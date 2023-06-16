@@ -122,7 +122,7 @@ namespace System
                     if (length > 2 * Vector512<short>.Count)
                     {
                         // Process the input in chunks of 64 characters (2 * Vector512<short>).
-                        // If the input length is a multiple of 32, don't consume the last 16 characters in this loop.
+                        // If the input length is a multiple of 64, don't consume the last 16 characters in this loop.
                         // Let the fallback below handle it instead. This is why the condition is
                         // ">" instead of ">=" above, and why "IsAddressLessThan" is used instead of "!IsAddressGreaterThan".
                         ref short twoVectorsAwayFromEnd = ref Unsafe.Add(ref searchSpace, length - (2 * Vector512<short>.Count));
@@ -321,8 +321,8 @@ namespace System
 
                     if (length > 2 * Vector512<short>.Count)
                     {
-                        // Process the input in chunks of 32 characters (2 * Vector256<short>).
-                        // If the input length is a multiple of 32, don't consume the last 16 characters in this loop.
+                        // Process the input in chunks of 64 characters (2 * Vector512<short>).
+                        // If the input length is a multiple of 64, don't consume the last 16 characters in this loop.
                         // Let the fallback below handle it instead. This is why the condition is
                         // ">" instead of ">=" above, and why "IsAddressLessThan" is used instead of "!IsAddressGreaterThan".
                         ref short twoVectorsAwayFromEnd = ref Unsafe.Add(ref searchSpace, length - (2 * Vector512<short>.Count));
@@ -534,8 +534,8 @@ namespace System
 
                     if (length > 2 * Vector512<short>.Count)
                     {
-                        // Process the input in chunks of 32 characters (2 * Vector256<short>).
-                        // If the input length is a multiple of 32, don't consume the last 16 characters in this loop.
+                        // Process the input in chunks of 64 characters (2 * Vector512<short>).
+                        // If the input length is a multiple of 64, don't consume the last 16 characters in this loop.
                         // Let the fallback below handle it instead. This is why the condition is
                         // ">" instead of ">=" above, and why "IsAddressLessThan" is used instead of "!IsAddressGreaterThan".
                         ref short twoVectorsAwayFromEnd = ref Unsafe.Add(ref searchSpace, length - (2 * Vector512<short>.Count));
@@ -752,8 +752,8 @@ namespace System
 
                     if (length > 2 * Vector512<short>.Count)
                     {
-                        // Process the input in chunks of 32 characters (2 * Vector256<short>).
-                        // If the input length is a multiple of 32, don't consume the last 16 characters in this loop.
+                        // Process the input in chunks of 64 characters (2 * Vector512<short>).
+                        // If the input length is a multiple of 64, don't consume the last 16 characters in this loop.
                         // Let the fallback below handle it instead. This is why the condition is
                         // ">" instead of ">=" above, and why "IsAddressLessThan" is used instead of "!IsAddressGreaterThan".
                         ref short twoVectorsAwayFromEnd = ref Unsafe.Add(ref searchSpace, length - (2 * Vector512<short>.Count));
@@ -761,7 +761,7 @@ namespace System
                         do
                         {
                             Vector512<short> source0 = Vector512.LoadUnsafe(ref currentSearchSpace);
-                            Vector512<short> source1 = Vector512.LoadUnsafe(ref currentSearchSpace, (nuint)Vector256<short>.Count);
+                            Vector512<short> source1 = Vector512.LoadUnsafe(ref currentSearchSpace, (nuint)Vector512<short>.Count);
                             Vector512<byte> packedSource = PackSources(source0, source1);
                             Vector512<byte> result = Vector512.Equals(packedValue0, packedSource) | Vector512.Equals(packedValue1, packedSource) | Vector512.Equals(packedValue2, packedSource);
                             result = NegateIfNeeded<TNegator>(result);
@@ -953,8 +953,8 @@ namespace System
 
                     if (length > 2 * Vector512<short>.Count)
                     {
-                        // Process the input in chunks of 32 characters (2 * Vector256<short>).
-                        // If the input length is a multiple of 32, don't consume the last 16 characters in this loop.
+                        // Process the input in chunks of 64 characters (2 * Vector512<short>).
+                        // If the input length is a multiple of 64, don't consume the last 16 characters in this loop.
                         // Let the fallback below handle it instead. This is why the condition is
                         // ">" instead of ">=" above, and why "IsAddressLessThan" is used instead of "!IsAddressGreaterThan".
                         ref short twoVectorsAwayFromEnd = ref Unsafe.Add(ref searchSpace, length - (2 * Vector512<short>.Count));
@@ -1128,7 +1128,6 @@ namespace System
             // - Values <= 32767 result in min(value, 255).
             // - Values  > 32767 result in 0. Because of this we can't accept needles that contain 0.
             return Avx512BW.PackUnsignedSaturate(source0, source1).AsByte();
-            //return Avx512BW.PackUnsignedSaturate(source0, source1).AsByte();
         }
 
         [MethodImpl(MethodImplOptions.AggressiveInlining)]
@@ -1229,7 +1228,7 @@ namespace System
         [CompExactlyDependsOn(typeof(Avx512F))]
         private static int ComputeFirstIndexOverlapped(ref short searchSpace, ref short current0, ref short current1, Vector512<byte> equals)
         {
-            ulong notEqualsElements = equals.ExtractMostSignificantBits();
+            ulong notEqualsElements = FixUpPackedVector512Result(equals).ExtractMostSignificantBits();
             int offsetInVector = BitOperations.TrailingZeroCount(notEqualsElements);
             if (offsetInVector >= Vector512<short>.Count)
             {

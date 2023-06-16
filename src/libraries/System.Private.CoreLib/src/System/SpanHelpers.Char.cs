@@ -629,8 +629,8 @@ namespace System
                     }
                     if (((nint)(searchSpace + (nint)offset) & (nint)(Vector512<byte>.Count - 1)) != 0)
                     {
-                        // Not currently aligned to Vector256 (is aligned to Vector128); this can cause a problem for searches
-                        // with no upper bound e.g. String.wcslen. Start with a check on Vector128 to align to Vector256,
+                        // Not currently aligned to Vector512 (is aligned to Vector256); this can cause a problem for searches
+                        // with no upper bound e.g. String.wcslen. Start with a check on Vector256 to align to Vector512,
                         // before moving to processing Vector256.
 
                         // This ensures we do not fault across memory pages

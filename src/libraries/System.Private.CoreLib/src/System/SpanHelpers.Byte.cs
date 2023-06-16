@@ -551,9 +551,9 @@ namespace System
 
                     if ((((nuint)(uint)searchSpace + offset) & (nuint)(Vector512<byte>.Count - 1)) != 0)
                     {
-                        // Not currently aligned to Vector256 (is aligned to Vector128); this can cause a problem for searches
+                        // Not currently aligned to Vector512 (is aligned to Vector256); this can cause a problem for searches
                         // with no upper bound e.g. String.strlen.
-                        // Start with a check on Vector128 to align to Vector256, before moving to processing Vector256.
+                        // Start with a check on Vector256 to align to Vector512, before moving to processing Vector256.
                         // This ensures we do not fault across memory pages while searching for an end of string.
                         Vector256<byte> search = Vector256.Load(searchSpace + offset);
 
