@@ -325,6 +325,10 @@ emit_simd_ins_for_binary_op (MonoCompile *cfg, MonoClass *klass, MonoMethodSigna
 			case SN_Divide:
 			case SN_op_Division: {
 				const char *class_name = m_class_get_name (klass);
+				if (!strcmp("Vector4", class_name) && fsig->params [1]->type == MONO_TYPE_R4) {
+					// Handles  Vector4 / scalar
+					return handle_mul_div_by_scalar (cfg, klass, MONO_TYPE_R4, args [1]->dreg, args [0]->dreg, OP_FDIV);	
+				}
 				if (strcmp ("Vector2", class_name) && strcmp ("Vector4", class_name) && strcmp ("Quaternion", class_name) && strcmp ("Plane", class_name)) {
 					if ((fsig->params [0]->type == MONO_TYPE_GENERICINST) && (fsig->params [1]->type != MONO_TYPE_GENERICINST))
 						return handle_mul_div_by_scalar (cfg, klass, arg_type, args [1]->dreg, args [0]->dreg, OP_FDIV);
@@ -347,6 +351,14 @@ emit_simd_ins_for_binary_op (MonoCompile *cfg, MonoClass *klass, MonoMethodSigna
 			case SN_Multiply:
 			case SN_op_Multiply: {
 				const char *class_name = m_class_get_name (klass);
+				if (!strcmp("Vector4", class_name)) {
+					// Handles scalar * Vector4 and Vector4 * scalar
+					if (fsig->params [0]->type == MONO_TYPE_R4) {
+						return handle_mul_div_by_scalar (cfg, klass, MONO_TYPE_R4, args [0]->dreg, args [1]->dreg, OP_FMUL);
+					} else if (fsig->params [1]->type == MONO_TYPE_R4) {
+						return handle_mul_div_by_scalar (cfg, klass, MONO_TYPE_R4, args [1]->dreg, args [0]->dreg, OP_FMUL);
+					}
+				}
 				if (strcmp ("Vector2", class_name) && strcmp ("Vector4", class_name) && strcmp ("Quaternion", class_name) && strcmp ("Plane", class_name)) {
 					if (fsig->params [1]->type != MONO_TYPE_GENERICINST)
 						return handle_mul_div_by_scalar (cfg, klass, arg_type, args [1]->dreg, args [0]->dreg, OP_FMUL);
@@ -2445,7 +2457,9 @@ emit_vector_2_3_4 (MonoCompile *cfg, MonoMethod *cmethod, MonoMethodSignature *f
 	MonoType *type, *etype;
 
 	if (!COMPILE_LLVM (cfg))
+#ifndef TARGET_ARM64
 		return NULL;
+#endif
 
 	id = lookup_intrins (vector2_methods, sizeof (vector2_methods), cmethod);
 	if (id == -1) {
@@ -2468,6 +2482,10 @@ emit_vector_2_3_4 (MonoCompile *cfg, MonoMethod *cmethod, MonoMethodSignature *f
 	// Similar to the cases in emit_sys_numerics_vector_t ()
 	switch (id) {
 	case SN_ctor:
+		if (!COMPILE_LLVM(cfg)) {
+			// upcoming work
+			return NULL;
+		}
 		if (is_elementwise_ctor (fsig, etype)) {
 			gboolean indirect = FALSE;
 			int dreg = load_simd_vreg (cfg, cmethod, args [0], &indirect);
@@ -2645,6 +2663,11 @@ emit_vector_2_3_4 (MonoCompile *cfg, MonoMethod *cmethod, MonoMethodSignature *f
 #endif
 	}
 	case SN_Abs: {
+		if (!COMPILE_LLVM (cfg)) {
+#ifdef TARGET_ARM64
+			return emit_simd_ins_for_sig (cfg, cmethod->klass, OP_XOP_OVR_X_X, INTRINS_AARCH64_ADV_SIMD_FABS, MONO_TYPE_R4, fsig, args);
+#endif
+		}
 		// MAX(x,0-x)
 		MonoInst *zero = emit_xzero (cfg, klass);
 		MonoInst *neg = emit_simd_ins (cfg, klass, OP_XBINOP, zero->dreg, args [0]->dreg);
