@@ -135,11 +135,24 @@ internal sealed class MetricsHandler : HttpMessageHandlerStage, IHttpMetricsLogg
             tags.Add("protocol", GetProtocolName(response.Version));
         }
 
-        if (request._options?.TryGetCustomMetricsTags(out IReadOnlyCollection<KeyValuePair<string, object?>>? customTags) is true)
+        if (request._options?.TryGetCustomMetricsTags(out ICollection<KeyValuePair<string, object?>>? customTags) is true)
         {
-            foreach (var customTag in customTags!)
+            // Normally, customTags should be a boxed TagList.
+            if (customTags is TagList tagList)
             {
-                tags.Add(customTag);
+                // TagList enumerator allocates, see https://github.com/dotnet/runtime/issues/87022, iterating using an indexer.
+                for (int i = 0; i < tagList.Count; i++)
+                {
+                    KeyValuePair<string, object?> customTag = tagList[i];
+                    tags.Add(customTag);
+                }
+            }
+            else
+            {
+                foreach (KeyValuePair<string, object?> customTag in customTags!)
+                {
+                    tags.Add(customTag);
+                }
             }
         }
     }

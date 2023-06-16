@@ -303,7 +303,7 @@ namespace System.Net.Http
 
     public static class HttpRequestOptionsExtensions
     {
-        public static void SetCustomMetricsTags(this HttpRequestOptions options, IReadOnlyCollection<KeyValuePair<string, object?>> tags) { throw null; }
+        public static ICollection<KeyValuePair<string, object?>> GetCustomMetricsTags(this HttpRequestOptions options) { throw null; }
     }
 
     public partial class HttpResponseMessage : System.IDisposable

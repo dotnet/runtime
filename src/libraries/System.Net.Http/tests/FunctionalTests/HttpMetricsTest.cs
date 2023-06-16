@@ -6,10 +6,11 @@ using System.Diagnostics;
 using System.Diagnostics.Metrics;
 using System.Linq;
 using System.Net.Test.Common;
+using System.Reflection;
 using System.Text;
 using System.Threading;
 using System.Threading.Tasks;
-using Microsoft.DotNet.XUnitExtensions;
+using Microsoft.DotNet.RemoteExecutor;
 using Xunit;
 using Xunit.Abstractions;
 
@@ -95,19 +96,28 @@ namespace System.Net.Http.Functional.Tests
             });
         }
 
-        [Fact]
-        public Task RequestDuration_CustomTags_Recorded()
+        [Theory]
+        [InlineData(false)]
+        [InlineData(true)]
+        public Task RequestDuration_CustomTags_Recorded(bool manualKeyAccess)
         {
+            // Access the key manually i
+            HttpRequestOptionsKey<ICollection<KeyValuePair<string, object?>>> customMetricsTagsKey = new("CustomMetricsTags");
+
             return LoopbackServerFactory.CreateClientAndServerAsync(async uri =>
             {
                 using HttpMessageInvoker client = CreateHttpMessageInvoker();
                 using InstrumentRecorder<double> recorder = SetupInstrumentRecorder<double>("http-client-request-duration");
                 using HttpRequestMessage request = new(HttpMethod.Get, uri) { Version = UseVersion };
-                request.Options.SetCustomMetricsTags(new[]
+                KeyValuePair<string, object> tag = new("route", "/test");
+                if (manualKeyAccess)
                 {
-                    new KeyValuePair<string, object>("route", "/test")
-                });
-
+                    request.Options.Set(customMetricsTagsKey, new[] { tag });
+                }
+                else
+                {
+                    request.Options.GetCustomMetricsTags().Add(tag);
+                }
                 using HttpResponseMessage response = await SendAsync(client, request);
 
                 Measurement<double> m = recorder.GetMeasurements().Single();
@@ -118,6 +128,65 @@ namespace System.Net.Http.Functional.Tests
             {
                 await server.AcceptConnectionSendResponseAndCloseAsync();
             });
+        }
+
+        [Theory]
+        [InlineData("System.Net.Http.HttpRequestOut.Start")]
+        [InlineData("System.Net.Http.Request")]
+        public void RequestDuration_CustomTags_DiagnosticListener_Recorded(string eventName)
+        {
+            RemoteExecutor.Invoke(static async (testClassName, eventNameInner) =>
+            {
+                using HttpMetricsTest test = (HttpMetricsTest)Activator.CreateInstance(Type.GetType(testClassName), (ITestOutputHelper)null);
+                await test.RequestDuration_CustomTags_DiagnosticListener_Recorded_Core(eventNameInner);
+            }, GetType().FullName, eventName).Dispose();
+        }
+
+        private async Task RequestDuration_CustomTags_DiagnosticListener_Recorded_Core(string eventName)
+        {
+            FakeDiagnosticListenerObserver diagnosticListenerObserver = new(kv =>
+            {
+                if (kv.Key == eventName)
+                {
+                    HttpRequestMessage request = GetProperty<HttpRequestMessage>(kv.Value, "Request");
+                    request.Options.GetCustomMetricsTags().Add(new KeyValuePair<string, object>("observed?", "observed!"));
+                }
+            });
+
+            using IDisposable subscription = DiagnosticListener.AllListeners.Subscribe(diagnosticListenerObserver);
+
+            await LoopbackServerFactory.CreateClientAndServerAsync(async uri =>
+            {
+                diagnosticListenerObserver.Enable();
+                using HttpMessageInvoker client = CreateHttpMessageInvoker();
+                using InstrumentRecorder<double> recorder = SetupInstrumentRecorder<double>("http-client-request-duration");
+                using HttpRequestMessage request = new(HttpMethod.Get, uri) { Version = UseVersion };
+                request.Options.GetCustomMetricsTags().Add(new KeyValuePair<string, object>("route", "/test"));
+
+                using HttpResponseMessage response = await SendAsync(client, request);
+
+                Measurement<double> m = recorder.GetMeasurements().Single();
+                VerifyRequestDuration(m, uri, ExpectedProtocolString, 200);
+                Assert.Equal("/test", m.Tags.ToArray().Single(t => t.Key == "route").Value);
+                Assert.Equal("observed!", m.Tags.ToArray().Single(t => t.Key == "observed?").Value);
+
+            }, async server =>
+            {
+                await server.AcceptConnectionSendResponseAndCloseAsync();
+            });
+
+            static T GetProperty<T>(object obj, string propertyName)
+            {
+                Type t = obj.GetType();
+
+                PropertyInfo p = t.GetRuntimeProperty(propertyName);
+
+                object propertyValue = p.GetValue(obj);
+                Assert.NotNull(propertyValue);
+                Assert.IsAssignableFrom<T>(propertyValue);
+
+                return (T)propertyValue;
+            }
         }
 
         public enum ResponseContentType
@@ -309,13 +378,13 @@ namespace System.Net.Http.Functional.Tests
 
             protected override HttpResponseMessage Send(HttpRequestMessage request, CancellationToken cancellationToken)
             {
-                request.Options.SetCustomMetricsTags(new[] { new KeyValuePair<string, object?>("before", "before!") });
+                request.Options.GetCustomMetricsTags().Add(new KeyValuePair<string, object?>("before", "before!"));
                 return base.Send(request, cancellationToken);
             }
 
             protected override Task<HttpResponseMessage> SendAsync(HttpRequestMessage request, CancellationToken cancellationToken)
             {
-                request.Options.SetCustomMetricsTags(new[] { new KeyValuePair<string, object?>("before", "before!") });
+                request.Options.GetCustomMetricsTags().Add(new KeyValuePair<string, object?>("before", "before!"));
                 return base.SendAsync(request, cancellationToken);
             }
         }
