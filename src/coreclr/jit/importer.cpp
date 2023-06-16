@@ -3145,7 +3145,8 @@ void Compiler::impImportAndPushBox(CORINFO_RESOLVED_TOKEN* pResolvedToken)
             lvaTable[impBoxTemp].lvType      = TYP_REF;
             lvaTable[impBoxTemp].lvSingleDef = 1;
             JITDUMP("Marking V%02u as a single def local\n", impBoxTemp);
-            const bool isExact = true;
+            const bool isExact =
+                (info.compCompHnd->getClassAttribs(pResolvedToken->hClass) & CORINFO_FLG_GENERIC_TYPE_VARIABLE)) == 0;
             lvaSetClass(impBoxTemp, pResolvedToken->hClass, isExact);
         }
 
