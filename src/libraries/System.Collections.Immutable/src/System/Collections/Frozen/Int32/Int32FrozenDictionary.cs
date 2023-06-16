@@ -35,7 +35,7 @@ namespace System.Collections.Frozen
                 hashCodes[i] = entries[i].Key;
             }
 
-            _hashTable = FrozenHashTable.Create(hashCodes);
+            _hashTable = FrozenHashTable.Create(hashCodes, hashCodesAreUnique: true);
 
             for (int srcIndex = 0; srcIndex < hashCodes.Length; srcIndex++)
             {
