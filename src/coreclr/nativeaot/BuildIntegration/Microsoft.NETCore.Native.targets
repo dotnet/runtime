@@ -43,6 +43,7 @@ The .NET Foundation licenses this file to you under the MIT license.
     <UseSystemResourceKeys Condition="$(IlcDisableReflection) == 'true'">true</UseSystemResourceKeys>
     <EventSourceSupport Condition="$(IlcDisableReflection) == 'true'">false</EventSourceSupport>
     <EventSourceSupport Condition="$(EventSourceSupport) == ''">false</EventSourceSupport>
+    <UseWindowsThreadPool Condition="'$(UseWindowsThreadPool)' == '' and '$(_targetOS)' == 'win'">true</UseWindowsThreadPool>
     <DynamicCodeSupport Condition="'$(DynamicCodeSupport)' == ''">false</DynamicCodeSupport>
   </PropertyGroup>
 
@@ -272,6 +273,7 @@ The .NET Foundation licenses this file to you under the MIT license.
 
       <!-- The managed debugging support in libraries is unused - trim it -->
       <IlcArg Condition="'$(IlcKeepManagedDebuggerSupport)' != 'true'" Include="--feature:System.Diagnostics.Debugger.IsSupported=false" />
+      <IlcArg Condition="'$(UseWindowsThreadPool)' != '' and '$(_targetOS)' == 'win'" Include="--feature:System.Threading.ThreadPool.UseWindowsThreadPool=$(UseWindowsThreadPool)" />
     </ItemGroup>
 
     <MakeDir Directories="$(NativeIntermediateOutputPath)" />

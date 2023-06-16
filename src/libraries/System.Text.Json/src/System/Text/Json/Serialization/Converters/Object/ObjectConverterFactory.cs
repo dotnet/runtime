@@ -2,6 +2,7 @@
 // The .NET Foundation licenses this file to you under the MIT license.
 
 using System.Collections;
+using System.Collections.Generic;
 using System.Diagnostics;
 using System.Diagnostics.CodeAnalysis;
 using System.Reflection;
@@ -39,15 +40,18 @@ namespace System.Text.Json.Serialization.Converters
             Justification = "The ctor is marked RequiresUnreferencedCode.")]
         public override JsonConverter CreateConverter(Type typeToConvert, JsonSerializerOptions options)
         {
-            if (typeToConvert.IsKeyValuePair())
-            {
-                return CreateKeyValuePairConverter(typeToConvert);
-            }
-
+            ConstructorInfo? constructor;
             JsonConverter converter;
             Type converterType;
 
-            if (!typeToConvert.TryGetDeserializationConstructor(_useDefaultConstructorInUnannotatedStructs, out ConstructorInfo? constructor))
+            if (typeToConvert.IsKeyValuePair())
+            {
+                // browser-wasm compat -- ensure the linker doesn't trim away constructor parameter names from KVP.
+                Type[] genericArguments = typeToConvert.GetGenericArguments();
+                Type keyValuePairType = typeof(KeyValuePair<,>).MakeGenericType(genericArguments);
+                constructor = keyValuePairType.GetConstructor(genericArguments);
+            }
+            else if (!typeToConvert.TryGetDeserializationConstructor(_useDefaultConstructorInUnannotatedStructs, out constructor))
             {
                 ThrowHelper.ThrowInvalidOperationException_SerializationDuplicateTypeAttribute<JsonConstructorAttribute>(typeToConvert);
             }
@@ -97,23 +101,6 @@ namespace System.Text.Json.Serialization.Converters
                     culture: null)!;
 
             converter.ConstructorInfo = constructor!;
-            return converter;
-        }
-
-        private static JsonConverter CreateKeyValuePairConverter(Type type)
-        {
-            Debug.Assert(type.IsKeyValuePair());
-
-            Type keyType = type.GetGenericArguments()[0];
-            Type valueType = type.GetGenericArguments()[1];
-
-            JsonConverter converter = (JsonConverter)Activator.CreateInstance(
-                typeof(KeyValuePairConverter<,>).MakeGenericType(new Type[] { keyType, valueType }),
-                BindingFlags.Instance | BindingFlags.Public,
-                binder: null,
-                args: null,
-                culture: null)!;
-
             return converter;
         }
     }

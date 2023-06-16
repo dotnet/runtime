@@ -118,14 +118,18 @@ let linked_functions = [
 
 #if USE_PTHREADS
 linked_functions = [...linked_functions,
-    /// mono-threads-wasm.c
+    // mono-threads-wasm.c
     "mono_wasm_pthread_on_pthread_attached",
+    "mono_wasm_pthread_on_pthread_detached",
     // threads.c
     "mono_wasm_eventloop_has_unsettled_interop_promises",
     // diagnostics_server.c
     "mono_wasm_diagnostic_server_on_server_thread_created",
     "mono_wasm_diagnostic_server_on_runtime_server_init",
     "mono_wasm_diagnostic_server_stream_signal_work_available",
+    // corebindings.c
+    "mono_wasm_install_js_worker_interop",
+    "mono_wasm_uninstall_js_worker_interop",
 ]
 #endif
 if (!DISABLE_LEGACY_JS_INTEROP) {

@@ -9828,8 +9828,9 @@ compile_method (MonoAotCompile *acfg, MonoMethod *method)
 	mono_atomic_inc_i32 (&acfg->stats.ccount);
 
 	if (acfg->aot_opts.compiled_methods_outfile && acfg->compiled_methods_outfile != NULL) {
-		if (!mono_method_is_generic_impl (method) && method->token != 0)
+		if (!mono_method_is_generic_impl (method) && method->token != 0) {
 			fprintf (acfg->compiled_methods_outfile, "%x\n", method->token);
+		}
 	}
 }
 
@@ -14832,6 +14833,10 @@ aot_assembly (MonoAssembly *ass, guint32 jit_opts, MonoAotOptions *aot_options)
 		acfg->compiled_methods_outfile = fopen (acfg->aot_opts.compiled_methods_outfile, "w+");
 		if (!acfg->compiled_methods_outfile)
 			aot_printerrf (acfg, "Unable to open compiled-methods-outfile specified file %s\n", acfg->aot_opts.compiled_methods_outfile);
+		else {
+			fprintf(acfg->compiled_methods_outfile, "%s\n", ass->image->filename);
+			fprintf(acfg->compiled_methods_outfile, "%s\n", ass->image->guid);
+		}
 	}
 
 	if (acfg->aot_opts.data_outfile) {

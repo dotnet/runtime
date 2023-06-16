@@ -3530,18 +3530,27 @@ GenTree* Compiler::impImportStaticReadOnlyField(CORINFO_FIELD_HANDLE field, CORI
 #ifdef FEATURE_SIMD
                 // First, let's check whether field is a SIMD vector and import it as GT_CNS_VEC
                 int simdWidth = getSIMDTypeSizeInBytes(fieldClsHnd);
-                if (simdWidth > 0)
+                if ((simdWidth > 0) && IsBaselineSimdIsaSupported())
                 {
                     assert((totalSize <= 32) && (totalSize <= MaxStructSize));
                     var_types simdType = getSIMDTypeForSize(simdWidth);
 
-// SSE2 and AdvSimd are baselines so TYP_SIMD8-16 are always there
-// for TYP_SIMD32 we need to check AVX support on XARCH
-#ifdef TARGET_XARCH
-                    bool hwAccelerated = (simdType != TYP_SIMD32) || compOpportunisticallyDependsOn(InstructionSet_AVX);
-#else
                     bool hwAccelerated = true;
+#ifdef TARGET_XARCH
+                    if (simdType == TYP_SIMD64)
+                    {
+                        hwAccelerated = compOpportunisticallyDependsOn(InstructionSet_AVX512F);
+                    }
+                    else if (simdType == TYP_SIMD32)
+                    {
+                        hwAccelerated = compOpportunisticallyDependsOn(InstructionSet_AVX);
+                    }
+                    else
 #endif
+                    {
+                        // SIMD8, SIMD12, SIMD16 are covered by IsBaselineSimdIsaSupported check
+                        assert((simdType == TYP_SIMD8) || (simdType == TYP_SIMD12) || (simdType == TYP_SIMD16));
+                    }
 
                     if (hwAccelerated)
                     {
