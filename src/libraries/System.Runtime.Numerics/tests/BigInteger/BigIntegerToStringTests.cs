@@ -212,7 +212,7 @@ namespace System.Numerics.Tests
         {
             List<CultureInfo> cultures = new () { new CultureInfo("en-US"), new CultureInfo("en-GB"), new CultureInfo("fr-CA"),
                                                             new CultureInfo("ar-SA"), new CultureInfo("de-DE"), new CultureInfo("he-IL"),
-                                                            new CultureInfo("ru-RU"), new CultureInfo("zh-CN"), };
+                                                            new CultureInfo("ru-RU"), new CultureInfo("zh-CN") };
             if (PlatformDetection.IsNotUsingLimitedCultures)
                 cultures.AddRange(new[] { new CultureInfo("as"), new CultureInfo("es-BO"), new CultureInfo("luy-KE") });
 
