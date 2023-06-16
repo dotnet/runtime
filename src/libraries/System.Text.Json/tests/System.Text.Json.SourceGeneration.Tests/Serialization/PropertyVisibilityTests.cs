@@ -332,6 +332,10 @@ namespace System.Text.Json.SourceGeneration.Tests
         [JsonSerializable(typeof(DictionaryWithPrivateKeyAndValueType))][JsonSerializable(typeof(ClassWithIgnoredAndPrivateMembers))]
         [JsonSerializable(typeof(ClassWithInternalJsonIncludeProperties))]
         [JsonSerializable(typeof(ClassWithIgnoredAndPrivateMembers))]
+        [JsonSerializable(typeof(Class1))]
+        [JsonSerializable(typeof(Class2))]
+        [JsonSerializable(typeof(NamespaceBase.Class1), TypeInfoPropertyName = "Class1FromNamespaceBase")]
+        [JsonSerializable(typeof(NamespaceBase.Class2), TypeInfoPropertyName = "Class2FromNamespaceBase")]
         internal sealed partial class PropertyVisibilityTestsContext_Metadata : JsonSerializerContext
         {
         }
@@ -587,6 +591,10 @@ namespace System.Text.Json.SourceGeneration.Tests
         [JsonSerializable(typeof(DictionaryWithPrivateKeyAndValueType))]
         [JsonSerializable(typeof(ClassWithInternalJsonIncludeProperties))]
         [JsonSerializable(typeof(ClassWithIgnoredAndPrivateMembers))]
+        [JsonSerializable(typeof(Class1))]
+        [JsonSerializable(typeof(Class2))]
+        [JsonSerializable(typeof(NamespaceBase.Class1), TypeInfoPropertyName = "Class1FromNamespaceBase")]
+        [JsonSerializable(typeof(NamespaceBase.Class2), TypeInfoPropertyName = "Class2FromNamespaceBase")]
         internal sealed partial class PropertyVisibilityTestsContext_Default : JsonSerializerContext
         {
         }
