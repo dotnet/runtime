@@ -36,18 +36,15 @@ namespace System.Collections.Frozen
         }
 
         /// <summary>Initializes a frozen hash table.</summary>
-        /// <param name="hashCodes">Pre-calculated hash codes.</param>
-        /// <param name="storeDestIndexFromSrcIndex">A delegate that assigns the index to a specific entry. It's passed the destination and source indices.</param>
+        /// <param name="hashCodes">Pre-calculated hash codes. When the method finishes, it assigns each value to destination index.</param>
         /// <param name="optimizeForReading">true to spend additional effort tuning for subsequent read speed on the table; false to prioritize construction time.</param>
         /// <remarks>
-        /// This method will iterate through the incoming entries and will invoke the hasher on each once.
         /// It will then determine the optimal number of hash buckets to allocate and will populate the
-        /// bucket table. In the process of doing so, it calls out to the <paramref name="storeDestIndexFromSrcIndex"/> to indicate
-        /// the resulting index for that entry. <see cref="FindMatchingEntries(int, out int, out int)"/>
-        /// then uses this index to reference individual entries by indexing into <see cref="HashCodes"/>.
+        /// bucket table. The caller is responsible to consume the values written to <paramref name="hashCodes"/> and update the destination (if desired).
+        /// <see cref="FindMatchingEntries(int, out int, out int)"/> then uses this index to reference individual entries by indexing into <see cref="HashCodes"/>.
         /// </remarks>
         /// <returns>A frozen hash table.</returns>
-        public static FrozenHashTable Create(ReadOnlySpan<int> hashCodes, Action<int, int> storeDestIndexFromSrcIndex, bool optimizeForReading = true)
+        public static FrozenHashTable Create(Span<int> hashCodes, bool optimizeForReading = true)
         {
             // Determine how many buckets to use.  This might be fewer than the number of entries
             // if any entries have identical hashcodes (not just different hashcodes that might
@@ -100,8 +97,10 @@ namespace System.Collections.Frozen
                 bucketStart = count;
                 while (index >= 0)
                 {
-                    hashtableHashcodes[count] = hashCodes[index];
-                    storeDestIndexFromSrcIndex(count, index);
+                    ref int hashCode = ref hashCodes[index];
+                    hashtableHashcodes[count] = hashCode;
+                    // we have used the hash code for the last time, now we re-use the buffer to store destination index
+                    hashCode = count;
                     count++;
                     bucketCount++;
 
