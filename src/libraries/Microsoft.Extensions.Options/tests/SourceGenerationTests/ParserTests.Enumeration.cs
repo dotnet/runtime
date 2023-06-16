@@ -3,6 +3,7 @@
 
 using Microsoft.Extensions.Options.Generators;
 using SourceGenerators.Tests;
+using System;
 using System.Threading.Tasks;
 using Xunit;
 
@@ -10,7 +11,7 @@ namespace Microsoft.Gen.OptionsValidation.Test;
 
 public partial class ParserTests
 {
-    [Fact]
+    [ConditionalFact(typeof(PlatformDetection), nameof(PlatformDetection.IsNotBrowser))]
     public async Task CircularTypeReferencesInEnumeration()
     {
         var (d, _) = await RunGenerator(@"
@@ -31,7 +32,7 @@ public partial class ParserTests
         Assert.Equal(DiagDescriptors.CircularTypeReferences.Id, d[0].Id);
     }
 
-    [Fact]
+    [ConditionalFact(typeof(PlatformDetection), nameof(PlatformDetection.IsNotBrowser))]
     public async Task NotValidatorInEnumeration()
     {
         var (d, _) = await RunGenerator(@"
@@ -61,7 +62,7 @@ public partial class ParserTests
         Assert.Equal(DiagDescriptors.DoesntImplementIValidateOptions.Id, d[0].Id);
     }
 
-    [Fact]
+    [ConditionalFact(typeof(PlatformDetection), nameof(PlatformDetection.IsNotBrowser))]
     public async Task NullValidatorInEnumeration()
     {
         var (d, _) = await RunGenerator(@"
@@ -92,7 +93,7 @@ public partial class ParserTests
         Assert.Equal(DiagDescriptors.NullValidatorType.Id, d[0].Id);
     }
 
-    [Fact]
+    [ConditionalFact(typeof(PlatformDetection), nameof(PlatformDetection.IsNotBrowser))]
     public async Task NoSimpleValidatorConstructorInEnumeration()
     {
         var (d, _) = await RunGenerator(@"
@@ -129,7 +130,7 @@ public partial class ParserTests
         Assert.Equal(DiagDescriptors.ValidatorsNeedSimpleConstructor.Id, d[0].Id);
     }
 
-    [Fact]
+    [ConditionalFact(typeof(PlatformDetection), nameof(PlatformDetection.IsNotBrowser))]
     public async Task CantValidateOpenGenericMembersInEnumeration()
     {
         var (d, _) = await RunGenerator(@"
@@ -160,7 +161,7 @@ public partial class ParserTests
         Assert.Equal(DiagDescriptors.CantUseWithGenericTypes.Id, d[2].Id);
     }
 
-    [Fact]
+    [ConditionalFact(typeof(PlatformDetection), nameof(PlatformDetection.IsNotBrowser))]
     public async Task ClosedGenericsInEnumeration()
     {
         var (d, _) = await RunGenerator(@"
@@ -191,7 +192,7 @@ public partial class ParserTests
         Assert.Equal(DiagDescriptors.NoEligibleMember.Id, d[2].Id);
     }
 
-    [Fact]
+    [ConditionalFact(typeof(PlatformDetection), nameof(PlatformDetection.IsNotBrowser))]
     public async Task NotEnumerable()
     {
         var (d, _) = await RunGenerator(@"

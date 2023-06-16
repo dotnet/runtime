@@ -1,7 +1,12 @@
 ﻿// Licensed to the .NET Foundation under one or more agreements.
 // The .NET Foundation licenses this file to you under the MIT license.
 
+using Microsoft.CodeAnalysis;
+using Microsoft.CodeAnalysis.CSharp.Syntax;
+using Microsoft.Extensions.Options;
+using Microsoft.Extensions.Options.Generators;
 using SourceGenerators.Tests;
+using System;
 using System.Collections.Generic;
 using System.Collections.Immutable;
 using System.ComponentModel.DataAnnotations;
@@ -9,17 +14,13 @@ using System.Globalization;
 using System.Linq;
 using System.Reflection;
 using System.Threading.Tasks;
-using Microsoft.CodeAnalysis;
-using Microsoft.CodeAnalysis.CSharp.Syntax;
-using Microsoft.Extensions.Options;
-using Microsoft.Extensions.Options.Generators;
 using Xunit;
 
 namespace Microsoft.Gen.OptionsValidation.Test;
 
 public partial class ParserTests
 {
-    [Fact]
+    [ConditionalFact(typeof(PlatformDetection), nameof(PlatformDetection.IsNotBrowser))]
     public async Task PotentiallyMissingAttributes()
     {
         var (d, _) = await RunGenerator(@"
@@ -49,7 +50,7 @@ public partial class ParserTests
         Assert.Equal(DiagDescriptors.PotentiallyMissingEnumerableValidation.Id, d[1].Id);
     }
 
-    [Fact]
+    [ConditionalFact(typeof(PlatformDetection), nameof(PlatformDetection.IsNotBrowser))]
     public async Task CircularTypeReferences()
     {
         var (d, _) = await RunGenerator(@"
@@ -70,7 +71,7 @@ public partial class ParserTests
         Assert.Equal(DiagDescriptors.CircularTypeReferences.Id, d[0].Id);
     }
 
-    [Fact]
+    [ConditionalFact(typeof(PlatformDetection), nameof(PlatformDetection.IsNotBrowser))]
     public async Task InvalidValidatorInterface()
     {
         var (d, _) = await RunGenerator(@"
@@ -101,7 +102,7 @@ public partial class ParserTests
         Assert.Equal(DiagDescriptors.DoesntImplementIValidateOptions.Id, d[0].Id);
     }
 
-    [Fact]
+    [ConditionalFact(typeof(PlatformDetection), nameof(PlatformDetection.IsNotBrowser))]
     public async Task NotValidator()
     {
         var (d, _) = await RunGenerator(@"
@@ -131,7 +132,7 @@ public partial class ParserTests
         Assert.Equal(DiagDescriptors.DoesntImplementIValidateOptions.Id, d[0].Id);
     }
 
-    [Fact]
+    [ConditionalFact(typeof(PlatformDetection), nameof(PlatformDetection.IsNotBrowser))]
     public async Task ValidatorAlreadyImplementValidateFunction()
     {
         var (d, _) = await RunGenerator(@"
@@ -169,7 +170,7 @@ public partial class ParserTests
         Assert.Equal(DiagDescriptors.AlreadyImplementsValidateMethod.Id, d[0].Id);
     }
 
-    [Fact]
+    [ConditionalFact(typeof(PlatformDetection), nameof(PlatformDetection.IsNotBrowser))]
     public async Task NullValidator()
     {
         var (d, _) = await RunGenerator(@"
@@ -200,7 +201,7 @@ public partial class ParserTests
         Assert.Equal(DiagDescriptors.NullValidatorType.Id, d[0].Id);
     }
 
-    [Fact]
+    [ConditionalFact(typeof(PlatformDetection), nameof(PlatformDetection.IsNotBrowser))]
     public async Task NoSimpleValidatorConstructor()
     {
         var (d, _) = await RunGenerator(@"
@@ -237,7 +238,7 @@ public partial class ParserTests
         Assert.Equal(DiagDescriptors.ValidatorsNeedSimpleConstructor.Id, d[0].Id);
     }
 
-    [Fact]
+    [ConditionalFact(typeof(PlatformDetection), nameof(PlatformDetection.IsNotBrowser))]
     public async Task NoStaticValidator()
     {
         var (d, _) = await RunGenerator(@"
@@ -257,7 +258,7 @@ public partial class ParserTests
         Assert.Equal(DiagDescriptors.CantBeStaticClass.Id, d[0].Id);
     }
 
-    [Fact]
+    [ConditionalFact(typeof(PlatformDetection), nameof(PlatformDetection.IsNotBrowser))]
     public async Task BogusModelType()
     {
         var (d, _) = await RunGenerator(@"
@@ -271,7 +272,7 @@ public partial class ParserTests
         Assert.Empty(d);
     }
 
-    [Fact]
+    [ConditionalFact(typeof(PlatformDetection), nameof(PlatformDetection.IsNotBrowser))]
     public async Task CantValidateOpenGenericMembers()
     {
         var (d, _) = await RunGenerator(@"
@@ -302,7 +303,7 @@ public partial class ParserTests
         Assert.Equal(DiagDescriptors.CantUseWithGenericTypes.Id, d[2].Id);
     }
 
-    [Fact]
+    [ConditionalFact(typeof(PlatformDetection), nameof(PlatformDetection.IsNotBrowser))]
     public async Task ClosedGenerics()
     {
         var (d, _) = await RunGenerator(@"
@@ -338,7 +339,7 @@ public partial class ParserTests
         Assert.Equal(DiagDescriptors.NoEligibleMember.Id, d[3].Id);
     }
 
-    [Fact]
+    [ConditionalFact(typeof(PlatformDetection), nameof(PlatformDetection.IsNotBrowser))]
     public async Task NoEligibleMembers()
     {
         var (d, _) = await RunGenerator(@"
@@ -370,7 +371,7 @@ public partial class ParserTests
         Assert.Equal(DiagDescriptors.NoEligibleMembersFromValidator.Id, d[1].Id);
     }
 
-    [Fact]
+    [ConditionalFact(typeof(PlatformDetection), nameof(PlatformDetection.IsNotBrowser))]
     public async Task AlreadyImplemented()
     {
         var (d, _) = await RunGenerator(@"
@@ -393,7 +394,7 @@ public partial class ParserTests
         Assert.Equal(DiagDescriptors.AlreadyImplementsValidateMethod.Id, d[0].Id);
     }
 
-    [Fact]
+    [ConditionalFact(typeof(PlatformDetection), nameof(PlatformDetection.IsNotBrowser))]
     public async Task ShouldNotProduceInfoWhenTheClassHasABaseClass()
     {
         var (d, _) = await RunGenerator(@"
@@ -418,7 +419,7 @@ public partial class ParserTests
         Assert.Empty(d);
     }
 
-    [Fact]
+    [ConditionalFact(typeof(PlatformDetection), nameof(PlatformDetection.IsNotBrowser))]
     public async Task ShouldNotProduceInfoWhenTransitiveClassHasABaseClass()
     {
         var (d, _) = await RunGenerator(@"
@@ -449,7 +450,7 @@ public partial class ParserTests
         Assert.Empty(d);
     }
 
-    [Theory]
+    [ConditionalTheory(typeof(PlatformDetection), nameof(PlatformDetection.IsNotBrowser))]
     [InlineData("bool")]
     [InlineData("int")]
     [InlineData("double")]
@@ -484,7 +485,7 @@ public partial class ParserTests
         Assert.Equal(DiagDescriptors.NoEligibleMember.Id, d[0].Id);
     }
 
-    [Fact]
+    [ConditionalFact(typeof(PlatformDetection), nameof(PlatformDetection.IsNotBrowser))]
     public async Task ShouldProduceWarningWhenTheClassHasNoEligibleMembers()
     {
         var (d, _) = await RunGenerator(@"
@@ -504,7 +505,7 @@ public partial class ParserTests
         Assert.Equal(DiagDescriptors.NoEligibleMembersFromValidator.Id, d[0].Id);
     }
 
-    [Theory]
+    [ConditionalTheory(typeof(PlatformDetection), nameof(PlatformDetection.IsNotBrowser))]
     [InlineData("private")]
     [InlineData("protected")]
     public async Task ShouldProduceWarningWhenTheClassMembersAreInaccessible(string accessModifier)
@@ -529,7 +530,7 @@ public partial class ParserTests
         Assert.Equal("SYSLIB1206", d[0].Id);
     }
 
-    [Fact]
+    [ConditionalFact(typeof(PlatformDetection), nameof(PlatformDetection.IsNotBrowser))]
     public async Task ShouldNotProduceErrorWhenMultipleValidationAnnotationsExist()
     {
         var (d, _) = await RunGenerator(@"
@@ -549,7 +550,7 @@ public partial class ParserTests
         Assert.Empty(d);
     }
 
-    [Fact]
+    [ConditionalFact(typeof(PlatformDetection), nameof(PlatformDetection.IsNotBrowser))]
     public async Task ShouldNotProduceErrorWhenDataTypeAttributesAreUsed()
     {
         var (d, _) = await RunGenerator(@"
@@ -583,7 +584,7 @@ public partial class ParserTests
         Assert.Empty(d);
     }
 
-    [Fact]
+    [ConditionalFact(typeof(PlatformDetection), nameof(PlatformDetection.IsNotBrowser))]
     public async Task ShouldNotProduceErrorWhenConstVariableIsUsedAsAttributeArgument()
     {
         var (d, _) = await RunGenerator(@"
@@ -604,7 +605,7 @@ public partial class ParserTests
     }
 
     // Testing on all existing & eligible annotations extending ValidationAttribute that aren't used above
-    [Fact]
+    [ConditionalFact(typeof(PlatformDetection), nameof(PlatformDetection.IsNotBrowser))]
     public async Task ShouldNotProduceAnyMessagesWhenExistingValidationsArePlaced()
     {
         var (d, _) = await RunGenerator(@"
@@ -644,7 +645,7 @@ public partial class ParserTests
         Assert.Empty(d);
     }
 
-    [Fact]
+    [ConditionalFact(typeof(PlatformDetection), nameof(PlatformDetection.IsNotBrowser))]
     public async Task ShouldNotProduceErrorWhenPropertiesAreUsedAsAttributeArgument()
     {
         var (d, _) = await RunGenerator(@"
@@ -664,7 +665,7 @@ public partial class ParserTests
         Assert.Empty(d);
     }
 
-    [Fact]
+    [ConditionalFact(typeof(PlatformDetection), nameof(PlatformDetection.IsNotBrowser))]
     public async Task ShouldSkipWhenOptionsValidatorAttributeDoesNotExist()
     {
         var (d, _) = await RunGenerator(@"
@@ -684,7 +685,7 @@ public partial class ParserTests
         Assert.Empty(d);
     }
 
-    [Fact]
+    [ConditionalFact(typeof(PlatformDetection), nameof(PlatformDetection.IsNotBrowser))]
     public async Task ShouldSkipAtrributeWhenAttributeSymbolCannotBeFound()
     {
         var (d, _) = await RunGenerator(@"
@@ -706,7 +707,7 @@ public partial class ParserTests
         Assert.Empty(d);
     }
 
-    [Fact]
+    [ConditionalFact(typeof(PlatformDetection), nameof(PlatformDetection.IsNotBrowser))]
     public async Task ShouldSkipAtrributeWhenAttributeSymbolIsNotBasedOnValidationAttribute()
     {
         var (d, _) = await RunGenerator(@"
@@ -728,7 +729,7 @@ public partial class ParserTests
         Assert.Empty(d);
     }
 
-    [Fact]
+    [ConditionalFact(typeof(PlatformDetection), nameof(PlatformDetection.IsNotBrowser))]
     public async Task ShouldAcceptAtrributeWhenAttributeIsInDifferentNamespace()
     {
         var (d, _) = await RunGenerator(@"
@@ -754,7 +755,7 @@ public partial class ParserTests
         Assert.Empty(d);
     }
 
-    [Fact]
+    [ConditionalFact(typeof(PlatformDetection), nameof(PlatformDetection.IsNotBrowser))]
     public async Task ShouldHandleAtrributePropertiesOtherThanString()
     {
         var (d, _) = await RunGenerator(@"
@@ -788,7 +789,7 @@ public partial class ParserTests
         Assert.Empty(d);
     }
 
-    [Fact]
+    [ConditionalFact(typeof(PlatformDetection), nameof(PlatformDetection.IsNotBrowser))]
     public async Task ShouldStoreFloatValuesCorrectly()
     {
         var backupCulture = CultureInfo.CurrentCulture;
@@ -819,7 +820,7 @@ public partial class ParserTests
         }
     }
 
-    [Fact]
+    [ConditionalFact(typeof(PlatformDetection), nameof(PlatformDetection.IsNotBrowser))]
     public async Task MultiModelValidatorGeneratesOnlyOnePartialTypeBlock()
     {
         var (d, sources) = await RunGenerator(@"

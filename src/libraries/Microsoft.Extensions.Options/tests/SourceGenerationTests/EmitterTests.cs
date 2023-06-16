@@ -17,7 +17,7 @@ namespace Microsoft.Gen.OptionsValidation.Test;
 
 public class EmitterTests
 {
-    [Fact]
+    [ConditionalFact(typeof(PlatformDetection), nameof(PlatformDetection.IsNotBrowser))]
     public async Task TestEmitter()
     {
         var sources = new List<string>();
