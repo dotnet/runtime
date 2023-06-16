@@ -266,9 +266,8 @@ static
 uint32_t
 ds_rt_set_environment_variable (const ep_char16_t *name, const ep_char16_t *value)
 {
-     // return SetEnvironmentVariableW(reinterpret_cast<LPCWSTR>(name), reinterpret_cast<LPCWSTR>(value)) ? S_OK : HRESULT_FROM_WIN32(GetLastError());
-     // PalDebugBreak();
-    return 0xffff;
+    extern uint32_t ds_rt_aot_set_environment_variable (const ep_char16_t *name, const ep_char16_t *value);
+    return ds_rt_aot_set_environment_variable(name, value);
 }
 
 static

@@ -669,6 +669,28 @@ bool ep_rt_aot_spin_lock_release (ep_rt_spin_lock_handle_t *spin_lock)
     return false;
 }
 
+void ep_rt_aot_os_environment_get_utf16 (dn_vector_ptr_t *env_array)
+{
+    STATIC_CONTRACT_NOTHROW;
+    EP_ASSERT (env_array != NULL);
+
+#ifdef HOST_WIN32
+    ep_char16_t * envs = reinterpret_cast<ep_char16_t *>(GetEnvironmentStringsW ());
+    if (envs) {
+        const ep_char16_t * next = envs;
+        while (*next) {
+            dn_vector_ptr_push_back (env_array, ep_rt_utf16_string_dup (reinterpret_cast<const ep_char16_t *>(next)));
+            next += ep_rt_utf16_string_len (reinterpret_cast<const ep_char16_t *>(next)) + 1;
+        }
+        FreeEnvironmentStringsW (reinterpret_cast<LPWSTR>(envs));
+    }
+#else
+    ep_char8_t **next = NULL;
+    for (next = environ; *next != NULL; ++next)
+        dn_vector_ptr_push_back (env_array, ep_rt_utf8_to_utf16le_string (*next, -1));
+#endif
+}
+
 #ifdef EP_CHECKED_BUILD
 
 void ep_rt_aot_lock_requires_lock_held (const ep_rt_lock_handle_t *lock)
