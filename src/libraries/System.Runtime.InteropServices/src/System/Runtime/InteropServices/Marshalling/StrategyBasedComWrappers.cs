@@ -2,6 +2,7 @@
 // The .NET Foundation licenses this file to you under the MIT license.
 
 using System.Collections;
+using System.Diagnostics.CodeAnalysis;
 using System.Reflection;
 using System.Runtime.CompilerServices;
 using System.Runtime.Versioning;
@@ -19,13 +20,12 @@ namespace System.Runtime.InteropServices.Marshalling
 
         protected static IIUnknownCacheStrategy CreateDefaultCacheStrategy() => new DefaultCaching();
 
+        [UnconditionalSuppressMessage("AOT", "IL3050:Calling members annotated with 'RequiresDynamicCodeAttribute' may break functionality when AOT compiling.", Justification = "The member with the attribute is in a IsDynamicCodeSupported block.")]
         protected virtual IIUnknownInterfaceDetailsStrategy GetOrCreateInterfaceDetailsStrategy()
         {
             if (RuntimeFeature.IsDynamicCodeSupported && OperatingSystem.IsWindows() && ComObject.ComImportInteropEnabled)
             {
-#pragma warning disable IL3050 // Calling members annotated with 'RequiresDynamicCodeAttribute' may break functionality when AOT compiling.
                 return ComImportInteropInterfaceDetailsStrategy.Instance;
-#pragma warning restore IL3050 // Calling members annotated with 'RequiresDynamicCodeAttribute' may break functionality when AOT compiling.
             }
             return DefaultIUnknownInterfaceDetailsStrategy;
         }

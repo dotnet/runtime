@@ -4,6 +4,7 @@
   <ItemGroup>
     <TestConsoleAppSourceFiles Include="GeneratedComInterfaceComImportInteropTrimmed.cs">
       <DisabledFeatureSwitches>System.Runtime.InteropServices.Marshalling.EnableGeneratedComInterfaceComImportInterop</DisabledFeatureSwitches>
+      <SkipOnTestRuntimes>browser-wasm</SkipOnTestRuntimes>
     </TestConsoleAppSourceFiles>
   </ItemGroup>
 

@@ -15,7 +15,6 @@ namespace System.Runtime.InteropServices.Marshalling
     /// </summary>
     public sealed unsafe class ComObject : IDynamicInterfaceCastable, IUnmanagedVirtualMethodTableProvider, ComImportInteropInterfaceDetailsStrategy.IComImportAdapter
     {
-        [MemberNotNullWhen(true, nameof(_runtimeCallableWrapper))]
         internal static bool ComImportInteropEnabled { get; } = AppContext.TryGetSwitch("System.Runtime.InteropServices.Marshalling.EnableGeneratedComInterfaceComImportInterop", out bool enabled) ? enabled : false;
 
         private readonly void* _instancePointer;
