@@ -3,12 +3,9 @@
 using System.Runtime.InteropServices;
 namespace System.Globalization
 {
-    [StructLayout(LayoutKind.Sequential, CharSet = CharSet.Ansi)]
-    public struct NSRange
+    internal struct NSRange
     {
-        [MarshalAs(UnmanagedType.I4)]
         public int Location;
-        [MarshalAs(UnmanagedType.I4)]
         public int Length;
     }
 }
