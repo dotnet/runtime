@@ -18,7 +18,7 @@ namespace System.Text.Json.Serialization.Tests
         // Ensure that the reflection-based serializer testing abstraction roots KeyValuePair<,>
         // which is required by many tests in the reflection test suite.
         [DynamicDependency(DynamicallyAccessedMemberTypes.PublicConstructors | DynamicallyAccessedMemberTypes.PublicProperties, typeof(KeyValuePair<,>))]
-        public JsonSerializerWrapper()
+        protected JsonSerializerWrapper()
         {
         }
 
