@@ -282,9 +282,9 @@ namespace Microsoft.Extensions.DependencyModel.Tests
         public void DefaultWorksCorrectly()
         {
             var context = DependencyContext.Default;
-            if (PlatformDetection.IsNativeAot)
+            if (PlatformDetection.IsSingleFile)
             {
-                // Native Aot apps don't have a .deps.json file
+                // single-file apps return a null default DependencyContext
                 Assert.Null(context);
             }
             else
