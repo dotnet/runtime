@@ -1932,8 +1932,7 @@ uint64_t getThreadStaticsBaseOffset()
 }
 #endif // TARGET_OSX
 #endif  // HOST_ARM64
-#endif // !_MSC_VER
-
+#else
 /*********************************************************************/
 static uint32_t ThreadLocalOffset(void* p)
 {
@@ -1942,6 +1941,9 @@ static uint32_t ThreadLocalOffset(void* p)
     uint8_t* pOurTls = pTls[_tls_index];
     return (uint32_t)((uint8_t*)p - pOurTls);
 }
+
+#endif // !_MSC_VER
+
 
 void CEEInfo::getThreadLocalStaticBlocksInfo (CORINFO_THREAD_STATIC_BLOCKS_INFO* pInfo, bool isGCType)
 {
