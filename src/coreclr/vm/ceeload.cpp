@@ -2813,18 +2813,6 @@ OBJECTHANDLE ModuleBase::ResolveStringRef(DWORD token, void** ppPinnedString)
     return string;
 }
 
-//
-// Used by the verifier.  Returns whether this stringref is valid.
-//
-CHECK Module::CheckStringRef(DWORD token)
-{
-    LIMITED_METHOD_CONTRACT;
-    CHECK(TypeFromToken(token)==mdtString);
-    CHECK(!IsNilToken(token));
-    CHECK(GetMDImport()->IsValidToken(token));
-    CHECK_OK;
-}
-
 mdToken Module::GetEntryPointToken()
 {
     WRAPPER_NO_CONTRACT;

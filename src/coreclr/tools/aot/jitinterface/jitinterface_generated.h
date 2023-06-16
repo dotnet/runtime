@@ -43,7 +43,6 @@ struct JitInterfaceCallbacks
     void (* findSig)(void * thisHandle, CorInfoExceptionClass** ppException, CORINFO_MODULE_HANDLE module, unsigned sigTOK, CORINFO_CONTEXT_HANDLE context, CORINFO_SIG_INFO* sig);
     void (* findCallSiteSig)(void * thisHandle, CorInfoExceptionClass** ppException, CORINFO_MODULE_HANDLE module, unsigned methTOK, CORINFO_CONTEXT_HANDLE context, CORINFO_SIG_INFO* sig);
     CORINFO_CLASS_HANDLE (* getTokenTypeAsHandle)(void * thisHandle, CorInfoExceptionClass** ppException, CORINFO_RESOLVED_TOKEN* pResolvedToken);
-    bool (* isValidStringRef)(void * thisHandle, CorInfoExceptionClass** ppException, CORINFO_MODULE_HANDLE module, unsigned metaTOK);
     int (* getStringLiteral)(void * thisHandle, CorInfoExceptionClass** ppException, CORINFO_MODULE_HANDLE module, unsigned metaTOK, char16_t* buffer, int bufferSize, int startIndex);
     size_t (* printObjectDescription)(void * thisHandle, CorInfoExceptionClass** ppException, CORINFO_OBJECT_HANDLE handle, char* buffer, size_t bufferSize, size_t* pRequiredBufferSize);
     CorInfoType (* asCorInfoType)(void * thisHandle, CorInfoExceptionClass** ppException, CORINFO_CLASS_HANDLE cls);
@@ -500,16 +499,6 @@ public:
 {
     CorInfoExceptionClass* pException = nullptr;
     CORINFO_CLASS_HANDLE temp = _callbacks->getTokenTypeAsHandle(_thisHandle, &pException, pResolvedToken);
-    if (pException != nullptr) throw pException;
-    return temp;
-}
-
-    virtual bool isValidStringRef(
-          CORINFO_MODULE_HANDLE module,
-          unsigned metaTOK)
-{
-    CorInfoExceptionClass* pException = nullptr;
-    bool temp = _callbacks->isValidStringRef(_thisHandle, &pException, module, metaTOK);
     if (pException != nullptr) throw pException;
     return temp;
 }

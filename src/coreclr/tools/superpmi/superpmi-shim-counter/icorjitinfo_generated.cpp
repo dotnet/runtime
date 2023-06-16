@@ -270,14 +270,6 @@ CORINFO_CLASS_HANDLE interceptor_ICJI::getTokenTypeAsHandle(
     return original_ICorJitInfo->getTokenTypeAsHandle(pResolvedToken);
 }
 
-bool interceptor_ICJI::isValidStringRef(
-          CORINFO_MODULE_HANDLE module,
-          unsigned metaTOK)
-{
-    mcs->AddCall("isValidStringRef");
-    return original_ICorJitInfo->isValidStringRef(module, metaTOK);
-}
-
 int interceptor_ICJI::getStringLiteral(
           CORINFO_MODULE_HANDLE module,
           unsigned metaTOK,

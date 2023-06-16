@@ -337,15 +337,6 @@ CORINFO_CLASS_HANDLE MyICJI::getTokenTypeAsHandle(CORINFO_RESOLVED_TOKEN* pResol
     return jitInstance->mc->repGetTokenTypeAsHandle(pResolvedToken);
 }
 
-// Checks if the given metadata token is valid StringRef
-bool MyICJI::isValidStringRef(CORINFO_MODULE_HANDLE module, /* IN  */
-                              unsigned              metaTOK /* IN  */
-                              )
-{
-    jitInstance->mc->cr->AddCall("isValidStringRef");
-    return jitInstance->mc->repIsValidStringRef(module, metaTOK);
-}
-
 int MyICJI::getStringLiteral(CORINFO_MODULE_HANDLE module,    /* IN  */
                              unsigned              metaTOK,   /* IN  */
                              char16_t*             buffer,    /* OUT */
