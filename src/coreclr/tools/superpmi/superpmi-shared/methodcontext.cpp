@@ -4886,37 +4886,6 @@ bool MethodContext::repSatisfiesMethodConstraints(CORINFO_CLASS_HANDLE parent, C
     return value != 0;
 }
 
-void MethodContext::recIsValidStringRef(CORINFO_MODULE_HANDLE module, unsigned metaTOK, bool result)
-{
-    if (IsValidStringRef == nullptr)
-        IsValidStringRef = new LightWeightMap<DLD, DWORD>();
-
-    DLD key;
-    ZeroMemory(&key, sizeof(key)); // Zero key including any struct padding
-    key.A = CastHandle(module);
-    key.B = (DWORD)metaTOK;
-
-    DWORD value = result ? 1 : 0;
-    IsValidStringRef->Add(key, value);
-    DEBUG_REC(dmpIsValidStringRef(key, value));
-}
-void MethodContext::dmpIsValidStringRef(DLD key, DWORD value)
-{
-    printf("IsValidStringRef key mod-%016" PRIX64 " tok-%08X, value res-%u", key.A, key.B, value);
-}
-bool MethodContext::repIsValidStringRef(CORINFO_MODULE_HANDLE module, unsigned metaTOK)
-{
-    DLD key;
-    ZeroMemory(&key, sizeof(key)); // Zero key including any struct padding
-    key.A = CastHandle(module);
-    key.B = (DWORD)metaTOK;
-
-    DWORD value = LookupByKeyOrMissNoMessage(IsValidStringRef, key);
-
-    DEBUG_REP(dmpIsValidStringRef(key, value));
-    return value != 0;
-}
-
 void MethodContext::recGetStringLiteral(CORINFO_MODULE_HANDLE module, unsigned metaTOK, char16_t* buffer, int bufferSize, int startIndex, int length)
 {
     if (GetStringLiteral == nullptr)

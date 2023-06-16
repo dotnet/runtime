@@ -320,16 +320,6 @@ CORINFO_CLASS_HANDLE WrapICorJitInfo::getTokenTypeAsHandle(
     return temp;
 }
 
-bool WrapICorJitInfo::isValidStringRef(
-          CORINFO_MODULE_HANDLE module,
-          unsigned metaTOK)
-{
-    API_ENTER(isValidStringRef);
-    bool temp = wrapHnd->isValidStringRef(module, metaTOK);
-    API_LEAVE(isValidStringRef);
-    return temp;
-}
-
 int WrapICorJitInfo::getStringLiteral(
           CORINFO_MODULE_HANDLE module,
           unsigned metaTOK,

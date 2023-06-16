@@ -1857,9 +1857,6 @@ namespace Internal.JitInterface
             return CorInfoCanSkipVerificationResult.CORINFO_VERIFICATION_CAN_SKIP;
         }
 
-        private bool isValidStringRef(CORINFO_MODULE_STRUCT_* module, uint metaTOK)
-        { throw new NotImplementedException("isValidStringRef"); }
-
         private int getStringLiteral(CORINFO_MODULE_STRUCT_* module, uint metaTOK, char* buffer, int size, int startIndex)
         {
             Debug.Assert(size >= 0);
