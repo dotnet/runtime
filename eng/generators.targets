@@ -19,11 +19,10 @@
     <EnabledGenerators Include="LibraryImportGenerator"
                        Condition="'$(EnableLibraryImportGenerator)' == '' and
                                   '$(IsSourceProject)' == 'true' and
-                                  '$(IsTasksProject)' != 'true' and
                                   '$(MSBuildProjectExtension)' == '.csproj' and
                                   (
                                     '$(TargetFrameworkMoniker)' != '$(NetCoreAppCurrentTargetFrameworkMoniker)' or
-                                    '$(DisableImplicitFrameworkReferences)' != 'true' or
+                                    '$(UseLocalTargetingRuntimePack)' == 'true' or
                                     (
                                       '@(Reference)' != '' and
                                       @(Reference->AnyHaveMetadataValue('Identity', 'System.Runtime.InteropServices'))
@@ -39,10 +38,9 @@
          - references System.Runtime.InteropServices -->
     <EnabledGenerators Include="ComInterfaceGenerator"
                        Condition="'$(IsSourceProject)' == 'true' and
-                                  '$(IsTasksProject)' != 'true' and
                                   '$(MSBuildProjectExtension)' == '.csproj' and
                                   (
-                                    '$(DisableImplicitFrameworkReferences)' != 'true' or
+                                    '$(UseLocalTargetingRuntimePack)' == 'true' or
                                     (
                                       '@(Reference)' != '' and
                                       @(Reference->AnyHaveMetadataValue('Identity', 'System.Runtime.InteropServices'))
