@@ -845,7 +845,6 @@ namespace System
         public static double Ieee754Remainder(double left, double right) => Math.IEEERemainder(left, right);
 
         /// <inheritdoc cref="IFloatingPointIeee754{TSelf}.ILogB(TSelf)" />
-        [Intrinsic]
         public static int ILogB(double x) => Math.ILogB(x);
 
         /// <inheritdoc cref="IFloatingPointIeee754{TSelf}.Lerp(TSelf, TSelf, TSelf)" />

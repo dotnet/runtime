@@ -812,7 +812,6 @@ namespace System
             }
         }
 
-        [Intrinsic]
         public static int ILogB(double x)
         {
             // Implementation based on https://git.musl-libc.org/cgit/musl/tree/src/math/ilogb.c
