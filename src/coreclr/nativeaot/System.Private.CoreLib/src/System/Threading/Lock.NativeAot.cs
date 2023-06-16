@@ -19,6 +19,9 @@ namespace System.Threading
         private static int s_maxSpinCount;
         private static int s_minSpinCount;
 
+        /// <summary>
+        /// Initializes a new instance of the <see cref="Lock"/> class.
+        /// </summary>
         public Lock() => _spinCount = SpinCountNotInitialized;
 
         [MethodImpl(MethodImplOptions.AggressiveInlining)]
