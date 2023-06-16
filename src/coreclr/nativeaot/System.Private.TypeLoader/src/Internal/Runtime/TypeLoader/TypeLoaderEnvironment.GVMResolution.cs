@@ -231,7 +231,7 @@ namespace Internal.Runtime.TypeLoader
                         NativeParser ifaceSigParser = new NativeParser(nativeLayoutReader, entryParser.GetUnsigned());
 
                         NativeLayoutInfoLoadContext nativeLayoutContext = new NativeLayoutInfoLoadContext();
-                        nativeLayoutContext._module = Instance.ModuleList.GetModuleInfoByHandle(module.Handle);
+                        nativeLayoutContext._module = ModuleList.Instance.GetModuleInfoByHandle(module.Handle);
                         nativeLayoutContext._typeSystemContext = context;
                         nativeLayoutContext._typeArgumentHandles = targetType.Instantiation;
 

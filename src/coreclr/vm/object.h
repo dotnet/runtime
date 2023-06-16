@@ -123,7 +123,7 @@ struct RCW;
 // The only fields mandated by all objects are
 //
 //     * a pointer to the code:MethodTable at offset 0
-//     * a poiner to a code:ObjHeader at a negative offset. This is often zero.  It holds information that
+//     * a pointer to a code:ObjHeader at a negative offset. This is often zero.  It holds information that
 //         any addition information that we might need to attach to arbitrary objects.
 //
 class Object
@@ -1284,7 +1284,7 @@ __inline bool IsCultureEnglishOrInvariant(LPCWSTR localeName)
     LIMITED_METHOD_CONTRACT;
     if (localeName != NULL &&
         (localeName[0] == W('\0') ||
-         wcscmp(localeName, W("en-US")) == 0))
+         u16_strcmp(localeName, W("en-US")) == 0))
     {
         return true;
     }

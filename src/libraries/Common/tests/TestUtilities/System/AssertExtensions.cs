@@ -405,6 +405,15 @@ namespace System
             }
         }
 
+        /// <summary>Validates that the two sets contains the same elements. XUnit doesn't display the full collections.</summary>
+        public static void Equal<T>(ISet<T> expected, ISet<T> actual)
+        {
+            if (!actual.SetEquals(expected))
+            {
+                throw new XunitException($"Expected: {string.Join(", ", expected)}{Environment.NewLine}Actual: {string.Join(", ", actual)}");
+            }
+        }
+
         /// <summary>
         /// Validates that the actual collection contains same items as expected collection. If the test fails, this will display:
         /// 1. Count if two collection count are different;

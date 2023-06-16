@@ -50,7 +50,7 @@ void auto_trace_init()
 
         // Copy in the command - %s
         wcscpy_s(command, bufferLen, commandTextValue);
-        written += wcslen(commandTextValue);
+        written += u16_strlen(commandTextValue);
 
         // Append " -p "
         wcscat_s(command, bufferLen - written, flagFormat);

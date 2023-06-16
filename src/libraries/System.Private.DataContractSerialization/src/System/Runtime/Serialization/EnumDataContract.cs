@@ -236,7 +236,7 @@ namespace System.Runtime.Serialization.DataContracts
                             DataMember memberContract = new DataMember(field);
                             if (memberAttribute.IsValueSetExplicitly)
                             {
-                                if (memberAttribute.Value == null || memberAttribute.Value.Length == 0)
+                                if (string.IsNullOrEmpty(memberAttribute.Value))
                                     ThrowInvalidDataContractException(SR.Format(SR.InvalidEnumMemberValue, field.Name, DataContract.GetClrTypeFullName(type)));
                                 memberContract.Name = memberAttribute.Value;
                             }

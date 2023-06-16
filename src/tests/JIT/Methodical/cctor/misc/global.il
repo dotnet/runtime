@@ -1,6 +1,6 @@
 .assembly extern legacy library mscorlib {}
 .assembly extern xunit.core {}
-.assembly global {}
+.assembly ASSEMBLY_NAME {}
 .field static public int32 a at D_00
 
 .method public static rtspecialname specialname void .cctor ()

@@ -1,6 +1,7 @@
 // Licensed to the .NET Foundation under one or more agreements.
 // The .NET Foundation licenses this file to you under the MIT license.
 
+using System;
 using System.IO;
 using System.Linq;
 using System.Text.Json;
@@ -33,11 +34,11 @@ public class BuildPublishTests : BuildTestBase
 
         // Build
         BlazorBuildInternal(id, config, publish: false);
-        AssertBlazorBootJson(config, isPublish: false);
+        AssertBlazorBootJson(config, isPublish: false, isNet7AndBelow: false);
 
         // Publish
         BlazorBuildInternal(id, config, publish: true);
-        AssertBlazorBootJson(config, isPublish: true);
+        AssertBlazorBootJson(config, isPublish: true, isNet7AndBelow: false);
     }
 
     [Theory]
@@ -64,6 +65,24 @@ public class BuildPublishTests : BuildTestBase
         }
     }
 
+    [Theory]
+    [InlineData("Debug", false)]
+    [InlineData("Release", false)]
+    [InlineData("Debug", true)]
+    [InlineData("Release", true)]
+    public void DefaultTemplate_CheckFingerprinting(string config, bool expectFingerprintOnDotnetJs)
+    {
+        string id = $"blz_checkfingerprinting_{config}_{Path.GetRandomFileName()}";
+
+        CreateBlazorWasmTemplateProject(id);
+
+        var options = new BlazorBuildOptions(id, config, NativeFilesType.Relinked, ExpectRelinkDirWhenPublishing: true, ExpectFingerprintOnDotnetJs: expectFingerprintOnDotnetJs);
+        var finterprintingArg = expectFingerprintOnDotnetJs ? "/p:WasmFingerprintDotnetJs=true" : string.Empty;
+
+        BlazorBuild(options, "/p:WasmBuildNative=true", finterprintingArg);
+        BlazorPublish(options, "/p:WasmBuildNative=true", finterprintingArg);
+    }
+
     // Disabling for now - publish folder can have more than one dotnet*hash*js, and not sure
     // how to pick which one to check, for the test
     //[Theory]
@@ -71,18 +90,18 @@ public class BuildPublishTests : BuildTestBase
     //[InlineData("Release")]
     //public void DefaultTemplate_AOT_OnlyWithPublishCommandLine_Then_PublishNoAOT(string config)
     //{
-        //string id = $"blz_aot_pub_{config}";
-        //CreateBlazorWasmTemplateProject(id);
+    //string id = $"blz_aot_pub_{config}";
+    //CreateBlazorWasmTemplateProject(id);
 
-        //// No relinking, no AOT
-        //BlazorBuild(new BlazorBuildOptions(id, config, NativeFilesType.FromRuntimePack);
+    //// No relinking, no AOT
+    //BlazorBuild(new BlazorBuildOptions(id, config, NativeFilesType.FromRuntimePack);
 
-        //// AOT=true only for the publish command line, similar to what
-        //// would happen when setting it in Publish dialog for VS
-        //BlazorPublish(new BlazorBuildOptions(id, config, expectedFileType: NativeFilesType.AOT, "-p:RunAOTCompilation=true");
+    //// AOT=true only for the publish command line, similar to what
+    //// would happen when setting it in Publish dialog for VS
+    //BlazorPublish(new BlazorBuildOptions(id, config, expectedFileType: NativeFilesType.AOT, "-p:RunAOTCompilation=true");
 
-        //// publish again, no AOT
-        //BlazorPublish(new BlazorBuildOptions(id, config, NativeFilesType.Relinked);
+    //// publish again, no AOT
+    //BlazorPublish(new BlazorBuildOptions(id, config, NativeFilesType.Relinked);
     //}
 
     [Theory]
@@ -197,10 +216,10 @@ public class BuildPublishTests : BuildTestBase
                 .ExecuteWithCapturedOutput("new razorclasslib")
                 .EnsureSuccessful();
 
-        string razorClassLibraryFileName = UseWebcil ? "RazorClassLibrary.webcil" : "RazorClassLibrary.dll";
+        string razorClassLibraryFileName = UseWebcil ? $"RazorClassLibrary{WebcilInWasmExtension}" : "RazorClassLibrary.dll";
         AddItemsPropertiesToProject(wasmProjectFile, extraItems: @$"
             <ProjectReference Include=""..\\RazorClassLibrary\\RazorClassLibrary.csproj"" />
-            <BlazorWebAssemblyLazyLoad Include=""{ razorClassLibraryFileName }"" />
+            <BlazorWebAssemblyLazyLoad Include=""{razorClassLibraryFileName}"" />
         ");
 
         _projectDir = wasmProjectDir;
@@ -226,7 +245,6 @@ public class BuildPublishTests : BuildTestBase
         Assert.Contains(razorClassLibraryFileName, lazyVal.EnumerateObject().Select(jp => jp.Name));
     }
 
-    [ActiveIssue("https://github.com/dotnet/runtime/issues/85769")]
     [ConditionalTheory(typeof(BuildTestBase), nameof(IsUsingWorkloads))]
     [InlineData("Debug")]
     [InlineData("Release")]

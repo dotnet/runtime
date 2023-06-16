@@ -17,7 +17,6 @@ namespace Internal.Metadata.NativeFormat
     [Flags]
 #if SYSTEM_PRIVATE_CORELIB
     [CLSCompliant(false)]
-    [ReflectionBlocked]
 #endif
     public enum AssemblyFlags : uint
     {
@@ -36,7 +35,6 @@ namespace Internal.Metadata.NativeFormat
 
 #if SYSTEM_PRIVATE_CORELIB
     [CLSCompliant(false)]
-    [ReflectionBlocked]
 #endif
     public enum AssemblyHashAlgorithm : uint
     {
@@ -47,7 +45,6 @@ namespace Internal.Metadata.NativeFormat
 
 #if SYSTEM_PRIVATE_CORELIB
     [CLSCompliant(false)]
-    [ReflectionBlocked]
 #endif
     public enum GenericParameterKind : byte
     {
@@ -60,7 +57,6 @@ namespace Internal.Metadata.NativeFormat
 
 #if SYSTEM_PRIVATE_CORELIB
     [CLSCompliant(false)]
-    [ReflectionBlocked]
 #endif
     public enum NamedArgumentMemberKind : byte
     {
@@ -73,7 +69,6 @@ namespace Internal.Metadata.NativeFormat
 
 #if SYSTEM_PRIVATE_CORELIB
     [CLSCompliant(false)]
-    [ReflectionBlocked]
 #endif
     public enum SignatureCallingConvention : byte
     {
@@ -91,7 +86,6 @@ namespace Internal.Metadata.NativeFormat
 
 #if SYSTEM_PRIVATE_CORELIB
     [CLSCompliant(false)]
-    [ReflectionBlocked]
 #endif
     public enum HandleType : byte
     {

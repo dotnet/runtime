@@ -38,14 +38,11 @@ namespace System
         internal const int StackallocIntBufferSizeLimit = 128;
         internal const int StackallocCharBufferSizeLimit = 256;
 
-        private static void FillStringChecked(string dest, int destPos, string src)
+        private static void CopyStringContent(string dest, int destPos, string src)
         {
             Debug.Assert(dest != null);
             Debug.Assert(src != null);
-            if (src.Length > dest.Length - destPos)
-            {
-                throw new IndexOutOfRangeException();
-            }
+            Debug.Assert(src.Length <= dest.Length - destPos);
 
             Buffer.Memmove(
                 destination: ref Unsafe.Add(ref dest._firstChar, destPos),
@@ -69,8 +66,8 @@ namespace System
             if (args.Length <= 1)
             {
                 return args.Length == 0 ?
-                    string.Empty :
-                    args[0]?.ToString() ?? string.Empty;
+                    Empty :
+                    args[0]?.ToString() ?? Empty;
             }
 
             // We need to get an intermediary string array
@@ -90,21 +87,21 @@ namespace System
             {
                 object? value = args[i];
 
-                string toString = value?.ToString() ?? string.Empty; // We need to handle both the cases when value or value.ToString() is null
+                string toString = value?.ToString() ?? Empty; // We need to handle both the cases when value or value.ToString() is null
                 strings[i] = toString;
 
                 totalLength += toString.Length;
 
                 if (totalLength < 0) // Check for a positive overflow
                 {
-                    throw new OutOfMemoryException();
+                    ThrowHelper.ThrowOutOfMemoryException_StringTooLong();
                 }
             }
 
             // If all of the ToStrings are null/empty, just return string.Empty
             if (totalLength == 0)
             {
-                return string.Empty;
+                return Empty;
             }
 
             string result = FastAllocateString(totalLength);
@@ -117,95 +114,15 @@ namespace System
                 Debug.Assert(s != null);
                 Debug.Assert(position <= totalLength - s.Length, "We didn't allocate enough space for the result string!");
 
-                FillStringChecked(result, position, s);
+                CopyStringContent(result, position, s);
                 position += s.Length;
             }
 
             return result;
         }
 
-        public static string Concat<T>(IEnumerable<T> values)
-        {
-            ArgumentNullException.ThrowIfNull(values);
-
-            if (typeof(T) == typeof(char))
-            {
-                // Special-case T==char, as we can handle that case much more efficiently,
-                // and string.Concat(IEnumerable<char>) can be used as an efficient
-                // enumerable-based equivalent of new string(char[]).
-                using (IEnumerator<char> en = Unsafe.As<IEnumerable<char>>(values).GetEnumerator())
-                {
-                    if (!en.MoveNext())
-                    {
-                        // There weren't any chars.  Return the empty string.
-                        return Empty;
-                    }
-
-                    char c = en.Current; // save the first char
-
-                    if (!en.MoveNext())
-                    {
-                        // There was only one char.  Return a string from it directly.
-                        return CreateFromChar(c);
-                    }
-
-                    // Create the StringBuilder, add the chars we've already enumerated,
-                    // add the rest, and then get the resulting string.
-                    var result = new ValueStringBuilder(stackalloc char[StackallocCharBufferSizeLimit]);
-                    result.Append(c); // first value
-                    do
-                    {
-                        c = en.Current;
-                        result.Append(c);
-                    }
-                    while (en.MoveNext());
-                    return result.ToString();
-                }
-            }
-            else
-            {
-                using (IEnumerator<T> en = values.GetEnumerator())
-                {
-                    if (!en.MoveNext())
-                        return string.Empty;
-
-                    // We called MoveNext once, so this will be the first item
-                    T currentValue = en.Current;
-
-                    // Call ToString before calling MoveNext again, since
-                    // we want to stay consistent with the below loop
-                    // Everything should be called in the order
-                    // MoveNext-Current-ToString, unless further optimizations
-                    // can be made, to avoid breaking changes
-                    string? firstString = currentValue?.ToString();
-
-                    // If there's only 1 item, simply call ToString on that
-                    if (!en.MoveNext())
-                    {
-                        // We have to handle the case of either currentValue
-                        // or its ToString being null
-                        return firstString ?? string.Empty;
-                    }
-
-                    var result = new ValueStringBuilder(stackalloc char[StackallocCharBufferSizeLimit]);
-
-                    result.Append(firstString);
-
-                    do
-                    {
-                        currentValue = en.Current;
-
-                        if (currentValue != null)
-                        {
-                            result.Append(currentValue.ToString());
-                        }
-                    }
-                    while (en.MoveNext());
-
-                    return result.ToString();
-                }
-            }
-        }
+        public static string Concat<T>(IEnumerable<T> values) =>
+            JoinCore(ReadOnlySpan<char>.Empty, values);
 
         public static string Concat(IEnumerable<string?> values)
         {
@@ -214,13 +131,13 @@ namespace System
             using (IEnumerator<string?> en = values.GetEnumerator())
             {
                 if (!en.MoveNext())
-                    return string.Empty;
+                    return Empty;
 
                 string? firstValue = en.Current;
 
                 if (!en.MoveNext())
                 {
-                    return firstValue ?? string.Empty;
+                    return firstValue ?? Empty;
                 }
 
                 var result = new ValueStringBuilder(stackalloc char[StackallocCharBufferSizeLimit]);
@@ -243,7 +160,7 @@ namespace System
             {
                 if (IsNullOrEmpty(str1))
                 {
-                    return string.Empty;
+                    return Empty;
                 }
                 return str1;
             }
@@ -255,10 +172,18 @@ namespace System
 
             int str0Length = str0.Length;
 
-            string result = FastAllocateString(str0Length + str1.Length);
+            int totalLength = str0Length + str1.Length;
 
-            FillStringChecked(result, 0, str0);
-            FillStringChecked(result, str0Length, str1);
+            // Can't overflow to a positive number so just check < 0
+            if (totalLength < 0)
+            {
+                ThrowHelper.ThrowOutOfMemoryException_StringTooLong();
+            }
+
+            string result = FastAllocateString(totalLength);
+
+            CopyStringContent(result, 0, str0);
+            CopyStringContent(result, str0Length, str1);
 
             return result;
         }
@@ -280,12 +205,18 @@ namespace System
                 return Concat(str0, str1);
             }
 
-            int totalLength = str0.Length + str1.Length + str2.Length;
+            // It can overflow to a positive number so we accumulate the total length as a long.
+            long totalLength = (long)str0.Length + (long)str1.Length + (long)str2.Length;
 
-            string result = FastAllocateString(totalLength);
-            FillStringChecked(result, 0, str0);
-            FillStringChecked(result, str0.Length, str1);
-            FillStringChecked(result, str0.Length + str1.Length, str2);
+            if (totalLength > int.MaxValue)
+            {
+                ThrowHelper.ThrowOutOfMemoryException_StringTooLong();
+            }
+
+            string result = FastAllocateString((int)totalLength);
+            CopyStringContent(result, 0, str0);
+            CopyStringContent(result, str0.Length, str1);
+            CopyStringContent(result, str0.Length + str1.Length, str2);
 
             return result;
         }
@@ -312,13 +243,19 @@ namespace System
                 return Concat(str0, str1, str2);
             }
 
-            int totalLength = str0.Length + str1.Length + str2.Length + str3.Length;
+            // It can overflow to a positive number so we accumulate the total length as a long.
+            long totalLength = (long)str0.Length + (long)str1.Length + (long)str2.Length + (long)str3.Length;
 
-            string result = FastAllocateString(totalLength);
-            FillStringChecked(result, 0, str0);
-            FillStringChecked(result, str0.Length, str1);
-            FillStringChecked(result, str0.Length + str1.Length, str2);
-            FillStringChecked(result, str0.Length + str1.Length + str2.Length, str3);
+            if (totalLength > int.MaxValue)
+            {
+                ThrowHelper.ThrowOutOfMemoryException_StringTooLong();
+            }
+
+            string result = FastAllocateString((int)totalLength);
+            CopyStringContent(result, 0, str0);
+            CopyStringContent(result, str0.Length, str1);
+            CopyStringContent(result, str0.Length + str1.Length, str2);
+            CopyStringContent(result, str0.Length + str1.Length + str2.Length, str3);
 
             return result;
         }
@@ -422,8 +359,8 @@ namespace System
             if (values.Length <= 1)
             {
                 return values.Length == 0 ?
-                    string.Empty :
-                    values[0] ?? string.Empty;
+                    Empty :
+                    values[0] ?? Empty;
             }
 
             // It's possible that the input values array could be changed concurrently on another
@@ -447,12 +384,12 @@ namespace System
             // If it's too long, fail, or if it's empty, return an empty string.
             if (totalLengthLong > int.MaxValue)
             {
-                throw new OutOfMemoryException();
+                ThrowHelper.ThrowOutOfMemoryException_StringTooLong();
             }
             int totalLength = (int)totalLengthLong;
             if (totalLength == 0)
             {
-                return string.Empty;
+                return Empty;
             }
 
             // Allocate a new string and copy each input string into it
@@ -461,7 +398,7 @@ namespace System
             for (int i = 0; i < values.Length; i++)
             {
                 string? value = values[i];
-                if (!string.IsNullOrEmpty(value))
+                if (!IsNullOrEmpty(value))
                 {
                     int valueLen = value.Length;
                     if (valueLen > totalLength - copiedLength)
@@ -470,7 +407,7 @@ namespace System
                         break;
                     }
 
-                    FillStringChecked(result, copiedLength, value);
+                    CopyStringContent(result, copiedLength, value);
                     copiedLength += valueLen;
                 }
             }
@@ -874,48 +811,102 @@ namespace System
                 ThrowHelper.ThrowArgumentNullException(ExceptionArgument.values);
             }
 
-            using (IEnumerator<T> en = values.GetEnumerator())
+            using (IEnumerator<T> e = values.GetEnumerator())
             {
-                if (!en.MoveNext())
+                if (!e.MoveNext())
                 {
+                    // If the enumerator is empty, just return an empty string.
                     return Empty;
                 }
 
-                // We called MoveNext once, so this will be the first item
-                T currentValue = en.Current;
-
-                // Call ToString before calling MoveNext again, since
-                // we want to stay consistent with the below loop
-                // Everything should be called in the order
-                // MoveNext-Current-ToString, unless further optimizations
-                // can be made, to avoid breaking changes
-                string? firstString = currentValue?.ToString();
-
-                // If there's only 1 item, simply call ToString on that
-                if (!en.MoveNext())
+                if (typeof(T) == typeof(char))
                 {
-                    // We have to handle the case of either currentValue
-                    // or its ToString being null
-                    return firstString ?? Empty;
-                }
+                    // Special-case T==char, as we can handle that case much more efficiently,
+                    // and string.Concat(IEnumerable<char>) can be used as an efficient
+                    // enumerable-based equivalent of new string(char[]).
 
-                var result = new ValueStringBuilder(stackalloc char[StackallocCharBufferSizeLimit]);
+                    IEnumerator<char> en = Unsafe.As<IEnumerator<char>>(e);
 
-                result.Append(firstString);
-
-                do
-                {
-                    currentValue = en.Current;
-
-                    result.Append(separator);
-                    if (currentValue != null)
+                    char c = en.Current; // save the first value
+                    if (!en.MoveNext())
                     {
-                        result.Append(currentValue.ToString());
+                        // There was only one char.  Return a string from it directly.
+                        return CreateFromChar(c);
                     }
-                }
-                while (en.MoveNext());
 
-                return result.ToString();
+                    // Create the builder, add the char we already enumerated,
+                    // add the rest, and then get the resulting string.
+                    var result = new ValueStringBuilder(stackalloc char[StackallocCharBufferSizeLimit]);
+                    result.Append(c); // first value
+                    do
+                    {
+                        if (!separator.IsEmpty)
+                        {
+                            result.Append(separator);
+                        }
+
+                        c = en.Current;
+                        result.Append(c);
+                    }
+                    while (en.MoveNext());
+                    return result.ToString();
+                }
+                else if (typeof(T).IsValueType && default(T) is ISpanFormattable)
+                {
+                    // Special-case value types that are ISpanFormattable, as we can implement those to avoid
+                    // all string allocations for the individual values.  We only do this for value types because
+                    // a) value types are much more likely to implement ISpanFormattable, and b) we can use
+                    // DefaultInterpolatedStringHandler to do all the heavy lifting, and it's more efficient
+                    // for value types as the checks it does for interface implementations are all elided.
+
+                    T value = e.Current; // save the first value
+                    if (!e.MoveNext())
+                    {
+                        // There was only one value. Return a string from it directly.
+                        return value!.ToString() ?? Empty;
+                    }
+
+                    var result = new DefaultInterpolatedStringHandler(0, 0, CultureInfo.CurrentCulture, stackalloc char[StackallocCharBufferSizeLimit]);
+                    result.AppendFormatted(value); // first value
+                    do
+                    {
+                        if (!separator.IsEmpty)
+                        {
+                            result.AppendFormatted(separator);
+                        }
+
+                        result.AppendFormatted(e.Current);
+                    }
+                    while (e.MoveNext());
+                    return result.ToStringAndClear();
+                }
+                else
+                {
+                    // For all other Ts, fall back to calling ToString on each and appending the resulting
+                    // string to a builder.
+
+                    string? firstString = e.Current?.ToString();  // save the first value
+                    if (!e.MoveNext())
+                    {
+                        return firstString ?? Empty;
+                    }
+
+                    var result = new ValueStringBuilder(stackalloc char[StackallocCharBufferSizeLimit]);
+
+                    result.Append(firstString);
+                    do
+                    {
+                        if (!separator.IsEmpty)
+                        {
+                            result.Append(separator);
+                        }
+
+                        result.Append(e.Current?.ToString());
+                    }
+                    while (e.MoveNext());
+
+                    return result.ToString();
+                }
             }
         }
 
@@ -931,7 +922,7 @@ namespace System
             long totalSeparatorsLength = (long)(values.Length - 1) * separator.Length;
             if (totalSeparatorsLength > int.MaxValue)
             {
-                ThrowHelper.ThrowOutOfMemoryException();
+                ThrowHelper.ThrowOutOfMemoryException_StringTooLong();
             }
             int totalLength = (int)totalSeparatorsLength;
 
@@ -943,9 +934,14 @@ namespace System
                     totalLength += value.Length;
                     if (totalLength < 0) // Check for overflow
                     {
-                        ThrowHelper.ThrowOutOfMemoryException();
+                        ThrowHelper.ThrowOutOfMemoryException_StringTooLong();
                     }
                 }
+            }
+
+            if (totalLength == 0)
+            {
+                return Empty;
             }
 
             // Copy each of the strings into the result buffer, interleaving with the separator.
@@ -970,7 +966,7 @@ namespace System
                     }
 
                     // Fill in the value.
-                    FillStringChecked(result, copiedLength, value);
+                    CopyStringContent(result, copiedLength, value);
                     copiedLength += valueLen;
                 }
 
@@ -1295,7 +1291,7 @@ namespace System
 
             long dstLength = this.Length + ((long)(newValue.Length - oldValueLength)) * indices.Length;
             if (dstLength > int.MaxValue)
-                throw new OutOfMemoryException();
+                ThrowHelper.ThrowOutOfMemoryException_StringTooLong();
             string dst = FastAllocateString((int)dstLength);
 
             Span<char> dstSpan = new Span<char>(ref dst._firstChar, dst.Length);
@@ -1365,7 +1361,7 @@ namespace System
         /// <remarks>
         /// This method searches for all newline sequences within the string and canonicalizes them to the
         /// newline sequence provided by <paramref name="replacementText"/>. If <paramref name="replacementText"/>
-        /// is <see cref="string.Empty"/>, all newline sequences within the string will be removed.
+        /// is <see cref="Empty"/>, all newline sequences within the string will be removed.
         ///
         /// It is not recommended that protocol parsers utilize this API. Protocol specifications often
         /// mandate specific newline sequences. For example, HTTP/1.1 (RFC 8615) mandates that the request
@@ -1608,12 +1604,12 @@ namespace System
 
         public string[] Split(string? separator, StringSplitOptions options = StringSplitOptions.None)
         {
-            return SplitInternal(separator ?? string.Empty, null, int.MaxValue, options);
+            return SplitInternal(separator ?? Empty, null, int.MaxValue, options);
         }
 
         public string[] Split(string? separator, int count, StringSplitOptions options = StringSplitOptions.None)
         {
-            return SplitInternal(separator ?? string.Empty, null, count, options);
+            return SplitInternal(separator ?? Empty, null, count, options);
         }
 
         public string[] Split(string[]? separator, StringSplitOptions options)
@@ -1757,7 +1753,7 @@ namespace System
             {
                 // We had a separator character at the end of a string.  Rather than just allowing
                 // a null character, we'll replace the last element in the array with an empty string.
-                splitStrings[arrIndex] = string.Empty;
+                splitStrings[arrIndex] = Empty;
             }
 
             return splitStrings;
@@ -2305,7 +2301,7 @@ namespace System
             int len = end - start + 1;
             return
                 len == Length ? this :
-                len == 0 ? string.Empty :
+                len == 0 ? Empty :
                 InternalSubString(start, len);
         }
     }

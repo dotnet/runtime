@@ -233,29 +233,32 @@ std::string SpmiDumpHelper::DumpJitFlags(unsigned long long flags)
     AddFlag(DEBUG_EnC);
     AddFlag(DEBUG_INFO);
     AddFlag(MIN_OPT);
-
+    AddFlag(ENABLE_CFG);
     AddFlag(MCJIT_BACKGROUND);
 
     // x86 only
     //
     AddFlagNumeric(PINVOKE_RESTORE_ESP, 8);
-    AddFlagNumeric(TARGET_P4, 9);
-    AddFlagNumeric(USE_FCOMI, 10);
-    AddFlagNumeric(USE_CMOV, 11);
+
+    // UNUSED = 9
+    // UNUSED = 10
+    // UNUSED = 11
+    // UNUSED = 12
 
     AddFlag(OSR);
     AddFlag(ALT_JIT);
     AddFlag(FROZEN_ALLOC_ALLOWED);
-
+    // UNUSED = 16
+    // UNUSED = 17
     AddFlag(MAKEFINALCODE);
     AddFlag(READYTORUN);
     AddFlag(PROF_ENTERLEAVE);
-
+    // UNUSED = 21
     AddFlag(PROF_NO_PINVOKE_INLINE);
-    AddFlag(SKIP_VERIFICATION);
+    // UNUSED = 23
     AddFlag(PREJIT);
     AddFlag(RELOC);
-    AddFlag(IMPORT_ONLY);
+    // UNUSED = 26
     AddFlag(IL_STUB);
     AddFlag(PROCSPLIT);
     AddFlag(BBINSTR);
@@ -263,8 +266,8 @@ std::string SpmiDumpHelper::DumpJitFlags(unsigned long long flags)
     AddFlag(FRAMED);
     AddFlag(BBINSTR_IF_LOOPS);
     AddFlag(PUBLISH_SECRET_PARAM);
-
-    AddFlag(SAMPLING_JIT_BACKGROUND);
+    // UNUSED = 34
+    // UNUSED = 35
     AddFlag(USE_PINVOKE_HELPERS);
     AddFlag(REVERSE_PINVOKE);
     AddFlag(TRACK_TRANSITIONS);
@@ -276,6 +279,10 @@ std::string SpmiDumpHelper::DumpJitFlags(unsigned long long flags)
     AddFlagNumeric(RELATIVE_CODE_RELOCS, 41);
 
     AddFlag(NO_INLINING);
+
+    // x86/x64 only
+    //
+    AddFlagNumeric(VECTOR512_THROTTLING, 43);
 
     // "Extra jit flag" support
     //

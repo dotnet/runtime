@@ -2824,7 +2824,7 @@ namespace System.Xml.Xsl.Xslt
         // Does not suppress errors
         private void ParseWhitespaceRules(string elements, bool preserveSpace)
         {
-            if (elements != null && elements.Length != 0)
+            if (!string.IsNullOrEmpty(elements))
             {
                 string[] tokens = XmlConvert.SplitString(elements);
                 for (int i = 0; i < tokens.Length; i++)
@@ -2834,7 +2834,7 @@ namespace System.Xml.Xsl.Xslt
                     {
                         namespaceName = _compiler.CreatePhantomNamespace();
                     }
-                    else if (prefix == null || prefix.Length == 0)
+                    else if (string.IsNullOrEmpty(prefix))
                     {
                         namespaceName = prefix;
                     }

@@ -736,7 +736,7 @@ ClrDataAppDomain::GetName(
                     S_OK : S_FALSE;
                 if (nameLen)
                 {
-                    size_t cchName = wcslen((PCWSTR)rawName) + 1;
+                    size_t cchName = u16_strlen((PCWSTR)rawName) + 1;
                     if (FitsIn<ULONG32>(cchName))
                     {
                         *nameLen = (ULONG32) cchName;
@@ -4771,7 +4771,7 @@ ClrDataExceptionState::GetString(
             status = StringCchCopy(str, bufLen, msgStr) == S_OK ? S_OK : S_FALSE;
             if (strLen != NULL)
             {
-                size_t cchName = wcslen(msgStr) + 1;
+                size_t cchName = u16_strlen(msgStr) + 1;
                 if (FitsIn<ULONG32>(cchName))
                 {
                     *strLen = (ULONG32) cchName;

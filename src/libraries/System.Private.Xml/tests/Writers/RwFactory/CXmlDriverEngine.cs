@@ -667,7 +667,7 @@ namespace System.Xml.RwFactoryWriterTests
                     // no 'implemented' variations satisfying the filter
                     testCase = new CXmlDriverEmptyTestCase(testCaseName, testCaseDescription,
                         " no variations with @Implemented='True' " +
-                        (_requiredLanguage != null && _requiredLanguage.Length != 0 ? " and @Language='" + _requiredLanguage + "'" : "") +
+                        (!string.IsNullOrEmpty(_requiredLanguage) ? " and @Language='" + _requiredLanguage + "'" : "") +
                         (filterXPath == null ? "" : " and satisfying '" + filterXPath + "'"), _testModule);
 
                 // add test case

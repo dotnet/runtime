@@ -120,7 +120,7 @@ namespace System.Formats.Tar
             {
                 KeyValuePair<string, string> kvp = enumerator.Current;
 
-                int index = kvp.Key.IndexOfAny(new char[] { '=', '\n' });
+                int index = kvp.Key.AsSpan().IndexOfAny('=', '\n');
                 if (index >= 0)
                 {
                     throw new ArgumentException(SR.Format(SR.TarExtAttrDisallowedKeyChar, kvp.Key, kvp.Key[index] == '\n' ? "\\n" : kvp.Key[index]));

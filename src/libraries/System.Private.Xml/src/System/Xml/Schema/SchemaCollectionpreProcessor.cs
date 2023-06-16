@@ -51,7 +51,7 @@ namespace System.Xml.Schema
             _schema = schema;
             _xmlns = NameTable.Add("xmlns");
 
-            Cleanup(schema);
+            SchemaCollectionPreprocessor.Cleanup(schema);
             if (loadExternals && _xmlResolver != null)
             {
                 _schemaLocations = new Hashtable(); //new Dictionary<Uri, Uri>();
@@ -80,7 +80,7 @@ namespace System.Xml.Schema
             return !HasErrors;
         }
 
-        private void Cleanup(XmlSchema schema)
+        private static void Cleanup(XmlSchema schema)
         {
             if (schema.IsProcessing)
             {
@@ -1733,7 +1733,7 @@ namespace System.Xml.Schema
         private void ValidateNameAttribute(XmlSchemaObject xso)
         {
             string? name = xso.NameAttribute;
-            if (name == null || name.Length == 0)
+            if (string.IsNullOrEmpty(name))
             {
                 SendValidationEvent(SR.Sch_InvalidNameAttributeEx, null, SR.Sch_NullValue, xso);
             }

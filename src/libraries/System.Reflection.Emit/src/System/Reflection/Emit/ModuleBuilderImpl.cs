@@ -119,6 +119,8 @@ namespace System.Reflection.Emit
 
             WriteCustomAttributes(_customAttributes, moduleHandle);
 
+            // All generic parameters for all types and methods should be written in specific order
+            List<GenericTypeParameterBuilderImpl> genericParams = new();
             // Add each type definition to metadata table.
             foreach (TypeBuilderImpl typeBuilder in _typeDefinitions)
             {
@@ -133,15 +135,9 @@ namespace System.Reflection.Emit
 
                 if (typeBuilder.IsGenericType)
                 {
-                    foreach (GenericTypeParameterBuilderImpl gParam in typeBuilder.GenericTypeParameters)
+                    foreach (GenericTypeParameterBuilderImpl param in typeBuilder.GenericTypeParameters)
                     {
-                        GenericParameterHandle handle = AddGenericTypeParameter(typeHandle, gParam);
-                        WriteCustomAttributes(gParam._customAttributes, handle);
-
-                        foreach (Type constraint in gParam.GetGenericParameterConstraints())
-                        {
-                            _metadataBuilder.AddGenericParameterConstraint(handle, GetTypeHandle(constraint));
-                        }
+                        genericParams.Add(param);
                     }
                 }
 
@@ -165,18 +161,43 @@ namespace System.Reflection.Emit
                 }
 
                 WriteCustomAttributes(typeBuilder._customAttributes, typeHandle);
-                WriteMethods(typeBuilder);
+                WriteMethods(typeBuilder, genericParams);
                 WriteFields(typeBuilder);
+            }
+
+            // Now write all generic parameters in order
+            genericParams.Sort((x, y) => {
+                int primary = CodedIndex.TypeOrMethodDef(x._parentHandle).CompareTo(CodedIndex.TypeOrMethodDef(y._parentHandle));
+                if (primary != 0)
+                    return primary;
+
+                return x.GenericParameterPosition.CompareTo(y.GenericParameterPosition);
+            });
+
+            foreach (GenericTypeParameterBuilderImpl param in genericParams)
+            {
+                AddGenericTypeParametersAndConstraintsCustomAttributes(param._parentHandle, param);
             }
         }
 
-        private void WriteMethods(TypeBuilderImpl typeBuilder)
+        private void WriteMethods(TypeBuilderImpl typeBuilder, List<GenericTypeParameterBuilderImpl> genericParams)
         {
             foreach (MethodBuilderImpl method in typeBuilder._methodDefinitions)
             {
                 MethodDefinitionHandle methodHandle = AddMethodDefinition(method, method.GetMethodSignatureBlob(), _nextParameterRowId);
                 WriteCustomAttributes(method._customAttributes, methodHandle);
                 _nextMethodDefRowId++;
+
+                if (method.IsGenericMethodDefinition)
+                {
+                    Type[] gParams = method.GetGenericArguments();
+                    for (int i = 0; i < gParams.Length; i++)
+                    {
+                        GenericTypeParameterBuilderImpl param = (GenericTypeParameterBuilderImpl)gParams[i];
+                        param._parentHandle = methodHandle;
+                        genericParams.Add(param);
+                    }
+                }
 
                 if (method._parameters != null)
                 {
@@ -289,12 +310,20 @@ namespace System.Reflection.Emit
             return handle;
         }
 
-        private GenericParameterHandle AddGenericTypeParameter(TypeDefinitionHandle typeHandle, GenericTypeParameterBuilderImpl gParam) =>
-            _metadataBuilder.AddGenericParameter(
-                parent: typeHandle,
+        private void AddGenericTypeParametersAndConstraintsCustomAttributes(EntityHandle parentHandle, GenericTypeParameterBuilderImpl gParam)
+        {
+            GenericParameterHandle handle = _metadataBuilder.AddGenericParameter(
+                parent: parentHandle,
                 attributes: gParam.GenericParameterAttributes,
                 name: _metadataBuilder.GetOrAddString(gParam.Name),
                 index: gParam.GenericParameterPosition);
+
+            WriteCustomAttributes(gParam._customAttributes, handle);
+            foreach (Type constraint in gParam.GetGenericParameterConstraints())
+            {
+                _metadataBuilder.AddGenericParameterConstraint(handle, GetTypeHandle(constraint));
+            }
+        }
 
         private void AddDefaultValue(ParameterHandle parameterHandle, object? defaultValue) =>
             _metadataBuilder.AddConstant(parent: parameterHandle, value: defaultValue);

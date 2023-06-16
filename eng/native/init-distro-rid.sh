@@ -66,6 +66,9 @@ getNonPortableDistroRid()
         __uname_version=$(uname -v)
         __solaris_major_version=$(echo "${__uname_version%.*}")
         nonPortableRid=solaris."$__solaris_major_version"-"$targetArch"
+    elif [ "$targetOs" = "haiku" ]; then
+        __uname_release=$(uname -r)
+        nonPortableRid=haiku.r"$__uname_release"-"$targetArch"
     fi
 
     echo "$(echo $nonPortableRid | tr '[:upper:]' '[:lower:]')"

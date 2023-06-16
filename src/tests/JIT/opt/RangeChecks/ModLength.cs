@@ -3,10 +3,12 @@
 
 using System;
 using System.Runtime.CompilerServices;
+using Xunit;
 
 public class ModLength
 {
-    public static int Main()
+    [Fact]
+    public static int TestEntryPoint()
     {
         Throws<DivideByZeroException>(() => Test1(new int[0], 0));
         Throws<DivideByZeroException>(() => Test2(new int[0], 1));

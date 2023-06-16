@@ -54,10 +54,6 @@ namespace ILCompiler
             var transformed = MetadataTransform.Run(policy, GetCompilationModulesWithMetadata());
             MetadataTransform transform = transformed.Transform;
 
-            // TODO: DeveloperExperienceMode: Use transformed.Transform.HandleType() to generate
-            //       TypeReference records for _typeDefinitionsGenerated that don't have metadata.
-            //       (To be used in MissingMetadataException messages)
-
             // Generate metadata blob
             var writer = new MetadataWriter();
             writer.ScopeDefinitions.AddRange(transformed.Scopes);

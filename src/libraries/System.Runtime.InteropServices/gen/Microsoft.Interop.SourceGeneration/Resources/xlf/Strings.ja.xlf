@@ -22,6 +22,11 @@
         <target state="translated">指定された 'ElementIndirectionDepth' 向けに 'MarshalUsingAttribute' で使用できるのは、'ConstantElementCount' または 'ElementCountInfo' のいずれか 1 つだけです</target>
         <note />
       </trans-unit>
+      <trans-unit id="ContainingTypeAccessibilityDetails">
+        <source>Containing type '{0}' has accessibility '{1}'.</source>
+        <target state="translated">包含型 '{0}' にはアクセシビリティ '{1}' があります。</target>
+        <note />
+      </trans-unit>
       <trans-unit id="CyclicalCountInfo">
         <source>This element cannot depend on '{0}' for collection size information without creating a dependency cycle</source>
         <target state="translated">この要素は、依存関係サイクルを作成せずに、コレクション サイズ情報向けに '{0}' に依存することはできません</target>
@@ -98,8 +103,8 @@
         <note />
       </trans-unit>
       <trans-unit id="MarshallingStringOrCharAsUndefinedNotSupported">
-        <source>Marshalling string or char without explicit marshalling information is not supported. Specify 'LibraryImportAttribute.StringMarshalling', 'LibraryImportAttribute.StringMarshallingCustomType', 'MarshalUsingAttribute' or 'MarshalAsAttribute'.</source>
-        <target state="translated">明示的なマーシャリング情報を含まない文字列または文字のマーシャリングはサポートされていません。'LibraryImportAttribute.StringMarstailing'、'LibraryImportAttribute.StringMarshallingCustomType'、'MarshalUsingAttribute' または 'MarshalAsAttribute' を指定します。</target>
+        <source>Marshalling string or char without explicit marshalling information is not supported. Specify '{0}.StringMarshalling', '{0}.StringMarshallingCustomType', 'MarshalUsingAttribute' or 'MarshalAsAttribute'.</source>
+        <target state="translated">明示的なマーシャリング情報を含まない文字列または文字のマーシャリングはサポートされていません。'{0}.StringMarshalling'、'{0}.StringMarshallingCustomType'、'MarshalUsingAttribute'、または 'MarshalAsAttribute'を指定します。</target>
         <note />
       </trans-unit>
       <trans-unit id="RuntimeMarshallingMustBeDisabled">
@@ -110,6 +115,11 @@
       <trans-unit id="SafeHandleByRefMustBeConcrete">
         <source>An abstract type derived from 'SafeHandle' cannot be marshalled by reference. The provided type must be concrete.</source>
         <target state="translated">'SafeHandle' から派生した抽象型は、参照でマーシャリングできません。指定される型は具象型である必要があります。</target>
+        <note />
+      </trans-unit>
+      <trans-unit id="TypeAccessibilityDetails">
+        <source>'{0}' has accessibility '{1}'.</source>
+        <target state="translated">'{0}' にはアクセシビリティ '{1}' があります。</target>
         <note />
       </trans-unit>
       <trans-unit id="UnmanagedToManagedMissingRequiredMarshaller">

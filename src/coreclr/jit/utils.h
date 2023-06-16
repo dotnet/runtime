@@ -264,8 +264,17 @@ public:
     // bitVectInit() - Initializes a bit vector of a given size
     static FixedBitVect* bitVectInit(UINT size, Compiler* comp);
 
+    // bitVectGetSize() - Get number of bits in the bit set
+    UINT bitVectGetSize()
+    {
+        return bitVectSize;
+    }
+
     // bitVectSet() - Sets the given bit
     void bitVectSet(UINT bitNum);
+
+    // bitVectClear() - Clears the given bit
+    void bitVectClear(UINT bitNum);
 
     // bitVectTest() - Tests the given bit
     bool bitVectTest(UINT bitNum);

@@ -17,9 +17,8 @@ namespace System.Text.Json.Serialization.Converters
         protected sealed override bool ReadAndCacheConstructorArgument(scoped ref ReadStack state, ref Utf8JsonReader reader, JsonParameterInfo jsonParameterInfo)
         {
             Debug.Assert(jsonParameterInfo.ShouldDeserialize);
-            Debug.Assert(jsonParameterInfo.Options != null);
 
-            bool success = jsonParameterInfo.EffectiveConverter.TryReadAsObject(ref reader, TypeToConvert, jsonParameterInfo.Options!, ref state, out object? arg);
+            bool success = jsonParameterInfo.EffectiveConverter.TryReadAsObject(ref reader, jsonParameterInfo.ParameterType, jsonParameterInfo.Options, ref state, out object? arg);
 
             if (success && !(arg == null && jsonParameterInfo.IgnoreNullTokensOnRead))
             {

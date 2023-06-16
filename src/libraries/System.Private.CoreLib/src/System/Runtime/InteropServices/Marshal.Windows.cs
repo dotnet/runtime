@@ -225,7 +225,7 @@ namespace System.Runtime.InteropServices
             if (hr < 0)
             {
                 if (throwOnError)
-                    throw Marshal.GetExceptionForHR(hr, new IntPtr(-1))!;
+                    throw GetExceptionForHR(hr, new IntPtr(-1))!;
                 return null;
             }
 

@@ -118,7 +118,7 @@ namespace System.Diagnostics.Eventing.Reader
             get
             {
                 string helpLinkStr = (string)NativeWrapper.EvtGetPublisherMetadataProperty(_handle, UnsafeNativeMethods.EvtPublisherMetadataPropertyId.EvtPublisherMetadataHelpLink);
-                if (helpLinkStr == null || helpLinkStr.Length == 0)
+                if (string.IsNullOrEmpty(helpLinkStr))
                     return null;
                 return new Uri(helpLinkStr);
             }

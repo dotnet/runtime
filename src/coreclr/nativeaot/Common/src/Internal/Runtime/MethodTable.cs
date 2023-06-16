@@ -294,6 +294,7 @@ namespace Internal.Runtime
 
         internal ushort ExtendedFlags
         {
+            [MethodImpl(MethodImplOptions.AggressiveInlining)]
             get
             {
                 return HasComponentSize ? (ushort)0 : (ushort)_uFlags;
@@ -845,6 +846,7 @@ namespace Internal.Runtime
 
         internal MethodTable** InterfaceMap
         {
+            [MethodImpl(MethodImplOptions.AggressiveInlining)]
             get
             {
                 // interface info table starts after the vtable and has _usNumInterfaces entries
@@ -939,16 +941,6 @@ namespace Internal.Runtime
                 Debug.Assert(!IsArray, "array type not supported in NonArrayBaseType");
                 Debug.Assert(IsCanonical || IsGenericTypeDefinition, "we expect type definitions here");
                 Debug.Assert(!IsGenericTypeDefinition || _relatedType._pBaseType == null, "callers assume this would be null for a generic definition");
-                return _relatedType._pBaseType;
-            }
-        }
-
-        internal MethodTable* RawBaseType
-        {
-            get
-            {
-                Debug.Assert(!IsParameterizedType, "array type not supported in NonArrayBaseType");
-                Debug.Assert(IsCanonical, "we expect canonical types here");
                 return _relatedType._pBaseType;
             }
         }
@@ -1216,7 +1208,7 @@ namespace Internal.Runtime
         /// The purpose of the segment is controlled by the class library. The runtime doesn't
         /// use this memory for any purpose.
         /// </summary>
-        internal IntPtr WritableData
+        internal void* WritableData
         {
             get
             {
@@ -1225,9 +1217,9 @@ namespace Internal.Runtime
                 uint offset = GetFieldOffset(EETypeField.ETF_WritableData);
 
                 if (!IsDynamicType)
-                    return GetField<RelativePointer>(offset).Value;
+                    return (void*)GetField<RelativePointer>(offset).Value;
                 else
-                    return GetField<Pointer>(offset).Value;
+                    return (void*)GetField<Pointer>(offset).Value;
             }
 #if TYPE_LOADER_IMPLEMENTATION
             set
@@ -1235,7 +1227,7 @@ namespace Internal.Runtime
                 Debug.Assert(IsDynamicType && SupportsWritableData);
 
                 uint cbOffset = GetFieldOffset(EETypeField.ETF_WritableData);
-                *(IntPtr*)((byte*)Unsafe.AsPointer(ref this) + cbOffset) = value;
+                *(void**)((byte*)Unsafe.AsPointer(ref this) + cbOffset) = value;
             }
 #endif
         }
@@ -1296,17 +1288,14 @@ namespace Internal.Runtime
             }
         }
 
+        // This method is always called with a known constant and there's a lot of benefit in inlining it.
+        [MethodImpl(MethodImplOptions.AggressiveInlining)]
         public uint GetFieldOffset(EETypeField eField)
         {
             // First part of MethodTable consists of the fixed portion followed by the vtable.
             uint cbOffset = (uint)(sizeof(MethodTable) + (IntPtr.Size * _usNumVtableSlots));
 
-            // Then we have the interface map.
-            if (eField == EETypeField.ETF_InterfaceMap)
-            {
-                Debug.Assert(NumInterfaces > 0);
-                return cbOffset;
-            }
+            // Followed by list of implemented interfaces
             cbOffset += (uint)(sizeof(MethodTable*) * NumInterfaces);
 
             uint relativeOrFullPointerOffset = (IsDynamicType || !SupportsRelativePointers ? (uint)IntPtr.Size : 4);

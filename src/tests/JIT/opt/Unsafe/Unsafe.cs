@@ -3,10 +3,11 @@
 
 using System;
 using System.Runtime.CompilerServices;
+using Xunit;
 
 namespace CodeGenTests
 {
-    class UnsafeTests
+    public class UnsafeTests
     {
         [MethodImpl(MethodImplOptions.NoInlining)]
         static byte UnsafeAsNarrowCast_Short(short value)
@@ -29,7 +30,8 @@ namespace CodeGenTests
             return Unsafe.As<long, byte>(ref value);
         }
 
-        static int Main()
+        [Fact]
+        public static int TestEntryPoint()
         {
             if (UnsafeAsNarrowCast_Short(255) != 255)
                 return 0;

@@ -25,7 +25,8 @@ extern void mono_wasm_bind_cs_function(MonoString **fully_qualified_name, int si
 extern void mono_wasm_marshal_promise(void *data);
 
 typedef void (*background_job_cb)(void);
-void mono_threads_schedule_background_job (background_job_cb cb);
+void mono_main_thread_schedule_background_job (background_job_cb cb);
+void mono_current_thread_schedule_background_job (background_job_cb cb);
 
 #ifndef DISABLE_LEGACY_JS_INTEROP
 extern void mono_wasm_invoke_js_with_args_ref (int js_handle, MonoString **method, MonoArray **args, int *is_exception, MonoObject **result);
@@ -42,17 +43,21 @@ extern void mono_wasm_typed_array_from_ref (int ptr, int begin, int end, int byt
 extern void* mono_wasm_invoke_js_blazor (MonoString **exceptionMessage, void *callInfo, void* arg0, void* arg1, void* arg2);
 #endif /* DISABLE_LEGACY_JS_INTEROP */
 
+#ifndef DISABLE_THREADS
+extern void mono_wasm_install_js_worker_interop (int install_js_synchronization_context);
+extern void mono_wasm_uninstall_js_worker_interop (int uninstall_js_synchronization_context);
+#endif /* DISABLE_THREADS */
+
 // HybridGlobalization
-extern void mono_wasm_change_case_invariant(MonoString **exceptionMessage, const uint16_t* src, int32_t srcLength, uint16_t* dst, int32_t dstLength, mono_bool bToUpper);
-extern void mono_wasm_change_case(MonoString **exceptionMessage, MonoString **culture, const uint16_t* src, int32_t srcLength, uint16_t* dst, int32_t dstLength, mono_bool bToUpper);
-extern int mono_wasm_compare_string(MonoString **exceptionMessage, MonoString **culture, const uint16_t* str1, int32_t str1Length, const uint16_t* str2, int32_t str2Length, int32_t options);
-extern mono_bool mono_wasm_starts_with(MonoString **exceptionMessage, MonoString **culture, const uint16_t* str1, int32_t str1Length, const uint16_t* str2, int32_t str2Length, int32_t options);
-extern mono_bool mono_wasm_ends_with(MonoString **exceptionMessage, MonoString **culture, const uint16_t* str1, int32_t str1Length, const uint16_t* str2, int32_t str2Length, int32_t options);
+extern void mono_wasm_change_case_invariant(const uint16_t* src, int32_t srcLength, uint16_t* dst, int32_t dstLength, mono_bool bToUpper, int *is_exception, MonoObject** ex_result);
+extern void mono_wasm_change_case(MonoString **culture, const uint16_t* src, int32_t srcLength, uint16_t* dst, int32_t dstLength, mono_bool bToUpper, int *is_exception, MonoObject** ex_result);
+extern int mono_wasm_compare_string(MonoString **culture, const uint16_t* str1, int32_t str1Length, const uint16_t* str2, int32_t str2Length, int32_t options, int *is_exception, MonoObject** ex_result);
+extern mono_bool mono_wasm_starts_with(MonoString **culture, const uint16_t* str1, int32_t str1Length, const uint16_t* str2, int32_t str2Length, int32_t options, int *is_exception, MonoObject** ex_result);
+extern mono_bool mono_wasm_ends_with(MonoString **culture, const uint16_t* str1, int32_t str1Length, const uint16_t* str2, int32_t str2Length, int32_t options, int *is_exception, MonoObject** ex_result);
+extern int mono_wasm_index_of(MonoString **culture, const uint16_t* str1, int32_t str1Length, const uint16_t* str2, int32_t str2Length, int32_t options, mono_bool fromBeginning, int *is_exception, MonoObject** ex_result);
 
 void bindings_initialize_internals (void)
 {
-	mono_add_internal_call ("System.Runtime.InteropServices.JavaScript.JSSynchronizationContext::ScheduleBackgroundJob", mono_threads_schedule_background_job);
-
 	mono_add_internal_call ("Interop/Runtime::ReleaseCSOwnedObject", mono_wasm_release_cs_owned_object);
 	mono_add_internal_call ("Interop/Runtime::BindJSFunction", mono_wasm_bind_js_function);
 	mono_add_internal_call ("Interop/Runtime::InvokeJSFunction", mono_wasm_invoke_bound_function);
@@ -61,6 +66,12 @@ void bindings_initialize_internals (void)
 	mono_add_internal_call ("Interop/Runtime::MarshalPromise", mono_wasm_marshal_promise);
 	mono_add_internal_call ("Interop/Runtime::RegisterGCRoot", mono_wasm_register_root);
 	mono_add_internal_call ("Interop/Runtime::DeregisterGCRoot", mono_wasm_deregister_root);
+
+#ifndef DISABLE_THREADS
+	mono_add_internal_call ("Interop/Runtime::InstallWebWorkerInterop", mono_wasm_install_js_worker_interop);
+	mono_add_internal_call ("Interop/Runtime::UninstallWebWorkerInterop", mono_wasm_uninstall_js_worker_interop);
+#endif /* DISABLE_THREADS */
+
 #ifndef DISABLE_LEGACY_JS_INTEROP
 	// legacy
 	mono_add_internal_call ("Interop/Runtime::InvokeJSWithArgsRef", mono_wasm_invoke_js_with_args_ref);
@@ -81,4 +92,5 @@ void bindings_initialize_internals (void)
 	mono_add_internal_call ("Interop/JsGlobalization::CompareString", mono_wasm_compare_string);
 	mono_add_internal_call ("Interop/JsGlobalization::StartsWith", mono_wasm_starts_with);
 	mono_add_internal_call ("Interop/JsGlobalization::EndsWith", mono_wasm_ends_with);
+	mono_add_internal_call ("Interop/JsGlobalization::IndexOf", mono_wasm_index_of);
 }

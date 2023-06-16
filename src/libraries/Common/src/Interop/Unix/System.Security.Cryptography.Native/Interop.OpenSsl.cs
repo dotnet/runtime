@@ -6,6 +6,7 @@ using System.Collections.Concurrent;
 using System.Collections.Generic;
 using System.Collections.ObjectModel;
 using System.Diagnostics;
+using System.Globalization;
 using System.IO;
 using System.Net;
 using System.Net.Security;
@@ -84,16 +85,11 @@ internal static partial class Interop
 
         private static int GetCacheSize()
         {
-            int cacheSize = -1;
             string? value = AppContext.GetData(TlsCacheSizeCtxName) as string ?? Environment.GetEnvironmentVariable(TlsCacheSizeEnvironmentVariable);
-            try
+            if (!int.TryParse(value, CultureInfo.InvariantCulture, out int cacheSize))
             {
-                if (value != null)
-                {
-                    cacheSize = int.Parse(value);
-                }
+                cacheSize = -1;
             }
-            catch { };
 
             return cacheSize;
         }

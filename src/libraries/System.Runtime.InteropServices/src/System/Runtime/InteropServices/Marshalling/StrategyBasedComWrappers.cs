@@ -9,6 +9,8 @@ namespace System.Runtime.InteropServices.Marshalling
     [CLSCompliant(false)]
     public class StrategyBasedComWrappers : ComWrappers
     {
+        internal static StrategyBasedComWrappers DefaultMarshallingInstance { get; } = new();
+
         public static IIUnknownInterfaceDetailsStrategy DefaultIUnknownInterfaceDetailsStrategy { get; } = Marshalling.DefaultIUnknownInterfaceDetailsStrategy.Instance;
 
         public static IIUnknownStrategy DefaultIUnknownStrategy { get; } = FreeThreadedStrategy.Instance;

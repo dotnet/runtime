@@ -100,6 +100,14 @@ INTRINS(PEXT_I64, x86_bmi_pext_64, X86)
 INTRINS(PDEP_I32, x86_bmi_pdep_32, X86)
 INTRINS(PDEP_I64, x86_bmi_pdep_64, X86)
 
+INTRINS_OVR(SIMD_SQRT_R8, sqrt, Generic, sse_r8_t)
+INTRINS_OVR(SIMD_SQRT_R4, sqrt, Generic, sse_r4_t)
+INTRINS_OVR_TAG(SIMD_FLOOR, floor, Generic, Scalar | V64 | V128 | R4 | R8)
+INTRINS_OVR_TAG(SIMD_CEIL, ceil, Generic, Scalar | V64 | V128 | R4 | R8)
+INTRINS_OVR_TAG(SIMD_TRUNC, trunc, Generic, Scalar | V64 | V128 | R4 | R8)
+INTRINS_OVR_TAG(SIMD_ROUND, round, Generic, Scalar | V64 | V128 | R4 | R8)
+INTRINS_OVR_TAG(SIMD_NEAREST, nearbyint, Generic, V64 | V128 | R4 | R8)
+
 #if LLVM_API_VERSION >= 1400
 INTRINS_OVR_TAG(ROUNDEVEN, roundeven, Generic, Scalar | V64 | V128 | R4 | R8)
 #endif
@@ -124,8 +132,6 @@ INTRINS(SSE_PSRL_Q, x86_sse2_psrl_q, X86)
 INTRINS(SSE_PSLL_W, x86_sse2_psll_w, X86)
 INTRINS(SSE_PSLL_D, x86_sse2_psll_d, X86)
 INTRINS(SSE_PSLL_Q, x86_sse2_psll_q, X86)
-INTRINS_OVR(SSE_SQRT_PD, sqrt, Generic, sse_r8_t)
-INTRINS_OVR(SSE_SQRT_PS, sqrt, Generic, sse_r4_t)
 INTRINS_OVR(SSE_SQRT_SD, sqrt, Generic, LLVMDoubleType ())
 INTRINS_OVR(SSE_SQRT_SS, sqrt, Generic, LLVMFloatType ())
 INTRINS(SSE_RCP_PS, x86_sse_rcp_ps, X86)
@@ -283,6 +289,12 @@ INTRINS_OVR_2_ARG(WASM_NARROW_SIGNED_V16, wasm_narrow_signed, Wasm, sse_i1_t, ss
 INTRINS_OVR_2_ARG(WASM_NARROW_SIGNED_V8, wasm_narrow_signed, Wasm, sse_i2_t, sse_i4_t)
 INTRINS_OVR_2_ARG(WASM_NARROW_UNSIGNED_V16, wasm_narrow_unsigned, Wasm, sse_i1_t, sse_i2_t)
 INTRINS_OVR_2_ARG(WASM_NARROW_UNSIGNED_V8, wasm_narrow_unsigned, Wasm, sse_i2_t, sse_i4_t)
+INTRINS_OVR_2_ARG(WASM_CONV_R8_TO_I4, fptosi_sat, Generic, v64_i4_t, v128_r8_t)
+INTRINS_OVR_2_ARG(WASM_CONV_R8_TO_U4, fptoui_sat, Generic, v64_i4_t, v128_r8_t)
+INTRINS_OVR_TAG(WASM_PMAX, wasm_pmax, Wasm, V128 | R4 | R8)
+INTRINS_OVR_TAG(WASM_PMIN, wasm_pmin, Wasm, V128 | R4 | R8)
+INTRINS_OVR(WASM_PMAX_V4, fabs, Generic, sse_r4_t)
+INTRINS_OVR(WASM_PMAX_V2, fabs, Generic, sse_r8_t)
 INTRINS(WASM_Q15MULR_SAT_SIGNED, wasm_q15mulr_sat_signed, Wasm)
 INTRINS(WASM_SHUFFLE, wasm_shuffle, Wasm)
 INTRINS_OVR(WASM_SUB_SAT_SIGNED_V16, wasm_sub_sat_signed, Wasm, sse_i1_t)
@@ -436,13 +448,9 @@ INTRINS_OVR_TAG(AARCH64_ADV_SIMD_FRECPS, aarch64_neon_frecps, Arm64, Scalar | V6
 INTRINS_OVR_TAG(AARCH64_ADV_SIMD_RBIT, aarch64_neon_rbit, Arm64, V64 | V128 | I1)
 #endif
 
-INTRINS_OVR_TAG(AARCH64_ADV_SIMD_FRINTA, round, Generic, Scalar | V64 | V128 | R4 | R8)
 #if LLVM_API_VERSION < 1400
 INTRINS_OVR_TAG(AARCH64_ADV_SIMD_FRINTN, aarch64_neon_frintn, Arm64, Scalar | V64 | V128 | R4 | R8)
 #endif
-INTRINS_OVR_TAG(AARCH64_ADV_SIMD_FRINTM, floor, Generic, Scalar | V64 | V128 | R4 | R8)
-INTRINS_OVR_TAG(AARCH64_ADV_SIMD_FRINTP, ceil, Generic, Scalar | V64 | V128 | R4 | R8)
-INTRINS_OVR_TAG(AARCH64_ADV_SIMD_FRINTZ, trunc, Generic, Scalar | V64 | V128 | R4 | R8)
 
 INTRINS_OVR_TAG(AARCH64_ADV_SIMD_SUQADD, aarch64_neon_suqadd, Arm64, Scalar | V64 | V128 | I1 | I2 | I4 | I8)
 INTRINS_OVR_TAG(AARCH64_ADV_SIMD_USQADD, aarch64_neon_usqadd, Arm64, Scalar | V64 | V128 | I1 | I2 | I4 | I8)

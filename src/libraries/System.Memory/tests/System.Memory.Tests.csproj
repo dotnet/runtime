@@ -272,6 +272,8 @@
     <Compile Include="Base64\Base64DecoderUnitTests.cs" />
     <Compile Include="Base64\Base64EncoderUnitTests.cs" />
     <Compile Include="Base64\Base64TestHelper.cs" />
+    <Compile Include="Base64\Base64TestBase.cs" />
+    <Compile Include="Base64\Base64ValidationUnitTests.cs" />
   </ItemGroup>
   <ItemGroup>
     <Compile Include="$(CommonTestPath)System\Buffers\NativeMemoryManager.cs"

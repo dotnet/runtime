@@ -109,8 +109,8 @@ struct JitInterfaceCallbacks
     CorInfoType (* getFieldType)(void * thisHandle, CorInfoExceptionClass** ppException, CORINFO_FIELD_HANDLE field, CORINFO_CLASS_HANDLE* structType, CORINFO_CLASS_HANDLE memberParent);
     unsigned (* getFieldOffset)(void * thisHandle, CorInfoExceptionClass** ppException, CORINFO_FIELD_HANDLE field);
     void (* getFieldInfo)(void * thisHandle, CorInfoExceptionClass** ppException, CORINFO_RESOLVED_TOKEN* pResolvedToken, CORINFO_METHOD_HANDLE callerHandle, CORINFO_ACCESS_FLAGS flags, CORINFO_FIELD_INFO* pResult);
-    uint32_t (* getThreadLocalFieldInfo)(void * thisHandle, CorInfoExceptionClass** ppException, CORINFO_FIELD_HANDLE field);
-    void (* getThreadLocalStaticBlocksInfo)(void * thisHandle, CorInfoExceptionClass** ppException, CORINFO_THREAD_STATIC_BLOCKS_INFO* pInfo);
+    uint32_t (* getThreadLocalFieldInfo)(void * thisHandle, CorInfoExceptionClass** ppException, CORINFO_FIELD_HANDLE field, bool isGCtype);
+    void (* getThreadLocalStaticBlocksInfo)(void * thisHandle, CorInfoExceptionClass** ppException, CORINFO_THREAD_STATIC_BLOCKS_INFO* pInfo, bool isGCType);
     bool (* isFieldStatic)(void * thisHandle, CorInfoExceptionClass** ppException, CORINFO_FIELD_HANDLE fldHnd);
     int (* getArrayOrStringLength)(void * thisHandle, CorInfoExceptionClass** ppException, CORINFO_OBJECT_HANDLE objHnd);
     void (* getBoundaries)(void * thisHandle, CorInfoExceptionClass** ppException, CORINFO_METHOD_HANDLE ftn, unsigned int* cILOffsets, uint32_t** pILOffsets, ICorDebugInfo::BoundaryTypes* implicitBoundaries);
@@ -125,11 +125,6 @@ struct JitInterfaceCallbacks
     int (* getExactClasses)(void * thisHandle, CorInfoExceptionClass** ppException, CORINFO_CLASS_HANDLE baseType, int maxExactClasses, CORINFO_CLASS_HANDLE* exactClsRet);
     CORINFO_CLASS_HANDLE (* getArgClass)(void * thisHandle, CorInfoExceptionClass** ppException, CORINFO_SIG_INFO* sig, CORINFO_ARG_LIST_HANDLE args);
     CorInfoHFAElemType (* getHFAType)(void * thisHandle, CorInfoExceptionClass** ppException, CORINFO_CLASS_HANDLE hClass);
-    JITINTERFACE_HRESULT (* GetErrorHRESULT)(void * thisHandle, CorInfoExceptionClass** ppException, struct _EXCEPTION_POINTERS* pExceptionPointers);
-    uint32_t (* GetErrorMessage)(void * thisHandle, CorInfoExceptionClass** ppException, char16_t* buffer, uint32_t bufferLength);
-    int (* FilterException)(void * thisHandle, CorInfoExceptionClass** ppException, struct _EXCEPTION_POINTERS* pExceptionPointers);
-    void (* ThrowExceptionForJitResult)(void * thisHandle, CorInfoExceptionClass** ppException, JITINTERFACE_HRESULT result);
-    void (* ThrowExceptionForHelper)(void * thisHandle, CorInfoExceptionClass** ppException, const CORINFO_HELPER_DESC* throwHelper);
     bool (* runWithErrorTrap)(void * thisHandle, CorInfoExceptionClass** ppException, ICorJitInfo::errorTrapFunction function, void* parameter);
     bool (* runWithSPMIErrorTrap)(void * thisHandle, CorInfoExceptionClass** ppException, ICorJitInfo::errorTrapFunction function, void* parameter);
     void (* getEEInfo)(void * thisHandle, CorInfoExceptionClass** ppException, CORINFO_EE_INFO* pEEInfoOut);
@@ -1170,19 +1165,21 @@ public:
 }
 
     virtual uint32_t getThreadLocalFieldInfo(
-          CORINFO_FIELD_HANDLE field)
+          CORINFO_FIELD_HANDLE field,
+          bool isGCtype)
 {
     CorInfoExceptionClass* pException = nullptr;
-    uint32_t temp = _callbacks->getThreadLocalFieldInfo(_thisHandle, &pException, field);
+    uint32_t temp = _callbacks->getThreadLocalFieldInfo(_thisHandle, &pException, field, isGCtype);
     if (pException != nullptr) throw pException;
     return temp;
 }
 
     virtual void getThreadLocalStaticBlocksInfo(
-          CORINFO_THREAD_STATIC_BLOCKS_INFO* pInfo)
+          CORINFO_THREAD_STATIC_BLOCKS_INFO* pInfo,
+          bool isGCType)
 {
     CorInfoExceptionClass* pException = nullptr;
-    _callbacks->getThreadLocalStaticBlocksInfo(_thisHandle, &pException, pInfo);
+    _callbacks->getThreadLocalStaticBlocksInfo(_thisHandle, &pException, pInfo, isGCType);
     if (pException != nullptr) throw pException;
 }
 
@@ -1322,44 +1319,6 @@ public:
     CorInfoHFAElemType temp = _callbacks->getHFAType(_thisHandle, &pException, hClass);
     if (pException != nullptr) throw pException;
     return temp;
-}
-
-    virtual JITINTERFACE_HRESULT GetErrorHRESULT(
-          struct _EXCEPTION_POINTERS* pExceptionPointers)
-{
-    CorInfoExceptionClass* pException = nullptr;
-    JITINTERFACE_HRESULT temp = _callbacks->GetErrorHRESULT(_thisHandle, &pException, pExceptionPointers);
-    if (pException != nullptr) throw pException;
-    return temp;
-}
-
-    virtual uint32_t GetErrorMessage(
-          char16_t* buffer,
-          uint32_t bufferLength)
-{
-    CorInfoExceptionClass* pException = nullptr;
-    uint32_t temp = _callbacks->GetErrorMessage(_thisHandle, &pException, buffer, bufferLength);
-    if (pException != nullptr) throw pException;
-    return temp;
-}
-
-    virtual int FilterException(
-          struct _EXCEPTION_POINTERS* pExceptionPointers);
-
-    virtual void ThrowExceptionForJitResult(
-          JITINTERFACE_HRESULT result)
-{
-    CorInfoExceptionClass* pException = nullptr;
-    _callbacks->ThrowExceptionForJitResult(_thisHandle, &pException, result);
-    if (pException != nullptr) throw pException;
-}
-
-    virtual void ThrowExceptionForHelper(
-          const CORINFO_HELPER_DESC* throwHelper)
-{
-    CorInfoExceptionClass* pException = nullptr;
-    _callbacks->ThrowExceptionForHelper(_thisHandle, &pException, throwHelper);
-    if (pException != nullptr) throw pException;
 }
 
     virtual bool runWithErrorTrap(

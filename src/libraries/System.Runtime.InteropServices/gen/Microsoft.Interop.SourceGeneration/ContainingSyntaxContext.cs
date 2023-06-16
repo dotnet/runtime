@@ -79,7 +79,7 @@ namespace Microsoft.Interop
             int code = ContainingNamespace?.GetHashCode() ?? 0;
             foreach (ContainingSyntax containingSyntax in ContainingSyntax)
             {
-                code ^= containingSyntax.Identifier.Value.GetHashCode();
+                code = HashCode.Combine(code, containingSyntax.Identifier.Value);
             }
             return code;
         }

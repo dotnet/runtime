@@ -485,13 +485,13 @@ public:
                          CORINFO_ACCESS_FLAGS    flags,
                          CORINFO_FIELD_INFO*     pResult);
 
-    void recGetThreadLocalFieldInfo(CORINFO_FIELD_HANDLE field, uint32_t result);
-    void     dmpGetThreadLocalFieldInfo(DWORDLONG key, DWORD value);
-    uint32_t repGetThreadLocalFieldInfo(CORINFO_FIELD_HANDLE field);
+    void     recGetThreadLocalFieldInfo(CORINFO_FIELD_HANDLE field, bool isGCType, uint32_t result);
+    void     dmpGetThreadLocalFieldInfo(DLD key, DWORD value);
+    uint32_t repGetThreadLocalFieldInfo(CORINFO_FIELD_HANDLE field, bool isGCType);
 
-    void recGetThreadLocalStaticBlocksInfo(CORINFO_THREAD_STATIC_BLOCKS_INFO* pInfo);
+    void recGetThreadLocalStaticBlocksInfo(CORINFO_THREAD_STATIC_BLOCKS_INFO* pInfo, bool isGCType);
     void dmpGetThreadLocalStaticBlocksInfo(DWORD key, const Agnostic_GetThreadLocalStaticBlocksInfo& value);
-    void repGetThreadLocalStaticBlocksInfo(CORINFO_THREAD_STATIC_BLOCKS_INFO* pInfo);
+    void repGetThreadLocalStaticBlocksInfo(CORINFO_THREAD_STATIC_BLOCKS_INFO* pInfo, bool isGCType);
 
     void recEmbedMethodHandle(CORINFO_METHOD_HANDLE handle, void** ppIndirection, CORINFO_METHOD_HANDLE result);
     void dmpEmbedMethodHandle(DWORDLONG key, DLDL value);
@@ -662,10 +662,6 @@ public:
     void recGetArrayInitializationData(CORINFO_FIELD_HANDLE field, DWORD size, void* result);
     void dmpGetArrayInitializationData(DLD key, DWORDLONG value);
     void* repGetArrayInitializationData(CORINFO_FIELD_HANDLE field, DWORD size);
-
-    void recFilterException(struct _EXCEPTION_POINTERS* pExceptionPointers, int result);
-    void dmpFilterException(DWORD key, DWORD value);
-    int repFilterException(struct _EXCEPTION_POINTERS* pExceptionPointers);
 
     void recGetAddressOfPInvokeTarget(CORINFO_METHOD_HANDLE method, CORINFO_CONST_LOOKUP* pLookup);
     void dmpGetAddressOfPInvokeTarget(DWORDLONG key, DLD value);
@@ -1111,7 +1107,7 @@ enum mcPackets
     //Packet_AllocMethodBlockCounts = 131,
     PacketCR_AllocUnwindInfo = 132,
     PacketCR_ReserveUnwindInfo = 133,
-    Packet_FilterException = 134,
+    //Packet_FilterException = 134,
     //Packet_HandleException = 135,
     //Retired9 = 136,
     Packet_IsFieldStatic = 137,

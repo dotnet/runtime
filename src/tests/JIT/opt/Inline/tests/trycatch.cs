@@ -4,6 +4,7 @@
 // Getter and Setter: SEH
 
 using System;
+using Xunit;
 
 namespace JitInliningTest
 {
@@ -24,9 +25,10 @@ namespace JitInliningTest
             }
         }
     }
-    internal class PropTest5
+    public class PropTest5
     {
-        public static int Main()
+        [Fact]
+        public static int TestEntryPoint()
         {
             A a = new A();
             a.prop = 100;

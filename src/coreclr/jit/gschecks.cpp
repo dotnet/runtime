@@ -116,17 +116,16 @@ void Compiler::gsCopyShadowParams()
 struct MarkPtrsInfo
 {
     Compiler* comp;
-    unsigned  lvAssignDef;  // Which local variable is the tree being assigned to?
-    bool      isAssignSrc;  // Is this the source value for an assignment?
+    unsigned  lvStoreDef;   // Which local variable is the tree being assigned to?
+    bool      isStoreSrc;   // Is this the source value for an assignment?
     bool      isUnderIndir; // Is this a pointer value tree that is being dereferenced?
     bool      skipNextNode; // Skip a single node during the tree-walk
 
 #ifdef DEBUG
     void Print()
     {
-        printf(
-            "[MarkPtrsInfo] = {comp = %p, lvAssignDef = %d, isAssignSrc = %d, isUnderIndir = %d, skipNextNode = %d}\n",
-            comp, lvAssignDef, isAssignSrc, isUnderIndir, skipNextNode);
+        printf("[MarkPtrsInfo] = {comp = %p, lvStoreDef = %d, isStoreSrc = %d, isUnderIndir = %d, skipNextNode = %d}\n",
+               comp, lvStoreDef, isStoreSrc, isUnderIndir, skipNextNode);
     }
 #endif
 };
@@ -149,7 +148,7 @@ Compiler::fgWalkResult Compiler::gsMarkPtrsAndAssignGroups(GenTree** pTree, fgWa
     ShadowParamVarInfo*  shadowVarInfo = pState->comp->gsShadowVarInfo;
     assert(shadowVarInfo);
 
-    assert(!pState->isAssignSrc || pState->lvAssignDef != (unsigned)-1);
+    assert(!pState->isStoreSrc || (pState->lvStoreDef != BAD_VAR_NUM));
 
     if (pState->skipNextNode)
     {
@@ -163,17 +162,18 @@ Compiler::fgWalkResult Compiler::gsMarkPtrsAndAssignGroups(GenTree** pTree, fgWa
         case GT_IND:
         case GT_BLK:
         case GT_ARR_ELEM:
-        case GT_ARR_INDEX:
-        case GT_ARR_OFFSET:
         case GT_MDARR_LENGTH:
         case GT_MDARR_LOWER_BOUND:
-
             newState.isUnderIndir = true;
-            {
-                newState.skipNextNode = true; // Don't have to worry about which kind of node we're dealing with
-                comp->fgWalkTreePre(&tree, comp->gsMarkPtrsAndAssignGroups, (void*)&newState);
-            }
+            newState.skipNextNode = true; // Don't have to worry about which kind of node we're dealing with
+            comp->fgWalkTreePre(&tree, comp->gsMarkPtrsAndAssignGroups, &newState);
+            return WALK_SKIP_SUBTREES;
 
+        case GT_STOREIND:
+        case GT_STORE_BLK:
+            newState.isUnderIndir = true;
+            comp->fgWalkTreePre(&tree->AsIndir()->Addr(), comp->gsMarkPtrsAndAssignGroups, &newState);
+            comp->fgWalkTreePre(&tree->AsIndir()->Data(), comp->gsMarkPtrsAndAssignGroups, pState);
             return WALK_SKIP_SUBTREES;
 
         // local vars and param uses
@@ -188,31 +188,31 @@ Compiler::fgWalkResult Compiler::gsMarkPtrsAndAssignGroups(GenTree** pTree, fgWa
                 comp->lvaTable[lclNum].lvIsPtr = 1;
             }
 
-            if (pState->isAssignSrc)
+            if (pState->isStoreSrc)
             {
                 //
                 // Add lvAssignDef and lclNum to a common assign group
-                if (shadowVarInfo[pState->lvAssignDef].assignGroup)
+                if (shadowVarInfo[pState->lvStoreDef].assignGroup)
                 {
                     if (shadowVarInfo[lclNum].assignGroup)
                     {
                         // OR both bit vector
-                        shadowVarInfo[pState->lvAssignDef].assignGroup->bitVectOr(shadowVarInfo[lclNum].assignGroup);
+                        shadowVarInfo[pState->lvStoreDef].assignGroup->bitVectOr(shadowVarInfo[lclNum].assignGroup);
                     }
                     else
                     {
-                        shadowVarInfo[pState->lvAssignDef].assignGroup->bitVectSet(lclNum);
+                        shadowVarInfo[pState->lvStoreDef].assignGroup->bitVectSet(lclNum);
                     }
 
                     // Point both to the same bit vector
-                    shadowVarInfo[lclNum].assignGroup = shadowVarInfo[pState->lvAssignDef].assignGroup;
+                    shadowVarInfo[lclNum].assignGroup = shadowVarInfo[pState->lvStoreDef].assignGroup;
                 }
                 else if (shadowVarInfo[lclNum].assignGroup)
                 {
-                    shadowVarInfo[lclNum].assignGroup->bitVectSet(pState->lvAssignDef);
+                    shadowVarInfo[lclNum].assignGroup->bitVectSet(pState->lvStoreDef);
 
                     // Point both to the same bit vector
-                    shadowVarInfo[pState->lvAssignDef].assignGroup = shadowVarInfo[lclNum].assignGroup;
+                    shadowVarInfo[pState->lvStoreDef].assignGroup = shadowVarInfo[lclNum].assignGroup;
                 }
                 else
                 {
@@ -220,9 +220,9 @@ Compiler::fgWalkResult Compiler::gsMarkPtrsAndAssignGroups(GenTree** pTree, fgWa
 
                     // (shadowVarInfo[pState->lvAssignDef] == NULL && shadowVarInfo[lclNew] == NULL);
                     // Neither of them has an assign group yet.  Make a new one.
-                    shadowVarInfo[pState->lvAssignDef].assignGroup = bv;
-                    shadowVarInfo[lclNum].assignGroup              = bv;
-                    bv->bitVectSet(pState->lvAssignDef);
+                    shadowVarInfo[pState->lvStoreDef].assignGroup = bv;
+                    shadowVarInfo[lclNum].assignGroup             = bv;
+                    bv->bitVectSet(pState->lvStoreDef);
                     bv->bitVectSet(lclNum);
                 }
             }
@@ -233,7 +233,7 @@ Compiler::fgWalkResult Compiler::gsMarkPtrsAndAssignGroups(GenTree** pTree, fgWa
         case GT_CALL:
 
             newState.isUnderIndir = false;
-            newState.isAssignSrc  = false;
+            newState.isStoreSrc   = false;
             {
                 CallArg* thisArg = tree->AsCall()->gtArgs.GetThisArg();
                 if (thisArg != nullptr)
@@ -249,11 +249,11 @@ Compiler::fgWalkResult Compiler::gsMarkPtrsAndAssignGroups(GenTree** pTree, fgWa
 
                 for (CallArg& arg : tree->AsCall()->gtArgs.EarlyArgs())
                 {
-                    comp->fgWalkTreePre(&arg.EarlyNodeRef(), gsMarkPtrsAndAssignGroups, (void*)&newState);
+                    comp->fgWalkTreePre(&arg.EarlyNodeRef(), gsMarkPtrsAndAssignGroups, &newState);
                 }
                 for (CallArg& arg : tree->AsCall()->gtArgs.LateArgs())
                 {
-                    comp->fgWalkTreePre(&arg.LateNodeRef(), gsMarkPtrsAndAssignGroups, (void*)&newState);
+                    comp->fgWalkTreePre(&arg.LateNodeRef(), gsMarkPtrsAndAssignGroups, &newState);
                 }
 
                 if (tree->AsCall()->gtCallType == CT_INDIRECT)
@@ -263,35 +263,17 @@ Compiler::fgWalkResult Compiler::gsMarkPtrsAndAssignGroups(GenTree** pTree, fgWa
                     // A function pointer is treated like a write-through pointer since
                     // it controls what code gets executed, and so indirectly can cause
                     // a write to memory.
-                    comp->fgWalkTreePre(&tree->AsCall()->gtCallAddr, gsMarkPtrsAndAssignGroups, (void*)&newState);
+                    comp->fgWalkTreePre(&tree->AsCall()->gtCallAddr, gsMarkPtrsAndAssignGroups, &newState);
                 }
             }
             return WALK_SKIP_SUBTREES;
 
-        case GT_ASG:
-        {
-            GenTreeOp* asg = tree->AsOp();
-            GenTree*   dst = asg->gtGetOp1();
-            GenTree*   src = asg->gtGetOp2();
-            // Assignments - track assign groups and *p defs.
-
-            // Walk dst side
-            comp->fgWalkTreePre(&dst, comp->gsMarkPtrsAndAssignGroups, (void*)&newState);
-
-            // Now handle src side
-            if (dst->OperIs(GT_LCL_VAR, GT_LCL_FLD))
-            {
-                unsigned lclNum      = dst->AsLclVarCommon()->GetLclNum();
-                newState.lvAssignDef = lclNum;
-                newState.isAssignSrc = true;
-            }
-
-            comp->fgWalkTreePre(&src, comp->gsMarkPtrsAndAssignGroups, (void*)&newState);
-            assert(dst == asg->gtGetOp1());
-            assert(src == asg->gtGetOp2());
-
+        case GT_STORE_LCL_VAR:
+        case GT_STORE_LCL_FLD:
+            newState.lvStoreDef = tree->AsLclVarCommon()->GetLclNum();
+            newState.isStoreSrc = true;
+            comp->fgWalkTreePre(&tree->AsLclVarCommon()->Data(), gsMarkPtrsAndAssignGroups, &newState);
             return WALK_SKIP_SUBTREES;
-        }
 
         default:
             return WALK_CONTINUE;
@@ -312,12 +294,12 @@ bool Compiler::gsFindVulnerableParams()
     MarkPtrsInfo info;
 
     info.comp         = this;
-    info.lvAssignDef  = (unsigned)-1;
+    info.lvStoreDef   = (unsigned)-1;
     info.isUnderIndir = false;
-    info.isAssignSrc  = false;
+    info.isStoreSrc   = false;
     info.skipNextNode = false;
 
-    // Walk all the trees setting lvIsWritePtr, lvIsOutgoingArg, lvIsPtr and assignGroup.
+    // Walk all the trees setting lvIsPtr and assignGroup.
     fgWalkAllTreesPre(gsMarkPtrsAndAssignGroups, &info);
 
     // Compute has vulnerable at the end of the loop.
@@ -427,20 +409,9 @@ void Compiler::gsParamsToShadows()
         LclVarDsc* shadowVarDsc = lvaGetDesc(shadowVarNum);
 
         // Copy some info
-
-        var_types type       = varTypeIsSmall(varDsc->TypeGet()) ? TYP_INT : varDsc->TypeGet();
-        shadowVarDsc->lvType = type;
-
-#ifdef FEATURE_SIMD
-        shadowVarDsc->lvUsedInSIMDIntrinsic = varDsc->lvUsedInSIMDIntrinsic;
-        if (varTypeIsSIMD(varDsc))
-        {
-            CorInfoType simdBaseJitType = varDsc->GetSimdBaseJitType();
-            shadowVarDsc->SetSimdBaseJitType(simdBaseJitType);
-        }
-#endif
+        var_types type            = varTypeIsSmall(varDsc->TypeGet()) ? TYP_INT : varDsc->TypeGet();
+        shadowVarDsc->lvType      = type;
         shadowVarDsc->lvRegStruct = varDsc->lvRegStruct;
-
         shadowVarDsc->SetAddressExposed(varDsc->IsAddressExposed() DEBUGARG(varDsc->GetAddrExposedReason()));
         shadowVarDsc->lvDoNotEnregister = varDsc->lvDoNotEnregister;
 #ifdef DEBUG
@@ -504,24 +475,18 @@ void Compiler::gsParamsToShadows()
 
                     tree->AsLclVarCommon()->SetLclNum(shadowLclNum);
 
-                    if (varTypeIsSmall(varDsc->TypeGet()))
+                    if (varTypeIsSmall(varDsc))
                     {
-                        if (tree->OperIs(GT_LCL_VAR))
+                        if (tree->OperIsScalarLocal())
                         {
                             tree->gtType = TYP_INT;
-
-                            if (user->OperIs(GT_ASG) && user->gtGetOp1() == tree)
-                            {
-                                user->gtType = TYP_INT;
-                            }
+                        }
+                        else if (tree->OperIs(GT_STORE_LCL_FLD) && tree->IsPartialLclFld(m_compiler))
+                        {
+                            tree->gtFlags |= GTF_VAR_USEASG;
                         }
                     }
                 }
-            }
-            // The transformation replaces small locals with TYP_INT ones, so "full" defs may become partial.
-            else if (tree->OperIs(GT_ASG) && varTypeIsSmall(tree->AsOp()->gtGetOp1()))
-            {
-                m_compiler->fgAssignSetVarDef(tree);
             }
 
             return WALK_CONTINUE;
@@ -548,28 +513,12 @@ void Compiler::gsParamsToShadows()
             continue;
         }
 
-        const LclVarDsc* shadowVarDsc = lvaGetDesc(shadowVarNum);
-        var_types        type         = shadowVarDsc->TypeGet();
-
         GenTree* src = gtNewLclvNode(lclNum, varDsc->TypeGet());
-        GenTree* dst = gtNewLclvNode(shadowVarNum, type);
-
         src->gtFlags |= GTF_DONT_CSE;
-        dst->gtFlags |= GTF_DONT_CSE;
+        GenTree* store = gtNewStoreLclVarNode(shadowVarNum, src);
 
-        GenTree* opAssign = nullptr;
-        if (type == TYP_STRUCT)
-        {
-            assert(shadowVarDsc->GetLayout() != nullptr);
-            assert(shadowVarDsc->lvExactSize() != 0);
-            opAssign = gtNewBlkOpNode(dst, src);
-        }
-        else
-        {
-            opAssign = gtNewAssignNode(dst, src);
-        }
         fgEnsureFirstBBisScratch();
-        (void)fgNewStmtAtBeg(fgFirstBB, fgMorphTree(opAssign));
+        (void)fgNewStmtAtBeg(fgFirstBB, fgMorphTree(store));
     }
 
     // If the method has "Jmp CalleeMethod", then we need to copy shadow params back to original
@@ -600,25 +549,11 @@ void Compiler::gsParamsToShadows()
                     continue;
                 }
 
-                const LclVarDsc* shadowVarDsc = lvaGetDesc(shadowVarNum);
-
-                GenTree* src = gtNewLclvNode(shadowVarNum, shadowVarDsc->TypeGet());
-                GenTree* dst = gtNewLclvNode(lclNum, varDsc->TypeGet());
-
+                GenTree* src = gtNewLclVarNode(shadowVarNum);
                 src->gtFlags |= GTF_DONT_CSE;
-                dst->gtFlags |= GTF_DONT_CSE;
+                GenTree* store = gtNewStoreLclVarNode(lclNum, src);
 
-                GenTree* opAssign = nullptr;
-                if (varDsc->TypeGet() == TYP_STRUCT)
-                {
-                    opAssign = gtNewBlkOpNode(dst, src);
-                }
-                else
-                {
-                    opAssign = gtNewAssignNode(dst, src);
-                }
-
-                (void)fgNewStmtNearEnd(block, fgMorphTree(opAssign));
+                (void)fgNewStmtNearEnd(block, fgMorphTree(store));
             }
         }
     }

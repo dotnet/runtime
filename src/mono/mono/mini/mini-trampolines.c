@@ -1150,6 +1150,7 @@ mono_delegate_trampoline (host_mgreg_t *regs, guint8 *code, gpointer *arg, guint
 gconstpointer
 mono_get_trampoline_func (MonoTrampolineType tramp_type)
 {
+#ifndef HOST_WASM
 	switch (tramp_type) {
 	case MONO_TRAMPOLINE_JIT:
 	case MONO_TRAMPOLINE_JUMP:
@@ -1170,6 +1171,9 @@ mono_get_trampoline_func (MonoTrampolineType tramp_type)
 		g_assert_not_reached ();
 		return NULL;
 	}
+#else
+	return NULL;
+#endif
 }
 
 static guchar*

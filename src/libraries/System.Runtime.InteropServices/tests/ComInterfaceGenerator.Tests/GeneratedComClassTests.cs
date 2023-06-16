@@ -16,6 +16,12 @@ namespace ComInterfaceGenerator.Tests
 
         [LibraryImport(NativeExportsNE_Binary, EntryPoint = "get_com_object_data")]
         public static partial int GetComObjectData(void* obj);
+
+        [LibraryImport(NativeExportsNE_Binary, EntryPoint = "set_com_object_data")]
+        public static partial void SetComObjectData(IGetAndSetInt obj, int data);
+
+        [LibraryImport(NativeExportsNE_Binary, EntryPoint = "get_com_object_data")]
+        public static partial int GetComObjectData(IGetAndSetInt obj);
     }
 
     [GeneratedComClass]
@@ -62,31 +68,23 @@ namespace ComInterfaceGenerator.Tests
         }
 
         [Fact]
-        public void CallsToComInterfaceWriteChangesToManagedObject()
+        public void CallsToComInterfaceWithMarshallerWriteChangesToManagedObject()
         {
             ManagedObjectExposedToCom obj = new();
-            StrategyBasedComWrappers wrappers = new();
-            void* ptr = (void*)wrappers.GetOrCreateComInterfaceForObject(obj, CreateComInterfaceFlags.None);
-            Assert.NotEqual(0, (nint)ptr);
             obj.Data = 3;
             Assert.Equal(3, obj.Data);
-            NativeExportsNE.SetComObjectData(ptr, 42);
+            NativeExportsNE.SetComObjectData(obj, 42);
             Assert.Equal(42, obj.Data);
-            Marshal.Release((nint)ptr);
         }
 
         [Fact]
-        public void CallsToComInterfaceReadChangesFromManagedObject()
+        public void CallsToComInterfaceWithMarshallerReadChangesFromManagedObject()
         {
             ManagedObjectExposedToCom obj = new();
-            StrategyBasedComWrappers wrappers = new();
-            void* ptr = (void*)wrappers.GetOrCreateComInterfaceForObject(obj, CreateComInterfaceFlags.None);
-            Assert.NotEqual(0, (nint)ptr);
             obj.Data = 3;
             Assert.Equal(3, obj.Data);
             obj.Data = 12;
-            Assert.Equal(obj.Data, NativeExportsNE.GetComObjectData(ptr));
-            Marshal.Release((nint)ptr);
+            Assert.Equal(obj.Data, NativeExportsNE.GetComObjectData(obj));
         }
     }
 }

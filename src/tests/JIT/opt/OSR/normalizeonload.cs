@@ -3,10 +3,11 @@
 
 using System;
 using System.Runtime.CompilerServices;
+using Xunit;
 
 // Ensure small OSR locals are marked as normalize on load
 
-class Runtime_83959
+public class Runtime_83959
 {
     static bool B(out byte b)
     {
@@ -42,7 +43,8 @@ class Runtime_83959
         }
     }
 
-    public static int Main()
+    [Fact]
+    public static int TestEntryPoint()
     {
         char c = (char) 0;
         FillStack(100);

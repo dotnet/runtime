@@ -44,6 +44,10 @@ namespace Microsoft.Extensions.Logging
     public partial interface ILogger<out TCategoryName> : Microsoft.Extensions.Logging.ILogger
     {
     }
+    public interface ILoggingBuilder
+    {
+        Microsoft.Extensions.DependencyInjection.IServiceCollection Services { get; }
+    }
     public partial interface ISupportExternalScope
     {
         void SetScopeProvider(Microsoft.Extensions.Logging.IExternalScopeProvider scopeProvider);
