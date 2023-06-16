@@ -14,7 +14,7 @@ namespace System.Threading
         // NOTE: Lock must not have a static (class) constructor, as Lock itself is used to synchronize
         // class construction.  If Lock has its own class constructor, this can lead to infinite recursion.
         // All static data in Lock must be lazy-initialized.
-        private static StaticsInitializationStage s_staticsInitializationStage;
+        private static int s_staticsInitializationStage;
         private static bool s_isSingleProcessor;
         private static int s_maxSpinCount;
         private static int s_minSpinCount;
@@ -91,7 +91,7 @@ namespace System.Threading
         [MethodImpl(MethodImplOptions.AggressiveInlining)]
         private TryLockResult LazyInitializeOrEnter()
         {
-            StaticsInitializationStage stage = Volatile.Read(ref s_staticsInitializationStage);
+            StaticsInitializationStage stage = (StaticsInitializationStage)Volatile.Read(ref s_staticsInitializationStage);
             switch (stage)
             {
                 case StaticsInitializationStage.Complete:
@@ -116,7 +116,8 @@ namespace System.Threading
                             Thread.SpinWait(1);
                         }
 
-                        if (Volatile.Read(ref s_staticsInitializationStage) == StaticsInitializationStage.Complete)
+                        if ((StaticsInitializationStage)Volatile.Read(ref s_staticsInitializationStage) ==
+                            StaticsInitializationStage.Complete)
                         {
                             goto case StaticsInitializationStage.Complete;
                         }
@@ -145,10 +146,11 @@ namespace System.Threading
             // Since Lock is used to synchronize class construction, and some of the statics initialization may involve class
             // construction, update the stage first to avoid infinite recursion
             switch (
+                (StaticsInitializationStage)
                 Interlocked.CompareExchange(
                     ref s_staticsInitializationStage,
-                    StaticsInitializationStage.Started,
-                    StaticsInitializationStage.NotStarted))
+                    (int)StaticsInitializationStage.Started,
+                    (int)StaticsInitializationStage.NotStarted))
             {
                 case StaticsInitializationStage.Started:
                     return false;
@@ -160,7 +162,7 @@ namespace System.Threading
             s_maxSpinCount = DetermineMaxSpinCount();
             s_minSpinCount = DetermineMinSpinCount();
 
-            Volatile.Write(ref s_staticsInitializationStage, 2);
+            Volatile.Write(ref s_staticsInitializationStage, (int)StaticsInitializationStage.Complete);
             return true;
         }
 
