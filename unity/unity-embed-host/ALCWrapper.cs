@@ -70,6 +70,18 @@ namespace Unity.CoreCLRHelpers
             return null;
         }
 
+        public Assembly FindAssemblyByName(string assemblySimpleName)
+        {
+            foreach (Assembly a in Assemblies)
+            {
+                if (Path.GetFileNameWithoutExtension(a.GetLoadedModules(getResourceModules: true)[0].Name).Equals(assemblySimpleName))
+                    return a;
+            }
+
+            return null;
+        }
+
+
         [MethodImpl(MethodImplOptions.InternalCall)]
         private static extern string InvokeFindPluginCallback(string path);
 

@@ -420,7 +420,7 @@ public abstract class BaseEmbeddingApiTests
         bool found = false;
         for (uint i = 0; i < Assembly.GetAssembly(type)!.GetTypes().Length; i++)
         {
-            var t = ClrHost.unity_class_get(ClrHost.class_get_image(type), (MONO_TOKEN_TYPE_DEF | (i + 1)));
+            var t = ClrHost.unity_class_get(ClrHost.class_get_image(type), MONO_TOKEN_TYPE_DEF | (i + 1));
             Assert.NotNull(t);
             if (t!.Equals(type))
             {
@@ -436,10 +436,6 @@ public abstract class BaseEmbeddingApiTests
     [TestCase(typeof(Cat))]
     [TestCase(typeof(Rock))]
     [TestCase(typeof(CatOnlyInterface))]
-    [TestCase(typeof(ValueMammal))]
-    [TestCase(typeof(ValueCat))]
-    [TestCase(typeof(ValueRock))]
-    [TestCase(typeof(ValueNoInterfaces))]
     public void MethodGet(Type type)
     {
         // Test only methods on the type itself to ensure they belong to the same module

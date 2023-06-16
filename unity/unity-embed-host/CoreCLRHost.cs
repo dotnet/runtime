@@ -36,7 +36,7 @@ static unsafe partial class CoreCLRHost
     static readonly Dictionary<Assembly, AssemblyCachedInfo> k_AssemblyCache = new ();
     static readonly Dictionary<string, AssemblyCachedInfo> k_AssemblyNameCache = new ();
 
-    class AssemblyCachedInfo
+    class AssemblyCachedInfo : IDisposable
     {
         public AssemblyCachedInfo(Assembly assembly)
         {
@@ -44,6 +44,13 @@ static unsafe partial class CoreCLRHost
             name = Marshal.StringToHGlobalAnsi(assembly.GetName().Name);
             filename = Marshal.StringToHGlobalAnsi(assembly.Location);
             module = assembly.GetLoadedModules(true)[0];
+        }
+
+        public void Dispose()
+        {
+            GCHandle.FromIntPtr(handle).Free();
+            Marshal.FreeHGlobal(name);
+            Marshal.FreeHGlobal(filename);
         }
 
         // Data for the return to the native code. Don't forget to release handle!
@@ -102,16 +109,12 @@ static unsafe partial class CoreCLRHost
 
     static AssemblyCachedInfo GetInfoForAssembly(Assembly assembly)
     {
-        lock (k_AssemblyCache) // Use only main cache for locks!
+        lock (k_AssemblyCache)
         {
             if (!k_AssemblyCache.TryGetValue(assembly, out var info))
             {
                 info = new AssemblyCachedInfo(assembly);
-                // Keep caches in sync
                 k_AssemblyCache[assembly] = info;
-                // Tests load the test assembly into the default assembly load context (e.g. TestCase[typeof(Mammal)]),
-                // so that load_assembly_from_path later does subsequent load into the new "system" ALC.
-                k_AssemblyNameCache.TryAdd(assembly.GetName().Name, info);
             }
             return info;
         }
@@ -119,10 +122,27 @@ static unsafe partial class CoreCLRHost
 
     static AssemblyCachedInfo GetInfoForAssembly(string assemblySimpleName)
     {
-        lock (k_AssemblyCache) // Use only main cache for locks!
+        lock (k_AssemblyNameCache)
         {
-            return !k_AssemblyNameCache.TryGetValue(assemblySimpleName, out var info) ? null : info;
+            if (k_AssemblyNameCache.TryGetValue(assemblySimpleName, out var info))
+                return info;
+
+            // Slow path for assemblies in all ALCs.
+            // Need to watch out for assemblies with the same name, but in different ALCs.
+            // That should be validated by the Unity side.
+            foreach (var context in AssemblyLoadContext.All)
+            {
+                foreach (var asm in context.Assemblies)
+                {
+                    if (Path.GetFileNameWithoutExtension(asm.GetLoadedModules(getResourceModules: true)[0].Name).Equals(assemblySimpleName))
+                    {
+                        return GetInfoForAssembly(asm);
+                    }
+                }
+            }
         }
+
+        return null;
     }
 
     [NativeFunction(NativeFunctionOptions.DoNotGenerate)]
@@ -193,10 +213,24 @@ static unsafe partial class CoreCLRHost
             {
                 if (k_AssemblyCache.TryGetValue(assembly, out var assemblyInfo))
                 {
-                    GCHandle.FromIntPtr(assemblyInfo.handle).Free();
-
+                    assemblyInfo.Dispose();
                     k_AssemblyCache.Remove(assembly);
-                    k_AssemblyNameCache.Remove(assembly.GetName().Name);
+                }
+            }
+        }
+        // Remove name cache assemblies.
+        lock (k_AssemblyNameCache)
+        {
+            foreach (var assembly in alcAssemblies)
+            {
+                string assemblyName = assembly.GetName().Name;
+                if (assemblyName == null)
+                    continue;
+
+                if (k_AssemblyNameCache.TryGetValue(assemblyName, out var assemblyInfo))
+                {
+                    // assemblyInfo is owned by k_AssemblyCache
+                    k_AssemblyNameCache.Remove(assemblyName);
                 }
             }
         }
@@ -221,20 +255,7 @@ static unsafe partial class CoreCLRHost
 
         // Quick path for already cached assemblies
         var assemblyInfo = GetInfoForAssembly(sname);
-        if (assemblyInfo != null)
-            return assemblyInfo.handle;
-
-        // Slow path for assemblies which are not cached yet
-        foreach (var context in AssemblyLoadContext.All)
-        {
-            foreach (var asm in context.Assemblies)
-            {
-                if (Path.GetFileNameWithoutExtension(asm.GetLoadedModules(getResourceModules: true)[0].Name).Equals(sname))
-                    return GetInfoForAssembly(asm).handle;
-            }
-        }
-
-        return nint.Zero;
+        return assemblyInfo != null ? assemblyInfo.handle : nint.Zero;
     }
 
     [return: NativeCallbackType("MonoAssembly*")]

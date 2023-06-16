@@ -37,8 +37,7 @@ typedef signed long long SInt64;
 typedef unsigned long long UInt64;
 typedef void* mono_register_object_callback;
 typedef void* mono_liveness_world_state_callback;
-const int MONO_TABLE_TYPEDEF = 2;               // mono/metadata/blob.h
-const int MONO_TOKEN_TYPE_DEF = 0x02000000;     // mono/metadata/tokentype.h
+const int mdtTypeDef = 0x02000000;
 
 void* s_MonoLibrary = nullptr;
 std::string g_monoDllPath;
@@ -620,12 +619,12 @@ TEST(can_get_types_from_image_table)
 {
     MonoClass *testclass = GetClassHelper(kTestDLLNameSpace, kTestClassName);
     GET_AND_CHECK(image, mono_assembly_get_image(g_assembly));
-    int rows = mono_image_get_table_rows(image, MONO_TABLE_TYPEDEF);
+    int rows = mono_image_get_table_rows(image, mdtTypeDef);
     CHECK(rows > 0);
     bool found = false;
     for (int i=0; i<rows; i++)
     {
-        GET_AND_CHECK(klass, mono_unity_class_get(image, MONO_TOKEN_TYPE_DEF | (i + 1)));
+        GET_AND_CHECK(klass, mono_unity_class_get(image, mdtTypeDef | (i + 1)));
         if (klass == testclass)
             found = true;
     }
