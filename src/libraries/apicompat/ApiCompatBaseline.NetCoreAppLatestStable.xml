@@ -2577,12 +2577,6 @@
   </Suppression>
   <Suppression>
     <DiagnosticId>CP0015</DiagnosticId>
-    <Target>M:System.Type.GetEnumValues:[T:System.Diagnostics.CodeAnalysis.RequiresDynamicCodeAttribute]</Target>
-    <Left>net7.0/mscorlib.dll</Left>
-    <Right>net8.0/mscorlib.dll</Right>
-  </Suppression>
-  <Suppression>
-    <DiagnosticId>CP0015</DiagnosticId>
     <Target>M:System.Linq.Queryable.AsQueryable(System.Collections.IEnumerable):[T:System.Diagnostics.CodeAnalysis.RequiresDynamicCodeAttribute]</Target>
     <Left>net7.0/netstandard.dll</Left>
     <Right>net8.0/netstandard.dll</Right>
@@ -2590,12 +2584,6 @@
   <Suppression>
     <DiagnosticId>CP0015</DiagnosticId>
     <Target>M:System.Linq.Queryable.AsQueryable``1(System.Collections.Generic.IEnumerable{``0}):[T:System.Diagnostics.CodeAnalysis.RequiresDynamicCodeAttribute]</Target>
-    <Left>net7.0/netstandard.dll</Left>
-    <Right>net8.0/netstandard.dll</Right>
-  </Suppression>
-  <Suppression>
-    <DiagnosticId>CP0015</DiagnosticId>
-    <Target>M:System.Type.GetEnumValues:[T:System.Diagnostics.CodeAnalysis.RequiresDynamicCodeAttribute]</Target>
     <Left>net7.0/netstandard.dll</Left>
     <Right>net8.0/netstandard.dll</Right>
   </Suppression>
