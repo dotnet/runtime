@@ -289,15 +289,6 @@ void WrapICorJitInfo::resolveToken(
     API_LEAVE(resolveToken);
 }
 
-bool WrapICorJitInfo::tryResolveToken(
-          CORINFO_RESOLVED_TOKEN* pResolvedToken)
-{
-    API_ENTER(tryResolveToken);
-    bool temp = wrapHnd->tryResolveToken(pResolvedToken);
-    API_LEAVE(tryResolveToken);
-    return temp;
-}
-
 void WrapICorJitInfo::findSig(
           CORINFO_MODULE_HANDLE module,
           unsigned sigTOK,

@@ -8072,9 +8072,7 @@ public:
 
     WORD eeGetRelocTypeHint(void* target);
 
-    // ICorStaticInfo wrapper functions
-
-    bool eeTryResolveToken(CORINFO_RESOLVED_TOKEN* resolvedToken);
+// ICorStaticInfo wrapper functions
 
 #if defined(UNIX_AMD64_ABI)
 #ifdef DEBUG

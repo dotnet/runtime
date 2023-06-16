@@ -2214,12 +2214,6 @@ public:
     // failures during token resolution.
     virtual void resolveToken(/* IN, OUT */ CORINFO_RESOLVED_TOKEN * pResolvedToken) = 0;
 
-    // Attempt to resolve a metadata token into a runtime method handle. Returns true
-    // if resolution succeeded and false otherwise (e.g. if it encounters invalid metadata
-    // during token reoslution). This method should be used instead of `resolveToken` in
-    // situations that need to be resilient to invalid metadata.
-    virtual bool tryResolveToken(/* IN, OUT */ CORINFO_RESOLVED_TOKEN * pResolvedToken) = 0;
-
     // Signature information about the call sig
     virtual void findSig (
             CORINFO_MODULE_HANDLE       module,     /* IN */

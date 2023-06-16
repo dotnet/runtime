@@ -40,7 +40,6 @@ struct JitInterfaceCallbacks
     void (* setPatchpointInfo)(void * thisHandle, CorInfoExceptionClass** ppException, PatchpointInfo* patchpointInfo);
     PatchpointInfo* (* getOSRInfo)(void * thisHandle, CorInfoExceptionClass** ppException, unsigned* ilOffset);
     void (* resolveToken)(void * thisHandle, CorInfoExceptionClass** ppException, CORINFO_RESOLVED_TOKEN* pResolvedToken);
-    bool (* tryResolveToken)(void * thisHandle, CorInfoExceptionClass** ppException, CORINFO_RESOLVED_TOKEN* pResolvedToken);
     void (* findSig)(void * thisHandle, CorInfoExceptionClass** ppException, CORINFO_MODULE_HANDLE module, unsigned sigTOK, CORINFO_CONTEXT_HANDLE context, CORINFO_SIG_INFO* sig);
     void (* findCallSiteSig)(void * thisHandle, CorInfoExceptionClass** ppException, CORINFO_MODULE_HANDLE module, unsigned methTOK, CORINFO_CONTEXT_HANDLE context, CORINFO_SIG_INFO* sig);
     CORINFO_CLASS_HANDLE (* getTokenTypeAsHandle)(void * thisHandle, CorInfoExceptionClass** ppException, CORINFO_RESOLVED_TOKEN* pResolvedToken);
@@ -473,15 +472,6 @@ public:
     CorInfoExceptionClass* pException = nullptr;
     _callbacks->resolveToken(_thisHandle, &pException, pResolvedToken);
     if (pException != nullptr) throw pException;
-}
-
-    virtual bool tryResolveToken(
-          CORINFO_RESOLVED_TOKEN* pResolvedToken)
-{
-    CorInfoExceptionClass* pException = nullptr;
-    bool temp = _callbacks->tryResolveToken(_thisHandle, &pException, pResolvedToken);
-    if (pException != nullptr) throw pException;
-    return temp;
 }
 
     virtual void findSig(

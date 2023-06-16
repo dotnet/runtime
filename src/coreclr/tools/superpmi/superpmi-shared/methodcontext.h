@@ -197,10 +197,6 @@ public:
     void dmpResolveToken(const Agnostic_CORINFO_RESOLVED_TOKENin& key, const ResolveTokenValue& value);
     void repResolveToken(CORINFO_RESOLVED_TOKEN* pResolvedToken, DWORD* exceptionCode);
 
-    void recTryResolveToken(CORINFO_RESOLVED_TOKEN* pResolvedToken, bool success);
-    void dmpTryResolveToken(const Agnostic_CORINFO_RESOLVED_TOKENin& key, const TryResolveTokenValue& value);
-    bool repTryResolveToken(CORINFO_RESOLVED_TOKEN* pResolvedToken);
-
     void recGetCallInfo(CORINFO_RESOLVED_TOKEN* pResolvedToken,
                         CORINFO_RESOLVED_TOKEN* pConstrainedResolvedToken,
                         CORINFO_METHOD_HANDLE   callerHandle,
@@ -1086,7 +1082,7 @@ enum mcPackets
     Packet_IsDelegateCreationAllowed = 155,
     Packet_GetSystemVAmd64PassStructInRegisterDescriptor = 156,
     Packet_GetReadyToRunDelegateCtorHelper = 157,
-    Packet_TryResolveToken = 158,
+    //Packet_TryResolveToken = 158,
     Packet_GetHFAType = 159,
     Packet_ResolveVirtualMethod = 160,
     Packet_GetMethodNameFromMetadata = 161,
