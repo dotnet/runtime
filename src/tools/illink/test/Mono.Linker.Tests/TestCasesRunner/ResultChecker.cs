@@ -58,7 +58,6 @@ namespace Mono.Linker.Tests.TestCasesRunner
 
 		static void ValidateTypeRefsHaveValidAssemblyRefs (AssemblyDefinition linked)
 		{
-			Console.WriteLine ("Validating type references have valid assembly references: " + linked.FullName);
 			foreach (var typeRef in linked.MainModule.GetTypeReferences ()) {
 				switch (typeRef.Scope) {
 				case null:
