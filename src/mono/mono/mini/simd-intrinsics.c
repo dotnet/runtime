@@ -2590,16 +2590,49 @@ emit_vector_2_3_4 (MonoCompile *cfg, MonoMethod *cmethod, MonoMethodSignature *f
 	MonoClass *klass;
 	MonoType *type, *etype;
 
-	if (!COMPILE_LLVM (cfg))
-#ifndef TARGET_ARM64
-		return NULL;
-#endif
 
 	id = lookup_intrins (vector2_methods, sizeof (vector2_methods), cmethod);
 	if (id == -1) {
 		// https://github.com/dotnet/runtime/issues/81961
 		// check_no_intrinsic_cattr (cmethod);
 		return NULL;
+	}
+
+	if (!COMPILE_LLVM (cfg)) {
+#ifndef TARGET_ARM64
+		return NULL;
+#else
+		// when a method gets enabled should be removed from here
+		switch (id) {
+		case SN_ctor:
+		case SN_Clamp:
+		case SN_Conjugate:
+		case SN_CopyTo:
+		case SN_Distance:
+		case SN_DistanceSquared:
+		case SN_Dot:
+		case SN_Length:
+		case SN_LengthSquared:
+		case SN_Lerp:
+		case SN_Negate:
+		case SN_Normalize:
+		case SN_get_Identity:
+		case SN_get_Item:
+		case SN_get_One:
+		case SN_get_UnitW:
+		case SN_get_UnitX:
+		case SN_get_UnitY:
+		case SN_get_UnitZ:
+		case SN_get_Zero:
+		case SN_op_Equality:
+		case SN_op_Inequality:
+		case SN_op_UnaryNegation:
+		case SN_set_Item:
+			return NULL;
+		default:
+			break;
+		}
+#endif
 	}
 
 	if (cfg->verbose_level > 1) {
@@ -2616,10 +2649,6 @@ emit_vector_2_3_4 (MonoCompile *cfg, MonoMethod *cmethod, MonoMethodSignature *f
 	// Similar to the cases in emit_sys_numerics_vector_t ()
 	switch (id) {
 	case SN_ctor:
-		if (!COMPILE_LLVM(cfg)) {
-			// upcoming work
-			return NULL;
-		}
 		if (is_elementwise_ctor (fsig, etype)) {
 			gboolean indirect = FALSE;
 			int dreg = load_simd_vreg (cfg, cmethod, args [0], &indirect);
