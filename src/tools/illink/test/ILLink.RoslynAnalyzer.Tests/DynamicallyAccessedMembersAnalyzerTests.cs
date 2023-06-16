@@ -15,7 +15,7 @@ namespace ILLink.RoslynAnalyzer.Tests
 	{
 		static Task VerifyDynamicallyAccessedMembersAnalyzer (
 			string source,
-			bool consoleApplication = false,
+			bool consoleApplication,
 			params DiagnosticResult[] expected)
 		{
 			return VerifyCS.VerifyAnalyzerAsync (
