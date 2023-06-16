@@ -151,10 +151,6 @@ void findCallSiteSig(
 CORINFO_CLASS_HANDLE getTokenTypeAsHandle(
           CORINFO_RESOLVED_TOKEN* pResolvedToken) override;
 
-bool isValidToken(
-          CORINFO_MODULE_HANDLE module,
-          unsigned metaTOK) override;
-
 bool isValidStringRef(
           CORINFO_MODULE_HANDLE module,
           unsigned metaTOK) override;

@@ -238,13 +238,6 @@ CORINFO_CLASS_HANDLE interceptor_ICJI::getTokenTypeAsHandle(
     return original_ICorJitInfo->getTokenTypeAsHandle(pResolvedToken);
 }
 
-bool interceptor_ICJI::isValidToken(
-          CORINFO_MODULE_HANDLE module,
-          unsigned metaTOK)
-{
-    return original_ICorJitInfo->isValidToken(module, metaTOK);
-}
-
 bool interceptor_ICJI::isValidStringRef(
           CORINFO_MODULE_HANDLE module,
           unsigned metaTOK)

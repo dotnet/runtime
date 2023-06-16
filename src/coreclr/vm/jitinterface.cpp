@@ -613,38 +613,6 @@ CORINFO_CLASS_HANDLE CEEInfo::getTokenTypeAsHandle (CORINFO_RESOLVED_TOKEN * pRe
 
 
 /*********************************************************************/
-// Checks if the given metadata token is valid
-bool CEEInfo::isValidToken (
-        CORINFO_MODULE_HANDLE       module,
-        mdToken                     metaTOK)
-{
-    CONTRACTL {
-        NOTHROW;
-        GC_NOTRIGGER;
-        MODE_ANY;
-    } CONTRACTL_END;
-
-    bool result = false;
-
-    JIT_TO_EE_TRANSITION_LEAF();
-
-    if (IsDynamicScope(module))
-    {
-        // No explicit token validation for dynamic code. Validation is
-        // side-effect of token resolution.
-        result = true;
-    }
-    else
-    {
-        result = ((Module *)module)->GetMDImport()->IsValidToken(metaTOK);
-    }
-
-    EE_TO_JIT_TRANSITION_LEAF();
-
-    return result;
-}
-
-/*********************************************************************/
 // Checks if the given metadata token is valid StringRef
 bool CEEInfo::isValidStringRef (
         CORINFO_MODULE_HANDLE       module,

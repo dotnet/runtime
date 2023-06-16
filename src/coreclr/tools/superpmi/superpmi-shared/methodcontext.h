@@ -766,10 +766,6 @@ public:
     void dmpDoesFieldBelongToClass(DLDL key, bool value);
     bool repDoesFieldBelongToClass(CORINFO_FIELD_HANDLE fld, CORINFO_CLASS_HANDLE cls);
 
-    void recIsValidToken(CORINFO_MODULE_HANDLE module, unsigned metaTOK, bool result);
-    void dmpIsValidToken(DLD key, DWORD value);
-    bool repIsValidToken(CORINFO_MODULE_HANDLE module, unsigned metaTOK);
-
     void recGetClassNameFromMetadata(CORINFO_CLASS_HANDLE cls, char* className, const char** namespaceName);
     void dmpGetClassNameFromMetadata(DLD key, DD value);
     const char* repGetClassNameFromMetadata(CORINFO_CLASS_HANDLE cls, const char** namespaceName);
@@ -1068,7 +1064,7 @@ enum mcPackets
     //Retired5 = 141,
     Packet_CheckMethodModifier = 142,
     Packet_CompileMethod = 143,
-    Packet_IsValidToken = 144,
+    //Packet_IsValidToken = 144,
     //Packet_FindNameOfToken = 145,
     //PacketCR_RecordCallSite = 146,
     Packet_GetLazyStringLiteralHelper = 147,

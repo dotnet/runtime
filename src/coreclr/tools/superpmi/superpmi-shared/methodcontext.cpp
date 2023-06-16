@@ -6243,37 +6243,6 @@ bool MethodContext::repDoesFieldBelongToClass(CORINFO_FIELD_HANDLE fld, CORINFO_
     return value != 0;
 }
 
-void MethodContext::recIsValidToken(CORINFO_MODULE_HANDLE module, unsigned metaTOK, bool result)
-{
-    if (IsValidToken == nullptr)
-        IsValidToken = new LightWeightMap<DLD, DWORD>();
-
-    DLD key;
-    ZeroMemory(&key, sizeof(key)); // Zero key including any struct padding
-    key.A = CastHandle(module);
-    key.B = (DWORD)metaTOK;
-
-    DWORD value = result ? 1 : 0;
-    IsValidToken->Add(key, value);
-    DEBUG_REC(dmpIsValidToken(key, value));
-}
-void MethodContext::dmpIsValidToken(DLD key, DWORD value)
-{
-    printf("IsValidToken key mod-%016" PRIX64 " tok-%08X, value res-%u", key.A, key.B, value);
-}
-bool MethodContext::repIsValidToken(CORINFO_MODULE_HANDLE module, unsigned metaTOK)
-{
-    DLD key;
-    ZeroMemory(&key, sizeof(key)); // Zero key including any struct padding
-    key.A = CastHandle(module);
-    key.B = (DWORD)metaTOK;
-
-    DWORD value = LookupByKeyOrMiss(IsValidToken, key, ": key %016" PRIX64 "", key.A);
-
-    DEBUG_REP(dmpIsValidToken(key, value));
-    return value != 0;
-}
-
 void MethodContext::recGetClassNameFromMetadata(CORINFO_CLASS_HANDLE cls, char* className, const char** namespaceName)
 {
     if (GetClassNameFromMetadata == nullptr)

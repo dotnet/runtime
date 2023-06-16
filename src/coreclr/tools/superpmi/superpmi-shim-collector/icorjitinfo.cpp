@@ -393,17 +393,6 @@ CORINFO_CLASS_HANDLE interceptor_ICJI::getTokenTypeAsHandle(CORINFO_RESOLVED_TOK
     return temp;
 }
 
-// Checks if the given metadata token is valid
-bool interceptor_ICJI::isValidToken(CORINFO_MODULE_HANDLE module, /* IN  */
-                                    unsigned              metaTOK /* IN  */
-                                    )
-{
-    mc->cr->AddCall("isValidToken");
-    bool result = original_ICorJitInfo->isValidToken(module, metaTOK);
-    mc->recIsValidToken(module, metaTOK, result);
-    return result;
-}
-
 // Checks if the given metadata token is valid StringRef
 bool interceptor_ICJI::isValidStringRef(CORINFO_MODULE_HANDLE module, /* IN  */
                                         unsigned              metaTOK /* IN  */

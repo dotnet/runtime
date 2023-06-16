@@ -1857,8 +1857,6 @@ namespace Internal.JitInterface
             return CorInfoCanSkipVerificationResult.CORINFO_VERIFICATION_CAN_SKIP;
         }
 
-        private bool isValidToken(CORINFO_MODULE_STRUCT_* module, uint metaTOK)
-        { throw new NotImplementedException("isValidToken"); }
         private bool isValidStringRef(CORINFO_MODULE_STRUCT_* module, uint metaTOK)
         { throw new NotImplementedException("isValidStringRef"); }
 
