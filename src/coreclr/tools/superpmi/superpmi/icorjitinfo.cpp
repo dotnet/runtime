@@ -1752,12 +1752,11 @@ void MyICJI::recordRelocation(void*    location,   /* IN  */
                               void*    locationRW, /* IN  */
                               void*    target,     /* IN  */
                               uint16_t fRelocType, /* IN  */
-                              uint16_t slotNum,    /* IN  */
                               int32_t  addlDelta   /* IN  */
                               )
 {
     jitInstance->mc->cr->AddCall("recordRelocation");
-    jitInstance->mc->cr->repRecordRelocation(location, target, fRelocType, slotNum, addlDelta);
+    jitInstance->mc->cr->repRecordRelocation(location, target, fRelocType, addlDelta);
 }
 
 uint16_t MyICJI::getRelocTypeHint(void* target)

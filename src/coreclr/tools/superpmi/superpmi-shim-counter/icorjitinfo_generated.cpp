@@ -1346,11 +1346,10 @@ void interceptor_ICJI::recordRelocation(
           void* locationRW,
           void* target,
           uint16_t fRelocType,
-          uint16_t slotNum,
           int32_t addlDelta)
 {
     mcs->AddCall("recordRelocation");
-    original_ICorJitInfo->recordRelocation(location, locationRW, target, fRelocType, slotNum, addlDelta);
+    original_ICorJitInfo->recordRelocation(location, locationRW, target, fRelocType, addlDelta);
 }
 
 uint16_t interceptor_ICJI::getRelocTypeHint(

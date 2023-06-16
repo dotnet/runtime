@@ -175,7 +175,7 @@ struct JitInterfaceCallbacks
     JITINTERFACE_HRESULT (* getPgoInstrumentationResults)(void * thisHandle, CorInfoExceptionClass** ppException, CORINFO_METHOD_HANDLE ftnHnd, ICorJitInfo::PgoInstrumentationSchema** pSchema, uint32_t* pCountSchemaItems, uint8_t** pInstrumentationData, ICorJitInfo::PgoSource* pgoSource);
     JITINTERFACE_HRESULT (* allocPgoInstrumentationBySchema)(void * thisHandle, CorInfoExceptionClass** ppException, CORINFO_METHOD_HANDLE ftnHnd, ICorJitInfo::PgoInstrumentationSchema* pSchema, uint32_t countSchemaItems, uint8_t** pInstrumentationData);
     void (* recordCallSite)(void * thisHandle, CorInfoExceptionClass** ppException, uint32_t instrOffset, CORINFO_SIG_INFO* callSig, CORINFO_METHOD_HANDLE methodHandle);
-    void (* recordRelocation)(void * thisHandle, CorInfoExceptionClass** ppException, void* location, void* locationRW, void* target, uint16_t fRelocType, uint16_t slotNum, int32_t addlDelta);
+    void (* recordRelocation)(void * thisHandle, CorInfoExceptionClass** ppException, void* location, void* locationRW, void* target, uint16_t fRelocType, int32_t addlDelta);
     uint16_t (* getRelocTypeHint)(void * thisHandle, CorInfoExceptionClass** ppException, void* target);
     uint32_t (* getExpectedTargetArchitecture)(void * thisHandle, CorInfoExceptionClass** ppException);
     uint32_t (* getJitFlags)(void * thisHandle, CorInfoExceptionClass** ppException, CORJIT_FLAGS* flags, uint32_t sizeInBytes);
@@ -1802,11 +1802,10 @@ public:
           void* locationRW,
           void* target,
           uint16_t fRelocType,
-          uint16_t slotNum,
           int32_t addlDelta)
 {
     CorInfoExceptionClass* pException = nullptr;
-    _callbacks->recordRelocation(_thisHandle, &pException, location, locationRW, target, fRelocType, slotNum, addlDelta);
+    _callbacks->recordRelocation(_thisHandle, &pException, location, locationRW, target, fRelocType, addlDelta);
     if (pException != nullptr) throw pException;
 }
 

@@ -3645,11 +3645,8 @@ namespace Internal.JitInterface
             }
         }
 
-        private void recordRelocation(void* location, void* locationRW, void* target, ushort fRelocType, ushort slotNum, int addlDelta)
+        private void recordRelocation(void* location, void* locationRW, void* target, ushort fRelocType, int addlDelta)
         {
-            // slotNum is not used
-            Debug.Assert(slotNum == 0);
-
             int relocOffset;
             BlockType locationBlock = findKnownBlock(location, out relocOffset);
             Debug.Assert(locationBlock != BlockType.Unknown, "BlockType.Unknown not expected");
