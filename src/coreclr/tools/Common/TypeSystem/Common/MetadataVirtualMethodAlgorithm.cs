@@ -315,6 +315,7 @@ namespace Internal.TypeSystem
 
         /// <summary>
         /// Find matching a matching method by name and sig on a type. (Restricted to virtual methods only)
+        /// This will find both exact and equivalent matches, but will prefer exact matches.
         /// </summary>
         /// <param name="targetMethod"></param>
         /// <param name="currentType"></param>
@@ -352,6 +353,9 @@ namespace Internal.TypeSystem
                     }
                 }
             }
+
+            if (implMethod == null)
+                return implMethodEquivalent;
 
             return implMethod;
         }

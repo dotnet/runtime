@@ -176,9 +176,8 @@ namespace ILCompiler
             }
         }
 
-        public virtual bool SupportsTypeEquivalence => Target.IsWindows;
-        public virtual bool SupportsCOMInterop => Target.IsWindows;
-
+        public override bool SupportsTypeEquivalence => Target.IsWindows;
+        public override bool SupportsCOMInterop => Target.IsWindows;
     }
 
     internal class VectorOfTFieldLayoutAlgorithm : FieldLayoutAlgorithm
