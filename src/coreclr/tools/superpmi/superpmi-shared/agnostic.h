@@ -602,12 +602,6 @@ struct ResolveTokenValue
     DWORD                              exceptionCode;
 };
 
-struct TryResolveTokenValue
-{
-    Agnostic_CORINFO_RESOLVED_TOKENout tokenOut;
-    DWORD                              success;
-};
-
 struct GetTokenTypeAsHandleValue
 {
     DWORDLONG hMethod;

@@ -1811,12 +1811,6 @@ namespace Internal.JitInterface
             pResolvedToken.cbMethodSpec = 0;
         }
 
-        private bool tryResolveToken(ref CORINFO_RESOLVED_TOKEN pResolvedToken)
-        {
-            resolveToken(ref pResolvedToken);
-            return true;
-        }
-
         private void findSig(CORINFO_MODULE_STRUCT_* module, uint sigTOK, CORINFO_CONTEXT_STRUCT* context, CORINFO_SIG_INFO* sig)
         {
             var methodIL = HandleToObject(module);

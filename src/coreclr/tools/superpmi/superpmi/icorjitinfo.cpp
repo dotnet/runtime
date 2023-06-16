@@ -307,13 +307,6 @@ void MyICJI::resolveToken(/* IN, OUT */ CORINFO_RESOLVED_TOKEN* pResolvedToken)
         ThrowException(exceptionCode);
 }
 
-// Resolve metadata token into runtime method handles.
-bool MyICJI::tryResolveToken(/* IN, OUT */ CORINFO_RESOLVED_TOKEN* pResolvedToken)
-{
-    jitInstance->mc->cr->AddCall("tryResolveToken");
-    return jitInstance->mc->repTryResolveToken(pResolvedToken);
-}
-
 // Signature information about the call sig
 void MyICJI::findSig(CORINFO_MODULE_HANDLE  module,  /* IN */
                      unsigned               sigTOK,  /* IN */

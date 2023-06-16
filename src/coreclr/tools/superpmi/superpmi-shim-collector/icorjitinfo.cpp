@@ -359,14 +359,6 @@ void interceptor_ICJI::resolveToken(/* IN, OUT */ CORINFO_RESOLVED_TOKEN* pResol
     });
 }
 
-bool interceptor_ICJI::tryResolveToken(/* IN, OUT */ CORINFO_RESOLVED_TOKEN* pResolvedToken)
-{
-    mc->cr->AddCall("tryResolveToken");
-    bool success = original_ICorJitInfo->tryResolveToken(pResolvedToken);
-    mc->recResolveToken(pResolvedToken, success);
-    return success;
-}
-
 // Signature information about the call sig
 void interceptor_ICJI::findSig(CORINFO_MODULE_HANDLE  module,  /* IN */
                                unsigned               sigTOK,  /* IN */

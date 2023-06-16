@@ -1425,42 +1425,6 @@ void MethodContext::repResolveToken(CORINFO_RESOLVED_TOKEN* pResolvedToken, DWOR
     *exceptionCode = (DWORD)value.exceptionCode;
 }
 
-void MethodContext::recTryResolveToken(CORINFO_RESOLVED_TOKEN* pResolvedToken, bool success)
-{
-    if (TryResolveToken == nullptr)
-        TryResolveToken = new LightWeightMap<Agnostic_CORINFO_RESOLVED_TOKENin, TryResolveTokenValue>();
-
-    Agnostic_CORINFO_RESOLVED_TOKENin key;
-    ZeroMemory(&key, sizeof(key)); // Zero key including any struct padding
-    key = SpmiRecordsHelper::CreateAgnostic_CORINFO_RESOLVED_TOKENin(pResolvedToken);
-
-    TryResolveTokenValue value;
-
-    value.tokenOut = SpmiRecordsHelper::StoreAgnostic_CORINFO_RESOLVED_TOKENout(pResolvedToken, ResolveToken);
-    value.success  = success ? 0 : 1;
-
-    TryResolveToken->Add(key, value);
-    DEBUG_REC(dmpTryResolveToken(key, value));
-}
-void MethodContext::dmpTryResolveToken(const Agnostic_CORINFO_RESOLVED_TOKENin& key, const TryResolveTokenValue& value)
-{
-    printf("TryResolveToken key: %s\n", SpmiDumpHelper::DumpAgnostic_CORINFO_RESOLVED_TOKENin(key).c_str());
-    printf(", value: %s failed-%u", SpmiDumpHelper::DumpAgnostic_CORINFO_RESOLVED_TOKENout(value.tokenOut).c_str(),
-           value.success);
-}
-bool MethodContext::repTryResolveToken(CORINFO_RESOLVED_TOKEN* pResolvedToken)
-{
-    Agnostic_CORINFO_RESOLVED_TOKENin key;
-    ZeroMemory(&key, sizeof(key)); // Zero key including any struct padding
-    key = SpmiRecordsHelper::CreateAgnostic_CORINFO_RESOLVED_TOKENin(pResolvedToken);
-
-    TryResolveTokenValue value = LookupByKeyOrMiss(TryResolveToken, key, ": token %x", pResolvedToken->token);
-    DEBUG_REP(dmpTryResolveToken(key, value));
-
-    SpmiRecordsHelper::Restore_CORINFO_RESOLVED_TOKENout(pResolvedToken, value.tokenOut, ResolveToken);
-    return (DWORD)value.success == 0; // recTryResolveToken encodes success as 0
-}
-
 void MethodContext::recGetCallInfo(CORINFO_RESOLVED_TOKEN* pResolvedToken,
                                    CORINFO_RESOLVED_TOKEN* pConstrainedResolvedToken,
                                    CORINFO_METHOD_HANDLE   callerHandle,

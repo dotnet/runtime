@@ -136,9 +136,6 @@ PatchpointInfo* getOSRInfo(
 void resolveToken(
           CORINFO_RESOLVED_TOKEN* pResolvedToken) override;
 
-bool tryResolveToken(
-          CORINFO_RESOLVED_TOKEN* pResolvedToken) override;
-
 void findSig(
           CORINFO_MODULE_HANDLE module,
           unsigned sigTOK,

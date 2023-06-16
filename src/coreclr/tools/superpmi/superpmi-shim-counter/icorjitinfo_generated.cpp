@@ -243,13 +243,6 @@ void interceptor_ICJI::resolveToken(
     original_ICorJitInfo->resolveToken(pResolvedToken);
 }
 
-bool interceptor_ICJI::tryResolveToken(
-          CORINFO_RESOLVED_TOKEN* pResolvedToken)
-{
-    mcs->AddCall("tryResolveToken");
-    return original_ICorJitInfo->tryResolveToken(pResolvedToken);
-}
-
 void interceptor_ICJI::findSig(
           CORINFO_MODULE_HANDLE module,
           unsigned sigTOK,
