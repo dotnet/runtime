@@ -653,7 +653,6 @@ public:
             void                    *locationRW,
             void                    *target,
             uint16_t                 fRelocType,
-            uint16_t                 slot,
             int32_t                  addlDelta) override final;
 
     uint16_t getRelocTypeHint(void * target) override final;
