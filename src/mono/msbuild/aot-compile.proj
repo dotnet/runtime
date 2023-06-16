@@ -17,6 +17,7 @@
         </ItemGroup>
         <Message Importance="High" Text="aot-compile: compiling $(_TestDll); MONO_PATH: $(MonoPath)" />
         <Exec Command="ldd $(_MonoPath)/libcoreclr.so" />
+        <Exec Command="ldconfig -p" />
         <Exec Command="$(_AotCompiler) $(_TestDll)" EnvironmentVariables="@(MonoEnvVar)" />
     </Target>
 </Project>
