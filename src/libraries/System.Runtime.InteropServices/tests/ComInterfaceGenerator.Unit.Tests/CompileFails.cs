@@ -35,6 +35,15 @@ namespace ComInterfaceGenerator.Unit.Tests
                     .WithLocation(0)
                     .WithArguments("IComInterface2")
             } };
+            yield return new object[] { ID(), codeSnippets.InterfaceWithPropertiesAndEvents, new[]
+            {
+               VerifyComInterfaceGenerator.Diagnostic(GeneratorDiagnostics.InstancePropertyDeclaredInInterface)
+                   .WithLocation(0)
+                   .WithArguments("Property", "INativeAPI"),
+               VerifyComInterfaceGenerator.Diagnostic(GeneratorDiagnostics.InstanceEventDeclaredInInterface)
+                   .WithLocation(1)
+                   .WithArguments("Event", "INativeAPI"),
+            } };
         }
 
         [Theory]

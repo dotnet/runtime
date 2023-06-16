@@ -25,7 +25,7 @@ namespace ComInterfaceGenerator.Unit.Tests
                public interface I
                {
                }
-               
+
                [GeneratedComClass]
                public class C : I
                {
@@ -63,12 +63,12 @@ namespace ComInterfaceGenerator.Unit.Tests
                public interface I
                {
                }
-               
+
                [GeneratedComClass]
                public class C : I
                {
                }
-               
+
                public static class Program
                {
                    public static void Foo(I i)
@@ -95,13 +95,13 @@ namespace ComInterfaceGenerator.Unit.Tests
             string source = """
                using System.Runtime.InteropServices;
                using System.Runtime.InteropServices.Marshalling;
-               
+
                [GeneratedComInterface]
                [Guid("0B7171CD-04A3-41B6-AD10-FE86D52197DD")]
                public interface I
                {
                }
-               
+
                [GeneratedComClass]
                public class C : I
                {
@@ -133,18 +133,18 @@ namespace ComInterfaceGenerator.Unit.Tests
             string source = """
                using System.Runtime.InteropServices;
                using System.Runtime.InteropServices.Marshalling;
-               
+
                [GeneratedComInterface]
                [Guid("0B7171CD-04A3-41B6-AD10-FE86D52197DD")]
                public interface I
                {
                }
-               
+
                [GeneratedComClass]
                public class C : I
                {
                }
-               
+
                public static class Program
                {
                    public static void Foo(I i)
@@ -171,13 +171,13 @@ namespace ComInterfaceGenerator.Unit.Tests
             string source = """
                 using System.Runtime.InteropServices;
                 using System.Runtime.InteropServices.Marshalling;
-                
+
                 [GeneratedComInterface]
                 [Guid("0B7171CD-04A3-41B6-AD10-FE86D52197DD")]
                 public interface I
                 {
                 }
-                
+
                 [GeneratedComClass]
                 public class C : I
                 {
@@ -269,7 +269,7 @@ namespace ComInterfaceGenerator.Unit.Tests
                 """;
 
             await VerifyAnalyzerAsync(source);
-        }        
+        }
 
         [Fact]
         public async Task GetTypedObjectForIUnknown()
@@ -309,18 +309,18 @@ namespace ComInterfaceGenerator.Unit.Tests
             string source = """
                 using System.Runtime.InteropServices;
                 using System.Runtime.InteropServices.Marshalling;
-      
+
                 [GeneratedComInterface]
                 [Guid("0B7171CD-04A3-41B6-AD10-FE86D52197DD")]
                 public interface I
                 {
                 }
-      
+
                 [GeneratedComClass]
                 public class C : I
                 {
                 }
-      
+
                 public static class Program
                 {
                     public static void Foo(I i)
@@ -347,18 +347,18 @@ namespace ComInterfaceGenerator.Unit.Tests
             string source = """
                 using System.Runtime.InteropServices;
                 using System.Runtime.InteropServices.Marshalling;
-      
+
                 [GeneratedComInterface]
                 [Guid("0B7171CD-04A3-41B6-AD10-FE86D52197DD")]
                 public interface I
                 {
                 }
-      
+
                 [GeneratedComClass]
                 public class C : I
                 {
                 }
-      
+
                 public static class Program
                 {
                     public static void Foo(I i)
@@ -385,18 +385,18 @@ namespace ComInterfaceGenerator.Unit.Tests
             string source = """
                using System.Runtime.InteropServices;
                using System.Runtime.InteropServices.Marshalling;
-      
+
                [GeneratedComInterface]
                [Guid("0B7171CD-04A3-41B6-AD10-FE86D52197DD")]
                public interface I
                {
                }
-      
+
                [GeneratedComClass]
                public class C : I
                {
                }
-      
+
                public static class Program
                {
                    public static void Foo(I i)
@@ -432,13 +432,13 @@ namespace ComInterfaceGenerator.Unit.Tests
             string source = """
               using System.Runtime.InteropServices;
               using System.Runtime.InteropServices.Marshalling;
-      
+
               [GeneratedComInterface]
               [Guid("0B7171CD-04A3-41B6-AD10-FE86D52197DD")]
               public interface I
               {
               }
-      
+
               [GeneratedComClass]
               public class C : I
               {
@@ -449,7 +449,7 @@ namespace ComInterfaceGenerator.Unit.Tests
               public interface J
               {
               }
-      
+
               public static class Program
               {
                   public static void Foo(I i)
@@ -483,18 +483,18 @@ namespace ComInterfaceGenerator.Unit.Tests
             string source = """
                 using System.Runtime.InteropServices;
                 using System.Runtime.InteropServices.Marshalling;
-      
+
                 [GeneratedComInterface]
                 [Guid("0B7171CD-04A3-41B6-AD10-FE86D52197DD")]
                 public interface I
                 {
                 }
-      
+
                 [GeneratedComClass]
                 public class C : I
                 {
                 }
-      
+
                 public static class Program
                 {
                     public static void Foo(nint i)
@@ -507,6 +507,28 @@ namespace ComInterfaceGenerator.Unit.Tests
                 """;
 
             await VerifyAnalyzerAsync(source);
+        }
+
+        [Fact]
+        public async Task SetNullToComImportField()
+        {
+            string source = """
+              using System.Runtime.InteropServices;
+              using System.Runtime.InteropServices.Marshalling;
+
+              [ComImport]
+              [Guid("0BADBF92-749A-44DB-9DA0-C8E2EEC783E2")]
+              public interface J
+              {
+              }
+
+              public class X
+              {
+                    public static J j = null;
+              }
+              """;
+
+              await VerifyAnalyzerAsync(source);
         }
 
         private Task VerifyAnalyzerAsync(string source)
