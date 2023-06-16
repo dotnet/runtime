@@ -722,7 +722,7 @@ namespace System.Net.Http
         protected internal override Task<HttpResponseMessage> SendAsync(HttpRequestMessage request,
             CancellationToken cancellationToken)
         {
-            HttpMessageHandler handler = SetupHandlerChain();
+            HttpMessageHandler handler = _handler ?? SetupHandlerChain();
             return handler.SendAsync(request, cancellationToken);
         }
 
