@@ -39,7 +39,7 @@ namespace Microsoft.Interop
                 {
                     Diagnostics = generator.Diagnostics.Add(new GeneratorDiagnostic.NotSupported(info, context)
                     {
-                    NotSupportedDetails = SR.InOutAttributeByRefNotSupported
+                        NotSupportedDetails = SR.InOutAttributeByRefNotSupported
                     })
                 };
             }
@@ -49,19 +49,19 @@ namespace Microsoft.Interop
                 {
                     Diagnostics = generator.Diagnostics.Add(new GeneratorDiagnostic.NotSupported(info, context)
                     {
-                    NotSupportedDetails = SR.InAttributeNotSupportedWithoutOut
+                        NotSupportedDetails = SR.InAttributeNotSupportedWithoutOut
                     })
-                    };
-                }
-            else if (info.ByValueContentsMarshalKind != ByValueContentsMarshalKind.Default)
-                && !generator.SupportsByValueMarshalKind(info.ByValueContentsMarshalKind, context))
-                    // TODO: Emit diagnostic for unnecesary attributes instead of failing the compilation.
-                    return generator with
+                };
+            }
+            else if (info.ByValueContentsMarshalKind != ByValueContentsMarshalKind.Default
+                && !generator.Generator.SupportsByValueMarshalKind(info.ByValueContentsMarshalKind, context))
             {
-                        Diagnostics = generator.Diagnostics.Add(new GeneratorDiagnostic.NotSupported(info, context)
+                return generator with
                 {
-                    NotSupportedDetails = SR.InOutAttributeMarshalerNotSupported
-                        })
+                    Diagnostics = generator.Diagnostics.Add(new GeneratorDiagnostic.NotSupported(info, context)
+                    {
+                        NotSupportedDetails = SR.InOutAttributeMarshalerNotSupported
+                    })
                 };
             }
             return generator;
