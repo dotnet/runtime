@@ -7,6 +7,8 @@ Project("{9A19103F-16F7-4668-BE54-9A1E7A4F7556}") = "System.IO.FileSystem.Access
 EndProject
 Project("{9A19103F-16F7-4668-BE54-9A1E7A4F7556}") = "System.IO.FileSystem.AccessControl", "..\System.IO.FileSystem.AccessControl\src\System.IO.FileSystem.AccessControl.csproj", "{28ACBF6E-C0FF-46BE-B9C0-0FA1AE05C340}"
 EndProject
+Project("{9A19103F-16F7-4668-BE54-9A1E7A4F7556}") = "ComInterfaceGenerator", "..\System.Runtime.InteropServices\gen\ComInterfaceGenerator\ComInterfaceGenerator.csproj", "{3CA4B29C-71BF-4709-8DA4-E1466A80FDB1}"
+EndProject
 Project("{9A19103F-16F7-4668-BE54-9A1E7A4F7556}") = "LibraryImportGenerator", "..\System.Runtime.InteropServices\gen\LibraryImportGenerator\LibraryImportGenerator.csproj", "{AABA6C21-1DC9-471F-979E-F35930A106F3}"
 EndProject
 Project("{9A19103F-16F7-4668-BE54-9A1E7A4F7556}") = "Microsoft.Interop.SourceGeneration", "..\System.Runtime.InteropServices\gen\Microsoft.Interop.SourceGeneration\Microsoft.Interop.SourceGeneration.csproj", "{CDB32066-5BD2-46EB-AFF1-07554FBF6942}"
@@ -53,6 +55,10 @@ Global
 		{28ACBF6E-C0FF-46BE-B9C0-0FA1AE05C340}.Debug|Any CPU.Build.0 = Debug|Any CPU
 		{28ACBF6E-C0FF-46BE-B9C0-0FA1AE05C340}.Release|Any CPU.ActiveCfg = Release|Any CPU
 		{28ACBF6E-C0FF-46BE-B9C0-0FA1AE05C340}.Release|Any CPU.Build.0 = Release|Any CPU
+		{3CA4B29C-71BF-4709-8DA4-E1466A80FDB1}.Debug|Any CPU.ActiveCfg = Debug|Any CPU
+		{3CA4B29C-71BF-4709-8DA4-E1466A80FDB1}.Debug|Any CPU.Build.0 = Debug|Any CPU
+		{3CA4B29C-71BF-4709-8DA4-E1466A80FDB1}.Release|Any CPU.ActiveCfg = Release|Any CPU
+		{3CA4B29C-71BF-4709-8DA4-E1466A80FDB1}.Release|Any CPU.Build.0 = Release|Any CPU
 		{AABA6C21-1DC9-471F-979E-F35930A106F3}.Debug|Any CPU.ActiveCfg = Debug|Any CPU
 		{AABA6C21-1DC9-471F-979E-F35930A106F3}.Debug|Any CPU.Build.0 = Debug|Any CPU
 		{AABA6C21-1DC9-471F-979E-F35930A106F3}.Release|Any CPU.ActiveCfg = Release|Any CPU
@@ -100,6 +106,7 @@ Global
 		{2593060B-10ED-40C1-8943-3C016EFD8928} = {BF0DEEC5-58A6-4156-B44B-E3C248A01523}
 		{28ACBF6E-C0FF-46BE-B9C0-0FA1AE05C340} = {5A0B73BB-E1B6-4034-AA56-A82762FD405F}
 		{E1E671BC-A82F-400A-9C93-ACB199A43BDA} = {5A0B73BB-E1B6-4034-AA56-A82762FD405F}
+		{3CA4B29C-71BF-4709-8DA4-E1466A80FDB1} = {82996086-0F1B-4E0F-9121-07C396EF0EC7}
 		{AABA6C21-1DC9-471F-979E-F35930A106F3} = {82996086-0F1B-4E0F-9121-07C396EF0EC7}
 		{CDB32066-5BD2-46EB-AFF1-07554FBF6942} = {82996086-0F1B-4E0F-9121-07C396EF0EC7}
 	EndGlobalSection

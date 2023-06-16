@@ -2,6 +2,7 @@
 // The .NET Foundation licenses this file to you under the MIT license.
 
 using System;
+using System.Collections.Generic;
 using System.Diagnostics;
 using System.Diagnostics.Tracing;
 using System.Diagnostics.CodeAnalysis;
@@ -27,15 +28,25 @@ namespace System
 
         // Parse a string specifying a list of assemblies and types
         // containing a startup hook, and call each hook in turn.
-        private static void ProcessStartupHooks()
+        private static void ProcessStartupHooks(string diagnosticStartupHooks)
         {
             if (!IsSupported)
                 return;
 
             string? startupHooksVariable = AppContext.GetData("STARTUP_HOOKS") as string;
-            if (startupHooksVariable == null)
-            {
+            if (null == startupHooksVariable && string.IsNullOrEmpty(diagnosticStartupHooks))
                 return;
+
+            List<string> startupHookParts = new();
+
+            if (!string.IsNullOrEmpty(diagnosticStartupHooks))
+            {
+                startupHookParts.AddRange(diagnosticStartupHooks.Split(Path.PathSeparator));
+            }
+
+            if (null != startupHooksVariable)
+            {
+                startupHookParts.AddRange(startupHooksVariable.Split(Path.PathSeparator));
             }
 
             ReadOnlySpan<char> disallowedSimpleAssemblyNameChars = stackalloc char[4]
@@ -47,9 +58,8 @@ namespace System
             };
 
             // Parse startup hooks variable
-            string[] startupHookParts = startupHooksVariable.Split(Path.PathSeparator);
-            StartupHookNameOrPath[] startupHooks = new StartupHookNameOrPath[startupHookParts.Length];
-            for (int i = 0; i < startupHookParts.Length; i++)
+            StartupHookNameOrPath[] startupHooks = new StartupHookNameOrPath[startupHookParts.Count];
+            for (int i = 0; i < startupHookParts.Count; i++)
             {
                 string startupHookPart = startupHookParts[i];
                 if (string.IsNullOrEmpty(startupHookPart))

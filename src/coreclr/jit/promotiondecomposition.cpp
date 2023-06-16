@@ -50,6 +50,7 @@ class DecompositionPlan
     };
 
     Compiler*                       m_compiler;
+    ReplaceVisitor*                 m_replacer;
     jitstd::vector<AggregateInfo*>& m_aggregates;
     PromotionLiveness*              m_liveness;
     GenTree*                        m_store;
@@ -61,6 +62,7 @@ class DecompositionPlan
 
 public:
     DecompositionPlan(Compiler*                       comp,
+                      ReplaceVisitor*                 replacer,
                       jitstd::vector<AggregateInfo*>& aggregates,
                       PromotionLiveness*              liveness,
                       GenTree*                        store,
@@ -68,6 +70,7 @@ public:
                       bool                            dstInvolvesReplacements,
                       bool                            srcInvolvesReplacements)
         : m_compiler(comp)
+        , m_replacer(replacer)
         , m_aggregates(aggregates)
         , m_liveness(liveness)
         , m_store(store)
@@ -718,6 +721,7 @@ private:
                     if (srcDeaths.IsReplacementDying((unsigned)replacementIndex))
                     {
                         src->gtFlags |= GTF_VAR_DEATH;
+                        m_replacer->CheckForwardSubForLastUse(entry.FromLclNum);
                     }
                 }
             }
@@ -768,13 +772,32 @@ private:
 
         if (remainderStrategy.Type == RemainderStrategy::Primitive)
         {
-            GenTree* src;
+            GenTree* src = nullptr;
             if (m_src->OperIs(GT_LCL_VAR, GT_LCL_FLD))
             {
                 GenTreeLclVarCommon* srcLcl = m_src->AsLclVarCommon();
-                src = m_compiler->gtNewLclFldNode(srcLcl->GetLclNum(), remainderStrategy.PrimitiveType,
-                                                  srcLcl->GetLclOffs() + remainderStrategy.PrimitiveOffset);
-                m_compiler->lvaSetVarDoNotEnregister(srcLcl->GetLclNum() DEBUGARG(DoNotEnregisterReason::LocalField));
+
+                // Check if the source has a regularly promoted field at this offset.
+                LclVarDsc* srcLclDsc  = m_compiler->lvaGetDesc(srcLcl);
+                unsigned   srcLclOffs = srcLcl->GetLclOffs() + remainderStrategy.PrimitiveOffset;
+
+                unsigned int fieldLcl =
+                    srcLclDsc->lvPromoted ? m_compiler->lvaGetFieldLocal(srcLclDsc, srcLclOffs) : BAD_VAR_NUM;
+                if (fieldLcl != BAD_VAR_NUM)
+                {
+                    LclVarDsc* dsc = m_compiler->lvaGetDesc(fieldLcl);
+                    if (genTypeSize(dsc->lvType) == genTypeSize(remainderStrategy.PrimitiveType))
+                    {
+                        src = m_compiler->gtNewLclvNode(fieldLcl, dsc->lvType);
+                    }
+                }
+
+                if (src == nullptr)
+                {
+                    src = m_compiler->gtNewLclFldNode(srcLcl->GetLclNum(), remainderStrategy.PrimitiveType, srcLclOffs);
+                    m_compiler->lvaSetVarDoNotEnregister(srcLcl->GetLclNum()
+                                                             DEBUGARG(DoNotEnregisterReason::LocalField));
+                }
             }
             else
             {
@@ -783,18 +806,44 @@ private:
                 PropagateIndirFlags(src, indirFlags);
             }
 
-            GenTree* store;
+            GenTree* store = nullptr;
             if (m_store->OperIsLocalStore())
             {
                 GenTreeLclVarCommon* dstLcl = m_store->AsLclVarCommon();
-                store = m_compiler->gtNewStoreLclFldNode(dstLcl->GetLclNum(), remainderStrategy.PrimitiveType,
-                                                         dstLcl->GetLclOffs() + remainderStrategy.PrimitiveOffset, src);
-                m_compiler->lvaSetVarDoNotEnregister(dstLcl->GetLclNum() DEBUGARG(DoNotEnregisterReason::LocalField));
+
+                // Check if the destination has a regularly promoted field at this offset.
+                LclVarDsc* dstLclDsc  = m_compiler->lvaGetDesc(dstLcl);
+                unsigned   dstLclOffs = dstLcl->GetLclOffs() + remainderStrategy.PrimitiveOffset;
+
+                unsigned int fieldLcl =
+                    dstLclDsc->lvPromoted ? m_compiler->lvaGetFieldLocal(dstLclDsc, dstLclOffs) : BAD_VAR_NUM;
+                if (fieldLcl != BAD_VAR_NUM)
+                {
+                    LclVarDsc* dsc = m_compiler->lvaGetDesc(fieldLcl);
+                    if (genTypeSize(dsc->lvType) == genTypeSize(remainderStrategy.PrimitiveType))
+                    {
+                        // Since the destination is regularly promoted the
+                        // source must be physically promoted to get here. That
+                        // means we always expect to see a LCL_FLD for the
+                        // source here that we can retype to what matches the
+                        // promoted field.
+                        assert(src->OperIs(GT_LCL_FLD));
+                        src->gtType = dsc->lvType;
+
+                        store = m_compiler->gtNewStoreLclVarNode(fieldLcl, src);
+                    }
+                }
+
+                if (store == nullptr)
+                {
+                    store = m_compiler->gtNewStoreLclFldNode(dstLcl->GetLclNum(), src->TypeGet(), dstLclOffs, src);
+                    m_compiler->lvaSetVarDoNotEnregister(dstLcl->GetLclNum()
+                                                             DEBUGARG(DoNotEnregisterReason::LocalField));
+                }
             }
             else
             {
-                store = m_compiler->gtNewStoreIndNode(remainderStrategy.PrimitiveType,
-                                                      grabAddr(remainderStrategy.PrimitiveOffset), src);
+                store = m_compiler->gtNewStoreIndNode(src->TypeGet(), grabAddr(remainderStrategy.PrimitiveOffset), src);
                 PropagateIndirFlags(store, indirFlags);
             }
 
@@ -1038,7 +1087,7 @@ void ReplaceVisitor::HandleStore(GenTree** use, GenTree* user)
         DecompositionStatementList result;
         EliminateCommasInBlockOp(store, &result);
 
-        DecompositionPlan plan(m_compiler, m_aggregates, m_liveness, store, src, dstInvolvesReplacements,
+        DecompositionPlan plan(m_compiler, this, m_aggregates, m_liveness, store, src, dstInvolvesReplacements,
                                srcInvolvesReplacements);
 
         if (dstInvolvesReplacements)
