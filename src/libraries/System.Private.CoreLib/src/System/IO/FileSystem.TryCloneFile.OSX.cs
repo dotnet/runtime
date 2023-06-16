@@ -53,7 +53,7 @@ namespace System.IO
                 // it's locked by something else, and then delete it. It should also fail if destination == source since it's already locked.
                 try
                 {
-                    using SafeFileHandle? dstHandle = SafeFileHandle.Open(destFullPath, FileMode.Open, FileAccess.ReadWrite,
+                    using SafeFileHandle? dstHandle = SafeFileHandle.OpenNoFollowSymlink(destFullPath, FileMode.Open, FileAccess.ReadWrite,
                         FileShare.None, FileOptions.None, preallocationSize: 0, out bool wasSymlink, createOpenException: CreateOpenExceptionForCopyFile);
                     if (wasSymlink)
                     {
