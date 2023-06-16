@@ -2235,12 +2235,6 @@ public:
     virtual CORINFO_CLASS_HANDLE getTokenTypeAsHandle (
             CORINFO_RESOLVED_TOKEN *    pResolvedToken /* IN  */) = 0;
 
-    // Checks if the given metadata token is valid
-    virtual bool isValidToken (
-            CORINFO_MODULE_HANDLE       module,     /* IN  */
-            unsigned                    metaTOK     /* IN  */
-            ) = 0;
-
     // Checks if the given metadata token is valid StringRef
     virtual bool isValidStringRef (
             CORINFO_MODULE_HANDLE       module,     /* IN  */
