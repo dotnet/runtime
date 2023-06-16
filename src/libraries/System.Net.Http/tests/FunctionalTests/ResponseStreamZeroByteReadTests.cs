@@ -126,7 +126,7 @@ namespace System.Net.Http.Functional.Tests
 
                 if (!useSsl)
                 {
-                    // SslStream does zero byte reads under the cover
+                    // SslStream does zero byte reads under the covers
                     Assert.False(sawZeroByteRead.Task.IsCompleted);
                 }
 

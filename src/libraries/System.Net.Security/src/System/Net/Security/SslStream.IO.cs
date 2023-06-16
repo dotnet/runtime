@@ -713,8 +713,8 @@ namespace System.Net.Security
             }
 
             // Do zero byte read to conserve resources:
-            // 1. We postpone allocation of read buffers. For example Kestrel may have idle connections without buffer until new request comes in.
-            // 2. The underlying stream may need to allocate GCHandle for async IO. If we postpone that until we have some data, we may be able to avoid it.
+            // 1. We postpone allocation of read buffers (on all platforms). For example Kestrel may have idle connections without buffer until new request comes in.
+            // 2. The underlying stream may need to allocate GCHandle for async IO (on Windows). If we postpone that until we have some data, we may be able to avoid it.
             //    That is not only important for CPU but also for memory fragmentation as pinned buffers are difficult to deal with.
             // Note that if the underlying stream does not support blocking on zero byte reads, then this will
             // complete immediately and won't save any memory, but will still function correctly.
