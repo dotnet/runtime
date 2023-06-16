@@ -189,19 +189,21 @@ namespace Microsoft.Interop.JavaScript
 
             Debug.Assert(jsExportAttr is not null);
 
-            var generatorDiagnostics = new GeneratorDiagnostics();
+            var generatorDiagnostics = new GeneratorDiagnosticBag();
+            var descriptorProvider = new DescriptorProvider();
 
             // Process the JSExport attribute
             JSExportData? jsExportData = ProcessJSExportAttribute(jsExportAttr!);
 
             if (jsExportData is null)
             {
-                generatorDiagnostics.ReportConfigurationNotSupported(jsExportAttr!, "Invalid syntax");
+                generatorDiagnostics.ReportConfigurationNotSupported(descriptorProvider, jsExportAttr!, "Invalid syntax");
                 jsExportData = new JSExportData();
             }
 
             // Create the stub.
-            var signatureContext = JSSignatureContext.Create(symbol, environment, generatorDiagnostics, ct);
+            var marshallingInfoParserDiagnosticBag = new MarshallingInfoParserDiagnosticsBag(descriptorProvider, generatorDiagnostics, SR.ResourceManager, typeof(FxResources.Microsoft.Interop.JavaScript.JSImportGenerator.SR));
+            var signatureContext = JSSignatureContext.Create(symbol, environment, marshallingInfoParserDiagnosticBag, ct);
 
             var containingTypeContext = new ContainingSyntaxContext(originalSyntax);
 
@@ -289,7 +291,9 @@ namespace Microsoft.Interop.JavaScript
         private static (MemberDeclarationSyntax, StatementSyntax, AttributeListSyntax, ImmutableArray<DiagnosticInfo>) GenerateSource(
             IncrementalStubGenerationContext incrementalContext)
         {
-            var diagnostics = new GeneratorDiagnostics();
+            var diagnostics = new GeneratorDiagnosticBag();
+
+            var descriptorProvider = new DescriptorProvider();
 
             // Generate stub code
             var stubGenerator = new JSExportCodeGenerator(
@@ -298,9 +302,9 @@ namespace Microsoft.Interop.JavaScript
             incrementalContext.SignatureContext.SignatureContext.ElementTypeInformation,
             incrementalContext.JSExportData,
             incrementalContext.SignatureContext,
-            (elementInfo, ex) =>
+            ex =>
             {
-                diagnostics.ReportMarshallingNotSupported(incrementalContext.DiagnosticLocation, elementInfo, ex.NotSupportedDetails, ex.DiagnosticProperties ?? ImmutableDictionary<string, string>.Empty);
+                diagnostics.ReportGeneratorDiagnostic(descriptorProvider, incrementalContext.DiagnosticLocation, ex);
             },
             incrementalContext.GeneratorFactoryKey.GeneratorFactory);
 

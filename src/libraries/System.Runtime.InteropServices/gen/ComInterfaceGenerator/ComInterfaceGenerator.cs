@@ -235,22 +235,25 @@ namespace Microsoft.Interop
                 }
             }
 
-            var generatorDiagnostics = new GeneratorDiagnostics();
+            var generatorDiagnostics = new GeneratorDiagnosticBag();
+            var diagnosticDescriptors = new DiagnosticDescriptorProvider();
 
             if (lcidConversionAttr is not null)
             {
                 // Using LCIDConversion with source-generated interop is not supported
-                generatorDiagnostics.ReportConfigurationNotSupported(lcidConversionAttr, nameof(TypeNames.LCIDConversionAttribute));
+                generatorDiagnostics.ReportConfigurationNotSupported(diagnosticDescriptors, lcidConversionAttr, nameof(TypeNames.LCIDConversionAttribute));
             }
 
             GeneratedComInterfaceCompilationData.TryGetGeneratedComInterfaceAttributeFromInterface(symbol.ContainingType, out var generatedComAttribute);
             var generatedComInterfaceAttributeData = GeneratedComInterfaceCompilationData.GetDataFromAttribute(generatedComAttribute);
             // Create the stub.
+
+            var marshallingInfoParserDiagnosticBag = new MarshallingInfoParserDiagnosticsBag(new DiagnosticDescriptorProvider(), generatorDiagnostics, SR.ResourceManager, typeof(FxResources.Microsoft.Interop.ComInterfaceGenerator.SR));
             var signatureContext = SignatureContext.Create(
                 symbol,
                 DefaultMarshallingInfoParser.Create(
                     environment,
-                    generatorDiagnostics,
+                    marshallingInfoParserDiagnosticBag,
                     symbol,
                     generatedComInterfaceAttributeData,
                     generatedComAttribute),

@@ -13,16 +13,16 @@ namespace Microsoft.Interop
     {
         private readonly IMarshallingGeneratorFactory _inner;
 
-        public IMarshallingGenerator Create(
+        public ResolvedGenerator Create(
             TypePositionInfo info,
             StubCodeContext context)
         {
             if (info.MarshallingAttributeInfo is NoMarshallingInfo && CustomTypeToErrorMessageMap.TryGetValue(info.ManagedType, out string errorMessage))
             {
-                throw new MarshallingNotSupportedException(info, context)
+                return ResolvedGenerator.NotSupported(new(info, context)
                 {
                     NotSupportedDetails = errorMessage
-                };
+                });
             }
             return _inner.Create(info, context);
         }

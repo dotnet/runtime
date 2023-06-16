@@ -32,11 +32,9 @@ namespace Microsoft.Interop.JavaScript
             ImmutableArray<TypePositionInfo> argTypes,
             JSImportData attributeData,
             JSSignatureContext signatureContext,
-            Action<TypePositionInfo, MarshallingNotSupportedException> marshallingNotSupportedCallback,
+            Action<GeneratorDiagnostic> marshallingNotSupportedCallback,
             IMarshallingGeneratorFactory generatorFactory)
         {
-            Action<TypePositionInfo, string> extendedInvariantViolationsCallback = (info, details) =>
-                marshallingNotSupportedCallback(info, new MarshallingNotSupportedException(info, _context) { NotSupportedDetails = details });
             _signatureContext = signatureContext;
             ManagedToNativeStubCodeContext innerContext = new ManagedToNativeStubCodeContext(targetFramework, targetFrameworkVersion, ReturnIdentifier, ReturnIdentifier);
             _context = new JSImportCodeContext(attributeData, innerContext);
@@ -44,7 +42,7 @@ namespace Microsoft.Interop.JavaScript
 
             foreach (var failure in bindingFailures)
             {
-                marshallingNotSupportedCallback(failure.Info, failure.Exception);
+                marshallingNotSupportedCallback(failure);
             }
             if (_marshallers.ManagedReturnMarshaller.Generator.UsesNativeIdentifier(_marshallers.ManagedReturnMarshaller.TypeInfo, null))
             {
@@ -59,7 +57,7 @@ namespace Microsoft.Interop.JavaScript
                 BoundGenerator spanArg = _marshallers.SignatureMarshallers.FirstOrDefault(m => m.TypeInfo.MarshallingAttributeInfo is JSMarshallingInfo(_, JSSpanTypeInfo));
                 if (spanArg != default)
                 {
-                    marshallingNotSupportedCallback(spanArg.TypeInfo, new MarshallingNotSupportedException(spanArg.TypeInfo, _context)
+                    marshallingNotSupportedCallback(new GeneratorDiagnostic.NotSupported(spanArg.TypeInfo, _context)
                     {
                         NotSupportedDetails = SR.SpanAndTaskNotSupported
                     });

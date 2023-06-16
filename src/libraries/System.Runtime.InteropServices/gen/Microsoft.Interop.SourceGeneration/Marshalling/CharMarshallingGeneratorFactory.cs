@@ -33,7 +33,7 @@ namespace Microsoft.Interop
             _stringMarshallingAttribute = stringMarshallingAttribute;
         }
 
-        public IMarshallingGenerator Create(TypePositionInfo info, StubCodeContext context)
+        public ResolvedGenerator Create(TypePositionInfo info, StubCodeContext context)
         {
             if (info.ManagedType is SpecialTypeInfo { SpecialType: SpecialType.System_Char })
             {
@@ -43,16 +43,16 @@ namespace Microsoft.Interop
             return _inner.Create(info, context);
         }
 
-        private IMarshallingGenerator CreateCharMarshaller(TypePositionInfo info, StubCodeContext context)
+        private ResolvedGenerator CreateCharMarshaller(TypePositionInfo info, StubCodeContext context)
         {
             MarshallingInfo marshalInfo = info.MarshallingAttributeInfo;
             if (marshalInfo is NoMarshallingInfo)
             {
                 // [Compat] Require explicit marshalling information.
-                throw new MarshallingNotSupportedException(info, context)
+                return ResolvedGenerator.NotSupported(new(info, context)
                 {
                     NotSupportedDetails = string.Format(SR.MarshallingStringOrCharAsUndefinedNotSupported, _stringMarshallingAttribute)
-                };
+                });
             }
 
             // Explicit MarshalAs takes precedence over string encoding info
@@ -62,7 +62,7 @@ namespace Microsoft.Interop
                 {
                     case UnmanagedType.I2:
                     case UnmanagedType.U2:
-                        return _useBlittableMarshallerForUtf16 ? s_blittable : s_utf16Char;
+                        return ResolvedGenerator.Resolved(_useBlittableMarshallerForUtf16 ? s_blittable : s_utf16Char);
                 }
             }
             else if (marshalInfo is MarshallingInfoStringSupport marshalStringInfo)
@@ -70,21 +70,21 @@ namespace Microsoft.Interop
                 switch (marshalStringInfo.CharEncoding)
                 {
                     case CharEncoding.Utf16:
-                        return _useBlittableMarshallerForUtf16 ? s_blittable : s_utf16Char;
+                        return ResolvedGenerator.Resolved(_useBlittableMarshallerForUtf16 ? s_blittable : s_utf16Char);
                     case CharEncoding.Utf8:
-                        throw new MarshallingNotSupportedException(info, context) // [Compat] UTF-8 is not supported for char
+                        return ResolvedGenerator.NotSupported(new(info, context) // [Compat] UTF-8 is not supported for char
                         {
                             NotSupportedDetails = SR.Format(SR.MarshallingCharAsSpecifiedStringMarshallingNotSupported, nameof(CharEncoding.Utf8))
-                        };
+                        });
                     case CharEncoding.Custom:
-                        throw new MarshallingNotSupportedException(info, context)
+                        return ResolvedGenerator.NotSupported(new(info, context)
                         {
                             NotSupportedDetails = SR.MarshallingCharAsStringMarshallingCustomNotSupported
-                        };
+                        });
                 }
             }
 
-            throw new MarshallingNotSupportedException(info, context);
+            return ResolvedGenerator.NotSupported(new(info, context));
         }
     }
 }

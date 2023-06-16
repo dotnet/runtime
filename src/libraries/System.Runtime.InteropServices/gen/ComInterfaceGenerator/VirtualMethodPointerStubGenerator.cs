@@ -18,7 +18,8 @@ namespace Microsoft.Interop
         public static (MethodDeclarationSyntax, ImmutableArray<DiagnosticInfo>) GenerateManagedToNativeStub(
             IncrementalMethodStubGenerationContext methodStub)
         {
-            var diagnostics = new GeneratorDiagnostics();
+            var diagnosticDescriptors = new DiagnosticDescriptorProvider();
+            var diagnostics = new GeneratorDiagnosticBag();
 
             // Generate stub code
             var stubGenerator = new ManagedToNativeVTableMethodGenerator(
@@ -27,9 +28,9 @@ namespace Microsoft.Interop
                 methodStub.SignatureContext.ElementTypeInformation,
                 methodStub.VtableIndexData.SetLastError,
                 methodStub.VtableIndexData.ImplicitThisParameter,
-                (elementInfo, ex) =>
+                ex =>
                 {
-                    diagnostics.ReportMarshallingNotSupported(methodStub.DiagnosticLocation, elementInfo, ex.NotSupportedDetails);
+                    diagnostics.ReportGeneratorDiagnostic(diagnosticDescriptors, methodStub.DiagnosticLocation, ex);
                 },
                 methodStub.ManagedToUnmanagedGeneratorFactory.GeneratorFactory);
 
@@ -68,7 +69,8 @@ namespace Microsoft.Interop
         public static (MethodDeclarationSyntax, ImmutableArray<DiagnosticInfo>) GenerateNativeToManagedStub(
             IncrementalMethodStubGenerationContext methodStub)
         {
-            var diagnostics = new GeneratorDiagnostics();
+            var diagnosticDescriptors = new DiagnosticDescriptorProvider();
+            var diagnostics = new GeneratorDiagnosticBag();
             ImmutableArray<TypePositionInfo> elements = AddImplicitElementInfos(methodStub);
 
             // Generate stub code
@@ -76,9 +78,9 @@ namespace Microsoft.Interop
                 methodStub.UnmanagedToManagedGeneratorFactory.Key.TargetFramework,
                 methodStub.UnmanagedToManagedGeneratorFactory.Key.TargetFrameworkVersion,
                 elements,
-                (elementInfo, ex) =>
+                ex =>
                 {
-                    diagnostics.ReportMarshallingNotSupported(methodStub.DiagnosticLocation, elementInfo, ex.NotSupportedDetails);
+                    diagnostics.ReportGeneratorDiagnostic(diagnosticDescriptors, methodStub.DiagnosticLocation, ex);
                 },
                 methodStub.UnmanagedToManagedGeneratorFactory.GeneratorFactory);
 
@@ -179,7 +181,7 @@ namespace Microsoft.Interop
                 method.UnmanagedToManagedGeneratorFactory.Key.TargetFrameworkVersion,
                 AddImplicitElementInfos(method),
                 // Swallow diagnostics here since the diagnostics will be reported by the unmanaged->managed stub generation
-                (elementInfo, ex) => { },
+                diag => { },
                 method.UnmanagedToManagedGeneratorFactory.GeneratorFactory);
 
             List<FunctionPointerParameterSyntax> functionPointerParameters = new();

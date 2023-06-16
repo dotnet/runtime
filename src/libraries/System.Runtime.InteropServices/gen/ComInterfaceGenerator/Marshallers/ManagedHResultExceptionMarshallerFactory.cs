@@ -27,16 +27,16 @@ namespace Microsoft.Interop
             _direction = direction;
         }
 
-        public IMarshallingGenerator Create(TypePositionInfo info, StubCodeContext context)
+        public ResolvedGenerator Create(TypePositionInfo info, StubCodeContext context)
         {
             if (info.MarshallingAttributeInfo is ManagedHResultExceptionMarshallingInfo)
             {
-                return _direction switch
+                return ResolvedGenerator.Resolved(_direction switch
                 {
                     MarshalDirection.UnmanagedToManaged => new UnmanagedToManagedMarshaller(),
                     MarshalDirection.ManagedToUnmanaged => new ManagedToUnmanagedMarshaller(),
                     _ => throw new UnreachableException()
-                };
+                });
             }
             else
             {
