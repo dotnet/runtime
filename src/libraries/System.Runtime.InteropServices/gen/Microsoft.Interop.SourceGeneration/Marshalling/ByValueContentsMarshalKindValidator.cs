@@ -2,8 +2,6 @@
 // The .NET Foundation licenses this file to you under the MIT license.
 
 using System;
-using System.Collections.Generic;
-using System.Text;
 
 namespace Microsoft.Interop
 {
@@ -53,16 +51,30 @@ namespace Microsoft.Interop
                     })
                 };
             }
-            else if (info.ByValueContentsMarshalKind != ByValueContentsMarshalKind.Default
-                && !generator.Generator.SupportsByValueMarshalKind(info.ByValueContentsMarshalKind, context))
+            else if (info.ByValueContentsMarshalKind != ByValueContentsMarshalKind.Default)
             {
-                return generator with
+                ByValueMarshalKindSupport support = generator.Generator.SupportsByValueMarshalKind(info.ByValueContentsMarshalKind, context);
+                if (support == ByValueMarshalKindSupport.NotSupported)
                 {
-                    Diagnostics = generator.Diagnostics.Add(new GeneratorDiagnostic.NotSupported(info, context)
+                    return generator with
                     {
-                        NotSupportedDetails = SR.InOutAttributeMarshalerNotSupported
-                    })
-                };
+                        Diagnostics = generator.Diagnostics.Add(new GeneratorDiagnostic.NotSupported(info, context)
+                        {
+                            NotSupportedDetails = SR.InOutAttributeMarshalerNotSupported
+                        })
+                    };
+                }
+                else if (support == ByValueMarshalKindSupport.Unnecessary)
+                {
+                    // TODO: Emit diagnostic for unnecesary attributes instead of failing the compilation.
+                    return generator with
+                    {
+                        Diagnostics = generator.Diagnostics.Add(new GeneratorDiagnostic.NotSupported(info, context)
+                        {
+                            NotSupportedDetails = SR.InOutAttributeMarshalerNotSupported
+                        })
+                    };
+                }
             }
             return generator;
         }

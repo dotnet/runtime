@@ -16,6 +16,8 @@ namespace Microsoft.Interop
         UnmanagedType UnmanagedType,
         CharEncoding CharEncoding) : MarshallingInfoStringSupport(CharEncoding)
     {
+        public required Location AttributeSyntaxLocation { get; init; }
+
         // UnmanagedType.LPUTF8Str is not in netstandard2.0, so we define a constant for the value here.
         // See https://docs.microsoft.com/dotnet/api/system.runtime.interopservices.unmanagedtype
         internal const UnmanagedType UnmanagedType_LPUTF8Str = (UnmanagedType)0x30;
@@ -74,6 +76,8 @@ namespace Microsoft.Interop
             bool isArrayType = unmanagedType == UnmanagedType.LPArray || unmanagedType == UnmanagedType.ByValArray;
             UnmanagedType elementUnmanagedType = (UnmanagedType)SizeAndParamIndexInfo.UnspecifiedConstSize;
 
+            Location attributeLocation = attributeData.ApplicationSyntaxReference.SyntaxTree.GetLocation(attributeData.ApplicationSyntaxReference.Span);
+
             // All other data on attribute is defined as NamedArguments.
             foreach (KeyValuePair<string, TypedConstant> namedArg in attributeData.NamedArguments)
             {
@@ -104,7 +108,10 @@ namespace Microsoft.Interop
             {
                 if (type is INamedTypeSymbol { IsComImport: true })
                 {
-                    return new MarshalAsInfo(unmanagedType, _defaultInfo.CharEncoding);
+                    return new MarshalAsInfo(unmanagedType, _defaultInfo.CharEncoding)
+                    {
+                        AttributeSyntaxLocation = attributeLocation
+                    };
                 }
                 return ComInterfaceMarshallingInfoProvider.CreateComInterfaceMarshallingInfo(_compilation, type);
             }
@@ -121,8 +128,11 @@ namespace Microsoft.Interop
                 if (elementUnmanagedType != (UnmanagedType)SizeAndParamIndexInfo.UnspecifiedConstSize)
                 {
                     elementMarshallingInfo = elementType.SpecialType == SpecialType.System_String
-                        ? CreateStringMarshallingInfo(elementType, elementUnmanagedType)
-                        : new MarshalAsInfo(elementUnmanagedType, _defaultInfo.CharEncoding);
+                        ? CreateStringMarshallingInfo(elementType, elementUnmanagedType, attributeLocation)
+                        : new MarshalAsInfo(elementUnmanagedType, _defaultInfo.CharEncoding)
+                        {
+                            AttributeSyntaxLocation = attributeLocation
+                        };
                 }
                 else
                 {
@@ -141,15 +151,19 @@ namespace Microsoft.Interop
 
             if (type.SpecialType == SpecialType.System_String)
             {
-                return CreateStringMarshallingInfo(type, unmanagedType);
+                return CreateStringMarshallingInfo(type, unmanagedType, attributeLocation);
             }
 
-            return new MarshalAsInfo(unmanagedType, _defaultInfo.CharEncoding);
+            return new MarshalAsInfo(unmanagedType, _defaultInfo.CharEncoding)
+            {
+                AttributeSyntaxLocation = attributeLocation
+            };
         }
 
         private MarshallingInfo CreateStringMarshallingInfo(
             ITypeSymbol type,
-            UnmanagedType unmanagedType)
+            UnmanagedType unmanagedType,
+            Location attributeLocation)
         {
             string? marshallerName = unmanagedType switch
             {
@@ -161,7 +175,12 @@ namespace Microsoft.Interop
             };
 
             if (marshallerName is null)
-                return new MarshalAsInfo(unmanagedType, _defaultInfo.CharEncoding);
+            {
+                return new MarshalAsInfo(unmanagedType, _defaultInfo.CharEncoding)
+                {
+                    AttributeSyntaxLocation = attributeLocation
+                };
+            }
 
             return StringMarshallingInfoProvider.CreateStringMarshallingInfo(_compilation, type, marshallerName);
         }
