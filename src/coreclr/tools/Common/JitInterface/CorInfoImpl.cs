@@ -1789,14 +1789,6 @@ namespace Internal.JitInterface
 
                     type = type.MakeArrayType();
                 }
-                else if (pResolvedToken.tokenType == CorInfoTokenKind.CORINFO_TOKENKIND_Casting)
-                {
-                    if (type.IsVoid)
-                        ThrowHelper.ThrowInvalidProgramException(ExceptionStringID.InvalidProgramSpecific, methodIL.OwningMethod);
-
-                    if (type.IsNullable)
-                        type = type.Instantiation[0];
-                }
                 pResolvedToken.hClass = ObjectToHandle(type);
 
 #if !SUPPORT_JIT

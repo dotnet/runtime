@@ -1156,28 +1156,25 @@ void CEEInfo::resolveToken(/* IN, OUT */ CORINFO_RESOLVED_TOKEN * pResolvedToken
     // tokenType specific verification and transformations
     //
     CorElementType et = th.GetInternalCorElementType();
-
-    if (tokenType != CORINFO_TOKENKIND_Ldtoken)
+    switch (tokenType)
     {
-        // Disallow ELEMENT_TYPE_BYREF and ELEMENT_TYPE_VOID
-        if (et == ELEMENT_TYPE_BYREF || et == ELEMENT_TYPE_VOID)
-            COMPlusThrow(kInvalidProgramException);
+        case CORINFO_TOKENKIND_Ldtoken:
+            // Allow everything.
+            break;
 
-        switch (tokenType)
-        {
-            case CORINFO_TOKENKIND_Newarr:
-                th = ClassLoader::LoadArrayTypeThrowing(th);
-                break;
+        case CORINFO_TOKENKIND_Newarr:
+            // Disallow ELEMENT_TYPE_BYREF and ELEMENT_TYPE_VOID
+            if (et == ELEMENT_TYPE_BYREF || et == ELEMENT_TYPE_VOID)
+                COMPlusThrow(kInvalidProgramException);
 
-            case CORINFO_TOKENKIND_Casting:
-                // isinst and castclass to Nullable<T> is same as underlying type
-                if (Nullable::IsNullableType(th))
-                    th = th.AsMethodTable()->GetInstantiation()[0];
-                break;
+            th = ClassLoader::LoadArrayTypeThrowing(th);
+            break;
 
-            default:
-                break;
-        }
+        default:
+            // Disallow ELEMENT_TYPE_BYREF and ELEMENT_TYPE_VOID
+            if (et == ELEMENT_TYPE_BYREF || et == ELEMENT_TYPE_VOID)
+                COMPlusThrow(kInvalidProgramException);
+            break;
     }
 
     // The JIT interface should always return fully loaded types
