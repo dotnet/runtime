@@ -9,6 +9,7 @@ using System.Net.Test.Common;
 using System.Text;
 using System.Threading;
 using System.Threading.Tasks;
+using Microsoft.DotNet.XUnitExtensions;
 using Xunit;
 using Xunit.Abstractions;
 
@@ -17,7 +18,7 @@ namespace System.Net.Http.Functional.Tests
     public abstract class HttpMetricsTest : HttpClientHandlerTestBase
     {
         protected HttpClientHandler Handler { get; }
-
+        protected virtual bool TestHttpMessageInvoker => false;
         public HttpMetricsTest(ITestOutputHelper output) : base(output)
         {
             Handler = CreateHttpClientHandler();
@@ -28,11 +29,11 @@ namespace System.Net.Http.Functional.Tests
         {
             return LoopbackServerFactory.CreateClientAndServerAsync(async uri =>
             {
-                using HttpClient client = new HttpClient(Handler);
-                using InstrumentRecorder<long> recorder = CreateInstrumentRecorder<long>("http-client-current-requests");
+                using HttpMessageInvoker client = CreateHttpMessageInvoker();
+                using InstrumentRecorder<long> recorder = SetupInstrumentRecorder<long>("http-client-current-requests");
                 using HttpRequestMessage request = new(HttpMethod.Get, uri) { Version = UseVersion };
 
-                HttpResponseMessage response = await client.SendAsync(TestAsync, request);
+                HttpResponseMessage response = await SendAsync(client, request);
                 response.Dispose(); // Make sure disposal doesn't interfere with recording by enforcing early disposal.
 
                 Assert.Collection(recorder.GetMeasurements(),
@@ -51,13 +52,13 @@ namespace System.Net.Http.Functional.Tests
 
             await LoopbackServerFactory.CreateClientAndServerAsync(async uri =>
             {
-                using HttpClient client = new HttpClient(Handler);
+                using HttpMessageInvoker client = CreateHttpMessageInvoker();
 
                 // Enable recording request-duration to test the path with metrics enabled.
-                using InstrumentRecorder<double> unrelatedRecorder = CreateInstrumentRecorder<double>("http-client-request-duration");
+                using InstrumentRecorder<double> unrelatedRecorder = SetupInstrumentRecorder<double>("http-client-request-duration");
 
                 using HttpRequestMessage request = new(HttpMethod.Get, uri) { Version = UseVersion };
-                Task<HttpResponseMessage> clientTask = client.SendAsync(TestAsync, request);
+                Task<HttpResponseMessage> clientTask = SendAsync(client, request);
                 await Task.Delay(100);
                 using InstrumentRecorder<long> recorder = new(Handler.Meter, "http-client-current-requests");
                 instrumentEnabledSemaphore.Release();
@@ -79,11 +80,11 @@ namespace System.Net.Http.Functional.Tests
         {
             return LoopbackServerFactory.CreateClientAndServerAsync(async uri =>
             {
-                using HttpClient client = new HttpClient(Handler);
-                using InstrumentRecorder<double> recorder = CreateInstrumentRecorder<double>("http-client-request-duration");
+                using HttpMessageInvoker client = CreateHttpMessageInvoker();
+                using InstrumentRecorder<double> recorder = SetupInstrumentRecorder<double>("http-client-request-duration");
                 using HttpRequestMessage request = new(new HttpMethod(method), uri) { Version = UseVersion };
 
-                using HttpResponseMessage response = await client.SendAsync(TestAsync, request);
+                using HttpResponseMessage response = await SendAsync(client, request);
 
                 Measurement<double> m = recorder.GetMeasurements().Single();
                 VerifyRequestDuration(m, uri, ExpectedProtocolString, (int)statusCode, method);
@@ -99,15 +100,15 @@ namespace System.Net.Http.Functional.Tests
         {
             return LoopbackServerFactory.CreateClientAndServerAsync(async uri =>
             {
-                using HttpClient client = new HttpClient(Handler);
-                using InstrumentRecorder<double> recorder = CreateInstrumentRecorder<double>("http-client-request-duration");
+                using HttpMessageInvoker client = CreateHttpMessageInvoker();
+                using InstrumentRecorder<double> recorder = SetupInstrumentRecorder<double>("http-client-request-duration");
                 using HttpRequestMessage request = new(HttpMethod.Get, uri) { Version = UseVersion };
                 request.Options.SetCustomMetricsTags(new[]
                 {
                     new KeyValuePair<string, object>("route", "/test")
                 });
 
-                using HttpResponseMessage response = await client.SendAsync(TestAsync, request);
+                using HttpResponseMessage response = await SendAsync(client, request);
 
                 Measurement<double> m = recorder.GetMeasurements().Single();
                 VerifyRequestDuration(m, uri, ExpectedProtocolString, 200);
@@ -133,12 +134,18 @@ namespace System.Net.Http.Functional.Tests
         [InlineData(HttpCompletionOption.ResponseHeadersRead, ResponseContentType.Empty)]
         [InlineData(HttpCompletionOption.ResponseHeadersRead, ResponseContentType.ContentLength)]
         [InlineData(HttpCompletionOption.ResponseHeadersRead, ResponseContentType.TransferEncodingChunked)]
-        public Task RequestDuration_EnrichmentHandler_Success_Recorded(HttpCompletionOption completionOption, ResponseContentType responseContentType)
+        public async Task RequestDuration_EnrichmentHandler_Success_Recorded(HttpCompletionOption completionOption, ResponseContentType responseContentType)
         {
-            return LoopbackServerFactory.CreateClientAndServerAsync(async uri =>
+            if (TestHttpMessageInvoker)
+            {
+                // HttpCompletionOption not supported for HttpMessageInvoker, skipping.
+                return;
+            }
+
+            await LoopbackServerFactory.CreateClientAndServerAsync(async uri =>
             {
                 using HttpClient client = CreateHttpClient(new EnrichmentHandler(Handler));
-                using InstrumentRecorder<double> recorder = CreateInstrumentRecorder<double>("http-client-request-duration");
+                using InstrumentRecorder<double> recorder = SetupInstrumentRecorder<double>("http-client-request-duration");
                 using HttpRequestMessage request = new(HttpMethod.Get, uri) { Version = UseVersion };
                 using HttpResponseMessage response = await client.SendAsync(TestAsync, request, completionOption);
 
@@ -173,11 +180,11 @@ namespace System.Net.Http.Functional.Tests
             {
                 return LoopbackServerFactory.CreateServerAsync(async (redirectServer, redirectUri) =>
                 {
-                    using HttpClient client = CreateHttpClient(Handler);
-                    using InstrumentRecorder<long> recorder = CreateInstrumentRecorder<long>("http-client-current-requests");
+                    using HttpMessageInvoker client = CreateHttpMessageInvoker();
+                    using InstrumentRecorder<long> recorder = SetupInstrumentRecorder<long>("http-client-current-requests");
                     using HttpRequestMessage request = new(HttpMethod.Get, originalUri) { Version = UseVersion };
 
-                    Task clientTask = client.SendAsync(TestAsync, request);
+                    Task clientTask = SendAsync(client, request);
                     Task serverTask = originalServer.HandleRequestAsync(HttpStatusCode.Redirect, new[] { new HttpHeaderData("Location", redirectUri.AbsoluteUri) });
 
                     await Task.WhenAny(clientTask, serverTask);
@@ -202,11 +209,21 @@ namespace System.Net.Http.Functional.Tests
             if (disposing)
             {
                 Handler.Dispose();
-                Handler.Meter.Dispose();
+                Handler.Meter.Dispose(); // Dispose the custom Meter, if set.
             }
 
             base.Dispose(disposing);
         }
+
+        protected Task<HttpResponseMessage> SendAsync(HttpMessageInvoker invoker, HttpRequestMessage request) =>
+            TestHttpMessageInvoker ?
+            invoker.SendAsync(request, default) :
+            ((HttpClient)invoker).SendAsync(TestAsync, request);
+
+        protected HttpMessageInvoker CreateHttpMessageInvoker(HttpMessageHandler? handler = null) =>
+            TestHttpMessageInvoker ?
+            new HttpMessageInvoker(handler ?? Handler) :
+            CreateHttpClient(handler ?? Handler);
 
         protected static void VerifyRequestDuration(Measurement<double> measurement, Uri uri, string? protocol, int? statusCode, string method = "GET")
         {
@@ -268,7 +285,7 @@ namespace System.Net.Http.Functional.Tests
             }
         }
 
-        protected InstrumentRecorder<T> CreateInstrumentRecorder<T>(string instrumentName)
+        protected InstrumentRecorder<T> SetupInstrumentRecorder<T>(string instrumentName)
             where T : struct
         {
             Meter meter = new("System.Net.Http");
@@ -311,20 +328,24 @@ namespace System.Net.Http.Functional.Tests
         {
         }
 
-        
-
         [Fact]
-        public Task RequestDuration_EnrichmentHandler_ContentLengthError_Recorded()
+        public async Task RequestDuration_EnrichmentHandler_ContentLengthError_Recorded()
         {
-            return LoopbackServerFactory.CreateClientAndServerAsync(async uri =>
+            if (TestHttpMessageInvoker)
             {
-                using HttpClient client = CreateHttpClient(new EnrichmentHandler(Handler));
-                using InstrumentRecorder<double> recorder = CreateInstrumentRecorder<double>("http-client-request-duration");
+                // HttpMessageInvoker doesn't buffer content, skipping.
+                return;
+            }
+
+            await LoopbackServerFactory.CreateClientAndServerAsync(async uri =>
+            {
+                using HttpMessageInvoker client = CreateHttpMessageInvoker(new EnrichmentHandler(Handler));
+                using InstrumentRecorder<double> recorder = SetupInstrumentRecorder<double>("http-client-request-duration");
                 using HttpRequestMessage request = new(HttpMethod.Get, uri) { Version = UseVersion };
 
                 await Assert.ThrowsAsync<HttpRequestException>(async () =>
                 {
-                    using HttpResponseMessage response = await client.SendAsync(TestAsync, request);
+                    using HttpResponseMessage response = await SendAsync(client, request);
                 });
                 Measurement<double> m = recorder.GetMeasurements().Single();
                 VerifyRequestDuration(m, uri, ExpectedProtocolString, 200); ;
@@ -336,17 +357,22 @@ namespace System.Net.Http.Functional.Tests
         }
 
         [Fact]
-        public Task Send_FailedRequests_ContentLengthError_Recorded()
+        public async Task Send_FailedRequests_ContentLengthError_Recorded()
         {
-            return LoopbackServerFactory.CreateClientAndServerAsync(async uri =>
+            if (TestHttpMessageInvoker)
             {
-                using HttpClient client = CreateHttpClient(Handler);
-                using InstrumentRecorder<long> recorder = CreateInstrumentRecorder<long>("http-client-failed-requests");
+                // MessageInvoker doesn't buffer the response content, skipping.
+                return;
+            }
+            await LoopbackServerFactory.CreateClientAndServerAsync(async uri =>
+            {
+                using HttpMessageInvoker client = CreateHttpMessageInvoker();
+                using InstrumentRecorder<long> recorder = SetupInstrumentRecorder<long>("http-client-failed-requests");
                 using HttpRequestMessage request = new(HttpMethod.Get, uri) { Version = UseVersion };
 
                 await Assert.ThrowsAsync<HttpRequestException>(async () =>
                 {
-                    using HttpResponseMessage response = await client.SendAsync(TestAsync, request);
+                    using HttpResponseMessage response = await SendAsync(client, request);
                 });
 
                 Measurement<long> m = recorder.GetMeasurements().Single();
@@ -370,15 +396,15 @@ namespace System.Net.Http.Functional.Tests
         {
             await LoopbackServer.CreateServerAsync(async server =>
             {
-                using HttpClient client = CreateHttpClient(Handler);
-                using InstrumentRecorder<double> recorder = CreateInstrumentRecorder<double>("http-client-request-duration");
+                using HttpMessageInvoker client = CreateHttpMessageInvoker();
+                using InstrumentRecorder<double> recorder = SetupInstrumentRecorder<double>("http-client-request-duration");
                 using HttpRequestMessage request = new(HttpMethod.Get, server.Address)
                 {
                     Version = HttpVersion.Version20,
                     VersionPolicy = HttpVersionPolicy.RequestVersionOrLower
                 };
 
-                Task<HttpResponseMessage> clientTask = client.SendAsync(TestAsync, request);
+                Task<HttpResponseMessage> clientTask = SendAsync(client, request);
 
                 Debug.Print(malformedResponse.ToString());
 
@@ -413,12 +439,18 @@ namespace System.Net.Http.Functional.Tests
         }
 
         [Fact]
-        public Task GetStringAsync_FailedRequests_ContentLengthError_Recorded()
+        public async Task GetStringAsync_FailedRequests_ContentLengthError_Recorded()
         {
-            return LoopbackServerFactory.CreateClientAndServerAsync(async uri =>
+            if (TestHttpMessageInvoker)
+            {
+                // GetString not supported for HttpMessageInvoker, skipping.
+                return;
+            }
+
+            await LoopbackServerFactory.CreateClientAndServerAsync(async uri =>
             {
                 using HttpClient client = CreateHttpClient(Handler);
-                using InstrumentRecorder<long> recorder = CreateInstrumentRecorder<long>("http-client-failed-requests");
+                using InstrumentRecorder<long> recorder = SetupInstrumentRecorder<long>("http-client-failed-requests");
                 
                 await Assert.ThrowsAsync<HttpRequestException>(async () =>
                 {
@@ -433,13 +465,20 @@ namespace System.Net.Http.Functional.Tests
         }
     }
 
+    public class HttpMetricsTest_Http11_Async_HttpMessageInvoker : HttpMetricsTest_Http11_Async
+    {
+        protected override bool TestHttpMessageInvoker => true;
+        public HttpMetricsTest_Http11_Async_HttpMessageInvoker(ITestOutputHelper output) : base(output)
+        {
+        }
+    }
+
     public class HttpMetricsTest_Http11_Sync : HttpMetricsTest_Http11
     {
+        protected override bool TestAsync => base.TestAsync;
         public HttpMetricsTest_Http11_Sync(ITestOutputHelper output) : base(output)
         {
         }
-
-        protected override bool TestAsync => base.TestAsync;
     }
 
     [ConditionalClass(typeof(PlatformDetection), nameof(PlatformDetection.SupportsAlpn))]
@@ -457,11 +496,11 @@ namespace System.Net.Http.Functional.Tests
             {
                 return GetFactoryForVersion(HttpVersion.Version20).CreateServerAsync(async (redirectServer, redirectUri) =>
                 {
-                    using HttpClient client = CreateHttpClient(Handler);
-                    using InstrumentRecorder<double> recorder = CreateInstrumentRecorder<double>("http-client-request-duration");
+                    using HttpMessageInvoker client = CreateHttpMessageInvoker();
+                    using InstrumentRecorder<double> recorder = SetupInstrumentRecorder<double>("http-client-request-duration");
                     using HttpRequestMessage request = new(HttpMethod.Get, originalUri) { Version = HttpVersion.Version20 };
 
-                    Task clientTask = client.SendAsync(request);
+                    Task clientTask = SendAsync(client, request);
                     Task serverTask = originalServer.HandleRequestAsync(HttpStatusCode.Redirect, new[] { new HttpHeaderData("Location", redirectUri.AbsoluteUri) });
 
                     await Task.WhenAny(clientTask, serverTask);
@@ -488,10 +527,11 @@ namespace System.Net.Http.Functional.Tests
         public async Task RequestDuration_ProtocolError_Recorded()
         {
             using Http2LoopbackServer server = Http2LoopbackServer.CreateServer();
-            using HttpClient client = CreateHttpClient(Handler);
-            using InstrumentRecorder<double> recorder = CreateInstrumentRecorder<double>("http-client-request-duration");
+            using HttpMessageInvoker client = CreateHttpMessageInvoker();
+            using InstrumentRecorder<double> recorder = SetupInstrumentRecorder<double>("http-client-request-duration");
 
-            Task<HttpResponseMessage> sendTask = client.GetAsync(server.Address);
+            using HttpRequestMessage request = new(HttpMethod.Get, server.Address) { Version = HttpVersion.Version20 };
+            Task<HttpResponseMessage> sendTask = SendAsync(client, request);
 
             Http2LoopbackConnection connection = await server.EstablishConnectionAsync();
             int streamId = await connection.ReadRequestHeaderAsync();
@@ -513,10 +553,11 @@ namespace System.Net.Http.Functional.Tests
         public async Task FailedRequests_ProtocolError_Recorded()
         {
             using Http2LoopbackServer server = Http2LoopbackServer.CreateServer();
-            using HttpClient client = CreateHttpClient(Handler);
-            using InstrumentRecorder<long> recorder = CreateInstrumentRecorder<long>("http-client-failed-requests");
+            using HttpMessageInvoker client = CreateHttpMessageInvoker();
+            using InstrumentRecorder<long> recorder = SetupInstrumentRecorder<long>("http-client-failed-requests");
 
-            Task<HttpResponseMessage> sendTask = client.GetAsync(server.Address);
+            using HttpRequestMessage request = new(HttpMethod.Get, server.Address) { Version = HttpVersion.Version20 };
+            Task<HttpResponseMessage> sendTask = SendAsync(client, request);
 
             Http2LoopbackConnection connection = await server.EstablishConnectionAsync();
             int streamId = await connection.ReadRequestHeaderAsync();
@@ -535,11 +576,27 @@ namespace System.Net.Http.Functional.Tests
         }
     }
 
+    public class HttpMetricsTest_Http20_HttpMessageInvoker : HttpMetricsTest_Http20
+    {
+        protected override bool TestHttpMessageInvoker => true;
+        public HttpMetricsTest_Http20_HttpMessageInvoker(ITestOutputHelper output) : base(output)
+        {
+        }
+    }
+
     [ConditionalClass(typeof(HttpClientHandlerTestBase), nameof(IsQuicSupported))]
     public class HttpMetricsTest_Http30 : HttpMetricsTest
     {
         protected override Version UseVersion => HttpVersion.Version30;
         public HttpMetricsTest_Http30(ITestOutputHelper output) : base(output)
+        {
+        }
+    }
+
+    public class HttpMetricsTest_Http30_HttpMessageInvoker : HttpMetricsTest_Http30
+    {
+        protected override bool TestHttpMessageInvoker => true;
+        public HttpMetricsTest_Http30_HttpMessageInvoker(ITestOutputHelper output) : base(output)
         {
         }
     }
