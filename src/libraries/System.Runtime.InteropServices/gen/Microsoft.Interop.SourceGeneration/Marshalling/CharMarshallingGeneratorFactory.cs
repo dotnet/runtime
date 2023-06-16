@@ -18,14 +18,6 @@ namespace Microsoft.Interop
         private readonly bool _useBlittableMarshallerForUtf16;
         private readonly string _stringMarshallingAttribute;
 
-        // Needed for API compatibility with preview 4
-        public CharMarshallingGeneratorFactory(IMarshallingGeneratorFactory inner, bool useBlittableMarshallerForUtf16)
-        {
-            _inner = inner;
-            _useBlittableMarshallerForUtf16 = useBlittableMarshallerForUtf16;
-            _stringMarshallingAttribute = "LibraryImportGenerator";
-        }
-
         public CharMarshallingGeneratorFactory(IMarshallingGeneratorFactory inner, bool useBlittableMarshallerForUtf16, string stringMarshallingAttribute)
         {
             _inner = inner;
