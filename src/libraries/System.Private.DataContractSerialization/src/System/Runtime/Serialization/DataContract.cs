@@ -635,60 +635,36 @@ namespace System.Runtime.Serialization.DataContracts
 
                     if (!s_typeNameToBuiltInContract.TryGetValue(typeName, out DataContract? dataContract))
                     {
-                        Type? type = null;
-                        string name = typeName.Substring(7);
-                        if (name == "Char")
-                            type = typeof(char);
-                        else if (name == "Boolean")
-                            type = typeof(bool);
-                        else if (name == "SByte")
-                            type = typeof(sbyte);
-                        else if (name == "Byte")
-                            type = typeof(byte);
-                        else if (name == "Int16")
-                            type = typeof(short);
-                        else if (name == "UInt16")
-                            type = typeof(ushort);
-                        else if (name == "Int32")
-                            type = typeof(int);
-                        else if (name == "UInt32")
-                            type = typeof(uint);
-                        else if (name == "Int64")
-                            type = typeof(long);
-                        else if (name == "UInt64")
-                            type = typeof(ulong);
-                        else if (name == "Single")
-                            type = typeof(float);
-                        else if (name == "Double")
-                            type = typeof(double);
-                        else if (name == "Decimal")
-                            type = typeof(decimal);
-                        else if (name == "DateTime")
-                            type = typeof(DateTime);
-                        else if (name == "String")
-                            type = typeof(string);
-                        else if (name == "Byte[]")
-                            type = typeof(byte[]);
-                        else if (name == "Object")
-                            type = typeof(object);
-                        else if (name == "TimeSpan")
-                            type = typeof(TimeSpan);
-                        else if (name == "Guid")
-                            type = typeof(Guid);
-                        else if (name == "Uri")
-                            type = typeof(Uri);
-                        else if (name == "Xml.XmlQualifiedName")
-                            type = typeof(XmlQualifiedName);
-                        else if (name == "Enum")
-                            type = typeof(Enum);
-                        else if (name == "ValueType")
-                            type = typeof(ValueType);
-                        else if (name == "Array")
-                            type = typeof(Array);
-                        else if (name == "Xml.XmlElement")
-                            type = typeof(XmlElement);
-                        else if (name == "Xml.XmlNode[]")
-                            type = typeof(XmlNode[]);
+                        Type? type = typeName.AsSpan(7) switch
+                        {
+                            "Char" => typeof(char),
+                            "Boolean" => typeof(bool),
+                            "SByte" => typeof(sbyte),
+                            "Byte" => typeof(byte),
+                            "Int16" => typeof(short),
+                            "UInt16" => typeof(ushort),
+                            "Int32" => typeof(int),
+                            "UInt32" => typeof(uint),
+                            "Int64" => typeof(long),
+                            "UInt64" => typeof(ulong),
+                            "Single" => typeof(float),
+                            "Double" => typeof(double),
+                            "Decimal" => typeof(decimal),
+                            "DateTime" => typeof(DateTime),
+                            "String" => typeof(string),
+                            "Byte[]" => typeof(byte[]),
+                            "Object" => typeof(object),
+                            "TimeSpan" => typeof(TimeSpan),
+                            "Guid" => typeof(Guid),
+                            "Uri" => typeof(Uri),
+                            "Xml.XmlQualifiedName" => typeof(XmlQualifiedName),
+                            "Enum" => typeof(Enum),
+                            "ValueType" => typeof(ValueType),
+                            "Array" => typeof(Array),
+                            "Xml.XmlElement" => typeof(XmlElement),
+                            "Xml.XmlNode[]" => typeof(XmlNode[]),
+                            _ => null,
+                        };
 
                         if (type != null)
                             TryCreateBuiltInDataContract(type, out dataContract);
@@ -1595,7 +1571,7 @@ namespace System.Runtime.Serialization.DataContracts
                 }
                 if (localName != null)
                 {
-                    string tempLocalName = typeName.Substring(startIndex, endIndex - startIndex);
+                    ReadOnlySpan<char> tempLocalName = typeName.AsSpan(startIndex, endIndex - startIndex);
                     localName.Append(tempLocalName);
                 }
                 while ((startIndex = typeName.IndexOf('.', startIndex + 1, endIndex - startIndex - 1)) >= 0)

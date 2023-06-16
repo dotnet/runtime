@@ -165,6 +165,7 @@ using System.Collections.ObjectModel;
 using System.Diagnostics;
 using System.Diagnostics.CodeAnalysis;
 using System.Globalization;
+using System.IO;
 using System.Numerics;
 using System.Reflection;
 using System.Resources;
@@ -1128,6 +1129,52 @@ namespace System.Diagnostics.Tracing
 #pragma warning restore 1591
 
         /// <summary>
+        /// A wrapper type for separating primitive types (int, long, string, etc) from other types
+        /// in the EventSource API. This type shouldn't be used directly, but just as implicit conversions
+        /// when using the WriteEvent API.
+        /// </summary>
+        public readonly struct EventSourcePrimitive
+        {
+            internal readonly object? Value;
+
+            private EventSourcePrimitive(object? value)
+            {
+                Value = value;
+            }
+            public static implicit operator EventSourcePrimitive(bool value) => new(value);
+            public static implicit operator EventSourcePrimitive(byte value) => new(value);
+            public static implicit operator EventSourcePrimitive(short value) => new(value);
+            public static implicit operator EventSourcePrimitive(int value) => new(value);
+            public static implicit operator EventSourcePrimitive(long value) => new(value);
+
+            [CLSCompliant(false)]
+            public static implicit operator EventSourcePrimitive(sbyte value) => new(value);
+            [CLSCompliant(false)]
+            public static implicit operator EventSourcePrimitive(ushort value) => new(value);
+            [CLSCompliant(false)]
+            public static implicit operator EventSourcePrimitive(uint value) => new(value);
+            [CLSCompliant(false)]
+            public static implicit operator EventSourcePrimitive(ulong value) => new(value);
+            [CLSCompliant(false)]
+            // Added to prevent going through the nuint -> ulong conversion
+            public static implicit operator EventSourcePrimitive(nuint value) => new(value);
+
+            public static implicit operator EventSourcePrimitive(float value) => new(value);
+            public static implicit operator EventSourcePrimitive(double value) => new(value);
+            public static implicit operator EventSourcePrimitive(decimal value) => new(value);
+
+            public static implicit operator EventSourcePrimitive(string? value) => new(value);
+            public static implicit operator EventSourcePrimitive(byte[]? value) => new(value);
+
+            public static implicit operator EventSourcePrimitive(Guid value) => new(value);
+            public static implicit operator EventSourcePrimitive(DateTime value) => new(value);
+            public static implicit operator EventSourcePrimitive(nint value) => new(value);
+            public static implicit operator EventSourcePrimitive(char value) => new(value);
+
+            public static implicit operator EventSourcePrimitive(Enum value) => new(value);
+        }
+
+        /// <summary>
         /// Used to construct the data structure to be passed to the native ETW APIs - EventWrite and EventWriteTransfer.
         /// </summary>
         protected internal struct EventData
@@ -1332,6 +1379,28 @@ namespace System.Diagnostics.Tracing
                     else
                         ThrowEventSourceException(m_eventData[eventId].Name, ex);
                 }
+            }
+        }
+
+        /// <summary>
+        /// This is a varargs helper for writing an event. It does create an array and box all the arguments so it is
+        /// relatively inefficient and should only be used for relatively rare events (e.g. less than 100 / sec). If your
+        /// rates are faster than that you should use <see cref="WriteEventCore"/> to create fast helpers for your particular
+        /// method signature. Even if you use this for rare events, this call should be guarded by an <see cref="IsEnabled()"/>
+        /// check so that the varargs call is not made when the EventSource is not active.
+        /// </summary>
+        [UnconditionalSuppressMessage("ReflectionAnalysis", "IL2026:UnrecognizedReflectionPattern",
+                   Justification = EventSourceSuppressMessage)]
+        protected void WriteEvent(int eventId, params EventSourcePrimitive[] args)
+        {
+            var argValues = new object?[args.Length];
+            for (int i = 0; i < args.Length; i++)
+            {
+                argValues[i] = args[i].Value;
+            }
+            unsafe
+            {
+                WriteEventVarargs(eventId, null, argValues);
             }
         }
 

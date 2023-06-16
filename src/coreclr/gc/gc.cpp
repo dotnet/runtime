@@ -44391,14 +44391,7 @@ CObjectHeader* gc_heap::allocate_uoh_object (size_t jsize, uint32_t flags, int g
         uint8_t* current_lowest_address = background_saved_lowest_address;
         uint8_t* current_highest_address = background_saved_highest_address;
 
-        if ((result < current_highest_address) && (result >= current_lowest_address))
-        {
-            dprintf (3, ("Clearing mark bit at address %zx",
-                     (size_t)(&mark_array [mark_word_of (result)])));
-
-            mark_array_clear_marked (result);
-        }
-        if (current_c_gc_state != c_gc_state_free)
+        if (current_c_gc_state == c_gc_state_planning)
         {
             dprintf (3, ("Concurrent allocation of a large object %zx",
                         (size_t)obj));

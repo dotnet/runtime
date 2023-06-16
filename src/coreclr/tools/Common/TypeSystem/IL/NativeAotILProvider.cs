@@ -311,6 +311,10 @@ namespace Internal.IL
                 if (methodIL != null)
                     return methodIL;
 
+                methodIL = UnsafeAccessors.TryGetIL(ecmaMethod);
+                if (methodIL != null)
+                    return methodIL;
+
                 return null;
             }
             else
