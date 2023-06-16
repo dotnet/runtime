@@ -819,7 +819,6 @@ namespace Internal.JitInterface
 
     public enum CORINFO_RUNTIME_ABI
     {
-        CORINFO_DESKTOP_ABI = 0x100,
         CORINFO_CORECLR_ABI = 0x200,
         CORINFO_NATIVEAOT_ABI = 0x300,
     }

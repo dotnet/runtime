@@ -4283,7 +4283,7 @@ void MethodContext::repGetEEInfo(CORINFO_EE_INFO* pEEInfoOut)
         pEEInfoOut->sizeOfReversePInvokeFrame                  = (unsigned)0x8;
         pEEInfoOut->osPageSize                                 = (size_t)0x1000;
         pEEInfoOut->maxUncheckedOffsetForNullObject            = (size_t)((32 * 1024) - 1);
-        pEEInfoOut->targetAbi                                  = CORINFO_DESKTOP_ABI;
+        pEEInfoOut->targetAbi                                  = CORINFO_CORECLR_ABI;
 #ifdef TARGET_OSX
         pEEInfoOut->osType                                     = CORINFO_MACOS;
 #elif defined(TARGET_UNIX)
