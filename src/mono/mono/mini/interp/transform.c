@@ -1267,82 +1267,72 @@ jit_call2_supported (MonoMethod *method, MonoMethodSignature *sig)
 #endif
 
 static void
-interp_generate_mae_throw (TransformData *td, MonoMethod *method, MonoMethod *target_method)
+emit_ldptr (TransformData *td, gpointer data)
 {
-	MonoJitICallInfo *info = &mono_get_jit_icall_info ()->mono_throw_method_access;
-
-	/* Inject code throwing MethodAccessException */
 	interp_add_ins (td, MINT_LDPTR);
 	push_simple_type (td, STACK_TYPE_I);
 	interp_ins_set_dreg (td->last_ins, td->sp [-1].local);
-	td->last_ins->data [0] = get_data_item_index (td, method);
+	td->last_ins->data [0] = get_data_item_index (td, data);
+}
 
-	interp_add_ins (td, MINT_LDPTR);
-	push_simple_type (td, STACK_TYPE_I);
-	interp_ins_set_dreg (td->last_ins, td->sp [-1].local);
-	td->last_ins->data [0] = get_data_item_index (td, target_method);
+static MintICallSig
+interp_get_icall_sig (MonoMethodSignature *sig);
 
-	td->sp -= 2;
+static void
+interp_generate_icall_throw (TransformData *td, MonoJitICallInfo *icall_info, gpointer arg1, gpointer arg2)
+{
+	// Allocate dreg for call, only void calls are supported
+	push_simple_type (td, STACK_TYPE_I4);
+	td->sp--;
+	int dummy_dreg = td->sp [0].local;
 
-	interp_add_ins (td, MINT_ICALL_PP_V);
+	int num_args = icall_info->sig->param_count;
+	if (num_args > 0)
+		emit_ldptr (td, arg1);
+	if (num_args > 1)
+		emit_ldptr (td, arg2);
+
+	td->sp -= num_args;
+
+	interp_add_ins (td, MINT_ICALL);
+	interp_ins_set_dreg (td->last_ins, dummy_dreg);
 	interp_ins_set_sreg (td->last_ins, MINT_CALL_ARGS_SREG);
-	td->last_ins->data [0] = get_data_item_index (td, (gpointer)info->func);
+	td->last_ins->data [0] = interp_get_icall_sig (icall_info->sig);
+	td->last_ins->data [1] = get_data_item_index (td, (gpointer)icall_info->func);
 	init_last_ins_call (td);
 	if (td->optimized) {
-		int *call_args = (int*)mono_mempool_alloc (td->mempool, 3 * sizeof (int));
-		call_args [0] = td->sp [0].local;
-		call_args [1] = td->sp [1].local;
-		call_args [2] = -1;
-		td->last_ins->info.call_info->call_args = call_args;
+		if (num_args) {
+			int *call_args = (int*)mono_mempool_alloc (td->mempool, (num_args + 1) * sizeof (int));
+			for (int i = 0; i < num_args; i++)
+				call_args [i] = td->sp [i].local;
+			call_args [num_args] = -1;
+			td->last_ins->info.call_info->call_args = call_args;
+		}
 	} else {
 		td->last_ins->info.call_info->call_offset = get_tos_offset (td);
 	}
+}
+
+static void
+interp_generate_mae_throw (TransformData *td, MonoMethod *method, MonoMethod *target_method)
+{
+	MonoJitICallInfo *info = &mono_get_jit_icall_info ()->mono_throw_method_access;
+	interp_generate_icall_throw (td, info, method, target_method);
 }
 
 static void
 interp_generate_void_throw (TransformData *td, MonoJitICallId icall_id)
 {
 	MonoJitICallInfo *info = mono_find_jit_icall_info (icall_id);
-
-	interp_add_ins (td, MINT_ICALL_V_V);
-	interp_ins_set_sreg (td->last_ins, MINT_CALL_ARGS_SREG);
-	td->last_ins->data [0] = get_data_item_index (td, (gpointer)info->func);
-	init_last_ins_call (td);
-	if (!td->optimized) {
-		push_simple_type (td, STACK_TYPE_I4);
-		td->sp--;
-		td->last_ins->dreg = td->sp [0].local;
-	} else {
-		td->last_ins->info.call_info->call_offset = get_tos_offset (td);
-	}
+	interp_generate_icall_throw (td, info, NULL, NULL);
 }
 
 static void
 interp_generate_ipe_throw_with_msg (TransformData *td, MonoError *error_msg)
 {
 	MonoJitICallInfo *info = &mono_get_jit_icall_info ()->mono_throw_invalid_program;
-
 	char *msg = mono_mem_manager_strdup (td->mem_manager, mono_error_get_message (error_msg));
-
-	interp_add_ins (td, MINT_LDPTR);
-	push_simple_type (td, STACK_TYPE_I);
-	interp_ins_set_dreg (td->last_ins, td->sp [-1].local);
-	td->last_ins->data [0] = get_data_item_index (td, msg);
-
-	td->sp -= 1;
-
-	interp_add_ins (td, MINT_ICALL_P_V);
-	interp_ins_set_sreg (td->last_ins, MINT_CALL_ARGS_SREG);
-	td->last_ins->data [0] = get_data_item_index (td, (gpointer)info->func);
-	init_last_ins_call (td);
-	if (td->optimized) {
-		int *call_args = (int*)mono_mempool_alloc (td->mempool, 2 * sizeof (int));
-		call_args [0] = td->sp [0].local;
-		call_args [1] = -1;
-		td->last_ins->info.call_info->call_args = call_args;
-	} else {
-		td->last_ins->info.call_info->call_offset = get_tos_offset (td);
-	}
+	interp_generate_icall_throw (td, info, msg, NULL);
 }
 
 static void
@@ -2774,35 +2764,35 @@ interp_type_as_ptr (MonoType *tp)
 
 #define INTERP_TYPE_AS_PTR(tp) interp_type_as_ptr (tp)
 
-static int
-interp_icall_op_for_sig (MonoMethodSignature *sig)
+static MintICallSig
+interp_get_icall_sig (MonoMethodSignature *sig)
 {
-	int op = -1;
+	MintICallSig op = MINT_ICALLSIG_MAX;
 	switch (sig->param_count) {
 	case 0:
 		if (MONO_TYPE_IS_VOID (sig->ret))
-			op = MINT_ICALL_V_V;
+			op = MINT_ICALLSIG_V_V;
 		else if (INTERP_TYPE_AS_PTR (sig->ret))
-			op = MINT_ICALL_V_P;
+			op = MINT_ICALLSIG_V_P;
 		break;
 	case 1:
 		if (MONO_TYPE_IS_VOID (sig->ret)) {
 			if (INTERP_TYPE_AS_PTR (sig->params [0]))
-				op = MINT_ICALL_P_V;
+				op = MINT_ICALLSIG_P_V;
 		} else if (INTERP_TYPE_AS_PTR (sig->ret)) {
 			if (INTERP_TYPE_AS_PTR (sig->params [0]))
-				op = MINT_ICALL_P_P;
+				op = MINT_ICALLSIG_P_P;
 		}
 		break;
 	case 2:
 		if (MONO_TYPE_IS_VOID (sig->ret)) {
 			if (INTERP_TYPE_AS_PTR (sig->params [0]) &&
 					INTERP_TYPE_AS_PTR (sig->params [1]))
-				op = MINT_ICALL_PP_V;
+				op = MINT_ICALLSIG_PP_V;
 		} else if (INTERP_TYPE_AS_PTR (sig->ret)) {
 			if (INTERP_TYPE_AS_PTR (sig->params [0]) &&
 					INTERP_TYPE_AS_PTR (sig->params [1]))
-				op = MINT_ICALL_PP_P;
+				op = MINT_ICALLSIG_PP_P;
 		}
 		break;
 	case 3:
@@ -2810,12 +2800,12 @@ interp_icall_op_for_sig (MonoMethodSignature *sig)
 			if (INTERP_TYPE_AS_PTR (sig->params [0]) &&
 					INTERP_TYPE_AS_PTR (sig->params [1]) &&
 					INTERP_TYPE_AS_PTR (sig->params [2]))
-				op = MINT_ICALL_PPP_V;
+				op = MINT_ICALLSIG_PPP_V;
 		} else if (INTERP_TYPE_AS_PTR (sig->ret)) {
 			if (INTERP_TYPE_AS_PTR (sig->params [0]) &&
 					INTERP_TYPE_AS_PTR (sig->params [1]) &&
 					INTERP_TYPE_AS_PTR (sig->params [2]))
-				op = MINT_ICALL_PPP_P;
+				op = MINT_ICALLSIG_PPP_P;
 		}
 		break;
 	case 4:
@@ -2824,13 +2814,13 @@ interp_icall_op_for_sig (MonoMethodSignature *sig)
 					INTERP_TYPE_AS_PTR (sig->params [1]) &&
 					INTERP_TYPE_AS_PTR (sig->params [2]) &&
 					INTERP_TYPE_AS_PTR (sig->params [3]))
-				op = MINT_ICALL_PPPP_V;
+				op = MINT_ICALLSIG_PPPP_V;
 		} else if (INTERP_TYPE_AS_PTR (sig->ret)) {
 			if (INTERP_TYPE_AS_PTR (sig->params [0]) &&
 					INTERP_TYPE_AS_PTR (sig->params [1]) &&
 					INTERP_TYPE_AS_PTR (sig->params [2]) &&
 					INTERP_TYPE_AS_PTR (sig->params [3]))
-				op = MINT_ICALL_PPPP_P;
+				op = MINT_ICALLSIG_PPPP_P;
 		}
 		break;
 	case 5:
@@ -2840,14 +2830,14 @@ interp_icall_op_for_sig (MonoMethodSignature *sig)
 					INTERP_TYPE_AS_PTR (sig->params [2]) &&
 					INTERP_TYPE_AS_PTR (sig->params [3]) &&
 					INTERP_TYPE_AS_PTR (sig->params [4]))
-				op = MINT_ICALL_PPPPP_V;
+				op = MINT_ICALLSIG_PPPPP_V;
 		} else if (INTERP_TYPE_AS_PTR (sig->ret)) {
 			if (INTERP_TYPE_AS_PTR (sig->params [0]) &&
 					INTERP_TYPE_AS_PTR (sig->params [1]) &&
 					INTERP_TYPE_AS_PTR (sig->params [2]) &&
 					INTERP_TYPE_AS_PTR (sig->params [3]) &&
 					INTERP_TYPE_AS_PTR (sig->params [4]))
-				op = MINT_ICALL_PPPPP_P;
+				op = MINT_ICALLSIG_PPPPP_P;
 		}
 		break;
 	case 6:
@@ -2858,7 +2848,7 @@ interp_icall_op_for_sig (MonoMethodSignature *sig)
 					INTERP_TYPE_AS_PTR (sig->params [3]) &&
 					INTERP_TYPE_AS_PTR (sig->params [4]) &&
 					INTERP_TYPE_AS_PTR (sig->params [5]))
-				op = MINT_ICALL_PPPPPP_V;
+				op = MINT_ICALLSIG_PPPPPP_V;
 		} else if (INTERP_TYPE_AS_PTR (sig->ret)) {
 			if (INTERP_TYPE_AS_PTR (sig->params [0]) &&
 					INTERP_TYPE_AS_PTR (sig->params [1]) &&
@@ -2866,7 +2856,7 @@ interp_icall_op_for_sig (MonoMethodSignature *sig)
 					INTERP_TYPE_AS_PTR (sig->params [3]) &&
 					INTERP_TYPE_AS_PTR (sig->params [4]) &&
 					INTERP_TYPE_AS_PTR (sig->params [5]))
-				op = MINT_ICALL_PPPPPP_P;
+				op = MINT_ICALLSIG_PPPPPP_P;
 		}
 		break;
 	}
@@ -3774,20 +3764,21 @@ interp_transform_call (TransformData *td, MonoMethod *method, MonoMethod *target
 			td->last_ins->data [0] = GUINT32_TO_UINT16 (params_stack_size);
 			td->last_ins->data [1] = get_data_item_index (td, (void *)csignature);
 		} else if (calli) {
+			MintICallSig icall_sig = MINT_ICALLSIG_MAX;
 #ifndef MONO_ARCH_HAS_NO_PROPER_MONOCTX
 			/* Try using fast icall path for simple signatures */
 			if (native && !method->dynamic)
-				op = interp_icall_op_for_sig (csignature);
+				icall_sig = interp_get_icall_sig (csignature);
 #endif
 			// FIXME calli receives both the args offset and sometimes another arg for the frame pointer,
 			// therefore some args are in the param area, while the fp is not. We should differentiate for
 			// this, probably once we will have an explicit param area where we copy arguments.
-			if (op != -1) {
+			if (icall_sig != MINT_ICALLSIG_MAX) {
 				interp_add_ins (td, MINT_CALLI_NAT_FAST);
 				interp_ins_set_dreg (td->last_ins, dreg);
 				interp_ins_set_sregs2 (td->last_ins, fp_sreg, MINT_CALL_ARGS_SREG);
-				td->last_ins->data [0] = get_data_item_index (td, (void *)csignature);
-				td->last_ins->data [1] = GINT_TO_OPCODE (op);
+				td->last_ins->data [0] = GINT_TO_UINT16 (icall_sig);
+				td->last_ins->data [1] = get_data_item_index (td, (void *)csignature);
 				td->last_ins->data [2] = !!save_last_error;
 			} else if (native && method->dynamic && csignature->pinvoke) {
 				interp_add_ins (td, MINT_CALLI_NAT_DYNAMIC);
@@ -7556,6 +7547,11 @@ generate_code (TransformData *td, MonoMethod *method, MonoMethodHeader *header, 
 						mt = mono_mint_type (info->sig->ret);
 						push_simple_type (td, stack_type [mt]);
 						dreg = td->sp [-1].local;
+					} else {
+						// dummy dreg
+						push_simple_type (td, STACK_TYPE_I4);
+						td->sp--;
+						dreg = td->sp [0].local;
 					}
 
 					if (jit_icall_id == MONO_JIT_ICALL_mono_threads_attach_coop) {
@@ -7566,15 +7562,14 @@ generate_code (TransformData *td, MonoMethod *method, MonoMethodHeader *header, 
 					} else if (jit_icall_id == MONO_JIT_ICALL_mono_threads_detach_coop) {
 						g_assert (rtm->needs_thread_attach);
 					} else {
-						int const icall_op = interp_icall_op_for_sig (info->sig);
-						g_assert (icall_op != -1);
+						MintICallSig icall_sig = interp_get_icall_sig (info->sig);
+						g_assert (icall_sig != MINT_ICALLSIG_MAX);
 
-						interp_add_ins (td, icall_op);
-						// hash here is overkill
-						if (dreg != -1)
-							interp_ins_set_dreg (td->last_ins, dreg);
+						interp_add_ins (td, MINT_ICALL);
+						interp_ins_set_dreg (td->last_ins, dreg);
 						interp_ins_set_sreg (td->last_ins, MINT_CALL_ARGS_SREG);
-						td->last_ins->data [0] = get_data_item_index (td, (gpointer)info->func);
+						td->last_ins->data [0] = icall_sig;
+						td->last_ins->data [1] = get_data_item_index (td, (gpointer)info->func);
 						init_last_ins_call (td);
 						td->last_ins->info.call_info->call_args = call_args;
 						if (!td->optimized)

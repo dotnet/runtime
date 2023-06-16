@@ -1,6 +1,8 @@
 ﻿Microsoft Visual Studio Solution File, Format Version 12.00
 Project("{9A19103F-16F7-4668-BE54-9A1E7A4F7556}") = "TestUtilities", "..\Common\tests\TestUtilities\TestUtilities.csproj", "{43450381-504E-4603-BF5D-99CCAC2B8A26}"
 EndProject
+Project("{9A19103F-16F7-4668-BE54-9A1E7A4F7556}") = "ComInterfaceGenerator", "..\System.Runtime.InteropServices\gen\ComInterfaceGenerator\ComInterfaceGenerator.csproj", "{FCCCA35C-E4FD-479E-8F5D-33B4A36AA4C9}"
+EndProject
 Project("{9A19103F-16F7-4668-BE54-9A1E7A4F7556}") = "LibraryImportGenerator", "..\System.Runtime.InteropServices\gen\LibraryImportGenerator\LibraryImportGenerator.csproj", "{4D066E4F-1EF9-46CE-AECC-8D5252E41370}"
 EndProject
 Project("{9A19103F-16F7-4668-BE54-9A1E7A4F7556}") = "Microsoft.Interop.SourceGeneration", "..\System.Runtime.InteropServices\gen\Microsoft.Interop.SourceGeneration\Microsoft.Interop.SourceGeneration.csproj", "{1C02A4C6-2AEB-46E3-B1D3-84EE2153671A}"
@@ -31,6 +33,10 @@ Global
 		{43450381-504E-4603-BF5D-99CCAC2B8A26}.Debug|Any CPU.Build.0 = Debug|Any CPU
 		{43450381-504E-4603-BF5D-99CCAC2B8A26}.Release|Any CPU.ActiveCfg = Release|Any CPU
 		{43450381-504E-4603-BF5D-99CCAC2B8A26}.Release|Any CPU.Build.0 = Release|Any CPU
+		{FCCCA35C-E4FD-479E-8F5D-33B4A36AA4C9}.Debug|Any CPU.ActiveCfg = Debug|Any CPU
+		{FCCCA35C-E4FD-479E-8F5D-33B4A36AA4C9}.Debug|Any CPU.Build.0 = Debug|Any CPU
+		{FCCCA35C-E4FD-479E-8F5D-33B4A36AA4C9}.Release|Any CPU.ActiveCfg = Release|Any CPU
+		{FCCCA35C-E4FD-479E-8F5D-33B4A36AA4C9}.Release|Any CPU.Build.0 = Release|Any CPU
 		{4D066E4F-1EF9-46CE-AECC-8D5252E41370}.Debug|Any CPU.ActiveCfg = Debug|Any CPU
 		{4D066E4F-1EF9-46CE-AECC-8D5252E41370}.Debug|Any CPU.Build.0 = Debug|Any CPU
 		{4D066E4F-1EF9-46CE-AECC-8D5252E41370}.Release|Any CPU.ActiveCfg = Release|Any CPU
@@ -62,6 +68,7 @@ Global
 	GlobalSection(NestedProjects) = preSolution
 		{43450381-504E-4603-BF5D-99CCAC2B8A26} = {9DE01EE3-CDAF-4B6E-B778-B5B5D83A9214}
 		{A15B95D2-1DDF-47C9-A92F-03FD5DB720C9} = {9DE01EE3-CDAF-4B6E-B778-B5B5D83A9214}
+		{FCCCA35C-E4FD-479E-8F5D-33B4A36AA4C9} = {BAAA946F-C5D8-483D-9610-F229125AFEFC}
 		{4D066E4F-1EF9-46CE-AECC-8D5252E41370} = {BAAA946F-C5D8-483D-9610-F229125AFEFC}
 		{1C02A4C6-2AEB-46E3-B1D3-84EE2153671A} = {BAAA946F-C5D8-483D-9610-F229125AFEFC}
 		{01218F2E-9DAB-42A4-B79C-589C53CE63E4} = {2E59B32B-BED2-4E24-9055-491C8DF351FB}

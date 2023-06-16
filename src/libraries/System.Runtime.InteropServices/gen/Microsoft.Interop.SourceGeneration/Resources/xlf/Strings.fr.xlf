@@ -22,6 +22,11 @@
         <target state="translated">Un seul de « ConstantElementCount » ou « ElementCountInfo » peut être utilisé dans un « MarshalUsingAttribute » pour un « ElementIndirectionDepth » donné</target>
         <note />
       </trans-unit>
+      <trans-unit id="ContainingTypeAccessibilityDetails">
+        <source>Containing type '{0}' has accessibility '{1}'.</source>
+        <target state="new">Containing type '{0}' has accessibility '{1}'.</target>
+        <note />
+      </trans-unit>
       <trans-unit id="CyclicalCountInfo">
         <source>This element cannot depend on '{0}' for collection size information without creating a dependency cycle</source>
         <target state="translated">Cet élément ne peut pas dépendre de « {0} » pour les informations de taille de collection sans créer un cycle de dépendance</target>
@@ -110,6 +115,11 @@
       <trans-unit id="SafeHandleByRefMustBeConcrete">
         <source>An abstract type derived from 'SafeHandle' cannot be marshalled by reference. The provided type must be concrete.</source>
         <target state="translated">Un type abstrait dérivé de « SafeHandle » ne peut pas être marshalé par référence. Le type fourni doit être concret.</target>
+        <note />
+      </trans-unit>
+      <trans-unit id="TypeAccessibilityDetails">
+        <source>'{0}' has accessibility '{1}'.</source>
+        <target state="new">'{0}' has accessibility '{1}'.</target>
         <note />
       </trans-unit>
       <trans-unit id="UnmanagedToManagedMissingRequiredMarshaller">

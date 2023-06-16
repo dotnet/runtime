@@ -2305,8 +2305,14 @@ void Compiler::compSetProcessor()
             // default preferred vector width to 256-bits in some scenarios. Power
             // users can override this with `DOTNET_PreferredVectorBitWidth=512` to
             // allow using such instructions where hardware support is available.
+            //
+            // Under stress, sometimes leave the preferred vector width at 512, even if that means
+            // throttling. This helps with test coverage on test machines that might be older.
 
-            preferredVectorByteLength = 256 / 8;
+            if (!compStressCompile(STRESS_GENERIC_VARN, 20))
+            {
+                preferredVectorByteLength = 256 / 8;
+            }
         }
     }
 
@@ -2843,6 +2849,7 @@ void Compiler::compInitOptions(JitFlags* jitFlags)
     opts.disDiffable  = false;
     opts.dspDiffable  = false;
     opts.disAlignment = false;
+    opts.disCodeBytes = false;
 #ifdef DEBUG
     opts.dspInstrs       = false;
     opts.dspLines        = false;
@@ -3037,6 +3044,10 @@ void Compiler::compInitOptions(JitFlags* jitFlags)
         if (JitConfig.JitDisasmWithAlignmentBoundaries())
         {
             opts.disAlignment = true;
+        }
+        if (JitConfig.JitDisasmWithCodeBytes())
+        {
+            opts.disCodeBytes = true;
         }
         if (JitConfig.JitDisasmDiffable())
         {
@@ -4716,13 +4727,13 @@ void Compiler::compCompile(void** methodCodePtr, uint32_t* methodCodeSize, JitFl
     //
     DoPhase(this, PHASE_EARLY_LIVENESS, &Compiler::fgEarlyLiveness);
 
-    // Promote struct locals based on primitive access patterns
-    //
-    DoPhase(this, PHASE_PHYSICAL_PROMOTION, &Compiler::PhysicalPromotion);
-
     // Run a simple forward substitution pass.
     //
     DoPhase(this, PHASE_FWD_SUB, &Compiler::fgForwardSub);
+
+    // Promote struct locals based on primitive access patterns
+    //
+    DoPhase(this, PHASE_PHYSICAL_PROMOTION, &Compiler::PhysicalPromotion);
 
     // Locals tree list is no longer kept valid.
     fgNodeThreading = NodeThreading::None;
