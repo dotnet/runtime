@@ -9,8 +9,14 @@ using Xunit;
 
 namespace System.Security.Cryptography.Tests
 {
-    public class HmacSha1Tests : Rfc2202HmacTests
+    public class HmacSha1Tests : Rfc2202HmacTests<HmacSha1Tests.Traits>
     {
+        public sealed class Traits : IHmacTrait
+        {
+            public static bool IsSupported => true;
+            public static int HashSizeInBytes => HMACSHA1.HashSizeInBytes;
+        }
+
         private static readonly byte[][] s_testKeys2202 =
         {
             null,
@@ -44,6 +50,7 @@ namespace System.Security.Cryptography.Tests
         protected override int MacSize => HMACSHA1.HashSizeInBytes;
 
         protected override HMAC Create() => new HMACSHA1();
+        protected override HMAC Create(byte[] key) => new HMACSHA1(key);
         protected override HashAlgorithm CreateHashAlgorithm() => SHA1.Create();
         protected override byte[] HashDataOneShot(byte[] key, byte[] source) =>
             HMACSHA1.HashData(key, source);
@@ -240,6 +247,13 @@ namespace System.Security.Cryptography.Tests
                 0,
                 hexKey: "000102030405060708090A0B0C0D0E0F",
                 output: "5433122F77BCF8A4D9B874B4149823EF5B7C207E");
+        }
+
+        [Fact]
+        public void HmacSha1_HashSizes()
+        {
+            Assert.Equal(160, HMACSHA1.HashSizeInBits);
+            Assert.Equal(20, HMACSHA1.HashSizeInBytes);
         }
     }
 }

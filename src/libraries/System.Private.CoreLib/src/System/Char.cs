@@ -163,12 +163,12 @@ namespace System
         // Overrides System.Object.ToString.
         public override string ToString()
         {
-            return char.ToString(m_value);
+            return ToString(m_value);
         }
 
         public string ToString(IFormatProvider? provider)
         {
-            return char.ToString(m_value);
+            return ToString(m_value);
         }
 
         //
@@ -1197,7 +1197,7 @@ namespace System
                     return false;
                 }
 
-                if ((source.Length > sizeof(char)) && (source[..^sizeof(char)].IndexOfAnyExcept((byte)0x00) >= 0))
+                if ((source.Length > sizeof(char)) && (source[..^sizeof(char)].ContainsAnyExcept((byte)0x00)))
                 {
                     // When we have any non-zero leading data, we are a large positive and therefore
                     // definitely out of range
@@ -1247,7 +1247,7 @@ namespace System
                     return false;
                 }
 
-                if ((source.Length > sizeof(char)) && (source[sizeof(char)..].IndexOfAnyExcept((byte)0x00) >= 0))
+                if ((source.Length > sizeof(char)) && (source[sizeof(char)..].ContainsAnyExcept((byte)0x00)))
                 {
                     // When we have any non-zero leading data, we are a large positive and therefore
                     // definitely out of range

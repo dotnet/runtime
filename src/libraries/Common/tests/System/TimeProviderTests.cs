@@ -321,7 +321,7 @@ namespace Tests.System
 
         [ConditionalTheory(typeof(PlatformDetection), nameof(PlatformDetection.IsThreadingSupported))]
         [MemberData(nameof(TimersProvidersWithTaskFactorData))]
-        public static async void RunWaitAsyncTests(TimeProvider provider, ITestTaskFactory taskFactory)
+        public static async Task RunWaitAsyncTests(TimeProvider provider, ITestTaskFactory taskFactory)
         {
             CancellationTokenSource cts = new CancellationTokenSource();
 
@@ -377,7 +377,7 @@ namespace Tests.System
 #if !NETFRAMEWORK
         [ConditionalTheory(typeof(PlatformDetection), nameof(PlatformDetection.IsThreadingSupported))]
         [MemberData(nameof(TimersProvidersListData))]
-        public static async void PeriodicTimerTests(TimeProvider provider)
+        public static async Task PeriodicTimerTests(TimeProvider provider)
         {
             var timer = new PeriodicTimer(TimeSpan.FromMilliseconds(1), provider);
             Assert.True(await timer.WaitForNextTickAsync());

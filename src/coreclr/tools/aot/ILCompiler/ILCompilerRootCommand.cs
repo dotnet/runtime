@@ -88,8 +88,6 @@ namespace ILCompiler
             new(new[] { "--methodbodyfolding" }, "Fold identical method bodies");
         public Option<string[]> InitAssemblies { get; } =
             new(new[] { "--initassembly" }, Array.Empty<string>, "Assembly(ies) with a library initializer");
-        public Option<string[]> AppContextSwitches { get; } =
-            new(new[] { "--appcontextswitch" }, Array.Empty<string>, "System.AppContext switches to set (format: 'Key=Value')");
         public Option<string[]> FeatureSwitches { get; } =
             new(new[] { "--feature" }, Array.Empty<string>, "Feature switches to apply (format: 'Namespace.Name=[true|false]'");
         public Option<string[]> RuntimeOptions { get; } =
@@ -114,6 +112,8 @@ namespace ILCompiler
             }, true, "Maximum number of threads to use during compilation");
         public Option<string> InstructionSet { get; } =
             new(new[] { "--instruction-set" }, "Instruction set to allow or disallow");
+        public Option<int> MaxVectorTBitWidth { get; } =
+            new(new[] { "--max-vectort-bitwidth" }, "Maximum width, in bits, that Vector<T> is allowed to be");
         public Option<string> Guard { get; } =
             new(new[] { "--guard" }, "Enable mitigations. Options: 'cf': CFG (Control Flow Guard, Windows only)");
         public Option<bool> Dehydrate { get; } =
@@ -138,8 +138,10 @@ namespace ILCompiler
             new(new[] { "--directpinvoke" }, Array.Empty<string>, "PInvoke to call directly");
         public Option<string[]> DirectPInvokeLists { get; } =
             new(new[] { "--directpinvokelist" }, Array.Empty<string>, "File with list of PInvokes to call directly");
-        public Option<int> MaxGenericCycle { get; } =
-            new(new[] { "--maxgenericcycle" }, () => CompilerTypeSystemContext.DefaultGenericCycleCutoffPoint, "Max depth of generic cycle");
+        public Option<int> MaxGenericCycleDepth { get; } =
+            new(new[] { "--maxgenericcycle" }, () => CompilerTypeSystemContext.DefaultGenericCycleDepthCutoff, "Max depth of generic cycle");
+        public Option<int> MaxGenericCycleBreadth { get; } =
+            new(new[] { "--maxgenericcyclebreadth" }, () => CompilerTypeSystemContext.DefaultGenericCycleBreadthCutoff, "Max breadth of generic cycle expansion");
         public Option<string[]> RootedAssemblies { get; } =
             new(new[] { "--root" }, Array.Empty<string>, "Fully generate given assembly");
         public Option<IEnumerable<string>> ConditionallyRootedAssemblies { get; } =
@@ -207,12 +209,12 @@ namespace ILCompiler
             AddOption(EmitStackTraceData);
             AddOption(MethodBodyFolding);
             AddOption(InitAssemblies);
-            AddOption(AppContextSwitches);
             AddOption(FeatureSwitches);
             AddOption(RuntimeOptions);
             AddOption(RuntimeKnobs);
             AddOption(Parallelism);
             AddOption(InstructionSet);
+            AddOption(MaxVectorTBitWidth);
             AddOption(Guard);
             AddOption(Dehydrate);
             AddOption(PreinitStatics);
@@ -225,7 +227,8 @@ namespace ILCompiler
             AddOption(SingleWarnDisabledAssemblies);
             AddOption(DirectPInvokes);
             AddOption(DirectPInvokeLists);
-            AddOption(MaxGenericCycle);
+            AddOption(MaxGenericCycleDepth);
+            AddOption(MaxGenericCycleBreadth);
             AddOption(RootedAssemblies);
             AddOption(ConditionallyRootedAssemblies);
             AddOption(TrimmedAssemblies);
@@ -270,9 +273,11 @@ namespace ILCompiler
                         // + the original command line arguments
                         // + a rsp file that should work to directly run out of the zip file
 
+#pragma warning disable CA1861 // Avoid constant arrays as arguments. Only executed once during the execution of the program.
                         Helpers.MakeReproPackage(makeReproPath, context.ParseResult.GetValue(OutputFilePath), args, context.ParseResult,
                             inputOptions : new[] { "r", "reference", "m", "mibc", "rdxml", "directpinvokelist", "descriptor" },
                             outputOptions : new[] { "o", "out", "exportsfile" });
+#pragma warning restore CA1861 // Avoid constant arrays as arguments
                     }
 
                     context.ExitCode = new Program(this).Run();

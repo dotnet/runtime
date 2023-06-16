@@ -308,7 +308,7 @@ namespace System
                 // We need to also track if the input data is unsigned
                 isUnsigned |= (sign == 0);
 
-                if (isUnsigned && sbyte.IsNegative(sign))
+                if (isUnsigned && IsNegative(sign))
                 {
                     // When we are unsigned and the most significant bit is set, we are a large positive
                     // and therefore definitely out of range
@@ -319,7 +319,7 @@ namespace System
 
                 if (source.Length > sizeof(sbyte))
                 {
-                    if (source[..^sizeof(sbyte)].IndexOfAnyExcept((byte)sign) >= 0)
+                    if (source[..^sizeof(sbyte)].ContainsAnyExcept((byte)sign))
                     {
                         // When we are unsigned and have any non-zero leading data or signed with any non-set leading
                         // data, we are a large positive/negative, respectively, and therefore definitely out of range
@@ -328,7 +328,7 @@ namespace System
                         return false;
                     }
 
-                    if (isUnsigned == sbyte.IsNegative((sbyte)source[^sizeof(sbyte)]))
+                    if (isUnsigned == IsNegative((sbyte)source[^sizeof(sbyte)]))
                     {
                         // When the most significant bit of the value being set/clear matches whether we are unsigned
                         // or signed then we are a large positive/negative and therefore definitely out of range
@@ -361,7 +361,7 @@ namespace System
                 // We need to also track if the input data is unsigned
                 isUnsigned |= (sign == 0);
 
-                if (isUnsigned && sbyte.IsNegative(sign))
+                if (isUnsigned && IsNegative(sign))
                 {
                     // When we are unsigned and the most significant bit is set, we are a large positive
                     // and therefore definitely out of range
@@ -372,7 +372,7 @@ namespace System
 
                 if (source.Length > sizeof(sbyte))
                 {
-                    if (source[sizeof(sbyte)..].IndexOfAnyExcept((byte)sign) >= 0)
+                    if (source[sizeof(sbyte)..].ContainsAnyExcept((byte)sign))
                     {
                         // When we are unsigned and have any non-zero leading data or signed with any non-set leading
                         // data, we are a large positive/negative, respectively, and therefore definitely out of range
@@ -381,7 +381,7 @@ namespace System
                         return false;
                     }
 
-                    if (isUnsigned == sbyte.IsNegative((sbyte)source[sizeof(sbyte) - 1]))
+                    if (isUnsigned == IsNegative((sbyte)source[sizeof(sbyte) - 1]))
                     {
                         // When the most significant bit of the value being set/clear matches whether we are unsigned
                         // or signed then we are a large positive/negative and therefore definitely out of range

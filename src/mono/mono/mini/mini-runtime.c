@@ -1547,7 +1547,6 @@ mono_resolve_patch_target_ext (MonoMemoryManager *mem_manager, MonoMethod *metho
 		break;
 	case MONO_PATCH_INFO_VTABLE:
 		target = mono_class_vtable_checked (patch_info->data.klass, error);
-		mono_error_assert_ok (error);
 		break;
 	case MONO_PATCH_INFO_DELEGATE_INFO: {
 		MonoDelegateClassMethodPair *del_tramp = patch_info->data.del_tramp;
@@ -4659,6 +4658,7 @@ mini_init (const char *filename)
 	callbacks.get_frame_info = mono_get_frame_info;
 	callbacks.get_cached_class_info = mono_aot_get_cached_class_info;
 	callbacks.get_class_from_name = mono_aot_get_class_from_name;
+	callbacks.mono_class_set_deferred_type_load_failure_callback = mono_class_set_type_load_failure;
 
 	if (mono_llvm_only) {
 		callbacks.build_imt_trampoline = mini_llvmonly_get_imt_trampoline;

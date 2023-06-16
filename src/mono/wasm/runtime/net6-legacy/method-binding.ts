@@ -1,8 +1,10 @@
 // Licensed to the .NET Foundation under one or more agreements.
 // The .NET Foundation licenses this file to you under the MIT license.
 
+import MonoWasmThreads from "consts:monoWasmThreads";
+
 import { legacy_c_functions as cwraps } from "../cwraps";
-import { Module } from "../globals";
+import { ENVIRONMENT_IS_PTHREAD, Module } from "../globals";
 import { parseFQN } from "../invoke-cs";
 import { setI32, setU32, setF32, setF64, setU52, setI52, setB32, setI32_unchecked, setU32_unchecked, _zero_region, _create_temp_frame, getB32, getI32, getU32, getF32, getF64 } from "../memory";
 import { mono_wasm_new_external_root, mono_wasm_new_root } from "../roots";
@@ -15,7 +17,7 @@ import { legacyHelpers } from "./globals";
 import { js_to_mono_obj_root, _js_to_mono_uri_root, js_to_mono_enum } from "./js-to-cs";
 import { _teardown_after_call } from "./method-calls";
 import { mono_log_warn } from "../logging";
-import { assert_legacy_interop } from "../pthreads/shared";
+import { assert_bindings } from "../invoke-js";
 
 
 const escapeRE = /[^A-Za-z0-9_$]/g;
@@ -670,4 +672,11 @@ export function mono_method_resolve(fqn: string): MonoMethod {
 
 export function mono_method_get_call_signature_ref(method: MonoMethod, mono_obj?: WasmRoot<MonoObject>): string/*ArgsMarshalString*/ {
     return legacyManagedExports._get_call_sig_ref(method, mono_obj ? mono_obj.address : legacyHelpers._null_root.address);
+}
+
+export function assert_legacy_interop(): void {
+    if (MonoWasmThreads) {
+        mono_assert(!ENVIRONMENT_IS_PTHREAD, "Legacy interop is not supported with WebAssembly threads.");
+    }
+    assert_bindings();
 }

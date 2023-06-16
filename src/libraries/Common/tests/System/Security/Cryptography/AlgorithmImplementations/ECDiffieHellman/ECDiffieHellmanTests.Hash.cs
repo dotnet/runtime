@@ -207,56 +207,87 @@ namespace System.Security.Cryptography.EcDiffieHellman.Tests
 
         public static IEnumerable<object[]> HashDerivationTestCases()
         {
-            return new object[][]
+            yield return new object[]
             {
-                new object[]
-                {
-                    HashAlgorithmName.SHA256,
-                    null,
-                    null,
-                    "595B71C33D9D40ACD9CA847C47267DAEE7498EEF0B553482FAA45791418AC679",
-                },
-
-                new object[]
-                {
-                    HashAlgorithmName.SHA1,
-                    null,
-                    null,
-                    "25E464FAC33F4A5F8786627FB3685F4C31B26327",
-                },
-
-                new object[]
-                {
-                    HashAlgorithmName.SHA256,
-                    "02040608",
-                    null,
-                    "D0F4C42D61E794E508A079822F3069C9F89D9E3385C8E090425FF38927798017",
-                },
-
-                new object[]
-                {
-                    HashAlgorithmName.SHA256,
-                    null,
-                    "010305",
-                    "20DCB58E2AC4E70B1BF47362B0D1C8B728E27D6575EA9B85106CBE05E1F7D6DB",
-                },
-
-                new object[]
-                {
-                    HashAlgorithmName.SHA256,
-                    "02040608",
-                    "010305",
-                    "EFC758D39896E9DE96C120B0A74FB751F140BD7F3F4FC3777DC2A530145E01EC",
-                },
-
-                new object[]
-                {
-                    HashAlgorithmName.SHA256,
-                    "010305",
-                    "02040608",
-                    "7DB5520A5D6351595FC286CD53509D964FBB152C289F072581CB5E16EBF319E8",
-                },
+                HashAlgorithmName.SHA256,
+                null,
+                null,
+                "595B71C33D9D40ACD9CA847C47267DAEE7498EEF0B553482FAA45791418AC679",
             };
+
+            yield return new object[]
+            {
+                HashAlgorithmName.SHA1,
+                null,
+                null,
+                "25E464FAC33F4A5F8786627FB3685F4C31B26327",
+            };
+
+            yield return new object[]
+            {
+                HashAlgorithmName.SHA256,
+                "02040608",
+                null,
+                "D0F4C42D61E794E508A079822F3069C9F89D9E3385C8E090425FF38927798017",
+            };
+
+            yield return new object[]
+            {
+                HashAlgorithmName.SHA256,
+                null,
+                "010305",
+                "20DCB58E2AC4E70B1BF47362B0D1C8B728E27D6575EA9B85106CBE05E1F7D6DB",
+            };
+
+            yield return new object[]
+            {
+                HashAlgorithmName.SHA256,
+                "02040608",
+                "010305",
+                "EFC758D39896E9DE96C120B0A74FB751F140BD7F3F4FC3777DC2A530145E01EC",
+            };
+
+            yield return new object[]
+            {
+                HashAlgorithmName.SHA256,
+                "010305",
+                "02040608",
+                "7DB5520A5D6351595FC286CD53509D964FBB152C289F072581CB5E16EBF319E8",
+            };
+
+            if (ECDiffieHellmanFactory.SupportsSha3)
+            {
+                // Created with:
+                // (echo -n -e '\x01\x03\0x05'; openssl pkeyutl -derive -inkey private.key -peerkey public.key; echo -n -e '\x02\x04\0x06\0x08') | openssl dgst -sha3-256
+                yield return new object[]
+                {
+                    HashAlgorithmName.SHA3_256,
+                    "010305",
+                    "02040608",
+                    "2AF6DA738DADF26607513ECB56451B5A476C7D42CFEC89872791B7A6C136A4F9",
+                };
+
+                // Created with:
+                // (echo -n -e '\x01\x03\0x05'; openssl pkeyutl -derive -inkey private.key -peerkey public.key; echo -n -e '\x02\x04\0x06\0x08') | openssl dgst -sha3-384
+                yield return new object[]
+                {
+                    HashAlgorithmName.SHA3_384,
+                    "010305",
+                    "02040608",
+                    "EE9C10A3E60EA06296699195B3E338575DA529BA167A7520CA8BF50C86C4A08AB153DD7B97ADEE58CE5A9CAAC2F52ED1",
+                };
+
+                // Created with:
+                // (echo -n -e '\x01\x03\0x05'; openssl pkeyutl -derive -inkey private.key -peerkey public.key; echo -n -e '\x02\x04\0x06\0x08') | openssl dgst -sha3-512
+                yield return new object[]
+                {
+                    HashAlgorithmName.SHA3_512,
+                    "010305",
+                    "02040608",
+                    "3614398AFC4A09B0490E095A7901FEA3C9C217E742064A371F2E04D6363EF864" +
+                        "FE52EEEEA976FEC3FF98DE55D1E78E864F009FD834E1D301FA069BD44F6ECD52",
+                };
+            }
         }
 
 #if NETCOREAPP
