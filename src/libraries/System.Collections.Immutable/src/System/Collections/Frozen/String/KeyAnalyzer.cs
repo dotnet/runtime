@@ -207,7 +207,7 @@ namespace System.Collections.Frozen
             Debug.Assert(IsAllAscii(s));
 
 #if NET8_0_OR_GREATER
-            return s.IndexOfAny(s_asciiLetters) >= 0;
+            return s.ContainsAny(s_asciiLetters);
 #else
             foreach (char c in s)
             {
@@ -225,7 +225,7 @@ namespace System.Collections.Frozen
         {
             set.Clear();
 
-            // SufficientUniquenessFactor of 95% is good enough.
+            // Sufficient uniqueness factor of 95% is good enough.
             // Instead of ensuring that 95% of data is good, we stop when we know that at least 5% is bad.
             int acceptableNonUniqueCount = uniqueStrings.Length / 20;
 

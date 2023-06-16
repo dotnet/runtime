@@ -1535,14 +1535,13 @@ add_valuetype (CallInfo *cinfo, ArgInfo *ainfo, MonoType *t, gboolean is_return)
 	int i, size, align_size, nregs, nfields, esize;
 	int field_offsets [16];
 	guint32 align;
-	MonoClass *klass;
 
-	klass = mono_class_from_mono_type_internal (t);
 	size = mini_type_stack_size_full (t, &align, cinfo->pinvoke);
 	align_size = ALIGN_TO (size, 8);
 
 	/* FIXME: gshared, gsharedvt, dyncalls */
 #if 0
+	MonoClass *klass = mono_class_from_mono_type_internal (t);
 	if (m_class_is_simd_type (klass) && size <= 16 && !cinfo->pinvoke && !is_return && cinfo->fr < FP_PARAM_REGS) {
 		ainfo->storage = ArgInSIMDReg;
 		ainfo->reg = cinfo->fr;
