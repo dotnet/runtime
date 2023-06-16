@@ -170,19 +170,6 @@ namespace System.Globalization
         {
             _sortName = culture.SortName;
 
-#if TARGET_BROWSER
-            if (GlobalizationMode.Hybrid)
-            {
-                JsInit(culture.InteropName!);
-                return;
-            }
-#elif TARGET_OSX || TARGET_MACCATALYST || TARGET_IOS || TARGET_TVOS
-            if (GlobalizationMode.Hybrid)
-            {
-                InitNative(culture.InteropName!);
-                return;
-            }
-#endif
             if (GlobalizationMode.UseNls)
             {
                 NlsInitSortHandle();

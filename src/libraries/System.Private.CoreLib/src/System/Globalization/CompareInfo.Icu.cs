@@ -23,7 +23,13 @@ namespace System.Globalization
         {
             _isAsciiEqualityOrdinal = GetIsAsciiEqualityOrdinal(interopCultureName);
             if (!GlobalizationMode.Invariant)
+            {
+#if TARGET_OSX || TARGET_MACCATALYST || TARGET_IOS || TARGET_TVOS || TARGET_BROWSER
+            if (GlobalizationMode.Hybrid)
+                return;
+#endif
                  _sortHandle = SortHandleCache.GetCachedSortHandle(interopCultureName);
+            }
         }
 
         private bool GetIsAsciiEqualityOrdinal(string interopCultureName)
@@ -197,9 +203,8 @@ namespace System.Globalization
                 if (GlobalizationMode.Hybrid)
                 {
                     NSRange result = Interop.Globalization.IndexOfNative(m_name, m_name.Length, b, target.Length, a, source.Length, options, fromBeginning);
-                    if (matchLengthPtr == null)
-                        matchLengthPtr = &result.Length;
-                    *matchLengthPtr = result.Length;
+                    if (matchLengthPtr != null)
+                       *matchLengthPtr = result.Length;
                     return result.Location;
                 }
 #endif
@@ -305,9 +310,8 @@ namespace System.Globalization
                 if (GlobalizationMode.Hybrid)
                 {
                     NSRange result = Interop.Globalization.IndexOfNative(m_name, m_name.Length, b, target.Length, a, source.Length, options, fromBeginning);
-                    if (matchLengthPtr == null)
-                       matchLengthPtr = &result.Length;
-                    *matchLengthPtr = result.Length;
+                    if (matchLengthPtr != null)
+                       *matchLengthPtr = result.Length;
                     return result.Location;
                 }
 #endif

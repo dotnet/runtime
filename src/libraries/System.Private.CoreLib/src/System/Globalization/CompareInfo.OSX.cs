@@ -11,11 +11,6 @@ namespace System.Globalization
 {
     public partial class CompareInfo
     {
-        private void InitNative(string interopCultureName)
-        {
-            _isAsciiEqualityOrdinal = GetIsAsciiEqualityOrdinal(interopCultureName);
-        }
-
         private unsafe int CompareStringNative(ReadOnlySpan<char> string1, ReadOnlySpan<char> string2, CompareOptions options)
         {
             Debug.Assert(!GlobalizationMode.Invariant);
@@ -60,9 +55,8 @@ namespace System.Globalization
                 fixed (char* pTarget = &MemoryMarshal.GetReference(target))
                 {
                     NSRange result = Interop.Globalization.IndexOfNative(m_name, m_name.Length, pTarget, target.Length, pSource, source.Length, options, fromBeginning);
-                    if (matchLengthPtr == null)
-                        matchLengthPtr = &result.Length;
-                    *matchLengthPtr = result.Length;
+                    if (matchLengthPtr != null)
+                       *matchLengthPtr = result.Length;
                     return result.Location;
                 }
             }
