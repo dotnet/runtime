@@ -1646,6 +1646,17 @@ namespace System.Net
                 // Cached identity is disposed with the session context
                 Session?.Dispose();
 
+                // Clean up the identity. This is for scenarios where identity was not cleaned up before due to
+                // identity caching for unsafe ntlm authentication
+
+                IDisposable? identity = AuthenticatedConnection?.Identity as IDisposable;
+                if ((identity != null) &&
+                    (AuthenticatedConnection!.Identity.AuthenticationType == AuthenticationTypes.NTLM) &&
+                    (listener.UnsafeConnectionNtlmAuthentication))
+                {
+                    identity.Dispose();
+                }
+
                 int oldValue = Interlocked.Exchange(ref _ownershipState, 3);
                 Debug.Assert(oldValue == 2, $"Expected OwnershipState of 2, saw {oldValue}.");
             }
