@@ -51,13 +51,14 @@ namespace System.Threading
             {
                 _threadHandle = handle;
             }
-#if DEBUG
             else
             {
+#if DEBUG
                 int lastError = Marshal.GetLastPInvokeError();
                 Debug.Fail($"{nameof(Interop.Kernel32.OpenThread)} unexpectedly failed with 0x{lastError:X8}: {Marshal.GetPInvokeErrorMessage(lastError)}");
-            }
 #endif
+                handle.Dispose();
+            }
         }
 
         /// <summary>Resets this instance's state to be ready for another use on this thread.</summary>
