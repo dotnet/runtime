@@ -722,7 +722,7 @@ namespace System.Numerics.Tests
                         post = " " + nfi.CurrencySymbol + ")";
                         break;
                     case 16:
-                        pre = nfi.NegativeSign + nfi.CurrencySymbol + " ";
+                        pre = nfi.CurrencySymbol + nfi.NegativeSign + " ";
                         break;
                 }
             }
