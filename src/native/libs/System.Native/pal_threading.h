@@ -31,7 +31,7 @@ PALEXPORT __attribute__((noreturn)) void SystemNative_Exit(int32_t exitCode);
 PALEXPORT __attribute__((noreturn)) void SystemNative_Abort(void);
 
 #ifdef TARGET_OSX
-PALEXPORT uint64_t SystemNative_GetUInt64OSThreadId();
+PALEXPORT uint64_t SystemNative_GetUInt64OSThreadId(void);
 #else
-PALEXPORT uint32_t SystemNative_TryGetUInt32OSThreadId();
+PALEXPORT uint32_t SystemNative_TryGetUInt32OSThreadId(void);
 #endif

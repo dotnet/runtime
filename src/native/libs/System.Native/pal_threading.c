@@ -281,7 +281,7 @@ void SystemNative_Abort(void)
 #ifdef TARGET_OSX
 
 // Gets a non-truncated OS thread ID that is also suitable for diagnostics, for platforms that offer a 64-bit ID
-uint64_t SystemNative_GetUInt64OSThreadId()
+uint64_t SystemNative_GetUInt64OSThreadId(void)
 {
     uint64_t threadId;
     int result = pthread_threadid_np(pthread_self(), &threadId);
@@ -291,7 +291,10 @@ uint64_t SystemNative_GetUInt64OSThreadId()
 
 #else // !TARGET_OSX
 
-#if defined(__FreeBSD__)
+#if defined(__linux__)
+#include <sys/syscall.h>
+#include <unistd.h>
+#elif defined(__FreeBSD__)
 #include <pthread_np.h>
 #elif defined(__NetBSD__)
 #include <lwp.h>
@@ -299,7 +302,7 @@ uint64_t SystemNative_GetUInt64OSThreadId()
 
 // Tries to get a non-truncated OS thread ID that is also suitable for diagnostics, for platforms that offer a 32-bit ID.
 // Returns (uint32_t)-1 when the implementation does not know how to get the OS thread ID.
-uint32_t SystemNative_TryGetUInt32OSThreadId()
+uint32_t SystemNative_TryGetUInt32OSThreadId(void)
 {
     const uint32_t InvalidId = (uint32_t)-1;
 
