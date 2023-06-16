@@ -3899,7 +3899,7 @@ unsigned Compiler::gtSetMultiOpOrder(GenTreeMultiOp* multiOp)
     int costEx = 1;
     int costSz = 1;
 
-    unsigned level  = 0;
+    unsigned level = 0;
 
 #if defined(FEATURE_HW_INTRINSICS)
     if (multiOp->OperIs(GT_HWINTRINSIC))
@@ -3971,8 +3971,8 @@ unsigned Compiler::gtSetMultiOpOrder(GenTreeMultiOp* multiOp)
         }
         else
         {
-            // Most encountered HWI nodes are simple arithmetic operations
-            // so default to the same cost as something like add/subtract
+// Most encountered HWI nodes are simple arithmetic operations
+// so default to the same cost as something like add/subtract
 
 #if defined(TARGET_XARCH)
             costEx = 1;
