@@ -8333,37 +8333,6 @@ CEEInfo::getMethodClass(
     return result;
 }
 
-/***********************************************************************/
-CORINFO_MODULE_HANDLE CEEInfo::getMethodModule (CORINFO_METHOD_HANDLE methodHnd)
-{
-    CONTRACTL {
-        NOTHROW;
-        GC_NOTRIGGER;
-        MODE_PREEMPTIVE;
-    } CONTRACTL_END;
-
-    CORINFO_MODULE_HANDLE result = NULL;
-
-    JIT_TO_EE_TRANSITION_LEAF();
-
-    MethodDesc* method = GetMethod(methodHnd);
-
-    if (method->IsDynamicMethod())
-    {
-        // this should never be called, thus the assert, I don't know if the (non existent) caller
-        // expects the Module or the scope
-        UNREACHABLE();
-    }
-    else
-    {
-        result = (CORINFO_MODULE_HANDLE) method->GetModule();
-    }
-
-    EE_TO_JIT_TRANSITION_LEAF();
-
-    return result;
-}
-
 /*********************************************************************/
 bool CEEInfo::isIntrinsicType(CORINFO_CLASS_HANDLE classHnd)
 {

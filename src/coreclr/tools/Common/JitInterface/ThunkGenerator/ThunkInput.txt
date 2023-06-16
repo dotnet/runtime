@@ -171,7 +171,6 @@ FUNCTIONS
     void reportTailCallDecision(CORINFO_METHOD_HANDLE callerHnd,        CORINFO_METHOD_HANDLE calleeHnd,        bool fIsTailPrefix,        CorInfoTailCall tailCallResult,        const char * reason);
     void getEHinfo(        CORINFO_METHOD_HANDLE ftn,        unsigned          EHnumber,        CORINFO_EH_CLAUSE* clause        );
     CORINFO_CLASS_HANDLE getMethodClass(        CORINFO_METHOD_HANDLE       method        );
-    CORINFO_MODULE_HANDLE getMethodModule(        CORINFO_METHOD_HANDLE       method        );
     void getMethodVTableOffset(        CORINFO_METHOD_HANDLE       method,        unsigned*                   offsetOfIndirection,        unsigned*                   offsetAfterIndirection, bool*                       isRelative);
     bool resolveVirtualMethod(CORINFO_DEVIRTUALIZATION_INFO* info);
     CORINFO_METHOD_HANDLE getUnboxedEntry(CORINFO_METHOD_HANDLE ftn, bool* requiresInstMethodTableArg);

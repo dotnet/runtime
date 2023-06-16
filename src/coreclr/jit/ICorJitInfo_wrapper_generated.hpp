@@ -132,15 +132,6 @@ CORINFO_CLASS_HANDLE WrapICorJitInfo::getMethodClass(
     return temp;
 }
 
-CORINFO_MODULE_HANDLE WrapICorJitInfo::getMethodModule(
-          CORINFO_METHOD_HANDLE method)
-{
-    API_ENTER(getMethodModule);
-    CORINFO_MODULE_HANDLE temp = wrapHnd->getMethodModule(method);
-    API_LEAVE(getMethodModule);
-    return temp;
-}
-
 void WrapICorJitInfo::getMethodVTableOffset(
           CORINFO_METHOD_HANDLE method,
           unsigned* offsetOfIndirection,

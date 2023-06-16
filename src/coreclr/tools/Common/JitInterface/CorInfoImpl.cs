@@ -1236,22 +1236,6 @@ namespace Internal.JitInterface
             return ObjectToHandle(m.OwningType);
         }
 
-        private CORINFO_MODULE_STRUCT_* getMethodModule(CORINFO_METHOD_STRUCT_* method)
-        {
-            MethodDesc m = HandleToObject(method);
-            if (m is UnboxingMethodDesc unboxingMethodDesc)
-            {
-                m = unboxingMethodDesc.Target;
-            }
-
-            MethodIL methodIL = _compilation.GetMethodIL(m);
-            if (methodIL == null)
-            {
-                return null;
-            }
-            return ObjectToHandle(methodIL);
-        }
-
         private bool resolveVirtualMethod(CORINFO_DEVIRTUALIZATION_INFO* info)
         {
             // Initialize OUT fields
