@@ -592,10 +592,27 @@ bool Compiler::fgExpandThreadLocalAccessForCall(BasicBlock** pBlock, Statement* 
 #if defined(TARGET_ARM64)
         if (TargetOS::IsMacOS)
         {
+            // mov x0, descrAddrOfMaxThreadStaticBlock
+            // mov x1, [x0]
+            // blr x1
+            //
             GenTree* tls_get_addr_val =
                 gtNewIconHandleNode(threadStaticBlocksInfo.descrAddrOfMaxThreadStaticBlock, GTF_ICON_FTN_ADDR);
-            tlsValue                  = gtNewIndCallNode(tls_get_addr_val, TYP_I_IMPL);
-            GenTreeCall* tlsRefCall   = tlsValue->AsCall();
+
+            tls_get_addr_val = gtNewIndir(TYP_I_IMPL, tls_get_addr_val, GTF_IND_NONFAULTING | GTF_IND_INVARIANT);
+
+            tlsValue                = gtNewIndCallNode(tls_get_addr_val, TYP_I_IMPL);
+            GenTreeCall* tlsRefCall = tlsValue->AsCall();
+
+            // This is a syscall indirect call which takes an argument.
+            // Populate and set the ABI apporpriately.
+            GenTree* tlsArg = gtNewIconNode(threadStaticBlocksInfo.descrAddrOfMaxThreadStaticBlock, TYP_I_IMPL);
+            tlsRefCall->gtArgs.InsertAfterThisOrFirst(this, NewCallArg::Primitive(tlsArg));
+
+            CallArg* arg0 = tlsRefCall->gtArgs.GetArgByIndex(0);
+            arg0->AbiInfo = CallArgABIInformation();
+            arg0->AbiInfo.SetRegNum(0, REG_ARG_0);
+
             tlsRefCall->gtFlags |= GTF_EXCEPT | (tls_get_addr_val->gtFlags & GTF_GLOB_EFFECT);
         }
         else

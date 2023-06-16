@@ -331,6 +331,24 @@ int LinearScan::BuildCall(GenTreeCall* call)
         }
     }
 
+    if (call->gtCallType == CT_INDIRECT)
+    {
+        for (CallArg& arg : call->gtArgs.EarlyArgs())
+        {
+            CallArgABIInformation& abiInfo = arg.AbiInfo;
+            GenTree*               argNode = arg.GetEarlyNode();
+
+            // Each register argument corresponds to one source.
+            if (argNode->OperIsPutArgReg())
+            {
+                srcCount++;
+                BuildUse(argNode, genRegMask(argNode->GetRegNum()));
+                const regNumber argReg = abiInfo.GetRegNum();
+                assert(argNode->GetRegNum() == argReg);
+            }
+        }
+    }
+
 #ifdef DEBUG
     // Now, count stack args
     // Note that these need to be computed into a register, but then
@@ -355,7 +373,7 @@ int LinearScan::BuildCall(GenTreeCall* call)
             }
             else
             {
-                assert(!argNode->IsValue() || argNode->IsUnusedValue());
+                assert(!argNode->IsValue() || argNode->IsUnusedValue() || (call->gtCallType == CT_INDIRECT));
             }
         }
     }

@@ -1860,10 +1860,10 @@ uint64_t getThreadStaticsBaseOffset()
 {
     uint64_t tlvGetAddr;
     __asm__ (
-    "adrp x0, t_ThreadStatics@TLVPPAGE\n"
-    "ldr x0, [x0, t_ThreadStatics@TLVPPAGEOFF]\n"
-    "ldr %[result], [x0]\n"
-    : [result] "=r" (p)
+    "adrp x0, _t_ThreadStatics@TLVPPAGE\n"
+    "ldr x0, [x0, _t_ThreadStatics@TLVPPAGEOFF]\n"
+    "ldr %[result], x0\n"
+    : [result] "=r" (tlvGetAddr)
     :
     : "x0", "x1"
     );
