@@ -776,7 +776,18 @@ namespace System.Text.Json.SourceGeneration
                         ? $"(({propertyGenSpec.DeclaringType.FullyQualifiedName}){ValueVarName})"
                         : ValueVarName;
 
-                    string propValueExpr = $"{objectExpr}.{propertyGenSpec.NameSpecifiedInSourceCode}";
+                    string propValueExpr;
+                    if (defaultCheckType != DefaultCheckType.None)
+                    {
+                        // Use temporary variable to evaluate property value only once
+                        string localVariableName =  $"__value_{propertyGenSpec.NameSpecifiedInSourceCode}";
+                        writer.WriteLine($"{propertyGenSpec.PropertyType.FullyQualifiedName} {localVariableName} = {objectExpr}.{propertyGenSpec.NameSpecifiedInSourceCode};");
+                        propValueExpr = localVariableName;
+                    }
+                    else
+                    {
+                        propValueExpr = $"{objectExpr}.{propertyGenSpec.NameSpecifiedInSourceCode}";
+                    }
 
                     switch (defaultCheckType)
                     {
