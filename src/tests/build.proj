@@ -480,11 +480,6 @@
       <CustomNativeMain>true</CustomNativeMain>
       <_SymbolPrefix>_</_SymbolPrefix>
       <DsymUtilOptions>--flat</DsymUtilOptions>
-      <IlcPath>$([MSBuild]::NormalizeDirectory('$(RepoRoot)', 'artifacts', 'bin', 'coreclr', '$(HostOS).$(BuildArchitecture).$(CoreCLRConfiguration)', 'ilc'))</IlcPath>
-      <IlcToolsPath>$(IlcPath)</IlcToolsPath>
-      <IlcSdkPath>$([MSBuild]::NormalizeDirectory('$(RepoRoot)', 'artifacts', 'bin', 'coreclr', '$(TargetOS).$(TargetArchitecture).$(CoreCLRConfiguration)', 'aotsdk'))</IlcSdkPath>
-      <IlcFrameworkPath>$(LibrariesAllBinArtifactsPath)</IlcFrameworkPath>
-      <IlcFrameworkNativePath>$(LibrariesAllBinArtifactsPath)</IlcFrameworkNativePath>
     </PropertyGroup>
   </Target>
 
@@ -511,12 +506,17 @@
       <_LinkerFlagsToDrop Include="@(LinkerArg)" Condition="$([System.String]::new('%(Identity)').Contains('swift'))" />
       <LinkerArg Remove="@(_LinkerFlagsToDrop)" />
       <ExtraLinkerArguments Include="@(LinkerArg)" />
+      <GlobalizationkNativeLibs Include="$(MicrosoftNetCoreAppRuntimePackDir)runtimes/$(TargetOS)-$(TargetArchitecture)/native/icudt.dat" />
     </ItemGroup>
 
     <RemoveDir Directories="$(BundleDir)" />
     <RemoveDir Directories="$(BuildDir)" />
     <RemoveDir Directories="$(AppDir)" />
     <MakeDir Directories="$(BuildDir)" />
+
+    <Copy
+        SourceFiles="@(GlobalizationkNativeLibs)"
+        DestinationFolder="$(BuildDir)" />
 
     <AppleAppBuilderTask
         UseNativeAOTRuntime="true"
@@ -688,7 +688,6 @@
       <GroupBuildCmd Condition="'$(TestBuildMode)' == 'nativeaot' and '$(TargetsAppleMobile)' == 'true'">$(GroupBuildCmd) "/p:CustomNativeMain=true"</GroupBuildCmd>
       <GroupBuildCmd Condition="'$(TestBuildMode)' == 'nativeaot' and '$(TargetsAppleMobile)' == 'true'">$(GroupBuildCmd) "/p:NativeCompilationDuringPublish=false"</GroupBuildCmd>
       <GroupBuildCmd Condition="'$(TestBuildMode)' == 'nativeaot' and '$(TargetsAppleMobile)' == 'true'">$(GroupBuildCmd) "/p:CustomIlcCompileDependsOn=true"</GroupBuildCmd>
-      <GroupBuildCmd Condition="'$(TestBuildMode)' == 'nativeaot' and '$(TargetsAppleMobile)' == 'true'">$(GroupBuildCmd) "/p:InvariantGlobalization=true"</GroupBuildCmd>
       <GroupBuildCmd Condition="'$(IlcMultiModule)' == 'true'">$(GroupBuildCmd) "/p:IlcMultiModule=true"</GroupBuildCmd>
       <GroupBuildCmd Condition="'$(BuildNativeAotFrameworkObjects)' == 'true'">$(GroupBuildCmd) "/p:BuildNativeAotFrameworkObjects=true"</GroupBuildCmd>
     </PropertyGroup>

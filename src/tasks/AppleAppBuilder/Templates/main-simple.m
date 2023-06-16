@@ -48,9 +48,6 @@ void (*clickHandlerPtr)(void);
     [button addTarget:self action:@selector(buttonClicked:) forControlEvents:UIControlEventTouchUpInside];
     [button setFrame:CGRectMake(50, 300, 200, 50)];
     [button setTitle:@"Click me (wire me up)" forState:UIControlStateNormal];
-#if !USE_NATIVE_AOT
-    [button setExclusiveTouch:YES];
-#endif
     [self.view addSubview:button];
 
     dispatch_async(dispatch_get_global_queue(DISPATCH_QUEUE_PRIORITY_DEFAULT, 0), ^{
