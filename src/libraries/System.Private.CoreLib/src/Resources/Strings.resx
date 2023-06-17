@@ -3435,7 +3435,7 @@
     <value>Setter must have parameters.</value>
   </data>
   <data name="Lock_Enter_LockRecursionException" xml:space="preserve">
-    <value>The calling thread has reached the limit of recursively entering the lock.</value>
+    <value>The lock has reached the limit of recursive enters.</value>
   </data>
   <data name="Lock_Enter_WaiterCountOverflow_OutOfMemoryException" xml:space="preserve">
     <value>The lock has reached the limit of how many threads may wait for the lock.</value>

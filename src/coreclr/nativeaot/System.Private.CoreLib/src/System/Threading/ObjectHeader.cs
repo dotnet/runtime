@@ -239,7 +239,7 @@ namespace System.Threading
                     SyncTable.MoveThinLockToNewEntry(
                         syncIndex,
                         oldBits & SBLK_MASK_LOCK_THREADID,
-                        (oldBits & SBLK_MASK_LOCK_RECLEVEL) >> SBLK_RECLEVEL_SHIFT);
+                        (ushort)((oldBits & SBLK_MASK_LOCK_RECLEVEL) >> SBLK_RECLEVEL_SHIFT));
                 }
 
                 // Store the sync entry index

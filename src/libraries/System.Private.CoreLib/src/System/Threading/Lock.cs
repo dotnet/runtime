@@ -36,7 +36,7 @@ namespace System.Threading
 #endif
 
         private uint _state; // see State for layout
-        private uint _recursionCount;
+        private ushort _recursionCount;
         private int _spinCount;
         private int _waiterStartTimeMs;
         private AutoResetEvent? _waitEvent;
@@ -50,8 +50,8 @@ namespace System.Threading
         /// as it had entered the lock to fully exit the lock and allow other threads to enter the lock.
         /// </remarks>
         /// <exception cref="LockRecursionException">
-        /// The calling thread has reached the limit of recursively entering the lock. The limit is implementation-defined, but
-        /// is expected to be high enough that it would typically not be reached when the lock is used properly.
+        /// The lock has reached the limit of recursive enters. The limit is implementation-defined, but is expected to be high
+        /// enough that it would typically not be reached when the lock is used properly.
         /// </exception>
         [MethodImpl(MethodImplOptions.NoInlining)]
         public void Enter()
@@ -76,8 +76,8 @@ namespace System.Threading
         /// allow other threads to enter the lock.
         /// </remarks>
         /// <exception cref="LockRecursionException">
-        /// The calling thread has reached the limit of recursively entering the lock. The limit is implementation-defined, but
-        /// is expected to be high enough that it would typically not be reached when the lock is used properly.
+        /// The lock has reached the limit of recursive enters. The limit is implementation-defined, but is expected to be high
+        /// enough that it would typically not be reached when the lock is used properly.
         /// </exception>
         [MethodImpl(MethodImplOptions.AggressiveInlining)]
         public Scope EnterScope()
@@ -131,8 +131,8 @@ namespace System.Threading
         /// the lock to fully exit the lock and allow other threads to enter the lock.
         /// </remarks>
         /// <exception cref="LockRecursionException">
-        /// The calling thread has reached the limit of recursively entering the lock. The limit is implementation-defined, but
-        /// is expected to be high enough that it would typically not be reached when the lock is used properly.
+        /// The lock has reached the limit of recursive enters. The limit is implementation-defined, but is expected to be high
+        /// enough that it would typically not be reached when the lock is used properly.
         /// </exception>
         [MethodImpl(MethodImplOptions.NoInlining)]
         public bool TryEnter() => TryEnter_Inlined(timeoutMs: 0);
@@ -159,8 +159,8 @@ namespace System.Threading
         /// <paramref name="millisecondsTimeout"/> is less than <code>-1</code>.
         /// </exception>
         /// <exception cref="LockRecursionException">
-        /// The calling thread has reached the limit of recursively entering the lock. The limit is implementation-defined, but
-        /// is expected to be high enough that it would typically not be reached when the lock is used properly.
+        /// The lock has reached the limit of recursive enters. The limit is implementation-defined, but is expected to be high
+        /// enough that it would typically not be reached when the lock is used properly.
         /// </exception>
         public bool TryEnter(int millisecondsTimeout)
         {
@@ -193,8 +193,8 @@ namespace System.Threading
         /// than <code>-1</code> milliseconds or greater than <see cref="int.MaxValue"/> milliseconds.
         /// </exception>
         /// <exception cref="LockRecursionException">
-        /// The calling thread has reached the limit of recursively entering the lock. The limit is implementation-defined, but
-        /// is expected to be high enough that it would typically not be reached when the lock is used properly.
+        /// The lock has reached the limit of recursive enters. The limit is implementation-defined, but is expected to be high
+        /// enough that it would typically not be reached when the lock is used properly.
         /// </exception>
         public bool TryEnter(TimeSpan timeout) => TryEnter_Outlined(WaitHandle.ToTimeoutMilliseconds(timeout));
 
@@ -284,7 +284,7 @@ namespace System.Threading
             {
                 Debug.Assert(new State(this).IsLocked);
 
-                uint newRecursionCount = _recursionCount + 1;
+                ushort newRecursionCount = (ushort)(_recursionCount + 1);
                 if (newRecursionCount != 0)
                 {
                     _recursionCount = newRecursionCount;

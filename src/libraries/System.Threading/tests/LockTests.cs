@@ -37,16 +37,24 @@ namespace System.Threading.Tests
         public static void DeepRecursion()
         {
             Lock lockObj = new();
-            var hc = lockObj.GetHashCode();
-            // reduced from "(long)int.MaxValue + 2;" to something that will return in a more meaningful time
-            const int limit = 10000;
+            const int successLimit = ushort.MaxValue - 1;
+            const int failureLimit = ushort.MaxValue + 2;
 
-            for (var i = 0L; i < limit; i++)
+            int i = 0;
+            for (; i < successLimit; i++)
             {
                 Assert.True(lockObj.TryEnter());
             }
 
-            for (var j = 0L; j < (limit - 1); j++)
+            Assert.Throws<LockRecursionException>(() =>
+            {
+                for (; i < failureLimit; i++)
+                {
+                    Assert.True(lockObj.TryEnter());
+                }
+            });
+
+            for (; i > 1; i--)
             {
                 lockObj.Exit();
                 Assert.True(lockObj.IsHeldByCurrentThread);

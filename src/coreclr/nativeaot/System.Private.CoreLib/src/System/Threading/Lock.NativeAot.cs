@@ -63,11 +63,11 @@ namespace System.Threading
             return isHeld;
         }
 
-        internal uint ExitAll()
+        internal ushort ExitAll()
         {
             Debug.Assert(IsHeldByCurrentThread);
 
-            uint recursionCount = _recursionCount;
+            ushort recursionCount = _recursionCount;
             _owningThreadId = 0;
             _recursionCount = 0;
 
@@ -80,7 +80,7 @@ namespace System.Threading
             return recursionCount;
         }
 
-        internal void Reenter(uint previousRecursionCount)
+        internal void Reenter(ushort previousRecursionCount)
         {
             Debug.Assert(!IsHeldByCurrentThread);
 
@@ -162,6 +162,9 @@ namespace System.Threading
             s_maxSpinCount = DetermineMaxSpinCount();
             s_minSpinCount = DetermineMinSpinCount();
 
+            // Also initialize some types that are used later to prevent potential class construction cycles
+            NativeRuntimeEventSource.Log.IsEnabled();
+
             Volatile.Write(ref s_staticsInitializationStage, (int)StaticsInitializationStage.Complete);
             return true;
         }
@@ -170,13 +173,13 @@ namespace System.Threading
         internal static bool IsSingleProcessor => s_isSingleProcessor;
 
         // Used to transfer the state when inflating thin locks
-        internal void InitializeLocked(int managedThreadId, int recursionCount)
+        internal void InitializeLocked(int managedThreadId, ushort recursionCount)
         {
             Debug.Assert(recursionCount == 0 || managedThreadId != 0);
 
             _state = managedThreadId == 0 ? State.InitialStateValue : State.LockedStateValue;
             _owningThreadId = (uint)managedThreadId;
-            _recursionCount = (uint)recursionCount;
+            _recursionCount = recursionCount;
         }
 
         private struct ThreadId

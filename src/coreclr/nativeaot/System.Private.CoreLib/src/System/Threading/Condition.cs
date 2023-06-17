@@ -107,7 +107,7 @@ namespace System.Threading
             Waiter waiter = GetWaiterForCurrentThread();
             AddWaiter(waiter);
 
-            uint recursionCount = _lock.ExitAll();
+            ushort recursionCount = _lock.ExitAll();
             bool success = false;
             try
             {
