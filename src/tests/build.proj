@@ -3,6 +3,9 @@
   <Import Project="Directory.Build.targets" />
   <Import Project="xunit-wrappers.targets" />
 
+  <Import Project="$(MonoProjectRoot)\msbuild\apple\build\AppleBuild.props" />
+  <Import Project="$(MonoProjectRoot)\msbuild\apple\build\AppleBuild.InTree.targets" />
+
   <PropertyGroup>
     <XunitTestBinBase Condition="'$(XunitTestBinBase)'==''" >$(BaseOutputPathWithConfig)</XunitTestBinBase>
     <XunitWrapperGeneratedCSDirBase>$(XunitTestBinBase)\TestWrappers\</XunitWrapperGeneratedCSDirBase>
@@ -566,7 +569,7 @@
 
     <MSBuild
       Projects="@(RunProj)"
-      Targets="BuildNativeAOTiOSApp"
+      Targets="BuildNativeAOTiOSApp;_AppleGenerateAppBundle"
       BuildInParallel="true"
       Condition="'@(TestDirectories)' != '' and '$(TestBuildMode)' == 'nativeaot'"
     />
