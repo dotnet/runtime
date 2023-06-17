@@ -5,6 +5,6 @@ namespace Microsoft.Extensions.DependencyInjection
 {
     public static class MetricsServiceExtensions
     {
-        public static Microsoft.Extensions.DependencyInjection.IServiceCollection AddMetrics(this Microsoft.Extensions.DependencyInjection.IServiceCollection services) { return null!; }
+        public static Microsoft.Extensions.DependencyInjection.IServiceCollection AddMetrics(this Microsoft.Extensions.DependencyInjection.IServiceCollection services) { throw null; }
     }
 }
