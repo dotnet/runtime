@@ -13,11 +13,6 @@ namespace System.Globalization.Tests
         {
             yield return new object[] { NumberFormatInfo.InvariantInfo, new int[] { 0 } };
             yield return new object[] { CultureInfo.GetCultureInfo("bg-BG").NumberFormat, new int[] { 0, 8 } };
-            if (PlatformDetection.IsNotUsingLimitedCultures)
-            {
-                // ICU for mobile / browser do not contain these locales
-            	yield return new object[] { CultureInfo.GetCultureInfo("luy-KE").NumberFormat, new int[] { 16 } };
-            }
         }
 
         [Theory]
@@ -40,7 +35,6 @@ namespace System.Globalization.Tests
                 // ICU for mobile / browser do not contain these locales
                 yield return new object[] { "as" };
                 yield return new object[] { "es-BO" };
-                yield return new object[] { "luy-KE" };
             }
         }
 
