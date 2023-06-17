@@ -532,6 +532,7 @@
 
     <IlcToolsPath>$(CoreCLRILCompilerDir)</IlcToolsPath>
     <IlcToolsPath Condition="'$(TargetArchitecture)' != '$(BuildArchitecture)' and '$(CustomIlcCompileDependsOn)' != 'true' and '$(TargetsAppleMobile)' != 'true'">$(CoreCLRCrossILCompilerDir)</IlcToolsPath>
+    <IlcToolsPath Condition="'$(CustomIlcCompileDependsOn)' == 'true' or '$(TargetsAppleMobile)' == 'true'">$([MSBuild]::NormalizeDirectory('$(RepoRoot)', 'artifacts', 'bin', 'coreclr', '$(HostOS).$(BuildArchitecture).$(CoreCLRConfiguration)', 'ilc'))</IlcToolsPath>
     <IlcBuildTasksPath>$(CoreCLRILCompilerDir)netstandard/ILCompiler.Build.Tasks.dll</IlcBuildTasksPath>
     <IlcSdkPath Condition="'$(CustomIlcCompileDependsOn)' != 'true' and '$(TargetsAppleMobile)' != 'true'">$(CoreCLRAotSdkDir)</IlcSdkPath>
     <IlcSdkPath Condition="'$(CustomIlcCompileDependsOn)' == 'true' or '$(TargetsAppleMobile)' == 'true'">$([MSBuild]::NormalizeDirectory('$(RepoRoot)', 'artifacts', 'bin', 'coreclr', '$(TargetOS).$(TargetArchitecture).$(CoreCLRConfiguration)', 'aotsdk'))</IlcSdkPath>
