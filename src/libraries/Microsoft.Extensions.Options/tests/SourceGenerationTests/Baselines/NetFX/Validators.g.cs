@@ -17,11 +17,19 @@ internal sealed partial class __ThirdModelNoNamespaceValidator__
         var baseName = (string.IsNullOrEmpty(name) ? "ThirdModelNoNamespace" : name) + ".";
         var builder = new global::Microsoft.Extensions.Options.ValidateOptionsResultBuilder();
         var context = new global::System.ComponentModel.DataAnnotations.ValidationContext(options);
+        var validationResults = new global::System.Collections.Generic.List<global::System.ComponentModel.DataAnnotations.ValidationResult>();
+        var validationAttributes = new global::System.Collections.Generic.List<global::System.ComponentModel.DataAnnotations.ValidationAttribute>();
 
         context.MemberName = "P5";
         context.DisplayName = baseName + "P5";
-        builder.AddResult(global::__OptionValidationStaticInstances.__Attributes.A1.GetValidationResult(options.P5, context));
-        builder.AddResult(global::__OptionValidationStaticInstances.__Attributes.A2.GetValidationResult(options.P5, context));
+        validationAttributes.Add(global::__OptionValidationStaticInstances.__Attributes.A1);
+        validationAttributes.Add(global::__OptionValidationStaticInstances.__Attributes.A2);
+        if (!global::System.ComponentModel.DataAnnotations.Validator.TryValidateValue(options.P5!, context, validationResults, validationAttributes))
+        {
+            builder.AddResults(validationResults);
+        }
+        validationResults.Clear();
+        validationAttributes.Clear();
 
         return builder.Build();
     }
@@ -40,11 +48,19 @@ partial class FirstValidatorNoNamespace
         var baseName = (string.IsNullOrEmpty(name) ? "FirstModelNoNamespace" : name) + ".";
         var builder = new global::Microsoft.Extensions.Options.ValidateOptionsResultBuilder();
         var context = new global::System.ComponentModel.DataAnnotations.ValidationContext(options);
+        var validationResults = new global::System.Collections.Generic.List<global::System.ComponentModel.DataAnnotations.ValidationResult>();
+        var validationAttributes = new global::System.Collections.Generic.List<global::System.ComponentModel.DataAnnotations.ValidationAttribute>();
 
         context.MemberName = "P1";
         context.DisplayName = baseName + "P1";
-        builder.AddResult(global::__OptionValidationStaticInstances.__Attributes.A1.GetValidationResult(options.P1, context));
-        builder.AddResult(global::__OptionValidationStaticInstances.__Attributes.A2.GetValidationResult(options.P1, context));
+        validationAttributes.Add(global::__OptionValidationStaticInstances.__Attributes.A1);
+        validationAttributes.Add(global::__OptionValidationStaticInstances.__Attributes.A2);
+        if (!global::System.ComponentModel.DataAnnotations.Validator.TryValidateValue(options.P1!, context, validationResults, validationAttributes))
+        {
+            builder.AddResults(validationResults);
+        }
+        validationResults.Clear();
+        validationAttributes.Clear();
 
         if (options.P2 is not null)
         {
@@ -73,11 +89,19 @@ partial class SecondValidatorNoNamespace
         var baseName = (string.IsNullOrEmpty(name) ? "SecondModelNoNamespace" : name) + ".";
         var builder = new global::Microsoft.Extensions.Options.ValidateOptionsResultBuilder();
         var context = new global::System.ComponentModel.DataAnnotations.ValidationContext(options);
+        var validationResults = new global::System.Collections.Generic.List<global::System.ComponentModel.DataAnnotations.ValidationResult>();
+        var validationAttributes = new global::System.Collections.Generic.List<global::System.ComponentModel.DataAnnotations.ValidationAttribute>();
 
         context.MemberName = "P4";
         context.DisplayName = baseName + "P4";
-        builder.AddResult(global::__OptionValidationStaticInstances.__Attributes.A1.GetValidationResult(options.P4, context));
-        builder.AddResult(global::__OptionValidationStaticInstances.__Attributes.A2.GetValidationResult(options.P4, context));
+        validationAttributes.Add(global::__OptionValidationStaticInstances.__Attributes.A1);
+        validationAttributes.Add(global::__OptionValidationStaticInstances.__Attributes.A2);
+        if (!global::System.ComponentModel.DataAnnotations.Validator.TryValidateValue(options.P4!, context, validationResults, validationAttributes))
+        {
+            builder.AddResults(validationResults);
+        }
+        validationResults.Clear();
+        validationAttributes.Clear();
 
         return builder.Build();
     }
@@ -98,14 +122,28 @@ namespace CustomAttr
             var baseName = (string.IsNullOrEmpty(name) ? "FirstModel" : name) + ".";
             var builder = new global::Microsoft.Extensions.Options.ValidateOptionsResultBuilder();
             var context = new global::System.ComponentModel.DataAnnotations.ValidationContext(options);
+            var validationResults = new global::System.Collections.Generic.List<global::System.ComponentModel.DataAnnotations.ValidationResult>();
+            var validationAttributes = new global::System.Collections.Generic.List<global::System.ComponentModel.DataAnnotations.ValidationAttribute>();
 
             context.MemberName = "P1";
             context.DisplayName = baseName + "P1";
-            builder.AddResult(global::__OptionValidationStaticInstances.__Attributes.A3.GetValidationResult(options.P1, context));
+            validationAttributes.Add(global::__OptionValidationStaticInstances.__Attributes.A3);
+            if (!global::System.ComponentModel.DataAnnotations.Validator.TryValidateValue(options.P1!, context, validationResults, validationAttributes))
+            {
+                builder.AddResults(validationResults);
+            }
+            validationResults.Clear();
+            validationAttributes.Clear();
 
             context.MemberName = "P2";
             context.DisplayName = baseName + "P2";
-            builder.AddResult(global::__OptionValidationStaticInstances.__Attributes.A4.GetValidationResult(options.P2, context));
+            validationAttributes.Add(global::__OptionValidationStaticInstances.__Attributes.A4);
+            if (!global::System.ComponentModel.DataAnnotations.Validator.TryValidateValue(options.P2!, context, validationResults, validationAttributes))
+            {
+                builder.AddResults(validationResults);
+            }
+            validationResults.Clear();
+            validationAttributes.Clear();
 
             return builder.Build();
         }
@@ -128,11 +166,19 @@ namespace Enumeration
             var baseName = (string.IsNullOrEmpty(name) ? "SecondModel" : name) + ".";
             var builder = new global::Microsoft.Extensions.Options.ValidateOptionsResultBuilder();
             var context = new global::System.ComponentModel.DataAnnotations.ValidationContext(options);
+            var validationResults = new global::System.Collections.Generic.List<global::System.ComponentModel.DataAnnotations.ValidationResult>();
+            var validationAttributes = new global::System.Collections.Generic.List<global::System.ComponentModel.DataAnnotations.ValidationAttribute>();
 
             context.MemberName = "P6";
             context.DisplayName = baseName + "P6";
-            builder.AddResult(global::__OptionValidationStaticInstances.__Attributes.A1.GetValidationResult(options.P6, context));
-            builder.AddResult(global::__OptionValidationStaticInstances.__Attributes.A2.GetValidationResult(options.P6, context));
+            validationAttributes.Add(global::__OptionValidationStaticInstances.__Attributes.A1);
+            validationAttributes.Add(global::__OptionValidationStaticInstances.__Attributes.A2);
+            if (!global::System.ComponentModel.DataAnnotations.Validator.TryValidateValue(options.P6!, context, validationResults, validationAttributes))
+            {
+                builder.AddResults(validationResults);
+            }
+            validationResults.Clear();
+            validationAttributes.Clear();
 
             return builder.Build();
         }
@@ -155,10 +201,18 @@ namespace Enumeration
             var baseName = (string.IsNullOrEmpty(name) ? "ThirdModel" : name) + ".";
             var builder = new global::Microsoft.Extensions.Options.ValidateOptionsResultBuilder();
             var context = new global::System.ComponentModel.DataAnnotations.ValidationContext(options);
+            var validationResults = new global::System.Collections.Generic.List<global::System.ComponentModel.DataAnnotations.ValidationResult>();
+            var validationAttributes = new global::System.Collections.Generic.List<global::System.ComponentModel.DataAnnotations.ValidationAttribute>();
 
             context.MemberName = "Value";
             context.DisplayName = baseName + "Value";
-            builder.AddResult(global::__OptionValidationStaticInstances.__Attributes.A5.GetValidationResult(options.Value, context));
+            validationAttributes.Add(global::__OptionValidationStaticInstances.__Attributes.A5);
+            if (!global::System.ComponentModel.DataAnnotations.Validator.TryValidateValue(options.Value!, context, validationResults, validationAttributes))
+            {
+                builder.AddResults(validationResults);
+            }
+            validationResults.Clear();
+            validationAttributes.Clear();
 
             return builder.Build();
         }
@@ -180,6 +234,8 @@ namespace Enumeration
             var baseName = (string.IsNullOrEmpty(name) ? "FirstModel" : name) + ".";
             var builder = new global::Microsoft.Extensions.Options.ValidateOptionsResultBuilder();
             var context = new global::System.ComponentModel.DataAnnotations.ValidationContext(options);
+            var validationResults = new global::System.Collections.Generic.List<global::System.ComponentModel.DataAnnotations.ValidationResult>();
+            var validationAttributes = new global::System.Collections.Generic.List<global::System.ComponentModel.DataAnnotations.ValidationAttribute>();
 
             if (options.P1 is not null)
             {
@@ -333,11 +389,19 @@ namespace Enumeration
             var baseName = (string.IsNullOrEmpty(name) ? "SecondModel" : name) + ".";
             var builder = new global::Microsoft.Extensions.Options.ValidateOptionsResultBuilder();
             var context = new global::System.ComponentModel.DataAnnotations.ValidationContext(options);
+            var validationResults = new global::System.Collections.Generic.List<global::System.ComponentModel.DataAnnotations.ValidationResult>();
+            var validationAttributes = new global::System.Collections.Generic.List<global::System.ComponentModel.DataAnnotations.ValidationAttribute>();
 
             context.MemberName = "P6";
             context.DisplayName = baseName + "P6";
-            builder.AddResult(global::__OptionValidationStaticInstances.__Attributes.A1.GetValidationResult(options.P6, context));
-            builder.AddResult(global::__OptionValidationStaticInstances.__Attributes.A2.GetValidationResult(options.P6, context));
+            validationAttributes.Add(global::__OptionValidationStaticInstances.__Attributes.A1);
+            validationAttributes.Add(global::__OptionValidationStaticInstances.__Attributes.A2);
+            if (!global::System.ComponentModel.DataAnnotations.Validator.TryValidateValue(options.P6!, context, validationResults, validationAttributes))
+            {
+                builder.AddResults(validationResults);
+            }
+            validationResults.Clear();
+            validationAttributes.Clear();
 
             return builder.Build();
         }
@@ -360,11 +424,19 @@ namespace Fields
             var baseName = (string.IsNullOrEmpty(name) ? "ThirdModel" : name) + ".";
             var builder = new global::Microsoft.Extensions.Options.ValidateOptionsResultBuilder();
             var context = new global::System.ComponentModel.DataAnnotations.ValidationContext(options);
+            var validationResults = new global::System.Collections.Generic.List<global::System.ComponentModel.DataAnnotations.ValidationResult>();
+            var validationAttributes = new global::System.Collections.Generic.List<global::System.ComponentModel.DataAnnotations.ValidationAttribute>();
 
             context.MemberName = "P5";
             context.DisplayName = baseName + "P5";
-            builder.AddResult(global::__OptionValidationStaticInstances.__Attributes.A1.GetValidationResult(options.P5, context));
-            builder.AddResult(global::__OptionValidationStaticInstances.__Attributes.A2.GetValidationResult(options.P5, context));
+            validationAttributes.Add(global::__OptionValidationStaticInstances.__Attributes.A1);
+            validationAttributes.Add(global::__OptionValidationStaticInstances.__Attributes.A2);
+            if (!global::System.ComponentModel.DataAnnotations.Validator.TryValidateValue(options.P5!, context, validationResults, validationAttributes))
+            {
+                builder.AddResults(validationResults);
+            }
+            validationResults.Clear();
+            validationAttributes.Clear();
 
             return builder.Build();
         }
@@ -386,11 +458,19 @@ namespace Fields
             var baseName = (string.IsNullOrEmpty(name) ? "FirstModel" : name) + ".";
             var builder = new global::Microsoft.Extensions.Options.ValidateOptionsResultBuilder();
             var context = new global::System.ComponentModel.DataAnnotations.ValidationContext(options);
+            var validationResults = new global::System.Collections.Generic.List<global::System.ComponentModel.DataAnnotations.ValidationResult>();
+            var validationAttributes = new global::System.Collections.Generic.List<global::System.ComponentModel.DataAnnotations.ValidationAttribute>();
 
             context.MemberName = "P1";
             context.DisplayName = baseName + "P1";
-            builder.AddResult(global::__OptionValidationStaticInstances.__Attributes.A1.GetValidationResult(options.P1, context));
-            builder.AddResult(global::__OptionValidationStaticInstances.__Attributes.A2.GetValidationResult(options.P1, context));
+            validationAttributes.Add(global::__OptionValidationStaticInstances.__Attributes.A1);
+            validationAttributes.Add(global::__OptionValidationStaticInstances.__Attributes.A2);
+            if (!global::System.ComponentModel.DataAnnotations.Validator.TryValidateValue(options.P1!, context, validationResults, validationAttributes))
+            {
+                builder.AddResults(validationResults);
+            }
+            validationResults.Clear();
+            validationAttributes.Clear();
 
             if (options.P2 is not null)
             {
@@ -419,11 +499,19 @@ namespace Fields
             var baseName = (string.IsNullOrEmpty(name) ? "SecondModel" : name) + ".";
             var builder = new global::Microsoft.Extensions.Options.ValidateOptionsResultBuilder();
             var context = new global::System.ComponentModel.DataAnnotations.ValidationContext(options);
+            var validationResults = new global::System.Collections.Generic.List<global::System.ComponentModel.DataAnnotations.ValidationResult>();
+            var validationAttributes = new global::System.Collections.Generic.List<global::System.ComponentModel.DataAnnotations.ValidationAttribute>();
 
             context.MemberName = "P4";
             context.DisplayName = baseName + "P4";
-            builder.AddResult(global::__OptionValidationStaticInstances.__Attributes.A1.GetValidationResult(options.P4, context));
-            builder.AddResult(global::__OptionValidationStaticInstances.__Attributes.A2.GetValidationResult(options.P4, context));
+            validationAttributes.Add(global::__OptionValidationStaticInstances.__Attributes.A1);
+            validationAttributes.Add(global::__OptionValidationStaticInstances.__Attributes.A2);
+            if (!global::System.ComponentModel.DataAnnotations.Validator.TryValidateValue(options.P4!, context, validationResults, validationAttributes))
+            {
+                builder.AddResults(validationResults);
+            }
+            validationResults.Clear();
+            validationAttributes.Clear();
 
             return builder.Build();
         }
@@ -445,11 +533,19 @@ namespace FileScopedNamespace
             var baseName = (string.IsNullOrEmpty(name) ? "FirstModel" : name) + ".";
             var builder = new global::Microsoft.Extensions.Options.ValidateOptionsResultBuilder();
             var context = new global::System.ComponentModel.DataAnnotations.ValidationContext(options);
+            var validationResults = new global::System.Collections.Generic.List<global::System.ComponentModel.DataAnnotations.ValidationResult>();
+            var validationAttributes = new global::System.Collections.Generic.List<global::System.ComponentModel.DataAnnotations.ValidationAttribute>();
 
             context.MemberName = "P1";
             context.DisplayName = baseName + "P1";
-            builder.AddResult(global::__OptionValidationStaticInstances.__Attributes.A1.GetValidationResult(options.P1, context));
-            builder.AddResult(global::__OptionValidationStaticInstances.__Attributes.A2.GetValidationResult(options.P1, context));
+            validationAttributes.Add(global::__OptionValidationStaticInstances.__Attributes.A1);
+            validationAttributes.Add(global::__OptionValidationStaticInstances.__Attributes.A2);
+            if (!global::System.ComponentModel.DataAnnotations.Validator.TryValidateValue(options.P1!, context, validationResults, validationAttributes))
+            {
+                builder.AddResults(validationResults);
+            }
+            validationResults.Clear();
+            validationAttributes.Clear();
 
             return builder.Build();
         }
@@ -471,10 +567,18 @@ namespace FunnyStrings
             var baseName = (string.IsNullOrEmpty(name) ? "FirstModel" : name) + ".";
             var builder = new global::Microsoft.Extensions.Options.ValidateOptionsResultBuilder();
             var context = new global::System.ComponentModel.DataAnnotations.ValidationContext(options);
+            var validationResults = new global::System.Collections.Generic.List<global::System.ComponentModel.DataAnnotations.ValidationResult>();
+            var validationAttributes = new global::System.Collections.Generic.List<global::System.ComponentModel.DataAnnotations.ValidationAttribute>();
 
             context.MemberName = "P1";
             context.DisplayName = baseName + "P1";
-            builder.AddResult(global::__OptionValidationStaticInstances.__Attributes.A6.GetValidationResult(options.P1, context));
+            validationAttributes.Add(global::__OptionValidationStaticInstances.__Attributes.A6);
+            if (!global::System.ComponentModel.DataAnnotations.Validator.TryValidateValue(options.P1!, context, validationResults, validationAttributes))
+            {
+                builder.AddResults(validationResults);
+            }
+            validationResults.Clear();
+            validationAttributes.Clear();
 
             return builder.Build();
         }
@@ -497,11 +601,19 @@ namespace Generics
             var baseName = (string.IsNullOrEmpty(name) ? "SecondModel" : name) + ".";
             var builder = new global::Microsoft.Extensions.Options.ValidateOptionsResultBuilder();
             var context = new global::System.ComponentModel.DataAnnotations.ValidationContext(options);
+            var validationResults = new global::System.Collections.Generic.List<global::System.ComponentModel.DataAnnotations.ValidationResult>();
+            var validationAttributes = new global::System.Collections.Generic.List<global::System.ComponentModel.DataAnnotations.ValidationAttribute>();
 
             context.MemberName = "P4";
             context.DisplayName = baseName + "P4";
-            builder.AddResult(global::__OptionValidationStaticInstances.__Attributes.A1.GetValidationResult(options.P4, context));
-            builder.AddResult(global::__OptionValidationStaticInstances.__Attributes.A2.GetValidationResult(options.P4, context));
+            validationAttributes.Add(global::__OptionValidationStaticInstances.__Attributes.A1);
+            validationAttributes.Add(global::__OptionValidationStaticInstances.__Attributes.A2);
+            if (!global::System.ComponentModel.DataAnnotations.Validator.TryValidateValue(options.P4!, context, validationResults, validationAttributes))
+            {
+                builder.AddResults(validationResults);
+            }
+            validationResults.Clear();
+            validationAttributes.Clear();
 
             return builder.Build();
         }
@@ -523,11 +635,19 @@ namespace Generics
             var baseName = (string.IsNullOrEmpty(name) ? "FirstModel" : name) + ".";
             var builder = new global::Microsoft.Extensions.Options.ValidateOptionsResultBuilder();
             var context = new global::System.ComponentModel.DataAnnotations.ValidationContext(options);
+            var validationResults = new global::System.Collections.Generic.List<global::System.ComponentModel.DataAnnotations.ValidationResult>();
+            var validationAttributes = new global::System.Collections.Generic.List<global::System.ComponentModel.DataAnnotations.ValidationAttribute>();
 
             context.MemberName = "P1";
             context.DisplayName = baseName + "P1";
-            builder.AddResult(global::__OptionValidationStaticInstances.__Attributes.A1.GetValidationResult(options.P1, context));
-            builder.AddResult(global::__OptionValidationStaticInstances.__Attributes.A2.GetValidationResult(options.P1, context));
+            validationAttributes.Add(global::__OptionValidationStaticInstances.__Attributes.A1);
+            validationAttributes.Add(global::__OptionValidationStaticInstances.__Attributes.A2);
+            if (!global::System.ComponentModel.DataAnnotations.Validator.TryValidateValue(options.P1!, context, validationResults, validationAttributes))
+            {
+                builder.AddResults(validationResults);
+            }
+            validationResults.Clear();
+            validationAttributes.Clear();
 
             if (options.P3 is not null)
             {
@@ -554,11 +674,19 @@ namespace MultiModelValidator
             var baseName = (string.IsNullOrEmpty(name) ? "FirstModel" : name) + ".";
             var builder = new global::Microsoft.Extensions.Options.ValidateOptionsResultBuilder();
             var context = new global::System.ComponentModel.DataAnnotations.ValidationContext(options);
+            var validationResults = new global::System.Collections.Generic.List<global::System.ComponentModel.DataAnnotations.ValidationResult>();
+            var validationAttributes = new global::System.Collections.Generic.List<global::System.ComponentModel.DataAnnotations.ValidationAttribute>();
 
             context.MemberName = "P1";
             context.DisplayName = baseName + "P1";
-            builder.AddResult(global::__OptionValidationStaticInstances.__Attributes.A1.GetValidationResult(options.P1, context));
-            builder.AddResult(global::__OptionValidationStaticInstances.__Attributes.A2.GetValidationResult(options.P1, context));
+            validationAttributes.Add(global::__OptionValidationStaticInstances.__Attributes.A1);
+            validationAttributes.Add(global::__OptionValidationStaticInstances.__Attributes.A2);
+            if (!global::System.ComponentModel.DataAnnotations.Validator.TryValidateValue(options.P1!, context, validationResults, validationAttributes))
+            {
+                builder.AddResults(validationResults);
+            }
+            validationResults.Clear();
+            validationAttributes.Clear();
 
             if (options.P2 is not null)
             {
@@ -579,11 +707,19 @@ namespace MultiModelValidator
             var baseName = (string.IsNullOrEmpty(name) ? "SecondModel" : name) + ".";
             var builder = new global::Microsoft.Extensions.Options.ValidateOptionsResultBuilder();
             var context = new global::System.ComponentModel.DataAnnotations.ValidationContext(options);
+            var validationResults = new global::System.Collections.Generic.List<global::System.ComponentModel.DataAnnotations.ValidationResult>();
+            var validationAttributes = new global::System.Collections.Generic.List<global::System.ComponentModel.DataAnnotations.ValidationAttribute>();
 
             context.MemberName = "P3";
             context.DisplayName = baseName + "P3";
-            builder.AddResult(global::__OptionValidationStaticInstances.__Attributes.A1.GetValidationResult(options.P3, context));
-            builder.AddResult(global::__OptionValidationStaticInstances.__Attributes.A2.GetValidationResult(options.P3, context));
+            validationAttributes.Add(global::__OptionValidationStaticInstances.__Attributes.A1);
+            validationAttributes.Add(global::__OptionValidationStaticInstances.__Attributes.A2);
+            if (!global::System.ComponentModel.DataAnnotations.Validator.TryValidateValue(options.P3!, context, validationResults, validationAttributes))
+            {
+                builder.AddResults(validationResults);
+            }
+            validationResults.Clear();
+            validationAttributes.Clear();
 
             return builder.Build();
         }
@@ -606,11 +742,19 @@ namespace Nested
             var baseName = (string.IsNullOrEmpty(name) ? "ThirdModel" : name) + ".";
             var builder = new global::Microsoft.Extensions.Options.ValidateOptionsResultBuilder();
             var context = new global::System.ComponentModel.DataAnnotations.ValidationContext(options);
+            var validationResults = new global::System.Collections.Generic.List<global::System.ComponentModel.DataAnnotations.ValidationResult>();
+            var validationAttributes = new global::System.Collections.Generic.List<global::System.ComponentModel.DataAnnotations.ValidationAttribute>();
 
             context.MemberName = "P6";
             context.DisplayName = baseName + "P6";
-            builder.AddResult(global::__OptionValidationStaticInstances.__Attributes.A1.GetValidationResult(options.P6, context));
-            builder.AddResult(global::__OptionValidationStaticInstances.__Attributes.A2.GetValidationResult(options.P6, context));
+            validationAttributes.Add(global::__OptionValidationStaticInstances.__Attributes.A1);
+            validationAttributes.Add(global::__OptionValidationStaticInstances.__Attributes.A2);
+            if (!global::System.ComponentModel.DataAnnotations.Validator.TryValidateValue(options.P6!, context, validationResults, validationAttributes))
+            {
+                builder.AddResults(validationResults);
+            }
+            validationResults.Clear();
+            validationAttributes.Clear();
 
             return builder.Build();
         }
@@ -634,11 +778,19 @@ namespace Nested
                 var baseName = (string.IsNullOrEmpty(name) ? "SecondModel" : name) + ".";
                 var builder = new global::Microsoft.Extensions.Options.ValidateOptionsResultBuilder();
                 var context = new global::System.ComponentModel.DataAnnotations.ValidationContext(options);
+                var validationResults = new global::System.Collections.Generic.List<global::System.ComponentModel.DataAnnotations.ValidationResult>();
+                var validationAttributes = new global::System.Collections.Generic.List<global::System.ComponentModel.DataAnnotations.ValidationAttribute>();
 
                 context.MemberName = "P5";
                 context.DisplayName = baseName + "P5";
-                builder.AddResult(global::__OptionValidationStaticInstances.__Attributes.A1.GetValidationResult(options.P5, context));
-                builder.AddResult(global::__OptionValidationStaticInstances.__Attributes.A2.GetValidationResult(options.P5, context));
+                validationAttributes.Add(global::__OptionValidationStaticInstances.__Attributes.A1);
+                validationAttributes.Add(global::__OptionValidationStaticInstances.__Attributes.A2);
+                if (!global::System.ComponentModel.DataAnnotations.Validator.TryValidateValue(options.P5!, context, validationResults, validationAttributes))
+                {
+                    builder.AddResults(validationResults);
+                }
+                validationResults.Clear();
+                validationAttributes.Clear();
 
                 return builder.Build();
             }
@@ -665,11 +817,19 @@ namespace Nested
                     var baseName = (string.IsNullOrEmpty(name) ? "FirstModel" : name) + ".";
                     var builder = new global::Microsoft.Extensions.Options.ValidateOptionsResultBuilder();
                     var context = new global::System.ComponentModel.DataAnnotations.ValidationContext(options);
+                    var validationResults = new global::System.Collections.Generic.List<global::System.ComponentModel.DataAnnotations.ValidationResult>();
+                    var validationAttributes = new global::System.Collections.Generic.List<global::System.ComponentModel.DataAnnotations.ValidationAttribute>();
 
                     context.MemberName = "P1";
                     context.DisplayName = baseName + "P1";
-                    builder.AddResult(global::__OptionValidationStaticInstances.__Attributes.A1.GetValidationResult(options.P1, context));
-                    builder.AddResult(global::__OptionValidationStaticInstances.__Attributes.A2.GetValidationResult(options.P1, context));
+                    validationAttributes.Add(global::__OptionValidationStaticInstances.__Attributes.A1);
+                    validationAttributes.Add(global::__OptionValidationStaticInstances.__Attributes.A2);
+                    if (!global::System.ComponentModel.DataAnnotations.Validator.TryValidateValue(options.P1!, context, validationResults, validationAttributes))
+                    {
+                        builder.AddResults(validationResults);
+                    }
+                    validationResults.Clear();
+                    validationAttributes.Clear();
 
                     if (options.P2 is not null)
                     {
@@ -707,11 +867,19 @@ namespace Nested
                 var baseName = (string.IsNullOrEmpty(name) ? "SecondModel" : name) + ".";
                 var builder = new global::Microsoft.Extensions.Options.ValidateOptionsResultBuilder();
                 var context = new global::System.ComponentModel.DataAnnotations.ValidationContext(options);
+                var validationResults = new global::System.Collections.Generic.List<global::System.ComponentModel.DataAnnotations.ValidationResult>();
+                var validationAttributes = new global::System.Collections.Generic.List<global::System.ComponentModel.DataAnnotations.ValidationAttribute>();
 
                 context.MemberName = "P5";
                 context.DisplayName = baseName + "P5";
-                builder.AddResult(global::__OptionValidationStaticInstances.__Attributes.A1.GetValidationResult(options.P5, context));
-                builder.AddResult(global::__OptionValidationStaticInstances.__Attributes.A2.GetValidationResult(options.P5, context));
+                validationAttributes.Add(global::__OptionValidationStaticInstances.__Attributes.A1);
+                validationAttributes.Add(global::__OptionValidationStaticInstances.__Attributes.A2);
+                if (!global::System.ComponentModel.DataAnnotations.Validator.TryValidateValue(options.P5!, context, validationResults, validationAttributes))
+                {
+                    builder.AddResults(validationResults);
+                }
+                validationResults.Clear();
+                validationAttributes.Clear();
 
                 return builder.Build();
             }
@@ -738,11 +906,19 @@ namespace Nested
                     var baseName = (string.IsNullOrEmpty(name) ? "SecondModel" : name) + ".";
                     var builder = new global::Microsoft.Extensions.Options.ValidateOptionsResultBuilder();
                     var context = new global::System.ComponentModel.DataAnnotations.ValidationContext(options);
+                    var validationResults = new global::System.Collections.Generic.List<global::System.ComponentModel.DataAnnotations.ValidationResult>();
+                    var validationAttributes = new global::System.Collections.Generic.List<global::System.ComponentModel.DataAnnotations.ValidationAttribute>();
 
                     context.MemberName = "P5";
                     context.DisplayName = baseName + "P5";
-                    builder.AddResult(global::__OptionValidationStaticInstances.__Attributes.A1.GetValidationResult(options.P5, context));
-                    builder.AddResult(global::__OptionValidationStaticInstances.__Attributes.A2.GetValidationResult(options.P5, context));
+                    validationAttributes.Add(global::__OptionValidationStaticInstances.__Attributes.A1);
+                    validationAttributes.Add(global::__OptionValidationStaticInstances.__Attributes.A2);
+                    if (!global::System.ComponentModel.DataAnnotations.Validator.TryValidateValue(options.P5!, context, validationResults, validationAttributes))
+                    {
+                        builder.AddResults(validationResults);
+                    }
+                    validationResults.Clear();
+                    validationAttributes.Clear();
 
                     return builder.Build();
                 }
@@ -770,11 +946,19 @@ namespace Nested
                     var baseName = (string.IsNullOrEmpty(name) ? "SecondModel" : name) + ".";
                     var builder = new global::Microsoft.Extensions.Options.ValidateOptionsResultBuilder();
                     var context = new global::System.ComponentModel.DataAnnotations.ValidationContext(options);
+                    var validationResults = new global::System.Collections.Generic.List<global::System.ComponentModel.DataAnnotations.ValidationResult>();
+                    var validationAttributes = new global::System.Collections.Generic.List<global::System.ComponentModel.DataAnnotations.ValidationAttribute>();
 
                     context.MemberName = "P5";
                     context.DisplayName = baseName + "P5";
-                    builder.AddResult(global::__OptionValidationStaticInstances.__Attributes.A1.GetValidationResult(options.P5, context));
-                    builder.AddResult(global::__OptionValidationStaticInstances.__Attributes.A2.GetValidationResult(options.P5, context));
+                    validationAttributes.Add(global::__OptionValidationStaticInstances.__Attributes.A1);
+                    validationAttributes.Add(global::__OptionValidationStaticInstances.__Attributes.A2);
+                    if (!global::System.ComponentModel.DataAnnotations.Validator.TryValidateValue(options.P5!, context, validationResults, validationAttributes))
+                    {
+                        builder.AddResults(validationResults);
+                    }
+                    validationResults.Clear();
+                    validationAttributes.Clear();
 
                     return builder.Build();
                 }
@@ -798,11 +982,19 @@ namespace RandomMembers
             var baseName = (string.IsNullOrEmpty(name) ? "FirstModel" : name) + ".";
             var builder = new global::Microsoft.Extensions.Options.ValidateOptionsResultBuilder();
             var context = new global::System.ComponentModel.DataAnnotations.ValidationContext(options);
+            var validationResults = new global::System.Collections.Generic.List<global::System.ComponentModel.DataAnnotations.ValidationResult>();
+            var validationAttributes = new global::System.Collections.Generic.List<global::System.ComponentModel.DataAnnotations.ValidationAttribute>();
 
             context.MemberName = "P1";
             context.DisplayName = baseName + "P1";
-            builder.AddResult(global::__OptionValidationStaticInstances.__Attributes.A1.GetValidationResult(options.P1, context));
-            builder.AddResult(global::__OptionValidationStaticInstances.__Attributes.A2.GetValidationResult(options.P1, context));
+            validationAttributes.Add(global::__OptionValidationStaticInstances.__Attributes.A1);
+            validationAttributes.Add(global::__OptionValidationStaticInstances.__Attributes.A2);
+            if (!global::System.ComponentModel.DataAnnotations.Validator.TryValidateValue(options.P1!, context, validationResults, validationAttributes))
+            {
+                builder.AddResults(validationResults);
+            }
+            validationResults.Clear();
+            validationAttributes.Clear();
 
             return builder.Build();
         }
@@ -825,11 +1017,19 @@ namespace RecordTypes
             var baseName = (string.IsNullOrEmpty(name) ? "ThirdModel" : name) + ".";
             var builder = new global::Microsoft.Extensions.Options.ValidateOptionsResultBuilder();
             var context = new global::System.ComponentModel.DataAnnotations.ValidationContext(options);
+            var validationResults = new global::System.Collections.Generic.List<global::System.ComponentModel.DataAnnotations.ValidationResult>();
+            var validationAttributes = new global::System.Collections.Generic.List<global::System.ComponentModel.DataAnnotations.ValidationAttribute>();
 
             context.MemberName = "P6";
             context.DisplayName = baseName + "P6";
-            builder.AddResult(global::__OptionValidationStaticInstances.__Attributes.A1.GetValidationResult(options.P6, context));
-            builder.AddResult(global::__OptionValidationStaticInstances.__Attributes.A2.GetValidationResult(options.P6, context));
+            validationAttributes.Add(global::__OptionValidationStaticInstances.__Attributes.A1);
+            validationAttributes.Add(global::__OptionValidationStaticInstances.__Attributes.A2);
+            if (!global::System.ComponentModel.DataAnnotations.Validator.TryValidateValue(options.P6!, context, validationResults, validationAttributes))
+            {
+                builder.AddResults(validationResults);
+            }
+            validationResults.Clear();
+            validationAttributes.Clear();
 
             return builder.Build();
         }
@@ -851,11 +1051,19 @@ namespace RecordTypes
             var baseName = (string.IsNullOrEmpty(name) ? "FirstModel" : name) + ".";
             var builder = new global::Microsoft.Extensions.Options.ValidateOptionsResultBuilder();
             var context = new global::System.ComponentModel.DataAnnotations.ValidationContext(options);
+            var validationResults = new global::System.Collections.Generic.List<global::System.ComponentModel.DataAnnotations.ValidationResult>();
+            var validationAttributes = new global::System.Collections.Generic.List<global::System.ComponentModel.DataAnnotations.ValidationAttribute>();
 
             context.MemberName = "P1";
             context.DisplayName = baseName + "P1";
-            builder.AddResult(global::__OptionValidationStaticInstances.__Attributes.A1.GetValidationResult(options.P1, context));
-            builder.AddResult(global::__OptionValidationStaticInstances.__Attributes.A2.GetValidationResult(options.P1, context));
+            validationAttributes.Add(global::__OptionValidationStaticInstances.__Attributes.A1);
+            validationAttributes.Add(global::__OptionValidationStaticInstances.__Attributes.A2);
+            if (!global::System.ComponentModel.DataAnnotations.Validator.TryValidateValue(options.P1!, context, validationResults, validationAttributes))
+            {
+                builder.AddResults(validationResults);
+            }
+            validationResults.Clear();
+            validationAttributes.Clear();
 
             if (options.P2 is not null)
             {
@@ -889,11 +1097,19 @@ namespace RecordTypes
             var baseName = (string.IsNullOrEmpty(name) ? "SecondModel" : name) + ".";
             var builder = new global::Microsoft.Extensions.Options.ValidateOptionsResultBuilder();
             var context = new global::System.ComponentModel.DataAnnotations.ValidationContext(options);
+            var validationResults = new global::System.Collections.Generic.List<global::System.ComponentModel.DataAnnotations.ValidationResult>();
+            var validationAttributes = new global::System.Collections.Generic.List<global::System.ComponentModel.DataAnnotations.ValidationAttribute>();
 
             context.MemberName = "P5";
             context.DisplayName = baseName + "P5";
-            builder.AddResult(global::__OptionValidationStaticInstances.__Attributes.A1.GetValidationResult(options.P5, context));
-            builder.AddResult(global::__OptionValidationStaticInstances.__Attributes.A2.GetValidationResult(options.P5, context));
+            validationAttributes.Add(global::__OptionValidationStaticInstances.__Attributes.A1);
+            validationAttributes.Add(global::__OptionValidationStaticInstances.__Attributes.A2);
+            if (!global::System.ComponentModel.DataAnnotations.Validator.TryValidateValue(options.P5!, context, validationResults, validationAttributes))
+            {
+                builder.AddResults(validationResults);
+            }
+            validationResults.Clear();
+            validationAttributes.Clear();
 
             return builder.Build();
         }
@@ -915,11 +1131,19 @@ namespace RecordTypes
             var baseName = (string.IsNullOrEmpty(name) ? "SecondModel" : name) + ".";
             var builder = new global::Microsoft.Extensions.Options.ValidateOptionsResultBuilder();
             var context = new global::System.ComponentModel.DataAnnotations.ValidationContext(options);
+            var validationResults = new global::System.Collections.Generic.List<global::System.ComponentModel.DataAnnotations.ValidationResult>();
+            var validationAttributes = new global::System.Collections.Generic.List<global::System.ComponentModel.DataAnnotations.ValidationAttribute>();
 
             context.MemberName = "P5";
             context.DisplayName = baseName + "P5";
-            builder.AddResult(global::__OptionValidationStaticInstances.__Attributes.A1.GetValidationResult(options.P5, context));
-            builder.AddResult(global::__OptionValidationStaticInstances.__Attributes.A2.GetValidationResult(options.P5, context));
+            validationAttributes.Add(global::__OptionValidationStaticInstances.__Attributes.A1);
+            validationAttributes.Add(global::__OptionValidationStaticInstances.__Attributes.A2);
+            if (!global::System.ComponentModel.DataAnnotations.Validator.TryValidateValue(options.P5!, context, validationResults, validationAttributes))
+            {
+                builder.AddResults(validationResults);
+            }
+            validationResults.Clear();
+            validationAttributes.Clear();
 
             return builder.Build();
         }
@@ -942,10 +1166,18 @@ namespace RepeatedTypes
             var baseName = (string.IsNullOrEmpty(name) ? "SecondModel" : name) + ".";
             var builder = new global::Microsoft.Extensions.Options.ValidateOptionsResultBuilder();
             var context = new global::System.ComponentModel.DataAnnotations.ValidationContext(options);
+            var validationResults = new global::System.Collections.Generic.List<global::System.ComponentModel.DataAnnotations.ValidationResult>();
+            var validationAttributes = new global::System.Collections.Generic.List<global::System.ComponentModel.DataAnnotations.ValidationAttribute>();
 
             context.MemberName = "P4";
             context.DisplayName = baseName + "P4";
-            builder.AddResult(global::__OptionValidationStaticInstances.__Attributes.A1.GetValidationResult(options.P4, context));
+            validationAttributes.Add(global::__OptionValidationStaticInstances.__Attributes.A1);
+            if (!global::System.ComponentModel.DataAnnotations.Validator.TryValidateValue(options.P4!, context, validationResults, validationAttributes))
+            {
+                builder.AddResults(validationResults);
+            }
+            validationResults.Clear();
+            validationAttributes.Clear();
 
             if (options.P4 is not null)
             {
@@ -973,11 +1205,19 @@ namespace RepeatedTypes
             var baseName = (string.IsNullOrEmpty(name) ? "ThirdModel" : name) + ".";
             var builder = new global::Microsoft.Extensions.Options.ValidateOptionsResultBuilder();
             var context = new global::System.ComponentModel.DataAnnotations.ValidationContext(options);
+            var validationResults = new global::System.Collections.Generic.List<global::System.ComponentModel.DataAnnotations.ValidationResult>();
+            var validationAttributes = new global::System.Collections.Generic.List<global::System.ComponentModel.DataAnnotations.ValidationAttribute>();
 
             context.MemberName = "P5";
             context.DisplayName = baseName + "P5";
-            builder.AddResult(global::__OptionValidationStaticInstances.__Attributes.A1.GetValidationResult(options.P5, context));
-            builder.AddResult(global::__OptionValidationStaticInstances.__Attributes.A2.GetValidationResult(options.P5, context));
+            validationAttributes.Add(global::__OptionValidationStaticInstances.__Attributes.A1);
+            validationAttributes.Add(global::__OptionValidationStaticInstances.__Attributes.A2);
+            if (!global::System.ComponentModel.DataAnnotations.Validator.TryValidateValue(options.P5!, context, validationResults, validationAttributes))
+            {
+                builder.AddResults(validationResults);
+            }
+            validationResults.Clear();
+            validationAttributes.Clear();
 
             return builder.Build();
         }
@@ -999,10 +1239,18 @@ namespace RepeatedTypes
             var baseName = (string.IsNullOrEmpty(name) ? "FirstModel" : name) + ".";
             var builder = new global::Microsoft.Extensions.Options.ValidateOptionsResultBuilder();
             var context = new global::System.ComponentModel.DataAnnotations.ValidationContext(options);
+            var validationResults = new global::System.Collections.Generic.List<global::System.ComponentModel.DataAnnotations.ValidationResult>();
+            var validationAttributes = new global::System.Collections.Generic.List<global::System.ComponentModel.DataAnnotations.ValidationAttribute>();
 
             context.MemberName = "P1";
             context.DisplayName = baseName + "P1";
-            builder.AddResult(global::__OptionValidationStaticInstances.__Attributes.A1.GetValidationResult(options.P1, context));
+            validationAttributes.Add(global::__OptionValidationStaticInstances.__Attributes.A1);
+            if (!global::System.ComponentModel.DataAnnotations.Validator.TryValidateValue(options.P1!, context, validationResults, validationAttributes))
+            {
+                builder.AddResults(validationResults);
+            }
+            validationResults.Clear();
+            validationAttributes.Clear();
 
             if (options.P1 is not null)
             {
@@ -1011,7 +1259,13 @@ namespace RepeatedTypes
 
             context.MemberName = "P2";
             context.DisplayName = baseName + "P2";
-            builder.AddResult(global::__OptionValidationStaticInstances.__Attributes.A1.GetValidationResult(options.P2, context));
+            validationAttributes.Add(global::__OptionValidationStaticInstances.__Attributes.A1);
+            if (!global::System.ComponentModel.DataAnnotations.Validator.TryValidateValue(options.P2!, context, validationResults, validationAttributes))
+            {
+                builder.AddResults(validationResults);
+            }
+            validationResults.Clear();
+            validationAttributes.Clear();
 
             if (options.P2 is not null)
             {
@@ -1020,7 +1274,13 @@ namespace RepeatedTypes
 
             context.MemberName = "P3";
             context.DisplayName = baseName + "P3";
-            builder.AddResult(global::__OptionValidationStaticInstances.__Attributes.A1.GetValidationResult(options.P3, context));
+            validationAttributes.Add(global::__OptionValidationStaticInstances.__Attributes.A1);
+            if (!global::System.ComponentModel.DataAnnotations.Validator.TryValidateValue(options.P3!, context, validationResults, validationAttributes))
+            {
+                builder.AddResults(validationResults);
+            }
+            validationResults.Clear();
+            validationAttributes.Clear();
 
             if (options.P3 is not null)
             {
@@ -1047,10 +1307,18 @@ namespace SelfValidation
             var baseName = (string.IsNullOrEmpty(name) ? "FirstModel" : name) + ".";
             var builder = new global::Microsoft.Extensions.Options.ValidateOptionsResultBuilder();
             var context = new global::System.ComponentModel.DataAnnotations.ValidationContext(options);
+            var validationResults = new global::System.Collections.Generic.List<global::System.ComponentModel.DataAnnotations.ValidationResult>();
+            var validationAttributes = new global::System.Collections.Generic.List<global::System.ComponentModel.DataAnnotations.ValidationAttribute>();
 
             context.MemberName = "P1";
             context.DisplayName = baseName + "P1";
-            builder.AddResult(global::__OptionValidationStaticInstances.__Attributes.A1.GetValidationResult(options.P1, context));
+            validationAttributes.Add(global::__OptionValidationStaticInstances.__Attributes.A1);
+            if (!global::System.ComponentModel.DataAnnotations.Validator.TryValidateValue(options.P1!, context, validationResults, validationAttributes))
+            {
+                builder.AddResults(validationResults);
+            }
+            validationResults.Clear();
+            validationAttributes.Clear();
 
             builder.AddResults(((global::System.ComponentModel.DataAnnotations.IValidatableObject)options).Validate(context));
 
@@ -1075,10 +1343,18 @@ namespace TestClasses.OptionsValidation
             var baseName = (string.IsNullOrEmpty(name) ? "RangeAttributeModelDouble" : name) + ".";
             var builder = new global::Microsoft.Extensions.Options.ValidateOptionsResultBuilder();
             var context = new global::System.ComponentModel.DataAnnotations.ValidationContext(options);
+            var validationResults = new global::System.Collections.Generic.List<global::System.ComponentModel.DataAnnotations.ValidationResult>();
+            var validationAttributes = new global::System.Collections.Generic.List<global::System.ComponentModel.DataAnnotations.ValidationAttribute>();
 
             context.MemberName = "Val";
             context.DisplayName = baseName + "Val";
-            builder.AddResult(global::__OptionValidationStaticInstances.__Attributes.A7.GetValidationResult(options.Val, context));
+            validationAttributes.Add(global::__OptionValidationStaticInstances.__Attributes.A7);
+            if (!global::System.ComponentModel.DataAnnotations.Validator.TryValidateValue(options.Val!, context, validationResults, validationAttributes))
+            {
+                builder.AddResults(validationResults);
+            }
+            validationResults.Clear();
+            validationAttributes.Clear();
 
             return builder.Build();
         }
@@ -1101,10 +1377,18 @@ namespace TestClasses.OptionsValidation
             var baseName = (string.IsNullOrEmpty(name) ? "RequiredAttributeModel" : name) + ".";
             var builder = new global::Microsoft.Extensions.Options.ValidateOptionsResultBuilder();
             var context = new global::System.ComponentModel.DataAnnotations.ValidationContext(options);
+            var validationResults = new global::System.Collections.Generic.List<global::System.ComponentModel.DataAnnotations.ValidationResult>();
+            var validationAttributes = new global::System.Collections.Generic.List<global::System.ComponentModel.DataAnnotations.ValidationAttribute>();
 
             context.MemberName = "Val";
             context.DisplayName = baseName + "Val";
-            builder.AddResult(global::__OptionValidationStaticInstances.__Attributes.A1.GetValidationResult(options.Val, context));
+            validationAttributes.Add(global::__OptionValidationStaticInstances.__Attributes.A1);
+            if (!global::System.ComponentModel.DataAnnotations.Validator.TryValidateValue(options.Val!, context, validationResults, validationAttributes))
+            {
+                builder.AddResults(validationResults);
+            }
+            validationResults.Clear();
+            validationAttributes.Clear();
 
             return builder.Build();
         }
@@ -1127,14 +1411,28 @@ namespace TestClasses.OptionsValidation
             var baseName = (string.IsNullOrEmpty(name) ? "TypeWithoutOptionsValidator" : name) + ".";
             var builder = new global::Microsoft.Extensions.Options.ValidateOptionsResultBuilder();
             var context = new global::System.ComponentModel.DataAnnotations.ValidationContext(options);
+            var validationResults = new global::System.Collections.Generic.List<global::System.ComponentModel.DataAnnotations.ValidationResult>();
+            var validationAttributes = new global::System.Collections.Generic.List<global::System.ComponentModel.DataAnnotations.ValidationAttribute>();
 
             context.MemberName = "Val1";
             context.DisplayName = baseName + "Val1";
-            builder.AddResult(global::__OptionValidationStaticInstances.__Attributes.A1.GetValidationResult(options.Val1, context));
+            validationAttributes.Add(global::__OptionValidationStaticInstances.__Attributes.A1);
+            if (!global::System.ComponentModel.DataAnnotations.Validator.TryValidateValue(options.Val1!, context, validationResults, validationAttributes))
+            {
+                builder.AddResults(validationResults);
+            }
+            validationResults.Clear();
+            validationAttributes.Clear();
 
             context.MemberName = "Val2";
             context.DisplayName = baseName + "Val2";
-            builder.AddResult(global::__OptionValidationStaticInstances.__Attributes.A8.GetValidationResult(options.Val2, context));
+            validationAttributes.Add(global::__OptionValidationStaticInstances.__Attributes.A8);
+            if (!global::System.ComponentModel.DataAnnotations.Validator.TryValidateValue(options.Val2!, context, validationResults, validationAttributes))
+            {
+                builder.AddResults(validationResults);
+            }
+            validationResults.Clear();
+            validationAttributes.Clear();
 
             if (options.YetAnotherComplexVal is not null)
             {
@@ -1161,14 +1459,28 @@ namespace TestClasses.OptionsValidation
             var baseName = (string.IsNullOrEmpty(name) ? "AttributePropertyModel" : name) + ".";
             var builder = new global::Microsoft.Extensions.Options.ValidateOptionsResultBuilder();
             var context = new global::System.ComponentModel.DataAnnotations.ValidationContext(options);
+            var validationResults = new global::System.Collections.Generic.List<global::System.ComponentModel.DataAnnotations.ValidationResult>();
+            var validationAttributes = new global::System.Collections.Generic.List<global::System.ComponentModel.DataAnnotations.ValidationAttribute>();
 
             context.MemberName = "Val1";
             context.DisplayName = baseName + "Val1";
-            builder.AddResult(global::__OptionValidationStaticInstances.__Attributes.A9.GetValidationResult(options.Val1, context));
+            validationAttributes.Add(global::__OptionValidationStaticInstances.__Attributes.A9);
+            if (!global::System.ComponentModel.DataAnnotations.Validator.TryValidateValue(options.Val1!, context, validationResults, validationAttributes))
+            {
+                builder.AddResults(validationResults);
+            }
+            validationResults.Clear();
+            validationAttributes.Clear();
 
             context.MemberName = "Val2";
             context.DisplayName = baseName + "Val2";
-            builder.AddResult(global::__OptionValidationStaticInstances.__Attributes.A10.GetValidationResult(options.Val2, context));
+            validationAttributes.Add(global::__OptionValidationStaticInstances.__Attributes.A10);
+            if (!global::System.ComponentModel.DataAnnotations.Validator.TryValidateValue(options.Val2!, context, validationResults, validationAttributes))
+            {
+                builder.AddResults(validationResults);
+            }
+            validationResults.Clear();
+            validationAttributes.Clear();
 
             return builder.Build();
         }
@@ -1190,6 +1502,8 @@ namespace TestClasses.OptionsValidation
             var baseName = (string.IsNullOrEmpty(name) ? "ComplexModel" : name) + ".";
             var builder = new global::Microsoft.Extensions.Options.ValidateOptionsResultBuilder();
             var context = new global::System.ComponentModel.DataAnnotations.ValidationContext(options);
+            var validationResults = new global::System.Collections.Generic.List<global::System.ComponentModel.DataAnnotations.ValidationResult>();
+            var validationAttributes = new global::System.Collections.Generic.List<global::System.ComponentModel.DataAnnotations.ValidationAttribute>();
 
             if (options.ComplexVal is not null)
             {
@@ -1221,10 +1535,18 @@ namespace TestClasses.OptionsValidation
             var baseName = (string.IsNullOrEmpty(name) ? "CustomTypeCustomValidationAttributeModel" : name) + ".";
             var builder = new global::Microsoft.Extensions.Options.ValidateOptionsResultBuilder();
             var context = new global::System.ComponentModel.DataAnnotations.ValidationContext(options);
+            var validationResults = new global::System.Collections.Generic.List<global::System.ComponentModel.DataAnnotations.ValidationResult>();
+            var validationAttributes = new global::System.Collections.Generic.List<global::System.ComponentModel.DataAnnotations.ValidationAttribute>();
 
             context.MemberName = "Val";
             context.DisplayName = baseName + "Val";
-            builder.AddResult(global::__OptionValidationStaticInstances.__Attributes.A11.GetValidationResult(options.Val, context));
+            validationAttributes.Add(global::__OptionValidationStaticInstances.__Attributes.A11);
+            if (!global::System.ComponentModel.DataAnnotations.Validator.TryValidateValue(options.Val!, context, validationResults, validationAttributes))
+            {
+                builder.AddResults(validationResults);
+            }
+            validationResults.Clear();
+            validationAttributes.Clear();
 
             return builder.Build();
         }
@@ -1246,10 +1568,18 @@ namespace TestClasses.OptionsValidation
             var baseName = (string.IsNullOrEmpty(name) ? "CustomValidationAttributeModel" : name) + ".";
             var builder = new global::Microsoft.Extensions.Options.ValidateOptionsResultBuilder();
             var context = new global::System.ComponentModel.DataAnnotations.ValidationContext(options);
+            var validationResults = new global::System.Collections.Generic.List<global::System.ComponentModel.DataAnnotations.ValidationResult>();
+            var validationAttributes = new global::System.Collections.Generic.List<global::System.ComponentModel.DataAnnotations.ValidationAttribute>();
 
             context.MemberName = "Val";
             context.DisplayName = baseName + "Val";
-            builder.AddResult(global::__OptionValidationStaticInstances.__Attributes.A12.GetValidationResult(options.Val, context));
+            validationAttributes.Add(global::__OptionValidationStaticInstances.__Attributes.A12);
+            if (!global::System.ComponentModel.DataAnnotations.Validator.TryValidateValue(options.Val!, context, validationResults, validationAttributes))
+            {
+                builder.AddResults(validationResults);
+            }
+            validationResults.Clear();
+            validationAttributes.Clear();
 
             return builder.Build();
         }
@@ -1271,10 +1601,18 @@ namespace TestClasses.OptionsValidation
             var baseName = (string.IsNullOrEmpty(name) ? "DataTypeAttributeModel" : name) + ".";
             var builder = new global::Microsoft.Extensions.Options.ValidateOptionsResultBuilder();
             var context = new global::System.ComponentModel.DataAnnotations.ValidationContext(options);
+            var validationResults = new global::System.Collections.Generic.List<global::System.ComponentModel.DataAnnotations.ValidationResult>();
+            var validationAttributes = new global::System.Collections.Generic.List<global::System.ComponentModel.DataAnnotations.ValidationAttribute>();
 
             context.MemberName = "Val";
             context.DisplayName = baseName + "Val";
-            builder.AddResult(global::__OptionValidationStaticInstances.__Attributes.A13.GetValidationResult(options.Val, context));
+            validationAttributes.Add(global::__OptionValidationStaticInstances.__Attributes.A13);
+            if (!global::System.ComponentModel.DataAnnotations.Validator.TryValidateValue(options.Val!, context, validationResults, validationAttributes))
+            {
+                builder.AddResults(validationResults);
+            }
+            validationResults.Clear();
+            validationAttributes.Clear();
 
             return builder.Build();
         }
@@ -1296,18 +1634,38 @@ namespace TestClasses.OptionsValidation
             var baseName = (string.IsNullOrEmpty(name) ? "DerivedModel" : name) + ".";
             var builder = new global::Microsoft.Extensions.Options.ValidateOptionsResultBuilder();
             var context = new global::System.ComponentModel.DataAnnotations.ValidationContext(options);
+            var validationResults = new global::System.Collections.Generic.List<global::System.ComponentModel.DataAnnotations.ValidationResult>();
+            var validationAttributes = new global::System.Collections.Generic.List<global::System.ComponentModel.DataAnnotations.ValidationAttribute>();
 
             context.MemberName = "DerivedVal";
             context.DisplayName = baseName + "DerivedVal";
-            builder.AddResult(global::__OptionValidationStaticInstances.__Attributes.A1.GetValidationResult(options.DerivedVal, context));
+            validationAttributes.Add(global::__OptionValidationStaticInstances.__Attributes.A1);
+            if (!global::System.ComponentModel.DataAnnotations.Validator.TryValidateValue(options.DerivedVal!, context, validationResults, validationAttributes))
+            {
+                builder.AddResults(validationResults);
+            }
+            validationResults.Clear();
+            validationAttributes.Clear();
 
             context.MemberName = "VirtualValWithAttr";
             context.DisplayName = baseName + "VirtualValWithAttr";
-            builder.AddResult(global::__OptionValidationStaticInstances.__Attributes.A1.GetValidationResult(options.VirtualValWithAttr, context));
+            validationAttributes.Add(global::__OptionValidationStaticInstances.__Attributes.A1);
+            if (!global::System.ComponentModel.DataAnnotations.Validator.TryValidateValue(options.VirtualValWithAttr!, context, validationResults, validationAttributes))
+            {
+                builder.AddResults(validationResults);
+            }
+            validationResults.Clear();
+            validationAttributes.Clear();
 
             context.MemberName = "Val";
             context.DisplayName = baseName + "Val";
-            builder.AddResult(global::__OptionValidationStaticInstances.__Attributes.A1.GetValidationResult(options.Val, context));
+            validationAttributes.Add(global::__OptionValidationStaticInstances.__Attributes.A1);
+            if (!global::System.ComponentModel.DataAnnotations.Validator.TryValidateValue(options.Val!, context, validationResults, validationAttributes))
+            {
+                builder.AddResults(validationResults);
+            }
+            validationResults.Clear();
+            validationAttributes.Clear();
 
             return builder.Build();
         }
@@ -1329,10 +1687,18 @@ namespace TestClasses.OptionsValidation
             var baseName = (string.IsNullOrEmpty(name) ? "EmailAttributeModel" : name) + ".";
             var builder = new global::Microsoft.Extensions.Options.ValidateOptionsResultBuilder();
             var context = new global::System.ComponentModel.DataAnnotations.ValidationContext(options);
+            var validationResults = new global::System.Collections.Generic.List<global::System.ComponentModel.DataAnnotations.ValidationResult>();
+            var validationAttributes = new global::System.Collections.Generic.List<global::System.ComponentModel.DataAnnotations.ValidationAttribute>();
 
             context.MemberName = "Val";
             context.DisplayName = baseName + "Val";
-            builder.AddResult(global::__OptionValidationStaticInstances.__Attributes.A14.GetValidationResult(options.Val, context));
+            validationAttributes.Add(global::__OptionValidationStaticInstances.__Attributes.A14);
+            if (!global::System.ComponentModel.DataAnnotations.Validator.TryValidateValue(options.Val!, context, validationResults, validationAttributes))
+            {
+                builder.AddResults(validationResults);
+            }
+            validationResults.Clear();
+            validationAttributes.Clear();
 
             return builder.Build();
         }
@@ -1354,18 +1720,38 @@ namespace TestClasses.OptionsValidation
             var baseName = (string.IsNullOrEmpty(name) ? "LeafModel" : name) + ".";
             var builder = new global::Microsoft.Extensions.Options.ValidateOptionsResultBuilder();
             var context = new global::System.ComponentModel.DataAnnotations.ValidationContext(options);
+            var validationResults = new global::System.Collections.Generic.List<global::System.ComponentModel.DataAnnotations.ValidationResult>();
+            var validationAttributes = new global::System.Collections.Generic.List<global::System.ComponentModel.DataAnnotations.ValidationAttribute>();
 
             context.MemberName = "VirtualValWithoutAttr";
             context.DisplayName = baseName + "VirtualValWithoutAttr";
-            builder.AddResult(global::__OptionValidationStaticInstances.__Attributes.A1.GetValidationResult(options.VirtualValWithoutAttr, context));
+            validationAttributes.Add(global::__OptionValidationStaticInstances.__Attributes.A1);
+            if (!global::System.ComponentModel.DataAnnotations.Validator.TryValidateValue(options.VirtualValWithoutAttr!, context, validationResults, validationAttributes))
+            {
+                builder.AddResults(validationResults);
+            }
+            validationResults.Clear();
+            validationAttributes.Clear();
 
             context.MemberName = "DerivedVal";
             context.DisplayName = baseName + "DerivedVal";
-            builder.AddResult(global::__OptionValidationStaticInstances.__Attributes.A1.GetValidationResult(options.DerivedVal, context));
+            validationAttributes.Add(global::__OptionValidationStaticInstances.__Attributes.A1);
+            if (!global::System.ComponentModel.DataAnnotations.Validator.TryValidateValue(options.DerivedVal!, context, validationResults, validationAttributes))
+            {
+                builder.AddResults(validationResults);
+            }
+            validationResults.Clear();
+            validationAttributes.Clear();
 
             context.MemberName = "Val";
             context.DisplayName = baseName + "Val";
-            builder.AddResult(global::__OptionValidationStaticInstances.__Attributes.A1.GetValidationResult(options.Val, context));
+            validationAttributes.Add(global::__OptionValidationStaticInstances.__Attributes.A1);
+            if (!global::System.ComponentModel.DataAnnotations.Validator.TryValidateValue(options.Val!, context, validationResults, validationAttributes))
+            {
+                builder.AddResults(validationResults);
+            }
+            validationResults.Clear();
+            validationAttributes.Clear();
 
             return builder.Build();
         }
@@ -1387,23 +1773,49 @@ namespace TestClasses.OptionsValidation
             var baseName = (string.IsNullOrEmpty(name) ? "MultipleAttributeModel" : name) + ".";
             var builder = new global::Microsoft.Extensions.Options.ValidateOptionsResultBuilder();
             var context = new global::System.ComponentModel.DataAnnotations.ValidationContext(options);
+            var validationResults = new global::System.Collections.Generic.List<global::System.ComponentModel.DataAnnotations.ValidationResult>();
+            var validationAttributes = new global::System.Collections.Generic.List<global::System.ComponentModel.DataAnnotations.ValidationAttribute>();
 
             context.MemberName = "Val1";
             context.DisplayName = baseName + "Val1";
-            builder.AddResult(global::__OptionValidationStaticInstances.__Attributes.A1.GetValidationResult(options.Val1, context));
-            builder.AddResult(global::__OptionValidationStaticInstances.__Attributes.A15.GetValidationResult(options.Val1, context));
+            validationAttributes.Add(global::__OptionValidationStaticInstances.__Attributes.A1);
+            validationAttributes.Add(global::__OptionValidationStaticInstances.__Attributes.A15);
+            if (!global::System.ComponentModel.DataAnnotations.Validator.TryValidateValue(options.Val1!, context, validationResults, validationAttributes))
+            {
+                builder.AddResults(validationResults);
+            }
+            validationResults.Clear();
+            validationAttributes.Clear();
 
             context.MemberName = "Val2";
             context.DisplayName = baseName + "Val2";
-            builder.AddResult(global::__OptionValidationStaticInstances.__Attributes.A16.GetValidationResult(options.Val2, context));
+            validationAttributes.Add(global::__OptionValidationStaticInstances.__Attributes.A16);
+            if (!global::System.ComponentModel.DataAnnotations.Validator.TryValidateValue(options.Val2!, context, validationResults, validationAttributes))
+            {
+                builder.AddResults(validationResults);
+            }
+            validationResults.Clear();
+            validationAttributes.Clear();
 
             context.MemberName = "Val3";
             context.DisplayName = baseName + "Val3";
-            builder.AddResult(global::__OptionValidationStaticInstances.__Attributes.A17.GetValidationResult(options.Val3, context));
+            validationAttributes.Add(global::__OptionValidationStaticInstances.__Attributes.A17);
+            if (!global::System.ComponentModel.DataAnnotations.Validator.TryValidateValue(options.Val3!, context, validationResults, validationAttributes))
+            {
+                builder.AddResults(validationResults);
+            }
+            validationResults.Clear();
+            validationAttributes.Clear();
 
             context.MemberName = "Val4";
             context.DisplayName = baseName + "Val4";
-            builder.AddResult(global::__OptionValidationStaticInstances.__Attributes.A18.GetValidationResult(options.Val4, context));
+            validationAttributes.Add(global::__OptionValidationStaticInstances.__Attributes.A18);
+            if (!global::System.ComponentModel.DataAnnotations.Validator.TryValidateValue(options.Val4!, context, validationResults, validationAttributes))
+            {
+                builder.AddResults(validationResults);
+            }
+            validationResults.Clear();
+            validationAttributes.Clear();
 
             return builder.Build();
         }
@@ -1425,10 +1837,18 @@ namespace TestClasses.OptionsValidation
             var baseName = (string.IsNullOrEmpty(name) ? "RangeAttributeModelDate" : name) + ".";
             var builder = new global::Microsoft.Extensions.Options.ValidateOptionsResultBuilder();
             var context = new global::System.ComponentModel.DataAnnotations.ValidationContext(options);
+            var validationResults = new global::System.Collections.Generic.List<global::System.ComponentModel.DataAnnotations.ValidationResult>();
+            var validationAttributes = new global::System.Collections.Generic.List<global::System.ComponentModel.DataAnnotations.ValidationAttribute>();
 
             context.MemberName = "Val";
             context.DisplayName = baseName + "Val";
-            builder.AddResult(global::__OptionValidationStaticInstances.__Attributes.A8.GetValidationResult(options.Val, context));
+            validationAttributes.Add(global::__OptionValidationStaticInstances.__Attributes.A8);
+            if (!global::System.ComponentModel.DataAnnotations.Validator.TryValidateValue(options.Val!, context, validationResults, validationAttributes))
+            {
+                builder.AddResults(validationResults);
+            }
+            validationResults.Clear();
+            validationAttributes.Clear();
 
             return builder.Build();
         }
@@ -1450,10 +1870,18 @@ namespace TestClasses.OptionsValidation
             var baseName = (string.IsNullOrEmpty(name) ? "RangeAttributeModelDouble" : name) + ".";
             var builder = new global::Microsoft.Extensions.Options.ValidateOptionsResultBuilder();
             var context = new global::System.ComponentModel.DataAnnotations.ValidationContext(options);
+            var validationResults = new global::System.Collections.Generic.List<global::System.ComponentModel.DataAnnotations.ValidationResult>();
+            var validationAttributes = new global::System.Collections.Generic.List<global::System.ComponentModel.DataAnnotations.ValidationAttribute>();
 
             context.MemberName = "Val";
             context.DisplayName = baseName + "Val";
-            builder.AddResult(global::__OptionValidationStaticInstances.__Attributes.A7.GetValidationResult(options.Val, context));
+            validationAttributes.Add(global::__OptionValidationStaticInstances.__Attributes.A7);
+            if (!global::System.ComponentModel.DataAnnotations.Validator.TryValidateValue(options.Val!, context, validationResults, validationAttributes))
+            {
+                builder.AddResults(validationResults);
+            }
+            validationResults.Clear();
+            validationAttributes.Clear();
 
             return builder.Build();
         }
@@ -1475,10 +1903,18 @@ namespace TestClasses.OptionsValidation
             var baseName = (string.IsNullOrEmpty(name) ? "RangeAttributeModelInt" : name) + ".";
             var builder = new global::Microsoft.Extensions.Options.ValidateOptionsResultBuilder();
             var context = new global::System.ComponentModel.DataAnnotations.ValidationContext(options);
+            var validationResults = new global::System.Collections.Generic.List<global::System.ComponentModel.DataAnnotations.ValidationResult>();
+            var validationAttributes = new global::System.Collections.Generic.List<global::System.ComponentModel.DataAnnotations.ValidationAttribute>();
 
             context.MemberName = "Val";
             context.DisplayName = baseName + "Val";
-            builder.AddResult(global::__OptionValidationStaticInstances.__Attributes.A16.GetValidationResult(options.Val, context));
+            validationAttributes.Add(global::__OptionValidationStaticInstances.__Attributes.A16);
+            if (!global::System.ComponentModel.DataAnnotations.Validator.TryValidateValue(options.Val!, context, validationResults, validationAttributes))
+            {
+                builder.AddResults(validationResults);
+            }
+            validationResults.Clear();
+            validationAttributes.Clear();
 
             return builder.Build();
         }
@@ -1500,10 +1936,18 @@ namespace TestClasses.OptionsValidation
             var baseName = (string.IsNullOrEmpty(name) ? "RegularExpressionAttributeModel" : name) + ".";
             var builder = new global::Microsoft.Extensions.Options.ValidateOptionsResultBuilder();
             var context = new global::System.ComponentModel.DataAnnotations.ValidationContext(options);
+            var validationResults = new global::System.Collections.Generic.List<global::System.ComponentModel.DataAnnotations.ValidationResult>();
+            var validationAttributes = new global::System.Collections.Generic.List<global::System.ComponentModel.DataAnnotations.ValidationAttribute>();
 
             context.MemberName = "Val";
             context.DisplayName = baseName + "Val";
-            builder.AddResult(global::__OptionValidationStaticInstances.__Attributes.A19.GetValidationResult(options.Val, context));
+            validationAttributes.Add(global::__OptionValidationStaticInstances.__Attributes.A19);
+            if (!global::System.ComponentModel.DataAnnotations.Validator.TryValidateValue(options.Val!, context, validationResults, validationAttributes))
+            {
+                builder.AddResults(validationResults);
+            }
+            validationResults.Clear();
+            validationAttributes.Clear();
 
             return builder.Build();
         }
@@ -1525,10 +1969,18 @@ namespace TestClasses.OptionsValidation
             var baseName = (string.IsNullOrEmpty(name) ? "RequiredAttributeModel" : name) + ".";
             var builder = new global::Microsoft.Extensions.Options.ValidateOptionsResultBuilder();
             var context = new global::System.ComponentModel.DataAnnotations.ValidationContext(options);
+            var validationResults = new global::System.Collections.Generic.List<global::System.ComponentModel.DataAnnotations.ValidationResult>();
+            var validationAttributes = new global::System.Collections.Generic.List<global::System.ComponentModel.DataAnnotations.ValidationAttribute>();
 
             context.MemberName = "Val";
             context.DisplayName = baseName + "Val";
-            builder.AddResult(global::__OptionValidationStaticInstances.__Attributes.A1.GetValidationResult(options.Val, context));
+            validationAttributes.Add(global::__OptionValidationStaticInstances.__Attributes.A1);
+            if (!global::System.ComponentModel.DataAnnotations.Validator.TryValidateValue(options.Val!, context, validationResults, validationAttributes))
+            {
+                builder.AddResults(validationResults);
+            }
+            validationResults.Clear();
+            validationAttributes.Clear();
 
             return builder.Build();
         }
@@ -1551,11 +2003,19 @@ namespace ValueTypes
             var baseName = (string.IsNullOrEmpty(name) ? "SecondModel" : name) + ".";
             var builder = new global::Microsoft.Extensions.Options.ValidateOptionsResultBuilder();
             var context = new global::System.ComponentModel.DataAnnotations.ValidationContext(options);
+            var validationResults = new global::System.Collections.Generic.List<global::System.ComponentModel.DataAnnotations.ValidationResult>();
+            var validationAttributes = new global::System.Collections.Generic.List<global::System.ComponentModel.DataAnnotations.ValidationAttribute>();
 
             context.MemberName = "P4";
             context.DisplayName = baseName + "P4";
-            builder.AddResult(global::__OptionValidationStaticInstances.__Attributes.A1.GetValidationResult(options.P4, context));
-            builder.AddResult(global::__OptionValidationStaticInstances.__Attributes.A2.GetValidationResult(options.P4, context));
+            validationAttributes.Add(global::__OptionValidationStaticInstances.__Attributes.A1);
+            validationAttributes.Add(global::__OptionValidationStaticInstances.__Attributes.A2);
+            if (!global::System.ComponentModel.DataAnnotations.Validator.TryValidateValue(options.P4!, context, validationResults, validationAttributes))
+            {
+                builder.AddResults(validationResults);
+            }
+            validationResults.Clear();
+            validationAttributes.Clear();
 
             return builder.Build();
         }
@@ -1577,11 +2037,19 @@ namespace ValueTypes
             var baseName = (string.IsNullOrEmpty(name) ? "FirstModel" : name) + ".";
             var builder = new global::Microsoft.Extensions.Options.ValidateOptionsResultBuilder();
             var context = new global::System.ComponentModel.DataAnnotations.ValidationContext(options);
+            var validationResults = new global::System.Collections.Generic.List<global::System.ComponentModel.DataAnnotations.ValidationResult>();
+            var validationAttributes = new global::System.Collections.Generic.List<global::System.ComponentModel.DataAnnotations.ValidationAttribute>();
 
             context.MemberName = "P1";
             context.DisplayName = baseName + "P1";
-            builder.AddResult(global::__OptionValidationStaticInstances.__Attributes.A1.GetValidationResult(options.P1, context));
-            builder.AddResult(global::__OptionValidationStaticInstances.__Attributes.A2.GetValidationResult(options.P1, context));
+            validationAttributes.Add(global::__OptionValidationStaticInstances.__Attributes.A1);
+            validationAttributes.Add(global::__OptionValidationStaticInstances.__Attributes.A2);
+            if (!global::System.ComponentModel.DataAnnotations.Validator.TryValidateValue(options.P1!, context, validationResults, validationAttributes))
+            {
+                builder.AddResults(validationResults);
+            }
+            validationResults.Clear();
+            validationAttributes.Clear();
 
             if (options.P2 is not null)
             {

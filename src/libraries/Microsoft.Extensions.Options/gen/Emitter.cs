@@ -18,6 +18,10 @@ namespace Microsoft.Extensions.Options.Generators
         private const string StaticFieldHolderClassesNamespace = "__OptionValidationStaticInstances";
         private const string StaticValidationAttributeHolderClassFQN = $"global::{StaticFieldHolderClassesNamespace}.{StaticValidationAttributeHolderClassName}";
         private const string StaticValidatorHolderClassFQN = $"global::{StaticFieldHolderClassesNamespace}.{StaticValidatorHolderClassName}";
+        private const string StaticListType = "global::System.Collections.Generic.List";
+        private const string StaticValidationResultType = "global::System.ComponentModel.DataAnnotations.ValidationResult";
+        private const string StaticValidationAttributeType = "global::System.ComponentModel.DataAnnotations.ValidationAttribute";
+
         private sealed record StaticFieldInfo(string FieldTypeFQN, int FieldOrder, string FieldName, IList<string> InstantiationLines);
 
         public string Emit(
@@ -159,6 +163,8 @@ namespace Microsoft.Extensions.Options.Generators
             OutLn($"var baseName = (string.IsNullOrEmpty(name) ? \"{modelToValidate.SimpleName}\" : name) + \".\";");
             OutLn($"var builder = new global::Microsoft.Extensions.Options.ValidateOptionsResultBuilder();");
             OutLn($"var context = new global::System.ComponentModel.DataAnnotations.ValidationContext(options);");
+            OutLn($"var validationResults = new {StaticListType}<{StaticValidationResultType}>();");
+            OutLn($"var validationAttributes = new {StaticListType}<{StaticValidationAttributeType}>();");
             OutLn();
 
             foreach (var vm in modelToValidate.MembersToValidate)
@@ -187,8 +193,7 @@ namespace Microsoft.Extensions.Options.Generators
             OutCloseBrace();
         }
 
-        private void GenMemberValidation(ValidatedMember vm,
-            ref Dictionary<string, StaticFieldInfo> staticValidationAttributesDict)
+        private void GenMemberValidation(ValidatedMember vm, ref Dictionary<string, StaticFieldInfo> staticValidationAttributesDict)
         {
             OutLn($"context.MemberName = \"{vm.Name}\";");
             OutLn($"context.DisplayName = baseName + \"{vm.Name}\";");
@@ -196,9 +201,15 @@ namespace Microsoft.Extensions.Options.Generators
             foreach (var attr in vm.ValidationAttributes)
             {
                 var staticValidationAttributeInstance = GetOrAddStaticValidationAttribute(ref staticValidationAttributesDict, attr);
-
-                OutLn($"builder.AddResult({StaticValidationAttributeHolderClassFQN}.{staticValidationAttributeInstance.FieldName}.GetValidationResult(options.{vm.Name}, context));");
+                OutLn($"validationAttributes.Add({StaticValidationAttributeHolderClassFQN}.{staticValidationAttributeInstance.FieldName});");
             }
+
+            OutLn($"if (!global::System.ComponentModel.DataAnnotations.Validator.TryValidateValue(options.{vm.Name}!, context, validationResults, validationAttributes))");
+            OutOpenBrace();
+            OutLn($"builder.AddResults(validationResults);");
+            OutCloseBrace();
+            OutLn($"validationResults.Clear();");
+            OutLn($"validationAttributes.Clear();");
         }
 
         private StaticFieldInfo GetOrAddStaticValidationAttribute(ref Dictionary<string, StaticFieldInfo> staticValidationAttributesDict, ValidationAttributeInfo attr)
