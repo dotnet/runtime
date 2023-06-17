@@ -253,11 +253,22 @@ MultiByteToWideChar(
         goto EXIT;
     }
 
-    // Use minipal_utf8_to_utf16_preallocated on all systems, since it replaces
+    // Use minipal_convert_utf8_to_utf16 on all systems, since it replaces
     // invalid characters and Core Foundation doesn't do that.
     if (CodePage == CP_UTF8 || CodePage == CP_ACP)
     {
-        retval = minipal_utf8_to_utf16_preallocated(lpMultiByteStr, cbMultiByte, &lpWideCharStr, cchWideChar, dwFlags, /* treatAsLE */ false);
+        if (cbMultiByte < 0)
+            cbMultiByte = strlen(lpMultiByteStr) + 1;
+
+        if (!lpWideCharStr || cchWideChar == 0)
+            retval = minipal_get_length_utf8_to_utf16(lpMultiByteStr, cbMultiByte, dwFlags);
+
+        if (lpWideCharStr)
+        {
+            if (cchWideChar == 0) cchWideChar = retval;
+            retval = minipal_convert_utf8_to_utf16(lpMultiByteStr, cbMultiByte, (CHAR16_T*)lpWideCharStr, cchWideChar, dwFlags);
+        }
+
         goto EXIT;
     }
 
@@ -333,11 +344,22 @@ WideCharToMultiByte(
         defaultChar = *lpDefaultChar;
     }
 
-    // Use minipal_utf16_to_utf8_preallocated on all systems because we use
+    // Use minipal_convert_utf16_to_utf8 on all systems because we use
     // UTF8ToUnicode in MultiByteToWideChar() on all systems.
     if (CodePage == CP_UTF8 || CodePage == CP_ACP)
     {
-        retval = minipal_utf16_to_utf8_preallocated(lpWideCharStr, cchWideChar, &lpMultiByteStr, cbMultiByte);
+        if (cchWideChar < 0)
+            cchWideChar = PAL_wcslen(lpWideCharStr) + 1;
+
+        if (!lpMultiByteStr || cbMultiByte == 0)
+            retval = minipal_get_length_utf16_to_utf8((CHAR16_T*)lpWideCharStr, cchWideChar, dwFlags);
+
+        if (lpMultiByteStr)
+        {
+            if (cbMultiByte == 0) cbMultiByte = retval;
+            retval = minipal_convert_utf16_to_utf8((CHAR16_T*)lpWideCharStr, cchWideChar, lpMultiByteStr, cbMultiByte, dwFlags);
+        }
+
         goto EXIT;
     }
 

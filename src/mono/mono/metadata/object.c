@@ -327,7 +327,7 @@ get_type_init_exception_for_vtable (MonoVTable *vtable)
 
 	mono_mem_manager_init_reflection_hashes (mem_manager);
 
-	/* 
+	/*
 	 * If the initializing thread was rudely aborted, the exception is not stored
 	 * in the hash.
 	 */

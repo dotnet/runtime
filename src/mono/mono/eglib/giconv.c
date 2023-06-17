@@ -28,7 +28,6 @@
 #include <errno.h>
 #include "../utils/mono-errno.h"
 
-typedef gunichar2 char16_t;
 #include <minipal/utf8.h>
 
 #ifdef _MSC_VER
@@ -44,9 +43,6 @@ static FORCE_INLINE (int) decode_utf8 (char *inbuf, size_t inleft, gunichar *out
 #if G_BYTE_ORDER == G_LITTLE_ENDIAN
 #define decode_utf16 decode_utf16le
 #else
-#ifndef BIGENDIAN
-#define BIGENDIAN
-#endif
 #define decode_utf16 decode_utf16be
 #endif
 
@@ -328,36 +324,27 @@ g_utf8_to_ucs4_fast (const gchar *str, glong len, glong *items_written)
 static FORCE_INLINE (void)
 map_error(GError **err)
 {
-	if (errno == 0) return;
-	if (errno == ERROR_INSUFFICIENT_BUFFER) {
+	if (errno == MINIPAL_ERROR_INSUFFICIENT_BUFFER) {
 		g_set_error (err, G_CONVERT_ERROR, G_CONVERT_ERROR_NO_MEMORY,
 			     "Allocation failed.");
-	} else if (errno == ERROR_NO_UNICODE_TRANSLATION) {
-		g_set_error (err, G_CONVERT_ERROR, G_CONVERT_ERROR_ILLEGAL_SEQUENCE,
-			     "Illegal byte sequence encountered in the input.");
-	} else {
-		g_set_error (err, G_CONVERT_ERROR, G_CONVERT_ERROR_PARTIAL_INPUT,
-			     "Partial byte sequence encountered in the input.");
 	}
 }
 
 static gunichar2 *
-g_utf8_to_utf16_impl (const gchar *str, glong len, glong *items_read, glong *items_written, GError **err, int dwFlags, bool treatAsLE)
+g_utf8_to_utf16_impl (const gchar *str, glong len, glong *items_read, glong *items_written, GError **err, int flags, bool treatAsLE)
 {
 	errno = 0;
 	gunichar2* lpDestStr = NULL;
-	int ret = minipal_utf8_to_utf16_allocate (str, len, &lpDestStr, dwFlags, treatAsLE);
-	if (items_written)
-		*items_written = errno == 0 ? ret : 0;
-	map_error(err);
-	return lpDestStr;
-}
+#if G_BYTE_ORDER == G_BIG_ENDIAN
+	if (treatAsLE)
+		flags |= MINIPAL_TREAT_AS_LITTLE_ENDIAN;
+#endif
 
-static gunichar2 *
-g_utf8_to_utf16le_custom_alloc_impl (const gchar *str, glong len, glong *items_read, glong *items_written, GCustomAllocator custom_alloc_func, gpointer custom_alloc_data, GError **err, bool treatAsLE)
-{
-	errno = 0;
-	int ret = minipal_utf8_to_utf16_preallocated (str, len, 0, 0, 0, /* treatAsLE */ treatAsLE);
+	if (len < 0)
+		len = (glong)strlen(str) + 1;
+
+	glong ret = (glong)minipal_get_length_utf8_to_utf16 (str, len, flags);
+
 	map_error(err);
 
 	if (items_written)
@@ -366,8 +353,43 @@ g_utf8_to_utf16le_custom_alloc_impl (const gchar *str, glong len, glong *items_r
 	if (ret <= 0)
 		return NULL;
 
-	gunichar2* lpDestStr = custom_alloc_func((ret + 1) * sizeof (gunichar2), custom_alloc_data);
-	ret = minipal_utf8_to_utf16_preallocated (str, len, &lpDestStr, ret, MB_ERR_INVALID_CHARS, /* treatAsLE */ treatAsLE);
+	lpDestStr = malloc((ret + 1) * sizeof(gunichar2));
+	ret = (glong)minipal_convert_utf8_to_utf16 (str, len, lpDestStr, ret, flags);
+    lpDestStr[ret] = '\0';
+
+	if (items_written)
+		*items_written = errno == 0 ? ret : 0;
+
+	map_error(err);
+	return lpDestStr;
+}
+
+static gunichar2 *
+g_utf8_to_utf16le_custom_alloc_impl (const gchar *str, glong len, glong *items_read, glong *items_written, GCustomAllocator custom_alloc_func, gpointer custom_alloc_data, GError **err, bool treatAsLE)
+{
+	guint flags = 0;
+	errno = 0;
+#if G_BYTE_ORDER == G_BIG_ENDIAN
+	if (treatAsLE)
+		flags = MINIPAL_TREAT_AS_LITTLE_ENDIAN;
+#endif
+	if (len < 0)
+		len = (glong)strlen(str) + 1;
+
+	glong ret = (glong)minipal_get_length_utf8_to_utf16 (str, len, flags);
+
+	map_error(err);
+
+	if (items_written)
+		*items_written = errno == 0 ? ret : 0;
+
+	if (ret <= 0)
+		return NULL;
+
+	gunichar2 *lpDestStr = custom_alloc_func((ret + 1) * sizeof (gunichar2), custom_alloc_data);
+	flags |= MINIPAL_MB_NO_REPLACE_INVALID_CHARS;
+	ret = (glong)minipal_convert_utf8_to_utf16 (str, len, lpDestStr, ret, flags);
+
 	map_error(err);
 	return lpDestStr;
 }
@@ -375,13 +397,13 @@ g_utf8_to_utf16le_custom_alloc_impl (const gchar *str, glong len, glong *items_r
 gunichar2 *
 g_utf8_to_utf16 (const gchar *str, glong len, glong *items_read, glong *items_written, GError **err)
 {
-	return g_utf8_to_utf16_impl (str, len, items_read, items_written, err, MB_ERR_INVALID_CHARS, false);
+	return g_utf8_to_utf16_impl (str, len, items_read, items_written, err, MINIPAL_MB_NO_REPLACE_INVALID_CHARS, false);
 }
 
 gunichar2 *
 g_utf8_to_utf16le (const gchar *str, glong len, glong *items_read, glong *items_written, GError **err)
 {
-	return g_utf8_to_utf16_impl (str, len, items_read, items_written, err, MB_ERR_INVALID_CHARS, true);
+	return g_utf8_to_utf16_impl (str, len, items_read, items_written, err, MINIPAL_MB_NO_REPLACE_INVALID_CHARS, true);
 }
 
 gunichar2 *
@@ -477,9 +499,31 @@ g_utf8_to_ucs4 (const gchar *str, glong len, glong *items_read, glong *items_wri
 static gchar *
 g_utf16_to_utf8_impl (const gunichar2 *str, glong len, glong *items_read, glong *items_written, GError **err, bool treatAsLE)
 {
+	guint flags = 0;
 	errno = 0;
 	gchar* lpDestStr = NULL;
-	int ret = minipal_utf16_to_utf8_allocate (str, len, &lpDestStr, treatAsLE);
+#if G_BYTE_ORDER == G_BIG_ENDIAN
+	if (treatAsLE)
+		flags |= MINIPAL_TREAT_AS_LITTLE_ENDIAN;
+#endif
+	if (len < 0) {
+		len = 0;
+		while (str[len])
+			len++;
+	}
+
+	glong ret = (glong)minipal_get_length_utf16_to_utf8 (str, len, flags);
+	map_error(err);
+
+	if (items_written)
+		*items_written = errno == 0 ? ret : 0;
+
+	if (ret <= 0)
+		return NULL;
+
+	lpDestStr = (gchar *)malloc((ret + 1) * sizeof(gchar));
+	ret = (glong)minipal_convert_utf16_to_utf8 (str, len, lpDestStr, ret, flags);
+	lpDestStr[ret] = '\0';
 
 	if (items_written)
 		*items_written = errno == 0 ? ret : 0;
@@ -504,7 +548,14 @@ gchar *
 g_utf16_to_utf8_custom_alloc (const gunichar2 *str, glong len, glong *items_read, glong *items_written, GCustomAllocator custom_alloc_func, gpointer custom_alloc_data, GError **err)
 {
 	errno = 0;
-	int ret = minipal_utf16_to_utf8_preallocated (str, len, 0, 0);
+
+	if (len < 0) {
+		len = 0;
+		while (str[len])
+			len++;
+	}
+
+	glong ret = (glong)minipal_get_length_utf16_to_utf8 (str, len, 0);
 	map_error(err);
 
 	if (items_written)
@@ -513,8 +564,9 @@ g_utf16_to_utf8_custom_alloc (const gunichar2 *str, glong len, glong *items_read
 	if (ret <= 0)
 		return NULL;
 
-	gchar* lpDestStr = custom_alloc_func((ret + 1) * sizeof (gunichar2), custom_alloc_data);
-	ret = minipal_utf16_to_utf8_preallocated (str, len, &lpDestStr, ret);
+	gchar *lpDestStr = custom_alloc_func((ret + 1) * sizeof (gunichar2), custom_alloc_data);
+	ret = (glong)minipal_convert_utf16_to_utf8 (str, len, lpDestStr, ret, 0);
+
 	map_error(err);
 	return lpDestStr;
 }
