@@ -5200,7 +5200,6 @@ namespace System.Diagnostics.Tracing
             sb = new StringBuilder();
             events = new StringBuilder();
             templates = new StringBuilder();
-            WillBuild = true;
             sb.AppendLine("<instrumentationManifest xmlns=\"http://schemas.microsoft.com/win/2004/08/events\">");
             sb.AppendLine(" <instrumentation xmlns:xs=\"http://www.w3.org/2001/XMLSchema\" xmlns:xsi=\"http://www.w3.org/2001/XMLSchema-instance\" xmlns:win=\"http://manifests.microsoft.com/win/2004/08/windows/events\">");
             sb.AppendLine("  <events xmlns=\"http://schemas.microsoft.com/win/2004/08/events\">");
@@ -5231,7 +5230,7 @@ namespace System.Diagnostics.Tracing
             errors = new List<string>();
             perEventByteArrayArgIndices = new Dictionary<string, List<int>>();
         }
-        internal readonly bool WillBuild = false;
+        internal bool WillBuild => sb is not null;
 
         public void AddOpcode(string name, int value)
         {
