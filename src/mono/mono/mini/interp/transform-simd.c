@@ -701,7 +701,7 @@ lookup_packedsimd_intrinsic (const char *name, MonoType *arg1)
 		if (strcmp (name, info->name))
 			continue;
 		if (!packedsimd_type_matches (arg_type_enum, info->arg_type)) {
-			g_print ("%s arg mismatch: %d != %d\n", name, arg_type_enum, info->arg_type);
+			// g_print ("%s arg mismatch: %d != %d\n", name, arg_type_enum, info->arg_type);
 			continue;
 		}
 		return info;
@@ -744,7 +744,7 @@ emit_sri_packedsimd (TransformData *td, MonoMethod *cmethod, MonoMethodSignature
 	if (info && info->interp_opcode && info->simd_intrins) {
 		simd_opcode = info->interp_opcode;
 		simd_intrins = info->simd_intrins;
-		g_print ("%s %d -> %s %d %s\n", info->name, info->arg_type, mono_interp_opname (simd_opcode), simd_intrins, info->intrinsic_name);
+		// g_print ("%s %d -> %s %d %s\n", info->name, info->arg_type, mono_interp_opname (simd_opcode), simd_intrins, info->intrinsic_name);
 	} else {
 		g_print ("MONO interpreter: Unimplemented method: System.Runtime.Intrinsics.Wasm.PackedSimd.%s\n", cmethod->name);
 
