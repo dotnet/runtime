@@ -34,6 +34,8 @@
 #define PORTABLE_RID_ARCH "loongarch64";
 #elif defined(TARGET_POWERPC64)
 #define PORTABLE_RID_ARCH "ppc64le";
+#else
+#error Unknown architecture
 #endif
 
 #undef PORTABLE_RID_OS
@@ -54,13 +56,11 @@
 
 #elif defined(TARGET_WINDOWS)
 #define PORTABLE_RID_OS "win"
+#else
+#error Unknown OS
 #endif
 
-#if defined(PORTABLE_RID_OS) && defined(PORTABLE_RID_ARCH)
 const ep_char8_t* _ds_portable_rid_info = PORTABLE_RID_OS "-" PORTABLE_RID_ARCH;
-#else
-const ep_char8_t* _ds_portable_rid_info = "unknown";
-#endif
 
 #endif /* ENABLE_PERFTRACING */
 
