@@ -22,19 +22,19 @@
     .try
     {
       // castclass valuetype
-      ldc.i4.s 1234
+      ldc.i4 1234
       box int32
       castclass int32
       unbox int32
-      call void [System.Runtime]System.Int32::ToString()
+      call instance string [System.Runtime]System.Int32::ToString()
       call void [System.Console]System.Console::WriteLine(class [System.Runtime]System.String)
 
       // castclass nullable
-      ldc.i4.s 1234
+      ldc.i4 1234
       box int32
       castclass valuetype [System.Runtime]System.Nullable`1<int32>
       unbox int32
-      call void [System.Runtime]System.Int32::ToString()
+      call instance string [System.Runtime]System.Int32::ToString()
       call void [System.Console]System.Console::WriteLine(class [System.Runtime]System.String)
 
       leave.s SUCCESS
