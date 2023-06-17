@@ -48,19 +48,11 @@ namespace System.Numerics
                 Z = new Vector2(m31, m32);
             }
 
+            private static readonly Impl _identity = new Impl () { X = Vector2.UnitX, Y = Vector2.UnitY, Z = Vector2.Zero };
+
             public static Impl Identity
             {
-                [MethodImpl(MethodImplOptions.AggressiveInlining)]
-                get
-                {
-                    Impl result;
-
-                    result.X = Vector2.UnitX;
-                    result.Y = Vector2.UnitY;
-                    result.Z = Vector2.Zero;
-
-                    return result;
-                }
+                get => _identity;
             }
 
             public float this[int row, int column]

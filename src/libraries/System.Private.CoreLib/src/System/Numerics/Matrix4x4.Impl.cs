@@ -67,20 +67,11 @@ namespace System.Numerics
                 W = new Vector4(value.Z, 0, 1);
             }
 
+            private static readonly Impl _identity = new Impl () { X = Vector4.UnitX, Y = Vector4.UnitY, Z = Vector4.UnitZ, W = Vector4.UnitW };
+
             public static Impl Identity
             {
-                [MethodImpl(MethodImplOptions.AggressiveInlining)]
-                get
-                {
-                    Impl result;
-
-                    result.X = Vector4.UnitX;
-                    result.Y = Vector4.UnitY;
-                    result.Z = Vector4.UnitZ;
-                    result.W = Vector4.UnitW;
-
-                    return result;
-                }
+                get => _identity;
             }
 
             public float this[int row, int column]
