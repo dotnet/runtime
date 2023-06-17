@@ -552,6 +552,17 @@ namespace Internal.JitInterface
                 {
                     if (computedNodes.Add(fixup))
                     {
+                        if (fixup is IMethodNode methodNode)
+                        {
+                            try
+                            {
+                                _compilation.NodeFactory.DetectGenericCycles(_methodCodeNode.Method, methodNode.Method);
+                            }
+                            catch (TypeLoadException)
+                            {
+                                throw new RequiresRuntimeJitException("Requires runtime JIT - potential generic cycle detected");
+                            }
+                        }
                         _methodCodeNode.Fixups.Add(fixup);
                     }
                 }
@@ -1225,22 +1236,6 @@ namespace Internal.JitInterface
             return ObjectToHandle(m.OwningType);
         }
 
-        private CORINFO_MODULE_STRUCT_* getMethodModule(CORINFO_METHOD_STRUCT_* method)
-        {
-            MethodDesc m = HandleToObject(method);
-            if (m is UnboxingMethodDesc unboxingMethodDesc)
-            {
-                m = unboxingMethodDesc.Target;
-            }
-
-            MethodIL methodIL = _compilation.GetMethodIL(m);
-            if (methodIL == null)
-            {
-                return null;
-            }
-            return ObjectToHandle(methodIL);
-        }
-
         private bool resolveVirtualMethod(CORINFO_DEVIRTUALIZATION_INFO* info)
         {
             // Initialize OUT fields
@@ -1554,8 +1549,6 @@ namespace Internal.JitInterface
 
         private bool satisfiesMethodConstraints(CORINFO_CLASS_STRUCT_* parent, CORINFO_METHOD_STRUCT_* method)
         { throw new NotImplementedException("satisfiesMethodConstraints"); }
-        private bool isCompatibleDelegate(CORINFO_CLASS_STRUCT_* objCls, CORINFO_CLASS_STRUCT_* methodParentCls, CORINFO_METHOD_STRUCT_* method, CORINFO_CLASS_STRUCT_* delegateCls, ref bool pfIsOpenDelegate)
-        { throw new NotImplementedException("isCompatibleDelegate"); }
         private void setPatchpointInfo(PatchpointInfo* patchpointInfo)
         { throw new NotImplementedException("setPatchpointInfo"); }
         private PatchpointInfo* getOSRInfo(ref uint ilOffset)
@@ -1802,12 +1795,6 @@ namespace Internal.JitInterface
             pResolvedToken.cbMethodSpec = 0;
         }
 
-        private bool tryResolveToken(ref CORINFO_RESOLVED_TOKEN pResolvedToken)
-        {
-            resolveToken(ref pResolvedToken);
-            return true;
-        }
-
         private void findSig(CORINFO_MODULE_STRUCT_* module, uint sigTOK, CORINFO_CONTEXT_STRUCT* context, CORINFO_SIG_INFO* sig)
         {
             var methodIL = HandleToObject(module);
@@ -1853,11 +1840,6 @@ namespace Internal.JitInterface
         {
             return CorInfoCanSkipVerificationResult.CORINFO_VERIFICATION_CAN_SKIP;
         }
-
-        private bool isValidToken(CORINFO_MODULE_STRUCT_* module, uint metaTOK)
-        { throw new NotImplementedException("isValidToken"); }
-        private bool isValidStringRef(CORINFO_MODULE_STRUCT_* module, uint metaTOK)
-        { throw new NotImplementedException("isValidStringRef"); }
 
         private int getStringLiteral(CORINFO_MODULE_STRUCT_* module, uint metaTOK, char* buffer, int size, int startIndex)
         {
@@ -2664,58 +2646,6 @@ namespace Internal.JitInterface
             };
         }
 
-        private CORINFO_CLASS_STRUCT_* mergeClasses(CORINFO_CLASS_STRUCT_* cls1, CORINFO_CLASS_STRUCT_* cls2)
-        {
-            TypeDesc type1 = HandleToObject(cls1);
-            TypeDesc type2 = HandleToObject(cls2);
-
-            TypeDesc merged = TypeExtensions.MergeTypesToCommonParent(type1, type2);
-
-#if DEBUG
-            // Make sure the merge is reflexive in the cases we "support".
-            TypeDesc reflexive = TypeExtensions.MergeTypesToCommonParent(type2, type1);
-
-            // If both sides are classes than either they have a common non-interface parent (in which case it is
-            // reflexive)
-            // OR they share a common interface, and it can be order dependent (if they share multiple interfaces
-            // in common)
-            if (!type1.IsInterface && !type2.IsInterface)
-            {
-                if (merged.IsInterface)
-                {
-                    Debug.Assert(reflexive.IsInterface);
-                }
-                else
-                {
-                    Debug.Assert(merged == reflexive);
-                }
-            }
-            // Both results must either be interfaces or classes.  They cannot be mixed.
-            Debug.Assert(merged.IsInterface == reflexive.IsInterface);
-
-            // If the result of the merge was a class, then the result of the reflexive merge was the same class.
-            if (!merged.IsInterface)
-            {
-                Debug.Assert(merged == reflexive);
-            }
-
-            // If both sides are arrays, then the result is either an array or g_pArrayClass.  The above is
-            // actually true for reference types as well, but it is a little excessive to deal with.
-            if (type1.IsArray && type2.IsArray)
-            {
-                TypeDesc arrayClass = _compilation.TypeSystemContext.GetWellKnownType(WellKnownType.Array);
-                Debug.Assert((merged.IsArray && reflexive.IsArray)
-                         || ((merged == arrayClass) && (reflexive == arrayClass)));
-            }
-
-            // The results must always be assignable
-            Debug.Assert(type1.CanCastTo(merged) && type2.CanCastTo(merged) && type1.CanCastTo(reflexive)
-                     && type2.CanCastTo(reflexive));
-#endif
-
-            return ObjectToHandle(merged);
-        }
-
         private bool isMoreSpecificType(CORINFO_CLASS_STRUCT_* cls1, CORINFO_CLASS_STRUCT_* cls2)
         {
             TypeDesc type1 = HandleToObject(cls1);
@@ -2784,15 +2714,12 @@ namespace Internal.JitInterface
                 result = asCorInfoType(returnType, clsRet);
             }
             else
-#pragma warning disable IDE0059 // Unnecessary assignment of a value
-                clsRet = null;
-#pragma warning restore IDE0059 // Unnecessary assignment of a value
+            {
+                *clsRet = null;
+            }
 
             return result;
         }
-
-        private bool satisfiesClassConstraints(CORINFO_CLASS_STRUCT_* cls)
-        { throw new NotImplementedException("satisfiesClassConstraints"); }
 
         private bool isSDArray(CORINFO_CLASS_STRUCT_* cls)
         {
@@ -3217,9 +3144,6 @@ namespace Internal.JitInterface
             return (uint)HandleToObject(ftn).GetHashCode();
         }
 
-        private UIntPtr findNameOfToken(CORINFO_MODULE_STRUCT_* moduleHandle, mdToken token, byte* szFQName, UIntPtr FQNameCapacity)
-        { throw new NotImplementedException("findNameOfToken"); }
-
         private bool getSystemVAmd64PassStructInRegisterDescriptor(CORINFO_CLASS_STRUCT_* structHnd, SYSTEMV_AMD64_CORINFO_STRUCT_REG_PASSING_DESCRIPTOR* structPassInRegDescPtr)
         {
             TypeDesc typeDesc = HandleToObject(structHnd);
@@ -3242,8 +3166,6 @@ namespace Internal.JitInterface
 
         private uint getThreadTLSIndex(ref void* ppIndirection)
         { throw new NotImplementedException("getThreadTLSIndex"); }
-        private void* getInlinedCallFrameVptr(ref void* ppIndirection)
-        { throw new NotImplementedException("getInlinedCallFrameVptr"); }
 
         private Dictionary<CorInfoHelpFunc, ISymbolNode> _helperCache = new Dictionary<CorInfoHelpFunc, ISymbolNode>();
         private void* getHelperFtn(CorInfoHelpFunc ftnNum, ref void* ppIndirection)
@@ -3358,10 +3280,6 @@ namespace Internal.JitInterface
             return constLookup;
         }
 
-        private bool canAccessFamily(CORINFO_METHOD_STRUCT_* hCaller, CORINFO_CLASS_STRUCT_* hInstanceType)
-        { throw new NotImplementedException("canAccessFamily"); }
-        private bool isRIDClassDomainID(CORINFO_CLASS_STRUCT_* cls)
-        { throw new NotImplementedException("isRIDClassDomainID"); }
         private uint getClassDomainID(CORINFO_CLASS_STRUCT_* cls, ref void* ppIndirection)
         { throw new NotImplementedException("getClassDomainID"); }
 
@@ -3727,11 +3645,8 @@ namespace Internal.JitInterface
             }
         }
 
-        private void recordRelocation(void* location, void* locationRW, void* target, ushort fRelocType, ushort slotNum, int addlDelta)
+        private void recordRelocation(void* location, void* locationRW, void* target, ushort fRelocType, int addlDelta)
         {
-            // slotNum is not used
-            Debug.Assert(slotNum == 0);
-
             int relocOffset;
             BlockType locationBlock = findKnownBlock(location, out relocOffset);
             Debug.Assert(locationBlock != BlockType.Unknown, "BlockType.Unknown not expected");

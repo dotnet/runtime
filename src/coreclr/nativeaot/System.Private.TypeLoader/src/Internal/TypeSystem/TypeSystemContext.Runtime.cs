@@ -200,19 +200,9 @@ namespace Internal.TypeSystem
                     TypeDesc[] genericParameters = new TypeDesc[rtth.ToEETypePtr()->GenericParameterCount];
                     Runtime.GenericVariance* runtimeVariance = rtth.ToEETypePtr()->HasGenericVariance ?
                         rtth.ToEETypePtr()->GenericVariance : null;
-                    for (int i = 0; i < genericParameters.Length; i++)
-                    {
-                        GenericVariance variance = runtimeVariance == null ? GenericVariance.None : runtimeVariance[i] switch
-                        {
-                            Runtime.GenericVariance.Contravariant => GenericVariance.Contravariant,
-                            Runtime.GenericVariance.Covariant => GenericVariance.Covariant,
-                            Runtime.GenericVariance.NonVariant or Runtime.GenericVariance.ArrayCovariant => GenericVariance.None,
-                            _ => throw new NotImplementedException()
-                        };
-                        genericParameters[i] = genericParameters[i] = new RuntimeGenericParameterDesc(GenericParameterKind.Type, i, this, variance);
-                    }
+                    ReadOnlySpan<Runtime.GenericVariance> varianceData = new ReadOnlySpan<Runtime.GenericVariance>(runtimeVariance, runtimeVariance == null ? 0 : genericParameters.Length);
 
-                    returnedType = new NoMetadataType(this, rtth, null, new Instantiation(genericParameters), rtth.GetHashCode());
+                    returnedType = new NoMetadataType(this, rtth, genericParameters.Length, varianceData, rtth.GetHashCode());
                 }
             }
             else if (RuntimeAugments.IsGenericType(rtth))

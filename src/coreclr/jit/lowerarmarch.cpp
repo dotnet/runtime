@@ -2579,7 +2579,7 @@ void Lowering::TryLowerCselToCinvOrCneg(GenTreeOp* select, GenTree* cond)
 
     assert(trueVal->OperIs(GT_NOT, GT_NEG) || falseVal->OperIs(GT_NOT, GT_NEG));
 
-    if (trueVal->OperIs(GT_NOT) || trueVal->OperIs(GT_NEG))
+    if ((isCneg && trueVal->OperIs(GT_NEG)) || (!isCneg && trueVal->OperIs(GT_NOT)))
     {
         shouldReverseCondition  = true;
         invertedOrNegatedVal    = trueVal->gtGetOp1();

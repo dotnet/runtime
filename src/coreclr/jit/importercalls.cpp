@@ -3319,7 +3319,7 @@ GenTree* Compiler::impIntrinsic(GenTree*                newobjThis,
             case NI_System_Math_FusedMultiplyAdd:
             {
 #ifdef TARGET_XARCH
-                if (compExactlyDependsOn(InstructionSet_FMA))
+                if (compOpportunisticallyDependsOn(InstructionSet_FMA))
                 {
                     assert(varTypeIsFloating(callType));
 
@@ -3340,7 +3340,7 @@ GenTree* Compiler::impIntrinsic(GenTree*                newobjThis,
                     break;
                 }
 #elif defined(TARGET_ARM64)
-                if (compExactlyDependsOn(InstructionSet_AdvSimd))
+                if (compOpportunisticallyDependsOn(InstructionSet_AdvSimd))
                 {
                     assert(varTypeIsFloating(callType));
 
@@ -3400,8 +3400,6 @@ GenTree* Compiler::impIntrinsic(GenTree*                newobjThis,
             }
 #if defined(TARGET_ARM64)
             // ARM64 has fmax/fmin which are IEEE754:2019 minimum/maximum compatible
-            // TODO-XARCH-CQ: Enable this for XARCH when one of the arguments is a constant
-            // so we can then emit maxss/minss and avoid NaN/-0.0 handling
             case NI_System_Math_Max:
             case NI_System_Math_Min:
 #endif
@@ -6280,12 +6278,6 @@ void Compiler::impMarkInlineCandidate(GenTree*               callNode,
 {
     if (!opts.OptEnabled(CLFLG_INLINING))
     {
-        /* XXX Mon 8/18/2008
-         * This assert is misleading.  The caller does not ensure that we have CLFLG_INLINING set before
-         * calling impMarkInlineCandidate.  However, if this assert trips it means that we're an inlinee and
-         * CLFLG_MINOPT is set.  That doesn't make a lot of sense.  If you hit this assert, work back and
-         * figure out why we did not set MAXOPT for this compile.
-         */
         assert(!compIsForInlining());
         return;
     }
@@ -6301,12 +6293,11 @@ void Compiler::impMarkInlineCandidate(GenTree*               callNode,
         assert(call->GetInlineCandidatesCount() > 0);
         for (uint8_t candidateId = 0; candidateId < call->GetInlineCandidatesCount(); candidateId++)
         {
-            InlineResult inlineResult(this, call, nullptr, "impMarkInlineCandidate", true);
+            InlineResult inlineResult(this, call, nullptr, "impMarkInlineCandidate for GDV");
 
             // Do the actual evaluation
             impMarkInlineCandidateHelper(call, candidateId, exactContextHnd, exactContextNeedsRuntimeLookup, callInfo,
                                          ilOffset, &inlineResult);
-
             // Ignore non-inlineable candidates
             // TODO: Consider keeping them to just devirtualize without inlining, at least for interface
             // calls on NativeAOT, but that requires more changes elsewhere too.
@@ -6316,12 +6307,19 @@ void Compiler::impMarkInlineCandidate(GenTree*               callNode,
                 candidateId--;
             }
         }
+
+        // None of the candidates made it, make sure the call is no longer marked as "has inline info"
+        if (call->GetInlineCandidatesCount() == 0)
+        {
+            assert(!call->IsInlineCandidate());
+            assert(!call->IsGuardedDevirtualizationCandidate());
+        }
     }
     else
     {
         const uint8_t candidatesCount = call->GetInlineCandidatesCount();
         assert(candidatesCount <= 1);
-        InlineResult inlineResult(this, call, nullptr, "impMarkInlineCandidate", true);
+        InlineResult inlineResult(this, call, nullptr, "impMarkInlineCandidate");
         impMarkInlineCandidateHelper(call, 0, exactContextHnd, exactContextNeedsRuntimeLookup, callInfo, ilOffset,
                                      &inlineResult);
     }
@@ -7588,7 +7586,7 @@ CORINFO_CLASS_HANDLE Compiler::impGetSpecialIntrinsicExactReturnType(GenTreeCall
                 if (instParam != nullptr)
                 {
                     assert(instParam->GetNext() == nullptr);
-                    CORINFO_CLASS_HANDLE hClass = gtGetHelperArgClassHandle(instParam->GetEarlyNode());
+                    CORINFO_CLASS_HANDLE hClass = gtGetHelperArgClassHandle(instParam->GetNode());
                     if (hClass != NO_CLASS_HANDLE)
                     {
                         hClass = getTypeInstantiationArgument(hClass, 0);

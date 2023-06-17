@@ -17,6 +17,7 @@ parameters:
   additionalSetupParameters: ''
   logicalMachine: ''
   pgoRunType: ''
+  physicalPromotionRunType: ''
   javascriptEngine: 'NoJS'
   iOSLlvmBuild: 'False'
   iOSStripSymbols: 'False'
@@ -38,8 +39,8 @@ jobs:
 - template: ${{ parameters.runJobTemplate }}
   parameters:
     # Compute job name from template parameters
-    jobName: ${{ format('perfbuild_{0}{1}_{2}_{3}_{4}_{5}_{6}_{7}_{8}_{9}_{10}_{11}', parameters.osGroup, parameters.osSubgroup, parameters.archType, parameters.buildConfig, parameters.runtimeType, parameters.codeGenType, parameters.runKind, parameters.logicalMachine, parameters.javascriptEngine, parameters.pgoRunType, parameters.iosLlvmBuild, parameters.iosStripSymbols) }}
-    displayName: ${{ format('Performance {0}{1} {2} {3} {4} {5} {6} {7} {8} {9} {10} {11}', parameters.osGroup, parameters.osSubgroup, parameters.archType, parameters.buildConfig, parameters.runtimeType, parameters.codeGenType, parameters.runKind, parameters.logicalMachine, parameters.javascriptEngine, parameters.pgoRunType, parameters.iosLlvmBuild, parameters.iosStripSymbols) }}
+    jobName: ${{ format('perfbuild_{0}{1}_{2}_{3}_{4}_{5}_{6}_{7}_{8}_{9}_{10}_{11}_{12}', parameters.osGroup, parameters.osSubgroup, parameters.archType, parameters.buildConfig, parameters.runtimeType, parameters.codeGenType, parameters.runKind, parameters.logicalMachine, parameters.javascriptEngine, parameters.pgoRunType, parameters.physicalPromotionRunType, parameters.iosLlvmBuild, parameters.iosStripSymbols) }}
+    displayName: ${{ format('Performance {0}{1} {2} {3} {4} {5} {6} {7} {8} {9} {10} {11} {12}', parameters.osGroup, parameters.osSubgroup, parameters.archType, parameters.buildConfig, parameters.runtimeType, parameters.codeGenType, parameters.runKind, parameters.logicalMachine, parameters.javascriptEngine, parameters.pgoRunType, parameters.physicalPromotionRunType, parameters.iosLlvmBuild, parameters.iosStripSymbols) }}
     pool: ${{ parameters.pool }}
     buildConfig: ${{ parameters.buildConfig }}
     archType: ${{ parameters.archType }}
@@ -55,6 +56,7 @@ jobs:
     container: ${{ parameters.container }}
     logicalmachine: ${{ parameters.logicalmachine }}
     pgoRunType: ${{ parameters.pgoRunType }}
+    physicalPromotionRunType: ${{ parameters.physicalPromotionRunType }}
     javascriptEngine: ${{ parameters.javascriptEngine }}
     iosLlvmBuild: ${{ parameters.iosLlvmBuild }}
     iosStripSymbols: ${{ parameters.iosStripSymbols }}
@@ -177,25 +179,24 @@ jobs:
         - template: /eng/pipelines/common/download-artifact-step.yml
           parameters:
             unpackFolder: $(librariesDownloadDir)/BrowserWasm
-            artifactFileName: BrowserWasm.zip
+            artifactFileName: BrowserWasm.tar.gz
             artifactName: BrowserWasm
             displayName: BrowserWasm
       - ${{ if ne(parameters.downloadSpecificBuild.buildId, '') }}:
         - template: /eng/pipelines/common/download-specific-artifact-step.yml
           parameters:
             unpackFolder: $(librariesDownloadDir)/BrowserWasm
-            artifactFileName: BrowserWasm.zip
+            artifactFileName: BrowserWasm.tar.gz
             artifactName: BrowserWasm
             displayName: BrowserWasm
             ${{ insert }}: ${{ parameters.downloadSpecificBuild }}
 
-      # Using test-main-7.0.js, since we are building with tfm:net7.0
       - script: >-
           mkdir -p $(librariesDownloadDir)/bin/wasm/wasm-data &&
           mkdir -p $(librariesDownloadDir)/bin/wasm/dotnet &&
           cp -r $(librariesDownloadDir)/BrowserWasm/staging/dotnet-latest/* $(librariesDownloadDir)/bin/wasm/dotnet &&
           cp -r $(librariesDownloadDir)/BrowserWasm/staging/built-nugets $(librariesDownloadDir)/bin/wasm &&
-          cp src/mono/wasm/Wasm.Build.Tests/data/test-main-7.0.js $(librariesDownloadDir)/bin/wasm/wasm-data/test-main.js &&
+          cp src/mono/wasm/test-main.js $(librariesDownloadDir)/bin/wasm/wasm-data/test-main.js &&
           find $(librariesDownloadDir)/bin/wasm -type d &&
           find $(librariesDownloadDir)/bin/wasm -type f -exec chmod 664 {} \;
         displayName: "Create wasm directory (Linux)"

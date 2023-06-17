@@ -49,6 +49,12 @@ struct Access
     unsigned     Offset;
     var_types    AccessType;
 
+    weight_t CountWtd                 = 0;
+    weight_t CountAssignedFromCallWtd = 0;
+    weight_t CountCallArgsWtd         = 0;
+    weight_t CountPassedAsRetbufWtd   = 0;
+
+#ifdef DEBUG
     // Number of times we saw this access.
     unsigned Count = 0;
     // Number of times this access is on the RHS of an assignment.
@@ -59,13 +65,10 @@ struct Access
     unsigned CountReturns               = 0;
     unsigned CountPassedAsRetbuf        = 0;
 
-    weight_t CountWtd                      = 0;
     weight_t CountAssignmentSourceWtd      = 0;
     weight_t CountAssignmentDestinationWtd = 0;
-    weight_t CountAssignedFromCallWtd      = 0;
-    weight_t CountCallArgsWtd              = 0;
     weight_t CountReturnsWtd               = 0;
-    weight_t CountPassedAsRetbufWtd        = 0;
+#endif
 
     Access(unsigned offset, var_types accessType, ClassLayout* layout)
         : Layout(layout), Offset(offset), AccessType(accessType)
@@ -97,13 +100,15 @@ struct Access
 
 enum class AccessKindFlags : uint32_t
 {
-    None                    = 0,
-    IsCallArg               = 1,
-    IsAssignmentSource      = 2,
-    IsAssignmentDestination = 4,
-    IsCallRetBuf            = 8,
-    IsAssignedFromCall      = 16,
+    None               = 0,
+    IsCallArg          = 1,
+    IsAssignedFromCall = 2,
+    IsCallRetBuf       = 4,
+#ifdef DEBUG
+    IsAssignmentSource      = 8,
+    IsAssignmentDestination = 16,
     IsReturned              = 32,
+#endif
 };
 
 inline constexpr AccessKindFlags operator~(AccessKindFlags a)
@@ -197,13 +202,28 @@ bool AggregateInfo::OverlappingReplacements(unsigned      offset,
     return true;
 }
 
+struct PrimitiveAccess
+{
+    weight_t  CountWtd = 0;
+    unsigned  Offset;
+    var_types AccessType;
+
+    INDEBUG(unsigned Count = 0);
+
+    PrimitiveAccess(unsigned offset, var_types accessType) : Offset(offset), AccessType(accessType)
+    {
+    }
+};
+
 // Tracks all the accesses into one particular struct local.
 class LocalUses
 {
-    jitstd::vector<Access> m_accesses;
+    jitstd::vector<Access>          m_accesses;
+    jitstd::vector<PrimitiveAccess> m_inducedAccesses;
 
 public:
-    LocalUses(Compiler* comp) : m_accesses(comp->getAllocator(CMK_Promotion))
+    LocalUses(Compiler* comp)
+        : m_accesses(comp->getAllocator(CMK_Promotion)), m_inducedAccesses(comp->getAllocator(CMK_Promotion))
     {
     }
 
@@ -252,8 +272,25 @@ public:
             access = &*m_accesses.insert(m_accesses.begin() + index, Access(offs, accessType, accessLayout));
         }
 
-        access->Count++;
         access->CountWtd += weight;
+
+        if ((flags & AccessKindFlags::IsCallArg) != AccessKindFlags::None)
+        {
+            access->CountCallArgsWtd += weight;
+        }
+
+        if ((flags & AccessKindFlags::IsCallRetBuf) != AccessKindFlags::None)
+        {
+            access->CountPassedAsRetbufWtd += weight;
+        }
+
+        if ((flags & AccessKindFlags::IsAssignedFromCall) != AccessKindFlags::None)
+        {
+            access->CountAssignedFromCallWtd += weight;
+        }
+
+#ifdef DEBUG
+        access->Count++;
 
         if ((flags & AccessKindFlags::IsAssignmentSource) != AccessKindFlags::None)
         {
@@ -265,23 +302,16 @@ public:
         {
             access->CountAssignmentDestination++;
             access->CountAssignmentDestinationWtd += weight;
-
-            if ((flags & AccessKindFlags::IsAssignedFromCall) != AccessKindFlags::None)
-            {
-                access->CountAssignedFromCallWtd += weight;
-            }
         }
 
         if ((flags & AccessKindFlags::IsCallArg) != AccessKindFlags::None)
         {
             access->CountCallArgs++;
-            access->CountCallArgsWtd += weight;
         }
 
         if ((flags & AccessKindFlags::IsCallRetBuf) != AccessKindFlags::None)
         {
             access->CountPassedAsRetbuf++;
-            access->CountPassedAsRetbufWtd += weight;
         }
 
         if ((flags & AccessKindFlags::IsReturned) != AccessKindFlags::None)
@@ -289,6 +319,57 @@ public:
             access->CountReturns++;
             access->CountReturnsWtd += weight;
         }
+#endif
+    }
+
+    //------------------------------------------------------------------------
+    // RecordInducedAccess:
+    //   Record an induced access into this local with the specified offset and access type.
+    //
+    // Parameters:
+    //   offs         - The offset being accessed
+    //   accessType   - The type of the access
+    //   weight       - Weight of the block containing the access
+    //
+    // Remarks:
+    //   Induced accesses are accesses that are induced by physical promotion
+    //   due to assignment decompositon. They are always of primitive type.
+    //
+    void RecordInducedAccess(unsigned offs, var_types accessType, weight_t weight)
+    {
+        PrimitiveAccess* access = nullptr;
+
+        size_t index = 0;
+        if (m_inducedAccesses.size() > 0)
+        {
+            index = Promotion::BinarySearch<PrimitiveAccess, &PrimitiveAccess::Offset>(m_inducedAccesses, offs);
+            if ((ssize_t)index >= 0)
+            {
+                do
+                {
+                    PrimitiveAccess& candidateAccess = m_inducedAccesses[index];
+                    if (candidateAccess.AccessType == accessType)
+                    {
+                        access = &candidateAccess;
+                        break;
+                    }
+
+                    index++;
+                } while (index < m_inducedAccesses.size() && m_inducedAccesses[index].Offset == offs);
+            }
+            else
+            {
+                index = ~index;
+            }
+        }
+
+        if (access == nullptr)
+        {
+            access = &*m_inducedAccesses.insert(m_inducedAccesses.begin() + index, PrimitiveAccess(offs, accessType));
+        }
+
+        access->CountWtd += weight;
+        INDEBUG(access->Count++);
     }
 
     //------------------------------------------------------------------------
@@ -320,33 +401,121 @@ public:
                 continue;
             }
 
-            if (!EvaluateReplacement(comp, lclNum, access))
+            if (!EvaluateReplacement(comp, lclNum, access, 0))
             {
                 continue;
             }
-
-#ifdef DEBUG
-            char buf[32];
-            sprintf_s(buf, sizeof(buf), "V%02u.[%03u..%03u)", lclNum, access.Offset,
-                      access.Offset + genTypeSize(access.AccessType));
-            size_t len  = strlen(buf) + 1;
-            char*  bufp = new (comp, CMK_DebugOnly) char[len];
-            strcpy_s(bufp, len, buf);
-#endif
-            unsigned   newLcl = comp->lvaGrabTemp(false DEBUGARG(bufp));
-            LclVarDsc* dsc    = comp->lvaGetDesc(newLcl);
-            dsc->lvType       = access.AccessType;
 
             if (*aggregateInfo == nullptr)
             {
                 *aggregateInfo = new (comp, CMK_Promotion) AggregateInfo(comp->getAllocator(CMK_Promotion), lclNum);
             }
 
-            (*aggregateInfo)
-                ->Replacements.push_back(Replacement(access.Offset, access.AccessType, newLcl DEBUGARG(bufp)));
+            (*aggregateInfo)->Replacements.push_back(Replacement(access.Offset, access.AccessType));
         }
 
         JITDUMP("\n");
+    }
+
+    //------------------------------------------------------------------------
+    // PickInducedPromotions:
+    //   Pick additional promotions to make based on the fact that some
+    //   accesses will be induced by assignment decomposition.
+    //
+    // Parameters:
+    //   comp   - Compiler instance
+    //   lclNum - Local num for this struct local
+    //   aggregateInfo - [out] Pointer to aggregate info to create and insert replacements into.
+    //
+    bool PickInducedPromotions(Compiler* comp, unsigned lclNum, AggregateInfo** aggregateInfo)
+    {
+        if (m_inducedAccesses.size() <= 0)
+        {
+            return false;
+        }
+
+        bool any = false;
+        JITDUMP("Picking induced promotions for V%02u\n", lclNum);
+        for (PrimitiveAccess& inducedAccess : m_inducedAccesses)
+        {
+            bool overlapsOtherInducedAccess = false;
+            for (PrimitiveAccess& otherInducedAccess : m_inducedAccesses)
+            {
+                if (&otherInducedAccess == &inducedAccess)
+                {
+                    continue;
+                }
+
+                if (inducedAccess.Offset + genTypeSize(inducedAccess.AccessType) <= otherInducedAccess.Offset)
+                {
+                    break;
+                }
+
+                if (otherInducedAccess.Offset + genTypeSize(otherInducedAccess.AccessType) <= inducedAccess.Offset)
+                {
+                    continue;
+                }
+
+                overlapsOtherInducedAccess = true;
+                break;
+            }
+
+            if (overlapsOtherInducedAccess)
+            {
+                continue;
+            }
+
+            Access* access = FindAccess(inducedAccess.Offset, inducedAccess.AccessType);
+
+            if (access == nullptr)
+            {
+                Access fakeAccess(inducedAccess.Offset, inducedAccess.AccessType, nullptr);
+                if (!EvaluateReplacement(comp, lclNum, fakeAccess, inducedAccess.CountWtd))
+                {
+                    continue;
+                }
+            }
+            else
+            {
+                if (!EvaluateReplacement(comp, lclNum, *access, inducedAccess.CountWtd))
+                {
+                    continue;
+                }
+            }
+
+            if (*aggregateInfo == nullptr)
+            {
+                *aggregateInfo = new (comp, CMK_Promotion) AggregateInfo(comp->getAllocator(CMK_Promotion), lclNum);
+            }
+
+            size_t insertionIndex;
+            if ((*aggregateInfo)->Replacements.size() > 0)
+            {
+#ifdef DEBUG
+                Replacement* overlapRep;
+                assert(!(*aggregateInfo)
+                            ->OverlappingReplacements(inducedAccess.Offset, genTypeSize(inducedAccess.AccessType),
+                                                      &overlapRep, nullptr));
+#endif
+
+                insertionIndex =
+                    Promotion::BinarySearch<Replacement, &Replacement::Offset>((*aggregateInfo)->Replacements,
+                                                                               inducedAccess.Offset);
+                assert((ssize_t)insertionIndex < 0);
+                insertionIndex = ~insertionIndex;
+            }
+            else
+            {
+                insertionIndex = 0;
+            }
+
+            (*aggregateInfo)
+                ->Replacements.insert((*aggregateInfo)->Replacements.begin() + insertionIndex,
+                                      Replacement(inducedAccess.Offset, inducedAccess.AccessType));
+            any = true;
+        }
+
+        return any;
     }
 
     //------------------------------------------------------------------------
@@ -354,26 +523,27 @@ public:
     //   Evaluate legality and profitability of a single replacement candidate.
     //
     // Parameters:
-    //   comp   - Compiler instance
-    //   lclNum - Local num for this struct local
-    //   access - Access information for the candidate.
+    //   comp            - Compiler instance
+    //   lclNum          - Local num for this struct local
+    //   access          - Access information for the candidate.
+    //   inducedCountWtd - Additional weighted count due to induced accesses.
     //
     // Returns:
     //   True if we should promote this access and create a replacement; otherwise false.
     //
-    bool EvaluateReplacement(Compiler* comp, unsigned lclNum, const Access& access)
+    bool EvaluateReplacement(Compiler* comp, unsigned lclNum, const Access& access, weight_t inducedCountWtd)
     {
-        weight_t countOverlappedCallArgWtd                = 0;
-        weight_t countOverlappedReturnsWtd                = 0;
-        weight_t countOverlappedRetbufsWtd                = 0;
-        weight_t countOverlappedAssignedFromCallWtd       = 0;
-        weight_t countOverlappedDecomposableAssignmentWtd = 0;
+        weight_t countOverlappedCallArgWtd          = 0;
+        weight_t countOverlappedRetbufsWtd          = 0;
+        weight_t countOverlappedAssignedFromCallWtd = 0;
 
         bool overlap = false;
         for (const Access& otherAccess : m_accesses)
         {
             if (&otherAccess == &access)
+            {
                 continue;
+            }
 
             if (!otherAccess.Overlaps(access.Offset, genTypeSize(access.AccessType)))
             {
@@ -386,25 +556,21 @@ public:
             }
 
             countOverlappedCallArgWtd += otherAccess.CountCallArgsWtd;
-            countOverlappedReturnsWtd += otherAccess.CountReturnsWtd;
             countOverlappedRetbufsWtd += otherAccess.CountPassedAsRetbufWtd;
             countOverlappedAssignedFromCallWtd += otherAccess.CountAssignedFromCallWtd;
-            countOverlappedDecomposableAssignmentWtd +=
-                (otherAccess.CountAssignmentDestinationWtd + otherAccess.CountAssignmentSourceWtd -
-                 otherAccess.CountAssignedFromCallWtd);
         }
 
         weight_t costWithout = 0;
 
         // We cost any normal access (which is a struct load or store) without promotion at 3 cycles.
-        costWithout += access.CountWtd * 3;
+        costWithout += (access.CountWtd + inducedCountWtd) * 3;
 
         weight_t costWith = 0;
 
         // For promoted accesses we expect these to turn into reg-reg movs (and in many cases be fully contained in the
         // parent).
         // We cost these at 0.5 cycles.
-        costWith += access.CountWtd * 0.5;
+        costWith += (access.CountWtd + inducedCountWtd) * 0.5;
 
         // Now look at the overlapping struct uses that promotion will make more expensive.
 
@@ -436,6 +602,15 @@ public:
         // TODO-CQ: A store-forwarding optimization in lowering could get rid
         // of these copies; however, it requires lowering to be able to prove
         // that not writing the fields into the struct local is ok.
+        //
+        // Note: Technically we also introduce writebacks before returns that
+        // we could account for, however the returns we see during physical
+        // promotion are only for structs returned in registers and in most
+        // cases the writeback introduced means we can eliminate an earlier
+        // "natural" writeback, balancing out the cost.
+        // Thus _not_ accounting for these is a CQ improvements.
+        // (Additionally, if it weren't we could teach the backend some
+        // store-forwarding/forward sub to make the write backs "free".)
         weight_t countWriteBacksWtd = countOverlappedCallArgWtd;
         costWith += countWriteBacksWtd * writeBackCost;
 
@@ -482,8 +657,24 @@ public:
         return false;
     }
 
+    //------------------------------------------------------------------------
+    // ClearInducedAccesses:
+    //   Clear the stored induced access metrics.
+    //
+    void ClearInducedAccesses()
+    {
+        m_inducedAccesses.clear();
+    }
+
 #ifdef DEBUG
-    void Dump(unsigned lclNum)
+    //------------------------------------------------------------------------
+    // DumpAccesses:
+    //   Dump the stored access metrics for a specified local.
+    //
+    // Parameters:
+    //   lclNum - The local
+    //
+    void DumpAccesses(unsigned lclNum)
     {
         if (m_accesses.size() <= 0)
         {
@@ -516,23 +707,97 @@ public:
                    access.CountReturnsWtd);
         }
     }
+
+    //------------------------------------------------------------------------
+    // DumpInducedAccesses:
+    //   Dump induced accesses for a specified struct local.
+    //
+    // Parameters:
+    //   lclNum - The local
+    //
+    void DumpInducedAccesses(unsigned lclNum)
+    {
+        if (m_inducedAccesses.size() <= 0)
+        {
+            return;
+        }
+
+        printf("Induced accesses for V%02u\n", lclNum);
+        for (PrimitiveAccess& access : m_inducedAccesses)
+        {
+            printf("  %s @ %03u\n", varTypeName(access.AccessType), access.Offset);
+            printf("    #: (%u, " FMT_WT ")\n", access.Count, access.CountWtd);
+        }
+    }
 #endif
+
+private:
+    //------------------------------------------------------------------------
+    // FindAccess:
+    //   Find access metrics information for the specified offset and access type.
+    //
+    // Parameters:
+    //   offs       - The offset
+    //   accessType - Access type
+    //
+    // Returns:
+    //   Pointer to a matching access, or nullptr if no match was found.
+    //
+    Access* FindAccess(unsigned offs, var_types accessType)
+    {
+        if (m_accesses.size() <= 0)
+        {
+            return nullptr;
+        }
+
+        size_t index = Promotion::BinarySearch<Access, &Access::Offset>(m_accesses, offs);
+        if ((ssize_t)index < 0)
+        {
+            return nullptr;
+        }
+
+        do
+        {
+            Access& candidateAccess = m_accesses[index];
+            if (candidateAccess.AccessType == accessType)
+            {
+                return &candidateAccess;
+            }
+
+            index++;
+        } while ((index < m_inducedAccesses.size()) && (m_inducedAccesses[index].Offset == offs));
+
+        return nullptr;
+    }
+};
+
+// Struct used to save all struct stores involving physical promotion candidates.
+// These stores can induce new field accesses as part of assignment decomposition.
+struct CandidateStore
+{
+    GenTreeLclVarCommon* Store;
+    BasicBlock*          Block;
 };
 
 // Visitor that records information about uses of struct locals.
 class LocalsUseVisitor : public GenTreeVisitor<LocalsUseVisitor>
 {
-    Promotion*  m_prom;
-    LocalUses** m_uses;
-    BasicBlock* m_curBB = nullptr;
+    Promotion*                 m_prom;
+    LocalUses**                m_uses;
+    BasicBlock*                m_curBB = nullptr;
+    ArrayStack<CandidateStore> m_candidateStores;
 
 public:
     enum
     {
-        DoPreOrder = true,
+        DoPreOrder   = true,
+        ComputeStack = true,
     };
 
-    LocalsUseVisitor(Promotion* prom) : GenTreeVisitor(prom->m_compiler), m_prom(prom)
+    LocalsUseVisitor(Promotion* prom)
+        : GenTreeVisitor(prom->m_compiler)
+        , m_prom(prom)
+        , m_candidateStores(prom->m_compiler->getAllocator(CMK_Promotion))
     {
         m_uses = new (prom->m_compiler, CMK_Promotion) LocalUses*[prom->m_compiler->lvaCount]{};
     }
@@ -550,21 +815,16 @@ public:
     }
 
     //------------------------------------------------------------------------
-    // GetUsesByLocal:
-    //   Get the uses information for a specified local.
+    // PreOrderVisit:
+    //   Visit a node in preorder and add its use information to the metrics.
     //
     // Parameters:
-    //   bb - The current basic block.
+    //   use  - The use edge
+    //   user - The user
     //
     // Returns:
-    //   Information about uses, or null if this local has no uses information
-    //   associated with it.
+    //   Visitor result
     //
-    LocalUses* GetUsesByLocal(unsigned lcl)
-    {
-        return m_uses[lcl];
-    }
-
     fgWalkResult PreOrderVisit(GenTree** use, GenTree* user)
     {
         GenTree* tree = *use;
@@ -590,9 +850,35 @@ public:
                 }
                 else
                 {
+                    int userIndex = 1;
+                    while (userIndex < m_ancestors.Height())
+                    {
+                        GenTree* ancestor = m_ancestors.Top(userIndex);
+                        GenTree* child    = m_ancestors.Top(userIndex - 1);
+
+                        if (!ancestor->OperIs(GT_COMMA) || (ancestor->gtGetOp2() != child))
+                        {
+                            break;
+                        }
+
+                        userIndex++;
+                    }
+
+                    GenTree* effectiveUser = userIndex >= m_ancestors.Height() ? nullptr : m_ancestors.Top(userIndex);
+
                     accessType   = lcl->TypeGet();
                     accessLayout = accessType == TYP_STRUCT ? lcl->GetLayout(m_compiler) : nullptr;
-                    accessFlags  = ClassifyLocalAccess(lcl, user);
+                    accessFlags  = ClassifyLocalAccess(lcl, effectiveUser);
+
+                    if (lcl->TypeIs(TYP_STRUCT) &&
+                        ((user != nullptr) && user->OperIsLocalStore() && user->Data()->OperIsLocalRead()))
+                    {
+                        // Make sure we add it only once if both the destination and source are candidates.
+                        if ((m_candidateStores.Height() <= 0) || (m_candidateStores.Top().Store != user))
+                        {
+                            m_candidateStores.Push(CandidateStore{user->AsLclVarCommon(), m_curBB});
+                        }
+                    }
                 }
 
                 LocalUses* uses = GetOrCreateUses(lcl->GetLclNum());
@@ -602,6 +888,200 @@ public:
         }
 
         return fgWalkResult::WALK_CONTINUE;
+    }
+
+    //------------------------------------------------------------------------
+    // PickPromotions:
+    //   Pick promotions and create aggregate information for each promoted
+    //   struct with promotions.
+    //
+    // Parameters:
+    //   aggregates - Appropriately sized vector to create aggregate information in.
+    //
+    // Returns:
+    //   True if any struct was physically promoted with at least one replacement;
+    //   otherwise false.
+    //
+    bool PickPromotions(jitstd::vector<AggregateInfo*>& aggregates)
+    {
+        unsigned numLocals = (unsigned)aggregates.size();
+        JITDUMP("Picking promotions\n");
+
+        bool any = false;
+
+        for (unsigned lclNum = 0; lclNum < numLocals; lclNum++)
+        {
+            LocalUses* uses = m_uses[lclNum];
+            if (uses == nullptr)
+            {
+                continue;
+            }
+
+#ifdef DEBUG
+            if (m_compiler->verbose)
+            {
+                uses->DumpAccesses(lclNum);
+            }
+#endif
+
+            uses->PickPromotions(m_compiler, lclNum, &aggregates[lclNum]);
+
+            any |= aggregates[lclNum] != nullptr;
+        }
+
+        if (!any)
+        {
+            return false;
+        }
+
+        if (m_candidateStores.Height() > 0)
+        {
+            // Now look for induced accesses due to assignment decomposition.
+
+            JITDUMP("Looking for induced accesses with %d stores between candidates\n", m_candidateStores.Height());
+            // Expand the set of fields iteratively based on the current picked
+            // set. We put a limit on this fixpoint computation to avoid
+            // pathological cases. From measurements no methods in our own
+            // collections need more than 10 iterations and 99.5% of methods
+            // need fewer than 5 iterations.
+            for (int iters = 0; iters < 10; iters++)
+            {
+                for (int i = 0; i < m_candidateStores.Height(); i++)
+                {
+                    const CandidateStore& candidateStore = m_candidateStores.BottomRef(i);
+                    GenTreeLclVarCommon*  store          = candidateStore.Store;
+
+                    assert(store->TypeIs(TYP_STRUCT));
+                    assert(store->Data()->OperIsLocalRead());
+
+                    GenTreeLclVarCommon* src = store->Data()->AsLclVarCommon();
+
+                    LclVarDsc* dstDsc = m_compiler->lvaGetDesc(store);
+                    LclVarDsc* srcDsc = m_compiler->lvaGetDesc(src);
+
+                    assert(Promotion::IsCandidateForPhysicalPromotion(dstDsc) ||
+                           Promotion::IsCandidateForPhysicalPromotion(srcDsc));
+
+                    if (dstDsc->lvPromoted)
+                    {
+                        InduceAccessesFromRegularlyPromotedStruct(aggregates, src, store, candidateStore.Block);
+                    }
+                    else if (srcDsc->lvPromoted)
+                    {
+                        InduceAccessesFromRegularlyPromotedStruct(aggregates, store, src, candidateStore.Block);
+                    }
+                    else
+                    {
+                        if (Promotion::IsCandidateForPhysicalPromotion(dstDsc))
+                        {
+                            InduceAccessesInCandidate(aggregates, store, src, candidateStore.Block);
+                        }
+
+                        if (Promotion::IsCandidateForPhysicalPromotion(srcDsc))
+                        {
+                            InduceAccessesInCandidate(aggregates, src, store, candidateStore.Block);
+                        }
+                    }
+                }
+
+                bool any = false;
+                for (unsigned lclNum = 0; lclNum < numLocals; lclNum++)
+                {
+                    LocalUses* uses = m_uses[lclNum];
+                    if (uses == nullptr)
+                    {
+                        continue;
+                    }
+#ifdef DEBUG
+                    if (m_compiler->verbose)
+                    {
+                        uses->DumpInducedAccesses(lclNum);
+                    }
+#endif
+
+                    any |= uses->PickInducedPromotions(m_compiler, lclNum, &aggregates[lclNum]);
+                }
+
+                if (!any)
+                {
+                    break;
+                }
+
+                for (unsigned lclNum = 0; lclNum < numLocals; lclNum++)
+                {
+                    if (m_uses[lclNum] != nullptr)
+                    {
+                        m_uses[lclNum]->ClearInducedAccesses();
+                    }
+                }
+            }
+        }
+
+        for (AggregateInfo* agg : aggregates)
+        {
+            if (agg == nullptr)
+            {
+                continue;
+            }
+
+            jitstd::vector<Replacement>& reps = agg->Replacements;
+
+            assert(reps.size() > 0);
+            // Create locals
+            for (Replacement& rep : reps)
+            {
+#ifdef DEBUG
+                char buf[32];
+                sprintf_s(buf, sizeof(buf), "V%02u.[%03u..%03u)", agg->LclNum, rep.Offset,
+                          rep.Offset + genTypeSize(rep.AccessType));
+                size_t len  = strlen(buf) + 1;
+                char*  bufp = new (m_compiler, CMK_DebugOnly) char[len];
+                strcpy_s(bufp, len, buf);
+                rep.Description = bufp;
+#endif
+
+                rep.LclNum     = m_compiler->lvaGrabTemp(false DEBUGARG(rep.Description));
+                LclVarDsc* dsc = m_compiler->lvaGetDesc(rep.LclNum);
+                dsc->lvType    = rep.AccessType;
+            }
+
+#ifdef DEBUG
+            JITDUMP("V%02u promoted with %d replacements\n", agg->LclNum, (int)reps.size());
+            for (const Replacement& rep : reps)
+            {
+                JITDUMP("  [%03u..%03u) promoted as %s V%02u\n", rep.Offset, rep.Offset + genTypeSize(rep.AccessType),
+                        varTypeName(rep.AccessType), rep.LclNum);
+            }
+#endif
+
+            JITDUMP("Computing unpromoted remainder for V%02u\n", agg->LclNum);
+            StructSegments unpromotedParts =
+                Promotion::SignificantSegments(m_compiler, m_compiler->lvaGetDesc(agg->LclNum)->GetLayout());
+            for (Replacement& rep : reps)
+            {
+                unpromotedParts.Subtract(StructSegments::Segment(rep.Offset, rep.Offset + genTypeSize(rep.AccessType)));
+            }
+
+            JITDUMP("  Remainder: ");
+            DBEXEC(m_compiler->verbose, unpromotedParts.Dump());
+            JITDUMP("\n\n");
+
+            StructSegments::Segment unpromotedSegment;
+            if (unpromotedParts.CoveringSegment(&unpromotedSegment))
+            {
+                agg->UnpromotedMin = unpromotedSegment.Start;
+                agg->UnpromotedMax = unpromotedSegment.End;
+                assert(unpromotedSegment.Start < unpromotedSegment.End);
+            }
+            else
+            {
+                // Aggregate is fully promoted, leave UnpromotedMin == UnpromotedMax to indicate this.
+            }
+
+            any = true;
+        }
+
+        return any;
     }
 
 private:
@@ -626,6 +1106,112 @@ private:
     }
 
     //------------------------------------------------------------------------
+    // InduceAccessesFromRegularlyPromotedStruct:
+    //   Create induced accesses based on the fact that there is an assignment
+    //   between a physical promotion candidate and regularly promoted struct.
+    //
+    // Parameters:
+    //   aggregates   - Aggregate information with current set of replacements
+    //                  for each struct local.
+    //   candidateLcl - The local node for a physical promotion candidate.
+    //   regPromLcl   - The local node for the regularly promoted struct that
+    //                  may induce new LCL_FLD nodes in the candidate.
+    //   block        - The block that the assignment appears in.
+    //
+    void InduceAccessesFromRegularlyPromotedStruct(jitstd::vector<AggregateInfo*>& aggregates,
+                                                   GenTreeLclVarCommon*            candidateLcl,
+                                                   GenTreeLclVarCommon*            regPromLcl,
+                                                   BasicBlock*                     block)
+    {
+        unsigned regPromOffs   = regPromLcl->GetLclOffs();
+        unsigned candidateOffs = candidateLcl->GetLclOffs();
+        unsigned size          = regPromLcl->GetLayout(m_compiler)->GetSize();
+
+        LclVarDsc* regPromDsc = m_compiler->lvaGetDesc(regPromLcl);
+        for (unsigned fieldLcl = regPromDsc->lvFieldLclStart, i = 0; i < regPromDsc->lvFieldCnt; fieldLcl++, i++)
+        {
+            LclVarDsc* fieldDsc = m_compiler->lvaGetDesc(fieldLcl);
+            if ((fieldDsc->lvFldOffset >= regPromOffs) &&
+                (fieldDsc->lvFldOffset + genTypeSize(fieldDsc->lvType) <= (regPromOffs + size)))
+            {
+                InduceAccess(aggregates, candidateLcl->GetLclNum(),
+                             candidateLcl->GetLclOffs() + (fieldDsc->lvFldOffset - regPromOffs), fieldDsc->lvType,
+                             block);
+            }
+        }
+    }
+
+    //------------------------------------------------------------------------
+    // InduceAccessesInCandidate:
+    //   Create induced accesses based on the fact that a specified candidate
+    //   is being assigned from another struct local (the inducer).
+    //
+    // Parameters:
+    //   aggregates - Aggregate information with current set of replacements
+    //                for each struct local.
+    //   candidate  - The local node for the physical promotion candidate.
+    //   inducer    - The local node that may induce new LCL_FLD nodes in the candidate.
+    //   block      - The block that the assignment appears in.
+    //
+    void InduceAccessesInCandidate(jitstd::vector<AggregateInfo*>& aggregates,
+                                   GenTreeLclVarCommon*            candidate,
+                                   GenTreeLclVarCommon*            inducer,
+                                   BasicBlock*                     block)
+    {
+        unsigned candOffs    = candidate->GetLclOffs();
+        unsigned inducerOffs = inducer->GetLclOffs();
+        unsigned size        = candidate->GetLayout(m_compiler)->GetSize();
+
+        AggregateInfo* inducerAgg = aggregates[inducer->GetLclNum()];
+        if (inducerAgg != nullptr)
+        {
+            Replacement* firstRep;
+            Replacement* endRep;
+            if (inducerAgg->OverlappingReplacements(inducerOffs, size, &firstRep, &endRep))
+            {
+                for (Replacement* rep = firstRep; rep < endRep; rep++)
+                {
+                    if ((rep->Offset >= inducerOffs) &&
+                        (rep->Offset + genTypeSize(rep->AccessType) <= (inducerOffs + size)))
+                    {
+                        InduceAccess(aggregates, candidate->GetLclNum(), candOffs + (rep->Offset - inducerOffs),
+                                     rep->AccessType, block);
+                    }
+                }
+            }
+        }
+    }
+
+    //------------------------------------------------------------------------
+    // InduceAccessesInCandidate:
+    //   Record an induced access in a candidate for physical promotion.
+    //
+    // Parameters:
+    //   aggregates - Aggregate information with current set of replacements
+    //                for each struct local.
+    //   lclNum     - Local that has the induced access.
+    //   offset     - Offset at which the induced access starts.
+    //   type       - Type of the induced access.
+    //   block      - The block with the induced access.
+    //
+    void InduceAccess(
+        jitstd::vector<AggregateInfo*>& aggregates, unsigned lclNum, unsigned offset, var_types type, BasicBlock* block)
+    {
+        AggregateInfo* agg = aggregates[lclNum];
+        if (agg != nullptr)
+        {
+            Replacement* overlapRep;
+            if (agg->OverlappingReplacements(offset, genTypeSize(type), &overlapRep, nullptr))
+            {
+                return;
+            }
+        }
+
+        LocalUses* uses = GetOrCreateUses(lclNum);
+        uses->RecordInducedAccess(offset, type, block->getBBWeight(m_compiler));
+    }
+
+    //------------------------------------------------------------------------
     // ClassifyLocalAccess:
     //   Given a local node and its user, classify information about it.
     //
@@ -643,7 +1229,7 @@ private:
         AccessKindFlags flags = AccessKindFlags::None;
         if (lcl->OperIsLocalStore())
         {
-            flags |= AccessKindFlags::IsAssignmentDestination;
+            INDEBUG(flags |= AccessKindFlags::IsAssignmentDestination);
 
             if (lcl->AsLclVarCommon()->Data()->gtEffectiveVal()->IsCall())
             {
@@ -660,7 +1246,7 @@ private:
         {
             for (CallArg& arg : user->AsCall()->gtArgs.Args())
             {
-                if (arg.GetNode() == lcl)
+                if (arg.GetNode()->gtEffectiveVal() == lcl)
                 {
                     flags |= AccessKindFlags::IsCallArg;
                     break;
@@ -668,16 +1254,18 @@ private:
             }
         }
 
-        if (user->OperIsStore() && (user->Data() == lcl))
+#ifdef DEBUG
+        if (user->OperIsStore() && (user->Data()->gtEffectiveVal() == lcl))
         {
             flags |= AccessKindFlags::IsAssignmentSource;
         }
 
         if (user->OperIs(GT_RETURN))
         {
-            assert(user->gtGetOp1() == lcl);
+            assert(user->gtGetOp1()->gtEffectiveVal() == lcl);
             flags |= AccessKindFlags::IsReturned;
         }
+#endif
 
         return flags;
     }
@@ -1101,8 +1689,6 @@ StructSegments Promotion::SignificantSegments(Compiler*    compiler,
     }
 #endif
 
-    // TODO-TP: Cache this per class layout, we call this for every struct
-    // operation on a promoted local.
     return segments;
 }
 
@@ -1125,6 +1711,11 @@ GenTree* Promotion::CreateWriteBack(Compiler* compiler, unsigned structLclNum, c
 {
     GenTree* value = compiler->gtNewLclVarNode(replacement.LclNum);
     GenTree* store = compiler->gtNewStoreLclFldNode(structLclNum, replacement.AccessType, replacement.Offset, value);
+
+    if (!compiler->lvaGetDesc(structLclNum)->lvDoNotEnregister)
+    {
+        compiler->lvaSetVarDoNotEnregister(structLclNum DEBUGARG(DoNotEnregisterReason::LocalField));
+    }
     return store;
 }
 
@@ -1147,6 +1738,11 @@ GenTree* Promotion::CreateReadBack(Compiler* compiler, unsigned structLclNum, co
 {
     GenTree* value = compiler->gtNewLclFldNode(structLclNum, replacement.AccessType, replacement.Offset);
     GenTree* store = compiler->gtNewStoreLclVarNode(replacement.LclNum, value);
+
+    if (!compiler->lvaGetDesc(structLclNum)->lvDoNotEnregister)
+    {
+        compiler->lvaSetVarDoNotEnregister(structLclNum DEBUGARG(DoNotEnregisterReason::LocalField));
+    }
     return store;
 }
 
@@ -1439,21 +2035,25 @@ void ReplaceVisitor::LoadStoreAroundCall(GenTreeCall* call, GenTree* user)
             continue;
         }
 
-        if (!arg.GetNode()->OperIs(GT_LCL_VAR, GT_LCL_FLD))
+        GenTree** argUse  = EffectiveUse(&arg.EarlyNodeRef());
+        GenTree*  argNode = *argUse;
+
+        if (!argNode->OperIs(GT_LCL_VAR, GT_LCL_FLD))
         {
             continue;
         }
 
-        GenTreeLclVarCommon* argNodeLcl = arg.GetNode()->AsLclVarCommon();
+        GenTreeLclVarCommon* argNodeLcl = argNode->AsLclVarCommon();
 
         if (argNodeLcl->TypeIs(TYP_STRUCT))
         {
             unsigned size = argNodeLcl->GetLayout(m_compiler)->GetSize();
-            WriteBackBefore(&arg.EarlyNodeRef(), argNodeLcl->GetLclNum(), argNodeLcl->GetLclOffs(), size);
+            WriteBackBefore(argUse, argNodeLcl->GetLclNum(), argNodeLcl->GetLclOffs(), size);
 
             if ((m_aggregates[argNodeLcl->GetLclNum()] != nullptr) && IsPromotedStructLocalDying(argNodeLcl))
             {
                 argNodeLcl->gtFlags |= GTF_VAR_DEATH;
+                CheckForwardSubForLastUse(argNodeLcl->GetLclNum());
             }
         }
     }
@@ -1467,6 +2067,26 @@ void ReplaceVisitor::LoadStoreAroundCall(GenTreeCall* call, GenTree* user)
 
         MarkForReadBack(retBufLcl, size DEBUGARG("used as retbuf"));
     }
+}
+
+//------------------------------------------------------------------------
+// EffectiveUse:
+//   Given a use, compute the "effective" use by skipping all uses of commas.
+//
+// Parameters:
+//   use - The use edge.
+//
+// Returns:
+//   A use edge that points to a non GT_COMMA value computed for the use.
+//
+GenTree** ReplaceVisitor::EffectiveUse(GenTree** use)
+{
+    while ((*use)->OperIs(GT_COMMA))
+    {
+        use = &(*use)->AsOp()->gtOp2;
+    }
+
+    return use;
 }
 
 //------------------------------------------------------------------------
@@ -1546,7 +2166,7 @@ void ReplaceVisitor::ReplaceLocal(GenTree** use, GenTree* user)
     {
         if (lcl->OperIsLocalRead())
         {
-            assert((user == nullptr) || user->OperIs(GT_CALL, GT_RETURN) || user->OperIsStore());
+            assert((user == nullptr) || user->OperIs(GT_CALL, GT_RETURN, GT_COMMA) || user->OperIsStore());
         }
     }
     else
@@ -1591,7 +2211,11 @@ void ReplaceVisitor::ReplaceLocal(GenTree** use, GenTree* user)
         *use = m_compiler->gtNewLclvNode(rep.LclNum, accessType);
     }
 
-    (*use)->gtFlags |= lcl->gtFlags & GTF_VAR_DEATH;
+    if ((lcl->gtFlags & GTF_VAR_DEATH) != 0)
+    {
+        (*use)->gtFlags |= GTF_VAR_DEATH;
+        CheckForwardSubForLastUse(rep.LclNum);
+    }
 
     if (isDef)
     {
@@ -1637,6 +2261,30 @@ void ReplaceVisitor::ReplaceLocal(GenTree** use, GenTree* user)
 }
 
 //------------------------------------------------------------------------
+// CheckForwardSubForLastUse:
+//   Indicate that a local has a last use in the current statement and that
+//   there thus may be a forward substitution opportunity.
+//
+// Parameters:
+//   lclNum - The local number with a last use in this statement.
+//
+void ReplaceVisitor::CheckForwardSubForLastUse(unsigned lclNum)
+{
+    if (m_currentBlock->firstStmt() == m_currentStmt)
+    {
+        return;
+    }
+
+    Statement* prevStmt = m_currentStmt->GetPrevStmt();
+    GenTree*   prevNode = prevStmt->GetRootNode();
+
+    if (prevNode->OperIsLocalStore() && (prevNode->AsLclVarCommon()->GetLclNum() == lclNum))
+    {
+        m_mayHaveForwardSub = true;
+    }
+}
+
+//------------------------------------------------------------------------
 // StoreBeforeReturn:
 //   Handle a return of a potential struct local.
 //
@@ -1645,16 +2293,23 @@ void ReplaceVisitor::ReplaceLocal(GenTree** use, GenTree* user)
 //
 void ReplaceVisitor::StoreBeforeReturn(GenTreeUnOp* ret)
 {
-    if (ret->TypeIs(TYP_VOID) || !ret->gtGetOp1()->OperIs(GT_LCL_VAR, GT_LCL_FLD))
+    if (ret->TypeIs(TYP_VOID))
     {
         return;
     }
 
-    GenTreeLclVarCommon* retLcl = ret->gtGetOp1()->AsLclVarCommon();
+    GenTree** retUse  = EffectiveUse(&ret->gtOp1);
+    GenTree*  retNode = *retUse;
+    if (!retNode->OperIs(GT_LCL_VAR, GT_LCL_FLD))
+    {
+        return;
+    }
+
+    GenTreeLclVarCommon* retLcl = retNode->AsLclVarCommon();
     if (retLcl->TypeIs(TYP_STRUCT))
     {
         unsigned size = retLcl->GetLayout(m_compiler)->GetSize();
-        WriteBackBefore(&ret->gtOp1, retLcl->GetLclNum(), retLcl->GetLclOffs(), size);
+        WriteBackBefore(retUse, retLcl->GetLclNum(), retLcl->GetLclOffs(), size);
     }
 }
 
@@ -1802,80 +2457,11 @@ PhaseStatus Promotion::Run()
         }
     }
 
-    unsigned numLocals = m_compiler->lvaCount;
-
-#ifdef DEBUG
-    if (m_compiler->verbose)
-    {
-        for (unsigned lcl = 0; lcl < m_compiler->lvaCount; lcl++)
-        {
-            LocalUses* uses = localsUse.GetUsesByLocal(lcl);
-            if (uses != nullptr)
-            {
-                uses->Dump(lcl);
-            }
-        }
-    }
-#endif
-
     // Pick promotions based on the use information we just collected.
-    bool                           anyReplacements = false;
     jitstd::vector<AggregateInfo*> aggregates(m_compiler->lvaCount, nullptr, m_compiler->getAllocator(CMK_Promotion));
-    for (unsigned i = 0; i < numLocals; i++)
+    if (!localsUse.PickPromotions(aggregates))
     {
-        LocalUses* uses = localsUse.GetUsesByLocal(i);
-        if (uses == nullptr)
-        {
-            continue;
-        }
-
-        uses->PickPromotions(m_compiler, i, &aggregates[i]);
-
-        if (aggregates[i] == nullptr)
-        {
-            continue;
-        }
-
-        jitstd::vector<Replacement>& reps = aggregates[i]->Replacements;
-
-        assert(reps.size() > 0);
-        anyReplacements = true;
-#ifdef DEBUG
-        JITDUMP("V%02u promoted with %d replacements\n", i, (int)reps.size());
-        for (const Replacement& rep : reps)
-        {
-            JITDUMP("  [%03u..%03u) promoted as %s V%02u\n", rep.Offset, rep.Offset + genTypeSize(rep.AccessType),
-                    varTypeName(rep.AccessType), rep.LclNum);
-        }
-#endif
-
-        JITDUMP("Computing unpromoted remainder for V%02u\n", i);
-        StructSegments unpromotedParts = SignificantSegments(m_compiler, m_compiler->lvaGetDesc(i)->GetLayout());
-        for (size_t i = 0; i < reps.size(); i++)
-        {
-            unpromotedParts.Subtract(
-                StructSegments::Segment(reps[i].Offset, reps[i].Offset + genTypeSize(reps[i].AccessType)));
-        }
-
-        JITDUMP("  Remainder: ");
-        DBEXEC(m_compiler->verbose, unpromotedParts.Dump());
-        JITDUMP("\n\n");
-
-        StructSegments::Segment unpromotedSegment;
-        if (unpromotedParts.CoveringSegment(&unpromotedSegment))
-        {
-            aggregates[i]->UnpromotedMin = unpromotedSegment.Start;
-            aggregates[i]->UnpromotedMax = unpromotedSegment.End;
-            assert(unpromotedSegment.Start < unpromotedSegment.End);
-        }
-        else
-        {
-            // Aggregate is fully promoted, leave UnpromotedMin == UnpromotedMax to indicate this.
-        }
-    }
-
-    if (!anyReplacements)
-    {
+        // No promotions picked.
         return PhaseStatus::MODIFIED_NOTHING;
     }
 
@@ -1919,7 +2505,7 @@ PhaseStatus Promotion::Run()
         for (Statement* stmt : bb->Statements())
         {
             DISPSTMT(stmt);
-            replacer.StartStatement();
+            replacer.StartStatement(stmt);
             replacer.WalkTree(stmt->GetRootNodePointer(), nullptr);
 
             if (replacer.MadeChanges())
@@ -1929,6 +2515,15 @@ PhaseStatus Promotion::Run()
                 JITDUMP("New statement:\n");
                 DISPSTMT(stmt);
             }
+
+            if (replacer.MayHaveForwardSubOpportunity())
+            {
+                JITDUMP("Invoking forward sub due to a potential opportunity\n");
+                while ((stmt != bb->firstStmt()) && m_compiler->fgForwardSubStatement(stmt->GetPrevStmt()))
+                {
+                    m_compiler->fgRemoveStmt(bb, stmt->GetPrevStmt());
+                }
+            }
         }
 
         replacer.EndBlock();
@@ -1936,14 +2531,14 @@ PhaseStatus Promotion::Run()
 
     // Add necessary explicit zeroing for some locals.
     Statement* prevStmt = nullptr;
-    for (unsigned lclNum = 0; lclNum < numLocals; lclNum++)
+    for (AggregateInfo* agg : aggregates)
     {
-        if (aggregates[lclNum] == nullptr)
+        if (agg == nullptr)
         {
             continue;
         }
 
-        LclVarDsc* dsc = m_compiler->lvaGetDesc(lclNum);
+        LclVarDsc* dsc = m_compiler->lvaGetDesc(agg->LclNum);
         if (dsc->lvSuppressedZeroInit)
         {
             // We may have suppressed inserting an explicit zero init based on the
@@ -1951,7 +2546,7 @@ PhaseStatus Promotion::Run()
             // Now that we are promoting some fields that assumption may be
             // invalidated for those fields, and we may need to insert explicit
             // zero inits again.
-            ExplicitlyZeroInitReplacementLocals(lclNum, aggregates[lclNum]->Replacements, &prevStmt);
+            ExplicitlyZeroInitReplacementLocals(agg->LclNum, agg->Replacements, &prevStmt);
         }
     }
 

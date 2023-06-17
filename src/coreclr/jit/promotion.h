@@ -12,7 +12,7 @@ struct Replacement
 {
     unsigned  Offset;
     var_types AccessType;
-    unsigned  LclNum;
+    unsigned  LclNum = BAD_VAR_NUM;
     // Is the replacement local (given by LclNum) fresher than the value in the struct local?
     bool NeedsWriteBack = true;
     // Is the value in the struct local fresher than the replacement local?
@@ -21,16 +21,10 @@ struct Replacement
     // back before transferring control if necessary.
     bool NeedsReadBack = false;
 #ifdef DEBUG
-    const char* Description;
+    const char* Description = "";
 #endif
 
-    Replacement(unsigned offset, var_types accessType, unsigned lclNum DEBUGARG(const char* description))
-        : Offset(offset)
-        , AccessType(accessType)
-        , LclNum(lclNum)
-#ifdef DEBUG
-        , Description(description)
-#endif
+    Replacement(unsigned offset, var_types accessType) : Offset(offset), AccessType(accessType)
     {
     }
 
@@ -248,10 +242,14 @@ class DecompositionPlan;
 
 class ReplaceVisitor : public GenTreeVisitor<ReplaceVisitor>
 {
+    friend class DecompositionPlan;
+
     jitstd::vector<AggregateInfo*>& m_aggregates;
     PromotionLiveness*              m_liveness;
     bool                            m_madeChanges         = false;
     bool                            m_hasPendingReadBacks = false;
+    bool                            m_mayHaveForwardSub   = false;
+    Statement*                      m_currentStmt         = nullptr;
     BasicBlock*                     m_currentBlock        = nullptr;
 
 public:
@@ -271,12 +269,19 @@ public:
         return m_madeChanges;
     }
 
+    bool MayHaveForwardSubOpportunity()
+    {
+        return m_mayHaveForwardSub;
+    }
+
     void StartBlock(BasicBlock* block);
     void EndBlock();
 
-    void StartStatement()
+    void StartStatement(Statement* stmt)
     {
-        m_madeChanges = false;
+        m_currentStmt       = stmt;
+        m_madeChanges       = false;
+        m_mayHaveForwardSub = false;
     }
 
     fgWalkResult PostOrderVisit(GenTree** use, GenTree* user);
@@ -284,8 +289,10 @@ public:
 private:
     GenTree** InsertMidTreeReadBacksIfNecessary(GenTree** use);
     void LoadStoreAroundCall(GenTreeCall* call, GenTree* user);
+    GenTree** EffectiveUse(GenTree** use);
     bool IsPromotedStructLocalDying(GenTreeLclVarCommon* structLcl);
     void ReplaceLocal(GenTree** use, GenTree* user);
+    void CheckForwardSubForLastUse(unsigned lclNum);
     void StoreBeforeReturn(GenTreeUnOp* ret);
     void WriteBackBefore(GenTree** use, unsigned lcl, unsigned offs, unsigned size);
     void MarkForReadBack(GenTreeLclVarCommon* lcl, unsigned size DEBUGARG(const char* reason));
