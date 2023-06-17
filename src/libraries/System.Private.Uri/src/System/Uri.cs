@@ -1636,6 +1636,11 @@ namespace System
                     return false;
             }
 
+            if (this.Scheme.Equals(UriSchemeMailto))
+            {
+                return this.ToString().Equals(obj.ToString());
+            }
+
             if (DisablePathAndQueryCanonicalization != obj.DisablePathAndQueryCanonicalization)
                 return false;
 
