@@ -112,7 +112,6 @@ class Promotion
     static StructSegments SignificantSegments(Compiler*    compiler,
                                               ClassLayout* layout DEBUGARG(FixedBitVect** bitVectRepr = nullptr));
 
-    void InsertInitialReadBack(unsigned lclNum, const jitstd::vector<Replacement>& replacements, Statement** prevStmt);
     void ExplicitlyZeroInitReplacementLocals(unsigned                           lclNum,
                                              const jitstd::vector<Replacement>& replacements,
                                              Statement**                        prevStmt);
@@ -220,6 +219,7 @@ public:
     }
 
     void Run();
+    bool IsReplacementLiveIn(BasicBlock* bb, unsigned structLcl, unsigned replacement);
     bool IsReplacementLiveOut(BasicBlock* bb, unsigned structLcl, unsigned replacement);
     StructDeaths GetDeathsForStructLocal(GenTreeLclVarCommon* use);
 
@@ -274,11 +274,7 @@ public:
         return m_mayHaveForwardSub;
     }
 
-    void StartBlock(BasicBlock* block)
-    {
-        m_currentBlock = block;
-    }
-
+    void StartBlock(BasicBlock* block);
     void EndBlock();
 
     void StartStatement(Statement* stmt)
@@ -299,7 +295,7 @@ private:
     void CheckForwardSubForLastUse(unsigned lclNum);
     void StoreBeforeReturn(GenTreeUnOp* ret);
     void WriteBackBefore(GenTree** use, unsigned lcl, unsigned offs, unsigned size);
-    bool MarkForReadBack(unsigned lcl, unsigned offs, unsigned size);
+    void MarkForReadBack(GenTreeLclVarCommon* lcl, unsigned size DEBUGARG(const char* reason));
 
     void HandleStore(GenTree** use, GenTree* user);
     bool OverlappingReplacements(GenTreeLclVarCommon* lcl,

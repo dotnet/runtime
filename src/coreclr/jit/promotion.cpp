@@ -1747,6 +1747,77 @@ GenTree* Promotion::CreateReadBack(Compiler* compiler, unsigned structLclNum, co
 }
 
 //------------------------------------------------------------------------
+// StartBlock:
+//   Handle reaching the end of the currently started block by preparing
+//   internal state for upcoming basic blocks, and inserting any necessary
+//   readbacks.
+//
+// Parameters:
+//   block - The block
+//
+void ReplaceVisitor::StartBlock(BasicBlock* block)
+{
+    m_currentBlock = block;
+
+#ifdef DEBUG
+    // At the start of every block we expect all replacements to be in their
+    // local home.
+    for (AggregateInfo* agg : m_aggregates)
+    {
+        if (agg == nullptr)
+        {
+            continue;
+        }
+
+        for (Replacement& rep : agg->Replacements)
+        {
+            assert(!rep.NeedsReadBack);
+            assert(rep.NeedsWriteBack);
+        }
+    }
+#endif
+
+    // OSR locals and parameters may need an initial read back, which we mark
+    // when we start the scratch BB.
+    if (!m_compiler->fgBBisScratch(block))
+    {
+        return;
+    }
+
+    for (AggregateInfo* agg : m_aggregates)
+    {
+        if (agg == nullptr)
+        {
+            continue;
+        }
+
+        LclVarDsc* dsc = m_compiler->lvaGetDesc(agg->LclNum);
+        if (!dsc->lvIsParam && !dsc->lvIsOSRLocal)
+        {
+            continue;
+        }
+
+        JITDUMP("Marking fields of %s V%02u as needing read-back in scratch " FMT_BB "\n",
+                dsc->lvIsParam ? "parameter" : "OSR-local", agg->LclNum, block->bbNum);
+
+        for (size_t i = 0; i < agg->Replacements.size(); i++)
+        {
+            Replacement& rep   = agg->Replacements[i];
+            rep.NeedsWriteBack = false;
+            if (m_liveness->IsReplacementLiveIn(block, agg->LclNum, (unsigned)i))
+            {
+                rep.NeedsReadBack = true;
+                JITDUMP("  V%02u (%s) marked\n", rep.LclNum, rep.Description);
+            }
+            else
+            {
+                JITDUMP("  V%02u (%s) not marked (not live-in to scratch BB)\n", rep.LclNum, rep.Description);
+            }
+        }
+    }
+}
+
+//------------------------------------------------------------------------
 // EndBlock:
 //   Handle reaching the end of the currently started block by preparing
 //   internal state for upcoming basic blocks, and inserting any necessary
@@ -1787,11 +1858,27 @@ void ReplaceVisitor::EndBlock()
                 }
                 else
                 {
+                    // We only mark fields as requiring read-back if they are
+                    // live at the point where the stack local was written, so
+                    // at first glance we would not expect this case to ever
+                    // happen. However, it is possible that the field is live
+                    // because it has a future struct use, in which case we may
+                    // not need to insert any readbacks anywhere. For example,
+                    // consider:
+                    //
+                    //   V03 = CALL() // V03 is a struct with promoted V03.[000..008)
+                    //   CALL(struct V03)    // V03.[000.008) marked as live here
+                    //
+                    // While V03.[000.008) gets marked for readback at the
+                    // assignment, no readback is necessary at the location of
+                    // the call argument, and it may die after that.
+
                     JITDUMP("Skipping reading back dead replacement V%02u.[%03u..%03u) -> V%02u near the end of " FMT_BB
                             "\n",
                             agg->LclNum, rep.Offset, rep.Offset + genTypeSize(rep.AccessType), rep.LclNum,
                             m_currentBlock->bbNum);
                 }
+
                 rep.NeedsReadBack = false;
             }
 
@@ -1802,6 +1889,18 @@ void ReplaceVisitor::EndBlock()
     m_hasPendingReadBacks = false;
 }
 
+//------------------------------------------------------------------------
+// PostOrderVisit:
+//   Visit a node in post-order and make necessary changes for promoted field
+//   uses.
+//
+// Parameters:
+//   use  - The use edge
+//   user - The user
+//
+// Returns:
+//   Visitor result.
+//
 Compiler::fgWalkResult ReplaceVisitor::PostOrderVisit(GenTree** use, GenTree* user)
 {
     GenTree* tree = *use;
@@ -1896,15 +1995,12 @@ GenTree** ReplaceVisitor::InsertMidTreeReadBacksIfNecessary(GenTree** use)
 
         for (Replacement& rep : agg->Replacements)
         {
-            // TODO-CQ: We should ensure we do not mark dead fields as
-            // requiring readback. Currently it is handled by querying liveness
-            // as part of end-of-block readback insertion, but for these
-            // mid-tree readbacks we cannot query liveness information for
-            // arbitrary locals.
             if (!rep.NeedsReadBack)
             {
                 continue;
             }
+
+            JITDUMP("  V%02.[%03u..%03u) -> V%02u\n", agg->LclNum, rep.Offset, genTypeSize(rep.AccessType), rep.LclNum);
 
             rep.NeedsReadBack = false;
             GenTree* readBack = Promotion::CreateReadBack(m_compiler, agg->LclNum, rep);
@@ -1969,10 +2065,7 @@ void ReplaceVisitor::LoadStoreAroundCall(GenTreeCall* call, GenTree* user)
         GenTreeLclVarCommon* retBufLcl = retBufArg->GetNode()->AsLclVarCommon();
         unsigned             size      = m_compiler->typGetObjLayout(call->gtRetClsHnd)->GetSize();
 
-        if (MarkForReadBack(retBufLcl->GetLclNum(), retBufLcl->GetLclOffs(), size))
-        {
-            JITDUMP("Retbuf has replacements that were marked for read back\n");
-        }
+        MarkForReadBack(retBufLcl, size DEBUGARG("used as retbuf"));
     }
 }
 
@@ -2106,9 +2199,9 @@ void ReplaceVisitor::ReplaceLocal(GenTree** use, GenTree* user)
 
     Replacement& rep = replacements[index];
     assert(accessType == rep.AccessType);
-    JITDUMP("  ..replaced with promoted lcl V%02u\n", rep.LclNum);
 
     bool isDef = lcl->OperIsLocalStore();
+
     if (isDef)
     {
         *use = m_compiler->gtNewStoreLclVarNode(rep.LclNum, lcl->Data());
@@ -2131,6 +2224,7 @@ void ReplaceVisitor::ReplaceLocal(GenTree** use, GenTree* user)
     }
     else if (rep.NeedsReadBack)
     {
+        JITDUMP("  ..needs a read back\n");
         *use = m_compiler->gtNewOperNode(GT_COMMA, (*use)->TypeGet(),
                                          Promotion::CreateReadBack(m_compiler, lclNum, rep), *use);
         rep.NeedsReadBack = false;
@@ -2160,6 +2254,8 @@ void ReplaceVisitor::ReplaceLocal(GenTree** use, GenTree* user)
 
         m_compiler->lvaGetDesc(rep.LclNum)->lvRedefinedInEmbeddedStatement = true;
     }
+
+    JITDUMP("  ..replaced with V%02u\n", rep.LclNum);
 
     m_madeChanges = true;
 }
@@ -2272,18 +2368,19 @@ void ReplaceVisitor::WriteBackBefore(GenTree** use, unsigned lcl, unsigned offs,
 //   back before their next use.
 //
 // Parameters:
-//   lcl          - The struct local
-//   offs         - The starting offset of the range in the struct local that needs to be read back from.
-//   size         - The size of the range
+//   lcl    - Local node. Its offset is the start of the range.
+//   size   - The size of the range
+//   reason - The reason the readback is required
 //
-bool ReplaceVisitor::MarkForReadBack(unsigned lcl, unsigned offs, unsigned size)
+void ReplaceVisitor::MarkForReadBack(GenTreeLclVarCommon* lcl, unsigned size DEBUGARG(const char* reason))
 {
-    if (m_aggregates[lcl] == nullptr)
+    if (m_aggregates[lcl->GetLclNum()] == nullptr)
     {
-        return false;
+        return;
     }
 
-    jitstd::vector<Replacement>& replacements = m_aggregates[lcl]->Replacements;
+    unsigned                     offs         = lcl->GetLclOffs();
+    jitstd::vector<Replacement>& replacements = m_aggregates[lcl->GetLclNum()]->Replacements;
     size_t                       index = Promotion::BinarySearch<Replacement, &Replacement::Offset>(replacements, offs);
 
     if ((ssize_t)index < 0)
@@ -2295,20 +2392,37 @@ bool ReplaceVisitor::MarkForReadBack(unsigned lcl, unsigned offs, unsigned size)
         }
     }
 
-    bool     any = false;
     unsigned end = offs + size;
-    while ((index < replacements.size()) && (replacements[index].Offset < end))
+    if ((index >= replacements.size()) || (replacements[index].Offset >= end))
     {
-        any              = true;
-        Replacement& rep = replacements[index];
-        assert(rep.Overlaps(offs, size));
-        rep.NeedsReadBack     = true;
-        rep.NeedsWriteBack    = false;
-        m_hasPendingReadBacks = true;
-        index++;
+        // No overlap with any field.
+        return;
     }
 
-    return any;
+    StructDeaths deaths = m_liveness->GetDeathsForStructLocal(lcl);
+    JITDUMP("Fields of [%06u] in range [%03u..%03u) need to be read back: %s\n", Compiler::dspTreeID(lcl), offs,
+            offs + size, reason);
+
+    do
+    {
+        Replacement& rep = replacements[index];
+        assert(rep.Overlaps(offs, size));
+
+        if (deaths.IsReplacementDying((unsigned)index))
+        {
+            JITDUMP("  V%02u (%s) not marked (is dying)\n", rep.LclNum, rep.Description);
+        }
+        else
+        {
+            rep.NeedsReadBack     = true;
+            m_hasPendingReadBacks = true;
+            JITDUMP("  V%02u (%s) marked\n", rep.LclNum, rep.Description);
+        }
+
+        rep.NeedsWriteBack = false;
+
+        index++;
+    } while ((index < replacements.size()) && (replacements[index].Offset < end));
 }
 
 //------------------------------------------------------------------------
@@ -2352,16 +2466,42 @@ PhaseStatus Promotion::Run()
         return PhaseStatus::MODIFIED_NOTHING;
     }
 
+    // Check for parameters and OSR locals that need to be read back on entry
+    // to the function.
+    for (AggregateInfo* agg : aggregates)
+    {
+        if (agg == nullptr)
+        {
+            continue;
+        }
+
+        LclVarDsc* dsc = m_compiler->lvaGetDesc(agg->LclNum);
+        if (dsc->lvIsParam || dsc->lvIsOSRLocal)
+        {
+            // We will need an initial readback. We create the scratch BB ahead
+            // of time so that we get correct liveness and mark the
+            // parameters/OSR-locals as requiring read-back as part of
+            // ReplaceVisitor::StartBlock when we get to the scratch block.
+            m_compiler->fgEnsureFirstBBisScratch();
+            break;
+        }
+    }
+
     // Compute liveness for the fields and remainders.
     PromotionLiveness liveness(m_compiler, aggregates);
     liveness.Run();
 
     JITDUMP("Making replacements\n\n");
+
     // Make all replacements we decided on.
     ReplaceVisitor replacer(this, aggregates, &liveness);
     for (BasicBlock* bb : m_compiler->Blocks())
     {
         replacer.StartBlock(bb);
+
+        JITDUMP("\nReplacing in ");
+        DBEXEC(m_compiler->verbose, bb->dspBlockHeader(m_compiler));
+        JITDUMP("\n");
 
         for (Statement* stmt : bb->Statements())
         {
@@ -2390,8 +2530,7 @@ PhaseStatus Promotion::Run()
         replacer.EndBlock();
     }
 
-    // Insert initial IR to read arguments/OSR locals into replacement locals,
-    // and add necessary explicit zeroing.
+    // Add necessary explicit zeroing for some locals.
     Statement* prevStmt = nullptr;
     for (AggregateInfo* agg : aggregates)
     {
@@ -2401,11 +2540,7 @@ PhaseStatus Promotion::Run()
         }
 
         LclVarDsc* dsc = m_compiler->lvaGetDesc(agg->LclNum);
-        if (dsc->lvIsParam || dsc->lvIsOSRLocal)
-        {
-            InsertInitialReadBack(agg->LclNum, agg->Replacements, &prevStmt);
-        }
-        else if (dsc->lvSuppressedZeroInit)
+        if (dsc->lvSuppressedZeroInit)
         {
             // We may have suppressed inserting an explicit zero init based on the
             // assumption that the entire local will be zero inited in the prolog.
@@ -2449,27 +2584,6 @@ bool Promotion::HaveCandidateLocals()
 bool Promotion::IsCandidateForPhysicalPromotion(LclVarDsc* dsc)
 {
     return (dsc->TypeGet() == TYP_STRUCT) && !dsc->lvPromoted && !dsc->IsAddressExposed();
-}
-
-//------------------------------------------------------------------------
-// Promotion::InsertInitialReadBack:
-//   Insert IR to initially read a struct local's value into its promoted field locals.
-//
-// Parameters:
-//   lclNum       - The struct local
-//   replacements - Replacements for the struct local
-//   prevStmt     - [in, out] Previous statement to insert after
-//
-void Promotion::InsertInitialReadBack(unsigned                           lclNum,
-                                      const jitstd::vector<Replacement>& replacements,
-                                      Statement**                        prevStmt)
-{
-    for (unsigned i = 0; i < replacements.size(); i++)
-    {
-        const Replacement& rep      = replacements[i];
-        GenTree*           readBack = CreateReadBack(m_compiler, lclNum, rep);
-        InsertInitStatement(prevStmt, readBack);
-    }
 }
 
 //------------------------------------------------------------------------
