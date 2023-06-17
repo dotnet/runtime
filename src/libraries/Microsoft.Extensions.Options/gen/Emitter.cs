@@ -41,8 +41,6 @@ namespace Microsoft.Extensions.Options.Generators
 
         private void GenValidatorType(ValidatorType vt, ref Dictionary<string, StaticFieldInfo> staticValidationAttributesDict, ref Dictionary<string, StaticFieldInfo> staticValidatorsDict)
         {
-            OutLn("#pragma warning disable CS0618 // Type or member is obsolete");
-
             if (vt.Namespace.Length > 0)
             {
                 OutLn($"namespace {vt.Namespace}");
@@ -282,9 +280,9 @@ namespace Microsoft.Extensions.Options.Generators
             if (vm.IsNullable)
             {
                 OutLn($"if (options.{vm.Name} != null)");
-                OutLn($"{{");
-                OutLn($"    builder.AddResult({callSequence}.Validate(baseName + \"{vm.Name}\", options.{vm.Name}{valueAccess}));");
-                OutLn($"}}");
+                OutOpenBrace();
+                OutLn($"builder.AddResult({callSequence}.Validate(baseName + \"{vm.Name}\", options.{vm.Name}{valueAccess}));");
+                OutCloseBrace();
             }
             else
             {
@@ -322,16 +320,16 @@ namespace Microsoft.Extensions.Options.Generators
             if (vm.EnumeratedIsNullable)
             {
                 OutLn($"if (o is not null)");
-                OutLn($"{{");
-                OutLn($"    builder.AddResult({callSequence}.Validate(baseName + $\"{vm.Name}[{{count++}}]\", o{enumeratedValueAccess}));");
-                OutLn($"}}");
+                OutOpenBrace();
+                OutLn($"builder.AddResult({callSequence}.Validate(baseName + $\"{vm.Name}[{{count++}}]\", o{enumeratedValueAccess}));");
+                OutCloseBrace();
 
                 if (!vm.EnumeratedMayBeNull)
                 {
                     OutLn($"else");
-                    OutLn($"{{");
-                    OutLn($"    builder.AddError(baseName + $\"{vm.Name}[{{count++}}] is null\");");
-                    OutLn($"}}");
+                    OutOpenBrace();
+                    OutLn($"builder.AddError(baseName + $\"{vm.Name}[{{count++}}] is null\");");
+                    OutCloseBrace();
                 }
             }
             else

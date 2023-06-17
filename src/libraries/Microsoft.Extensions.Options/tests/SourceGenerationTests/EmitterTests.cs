@@ -54,8 +54,6 @@ public class EmitterTests
 
         string result = r[0].SourceText.ToString();
         Assert.Equal(baseline, result);
-        // string golden = File.ReadAllText(@"generated/Microsoft.Extensions.Options.SourceGeneration/Microsoft.Extensions.Options.Generators.Generator/Validators.g.cs");
-        // Assert.Equal(golden, result);
 #pragma warning restore RS1035
     }
 }
