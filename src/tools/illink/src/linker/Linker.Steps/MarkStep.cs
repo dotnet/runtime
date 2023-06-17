@@ -1452,7 +1452,7 @@ namespace Mono.Linker.Steps
 			readonly MarkingHelpers markingHelpers;
 
 			TypeReferenceMarker (AssemblyDefinition assembly, MarkingHelpers markingHelpers)
-				: base (assembly)
+				: base (assembly, walkSymbols: false)
 			{
 				this.markingHelpers = markingHelpers;
 			}
