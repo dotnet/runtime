@@ -166,8 +166,6 @@ extern "C" HRESULT  GetCLRRuntimeHost(REFIID riid, IUnknown **ppUnk);
 #define FIELD_ATTRIBUTE_PRIVATE               0x0001
 #define FIELD_ATTRIBUTE_FAMILY                0x0004
 #define FIELD_ATTRIBUTE_PUBLIC                0x0006
-const int MONO_TABLE_TYPEDEF = 2;               // mono/metadata/blob.h
-const int MONO_TABLE_CUSTOMATTRIBUTE = 0xc;     // mono/metadata/blob.h
 
 template <COUNT_T MEMSIZE>
 static STRINGREF AllocateString(const InlineSString<MEMSIZE>& sstr)
@@ -1702,8 +1700,6 @@ extern "C" EXPORT_API void EXPORT_CC mono_unity_initialize_host_apis(initialize_
 
     hr = init_func(g_HostStruct, (int32_t)sizeof(HostStruct), g_HostStructNative, (int32_t)sizeof(HostStructNative));
 
-    if (s_AssemblyDir != NULL)
-        g_HostStruct->add_system_assembly_search_path(s_AssemblyDir->GetUTF8());
     if (s_AssemblyPaths != NULL)
         g_HostStruct->add_system_assembly_search_path(s_AssemblyPaths->GetUTF8());
     gRootDomain = gCurrentDomain = g_HostStruct->get_system_assembly_load_context();
