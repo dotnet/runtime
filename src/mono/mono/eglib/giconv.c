@@ -36,10 +36,6 @@
 #define FORCE_INLINE(RET_TYPE) inline RET_TYPE __attribute__((always_inline))
 #endif
 
-#define UNROLL_DECODE_UTF8 0
-
-static FORCE_INLINE (int) decode_utf8 (char *inbuf, size_t inleft, gunichar *outchar);
-
 #if G_BYTE_ORDER == G_LITTLE_ENDIAN
 #define decode_utf16 decode_utf16le
 #else
@@ -386,9 +382,15 @@ g_utf8_to_utf16le_custom_alloc_impl (const gchar *str, glong len, glong *items_r
 	if (ret <= 0)
 		return NULL;
 
-	gunichar2 *lpDestStr = custom_alloc_func((ret + 1) * sizeof (gunichar2), custom_alloc_data);
+	gunichar2 *lpDestStr = custom_alloc_func((ret + 1) * sizeof(gunichar2), custom_alloc_data);
+	if (G_UNLIKELY (!lpDestStr)) {
+		g_set_error (err, G_CONVERT_ERROR, G_CONVERT_ERROR_NO_MEMORY, "Allocation failed.");
+		return NULL;
+	}
+
 	flags |= MINIPAL_MB_NO_REPLACE_INVALID_CHARS;
 	ret = (glong)minipal_convert_utf8_to_utf16 (str, len, lpDestStr, ret, flags);
+	lpDestStr[ret] = '\0';
 
 	map_error(err);
 	return lpDestStr;
@@ -510,6 +512,8 @@ g_utf16_to_utf8_impl (const gunichar2 *str, glong len, glong *items_read, glong 
 		len = 0;
 		while (str[len])
 			len++;
+
+		len++;
 	}
 
 	glong ret = (glong)minipal_get_length_utf16_to_utf8 (str, len, flags);
@@ -521,7 +525,7 @@ g_utf16_to_utf8_impl (const gunichar2 *str, glong len, glong *items_read, glong 
 	if (ret <= 0)
 		return NULL;
 
-	lpDestStr = (gchar *)malloc((ret + 1) * sizeof(gchar));
+	lpDestStr = (gchar *)g_malloc((ret + 1) * sizeof(gchar));
 	ret = (glong)minipal_convert_utf16_to_utf8 (str, len, lpDestStr, ret, flags);
 	lpDestStr[ret] = '\0';
 
@@ -553,6 +557,8 @@ g_utf16_to_utf8_custom_alloc (const gunichar2 *str, glong len, glong *items_read
 		len = 0;
 		while (str[len])
 			len++;
+
+		len++;
 	}
 
 	glong ret = (glong)minipal_get_length_utf16_to_utf8 (str, len, 0);
@@ -565,7 +571,13 @@ g_utf16_to_utf8_custom_alloc (const gunichar2 *str, glong len, glong *items_read
 		return NULL;
 
 	gchar *lpDestStr = custom_alloc_func((ret + 1) * sizeof (gunichar2), custom_alloc_data);
+	if (G_UNLIKELY (!lpDestStr)) {
+		g_set_error (err, G_CONVERT_ERROR, G_CONVERT_ERROR_NO_MEMORY, "Allocation failed.");
+		return NULL;
+	}
+
 	ret = (glong)minipal_convert_utf16_to_utf8 (str, len, lpDestStr, ret, 0);
+	lpDestStr[ret] = '\0';
 
 	map_error(err);
 	return lpDestStr;
