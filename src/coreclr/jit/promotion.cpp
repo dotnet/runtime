@@ -765,7 +765,7 @@ private:
             }
 
             index++;
-        } while ((index < m_inducedAccesses.size()) && (m_inducedAccesses[index].Offset == offs));
+        } while ((index < m_accesses.size()) && (m_accesses[index].Offset == offs));
 
         return nullptr;
     }
