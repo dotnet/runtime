@@ -417,7 +417,7 @@ namespace System.Runtime.InteropServices
             {
                 _wrapper = wrapper;
                 _wrappedObject = wrappedObject;
-                _releaser = new ManagedObjectWrapperReleaser(wrapper, wrappedObject);
+                _releaser = new ManagedObjectWrapperReleaser(wrapper);
                 _wrapper->HolderHandle = RuntimeImports.RhHandleAllocRefCounted(this);
             }
 
@@ -431,19 +431,18 @@ namespace System.Runtime.InteropServices
         internal unsafe class ManagedObjectWrapperReleaser
         {
             private ManagedObjectWrapper* _wrapper;
-            private GCHandle _wrappedObject;
 
-            public ManagedObjectWrapperReleaser(ManagedObjectWrapper* wrapper, object wrappedObject)
+            public ManagedObjectWrapperReleaser(ManagedObjectWrapper* wrapper)
             {
                 _wrapper = wrapper;
-                _wrappedObject = GCHandle.Alloc(wrappedObject, GCHandleType.WeakTrackResurrection);
             }
 
             ~ManagedObjectWrapperReleaser()
             {
-                if (_wrappedObject.IsAllocated && _wrappedObject.Target != null)
+                IntPtr refCountedHandle = _wrapper->HolderHandle;
+                if (refCountedHandle != IntPtr.Zero && RuntimeImports.RhHandleGet(refCountedHandle) != null)
                 {
-                    // The wrapped object has not been fully collected, so it is still
+                    // The ManagedObjectWrapperHolder has not been fully collected, so it is still
                     // potentially reachable via the Conditional Weak Table.
                     // Keep ourselves alive in case the wrapped object is resurrected.
                     GC.ReRegisterForFinalize(this);
@@ -455,8 +454,6 @@ namespace System.Runtime.InteropServices
                 {
                     NativeMemory.Free(_wrapper);
                     _wrapper = null;
-                    if (_wrappedObject.IsAllocated)
-                        _wrappedObject.Free();
                 }
                 else
                 {
