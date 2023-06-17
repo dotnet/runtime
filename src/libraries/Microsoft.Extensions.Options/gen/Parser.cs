@@ -52,7 +52,7 @@ namespace Microsoft.Extensions.Options.Generators
                     sm ??= _compilation.GetSemanticModel(typeDec.SyntaxTree);
 
                     var validatorType = sm.GetDeclaredSymbol(typeDec) as ITypeSymbol;
-                    if (validatorType != null)
+                    if (validatorType is not null)
                     {
                         if (validatorType.IsStatic)
                         {
@@ -114,7 +114,7 @@ namespace Microsoft.Extensions.Options.Generators
                         var parents = new List<string>();
                         var parent = typeDec.Parent as TypeDeclarationSyntax;
 
-                        while (parent != null && IsAllowedKind(parent.Kind()))
+                        while (parent is not null && IsAllowedKind(parent.Kind()))
                         {
                             parents.Add($"partial {GetTypeKeyword(parent)} {parent.Identifier}{parent.TypeParameterList} {parent.ConstraintClauses}");
                             parent = parent.Parent as TypeDeclarationSyntax;
@@ -263,7 +263,7 @@ namespace Microsoft.Extensions.Options.Generators
             foreach (var member in members)
             {
                 var memberInfo = GetMemberInfo(member, speculate);
-                if (memberInfo != null)
+                if (memberInfo is not null)
                 {
                     if (member.DeclaredAccessibility != Accessibility.Public && member.DeclaredAccessibility != Accessibility.Internal)
                     {
@@ -287,7 +287,7 @@ namespace Microsoft.Extensions.Options.Generators
                     memberType = prop.Type;
                     break;
                 case IFieldSymbol field:
-                    if (field.AssociatedSymbol != null)
+                    if (field.AssociatedSymbol is not null)
                     {
                         // a backing field for a property, don't need those
                         return null;
@@ -309,7 +309,7 @@ namespace Microsoft.Extensions.Options.Generators
             var transValidatorIsSynthetic = false;
             var enumerationValidatorIsSynthetic = false;
 
-            foreach (var attribute in member.GetAttributes().Where(a => a.AttributeClass != null))
+            foreach (var attribute in member.GetAttributes().Where(a => a.AttributeClass is not null))
             {
                 var attributeType = attribute.AttributeClass!;
                 var attrLoc = attribute.ApplicationSyntaxReference?.GetSyntax().GetLocation();
@@ -328,7 +328,7 @@ namespace Microsoft.Extensions.Options.Generators
                     if (attribute.ConstructorArguments.Length == 1)
                     {
                         var transValidatorType = attribute.ConstructorArguments[0].Value as INamedTypeSymbol;
-                        if (transValidatorType != null)
+                        if (transValidatorType is not null)
                         {
                             if (CanValidate(transValidatorType, memberType))
                             {
@@ -391,7 +391,7 @@ namespace Microsoft.Extensions.Options.Generators
                     if (attribute.ConstructorArguments.Length == 1)
                     {
                         var enumerationValidatorType = attribute.ConstructorArguments[0].Value as INamedTypeSymbol;
-                        if (enumerationValidatorType != null)
+                        if (enumerationValidatorType is not null)
                         {
                             if (CanValidate(enumerationValidatorType, enumeratedType))
                             {
@@ -464,7 +464,7 @@ namespace Microsoft.Extensions.Options.Generators
             if (enumerationValidatorTypeName == null && speculate)
             {
                 var enumeratedType = GetEnumeratedType(memberType);
-                if (enumeratedType != null)
+                if (enumeratedType is not null)
                 {
                     if (!HasOpenGenerics(enumeratedType, out var genericType))
                     {
@@ -477,7 +477,7 @@ namespace Microsoft.Extensions.Options.Generators
                 }
             }
 
-            if (validationAttrs.Count > 0 || transValidatorTypeName != null || enumerationValidatorTypeName != null)
+            if (validationAttrs.Count > 0 || transValidatorTypeName is not null || enumerationValidatorTypeName is not null)
             {
                 return new(
                     member.Name,

@@ -169,13 +169,13 @@ namespace Microsoft.Extensions.Options.Generators
                     OutLn();
                 }
 
-                if (vm.TransValidatorType != null)
+                if (vm.TransValidatorType is not null)
                 {
                     GenTransitiveValidation(vm, ref staticValidatorsDict);
                     OutLn();
                 }
 
-                if (vm.EnumerationValidatorType != null)
+                if (vm.EnumerationValidatorType is not null)
                 {
                     GenEnumerationValidation(vm, ref staticValidatorsDict);
                     OutLn();
@@ -279,7 +279,7 @@ namespace Microsoft.Extensions.Options.Generators
 
             if (vm.IsNullable)
             {
-                OutLn($"if (options.{vm.Name} != null)");
+                OutLn($"if (options.{vm.Name} is not null)");
                 OutOpenBrace();
                 OutLn($"builder.AddResult({callSequence}.Validate(baseName + \"{vm.Name}\", options.{vm.Name}{valueAccess}));");
                 OutCloseBrace();
@@ -308,7 +308,7 @@ namespace Microsoft.Extensions.Options.Generators
 
             if (vm.IsNullable)
             {
-                OutLn($"if (options.{vm.Name} != null)");
+                OutLn($"if (options.{vm.Name} is not null)");
             }
 
             OutOpenBrace();
@@ -321,16 +321,18 @@ namespace Microsoft.Extensions.Options.Generators
             {
                 OutLn($"if (o is not null)");
                 OutOpenBrace();
-                OutLn($"builder.AddResult({callSequence}.Validate(baseName + $\"{vm.Name}[{{count++}}]\", o{enumeratedValueAccess}));");
+                OutLn($"builder.AddResult({callSequence}.Validate(baseName + $\"{vm.Name}[{{count}}]\", o{enumeratedValueAccess}));");
                 OutCloseBrace();
 
                 if (!vm.EnumeratedMayBeNull)
                 {
                     OutLn($"else");
                     OutOpenBrace();
-                    OutLn($"builder.AddError(baseName + $\"{vm.Name}[{{count++}}] is null\");");
+                    OutLn($"builder.AddError(baseName + $\"{vm.Name}[{{count}}] is null\");");
                     OutCloseBrace();
                 }
+
+                OutLn($"count++;");
             }
             else
             {

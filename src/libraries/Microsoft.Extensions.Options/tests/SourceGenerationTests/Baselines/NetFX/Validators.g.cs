@@ -46,12 +46,12 @@ partial class FirstValidatorNoNamespace
         builder.AddResult(global::__OptionValidationStaticInstances.__Attributes.A1.GetValidationResult(options.P1, context));
         builder.AddResult(global::__OptionValidationStaticInstances.__Attributes.A2.GetValidationResult(options.P1, context));
 
-        if (options.P2 != null)
+        if (options.P2 is not null)
         {
             builder.AddResult(global::__OptionValidationStaticInstances.__Validators.V1.Validate(baseName + "P2", options.P2));
         }
 
-        if (options.P3 != null)
+        if (options.P3 is not null)
         {
             builder.AddResult(global::__ThirdModelNoNamespaceValidator__.Validate(baseName + "P3", options.P3));
         }
@@ -181,51 +181,54 @@ namespace Enumeration
             var builder = new global::Microsoft.Extensions.Options.ValidateOptionsResultBuilder();
             var context = new global::System.ComponentModel.DataAnnotations.ValidationContext(options);
 
-            if (options.P1 != null)
+            if (options.P1 is not null)
             {
                 var count = 0;
                 foreach (var o in options.P1)
                 {
                     if (o is not null)
                     {
-                        builder.AddResult(global::Enumeration.__SecondModelValidator__.Validate(baseName + $"P1[{count++}]", o));
+                        builder.AddResult(global::Enumeration.__SecondModelValidator__.Validate(baseName + $"P1[{count}]", o));
                     }
                     else
                     {
-                        builder.AddError(baseName + $"P1[{count++}] is null");
+                        builder.AddError(baseName + $"P1[{count}] is null");
                     }
+                    count++;
                 }
             }
 
-            if (options.P2 != null)
+            if (options.P2 is not null)
             {
                 var count = 0;
                 foreach (var o in options.P2)
                 {
                     if (o is not null)
                     {
-                        builder.AddResult(global::__OptionValidationStaticInstances.__Validators.V2.Validate(baseName + $"P2[{count++}]", o));
+                        builder.AddResult(global::__OptionValidationStaticInstances.__Validators.V2.Validate(baseName + $"P2[{count}]", o));
                     }
                     else
                     {
-                        builder.AddError(baseName + $"P2[{count++}] is null");
+                        builder.AddError(baseName + $"P2[{count}] is null");
                     }
+                    count++;
                 }
             }
 
-            if (options.P3 != null)
+            if (options.P3 is not null)
             {
                 var count = 0;
                 foreach (var o in options.P3)
                 {
                     if (o is not null)
                     {
-                        builder.AddResult(global::Enumeration.__SecondModelValidator__.Validate(baseName + $"P3[{count++}]", o));
+                        builder.AddResult(global::Enumeration.__SecondModelValidator__.Validate(baseName + $"P3[{count}]", o));
                     }
+                    count++;
                 }
             }
 
-            if (options.P4 != null)
+            if (options.P4 is not null)
             {
                 var count = 0;
                 foreach (var o in options.P4)
@@ -234,43 +237,46 @@ namespace Enumeration
                 }
             }
 
-            if (options.P5 != null)
+            if (options.P5 is not null)
             {
                 var count = 0;
                 foreach (var o in options.P5)
                 {
                     if (o is not null)
                     {
-                        builder.AddResult(global::Enumeration.__ThirdModelValidator__.Validate(baseName + $"P5[{count++}]", o.Value));
+                        builder.AddResult(global::Enumeration.__ThirdModelValidator__.Validate(baseName + $"P5[{count}]", o.Value));
                     }
+                    count++;
                 }
             }
 
-            if (options.P51 != null)
+            if (options.P51 is not null)
             {
                 var count = 0;
                 foreach (var o in options.P51)
                 {
                     if (o is not null)
                     {
-                        builder.AddResult(global::Enumeration.__ThirdModelValidator__.Validate(baseName + $"P51[{count++}]", o.Value));
+                        builder.AddResult(global::Enumeration.__ThirdModelValidator__.Validate(baseName + $"P51[{count}]", o.Value));
                     }
+                    count++;
                 }
             }
 
-            if (options.P6 != null)
+            if (options.P6 is not null)
             {
                 var count = 0;
                 foreach (var o in options.P6.Value)
                 {
                     if (o is not null)
                     {
-                        builder.AddResult(global::Enumeration.__SecondModelValidator__.Validate(baseName + $"P6[{count++}]", o));
+                        builder.AddResult(global::Enumeration.__SecondModelValidator__.Validate(baseName + $"P6[{count}]", o));
                     }
                     else
                     {
-                        builder.AddError(baseName + $"P6[{count++}] is null");
+                        builder.AddError(baseName + $"P6[{count}] is null");
                     }
+                    count++;
                 }
             }
 
@@ -280,28 +286,30 @@ namespace Enumeration
                 {
                     if (o is not null)
                     {
-                        builder.AddResult(global::Enumeration.__SecondModelValidator__.Validate(baseName + $"P7[{count++}]", o));
+                        builder.AddResult(global::Enumeration.__SecondModelValidator__.Validate(baseName + $"P7[{count}]", o));
                     }
                     else
                     {
-                        builder.AddError(baseName + $"P7[{count++}] is null");
+                        builder.AddError(baseName + $"P7[{count}] is null");
                     }
+                    count++;
                 }
             }
 
-            if (options.P8 != null)
+            if (options.P8 is not null)
             {
                 var count = 0;
                 foreach (var o in options.P8.Value)
                 {
                     if (o is not null)
                     {
-                        builder.AddResult(global::Enumeration.__SecondModelValidator__.Validate(baseName + $"P8[{count++}]", o));
+                        builder.AddResult(global::Enumeration.__SecondModelValidator__.Validate(baseName + $"P8[{count}]", o));
                     }
                     else
                     {
-                        builder.AddError(baseName + $"P8[{count++}] is null");
+                        builder.AddError(baseName + $"P8[{count}] is null");
                     }
+                    count++;
                 }
             }
 
@@ -384,7 +392,7 @@ namespace Fields
             builder.AddResult(global::__OptionValidationStaticInstances.__Attributes.A1.GetValidationResult(options.P1, context));
             builder.AddResult(global::__OptionValidationStaticInstances.__Attributes.A2.GetValidationResult(options.P1, context));
 
-            if (options.P2 != null)
+            if (options.P2 is not null)
             {
                 builder.AddResult(global::__OptionValidationStaticInstances.__Validators.V3.Validate(baseName + "P2", options.P2));
             }
@@ -521,7 +529,7 @@ namespace Generics
             builder.AddResult(global::__OptionValidationStaticInstances.__Attributes.A1.GetValidationResult(options.P1, context));
             builder.AddResult(global::__OptionValidationStaticInstances.__Attributes.A2.GetValidationResult(options.P1, context));
 
-            if (options.P3 != null)
+            if (options.P3 is not null)
             {
                 builder.AddResult(global::Generics.__SecondModelValidator__.Validate(baseName + "P3", options.P3));
             }
@@ -552,7 +560,7 @@ namespace MultiModelValidator
             builder.AddResult(global::__OptionValidationStaticInstances.__Attributes.A1.GetValidationResult(options.P1, context));
             builder.AddResult(global::__OptionValidationStaticInstances.__Attributes.A2.GetValidationResult(options.P1, context));
 
-            if (options.P2 != null)
+            if (options.P2 is not null)
             {
                 builder.AddResult(global::__OptionValidationStaticInstances.__Validators.V4.Validate(baseName + "P2", options.P2));
             }
@@ -663,14 +671,14 @@ namespace Nested
                     builder.AddResult(global::__OptionValidationStaticInstances.__Attributes.A1.GetValidationResult(options.P1, context));
                     builder.AddResult(global::__OptionValidationStaticInstances.__Attributes.A2.GetValidationResult(options.P1, context));
 
-                    if (options.P2 != null)
+                    if (options.P2 is not null)
                     {
                         builder.AddResult(global::__OptionValidationStaticInstances.__Validators.V5.Validate(baseName + "P2", options.P2));
                     }
 
                     builder.AddResult(global::Nested.__ThirdModelValidator__.Validate(baseName + "P3", options.P3));
 
-                    if (options.P4 != null)
+                    if (options.P4 is not null)
                     {
                         builder.AddResult(global::__OptionValidationStaticInstances.__Validators.V6.Validate(baseName + "P4", options.P4));
                     }
@@ -849,12 +857,12 @@ namespace RecordTypes
             builder.AddResult(global::__OptionValidationStaticInstances.__Attributes.A1.GetValidationResult(options.P1, context));
             builder.AddResult(global::__OptionValidationStaticInstances.__Attributes.A2.GetValidationResult(options.P1, context));
 
-            if (options.P2 != null)
+            if (options.P2 is not null)
             {
                 builder.AddResult(global::__OptionValidationStaticInstances.__Validators.V7.Validate(baseName + "P2", options.P2));
             }
 
-            if (options.P3 != null)
+            if (options.P3 is not null)
             {
                 builder.AddResult(global::__OptionValidationStaticInstances.__Validators.V8.Validate(baseName + "P3", options.P3));
             }
@@ -939,7 +947,7 @@ namespace RepeatedTypes
             context.DisplayName = baseName + "P4";
             builder.AddResult(global::__OptionValidationStaticInstances.__Attributes.A1.GetValidationResult(options.P4, context));
 
-            if (options.P4 != null)
+            if (options.P4 is not null)
             {
                 builder.AddResult(global::RepeatedTypes.__ThirdModelValidator__.Validate(baseName + "P4", options.P4));
             }
@@ -996,7 +1004,7 @@ namespace RepeatedTypes
             context.DisplayName = baseName + "P1";
             builder.AddResult(global::__OptionValidationStaticInstances.__Attributes.A1.GetValidationResult(options.P1, context));
 
-            if (options.P1 != null)
+            if (options.P1 is not null)
             {
                 builder.AddResult(global::RepeatedTypes.__SecondModelValidator__.Validate(baseName + "P1", options.P1));
             }
@@ -1005,7 +1013,7 @@ namespace RepeatedTypes
             context.DisplayName = baseName + "P2";
             builder.AddResult(global::__OptionValidationStaticInstances.__Attributes.A1.GetValidationResult(options.P2, context));
 
-            if (options.P2 != null)
+            if (options.P2 is not null)
             {
                 builder.AddResult(global::RepeatedTypes.__SecondModelValidator__.Validate(baseName + "P2", options.P2));
             }
@@ -1014,7 +1022,7 @@ namespace RepeatedTypes
             context.DisplayName = baseName + "P3";
             builder.AddResult(global::__OptionValidationStaticInstances.__Attributes.A1.GetValidationResult(options.P3, context));
 
-            if (options.P3 != null)
+            if (options.P3 is not null)
             {
                 builder.AddResult(global::RepeatedTypes.__ThirdModelValidator__.Validate(baseName + "P3", options.P3));
             }
@@ -1128,7 +1136,7 @@ namespace TestClasses.OptionsValidation
             context.DisplayName = baseName + "Val2";
             builder.AddResult(global::__OptionValidationStaticInstances.__Attributes.A8.GetValidationResult(options.Val2, context));
 
-            if (options.YetAnotherComplexVal != null)
+            if (options.YetAnotherComplexVal is not null)
             {
                 builder.AddResult(global::TestClasses.OptionsValidation.__RangeAttributeModelDoubleValidator__.Validate(baseName + "YetAnotherComplexVal", options.YetAnotherComplexVal));
             }
@@ -1183,12 +1191,12 @@ namespace TestClasses.OptionsValidation
             var builder = new global::Microsoft.Extensions.Options.ValidateOptionsResultBuilder();
             var context = new global::System.ComponentModel.DataAnnotations.ValidationContext(options);
 
-            if (options.ComplexVal != null)
+            if (options.ComplexVal is not null)
             {
                 builder.AddResult(global::TestClasses.OptionsValidation.__RequiredAttributeModelValidator__.Validate(baseName + "ComplexVal", options.ComplexVal));
             }
 
-            if (options.ValWithoutOptionsValidator != null)
+            if (options.ValWithoutOptionsValidator is not null)
             {
                 builder.AddResult(global::TestClasses.OptionsValidation.__TypeWithoutOptionsValidatorValidator__.Validate(baseName + "ValWithoutOptionsValidator", options.ValWithoutOptionsValidator));
             }
@@ -1575,14 +1583,14 @@ namespace ValueTypes
             builder.AddResult(global::__OptionValidationStaticInstances.__Attributes.A1.GetValidationResult(options.P1, context));
             builder.AddResult(global::__OptionValidationStaticInstances.__Attributes.A2.GetValidationResult(options.P1, context));
 
-            if (options.P2 != null)
+            if (options.P2 is not null)
             {
                 builder.AddResult(global::ValueTypes.__SecondModelValidator__.Validate(baseName + "P2", options.P2.Value));
             }
 
             builder.AddResult(global::ValueTypes.__SecondModelValidator__.Validate(baseName + "P3", options.P3));
 
-            if (options.P4 != null)
+            if (options.P4 is not null)
             {
                 builder.AddResult(global::ValueTypes.__SecondModelValidator__.Validate(baseName + "P4", options.P4.Value));
             }
