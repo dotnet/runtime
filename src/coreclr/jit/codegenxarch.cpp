@@ -7336,7 +7336,8 @@ void CodeGen::genIntToFloatCast(GenTree* treeNode)
     // Also we don't expect to see uint32 -> float/double and uint64 -> float conversions
     // here since they should have been lowered appropriately.
     noway_assert(srcType != TYP_UINT);
-    noway_assert((srcType != TYP_ULONG) || (dstType != TYP_FLOAT));
+    noway_assert((srcType != TYP_ULONG) || (dstType != TYP_FLOAT) ||
+                 compiler->compOpportunisticallyDependsOn(InstructionSet_AVX512F));
 
     if (compiler->compOpportunisticallyDependsOn(InstructionSet_AVX512F))
     {

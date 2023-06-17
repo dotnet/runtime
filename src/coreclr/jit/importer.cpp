@@ -7883,6 +7883,16 @@ void Compiler::impImportBlockCode(BasicBlock* block)
                                || (impStackTop().val->TypeGet() == TYP_BYREF)
 #endif
                         ;
+#ifdef TARGET_AMD64
+                    // If AVX512 is present and we are not checking for overflow, we do not need
+                    // a large node. In this case, we will not fallback to a helper function but
+                    // will use the intrinsic instead. Hence setting the callNode to false to
+                    // avoid generating a large node.
+                    if (callNode && compOpportunisticallyDependsOn(InstructionSet_AVX512F) && !ovfl)
+                    {
+                        callNode = false;
+                    }
+#endif // TARGET_AMD64
                 }
                 else
                 {

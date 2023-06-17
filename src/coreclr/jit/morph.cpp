@@ -293,6 +293,41 @@ GenTree* Compiler::fgMorphExpandCast(GenTreeCast* tree)
     var_types dstType = tree->CastToType();
     unsigned  dstSize = genTypeSize(dstType);
 
+#if defined(TARGET_AMD64)
+    // If AVX512 is present, we have intrinsic available to convert
+    // ulong directly to float. Hence, we need to combine the 2 nodes
+    // GT_CAST(GT_CAST(TYP_ULONG, TYP_DOUBLE), TYP_FLOAT) into a single
+    // node i.e. GT_CAST(TYP_ULONG, TYP_FLOAT). At this point, we already
+    // have the 2 GT_CAST nodes in the tree and we are combining them below.
+    if (compOpportunisticallyDependsOn(InstructionSet_AVX512F))
+    {
+        if (oper->OperIs(GT_CAST))
+        {
+            GenTreeCast* innerCast = static_cast<GenTreeCast*>(oper);
+
+            if (innerCast->IsUnsigned())
+            {
+                GenTree*  innerOper    = innerCast->CastOp();
+                var_types innerSrcType = genActualType(innerOper);
+                var_types innerDstType = innerCast->CastToType();
+                unsigned  innerDstSize = genTypeSize(innerDstType);
+                innerSrcType           = varTypeToUnsigned(innerSrcType);
+
+                if (innerSrcType == TYP_ULONG)
+                {
+                    if (dstType == TYP_FLOAT && innerDstType == TYP_DOUBLE)
+                    {
+                        // One optimized cast here
+                        tree         = gtNewCastNode(TYP_ULONG, innerOper, true, TYP_FLOAT);
+                        tree->gtType = TYP_FLOAT;
+                        return fgMorphTree(tree);
+                    }
+                }
+            }
+        }
+    }
+#endif
+
     // See if the cast has to be done in two steps.  R -> I
     if (varTypeIsFloating(srcType) && varTypeIsIntegral(dstType))
     {
@@ -453,7 +488,7 @@ GenTree* Compiler::fgMorphExpandCast(GenTreeCast* tree)
     {
         srcType = varTypeToUnsigned(srcType);
 
-        if (srcType == TYP_ULONG)
+        if (srcType == TYP_ULONG && !compOpportunisticallyDependsOn(InstructionSet_AVX512F))
         {
             if (dstType == TYP_FLOAT)
             {
