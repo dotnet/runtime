@@ -629,6 +629,26 @@
         <target state="translated">Le type spécifié n’est pas prise en charge par les P/Invokes générés par la source.</target>
         <note />
       </trans-unit>
+      <trans-unit id="UnnecessaryMarshallingInfoDescription">
+        <source>Unnecesssary marshalling info was provided. This marshalling information can be removed without any change in behavior to the application.</source>
+        <target state="new">Unnecesssary marshalling info was provided. This marshalling information can be removed without any change in behavior to the application.</target>
+        <note />
+      </trans-unit>
+      <trans-unit id="UnnecessaryMarshallingInfoTitle">
+        <source>Unnecessary marshalling info was provided and can be removed.</source>
+        <target state="new">Unnecessary marshalling info was provided and can be removed.</target>
+        <note />
+      </trans-unit>
+      <trans-unit id="UnnecessaryParameterMarshallingInfoMessage">
+        <source>Unnecessary marshalling info '{0}' was provided for parameter '{1}'</source>
+        <target state="new">Unnecessary marshalling info '{0}' was provided for parameter '{1}'</target>
+        <note />
+      </trans-unit>
+      <trans-unit id="UnnecessaryReturnMarshallingInfoMessage">
+        <source>Unnecessary marshalling info '{0}' was provided for the return type of method '{1}'</source>
+        <target state="new">Unnecessary marshalling info '{0}' was provided for the return type of method '{1}'</target>
+        <note />
+      </trans-unit>
       <trans-unit id="ValueInCallerAllocatedBufferRequiresSpanConstructorDescription">
         <source>A 'Value'-kind native type that supports the 'CallerAllocatedBuffer' feature must provide a two-parameter constructor taking the managed type and a 'Span' of an 'unmanaged' type as parameters</source>
         <target state="translated">Un type natif de type «Value» qui prend en charge la fonctionnalité «CallerAllocatedBuffer» doit fournir un constructeur à deux paramètres prenant le type managé et un « Span » d’un type « non géré » comme paramètres</target>

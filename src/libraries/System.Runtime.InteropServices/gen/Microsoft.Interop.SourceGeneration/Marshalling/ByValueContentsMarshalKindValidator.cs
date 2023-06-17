@@ -2,6 +2,8 @@
 // The .NET Foundation licenses this file to you under the MIT license.
 
 using System;
+using System.Collections.Immutable;
+using Microsoft.CodeAnalysis;
 
 namespace Microsoft.Interop
 {
@@ -66,12 +68,21 @@ namespace Microsoft.Interop
                 }
                 else if (support == ByValueMarshalKindSupport.Unnecessary)
                 {
-                    // TODO: Emit diagnostic for unnecesary attributes instead of failing the compilation.
+                    var locations = ImmutableArray<Location>.Empty;
+                    if (info.ByValueMarshalAttributeLocations.InLocation is not null)
+                    {
+                        locations = locations.Add(info.ByValueMarshalAttributeLocations.InLocation);
+                    }
+                    if (info.ByValueMarshalAttributeLocations.OutLocation is not null)
+                    {
+                        locations = locations.Add(info.ByValueMarshalAttributeLocations.OutLocation);
+                    }
+
                     return generator with
                     {
-                        Diagnostics = generator.Diagnostics.Add(new GeneratorDiagnostic.NotSupported(info, context)
+                        Diagnostics = generator.Diagnostics.Add(new GeneratorDiagnostic.UnnecessaryData(info, context, locations)
                         {
-                            NotSupportedDetails = SR.InOutAttributeMarshalerNotSupported
+                            UnnecessaryDataDetails = SR.InOutAttributes
                         })
                     };
                 }
