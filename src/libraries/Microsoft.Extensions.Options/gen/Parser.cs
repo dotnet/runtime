@@ -39,24 +39,25 @@ namespace Microsoft.Extensions.Options.Generators
             _symbolHolder = symbolHolder;
         }
 
-        public IReadOnlyList<ValidatorType> GetValidatorTypes(IEnumerable<TypeDeclarationSyntax> classes)
+        public IReadOnlyList<ValidatorType> GetValidatorTypes(IEnumerable<(TypeDeclarationSyntax TypeSyntax, SemanticModel SemanticModel)> classes)
         {
             var results = new List<ValidatorType>();
 
-            foreach (var group in classes.GroupBy(x => x.SyntaxTree))
+            foreach (var group in classes.GroupBy(x => x.TypeSyntax.SyntaxTree))
             {
                 SemanticModel? sm = null;
                 foreach (var typeDec in group)
                 {
+                    TypeDeclarationSyntax syntax = typeDec.TypeSyntax;
                     _cancellationToken.ThrowIfCancellationRequested();
-                    sm ??= _compilation.GetSemanticModel(typeDec.SyntaxTree);
+                    sm ??= typeDec.SemanticModel;
 
-                    var validatorType = sm.GetDeclaredSymbol(typeDec) as ITypeSymbol;
+                    var validatorType = sm.GetDeclaredSymbol(syntax) as ITypeSymbol;
                     if (validatorType is not null)
                     {
                         if (validatorType.IsStatic)
                         {
-                            Diag(DiagDescriptors.CantBeStaticClass, typeDec.GetLocation());
+                            Diag(DiagDescriptors.CantBeStaticClass, syntax.GetLocation());
                             continue;
                         }
 
@@ -66,7 +67,7 @@ namespace Microsoft.Extensions.Options.Generators
                         if (modelTypes.Count == 0)
                         {
                             // validator doesn't implement IValidateOptions
-                            Diag(DiagDescriptors.DoesntImplementIValidateOptions, typeDec.GetLocation(), validatorType.Name);
+                            Diag(DiagDescriptors.DoesntImplementIValidateOptions, syntax.GetLocation(), validatorType.Name);
                             continue;
                         }
 
@@ -88,7 +89,7 @@ namespace Microsoft.Extensions.Options.Generators
                             if (AlreadyImplementsValidateMethod(validatorType, modelType))
                             {
                                 // this type already implements a validation function, we can't auto-generate a new one
-                                Diag(DiagDescriptors.AlreadyImplementsValidateMethod, typeDec.GetLocation(), validatorType.Name);
+                                Diag(DiagDescriptors.AlreadyImplementsValidateMethod, syntax.GetLocation(), validatorType.Name);
                                 continue;
                             }
 
@@ -96,7 +97,7 @@ namespace Microsoft.Extensions.Options.Generators
                             if (membersToValidate.Count == 0)
                             {
                                 // this type lacks any eligible members
-                                Diag(DiagDescriptors.NoEligibleMembersFromValidator, typeDec.GetLocation(), modelType.ToString(), validatorType.ToString());
+                                Diag(DiagDescriptors.NoEligibleMembersFromValidator, syntax.GetLocation(), modelType.ToString(), validatorType.ToString());
                                 continue;
                             }
 
@@ -112,7 +113,7 @@ namespace Microsoft.Extensions.Options.Generators
                         // following code establishes the containment hierarchy for the generated type in terms of nested types
 
                         var parents = new List<string>();
-                        var parent = typeDec.Parent as TypeDeclarationSyntax;
+                        var parent = syntax.Parent as TypeDeclarationSyntax;
 
                         while (parent is not null && IsAllowedKind(parent.Kind()))
                         {

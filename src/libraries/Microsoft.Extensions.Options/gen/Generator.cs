@@ -17,20 +17,20 @@ namespace Microsoft.Extensions.Options.Generators
     {
         public void Initialize(IncrementalGeneratorInitializationContext context)
         {
-            IncrementalValuesProvider<TypeDeclarationSyntax> typeDeclarations = context.SyntaxProvider
+            IncrementalValuesProvider<(TypeDeclarationSyntax TypeSyntax, SemanticModel SemanticModel)> typeDeclarations = context.SyntaxProvider
                 .ForAttributeWithMetadataName(
                     SymbolLoader.OptionsValidatorAttribute,
                     (node, _) => node is TypeDeclarationSyntax,
-                    (context, _) => context.TargetNode as TypeDeclarationSyntax)
-                .Where(static m => m is not null);
+                    (context, _) => (TypeSyntax:context.TargetNode as TypeDeclarationSyntax, SemanticModel: context.SemanticModel))
+                .Where(static m => m.TypeSyntax is not null);
 
-            IncrementalValueProvider<(Compilation, ImmutableArray<TypeDeclarationSyntax>)> compilationAndTypes =
+            IncrementalValueProvider<(Compilation, ImmutableArray<(TypeDeclarationSyntax TypeSyntax, SemanticModel SemanticModel)>)> compilationAndTypes =
                 context.CompilationProvider.Combine(typeDeclarations.Collect());
 
             context.RegisterSourceOutput(compilationAndTypes, static (spc, source) => HandleAnnotatedTypes(source.Item1, source.Item2, spc));
         }
 
-        private static void HandleAnnotatedTypes(Compilation compilation, ImmutableArray<TypeDeclarationSyntax> types, SourceProductionContext context)
+        private static void HandleAnnotatedTypes(Compilation compilation, ImmutableArray<(TypeDeclarationSyntax TypeSyntax, SemanticModel SemanticModel)> types, SourceProductionContext context)
         {
             if (!SymbolLoader.TryLoad(compilation, out var symbolHolder))
             {
