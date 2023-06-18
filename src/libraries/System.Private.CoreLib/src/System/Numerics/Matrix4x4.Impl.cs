@@ -832,6 +832,22 @@ namespace System.Numerics
                 return result;
             }
 
+
+            [MethodImpl(MethodImplOptions.AggressiveInlining)]
+            public static Impl CreateViewport(float x, float y, float width, float height, float minDepth, float maxDepth)
+            {
+                Impl result = Identity;
+
+                result.X.X = width * 0.5f;
+                result.Y.Y = -height * 0.5f;
+                result.Z.Z = maxDepth - minDepth;
+                result.W.X = x + result.X.X;
+                result.W.Y = y - result.Y.Y;
+                result.W.Z = minDepth;
+
+                return result;
+            }
+
             [MethodImpl(MethodImplOptions.AggressiveInlining)]
             public static Impl CreateWorld(in Vector3 position, in Vector3 forward, in Vector3 up)
             {
