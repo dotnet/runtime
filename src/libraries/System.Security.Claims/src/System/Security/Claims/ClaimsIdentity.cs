@@ -951,8 +951,8 @@ namespace System.Security.Claims
             {
                 // The ClaimsIdentity.Name property requires that ClaimsIdentity.NameClaimType is correctly
                 // configured to match the name of the logical name claim type of the identity.
-                // Only include name if the ClaimsIdentity.Name property has a value.
-                // Seeing a null name on an authenticated claim could create a confusion.
+                // Because of this, only include name if the ClaimsIdentity.Name property has a value.
+                // Not including the name is to avoid developer confusion at seeing "Name = (null)" on an authenticated identity.
                 debugText += $", Name = {Name}";
             }
             if (claimsCount > 0)
