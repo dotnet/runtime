@@ -221,19 +221,8 @@ namespace System.Text.Json.Reflection
             return propertyInfo.GetMethod?.IsVirtual == true || propertyInfo.SetMethod?.IsVirtual == true;
         }
 
-        public static bool IsKeyValuePair(this Type type, Type? keyValuePairType = null)
-        {
-            if (!type.IsGenericType)
-            {
-                return false;
-            }
-
-            // Work around not being able to use typeof(KeyValuePair<,>) directly during compile-time src gen type analysis.
-            keyValuePairType ??= typeof(KeyValuePair<,>);
-
-            Type generic = type.GetGenericTypeDefinition();
-            return generic == keyValuePairType;
-        }
+        public static bool IsKeyValuePair(this Type type)
+            => type.IsGenericType && type.GetGenericTypeDefinition() == typeof(KeyValuePair<,>);
 
         public static bool TryGetDeserializationConstructor(
             [DynamicallyAccessedMembers(DynamicallyAccessedMemberTypes.PublicConstructors | DynamicallyAccessedMemberTypes.NonPublicConstructors)]

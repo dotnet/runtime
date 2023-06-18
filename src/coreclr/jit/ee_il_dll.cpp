@@ -1361,11 +1361,6 @@ void Compiler::eeGetSystemVAmd64PassStructInRegisterDescriptor(
 
 #endif // UNIX_AMD64_ABI
 
-bool Compiler::eeTryResolveToken(CORINFO_RESOLVED_TOKEN* resolvedToken)
-{
-    return info.compCompHnd->tryResolveToken(resolvedToken);
-}
-
 bool Compiler::eeRunWithErrorTrapImp(void (*function)(void*), void* param)
 {
     return info.compCompHnd->runWithErrorTrap(function, param);

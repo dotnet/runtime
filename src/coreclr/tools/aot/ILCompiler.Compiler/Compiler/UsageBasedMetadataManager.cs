@@ -541,6 +541,9 @@ namespace ILCompiler
             {
                 dependencies ??= new DependencyList();
                 dependencies.Add(factory.ReflectedMethod(target), "Target of a delegate");
+
+                if (target.IsVirtual)
+                    dependencies.Add(factory.DelegateTargetVirtualMethod(target.GetCanonMethodTarget(CanonicalFormKind.Specific)), "Target of a delegate");
             }
         }
 
@@ -548,29 +551,14 @@ namespace ILCompiler
         {
             Debug.Assert(decl.IsVirtual && MetadataVirtualMethodAlgorithm.FindSlotDefiningMethodForVirtualMethod(decl) == decl);
 
-            // If a virtual method slot is reflection visible, all implementations become reflection visible.
-            //
-            // We could technically come up with a weaker position on this because the code below just needs to
-            // to ensure that delegates to virtual methods can have their GetMethodInfo() called.
-            // Delegate construction introduces a ReflectableMethod for the slot defining method; it doesn't need to.
-            // We could have a specialized node type to track that specific thing and introduce a conditional dependency
-            // on that.
-            //
-            // class Base { abstract Boo(); }
-            // class Derived1 : Base { override Boo() { } }
-            // class Derived2 : Base { override Boo() { } }
-            //
-            // typeof(Derived2).GetMethods(...)
-            //
-            // In the above case, we don't really need Derived1.Boo to become reflection visible
-            // but the below code will do that because ReflectedMethodNode tracks all reflectable methods,
-            // without keeping information about subtleities like "reflectable delegate".
+            // If a virtual method slot is a target of a delegate, all implementations become reflection visible
+            // to support Delegate.GetMethodInfo().
             if (!IsReflectionBlocked(decl) && !IsReflectionBlocked(impl))
             {
                 dependencies ??= new CombinedDependencyList();
                 dependencies.Add(new DependencyNodeCore<NodeFactory>.CombinedDependencyListEntry(
                     factory.ReflectedMethod(impl.GetCanonMethodTarget(CanonicalFormKind.Specific)),
-                    factory.ReflectedMethod(decl.GetCanonMethodTarget(CanonicalFormKind.Specific)),
+                    factory.DelegateTargetVirtualMethod(decl.GetCanonMethodTarget(CanonicalFormKind.Specific)),
                     "Virtual method declaration is reflectable"));
             }
         }

@@ -15,7 +15,7 @@
 
 #include "config.h"
 #include <glib.h>
-#include <mono/utils/mono-membar.h>
+#include <mono/utils/mono-memory-model.h>
 #include <mono/utils/mono-compiler.h>
 
 /*

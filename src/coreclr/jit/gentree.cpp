@@ -18194,9 +18194,7 @@ CORINFO_CLASS_HANDLE Compiler::gtGetHelperCallClassHandle(GenTreeCall* call, boo
             // for the result, unless it is an interface type.
             //
             // TODO-CQ: when we have default interface methods then
-            // this might not be the best assumption. We could also
-            // explore calling something like mergeClasses to identify
-            // the more specific class. A similar issue arises when
+            // this might not be the best assumption. A similar issue arises when
             // typing the temp in impCastClassOrIsInstToTree, when we
             // expand the cast inline.
             if (castHnd != nullptr)
@@ -20513,7 +20511,7 @@ GenTree* Compiler::gtNewSimdCmpOpNode(
 
         case GT_GE:
         {
-            if (IsBaselineVector512IsaSupported())
+            if (IsBaselineVector512IsaSupportedOpportunistically())
             {
                 if (simdSize == 64)
                 {
@@ -20608,7 +20606,7 @@ GenTree* Compiler::gtNewSimdCmpOpNode(
 
         case GT_GT:
         {
-            if (IsBaselineVector512IsaSupported())
+            if (IsBaselineVector512IsaSupportedOpportunistically())
             {
                 if (simdSize == 64)
                 {
@@ -20810,7 +20808,7 @@ GenTree* Compiler::gtNewSimdCmpOpNode(
 
         case GT_LE:
         {
-            if (IsBaselineVector512IsaSupported())
+            if (IsBaselineVector512IsaSupportedOpportunistically())
             {
                 if (simdSize == 64)
                 {
@@ -20905,7 +20903,7 @@ GenTree* Compiler::gtNewSimdCmpOpNode(
 
         case GT_LT:
         {
-            if (IsBaselineVector512IsaSupported())
+            if (IsBaselineVector512IsaSupportedOpportunistically())
             {
                 if (simdSize == 64)
                 {
@@ -22788,7 +22786,7 @@ GenTree* Compiler::gtNewSimdNarrowNode(
     GenTree* tmp3;
     GenTree* tmp4;
 
-    if (IsBaselineVector512IsaSupported())
+    if (IsBaselineVector512IsaSupportedOpportunistically())
     {
         // This is the same in principle to the other comments below, however due to
         // code formatting, its too long to reasonably display here.
