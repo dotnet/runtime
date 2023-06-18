@@ -131,7 +131,7 @@ namespace System.Net.Http.Functional.Tests
             });
         }
 
-        [Theory]
+        [ConditionalTheory(typeof(RemoteExecutor), nameof(RemoteExecutor.IsSupported))]
         [InlineData("System.Net.Http.HttpRequestOut.Start")]
         [InlineData("System.Net.Http.Request")]
         public void RequestDuration_CustomTags_DiagnosticListener_Recorded(string eventName)
@@ -673,7 +673,7 @@ namespace System.Net.Http.Functional.Tests
 
     public class HttpMetricsTest_General
     {
-        [Fact]
+        [ConditionalFact(typeof(SocketsHttpHandler), nameof(SocketsHttpHandler.IsSupported))]
         public void SocketsHttpHandler_DefaultMeter_IsSharedInstance()
         {
             SocketsHttpHandler h1 = new();
@@ -689,7 +689,7 @@ namespace System.Net.Http.Functional.Tests
             Assert.Same(h1.Meter, h2.Meter);
         }
 
-        [Theory]
+        [ConditionalFact(typeof(SocketsHttpHandler), nameof(SocketsHttpHandler.IsSupported))]
         [InlineData(false)]
         [InlineData(true)]
         public void SocketsHttpHandler_Dispose_DoesNotDisposeMeter(bool globalMeter)
