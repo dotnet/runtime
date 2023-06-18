@@ -249,6 +249,12 @@ namespace System.Security.Cryptography.Asn1.Pkcs12
                         default,
                         encryptedData.EncryptedContentInfo.EncryptedContent.Value.Span,
                         destination);
+
+                    // When padding happens to be as expected (false-positive), we can detect gibberish and prevent unexpected failures later
+                    // This extra check makes it so it's very unlikely we'll end up with false positive.
+                    AsnValueReader outerSafeBag = new AsnValueReader(destination.AsSpan(0, written), AsnEncodingRules.BER);
+                    AsnValueReader safeBagReader = outerSafeBag.ReadSequence();
+                    outerSafeBag.ThrowIfNotEmpty();
                 }
                 catch
                 {
@@ -259,6 +265,12 @@ namespace System.Security.Cryptography.Asn1.Pkcs12
                         default,
                         encryptedData.EncryptedContentInfo.EncryptedContent.Value.Span,
                         destination);
+
+                    // When padding happens to be as expected (false-positive), we can detect gibberish and prevent unexpected failures later
+                    // This extra check makes it so it's very unlikely we'll end up with false positive.
+                    AsnValueReader outerSafeBag = new AsnValueReader(destination.AsSpan(0, written), AsnEncodingRules.BER);
+                    AsnValueReader safeBagReader = outerSafeBag.ReadSequence();
+                    outerSafeBag.ThrowIfNotEmpty();
                 }
             }
             finally
