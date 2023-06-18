@@ -3,12 +3,20 @@
 
 using System;
 using System.Collections.Generic;
+using System.Diagnostics;
 
 namespace Microsoft.Extensions.Logging
 {
+    [DebuggerDisplay("{DebuggerToString(),nq}")]
     internal sealed class Logger : ILogger
     {
-        public Logger(LoggerInformation[] loggers) => Loggers = loggers;
+        private readonly string _categoryName;
+
+        public Logger(string categoryName, LoggerInformation[] loggers)
+        {
+            _categoryName = categoryName;
+            Loggers = loggers;
+        }
 
         public LoggerInformation[] Loggers { get; set; }
         public MessageLogger[]? MessageLoggers { get; set; }
@@ -140,6 +148,40 @@ namespace Microsoft.Extensions.Logging
             }
 
             return scope;
+        }
+
+        internal string DebuggerToString()
+        {
+            var logLevels = new LogLevel[]
+            {
+                LogLevel.Trace,
+                LogLevel.Debug,
+                LogLevel.Information,
+                LogLevel.Warning,
+                LogLevel.Error,
+                LogLevel.Critical
+            };
+
+            LogLevel minimumLevel = LogLevel.None;
+
+            foreach (LogLevel logLevel in logLevels)
+            {
+                if (!IsEnabled(logLevel))
+                {
+                    break;
+                }
+
+                minimumLevel = logLevel;
+            }
+
+            var enabled = minimumLevel != LogLevel.None;
+            var debugText = $@"CategoryName = ""{_categoryName}"", Enabled = {(enabled ? "true" : "false")}";
+            if (enabled)
+            {
+                debugText += ", MinimumLevel = {minimumLevel}";
+            }
+
+            return debugText;
         }
 
         private static void ThrowLoggingError(List<Exception> exceptions)
