@@ -1827,6 +1827,11 @@ namespace System.Text.RegularExpressions
                 return DescribeChar(set[SetStartIndex]);
             }
 
+            if (set == AnyClass)
+            {
+                return ".";
+            }
+
             int index = SetStartIndex;
             char ch1;
             char ch2;
@@ -1966,6 +1971,16 @@ namespace System.Text.RegularExpressions
                 >= ' ' and <= '~' => ch.ToString(),
                 _ => $"\\u{(uint)ch:X4}"
             };
+
+        public static string DescribeString(string s)
+        {
+            StringBuilder sb = new StringBuilder();
+            foreach(char c in s)
+            {
+                sb.Append(DescribeChar(c));
+            }
+            return sb.ToString();
+        }
 
         private static string DescribeCategory(char ch) =>
             (short)ch switch

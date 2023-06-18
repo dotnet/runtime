@@ -2893,7 +2893,7 @@ namespace System.Text.RegularExpressions
                     sb.Append(' ').Append($"index = {M}");
                     break;
                 case RegexNodeKind.Multi:
-                    sb.Append(" \"").Append(Str).Append('"');
+                    sb.Append(" \"").Append(RegexCharClass.DescribeString(Str!)).Append('"');
                     break;
                 case RegexNodeKind.Set:
                 case RegexNodeKind.Setloop:
