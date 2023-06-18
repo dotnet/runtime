@@ -946,7 +946,21 @@ namespace System.Security.Claims
                 claimsCount++;
             }
 
-            return $"Identity Name = {Name ?? "(null)"}, IsAuthenticated = {(IsAuthenticated ? "true" : "false")}, Claims Count = {claimsCount}";
+            string debugText = $"IsAuthenticated = {(IsAuthenticated ? "true" : "false")}";
+            if (Name != null)
+            {
+                // The ClaimsIdentity.Name property requires that ClaimsIdentity.NameClaimType is correctly
+                // configured to match the name of the logical name claim type of the identity.
+                // Only include name if the ClaimsIdentity.Name property has a value.
+                // Seeing a null name on an authenticated claim could create a confusion.
+                debugText += $", Name = {Name}";
+            }
+            if (claimsCount > 0)
+            {
+                debugText += $", Claims = {claimsCount}";
+            }
+
+            return debugText;
         }
 
         private sealed class ClaimsIdentityDebugProxy
