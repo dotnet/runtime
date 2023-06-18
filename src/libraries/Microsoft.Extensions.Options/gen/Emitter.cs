@@ -163,15 +163,22 @@ namespace Microsoft.Extensions.Options.Generators
             OutLn($"var baseName = (string.IsNullOrEmpty(name) ? \"{modelToValidate.SimpleName}\" : name) + \".\";");
             OutLn($"var builder = new global::Microsoft.Extensions.Options.ValidateOptionsResultBuilder();");
             OutLn($"var context = new global::System.ComponentModel.DataAnnotations.ValidationContext(options);");
-            OutLn($"var validationResults = new {StaticListType}<{StaticValidationResultType}>();");
-            OutLn($"var validationAttributes = new {StaticListType}<{StaticValidationAttributeType}>();");
+
+            int capacity = modelToValidate.MembersToValidate.Max(static vm => vm.ValidationAttributes.Count);
+            if (capacity > 0)
+            {
+                OutLn($"var validationResults = new {StaticListType}<{StaticValidationResultType}>();");
+                OutLn($"var validationAttributes = new {StaticListType}<{StaticValidationAttributeType}>({capacity});");
+            }
             OutLn();
 
+            bool cleanListsBeforeUse = false;
             foreach (var vm in modelToValidate.MembersToValidate)
             {
                 if (vm.ValidationAttributes.Count > 0)
                 {
-                    GenMemberValidation(vm, ref staticValidationAttributesDict);
+                    GenMemberValidation(vm, ref staticValidationAttributesDict, cleanListsBeforeUse);
+                    cleanListsBeforeUse = true;
                     OutLn();
                 }
 
@@ -193,10 +200,16 @@ namespace Microsoft.Extensions.Options.Generators
             OutCloseBrace();
         }
 
-        private void GenMemberValidation(ValidatedMember vm, ref Dictionary<string, StaticFieldInfo> staticValidationAttributesDict)
+        private void GenMemberValidation(ValidatedMember vm, ref Dictionary<string, StaticFieldInfo> staticValidationAttributesDict, bool cleanListsBeforeUse)
         {
             OutLn($"context.MemberName = \"{vm.Name}\";");
             OutLn($"context.DisplayName = baseName + \"{vm.Name}\";");
+
+            if (cleanListsBeforeUse)
+            {
+                OutLn($"validationResults.Clear();");
+                OutLn($"validationAttributes.Clear();");
+            }
 
             foreach (var attr in vm.ValidationAttributes)
             {
@@ -208,8 +221,6 @@ namespace Microsoft.Extensions.Options.Generators
             OutOpenBrace();
             OutLn($"builder.AddResults(validationResults);");
             OutCloseBrace();
-            OutLn($"validationResults.Clear();");
-            OutLn($"validationAttributes.Clear();");
         }
 
         private StaticFieldInfo GetOrAddStaticValidationAttribute(ref Dictionary<string, StaticFieldInfo> staticValidationAttributesDict, ValidationAttributeInfo attr)

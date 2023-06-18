@@ -18,7 +18,7 @@ internal sealed partial class __ThirdModelNoNamespaceValidator__
         var builder = new global::Microsoft.Extensions.Options.ValidateOptionsResultBuilder();
         var context = new global::System.ComponentModel.DataAnnotations.ValidationContext(options);
         var validationResults = new global::System.Collections.Generic.List<global::System.ComponentModel.DataAnnotations.ValidationResult>();
-        var validationAttributes = new global::System.Collections.Generic.List<global::System.ComponentModel.DataAnnotations.ValidationAttribute>();
+        var validationAttributes = new global::System.Collections.Generic.List<global::System.ComponentModel.DataAnnotations.ValidationAttribute>(2);
 
         context.MemberName = "P5";
         context.DisplayName = baseName + "P5";
@@ -28,8 +28,6 @@ internal sealed partial class __ThirdModelNoNamespaceValidator__
         {
             builder.AddResults(validationResults);
         }
-        validationResults.Clear();
-        validationAttributes.Clear();
 
         return builder.Build();
     }
@@ -49,7 +47,7 @@ partial class FirstValidatorNoNamespace
         var builder = new global::Microsoft.Extensions.Options.ValidateOptionsResultBuilder();
         var context = new global::System.ComponentModel.DataAnnotations.ValidationContext(options);
         var validationResults = new global::System.Collections.Generic.List<global::System.ComponentModel.DataAnnotations.ValidationResult>();
-        var validationAttributes = new global::System.Collections.Generic.List<global::System.ComponentModel.DataAnnotations.ValidationAttribute>();
+        var validationAttributes = new global::System.Collections.Generic.List<global::System.ComponentModel.DataAnnotations.ValidationAttribute>(2);
 
         context.MemberName = "P1";
         context.DisplayName = baseName + "P1";
@@ -59,8 +57,6 @@ partial class FirstValidatorNoNamespace
         {
             builder.AddResults(validationResults);
         }
-        validationResults.Clear();
-        validationAttributes.Clear();
 
         if (options.P2 is not null)
         {
@@ -90,7 +86,7 @@ partial class SecondValidatorNoNamespace
         var builder = new global::Microsoft.Extensions.Options.ValidateOptionsResultBuilder();
         var context = new global::System.ComponentModel.DataAnnotations.ValidationContext(options);
         var validationResults = new global::System.Collections.Generic.List<global::System.ComponentModel.DataAnnotations.ValidationResult>();
-        var validationAttributes = new global::System.Collections.Generic.List<global::System.ComponentModel.DataAnnotations.ValidationAttribute>();
+        var validationAttributes = new global::System.Collections.Generic.List<global::System.ComponentModel.DataAnnotations.ValidationAttribute>(2);
 
         context.MemberName = "P4";
         context.DisplayName = baseName + "P4";
@@ -100,8 +96,6 @@ partial class SecondValidatorNoNamespace
         {
             builder.AddResults(validationResults);
         }
-        validationResults.Clear();
-        validationAttributes.Clear();
 
         return builder.Build();
     }
@@ -123,7 +117,7 @@ namespace CustomAttr
             var builder = new global::Microsoft.Extensions.Options.ValidateOptionsResultBuilder();
             var context = new global::System.ComponentModel.DataAnnotations.ValidationContext(options);
             var validationResults = new global::System.Collections.Generic.List<global::System.ComponentModel.DataAnnotations.ValidationResult>();
-            var validationAttributes = new global::System.Collections.Generic.List<global::System.ComponentModel.DataAnnotations.ValidationAttribute>();
+            var validationAttributes = new global::System.Collections.Generic.List<global::System.ComponentModel.DataAnnotations.ValidationAttribute>(1);
 
             context.MemberName = "P1";
             context.DisplayName = baseName + "P1";
@@ -132,18 +126,16 @@ namespace CustomAttr
             {
                 builder.AddResults(validationResults);
             }
-            validationResults.Clear();
-            validationAttributes.Clear();
 
             context.MemberName = "P2";
             context.DisplayName = baseName + "P2";
+            validationResults.Clear();
+            validationAttributes.Clear();
             validationAttributes.Add(global::__OptionValidationStaticInstances.__Attributes.A4);
             if (!global::System.ComponentModel.DataAnnotations.Validator.TryValidateValue(options.P2!, context, validationResults, validationAttributes))
             {
                 builder.AddResults(validationResults);
             }
-            validationResults.Clear();
-            validationAttributes.Clear();
 
             return builder.Build();
         }
@@ -167,7 +159,7 @@ namespace Enumeration
             var builder = new global::Microsoft.Extensions.Options.ValidateOptionsResultBuilder();
             var context = new global::System.ComponentModel.DataAnnotations.ValidationContext(options);
             var validationResults = new global::System.Collections.Generic.List<global::System.ComponentModel.DataAnnotations.ValidationResult>();
-            var validationAttributes = new global::System.Collections.Generic.List<global::System.ComponentModel.DataAnnotations.ValidationAttribute>();
+            var validationAttributes = new global::System.Collections.Generic.List<global::System.ComponentModel.DataAnnotations.ValidationAttribute>(2);
 
             context.MemberName = "P6";
             context.DisplayName = baseName + "P6";
@@ -177,8 +169,6 @@ namespace Enumeration
             {
                 builder.AddResults(validationResults);
             }
-            validationResults.Clear();
-            validationAttributes.Clear();
 
             return builder.Build();
         }
@@ -202,7 +192,7 @@ namespace Enumeration
             var builder = new global::Microsoft.Extensions.Options.ValidateOptionsResultBuilder();
             var context = new global::System.ComponentModel.DataAnnotations.ValidationContext(options);
             var validationResults = new global::System.Collections.Generic.List<global::System.ComponentModel.DataAnnotations.ValidationResult>();
-            var validationAttributes = new global::System.Collections.Generic.List<global::System.ComponentModel.DataAnnotations.ValidationAttribute>();
+            var validationAttributes = new global::System.Collections.Generic.List<global::System.ComponentModel.DataAnnotations.ValidationAttribute>(1);
 
             context.MemberName = "Value";
             context.DisplayName = baseName + "Value";
@@ -211,8 +201,6 @@ namespace Enumeration
             {
                 builder.AddResults(validationResults);
             }
-            validationResults.Clear();
-            validationAttributes.Clear();
 
             return builder.Build();
         }
@@ -234,8 +222,6 @@ namespace Enumeration
             var baseName = (string.IsNullOrEmpty(name) ? "FirstModel" : name) + ".";
             var builder = new global::Microsoft.Extensions.Options.ValidateOptionsResultBuilder();
             var context = new global::System.ComponentModel.DataAnnotations.ValidationContext(options);
-            var validationResults = new global::System.Collections.Generic.List<global::System.ComponentModel.DataAnnotations.ValidationResult>();
-            var validationAttributes = new global::System.Collections.Generic.List<global::System.ComponentModel.DataAnnotations.ValidationAttribute>();
 
             if (options.P1 is not null)
             {
@@ -390,7 +376,7 @@ namespace Enumeration
             var builder = new global::Microsoft.Extensions.Options.ValidateOptionsResultBuilder();
             var context = new global::System.ComponentModel.DataAnnotations.ValidationContext(options);
             var validationResults = new global::System.Collections.Generic.List<global::System.ComponentModel.DataAnnotations.ValidationResult>();
-            var validationAttributes = new global::System.Collections.Generic.List<global::System.ComponentModel.DataAnnotations.ValidationAttribute>();
+            var validationAttributes = new global::System.Collections.Generic.List<global::System.ComponentModel.DataAnnotations.ValidationAttribute>(2);
 
             context.MemberName = "P6";
             context.DisplayName = baseName + "P6";
@@ -400,8 +386,6 @@ namespace Enumeration
             {
                 builder.AddResults(validationResults);
             }
-            validationResults.Clear();
-            validationAttributes.Clear();
 
             return builder.Build();
         }
@@ -425,7 +409,7 @@ namespace Fields
             var builder = new global::Microsoft.Extensions.Options.ValidateOptionsResultBuilder();
             var context = new global::System.ComponentModel.DataAnnotations.ValidationContext(options);
             var validationResults = new global::System.Collections.Generic.List<global::System.ComponentModel.DataAnnotations.ValidationResult>();
-            var validationAttributes = new global::System.Collections.Generic.List<global::System.ComponentModel.DataAnnotations.ValidationAttribute>();
+            var validationAttributes = new global::System.Collections.Generic.List<global::System.ComponentModel.DataAnnotations.ValidationAttribute>(2);
 
             context.MemberName = "P5";
             context.DisplayName = baseName + "P5";
@@ -435,8 +419,6 @@ namespace Fields
             {
                 builder.AddResults(validationResults);
             }
-            validationResults.Clear();
-            validationAttributes.Clear();
 
             return builder.Build();
         }
@@ -459,7 +441,7 @@ namespace Fields
             var builder = new global::Microsoft.Extensions.Options.ValidateOptionsResultBuilder();
             var context = new global::System.ComponentModel.DataAnnotations.ValidationContext(options);
             var validationResults = new global::System.Collections.Generic.List<global::System.ComponentModel.DataAnnotations.ValidationResult>();
-            var validationAttributes = new global::System.Collections.Generic.List<global::System.ComponentModel.DataAnnotations.ValidationAttribute>();
+            var validationAttributes = new global::System.Collections.Generic.List<global::System.ComponentModel.DataAnnotations.ValidationAttribute>(2);
 
             context.MemberName = "P1";
             context.DisplayName = baseName + "P1";
@@ -469,8 +451,6 @@ namespace Fields
             {
                 builder.AddResults(validationResults);
             }
-            validationResults.Clear();
-            validationAttributes.Clear();
 
             if (options.P2 is not null)
             {
@@ -500,7 +480,7 @@ namespace Fields
             var builder = new global::Microsoft.Extensions.Options.ValidateOptionsResultBuilder();
             var context = new global::System.ComponentModel.DataAnnotations.ValidationContext(options);
             var validationResults = new global::System.Collections.Generic.List<global::System.ComponentModel.DataAnnotations.ValidationResult>();
-            var validationAttributes = new global::System.Collections.Generic.List<global::System.ComponentModel.DataAnnotations.ValidationAttribute>();
+            var validationAttributes = new global::System.Collections.Generic.List<global::System.ComponentModel.DataAnnotations.ValidationAttribute>(2);
 
             context.MemberName = "P4";
             context.DisplayName = baseName + "P4";
@@ -510,8 +490,6 @@ namespace Fields
             {
                 builder.AddResults(validationResults);
             }
-            validationResults.Clear();
-            validationAttributes.Clear();
 
             return builder.Build();
         }
@@ -534,7 +512,7 @@ namespace FileScopedNamespace
             var builder = new global::Microsoft.Extensions.Options.ValidateOptionsResultBuilder();
             var context = new global::System.ComponentModel.DataAnnotations.ValidationContext(options);
             var validationResults = new global::System.Collections.Generic.List<global::System.ComponentModel.DataAnnotations.ValidationResult>();
-            var validationAttributes = new global::System.Collections.Generic.List<global::System.ComponentModel.DataAnnotations.ValidationAttribute>();
+            var validationAttributes = new global::System.Collections.Generic.List<global::System.ComponentModel.DataAnnotations.ValidationAttribute>(2);
 
             context.MemberName = "P1";
             context.DisplayName = baseName + "P1";
@@ -544,8 +522,6 @@ namespace FileScopedNamespace
             {
                 builder.AddResults(validationResults);
             }
-            validationResults.Clear();
-            validationAttributes.Clear();
 
             return builder.Build();
         }
@@ -568,7 +544,7 @@ namespace FunnyStrings
             var builder = new global::Microsoft.Extensions.Options.ValidateOptionsResultBuilder();
             var context = new global::System.ComponentModel.DataAnnotations.ValidationContext(options);
             var validationResults = new global::System.Collections.Generic.List<global::System.ComponentModel.DataAnnotations.ValidationResult>();
-            var validationAttributes = new global::System.Collections.Generic.List<global::System.ComponentModel.DataAnnotations.ValidationAttribute>();
+            var validationAttributes = new global::System.Collections.Generic.List<global::System.ComponentModel.DataAnnotations.ValidationAttribute>(1);
 
             context.MemberName = "P1";
             context.DisplayName = baseName + "P1";
@@ -577,8 +553,6 @@ namespace FunnyStrings
             {
                 builder.AddResults(validationResults);
             }
-            validationResults.Clear();
-            validationAttributes.Clear();
 
             return builder.Build();
         }
@@ -602,7 +576,7 @@ namespace Generics
             var builder = new global::Microsoft.Extensions.Options.ValidateOptionsResultBuilder();
             var context = new global::System.ComponentModel.DataAnnotations.ValidationContext(options);
             var validationResults = new global::System.Collections.Generic.List<global::System.ComponentModel.DataAnnotations.ValidationResult>();
-            var validationAttributes = new global::System.Collections.Generic.List<global::System.ComponentModel.DataAnnotations.ValidationAttribute>();
+            var validationAttributes = new global::System.Collections.Generic.List<global::System.ComponentModel.DataAnnotations.ValidationAttribute>(2);
 
             context.MemberName = "P4";
             context.DisplayName = baseName + "P4";
@@ -612,8 +586,6 @@ namespace Generics
             {
                 builder.AddResults(validationResults);
             }
-            validationResults.Clear();
-            validationAttributes.Clear();
 
             return builder.Build();
         }
@@ -636,7 +608,7 @@ namespace Generics
             var builder = new global::Microsoft.Extensions.Options.ValidateOptionsResultBuilder();
             var context = new global::System.ComponentModel.DataAnnotations.ValidationContext(options);
             var validationResults = new global::System.Collections.Generic.List<global::System.ComponentModel.DataAnnotations.ValidationResult>();
-            var validationAttributes = new global::System.Collections.Generic.List<global::System.ComponentModel.DataAnnotations.ValidationAttribute>();
+            var validationAttributes = new global::System.Collections.Generic.List<global::System.ComponentModel.DataAnnotations.ValidationAttribute>(2);
 
             context.MemberName = "P1";
             context.DisplayName = baseName + "P1";
@@ -646,8 +618,6 @@ namespace Generics
             {
                 builder.AddResults(validationResults);
             }
-            validationResults.Clear();
-            validationAttributes.Clear();
 
             if (options.P3 is not null)
             {
@@ -675,7 +645,7 @@ namespace MultiModelValidator
             var builder = new global::Microsoft.Extensions.Options.ValidateOptionsResultBuilder();
             var context = new global::System.ComponentModel.DataAnnotations.ValidationContext(options);
             var validationResults = new global::System.Collections.Generic.List<global::System.ComponentModel.DataAnnotations.ValidationResult>();
-            var validationAttributes = new global::System.Collections.Generic.List<global::System.ComponentModel.DataAnnotations.ValidationAttribute>();
+            var validationAttributes = new global::System.Collections.Generic.List<global::System.ComponentModel.DataAnnotations.ValidationAttribute>(2);
 
             context.MemberName = "P1";
             context.DisplayName = baseName + "P1";
@@ -685,8 +655,6 @@ namespace MultiModelValidator
             {
                 builder.AddResults(validationResults);
             }
-            validationResults.Clear();
-            validationAttributes.Clear();
 
             if (options.P2 is not null)
             {
@@ -708,7 +676,7 @@ namespace MultiModelValidator
             var builder = new global::Microsoft.Extensions.Options.ValidateOptionsResultBuilder();
             var context = new global::System.ComponentModel.DataAnnotations.ValidationContext(options);
             var validationResults = new global::System.Collections.Generic.List<global::System.ComponentModel.DataAnnotations.ValidationResult>();
-            var validationAttributes = new global::System.Collections.Generic.List<global::System.ComponentModel.DataAnnotations.ValidationAttribute>();
+            var validationAttributes = new global::System.Collections.Generic.List<global::System.ComponentModel.DataAnnotations.ValidationAttribute>(2);
 
             context.MemberName = "P3";
             context.DisplayName = baseName + "P3";
@@ -718,8 +686,6 @@ namespace MultiModelValidator
             {
                 builder.AddResults(validationResults);
             }
-            validationResults.Clear();
-            validationAttributes.Clear();
 
             return builder.Build();
         }
@@ -743,7 +709,7 @@ namespace Nested
             var builder = new global::Microsoft.Extensions.Options.ValidateOptionsResultBuilder();
             var context = new global::System.ComponentModel.DataAnnotations.ValidationContext(options);
             var validationResults = new global::System.Collections.Generic.List<global::System.ComponentModel.DataAnnotations.ValidationResult>();
-            var validationAttributes = new global::System.Collections.Generic.List<global::System.ComponentModel.DataAnnotations.ValidationAttribute>();
+            var validationAttributes = new global::System.Collections.Generic.List<global::System.ComponentModel.DataAnnotations.ValidationAttribute>(2);
 
             context.MemberName = "P6";
             context.DisplayName = baseName + "P6";
@@ -753,8 +719,6 @@ namespace Nested
             {
                 builder.AddResults(validationResults);
             }
-            validationResults.Clear();
-            validationAttributes.Clear();
 
             return builder.Build();
         }
@@ -779,7 +743,7 @@ namespace Nested
                 var builder = new global::Microsoft.Extensions.Options.ValidateOptionsResultBuilder();
                 var context = new global::System.ComponentModel.DataAnnotations.ValidationContext(options);
                 var validationResults = new global::System.Collections.Generic.List<global::System.ComponentModel.DataAnnotations.ValidationResult>();
-                var validationAttributes = new global::System.Collections.Generic.List<global::System.ComponentModel.DataAnnotations.ValidationAttribute>();
+                var validationAttributes = new global::System.Collections.Generic.List<global::System.ComponentModel.DataAnnotations.ValidationAttribute>(2);
 
                 context.MemberName = "P5";
                 context.DisplayName = baseName + "P5";
@@ -789,8 +753,6 @@ namespace Nested
                 {
                     builder.AddResults(validationResults);
                 }
-                validationResults.Clear();
-                validationAttributes.Clear();
 
                 return builder.Build();
             }
@@ -818,7 +780,7 @@ namespace Nested
                     var builder = new global::Microsoft.Extensions.Options.ValidateOptionsResultBuilder();
                     var context = new global::System.ComponentModel.DataAnnotations.ValidationContext(options);
                     var validationResults = new global::System.Collections.Generic.List<global::System.ComponentModel.DataAnnotations.ValidationResult>();
-                    var validationAttributes = new global::System.Collections.Generic.List<global::System.ComponentModel.DataAnnotations.ValidationAttribute>();
+                    var validationAttributes = new global::System.Collections.Generic.List<global::System.ComponentModel.DataAnnotations.ValidationAttribute>(2);
 
                     context.MemberName = "P1";
                     context.DisplayName = baseName + "P1";
@@ -828,8 +790,6 @@ namespace Nested
                     {
                         builder.AddResults(validationResults);
                     }
-                    validationResults.Clear();
-                    validationAttributes.Clear();
 
                     if (options.P2 is not null)
                     {
@@ -868,7 +828,7 @@ namespace Nested
                 var builder = new global::Microsoft.Extensions.Options.ValidateOptionsResultBuilder();
                 var context = new global::System.ComponentModel.DataAnnotations.ValidationContext(options);
                 var validationResults = new global::System.Collections.Generic.List<global::System.ComponentModel.DataAnnotations.ValidationResult>();
-                var validationAttributes = new global::System.Collections.Generic.List<global::System.ComponentModel.DataAnnotations.ValidationAttribute>();
+                var validationAttributes = new global::System.Collections.Generic.List<global::System.ComponentModel.DataAnnotations.ValidationAttribute>(2);
 
                 context.MemberName = "P5";
                 context.DisplayName = baseName + "P5";
@@ -878,8 +838,6 @@ namespace Nested
                 {
                     builder.AddResults(validationResults);
                 }
-                validationResults.Clear();
-                validationAttributes.Clear();
 
                 return builder.Build();
             }
@@ -907,7 +865,7 @@ namespace Nested
                     var builder = new global::Microsoft.Extensions.Options.ValidateOptionsResultBuilder();
                     var context = new global::System.ComponentModel.DataAnnotations.ValidationContext(options);
                     var validationResults = new global::System.Collections.Generic.List<global::System.ComponentModel.DataAnnotations.ValidationResult>();
-                    var validationAttributes = new global::System.Collections.Generic.List<global::System.ComponentModel.DataAnnotations.ValidationAttribute>();
+                    var validationAttributes = new global::System.Collections.Generic.List<global::System.ComponentModel.DataAnnotations.ValidationAttribute>(2);
 
                     context.MemberName = "P5";
                     context.DisplayName = baseName + "P5";
@@ -917,8 +875,6 @@ namespace Nested
                     {
                         builder.AddResults(validationResults);
                     }
-                    validationResults.Clear();
-                    validationAttributes.Clear();
 
                     return builder.Build();
                 }
@@ -947,7 +903,7 @@ namespace Nested
                     var builder = new global::Microsoft.Extensions.Options.ValidateOptionsResultBuilder();
                     var context = new global::System.ComponentModel.DataAnnotations.ValidationContext(options);
                     var validationResults = new global::System.Collections.Generic.List<global::System.ComponentModel.DataAnnotations.ValidationResult>();
-                    var validationAttributes = new global::System.Collections.Generic.List<global::System.ComponentModel.DataAnnotations.ValidationAttribute>();
+                    var validationAttributes = new global::System.Collections.Generic.List<global::System.ComponentModel.DataAnnotations.ValidationAttribute>(2);
 
                     context.MemberName = "P5";
                     context.DisplayName = baseName + "P5";
@@ -957,8 +913,6 @@ namespace Nested
                     {
                         builder.AddResults(validationResults);
                     }
-                    validationResults.Clear();
-                    validationAttributes.Clear();
 
                     return builder.Build();
                 }
@@ -983,7 +937,7 @@ namespace RandomMembers
             var builder = new global::Microsoft.Extensions.Options.ValidateOptionsResultBuilder();
             var context = new global::System.ComponentModel.DataAnnotations.ValidationContext(options);
             var validationResults = new global::System.Collections.Generic.List<global::System.ComponentModel.DataAnnotations.ValidationResult>();
-            var validationAttributes = new global::System.Collections.Generic.List<global::System.ComponentModel.DataAnnotations.ValidationAttribute>();
+            var validationAttributes = new global::System.Collections.Generic.List<global::System.ComponentModel.DataAnnotations.ValidationAttribute>(2);
 
             context.MemberName = "P1";
             context.DisplayName = baseName + "P1";
@@ -993,8 +947,6 @@ namespace RandomMembers
             {
                 builder.AddResults(validationResults);
             }
-            validationResults.Clear();
-            validationAttributes.Clear();
 
             return builder.Build();
         }
@@ -1018,7 +970,7 @@ namespace RecordTypes
             var builder = new global::Microsoft.Extensions.Options.ValidateOptionsResultBuilder();
             var context = new global::System.ComponentModel.DataAnnotations.ValidationContext(options);
             var validationResults = new global::System.Collections.Generic.List<global::System.ComponentModel.DataAnnotations.ValidationResult>();
-            var validationAttributes = new global::System.Collections.Generic.List<global::System.ComponentModel.DataAnnotations.ValidationAttribute>();
+            var validationAttributes = new global::System.Collections.Generic.List<global::System.ComponentModel.DataAnnotations.ValidationAttribute>(2);
 
             context.MemberName = "P6";
             context.DisplayName = baseName + "P6";
@@ -1028,8 +980,6 @@ namespace RecordTypes
             {
                 builder.AddResults(validationResults);
             }
-            validationResults.Clear();
-            validationAttributes.Clear();
 
             return builder.Build();
         }
@@ -1052,7 +1002,7 @@ namespace RecordTypes
             var builder = new global::Microsoft.Extensions.Options.ValidateOptionsResultBuilder();
             var context = new global::System.ComponentModel.DataAnnotations.ValidationContext(options);
             var validationResults = new global::System.Collections.Generic.List<global::System.ComponentModel.DataAnnotations.ValidationResult>();
-            var validationAttributes = new global::System.Collections.Generic.List<global::System.ComponentModel.DataAnnotations.ValidationAttribute>();
+            var validationAttributes = new global::System.Collections.Generic.List<global::System.ComponentModel.DataAnnotations.ValidationAttribute>(2);
 
             context.MemberName = "P1";
             context.DisplayName = baseName + "P1";
@@ -1062,8 +1012,6 @@ namespace RecordTypes
             {
                 builder.AddResults(validationResults);
             }
-            validationResults.Clear();
-            validationAttributes.Clear();
 
             if (options.P2 is not null)
             {
@@ -1098,7 +1046,7 @@ namespace RecordTypes
             var builder = new global::Microsoft.Extensions.Options.ValidateOptionsResultBuilder();
             var context = new global::System.ComponentModel.DataAnnotations.ValidationContext(options);
             var validationResults = new global::System.Collections.Generic.List<global::System.ComponentModel.DataAnnotations.ValidationResult>();
-            var validationAttributes = new global::System.Collections.Generic.List<global::System.ComponentModel.DataAnnotations.ValidationAttribute>();
+            var validationAttributes = new global::System.Collections.Generic.List<global::System.ComponentModel.DataAnnotations.ValidationAttribute>(2);
 
             context.MemberName = "P5";
             context.DisplayName = baseName + "P5";
@@ -1108,8 +1056,6 @@ namespace RecordTypes
             {
                 builder.AddResults(validationResults);
             }
-            validationResults.Clear();
-            validationAttributes.Clear();
 
             return builder.Build();
         }
@@ -1132,7 +1078,7 @@ namespace RecordTypes
             var builder = new global::Microsoft.Extensions.Options.ValidateOptionsResultBuilder();
             var context = new global::System.ComponentModel.DataAnnotations.ValidationContext(options);
             var validationResults = new global::System.Collections.Generic.List<global::System.ComponentModel.DataAnnotations.ValidationResult>();
-            var validationAttributes = new global::System.Collections.Generic.List<global::System.ComponentModel.DataAnnotations.ValidationAttribute>();
+            var validationAttributes = new global::System.Collections.Generic.List<global::System.ComponentModel.DataAnnotations.ValidationAttribute>(2);
 
             context.MemberName = "P5";
             context.DisplayName = baseName + "P5";
@@ -1142,8 +1088,6 @@ namespace RecordTypes
             {
                 builder.AddResults(validationResults);
             }
-            validationResults.Clear();
-            validationAttributes.Clear();
 
             return builder.Build();
         }
@@ -1167,7 +1111,7 @@ namespace RepeatedTypes
             var builder = new global::Microsoft.Extensions.Options.ValidateOptionsResultBuilder();
             var context = new global::System.ComponentModel.DataAnnotations.ValidationContext(options);
             var validationResults = new global::System.Collections.Generic.List<global::System.ComponentModel.DataAnnotations.ValidationResult>();
-            var validationAttributes = new global::System.Collections.Generic.List<global::System.ComponentModel.DataAnnotations.ValidationAttribute>();
+            var validationAttributes = new global::System.Collections.Generic.List<global::System.ComponentModel.DataAnnotations.ValidationAttribute>(1);
 
             context.MemberName = "P4";
             context.DisplayName = baseName + "P4";
@@ -1176,8 +1120,6 @@ namespace RepeatedTypes
             {
                 builder.AddResults(validationResults);
             }
-            validationResults.Clear();
-            validationAttributes.Clear();
 
             if (options.P4 is not null)
             {
@@ -1206,7 +1148,7 @@ namespace RepeatedTypes
             var builder = new global::Microsoft.Extensions.Options.ValidateOptionsResultBuilder();
             var context = new global::System.ComponentModel.DataAnnotations.ValidationContext(options);
             var validationResults = new global::System.Collections.Generic.List<global::System.ComponentModel.DataAnnotations.ValidationResult>();
-            var validationAttributes = new global::System.Collections.Generic.List<global::System.ComponentModel.DataAnnotations.ValidationAttribute>();
+            var validationAttributes = new global::System.Collections.Generic.List<global::System.ComponentModel.DataAnnotations.ValidationAttribute>(2);
 
             context.MemberName = "P5";
             context.DisplayName = baseName + "P5";
@@ -1216,8 +1158,6 @@ namespace RepeatedTypes
             {
                 builder.AddResults(validationResults);
             }
-            validationResults.Clear();
-            validationAttributes.Clear();
 
             return builder.Build();
         }
@@ -1240,7 +1180,7 @@ namespace RepeatedTypes
             var builder = new global::Microsoft.Extensions.Options.ValidateOptionsResultBuilder();
             var context = new global::System.ComponentModel.DataAnnotations.ValidationContext(options);
             var validationResults = new global::System.Collections.Generic.List<global::System.ComponentModel.DataAnnotations.ValidationResult>();
-            var validationAttributes = new global::System.Collections.Generic.List<global::System.ComponentModel.DataAnnotations.ValidationAttribute>();
+            var validationAttributes = new global::System.Collections.Generic.List<global::System.ComponentModel.DataAnnotations.ValidationAttribute>(1);
 
             context.MemberName = "P1";
             context.DisplayName = baseName + "P1";
@@ -1249,8 +1189,6 @@ namespace RepeatedTypes
             {
                 builder.AddResults(validationResults);
             }
-            validationResults.Clear();
-            validationAttributes.Clear();
 
             if (options.P1 is not null)
             {
@@ -1259,13 +1197,13 @@ namespace RepeatedTypes
 
             context.MemberName = "P2";
             context.DisplayName = baseName + "P2";
+            validationResults.Clear();
+            validationAttributes.Clear();
             validationAttributes.Add(global::__OptionValidationStaticInstances.__Attributes.A1);
             if (!global::System.ComponentModel.DataAnnotations.Validator.TryValidateValue(options.P2!, context, validationResults, validationAttributes))
             {
                 builder.AddResults(validationResults);
             }
-            validationResults.Clear();
-            validationAttributes.Clear();
 
             if (options.P2 is not null)
             {
@@ -1274,13 +1212,13 @@ namespace RepeatedTypes
 
             context.MemberName = "P3";
             context.DisplayName = baseName + "P3";
+            validationResults.Clear();
+            validationAttributes.Clear();
             validationAttributes.Add(global::__OptionValidationStaticInstances.__Attributes.A1);
             if (!global::System.ComponentModel.DataAnnotations.Validator.TryValidateValue(options.P3!, context, validationResults, validationAttributes))
             {
                 builder.AddResults(validationResults);
             }
-            validationResults.Clear();
-            validationAttributes.Clear();
 
             if (options.P3 is not null)
             {
@@ -1308,7 +1246,7 @@ namespace SelfValidation
             var builder = new global::Microsoft.Extensions.Options.ValidateOptionsResultBuilder();
             var context = new global::System.ComponentModel.DataAnnotations.ValidationContext(options);
             var validationResults = new global::System.Collections.Generic.List<global::System.ComponentModel.DataAnnotations.ValidationResult>();
-            var validationAttributes = new global::System.Collections.Generic.List<global::System.ComponentModel.DataAnnotations.ValidationAttribute>();
+            var validationAttributes = new global::System.Collections.Generic.List<global::System.ComponentModel.DataAnnotations.ValidationAttribute>(1);
 
             context.MemberName = "P1";
             context.DisplayName = baseName + "P1";
@@ -1317,8 +1255,6 @@ namespace SelfValidation
             {
                 builder.AddResults(validationResults);
             }
-            validationResults.Clear();
-            validationAttributes.Clear();
 
             builder.AddResults(((global::System.ComponentModel.DataAnnotations.IValidatableObject)options).Validate(context));
 
@@ -1344,7 +1280,7 @@ namespace TestClasses.OptionsValidation
             var builder = new global::Microsoft.Extensions.Options.ValidateOptionsResultBuilder();
             var context = new global::System.ComponentModel.DataAnnotations.ValidationContext(options);
             var validationResults = new global::System.Collections.Generic.List<global::System.ComponentModel.DataAnnotations.ValidationResult>();
-            var validationAttributes = new global::System.Collections.Generic.List<global::System.ComponentModel.DataAnnotations.ValidationAttribute>();
+            var validationAttributes = new global::System.Collections.Generic.List<global::System.ComponentModel.DataAnnotations.ValidationAttribute>(1);
 
             context.MemberName = "Val";
             context.DisplayName = baseName + "Val";
@@ -1353,8 +1289,6 @@ namespace TestClasses.OptionsValidation
             {
                 builder.AddResults(validationResults);
             }
-            validationResults.Clear();
-            validationAttributes.Clear();
 
             return builder.Build();
         }
@@ -1378,7 +1312,7 @@ namespace TestClasses.OptionsValidation
             var builder = new global::Microsoft.Extensions.Options.ValidateOptionsResultBuilder();
             var context = new global::System.ComponentModel.DataAnnotations.ValidationContext(options);
             var validationResults = new global::System.Collections.Generic.List<global::System.ComponentModel.DataAnnotations.ValidationResult>();
-            var validationAttributes = new global::System.Collections.Generic.List<global::System.ComponentModel.DataAnnotations.ValidationAttribute>();
+            var validationAttributes = new global::System.Collections.Generic.List<global::System.ComponentModel.DataAnnotations.ValidationAttribute>(1);
 
             context.MemberName = "Val";
             context.DisplayName = baseName + "Val";
@@ -1387,8 +1321,6 @@ namespace TestClasses.OptionsValidation
             {
                 builder.AddResults(validationResults);
             }
-            validationResults.Clear();
-            validationAttributes.Clear();
 
             return builder.Build();
         }
@@ -1412,7 +1344,7 @@ namespace TestClasses.OptionsValidation
             var builder = new global::Microsoft.Extensions.Options.ValidateOptionsResultBuilder();
             var context = new global::System.ComponentModel.DataAnnotations.ValidationContext(options);
             var validationResults = new global::System.Collections.Generic.List<global::System.ComponentModel.DataAnnotations.ValidationResult>();
-            var validationAttributes = new global::System.Collections.Generic.List<global::System.ComponentModel.DataAnnotations.ValidationAttribute>();
+            var validationAttributes = new global::System.Collections.Generic.List<global::System.ComponentModel.DataAnnotations.ValidationAttribute>(1);
 
             context.MemberName = "Val1";
             context.DisplayName = baseName + "Val1";
@@ -1421,18 +1353,16 @@ namespace TestClasses.OptionsValidation
             {
                 builder.AddResults(validationResults);
             }
-            validationResults.Clear();
-            validationAttributes.Clear();
 
             context.MemberName = "Val2";
             context.DisplayName = baseName + "Val2";
+            validationResults.Clear();
+            validationAttributes.Clear();
             validationAttributes.Add(global::__OptionValidationStaticInstances.__Attributes.A8);
             if (!global::System.ComponentModel.DataAnnotations.Validator.TryValidateValue(options.Val2!, context, validationResults, validationAttributes))
             {
                 builder.AddResults(validationResults);
             }
-            validationResults.Clear();
-            validationAttributes.Clear();
 
             if (options.YetAnotherComplexVal is not null)
             {
@@ -1460,7 +1390,7 @@ namespace TestClasses.OptionsValidation
             var builder = new global::Microsoft.Extensions.Options.ValidateOptionsResultBuilder();
             var context = new global::System.ComponentModel.DataAnnotations.ValidationContext(options);
             var validationResults = new global::System.Collections.Generic.List<global::System.ComponentModel.DataAnnotations.ValidationResult>();
-            var validationAttributes = new global::System.Collections.Generic.List<global::System.ComponentModel.DataAnnotations.ValidationAttribute>();
+            var validationAttributes = new global::System.Collections.Generic.List<global::System.ComponentModel.DataAnnotations.ValidationAttribute>(1);
 
             context.MemberName = "Val1";
             context.DisplayName = baseName + "Val1";
@@ -1469,18 +1399,16 @@ namespace TestClasses.OptionsValidation
             {
                 builder.AddResults(validationResults);
             }
-            validationResults.Clear();
-            validationAttributes.Clear();
 
             context.MemberName = "Val2";
             context.DisplayName = baseName + "Val2";
+            validationResults.Clear();
+            validationAttributes.Clear();
             validationAttributes.Add(global::__OptionValidationStaticInstances.__Attributes.A10);
             if (!global::System.ComponentModel.DataAnnotations.Validator.TryValidateValue(options.Val2!, context, validationResults, validationAttributes))
             {
                 builder.AddResults(validationResults);
             }
-            validationResults.Clear();
-            validationAttributes.Clear();
 
             return builder.Build();
         }
@@ -1502,8 +1430,6 @@ namespace TestClasses.OptionsValidation
             var baseName = (string.IsNullOrEmpty(name) ? "ComplexModel" : name) + ".";
             var builder = new global::Microsoft.Extensions.Options.ValidateOptionsResultBuilder();
             var context = new global::System.ComponentModel.DataAnnotations.ValidationContext(options);
-            var validationResults = new global::System.Collections.Generic.List<global::System.ComponentModel.DataAnnotations.ValidationResult>();
-            var validationAttributes = new global::System.Collections.Generic.List<global::System.ComponentModel.DataAnnotations.ValidationAttribute>();
 
             if (options.ComplexVal is not null)
             {
@@ -1536,7 +1462,7 @@ namespace TestClasses.OptionsValidation
             var builder = new global::Microsoft.Extensions.Options.ValidateOptionsResultBuilder();
             var context = new global::System.ComponentModel.DataAnnotations.ValidationContext(options);
             var validationResults = new global::System.Collections.Generic.List<global::System.ComponentModel.DataAnnotations.ValidationResult>();
-            var validationAttributes = new global::System.Collections.Generic.List<global::System.ComponentModel.DataAnnotations.ValidationAttribute>();
+            var validationAttributes = new global::System.Collections.Generic.List<global::System.ComponentModel.DataAnnotations.ValidationAttribute>(1);
 
             context.MemberName = "Val";
             context.DisplayName = baseName + "Val";
@@ -1545,8 +1471,6 @@ namespace TestClasses.OptionsValidation
             {
                 builder.AddResults(validationResults);
             }
-            validationResults.Clear();
-            validationAttributes.Clear();
 
             return builder.Build();
         }
@@ -1569,7 +1493,7 @@ namespace TestClasses.OptionsValidation
             var builder = new global::Microsoft.Extensions.Options.ValidateOptionsResultBuilder();
             var context = new global::System.ComponentModel.DataAnnotations.ValidationContext(options);
             var validationResults = new global::System.Collections.Generic.List<global::System.ComponentModel.DataAnnotations.ValidationResult>();
-            var validationAttributes = new global::System.Collections.Generic.List<global::System.ComponentModel.DataAnnotations.ValidationAttribute>();
+            var validationAttributes = new global::System.Collections.Generic.List<global::System.ComponentModel.DataAnnotations.ValidationAttribute>(1);
 
             context.MemberName = "Val";
             context.DisplayName = baseName + "Val";
@@ -1578,8 +1502,6 @@ namespace TestClasses.OptionsValidation
             {
                 builder.AddResults(validationResults);
             }
-            validationResults.Clear();
-            validationAttributes.Clear();
 
             return builder.Build();
         }
@@ -1602,7 +1524,7 @@ namespace TestClasses.OptionsValidation
             var builder = new global::Microsoft.Extensions.Options.ValidateOptionsResultBuilder();
             var context = new global::System.ComponentModel.DataAnnotations.ValidationContext(options);
             var validationResults = new global::System.Collections.Generic.List<global::System.ComponentModel.DataAnnotations.ValidationResult>();
-            var validationAttributes = new global::System.Collections.Generic.List<global::System.ComponentModel.DataAnnotations.ValidationAttribute>();
+            var validationAttributes = new global::System.Collections.Generic.List<global::System.ComponentModel.DataAnnotations.ValidationAttribute>(1);
 
             context.MemberName = "Val";
             context.DisplayName = baseName + "Val";
@@ -1611,8 +1533,6 @@ namespace TestClasses.OptionsValidation
             {
                 builder.AddResults(validationResults);
             }
-            validationResults.Clear();
-            validationAttributes.Clear();
 
             return builder.Build();
         }
@@ -1635,7 +1555,7 @@ namespace TestClasses.OptionsValidation
             var builder = new global::Microsoft.Extensions.Options.ValidateOptionsResultBuilder();
             var context = new global::System.ComponentModel.DataAnnotations.ValidationContext(options);
             var validationResults = new global::System.Collections.Generic.List<global::System.ComponentModel.DataAnnotations.ValidationResult>();
-            var validationAttributes = new global::System.Collections.Generic.List<global::System.ComponentModel.DataAnnotations.ValidationAttribute>();
+            var validationAttributes = new global::System.Collections.Generic.List<global::System.ComponentModel.DataAnnotations.ValidationAttribute>(1);
 
             context.MemberName = "DerivedVal";
             context.DisplayName = baseName + "DerivedVal";
@@ -1644,28 +1564,26 @@ namespace TestClasses.OptionsValidation
             {
                 builder.AddResults(validationResults);
             }
-            validationResults.Clear();
-            validationAttributes.Clear();
 
             context.MemberName = "VirtualValWithAttr";
             context.DisplayName = baseName + "VirtualValWithAttr";
+            validationResults.Clear();
+            validationAttributes.Clear();
             validationAttributes.Add(global::__OptionValidationStaticInstances.__Attributes.A1);
             if (!global::System.ComponentModel.DataAnnotations.Validator.TryValidateValue(options.VirtualValWithAttr!, context, validationResults, validationAttributes))
             {
                 builder.AddResults(validationResults);
             }
-            validationResults.Clear();
-            validationAttributes.Clear();
 
             context.MemberName = "Val";
             context.DisplayName = baseName + "Val";
+            validationResults.Clear();
+            validationAttributes.Clear();
             validationAttributes.Add(global::__OptionValidationStaticInstances.__Attributes.A1);
             if (!global::System.ComponentModel.DataAnnotations.Validator.TryValidateValue(options.Val!, context, validationResults, validationAttributes))
             {
                 builder.AddResults(validationResults);
             }
-            validationResults.Clear();
-            validationAttributes.Clear();
 
             return builder.Build();
         }
@@ -1688,7 +1606,7 @@ namespace TestClasses.OptionsValidation
             var builder = new global::Microsoft.Extensions.Options.ValidateOptionsResultBuilder();
             var context = new global::System.ComponentModel.DataAnnotations.ValidationContext(options);
             var validationResults = new global::System.Collections.Generic.List<global::System.ComponentModel.DataAnnotations.ValidationResult>();
-            var validationAttributes = new global::System.Collections.Generic.List<global::System.ComponentModel.DataAnnotations.ValidationAttribute>();
+            var validationAttributes = new global::System.Collections.Generic.List<global::System.ComponentModel.DataAnnotations.ValidationAttribute>(1);
 
             context.MemberName = "Val";
             context.DisplayName = baseName + "Val";
@@ -1697,8 +1615,6 @@ namespace TestClasses.OptionsValidation
             {
                 builder.AddResults(validationResults);
             }
-            validationResults.Clear();
-            validationAttributes.Clear();
 
             return builder.Build();
         }
@@ -1721,7 +1637,7 @@ namespace TestClasses.OptionsValidation
             var builder = new global::Microsoft.Extensions.Options.ValidateOptionsResultBuilder();
             var context = new global::System.ComponentModel.DataAnnotations.ValidationContext(options);
             var validationResults = new global::System.Collections.Generic.List<global::System.ComponentModel.DataAnnotations.ValidationResult>();
-            var validationAttributes = new global::System.Collections.Generic.List<global::System.ComponentModel.DataAnnotations.ValidationAttribute>();
+            var validationAttributes = new global::System.Collections.Generic.List<global::System.ComponentModel.DataAnnotations.ValidationAttribute>(1);
 
             context.MemberName = "VirtualValWithoutAttr";
             context.DisplayName = baseName + "VirtualValWithoutAttr";
@@ -1730,28 +1646,26 @@ namespace TestClasses.OptionsValidation
             {
                 builder.AddResults(validationResults);
             }
-            validationResults.Clear();
-            validationAttributes.Clear();
 
             context.MemberName = "DerivedVal";
             context.DisplayName = baseName + "DerivedVal";
+            validationResults.Clear();
+            validationAttributes.Clear();
             validationAttributes.Add(global::__OptionValidationStaticInstances.__Attributes.A1);
             if (!global::System.ComponentModel.DataAnnotations.Validator.TryValidateValue(options.DerivedVal!, context, validationResults, validationAttributes))
             {
                 builder.AddResults(validationResults);
             }
-            validationResults.Clear();
-            validationAttributes.Clear();
 
             context.MemberName = "Val";
             context.DisplayName = baseName + "Val";
+            validationResults.Clear();
+            validationAttributes.Clear();
             validationAttributes.Add(global::__OptionValidationStaticInstances.__Attributes.A1);
             if (!global::System.ComponentModel.DataAnnotations.Validator.TryValidateValue(options.Val!, context, validationResults, validationAttributes))
             {
                 builder.AddResults(validationResults);
             }
-            validationResults.Clear();
-            validationAttributes.Clear();
 
             return builder.Build();
         }
@@ -1774,7 +1688,7 @@ namespace TestClasses.OptionsValidation
             var builder = new global::Microsoft.Extensions.Options.ValidateOptionsResultBuilder();
             var context = new global::System.ComponentModel.DataAnnotations.ValidationContext(options);
             var validationResults = new global::System.Collections.Generic.List<global::System.ComponentModel.DataAnnotations.ValidationResult>();
-            var validationAttributes = new global::System.Collections.Generic.List<global::System.ComponentModel.DataAnnotations.ValidationAttribute>();
+            var validationAttributes = new global::System.Collections.Generic.List<global::System.ComponentModel.DataAnnotations.ValidationAttribute>(2);
 
             context.MemberName = "Val1";
             context.DisplayName = baseName + "Val1";
@@ -1784,38 +1698,36 @@ namespace TestClasses.OptionsValidation
             {
                 builder.AddResults(validationResults);
             }
-            validationResults.Clear();
-            validationAttributes.Clear();
 
             context.MemberName = "Val2";
             context.DisplayName = baseName + "Val2";
+            validationResults.Clear();
+            validationAttributes.Clear();
             validationAttributes.Add(global::__OptionValidationStaticInstances.__Attributes.A16);
             if (!global::System.ComponentModel.DataAnnotations.Validator.TryValidateValue(options.Val2!, context, validationResults, validationAttributes))
             {
                 builder.AddResults(validationResults);
             }
-            validationResults.Clear();
-            validationAttributes.Clear();
 
             context.MemberName = "Val3";
             context.DisplayName = baseName + "Val3";
+            validationResults.Clear();
+            validationAttributes.Clear();
             validationAttributes.Add(global::__OptionValidationStaticInstances.__Attributes.A17);
             if (!global::System.ComponentModel.DataAnnotations.Validator.TryValidateValue(options.Val3!, context, validationResults, validationAttributes))
             {
                 builder.AddResults(validationResults);
             }
-            validationResults.Clear();
-            validationAttributes.Clear();
 
             context.MemberName = "Val4";
             context.DisplayName = baseName + "Val4";
+            validationResults.Clear();
+            validationAttributes.Clear();
             validationAttributes.Add(global::__OptionValidationStaticInstances.__Attributes.A18);
             if (!global::System.ComponentModel.DataAnnotations.Validator.TryValidateValue(options.Val4!, context, validationResults, validationAttributes))
             {
                 builder.AddResults(validationResults);
             }
-            validationResults.Clear();
-            validationAttributes.Clear();
 
             return builder.Build();
         }
@@ -1838,7 +1750,7 @@ namespace TestClasses.OptionsValidation
             var builder = new global::Microsoft.Extensions.Options.ValidateOptionsResultBuilder();
             var context = new global::System.ComponentModel.DataAnnotations.ValidationContext(options);
             var validationResults = new global::System.Collections.Generic.List<global::System.ComponentModel.DataAnnotations.ValidationResult>();
-            var validationAttributes = new global::System.Collections.Generic.List<global::System.ComponentModel.DataAnnotations.ValidationAttribute>();
+            var validationAttributes = new global::System.Collections.Generic.List<global::System.ComponentModel.DataAnnotations.ValidationAttribute>(1);
 
             context.MemberName = "Val";
             context.DisplayName = baseName + "Val";
@@ -1847,8 +1759,6 @@ namespace TestClasses.OptionsValidation
             {
                 builder.AddResults(validationResults);
             }
-            validationResults.Clear();
-            validationAttributes.Clear();
 
             return builder.Build();
         }
@@ -1871,7 +1781,7 @@ namespace TestClasses.OptionsValidation
             var builder = new global::Microsoft.Extensions.Options.ValidateOptionsResultBuilder();
             var context = new global::System.ComponentModel.DataAnnotations.ValidationContext(options);
             var validationResults = new global::System.Collections.Generic.List<global::System.ComponentModel.DataAnnotations.ValidationResult>();
-            var validationAttributes = new global::System.Collections.Generic.List<global::System.ComponentModel.DataAnnotations.ValidationAttribute>();
+            var validationAttributes = new global::System.Collections.Generic.List<global::System.ComponentModel.DataAnnotations.ValidationAttribute>(1);
 
             context.MemberName = "Val";
             context.DisplayName = baseName + "Val";
@@ -1880,8 +1790,6 @@ namespace TestClasses.OptionsValidation
             {
                 builder.AddResults(validationResults);
             }
-            validationResults.Clear();
-            validationAttributes.Clear();
 
             return builder.Build();
         }
@@ -1904,7 +1812,7 @@ namespace TestClasses.OptionsValidation
             var builder = new global::Microsoft.Extensions.Options.ValidateOptionsResultBuilder();
             var context = new global::System.ComponentModel.DataAnnotations.ValidationContext(options);
             var validationResults = new global::System.Collections.Generic.List<global::System.ComponentModel.DataAnnotations.ValidationResult>();
-            var validationAttributes = new global::System.Collections.Generic.List<global::System.ComponentModel.DataAnnotations.ValidationAttribute>();
+            var validationAttributes = new global::System.Collections.Generic.List<global::System.ComponentModel.DataAnnotations.ValidationAttribute>(1);
 
             context.MemberName = "Val";
             context.DisplayName = baseName + "Val";
@@ -1913,8 +1821,6 @@ namespace TestClasses.OptionsValidation
             {
                 builder.AddResults(validationResults);
             }
-            validationResults.Clear();
-            validationAttributes.Clear();
 
             return builder.Build();
         }
@@ -1937,7 +1843,7 @@ namespace TestClasses.OptionsValidation
             var builder = new global::Microsoft.Extensions.Options.ValidateOptionsResultBuilder();
             var context = new global::System.ComponentModel.DataAnnotations.ValidationContext(options);
             var validationResults = new global::System.Collections.Generic.List<global::System.ComponentModel.DataAnnotations.ValidationResult>();
-            var validationAttributes = new global::System.Collections.Generic.List<global::System.ComponentModel.DataAnnotations.ValidationAttribute>();
+            var validationAttributes = new global::System.Collections.Generic.List<global::System.ComponentModel.DataAnnotations.ValidationAttribute>(1);
 
             context.MemberName = "Val";
             context.DisplayName = baseName + "Val";
@@ -1946,8 +1852,6 @@ namespace TestClasses.OptionsValidation
             {
                 builder.AddResults(validationResults);
             }
-            validationResults.Clear();
-            validationAttributes.Clear();
 
             return builder.Build();
         }
@@ -1970,7 +1874,7 @@ namespace TestClasses.OptionsValidation
             var builder = new global::Microsoft.Extensions.Options.ValidateOptionsResultBuilder();
             var context = new global::System.ComponentModel.DataAnnotations.ValidationContext(options);
             var validationResults = new global::System.Collections.Generic.List<global::System.ComponentModel.DataAnnotations.ValidationResult>();
-            var validationAttributes = new global::System.Collections.Generic.List<global::System.ComponentModel.DataAnnotations.ValidationAttribute>();
+            var validationAttributes = new global::System.Collections.Generic.List<global::System.ComponentModel.DataAnnotations.ValidationAttribute>(1);
 
             context.MemberName = "Val";
             context.DisplayName = baseName + "Val";
@@ -1979,8 +1883,6 @@ namespace TestClasses.OptionsValidation
             {
                 builder.AddResults(validationResults);
             }
-            validationResults.Clear();
-            validationAttributes.Clear();
 
             return builder.Build();
         }
@@ -2004,7 +1906,7 @@ namespace ValueTypes
             var builder = new global::Microsoft.Extensions.Options.ValidateOptionsResultBuilder();
             var context = new global::System.ComponentModel.DataAnnotations.ValidationContext(options);
             var validationResults = new global::System.Collections.Generic.List<global::System.ComponentModel.DataAnnotations.ValidationResult>();
-            var validationAttributes = new global::System.Collections.Generic.List<global::System.ComponentModel.DataAnnotations.ValidationAttribute>();
+            var validationAttributes = new global::System.Collections.Generic.List<global::System.ComponentModel.DataAnnotations.ValidationAttribute>(2);
 
             context.MemberName = "P4";
             context.DisplayName = baseName + "P4";
@@ -2014,8 +1916,6 @@ namespace ValueTypes
             {
                 builder.AddResults(validationResults);
             }
-            validationResults.Clear();
-            validationAttributes.Clear();
 
             return builder.Build();
         }
@@ -2038,7 +1938,7 @@ namespace ValueTypes
             var builder = new global::Microsoft.Extensions.Options.ValidateOptionsResultBuilder();
             var context = new global::System.ComponentModel.DataAnnotations.ValidationContext(options);
             var validationResults = new global::System.Collections.Generic.List<global::System.ComponentModel.DataAnnotations.ValidationResult>();
-            var validationAttributes = new global::System.Collections.Generic.List<global::System.ComponentModel.DataAnnotations.ValidationAttribute>();
+            var validationAttributes = new global::System.Collections.Generic.List<global::System.ComponentModel.DataAnnotations.ValidationAttribute>(2);
 
             context.MemberName = "P1";
             context.DisplayName = baseName + "P1";
@@ -2048,8 +1948,6 @@ namespace ValueTypes
             {
                 builder.AddResults(validationResults);
             }
-            validationResults.Clear();
-            validationAttributes.Clear();
 
             if (options.P2 is not null)
             {
