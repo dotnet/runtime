@@ -4506,7 +4506,6 @@ void LinearScan::processBlockStartLocations(BasicBlock* currentBlock)
     // Only focus on actual registers present
     deadCandidates &= actualRegistersMask;
 
-    // regMaskTP deadCandidateBit = genFindLowestBit(deadCandidates);
     while (deadCandidates != RBM_NONE)
     {
         regNumber  reg           = genFirstRegNumFromMaskAndToggle(deadCandidates);
