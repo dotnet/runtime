@@ -316,7 +316,22 @@ namespace Microsoft.Interop
             return _unmanagedType;
         }
 
-        public IEnumerable<StatementSyntax> GenerateCleanupStatements(TypePositionInfo info, StubCodeContext context) => Array.Empty<StatementSyntax>();
+        public IEnumerable<StatementSyntax> GenerateCleanupStatements(TypePositionInfo info, StubCodeContext context)
+        {
+
+            if (MarshallerHelpers.GetMarshalDirection(info, context) == MarshalDirection.ManagedToUnmanaged)
+            {
+                yield return EmptyStatement();
+                yield break;
+            }
+
+            string numElementsIdentifier = MarshallerHelpers.GetNumElementsIdentifier(info, context);
+            yield return ExpressionStatement(
+                AssignmentExpression(
+                    SyntaxKind.SimpleAssignmentExpression,
+                    IdentifierName(numElementsIdentifier),
+                    _numElementsExpression));
+        }
 
         public IEnumerable<StatementSyntax> GenerateGuaranteedUnmarshalStatements(TypePositionInfo info, StubCodeContext context)
         {
@@ -543,17 +558,16 @@ namespace Microsoft.Interop
             {
                 yield break;
             }
+            foreach (var statement in _spaceMarshallingStrategy.GenerateCleanupStatements(info, context))
+            {
+                yield return statement;
+            }
 
             StatementSyntax elementCleanup = _elementsMarshalling.GenerateElementCleanupStatement(info, context);
 
             if (!elementCleanup.IsKind(SyntaxKind.EmptyStatement))
             {
                 yield return elementCleanup;
-            }
-
-            foreach (var statement in _spaceMarshallingStrategy.GenerateCleanupStatements(info, context))
-            {
-                yield return statement;
             }
         }
 

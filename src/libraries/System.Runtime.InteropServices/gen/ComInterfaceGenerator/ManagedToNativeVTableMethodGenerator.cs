@@ -137,7 +137,6 @@ namespace Microsoft.Interop
             bool shouldInitializeVariables = !statements.GuaranteedUnmarshal.IsEmpty || !statements.Cleanup.IsEmpty;
             VariableDeclarations declarations = VariableDeclarations.GenerateDeclarationsForManagedToUnmanaged(_marshallers, _context, shouldInitializeVariables);
 
-
             if (_setLastError)
             {
                 // Declare variable for last error
@@ -228,7 +227,7 @@ namespace Microsoft.Interop
             if (!_marshallers.IsManagedVoidReturn)
                 allStatements.Add(ReturnStatement(IdentifierName(_context.GetIdentifiers(_marshallers.ManagedReturnMarshaller.TypeInfo).managed)));
 
-            return Block(allStatements);
+            return Block(allStatements.Where(s => s is not EmptyStatementSyntax));
         }
 
         private ParenthesizedExpressionSyntax CreateFunctionPointerExpression(
