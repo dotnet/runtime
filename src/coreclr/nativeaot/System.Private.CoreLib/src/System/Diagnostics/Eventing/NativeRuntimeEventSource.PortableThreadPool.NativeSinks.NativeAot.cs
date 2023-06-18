@@ -16,6 +16,13 @@ namespace System.Diagnostics.Tracing
     // It contains the runtime specific interop to native event sinks.
     internal sealed partial class NativeRuntimeEventSource : EventSource
     {
+        // We don't have these keywords defined from the genRuntimeEventSources.py, so we need to manually define them here.
+        public static class Keywords
+        {
+            public const EventKeywords ThreadingKeyword = (EventKeywords)0x10000;
+            public const EventKeywords ThreadTransferKeyword = (EventKeywords)0x80000000;
+        }
+
         [NonEvent]
         internal static void LogThreadPoolWorkerThreadStart(uint ActiveWorkerThreadCount, uint RetiredWorkerThreadCount, ushort ClrInstanceID)
         {
@@ -46,12 +53,15 @@ namespace System.Diagnostics.Tracing
             RuntimeImports.RhEventPipeInternal_LogThreadPoolWorkerThreadAdjustmentSample(Throughput, ClrInstanceID);
         }
 
-        [NonEvent]
+#if TARGET_UNIX
         // Reason parameter is an enum in NativeRuntimeEventSource but passed here as the underlying type
-        internal static void LogThreadPoolWorkerThreadAdjustmentAdjustment(double AverageThroughput, uint NewWorkerThreadCount, uint Reason, ushort ClrInstanceID)
+        // In Windows, this event is not fired in managed code
+        [NonEvent]
+        internal static void LogThreadPoolWorkerThreadAdjustmentAdjustment(double AverageThroughput, uint NewWorkerThreadCount, ThreadAdjustmentReasonMap Reason, ushort ClrInstanceID)
         {
-            RuntimeImports.RhEventPipeInternal_LogThreadPoolWorkerThreadAdjustmentAdjustment(AverageThroughput, NewWorkerThreadCount, Reason, ClrInstanceID);
+            RuntimeImports.RhEventPipeInternal_LogThreadPoolWorkerThreadAdjustmentAdjustment(AverageThroughput, NewWorkerThreadCount, (uint)Reason, ClrInstanceID);
         }
+#endif
 
         [NonEvent]
         internal static void LogThreadPoolWorkerThreadAdjustmentStats(

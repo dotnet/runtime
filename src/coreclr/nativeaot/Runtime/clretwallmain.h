@@ -714,7 +714,6 @@ inline ULONG FireEtwDecreaseMemoryPressure(
 )
 {
     ULONG status = EventPipeWriteEventDecreaseMemoryPressure(BytesFreed,ClrInstanceID,ActivityId,RelatedActivityId);
-    //status &= FireEtXplatDecreaseMemoryPressure(BytesFreed,ClrInstanceID);
     return status;
 }
 
@@ -729,7 +728,6 @@ inline ULONG FireEtwFinalizeObject(
 )
 {
     ULONG status = EventPipeWriteEventFinalizeObject(TypeID,ObjectID,ClrInstanceID,ActivityId,RelatedActivityId);
-    //status &= FireEtXplatFinalizeObject(TypeID,ObjectID,ClrInstanceID);
     return status;
 }
 
@@ -742,7 +740,6 @@ inline ULONG FireEtwGCFinalizersBegin_V1(
 )
 {
     ULONG status = EventPipeWriteEventGCFinalizersBegin_V1(ClrInstanceID,ActivityId,RelatedActivityId);
-//    status &= FireEtXplatGCFinalizersBegin_V1(ClrInstanceID);
     return status;
 }
 
@@ -756,7 +753,6 @@ inline ULONG FireEtwGCFinalizersEnd_V1(
 )
 {
     ULONG status = EventPipeWriteEventGCFinalizersEnd_V1(Count,ClrInstanceID,ActivityId,RelatedActivityId);
-    //status &= FireEtXplatGCFinalizersEnd_V1(Count,ClrInstanceID);
     return status;
 }
 
@@ -771,7 +767,6 @@ inline uint32_t FireEtwThreadPoolWorkerThreadStart(
 )
 {
     uint32_t status = EventPipeWriteEventThreadPoolWorkerThreadStart(ActiveWorkerThreadCount,RetiredWorkerThreadCount,ClrInstanceID,ActivityId,RelatedActivityId);
-    // status &= FireEtXplatThreadPoolWorkerThreadStart(ActiveWorkerThreadCount,RetiredWorkerThreadCount,ClrInstanceID);
     return status;
 }
 
@@ -784,7 +779,6 @@ inline uint32_t FireEtwThreadPoolWorkerThreadStop(
 )
 {
     uint32_t status = EventPipeWriteEventThreadPoolWorkerThreadStop(ActiveWorkerThreadCount,RetiredWorkerThreadCount,ClrInstanceID,ActivityId,RelatedActivityId);
-    // status &= FireEtXplatThreadPoolWorkerThreadStart(ActiveWorkerThreadCount,RetiredWorkerThreadCount,ClrInstanceID);
     return status;
 }
 
@@ -797,7 +791,6 @@ inline uint32_t FireEtwThreadPoolWorkerThreadWait(
 )
 {
     uint32_t status = EventPipeWriteEventThreadPoolWorkerThreadWait(ActiveWorkerThreadCount,RetiredWorkerThreadCount,ClrInstanceID,ActivityId,RelatedActivityId);
-    // status &= FireEtXplatThreadPoolWorkerThreadStart(ActiveWorkerThreadCount,RetiredWorkerThreadCount,ClrInstanceID);
     return status;
 }
 
@@ -814,7 +807,6 @@ inline uint32_t FireEtwThreadPoolMinMaxThreads(
 )
 {
     uint32_t status = EventPipeWriteEventThreadPoolMinMaxThreads(MinWorkerThreads,MaxWorkerThreads,MinIOCompletionThreads,MaxIOCompletionThreads,ClrInstanceID,ActivityId,RelatedActivityId);
-    //status &= FireEtXplatThreadPoolMinMaxThreads(MinWorkerThreads,MaxWorkerThreads,MinIOCompletionThreads,MaxIOCompletionThreads,ClrInstanceID);
     return status;
 }
 
@@ -828,7 +820,6 @@ inline uint32_t FireEtwThreadPoolWorkerThreadAdjustmentSample(
 )
 {
     uint32_t status = EventPipeWriteEventThreadPoolWorkerThreadAdjustmentSample(Throughput,ClrInstanceID,ActivityId,RelatedActivityId);
-    //status &= FireEtXplatThreadPoolWorkerThreadAdjustmentSample(Throughput,ClrInstanceID);
     return status;
 }
 
@@ -844,7 +835,6 @@ inline uint32_t FireEtwThreadPoolWorkerThreadAdjustmentAdjustment(
 )
 {
     uint32_t status = EventPipeWriteEventThreadPoolWorkerThreadAdjustmentAdjustment(AverageThroughput,NewWorkerThreadCount,Reason,ClrInstanceID,ActivityId,RelatedActivityId);
-    //status &= FireEtXplatThreadPoolWorkerThreadAdjustmentAdjustment(AverageThroughput,NewWorkerThreadCount,Reason,ClrInstanceID);
     return status;
 }
 
@@ -867,7 +857,6 @@ inline uint32_t FireEtwThreadPoolWorkerThreadAdjustmentStats(
 )
 {
     uint32_t status = EventPipeWriteEventThreadPoolWorkerThreadAdjustmentStats(Duration,Throughput,ThreadWave,ThroughputWave,ThroughputErrorEstimate,AverageThroughputErrorEstimate,ThroughputRatio,Confidence,NewControlSetting,NewThreadWaveMagnitude,ClrInstanceID,ActivityId,RelatedActivityId);
-    //status &= FireEtXplatThreadPoolWorkerThreadAdjustmentStats(Duration,Throughput,ThreadWave,ThroughputWave,ThroughputErrorEstimate,AverageThroughputErrorEstimate,ThroughputRatio,Confidence,NewControlSetting,NewThreadWaveMagnitude,ClrInstanceID);
     return status;
 }
 
@@ -883,7 +872,6 @@ inline uint32_t FireEtwThreadPoolIOEnqueue(
 )
 {
     uint32_t status = EventPipeWriteEventThreadPoolIOEnqueue(NativeOverlapped,Overlapped,MultiDequeues,ClrInstanceID,ActivityId,RelatedActivityId);
-    //status &= FireEtXplatThreadPoolIOEnqueue(NativeOverlapped,Overlapped,MultiDequeues,ClrInstanceID);
     return status;
 }
 
@@ -898,7 +886,6 @@ inline uint32_t FireEtwThreadPoolIODequeue(
 )
 {
     uint32_t status = EventPipeWriteEventThreadPoolIODequeue(NativeOverlapped,Overlapped,ClrInstanceID,ActivityId,RelatedActivityId);
-    //status &= FireEtXplatThreadPoolIODequeue(NativeOverlapped,Overlapped,ClrInstanceID);
     return status;
 }
 
@@ -912,7 +899,6 @@ inline uint32_t FireEtwThreadPoolWorkingThreadCount(
 )
 {
     uint32_t status = EventPipeWriteEventThreadPoolWorkingThreadCount(Count,ClrInstanceID,ActivityId,RelatedActivityId);
-    //status &= FireEtXplatThreadPoolWorkingThreadCount(Count,ClrInstanceID);
     return status;
 }
 
@@ -927,7 +913,6 @@ inline uint32_t FireEtwThreadPoolIOPack(
 )
 {
     uint32_t status = EventPipeWriteEventThreadPoolIOPack(NativeOverlapped,Overlapped,ClrInstanceID,ActivityId,RelatedActivityId);
-    //status &= FireEtXplatThreadPoolIOPack(NativeOverlapped,Overlapped,ClrInstanceID);
     return status;
 }
 

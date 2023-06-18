@@ -32,10 +32,17 @@ namespace Tracing.Tests.SimpleProviderValidation
             var providers = new List<EventPipeProvider>()
             {
                 new EventPipeProvider("MyEventSource", EventLevel.Verbose),
-                new EventPipeProvider("Microsoft-DotNETCore-SampleProfiler", EventLevel.Verbose)
+                new EventPipeProvider("Microsoft-DotNETCore-SampleProfiler", EventLevel.Verbose),
+                //GCKeyword (0x1): 0b1
+                new EventPipeProvider("Microsoft-Windows-DotNETRuntime", EventLevel.Verbose, 0xFFFF)
             };
 
             var ret = IpcTraceTest.RunAndValidateEventCounts(_expectedEventCounts, _eventGeneratingAction, providers, 1024, enableRundownProvider:false);
+
+            GC.Collect();
+            GC.WaitForPendingFinalizers();
+            GC.Collect();
+
             if (ret < 0)
                 return ret;
             else
@@ -44,18 +51,45 @@ namespace Tracing.Tests.SimpleProviderValidation
 
         private static Dictionary<string, ExpectedEventCount> _expectedEventCounts = new Dictionary<string, ExpectedEventCount>()
         {
-            { "MyEventSource", 100_000 },
-            { "Microsoft-DotNETCore-EventPipe", 1}
+            { "MyEventSource", 100 },
+            { "Microsoft-DotNETCore-EventPipe", 1},
+            { "Microsoft-Windows-DotNETRuntime", 1}
         };
 
         private static Action _eventGeneratingAction = () => 
         {
-            for (int i = 0; i < 100_000; i++)
+            GC.Collect();
+            GC.WaitForPendingFinalizers();
+            GC.Collect();
+            List<Foo> list = new List<Foo>();
+            for (int i = 0; i < 100; i++)
             {
-                if (i % 10_000 == 0)
+                list.Add(new Foo(i));
+                if (i % 10 == 0)
                     Logger.logger.Log($"Fired MyEvent {i:N0}/100,000 times...");
                 MyEventSource.Log.MyEvent();
             }
+            int rndValue = new Random().Next(0, 100);
+            Console.WriteLine($"{list[rndValue].IValue}-{list[rndValue].SValue}");
+            GC.Collect();
+            GC.WaitForPendingFinalizers();
+            GC.Collect();
         };
     }
+    public class Foo
+    {
+        public int IValue { get; set; }
+        public string SValue { get; set; }
+        public Foo(int value)
+        {
+            IValue = value;
+            SValue = value.ToString();
+        }
+
+        ~Foo()
+        {
+            Console.WriteLine("In Destructor");
+        }
+    }
+
 }
