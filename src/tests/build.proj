@@ -514,7 +514,6 @@
 
     <ItemGroup>
       <_LinkerFlagsToDrop Include="@(NativeFramework->'-framework %(Identity)')" />
-      <_LinkerFlagsToDrop Include="@(LinkerArg)" Condition="$([System.String]::new('%(Identity)').Contains('swift'))" />
       <LinkerArg Remove="@(_LinkerFlagsToDrop)" />
       <ExtraAppLinkerArgs Include="@(LinkerArg)" />
       <GlobalizationkNativeLibs Include="$(MicrosoftNetCoreAppRuntimePackDir)runtimes/$(TargetOS)-$(TargetArchitecture)/native/icudt.dat" />
