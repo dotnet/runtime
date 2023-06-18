@@ -48,6 +48,7 @@ namespace System.Net.Http.Functional.Tests
         }
 
         [Fact]
+        [OuterLoop("Uses Task.Delay")]
         public async Task CurrentRequests_InstrumentEnabledAfterSending_NotRecorded()
         {
             SemaphoreSlim instrumentEnabledSemaphore = new SemaphoreSlim(0);
