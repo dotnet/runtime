@@ -535,6 +535,7 @@ namespace System.Net.Http.Functional.Tests
         }
     }
 
+    [ConditionalClass(typeof(PlatformDetection), nameof(PlatformDetection.IsNotMobile))]
     public class HttpMetricsTest_Http11_Async_HttpMessageInvoker : HttpMetricsTest_Http11_Async
     {
         protected override bool TestHttpMessageInvoker => true;
@@ -543,6 +544,7 @@ namespace System.Net.Http.Functional.Tests
         }
     }
 
+    [ConditionalClass(typeof(PlatformDetection), nameof(PlatformDetection.IsNotMobile))]
     public class HttpMetricsTest_Http11_Sync : HttpMetricsTest_Http11
     {
         protected override bool TestAsync => base.TestAsync;
@@ -551,9 +553,10 @@ namespace System.Net.Http.Functional.Tests
         }
     }
 
-    [ConditionalClass(typeof(PlatformDetection), nameof(PlatformDetection.SupportsAlpn))]
+    [ConditionalClass(typeof(HttpMetricsTest_Http20), nameof(IsEnabled))]
     public class HttpMetricsTest_Http20 : HttpMetricsTest
     {
+        public static bool IsEnabled = PlatformDetection.IsNotMobile && PlatformDetection.SupportsAlpn;
         protected override Version UseVersion => HttpVersion.Version20;
         public HttpMetricsTest_Http20(ITestOutputHelper output) : base(output)
         {
