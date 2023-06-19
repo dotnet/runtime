@@ -52,18 +52,16 @@ namespace Microsoft.Extensions.Configuration.Binder.SourceGeneration
                 return;
             }
 
-            if (compilationData?.LanguageVersionIsSupported != true)
+            if (compilationData?.LanguageVersionIsSupported is not true)
             {
                 context.ReportDiagnostic(Diagnostic.Create(Parser.Diagnostics.LanguageVersionNotSupported, location: null));
                 return;
             }
 
             Parser parser = new(context, compilationData.TypeSymbols!, inputCalls);
-            SourceGenSpec? spec = parser.GetSourceGenerationSpec();
-
-            if (spec?.HasRootMethods() is true)
+            if (parser.GetSourceGenerationSpec() is SourceGenerationSpec { } spec)
             {
-                Emitter emitter = new(context, spec!);
+                Emitter emitter = new(context, spec);
                 emitter.Emit();
             }
         }

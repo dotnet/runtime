@@ -24,18 +24,18 @@
     <Compile Include="ConfigurationBindingGenerator.cs" />
     <Compile Include="ConfigurationBindingGenerator.Emitter.cs" />
     <Compile Include="ConfigurationBindingGenerator.Parser.cs" />
-    <Compile Include="GeneratedMethods\BinderInvocation.cs" />
-    <Compile Include="GeneratedMethods\ConfigBinderMethodSpec.Emit.cs" />
-    <Compile Include="GeneratedMethods\ConfigBinderMethodSpec.Parse.cs" />
-    <Compile Include="GeneratedMethods\CoreBindingHelperMethodSpec.Emit.cs" />
-    <Compile Include="GeneratedMethods\CoreBindingHelperMethodSpec.Parse.cs" />
-    <Compile Include="GeneratedMethods\MethodSpec.cs" />
-    <Compile Include="GeneratedMethods\OptionsBuilderMethodSpec.Emit.cs" />
-    <Compile Include="GeneratedMethods\OptionsBuilderMethodSpec.Parse.cs" />
-    <Compile Include="GeneratedMethods\ServiceCollectionMethodSpec.Emit.cs" />
-    <Compile Include="GeneratedMethods\ServiceCollectionMethodSpec.Parse.cs" />
-    <Compile Include="Helpers\Emitter.ExceptionMessages.cs" />
-    <Compile Include="Helpers\Parser.Diagnostics.cs" />
+    <Compile Include="Helpers\Emitter\ConfigurationBinder.cs" />
+    <Compile Include="Helpers\Emitter\CoreBindingHelper.cs" />
+    <Compile Include="Helpers\Emitter\ExceptionMessages.cs" />
+    <Compile Include="Helpers\Emitter\Helpers.cs" />
+    <Compile Include="Helpers\Emitter\OptionsBuilderConfigurationExtensions.cs" />
+    <Compile Include="Helpers\Emitter\OptionsConfigurationServiceCollectionExtensions.cs" />
+    <Compile Include="Helpers\MethodsToGen.cs" />
+    <Compile Include="Helpers\Parser\BinderInvocation.cs" />
+    <Compile Include="Helpers\Parser\ConfigurationBinder.cs" />
+    <Compile Include="Helpers\Parser\Diagnostics.cs" />
+    <Compile Include="Helpers\Parser\OptionsBuilderConfigurationExtensions.cs" />
+    <Compile Include="Helpers\Parser\OptionsConfigurationServiceCollectionExtensions.cs" />
     <Compile Include="Helpers\SourceWriter.cs" />
     <Compile Include="Model\CollectionSpec.cs" />
     <Compile Include="Model\ConfigurationSectionSpec.cs" />
@@ -46,7 +46,7 @@
     <Compile Include="Model\ParameterSpec.cs" />
     <Compile Include="Model\ParsableFromStringSpec.cs" />
     <Compile Include="Model\PropertySpec.cs" />
+    <Compile Include="Model\SourceGenerationSpec.cs" />
     <Compile Include="Model\TypeSpec.cs" />
-    <Compile Include="SourceGenSpec.cs" />
   </ItemGroup>
 </Project>
