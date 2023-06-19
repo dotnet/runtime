@@ -44,11 +44,18 @@ namespace System.Runtime.InteropServices.Marshalling
             return (T)StrategyBasedComWrappers.DefaultMarshallingInstance.GetOrCreateObjectForComInstance((nint)unmanaged, CreateObjectFlags.Unwrap);
         }
 
+        public static void Free(void* unmanaged)
+        {
+            if (unmanaged != null)
+            {
+                Marshal.Release((nint)unmanaged);
+            }
+        }
+
         internal static void* CastIUnknownToInterfaceType(nint unknown)
         {
             if (TargetInterfaceIID is null)
             {
-                // If the managed type isn't a GeneratedComInterface-attributed type, we'll marshal to an IUnknown*.
                 return (void*)unknown;
             }
             Guid iid = TargetInterfaceIID.Value;
