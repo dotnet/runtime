@@ -24,7 +24,7 @@
       </trans-unit>
       <trans-unit id="ContainingTypeAccessibilityDetails">
         <source>Containing type '{0}' has accessibility '{1}'.</source>
-        <target state="new">Containing type '{0}' has accessibility '{1}'.</target>
+        <target state="translated">Le type conteneur '{0}' a une accessibilité '{1}'.</target>
         <note />
       </trans-unit>
       <trans-unit id="CyclicalCountInfo">
@@ -119,7 +119,7 @@
       </trans-unit>
       <trans-unit id="TypeAccessibilityDetails">
         <source>'{0}' has accessibility '{1}'.</source>
-        <target state="new">'{0}' has accessibility '{1}'.</target>
+        <target state="translated">'{0}' a une accessibilité '{1}'.</target>
         <note />
       </trans-unit>
       <trans-unit id="UnmanagedToManagedMissingRequiredMarshaller">

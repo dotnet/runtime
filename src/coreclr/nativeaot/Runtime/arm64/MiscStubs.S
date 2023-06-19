@@ -4,6 +4,7 @@
 #include <unixasmmacros.inc>
 #include "AsmOffsets.inc"
 
+#ifndef TARGET_ANDROID
 NESTED_ENTRY RhpGetInlinedThreadStaticBase, _TEXT, NoHandler
         // On exit:
         //   x0 - the thread static base for the given type
@@ -22,3 +23,4 @@ HaveValue:
         ret
 
 NESTED_END RhpGetInlinedThreadStaticBase, _TEXT
+#endif

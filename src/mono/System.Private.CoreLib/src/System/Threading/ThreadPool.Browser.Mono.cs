@@ -23,6 +23,10 @@ namespace System.Threading
         {
         }
 
+#pragma warning disable CA1822 // Mark members as static
+        internal bool Repeating => false;
+#pragma warning restore CA1822
+
         public bool Unregister(WaitHandle? waitObject)
         {
             throw new PlatformNotSupportedException();
@@ -160,6 +164,12 @@ namespace System.Threading
         public static bool BindHandle(SafeHandle osHandle)
         {
             throw new PlatformNotSupportedException(SR.Arg_PlatformNotSupported); // Replaced by ThreadPoolBoundHandle.BindHandle
+        }
+
+        [Conditional("unnecessary")]
+        internal static void ReportThreadStatus(bool isWorking)
+        {
+
         }
     }
 }

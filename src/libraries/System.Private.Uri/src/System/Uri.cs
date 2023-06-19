@@ -1472,7 +1472,7 @@ namespace System
         public static bool CheckSchemeName([NotNullWhen(true)] string? schemeName) =>
             !string.IsNullOrEmpty(schemeName) &&
             char.IsAsciiLetter(schemeName[0]) &&
-            schemeName.AsSpan().IndexOfAnyExcept(s_schemeChars) < 0;
+            !schemeName.AsSpan().ContainsAnyExcept(s_schemeChars);
 
         //
         // IsHexDigit
@@ -3972,7 +3972,7 @@ namespace System
                 flags |= Flags.DnsHostType;
 
                 // Canonical DNS hostnames don't contain uppercase letters
-                if (new ReadOnlySpan<char>(pString + start, domainNameLength).IndexOfAnyInRange('A', 'Z') < 0)
+                if (!new ReadOnlySpan<char>(pString + start, domainNameLength).ContainsAnyInRange('A', 'Z'))
                 {
                     flags |= Flags.CanonicalDnsHost;
                 }
