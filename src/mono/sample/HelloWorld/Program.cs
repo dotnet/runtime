@@ -22,7 +22,7 @@ public class P {
                                         Console.WriteLine ($"IsEntered by other thread: {Monitor.IsEntered(l)}");
                                 }
                         } catch (ThreadInterruptedException) {
-                                Console.WriteLine ("interrupted");
+                                Console.WriteLine ("GOOD: interrupted");
                         }
                 });
 

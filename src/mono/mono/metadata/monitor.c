@@ -781,6 +781,7 @@ static void
 signal_monitor (gpointer mon_untyped)
 {
 	MonoThreadsSync *mon = (MonoThreadsSync*) mon_untyped;
+	LOCK_DEBUG (g_warning ("%s: wake up signaled", __func__));
 	mono_coop_mutex_lock (mon->entry_mutex);
 	mono_coop_cond_broadcast (mon->entry_cond);
 	mono_coop_mutex_unlock (mon->entry_mutex);
@@ -876,6 +877,7 @@ retry_contended:
 		if (G_LIKELY (tmp_status == old_status)) {
 			/* Success */
 			g_assert (mon->nest == 1);
+			LOCK_DEBUG (g_message("%s: (%d) acquired contended %p (%d ms)", __func__, id, obj, ms));
 			MONO_PROFILER_RAISE (monitor_acquired, (obj));
 			return 1;
 		}
@@ -905,6 +907,8 @@ retry_contended:
 
 	thread = mono_thread_internal_current ();
 
+	LOCK_DEBUG (g_message("%s: (%d) registered to wait for object %p (%d ms)", __func__, id, obj, ms));
+
 	mono_thread_set_state (thread, ThreadState_WaitSleepJoin);
 	mono_thread_info_install_interrupt (signal_monitor, mon, &interrupted);
 	if (!interrupted) {
@@ -916,6 +920,7 @@ retry_contended:
 				timedout = TRUE;
 		}
 		mono_thread_info_uninstall_interrupt (&interrupted);
+		LOCK_DEBUG (g_message("%s: (%d) after wait %p, interrupted = %s", __func__, id, obj, interrupted ? "TRUE" : "FALSE"));
 	}
 	mono_thread_clr_state (thread, ThreadState_WaitSleepJoin);
 
@@ -925,6 +930,7 @@ retry_contended:
 
 	if (timedout || (interrupted && allow_interruption)) {
 		/* we're done */
+		LOCK_DEBUG (g_message("%s: (%d) timed out or interrupted %p (%d ms)", __func__, id, obj, ms));
 	} else {
 		/*
 		 * We have to obey a stop/suspend request even if
@@ -946,6 +952,7 @@ retry_contended:
 					ms -= GINT64_TO_UINT32 (delta);
 				}
 			}
+			LOCK_DEBUG (g_message("%s: (%d) retrying contended %p (%d ms)", __func__, id, obj, ms));
 			/* retry from the top */
 			goto retry_contended;
 		}
@@ -1213,7 +1220,17 @@ mono_monitor_enter_v4_internal (MonoObject *obj, MonoBoolean *lock_taken)
 		mono_error_set_pending_exception (error);
 		return;
 	}
-	mono_monitor_try_enter_loop_if_interrupted (obj, MONO_INFINITE_WAIT, FALSE, lock_taken, NULL);
+	LOCK_DEBUG (g_message ("%s: (%d) trying to lock object %p", __func__, mono_thread_info_get_small_id (), obj));
+	
+	/// FIXME: Aleksey -
+	/* Actually there's a small bug in the native monitor implementation since https://github.com/dotnet/runtime/commit/b6aa9e1125248a4c7cc4d7ffe3cbab101c37e9be */
+
+	/* https://github.com/dotnet/runtime/blob/4542e09ba0494eb29c86c6255fcba7fd9db897b7/src/mono/mono/metadata/monitor.c#L1214 */
+
+	/* This should pass `TRUE` instead of `FALSE` for `allow_interruption` - the old code in Mono here called `mono_monitor_try_enter_with_atomic_var` that used to have `allow_interruption` as a local that was initialized to `TRUE`.  The refactored code passed `allow_interruption` as an argument. In most cases it passed `TRUE`, but for `mono_monitor_enter_v4_internal` it passed `FALSE`.  The upshot is that the JIT intrinsic for `Monitor.Enter(object, ref bool)` is not quite right.  Except for some reason it seems to work in mono/mono whch has the same value here. */
+
+	/* https://github.com/mono/mono/pull/17387/files#diff-210ffb0ddf31666ef0a230a3a23014529894a8a891d351f6c95b4e62a29d7013L1182 */
+	mono_monitor_try_enter_loop_if_interrupted (obj, MONO_INFINITE_WAIT, FALSE/*TRUE*/, lock_taken, NULL);
 }
 
 /*

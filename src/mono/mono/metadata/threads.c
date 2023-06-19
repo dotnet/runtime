@@ -3593,6 +3593,14 @@ flush_thread_interrupt_queue (void)
 }
 #endif
 
+static bool
+check_and_clear_wait_subsystem_interrupted (MonoInternalThread *thread)
+{
+	g_assert (thread == mono_thread_internal_current());
+	// TODO: call Thread.Current.WaitInfo.get_CheckAndResetPendingInterrupt
+	return FALSE;
+}
+
 /*
  * mono_thread_execute_interruption
  *
@@ -3656,6 +3664,13 @@ mono_thread_execute_interruption (MonoExceptionHandle *pexc)
 		/* calls UNLOCK_THREAD (thread) */
 		self_suspend_internal ();
 		unlock = FALSE;
+	} else if (check_and_clear_wait_subsystem_interrupted (MONO_HANDLE_RAW (thread))) {
+		unlock_thread_handle (thread);
+		unlock = FALSE;
+		ERROR_DECL (error);
+		exc = mono_exception_new_thread_interrupted (error);
+		mono_error_assert_ok (error); // FIXME
+		fexc = TRUE;
 	}
 exit:
 	if (unlock)
