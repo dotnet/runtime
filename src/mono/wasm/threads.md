@@ -6,7 +6,7 @@ Build the runtime with `/p:MonoWasmBuildVariant=multithread` to enable support f
 
 ## Building sample apps ##
 
-Sample apps use the "public" properties `WasmEnableThreads` to enable the relevant functionality. 
+Sample apps use the "public" properties `WasmEnableThreads` to enable the relevant functionality.
 This also works with released versions of .NET 7 or later and the `wasmbrowser` template.
 
 ## Libraries feature defines ##
