@@ -19,7 +19,6 @@ publish:
 	$(DOTNET) publish \
 	-c $(MONO_CONFIG) \
 	-r $(TARGET_OS)-$(MONO_ARCH) \
-	/p:SelfContained=true \
 	/p:RunAOTCompilation=$(AOT) \
 	/p:StripILCode=$(StripILCode) \
 	/p:CompiledMethodsOutputDirectory=$(CompiledMethodsOutputDirectory) \
