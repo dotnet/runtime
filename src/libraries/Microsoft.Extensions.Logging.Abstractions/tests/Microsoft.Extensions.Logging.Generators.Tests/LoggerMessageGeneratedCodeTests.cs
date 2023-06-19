@@ -282,6 +282,27 @@ namespace Microsoft.Extensions.Logging.Generators.Tests
             Assert.Equal("M1 Foo", logger.LastFormattedString);
             Assert.Equal(LogLevel.Trace, logger.LastLogLevel);
             Assert.Equal(1, logger.CallCount);
+
+            logger.Reset();
+            o.M2("Bar");
+            Assert.Null(logger.LastException);
+            Assert.Equal("M2 Bar", logger.LastFormattedString);
+            Assert.Equal(LogLevel.Information, logger.LastLogLevel);
+            Assert.Equal(-1, logger.LastEventId.Id);
+
+            logger.Reset();
+            o.M3(LogLevel.Critical, "Foo Bar");
+            Assert.Null(logger.LastException);
+            Assert.Equal("M3 Foo Bar", logger.LastFormattedString);
+            Assert.Equal(LogLevel.Critical, logger.LastLogLevel);
+            Assert.Equal(-1, logger.LastEventId.Id);
+
+            logger.Reset();
+            o.M4();
+            Assert.Null(logger.LastException);
+            Assert.Equal("", logger.LastFormattedString);
+            Assert.Equal(LogLevel.Debug, logger.LastLogLevel);
+            Assert.Equal(-1, logger.LastEventId.Id);
         }
 
         [Fact]

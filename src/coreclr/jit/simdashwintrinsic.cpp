@@ -637,7 +637,7 @@ GenTree* Compiler::impSimdAsHWIntrinsicSpecial(NamedIntrinsic       intrinsic,
                     useToScalar &= !varTypeIsLong(simdBaseType);
 #endif // TARGET_X86
 
-                    if (!useToScalar && !compExactlyDependsOn(InstructionSet_SSE41))
+                    if (!useToScalar && !compOpportunisticallyDependsOn(InstructionSet_SSE41))
                     {
                         // Using software fallback if simdBaseType is not supported by hardware
                         return nullptr;
@@ -668,7 +668,7 @@ GenTree* Compiler::impSimdAsHWIntrinsicSpecial(NamedIntrinsic       intrinsic,
         {
             if ((simdBaseType == TYP_INT) || (simdBaseType == TYP_UINT))
             {
-                if (!compExactlyDependsOn(InstructionSet_SSE41))
+                if (!compOpportunisticallyDependsOn(InstructionSet_SSE41))
                 {
                     // TODO-XARCH-CQ: We can support 32-bit integers if we updating multiplication
                     // to be lowered rather than imported as the relevant operations.
@@ -734,7 +734,7 @@ GenTree* Compiler::impSimdAsHWIntrinsicSpecial(NamedIntrinsic       intrinsic,
                 case TYP_INT:
                 case TYP_UINT:
                 {
-                    if (!compExactlyDependsOn(InstructionSet_SSE41))
+                    if (!compOpportunisticallyDependsOn(InstructionSet_SSE41))
                     {
                         return nullptr;
                     }
@@ -744,7 +744,7 @@ GenTree* Compiler::impSimdAsHWIntrinsicSpecial(NamedIntrinsic       intrinsic,
                 case TYP_LONG:
                 case TYP_ULONG:
                 {
-                    if (!compExactlyDependsOn(InstructionSet_SSE41_X64))
+                    if (!compOpportunisticallyDependsOn(InstructionSet_SSE41_X64))
                     {
                         return nullptr;
                     }
@@ -818,7 +818,7 @@ GenTree* Compiler::impSimdAsHWIntrinsicSpecial(NamedIntrinsic       intrinsic,
         case NI_VectorT128_Floor:
         case NI_VectorT128_Ceiling:
         {
-            if (!compExactlyDependsOn(InstructionSet_SSE41))
+            if (!compOpportunisticallyDependsOn(InstructionSet_SSE41))
             {
                 return nullptr;
             }

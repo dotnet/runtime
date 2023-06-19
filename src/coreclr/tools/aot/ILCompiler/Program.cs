@@ -92,7 +92,9 @@ namespace ILCompiler
             var targetAbi = TargetAbi.NativeAot;
             var targetDetails = new TargetDetails(targetArchitecture, targetOS, targetAbi, simdVectorLength);
             CompilerTypeSystemContext typeSystemContext =
-                new CompilerTypeSystemContext(targetDetails, genericsMode, supportsReflection ? DelegateFeature.All : 0, Get(_command.MaxGenericCycle));
+                new CompilerTypeSystemContext(targetDetails, genericsMode, supportsReflection ? DelegateFeature.All : 0,
+                    genericCycleDepthCutoff: Get(_command.MaxGenericCycleDepth),
+                    genericCycleBreadthCutoff: Get(_command.MaxGenericCycleBreadth));
 
             //
             // TODO: To support our pre-compiled test tree, allow input files that aren't managed assemblies since
@@ -492,8 +494,7 @@ namespace ILCompiler
                 // If we have a scanner, we can inline threadstatics storage using the information
                 // we collected at scanning time.
                 // Inlined storage implies a single type manager, thus we do not do it in multifile case.
-                // This could be a command line switch if we really wanted to.
-                if (!multiFile)
+                if (!multiFile && !Get(_command.NoInlineTls))
                 {
                     builder.UseInlinedThreadStatics(scanResults.GetInlinedThreadStatics());
                 }

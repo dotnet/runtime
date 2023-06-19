@@ -333,7 +333,7 @@ public sealed partial class QuicListener : IAsyncDisposable
             // Process the event.
             if (NetEventSource.Log.IsEnabled())
             {
-                NetEventSource.Info(instance, $"{instance} Received event {listenerEvent->Type}");
+                NetEventSource.Info(instance, $"{instance} Received event {listenerEvent->Type} {listenerEvent->ToString()}");
             }
             return instance.HandleListenerEvent(ref *listenerEvent);
         }

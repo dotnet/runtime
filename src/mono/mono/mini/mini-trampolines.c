@@ -14,7 +14,7 @@
 #include <mono/metadata/tabledefs.h>
 #include <mono/utils/mono-counters.h>
 #include <mono/utils/mono-error-internals.h>
-#include <mono/utils/mono-membar.h>
+#include <mono/utils/mono-memory-model.h>
 #include <mono/utils/mono-compiler.h>
 #include <mono/utils/mono-threads-coop.h>
 #include <mono/utils/unlocked.h>
