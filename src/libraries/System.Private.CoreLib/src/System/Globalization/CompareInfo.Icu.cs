@@ -25,8 +25,8 @@ namespace System.Globalization
             if (!GlobalizationMode.Invariant)
             {
 #if TARGET_OSX || TARGET_MACCATALYST || TARGET_IOS || TARGET_TVOS || TARGET_BROWSER
-            if (GlobalizationMode.Hybrid)
-                return;
+                if (GlobalizationMode.Hybrid)
+                    return;
 #endif
                  _sortHandle = SortHandleCache.GetCachedSortHandle(interopCultureName);
             }
@@ -85,8 +85,8 @@ namespace System.Globalization
                 fixed (char* pTarget = &MemoryMarshal.GetReference(target))
                 {
 #if TARGET_OSX || TARGET_MACCATALYST || TARGET_IOS || TARGET_TVOS
-                if (GlobalizationMode.Hybrid)
-                    return IndexOfCoreNative(pTarget, target.Length, pSource, source.Length, options, fromBeginning, matchLengthPtr);
+                    if (GlobalizationMode.Hybrid)
+                        return IndexOfCoreNative(pTarget, target.Length, pSource, source.Length, options, fromBeginning, matchLengthPtr);
 #endif
                     if (fromBeginning)
                         return Interop.Globalization.IndexOf(_sortHandle, pTarget, target.Length, pSource, source.Length, options, matchLengthPtr);
@@ -338,8 +338,8 @@ namespace System.Globalization
                 fixed (char* pPrefix = &MemoryMarshal.GetReference(prefix))
                 {
 #if TARGET_OSX || TARGET_MACCATALYST || TARGET_IOS || TARGET_TVOS
-                if (GlobalizationMode.Hybrid)
-                    return NativeStartsWith(pPrefix, prefix.Length, pSource, source.Length, options);
+                    if (GlobalizationMode.Hybrid)
+                        return NativeStartsWith(pPrefix, prefix.Length, pSource, source.Length, options);
 #endif
                     return Interop.Globalization.StartsWith(_sortHandle, pPrefix, prefix.Length, pSource, source.Length, options, matchLengthPtr);
                 }
@@ -522,8 +522,8 @@ namespace System.Globalization
                 fixed (char* pSuffix = &MemoryMarshal.GetReference(suffix))
                 {
 #if TARGET_OSX || TARGET_MACCATALYST || TARGET_IOS || TARGET_TVOS
-                if (GlobalizationMode.Hybrid)
-                    return NativeEndsWith(pSuffix, suffix.Length, pSource, source.Length, options);
+                    if (GlobalizationMode.Hybrid)
+                        return NativeEndsWith(pSuffix, suffix.Length, pSource, source.Length, options);
 #endif
                     return Interop.Globalization.EndsWith(_sortHandle, pSuffix, suffix.Length, pSource, source.Length, options, matchLengthPtr);
                 }

@@ -19,7 +19,7 @@ typedef enum
     StringSort = 536870912,
 } CompareOptions;
 
-static NSLocale* GetCurrentLocale(const uint16_t* localeName,int32_t lNameLength)
+static NSLocale* GetCurrentLocale(const uint16_t* localeName, int32_t lNameLength)
 {
     NSLocale *currentLocale;
     if(localeName == NULL || lNameLength == 0)
@@ -65,18 +65,18 @@ int32_t GlobalizationNative_CompareStringNative(const uint16_t* localeName, int3
 {    
     NSLocale *currentLocale = GetCurrentLocale(localeName, lNameLength);
     NSString *sourceString = [NSString stringWithCharacters: lpSource length: cwSourceLength];
-    NSString *sourceStrComposed = sourceString.precomposedStringWithCanonicalMapping;
+    NSString *sourceStrPrecomposed = sourceString.precomposedStringWithCanonicalMapping;
     NSString *targetString = [NSString stringWithCharacters: lpTarget length: cwTargetLength];
-    NSString *targetStrComposed = targetString.precomposedStringWithCanonicalMapping;
+    NSString *targetStrPrecomposed = targetString.precomposedStringWithCanonicalMapping;
 
-    NSRange comparisonRange = NSMakeRange(0, sourceStrComposed.length);
+    NSRange comparisonRange = NSMakeRange(0, sourceStrPrecomposed.length);
     NSStringCompareOptions options = ConvertFromCompareOptionsToNSStringCompareOptions(comparisonOptions);
     
     // in case mapping is not found
     if (options == 0)
         return -2;
 
-    return [sourceStrComposed compare:targetStrComposed
+    return [sourceStrPrecomposed compare:targetStrPrecomposed
                               options:options
                               range:comparisonRange
                               locale:currentLocale];
@@ -143,18 +143,17 @@ Range GlobalizationNative_IndexOfNative(const uint16_t* localeName, int32_t lNam
 
     if (containsRange.location == NSNotFound)
     {
-        result.location = -1;
         return result;
     }
 
     // localizedStandardRangeOfString is performing a case and diacritic insensitive, locale-aware search and finding first occurance.
     if ((comparisonOptions & IgnoreCase) && lNameLength == 0 && fromBeginning)
     {      
-        NSRange localizedStandartRange = [sourceStrComposed localizedStandardRangeOfString:searchStrComposed];
-        if (localizedStandartRange.location != NSNotFound)
+        NSRange localizedStandardRange = [sourceStrComposed localizedStandardRangeOfString:searchStrComposed];
+        if (localizedStandardRange.location != NSNotFound)
         {
-            result.location = localizedStandartRange.location;
-            result.length = localizedStandartRange.length;                    
+            result.location = localizedStandardRange.location;
+            result.length = localizedStandardRange.length;                    
             return result;
         }       
     }
@@ -173,42 +172,42 @@ Range GlobalizationNative_IndexOfNative(const uint16_t* localeName, int32_t lNam
         // and case insensitive search appears more than one time in source string take last index
         // e.g. new CultureInfo().CompareInfo.LastIndexOf("Is \u0055\u0308 or \u0075\u0308 the same as \u00DC or \u00FC?", "U\u0308", 25,18, CompareOptions.IgnoreCase);
         // should return 24 but here it will be 9
-        if(fromBeginning || !(comparisonOptions & IgnoreCase))
+        if (fromBeginning || !(comparisonOptions & IgnoreCase))
             return result;
     }
     
     rangeOfReceiverToSearch = NSMakeRange(0, sourceStrComposed.length);
     // Normalize search string with Form C
-    NSRange preComposedRange = [sourceStrComposed rangeOfString:searchStrPrecomposed
+    NSRange precomposedRange = [sourceStrComposed rangeOfString:searchStrPrecomposed
                                                   options:options
                                                   range:rangeOfReceiverToSearch
                                                   locale:currentLocale];
 
-    if (preComposedRange.location != NSNotFound)
+    if (precomposedRange.location != NSNotFound)
     {
         // in case of last index and CompareOptions.IgnoreCase 
         // if letters have different representations in source and search strings
         // and search appears more than one time in source string take last index
         // e.g. new CultureInfo().CompareInfo.LastIndexOf("Is \u0055\u0308 or \u0075\u0308 the same as \u00DC or \u00FC?", "U\u0308", 25,18, CompareOptions.IgnoreCase);
         // this will return 24 
-        if ((int32_t)result.location > (int32_t)preComposedRange.location && !fromBeginning && (comparisonOptions & IgnoreCase))
+        if ((int32_t)result.location > (int32_t)precomposedRange.location && !fromBeginning && (comparisonOptions & IgnoreCase))
             return result;
-        result.location = preComposedRange.location;
-        result.length = preComposedRange.length;
+        result.location = precomposedRange.location;
+        result.length = precomposedRange.length;
     }
     else
     {
         // Normalize search string with Form D
         NSString *searchStrDecomposed = searchStrComposed.decomposedStringWithCanonicalMapping;
-        NSRange deComposedRange = [sourceStrComposed rangeOfString:searchStrDecomposed
+        NSRange decomposedRange = [sourceStrComposed rangeOfString:searchStrDecomposed
                                                      options:options
                                                      range:rangeOfReceiverToSearch
                                                      locale:currentLocale];
 
-        if (deComposedRange.location != NSNotFound)
+        if (decomposedRange.location != NSNotFound)
         {
-            result.location = deComposedRange.location;
-            result.length = deComposedRange.length;                    
+            result.location = decomposedRange.location;
+            result.length = decomposedRange.length;                    
             return result;
         }
     }
