@@ -14,6 +14,7 @@ namespace System
         internal const int MaxDateTimeNumberDigits = 8;
 
         internal const char TimeDelimiter = ':';
+        internal const char TimeFractionDelimiterComma = ',';
         internal const char TimeFractionDelimiterDot = '.';
 
         internal static DateTime ParseExact(ReadOnlySpan<char> s, ReadOnlySpan<char> format, DateTimeFormatInfo dtfi, DateTimeStyles style)
@@ -645,7 +646,8 @@ new DS[] { DS.ERROR,  DS.TX_NNN,  DS.TX_NNN,  DS.TX_NNN,  DS.ERROR,   DS.ERROR, 
                         if (str.Index < str.Length - 1)
                         {
                             char nextCh = str.Value[str.Index];
-                            if (nextCh == TimeFractionDelimiterDot)
+                            if ((nextCh == TimeFractionDelimiterDot)
+                                || (nextCh == TimeFractionDelimiterComma))
                             {
                                 // While ParseFraction can fail, it just means that there were no digits after
                                 // the dot. In this case ParseFraction just removes the dot. This is actually
@@ -2984,7 +2986,8 @@ new DS[] { DS.ERROR,  DS.TX_NNN,  DS.TX_NNN,  DS.TX_NNN,  DS.ERROR,   DS.ERROR, 
                     result.SetBadDateTimeFailure();
                     return false;
                 }
-                if (str.Match(TimeFractionDelimiterDot))
+                if ((str.Match(TimeFractionDelimiterDot))
+                    || (str.Match(TimeFractionDelimiterComma)))
                 {
                     if (!ParseFraction(ref str, out partSecond))
                     {
