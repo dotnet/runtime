@@ -8,6 +8,7 @@
     <DeployAndRun Condition="'$(DeployAndRun)' == ''">true</DeployAndRun>
     <RuntimeIdentifier>$(TargetOS)-$(TargetArchitecture)</RuntimeIdentifier>
     <AppName>HelloiOS</AppName>
+    <DefineConstants Condition="'$(ArchiveTests)' == 'true'">$(DefineConstants);CI_TEST</DefineConstants>
     <UseNativeAOTRuntime Condition="'$(UseNativeAOTRuntime)' == ''">true</UseNativeAOTRuntime>
     <PublishDir Condition="'$(PublishDir)' == ''">$(OutputPath)/publish</PublishDir>
     <NativeLib>static</NativeLib>
@@ -15,13 +16,14 @@
     <!-- Escape NativeAOT bundling targets -->
     <NativeCompilationDuringPublish>false</NativeCompilationDuringPublish>
     <IlcCompileDependsOn>Compile;ComputeIlcCompileInputs;SetupOSSpecificProps;PrepareForILLink</IlcCompileDependsOn>
+    <ILCompilerTargetsPath>$([MSBuild]::NormalizePath('$(NativeAotTargetsPath)', 'Microsoft.DotNet.ILCompiler.SingleEntry.targets'))</ILCompilerTargetsPath>
   </PropertyGroup>
 
   <PropertyGroup Condition="'$(PublishAotUsingRuntimePack)' == 'true'">
     <PublishAot>true</PublishAot>
     <MSBuildWarningsAsErrors>$(MSBuildWarningsAsErrors);NU1603</MSBuildWarningsAsErrors>
     <UseLocalTargetingRuntimePack>false</UseLocalTargetingRuntimePack>
-    <RestoreAdditionalProjectSources>$([MSBuild]::NormalizeDirectory('$(RepoRoot)', 'artifacts', 'packages', '$(CoreCLRConfiguration)', 'Shipping'))</RestoreAdditionalProjectSources>
+    <!-- <RestoreAdditionalProjectSources>$([MSBuild]::NormalizeDirectory('$(RepoRoot)', 'artifacts', 'packages', '$(CoreCLRConfiguration)', 'Shipping'))</RestoreAdditionalProjectSources> -->
   </PropertyGroup>
 
   <ItemGroup>
@@ -29,7 +31,6 @@
     <DirectPInvoke Include="__Internal" />
   </ItemGroup>
 
-  <Import Condition="'$(PublishAotUsingRuntimePack)' != 'true'" Project="$(CoreClrProjectRoot)nativeaot\BuildIntegration\Microsoft.DotNet.ILCompiler.SingleEntry.targets" />
   <UsingTask TaskName="AppleAppBuilderTask"
              AssemblyFile="$(AppleAppBuilderTasksAssemblyPath)" />
 
@@ -56,6 +57,7 @@
   </Target>
 
   <Target Name="BuildAppBundle"
+    Condition="'$(ArchiveTests)' != 'true'"
     AfterTargets="Build"
     DependsOnTargets="IlcCompile;CopyFilesToPublishDirectory">
 
@@ -69,7 +71,6 @@
 
     <ItemGroup>
       <_LinkerFlagsToDrop Include="@(NativeFramework->'-framework %(Identity)')" />
-      <_LinkerFlagsToDrop Include="@(LinkerArg)" Condition="$([System.String]::new('%(Identity)').Contains('swift'))" />
       <LinkerArg Remove="@(_LinkerFlagsToDrop)" />
       <ExtraLinkerArguments Include="@(LinkerArg)" />
       <_NativeDependencies Include="%(ManagedBinary.IlcOutputFile)" />
@@ -105,7 +106,7 @@
 
   <Target Name="RunAppBundle"
           AfterTargets="BuildAppBundle"
-          Condition="'$(DeployAndRun)' == 'true'">
+          Condition="'$(DeployAndRun)' == 'true' and '$(ArchiveTests)' != 'true'">
     <Exec Condition="'$(TargetOS)' == 'iossimulator'" Command="dotnet xharness apple run --app=$(AppBundlePath) --targets=ios-simulator-64 --output-directory=/tmp/out" />
     <Exec Condition="'$(TargetOS)' == 'ios'" Command="dotnet xharness apple run --app=$(AppBundlePath) --targets=ios-device --output-directory=/tmp/out" />
   </Target>

@@ -1,7 +1,8 @@
 <Project Sdk="Microsoft.NET.Sdk">
   <PropertyGroup>
-    <OutputType>Exe</OutputType>
+    <!-- <OutputType>Exe</OutputType> -->
     <OutputPath>bin</OutputPath>
+    <IntermediateOutputPath>$(MSBuildThisFileDirectory)obj/</IntermediateOutputPath>
     <TargetFramework>$(NetCoreAppCurrent)</TargetFramework>
     <TargetOS Condition="'$(TargetOS)' == ''">iossimulator</TargetOS>
     <RuntimeIdentifier>$(TargetOS)-$(TargetArchitecture)</RuntimeIdentifier>
@@ -24,10 +25,7 @@
     <BuildAppBundleDependsOnTargets Condition="'$(ArchiveTests)' == 'true'">Publish</BuildAppBundleDependsOnTargets>
   </PropertyGroup>
 
-  <Import Project="$(MonoProjectRoot)\msbuild\apple\build\AppleBuild.props" />
-  <Import Project="$(MonoProjectRoot)\msbuild\apple\build\AppleBuild.InTree.targets" />
-
-  <Target Name="BuildAppBundle" AfterTargets="$(BuildAppBundleAfterTargets)" DependsOnTargets="$(BuildAppBundleDependsOnTargets)"/>
+  <Target Name="BuildAppBundle" Condition="'$(ArchiveTests)' != 'true' or ('$(ArchiveTests)' == 'true' and '$(TargetOS)' !='ios')" AfterTargets="$(BuildAppBundleAfterTargets)" DependsOnTargets="$(BuildAppBundleDependsOnTargets)"/>
   <Target Name="_SetAppleGenerateAppBundleProps" Condition="'$(TargetOS)' != 'ios' and '$(ArchiveTests)' != 'true'" BeforeTargets="_AppleGenerateAppBundle">
     <PropertyGroup>
       <RuntimeComponents>diagnostics_tracing;marshal-ilgen</RuntimeComponents>
@@ -46,7 +44,7 @@
   </Target>
 
   <Target Name="CopySampleAppToHelixTestDir"
-          Condition="'$(ArchiveTests)' == 'true'"
+          Condition="'$(ArchiveTests)' == 'true' and '$(TargetOS)' != 'ios'"
           AfterTargets="_AppleGenerateAppBundle" >
     <PropertyGroup>
       <!-- Helix properties -->

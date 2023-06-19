@@ -14,7 +14,20 @@
   </PropertyGroup>
 
   <PropertyGroup>
-    <RunAOTCompilation Condition="'$(TargetOS)' == 'ios' or '$(TargetOS)' == 'tvos'">true</RunAOTCompilation>
+    <RunAOTCompilation Condition="'$(UseNativeAOTRuntime)' != 'true' and ('$(TargetOS)' == 'ios' or '$(TargetOS)' == 'tvos')">true</RunAOTCompilation>
+  </PropertyGroup>
+
+  <PropertyGroup Condition="'$(UseNativeAOTRuntime)' == 'true'">
+    <IlcBuildTasksPath>$([MSBuild]::NormalizePath('$(RepoRoot)', 'artifacts', 'bin', 'coreclr', '$(HostOS).$(BuildArchitecture).$(CoreCLRConfiguration)', 'ilc-published', 'netstandard', 'ILCompiler.Build.Tasks.dll'))</IlcBuildTasksPath>
+    <IlcPath>$([MSBuild]::NormalizeDirectory('$(RepoRoot)', 'artifacts', 'bin', 'coreclr', '$(HostOS).$(BuildArchitecture).$(CoreCLRConfiguration)', 'ilc'))</IlcPath>
+    <IlcToolsPath>$(IlcPath)</IlcToolsPath>
+    <IlcSdkPath>$(CoreCLRAotSdkDir)</IlcSdkPath>
+    <IlcFrameworkPath>$(LibrariesAllBinArtifactsPath)</IlcFrameworkPath>
+    <IlcFrameworkNativePath>$(LibrariesAllBinArtifactsPath)</IlcFrameworkNativePath>
+    <AppleGenerateAppBundle>true</AppleGenerateAppBundle>
+    <GenerateXcodeProject>true</GenerateXcodeProject>
+    <RunAOTCompilation>false</RunAOTCompilation>
+    <GenerateAppBundle>true</GenerateAppBundle>
   </PropertyGroup>
 
   <PropertyGroup>

@@ -130,7 +130,7 @@
         OutputFile="$(BundleDir)publish\ProxyProjectForAOTOnHelix.props" />
   </Target>
 
-  <Target Name="PrepareForAppleBuildApp">
+  <Target Name="PrepareForAppleBuildApp" Condition="'$(UseNativeAOTRuntime)' != 'true'">
     <Error Condition="!Exists('$(MicrosoftNetCoreAppRuntimePackRidDir)')" Text="MicrosoftNetCoreAppRuntimePackRidDir=$(MicrosoftNetCoreAppRuntimePackRidDir) doesn't exist" />
 
     <WriteLinesToFile File="$(PublishDir)xunit-excludes.txt" Lines="$(XunitExcludesTxtFileContent)" Overwrite="true" />

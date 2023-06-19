@@ -19,12 +19,15 @@
 
     <_IsLibraryMode Condition="'$(NativeLib)' != ''">true</_IsLibraryMode>
 
+    <_AotCompileTargetName Condition="'$(RunAOTCompilation)' == 'true'">_AppleAotCompile;</_AotCompileTargetName>
+    <_AotCompileTargetName Condition="'$(UseNativeAOTRuntime)' == 'true'">_AppleNativeAotCompile;</_AotCompileTargetName>
+
     <AppleBuildAfterThisTarget Condition="'$(AppleBuildAfterThisTarget)' == ''">Publish</AppleBuildAfterThisTarget>
     <AppleBuildDependsOn>
         _InitializeCommonProperties;
         _BeforeAppleBuild;
         _AppleResolveReferences;
-        _AppleAotCompile;
+        $(_AotCompileTargetName)
         _BuildNativeLibrary;
         _AppleGenerateAppBundle;
         _AfterAppleBuild

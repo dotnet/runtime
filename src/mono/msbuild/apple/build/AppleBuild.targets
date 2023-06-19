@@ -15,6 +15,10 @@
              TaskName="ILStrip"
              AssemblyFile="$(MonoTargetsTasksAssemblyPath)" />
 
+  <!-- Fix temporary regression, will be fixed on the main in a separate PR: https://github.com/dotnet/runtime/issues/80911 -->
+  <Import Condition="'$(UseNativeAOTRuntime)' == 'true'"
+          Project="$(ILCompilerTargetsPath)" />
+
   <Target Name="_CleanPublish" 
           BeforeTargets="Build">
     <RemoveDir Directories="$(PublishDir)" />
@@ -46,7 +50,7 @@
       <AppleBundleDir Condition="'$(AppleBundleDir)' == ''">$([MSBuild]::NormalizeDirectory('$(OutDir)', 'Bundle'))</AppleBundleDir>
 
       <BundleDir>$(AppleBundleDir)</BundleDir>
-      <_MonoHeaderPath>$([MSBuild]::NormalizeDirectory($(MicrosoftNetCoreAppRuntimePackRidNativeDir), 'include', 'mono-2.0'))</_MonoHeaderPath>
+      <_MonoHeaderPath Condition="'$(UseNativeAOTRuntime)' != 'true'">$([MSBuild]::NormalizeDirectory($(MicrosoftNetCoreAppRuntimePackRidNativeDir), 'include', 'mono-2.0'))</_MonoHeaderPath>
       <_AotModuleTablePath>$(AppleBundleDir)\modules.m</_AotModuleTablePath>
       <AppName Condition="'$(AppName)' == ''">$(AssemblyName)</AppName>
     </PropertyGroup>
@@ -57,7 +61,7 @@
     </ItemGroup>
 
     <PropertyGroup>
-      <RuntimeComponents Condition="'$(RuntimeComponents)' == ''">marshal-ilgen</RuntimeComponents>
+      <RuntimeComponents Condition="'$(RuntimeComponents)' == '' and '$(UseNativeAOTRuntime)' != 'true'">marshal-ilgen</RuntimeComponents>
     </PropertyGroup>
 
     <ItemGroup Condition="'$(_IsLibraryMode)' == 'true'">
@@ -85,7 +89,7 @@
     <PropertyGroup>
       <_AppleRuntimeConfigFilePath Condition="'$(_AppleRuntimeConfigFilePath)' == ''">$([MSBuild]::NormalizePath($(AppleBuildDir), '$(AssemblyName).runtimeconfig.json'))</_AppleRuntimeConfigFilePath>
       <_ParsedRuntimeConfigFilePath Condition="'$(_ParsedRuntimeConfigFilePath)' == ''">$([MSBuild]::NormalizePath($(AppleBuildDir), 'runtimeconfig.bin'))</_ParsedRuntimeConfigFilePath>
-      <UseConsoleUITemplate Condition="'$(UseConsoleUITemplate)' == ''">true</UseConsoleUITemplate>
+      <UseConsoleUITemplate Condition="'$(UseConsoleUITemplate)' == '' and '$(UseNativeAOTRuntime)' != 'true'">true</UseConsoleUITemplate>
     </PropertyGroup>
 
     <RemoveDir Directories="$(AppleBundleDir)" />
@@ -225,6 +229,8 @@
     </ItemGroup>
   </Target>
 
+  <Target Name="_AppleNativeAotCompile"
+          DependsOnTargets="SetupProperties;ComputeIlcCompileInputs;IlcCompile" />
 
   <Target Name="_AppleGenerateAppBundle" 
           Condition="'$(AppleGenerateAppBundle)' == 'true'"
@@ -238,7 +244,17 @@
 
     <Error Condition="'$(NativeMainSource)' != '' and !Exists('$(NativeMainSource)')" Text="Project property NativeMainSource is defined, but the specified file: '$(NativeMainSource)' does not exist." />
 
+    <!-- Move to separate target -->
+    <ItemGroup Condition="'$(UseNativeAOTRuntime)' == 'true'">
+      <_LinkerFlagsToDrop Include="@(NativeFramework->'-framework %(Identity)')" />
+      <LinkerArg Remove="@(_LinkerFlagsToDrop)" />
+      <ExtraAppLinkerArgs Include="@(LinkerArg)" />
+      <_NativeDependencies Include="%(ManagedBinary.IlcOutputFile)" />
+    </ItemGroup>
+
     <AppleAppBuilderTask
+      UseNativeAOTRuntime="$(UseNativeAOTRuntime)"
+      NativeDependencies="@(_NativeDependencies)"
       AppDir="$(AppleBuildDir)"
       Arch="$(TargetArchitecture)"
       Assemblies="@(_AssembliesToBundleInternal)"
