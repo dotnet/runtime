@@ -4085,7 +4085,7 @@ mono_arch_output_basic_block (MonoCompile *cfg, MonoBasicBlock *bb)
 		}
 		case OP_CREATE_SCALAR_UNSAFE_INT: {
 			const int t = get_type_size_macro (ins->inst_c1);
-			arm_neon_ins_g(code, t, dreg, sreg1, 0);
+			arm_neon_ins_g (code, t, dreg, sreg1, 0);
 			break;
 		}
 		case OP_CREATE_SCALAR_UNSAFE_FLOAT: {
@@ -4099,14 +4099,17 @@ mono_arch_output_basic_block (MonoCompile *cfg, MonoBasicBlock *bb)
 					t = SIZE_8;
 					break;
 				}
-				arm_neon_ins_e(code, t, dreg, sreg1, 0, 0);
+				arm_neon_ins_e (code, t, dreg, sreg1, 0, 0);
 			}
 			break;
 		}
-		// This requires Vector64 SIMD support
-		// case OP_XCONCAT:
-		// 	arm_neon_ext_16b(code, dreg, sreg1, sreg2, 8);
-		// 	break;
+		case OP_XCONCAT: {
+			if (dreg != sreg1)
+				arm_neon_mov (code, dreg, sreg1);
+
+			arm_neon_ins_e (code, SIZE_8, dreg, sreg2, 1, 0); 
+		 	break;
+		}
 		case OP_ARM64_USHL: {
 			arm_neon_ushl (code, get_vector_size_macro (ins), get_type_size_macro (ins->inst_c1), dreg, sreg1, sreg2);
 			break;
@@ -4118,6 +4121,16 @@ mono_arch_output_basic_block (MonoCompile *cfg, MonoBasicBlock *bb)
 				arm_neon_ext_16b (code, dreg, sreg1, sreg2, ins->inst_c0);
 			break;
 		}
+		case OP_XLOWER: {
+			if (dreg != sreg1)
+				arm_neon_mov_8b (code, dreg, sreg1);
+			break;
+		}
+		case OP_XUPPER:
+			arm_neon_fdup_e (code, VREG_FULL, TYPE_F64, dreg, sreg1, 1);
+			break;
+	
+
 		/* BRANCH */
 		case OP_BR:
 			mono_add_patch_info_rel (cfg, offset, MONO_PATCH_INFO_BB, ins->inst_target_bb, MONO_R_ARM64_B);

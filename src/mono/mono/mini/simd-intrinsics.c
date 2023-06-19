@@ -1382,14 +1382,7 @@ emit_sri_vector (MonoCompile *cfg, MonoMethod *cmethod, MonoMethodSignature *fsi
 	if (!COMPILE_LLVM (cfg)) {
 		if (vector_size != 128)
 			return NULL;
-		switch (id) {
-		case SN_GetLower:
-		case SN_GetUpper:
-			return NULL;
-		default:
-			break;
 		}
-	}
 #endif
 
 #ifdef TARGET_WASM
@@ -1662,11 +1655,6 @@ emit_sri_vector (MonoCompile *cfg, MonoMethod *cmethod, MonoMethodSignature *fsi
 			ins->inst_c1 = arg0_type;
 			return ins;
 		} else if (is_create_from_half_vectors_overload (fsig)) {
-#if defined(TARGET_ARM64)
-			// Require Vector64 SIMD support
-			if (!COMPILE_LLVM (cfg))
-				return NULL;
-#endif
 #if defined(TARGET_AMD64)
 			// Require Vector64 SIMD support
 			if (!COMPILE_LLVM (cfg))
@@ -1926,13 +1914,6 @@ emit_sri_vector (MonoCompile *cfg, MonoMethod *cmethod, MonoMethodSignature *fsi
 		if (!is_element_type_primitive (fsig->params [0]))
 			return NULL;
 		int op = id == SN_GetLower ? OP_XLOWER : OP_XUPPER;
-
-#ifdef TARGET_AMD64
-		if (!COMPILE_LLVM (cfg))
-			/* These return a Vector64 */
-			return NULL;
-#endif
-
 		return emit_simd_ins_for_sig (cfg, klass, op, 0, arg0_type, fsig, args);
 	}
 	case SN_GreaterThan:
