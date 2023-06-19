@@ -307,6 +307,14 @@ namespace ILCompiler.DependencyAnalysis
                 case RelocType.IMAGE_REL_BASED_ARM64_PAGEBASE_REL21:
                 case RelocType.IMAGE_REL_BASED_ARM64_PAGEOFFSET_12L:
                 case RelocType.IMAGE_REL_BASED_ARM64_PAGEOFFSET_12A:
+
+                case RelocType.IMAGE_REL_AARCH64_TLSDESC_ADR_PAGE21:
+                case RelocType.IMAGE_REL_AARCH64_TLSDESC_LD64_LO12:
+                case RelocType.IMAGE_REL_AARCH64_TLSDESC_ADD_LO12:
+                case RelocType.IMAGE_REL_AARCH64_TLSDESC_CALL:
+                case RelocType.IMAGE_REL_AARCH64_TLSLE_ADD_TPREL_HI12:
+                case RelocType.IMAGE_REL_AARCH64_TLSLE_ADD_TPREL_LO12_NC:
+
                 case RelocType.IMAGE_REL_BASED_LOONGARCH64_PC:
                 case RelocType.IMAGE_REL_BASED_LOONGARCH64_JIR:
                     Debug.Assert(delta == 0);

@@ -231,7 +231,76 @@ namespace ILCompiler.DependencyAnalysis
         // may trash volatile registers. (there are calls to the slow helper and possibly to the platform's TLS support)
         private static void EmitInlineTLSAccess(NodeFactory factory, ref ARM64Emitter encoder)
         {
-            throw new NotImplementedException();
+            ISymbolNode getInlinedThreadStaticBaseSlow = factory.HelperEntrypoint(HelperEntrypoint.GetInlinedThreadStaticBaseSlow);
+            ISymbolNode tlsRoot = factory.TlsRoot;
+            // IsSingleFileCompilation is not enough to guarantee that we can use "Initial Executable" optimizations.
+            // we need a special compiler flag analogous to /GA. Just assume "false" for now.
+            // bool singleFileExe = factory.CompilationModuleGroup.IsSingleFileCompilation;
+            bool singleFileExe = false;
+
+            if (factory.Target.OperatingSystem == TargetOS.Linux)
+            {
+                if (singleFileExe)
+                {
+                    // mrs  x0, tpidr_el0
+                    encoder.Builder.EmitUInt(0xd53bd040);
+
+                    // add  x0, x0, #:tprel_hi12:tlsRoot, lsl #12
+                    encoder.Builder.EmitReloc(tlsRoot, RelocType.IMAGE_REL_AARCH64_TLSLE_ADD_TPREL_HI12);
+                    encoder.Builder.EmitUInt(0x91400000);
+
+                    // add  x1, x0, #:tprel_lo12_nc:tlsRoot, lsl #0
+                    encoder.Builder.EmitReloc(tlsRoot, RelocType.IMAGE_REL_AARCH64_TLSLE_ADD_TPREL_LO12_NC);
+                    encoder.Builder.EmitUInt(0x91000001);
+                }
+                else
+                {
+                    // stp     x29, x30, [sp, -16]!
+                    encoder.Builder.EmitUInt(0xa9bf7bfd);
+                    // mov     x29, sp
+                    encoder.Builder.EmitUInt(0x910003fd);
+
+                    // mrs     x1, tpidr_el0
+                    encoder.Builder.EmitUInt(0xd53bd041);
+
+                    // adrp    x0, :tlsdesc:tlsRoot
+                    encoder.Builder.EmitReloc(tlsRoot, RelocType.IMAGE_REL_AARCH64_TLSDESC_ADR_PAGE21);
+                    encoder.Builder.EmitUInt(0x90000000);
+
+                    // ldr     x2, [x0, #:tlsdesc_lo12:tlsRoot]
+                    encoder.Builder.EmitReloc(tlsRoot, RelocType.IMAGE_REL_AARCH64_TLSDESC_LD64_LO12);
+                    encoder.Builder.EmitUInt(0xf9400002);
+
+                    // add     x0, x0, :tlsdesc_lo12:tlsRoot
+                    encoder.Builder.EmitReloc(tlsRoot, RelocType.IMAGE_REL_AARCH64_TLSDESC_ADD_LO12);
+                    encoder.Builder.EmitUInt(0x91000000);
+
+                    // blr     :tlsdesc_call:tlsRoot:x2
+                    encoder.Builder.EmitReloc(tlsRoot, RelocType.IMAGE_REL_AARCH64_TLSDESC_CALL);
+                    encoder.Builder.EmitUInt(0xd63f0040);
+
+                    // add     x1, x1, x0
+                    encoder.Builder.EmitUInt(0x8b000021);
+
+                    // ldp     x29, x30, [sp], 16
+                    encoder.Builder.EmitUInt(0xa8c17bfd);
+                }
+
+                encoder.EmitLDR(Register.X0, Register.X1);
+
+                // here we have:
+                // X1: addr, X0: storage
+                // if the storage is already allocated, just return, otherwise do slow path.
+
+                encoder.EmitCMP(Register.X0, 0);
+                encoder.EmitRETIfNotEqual();
+                encoder.EmitMOV(Register.X0, Register.X1);
+                encoder.EmitJMP(getInlinedThreadStaticBaseSlow);
+            }
+            else
+            {
+                throw new NotImplementedException();
+            }
         }
     }
 }

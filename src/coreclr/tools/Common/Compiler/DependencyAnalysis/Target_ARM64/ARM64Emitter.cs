@@ -176,7 +176,15 @@ namespace ILCompiler.DependencyAnalysis.ARM64
 
         public void EmitRETIfEqual()
         {
+            // b.ne #8
             Builder.EmitUInt(0b01010100_0000000000000000010_0_0001u);
+            EmitRET();
+        }
+
+        public void EmitRETIfNotEqual()
+        {
+            // b.eq #8
+            Builder.EmitUInt(0b01010100_0000000000000000010_0_0000u);
             EmitRET();
         }
 
