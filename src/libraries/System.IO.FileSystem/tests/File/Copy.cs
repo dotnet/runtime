@@ -253,6 +253,24 @@ namespace System.IO.Tests
             Assert.Equal(File.ReadAllText(path), File.ReadAllText(testFile)); // assumes chosen files won't change between reads
         }
         #endregion
+
+        [ConditionalFact(typeof(MountHelper), nameof(MountHelper.CanCreateSymbolicLinks))]
+        public void OverwriteCopyOntoLink()
+        {
+            string file1 = GetTestFilePath();
+            string file2 = GetTestFilePath();
+            string link = GetTestFilePath();
+
+            File.Create(file1).Dispose();
+            File.Create(file2).Dispose();
+            File.CreateSymbolicLink(link, file2);
+
+            File.WriteAllText(file1, "abc");
+            File.WriteAllText(file2, "def");
+
+            File.Copy(file1, link, true);
+            Assert.Equal("abc", File.ReadAllText(file2));
+        }
     }
 
     public class File_Copy_str_str_b : File_Copy_str_str

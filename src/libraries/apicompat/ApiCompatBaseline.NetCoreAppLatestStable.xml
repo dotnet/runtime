@@ -879,6 +879,12 @@
   </Suppression>
   <Suppression>
     <DiagnosticId>CP0014</DiagnosticId>
+    <Target>T:System.Net.Security.NegotiateStream:[T:System.Runtime.Versioning.UnsupportedOSPlatformAttribute]</Target>
+    <Left>net7.0/netstandard.dll</Left>
+    <Right>net8.0/netstandard.dll</Right>
+  </Suppression>
+  <Suppression>
+    <DiagnosticId>CP0014</DiagnosticId>
     <Target>M:System.Console.get_WindowHeight:[T:System.Runtime.Versioning.UnsupportedOSPlatformAttribute]</Target>
     <Left>net7.0/System.Console.dll</Left>
     <Right>net8.0/System.Console.dll</Right>
@@ -1743,6 +1749,12 @@
   </Suppression>
   <Suppression>
     <DiagnosticId>CP0014</DiagnosticId>
+    <Target>T:System.Net.Security.NegotiateStream:[T:System.Runtime.Versioning.UnsupportedOSPlatformAttribute]</Target>
+    <Left>net7.0/System.dll</Left>
+    <Right>net8.0/System.dll</Right>
+  </Suppression>
+  <Suppression>
+    <DiagnosticId>CP0014</DiagnosticId>
     <Target>M:System.Linq.Queryable.Aggregate``1(System.Linq.IQueryable{``0},System.Linq.Expressions.Expression{System.Func{``0,``0,``0}}):[T:System.Diagnostics.CodeAnalysis.RequiresDynamicCodeAttribute]</Target>
     <Left>net7.0/System.Linq.Queryable.dll</Left>
     <Right>net8.0/System.Linq.Queryable.dll</Right>
@@ -2550,6 +2562,12 @@
     <Target>M:System.Linq.Queryable.Zip``3(System.Linq.IQueryable{``0},System.Collections.Generic.IEnumerable{``1},System.Linq.Expressions.Expression{System.Func{``0,``1,``2}}):[T:System.Diagnostics.CodeAnalysis.RequiresDynamicCodeAttribute]</Target>
     <Left>net7.0/System.Linq.Queryable.dll</Left>
     <Right>net8.0/System.Linq.Queryable.dll</Right>
+  </Suppression>
+  <Suppression>
+    <DiagnosticId>CP0014</DiagnosticId>
+    <Target>T:System.Net.Security.NegotiateStream:[T:System.Runtime.Versioning.UnsupportedOSPlatformAttribute]</Target>
+    <Left>net7.0/System.Net.Security.dll</Left>
+    <Right>net8.0/System.Net.Security.dll</Right>
   </Suppression>
   <Suppression>
     <DiagnosticId>CP0015</DiagnosticId>

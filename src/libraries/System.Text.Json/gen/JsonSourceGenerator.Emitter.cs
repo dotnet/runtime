@@ -1211,23 +1211,16 @@ namespace System.Text.Json.SourceGeneration
                 return CompleteSourceFileAndReturnText(writer);
             }
 
-            private static string GetNumberHandlingAsStr(JsonNumberHandling? numberHandling) =>
-                numberHandling switch
-                {
-                    null => "null",
-                    >= 0 => $"({JsonNumberHandlingTypeRef}){(int)numberHandling.Value}",
-                    < 0 => $"({JsonNumberHandlingTypeRef})({(int)numberHandling.Value})"
-                };
+            private static string GetNumberHandlingAsStr(JsonNumberHandling? numberHandling)
+                => numberHandling.HasValue
+                ? SourceGeneratorHelpers.FormatEnumLiteral(JsonNumberHandlingTypeRef, numberHandling.Value)
+                : "null";
 
-            private static string GetObjectCreationHandlingAsStr(JsonObjectCreationHandling creationHandling) =>
-                creationHandling >= 0
-                ? $"({JsonObjectCreationHandlingTypeRef}){(int)creationHandling}"
-                : $"({JsonObjectCreationHandlingTypeRef})({(int)creationHandling})";
+            private static string GetObjectCreationHandlingAsStr(JsonObjectCreationHandling creationHandling)
+                => SourceGeneratorHelpers.FormatEnumLiteral(JsonObjectCreationHandlingTypeRef, creationHandling);
 
-            private static string GetUnmappedMemberHandlingAsStr(JsonUnmappedMemberHandling unmappedMemberHandling) =>
-                unmappedMemberHandling >= 0
-                ? $"({JsonUnmappedMemberHandlingTypeRef}){(int)unmappedMemberHandling}"
-                : $"({JsonUnmappedMemberHandlingTypeRef})({(int)unmappedMemberHandling})";
+            private static string GetUnmappedMemberHandlingAsStr(JsonUnmappedMemberHandling unmappedMemberHandling)
+                => SourceGeneratorHelpers.FormatEnumLiteral(JsonUnmappedMemberHandlingTypeRef, unmappedMemberHandling);
 
             private static string GetCreateValueInfoMethodRef(string typeCompilableName) => $"{CreateValueInfoMethodName}<{typeCompilableName}>";
 
