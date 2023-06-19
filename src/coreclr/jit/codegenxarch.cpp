@@ -7336,8 +7336,8 @@ void CodeGen::genIntToFloatCast(GenTree* treeNode)
     // Also we don't expect to see uint32 -> float/double and uint64 -> float conversions
     // here since they should have been lowered appropriately.
     noway_assert(srcType != TYP_UINT);
-    noway_assert((srcType != TYP_ULONG) || (dstType != TYP_FLOAT) ||
-                 compiler->compOpportunisticallyDependsOn(InstructionSet_AVX512F));
+    assert((srcType != TYP_ULONG) || (dstType != TYP_FLOAT) ||
+            compiler->compOpportunisticallyDependsOn(InstructionSet_AVX512F));
 
     if (compiler->compOpportunisticallyDependsOn(InstructionSet_AVX512F))
     {
@@ -7464,8 +7464,8 @@ void CodeGen::genFloatToIntCast(GenTree* treeNode)
     // We shouldn't be seeing uint64 here as it should have been converted
     // into a helper call by either front-end or lowering phase, unless we have AVX512F
     // accelerated conversions.
-    noway_assert(!varTypeIsUnsigned(dstType) || (dstSize != EA_ATTR(genTypeSize(TYP_LONG))) ||
-                 compiler->compOpportunisticallyDependsOn(InstructionSet_AVX512F));
+    assert(!varTypeIsUnsigned(dstType) || (dstSize != EA_ATTR(genTypeSize(TYP_LONG))) ||
+           compiler->compOpportunisticallyDependsOn(InstructionSet_AVX512F));
 
     // If the dstType is TYP_UINT, we have 32-bits to encode the
     // float number. Any of 33rd or above bits can be the sign bit.
