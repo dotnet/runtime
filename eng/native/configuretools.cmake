@@ -93,7 +93,7 @@ if (NOT CLR_CMAKE_HOST_WIN32)
   endif()
 endif()
 
-# This introspection depends on CMAKE_STRINGS, whcih is why it's in this file instead of configureplatform
+# This introspection depends on CMAKE_STRINGS, which is why it's in this file instead of configureplatform
 if (CLR_CMAKE_HOST_LINUX)
   execute_process(
     COMMAND bash -c "if ${CMAKE_STRINGS} \"${CMAKE_SYSROOT}/usr/bin/ldd\" 2>&1 | grep -q musl; then echo musl; fi"
