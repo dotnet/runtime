@@ -3401,9 +3401,9 @@ GenTree* Compiler::impIntrinsic(GenTree*                newobjThis,
 
             case NI_System_Math_Max:
             {
-                bool isMax       = true;
-                bool isMagnitude = false;
-                bool isNumber    = false;
+                const bool isMax       = true;
+                const bool isMagnitude = false;
+                const bool isNumber    = false;
 
                 retNode = impMinMaxIntrinsic(method, sig, callJitType, ni, tailCall, isMax, isMagnitude, isNumber);
                 break;
@@ -3411,9 +3411,9 @@ GenTree* Compiler::impIntrinsic(GenTree*                newobjThis,
 
             case NI_System_Math_Min:
             {
-                bool isMax       = false;
-                bool isMagnitude = false;
-                bool isNumber    = false;
+                const bool isMax       = false;
+                const bool isMagnitude = false;
+                const bool isNumber    = false;
 
                 retNode = impMinMaxIntrinsic(method, sig, callJitType, ni, tailCall, isMax, isMagnitude, isNumber);
                 break;
@@ -3421,9 +3421,9 @@ GenTree* Compiler::impIntrinsic(GenTree*                newobjThis,
 
             case NI_System_Math_MaxMagnitude:
             {
-                bool isMax       = true;
-                bool isMagnitude = true;
-                bool isNumber    = false;
+                const bool isMax       = true;
+                const bool isMagnitude = true;
+                const bool isNumber    = false;
 
                 retNode = impMinMaxIntrinsic(method, sig, callJitType, ni, tailCall, isMax, isMagnitude, isNumber);
                 break;
@@ -3431,9 +3431,9 @@ GenTree* Compiler::impIntrinsic(GenTree*                newobjThis,
 
             case NI_System_Math_MinMagnitude:
             {
-                bool isMax       = false;
-                bool isMagnitude = true;
-                bool isNumber    = false;
+                const bool isMax       = false;
+                const bool isMagnitude = true;
+                const bool isNumber    = false;
 
                 retNode = impMinMaxIntrinsic(method, sig, callJitType, ni, tailCall, isMax, isMagnitude, isNumber);
                 break;
@@ -3441,9 +3441,9 @@ GenTree* Compiler::impIntrinsic(GenTree*                newobjThis,
 
             case NI_System_Math_MaxMagnitudeNumber:
             {
-                bool isMax       = true;
-                bool isMagnitude = true;
-                bool isNumber    = true;
+                const bool isMax       = true;
+                const bool isMagnitude = true;
+                const bool isNumber    = true;
 
                 retNode = impMinMaxIntrinsic(method, sig, callJitType, ni, tailCall, isMax, isMagnitude, isNumber);
                 break;
@@ -3451,9 +3451,9 @@ GenTree* Compiler::impIntrinsic(GenTree*                newobjThis,
 
             case NI_System_Math_MinMagnitudeNumber:
             {
-                bool isMax       = false;
-                bool isMagnitude = true;
-                bool isNumber    = true;
+                const bool isMax       = false;
+                const bool isMagnitude = true;
+                const bool isNumber    = true;
 
                 retNode = impMinMaxIntrinsic(method, sig, callJitType, ni, tailCall, isMax, isMagnitude, isNumber);
                 break;
@@ -3461,9 +3461,9 @@ GenTree* Compiler::impIntrinsic(GenTree*                newobjThis,
 
             case NI_System_Math_MaxNumber:
             {
-                bool isMax       = true;
-                bool isMagnitude = false;
-                bool isNumber    = true;
+                const bool isMax       = true;
+                const bool isMagnitude = false;
+                const bool isNumber    = true;
 
                 retNode = impMinMaxIntrinsic(method, sig, callJitType, ni, tailCall, isMax, isMagnitude, isNumber);
                 break;
@@ -3471,9 +3471,9 @@ GenTree* Compiler::impIntrinsic(GenTree*                newobjThis,
 
             case NI_System_Math_MinNumber:
             {
-                bool isMax       = false;
-                bool isMagnitude = false;
-                bool isNumber    = true;
+                const bool isMax       = false;
+                const bool isMagnitude = false;
+                const bool isNumber    = true;
 
                 retNode = impMinMaxIntrinsic(method, sig, callJitType, ni, tailCall, isMax, isMagnitude, isNumber);
                 break;
