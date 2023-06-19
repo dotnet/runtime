@@ -1201,6 +1201,8 @@ static guint16 sri_vector_methods [] = {
 	SN_WidenLower,
 	SN_WidenUpper,
 	SN_WithElement,
+	SN_WithLower,
+	SN_WithUpper,
 	SN_Xor,
 	SN_get_IsHardwareAccelerated,
 };
@@ -2287,7 +2289,7 @@ emit_sri_vector (MonoCompile *cfg, MonoMethod *cmethod, MonoMethodSignature *fsi
 	case SN_WithUpper: {
 		if (!is_element_type_primitive (fsig->params [0]))
 			return NULL;
-		int op = id == SN_GetLower ? OP_XINSERT_LOWER : OP_XINSERT_UPPER;
+		int op = id == SN_WithLower ? OP_XINSERT_LOWER : OP_XINSERT_UPPER;
 		return emit_simd_ins_for_sig (cfg, klass, op, 0, arg0_type, fsig, args);
 	}
 	default:

@@ -4130,6 +4130,14 @@ mono_arch_output_basic_block (MonoCompile *cfg, MonoBasicBlock *bb)
 			arm_neon_fdup_e (code, VREG_FULL, TYPE_F64, dreg, sreg1, 1);
 			break;
 	
+		case OP_XINSERT_LOWER:
+		case OP_XINSERT_UPPER: {
+			if (dreg != sreg1)
+				arm_neon_mov (code, dreg, sreg1);
+
+			arm_neon_ins_e (code, SIZE_8, dreg, sreg2, insert_at, 0);
+			break;
+		}
 
 		/* BRANCH */
 		case OP_BR:
