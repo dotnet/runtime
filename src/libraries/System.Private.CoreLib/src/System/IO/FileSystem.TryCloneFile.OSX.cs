@@ -53,13 +53,21 @@ namespace System.IO
                 // it's locked by something else, and then delete it. It should also fail if destination == source since it's already locked.
                 try
                 {
-                    using SafeFileHandle? dstHandle = SafeFileHandle.Open(destFullPath, FileMode.Open, FileAccess.ReadWrite,
-                        FileShare.None, FileOptions.None, preallocationSize: 0, createOpenException: CreateOpenExceptionForCopyFile);
-                    if (Interop.Sys.Unlink(destFullPath) < 0 &&
-                        Interop.Sys.GetLastError() != Interop.Error.ENOENT)
+                    using SafeFileHandle? dstHandle = SafeFileHandle.OpenNoFollowSymlink(destFullPath, FileMode.Open, FileAccess.ReadWrite,
+                        FileShare.None, FileOptions.None, preallocationSize: 0, out bool wasSymlink, createOpenException: CreateOpenExceptionForCopyFile);
+                    if (wasSymlink)
                     {
-                        // Fall back to standard copy as an unexpected error has occurred.
+                        // Don't try if it's a symlink.
                         return;
+                    }
+                    else
+                    {
+                        if (Interop.Sys.Unlink(destFullPath) < 0 &&
+                            Interop.Sys.GetLastError() != Interop.Error.ENOENT)
+                        {
+                            // Fall back to standard copy as an unexpected error has occurred.
+                            return;
+                        }
                     }
                 }
                 catch (FileNotFoundException)

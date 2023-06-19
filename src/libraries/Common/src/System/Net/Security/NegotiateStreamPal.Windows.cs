@@ -328,216 +328,120 @@ namespace System.Net.Security
             }
         }
 
-        internal static unsafe int Encrypt(
+        internal static unsafe bool VerifyMIC(
             SafeDeleteContext securityContext,
-            ReadOnlySpan<byte> buffer,
             bool isConfidential,
-            bool isNtlm,
-            [NotNull] ref byte[]? output)
+            ReadOnlySpan<byte> message,
+            ReadOnlySpan<byte> signature)
         {
-            SecPkgContext_Sizes sizes = default;
-            bool success = SSPIWrapper.QueryBlittableContextAttributes(GlobalSSPI.SSPIAuth, securityContext, Interop.SspiCli.ContextAttribute.SECPKG_ATTR_SIZES, ref sizes);
-            Debug.Assert(success);
+            bool refAdded = false;
 
-            int maxCount = checked(int.MaxValue - 4 - sizes.cbBlockSize - sizes.cbSecurityTrailer);
-            if (buffer.Length > maxCount)
+            try
             {
-                throw new ArgumentOutOfRangeException(nameof(buffer.Length), SR.Format(SR.net_io_out_range, maxCount));
+                securityContext.DangerousAddRef(ref refAdded);
+
+                fixed (byte* messagePtr = message)
+                fixed (byte* signaturePtr = signature)
+                {
+                    Interop.SspiCli.SecBuffer* unmanagedBuffer = stackalloc Interop.SspiCli.SecBuffer[2];
+                    Interop.SspiCli.SecBuffer* tokenBuffer = &unmanagedBuffer[0];
+                    Interop.SspiCli.SecBuffer* dataBuffer = &unmanagedBuffer[1];
+                    tokenBuffer->BufferType = SecurityBufferType.SECBUFFER_TOKEN;
+                    tokenBuffer->pvBuffer = (IntPtr)signaturePtr;
+                    tokenBuffer->cbBuffer = signature.Length;
+                    dataBuffer->BufferType = SecurityBufferType.SECBUFFER_DATA;
+                    dataBuffer->pvBuffer = (IntPtr)messagePtr;
+                    dataBuffer->cbBuffer = message.Length;
+
+                    Interop.SspiCli.SecBufferDesc sdcIn = new Interop.SspiCli.SecBufferDesc(2)
+                    {
+                        pBuffers = unmanagedBuffer
+                    };
+
+                    uint qop;
+                    int errorCode = Interop.SspiCli.VerifySignature(ref securityContext._handle, in sdcIn, 0, &qop);
+
+                    if (errorCode != 0)
+                    {
+                        Exception e = new Win32Exception(errorCode);
+                        if (NetEventSource.Log.IsEnabled()) NetEventSource.Error(null, e);
+                        throw new Win32Exception(errorCode);
+                    }
+
+                    if (isConfidential && qop == Interop.SspiCli.SECQOP_WRAP_NO_ENCRYPT)
+                    {
+                        Debug.Fail($"Expected qop = 0, returned value = {qop}");
+                        throw new InvalidOperationException(SR.net_auth_message_not_encrypted);
+                    }
+
+                    return true;
+                }
             }
-
-            int resultSize = buffer.Length + sizes.cbSecurityTrailer + sizes.cbBlockSize;
-            if (output == null || output.Length < resultSize + 4)
+            finally
             {
-                output = new byte[resultSize + 4];
-            }
-
-            // Make a copy of user data for in-place encryption.
-            buffer.CopyTo(output.AsSpan(4 + sizes.cbSecurityTrailer));
-
-            fixed (byte* outputPtr = output)
-            {
-                // Prepare buffers TOKEN(signature), DATA and Padding.
-                Interop.SspiCli.SecBuffer* unmanagedBuffer = stackalloc Interop.SspiCli.SecBuffer[3];
-                Interop.SspiCli.SecBuffer* tokenBuffer = &unmanagedBuffer[0];
-                Interop.SspiCli.SecBuffer* dataBuffer = &unmanagedBuffer[1];
-                Interop.SspiCli.SecBuffer* paddingBuffer = &unmanagedBuffer[2];
-                tokenBuffer->BufferType = SecurityBufferType.SECBUFFER_TOKEN;
-                tokenBuffer->pvBuffer = (IntPtr)(outputPtr + 4);
-                tokenBuffer->cbBuffer = sizes.cbSecurityTrailer;
-                dataBuffer->BufferType = SecurityBufferType.SECBUFFER_DATA;
-                dataBuffer->pvBuffer = (IntPtr)(outputPtr + 4 + sizes.cbSecurityTrailer);
-                dataBuffer->cbBuffer = buffer.Length;
-                paddingBuffer->BufferType = SecurityBufferType.SECBUFFER_PADDING;
-                paddingBuffer->pvBuffer = (IntPtr)(outputPtr + 4 + sizes.cbSecurityTrailer + buffer.Length);
-                paddingBuffer->cbBuffer = sizes.cbBlockSize;
-
-                Interop.SspiCli.SecBufferDesc sdcInOut = new Interop.SspiCli.SecBufferDesc(3)
+                if (refAdded)
                 {
-                    pBuffers = unmanagedBuffer
-                };
-
-                if (isNtlm && !isConfidential)
-                {
-                    dataBuffer->BufferType |= SecurityBufferType.SECBUFFER_READONLY;
+                    securityContext.DangerousRelease();
                 }
-
-                uint qop = isConfidential ? 0 : Interop.SspiCli.SECQOP_WRAP_NO_ENCRYPT;
-                int errorCode = GlobalSSPI.SSPIAuth.EncryptMessage(securityContext, ref sdcInOut, qop);
-
-                if (errorCode != 0)
-                {
-                    Exception e = new Win32Exception(errorCode);
-                    if (NetEventSource.Log.IsEnabled()) NetEventSource.Error(null, e);
-                    throw new Win32Exception(errorCode);
-                }
-
-                // Compacting the result.
-                resultSize = tokenBuffer->cbBuffer;
-                bool forceCopy = false;
-                if (resultSize != sizes.cbSecurityTrailer)
-                {
-                    forceCopy = true;
-                    output.AsSpan(4 + sizes.cbSecurityTrailer, dataBuffer->cbBuffer).CopyTo(output.AsSpan(4 + resultSize, dataBuffer->cbBuffer));
-                }
-
-                resultSize += dataBuffer->cbBuffer;
-                if (paddingBuffer->cbBuffer != 0 && (forceCopy || resultSize != (buffer.Length + sizes.cbSecurityTrailer)))
-                {
-                    output.AsSpan(4 + sizes.cbSecurityTrailer + buffer.Length, paddingBuffer->cbBuffer).CopyTo(output.AsSpan(4 + resultSize, paddingBuffer->cbBuffer));
-                }
-
-                resultSize += paddingBuffer->cbBuffer;
-                BinaryPrimitives.WriteInt32LittleEndian(output, resultSize);
-
-                return resultSize + 4;
             }
         }
 
-        internal static unsafe int Decrypt(
+        internal static unsafe void GetMIC(
             SafeDeleteContext securityContext,
-            Span<byte> buffer,
             bool isConfidential,
-            bool isNtlm,
-            out int newOffset)
+            ReadOnlySpan<byte> message,
+            IBufferWriter<byte> signature)
         {
-            if (isNtlm)
+            bool refAdded = false;
+
+            try
             {
-                return DecryptNtlm(securityContext, buffer, isConfidential, out newOffset);
+                securityContext.DangerousAddRef(ref refAdded);
+
+                SecPkgContext_Sizes sizes = default;
+                bool success = SSPIWrapper.QueryBlittableContextAttributes(GlobalSSPI.SSPIAuth, securityContext, Interop.SspiCli.ContextAttribute.SECPKG_ATTR_SIZES, ref sizes);
+                Debug.Assert(success);
+
+                Span<byte> signatureBuffer = signature.GetSpan(sizes.cbSecurityTrailer);
+
+                fixed (byte* messagePtr = message)
+                fixed (byte* signaturePtr = signatureBuffer)
+                {
+                    // Prepare buffers TOKEN(signature), DATA.
+                    Interop.SspiCli.SecBuffer* unmanagedBuffer = stackalloc Interop.SspiCli.SecBuffer[2];
+                    Interop.SspiCli.SecBuffer* tokenBuffer = &unmanagedBuffer[0];
+                    Interop.SspiCli.SecBuffer* dataBuffer = &unmanagedBuffer[1];
+                    tokenBuffer->BufferType = SecurityBufferType.SECBUFFER_TOKEN;
+                    tokenBuffer->pvBuffer = (IntPtr)signaturePtr;
+                    tokenBuffer->cbBuffer = sizes.cbSecurityTrailer;
+                    dataBuffer->BufferType = SecurityBufferType.SECBUFFER_DATA;
+                    dataBuffer->pvBuffer = (IntPtr)messagePtr;
+                    dataBuffer->cbBuffer = message.Length;
+
+                    Interop.SspiCli.SecBufferDesc sdcInOut = new Interop.SspiCli.SecBufferDesc(2)
+                    {
+                        pBuffers = unmanagedBuffer
+                    };
+
+                    uint qop = isConfidential ? 0 : Interop.SspiCli.SECQOP_WRAP_NO_ENCRYPT;
+                    int errorCode = Interop.SspiCli.MakeSignature(ref securityContext._handle, qop, ref sdcInOut, 0);
+
+                    if (errorCode != 0)
+                    {
+                        Exception e = new Win32Exception(errorCode);
+                        if (NetEventSource.Log.IsEnabled()) NetEventSource.Error(null, e);
+                        throw new Win32Exception(errorCode);
+                    }
+
+                    signature.Advance(signatureBuffer.Length);
+                }
             }
-
-            //
-            // Kerberos and up
-            //
-            fixed (byte* bufferPtr = buffer)
+            finally
             {
-                Interop.SspiCli.SecBuffer* unmanagedBuffer = stackalloc Interop.SspiCli.SecBuffer[2];
-                Interop.SspiCli.SecBuffer* streamBuffer = &unmanagedBuffer[0];
-                Interop.SspiCli.SecBuffer* dataBuffer = &unmanagedBuffer[1];
-                streamBuffer->BufferType = SecurityBufferType.SECBUFFER_STREAM;
-                streamBuffer->pvBuffer = (IntPtr)bufferPtr;
-                streamBuffer->cbBuffer = buffer.Length;
-                dataBuffer->BufferType = SecurityBufferType.SECBUFFER_DATA;
-                dataBuffer->pvBuffer = IntPtr.Zero;
-                dataBuffer->cbBuffer = 0;
-
-                Interop.SspiCli.SecBufferDesc sdcInOut = new Interop.SspiCli.SecBufferDesc(2)
+                if (refAdded)
                 {
-                    pBuffers = unmanagedBuffer
-                };
-
-                uint qop;
-                int errorCode = GlobalSSPI.SSPIAuth.DecryptMessage(securityContext, ref sdcInOut, out qop);
-
-                if (errorCode != 0)
-                {
-                    Exception e = new Win32Exception(errorCode);
-                    if (NetEventSource.Log.IsEnabled()) NetEventSource.Error(null, e);
-                    throw new Win32Exception(errorCode);
+                    securityContext.DangerousRelease();
                 }
-
-                if (qop == Interop.SspiCli.SECQOP_WRAP_NO_ENCRYPT && isConfidential)
-                {
-                    Debug.Fail($"Expected qop = 0, returned value = {qop}");
-                    throw new InvalidOperationException(SR.net_auth_message_not_encrypted);
-                }
-
-                if (dataBuffer->BufferType != SecurityBufferType.SECBUFFER_DATA)
-                {
-                    throw new InternalException(dataBuffer->BufferType);
-                }
-
-                Debug.Assert((nint)dataBuffer->pvBuffer >= (nint)bufferPtr);
-                Debug.Assert((nint)dataBuffer->pvBuffer + dataBuffer->cbBuffer <= (nint)bufferPtr + buffer.Length);
-                newOffset = (int)((byte*)dataBuffer->pvBuffer - bufferPtr);
-                return dataBuffer->cbBuffer;
-            }
-        }
-
-        private static unsafe int DecryptNtlm(
-            SafeDeleteContext securityContext,
-            Span<byte> buffer,
-            bool isConfidential,
-            out int newOffset)
-        {
-            const int NtlmSignatureLength = 16;
-
-            // For the most part the arguments are verified in Decrypt().
-            if (buffer.Length < NtlmSignatureLength)
-            {
-                Debug.Fail("Argument 'count' out of range.");
-                throw new Win32Exception((int)Interop.SECURITY_STATUS.InvalidToken);
-            }
-
-            fixed (byte* bufferPtr = buffer)
-            {
-                SecurityBufferType realDataType = SecurityBufferType.SECBUFFER_DATA;
-                Interop.SspiCli.SecBuffer* unmanagedBuffer = stackalloc Interop.SspiCli.SecBuffer[2];
-                Interop.SspiCli.SecBuffer* tokenBuffer = &unmanagedBuffer[0];
-                Interop.SspiCli.SecBuffer* dataBuffer = &unmanagedBuffer[1];
-                tokenBuffer->BufferType = SecurityBufferType.SECBUFFER_TOKEN;
-                tokenBuffer->pvBuffer = (IntPtr)bufferPtr;
-                tokenBuffer->cbBuffer = NtlmSignatureLength;
-                dataBuffer->BufferType = SecurityBufferType.SECBUFFER_DATA;
-                dataBuffer->pvBuffer = (IntPtr)(bufferPtr + NtlmSignatureLength);
-                dataBuffer->cbBuffer = buffer.Length - NtlmSignatureLength;
-
-                Interop.SspiCli.SecBufferDesc sdcInOut = new Interop.SspiCli.SecBufferDesc(2)
-                {
-                    pBuffers = unmanagedBuffer
-                };
-                uint qop;
-                int errorCode;
-
-                if (!isConfidential)
-                {
-                    realDataType |= SecurityBufferType.SECBUFFER_READONLY;
-                    dataBuffer->BufferType = realDataType;
-                }
-
-                errorCode = GlobalSSPI.SSPIAuth.DecryptMessage(securityContext, ref sdcInOut, out qop);
-
-                if (errorCode != 0)
-                {
-                    Exception e = new Win32Exception(errorCode);
-                    if (NetEventSource.Log.IsEnabled()) NetEventSource.Error(null, e);
-                    throw new Win32Exception(errorCode);
-                }
-
-                if (isConfidential && qop == Interop.SspiCli.SECQOP_WRAP_NO_ENCRYPT)
-                {
-                    Debug.Fail($"Expected qop = 0, returned value = {qop}");
-                    throw new InvalidOperationException(SR.net_auth_message_not_encrypted);
-                }
-
-                if (dataBuffer->BufferType != realDataType)
-                {
-                    throw new InternalException(dataBuffer->BufferType);
-                }
-
-                Debug.Assert((nint)dataBuffer->pvBuffer >= (nint)bufferPtr);
-                Debug.Assert((nint)dataBuffer->pvBuffer + dataBuffer->cbBuffer <= (nint)bufferPtr + buffer.Length);
-                newOffset = (int)((byte*)dataBuffer->pvBuffer - bufferPtr);
-                return dataBuffer->cbBuffer;
             }
         }
     }
