@@ -492,8 +492,8 @@ namespace ILCompiler
                 }
 
                 // If we have a scanner, we can inline threadstatics storage using the information we collected at scanning time.
-                // This could be a command line switch if we really wanted to.
-                if ((targetArchitecture == TargetArchitecture.X64 && (targetOS == TargetOS.Windows || targetOS == TargetOS.Linux)))
+                if (!Get(_command.NoInlineTls) &&
+                    (targetArchitecture == TargetArchitecture.X64 && (targetOS == TargetOS.Windows || targetOS == TargetOS.Linux)))
                 {
                     builder.UseInlinedThreadStatics(scanResults.GetInlinedThreadStatics());
                 }
