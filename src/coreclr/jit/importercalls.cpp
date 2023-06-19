@@ -5960,7 +5960,6 @@ void Compiler::considerGuardedDevirtualization(GenTreeCall*            call,
             assert((numExactClasses > 0) && (numExactClasses <= maxTypeChecks));
             JITDUMP("We have exactly %d classes implementing %s:\n", numExactClasses, eeGetClassName(baseClass));
 
-            int skipped = 0;
             for (int exactClsIdx = 0; exactClsIdx < numExactClasses; exactClsIdx++)
             {
                 CORINFO_CLASS_HANDLE exactCls = exactClasses[exactClsIdx];
@@ -6010,6 +6009,14 @@ void Compiler::considerGuardedDevirtualization(GenTreeCall*            call,
                 addGuardedDevirtualizationCandidate(call, exactMethod, exactCls, exactMethodAttrs, clsAttrs,
                                                     likelyHood);
             }
+
+            if (call->GetInlineCandidatesCount() == numExactClasses)
+            {
+                assert(numExactClasses > 0);
+                call->gtCallMoreFlags |= GTF_CALL_M_GUARDED_DEVIRT_EXACT;
+                // NOTE: we have to drop this flag if we change the number of candidates before we expand.
+            }
+
             return;
         }
     }

@@ -2,10 +2,10 @@
 // The .NET Foundation licenses this file to you under the MIT license.
 
 import MonoWasmThreads from "consts:monoWasmThreads";
-import WasmEnableLegacyJsInterop from "consts:WasmEnableLegacyJsInterop";
+import WasmEnableLegacyJsInterop from "consts:wasmEnableLegacyJsInterop";
 
 import { DotnetModuleInternal, CharPtrNull } from "./types/internal";
-import { disableLegacyJsInterop, ENVIRONMENT_IS_PTHREAD, exportedRuntimeAPI, INTERNAL, loaderHelpers, Module, runtimeHelpers } from "./globals";
+import { linkerDisableLegacyJsInterop, ENVIRONMENT_IS_PTHREAD, exportedRuntimeAPI, INTERNAL, loaderHelpers, Module, runtimeHelpers } from "./globals";
 import cwraps, { init_c_exports } from "./cwraps";
 import { mono_wasm_raise_debug_event, mono_wasm_runtime_ready } from "./debug";
 import { toBase64StringImpl } from "./base64";
@@ -327,7 +327,7 @@ function mono_wasm_pre_init_essential(isWorker: boolean): void {
 
     init_c_exports();
     cwraps_internal(INTERNAL);
-    if (WasmEnableLegacyJsInterop && !disableLegacyJsInterop) {
+    if (WasmEnableLegacyJsInterop && !linkerDisableLegacyJsInterop) {
         cwraps_mono_api(MONO);
         cwraps_binding_api(BINDING);
     }
@@ -581,7 +581,7 @@ export function bindings_init(): void {
         const mark = startMeasure();
         strings_init();
         init_managed_exports();
-        if (WasmEnableLegacyJsInterop && !disableLegacyJsInterop && !ENVIRONMENT_IS_PTHREAD) {
+        if (WasmEnableLegacyJsInterop && !linkerDisableLegacyJsInterop && !ENVIRONMENT_IS_PTHREAD) {
             init_legacy_exports();
         }
         initialize_marshalers_to_js();

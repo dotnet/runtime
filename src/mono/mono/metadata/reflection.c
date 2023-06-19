@@ -13,7 +13,7 @@
  * Licensed under the MIT license. See LICENSE file in the project root for full license information.
  */
 #include <config.h>
-#include "mono/utils/mono-membar.h"
+#include "mono/utils/mono-memory-model.h"
 #include "mono/metadata/assembly-internals.h"
 #include "mono/metadata/reflection-internals.h"
 #include "mono/metadata/tabledefs.h"

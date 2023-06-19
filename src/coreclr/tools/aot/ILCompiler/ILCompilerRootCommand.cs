@@ -80,6 +80,8 @@ namespace ILCompiler
             new(new[] { "--scan" }, "Use IL scanner to generate optimized code (implied by -O)");
         public Option<bool> NoScanner { get; } =
             new(new[] { "--noscan" }, "Do not use IL scanner to generate optimized code");
+        public Option<bool> NoInlineTls { get; } =
+            new(new[] { "--noinlinetls" }, "Do not generate inline thread local statics");
         public Option<string> IlDump { get; } =
             new(new[] { "--ildump" }, "Dump IL assembly listing for compiler-generated IL");
         public Option<bool> EmitStackTraceData { get; } =
@@ -205,6 +207,7 @@ namespace ILCompiler
             AddOption(ScanReflection);
             AddOption(UseScanner);
             AddOption(NoScanner);
+            AddOption(NoInlineTls);
             AddOption(IlDump);
             AddOption(EmitStackTraceData);
             AddOption(MethodBodyFolding);

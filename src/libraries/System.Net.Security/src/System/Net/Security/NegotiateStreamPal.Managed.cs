@@ -12,7 +12,6 @@ namespace System.Net.Security
     // It encapsulates security context and does the real work in authentication and
     // user data encryption with NEGO SSPI package.
     //
-    [UnsupportedOSPlatform("tvos")]
     internal static partial class NegotiateStreamPal
     {
 #pragma warning disable IDE0060
@@ -23,12 +22,11 @@ namespace System.Net.Security
 
         internal static void ValidateImpersonationLevel(TokenImpersonationLevel impersonationLevel)
         {
-            throw new PlatformNotSupportedException();
-        }
-
-        internal static Win32Exception CreateExceptionFromError(SecurityStatusPal statusCode)
-        {
-            throw new PlatformNotSupportedException();
+            if (impersonationLevel != TokenImpersonationLevel.Identification)
+            {
+                throw new ArgumentOutOfRangeException(nameof(impersonationLevel), impersonationLevel.ToString(),
+                    SR.net_auth_supported_impl_levels);
+            }
         }
 #pragma warning restore IDE0060
     }

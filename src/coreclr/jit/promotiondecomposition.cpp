@@ -1046,21 +1046,18 @@ void Compiler::gtPeelOffsets(GenTree** addr, target_ssize_t* offset, FieldSeq** 
     }
 }
 
-// HandleStore:
+// HandleStructStore:
 //   Handle a store that may be between struct locals with replacements.
 //
 // Parameters:
 //   use  - The store's use
 //   user - The store's user
 //
-void ReplaceVisitor::HandleStore(GenTree** use, GenTree* user)
+void ReplaceVisitor::HandleStructStore(GenTree** use, GenTree* user)
 {
     GenTree* store = *use;
 
-    if (!store->TypeIs(TYP_STRUCT))
-    {
-        return;
-    }
+    assert(store->TypeIs(TYP_STRUCT));
 
     GenTree*             src    = store->Data()->gtEffectiveVal();
     GenTreeLclVarCommon* dstLcl = store->OperIsLocalStore() ? store->AsLclVarCommon() : nullptr;
@@ -1202,10 +1199,7 @@ void ReplaceVisitor::HandleStore(GenTree** use, GenTree* user)
         {
             GenTreeLclVarCommon* lclStore = store->AsLclVarCommon();
             unsigned             size     = lclStore->GetLayout(m_compiler)->GetSize();
-            if (MarkForReadBack(lclStore->GetLclNum(), lclStore->GetLclOffs(), size))
-            {
-                JITDUMP("Marked store destination replacements to be read back (could not decompose this store)\n");
-            }
+            MarkForReadBack(lclStore, size DEBUGARG("cannot decompose store"));
         }
     }
 }
