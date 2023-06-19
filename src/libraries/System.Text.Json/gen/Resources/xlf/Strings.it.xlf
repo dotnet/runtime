@@ -64,12 +64,12 @@
       </trans-unit>
       <trans-unit id="JsonStringEnumConverterNotSupportedMessageFormat">
         <source>The member '{0}' has been annotated with 'JsonStringEnumConverter' which is not supported in native AOT. Consider using the generic 'JsonStringEnumConverter&lt;TEnum&gt;' instead.</source>
-        <target state="new">The member '{0}' has been annotated with 'JsonStringEnumConverter' which is not supported in native AOT. Consider using the generic 'JsonStringEnumConverter&lt;TEnum&gt;' instead.</target>
+        <target state="translated">Il membro '{0}' è stato annotato con 'JsonStringEnumConverter' che non è supportato in AOT nativo. Provare a usare il generico 'JsonStringEnumConverter&lt;TEnum&gt;'.</target>
         <note />
       </trans-unit>
       <trans-unit id="JsonStringEnumConverterNotSupportedTitle">
         <source>The non-generic 'JsonStringEnumConverter' requires dynamic code.</source>
-        <target state="new">The non-generic 'JsonStringEnumConverter' requires dynamic code.</target>
+        <target state="translated">L'elemento 'JsonStringEnumConverter' non generico richiede un codice dinamico.</target>
         <note />
       </trans-unit>
       <trans-unit id="MultipleJsonConstructorAttributeFormat">

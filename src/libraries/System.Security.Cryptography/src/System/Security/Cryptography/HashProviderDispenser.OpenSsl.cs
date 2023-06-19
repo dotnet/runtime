@@ -53,6 +53,21 @@ namespace System.Security.Cryptography
                 return written;
             }
 
+            public static unsafe void HashDataXof(string hashAlgorithmId, ReadOnlySpan<byte> source, Span<byte> destination)
+            {
+                IntPtr evpType = Interop.Crypto.HashAlgorithmToEvp(hashAlgorithmId);
+                Debug.Assert(evpType != IntPtr.Zero);
+
+                const int Success = 1;
+                int ret = Interop.Crypto.EvpDigestXOFOneShot(evpType, source, destination);
+
+                if (ret != Success)
+                {
+                    Debug.Assert(ret == 0);
+                    throw Interop.Crypto.CreateOpenSslCryptographicException();
+                }
+            }
+
             public static unsafe int HashData(string hashAlgorithmId, ReadOnlySpan<byte> source, Span<byte> destination)
             {
                 IntPtr evpType = Interop.Crypto.HashAlgorithmToEvp(hashAlgorithmId);

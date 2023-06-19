@@ -1718,7 +1718,7 @@ GenTree* Lowering::LowerHWIntrinsicCmpOp(GenTreeHWIntrinsic* node, genTreeOps cm
     // TODO-XARCH-AVX512: We should handle TYP_SIMD12 here under the EVEX path, but doing
     // so will require us to account for the unused 4th element.
 
-    if ((simdType != TYP_SIMD12) && comp->IsBaselineVector512IsaSupported())
+    if ((simdType != TYP_SIMD12) && comp->IsBaselineVector512IsaSupportedOpportunistically())
     {
         // The EVEX encoded versions of the comparison instructions all return a kmask
         //
@@ -7619,7 +7619,7 @@ bool Lowering::IsContainableHWIntrinsicOp(GenTreeHWIntrinsic* parentNode, GenTre
                 case NI_AVX512BW_ShiftLeftLogical128BitLane:
                 case NI_AVX512BW_ShiftRightLogical128BitLane:
                 {
-                    if (comp->compOpportunisticallyDependsOn(InstructionSet_Vector512))
+                    if (comp->IsBaselineVector512IsaSupportedOpportunistically())
                     {
                         assert(!supportsSIMDScalarLoads);
 

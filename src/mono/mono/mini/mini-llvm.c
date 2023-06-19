@@ -4910,7 +4910,11 @@ static const gboolean use_mono_personality_debug = TRUE;
 static const char *default_personality_name = "mono_debug_personality";
 #else
 static const gboolean use_mono_personality_debug = FALSE;
+#ifdef TARGET_WIN32_MSVC
+static const char *default_personality_name = "__CxxFrameHandler3";
+#else
 static const char *default_personality_name = "__gxx_personality_v0";
+#endif
 #endif
 
 static const char*

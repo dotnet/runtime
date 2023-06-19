@@ -59,11 +59,11 @@ public:
                           PInvokeTransitionFrame**      ppPreviousTransitionFrame);   // out
 
     uintptr_t GetConservativeUpperBoundForOutgoingArgs(MethodInfo *   pMethodInfo,
-                                                        REGDISPLAY *   pRegisterSet);
+                                                       REGDISPLAY *   pRegisterSet);
 
     bool IsUnwindable(PTR_VOID pvAddress);
 
-    int TrailingEpilogueInstructionsCount(PTR_VOID pvAddress); 
+    int TrailingEpilogueInstructionsCount(MethodInfo * pMethodInfo, PTR_VOID pvAddress);
 
     bool GetReturnAddressHijackInfo(MethodInfo *    pMethodInfo,
                                     REGDISPLAY *    pRegisterSet,       // in

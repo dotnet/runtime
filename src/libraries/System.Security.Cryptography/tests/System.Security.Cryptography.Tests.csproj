@@ -302,6 +302,9 @@
     <Compile Include="Sha3_256Tests.cs" />
     <Compile Include="Sha3_384Tests.cs" />
     <Compile Include="Sha3_512Tests.cs" />
+    <Compile Include="ShakeTestDriver.cs" />
+    <Compile Include="Shake128Tests.cs" />
+    <Compile Include="Shake256Tests.cs" />
     <Compile Include="SignatureAlgorithmHashTests.cs" />
     <Compile Include="SignatureDescriptionTests.cs" />
     <Compile Include="SimpleHashAlgorithmTest.cs" />
