@@ -17,6 +17,7 @@ namespace System.Net
         private const int ResolutionStartEventId = 1;
         private const int ResolutionStopEventId = 2;
         private const int ResolutionFailedEventId = 3;
+        private const int HostAliasesLoadFailureEventId = 4;
 
         private PollingCounter? _lookupsRequestedCounter;
         private PollingCounter? _currentLookupsCounter;
@@ -58,6 +59,8 @@ namespace System.Net
         [Event(ResolutionFailedEventId, Level = EventLevel.Informational)]
         private void ResolutionFailed() => WriteEvent(ResolutionFailedEventId);
 
+        [Event(HostAliasesLoadFailureEventId, Level = EventLevel.Error)]
+        public void HostAliasesLoadFailure(string aliasesFilePath, string failureReason) => WriteEvent(HostAliasesLoadFailureEventId, aliasesFilePath, failureReason);
 
         [NonEvent]
         public long BeforeResolution(object hostNameOrAddress)

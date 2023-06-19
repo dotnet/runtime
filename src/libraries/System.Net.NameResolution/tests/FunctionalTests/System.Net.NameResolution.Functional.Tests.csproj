@@ -13,6 +13,7 @@
     <Compile Include="GetHostNameTest.cs" />
     <Compile Include="GetHostEntryTest.cs" />
     <Compile Include="GetHostAddressesTest.cs" />
+    <Compile Include="HostAliasesTest.cs" />
     <Compile Include="LoggingTest.cs" />
     <Compile Include="TelemetryTest.cs" />
     <Compile Include="TestSettings.cs" />

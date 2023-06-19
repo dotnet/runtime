@@ -14,10 +14,10 @@ namespace System.Net.NameResolution.Tests
     public class GetHostAddressesTest
     {
         [Fact]
-        public Task Dns_GetHostAddressesAsync_HostString_Ok() => TestGetHostAddressesAsync(() => Dns.GetHostAddressesAsync(TestSettings.LocalHost));
+        public static Task Dns_GetHostAddressesAsync_HostString_Ok() => TestGetHostAddressesAsync(() => Dns.GetHostAddressesAsync(TestSettings.LocalHost));
 
         [Fact]
-        public Task Dns_GetHostAddressesAsync_IPString_Ok() => TestGetHostAddressesAsync(() => Dns.GetHostAddressesAsync(TestSettings.LocalIPString));
+        public static Task Dns_GetHostAddressesAsync_IPString_Ok() => TestGetHostAddressesAsync(() => Dns.GetHostAddressesAsync(TestSettings.LocalIPString));
 
         private static async Task TestGetHostAddressesAsync(Func<Task<IPAddress[]>> getHostAddressesFunc)
         {

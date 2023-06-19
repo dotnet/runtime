@@ -4,7 +4,7 @@
 using System.Collections.Generic;
 using System.Diagnostics;
 using System.Globalization;
-using System.Net.Internals;
+using System.IO;
 using System.Net.Sockets;
 using System.Threading;
 using System.Threading.Tasks;
@@ -14,6 +14,31 @@ namespace System.Net
     /// <summary>Provides simple domain name resolution functionality.</summary>
     public static class Dns
     {
+        /// <summary>Name of environment variable storing optional host aliases file used by Dns.</summary>
+        /// <remarks>
+        /// If this environment variable is set, its value is used as the path to a host aliases file.
+        /// The aliases are used as part of APIs performing forward DNS resolution, where an alias
+        /// is simply replaced by the name it maps to.  The file contains one entry per line,
+        /// with the first value for the alias and the second value for the thing being aliased,
+        /// delimited by whitespace. Text starting with '#' is treated as a comment and ignored,
+        /// as is extraneous whitespace. For example, given the file:
+        ///     frontend 192.168.1.1
+        ///     anotherfrontend frontend # this is a comment
+        ///     msft www.microsoft.com
+        /// a `Dns.GetHostEntry("msft")` would end up returning the identical output it would
+        /// for `Dns.GetHostEntry("www.microsoft.com")`, and a call to `Dns.GetHostAddresses("anotherfrontend")`
+        /// would end up returning the same output as `Dns.GetHostAddresses("192.168.1.1")`.
+        ///
+        /// Only APIs that accept strings as input are affected by this environment variable.
+        /// APIs that accept IPAddress as input are unaffected.
+        ///
+        /// Aliases are treated as ordinal case-insensitive.
+        /// </remarks>
+        private const string HostAliasesEnvironmentVariable = "DOTNET_SYSTEM_NET_HOSTALIASES";
+
+        /// <summary>Optional aliases specified in a custom host aliases file.</summary>
+        private static readonly Dictionary<string, string>? s_hostAliases = LoadHostAliases();
+
         /// <summary>Gets the host name of the local machine.</summary>
         public static string GetHostName()
         {
@@ -66,6 +91,8 @@ namespace System.Net
         public static IPHostEntry GetHostEntry(string hostNameOrAddress, AddressFamily family)
         {
             ArgumentNullException.ThrowIfNull(hostNameOrAddress);
+
+            hostNameOrAddress = ResolveHostAlias(hostNameOrAddress);
 
             // See if it's an IP Address.
             IPHostEntry ipHostEntry;
@@ -191,6 +218,8 @@ namespace System.Net
         {
             ArgumentNullException.ThrowIfNull(hostNameOrAddress);
 
+            hostNameOrAddress = ResolveHostAlias(hostNameOrAddress);
+
             // See if it's an IP Address.
             IPAddress[] addresses;
             if (IPAddress.TryParse(hostNameOrAddress, out IPAddress? address))
@@ -255,6 +284,8 @@ namespace System.Net
         {
             ArgumentNullException.ThrowIfNull(hostName);
 
+            hostName = ResolveHostAlias(hostName);
+
             if (IPAddress.TryParse(hostName, out IPAddress? address))
             {
                 return CreateHostEntryForAddress(address);
@@ -301,6 +332,8 @@ namespace System.Net
         public static IPHostEntry Resolve(string hostName)
         {
             ArgumentNullException.ThrowIfNull(hostName);
+
+            hostName = ResolveHostAlias(hostName);
 
             // See if it's an IP Address.
             IPHostEntry ipHostEntry;
@@ -371,6 +404,8 @@ namespace System.Net
         private static object GetHostEntryOrAddressesCore(string hostName, bool justAddresses, AddressFamily addressFamily, long startingTimestamp = 0)
         {
             ValidateHostName(hostName);
+
+            hostName = ResolveHostAlias(hostName);
 
             if (startingTimestamp == 0)
             {
@@ -502,6 +537,8 @@ namespace System.Net
                     Task.FromCanceled<IPHostEntry>(cancellationToken);
             }
 
+            hostName = ResolveHostAlias(hostName);
+
             object asyncState;
 
             // See if it's an IP Address.
@@ -585,6 +622,8 @@ namespace System.Net
         private static Task<T>? GetAddrInfoWithTelemetryAsync<T>(string hostName, bool justAddresses, AddressFamily addressFamily, CancellationToken cancellationToken)
              where T : class
         {
+            Debug.Assert(hostName == ResolveHostAlias(hostName));
+
             long startingTimestamp = Stopwatch.GetTimestamp();
             Task? task = NameResolutionPal.GetAddrInfoAsync(hostName, justAddresses, addressFamily, cancellationToken);
 
@@ -599,7 +638,7 @@ namespace System.Net
 
             static async Task<T> CompleteAsync(Task task, string hostName, long startingTimestamp)
             {
-                _  = NameResolutionTelemetry.Log.BeforeResolution(hostName);
+                _ = NameResolutionTelemetry.Log.BeforeResolution(hostName);
                 T? result = null;
                 try
                 {
@@ -709,5 +748,98 @@ namespace System.Net
 
         private static SocketException CreateException(SocketError error, int nativeError) =>
             new SocketException((int)error) { HResult = nativeError };
+
+        /// <summary>Resolves a name through the custom aliases table if one exists.</summary>
+        /// <param name="name">The name to resolve.</param>
+        /// <returns>
+        /// The resolved name.  If there isn't an aliases table, this is just the original name.
+        /// If there is one, the name is resolved through the table as many times as are needed
+        /// until the resulting name no longer has an entry in the table.
+        /// </returns>
+        private static string ResolveHostAlias(string name)
+        {
+            if (s_hostAliases is not null)
+            {
+                while (s_hostAliases.TryGetValue(name, out string? newName))
+                {
+                    name = newName;
+                }
+            }
+
+            return name;
+        }
+
+        /// <summary>Loads host aliases from a path specified in the <see cref="HostAliasesEnvironmentVariable"/> environment variable.</summary>
+        private static Dictionary<string, string>? LoadHostAliases()
+        {
+            if (Environment.GetEnvironmentVariable(HostAliasesEnvironmentVariable) is string path)
+            {
+                try
+                {
+                    var aliases = new Dictionary<string, string>(StringComparer.OrdinalIgnoreCase);
+                    Span<Range> ranges = stackalloc Range[3];
+
+                    foreach (ReadOnlySpan<char> line in File.ReadAllText(path).AsSpan().EnumerateLines())
+                    {
+                        scoped ReadOnlySpan<char> span = line;
+
+                        // Trim off comments and whitespace
+                        int commentPos = span.IndexOf('#');
+                        if (commentPos >= 0)
+                        {
+                            span = span.Slice(0, commentPos);
+                        }
+                        span = span.Trim();
+                        if (span.IsEmpty)
+                        {
+                            continue;
+                        }
+
+                        // Split a line into pieces
+                        if (span.SplitAny(ranges, "", StringSplitOptions.TrimEntries | StringSplitOptions.RemoveEmptyEntries) != 2)
+                        {
+                            // Unable to parse the line. This is not fatal; just ignore the line.
+                            if (NameResolutionTelemetry.Log.IsEnabled()) NameResolutionTelemetry.Log.HostAliasesLoadFailure(path, $"Unable to parse line '{line}'");
+                            continue;
+                        }
+
+                        string from = span[ranges[0]].ToString(), to = span[ranges[1]].ToString();
+                        if (!aliases.TryAdd(from, to))
+                        {
+                            // Duplicate entry. This is not fatal; just ignore the duplicate.
+                            if (NameResolutionTelemetry.Log.IsEnabled()) NameResolutionTelemetry.Log.HostAliasesLoadFailure(path, $"Duplicate entry for '{from}'");
+                        }
+                    }
+
+                    // Validate there aren't any cycles. If there are any, throw out the aliases entirely.
+                    var seen = new HashSet<string>(StringComparer.OrdinalIgnoreCase);
+                    foreach (string key in aliases.Keys)
+                    {
+                        string? current = key;
+                        seen.Clear();
+                        seen.Add(current);
+                        while (aliases.TryGetValue(current, out current))
+                        {
+                            if (!seen.Add(current))
+                            {
+                                // Cycle! This is fatal to using the host aliases, since we could end up live locking in an infinite loop during Dns queries.
+                                if (NameResolutionTelemetry.Log.IsEnabled()) NameResolutionTelemetry.Log.HostAliasesLoadFailure(path, "Cycle detected");
+                                return null;
+                            }
+                        }
+                    }
+
+                    // Return the parsed aliases.
+                    return aliases;
+                }
+                catch (Exception e)
+                {
+                    NameResolutionTelemetry.Log.HostAliasesLoadFailure(path, e.Message);
+                }
+            }
+
+            // Either no file was specified or we failed to load it.
+            return null;
+        }
     }
 }
