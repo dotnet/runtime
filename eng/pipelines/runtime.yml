@@ -1475,7 +1475,8 @@ extends:
           jobParameters:
             testGroup: innerloop
             nameSuffix: AllSubsets_NativeAOT
-            buildArgs: -s clr.aot+libs+libs.tests -c $(_BuildConfig) -rc $(_BuildConfig) /p:ArchiveTests=true /p:DevTeamProvisioning=- /p:RunSmokeTestsOnly=true /p:BuildTestsOnHelix=true /p:UseNativeAOTRuntime=true
+            buildArgs: -s clr.aot+libs+libs.tests -c $(_BuildConfig) -rc $(_BuildConfig)
+            runtimeBuildArgs: /p:ArchiveTests=true /p:DevTeamProvisioning=- /p:RunSmokeTestsOnly=true /p:BuildTestsOnHelix=true /p:UseNativeAOTRuntime=true
             timeoutInMinutes: 180
             # extra steps, run tests
             extraStepsTemplate: /eng/pipelines/libraries/helix.yml
