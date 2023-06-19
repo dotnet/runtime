@@ -14,13 +14,6 @@ using Microsoft.Diagnostics.NETCore.Client;
 
 namespace Tracing.Tests.SimpleProviderValidation
 {
-    public sealed class MyEventSource : EventSource
-    {
-        private MyEventSource() {}
-        public static MyEventSource Log = new MyEventSource();
-        public void MyEvent() { WriteEvent(1, "MyEvent"); }
-    }
-
     public class ProviderValidation
     {
         public static int Main()
@@ -31,13 +24,12 @@ namespace Tracing.Tests.SimpleProviderValidation
 
             var providers = new List<EventPipeProvider>()
             {
-                new EventPipeProvider("MyEventSource", EventLevel.Verbose),
                 new EventPipeProvider("Microsoft-DotNETCore-SampleProfiler", EventLevel.Verbose),
                 //GCKeyword (0x1): 0b1
-                new EventPipeProvider("Microsoft-Windows-DotNETRuntime", EventLevel.Verbose, 0xFFFF)
+                new EventPipeProvider("Microsoft-Windows-DotNETRuntime", EventLevel.Informational, 0b1)
             };
 
-            var ret = IpcTraceTest.RunAndValidateEventCounts(_expectedEventCounts, _eventGeneratingAction, providers, 1024, enableRundownProvider:false);
+            var ret = IpcTraceTest.RunAndValidateEventCounts(_expectedEventCounts, _eventGeneratingAction, providers, 1024, _DoesTraceContainEvents, enableRundownProvider:false);
 
             GC.Collect();
             GC.WaitForPendingFinalizers();
@@ -51,45 +43,59 @@ namespace Tracing.Tests.SimpleProviderValidation
 
         private static Dictionary<string, ExpectedEventCount> _expectedEventCounts = new Dictionary<string, ExpectedEventCount>()
         {
-            { "MyEventSource", 100 },
-            { "Microsoft-DotNETCore-EventPipe", 1},
-            { "Microsoft-Windows-DotNETRuntime", 1}
+            { "Microsoft-Windows-DotNETRuntime", -1 }
         };
 
         private static Action _eventGeneratingAction = () => 
         {
-            GC.Collect();
-            GC.WaitForPendingFinalizers();
-            GC.Collect();
-            List<Foo> list = new List<Foo>();
-            for (int i = 0; i < 100; i++)
+            for (int i = 0; i < 50; i++)
             {
-                list.Add(new Foo(i));
                 if (i % 10 == 0)
-                    Logger.logger.Log($"Fired MyEvent {i:N0}/100,000 times...");
-                MyEventSource.Log.MyEvent();
+                    Logger.logger.Log($"Called GC.Collect() {i} times...");
+                ProviderValidation providerValidation = new ProviderValidation();
+                providerValidation = null;
+                GC.Collect();
             }
-            int rndValue = new Random().Next(0, 100);
-            Console.WriteLine($"{list[rndValue].IValue}-{list[rndValue].SValue}");
-            GC.Collect();
-            GC.WaitForPendingFinalizers();
-            GC.Collect();
         };
-    }
-    public class Foo
-    {
-        public int IValue { get; set; }
-        public string SValue { get; set; }
-        public Foo(int value)
-        {
-            IValue = value;
-            SValue = value.ToString();
-        }
 
-        ~Foo()
+        private static Func<EventPipeEventSource, Func<int>> _DoesTraceContainEvents = (source) =>
         {
-            Console.WriteLine("In Destructor");
-        }
-    }
+            int GCStartEvents = 0;
+            int GCEndEvents = 0;
+            source.Clr.GCStart += (eventData) => GCStartEvents += 1;
+            source.Clr.GCStop += (eventData) => GCEndEvents += 1;
 
+            int GCRestartEEStartEvents = 0;
+            int GCRestartEEStopEvents = 0;
+            source.Clr.GCRestartEEStart += (eventData) => GCRestartEEStartEvents += 1;
+            source.Clr.GCRestartEEStop += (eventData) => GCRestartEEStopEvents += 1;
+
+            int GCSuspendEEEvents = 0;
+            int GCSuspendEEEndEvents = 0;
+            source.Clr.GCSuspendEEStart += (eventData) => GCSuspendEEEvents += 1;
+            source.Clr.GCSuspendEEStop += (eventData) => GCSuspendEEEndEvents += 1;
+
+            return () => {
+                Logger.logger.Log("Event counts validation");
+
+                Logger.logger.Log("GCStartEvents: " + GCStartEvents);
+                Logger.logger.Log("GCEndEvents: " + GCEndEvents);
+                bool GCStartStopResult = GCStartEvents >= 50 && GCEndEvents >= 50 && Math.Abs(GCStartEvents - GCEndEvents) <=2;
+                Logger.logger.Log("GCStartStopResult check: " + GCStartStopResult);
+
+                Logger.logger.Log("GCRestartEEStartEvents: " + GCRestartEEStartEvents);
+                Logger.logger.Log("GCRestartEEStopEvents: " + GCRestartEEStopEvents);
+                bool GCRestartEEStartStopResult = GCRestartEEStartEvents >= 50 && GCRestartEEStopEvents >= 50;
+                Logger.logger.Log("GCRestartEEStartStopResult check: " + GCRestartEEStartStopResult);
+
+                Logger.logger.Log("GCSuspendEEEvents: " + GCSuspendEEEvents);
+                Logger.logger.Log("GCSuspendEEEndEvents: " + GCSuspendEEEndEvents);
+                bool GCSuspendEEStartStopResult = GCSuspendEEEvents >= 50 && GCSuspendEEEndEvents >= 50;
+                Logger.logger.Log("GCSuspendEEStartStopResult check: " + GCSuspendEEStartStopResult);
+
+                return GCStartStopResult && GCRestartEEStartStopResult && GCSuspendEEStartStopResult ? 100 : -1;
+            };
+        };
+
+    }
 }
