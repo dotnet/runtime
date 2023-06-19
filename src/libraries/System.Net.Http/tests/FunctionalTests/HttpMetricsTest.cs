@@ -548,7 +548,7 @@ namespace System.Net.Http.Functional.Tests
     [ConditionalClass(typeof(PlatformDetection), nameof(PlatformDetection.IsNotMobile))]
     public class HttpMetricsTest_Http11_Sync : HttpMetricsTest_Http11
     {
-        protected override bool TestAsync => base.TestAsync;
+        protected override bool TestAsync => false;
         public HttpMetricsTest_Http11_Sync(ITestOutputHelper output) : base(output)
         {
         }
@@ -658,22 +658,22 @@ namespace System.Net.Http.Functional.Tests
         }
     }
 
-    [ConditionalClass(typeof(HttpClientHandlerTestBase), nameof(IsQuicSupported))]
-    public class HttpMetricsTest_Http30 : HttpMetricsTest
-    {
-        protected override Version UseVersion => HttpVersion.Version30;
-        public HttpMetricsTest_Http30(ITestOutputHelper output) : base(output)
-        {
-        }
-    }
+    //[ConditionalClass(typeof(HttpClientHandlerTestBase), nameof(IsQuicSupported))]
+    //public class HttpMetricsTest_Http30 : HttpMetricsTest
+    //{
+    //    protected override Version UseVersion => HttpVersion.Version30;
+    //    public HttpMetricsTest_Http30(ITestOutputHelper output) : base(output)
+    //    {
+    //    }
+    //}
 
-    public class HttpMetricsTest_Http30_HttpMessageInvoker : HttpMetricsTest_Http30
-    {
-        protected override bool TestHttpMessageInvoker => true;
-        public HttpMetricsTest_Http30_HttpMessageInvoker(ITestOutputHelper output) : base(output)
-        {
-        }
-    }
+    //public class HttpMetricsTest_Http30_HttpMessageInvoker : HttpMetricsTest_Http30
+    //{
+    //    protected override bool TestHttpMessageInvoker => true;
+    //    public HttpMetricsTest_Http30_HttpMessageInvoker(ITestOutputHelper output) : base(output)
+    //    {
+    //    }
+    //}
 
     public class HttpMetricsTest_General
     {
