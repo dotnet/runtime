@@ -6,6 +6,7 @@
     <TargetOS>browser</TargetOS>
     <TargetArchitecture>wasm</TargetArchitecture>
     <RuntimeIdentifier>browser-wasm</RuntimeIdentifier>
+    <MonoWasmBuildVariant Condition="'$(WasmEnableThreads)' == 'true'">multithread</MonoWasmBuildVariant>
     <!-- Suppress experimental trim warnings. This can be removed when we get a preview6 SDK. -->
     <NoWarn>$(NoWarn);IL2121</NoWarn>
   </PropertyGroup>
@@ -15,7 +16,7 @@
   <PropertyGroup>
     <OutputPath>bin</OutputPath>
     <WasmAppDir>$(MSBuildProjectDirectory)\bin\$(Configuration)\AppBundle\</WasmAppDir>
-    <WasmXHarnessArgs Condition="'$(WasmEnableThreads)' == 'true' or '$(WasmEnablePerfTracing)' == 'true' or '$(MonoWasmBuildVariant)' == 'multithread' or '$(MonoWasmBuildVariant)' == 'perftrace'">$(WasmXHarnessArgs) --web-server-use-cop</WasmXHarnessArgs>
+    <WasmXHarnessArgs Condition="'$(WasmEnableThreads)' == 'true'">$(WasmXHarnessArgs) --web-server-use-cop</WasmXHarnessArgs>
   </PropertyGroup>
   <PropertyGroup Condition="'$(Configuration)' == 'Debug'">
     <WasmNativeStrip>false</WasmNativeStrip>

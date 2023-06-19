@@ -149,7 +149,6 @@
       <LatestRuntimeFrameworkVersion Condition="'%(KnownRuntimePack.TargetFramework)' == '${NetCoreAppCurrent}' and '%(KnownRuntimePack.RuntimePackLabels)' == 'Mono'">$(_MonoWorkloadRuntimePackPackageVersion)</LatestRuntimeFrameworkVersion>
       <!-- Overrides for wasm threading support -->
       <RuntimePackNamePatterns Condition="'$(RuntimeIdentifier)' == 'browser-wasm' and '$(WasmEnableThreads)' == 'true'">Microsoft.NETCore.App.Runtime.Mono.multithread.**RID**</RuntimePackNamePatterns>
-      <RuntimePackNamePatterns Condition="'$(RuntimeIdentifier)' == 'browser-wasm' and '$(WasmEnablePerfTracing)' == 'true'">Microsoft.NETCore.App.Runtime.Mono.perftrace.**RID**</RuntimePackNamePatterns>
     </KnownRuntimePack>
     <KnownWebAssemblySdkPack Update="@(KnownWebAssemblySdkPack)">
       <WebAssemblySdkPackVersion Condition="'%(KnownWebAssemblySdkPack.TargetFramework)' == '${NetCoreAppCurrent}'">$(_KnownWebAssemblySdkPackVersion)</WebAssemblySdkPackVersion>
@@ -175,12 +174,5 @@
 
     <Error Condition="'$(WasmBuildNative)' == 'true'"
       Text="WebAssembly workloads, required for native relinking, are only supported for projects targeting net6.0+ . Set %24(WasmBuildNative)=false to disable it." />
-  </Target>
-
-  <Target Name="_ErrorDualWasmThreadProps"
-    Condition="('$(TargetsCurrent)' == 'true' or '$(TargetsNet7)' == 'true') and '$(RuntimeIdentifier)' == 'browser-wasm' and
-    '$(BrowserWorkloadDisabled)' != 'true' and '$(WasmEnableThreads)' == 'true' and '$(WasmEnablePerfTrace)' == 'true'"
-    BeforeTargets="Build">
-    <Error Text="WebAssembly workloads can only support one active threading mode at a time. Either set WasmEnableThreads or WasmEnablePerfTracing to true, but not both." />
   </Target>
 </Project>

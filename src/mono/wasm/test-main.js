@@ -136,6 +136,8 @@ function processArguments(incomingArguments, runArgs) {
             runArgs.forwardConsole = false;
         } else if (currentArg == "--no-memory-snapshot") {
             runArgs.memorySnapshot = false;
+        } else if (currentArg == "--use-threads") {
+            runArgs.environmentVariables["IsBrowserThreadingSupported"] = "true";
         } else if (currentArg.startsWith("--fetch-random-delay=")) {
             const arg = currentArg.substring("--fetch-random-delay=".length);
             if (is_browser) {
