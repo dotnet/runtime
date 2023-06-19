@@ -354,20 +354,6 @@ namespace LibraryImportGenerator.UnitTests
             }};
 
             // Unsupported [In, Out] attributes usage
-            // Blittable array
-            yield return new object[] { ID(), CodeSnippets.ByValueParameterWithModifier<int[]>("Out"), new[]
-            {
-                VerifyCS.Diagnostic(GeneratorDiagnostics.ParameterTypeNotSupportedWithDetails)
-                    .WithLocation(0)
-                    .WithArguments("The provided '[In]' and '[Out]' attributes on this parameter are unsupported on this parameter.", "p")
-            } };
-
-            yield return new object[] { ID(), CodeSnippets.ByValueParameterWithModifier<int[]>("In, Out"), new[]
-            {
-                VerifyCS.Diagnostic(GeneratorDiagnostics.ParameterTypeNotSupportedWithDetails)
-                    .WithLocation(0)
-                    .WithArguments("The provided '[In]' and '[Out]' attributes on this parameter are unsupported on this parameter.", "p")
-            } };
 
             // By ref with [In, Out] attributes
             yield return new object[] { ID(), CodeSnippets.ByValueParameterWithModifier("in int", "In"), new[]
