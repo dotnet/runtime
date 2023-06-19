@@ -32,11 +32,14 @@ namespace Microsoft.Extensions.Logging
                 minimumLevel = logLevel;
             }
 
-            var enabled = minimumLevel != LogLevel.None;
-            var debugText = $@"Name = ""{name}"", Enabled = {(enabled ? "true" : "false")}";
-            if (enabled)
+            var debugText = $@"Name = ""{name}""";
+            if (minimumLevel != LogLevel.None)
             {
                 debugText += $", MinLevel = {minimumLevel}";
+            }
+            else
+            {
+                debugText += $", Enabled = false";
             }
 
             return debugText;

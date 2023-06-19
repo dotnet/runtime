@@ -270,7 +270,7 @@ namespace Microsoft.Extensions.Logging.Test
 
             // Assert
             Assert.Equal(@"Name = ""Microsoft.Extensions.Logging.Test.LoggerTest"", Enabled = false", beforeProvider);
-            Assert.Equal(@"Name = ""Microsoft.Extensions.Logging.Test.LoggerTest"", Enabled = true, MinLevel = Trace", afterProvider);
+            Assert.Equal(@"Name = ""Microsoft.Extensions.Logging.Test.LoggerTest"", MinLevel = Trace", afterProvider);
         }
 
         private class CustomLoggerProvider : ILoggerProvider
