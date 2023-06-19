@@ -693,7 +693,7 @@ namespace System.Net.Http.Functional.Tests
             Assert.Same(h1.Meter, h2.Meter);
         }
 
-        [ConditionalFact(typeof(SocketsHttpHandler), nameof(SocketsHttpHandler.IsSupported))]
+        [ConditionalTheory(typeof(SocketsHttpHandler), nameof(SocketsHttpHandler.IsSupported))]
         [InlineData(false)]
         [InlineData(true)]
         public void SocketsHttpHandler_Dispose_DoesNotDisposeMeter(bool globalMeter)
