@@ -40,7 +40,10 @@
 #error Unknown OS
 #endif
 
-const ep_char8_t* _ds_portable_rid_info = PORTABLE_RID_OS "-" ARCH_TARGET_NAME;
+#define QUOTE_MACRO_HELPER(x)       #x
+#define QUOTE_MACRO(x)              QUOTE_MACRO_HELPER(x)
+
+const ep_char8_t* _ds_portable_rid_info = PORTABLE_RID_OS "-" QUOTE_MACRO(ARCH_TARGET_NAME);
 
 #endif /* ENABLE_PERFTRACING */
 
