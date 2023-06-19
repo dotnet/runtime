@@ -17,11 +17,8 @@ public class Interfaces
         if (TestInterfaceCache() == Fail)
             return Fail;
 
-// Tracking issue: https://github.com/dotnet/runtime/issues/87458
-#if !TARGET_IOS && !TARGET_TVOS
         if (TestAVInInterfaceCache() == Fail)
             return Fail;
-#endif
 
         if (TestMultipleInterfaces() == Fail)
             return Fail;

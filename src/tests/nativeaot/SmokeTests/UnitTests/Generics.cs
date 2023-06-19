@@ -53,10 +53,7 @@ class Generics
         TestNullableCasting.Run();
         TestVariantCasting.Run();
         TestMDArrayAddressMethod.Run();
-// Tracking issue: https://github.com/dotnet/runtime/issues/87458
-#if !TARGET_IOS && !TARGET_TVOS
         TestNativeLayoutGeneration.Run();
-#endif
         TestByRefLikeVTables.Run();
         TestFunctionPointerLoading.Run();
 
