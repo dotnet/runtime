@@ -149,6 +149,7 @@ namespace System.Collections.Frozen
             Debug.Assert(hashCodes.Length != 0);
             Debug.Assert(!hashCodesAreUnique || new HashSet<int>(hashCodes.ToArray()).Count == hashCodes.Length);
 
+            const double AcceptableCollisionRate = 0.05;  // What is a satisfactory rate of hash collisions?
             const int LargeInputSizeThreshold = 1000;     // What is the limit for an input to be considered "small"?
             const int MaxSmallBucketTableMultiplier = 16; // How large a bucket table should be allowed for small inputs?
             const int MaxLargeBucketTableMultiplier = 3;  // How large a bucket table should be allowed for large inputs?
@@ -213,8 +214,7 @@ namespace System.Collections.Frozen
             int[] seenBuckets = ArrayPool<int>.Shared.Rent((maxNumBuckets / BitsPerInt32) + 1);
 
             int bestNumBuckets = maxNumBuckets;
-            // just one more collision than the acceptable collision rate (5%)
-            int bestNumCollisions = (uniqueCodesCount / 20) + 1;
+            int bestNumCollisions = uniqueCodesCount;
 
             // Iterate through each available prime between the min and max discovered. For each, compute
             // the collision ratio.
@@ -280,7 +280,7 @@ namespace System.Collections.Frozen
                 {
                     bestNumBuckets = numBuckets;
 
-                    if (numCollisions <= (uniqueCodesCount / 20))
+                    if (numCollisions / (double)uniqueCodesCount <= AcceptableCollisionRate)
                     {
                         break;
                     }
