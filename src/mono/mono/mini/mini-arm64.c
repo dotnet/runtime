@@ -4135,6 +4135,7 @@ mono_arch_output_basic_block (MonoCompile *cfg, MonoBasicBlock *bb)
 			if (dreg != sreg1)
 				arm_neon_mov (code, dreg, sreg1);
 
+			int insert_at = (ins->opcode == OP_XINSERT_LOWER) ? 0 : 1;
 			arm_neon_ins_e (code, SIZE_8, dreg, sreg2, insert_at, 0);
 			break;
 		}
