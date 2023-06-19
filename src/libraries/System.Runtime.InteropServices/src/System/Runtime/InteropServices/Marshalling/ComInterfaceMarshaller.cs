@@ -56,6 +56,7 @@ namespace System.Runtime.InteropServices.Marshalling
         {
             if (TargetInterfaceIID is null)
             {
+                // If the managed type isn't a GeneratedComInterface-attributed type, we'll marshal to an IUnknown*.
                 return (void*)unknown;
             }
             Guid iid = TargetInterfaceIID.Value;
