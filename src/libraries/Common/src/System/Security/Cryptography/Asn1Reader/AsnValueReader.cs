@@ -216,11 +216,6 @@ namespace System.Formats.Asn1
             _span = _span.Slice(consumed);
             return ret;
         }
-
-        internal int GetRemainingLength()
-        {
-            return _span.Length;
-        }
     }
 
     internal static class AsnWriterExtensions
