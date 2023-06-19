@@ -15,15 +15,13 @@ internal static partial class Interop
 
         [LibraryImport(Libraries.GlobalizationNative, EntryPoint = "GlobalizationNative_EndsWithNative", StringMarshalling = StringMarshalling.Utf16)]
         [MethodImpl(MethodImplOptions.NoInlining)]
-        [return: MarshalAs(UnmanagedType.Bool)]
-        internal static unsafe partial bool EndsWithNative(string localeName, int lNameLen, char* target, int cwTargetLength, char* source, int cwSourceLength, CompareOptions options);
+        internal static unsafe partial int EndsWithNative(string localeName, int lNameLen, char* target, int cwTargetLength, char* source, int cwSourceLength, CompareOptions options);
 
         [LibraryImport(Libraries.GlobalizationNative, EntryPoint = "GlobalizationNative_IndexOfNative", StringMarshalling = StringMarshalling.Utf16)]
         internal static unsafe partial NSRange IndexOfNative(string localeName, int lNameLen, char* target, int cwTargetLength, char* pSource, int cwSourceLength, CompareOptions options, [MarshalAs(UnmanagedType.Bool)] bool fromBeginning);
 
         [LibraryImport(Libraries.GlobalizationNative, EntryPoint = "GlobalizationNative_StartsWithNative", StringMarshalling = StringMarshalling.Utf16)]
         [MethodImpl(MethodImplOptions.NoInlining)]
-        [return: MarshalAs(UnmanagedType.Bool)]
-        internal static unsafe partial bool StartsWithNative(string localeName, int lNameLen, char* target, int cwTargetLength, char* source, int cwSourceLength, CompareOptions options);
+        internal static unsafe partial int StartsWithNative(string localeName, int lNameLen, char* target, int cwTargetLength, char* source, int cwSourceLength, CompareOptions options);
     }
 }

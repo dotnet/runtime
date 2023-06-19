@@ -95,12 +95,6 @@ static NSString* RemoveWeightlessCharacters(NSString* source)
     return modifiedString;
 }
 
-// Remove weightless characters and normalize string with form C
-static NSString* ComposeString(NSString* source)
-{
-    return RemoveWeightlessCharacters(source.precomposedStringWithCanonicalMapping);
-}
-
 /*
 Function: IndexOf
 Find detailed explanation how this function works in https://github.com/dotnet/runtime/blob/main/docs/design/features/globalization-hybrid-mode.md
@@ -110,32 +104,33 @@ Range GlobalizationNative_IndexOfNative(const uint16_t* localeName, int32_t lNam
 {
     assert(cwTargetLength >= 0);
     Range result = {-1, 0};
-
-    NSLocale *currentLocale = GetCurrentLocale(localeName, lNameLength);
-    NSString *searchString = [NSString stringWithCharacters: lpTarget length: cwTargetLength];
-    NSString *searchStrComposed = RemoveWeightlessCharacters(searchString);
-    NSString *searchStrPrecomposed = searchStrComposed.precomposedStringWithCanonicalMapping;
-    NSString *sourceString = [NSString stringWithCharacters: lpSource length: cwSourceLength];
-    NSString *sourceStrComposed = RemoveWeightlessCharacters(sourceString);
-    NSString *sourceStrPrecomposed = sourceStrComposed.precomposedStringWithCanonicalMapping;
-
-    if (sourceStrComposed.length == 0 || searchStrComposed.length == 0)
-    {
-       result.location = fromBeginning ? 0 : sourceString.length;
-       return result;
-    }
-    NSRange rangeOfReceiverToSearch = NSMakeRange(0, sourceStrComposed.length);
     NSStringCompareOptions options = ConvertFromCompareOptionsToNSStringCompareOptions(comparisonOptions);
     
     // in case mapping is not found
     if (options == 0)
         return result;
+    
+    NSString *searchString = [NSString stringWithCharacters: lpTarget length: cwTargetLength];
+    NSString *searchStrCleaned = RemoveWeightlessCharacters(searchString);
+    NSString *sourceString = [NSString stringWithCharacters: lpSource length: cwSourceLength];
+    NSString *sourceStrCleaned = RemoveWeightlessCharacters(sourceString);
+
+    if (sourceStrCleaned.length == 0 || searchStrCleaned.length == 0)
+    {
+       result.location = fromBeginning ? 0 : sourceString.length;
+       return result;
+    }
+
+    NSLocale *currentLocale = GetCurrentLocale(localeName, lNameLength);
+    NSString *searchStrPrecomposed = searchStrCleaned.precomposedStringWithCanonicalMapping;
+    NSString *sourceStrPrecomposed = sourceStrCleaned.precomposedStringWithCanonicalMapping;
+
     // last index
     if (!fromBeginning)
         options |= NSBackwardsSearch;
 
     // check if source contains search string
-    rangeOfReceiverToSearch = NSMakeRange(0, sourceStrPrecomposed.length);
+    NSRange rangeOfReceiverToSearch = NSMakeRange(0, sourceStrPrecomposed.length);
     NSRange containsRange = [sourceStrPrecomposed rangeOfString:searchStrPrecomposed
                                                   options:options
                                                   range:rangeOfReceiverToSearch
@@ -149,7 +144,7 @@ Range GlobalizationNative_IndexOfNative(const uint16_t* localeName, int32_t lNam
     // localizedStandardRangeOfString is performing a case and diacritic insensitive, locale-aware search and finding first occurance.
     if ((comparisonOptions & IgnoreCase) && lNameLength == 0 && fromBeginning)
     {      
-        NSRange localizedStandardRange = [sourceStrComposed localizedStandardRangeOfString:searchStrComposed];
+        NSRange localizedStandardRange = [sourceStrCleaned localizedStandardRangeOfString:searchStrCleaned];
         if (localizedStandardRange.location != NSNotFound)
         {
             result.location = localizedStandardRange.location;
@@ -157,8 +152,9 @@ Range GlobalizationNative_IndexOfNative(const uint16_t* localeName, int32_t lNam
             return result;
         }       
     }
-   
-    NSRange nsRange = [sourceStrComposed rangeOfString:searchStrComposed
+
+    rangeOfReceiverToSearch = NSMakeRange(0, sourceStrCleaned.length);
+    NSRange nsRange = [sourceStrCleaned rangeOfString:searchStrCleaned
                                          options:options
                                          range:rangeOfReceiverToSearch
                                          locale:currentLocale];
@@ -176,9 +172,9 @@ Range GlobalizationNative_IndexOfNative(const uint16_t* localeName, int32_t lNam
             return result;
     }
     
-    rangeOfReceiverToSearch = NSMakeRange(0, sourceStrComposed.length);
+    rangeOfReceiverToSearch = NSMakeRange(0, sourceStrCleaned.length);
     // Normalize search string with Form C
-    NSRange precomposedRange = [sourceStrComposed rangeOfString:searchStrPrecomposed
+    NSRange precomposedRange = [sourceStrCleaned rangeOfString:searchStrPrecomposed
                                                   options:options
                                                   range:rangeOfReceiverToSearch
                                                   locale:currentLocale];
@@ -194,24 +190,24 @@ Range GlobalizationNative_IndexOfNative(const uint16_t* localeName, int32_t lNam
             return result;
         result.location = precomposedRange.location;
         result.length = precomposedRange.length;
+        return result;
     }
-    else
-    {
-        // Normalize search string with Form D
-        NSString *searchStrDecomposed = searchStrComposed.decomposedStringWithCanonicalMapping;
-        NSRange decomposedRange = [sourceStrComposed rangeOfString:searchStrDecomposed
-                                                     options:options
-                                                     range:rangeOfReceiverToSearch
-                                                     locale:currentLocale];
 
-        if (decomposedRange.location != NSNotFound)
-        {
-            result.location = decomposedRange.location;
-            result.length = decomposedRange.length;                    
-            return result;
-        }
+    // Normalize search string with Form D
+    NSString *searchStrDecomposed = searchStrCleaned.decomposedStringWithCanonicalMapping;
+    NSRange decomposedRange = [sourceStrCleaned rangeOfString:searchStrDecomposed
+                                                options:options
+                                                range:rangeOfReceiverToSearch
+                                                locale:currentLocale];
+
+    if (decomposedRange.location != NSNotFound)
+    {
+        result.location = decomposedRange.location;
+        result.length = decomposedRange.length;                    
+        return result;
     }
-    
+
+    result.location = -2;
     return result;
 }
 
@@ -222,18 +218,19 @@ int32_t GlobalizationNative_StartsWithNative(const uint16_t* localeName, int32_t
                                              const uint16_t* lpSource, int32_t cwSourceLength, int32_t comparisonOptions)
                         
 {
-    NSLocale *currentLocale = GetCurrentLocale(localeName, lNameLength);
-    NSString *prefixString = [NSString stringWithCharacters: lpPrefix length: cwPrefixLength];
-    NSString *prefixStrComposed = ComposeString(prefixString);
-    NSString *sourceString = [NSString stringWithCharacters: lpSource length: cwSourceLength];
-    NSString *sourceStrComposed = ComposeString(sourceString);
-
-    NSRange sourceRange = NSMakeRange(0, prefixStrComposed.length > sourceStrComposed.length ? sourceStrComposed.length : prefixStrComposed.length);
     NSStringCompareOptions options = ConvertFromCompareOptionsToNSStringCompareOptions(comparisonOptions);
     
     // in case mapping is not found
     if (options == 0)
         return -2;
+
+    NSLocale *currentLocale = GetCurrentLocale(localeName, lNameLength);
+    NSString *prefixString = [NSString stringWithCharacters: lpPrefix length: cwPrefixLength];
+    NSString *prefixStrComposed = RemoveWeightlessCharacters(prefixString.precomposedStringWithCanonicalMapping);
+    NSString *sourceString = [NSString stringWithCharacters: lpSource length: cwSourceLength];
+    NSString *sourceStrComposed = RemoveWeightlessCharacters(sourceString.precomposedStringWithCanonicalMapping);
+
+    NSRange sourceRange = NSMakeRange(0, prefixStrComposed.length > sourceStrComposed.length ? sourceStrComposed.length : prefixStrComposed.length);
         
     int32_t result = [sourceStrComposed compare:prefixStrComposed
                                         options:options
@@ -249,20 +246,20 @@ int32_t GlobalizationNative_EndsWithNative(const uint16_t* localeName, int32_t l
                                            const uint16_t* lpSource, int32_t cwSourceLength, int32_t comparisonOptions)
                         
 {
-    NSLocale *currentLocale = GetCurrentLocale(localeName, lNameLength);
-    NSString *suffixString = [NSString stringWithCharacters: lpSuffix length: cwSuffixLength];
-    NSString *suffixStrComposed = ComposeString(suffixString);
-    NSString *sourceString = [NSString stringWithCharacters: lpSource length: cwSourceLength];
-    NSString *sourceStrComposed = ComposeString(sourceString);
-
-    int32_t startIndex = suffixStrComposed.length > sourceStrComposed.length ? 0 : sourceStrComposed.length - suffixStrComposed.length;
-    NSRange sourceRange = NSMakeRange(startIndex, sourceStrComposed.length - startIndex);
     NSStringCompareOptions options = ConvertFromCompareOptionsToNSStringCompareOptions(comparisonOptions);
     
     // in case mapping is not found
     if (options == 0)
         return -2;
-        
+
+    NSLocale *currentLocale = GetCurrentLocale(localeName, lNameLength);
+    NSString *suffixString = [NSString stringWithCharacters: lpSuffix length: cwSuffixLength];
+    NSString *suffixStrComposed = RemoveWeightlessCharacters(suffixString.precomposedStringWithCanonicalMapping);
+    NSString *sourceString = [NSString stringWithCharacters: lpSource length: cwSourceLength];
+    NSString *sourceStrComposed = RemoveWeightlessCharacters(sourceString.precomposedStringWithCanonicalMapping);
+    int32_t startIndex = suffixStrComposed.length > sourceStrComposed.length ? 0 : sourceStrComposed.length - suffixStrComposed.length;
+    NSRange sourceRange = NSMakeRange(startIndex, sourceStrComposed.length - startIndex);
+     
     int32_t result = [sourceStrComposed compare:suffixStrComposed
                                         options:options
                                         range:sourceRange
