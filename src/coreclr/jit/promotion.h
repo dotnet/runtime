@@ -7,6 +7,13 @@
 #include "compiler.h"
 #include "vector.h"
 
+// We limit the max number of fields that can be promoted in a single struct to
+// avoid pathological cases (e.g. machine generated code). Furthermore,
+// writebacks before struct uses introduce commas with nested trees for each
+// field written back, so without a limit we could create arbitrarily deep
+// trees.
+const int PHYSICAL_PROMOTION_MAX_PROMOTIONS_PER_STRUCT = 64;
+
 // Represents a single replacement of a (field) access into a struct local.
 struct Replacement
 {
