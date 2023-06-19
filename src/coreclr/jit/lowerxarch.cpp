@@ -1610,17 +1610,25 @@ GenTree* Lowering::LowerHWIntrinsic(GenTreeHWIntrinsic* node)
             LowerFusedMultiplyAdd(node);
             break;
 
+        case NI_AVX512F_BlendVariable:
         case NI_AVX512F_CompareEqual:
         case NI_AVX512F_CompareGreaterThan:
         case NI_AVX512F_CompareGreaterThanOrEqual:
         case NI_AVX512F_CompareLessThan:
         case NI_AVX512F_CompareLessThanOrEqual:
         case NI_AVX512F_CompareNotEqual:
+        case NI_AVX512F_CompareNotGreaterThan:
+        case NI_AVX512F_CompareNotGreaterThanOrEqual:
+        case NI_AVX512F_CompareNotLessThan:
+        case NI_AVX512F_CompareNotLessThanOrEqual:
+        case NI_AVX512F_CompareOrdered:
+        case NI_AVX512F_CompareUnordered:
         case NI_AVX512F_VL_CompareGreaterThan:
         case NI_AVX512F_VL_CompareGreaterThanOrEqual:
         case NI_AVX512F_VL_CompareLessThan:
         case NI_AVX512F_VL_CompareLessThanOrEqual:
         case NI_AVX512F_VL_CompareNotEqual:
+        case NI_AVX512BW_BlendVariable:
         case NI_AVX512BW_CompareEqual:
         case NI_AVX512BW_CompareGreaterThan:
         case NI_AVX512BW_CompareGreaterThanOrEqual:
@@ -1848,31 +1856,67 @@ GenTree* Lowering::LowerHWIntrinsicCmpOp(GenTreeHWIntrinsic* node, genTreeOps cm
 
                         case NI_AVX512F_CompareGreaterThanMask:
                         {
-                            maskIntrinsicId = NI_AVX512F_CompareLessThanOrEqualMask;
+                            maskIntrinsicId = NI_AVX512F_CompareNotGreaterThanMask;
                             break;
                         }
 
                         case NI_AVX512F_CompareGreaterThanOrEqualMask:
                         {
-                            maskIntrinsicId = NI_AVX512F_CompareLessThanMask;
+                            maskIntrinsicId = NI_AVX512F_CompareNotGreaterThanOrEqualMask;
                             break;
                         }
 
                         case NI_AVX512F_CompareLessThanMask:
                         {
-                            maskIntrinsicId = NI_AVX512F_CompareGreaterThanOrEqualMask;
+                            maskIntrinsicId = NI_AVX512F_CompareNotLessThanMask;
                             break;
                         }
 
                         case NI_AVX512F_CompareLessThanOrEqualMask:
                         {
-                            maskIntrinsicId = NI_AVX512F_CompareGreaterThanMask;
+                            maskIntrinsicId = NI_AVX512F_CompareNotLessThanOrEqualMask;
                             break;
                         }
 
                         case NI_AVX512F_CompareNotEqualMask:
                         {
                             maskIntrinsicId = NI_AVX512F_CompareEqualMask;
+                            break;
+                        }
+
+                        case NI_AVX512F_CompareNotGreaterThanMask:
+                        {
+                            maskIntrinsicId = NI_AVX512F_CompareGreaterThanMask;
+                            break;
+                        }
+
+                        case NI_AVX512F_CompareNotGreaterThanOrEqualMask:
+                        {
+                            maskIntrinsicId = NI_AVX512F_CompareGreaterThanOrEqualMask;
+                            break;
+                        }
+
+                        case NI_AVX512F_CompareNotLessThanMask:
+                        {
+                            maskIntrinsicId = NI_AVX512F_CompareLessThanMask;
+                            break;
+                        }
+
+                        case NI_AVX512F_CompareNotLessThanOrEqualMask:
+                        {
+                            maskIntrinsicId = NI_AVX512F_CompareLessThanOrEqualMask;
+                            break;
+                        }
+
+                        case NI_AVX512F_CompareOrderedMask:
+                        {
+                            maskIntrinsicId = NI_AVX512F_CompareUnorderedMask;
+                            break;
+                        }
+
+                        case NI_AVX512F_CompareUnorderedMask:
+                        {
+                            maskIntrinsicId = NI_AVX512F_CompareOrderedMask;
                             break;
                         }
 
@@ -5047,10 +5091,19 @@ GenTree* Lowering::LowerHWIntrinsicWithAvx512Mask(GenTreeHWIntrinsic* node)
     assert(varTypeIsArithmetic(simdBaseType));
     assert(simdSize != 0);
 
-    NamedIntrinsic maskIntrinsicId;
+    NamedIntrinsic maskIntrinsicId = NI_Illegal;
+    GenTree**      maskOperand     = nullptr;
 
     switch (intrinsicId)
     {
+        case NI_AVX512F_BlendVariable:
+        case NI_AVX512BW_BlendVariable:
+        {
+            maskIntrinsicId = NI_AVX512F_BlendVariableMask;
+            maskOperand     = &node->Op(3);
+            break;
+        }
+
         case NI_AVX512F_CompareEqual:
         case NI_AVX512BW_CompareEqual:
         {
@@ -5089,7 +5142,7 @@ GenTree* Lowering::LowerHWIntrinsicWithAvx512Mask(GenTreeHWIntrinsic* node)
         case NI_AVX512F_VL_CompareLessThan:
         case NI_AVX512BW_VL_CompareLessThan:
         {
-            assert(varTypeIsUnsigned(simdBaseType));
+            assert(!varTypeIsFloating(simdBaseType));
             FALLTHROUGH;
         }
 
@@ -5128,23 +5181,83 @@ GenTree* Lowering::LowerHWIntrinsicWithAvx512Mask(GenTreeHWIntrinsic* node)
             break;
         }
 
+        case NI_AVX512F_CompareNotGreaterThan:
+        {
+            maskIntrinsicId = NI_AVX512F_CompareNotGreaterThanMask;
+            break;
+        }
+
+        case NI_AVX512F_CompareNotGreaterThanOrEqual:
+        {
+            maskIntrinsicId = NI_AVX512F_CompareNotGreaterThanOrEqualMask;
+            break;
+        }
+
+        case NI_AVX512F_CompareNotLessThan:
+        {
+            maskIntrinsicId = NI_AVX512F_CompareNotLessThanMask;
+            break;
+        }
+
+        case NI_AVX512F_CompareNotLessThanOrEqual:
+        {
+            maskIntrinsicId = NI_AVX512F_CompareNotLessThanOrEqualMask;
+            break;
+        }
+
+        case NI_AVX512F_CompareOrdered:
+        {
+            maskIntrinsicId = NI_AVX512F_CompareOrderedMask;
+            break;
+        }
+
+        case NI_AVX512F_CompareUnordered:
+        {
+            maskIntrinsicId = NI_AVX512F_CompareUnorderedMask;
+            break;
+        }
+
         default:
         {
             unreached();
         }
     }
 
-    node->gtType = TYP_MASK;
+    assert(maskIntrinsicId != NI_Illegal);
     node->ChangeHWIntrinsicId(maskIntrinsicId);
 
-    LIR::Use use;
-    if (BlockRange().TryGetUse(node, &use))
+    if (maskOperand != nullptr)
     {
-        GenTree* maskToVector =
-            comp->gtNewSimdHWIntrinsicNode(simdType, node, NI_AVX512F_ConvertMaskToVector, simdBaseJitType, simdSize);
-        BlockRange().InsertAfter(node, maskToVector);
-        use.ReplaceWith(maskToVector);
+        GenTree* maskOp = *maskOperand;
+
+        if (maskOp->OperIsHWIntrinsic(NI_AVX512F_ConvertMaskToVector))
+        {
+            GenTreeHWIntrinsic* maskToVector = maskOp->AsHWIntrinsic();
+            *maskOperand                     = maskToVector->Op(1);
+            BlockRange().Remove(maskOp);
+        }
+        else
+        {
+            GenTree* vectorToMask = comp->gtNewSimdHWIntrinsicNode(TYP_MASK, maskOp, NI_AVX512F_ConvertVectorToMask,
+                                                                   simdBaseJitType, simdSize);
+            BlockRange().InsertAfter(maskOp, vectorToMask);
+            *maskOperand = vectorToMask;
+        }
     }
+    else
+    {
+        node->gtType = TYP_MASK;
+
+        LIR::Use use;
+        if (BlockRange().TryGetUse(node, &use))
+        {
+            GenTree* maskToVector = comp->gtNewSimdHWIntrinsicNode(simdType, node, NI_AVX512F_ConvertMaskToVector,
+                                                                   simdBaseJitType, simdSize);
+            BlockRange().InsertAfter(node, maskToVector);
+            use.ReplaceWith(maskToVector);
+        }
+    }
+
     return LowerNode(node);
 }
 
@@ -9072,6 +9185,7 @@ void Lowering::ContainCheckHWIntrinsic(GenTreeHWIntrinsic* node)
                             case NI_SSE41_BlendVariable:
                             case NI_AVX_BlendVariable:
                             case NI_AVX2_BlendVariable:
+                            case NI_AVX512F_BlendVariableMask:
                             {
                                 if (IsContainableHWIntrinsicOp(node, op2, &supportsRegOptional))
                                 {
