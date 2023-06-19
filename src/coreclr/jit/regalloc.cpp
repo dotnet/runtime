@@ -311,15 +311,6 @@ void Compiler::raMarkStkVars()
             bool stkFixedArgInVarArgs =
                 info.compIsVarArgs && varDsc->lvIsParam && !varDsc->lvIsRegArg && lclNum != lvaVarargsHandleArg;
 
-            // If its address has been exposed, ignore lvRefCnt. However, exclude
-            // fixed arguments in varargs method as lvOnFrame shouldn't be set
-            // for them as we don't want to explicitly report them to GC.
-
-            if (!stkFixedArgInVarArgs)
-            {
-                needSlot |= varDsc->IsAddressExposed();
-            }
-
 #ifdef DEBUG
             /* For debugging, note that we have to reserve space even for
                unused variables if they are ever in scope. However, this is not
@@ -342,18 +333,7 @@ void Compiler::raMarkStkVars()
 
             if (opts.compDbgCode && !stkFixedArgInVarArgs && lclNum < info.compLocalsCount)
             {
-                if (varDsc->lvRefCnt() == 0)
-                {
-                    assert(!"unreferenced local in debug codegen");
-                    varDsc->lvImplicitlyReferenced = 1;
-                }
-
-                needSlot |= true;
-
-                if (!varDsc->lvIsParam)
-                {
-                    varDsc->lvMustInit = true;
-                }
+                assert(!"unreferenced local in debug codegen");
             }
 
             varDsc->lvOnFrame = needSlot;
