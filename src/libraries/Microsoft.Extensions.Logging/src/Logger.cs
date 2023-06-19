@@ -152,36 +152,7 @@ namespace Microsoft.Extensions.Logging
 
         internal string DebuggerToString()
         {
-            var logLevels = new LogLevel[]
-            {
-                LogLevel.Trace,
-                LogLevel.Debug,
-                LogLevel.Information,
-                LogLevel.Warning,
-                LogLevel.Error,
-                LogLevel.Critical
-            };
-
-            LogLevel minimumLevel = LogLevel.None;
-
-            foreach (LogLevel logLevel in logLevels)
-            {
-                if (!IsEnabled(logLevel))
-                {
-                    break;
-                }
-
-                minimumLevel = logLevel;
-            }
-
-            var enabled = minimumLevel != LogLevel.None;
-            var debugText = $@"CategoryName = ""{_categoryName}"", Enabled = {(enabled ? "true" : "false")}";
-            if (enabled)
-            {
-                debugText += ", MinimumLevel = {minimumLevel}";
-            }
-
-            return debugText;
+            return DebuggerDisplayFormatting.DebuggerToString(_categoryName, this);
         }
 
         private static void ThrowLoggingError(List<Exception> exceptions)
