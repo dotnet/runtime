@@ -712,6 +712,7 @@ namespace System.Net.Security
                 return frameSize;
             }
 
+            await TIOAdapter.ReadAsync(InnerStream, Memory<byte>.Empty, cancellationToken).ConfigureAwait(false);
 
             // If we don't have enough data to determine the frame size, use the provided estimate
             // (e.g. a full TLS frame for reads, and a somewhat shorter frame for handshake / renegotiation).
@@ -794,6 +795,7 @@ namespace System.Net.Security
         private async ValueTask<int> ReadAsyncInternal<TIOAdapter>(Memory<byte> buffer, CancellationToken cancellationToken)
             where TIOAdapter : IReadWriteAdapter
         {
+
             // Throw first if we already have exception.
             // Check for disposal is not atomic so we will check again below.
             ThrowIfExceptionalOrNotAuthenticated();
