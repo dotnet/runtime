@@ -13,12 +13,18 @@
   </Target>
 
   <PropertyGroup Condition="'$(UseIntellisensePackageDocXmlFile)' == 'true'">
-    <NoWarn>$(NoWarn);1591</NoWarn>
     <IntellisensePackageXmlRootFolder>$([MSBuild]::NormalizeDirectory('$(NuGetPackageRoot)', 'microsoft.private.intellisense', '$(MicrosoftPrivateIntellisenseVersion)', 'IntellisenseFiles'))</IntellisensePackageXmlRootFolder>
     <IntellisensePackageXmlFilePathFromNetFolder>$([MSBuild]::NormalizePath('$(IntellisensePackageXmlRootFolder)', 'net', '1033', '$(AssemblyName).xml'))</IntellisensePackageXmlFilePathFromNetFolder>
     <IntellisensePackageXmlFilePathFromDotNetPlatExtFolder>$([MSBuild]::NormalizePath('$(IntellisensePackageXmlRootFolder)', 'dotnet-plat-ext', '1033', '$(AssemblyName).xml'))</IntellisensePackageXmlFilePathFromDotNetPlatExtFolder>
     <IntellisensePackageXmlFilePath Condition="'$(IntellisensePackageXmlFilePath)' == '' and Exists($(IntellisensePackageXmlFilePathFromNetFolder))">$(IntellisensePackageXmlFilePathFromNetFolder)</IntellisensePackageXmlFilePath>
     <IntellisensePackageXmlFilePath Condition="'$(IntellisensePackageXmlFilePath)' == '' and Exists($(IntellisensePackageXmlFilePathFromDotNetPlatExtFolder))">$(IntellisensePackageXmlFilePathFromDotNetPlatExtFolder)</IntellisensePackageXmlFilePath>
+    <!-- Suppress "CS1591 - Missing XML comment for publicly visible type or member" compiler errors if
+         - the intellisense package xml file is used or
+         - the assembly is private (i.e. System.Private.Uri) or
+         - the assembly is a PNSE assembly. -->
+    <NoWarn Condition="'$(IntellisensePackageXmlFilePath)' != '' or
+                       '$(IsPrivateAssembly)' == 'true' or
+                       '$(GeneratePlatformNotSupportedAssemblyMessage)' != ''">$(NoWarn);1591</NoWarn>
   </PropertyGroup>
 
   <ItemGroup>

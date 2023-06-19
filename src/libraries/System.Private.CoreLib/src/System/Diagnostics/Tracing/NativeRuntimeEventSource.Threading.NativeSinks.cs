@@ -1,31 +1,29 @@
 // Licensed to the .NET Foundation under one or more agreements.
 // The .NET Foundation licenses this file to you under the MIT license.
 
+using System.Diagnostics.CodeAnalysis;
 using System.Threading;
 using System.Runtime.CompilerServices;
-using System.Diagnostics.CodeAnalysis;
 
 namespace System.Diagnostics.Tracing
 {
     // This is part of the NativeRuntimeEventsource, which is the managed version of the Microsoft-Windows-DotNETRuntime provider.
-    // It contains the handwritten implementation of the ThreadPool events.
+    // It contains the handwritten implementation of threading events.
     // The events here do not call into the typical WriteEvent* APIs unlike most EventSources because that results in the
     // events to be forwarded to EventListeners twice, once directly from the managed WriteEvent API, and another time
     // from the mechanism in NativeRuntimeEventSource.ProcessEvents that forwards native runtime events to EventListeners.
     // To prevent this, these events call directly into QCalls provided by the runtime (refer to NativeRuntimeEventSource.cs) which call
     // FireEtw* methods auto-generated from ClrEtwAll.man. This ensures that corresponding event sinks are being used
     // for the native platform.
-    // For implementation of these events not supporting native sinks, refer to NativeRuntimeEventSource.PortableThreadPool.cs.
+    // For implementation of these events not supporting native sinks, refer to NativeRuntimeEventSource.Threading.cs.
     [SuppressMessage("Performance", "CA1822:Mark members as static", Justification = "NativeRuntimeEventSource is a special case where event methods don't use WriteEvent/WriteEventCore but still need to be instance methods.")]
     internal sealed partial class NativeRuntimeEventSource : EventSource
     {
-        // This value does not seem to be used, leaving it as zero for now. It may be useful for a scenario that may involve
-        // multiple instances of the runtime within the same process, but then it seems unlikely that both instances' thread
-        // pools would be in moderate use.
-        private const ushort DefaultClrInstanceId = 0;
-
-        private static class Messages
+        private static partial class Messages
         {
+            public const string ContentionLockCreated = "LockID={0};\nAssociatedObjectID={1};\nClrInstanceID={2}";
+            public const string ContentionStart = "ContentionFlags={0};\nClrInstanceID={1};\nLockID={2};\nAssociatedObjectID={3}\nLockOwnerThreadID={4}";
+            public const string ContentionStop = "ContentionFlags={0};\nClrInstanceID={1};\nDurationNs={2}";
             public const string WorkerThread = "ActiveWorkerThreadCount={0};\nRetiredWorkerThreadCount={1};\nClrInstanceID={2}";
             public const string MinMaxThreads = "MinWorkerThreads={0};\nMaxWorkerThreads={1};\nMinIOCompletionThreads={2};\nMaxIOCompletionThreads={3};\nClrInstanceID={4}";
             public const string WorkerThreadAdjustmentSample = "Throughput={0};\nClrInstanceID={1}";
@@ -37,8 +35,9 @@ namespace System.Diagnostics.Tracing
         }
 
         // The task definitions for the ETW manifest
-        public static class Tasks // this name and visibility is important for EventSource
+        public static partial class Tasks // this name and visibility is important for EventSource
         {
+            public const EventTask Contention = (EventTask)8;
             public const EventTask ThreadPoolWorkerThread = (EventTask)16;
             public const EventTask ThreadPoolWorkerThreadAdjustment = (EventTask)18;
             public const EventTask ThreadPool = (EventTask)23;
@@ -46,8 +45,9 @@ namespace System.Diagnostics.Tracing
             public const EventTask ThreadPoolMinMaxThreads = (EventTask)38;
         }
 
-        public static class Opcodes // this name and visibility is important for EventSource
+        public static partial class Opcodes // this name and visibility is important for EventSource
         {
+            public const EventOpcode LockCreated = (EventOpcode)11;
             public const EventOpcode IOEnqueue = (EventOpcode)13;
             public const EventOpcode IODequeue = (EventOpcode)14;
             public const EventOpcode IOPack = (EventOpcode)15;
@@ -55,6 +55,12 @@ namespace System.Diagnostics.Tracing
             public const EventOpcode Sample = (EventOpcode)100;
             public const EventOpcode Adjustment = (EventOpcode)101;
             public const EventOpcode Stats = (EventOpcode)102;
+        }
+
+        public enum ContentionFlagsMap : byte
+        {
+            Managed,
+            Native,
         }
 
         public enum ThreadAdjustmentReasonMap : uint
@@ -66,8 +72,40 @@ namespace System.Diagnostics.Tracing
             ChangePoint,
             Stabilizing,
             Starvation,
-            ThreadTimedOut
+            ThreadTimedOut,
+            CooperativeBlocking,
         }
+
+        [Event(90, Level = EventLevel.Informational, Message = Messages.ContentionLockCreated, Task = Tasks.Contention, Opcode = EventOpcode.Info, Version = 0, Keywords = Keywords.ContentionKeyword)]
+        private void ContentionLockCreated(nint LockID, nint AssociatedObjectID, ushort ClrInstanceID = DefaultClrInstanceId)
+        {
+            Debug.Assert(IsEnabled(EventLevel.Informational, Keywords.ContentionKeyword));
+            LogContentionLockCreated(LockID, AssociatedObjectID, ClrInstanceID);
+        }
+
+        [Event(81, Level = EventLevel.Informational, Message = Messages.ContentionStart, Task = Tasks.Contention, Opcode = EventOpcode.Start, Version = 2, Keywords = Keywords.ContentionKeyword)]
+        private void ContentionStart(
+            ContentionFlagsMap ContentionFlags,
+            ushort ClrInstanceID,
+            nint LockID,
+            nint AssociatedObjectID,
+            ulong LockOwnerThreadID)
+        {
+            Debug.Assert(IsEnabled(EventLevel.Informational, Keywords.ContentionKeyword));
+            LogContentionStart(ContentionFlags, ClrInstanceID, LockID, AssociatedObjectID, LockOwnerThreadID);
+        }
+
+        [Event(91, Level = EventLevel.Informational, Message = Messages.ContentionStop, Task = Tasks.Contention, Opcode = EventOpcode.Stop, Version = 1, Keywords = Keywords.ContentionKeyword)]
+        private void ContentionStop(ContentionFlagsMap ContentionFlags, ushort ClrInstanceID, double DurationNs)
+        {
+            Debug.Assert(IsEnabled(EventLevel.Informational, Keywords.ContentionKeyword));
+            LogContentionStop(ContentionFlags, ClrInstanceID, DurationNs);
+        }
+
+        [NonEvent]
+        [MethodImpl(MethodImplOptions.NoInlining)]
+        public void ContentionStop(double durationNs) =>
+            ContentionStop(ContentionFlagsMap.Managed, DefaultClrInstanceId, durationNs);
 
         [Event(50, Level = EventLevel.Informational, Message = Messages.WorkerThread, Task = Tasks.ThreadPoolWorkerThread, Opcode = EventOpcode.Start, Version = 0, Keywords = Keywords.ThreadingKeyword)]
         public unsafe void ThreadPoolWorkerThreadStart(
@@ -184,7 +222,9 @@ namespace System.Diagnostics.Tracing
         {
             if (IsEnabled(EventLevel.Verbose, Keywords.ThreadingKeyword | Keywords.ThreadTransferKeyword))
             {
+#pragma warning disable CA1416 // 'RegisteredWaitHandle.Repeating' is unsupported on: 'browser'
                 ThreadPoolIOEnqueue((IntPtr)registeredWaitHandle.GetHashCode(), IntPtr.Zero, registeredWaitHandle.Repeating);
+#pragma warning restore CA1416
             }
         }
 

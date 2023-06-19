@@ -1,13 +1,13 @@
 // Licensed to the .NET Foundation under one or more agreements.
 // The .NET Foundation licenses this file to you under the MIT license.
-import {
-    EventPipeSessionIDImpl
-} from "../shared/types";
+import MonoWasmThreads from "consts:monoWasmThreads";
+
+import { EventPipeSessionIDImpl } from "../shared/types";
 import { EventPipeSocketConnection, takeOverSocket } from "./socket-connection";
 import { StreamQueue, allocateQueue } from "./stream-queue";
 import type { MockRemoteSocket } from "../mock";
 import type { VoidPtr } from "../../types/emscripten";
-import cwraps from "../../cwraps";
+import { diagnostics_c_functions as cwraps } from "../../cwraps";
 import {
     EventPipeCommandCollectTracing2,
     EventPipeCollectTracingCommandProvider,
@@ -24,6 +24,7 @@ export class EventPipeStreamingSession {
 }
 
 export async function makeEventPipeStreamingSession(ws: WebSocket | MockRemoteSocket, cmd: EventPipeCommandCollectTracing2): Promise<EventPipeStreamingSession> {
+    mono_assert(MonoWasmThreads, "The diagnostic server requires threads to be enabled during build time.");
     // First, create the native IPC stream and get its queue.
     const ipcStreamAddr = cwraps.mono_wasm_diagnostic_server_create_stream(); // FIXME: this should be a wrapped in a JS object so we can free it when we're done.
     const queueAddr = getQueueAddrFromStreamAddr(ipcStreamAddr);
