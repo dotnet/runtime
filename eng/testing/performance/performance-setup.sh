@@ -275,7 +275,7 @@ if [[ "$internal" == true ]]; then
     extra_benchmark_dotnet_arguments=
 
     if [[ "$logical_machine" == "perfiphone12mini" ]]; then
-        queue=OSX.1015.Amd64.Iphone.Perf
+        queue=OSX.13.Amd64.Iphone.Perf
     elif [[ "$logical_machine" == "perfampere" ]]; then
         queue=Ubuntu.2004.Arm64.Perf
     elif [[ "$logical_machine" == "cloudvm" ]]; then
@@ -403,7 +403,14 @@ if [[ -n "$wasm_bundle_directory" ]]; then
     wasm_bundle_directory_path=$payload_directory
     mv $wasm_bundle_directory/* $wasm_bundle_directory_path
     find $wasm_bundle_directory_path -type d
-    extra_benchmark_dotnet_arguments="$extra_benchmark_dotnet_arguments --wasmEngine /home/helixbot/.jsvu/$javascript_engine --cli \$HELIX_CORRELATION_PAYLOAD/dotnet/dotnet --wasmDataDir \$HELIX_CORRELATION_PAYLOAD/wasm-data"
+    wasm_args="--expose_wasm"
+    if [ "$javascript_engine" == "v8" ]; then
+        # for es6 module support
+        wasm_args="$wasm_args --module"
+    fi
+
+    # Workaround: escaping the quotes around `--wasmArgs=..` so they get retained for the actual command line
+    extra_benchmark_dotnet_arguments="$extra_benchmark_dotnet_arguments --wasmEngine /home/helixbot/.jsvu/$javascript_engine \\\"--wasmArgs=$wasm_args \\\" --cli \$HELIX_CORRELATION_PAYLOAD/dotnet/dotnet --wasmDataDir \$HELIX_CORRELATION_PAYLOAD/wasm-data"
     if [[ "$wasmaot" == "true" ]]; then
         extra_benchmark_dotnet_arguments="$extra_benchmark_dotnet_arguments --aotcompilermode wasm --buildTimeout 3600"
     fi
