@@ -257,8 +257,8 @@
   <!-- Mono runtime build -->
   <Target Name="BuildMonoRuntime">
     <PropertyGroup>
-      <_MonoLLVMTargetArchitecture Condition="'$(TargetArchitecture)' == 'wasm'">$(BuildArchitecture)</_MonoLLVMTargetArchitecture>
-      <_MonoLLVMTargetArchitecture Condition="'$(TargetArchitecture)' != 'wasm'">$(TargetArchitecture)</_MonoLLVMTargetArchitecture>
+      <_MonoLLVMTargetArchitecture Condition="'$(TargetArchitecture)' == 'wasm' and '$(MonoUseLLVMPackage)' == 'true'">$(BuildArchitecture)</_MonoLLVMTargetArchitecture>
+      <_MonoLLVMTargetArchitecture Condition="'$(TargetArchitecture)' != 'wasm' and '$(MonoUseLLVMPackage)' == 'true'">$(TargetArchitecture)</_MonoLLVMTargetArchitecture>
     </PropertyGroup>
     <ItemGroup>
       <_MonoCMakeArgs Condition="'$(_MonoUseNinja)' == 'true'" Include="-G Ninja"/>
@@ -702,8 +702,8 @@
     </PropertyGroup>
 
     <PropertyGroup>
-      <_MonoLLVMTargetArchitecture>$(BuildArchitecture)</_MonoLLVMTargetArchitecture>
-      <_MonoLLVMTargetArchitecture Condition="'$(AotHostArchitecture)' != ''">$(AotHostArchitecture)</_MonoLLVMTargetArchitecture>
+      <_MonoLLVMTargetArchitecture Condition="'$(MonoUseLLVMPackage)' == 'true'">$(BuildArchitecture)</_MonoLLVMTargetArchitecture>
+      <_MonoLLVMTargetArchitecture Condition="'$(AotHostArchitecture)' != '' and '$(MonoUseLLVMPackage)' == 'true'">$(AotHostArchitecture)</_MonoLLVMTargetArchitecture>
     </PropertyGroup>
 
     <ItemGroup Condition="'$(HostOS)' == 'Linux' and (('$(MonoAOTEnableLLVM)' == 'true' and '$(MonoUseLibCxx)' == 'true') or '$(TargetArchitecture)' == 'wasm')">
