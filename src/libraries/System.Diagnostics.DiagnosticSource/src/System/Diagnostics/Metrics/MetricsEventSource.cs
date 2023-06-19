@@ -305,9 +305,7 @@ namespace System.Diagnostics.Metrics
 
                         if (IsSharedSession(commandSessionId))
                         {
-                            if (command.Command == EventCommand.Disable
-                                && !_disabledRefCount
-                                && Interlocked.Decrement(ref _sharedSessionRefCount) == 0)
+                            if (ShouldDisable(command.Command))
                             {
                                 Parent.Message($"Previous session with id {_sessionId} is stopped");
                                 _aggregationManager.Dispose();
@@ -370,9 +368,7 @@ namespace System.Diagnostics.Metrics
                                 Parent.MultipleSessionsNotSupportedError(_sessionId);
                                 return;
                             }
-                            else if (command.Command == EventCommand.Disable
-                                && !_disabledRefCount
-                                && Interlocked.Decrement(ref _sharedSessionRefCount) == 0)
+                            else if (ShouldDisable(command.Command))
                             {
                                 Parent.Message($"Previous session with id {_sessionId} is stopped");
                                 _aggregationManager.Dispose();
@@ -432,6 +428,13 @@ namespace System.Diagnostics.Metrics
                 }
             }
 
+            private bool ShouldDisable(EventCommand command)
+            {
+                return command == EventCommand.Disable
+                    && ((!_disabledRefCount && Interlocked.Decrement(ref _sharedSessionRefCount) == 0)
+                    || !Parent.IsEnabled());
+            }
+
             private bool ParseMetrics(IDictionary<string, string> arguments, out string? metricsSpecs)
             {
                 if (arguments.TryGetValue("Metrics", out metricsSpecs))
@@ -452,6 +455,10 @@ namespace System.Diagnostics.Metrics
 
             private void IncrementRefCount(string clientId, EventCommandEventArgs command)
             {
+                // When creating a SHARED session (i.e. sessionId == SharedSessionId), a randomly-generated clientId
+                // should be provided as part of the command arguments. If not, we can't tell which session is
+                // configured incorrectly, and ref-counting will be disabled since there is no way to keep track of
+                // multiple Enables coming from the same client. This will cause the session to remain active indefinitely.
                 if (clientId.Equals(SharedSessionId))
                 {
                     if (command.Arguments!.TryGetValue(ClientIdKey, out string? clientIdArg) && !string.IsNullOrEmpty(clientIdArg))
