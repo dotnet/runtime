@@ -1226,12 +1226,10 @@ namespace System.Net
                 throw new InvalidOperationException(SR.net_listener_no_spns);
             }
 
-            // TODO: Do we want to allow http/localhost?
-
             return new ExtendedProtectionPolicy(
                 policy.PolicyEnforcement,
                 policy.ProtectionScenario,
-                _defaultServiceNames.ServiceNames);
+                _defaultServiceNames.ServiceNames.Merge("HTTP/localhost"));
         }
 
         // This only works for context-destroying errors.
