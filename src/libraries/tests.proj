@@ -611,7 +611,7 @@
                       BuildInParallel="false" />
   </ItemGroup>
 
-  <ItemGroup Condition="'$(ArchiveTests)' == 'true' and '$(TargetOS)' == 'ios'">
+  <ItemGroup Condition="'$(ArchiveTests)' == 'true' and '$(TargetOS)' == 'ios' and '$(RunAOTCompilation)' == 'true'">
     <!-- Only System.Runtime tests on iOS for now -->
     <!-- Move it to rolling build once the CI is green -->
     <ProjectReference Include="$(MonoProjectRoot)sample\iOS\Program.csproj"
