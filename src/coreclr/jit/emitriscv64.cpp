@@ -3673,14 +3673,10 @@ void emitter::emitDisInsName(code_t code, const BYTE* addr, instrDesc* id)
 
 void emitter::emitDispInsHex(instrDesc* id, BYTE* code, size_t sz)
 {
-#ifdef DEBUG
-    if (!emitComp->opts.disAddr)
+    if (!emitComp->opts.disCodeBytes)
     {
         return;
     }
-#else // DEBUG
-    return;
-#endif
 
     // We do not display the instruction hex if we want diff-able disassembly
     if (!emitComp->opts.disDiffable)
@@ -4164,7 +4160,7 @@ regNumber emitter::emitInsTernary(instruction ins, emitAttr attr, GenTree* dst, 
                     }
                     else
                     {
-                        emitIns_R_R_R(INS_mulhu, attr, codeGen->rsGetRsvdReg(), src1->GetRegNum(), src2->GetRegNum());
+                        emitIns_R_R_R(INS_mulh, attr, codeGen->rsGetRsvdReg(), src1->GetRegNum(), src2->GetRegNum());
                     }
                 }
             }

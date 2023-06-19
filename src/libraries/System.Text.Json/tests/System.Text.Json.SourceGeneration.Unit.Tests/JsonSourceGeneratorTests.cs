@@ -230,9 +230,7 @@ namespace System.Text.Json.SourceGeneration.UnitTests
                 Assert.Empty(result.AllGeneratedTypes);
             }
 
-            CompilationHelper.CheckDiagnosticMessages(DiagnosticSeverity.Info, result.Diagnostics, Array.Empty<(Location, string)>());
-            CompilationHelper.CheckDiagnosticMessages(DiagnosticSeverity.Warning, result.Diagnostics, Array.Empty<(Location, string)>());
-            CompilationHelper.CheckDiagnosticMessages(DiagnosticSeverity.Error, result.Diagnostics, Array.Empty<(Location, string)>());
+            Assert.Empty(result.Diagnostics);
         }
 
         [Theory]
@@ -262,10 +260,7 @@ namespace System.Text.Json.SourceGeneration.UnitTests
             JsonSourceGeneratorResult result = CompilationHelper.RunJsonSourceGenerator(compilation);
 
             Assert.Empty(result.AllGeneratedTypes);
-
-            CompilationHelper.CheckDiagnosticMessages(DiagnosticSeverity.Info, result.Diagnostics, Array.Empty<(Location, string)>());
-            CompilationHelper.CheckDiagnosticMessages(DiagnosticSeverity.Warning, result.Diagnostics, Array.Empty<(Location, string)>());
-            CompilationHelper.CheckDiagnosticMessages(DiagnosticSeverity.Error, result.Diagnostics, Array.Empty<(Location, string)>());
+            Assert.Empty(result.Diagnostics);
         }
 
         [Fact]
@@ -381,7 +376,7 @@ namespace System.Text.Json.SourceGeneration.UnitTests
         }
 
         [Fact]
-        [ActiveIssue("https://github.com/dotnet/runtime/issues/63802", TargetFrameworkMonikers.NetFramework)]
+        [SkipOnTargetFramework(TargetFrameworkMonikers.NetFramework)] // Netfx lacks IsExternalInit class needed for records
         public void Record()
         {
             // Compile the referenced assembly first.
@@ -426,12 +421,14 @@ namespace System.Text.Json.SourceGeneration.UnitTests
             CheckCompilationDiagnosticsErrors(result.Diagnostics);
             CheckCompilationDiagnosticsErrors(result.NewCompilation.GetDiagnostics());
 
-            Assert.Equal(4, result.AllGeneratedTypes.Count());
+            Assert.Equal(3, result.AllGeneratedTypes.Count());
             result.AssertContainsType("global::HelloWorld.AppRecord");
+            result.AssertContainsType("string");
+            result.AssertContainsType("int");
         }
 
         [Fact]
-        [ActiveIssue("https://github.com/dotnet/runtime/issues/63802", TargetFrameworkMonikers.NetFramework)]
+        [SkipOnTargetFramework(TargetFrameworkMonikers.NetFramework)] // Netfx lacks IsExternalInit class needed for records
         public void RecordInExternalAssembly()
         {
             // Compile the referenced assembly first.
@@ -463,8 +460,10 @@ namespace System.Text.Json.SourceGeneration.UnitTests
             CheckCompilationDiagnosticsErrors(result.Diagnostics);
             CheckCompilationDiagnosticsErrors(result.NewCompilation.GetDiagnostics());
 
-            Assert.Equal(4, result.AllGeneratedTypes.Count());
+            Assert.Equal(3, result.AllGeneratedTypes.Count());
             result.AssertContainsType("global::ReferencedAssembly.LibRecord");
+            result.AssertContainsType("string");
+            result.AssertContainsType("int");
         }
 
         [Fact]
@@ -504,8 +503,10 @@ namespace System.Text.Json.SourceGeneration.UnitTests
             CheckCompilationDiagnosticsErrors(result.Diagnostics);
             CheckCompilationDiagnosticsErrors(result.NewCompilation.GetDiagnostics());
 
-            Assert.Equal(4, result.AllGeneratedTypes.Count());
+            Assert.Equal(3, result.AllGeneratedTypes.Count());
             result.AssertContainsType("global::HelloWorld.AppRecord");
+            result.AssertContainsType("string");
+            result.AssertContainsType("int");
         }
 
         private void CheckCompilationDiagnosticsErrors(ImmutableArray<Diagnostic> diagnostics)
@@ -596,9 +597,7 @@ namespace System.Text.Json.SourceGeneration.UnitTests
             ImmutableArray<Diagnostic> generatorDiags = result.NewCompilation.GetDiagnostics();
 
             // No diagnostics expected.
-            CompilationHelper.CheckDiagnosticMessages(DiagnosticSeverity.Info, generatorDiags, Array.Empty<(Location, string)>());
-            CompilationHelper.CheckDiagnosticMessages(DiagnosticSeverity.Warning, generatorDiags, Array.Empty<(Location, string)>());
-            CompilationHelper.CheckDiagnosticMessages(DiagnosticSeverity.Error, generatorDiags, Array.Empty<(Location, string)>());
+            Assert.Empty(result.Diagnostics);
         }
 
         [Fact]
@@ -626,9 +625,7 @@ namespace System.Text.Json.SourceGeneration.UnitTests
             ImmutableArray<Diagnostic> generatorDiags = result.NewCompilation.GetDiagnostics();
 
             // No diagnostics expected.
-            CompilationHelper.CheckDiagnosticMessages(DiagnosticSeverity.Info, generatorDiags, Array.Empty<(Location, string)>());
-            CompilationHelper.CheckDiagnosticMessages(DiagnosticSeverity.Warning, generatorDiags, Array.Empty<(Location, string)>());
-            CompilationHelper.CheckDiagnosticMessages(DiagnosticSeverity.Error, generatorDiags, Array.Empty<(Location, string)>());
+            Assert.Empty(result.Diagnostics);
         }
 
         [Fact]
@@ -689,9 +686,7 @@ namespace System.Text.Json.SourceGeneration.UnitTests
             ImmutableArray<Diagnostic> generatorDiags = result.NewCompilation.GetDiagnostics();
 
             // No diagnostics expected.
-            CompilationHelper.CheckDiagnosticMessages(DiagnosticSeverity.Info, generatorDiags, Array.Empty<(Location, string)>());
-            CompilationHelper.CheckDiagnosticMessages(DiagnosticSeverity.Warning, generatorDiags, Array.Empty<(Location, string)>());
-            CompilationHelper.CheckDiagnosticMessages(DiagnosticSeverity.Error, generatorDiags, Array.Empty<(Location, string)>());
+            Assert.Empty(result.Diagnostics);
         }
 
         [Fact]

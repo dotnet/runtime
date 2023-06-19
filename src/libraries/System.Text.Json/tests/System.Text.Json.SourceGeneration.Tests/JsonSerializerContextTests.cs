@@ -6,6 +6,7 @@ using System.Reflection;
 using System.Text.Json.Serialization;
 using System.Text.Json.Serialization.Metadata;
 using System.Text.Json.Serialization.Tests;
+using System.Text.Json.SourceGeneration.Tests.NETStandard;
 using System.Threading.Tasks;
 using Microsoft.DotNet.RemoteExecutor;
 using Xunit;
@@ -143,7 +144,6 @@ namespace System.Text.Json.SourceGeneration.Tests
         }
 
         [ConditionalFact(typeof(RemoteExecutor), nameof(RemoteExecutor.IsSupported))]
-        [ActiveIssue("https://github.com/dotnet/runtime/issues/63802", TargetFrameworkMonikers.NetFramework)]
         public static void Converters_AndTypeInfoCreator_NotRooted_WhenMetadataNotPresent()
         {
             RemoteExecutor.Invoke(
@@ -704,20 +704,19 @@ namespace System.Text.Json.SourceGeneration.Tests
         {
         }
 
-        // Regression test for https://github.com/dotnet/runtime/issues/61860
         [Fact]
-        [ActiveIssue("https://github.com/dotnet/runtime/issues/79311", typeof(PlatformDetection), nameof(PlatformDetection.IsNativeAot))]
         public static void SupportsGenericParameterWithCustomConverterFactory()
         {
+            // Regression test for https://github.com/dotnet/runtime/issues/61860
             var value = new List<TestEnum> { TestEnum.Cee };
             string json = JsonSerializer.Serialize(value, GenericParameterWithCustomConverterFactoryContext.Default.ListTestEnum);
             Assert.Equal(@"[""Cee""]", json);
         }
 
-        // Regression test for https://github.com/dotnet/runtime/issues/74652
         [Fact]
         public static void ClassWithStringValuesRoundtrips()
         {
+            // Regression test for https://github.com/dotnet/runtime/issues/74652
             JsonSerializerOptions options = ClassWithStringValuesContext.Default.Options;
 
             ClassWithStringValues obj = new()
@@ -729,10 +728,10 @@ namespace System.Text.Json.SourceGeneration.Tests
             Assert.Equal("""{"StringValuesProperty":["abc","def"]}""", json);
         }
 
-        // Regression test for https://github.com/dotnet/runtime/issues/61734
         [Fact]
         public static void ClassWithDictionaryPropertyRoundtrips()
         {
+            // Regression test for https://github.com/dotnet/runtime/issues/61734
             JsonSerializerOptions options = ClassWithDictionaryPropertyContext.Default.Options;
 
             ClassWithDictionaryProperty obj = new(new Dictionary<string, object?>()
@@ -745,7 +744,7 @@ namespace System.Text.Json.SourceGeneration.Tests
             Assert.Equal("""{"DictionaryProperty":{"foo":"bar","test":"baz"}}""", json);
         }
 
-        [JsonConverter(typeof(JsonStringEnumConverter))]
+        [JsonConverter(typeof(JsonStringEnumConverter<TestEnum>))]
         public enum TestEnum
         {
             Aye, Bee, Cee
@@ -768,6 +767,26 @@ namespace System.Text.Json.SourceGeneration.Tests
 
         [JsonSerializable(typeof(ClassWithDictionaryProperty))]
         internal partial class ClassWithDictionaryPropertyContext : JsonSerializerContext
+        {
+        }
+
+        [Fact]
+        public static void DoesNotReferenceInternalMembersFromOtherAssemblies()
+        {
+            // Regression test for https://github.com/dotnet/runtime/issues/66679
+
+            Assert.Equal(1, ContextForClassesFromAnotherAssembly.Default.ClassFromOtherAssemblyWithNonPublicMembers.Properties.Count);
+            Assert.Equal("PublicValue", ContextForClassesFromAnotherAssembly.Default.ClassFromOtherAssemblyWithNonPublicMembers.Properties[0].Name);
+
+            var value = new ClassFromOtherAssemblyWithNonPublicMembers();
+            string json = JsonSerializer.Serialize(value, ContextForClassesFromAnotherAssembly.Default.ClassFromOtherAssemblyWithNonPublicMembers);
+            Assert.Equal("""{"PublicValue":1}""", json);
+
+            JsonSerializer.Deserialize(json, ContextForClassesFromAnotherAssembly.Default.ClassFromOtherAssemblyWithNonPublicMembers);
+        }
+
+        [JsonSerializable(typeof(ClassFromOtherAssemblyWithNonPublicMembers))]
+        internal partial class ContextForClassesFromAnotherAssembly : JsonSerializerContext
         {
         }
 

@@ -80,6 +80,8 @@ namespace ILCompiler
             new(new[] { "--scan" }, "Use IL scanner to generate optimized code (implied by -O)");
         public Option<bool> NoScanner { get; } =
             new(new[] { "--noscan" }, "Do not use IL scanner to generate optimized code");
+        public Option<bool> NoInlineTls { get; } =
+            new(new[] { "--noinlinetls" }, "Do not generate inline thread local statics");
         public Option<string> IlDump { get; } =
             new(new[] { "--ildump" }, "Dump IL assembly listing for compiler-generated IL");
         public Option<bool> EmitStackTraceData { get; } =
@@ -112,6 +114,8 @@ namespace ILCompiler
             }, true, "Maximum number of threads to use during compilation");
         public Option<string> InstructionSet { get; } =
             new(new[] { "--instruction-set" }, "Instruction set to allow or disallow");
+        public Option<int> MaxVectorTBitWidth { get; } =
+            new(new[] { "--max-vectort-bitwidth" }, "Maximum width, in bits, that Vector<T> is allowed to be");
         public Option<string> Guard { get; } =
             new(new[] { "--guard" }, "Enable mitigations. Options: 'cf': CFG (Control Flow Guard, Windows only)");
         public Option<bool> Dehydrate { get; } =
@@ -136,8 +140,10 @@ namespace ILCompiler
             new(new[] { "--directpinvoke" }, Array.Empty<string>, "PInvoke to call directly");
         public Option<string[]> DirectPInvokeLists { get; } =
             new(new[] { "--directpinvokelist" }, Array.Empty<string>, "File with list of PInvokes to call directly");
-        public Option<int> MaxGenericCycle { get; } =
-            new(new[] { "--maxgenericcycle" }, () => CompilerTypeSystemContext.DefaultGenericCycleCutoffPoint, "Max depth of generic cycle");
+        public Option<int> MaxGenericCycleDepth { get; } =
+            new(new[] { "--maxgenericcycle" }, () => CompilerTypeSystemContext.DefaultGenericCycleDepthCutoff, "Max depth of generic cycle");
+        public Option<int> MaxGenericCycleBreadth { get; } =
+            new(new[] { "--maxgenericcyclebreadth" }, () => CompilerTypeSystemContext.DefaultGenericCycleBreadthCutoff, "Max breadth of generic cycle expansion");
         public Option<string[]> RootedAssemblies { get; } =
             new(new[] { "--root" }, Array.Empty<string>, "Fully generate given assembly");
         public Option<IEnumerable<string>> ConditionallyRootedAssemblies { get; } =
@@ -201,6 +207,7 @@ namespace ILCompiler
             AddOption(ScanReflection);
             AddOption(UseScanner);
             AddOption(NoScanner);
+            AddOption(NoInlineTls);
             AddOption(IlDump);
             AddOption(EmitStackTraceData);
             AddOption(MethodBodyFolding);
@@ -210,6 +217,7 @@ namespace ILCompiler
             AddOption(RuntimeKnobs);
             AddOption(Parallelism);
             AddOption(InstructionSet);
+            AddOption(MaxVectorTBitWidth);
             AddOption(Guard);
             AddOption(Dehydrate);
             AddOption(PreinitStatics);
@@ -222,7 +230,8 @@ namespace ILCompiler
             AddOption(SingleWarnDisabledAssemblies);
             AddOption(DirectPInvokes);
             AddOption(DirectPInvokeLists);
-            AddOption(MaxGenericCycle);
+            AddOption(MaxGenericCycleDepth);
+            AddOption(MaxGenericCycleBreadth);
             AddOption(RootedAssemblies);
             AddOption(ConditionallyRootedAssemblies);
             AddOption(TrimmedAssemblies);

@@ -1523,59 +1523,6 @@ FCIMPL3_IVV(INT64, COMInterlocked::CompareExchange64, INT64* location, INT64 val
 }
 FCIMPLEND
 
-FCIMPL2_IV(float,COMInterlocked::ExchangeFloat, float *location, float value)
-{
-    FCALL_CONTRACT;
-
-    if( NULL == location) {
-        FCThrow(kNullReferenceException);
-    }
-
-    LONG ret = InterlockedExchange((LONG *) location, *(LONG*)&value);
-    return *(float*)&ret;
-}
-FCIMPLEND
-
-FCIMPL2_IV(double,COMInterlocked::ExchangeDouble, double *location, double value)
-{
-    FCALL_CONTRACT;
-
-    if( NULL == location) {
-        FCThrow(kNullReferenceException);
-    }
-
-
-    INT64 ret = InterlockedExchange64((INT64 *) location, *(INT64*)&value);
-    return *(double*)&ret;
-}
-FCIMPLEND
-
-FCIMPL3_IVV(float,COMInterlocked::CompareExchangeFloat, float *location, float value, float comparand)
-{
-    FCALL_CONTRACT;
-
-    if( NULL == location) {
-        FCThrow(kNullReferenceException);
-    }
-
-    LONG ret = (LONG)InterlockedCompareExchange((LONG*) location, *(LONG*)&value, *(LONG*)&comparand);
-    return *(float*)&ret;
-}
-FCIMPLEND
-
-FCIMPL3_IVV(double,COMInterlocked::CompareExchangeDouble, double *location, double value, double comparand)
-{
-    FCALL_CONTRACT;
-
-    if( NULL == location) {
-        FCThrow(kNullReferenceException);
-    }
-
-    INT64 ret = (INT64)InterlockedCompareExchange64((INT64*) location, *(INT64*)&value, *(INT64*)&comparand);
-    return *(double*)&ret;
-}
-FCIMPLEND
-
 FCIMPL2(LPVOID,COMInterlocked::ExchangeObject, LPVOID*location, LPVOID value)
 {
     FCALL_CONTRACT;

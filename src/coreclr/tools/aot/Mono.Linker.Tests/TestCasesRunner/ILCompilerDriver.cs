@@ -25,7 +25,7 @@ namespace Mono.Linker.Tests.TestCasesRunner
 			ComputeDefaultOptions (out var targetOS, out var targetArchitecture);
 			var targetDetails = new TargetDetails (targetArchitecture, targetOS, TargetAbi.NativeAot);
 			CompilerTypeSystemContext typeSystemContext =
-				new CompilerTypeSystemContext (targetDetails, SharedGenericsMode.CanonicalReferenceTypes, DelegateFeature.All, genericCycleCutoffPoint: -1);
+				new CompilerTypeSystemContext (targetDetails, SharedGenericsMode.CanonicalReferenceTypes, DelegateFeature.All, genericCycleDepthCutoff: -1);
 
 			typeSystemContext.InputFilePaths = options.InputFilePaths;
 			typeSystemContext.ReferenceFilePaths = options.ReferenceFilePaths;

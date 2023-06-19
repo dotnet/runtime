@@ -2373,7 +2373,7 @@ bool DebuggerController::PatchTrace(TraceDestination *trace,
         // trace->address is actually a MethodDesc* of the method that we'll
         // soon JIT, so put a relative bp at offset zero in.
         LOG((LF_CORDB, LL_INFO10000,
-            "Setting unjitted method patch in MethodDesc 0x%p %s\n", trace->GetMethodDesc(), trace->GetMethodDesc() ? trace->GetMethodDesc()->m_pszDebugMethodName : ""));
+            "Setting unjitted method patch in MethodDesc %p %s\n", trace->GetMethodDesc(), trace->GetMethodDesc() ? trace->GetMethodDesc()->m_pszDebugMethodName : ""));
 
         // Note: we have to make sure to bind here. If this function is prejitted, this may be our only chance to get a
         // DebuggerJITInfo and thereby cause a JITComplete callback.
@@ -2484,7 +2484,7 @@ bool DebuggerController::MatchPatch(Thread *thread,
         }
     }
 
-    LOG((LF_CORDB, LL_INFO100000, "DC::MP: Returning true"));
+    LOG((LF_CORDB, LL_INFO100000, "DC::MP: Returning true\n"));
 
     return true;
 }
@@ -3317,11 +3317,11 @@ BOOL DebuggerController::DispatchExceptionHook(Thread *thread,
     }
     CONTRACTL_END;
 
-    LOG((LF_CORDB, LL_INFO1000, "DC:: DispatchExceptionHook\n"));
+    LOG((LF_CORDB, LL_INFO1000, "DC::DEH: DispatchExceptionHook\n"));
 
     if (!g_patchTableValid)
     {
-        LOG((LF_CORDB, LL_INFO1000, "DC::DEH returning, no patch table.\n"));
+        LOG((LF_CORDB, LL_INFO1000, "DC::DEH: returning, no patch table.\n"));
         return (TRUE);
     }
 
@@ -3339,16 +3339,16 @@ BOOL DebuggerController::DispatchExceptionHook(Thread *thread,
         DebuggerController *pNext = p->m_next;
 
         if (p->m_exceptionHook
-            && (p->m_thread == NULL || p->m_thread == thread) &&
-            tpr != TPR_IGNORE_AND_STOP)
+            && (p->m_thread == NULL || p->m_thread == thread)
+            && tpr != TPR_IGNORE_AND_STOP)
         {
-                        LOG((LF_CORDB, LL_INFO1000, "DC::DEH calling TEH...\n"));
+            LOG((LF_CORDB, LL_INFO1000, "DC::DEH: calling TEH...\n"));
             tpr = p->TriggerExceptionHook(thread, context , pException);
-                        LOG((LF_CORDB, LL_INFO1000, "DC::DEH ... returned.\n"));
+            LOG((LF_CORDB, LL_INFO1000, "DC::DEH: ... returned.\n"));
 
             if (tpr == TPR_IGNORE_AND_STOP)
             {
-                LOG((LF_CORDB, LL_INFO1000, "DC:: DEH: leaving early!\n"));
+                LOG((LF_CORDB, LL_INFO1000, "DC::DEH: leaving early!\n"));
                 break;
             }
         }
@@ -3356,7 +3356,7 @@ BOOL DebuggerController::DispatchExceptionHook(Thread *thread,
         p = pNext;
     }
 
-    LOG((LF_CORDB, LL_INFO1000, "DC:: DEH: returning 0x%x!\n", tpr));
+    LOG((LF_CORDB, LL_INFO1000, "DC::DEH: returning 0x%x!\n", tpr));
 
     return (tpr != TPR_IGNORE_AND_STOP);
 }
@@ -4725,11 +4725,11 @@ TP_RESULT DebuggerPatchSkip::TriggerExceptionHook(Thread *thread, CONTEXT * cont
         SIZE_T *sp = (SIZE_T *) GetSP(context);
 
         LOG((LF_CORDB, LL_INFO10000,
-             "Bypass call return address redirected from 0x%p\n", *sp));
+             "Bypass call return address redirected from %p\n", *sp));
 
         *sp -= patchBypass - (BYTE*)m_address;
 
-        LOG((LF_CORDB, LL_INFO10000, "to 0x%p\n", *sp));
+        LOG((LF_CORDB, LL_INFO10000, "to %p\n", *sp));
 #else
         PORTABILITY_ASSERT("DebuggerPatchSkip::TriggerExceptionHook -- return address fixup NYI");
 #endif
@@ -4739,7 +4739,7 @@ TP_RESULT DebuggerPatchSkip::TriggerExceptionHook(Thread *thread, CONTEXT * cont
     {
         // Fixup IP
 
-        LOG((LF_CORDB, LL_INFO10000, "Bypass instruction redirected from 0x%p\n", GetIP(context)));
+        LOG((LF_CORDB, LL_INFO10000, "Bypass instruction redirected from %p\n", GetIP(context)));
 
         if (IsSingleStep(exception->ExceptionCode))
         {
@@ -4786,9 +4786,9 @@ TP_RESULT DebuggerPatchSkip::TriggerExceptionHook(Thread *thread, CONTEXT * cont
                 ((size_t)GetIP(context) >  (size_t)patchBypass &&
                  (size_t)GetIP(context) <= (size_t)(patchBypass + MAX_INSTRUCTION_LENGTH + 1)))
             {
-                LOG((LF_CORDB, LL_INFO10000, "Bypass instruction redirected because still in skip area.\n"));
-                LOG((LF_CORDB, LL_INFO10000, "m_fIsCall = %d, patchBypass = 0x%x, m_address = 0x%x\n",
-                    m_instrAttrib.m_fIsCall, patchBypass, m_address));
+                LOG((LF_CORDB, LL_INFO10000, "Bypass instruction redirected because still in skip area.\n"
+                    "\tm_fIsCall = %s, patchBypass = %p, m_address = %p\n",
+                    (m_instrAttrib.m_fIsCall ? "true" : "false"), patchBypass, m_address));
                 SetIP(context, (PCODE)((BYTE *)GetIP(context) - (patchBypass - (BYTE *)m_address)));
             }
             else
@@ -4822,8 +4822,7 @@ TP_RESULT DebuggerPatchSkip::TriggerExceptionHook(Thread *thread, CONTEXT * cont
             SetIP(context, (PCODE)((BYTE *)GetIP(context) - (patchBypass - (BYTE *)m_address)));
         }
 
-        LOG((LF_CORDB, LL_ALWAYS, "to 0x%x\n", GetIP(context)));
-
+        LOG((LF_CORDB, LL_ALWAYS, "DPS::TEH: IP now at %p\n", GetIP(context)));
     }
 
 #endif
@@ -5376,39 +5375,36 @@ bool DebuggerStepper::DetectHandleInterceptors(ControllerStackInfo *info)
 
 BOOL DebuggerStepper::DetectHandleLCGMethods(const PCODE ip, MethodDesc * pMD, ControllerStackInfo * pInfo)
 {
+    // If a MethodDesc is specified, it has to match the given IP.
+    _ASSERTE(pMD == NULL || pMD == g_pEEInterface->GetNativeCodeMethodDesc(ip));
+
     // Look up the MethodDesc for the given IP.
     if (pMD == NULL)
     {
-        if (g_pEEInterface->IsManagedNativeCode((const BYTE *)ip))
-        {
-            pMD = g_pEEInterface->GetNativeCodeMethodDesc(ip);
-            _ASSERTE(pMD != NULL);
-        }
-    }
-#if defined(_DEBUG)
-    else
-    {
-        // If a MethodDesc is specified, it has to match the given IP.
-        _ASSERTE(pMD == g_pEEInterface->GetNativeCodeMethodDesc(ip));
-    }
-#endif // _DEBUG
+        // If the given IP is in unmanaged code, then it isn't an LCG method
+        if (!g_pEEInterface->IsManagedNativeCode((const BYTE *)ip))
+            return FALSE;
 
-    // If the given IP is in unmanaged code, then we won't have a MethodDesc by this point.
-    if (pMD != NULL)
-    {
-        if (pMD->IsLCGMethod())
-        {
-            // Enable all the traps to catch the thread.
-            EnableUnwind(m_fp);
-            EnableJMCBackStop(pMD);
-
-            pInfo->SetReturnFrameWithActiveFrame();
-            TrapStepOut(pInfo);
-            return TRUE;
-        }
+        pMD = g_pEEInterface->GetNativeCodeMethodDesc(ip);
     }
 
-    return FALSE;
+    _ASSERTE(pMD != NULL);
+    LOG((LF_CORDB, LL_INFO10000, "DS::DHLCGM: ip:%zx pMD:%p (%s::%s)\n",
+        ip,
+        pMD,
+        pMD->m_pszDebugClassName,
+        pMD->m_pszDebugMethodName));
+
+    if (!pMD->IsLCGMethod())
+        return FALSE;
+
+    // Enable all the traps to catch the thread.
+    EnableUnwind(m_fp);
+    EnableJMCBackStop(pMD);
+
+    pInfo->SetReturnFrameWithActiveFrame();
+    TrapStepOut(pInfo);
+    return TRUE;
 }
 
 
@@ -5523,19 +5519,19 @@ bool DebuggerStepper::TrapStepInto(ControllerStackInfo *info,
     if (IsCloserToRoot(info->m_activeFrame.fp, m_fpStepInto))
         m_fpStepInto = info->m_activeFrame.fp;
 
-    LOG((LF_CORDB, LL_INFO1000, "DS::TSI this:0x%p m_fpStepInto:0x%p\n",
-        this, m_fpStepInto.GetSPValue()));
+    LOG((LF_CORDB, LL_INFO1000, "DS::TSI this:%p m_fpStepInto:%p ip:%p\n",
+        this, m_fpStepInto.GetSPValue(), ip));
 
     TraceDestination trace;
 
     // Trace through the stubs.
     // If we're calling from managed code, this should either succeed
-    // or become an ecall into mscorwks.
-    // @Todo - what about stubs in mscorwks.
+    // or become an ecall into coreclr.
     // @todo - if this fails, we want to provide as much info as possible.
     if (!g_pEEInterface->TraceStub(ip, &trace)
         || !g_pEEInterface->FollowTrace(&trace))
     {
+        LOG((LF_CORDB, LL_INFO1000, "DS::TSI Failed to step into\n"));
         return false;
     }
 
@@ -5964,8 +5960,8 @@ bool DebuggerStepper::TrapStep(ControllerStackInfo *info, bool in)
 
             case WALK_UNKNOWN:
     LWALK_UNKNOWN:
-                LOG((LF_CORDB,LL_INFO10000,"DS::TS:WALK_UNKNOWN - curIP:0x%p "
-                    "nextIP:0x%p skipIP:0x%p 1st byte of opcode:0x%x\n", (BYTE*)GetControlPC(&(info->m_activeFrame.
+                LOG((LF_CORDB,LL_INFO10000,"DS::TS:WALK_UNKNOWN - curIP:%p "
+                    "nextIP:%p skipIP:%p 1st byte of opcode:0x%x\n", (BYTE*)GetControlPC(&(info->m_activeFrame.
                     registers)), walker.GetNextIP(),walker.GetSkipIP(),
                     *(BYTE*)GetControlPC(&(info->m_activeFrame.registers))));
 
@@ -6713,7 +6709,7 @@ bool DebuggerStepper::SetRangesFromIL(DebuggerJitInfo *dji, COR_DEBUG_STEP_RANGE
             {
                 // {0...-1} means use the entire method as the range
                 // Code dup'd from below case.
-                LOG((LF_CORDB, LL_INFO10000, "DS:Step: Have DJI, special (0,-1) entry\n"));
+                LOG((LF_CORDB, LL_INFO10000, "DS::Step: Have DJI, special (0,-1) entry\n"));
                 rTo->startOffset = 0;
                 rTo->endOffset   = (ULONG32)g_pEEInterface->GetFunctionSize(fd);
             }
@@ -6777,7 +6773,7 @@ bool DebuggerStepper::SetRangesFromIL(DebuggerJitInfo *dji, COR_DEBUG_STEP_RANGE
                         }
                     }
 
-                    LOG((LF_CORDB, LL_INFO10000, "DS:Step: nat off:0x%x to 0x%x\n", rTo->startOffset, rTo->endOffset));
+                    LOG((LF_CORDB, LL_INFO10000, "DS::Step: nat off:0x%x to 0x%x\n", rTo->startOffset, rTo->endOffset));
                 }
             }
         }
@@ -6799,7 +6795,7 @@ bool DebuggerStepper::SetRangesFromIL(DebuggerJitInfo *dji, COR_DEBUG_STEP_RANGE
         {
             if (r->startOffset == 0 && r->endOffset == (ULONG) ~0)
             {
-                LOG((LF_CORDB, LL_INFO10000, "DS:Step:No DJI, (0,-1) special entry\n"));
+                LOG((LF_CORDB, LL_INFO10000, "DS::Step:No DJI, (0,-1) special entry\n"));
                 // Code dup'd from above case.
                 // {0...-1} means use the entire method as the range
                 rTo->startOffset = 0;
@@ -6807,7 +6803,7 @@ bool DebuggerStepper::SetRangesFromIL(DebuggerJitInfo *dji, COR_DEBUG_STEP_RANGE
             }
             else
             {
-                LOG((LF_CORDB, LL_INFO10000, "DS:Step:No DJI, regular entry\n"));
+                LOG((LF_CORDB, LL_INFO10000, "DS::Step:No DJI, regular entry\n"));
                 // We can't just leave ths IL entry - we have to
                 // get rid of it.
                 // This will just be ignored
@@ -6949,12 +6945,12 @@ bool DebuggerStepper::Step(FramePointer fp, bool in,
     }
     m_eMode = m_stepIn ? cStepIn : cStepOver;
 
-    LOG((LF_CORDB,LL_INFO10000,"DS 0x%p Step: STEP_NORMAL\n",this));
+    LOG((LF_CORDB,LL_INFO10000,"DS::Step %p STEP_NORMAL\n",this));
     m_reason = STEP_NORMAL; //assume it'll be a normal step & set it to
     //something else if we walk over it
     if (fIsILStub)
     {
-        LOG((LF_CORDB, LL_INFO10000, "DS:Step: stepping in an IL stub\n"));
+        LOG((LF_CORDB, LL_INFO10000, "DS::Step: stepping in an IL stub\n"));
 
         // Enable the right triggers if the user wants to step in.
         if (in)
@@ -6978,12 +6974,12 @@ bool DebuggerStepper::Step(FramePointer fp, bool in,
     }
     else if (!TrapStep(&info, in))
     {
-        LOG((LF_CORDB,LL_INFO10000,"DS:Step: Did TS\n"));
+        LOG((LF_CORDB,LL_INFO10000,"DS::Step: Did TS\n"));
         m_stepIn = true;
         TrapStepNext(&info);
     }
 
-    LOG((LF_CORDB,LL_INFO10000,"DS:Step: Did TS,TSO\n"));
+    LOG((LF_CORDB,LL_INFO10000,"DS::Step: Did TS,TSO\n"));
 
     EnableUnwind(m_fp);
 
@@ -7316,13 +7312,13 @@ void DebuggerStepper::TriggerMethodEnter(Thread * thread,
     _ASSERTE(!IsFrozen());
 
     MethodDesc * pDesc = dji->m_nativeCodeVersion.GetMethodDesc();
-    LOG((LF_CORDB, LL_INFO10000, "DebuggerStepper::TME, desc=%p, addr=%p\n",
+    LOG((LF_CORDB, LL_INFO10000, "DS::TME, desc=%p, addr=%p\n",
         pDesc, ip));
 
     // JMC steppers won't stop in Lightweight codegen (LCG). Just return & keep executing.
     if (pDesc->IsNoMetadata())
     {
-        LOG((LF_CORDB, LL_INFO100000, "DebuggerStepper::TME, skipping b/c it's dynamic code (LCG)\n"));
+        LOG((LF_CORDB, LL_INFO100000, "DS::TME, skipping b/c it's dynamic code (LCG)\n"));
         return;
     }
 
@@ -7382,9 +7378,7 @@ void DebuggerStepper::TriggerMethodEnter(Thread * thread,
     }
 #endif
 
-
-
-    // Place a patch to stopus.
+    // Place a patch to stop us.
     // Don't bind to a particular AppDomain so that we can do a Cross-Appdomain step.
     AddBindAndActivateNativeManagedPatch(pDesc,
                   dji,
@@ -7393,9 +7387,9 @@ void DebuggerStepper::TriggerMethodEnter(Thread * thread,
                   NULL // AppDomain
     );
 
-    LOG((LF_CORDB, LL_INFO10000, "DJMCStepper::TME, after setting patch to stop\n"));
+    LOG((LF_CORDB, LL_INFO10000, "DS::TME, after setting patch to stop\n"));
 
-    // Once we resume, we'll go hit that patch (duh, we patched our return address)
+    // Once we resume, we'll go hit that patch since we patched our return address.
     // Furthermore, we know the step will complete with reason = call, so set that now.
     m_reason = STEP_CALL;
 }
@@ -7406,7 +7400,7 @@ void DebuggerStepper::TriggerMethodEnter(Thread * thread,
 // We never single-step into calls (we place a patch at the call destination).
 bool DebuggerStepper::TriggerSingleStep(Thread *thread, const BYTE *ip)
 {
-    LOG((LF_CORDB,LL_INFO10000,"DS:TSS this:0x%p, @ ip:0x%p\n", this, ip));
+    LOG((LF_CORDB,LL_INFO10000,"DS::TSS this:0x%p, @ ip:0x%p\n", this, ip));
 
     _ASSERTE(!IsFrozen());
 
@@ -7507,12 +7501,12 @@ bool DebuggerStepper::TriggerSingleStep(Thread *thread, const BYTE *ip)
 
 void DebuggerStepper::TriggerTraceCall(Thread *thread, const BYTE *ip)
 {
-    LOG((LF_CORDB,LL_INFO10000,"DS:TTC this:0x%x, @ ip:0x%x\n",this,ip));
+    LOG((LF_CORDB,LL_INFO10000,"DS::TTC this:0x%x, @ ip:0x%x\n",this,ip));
     TraceDestination trace;
 
     if (IsFrozen())
     {
-        LOG((LF_CORDB,LL_INFO10000,"DS:TTC exit b/c of Frozen\n"));
+        LOG((LF_CORDB,LL_INFO10000,"DS::TTC exit b/c of Frozen\n"));
         return;
     }
 
@@ -7573,7 +7567,7 @@ void DebuggerStepper::TriggerUnwind(Thread *thread,
 
     if (IsFrozen())
     {
-        LOG((LF_CORDB,LL_INFO10000,"DS:TTC exit b/c of Frozen\n"));
+        LOG((LF_CORDB,LL_INFO10000,"DS::TTC exit b/c of Frozen\n"));
         return;
     }
 
@@ -7853,7 +7847,7 @@ bool DebuggerJMCStepper::TrapStepInHelper(
         SIZE_T offset = CodeRegionInfo::GetCodeRegionInfo(dji, pDesc).AddressToOffset(ipNext);
 
 
-        LOG((LF_CORDB, LL_INFO100000, "DJMCStepper::TSIH, at '%s::%s', calling=0x%p, next=0x%p, offset=%d\n",
+        LOG((LF_CORDB, LL_INFO100000, "DJMCStepper::TSIH, at '%s::%s', calling=%p, next=%p, offset=%d\n",
             pDesc->m_pszDebugClassName,
             pDesc->m_pszDebugMethodName,
             ipCallTarget, ipNext,

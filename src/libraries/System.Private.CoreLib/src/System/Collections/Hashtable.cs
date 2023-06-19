@@ -13,6 +13,7 @@
 
 using System.ComponentModel;
 using System.Diagnostics;
+using System.Runtime.CompilerServices;
 using System.Runtime.Serialization;
 using System.Threading;
 
@@ -52,10 +53,10 @@ namespace System.Collections
     // the Hashtable.  That hash function (and the equals method on the
     // IEqualityComparer) would be used for all objects in the table.
     //
-    [DebuggerTypeProxy(typeof(System.Collections.Hashtable.HashtableDebugView))]
+    [DebuggerTypeProxy(typeof(HashtableDebugView))]
     [DebuggerDisplay("Count = {Count}")]
     [Serializable]
-    [System.Runtime.CompilerServices.TypeForwardedFrom("mscorlib, Version=4.0.0.0, Culture=neutral, PublicKeyToken=b77a5c561934e089")]
+    [TypeForwardedFrom("mscorlib, Version=4.0.0.0, Culture=neutral, PublicKeyToken=b77a5c561934e089")]
     public class Hashtable : IDictionary, ISerializable, IDeserializationCallback, ICloneable
     {
         /*
@@ -790,12 +791,12 @@ namespace System.Collections
         protected virtual bool KeyEquals(object? item, object key)
         {
             Debug.Assert(key != null, "key can't be null here!");
-            if (object.ReferenceEquals(_buckets, item))
+            if (ReferenceEquals(_buckets, item))
             {
                 return false;
             }
 
-            if (object.ReferenceEquals(item, key))
+            if (ReferenceEquals(item, key))
                 return true;
 
             if (_keycomparer != null)
@@ -1333,7 +1334,7 @@ namespace System.Collections
             {
                 lock (_table.SyncRoot)
                 {
-                    return Hashtable.Synchronized((Hashtable)_table.Clone());
+                    return Synchronized((Hashtable)_table.Clone());
                 }
             }
 
