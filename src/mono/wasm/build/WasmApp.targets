@@ -82,6 +82,8 @@
                                               - AppBundle directly contains user files
                                               - AppBundle/_framework contains generated files (dlls, runtime scripts, icu)
                                               - AppBundle/_content contains web files from nuget packages (css, js, etc)
+      - $(WasmEnableRuntimeAssetsLocation)  - Disables 'WasmRuntimeAssetsLocation' and merges user files and '_framework' into a single folder
+                                              It changes the relative path for module imports from nuget packages (using JSHost.ImportAsync).
 
       Public items:
       - @(WasmExtraFilesToDeploy) - Files to copy to $(WasmAppDir).
@@ -141,7 +143,8 @@
     <!-- by default, package assemblies as webcil -->
     <WasmEnableWebcil Condition="'$(WasmEnableWebcil)' == ''">true</WasmEnableWebcil>
 
-    <WasmRuntimeAssetsLocation Condition="'$(WasmRuntimeAssetsLocation)' == ''">_framework</WasmRuntimeAssetsLocation>
+    <WasmEnableRuntimeAssetsLocation Condition="'$(WasmEnableRuntimeAssetsLocation)' == ''">true</WasmEnableRuntimeAssetsLocation>
+    <WasmRuntimeAssetsLocation Condition="'$(WasmEnableRuntimeAssetsLocation)' == 'true' and '$(WasmRuntimeAssetsLocation)' == ''">_framework</WasmRuntimeAssetsLocation>
   </PropertyGroup>
 
   <ItemGroup>
