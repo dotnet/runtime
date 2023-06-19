@@ -40,18 +40,11 @@ namespace System.Text.Json.Serialization.Converters
             Justification = "The ctor is marked RequiresUnreferencedCode.")]
         public override JsonConverter CreateConverter(Type typeToConvert, JsonSerializerOptions options)
         {
-            ConstructorInfo? constructor;
             JsonConverter converter;
             Type converterType;
 
-            if (typeToConvert.IsKeyValuePair())
-            {
-                // browser-wasm compat -- ensure the linker doesn't trim away constructor parameter names from KVP.
-                Type[] genericArguments = typeToConvert.GetGenericArguments();
-                Type keyValuePairType = typeof(KeyValuePair<,>).MakeGenericType(genericArguments);
-                constructor = keyValuePairType.GetConstructor(genericArguments);
-            }
-            else if (!typeToConvert.TryGetDeserializationConstructor(_useDefaultConstructorInUnannotatedStructs, out constructor))
+            bool useDefaultConstructorInUnannotatedStructs = _useDefaultConstructorInUnannotatedStructs && !typeToConvert.IsKeyValuePair();
+            if (!typeToConvert.TryGetDeserializationConstructor(useDefaultConstructorInUnannotatedStructs, out ConstructorInfo? constructor))
             {
                 ThrowHelper.ThrowInvalidOperationException_SerializationDuplicateTypeAttribute<JsonConstructorAttribute>(typeToConvert);
             }

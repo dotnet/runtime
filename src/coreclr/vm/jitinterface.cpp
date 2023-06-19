@@ -611,107 +611,6 @@ CORINFO_CLASS_HANDLE CEEInfo::getTokenTypeAsHandle (CORINFO_RESOLVED_TOKEN * pRe
     return tokenType;
 }
 
-/*********************************************************************/
-size_t CEEInfo::findNameOfToken (
-            CORINFO_MODULE_HANDLE       scopeHnd,
-            mdToken                     metaTOK,
-            _Out_writes_ (FQNameCapacity)  char * szFQName,
-            size_t FQNameCapacity)
-{
-    CONTRACTL {
-        THROWS;
-        GC_TRIGGERS;
-        MODE_PREEMPTIVE;
-    } CONTRACTL_END;
-
-    size_t NameLen = 0;
-
-    JIT_TO_EE_TRANSITION();
-
-    if (IsDynamicScope(scopeHnd))
-    {
-        strncpy_s (szFQName, FQNameCapacity, "DynamicToken", FQNameCapacity - 1);
-        NameLen = strlen (szFQName);
-    }
-    else
-    {
-        Module* module = (Module *)scopeHnd;
-        NameLen = findNameOfToken(module, metaTOK, szFQName, FQNameCapacity);
-    }
-
-    EE_TO_JIT_TRANSITION();
-
-    return NameLen;
-}
-
-/*********************************************************************/
-// Checks if the given metadata token is valid
-bool CEEInfo::isValidToken (
-        CORINFO_MODULE_HANDLE       module,
-        mdToken                     metaTOK)
-{
-    CONTRACTL {
-        NOTHROW;
-        GC_NOTRIGGER;
-        MODE_ANY;
-    } CONTRACTL_END;
-
-    bool result = false;
-
-    JIT_TO_EE_TRANSITION_LEAF();
-
-    if (IsDynamicScope(module))
-    {
-        // No explicit token validation for dynamic code. Validation is
-        // side-effect of token resolution.
-        result = true;
-    }
-    else
-    {
-        result = ((Module *)module)->GetMDImport()->IsValidToken(metaTOK);
-    }
-
-    EE_TO_JIT_TRANSITION_LEAF();
-
-    return result;
-}
-
-/*********************************************************************/
-// Checks if the given metadata token is valid StringRef
-bool CEEInfo::isValidStringRef (
-        CORINFO_MODULE_HANDLE       module,
-        mdToken                     metaTOK)
-{
-    CONTRACTL {
-        THROWS;
-        GC_TRIGGERS;
-        MODE_PREEMPTIVE;
-    } CONTRACTL_END;
-
-    bool result = true;
-
-    JIT_TO_EE_TRANSITION();
-
-    if (IsDynamicScope(module))
-    {
-        result = GetDynamicResolver(module)->IsValidStringRef(metaTOK);
-    }
-    else
-    {
-        result = ((Module *)module)->CheckStringRef(metaTOK);
-        if (result)
-        {
-            DWORD dwCharCount;
-            LPCWSTR pString;
-            result = (!FAILED(((Module *)module)->GetMDImport()->GetUserString(metaTOK, &dwCharCount, NULL, &pString)) &&
-                     pString != NULL);
-        }
-    }
-
-    EE_TO_JIT_TRANSITION();
-
-    return result;
-}
 
 int CEEInfo::getStringLiteral (
         CORINFO_MODULE_HANDLE       moduleHnd,
@@ -1230,117 +1129,6 @@ void CEEInfo::resolveToken(/* IN, OUT */ CORINFO_RESOLVED_TOKEN * pResolvedToken
     EE_TO_JIT_TRANSITION();
 }
 
-/*********************************************************************/
-struct TryResolveTokenFilterParam
-{
-    CEEInfo* m_this;
-    CORINFO_RESOLVED_TOKEN* m_resolvedToken;
-    EXCEPTION_POINTERS m_exceptionPointers;
-    bool m_success;
-};
-
-bool isValidTokenForTryResolveToken(CEEInfo* info, CORINFO_RESOLVED_TOKEN* resolvedToken)
-{
-    CONTRACTL {
-        NOTHROW;
-        GC_NOTRIGGER;
-        MODE_ANY;
-    } CONTRACTL_END;
-
-    if (!info->isValidToken(resolvedToken->tokenScope, resolvedToken->token))
-    {
-        return false;
-    }
-
-    CorInfoTokenKind tokenType = resolvedToken->tokenType;
-    switch (TypeFromToken(resolvedToken->token))
-    {
-    case mdtModuleRef:
-    case mdtTypeDef:
-    case mdtTypeRef:
-    case mdtTypeSpec:
-        if ((tokenType & CORINFO_TOKENKIND_Class) == 0)
-            return false;
-        break;
-
-    case mdtMethodDef:
-    case mdtMethodSpec:
-        if ((tokenType & CORINFO_TOKENKIND_Method) == 0)
-            return false;
-        break;
-
-    case mdtFieldDef:
-        if ((tokenType & CORINFO_TOKENKIND_Field) == 0)
-            return false;
-        break;
-
-    case mdtMemberRef:
-        if ((tokenType & (CORINFO_TOKENKIND_Method | CORINFO_TOKENKIND_Field)) == 0)
-            return false;
-        break;
-
-    default:
-        return false;
-    }
-
-    return true;
-}
-
-LONG EEFilterException(struct _EXCEPTION_POINTERS* exceptionPointers, void* unused);
-
-LONG TryResolveTokenFilter(struct _EXCEPTION_POINTERS* exceptionPointers, void* theParam)
-{
-    CONTRACTL {
-        NOTHROW;
-        GC_NOTRIGGER;
-        MODE_ANY;
-    } CONTRACTL_END;
-
-    // Backward compatibility: Convert bad image format exceptions thrown while resolving tokens
-    // to simple true/false successes. This is done for backward compatibility only. Ideally,
-    // we would always treat bad tokens in the IL  stream as fatal errors.
-    if (exceptionPointers->ExceptionRecord->ExceptionCode == EXCEPTION_COMPLUS)
-    {
-        auto* param = reinterpret_cast<TryResolveTokenFilterParam*>(theParam);
-        if (!isValidTokenForTryResolveToken(param->m_this, param->m_resolvedToken))
-        {
-            param->m_exceptionPointers = *exceptionPointers;
-            return EEFilterException(exceptionPointers, nullptr);
-        }
-    }
-
-    return EXCEPTION_CONTINUE_SEARCH;
-}
-
-bool CEEInfo::tryResolveToken(CORINFO_RESOLVED_TOKEN* resolvedToken)
-{
-    // No dynamic contract here because SEH is used
-    STATIC_CONTRACT_THROWS;
-    STATIC_CONTRACT_GC_TRIGGERS;
-    STATIC_CONTRACT_MODE_PREEMPTIVE;
-
-    TryResolveTokenFilterParam param;
-    param.m_this = this;
-    param.m_resolvedToken = resolvedToken;
-    param.m_success = true;
-
-    PAL_TRY(TryResolveTokenFilterParam*, pParam, &param)
-    {
-        pParam->m_this->resolveToken(pParam->m_resolvedToken);
-    }
-    PAL_EXCEPT_FILTER(TryResolveTokenFilter)
-    {
-        if (param.m_exceptionPointers.ExceptionRecord->ExceptionCode == EXCEPTION_COMPLUS)
-        {
-            HandleException(&param.m_exceptionPointers);
-        }
-
-        param.m_success = false;
-    }
-    PAL_ENDTRY
-
-    return param.m_success;
-}
 
 /*********************************************************************/
 // We have a few frequently used constants in CoreLib that are defined as
@@ -4464,74 +4252,6 @@ TypeCompareState CEEInfo::compareTypesForEquality(
     return result;
 }
 
-/*********************************************************************/
-// returns the intersection of cls1 and cls2.
-CORINFO_CLASS_HANDLE CEEInfo::mergeClasses(
-        CORINFO_CLASS_HANDLE        cls1,
-        CORINFO_CLASS_HANDLE        cls2)
-{
-    CONTRACTL {
-        THROWS;
-        GC_TRIGGERS;
-        MODE_PREEMPTIVE;
-    } CONTRACTL_END;
-
-    CORINFO_CLASS_HANDLE result = NULL;
-
-    JIT_TO_EE_TRANSITION();
-
-    TypeHandle merged = TypeHandle::MergeTypeHandlesToCommonParent(TypeHandle(cls1), TypeHandle(cls2));
-#ifdef _DEBUG
-    {
-        //Make sure the merge is reflexive in the cases we "support".
-        TypeHandle hnd1 = TypeHandle(cls1);
-        TypeHandle hnd2 = TypeHandle(cls2);
-        TypeHandle reflexive = TypeHandle::MergeTypeHandlesToCommonParent(hnd2, hnd1);
-
-        //If both sides are classes than either they have a common non-interface parent (in which case it is
-        //reflexive)
-        //OR they share a common interface, and it can be order dependent (if they share multiple interfaces
-        //in common)
-        if (!hnd1.IsInterface() && !hnd2.IsInterface())
-        {
-            if (merged.IsInterface())
-            {
-                _ASSERTE(reflexive.IsInterface());
-            }
-            else
-            {
-                _ASSERTE(merged == reflexive);
-            }
-        }
-        //Both results must either be interfaces or classes.  They cannot be mixed.
-        _ASSERTE((!!merged.IsInterface()) == (!!reflexive.IsInterface()));
-
-        //If the result of the merge was a class, then the result of the reflexive merge was the same class.
-        if (!merged.IsInterface())
-        {
-            _ASSERTE(merged == reflexive);
-        }
-
-        // If both sides are arrays, then the result is either an array or g_pArrayClass.  The above is
-        // actually true for reference types as well, but it is a little excessive to deal with.
-        if (hnd1.IsArray() && hnd2.IsArray())
-        {
-            _ASSERTE((merged.IsArray() && reflexive.IsArray())
-                     || ((merged == g_pArrayClass) && (reflexive == g_pArrayClass)));
-        }
-
-        //Can I assert anything about generic variables?
-
-        //The results must always be assignable
-        _ASSERTE(hnd1.CanCastTo(merged) && hnd2.CanCastTo(merged) && hnd1.CanCastTo(reflexive)
-                 && hnd2.CanCastTo(reflexive));
-    }
-#endif
-    result = CORINFO_CLASS_HANDLE(merged.AsPtr());
-
-    EE_TO_JIT_TRANSITION();
-    return result;
-}
 
 /*********************************************************************/
 static BOOL isMoreSpecificTypeHelper(
@@ -4732,28 +4452,6 @@ CorInfoType CEEInfo::getChildType (
     EE_TO_JIT_TRANSITION();
 
     return ret;
-}
-
-/*********************************************************************/
-// Check any constraints on class type arguments
-bool CEEInfo::satisfiesClassConstraints(CORINFO_CLASS_HANDLE cls)
-{
-    CONTRACTL {
-        THROWS;
-        GC_TRIGGERS;
-        MODE_PREEMPTIVE;
-    } CONTRACTL_END;
-
-    bool result = false;
-
-    JIT_TO_EE_TRANSITION();
-
-    _ASSERTE(cls != NULL);
-    result = TypeHandle(cls).SatisfiesClassConstraints();
-
-    EE_TO_JIT_TRANSITION();
-
-    return result;
 }
 
 /*********************************************************************/
@@ -5693,74 +5391,6 @@ void CEEInfo::getCallInfo(
     }
 
     EE_TO_JIT_TRANSITION();
-}
-
-bool CEEInfo::canAccessFamily(CORINFO_METHOD_HANDLE hCaller,
-                              CORINFO_CLASS_HANDLE hInstanceType)
-{
-    WRAPPER_NO_CONTRACT;
-
-    bool ret = false;
-
-    //Since this is only for verification, I don't need to do the demand.
-    JIT_TO_EE_TRANSITION();
-
-    TypeHandle targetType = TypeHandle(hInstanceType);
-    TypeHandle accessingType = TypeHandle(GetMethod(hCaller)->GetMethodTable());
-    AccessCheckOptions::AccessCheckType accessCheckOptions = AccessCheckOptions::kNormalAccessibilityChecks;
-    DynamicResolver* pIgnored;
-    BOOL doCheck = TRUE;
-    if (GetMethod(hCaller)->IsDynamicMethod())
-    {
-        //If this is a DynamicMethod, perform the check from the type to which the DynamicMethod was
-        //attached.
-        //
-        //If this is a dynamic method, don't do this check.  If they specified SkipVisibilityChecks
-        //(ModifyCheckForDynamicMethod returned false), we should obviously skip the check for the C++
-        //protected rule (since we skipped all the other visibility checks).  If they specified
-        //RestrictedSkipVisibilityChecks, then they're a "free" DynamicMethod.  This check is meaningless
-        //(i.e.  it would always fail).  We've already done a demand for access to the member.  Let that be
-        //enough.
-        doCheck = ModifyCheckForDynamicMethod(GetMethod(hCaller)->AsDynamicMethodDesc()->GetResolver(),
-                                              &accessingType, &accessCheckOptions, &pIgnored);
-        if (accessCheckOptions == AccessCheckOptions::kRestrictedMemberAccess
-            || accessCheckOptions == AccessCheckOptions::kRestrictedMemberAccessNoTransparency
-            )
-            doCheck = FALSE;
-    }
-
-    if (doCheck)
-    {
-        ret = !!ClassLoader::CanAccessFamilyVerification(accessingType, targetType);
-    }
-    else
-    {
-        ret = true;
-    }
-
-    EE_TO_JIT_TRANSITION();
-    return ret;
-}
-
-bool CEEInfo::isRIDClassDomainID(CORINFO_CLASS_HANDLE cls)
-{
-    CONTRACTL {
-        THROWS;
-        GC_TRIGGERS;
-        MODE_PREEMPTIVE;
-    } CONTRACTL_END;
-
-    bool result = FALSE;
-
-    JIT_TO_EE_TRANSITION();
-
-    TypeHandle  VMClsHnd(cls);
-
-    result = !VMClsHnd.AsMethodTable()->IsDynamicStatics();
-
-    EE_TO_JIT_TRANSITION();
-
-    return result;
 }
 
 
@@ -8703,37 +8333,6 @@ CEEInfo::getMethodClass(
     return result;
 }
 
-/***********************************************************************/
-CORINFO_MODULE_HANDLE CEEInfo::getMethodModule (CORINFO_METHOD_HANDLE methodHnd)
-{
-    CONTRACTL {
-        NOTHROW;
-        GC_NOTRIGGER;
-        MODE_PREEMPTIVE;
-    } CONTRACTL_END;
-
-    CORINFO_MODULE_HANDLE result = NULL;
-
-    JIT_TO_EE_TRANSITION_LEAF();
-
-    MethodDesc* method = GetMethod(methodHnd);
-
-    if (method->IsDynamicMethod())
-    {
-        // this should never be called, thus the assert, I don't know if the (non existent) caller
-        // expects the Module or the scope
-        UNREACHABLE();
-    }
-    else
-    {
-        result = (CORINFO_MODULE_HANDLE) method->GetModule();
-    }
-
-    EE_TO_JIT_TRANSITION_LEAF();
-
-    return result;
-}
-
 /*********************************************************************/
 bool CEEInfo::isIntrinsicType(CORINFO_CLASS_HANDLE classHnd)
 {
@@ -10127,56 +9726,6 @@ bool CEEInfo::satisfiesMethodConstraints(
 }
 
 
-
-/*********************************************************************/
-// Given a delegate target class, a target method parent class,  a  target method,
-// a delegate class, check if the method signature is compatible with the Invoke method of the delegate
-// (under the typical instantiation of any free type variables in the memberref signatures).
-//
-// objCls should be NULL if the target object is NULL
-//@GENERICSVER: new (suitable for generics)
-bool CEEInfo::isCompatibleDelegate(
-            CORINFO_CLASS_HANDLE        objCls,
-            CORINFO_CLASS_HANDLE        methodParentCls,
-            CORINFO_METHOD_HANDLE       method,
-            CORINFO_CLASS_HANDLE        delegateCls,
-            bool*                       pfIsOpenDelegate)
-{
-    CONTRACTL {
-        THROWS;
-        GC_TRIGGERS;
-        MODE_PREEMPTIVE;
-    } CONTRACTL_END;
-
-    bool result = false;
-
-    JIT_TO_EE_TRANSITION();
-
-    _ASSERTE(method != NULL);
-    _ASSERTE(delegateCls != NULL);
-
-    TypeHandle delegateClsHnd = (TypeHandle) delegateCls;
-
-    _ASSERTE(delegateClsHnd.GetMethodTable()->IsDelegate());
-
-    TypeHandle methodParentHnd = (TypeHandle) (methodParentCls);
-    MethodDesc* pMDFtn = GetMethod(method);
-    TypeHandle objClsHnd(objCls);
-
-    EX_TRY
-    {
-      result = COMDelegate::ValidateCtor(objClsHnd, methodParentHnd, pMDFtn, delegateClsHnd, pfIsOpenDelegate);
-    }
-    EX_CATCH
-    {
-    }
-    EX_END_CATCH(SwallowAllExceptions)
-
-    EE_TO_JIT_TRANSITION();
-
-    return result;
-}
-
 /*********************************************************************/
 // return address of fixup area for late-bound N/Direct calls.
 void CEEInfo::getAddressOfPInvokeTarget(CORINFO_METHOD_HANDLE method,
@@ -10360,27 +9909,6 @@ uint32_t CEEInfo::getThreadTLSIndex(void **ppIndirection)
     return result;
 }
 
-const void * CEEInfo::getInlinedCallFrameVptr(void **ppIndirection)
-{
-    CONTRACTL {
-        NOTHROW;
-        GC_NOTRIGGER;
-        MODE_PREEMPTIVE;
-    } CONTRACTL_END;
-
-    void * result = NULL;
-
-    if (ppIndirection != NULL)
-        *ppIndirection = NULL;
-
-    JIT_TO_EE_TRANSITION_LEAF();
-
-    result = (void*)InlinedCallFrame::GetMethodFrameVPtr();
-
-    EE_TO_JIT_TRANSITION_LEAF();
-
-    return result;
-}
 
 int32_t * CEEInfo::getAddrOfCaptureThreadGlobal(void **ppIndirection)
 {
@@ -11534,7 +11062,6 @@ void CEEJitInfo::recordRelocation(void * location,
                                   void * locationRW,
                                   void * target,
                                   WORD   fRelocType,
-                                  WORD   slot,
                                   INT32  addlDelta)
 {
     CONTRACTL {
@@ -11552,7 +11079,7 @@ void CEEJitInfo::recordRelocation(void * location,
     {
     case IMAGE_REL_BASED_DIR64:
         // Write 64-bits into location
-        *((UINT64 *) ((BYTE *) locationRW + slot)) = (UINT64) target;
+        *((UINT64 *) locationRW) = (UINT64) target;
         break;
 
 #ifdef TARGET_AMD64
@@ -11560,8 +11087,8 @@ void CEEJitInfo::recordRelocation(void * location,
         {
             target = (BYTE *)target + addlDelta;
 
-            INT32 * fixupLocation = (INT32 *) ((BYTE *) location + slot);
-            INT32 * fixupLocationRW = (INT32 *) ((BYTE *) locationRW + slot);
+            INT32 * fixupLocation = (INT32 *) location;
+            INT32 * fixupLocationRW = (INT32 *) locationRW;
             BYTE * baseAddr = (BYTE *)fixupLocation + sizeof(INT32);
 
             delta  = (INT64)((BYTE *)target - baseAddr);
@@ -11615,7 +11142,6 @@ void CEEJitInfo::recordRelocation(void * location,
 #ifdef TARGET_ARM64
     case IMAGE_REL_ARM64_BRANCH26:   // 26 bit offset << 2 & sign ext, for B and BL
         {
-            _ASSERTE(slot == 0);
             _ASSERTE(addlDelta == 0);
 
             PCODE branchTarget  = (PCODE) target;
@@ -11692,7 +11218,6 @@ void CEEJitInfo::recordRelocation(void * location,
 
     case IMAGE_REL_ARM64_PAGEBASE_REL21:
         {
-            _ASSERTE(slot == 0);
             _ASSERTE(addlDelta == 0);
 
             // Write the 21 bits pc-relative page address into location.
@@ -11706,7 +11231,6 @@ void CEEJitInfo::recordRelocation(void * location,
 
     case IMAGE_REL_ARM64_PAGEOFFSET_12A:
         {
-            _ASSERTE(slot == 0);
             _ASSERTE(addlDelta == 0);
 
             // Write the 12 bits page offset into location.
@@ -12771,10 +12295,6 @@ CorJitResult invokeCompileMethod(EEJitManager *jitMgr,
     CORJIT_FLAGS flags;
     if (g_pConfig->JitFramed())
         flags.Set(CORJIT_FLAGS::CORJIT_FLAG_FRAMED);
-#ifdef TARGET_X86
-    if (g_pConfig->PInvokeRestoreEsp(ftn->GetModule()->IsPreV4Assembly()))
-        flags.Set(CORJIT_FLAGS::CORJIT_FLAG_PINVOKE_RESTORE_ESP);
-#endif // TARGET_X86
 
     // Set flags based on method's ImplFlags.
     if (!ftn->IsNoMetadata())
@@ -13237,17 +12757,14 @@ PCODE UnsafeJitFunction(PrepareCodeConfig* config,
         {
             jitInfo.WriteCode(jitMgr);
 #if defined(DEBUGGING_SUPPORTED)
-            if (!pJitFlags->IsSet(CORJIT_FLAGS::CORJIT_FLAG_MCJIT_BACKGROUND))
+            //
+            // Notify the debugger that we have successfully jitted the function
+            //
+            if (g_pDebugInterface)
             {
-                //
-                // Notify the debugger that we have successfully jitted the function
-                //
-                if (g_pDebugInterface)
+                if (!jitInfo.JitAgain())
                 {
-                    if (!jitInfo.JitAgain())
-                    {
-                        g_pDebugInterface->JITComplete(nativeCodeVersion, (TADDR)nativeEntry);
-                    }
+                    g_pDebugInterface->JITComplete(nativeCodeVersion, (TADDR)nativeEntry);
                 }
             }
 #endif // DEBUGGING_SUPPORTED
@@ -14557,7 +14074,6 @@ void CEEInfo::recordRelocation(
         void *                 locationRW, /* IN  */
         void *                 target,     /* IN  */
         WORD                   fRelocType, /* IN  */
-        WORD                   slotNum,  /* IN  */
         INT32                  addlDelta /* IN  */
         )
 {

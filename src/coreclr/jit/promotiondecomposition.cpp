@@ -1202,10 +1202,7 @@ void ReplaceVisitor::HandleStore(GenTree** use, GenTree* user)
         {
             GenTreeLclVarCommon* lclStore = store->AsLclVarCommon();
             unsigned             size     = lclStore->GetLayout(m_compiler)->GetSize();
-            if (MarkForReadBack(lclStore->GetLclNum(), lclStore->GetLclOffs(), size))
-            {
-                JITDUMP("Marked store destination replacements to be read back (could not decompose this store)\n");
-            }
+            MarkForReadBack(lclStore, size DEBUGARG("cannot decompose store"));
         }
     }
 }

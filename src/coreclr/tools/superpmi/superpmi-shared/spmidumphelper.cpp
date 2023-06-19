@@ -234,55 +234,37 @@ std::string SpmiDumpHelper::DumpJitFlags(unsigned long long flags)
     AddFlag(DEBUG_INFO);
     AddFlag(MIN_OPT);
     AddFlag(ENABLE_CFG);
-    AddFlag(MCJIT_BACKGROUND);
-
-    // x86 only
-    //
-    AddFlagNumeric(PINVOKE_RESTORE_ESP, 8);
-
-    // UNUSED = 9
-    // UNUSED = 10
-    // UNUSED = 11
-    // UNUSED = 12
-
     AddFlag(OSR);
     AddFlag(ALT_JIT);
     AddFlag(FROZEN_ALLOC_ALLOWED);
-    // UNUSED = 16
-    // UNUSED = 17
     AddFlag(MAKEFINALCODE);
     AddFlag(READYTORUN);
     AddFlag(PROF_ENTERLEAVE);
-    // UNUSED = 21
     AddFlag(PROF_NO_PINVOKE_INLINE);
-    // UNUSED = 23
     AddFlag(PREJIT);
     AddFlag(RELOC);
-    // UNUSED = 26
     AddFlag(IL_STUB);
     AddFlag(PROCSPLIT);
     AddFlag(BBINSTR);
+    AddFlag(BBINSTR_IF_LOOPS);
     AddFlag(BBOPT);
     AddFlag(FRAMED);
-    AddFlag(BBINSTR_IF_LOOPS);
     AddFlag(PUBLISH_SECRET_PARAM);
-    // UNUSED = 34
-    // UNUSED = 35
     AddFlag(USE_PINVOKE_HELPERS);
     AddFlag(REVERSE_PINVOKE);
     AddFlag(TRACK_TRANSITIONS);
     AddFlag(TIER0);
     AddFlag(TIER1);
+    AddFlag(NO_INLINING);
 
     // arm32 only
     //
-    AddFlagNumeric(RELATIVE_CODE_RELOCS, 41);
+    AddFlagNumeric(RELATIVE_CODE_RELOCS, 29);
+    AddFlagNumeric(SOFTFP_ABI, 30);
 
-    AddFlag(NO_INLINING);
-
-    // x86/x64 only
+    // xarch only
     //
-    AddFlagNumeric(VECTOR512_THROTTLING, 43);
+    AddFlagNumeric(VECTOR512_THROTTLING, 31);
 
     // "Extra jit flag" support
     //
