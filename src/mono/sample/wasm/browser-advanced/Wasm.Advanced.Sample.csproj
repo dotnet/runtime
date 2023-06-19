@@ -16,7 +16,7 @@
     <WasmProfilers>browser;</WasmProfilers>
 
     <!-- Put "framework" (dotnet.js, dlls, etc) files directly into the AppBundle -->
-    <WasmEnableRuntimeAssetsLocation>false</WasmEnableRuntimeAssetsLocation>
+    <WasmRuntimeAssetsLocation>./</WasmRuntimeAssetsLocation>
   </PropertyGroup>
   <ItemGroup>
     <WasmExtraFilesToDeploy Include="main.js" />

@@ -77,13 +77,12 @@
       - $(WasmAllowUndefinedSymbols)        - Controls whether undefined symbols are allowed or not,
                                               if true, appends 'allow-undefined' and sets 'ERROR_ON_UNDEFINED_SYMBOLS=0' as arguments for wasm-ld,
                                               if false (default), removes 'allow-undefined' and sets 'ERROR_ON_UNDEFINED_SYMBOLS=1'.
-      - $(WasmRuntimeAssetsLocation)        - Allows to override a location for build generated files. Defaults to `_framework`.
+      - $(WasmRuntimeAssetsLocation)        - Allows to override a location for build generated files. 
+                                              Defaults to '_framework', if you want to put framework files in the same directory as user files, use './' value.
                                               Output structure
                                               - AppBundle directly contains user files
                                               - AppBundle/_framework contains generated files (dlls, runtime scripts, icu)
                                               - AppBundle/_content contains web files from nuget packages (css, js, etc)
-      - $(WasmEnableRuntimeAssetsLocation)  - Disables 'WasmRuntimeAssetsLocation' and merges user files and '_framework' into a single folder (default: true)
-                                              It changes the relative path for module imports from nuget packages (using JSHost.ImportAsync).
 
       Public items:
       - @(WasmExtraFilesToDeploy) - Files to copy to $(WasmAppDir).
@@ -142,9 +141,6 @@
 
     <!-- by default, package assemblies as webcil -->
     <WasmEnableWebcil Condition="'$(WasmEnableWebcil)' == ''">true</WasmEnableWebcil>
-
-    <WasmEnableRuntimeAssetsLocation Condition="'$(WasmEnableRuntimeAssetsLocation)' == ''">true</WasmEnableRuntimeAssetsLocation>
-    <WasmRuntimeAssetsLocation Condition="'$(WasmEnableRuntimeAssetsLocation)' == 'true' and '$(WasmRuntimeAssetsLocation)' == ''">_framework</WasmRuntimeAssetsLocation>
   </PropertyGroup>
 
   <ItemGroup>
@@ -372,11 +368,18 @@
 
   </Target>
 
+  <Target Name="_EnsureWasmRuntimeAssetsLocation" Condition="'$(WasmRuntimeAssetsLocation)' == ''">
+    <Message Importance="Low" Text="Set 'WasmRuntimeAssetsLocation' to default value '_framework'" />
+    <PropertyGroup>
+      <WasmRuntimeAssetsLocation>_framework</WasmRuntimeAssetsLocation>
+    </PropertyGroup>
+  </Target>
+
   <Target Name="_WasmGenerateAppBundle"
           Inputs="@(_WasmAssembliesInternal);@(WasmExtraFilesToDeploy);$(WasmIcuDataFileName);@(WasmNativeAsset)"
           Outputs="$(WasmAppDir)\.stamp"
           Condition="'$(WasmGenerateAppBundle)' == 'true'"
-          DependsOnTargets="_WasmGenerateRuntimeConfig;_GetWasmGenerateAppBundleDependencies">
+          DependsOnTargets="_WasmGenerateRuntimeConfig;_GetWasmGenerateAppBundleDependencies;_EnsureWasmRuntimeAssetsLocation">
     <Error Condition="'$(InvariantGlobalization)' != 'true' and '$(WasmIcuDataFileName)' != '' and !Exists('$(_WasmIcuDataFileName)')" Text="File in location %24(WasmIcuDataFileName)=$(WasmIcuDataFileName) cannot be found neither when used as absolute path nor a relative runtime pack path. You might want to pass one of the values: @(_IcuAvailableDataFiles->' %(Filename)')."/>
     <Warning Condition="'$(InvariantGlobalization)' != 'true' and '$(WasmIncludeFullIcuData)' == 'true' and '$(WasmIcuDataFileName)' != ''" Text="%24(WasmIcuDataFileName) has no effect when %24(WasmIncludeFullIcuData) is set to true." />
 
