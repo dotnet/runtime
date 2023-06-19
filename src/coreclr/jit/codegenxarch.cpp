@@ -7337,7 +7337,7 @@ void CodeGen::genIntToFloatCast(GenTree* treeNode)
     // here since they should have been lowered appropriately.
     noway_assert(srcType != TYP_UINT);
     assert((srcType != TYP_ULONG) || (dstType != TYP_FLOAT) ||
-            compiler->compOpportunisticallyDependsOn(InstructionSet_AVX512F));
+           compiler->compOpportunisticallyDependsOn(InstructionSet_AVX512F));
 
     if (compiler->compOpportunisticallyDependsOn(InstructionSet_AVX512F))
     {
