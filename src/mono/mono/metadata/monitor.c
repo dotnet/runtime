@@ -48,8 +48,8 @@ enum {
 };
 #undef OPDEF
 
-/*#define LOCK_DEBUG(a) do { a; } while (0)*/
-#define LOCK_DEBUG(a)
+#define LOCK_DEBUG(a) do { a; } while (0)
+// #define LOCK_DEBUG(a)
 
 /*
  * The monitor implementation here is based on
@@ -1161,6 +1161,7 @@ mono_monitor_try_enter_loop_if_interrupted (MonoObject *obj, guint32 ms,
 		if (res == -1) {
 			// The wait was interrupted and the monitor was not acquired.
 			MonoException *exc;
+			LOCK_DEBUG (g_message ("%s: (%d) was interrupted %p", __func__, mono_thread_info_get_small_id (), obj));
 			HANDLE_FUNCTION_ENTER ();
 			exc = mono_thread_interruption_checkpoint ();
 			if (exc) {
@@ -1177,6 +1178,7 @@ mono_monitor_try_enter_loop_if_interrupted (MonoObject *obj, guint32 ms,
 			// This feels like a hack.
 			// threads.c should give us less confusing directions.
 			allow_interruption = FALSE;
+			LOCK_DEBUG (g_message ("%s: (%d) interruption might be spurious %p", __func__, mono_thread_info_get_small_id (), obj));
 		}
 	} while (res == -1);
 
