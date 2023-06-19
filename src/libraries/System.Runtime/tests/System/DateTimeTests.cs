@@ -2735,7 +2735,7 @@ namespace System.Tests
         public static void TryFormat_MatchesToString(string format)
         {
             DateTime dt = DateTime.UtcNow;
-            foreach (var culture in CultureInfo.GetCultures(CultureTypes.AllCultures))
+            foreach (CultureInfo culture in CultureInfo.GetCultures(CultureTypes.AllCultures))
             {
                 using (new ThreadCultureChange(culture))
                 {
