@@ -587,7 +587,8 @@ bool Compiler::fgExpandThreadLocalAccessForCall(BasicBlock** pBlock, Statement* 
         // Base of coreclr's thread local storage
         tlsValue = gtNewIndir(TYP_I_IMPL, tlsValue, GTF_IND_NONFAULTING | GTF_IND_INVARIANT);
     }
-    else if (TargetOS::IsMacOS)
+    // The check (TargetOS::IsMacOS) doesn't work natively on osx/x64
+    else if (eeGetEEInfo()->osType == CORINFO_MACOS)
     {
         // Code sequence to access thread local variable on osx/x64:
         //
