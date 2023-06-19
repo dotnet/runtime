@@ -39,6 +39,11 @@ namespace Microsoft.Extensions.Logging
             }
             else
             {
+                // Display "Enabled = false". This makes it clear that the entire ILogger
+                // is disabled and nothing is written.
+                //
+                // If "MinLevel = None" was displayed then someone could think that the
+                // min level is disabled and everything is written.
                 debugText += $", Enabled = false";
             }
 
