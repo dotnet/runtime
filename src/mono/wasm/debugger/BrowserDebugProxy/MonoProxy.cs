@@ -20,7 +20,7 @@ namespace Microsoft.WebAssembly.Diagnostics
     {
         private IList<string> urlSymbolServerList;
         private HashSet<SessionId> sessions = new HashSet<SessionId>();
-        protected Dictionary<SessionId, ExecutionContext> contexts = new Dictionary<SessionId, ExecutionContext>();
+        protected Dictionary<SessionId, List<ExecutionContext>> contexts = new Dictionary<SessionId, List<ExecutionContext>>();
 
         public static HttpClient HttpClient => new HttpClient();
 
@@ -41,7 +41,7 @@ namespace Microsoft.WebAssembly.Diagnostics
 
         internal ExecutionContext GetContext(SessionId sessionId)
         {
-            if (contexts.TryGetValue(sessionId, out ExecutionContext context))
+            if (TryGetCurrentExecutionContextValue(sessionId, out ExecutionContext context))
                 return context;
 
             throw new ArgumentException($"Invalid Session: \"{sessionId}\"", nameof(sessionId));
@@ -49,16 +49,29 @@ namespace Microsoft.WebAssembly.Diagnostics
 
         private bool UpdateContext(SessionId sessionId, ExecutionContext executionContext, out ExecutionContext previousExecutionContext)
         {
-            bool previous = contexts.TryGetValue(sessionId, out previousExecutionContext);
-            contexts[sessionId] = executionContext;
+            bool previous = TryGetCurrentExecutionContextValue(sessionId, out previousExecutionContext);
+            if (!previous)
+                contexts[sessionId] = new();
+            contexts[sessionId].Add(executionContext);
             return previous;
+        }
+
+        internal bool TryGetCurrentExecutionContextValue(SessionId id, out ExecutionContext executionContext)
+        {
+            executionContext = null;
+            if (!contexts.TryGetValue(id, out List<ExecutionContext> contextList))
+                return false;
+            if (contextList.Count == 0)
+                return false;
+            executionContext = contextList.Last<ExecutionContext>();
+            return true;
         }
 
         internal virtual Task<Result> SendMonoCommand(SessionId id, MonoCommands cmd, CancellationToken token) => SendCommand(id, "Runtime.evaluate", JObject.FromObject(cmd), token);
 
         internal void SendLog(SessionId sessionId, string message, CancellationToken token, string type = "warning")
         {
-            if (!contexts.TryGetValue(sessionId, out ExecutionContext context))
+            if (!TryGetCurrentExecutionContextValue(sessionId, out ExecutionContext context))
                 return;
             /*var o = JObject.FromObject(new
             {
@@ -93,7 +106,7 @@ namespace Microsoft.WebAssembly.Diagnostics
                 case "Runtime.consoleAPICalled":
                     {
                         // Don't process events from sessions we aren't tracking
-                        if (!contexts.TryGetValue(sessionId, out ExecutionContext context))
+                        if (!TryGetCurrentExecutionContextValue(sessionId, out ExecutionContext context))
                             return false;
                         string type = args["type"]?.ToString();
                         if (type == "debug")
@@ -167,6 +180,17 @@ namespace Microsoft.WebAssembly.Diagnostics
                             }
                         }
                         return true;
+                    }
+
+                case "Runtime.executionContextDestroyed":
+                    {
+                        int id = args["executionContextId"].Value<int>();
+                        if (!contexts.TryGetValue(sessionId, out var contextList))
+                            return false;
+                        contextList.RemoveAll(x => x.Id == id);
+                        if (contextList.Count == 0)
+                            contexts.Remove(sessionId);
+                        return false;
                     }
 
                 case "Debugger.paused":
@@ -254,7 +278,7 @@ namespace Microsoft.WebAssembly.Diagnostics
         }
         protected async Task<bool> IsRuntimeAlreadyReadyAlready(SessionId sessionId, CancellationToken token)
         {
-            if (contexts.TryGetValue(sessionId, out ExecutionContext context) && context.IsRuntimeReady)
+            if (TryGetCurrentExecutionContextValue(sessionId, out ExecutionContext context) && context.IsRuntimeReady)
                 return true;
 
             Result res = await SendMonoCommand(sessionId, MonoCommands.IsRuntimeReady(RuntimeId), token);
@@ -277,7 +301,7 @@ namespace Microsoft.WebAssembly.Diagnostics
             if (id == SessionId.Null)
                 await AttachToTarget(id, token);
 
-            if (!contexts.TryGetValue(id, out ExecutionContext context))
+            if (!TryGetCurrentExecutionContextValue(id, out ExecutionContext context))
             {
                 if  (method == "Debugger.setPauseOnExceptions")
                 {
