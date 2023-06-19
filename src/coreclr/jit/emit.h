@@ -890,7 +890,7 @@ protected:
 #define ID_MAX_SMALL_CNS (int)(ID_CNT_SMALL_CNS - ID_ADJ_SMALL_CNS - 1)
 
         // We encounter many constants, but there is a disproportionate amount that are in the range [-1, +4]
-        // and otherwise powers of 2. We therefore allow the tracked range here to incldue negative values.
+        // and otherwise powers of 2. We therefore allow the tracked range here to include negative values.
         signed _idSmallCns : ID_BIT_SMALL_CNS;
 
         ////////////////////////////////////////////////////////////////////////

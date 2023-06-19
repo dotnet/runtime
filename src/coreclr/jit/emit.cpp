@@ -560,7 +560,7 @@ void emitterStats(FILE* fout)
 
             if (c >= m)
             {
-                // We make and assumption that MIN is negative and MAX is positive
+                // We make an assumption that MIN is negative and MAX is positive
                 assert((ID_MIN_SMALL_CNS < 0) && (ID_MAX_SMALL_CNS > 0));
 
                 // Adjust the index to match the allowed value range
