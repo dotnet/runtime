@@ -796,7 +796,7 @@ namespace System.Net
             }
         }
 
-        private bool VerifyMIC(ReadOnlySpan<byte> message, ReadOnlySpan<byte> signature)
+        internal bool VerifyMIC(ReadOnlySpan<byte> message, ReadOnlySpan<byte> signature)
         {
             // Check length and version
             if (signature.Length != SignatureLength ||
@@ -815,10 +815,21 @@ namespace System.Net
             return signature.SequenceEqual(expectedSignature);
         }
 
+        internal void GetMIC(ReadOnlySpan<byte> message, IBufferWriter<byte> signature)
+        {
+            Debug.Assert(_clientSeal is not null);
+            Debug.Assert(_clientSigningKey is not null);
+
+            Span<byte> signatureBuffer = signature.GetSpan(SignatureLength);
+            CalculateSignature(message, _clientSequenceNumber, _clientSigningKey, _clientSeal, signatureBuffer);
+            _clientSequenceNumber++;
+            signature.Advance(SignatureLength);
+        }
+
         private byte[] GetMIC(ReadOnlySpan<byte> message)
         {
-            Debug.Assert(_clientSeal != null);
-            Debug.Assert(_clientSigningKey != null);
+            Debug.Assert(_clientSeal is not null);
+            Debug.Assert(_clientSigningKey is not null);
 
             byte[] signature = new byte[SignatureLength];
             CalculateSignature(message, _clientSequenceNumber, _clientSigningKey, _clientSeal, signature);
@@ -1084,19 +1095,9 @@ namespace System.Net
             return NegotiateAuthenticationStatusCode.Completed;
         }
 
-#pragma warning disable CA1822, IDE0060
-        internal int Encrypt(ReadOnlySpan<byte> buffer, [NotNull] ref byte[]? output)
-        {
-            throw new PlatformNotSupportedException();
-        }
-
-        internal int Decrypt(Span<byte> payload, out int newOffset)
-        {
-            throw new PlatformNotSupportedException();
-        }
-
         internal string ProtocolName => _isSpNego ? NegotiationInfoClass.Negotiate : NegotiationInfoClass.NTLM;
 
+#pragma warning disable CA1822, IDE0060
         internal bool IsNTLM => true;
 
         internal bool IsKerberos => false;
@@ -1104,8 +1105,8 @@ namespace System.Net
         internal bool IsServer { get; set; }
 
         internal bool IsValidContext => true;
+#pragma warning restore CA1822, IDE0060
 
         internal string? ClientSpecifiedSpn => _spn;
-#pragma warning restore CA1822, IDE0060
     }
 }

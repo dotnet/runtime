@@ -775,9 +775,65 @@ public:
 class BitOperations
 {
 public:
-    static uint32_t BitScanForward(uint32_t value);
+    //------------------------------------------------------------------------
+    // BitOperations::BitScanForward: Search the mask data from least significant bit (LSB) to the most significant bit
+    // (MSB) for a set bit (1)
+    //
+    // Arguments:
+    //    value - the value
+    //
+    // Return Value:
+    //    0 if the mask is zero; nonzero otherwise.
+    //
+    FORCEINLINE static uint32_t BitScanForward(uint32_t value)
+    {
+        assert(value != 0);
 
-    static uint32_t BitScanForward(uint64_t value);
+#if defined(_MSC_VER)
+        unsigned long result;
+        ::_BitScanForward(&result, value);
+        return static_cast<uint32_t>(result);
+#else
+        int32_t result = __builtin_ctz(value);
+        return static_cast<uint32_t>(result);
+#endif
+    }
+
+    //------------------------------------------------------------------------
+    // BitOperations::BitScanForward: Search the mask data from least significant bit (LSB) to the most significant bit
+    // (MSB) for a set bit (1)
+    //
+    // Arguments:
+    //    value - the value
+    //
+    // Return Value:
+    //    0 if the mask is zero; nonzero otherwise.
+    //
+    FORCEINLINE static uint32_t BitScanForward(uint64_t value)
+    {
+        assert(value != 0);
+
+#if defined(_MSC_VER)
+#if defined(HOST_64BIT)
+        unsigned long result;
+        ::_BitScanForward64(&result, value);
+        return static_cast<uint32_t>(result);
+#else
+        uint32_t lower = static_cast<uint32_t>(value);
+
+        if (lower == 0)
+        {
+            uint32_t upper = static_cast<uint32_t>(value >> 32);
+            return 32 + BitScanForward(upper);
+        }
+
+        return BitScanForward(lower);
+#endif // HOST_64BIT
+#else
+        int32_t result = __builtin_ctzll(value);
+        return static_cast<uint32_t>(result);
+#endif
+    }
 
     static uint32_t BitScanReverse(uint32_t value);
 

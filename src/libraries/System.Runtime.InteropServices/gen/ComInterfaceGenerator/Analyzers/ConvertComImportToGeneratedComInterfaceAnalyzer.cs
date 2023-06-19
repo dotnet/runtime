@@ -45,7 +45,7 @@ namespace Microsoft.Interop.Analyzers
                     context.Compilation,
                     targetFramework.TargetFramework,
                     targetFramework.Version,
-                    context.Compilation.SourceModule.GetAttributes().Any(attr => attr.AttributeClass.ToDisplayString() == TypeNames.System_Runtime_CompilerServices_SkipLocalsInitAttribute));
+                    context.Compilation.SourceModule.GetAttributes().Any(attr => attr.AttributeClass.ToDisplayString() == TypeNames.System_Runtime_CompilerServices_SkipLocalsInitAttribute_Metadata));
 
                 context.RegisterSymbolAction(context =>
                 {

@@ -10084,8 +10084,7 @@ void emitter::emitRecordRelocation(void*    location,            /* IN */
     // late disassembly; maybe we'll need it?
     if (emitComp->info.compMatchedVM)
     {
-        // slotNum is unused on all supported platforms.
-        emitCmpHandle->recordRelocation(location, locationRW, target, fRelocType, /* slotNum */ 0, addlDelta);
+        emitCmpHandle->recordRelocation(location, locationRW, target, fRelocType, addlDelta);
     }
 #if defined(LATE_DISASM)
     codeGen->getDisAssembler().disRecordRelocation((size_t)location, (size_t)target);

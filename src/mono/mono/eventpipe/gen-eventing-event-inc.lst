@@ -5,8 +5,11 @@ AssemblyDCEnd_V1
 AssemblyLoad_V1
 AssemblyUnload_V1
 BulkType
+ContentionLockCreated
 ContentionStart_V1
+ContentionStart_V2
 ContentionStop
+ContentionStop_V1
 DCEndComplete_V1
 DCEndInit_V1
 DomainModuleDCEnd_V1

@@ -3319,7 +3319,7 @@ GenTree* Compiler::impIntrinsic(GenTree*                newobjThis,
             case NI_System_Math_FusedMultiplyAdd:
             {
 #ifdef TARGET_XARCH
-                if (compExactlyDependsOn(InstructionSet_FMA))
+                if (compOpportunisticallyDependsOn(InstructionSet_FMA))
                 {
                     assert(varTypeIsFloating(callType));
 
@@ -3340,7 +3340,7 @@ GenTree* Compiler::impIntrinsic(GenTree*                newobjThis,
                     break;
                 }
 #elif defined(TARGET_ARM64)
-                if (compExactlyDependsOn(InstructionSet_AdvSimd))
+                if (compOpportunisticallyDependsOn(InstructionSet_AdvSimd))
                 {
                     assert(varTypeIsFloating(callType));
 
@@ -3400,8 +3400,6 @@ GenTree* Compiler::impIntrinsic(GenTree*                newobjThis,
             }
 #if defined(TARGET_ARM64)
             // ARM64 has fmax/fmin which are IEEE754:2019 minimum/maximum compatible
-            // TODO-XARCH-CQ: Enable this for XARCH when one of the arguments is a constant
-            // so we can then emit maxss/minss and avoid NaN/-0.0 handling
             case NI_System_Math_Max:
             case NI_System_Math_Min:
 #endif
@@ -5730,7 +5728,7 @@ void Compiler::pickGDV(GenTreeCall*           call,
     // Prefer class guess as it is cheaper
     if (numberOfClasses > 0)
     {
-        const int maxNumberOfGuesses = min(MAX_GDV_TYPE_CHECKS, JitConfig.JitGuardedDevirtualizationMaxTypeChecks());
+        const int maxNumberOfGuesses = getGDVMaxTypeChecks();
         if (maxNumberOfGuesses == 0)
         {
             // DOTNET_JitGuardedDevirtualizationMaxTypeChecks=0 means we don't want to do any guarded devirtualization
@@ -5931,7 +5929,7 @@ void Compiler::considerGuardedDevirtualization(GenTreeCall*            call,
     {
         pickGDV(call, ilOffset, isInterface, likelyClasses, likelyMethodes, &candidatesCount, likelihoods);
         assert((unsigned)candidatesCount <= MAX_GDV_TYPE_CHECKS);
-        assert((unsigned)candidatesCount <= (unsigned)JitConfig.JitGuardedDevirtualizationMaxTypeChecks());
+        assert((unsigned)candidatesCount <= (unsigned)getGDVMaxTypeChecks());
         if (candidatesCount == 0)
         {
             hasPgoData = false;
@@ -5944,7 +5942,7 @@ void Compiler::considerGuardedDevirtualization(GenTreeCall*            call,
     // from both.
     if (!hasPgoData && (baseClass != NO_CLASS_HANDLE) && JitConfig.JitEnableExactDevirtualization())
     {
-        int maxTypeChecks = min(JitConfig.JitGuardedDevirtualizationMaxTypeChecks(), MAX_GDV_TYPE_CHECKS);
+        int maxTypeChecks = min(getGDVMaxTypeChecks(), MAX_GDV_TYPE_CHECKS);
 
         CORINFO_CLASS_HANDLE exactClasses[MAX_GDV_TYPE_CHECKS];
         int numExactClasses = info.compCompHnd->getExactClasses(baseClass, MAX_GDV_TYPE_CHECKS, exactClasses);
@@ -5962,7 +5960,6 @@ void Compiler::considerGuardedDevirtualization(GenTreeCall*            call,
             assert((numExactClasses > 0) && (numExactClasses <= maxTypeChecks));
             JITDUMP("We have exactly %d classes implementing %s:\n", numExactClasses, eeGetClassName(baseClass));
 
-            int skipped = 0;
             for (int exactClsIdx = 0; exactClsIdx < numExactClasses; exactClsIdx++)
             {
                 CORINFO_CLASS_HANDLE exactCls = exactClasses[exactClsIdx];
@@ -6012,6 +6009,14 @@ void Compiler::considerGuardedDevirtualization(GenTreeCall*            call,
                 addGuardedDevirtualizationCandidate(call, exactMethod, exactCls, exactMethodAttrs, clsAttrs,
                                                     likelyHood);
             }
+
+            if (call->GetInlineCandidatesCount() == numExactClasses)
+            {
+                assert(numExactClasses > 0);
+                call->gtCallMoreFlags |= GTF_CALL_M_GUARDED_DEVIRT_EXACT;
+                // NOTE: we have to drop this flag if we change the number of candidates before we expand.
+            }
+
             return;
         }
     }

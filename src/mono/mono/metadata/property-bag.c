@@ -9,7 +9,7 @@
  */
 #include <mono/metadata/property-bag.h>
 #include <mono/utils/atomic.h>
-#include <mono/utils/mono-membar.h>
+#include <mono/utils/mono-memory-model.h>
 
 /*
  * mono_property_bag_get:

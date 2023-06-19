@@ -2079,7 +2079,7 @@ protected:
 #define emitVarRefOffs 0
 #endif // !DEBUG
 
-    const char* emitRegName(regNumber reg, emitAttr size = EA_PTRSIZE, bool varName = true);
+    const char* emitRegName(regNumber reg, emitAttr size = EA_PTRSIZE, bool varName = true) const;
     const char* emitFloatRegName(regNumber reg, emitAttr size = EA_PTRSIZE, bool varName = true);
 
     // GC Info changes are not readily available at each instruction.
