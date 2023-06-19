@@ -1,10 +1,10 @@
 [see also](../../../wasm/runtime/diagnostics/README.md)
 
-To be able to run this sample you need to build the runtime with `/p:WasmEnablePerfTracing=true` and use Chrome browser
+To be able to run this sample you need to build the runtime with `/p:FeatureWasmThreads=true` and use Chrome browser
 
 # Testing with mock
 
-Build the runtime with `/p:MonoWasmBuildVariant=perftrace /p:MonoDiagnosticsMock=true`
+Build the runtime with `/p:MonoWasmBuildVariant=multithread /p:MonoDiagnosticsMock=true`
 Run this test with `/p:MonoDiagnosticsMock=true`
 
 It will inject file [mock.js](./mock.js) into the worker thread, which is mocking the `dotnet trace` tool.
