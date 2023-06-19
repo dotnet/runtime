@@ -665,7 +665,7 @@ namespace Microsoft.Extensions.DependencyInjection.ServiceLookup
             {
                 // We special case IEnumerable since it isn't explicitly registered in the container
                 // yet we can manifest instances of it when requested.
-                return genericDefinition == typeof(IEnumerable<>) || _descriptorLookup.ContainsKey(ServiceIdentifier.FromServiceType(genericDefinition));
+                return genericDefinition == typeof(IEnumerable<>) || _descriptorLookup.ContainsKey(serviceIdentifier.GetGenericTypeDefinition());
             }
 
             // These are the built in service types that aren't part of the list of service descriptors

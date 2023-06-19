@@ -3,6 +3,7 @@
 
 using System;
 using Xunit;
+using Microsoft.Extensions.DependencyInjection.Specification.Fakes;
 
 namespace Microsoft.Extensions.DependencyInjection.Specification
 {
@@ -24,6 +25,22 @@ namespace Microsoft.Extensions.DependencyInjection.Specification
             Assert.Null(provider.GetService<IService>());
             Assert.Same(service1, provider.GetKeyedService<IService>("service1"));
             Assert.Same(service2, provider.GetKeyedService<IService>("service2"));
+        }
+
+        [Fact]
+        public void ResolveKeyedOpenGenericService()
+        {
+            var collection = new ServiceCollection();
+            collection.AddKeyedTransient(typeof(IFakeOpenGenericService<>), "my-service", typeof(FakeOpenGenericService<>));
+            collection.AddSingleton<IFakeSingletonService, FakeService>();
+            var provider = CreateServiceProvider(collection);
+
+            // Act
+            var genericService = provider.GetKeyedService<IFakeOpenGenericService<IFakeSingletonService>>("my-service");
+            var singletonService = provider.GetService<IFakeSingletonService>();
+
+            // Assert
+            Assert.Same(singletonService, genericService.Value);
         }
 
         [Fact]
