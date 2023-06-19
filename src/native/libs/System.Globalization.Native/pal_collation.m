@@ -129,7 +129,8 @@ Range GlobalizationNative_IndexOfNative(const uint16_t* localeName, int32_t lNam
     if (!fromBeginning)
         options |= NSBackwardsSearch;
 
-    // check if source contains search string
+    // check if there is a possible match and return -1 if not
+    // doesn't matter which normalization form is used here
     NSRange rangeOfReceiverToSearch = NSMakeRange(0, sourceStrPrecomposed.length);
     NSRange containsRange = [sourceStrPrecomposed rangeOfString:searchStrPrecomposed
                                                   options:options
@@ -141,7 +142,7 @@ Range GlobalizationNative_IndexOfNative(const uint16_t* localeName, int32_t lNam
         return result;
     }
 
-    // localizedStandardRangeOfString is performing a case and diacritic insensitive, locale-aware search and finding first occurance.
+    // localizedStandardRangeOfString is performing a case and diacritic insensitive, locale-aware search and finding first occurance
     if ((comparisonOptions & IgnoreCase) && lNameLength == 0 && fromBeginning)
     {      
         NSRange localizedStandardRange = [sourceStrCleaned localizedStandardRangeOfString:searchStrCleaned];
@@ -153,6 +154,7 @@ Range GlobalizationNative_IndexOfNative(const uint16_t* localeName, int32_t lNam
         }       
     }
 
+    // sourceString and searchString possibly have the same composition of characters
     rangeOfReceiverToSearch = NSMakeRange(0, sourceStrCleaned.length);
     NSRange nsRange = [sourceStrCleaned rangeOfString:searchStrCleaned
                                          options:options
@@ -173,7 +175,8 @@ Range GlobalizationNative_IndexOfNative(const uint16_t* localeName, int32_t lNam
     }
     
     rangeOfReceiverToSearch = NSMakeRange(0, sourceStrCleaned.length);
-    // Normalize search string with Form C
+    // check if sourceString has precomposed form of characters and searchString has decomposed form of characters
+    // convert searchString to a precomposed form
     NSRange precomposedRange = [sourceStrCleaned rangeOfString:searchStrPrecomposed
                                                   options:options
                                                   range:rangeOfReceiverToSearch
@@ -193,7 +196,8 @@ Range GlobalizationNative_IndexOfNative(const uint16_t* localeName, int32_t lNam
         return result;
     }
 
-    // Normalize search string with Form D
+    // check if sourceString has decomposed form of characters and searchString has precomposed form of characters
+    // convert searchString to a decomposed form
     NSString *searchStrDecomposed = searchStrCleaned.decomposedStringWithCanonicalMapping;
     NSRange decomposedRange = [sourceStrCleaned rangeOfString:searchStrDecomposed
                                                 options:options

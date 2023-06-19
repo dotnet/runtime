@@ -363,6 +363,10 @@ Mapped to Apple Native API `rangeOfString:options:range:locale:`(https://develop
 In `rangeOfString:options:range:locale:` objects are compared by checking the Unicode canonical equivalence of their code point sequences.
 In cases where search string contains diaeresis and has different normalization form than in source string result can be incorrect.
 
+Characters in general are represented by unicode code points, and some characters can be represented in a single code point or by combining multiple characters (like diacritics/diaeresis). Normalization Form C will look to compress characters to their single code point format if they were originally represented as a sequence of multiple code points. Normalization Form D does the opposite and expands characters into their multiple code point formats if possible.
+
+`NSString` `rangeOfString:options:range:locale:` uses canonical equivalence to find the position of the `searchString` within the `sourceString`, however, it does not automatically handle comparison of precomposed (single code point representation) or decomposed (most code points representation). Because the `searchString` and `sourceString` can be of differing formats, to properly find the index, we need to ensure that the searchString is in the same form as the sourceString by checking the `rangeOfString:options:range:locale:` using every single normalization form.
+
 Here are the covered cases with diaeresis:
   1. Search string contains diaeresis and has same normalization form as in source string.
   2. Search string contains diaeresis but with source string they have same letters with different char lengths but substring is normalized in source.
