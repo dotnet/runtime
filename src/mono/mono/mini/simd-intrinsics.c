@@ -1916,6 +1916,12 @@ emit_sri_vector (MonoCompile *cfg, MonoMethod *cmethod, MonoMethodSignature *fsi
 		if (!is_element_type_primitive (fsig->params [0]))
 			return NULL;
 		int op = id == SN_GetLower ? OP_XLOWER : OP_XUPPER;
+
+#ifdef TARGET_AMD64
+		if (!COMPILE_LLVM (cfg))
+		/* These return a Vector64 */
+			return NULL;
+#endif
 		return emit_simd_ins_for_sig (cfg, klass, op, 0, arg0_type, fsig, args);
 	}
 	case SN_GreaterThan:
