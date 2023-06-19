@@ -850,21 +850,11 @@ public:
                 }
                 else
                 {
-                    int userIndex = 1;
-                    while (userIndex < m_ancestors.Height())
+                    GenTree* effectiveUser = user;
+                    if ((user != nullptr) && user->OperIs(GT_COMMA))
                     {
-                        GenTree* ancestor = m_ancestors.Top(userIndex);
-                        GenTree* child    = m_ancestors.Top(userIndex - 1);
-
-                        if (!ancestor->OperIs(GT_COMMA) || (ancestor->gtGetOp2() != child))
-                        {
-                            break;
-                        }
-
-                        userIndex++;
+                        effectiveUser = Promotion::EffectiveUser(m_ancestors);
                     }
-
-                    GenTree* effectiveUser = userIndex >= m_ancestors.Height() ? nullptr : m_ancestors.Top(userIndex);
 
                     accessType   = lcl->TypeGet();
                     accessLayout = accessType == TYP_STRUCT ? lcl->GetLayout(m_compiler) : nullptr;
@@ -1909,29 +1899,22 @@ Compiler::fgWalkResult ReplaceVisitor::PostOrderVisit(GenTree** use, GenTree* us
 
     if (tree->OperIsStore())
     {
-        if (tree->OperIsLocalStore())
+        if (tree->TypeIs(TYP_STRUCT))
+        {
+            // Struct stores can be decomposed directly into accesses of the replacements.
+            HandleStructStore(use, user);
+        }
+        else if (tree->OperIsLocalStore())
         {
             ReplaceLocal(use, user);
         }
 
-        // Stores can be decomposed directly into accesses of the replacements.
-        HandleStore(use, user);
         return fgWalkResult::WALK_CONTINUE;
     }
 
     if (tree->OperIs(GT_CALL))
     {
-        // Calls need to store replacements back into the struct local for args
-        // and need to restore replacements from the result (for
-        // retbufs/returns).
-        LoadStoreAroundCall((*use)->AsCall(), user);
-        return fgWalkResult::WALK_CONTINUE;
-    }
-
-    if (tree->OperIs(GT_RETURN))
-    {
-        // Returns need to store replacements back into the struct local.
-        StoreBeforeReturn((*use)->AsUnOp());
+        ReadBackAfterCall((*use)->AsCall(), user);
         return fgWalkResult::WALK_CONTINUE;
     }
 
@@ -2016,77 +1999,28 @@ GenTree** ReplaceVisitor::InsertMidTreeReadBacksIfNecessary(GenTree** use)
 }
 
 //------------------------------------------------------------------------
-// LoadStoreAroundCall:
-//   Handle a call that may involve struct local arguments and that may
-//   pass a struct local with replacements as the retbuf.
+// ReadBackAfterCall:
+//   Handle a call that may  pass a struct local with replacements as the
+//   retbuf.
 //
 // Parameters:
 //   call - The call
 //   user - The user of the call.
 //
-void ReplaceVisitor::LoadStoreAroundCall(GenTreeCall* call, GenTree* user)
+void ReplaceVisitor::ReadBackAfterCall(GenTreeCall* call, GenTree* user)
 {
-    CallArg* retBufArg = nullptr;
-    for (CallArg& arg : call->gtArgs.Args())
+    if (!call->IsOptimizingRetBufAsLocal())
     {
-        if (arg.GetWellKnownArg() == WellKnownArg::RetBuffer)
-        {
-            retBufArg = &arg;
-            continue;
-        }
-
-        GenTree** argUse  = EffectiveUse(&arg.EarlyNodeRef());
-        GenTree*  argNode = *argUse;
-
-        if (!argNode->OperIs(GT_LCL_VAR, GT_LCL_FLD))
-        {
-            continue;
-        }
-
-        GenTreeLclVarCommon* argNodeLcl = argNode->AsLclVarCommon();
-
-        if (argNodeLcl->TypeIs(TYP_STRUCT))
-        {
-            unsigned size = argNodeLcl->GetLayout(m_compiler)->GetSize();
-            WriteBackBefore(argUse, argNodeLcl->GetLclNum(), argNodeLcl->GetLclOffs(), size);
-
-            if ((m_aggregates[argNodeLcl->GetLclNum()] != nullptr) && IsPromotedStructLocalDying(argNodeLcl))
-            {
-                argNodeLcl->gtFlags |= GTF_VAR_DEATH;
-                CheckForwardSubForLastUse(argNodeLcl->GetLclNum());
-            }
-        }
+        return;
     }
 
-    if (call->IsOptimizingRetBufAsLocal())
-    {
-        assert(retBufArg != nullptr);
-        assert(retBufArg->GetNode()->OperIs(GT_LCL_ADDR));
-        GenTreeLclVarCommon* retBufLcl = retBufArg->GetNode()->AsLclVarCommon();
-        unsigned             size      = m_compiler->typGetObjLayout(call->gtRetClsHnd)->GetSize();
+    CallArg* retBufArg = call->gtArgs.GetRetBufferArg();
+    assert(retBufArg != nullptr);
+    assert(retBufArg->GetNode()->OperIs(GT_LCL_ADDR));
+    GenTreeLclVarCommon* retBufLcl = retBufArg->GetNode()->AsLclVarCommon();
+    unsigned             size      = m_compiler->typGetObjLayout(call->gtRetClsHnd)->GetSize();
 
-        MarkForReadBack(retBufLcl, size DEBUGARG("used as retbuf"));
-    }
-}
-
-//------------------------------------------------------------------------
-// EffectiveUse:
-//   Given a use, compute the "effective" use by skipping all uses of commas.
-//
-// Parameters:
-//   use - The use edge.
-//
-// Returns:
-//   A use edge that points to a non GT_COMMA value computed for the use.
-//
-GenTree** ReplaceVisitor::EffectiveUse(GenTree** use)
-{
-    while ((*use)->OperIs(GT_COMMA))
-    {
-        use = &(*use)->AsOp()->gtOp2;
-    }
-
-    return use;
+    MarkForReadBack(retBufLcl, size DEBUGARG("used as retbuf"));
 }
 
 //------------------------------------------------------------------------
@@ -2161,34 +2095,56 @@ void ReplaceVisitor::ReplaceLocal(GenTree** use, GenTree* user)
     unsigned  offs       = lcl->GetLclOffs();
     var_types accessType = lcl->TypeGet();
 
-#ifdef DEBUG
     if (accessType == TYP_STRUCT)
     {
-        if (lcl->OperIsLocalRead())
+        // We only expect to see struct uses here that need replacement. Struct
+        // stores need to go through decomposition.
+        assert(lcl->OperIsLocalRead());
+
+        GenTree* effectiveUser = user;
+        if ((user != nullptr) && user->OperIs(GT_COMMA))
         {
-            assert((user == nullptr) || user->OperIs(GT_CALL, GT_RETURN, GT_COMMA) || user->OperIsStore());
-        }
-    }
-    else
-    {
-        ClassLayout* accessLayout = accessType == TYP_STRUCT ? lcl->GetLayout(m_compiler) : nullptr;
-        unsigned     accessSize   = accessLayout != nullptr ? accessLayout->GetSize() : genTypeSize(accessType);
-        for (const Replacement& rep : replacements)
-        {
-            assert(!rep.Overlaps(offs, accessSize) || ((rep.Offset == offs) && (rep.AccessType == accessType)));
+            effectiveUser = Promotion::EffectiveUser(m_ancestors);
         }
 
-        assert((accessType != TYP_STRUCT) || (accessLayout != nullptr));
-        JITDUMP("Processing use [%06u] of V%02u.[%03u..%03u)\n", Compiler::dspTreeID(lcl), lclNum, offs,
-                offs + accessSize);
-    }
-#endif
+        if (effectiveUser == nullptr)
+        {
+            return;
+        }
 
-    if (accessType == TYP_STRUCT)
-    {
-        // Will be handled once we get to the parent.
+        if (effectiveUser->OperIsStore())
+        {
+            // Source of store. Will be handled by decomposition when we get to
+            // the store, so we should not introduce any writebacks.
+            assert(effectiveUser->Data() == lcl);
+            return;
+        }
+
+        JITDUMP("Processing struct use [%06u] of V%02u.[%03u..%03u)\n", Compiler::dspTreeID(lcl), lclNum, offs,
+                offs + lcl->GetLayout(m_compiler)->GetSize());
+
+        assert(effectiveUser->OperIs(GT_CALL, GT_RETURN));
+        unsigned size = lcl->GetLayout(m_compiler)->GetSize();
+        WriteBackBefore(use, lclNum, lcl->GetLclOffs(), size);
+
+        if ((m_aggregates[lclNum] != nullptr) && IsPromotedStructLocalDying(lcl))
+        {
+            lcl->gtFlags |= GTF_VAR_DEATH;
+            CheckForwardSubForLastUse(lclNum);
+        }
         return;
     }
+
+#ifdef DEBUG
+    unsigned accessSize = genTypeSize(accessType);
+    for (const Replacement& rep : replacements)
+    {
+        assert(!rep.Overlaps(offs, accessSize) || ((rep.Offset == offs) && (rep.AccessType == accessType)));
+    }
+
+    JITDUMP("Processing primitive use [%06u] of V%02u.[%03u..%03u)\n", Compiler::dspTreeID(lcl), lclNum, offs,
+            offs + accessSize);
+#endif
 
     size_t index = Promotion::BinarySearch<Replacement, &Replacement::Offset>(replacements, offs);
     if ((ssize_t)index < 0)
@@ -2281,35 +2237,6 @@ void ReplaceVisitor::CheckForwardSubForLastUse(unsigned lclNum)
     if (prevNode->OperIsLocalStore() && (prevNode->AsLclVarCommon()->GetLclNum() == lclNum))
     {
         m_mayHaveForwardSub = true;
-    }
-}
-
-//------------------------------------------------------------------------
-// StoreBeforeReturn:
-//   Handle a return of a potential struct local.
-//
-// Parameters:
-//   ret - The GT_RETURN node
-//
-void ReplaceVisitor::StoreBeforeReturn(GenTreeUnOp* ret)
-{
-    if (ret->TypeIs(TYP_VOID))
-    {
-        return;
-    }
-
-    GenTree** retUse  = EffectiveUse(&ret->gtOp1);
-    GenTree*  retNode = *retUse;
-    if (!retNode->OperIs(GT_LCL_VAR, GT_LCL_FLD))
-    {
-        return;
-    }
-
-    GenTreeLclVarCommon* retLcl = retNode->AsLclVarCommon();
-    if (retLcl->TypeIs(TYP_STRUCT))
-    {
-        unsigned size = retLcl->GetLayout(m_compiler)->GetSize();
-        WriteBackBefore(retUse, retLcl->GetLclNum(), retLcl->GetLclOffs(), size);
     }
 }
 
@@ -2587,6 +2514,31 @@ bool Promotion::IsCandidateForPhysicalPromotion(LclVarDsc* dsc)
 }
 
 //------------------------------------------------------------------------
+// Promotion::EffectiveUser:
+//   Find the effective user given an ancestor stack.
+//
+// Returns:
+//   The user, or null if all users are commas.
+//
+GenTree* Promotion::EffectiveUser(Compiler::GenTreeStack& ancestors)
+{
+    int userIndex = 1;
+    while (userIndex < ancestors.Height())
+    {
+        GenTree* ancestor = ancestors.Top(userIndex);
+        GenTree* child    = ancestors.Top(userIndex - 1);
+
+        if (!ancestor->OperIs(GT_COMMA) || (ancestor->gtGetOp2() != child))
+        {
+            return ancestor;
+        }
+
+        userIndex++;
+    }
+
+    return nullptr;
+}
+
 // Promotion::ExplicitlyZeroInitReplacementLocals:
 //   Insert IR to zero out replacement locals if necessary.
 //
