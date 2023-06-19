@@ -71,12 +71,10 @@ namespace System.Net.Quic.Tests
         [Fact]
         public async Task MismatchedCipherPolicies_ConnectAsync_ThrowsQuicException()
         {
-            QuicException ex = await Assert.ThrowsAsync<QuicException>(() => TestConnection(
+            await AssertThrowsQuicExceptionAsync(QuicError.TransportError, () => TestConnection(
                new CipherSuitesPolicy(new[] { TlsCipherSuite.TLS_AES_128_GCM_SHA256 }),
                new CipherSuitesPolicy(new[] { TlsCipherSuite.TLS_AES_256_GCM_SHA384 })
             ));
-
-            Assert.Equal(QuicError.TransportError, ex.QuicError);
         }
     }
 }
