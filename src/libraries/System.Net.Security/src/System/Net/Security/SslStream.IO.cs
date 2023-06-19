@@ -712,25 +712,13 @@ namespace System.Net.Security
                 return frameSize;
             }
 
-            // Do zero byte read to conserve resources:
-            // 1. We postpone allocation of read buffers (on all platforms). For example Kestrel may have idle connections without buffer until new request comes in.
-            // 2. The underlying stream may need to allocate GCHandle for async IO (on Windows). If we postpone that until we have some data, we may be able to avoid it.
-            //    That is not only important for CPU but also for memory fragmentation as pinned buffers are difficult to deal with.
-            // Note that if the underlying stream does not support blocking on zero byte reads, then this will
-            // complete immediately and won't save any memory, but will still function correctly.
-            await TIOAdapter.ReadAsync(InnerStream, Memory<byte>.Empty, cancellationToken).ConfigureAwait(false);
 
-            if (frameSize == UnknownTlsFrameLength)
-            {
-                // We do not have enough data to determine frame size. Use provided estimate e.g.
-                // full TLS frame for read, and somewhat shorter frame for handshake or renegotiation
-                _buffer.EnsureAvailableSpace(estimatedSize);
-            }
-            else
-            {
-                // make sure we have space for the whole frame
-                _buffer.EnsureAvailableSpace(frameSize - _buffer.EncryptedLength);
-            }
+            // If we don't have enough data to determine the frame size, use the provided estimate
+            // (e.g. a full TLS frame for reads, and a somewhat shorter frame for handshake / renegotiation).
+            // If we do know the frame size, ensure we have space for the whole frame.
+            _buffer.EnsureAvailableSpace(frameSize == UnknownTlsFrameLength ?
+                estimatedSize :
+                frameSize - _buffer.EncryptedLength);
 
             while (_buffer.EncryptedLength < frameSize)
             {
