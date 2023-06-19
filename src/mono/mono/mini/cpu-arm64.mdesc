@@ -559,8 +559,8 @@ xinsert_i8: dest:x src1:x src2:i src3:i len:20
 xinsert_r8: dest:x src1:x src2:f src3:i len:20
 arm64_broadcast_elem: dest:x src1:x len:16
 xconcat: dest:x src1:x src2:x len:8
-xlower: dest:x src1:x len:4
-xupper: dest:x src1:x len:4
+xlower: dest:x src1:x len:8
+xupper: dest:x src1:x len:8
 xinsert_lower: dest:x src1:x src2:x len:8
 xinsert_upper: dest:x src1:x src2:x len:8
 

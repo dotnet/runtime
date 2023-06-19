@@ -4122,12 +4122,20 @@ mono_arch_output_basic_block (MonoCompile *cfg, MonoBasicBlock *bb)
 			break;
 		}
 		case OP_XLOWER: {
-			if (dreg != sreg1)
+			if (dreg == sreg1) {
+				// clean the upper half
+				arm_neon_eor (code, VREG_FULL, NEON_TMP_REG, NEON_TMP_REG, NEON_TMP_REG);
+				arm_neon_ins_e (code, SIZE_8, dreg, NEON_TMP_REG, 1, 0); 
+			} else {
+				arm_neon_eor (code, VREG_FULL, dreg, dreg, dreg);
 				arm_neon_mov_8b (code, dreg, sreg1);
+			}
 			break;
 		}
 		case OP_XUPPER:
-			arm_neon_fdup_e (code, VREG_FULL, TYPE_F64, dreg, sreg1, 1);
+			// shift in 64 zeros from the left
+			arm_neon_eor (code, VREG_FULL, NEON_TMP_REG, NEON_TMP_REG, NEON_TMP_REG);
+			arm_neon_ext_16b (code, dreg, sreg1, NEON_TMP_REG, 8);
 			break;
 	
 		case OP_XINSERT_LOWER:
