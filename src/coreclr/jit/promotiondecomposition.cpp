@@ -49,6 +49,7 @@ class DecompositionPlan
         var_types    Type;
     };
 
+    Promotion*                      m_promotion;
     Compiler*                       m_compiler;
     ReplaceVisitor*                 m_replacer;
     jitstd::vector<AggregateInfo*>& m_aggregates;
@@ -61,7 +62,7 @@ class DecompositionPlan
     bool                            m_hasNonRemainderUseOfStructLocal = false;
 
 public:
-    DecompositionPlan(Compiler*                       comp,
+    DecompositionPlan(Promotion*                      prom,
                       ReplaceVisitor*                 replacer,
                       jitstd::vector<AggregateInfo*>& aggregates,
                       PromotionLiveness*              liveness,
@@ -69,7 +70,8 @@ public:
                       GenTree*                        src,
                       bool                            dstInvolvesReplacements,
                       bool                            srcInvolvesReplacements)
-        : m_compiler(comp)
+        : m_promotion(prom)
+        , m_compiler(prom->m_compiler)
         , m_replacer(replacer)
         , m_aggregates(aggregates)
         , m_liveness(liveness)
@@ -77,7 +79,7 @@ public:
         , m_src(src)
         , m_dstInvolvesReplacements(dstInvolvesReplacements)
         , m_srcInvolvesReplacements(srcInvolvesReplacements)
-        , m_entries(comp->getAllocator(CMK_Promotion))
+        , m_entries(prom->m_compiler->getAllocator(CMK_Promotion))
     {
     }
 
@@ -274,25 +276,16 @@ private:
     {
         ClassLayout* dstLayout = m_store->GetLayout(m_compiler);
 
-        // Validate with "obviously correct" but less scalable fixed bit vector implementation.
-        INDEBUG(FixedBitVect * segmentBitVect);
-        StructSegments segments = Promotion::SignificantSegments(m_compiler, dstLayout DEBUGARG(&segmentBitVect));
+        StructSegments segments = m_promotion->SignificantSegments(dstLayout);
 
         for (int i = 0; i < m_entries.Height(); i++)
         {
             const Entry& entry = m_entries.BottomRef(i);
 
             segments.Subtract(StructSegments::Segment(entry.Offset, entry.Offset + genTypeSize(entry.Type)));
-
-#ifdef DEBUG
-            for (unsigned i = 0; i < genTypeSize(entry.Type); i++)
-                segmentBitVect->bitVectClear(entry.Offset + i);
-#endif
         }
 
 #ifdef DEBUG
-        segments.Check(segmentBitVect);
-
         if (m_compiler->verbose)
         {
             printf("  Remainder: ");
@@ -1084,7 +1077,7 @@ void ReplaceVisitor::HandleStructStore(GenTree** use, GenTree* user)
         DecompositionStatementList result;
         EliminateCommasInBlockOp(store, &result);
 
-        DecompositionPlan plan(m_compiler, this, m_aggregates, m_liveness, store, src, dstInvolvesReplacements,
+        DecompositionPlan plan(m_promotion, this, m_aggregates, m_liveness, store, src, dstInvolvesReplacements,
                                srcInvolvesReplacements);
 
         if (dstInvolvesReplacements)

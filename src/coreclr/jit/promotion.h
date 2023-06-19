@@ -79,7 +79,6 @@ public:
     bool CoveringSegment(Segment* result);
 
 #ifdef DEBUG
-    void Check(FixedBitVect* vect);
     void Dump();
 #endif
 };
@@ -104,9 +103,12 @@ struct AggregateInfo
                                  Replacement** endReplacement);
 };
 
+typedef JitHashTable<ClassLayout*, JitPtrKeyFuncs<ClassLayout>, class StructSegments*> ClassLayoutStructSegmentsMap;
+
 class Promotion
 {
-    Compiler* m_compiler;
+    Compiler*                     m_compiler;
+    ClassLayoutStructSegmentsMap* m_significantSegmentsCache = nullptr;
 
     friend class LocalUses;
     friend class LocalsUseVisitor;
@@ -116,8 +118,7 @@ class Promotion
     friend class DecompositionPlan;
     friend class StructSegments;
 
-    static StructSegments SignificantSegments(Compiler*    compiler,
-                                              ClassLayout* layout DEBUGARG(FixedBitVect** bitVectRepr = nullptr));
+    StructSegments SignificantSegments(ClassLayout* layout);
 
     void ExplicitlyZeroInitReplacementLocals(unsigned                           lclNum,
                                              const jitstd::vector<Replacement>& replacements,
@@ -252,6 +253,7 @@ class ReplaceVisitor : public GenTreeVisitor<ReplaceVisitor>
 {
     friend class DecompositionPlan;
 
+    Promotion*                      m_promotion;
     jitstd::vector<AggregateInfo*>& m_aggregates;
     PromotionLiveness*              m_liveness;
     bool                            m_madeChanges         = false;
@@ -269,7 +271,7 @@ public:
     };
 
     ReplaceVisitor(Promotion* prom, jitstd::vector<AggregateInfo*>& aggregates, PromotionLiveness* liveness)
-        : GenTreeVisitor(prom->m_compiler), m_aggregates(aggregates), m_liveness(liveness)
+        : GenTreeVisitor(prom->m_compiler), m_promotion(prom), m_aggregates(aggregates), m_liveness(liveness)
     {
     }
 

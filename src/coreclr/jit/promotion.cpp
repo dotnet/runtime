@@ -1103,7 +1103,7 @@ public:
 
             JITDUMP("Computing unpromoted remainder for V%02u\n", agg->LclNum);
             StructSegments unpromotedParts =
-                Promotion::SignificantSegments(m_compiler, m_compiler->lvaGetDesc(agg->LclNum)->GetLayout());
+                m_prom->SignificantSegments(m_compiler->lvaGetDesc(agg->LclNum)->GetLayout());
             for (Replacement& rep : reps)
             {
                 unpromotedParts.Subtract(StructSegments::Segment(rep.Offset, rep.Offset + genTypeSize(rep.AccessType)));
@@ -1577,42 +1577,6 @@ bool StructSegments::CoveringSegment(Segment* result)
 
 #ifdef DEBUG
 //------------------------------------------------------------------------
-// Check:
-//   Validate that the data structure is normalized and that it equals a
-//   specific fixed bit vector.
-//
-// Parameters:
-//   vect - The bit vector
-//
-// Remarks:
-//   This validates that the internal representation is normalized (i.e.
-//   all adjacent intervals are merged) and that it contains an index iff
-//   the specified vector contains that index.
-//
-void StructSegments::Check(FixedBitVect* vect)
-{
-    bool     first = true;
-    unsigned last  = 0;
-    for (const Segment& segment : m_segments)
-    {
-        assert(first || (last < segment.Start));
-        assert(segment.End <= vect->bitVectGetSize());
-
-        for (unsigned i = last; i < segment.Start; i++)
-            assert(!vect->bitVectTest(i));
-
-        for (unsigned i = segment.Start; i < segment.End; i++)
-            assert(vect->bitVectTest(i));
-
-        first = false;
-        last  = segment.End;
-    }
-
-    for (unsigned i = last, size = vect->bitVectGetSize(); i < size; i++)
-        assert(!vect->bitVectTest(i));
-}
-
-//------------------------------------------------------------------------
 // Dump:
 //   Dump a string representation of the segment tree to stdout.
 //
@@ -1640,18 +1604,20 @@ void StructSegments::Dump()
 //   for the specified class layout.
 //
 // Parameters:
-//   compiler    - Compiler instance
 //   layout      - The layout
-//   bitVectRept - In debug, a bit vector that represents the same segments as the returned segment tree.
-//                 Used for verification purposes.
 //
 // Returns:
 //   Segment tree containing all significant parts of the layout.
 //
-StructSegments Promotion::SignificantSegments(Compiler*    compiler,
-                                              ClassLayout* layout DEBUGARG(FixedBitVect** bitVectRepr))
+StructSegments Promotion::SignificantSegments(ClassLayout* layout)
 {
-    COMP_HANDLE compHnd = compiler->info.compCompHnd;
+    StructSegments* cached;
+    if ((m_significantSegmentsCache != nullptr) && m_significantSegmentsCache->Lookup(layout, &cached))
+    {
+        return StructSegments(*cached);
+    }
+
+    COMP_HANDLE compHnd = m_compiler->info.compCompHnd;
 
     bool significantPadding;
     if (layout->IsBlockLayout())
@@ -1683,19 +1649,11 @@ StructSegments Promotion::SignificantSegments(Compiler*    compiler,
         }
     }
 
-    StructSegments segments(compiler->getAllocator(CMK_Promotion));
-
-    // Validate with "obviously correct" but less scalable fixed bit vector implementation.
-    INDEBUG(FixedBitVect* segmentBitVect = FixedBitVect::bitVectInit(layout->GetSize(), compiler));
+    StructSegments segments(m_compiler->getAllocator(CMK_Promotion));
 
     if (significantPadding)
     {
         segments.Add(StructSegments::Segment(0, layout->GetSize()));
-
-#ifdef DEBUG
-        for (unsigned i = 0; i < layout->GetSize(); i++)
-            segmentBitVect->bitVectSet(i);
-#endif
     }
     else
     {
@@ -1720,19 +1678,16 @@ StructSegments Promotion::SignificantSegments(Compiler*    compiler,
             }
 
             segments.Add(StructSegments::Segment(fldOffset, fldOffset + size));
-#ifdef DEBUG
-            for (unsigned i = 0; i < size; i++)
-                segmentBitVect->bitVectSet(fldOffset + i);
-#endif
         }
     }
 
-#ifdef DEBUG
-    if (bitVectRepr != nullptr)
+    if (m_significantSegmentsCache == nullptr)
     {
-        *bitVectRepr = segmentBitVect;
+        m_significantSegmentsCache =
+            new (m_compiler, CMK_Promotion) ClassLayoutStructSegmentsMap(m_compiler->getAllocator(CMK_Promotion));
     }
-#endif
+
+    m_significantSegmentsCache->Set(layout, new (m_compiler, CMK_Promotion) StructSegments(segments));
 
     return segments;
 }
