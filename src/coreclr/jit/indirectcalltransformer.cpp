@@ -484,7 +484,8 @@ private:
             JITDUMP("Likelihood of correct guess is %u\n", likelihood);
 
             // TODO: implement chaining for multiple GDV candidates
-            const bool canChainGdv = GetChecksCount() == 1;
+            const bool canChainGdv =
+                (GetChecksCount() == 1) && ((origCall->gtCallMoreFlags & GTF_CALL_M_GUARDED_DEVIRT_EXACT) == 0);
             if (canChainGdv)
             {
                 const bool isChainedGdv = (origCall->gtCallMoreFlags & GTF_CALL_M_GUARDED_DEVIRT_CHAIN) != 0;
@@ -534,12 +535,9 @@ private:
             return call;
         }
 
-        //------------------------------------------------------------------------
-        // ClearFlag: clear guarded devirtualization candidate flag from the original call.
-        //
         virtual void ClearFlag()
         {
-            origCall->ClearGuardedDevirtualizationCandidate();
+            // We remove the GDV flag from the call in the CreateElse
         }
 
         virtual UINT8 GetChecksCount()
@@ -587,9 +585,18 @@ private:
                 prevCheckBlock->bbJumpDest = checkBlock;
                 compiler->fgAddRefPred(checkBlock, prevCheckBlock);
 
-                // Weight for the new secondary check is the difference between the previous check and the thenBlock.
-                checkBlock->inheritWeightPercentage(prevCheckBlock,
-                                                    100 - origCall->GetGDVCandidateInfo(checkIdx)->likelihood);
+                // Calculate the total likelihood for this check as a sum of likelihoods
+                // of all previous candidates (thenBlocks)
+                unsigned checkLikelihood = 100;
+                for (uint8_t previousCandidate = 0; previousCandidate < checkIdx; previousCandidate++)
+                {
+                    checkLikelihood -= origCall->GetGDVCandidateInfo(previousCandidate)->likelihood;
+                }
+
+                // Make sure we didn't overflow
+                assert(checkLikelihood <= 100);
+
+                checkBlock->inheritWeightPercentage(currBlock, checkLikelihood);
             }
 
             // Find last arg with a side effect. All args with any effect
@@ -637,6 +644,17 @@ private:
             // because flow along the "cold path" is going to bypass the check block.
             //
             lastStmt = checkBlock->lastStmt();
+
+            // In case if GDV candidates are "exact" (e.g. we have the full list of classes implementing
+            // the given interface in the app - NativeAOT only at this moment) we assume the last
+            // check will always be true, so we just simplify the block to BBJ_NONE
+            const bool isLastCheck = (checkIdx == origCall->GetInlineCandidatesCount() - 1);
+            if (isLastCheck && ((origCall->gtCallMoreFlags & GTF_CALL_M_GUARDED_DEVIRT_EXACT) != 0))
+            {
+                checkBlock->bbJumpDest = nullptr;
+                checkBlock->bbJumpKind = BBJ_NONE;
+                return;
+            }
 
             InlineCandidateInfo* guardedInfo = origCall->GetGDVCandidateInfo(checkIdx);
 
@@ -839,6 +857,7 @@ private:
             // special candidate helper and we need to use the new 'this'.
             GenTreeCall* call = compiler->gtCloneCandidateCall(origCall);
             call->gtArgs.GetThisArg()->SetEarlyNode(compiler->gtNewLclvNode(thisTemp, TYP_REF));
+
             call->SetIsGuarded();
 
             JITDUMP("Direct call [%06u] in block " FMT_BB "\n", compiler->dspTreeID(call), block->bbNum);
@@ -979,10 +998,23 @@ private:
             elseBlock = CreateAndInsertBasicBlock(BBJ_NONE, thenBlock);
             elseBlock->bbFlags |= currBlock->bbFlags & BBF_SPLIT_GAINED;
 
+            // CheckBlock flows into elseBlock unless we deal with the case
+            // where we know the last check is always true (in case of "exact" GDV)
+            if (checkBlock->KindIs(BBJ_COND))
+            {
+                checkBlock->bbJumpDest = elseBlock;
+                compiler->fgAddRefPred(elseBlock, checkBlock);
+            }
+            else
+            {
+                // In theory, we could simplify the IR here, but since it's a rare case
+                // and is NativeAOT-only, we just assume the unreached block will be removed
+                // by other phases.
+                assert(origCall->gtCallMoreFlags & GTF_CALL_M_GUARDED_DEVIRT_EXACT);
+            }
+
             // elseBlock always flows into remainderBlock
-            checkBlock->bbJumpDest = elseBlock;
             compiler->fgAddRefPred(remainderBlock, elseBlock);
-            compiler->fgAddRefPred(elseBlock, checkBlock);
 
             // Calculate the likelihood of the else block as a remainder of the sum
             // of all the other likelihoods.
@@ -994,12 +1026,16 @@ private:
             // Make sure it didn't overflow
             assert(elseLikelihood <= 100);
 
+            // Remove everything related to inlining from the original call
+            origCall->ClearInlineInfo();
+
             elseBlock->inheritWeightPercentage(currBlock, elseLikelihood);
 
             GenTreeCall* call    = origCall;
             Statement*   newStmt = compiler->gtNewStmt(call, stmt->GetDebugInfo());
 
             call->gtFlags &= ~GTF_CALL_INLINE_CANDIDATE;
+
             call->SetIsGuarded();
 
             JITDUMP("Residual call [%06u] moved to block " FMT_BB "\n", compiler->dspTreeID(call), elseBlock->bbNum);

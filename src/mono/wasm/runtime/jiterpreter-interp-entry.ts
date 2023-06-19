@@ -16,6 +16,7 @@ import {
     JiterpreterOptions, getMemberOffset, JiterpMember
 } from "./jiterpreter-support";
 import { mono_log_error, mono_log_info } from "./logging";
+import { utf8ToString } from "./strings";
 
 // Controls miscellaneous diagnostic output.
 const trace = 0;
@@ -166,7 +167,7 @@ export function mono_interp_jit_wasm_entry_trampoline(
 
     const info = new TrampolineInfo(
         imethod, method, argumentCount, pParamTypes,
-        unbox, hasThisReference, hasReturnValue, Module.UTF8ToString(<any>name),
+        unbox, hasThisReference, hasReturnValue, utf8ToString(<any>name),
         defaultImplementation
     );
     if (!fnTable)

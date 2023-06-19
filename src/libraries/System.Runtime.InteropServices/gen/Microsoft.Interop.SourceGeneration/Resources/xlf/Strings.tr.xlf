@@ -22,6 +22,11 @@
         <target state="translated">Belirli bir 'ElementIndirectionDepth' için 'MarshalUsingAttribute' içinde 'ConstantElementCount' veya 'ElementCountInfo' değerlerinden yalnızca biri kullanılabilir</target>
         <note />
       </trans-unit>
+      <trans-unit id="ContainingTypeAccessibilityDetails">
+        <source>Containing type '{0}' has accessibility '{1}'.</source>
+        <target state="translated">'{0}' kapsayan türü '{1}' erişilebilirlik özelliğine sahip.</target>
+        <note />
+      </trans-unit>
       <trans-unit id="CyclicalCountInfo">
         <source>This element cannot depend on '{0}' for collection size information without creating a dependency cycle</source>
         <target state="translated">Bu öğe, bir bağımlılık döngüsü oluşturmadan koleksiyon boyutu bilgileri için '{0}' değerine bağımlı olamaz</target>
@@ -98,8 +103,8 @@
         <note />
       </trans-unit>
       <trans-unit id="MarshallingStringOrCharAsUndefinedNotSupported">
-        <source>Marshalling string or char without explicit marshalling information is not supported. Specify 'LibraryImportAttribute.StringMarshalling', 'LibraryImportAttribute.StringMarshallingCustomType', 'MarshalUsingAttribute' or 'MarshalAsAttribute'.</source>
-        <target state="translated">Açık sıralama bilgileri olmadan dize veya karakter sıralama desteklenmiyor. 'LibraryImportAttribute.StringMarshalling', 'LibraryImportAttribute.StringMarshallingCustomType', 'MarshalUsingAttribute' veya 'MarshalAsAttribute' belirtin.</target>
+        <source>Marshalling string or char without explicit marshalling information is not supported. Specify '{0}.StringMarshalling', '{0}.StringMarshallingCustomType', 'MarshalUsingAttribute' or 'MarshalAsAttribute'.</source>
+        <target state="translated">Açık hazırlama bilgileri olmadan dize veya karakter hazırlama desteklenmiyor. '{0}.StringMarshalling', '{0}.StringMarshallingCustomType', 'MarshalUsingAttribute' veya 'MarshalAsAttribute' belirtin.</target>
         <note />
       </trans-unit>
       <trans-unit id="RuntimeMarshallingMustBeDisabled">
@@ -110,6 +115,11 @@
       <trans-unit id="SafeHandleByRefMustBeConcrete">
         <source>An abstract type derived from 'SafeHandle' cannot be marshalled by reference. The provided type must be concrete.</source>
         <target state="translated">'SafeHandle' özelliğinden türetilen soyut türler, başvuruya göre sıralanamaz. Sağlanan tür somut olmalıdır.</target>
+        <note />
+      </trans-unit>
+      <trans-unit id="TypeAccessibilityDetails">
+        <source>'{0}' has accessibility '{1}'.</source>
+        <target state="translated">'{0}', '{1}' erişilebilirlik özelliğine sahip.</target>
         <note />
       </trans-unit>
       <trans-unit id="UnmanagedToManagedMissingRequiredMarshaller">

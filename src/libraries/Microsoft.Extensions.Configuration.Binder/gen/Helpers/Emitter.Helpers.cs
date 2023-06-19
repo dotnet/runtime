@@ -1,6 +1,10 @@
 ﻿// Licensed to the .NET Foundation under one or more agreements.
 // The .NET Foundation licenses this file to you under the MIT license.
 
+using Microsoft.CodeAnalysis;
+using System;
+using System.Diagnostics;
+
 namespace Microsoft.Extensions.Configuration.Binder.SourceGeneration
 {
     public sealed partial class ConfigurationBindingGenerator
@@ -39,7 +43,7 @@ namespace Microsoft.Extensions.Configuration.Binder.SourceGeneration
             public static class Identifier
             {
                 public const string binderOptions = nameof(binderOptions);
-                public const string configureActions = nameof(configureActions);
+                public const string configureOptions = nameof(configureOptions);
                 public const string configuration = nameof(configuration);
                 public const string defaultValue = nameof(defaultValue);
                 public const string element = nameof(element);
@@ -79,6 +83,7 @@ namespace Microsoft.Extensions.Configuration.Binder.SourceGeneration
                 public const string GetValue = nameof(GetValue);
                 public const string GetValueCore = nameof(GetValueCore);
                 public const string HasChildren = nameof(HasChildren);
+                public const string HasConfig = nameof(HasConfig);
                 public const string HasValueOrChildren = nameof(HasValueOrChildren);
                 public const string HasValue = nameof(HasValue);
                 public const string Helpers = nameof(Helpers);
@@ -133,6 +138,21 @@ namespace Microsoft.Extensions.Configuration.Binder.SourceGeneration
                 _writer.WriteBlankLine();
             }
 
+            private bool EmitInitException(TypeSpec type)
+            {
+                Debug.Assert(type.InitializationStrategy is not InitializationStrategy.None);
+
+                if (!type.CanInitialize)
+                {
+                    _writer.WriteLine(GetInitException(type.InitExceptionMessage) + ";");
+                    return true;
+                }
+
+                return false;
+            }
+
+            private string GetInitException(string message) => $@"throw new {GetInvalidOperationDisplayName()}(""{message}"")";
+
             private string GetIncrementalVarName(string prefix) => $"{prefix}{_parseValueCount++}";
 
             private string GetTypeDisplayString(TypeSpec type) => _useFullyQualifiedNames ? type.FullyQualifiedDisplayString : type.MinimalDisplayString;
@@ -146,6 +166,22 @@ namespace Microsoft.Extensions.Configuration.Binder.SourceGeneration
 
                 return methodName;
             }
+
+            private static string GetExpressionForArgument(ParameterSpec parameter)
+            {
+                string name = parameter.Name + (parameter.HasExplicitDefaultValue ? string.Empty : $".{Identifier.Value}");
+
+                return parameter.RefKind switch
+                {
+                    RefKind.None => name,
+                    RefKind.Ref => $"ref {name}",
+                    RefKind.Out => "out _",
+                    RefKind.In => $"in {name}",
+                    _ => throw new InvalidOperationException()
+                };
+            }
+
+            private string GetInvalidOperationDisplayName() => _useFullyQualifiedNames ? FullyQualifiedDisplayName.InvalidOperationException : Identifier.InvalidOperationException;
         }
     }
 }

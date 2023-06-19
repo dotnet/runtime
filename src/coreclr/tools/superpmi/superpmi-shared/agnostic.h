@@ -474,14 +474,6 @@ struct Agnostic_GetStaticBaseAddress
     DWORD                         result;
 };
 
-struct Agnostic_IsCompatibleDelegate
-{
-    DWORDLONG objCls;
-    DWORDLONG methodParentCls;
-    DWORDLONG method;
-    DWORDLONG delegateCls;
-};
-
 struct Agnostic_PgoInstrumentationSchema
 {
     DWORDLONG Offset;          // size_t
@@ -610,12 +602,6 @@ struct ResolveTokenValue
     DWORD                              exceptionCode;
 };
 
-struct TryResolveTokenValue
-{
-    Agnostic_CORINFO_RESOLVED_TOKENout tokenOut;
-    DWORD                              success;
-};
-
 struct GetTokenTypeAsHandleValue
 {
     DWORDLONG hMethod;
@@ -675,7 +661,6 @@ struct Agnostic_RecordRelocation
     DWORDLONG location;
     DWORDLONG target;
     DWORD     fRelocType;
-    DWORD     slotNum;
     DWORD     addlDelta;
 };
 

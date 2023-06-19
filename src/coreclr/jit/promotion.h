@@ -12,7 +12,7 @@ struct Replacement
 {
     unsigned  Offset;
     var_types AccessType;
-    unsigned  LclNum;
+    unsigned  LclNum = BAD_VAR_NUM;
     // Is the replacement local (given by LclNum) fresher than the value in the struct local?
     bool NeedsWriteBack = true;
     // Is the value in the struct local fresher than the replacement local?
@@ -21,16 +21,10 @@ struct Replacement
     // back before transferring control if necessary.
     bool NeedsReadBack = false;
 #ifdef DEBUG
-    const char* Description;
+    const char* Description = "";
 #endif
 
-    Replacement(unsigned offset, var_types accessType, unsigned lclNum DEBUGARG(const char* description))
-        : Offset(offset)
-        , AccessType(accessType)
-        , LclNum(lclNum)
-#ifdef DEBUG
-        , Description(description)
-#endif
+    Replacement(unsigned offset, var_types accessType) : Offset(offset), AccessType(accessType)
     {
     }
 
@@ -118,7 +112,6 @@ class Promotion
     static StructSegments SignificantSegments(Compiler*    compiler,
                                               ClassLayout* layout DEBUGARG(FixedBitVect** bitVectRepr = nullptr));
 
-    void InsertInitialReadBack(unsigned lclNum, const jitstd::vector<Replacement>& replacements, Statement** prevStmt);
     void ExplicitlyZeroInitReplacementLocals(unsigned                           lclNum,
                                              const jitstd::vector<Replacement>& replacements,
                                              Statement**                        prevStmt);
@@ -172,6 +165,7 @@ class Promotion
     bool HaveCandidateLocals();
 
     static bool IsCandidateForPhysicalPromotion(LclVarDsc* dsc);
+    static GenTree* EffectiveUser(Compiler::GenTreeStack& ancestors);
 
 public:
     explicit Promotion(Compiler* compiler) : m_compiler(compiler)
@@ -226,6 +220,7 @@ public:
     }
 
     void Run();
+    bool IsReplacementLiveIn(BasicBlock* bb, unsigned structLcl, unsigned replacement);
     bool IsReplacementLiveOut(BasicBlock* bb, unsigned structLcl, unsigned replacement);
     StructDeaths GetDeathsForStructLocal(GenTreeLclVarCommon* use);
 
@@ -248,10 +243,14 @@ class DecompositionPlan;
 
 class ReplaceVisitor : public GenTreeVisitor<ReplaceVisitor>
 {
+    friend class DecompositionPlan;
+
     jitstd::vector<AggregateInfo*>& m_aggregates;
     PromotionLiveness*              m_liveness;
     bool                            m_madeChanges         = false;
     bool                            m_hasPendingReadBacks = false;
+    bool                            m_mayHaveForwardSub   = false;
+    Statement*                      m_currentStmt         = nullptr;
     BasicBlock*                     m_currentBlock        = nullptr;
 
 public:
@@ -259,6 +258,7 @@ public:
     {
         DoPostOrder       = true,
         UseExecutionOrder = true,
+        ComputeStack      = true,
     };
 
     ReplaceVisitor(Promotion* prom, jitstd::vector<AggregateInfo*>& aggregates, PromotionLiveness* liveness)
@@ -271,30 +271,33 @@ public:
         return m_madeChanges;
     }
 
-    void StartBlock(BasicBlock* block)
+    bool MayHaveForwardSubOpportunity()
     {
-        m_currentBlock = block;
+        return m_mayHaveForwardSub;
     }
 
+    void StartBlock(BasicBlock* block);
     void EndBlock();
 
-    void StartStatement()
+    void StartStatement(Statement* stmt)
     {
-        m_madeChanges = false;
+        m_currentStmt       = stmt;
+        m_madeChanges       = false;
+        m_mayHaveForwardSub = false;
     }
 
     fgWalkResult PostOrderVisit(GenTree** use, GenTree* user);
 
 private:
     GenTree** InsertMidTreeReadBacksIfNecessary(GenTree** use);
-    void LoadStoreAroundCall(GenTreeCall* call, GenTree* user);
+    void ReadBackAfterCall(GenTreeCall* call, GenTree* user);
     bool IsPromotedStructLocalDying(GenTreeLclVarCommon* structLcl);
     void ReplaceLocal(GenTree** use, GenTree* user);
-    void StoreBeforeReturn(GenTreeUnOp* ret);
+    void CheckForwardSubForLastUse(unsigned lclNum);
     void WriteBackBefore(GenTree** use, unsigned lcl, unsigned offs, unsigned size);
-    bool MarkForReadBack(unsigned lcl, unsigned offs, unsigned size);
+    void MarkForReadBack(GenTreeLclVarCommon* lcl, unsigned size DEBUGARG(const char* reason));
 
-    void HandleStore(GenTree** use, GenTree* user);
+    void HandleStructStore(GenTree** use, GenTree* user);
     bool OverlappingReplacements(GenTreeLclVarCommon* lcl,
                                  Replacement**        firstReplacement,
                                  Replacement**        endReplacement = nullptr);

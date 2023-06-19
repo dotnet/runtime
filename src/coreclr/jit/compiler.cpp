@@ -1329,7 +1329,7 @@ void Compiler::compStartup()
     emitter::emitInit();
 
     // Static vars of ValueNumStore
-    ValueNumStore::InitValueNumStoreStatics();
+    ValueNumStore::ValidateValueNumStoreStatics();
 
     compDisplayStaticSizes(jitstdout);
 }
@@ -2285,15 +2285,16 @@ void Compiler::compSetProcessor()
     // the overall JIT implementation, we currently require the entire set of ISAs to be
     // supported and disable AVX512 support otherwise.
 
-    if (instructionSetFlags.HasInstructionSet(InstructionSet_AVX512BW_VL) &&
-        instructionSetFlags.HasInstructionSet(InstructionSet_AVX512CD_VL) &&
-        instructionSetFlags.HasInstructionSet(InstructionSet_AVX512DQ_VL))
+    if (instructionSetFlags.HasInstructionSet(InstructionSet_AVX512F))
     {
-        assert(instructionSetFlags.HasInstructionSet(InstructionSet_AVX512BW));
-        assert(instructionSetFlags.HasInstructionSet(InstructionSet_AVX512CD));
-        assert(instructionSetFlags.HasInstructionSet(InstructionSet_AVX512DQ));
         assert(instructionSetFlags.HasInstructionSet(InstructionSet_AVX512F));
         assert(instructionSetFlags.HasInstructionSet(InstructionSet_AVX512F_VL));
+        assert(instructionSetFlags.HasInstructionSet(InstructionSet_AVX512BW));
+        assert(instructionSetFlags.HasInstructionSet(InstructionSet_AVX512BW_VL));
+        assert(instructionSetFlags.HasInstructionSet(InstructionSet_AVX512CD));
+        assert(instructionSetFlags.HasInstructionSet(InstructionSet_AVX512CD_VL));
+        assert(instructionSetFlags.HasInstructionSet(InstructionSet_AVX512DQ));
+        assert(instructionSetFlags.HasInstructionSet(InstructionSet_AVX512DQ_VL));
 
         instructionSetFlags.AddInstructionSet(InstructionSet_Vector512);
 
@@ -2304,35 +2305,15 @@ void Compiler::compSetProcessor()
             // default preferred vector width to 256-bits in some scenarios. Power
             // users can override this with `DOTNET_PreferredVectorBitWidth=512` to
             // allow using such instructions where hardware support is available.
+            //
+            // Under stress, sometimes leave the preferred vector width at 512, even if that means
+            // throttling. This helps with test coverage on test machines that might be older.
 
-            preferredVectorByteLength = 256 / 8;
+            if (!compStressCompile(STRESS_GENERIC_VARN, 20))
+            {
+                preferredVectorByteLength = 256 / 8;
+            }
         }
-    }
-    else
-    {
-        instructionSetFlags.RemoveInstructionSet(InstructionSet_AVX512F);
-        instructionSetFlags.RemoveInstructionSet(InstructionSet_AVX512F_VL);
-        instructionSetFlags.RemoveInstructionSet(InstructionSet_AVX512BW);
-        instructionSetFlags.RemoveInstructionSet(InstructionSet_AVX512BW_VL);
-        instructionSetFlags.RemoveInstructionSet(InstructionSet_AVX512CD);
-        instructionSetFlags.RemoveInstructionSet(InstructionSet_AVX512CD_VL);
-        instructionSetFlags.RemoveInstructionSet(InstructionSet_AVX512DQ);
-        instructionSetFlags.RemoveInstructionSet(InstructionSet_AVX512DQ_VL);
-        instructionSetFlags.RemoveInstructionSet(InstructionSet_AVX512VBMI);
-        instructionSetFlags.RemoveInstructionSet(InstructionSet_AVX512VBMI_VL);
-
-#ifdef TARGET_AMD64
-        instructionSetFlags.RemoveInstructionSet(InstructionSet_AVX512F_X64);
-        instructionSetFlags.RemoveInstructionSet(InstructionSet_AVX512F_VL_X64);
-        instructionSetFlags.RemoveInstructionSet(InstructionSet_AVX512BW_X64);
-        instructionSetFlags.RemoveInstructionSet(InstructionSet_AVX512BW_VL_X64);
-        instructionSetFlags.RemoveInstructionSet(InstructionSet_AVX512CD_X64);
-        instructionSetFlags.RemoveInstructionSet(InstructionSet_AVX512CD_VL_X64);
-        instructionSetFlags.RemoveInstructionSet(InstructionSet_AVX512DQ_X64);
-        instructionSetFlags.RemoveInstructionSet(InstructionSet_AVX512DQ_VL_X64);
-        instructionSetFlags.RemoveInstructionSet(InstructionSet_AVX512VBMI_X64);
-        instructionSetFlags.RemoveInstructionSet(InstructionSet_AVX512VBMI_VL_X64);
-#endif // TARGET_AMD64
     }
 
     opts.preferredVectorByteLength = preferredVectorByteLength;
@@ -2868,6 +2849,7 @@ void Compiler::compInitOptions(JitFlags* jitFlags)
     opts.disDiffable  = false;
     opts.dspDiffable  = false;
     opts.disAlignment = false;
+    opts.disCodeBytes = false;
 #ifdef DEBUG
     opts.dspInstrs       = false;
     opts.dspLines        = false;
@@ -3062,6 +3044,10 @@ void Compiler::compInitOptions(JitFlags* jitFlags)
         if (JitConfig.JitDisasmWithAlignmentBoundaries())
         {
             opts.disAlignment = true;
+        }
+        if (JitConfig.JitDisasmWithCodeBytes())
+        {
+            opts.disCodeBytes = true;
         }
         if (JitConfig.JitDisasmDiffable())
         {
@@ -4741,13 +4727,13 @@ void Compiler::compCompile(void** methodCodePtr, uint32_t* methodCodeSize, JitFl
     //
     DoPhase(this, PHASE_EARLY_LIVENESS, &Compiler::fgEarlyLiveness);
 
-    // Promote struct locals based on primitive access patterns
-    //
-    DoPhase(this, PHASE_PHYSICAL_PROMOTION, &Compiler::PhysicalPromotion);
-
     // Run a simple forward substitution pass.
     //
     DoPhase(this, PHASE_FWD_SUB, &Compiler::fgForwardSub);
+
+    // Promote struct locals based on primitive access patterns
+    //
+    DoPhase(this, PHASE_PHYSICAL_PROMOTION, &Compiler::PhysicalPromotion);
 
     // Locals tree list is no longer kept valid.
     fgNodeThreading = NodeThreading::None;
@@ -5580,7 +5566,7 @@ void Compiler::generatePatchpointInfo()
     //
     const int totalFrameSize = codeGen->genTotalFrameSize() + TARGET_POINTER_SIZE;
     const int offsetAdjust   = 0;
-#elif defined(TARGET_ARM64)
+#elif defined(TARGET_ARM64) || defined(TARGET_LOONGARCH64)
     // SP is not manipulated by calls so no frame size adjustment needed.
     // Local Offsets may need adjusting, if FP is at bottom of frame.
     //
@@ -6830,8 +6816,8 @@ int Compiler::compCompileHelper(CORINFO_MODULE_HANDLE classPtr,
         {
             frameSizeUpdate = 8;
         }
-#elif defined(TARGET_ARM64)
-        if ((totalFrameSize % 16) != 0)
+#elif defined(TARGET_ARM64) || defined(TARGET_LOONGARCH64)
+        if ((totalFrameSize & 0xf) != 0)
         {
             frameSizeUpdate = 8;
         }

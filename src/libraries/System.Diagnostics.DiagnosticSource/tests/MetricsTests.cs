@@ -1221,6 +1221,16 @@ namespace System.Diagnostics.Metrics.Tests
                 Assert.Equal("8.0", meter8.Version);
                 Assert.Equal(new[] { new KeyValuePair<string, object?>("Key8", "Value8") }, meter8.Tags);
                 Assert.Equal("Scope8", meter8.Scope);
+
+                // Test tags sorting order
+                TagList l = new TagList() { { "f", "a" }, { "d", "b" }, { "w", "b" }, { "h", new object() }, { "N", null }, { "a", "b" }, { "a", null } };
+                using Meter meter9 = new Meter(new MeterOptions("TestMeterCreationWithOptions9") { Version = "8.0", Tags = l, Scope = "Scope8" });
+                var insArray = meter9.Tags.ToArray();
+                Assert.Equal(l.Count, insArray.Length);
+                for (int i = 0; i < insArray.Length - 1; i++)
+                {
+                    Assert.True(string.Compare(insArray[i].Key, insArray[i + 1].Key, StringComparison.Ordinal) <= 0);
+                }
             }).Dispose();
         }
 
@@ -1297,6 +1307,38 @@ namespace System.Diagnostics.Metrics.Tests
                 UpDownCounter<int> upDownCounter3 = meter.CreateUpDownCounter<int>("name", null, null, list3);
 
                 Assert.False(object.ReferenceEquals(upDownCounter3, upDownCounter1));
+
+                //
+                // Test instrument creation with unordered tags
+                //
+
+                object o = new object();
+                TagList l1 = new TagList() { { "f", "a" }, { "d", "b" }, { "w", "b" }, { "h", o}, { "N", null }, { "a", "b" }, { "a", null } };
+                List<KeyValuePair<string, object?>> l2 = new List<KeyValuePair<string, object?>>()
+                {
+                    new KeyValuePair<string, object?>("w", "b"), new KeyValuePair<string, object?>("h", o), new KeyValuePair<string, object?>("a", null),
+                    new KeyValuePair<string, object?>("d", "b"), new KeyValuePair<string, object?>("f", "a"), new KeyValuePair<string, object?>("N", null),
+                    new KeyValuePair<string, object?>("a", "b")
+                };
+                HashSet<KeyValuePair<string, object?>> l3 = new HashSet<KeyValuePair<string, object?>>()
+                {
+                    new KeyValuePair<string, object?>("d", "b"), new KeyValuePair<string, object?>("f", "a"), new KeyValuePair<string, object?>("a", null),
+                    new KeyValuePair<string, object?>("w", "b"), new KeyValuePair<string, object?>("h", o), new KeyValuePair<string, object?>("a", "b"),
+                    new KeyValuePair<string, object?>("N", null)
+                };
+
+                Counter<int> counter9 = meter.CreateCounter<int>("name9", null, null, l1);
+                Counter<int> counter10 = meter.CreateCounter<int>("name9", null, null, l2);
+                Counter<int> counter11 = meter.CreateCounter<int>("name9", null, null, l3);
+                Assert.Same(counter9, counter10);
+                Assert.Same(counter9, counter11);
+
+                KeyValuePair<string, object?>[] t1 = counter9.Tags.ToArray();
+                Assert.Equal(l1.Count, t1.Length);
+                t1[0] = new KeyValuePair<string, object?>(t1[0].Key, "newValue"); // change value of one item;
+                Counter<int> counter12 = meter.CreateCounter<int>("name9", null, null, t1);
+                Assert.NotSame(counter9, counter12);
+
             }).Dispose();
         }
 
@@ -1341,6 +1383,17 @@ namespace System.Diagnostics.Metrics.Tests
 
                 Instrument ins12 = meter.CreateObservableGauge<float>("ObservableUpDownCounter3", () => new Measurement<float>[] { new Measurement<float>(3) }, null, null, new TagList() { { "oudc3", "oudc-v3" } });
                 Assert.Equal(new[] { new KeyValuePair<string, object?>("oudc3", "oudc-v3") }, ins12.Tags);
+
+                // Test tags sorting order
+
+                TagList l = new TagList() { { "z", "a" }, { "y", "b" }, { "x", "b" }, { "m", new object() }, { "N", null }, { "a", "b" }, { "a", null } };
+                Instrument ins13 = meter.CreateCounter<int>("counter", null, null, l);
+                var insArray = ins13.Tags.ToArray();
+                Assert.Equal(l.Count, insArray.Length);
+                for (int i = 0; i < insArray.Length - 1; i++)
+                {
+                    Assert.True(string.Compare(insArray[i].Key, insArray[i + 1].Key, StringComparison.Ordinal) <= 0);
+                }
 
             }).Dispose();
         }
@@ -1454,10 +1507,6 @@ namespace System.Diagnostics.Metrics.Tests
                 Assert.True(recorder7.GetMeasurements().Same(new Measurement<long>[] { measurementWith10Value, measurementWith10Value }));
                 Assert.True(recorder7.GetMeasurements(true).Same(new Measurement<long>[] { measurementWith10Value, measurementWith10Value, measurementWith10Value }));
                 Assert.True(recorder7.GetMeasurements().Same(new Measurement<long>[] { measurementWith10Value }));
-                // Assert.Equal(new Measurement<long>[] { measurementWith10Value, measurementWith10Value }, recorder7.GetMeasurements());
-                // Assert.Equal(new Measurement<long>[] { measurementWith10Value, measurementWith10Value, measurementWith10Value }, recorder7.GetMeasurements(clear: true));
-                // Assert.Equal(new Measurement<long>[] { measurementWith10Value }, recorder7.GetMeasurements());
-
             }).Dispose();
         }
 

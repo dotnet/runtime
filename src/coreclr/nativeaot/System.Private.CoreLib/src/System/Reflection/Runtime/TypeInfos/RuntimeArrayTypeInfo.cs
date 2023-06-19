@@ -308,7 +308,7 @@ namespace System.Reflection.Runtime.TypeInfos
         //
         // Helper for jagged array constructors.
         //
-        private Array CreateJaggedArray(RuntimeTypeInfo arrayType, int[] lengths, int index)
+        private static Array CreateJaggedArray(RuntimeTypeInfo arrayType, int[] lengths, int index)
         {
             int length = lengths[index];
             Array jaggedArray = ReflectionCoreExecution.ExecutionEnvironment.NewArray(arrayType.TypeHandle, length);

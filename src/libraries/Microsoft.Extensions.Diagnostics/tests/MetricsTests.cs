@@ -49,6 +49,47 @@ namespace Microsoft.Extensions.Diagnostics.Metrics.Tests
             Assert.Same(meterFactory, meter3.Scope);
 
             Assert.NotSame(meter1, meter3);
+
+            //
+            // Test meter creation with unordered tags
+            //
+
+            object o = new object();
+            TagList l1 = new TagList() { { "z", "a" }, { "y", "b" }, { "x", "c" }, { "w", o }, { "N", null }, { "c", "d" }, { "q", "d" }, { "c", null } };
+            List<KeyValuePair<string, object?>> l2 = new List<KeyValuePair<string, object?>>()
+            {
+                new KeyValuePair<string, object?>("y", "b"), new KeyValuePair<string, object?>("c", null), new KeyValuePair<string, object?>("N", null),
+                new KeyValuePair<string, object?>("x", "c"), new KeyValuePair<string, object?>("w", o), new KeyValuePair<string, object?>("z", "a"),
+                new KeyValuePair<string, object?>("c", "d"), new KeyValuePair<string, object?>("q", "d")
+            };
+            HashSet<KeyValuePair<string, object?>> l3 = new HashSet<KeyValuePair<string, object?>>()
+            {
+                new KeyValuePair<string, object?>("q", "d"), new KeyValuePair<string, object?>("c", null), new KeyValuePair<string, object?>("N", null),
+                new KeyValuePair<string, object?>("w", o), new KeyValuePair<string, object?>("c", "d"), new KeyValuePair<string, object?>("x", "c"),
+                new KeyValuePair<string, object?>("z", "a"), new KeyValuePair<string, object?>("y", "b")
+            };
+
+            Meter meter4 = meterFactory.Create("name4", "4", l1);
+            Meter meter5 = meterFactory.Create("name4", "4", l2);
+            Meter meter6 = meterFactory.Create("name4", "4", l3);
+
+            Assert.Same(meter4, meter5);
+            Assert.Same(meter4, meter6);
+
+            KeyValuePair<string, object?>[] t1 = meter4.Tags.ToArray();
+            Assert.Equal(l1.Count, t1.Length);
+            t1[0] = new KeyValuePair<string, object?>(t1[0].Key, "newValue"); // change value of one item;
+            Meter meter7 = meterFactory.Create("name4", "4", t1);
+            Assert.NotSame(meter4, meter7);
+
+            //
+            // Ensure the tags in the meter are sorted
+            //
+            t1 = meter4.Tags.ToArray();
+            for (int i = 0; i < t1.Length - 1; i++)
+            {
+                Assert.True(string.Compare(t1[i].Key, t1[i + 1].Key, StringComparison.Ordinal) <= 0);
+            }
         }
 
         [Fact]
@@ -60,6 +101,41 @@ namespace Microsoft.Extensions.Diagnostics.Metrics.Tests
             using IMeterFactory meterFactory = sp.GetRequiredService<IMeterFactory>();
 
             Assert.Throws<ArgumentNullException>(() => meterFactory.Create(name: null));
+            Assert.Throws<InvalidOperationException>(() => meterFactory.Create(new MeterOptions("name") { Name = "SomeName", Scope = new object() }));
+
+            Meter meter = meterFactory.Create(new MeterOptions("name") { Name = "SomeName", Scope = meterFactory });
+            Assert.Equal(meterFactory, meter.Scope);
+        }
+
+        [Fact]
+        public void MeterDisposeTest()
+        {
+            ServiceCollection services = new ServiceCollection();
+            services.AddMetrics();
+            var sp = services.BuildServiceProvider();
+            IMeterFactory meterFactory = sp.GetRequiredService<IMeterFactory>();
+
+            Meter meter = meterFactory.Create("DisposableMeter");
+
+            Counter<int> counter = meter.CreateCounter<int>("MyCounter");
+            InstrumentRecorder<int> recorder = new InstrumentRecorder<int>(counter);
+            counter.Add(10);
+            Assert.Equal(1, recorder.GetMeasurements().Count());
+            Assert.Equal(10, recorder.GetMeasurements().ElementAt(0).Value);
+            meter.Dispose(); // should be no-op
+            counter.Add(20);
+            Assert.Equal(2, recorder.GetMeasurements().Count());
+            Assert.Equal(20, recorder.GetMeasurements().ElementAt(1).Value);
+
+            meter.Dispose(); // dispose again, should be no-op too
+            counter.Add(30);
+            Assert.Equal(3, recorder.GetMeasurements().Count());
+            Assert.Equal(30, recorder.GetMeasurements().ElementAt(2).Value);
+
+            // Now dispose the factory, the meter should be disposed too
+            meterFactory.Dispose();
+            counter.Add(40); // recorder shouldn't observe this value as the meter created this instrument is disposed
+            Assert.Equal(3, recorder.GetMeasurements().Count());
         }
 
         [Fact]

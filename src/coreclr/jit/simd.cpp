@@ -299,7 +299,10 @@ CorInfoType Compiler::getBaseJitTypeAndSizeOfSIMDType(CORINFO_CLASS_HANDLE typeH
                         JITDUMP(" Found Vector<%s>\n", varTypeName(JitType2PreciseVarType(simdBaseJitType)));
                         size = getVectorTByteLength();
 
-                        assert(size != 0);
+                        if (size == 0)
+                        {
+                            return CORINFO_TYPE_UNDEF;
+                        }
                         break;
                     }
 
@@ -380,7 +383,7 @@ CorInfoType Compiler::getBaseJitTypeAndSizeOfSIMDType(CORINFO_CLASS_HANDLE typeH
                     return CORINFO_TYPE_UNDEF;
                 }
 
-                if (!compExactlyDependsOn(InstructionSet_AVX))
+                if (!compOpportunisticallyDependsOn(InstructionSet_AVX))
                 {
                     // We must treat as a regular struct if AVX isn't supported
                     return CORINFO_TYPE_UNDEF;
@@ -405,7 +408,7 @@ CorInfoType Compiler::getBaseJitTypeAndSizeOfSIMDType(CORINFO_CLASS_HANDLE typeH
                     return CORINFO_TYPE_UNDEF;
                 }
 
-                if (!compExactlyDependsOn(InstructionSet_AVX512F))
+                if (!compOpportunisticallyDependsOn(InstructionSet_AVX512F))
                 {
                     // We must treat as a regular struct if AVX512F isn't supported
                     return CORINFO_TYPE_UNDEF;
