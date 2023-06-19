@@ -2014,6 +2014,7 @@ void ReplaceVisitor::ReadBackAfterCall(GenTreeCall* call, GenTree* user)
         return;
     }
 
+    CallArg* retBufArg = call->gtArgs.GetRetBufferArg();
     assert(retBufArg != nullptr);
     assert(retBufArg->GetNode()->OperIs(GT_LCL_ADDR));
     GenTreeLclVarCommon* retBufLcl = retBufArg->GetNode()->AsLclVarCommon();
