@@ -318,9 +318,7 @@ interface BootJsonData {
     readonly environmentVariables?: {
         [name: string]: string;
     };
-    readonly diagnosticTracing?: {
-        [name: string]: string;
-    };
+    readonly diagnosticTracing?: boolean;
     readonly pthreadPoolSize: number;
     modifiableAssemblies: string | null;
     aspnetCoreBrowserTools: string | null;
@@ -343,7 +341,6 @@ interface ResourceGroups {
     readonly vfs?: {
         [virtualPath: string]: ResourceList;
     };
-    readonly remoteSources?: string[];
 }
 type ResourceList = {
     [name: string]: string;
