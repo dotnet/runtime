@@ -153,10 +153,6 @@ export async function mono_download_assets(): Promise<void> {
                         await runtimeHelpers.memorySnapshotSkippedOrDone.promise;
                         runtimeHelpers.instantiate_asset(asset, url, data);
                     }
-                    if (asset.behavior === "symbols") {
-                        await runtimeHelpers.instantiate_symbols_asset(asset);
-                        cleanupAsset(asset);
-                    }
                 } else {
                     const headersOnly = skipBufferByAssetTypes[asset.behavior];
                     if (!headersOnly) {
@@ -168,9 +164,12 @@ export async function mono_download_assets(): Promise<void> {
                             loaderHelpers.expected_instantiated_assets_count--;
                         }
                     } else {
-                        if (skipBufferByAssetTypes[asset.behavior]) {
-                            ++loaderHelpers.actual_downloaded_assets_count;
+                        if (asset.behavior === "symbols") {
+                            await runtimeHelpers.instantiate_symbols_asset(asset);
+                            cleanupAsset(asset);
                         }
+
+                        ++loaderHelpers.actual_downloaded_assets_count;
                     }
                 }
             })());

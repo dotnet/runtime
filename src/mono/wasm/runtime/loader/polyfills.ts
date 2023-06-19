@@ -93,7 +93,8 @@ export async function fetch_like(url: string, init?: RequestInit): Promise<Respo
                 },
                 json: () => {
                     return JSON.parse(read(url, "utf8"));
-                }
+                },
+                text: () => read(url, "utf8")
             };
         }
     }
