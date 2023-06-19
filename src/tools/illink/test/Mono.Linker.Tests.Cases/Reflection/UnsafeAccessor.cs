@@ -137,7 +137,7 @@ namespace Mono.Linker.Tests.Cases.Reflection
 
 				[Kept]
 				[KeptAttributeAttribute (typeof (UnsafeAccessorAttribute))]
-				[UnsafeAccessor (UnsafeAccessorKind.StaticMethod, Name = nameof(MethodWithoutParametersTarget.SecondTarget))]
+				[UnsafeAccessor (UnsafeAccessorKind.StaticMethod, Name = nameof (MethodWithoutParametersTarget.SecondTarget))]
 				extern static void SpecifyNameParameter (MethodWithoutParametersTarget target);
 
 				[Kept]
@@ -159,12 +159,33 @@ namespace Mono.Linker.Tests.Cases.Reflection
 			class MethodWithParameter
 			{
 				[Kept]
+				class SuperBase { }
+
+				[Kept]
+				[KeptBaseType (typeof (SuperBase))]
+				class Base : SuperBase { }
+
+				//[Kept]
+				//[KeptBaseType (typeof (Base))]
+				class Derived : Base { }
+
+				[Kept]
 				class MethodWithParameterTarget
 				{
 					private static void MethodWithOverloads () { }
 
 					[Kept]
 					private static void MethodWithOverloads (int i) { }
+
+					private static void MethodWithGenericAndSpecificOverload (object o) { }
+
+					[Kept]
+					private static void MethodWithGenericAndSpecificOverload (string o) { }
+
+					private static void MethodWithThreeInheritanceOverloads (SuperBase o) { }
+					[Kept]
+					private static void MethodWithThreeInheritanceOverloads (Base o) { }
+					private static void MethodWithThreeInheritanceOverloads (Derived o) { }
 				}
 
 				[Kept]
@@ -173,9 +194,21 @@ namespace Mono.Linker.Tests.Cases.Reflection
 				extern static void MethodWithOverloads (MethodWithParameterTarget target, int i);
 
 				[Kept]
+				[KeptAttributeAttribute (typeof (UnsafeAccessorAttribute))]
+				[UnsafeAccessor (UnsafeAccessorKind.StaticMethod)]
+				extern static void MethodWithGenericAndSpecificOverload (MethodWithParameterTarget target, string s);
+
+				[Kept]
+				[KeptAttributeAttribute (typeof (UnsafeAccessorAttribute))]
+				[UnsafeAccessor (UnsafeAccessorKind.StaticMethod)]
+				extern static void MethodWithThreeInheritanceOverloads (MethodWithParameterTarget target, Base o);
+
+				[Kept]
 				public static void Test ()
 				{
 					MethodWithOverloads (null, 0);
+					MethodWithGenericAndSpecificOverload (null, null);
+					MethodWithThreeInheritanceOverloads (null, null);
 				}
 			}
 
