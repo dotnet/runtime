@@ -5945,7 +5945,12 @@ process_bb (EmitContext *ctx, MonoBasicBlock *bb)
 						/* The return value might not be set if there is a throw */
 						LLVMValueRef val = build_ptr_cast (builder, lhs, LLVMVectorType (IntPtrType (), elems));
 						for (int i = 0; i < elems; ++i) {
+							LLVMTypeRef etype = LLVMStructGetTypeAtIndex (LLVMTypeOf (retval), i);
 							LLVMValueRef element = LLVMBuildExtractElement (builder, val, const_int32 (i), "");
+							if (LLVMTypeOf (element) == r8_t)
+								element = LLVMBuildBitCast (builder, element, LLVMStructGetTypeAtIndex (LLVMTypeOf (retval), i), "");
+							else
+								element = convert (ctx, element, etype);
 							retval = LLVMBuildInsertValue (builder, retval, element, i, "setret_simd_vtype_in_reg");
 						}
 					} else {
