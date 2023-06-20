@@ -129,12 +129,14 @@
   <Target Name="UpdateLocalTargetingAndRuntimePack"
           Condition="'$(UseLocalTargetingRuntimePack)' == 'true'"
           AfterTargets="ResolveFrameworkReferences">
+    <Error Text="The shared framework must be built before the local targeting pack can be consumed."
+           Condition="!Exists('$(MicrosoftNetCoreAppRefPackDir)data\FrameworkList.xml')" />
+    
     <ItemGroup>
       <ResolvedTargetingPack Path="$(MicrosoftNetCoreAppRefPackDir.TrimEnd('/\'))"
                              NuGetPackageVersion="$(ProductVersion)"
                              PackageDirectory="$(MicrosoftNetCoreAppRefPackDir.TrimEnd('/\'))"
-                             Condition="'%(ResolvedTargetingPack.RuntimeFrameworkName)' == '$(LocalFrameworkOverrideName)' and
-                                        Exists('$(MicrosoftNetCoreAppRefPackDir)data\FrameworkList.xml')" />
+                             Condition="'%(ResolvedTargetingPack.RuntimeFrameworkName)' == '$(LocalFrameworkOverrideName)'" />
       <ResolvedRuntimePack PackageDirectory="$(MicrosoftNetCoreAppRuntimePackDir)"
                            Condition="'$(MicrosoftNetCoreAppRuntimePackDir)' != '' and
                                       '%(ResolvedRuntimePack.FrameworkName)' == '$(LocalFrameworkOverrideName)'" />
