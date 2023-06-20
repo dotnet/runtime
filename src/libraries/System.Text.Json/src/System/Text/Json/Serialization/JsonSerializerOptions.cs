@@ -54,6 +54,7 @@ namespace System.Text.Json
 
         // For any new option added, adding it to the options copied in the copy constructor below must be considered.
         private IJsonTypeInfoResolver? _typeInfoResolver;
+        private JsonDictionaryKeyFilter? _dictionaryKeyFilter;
         private JsonNamingPolicy? _dictionaryKeyPolicy;
         private JsonNamingPolicy? _jsonPropertyNamingPolicy;
         private JsonCommentHandling _readCommentHandling;
@@ -105,6 +106,7 @@ namespace System.Text.Json
             // 2. _typeInfoResolverChain can be created lazily as it relies on
             //    _typeInfoResolver as its source of truth.
 
+            _dictionaryKeyFilter = options._dictionaryKeyFilter;
             _dictionaryKeyPolicy = options._dictionaryKeyPolicy;
             _jsonPropertyNamingPolicy = options._jsonPropertyNamingPolicy;
             _readCommentHandling = options._readCommentHandling;
@@ -293,6 +295,28 @@ namespace System.Text.Json
                 VerifyMutable();
 
                 _encoder = value;
+            }
+        }
+
+        /// <summary>
+        /// Specifies the filter used to ignore <see cref="System.Collections.IDictionary"/> keys
+        /// when deserializing.
+        /// </summary>
+        /// <remarks>
+        /// This property can be set to <see cref="JsonDictionaryKeyFilter.IgnoreMetadataNames"/>
+        /// to ignore any keys starting with $, such as `$schema`.
+        /// It is used when deserializing.
+        /// </remarks>
+        public JsonDictionaryKeyFilter? DictionaryKeyFilter
+        {
+            get
+            {
+                return _dictionaryKeyFilter;
+            }
+            set
+            {
+                VerifyMutable();
+                _dictionaryKeyFilter = value;
             }
         }
 

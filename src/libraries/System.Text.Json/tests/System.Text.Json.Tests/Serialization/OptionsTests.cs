@@ -57,6 +57,7 @@ namespace System.Text.Json.Serialization.Tests
             // Verify defaults and ensure getters do not throw.
             Assert.False(options.AllowTrailingCommas);
             Assert.Equal(16 * 1024, options.DefaultBufferSize);
+            Assert.Null(options.DictionaryKeyFilter);
             Assert.Null(options.DictionaryKeyPolicy);
             Assert.Null(options.Encoder);
             Assert.False(options.IgnoreNullValues);
@@ -74,6 +75,7 @@ namespace System.Text.Json.Serialization.Tests
             // Setters should always throw; we don't check to see if the value is the same or not.
             Assert.Throws<InvalidOperationException>(() => options.AllowTrailingCommas = options.AllowTrailingCommas);
             Assert.Throws<InvalidOperationException>(() => options.DefaultBufferSize = options.DefaultBufferSize);
+            Assert.Throws<InvalidOperationException>(() => options.DictionaryKeyFilter = options.DictionaryKeyFilter);
             Assert.Throws<InvalidOperationException>(() => options.DictionaryKeyPolicy = options.DictionaryKeyPolicy);
             Assert.Throws<InvalidOperationException>(() => options.Encoder = JavaScriptEncoder.Default);
             Assert.Throws<InvalidOperationException>(() => options.IgnoreNullValues = options.IgnoreNullValues);
@@ -1225,6 +1227,10 @@ namespace System.Text.Json.Serialization.Tests
                 else if (propertyType == typeof(JavaScriptEncoder))
                 {
                     options.Encoder = JavaScriptEncoder.Default;
+                }
+                else if (propertyType == typeof(JsonDictionaryKeyFilter))
+                {
+                    options.DictionaryKeyFilter = JsonDictionaryKeyFilter.IgnoreMetadataNames;
                 }
                 else if (propertyType == typeof(JsonNamingPolicy))
                 {

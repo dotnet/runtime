@@ -161,6 +161,11 @@ namespace System.Text.Json
 #endif
         public override void GetObjectData(System.Runtime.Serialization.SerializationInfo info, System.Runtime.Serialization.StreamingContext context) { }
     }
+    public abstract class JsonDictionaryKeyFilter
+    {
+        public static System.Text.Json.JsonDictionaryKeyFilter IgnoreMetadataNames { get { throw null; } }
+        public abstract bool IgnoreKey(System.ReadOnlySpan<byte> utf8Key);
+    }
     public abstract partial class JsonNamingPolicy
     {
         protected JsonNamingPolicy() { }
@@ -373,6 +378,7 @@ namespace System.Text.Json
         public static System.Text.Json.JsonSerializerOptions Default { [System.Diagnostics.CodeAnalysis.RequiresDynamicCodeAttribute("JSON serialization and deserialization might require types that cannot be statically analyzed and might need runtime code generation. Use System.Text.Json source generation for native AOT applications."), System.Diagnostics.CodeAnalysis.RequiresUnreferencedCodeAttribute("JSON serialization and deserialization might require types that cannot be statically analyzed. Use the overload that takes a JsonTypeInfo or JsonSerializerContext, or make sure all of the required types are preserved.")] get { throw null; } }
         public int DefaultBufferSize { get { throw null; } set { } }
         public System.Text.Json.Serialization.JsonIgnoreCondition DefaultIgnoreCondition { get { throw null; } set { } }
+        public System.Text.Json.JsonDictionaryKeyFilter? DictionaryKeyFilter { get { throw null; } set { } }
         public System.Text.Json.JsonNamingPolicy? DictionaryKeyPolicy { get { throw null; } set { } }
         public System.Text.Encodings.Web.JavaScriptEncoder? Encoder { get { throw null; } set { } }
         [System.ComponentModel.EditorBrowsableAttribute(System.ComponentModel.EditorBrowsableState.Never)]
