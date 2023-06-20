@@ -200,8 +200,9 @@ namespace System.Diagnostics
         /// <summary>Associated process is a child that can use the terminal.</summary>
         private readonly bool _usesTerminal;
 
-        /// <summary>If a wait operation is in progress or has completed, the Task that represents it; otherwise, null.</summary>
-        private Task? _waitInProgress;
+        /// <summary>An in-progress or completed wait operation.</summary>
+        /// <remarks>A completed task does not mean the process has exited.</remarks>
+        private Task _waitInProgress = Task.CompletedTask;
         /// <summary>The number of alive users of this object.</summary>
         private int _outstandingRefCount;
 
@@ -322,7 +323,7 @@ namespace System.Diagnostics
 
                 // Is another wait operation in progress?  If so, then we haven't exited,
                 // and that task owns the right to call CheckForNonChildExit.
-                if (_waitInProgress is Task waitInProgress && !waitInProgress.IsCompleted)
+                if (!_waitInProgress.IsCompleted)
                 {
                     exitCode = null;
                     return false;
@@ -439,7 +440,7 @@ namespace System.Diagnostics
                         {
                             // If there's currently a wait-in-progress, then we know the other process
                             // hasn't exited (barring races and the polling interval).
-                            if (_waitInProgress is Task waitInProgress && !waitInProgress.IsCompleted)
+                            if (!_waitInProgress.IsCompleted)
                             {
                                 return false;
                             }
@@ -457,7 +458,7 @@ namespace System.Diagnostics
                         // by waiting on that existing task.  Otherwise, we'll spin up
                         // such a task.
                         waitTask = _waitInProgress;
-                        if (waitTask is null || waitTask.IsCompleted)
+                        if (waitTask.IsCompleted)
                         {
                             createdTask = true;
                             CancellationToken token = remainingTimeout == Timeout.Infinite ?
@@ -508,7 +509,7 @@ namespace System.Diagnostics
             // Wait for the previous waiting task to complete. We need to ensure that this call completes asynchronously,
             // in order to escape the caller's lock and avoid blocking the caller by any work in the below loop, so
             // we use ForceYielding.
-            await (_waitInProgress ?? Task.CompletedTask).ConfigureAwait(ConfigureAwaitOptions.ForceYielding | ConfigureAwaitOptions.SuppressThrowing);
+            await _waitInProgress.ConfigureAwait(ConfigureAwaitOptions.ForceYielding | ConfigureAwaitOptions.SuppressThrowing);
 
             // Arbitrary values chosen to balance delays with polling overhead.  Start with fast polling
             // to handle quickly completing processes, but fall back to longer polling to minimize
