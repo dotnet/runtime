@@ -72,7 +72,7 @@ class Program
         // Ensure the TextInfo class is trimmed correctly.
         Type textInfo = GetCoreLibType("System.Globalization.TextInfo");
         if (textInfo.GetMembers(privateInstanceMethods).Any(m =>
-            m.Name == "JsChangeCase")))
+            m.Name == "JsChangeCase"))
             return -6;
 
         return 100;

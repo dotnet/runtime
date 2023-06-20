@@ -25,8 +25,6 @@ namespace System.Globalization
         internal static bool Invariant => Settings.Invariant;
 #if TARGET_OSX || TARGET_MACCATALYST || TARGET_IOS || TARGET_TVOS || TARGET_BROWSER
         internal static bool Hybrid => Settings.Hybrid;
-        // for trimming substitution
-        internal static bool Icu { get; } = !Hybrid && !Invariant;
 #endif
         internal static bool PredefinedCulturesOnly => Settings.PredefinedCulturesOnly;
 

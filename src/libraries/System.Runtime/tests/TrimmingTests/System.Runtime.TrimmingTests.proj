@@ -20,13 +20,8 @@
     <TestConsoleAppSourceFiles Include="InterfacesOnArrays.cs" />
     <TestConsoleAppSourceFiles Include="InvariantGlobalizationFalse.cs">
       <DisabledFeatureSwitches>System.Globalization.Invariant</DisabledFeatureSwitches>
-      <EnabledFeatureSwitches>System.Globalization.Hybrid</EnabledFeatureSwitches>
-    </TestConsoleAppSourceFiles>
-    <TestConsoleAppSourceFiles Include="InvariantGlobalizationFalse.cs">
-      <DisabledFeatureSwitches>System.Globalization.Invariant</DisabledFeatureSwitches>
     </TestConsoleAppSourceFiles>
     <TestConsoleAppSourceFiles Include="InvariantGlobalizationTrue.cs">
-      <DisabledFeatureSwitches>System.Globalization.Hybrid</DisabledFeatureSwitches>
       <EnabledFeatureSwitches>System.Globalization.Invariant;System.Globalization.PredefinedCulturesOnly</EnabledFeatureSwitches>
     </TestConsoleAppSourceFiles>
     <TestConsoleAppSourceFiles Include="StackFrameHelperTest.cs">
@@ -46,7 +41,7 @@
       <!-- Setting the Trimming feature switch to make sure that the Resources get trimmed by the trimmer
       as this test will ensure exceptions are using Resource keys -->
       <EnabledFeatureSwitches>System.Resources.UseSystemResourceKeys</EnabledFeatureSwitches>
-    </TestConsoleAppSourceFiles>    
+    </TestConsoleAppSourceFiles>
     <TestConsoleAppSourceFiles Include="TypeBuilderComDisabled.cs">
       <DisabledFeatureSwitches>System.Runtime.InteropServices.BuiltInComInterop.IsSupported</DisabledFeatureSwitches>
     </TestConsoleAppSourceFiles>
