@@ -205,7 +205,7 @@ namespace Wasm.Build.Tests
             CommandResult result = new DotNetCommand(s_buildEnv, _testOutput)
                 .WithWorkingDirectory(_projectDir!)
                 .WithEnvironmentVariable("NUGET_PACKAGES", _nugetPackagesDir)
-                .ExecuteWithCapturedOutput("build", $"-c {config} -bl");
+                .ExecuteWithCapturedOutput("build", $"-c {config} -bl -p:WasmRuntimeAssetsLocation=./");
 
             Assert.True(result.ExitCode == 0, "Expected build to succeed");
 
