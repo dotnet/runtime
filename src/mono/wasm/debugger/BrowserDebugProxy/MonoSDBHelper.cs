@@ -808,17 +808,17 @@ namespace Microsoft.WebAssembly.Diagnostics
         internal readonly ILogger logger;
 
 #pragma warning disable SYSLIB1045
-        private static Regex regexForAsyncLocals = new Regex(@"\<(?<varName>[^)]*)\>(?<varId>[^)]*)(__)(?<scopeId>\d+)", RegexOptions.Singleline);
+        private static Regex regexForAsyncLocals = new (@"\<(?<varName>[^)]*)\>(?<varId>[^)]*)(__)(?<scopeId>\d+)", RegexOptions.Singleline);
 
-        private static Regex regexForVBAsyncLocals = new Regex(@"\$VB\$ResumableLocal_(?<varName>[^\$]*)\$(?<scopeId>\d+)", RegexOptions.Singleline); //$VB$ResumableLocal_testVbScope$2
+        private static Regex regexForVBAsyncLocals = new (@"\$VB\$ResumableLocal_(?<varName>[^\$]*)\$(?<scopeId>\d+)", RegexOptions.Singleline); //$VB$ResumableLocal_testVbScope$2
 
-        private static Regex regexForVBAsyncMethodName = new Regex(@"VB\$StateMachine_(\d+)_(?<methodName>.*)", RegexOptions.Singleline); //VB$StateMachine_2_RunVBScope
+        private static Regex regexForVBAsyncMethodName = new (@"VB\$StateMachine_(\d+)_(?<methodName>.*)", RegexOptions.Singleline); //VB$StateMachine_2_RunVBScope
 
-        private static Regex regexForAsyncMethodName = new Regex(@"\<([^>]*)\>([d][_][_])([0-9]*)");
+        private static Regex regexForAsyncMethodName = new (@"\<([^>]*)\>([d][_][_])([0-9]*)");
 
-        private static Regex regexForGenericArgs = new Regex(@"[`][0-9]+");
+        private static Regex regexForGenericArgs = new (@"[`][0-9]+");
 
-        private static Regex regexForNestedLeftRightAngleBrackets = new Regex("^(((?'Open'<)[^<>]*)+((?'Close-Open'>)[^<>]*)+)*(?(Open)(?!))[^<>]*"); // <ContinueWithStaticAsync>b__3_0
+        private static Regex regexForNestedLeftRightAngleBrackets = new ("^(((?'Open'<)[^<>]*)+((?'Close-Open'>)[^<>]*)+)*(?(Open)(?!))[^<>]*"); // <ContinueWithStaticAsync>b__3_0
 #pragma warning restore SYSLIB1045
 
         public JObjectValueCreator ValueCreator { get; init; }
@@ -1677,8 +1677,8 @@ namespace Microsoft.WebAssembly.Diagnostics
             return null;
         }
 #pragma warning disable SYSLIB1045
-        private static Regex regexForGenericArity = new Regex(@"`\d+");
-        private static Regex regexForSquareBrackets = new Regex(@"[[, ]+]");
+        private static Regex regexForGenericArity = new (@"`\d+");
+        private static Regex regexForSquareBrackets = new (@"[[, ]+]");
 #pragma warning restore SYSLIB1045
 
         public async Task<string> GetTypeName(int typeId, CancellationToken token)
