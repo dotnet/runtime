@@ -101,7 +101,6 @@
     <ItemGroup>
       <_ApplePropertyNames Include="InvariantGlobalization" />
       <_ApplePropertyNames Include="HybridGlobalization" />
-      <_ApplePropertyNames Include="AppName" />
       <_ApplePropertyNames Include="AssemblyName" />
       <_ApplePropertyNames Include="MonoEnableLLVM" />
       <_ApplePropertyNames Include="MainLibraryFileName" />
