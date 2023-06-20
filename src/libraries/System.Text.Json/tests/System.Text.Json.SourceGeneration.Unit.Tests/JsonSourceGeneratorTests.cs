@@ -800,5 +800,67 @@ namespace System.Text.Json.SourceGeneration.UnitTests
             result.AssertContainsType("global::HelloWorld.MyGenericClass<string>.NestedGenericClass<int>");
             result.AssertContainsType("string");
         }
+
+        [Fact]
+        public void ContextsNestedInGenericTypesAreSupported()
+        {
+            string source = """
+                using System.Text.Json.Serialization;
+
+                namespace HelloWorld
+                {
+                    public partial class GenericContainer<T>
+                    {
+                        [JsonSerializable(typeof(MyClass))]
+                        internal partial class JsonContext : JsonSerializerContext
+                        {
+                        }
+                    }
+
+                    public class MyClass
+                    {
+                    }
+                }
+                """;
+
+            Compilation compilation = CompilationHelper.CreateCompilation(source);
+
+            JsonSourceGeneratorResult result = CompilationHelper.RunJsonSourceGenerator(compilation);
+
+            // Make sure compilation was successful.
+            Assert.Empty(result.NewCompilation.GetDiagnostics());
+            Assert.Empty(result.Diagnostics);
+        }
+
+        [Fact]
+        public void ContextsNestedInStructsAreSupported()
+        {
+            string source = """
+                using System.Text.Json.Serialization;
+
+                namespace HelloWorld
+                {
+                    public partial struct MyStruct
+                    {
+                        [JsonSerializable(typeof(MyClass))]
+                        internal partial class JsonContext : JsonSerializerContext
+                        {
+                        }
+                    }
+
+                    public class MyClass
+                    {
+                    }
+                }
+                """;
+
+            Compilation compilation = CompilationHelper.CreateCompilation(source);
+
+            JsonSourceGeneratorResult result = CompilationHelper.RunJsonSourceGenerator(compilation);
+
+            // Make sure compilation was successful.
+            Assert.Empty(result.NewCompilation.GetDiagnostics());
+            Assert.Empty(result.Diagnostics);
+        }
     }
 }
