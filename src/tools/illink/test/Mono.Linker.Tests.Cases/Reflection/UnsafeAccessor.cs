@@ -186,6 +186,9 @@ namespace Mono.Linker.Tests.Cases.Reflection
 					[Kept]
 					private static void MethodWithThreeInheritanceOverloads (Base o) { }
 					private static void MethodWithThreeInheritanceOverloads (Derived o) { }
+
+					private static void MethodWithImperfectMatch (SuperBase o) { }
+					private static void MethodWithImperfectMatch (Derived o) { }
 				}
 
 				[Kept]
@@ -204,11 +207,17 @@ namespace Mono.Linker.Tests.Cases.Reflection
 				extern static void MethodWithThreeInheritanceOverloads (MethodWithParameterTarget target, Base o);
 
 				[Kept]
+				[KeptAttributeAttribute (typeof (UnsafeAccessorAttribute))]
+				[UnsafeAccessor (UnsafeAccessorKind.StaticMethod)]
+				extern static void MethodWithImperfectMatch (MethodWithParameterTarget target, Base o);
+
+				[Kept]
 				public static void Test ()
 				{
 					MethodWithOverloads (null, 0);
 					MethodWithGenericAndSpecificOverload (null, null);
 					MethodWithThreeInheritanceOverloads (null, null);
+					MethodWithImperfectMatch (null, null);
 				}
 			}
 
