@@ -272,7 +272,7 @@ namespace Microsoft.Extensions.DependencyInjection.ServiceLookup
                 }
 
                 Type itemType = serviceType.GenericTypeArguments[0];
-                var cacheKey = ServiceIdentifier.FromServiceType(itemType);
+                var cacheKey = new ServiceIdentifier(serviceIdentifier.ServiceKey, itemType);
                 if (ServiceProvider.VerifyAotCompatibility && itemType.IsValueType)
                 {
                     // NativeAOT apps are not able to make Enumerable of ValueType services
@@ -315,16 +315,22 @@ namespace Microsoft.Extensions.DependencyInjection.ServiceLookup
                     int slot = 0;
                     for (int i = _descriptors.Length - 1; i >= 0; i--)
                     {
-                        if (TryCreateExact(_descriptors[i], cacheKey, callSiteChain, slot) is { } callSite)
+                        if (KeyEquals(_descriptors[i].ServiceKey, cacheKey.ServiceKey))
                         {
-                            AddCallSite(callSite, i);
+                            if (TryCreateExact(_descriptors[i], cacheKey, callSiteChain, slot) is { } callSite)
+                            {
+                                AddCallSite(callSite, i);
+                            }
                         }
                     }
                     for (int i = _descriptors.Length - 1; i >= 0; i--)
                     {
-                        if (TryCreateOpenGeneric(_descriptors[i], cacheKey, callSiteChain, slot, throwOnConstraintViolation: false) is { } callSite)
+                        if (KeyEquals(_descriptors[i].ServiceKey, cacheKey.ServiceKey))
                         {
-                            AddCallSite(callSite, i);
+                            if (TryCreateOpenGeneric(_descriptors[i], cacheKey, callSiteChain, slot, throwOnConstraintViolation: false) is { } callSite)
+                            {
+                                AddCallSite(callSite, i);
+                            }
                         }
                     }
 
@@ -674,6 +680,20 @@ namespace Microsoft.Extensions.DependencyInjection.ServiceLookup
             return serviceType == typeof(IServiceProvider) ||
                    serviceType == typeof(IServiceScopeFactory) ||
                    serviceType == typeof(IServiceProviderIsService);
+        }
+
+        /// <summary>
+        /// Returns true if both keys are null or equals, or if key1 is KeyedService.AnyKey and key2 is not null
+        /// </summary>
+        private static bool KeyEquals(object? key1, object? key2)
+        {
+            if (key1 == null && key2 == null)
+                return true;
+
+            if (key1 != null && key2 != null)
+                return key1.Equals(KeyedService.AnyKey) || key1.Equals(key2);
+
+            return false;
         }
 
         private struct ServiceDescriptorCacheItem

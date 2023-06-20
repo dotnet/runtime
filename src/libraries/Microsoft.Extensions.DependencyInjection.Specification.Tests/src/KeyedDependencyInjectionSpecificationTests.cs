@@ -4,6 +4,7 @@
 using System;
 using Xunit;
 using Microsoft.Extensions.DependencyInjection.Specification.Fakes;
+using System.Linq;
 
 namespace Microsoft.Extensions.DependencyInjection.Specification
 {
@@ -41,6 +42,52 @@ namespace Microsoft.Extensions.DependencyInjection.Specification
 
             // Assert
             Assert.Same(singletonService, genericService.Value);
+        }
+
+        [Fact]
+        public void ResolveKeyedServices()
+        {
+            var service1 = new Service();
+            var service2 = new Service();
+            var service3 = new Service();
+            var service4 = new Service();
+            var serviceCollection = new ServiceCollection();
+            serviceCollection.AddKeyedSingleton<IService>("first-service", service1);
+            serviceCollection.AddKeyedSingleton<IService>("service", service2);
+            serviceCollection.AddKeyedSingleton<IService>("service", service3);
+            serviceCollection.AddKeyedSingleton<IService>("service", service4);
+
+            var provider = CreateServiceProvider(serviceCollection);
+
+            var firstSvc = provider.GetKeyedServices<IService>("first-service").ToList();
+            Assert.Single(firstSvc);
+            Assert.Same(service1, firstSvc[0]);
+
+            var services = provider.GetKeyedServices<IService>("service").ToList();
+            Assert.Equal(new[] { service2, service3, service4 }, services);
+        }
+
+        [Fact]
+        public void ResolveKeyedGenericServices()
+        {
+            var service1 = new FakeService();
+            var service2 = new FakeService();
+            var service3 = new FakeService();
+            var service4 = new FakeService();
+            var serviceCollection = new ServiceCollection();
+            serviceCollection.AddKeyedSingleton<IFakeOpenGenericService<PocoClass>>("first-service", service1);
+            serviceCollection.AddKeyedSingleton<IFakeOpenGenericService<PocoClass>>("service", service2);
+            serviceCollection.AddKeyedSingleton<IFakeOpenGenericService<PocoClass>>("service", service3);
+            serviceCollection.AddKeyedSingleton<IFakeOpenGenericService<PocoClass>>("service", service4);
+
+            var provider = CreateServiceProvider(serviceCollection);
+
+            var firstSvc = provider.GetKeyedServices<IFakeOpenGenericService<PocoClass>>("first-service").ToList();
+            Assert.Single(firstSvc);
+            Assert.Same(service1, firstSvc[0]);
+
+            var services = provider.GetKeyedServices<IFakeOpenGenericService<PocoClass>>("service").ToList();
+            Assert.Equal(new[] { service2, service3, service4 }, services);
         }
 
         [Fact]
@@ -90,6 +137,22 @@ namespace Microsoft.Extensions.DependencyInjection.Specification
             var svc2 = provider.GetKeyedService<IService>(serviceKey2);
             Assert.NotNull(svc2);
             Assert.Equal(serviceKey2, svc2.ToString());
+        }
+
+        [Fact]
+        public void ResolveKeyedServicesSingletonInstanceWithAnyKey()
+        {
+            var service1 = new FakeService();
+            var service2 = new FakeService();
+
+            var serviceCollection = new ServiceCollection();
+            serviceCollection.AddKeyedSingleton<IFakeOpenGenericService<PocoClass>>(KeyedService.AnyKey, service1);
+            serviceCollection.AddKeyedSingleton<IFakeOpenGenericService<PocoClass>>("some-key", service2);
+
+            var provider = CreateServiceProvider(serviceCollection);
+
+            var services = provider.GetKeyedServices<IFakeOpenGenericService<PocoClass>>("some-key").ToList();
+            Assert.Equal(new[] { service1, service2 }, services);
         }
 
         [Fact]
