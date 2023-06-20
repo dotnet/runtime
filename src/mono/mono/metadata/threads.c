@@ -3593,12 +3593,28 @@ flush_thread_interrupt_queue (void)
 }
 #endif
 
-static bool
+static gboolean
 check_and_clear_wait_subsystem_interrupted (MonoInternalThread *thread)
 {
 	g_assert (thread == mono_thread_internal_current());
-	// TODO: call Thread.Current.WaitInfo.get_CheckAndResetPendingInterrupt
-	return FALSE;
+
+	ERROR_DECL (method_error);
+	MONO_STATIC_POINTER_INIT (MonoMethod, check_and_reset_method)
+	check_and_reset_method = mono_class_get_method_from_name_checked (mono_defaults.monitor_class, "CheckAndResetWaitSubsystemInterrupted", 2, 0, method_error);
+	mono_error_assert_ok (method_error);
+	MONO_STATIC_POINTER_INIT_END (MonoMethod, check_and_reset_method)
+	g_assert (check_and_reset_method);
+									  
+	MonoBoolean result = FALSE;
+	ERROR_DECL (error);
+
+	gpointer args[2];
+	args[0] = thread;
+	args[1] = &result;
+
+	mono_runtime_invoke_checked (check_and_reset_method, NULL, args, error);
+	mono_error_assert_ok (error);
+	return !!result;
 }
 
 /*

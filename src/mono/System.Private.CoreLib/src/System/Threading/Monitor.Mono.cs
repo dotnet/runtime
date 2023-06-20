@@ -1,6 +1,7 @@
 // Licensed to the .NET Foundation under one or more agreements.
 // The .NET Foundation licenses this file to you under the MIT license.
 
+using System.Diagnostics.CodeAnalysis;
 using System.Runtime.CompilerServices;
 using System.Runtime.Versioning;
 
@@ -8,6 +9,7 @@ namespace System.Threading
 {
     public static partial class Monitor
     {
+        [DynamicDependency(nameof(CheckAndResetWaitSubsystemInterrupted))]
         [Intrinsic]
         [MethodImplAttribute(MethodImplOptions.InternalCall)] // Interpreter is missing this intrinsic
         public static void Enter(object obj) => Enter(obj);
@@ -124,6 +126,7 @@ namespace System.Threading
             return Monitor_wait(obj, millisecondsTimeout, true);
         }
 
+        [DynamicDependency(nameof(CheckAndResetWaitSubsystemInterrupted))]
         [MethodImplAttribute(MethodImplOptions.InternalCall)]
         internal static extern void try_enter_with_atomic_var(object obj, int millisecondsTimeout, bool allowInterruption, ref bool lockTaken);
 
@@ -149,6 +152,15 @@ namespace System.Threading
         {
             [MethodImplAttribute(MethodImplOptions.InternalCall)]
             get;
+        }
+
+        private static void CheckAndResetWaitSubsystemInterrupted(Thread thread, out bool interrupted)
+        {
+#if TARGET_UNIX || TARGET_BROWSER || TARGET_WASI // TODO: https://github.com/dotnet/runtime/issues/49521
+            interrupted = thread.WaitInfo.CheckAndResetPendingInterrupt_TakeLock;
+#else
+            interrupted = false;
+#endif
         }
     }
 }

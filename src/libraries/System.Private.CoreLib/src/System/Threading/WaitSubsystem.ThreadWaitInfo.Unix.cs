@@ -528,6 +528,22 @@ namespace System.Threading
                 }
             }
 
+            internal bool CheckAndResetPendingInterrupt_TakeLock
+            {
+                get
+                {
+                    var lockHolder = new LockHolder (s_lock);
+                    try
+                    {
+                        return CheckAndResetPendingInterrupt;
+                    }
+                    finally
+                    {
+                        lockHolder.Dispose();
+                    }
+                }
+            }
+
             private bool CheckAndResetPendingInterrupt_NotLocked
             {
                 get
