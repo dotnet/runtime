@@ -157,6 +157,12 @@ emit_common_simd_operations (TransformData *td, int id, int atype, int vector_si
 				for (int i = 0; i < vector_size / arg_size; i++)
 					data [i] = 1;
 				return TRUE;
+			} else if (atype == MONO_TYPE_R4) {
+				interp_add_ins (td, MINT_SIMD_V128_LDC);
+				float *data = (float*)&td->last_ins->data [0];
+				for (int i = 0; i < vector_size / arg_size; i++)
+					data [i] = 1.0f;
+				return TRUE;
 			}
 			break;
 		case SN_get_Zero:
