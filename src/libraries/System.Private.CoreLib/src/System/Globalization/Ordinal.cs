@@ -536,8 +536,7 @@ namespace System.Globalization
                         // Do a full IgnoreCase equality comparison. SpanHelpers.IndexOf skips comparing the two characters in some cases,
                         // but we don't actually know that the two characters are equal, since we compared with | 0x20. So we just compare
                         // the full string always.
-                        int bitPos = BitOperations.TrailingZeroCount(mask);
-                        int charPos = (int)((uint)bitPos / 2); // div by 2 (shr) because we work with 2-byte chars
+                        nint charPos = BitOperations.TrailingZeroCount(mask) >> 2;
                         if (EqualsIgnoreCase(ref Unsafe.Add(ref searchSpace, offset + charPos), ref valueRef, value.Length))
                         {
                             // Match! Return the index.
@@ -546,14 +545,7 @@ namespace System.Globalization
 
                         // Clear the two lowest set bits in the mask. If there are no more set bits, we're done.
                         // If any remain, we loop around to do the next comparison.
-                        if (Bmi1.IsSupported)
-                        {
-                            mask = Bmi1.ResetLowestSetBit(Bmi1.ResetLowestSetBit(mask));
-                        }
-                        else
-                        {
-                            mask &= ~(uint)(0b11 << bitPos);
-                        }
+                        mask = BitOperations.ResetLowestSetBit(BitOperations.ResetLowestSetBit(mask));
                     } while (mask != 0);
                     goto LoopFooter;
 

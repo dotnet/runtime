@@ -114,9 +114,7 @@ namespace System
                     uint mask = cmpAnd.ExtractMostSignificantBits();
                     do
                     {
-                        int bitPos = BitOperations.TrailingZeroCount(mask);
-                        // div by 2 (shr) because we work with 2-byte chars
-                        nint charPos = (nint)((uint)bitPos / 2);
+                        nint charPos = BitOperations.TrailingZeroCount(mask) >> 2;
                         if (valueLength == 2 || // we already matched two chars
                             SequenceEqual(
                                 ref Unsafe.As<char, byte>(ref Unsafe.Add(ref searchSpace, offset + charPos)),
@@ -126,10 +124,7 @@ namespace System
                         }
 
                         // Clear two the lowest set bits
-                        if (Bmi1.IsSupported)
-                            mask = Bmi1.ResetLowestSetBit(Bmi1.ResetLowestSetBit(mask));
-                        else
-                            mask &= ~(uint)(0b11 << bitPos);
+                        mask = BitOperations.ResetLowestSetBit(BitOperations.ResetLowestSetBit(mask));
                     } while (mask != 0);
                     goto LOOP_FOOTER;
 
