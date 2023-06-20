@@ -2,6 +2,7 @@
 // The .NET Foundation licenses this file to you under the MIT license.
 
 using System;
+using System.Buffers;
 using System.Collections.Concurrent;
 using System.Collections.Generic;
 using System.Collections.ObjectModel;
@@ -517,7 +518,7 @@ internal static partial class Interop
             sendCount = Crypto.BioCtrlPending(context.OutputBio!);
             if (sendCount > 0)
             {
-                sendBuf = new byte[sendCount];
+                sendBuf = ArrayPool<byte>.Shared.Rent(sendCount);
 
                 try
                 {
@@ -553,13 +554,14 @@ internal static partial class Interop
             return stateOk ? SecurityStatusPalErrorCode.OK : SecurityStatusPalErrorCode.ContinueNeeded;
         }
 
-        internal static int Encrypt(SafeSslHandle context, ReadOnlySpan<byte> input, ref byte[] output, out Ssl.SslErrorCode errorCode)
+        internal static int Encrypt(SafeSslHandle context, ReadOnlySpan<byte> input, out byte[]? output, out Ssl.SslErrorCode errorCode)
         {
             int retVal = Ssl.SslWrite(context, ref MemoryMarshal.GetReference(input), input.Length, out errorCode);
 
             if (retVal != input.Length)
             {
                 retVal = 0;
+                output = null;
 
                 switch (errorCode)
                 {
@@ -575,11 +577,7 @@ internal static partial class Interop
             else
             {
                 int capacityNeeded = Crypto.BioCtrlPending(context.OutputBio!);
-
-                if (output == null || output.Length < capacityNeeded)
-                {
-                    output = new byte[capacityNeeded];
-                }
+                output = ArrayPool<byte>.Shared.Rent(capacityNeeded);
 
                 retVal = BioRead(context.OutputBio!, output, capacityNeeded);
 
