@@ -8943,7 +8943,10 @@ calli_end:
 			if (sp [-1]->type == STACK_R8 || sp [-1]->type == STACK_R4) {
 				/* floats are always signed, _UN has no effect */
 				ADD_UNOP (CEE_CONV_OVF_U8);
-				ADD_UNOP (il_op);
+				if (TARGET_SIZEOF_VOID_P == 8 && il_op == MONO_CEE_CONV_OVF_U)
+					sp [-1]->type = STACK_PTR; // no additional conversion needed
+				else
+					ADD_UNOP (il_op);
 			} else {
 				ADD_UNOP (il_op);
 			}

@@ -1,16 +1,13 @@
 <Project Sdk="Microsoft.NET.Sdk">
-  <Import Project="..\DefaultBrowserSample.targets" />
   <PropertyGroup>
     <WasmBuildNative>true</WasmBuildNative>
     <FeatureWasmPerfTracing>true</FeatureWasmPerfTracing>
+    <WasmEnableThreads>true</WasmEnableThreads>
     <WasmEnablePerfTracing>true</WasmEnablePerfTracing>
-    <!-- <FeatureWasmThreads>true</FeatureWasmThreads> -->
     <NoWarn>$(NoWarn);CA2007</NoWarn> <!-- consider ConfigureAwait() -->
-  </PropertyGroup>
-
-  <PropertyGroup>
     <MonoDiagnosticsMock Condition="('$(MonoDiagnosticsMock)' == '') and ('$(Configuration)' == 'Debug' or '$(ArchiveTests)' == 'true')">true</MonoDiagnosticsMock>
   </PropertyGroup>
+  <Import Project="..\DefaultBrowserSample.targets" />
 
   <ItemGroup>
     <WasmExtraFilesToDeploy Include="index.html" />

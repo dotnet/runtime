@@ -156,7 +156,7 @@ The .NET Foundation licenses this file to you under the MIT license.
 
     <PropertyGroup>
       <_CommandProbe>command -v</_CommandProbe>
-      <_CommandProbe Condition="$([MSBuild]::IsOSPlatform('Windows'))">where</_CommandProbe>
+      <_CommandProbe Condition="$([MSBuild]::IsOSPlatform('Windows'))">where /Q</_CommandProbe>
     </PropertyGroup>
 
     <Exec Command="$(_CommandProbe) &quot;$(CppLinker)&quot;" IgnoreExitCode="true" StandardOutputImportance="Low">
