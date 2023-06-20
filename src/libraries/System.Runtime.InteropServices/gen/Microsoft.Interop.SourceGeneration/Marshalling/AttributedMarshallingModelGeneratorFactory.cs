@@ -287,6 +287,12 @@ namespace Microsoft.Interop
                 elementInfo,
                 new LinearCollectionElementMarshallingCodeContext(StubCodeContext.Stage.Setup, string.Empty, string.Empty, context));
 
+            ExpressionSyntax numElementsExpression = LiteralExpression(SyntaxKind.NumericLiteralExpression, Literal(0));
+            if (MarshallerHelpers.GetMarshalDirection(info, context) != MarshalDirection.ManagedToUnmanaged)
+            {
+                // In this case, we need a numElementsExpression supplied from metadata, so we'll calculate it here.
+                numElementsExpression = GetNumElementsExpressionFromMarshallingInfo(info, marshalInfo.ElementCountInfo, context);
+            }
 
             // Insert the unmanaged element type into the marshaller type
             TypeSyntax unmanagedElementType = elementMarshaller.AsNativeType(elementInfo).Syntax.GetCompatibleGenericTypeParameterSyntax();
@@ -306,15 +312,6 @@ namespace Microsoft.Interop
 
             bool elementIsBlittable = elementMarshaller is BlittableMarshaller;
 
-            ExpressionSyntax numElementsExpression = LiteralExpression(SyntaxKind.NumericLiteralExpression, Literal(0));
-            var freeStrategy = GetFreeStrategy(info, context);
-            var marshalDirection = MarshallerHelpers.GetMarshalDirection(info, context);
-            if (marshalDirection != MarshalDirection.ManagedToUnmanaged)// || freeStrategy != FreeStrategy.NoFree && !elementIsBlittable)
-            {
-                // In this case, we need a numElementsExpression supplied from metadata, so we'll calculate it here.
-                numElementsExpression = GetNumElementsExpressionFromMarshallingInfo(info, marshalInfo.ElementCountInfo, context);
-            }
-
             ICustomTypeMarshallingStrategy marshallingStrategy;
 
             if (marshallerData.HasState)
@@ -330,8 +327,9 @@ namespace Microsoft.Interop
                 }
 
                 IElementsMarshallingCollectionSource collectionSource = new StatefulLinearCollectionSource();
-                ElementsMarshalling elementsMarshalling = CreateElementsMarshalling(marshallerData, elementInfo, elementMarshaller, unmanagedElementType, collectionSource, freeStrategy);
+                ElementsMarshalling elementsMarshalling = CreateElementsMarshalling(marshallerData, elementInfo, elementMarshaller, unmanagedElementType, collectionSource);
 
+                var freeStrategy = GetFreeStrategy(info, context);
                 if (freeStrategy == FreeStrategy.FreeOriginal)
                 {
                     marshallingStrategy = new UnmanagedToManagedOwnershipTrackingStrategy(marshallingStrategy);
@@ -353,13 +351,14 @@ namespace Microsoft.Interop
             {
                 marshallingStrategy = new StatelessLinearCollectionSpaceAllocator(marshallerTypeSyntax, nativeType, marshallerData.Shape, numElementsExpression);
 
-                IElementsMarshallingCollectionSource collectionSource = new StatelessLinearCollectionSource(marshallerTypeSyntax);
+                var freeStrategy = GetFreeStrategy(info, context);
                 if (freeStrategy == FreeStrategy.FreeOriginal)
                 {
                     marshallingStrategy = new UnmanagedToManagedOwnershipTrackingStrategy(marshallingStrategy);
                 }
 
-                ElementsMarshalling elementsMarshalling = CreateElementsMarshalling(marshallerData, elementInfo, elementMarshaller, unmanagedElementType, collectionSource, freeStrategy);
+                IElementsMarshallingCollectionSource collectionSource = new StatelessLinearCollectionSource(marshallerTypeSyntax);
+                ElementsMarshalling elementsMarshalling = CreateElementsMarshalling(marshallerData, elementInfo, elementMarshaller, unmanagedElementType, collectionSource);
 
                 marshallingStrategy = new StatelessLinearCollectionMarshalling(marshallingStrategy, elementsMarshalling, nativeType, marshallerData.Shape, numElementsExpression, freeStrategy != FreeStrategy.NoFree);
 
@@ -438,7 +437,7 @@ namespace Microsoft.Interop
             return FreeStrategy.NoFree;
         }
 
-        private static ElementsMarshalling CreateElementsMarshalling(CustomTypeMarshallerData marshallerData, TypePositionInfo elementInfo, IMarshallingGenerator elementMarshaller, TypeSyntax unmanagedElementType, IElementsMarshallingCollectionSource collectionSource, FreeStrategy freeStrategy)
+        private static ElementsMarshalling CreateElementsMarshalling(CustomTypeMarshallerData marshallerData, TypePositionInfo elementInfo, IMarshallingGenerator elementMarshaller, TypeSyntax unmanagedElementType, IElementsMarshallingCollectionSource collectionSource)
         {
             ElementsMarshalling elementsMarshalling;
 
@@ -449,7 +448,7 @@ namespace Microsoft.Interop
             }
             else
             {
-                elementsMarshalling = new NonBlittableElementsMarshalling(unmanagedElementType, elementMarshaller, elementInfo, collectionSource, freeStrategy == FreeStrategy.FreeOriginal);
+                elementsMarshalling = new NonBlittableElementsMarshalling(unmanagedElementType, elementMarshaller, elementInfo, collectionSource);
             }
 
             return elementsMarshalling;

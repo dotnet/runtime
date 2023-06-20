@@ -249,20 +249,17 @@ namespace Microsoft.Interop
         private readonly TypeSyntax _unmanagedElementType;
         private readonly IMarshallingGenerator _elementMarshaller;
         private readonly TypePositionInfo _elementInfo;
-        private readonly bool _freeMarshalledArray;
 
         public NonBlittableElementsMarshalling(
             TypeSyntax unmanagedElementType,
             IMarshallingGenerator elementMarshaller,
             TypePositionInfo elementInfo,
-            IElementsMarshallingCollectionSource collectionSource,
-            bool freeMarshalledArray)
+            IElementsMarshallingCollectionSource collectionSource)
             : base(collectionSource)
         {
             _unmanagedElementType = unmanagedElementType;
             _elementMarshaller = elementMarshaller;
             _elementInfo = elementInfo;
-            _freeMarshalledArray = freeMarshalledArray;
         }
 
         public override StatementSyntax GenerateMarshalStatement(TypePositionInfo info, StubCodeContext context)
@@ -647,13 +644,13 @@ namespace Microsoft.Interop
             return usesLastIndexMarshalled;
         }
 
-        private bool ShouldCleanUpAllElements(TypePositionInfo info, StubCodeContext context)
+        private static bool ShouldCleanUpAllElements(TypePositionInfo info, StubCodeContext context)
         {
             _ = info;
             _ = context;
             // AdditionalTemporaryStateLivesAcrossStages implies that it is an outer collection
             // Out parameters means that the contents are created by the P/Invoke and assumed to have successfully created all elements
-            return _freeMarshalledArray || !context.AdditionalTemporaryStateLivesAcrossStages || info.ByValueContentsMarshalKind == ByValueContentsMarshalKind.Out || info.RefKind == RefKind.Out;
+            return !context.AdditionalTemporaryStateLivesAcrossStages || info.ByValueContentsMarshalKind == ByValueContentsMarshalKind.Out || info.RefKind == RefKind.Out;
         }
 
         public override StatementSyntax GenerateSetupStatement(TypePositionInfo info, StubCodeContext context)
