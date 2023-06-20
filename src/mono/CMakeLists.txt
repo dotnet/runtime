@@ -1,15 +1,4 @@
-get_cmake_property(_variableNames VARIABLES)
-list(SORT _variableNames)
-foreach (_varName ${_variableNames})
-  message("VAR STATUS: ${_varName}=${${_varName}}")
-endforeach()
-
-if (MONO_COMPONENTS_RID MATCHES "wasm" OR AOT_TARGET_TRIPLE MATCHES "wasm32")
-    # Temporary workaround for CI wasm machines that still have CMake 3.17.0.
-    cmake_minimum_required(VERSION 3.17.0)
-else ()
-    cmake_minimum_required(VERSION 3.20)
-endif ()
+cmake_minimum_required(VERSION 3.20)
 
 project(mono)
 
