@@ -102,7 +102,7 @@ namespace System.Diagnostics.Tests
         [Fact]
         public static void OverridesToString()
         {
-            // In this test we use string interpolation witch a Stopwatch instance to trigger
+            // In this test we use string interpolation with a Stopwatch instance to trigger
             // a call to the overridden ToString() method which should return the elapsed time
             // as a string.
 
