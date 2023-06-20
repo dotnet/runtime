@@ -314,7 +314,7 @@ namespace ILCompiler.DependencyAnalysis.ReadyToRun
                     var methodDecl = type.EcmaModule.GetMethod(methodImpl.MethodDeclaration);
 
                     // Validate that all MethodImpls actually match signatures closely enough
-                    if (!methodBody.Signature.EqualsWithCovariantReturnType(methodDecl.Signature))
+                    if (!methodBody.Signature.ApplySubstitution(type.Instantiation).EqualsWithCovariantReturnType(methodDecl.Signature.ApplySubstitution(type.Instantiation)))
                     {
                         AddTypeValidationError(type, $"MethodImpl with Body '{methodBody}' and Decl '{methodDecl}' do not have matching signatures");
                         return false;
@@ -437,7 +437,7 @@ namespace ILCompiler.DependencyAnalysis.ReadyToRun
                         if ((virtualMethod.OwningType != type.BaseType) && (virtualMethod.OwningType != type) && (baseTypeVirtualMethodAlgorithm != null))
                         {
                             var implementationOnBaseType = baseTypeVirtualMethodAlgorithm.FindVirtualFunctionTargetMethodOnObjectType(virtualMethod, type.BaseType);
-                            if (!implementationMethod.Signature.EqualsWithCovariantReturnType(implementationOnBaseType.Signature))
+                            if (!implementationMethod.Signature.ApplySubstitution(type.Instantiation).EqualsWithCovariantReturnType(implementationOnBaseType.Signature.ApplySubstitution(type.Instantiation)))
                             {
                                 AddTypeValidationError(type, $"Virtual method '{virtualMethod}' overriden by method '{implementationMethod}' does not satisfy the covariant return type introduced with '{implementationOnBaseType}'");
                                 return false;
