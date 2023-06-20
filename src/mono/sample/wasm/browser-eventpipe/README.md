@@ -1,6 +1,6 @@
 [see also](../../../wasm/runtime/diagnostics/README.md)
 
-To be able to run this sample you need to build the runtime with `/p:FeatureWasmThreads=true` and use Chrome browser
+To be able to run this sample you need to build the runtime with `/p:MonoWasmBuildVariant=multithread` and use Chrome browser
 
 # Testing with mock
 
@@ -17,7 +17,7 @@ dotnet trace convert --format Speedscope c:\Downloads\trace.1665653486202.nettra
 
 # Testing with dotnet trace tool
 
-Build the runtime with `/p:MonoWasmBuildVariant=perftrace`
+Build the runtime with `/p:MonoWasmBuildVariant=multithread`
 Build a version of dsrouter with WebSockets support (versions from upstream that target net6.0 or later have the requisite support, see https://github.com/dotnet/diagnostics/blob/main/src/Tools/dotnet-dsrouter/dotnet-dsrouter.csproj)
 
 In console #1 start dsrouter
