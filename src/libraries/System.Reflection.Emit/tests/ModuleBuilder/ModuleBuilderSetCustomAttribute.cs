@@ -58,7 +58,7 @@ namespace System.Reflection.Emit.Tests
         }
 
         [ConditionalFact(typeof(PlatformDetection), nameof(PlatformDetection.IsReflectionEmitSupported))]
-        public void SetCustomAttribute_NonPublicVisibility_DefinedInternally()
+        public void SetCustomAttribute_GetCustomAttributesData_NonPublicVisibility_DefinedInternally()
         {
             ModuleBuilder module = Helpers.DynamicModule();
 
@@ -74,7 +74,23 @@ namespace System.Reflection.Emit.Tests
         }
 
         [ConditionalFact(typeof(PlatformDetection), nameof(PlatformDetection.IsReflectionEmitSupported))]
-        public void SetCustomAttribute_NonPublicVisibility_DefinedExternally()
+        public void SetCustomAttribute_GetCustomAttributes_NonPublicVisibility_DefinedInternally()
+        {
+            ModuleBuilder module = Helpers.DynamicModule();
+
+            TypeBuilder internalAttributeType = module.DefineType("DynamicInternalAttribute", TypeAttributes.NotPublic, typeof(Attribute));
+            ConstructorBuilder internalAttributeCtor = internalAttributeType.DefineConstructor(MethodAttributes.Public, CallingConventions.Standard, new Type[0]);
+            internalAttributeCtor.GetILGenerator().Emit(OpCodes.Ret);
+
+            ConstructorInfo internalAttributeCtorInfo = internalAttributeType.CreateTypeInfo().GetConstructor(Array.Empty<Type>());
+            CustomAttributeBuilder customAttribute = new CustomAttributeBuilder(internalAttributeCtorInfo, Array.Empty<object>());
+
+            module.SetCustomAttribute(customAttribute);
+            Assert.Single(module.GetCustomAttributes(false));
+        }
+
+        [ConditionalFact(typeof(PlatformDetection), nameof(PlatformDetection.IsReflectionEmitSupported))]
+        public void SetCustomAttribute_GetCustomAttributesData_NonPublicVisibility_DefinedExternally()
         {
             ModuleBuilder module1 = Helpers.DynamicModule();
             ModuleBuilder module2 = Helpers.DynamicModule("AnotherTestAssembly", "AnotherTestModule");
@@ -87,7 +103,24 @@ namespace System.Reflection.Emit.Tests
             CustomAttributeBuilder customAttribute = new CustomAttributeBuilder(internalAttributeCtorInfo, Array.Empty<object>());
 
             module2.SetCustomAttribute(customAttribute);
-            Assert.Empty(module2.GetCustomAttributesData());
+            Assert.Single(module2.GetCustomAttributesData());
+        }
+
+        [ConditionalFact(typeof(PlatformDetection), nameof(PlatformDetection.IsReflectionEmitSupported))]
+        public void SetCustomAttribute_GetCustomAttributes_NonPublicVisibility_DefinedExternally()
+        {
+            ModuleBuilder module1 = Helpers.DynamicModule();
+            ModuleBuilder module2 = Helpers.DynamicModule("AnotherTestAssembly", "AnotherTestModule");
+
+            TypeBuilder internalAttributeType = module1.DefineType("DynamicInternalAttribute", TypeAttributes.NotPublic, typeof(Attribute));
+            ConstructorBuilder internalAttributeCtor = internalAttributeType.DefineConstructor(MethodAttributes.Public, CallingConventions.Standard, new Type[0]);
+            internalAttributeCtor.GetILGenerator().Emit(OpCodes.Ret);
+
+            ConstructorInfo internalAttributeCtorInfo = internalAttributeType.CreateTypeInfo().GetConstructor(Array.Empty<Type>());
+            CustomAttributeBuilder customAttribute = new CustomAttributeBuilder(internalAttributeCtorInfo, Array.Empty<object>());
+
+            module2.SetCustomAttribute(customAttribute);
+            Assert.Empty(module2.GetCustomAttributes(false));
         }
     }
 }
