@@ -198,8 +198,7 @@ namespace Microsoft.Extensions.DependencyInjection
 
         internal void ReplaceServiceAccessor(ServiceCallSite callSite, Func<ServiceProviderEngineScope, object?> accessor)
         {
-            // TODO BPETIT
-            _realizedServices[ServiceIdentifier.FromServiceType(callSite.ServiceType)] = accessor;
+            _realizedServices[new ServiceIdentifier(callSite.Key, callSite.ServiceType)] = accessor;
         }
 
         internal IServiceScope CreateScope()

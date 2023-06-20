@@ -391,6 +391,7 @@ namespace Microsoft.Extensions.DependencyInjection.ServiceLookup
                 {
                     throw new InvalidOperationException(SR.InvalidServiceDescriptor);
                 }
+                callSite.Key = descriptor.ServiceKey;
 
                 return _callSiteCache[callSiteKey] = callSite;
             }
