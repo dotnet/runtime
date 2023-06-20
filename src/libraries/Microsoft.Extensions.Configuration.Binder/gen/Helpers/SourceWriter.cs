@@ -12,8 +12,23 @@ namespace Microsoft.Extensions.Configuration.Binder.SourceGeneration
     {
         private readonly StringBuilder _sb = new();
         private static readonly char[] s_newLine = Environment.NewLine.ToCharArray();
+        private int _indentation;
 
-        public int IndentationLevel;
+
+        public int Indentation
+        {
+            get => _indentation;
+            set
+            {
+                if (value < 0)
+                {
+                    Throw();
+                    static void Throw() => throw new ArgumentOutOfRangeException(nameof(value));
+                }
+
+                _indentation = value;
+            }
+        }
 
         public void WriteBlockStart(string? declaration = null)
         {
@@ -22,19 +37,19 @@ namespace Microsoft.Extensions.Configuration.Binder.SourceGeneration
                 WriteLine(declaration);
             }
             WriteLine("{");
-            IndentationLevel++;
+            Indentation++;
         }
 
         public void WriteBlockEnd(string? extra = null)
         {
-            IndentationLevel--;
-            Debug.Assert(IndentationLevel > -1);
+            Indentation--;
+            Debug.Assert(Indentation > -1);
             WriteLine($"}}{extra}");
         }
 
         public void WriteLine(string source)
         {
-            _sb.Append(' ', 4 * IndentationLevel);
+            _sb.Append(' ', 4 * Indentation);
             _sb.AppendLine(source);
         }
 
@@ -71,7 +86,7 @@ namespace Microsoft.Extensions.Configuration.Binder.SourceGeneration
 
         public SourceText ToSourceText()
         {
-            Debug.Assert(IndentationLevel == 0 && _sb.Length > 0);
+            Debug.Assert(Indentation == 0 && _sb.Length > 0);
             return SourceText.From(_sb.ToString(), Encoding.UTF8);
         }
 
@@ -108,7 +123,7 @@ namespace Microsoft.Extensions.Configuration.Binder.SourceGeneration
 
         private unsafe void WriteLine(ReadOnlySpan<char> source)
         {
-            _sb.Append(' ', 4 * IndentationLevel);
+            _sb.Append(' ', 4 * Indentation);
             fixed (char* ptr = source)
             {
                 _sb.Append(ptr, source.Length);

@@ -61,11 +61,11 @@ namespace Microsoft.Extensions.Configuration.Binder.SourceGeneration
                     SymbolEqualityComparer.Default.Equals(_typeSymbols.IConfiguration, @params[2].Type) &&
                     SymbolEqualityComparer.Default.Equals(_typeSymbols.ActionOfBinderOptions, @params[3].Type))
                 {
-                    Debug.Assert(paramCount is 4);
                     overload = MethodsToGen_Extensions_ServiceCollection.Configure_T_name_BinderOptions;
                 }
                 else
                 {
+                    Debug.Assert(paramCount is 4);
                     return;
                 }
 

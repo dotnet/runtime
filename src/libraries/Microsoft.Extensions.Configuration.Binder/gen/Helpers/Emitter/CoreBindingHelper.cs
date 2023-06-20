@@ -310,7 +310,7 @@ namespace Microsoft.Extensions.Configuration.Binder.SourceGeneration
                     string lhs = memberName + (configValueMustExist ? $".{Identifier.Value}" : string.Empty);
 
                     _writer.WriteLine($@"case ""{configurationKeyName}"":");
-                    _writer.IndentationLevel++;
+                    _writer.Indentation++;
                     _writer.WriteBlockStart();
 
                     EmitMemberBindLogicCore(memberType, lhs);
@@ -322,7 +322,7 @@ namespace Microsoft.Extensions.Configuration.Binder.SourceGeneration
 
                     _writer.WriteBlockEnd();
                     _writer.WriteLine("break;");
-                    _writer.IndentationLevel--;
+                    _writer.Indentation--;
 
                     void EmitMemberBindLogicCore(TypeSpec type, string lhs)
                     {
@@ -730,7 +730,7 @@ namespace Microsoft.Extensions.Configuration.Binder.SourceGeneration
                 foreach (PropertySpec property in type.Properties.Values)
                 {
                     _writer.WriteLine($@"case ""{property.ConfigurationKeyName}"":");
-                    _writer.IndentationLevel++;
+                    _writer.Indentation++;
                     _writer.WriteBlockStart();
 
                     bool success = true;
@@ -746,7 +746,7 @@ namespace Microsoft.Extensions.Configuration.Binder.SourceGeneration
                         _writer.WriteLine("break;");
                     }
 
-                    _writer.IndentationLevel--;
+                    _writer.Indentation--;
                 }
 
                 EmitSwitchDefault($$"""
@@ -906,7 +906,7 @@ namespace Microsoft.Extensions.Configuration.Binder.SourceGeneration
             private void EmitSwitchDefault(string caseLogic, bool addBreak = true)
             {
                 _writer.WriteLine("default:");
-                _writer.IndentationLevel++;
+                _writer.Indentation++;
                 _writer.WriteBlockStart();
                 _writer.WriteBlock(caseLogic);
                 _writer.WriteBlockEnd();
@@ -916,7 +916,7 @@ namespace Microsoft.Extensions.Configuration.Binder.SourceGeneration
                     _writer.WriteLine("break;");
                 }
 
-                _writer.IndentationLevel--;
+                _writer.Indentation--;
             }
 
             private void Emit_NotSupportedException_TypeNotDetectedAsInput() =>

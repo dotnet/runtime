@@ -13,17 +13,17 @@ namespace Microsoft.Extensions.Configuration.Binder.SourceGeneration
         private sealed partial class Emitter
         {
             private readonly SourceProductionContext _context;
-            public SourceGenerationSpec _sourceGenSpec;
+            private readonly SourceGenerationSpec _sourceGenSpec;
 
             // Postfix for stringValueX variables used to save config value indexer
             // results e.g. if (configuration["Key"] is string stringValue0) { ... }
             private int _parseValueCount;
 
-            public bool _precedingBlockExists;
+            private bool _precedingBlockExists;
 
-            public SourceWriter _writer = new();
+            private readonly SourceWriter _writer = new();
 
-            private readonly Regex _arrayBracketsRegex = new(Regex.Escape("[]"));
+            private static readonly Regex s_arrayBracketsRegex = new(Regex.Escape("[]"));
 
             public bool _useFullyQualifiedNames { get; private set; }
 
@@ -174,7 +174,7 @@ namespace Microsoft.Extensions.Configuration.Binder.SourceGeneration
                 {
                     if (collectionType is EnumerableSpec { InitializationStrategy: InitializationStrategy.Array })
                     {
-                        expressionForInit = $"new {_arrayBracketsRegex.Replace(effectiveDisplayString, "[0]", 1)}";
+                        expressionForInit = $"new {s_arrayBracketsRegex.Replace(effectiveDisplayString, "[0]", 1)}";
                     }
                     else
                     {
