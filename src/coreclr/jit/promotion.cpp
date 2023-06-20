@@ -859,9 +859,9 @@ public:
 
         if (tree->OperIsAnyLocal())
         {
-            GenTreeLclVarCommon* lcl = tree->AsLclVarCommon();
-            LclVarDsc*           dsc = m_compiler->lvaGetDesc(lcl);
-            bool isCandidate = Promotion::IsCandidateForPhysicalPromotion(dsc);
+            GenTreeLclVarCommon* lcl         = tree->AsLclVarCommon();
+            LclVarDsc*           dsc         = m_compiler->lvaGetDesc(lcl);
+            bool                 isCandidate = Promotion::IsCandidateForPhysicalPromotion(dsc);
             if (isCandidate)
             {
                 var_types       accessType;
@@ -898,10 +898,10 @@ public:
             if (tree->OperIsLocalStore() && tree->TypeIs(TYP_STRUCT))
             {
                 GenTree* data = tree->Data()->gtEffectiveVal();
-                if (data->OperIsLocalRead() &&
-                    (isCandidate || Promotion::IsCandidateForPhysicalPromotion(m_compiler->lvaGetDesc(data->AsLclVarCommon()))))
+                if (data->OperIsLocalRead() && (isCandidate || Promotion::IsCandidateForPhysicalPromotion(
+                                                                   m_compiler->lvaGetDesc(data->AsLclVarCommon()))))
                 {
-                    m_candidateStores.Push(CandidateStore{ tree->AsLclVarCommon(), m_curBB });
+                    m_candidateStores.Push(CandidateStore{tree->AsLclVarCommon(), m_curBB});
                 }
             }
         }
