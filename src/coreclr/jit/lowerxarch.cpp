@@ -802,8 +802,8 @@ void Lowering::LowerCast(GenTree* tree)
     //       Reason: ulong -> float = ulong -> double -> float
     if (varTypeIsFloating(srcType))
     {
-        assert(!tree->gtOverflow() || comp->compOpportunisticallyDependsOn(InstructionSet_AVX512F));
-        assert(castToType != TYP_ULONG || comp->compOpportunisticallyDependsOn(InstructionSet_AVX512F));
+        assert(!tree->gtOverflow() || comp->compIsaSupportedDebugOnly(InstructionSet_AVX512F));
+        assert(castToType != TYP_ULONG || comp->compIsaSupportedDebugOnly(InstructionSet_AVX512F));
     }
     else if (srcType == TYP_UINT)
     {
@@ -811,7 +811,7 @@ void Lowering::LowerCast(GenTree* tree)
     }
     else if (srcType == TYP_ULONG)
     {
-        assert(castToType != TYP_FLOAT || comp->compOpportunisticallyDependsOn(InstructionSet_AVX512F));
+        assert(castToType != TYP_FLOAT || comp->compIsaSupportedDebugOnly(InstructionSet_AVX512F));
     }
 
     // Case of src is a small type and dst is a floating point type.
