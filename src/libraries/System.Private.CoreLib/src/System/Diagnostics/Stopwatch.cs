@@ -89,6 +89,8 @@ namespace System.Diagnostics
             _isRunning = true;
         }
 
+        public override string ToString() => Elapsed.ToString();
+
         public bool IsRunning
         {
             get { return _isRunning; }
