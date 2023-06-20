@@ -1775,6 +1775,8 @@ void ReplaceVisitor::StartBlock(BasicBlock* block)
             assert(rep.NeedsWriteBack);
         }
     }
+
+    assert(m_numPendingReadBacks == 0);
 #endif
 
     // OSR locals and parameters may need an initial read back, which we mark
@@ -1802,11 +1804,11 @@ void ReplaceVisitor::StartBlock(BasicBlock* block)
 
         for (size_t i = 0; i < agg->Replacements.size(); i++)
         {
-            Replacement& rep   = agg->Replacements[i];
-            rep.NeedsWriteBack = false;
+            Replacement& rep = agg->Replacements[i];
+            ClearNeedsWriteBack(rep);
             if (m_liveness->IsReplacementLiveIn(block, agg->LclNum, (unsigned)i))
             {
-                rep.NeedsReadBack = true;
+                SetNeedsReadBack(rep);
                 JITDUMP("  V%02u (%s) marked\n", rep.LclNum, rep.Description);
             }
             else
@@ -1879,14 +1881,14 @@ void ReplaceVisitor::EndBlock()
                             m_currentBlock->bbNum);
                 }
 
-                rep.NeedsReadBack = false;
+                ClearNeedsReadBack(rep);
             }
 
-            rep.NeedsWriteBack = true;
+            SetNeedsWriteBack(rep);
         }
     }
 
-    m_numPendingReadBacks = 0;
+    assert(m_numPendingReadBacks == 0);
 }
 
 //------------------------------------------------------------------------
@@ -1945,9 +1947,7 @@ void ReplaceVisitor::StartStatement(Statement* stmt)
             Statement* stmt     = m_compiler->fgNewStmtFromTree(readBack);
             DISPSTMT(stmt);
             m_compiler->fgInsertStmtBefore(m_currentBlock, m_currentStmt, stmt);
-            rep.NeedsReadBack = false;
-            assert(m_numPendingReadBacks > 0);
-            m_numPendingReadBacks--;
+            ClearNeedsReadBack(rep);
         }
     }
 }
@@ -1998,6 +1998,69 @@ Compiler::fgWalkResult ReplaceVisitor::PostOrderVisit(GenTree** use, GenTree* us
     }
 
     return fgWalkResult::WALK_CONTINUE;
+}
+
+//------------------------------------------------------------------------
+// SetNeedsWriteBack:
+//   Track that a replacement is more up-to-date in the field local than the
+//   struct local.
+//
+// Remarks:
+//   This is usually the case since we generally always keep a field's value in
+//   its created primitive local.
+//
+void ReplaceVisitor::SetNeedsWriteBack(Replacement& rep)
+{
+    rep.NeedsWriteBack = true;
+    assert(!rep.NeedsReadBack);
+}
+
+//------------------------------------------------------------------------
+// ClearNeedsWriteBack:
+//   Track that a replacement is not is more up-to-date in the field local than
+//   the struct local.
+//
+void ReplaceVisitor::ClearNeedsWriteBack(Replacement& rep)
+{
+    rep.NeedsWriteBack = false;
+}
+
+//------------------------------------------------------------------------
+// SetNeedsReadBack:
+//   Track that a replacement is more up-to-date in the struct local than the
+//   field local.
+//
+// Remarks:
+//   This occurs after the struct local is assigned in a way that cannot be
+//   decomposed directly into assignments to field locals; for example because
+//   it is passed as a retbuf.
+//
+void ReplaceVisitor::SetNeedsReadBack(Replacement& rep)
+{
+    if (rep.NeedsReadBack)
+    {
+        return;
+    }
+
+    rep.NeedsReadBack = true;
+    m_numPendingReadBacks++;
+}
+
+//------------------------------------------------------------------------
+// ClearNeedsReadBack:
+//   Track that a replacement is not more up-to-date in the struct local than
+//   the field local.
+//
+void ReplaceVisitor::ClearNeedsReadBack(Replacement& rep)
+{
+    if (!rep.NeedsReadBack)
+    {
+        return;
+    }
+
+    assert(m_numPendingReadBacks > 0);
+    rep.NeedsReadBack = false;
+    m_numPendingReadBacks--;
 }
 
 //------------------------------------------------------------------------
@@ -2058,7 +2121,7 @@ GenTree** ReplaceVisitor::InsertMidTreeReadBacksIfNecessary(GenTree** use)
 
             JITDUMP("  V%02.[%03u..%03u) -> V%02u\n", agg->LclNum, rep.Offset, genTypeSize(rep.AccessType), rep.LclNum);
 
-            rep.NeedsReadBack = false;
+            ClearNeedsReadBack(rep);
             GenTree* readBack = Promotion::CreateReadBack(m_compiler, agg->LclNum, rep);
             *use =
                 m_compiler->gtNewOperNode(GT_COMMA, (*use)->IsValue() ? (*use)->TypeGet() : TYP_VOID, readBack, *use);
@@ -2067,7 +2130,7 @@ GenTree** ReplaceVisitor::InsertMidTreeReadBacksIfNecessary(GenTree** use)
         }
     }
 
-    m_numPendingReadBacks = 0;
+    assert(m_numPendingReadBacks == 0);
     return use;
 }
 
@@ -2248,8 +2311,8 @@ void ReplaceVisitor::ReplaceLocal(GenTree** use, GenTree* user)
 
     if (isDef)
     {
-        rep.NeedsWriteBack = true;
-        rep.NeedsReadBack  = false;
+        ClearNeedsReadBack(rep);
+        SetNeedsWriteBack(rep);
     }
     else if (rep.NeedsReadBack)
     {
@@ -2261,9 +2324,7 @@ void ReplaceVisitor::ReplaceLocal(GenTree** use, GenTree* user)
         JITDUMP("  ..needs a read back\n");
         *use = m_compiler->gtNewOperNode(GT_COMMA, (*use)->TypeGet(),
                                          Promotion::CreateReadBack(m_compiler, lclNum, rep), *use);
-        rep.NeedsReadBack = false;
-        assert(m_numPendingReadBacks > 0);
-        m_numPendingReadBacks--;
+        ClearNeedsReadBack(rep);
 
         // TODO: Local copy prop does not take into account that the
         // uses of LCL_VAR occur at the user, which means it may introduce
@@ -2361,8 +2422,8 @@ void ReplaceVisitor::WriteBackBefore(GenTree** use, unsigned lcl, unsigned offs,
             *use = comma;
             use  = &comma->gtOp2;
 
-            rep.NeedsWriteBack = false;
-            m_madeChanges      = true;
+            ClearNeedsWriteBack(rep);
+            m_madeChanges = true;
         }
 
         index++;
@@ -2426,12 +2487,11 @@ void ReplaceVisitor::MarkForReadBack(GenTreeLclVarCommon* lcl, unsigned size DEB
         }
         else
         {
-            rep.NeedsReadBack = true;
-            m_numPendingReadBacks++;
+            SetNeedsReadBack(rep);
             JITDUMP("  V%02u (%s) marked\n", rep.LclNum, rep.Description);
         }
 
-        rep.NeedsWriteBack = false;
+        ClearNeedsWriteBack(rep);
 
         index++;
     } while ((index < replacements.size()) && (replacements[index].Offset < end));

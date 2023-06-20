@@ -292,6 +292,11 @@ public:
     fgWalkResult PostOrderVisit(GenTree** use, GenTree* user);
 
 private:
+    void SetNeedsWriteBack(Replacement& rep);
+    void ClearNeedsWriteBack(Replacement& rep);
+    void SetNeedsReadBack(Replacement& rep);
+    void ClearNeedsReadBack(Replacement& rep);
+
     GenTree** InsertMidTreeReadBacksIfNecessary(GenTree** use);
     void ReadBackAfterCall(GenTreeCall* call, GenTree* user);
     bool IsPromotedStructLocalDying(GenTreeLclVarCommon* structLcl);
