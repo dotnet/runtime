@@ -205,9 +205,9 @@
         $(LibrariesNativeArtifactsPath)*.dat;"
         IsNative="true" />
       <!-- for threaded wasm -->
-      <LibrariesRuntimeFiles Condition="'$(TargetOS)' == 'browser' and Exists('$(LibrariesNativeArtifactsPath)dotnet.worker.js')"
+      <LibrariesRuntimeFiles Condition="'$(TargetOS)' == 'browser' and Exists('$(LibrariesNativeArtifactsPath)dotnet.native.worker.js')"
                              Include="
-        $(LibrariesNativeArtifactsPath)dotnet.worker.js"
+        $(LibrariesNativeArtifactsPath)dotnet.native.worker.js"
         IsNative="true" />
       <LibrariesRuntimeFiles Condition="'$(TargetOS)' == 'browser'"
                              Include="
