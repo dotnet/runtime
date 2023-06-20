@@ -316,6 +316,31 @@ emit_common_simd_epilogue (TransformData *td, MonoClass *vector_klass, MonoMetho
 	td->ip += 5;
 }
 
+static void
+emit_vector_create (TransformData *td, MonoMethodSignature *csignature, MonoClass *vector_klass, int vector_size)
+{
+	int num_args = csignature->param_count;
+	if (num_args == 16) interp_add_ins (td, MINT_SIMD_V128_I1_CREATE);
+	else if (num_args == 8) interp_add_ins (td, MINT_SIMD_V128_I2_CREATE);
+	else if (num_args == 4) interp_add_ins (td, MINT_SIMD_V128_I4_CREATE);
+	else if (num_args == 2) interp_add_ins (td, MINT_SIMD_V128_I8_CREATE);
+	else g_assert_not_reached ();
+
+	// We use call args machinery since we have too many args
+	interp_ins_set_sreg (td->last_ins, MINT_CALL_ARGS_SREG);
+	int *call_args = (int*)mono_mempool_alloc (td->mempool, (num_args + 1) * sizeof (int));
+	td->sp -= csignature->param_count;
+	for (int i = 0; i < num_args; i++)
+		call_args [i] = td->sp [i].local;
+	call_args [num_args] = -1;
+	init_last_ins_call (td);
+	td->last_ins->info.call_info->call_args = call_args;
+	if (!td->optimized)
+		td->last_ins->info.call_info->call_offset = get_tos_offset (td);
+	push_type_vt (td, vector_klass, vector_size);
+	interp_ins_set_dreg (td->last_ins, td->sp [-1].local);
+}
+
 static gboolean
 emit_sri_vector128 (TransformData *td, MonoMethod *cmethod, MonoMethodSignature *csignature)
 {
@@ -358,26 +383,7 @@ emit_sri_vector128 (TransformData *td, MonoMethod *cmethod, MonoMethodSignature 
 				else if (arg_size == 4) simd_intrins = INTERP_SIMD_INTRINSIC_V128_I4_CREATE;
 				else if (arg_size == 8) simd_intrins = INTERP_SIMD_INTRINSIC_V128_I8_CREATE;
 			} else if (csignature->param_count == vector_size / arg_size && atype == csignature->params [0]->type) {
-				int num_args = csignature->param_count;
-				if (num_args == 16) interp_add_ins (td, MINT_SIMD_V128_I1_CREATE);
-				else if (num_args == 8) interp_add_ins (td, MINT_SIMD_V128_I2_CREATE);
-				else if (num_args == 4) interp_add_ins (td, MINT_SIMD_V128_I4_CREATE);
-				else if (num_args == 2) interp_add_ins (td, MINT_SIMD_V128_I8_CREATE);
-				else g_assert_not_reached ();
-
-				// We use call args machinery since we have too many args
-				interp_ins_set_sreg (td->last_ins, MINT_CALL_ARGS_SREG);
-				int *call_args = (int*)mono_mempool_alloc (td->mempool, (num_args + 1) * sizeof (int));
-				td->sp -= csignature->param_count;
-				for (int i = 0; i < num_args; i++)
-					call_args [i] = td->sp [i].local;
-				call_args [num_args] = -1;
-				init_last_ins_call (td);
-				td->last_ins->info.call_info->call_args = call_args;
-				if (!td->optimized)
-					td->last_ins->info.call_info->call_offset = get_tos_offset (td);
-				push_type_vt (td, vector_klass, vector_size);
-				interp_ins_set_dreg (td->last_ins, td->sp [-1].local);
+				emit_vector_create (td, csignature, vector_klass, vector_size);
 				td->ip += 5;
 				return TRUE;
 			}
