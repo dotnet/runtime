@@ -159,7 +159,7 @@ namespace System.Threading.Tasks
 
         private static int GenerateCooperativeMultitaskingTaskTimeout()
         {
-            // This logic ensures that we have a diversity of timeouts in the range [100 ms, 50 * ProcessorCount ms) across worker tasks.
+            // This logic ensures that we have a diversity of timeouts in the range [100 ms, 100 + 50 * ProcessorCount ms) across worker tasks.
             // Otherwise all workers will try to timeout at precisely the same point, which is bad if the work is just about to finish.
             // These 100/50 values are somewhat arbitrary.
             return 100 + Random.Shared.Next(0, 50 * Environment.ProcessorCount);
