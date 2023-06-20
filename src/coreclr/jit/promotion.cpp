@@ -2127,7 +2127,7 @@ void ReplaceVisitor::ReplaceLocal(GenTree** use, GenTree* user)
         {
             // Source of store. Will be handled by decomposition when we get to
             // the store, so we should not introduce any writebacks.
-            assert(effectiveUser->Data() == lcl);
+            assert(effectiveUser->Data()->gtEffectiveVal() == lcl);
             return;
         }
 
