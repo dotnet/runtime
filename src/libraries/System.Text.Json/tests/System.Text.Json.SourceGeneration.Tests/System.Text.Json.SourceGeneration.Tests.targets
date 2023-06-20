@@ -140,6 +140,7 @@
   </ItemGroup>
 
   <ItemGroup>
+    <DefaultReferenceExclusion Include="System.Text.Json.SourceGeneration" />
     <ProjectReference Include="$(LibrariesProjectRoot)Microsoft.Extensions.Primitives\src\Microsoft.Extensions.Primitives.csproj" />
   </ItemGroup>
 

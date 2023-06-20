@@ -84,4 +84,14 @@ namespace ApplyUpdateReferencedAssembly
             Console.WriteLine($"add a breakpoint the instance method of the new class");
         }
     }
+
+    // public class MethodBody9 {
+    //     public static int M1(int x, int y) {
+    //         return x + y;
+    //     }
+        
+    //     public static int test() {
+    //         return M1(1, 2);
+    //     }
+    // }
 }

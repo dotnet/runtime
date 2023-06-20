@@ -5126,12 +5126,17 @@ mono_metadata_custom_attrs_from_index (MonoImage *meta, guint32 index)
 	/* FIXME: Index translation */
 
 	gboolean found = tdef->base && mono_binary_search (&loc, tdef->base, table_info_get_rows (tdef), tdef->row_size, table_locator) != NULL;
-	if (!found && !meta->has_updates)
-		return 0;
-
-	if (G_UNLIKELY (meta->has_updates)) {
-		if (!found && !mono_metadata_update_metadata_linear_search (meta, tdef, &loc, table_locator))
+	if (!found) {
+		if (G_LIKELY (!meta->has_updates)) {
 			return 0;
+		} else {
+			if ((mono_metadata_table_num_rows (meta, MONO_TABLE_CUSTOMATTRIBUTE) > table_info_get_rows (tdef))) {
+				if (!mono_metadata_update_metadata_linear_search (meta, tdef, &loc, table_locator))
+					return 0;
+			} else {
+				return 0;
+			}
+		}
 	}
 
 	/* Find the first entry by searching backwards */
@@ -7730,13 +7735,15 @@ mono_metadata_get_corresponding_field_from_generic_type_definition (MonoClassFie
 	if (!mono_class_is_ginst (m_field_get_parent (field)))
 		return field;
 
-	/*
-	 * metadata-update: nothing to do. can't add fields to existing generic
-	 * classes; for new gtds added in updates, this is correct.
-	 */
 	gtd = mono_class_get_generic_class (m_field_get_parent (field))->container_class;
-	offset = field - m_class_get_fields (m_field_get_parent (field));
-	return m_class_get_fields (gtd) + offset;
+
+	if (G_LIKELY (!m_field_is_from_update (field))) {
+		offset = field - m_class_get_fields (m_field_get_parent (field));
+		return m_class_get_fields (gtd) + offset;
+	} else {
+		uint32_t token = mono_class_get_field_token (field);
+		return mono_class_get_field (gtd, token);
+	}
 }
 
 /*

@@ -132,9 +132,6 @@ public:
                                        int          flags,
                                        bool        *pfIsOpenDelegate);
     static MethodDesc* GetDelegateCtor(TypeHandle delegateType, MethodDesc *pTargetMethod, DelegateCtorArgs *pCtorData);
-    //@GENERICSVER: new (suitable for generics)
-    // Method to do static validation of delegate .ctor
-    static bool ValidateCtor(TypeHandle objHnd, TypeHandle ftnParentHnd, MethodDesc *pFtn, TypeHandle dlgtHnd, bool *pfIsOpenDelegate);
 
 private:
     static void BindToMethod(DELEGATEREF   *pRefThis,

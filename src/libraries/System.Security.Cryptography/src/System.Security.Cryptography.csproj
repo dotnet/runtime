@@ -363,6 +363,7 @@
     <Compile Include="System\Security\Cryptography\KeyNumber.cs" />
     <Compile Include="System\Security\Cryptography\KeySizes.cs" />
     <Compile Include="System\Security\Cryptography\LiteHashProvider.cs" />
+    <Compile Include="System\Security\Cryptography\LiteHashProvider.Xof.cs" />
     <Compile Include="System\Security\Cryptography\MaskGenerationMethod.cs" />
     <Compile Include="System\Security\Cryptography\MD5.cs" />
     <Compile Include="System\Security\Cryptography\MD5CryptoServiceProvider.cs" />
@@ -418,6 +419,8 @@
     <Compile Include="System\Security\Cryptography\SHA3_256.cs" />
     <Compile Include="System\Security\Cryptography\SHA3_384.cs" />
     <Compile Include="System\Security\Cryptography\SHA3_512.cs" />
+    <Compile Include="System\Security\Cryptography\Shake128.cs" />
+    <Compile Include="System\Security\Cryptography\Shake256.cs" />
     <Compile Include="System\Security\Cryptography\SignatureDescription.cs" />
     <Compile Include="System\Security\Cryptography\SymmetricAlgorithm.cs" />
     <Compile Include="System\Security\Cryptography\SymmetricPadding.cs" />
@@ -595,6 +598,8 @@
     <Compile Include="System\Security\Cryptography\RC2Implementation.NotSupported.cs" />
     <Compile Include="System\Security\Cryptography\RSACryptoServiceProvider.NotSupported.cs" />
     <Compile Include="System\Security\Cryptography\RSA.Create.NotSupported.cs" />
+    <Compile Include="System\Security\Cryptography\Shake128.NonWindows.cs" />
+    <Compile Include="System\Security\Cryptography\Shake256.NonWindows.cs" />
     <Compile Include="System\Security\Cryptography\SP800108HmacCounterKdf.Managed.cs" />
     <Compile Include="System\Security\Cryptography\SP800108HmacCounterKdfImplementationManaged.cs" />
     <Compile Include="System\Security\Cryptography\SHAHashProvider.Browser.Managed.cs" />
@@ -837,6 +842,8 @@
     <Compile Include="System\Security\Cryptography\RSAOpenSsl.cs" />
     <Compile Include="System\Security\Cryptography\RSAWrapper.cs" />
     <Compile Include="System\Security\Cryptography\SafeEvpPKeyHandle.OpenSsl.cs" />
+    <Compile Include="System\Security\Cryptography\Shake128.NonWindows.cs" />
+    <Compile Include="System\Security\Cryptography\Shake256.NonWindows.cs" />
     <Compile Include="System\Security\Cryptography\SP800108HmacCounterKdf.Managed.cs" />
     <Compile Include="System\Security\Cryptography\SP800108HmacCounterKdfImplementationManaged.cs" />
     <Compile Include="System\Security\Cryptography\TripleDESCryptoServiceProvider.Wrap.cs" />
@@ -1048,7 +1055,7 @@
     <Compile Include="System\Security\Cryptography\RSA.Create.Android.cs" />
     <Compile Include="System\Security\Cryptography\RSACryptoServiceProvider.Unix.cs" />
     <Compile Include="System\Security\Cryptography\SP800108HmacCounterKdf.Managed.cs" />
-<Compile Include="System\Security\Cryptography\SP800108HmacCounterKdfImplementationManaged.cs" />
+    <Compile Include="System\Security\Cryptography\SP800108HmacCounterKdfImplementationManaged.cs" />
     <Compile Include="System\Security\Cryptography\TripleDESCryptoServiceProvider.Wrap.cs" />
     <Compile Include="System\Security\Cryptography\TripleDesImplementation.OpenSsl.cs" />
     <Compile Include="System\Security\Cryptography\X509Certificates\AndroidCertificatePal.cs" />
@@ -1060,6 +1067,8 @@
     <Compile Include="System\Security\Cryptography\X509Certificates\FindPal.Android.cs" />
     <Compile Include="System\Security\Cryptography\X509Certificates\ManagedCertificateFinder.cs" />
     <Compile Include="System\Security\Cryptography\X509Certificates\ManagedX509ExtensionProcessor.cs" />
+    <Compile Include="System\Security\Cryptography\Shake128.NonWindows.cs" />
+    <Compile Include="System\Security\Cryptography\Shake256.NonWindows.cs" />
     <Compile Include="System\Security\Cryptography\X509Certificates\StorePal.Android.cs" />
     <Compile Include="System\Security\Cryptography\X509Certificates\StorePal.Android.AndroidKeyStore.cs" />
     <Compile Include="System\Security\Cryptography\X509Certificates\StorePal.Android.ExportPal.cs" />
@@ -1224,6 +1233,8 @@
     <Compile Include="System\Security\Cryptography\RC2Implementation.Apple.cs" />
     <Compile Include="System\Security\Cryptography\RSA.Create.SecurityTransforms.cs" />
     <Compile Include="System\Security\Cryptography\RSACryptoServiceProvider.Unix.cs" />
+    <Compile Include="System\Security\Cryptography\Shake128.NonWindows.cs" />
+    <Compile Include="System\Security\Cryptography\Shake256.NonWindows.cs" />
     <Compile Include="System\Security\Cryptography\SP800108HmacCounterKdf.Managed.cs" />
     <Compile Include="System\Security\Cryptography\SP800108HmacCounterKdfImplementationManaged.cs" />
     <Compile Include="System\Security\Cryptography\TripleDESCryptoServiceProvider.Wrap.cs" />
@@ -1827,6 +1838,8 @@
     <Compile Include="System\Security\Cryptography\RSACng.cs" />
     <Compile Include="System\Security\Cryptography\RSACng.ImportExport.cs" />
     <Compile Include="System\Security\Cryptography\RSACng.Key.cs" />
+    <Compile Include="System\Security\Cryptography\Shake128.Windows.cs" />
+    <Compile Include="System\Security\Cryptography\Shake256.Windows.cs" />
     <Compile Include="System\Security\Cryptography\SP800108HmacCounterKdf.Windows.cs" />
     <Compile Include="System\Security\Cryptography\SP800108HmacCounterKdfImplementationCng.cs" />
     <Compile Include="System\Security\Cryptography\SP800108HmacCounterKdfImplementationManaged.cs" />

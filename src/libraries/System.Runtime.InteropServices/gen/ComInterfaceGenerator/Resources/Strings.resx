@@ -359,4 +359,22 @@
   <data name="CastsBetweenRuntimeComAndSourceGeneratedComNotSupportedTitle" xml:space="preserve">
     <value>Casting between a 'ComImport' type and a source-generated COM type is not supported</value>
   </data>
+  <data name="InstanceEventDeclaredInInterfaceDescription" xml:space="preserve">
+    <value>Events are not a concept in COM, so no interop code will be source generated for instance events on source-generated COM interfaces.</value>
+  </data>
+  <data name="InstanceEventDeclaredInInterfaceMessage" xml:space="preserve">
+    <value>The instance event '{0}' is declared in the interface '{1}', which has the 'GeneratedComInterfaceAttribute' applied</value>
+  </data>
+  <data name="InstanceEventDeclaredInInterfaceTitle" xml:space="preserve">
+    <value>Declaring an instance event in a type with the 'GeneratedComInterfaceAttribute' is not supported</value>
+  </data>
+  <data name="InstancePropertyDeclaredInInterfaceDescription" xml:space="preserve">
+    <value>Properties are not a concept in COM, so no interop code will be source generated for instance properties on source-generated COM interfaces.</value>
+  </data>
+  <data name="InstancePropertyDeclaredInInterfaceMessage" xml:space="preserve">
+    <value>The instance property '{0}' is declared in the interface '{1}', which has the 'GeneratedComInterfaceAttribute' applied</value>
+  </data>
+  <data name="InstancePropertyDeclaredInInterfaceTitle" xml:space="preserve">
+    <value>Declaring an instance property in a type with the 'GeneratedComInterfaceAttribute' is not supported</value>
+  </data>
 </root>

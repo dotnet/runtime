@@ -393,6 +393,7 @@
     <Compile Include="Compiler\Dataflow\ValueNode.cs" />
     <Compile Include="Compiler\DebugInformationProvider.cs" />
     <Compile Include="Compiler\DependencyAnalysis\CustomAttributeMetadataNode.cs" />
+    <Compile Include="Compiler\DependencyAnalysis\DelegateTargetVirtualMethodNode.cs" />
     <Compile Include="Compiler\DependencyAnalysis\EmbeddedTrimmingDescriptorNode.cs" />
     <Compile Include="Compiler\DependencyAnalysis\DataflowAnalyzedMethodNode.cs" />
     <Compile Include="Compiler\DependencyAnalysis\DataflowAnalyzedTypeDefinitionNode.cs" />

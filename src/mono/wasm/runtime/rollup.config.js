@@ -16,7 +16,7 @@ const isDebug = configuration !== "Release";
 const productVersion = process.env.ProductVersion || "8.0.0-dev";
 const nativeBinDir = process.env.NativeBinDir ? process.env.NativeBinDir.replace(/"/g, "") : "bin";
 const monoWasmThreads = process.env.MonoWasmThreads === "true" ? true : false;
-const WasmEnableLegacyJsInterop = process.env.DISABLE_LEGACY_JS_INTEROP !== "1" ? true : false;
+const wasmEnableLegacyJsInterop = process.env.DISABLE_LEGACY_JS_INTEROP !== "1" ? true : false;
 const monoDiagnosticsMock = process.env.MonoDiagnosticsMock === "true" ? true : false;
 const terserConfig = {
     compress: {
@@ -71,6 +71,14 @@ try {
 } catch (e) {
     gitHash = "unknown";
 }
+const envConstants = {
+    productVersion,
+    configuration,
+    monoWasmThreads,
+    monoDiagnosticsMock,
+    gitHash,
+    wasmEnableLegacyJsInterop,
+};
 
 function consts(dict) {
     // implement rollup-plugin-const in terms of @rollup/plugin-virtual
@@ -94,7 +102,7 @@ const typescriptConfigOptions = {
     include: ["**/*.ts", "../../../../artifacts/bin/native/generated/**/*.ts"]
 };
 
-const outputCodePlugins = [consts({ productVersion, configuration, monoWasmThreads, monoDiagnosticsMock, gitHash, WasmEnableLegacyJsInterop }), typescript(typescriptConfigOptions)];
+const outputCodePlugins = [consts(envConstants), typescript(typescriptConfigOptions)];
 const externalDependencies = ["module"];
 
 const loaderConfig = {

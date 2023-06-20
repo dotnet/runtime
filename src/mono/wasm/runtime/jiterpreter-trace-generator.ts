@@ -1229,22 +1229,6 @@ export function generateWasmBody(
                 }
                 break;
 
-            // TODO: Verify that this isn't worse
-            case MintOpcode.MINT_ICALL_V_P:
-            case MintOpcode.MINT_ICALL_V_V:
-            case MintOpcode.MINT_ICALL_P_P:
-            case MintOpcode.MINT_ICALL_P_V:
-            case MintOpcode.MINT_ICALL_PP_V:
-            case MintOpcode.MINT_ICALL_PP_P:
-                // See comments for MINT_CALL
-                if (isConditionallyExecuted) {
-                    append_bailout(builder, ip, BailoutReason.Icall);
-                    pruneOpcodes = true;
-                } else {
-                    ip = abort;
-                }
-                break;
-
             // Unlike regular rethrow which will only appear in catch blocks,
             //  MONO_RETHROW appears to show up in other places, so it's worth conditional bailout
             case MintOpcode.MINT_MONO_RETHROW:

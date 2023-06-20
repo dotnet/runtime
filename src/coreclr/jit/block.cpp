@@ -846,7 +846,7 @@ BasicBlock* BasicBlock::GetUniquePred(Compiler* compiler) const
 //
 // Return Value:
 //    The unique successor of a block, or nullptr if there is no unique successor.
-
+//
 BasicBlock* BasicBlock::GetUniqueSucc() const
 {
     if (bbJumpKind == BBJ_ALWAYS)
