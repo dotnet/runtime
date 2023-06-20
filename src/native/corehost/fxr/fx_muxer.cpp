@@ -833,30 +833,27 @@ int fx_muxer_t::initialize_for_runtime_config(
     return rc;
 }
 
-namespace
+int fx_muxer_t::load_runtime(host_context_t *context)
 {
-    int load_runtime(host_context_t *context)
+    assert(context->type == host_context_type::initialized || context->type == host_context_type::active);
+    if (context->type == host_context_type::active)
+        return StatusCode::Success;
+
+    const corehost_context_contract &contract = context->hostpolicy_context_contract;
+    int rc = contract.load_runtime();
+
+    // Mark the context as active or invalid
+    context->type = rc == StatusCode::Success ? host_context_type::active : host_context_type::invalid;
+
     {
-        assert(context->type == host_context_type::initialized || context->type == host_context_type::active);
-        if (context->type == host_context_type::active)
-            return StatusCode::Success;
-
-        const corehost_context_contract &contract = context->hostpolicy_context_contract;
-        int rc = contract.load_runtime();
-
-        // Mark the context as active or invalid
-        context->type = rc == StatusCode::Success ? host_context_type::active : host_context_type::invalid;
-
-        {
-            std::lock_guard<std::mutex> lock{ g_context_lock };
-            assert(g_active_host_context == nullptr);
-            g_active_host_context.reset(context);
-            g_context_initializing.store(false);
-        }
-
-        g_context_initializing_cv.notify_all();
-        return rc;
+        std::lock_guard<std::mutex> lock{ g_context_lock };
+        assert(g_active_host_context == nullptr);
+        g_active_host_context.reset(context);
+        g_context_initializing.store(false);
     }
+
+    g_context_initializing_cv.notify_all();
+    return rc;
 }
 
 int fx_muxer_t::run_app(host_context_t *context)
@@ -874,7 +871,7 @@ int fx_muxer_t::run_app(host_context_t *context)
     {
         propagate_error_writer_t propagate_error_writer_to_corehost(context->hostpolicy_contract.set_error_writer);
 
-        int rc = load_runtime(context);
+        int rc = fx_muxer_t::load_runtime(context);
         if (rc != StatusCode::Success)
             return rc;
 
@@ -882,7 +879,7 @@ int fx_muxer_t::run_app(host_context_t *context)
     }
 }
 
-int fx_muxer_t::get_runtime_delegate(host_context_t *context, coreclr_delegate_type type, void **delegate)
+int fx_muxer_t::get_runtime_delegate(const host_context_t *context, coreclr_delegate_type type, void **delegate)
 {
     switch (type)
     {
@@ -912,13 +909,6 @@ int fx_muxer_t::get_runtime_delegate(host_context_t *context, coreclr_delegate_t
     const corehost_context_contract &contract = context->hostpolicy_context_contract;
     {
         propagate_error_writer_t propagate_error_writer_to_corehost(context->hostpolicy_contract.set_error_writer);
-
-        if (context->type != host_context_type::secondary)
-        {
-            int rc = load_runtime(context);
-            if (rc != StatusCode::Success)
-                return rc;
-        }
 
         return contract.get_runtime_delegate(type, delegate);
     }

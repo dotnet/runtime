@@ -103,12 +103,14 @@ namespace Microsoft.Interop
 
         private MethodDeclarationSyntax CreateUnreachableExceptionStub()
         {
-            // DeclarationCopiedFromBaseDeclaration(<Arguments>) => throw new UnreachableException("This method should not be reached");
+            // DeclarationCopiedFromBaseDeclaration(<Arguments>) => throw new UnreachableException();
             return MethodInfo.Syntax
+                .WithReturnType(GenerationContext.SignatureContext.StubReturnType)
                 .WithModifiers(TokenList())
                 .WithAttributeLists(List<AttributeListSyntax>())
                 .WithExplicitInterfaceSpecifier(ExplicitInterfaceSpecifier(
                     ParseName(OriginalDeclaringInterface.Info.Type.FullTypeName)))
+                .WithParameterList(ParameterList(SeparatedList(GenerationContext.SignatureContext.StubParameters)))
                 .WithExpressionBody(ArrowExpressionClause(
                     ThrowExpression(
                         ObjectCreationExpression(
@@ -129,6 +131,7 @@ namespace Microsoft.Interop
             var forwarder = new Forwarder();
             return MethodDeclaration(GenerationContext.SignatureContext.StubReturnType, MethodInfo.MethodName)
                 .WithModifiers(TokenList(Token(SyntaxKind.NewKeyword)))
+                .WithAttributeLists(List(GenerationContext.SignatureContext.AdditionalAttributes.Concat(MethodInfo.Attributes.Select(a => a.GenerateAttributeList()))))
                 .WithParameterList(ParameterList(SeparatedList(GenerationContext.SignatureContext.StubParameters)))
                 .WithExpressionBody(
                     ArrowExpressionClause(

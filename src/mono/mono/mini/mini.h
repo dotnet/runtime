@@ -2778,6 +2778,8 @@ typedef enum {
 	SHARE_MODE_GSHAREDVT = 0x1,
 } GetSharedMethodFlags;
 
+MonoClass* mini_handle_call_res_devirt (MonoMethod *cmethod);
+
 MonoType* mini_get_underlying_type (MonoType *type);
 MonoType* mini_type_get_underlying_type (MonoType *type);
 MonoClass* mini_get_class (MonoMethod *method, guint32 token, MonoGenericContext *context);

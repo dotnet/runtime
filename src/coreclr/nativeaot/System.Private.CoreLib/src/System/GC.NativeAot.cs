@@ -61,6 +61,21 @@ namespace System
         AllocationExceeded = 3
     }
 
+    internal enum RefreshMemoryStatus
+    {
+        Succeeded = 0,
+        HardLimitTooLow = 1,
+        HardLimitInvalid = 2,
+    }
+
+    internal enum EnableNoGCRegionCallbackStatus
+    {
+        Success,
+        NotStarted,
+        InsufficientBudget,
+        AlreadyRegistered,
+    }
+
     public static partial class GC
     {
         public static int GetGeneration(object obj)
@@ -282,6 +297,69 @@ namespace System
         public static bool TryStartNoGCRegion(long totalSize)
         {
             return StartNoGCRegionWorker(totalSize, false, 0, false);
+        }
+
+        private unsafe struct NoGCRegionCallbackFinalizerWorkItem
+        {
+            // FinalizerWorkItem
+            public NoGCRegionCallbackFinalizerWorkItem* next;
+            public delegate* unmanaged<NoGCRegionCallbackFinalizerWorkItem*, void> callback;
+
+            public bool scheduled;
+            public bool abandoned;
+
+            public GCHandle action;
+        }
+
+        public static unsafe void RegisterNoGCRegionCallback(long totalSize, Action callback)
+        {
+            ArgumentOutOfRangeException.ThrowIfNegativeOrZero(totalSize);
+            ArgumentNullException.ThrowIfNull(callback);
+
+            NoGCRegionCallbackFinalizerWorkItem* pWorkItem = null;
+            try
+            {
+                pWorkItem = (NoGCRegionCallbackFinalizerWorkItem*)NativeMemory.AllocZeroed((nuint)sizeof(NoGCRegionCallbackFinalizerWorkItem));
+                pWorkItem->action = GCHandle.Alloc(callback);
+                pWorkItem->callback = &Callback;
+
+                EnableNoGCRegionCallbackStatus status = (EnableNoGCRegionCallbackStatus)RuntimeImports.RhEnableNoGCRegionCallback(pWorkItem, totalSize);
+                if (status != EnableNoGCRegionCallbackStatus.Success)
+                {
+                    switch (status)
+                    {
+                        case EnableNoGCRegionCallbackStatus.NotStarted:
+                            throw new InvalidOperationException(SR.Format(SR.InvalidOperationException_NoGCRegionNotInProgress));
+                        case EnableNoGCRegionCallbackStatus.InsufficientBudget:
+                            throw new InvalidOperationException(SR.Format(SR.InvalidOperationException_NoGCRegionAllocationExceeded));
+                        case EnableNoGCRegionCallbackStatus.AlreadyRegistered:
+                            throw new InvalidOperationException(SR.InvalidOperationException_NoGCRegionCallbackAlreadyRegistered);
+                    }
+                    Debug.Assert(false);
+                }
+                pWorkItem = null; // Ownership transferred
+            }
+            finally
+            {
+                if (pWorkItem != null)
+                    Free(pWorkItem);
+            }
+
+            [UnmanagedCallersOnly]
+            static void Callback(NoGCRegionCallbackFinalizerWorkItem* pWorkItem)
+            {
+                Debug.Assert(pWorkItem->scheduled);
+                if (!pWorkItem->abandoned)
+                    ((Action)(pWorkItem->action.Target!))();
+                Free(pWorkItem);
+            }
+
+            static void Free(NoGCRegionCallbackFinalizerWorkItem* pWorkItem)
+            {
+                if (pWorkItem->action.IsAllocated)
+                    pWorkItem->action.Free();
+                NativeMemory.Free(pWorkItem);
+            }
         }
 
         /// <summary>
@@ -569,7 +647,7 @@ namespace System
         }
 
         [UnmanagedCallersOnly]
-        private static unsafe void Callback(void* configurationContext, void* name, void* publicKey, RuntimeImports.GCConfigurationType type, long data)
+        private static unsafe void ConfigCallback(void* configurationContext, void* name, void* publicKey, RuntimeImports.GCConfigurationType type, long data)
         {
             // If the public key is null, it means that the corresponding configuration isn't publicly available
             // and therefore, we shouldn't add it to the configuration dictionary to return to the user.
@@ -617,7 +695,7 @@ namespace System
                 Configurations = new Dictionary<string, object>()
             };
 
-            RuntimeImports.RhEnumerateConfigurationValues(Unsafe.AsPointer(ref context), &Callback);
+            RuntimeImports.RhEnumerateConfigurationValues(Unsafe.AsPointer(ref context), &ConfigCallback);
             return context.Configurations!;
         }
 
@@ -802,6 +880,39 @@ namespace System
         public static TimeSpan GetTotalPauseDuration()
         {
             return new TimeSpan(RuntimeImports.RhGetTotalPauseDuration());
+        }
+
+        [System.Runtime.Versioning.RequiresPreviewFeaturesAttribute("RefreshMemoryLimit is in preview.")]
+        public static void RefreshMemoryLimit()
+        {
+            ulong heapHardLimit = (AppContext.GetData("GCHeapHardLimit") as ulong?) ?? ulong.MaxValue;
+            ulong heapHardLimitPercent = (AppContext.GetData("GCHeapHardLimitPercent") as ulong?) ?? ulong.MaxValue;
+            ulong heapHardLimitSOH = (AppContext.GetData("GCHeapHardLimitSOH") as ulong?) ?? ulong.MaxValue;
+            ulong heapHardLimitLOH = (AppContext.GetData("GCHeapHardLimitLOH") as ulong?) ?? ulong.MaxValue;
+            ulong heapHardLimitPOH = (AppContext.GetData("GCHeapHardLimitPOH") as ulong?) ?? ulong.MaxValue;
+            ulong heapHardLimitSOHPercent = (AppContext.GetData("GCHeapHardLimitSOHPercent") as ulong?) ?? ulong.MaxValue;
+            ulong heapHardLimitLOHPercent = (AppContext.GetData("GCHeapHardLimitLOHPercent") as ulong?) ?? ulong.MaxValue;
+            ulong heapHardLimitPOHPercent = (AppContext.GetData("GCHeapHardLimitPOHPercent") as ulong?) ?? ulong.MaxValue;
+            RuntimeImports.GCHeapHardLimitInfo heapHardLimitInfo = new RuntimeImports.GCHeapHardLimitInfo
+            {
+                HeapHardLimit = heapHardLimit,
+                HeapHardLimitPercent = heapHardLimitPercent,
+                HeapHardLimitSOH = heapHardLimitSOH,
+                HeapHardLimitLOH = heapHardLimitLOH,
+                HeapHardLimitPOH = heapHardLimitPOH,
+                HeapHardLimitSOHPercent = heapHardLimitSOHPercent,
+                HeapHardLimitLOHPercent = heapHardLimitLOHPercent,
+                HeapHardLimitPOHPercent = heapHardLimitPOHPercent,
+            };
+            RefreshMemoryStatus status = (RefreshMemoryStatus)RuntimeImports.RhRefreshMemoryLimit(heapHardLimitInfo);
+            switch (status)
+            {
+                case RefreshMemoryStatus.HardLimitTooLow:
+                    throw new InvalidOperationException(SR.InvalidOperationException_HardLimitTooLow);
+                case RefreshMemoryStatus.HardLimitInvalid:
+                    throw new InvalidOperationException(SR.InvalidOperationException_HardLimitInvalid);
+            }
+            Debug.Assert(status == RefreshMemoryStatus.Succeeded);
         }
     }
 }

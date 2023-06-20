@@ -3922,12 +3922,15 @@ encode_method_ref (MonoAotCompile *acfg, MonoMethod *method, guint8 *buf, guint8
 				encode_klass_ref (acfg, method->klass, p, &p);
 			} else {
 				MonoMethodSignature *sig = mono_method_signature_internal (method);
-				WrapperInfo *wrapper_info = mono_marshal_get_wrapper_info (method);
 
 				encode_value (0, p, &p);
 				if (method->wrapper_type == MONO_WRAPPER_DELEGATE_INVOKE)
-					encode_value (wrapper_info ? wrapper_info->subtype : 0, p, &p);
-				encode_signature (acfg, sig, p, &p);
+					encode_value (info ? info->subtype : 0, p, &p);
+
+				if (info && info->subtype == WRAPPER_SUBTYPE_DELEGATE_INVOKE_VIRTUAL)
+					encode_klass_ref (acfg, info->d.delegate_invoke.method->klass, p, &p);
+				else
+					encode_signature (acfg, sig, p, &p);
 			}
 			break;
 		}
@@ -4546,6 +4549,41 @@ can_marshal_struct (MonoClass *klass)
 	return can_marshal;
 }
 
+/* Create a ref shared instantiation */
+static void
+create_ref_shared_inst (MonoAotCompile *acfg, MonoMethod *method, MonoGenericContext *ctx)
+{
+	MonoGenericContext shared_context;
+	MonoType **args;
+	MonoGenericInst *inst;
+	MonoGenericContainer *container;
+
+	memset (ctx, 0, sizeof (MonoGenericContext));
+
+	if (mono_class_is_gtd (method->klass)) {
+		shared_context = mono_class_get_generic_container (method->klass)->context;
+		inst = shared_context.class_inst;
+
+		args = g_new0 (MonoType*, inst->type_argc);
+		for (guint i = 0; i < inst->type_argc; ++i)
+			args [i] = mono_get_object_type ();
+		ctx->class_inst = mono_metadata_get_generic_inst (inst->type_argc, args);
+		g_free (args);
+	}
+	if (method->is_generic) {
+		container = mono_method_get_generic_container (method);
+		g_assert (!container->is_anonymous && container->is_method);
+		shared_context = container->context;
+		inst = shared_context.method_inst;
+
+		args = g_new0 (MonoType*, inst->type_argc);
+		for (int i = 0; i < container->type_argc; ++i)
+			args [i] = mono_get_object_type ();
+		ctx->method_inst = mono_metadata_get_generic_inst (inst->type_argc, args);
+		g_free (args);
+	}
+}
+
 static void
 create_gsharedvt_inst (MonoAotCompile *acfg, MonoMethod *method, MonoGenericContext *ctx)
 {
@@ -4962,12 +5000,38 @@ add_full_aot_wrappers (MonoAotCompile *acfg)
 		if (!m_class_is_delegate (klass) || klass == mono_defaults.delegate_class || klass == mono_defaults.multicastdelegate_class)
 			continue;
 
+		method = mono_get_delegate_invoke_internal (klass);
+		if (mono_class_is_gtd (klass)) {
+			MonoGenericContext ctx;
+			MonoMethod *inst, *gshared;
+
+			create_ref_shared_inst (acfg, method, &ctx);
+
+			inst = mono_class_inflate_generic_method_checked (method, &ctx, error);
+			g_assert (is_ok (error)); /* FIXME don't swallow the error */
+
+			sig = mono_method_signature_internal (method);
+			if (sig->param_count && !m_class_is_byreflike (mono_class_from_mono_type_internal (sig->params [0])) && !m_type_is_byref (sig->params [0])) {
+				m = mono_marshal_get_delegate_invoke_internal (inst, TRUE, FALSE, NULL);
+
+				gshared = mini_get_shared_method_full (m, SHARE_MODE_NONE, error);
+				mono_error_assert_ok (error);
+
+				add_extra_method (acfg, gshared);
+			}
+		}
+
 		if (!mono_class_is_gtd (klass)) {
-			method = mono_get_delegate_invoke_internal (klass);
 
 			m = mono_marshal_get_delegate_invoke (method, NULL);
 
 			add_method (acfg, m);
+
+			sig = mono_method_signature_internal (method);
+			if (sig->param_count && !m_class_is_byreflike (mono_class_from_mono_type_internal (sig->params [0])) && !m_type_is_byref (sig->params [0])) {
+				m = mono_marshal_get_delegate_invoke_internal (method, TRUE, FALSE, NULL);
+				add_method (acfg, m);
+			}
 
 			method = try_get_method_nofail (klass, "BeginInvoke", -1, 0);
 			if (method)
@@ -7816,7 +7880,7 @@ emit_klass_info (MonoAotCompile *acfg, guint32 token)
 	} else {
 		gboolean has_nested = mono_class_get_nested_classes_property (klass) != NULL;
 		encode_value (m_class_get_vtable_size (klass), p, &p);
-		encode_value ((m_class_has_weak_fields (klass) << 9) | (mono_class_is_gtd (klass) ? (1 << 8) : 0) | (no_special_static << 7) | (m_class_has_static_refs (klass) << 6) | (m_class_has_references (klass) << 5) | ((m_class_is_blittable (klass) << 4) | (has_nested ? 1 : 0) << 3) | (m_class_has_cctor (klass) << 2) | (m_class_has_finalize (klass) << 1) | m_class_is_ghcimpl (klass), p, &p);
+		encode_value ((m_class_has_deferred_failure (klass) << 10) | (m_class_has_weak_fields (klass) << 9) | (mono_class_is_gtd (klass) ? (1 << 8) : 0) | (no_special_static << 7) | (m_class_has_static_refs (klass) << 6) | (m_class_has_references (klass) << 5) | ((m_class_is_blittable (klass) << 4) | (has_nested ? 1 : 0) << 3) | (m_class_has_cctor (klass) << 2) | (m_class_has_finalize (klass) << 1) | m_class_is_ghcimpl (klass), p, &p);
 		if (m_class_has_cctor (klass))
 			encode_method_ref (acfg, mono_class_get_cctor (klass), p, &p);
 		if (m_class_has_finalize (klass))
@@ -9326,6 +9390,7 @@ add_referenced_patch (MonoAotCompile *acfg, MonoJumpInfo *patch_info, int depth)
 			case MONO_PATCH_INFO_VIRT_METHOD:
 			case MONO_PATCH_INFO_GSHAREDVT_METHOD:
 			case MONO_PATCH_INFO_GSHAREDVT_CALL:
+			case MONO_PATCH_INFO_SIGNATURE:
 				tmp.type = patch_type;
 				tmp.data.target = data;
 				break;
@@ -9764,8 +9829,9 @@ compile_method (MonoAotCompile *acfg, MonoMethod *method)
 	mono_atomic_inc_i32 (&acfg->stats.ccount);
 
 	if (acfg->aot_opts.compiled_methods_outfile && acfg->compiled_methods_outfile != NULL) {
-		if (!mono_method_is_generic_impl (method) && method->token != 0)
+		if (!mono_method_is_generic_impl (method) && method->token != 0) {
 			fprintf (acfg->compiled_methods_outfile, "%x\n", method->token);
+		}
 	}
 }
 
@@ -14768,6 +14834,10 @@ aot_assembly (MonoAssembly *ass, guint32 jit_opts, MonoAotOptions *aot_options)
 		acfg->compiled_methods_outfile = fopen (acfg->aot_opts.compiled_methods_outfile, "w+");
 		if (!acfg->compiled_methods_outfile)
 			aot_printerrf (acfg, "Unable to open compiled-methods-outfile specified file %s\n", acfg->aot_opts.compiled_methods_outfile);
+		else {
+			fprintf(acfg->compiled_methods_outfile, "%s\n", ass->image->filename);
+			fprintf(acfg->compiled_methods_outfile, "%s\n", ass->image->guid);
+		}
 	}
 
 	if (acfg->aot_opts.data_outfile) {

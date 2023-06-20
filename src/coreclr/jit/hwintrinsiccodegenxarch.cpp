@@ -97,9 +97,6 @@ void CodeGen::genHWIntrinsic(GenTreeHWIntrinsic* node)
 
     // We need to validate that other phases of the compiler haven't introduced unsupported intrinsics
     assert(compiler->compIsaSupportedDebugOnly(isa));
-
-    int ival = HWIntrinsicInfo::lookupIval(intrinsicId, compiler->compOpportunisticallyDependsOn(InstructionSet_AVX));
-
     assert(HWIntrinsicInfo::RequiresCodegen(intrinsicId));
 
     if (genIsTableDrivenHWIntrinsic(intrinsicId, category))
@@ -119,11 +116,14 @@ void CodeGen::genHWIntrinsic(GenTreeHWIntrinsic* node)
         emitter*  emit   = GetEmitter();
 
         assert(numArgs >= 0);
+
         instruction ins = HWIntrinsicInfo::lookupIns(intrinsicId, baseType);
         assert(ins != INS_invalid);
-        emitAttr simdSize = emitActualTypeSize(Compiler::getSIMDTypeForSize(node->GetSimdSize()));
 
+        emitAttr simdSize = emitActualTypeSize(Compiler::getSIMDTypeForSize(node->GetSimdSize()));
         assert(simdSize != 0);
+
+        int ival = HWIntrinsicInfo::lookupIval(compiler, intrinsicId, baseType);
 
         switch (numArgs)
         {
@@ -144,7 +144,7 @@ void CodeGen::genHWIntrinsic(GenTreeHWIntrinsic* node)
                     genConsumeRegs(op1);
                     op1Reg = op1->GetRegNum();
 
-                    if ((ival != -1) && varTypeIsFloating(baseType))
+                    if (ival != -1)
                     {
                         assert((ival >= 0) && (ival <= 127));
                         if (HWIntrinsicInfo::CopiesUpperBits(intrinsicId))
@@ -208,7 +208,7 @@ void CodeGen::genHWIntrinsic(GenTreeHWIntrinsic* node)
                     op1Reg = targetReg;
                 }
 
-                if ((ival != -1) && varTypeIsFloating(baseType))
+                if (ival != -1)
                 {
                     assert((ival >= 0) && (ival <= 127));
                     genHWIntrinsic_R_R_RM_I(node, ins, simdSize, static_cast<int8_t>(ival));
@@ -235,7 +235,6 @@ void CodeGen::genHWIntrinsic(GenTreeHWIntrinsic* node)
                 }
                 else if (HWIntrinsicInfo::isImmOp(intrinsicId, op2))
                 {
-                    assert(ival == -1);
                     auto emitSwCase = [&](int8_t i) {
                         if (HWIntrinsicInfo::CopiesUpperBits(intrinsicId))
                         {
@@ -293,10 +292,10 @@ void CodeGen::genHWIntrinsic(GenTreeHWIntrinsic* node)
                 genConsumeRegs(op3);
                 op3Reg = op3->GetRegNum();
 
+                assert(ival == -1);
+
                 if (HWIntrinsicInfo::isImmOp(intrinsicId, op3))
                 {
-                    assert(ival == -1);
-
                     auto emitSwCase = [&](int8_t i) { genHWIntrinsic_R_R_RM_I(node, ins, simdSize, i); };
 
                     if (op3->IsCnsIntOrI())
@@ -341,10 +340,12 @@ void CodeGen::genHWIntrinsic(GenTreeHWIntrinsic* node)
                         case NI_SSE41_BlendVariable:
                         case NI_AVX_BlendVariable:
                         case NI_AVX2_BlendVariable:
+                        case NI_AVX512F_BlendVariableMask:
                         {
                             genHWIntrinsic_R_R_RM_R(node, ins, simdSize);
                             break;
                         }
+
                         case NI_AVXVNNI_MultiplyWideningAndAdd:
                         case NI_AVXVNNI_MultiplyWideningAndAddSaturate:
                         {
@@ -355,6 +356,7 @@ void CodeGen::genHWIntrinsic(GenTreeHWIntrinsic* node)
                             genHWIntrinsic_R_R_R_RM(ins, simdSize, targetReg, op1Reg, op2Reg, op3);
                             break;
                         }
+
                         default:
                         {
                             unreached();
@@ -384,10 +386,10 @@ void CodeGen::genHWIntrinsic(GenTreeHWIntrinsic* node)
                 genConsumeRegs(op4);
                 op4Reg = op4->GetRegNum();
 
+                assert(ival == -1);
+
                 if (HWIntrinsicInfo::isImmOp(intrinsicId, op4))
                 {
-                    assert(ival == -1);
-
                     auto emitSwCase = [&](int8_t i) { genHWIntrinsic_R_R_R_RM_I(node, ins, simdSize, i); };
 
                     if (op4->IsCnsIntOrI())
@@ -455,6 +457,8 @@ void CodeGen::genHWIntrinsic(GenTreeHWIntrinsic* node)
         case InstructionSet_AVX512F_X64:
         case InstructionSet_AVX512BW:
         case InstructionSet_AVX512BW_VL:
+        case InstructionSet_AVX512VBMI:
+        case InstructionSet_AVX512VBMI_VL:
             genAvxFamilyIntrinsic(node);
             break;
         case InstructionSet_AES:
@@ -1913,6 +1917,7 @@ void CodeGen::genAvxFamilyIntrinsic(GenTreeHWIntrinsic* node)
 
             instruction maskIns;
             instruction kmovIns;
+            emitAttr    kmovAttr = EA_4BYTE;
 
             // TODO-XARCH-AVX512 note that this type/kmov combination assumes 512-bit vector types but would change
             // if used for other vector lengths, i.e., TYPE_BYTE requires kmovq for for 512-bit vector, but kmovd
@@ -1921,122 +1926,49 @@ void CodeGen::genAvxFamilyIntrinsic(GenTreeHWIntrinsic* node)
             {
                 case TYP_BYTE:
                 case TYP_UBYTE:
-                    maskIns = INS_vpmovb2m;
-                    kmovIns = INS_kmovq_gpr;
+                {
+                    maskIns  = INS_vpmovb2m;
+                    kmovIns  = INS_kmovq_gpr;
+                    kmovAttr = EA_8BYTE;
                     break;
+                }
+
                 case TYP_SHORT:
                 case TYP_USHORT:
+                {
                     maskIns = INS_vpmovw2m;
                     kmovIns = INS_kmovd_gpr;
                     break;
+                }
+
                 case TYP_INT:
                 case TYP_UINT:
                 case TYP_FLOAT:
+                {
                     maskIns = INS_vpmovd2m;
                     kmovIns = INS_kmovw_gpr;
                     break;
+                }
+
                 case TYP_DOUBLE:
                 case TYP_LONG:
                 case TYP_ULONG:
+                {
                     maskIns = INS_vpmovq2m;
                     kmovIns = INS_kmovb_gpr;
                     break;
+                }
+
                 default:
+                {
                     unreached();
+                }
             }
 
             assert(emitter::isMaskReg(maskReg));
 
             emit->emitIns_R_R(maskIns, attr, maskReg, op1Reg);
-            emit->emitIns_Mov(kmovIns, EA_8BYTE, targetReg, maskReg, INS_FLAGS_DONT_CARE);
-            break;
-        }
-
-        case NI_AVX512F_CompareEqualSpecial:
-        {
-            GenTree* op2     = node->Op(2);
-            op1Reg           = op1->GetRegNum();
-            regNumber op2Reg = op2->GetRegNum();
-
-            instruction compareIns = HWIntrinsicInfo::lookupIns(NI_AVX512F_CompareEqualSpecial, baseType);
-
-            assert(compareIns != INS_invalid);
-            assert(emitter::isMaskReg(targetReg));
-
-            emit->emitIns_R_R_R_I(compareIns, attr, targetReg, op1Reg, op2Reg, 0);
-            break;
-        }
-
-        case NI_AVX512F_CompareGreaterThanOrEqualSpecial:
-        {
-            GenTree* op2     = node->Op(2);
-            op1Reg           = op1->GetRegNum();
-            regNumber op2Reg = op2->GetRegNum();
-
-            instruction compareIns = HWIntrinsicInfo::lookupIns(NI_AVX512F_CompareGreaterThanOrEqualSpecial, baseType);
-
-            assert(compareIns != INS_invalid);
-            assert(emitter::isMaskReg(targetReg));
-
-            emit->emitIns_R_R_R_I(compareIns, attr, targetReg, op1Reg, op2Reg, 5);
-            break;
-        }
-
-        case NI_AVX512F_CompareGreaterThanSpecial:
-        {
-            GenTree* op2     = node->Op(2);
-            op1Reg           = op1->GetRegNum();
-            regNumber op2Reg = op2->GetRegNum();
-
-            instruction compareIns = HWIntrinsicInfo::lookupIns(NI_AVX512F_CompareGreaterThanSpecial, baseType);
-
-            assert(compareIns != INS_invalid);
-            assert(emitter::isMaskReg(targetReg));
-
-            emit->emitIns_R_R_R_I(compareIns, attr, targetReg, op1Reg, op2Reg, 6);
-            break;
-        }
-
-        case NI_AVX512F_CompareLessThanOrEqualSpecial:
-        {
-            GenTree* op2     = node->Op(2);
-            op1Reg           = op1->GetRegNum();
-            regNumber op2Reg = op2->GetRegNum();
-
-            instruction compareIns = HWIntrinsicInfo::lookupIns(NI_AVX512F_CompareLessThanOrEqualSpecial, baseType);
-
-            assert(compareIns != INS_invalid);
-            assert(emitter::isMaskReg(targetReg));
-
-            emit->emitIns_R_R_R_I(compareIns, attr, targetReg, op1Reg, op2Reg, 2);
-            break;
-        }
-
-        case NI_AVX512F_CompareLessThanSpecial:
-        {
-            GenTree* op2     = node->Op(2);
-            op1Reg           = op1->GetRegNum();
-            regNumber op2Reg = op2->GetRegNum();
-
-            instruction compareIns = HWIntrinsicInfo::lookupIns(NI_AVX512F_CompareLessThanSpecial, baseType);
-
-            assert(compareIns != INS_invalid);
-            assert(emitter::isMaskReg(targetReg));
-
-            emit->emitIns_R_R_R_I(compareIns, attr, targetReg, op1Reg, op2Reg, 1);
-            break;
-        }
-
-        case NI_AVX512F_MoveMaskToVectorSpecial:
-        {
-            op1Reg = op1->GetRegNum();
-
-            instruction maskMovIns = HWIntrinsicInfo::lookupIns(NI_AVX512F_MoveMaskToVectorSpecial, baseType);
-
-            assert(maskMovIns != INS_invalid);
-            assert(emitter::isMaskReg(op1Reg));
-
-            emit->emitIns_R_R(maskMovIns, attr, targetReg, op1Reg);
+            emit->emitIns_Mov(kmovIns, kmovAttr, targetReg, maskReg, INS_FLAGS_DONT_CARE);
             break;
         }
 
@@ -2044,7 +1976,28 @@ void CodeGen::genAvxFamilyIntrinsic(GenTreeHWIntrinsic* node)
         {
             op1Reg = op1->GetRegNum();
 
-            instruction testIns = HWIntrinsicInfo::lookupIns(NI_AVX512F_KORTEST, baseType);
+            uint32_t simdSize = node->GetSimdSize();
+            uint32_t count    = simdSize / genTypeSize(baseType);
+
+            instruction testIns;
+
+            if (count <= 8)
+            {
+                testIns = INS_kortestb;
+            }
+            else if (count == 16)
+            {
+                testIns = INS_kortestw;
+            }
+            else if (count == 32)
+            {
+                testIns = INS_kortestd;
+            }
+            else
+            {
+                assert(count == 64);
+                testIns = INS_kortestq;
+            }
 
             assert(testIns != INS_invalid);
             assert(emitter::isMaskReg(op1Reg));

@@ -797,11 +797,6 @@ int LinearScan::BuildNode(GenTree* tree)
             assert(dstCount == 0);
             break;
 
-        case GT_ASG:
-            noway_assert(!"We should never hit any assignment operator in lowering");
-            srcCount = 0;
-            break;
-
         case GT_ADD:
         case GT_SUB:
             if (varTypeIsFloating(tree->TypeGet()))
@@ -878,6 +873,9 @@ int LinearScan::BuildNode(GenTree* tree)
             {
                 case NI_System_Math_Max:
                 case NI_System_Math_Min:
+                case NI_System_Math_MaxNumber:
+                case NI_System_Math_MinNumber:
+                {
                     assert(varTypeIsFloating(tree->gtGetOp1()));
                     assert(varTypeIsFloating(tree->gtGetOp2()));
                     assert(tree->gtGetOp1()->TypeIs(tree->TypeGet()));
@@ -886,6 +884,7 @@ int LinearScan::BuildNode(GenTree* tree)
                     assert(dstCount == 1);
                     BuildDef(tree);
                     break;
+                }
 
                 case NI_System_Math_Abs:
                 case NI_System_Math_Ceiling:
@@ -893,6 +892,7 @@ int LinearScan::BuildNode(GenTree* tree)
                 case NI_System_Math_Truncate:
                 case NI_System_Math_Round:
                 case NI_System_Math_Sqrt:
+                {
                     assert(varTypeIsFloating(tree->gtGetOp1()));
                     assert(tree->gtGetOp1()->TypeIs(tree->TypeGet()));
 
@@ -901,6 +901,7 @@ int LinearScan::BuildNode(GenTree* tree)
                     assert(dstCount == 1);
                     BuildDef(tree);
                     break;
+                }
 
                 default:
                     unreached();

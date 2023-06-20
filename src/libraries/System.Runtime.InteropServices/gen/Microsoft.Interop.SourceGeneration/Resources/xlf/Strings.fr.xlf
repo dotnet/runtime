@@ -22,6 +22,11 @@
         <target state="translated">Un seul de « ConstantElementCount » ou « ElementCountInfo » peut être utilisé dans un « MarshalUsingAttribute » pour un « ElementIndirectionDepth » donné</target>
         <note />
       </trans-unit>
+      <trans-unit id="ContainingTypeAccessibilityDetails">
+        <source>Containing type '{0}' has accessibility '{1}'.</source>
+        <target state="translated">Le type conteneur '{0}' a une accessibilité '{1}'.</target>
+        <note />
+      </trans-unit>
       <trans-unit id="CyclicalCountInfo">
         <source>This element cannot depend on '{0}' for collection size information without creating a dependency cycle</source>
         <target state="translated">Cet élément ne peut pas dépendre de « {0} » pour les informations de taille de collection sans créer un cycle de dépendance</target>
@@ -98,8 +103,8 @@
         <note />
       </trans-unit>
       <trans-unit id="MarshallingStringOrCharAsUndefinedNotSupported">
-        <source>Marshalling string or char without explicit marshalling information is not supported. Specify 'LibraryImportAttribute.StringMarshalling', 'LibraryImportAttribute.StringMarshallingCustomType', 'MarshalUsingAttribute' or 'MarshalAsAttribute'.</source>
-        <target state="translated">Le marshaling de chaîne ou de char sans informations de marshaling explicites n’est pas pris en charge. Spécifiez « LibraryImportAttribute.StringMars streaming », « LibraryImportAttribute.StringMars streamingCustomType », « MarshalUsingAttribute » ou « MarshalAsAttribute ».</target>
+        <source>Marshalling string or char without explicit marshalling information is not supported. Specify '{0}.StringMarshalling', '{0}.StringMarshallingCustomType', 'MarshalUsingAttribute' or 'MarshalAsAttribute'.</source>
+        <target state="translated">Le marshalling d’une chaîne ou d’un caractère sans information explicite sur le marshalling n’est pas pris en charge. Spécifiez '{0}.StringMarshalling', '{0}.StringMarshallingCustomType', 'MarshalUsingAttribute' ou 'MarshalAsAttribute'.</target>
         <note />
       </trans-unit>
       <trans-unit id="RuntimeMarshallingMustBeDisabled">
@@ -110,6 +115,11 @@
       <trans-unit id="SafeHandleByRefMustBeConcrete">
         <source>An abstract type derived from 'SafeHandle' cannot be marshalled by reference. The provided type must be concrete.</source>
         <target state="translated">Un type abstrait dérivé de « SafeHandle » ne peut pas être marshalé par référence. Le type fourni doit être concret.</target>
+        <note />
+      </trans-unit>
+      <trans-unit id="TypeAccessibilityDetails">
+        <source>'{0}' has accessibility '{1}'.</source>
+        <target state="translated">'{0}' a une accessibilité '{1}'.</target>
         <note />
       </trans-unit>
       <trans-unit id="UnmanagedToManagedMissingRequiredMarshaller">

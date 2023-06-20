@@ -1,6 +1,10 @@
 project(System.Globalization.Native C)
 
 if(CLR_CMAKE_TARGET_UNIX OR CLR_CMAKE_TARGET_WASI)
+    if (ANDROID_FORCE_ICU_DATA_DIR)
+        add_definitions(-DANDROID_FORCE_ICU_DATA_DIR)
+    endif()
+
     add_compile_options(-Wno-switch-enum)
     add_compile_options(-Wno-covered-switch-default)
 
@@ -89,7 +93,7 @@ else()
 endif()
 
 if (CLR_CMAKE_TARGET_APPLE)
-    set(NATIVEGLOBALIZATION_SOURCES ${NATIVEGLOBALIZATION_SOURCES} pal_locale.m)
+    set(NATIVEGLOBALIZATION_SOURCES ${NATIVEGLOBALIZATION_SOURCES} pal_locale.m pal_collation.m)
 endif()
 
 # time zone names are filtered out of icu data for the browser and associated functionality is disabled

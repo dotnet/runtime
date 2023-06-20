@@ -439,11 +439,13 @@ namespace System
                 // Needs to be double length to allow us to align the data first.
                 lengthToExamine = UnalignedCountVector128(searchSpace);
             }
+#if MONO
             else if (Vector.IsHardwareAccelerated)
             {
                 // Needs to be double length to allow us to align the data first.
                 lengthToExamine = UnalignedCountVector(searchSpace);
             }
+#endif
 
         SequentialScan:
             // In the non-vector case lengthToExamine is the total length.
@@ -603,6 +605,7 @@ namespace System
                     }
                 }
             }
+#if MONO
             else if (Vector.IsHardwareAccelerated)
             {
                 if (offset < length)
@@ -637,6 +640,7 @@ namespace System
                     }
                 }
             }
+#endif
 
             ThrowMustBeNullTerminatedString();
         Found3:
@@ -649,6 +653,7 @@ namespace System
             return (int)(offset);
         }
 
+#if MONO
         // Vector sub-search adapted from https://github.com/aspnet/KestrelHttpServer/pull/1138
         [MethodImpl(MethodImplOptions.AggressiveInlining)]
         private static int LocateFirstFoundChar(Vector<ushort> match)
@@ -671,10 +676,6 @@ namespace System
         }
 
         [MethodImpl(MethodImplOptions.AggressiveInlining)]
-        private static int LocateFirstFoundChar(ulong match)
-            => BitOperations.TrailingZeroCount(match) >> 4;
-
-        [MethodImpl(MethodImplOptions.AggressiveInlining)]
         private static Vector<ushort> LoadVector(ref char start, nint offset)
             => Unsafe.ReadUnaligned<Vector<ushort>>(ref Unsafe.As<char, byte>(ref Unsafe.Add(ref start, offset)));
 
@@ -687,19 +688,24 @@ namespace System
             => (length - offset) & ~(Vector<ushort>.Count - 1);
 
         [MethodImpl(MethodImplOptions.AggressiveInlining)]
+        private static unsafe nint UnalignedCountVector(char* searchSpace)
+        {
+            const int ElementsPerByte = sizeof(ushort) / sizeof(byte);
+            return (nint)(uint)(-(int)searchSpace / ElementsPerByte) & (Vector<ushort>.Count - 1);
+        }
+#endif
+
+        [MethodImpl(MethodImplOptions.AggressiveInlining)]
+        private static int LocateFirstFoundChar(ulong match)
+            => BitOperations.TrailingZeroCount(match) >> 4;
+
+        [MethodImpl(MethodImplOptions.AggressiveInlining)]
         private static nint GetCharVector128SpanLength(nint offset, nint length)
             => (length - offset) & ~(Vector128<ushort>.Count - 1);
 
         [MethodImpl(MethodImplOptions.AggressiveInlining)]
         private static nint GetCharVector256SpanLength(nint offset, nint length)
             => (length - offset) & ~(Vector256<ushort>.Count - 1);
-
-        [MethodImpl(MethodImplOptions.AggressiveInlining)]
-        private static unsafe nint UnalignedCountVector(char* searchSpace)
-        {
-            const int ElementsPerByte = sizeof(ushort) / sizeof(byte);
-            return (nint)(uint)(-(int)searchSpace / ElementsPerByte) & (Vector<ushort>.Count - 1);
-        }
 
         [MethodImpl(MethodImplOptions.AggressiveInlining)]
         private static unsafe nint UnalignedCountVector128(char* searchSpace)

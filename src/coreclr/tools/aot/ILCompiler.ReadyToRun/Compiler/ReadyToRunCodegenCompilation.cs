@@ -106,6 +106,8 @@ namespace ILCompiler
                 }
             }
 
+            _nodeFactory.DetectGenericCycles(caller, callee);
+
             return NodeFactory.CompilationModuleGroup.CanInline(caller, callee);
         }
 
@@ -255,6 +257,8 @@ namespace ILCompiler
         private readonly HashSet<MethodWithGCInfo> _methodsToRecompile = new HashSet<MethodWithGCInfo>();
 
         public ProfileDataManager ProfileData => _profileData;
+
+        public bool DeterminismCheckFailed { get; set; }
 
         public ReadyToRunSymbolNodeFactory SymbolNodeFactory { get; }
         public ReadyToRunCompilationModuleGroupBase CompilationModuleGroup { get; }
@@ -407,6 +411,11 @@ namespace ILCompiler
             {
                 flags |= ReadyToRunFlags.READYTORUN_FLAG_PlatformNeutralSource;
             }
+            bool automaticTypeValidation = _nodeFactory.OptimizationFlags.TypeValidation == TypeValidationRule.Automatic || _nodeFactory.OptimizationFlags.TypeValidation == TypeValidationRule.AutomaticWithLogging;
+            if (_nodeFactory.OptimizationFlags.TypeValidation == TypeValidationRule.SkipTypeValidation)
+            {
+                flags |= ReadyToRunFlags.READYTORUN_FLAG_SkipTypeValidation;
+            }
 
             flags |= _nodeFactory.CompilationModuleGroup.GetReadyToRunFlags() & ReadyToRunFlags.READYTORUN_FLAG_MultiModuleVersionBubble;
 
@@ -424,7 +433,10 @@ namespace ILCompiler
                 win32Resources: new Win32Resources.ResourceData(inputModule),
                 flags,
                 _nodeFactory.OptimizationFlags,
-                _nodeFactory.ImageBase);
+                _nodeFactory.ImageBase,
+                automaticTypeValidation ? inputModule : null,
+                genericCycleDepthCutoff: -1, // We don't need generic cycle detection when rewriting component assemblies
+                genericCycleBreadthCutoff: -1); // as we're not actually compiling anything
 
             IComparer<DependencyNodeCore<NodeFactory>> comparer = new SortableDependencyNode.ObjectNodeComparer(CompilerComparer.Instance);
             DependencyAnalyzerBase<NodeFactory> componentGraph = new DependencyAnalyzer<NoLogStrategy<NodeFactory>, NodeFactory>(componentFactory, comparer);
@@ -475,10 +487,16 @@ namespace ILCompiler
                 return true;
             }
 
-            if (!(type is MetadataType defType))
+            if (type is not MetadataType defType)
             {
                 // Non metadata backed types have layout defined in all version bubbles
                 return true;
+            }
+
+            if (VectorOfTFieldLayoutAlgorithm.IsVectorOfTType(defType))
+            {
+                // Vector<T> always needs a layout check
+                return false;
             }
 
             if (!NodeFactory.CompilationModuleGroup.VersionsWithModule(defType.Module))
@@ -800,9 +818,9 @@ namespace ILCompiler
                     Logger.Writer.WriteLine("Compiling " + methodName);
                 }
 
-                if (_printReproInstructions != null)
+                if (_nodeFactory.OptimizationFlags.PrintReproArgs)
                 {
-                    Logger.Writer.WriteLine($"Single method repro args:{_printReproInstructions(method)}");
+                    Logger.Writer.WriteLine($"Single method repro args:{GetReproInstructions(method)}");
                 }
 
                 try
@@ -878,6 +896,11 @@ namespace ILCompiler
         public override void Dispose()
         {
             Array.Clear(_corInfoImpls);
+        }
+
+        public string GetReproInstructions(MethodDesc method)
+        {
+            return _printReproInstructions(method);
         }
     }
 }

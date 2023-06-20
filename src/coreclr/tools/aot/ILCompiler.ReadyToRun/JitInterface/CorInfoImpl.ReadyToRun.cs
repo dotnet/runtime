@@ -24,6 +24,7 @@ using ILCompiler;
 using ILCompiler.DependencyAnalysis;
 using ILCompiler.DependencyAnalysis.ReadyToRun;
 using System.Text;
+using System.Runtime.CompilerServices;
 
 namespace Internal.JitInterface
 {
@@ -331,6 +332,12 @@ namespace Internal.JitInterface
             }
             sb.Append("; ");
             sb.Append(Token.ToString());
+            if (OwningTypeNotDerivedFromToken)
+            {
+                sb.Append("; OWNINGTYPE");
+                sb.Append(nameMangler.GetMangledTypeName(OwningType));
+                sb.Append("; ");
+            }
             if (Unboxing)
                 sb.Append("; UNBOXING");
         }
@@ -631,10 +638,50 @@ namespace Internal.JitInterface
             return false;
         }
 
+        class DeterminismData
+        {
+            public int Iterations = 0;
+            public int HashCode = 0;
+        }
+
+        private static ConditionalWeakTable<MethodDesc, DeterminismData> _determinismTable = new ConditionalWeakTable<MethodDesc, DeterminismData>();
+
         partial void DetermineIfCompilationShouldBeRetried(ref CompilationResult result)
         {
+            if ((_ilBodiesNeeded == null) && _compilation.NodeFactory.OptimizationFlags.DeterminismStress > 0)
+            {
+                HashCode hashCode = default(HashCode);
+                hashCode.AddBytes(_code);
+                hashCode.AddBytes(_roData);
+                int functionOutputHashCode = hashCode.ToHashCode();
+
+                lock (_determinismTable)
+                {
+                    DeterminismData data = _determinismTable.GetOrCreateValue(MethodBeingCompiled);
+                    if (data.Iterations == 0)
+                    {
+                        data.Iterations = 1;
+                        data.HashCode = functionOutputHashCode;
+                    }
+                    else
+                    {
+                        data.Iterations++;
+                    }
+
+                    if (data.HashCode != functionOutputHashCode)
+                    {
+                        _compilation.DeterminismCheckFailed = true;
+                        _compilation.Logger.LogMessage($"ERROR: Determinism check compiling method '{MethodBeingCompiled}' failed. Use '{_compilation.GetReproInstructions(MethodBeingCompiled)}' on command line to reproduce the failure.");
+                    }
+                    else if (data.Iterations <= _compilation.NodeFactory.OptimizationFlags.DeterminismStress)
+                    {
+                        result = CompilationResult.CompilationRetryRequested;
+                    }
+                }
+            }
+
             // If any il bodies need to be recomputed, force recompilation
-            if ((_ilBodiesNeeded != null) || InfiniteCompileStress.Enabled)
+            if ((_ilBodiesNeeded != null) || InfiniteCompileStress.Enabled || result == CompilationResult.CompilationRetryRequested)
             {
                 _compilation.PrepareForCompilationRetry(_methodCodeNode, _ilBodiesNeeded);
                 result = CompilationResult.CompilationRetryRequested;
@@ -824,12 +871,14 @@ namespace Internal.JitInterface
                         if (helperId == ReadyToRunHelperId.MethodEntry && pGenericLookupKind.runtimeLookupArgs != null)
                         {
                             constrainedType = (TypeDesc)GetRuntimeDeterminedObjectForToken(ref *(CORINFO_RESOLVED_TOKEN*)pGenericLookupKind.runtimeLookupArgs);
+                            _compilation.NodeFactory.DetectGenericCycles(MethodBeingCompiled, constrainedType);
                         }
                         object helperArg = GetRuntimeDeterminedObjectForToken(ref pResolvedToken);
                         if (helperArg is MethodDesc methodDesc)
                         {
                             var methodIL = HandleToObject(pResolvedToken.tokenScope);
                             MethodDesc sharedMethod = methodIL.OwningMethod.GetSharedRuntimeFormMethodTarget();
+                            _compilation.NodeFactory.DetectGenericCycles(MethodBeingCompiled, sharedMethod);
                             helperArg = new MethodWithToken(methodDesc, HandleToModuleToken(ref pResolvedToken), constrainedType, unboxing: false, context: sharedMethod);
                         }
                         else if (helperArg is FieldDesc fieldDesc)
@@ -2213,6 +2262,11 @@ namespace Internal.JitInterface
                 out callerModule,
                 out useInstantiatingStub);
 
+            if (callerMethod.HasInstantiation || callerMethod.OwningType.HasInstantiation)
+            {
+                _compilation.NodeFactory.DetectGenericCycles(callerMethod, methodToCall);
+            }
+
             if (pResult->thisTransform == CORINFO_THIS_TRANSFORM.CORINFO_BOX_THIS)
             {
                 // READYTORUN: FUTURE: Optionally create boxing stub at runtime
@@ -3128,7 +3182,7 @@ namespace Internal.JitInterface
         {
             return false;
         }
-        
+
         private CORINFO_OBJECT_STRUCT_* getRuntimeTypePointer(CORINFO_CLASS_STRUCT_* cls)
         {
             return null;

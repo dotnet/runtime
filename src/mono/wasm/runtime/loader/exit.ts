@@ -140,7 +140,7 @@ function logErrorOnExit(exit_code: number, reason?: any) {
                     mono_log_info_no_prefix("WASM EXIT " + exit_code);
                 }
                 else {
-                    setTimeout(stop_when_ws_buffer_empty, 100);
+                    globalThis.setTimeout(stop_when_ws_buffer_empty, 100);
                 }
             };
             stop_when_ws_buffer_empty();

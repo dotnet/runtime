@@ -2516,13 +2516,11 @@ mono_class_get_virtual_method (MonoClass *klass, MonoMethod *method, MonoError *
 		} else {
 			res = vtable [method->slot];
 		}
-    }
-
-	{
-		if (method->is_inflated) {
-			/* Have to inflate the result */
-			res = mono_class_inflate_generic_method_checked (res, &((MonoMethodInflated*)method)->context, error);
-		}
+	}
+	// res can be null if klass is abstract and doesn't implement method
+	if (res && method->is_inflated) {
+		/* Have to inflate the result */
+		res = mono_class_inflate_generic_method_checked (res, &((MonoMethodInflated*)method)->context, error);
 	}
 
 	return res;
@@ -8137,7 +8135,11 @@ mono_runtime_run_startup_hooks (void)
 	mono_error_cleanup (error);
 	if (!method)
 		return;
-	mono_runtime_invoke_checked (method, NULL, NULL, error);
+
+	gpointer args [1];
+	args[0] = mono_string_empty_internal (mono_domain_get ());
+
+	mono_runtime_invoke_checked (method, NULL, args, error);
 	// runtime hooks design doc says not to catch exceptions from the hooks
 	mono_error_raise_exception_deprecated (error);
 }

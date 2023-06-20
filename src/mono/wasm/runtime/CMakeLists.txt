@@ -8,7 +8,6 @@ endif ()
 project(mono-wasm-runtime C)
 
 option(DISABLE_THREADS "defined if the build does NOT support multithreading" ON)
-option(DISABLE_WASM_USER_THREADS "defined if the build does not allow user threads to be created in a multithreaded build" OFF)
 option(DISABLE_LEGACY_JS_INTEROP "defined if the build does not support legacy JavaScript interop" OFF)
 
 set(CMAKE_EXECUTABLE_SUFFIX ".js")

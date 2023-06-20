@@ -231,7 +231,7 @@ namespace ILCompiler
         {
             StringBuilder sb = new StringBuilder();
             CecilTypeNameFormatter.Instance.AppendName(sb, type);
-            if (regex.IsMatch(sb.ToString()))
+            if (regex.Match(sb.ToString()).Success)
                 ProcessType(type, nav);
         }
 

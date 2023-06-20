@@ -1,0 +1,8 @@
+<linker>
+  <assembly fullname="System.Private.CoreLib">
+    <type fullname="System.Threading.ThreadPool">
+      <method signature="System.Boolean get_UseWindowsThreadPool()" body="stub" value="true" feature="System.Threading.ThreadPool.UseWindowsThreadPool" featurevalue="true"/>
+      <method signature="System.Boolean get_UseWindowsThreadPool()" body="stub" value="false" feature="System.Threading.ThreadPool.UseWindowsThreadPool" featurevalue="false"/>
+    </type>
+  </assembly>
+</linker>

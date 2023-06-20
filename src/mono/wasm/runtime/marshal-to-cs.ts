@@ -1,7 +1,7 @@
 // Licensed to the .NET Foundation under one or more agreements.
 // The .NET Foundation licenses this file to you under the MIT license.
 
-import monoWasmThreads from "consts:monoWasmThreads";
+import MonoWasmThreads from "consts:monoWasmThreads";
 import { isThenable } from "./cancelable-promise";
 import cwraps from "./cwraps";
 import { assert_not_disposed, cs_owned_js_handle_symbol, js_owned_gc_handle_symbol, mono_wasm_get_js_handle, setup_managed_proxy, teardown_managed_proxy } from "./gc-handles";
@@ -15,8 +15,8 @@ import {
     set_arg_element_type, ManagedObject, JavaScriptMarshalerArgSize
 } from "./marshal";
 import { get_marshaler_to_js_by_type } from "./marshal-to-js";
-import { _zero_region } from "./memory";
-import { js_string_to_mono_string_root } from "./strings";
+import { _zero_region, localHeapViewF64, localHeapViewI32, localHeapViewU8 } from "./memory";
+import { stringToMonoStringRoot } from "./strings";
 import { GCHandle, GCHandleNull, JSMarshalerArgument, JSMarshalerArguments, JSMarshalerType, MarshalerToCs, MarshalerToJs, BoundMarshalerToCs, MarshalerType } from "./types/internal";
 import { TypedArray } from "./types/emscripten";
 import { addUnsettledPromise, settleUnsettledPromise } from "./pthreads/shared/eventloop";
@@ -225,7 +225,7 @@ function _marshal_string_to_cs(arg: JSMarshalerArgument, value: string) {
 function _marshal_string_to_cs_impl(arg: JSMarshalerArgument, value: string) {
     const root = get_string_root(arg);
     try {
-        js_string_to_mono_string_root(value, root);
+        stringToMonoStringRoot(value, root);
     }
     finally {
         root.release();
@@ -309,16 +309,16 @@ function _marshal_task_to_cs(arg: JSMarshalerArgument, value: Promise<any>, _?: 
     const holder = new TaskCallbackHolder(value);
     setup_managed_proxy(holder, gc_handle);
 
-    if (monoWasmThreads)
+    if (MonoWasmThreads)
         addUnsettledPromise();
 
     value.then(data => {
-        if (monoWasmThreads)
+        if (MonoWasmThreads)
             settleUnsettledPromise();
         runtimeHelpers.javaScriptExports.complete_task(gc_handle, null, data, res_converter || _marshal_cs_object_to_cs);
         teardown_managed_proxy(holder, gc_handle); // this holds holder alive for finalizer, until the promise is freed, (holding promise instead would not work)
     }).catch(reason => {
-        if (monoWasmThreads)
+        if (MonoWasmThreads)
             settleUnsettledPromise();
         runtimeHelpers.javaScriptExports.complete_task(gc_handle, reason, null, undefined);
         teardown_managed_proxy(holder, gc_handle); // this holds holder alive for finalizer, until the promise is freed
@@ -496,17 +496,17 @@ export function marshal_array_to_cs_impl(arg: JSMarshalerArgument, value: Array<
         }
         else if (element_type == MarshalerType.Byte) {
             mono_assert(Array.isArray(value) || value instanceof Uint8Array, "Value is not an Array or Uint8Array");
-            const targetView = Module.HEAPU8.subarray(<any>buffer_ptr, buffer_ptr + length);
+            const targetView = localHeapViewU8().subarray(<any>buffer_ptr, buffer_ptr + length);
             targetView.set(value);
         }
         else if (element_type == MarshalerType.Int32) {
             mono_assert(Array.isArray(value) || value instanceof Int32Array, "Value is not an Array or Int32Array");
-            const targetView = Module.HEAP32.subarray(<any>buffer_ptr >> 2, (buffer_ptr >> 2) + length);
+            const targetView = localHeapViewI32().subarray(<any>buffer_ptr >> 2, (buffer_ptr >> 2) + length);
             targetView.set(value);
         }
         else if (element_type == MarshalerType.Double) {
             mono_assert(Array.isArray(value) || value instanceof Float64Array, "Value is not an Array or Float64Array");
-            const targetView = Module.HEAPF64.subarray(<any>buffer_ptr >> 3, (buffer_ptr >> 3) + length);
+            const targetView = localHeapViewF64().subarray(<any>buffer_ptr >> 3, (buffer_ptr >> 3) + length);
             targetView.set(value);
         }
         else {

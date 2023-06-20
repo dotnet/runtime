@@ -173,7 +173,11 @@ void ObjectAllocator::MarkEscapingVarsAndBuildConnGraph()
             unsigned lclNum     = tree->AsLclVarCommon()->GetLclNum();
             bool     lclEscapes = true;
 
-            if (tree->OperIs(GT_LCL_VAR) && tree->TypeIs(TYP_REF, TYP_BYREF, TYP_I_IMPL))
+            if (tree->OperIsLocalStore())
+            {
+                lclEscapes = false;
+            }
+            else if (tree->OperIs(GT_LCL_VAR) && tree->TypeIs(TYP_REF, TYP_BYREF, TYP_I_IMPL))
             {
                 assert(tree == m_ancestors.Top());
 
@@ -356,15 +360,15 @@ bool ObjectAllocator::MorphAllocObjNodes()
         for (Statement* const stmt : block->Statements())
         {
             GenTree* stmtExpr = stmt->GetRootNode();
-            GenTree* op2      = nullptr;
+            GenTree* data     = nullptr;
 
             bool canonicalAllocObjFound = false;
 
-            if (stmtExpr->OperGet() == GT_ASG && stmtExpr->TypeGet() == TYP_REF)
+            if (stmtExpr->OperIs(GT_STORE_LCL_VAR) && stmtExpr->TypeIs(TYP_REF))
             {
-                op2 = stmtExpr->gtGetOp2();
+                data = stmtExpr->AsLclVar()->Data();
 
-                if (op2->OperGet() == GT_ALLOCOBJ)
+                if (data->OperGet() == GT_ALLOCOBJ)
                 {
                     canonicalAllocObjFound = true;
                 }
@@ -376,22 +380,14 @@ bool ObjectAllocator::MorphAllocObjNodes()
                 //------------------------------------------------------------------------
                 // We expect the following expression tree at this point
                 //  STMTx (IL 0x... ???)
-                //    * ASG       ref
-                //    +--*  LCL_VAR   ref
+                //    * STORE_LCL_VAR   ref
                 //    \--*  ALLOCOBJ  ref
                 //       \--*  CNS_INT(h) long
                 //------------------------------------------------------------------------
 
-                GenTree* op1 = stmtExpr->gtGetOp1();
-
-                assert(op1->OperGet() == GT_LCL_VAR);
-                assert(op1->TypeGet() == TYP_REF);
-                assert(op2 != nullptr);
-                assert(op2->OperGet() == GT_ALLOCOBJ);
-
-                GenTreeAllocObj*     asAllocObj = op2->AsAllocObj();
-                unsigned int         lclNum     = op1->AsLclVar()->GetLclNum();
-                CORINFO_CLASS_HANDLE clsHnd     = op2->AsAllocObj()->gtAllocObjClsHnd;
+                GenTreeAllocObj*     asAllocObj = data->AsAllocObj();
+                unsigned int         lclNum     = stmtExpr->AsLclVar()->GetLclNum();
+                CORINFO_CLASS_HANDLE clsHnd     = data->AsAllocObj()->gtAllocObjClsHnd;
 
                 // Don't attempt to do stack allocations inside basic blocks that may be in a loop.
                 if (IsObjectStackAllocationEnabled() && !basicBlockHasBackwardJump &&
@@ -416,20 +412,16 @@ bool ObjectAllocator::MorphAllocObjNodes()
                         JITDUMP("Allocating local variable V%02u on the heap\n", lclNum);
                     }
 
-                    op2 = MorphAllocObjNodeIntoHelperCall(asAllocObj);
+                    data                         = MorphAllocObjNodeIntoHelperCall(asAllocObj);
+                    stmtExpr->AsLclVar()->Data() = data;
+                    stmtExpr->AddAllEffectsFlags(data);
                 }
-
-                // Propagate flags of op2 to its parent.
-                stmtExpr->AsOp()->gtOp2 = op2;
-                stmtExpr->gtFlags |= op2->gtFlags & GTF_ALL_EFFECT;
             }
-
 #ifdef DEBUG
             else
             {
-                // We assume that GT_ALLOCOBJ nodes are always present in the
-                // canonical form.
-                comp->fgWalkTreePre(stmt->GetRootNodePointer(), AssertWhenAllocObjFoundVisitor);
+                // We assume that GT_ALLOCOBJ nodes are always present in the canonical form.
+                assert(!comp->gtTreeContainsOper(stmt->GetRootNode(), GT_ALLOCOBJ));
             }
 #endif // DEBUG
         }
@@ -524,17 +516,14 @@ unsigned int ObjectAllocator::MorphAllocObjNodeIntoStackAlloc(GenTreeAllocObj* a
     {
         //------------------------------------------------------------------------
         // STMTx (IL 0x... ???)
-        //   *  ASG       struct (init)
-        //   +--*  LCL_VAR   struct
+        //   *  STORE_LCL_VAR   struct
         //   \--*  CNS_INT   int    0
         //------------------------------------------------------------------------
 
-        GenTree* tree = comp->gtNewLclvNode(lclNum, TYP_STRUCT);
-        tree          = comp->gtNewAssignNode(tree, comp->gtNewIconNode(0));
+        GenTree*   init     = comp->gtNewStoreLclVarNode(lclNum, comp->gtNewIconNode(0));
+        Statement* initStmt = comp->gtNewStmt(init);
 
-        Statement* newStmt = comp->gtNewStmt(tree);
-
-        comp->fgInsertStmtBefore(block, stmt, newStmt);
+        comp->fgInsertStmtBefore(block, stmt, initStmt);
     }
     else
     {
@@ -545,18 +534,15 @@ unsigned int ObjectAllocator::MorphAllocObjNodeIntoStackAlloc(GenTreeAllocObj* a
 
     //------------------------------------------------------------------------
     // STMTx (IL 0x... ???)
-    //   * ASG       long
-    //   +--*  LCL_FLD    long
+    //   * STORE_LCL_FLD    long
     //   \--*  CNS_INT(h) long
     //------------------------------------------------------------------------
 
     // Initialize the method table pointer.
-    GenTree* tree = comp->gtNewLclFldNode(lclNum, TYP_I_IMPL, 0);
-    tree          = comp->gtNewAssignNode(tree, allocObj->gtGetOp1());
+    GenTree*   init     = comp->gtNewStoreLclFldNode(lclNum, TYP_I_IMPL, 0, allocObj->gtGetOp1());
+    Statement* initStmt = comp->gtNewStmt(init);
 
-    Statement* newStmt = comp->gtNewStmt(tree);
-
-    comp->fgInsertStmtBefore(block, stmt, newStmt);
+    comp->fgInsertStmtBefore(block, stmt, initStmt);
 
     return lclNum;
 }
@@ -575,7 +561,7 @@ unsigned int ObjectAllocator::MorphAllocObjNodeIntoStackAlloc(GenTreeAllocObj* a
 // Notes:
 //    The method currently treats all locals assigned to a field as escaping.
 //    The can potentially be tracked by special field edges in the connection graph.
-
+//
 bool ObjectAllocator::CanLclVarEscapeViaParentStack(ArrayStack<GenTree*>* parentStack, unsigned int lclNum)
 {
     assert(parentStack != nullptr);
@@ -599,48 +585,18 @@ bool ObjectAllocator::CanLclVarEscapeViaParentStack(ArrayStack<GenTree*>* parent
 
         switch (parent->OperGet())
         {
-            case GT_ASG:
+            // Update the connection graph if we are storing to a local.
+            // For all other stores we mark the local as escaping.
+            case GT_STORE_LCL_VAR:
             {
-                // Use the following conservative behavior for GT_ASG parent node:
-                //   Consider local variable to be escaping if
-                //   1. lclVar appears on the rhs of a GT_ASG node
-                //                      AND
-                //   2. The lhs of the GT_ASG is not another lclVar
+                // Add an edge to the connection graph.
+                const unsigned int dstLclNum = parent->AsLclVar()->GetLclNum();
+                const unsigned int srcLclNum = lclNum;
 
-                GenTree* op1 = parent->AsOp()->gtGetOp1();
-
-                if (op1 == tree)
-                {
-                    // Assigning to a local doesn't make it escaping.
-                    // If there is another local variable on the rhs,
-                    // we will update the connection graph when we visit it.
-                    canLclVarEscapeViaParentStack = false;
-                }
-                else
-                {
-                    // lclVar is on the rhs of GT_ASG node
-                    assert(parent->AsOp()->gtGetOp2() == tree);
-
-                    // Update the connection graph if we are assigning to a local.
-                    // For all other assignments we mark the rhs local as escaping.
-                    // TODO-ObjectStackAllocation: track assignments to fields.
-                    if (op1->OperGet() == GT_LCL_VAR)
-                    {
-                        // We expect the following tree at this point
-                        //   /--*  GT_LCL_VAR    ref    rhsLclVar
-                        // --*  =         ref
-                        //   \--*  GT_LCL_VAR    ref    lhsLclVar
-
-                        // Add an edge to the connection graph.
-                        const unsigned int lhsLclNum = op1->AsLclVar()->GetLclNum();
-                        const unsigned int rhsLclNum = lclNum;
-
-                        AddConnGraphEdge(lhsLclNum, rhsLclNum);
-                        canLclVarEscapeViaParentStack = false;
-                    }
-                }
-                break;
+                AddConnGraphEdge(dstLclNum, srcLclNum);
+                canLclVarEscapeViaParentStack = false;
             }
+            break;
 
             case GT_EQ:
             case GT_NE:
@@ -664,6 +620,13 @@ bool ObjectAllocator::CanLclVarEscapeViaParentStack(ArrayStack<GenTree*>* parent
                 keepChecking = true;
                 break;
 
+            case GT_STOREIND:
+                if (tree != parent->AsIndir()->Addr())
+                {
+                    // TODO-ObjectStackAllocation: track stores to fields.
+                    break;
+                }
+                FALLTHROUGH;
             case GT_IND:
                 // Address of the field/ind is not taken so the local doesn't escape.
                 canLclVarEscapeViaParentStack = false;
@@ -723,18 +686,12 @@ void ObjectAllocator::UpdateAncestorTypes(GenTree* tree, ArrayStack<GenTree*>* p
 
         switch (parent->OperGet())
         {
-            case GT_ASG:
-            {
-                GenTree* op2 = parent->AsOp()->gtGetOp2();
-
-                if ((op2 == tree) && (parent->TypeGet() == TYP_REF))
+            case GT_STORE_LCL_VAR:
+                if (parent->TypeGet() == TYP_REF)
                 {
-                    assert(parent->AsOp()->gtGetOp1()->OperGet() == GT_LCL_VAR);
                     parent->ChangeType(newType);
                 }
-
                 break;
-            }
 
             case GT_EQ:
             case GT_NE:
@@ -759,8 +716,9 @@ void ObjectAllocator::UpdateAncestorTypes(GenTree* tree, ArrayStack<GenTree*>* p
                 keepChecking = true;
                 break;
 
-            case GT_IND:
-            {
+            case GT_STOREIND:
+                assert(tree == parent->AsIndir()->Addr());
+
                 // The new target could be *not* on the heap.
                 parent->gtFlags &= ~GTF_IND_TGT_HEAP;
 
@@ -772,7 +730,9 @@ void ObjectAllocator::UpdateAncestorTypes(GenTree* tree, ArrayStack<GenTree*>* p
                     parent->gtFlags |= GTF_IND_TGT_NOT_HEAP;
                 }
                 break;
-            }
+
+            case GT_IND:
+                break;
 
             default:
                 unreached();
@@ -786,30 +746,6 @@ void ObjectAllocator::UpdateAncestorTypes(GenTree* tree, ArrayStack<GenTree*>* p
 
     return;
 }
-
-#ifdef DEBUG
-//------------------------------------------------------------------------
-// AssertWhenAllocObjFoundVisitor: Look for a GT_ALLOCOBJ node and assert
-//                                 when found one.
-//
-// Arguments:
-//    pTree   - Tree to examine
-//    data    - Walker data
-//
-// Return Value:
-//    Always returns fgWalkResult::WALK_CONTINUE
-
-Compiler::fgWalkResult ObjectAllocator::AssertWhenAllocObjFoundVisitor(GenTree** pTree, Compiler::fgWalkData* data)
-{
-    GenTree* tree = *pTree;
-
-    assert(tree != nullptr);
-    assert(tree->OperGet() != GT_ALLOCOBJ);
-
-    return Compiler::fgWalkResult::WALK_CONTINUE;
-}
-
-#endif // DEBUG
 
 //------------------------------------------------------------------------
 // RewriteUses: Find uses of the newobj temp for stack-allocated
@@ -837,7 +773,7 @@ void ObjectAllocator::RewriteUses()
         Compiler::fgWalkResult PreOrderVisit(GenTree** use, GenTree* user)
         {
             GenTree* tree = *use;
-            assert(tree->IsLocal() || tree->OperIs(GT_LCL_ADDR));
+            assert(tree->OperIsAnyLocal());
 
             const unsigned int lclNum    = tree->AsLclVarCommon()->GetLclNum();
             unsigned int       newLclNum = BAD_VAR_NUM;
@@ -847,11 +783,12 @@ void ObjectAllocator::RewriteUses()
                 m_allocator->MayLclVarPointToStack(lclNum))
             {
                 // Analysis does not handle indirect access to pointer locals.
-                assert(tree->OperIs(GT_LCL_VAR));
+                assert(tree->OperIsScalarLocal());
 
                 var_types newType;
                 if (m_allocator->m_HeapLocalToStackLocalMap.TryGetValue(lclNum, &newLclNum))
                 {
+                    assert(tree->OperIs(GT_LCL_VAR)); // Must be a use.
                     newType = TYP_I_IMPL;
                     tree    = m_compiler->gtNewLclVarAddrNode(newLclNum);
                     *use    = tree;

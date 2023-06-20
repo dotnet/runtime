@@ -28,6 +28,8 @@ namespace ILCompiler
             new(new[] { "--optimize-time", "--Ot" }, "Enable optimizations, favor code speed");
         public Option<string[]> MibcFilePaths { get; } =
             new(new[] { "--mibc", "-m" }, Array.Empty<string>, "Mibc file(s) for profile guided optimization");
+        public Option<string[]> SatelliteFilePaths { get; } =
+            new(new[] { "--satellite" }, Array.Empty<string>, "Satellite assemblies associated with inputs/references");
         public Option<bool> EnableDebugInfo { get; } =
             new(new[] { "--debug", "-g" }, "Emit debugging information");
         public Option<bool> UseDwarf5 { get; } =
@@ -78,6 +80,8 @@ namespace ILCompiler
             new(new[] { "--scan" }, "Use IL scanner to generate optimized code (implied by -O)");
         public Option<bool> NoScanner { get; } =
             new(new[] { "--noscan" }, "Do not use IL scanner to generate optimized code");
+        public Option<bool> NoInlineTls { get; } =
+            new(new[] { "--noinlinetls" }, "Do not generate inline thread local statics");
         public Option<string> IlDump { get; } =
             new(new[] { "--ildump" }, "Dump IL assembly listing for compiler-generated IL");
         public Option<bool> EmitStackTraceData { get; } =
@@ -86,12 +90,12 @@ namespace ILCompiler
             new(new[] { "--methodbodyfolding" }, "Fold identical method bodies");
         public Option<string[]> InitAssemblies { get; } =
             new(new[] { "--initassembly" }, Array.Empty<string>, "Assembly(ies) with a library initializer");
-        public Option<string[]> AppContextSwitches { get; } =
-            new(new[] { "--appcontextswitch" }, Array.Empty<string>, "System.AppContext switches to set (format: 'Key=Value')");
         public Option<string[]> FeatureSwitches { get; } =
             new(new[] { "--feature" }, Array.Empty<string>, "Feature switches to apply (format: 'Namespace.Name=[true|false]'");
         public Option<string[]> RuntimeOptions { get; } =
             new(new[] { "--runtimeopt" }, Array.Empty<string>, "Runtime options to set");
+        public Option<string[]> RuntimeKnobs { get; } =
+            new(new[] { "--runtimeknob" }, Array.Empty<string>, "Runtime knobs to set");
         public Option<int> Parallelism { get; } =
             new(new[] { "--parallelism" }, result =>
             {
@@ -110,6 +114,8 @@ namespace ILCompiler
             }, true, "Maximum number of threads to use during compilation");
         public Option<string> InstructionSet { get; } =
             new(new[] { "--instruction-set" }, "Instruction set to allow or disallow");
+        public Option<int> MaxVectorTBitWidth { get; } =
+            new(new[] { "--max-vectort-bitwidth" }, "Maximum width, in bits, that Vector<T> is allowed to be");
         public Option<string> Guard { get; } =
             new(new[] { "--guard" }, "Enable mitigations. Options: 'cf': CFG (Control Flow Guard, Windows only)");
         public Option<bool> Dehydrate { get; } =
@@ -134,8 +140,10 @@ namespace ILCompiler
             new(new[] { "--directpinvoke" }, Array.Empty<string>, "PInvoke to call directly");
         public Option<string[]> DirectPInvokeLists { get; } =
             new(new[] { "--directpinvokelist" }, Array.Empty<string>, "File with list of PInvokes to call directly");
-        public Option<int> MaxGenericCycle { get; } =
-            new(new[] { "--maxgenericcycle" }, () => CompilerTypeSystemContext.DefaultGenericCycleCutoffPoint, "Max depth of generic cycle");
+        public Option<int> MaxGenericCycleDepth { get; } =
+            new(new[] { "--maxgenericcycle" }, () => CompilerTypeSystemContext.DefaultGenericCycleDepthCutoff, "Max depth of generic cycle");
+        public Option<int> MaxGenericCycleBreadth { get; } =
+            new(new[] { "--maxgenericcyclebreadth" }, () => CompilerTypeSystemContext.DefaultGenericCycleBreadthCutoff, "Max breadth of generic cycle expansion");
         public Option<string[]> RootedAssemblies { get; } =
             new(new[] { "--root" }, Array.Empty<string>, "Fully generate given assembly");
         public Option<IEnumerable<string>> ConditionallyRootedAssemblies { get; } =
@@ -173,6 +181,7 @@ namespace ILCompiler
             AddOption(OptimizeSpace);
             AddOption(OptimizeTime);
             AddOption(MibcFilePaths);
+            AddOption(SatelliteFilePaths);
             AddOption(EnableDebugInfo);
             AddOption(UseDwarf5);
             AddOption(NativeLib);
@@ -198,15 +207,17 @@ namespace ILCompiler
             AddOption(ScanReflection);
             AddOption(UseScanner);
             AddOption(NoScanner);
+            AddOption(NoInlineTls);
             AddOption(IlDump);
             AddOption(EmitStackTraceData);
             AddOption(MethodBodyFolding);
             AddOption(InitAssemblies);
-            AddOption(AppContextSwitches);
             AddOption(FeatureSwitches);
             AddOption(RuntimeOptions);
+            AddOption(RuntimeKnobs);
             AddOption(Parallelism);
             AddOption(InstructionSet);
+            AddOption(MaxVectorTBitWidth);
             AddOption(Guard);
             AddOption(Dehydrate);
             AddOption(PreinitStatics);
@@ -219,7 +230,8 @@ namespace ILCompiler
             AddOption(SingleWarnDisabledAssemblies);
             AddOption(DirectPInvokes);
             AddOption(DirectPInvokeLists);
-            AddOption(MaxGenericCycle);
+            AddOption(MaxGenericCycleDepth);
+            AddOption(MaxGenericCycleBreadth);
             AddOption(RootedAssemblies);
             AddOption(ConditionallyRootedAssemblies);
             AddOption(TrimmedAssemblies);
@@ -264,9 +276,11 @@ namespace ILCompiler
                         // + the original command line arguments
                         // + a rsp file that should work to directly run out of the zip file
 
+#pragma warning disable CA1861 // Avoid constant arrays as arguments. Only executed once during the execution of the program.
                         Helpers.MakeReproPackage(makeReproPath, context.ParseResult.GetValue(OutputFilePath), args, context.ParseResult,
                             inputOptions : new[] { "r", "reference", "m", "mibc", "rdxml", "directpinvokelist", "descriptor" },
                             outputOptions : new[] { "o", "out", "exportsfile" });
+#pragma warning restore CA1861 // Avoid constant arrays as arguments
                     }
 
                     context.ExitCode = new Program(this).Run();

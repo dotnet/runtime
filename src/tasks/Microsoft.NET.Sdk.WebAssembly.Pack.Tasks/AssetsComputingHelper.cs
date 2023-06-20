@@ -16,7 +16,6 @@ public class AssetsComputingHelper
     {
         "Microsoft.NETCore.App.Runtime.Mono.browser-wasm",
         "Microsoft.NETCore.App.Runtime.Mono.multithread.browser-wasm",
-        "Microsoft.NETCore.App.Runtime.Mono.perftrace.browser-wasm",
     };
 
     private static readonly string[] dotnetJsSingleThreadNames = new[]

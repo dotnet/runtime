@@ -879,6 +879,12 @@
   </Suppression>
   <Suppression>
     <DiagnosticId>CP0014</DiagnosticId>
+    <Target>T:System.Net.Security.NegotiateStream:[T:System.Runtime.Versioning.UnsupportedOSPlatformAttribute]</Target>
+    <Left>net7.0/netstandard.dll</Left>
+    <Right>net8.0/netstandard.dll</Right>
+  </Suppression>
+  <Suppression>
+    <DiagnosticId>CP0014</DiagnosticId>
     <Target>M:System.Console.get_WindowHeight:[T:System.Runtime.Versioning.UnsupportedOSPlatformAttribute]</Target>
     <Left>net7.0/System.Console.dll</Left>
     <Right>net8.0/System.Console.dll</Right>
@@ -1743,6 +1749,12 @@
   </Suppression>
   <Suppression>
     <DiagnosticId>CP0014</DiagnosticId>
+    <Target>T:System.Net.Security.NegotiateStream:[T:System.Runtime.Versioning.UnsupportedOSPlatformAttribute]</Target>
+    <Left>net7.0/System.dll</Left>
+    <Right>net8.0/System.dll</Right>
+  </Suppression>
+  <Suppression>
+    <DiagnosticId>CP0014</DiagnosticId>
     <Target>M:System.Linq.Queryable.Aggregate``1(System.Linq.IQueryable{``0},System.Linq.Expressions.Expression{System.Func{``0,``0,``0}}):[T:System.Diagnostics.CodeAnalysis.RequiresDynamicCodeAttribute]</Target>
     <Left>net7.0/System.Linq.Queryable.dll</Left>
     <Right>net8.0/System.Linq.Queryable.dll</Right>
@@ -2552,80 +2564,14 @@
     <Right>net8.0/System.Linq.Queryable.dll</Right>
   </Suppression>
   <Suppression>
-    <DiagnosticId>CP0015</DiagnosticId>
-    <Target>M:System.Runtime.Serialization.Formatter.Deserialize(System.IO.Stream):[T:System.Diagnostics.CodeAnalysis.RequiresUnreferencedCodeAttribute]</Target>
-    <Left>net7.0/mscorlib.dll</Left>
-    <Right>net8.0/mscorlib.dll</Right>
+    <DiagnosticId>CP0014</DiagnosticId>
+    <Target>T:System.Net.Security.NegotiateStream:[T:System.Runtime.Versioning.UnsupportedOSPlatformAttribute]</Target>
+    <Left>net7.0/System.Net.Security.dll</Left>
+    <Right>net8.0/System.Net.Security.dll</Right>
   </Suppression>
   <Suppression>
     <DiagnosticId>CP0015</DiagnosticId>
-    <Target>M:System.Runtime.Serialization.Formatter.Serialize(System.IO.Stream,System.Object):[T:System.Diagnostics.CodeAnalysis.RequiresUnreferencedCodeAttribute]</Target>
-    <Left>net7.0/mscorlib.dll</Left>
-    <Right>net8.0/mscorlib.dll</Right>
-  </Suppression>
-  <Suppression>
-    <DiagnosticId>CP0015</DiagnosticId>
-    <Target>M:System.Runtime.Serialization.Formatters.Binary.BinaryFormatter.Deserialize(System.IO.Stream):[T:System.Diagnostics.CodeAnalysis.RequiresUnreferencedCodeAttribute]</Target>
-    <Left>net7.0/mscorlib.dll</Left>
-    <Right>net8.0/mscorlib.dll</Right>
-  </Suppression>
-  <Suppression>
-    <DiagnosticId>CP0015</DiagnosticId>
-    <Target>M:System.Runtime.Serialization.Formatters.Binary.BinaryFormatter.Serialize(System.IO.Stream,System.Object):[T:System.Diagnostics.CodeAnalysis.RequiresUnreferencedCodeAttribute]</Target>
-    <Left>net7.0/mscorlib.dll</Left>
-    <Right>net8.0/mscorlib.dll</Right>
-  </Suppression>
-  <Suppression>
-    <DiagnosticId>CP0015</DiagnosticId>
-    <Target>M:System.Runtime.Serialization.IFormatter.Deserialize(System.IO.Stream):[T:System.Diagnostics.CodeAnalysis.RequiresUnreferencedCodeAttribute]</Target>
-    <Left>net7.0/mscorlib.dll</Left>
-    <Right>net8.0/mscorlib.dll</Right>
-  </Suppression>
-  <Suppression>
-    <DiagnosticId>CP0015</DiagnosticId>
-    <Target>M:System.Runtime.Serialization.IFormatter.Serialize(System.IO.Stream,System.Object):[T:System.Diagnostics.CodeAnalysis.RequiresUnreferencedCodeAttribute]</Target>
-    <Left>net7.0/mscorlib.dll</Left>
-    <Right>net8.0/mscorlib.dll</Right>
-  </Suppression>
-  <Suppression>
-    <DiagnosticId>CP0015</DiagnosticId>
-    <Target>M:System.Runtime.Serialization.ObjectManager.DoFixups:[T:System.Diagnostics.CodeAnalysis.RequiresUnreferencedCodeAttribute]</Target>
-    <Left>net7.0/mscorlib.dll</Left>
-    <Right>net8.0/mscorlib.dll</Right>
-  </Suppression>
-  <Suppression>
-    <DiagnosticId>CP0015</DiagnosticId>
-    <Target>M:System.Runtime.Serialization.ObjectManager.RaiseOnDeserializingEvent(System.Object):[T:System.Diagnostics.CodeAnalysis.RequiresUnreferencedCodeAttribute]</Target>
-    <Left>net7.0/mscorlib.dll</Left>
-    <Right>net8.0/mscorlib.dll</Right>
-  </Suppression>
-  <Suppression>
-    <DiagnosticId>CP0015</DiagnosticId>
-    <Target>M:System.Runtime.Serialization.ObjectManager.RegisterObject(System.Object,System.Int64,System.Runtime.Serialization.SerializationInfo,System.Int64,System.Reflection.MemberInfo,System.Int32[]):[T:System.Diagnostics.CodeAnalysis.RequiresUnreferencedCodeAttribute]</Target>
-    <Left>net7.0/mscorlib.dll</Left>
-    <Right>net8.0/mscorlib.dll</Right>
-  </Suppression>
-  <Suppression>
-    <DiagnosticId>CP0015</DiagnosticId>
-    <Target>M:System.Runtime.Serialization.ObjectManager.RegisterObject(System.Object,System.Int64,System.Runtime.Serialization.SerializationInfo,System.Int64,System.Reflection.MemberInfo):[T:System.Diagnostics.CodeAnalysis.RequiresUnreferencedCodeAttribute]</Target>
-    <Left>net7.0/mscorlib.dll</Left>
-    <Right>net8.0/mscorlib.dll</Right>
-  </Suppression>
-  <Suppression>
-    <DiagnosticId>CP0015</DiagnosticId>
-    <Target>M:System.Runtime.Serialization.ObjectManager.RegisterObject(System.Object,System.Int64,System.Runtime.Serialization.SerializationInfo):[T:System.Diagnostics.CodeAnalysis.RequiresUnreferencedCodeAttribute]</Target>
-    <Left>net7.0/mscorlib.dll</Left>
-    <Right>net8.0/mscorlib.dll</Right>
-  </Suppression>
-  <Suppression>
-    <DiagnosticId>CP0015</DiagnosticId>
-    <Target>M:System.Runtime.Serialization.ObjectManager.RegisterObject(System.Object,System.Int64):[T:System.Diagnostics.CodeAnalysis.RequiresUnreferencedCodeAttribute]</Target>
-    <Left>net7.0/mscorlib.dll</Left>
-    <Right>net8.0/mscorlib.dll</Right>
-  </Suppression>
-  <Suppression>
-    <DiagnosticId>CP0015</DiagnosticId>
-    <Target>M:System.Runtime.Serialization.SerializationObjectManager.RegisterObject(System.Object):[T:System.Diagnostics.CodeAnalysis.RequiresUnreferencedCodeAttribute]</Target>
+    <Target>M:System.Type.GetEnumValues:[T:System.Diagnostics.CodeAnalysis.RequiresDynamicCodeAttribute]</Target>
     <Left>net7.0/mscorlib.dll</Left>
     <Right>net8.0/mscorlib.dll</Right>
   </Suppression>
@@ -2643,79 +2589,7 @@
   </Suppression>
   <Suppression>
     <DiagnosticId>CP0015</DiagnosticId>
-    <Target>M:System.Runtime.Serialization.Formatter.Deserialize(System.IO.Stream):[T:System.Diagnostics.CodeAnalysis.RequiresUnreferencedCodeAttribute]</Target>
-    <Left>net7.0/netstandard.dll</Left>
-    <Right>net8.0/netstandard.dll</Right>
-  </Suppression>
-  <Suppression>
-    <DiagnosticId>CP0015</DiagnosticId>
-    <Target>M:System.Runtime.Serialization.Formatter.Serialize(System.IO.Stream,System.Object):[T:System.Diagnostics.CodeAnalysis.RequiresUnreferencedCodeAttribute]</Target>
-    <Left>net7.0/netstandard.dll</Left>
-    <Right>net8.0/netstandard.dll</Right>
-  </Suppression>
-  <Suppression>
-    <DiagnosticId>CP0015</DiagnosticId>
-    <Target>M:System.Runtime.Serialization.Formatters.Binary.BinaryFormatter.Deserialize(System.IO.Stream):[T:System.Diagnostics.CodeAnalysis.RequiresUnreferencedCodeAttribute]</Target>
-    <Left>net7.0/netstandard.dll</Left>
-    <Right>net8.0/netstandard.dll</Right>
-  </Suppression>
-  <Suppression>
-    <DiagnosticId>CP0015</DiagnosticId>
-    <Target>M:System.Runtime.Serialization.Formatters.Binary.BinaryFormatter.Serialize(System.IO.Stream,System.Object):[T:System.Diagnostics.CodeAnalysis.RequiresUnreferencedCodeAttribute]</Target>
-    <Left>net7.0/netstandard.dll</Left>
-    <Right>net8.0/netstandard.dll</Right>
-  </Suppression>
-  <Suppression>
-    <DiagnosticId>CP0015</DiagnosticId>
-    <Target>M:System.Runtime.Serialization.IFormatter.Deserialize(System.IO.Stream):[T:System.Diagnostics.CodeAnalysis.RequiresUnreferencedCodeAttribute]</Target>
-    <Left>net7.0/netstandard.dll</Left>
-    <Right>net8.0/netstandard.dll</Right>
-  </Suppression>
-  <Suppression>
-    <DiagnosticId>CP0015</DiagnosticId>
-    <Target>M:System.Runtime.Serialization.IFormatter.Serialize(System.IO.Stream,System.Object):[T:System.Diagnostics.CodeAnalysis.RequiresUnreferencedCodeAttribute]</Target>
-    <Left>net7.0/netstandard.dll</Left>
-    <Right>net8.0/netstandard.dll</Right>
-  </Suppression>
-  <Suppression>
-    <DiagnosticId>CP0015</DiagnosticId>
-    <Target>M:System.Runtime.Serialization.ObjectManager.DoFixups:[T:System.Diagnostics.CodeAnalysis.RequiresUnreferencedCodeAttribute]</Target>
-    <Left>net7.0/netstandard.dll</Left>
-    <Right>net8.0/netstandard.dll</Right>
-  </Suppression>
-  <Suppression>
-    <DiagnosticId>CP0015</DiagnosticId>
-    <Target>M:System.Runtime.Serialization.ObjectManager.RaiseOnDeserializingEvent(System.Object):[T:System.Diagnostics.CodeAnalysis.RequiresUnreferencedCodeAttribute]</Target>
-    <Left>net7.0/netstandard.dll</Left>
-    <Right>net8.0/netstandard.dll</Right>
-  </Suppression>
-  <Suppression>
-    <DiagnosticId>CP0015</DiagnosticId>
-    <Target>M:System.Runtime.Serialization.ObjectManager.RegisterObject(System.Object,System.Int64,System.Runtime.Serialization.SerializationInfo,System.Int64,System.Reflection.MemberInfo,System.Int32[]):[T:System.Diagnostics.CodeAnalysis.RequiresUnreferencedCodeAttribute]</Target>
-    <Left>net7.0/netstandard.dll</Left>
-    <Right>net8.0/netstandard.dll</Right>
-  </Suppression>
-  <Suppression>
-    <DiagnosticId>CP0015</DiagnosticId>
-    <Target>M:System.Runtime.Serialization.ObjectManager.RegisterObject(System.Object,System.Int64,System.Runtime.Serialization.SerializationInfo,System.Int64,System.Reflection.MemberInfo):[T:System.Diagnostics.CodeAnalysis.RequiresUnreferencedCodeAttribute]</Target>
-    <Left>net7.0/netstandard.dll</Left>
-    <Right>net8.0/netstandard.dll</Right>
-  </Suppression>
-  <Suppression>
-    <DiagnosticId>CP0015</DiagnosticId>
-    <Target>M:System.Runtime.Serialization.ObjectManager.RegisterObject(System.Object,System.Int64,System.Runtime.Serialization.SerializationInfo):[T:System.Diagnostics.CodeAnalysis.RequiresUnreferencedCodeAttribute]</Target>
-    <Left>net7.0/netstandard.dll</Left>
-    <Right>net8.0/netstandard.dll</Right>
-  </Suppression>
-  <Suppression>
-    <DiagnosticId>CP0015</DiagnosticId>
-    <Target>M:System.Runtime.Serialization.ObjectManager.RegisterObject(System.Object,System.Int64):[T:System.Diagnostics.CodeAnalysis.RequiresUnreferencedCodeAttribute]</Target>
-    <Left>net7.0/netstandard.dll</Left>
-    <Right>net8.0/netstandard.dll</Right>
-  </Suppression>
-  <Suppression>
-    <DiagnosticId>CP0015</DiagnosticId>
-    <Target>M:System.Runtime.Serialization.SerializationObjectManager.RegisterObject(System.Object):[T:System.Diagnostics.CodeAnalysis.RequiresUnreferencedCodeAttribute]</Target>
+    <Target>M:System.Type.GetEnumValues:[T:System.Diagnostics.CodeAnalysis.RequiresDynamicCodeAttribute]</Target>
     <Left>net7.0/netstandard.dll</Left>
     <Right>net8.0/netstandard.dll</Right>
   </Suppression>
@@ -2760,6 +2634,18 @@
     <Target>T:System.Linq.EnumerableQuery`1:[T:System.Diagnostics.CodeAnalysis.RequiresDynamicCodeAttribute]</Target>
     <Left>net7.0/System.Linq.Queryable.dll</Left>
     <Right>net8.0/System.Linq.Queryable.dll</Right>
+  </Suppression>
+  <Suppression>
+    <DiagnosticId>CP0015</DiagnosticId>
+    <Target>M:System.Type.GetEnumValues:[T:System.Diagnostics.CodeAnalysis.RequiresDynamicCodeAttribute]</Target>
+    <Left>net7.0/System.Runtime.dll</Left>
+    <Right>net8.0/System.Runtime.dll</Right>
+  </Suppression>
+  <Suppression>
+    <DiagnosticId>CP0015</DiagnosticId>
+    <Target>T:System.Runtime.InteropServices.Marshalling.NativeMarshallingAttribute:[T:System.AttributeUsageAttribute]</Target>
+    <Left>net7.0/System.Runtime.dll</Left>
+    <Right>net8.0/System.Runtime.dll</Right>
   </Suppression>
   <Suppression>
     <DiagnosticId>CP0015</DiagnosticId>
@@ -2775,80 +2661,8 @@
   </Suppression>
   <Suppression>
     <DiagnosticId>CP0015</DiagnosticId>
-    <Target>M:System.Runtime.Serialization.Formatter.Deserialize(System.IO.Stream):[T:System.Diagnostics.CodeAnalysis.RequiresUnreferencedCodeAttribute]</Target>
-    <Left>net7.0/System.Runtime.Serialization.Formatters.dll</Left>
-    <Right>net8.0/System.Runtime.Serialization.Formatters.dll</Right>
-  </Suppression>
-  <Suppression>
-    <DiagnosticId>CP0015</DiagnosticId>
-    <Target>M:System.Runtime.Serialization.Formatter.Serialize(System.IO.Stream,System.Object):[T:System.Diagnostics.CodeAnalysis.RequiresUnreferencedCodeAttribute]</Target>
-    <Left>net7.0/System.Runtime.Serialization.Formatters.dll</Left>
-    <Right>net8.0/System.Runtime.Serialization.Formatters.dll</Right>
-  </Suppression>
-  <Suppression>
-    <DiagnosticId>CP0015</DiagnosticId>
-    <Target>M:System.Runtime.Serialization.Formatters.Binary.BinaryFormatter.Deserialize(System.IO.Stream):[T:System.Diagnostics.CodeAnalysis.RequiresUnreferencedCodeAttribute]</Target>
-    <Left>net7.0/System.Runtime.Serialization.Formatters.dll</Left>
-    <Right>net8.0/System.Runtime.Serialization.Formatters.dll</Right>
-  </Suppression>
-  <Suppression>
-    <DiagnosticId>CP0015</DiagnosticId>
-    <Target>M:System.Runtime.Serialization.Formatters.Binary.BinaryFormatter.Serialize(System.IO.Stream,System.Object):[T:System.Diagnostics.CodeAnalysis.RequiresUnreferencedCodeAttribute]</Target>
-    <Left>net7.0/System.Runtime.Serialization.Formatters.dll</Left>
-    <Right>net8.0/System.Runtime.Serialization.Formatters.dll</Right>
-  </Suppression>
-  <Suppression>
-    <DiagnosticId>CP0015</DiagnosticId>
-    <Target>M:System.Runtime.Serialization.IFormatter.Deserialize(System.IO.Stream):[T:System.Diagnostics.CodeAnalysis.RequiresUnreferencedCodeAttribute]</Target>
-    <Left>net7.0/System.Runtime.Serialization.Formatters.dll</Left>
-    <Right>net8.0/System.Runtime.Serialization.Formatters.dll</Right>
-  </Suppression>
-  <Suppression>
-    <DiagnosticId>CP0015</DiagnosticId>
-    <Target>M:System.Runtime.Serialization.IFormatter.Serialize(System.IO.Stream,System.Object):[T:System.Diagnostics.CodeAnalysis.RequiresUnreferencedCodeAttribute]</Target>
-    <Left>net7.0/System.Runtime.Serialization.Formatters.dll</Left>
-    <Right>net8.0/System.Runtime.Serialization.Formatters.dll</Right>
-  </Suppression>
-  <Suppression>
-    <DiagnosticId>CP0015</DiagnosticId>
-    <Target>M:System.Runtime.Serialization.ObjectManager.DoFixups:[T:System.Diagnostics.CodeAnalysis.RequiresUnreferencedCodeAttribute]</Target>
-    <Left>net7.0/System.Runtime.Serialization.Formatters.dll</Left>
-    <Right>net8.0/System.Runtime.Serialization.Formatters.dll</Right>
-  </Suppression>
-  <Suppression>
-    <DiagnosticId>CP0015</DiagnosticId>
-    <Target>M:System.Runtime.Serialization.ObjectManager.RaiseOnDeserializingEvent(System.Object):[T:System.Diagnostics.CodeAnalysis.RequiresUnreferencedCodeAttribute]</Target>
-    <Left>net7.0/System.Runtime.Serialization.Formatters.dll</Left>
-    <Right>net8.0/System.Runtime.Serialization.Formatters.dll</Right>
-  </Suppression>
-  <Suppression>
-    <DiagnosticId>CP0015</DiagnosticId>
-    <Target>M:System.Runtime.Serialization.ObjectManager.RegisterObject(System.Object,System.Int64,System.Runtime.Serialization.SerializationInfo,System.Int64,System.Reflection.MemberInfo,System.Int32[]):[T:System.Diagnostics.CodeAnalysis.RequiresUnreferencedCodeAttribute]</Target>
-    <Left>net7.0/System.Runtime.Serialization.Formatters.dll</Left>
-    <Right>net8.0/System.Runtime.Serialization.Formatters.dll</Right>
-  </Suppression>
-  <Suppression>
-    <DiagnosticId>CP0015</DiagnosticId>
-    <Target>M:System.Runtime.Serialization.ObjectManager.RegisterObject(System.Object,System.Int64,System.Runtime.Serialization.SerializationInfo,System.Int64,System.Reflection.MemberInfo):[T:System.Diagnostics.CodeAnalysis.RequiresUnreferencedCodeAttribute]</Target>
-    <Left>net7.0/System.Runtime.Serialization.Formatters.dll</Left>
-    <Right>net8.0/System.Runtime.Serialization.Formatters.dll</Right>
-  </Suppression>
-  <Suppression>
-    <DiagnosticId>CP0015</DiagnosticId>
-    <Target>M:System.Runtime.Serialization.ObjectManager.RegisterObject(System.Object,System.Int64,System.Runtime.Serialization.SerializationInfo):[T:System.Diagnostics.CodeAnalysis.RequiresUnreferencedCodeAttribute]</Target>
-    <Left>net7.0/System.Runtime.Serialization.Formatters.dll</Left>
-    <Right>net8.0/System.Runtime.Serialization.Formatters.dll</Right>
-  </Suppression>
-  <Suppression>
-    <DiagnosticId>CP0015</DiagnosticId>
-    <Target>M:System.Runtime.Serialization.ObjectManager.RegisterObject(System.Object,System.Int64):[T:System.Diagnostics.CodeAnalysis.RequiresUnreferencedCodeAttribute]</Target>
-    <Left>net7.0/System.Runtime.Serialization.Formatters.dll</Left>
-    <Right>net8.0/System.Runtime.Serialization.Formatters.dll</Right>
-  </Suppression>
-  <Suppression>
-    <DiagnosticId>CP0015</DiagnosticId>
-    <Target>M:System.Runtime.Serialization.SerializationObjectManager.RegisterObject(System.Object):[T:System.Diagnostics.CodeAnalysis.RequiresUnreferencedCodeAttribute]</Target>
-    <Left>net7.0/System.Runtime.Serialization.Formatters.dll</Left>
-    <Right>net8.0/System.Runtime.Serialization.Formatters.dll</Right>
+    <Target>T:System.Text.Json.Serialization.JsonStringEnumConverter:[T:System.Diagnostics.CodeAnalysis.RequiresDynamicCodeAttribute]</Target>
+    <Left>net7.0/System.Text.Json.dll</Left>
+    <Right>net8.0/System.Text.Json.dll</Right>
   </Suppression>
 </Suppressions>
