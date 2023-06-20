@@ -22,10 +22,6 @@
     <NoWarn Condition="'$(IsMergedTestRunnerAssembly)' == 'true'">$(NoWarn);CS2008</NoWarn>
   </PropertyGroup>
 
-  <PropertyGroup>
-    <IlcCompileDependsOn Condition="'$(CustomIlcCompileDependsOn)' == 'true'">Compile;ComputeIlcCompileInputs;SetupOSSpecificProps;PrepareForILLink</IlcCompileDependsOn>
-  </PropertyGroup>
-
   <!-- All CLRTests need to be of a certain "kind". These kinds are enumerated below.
   By default all tests are BuildAndRun. This means that the build system will Build them
   and construct a run-batch-script for them. -->
@@ -531,10 +527,10 @@
     <TrimMode Condition="'$(EnableAggressiveTrimming)' != 'true'">partial</TrimMode>
 
     <IlcToolsPath>$(CoreCLRILCompilerDir)</IlcToolsPath>
-    <IlcToolsPath Condition="'$(TargetArchitecture)' != '$(BuildArchitecture)' and '$(CustomIlcCompileDependsOn)' != 'true' and '$(TargetsAppleMobile)' != 'true'">$(CoreCLRCrossILCompilerDir)</IlcToolsPath>
+    <IlcToolsPath Condition="'$(TargetArchitecture)' != '$(BuildArchitecture)' and '$(TargetsAppleMobile)' != 'true'">$(CoreCLRCrossILCompilerDir)</IlcToolsPath>
     <IlcBuildTasksPath>$(CoreCLRILCompilerDir)netstandard/ILCompiler.Build.Tasks.dll</IlcBuildTasksPath>
-    <IlcSdkPath Condition="'$(CustomIlcCompileDependsOn)' != 'true' and '$(TargetsAppleMobile)' != 'true'">$(CoreCLRAotSdkDir)</IlcSdkPath>
-    <IlcSdkPath Condition="'$(CustomIlcCompileDependsOn)' == 'true' or '$(TargetsAppleMobile)' == 'true'">$([MSBuild]::NormalizeDirectory('$(RepoRoot)', 'artifacts', 'bin', 'coreclr', '$(TargetOS).$(TargetArchitecture).$(CoreCLRConfiguration)', 'aotsdk'))</IlcSdkPath>
+    <IlcSdkPath Condition="'$(TargetsAppleMobile)' != 'true'">$(CoreCLRAotSdkDir)</IlcSdkPath>
+    <IlcSdkPath Condition="'$(TargetsAppleMobile)' == 'true'">$([MSBuild]::NormalizeDirectory('$(RepoRoot)', 'artifacts', 'bin', 'coreclr', '$(TargetOS).$(TargetArchitecture).$(CoreCLRConfiguration)', 'aotsdk'))</IlcSdkPath>
     <IlcFrameworkPath>$(MicrosoftNetCoreAppRuntimePackRidLibTfmDir)</IlcFrameworkPath>
     <IlcFrameworkNativePath>$(MicrosoftNetCoreAppRuntimePackNativeDir)</IlcFrameworkNativePath>
     <RuntimeIdentifier>$(OutputRID)</RuntimeIdentifier>

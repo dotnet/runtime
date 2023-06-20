@@ -472,22 +472,9 @@
     <Message Importance="High" Text="App: $(FinalPath)" />
   </Target>
 
-  <!-- This target sets custom ILC properties to ensure correct values for the build -->
-  <Target Name="_SetCustomOSSpecificProps">
-    <PropertyGroup>
-      <_targetOS>$(TargetOS)</_targetOS>
-      <UseNativeAOTRuntime>true</UseNativeAOTRuntime>
-      <NativeLib>static</NativeLib>
-      <CustomNativeMain>true</CustomNativeMain>
-      <_IsApplePlatform Condition="'$(TargetsAppleMobile)' == 'true'">true</_IsApplePlatform>
-      <_IsiOSLikePlatform Condition="'$(TargetsAppleMobile)' == 'true'">true</_IsiOSLikePlatform>
-      <DsymUtilOptions Condition="'$(_IsApplePlatform)' == 'true'">--flat</DsymUtilOptions>
-      <_SymbolPrefix Condition="'$(_IsApplePlatform)' == 'true'">_</_SymbolPrefix>
-    </PropertyGroup>
-  </Target>
 
   <!-- This target builds a Native AOT iOS App -->
-  <Target Name="BuildNativeAOTiOSApp" DependsOnTargets="_SetCustomOSSpecificProps;SetupOSSpecificProps">
+  <Target Name="BuildNativeAOTiOSApp" DependsOnTargets="SetupOSSpecificProps">
     <PropertyGroup>
       <CategoryPath>$([System.IO.Path]::GetDirectoryName($([System.IO.Path]::GetDirectoryName($(_CMDDIR)))))</CategoryPath>
       <CategoryName>$([System.IO.Path]::GetFileName($(CategoryPath)))</CategoryName>
@@ -670,11 +657,6 @@
       <GroupBuildCmd>$(GroupBuildCmd) /bl:$(ArtifactsDir)/log/$(Configuration)/InnerManagedTestBuild.$(__TestGroupToBuild).binlog</GroupBuildCmd>
       <GroupBuildCmd Condition="'$(CrossBuild)' == 'true'">$(GroupBuildCmd) "/p:CrossBuild=true"</GroupBuildCmd>
       <GroupBuildCmd Condition="'$(TestBuildMode)' == 'nativeaot'">$(GroupBuildCmd) "/p:DefaultBuildAllTarget=BuildNativeAot"</GroupBuildCmd>
-      <GroupBuildCmd Condition="'$(TestBuildMode)' == 'nativeaot' and '$(TargetsAppleMobile)' == 'true'">$(GroupBuildCmd) "/p:UseNativeAOTRuntime=true"</GroupBuildCmd>
-      <GroupBuildCmd Condition="'$(TestBuildMode)' == 'nativeaot' and '$(TargetsAppleMobile)' == 'true'">$(GroupBuildCmd) "/p:NativeLib=static"</GroupBuildCmd>
-      <GroupBuildCmd Condition="'$(TestBuildMode)' == 'nativeaot' and '$(TargetsAppleMobile)' == 'true'">$(GroupBuildCmd) "/p:CustomNativeMain=true"</GroupBuildCmd>
-      <GroupBuildCmd Condition="'$(TestBuildMode)' == 'nativeaot' and '$(TargetsAppleMobile)' == 'true'">$(GroupBuildCmd) "/p:NativeCompilationDuringPublish=false"</GroupBuildCmd>
-      <GroupBuildCmd Condition="'$(TestBuildMode)' == 'nativeaot' and '$(TargetsAppleMobile)' == 'true'">$(GroupBuildCmd) "/p:CustomIlcCompileDependsOn=true"</GroupBuildCmd>
       <GroupBuildCmd Condition="'$(IlcMultiModule)' == 'true'">$(GroupBuildCmd) "/p:IlcMultiModule=true"</GroupBuildCmd>
       <GroupBuildCmd Condition="'$(BuildNativeAotFrameworkObjects)' == 'true'">$(GroupBuildCmd) "/p:BuildNativeAotFrameworkObjects=true"</GroupBuildCmd>
     </PropertyGroup>

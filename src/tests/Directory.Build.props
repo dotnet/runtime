@@ -211,6 +211,17 @@
     <SkipTestUtilitiesReference>true</SkipTestUtilitiesReference>
   </PropertyGroup>
 
+  <PropertyGroup Condition="'$(RuntimeFlavor)' == 'coreclr' and '$(TargetsAppleMobile)' == 'true'">
+      <_targetOS>$(TargetOS)</_targetOS>
+      <UseNativeAOTRuntime>true</UseNativeAOTRuntime>
+      <NativeLib>static</NativeLib>
+      <CustomNativeMain>true</CustomNativeMain>
+      <_IsApplePlatform Condition="'$(TargetsAppleMobile)' == 'true'">true</_IsApplePlatform>
+      <_IsiOSLikePlatform Condition="'$(TargetsAppleMobile)' == 'true'">true</_IsiOSLikePlatform>
+      <DsymUtilOptions Condition="'$(_IsApplePlatform)' == 'true'">--flat</DsymUtilOptions>
+      <_SymbolPrefix Condition="'$(_IsApplePlatform)' == 'true'">_</_SymbolPrefix>
+  </PropertyGroup>
+
   <Import Project="$(RepositoryEngineeringDir)testing\tests.props"  Condition="'$(IsTestsCommonProject)' != 'true'" />
   <Import Project="$(BaseOutputPath)\packages\Common\test_dependencies\test_dependencies\test_dependencies.*.props" Condition="'$(IsTestsCommonProject)' != 'true'" />
 </Project>
