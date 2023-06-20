@@ -4,8 +4,9 @@
 using System.Collections.Generic;
 using System.Diagnostics;
 using System.Globalization;
-using System.Net.Internals;
+using System.IO;
 using System.Net.Sockets;
+using System.Runtime.InteropServices;
 using System.Threading;
 using System.Threading.Tasks;
 
@@ -14,6 +15,22 @@ namespace System.Net
     /// <summary>Provides simple domain name resolution functionality.</summary>
     public static class Dns
     {
+        /// <summary>Name of environment variable storing optional hosts file used by Dns.</summary>
+        /// <remarks>
+        /// If this environment variable is set, its value is used as the path to a hosts file.
+        /// If that hosts file is found and it contains a name or IP address being searched for,
+        /// its data will be used exclusively instead of performing a DNS query via the OS.
+        /// </remarks>
+        private const string HostsFileEnvVarName = "DOTNET_SYSTEM_NET_HOSTS";
+
+        /// <summary>Optional overrides specified in a custom host file.</summary>
+        /// <remarks>
+        /// If non-null, Dns queries first consult the tables in these overrides.
+        /// If the specified host name or address is found, the override data is used exclusively.
+        /// Otherwise, the query falls through to normal operation.
+        /// </remarks>
+        private static readonly HostsOverridesLookup? s_hostsOverrides = LoadHostsOverrides();
+
         /// <summary>Gets the host name of the local machine.</summary>
         public static string GetHostName()
         {
@@ -156,7 +173,8 @@ namespace System.Net
                 throw new ArgumentException(SR.net_invalid_ip_addr, nameof(address));
             }
 
-            return RunAsync(static (s, stopwatch) => {
+            return RunAsync(static (s, stopwatch) =>
+            {
                 IPHostEntry ipHostEntry = GetHostEntryCore((IPAddress)s, AddressFamily.Unspecified, stopwatch);
                 if (NetEventSource.Log.IsEnabled()) NetEventSource.Info((IPAddress)s, $"{ipHostEntry} with {ipHostEntry.AddressList.Length} entries");
                 return ipHostEntry;
@@ -380,7 +398,25 @@ namespace System.Net
             object result;
             try
             {
-                SocketError errorCode = NameResolutionPal.TryGetAddrInfo(hostName, justAddresses, addressFamily, out string? newHostName, out string[] aliases, out IPAddress[] addresses, out int nativeErrorCode);
+                string? newHostName = null;
+                IPAddress[]? addresses = null;
+                string[]? aliases = null;
+                SocketError errorCode;
+                int nativeErrorCode;
+
+                if (s_hostsOverrides is not null && s_hostsOverrides.NameToHostEntry.TryGetValue(hostName, out IPHostEntry? overridesEntry))
+                {
+                    newHostName = overridesEntry.HostName;
+                    addresses = CloneAddresses(overridesEntry.AddressList, addressFamily);
+                    aliases = !justAddresses && overridesEntry.Aliases.Length != 0 ? (string[])overridesEntry.Aliases.Clone() : Array.Empty<string>();
+
+                    errorCode = addresses.Length != 0 ? SocketError.Success : SocketError.HostNotFound;
+                    nativeErrorCode = 0;
+                }
+                else
+                {
+                    errorCode = NameResolutionPal.TryGetAddrInfo(hostName, justAddresses, addressFamily, out newHostName, out aliases, out addresses, out nativeErrorCode);
+                }
 
                 if (errorCode != SocketError.Success)
                 {
@@ -388,13 +424,13 @@ namespace System.Net
                     throw CreateException(errorCode, nativeErrorCode);
                 }
 
-                result = justAddresses ? (object)
+                result = justAddresses ?
                     addresses :
                     new IPHostEntry
                     {
                         AddressList = addresses,
                         HostName = newHostName!,
-                        Aliases = aliases
+                        Aliases = aliases!,
                     };
             }
             catch when (LogFailure(startingTimestamp))
@@ -427,16 +463,34 @@ namespace System.Net
                 startingTimestamp = NameResolutionTelemetry.Log.BeforeResolution(address);
             }
 
-            SocketError errorCode;
             string? name;
+            string[]? aliases = null;
+            IPAddress[]? addresses = null;
+            SocketError errorCode;
+            int nativeErrorCode;
+
             try
             {
-                name = NameResolutionPal.TryGetNameInfo(address, out errorCode, out int nativeErrorCode);
+                if (s_hostsOverrides is not null && s_hostsOverrides.AddressToHostEntry.TryGetValue(address, out IPHostEntry? overridesEntry))
+                {
+                    name = overridesEntry.HostName;
+                    addresses = CloneAddresses(overridesEntry.AddressList, addressFamily);
+                    aliases = !justAddresses && overridesEntry.Aliases.Length != 0 ? (string[])overridesEntry.Aliases.Clone() : Array.Empty<string>();
+
+                    errorCode = addresses.Length != 0 ? SocketError.Success : SocketError.HostNotFound;
+                    nativeErrorCode = 0;
+                }
+                else
+                {
+                    name = NameResolutionPal.TryGetNameInfo(address, out errorCode, out nativeErrorCode);
+                }
+
                 if (errorCode != SocketError.Success)
                 {
                     if (NetEventSource.Log.IsEnabled()) NetEventSource.Error(address, $"{address} DNS lookup failed with {errorCode}");
                     throw CreateException(errorCode, nativeErrorCode);
                 }
+
                 Debug.Assert(name != null);
             }
             catch when (LogFailure(startingTimestamp))
@@ -448,24 +502,32 @@ namespace System.Net
             NameResolutionTelemetry.Log.AfterResolution(startingTimestamp, successful: true);
 
             // Do the forward lookup to get the IPs for that host name
-            startingTimestamp = NameResolutionTelemetry.Log.BeforeResolution(name);
-
             object result;
             try
             {
-                errorCode = NameResolutionPal.TryGetAddrInfo(name, justAddresses, addressFamily, out string? hostName, out string[] aliases, out IPAddress[] addresses, out int nativeErrorCode);
-
-                if (errorCode != SocketError.Success)
+                if (addresses is null)
                 {
-                    if (NetEventSource.Log.IsEnabled()) NetEventSource.Error(address, $"forward lookup for '{name}' failed with {errorCode}");
+                    startingTimestamp = NameResolutionTelemetry.Log.BeforeResolution(name);
+
+                    errorCode = NameResolutionPal.TryGetAddrInfo(name, justAddresses, addressFamily, out name, out aliases, out addresses, out nativeErrorCode);
+                    if (errorCode != SocketError.Success)
+                    {
+                        if (NetEventSource.Log.IsEnabled()) NetEventSource.Error(address, $"forward lookup for '{name}' failed with {errorCode}");
+                    }
+
+                    NameResolutionTelemetry.Log.AfterResolution(startingTimestamp, successful: true);
                 }
 
+                Debug.Assert(name is not null);
+                Debug.Assert(justAddresses || aliases is not null);
+                Debug.Assert(addresses is not null);
+
                 result = justAddresses ?
-                    (object)addresses :
+                    addresses :
                     new IPHostEntry
                     {
-                        HostName = hostName!,
-                        Aliases = aliases,
+                        HostName = name,
+                        Aliases = aliases!,
                         AddressList = addresses
                     };
             }
@@ -474,8 +536,6 @@ namespace System.Net
                 Debug.Fail("LogFailure should return false");
                 throw;
             }
-
-            NameResolutionTelemetry.Log.AfterResolution(startingTimestamp, successful: true);
 
             // One of three things happened:
             // 1. Success.
@@ -497,7 +557,7 @@ namespace System.Net
 
             if (cancellationToken.IsCancellationRequested)
             {
-                return justAddresses ? (Task)
+                return justAddresses ?
                     Task.FromCanceled<IPAddress[]>(cancellationToken) :
                     Task.FromCanceled<IPHostEntry>(cancellationToken);
             }
@@ -515,12 +575,12 @@ namespace System.Net
 
                 if (justReturnParsedIp)
                 {
-                    return justAddresses ? (Task)
+                    return justAddresses ?
                         Task.FromResult(family == AddressFamily.Unspecified || ipAddress.AddressFamily == family ? new[] { ipAddress } : Array.Empty<IPAddress>()) :
                         Task.FromResult(CreateHostEntryForAddress(ipAddress));
                 }
 
-                asyncState = family == AddressFamily.Unspecified ? (object)ipAddress : new KeyValuePair<IPAddress, AddressFamily>(ipAddress, family);
+                asyncState = family == AddressFamily.Unspecified ? ipAddress : new KeyValuePair<IPAddress, AddressFamily>(ipAddress, family);
             }
             else
             {
@@ -534,18 +594,11 @@ namespace System.Net
 
                     ValidateHostName(hostName);
 
-                    Task? t;
-                    if (NameResolutionTelemetry.Log.IsEnabled())
-                    {
-                        t = justAddresses
-                            ? GetAddrInfoWithTelemetryAsync<IPAddress[]>(hostName, justAddresses, family, cancellationToken)
-                            : GetAddrInfoWithTelemetryAsync<IPHostEntry>(hostName, justAddresses, family, cancellationToken);
-
-                    }
-                    else
-                    {
-                        t = NameResolutionPal.GetAddrInfoAsync(hostName, justAddresses, family, cancellationToken);
-                    }
+                    Task? t =
+                        s_hostsOverrides is not null && s_hostsOverrides.NameToHostEntry.TryGetValue(hostName, out _) ? null : // to avoid code duplication, force sync path at the expense of an extra dictionary lookup
+                        !NameResolutionTelemetry.Log.IsEnabled() ? NameResolutionPal.GetAddrInfoAsync(hostName, justAddresses, family, cancellationToken) :
+                        justAddresses ? GetAddrInfoWithTelemetryAsync<IPAddress[]>(hostName, justAddresses, family, cancellationToken) :
+                        GetAddrInfoWithTelemetryAsync<IPHostEntry>(hostName, justAddresses, family, cancellationToken);
 
                     // If async resolution started, return task to user, otherwise fall back to sync API on threadpool.
                     if (t != null)
@@ -555,7 +608,7 @@ namespace System.Net
 #pragma warning restore CS0162
                 }
 
-                asyncState = family == AddressFamily.Unspecified ? (object)hostName : new KeyValuePair<string, AddressFamily>(hostName, family);
+                asyncState = family == AddressFamily.Unspecified ? hostName : new KeyValuePair<string, AddressFamily>(hostName, family);
             }
 
             if (justAddresses)
@@ -585,6 +638,9 @@ namespace System.Net
         private static Task<T>? GetAddrInfoWithTelemetryAsync<T>(string hostName, bool justAddresses, AddressFamily addressFamily, CancellationToken cancellationToken)
              where T : class
         {
+            Debug.Assert(s_hostsOverrides is null || !s_hostsOverrides.NameToHostEntry.ContainsKey(hostName),
+                "We shouldn't be using the async path if a hosts file was specified and contained this host");
+
             long startingTimestamp = Stopwatch.GetTimestamp();
             Task? task = NameResolutionPal.GetAddrInfoAsync(hostName, justAddresses, addressFamily, cancellationToken);
 
@@ -709,5 +765,207 @@ namespace System.Net
 
         private static SocketException CreateException(SocketError error, int nativeError) =>
             new SocketException((int)error) { HResult = nativeError };
+
+        /// <summary>
+        /// Creates an array of the addresses in <paramref name="addresses"/> that match the specified <paramref name="addressFamily"/>.
+        /// If the <paramref name="addressFamily"/> is <see cref="AddressFamily.Unspecified"/>, then all addresses are returned.
+        /// </summary>
+        private static IPAddress[] CloneAddresses(IPAddress[] addresses, AddressFamily addressFamily)
+        {
+            // Count how many addresses match the specified address family.
+            int count = 0;
+            foreach (IPAddress address in addresses)
+            {
+                if (IncludeAddress(address, addressFamily))
+                {
+                    count++;
+                }
+            }
+
+            // If none match, return an empty array.
+            if (count == 0)
+            {
+                return Array.Empty<IPAddress>();
+            }
+
+            var result = new IPAddress[count];
+            int i = 0;
+            Span<byte> bytes = stackalloc byte[IPAddressParserStatics.IPv6AddressBytes];
+            foreach (IPAddress address in addresses)
+            {
+                if (IncludeAddress(address, addressFamily))
+                {
+                    // Clone the IPAddress before handing it out, as it's mutable.
+                    address.TryWriteBytes(bytes, out int bytesWritten);
+                    Debug.Assert(bytesWritten > 0);
+                    result[i++] = new IPAddress(bytes.Slice(0, bytesWritten));
+                }
+            }
+
+            return result;
+
+            static bool IncludeAddress(IPAddress address, AddressFamily addressFamily) =>
+                (addressFamily is AddressFamily.Unspecified || addressFamily == address.AddressFamily) &&
+                ((address.AddressFamily is AddressFamily.InterNetwork && SocketProtocolSupportPal.OSSupportsIPv4) ||
+                 (address.AddressFamily is AddressFamily.InterNetworkV6 && SocketProtocolSupportPal.OSSupportsIPv6));
+        }
+
+        /// <summary>Loads hosts overrides if any were specified.</summary>
+        /// <remarks>The parsed overrides, or null if none were specified or valid.</remarks>
+        private static HostsOverridesLookup? LoadHostsOverrides()
+        {
+            // NOTE:
+            // Several loops in this implementation could be worst case O(N^2) in both time and allocation,
+            // e.g. every time we encounter a new alias for an address, we'll grow the alias list for that address by 1.
+            // However, a) the hosts file is trusted (if it weren't, there would already be problems as it would enable
+            // an untrusted file to dictate the destination of network traffic), and b) the hosts file is expected
+            // to be small, in which case O(N^2) is fine and actually better than the overhead of more temporary O(1) data structures.
+
+            // Read the path to the overrides file.  This file is expected to be in the same format as the
+            // a hosts file, with one line per entry, where each line consists of an IP address followed by
+            // at least one space or tab, followed by one or more host names, each separated by one or more
+            // spaces or tabs.  Blank lines and any text on a line starting with and after a '#' are ignored.
+            if (Environment.GetEnvironmentVariable(HostsFileEnvVarName) is string path)
+            {
+                // Read the hosts file. Ignore any failures, e.g. if the file doesn't exist or is malformed, and just return null.
+                string hosts;
+                try
+                {
+                    hosts = File.ReadAllText(path);
+                }
+                catch (Exception ex)
+                {
+                    if (NameResolutionTelemetry.Log.IsEnabled()) NameResolutionTelemetry.Log.HostsOverrideError(path, $"Unable to load file. {ex.Message}");
+                    return null;
+                }
+
+                // Create the result object containing the forward and reverse lookup dictionaries.
+                var result = new HostsOverridesLookup();
+
+                // Process each line.
+                ReadOnlySpan<char> spaceChars = stackalloc char[] { ' ', '\t' };
+                foreach (ReadOnlySpan<char> line in hosts.AsSpan().EnumerateLines())
+                {
+                    scoped ReadOnlySpan<char> span = line;
+
+                    // Trim off comments
+                    int commentPos = span.IndexOf('#');
+                    if (commentPos >= 0)
+                    {
+                        span = span.Slice(0, commentPos);
+                    }
+                    span = span.Trim(spaceChars);
+                    if (span.IsEmpty)
+                    {
+                        // Skip blank and comment-only lines
+                        continue;
+                    }
+
+                    // See if there's any remaining space in the line.  If there isn't,
+                    // then at most we have an address with no host name, and we'll ignore it.
+                    int spacePos = span.IndexOfAny(spaceChars);
+                    if (spacePos < 0)
+                    {
+                        if (NameResolutionTelemetry.Log.IsEnabled()) NameResolutionTelemetry.Log.HostsOverrideError(path, $"Invalid line '{line}'");
+                        continue;
+                    }
+
+                    // We parse the address to ensure it's valid and ignore the line if it's not.
+                    if (!IPAddress.TryParse(span.Slice(0, spacePos), out IPAddress? address))
+                    {
+                        if (NameResolutionTelemetry.Log.IsEnabled()) NameResolutionTelemetry.Log.HostsOverrideError(path, $"Unable to parse '{span.Slice(0, spacePos)}' as IPAddress");
+                        continue;
+                    }
+
+                    // Parse each host name after it.
+                    span = span.Slice(spacePos).TrimStart(spaceChars);
+                    while (!span.IsEmpty)
+                    {
+                        // Find the end of the name.
+                        int end = span.IndexOfAny(spaceChars);
+                        if (end < 0)
+                        {
+                            end = span.Length;
+                        }
+
+                        // Parse out the name and ensure it's a valid DNS name.
+                        string hostName = span.Slice(0, end).ToString();
+                        span = span.Slice(end).TrimStart(spaceChars);
+                        if (Uri.CheckHostName(hostName) != UriHostNameType.Dns)
+                        {
+                            if (NameResolutionTelemetry.Log.IsEnabled()) NameResolutionTelemetry.Log.HostsOverrideError(path, $"Invalid DNS hostname '{hostName}'");
+                            continue;
+                        }
+
+                        // Create or augment the forward lookup entry for this name to IP.  If the entry already exists,
+                        // add the IPAddress as an additional one to the AddressList if it's not already there.
+                        ref IPHostEntry? nameEntry = ref CollectionsMarshal.GetValueRefOrAddDefault(result.NameToHostEntry, hostName, out _);
+                        if (nameEntry is null)
+                        {
+                            nameEntry = new IPHostEntry() { HostName = hostName, AddressList = new[] { address }, Aliases = Array.Empty<string>() };
+                        }
+                        else
+                        {
+                            nameEntry.AddressList = AddIfMissing(nameEntry.AddressList, address);
+                        }
+
+                        // Create or augment the reverse lookup entry for this IP to name.  If the entry already exists,
+                        // add the hostname as an alias if it's not already the hostname or included as an alias.
+                        ref IPHostEntry? addressEntry = ref CollectionsMarshal.GetValueRefOrAddDefault(result.AddressToHostEntry, address, out _);
+                        if (addressEntry is null)
+                        {
+                            addressEntry = new IPHostEntry() { HostName = hostName, AddressList = new[] { address }, Aliases = Array.Empty<string>() };
+                        }
+                        else if (!hostName.Equals(addressEntry.HostName, StringComparison.OrdinalIgnoreCase))
+                        {
+                            addressEntry.Aliases = AddIfMissing(addressEntry.Aliases, hostName, StringComparer.OrdinalIgnoreCase);
+                        }
+
+                        // Log the mapping.
+                        if (NameResolutionTelemetry.Log.IsEnabled()) NameResolutionTelemetry.Log.HostsOverrideMappingAdded(hostName, address.ToString());
+
+                        // Creates a new array with the specified value added to the end of the input array
+                        // if it's not already present, OrdinalIgnoreCase.
+                        static T[] AddIfMissing<T>(T[] array, T value, IEqualityComparer<T>? comparer = null)
+                        {
+                            comparer ??= EqualityComparer<T>.Default;
+
+                            foreach (T item in array)
+                            {
+                                if (comparer.Equals(item, value))
+                                {
+                                    return array;
+                                }
+                            }
+
+                            T[] newArray = new T[array.Length + 1];
+                            Array.Copy(array, newArray, array.Length);
+                            newArray[^1] = value;
+                            return newArray;
+                        }
+                    }
+                }
+
+                // If we got any valid entries, return them.
+                if (result.NameToHostEntry.Count != 0)
+                {
+                    Debug.Assert(result.AddressToHostEntry.Count != 0);
+                    return result;
+                }
+            }
+
+            // No valid overrides were specified.
+            return null;
+        }
+
+        /// <summary>Hosts overrides lookup tables, populated from a custom hosts file if one was specified.</summary>
+        private sealed class HostsOverridesLookup
+        {
+            /// <summary>Mapping from a string host name to the corresponding <see cref="IPHostEntry"/>.</summary>
+            public Dictionary<string, IPHostEntry> NameToHostEntry { get; } = new Dictionary<string, IPHostEntry>(StringComparer.OrdinalIgnoreCase);
+
+            /// <summary>Mapping from an <see cref="IPAddress"/> to the corresponding <see cref="IPHostEntry"/>.</summary>
+            public Dictionary<IPAddress, IPHostEntry> AddressToHostEntry { get; } = new Dictionary<IPAddress, IPHostEntry>();
+        }
     }
 }

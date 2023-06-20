@@ -17,6 +17,8 @@ namespace System.Net
         private const int ResolutionStartEventId = 1;
         private const int ResolutionStopEventId = 2;
         private const int ResolutionFailedEventId = 3;
+        private const int HostsOverrideMappingAddedId = 4;
+        private const int HostsOverrideErrorEventId = 5;
 
         private PollingCounter? _lookupsRequestedCounter;
         private PollingCounter? _currentLookupsCounter;
@@ -58,6 +60,11 @@ namespace System.Net
         [Event(ResolutionFailedEventId, Level = EventLevel.Informational)]
         private void ResolutionFailed() => WriteEvent(ResolutionFailedEventId);
 
+        [Event(HostsOverrideMappingAddedId, Level = EventLevel.Informational)]
+        public void HostsOverrideMappingAdded(string hostname, string address) => WriteEvent(HostsOverrideMappingAddedId, hostname, address);
+
+        [Event(HostsOverrideErrorEventId, Level = EventLevel.Error)]
+        public void HostsOverrideError(string hostsPath, string errorDescription) => WriteEvent(HostsOverrideErrorEventId, hostsPath, errorDescription);
 
         [NonEvent]
         public long BeforeResolution(object hostNameOrAddress)
