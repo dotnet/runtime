@@ -69,6 +69,8 @@ static const Entry s_globalizationNative[] =
     DllImportEntry(GlobalizationNative_IndexOfNative)
     DllImportEntry(GlobalizationNative_StartsWithNative)
     DllImportEntry(GlobalizationNative_EndsWithNative)
+    DllImportEntry(GlobalizationNative_ChangeCaseNative)
+    DllImportEntry(GlobalizationNative_ChangeCaseInvariantNative)
 #endif
 };
 

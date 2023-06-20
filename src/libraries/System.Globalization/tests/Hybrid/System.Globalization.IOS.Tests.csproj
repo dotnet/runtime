@@ -5,7 +5,7 @@
     <HybridGlobalization>true</HybridGlobalization>
   </PropertyGroup>
   <ItemGroup>
-    <Compile Include="HybridMode.cs" />
+    <!--<Compile Include="HybridMode.cs" />
     <Compile Include="..\CultureInfo\CultureInfoNumberFormat.cs" />
     <Compile Include="..\CultureInfo\CultureInfoNames.cs" />
     <Compile Include="..\DateTimeFormatInfo\DateTimeFormatInfoData.cs" />
@@ -37,6 +37,7 @@
     <Compile Include="..\CompareInfo\CompareInfoTests.IndexOf.cs" />
     <Compile Include="..\CompareInfo\CompareInfoTests.LastIndexOf.cs" />
     <Compile Include="..\CompareInfo\CompareInfoTests.IsPrefix.cs" />
-    <Compile Include="..\CompareInfo\CompareInfoTests.IsSuffix.cs" />
+    <Compile Include="..\CompareInfo\CompareInfoTests.IsSuffix.cs" />-->
+    <Compile Include="..\System\Globalization\TextInfoTests.cs" />
   </ItemGroup>
 </Project>

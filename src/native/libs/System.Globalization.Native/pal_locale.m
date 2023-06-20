@@ -459,7 +459,7 @@ int32_t GlobalizationNative_GetLocaleInfoIntNative(const char* localeName, Local
         }        
         case LocaleNumber_ReadingLayout:
         {
-            NSLocaleLanguageDirection langDir = [NSLocale characterDirectionForLanguage:[[NSLocale currentLocale] objectForKey:NSLocaleLanguageCode]];
+            NSLocaleLanguageDirection langDir = [NSLocale characterDirectionForLanguage:[currentLocale objectForKey:NSLocaleLanguageCode]];
             //  0 - Left to right (such as en-US)
             //  1 - Right to left (such as arabic locales)
             value = NSLocaleLanguageDirectionRightToLeft == langDir ? 1 : 0;

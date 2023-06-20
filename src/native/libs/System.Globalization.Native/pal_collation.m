@@ -4,6 +4,7 @@
 #include <stdlib.h>
 #include "pal_locale_internal.h"
 #include "pal_collation.h"
+#include "pal_casing.h"
 
 #import <Foundation/Foundation.h>
 
@@ -269,4 +270,37 @@ int32_t GlobalizationNative_EndsWithNative(const uint16_t* localeName, int32_t l
     return result == NSOrderedSame ? 1 : 0;
 }
 
+/*
+Function:
+ChangeCaseNative
+
+Returns upper or lower casing of a string, taking into account the specified locale.
+*/
+const char* GlobalizationNative_ChangeCaseNative(const char* localeName, int32_t lNameLength,
+                                                     const char* lpSrc, int32_t cwSrcLength, int32_t bToUpper)
+{
+    //NSLocale *currentLocale = GetCurrentLocale(localeName, lNameLength);
+    NSString *locName = [NSString stringWithFormat:@"%s", localeName];
+    NSLocale *currentLocale = [[NSLocale alloc] initWithLocaleIdentifier:locName];
+    NSString *source = [NSString stringWithFormat:@"%s", lpSrc];//[NSString stringWithCharacters: lpSrc length: cwSrcLength];
+    NSString *result = bToUpper ? [source uppercaseStringWithLocale:currentLocale] : [source lowercaseStringWithLocale:currentLocale];
+    const char* retVal = strdup([result UTF8String]);
+    return retVal;
+}
+
+/*
+Function:
+ChangeCaseInvariantNative
+
+Returns upper or lower casing of a string.
+*/
+const char* GlobalizationNative_ChangeCaseInvariantNative(const char* lpSrc, int32_t cwSrcLength, int32_t bToUpper)
+{
+    //NSString *source = [NSString stringWithCharacters: lpSrc length: cwSrcLength];
+    NSString *source = [NSString stringWithFormat:@"%s", lpSrc];
+    NSString *result = bToUpper ? source.uppercaseString : source.lowercaseString;
+
+    const char* retVal = strdup([result UTF8String]);
+    return retVal;
+}
 #endif
