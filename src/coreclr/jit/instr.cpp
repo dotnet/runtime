@@ -2334,6 +2334,8 @@ instruction CodeGen::ins_FloatConv(var_types to, var_types from, emitAttr attr)
                     return INS_cvtss2sd;
                 case TYP_ULONG:
                     return INS_vcvttss2usi64;
+                case TYP_UINT:
+                    return INS_vcvttss2usi32;
                 default:
                     unreached();
             }
@@ -2364,6 +2366,19 @@ instruction CodeGen::ins_FloatConv(var_types to, var_types from, emitAttr attr)
                     return INS_vcvtusi2sd64;
                 case TYP_FLOAT:
                     return INS_vcvtusi2ss64;
+                default:
+                    unreached();
+            }
+        
+        case TYP_UINT:
+            switch (to)
+            {
+                case TYP_FLOAT:
+                    return INS_vcvtusi2ss32;
+
+                case TYP_DOUBLE:
+                    return INS_vcvtusi2sd32;
+
                 default:
                     unreached();
             }

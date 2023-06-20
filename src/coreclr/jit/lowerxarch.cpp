@@ -807,7 +807,7 @@ void Lowering::LowerCast(GenTree* tree)
     }
     else if (srcType == TYP_UINT)
     {
-        noway_assert(!varTypeIsFloating(castToType));
+        noway_assert(!varTypeIsFloating(castToType) || comp->compOpportunisticallyDependsOn(InstructionSet_AVX512F));
     }
     else if (srcType == TYP_ULONG)
     {
