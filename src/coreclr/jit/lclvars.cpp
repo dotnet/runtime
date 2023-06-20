@@ -2502,6 +2502,13 @@ void Compiler::StructPromotionHelper::PromoteStructVar(unsigned lclNum)
                     {
                         assert(index == 1);
                         fieldRegNum = varDsc->GetOtherArgReg();
+#if defined(TARGET_LOONGARCH64) || defined(TARGET_RISCV64)
+                        if (varDsc->lvIsSplit)
+                        {
+                            assert(fieldRegNum == REG_STK);
+                            fieldVarDsc->lvIsRegArg = 0;
+                        }
+#endif // TARGET_LOONGARCH64 || TARGET_RISCV64
                     }
                     fieldVarDsc->SetArgReg(fieldRegNum);
                 }
