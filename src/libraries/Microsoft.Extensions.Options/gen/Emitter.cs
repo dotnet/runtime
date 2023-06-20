@@ -95,7 +95,7 @@ namespace Microsoft.Extensions.Options.Generators
             OutOpenBrace();
 
             OutGeneratedCodeAttribute();
-            OutLn($"file static class {className}");
+            OutLn($"internal static class {className}");
             OutOpenBrace();
 
             var staticValidationAttributes = staticFields

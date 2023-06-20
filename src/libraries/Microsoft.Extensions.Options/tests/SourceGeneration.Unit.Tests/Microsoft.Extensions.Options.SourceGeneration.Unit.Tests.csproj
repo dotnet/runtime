@@ -11,6 +11,8 @@
 
   <ItemGroup>
     <Compile Include="$(CommonPath)..\tests\SourceGenerators\RoslynTestUtils.cs" Link="SourceGenerators\RoslynTestUtils.cs" />
+    <Compile Include="$(LibrariesProjectRoot)Microsoft.Extensions.Options\gen\DiagDescriptorsBase.cs" Link="gen\DiagDescriptorsBase.cs" />
+    <Compile Include="$(LibrariesProjectRoot)Microsoft.Extensions.Options\gen\DiagDescriptors.cs" Link="gen\DiagDescriptors.cs" />
   </ItemGroup>
 
   <ItemGroup Condition="'$(TargetFrameworkIdentifier)' != '.NETFramework'">

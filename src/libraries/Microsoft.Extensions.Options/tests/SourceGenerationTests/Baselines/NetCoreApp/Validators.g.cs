@@ -1968,7 +1968,7 @@ namespace ValueTypes
 namespace __OptionValidationStaticInstances
 {
     [global::System.CodeDom.Compiler.GeneratedCodeAttribute("Microsoft.Extensions.Options.SourceGeneration", "42.42.42.42")]
-    file static class __Attributes
+    internal static class __Attributes
     {
         internal static readonly global::System.ComponentModel.DataAnnotations.RequiredAttribute A1 = new global::System.ComponentModel.DataAnnotations.RequiredAttribute();
 
@@ -2059,7 +2059,7 @@ namespace __OptionValidationStaticInstances
 namespace __OptionValidationStaticInstances
 {
     [global::System.CodeDom.Compiler.GeneratedCodeAttribute("Microsoft.Extensions.Options.SourceGeneration", "42.42.42.42")]
-    file static class __Validators
+    internal static class __Validators
     {
         internal static readonly global::SecondValidatorNoNamespace V1 = new global::SecondValidatorNoNamespace();
 
