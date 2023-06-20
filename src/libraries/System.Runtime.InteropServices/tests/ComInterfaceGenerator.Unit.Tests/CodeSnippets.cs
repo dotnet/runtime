@@ -285,6 +285,33 @@ namespace ComInterfaceGenerator.Unit.Tests
             }
             """;
 
+        public string DerivedWithParametersDeclaredInOtherNamespace => $$"""
+            using System.Runtime.CompilerServices;
+            using System.Runtime.InteropServices;
+            using System.Runtime.InteropServices.Marshalling;
+            using OtherNS;
+
+            namespace OtherNS
+            {
+                public struct NewType;
+            }
+
+            namespace Test
+            {
+                {{GeneratedComInterface()}}
+                partial interface IComInterface
+                {
+                     NewType Method(NewType p);
+                }
+
+                {{GeneratedComInterface()}}
+                partial interface IComInterface2 : IComInterface
+                {
+                    NewType Method2(NewType p);
+                }
+            }
+            """;
+
         public string DerivedWithStringMarshalling(params
             (StringMarshalling StringMarshalling, Type? StringMarshallingCustomType)[] attributeArguments)
         {

@@ -148,7 +148,7 @@ namespace System
                     {
                         // s_iriInvalidAsciiChars confirmed everything in [0, 7F] range.
                         // Chars in [80, 9F] range are also invalid, check for them now.
-                        if (hostname.IndexOfAnyInRange('\u0080', '\u009F') >= 0)
+                        if (hostname.ContainsAnyInRange('\u0080', '\u009F'))
                         {
                             return false;
                         }
@@ -204,7 +204,7 @@ namespace System
             try
             {
                 string asciiForm = s_idnMapping.GetAscii(bidiStrippedHost);
-                if (asciiForm.AsSpan().IndexOfAny(s_unsafeForNormalizedHostChars) >= 0)
+                if (asciiForm.AsSpan().ContainsAny(s_unsafeForNormalizedHostChars))
                 {
                     throw new UriFormatException(SR.net_uri_BadUnicodeHostForIdn);
                 }

@@ -42,5 +42,13 @@ namespace System.Runtime.InteropServices.Marshalling
             }
             return (T)StrategyBasedComWrappers.DefaultMarshallingInstance.GetOrCreateObjectForComInstance((nint)unmanaged, CreateObjectFlags.Unwrap | CreateObjectFlags.UniqueInstance);
         }
+
+        public static void Free(void* unmanaged)
+        {
+            if (unmanaged != null)
+            {
+                Marshal.Release((nint)unmanaged);
+            }
+        }
     }
 }

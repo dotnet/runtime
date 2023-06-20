@@ -184,15 +184,6 @@ CORINFO_CLASS_HANDLE interceptor_ICJI::getMethodClass(CORINFO_METHOD_HANDLE meth
     return temp;
 }
 
-// return module it belongs to
-CORINFO_MODULE_HANDLE interceptor_ICJI::getMethodModule(CORINFO_METHOD_HANDLE method)
-{
-    mc->cr->AddCall("getMethodModule");
-    CORINFO_MODULE_HANDLE temp = original_ICorJitInfo->getMethodModule(method);
-    mc->recGetMethodModule(method, temp);
-    return temp;
-}
-
 // This function returns the offset of the specified method in the
 // vtable of it's owning class or interface.
 void interceptor_ICJI::getMethodVTableOffset(CORINFO_METHOD_HANDLE method,                 /* IN */
@@ -288,31 +279,12 @@ bool interceptor_ICJI::pInvokeMarshalingRequired(CORINFO_METHOD_HANDLE method, C
 }
 
 // Check constraints on method type arguments (only).
-// The parent class should be checked separately using satisfiesClassConstraints(parent).
 bool interceptor_ICJI::satisfiesMethodConstraints(CORINFO_CLASS_HANDLE  parent, // the exact parent of the method
                                                   CORINFO_METHOD_HANDLE method)
 {
     mc->cr->AddCall("satisfiesMethodConstraints");
     bool temp = original_ICorJitInfo->satisfiesMethodConstraints(parent, method);
     mc->recSatisfiesMethodConstraints(parent, method, temp);
-    return temp;
-}
-
-// Given a delegate target class, a target method parent class,  a  target method,
-// a delegate class, check if the method signature is compatible with the Invoke method of the delegate
-// (under the typical instantiation of any free type variables in the memberref signatures).
-bool interceptor_ICJI::isCompatibleDelegate(
-    CORINFO_CLASS_HANDLE  objCls,          /* type of the delegate target, if any */
-    CORINFO_CLASS_HANDLE  methodParentCls, /* exact parent of the target method, if any */
-    CORINFO_METHOD_HANDLE method,          /* (representative) target method, if any */
-    CORINFO_CLASS_HANDLE  delegateCls,     /* exact type of the delegate */
-    bool*                 pfIsOpenDelegate /* is the delegate open */
-    )
-{
-    mc->cr->AddCall("isCompatibleDelegate");
-    bool temp =
-        original_ICorJitInfo->isCompatibleDelegate(objCls, methodParentCls, method, delegateCls, pfIsOpenDelegate);
-    mc->recIsCompatibleDelegate(objCls, methodParentCls, method, delegateCls, pfIsOpenDelegate, temp);
     return temp;
 }
 
@@ -378,14 +350,6 @@ void interceptor_ICJI::resolveToken(/* IN, OUT */ CORINFO_RESOLVED_TOKEN* pResol
     });
 }
 
-bool interceptor_ICJI::tryResolveToken(/* IN, OUT */ CORINFO_RESOLVED_TOKEN* pResolvedToken)
-{
-    mc->cr->AddCall("tryResolveToken");
-    bool success = original_ICorJitInfo->tryResolveToken(pResolvedToken);
-    mc->recResolveToken(pResolvedToken, success);
-    return success;
-}
-
 // Signature information about the call sig
 void interceptor_ICJI::findSig(CORINFO_MODULE_HANDLE  module,  /* IN */
                                unsigned               sigTOK,  /* IN */
@@ -417,28 +381,6 @@ CORINFO_CLASS_HANDLE interceptor_ICJI::getTokenTypeAsHandle(CORINFO_RESOLVED_TOK
     mc->cr->AddCall("getTokenTypeAsHandle");
     CORINFO_CLASS_HANDLE temp = original_ICorJitInfo->getTokenTypeAsHandle(pResolvedToken);
     mc->recGetTokenTypeAsHandle(pResolvedToken, temp);
-    return temp;
-}
-
-// Checks if the given metadata token is valid
-bool interceptor_ICJI::isValidToken(CORINFO_MODULE_HANDLE module, /* IN  */
-                                    unsigned              metaTOK /* IN  */
-                                    )
-{
-    mc->cr->AddCall("isValidToken");
-    bool result = original_ICorJitInfo->isValidToken(module, metaTOK);
-    mc->recIsValidToken(module, metaTOK, result);
-    return result;
-}
-
-// Checks if the given metadata token is valid StringRef
-bool interceptor_ICJI::isValidStringRef(CORINFO_MODULE_HANDLE module, /* IN  */
-                                        unsigned              metaTOK /* IN  */
-                                        )
-{
-    mc->cr->AddCall("isValidStringRef");
-    bool temp = original_ICorJitInfo->isValidStringRef(module, metaTOK);
-    mc->recIsValidStringRef(module, metaTOK, temp);
     return temp;
 }
 
@@ -918,15 +860,6 @@ TypeCompareState interceptor_ICJI::compareTypesForEquality(CORINFO_CLASS_HANDLE 
     return temp;
 }
 
-// returns the intersection of cls1 and cls2.
-CORINFO_CLASS_HANDLE interceptor_ICJI::mergeClasses(CORINFO_CLASS_HANDLE cls1, CORINFO_CLASS_HANDLE cls2)
-{
-    mc->cr->AddCall("mergeClasses");
-    CORINFO_CLASS_HANDLE temp = original_ICorJitInfo->mergeClasses(cls1, cls2);
-    mc->recMergeClasses(cls1, cls2, temp);
-    return temp;
-}
-
 // Returns true if cls2 is known to be a more specific type than cls1.
 bool interceptor_ICJI::isMoreSpecificType(CORINFO_CLASS_HANDLE cls1, CORINFO_CLASS_HANDLE cls2)
 {
@@ -974,15 +907,6 @@ CorInfoType interceptor_ICJI::getChildType(CORINFO_CLASS_HANDLE clsHnd, CORINFO_
     mc->cr->AddCall("getChildType");
     CorInfoType temp = original_ICorJitInfo->getChildType(clsHnd, clsRet);
     mc->recGetChildType(clsHnd, clsRet, temp);
-    return temp;
-}
-
-// Check constraints on type arguments of this class and parent classes
-bool interceptor_ICJI::satisfiesClassConstraints(CORINFO_CLASS_HANDLE cls)
-{
-    mc->cr->AddCall("satisfiesClassConstraints");
-    bool temp = original_ICorJitInfo->satisfiesClassConstraints(cls);
-    mc->recSatisfiesClassConstraints(cls, temp);
     return temp;
 }
 
@@ -1401,19 +1325,6 @@ unsigned interceptor_ICJI::getMethodHash(CORINFO_METHOD_HANDLE ftn /* IN */
     return temp;
 }
 
-// this function is for debugging only.
-size_t interceptor_ICJI::findNameOfToken(CORINFO_MODULE_HANDLE              module,        /* IN  */
-                                         mdToken                            metaTOK,       /* IN  */
-                                         _Out_writes_(FQNameCapacity) char* szFQName,      /* OUT */
-                                         size_t                             FQNameCapacity /* IN */
-                                         )
-{
-    mc->cr->AddCall("findNameOfToken");
-    size_t result = original_ICorJitInfo->findNameOfToken(module, metaTOK, szFQName, FQNameCapacity);
-    mc->recFindNameOfToken(module, metaTOK, szFQName, FQNameCapacity, result);
-    return result;
-}
-
 bool interceptor_ICJI::getSystemVAmd64PassStructInRegisterDescriptor(
     /* IN */ CORINFO_CLASS_HANDLE                                  structHnd,
     /* OUT */ SYSTEMV_AMD64_CORINFO_STRUCT_REG_PASSING_DESCRIPTOR* structPassInRegDescPtr)
@@ -1447,14 +1358,6 @@ uint32_t interceptor_ICJI::getThreadTLSIndex(void** ppIndirection)
     mc->cr->AddCall("getThreadTLSIndex");
     uint32_t temp = original_ICorJitInfo->getThreadTLSIndex(ppIndirection);
     mc->recGetThreadTLSIndex(ppIndirection, temp);
-    return temp;
-}
-
-const void* interceptor_ICJI::getInlinedCallFrameVptr(void** ppIndirection)
-{
-    mc->cr->AddCall("getInlinedCallFrameVptr");
-    const void* temp = original_ICorJitInfo->getInlinedCallFrameVptr(ppIndirection);
-    mc->recGetInlinedCallFrameVptr(ppIndirection, temp);
     return temp;
 }
 
@@ -1660,22 +1563,6 @@ void interceptor_ICJI::getCallInfo(
         mc->recGetCallInfo(pResolvedToken, pConstrainedResolvedToken, callerHandle, flags, pResult,
                            exceptionCode);
     });
-}
-
-bool interceptor_ICJI::canAccessFamily(CORINFO_METHOD_HANDLE hCaller, CORINFO_CLASS_HANDLE hInstanceType)
-{
-    mc->cr->AddCall("canAccessFamily");
-    bool temp = original_ICorJitInfo->canAccessFamily(hCaller, hInstanceType);
-    mc->recCanAccessFamily(hCaller, hInstanceType, temp);
-    return temp;
-}
-
-// Returns TRUE if the Class Domain ID is the RID of the class (currently true for every class
-// except reflection emitted classes and generics)
-bool interceptor_ICJI::isRIDClassDomainID(CORINFO_CLASS_HANDLE cls)
-{
-    mc->cr->AddCall("isRIDClassDomainID");
-    return original_ICorJitInfo->isRIDClassDomainID(cls);
 }
 
 // returns the class's domain ID for accessing shared statics
@@ -2013,13 +1900,12 @@ void interceptor_ICJI::recordRelocation(void*    location,   /* IN  */
                                         void*    locationRW, /* IN  */
                                         void*    target,     /* IN  */
                                         uint16_t fRelocType, /* IN  */
-                                        uint16_t slotNum,    /* IN  */
                                         int32_t  addlDelta   /* IN  */
                                         )
 {
     mc->cr->AddCall("recordRelocation");
-    original_ICorJitInfo->recordRelocation(location, locationRW, target, fRelocType, slotNum, addlDelta);
-    mc->cr->recRecordRelocation(location, target, fRelocType, slotNum, addlDelta);
+    original_ICorJitInfo->recordRelocation(location, locationRW, target, fRelocType, addlDelta);
+    mc->cr->recRecordRelocation(location, target, fRelocType, addlDelta);
 }
 
 uint16_t interceptor_ICJI::getRelocTypeHint(void* target)

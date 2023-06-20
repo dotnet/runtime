@@ -1225,7 +1225,7 @@ new DS[] { DS.ERROR,  DS.TX_NNN,  DS.TX_NNN,  DS.TX_NNN,  DS.ERROR,   DS.ERROR, 
             else if (ch == '\0')
             {
                 // Nulls are only valid if they are the only trailing character
-                if (str.Value.Slice(str.Index + 1).IndexOfAnyExcept('\0') >= 0)
+                if (str.Value.Slice(str.Index + 1).ContainsAnyExcept('\0'))
                 {
                     return false;
                 }
