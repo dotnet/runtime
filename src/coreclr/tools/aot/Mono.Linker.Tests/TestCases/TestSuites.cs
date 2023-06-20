@@ -44,7 +44,7 @@ namespace Mono.Linker.Tests.TestCases
 			switch (t) {
 			case "TypeHierarchyReflectionWarnings":
 			case "ParametersUsedViaReflection":
-			// case "UnsafeAccessor": Enable this ones the NativeAOT support is implemented
+			case "UnsafeAccessor":
 				Run (t);
 				break;
 			default:
