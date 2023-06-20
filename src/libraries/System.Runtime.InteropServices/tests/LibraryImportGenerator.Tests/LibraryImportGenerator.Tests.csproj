@@ -6,7 +6,9 @@
     <IncludeLibraryImportGeneratorSources>false</IncludeLibraryImportGeneratorSources>
     <ReferencesNativeExports>true</ReferencesNativeExports>
     <EmitCompilerGeneratedFiles>true</EmitCompilerGeneratedFiles>
-    <CompilerGeneratedFilesOutputPath>\src\GeneratedCode\LibraryImportGenerator.Tests</CompilerGeneratedFilesOutputPath>
+    <!-- Declare InteropCompilerGeneratedFilesOutputPath to put generated files in a single repo to easily view diffs -->
+    <CompilerGeneratedFilesOutputPath Condition="'$(InteropCompilerGeneratedFilesOutputPath)' == ''">$(OutputPath)\Generated</CompilerGeneratedFilesOutputPath>
+    <CompilerGeneratedFilesOutputPath Condition="'$(InteropCompilerGeneratedFilesOutputPath)' != ''">$(InteropCompilerGeneratedFilesOutputPath)\LibraryImportGenerator.Tests</CompilerGeneratedFilesOutputPath>
   </PropertyGroup>
 
   <ItemGroup>
