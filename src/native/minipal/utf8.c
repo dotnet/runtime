@@ -92,7 +92,7 @@ static bool DecoderReplacementFallbackBuffer_Fallback(DecoderBuffer* self)
 // Right now this has both bytes and bytes[], since we might have extra bytes, hence the
 // array, and we might need the index, hence the byte*
 // Don't touch ref chars unless we succeed
-static bool DecoderReplacementFallbackBuffer_InternalFallback_Copy(DecoderBuffer* self, CHAR16_T** chars)
+static bool DecoderReplacementFallbackBuffer_InternalFallback_Copy(DecoderBuffer* self, CHAR16_T** chars, CHAR16_T* pAllocatedBufferEnd)
 {
     assert(self->byteStart != NULL);
 
@@ -132,6 +132,11 @@ static bool DecoderReplacementFallbackBuffer_InternalFallback_Copy(DecoderBuffer
             }
 
             *(charTemp++) = ch;
+            if (charTemp > pAllocatedBufferEnd)
+            {
+                errno = MINIPAL_ERROR_INSUFFICIENT_BUFFER;
+                return false;
+            }
         }
 
         // Need to make sure that bHighSurrogate isn't true
@@ -332,13 +337,13 @@ static bool InRange(int c, int begin, int end)
 // During GetChars we had an invalid byte sequence
 // pSrc is backed up to the start of the bad sequence if we didn't have room to
 // fall it back.  Otherwise pSrc remains where it is.
-static bool FallbackInvalidByteSequence_Copy(UTF8Encoding* self, unsigned char** pSrc, CHAR16_T** pTarget)
+static bool FallbackInvalidByteSequence_Copy(UTF8Encoding* self, unsigned char** pSrc, CHAR16_T** pTarget, CHAR16_T* pAllocatedBufferEnd)
 {
     assert(self->useFallback);
 
     // Get our byte[]
     unsigned char* pStart = *pSrc;
-    bool fallbackResult = DecoderReplacementFallbackBuffer_InternalFallback_Copy(&self->buffer.decoder, pTarget);
+    bool fallbackResult = DecoderReplacementFallbackBuffer_InternalFallback_Copy(&self->buffer.decoder, pTarget, pAllocatedBufferEnd);
 
     // Do the actual fallback
     if (!fallbackResult)
@@ -736,6 +741,14 @@ static size_t GetCharCount(UTF8Encoding* self, unsigned char* bytes, size_t coun
     return charCount;
 }
 
+#define ENSURE_BUFFER_INC                          \
+    pTarget++;                                     \
+    if (pTarget > pAllocatedBufferEnd)             \
+    {                                              \
+        errno = MINIPAL_ERROR_INSUFFICIENT_BUFFER; \
+        return 0;                                  \
+    }
+
 static int GetChars(UTF8Encoding* self, unsigned char* bytes, size_t byteCount, CHAR16_T* chars, size_t charCount)
 {
     assert(chars != NULL);
@@ -830,7 +843,8 @@ static int GetChars(UTF8Encoding* self, unsigned char* bytes, size_t byteCount, 
             {
                 *pTarget = (CHAR16_T)(((ch >> 10) & 0x7FF) +
                     (HIGH_SURROGATE_START - (0x10000 >> 10)));
-                pTarget++;
+
+                ENSURE_BUFFER_INC
 
                 ch = (ch & 0x3FF) +
                     (int)(LOW_SURROGATE_START);
@@ -856,17 +870,14 @@ static int GetChars(UTF8Encoding* self, unsigned char* bytes, size_t byteCount, 
         }
 
         // That'll back us up the appropriate # of bytes if we didn't get anywhere
-        if (!FallbackInvalidByteSequence_Copy(self, &pSrc, &pTarget))
+        if (!FallbackInvalidByteSequence_Copy(self, &pSrc, &pTarget, pAllocatedBufferEnd))
         {
+            if (errno == MINIPAL_ERROR_INSUFFICIENT_BUFFER) return 0;
+
             // Check if we ran out of buffer space
-            assert(pSrc >= bytes || pTarget == chars);
+            assert(pSrc >= bytes);
 
             DecoderReplacementFallbackBuffer_Reset(&self->buffer.decoder);
-            if (pTarget == chars)
-            {
-                errno = MINIPAL_ERROR_INSUFFICIENT_BUFFER;
-                return 0;
-            }
             ch = 0;
             break;
         }
@@ -960,15 +971,7 @@ static int GetChars(UTF8Encoding* self, unsigned char* bytes, size_t byteCount, 
             }
             pSrc--;
 
-            // Throw that we don't have enough room (pSrc could be < chars if we had started to process
-            // a 4 byte sequence already)
-            assert(pSrc >= bytes || pTarget == chars);
-
-            if (pTarget == chars)
-            {
-                errno = MINIPAL_ERROR_INSUFFICIENT_BUFFER;
-                return 0;
-            }
+            assert(pSrc >= bytes);
 
             // Don't store ch in decoder, we already backed up to its start
             ch = 0;
@@ -977,7 +980,7 @@ static int GetChars(UTF8Encoding* self, unsigned char* bytes, size_t byteCount, 
             break;
         }
         *pTarget = (CHAR16_T)ch;
-        pTarget++;
+        ENSURE_BUFFER_INC
 
         int availableChars = pAllocatedBufferEnd - pTarget;
         int availableBytes = pEnd - pSrc;
@@ -1004,7 +1007,7 @@ static int GetChars(UTF8Encoding* self, unsigned char* bytes, size_t byteCount, 
                 if (ch > 0x7F) goto ProcessChar;
 
                 *pTarget = (CHAR16_T)ch;
-                pTarget++;
+                ENSURE_BUFFER_INC
             }
             // we are done
             ch = 0;
@@ -1028,7 +1031,7 @@ static int GetChars(UTF8Encoding* self, unsigned char* bytes, size_t byteCount, 
             if (ch > 0x7F) goto LongCode;
 
             *pTarget = (CHAR16_T)ch;
-            pTarget++;
+            ENSURE_BUFFER_INC
 
             // get pSrc to be 2-byte aligned
             if ((((size_t)pSrc) & 0x1) != 0)
@@ -1038,7 +1041,7 @@ static int GetChars(UTF8Encoding* self, unsigned char* bytes, size_t byteCount, 
                 if (ch > 0x7F) goto LongCode;
 
                 *pTarget = (CHAR16_T)ch;
-                pTarget++;
+                ENSURE_BUFFER_INC
             }
 
             // get pSrc to be 4-byte aligned
@@ -1046,6 +1049,13 @@ static int GetChars(UTF8Encoding* self, unsigned char* bytes, size_t byteCount, 
             {
                 ch = *(unsigned short*)pSrc;
                 if ((ch & 0x8080) != 0) goto LongCodeWithMask16;
+
+
+                if (pTarget + 2 > pAllocatedBufferEnd)
+                {
+                    errno = MINIPAL_ERROR_INSUFFICIENT_BUFFER;
+                    return 0;
+                }
 
                 // Unfortunately, this is endianness sensitive
 #if BIGENDIAN
@@ -1072,6 +1082,12 @@ static int GetChars(UTF8Encoding* self, unsigned char* bytes, size_t byteCount, 
                 ch = *(int*)pSrc;
                 int chb = *(int*)(pSrc + 4);
                 if (((ch | chb) & (int)0x80808080) != 0) goto LongCodeWithMask32;
+
+                if (pTarget + 8 > pAllocatedBufferEnd)
+                {
+                    errno = MINIPAL_ERROR_INSUFFICIENT_BUFFER;
+                    return 0;
+                }
 
                 // Unfortunately, this is endianness sensitive
 #if BIGENDIAN
@@ -1124,7 +1140,7 @@ static int GetChars(UTF8Encoding* self, unsigned char* bytes, size_t byteCount, 
             if (ch <= 0x7F)
             {
                 *pTarget = (CHAR16_T)ch;
-                pTarget++;
+                ENSURE_BUFFER_INC
                 continue;
             }
 
@@ -1176,7 +1192,7 @@ static int GetChars(UTF8Encoding* self, unsigned char* bytes, size_t byteCount, 
 
                     *pTarget = (CHAR16_T)(((ch >> 10) & 0x7FF) +
                         (HIGH_SURROGATE_START - (0x10000 >> 10)));
-                    pTarget++;
+                    ENSURE_BUFFER_INC
 
                     ch = (ch & 0x3FF) + (LOW_SURROGATE_START);
 
@@ -1224,7 +1240,7 @@ static int GetChars(UTF8Encoding* self, unsigned char* bytes, size_t byteCount, 
             }
 
             *pTarget = (CHAR16_T)ch;
-            pTarget++;
+            ENSURE_BUFFER_INC
 
             // extra byte, we're only expecting 1 char for each of these 2 bytes,
             // but the loop is testing the target (not source) against pStop.
@@ -1266,6 +1282,12 @@ static int GetChars(UTF8Encoding* self, unsigned char* bytes, size_t byteCount, 
     // Shouldn't have anything in fallback buffer for GetChars
     // (don't have to check m_throwOnOverflow for chars)
     assert(!fallbackUsed || self->buffer.decoder.fallbackCount < 0);
+
+    if (pSrc < pEnd)
+    {
+        errno = MINIPAL_ERROR_INSUFFICIENT_BUFFER;
+        return 0;
+    }
 
     return pTarget - chars;
 }
@@ -1467,22 +1489,22 @@ static size_t GetBytes(UTF8Encoding* self, CHAR16_T* chars, size_t charCount, un
                 else
                 {
                     *pTarget = (unsigned char)(0xF0 | (ch >> 18));
-                    pTarget++;
+                    ENSURE_BUFFER_INC
 
                     chb = 0x80 | ((ch >> 12) & 0x3F);
                 }
                 *pTarget = (unsigned char)chb;
-                pTarget++;
+                ENSURE_BUFFER_INC
 
                 chb = 0x80 | ((ch >> 6) & 0x3F);
             }
             *pTarget = (unsigned char)chb;
-            pTarget++;
+            ENSURE_BUFFER_INC
 
             *pTarget = (unsigned char)0x80 | (ch & 0x3F);
         }
 
-        pTarget++;
+        ENSURE_BUFFER_INC
 
         // If still have fallback don't do fast loop
         if (fallbackUsed && (ch = EncoderReplacementFallbackBuffer_InternalGetNextChar(&self->buffer.encoder)) != 0)
@@ -1514,7 +1536,7 @@ static size_t GetBytes(UTF8Encoding* self, CHAR16_T* chars, size_t charCount, un
                 if (ch > 0x7F) goto ProcessChar;
 
                 *pTarget = (unsigned char)ch;
-                pTarget++;
+                ENSURE_BUFFER_INC
             }
             // we are done, let ch be 0 to clear encoder
             ch = 0;
@@ -1546,7 +1568,7 @@ static size_t GetBytes(UTF8Encoding* self, CHAR16_T* chars, size_t charCount, un
             if (ch > 0x7F) goto LongCode;
 
             *pTarget = (unsigned char)ch;
-            pTarget++;
+            ENSURE_BUFFER_INC
 
             // get pSrc aligned
             if (((size_t)pSrc & 0x2) != 0)
@@ -1556,7 +1578,7 @@ static size_t GetBytes(UTF8Encoding* self, CHAR16_T* chars, size_t charCount, un
                 if (ch > 0x7F) goto LongCode;
 
                 *pTarget = (unsigned char)ch;
-                pTarget++;
+                ENSURE_BUFFER_INC
             }
 
             // Run 4 characters at a time!
@@ -1566,6 +1588,12 @@ static size_t GetBytes(UTF8Encoding* self, CHAR16_T* chars, size_t charCount, un
                 int chc = *(int*)(pSrc + 2);
 
                 if (((ch | chc) & (int)0xFF80FF80) != 0) goto LongCodeWithMask;
+
+                if (pTarget + 4 > pAllocatedBufferEnd)
+                {
+                    errno = MINIPAL_ERROR_INSUFFICIENT_BUFFER;
+                    return 0;
+                }
 
                 // Unfortunately, this is endianness sensitive
 #if BIGENDIAN
@@ -1603,7 +1631,7 @@ static size_t GetBytes(UTF8Encoding* self, CHAR16_T* chars, size_t charCount, un
         if (ch > 0x7F) goto LongCode;
 
         *pTarget = (unsigned char)ch;
-        pTarget++;
+        ENSURE_BUFFER_INC
         continue;
 
         LongCode:
@@ -1650,29 +1678,35 @@ static size_t GetBytes(UTF8Encoding* self, CHAR16_T* chars, size_t charCount, un
                     // pStop - this unsigned char is compensated by the second surrogate character
                     // 2 input chars require 4 output bytes.  2 have been anticipated already
                     // and 2 more will be accounted for by the 2 pStop-- calls below.
-                    pTarget++;
+                    ENSURE_BUFFER_INC
 
                     chd = 0x80 | ((ch >> 12) & 0x3F);
                 }
                 *pTarget = (unsigned char)chd;
                 pStop--;                    // 3 unsigned char sequence for 1 char, so need pStop-- and the one below too.
-                pTarget++;
+                ENSURE_BUFFER_INC
 
                 chd = 0x80 | ((ch >> 6) & 0x3F);
             }
             *pTarget = (unsigned char)chd;
             pStop--;                        // 2 unsigned char sequence for 1 char so need pStop--.
-            pTarget++;
+            ENSURE_BUFFER_INC
 
             *pTarget = (unsigned char)(0x80 | (ch & 0x3F));
             // pStop - this unsigned char is already included
-            pTarget++;
+            ENSURE_BUFFER_INC
         }
 
         assert(pTarget <= pAllocatedBufferEnd);
 
         // no pending char at this point
         ch = 0;
+    }
+
+    if (pSrc < pEnd)
+    {
+        errno = MINIPAL_ERROR_INSUFFICIENT_BUFFER;
+        return 0;
     }
 
     return (int)(pTarget - bytes);
@@ -2080,16 +2114,8 @@ size_t minipal_convert_utf8_to_utf16(const char* source, size_t sourceLength, CH
 #endif
     };
 
-    if (GetCharCount(&enc, (unsigned char*)source, sourceLength) > destinationLength)
-    {
-        errno = MINIPAL_ERROR_INSUFFICIENT_BUFFER;
-        ret = 0;
-    }
-    else
-    {
-        ret = GetChars(&enc, (unsigned char*)source, sourceLength, destination, destinationLength);
-        if (errno) ret = 0;
-    }
+    ret = GetChars(&enc, (unsigned char*)source, sourceLength, destination, destinationLength);
+    if (errno) ret = 0;
 
     return ret;
 }
@@ -2112,20 +2138,12 @@ size_t minipal_convert_utf16_to_utf8(const CHAR16_T* source, size_t sourceLength
 #endif
     };
 
-    if (GetByteCount(&enc, (CHAR16_T*)source, sourceLength) > destinationLength)
-    {
-        errno = MINIPAL_ERROR_INSUFFICIENT_BUFFER;
-        ret = 0;
-    }
-    else
-    {
 #if !BIGENDIAN
-        (void)flags; // unused
+    (void)flags; // unused
 #endif
 
-        ret = GetBytes(&enc, (CHAR16_T*)source, sourceLength, (unsigned char*)destination, destinationLength);
-        if (errno) ret = 0;
-    }
+    ret = GetBytes(&enc, (CHAR16_T*)source, sourceLength, (unsigned char*)destination, destinationLength);
+    if (errno) ret = 0;
 
     return ret;
 }

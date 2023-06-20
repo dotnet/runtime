@@ -253,8 +253,6 @@ MultiByteToWideChar(
         goto EXIT;
     }
 
-    // Use minipal_convert_utf8_to_utf16 on all systems, since it replaces
-    // invalid characters and Core Foundation doesn't do that.
     if (CodePage == CP_UTF8 || CodePage == CP_ACP)
     {
         if (cbMultiByte < 0)
@@ -344,8 +342,6 @@ WideCharToMultiByte(
         defaultChar = *lpDefaultChar;
     }
 
-    // Use minipal_convert_utf16_to_utf8 on all systems because we use
-    // UTF8ToUnicode in MultiByteToWideChar() on all systems.
     if (CodePage == CP_UTF8 || CodePage == CP_ACP)
     {
         if (cchWideChar < 0)
