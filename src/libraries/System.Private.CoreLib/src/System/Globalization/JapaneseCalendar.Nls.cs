@@ -67,17 +67,17 @@ namespace System.Globalization
                     }
                 }
             }
-            catch (System.Security.SecurityException)
+            catch (Security.SecurityException)
             {
                 // If we weren't allowed to read, then just ignore the error
                 return null;
             }
-            catch (System.IO.IOException)
+            catch (IO.IOException)
             {
                 // If key is being deleted just ignore the error
                 return null;
             }
-            catch (System.UnauthorizedAccessException)
+            catch (UnauthorizedAccessException)
             {
                 // Registry access rights permissions, just ignore the error
                 return null;

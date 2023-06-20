@@ -403,23 +403,39 @@ TADDR Precode::AllocateTemporaryEntryPoints(MethodDescChunk *  pChunk,
 #endif
     {
         MethodDesc *pMD = pChunk->GetFirstMethodDesc();
+        bool chunkContainsEligibleMethods = pMD->DetermineIsEligibleForTieredCompilationInvariantForAllMethodsInChunk();
+
+#ifdef _DEBUG
+        // Validate every MethodDesc has the same result for DetermineIsEligibleForTieredCompilationInvariantForAllMethodsInChunk
+        MethodDesc *pMDDebug = pChunk->GetFirstMethodDesc();
         for (int i = 0; i < count; ++i)
         {
-            if (pMD->DetermineAndSetIsEligibleForTieredCompilation())
+            _ASSERTE(chunkContainsEligibleMethods == pMDDebug->DetermineIsEligibleForTieredCompilationInvariantForAllMethodsInChunk());
+            pMDDebug = (MethodDesc *)(dac_cast<TADDR>(pMDDebug) + pMDDebug->SizeOf());
+        }
+#endif
+#ifndef HAS_COMPACT_ENTRYPOINTS
+        if (chunkContainsEligibleMethods)
+#endif
+        {
+            for (int i = 0; i < count; ++i)
             {
-                _ASSERTE(pMD->IsEligibleForTieredCompilation());
-                _ASSERTE(!pMD->IsVersionableWithPrecode() || pMD->RequiresStableEntryPoint());
-            }
+                if (chunkContainsEligibleMethods && pMD->DetermineAndSetIsEligibleForTieredCompilation())
+                {
+                    _ASSERTE(pMD->IsEligibleForTieredCompilation());
+                    _ASSERTE(!pMD->IsVersionableWithPrecode() || pMD->RequiresStableEntryPoint());
+                }
 
 #ifdef HAS_COMPACT_ENTRYPOINTS
-            if (pMD->IsVersionableWithPrecode())
-            {
-                _ASSERTE(pMD->RequiresStableEntryPoint());
-                hasMethodDescVersionableWithPrecode = true;
-            }
+                if (pMD->IsVersionableWithPrecode())
+                {
+                    _ASSERTE(pMD->RequiresStableEntryPoint());
+                    hasMethodDescVersionableWithPrecode = true;
+                }
 #endif
 
-            pMD = (MethodDesc *)(dac_cast<TADDR>(pMD) + pMD->SizeOf());
+                pMD = (MethodDesc *)(dac_cast<TADDR>(pMD) + pMD->SizeOf());
+            }
         }
     }
 

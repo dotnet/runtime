@@ -131,7 +131,7 @@ namespace System
             // method ptrs don't match, go down long path
             //
             if (_methodBase == null || d._methodBase == null || !(_methodBase is MethodInfo) || !(d._methodBase is MethodInfo))
-                return Delegate.InternalEqualMethodHandles(this, d);
+                return InternalEqualMethodHandles(this, d);
             else
                 return _methodBase.Equals(d._methodBase);
         }

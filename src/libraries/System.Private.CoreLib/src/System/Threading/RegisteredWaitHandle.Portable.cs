@@ -1,4 +1,4 @@
-// Licensed to the .NET Foundation under one or more agreements.
+﻿// Licensed to the .NET Foundation under one or more agreements.
 // The .NET Foundation licenses this file to you under the MIT license.
 
 using System.Diagnostics;
@@ -11,69 +11,12 @@ namespace System.Threading
     /// An object representing the registration of a <see cref="WaitHandle"/> via <see cref="ThreadPool.RegisterWaitForSingleObject"/>.
     /// </summary>
 #if !FEATURE_WASM_THREADS
-    [System.Runtime.Versioning.UnsupportedOSPlatformAttribute("browser")]
+    [UnsupportedOSPlatform("browser")]
 #endif
     public sealed partial class RegisteredWaitHandle : MarshalByRefObject
     {
-        internal RegisteredWaitHandle(WaitHandle waitHandle, _ThreadPoolWaitOrTimerCallback callbackHelper,
-            int millisecondsTimeout, bool repeating)
-        {
-            Thread.ThrowIfNoThreadStart();
-            Handle = waitHandle.SafeWaitHandle;
-            Callback = callbackHelper;
-            TimeoutDurationMs = millisecondsTimeout;
-            Repeating = repeating;
-            if (!IsInfiniteTimeout)
-            {
-                RestartTimeout();
-            }
-        }
-
         private static AutoResetEvent? s_cachedEvent;
-
-        private static AutoResetEvent RentEvent() =>
-            Interlocked.Exchange(ref s_cachedEvent, null) ??
-            new AutoResetEvent(false);
-
-        private static void ReturnEvent(AutoResetEvent resetEvent)
-        {
-            if (Interlocked.CompareExchange(ref s_cachedEvent, resetEvent, null) != null)
-            {
-                resetEvent.Dispose();
-            }
-        }
-
         private static readonly LowLevelLock s_callbackLock = new LowLevelLock();
-
-        /// <summary>
-        /// The callback to execute when the wait on <see cref="Handle"/> either times out or completes.
-        /// </summary>
-        internal _ThreadPoolWaitOrTimerCallback Callback { get; }
-
-        /// <summary>
-        /// The <see cref="SafeWaitHandle"/> that was registered.
-        /// </summary>
-        internal SafeWaitHandle Handle { get; }
-
-        /// <summary>
-        /// The time this handle times out at in ms.
-        /// </summary>
-        internal int TimeoutTimeMs { get; private set; }
-
-        internal int TimeoutDurationMs { get; }
-
-        internal bool IsInfiniteTimeout => TimeoutDurationMs == -1;
-
-        internal void RestartTimeout()
-        {
-            Debug.Assert(!IsInfiniteTimeout);
-            TimeoutTimeMs = Environment.TickCount + TimeoutDurationMs;
-        }
-
-        /// <summary>
-        /// Whether or not the wait is a repeating wait.
-        /// </summary>
-        internal bool Repeating { get; }
 
         /// <summary>
         /// The <see cref="WaitHandle"/> the user passed in via <see cref="Unregister(WaitHandle)"/>.
@@ -109,7 +52,44 @@ namespace System.Threading
         /// </summary>
         internal PortableThreadPool.WaitThread? WaitThread { get; set; }
 
-        public bool Unregister(WaitHandle waitObject)
+        internal RegisteredWaitHandle(WaitHandle waitHandle, _ThreadPoolWaitOrTimerCallback callbackHelper,
+            int millisecondsTimeout, bool repeating)
+        {
+#if WINDOWS
+            Debug.Assert(!ThreadPool.UseWindowsThreadPool);
+#endif
+            GC.SuppressFinalize(this);
+
+            Thread.ThrowIfNoThreadStart();
+            _waitHandle = waitHandle.SafeWaitHandle;
+            _callbackHelper = callbackHelper;
+            _signedMillisecondsTimeout = millisecondsTimeout;
+            _repeating = repeating;
+            if (!IsInfiniteTimeout)
+            {
+                RestartTimeout();
+            }
+        }
+
+        private static AutoResetEvent RentEvent() =>
+            Interlocked.Exchange(ref s_cachedEvent, null) ??
+            new AutoResetEvent(false);
+
+        private static void ReturnEvent(AutoResetEvent resetEvent)
+        {
+            if (Interlocked.CompareExchange(ref s_cachedEvent, resetEvent, null) != null)
+            {
+                resetEvent.Dispose();
+            }
+        }
+
+        internal void RestartTimeout()
+        {
+            Debug.Assert(!IsInfiniteTimeout);
+            TimeoutTimeMs = Environment.TickCount + TimeoutDurationMs;
+        }
+
+        private bool UnregisterPortableCore(WaitHandle waitObject)
         {
             // The registered wait handle must have been registered by this time, otherwise the instance is not handed out to
             // the caller of the public variants of RegisterWaitForSingleObject
@@ -205,7 +185,7 @@ namespace System.Threading
         /// Perform the registered callback if the <see cref="UserUnregisterWaitHandle"/> has not been signaled.
         /// </summary>
         /// <param name="timedOut">Whether or not the wait timed out.</param>
-        internal void PerformCallback(bool timedOut)
+        internal void PerformCallbackPortableCore(bool timedOut)
         {
 #if DEBUG
             s_callbackLock.Acquire();
@@ -219,7 +199,7 @@ namespace System.Threading
             }
 #endif
 
-            _ThreadPoolWaitOrTimerCallback.PerformWaitOrTimerCallback(Callback, timedOut);
+            _ThreadPoolWaitOrTimerCallback.PerformWaitOrTimerCallback(Callback!, timedOut);
             CompleteCallbackRequest();
         }
 

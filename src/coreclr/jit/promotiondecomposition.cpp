@@ -49,7 +49,9 @@ class DecompositionPlan
         var_types    Type;
     };
 
+    Promotion*                      m_promotion;
     Compiler*                       m_compiler;
+    ReplaceVisitor*                 m_replacer;
     jitstd::vector<AggregateInfo*>& m_aggregates;
     PromotionLiveness*              m_liveness;
     GenTree*                        m_store;
@@ -60,21 +62,24 @@ class DecompositionPlan
     bool                            m_hasNonRemainderUseOfStructLocal = false;
 
 public:
-    DecompositionPlan(Compiler*                       comp,
+    DecompositionPlan(Promotion*                      prom,
+                      ReplaceVisitor*                 replacer,
                       jitstd::vector<AggregateInfo*>& aggregates,
                       PromotionLiveness*              liveness,
                       GenTree*                        store,
                       GenTree*                        src,
                       bool                            dstInvolvesReplacements,
                       bool                            srcInvolvesReplacements)
-        : m_compiler(comp)
+        : m_promotion(prom)
+        , m_compiler(prom->m_compiler)
+        , m_replacer(replacer)
         , m_aggregates(aggregates)
         , m_liveness(liveness)
         , m_store(store)
         , m_src(src)
         , m_dstInvolvesReplacements(dstInvolvesReplacements)
         , m_srcInvolvesReplacements(srcInvolvesReplacements)
-        , m_entries(comp->getAllocator(CMK_Promotion))
+        , m_entries(prom->m_compiler->getAllocator(CMK_Promotion))
     {
     }
 
@@ -271,25 +276,16 @@ private:
     {
         ClassLayout* dstLayout = m_store->GetLayout(m_compiler);
 
-        // Validate with "obviously correct" but less scalable fixed bit vector implementation.
-        INDEBUG(FixedBitVect * segmentBitVect);
-        StructSegments segments = Promotion::SignificantSegments(m_compiler, dstLayout DEBUGARG(&segmentBitVect));
+        StructSegments segments = m_promotion->SignificantSegments(dstLayout);
 
         for (int i = 0; i < m_entries.Height(); i++)
         {
             const Entry& entry = m_entries.BottomRef(i);
 
             segments.Subtract(StructSegments::Segment(entry.Offset, entry.Offset + genTypeSize(entry.Type)));
-
-#ifdef DEBUG
-            for (unsigned i = 0; i < genTypeSize(entry.Type); i++)
-                segmentBitVect->bitVectClear(entry.Offset + i);
-#endif
         }
 
 #ifdef DEBUG
-        segments.Check(segmentBitVect);
-
         if (m_compiler->verbose)
         {
             printf("  Remainder: ");
@@ -698,21 +694,8 @@ private:
                 entry.ToReplacement->NeedsReadBack  = false;
             }
 
-            if (CanSkipEntry(entry, dstDeaths, remainderStrategy))
+            if (CanSkipEntry(entry, dstDeaths, remainderStrategy DEBUGARG(/* dump */ true)))
             {
-                if (entry.FromReplacement != nullptr)
-                {
-                    JITDUMP(
-                        "  Skipping dst+%03u <- V%02u (%s); it is up-to-date in its struct local and will be handled "
-                        "as part of the remainder\n",
-                        entry.Offset, entry.FromReplacement->LclNum, entry.FromReplacement->Description);
-                }
-                else if (entry.ToReplacement != nullptr)
-                {
-                    JITDUMP("  Skipping def of V%02u (%s); it is dying", entry.ToReplacement->LclNum,
-                            entry.ToReplacement->Description);
-                }
-
                 continue;
             }
 
@@ -731,6 +714,7 @@ private:
                     if (srcDeaths.IsReplacementDying((unsigned)replacementIndex))
                     {
                         src->gtFlags |= GTF_VAR_DEATH;
+                        m_replacer->CheckForwardSubForLastUse(entry.FromLclNum);
                     }
                 }
             }
@@ -781,13 +765,32 @@ private:
 
         if (remainderStrategy.Type == RemainderStrategy::Primitive)
         {
-            GenTree* src;
+            GenTree* src = nullptr;
             if (m_src->OperIs(GT_LCL_VAR, GT_LCL_FLD))
             {
                 GenTreeLclVarCommon* srcLcl = m_src->AsLclVarCommon();
-                src = m_compiler->gtNewLclFldNode(srcLcl->GetLclNum(), remainderStrategy.PrimitiveType,
-                                                  srcLcl->GetLclOffs() + remainderStrategy.PrimitiveOffset);
-                m_compiler->lvaSetVarDoNotEnregister(srcLcl->GetLclNum() DEBUGARG(DoNotEnregisterReason::LocalField));
+
+                // Check if the source has a regularly promoted field at this offset.
+                LclVarDsc* srcLclDsc  = m_compiler->lvaGetDesc(srcLcl);
+                unsigned   srcLclOffs = srcLcl->GetLclOffs() + remainderStrategy.PrimitiveOffset;
+
+                unsigned int fieldLcl =
+                    srcLclDsc->lvPromoted ? m_compiler->lvaGetFieldLocal(srcLclDsc, srcLclOffs) : BAD_VAR_NUM;
+                if (fieldLcl != BAD_VAR_NUM)
+                {
+                    LclVarDsc* dsc = m_compiler->lvaGetDesc(fieldLcl);
+                    if (genTypeSize(dsc->lvType) == genTypeSize(remainderStrategy.PrimitiveType))
+                    {
+                        src = m_compiler->gtNewLclvNode(fieldLcl, dsc->lvType);
+                    }
+                }
+
+                if (src == nullptr)
+                {
+                    src = m_compiler->gtNewLclFldNode(srcLcl->GetLclNum(), remainderStrategy.PrimitiveType, srcLclOffs);
+                    m_compiler->lvaSetVarDoNotEnregister(srcLcl->GetLclNum()
+                                                             DEBUGARG(DoNotEnregisterReason::LocalField));
+                }
             }
             else
             {
@@ -796,18 +799,44 @@ private:
                 PropagateIndirFlags(src, indirFlags);
             }
 
-            GenTree* store;
+            GenTree* store = nullptr;
             if (m_store->OperIsLocalStore())
             {
                 GenTreeLclVarCommon* dstLcl = m_store->AsLclVarCommon();
-                store = m_compiler->gtNewStoreLclFldNode(dstLcl->GetLclNum(), remainderStrategy.PrimitiveType,
-                                                         dstLcl->GetLclOffs() + remainderStrategy.PrimitiveOffset, src);
-                m_compiler->lvaSetVarDoNotEnregister(dstLcl->GetLclNum() DEBUGARG(DoNotEnregisterReason::LocalField));
+
+                // Check if the destination has a regularly promoted field at this offset.
+                LclVarDsc* dstLclDsc  = m_compiler->lvaGetDesc(dstLcl);
+                unsigned   dstLclOffs = dstLcl->GetLclOffs() + remainderStrategy.PrimitiveOffset;
+
+                unsigned int fieldLcl =
+                    dstLclDsc->lvPromoted ? m_compiler->lvaGetFieldLocal(dstLclDsc, dstLclOffs) : BAD_VAR_NUM;
+                if (fieldLcl != BAD_VAR_NUM)
+                {
+                    LclVarDsc* dsc = m_compiler->lvaGetDesc(fieldLcl);
+                    if (genTypeSize(dsc->lvType) == genTypeSize(remainderStrategy.PrimitiveType))
+                    {
+                        // Since the destination is regularly promoted the
+                        // source must be physically promoted to get here. That
+                        // means we always expect to see a LCL_FLD for the
+                        // source here that we can retype to what matches the
+                        // promoted field.
+                        assert(src->OperIs(GT_LCL_FLD));
+                        src->gtType = dsc->lvType;
+
+                        store = m_compiler->gtNewStoreLclVarNode(fieldLcl, src);
+                    }
+                }
+
+                if (store == nullptr)
+                {
+                    store = m_compiler->gtNewStoreLclFldNode(dstLcl->GetLclNum(), src->TypeGet(), dstLclOffs, src);
+                    m_compiler->lvaSetVarDoNotEnregister(dstLcl->GetLclNum()
+                                                             DEBUGARG(DoNotEnregisterReason::LocalField));
+                }
             }
             else
             {
-                store = m_compiler->gtNewStoreIndNode(remainderStrategy.PrimitiveType,
-                                                      grabAddr(remainderStrategy.PrimitiveOffset), src);
+                store = m_compiler->gtNewStoreIndNode(src->TypeGet(), grabAddr(remainderStrategy.PrimitiveOffset), src);
                 PropagateIndirFlags(store, indirFlags);
             }
 
@@ -824,9 +853,13 @@ private:
     //
     // Parameters:
     //   entry             - The init/copy entry
+    //   deaths            - Liveness information for the destination; only valid if m_dstInvolvedReplacements is true.
     //   remainderStrategy - The strategy we are using for the remainder
+    //   dump              - Whether to JITDUMP decisions made
     //
-    bool CanSkipEntry(const Entry& entry, const StructDeaths& deaths, const RemainderStrategy& remainderStrategy)
+    bool CanSkipEntry(const Entry&             entry,
+                      const StructDeaths&      deaths,
+                      const RemainderStrategy& remainderStrategy DEBUGARG(bool dump = false))
     {
         if (entry.ToReplacement != nullptr)
         {
@@ -841,6 +874,32 @@ private:
             size_t replacementIndex = entry.ToReplacement - firstRep;
             if (deaths.IsReplacementDying((unsigned)replacementIndex))
             {
+#ifdef DEBUG
+                if (dump)
+                {
+                    JITDUMP("  Skipping def of V%02u (%s); it is dying\n", entry.ToReplacement->LclNum,
+                            entry.ToReplacement->Description);
+                }
+#endif
+
+                return true;
+            }
+        }
+        else
+        {
+            // If the destination has replacements we still have usable
+            // liveness information for the remainder. This case happens if the
+            // source was also promoted.
+            if (m_dstInvolvesReplacements && deaths.IsRemainderDying())
+            {
+#ifdef DEBUG
+                if (dump)
+                {
+                    JITDUMP("  Skipping write to dst+%03u; it is the remainder and the remainder is dying\n",
+                            entry.Offset);
+                }
+#endif
+
                 return true;
             }
         }
@@ -848,8 +907,20 @@ private:
         if (entry.FromReplacement != nullptr)
         {
             // Check if the remainder is going to handle it.
-            return (remainderStrategy.Type == RemainderStrategy::FullBlock) && !entry.FromReplacement->NeedsWriteBack &&
-                   (entry.ToLclNum == BAD_VAR_NUM);
+            if ((remainderStrategy.Type == RemainderStrategy::FullBlock) && !entry.FromReplacement->NeedsWriteBack &&
+                (entry.ToLclNum == BAD_VAR_NUM))
+            {
+#ifdef DEBUG
+                if (dump)
+                {
+                    JITDUMP("  Skipping dst+%03u <- V%02u (%s); it is up-to-date in its struct local and will be "
+                            "handled as part of the remainder\n",
+                            entry.Offset, entry.FromReplacement->LclNum, entry.FromReplacement->Description);
+                }
+#endif
+
+                return true;
+            }
         }
 
         return false;
@@ -968,21 +1039,18 @@ void Compiler::gtPeelOffsets(GenTree** addr, target_ssize_t* offset, FieldSeq** 
     }
 }
 
-// HandleStore:
+// HandleStructStore:
 //   Handle a store that may be between struct locals with replacements.
 //
 // Parameters:
 //   use  - The store's use
 //   user - The store's user
 //
-void ReplaceVisitor::HandleStore(GenTree** use, GenTree* user)
+void ReplaceVisitor::HandleStructStore(GenTree** use, GenTree* user)
 {
     GenTree* store = *use;
 
-    if (!store->TypeIs(TYP_STRUCT))
-    {
-        return;
-    }
+    assert(store->TypeIs(TYP_STRUCT));
 
     GenTree*             src    = store->Data()->gtEffectiveVal();
     GenTreeLclVarCommon* dstLcl = store->OperIsLocalStore() ? store->AsLclVarCommon() : nullptr;
@@ -1009,7 +1077,7 @@ void ReplaceVisitor::HandleStore(GenTree** use, GenTree* user)
         DecompositionStatementList result;
         EliminateCommasInBlockOp(store, &result);
 
-        DecompositionPlan plan(m_compiler, m_aggregates, m_liveness, store, src, dstInvolvesReplacements,
+        DecompositionPlan plan(m_promotion, this, m_aggregates, m_liveness, store, src, dstInvolvesReplacements,
                                srcInvolvesReplacements);
 
         if (dstInvolvesReplacements)
@@ -1124,10 +1192,7 @@ void ReplaceVisitor::HandleStore(GenTree** use, GenTree* user)
         {
             GenTreeLclVarCommon* lclStore = store->AsLclVarCommon();
             unsigned             size     = lclStore->GetLayout(m_compiler)->GetSize();
-            if (MarkForReadBack(lclStore->GetLclNum(), lclStore->GetLclOffs(), size))
-            {
-                JITDUMP("Marked store destination replacements to be read back (could not decompose this store)\n");
-            }
+            MarkForReadBack(lclStore, size DEBUGARG("cannot decompose store"));
         }
     }
 }
@@ -1336,7 +1401,7 @@ void ReplaceVisitor::CopyBetweenFields(GenTree*                    store,
 
         if ((dstRep < dstEndRep) && (srcRep < srcEndRep))
         {
-            if (srcRep->Offset - srcBaseOffs + genTypeSize(srcRep->AccessType) < dstRep->Offset - dstBaseOffs)
+            if (srcRep->Offset - srcBaseOffs + genTypeSize(srcRep->AccessType) <= dstRep->Offset - dstBaseOffs)
             {
                 // This source replacement ends before the next destination replacement starts.
                 // Write it directly to the destination struct local.
@@ -1348,7 +1413,7 @@ void ReplaceVisitor::CopyBetweenFields(GenTree*                    store,
                 continue;
             }
 
-            if (dstRep->Offset - dstBaseOffs + genTypeSize(dstRep->AccessType) < srcRep->Offset - srcBaseOffs)
+            if (dstRep->Offset - dstBaseOffs + genTypeSize(dstRep->AccessType) <= srcRep->Offset - srcBaseOffs)
             {
                 // Destination replacement ends before the next source replacement starts.
                 // Read it directly from the source struct local.
@@ -1402,7 +1467,7 @@ void ReplaceVisitor::CopyBetweenFields(GenTree*                    store,
                     {
                         plan->CopyBetweenReplacements(dstRep, fieldLcl, offs);
                         JITDUMP("  V%02u (%s)%s <- V%02u (%s)\n", dstRep->LclNum, dstRep->Description,
-                                LastUseString(dstLcl, dstRep), dsc->lvReason);
+                                LastUseString(dstLcl, dstRep), fieldLcl, dsc->lvReason);
                         dstRep++;
                         continue;
                     }
