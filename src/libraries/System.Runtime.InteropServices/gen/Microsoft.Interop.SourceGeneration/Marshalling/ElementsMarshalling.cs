@@ -294,7 +294,7 @@ namespace Microsoft.Interop
                             CollectionSource.GetUnmanagedValuesDestination(info, context))))))
             };
             // If it is a multidimensional array, we will just clear each allocated span.
-            if (_freeMarshalledArray && !UsesLastIndexMarshalled(info, context))
+            if (ShouldCleanUpAllElements(info, context))
             {
                 // <nativeSpanIdentifier>.Clear()
                 statements.Add(ExpressionStatement(

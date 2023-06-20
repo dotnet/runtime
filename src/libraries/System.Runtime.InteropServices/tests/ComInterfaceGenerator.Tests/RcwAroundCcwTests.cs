@@ -2,12 +2,11 @@
 // The .NET Foundation licenses this file to you under the MIT license.
 
 using System;
-using System.Runtime.InteropServices.Marshalling;
 using System.Runtime.InteropServices;
+using System.Runtime.InteropServices.Marshalling;
 using SharedTypes.ComInterfaces;
 using Xunit;
 using static ComInterfaceGenerator.Tests.ComInterfaces;
-using System.Collections.Generic;
 
 namespace ComInterfaceGenerator.Tests
 {
@@ -103,6 +102,41 @@ namespace ComInterfaceGenerator.Tests
             );
             Assert.Throws<ArgumentException>(() =>
                 obj.Set(new int[] { 1, 2, 3, 4, 5, 6, 7, 8, 9, 0 })
+            );
+        }
+
+        [Fact]
+        public void IJaggedArrayMarshallingFailsWithCorrectWidths()
+        {
+            // This isn't clearing the span like it should
+            var obj = CreateWrapper<IJaggedIntArrayMarshallingFailsImpl, IJaggedIntArrayMarshallingFails>();
+
+            var array = new int[][] { new int[] { 1, 2, 3 }, new int[] { 4, 5, }, new int[] { 6, 7, 8, 9 } };
+            var length = 3;
+            var widths = new int[] { 3, 2, 4 };
+            Assert.Throws<ArgumentException>(() =>
+                obj.Set(array, widths, length)
+            );
+            Assert.Throws<ArgumentException>(() =>
+                // We have to pass in the corrent widths and length to cleanup, otherwise we get a nullref when indexing widths
+                _ = obj.Get(out widths, out length)
+            );
+        }
+
+        [Fact]
+        [ActiveIssue("not filed yet. Widths is out, but if we fail marshalling the widths, we can't cleanup the array")]
+        public void IJaggedArrayMarshallingFails()
+        {
+            var obj = CreateWrapper<IJaggedIntArrayMarshallingFailsImpl, IJaggedIntArrayMarshallingFails>();
+
+            Assert.Throws<ArgumentException>(() =>
+                _ = obj.Get(out _, out _)
+            );
+            var array = new int[][] { new int[] { 1, 2, 3 }, new int[] { 4, 5, }, new int[] { 6, 7, 8, 9 } };
+            var length = 3;
+            var widths = new int[] { 3, 2, 4 };
+            Assert.Throws<ArgumentException>(() =>
+                obj.Set(array, widths, length)
             );
         }
     }

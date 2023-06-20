@@ -534,6 +534,7 @@ namespace Microsoft.Interop
         private readonly ElementsMarshalling _elementsMarshalling;
         private readonly ManagedTypeInfo _unmanagedType;
         private readonly MarshallerShape _shape;
+        private readonly ExpressionSyntax _numElementsExpression;
         private readonly bool _cleanupElementsAndSpace;
 
         public StatelessLinearCollectionMarshalling(
@@ -541,12 +542,14 @@ namespace Microsoft.Interop
             ElementsMarshalling elementsMarshalling,
             ManagedTypeInfo unmanagedType,
             MarshallerShape shape,
+            ExpressionSyntax numElementsExpression,
             bool cleanupElementsAndSpace)
         {
             _spaceMarshallingStrategy = spaceMarshallingStrategy;
             _elementsMarshalling = elementsMarshalling;
             _unmanagedType = unmanagedType;
             _shape = shape;
+            _numElementsExpression = numElementsExpression;
             _cleanupElementsAndSpace = cleanupElementsAndSpace;
         }
 
@@ -567,6 +570,15 @@ namespace Microsoft.Interop
 
             if (!elementCleanup.IsKind(SyntaxKind.EmptyStatement))
             {
+                if (!context.AdditionalTemporaryStateLivesAcrossStages)
+                {
+                    string numElementsIdentifier = MarshallerHelpers.GetNumElementsIdentifier(info, context);
+                    yield return ExpressionStatement(
+                        AssignmentExpression(
+                            SyntaxKind.SimpleAssignmentExpression,
+                            IdentifierName(numElementsIdentifier),
+                            _numElementsExpression));
+                }
                 yield return elementCleanup;
             }
         }
