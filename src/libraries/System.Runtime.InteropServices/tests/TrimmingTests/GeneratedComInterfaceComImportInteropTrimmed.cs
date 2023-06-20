@@ -26,12 +26,10 @@ var comWrappers = new StrategyBasedComWrappers();
 
 var managedObject = new ComClass();
 var nativeObject = comWrappers.GetOrCreateComInterfaceForObject(managedObject, CreateComInterfaceFlags.None);
-var wrapper = comWrappers.GetOrCreateObjectForComInstance(nativeObject, CreateObjectFlags.None);
+var wrapper = (IComInterface)comWrappers.GetOrCreateObjectForComInstance(nativeObject, CreateObjectFlags.None);
 Marshal.Release(nativeObject);
 
-// We can't use the wrapper as trimming tests don't reference the source generators from the live ref pack
-// due to how we construct it. Tracking this issue as https://github.com/dotnet/runtime/issues/87582.
-return 100;
+return wrapper.Method();
 
 [MethodImpl(MethodImplOptions.NoInlining)]
 static Type RemoveTypeTrimAnalysis(Type type) => type;
