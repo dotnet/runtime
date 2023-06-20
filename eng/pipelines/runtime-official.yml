@@ -221,6 +221,7 @@ extends:
           buildConfig: release
           platforms:
           - linux_x64
+          - linux_musl_x64
           jobParameters:
             buildArgs: -s mono+packs -c $(_BuildConfig)
                       /p:MonoCrossAOTTargetOS=android+browser /p:SkipMonoCrossJitConfigure=true /p:BuildMonoAOTCrossCompilerOnly=true
@@ -244,6 +245,7 @@ extends:
           buildConfig: release
           platforms:
           - linux_arm64
+          - linux_musl_arm64
           jobParameters:
             buildArgs: -s mono+packs -c $(_BuildConfig)
                        /p:MonoCrossAOTTargetOS=browser /p:SkipMonoCrossJitConfigure=true /p:BuildMonoAOTCrossCompilerOnly=true

@@ -731,6 +731,7 @@ extends:
           buildConfig: release
           platforms:
           - linux_x64
+          - linux_musl_x64
           # - linux_arm64
           # - linux_musl_arm64
           - windows_x64
@@ -784,6 +785,7 @@ extends:
           buildConfig: release
           platforms:
           - linux_arm64
+          - linux_musl_arm64
           - osx_arm64
           jobParameters:
             runtimeVariant: crossaot
