@@ -95,6 +95,17 @@ static NSString* RemoveWeightlessCharacters(NSString* source)
     return modifiedString;
 }
 
+static int32_t IsIndexFound(int32_t fromBeginning, int32_t foundLocation, int32_t newLocation)
+{
+    // last index
+    if (!fromBeginning && foundLocation > newLocation)
+        return 1;
+    // first index
+    if (fromBeginning && foundLocation != -2 && foundLocation < newLocation)
+        return 1;
+    return 0;
+}
+
 /*
 Function: IndexOf
 Find detailed explanation how this function works in https://github.com/dotnet/runtime/blob/main/docs/design/features/globalization-hybrid-mode.md
@@ -138,22 +149,10 @@ Range GlobalizationNative_IndexOfNative(const uint16_t* localeName, int32_t lNam
                                                   locale:currentLocale];
 
     if (containsRange.location == NSNotFound)
-    {
         return result;
-    }
 
-    // localizedStandardRangeOfString is performing a case and diacritic insensitive, locale-aware search and finding first occurance
-    if ((comparisonOptions & IgnoreCase) && lNameLength == 0 && fromBeginning)
-    {      
-        NSRange localizedStandardRange = [sourceStrCleaned localizedStandardRangeOfString:searchStrCleaned];
-        if (localizedStandardRange.location != NSNotFound)
-        {
-            result.location = localizedStandardRange.location;
-            result.length = localizedStandardRange.length;                    
-            return result;
-        }       
-    }
-
+    // in case search string is inside source string but we can't find the index return -2
+    result.location = -2;
     // sourceString and searchString possibly have the same composition of characters
     rangeOfReceiverToSearch = NSMakeRange(0, sourceStrCleaned.length);
     NSRange nsRange = [sourceStrCleaned rangeOfString:searchStrCleaned
@@ -165,35 +164,34 @@ Range GlobalizationNative_IndexOfNative(const uint16_t* localeName, int32_t lNam
     {   
         result.location = nsRange.location;
         result.length = nsRange.length;
-        // in case of last index and CompareOptions.IgnoreCase 
-        // if letters have different representations in source and search strings
-        // and case insensitive search appears more than one time in source string take last index
+        // in case of CompareOptions.IgnoreCase if letters have different representations in source and search strings
+        // and case insensitive search appears more than one time in source string take last index for LastIndexOf and first index for IndexOf
         // e.g. new CultureInfo().CompareInfo.LastIndexOf("Is \u0055\u0308 or \u0075\u0308 the same as \u00DC or \u00FC?", "U\u0308", 25,18, CompareOptions.IgnoreCase);
         // should return 24 but here it will be 9
-        if (fromBeginning || !(comparisonOptions & IgnoreCase))
+        if (!(comparisonOptions & IgnoreCase))
             return result;
     }
-    
-    rangeOfReceiverToSearch = NSMakeRange(0, sourceStrCleaned.length);
+
     // check if sourceString has precomposed form of characters and searchString has decomposed form of characters
     // convert searchString to a precomposed form
     NSRange precomposedRange = [sourceStrCleaned rangeOfString:searchStrPrecomposed
-                                                  options:options
-                                                  range:rangeOfReceiverToSearch
-                                                  locale:currentLocale];
+                                                 options:options
+                                                 range:rangeOfReceiverToSearch
+                                                 locale:currentLocale];
 
     if (precomposedRange.location != NSNotFound)
     {
-        // in case of last index and CompareOptions.IgnoreCase 
-        // if letters have different representations in source and search strings
-        // and search appears more than one time in source string take last index
+        // in case of CompareOptions.IgnoreCase if letters have different representations in source and search strings
+        // and search appears more than one time in source string take last index for LastIndexOf and first index for IndexOf
         // e.g. new CultureInfo().CompareInfo.LastIndexOf("Is \u0055\u0308 or \u0075\u0308 the same as \u00DC or \u00FC?", "U\u0308", 25,18, CompareOptions.IgnoreCase);
-        // this will return 24 
-        if ((int32_t)result.location > (int32_t)precomposedRange.location && !fromBeginning && (comparisonOptions & IgnoreCase))
+        // this will return 24
+        if ((comparisonOptions & IgnoreCase) && IsIndexFound(fromBeginning, (int32_t)result.location, (int32_t)precomposedRange.location))
             return result;
+
         result.location = precomposedRange.location;
         result.length = precomposedRange.length;
-        return result;
+        if (!(comparisonOptions & IgnoreCase))
+           return result;
     }
 
     // check if sourceString has decomposed form of characters and searchString has precomposed form of characters
@@ -206,12 +204,14 @@ Range GlobalizationNative_IndexOfNative(const uint16_t* localeName, int32_t lNam
 
     if (decomposedRange.location != NSNotFound)
     {
+        if ((comparisonOptions & IgnoreCase) && IsIndexFound(fromBeginning, (int32_t)result.location, (int32_t)decomposedRange.location))
+            return result;
+
         result.location = decomposedRange.location;
         result.length = decomposedRange.length;                    
         return result;
     }
 
-    result.location = -2;
     return result;
 }
 
@@ -219,8 +219,7 @@ Range GlobalizationNative_IndexOfNative(const uint16_t* localeName, int32_t lNam
  Return value is a "Win32 BOOL" (1 = true, 0 = false)
  */
 int32_t GlobalizationNative_StartsWithNative(const uint16_t* localeName, int32_t lNameLength, const uint16_t* lpPrefix, int32_t cwPrefixLength, 
-                                             const uint16_t* lpSource, int32_t cwSourceLength, int32_t comparisonOptions)
-                        
+                                             const uint16_t* lpSource, int32_t cwSourceLength, int32_t comparisonOptions)          
 {
     NSStringCompareOptions options = ConvertFromCompareOptionsToNSStringCompareOptions(comparisonOptions);
     
@@ -247,8 +246,7 @@ int32_t GlobalizationNative_StartsWithNative(const uint16_t* localeName, int32_t
  Return value is a "Win32 BOOL" (1 = true, 0 = false)
  */
 int32_t GlobalizationNative_EndsWithNative(const uint16_t* localeName, int32_t lNameLength, const uint16_t* lpSuffix, int32_t cwSuffixLength,
-                                           const uint16_t* lpSource, int32_t cwSourceLength, int32_t comparisonOptions)
-                        
+                                           const uint16_t* lpSource, int32_t cwSourceLength, int32_t comparisonOptions)                
 {
     NSStringCompareOptions options = ConvertFromCompareOptionsToNSStringCompareOptions(comparisonOptions);
     
