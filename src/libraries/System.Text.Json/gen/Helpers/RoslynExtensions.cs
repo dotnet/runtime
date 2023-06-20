@@ -26,6 +26,12 @@ namespace System.Text.Json.SourceGeneration
         public static Location? GetDiagnosticLocation(this ISymbol typeSymbol)
             => typeSymbol.Locations.Length > 0 ? typeSymbol.Locations[0] : null;
 
+        public static Location? GetDiagnosticLocation(this AttributeData attributeData)
+        {
+            SyntaxReference? reference = attributeData.ApplicationSyntaxReference;
+            return reference?.SyntaxTree.GetLocation(reference.Span);
+        }
+
         /// <summary>
         /// Creates a copy of the Location instance that does not capture a reference to Compilation.
         /// </summary>
@@ -60,6 +66,11 @@ namespace System.Text.Json.SourceGeneration
                 }
                 else if (namedType.IsGenericType)
                 {
+                    if (namedType.IsUnboundGenericType)
+                    {
+                        return namedType;
+                    }
+
                     ImmutableArray<ITypeSymbol> typeArguments = namedType.TypeArguments;
                     INamedTypeSymbol? containingType = namedType.ContainingType;
 

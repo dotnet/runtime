@@ -102,7 +102,7 @@ namespace System.Text.Json.SourceGeneration.UnitTests
 
                 namespace JsonSourceGenerator
                 {
-                    [JsonSerializable(typeof(JsonSourceGenerator.IndexViewModel)]
+                    [JsonSerializable(typeof(JsonSourceGenerator.IndexViewModel))]
                     public partial class JsonContext : JsonSerializerContext
                     {
                     }
@@ -126,60 +126,58 @@ namespace System.Text.Json.SourceGeneration.UnitTests
 
             JsonSourceGeneratorResult result = CompilationHelper.RunJsonSourceGenerator(compilation);
 
+            Assert.Empty(result.NewCompilation.GetDiagnostics());
             Assert.Empty(result.Diagnostics);
         }
 
-        [Fact]
-        public void MultiDimensionArrayDoesNotProduceWarnings()
+        [Theory]
+        [InlineData(false)]
+        [InlineData(true)]
+        public void MultiDimensionArrayDoesNotProduceWarnings(bool explicitRef)
         {
-            static void RunTest(bool explicitRef)
-            {
-                // Compile the referenced assembly first.
-                Compilation campaignCompilation = CompilationHelper.CreateCampaignSummaryViewModelCompilation();
-                Compilation eventCompilation = CompilationHelper.CreateActiveOrUpcomingEventCompilation();
+            // Compile the referenced assembly first.
+            Compilation campaignCompilation = CompilationHelper.CreateCampaignSummaryViewModelCompilation();
+            Compilation eventCompilation = CompilationHelper.CreateActiveOrUpcomingEventCompilation();
 
-                // Emit the image of the referenced assembly.
-                byte[] campaignImage = CompilationHelper.CreateAssemblyImage(campaignCompilation);
-                byte[] eventImage = CompilationHelper.CreateAssemblyImage(eventCompilation);
+            // Emit the image of the referenced assembly.
+            byte[] campaignImage = CompilationHelper.CreateAssemblyImage(campaignCompilation);
+            byte[] eventImage = CompilationHelper.CreateAssemblyImage(eventCompilation);
 
-                string optionalAttribute = explicitRef ? "[JsonSerializable(typeof(ActiveOrUpcomingEvent[,])]" : null;
+            string optionalAttribute = explicitRef ? "[JsonSerializable(typeof(ActiveOrUpcomingEvent[,]))]" : null;
 
-                // Main source for current compilation.
-                string source = $$"""
-                    using System.Collections.Generic;
-                    using System.Text.Json.Serialization;
-                    using ReferencedAssembly;
+            // Main source for current compilation.
+            string source = $$"""
+                using System.Text.Json.Serialization;
+                using ReferencedAssembly;
 
-                    namespace JsonSourceGenerator
+                namespace JsonSourceGenerator
+                {
+                    {{optionalAttribute}}
+                    [JsonSerializable(typeof(JsonSourceGenerator.IndexViewModel))]
+                    public partial class JsonContext : JsonSerializerContext
                     {
-                        {{optionalAttribute}}
-                        [JsonSerializable(typeof(JsonSourceGenerator.IndexViewModel)]
-                        public partial class JsonContext : JsonSerializerContext
-                        {
-                        }
-
-                        public class IndexViewModel
-                        {
-                            public ActiveOrUpcomingEvent[,] ActiveOrUpcomingEvents { get; set; }
-                            public CampaignSummaryViewModel FeaturedCampaign { get; set; }
-                            public bool IsNewAccount { get; set; }
-                            public bool HasFeaturedCampaign => FeaturedCampaign != null;
-                        }
                     }
-                    """;
 
-                MetadataReference[] additionalReferences = {
-                    MetadataReference.CreateFromImage(campaignImage),
-                    MetadataReference.CreateFromImage(eventImage),
-                };
+                    public class IndexViewModel
+                    {
+                        public ActiveOrUpcomingEvent[,] ActiveOrUpcomingEvents { get; set; }
+                        public CampaignSummaryViewModel FeaturedCampaign { get; set; }
+                        public bool IsNewAccount { get; set; }
+                        public bool HasFeaturedCampaign => FeaturedCampaign != null;
+                    }
+                }
+                """;
 
-                Compilation compilation = CompilationHelper.CreateCompilation(source, additionalReferences);
-                JsonSourceGeneratorResult result = CompilationHelper.RunJsonSourceGenerator(compilation);
-                Assert.Empty(result.Diagnostics);
-            }
+            MetadataReference[] additionalReferences = {
+                MetadataReference.CreateFromImage(campaignImage),
+                MetadataReference.CreateFromImage(eventImage),
+            };
 
-            RunTest(explicitRef: true);
-            RunTest(false);
+            Compilation compilation = CompilationHelper.CreateCompilation(source, additionalReferences);
+            JsonSourceGeneratorResult result = CompilationHelper.RunJsonSourceGenerator(compilation);
+
+            Assert.Empty(result.NewCompilation.GetDiagnostics());
+            Assert.Empty(result.Diagnostics);
         }
 
         [Fact]
@@ -190,9 +188,7 @@ namespace System.Text.Json.SourceGeneration.UnitTests
             JsonSourceGeneratorResult result = CompilationHelper.RunJsonSourceGenerator(compilation);
 
             INamedTypeSymbol symbol = (INamedTypeSymbol)compilation.GetSymbolsWithName("JsonContext").FirstOrDefault();
-            SyntaxReference syntaxReference = new List<AttributeData>(symbol.GetAttributes())[1].ApplicationSyntaxReference;
-            TextSpan textSpan = syntaxReference.Span;
-            Location location = syntaxReference.SyntaxTree.GetLocation(textSpan)!;
+            Location location = symbol.GetAttributes()[1].GetLocation();
 
             var expectedDiagnostics = new DiagnosticData[]
             {
@@ -339,13 +335,69 @@ namespace System.Text.Json.SourceGeneration.UnitTests
             Compilation compilation = CompilationHelper.CreateTypesAnnotatedWithJsonStringEnumConverter();
             JsonSourceGeneratorResult result = CompilationHelper.RunJsonSourceGenerator(compilation);
 
-            Location enum2PropLocation = compilation.GetSymbolsWithName("Enum2Prop").First().Locations[0];
-            Location enum1TypeLocation = compilation.GetSymbolsWithName("Enum1").First().Locations[0];
+            Location enum2PropLocation = compilation.GetSymbolsWithName("Enum2Prop").First().GetAttributes()[0].GetLocation();
+            Location enum1TypeLocation = compilation.GetSymbolsWithName("Enum1").First().GetAttributes()[0].GetLocation();
 
             var expectedDiagnostics = new DiagnosticData[]
             {
                 new(DiagnosticSeverity.Warning, enum1TypeLocation, "The member 'HelloWorld.Enum1' has been annotated with 'JsonStringEnumConverter' which is not supported in native AOT. Consider using the generic 'JsonStringEnumConverter<TEnum>' instead."),
                 new(DiagnosticSeverity.Warning, enum2PropLocation, "The member 'HelloWorld.MyClass.Enum2Prop' has been annotated with 'JsonStringEnumConverter' which is not supported in native AOT. Consider using the generic 'JsonStringEnumConverter<TEnum>' instead."),
+            };
+
+            CompilationHelper.AssertEqualDiagnosticMessages(expectedDiagnostics, result.Diagnostics);
+        }
+
+        [Fact]
+        public void InvalidJsonConverterAttributeTypeWarns()
+        {
+            Compilation compilation = CompilationHelper.CreateTypesWithInvalidJsonConverterAttributeType();
+            JsonSourceGeneratorResult result = CompilationHelper.RunJsonSourceGenerator(compilation);
+
+            Location value1PropLocation = compilation.GetSymbolsWithName("Value1").First().GetAttributes()[0].GetLocation();
+            Location value2PropLocation = compilation.GetSymbolsWithName("Value2").First().GetAttributes()[0].GetLocation();
+            Location value3PropLocation = compilation.GetSymbolsWithName("Value3").First().GetAttributes()[0].GetLocation();
+
+            var expectedDiagnostics = new DiagnosticData[]
+            {
+                new(DiagnosticSeverity.Warning, value1PropLocation, "The 'JsonConverterAttribute' type 'null' specified on member 'HelloWorld.MyClass.Value1' is not a converter type or does not contain an accessible parameterless constructor."),
+                new(DiagnosticSeverity.Warning, value2PropLocation, "The 'JsonConverterAttribute' type 'int' specified on member 'HelloWorld.MyClass.Value2' is not a converter type or does not contain an accessible parameterless constructor."),
+                new(DiagnosticSeverity.Warning, value3PropLocation, "The 'JsonConverterAttribute' type 'HelloWorld.InacessibleConverter' specified on member 'HelloWorld.MyClass.Value3' is not a converter type or does not contain an accessible parameterless constructor."),
+            };
+
+            CompilationHelper.AssertEqualDiagnosticMessages(expectedDiagnostics, result.Diagnostics);
+        }
+
+        [Fact]
+        public void UnboundGenericTypeDeclarationWarns()
+        {
+            Compilation compilation = CompilationHelper.CreateContextWithUnboundGenericTypeDeclarations();
+            JsonSourceGeneratorResult result = CompilationHelper.RunJsonSourceGenerator(compilation);
+
+            INamedTypeSymbol symbol = (INamedTypeSymbol)compilation.GetSymbolsWithName("JsonContext").FirstOrDefault();
+            Collections.Immutable.ImmutableArray<AttributeData> attributes = symbol.GetAttributes();
+
+            var expectedDiagnostics = new DiagnosticData[]
+            {
+                new(DiagnosticSeverity.Warning, attributes[0].GetLocation(), "Did not generate serialization metadata for type 'System.Collections.Generic.List<>'."),
+                new(DiagnosticSeverity.Warning, attributes[1].GetLocation(), "Did not generate serialization metadata for type 'System.Collections.Generic.Dictionary<,>'."),
+            };
+
+            CompilationHelper.AssertEqualDiagnosticMessages(expectedDiagnostics, result.Diagnostics);
+        }
+
+        [Fact]
+        public void ErrorTypeDeclarationWarns()
+        {
+            Compilation compilation = CompilationHelper.CreateContextWithErrorTypeDeclarations();
+            JsonSourceGeneratorResult result = CompilationHelper.RunJsonSourceGenerator(compilation);
+
+            INamedTypeSymbol symbol = (INamedTypeSymbol)compilation.GetSymbolsWithName("JsonContext").FirstOrDefault();
+            Collections.Immutable.ImmutableArray<AttributeData> attributes = symbol.GetAttributes();
+
+            var expectedDiagnostics = new DiagnosticData[]
+            {
+                new(DiagnosticSeverity.Warning, attributes[0].GetLocation(), "Did not generate serialization metadata for type 'BogusType'."),
+                new(DiagnosticSeverity.Warning, attributes[1].GetLocation(), "Did not generate serialization metadata for type 'BogusType<int>'."),
             };
 
             CompilationHelper.AssertEqualDiagnosticMessages(expectedDiagnostics, result.Diagnostics);
