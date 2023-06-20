@@ -1458,12 +1458,6 @@ GenTree* OptBoolsDsc::optIsBoolComp(OptTestInfo* pOptTest)
 //
 PhaseStatus Compiler::optOptimizeBools()
 {
-
-    if (!ISMETHOD("Test"))
-    {
-        return PhaseStatus::MODIFIED_NOTHING;
-    }
-
 #ifdef DEBUG
     if (verbose)
     {
@@ -1694,6 +1688,8 @@ bool OptRangePatternDsc::optMakeSwitchBBdesc()
         printf("\nStart optMakeSwitchBlock()\n");
     }
 
+    assert(m_optFirstBB->bbJumpKind == BBJ_COND);
+
     if (m_rangePattern == 0 || m_numFoundPatterns > m_rangePattern || m_rangePattern > m_sizePatterns)
     {
         return false;
@@ -1781,7 +1777,10 @@ bool OptRangePatternDsc::optMakeSwitchBBdesc()
 
     // Change `if` basic block to `Switch` basic block
     switchBBdesc = m_optFirstBB;
+
+    // Change the BBJ_COND to BBJ_SWITCH
     switchBBdesc->bbJumpKind = BBJ_SWITCH;
+    switchBBdesc->bbJumpDest = nullptr;
 
     switchBBdesc->bbCodeOffs    = m_bbCodeOffs;
     switchBBdesc->bbCodeOffsEnd = m_bbCodeOffsEnd;
@@ -1799,17 +1798,53 @@ bool OptRangePatternDsc::optMakeSwitchBBdesc()
     }
     printf("\n");
 
-    // Change from GT_JTRUE to GT_SWITCH
-    switchBBdesc->lastStmt()->GetRootNode()->ChangeOper(GT_SWITCH, GenTree::PRESERVE_VN);
-    switchBBdesc->lastStmt()->GetRootNode()->gtFlags &= ~GTF_ASG;       // TODO check the right value to set
+    // Transform Statement and GenTree of the switch basic block
 
-    // Change from GT_EQ or GT_NE to SUB
+    Statement* stmt = switchBBdesc->lastStmt();
+    GenTree*   rootTree = stmt->GetRootNode();      // JTRUE node
+    assert(rootTree->OperIs(GT_JTRUE));
+
+    // Extract side effects if there are any and
+    // append them before the current statement as a new statement
+    GenTree* sideEffList = nullptr;
+    if (rootTree->gtFlags & GTF_SIDE_EFFECT)
+    {
+        m_comp->gtExtractSideEffList(rootTree, &sideEffList);
+        if (sideEffList != nullptr)
+        {
+            noway_assert(sideEffList->gtFlags & GTF_SIDE_EFFECT);
+#ifdef DEBUG
+            if (m_comp->verbose)
+            {
+                printf("Extracted side effects list...\n");
+                m_comp->gtDispTree(sideEffList);
+                printf("\n");
+            }
+#endif // DEBUG
+
+            Statement* sideEffStmt = m_comp->fgNewStmtFromTree(sideEffList);
+            m_comp->fgInsertStmtBefore(switchBBdesc, stmt, sideEffStmt);
+            m_comp->gtSetStmtInfo(sideEffStmt);
+            m_comp->fgSetStmtSeq(sideEffStmt);
+
+            // TODO set stmt info in STMT00006 ( ??? ... ??? )
+
+            m_comp->fgDispBasicBlocks(true);
+            printf("\n");
+        }
+    }
+
+    // Change from GT_JTRUE to GT_SWITCH
+    rootTree->ChangeOper(GT_SWITCH, GenTree::PRESERVE_VN);
+    rootTree->gtFlags &= ~GTF_ASG;                      // TODO check the right value to set
+
+    // Change from GT_EQ or GT_NE to GT_SUB
     //      tree: SUB
     //      op1: LCL_VAR
     //      op2: GT_CNS_INT
-    GenTree* tree = switchBBdesc->lastStmt()->GetRootNode()->gtGetOp1(); // GT_EQ or GT_NE node
+    GenTree* tree = rootTree->gtGetOp1(); // GT_EQ or GT_NE node to chnage to GT_SUB
     tree->ChangeOper(GT_SUB, GenTree::PRESERVE_VN);
-    //tree->gtFlags &= ~GTF_ASG;            // TODO check the right value to set
+    tree->gtFlags &= ~GTF_ASG;                          // TODO check the right value to set
 
     // get LCL_VAR node in case of COMMA node
     if (tree->gtGetOp1()->OperIs(GT_COMMA))
@@ -1820,23 +1855,25 @@ bool OptRangePatternDsc::optMakeSwitchBBdesc()
 
         tree->AsOp()->gtOp1 = op2;                       // Set LCL_VAR node to op1 of GT_SUB tree
 
-        // TODO: Update the statement m_tree list. It causes assert during fgDebugCheckStmtsList >
-        // fgDebugCheckNodeLinks()
+        m_comp->gtSetStmtInfo(stmt);
+        m_comp->fgSetStmtSeq(stmt);
 
-        DEBUG_DESTROY_NODE(op1);
+        //DEBUG_DESTROY_NODE(op1);
         DEBUG_DESTROY_NODE(commaNode); // Destroy COMMA node
     }
 
-    // Change CNS_INT node value if siwtch tree does not have the mininum pattern
+    // Change CNS_INT node if siwtch tree does not have the mininum pattern
 
-    GenTree* operTree = switchBBdesc->lastStmt()->GetRootNode()->gtGetOp1();  // GT_SUB node
-    assert(operTree->gtGetOp2() != nullptr);
-    if (operTree->gtGetOp2()->AsIntCon()->IconValue() != m_minPattern)
+    assert(tree->gtGetOp2() != nullptr);
+    if (tree->gtGetOp2()->AsIntCon()->IconValue() != m_minPattern)
     {
-        operTree->AsOp()->gtOp2 = m_minOp;
+        GenTree* op2 = tree->gtGetOp2();                // GT_CNS_INT node
+        tree->AsOp()->gtOp2 = m_minOp;
 
-        // TODO: Update the statement m_tree list. It causes assert during fgDebugCheckStmtsList >
-        // fgDebugCheckNodeLinks()
+        m_comp->gtSetStmtInfo(stmt);
+        m_comp->fgSetStmtSeq(stmt);
+
+        DEBUG_DESTROY_NODE(op2);
     }
 
     return true;
