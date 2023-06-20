@@ -538,6 +538,42 @@ opcode_added:
 	return TRUE;
 }
 
+static gboolean
+emit_sn_vector4 (TransformData *td, MonoMethod *cmethod, MonoMethodSignature *csignature)
+{
+	int id = lookup_intrins (sn_vector_t_methods, sizeof (sn_vector_t_methods), cmethod);
+	if (id == -1)
+		return FALSE;
+
+	gint16 simd_opcode = -1;
+	gint16 simd_intrins = -1;
+
+	// First argument is always vector
+	MonoClass *vector_klass = cmethod->klass;
+
+	MonoTypeEnum atype = MONO_TYPE_R4;
+	int vector_size = SIZEOF_V128;
+	int arg_size = sizeof (float);
+	int scalar_arg = -1;
+	for (int i = 0; i < csignature->param_count; i++) {
+		if (csignature->params [i]->type != MONO_TYPE_GENERICINST)
+			scalar_arg = i;
+	}
+
+	if (emit_common_simd_operations (td, id, atype, vector_size, arg_size, scalar_arg, &simd_opcode, &simd_intrins))
+		goto opcode_added;
+
+	if (simd_opcode == -1 || simd_intrins == -1)
+		return FALSE;
+
+	interp_add_ins (td, simd_opcode);
+	td->last_ins->data [0] = simd_intrins;
+
+opcode_added:
+	emit_common_simd_epilogue (td, vector_klass, csignature, vector_size, FALSE);
+	return TRUE;
+}
+
 #if HOST_BROWSER
 
 #define PSIMD_ARGTYPE_I1 MONO_TYPE_I1
@@ -825,6 +861,8 @@ interp_emit_simd_intrinsics (TransformData *td, MonoMethod *cmethod, MonoMethodS
 	} else if (!strcmp (class_ns, "System.Numerics")) {
 		if (!strcmp (class_name, "Vector`1"))
 			return emit_sn_vector_t (td, cmethod, csignature);
+		else if (!strcmp (class_name, "Vector4"))
+			return emit_sn_vector4 (td, cmethod, csignature);
 	} else if (!strcmp (class_ns, "System.Runtime.Intrinsics.Wasm")) {
 		if (!strcmp (class_name, "PackedSimd"))
 			return emit_sri_packedsimd (td, cmethod, csignature);
