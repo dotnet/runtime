@@ -1123,6 +1123,57 @@ bool emitter::Is4ByteSSEInstruction(instruction ins) const
 }
 
 //------------------------------------------------------------------------
+// isLowSIMDReg: Checks if a register is a register supported by any SIMD encoding
+//
+// Arguments:
+//     reg -- register to check
+//
+// Return Value:
+//   true if the register is a register supported by any SIMD encoding
+static bool isLowSimdReg(regNumber reg)
+{
+#ifdef TARGET_AMD64
+    return (reg >= REG_XMM0) && (reg <= REG_XMM15);
+#else
+    return (reg >= REG_XMM0) && (reg <= REG_XMM7);
+#endif
+}
+
+//------------------------------------------------------------------------
+// encodeRegAsIval: Encodes a register as an ival for use by a SIMD instruction
+//
+// Arguments
+//    opReg -- The register being encoded
+//
+// Returns:
+//    opReg encoded as an ival
+static int8_t encodeRegAsIval(regNumber opReg)
+{
+    assert(isLowSimdReg(opReg) || emitter::isMaskReg(opReg));
+    ssize_t ival = static_cast<ssize_t>(opReg);
+
+    assert((ival >= 0x00) && (ival <= 0xFF));
+    return static_cast<int8_t>(ival);
+}
+
+//------------------------------------------------------------------------
+// decodeRegFromIval: Decodes a register from an ival for use by a SIMD instruction
+//
+// Arguments
+//    ival -- The ival being decoded
+//
+// Returns:
+//    The regNumber that was encoded as an ival
+static regNumber decodeRegFromIval(ssize_t ival)
+{
+    assert((ival >= -128) && (ival <= +127));
+    regNumber opReg = static_cast<regNumber>(ival);
+
+    assert(isLowSimdReg(opReg) || emitter::isMaskReg(opReg));
+    return opReg;
+}
+
+//------------------------------------------------------------------------
 // TakesSimdPrefix: Checks if the instruction should be VEX or EVEX encoded.
 //
 // Arguments:
@@ -1237,17 +1288,17 @@ bool emitter::TakesEvexPrefix(const instrDesc* id) const
 // AddEvexPrefix: Add default EVEX prefix with only LL' bits set.
 //
 // Arguments:
-//    ins -- processor instruction to check.
+//    id   -- instruction descriptor for encoding
 //    code -- opcode bits.
 //    attr -- operand size
 //
 // Return Value:
 //    encoded code with Evex prefix.
 //
-emitter::code_t emitter::AddEvexPrefix(instruction ins, code_t code, emitAttr attr)
+emitter::code_t emitter::AddEvexPrefix(const instrDesc* id, code_t code, emitAttr attr)
 {
     // Only AVX512 instructions require EVEX prefix
-    assert(IsEvexEncodableInstruction(ins));
+    assert(IsEvexEncodableInstruction(id->idIns()));
 
     // Shouldn't have already added EVEX prefix
     assert(!hasEvexPrefix(code));
@@ -1266,22 +1317,59 @@ emitter::code_t emitter::AddEvexPrefix(instruction ins, code_t code, emitAttr at
         // Set L' bits to 11 in case of instructions that operate on 512-bits.
         code |= LPRIMEBIT_IN_BYTE_EVEX_PREFIX;
     }
-    return code;
-}
 
-//------------------------------------------------------------------------
-// AddEvexPrefix: set Evex.b bit if EvexbContext is set in instruction descritor.
-//
-// Arguments:
-//    code -- opcode bits.
-//
-// Return Value:
-//    encoded code with Evex.b set if needed.
-//
-emitter::code_t emitter::AddEvexbBit(code_t code)
-{
-    assert(hasEvexPrefix(code));
-    code |= EVEX_B_BIT;
+    if (id->idIsEvexbContext())
+    {
+        code |= EVEX_B_BIT;
+    }
+
+    regNumber maskReg = REG_NA;
+
+    switch (id->idInsFmt())
+    {
+        case IF_RWR_RRD_ARD_RRD:
+        {
+            CnsVal cnsVal;
+            emitGetInsAmdCns(id, &cnsVal);
+
+            maskReg = decodeRegFromIval(cnsVal.cnsVal);
+            break;
+        }
+
+        case IF_RWR_RRD_MRD_RRD:
+        {
+            CnsVal cnsVal;
+            emitGetInsDcmCns(id, &cnsVal);
+
+            maskReg = decodeRegFromIval(cnsVal.cnsVal);
+            break;
+        }
+
+        case IF_RWR_RRD_SRD_RRD:
+        {
+            CnsVal cnsVal;
+            emitGetInsCns(id, &cnsVal);
+
+            maskReg = decodeRegFromIval(cnsVal.cnsVal);
+            break;
+        }
+
+        case IF_RWR_RRD_RRD_RRD:
+        {
+            maskReg = id->idReg4();
+            break;
+        }
+
+        default:
+        {
+            break;
+        }
+    }
+
+    if (isMaskReg(maskReg))
+    {
+        code |= (static_cast<code_t>(maskReg - KBASE) << 32);
+    }
     return code;
 }
 
@@ -7023,25 +7111,6 @@ void emitter::emitIns_R_R_S_I(
 }
 
 //------------------------------------------------------------------------
-// encodeXmmRegAsIval: Encodes a XMM register into imm[7:4] for use by a SIMD instruction
-//
-// Arguments
-//    opReg -- The register being encoded
-//
-// Returns:
-//    opReg encoded in imm[7:4]
-static int encodeXmmRegAsIval(regNumber opReg)
-{
-    // AVX/AVX2 supports 4-reg format for vblendvps/vblendvpd/vpblendvb,
-    // which encodes the fourth register into imm8[7:4]
-    assert(opReg >= XMMBASE);
-    int ival = (opReg - XMMBASE) << 4;
-
-    assert((ival >= 0) && (ival <= 255));
-    return (int8_t)ival;
-}
-
-//------------------------------------------------------------------------
 // emitIns_R_R_A_R: emits the code for an instruction that takes a register operand, a GenTreeIndir address,
 //                  another register operand, and that returns a value in register
 //
@@ -7059,10 +7128,10 @@ static int encodeXmmRegAsIval(regNumber opReg)
 void emitter::emitIns_R_R_A_R(
     instruction ins, emitAttr attr, regNumber targetReg, regNumber op1Reg, regNumber op3Reg, GenTreeIndir* indir)
 {
-    assert(isAvxBlendv(ins));
+    assert(isAvxBlendv(ins) || isAvx512Blendv(ins));
     assert(UseSimdEncoding());
 
-    int        ival = encodeXmmRegAsIval(op3Reg);
+    int8_t     ival = encodeRegAsIval(op3Reg);
     ssize_t    offs = indir->Offset();
     instrDesc* id   = emitNewInstrAmdCns(attr, offs, ival);
 
@@ -7071,46 +7140,6 @@ void emitter::emitIns_R_R_A_R(
     id->idReg2(op1Reg);
 
     emitHandleMemOp(indir, id, IF_RWR_RRD_ARD_RRD, ins);
-
-    UNATIVE_OFFSET sz = emitInsSizeAM(id, insCodeRM(ins), ival);
-    id->idCodeSize(sz);
-
-    dispIns(id);
-    emitCurIGsize += sz;
-}
-
-//------------------------------------------------------------------------
-// emitIns_R_R_AR_R: emits the code for an instruction that takes a register operand, a base memory
-//                   register, another register operand, and that returns a value in register
-//
-// Arguments:
-//    ins       -- The instruction being emitted
-//    attr      -- The emit attribute
-//    targetReg -- The target register
-//    op1Reg    -- The register of the first operands
-//    op3Reg    -- The register of the third operand
-//    base      -- The base register used for the memory address
-//    offs      -- The offset added to the memory address from base
-//
-// Remarks:
-//    op2 is built from base + offs
-//
-void emitter::emitIns_R_R_AR_R(
-    instruction ins, emitAttr attr, regNumber targetReg, regNumber op1Reg, regNumber op3Reg, regNumber base, int offs)
-{
-    assert(isAvxBlendv(ins));
-    assert(UseSimdEncoding());
-
-    int        ival = encodeXmmRegAsIval(op3Reg);
-    instrDesc* id   = emitNewInstrAmdCns(attr, offs, ival);
-
-    id->idIns(ins);
-    id->idReg1(targetReg);
-    id->idReg2(op1Reg);
-
-    id->idInsFmt(IF_RWR_RRD_ARD_RRD);
-    id->idAddr()->iiaAddrMode.amBaseReg = base;
-    id->idAddr()->iiaAddrMode.amIndxReg = REG_NA;
 
     UNATIVE_OFFSET sz = emitInsSizeAM(id, insCodeRM(ins), ival);
     id->idCodeSize(sz);
@@ -7143,7 +7172,7 @@ void emitter::emitIns_R_R_C_R(instruction          ins,
                               CORINFO_FIELD_HANDLE fldHnd,
                               int                  offs)
 {
-    assert(isAvxBlendv(ins));
+    assert(isAvxBlendv(ins) || isAvx512Blendv(ins));
     assert(UseSimdEncoding());
 
     // Static always need relocs
@@ -7152,7 +7181,7 @@ void emitter::emitIns_R_R_C_R(instruction          ins,
         attr = EA_SET_FLG(attr, EA_DSP_RELOC_FLG);
     }
 
-    int        ival = encodeXmmRegAsIval(op3Reg);
+    int8_t     ival = encodeRegAsIval(op3Reg);
     instrDesc* id   = emitNewInstrCnsDsp(attr, ival, offs);
 
     id->idIns(ins);
@@ -7188,10 +7217,10 @@ void emitter::emitIns_R_R_C_R(instruction          ins,
 void emitter::emitIns_R_R_S_R(
     instruction ins, emitAttr attr, regNumber targetReg, regNumber op1Reg, regNumber op3Reg, int varx, int offs)
 {
-    assert(isAvxBlendv(ins));
+    assert(isAvxBlendv(ins) || isAvx512Blendv(ins));
     assert(UseSimdEncoding());
 
-    int        ival = encodeXmmRegAsIval(op3Reg);
+    int8_t     ival = encodeRegAsIval(op3Reg);
     instrDesc* id   = emitNewInstrCns(attr, ival);
 
     id->idIns(ins);
@@ -7211,11 +7240,10 @@ void emitter::emitIns_R_R_S_R(
 void emitter::emitIns_R_R_R_R(
     instruction ins, emitAttr attr, regNumber targetReg, regNumber reg1, regNumber reg2, regNumber reg3)
 {
-    assert(isAvxBlendv(ins));
+    assert(isAvxBlendv(ins) || isAvx512Blendv(ins));
     assert(UseSimdEncoding());
 
-    int        ival = encodeXmmRegAsIval(reg3);
-    instrDesc* id   = emitNewInstrCns(attr, ival);
+    instrDesc* id = emitNewInstr(attr);
 
     id->idIns(ins);
     id->idInsFmt(IF_RWR_RRD_RRD_RRD);
@@ -7224,7 +7252,14 @@ void emitter::emitIns_R_R_R_R(
     id->idReg3(reg2);
     id->idReg4(reg3);
 
-    UNATIVE_OFFSET sz = emitInsSizeRR(id, insCodeRM(ins), ival);
+    UNATIVE_OFFSET sz = emitInsSizeRR(id, insCodeRM(ins));
+
+    if (!isMaskReg(reg3))
+    {
+        // The 4th register is encoded as an 8-bit ival
+        sz += 1;
+    }
+
     id->idCodeSize(sz);
 
     dispIns(id);
@@ -8482,7 +8517,7 @@ void emitter::emitIns_SIMD_R_R_R_R(
     }
     else if (UseSimdEncoding())
     {
-        assert(isAvxBlendv(ins) || isSse41Blendv(ins));
+        assert(isSse41Blendv(ins) || isAvxBlendv(ins) || isAvx512Blendv(ins));
 
         // convert SSE encoding of SSE4.1 instructions to VEX encoding
         switch (ins)
@@ -8564,7 +8599,7 @@ void emitter::emitIns_SIMD_R_R_A_R(
 {
     if (UseSimdEncoding())
     {
-        assert(isAvxBlendv(ins) || isSse41Blendv(ins));
+        assert(isSse41Blendv(ins) || isAvxBlendv(ins) || isAvx512Blendv(ins));
 
         // convert SSE encoding of SSE4.1 instructions to VEX encoding
         switch (ins)
@@ -8614,72 +8649,6 @@ void emitter::emitIns_SIMD_R_R_A_R(
 }
 
 //------------------------------------------------------------------------
-// emitIns_SIMD_R_R_AR_R: emits the code for a SIMD instruction that takes a register operand, a base memory
-//                        register, another register operand, and that returns a value in register
-//
-// Arguments:
-//    ins       -- The instruction being emitted
-//    attr      -- The emit attribute
-//    targetReg -- The target register
-//    op1Reg    -- The register of the first operands
-//    op3Reg    -- The register of the third operand
-//    base      -- The base register used for the memory address
-//
-void emitter::emitIns_SIMD_R_R_AR_R(
-    instruction ins, emitAttr attr, regNumber targetReg, regNumber op1Reg, regNumber op3Reg, regNumber base)
-{
-    if (UseSimdEncoding())
-    {
-        assert(isAvxBlendv(ins) || isSse41Blendv(ins));
-
-        // convert SSE encoding of SSE4.1 instructions to VEX encoding
-        switch (ins)
-        {
-            case INS_blendvps:
-            {
-                ins = INS_vblendvps;
-                break;
-            }
-
-            case INS_blendvpd:
-            {
-                ins = INS_vblendvpd;
-                break;
-            }
-
-            case INS_pblendvb:
-            {
-                ins = INS_vpblendvb;
-                break;
-            }
-
-            default:
-            {
-                break;
-            }
-        }
-
-        emitIns_R_R_AR_R(ins, attr, targetReg, op1Reg, op3Reg, base, 0);
-    }
-    else
-    {
-        assert(isSse41Blendv(ins));
-
-        // Ensure we aren't overwriting op1
-        assert(op1Reg != REG_XMM0);
-
-        // SSE4.1 blendv* hardcode the mask vector (op3) in XMM0
-        emitIns_Mov(INS_movaps, attr, REG_XMM0, op3Reg, /* canSkip */ true);
-
-        // Ensure we aren't overwriting op3 (which should be REG_XMM0)
-        assert(targetReg != REG_XMM0);
-
-        emitIns_Mov(INS_movaps, attr, targetReg, op1Reg, /* canSkip */ true);
-        emitIns_R_AR(ins, attr, targetReg, base, 0);
-    }
-}
-
-//------------------------------------------------------------------------
 // emitIns_SIMD_R_R_C_R: emits the code for a SIMD instruction that takes a register operand, a field handle +
 //                       offset,  another register operand, and that returns a value in register
 //
@@ -8702,7 +8671,7 @@ void emitter::emitIns_SIMD_R_R_C_R(instruction          ins,
 {
     if (UseSimdEncoding())
     {
-        assert(isAvxBlendv(ins) || isSse41Blendv(ins));
+        assert(isSse41Blendv(ins) || isAvxBlendv(ins) || isAvx512Blendv(ins));
 
         // convert SSE encoding of SSE4.1 instructions to VEX encoding
         switch (ins)
@@ -8769,7 +8738,7 @@ void emitter::emitIns_SIMD_R_R_S_R(
 {
     if (UseSimdEncoding())
     {
-        assert(isAvxBlendv(ins) || isSse41Blendv(ins));
+        assert(isSse41Blendv(ins) || isAvxBlendv(ins) || isAvx512Blendv(ins));
 
         // convert SSE encoding of SSE4.1 instructions to VEX encoding
         switch (ins)
@@ -9962,7 +9931,7 @@ size_t emitter::emitSizeOfInsDsc(instrDesc* id) const
  *  Return a string that represents the given register.
  */
 
-const char* emitter::emitRegName(regNumber reg, emitAttr attr, bool varName)
+const char* emitter::emitRegName(regNumber reg, emitAttr attr, bool varName) const
 {
     static char          rb[2][128];
     static unsigned char rbc = 0;
@@ -10149,7 +10118,7 @@ const char* emitter::emitRegName(regNumber reg, emitAttr attr, bool varName)
  *  Return a string that represents the given XMM register.
  */
 
-const char* emitter::emitXMMregName(unsigned reg)
+const char* emitter::emitXMMregName(unsigned reg) const
 {
     static const char* const regNames[] = {
 #define REGDEF(name, rnum, mask, sname) "x" sname,
@@ -10167,7 +10136,7 @@ const char* emitter::emitXMMregName(unsigned reg)
  *  Return a string that represents the given YMM register.
  */
 
-const char* emitter::emitYMMregName(unsigned reg)
+const char* emitter::emitYMMregName(unsigned reg) const
 {
     static const char* const regNames[] = {
 #define REGDEF(name, rnum, mask, sname) "y" sname,
@@ -10185,7 +10154,7 @@ const char* emitter::emitYMMregName(unsigned reg)
  *  Return a string that represents the given ZMM register.
  */
 
-const char* emitter::emitZMMregName(unsigned reg)
+const char* emitter::emitZMMregName(unsigned reg) const
 {
     static const char* const regNames[] = {
 #define REGDEF(name, rnum, mask, sname) "z" sname,
@@ -10390,6 +10359,17 @@ void emitter::emitDispFrameRef(int varx, int disp, int offs, bool asmfm)
         }
     }
 #endif
+}
+
+/*****************************************************************************
+ *
+ *  Display the mask for the instruction
+ */
+void emitter::emitDispMask(const instrDesc* id, regNumber reg, emitAttr size) const
+{
+    printf("{%s}", emitRegName(reg, size));
+    // TODO: Handle printing {z} if EVEX.z is set
+    printf(", ");
 }
 
 /*****************************************************************************
@@ -11129,13 +11109,24 @@ void emitter::emitDispIns(
 
         case IF_RWR_RRD_ARD_RRD:
         {
-            printf("%s, ", emitRegName(id->idReg1(), attr));
-            printf("%s, ", emitRegName(id->idReg2(), attr));
-            emitDispAddrMode(id);
+            printf("%s ", emitRegName(id->idReg1(), attr));
 
             emitGetInsAmdCns(id, &cnsVal);
-            val = (cnsVal.cnsVal >> 4) + XMMBASE;
-            printf(", %s", emitRegName((regNumber)val, attr));
+            regNumber op3Reg     = decodeRegFromIval(cnsVal.cnsVal);
+            bool      hasMaskReg = isMaskReg(op3Reg);
+
+            if (hasMaskReg)
+            {
+                emitDispMask(id, op3Reg, attr);
+            }
+
+            printf("%s, %s", emitRegName(id->idReg2(), attr), sstr);
+            emitDispAddrMode(id);
+
+            if (!hasMaskReg)
+            {
+                printf(", %s", emitRegName(op3Reg, attr));
+            }
             break;
         }
 
@@ -11375,14 +11366,25 @@ void emitter::emitDispIns(
 
         case IF_RWR_RRD_SRD_RRD:
         {
-            printf("%s, ", emitRegName(id->idReg1(), attr));
-            printf("%s, ", emitRegName(id->idReg2(), attr));
+            printf("%s ", emitRegName(id->idReg1(), attr));
+
+            emitGetInsCns(id, &cnsVal);
+            regNumber op3Reg     = decodeRegFromIval(cnsVal.cnsVal);
+            bool      hasMaskReg = isMaskReg(op3Reg);
+
+            if (hasMaskReg)
+            {
+                emitDispMask(id, op3Reg, attr);
+            }
+
+            printf("%s, %s", emitRegName(id->idReg2(), attr), sstr);
             emitDispFrameRef(id->idAddr()->iiaLclVar.lvaVarNum(), id->idAddr()->iiaLclVar.lvaOffset(),
                              id->idDebugOnlyInfo()->idVarRefOffs, asmfm);
 
-            emitGetInsCns(id, &cnsVal);
-            val = (cnsVal.cnsVal >> 4) + XMMBASE;
-            printf(", %s", emitRegName((regNumber)val, attr));
+            if (!hasMaskReg)
+            {
+                printf(", %s", emitRegName(op3Reg, attr));
+            }
             break;
         }
 
@@ -11583,12 +11585,26 @@ void emitter::emitDispIns(
 
         case IF_RWR_RRD_RRD_RRD:
         {
-            assert(IsAVXOnlyInstruction(ins));
+            assert(IsVexOrEvexEncodableInstruction(ins));
             assert(UseVEXEncoding());
-            printf("%s, ", emitRegName(id->idReg1(), attr));
+
+            printf("%s ", emitRegName(id->idReg1(), attr));
+
+            regNumber op4Reg     = id->idReg4();
+            bool      hasMaskReg = isMaskReg(op4Reg);
+
+            if (hasMaskReg)
+            {
+                emitDispMask(id, op4Reg, attr);
+            }
+
             printf("%s, ", emitRegName(id->idReg2(), attr));
-            printf("%s, ", emitRegName(id->idReg3(), attr));
-            printf("%s", emitRegName(id->idReg4(), attr));
+            printf("%s", emitRegName(id->idReg3(), attr));
+
+            if (!hasMaskReg)
+            {
+                printf(", %s", emitRegName(op4Reg, attr));
+            }
             break;
         }
 
@@ -11848,15 +11864,25 @@ void emitter::emitDispIns(
 
         case IF_RWR_RRD_MRD_RRD:
         {
-            printf("%s, ", emitRegName(id->idReg1(), attr));
-            printf("%s, ", emitRegName(id->idReg2(), attr));
+            printf("%s ", emitRegName(id->idReg1(), attr));
 
+            emitGetInsDcmCns(id, &cnsVal);
+            regNumber op3Reg     = decodeRegFromIval(cnsVal.cnsVal);
+            bool      hasMaskReg = isMaskReg(op3Reg);
+
+            if (hasMaskReg)
+            {
+                emitDispMask(id, op3Reg, attr);
+            }
+
+            printf("%s, %s", emitRegName(id->idReg2(), attr), sstr);
             offs = emitGetInsDsp(id);
             emitDispClsVar(id->idAddr()->iiaFieldHnd, offs, ID_INFO_DSP_RELOC);
 
-            emitGetInsDcmCns(id, &cnsVal);
-            val = (cnsVal.cnsVal >> 4) + XMMBASE;
-            printf(", %s", emitRegName((regNumber)val, attr));
+            if (!hasMaskReg)
+            {
+                printf(", %s", emitRegName(op3Reg, attr));
+            }
             break;
         }
 
@@ -14882,7 +14908,7 @@ BYTE* emitter::emitOutputRRR(BYTE* dst, instrDesc* id)
 
     instruction ins = id->idIns();
     assert(IsVexOrEvexEncodableInstruction(ins));
-    assert(IsThreeOperandAVXInstruction(ins) || isAvxBlendv(ins));
+    assert(IsThreeOperandAVXInstruction(ins) || isAvxBlendv(ins) || isAvx512Blendv(ins));
     regNumber targetReg = id->idReg1();
     regNumber src1      = id->idReg2();
     regNumber src2      = id->idReg3();
@@ -16032,6 +16058,7 @@ size_t emitter::emitOutputInstr(insGroup* ig, instrDesc* id, BYTE** dp)
     BYTE*         dst           = *dp;
     size_t        sz            = sizeof(instrDesc);
     instruction   ins           = id->idIns();
+    insFormat     insFmt        = id->idInsFmt();
     unsigned char callInstrSize = 0;
 
 #ifdef DEBUG
@@ -16048,7 +16075,7 @@ size_t emitter::emitOutputInstr(insGroup* ig, instrDesc* id, BYTE** dp)
     VARSET_TP GCvars(VarSetOps::UninitVal());
 
     // What instruction format have we got?
-    switch (id->idInsFmt())
+    switch (insFmt)
     {
         code_t   code;
         unsigned regcode;
@@ -16455,11 +16482,36 @@ size_t emitter::emitOutputInstr(insGroup* ig, instrDesc* id, BYTE** dp)
         }
 
         case IF_RWR_RRD_RRD_CNS:
-        case IF_RWR_RRD_RRD_RRD:
         {
             dst = emitOutputRRR(dst, id);
             dst += emitOutputByte(dst, emitGetInsSC(id));
             sz = emitSizeOfInsDsc_CNS(id);
+            break;
+        }
+
+        case IF_RWR_RRD_RRD_RRD:
+        {
+            // This should only be called on AVX instructions
+            assert(IsVexOrEvexEncodableInstruction(ins));
+
+            regNumber op4Reg = id->idReg4();
+
+            if (isMaskReg(op4Reg))
+            {
+                assert(IsAvx512OnlyInstruction(ins));
+                assert(EncodedBySSE38orSSE3A(ins));
+
+                dst = emitOutputRRR(dst, id);
+                sz  = sizeof(instrDesc);
+                break;
+            }
+
+            ssize_t cnsVal = encodeRegAsIval(op4Reg);
+            cnsVal         = (cnsVal - XMMBASE) << 4;
+
+            dst = emitOutputRRR(dst, id);
+            dst += emitOutputByte(dst, cnsVal);
+            sz = sizeof(instrDesc);
             break;
         }
 
@@ -16736,8 +16788,27 @@ size_t emitter::emitOutputInstr(insGroup* ig, instrDesc* id, BYTE** dp)
         case IF_RWR_RRD_ARD_RRD:
         {
             assert(IsAvx512OrPriorInstruction(ins));
-            emitGetInsAmdCns(id, &cnsVal);
+
             code = insCodeRM(ins);
+            emitGetInsAmdCns(id, &cnsVal);
+
+            if (insFmt == IF_RWR_RRD_ARD_RRD)
+            {
+                regNumber op3Reg = decodeRegFromIval(cnsVal.cnsVal);
+
+                if (isMaskReg(op3Reg))
+                {
+                    assert(IsAvx512OnlyInstruction(ins));
+                    assert(EncodedBySSE38orSSE3A(ins));
+
+                    dst = emitOutputAM(dst, id, code);
+                    sz  = emitSizeOfInsDsc_AMD(id);
+                    break;
+                }
+
+                assert(isLowSimdReg(op3Reg));
+                cnsVal.cnsVal = static_cast<int8_t>((cnsVal.cnsVal - XMMBASE) << 4);
+            }
 
             if (EncodedBySSE38orSSE3A(ins))
             {
@@ -16980,12 +17051,29 @@ size_t emitter::emitOutputInstr(insGroup* ig, instrDesc* id, BYTE** dp)
         {
             // This should only be called on AVX instructions
             assert(IsVexOrEvexEncodableInstruction(ins));
-            emitGetInsCns(id, &cnsVal);
 
             code = insCodeRM(ins);
             code = AddSimdPrefixIfNeeded(id, code, size);
-            code = insEncodeReg3456(id, id->idReg2(), size,
-                                    code); // encode source operand reg in 'vvvv' bits in 1's complement form
+            code = insEncodeReg3456(id, id->idReg2(), size, code);
+            emitGetInsCns(id, &cnsVal);
+
+            if (insFmt == IF_RWR_RRD_SRD_RRD)
+            {
+                regNumber op3Reg = decodeRegFromIval(cnsVal.cnsVal);
+
+                if (isMaskReg(op3Reg))
+                {
+                    assert(IsAvx512OnlyInstruction(ins));
+                    assert(EncodedBySSE38orSSE3A(ins));
+
+                    dst = emitOutputSV(dst, id, code);
+                    sz  = emitSizeOfInsDsc_CNS(id);
+                    break;
+                }
+
+                assert(isLowSimdReg(op3Reg));
+                cnsVal.cnsVal = static_cast<int8_t>((cnsVal.cnsVal - XMMBASE) << 4);
+            }
 
             if (EncodedBySSE38orSSE3A(ins))
             {
@@ -16998,6 +17086,7 @@ size_t emitter::emitOutputInstr(insGroup* ig, instrDesc* id, BYTE** dp)
                 regcode = (insEncodeReg345(id, id->idReg1(), size, &code) << 8);
                 dst     = emitOutputSV(dst, id, code | regcode, &cnsVal);
             }
+
             sz = emitSizeOfInsDsc_CNS(id);
             break;
         }
@@ -17222,12 +17311,29 @@ size_t emitter::emitOutputInstr(insGroup* ig, instrDesc* id, BYTE** dp)
         {
             // This should only be called on AVX instructions
             assert(IsVexOrEvexEncodableInstruction(ins));
-            emitGetInsCns(id, &cnsVal);
 
             code = insCodeRM(ins);
             code = AddSimdPrefixIfNeeded(id, code, size);
-            code = insEncodeReg3456(id, id->idReg2(), size,
-                                    code); // encode source operand reg in 'vvvv' bits in 1's complement form
+            code = insEncodeReg3456(id, id->idReg2(), size, code);
+            emitGetInsCns(id, &cnsVal);
+
+            if (insFmt == IF_RWR_RRD_MRD_RRD)
+            {
+                regNumber op3Reg = decodeRegFromIval(cnsVal.cnsVal);
+
+                if (isMaskReg(op3Reg))
+                {
+                    assert(IsAvx512OnlyInstruction(ins));
+                    assert(EncodedBySSE38orSSE3A(ins));
+
+                    dst = emitOutputCV(dst, id, code);
+                    sz  = emitSizeOfInsDsc_DSP(id);
+                    break;
+                }
+
+                assert(isLowSimdReg(op3Reg));
+                cnsVal.cnsVal = static_cast<int8_t>((cnsVal.cnsVal - XMMBASE) << 4);
+            }
 
             if (EncodedBySSE38orSSE3A(ins))
             {
@@ -18810,9 +18916,43 @@ emitter::insExecutionCharacteristics emitter::getInsExecutionCharacteristics(ins
         case INS_vblendvps:
         case INS_vblendvpd:
         case INS_vpblendvb:
+        {
             result.insThroughput = PERFSCORE_THROUGHPUT_1C;
             result.insLatency += PERFSCORE_LATENCY_2C;
             break;
+        }
+
+        case INS_vblendmps:
+        case INS_vblendmpd:
+        case INS_vpblendmd:
+        case INS_vpblendmq:
+        {
+            if (opSize == EA_64BYTE)
+            {
+                result.insThroughput = PERFSCORE_THROUGHPUT_2X;
+            }
+            else
+            {
+                result.insThroughput = PERFSCORE_THROUGHPUT_3X;
+            }
+            result.insLatency += PERFSCORE_LATENCY_1C;
+            break;
+        }
+
+        case INS_vpblendmb:
+        case INS_vpblendmw:
+        {
+            if (opSize == EA_64BYTE)
+            {
+                result.insThroughput = PERFSCORE_THROUGHPUT_2X;
+            }
+            else
+            {
+                result.insThroughput = PERFSCORE_THROUGHPUT_3X;
+            }
+            result.insLatency += PERFSCORE_LATENCY_3C;
+            break;
+        }
 
         case INS_bswap:
             if (opSize == EA_8BYTE)

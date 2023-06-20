@@ -3,7 +3,6 @@ cmake_minimum_required(VERSION 3.14.5)
 project(mono-wasi-runtime C)
 
 option(DISABLE_THREADS "defined if the build does NOT support multithreading" ON)
-option(DISABLE_WASM_USER_THREADS "defined if the build does not allow user threads to be created in a multithreaded build" OFF)
 
 set(CMAKE_EXECUTABLE_SUFFIX ".wasm")
 add_executable(dotnet driver.c main.c pinvoke.c stubs.c synthetic-pthread.c)

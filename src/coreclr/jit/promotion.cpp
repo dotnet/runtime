@@ -382,16 +382,22 @@ public:
     //   lclNum - Local num for this struct local
     //   aggregateInfo - [out] Pointer to aggregate info to create and insert replacements into.
     //
-    void PickPromotions(Compiler* comp, unsigned lclNum, AggregateInfo** aggregateInfo)
+    // Returns:
+    //   Number of promotions picked.
+    //
+    int PickPromotions(Compiler* comp, unsigned lclNum, AggregateInfo** aggregateInfo)
     {
         if (m_accesses.size() <= 0)
         {
-            return;
+            return 0;
         }
+
+        AggregateInfo*& agg = *aggregateInfo;
 
         JITDUMP("Picking promotions for V%02u\n", lclNum);
 
-        assert(*aggregateInfo == nullptr);
+        assert(agg == nullptr);
+        int numReps = 0;
         for (size_t i = 0; i < m_accesses.size(); i++)
         {
             const Access& access = m_accesses[i];
@@ -406,15 +412,24 @@ public:
                 continue;
             }
 
-            if (*aggregateInfo == nullptr)
+            if (agg == nullptr)
             {
-                *aggregateInfo = new (comp, CMK_Promotion) AggregateInfo(comp->getAllocator(CMK_Promotion), lclNum);
+                agg = new (comp, CMK_Promotion) AggregateInfo(comp->getAllocator(CMK_Promotion), lclNum);
             }
 
-            (*aggregateInfo)->Replacements.push_back(Replacement(access.Offset, access.AccessType));
+            agg->Replacements.push_back(Replacement(access.Offset, access.AccessType));
+            numReps++;
+
+            if (agg->Replacements.size() >= PHYSICAL_PROMOTION_MAX_PROMOTIONS_PER_STRUCT)
+            {
+                JITDUMP("  Promoted %zu fields in V%02u; will not promote more\n", agg->Replacements.size(),
+                        agg->LclNum);
+                break;
+            }
         }
 
         JITDUMP("\n");
+        return numReps;
     }
 
     //------------------------------------------------------------------------
@@ -427,14 +442,24 @@ public:
     //   lclNum - Local num for this struct local
     //   aggregateInfo - [out] Pointer to aggregate info to create and insert replacements into.
     //
-    bool PickInducedPromotions(Compiler* comp, unsigned lclNum, AggregateInfo** aggregateInfo)
+    // Returns:
+    //   Number of new promotions.
+    //
+    int PickInducedPromotions(Compiler* comp, unsigned lclNum, AggregateInfo** aggregateInfo)
     {
         if (m_inducedAccesses.size() <= 0)
         {
-            return false;
+            return 0;
         }
 
-        bool any = false;
+        AggregateInfo*& agg = *aggregateInfo;
+
+        if ((agg != nullptr) && (agg->Replacements.size() >= PHYSICAL_PROMOTION_MAX_PROMOTIONS_PER_STRUCT))
+        {
+            return 0;
+        }
+
+        int numReps = 0;
         JITDUMP("Picking induced promotions for V%02u\n", lclNum);
         for (PrimitiveAccess& inducedAccess : m_inducedAccesses)
         {
@@ -483,24 +508,22 @@ public:
                 }
             }
 
-            if (*aggregateInfo == nullptr)
+            if (agg == nullptr)
             {
-                *aggregateInfo = new (comp, CMK_Promotion) AggregateInfo(comp->getAllocator(CMK_Promotion), lclNum);
+                agg = new (comp, CMK_Promotion) AggregateInfo(comp->getAllocator(CMK_Promotion), lclNum);
             }
 
             size_t insertionIndex;
-            if ((*aggregateInfo)->Replacements.size() > 0)
+            if (agg->Replacements.size() > 0)
             {
 #ifdef DEBUG
                 Replacement* overlapRep;
-                assert(!(*aggregateInfo)
-                            ->OverlappingReplacements(inducedAccess.Offset, genTypeSize(inducedAccess.AccessType),
-                                                      &overlapRep, nullptr));
+                assert(!agg->OverlappingReplacements(inducedAccess.Offset, genTypeSize(inducedAccess.AccessType),
+                                                     &overlapRep, nullptr));
 #endif
 
                 insertionIndex =
-                    Promotion::BinarySearch<Replacement, &Replacement::Offset>((*aggregateInfo)->Replacements,
-                                                                               inducedAccess.Offset);
+                    Promotion::BinarySearch<Replacement, &Replacement::Offset>(agg->Replacements, inducedAccess.Offset);
                 assert((ssize_t)insertionIndex < 0);
                 insertionIndex = ~insertionIndex;
             }
@@ -509,13 +532,18 @@ public:
                 insertionIndex = 0;
             }
 
-            (*aggregateInfo)
-                ->Replacements.insert((*aggregateInfo)->Replacements.begin() + insertionIndex,
-                                      Replacement(inducedAccess.Offset, inducedAccess.AccessType));
-            any = true;
+            agg->Replacements.insert(agg->Replacements.begin() + insertionIndex,
+                                     Replacement(inducedAccess.Offset, inducedAccess.AccessType));
+            numReps++;
+
+            if (agg->Replacements.size() >= PHYSICAL_PROMOTION_MAX_PROMOTIONS_PER_STRUCT)
+            {
+                JITDUMP("  Promoted %zu fields in V%02u; will not promote more\n", agg->Replacements.size());
+                break;
+            }
         }
 
-        return any;
+        return numReps;
     }
 
     //------------------------------------------------------------------------
@@ -765,7 +793,7 @@ private:
             }
 
             index++;
-        } while ((index < m_inducedAccesses.size()) && (m_inducedAccesses[index].Offset == offs));
+        } while ((index < m_accesses.size()) && (m_accesses[index].Offset == offs));
 
         return nullptr;
     }
@@ -897,7 +925,21 @@ public:
         unsigned numLocals = (unsigned)aggregates.size();
         JITDUMP("Picking promotions\n");
 
-        bool any = false;
+        int totalNumPromotions = 0;
+        // We limit the total number of promotions picked based on the tracking
+        // limit to avoid blowup in the superlinear liveness computation in
+        // pathological cases, and also because once we stop tracking the fields there is no benefit anymore.
+        //
+        // This logic could be improved by the use of ref counting to pick the
+        // smart fields to compute liveness for, but as of writing this there
+        // is no example in the built-in SPMI collections that hits this limit.
+        //
+        // Note that we may go slightly over this as once we start picking
+        // replacement locals for a single struct we do not stop until we get
+        // to the next struct, but PHYSICAL_PROMOTION_MAX_PROMOTIONS_PER_STRUCT
+        // puts a limit on the number of promotions in each struct so this is
+        // fine to avoid the pathological cases.
+        const int maxTotalNumPromotions = JitConfig.JitMaxLocalsToTrack();
 
         for (unsigned lclNum = 0; lclNum < numLocals; lclNum++)
         {
@@ -914,17 +956,22 @@ public:
             }
 #endif
 
-            uses->PickPromotions(m_compiler, lclNum, &aggregates[lclNum]);
+            totalNumPromotions += uses->PickPromotions(m_compiler, lclNum, &aggregates[lclNum]);
 
-            any |= aggregates[lclNum] != nullptr;
+            if (totalNumPromotions >= maxTotalNumPromotions)
+            {
+                JITDUMP("Promoted %d fields which is over our limit of %d; will not promote more\n", totalNumPromotions,
+                        maxTotalNumPromotions);
+                break;
+            }
         }
 
-        if (!any)
+        if (totalNumPromotions <= 0)
         {
             return false;
         }
 
-        if (m_candidateStores.Height() > 0)
+        if ((m_candidateStores.Height() > 0) && (totalNumPromotions < maxTotalNumPromotions))
         {
             // Now look for induced accesses due to assignment decomposition.
 
@@ -974,7 +1021,7 @@ public:
                     }
                 }
 
-                bool any = false;
+                bool again = false;
                 for (unsigned lclNum = 0; lclNum < numLocals; lclNum++)
                 {
                     LocalUses* uses = m_uses[lclNum];
@@ -989,10 +1036,20 @@ public:
                     }
 #endif
 
-                    any |= uses->PickInducedPromotions(m_compiler, lclNum, &aggregates[lclNum]);
+                    int numInducedProms = uses->PickInducedPromotions(m_compiler, lclNum, &aggregates[lclNum]);
+                    again |= numInducedProms > 0;
+
+                    totalNumPromotions += numInducedProms;
+                    if (totalNumPromotions >= maxTotalNumPromotions)
+                    {
+                        JITDUMP("Promoted %d fields and our limit is %d; will not promote more\n", totalNumPromotions,
+                                maxTotalNumPromotions);
+                        again = false;
+                        break;
+                    }
                 }
 
-                if (!any)
+                if (!again)
                 {
                     break;
                 }
@@ -1046,7 +1103,7 @@ public:
 
             JITDUMP("Computing unpromoted remainder for V%02u\n", agg->LclNum);
             StructSegments unpromotedParts =
-                Promotion::SignificantSegments(m_compiler, m_compiler->lvaGetDesc(agg->LclNum)->GetLayout());
+                m_prom->SignificantSegments(m_compiler->lvaGetDesc(agg->LclNum)->GetLayout());
             for (Replacement& rep : reps)
             {
                 unpromotedParts.Subtract(StructSegments::Segment(rep.Offset, rep.Offset + genTypeSize(rep.AccessType)));
@@ -1067,11 +1124,9 @@ public:
             {
                 // Aggregate is fully promoted, leave UnpromotedMin == UnpromotedMax to indicate this.
             }
-
-            any = true;
         }
 
-        return any;
+        return totalNumPromotions > 0;
     }
 
 private:
@@ -1522,42 +1577,6 @@ bool StructSegments::CoveringSegment(Segment* result)
 
 #ifdef DEBUG
 //------------------------------------------------------------------------
-// Check:
-//   Validate that the data structure is normalized and that it equals a
-//   specific fixed bit vector.
-//
-// Parameters:
-//   vect - The bit vector
-//
-// Remarks:
-//   This validates that the internal representation is normalized (i.e.
-//   all adjacent intervals are merged) and that it contains an index iff
-//   the specified vector contains that index.
-//
-void StructSegments::Check(FixedBitVect* vect)
-{
-    bool     first = true;
-    unsigned last  = 0;
-    for (const Segment& segment : m_segments)
-    {
-        assert(first || (last < segment.Start));
-        assert(segment.End <= vect->bitVectGetSize());
-
-        for (unsigned i = last; i < segment.Start; i++)
-            assert(!vect->bitVectTest(i));
-
-        for (unsigned i = segment.Start; i < segment.End; i++)
-            assert(vect->bitVectTest(i));
-
-        first = false;
-        last  = segment.End;
-    }
-
-    for (unsigned i = last, size = vect->bitVectGetSize(); i < size; i++)
-        assert(!vect->bitVectTest(i));
-}
-
-//------------------------------------------------------------------------
 // Dump:
 //   Dump a string representation of the segment tree to stdout.
 //
@@ -1585,18 +1604,20 @@ void StructSegments::Dump()
 //   for the specified class layout.
 //
 // Parameters:
-//   compiler    - Compiler instance
 //   layout      - The layout
-//   bitVectRept - In debug, a bit vector that represents the same segments as the returned segment tree.
-//                 Used for verification purposes.
 //
 // Returns:
 //   Segment tree containing all significant parts of the layout.
 //
-StructSegments Promotion::SignificantSegments(Compiler*    compiler,
-                                              ClassLayout* layout DEBUGARG(FixedBitVect** bitVectRepr))
+StructSegments Promotion::SignificantSegments(ClassLayout* layout)
 {
-    COMP_HANDLE compHnd = compiler->info.compCompHnd;
+    StructSegments* cached;
+    if ((m_significantSegmentsCache != nullptr) && m_significantSegmentsCache->Lookup(layout, &cached))
+    {
+        return StructSegments(*cached);
+    }
+
+    COMP_HANDLE compHnd = m_compiler->info.compCompHnd;
 
     bool significantPadding;
     if (layout->IsBlockLayout())
@@ -1628,19 +1649,11 @@ StructSegments Promotion::SignificantSegments(Compiler*    compiler,
         }
     }
 
-    StructSegments segments(compiler->getAllocator(CMK_Promotion));
-
-    // Validate with "obviously correct" but less scalable fixed bit vector implementation.
-    INDEBUG(FixedBitVect* segmentBitVect = FixedBitVect::bitVectInit(layout->GetSize(), compiler));
+    StructSegments segments(m_compiler->getAllocator(CMK_Promotion));
 
     if (significantPadding)
     {
         segments.Add(StructSegments::Segment(0, layout->GetSize()));
-
-#ifdef DEBUG
-        for (unsigned i = 0; i < layout->GetSize(); i++)
-            segmentBitVect->bitVectSet(i);
-#endif
     }
     else
     {
@@ -1665,19 +1678,16 @@ StructSegments Promotion::SignificantSegments(Compiler*    compiler,
             }
 
             segments.Add(StructSegments::Segment(fldOffset, fldOffset + size));
-#ifdef DEBUG
-            for (unsigned i = 0; i < size; i++)
-                segmentBitVect->bitVectSet(fldOffset + i);
-#endif
         }
     }
 
-#ifdef DEBUG
-    if (bitVectRepr != nullptr)
+    if (m_significantSegmentsCache == nullptr)
     {
-        *bitVectRepr = segmentBitVect;
+        m_significantSegmentsCache =
+            new (m_compiler, CMK_Promotion) ClassLayoutStructSegmentsMap(m_compiler->getAllocator(CMK_Promotion));
     }
-#endif
+
+    m_significantSegmentsCache->Set(layout, new (m_compiler, CMK_Promotion) StructSegments(segments));
 
     return segments;
 }

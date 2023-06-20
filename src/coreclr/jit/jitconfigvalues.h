@@ -528,8 +528,8 @@ CONFIG_INTEGER(JitEnableGuardedDevirtualization, W("JitEnableGuardedDevirtualiza
 
 #define MAX_GDV_TYPE_CHECKS 5
 // Number of types to probe for polymorphic virtual call-sites to devirtualize them,
-// Max number is MAX_GDV_TYPE_CHECKS defined above ^
-CONFIG_INTEGER(JitGuardedDevirtualizationMaxTypeChecks, W("JitGuardedDevirtualizationMaxTypeChecks"), 1)
+// Max number is MAX_GDV_TYPE_CHECKS defined above ^. -1 means it's up to JIT to decide
+CONFIG_INTEGER(JitGuardedDevirtualizationMaxTypeChecks, W("JitGuardedDevirtualizationMaxTypeChecks"), -1)
 
 // Various policies for GuardedDevirtualization
 CONFIG_INTEGER(JitGuardedDevirtualizationChainLikelihood, W("JitGuardedDevirtualizationChainLikelihood"), 0x4B) // 75
