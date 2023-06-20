@@ -1,6 +1,7 @@
 ﻿// Licensed to the .NET Foundation under one or more agreements.
 // The .NET Foundation licenses this file to you under the MIT license.
 using System;
+using System.ComponentModel;
 
 #if MICROSOFT_INTEROP_COMINTERFACEGENERATOR
 namespace Microsoft.Interop
@@ -17,6 +18,7 @@ namespace System.Runtime.InteropServices.Marshalling
         /// <summary>
         /// No options specified.
         /// </summary>
+        [EditorBrowsable(EditorBrowsableState.Never)]
         None = 0,
         /// <summary>
         /// Generate a wrapper for managed objects to enable exposing them through the COM interface.
