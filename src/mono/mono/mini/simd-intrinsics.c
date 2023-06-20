@@ -1919,7 +1919,7 @@ emit_sri_vector (MonoCompile *cfg, MonoMethod *cmethod, MonoMethodSignature *fsi
 
 #ifdef TARGET_AMD64
 		if (!COMPILE_LLVM (cfg))
-		/* These return a Vector64 */
+		  /* These return a Vector64 */
 			return NULL;
 #endif
 		return emit_simd_ins_for_sig (cfg, klass, op, 0, arg0_type, fsig, args);
