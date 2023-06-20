@@ -3,7 +3,6 @@
   <PropertyGroup>
     <Nullable>enable</Nullable>
     <TargetFrameworks>$(NetCoreAppCurrent);$(NetFrameworkMinimum)</TargetFrameworks>
-    <EnableDefaultItems>true</EnableDefaultItems>
   </PropertyGroup>
 
   <ItemGroup>
@@ -13,7 +12,14 @@
   </ItemGroup>
 
   <ItemGroup>
-    <ProjectReference Include="..\src\Microsoft.Extensions.Options.ConfigurationExtensions.csproj" SkipUseReferenceAssembly="true" />
+    <ProjectReference Include="..\..\src\Microsoft.Extensions.Options.ConfigurationExtensions.csproj" SkipUseReferenceAssembly="true" />
+  </ItemGroup>
+
+  <ItemGroup>
+    <Compile Include="..\Common\FakeConfigurationProvider.cs" Link="Common\FakeConfigurationProvider.cs" />
+    <Compile Include="..\Common\FakeConfigurationSource.cs" Link="Common\FakeConfigurationSource.cs" />
+    <Compile Include="..\Common\FakeOptions.cs" Link="Common\FakeOptions.cs" />
+    <Compile Include="..\Common\OptionsBuilderConfigurationExtensionsTests.cs" Link="Common\OptionsBuidlerConfigurationExtensionsTests.cs" />
   </ItemGroup>
 
 </Project>

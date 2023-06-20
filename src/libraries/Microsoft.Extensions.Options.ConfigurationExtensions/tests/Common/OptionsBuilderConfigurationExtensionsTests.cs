@@ -100,17 +100,19 @@ namespace Microsoft.Extensions.Options.ConfigurationExtensions.Tests
 
             _ = optionsBuilder.BindConfiguration(configSectionPath: "");
 
+#if !BUILDING_SOURCE_GENERATOR_TESTS
             using ServiceProvider serviceProvider = services.BuildServiceProvider();
+            // This leads to an indirect call to ConfigurationBinder.Bind located in a different assembly. Not supported by source generator.
             FakeOptions options = serviceProvider.GetRequiredService<IOptions<FakeOptions>>().Value;
 
             Assert.Equal(messageValue, options.Message);
+#endif
         }
 
         [Fact]
         public static void BindConfiguration_UpdatesOptionOnConfigurationUpdateWithEmptySectionName()
         {
             const string messageValue1 = "This is a test";
-            const string messageValue2 = "This is the message after update";
 
             FakeConfigurationSource configSource = new()
             {
@@ -126,6 +128,10 @@ namespace Microsoft.Extensions.Options.ConfigurationExtensions.Tests
                     .Build());
             OptionsBuilder<FakeOptions> optionsBuilder = services.AddOptions<FakeOptions>();
             _ = optionsBuilder.BindConfiguration(configSectionPath: "");
+
+#if !BUILDING_SOURCE_GENERATOR_TESTS
+            const string messageValue2 = "This is the message after update";
+
             using ServiceProvider serviceProvider = services.BuildServiceProvider();
             var optionsMonitor = serviceProvider.GetRequiredService<IOptionsMonitor<FakeOptions>>();
             bool updateHasRun = false;
@@ -133,12 +139,15 @@ namespace Microsoft.Extensions.Options.ConfigurationExtensions.Tests
             {
                 updateHasRun = true;
             });
+
+            // This leads to an indirect call to ConfigurationBinder.Bind located in a different assembly. Not supported by source generator.
             FakeOptions optionsValue1 = optionsMonitor.CurrentValue;
             Assert.Equal(messageValue1, optionsValue1.Message);
             configSource.Provider.Set(nameof(FakeOptions.Message), messageValue2);
             FakeOptions optionsValue2 = optionsMonitor.CurrentValue;
             Assert.True(updateHasRun);
             Assert.Equal(messageValue2, optionsValue2.Message);
+#endif
         }
 
         [Fact]
