@@ -682,6 +682,9 @@
 #cmakedefine MONO_CROSS_COMPILE 1
 
 /* ... */
+#cmakedefine TARGET_BROWSER 1
+
+/* ... */
 #cmakedefine TARGET_WASM 1
 
 /* ... */

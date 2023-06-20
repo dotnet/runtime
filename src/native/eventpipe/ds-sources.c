@@ -18,7 +18,9 @@
 
 #undef PORTABLE_RID_OS
 
-#if defined(TARGET_UNIX)
+#if defined(TARGET_BROWSER)
+#define PORTABLE_RID_OS "browser"
+#elif defined(TARGET_UNIX)
 
 #if defined(TARGET_ANDROID)
 #define PORTABLE_RID_OS "linux-bionic"
