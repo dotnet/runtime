@@ -88,7 +88,7 @@ namespace Wasm.Build.Tests
 
             UpdateBrowserMainJs(DefaultTargetFramework);
 
-            var buildArgs = new BuildArgs(projectName, config, false, id, "-p:WasmRuntimeAssetsLocation=./");
+            var buildArgs = new BuildArgs(projectName, config, false, id, "/p:WasmRuntimeAssetsLocation=./");
             buildArgs = ExpandBuildArgs(buildArgs);
 
             BuildProject(buildArgs,
@@ -137,7 +137,7 @@ namespace Wasm.Build.Tests
 
             UpdateConsoleMainJs();
 
-            var buildArgs = new BuildArgs(projectName, config, false, id, "-p:WasmRuntimeAssetsLocation=./");
+            var buildArgs = new BuildArgs(projectName, config, false, id, "/p:WasmRuntimeAssetsLocation=./");
             buildArgs = ExpandBuildArgs(buildArgs);
 
             BuildProject(buildArgs,
@@ -209,7 +209,7 @@ namespace Wasm.Build.Tests
             if (relinking)
                 AddItemsPropertiesToProject(projectFile, "<WasmBuildNative>true</WasmBuildNative>");
 
-            var buildArgs = new BuildArgs(projectName, config, false, id, "-p:WasmRuntimeAssetsLocation=./");
+            var buildArgs = new BuildArgs(projectName, config, false, id, "/p:WasmRuntimeAssetsLocation=./");
             buildArgs = ExpandBuildArgs(buildArgs);
 
             BuildProject(buildArgs,
@@ -273,7 +273,7 @@ namespace Wasm.Build.Tests
 
             UpdateBrowserMainJs(DefaultTargetFramework);
 
-            extraProperties += "-p:WasmRuntimeAssetsLocation=./";
+            extraProperties += "<WasmRuntimeAssetsLocation>./</WasmRuntimeAssetsLocation>";
 
             if (!string.IsNullOrEmpty(extraProperties))
                 AddItemsPropertiesToProject(projectFile, extraProperties: extraProperties);
@@ -309,7 +309,7 @@ namespace Wasm.Build.Tests
             UpdateProgramCS();
             UpdateConsoleMainJs();
 
-            extraProperties += "-p:WasmRuntimeAssetsLocation=./";
+            extraProperties += "<WasmRuntimeAssetsLocation>./</WasmRuntimeAssetsLocation>";
 
             if (!string.IsNullOrEmpty(extraProperties))
                 AddItemsPropertiesToProject(projectFile, extraProperties: extraProperties);
@@ -386,7 +386,7 @@ namespace Wasm.Build.Tests
                 AddItemsPropertiesToProject(projectFile, "<WasmBuildNative>true</WasmBuildNative>");
             }
 
-            var buildArgs = new BuildArgs(projectName, config, aot, id, "-p:WasmRuntimeAssetsLocation=./");
+            var buildArgs = new BuildArgs(projectName, config, aot, id, "/p:WasmRuntimeAssetsLocation=./");
             buildArgs = ExpandBuildArgs(buildArgs);
 
             bool expectRelinking = config == "Release" || aot || relinking;
@@ -441,7 +441,7 @@ namespace Wasm.Build.Tests
 
             new DotNetCommand(s_buildEnv, _testOutput)
                     .WithWorkingDirectory(_projectDir!)
-                    .Execute($"build -c {config} -bl:{Path.Combine(s_buildEnv.LogRootPath, $"{id}.binlog")} -p:WasmRuntimeAssetsLocation=./")
+                    .Execute($"build -c {config} -bl:{Path.Combine(s_buildEnv.LogRootPath, $"{id}.binlog")} /p:WasmRuntimeAssetsLocation=./")
                     .EnsureSuccessful();
 
             using var runCommand = new RunCommand(s_buildEnv, _testOutput)
