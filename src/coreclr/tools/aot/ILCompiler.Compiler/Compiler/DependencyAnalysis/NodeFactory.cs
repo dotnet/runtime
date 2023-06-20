@@ -108,21 +108,14 @@ namespace ILCompiler.DependencyAnalysis
             get;
         }
 
-        // Temporary workaround that is used to disable certain features from lighting up
-        // in CppCodegen because they're not fully implemented yet.
-        public virtual bool IsCppCodegenTemporaryWorkaround
-        {
-            get { return false; }
-        }
-
         /// <summary>
         /// Return true if the type is not permitted by the rules of the runtime to have an MethodTable.
         /// The implementation here is not intended to be complete, but represents many conditions
         /// which make a type ineligible to be an MethodTable. (This function is intended for use in assertions only)
         /// </summary>
-        private bool TypeCannotHaveEEType(TypeDesc type)
+        private static bool TypeCannotHaveEEType(TypeDesc type)
         {
-            if (!IsCppCodegenTemporaryWorkaround && type.GetTypeDefinition() is INonEmittableType)
+            if (type.GetTypeDefinition() is INonEmittableType)
                 return true;
 
             if (type.IsRuntimeDeterminedSubtype)
