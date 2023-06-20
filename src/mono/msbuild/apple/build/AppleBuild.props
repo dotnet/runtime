@@ -15,7 +15,9 @@
     <UseMonoRuntime>true</UseMonoRuntime>
     <UseMonoJustInterp Condition="'$(RunAOTCompilation)' == 'true' and '$(MonoForceInterpreter)' == 'true'">true</UseMonoJustInterp>
 
-    <!--<ShouldILStrip Condition="'$(RunAOTCompilation)' == 'true' and '$(MonoForceInterpreter)' != 'true'">true</ShouldILStrip>-->
+    <StripDebugSymbols Condition="'$(StripDebugSymbols)' == ''" >false</StripDebugSymbols>
+    <!-- Tracking issue: https://github.com/dotnet/runtime/issues/87740 -->
+    <!-- <ShouldILStrip Condition="'$(RunAOTCompilation)' == 'true' and '$(MonoForceInterpreter)' != 'true'">true</ShouldILStrip> -->
 
     <_IsLibraryMode Condition="'$(NativeLib)' != ''">true</_IsLibraryMode>
 

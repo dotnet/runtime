@@ -188,22 +188,6 @@ extends:
           platforms:
           - browser_wasm
           jobParameters:
-            buildArgs: -s mono+libs+host+packs -c $(_BuildConfig) /p:MonoWasmBuildVariant=perftrace /p:AotHostArchitecture=x64 /p:AotHostOS=$(_hostedOS)
-            nameSuffix: AllSubsets_Mono_perftrace
-            isOfficialBuild: ${{ variables.isOfficialBuild }}
-            runtimeVariant: perftrace
-            extraStepsTemplate: /eng/pipelines/common/upload-intermediate-artifacts-step.yml
-            extraStepsParameters:
-              name: MonoRuntimePacks
-
-      - template: /eng/pipelines/common/platform-matrix.yml
-        parameters:
-          jobTemplate: /eng/pipelines/common/global-build-job.yml
-          buildConfig: release
-          runtimeFlavor: mono
-          platforms:
-          - browser_wasm
-          jobParameters:
             buildArgs: -s mono+libs+host+packs -c $(_BuildConfig) /p:MonoWasmBuildVariant=multithread /p:AotHostArchitecture=x64 /p:AotHostOS=$(_hostedOS)
             nameSuffix: AllSubsets_Mono_multithread
             isOfficialBuild: ${{ variables.isOfficialBuild }}

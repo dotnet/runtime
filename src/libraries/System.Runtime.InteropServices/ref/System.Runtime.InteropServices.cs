@@ -342,6 +342,7 @@ namespace System.Runtime.InteropServices.Marshalling
     {
         public static void* ConvertToUnmanaged(T? managed) { throw null; }
         public static T? ConvertToManaged(void* unmanaged) { throw null; }
+        public static void Free(void* unmanaged) { }
     }
     public sealed partial class ComObject : System.Runtime.InteropServices.IDynamicInterfaceCastable, System.Runtime.InteropServices.Marshalling.IUnmanagedVirtualMethodTableProvider
     {
@@ -474,6 +475,7 @@ namespace System.Runtime.InteropServices.Marshalling
     {
         public static void* ConvertToUnmanaged(T? managed) { throw null; }
         public static T? ConvertToManaged(void* unmanaged) { throw null; }
+        public static void Free(void* unmanaged) { }
     }
     [System.CLSCompliantAttribute(false)]
     public readonly partial struct VirtualMethodTableInfo
