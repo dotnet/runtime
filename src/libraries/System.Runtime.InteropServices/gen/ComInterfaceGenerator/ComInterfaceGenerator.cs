@@ -312,7 +312,7 @@ namespace Microsoft.Interop
 
             var declaringType = ManagedTypeInfo.CreateTypeInfoForTypeSymbol(symbol.ContainingType);
 
-            var virtualMethodIndexData = new VirtualMethodIndexData(index, ImplicitThisParameter: true, MarshalDirection.Bidirectional, true, ExceptionMarshalling.Com);
+            var virtualMethodIndexData = new VirtualMethodIndexData(index, ImplicitThisParameter: true, GetDirectionFromOptions(generatedComInterfaceAttributeData.Options), true, ExceptionMarshalling.Com);
 
             return new IncrementalMethodStubGenerationContext(
                 signatureContext,
@@ -328,6 +328,23 @@ namespace Microsoft.Interop
                 declaringType,
                 generatorDiagnostics.Diagnostics.ToSequenceEqualImmutableArray(),
                 ComInterfaceDispatchMarshallingInfo.Instance);
+        }
+
+        private static MarshalDirection GetDirectionFromOptions(ComInterfaceOptions options)
+        {
+            if (options.HasFlag(ComInterfaceOptions.ManagedObjectWrapper | ComInterfaceOptions.ComObjectWrapper))
+            {
+                return MarshalDirection.Bidirectional;
+            }
+            if (options.HasFlag(ComInterfaceOptions.ManagedObjectWrapper))
+            {
+                return MarshalDirection.UnmanagedToManaged;
+            }
+            if (options.HasFlag(ComInterfaceOptions.ComObjectWrapper))
+            {
+                return MarshalDirection.ManagedToUnmanaged;
+            }
+            throw new ArgumentOutOfRangeException(nameof(options), "No-wrapper options should have been filtered out before calling this method.");
         }
 
         private static ImmutableArray<ComInterfaceAndMethodsContext> GroupComContextsForInterfaceGeneration(ImmutableArray<ComMethodContext> methods, ImmutableArray<ComInterfaceContext> interfaces, CancellationToken ct)
@@ -410,6 +427,11 @@ namespace Microsoft.Interop
 
         private static InterfaceDeclarationSyntax GenerateImplementationVTable(ComInterfaceAndMethodsContext interfaceMethods, CancellationToken _)
         {
+            if (!interfaceMethods.Interface.Options.HasFlag(ComInterfaceOptions.ManagedObjectWrapper))
+            {
+                return ImplementationInterfaceTemplate;
+            }
+
             const string vtableLocalName = "vtable";
             var interfaceType = interfaceMethods.Interface.Info.Type;
             var interfaceMethodStubs = interfaceMethods.DeclaredMethods.Select(m => m.GenerationContext);
@@ -573,8 +595,7 @@ namespace Microsoft.Interop
 
         private static ClassDeclarationSyntax GenerateInterfaceInformation(ComInterfaceInfo context, CancellationToken _)
         {
-            const string vtableFieldName = "_vtable";
-            return InterfaceInformationTypeTemplate
+            ClassDeclarationSyntax interfaceInformationType = InterfaceInformationTypeTemplate
                 .AddMembers(
                     // public static System.Guid Iid { get; } = new(<embeddedDataBlob>);
                     PropertyDeclaration(ParseTypeName(TypeNames.System_Guid), "Iid")
@@ -586,29 +607,41 @@ namespace Microsoft.Interop
                                 ImplicitObjectCreationExpression()
                                     .AddArgumentListArguments(
                                         Argument(CreateEmbeddedDataBlobCreationStatement(context.InterfaceId.ToByteArray())))))
-                        .WithSemicolonToken(Token(SyntaxKind.SemicolonToken)),
-                    // private static void** _vtable;
-                    FieldDeclaration(VariableDeclaration(VoidStarStarSyntax, SingletonSeparatedList(VariableDeclarator(vtableFieldName))))
-                        .AddModifiers(Token(SyntaxKind.PrivateKeyword), Token(SyntaxKind.StaticKeyword)),
-                    // public static void* VirtualMethodTableManagedImplementation => _vtable != null ? _vtable : (_vtable = InterfaceImplementation.CreateManagedVirtualMethodTable());
-                    PropertyDeclaration(VoidStarStarSyntax, "ManagedVirtualMethodTable")
-                        .AddModifiers(Token(SyntaxKind.PublicKeyword), Token(SyntaxKind.StaticKeyword))
-                        .WithExpressionBody(
-                            ArrowExpressionClause(
-                                ConditionalExpression(
-                                    BinaryExpression(SyntaxKind.NotEqualsExpression,
-                                        IdentifierName(vtableFieldName),
-                                        LiteralExpression(SyntaxKind.NullLiteralExpression)),
-                                    IdentifierName(vtableFieldName),
-                                    ParenthesizedExpression(
-                                        AssignmentExpression(SyntaxKind.SimpleAssignmentExpression,
+                        .WithSemicolonToken(Token(SyntaxKind.SemicolonToken)));
+
+            if (context.Options.HasFlag(ComInterfaceOptions.ManagedObjectWrapper))
+            {
+                const string vtableFieldName = "_vtable";
+                return interfaceInformationType.AddMembers(
+                        // private static void** _vtable;
+                        FieldDeclaration(VariableDeclaration(VoidStarStarSyntax, SingletonSeparatedList(VariableDeclarator(vtableFieldName))))
+                            .AddModifiers(Token(SyntaxKind.PrivateKeyword), Token(SyntaxKind.StaticKeyword)),
+                        // public static void* VirtualMethodTableManagedImplementation => _vtable != null ? _vtable : (_vtable = InterfaceImplementation.CreateManagedVirtualMethodTable());
+                        PropertyDeclaration(VoidStarStarSyntax, "ManagedVirtualMethodTable")
+                            .AddModifiers(Token(SyntaxKind.PublicKeyword), Token(SyntaxKind.StaticKeyword))
+                            .WithExpressionBody(
+                                ArrowExpressionClause(
+                                    ConditionalExpression(
+                                        BinaryExpression(SyntaxKind.NotEqualsExpression,
                                             IdentifierName(vtableFieldName),
-                                            InvocationExpression(
-                                                MemberAccessExpression(SyntaxKind.SimpleMemberAccessExpression,
-                                                    IdentifierName("InterfaceImplementation"),
-                                                    IdentifierName(CreateManagedVirtualFunctionTableMethodName))))))))
-                        .WithSemicolonToken(Token(SyntaxKind.SemicolonToken))
-                    );
+                                            LiteralExpression(SyntaxKind.NullLiteralExpression)),
+                                        IdentifierName(vtableFieldName),
+                                        ParenthesizedExpression(
+                                            AssignmentExpression(SyntaxKind.SimpleAssignmentExpression,
+                                                IdentifierName(vtableFieldName),
+                                                InvocationExpression(
+                                                    MemberAccessExpression(SyntaxKind.SimpleMemberAccessExpression,
+                                                        IdentifierName("InterfaceImplementation"),
+                                                        IdentifierName(CreateManagedVirtualFunctionTableMethodName))))))))
+                            .WithSemicolonToken(Token(SyntaxKind.SemicolonToken)));
+            }
+
+            return interfaceInformationType.AddMembers(
+                PropertyDeclaration(VoidStarStarSyntax, "ManagedVirtualMethodTable")
+                    .AddModifiers(Token(SyntaxKind.PublicKeyword), Token(SyntaxKind.StaticKeyword))
+                    .WithExpressionBody(ArrowExpressionClause(LiteralExpression(SyntaxKind.NullLiteralExpression)))
+                    .WithSemicolonToken(Token(SyntaxKind.SemicolonToken)));
+
 
             static ExpressionSyntax CreateEmbeddedDataBlobCreationStatement(ReadOnlySpan<byte> bytes)
             {
