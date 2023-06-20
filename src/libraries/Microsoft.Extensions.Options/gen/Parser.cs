@@ -431,7 +431,7 @@ namespace Microsoft.Extensions.Options.Generators
                     // pop the stack
                     _ = _visitedModelTypes.Remove(enumeratedType.WithNullableAnnotation(NullableAnnotation.None));
                 }
-                else if (DerivesFrom(attributeType, _symbolHolder.ValidationAttributeSymbol))
+                else if (ConvertTo(attributeType, _symbolHolder.ValidationAttributeSymbol))
                 {
                     var validationAttr = new ValidationAttributeInfo(attributeType.ToDisplayString(SymbolDisplayFormat.FullyQualifiedFormat));
                     validationAttrs.Add(validationAttr);
@@ -540,7 +540,7 @@ namespace Microsoft.Extensions.Options.Generators
             return "global::" + (result.Namespace.Length > 0 ? result.Namespace + "." + result.Name : result.Name);
         }
 
-        private bool DerivesFrom(ITypeSymbol source, ITypeSymbol dest)
+        private bool ConvertTo(ITypeSymbol source, ITypeSymbol dest)
         {
             var conversion = _compilation.ClassifyConversion(source, dest);
             return conversion.IsReference && conversion.IsImplicit;

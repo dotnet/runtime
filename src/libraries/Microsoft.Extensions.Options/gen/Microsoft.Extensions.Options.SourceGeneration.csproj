@@ -16,6 +16,7 @@
   </ItemGroup>
 
   <ItemGroup>
+    <Compile Include="$(CoreLibSharedDir)System\Runtime\CompilerServices\IsExternalInit.cs" Link="Common\System\Runtime\CompilerServices\IsExternalInit.cs" />
     <Compile Include="DiagDescriptors.cs" />
     <Compile Include="DiagDescriptorsBase.cs" />
     <Compile Include="Emitter.cs" />
@@ -30,6 +31,5 @@
     <Compile Include="SymbolHolder.cs" />
     <Compile Include="SymbolLoader.cs" />
     <Compile Include="TypeDeclarationSyntaxReceiver.cs" />
-    <Compile Include="$(CoreLibSharedDir)System\Runtime\CompilerServices\IsExternalInit.cs" Link="Common\System\Runtime\CompilerServices\IsExternalInit.cs" />
   </ItemGroup>
 </Project>
