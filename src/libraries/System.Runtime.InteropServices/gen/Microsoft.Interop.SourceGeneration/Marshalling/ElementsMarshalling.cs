@@ -2,6 +2,7 @@
 // The .NET Foundation licenses this file to you under the MIT license.
 
 using System.Collections.Generic;
+using System.Diagnostics;
 using System.Linq;
 using Microsoft.CodeAnalysis;
 using Microsoft.CodeAnalysis.CSharp;
@@ -37,14 +38,14 @@ namespace Microsoft.Interop
                         CollectionSource.GetUnmanagedValuesDestination(info, context),
                         IdentifierName("Clear"))));
         }
-        public StatementSyntax GenerateClearUnmanagedValuesSource(TypePositionInfo info, StubCodeContext context)
+        public StatementSyntax GenerateClearManagedValuesDestination(TypePositionInfo info, StubCodeContext context)
         {
             // <GetUnmanagedValuesSource>.Clear();
             return ExpressionStatement(
                 InvocationExpression(
                     MemberAccessExpression(
                         SyntaxKind.SimpleMemberAccessExpression,
-                        CollectionSource.GetUnmanagedValuesSource(info, context),
+                        CollectionSource.GetManagedValuesDestination(info, context),
                         IdentifierName("Clear"))));
         }
 
@@ -622,10 +623,26 @@ namespace Microsoft.Interop
             if (_usesLastIndexMarshalledCache.TryGetValue((info, cleanupContext), out bool result))
                 return result;
             bool shouldCleanupAllElements = ShouldCleanUpAllElements(info, cleanupContext);
+            if (shouldCleanupAllElements)
+            {
+                _usesLastIndexMarshalledCache.Add((info, cleanupContext), false);
+                return false;
+            }
+            bool onlyUnmarshals = MarshallerHelpers.GetMarshalDirection(info, context) == MarshalDirection.UnmanagedToManaged;
+            if (onlyUnmarshals)
+            {
+                _usesLastIndexMarshalledCache.Add((info, cleanupContext), false);
+                return false;
+            }
             var CleanupStatements = GenerateElementStages(info, cleanupContext, _elementMarshaller, _elementInfo, out _, out _, StubCodeContext.Stage.Cleanup);
             bool hasCleanupStatements = CleanupStatements.Any(s => !s.IsKind(SyntaxKind.EmptyStatement));
-            bool onlyUnmarshals = context.Direction == MarshalDirection.UnmanagedToManaged;
+            if (!hasCleanupStatements)
+            {
+                _usesLastIndexMarshalledCache.Add((info, cleanupContext), false);
+                return false;
+            }
             bool usesLastIndexMarshalled = !shouldCleanupAllElements && hasCleanupStatements && !onlyUnmarshals;
+            Debug.Assert(usesLastIndexMarshalled);
             _usesLastIndexMarshalledCache.Add((info, cleanupContext), usesLastIndexMarshalled);
             return usesLastIndexMarshalled;
         }

@@ -455,7 +455,7 @@ namespace Microsoft.Interop
             {
                 // If the parameter is marshalled by-value [Out], then we don't marshal the contents of the collection.
                 // We do clear the span, so that if the invoke target doesn't fill it, we aren't left with undefined content.
-                yield return _elementsMarshalling.GenerateClearUnmanagedValuesSource(info, context);
+                yield return _elementsMarshalling.GenerateClearManagedValuesDestination(info, context);
                 yield break;
             }
 

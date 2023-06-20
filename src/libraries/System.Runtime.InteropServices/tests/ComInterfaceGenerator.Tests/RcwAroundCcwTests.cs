@@ -5,6 +5,7 @@ using System;
 using System.Runtime.InteropServices;
 using System.Runtime.InteropServices.Marshalling;
 using SharedTypes.ComInterfaces;
+using SharedTypes.ComInterfaces.MarshallingFails;
 using Xunit;
 using static ComInterfaceGenerator.Tests.ComInterfaces;
 
@@ -138,6 +139,44 @@ namespace ComInterfaceGenerator.Tests
             Assert.Throws<ArgumentException>(() =>
                 obj.Set(array, widths, length)
             );
+        }
+
+        [Fact]
+        public void IStringArrayMarshallingFails()
+        {
+            var obj = CreateWrapper<IStringArrayMarshallingFailsImpl, IStringArrayMarshallingFails>();
+
+            var strings = IStringArrayMarshallingFailsImpl.StartingStrings;
+
+            // All of these will marshal either to COM or the CCW will marshal on the return
+            Assert.Throws<ArgumentException>(() =>
+            {
+                obj.Param(strings);
+            });
+            Assert.Throws<ArgumentException>(() =>
+            {
+                obj.RefParam(ref strings);
+            });
+            Assert.Throws<ArgumentException>(() =>
+            {
+                obj.InParam(in strings);
+            });
+            Assert.Throws<ArgumentException>(() =>
+            {
+                obj.OutParam(out strings);
+            });
+            Assert.Throws<ArgumentException>(() =>
+            {
+                obj.ByValueOutParam(strings);
+            });
+            Assert.Throws<ArgumentException>(() =>
+            {
+                obj.ByValueInOutParam(strings);
+            });
+            Assert.Throws<ArgumentException>(() =>
+            {
+                _ = obj.ReturnValue();
+            });
         }
     }
 

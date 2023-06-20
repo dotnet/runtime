@@ -4,6 +4,8 @@
 #if ANCILLARY_INTEROP
 namespace System.Runtime.InteropServices.Marshalling
 #else
+using System.ComponentModel;
+
 namespace Microsoft.Interop
 #endif
 {
