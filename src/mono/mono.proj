@@ -712,10 +712,10 @@
 
     <!-- macOS host specific options -->
     <ItemGroup Condition="'$(AotHostOS)' == 'osx' or $([MSBuild]::IsOSPlatform('OSX'))">
-      <MonoAOTCMakeArgs Condition="'$(_MonoLLVMTargetArchitecture)' == 'x64'" Include="-DCMAKE_OSX_ARCHITECTURES=x86_64" />
-      <MonoAOTCMakeArgs Condition="'$(_MonoLLVMTargetArchitecture)' == 'x86'" Include="-DCMAKE_OSX_ARCHITECTURES=i386" />
-      <MonoAOTCMakeArgs Condition="'$(_MonoLLVMTargetArchitecture)' == 'arm64'" Include="-DCMAKE_OSX_ARCHITECTURES=arm64" />
-      <MonoAOTCMakeArgs Condition="'$(_MonoLLVMTargetArchitecture)' == 'arm'" Include="&quot;-DCMAKE_OSX_ARCHITECTURES=armv7%3Barmv7s&quot;" />
+      <MonoAOTCMakeArgs Condition="'$(AotHostArchitecture)' == 'x64' or ('$(AotHostArchitecture)' == '' and '$(BuildArchitecture)' == 'x64')" Include="-DCMAKE_OSX_ARCHITECTURES=x86_64" />
+      <MonoAOTCMakeArgs Condition="'$(AotHostArchitecture)' == 'x86' or ('$(AotHostArchitecture)' == '' and '$(BuildArchitecture)' == 'x86')" Include="-DCMAKE_OSX_ARCHITECTURES=i386" />
+      <MonoAOTCMakeArgs Condition="'$(AotHostArchitecture)' == 'arm64' or ('$(AotHostArchitecture)' == '' and '$(BuildArchitecture)' == 'arm64')" Include="-DCMAKE_OSX_ARCHITECTURES=arm64" />
+      <MonoAOTCMakeArgs Condition="'$(AotHostArchitecture)' == 'arm' or ('$(AotHostArchitecture)' == '' and '$(BuildArchitecture)' == 'arm')" Include="&quot;-DCMAKE_OSX_ARCHITECTURES=armv7%3Barmv7s&quot;" />
       <MonoAOTCMakeArgs Include="-DCMAKE_OSX_DEPLOYMENT_TARGET=$(macOSVersionMin)" />
       <MonoAOTCMakeArgs Include="-DENABLE_ICALL_EXPORT=1"/>
       <_MonoAOTCFLAGS Condition="'$(AotHostArchitecture)' == 'arm64'" Include="-arch arm64" />
