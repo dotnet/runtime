@@ -111,7 +111,6 @@ public class BuildPublishTests : BuildTestBase
     [InlineData("Release", /*build*/true, /*publish*/false)]
     [InlineData("Release", /*build*/false, /*publish*/true)]
     [InlineData("Release", /*build*/true, /*publish*/true)]
-    [ActiveIssue("https://github.com/dotnet/runtime/issues/82725")]
     public async Task WithDllImportInMainAssembly(string config, bool build, bool publish)
     {
         // Based on https://github.com/dotnet/runtime/issues/59255
@@ -257,7 +256,6 @@ public class BuildPublishTests : BuildTestBase
         await BlazorRunForBuildWithDotnetRun(config);
     }
 
-    [ActiveIssue("https://github.com/dotnet/runtime/issues/82481")]
     [ConditionalTheory(typeof(BuildTestBase), nameof(IsUsingWorkloads))]
     [InlineData("Debug", false)]
     [InlineData("Debug", true)]
@@ -270,7 +268,11 @@ public class BuildPublishTests : BuildTestBase
         if (aot)
             AddItemsPropertiesToProject(projectFile, "<RunAOTCompilation>true</RunAOTCompilation>");
 
-        BlazorPublish(new BlazorBuildOptions(id, config, aot ? NativeFilesType.AOT : NativeFilesType.Relinked));
+        BlazorPublish(new BlazorBuildOptions(
+            id,
+            config,
+            aot ? NativeFilesType.AOT
+                : (config == "Release" ? NativeFilesType.Relinked : NativeFilesType.FromRuntimePack)));
         await BlazorRunForPublishWithWebServer(config);
     }
 
