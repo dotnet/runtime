@@ -1247,7 +1247,7 @@ namespace Microsoft.WebAssembly.Diagnostics
     internal sealed partial class SourceFile
     {
 #pragma warning disable SYSLIB1045
-        private static readonly Regex regexForEscapeFileName = new Regex(@"([:/])");
+        private static readonly Regex regexForEscapeFileName = new (@"([:/])");
 #pragma warning restore SYSLIB1045
 
         private readonly Dictionary<int, MethodInfo> methods;

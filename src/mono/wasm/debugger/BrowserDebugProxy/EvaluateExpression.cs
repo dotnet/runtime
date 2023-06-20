@@ -36,7 +36,7 @@ namespace Microsoft.WebAssembly.Diagnostics
         private sealed partial class ExpressionSyntaxReplacer : CSharpSyntaxWalker
         {
 #pragma warning disable SYSLIB1045
-            private static Regex regexForReplaceVarName = new Regex(@"[^A-Za-z0-9_]", RegexOptions.Singleline);
+            private static Regex regexForReplaceVarName = new (@"[^A-Za-z0-9_]", RegexOptions.Singleline);
 #pragma warning restore SYSLIB1045
             public List<IdentifierNameSyntax> identifiers = new List<IdentifierNameSyntax>();
             public List<InvocationExpressionSyntax> methodCalls = new List<InvocationExpressionSyntax>();
