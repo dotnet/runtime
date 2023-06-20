@@ -591,12 +591,7 @@ namespace System.Threading
         }
 
         internal static long ContentionCount => s_contentionCount;
-
-        internal void Dispose()
-        {
-            Debug.Assert(new State(this).IsInitialState);
-            _waitEvent?.Dispose();
-        }
+        internal void Dispose() => _waitEvent?.Dispose();
 
         internal nint LockIdForEvents
         {
