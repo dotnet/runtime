@@ -261,6 +261,7 @@
       ProjectName="$(AppName)"
       RuntimeComponents="$(RuntimeComponents)"
       TargetOS="$(TargetOS)"
+      StripSymbolTable="$(StripDebugSymbols)"
       ExcludeFromAppDir="@(_ExcludeFromAppDir)"
       UseConsoleUITemplate="$(UseConsoleUITemplate)">
         <Output TaskParameter="AppBundlePath" PropertyName="AppBundlePath" />

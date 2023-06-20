@@ -62,6 +62,16 @@
         <target state="translated">초기화 전용 속성의 역직렬화는 현재 원본 생성 모드에서 지원되지 않습니다.</target>
         <note />
       </trans-unit>
+      <trans-unit id="JsonConverterAttributeInvalidTypeMessageFormat">
+        <source>The 'JsonConverterAttribute' type '{0}' specified on member '{1}' is not a converter type or does not contain an accessible parameterless constructor.</source>
+        <target state="new">The 'JsonConverterAttribute' type '{0}' specified on member '{1}' is not a converter type or does not contain an accessible parameterless constructor.</target>
+        <note />
+      </trans-unit>
+      <trans-unit id="JsonConverterAttributeInvalidTypeTitle">
+        <source>The 'JsonConverterAttribute.Type' contains an invalid or inaccessible argument.</source>
+        <target state="new">The 'JsonConverterAttribute.Type' contains an invalid or inaccessible argument.</target>
+        <note />
+      </trans-unit>
       <trans-unit id="JsonStringEnumConverterNotSupportedMessageFormat">
         <source>The member '{0}' has been annotated with 'JsonStringEnumConverter' which is not supported in native AOT. Consider using the generic 'JsonStringEnumConverter&lt;TEnum&gt;' instead.</source>
         <target state="translated">'{0}' 멤버에 네이티브 AOT에서 지원되지 않는 'JsonStringEnumConverter'로 주석이 달렸습니다. 대신 제네릭 'JsonStringEnumConverter&lt;TEnum&gt;'을 사용해 보세요.</target>
