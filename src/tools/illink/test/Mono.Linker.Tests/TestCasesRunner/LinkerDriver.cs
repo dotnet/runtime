@@ -24,11 +24,11 @@ namespace Mono.Linker.Tests.TestCasesRunner
 			}
 		}
 
-		public virtual void Link (string[] args, LinkerCustomizations customizations, ILogger logger)
+		public virtual int Link (string[] args, LinkerCustomizations customizations, ILogger logger)
 		{
 			Driver.ProcessResponseFile (args, out var queue);
 			using (var driver = new TestDriver (queue, customizations)) {
-				driver.Run (logger);
+				return driver.Run (logger);
 			}
 		}
 	}

@@ -47,5 +47,8 @@ namespace Internal.TypeSystem
 
         // MarshalDirectiveException
         MarshalDirectiveGeneric,
+
+        // AmbiguousMatchException
+        AmbiguousMatchUnsafeAccessor,
     }
 }

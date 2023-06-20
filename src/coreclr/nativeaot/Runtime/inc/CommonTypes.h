@@ -24,7 +24,14 @@ using std::size_t;
 using std::uintptr_t;
 using std::intptr_t;
 
+
+#ifdef TARGET_WINDOWS
 typedef wchar_t             WCHAR;
+#define W(str) L##str
+#else
+typedef char16_t             WCHAR;
+#define W(str) u##str
+#endif
 typedef void *              HANDLE;
 
 typedef uint32_t            UInt32_BOOL;    // windows 4-byte BOOL, 0 -> false, everything else -> true

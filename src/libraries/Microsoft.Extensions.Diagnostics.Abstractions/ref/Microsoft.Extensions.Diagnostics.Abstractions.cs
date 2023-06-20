@@ -7,4 +7,8 @@ namespace Microsoft.Extensions.Diagnostics.Metrics
     {
         System.Diagnostics.Metrics.Meter Create(System.Diagnostics.Metrics.MeterOptions options);
     }
+    public static class MeterFactoryExtensions
+    {
+        public static System.Diagnostics.Metrics.Meter Create(this Microsoft.Extensions.Diagnostics.Metrics.IMeterFactory meterFactory, string name, string? version = null, System.Collections.Generic.IEnumerable<System.Collections.Generic.KeyValuePair<string, object?>>? tags = null) { return null!; }
+    }
 }

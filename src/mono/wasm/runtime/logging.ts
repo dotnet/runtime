@@ -2,10 +2,15 @@
 // The .NET Foundation licenses this file to you under the MIT license.
 
 /* eslint-disable no-console */
-import { INTERNAL, Module, runtimeHelpers } from "./globals";
+import { INTERNAL, runtimeHelpers } from "./globals";
+import { utf8ToString } from "./strings";
 import { CharPtr, VoidPtr } from "./types/emscripten";
 
-const prefix = "MONO_WASM: ";
+let prefix = "MONO_WASM: ";
+
+export function mono_set_thread_id(tid: string) {
+    prefix = `MONO_WASM [${tid}]: `;
+}
 
 export function mono_log_debug(msg: string, ...data: any) {
     if (runtimeHelpers.diagnosticTracing) {
@@ -91,11 +96,11 @@ export function mono_wasm_stringify_as_error_with_stack(err: Error | string): st
 }
 
 export function mono_wasm_trace_logger(log_domain_ptr: CharPtr, log_level_ptr: CharPtr, message_ptr: CharPtr, fatal: number, user_data: VoidPtr): void {
-    const origMessage = Module.UTF8ToString(message_ptr);
+    const origMessage = utf8ToString(message_ptr);
     const isFatal = !!fatal;
-    const domain = Module.UTF8ToString(log_domain_ptr);
+    const domain = utf8ToString(log_domain_ptr);
     const dataPtr = user_data;
-    const log_level = Module.UTF8ToString(log_level_ptr);
+    const log_level = utf8ToString(log_level_ptr);
 
     const message = `[MONO] ${origMessage}`;
 

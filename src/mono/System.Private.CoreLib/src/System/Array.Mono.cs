@@ -390,7 +390,9 @@ namespace System
         }
 
         [Intrinsic]
+#pragma warning disable CA1822 // Mark members as static
         internal int GetElementSize() => GetElementSize();
+#pragma warning restore
 
         [MethodImpl(MethodImplOptions.InternalCall)]
         private static extern CorElementType GetCorElementTypeOfElementTypeInternal(ObjectHandleOnStack arr);

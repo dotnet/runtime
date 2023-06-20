@@ -44,7 +44,13 @@ enum NamedIntrinsic : unsigned short
     NI_System_Math_Log2,
     NI_System_Math_Log10,
     NI_System_Math_Max,
+    NI_System_Math_MaxMagnitude,
+    NI_System_Math_MaxMagnitudeNumber,
+    NI_System_Math_MaxNumber,
     NI_System_Math_Min,
+    NI_System_Math_MinMagnitude,
+    NI_System_Math_MinMagnitudeNumber,
+    NI_System_Math_MinNumber,
     NI_System_Math_Pow,
     NI_System_Math_Round,
     NI_System_Math_Sin,
@@ -126,11 +132,11 @@ enum NamedIntrinsic : unsigned short
 #ifdef FEATURE_HW_INTRINSICS
     NI_HW_INTRINSIC_START,
 #if defined(TARGET_XARCH)
-#define HARDWARE_INTRINSIC(isa, name, size, numarg, t1, t2, t3, t4, t5, t6, t7, t8, t9, t10, category, flag)           \
+#define HARDWARE_INTRINSIC(isa, name, size, numarg, extra, t1, t2, t3, t4, t5, t6, t7, t8, t9, t10, category, flag)    \
     NI_##isa##_##name,
 #include "hwintrinsiclistxarch.h"
 #elif defined(TARGET_ARM64)
-#define HARDWARE_INTRINSIC(isa, name, size, numarg, t1, t2, t3, t4, t5, t6, t7, t8, t9, t10, category, flag)           \
+#define HARDWARE_INTRINSIC(isa, name, size, numarg, extra, t1, t2, t3, t4, t5, t6, t7, t8, t9, t10, category, flag)    \
     NI_##isa##_##name,
 #include "hwintrinsiclistarm64.h"
 #endif // !defined(TARGET_XARCH) && !defined(TARGET_ARM64)

@@ -1,20 +1,22 @@
 // Licensed to the .NET Foundation under one or more agreements.
 // The .NET Foundation licenses this file to you under the MIT license.
 
-using System.Runtime.InteropServices;
 using System.Collections.Generic;
 using System.Diagnostics;
+using System.Diagnostics.CodeAnalysis;
+using System.Runtime.InteropServices;
+using System.Text.Json.Serialization;
 
 namespace System.Text.Json
 {
     internal static partial class JsonHelpers
     {
+#if !NETCOREAPP
         /// <summary>
-        /// Emulates Dictionary.TryAdd on netstandard.
+        /// netstandard/netfx polyfill for Dictionary.TryAdd
         /// </summary>
-        public static bool TryAdd<TKey, TValue>(this Dictionary<TKey, TValue> dictionary, in TKey key, in TValue value) where TKey : notnull
+        public static bool TryAdd<TKey, TValue>(this Dictionary<TKey, TValue> dictionary, TKey key, TValue value) where TKey : notnull
         {
-#if NETSTANDARD2_0 || NETFRAMEWORK
             if (!dictionary.ContainsKey(key))
             {
                 dictionary[key] = value;
@@ -22,9 +24,29 @@ namespace System.Text.Json
             }
 
             return false;
-#else
-            return dictionary.TryAdd(key, value);
+        }
+
+        /// <summary>
+        /// netstandard/netfx polyfill for Queue.TryDequeue
+        /// </summary>
+        public static bool TryDequeue<T>(this Queue<T> queue, [NotNullWhen(true)] out T? result)
+        {
+            if (queue.Count > 0)
+            {
+                result = queue.Dequeue();
+                return true;
+            }
+
+            result = default;
+            return false;
+        }
 #endif
+
+        internal static bool RequiresSpecialNumberHandlingOnWrite(JsonNumberHandling? handling)
+        {
+            return handling != null
+                ? (handling.Value & (JsonNumberHandling.WriteAsString | JsonNumberHandling.AllowNamedFloatingPointLiterals)) != 0
+                : false;
         }
 
         /// <summary>
@@ -133,7 +155,7 @@ namespace System.Text.Json
                 // Iterate over the adjacency matrix, removing any occurrence of nextIndex.
                 for (int i = 0; i < adjacency.Count; i++)
                 {
-                    if (adjacency[i] is { } childMap && childMap[nextIndex])
+                    if (adjacency[i] is { } childMap && nextIndex < childMap.Length && childMap[nextIndex])
                     {
                         childMap[nextIndex] = false;
 

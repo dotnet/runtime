@@ -67,6 +67,7 @@ public class MonoAOTCompiler : Microsoft.Build.Utilities.Task
     ///   - LlvmObjectFile (if using LLVM)
     ///   - LlvmBitcodeFile (if using LLVM-only)
     ///   - ExportsFile (used in LibraryMode only)
+    ///   - MethodTokenFile (when using CollectCompiledMethods=true)
     /// </summary>
     [Output]
     public ITaskItem[]? CompiledAssemblies { get; set; }
@@ -151,6 +152,16 @@ public class MonoAOTCompiler : Microsoft.Build.Utilities.Task
     /// Instructs the AOT compiler to emit DWARF debugging information.
     /// </summary>
     public bool UseDwarfDebug { get; set; }
+
+    /// <summary>
+    /// Instructs the AOT compiler to print the list of aot compiled methods
+    /// </summary>
+    public bool CollectCompiledMethods { get; set; }
+
+    /// <summary>
+    /// Directory to store the aot output when using switch compiled-methods-outfile
+    /// </summary>
+    public string? CompiledMethodsOutputDirectory { get; set; }
 
     /// <summary>
     /// File to use for profile-guided optimization, *only* the methods described in the file will be AOT compiled.
@@ -291,6 +302,7 @@ public class MonoAOTCompiler : Microsoft.Build.Utilities.Task
     private int _totalNumAssemblies;
 
     private readonly Dictionary<string, string> _symbolNameFixups = new();
+    private static readonly char[] s_semicolon = new char[]{ ';' };
 
     private bool ProcessAndValidateArguments()
     {
@@ -434,6 +446,17 @@ public class MonoAOTCompiler : Microsoft.Build.Utilities.Task
             string? fullPath = asmItem.GetMetadata("FullPath");
             if (!File.Exists(fullPath))
                 throw new LogAsErrorException($"Could not find {fullPath} to AOT");
+        }
+
+        if (CollectCompiledMethods)
+        {
+            if (string.IsNullOrEmpty(CompiledMethodsOutputDirectory))
+                throw new LogAsErrorException($"{nameof(CompiledMethodsOutputDirectory)} is empty. When {nameof(CollectCompiledMethods)} is set to true, the user needs to provide a directory for {nameof(CompiledMethodsOutputDirectory)}.");
+
+            if (!Directory.Exists(CompiledMethodsOutputDirectory))
+            {
+                Directory.CreateDirectory(CompiledMethodsOutputDirectory);
+            }
         }
 
         return !Log.HasLoggedErrors;
@@ -635,13 +658,13 @@ public class MonoAOTCompiler : Microsoft.Build.Utilities.Task
         var a = assemblyItem.GetMetadata("AotArguments");
         if (a != null)
         {
-             aotArgs.AddRange(a.Split(new char[]{ ';' }, StringSplitOptions.RemoveEmptyEntries));
+             aotArgs.AddRange(a.Split(s_semicolon, StringSplitOptions.RemoveEmptyEntries));
         }
 
         var p = assemblyItem.GetMetadata("ProcessArguments");
         if (p != null)
         {
-            processArgs.AddRange(p.Split(new char[]{ ';' }, StringSplitOptions.RemoveEmptyEntries));
+            processArgs.AddRange(p.Split(s_semicolon, StringSplitOptions.RemoveEmptyEntries));
         }
 
         processArgs.Add("--debug");
@@ -709,6 +732,23 @@ public class MonoAOTCompiler : Microsoft.Build.Utilities.Task
         else if (!string.IsNullOrEmpty (DedupAssembly))
         {
             aotArgs.Add("dedup-skip");
+        }
+
+        if (CollectCompiledMethods)
+        {
+            string assemblyName = assemblyFilename.Replace(".", "_");
+            string outputFileName = assemblyName + "_compiled_methods.txt";
+            string outputFilePath;
+            if (string.IsNullOrEmpty(CompiledMethodsOutputDirectory))
+            {
+                outputFilePath = outputFileName;
+            }
+            else
+            {
+                outputFilePath = Path.Combine(CompiledMethodsOutputDirectory, outputFileName);
+            }
+            aotArgs.Add($"compiled-methods-outfile={outputFilePath}");
+            aotAssembly.SetMetadata("MethodTokenFile", outputFilePath);
         }
 
         // compute output mode and file names

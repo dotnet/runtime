@@ -280,17 +280,6 @@ ClassLoader::CreateTypeHandleForNonCanonicalGenericInstantiation(
         ThrowHR(COR_E_OVERFLOW);
     }
 
-    BOOL canShareVtableChunks = MethodTable::CanShareVtableChunksFrom(pOldMT, pLoaderModule);
-
-    SIZE_T offsetOfUnsharedVtableChunks = allocSize.Value();
-
-    // We either share all of the canonical's virtual slots or none of them
-    // If none, we need to allocate space for the slots
-    if (!canShareVtableChunks)
-    {
-        allocSize += S_SIZE_T( cSlots ) * S_SIZE_T( sizeof(MethodTable::VTableIndir2_t) );
-    }
-
     if (allocSize.IsOverflow())
     {
         ThrowHR(COR_E_OVERFLOW);
@@ -358,28 +347,8 @@ ClassLoader::CreateTypeHandleForNonCanonicalGenericInstantiation(
     MethodTable::VtableIndirectionSlotIterator it = pMT->IterateVtableIndirectionSlots();
     while (it.Next())
     {
-        if (canShareVtableChunks)
-        {
-            // Share the canonical chunk
-            it.SetIndirectionSlot(pOldMT->GetVtableIndirections()[it.GetIndex()]);
-        }
-        else
-        {
-            // Use the locally allocated chunk
-            it.SetIndirectionSlot((MethodTable::VTableIndir2_t *)(pMemory+offsetOfUnsharedVtableChunks));
-            offsetOfUnsharedVtableChunks += it.GetSize();
-        }
-    }
-
-    // If we are not sharing parent chunks, copy down the slot contents
-    if (!canShareVtableChunks)
-    {
-        // Need to assign the slots one by one to filter out jump thunks
-        MethodTable::MethodDataWrapper hOldMTData(MethodTable::GetMethodData(pOldMT, FALSE));
-        for (DWORD i = 0; i < cSlots; i++)
-        {
-            pMT->CopySlotFrom(i, hOldMTData, pOldMT);
-        }
+        // Share the canonical chunk
+        it.SetIndirectionSlot(pOldMT->GetVtableIndirections()[it.GetIndex()]);
     }
 
     // All flags on m_pNgenPrivateData data apart

@@ -20,7 +20,7 @@ namespace System.Reflection.Metadata
         /// <param name="length">When this method returns, contains the length of the metadata section blob.</param>
         /// <returns>
         /// <see langword="true" /> if the metadata is retrieved successfully; <see langword="false" /> upon failure.
-        /// The metadata might not be available for some assemblies, such as <see cref="System.Reflection.Emit.AssemblyBuilder" />, AOT images, etc.
+        /// The metadata might not be available for some assemblies, such as <see cref="Emit.AssemblyBuilder" />, AOT images, etc.
         /// </returns>
         /// <remarks>
         /// <para>Callers should not write to the metadata blob.</para>
