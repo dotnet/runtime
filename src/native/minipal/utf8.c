@@ -152,13 +152,6 @@ static void DecoderReplacementFallbackBuffer_Reset(DecoderBuffer* self)
     self->byteStart = NULL;
 }
 
-// Set the above values
-static void DecoderBuffer_InternalInitialize(DecoderBuffer* self, unsigned char* byteStart, CHAR16_T* charEnd)
-{
-    self->byteStart = byteStart;
-    self->charEnd = charEnd;
-}
-
 typedef struct
 {
     const CHAR16_T strDefault[3];
@@ -442,12 +435,17 @@ static size_t GetCharCount(UTF8Encoding* self, unsigned char* bytes, size_t coun
         goto EncodeChar;
 
     InvalidByteSequence:
-        // this code fragment should be close to the gotos referencing it
-        // Have to do fallback for invalid bytes
+        if (!self->useFallback)
+        {
+            errno = MINIPAL_ERROR_NO_UNICODE_TRANSLATION;
+            return 0;
+        }
+
         if (!fallbackUsed)
         {
             fallbackUsed = true;
-            if (self->useFallback) DecoderBuffer_InternalInitialize(&self->buffer.decoder, bytes, NULL);
+            self->buffer.decoder.byteStart = bytes;
+            self->buffer.decoder.charEnd = NULL;
         }
         charCount += self->buffer.decoder.strDefaultLength;
 
@@ -728,12 +726,6 @@ static size_t GetCharCount(UTF8Encoding* self, unsigned char* bytes, size_t coun
     {
         // We were already adjusting for these, so need to unadjust
         charCount += (ch >> 30);
-        // Have to do fallback for invalid bytes
-        if (!fallbackUsed)
-        {
-            fallbackUsed = true;
-            if (self->useFallback) DecoderBuffer_InternalInitialize(&self->buffer.decoder, bytes, NULL);
-        }
         charCount += self->buffer.decoder.strDefaultLength;
     }
 
@@ -848,12 +840,19 @@ static int GetChars(UTF8Encoding* self, unsigned char* bytes, size_t byteCount, 
         goto EncodeChar;
 
     InvalidByteSequence:
+        if (!self->useFallback)
+        {
+            errno = MINIPAL_ERROR_NO_UNICODE_TRANSLATION;
+            return 0;
+        }
+
         // this code fragment should be close to the gotos referencing it
         // Have to do fallback for invalid bytes
         if (!fallbackUsed)
         {
             fallbackUsed = true;
-            if (self->useFallback) DecoderBuffer_InternalInitialize(&self->buffer.decoder, bytes, pAllocatedBufferEnd);
+            self->buffer.decoder.byteStart = bytes;
+            self->buffer.decoder.charEnd = pAllocatedBufferEnd;
         }
 
         // That'll back us up the appropriate # of bytes if we didn't get anywhere
@@ -862,7 +861,7 @@ static int GetChars(UTF8Encoding* self, unsigned char* bytes, size_t byteCount, 
             // Check if we ran out of buffer space
             assert(pSrc >= bytes || pTarget == chars);
 
-            if (self->useFallback) DecoderReplacementFallbackBuffer_Reset(&self->buffer.decoder);
+            DecoderReplacementFallbackBuffer_Reset(&self->buffer.decoder);
             if (pTarget == chars)
             {
                 errno = MINIPAL_ERROR_INSUFFICIENT_BUFFER;
@@ -1247,13 +1246,6 @@ static int GetChars(UTF8Encoding* self, unsigned char* bytes, size_t byteCount, 
 
     if (ch != 0)
     {
-        // Have to do fallback for invalid bytes
-        if (!fallbackUsed)
-        {
-            fallbackUsed = true;
-            if (self->useFallback) DecoderBuffer_InternalInitialize(&self->buffer.decoder, bytes, NULL);
-        }
-
         // This'll back us up the appropriate # of bytes if we didn't get anywhere
         if (!self->useFallback)
         {
@@ -1261,7 +1253,6 @@ static int GetChars(UTF8Encoding* self, unsigned char* bytes, size_t byteCount, 
 
             // Ran out of buffer space
             // Need to throw an exception?
-            if (self->useFallback) DecoderReplacementFallbackBuffer_Reset(&self->buffer.decoder);
             if (pTarget == chars)
             {
                 errno = MINIPAL_ERROR_INSUFFICIENT_BUFFER;

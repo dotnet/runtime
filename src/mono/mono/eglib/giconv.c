@@ -321,8 +321,9 @@ static FORCE_INLINE (void)
 map_error(GError **err)
 {
 	if (errno == MINIPAL_ERROR_INSUFFICIENT_BUFFER) {
-		g_set_error (err, G_CONVERT_ERROR, G_CONVERT_ERROR_NO_MEMORY,
-			     "Allocation failed.");
+		g_set_error (err, G_CONVERT_ERROR, G_CONVERT_ERROR_NO_MEMORY, "Allocation failed.");
+	} else if (errno == MINIPAL_ERROR_NO_UNICODE_TRANSLATION) {
+		g_set_error (err, G_CONVERT_ERROR, G_CONVERT_ERROR_ILLEGAL_SEQUENCE, "Illegal byte sequence encountered in the input.");
 	}
 }
 
@@ -351,7 +352,7 @@ g_utf8_to_utf16_impl (const gchar *str, glong len, glong *items_read, glong *ite
 
 	lpDestStr = malloc((ret + 1) * sizeof(gunichar2));
 	ret = (glong)minipal_convert_utf8_to_utf16 (str, len, lpDestStr, ret, flags);
-    lpDestStr[ret] = '\0';
+	lpDestStr[ret] = '\0';
 
 	if (items_written)
 		*items_written = errno == 0 ? ret : 0;
