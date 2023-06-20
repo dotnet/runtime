@@ -767,7 +767,7 @@ namespace Wasm.Build.Tests
                 AssertFilesExist(bundleDir, new[] { "_framework/icudt_EFIGS.dat" }, expectToExist: expectEFIGS);
                 AssertFilesExist(bundleDir, new[] { "_framework/icudt_CJK.dat" }, expectToExist: expectCJK);
                 AssertFilesExist(bundleDir, new[] { "_framework/icudt_no_CJK.dat" }, expectToExist: expectNOCJK);
-                AssertFilesExist(bundleDir, new[] { "icudt_hybrid.dat" }, expectToExist: expectHYBRID);
+                AssertFilesExist(bundleDir, new[] { "_framework/icudt_hybrid.dat" }, expectToExist: expectHYBRID);
             }
         }
 
