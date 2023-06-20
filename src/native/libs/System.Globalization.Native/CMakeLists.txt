@@ -1,6 +1,10 @@
 project(System.Globalization.Native C)
 
 if(CLR_CMAKE_TARGET_UNIX OR CLR_CMAKE_TARGET_WASI)
+    if (ANDROID_FORCE_ICU_DATA_DIR)
+        add_definitions(-DANDROID_FORCE_ICU_DATA_DIR)
+    endif()
+
     add_compile_options(-Wno-switch-enum)
     add_compile_options(-Wno-covered-switch-default)
 
