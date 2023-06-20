@@ -7757,7 +7757,10 @@ void Compiler::impCheckCanInline(GenTreeCall*           call,
             // Speculatively check if initClass() can be done.
             // If it can be done, we will try to inline the method.
             CorInfoInitClassResult const initClassResult =
-                compCompHnd->initClass(nullptr /* field */, ftn /* method */, pParam->exactContextHnd /* context */);
+                compCompHnd->initClass(nullptr /* field */, ftn /* method */,
+                                       pParam->call->IsGuardedDevirtualizationCandidate()
+                                           ? MAKE_METHODCONTEXT(ftn)
+                                           : pParam->exactContextHnd /* context */);
 
             if (initClassResult & CORINFO_INITCLASS_DONT_INLINE)
             {
