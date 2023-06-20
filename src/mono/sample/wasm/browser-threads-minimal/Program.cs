@@ -175,7 +175,7 @@ namespace Sample
             {
                 Console.WriteLine($"smoke {meaning}: TestTLS 2 ManagedThreadId:{Thread.CurrentThread.ManagedThreadId}, SynchronizationContext: {SynchronizationContext.Current?.GetType().FullName ?? "null"}");
                 meaning = 41;
-                await JSHost.ImportAsync(fetchhelper, "./fetchhelper.js");
+                await JSHost.ImportAsync(fetchhelper, "../fetchhelper.js");
                 Console.WriteLine($"smoke {meaning}: TestTLS 3 ManagedThreadId:{Thread.CurrentThread.ManagedThreadId}, SynchronizationContext: {SynchronizationContext.Current?.GetType().FullName ?? "null"}");
                 meaning = 43;
                 Console.WriteLine($"smoke {meaning}: TestTLS 4 ManagedThreadId:{Thread.CurrentThread.ManagedThreadId}, SynchronizationContext: {SynchronizationContext.Current?.GetType().FullName ?? "null"}");
