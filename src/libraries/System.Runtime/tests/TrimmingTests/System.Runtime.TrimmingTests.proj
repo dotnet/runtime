@@ -10,6 +10,12 @@
     <TestConsoleAppSourceFiles Include="DebuggerVisualizerAttributeTests.cs" />
     <TestConsoleAppSourceFiles Include="DefaultValueAttributeCtorTest.cs" />
     <TestConsoleAppSourceFiles Include="GenericArraySortHelperTest.cs" />
+    <TestConsoleAppSourceFiles Include="HybridGlobalizationTrue.cs">
+      <EnabledFeatureSwitches>System.Globalization.Hybrid</EnabledFeatureSwitches>
+    </TestConsoleAppSourceFiles>    
+    <TestConsoleAppSourceFiles Include="HybridGlobalizationFalse.cs">
+      <DisabledFeatureSwitches>System.Globalization.Hybrid</DisabledFeatureSwitches>
+    </TestConsoleAppSourceFiles>
     <TestConsoleAppSourceFiles Include="InheritedAttributeTests.cs" />
     <TestConsoleAppSourceFiles Include="InterfacesOnArrays.cs" />
     <TestConsoleAppSourceFiles Include="InvariantGlobalizationFalse.cs">
@@ -40,7 +46,7 @@
       <!-- Setting the Trimming feature switch to make sure that the Resources get trimmed by the trimmer
       as this test will ensure exceptions are using Resource keys -->
       <EnabledFeatureSwitches>System.Resources.UseSystemResourceKeys</EnabledFeatureSwitches>
-    </TestConsoleAppSourceFiles>
+    </TestConsoleAppSourceFiles>    
     <TestConsoleAppSourceFiles Include="TypeBuilderComDisabled.cs">
       <DisabledFeatureSwitches>System.Runtime.InteropServices.BuiltInComInterop.IsSupported</DisabledFeatureSwitches>
     </TestConsoleAppSourceFiles>

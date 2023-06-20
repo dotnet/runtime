@@ -1,9 +1,5 @@
 <linker>
   <assembly fullname="System.Private.CoreLib">
-    <!-- Hybrid mode -->
-    <type fullname="System.Globalization.GlobalizationMode" feature="System.Globalization.Hybrid" featurevalue="true" >
-      <method signature="System.Boolean get_Hybrid()" body="stub" value="true" />
-    </type>
     <!-- non-Hybrid mode -->
     <type fullname="System.Globalization.GlobalizationMode" feature="System.Globalization.Hybrid" featurevalue="false">
       <method signature="System.Boolean get_Hybrid()" body="stub" value="false" />
