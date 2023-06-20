@@ -422,63 +422,25 @@ namespace System.Text.Json.SourceGeneration
                 ParameterGenerationSpec[]? ctorParamSpecs = null;
                 List<PropertyInitializerGenerationSpec>? propertyInitializerSpecs = null;
                 CollectionType collectionType = CollectionType.NotApplicable;
-                JsonNumberHandling? numberHandling = null;
-                JsonUnmappedMemberHandling? unmappedMemberHandling = null;
-                JsonObjectCreationHandling? preferredPropertyObjectCreationHandling = null;
                 string? immutableCollectionFactoryTypeFullName = null;
-                bool foundDesignTimeCustomConverter = false;
-                TypeRef? converterType = null;
                 bool implementsIJsonOnSerialized = false;
                 bool implementsIJsonOnSerializing = false;
-                bool isPolymorphic = false;
 
-                foreach (AttributeData attributeData in type.GetAttributes())
-                {
-                    INamedTypeSymbol? attributeType = attributeData.AttributeClass;
-
-                    if (SymbolEqualityComparer.Default.Equals(attributeType, _knownSymbols.JsonNumberHandlingAttributeType))
-                    {
-                        numberHandling = (JsonNumberHandling)attributeData.ConstructorArguments[0].Value!;
-                        continue;
-                    }
-                    else if (SymbolEqualityComparer.Default.Equals(attributeType, _knownSymbols.JsonUnmappedMemberHandlingAttributeType))
-                    {
-                        unmappedMemberHandling = (JsonUnmappedMemberHandling)attributeData.ConstructorArguments[0].Value!;
-                        continue;
-                    }
-                    else if (SymbolEqualityComparer.Default.Equals(attributeType, _knownSymbols.JsonObjectCreationHandlingAttributeType))
-                    {
-                        preferredPropertyObjectCreationHandling = (JsonObjectCreationHandling)attributeData.ConstructorArguments[0].Value!;
-                        continue;
-                    }
-                    else if (!foundDesignTimeCustomConverter && _knownSymbols.JsonConverterAttributeType.IsAssignableFrom(attributeType))
-                    {
-                        converterType = GetConverterTypeFromAttribute(contextType, type, attributeData);
-                        foundDesignTimeCustomConverter = true;
-                    }
-
-                    if (SymbolEqualityComparer.Default.Equals(attributeType, _knownSymbols.JsonDerivedTypeAttributeType))
-                    {
-                        Debug.Assert(attributeData.ConstructorArguments.Length > 0);
-                        var derivedType = (ITypeSymbol)attributeData.ConstructorArguments[0].Value!;
-                        EnqueueType(derivedType, typeToGenerate.Mode);
-
-                        if (!isPolymorphic && typeToGenerate.Mode == JsonSourceGenerationMode.Serialization)
-                        {
-                            ReportDiagnostic(DiagnosticDescriptors.PolymorphismNotSupported, typeLocation, type.ToDisplayString());
-                        }
-
-                        isPolymorphic = true;
-                    }
-                }
+                ProcessTypeCustomAttributes(typeToGenerate, contextType, typeLocation,
+                    out JsonNumberHandling? numberHandling,
+                    out JsonUnmappedMemberHandling? unmappedMemberHandling,
+                    out JsonObjectCreationHandling? preferredPropertyObjectCreationHandling,
+                    out bool foundJsonConverterAttribute,
+                    out TypeRef? customConverterType,
+                    out bool isPolymorphic);
 
                 if (type is INamedTypeSymbol { IsUnboundGenericType: true } or IErrorTypeSymbol)
                 {
                     classType = ClassType.TypeUnsupportedBySourceGen;
                 }
-                else if (foundDesignTimeCustomConverter)
+                else if (foundJsonConverterAttribute)
                 {
-                    classType = converterType != null
+                    classType = customConverterType != null
                         ? ClassType.TypeWithDesignTimeProvidedCustomConverter
                         : ClassType.TypeUnsupportedBySourceGen;
                 }
@@ -596,11 +558,70 @@ namespace System.Text.Json.SourceGeneration
                     RuntimeTypeRef = runtimeTypeRef,
                     IsValueTuple = type.IsTupleType,
                     HasExtensionDataPropertyType = hasExtensionDataProperty,
-                    ConverterType = converterType,
+                    ConverterType = customConverterType,
                     ImplementsIJsonOnSerialized = implementsIJsonOnSerialized,
                     ImplementsIJsonOnSerializing = implementsIJsonOnSerializing,
                     ImmutableCollectionFactoryMethod = DetermineImmutableCollectionFactoryMethod(immutableCollectionFactoryTypeFullName),
                 };
+            }
+
+            private void ProcessTypeCustomAttributes(
+                in TypeToGenerate typeToGenerate,
+                INamedTypeSymbol contextType,
+                Location typeLocation,
+                out JsonNumberHandling? numberHandling,
+                out JsonUnmappedMemberHandling? unmappedMemberHandling,
+                out JsonObjectCreationHandling? objectCreationHandling,
+                out bool foundJsonConverterAttribute,
+                out TypeRef? customConverterType,
+                out bool isPolymorphic)
+            {
+                numberHandling = null;
+                unmappedMemberHandling = null;
+                objectCreationHandling = null;
+                customConverterType = null;
+                foundJsonConverterAttribute = false;
+                isPolymorphic = false;
+
+                foreach (AttributeData attributeData in typeToGenerate.Type.GetAttributes())
+                {
+                    INamedTypeSymbol? attributeType = attributeData.AttributeClass;
+
+                    if (SymbolEqualityComparer.Default.Equals(attributeType, _knownSymbols.JsonNumberHandlingAttributeType))
+                    {
+                        numberHandling = (JsonNumberHandling)attributeData.ConstructorArguments[0].Value!;
+                        continue;
+                    }
+                    else if (SymbolEqualityComparer.Default.Equals(attributeType, _knownSymbols.JsonUnmappedMemberHandlingAttributeType))
+                    {
+                        unmappedMemberHandling = (JsonUnmappedMemberHandling)attributeData.ConstructorArguments[0].Value!;
+                        continue;
+                    }
+                    else if (SymbolEqualityComparer.Default.Equals(attributeType, _knownSymbols.JsonObjectCreationHandlingAttributeType))
+                    {
+                        objectCreationHandling = (JsonObjectCreationHandling)attributeData.ConstructorArguments[0].Value!;
+                        continue;
+                    }
+                    else if (!foundJsonConverterAttribute && _knownSymbols.JsonConverterAttributeType.IsAssignableFrom(attributeType))
+                    {
+                        customConverterType = GetConverterTypeFromAttribute(contextType, typeToGenerate.Type, attributeData);
+                        foundJsonConverterAttribute = true;
+                    }
+
+                    if (SymbolEqualityComparer.Default.Equals(attributeType, _knownSymbols.JsonDerivedTypeAttributeType))
+                    {
+                        Debug.Assert(attributeData.ConstructorArguments.Length > 0);
+                        var derivedType = (ITypeSymbol)attributeData.ConstructorArguments[0].Value!;
+                        EnqueueType(derivedType, typeToGenerate.Mode);
+
+                        if (!isPolymorphic && typeToGenerate.Mode == JsonSourceGenerationMode.Serialization)
+                        {
+                            ReportDiagnostic(DiagnosticDescriptors.PolymorphismNotSupported, typeLocation, typeToGenerate.Type.ToDisplayString());
+                        }
+
+                        isPolymorphic = true;
+                    }
+                }
             }
 
             private bool TryResolveCollectionType(
