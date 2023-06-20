@@ -431,7 +431,12 @@ namespace Microsoft.Interop
                     PredefinedType(Token(SyntaxKind.IntKeyword)),
                     SingletonSeparatedList(
                         VariableDeclarator(numElementsIdentifier))));
-            yield return _elementsMarshalling.GenerateSetupStatement(info, context);
+
+            var elementsSetup = _elementsMarshalling.GenerateSetupStatement(info, context);
+            if (elementsSetup is not EmptyStatementSyntax)
+            {
+                yield return elementsSetup;
+            }
             // Use the numElements local to ensure the compiler doesn't give errors for using an uninitialized variable.
             // The value will never be used unless it has been initialized, so this is safe.
             yield return MarshallerHelpers.SkipInitOrDefaultInit(

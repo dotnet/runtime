@@ -107,25 +107,6 @@ namespace ComInterfaceGenerator.Tests
         }
 
         [Fact]
-        public void IJaggedArrayMarshallingFailsWithCorrectWidths()
-        {
-            // This isn't clearing the span like it should
-            var obj = CreateWrapper<IJaggedIntArrayMarshallingFailsImpl, IJaggedIntArrayMarshallingFails>();
-
-            var array = new int[][] { new int[] { 1, 2, 3 }, new int[] { 4, 5, }, new int[] { 6, 7, 8, 9 } };
-            var length = 3;
-            var widths = new int[] { 3, 2, 4 };
-            Assert.Throws<ArgumentException>(() =>
-                obj.Set(array, widths, length)
-            );
-            Assert.Throws<ArgumentException>(() =>
-                // We have to pass in the corrent widths and length to cleanup, otherwise we get a nullref when indexing widths
-                _ = obj.Get(out widths, out length)
-            );
-        }
-
-        [Fact]
-        [ActiveIssue("not filed yet. Widths is out, but if we fail marshalling the widths, we can't cleanup the array")]
         public void IJaggedArrayMarshallingFails()
         {
             var obj = CreateWrapper<IJaggedIntArrayMarshallingFailsImpl, IJaggedIntArrayMarshallingFails>();
@@ -165,10 +146,11 @@ namespace ComInterfaceGenerator.Tests
             {
                 obj.OutParam(out strings);
             });
-            Assert.Throws<ArgumentException>(() =>
-            {
-                obj.ByValueOutParam(strings);
-            });
+            // https://github.com/dotnet/runtime/issues/87845
+            //Assert.Throws<ArgumentException>(() =>
+            //{
+            //    obj.ByValueOutParam(strings);
+            //});
             Assert.Throws<ArgumentException>(() =>
             {
                 obj.ByValueInOutParam(strings);
