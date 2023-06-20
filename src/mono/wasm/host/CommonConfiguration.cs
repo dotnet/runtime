@@ -1,8 +1,6 @@
 // Licensed to the .NET Foundation under one or more agreements.
 // The .NET Foundation licenses this file to you under the MIT license.
 
-#nullable enable
-
 using Mono.Options;
 using System.Linq;
 using System;
@@ -23,6 +21,7 @@ internal sealed class CommonConfiguration
     public HostConfig HostConfig { get; init; }
     public WasmHostProperties HostProperties { get; init; }
     public IEnumerable<string> HostArguments { get; init; }
+    public bool Silent { get; private set; } = true;
 
     private string? hostArg;
     private string? _runtimeConfigPath;
@@ -38,6 +37,7 @@ internal sealed class CommonConfiguration
             { "host|h=", "Host config name", v => hostArg = v },
             { "runtime-config|r=", "runtimeconfig.json path for the app", v => _runtimeConfigPath = v },
             { "extra-host-arg=", "Extra argument to be passed to the host", hostArgsList.Add },
+            { "no-silent", "Verbose output from WasmAppHost", _ => Silent = false }
         };
 
         RemainingArgs = options.Parse(args);
