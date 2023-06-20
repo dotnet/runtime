@@ -462,7 +462,7 @@ namespace System.Globalization
                         // Do a full IgnoreCase equality comparison. SpanHelpers.IndexOf skips comparing the two characters in some cases,
                         // but we don't actually know that the two characters are equal, since we compared with | 0x20. So we just compare
                         // the full string always.
-                        nint charPos = BitOperations.TrailingZeroCount(mask) >> 2;
+                        nint charPos = (nint)((uint)BitOperations.TrailingZeroCount(mask) / sizeof(ushort));
                         if (EqualsIgnoreCase(ref Unsafe.Add(ref searchSpace, offset + charPos), ref valueRef, value.Length))
                         {
                             // Match! Return the index.
@@ -528,7 +528,7 @@ namespace System.Globalization
                         // Do a full IgnoreCase equality comparison. SpanHelpers.IndexOf skips comparing the two characters in some cases,
                         // but we don't actually know that the two characters are equal, since we compared with | 0x20. So we just compare
                         // the full string always.
-                        nint charPos = BitOperations.TrailingZeroCount(mask) >> 2;
+                        nint charPos = (nint)((uint)BitOperations.TrailingZeroCount(mask) / sizeof(ushort));
                         if (EqualsIgnoreCase(ref Unsafe.Add(ref searchSpace, offset + charPos), ref valueRef, value.Length))
                         {
                             // Match! Return the index.

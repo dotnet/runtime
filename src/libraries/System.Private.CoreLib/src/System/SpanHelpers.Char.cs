@@ -114,7 +114,7 @@ namespace System
                     uint mask = cmpAnd.ExtractMostSignificantBits();
                     do
                     {
-                        nint charPos = BitOperations.TrailingZeroCount(mask) >> 2;
+                        nint charPos = (nint)((uint)BitOperations.TrailingZeroCount(mask) / sizeof(ushort));
                         if (valueLength == 2 || // we already matched two chars
                             SequenceEqual(
                                 ref Unsafe.As<char, byte>(ref Unsafe.Add(ref searchSpace, offset + charPos)),
@@ -176,7 +176,7 @@ namespace System
                     uint mask = cmpAnd.ExtractMostSignificantBits();
                     do
                     {
-                        nint charPos = BitOperations.TrailingZeroCount(mask) >> 2;
+                        nint charPos = (nint)((uint)BitOperations.TrailingZeroCount(mask) / sizeof(ushort));
                         if (valueLength == 2 || // we already matched two chars
                             SequenceEqual(
                                 ref Unsafe.As<char, byte>(ref Unsafe.Add(ref searchSpace, offset + charPos)),
