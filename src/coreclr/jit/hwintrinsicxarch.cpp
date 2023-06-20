@@ -2846,6 +2846,7 @@ GenTree* Compiler::impSpecialIntrinsic(NamedIntrinsic        intrinsic,
 
         case NI_Vector128_Sum:
         case NI_Vector256_Sum:
+        case NI_Vector512_Sum:
         {
             assert(sig->numArgs == 1);
             var_types simdType = getSIMDTypeForSize(simdSize);

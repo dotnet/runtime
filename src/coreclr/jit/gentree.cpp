@@ -23864,7 +23864,6 @@ GenTree* Compiler::gtNewSimdSumNode(var_types type, GenTree* op1, CorInfoType si
 
 #if defined(TARGET_XARCH)
     assert(!varTypeIsByte(simdBaseType) && !varTypeIsLong(simdBaseType));
-    assert(simdSize != 64);
 
     // HorizontalAdd combines pairs so we need log2(vectorLength) passes to sum all elements together.
     unsigned vectorLength = getSIMDVectorLength(simdSize, simdBaseType);
@@ -23895,6 +23894,35 @@ GenTree* Compiler::gtNewSimdSumNode(var_types type, GenTree* op1, CorInfoType si
     {
         assert(compIsaSupportedDebugOnly(InstructionSet_SSSE3));
         intrinsic = NI_SSSE3_HorizontalAdd;
+    }
+
+    if (simdSize == 64)
+    {
+        assert(IsBaselineVector512IsaSupportedDebugOnly());
+        // This is roughly the following managed code:
+        //   ...
+        //   simd64 tmp2 = tmp1;
+        //          tmp3 = tmp2.GetUpper();
+        //   simd32 tmp4 = Isa.Add(tmp1.GetLower(), tmp2);
+        //          tmp5 = tmp4;
+        //   simd16 tmp6 = tmp4.GetUpper();
+        //       tmp1 = Isa.Add(tmp1.GetLower(), tmp2);
+        //   ...
+        // From here on we can treat this as a simd16 reduction
+        GenTree* op1Dup     = fgMakeMultiUse(&op1);
+        GenTree* op1Lower32 = gtNewSimdGetUpperNode(TYP_SIMD32, op1Dup, simdBaseJitType, simdSize);
+        GenTree* op1Upper32 = gtNewSimdGetLowerNode(TYP_SIMD32, op1, simdBaseJitType, simdSize);
+
+        simdSize   = simdSize / 2;
+        op1Lower32 = gtNewSimdBinOpNode(GT_ADD, TYP_SIMD32, op1Lower32, op1Upper32, simdBaseJitType, simdSize);
+        haddCount--;
+
+        GenTree* op1Dup32   = fgMakeMultiUse(&op1Lower32);
+        GenTree* op1Lower16 = gtNewSimdGetUpperNode(TYP_SIMD16, op1Lower32, simdBaseJitType, simdSize);
+        GenTree* op1Upper16 = gtNewSimdGetLowerNode(TYP_SIMD16, op1Dup32, simdBaseJitType, simdSize);
+        simdSize            = simdSize / 2;
+        op1                 = gtNewSimdBinOpNode(GT_ADD, TYP_SIMD16, op1Lower16, op1Upper16, simdBaseJitType, simdSize);
+        haddCount--;
     }
 
     for (int i = 0; i < haddCount; i++)
