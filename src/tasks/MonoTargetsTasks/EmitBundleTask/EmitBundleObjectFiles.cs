@@ -6,9 +6,7 @@ using System.Diagnostics;
 using System.IO;
 using Microsoft.Build.Framework;
 
-namespace Microsoft.WebAssembly.Build.Tasks;
-
-public class EmitWasmBundleObjectFiles : EmitWasmBundleBase
+public class EmitBundleObjectFiles : EmitBundleBase
 {
     [Required]
     public string ClangExecutable { get; set; } = default!;
@@ -24,7 +22,7 @@ public class EmitWasmBundleObjectFiles : EmitWasmBundleBase
         return base.Execute();
     }
 
-    public override bool Emit(string destinationFile, Action<Stream> inputProvider)
+    public override bool EmitBundleFile(string destinationFile, Action<Stream> EmitBundleFile)
     {
         if (Path.GetDirectoryName(destinationFile) is string destDir && !string.IsNullOrEmpty(destDir))
             Directory.CreateDirectory(destDir);
@@ -33,8 +31,8 @@ public class EmitWasmBundleObjectFiles : EmitWasmBundleBase
                             ClangExecutable!,
                             args: $"-xc -o \"{destinationFile}\" -c -",
                             envVars: null, workingDir: null, silent: true, logStdErrAsMessage: false,
-                            debugMessageImportance: MessageImportance.Low, label: null,
-                            inputProvider);
+                            debugMessageImportance: MessageImportance.Low, label: Path.GetFileName(destinationFile),
+                            EmitBundleFile);
         if (exitCode != 0)
         {
             Log.LogError($"Failed to compile with exit code {exitCode}{Environment.NewLine}Output: {output}");
@@ -42,4 +40,8 @@ public class EmitWasmBundleObjectFiles : EmitWasmBundleBase
         return exitCode == 0;
     }
 
+    public override string GetDestinationFileExtension()
+    {
+        return ".o";
+    }
 }
