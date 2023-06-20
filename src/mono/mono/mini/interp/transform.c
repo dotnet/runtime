@@ -6289,6 +6289,10 @@ generate_code (TransformData *td, MonoMethod *method, MonoMethodHeader *header, 
 				init_last_ins_call (td);
 				td->last_ins->info.call_info->call_offset = call_offset;
 			} else {
+#ifdef INTERP_ENABLE_SIMD
+				if ((mono_interp_opt & INTERP_OPT_SIMD) && interp_emit_simd_intrinsics (td, m, csignature))
+					break;
+#endif
 				td->sp -= csignature->param_count;
 
 				// Move params types in temporary buffer

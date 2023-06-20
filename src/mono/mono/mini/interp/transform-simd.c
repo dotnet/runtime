@@ -14,16 +14,21 @@
 #define MSGSTRFIELD1(line) str##line
 static const struct msgstr_t {
 #define SIMD_METHOD(name) char MSGSTRFIELD(__LINE__) [sizeof (#name)];
+#define SIMD_METHOD2(str,name) char MSGSTRFIELD(__LINE__) [sizeof (str)];
 #include "simd-methods.def"
 #undef SIMD_METHOD
+#undef SIMD_METHOD2
 } method_names = {
 #define SIMD_METHOD(name) #name,
+#define SIMD_METHOD2(str,name) str,
 #include "simd-methods.def"
 #undef SIMD_METHOD
+#undef SIMD_METHOD2
 };
 
 enum {
 #define SIMD_METHOD(name) SN_ ## name = offsetof (struct msgstr_t, MSGSTRFIELD(__LINE__)),
+#define SIMD_METHOD2(str,name) SN_ ## name = offsetof (struct msgstr_t, MSGSTRFIELD(__LINE__)),
 #include "simd-methods.def"
 };
 
@@ -91,6 +96,7 @@ static guint16 sri_vector128_t_methods [] = {
 };
 
 static guint16 sn_vector_t_methods [] = {
+	SN_ctor,
 	SN_get_AllBitsSet,
 	SN_get_Count,
 	SN_get_One,
@@ -536,8 +542,15 @@ emit_sn_vector_t (TransformData *td, MonoMethod *cmethod, MonoMethodSignature *c
 	if (!get_common_simd_info (vector_klass, csignature, &atype, &vector_size, &arg_size, &scalar_arg))
 		return FALSE;
 
-	if (emit_common_simd_operations (td, id, atype, vector_size, arg_size, scalar_arg, &simd_opcode, &simd_intrins))
+	if (emit_common_simd_operations (td, id, atype, vector_size, arg_size, scalar_arg, &simd_opcode, &simd_intrins)) {
 		goto opcode_added;
+	} else if (id == SN_ctor) {
+		if (csignature->param_count == vector_size / arg_size && atype == csignature->params [0]->type) {
+			emit_vector_create (td, csignature, vector_klass, vector_size);
+			// For newobj path, td->ip doesn't need to be bumped
+			return TRUE;
+		}
+	}
 
 	if (simd_opcode == -1 || simd_intrins == -1)
 		return FALSE;
@@ -572,8 +585,15 @@ emit_sn_vector4 (TransformData *td, MonoMethod *cmethod, MonoMethodSignature *cs
 			scalar_arg = i;
 	}
 
-	if (emit_common_simd_operations (td, id, atype, vector_size, arg_size, scalar_arg, &simd_opcode, &simd_intrins))
+	if (emit_common_simd_operations (td, id, atype, vector_size, arg_size, scalar_arg, &simd_opcode, &simd_intrins)) {
 		goto opcode_added;
+	} else if (id == SN_ctor) {
+		if (csignature->param_count == vector_size / arg_size && atype == csignature->params [0]->type) {
+			emit_vector_create (td, csignature, vector_klass, vector_size);
+			// For newobj path, td->ip doesn't need to be bumped
+			return TRUE;
+		}
+	}
 
 	if (simd_opcode == -1 || simd_intrins == -1)
 		return FALSE;
