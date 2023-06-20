@@ -1099,9 +1099,13 @@ void ReplaceVisitor::HandleStructStore(GenTree** use, GenTree* user)
                     dstFirstRep->NeedsWriteBack = false;
                 }
 
+                if (!dstFirstRep->NeedsReadBack)
+                {
+                    dstFirstRep->NeedsReadBack = true;
+                    m_numPendingReadBacks++;
+                }
+
                 plan.MarkNonRemainderUseOfStructLocal();
-                dstFirstRep->NeedsReadBack = true;
-                m_hasPendingReadBacks      = true;
                 dstFirstRep++;
             }
 
@@ -1119,9 +1123,13 @@ void ReplaceVisitor::HandleStructStore(GenTree** use, GenTree* user)
                         dstLastRep->NeedsWriteBack = false;
                     }
 
+                    if (!dstLastRep->NeedsReadBack)
+                    {
+                        dstLastRep->NeedsReadBack = true;
+                        m_numPendingReadBacks++;
+                    }
+
                     plan.MarkNonRemainderUseOfStructLocal();
-                    dstLastRep->NeedsReadBack = true;
-                    m_hasPendingReadBacks     = true;
                     dstEndRep--;
                 }
             }

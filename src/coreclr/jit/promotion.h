@@ -257,7 +257,7 @@ class ReplaceVisitor : public GenTreeVisitor<ReplaceVisitor>
     jitstd::vector<AggregateInfo*>& m_aggregates;
     PromotionLiveness*              m_liveness;
     bool                            m_madeChanges         = false;
-    bool                            m_hasPendingReadBacks = false;
+    unsigned                        m_numPendingReadBacks = 0;
     bool                            m_mayHaveForwardSub   = false;
     Statement*                      m_currentStmt         = nullptr;
     BasicBlock*                     m_currentBlock        = nullptr;
@@ -287,13 +287,7 @@ public:
 
     void StartBlock(BasicBlock* block);
     void EndBlock();
-
-    void StartStatement(Statement* stmt)
-    {
-        m_currentStmt       = stmt;
-        m_madeChanges       = false;
-        m_mayHaveForwardSub = false;
-    }
+    void StartStatement(Statement* stmt);
 
     fgWalkResult PostOrderVisit(GenTree** use, GenTree* user);
 
