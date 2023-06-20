@@ -9366,7 +9366,7 @@ write_v128_element (gpointer v128_addr, LocalValue *val, int index, int el_size)
 	switch (el_size) {
 		case 1: *(gint8*)el_addr = (gint8)val->i; break;
 		case 2: *(gint16*)el_addr = (gint16)val->i; break;
-		case 4: *(gint32*)el_addr = val->i; break;
+		case 4: *(gint32*)el_addr = val->i; break; // this also handles r4
 		case 8: *(gint64*)el_addr = val->l; break;
 		default:
 			g_assert_not_reached ();
@@ -9383,7 +9383,7 @@ interp_fold_simd_create (TransformData *td, InterpBasicBlock *cbb, LocalValue *l
 	int var = args [index];
 	while (var != -1) {
 		LocalValue *val = &local_defs [var];
-		if (val->type != LOCAL_VALUE_I4 && val->type != LOCAL_VALUE_I8)
+		if (val->type != LOCAL_VALUE_I4 && val->type != LOCAL_VALUE_I8 && val->type != LOCAL_VALUE_R4)
 			return ins;
 		index++;
 		var = args [index];
@@ -9658,6 +9658,11 @@ retry:
 			} else if (MINT_IS_LDC_I8 (opcode)) {
 				local_defs [dreg].type = LOCAL_VALUE_I8;
 				local_defs [dreg].l = interp_get_const_from_ldc_i8 (ins);
+			} else if (opcode == MINT_LDC_R4) {
+				guint32 val_u = READ32 (&ins->data [0]);
+				float f = *(float*)(&val_u);
+				local_defs [dreg].type = LOCAL_VALUE_R4;
+				local_defs [dreg].f = f;
 			} else if (ins->opcode == MINT_LDPTR) {
 #if SIZEOF_VOID_P == 8
 				local_defs [dreg].type = LOCAL_VALUE_I8;
