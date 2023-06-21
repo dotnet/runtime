@@ -937,7 +937,6 @@ namespace System.Net.Security
                 size   -
                 output - Encrypted bytes
         --*/
-        //internal SecurityStatusPal Encrypt(ReadOnlyMemory<byte> buffer, ref byte[] output, out int resultSize)
         internal void Encrypt(ReadOnlyMemory<byte> buffer, out ProtocolToken token)
         {
             if (NetEventSource.Log.IsEnabled()) NetEventSource.DumpBuffer(this, buffer.Span);

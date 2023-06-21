@@ -78,7 +78,6 @@ namespace System.Net.Security
             }
         }
 
-        //private SecurityStatusPal EncryptData(ReadOnlyMemory<byte> buffer, ref byte[] outBuffer, out int outSize)
         private void EncryptData(ReadOnlyMemory<byte> buffer, out ProtocolToken token)
         {
             ThrowIfExceptionalOrNotAuthenticated();
@@ -89,13 +88,11 @@ namespace System.Net.Security
                 {
                     token.Size = 0;
                     token.Payload = null;
-                    //outSize = 0;
                     // avoid waiting under lock.
                     token.Status = new SecurityStatusPal(SecurityStatusPalErrorCode.TryAgain);
                     return;
                 }
 
-                //return Encrypt(buffer, ref outBuffer, out outSize);
                 Encrypt(buffer, out token);
             }
         }
@@ -610,15 +607,9 @@ namespace System.Net.Security
         private ValueTask WriteSingleChunk<TIOAdapter>(ReadOnlyMemory<byte> buffer, CancellationToken cancellationToken)
             where TIOAdapter : IReadWriteAdapter
         {
-            //byte[] rentedBuffer = ArrayPool<byte>.Shared.Rent(buffer.Length + FrameOverhead);
-            //byte[] outBuffer = rentedBuffer;
-
-            //SecurityStatusPal status;
-            //int encryptedBytes;
             ProtocolToken token;
             while (true)
             {
-                //status = EncryptData(buffer, ref outBuffer, out encryptedBytes);
                 EncryptData(buffer, out token);
 
                 // TryAgain should be rare, when renegotiation happens exactly when we want to write.
@@ -644,7 +635,6 @@ namespace System.Net.Security
 
             if (token.Status.ErrorCode != SecurityStatusPalErrorCode.OK)
             {
-                //ArrayPool<byte>.Shared.Return(rentedBuffer);
                 token.Clear();
                 return ValueTask.FromException(ExceptionDispatchInfo.SetCurrentStackTrace(new IOException(SR.net_io_encrypt, SslStreamPal.GetException(token.Status))));
             }
@@ -653,7 +643,6 @@ namespace System.Net.Security
             if (t.IsCompletedSuccessfully)
             {
                 token.Clear();
-                //ArrayPool<byte>.Shared.Return(rentedBuffer);
                 return t;
             }
             else
@@ -664,22 +653,15 @@ namespace System.Net.Security
             async ValueTask WaitAndWriteAsync(ReadOnlyMemory<byte> buffer, Task waitTask, CancellationToken cancellationToken)
             {
                 ProtocolToken token = default;
-                //byte[]? bufferToReturn = rentedBuffer;
-                //byte[] outBuffer = rentedBuffer;
                 try
                 {
                     // Wait for renegotiation to finish.
                     await waitTask.ConfigureAwait(false);
 
-                    //SecurityStatusPal status = EncryptData(buffer, ref outBuffer, out int encryptedBytes);
                     EncryptData(buffer, out token);
                     if (token.Status.ErrorCode == SecurityStatusPalErrorCode.TryAgain)
                     {
-                        // No need to hold on the buffer any more.
-                        //byte[] tmp = bufferToReturn;
-                        //bufferToReturn = null;
-                        //ArrayPool<byte>.Shared.Return(tmp);
-
+                        token.Clear();
                         // Call WriteSingleChunk() recursively to avoid code duplication.
                         // This should be extremely rare in cases when second renegotiation happens concurrently with Write.
                         await WriteSingleChunk<TIOAdapter>(buffer, cancellationToken).ConfigureAwait(false);
@@ -696,14 +678,9 @@ namespace System.Net.Security
                 finally
                 {
                     token.Clear();
-                    //if (bufferToReturn != null)
-                    {
-                    //    ArrayPool<byte>.Shared.Return(bufferToReturn);
-                    }
                 }
             }
 
-            //static async ValueTask CompleteWriteAsync(ValueTask writeTask, byte[] bufferToReturn)
             static async ValueTask CompleteWriteAsync(ValueTask writeTask, ProtocolToken token)
             {
                 try

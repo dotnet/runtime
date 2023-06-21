@@ -307,7 +307,6 @@ namespace System.Net
 
         internal int BytesReadyForConnection => _outputBuffer.ActiveLength;
 
-        //internal byte[]? ReadPendingWrites()
         internal void ReadPendingWrites(ref ProtocolToken token)
         {
             lock (_sslContext)
