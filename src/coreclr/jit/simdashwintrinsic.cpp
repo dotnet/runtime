@@ -530,6 +530,29 @@ GenTree* Compiler::impSimdAsHWIntrinsicSpecial(NamedIntrinsic       intrinsic,
 
     switch (intrinsic)
     {
+#if defined(TARGET_XARCH)
+        case NI_VectorT128_ConvertToUInt32:
+        case NI_VectorT256_ConvertToUInt32:
+        {
+            // TODO-XARCH-CQ: These intrinsics should be accelerated
+            // This is not accelerated because scalar float/double->uint
+            // is not yet accelerated. Upon updating them for avx512, there
+            // will be a difference in values between non AVX512 and 
+            // AVX512 machine.
+            return nullptr;
+        }
+
+        case NI_VectorT128_ConvertToSingle:
+        case NI_VectorT256_ConvertToSingle:
+        {
+            if (simdBaseType == TYP_UINT)
+            {
+                // TODO-XARCH-CQ: These intrinsics should be accelerated
+                return nullptr;
+            }
+            break;
+        }
+#endif // TARGET_XARCH
 
 #if defined(TARGET_X86)
         case NI_VectorT128_CreateBroadcast:
@@ -1271,35 +1294,13 @@ GenTree* Compiler::impSimdAsHWIntrinsicSpecial(NamedIntrinsic       intrinsic,
                     return gtNewSimdHWIntrinsicNode(retType, op1, convert, simdBaseJitType, simdSize);
                 }
 
-                case NI_VectorT128_ConvertToUInt32:
-                case NI_VectorT256_ConvertToUInt32:
-                {
-                    assert(sig->numArgs == 1);
-                    assert(simdBaseType == TYP_FLOAT);
-                    NamedIntrinsic convert = (simdSize == 32) ? NI_AVX512F_VL_ConvertToVector256UInt32
-                                                : NI_AVX512F_VL_ConvertToVector128UInt32;
-                    return gtNewSimdHWIntrinsicNode(retType, op1, convert, simdBaseJitType, simdSize);
-                }
-
                 case NI_VectorT128_ConvertToSingle:
                 case NI_VectorT256_ConvertToSingle:
                 {
-                    if (simdBaseType == TYP_INT)
-                    {
-                        NamedIntrinsic convert =
-                            (simdSize == 32) ? NI_AVX_ConvertToVector256Single : NI_SSE2_ConvertToVector128Single;
-                        return gtNewSimdHWIntrinsicNode(retType, op1, convert, simdBaseJitType, simdSize);
-                    }
-                    else if (simdBaseType == TYP_UINT)
-                    {
-                        NamedIntrinsic convert =
-                            (simdSize == 32) ? NI_AVX512F_VL_ConvertToVector256Single : NI_AVX512F_VL_ConvertToVector128Single;
-                        return gtNewSimdHWIntrinsicNode(retType, op1, convert, simdBaseJitType, simdSize);
-                    }
-                    else
-                    {
-                        unreached();
-                    }
+                    assert(simdBaseType == TYP_INT);
+                    NamedIntrinsic convert =
+                        (simdSize == 32) ? NI_AVX_ConvertToVector256Single : NI_SSE2_ConvertToVector128Single;
+                    return gtNewSimdHWIntrinsicNode(retType, op1, convert, simdBaseJitType, simdSize);
                 }
 
                 case NI_VectorT256_ToScalar:

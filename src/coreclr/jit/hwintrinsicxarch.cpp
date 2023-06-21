@@ -1412,19 +1412,10 @@ GenTree* Compiler::impSpecialIntrinsic(NamedIntrinsic        intrinsic,
         case NI_Vector256_ConvertToUInt32:
         case NI_Vector512_ConvertToUInt32:
         {
-            if (IsBaselineVector512IsaSupportedOpportunistically())
-            {
-                assert(sig->numArgs == 1);
-                assert(simdBaseType == TYP_FLOAT);
-
-                intrinsic = (simdSize == 16) ? NI_AVX512F_VL_ConvertToVector128UInt32 
-                          : (simdSize == 32) ? NI_AVX512F_VL_ConvertToVector256UInt32
-                                             : NI_AVX512F_ConvertToVector512UInt32;
-
-                op1     = impSIMDPopStack();
-                retNode = gtNewSimdHWIntrinsicNode(retType, op1, intrinsic, simdBaseJitType, simdSize);
-            }
-            break;
+            assert(sig->numArgs == 1);
+            // TODO-XARCH-CQ: These intrinsics should be accelerated
+            // It is not accelerated for now because there is a difference between
+            // non AVX512 and AVX512 machine in terms of output values for casting.
         }
 
         case NI_Vector128_ConvertToUInt64:
@@ -1434,7 +1425,7 @@ GenTree* Compiler::impSpecialIntrinsic(NamedIntrinsic        intrinsic,
             if (IsBaselineVector512IsaSupportedOpportunistically())
             {
                 assert(sig->numArgs == 1);
-                assert(simdBaseType == TYP_DOUBLE);
+                assert((simdBaseType == TYP_DOUBLE) || (simdBaseType == TYP_FLOAT));
 
 #ifdef TARGET_XARCH
                 intrinsic = (simdSize == 16) ? NI_AVX512DQ_VL_ConvertToVector128UInt64WithTruncation
@@ -1505,19 +1496,12 @@ GenTree* Compiler::impSpecialIntrinsic(NamedIntrinsic        intrinsic,
                 op1     = impSIMDPopStack();
                 retNode = gtNewSimdHWIntrinsicNode(retType, op1, intrinsic, simdBaseJitType, simdSize);
             }
-            else if (simdBaseType == TYP_UINT)
-            {
-                if (IsBaselineVector512IsaSupportedOpportunistically())
-                {
-                    intrinsic = (simdSize == 32) ? NI_AVX512F_VL_ConvertToVector256Single : NI_AVX512F_VL_ConvertToVector128Single;
-
-                    op1     = impSIMDPopStack();
-                    retNode = gtNewSimdHWIntrinsicNode(retType, op1, intrinsic, simdBaseJitType, simdSize);
-                }
-            }
             else
             {
-                unreached();
+                // TODO-XARCH-CQ: These intrinsics should be accelerated
+                // Not accelerated for the same reason ConvertToUint32 is
+                // not accelerated.
+                assert(simdBaseType == TYP_UINT);
             }
             break;
         }
