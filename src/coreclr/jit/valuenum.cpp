@@ -8482,7 +8482,7 @@ ValueNum ValueNumStore::EvalMathFuncBinary(var_types typ, NamedIntrinsic gtMathF
                 {
                     assert(typ == TypeOfVN(arg1VN));
                     float arg1Val = GetConstantSingle(arg1VN);
-                    res          = FloatingPointUtils::minimum(arg0Val, arg1Val);
+                    res           = FloatingPointUtils::minimum(arg0Val, arg1Val);
                     break;
                 }
 
