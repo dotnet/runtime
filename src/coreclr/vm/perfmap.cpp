@@ -141,13 +141,13 @@ PerfMap::PerfMap(int pid, const char* path)
     m_ErrorEncountered = false;
 
     // Build the path to the map file on disk.
-    SString path;
-    path.Printf("%Sperf-%d.map", path, pid);
+    SString pathFile;
+    pathFile.Printf("%sperf-%d.map", path, pid);
 
     // Open the map file for writing.
-    OpenFile(path);
+    OpenFile(pathFile);
 
-    m_PerfInfo = new PerfInfo(pid);
+    m_PerfInfo = new PerfInfo(pid, path);
 }
 
 // Construct a new map without a specified file name.
