@@ -8,6 +8,7 @@ using System.Diagnostics.CodeAnalysis;
 using System.Linq;
 using Microsoft.CodeAnalysis;
 using Microsoft.CodeAnalysis.CSharp;
+using Microsoft.CodeAnalysis.CSharp.Syntax;
 using Microsoft.CodeAnalysis.DotnetRuntime.Extensions;
 
 namespace System.Text.Json.SourceGeneration
@@ -254,6 +255,33 @@ namespace System.Text.Json.SourceGeneration
                 // For consistency with class hierarchy resolution order,
                 // sort topologically from most derived to least derived.
                 return JsonHelpers.TraverseGraphWithTopologicalSort<INamedTypeSymbol>(namedType, static t => t.AllInterfaces, SymbolEqualityComparer.Default);
+            }
+        }
+
+        /// <summary>
+        /// Returns the kind keyword corresponding to the specified declaration syntax node.
+        /// </summary>
+        public static string GetTypeKindKeyword(this TypeDeclarationSyntax typeDeclaration)
+        {
+            switch (typeDeclaration.Kind())
+            {
+                case SyntaxKind.ClassDeclaration:
+                    return "class";
+                case SyntaxKind.InterfaceDeclaration:
+                    return "interface";
+                case SyntaxKind.StructDeclaration:
+                    return "struct";
+                case SyntaxKind.RecordDeclaration:
+                    return "record";
+                case SyntaxKind.RecordStructDeclaration:
+                    return "record struct";
+                case SyntaxKind.EnumDeclaration:
+                    return "enum";
+                case SyntaxKind.DelegateDeclaration:
+                    return "delegate";
+                default:
+                    Debug.Fail("unexpected syntax kind");
+                    return null;
             }
         }
     }
