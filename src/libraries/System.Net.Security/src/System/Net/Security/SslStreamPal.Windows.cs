@@ -45,6 +45,16 @@ namespace System.Net.Security
         internal const bool StartMutualAuthAsAnonymous = true;
         internal const bool CanEncryptEmptyMessage = true;
 
+        // used to disable TLS resume on Windows
+        private static readonly Interop.SChannel.SCHANNEL_SESSION_TOKEN s_sessionToken = new Interop.SChannel.SCHANNEL_SESSION_TOKEN
+        {
+            dwTokenType = Interop.SChannel.SCHANNEL_SESSION,
+            dwFlags = Interop.SChannel.SSL_SESSION_DISABLE_RECONNECTS,
+        };
+
+        private static readonly byte[] s_sessionTokenBuffer = MemoryMarshal.AsBytes(new ReadOnlySpan<Interop.SChannel.SCHANNEL_SESSION_TOKEN>(s_sessionToken)).ToArray();
+
+
         public static void VerifyPackageInfo()
         {
             SSPIWrapper.GetVerifyPackageInfo(GlobalSSPI.SSPISecureChannel, SecurityPackage, true);
@@ -166,14 +176,7 @@ namespace System.Net.Security
 
             if (!sslAuthenticationOptions.AllowTlsResume && newContext && context != null)
             {
-                var alertToken = new Interop.SChannel.SCHANNEL_SESSION_TOKEN
-                {
-                    dwTokenType = Interop.SChannel.SCHANNEL_SESSION,
-                    dwFlags = Interop.SChannel.SSL_SESSION_DISABLE_RECONNECTS,
-                };
-
-                byte[] buffer = MemoryMarshal.AsBytes(new ReadOnlySpan<Interop.SChannel.SCHANNEL_SESSION_TOKEN>(in alertToken)).ToArray();
-                var securityBuffer = new SecurityBuffer(buffer, SecurityBufferType.SECBUFFER_TOKEN);
+                var securityBuffer = new SecurityBuffer(s_sessionTokenBuffer, SecurityBufferType.SECBUFFER_TOKEN);
 
                 SecurityStatusPal result = SecurityStatusAdapterPal.GetSecurityStatusPalFromNativeInt(SSPIWrapper.ApplyControlToken(
                     GlobalSSPI.SSPISecureChannel,

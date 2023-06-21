@@ -941,9 +941,9 @@ namespace System.Net.Security
 #if DEBUG
             if (NetEventSource.Log.IsEnabled())
             {
-                // This keeps the propery alive for tests via reflection
+                // This keeps the property alive only for tests via reflection
+                // Otherwise it could be optimized out as it is not used by production code.
                 NetEventSource.Info(this, $"TLS resumed {_connectionInfo.TlsResumed}");
-                //Console.WriteLine("Filrd is {0}", _connectionInfo.TlsResumed);
             }
 #endif
         }
