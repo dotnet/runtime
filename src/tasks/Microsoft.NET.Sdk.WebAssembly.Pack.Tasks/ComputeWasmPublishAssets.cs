@@ -200,12 +200,12 @@ public class ComputeWasmPublishAssets : Task
             if (isDotNetJs)
             {
                 var baseName = Path.GetFileNameWithoutExtension(key);
-                if (baseName.StartsWith("dotnet.native"))
+                if (baseName.StartsWith("dotnet.native.worker"))
+                    baseName = "dotnet.native.worker";
+                else if (baseName.StartsWith("dotnet.native"))
                     baseName = "dotnet.native";
                 else if (baseName.StartsWith("dotnet.runtime"))
                     baseName = "dotnet.runtime";
-                else if (baseName.StartsWith("dotnet.worker"))
-                    baseName = "dotnet.worker";
                 else if (baseName.StartsWith("dotnet"))
                     baseName = "dotnet";
 

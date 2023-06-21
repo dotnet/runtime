@@ -4910,7 +4910,11 @@ static const gboolean use_mono_personality_debug = TRUE;
 static const char *default_personality_name = "mono_debug_personality";
 #else
 static const gboolean use_mono_personality_debug = FALSE;
+#ifdef TARGET_WIN32_MSVC
+static const char *default_personality_name = "__CxxFrameHandler3";
+#else
 static const char *default_personality_name = "__gxx_personality_v0";
+#endif
 #endif
 
 static const char*
@@ -8295,7 +8299,11 @@ MONO_RESTORE_WARNING
 #endif // defined(TARGET_X86) || defined(TARGET_AMD64) || defined(TARGET_ARM64) || defined(TARGET_WASM)
 
 #if defined(TARGET_X86) || defined(TARGET_AMD64) || defined(TARGET_WASM)
-
+		case OP_SIMD_STORE: {
+			LLVMValueRef dst_vec = convert (ctx, lhs, pointer_type (LLVMTypeOf (rhs)));
+			mono_llvm_build_aligned_store (builder, rhs, dst_vec, FALSE, ins->inst_c0);
+			break;
+		}
 		case OP_PADDB:
 		case OP_PADDW:
 		case OP_PADDD:
@@ -8753,6 +8761,23 @@ MONO_RESTORE_WARNING
 			break;
 		}
 
+		case OP_SIMD_LOAD_SCALAR_I4:
+		case OP_SIMD_LOAD_SCALAR_I8:
+		case OP_SIMD_LOAD_SCALAR_R8: {
+			LLVMTypeRef rty = NULL;
+			switch (ins->opcode) {
+			case OP_SIMD_LOAD_SCALAR_I4: rty = sse_i4_t; break;
+			case OP_SIMD_LOAD_SCALAR_I8: rty = sse_i8_t; break;
+			case OP_SIMD_LOAD_SCALAR_R8: rty = sse_r8_t; break;
+			}
+			LLVMTypeRef srcty = LLVMGetElementType (rty);
+			LLVMValueRef zero = LLVMConstNull (rty);
+			LLVMValueRef addr = convert (ctx, lhs, pointer_type (srcty));
+			LLVMValueRef val = mono_llvm_build_aligned_load (builder, srcty, addr, "", FALSE, 1);
+			values [ins->dreg] = LLVMBuildInsertElement (builder, zero, val, const_int32 (0), dname);
+			break;
+		}
+
 #if defined(TARGET_X86) || defined(TARGET_AMD64) || defined(TARGET_WASM)
 		case OP_XOP_X_I:
 		case OP_XOP_X_X:
@@ -8884,22 +8909,6 @@ MONO_RESTORE_WARNING
 			emit_store (builder, val, addr, FALSE);
 			break;
 		}
-		case OP_SSE2_MOVD:
-		case OP_SSE2_MOVQ:
-		case OP_SSE2_MOVUPD: {
-			LLVMTypeRef rty = NULL;
-			switch (ins->opcode) {
-			case OP_SSE2_MOVD: rty = sse_i4_t; break;
-			case OP_SSE2_MOVQ: rty = sse_i8_t; break;
-			case OP_SSE2_MOVUPD: rty = sse_r8_t; break;
-			}
-			LLVMTypeRef srcty = LLVMGetElementType (rty);
-			LLVMValueRef zero = LLVMConstNull (rty);
-			LLVMValueRef addr = convert (ctx, lhs, pointer_type (srcty));
-			LLVMValueRef val = mono_llvm_build_aligned_load (builder, srcty, addr, "", FALSE, 1);
-			values [ins->dreg] = LLVMBuildInsertElement (builder, zero, val, const_int32 (0), dname);
-			break;
-		}
 
 		case OP_SSE_MOVLPS_LOAD:
 		case OP_SSE_MOVHPS_LOAD: {
@@ -8952,12 +8961,6 @@ MONO_RESTORE_WARNING
 			int index = ins->opcode == OP_SSE2_MOVHPD_STORE ? 1 : 0;
 			LLVMValueRef val = LLVMBuildExtractElement (builder, rhs, const_int32 (index), "");
 			emit_store (builder, val, addr, FALSE);
-			break;
-		}
-
-		case OP_SSE_STORE: {
-			LLVMValueRef dst_vec = convert (ctx, lhs, pointer_type (LLVMTypeOf (rhs)));
-			mono_llvm_build_aligned_store (builder, rhs, dst_vec, FALSE, ins->inst_c0);
 			break;
 		}
 
@@ -10096,6 +10099,156 @@ MONO_RESTORE_WARNING
 			LLVMValueRef ext2 = is_unsigned ? LLVMBuildZExt (builder, part2, ret_t, "") : LLVMBuildSExt (builder, part2, ret_t, "");
 			values [ins->dreg] = LLVMBuildMul (builder, ext1, ext2, "");
 
+			break;
+		}
+		case OP_WASM_SIMD_LOAD_SCALAR_INSERT: {
+			LLVMTypeRef rtype;
+			switch(inst_c1_type (ins)) {
+				case MONO_TYPE_I1:
+				case MONO_TYPE_U1:
+					rtype = v128_i1_t;
+					break;
+				case MONO_TYPE_I2:
+				case MONO_TYPE_U2:
+					rtype = v128_i2_t;
+					break;
+				case MONO_TYPE_I:
+				case MONO_TYPE_U:
+				case MONO_TYPE_I4:
+				case MONO_TYPE_U4:
+				case MONO_TYPE_R4:
+					rtype = v128_i4_t;
+					break;
+				case MONO_TYPE_I8:
+				case MONO_TYPE_U8:
+				case MONO_TYPE_R8:
+					rtype = v128_i8_t;
+					break;
+				default:
+					g_assert_not_reached();
+			}
+			LLVMTypeRef srctype = LLVMGetElementType (rtype);
+			LLVMValueRef addr = convert (ctx, lhs, pointer_type (srctype));
+			LLVMValueRef scalar = mono_llvm_build_aligned_load (builder, srctype, addr, "", FALSE, 1);
+			LLVMTypeRef vtype = LLVMTypeOf (rhs);
+			LLVMValueRef vec = vtype == rtype ? rhs : LLVMBuildBitCast(builder, rhs, rtype, "");
+			vec = LLVMBuildInsertElement (builder, vec, scalar, arg3, "");
+			if (vtype != rtype)
+				vec = LLVMBuildBitCast(builder, vec, vtype, "");
+			values [ins->dreg] = vec;
+			break;
+		}
+		case OP_WASM_SIMD_LOAD_WIDENING: {
+			MonoTypeEnum ptype = inst_c1_type (ins);
+			LLVMTypeRef srctype = NULL, dsttype = NULL;
+			switch(ptype) {
+				case MONO_TYPE_U1:
+				case MONO_TYPE_I1:
+					srctype = v64_i1_t;
+					dsttype = v128_i2_t;
+					break;
+				case MONO_TYPE_U2:
+				case MONO_TYPE_I2:
+					srctype = v64_i2_t;
+					dsttype = v128_i4_t;
+					break;
+				case MONO_TYPE_U:
+				case MONO_TYPE_I:
+				case MONO_TYPE_U4:
+				case MONO_TYPE_I4:
+					srctype = v64_i4_t;
+					dsttype = v128_i8_t;
+					break;
+				default:
+					g_assert_not_reached();
+			}
+			LLVMValueRef addr = convert (ctx, lhs, pointer_type (srctype));
+			LLVMValueRef narrow = mono_llvm_build_aligned_load (builder, srctype, addr, "", FALSE, 1);
+			values [ins->dreg] =  primitive_type_is_unsigned (ptype) ? LLVMBuildZExt (builder, narrow, dsttype, "") : LLVMBuildSExt (builder, narrow, dsttype, "");
+			break;
+		}
+		case OP_WASM_SIMD_LOAD_SCALAR_SPLAT: {
+			int elems;
+			LLVMTypeRef rtype;
+			switch(inst_c1_type (ins)) {
+				case MONO_TYPE_I1:
+				case MONO_TYPE_U1:
+					rtype = v128_i1_t;
+					elems = 16;
+					break;
+				case MONO_TYPE_I2:
+				case MONO_TYPE_U2:
+					rtype = v128_i2_t;
+					elems = 8;
+					break;
+				case MONO_TYPE_I:
+				case MONO_TYPE_U:
+				case MONO_TYPE_I4:
+				case MONO_TYPE_U4:
+					rtype = v128_i4_t;
+					elems = 4;
+					break;
+				case MONO_TYPE_R4:
+					rtype = v128_r4_t;
+					elems = 4;
+					break;
+				case MONO_TYPE_I8:
+				case MONO_TYPE_U8:
+					rtype = v128_i8_t;
+					elems = 2;
+					break;
+				case MONO_TYPE_R8:
+					rtype = v128_r8_t;
+					elems = 2;
+					break;
+				default:
+					g_assert_not_reached();
+			}
+			LLVMTypeRef srctype = LLVMGetElementType (rtype);
+			LLVMValueRef addr = convert (ctx, lhs, pointer_type (srctype));
+			LLVMValueRef scalar = mono_llvm_build_aligned_load (builder, srctype, addr, "", FALSE, 1);
+			values [ins->dreg] = broadcast_element (ctx, scalar, elems);
+			break;
+		}
+		case OP_WASM_SIMD_STORE_LANE: {
+			LLVMTypeRef rtype;
+			gboolean is_fp = FALSE;
+			switch(inst_c1_type (ins)) {
+				case MONO_TYPE_I1:
+				case MONO_TYPE_U1:
+					rtype = v128_i1_t;
+					break;
+				case MONO_TYPE_I2:
+				case MONO_TYPE_U2:
+					rtype = v128_i2_t;
+					break;
+				case MONO_TYPE_R4:
+					is_fp = TRUE;
+					rtype = v128_i4_t;
+					break;
+				case MONO_TYPE_I:
+				case MONO_TYPE_U:
+				case MONO_TYPE_I4:
+				case MONO_TYPE_U4:
+					rtype = v128_i4_t;
+					break;
+				case MONO_TYPE_R8:
+					is_fp = TRUE;
+					rtype = v128_i8_t;
+					break;
+				case MONO_TYPE_I8:
+				case MONO_TYPE_U8:
+					rtype = v128_i8_t;
+					break;
+				default:
+					g_assert_not_reached();
+			}
+
+			LLVMTypeRef srctype = LLVMGetElementType (rtype);
+			LLVMValueRef src = is_fp ? convert(ctx, rhs, rtype) : rhs;
+			LLVMValueRef address = convert (ctx, lhs, pointer_type (srctype));
+			LLVMValueRef elem = LLVMBuildExtractElement (builder, src, arg3, "");
+			mono_llvm_build_aligned_store (builder, elem, address, FALSE, 1);
 			break;
 		}
 #endif

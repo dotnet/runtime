@@ -142,7 +142,7 @@ namespace Microsoft.Extensions.Logging
             {
                 if (!_loggers.TryGetValue(categoryName, out Logger? logger))
                 {
-                    logger = new Logger(CreateLoggers(categoryName));
+                    logger = new Logger(categoryName, CreateLoggers(categoryName));
 
                     (logger.MessageLoggers, logger.ScopeLoggers) = ApplyFilters(logger.Loggers);
 

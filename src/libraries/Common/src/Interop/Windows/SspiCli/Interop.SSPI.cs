@@ -362,6 +362,20 @@ internal static partial class Interop
             uint* qualityOfProtection);
 
         [LibraryImport(Interop.Libraries.SspiCli, SetLastError = true)]
+        internal static partial int MakeSignature(
+            ref CredHandle contextHandle,
+            uint qualityOfProtection,
+            ref SecBufferDesc inputOutput,
+            uint sequenceNumber);
+
+        [LibraryImport(Interop.Libraries.SspiCli, SetLastError = true)]
+        internal static unsafe partial int VerifySignature(
+            ref CredHandle contextHandle,
+            in SecBufferDesc input,
+            uint sequenceNumber,
+            uint *qualityOfProtection);
+
+        [LibraryImport(Interop.Libraries.SspiCli, SetLastError = true)]
         internal static partial int QuerySecurityContextToken(
             ref CredHandle phContext,
             out SecurityContextTokenHandle handle);

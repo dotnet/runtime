@@ -49,6 +49,7 @@ class DecompositionPlan
         var_types    Type;
     };
 
+    Promotion*                      m_promotion;
     Compiler*                       m_compiler;
     ReplaceVisitor*                 m_replacer;
     jitstd::vector<AggregateInfo*>& m_aggregates;
@@ -61,7 +62,7 @@ class DecompositionPlan
     bool                            m_hasNonRemainderUseOfStructLocal = false;
 
 public:
-    DecompositionPlan(Compiler*                       comp,
+    DecompositionPlan(Promotion*                      prom,
                       ReplaceVisitor*                 replacer,
                       jitstd::vector<AggregateInfo*>& aggregates,
                       PromotionLiveness*              liveness,
@@ -69,7 +70,8 @@ public:
                       GenTree*                        src,
                       bool                            dstInvolvesReplacements,
                       bool                            srcInvolvesReplacements)
-        : m_compiler(comp)
+        : m_promotion(prom)
+        , m_compiler(prom->m_compiler)
         , m_replacer(replacer)
         , m_aggregates(aggregates)
         , m_liveness(liveness)
@@ -77,7 +79,7 @@ public:
         , m_src(src)
         , m_dstInvolvesReplacements(dstInvolvesReplacements)
         , m_srcInvolvesReplacements(srcInvolvesReplacements)
-        , m_entries(comp->getAllocator(CMK_Promotion))
+        , m_entries(prom->m_compiler->getAllocator(CMK_Promotion))
     {
     }
 
@@ -274,25 +276,16 @@ private:
     {
         ClassLayout* dstLayout = m_store->GetLayout(m_compiler);
 
-        // Validate with "obviously correct" but less scalable fixed bit vector implementation.
-        INDEBUG(FixedBitVect * segmentBitVect);
-        StructSegments segments = Promotion::SignificantSegments(m_compiler, dstLayout DEBUGARG(&segmentBitVect));
+        StructSegments segments = m_promotion->SignificantSegments(dstLayout);
 
         for (int i = 0; i < m_entries.Height(); i++)
         {
             const Entry& entry = m_entries.BottomRef(i);
 
             segments.Subtract(StructSegments::Segment(entry.Offset, entry.Offset + genTypeSize(entry.Type)));
-
-#ifdef DEBUG
-            for (unsigned i = 0; i < genTypeSize(entry.Type); i++)
-                segmentBitVect->bitVectClear(entry.Offset + i);
-#endif
         }
 
 #ifdef DEBUG
-        segments.Check(segmentBitVect);
-
         if (m_compiler->verbose)
         {
             printf("  Remainder: ");
@@ -434,8 +427,8 @@ private:
                 statements->AddStatement(store);
             }
 
-            entry.ToReplacement->NeedsWriteBack = true;
-            entry.ToReplacement->NeedsReadBack  = false;
+            m_replacer->ClearNeedsReadBack(*entry.ToReplacement);
+            m_replacer->SetNeedsWriteBack(*entry.ToReplacement);
         }
 
         RemainderStrategy remainderStrategy = DetermineRemainderStrategy(deaths);
@@ -527,7 +520,7 @@ private:
                         // The loop below will skip these replacements as an
                         // optimization if it is going to copy the struct
                         // anyway.
-                        rep->NeedsWriteBack = false;
+                        m_replacer->ClearNeedsWriteBack(*rep);
                     }
                 }
             }
@@ -697,8 +690,8 @@ private:
 
             if (entry.ToReplacement != nullptr)
             {
-                entry.ToReplacement->NeedsWriteBack = true;
-                entry.ToReplacement->NeedsReadBack  = false;
+                m_replacer->ClearNeedsReadBack(*entry.ToReplacement);
+                m_replacer->SetNeedsWriteBack(*entry.ToReplacement);
             }
 
             if (CanSkipEntry(entry, dstDeaths, remainderStrategy DEBUGARG(/* dump */ true)))
@@ -1046,21 +1039,18 @@ void Compiler::gtPeelOffsets(GenTree** addr, target_ssize_t* offset, FieldSeq** 
     }
 }
 
-// HandleStore:
+// HandleStructStore:
 //   Handle a store that may be between struct locals with replacements.
 //
 // Parameters:
 //   use  - The store's use
 //   user - The store's user
 //
-void ReplaceVisitor::HandleStore(GenTree** use, GenTree* user)
+void ReplaceVisitor::HandleStructStore(GenTree** use, GenTree* user)
 {
     GenTree* store = *use;
 
-    if (!store->TypeIs(TYP_STRUCT))
-    {
-        return;
-    }
+    assert(store->TypeIs(TYP_STRUCT));
 
     GenTree*             src    = store->Data()->gtEffectiveVal();
     GenTreeLclVarCommon* dstLcl = store->OperIsLocalStore() ? store->AsLclVarCommon() : nullptr;
@@ -1087,7 +1077,7 @@ void ReplaceVisitor::HandleStore(GenTree** use, GenTree* user)
         DecompositionStatementList result;
         EliminateCommasInBlockOp(store, &result);
 
-        DecompositionPlan plan(m_compiler, this, m_aggregates, m_liveness, store, src, dstInvolvesReplacements,
+        DecompositionPlan plan(m_promotion, this, m_aggregates, m_liveness, store, src, dstInvolvesReplacements,
                                srcInvolvesReplacements);
 
         if (dstInvolvesReplacements)
@@ -1106,12 +1096,12 @@ void ReplaceVisitor::HandleStore(GenTree** use, GenTree* user)
                     // We accomplish this by an initial write back, the struct copy, followed by a later read back.
                     // TODO-CQ: This is expensive and unreflected in heuristics, but it is also very rare.
                     result.AddStatement(Promotion::CreateWriteBack(m_compiler, dstLcl->GetLclNum(), *dstFirstRep));
-                    dstFirstRep->NeedsWriteBack = false;
+                    ClearNeedsWriteBack(*dstFirstRep);
                 }
 
+                SetNeedsReadBack(*dstFirstRep);
+
                 plan.MarkNonRemainderUseOfStructLocal();
-                dstFirstRep->NeedsReadBack = true;
-                m_hasPendingReadBacks      = true;
                 dstFirstRep++;
             }
 
@@ -1126,12 +1116,12 @@ void ReplaceVisitor::HandleStore(GenTree** use, GenTree* user)
                     if (dstLastRep->NeedsWriteBack)
                     {
                         result.AddStatement(Promotion::CreateWriteBack(m_compiler, dstLcl->GetLclNum(), *dstLastRep));
-                        dstLastRep->NeedsWriteBack = false;
+                        ClearNeedsWriteBack(*dstLastRep);
                     }
 
+                    SetNeedsReadBack(*dstLastRep);
+
                     plan.MarkNonRemainderUseOfStructLocal();
-                    dstLastRep->NeedsReadBack = true;
-                    m_hasPendingReadBacks     = true;
                     dstEndRep--;
                 }
             }
@@ -1150,7 +1140,7 @@ void ReplaceVisitor::HandleStore(GenTree** use, GenTree* user)
                 if (srcFirstRep->NeedsWriteBack)
                 {
                     result.AddStatement(Promotion::CreateWriteBack(m_compiler, srcLcl->GetLclNum(), *srcFirstRep));
-                    srcFirstRep->NeedsWriteBack = false;
+                    ClearNeedsWriteBack(*srcFirstRep);
                 }
 
                 srcFirstRep++;
@@ -1167,7 +1157,7 @@ void ReplaceVisitor::HandleStore(GenTree** use, GenTree* user)
                     if (srcLastRep->NeedsWriteBack)
                     {
                         result.AddStatement(Promotion::CreateWriteBack(m_compiler, srcLcl->GetLclNum(), *srcLastRep));
-                        srcLastRep->NeedsWriteBack = false;
+                        ClearNeedsWriteBack(*srcLastRep);
                     }
 
                     srcEndRep--;
@@ -1202,10 +1192,7 @@ void ReplaceVisitor::HandleStore(GenTree** use, GenTree* user)
         {
             GenTreeLclVarCommon* lclStore = store->AsLclVarCommon();
             unsigned             size     = lclStore->GetLayout(m_compiler)->GetSize();
-            if (MarkForReadBack(lclStore->GetLclNum(), lclStore->GetLclOffs(), size))
-            {
-                JITDUMP("Marked store destination replacements to be read back (could not decompose this store)\n");
-            }
+            MarkForReadBack(lclStore, size DEBUGARG("cannot decompose store"));
         }
     }
 }
@@ -1321,8 +1308,8 @@ void ReplaceVisitor::InitFields(GenTreeLclVarCommon* dstStore,
                     rep->Description);
 
             // We will need to read this one back after initing the struct.
-            rep->NeedsWriteBack = false;
-            rep->NeedsReadBack  = true;
+            ClearNeedsWriteBack(*rep);
+            SetNeedsReadBack(*rep);
             plan->MarkNonRemainderUseOfStructLocal();
             continue;
         }
@@ -1408,7 +1395,7 @@ void ReplaceVisitor::CopyBetweenFields(GenTree*                    store,
 
             assert(srcLcl != nullptr);
             statements->AddStatement(Promotion::CreateReadBack(m_compiler, srcLcl->GetLclNum(), *srcRep));
-            srcRep->NeedsReadBack = false;
+            ClearNeedsReadBack(*srcRep);
             assert(!srcRep->NeedsWriteBack);
         }
 
