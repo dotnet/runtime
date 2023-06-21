@@ -105,7 +105,7 @@ namespace System.Text.Json.SourceGeneration
                 }
 
                 Location contextLocation = contextClassDeclaration.GetLocation();
-                if (!TryGetClassDeclarationList(contextClassDeclaration, semanticModel, cancellationToken, out List<string>? classDeclarationList))
+                if (!TryGetNestedTypeDeclarations(contextClassDeclaration, semanticModel, cancellationToken, out List<string>? classDeclarationList))
                 {
                     // Class or one of its containing types is not partial so we can't add to it.
                     ReportDiagnostic(DiagnosticDescriptors.ContextClassesMustBePartial, contextLocation, contextTypeSymbol.Name);
@@ -154,44 +154,41 @@ namespace System.Text.Json.SourceGeneration
                 return contextGenSpec;
             }
 
-            private static bool TryGetClassDeclarationList(ClassDeclarationSyntax contextClassSyntax, SemanticModel semanticModel, CancellationToken cancellationToken, [NotNullWhen(true)] out List<string>? classDeclarationList)
+            private static bool TryGetNestedTypeDeclarations(ClassDeclarationSyntax contextClassSyntax, SemanticModel semanticModel, CancellationToken cancellationToken, [NotNullWhen(true)] out List<string>? typeDeclarations)
             {
-                classDeclarationList = null;
+                typeDeclarations = null;
 
-                for (TypeDeclarationSyntax? current = contextClassSyntax; current != null; current = current.Parent as TypeDeclarationSyntax)
+                for (TypeDeclarationSyntax? currentType = contextClassSyntax; currentType != null; currentType = currentType.Parent as TypeDeclarationSyntax)
                 {
-                    SyntaxTokenList tokenList = current.Modifiers;
-                    int tokenCount = tokenList.Count;
+                    StringBuilder stringBuilder = new();
+                    bool isPartialType = false;
 
-                    bool isPartial = false;
-
-                    string[] declarationElements = new string[tokenCount + 2];
-
-                    for (int i = 0; i < tokenCount; i++)
+                    foreach (SyntaxToken modifier in currentType.Modifiers)
                     {
-                        SyntaxToken token = tokenList[i];
-                        declarationElements[i] = token.Text;
-
-                        if (token.IsKind(SyntaxKind.PartialKeyword))
-                        {
-                            isPartial = true;
-                        }
+                        stringBuilder.Append(modifier.Text);
+                        stringBuilder.Append(' ');
+                        isPartialType |= modifier.IsKind(SyntaxKind.PartialKeyword);
                     }
 
-                    if (!isPartial)
+                    if (!isPartialType)
                     {
-                        classDeclarationList = null;
+                        typeDeclarations = null;
                         return false;
                     }
 
-                    INamedTypeSymbol typeSymbol = semanticModel.GetDeclaredSymbol(current, cancellationToken)!;
-                    declarationElements[tokenCount] = typeSymbol.IsValueType ? "struct" : "class";
-                    declarationElements[tokenCount + 1] = typeSymbol.ToDisplayString(SymbolDisplayFormat.MinimallyQualifiedFormat);
+                    stringBuilder.Append(currentType.GetTypeKindKeyword());
+                    stringBuilder.Append(' ');
 
-                    (classDeclarationList ??= new()).Add(string.Join(" ", declarationElements));
+                    INamedTypeSymbol? typeSymbol = semanticModel.GetDeclaredSymbol(currentType, cancellationToken);
+                    Debug.Assert(typeSymbol != null);
+
+                    string typeName = typeSymbol.ToDisplayString(SymbolDisplayFormat.MinimallyQualifiedFormat);
+                    stringBuilder.Append(typeName);
+
+                    (typeDeclarations ??= new()).Add(stringBuilder.ToString());
                 }
 
-                Debug.Assert(classDeclarationList?.Count > 0);
+                Debug.Assert(typeDeclarations?.Count > 0);
                 return true;
             }
 

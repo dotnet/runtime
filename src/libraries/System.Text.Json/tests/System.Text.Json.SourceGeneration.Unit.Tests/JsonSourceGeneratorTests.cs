@@ -832,15 +832,25 @@ namespace System.Text.Json.SourceGeneration.UnitTests
             Assert.Empty(result.Diagnostics);
         }
 
-        [Fact]
-        public void ContextsNestedInStructsAreSupported()
+        [Theory]
+        [InlineData("public partial interface IMyInterface")]
+        [InlineData("public partial struct MyStruct")]
+        [InlineData("public ref partial struct MyRefStruct")]
+        [InlineData("public readonly partial struct MyStruct")]
+        [InlineData("public readonly ref partial struct MyRefStruct")]
+        [InlineData("public sealed partial class MySealedClass")]
+#if ROSLYN4_0_OR_GREATER && NETCOREAPP
+        [InlineData("public partial record MyRecord(int x)")]
+        [InlineData("public partial record struct MyRecordStruct(int x)")]
+#endif
+        public void ContextsNestedInNonClassKindsAreSupported(string containingTypeDeclarationHeader)
         {
-            string source = """
+            string source = $$"""
                 using System.Text.Json.Serialization;
 
                 namespace HelloWorld
                 {
-                    public partial struct MyStruct
+                    {{containingTypeDeclarationHeader}}
                     {
                         [JsonSerializable(typeof(MyClass))]
                         internal partial class JsonContext : JsonSerializerContext
