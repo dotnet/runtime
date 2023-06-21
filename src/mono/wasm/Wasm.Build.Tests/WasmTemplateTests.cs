@@ -36,7 +36,7 @@ namespace Wasm.Build.Tests
             File.WriteAllText(path, text);
         }
 
-        private void UpdateBrowserMainJs(string targetFramework)
+        private void UpdateBrowserMainJs(string targetFramework, bool flatOutput = false)
         {
             string mainJsPath = Path.Combine(_projectDir!, "main.js");
             string mainJsContent = File.ReadAllText(mainJsPath);
@@ -46,6 +46,10 @@ namespace Wasm.Build.Tests
                     targetFramework == "net8.0"
                         ? ".withConsoleForwarding().withElementOnExit().withExitCodeLogging().withExitOnUnhandledError().create()"
                         : ".withConsoleForwarding().withElementOnExit().withExitCodeLogging().create()");
+
+            if (flatOutput)
+                mainJsContent = mainJsContent.Replace("from './_framework/dotnet.js'", "from './dotnet.js'");
+
             File.WriteAllText(mainJsPath, mainJsContent);
         }
 
@@ -424,21 +428,23 @@ namespace Wasm.Build.Tests
         }
 
         [ConditionalTheory(typeof(BuildTestBase), nameof(IsUsingWorkloads))]
-        [InlineData("", BuildTestBase.DefaultTargetFramework)]
+        [InlineData("", BuildTestBase.DefaultTargetFramework, false)]
+        [InlineData("", BuildTestBase.DefaultTargetFramework, true)]
         // [ActiveIssue("https://github.com/dotnet/runtime/issues/79313")]
         // [InlineData("-f net7.0", "net7.0")]
-        [InlineData("-f net8.0", "net8.0")]
-        public async Task BrowserBuildAndRun(string extraNewArgs, string targetFramework)
+        [InlineData("-f net8.0", "net8.0", false)]
+        [InlineData("-f net8.0", "net8.0", true)]
+        public async Task BrowserBuildAndRun(string extraNewArgs, string targetFramework, bool flatOutput)
         {
             string config = "Debug";
             string id = $"browser_{config}_{Path.GetRandomFileName()}";
             CreateWasmTemplateProject(id, "wasmbrowser", extraNewArgs);
 
-            UpdateBrowserMainJs(targetFramework);
+            UpdateBrowserMainJs(targetFramework, flatOutput);
 
             new DotNetCommand(s_buildEnv, _testOutput)
                     .WithWorkingDirectory(_projectDir!)
-                    .Execute($"build -c {config} -bl:{Path.Combine(s_buildEnv.LogRootPath, $"{id}.binlog")}")
+                    .Execute($"build -c {config} -bl:{Path.Combine(s_buildEnv.LogRootPath, $"{id}.binlog")} {(flatOutput ? "-p:WasmRuntimeAssetsLocation=./" : "")}")
                     .EnsureSuccessful();
 
             using var runCommand = new RunCommand(s_buildEnv, _testOutput)
