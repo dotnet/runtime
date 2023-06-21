@@ -6,6 +6,7 @@ using System.Collections.Generic;
 using System.Collections.Immutable;
 using System.Diagnostics;
 using System.Linq;
+using System.Runtime.CompilerServices;
 using System.Threading;
 using Microsoft.CodeAnalysis;
 using Microsoft.CodeAnalysis.CSharp;
@@ -103,6 +104,7 @@ namespace Microsoft.Extensions.Logging.Generators
                             IMethodSymbol logMethodSymbol = sm.GetDeclaredSymbol(method, _cancellationToken)!;
                             Debug.Assert(logMethodSymbol != null, "log method is present.");
                             (int eventId, int? level, string message, string? eventName, bool skipEnabledCheck) = (-1, null, string.Empty, null, false);
+                            bool suppliedEventId = false;
 
                             foreach (AttributeListSyntax mal in method.AttributeLists)
                             {
@@ -160,19 +162,21 @@ namespace Microsoft.Extensions.Logging.Generators
                                                         message = string.Empty;
                                                         level = items[0].IsNull ? null : (int?)GetItem(items[0]);
                                                     }
-                                                    eventId = -1;
                                                     break;
 
                                                 case 2:
                                                     // LoggerMessageAttribute(LogLevel level, string message)
-                                                    eventId = -1;
                                                     level = items[0].IsNull ? null : (int?)GetItem(items[0]);
                                                     message = items[1].IsNull ? string.Empty : (string)GetItem(items[1]);
                                                     break;
 
                                                 case 3:
                                                     // LoggerMessageAttribute(int eventId, LogLevel level, string message)
-                                                    eventId = items[0].IsNull ? -1 : (int)GetItem(items[0]);
+                                                    if (!items[0].IsNull)
+                                                    {
+                                                        suppliedEventId = true;
+                                                        eventId = (int)GetItem(items[0]);
+                                                    }
                                                     level = items[1].IsNull ? null : (int?)GetItem(items[1]);
                                                     message = items[2].IsNull ? string.Empty : (string)GetItem(items[2]);
                                                     break;
@@ -202,6 +206,7 @@ namespace Microsoft.Extensions.Logging.Generators
                                                     {
                                                         case "EventId":
                                                             eventId = (int)GetItem(value);
+                                                            suppliedEventId = true;
                                                             break;
                                                         case "Level":
                                                             level = value.IsNull ? null : (int?)GetItem(value);
@@ -225,6 +230,11 @@ namespace Microsoft.Extensions.Logging.Generators
                                     {
                                         // skip further generator execution and let compiler generate the errors
                                         break;
+                                    }
+
+                                    if (!suppliedEventId)
+                                    {
+                                        eventId = GetNonRandomizedHashCode(string.IsNullOrWhiteSpace(eventName) ? logMethodSymbol.Name : eventName);
                                     }
 
                                     var lm = new LoggerMethod
@@ -298,8 +308,7 @@ namespace Microsoft.Extensions.Logging.Generators
                                     }
 
                                     // ensure there are no duplicate event ids.
-                                    // LoggerMessageAttribute has constructors that don't take an EventId, we need to exclude the default Id -1 from duplication checks.
-                                    if (lm.EventId != -1 && !eventIds.Add(lm.EventId))
+                                    if (!eventIds.Add(lm.EventId))
                                     {
                                         Diag(DiagnosticDescriptors.ShouldntReuseEventIds, ma.GetLocation(), lm.EventId, classDec.Identifier.Text);
                                     }
@@ -806,6 +815,48 @@ namespace Microsoft.Extensions.Logging.Generators
             // A parameter flagged as IsTemplateParameter is not going to be taken care of specially as an argument to ILogger.Log
             // but instead is supposed to be taken as a parameter for the template.
             public bool IsTemplateParameter => !IsLogger && !IsException && !IsLogLevel;
+        }
+
+        [MethodImpl(MethodImplOptions.AggressiveInlining)]
+        public static uint RotateLeft(uint value, int offset) => (value << offset) | (value >> (32 - offset));
+
+        /// <summary>
+        /// Returns a non-randomized hash code for the given string.
+        /// This implementation is porting the one used in the core https://github.com/dotnet/runtime/blob/f3b599e5777eb1db7c396fdc1597c390f22879e6/src/libraries/System.Private.CoreLib/src/System/String.Comparison.cs.
+        /// We always return a positive value.
+        /// </summary>
+        private static int GetNonRandomizedHashCode(string source)
+        {
+            uint hash1 = (5381 << 16) + 5381;
+            uint hash2 = hash1;
+
+            int index = 0;
+            int length = source.Length;
+
+            while (index <= length - 4)
+            {
+                hash1 = (RotateLeft(hash1, 5) + hash1) ^ (uint)(source[index] | (source[index + 1] << 16));
+                hash2 = (RotateLeft(hash2, 5) + hash2) ^ (uint)(source[index + 2] | ((uint)source[index + 3] << 16));
+                index += 4;
+            }
+
+            switch (length - index)
+            {
+                case 1:
+                    hash2 = (RotateLeft(hash1, 5) + hash2) ^ (uint)(source[index]);
+                    break;
+
+                case 2:
+                    hash2 = (RotateLeft(hash1, 5) + hash2) ^ (uint)(source[index] | (source[index + 1] << 16));
+                    break;
+
+                case 3:
+                    hash1 = (RotateLeft(hash1, 5) + hash1) ^ (uint)(source[index] | ((uint)source[index + 1] << 16));
+                    hash2 = (RotateLeft(hash2, 5) + hash2) ^ (uint)source[index + 2];
+                    break;
+            }
+
+            return Math.Abs((int)(hash1 + (hash2 * 1566083941)));
         }
     }
 }
