@@ -318,6 +318,8 @@ export interface JavaScriptExports {
 
     // the marshaled signature is: string GetManagedStackTrace(GCHandle exception)
     get_managed_stack_trace(exception_gc_handle: GCHandle): string | null
+
+    load_satellite_assembly(assembly: { dll: Uint8Array }): void;
 }
 
 export type MarshalerToJs = (arg: JSMarshalerArgument, element_type?: MarshalerType, res_converter?: MarshalerToJs, arg1_converter?: MarshalerToCs, arg2_converter?: MarshalerToCs, arg3_converter?: MarshalerToCs) => any;

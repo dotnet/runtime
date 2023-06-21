@@ -1,6 +1,6 @@
 /* eslint-disable no-prototype-builtins */
 
-import { INTERNAL } from "./globals";
+import { INTERNAL, runtimeHelpers } from "./globals";
 import { WebAssemblyResourceLoader } from "./loader/blazor/WebAssemblyResourceLoader";
 import { LoadingResource } from "./types";
 
@@ -20,7 +20,6 @@ export async function loadSatelliteAssemblies(culturesToLoad: string[]): Promise
             const bytes = await response.arrayBuffer();
             const wrapper = { dll: new Uint8Array(bytes) };
 
-            // TODO MF: call interop
-            loader(wrapper);
+            runtimeHelpers.javaScriptExports.load_satellite_assembly(wrapper);
         }));
 }

@@ -42,7 +42,7 @@ export function initialize_marshalers_to_cs(): void {
         js_to_cs_marshalers.set(MarshalerType.String, _marshal_string_to_cs);
         js_to_cs_marshalers.set(MarshalerType.Exception, marshal_exception_to_cs);
         js_to_cs_marshalers.set(MarshalerType.JSException, marshal_exception_to_cs);
-        js_to_cs_marshalers.set(MarshalerType.JSObject, _marshal_js_object_to_cs);
+        js_to_cs_marshalers.set(MarshalerType.JSObject, marshal_js_object_to_cs);
         js_to_cs_marshalers.set(MarshalerType.Object, _marshal_cs_object_to_cs);
         js_to_cs_marshalers.set(MarshalerType.Task, _marshal_task_to_cs);
         js_to_cs_marshalers.set(MarshalerType.Action, _marshal_function_to_cs);
@@ -352,7 +352,7 @@ export function marshal_exception_to_cs(arg: JSMarshalerArgument, value: any): v
     }
 }
 
-function _marshal_js_object_to_cs(arg: JSMarshalerArgument, value: any): void {
+export function marshal_js_object_to_cs(arg: JSMarshalerArgument, value: any): void {
     if (value === undefined || value === null) {
         set_arg_type(arg, MarshalerType.None);
     }
@@ -491,7 +491,7 @@ export function marshal_array_to_cs_impl(arg: JSMarshalerArgument, value: Array<
             _zero_region(buffer_ptr, buffer_length);
             for (let index = 0; index < length; index++) {
                 const element_arg = get_arg(buffer_ptr, index);
-                _marshal_js_object_to_cs(element_arg, value[index]);
+                marshal_js_object_to_cs(element_arg, value[index]);
             }
         }
         else if (element_type == MarshalerType.Byte) {

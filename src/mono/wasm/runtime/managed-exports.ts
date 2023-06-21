@@ -8,7 +8,7 @@ import cwraps from "./cwraps";
 import { runtimeHelpers, Module } from "./globals";
 import { alloc_stack_frame, get_arg, get_arg_gc_handle, set_arg_type, set_gc_handle } from "./marshal";
 import { invoke_method_and_handle_exception } from "./invoke-cs";
-import { marshal_array_to_cs_impl, marshal_exception_to_cs, marshal_intptr_to_cs } from "./marshal-to-cs";
+import { marshal_array_to_cs_impl, marshal_exception_to_cs, marshal_intptr_to_cs, marshal_js_object_to_cs } from "./marshal-to-cs";
 import { marshal_int32_to_js, marshal_string_to_js, marshal_task_to_js } from "./marshal-to-js";
 
 export function init_managed_exports(): void {
@@ -37,6 +37,8 @@ export function init_managed_exports(): void {
     mono_assert(call_delegate_method, "Can't find CallDelegate method");
     const get_managed_stack_trace_method = get_method("GetManagedStackTrace");
     mono_assert(get_managed_stack_trace_method, "Can't find GetManagedStackTrace method");
+    const load_satellite_assembly_method = get_method("LoadSatelliteAssembly");
+    mono_assert(load_satellite_assembly_method, "Can't find LoadSatelliteAssembly method");
 
     runtimeHelpers.javaScriptExports.call_entry_point = async (entry_point: MonoMethod, program_args?: string[]): Promise<number> => {
         const sp = Module.stackSave();
@@ -59,6 +61,17 @@ export function init_managed_exports(): void {
             return await promise;
         } finally {
             Module.runtimeKeepalivePop();// after await promise !
+            Module.stackRestore(sp);
+        }
+    };
+    runtimeHelpers.javaScriptExports.load_satellite_assembly = (assembly: { dll: Uint8Array }): void => {
+        const sp = Module.stackSave();
+        try {
+            const args = alloc_stack_frame(3);
+            const arg1 = get_arg(args, 2);
+            marshal_js_object_to_cs(arg1, assembly);
+            invoke_method_and_handle_exception(load_satellite_assembly_method, args);
+        } finally {
             Module.stackRestore(sp);
         }
     };
