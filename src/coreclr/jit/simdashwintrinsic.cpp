@@ -1267,6 +1267,7 @@ GenTree* Compiler::impSimdAsHWIntrinsicSpecial(NamedIntrinsic       intrinsic,
                                                :                    NI_AVX512DQ_ConvertToVector512Double;
                         return gtNewSimdHWIntrinsicNode(retType, op1, convert, simdBaseJitType, simdSize);
                     }
+                    return nullptr;
                 }
 
                 case NI_VectorT128_ConvertToInt64:
@@ -1288,6 +1289,7 @@ GenTree* Compiler::impSimdAsHWIntrinsicSpecial(NamedIntrinsic       intrinsic,
 #endif // TARGET_XARCH
                         return gtNewSimdHWIntrinsicNode(retType, op1, convert, simdBaseJitType, simdSize);
                     }
+                    return nullptr;
                 }
 
                 case NI_VectorT128_ConvertToUInt64:
@@ -1309,6 +1311,7 @@ GenTree* Compiler::impSimdAsHWIntrinsicSpecial(NamedIntrinsic       intrinsic,
 #endif //TARGET_XARCH
                         return gtNewSimdHWIntrinsicNode(retType, op1, convert, simdBaseJitType, simdSize);
                     }
+                    return nullptr;
                 }
 
                 case NI_VectorT128_ConvertToSingle:
