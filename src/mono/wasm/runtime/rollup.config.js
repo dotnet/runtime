@@ -16,19 +16,19 @@ const isDebug = configuration !== "Release";
 const productVersion = process.env.ProductVersion || "8.0.0-dev";
 const nativeBinDir = process.env.NativeBinDir ? process.env.NativeBinDir.replace(/"/g, "") : "bin";
 const monoWasmThreads = process.env.MonoWasmThreads === "true" ? true : false;
-const WasmEnableLegacyJsInterop = process.env.DISABLE_LEGACY_JS_INTEROP !== "1" ? true : false;
+const wasmEnableLegacyJsInterop = process.env.DISABLE_LEGACY_JS_INTEROP !== "1" ? true : false;
 const monoDiagnosticsMock = process.env.MonoDiagnosticsMock === "true" ? true : false;
 const terserConfig = {
     compress: {
         defaults: true,
         passes: 2,
-        drop_debugger: false,// we invoke debugger
-        drop_console: false,// we log to console
+        drop_debugger: false, // we invoke debugger
+        drop_console: false, // we log to console
     },
     mangle: {
         // because of stack walk at src/mono/wasm/debugger/BrowserDebugProxy/MonoProxy.cs
         // and unit test at src\libraries\System.Runtime.InteropServices.JavaScript\tests\System.Runtime.InteropServices.JavaScript.Legacy.UnitTests\timers.mjs
-        keep_fnames: /(mono_wasm_runtime_ready|mono_wasm_fire_debugger_agent_message_with_data|mono_wasm_fire_debugger_agent_message_with_data_to_pause|mono_wasm_set_timeout_exec)/,
+        keep_fnames: /(mono_wasm_runtime_ready|mono_wasm_fire_debugger_agent_message_with_data|mono_wasm_fire_debugger_agent_message_with_data_to_pause|mono_wasm_schedule_timer_tick)/,
         keep_classnames: /(ManagedObject|ManagedError|Span|ArraySegment|WasmRootBuffer|SessionOptionsBuilder)/,
     },
 };
@@ -71,11 +71,19 @@ try {
 } catch (e) {
     gitHash = "unknown";
 }
+const envConstants = {
+    productVersion,
+    configuration,
+    monoWasmThreads,
+    monoDiagnosticsMock,
+    gitHash,
+    wasmEnableLegacyJsInterop,
+};
 
 function consts(dict) {
-    /// implement rollup-plugin-const in terms of @rollup/plugin-virtual
-    /// It's basically the same thing except "consts" names all its modules with a "consts:" prefix,
-    /// and the virtual module always exports a single default binding (the const value).
+    // implement rollup-plugin-const in terms of @rollup/plugin-virtual
+    // It's basically the same thing except "consts" names all its modules with a "consts:" prefix,
+    // and the virtual module always exports a single default binding (the const value).
 
     let newDict = {};
     for (const k in dict) {
@@ -94,7 +102,7 @@ const typescriptConfigOptions = {
     include: ["**/*.ts", "../../../../artifacts/bin/native/generated/**/*.ts"]
 };
 
-const outputCodePlugins = [consts({ productVersion, configuration, monoWasmThreads, monoDiagnosticsMock, gitHash, WasmEnableLegacyJsInterop }), typescript(typescriptConfigOptions)];
+const outputCodePlugins = [consts(envConstants), typescript(typescriptConfigOptions)];
 const externalDependencies = ["module"];
 
 const loaderConfig = {
@@ -375,5 +383,6 @@ function onwarn(warning) {
         return;
     }
 
+    // eslint-disable-next-line no-console
     console.warn(`(!) ${warning.toString()}`);
 }

@@ -248,7 +248,7 @@ namespace Mono.Linker.Tests.TestCasesRunner
 
 				VerifyInterfaces (original, linked);
 				VerifyPseudoAttributes (original, linked);
-				VerifyGenericParameters (original, linked);
+				VerifyGenericParameters (original, linked, compilerGenerated: false);
 				VerifyCustomAttributes (original, linked);
 				VerifySecurityAttributes (original, linked);
 
@@ -537,12 +537,12 @@ namespace Mono.Linker.Tests.TestCasesRunner
 				Assert.Fail ($"Method `{src.FullName}' should have been kept");
 
 			VerifyPseudoAttributes (src, linked);
-			VerifyGenericParameters (src, linked);
+			VerifyGenericParameters (src, linked, compilerGenerated);
 			if (!compilerGenerated) {
 				VerifyCustomAttributes (src, linked);
 				VerifyCustomAttributes (src.MethodReturnType, linked.MethodReturnType);
 			}
-			VerifyParameters (src, linked);
+			VerifyParameters (src, linked, compilerGenerated);
 			VerifySecurityAttributes (src, linked);
 			VerifyArrayInitializers (src, linked);
 			VerifyMethodBody (src, linked);
@@ -1056,7 +1056,7 @@ namespace Mono.Linker.Tests.TestCasesRunner
 			}
 		}
 
-		void VerifyGenericParameters (IGenericParameterProvider src, IGenericParameterProvider linked)
+		void VerifyGenericParameters (IGenericParameterProvider src, IGenericParameterProvider linked, bool compilerGenerated)
 		{
 			Assert.AreEqual (src.HasGenericParameters, linked.HasGenericParameters);
 			if (src.HasGenericParameters) {
@@ -1064,7 +1064,10 @@ namespace Mono.Linker.Tests.TestCasesRunner
 					// TODO: Verify constraints
 					var srcp = src.GenericParameters[i];
 					var lnkp = linked.GenericParameters[i];
-					VerifyCustomAttributes (srcp, lnkp);
+
+					if (!compilerGenerated) {
+						VerifyCustomAttributes (srcp, lnkp);
+					}
 
 					if (checkNames) {
 						if (srcp.CustomAttributes.Any (attr => attr.AttributeType.Name == nameof (RemovedNameValueAttribute))) {
@@ -1078,7 +1081,7 @@ namespace Mono.Linker.Tests.TestCasesRunner
 			}
 		}
 
-		void VerifyParameters (IMethodSignature src, IMethodSignature linked)
+		void VerifyParameters (IMethodSignature src, IMethodSignature linked, bool compilerGenerated)
 		{
 			Assert.AreEqual (src.HasParameters, linked.HasParameters);
 			if (src.HasParameters) {
@@ -1086,7 +1089,9 @@ namespace Mono.Linker.Tests.TestCasesRunner
 					var srcp = src.Parameters[i];
 					var lnkp = linked.Parameters[i];
 
-					VerifyCustomAttributes (srcp, lnkp);
+					if (!compilerGenerated) {
+						VerifyCustomAttributes (srcp, lnkp);
+					}
 
 					if (checkNames) {
 						if (srcp.CustomAttributes.Any (attr => attr.AttributeType.Name == nameof (RemovedNameValueAttribute)))

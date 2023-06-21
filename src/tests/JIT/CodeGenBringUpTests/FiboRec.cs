@@ -5,6 +5,7 @@
 
 using System;
 using System.Runtime.CompilerServices;
+using Xunit;
 public class BringUpTest_FiboRec
 {
     const int Pass = 100;
@@ -21,7 +22,8 @@ public class BringUpTest_FiboRec
         return a;
     }
 
-    public static int Main()
+    [Fact]
+    public static int TestEntryPoint()
     {
         int y = FiboRec(0, 1, 7);
         if (y == 13) return Pass;

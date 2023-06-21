@@ -8,6 +8,7 @@ import { exportedRuntimeAPI, loaderHelpers, runtimeHelpers } from "./globals";
 import { initializeBootConfig, loadBootConfig } from "./blazor/_Integration";
 import { BootConfigResult } from "./blazor/BootConfig";
 import { BootJsonData } from "../types/blazor";
+import { mono_log_error, mono_log_debug } from "./logging";
 
 export function deep_merge_config(target: MonoConfigInternal, source: MonoConfigInternal): MonoConfigInternal {
     const providedConfig: MonoConfigInternal = { ...source };
@@ -35,6 +36,7 @@ export function deep_merge_module(target: DotnetModuleInternal, source: DotnetMo
     return Object.assign(target, providedConfig);
 }
 
+// NOTE: this is called before setRuntimeGlobals
 export function normalizeConfig() {
     // normalize
     const config = loaderHelpers.config;
@@ -55,7 +57,7 @@ export function normalizeConfig() {
     runtimeHelpers.waitForDebugger = config.waitForDebugger;
     config.startupMemoryCache = !!config.startupMemoryCache;
     if (config.startupMemoryCache && runtimeHelpers.waitForDebugger) {
-        if (loaderHelpers.diagnosticTracing) console.info("MONO_WASM: Disabling startupMemoryCache because waitForDebugger is set");
+        mono_log_debug("Disabling startupMemoryCache because waitForDebugger is set");
         config.startupMemoryCache = false;
     }
 
@@ -78,18 +80,24 @@ export async function mono_wasm_load_config(module: DotnetModuleInternal): Promi
         loaderHelpers.afterConfigLoaded.promise_control.resolve(loaderHelpers.config);
         return;
     }
-    if (loaderHelpers.diagnosticTracing) console.debug("MONO_WASM: mono_wasm_load_config");
+    mono_log_debug("mono_wasm_load_config");
     try {
-        const resolveSrc = loaderHelpers.locateFile(configFilePath);
-        const configResponse = await loaderHelpers.fetch_like(resolveSrc);
-        const loadedAnyConfig: any = (await configResponse.json()) || {};
-        if (loadedAnyConfig.resources) {
-            await initializeBootConfig(BootConfigResult.fromFetchResponse(configResponse, loadedAnyConfig as BootJsonData), module);
+        loaderHelpers.config.applicationEnvironment = loaderHelpers.config.applicationEnvironment ?? loaderHelpers.config.startupOptions?.environment ?? "Production";
+
+        if (loaderHelpers.config.startupOptions && loaderHelpers.config.startupOptions.loadBootResource) {
+            // If we have custom loadBootResource
+            await loadBootConfig(loaderHelpers.config, module);
         } else {
-            const loadedConfig = loadedAnyConfig as MonoConfigInternal;
-            if (loaderHelpers.config.startupOptions && loaderHelpers.config.startupOptions.loadBootResource) {
-                await loadBootConfig(loaderHelpers.config, module);
+            // Otherwise load using fetch_like
+            const resolveSrc = loaderHelpers.locateFile(configFilePath);
+            const configResponse = await loaderHelpers.fetch_like(resolveSrc);
+            const loadedAnyConfig: any = (await configResponse.json()) || {};
+            if (loadedAnyConfig.resources) {
+                // If we found boot config schema
+                await initializeBootConfig(BootConfigResult.fromFetchResponse(configResponse, loadedAnyConfig as BootJsonData, loaderHelpers.config.applicationEnvironment), module, loaderHelpers.config.startupOptions);
             } else {
+                // Otherwise we found mono config schema
+                const loadedConfig = loadedAnyConfig as MonoConfigInternal;
                 if (loadedConfig.environmentVariables && typeof (loadedConfig.environmentVariables) !== "object")
                     throw new Error("Expected config.environmentVariables to be unset or a dictionary-style object");
                 deep_merge_config(loaderHelpers.config, loadedConfig);
@@ -104,7 +112,7 @@ export async function mono_wasm_load_config(module: DotnetModuleInternal): Promi
                 normalizeConfig();
             }
             catch (err: any) {
-                console.error("MONO_WASM: onConfigLoaded() failed", err);
+                mono_log_error("onConfigLoaded() failed", err);
                 throw err;
             }
         }

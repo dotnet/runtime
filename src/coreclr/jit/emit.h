@@ -323,7 +323,10 @@ struct insGroup
 
     // Try to do better packing based on how large regMaskSmall is (8, 16, or 64 bits).
     CLANG_FORMAT_COMMENT_ANCHOR;
-#if REGMASK_BITS <= 32
+
+#if !(REGMASK_BITS <= 32)
+    regMaskSmall igGCregs; // set of registers with live GC refs
+#endif                     // !(REGMASK_BITS <= 32)
 
     union {
         BYTE*                    igData;   // addr of instruction descriptors
@@ -334,36 +337,17 @@ struct insGroup
     // Last instruction in group, if any (nullptr if none); used for backwards navigation.
     // (Should be type emitter::instrDesc*).
     void* igLastIns;
-#endif
+#endif // EMIT_BACKWARDS_NAVIGATION
 
 #if EMIT_TRACK_STACK_DEPTH
     unsigned igStkLvl; // stack level on entry
-#endif
-    regMaskSmall  igGCregs; // set of registers with live GC refs
-    unsigned char igInsCnt; // # of instructions  in this group
+#endif                 // EMIT_TRACK_STACK_DEPTH
 
-#else // REGMASK_BITS
-
+#if REGMASK_BITS <= 32
     regMaskSmall igGCregs; // set of registers with live GC refs
-
-    union {
-        BYTE*                    igData;   // addr of instruction descriptors
-        insPlaceholderGroupData* igPhData; // when igFlags & IGF_PLACEHOLDER
-    };
-
-#if EMIT_BACKWARDS_NAVIGATION
-    // Last instruction in group, if any (nullptr if none); used for backwards navigation.
-    // (Should be type emitter::instrDesc*).
-    void*    igLastIns;
-#endif
-
-#if EMIT_TRACK_STACK_DEPTH
-    unsigned igStkLvl; // stack level on entry
-#endif
+#endif                     // REGMASK_BITS <= 32
 
     unsigned char igInsCnt; // # of instructions  in this group
-
-#endif // REGMASK_BITS
 
     VARSET_VALRET_TP igGCvars() const
     {
@@ -725,11 +709,12 @@ protected:
 
         ////////////////////////////////////////////////////////////////////////
         // Space taken up to here:
-        // x86:   17 bits
-        // amd64: 17 bits
-        // arm:   16 bits
-        // arm64: 17 bits
+        // x86:         17 bits
+        // amd64:       17 bits
+        // arm:         16 bits
+        // arm64:       17 bits
         // loongarch64: 14 bits
+        // risc-v:      14 bits
 
     private:
 #if defined(TARGET_XARCH)
@@ -766,11 +751,12 @@ protected:
 
         ////////////////////////////////////////////////////////////////////////
         // Space taken up to here:
-        // x86:   38 bits
-        // amd64: 38 bits
-        // arm:   32 bits
-        // arm64: 31 bits
+        // x86:         38 bits
+        // amd64:       38 bits
+        // arm:         32 bits
+        // arm64:       31 bits
         // loongarch64: 28 bits
+        // risc-v:      28 bits
 
         unsigned _idSmallDsc : 1;  // is this a "small" descriptor?
         unsigned _idLargeCns : 1;  // does a large constant     follow?
@@ -781,6 +767,9 @@ protected:
         unsigned _idCallRegPtr : 1; // IL indirect calls: addr in reg
         unsigned _idCallAddr : 1;   // IL indirect calls: can make a direct call to iiaAddr
         unsigned _idNoGC : 1;       // Some helpers don't get recorded in GC tables
+#if defined(TARGET_XARCH)
+        unsigned _idEvexbContext : 1; // does EVEX.b need to be set.
+#endif                                //  TARGET_XARCH
 
 #ifdef TARGET_ARM64
         opSize   _idOpSize : 3;    // operand size: 0=1 , 1=2 , 2=4 , 3=8, 4=16
@@ -814,11 +803,12 @@ protected:
 
         ////////////////////////////////////////////////////////////////////////
         // Space taken up to here:
-        // x86:   46 bits
-        // amd64: 46 bits
-        // arm:   48 bits
-        // arm64: 50 bits
+        // x86:         47 bits
+        // amd64:       47 bits
+        // arm:         48 bits
+        // arm64:       50 bits
         // loongarch64: 46 bits
+        // risc-v:      46 bits
 
         //
         // How many bits have been used beyond the first 32?
@@ -830,8 +820,10 @@ protected:
 #define ID_EXTRA_BITFIELD_BITS (16)
 #elif defined(TARGET_ARM64)
 #define ID_EXTRA_BITFIELD_BITS (18)
-#elif defined(TARGET_XARCH) || defined(TARGET_LOONGARCH64) || defined(TARGET_RISCV64)
+#elif defined(TARGET_LOONGARCH64) || defined(TARGET_RISCV64)
 #define ID_EXTRA_BITFIELD_BITS (14)
+#elif defined(TARGET_XARCH)
+#define ID_EXTRA_BITFIELD_BITS (15)
 #else
 #error Unsupported or unset target architecture
 #endif
@@ -866,11 +858,12 @@ protected:
 
         ////////////////////////////////////////////////////////////////////////
         // Space taken up to here (with/without prev offset, assuming host==target):
-        // x86:   52/48 bits
-        // amd64: 53/48 bits
-        // arm:   54/50 bits
-        // arm64: 57/52 bits
+        // x86:         53/49 bits
+        // amd64:       54/49 bits
+        // arm:         54/50 bits
+        // arm64:       57/52 bits
         // loongarch64: 53/48 bits
+        // risc-v:      53/48 bits
         CLANG_FORMAT_COMMENT_ANCHOR;
 
 #define ID_EXTRA_BITS (ID_EXTRA_RELOC_BITS + ID_EXTRA_BITFIELD_BITS + ID_EXTRA_PREV_OFFSET_BITS)
@@ -879,18 +872,26 @@ protected:
 
 #define ID_BIT_SMALL_CNS (32 - ID_EXTRA_BITS)
         C_ASSERT(ID_BIT_SMALL_CNS > 0);
-#define ID_MIN_SMALL_CNS 0
-#define ID_MAX_SMALL_CNS (int)((1 << ID_BIT_SMALL_CNS) - 1U)
 
         ////////////////////////////////////////////////////////////////////////
         // Small constant size (with/without prev offset, assuming host==target):
-        // x86:   12/16 bits
-        // amd64: 11/16 bits
-        // arm:   10/14 bits
-        // arm64: 7/12 bits
+        // x86:         11/15 bits
+        // amd64:       10/15 bits
+        // arm:         10/14 bits
+        // arm64:        7/12 bits
         // loongarch64: 11/16 bits
+        // risc-v:      11/16 bits
+        CLANG_FORMAT_COMMENT_ANCHOR;
 
-        unsigned _idSmallCns : ID_BIT_SMALL_CNS;
+#define ID_ADJ_SMALL_CNS (int)(1 << (ID_BIT_SMALL_CNS - 1))
+#define ID_CNT_SMALL_CNS (int)(1 << ID_BIT_SMALL_CNS)
+
+#define ID_MIN_SMALL_CNS (int)(0 - ID_ADJ_SMALL_CNS)
+#define ID_MAX_SMALL_CNS (int)(ID_CNT_SMALL_CNS - ID_ADJ_SMALL_CNS - 1)
+
+        // We encounter many constants, but there is a disproportionate amount that are in the range [-1, +4]
+        // and otherwise powers of 2. We therefore allow the tracked range here to include negative values.
+        signed _idSmallCns : ID_BIT_SMALL_CNS;
 
         ////////////////////////////////////////////////////////////////////////
         // Space taken up to here: 64 bits, all architectures, by design.
@@ -1136,7 +1137,7 @@ protected:
         void idCodeSize(unsigned sz)
         {
             // RISCV64's instrDesc is not always meaning only one instruction.
-            // e.g. the `emitter::emitIns_I_la` for emitting the immediates.
+            // e.g. the `emitter::emitLoadImmediate` for emitting the immediates.
             assert(sz <= 32);
             _idCodeSize = sz;
         }
@@ -1463,7 +1464,7 @@ protected:
 
 #endif // TARGET_RISCV64
 
-        inline static bool fitsInSmallCns(ssize_t val)
+        inline static bool fitsInSmallCns(cnsval_ssize_t val)
         {
             return ((val >= ID_MIN_SMALL_CNS) && (val <= ID_MAX_SMALL_CNS));
         }
@@ -1528,6 +1529,19 @@ protected:
         {
             _idNoGC = val;
         }
+
+#ifdef TARGET_XARCH
+        bool idIsEvexbContext() const
+        {
+            return _idEvexbContext != 0;
+        }
+        void idSetEvexbContext()
+        {
+            assert(_idEvexbContext == 0);
+            _idEvexbContext = 1;
+            assert(_idEvexbContext == 1);
+        }
+#endif
 
 #ifdef TARGET_ARMARCH
         bool idIsLclVar() const
@@ -1628,14 +1642,15 @@ protected:
 
 #endif // EMIT_BACKWARDS_NAVIGATION
 
-        unsigned idSmallCns() const
+        signed idSmallCns() const
         {
             return _idSmallCns;
         }
-        void idSmallCns(size_t value)
+        void idSmallCns(cnsval_ssize_t value)
         {
             assert(fitsInSmallCns(value));
             _idSmallCns = value;
+            assert(value == idSmallCns());
         }
 
         inline const idAddrUnion* idAddr() const
@@ -2061,7 +2076,7 @@ protected:
 #define emitVarRefOffs 0
 #endif // !DEBUG
 
-    const char* emitRegName(regNumber reg, emitAttr size = EA_PTRSIZE, bool varName = true);
+    const char* emitRegName(regNumber reg, emitAttr size = EA_PTRSIZE, bool varName = true) const;
     const char* emitFloatRegName(regNumber reg, emitAttr size = EA_PTRSIZE, bool varName = true);
 
     // GC Info changes are not readily available at each instruction.
@@ -2739,6 +2754,9 @@ private:
 #if defined(TARGET_ARM64)
     instrDescLclVarPair* emitAllocInstrLclVarPair(emitAttr attr)
     {
+#if EMITTER_STATS
+        emitTotalIDescLclVarPairCnt++;
+#endif // EMITTER_STATS
         instrDescLclVarPair* result = (instrDescLclVarPair*)emitAllocAnyInstr(sizeof(instrDescLclVarPair), attr);
         result->idSetIsLclVarPair();
         return result;
@@ -2746,6 +2764,9 @@ private:
 
     instrDescLclVarPairCns* emitAllocInstrLclVarPairCns(emitAttr attr, cnsval_size_t cns)
     {
+#if EMITTER_STATS
+        emitTotalIDescLclVarPairCnsCnt++;
+#endif // EMITTER_STATS
         instrDescLclVarPairCns* result =
             (instrDescLclVarPairCns*)emitAllocAnyInstr(sizeof(instrDescLclVarPairCns), attr);
         result->idSetIsLargeCns();
@@ -2819,7 +2840,7 @@ private:
     instrDescAlign* emitAllocInstrAlign()
     {
 #if EMITTER_STATS
-        emitTotalDescAlignCnt++;
+        emitTotalIDescAlignCnt++;
 #endif // EMITTER_STATS
         return (instrDescAlign*)emitAllocAnyInstr(sizeof(instrDescAlign), EA_1BYTE);
     }
@@ -3160,35 +3181,114 @@ public:
 
     static unsigned emitTotalIDescSmallCnt;
     static unsigned emitTotalIDescCnt;
-    static unsigned emitTotalIDescJmpCnt;
-#if !defined(TARGET_ARM64)
-    static unsigned emitTotalIDescLblCnt;
-#endif // !defined(TARGET_ARM64)
     static unsigned emitTotalIDescCnsCnt;
     static unsigned emitTotalIDescDspCnt;
-    static unsigned emitTotalIDescCnsDspCnt;
+#ifdef TARGET_ARM64
+    static unsigned emitTotalIDescLclVarPairCnt;
+    static unsigned emitTotalIDescLclVarPairCnsCnt;
+#endif // TARGET_ARM64
+#ifdef TARGET_ARM
+    static unsigned emitTotalIDescRelocCnt;
+#endif // TARGET_ARM
 #ifdef TARGET_XARCH
     static unsigned emitTotalIDescAmdCnt;
     static unsigned emitTotalIDescCnsAmdCnt;
 #endif // TARGET_XARCH
+    static unsigned emitTotalIDescCnsDspCnt;
+#if FEATURE_LOOP_ALIGN
+    static unsigned emitTotalIDescAlignCnt;
+#endif // FEATURE_LOOP_ALIGN
+    static unsigned emitTotalIDescJmpCnt;
+#if !defined(TARGET_ARM64)
+    static unsigned emitTotalIDescLblCnt;
+#endif // !defined(TARGET_ARM64)
     static unsigned emitTotalIDescCGCACnt;
-#ifdef TARGET_ARM
-    static unsigned emitTotalIDescRelocCnt;
-#endif // TARGET_ARM
 
     static size_t emitTotMemAlloc;
 
     static unsigned emitSmallDspCnt;
     static unsigned emitLargeDspCnt;
 
-    static unsigned emitSmallCnsCnt;
 #define SMALL_CNS_TSZ 256
     static unsigned emitSmallCns[SMALL_CNS_TSZ];
+    static unsigned emitSmallCnsCnt;
     static unsigned emitLargeCnsCnt;
-    static unsigned emitTotalDescAlignCnt;
+    static unsigned emitInt8CnsCnt;
+    static unsigned emitInt16CnsCnt;
+    static unsigned emitInt32CnsCnt;
+    static unsigned emitNegCnsCnt;
+    static unsigned emitPow2CnsCnt;
 
     static unsigned emitIFcounts[IF_COUNT];
 
+    void TrackCns(cnsval_ssize_t value)
+    {
+        if (value < 0)
+        {
+            emitNegCnsCnt++;
+
+            if (value >= INT8_MIN)
+            {
+                emitInt8CnsCnt++;
+            }
+            else if (value >= INT16_MIN)
+            {
+                emitInt16CnsCnt++;
+            }
+            else if (value >= INT32_MIN)
+            {
+                emitInt32CnsCnt++;
+            }
+        }
+        else if (value <= INT8_MAX)
+        {
+            emitInt8CnsCnt++;
+        }
+        else if (value <= INT16_MAX)
+        {
+            emitInt16CnsCnt++;
+        }
+        else if (value <= INT32_MAX)
+        {
+            emitInt32CnsCnt++;
+        }
+
+        if (isPow2(value))
+        {
+            emitPow2CnsCnt++;
+        }
+    }
+
+    void TrackSmallCns(cnsval_ssize_t value)
+    {
+        // We only track a subset of the allowed small constants and
+        // so we'll split the tracked range between positive/negative
+        // aggregating those outside the tracked range into the min/max
+        // instead.
+
+        assert(fitsInSmallCns(value));
+        uint32_t index = 0;
+
+        if (value >= ((SMALL_CNS_TSZ / 2) - 1))
+        {
+            index = static_cast<uint32_t>(SMALL_CNS_TSZ - 1);
+        }
+        else if (value >= (0 - SMALL_CNS_TSZ / 2))
+        {
+            index = static_cast<uint32_t>(value + (SMALL_CNS_TSZ / 2));
+        }
+
+        emitSmallCnsCnt++;
+        emitSmallCns[index]++;
+
+        TrackCns(value);
+    }
+
+    void TrackLargeCns(cnsval_ssize_t value)
+    {
+        emitLargeCnsCnt++;
+        TrackCns(value);
+    }
 #endif // EMITTER_STATS
 
 /*************************************************************************
@@ -3416,21 +3516,21 @@ inline emitter::instrDesc* emitter::emitNewInstrLclVarPair(emitAttr attr, cnsval
     {
         instrDescLclVarPair* id = emitAllocInstrLclVarPair(attr);
         id->idSmallCns(cns);
+
 #if EMITTER_STATS
-        emitSmallCnsCnt++;
-        if ((cns - ID_MIN_SMALL_CNS) >= (SMALL_CNS_TSZ - 1))
-            emitSmallCns[SMALL_CNS_TSZ - 1]++;
-        else
-            emitSmallCns[cns - ID_MIN_SMALL_CNS]++;
+        TrackSmallCns(cns);
 #endif
+
         return id;
     }
     else
     {
         instrDescLclVarPairCns* id = emitAllocInstrLclVarPairCns(attr, cns);
+
 #if EMITTER_STATS
-        emitLargeCnsCnt++;
+        TrackLargeCns(cns);
 #endif
+
         return id;
     }
 }
@@ -3479,11 +3579,7 @@ inline emitter::instrDesc* emitter::emitNewInstrCns(emitAttr attr, cnsval_ssize_
         id->idSmallCns(cns);
 
 #if EMITTER_STATS
-        emitSmallCnsCnt++;
-        if ((cns - ID_MIN_SMALL_CNS) >= (SMALL_CNS_TSZ - 1))
-            emitSmallCns[SMALL_CNS_TSZ - 1]++;
-        else
-            emitSmallCns[cns - ID_MIN_SMALL_CNS]++;
+        TrackSmallCns(cns);
 #endif
 
         return id;
@@ -3493,7 +3589,7 @@ inline emitter::instrDesc* emitter::emitNewInstrCns(emitAttr attr, cnsval_ssize_
         instrDescCns* id = emitAllocInstrCns(attr, cns);
 
 #if EMITTER_STATS
-        emitLargeCnsCnt++;
+        TrackLargeCns(cns);
 #endif
 
         return id;
@@ -3551,11 +3647,7 @@ inline emitter::instrDesc* emitter::emitNewInstrSC(emitAttr attr, cnsval_ssize_t
         id->idSmallCns(cns);
 
 #if EMITTER_STATS
-        emitSmallCnsCnt++;
-        if ((cns - ID_MIN_SMALL_CNS) >= (SMALL_CNS_TSZ - 1))
-            emitSmallCns[SMALL_CNS_TSZ - 1]++;
-        else
-            emitSmallCns[cns - ID_MIN_SMALL_CNS]++;
+        TrackSmallCns(cns);
 #endif
 
         return id;
@@ -3565,7 +3657,7 @@ inline emitter::instrDesc* emitter::emitNewInstrSC(emitAttr attr, cnsval_ssize_t
         instrDescCns* id = emitAllocInstrCns(attr, cns);
 
 #if EMITTER_STATS
-        emitLargeCnsCnt++;
+        TrackLargeCns(cns);
 #endif
 
         return id;
@@ -3655,9 +3747,25 @@ inline unsigned emitter::emitGetInsCIargs(instrDesc* id)
 //
 emitAttr emitter::emitGetMemOpSize(instrDesc* id) const
 {
+
     emitAttr    defaultSize = id->idOpSize();
     instruction ins         = id->idIns();
+    if (id->idIsEvexbContext())
+    {
+        // should have the assumption that Evex.b now stands for the embedded broadcast context.
+        // reference: Section 2.7.5 in Intel 64 and ia-32 architectures software developer's manual volume 2.
+        ssize_t inputSize = GetInputSizeInBytes(id);
+        switch (inputSize)
+        {
+            case 4:
+                return EA_4BYTE;
+            case 8:
+                return EA_8BYTE;
 
+            default:
+                unreached();
+        }
+    }
     switch (ins)
     {
         case INS_pextrb:

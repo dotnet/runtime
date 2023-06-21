@@ -22,6 +22,11 @@
         <target state="translated">在指定的 'ElementIndirectionDepth' 的 'MarshalUsingAttribute' 中只能使用 'ConstantElementCount' 或 'ElementCountInfo' 其中之一</target>
         <note />
       </trans-unit>
+      <trans-unit id="ContainingTypeAccessibilityDetails">
+        <source>Containing type '{0}' has accessibility '{1}'.</source>
+        <target state="translated">包含的類型 '{0}' 具有存取範圍 '{1}'。</target>
+        <note />
+      </trans-unit>
       <trans-unit id="CyclicalCountInfo">
         <source>This element cannot depend on '{0}' for collection size information without creating a dependency cycle</source>
         <target state="translated">此元素不需要建立相依性循環，就無法依存 '{0}' 集合大小資訊</target>
@@ -98,8 +103,8 @@
         <note />
       </trans-unit>
       <trans-unit id="MarshallingStringOrCharAsUndefinedNotSupported">
-        <source>Marshalling string or char without explicit marshalling information is not supported. Specify 'LibraryImportAttribute.StringMarshalling', 'LibraryImportAttribute.StringMarshallingCustomType', 'MarshalUsingAttribute' or 'MarshalAsAttribute'.</source>
-        <target state="translated">不支援在未明確封送處理資訊的情況下封送處理字串或字元。請指定 'LibraryImportAttribute.StringMarshalling'、'LibraryImportAttribute.StringMarshallingCustomType'、'MarshalUsingAttribute' 或 'MarshalAsAttribute'。</target>
+        <source>Marshalling string or char without explicit marshalling information is not supported. Specify '{0}.StringMarshalling', '{0}.StringMarshallingCustomType', 'MarshalUsingAttribute' or 'MarshalAsAttribute'.</source>
+        <target state="translated">不支援沒有明確封送處理資訊的封送處理字串或字元。請指定 '{0}.StringMarshalling、'{0}.StringMarshallingCustomType'、'MarshalUsingAttribute' 或 'MarshalAsAttribute'。</target>
         <note />
       </trans-unit>
       <trans-unit id="RuntimeMarshallingMustBeDisabled">
@@ -110,6 +115,11 @@
       <trans-unit id="SafeHandleByRefMustBeConcrete">
         <source>An abstract type derived from 'SafeHandle' cannot be marshalled by reference. The provided type must be concrete.</source>
         <target state="translated">衍生自 'SafeHandle' 的抽象類型無法依參考排列。提供的類型必須是實體。</target>
+        <note />
+      </trans-unit>
+      <trans-unit id="TypeAccessibilityDetails">
+        <source>'{0}' has accessibility '{1}'.</source>
+        <target state="translated">'{0}' 具有存取範圍 '{1}'。</target>
         <note />
       </trans-unit>
       <trans-unit id="UnmanagedToManagedMissingRequiredMarshaller">

@@ -265,6 +265,7 @@ namespace System.Collections.Immutable
             > CastUp<TDerived>(System.Collections.Immutable.ImmutableArray<TDerived> items) where TDerived : class?, T { throw null; }
         public System.Collections.Immutable.ImmutableArray<T> Clear() { throw null; }
         public bool Contains(T item) { throw null; }
+        public bool Contains(T item, System.Collections.Generic.IEqualityComparer<T>? equalityComparer) { throw null; }
         public void CopyTo(int sourceIndex, T[] destination, int destinationIndex, int length) { }
         public void CopyTo(T[] destination) { }
         public void CopyTo(T[] destination, int destinationIndex) { }

@@ -528,6 +528,8 @@ class CrossGenRunner:
         args.append('-r')
         args.append('"' + platform_assemblies_paths + self.platform_directory_sep + '*.dll"' )
         args.append('-O')
+        args.append('--determinism-stress')
+        args.append('3')
         args.append('--out')
         args.append(ni_filename)
         args.append('--targetos ')

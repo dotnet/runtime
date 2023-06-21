@@ -23,7 +23,7 @@ namespace System.Text.Json.SourceGeneration
     /// When adding new members to the type, please ensure that these properties
     /// are satisfied otherwise we risk breaking incremental caching in the source generator!
     /// </remarks>
-    [DebuggerDisplay("Name={Name}, Type={TypeMetadata}")]
+    [DebuggerDisplay("Name={MemberName}, Type={PropertyType.Name}")]
     public sealed record PropertyGenerationSpec
     {
         /// <summary>
@@ -93,10 +93,6 @@ namespace System.Text.Json.SourceGeneration
         /// </summary>
         public required bool CanUseSetter { get; init; }
 
-        public required bool GetterIsVirtual { get; init; }
-
-        public required bool SetterIsVirtual { get; init; }
-
         /// <summary>
         /// The <see cref="JsonIgnoreCondition"/> for the property.
         /// </summary>
@@ -128,20 +124,60 @@ namespace System.Text.Json.SourceGeneration
         public required bool IsExtensionData { get; init; }
 
         /// <summary>
-        /// Generation specification for the property's type.
+        /// Gets a reference to the property type.
         /// </summary>
         public required TypeRef PropertyType { get; init; }
 
         /// <summary>
-        /// Compilable name of the property's declaring type.
+        /// Gets a reference to the declaring type of the property.
         /// </summary>
-        public required string DeclaringTypeRef { get; init; }
+        public required TypeRef DeclaringType { get; init; }
 
         /// <summary>
-        /// Source code to instantiate design-time specified custom converter.
+        /// Design-time specified custom converter type.
         /// </summary>
-        public required string? ConverterInstantiationLogic { get; init; }
+        public required TypeRef? ConverterType { get; init; }
 
-        public required bool HasFactoryConverter { get; init; }
+        /// <summary>
+        /// Determines if the specified property should be included in the fast-path method body.
+        /// </summary>
+        public bool ShouldIncludePropertyForFastPath(ContextGenerationSpec contextSpec)
+        {
+            // Discard ignored properties
+            if (DefaultIgnoreCondition is JsonIgnoreCondition.Always)
+            {
+                return false;
+            }
+
+            // Discard properties without getters
+            if (!CanUseGetter)
+            {
+                return false;
+            }
+
+            // Discard fields when JsonInclude or IncludeFields aren't enabled.
+            if (!IsProperty && !HasJsonInclude && !contextSpec.IncludeFields)
+            {
+                return false;
+            }
+
+            // Ignore read-only properties/fields if enabled in configuration.
+            if (IsReadOnly)
+            {
+                if (IsProperty)
+                {
+                    if (contextSpec.IgnoreReadOnlyProperties)
+                    {
+                        return false;
+                    }
+                }
+                else if (contextSpec.IgnoreReadOnlyFields)
+                {
+                    return false;
+                }
+            }
+
+            return true;
+        }
     }
 }

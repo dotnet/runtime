@@ -392,7 +392,64 @@ namespace System.Runtime.Intrinsics.Wasm
         public static Vector128<nint>   CompareGreaterThanOrEqual(Vector128<nint>   left, Vector128<nint>   right) { throw new PlatformNotSupportedException(); }
         public static Vector128<nuint>  CompareGreaterThanOrEqual(Vector128<nuint>  left, Vector128<nuint>  right) { throw new PlatformNotSupportedException(); }
 
-       // Floating-point sign bit operations
+        // Load
+
+        public static unsafe Vector128<sbyte>  LoadVector128(sbyte*  address) { throw new PlatformNotSupportedException(); }
+        public static unsafe Vector128<byte>   LoadVector128(byte*   address) { throw new PlatformNotSupportedException(); }
+        public static unsafe Vector128<short>  LoadVector128(short*  address) { throw new PlatformNotSupportedException(); }
+        public static unsafe Vector128<ushort> LoadVector128(ushort* address) { throw new PlatformNotSupportedException(); }
+        public static unsafe Vector128<int>    LoadVector128(int*    address) { throw new PlatformNotSupportedException(); }
+        public static unsafe Vector128<uint>   LoadVector128(uint*   address) { throw new PlatformNotSupportedException(); }
+        public static unsafe Vector128<long>   LoadVector128(long*   address) { throw new PlatformNotSupportedException(); }
+        public static unsafe Vector128<ulong>  LoadVector128(ulong*  address) { throw new PlatformNotSupportedException(); }
+        public static unsafe Vector128<float>  LoadVector128(float*  address) { throw new PlatformNotSupportedException(); }
+        public static unsafe Vector128<double> LoadVector128(double* address) { throw new PlatformNotSupportedException(); }
+        public static unsafe Vector128<nint>   LoadVector128(nint*   address) { throw new PlatformNotSupportedException(); }
+        public static unsafe Vector128<nuint>  LoadVector128(nuint*  address) { throw new PlatformNotSupportedException(); }
+
+        public static unsafe Vector128<int>    LoadScalarVector128(int*    address) { throw new PlatformNotSupportedException(); }
+        public static unsafe Vector128<uint>   LoadScalarVector128(uint*   address) { throw new PlatformNotSupportedException(); }
+        public static unsafe Vector128<long>   LoadScalarVector128(long*   address) { throw new PlatformNotSupportedException(); }
+        public static unsafe Vector128<ulong>  LoadScalarVector128(ulong*  address) { throw new PlatformNotSupportedException(); }
+        public static unsafe Vector128<float>  LoadScalarVector128(float*  address) { throw new PlatformNotSupportedException(); }
+        public static unsafe Vector128<double> LoadScalarVector128(double* address) { throw new PlatformNotSupportedException(); }
+        public static unsafe Vector128<nint>   LoadScalarVector128(nint*   address) { throw new PlatformNotSupportedException(); }
+        public static unsafe Vector128<nuint>  LoadScalarVector128(nuint*  address) { throw new PlatformNotSupportedException(); }
+
+        public static unsafe Vector128<sbyte>  LoadScalarAndSplatVector128(sbyte*  address) { throw new PlatformNotSupportedException(); }
+        public static unsafe Vector128<byte>   LoadScalarAndSplatVector128(byte*   address) { throw new PlatformNotSupportedException(); }
+        public static unsafe Vector128<short>  LoadScalarAndSplatVector128(short*  address) { throw new PlatformNotSupportedException(); }
+        public static unsafe Vector128<ushort> LoadScalarAndSplatVector128(ushort* address) { throw new PlatformNotSupportedException(); }
+        public static unsafe Vector128<int>    LoadScalarAndSplatVector128(int*    address) { throw new PlatformNotSupportedException(); }
+        public static unsafe Vector128<uint>   LoadScalarAndSplatVector128(uint*   address) { throw new PlatformNotSupportedException(); }
+        public static unsafe Vector128<long>   LoadScalarAndSplatVector128(long*   address) { throw new PlatformNotSupportedException(); }
+        public static unsafe Vector128<ulong>  LoadScalarAndSplatVector128(ulong*  address) { throw new PlatformNotSupportedException(); }
+        public static unsafe Vector128<float>  LoadScalarAndSplatVector128(float*  address) { throw new PlatformNotSupportedException(); }
+        public static unsafe Vector128<double> LoadScalarAndSplatVector128(double* address) { throw new PlatformNotSupportedException(); }
+        public static unsafe Vector128<nint>   LoadScalarAndSplatVector128(nint*   address) { throw new PlatformNotSupportedException(); }
+        public static unsafe Vector128<nuint>  LoadScalarAndSplatVector128(nuint*  address) { throw new PlatformNotSupportedException(); }
+
+        public static unsafe Vector128<sbyte>  LoadScalarAndInsert(sbyte*  address, Vector128<sbyte>  vector, [ConstantExpected(Max = (byte)(15))] byte index) { throw new PlatformNotSupportedException(); }
+        public static unsafe Vector128<byte>   LoadScalarAndInsert(byte*   address, Vector128<byte>   vector, [ConstantExpected(Max = (byte)(15))] byte index) { throw new PlatformNotSupportedException(); }
+        public static unsafe Vector128<short>  LoadScalarAndInsert(short*  address, Vector128<short>  vector, [ConstantExpected(Max = (byte)(7))] byte index) { throw new PlatformNotSupportedException(); }
+        public static unsafe Vector128<ushort> LoadScalarAndInsert(ushort* address, Vector128<ushort> vector, [ConstantExpected(Max = (byte)(7))] byte index) { throw new PlatformNotSupportedException(); }
+        public static unsafe Vector128<int>    LoadScalarAndInsert(int*    address, Vector128<int>    vector, [ConstantExpected(Max = (byte)(3))] byte index) { throw new PlatformNotSupportedException(); }
+        public static unsafe Vector128<uint>   LoadScalarAndInsert(uint*   address, Vector128<uint>   vector, [ConstantExpected(Max = (byte)(3))] byte index) { throw new PlatformNotSupportedException(); }
+        public static unsafe Vector128<long>   LoadScalarAndInsert(long*   address, Vector128<long>   vector, [ConstantExpected(Max = (byte)(1))] byte index) { throw new PlatformNotSupportedException(); }
+        public static unsafe Vector128<ulong>  LoadScalarAndInsert(ulong*  address, Vector128<ulong>  vector, [ConstantExpected(Max = (byte)(1))] byte index) { throw new PlatformNotSupportedException(); }
+        public static unsafe Vector128<float>  LoadScalarAndInsert(float*  address, Vector128<float>  vector, [ConstantExpected(Max = (byte)(3))] byte index) { throw new PlatformNotSupportedException(); }
+        public static unsafe Vector128<double> LoadScalarAndInsert(double* address, Vector128<double> vector, [ConstantExpected(Max = (byte)(1))] byte index) { throw new PlatformNotSupportedException(); }
+        public static unsafe Vector128<nint>   LoadScalarAndInsert(nint*   address, Vector128<nint>   vector, [ConstantExpected(Max = (byte)(3))] byte index) { throw new PlatformNotSupportedException(); }
+        public static unsafe Vector128<nuint>  LoadScalarAndInsert(nuint*  address, Vector128<nuint>  vector, [ConstantExpected(Max = (byte)(3))] byte index) { throw new PlatformNotSupportedException(); }
+
+        public static unsafe Vector128<short>  LoadWideningVector128(sbyte*  address) { throw new PlatformNotSupportedException(); }
+        public static unsafe Vector128<ushort> LoadWideningVector128(byte*   address) { throw new PlatformNotSupportedException(); }
+        public static unsafe Vector128<int>    LoadWideningVector128(short*  address) { throw new PlatformNotSupportedException(); }
+        public static unsafe Vector128<uint>   LoadWideningVector128(ushort* address) { throw new PlatformNotSupportedException(); }
+        public static unsafe Vector128<long>   LoadWideningVector128(int*    address) { throw new PlatformNotSupportedException(); }
+        public static unsafe Vector128<ulong>  LoadWideningVector128(uint*   address) { throw new PlatformNotSupportedException(); }
+
+        // Floating-point sign bit operations
 
         public static Vector128<float>  Negate(Vector128<float>  value) { throw new PlatformNotSupportedException(); }
         public static Vector128<double> Negate(Vector128<double> value) { throw new PlatformNotSupportedException(); }
@@ -445,10 +502,52 @@ namespace System.Runtime.Intrinsics.Wasm
 
         // Conversions
 
+        public static Vector128<float> ConvertToSingle(Vector128<int>    value) { throw new PlatformNotSupportedException(); }
+        public static Vector128<float> ConvertToSingle(Vector128<uint>   value) { throw new PlatformNotSupportedException(); }
+        public static Vector128<float> ConvertToSingle(Vector128<double> value) { throw new PlatformNotSupportedException(); }
+
+        public static Vector128<double> ConvertToDoubleLower(Vector128<int>   value) { throw new PlatformNotSupportedException(); }
+        public static Vector128<double> ConvertToDoubleLower(Vector128<uint>  value) { throw new PlatformNotSupportedException(); }
+        public static Vector128<double> ConvertToDoubleLower(Vector128<float> value) { throw new PlatformNotSupportedException(); }
+
+        public static Vector128<int>  ConvertToInt32Saturate(Vector128<float> value) { throw new PlatformNotSupportedException(); }
+        internal static Vector128<uint> ConvertToUnsignedInt32Saturate(Vector128<float> value) { throw new PlatformNotSupportedException(); }
+
+        public static Vector128<int>  ConvertToInt32Saturate(Vector128<double> value) { throw new PlatformNotSupportedException(); }
+        internal static Vector128<uint> ConvertToUnsignedInt32Saturate(Vector128<double> value) { throw new PlatformNotSupportedException(); }
+
         internal static Vector128<sbyte>  ConvertNarrowingSignedSaturate(Vector128<short>   lower, Vector128<short> upper) { throw new PlatformNotSupportedException(); }
         internal static Vector128<short>  ConvertNarrowingSignedSaturate(Vector128<int>     lower, Vector128<int>   upper) { throw new PlatformNotSupportedException(); }
 
         internal static Vector128<byte>   ConvertNarrowingUnsignedSaturate(Vector128<short> lower, Vector128<short> upper) { throw new PlatformNotSupportedException(); }
         internal static Vector128<ushort> ConvertNarrowingUnsignedSaturate(Vector128<int>   lower, Vector128<int>   upper) { throw new PlatformNotSupportedException(); }
+
+        public static Vector128<short>  SignExtendWideningLower(Vector128<sbyte>  value) { throw new PlatformNotSupportedException(); }
+        public static Vector128<ushort> SignExtendWideningLower(Vector128<byte>   value) { throw new PlatformNotSupportedException(); }
+        public static Vector128<int>    SignExtendWideningLower(Vector128<short>  value) { throw new PlatformNotSupportedException(); }
+        public static Vector128<uint>   SignExtendWideningLower(Vector128<ushort> value) { throw new PlatformNotSupportedException(); }
+        public static Vector128<long>   SignExtendWideningLower(Vector128<int>    value) { throw new PlatformNotSupportedException(); }
+        public static Vector128<ulong>  SignExtendWideningLower(Vector128<uint>   value) { throw new PlatformNotSupportedException(); }
+
+        public static Vector128<short>  SignExtendWideningUpper(Vector128<sbyte>  value) { throw new PlatformNotSupportedException(); }
+        public static Vector128<ushort> SignExtendWideningUpper(Vector128<byte>   value) { throw new PlatformNotSupportedException(); }
+        public static Vector128<int>    SignExtendWideningUpper(Vector128<short>  value) { throw new PlatformNotSupportedException(); }
+        public static Vector128<uint>   SignExtendWideningUpper(Vector128<ushort> value) { throw new PlatformNotSupportedException(); }
+        public static Vector128<long>   SignExtendWideningUpper(Vector128<int>    value) { throw new PlatformNotSupportedException(); }
+        public static Vector128<ulong>  SignExtendWideningUpper(Vector128<uint>   value) { throw new PlatformNotSupportedException(); }
+
+        public static Vector128<short>  ZeroExtendWideningLower(Vector128<sbyte>  value) { throw new PlatformNotSupportedException(); }
+        public static Vector128<ushort> ZeroExtendWideningLower(Vector128<byte>   value) { throw new PlatformNotSupportedException(); }
+        public static Vector128<int>    ZeroExtendWideningLower(Vector128<short>  value) { throw new PlatformNotSupportedException(); }
+        public static Vector128<uint>   ZeroExtendWideningLower(Vector128<ushort> value) { throw new PlatformNotSupportedException(); }
+        public static Vector128<long>   ZeroExtendWideningLower(Vector128<int>    value) { throw new PlatformNotSupportedException(); }
+        public static Vector128<ulong>  ZeroExtendWideningLower(Vector128<uint>   value) { throw new PlatformNotSupportedException(); }
+
+        public static Vector128<short>  ZeroExtendWideningUpper(Vector128<sbyte>  value) { throw new PlatformNotSupportedException(); }
+        public static Vector128<ushort> ZeroExtendWideningUpper(Vector128<byte>   value) { throw new PlatformNotSupportedException(); }
+        public static Vector128<int>    ZeroExtendWideningUpper(Vector128<short>  value) { throw new PlatformNotSupportedException(); }
+        public static Vector128<uint>   ZeroExtendWideningUpper(Vector128<ushort> value) { throw new PlatformNotSupportedException(); }
+        public static Vector128<long>   ZeroExtendWideningUpper(Vector128<int>    value) { throw new PlatformNotSupportedException(); }
+        public static Vector128<ulong>  ZeroExtendWideningUpper(Vector128<uint>   value) { throw new PlatformNotSupportedException(); }
     }
 }

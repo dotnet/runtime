@@ -7,10 +7,12 @@ Wasm.Build.Tests.Blazor.BuildPublishTests
 Wasm.Build.Tests.Blazor.MiscTests
 Wasm.Build.Tests.Blazor.MiscTests2
 Wasm.Build.Tests.Blazor.NativeRefTests
+Wasm.Build.Tests.Blazor.AppsettingsTests
 Wasm.Build.Tests.BuildPublishTests
 Wasm.Build.Tests.CleanTests
 Wasm.Build.Tests.ConfigSrcTests
 Wasm.Build.Tests.IcuShardingTests
+Wasm.Build.Tests.HybridGlobalizationTests
 Wasm.Build.Tests.InvariantGlobalizationTests
 Wasm.Build.Tests.MainWithArgsTests
 Wasm.Build.Tests.NativeBuildTests

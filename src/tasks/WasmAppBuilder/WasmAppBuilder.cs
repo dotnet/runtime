@@ -187,7 +187,7 @@ public class WasmAppBuilder : WasmAppBuilderBaseTask
                 var tmpWebcil = Path.GetTempFileName();
                 var webcilWriter = Microsoft.WebAssembly.Build.Tasks.WebcilConverter.FromPortableExecutable(inputPath: assembly, outputPath: tmpWebcil, logger: Log);
                 webcilWriter.ConvertToWebcil();
-                var finalWebcil = Path.Combine(asmRootPath, Path.ChangeExtension(Path.GetFileName(assembly), ".webcil"));
+                var finalWebcil = Path.Combine(asmRootPath, Path.ChangeExtension(Path.GetFileName(assembly), Utils.WebcilInWasmExtension));
                 if (Utils.CopyIfDifferent(tmpWebcil, finalWebcil, useHash: true))
                     Log.LogMessage(MessageImportance.Low, $"Generated {finalWebcil} .");
                 else
@@ -259,7 +259,7 @@ public class WasmAppBuilder : WasmAppBuilderBaseTask
             {
                 if (UseWebcil)
                 {
-                    assemblyPath = Path.Combine(asmRootPath, Path.ChangeExtension(Path.GetFileName(assembly), ".webcil"));
+                    assemblyPath = Path.Combine(asmRootPath, Path.ChangeExtension(Path.GetFileName(assembly), Utils.WebcilInWasmExtension));
                     // For the hash, read the bytes from the webcil file, not the dll file.
                     bytes = File.ReadAllBytes(assemblyPath);
                 }
@@ -287,7 +287,7 @@ public class WasmAppBuilder : WasmAppBuilderBaseTask
                 var tmpWebcil = Path.GetTempFileName();
                 var webcilWriter = Microsoft.WebAssembly.Build.Tasks.WebcilConverter.FromPortableExecutable(inputPath: args.fullPath, outputPath: tmpWebcil, logger: Log);
                 webcilWriter.ConvertToWebcil();
-                var finalWebcil = Path.Combine(directory, Path.ChangeExtension(name, ".webcil"));
+                var finalWebcil = Path.Combine(directory, Path.ChangeExtension(name, Utils.WebcilInWasmExtension));
                 if (Utils.CopyIfDifferent(tmpWebcil, finalWebcil, useHash: true))
                     Log.LogMessage(MessageImportance.Low, $"Generated {finalWebcil} .");
                 else

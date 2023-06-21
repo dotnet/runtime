@@ -106,7 +106,7 @@ namespace System.Xml
             get
             {
                 XPathNodeType xnt = XPathNodeType.SignificantWhitespace;
-                DecideXPNodeTypeForTextNodes(this, ref xnt);
+                XmlCharacterData.DecideXPNodeTypeForTextNodes(this, ref xnt);
                 return xnt;
             }
         }

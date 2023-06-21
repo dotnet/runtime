@@ -3131,7 +3131,7 @@ public:
                 }
 
                 /* Create a store of the value to the temp */
-                GenTree* store     = m_pCompiler->gtNewTempAssign(cseLclVarNum, val);
+                GenTree* store     = m_pCompiler->gtNewTempStore(cseLclVarNum, val);
                 GenTree* origStore = store;
 
                 if (!store->OperIs(GT_STORE_LCL_VAR))
@@ -3166,11 +3166,11 @@ public:
                     // These should not have been set yet, since this is the first and
                     // only def for this CSE.
                     assert(ssaVarDsc->GetBlock() == nullptr);
-                    assert(ssaVarDsc->GetAssignment() == nullptr);
+                    assert(ssaVarDsc->GetDefNode() == nullptr);
 
                     ssaVarDsc->m_vnPair = val->gtVNPair;
                     ssaVarDsc->SetBlock(blk);
-                    ssaVarDsc->SetAssignment(store->AsLclVarCommon());
+                    ssaVarDsc->SetDefNode(store->AsLclVarCommon());
                 }
 
                 /* Create a reference to the CSE temp */

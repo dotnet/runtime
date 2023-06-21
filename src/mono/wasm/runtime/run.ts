@@ -6,6 +6,8 @@ import { mono_wasm_wait_for_debugger } from "./debug";
 import { mono_wasm_set_main_args } from "./startup";
 import cwraps from "./cwraps";
 import { assembly_load } from "./class-loader";
+import { mono_log_info } from "./logging";
+import { assert_bindings } from "./invoke-js";
 
 /**
  * Possible signatures are described here  https://docs.microsoft.com/en-us/dotnet/csharp/fundamentals/program-structure/main-command-line
@@ -30,7 +32,7 @@ export async function mono_run_main_and_exit(main_assembly_name: string, args: s
 export async function mono_run_main(main_assembly_name: string, args: string[]): Promise<number> {
     mono_wasm_set_main_args(main_assembly_name, args);
     if (runtimeHelpers.waitForDebugger == -1) {
-        console.log("MONO_WASM: waiting for debugger...");
+        mono_log_info("waiting for debugger...");
         await mono_wasm_wait_for_debugger();
     }
     const method = find_entry_point(main_assembly_name);
@@ -38,7 +40,7 @@ export async function mono_run_main(main_assembly_name: string, args: string[]):
 }
 
 export function find_entry_point(assembly: string) {
-    mono_assert(runtimeHelpers.mono_wasm_bindings_is_ready, "The runtime must be initialized.");
+    assert_bindings();
     const asm = assembly_load(assembly);
     if (!asm)
         throw new Error("Could not find assembly: " + assembly);

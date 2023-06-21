@@ -61,7 +61,45 @@ namespace System.Text
                     }
                 }
             }
-            else if (!Vector256.IsHardwareAccelerated || length < (uint)Vector256<TRight>.Count)
+            else if (Avx.IsSupported && length >= (uint)Vector256<TRight>.Count)
+            {
+                ref TLeft currentLeftSearchSpace = ref left;
+                ref TLeft oneVectorAwayFromLeftEnd = ref Unsafe.Add(ref currentLeftSearchSpace, length - TLoader.Count256);
+                ref TRight currentRightSearchSpace = ref right;
+                ref TRight oneVectorAwayFromRightEnd = ref Unsafe.Add(ref currentRightSearchSpace, length - (uint)Vector256<TRight>.Count);
+
+                Vector256<TRight> leftValues;
+                Vector256<TRight> rightValues;
+
+                // Loop until either we've finished all elements or there's less than a vector's-worth remaining.
+                do
+                {
+                    leftValues = TLoader.Load256(ref currentLeftSearchSpace);
+                    rightValues = Vector256.LoadUnsafe(ref currentRightSearchSpace);
+
+                    if (leftValues != rightValues || !AllCharsInVectorAreAscii(leftValues | rightValues))
+                    {
+                        return false;
+                    }
+
+                    currentRightSearchSpace = ref Unsafe.Add(ref currentRightSearchSpace, Vector256<TRight>.Count);
+                    currentLeftSearchSpace = ref Unsafe.Add(ref currentLeftSearchSpace, TLoader.Count256);
+                }
+                while (!Unsafe.IsAddressGreaterThan(ref currentRightSearchSpace, ref oneVectorAwayFromRightEnd));
+
+                // If any elements remain, process the last vector in the search space.
+                if (length % (uint)Vector256<TRight>.Count != 0)
+                {
+                    leftValues = TLoader.Load256(ref oneVectorAwayFromLeftEnd);
+                    rightValues = Vector256.LoadUnsafe(ref oneVectorAwayFromRightEnd);
+
+                    if (leftValues != rightValues || !AllCharsInVectorAreAscii(leftValues | rightValues))
+                    {
+                        return false;
+                    }
+                }
+            }
+            else
             {
                 ref TLeft currentLeftSearchSpace = ref left;
                 ref TLeft oneVectorAwayFromLeftEnd = ref Unsafe.Add(ref currentLeftSearchSpace, length - TLoader.Count128);
@@ -93,44 +131,6 @@ namespace System.Text
                 {
                     leftValues = TLoader.Load128(ref oneVectorAwayFromLeftEnd);
                     rightValues = Vector128.LoadUnsafe(ref oneVectorAwayFromRightEnd);
-
-                    if (leftValues != rightValues || !AllCharsInVectorAreAscii(leftValues | rightValues))
-                    {
-                        return false;
-                    }
-                }
-            }
-            else
-            {
-                ref TLeft currentLeftSearchSpace = ref left;
-                ref TLeft oneVectorAwayFromLeftEnd = ref Unsafe.Add(ref currentLeftSearchSpace, length - TLoader.Count256);
-                ref TRight currentRightSearchSpace = ref right;
-                ref TRight oneVectorAwayFromRightEnd = ref Unsafe.Add(ref currentRightSearchSpace, length - (uint)Vector256<TRight>.Count);
-
-                Vector256<TRight> leftValues;
-                Vector256<TRight> rightValues;
-
-                // Loop until either we've finished all elements or there's less than a vector's-worth remaining.
-                do
-                {
-                    leftValues = TLoader.Load256(ref currentLeftSearchSpace);
-                    rightValues = Vector256.LoadUnsafe(ref currentRightSearchSpace);
-
-                    if (leftValues != rightValues || !AllCharsInVectorAreAscii(leftValues | rightValues))
-                    {
-                        return false;
-                    }
-
-                    currentRightSearchSpace = ref Unsafe.Add(ref currentRightSearchSpace, Vector256<TRight>.Count);
-                    currentLeftSearchSpace = ref Unsafe.Add(ref currentLeftSearchSpace, TLoader.Count256);
-                }
-                while (!Unsafe.IsAddressGreaterThan(ref currentRightSearchSpace, ref oneVectorAwayFromRightEnd));
-
-                // If any elements remain, process the last vector in the search space.
-                if (length % (uint)Vector256<TRight>.Count != 0)
-                {
-                    leftValues = TLoader.Load256(ref oneVectorAwayFromLeftEnd);
-                    rightValues = Vector256.LoadUnsafe(ref oneVectorAwayFromRightEnd);
 
                     if (leftValues != rightValues || !AllCharsInVectorAreAscii(leftValues | rightValues))
                     {
@@ -206,7 +206,79 @@ namespace System.Text
                     }
                 }
             }
-            else if (!Vector256.IsHardwareAccelerated || length < (uint)Vector256<TRight>.Count)
+            else if (Avx.IsSupported && length >= (uint)Vector256<TRight>.Count)
+            {
+                ref TLeft currentLeftSearchSpace = ref left;
+                ref TLeft oneVectorAwayFromLeftEnd = ref Unsafe.Add(ref currentLeftSearchSpace, length - TLoader.Count256);
+                ref TRight currentRightSearchSpace = ref right;
+                ref TRight oneVectorAwayFromRightEnd = ref Unsafe.Add(ref currentRightSearchSpace, length - (uint)Vector256<TRight>.Count);
+
+                Vector256<TRight> leftValues;
+                Vector256<TRight> rightValues;
+
+                Vector256<TRight> loweringMask = Vector256.Create(TRight.CreateTruncating(0x20));
+                Vector256<TRight> vecA = Vector256.Create(TRight.CreateTruncating('a'));
+                Vector256<TRight> vecZMinusA = Vector256.Create(TRight.CreateTruncating(('z' - 'a')));
+
+                // Loop until either we've finished all elements or there's less than a vector's-worth remaining.
+                do
+                {
+                    leftValues = TLoader.Load256(ref currentLeftSearchSpace);
+                    rightValues = Vector256.LoadUnsafe(ref currentRightSearchSpace);
+
+                    if (!AllCharsInVectorAreAscii(leftValues | rightValues))
+                    {
+                        return false;
+                    }
+
+                    Vector256<TRight> notEquals = ~Vector256.Equals(leftValues, rightValues);
+
+                    if (notEquals != Vector256<TRight>.Zero)
+                    {
+                        // not exact match
+
+                        leftValues |= loweringMask;
+                        rightValues |= loweringMask;
+
+                        if (Vector256.GreaterThanAny((leftValues - vecA) & notEquals, vecZMinusA) || leftValues != rightValues)
+                        {
+                            return false; // first input isn't in [A-Za-z], and not exact match of lowered
+                        }
+                    }
+
+                    currentRightSearchSpace = ref Unsafe.Add(ref currentRightSearchSpace, (uint)Vector256<TRight>.Count);
+                    currentLeftSearchSpace = ref Unsafe.Add(ref currentLeftSearchSpace, TLoader.Count256);
+                }
+                while (!Unsafe.IsAddressGreaterThan(ref currentRightSearchSpace, ref oneVectorAwayFromRightEnd));
+
+                // If any elements remain, process the last vector in the search space.
+                if (length % (uint)Vector256<TRight>.Count != 0)
+                {
+                    leftValues = TLoader.Load256(ref oneVectorAwayFromLeftEnd);
+                    rightValues = Vector256.LoadUnsafe(ref oneVectorAwayFromRightEnd);
+
+                    if (!AllCharsInVectorAreAscii(leftValues | rightValues))
+                    {
+                        return false;
+                    }
+
+                    Vector256<TRight> notEquals = ~Vector256.Equals(leftValues, rightValues);
+
+                    if (notEquals != Vector256<TRight>.Zero)
+                    {
+                        // not exact match
+
+                        leftValues |= loweringMask;
+                        rightValues |= loweringMask;
+
+                        if (Vector256.GreaterThanAny((leftValues - vecA) & notEquals, vecZMinusA) || leftValues != rightValues)
+                        {
+                            return false; // first input isn't in [A-Za-z], and not exact match of lowered
+                        }
+                    }
+                }
+            }
+            else
             {
                 ref TLeft currentLeftSearchSpace = ref left;
                 ref TLeft oneVectorAwayFromLeftEnd = ref Unsafe.Add(ref currentLeftSearchSpace, length - TLoader.Count128);
@@ -273,78 +345,6 @@ namespace System.Text
                         rightValues |= loweringMask;
 
                         if (Vector128.GreaterThanAny((leftValues - vecA) & notEquals, vecZMinusA) || leftValues != rightValues)
-                        {
-                            return false; // first input isn't in [A-Za-z], and not exact match of lowered
-                        }
-                    }
-                }
-            }
-            else
-            {
-                ref TLeft currentLeftSearchSpace = ref left;
-                ref TLeft oneVectorAwayFromLeftEnd = ref Unsafe.Add(ref currentLeftSearchSpace, length - TLoader.Count256);
-                ref TRight currentRightSearchSpace = ref right;
-                ref TRight oneVectorAwayFromRightEnd = ref Unsafe.Add(ref currentRightSearchSpace, length - (uint)Vector256<TRight>.Count);
-
-                Vector256<TRight> leftValues;
-                Vector256<TRight> rightValues;
-
-                Vector256<TRight> loweringMask = Vector256.Create(TRight.CreateTruncating(0x20));
-                Vector256<TRight> vecA = Vector256.Create(TRight.CreateTruncating('a'));
-                Vector256<TRight> vecZMinusA = Vector256.Create(TRight.CreateTruncating(('z' - 'a')));
-
-                // Loop until either we've finished all elements or there's less than a vector's-worth remaining.
-                do
-                {
-                    leftValues = TLoader.Load256(ref currentLeftSearchSpace);
-                    rightValues = Vector256.LoadUnsafe(ref currentRightSearchSpace);
-
-                    if (!AllCharsInVectorAreAscii(leftValues | rightValues))
-                    {
-                        return false;
-                    }
-
-                    Vector256<TRight> notEquals = ~Vector256.Equals(leftValues, rightValues);
-
-                    if (notEquals != Vector256<TRight>.Zero)
-                    {
-                        // not exact match
-
-                        leftValues |= loweringMask;
-                        rightValues |= loweringMask;
-
-                        if (Vector256.GreaterThanAny((leftValues - vecA) & notEquals, vecZMinusA) || leftValues != rightValues)
-                        {
-                            return false; // first input isn't in [A-Za-z], and not exact match of lowered
-                        }
-                    }
-
-                    currentRightSearchSpace = ref Unsafe.Add(ref currentRightSearchSpace, (uint)Vector256<TRight>.Count);
-                    currentLeftSearchSpace = ref Unsafe.Add(ref currentLeftSearchSpace, TLoader.Count256);
-                }
-                while (!Unsafe.IsAddressGreaterThan(ref currentRightSearchSpace, ref oneVectorAwayFromRightEnd));
-
-                // If any elements remain, process the last vector in the search space.
-                if (length % (uint)Vector256<TRight>.Count != 0)
-                {
-                    leftValues = TLoader.Load256(ref oneVectorAwayFromLeftEnd);
-                    rightValues = Vector256.LoadUnsafe(ref oneVectorAwayFromRightEnd);
-
-                    if (!AllCharsInVectorAreAscii(leftValues | rightValues))
-                    {
-                        return false;
-                    }
-
-                    Vector256<TRight> notEquals = ~Vector256.Equals(leftValues, rightValues);
-
-                    if (notEquals != Vector256<TRight>.Zero)
-                    {
-                        // not exact match
-
-                        leftValues |= loweringMask;
-                        rightValues |= loweringMask;
-
-                        if (Vector256.GreaterThanAny((leftValues - vecA) & notEquals, vecZMinusA) || leftValues != rightValues)
                         {
                             return false; // first input isn't in [A-Za-z], and not exact match of lowered
                         }

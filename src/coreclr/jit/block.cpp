@@ -68,86 +68,39 @@ unsigned SsaStressHashHelper()
 }
 #endif
 
-EHSuccessorIterPosition::EHSuccessorIterPosition(Compiler* comp, BasicBlock* block)
-    : m_remainingRegSuccs(block->NumSucc(comp)), m_curRegSucc(nullptr), m_curTry(comp->ehGetBlockExnFlowDsc(block))
+//------------------------------------------------------------------------
+//  AllSuccessorEnumerator: Construct an instance of the enumerator.
+//
+//  Arguments:
+//     comp  - Compiler instance
+//     block - The block whose successors are to be iterated
+//
+AllSuccessorEnumerator::AllSuccessorEnumerator(Compiler* comp, BasicBlock* block) : m_block(block)
 {
-    // If "block" is a "leave helper" block (the empty BBJ_ALWAYS block that pairs with a
-    // preceding BBJ_CALLFINALLY block to implement a "leave" IL instruction), then no exceptions
-    // can occur within it, so clear m_curTry if it's non-null.
-    if (m_curTry != nullptr)
-    {
-        if (block->isBBCallAlwaysPairTail())
+    m_numSuccs = 0;
+    block->VisitAllSuccs(comp, [this](BasicBlock* succ) {
+        if (m_numSuccs < ArrLen(m_successors))
         {
-            m_curTry = nullptr;
-        }
-    }
-
-    if (m_curTry == nullptr && m_remainingRegSuccs > 0)
-    {
-        // Examine the successors to see if any are the start of try blocks.
-        FindNextRegSuccTry(comp, block);
-    }
-}
-
-void EHSuccessorIterPosition::FindNextRegSuccTry(Compiler* comp, BasicBlock* block)
-{
-    assert(m_curTry == nullptr);
-
-    // Must now consider the next regular successor, if any.
-    while (m_remainingRegSuccs > 0)
-    {
-        m_remainingRegSuccs--;
-        m_curRegSucc = block->GetSucc(m_remainingRegSuccs, comp);
-        if (comp->bbIsTryBeg(m_curRegSucc))
-        {
-            assert(m_curRegSucc->hasTryIndex()); // Since it is a try begin.
-            unsigned newTryIndex = m_curRegSucc->getTryIndex();
-
-            // If the try region started by "m_curRegSucc" (represented by newTryIndex) contains m_block,
-            // we've already yielded its handler, as one of the EH handler successors of m_block itself.
-            if (comp->bbInExnFlowRegions(newTryIndex, block))
-            {
-                continue;
-            }
-
-            // Otherwise, consider this try.
-            m_curTry = comp->ehGetDsc(newTryIndex);
-            break;
-        }
-    }
-}
-
-void EHSuccessorIterPosition::Advance(Compiler* comp, BasicBlock* block)
-{
-    assert(m_curTry != nullptr);
-    if (m_curTry->ebdEnclosingTryIndex != EHblkDsc::NO_ENCLOSING_INDEX)
-    {
-        m_curTry = comp->ehGetDsc(m_curTry->ebdEnclosingTryIndex);
-
-        // If we've gone over into considering try's containing successors,
-        // then the enclosing try must have the successor as its first block.
-        if (m_curRegSucc == nullptr || m_curTry->ebdTryBeg == m_curRegSucc)
-        {
-            return;
+            m_successors[m_numSuccs] = succ;
         }
 
-        // Otherwise, give up, try the next regular successor.
-        m_curTry = nullptr;
-    }
-    else
+        m_numSuccs++;
+        return BasicBlockVisit::Continue;
+    });
+
+    if (m_numSuccs > ArrLen(m_successors))
     {
-        m_curTry = nullptr;
+        m_pSuccessors = new (comp, CMK_BasicBlock) BasicBlock*[m_numSuccs];
+
+        unsigned numSuccs = 0;
+        block->VisitAllSuccs(comp, [this, &numSuccs](BasicBlock* succ) {
+            assert(numSuccs < m_numSuccs);
+            m_pSuccessors[numSuccs++] = succ;
+            return BasicBlockVisit::Continue;
+        });
+
+        assert(numSuccs == m_numSuccs);
     }
-
-    // We've exhausted all try blocks.
-    // See if there are any remaining regular successors that start try blocks.
-    FindNextRegSuccTry(comp, block);
-}
-
-BasicBlock* EHSuccessorIterPosition::Current(Compiler* comp, BasicBlock* block)
-{
-    assert(m_curTry != nullptr);
-    return m_curTry->ExFlowBlock();
 }
 
 FlowEdge* Compiler::BlockPredsWithEH(BasicBlock* blk)
@@ -893,7 +846,7 @@ BasicBlock* BasicBlock::GetUniquePred(Compiler* compiler) const
 //
 // Return Value:
 //    The unique successor of a block, or nullptr if there is no unique successor.
-
+//
 BasicBlock* BasicBlock::GetUniqueSucc() const
 {
     if (bbJumpKind == BBJ_ALWAYS)
@@ -929,8 +882,8 @@ unsigned JitPtrKeyFuncs<BasicBlock>::GetHashCode(const BasicBlock* ptr)
 // isEmpty: check if block is empty or contains only ignorable statements
 //
 // Return Value:
-//    True if block is empty, or contains only PHI assignments,
-//    or contains zero or more PHI assignments followed by NOPs.
+//    True if block is empty, or contains only PHI stores,
+//    or contains zero or more PHI stores followed by NOPs.
 //
 bool BasicBlock::isEmpty() const
 {
@@ -982,25 +935,15 @@ bool BasicBlock::isValid() const
 Statement* BasicBlock::FirstNonPhiDef() const
 {
     Statement* stmt = firstStmt();
-    if (stmt == nullptr)
-    {
-        return nullptr;
-    }
-    GenTree* tree = stmt->GetRootNode();
-    while ((tree->OperGet() == GT_ASG && tree->AsOp()->gtOp2->OperGet() == GT_PHI) ||
-           (tree->OperGet() == GT_STORE_LCL_VAR && tree->AsOp()->gtOp1->OperGet() == GT_PHI))
+    while ((stmt != nullptr) && stmt->IsPhiDefnStmt())
     {
         stmt = stmt->GetNextStmt();
-        if (stmt == nullptr)
-        {
-            return nullptr;
-        }
-        tree = stmt->GetRootNode();
     }
+
     return stmt;
 }
 
-Statement* BasicBlock::FirstNonPhiDefOrCatchArgAsg() const
+Statement* BasicBlock::FirstNonPhiDefOrCatchArgStore() const
 {
     Statement* stmt = FirstNonPhiDef();
     if (stmt == nullptr)
@@ -1008,8 +951,7 @@ Statement* BasicBlock::FirstNonPhiDefOrCatchArgAsg() const
         return nullptr;
     }
     GenTree* tree = stmt->GetRootNode();
-    if ((tree->OperGet() == GT_ASG && tree->AsOp()->gtOp2->OperGet() == GT_CATCH_ARG) ||
-        (tree->OperGet() == GT_STORE_LCL_VAR && tree->AsOp()->gtOp1->OperGet() == GT_CATCH_ARG))
+    if (tree->OperIs(GT_STORE_LCL_VAR) && tree->AsLclVar()->Data()->OperIs(GT_CATCH_ARG))
     {
         stmt = stmt->GetNextStmt();
     }

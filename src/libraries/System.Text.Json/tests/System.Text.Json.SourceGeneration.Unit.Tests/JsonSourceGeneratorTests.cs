@@ -1,11 +1,8 @@
 // Licensed to the .NET Foundation under one or more agreements.
 // The .NET Foundation licenses this file to you under the MIT license.
 
-using System.Collections;
-using System.Collections.Generic;
 using System.Collections.Immutable;
 using System.Linq;
-using System.Reflection;
 using Microsoft.CodeAnalysis;
 using Xunit;
 
@@ -225,17 +222,15 @@ namespace System.Text.Json.SourceGeneration.UnitTests
 
             if (includeSTJ)
             {
-                result.AssertContainsType("global::System.Int32");
-                result.AssertContainsType("global::System.String");
+                result.AssertContainsType("int");
+                result.AssertContainsType("string");
             }
             else
             {
                 Assert.Empty(result.AllGeneratedTypes);
             }
 
-            CompilationHelper.CheckDiagnosticMessages(DiagnosticSeverity.Info, result.Diagnostics, Array.Empty<(Location, string)>());
-            CompilationHelper.CheckDiagnosticMessages(DiagnosticSeverity.Warning, result.Diagnostics, Array.Empty<(Location, string)>());
-            CompilationHelper.CheckDiagnosticMessages(DiagnosticSeverity.Error, result.Diagnostics, Array.Empty<(Location, string)>());
+            Assert.Empty(result.Diagnostics);
         }
 
         [Theory]
@@ -265,10 +260,7 @@ namespace System.Text.Json.SourceGeneration.UnitTests
             JsonSourceGeneratorResult result = CompilationHelper.RunJsonSourceGenerator(compilation);
 
             Assert.Empty(result.AllGeneratedTypes);
-
-            CompilationHelper.CheckDiagnosticMessages(DiagnosticSeverity.Info, result.Diagnostics, Array.Empty<(Location, string)>());
-            CompilationHelper.CheckDiagnosticMessages(DiagnosticSeverity.Warning, result.Diagnostics, Array.Empty<(Location, string)>());
-            CompilationHelper.CheckDiagnosticMessages(DiagnosticSeverity.Error, result.Diagnostics, Array.Empty<(Location, string)>());
+            Assert.Empty(result.Diagnostics);
         }
 
         [Fact]
@@ -377,14 +369,14 @@ namespace System.Text.Json.SourceGeneration.UnitTests
 
             Assert.Equal(5, result.AllGeneratedTypes.Count());
             result.AssertContainsType("global::MyType");
-            result.AssertContainsType("global::System.Int32");
-            result.AssertContainsType("global::System.String");
-            result.AssertContainsType("global::System.Double");
-            result.AssertContainsType("global::System.Char");
+            result.AssertContainsType("int");
+            result.AssertContainsType("string");
+            result.AssertContainsType("double");
+            result.AssertContainsType("char");
         }
 
         [Fact]
-        [ActiveIssue("https://github.com/dotnet/runtime/issues/63802", TargetFrameworkMonikers.NetFramework)]
+        [SkipOnTargetFramework(TargetFrameworkMonikers.NetFramework)] // Netfx lacks IsExternalInit class needed for records
         public void Record()
         {
             // Compile the referenced assembly first.
@@ -429,12 +421,14 @@ namespace System.Text.Json.SourceGeneration.UnitTests
             CheckCompilationDiagnosticsErrors(result.Diagnostics);
             CheckCompilationDiagnosticsErrors(result.NewCompilation.GetDiagnostics());
 
-            Assert.Equal(4, result.AllGeneratedTypes.Count());
+            Assert.Equal(3, result.AllGeneratedTypes.Count());
             result.AssertContainsType("global::HelloWorld.AppRecord");
+            result.AssertContainsType("string");
+            result.AssertContainsType("int");
         }
 
         [Fact]
-        [ActiveIssue("https://github.com/dotnet/runtime/issues/63802", TargetFrameworkMonikers.NetFramework)]
+        [SkipOnTargetFramework(TargetFrameworkMonikers.NetFramework)] // Netfx lacks IsExternalInit class needed for records
         public void RecordInExternalAssembly()
         {
             // Compile the referenced assembly first.
@@ -466,8 +460,10 @@ namespace System.Text.Json.SourceGeneration.UnitTests
             CheckCompilationDiagnosticsErrors(result.Diagnostics);
             CheckCompilationDiagnosticsErrors(result.NewCompilation.GetDiagnostics());
 
-            Assert.Equal(4, result.AllGeneratedTypes.Count());
+            Assert.Equal(3, result.AllGeneratedTypes.Count());
             result.AssertContainsType("global::ReferencedAssembly.LibRecord");
+            result.AssertContainsType("string");
+            result.AssertContainsType("int");
         }
 
         [Fact]
@@ -507,8 +503,10 @@ namespace System.Text.Json.SourceGeneration.UnitTests
             CheckCompilationDiagnosticsErrors(result.Diagnostics);
             CheckCompilationDiagnosticsErrors(result.NewCompilation.GetDiagnostics());
 
-            Assert.Equal(4, result.AllGeneratedTypes.Count());
+            Assert.Equal(3, result.AllGeneratedTypes.Count());
             result.AssertContainsType("global::HelloWorld.AppRecord");
+            result.AssertContainsType("string");
+            result.AssertContainsType("int");
         }
 
         private void CheckCompilationDiagnosticsErrors(ImmutableArray<Diagnostic> diagnostics)
@@ -568,7 +566,7 @@ namespace System.Text.Json.SourceGeneration.UnitTests
             // Should find the generated type.
             Assert.Equal(2, result.AllGeneratedTypes.Count());
             result.AssertContainsType("global::HelloWorld.MyType");
-            result.AssertContainsType("global::System.Int32");
+            result.AssertContainsType("int");
         }
 
         [Fact]
@@ -599,9 +597,7 @@ namespace System.Text.Json.SourceGeneration.UnitTests
             ImmutableArray<Diagnostic> generatorDiags = result.NewCompilation.GetDiagnostics();
 
             // No diagnostics expected.
-            CompilationHelper.CheckDiagnosticMessages(DiagnosticSeverity.Info, generatorDiags, Array.Empty<(Location, string)>());
-            CompilationHelper.CheckDiagnosticMessages(DiagnosticSeverity.Warning, generatorDiags, Array.Empty<(Location, string)>());
-            CompilationHelper.CheckDiagnosticMessages(DiagnosticSeverity.Error, generatorDiags, Array.Empty<(Location, string)>());
+            Assert.Empty(result.Diagnostics);
         }
 
         [Fact]
@@ -629,9 +625,40 @@ namespace System.Text.Json.SourceGeneration.UnitTests
             ImmutableArray<Diagnostic> generatorDiags = result.NewCompilation.GetDiagnostics();
 
             // No diagnostics expected.
-            CompilationHelper.CheckDiagnosticMessages(DiagnosticSeverity.Info, generatorDiags, Array.Empty<(Location, string)>());
-            CompilationHelper.CheckDiagnosticMessages(DiagnosticSeverity.Warning, generatorDiags, Array.Empty<(Location, string)>());
-            CompilationHelper.CheckDiagnosticMessages(DiagnosticSeverity.Error, generatorDiags, Array.Empty<(Location, string)>());
+            Assert.Empty(result.Diagnostics);
+        }
+
+        [Fact]
+        public void EquivalentTupleDeclarations_DoNotConflict()
+        {
+            string source = """
+                using System.Text.Json.Serialization;
+
+                #nullable enable
+
+                namespace HelloWorld
+                {
+                    [JsonSerializable(typeof((string? Label1, string Label2, int Integer)))]
+                    [JsonSerializable(typeof((string, string, int)))]
+                    internal partial class JsonContext : JsonSerializerContext
+                    {
+                    }
+                }
+                """;
+
+            Compilation compilation = CompilationHelper.CreateCompilation(source);
+
+            JsonSourceGeneratorResult result = CompilationHelper.RunJsonSourceGenerator(compilation);
+
+            // Make sure compilation was successful.
+            Assert.Empty(result.Diagnostics);
+            Assert.Empty(result.NewCompilation.GetDiagnostics());
+
+            // Should find the generated type.
+            Assert.Equal(3, result.AllGeneratedTypes.Count());
+            result.AssertContainsType("(string, string, int)");
+            result.AssertContainsType("string");
+            result.AssertContainsType("int");
         }
 
         [Fact]
@@ -659,9 +686,119 @@ namespace System.Text.Json.SourceGeneration.UnitTests
             ImmutableArray<Diagnostic> generatorDiags = result.NewCompilation.GetDiagnostics();
 
             // No diagnostics expected.
-            CompilationHelper.CheckDiagnosticMessages(DiagnosticSeverity.Info, generatorDiags, Array.Empty<(Location, string)>());
-            CompilationHelper.CheckDiagnosticMessages(DiagnosticSeverity.Warning, generatorDiags, Array.Empty<(Location, string)>());
-            CompilationHelper.CheckDiagnosticMessages(DiagnosticSeverity.Error, generatorDiags, Array.Empty<(Location, string)>());
+            Assert.Empty(result.Diagnostics);
+        }
+
+        [Fact]
+        public void UseUnderlyingTypeConverterForNullableType()
+        {
+            // Compile the referenced assembly first.
+            Compilation referencedCompilation = CompilationHelper.CreateReferencedLocationCompilation();
+
+            // Emit the image of the referenced assembly.
+            byte[] referencedImage = CompilationHelper.CreateAssemblyImage(referencedCompilation);
+
+            string source = """
+                using ReferencedAssembly;
+                using System;
+                using System.Text.Json;
+                using System.Text.Json.Serialization;
+                namespace Test
+                {
+                    [JsonSourceGenerationOptions]
+                    [JsonSerializable(typeof(Sample))]
+                    public partial class SourceGenerationContext : JsonSerializerContext
+                    {
+                    }
+                    public class Sample
+                    {
+                        [JsonConverter(typeof(DateTimeOffsetToTimestampJsonConverter))]
+                        public DateTimeOffset Start { get; set; }
+                        [JsonConverter(typeof(DateTimeOffsetToTimestampJsonConverter))]
+                        public DateTimeOffset? End { get; set; } // Without this property, this is fine
+                    }
+                    public class DateTimeOffsetToTimestampJsonConverter : JsonConverter<DateTimeOffset>
+                    {
+                        internal const long TicksPerMicroseconds = 10;
+                        public override DateTimeOffset Read(ref Utf8JsonReader reader, Type typeToConvert, JsonSerializerOptions options)
+                        {
+                            var value = reader.GetInt64();
+                            return new DateTimeOffset(value * TicksPerMicroseconds, TimeSpan.Zero);
+                        }
+                        public override void Write(Utf8JsonWriter writer, DateTimeOffset value, JsonSerializerOptions options)
+                        {
+                            writer.WriteNumberValue(value.Ticks / TicksPerMicroseconds);
+                        }
+                    }
+                }
+                """;
+
+            MetadataReference[] additionalReferences = { MetadataReference.CreateFromImage(referencedImage) };
+
+            Compilation compilation = CompilationHelper.CreateCompilation(source, additionalReferences);
+
+            JsonSourceGeneratorResult result = CompilationHelper.RunJsonSourceGenerator(compilation);
+
+            // Make sure compilation was successful.
+            CheckCompilationDiagnosticsErrors(result.NewCompilation.GetDiagnostics());
+
+            Assert.Equal(3, result.AllGeneratedTypes.Count());
+            result.AssertContainsType("global::Test.Sample");
+            result.AssertContainsType("global::System.DateTimeOffset");
+            result.AssertContainsType("global::System.DateTimeOffset?");
+        }
+
+        [Fact]
+        public void VariousGenericSerializableTypesAreSupported()
+        {
+            string source = """
+                using System;
+                using System.Collections.Generic;
+                using System.Text.Json.Serialization;
+
+                namespace HelloWorld
+                {
+                    [JsonSerializable(typeof(Dictionary<string, string>))]
+                    [JsonSerializable(typeof(HelloWorld.MyClass.NestedGenericClass<string>))]
+                    [JsonSerializable(typeof(HelloWorld.MyGenericClass<string>.NestedClass))]
+                    [JsonSerializable(typeof(HelloWorld.MyGenericClass<string>.NestedGenericClass<int>))]
+                    internal partial class JsonContext : JsonSerializerContext
+                    {
+                    }
+
+                    public class MyClass
+                    {
+                        public class NestedGenericClass<T>
+                        {
+                        }
+                    }
+
+                    public class MyGenericClass<T1>
+                    {
+                        public class NestedClass
+                        {
+                        }
+                        public class NestedGenericClass<T2>
+                        {
+                        }
+                    }
+                }
+                """;
+
+            Compilation compilation = CompilationHelper.CreateCompilation(source);
+
+            JsonSourceGeneratorResult result = CompilationHelper.RunJsonSourceGenerator(compilation);
+
+            // Make sure compilation was successful.
+            Assert.Empty(result.Diagnostics.Where(diag => diag.Severity.Equals(DiagnosticSeverity.Error)));
+            Assert.Empty(result.NewCompilation.GetDiagnostics().Where(diag => diag.Severity.Equals(DiagnosticSeverity.Error)));
+
+            Assert.Equal(5, result.AllGeneratedTypes.Count());
+            result.AssertContainsType("global::System.Collections.Generic.Dictionary<string, string>");
+            result.AssertContainsType("global::HelloWorld.MyClass.NestedGenericClass<string>");
+            result.AssertContainsType("global::HelloWorld.MyGenericClass<string>.NestedClass");
+            result.AssertContainsType("global::HelloWorld.MyGenericClass<string>.NestedGenericClass<int>");
+            result.AssertContainsType("string");
         }
     }
 }

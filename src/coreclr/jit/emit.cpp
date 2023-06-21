@@ -180,30 +180,40 @@ unsigned emitter::emitTotalIGExtend;
 
 unsigned emitter::emitTotalIDescSmallCnt;
 unsigned emitter::emitTotalIDescCnt;
-unsigned emitter::emitTotalIDescJmpCnt;
-#if !defined(TARGET_ARM64)
-unsigned emitter::emitTotalIDescLblCnt;
-#endif // !defined(TARGET_ARM64)
 unsigned emitter::emitTotalIDescCnsCnt;
 unsigned emitter::emitTotalIDescDspCnt;
-unsigned emitter::emitTotalIDescCnsDspCnt;
+#ifdef TARGET_ARM64
+unsigned emitter::emitTotalIDescLclVarPairCnt;
+unsigned emitter::emitTotalIDescLclVarPairCnsCnt;
+#endif // TARGET_ARM64
+#ifdef TARGET_ARM
+unsigned emitter::emitTotalIDescRelocCnt;
+#endif // TARGET_ARM
 #ifdef TARGET_XARCH
 unsigned emitter::emitTotalIDescAmdCnt;
 unsigned emitter::emitTotalIDescCnsAmdCnt;
 #endif // TARGET_XARCH
+unsigned emitter::emitTotalIDescCnsDspCnt;
+#if FEATURE_LOOP_ALIGN
+unsigned emitter::emitTotalIDescAlignCnt;
+#endif // FEATURE_LOOP_ALIGN
+unsigned emitter::emitTotalIDescJmpCnt;
+#if !defined(TARGET_ARM64)
+unsigned emitter::emitTotalIDescLblCnt;
+#endif // !defined(TARGET_ARM64)
 unsigned emitter::emitTotalIDescCGCACnt;
-#ifdef TARGET_ARM
-unsigned emitter::emitTotalIDescRelocCnt;
-#endif // TARGET_ARM
 
 unsigned emitter::emitSmallDspCnt;
 unsigned emitter::emitLargeDspCnt;
 
+unsigned emitter::emitSmallCns[SMALL_CNS_TSZ];
 unsigned emitter::emitSmallCnsCnt;
 unsigned emitter::emitLargeCnsCnt;
-unsigned emitter::emitSmallCns[SMALL_CNS_TSZ];
-
-unsigned emitter::emitTotalDescAlignCnt;
+unsigned emitter::emitInt8CnsCnt;
+unsigned emitter::emitInt16CnsCnt;
+unsigned emitter::emitInt32CnsCnt;
+unsigned emitter::emitNegCnsCnt;
+unsigned emitter::emitPow2CnsCnt;
 
 void emitterStaticStats(FILE* fout)
 {
@@ -219,116 +229,156 @@ void emitterStaticStats(FILE* fout)
 
     fprintf(fout, "\n");
     fprintf(fout, "insGroup:\n");
-    fprintf(fout, "Offset / size of igNext           = %2zu / %2zu\n", offsetof(insGroup, igNext),
+    fprintf(fout, "Offset / size of igNext             = %3zu / %2zu\n", offsetof(insGroup, igNext),
             sizeof(igDummy->igNext));
 #if EMIT_BACKWARDS_NAVIGATION
-    fprintf(fout, "Offset / size of igPrev           = %2zu / %2zu\n", offsetof(insGroup, igPrev),
+    fprintf(fout, "Offset / size of igPrev             = %3zu / %2zu\n", offsetof(insGroup, igPrev),
             sizeof(igDummy->igPrev));
 #endif // EMIT_BACKWARDS_NAVIGATION
 #ifdef DEBUG
-    fprintf(fout, "Offset / size of igSelf           = %2zu / %2zu\n", offsetof(insGroup, igSelf),
+    fprintf(fout, "Offset / size of igSelf             = %3zu / %2zu\n", offsetof(insGroup, igSelf),
             sizeof(igDummy->igSelf));
-#endif
-    fprintf(fout, "Offset / size of igNum            = %2zu / %2zu\n", offsetof(insGroup, igNum),
+#endif // DEBUG
+#if defined(DEBUG) || defined(LATE_DISASM)
+    fprintf(fout, "Offset / size of igWeight           = %3zu / %2zu\n", offsetof(insGroup, igWeight),
+            sizeof(igDummy->igWeight));
+    fprintf(fout, "Offset / size of igPerfScore        = %3zu / %2zu\n", offsetof(insGroup, igPerfScore),
+            sizeof(igDummy->igPerfScore));
+#endif // DEBUG || LATE_DISASM
+#ifdef DEBUG
+    fprintf(fout, "Offset / size of lastGeneratedBlock = %3zu / %2zu\n", offsetof(insGroup, lastGeneratedBlock),
+            sizeof(igDummy->lastGeneratedBlock));
+    fprintf(fout, "Offset / size of igBlocks           = %3zu / %2zu\n", offsetof(insGroup, igBlocks),
+            sizeof(igDummy->igBlocks));
+    fprintf(fout, "Offset / size of igDataSize         = %3zu / %2zu\n", offsetof(insGroup, igDataSize),
+            sizeof(igDummy->igDataSize));
+#endif // DEBUG
+    fprintf(fout, "Offset / size of igNum              = %3zu / %2zu\n", offsetof(insGroup, igNum),
             sizeof(igDummy->igNum));
-    fprintf(fout, "Offset / size of igOffs           = %2zu / %2zu\n", offsetof(insGroup, igOffs),
+    fprintf(fout, "Offset / size of igOffs             = %3zu / %2zu\n", offsetof(insGroup, igOffs),
             sizeof(igDummy->igOffs));
-    fprintf(fout, "Offset / size of igFuncIdx        = %2zu / %2zu\n", offsetof(insGroup, igFuncIdx),
+    fprintf(fout, "Offset / size of igFuncIdx          = %3zu / %2zu\n", offsetof(insGroup, igFuncIdx),
             sizeof(igDummy->igFuncIdx));
-    fprintf(fout, "Offset / size of igFlags          = %2zu / %2zu\n", offsetof(insGroup, igFlags),
+    fprintf(fout, "Offset / size of igFlags            = %3zu / %2zu\n", offsetof(insGroup, igFlags),
             sizeof(igDummy->igFlags));
-    fprintf(fout, "Offset / size of igSize           = %2zu / %2zu\n", offsetof(insGroup, igSize),
+    fprintf(fout, "Offset / size of igSize             = %3zu / %2zu\n", offsetof(insGroup, igSize),
             sizeof(igDummy->igSize));
-    fprintf(fout, "Offset / size of igData           = %2zu / %2zu\n", offsetof(insGroup, igData),
+#if FEATURE_LOOP_ALIGN
+    fprintf(fout, "Offset / size of igLoopBackEdge     = %3zu / %2zu\n", offsetof(insGroup, igLoopBackEdge),
+            sizeof(igDummy->igLoopBackEdge));
+#endif // FEATURE_LOOP_ALIGN
+#if !(REGMASK_BITS <= 32)
+    fprintf(fout, "Offset / size of igGCregs           = %3zu / %2zu\n", offsetof(insGroup, igGCregs),
+            sizeof(igDummy->igGCregs));
+#endif // !(REGMASK_BITS <= 32)
+    fprintf(fout, "Offset / size of igData             = %3zu / %2zu\n", offsetof(insGroup, igData),
             sizeof(igDummy->igData));
-    fprintf(fout, "Offset / size of igPhData         = %2zu / %2zu\n", offsetof(insGroup, igPhData),
+    fprintf(fout, "Offset / size of igPhData           = %3zu / %2zu\n", offsetof(insGroup, igPhData),
             sizeof(igDummy->igPhData));
 #if EMIT_BACKWARDS_NAVIGATION
-    fprintf(fout, "Offset / size of igLastIns        = %2zu / %2zu\n", offsetof(insGroup, igLastIns),
+    fprintf(fout, "Offset / size of igLastIns          = %3zu / %2zu\n", offsetof(insGroup, igLastIns),
             sizeof(igDummy->igLastIns));
 #endif // EMIT_BACKWARDS_NAVIGATION
 #if EMIT_TRACK_STACK_DEPTH
-    fprintf(fout, "Offset / size of igStkLvl         = %2zu / %2zu\n", offsetof(insGroup, igStkLvl),
+    fprintf(fout, "Offset / size of igStkLvl           = %3zu / %2zu\n", offsetof(insGroup, igStkLvl),
             sizeof(igDummy->igStkLvl));
-#endif
-    fprintf(fout, "Offset / size of igGCregs         = %2zu / %2zu\n", offsetof(insGroup, igGCregs),
+#endif // EMIT_TRACK_STACK_DEPTH
+#if REGMASK_BITS <= 32
+    fprintf(fout, "Offset / size of igGCregs           = %3zu / %2zu\n", offsetof(insGroup, igGCregs),
             sizeof(igDummy->igGCregs));
-    fprintf(fout, "Offset / size of igInsCnt         = %2zu / %2zu\n", offsetof(insGroup, igInsCnt),
+#endif // REGMASK_BITS <= 32
+    fprintf(fout, "Offset / size of igInsCnt           = %3zu / %2zu\n", offsetof(insGroup, igInsCnt),
             sizeof(igDummy->igInsCnt));
     fprintf(fout, "\n");
-    fprintf(fout, "Size of insGroup                  = %zu\n", sizeof(insGroup));
+    fprintf(fout, "Size of insGroup                    = %zu\n", sizeof(insGroup));
 
     // insPlaceholderGroupData members
 
+    insPlaceholderGroupData* ipgdDummy = nullptr;
+
     fprintf(fout, "\n");
     fprintf(fout, "insPlaceholderGroupData:\n");
-    fprintf(fout, "Offset of igPhNext                = %2zu\n", offsetof(insPlaceholderGroupData, igPhNext));
-    fprintf(fout, "Offset of igPhBB                  = %2zu\n", offsetof(insPlaceholderGroupData, igPhBB));
-    fprintf(fout, "Offset of igPhInitGCrefVars       = %2zu\n", offsetof(insPlaceholderGroupData, igPhInitGCrefVars));
-    fprintf(fout, "Offset of igPhInitGCrefRegs       = %2zu\n", offsetof(insPlaceholderGroupData, igPhInitGCrefRegs));
-    fprintf(fout, "Offset of igPhInitByrefRegs       = %2zu\n", offsetof(insPlaceholderGroupData, igPhInitByrefRegs));
-    fprintf(fout, "Offset of igPhPrevGCrefVars       = %2zu\n", offsetof(insPlaceholderGroupData, igPhPrevGCrefVars));
-    fprintf(fout, "Offset of igPhPrevGCrefRegs       = %2zu\n", offsetof(insPlaceholderGroupData, igPhPrevGCrefRegs));
-    fprintf(fout, "Offset of igPhPrevByrefRegs       = %2zu\n", offsetof(insPlaceholderGroupData, igPhPrevByrefRegs));
-    fprintf(fout, "Offset of igPhType                = %2zu\n", offsetof(insPlaceholderGroupData, igPhType));
-    fprintf(fout, "Size   of insPlaceholderGroupData = %zu\n", sizeof(insPlaceholderGroupData));
+    fprintf(fout, "Offset / size of igPhNext           = %3zu / %2zu\n", offsetof(insPlaceholderGroupData, igPhNext),
+            sizeof(ipgdDummy->igPhNext));
+    fprintf(fout, "Offset / size of igPhBB             = %3zu / %2zu\n", offsetof(insPlaceholderGroupData, igPhBB),
+            sizeof(ipgdDummy->igPhBB));
+    fprintf(fout, "Offset / size of igPhInitGCrefVars  = %3zu / %2zu\n",
+            offsetof(insPlaceholderGroupData, igPhInitGCrefVars), sizeof(ipgdDummy->igPhInitGCrefVars));
+    fprintf(fout, "Offset / size of igPhInitGCrefRegs  = %3zu / %2zu\n",
+            offsetof(insPlaceholderGroupData, igPhInitGCrefRegs), sizeof(ipgdDummy->igPhInitGCrefRegs));
+    fprintf(fout, "Offset / size of igPhInitByrefRegs  = %3zu / %2zu\n",
+            offsetof(insPlaceholderGroupData, igPhInitByrefRegs), sizeof(ipgdDummy->igPhInitByrefRegs));
+    fprintf(fout, "Offset / size of igPhPrevGCrefVars  = %3zu / %2zu\n",
+            offsetof(insPlaceholderGroupData, igPhPrevGCrefVars), sizeof(ipgdDummy->igPhPrevGCrefVars));
+    fprintf(fout, "Offset / size of igPhPrevGCrefRegs  = %3zu / %2zu\n",
+            offsetof(insPlaceholderGroupData, igPhPrevGCrefRegs), sizeof(ipgdDummy->igPhPrevGCrefRegs));
+    fprintf(fout, "Offset / size of igPhPrevByrefRegs  = %3zu / %2zu\n",
+            offsetof(insPlaceholderGroupData, igPhPrevByrefRegs), sizeof(ipgdDummy->igPhPrevByrefRegs));
+    fprintf(fout, "Offset / size of igPhType           = %3zu / %2zu\n", offsetof(insPlaceholderGroupData, igPhType),
+            sizeof(ipgdDummy->igPhType));
+    fprintf(fout, "\n");
+    fprintf(fout, "Size of insPlaceholderGroupData     = %zu\n", sizeof(insPlaceholderGroupData));
 
     fprintf(fout, "\n");
-    fprintf(fout, "SMALL_IDSC_SIZE           = %2u\n", SMALL_IDSC_SIZE);
-    fprintf(fout, "Size   of instrDesc       = %2zu\n", sizeof(emitter::instrDesc));
-    // fprintf(fout, "Offset of _idIns      = %2zu\n", offsetof(emitter::instrDesc, _idIns      ));
-    // fprintf(fout, "Offset of _idInsFmt   = %2zu\n", offsetof(emitter::instrDesc, _idInsFmt   ));
-    // fprintf(fout, "Offset of _idOpSize   = %2zu\n", offsetof(emitter::instrDesc, _idOpSize   ));
-    // fprintf(fout, "Offset of idSmallCns  = %2zu\n", offsetof(emitter::instrDesc, idSmallCns  ));
-    // fprintf(fout, "Offset of _idAddrUnion= %2zu\n", offsetof(emitter::instrDesc, _idAddrUnion));
-    // fprintf(fout, "\n");
-    // fprintf(fout, "Size   of _idAddrUnion= %2zu\n", sizeof(((emitter::instrDesc*)0)->_idAddrUnion));
-
-    fprintf(fout, "Size   of instrDescJmp    = %2zu\n", sizeof(emitter::instrDescJmp));
+    fprintf(fout, "SMALL_IDSC_SIZE                = %2u\n", SMALL_IDSC_SIZE);
+    fprintf(fout, "Size of instrDesc              = %2zu\n", sizeof(emitter::instrDesc));
+    fprintf(fout, "Size of instrDescCns           = %2zu\n", sizeof(emitter::instrDescCns));
+    fprintf(fout, "Size of instrDescDsp           = %2zu\n", sizeof(emitter::instrDescDsp));
+#ifdef TARGET_ARM64
+    fprintf(fout, "Size of instrDescLclVarPair    = %2zu\n", sizeof(emitter::instrDescLclVarPair));
+    fprintf(fout, "Size of instrDescLclVarPairCns = %2zu\n", sizeof(emitter::instrDescLclVarPairCns));
+#endif // TARGET_ARM64
+#ifdef TARGET_ARM
+    fprintf(fout, "Size of instrDescReloc         = %2zu\n", sizeof(emitter::instrDescReloc));
+#endif // TARGET_ARM
+#ifdef TARGET_XARCH
+    fprintf(fout, "Size of instrDescAmd           = %2zu\n", sizeof(emitter::instrDescAmd));
+    fprintf(fout, "Size of instrDescCnsAmd        = %2zu\n", sizeof(emitter::instrDescCnsAmd));
+#endif // TARGET_XARCH
+    fprintf(fout, "Size of instrDescCnsDsp        = %2zu\n", sizeof(emitter::instrDescCnsDsp));
 #if FEATURE_LOOP_ALIGN
-    fprintf(fout, "Size   of instrDescAlign  = %2zu\n", sizeof(emitter::instrDescAlign));
+    fprintf(fout, "Size of instrDescAlign         = %2zu\n", sizeof(emitter::instrDescAlign));
 #endif // FEATURE_LOOP_ALIGN
+    fprintf(fout, "Size of instrDescJmp           = %2zu\n", sizeof(emitter::instrDescJmp));
 #if !defined(TARGET_ARM64)
-    fprintf(fout, "Size   of instrDescLbl    = %2zu\n", sizeof(emitter::instrDescLbl));
+    fprintf(fout, "Size of instrDescLbl           = %2zu\n", sizeof(emitter::instrDescLbl));
 #endif // !defined(TARGET_ARM64)
-    fprintf(fout, "Size   of instrDescCns    = %2zu\n", sizeof(emitter::instrDescCns));
-    fprintf(fout, "Size   of instrDescDsp    = %2zu\n", sizeof(emitter::instrDescDsp));
-    fprintf(fout, "Size   of instrDescCnsDsp = %2zu\n", sizeof(emitter::instrDescCnsDsp));
-#ifdef TARGET_XARCH
-    fprintf(fout, "Size   of instrDescAmd    = %2zu\n", sizeof(emitter::instrDescAmd));
-    fprintf(fout, "Size   of instrDescCnsAmd = %2zu\n", sizeof(emitter::instrDescCnsAmd));
-#endif // TARGET_XARCH
-    fprintf(fout, "Size   of instrDescCGCA   = %2zu\n", sizeof(emitter::instrDescCGCA));
-#ifdef TARGET_ARM
-    fprintf(fout, "Size   of instrDescReloc  = %2zu\n", sizeof(emitter::instrDescReloc));
-#endif // TARGET_ARM
+    fprintf(fout, "Size of instrDescCGCA          = %2zu\n", sizeof(emitter::instrDescCGCA));
 
     fprintf(fout, "\n");
-    fprintf(fout, "igBuffSize                    = %2zu\n", igBuffSize);
-    fprintf(fout, "SMALL_IDSC_SIZE per IG buffer = %2zu\n", igBuffSize / SMALL_IDSC_SIZE);
-    fprintf(fout, "instrDesc per IG buffer       = %2zu\n", igBuffSize / sizeof(emitter::instrDesc));
-    fprintf(fout, "instrDescJmp per IG buffer    = %2zu\n", igBuffSize / sizeof(emitter::instrDescJmp));
-#if !defined(TARGET_ARM64)
-    fprintf(fout, "instrDescLbl per IG buffer    = %2zu\n", igBuffSize / sizeof(emitter::instrDescLbl));
-#endif // !defined(TARGET_ARM64)
-    fprintf(fout, "instrDescCns per IG buffer    = %2zu\n", igBuffSize / sizeof(emitter::instrDescCns));
-    fprintf(fout, "instrDescDsp per IG buffer    = %2zu\n", igBuffSize / sizeof(emitter::instrDescDsp));
-    fprintf(fout, "instrDescCnsDsp per IG buffer = %2zu\n", igBuffSize / sizeof(emitter::instrDescCnsDsp));
-#ifdef TARGET_XARCH
-    fprintf(fout, "instrDescAmd per IG buffer    = %2zu\n", igBuffSize / sizeof(emitter::instrDescAmd));
-    fprintf(fout, "instrDescCnsAmd per IG buffer = %2zu\n", igBuffSize / sizeof(emitter::instrDescCnsAmd));
-#endif // TARGET_XARCH
-    fprintf(fout, "instrDescCGCA per IG buffer   = %2zu\n", igBuffSize / sizeof(emitter::instrDescCGCA));
+    fprintf(fout, "igBuffSize                           = %2zu\n", igBuffSize);
+    fprintf(fout, "SMALL_IDSC_SIZE        per IG buffer = %2zu\n", igBuffSize / SMALL_IDSC_SIZE);
+    fprintf(fout, "instrDesc              per IG buffer = %2zu\n", igBuffSize / sizeof(emitter::instrDesc));
+    fprintf(fout, "instrDescCns           per IG buffer = %2zu\n", igBuffSize / sizeof(emitter::instrDescCns));
+    fprintf(fout, "instrDescDsp           per IG buffer = %2zu\n", igBuffSize / sizeof(emitter::instrDescDsp));
+#ifdef TARGET_ARM64
+    fprintf(fout, "instrDescLclVarPair    per IG buffer = %2zu\n", igBuffSize / sizeof(emitter::instrDescLclVarPair));
+    fprintf(fout, "instrDescLclVarPairCns per IG buffer = %2zu\n",
+            igBuffSize / sizeof(emitter::instrDescLclVarPairCns));
+#endif // TARGET_ARM64
 #ifdef TARGET_ARM
-    fprintf(fout, "instrDescReloc per IG buffer  = %2zu\n", igBuffSize / sizeof(emitter::instrDescReloc));
+    fprintf(fout, "instrDescReloc         per IG buffer = %2zu\n", igBuffSize / sizeof(emitter::instrDescReloc));
 #endif // TARGET_ARM
+#ifdef TARGET_XARCH
+    fprintf(fout, "instrDescAmd           per IG buffer = %2zu\n", igBuffSize / sizeof(emitter::instrDescAmd));
+    fprintf(fout, "instrDescCnsAmd        per IG buffer = %2zu\n", igBuffSize / sizeof(emitter::instrDescCnsAmd));
+#endif // TARGET_XARCH
+    fprintf(fout, "instrDescCnsDsp        per IG buffer = %2zu\n", igBuffSize / sizeof(emitter::instrDescCnsDsp));
+#if FEATURE_LOOP_ALIGN
+    fprintf(fout, "instrDescAlign         per IG buffer = %2zu\n", igBuffSize / sizeof(emitter::instrDescAlign));
+#endif // FEATURE_LOOP_ALIGN
+    fprintf(fout, "instrDescJmp           per IG buffer = %2zu\n", igBuffSize / sizeof(emitter::instrDescJmp));
+#if !defined(TARGET_ARM64)
+    fprintf(fout, "instrDescLbl           per IG buffer = %2zu\n", igBuffSize / sizeof(emitter::instrDescLbl));
+#endif // !defined(TARGET_ARM64)
+    fprintf(fout, "instrDescCGCA          per IG buffer = %2zu\n", igBuffSize / sizeof(emitter::instrDescCGCA));
 
     fprintf(fout, "\n");
     fprintf(fout, "GCInfo::regPtrDsc:\n");
     fprintf(fout, "Offset of rpdNext           = %2zu\n", offsetof(GCInfo::regPtrDsc, rpdNext));
     fprintf(fout, "Offset of rpdOffs           = %2zu\n", offsetof(GCInfo::regPtrDsc, rpdOffs));
     fprintf(fout, "Offset of <union>           = %2zu\n", offsetof(GCInfo::regPtrDsc, rpdPtrArg));
-    fprintf(fout, "Size   of GCInfo::regPtrDsc = %2zu\n", sizeof(GCInfo::regPtrDsc));
+    fprintf(fout, "Size of GCInfo::regPtrDsc   = %2zu\n", sizeof(GCInfo::regPtrDsc));
 
     fprintf(fout, "\n");
 }
@@ -420,37 +470,45 @@ void emitterStats(FILE* fout)
         fprintf(fout, "A total of %8zu desc.  bytes\n", emitter::emitTotalIGsize);
         fprintf(fout, "\n");
 
-        fprintf(fout, "Total instructions:    %8u\n", emitter::emitTotalInsCnt);
-        fprintf(fout, "Total small instrDesc: %8u (%5.2f%%)\n", emitter::emitTotalIDescSmallCnt,
+        fprintf(fout, "Total instructions:           %8u\n", emitter::emitTotalInsCnt);
+        fprintf(fout, "Total small instrDesc:        %8u (%5.2f%%)\n", emitter::emitTotalIDescSmallCnt,
                 100.0 * emitter::emitTotalIDescSmallCnt / emitter::emitTotalInsCnt);
-        fprintf(fout, "Total instrDesc:       %8u (%5.2f%%)\n", emitter::emitTotalIDescCnt,
+        fprintf(fout, "Total instrDesc:              %8u (%5.2f%%)\n", emitter::emitTotalIDescCnt,
                 100.0 * emitter::emitTotalIDescCnt / emitter::emitTotalInsCnt);
-        fprintf(fout, "Total instrDescJmp:    %8u (%5.2f%%)\n", emitter::emitTotalIDescJmpCnt,
-                100.0 * emitter::emitTotalIDescJmpCnt / emitter::emitTotalInsCnt);
-#if !defined(TARGET_ARM64)
-        fprintf(fout, "Total instrDescLbl:    %8u (%5.2f%%)\n", emitter::emitTotalIDescLblCnt,
-                100.0 * emitter::emitTotalIDescLblCnt / emitter::emitTotalInsCnt);
-#endif // !defined(TARGET_ARM64)
-        fprintf(fout, "Total instrDescCns:    %8u (%5.2f%%)\n", emitter::emitTotalIDescCnsCnt,
+        fprintf(fout, "Total instrDescCns:           %8u (%5.2f%%)\n", emitter::emitTotalIDescCnsCnt,
                 100.0 * emitter::emitTotalIDescCnsCnt / emitter::emitTotalInsCnt);
-        fprintf(fout, "Total instrDescDsp:    %8u (%5.2f%%)\n", emitter::emitTotalIDescDspCnt,
+        fprintf(fout, "Total instrDescDsp:           %8u (%5.2f%%)\n", emitter::emitTotalIDescDspCnt,
                 100.0 * emitter::emitTotalIDescDspCnt / emitter::emitTotalInsCnt);
-        fprintf(fout, "Total instrDescCnsDsp: %8u (%5.2f%%)\n", emitter::emitTotalIDescCnsDspCnt,
-                100.0 * emitter::emitTotalIDescCnsDspCnt / emitter::emitTotalInsCnt);
-#ifdef TARGET_XARCH
-        fprintf(fout, "Total instrDescAmd:    %8u (%5.2f%%)\n", emitter::emitTotalIDescAmdCnt,
-                100.0 * emitter::emitTotalIDescAmdCnt / emitter::emitTotalInsCnt);
-        fprintf(fout, "Total instrDescCnsAmd: %8u (%5.2f%%)\n", emitter::emitTotalIDescCnsAmdCnt,
-                100.0 * emitter::emitTotalIDescCnsAmdCnt / emitter::emitTotalInsCnt);
-#endif // TARGET_XARCH
-        fprintf(fout, "Total instrDescCGCA:   %8u (%5.2f%%)\n", emitter::emitTotalIDescCGCACnt,
-                100.0 * emitter::emitTotalIDescCGCACnt / emitter::emitTotalInsCnt);
+#ifdef TARGET_ARM64
+        fprintf(fout, "Total instrDescLclVarPair:    %8u (%5.2f%%)\n", emitter::emitTotalIDescLclVarPairCnt,
+                100.0 * emitter::emitTotalIDescLclVarPairCnt / emitter::emitTotalInsCnt);
+        fprintf(fout, "Total instrDescLclVarPairCns: %8u (%5.2f%%)\n", emitter::emitTotalIDescLclVarPairCnsCnt,
+                100.0 * emitter::emitTotalIDescLclVarPairCnsCnt / emitter::emitTotalInsCnt);
+#endif // TARGET_ARM64
 #ifdef TARGET_ARM
-        fprintf(fout, "Total instrDescReloc:  %8u (%5.2f%%)\n", emitter::emitTotalIDescRelocCnt,
+        fprintf(fout, "Total instrDescReloc:         %8u (%5.2f%%)\n", emitter::emitTotalIDescRelocCnt,
                 100.0 * emitter::emitTotalIDescRelocCnt / emitter::emitTotalInsCnt);
 #endif // TARGET_ARM
-        fprintf(fout, "Total instrDescAlign:  %8u (%5.2f%%)\n", emitter::emitTotalDescAlignCnt,
-                100.0 * emitter::emitTotalDescAlignCnt / emitter::emitTotalInsCnt);
+#ifdef TARGET_XARCH
+        fprintf(fout, "Total instrDescAmd:           %8u (%5.2f%%)\n", emitter::emitTotalIDescAmdCnt,
+                100.0 * emitter::emitTotalIDescAmdCnt / emitter::emitTotalInsCnt);
+        fprintf(fout, "Total instrDescCnsAmd:        %8u (%5.2f%%)\n", emitter::emitTotalIDescCnsAmdCnt,
+                100.0 * emitter::emitTotalIDescCnsAmdCnt / emitter::emitTotalInsCnt);
+#endif // TARGET_XARCH
+        fprintf(fout, "Total instrDescCnsDsp:        %8u (%5.2f%%)\n", emitter::emitTotalIDescCnsDspCnt,
+                100.0 * emitter::emitTotalIDescCnsDspCnt / emitter::emitTotalInsCnt);
+#if FEATURE_LOOP_ALIGN
+        fprintf(fout, "Total instrDescAlign:         %8u (%5.2f%%)\n", emitter::emitTotalIDescAlignCnt,
+                100.0 * emitter::emitTotalIDescAlignCnt / emitter::emitTotalInsCnt);
+#endif // FEATURE_LOOP_ALIGN
+        fprintf(fout, "Total instrDescJmp:           %8u (%5.2f%%)\n", emitter::emitTotalIDescJmpCnt,
+                100.0 * emitter::emitTotalIDescJmpCnt / emitter::emitTotalInsCnt);
+#if !defined(TARGET_ARM64)
+        fprintf(fout, "Total instrDescLbl:           %8u (%5.2f%%)\n", emitter::emitTotalIDescLblCnt,
+                100.0 * emitter::emitTotalIDescLblCnt / emitter::emitTotalInsCnt);
+#endif // !defined(TARGET_ARM64)
+        fprintf(fout, "Total instrDescCGCA:          %8u (%5.2f%%)\n", emitter::emitTotalIDescCGCACnt,
+                100.0 * emitter::emitTotalIDescCGCACnt / emitter::emitTotalInsCnt);
 
         fprintf(fout, "\n");
     }
@@ -467,33 +525,58 @@ void emitterStats(FILE* fout)
     stkDepthTable.dump(fout);
     fprintf(fout, "\n");
 
-    if ((emitter::emitSmallCnsCnt > 0) || (emitter::emitLargeCnsCnt > 0))
+    unsigned emitTotalCnsCnt = emitter::emitLargeCnsCnt + emitter::emitSmallCnsCnt;
+
+    if (emitTotalCnsCnt != 0)
     {
-        fprintf(fout, "SmallCnsCnt = %6u\n", emitter::emitSmallCnsCnt);
-        fprintf(fout, "LargeCnsCnt = %6u (%3u %% of total)\n", emitter::emitLargeCnsCnt,
-                100 * emitter::emitLargeCnsCnt / (emitter::emitLargeCnsCnt + emitter::emitSmallCnsCnt));
+        fprintf(fout, "SmallCnsCnt = %8u (%5.2f%%)\n", emitter::emitSmallCnsCnt,
+                (100.0 * emitter::emitSmallCnsCnt) / emitTotalCnsCnt);
+        fprintf(fout, "LargeCnsCnt = %8u (%5.2f%%)\n", emitter::emitLargeCnsCnt,
+                (100.0 * emitter::emitLargeCnsCnt) / emitTotalCnsCnt);
+        fprintf(fout, "Int8CnsCnt  = %8u (%5.2f%%)\n", emitter::emitInt8CnsCnt,
+                (100.0 * emitter::emitInt8CnsCnt) / emitTotalCnsCnt);
+        fprintf(fout, "Int16CnsCnt = %8u (%5.2f%%)\n", emitter::emitInt16CnsCnt,
+                (100.0 * emitter::emitInt16CnsCnt) / emitTotalCnsCnt);
+        fprintf(fout, "Int32CnsCnt = %8u (%5.2f%%)\n", emitter::emitInt32CnsCnt,
+                (100.0 * emitter::emitInt32CnsCnt) / emitTotalCnsCnt);
+        fprintf(fout, "NegCnsCnt   = %8u (%5.2f%%)\n", emitter::emitNegCnsCnt,
+                (100.0 * emitter::emitNegCnsCnt) / emitTotalCnsCnt);
+        fprintf(fout, "Pow2CnsCnt  = %8u (%5.2f%%)\n", emitter::emitPow2CnsCnt,
+                (100.0 * emitter::emitPow2CnsCnt) / emitTotalCnsCnt);
     }
 
     // Print out the most common small constants.
-    if (emitter::emitSmallCnsCnt > 0)
+    if (emitter::emitSmallCnsCnt != 0)
     {
         fprintf(fout, "\n\n");
-        fprintf(fout, "Common small constants >= %2u, <= %2u\n", ID_MIN_SMALL_CNS, ID_MAX_SMALL_CNS);
+        fprintf(fout, "Common small constants >= %2d, <= %2d\n", ID_MIN_SMALL_CNS, ID_MAX_SMALL_CNS);
 
-        unsigned m = emitter::emitSmallCnsCnt / 1000 + 1;
+        // Only print constants representing more than 0.1% of the total constants
+        unsigned m = (emitter::emitSmallCnsCnt / 1000) + 1;
 
-        for (int i = ID_MIN_SMALL_CNS; (i <= ID_MAX_SMALL_CNS) && (i < SMALL_CNS_TSZ); i++)
+        for (int i = 0; (i <= ID_CNT_SMALL_CNS) && (i < SMALL_CNS_TSZ); i++)
         {
-            unsigned c = emitter::emitSmallCns[i - ID_MIN_SMALL_CNS];
+            unsigned c = emitter::emitSmallCns[i];
+
             if (c >= m)
             {
-                if (i == SMALL_CNS_TSZ - 1)
+                // We make an assumption that MIN is negative and MAX is positive
+                assert((ID_MIN_SMALL_CNS < 0) && (ID_MAX_SMALL_CNS > 0));
+
+                // Adjust the index to match the allowed value range
+                int v = i - (SMALL_CNS_TSZ / 2);
+
+                if (i == 0)
                 {
-                    fprintf(fout, "cns[>=%4d] = %u\n", i, c);
+                    fprintf(fout, "cns[<=%4d] = %8u (%5.2f%%)\n", v, c, (100.0 * c) / emitTotalCnsCnt);
+                }
+                else if (i == (SMALL_CNS_TSZ - 1))
+                {
+                    fprintf(fout, "cns[>=%4d] = %8u (%5.2f%%)\n", v, c, (100.0 * c) / emitTotalCnsCnt);
                 }
                 else
                 {
-                    fprintf(fout, "cns[%4d] = %u\n", i, c);
+                    fprintf(fout, "cns[  %4d] = %8u (%5.2f%%)\n", v, c, (100.0 * c) / emitTotalCnsCnt);
                 }
             }
         }
@@ -507,13 +590,13 @@ void emitterStats(FILE* fout)
 /*****************************************************************************/
 
 const unsigned short emitTypeSizes[] = {
-#define DEF_TP(tn, nm, jitType, verType, sz, sze, asze, st, al, regTyp, regFld, tf) sze,
+#define DEF_TP(tn, nm, jitType, sz, sze, asze, st, al, regTyp, regFld, tf) sze,
 #include "typelist.h"
 #undef DEF_TP
 };
 
 const unsigned short emitTypeActSz[] = {
-#define DEF_TP(tn, nm, jitType, verType, sz, sze, asze, st, al, regTyp, regFld, tf) asze,
+#define DEF_TP(tn, nm, jitType, sz, sze, asze, st, al, regTyp, regFld, tf) asze,
 #include "typelist.h"
 #undef DEF_TP
 };
@@ -2642,11 +2725,7 @@ emitter::instrDesc* emitter::emitNewInstrCnsDsp(emitAttr size, target_ssize_t cn
             id->idSmallCns(cns);
 
 #if EMITTER_STATS
-            emitSmallCnsCnt++;
-            if ((cns - ID_MIN_SMALL_CNS) >= (SMALL_CNS_TSZ - 1))
-                emitSmallCns[SMALL_CNS_TSZ - 1]++;
-            else
-                emitSmallCns[cns - ID_MIN_SMALL_CNS]++;
+            TrackSmallCns(cns);
             emitSmallDspCnt++;
 #endif
 
@@ -2657,7 +2736,7 @@ emitter::instrDesc* emitter::emitNewInstrCnsDsp(emitAttr size, target_ssize_t cn
             instrDescCns* id = emitAllocInstrCns(size, cns);
 
 #if EMITTER_STATS
-            emitLargeCnsCnt++;
+            TrackLargeCns(cns);
             emitSmallDspCnt++;
 #endif
 
@@ -2676,12 +2755,8 @@ emitter::instrDesc* emitter::emitNewInstrCnsDsp(emitAttr size, target_ssize_t cn
             id->idSmallCns(cns);
 
 #if EMITTER_STATS
+            TrackSmallCns(cns);
             emitLargeDspCnt++;
-            emitSmallCnsCnt++;
-            if ((cns - ID_MIN_SMALL_CNS) >= (SMALL_CNS_TSZ - 1))
-                emitSmallCns[SMALL_CNS_TSZ - 1]++;
-            else
-                emitSmallCns[cns - ID_MIN_SMALL_CNS]++;
 #endif
 
             return id;
@@ -2697,8 +2772,8 @@ emitter::instrDesc* emitter::emitNewInstrCnsDsp(emitAttr size, target_ssize_t cn
             id->iddcDspVal = dsp;
 
 #if EMITTER_STATS
+            TrackLargeCns(cns);
             emitLargeDspCnt++;
-            emitLargeCnsCnt++;
 #endif
 
             return id;
@@ -10084,8 +10159,7 @@ void emitter::emitRecordRelocation(void*    location,            /* IN */
     // late disassembly; maybe we'll need it?
     if (emitComp->info.compMatchedVM)
     {
-        // slotNum is unused on all supported platforms.
-        emitCmpHandle->recordRelocation(location, locationRW, target, fRelocType, /* slotNum */ 0, addlDelta);
+        emitCmpHandle->recordRelocation(location, locationRW, target, fRelocType, addlDelta);
     }
 #if defined(LATE_DISASM)
     codeGen->getDisAssembler().disRecordRelocation((size_t)location, (size_t)target);

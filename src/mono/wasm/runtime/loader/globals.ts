@@ -19,6 +19,18 @@ export let exportedRuntimeAPI: RuntimeAPI = null as any;
 export let INTERNAL: any;
 export let _loaderModuleLoaded = false; // please keep it in place also as rollup guard
 
+export const globalObjectsRoot: GlobalObjects = {
+    mono: {},
+    binding: {},
+    internal: {},
+    module: {},
+    loaderHelpers: {},
+    runtimeHelpers: {},
+    api: {}
+} as any;
+
+setLoaderGlobals(globalObjectsRoot);
+
 export function setLoaderGlobals(
     globalObjects: GlobalObjects,
 ) {
@@ -39,6 +51,8 @@ export function setLoaderGlobals(
         config: { environmentVariables: {} }
     });
     Object.assign(runtimeHelpers, {
+        mono_wasm_bindings_is_ready: false,
+        javaScriptExports: {} as any,
         config: globalObjects.module.config,
         diagnosticTracing: false,
     });

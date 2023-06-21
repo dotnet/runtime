@@ -47,14 +47,8 @@
     -->
     <WarningsAsErrors>$(WarningsAsErrors.Replace('NU1605', ''))</WarningsAsErrors>
 
-    <IsRuntimeAndReferenceAssembly Condition="'$(IsRuntimeAndReferenceAssembly)' == '' and
-                                              '$(IsSourceProject)' == 'true' and
-                                              Exists('$(LibrariesProjectRoot)$(MSBuildProjectName)') and
-                                              !Exists('$(LibrariesProjectRoot)$(MSBuildProjectName)$([System.IO.Path]::DirectorySeparatorChar)ref') and
-                                              !$(MSBuildProjectName.StartsWith('System.Private'))">true</IsRuntimeAndReferenceAssembly>
-
     <!-- The source of truth for these IsNETCoreApp* properties is NetCoreAppLibrary.props. -->
-    <IsNETCoreAppSrc Condition="('$(IsSourceProject)' == 'true' or '$(IsRuntimeAndReferenceAssembly)' == 'true') and
+    <IsNETCoreAppSrc Condition="'$(IsSourceProject)' == 'true' and
                                 $(NetCoreAppLibrary.Contains('$(AssemblyName);'))">true</IsNETCoreAppSrc>
     <IsNETCoreAppRef Condition="('$(IsReferenceAssemblyProject)' == 'true' or '$(IsRuntimeAndReferenceAssembly)' == 'true') and
                                 $(NetCoreAppLibrary.Contains('$(AssemblyName);')) and
@@ -82,7 +76,7 @@
   <!-- Libraries-specific binplacing properties -->
   <PropertyGroup>
     <BinPlaceRef Condition="'$(BinPlaceRef)' == '' and ('$(IsReferenceAssemblyProject)' == 'true' or '$(IsRuntimeAndReferenceAssembly)' == 'true')">true</BinPlaceRef>
-    <BinPlaceRuntime Condition="'$(BinPlaceRuntime)' == '' and ('$(IsSourceProject)' == 'true' or '$(IsRuntimeAndReferenceAssembly)' == 'true')">true</BinPlaceRuntime>
+    <BinPlaceRuntime Condition="'$(BinPlaceRuntime)' == '' and '$(IsSourceProject)' == 'true'">true</BinPlaceRuntime>
     <BinPlaceForTargetVertical Condition="'$(BinPlaceForTargetVertical)' == ''">true</BinPlaceForTargetVertical>
   </PropertyGroup>
 
@@ -96,7 +90,7 @@
     </BinPlaceTargetFrameworks>
 
     <!-- Source generator projects might multi-target. Make sure that only the netstandard2.0 compiled assets get binplaced. -->
-    <BinPlaceDir Include="$(MicrosoftNetCoreAppRefPackDir)analyzers\dotnet\$(AnalyzerLanguage)"
+    <BinPlaceDir Include="$(MicrosoftNetCoreAppRefPackDir)$(GeneratorProjectBaseTargetPath)"
                  Condition="'$(IsNETCoreAppAnalyzer)' == 'true' and
                             '$(TargetFramework)' == 'netstandard2.0'" />
 

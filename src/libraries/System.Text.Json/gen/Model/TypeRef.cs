@@ -2,7 +2,6 @@
 // The .NET Foundation licenses this file to you under the MIT license.
 
 using System.Diagnostics;
-using System.Text.Json.Reflection;
 using Microsoft.CodeAnalysis;
 
 namespace System.Text.Json.SourceGeneration
@@ -13,17 +12,13 @@ namespace System.Text.Json.SourceGeneration
     [DebuggerDisplay("Name={Name}")]
     public sealed class TypeRef : IEquatable<TypeRef>
     {
-        public TypeRef(Type type)
+        public TypeRef(ITypeSymbol type)
         {
-            Debug.Assert(type is TypeWrapper);
-            var wrapper = ((TypeWrapper)type);
-
             Name = type.Name;
-            FullyQualifiedName = type.GetCompilableName();
-            IsValueType = wrapper.IsValueType;
-            TypeKind = wrapper.Symbol.TypeKind;
-            SpecialType = wrapper.Symbol.SpecialType;
-            CanContainNullableReferenceAnnotations = type.CanContainNullableReferenceTypeAnnotations();
+            FullyQualifiedName = type.GetFullyQualifiedName();
+            IsValueType = type.IsValueType;
+            TypeKind = type.TypeKind;
+            SpecialType = type.SpecialType;
         }
 
         public string Name { get; }
@@ -36,10 +31,6 @@ namespace System.Text.Json.SourceGeneration
         public bool IsValueType { get; }
         public TypeKind TypeKind { get; }
         public SpecialType SpecialType { get; }
-
-        // The spec is derived from cached `System.Type` instances, which are generally annotation-agnostic.
-        // Hence we can only record the potential for nullable annotations being possible for the runtime type.
-        public bool CanContainNullableReferenceAnnotations { get; }
 
         public bool CanBeNull => !IsValueType || SpecialType is SpecialType.System_Nullable_T;
 

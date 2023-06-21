@@ -32,6 +32,7 @@ namespace Mono.Linker.Tests.Cases.DataFlow
 			AsyncCapture ();
 			AsyncTypeMismatch ();
 			AsyncInsideClosure ();
+			AsyncInsideClosureNonGeneric ();
 			AsyncInsideClosureMismatch ();
 
 			// Closures
@@ -216,6 +217,22 @@ namespace Mono.Linker.Tests.Cases.DataFlow
 					x++;
 					_ = typeof (T1).GetMethods ();
 					_ = typeof (T2).GetProperties ();
+				}
+			}
+		}
+
+		private static void AsyncInsideClosureNonGeneric ()
+		{
+			Outer<string> ();
+			void Outer<[DynamicallyAccessedMembers (DynamicallyAccessedMemberTypes.PublicMethods)] T1> ()
+			{
+				int x = 0;
+				Inner ().Wait ();
+				async Task Inner ()
+				{
+					await Task.Delay (0);
+					x++;
+					_ = typeof (T1).GetMethods ();
 				}
 			}
 		}

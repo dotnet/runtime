@@ -311,13 +311,13 @@ namespace System.Diagnostics.Tracing
     {
         private readonly TraceLoggingTypeInfo valueInfo;
 
-        [System.Diagnostics.CodeAnalysis.RequiresUnreferencedCode("EventSource WriteEvent will serialize the whole object graph. Trimmer will not safely handle this case because properties may be trimmed. This can be suppressed if the object is a primitive type")]
+        [RequiresUnreferencedCode("EventSource WriteEvent will serialize the whole object graph. Trimmer will not safely handle this case because properties may be trimmed. This can be suppressed if the object is a primitive type")]
         public NullableTypeInfo(Type type, List<Type> recursionCheck)
             : base(type)
         {
             Type[] typeArgs = type.GenericTypeArguments;
             Debug.Assert(typeArgs.Length == 1);
-            this.valueInfo = TraceLoggingTypeInfo.GetInstance(typeArgs[0], recursionCheck);
+            this.valueInfo = GetInstance(typeArgs[0], recursionCheck);
         }
 
         public override void WriteMetadata(

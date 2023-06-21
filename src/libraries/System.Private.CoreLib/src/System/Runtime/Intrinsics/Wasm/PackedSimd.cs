@@ -1699,7 +1699,264 @@ namespace System.Runtime.Intrinsics.Wasm
         [Intrinsic]
         public static Vector128<nuint>  CompareGreaterThanOrEqual(Vector128<nuint>  left, Vector128<nuint>  right) => CompareGreaterThanOrEqual(left, right);
 
-       // Floating-point sign bit operations
+        // Load
+
+        /// <summary>
+        ///   v128.load
+        /// </summary>
+        [Intrinsic]
+        public static unsafe Vector128<sbyte>  LoadVector128(sbyte*  address) => LoadVector128(address);
+        /// <summary>
+        ///   v128.load
+        /// </summary>
+        [Intrinsic]
+        public static unsafe Vector128<byte>   LoadVector128(byte*   address) => LoadVector128(address);
+        /// <summary>
+        ///   v128.load
+        /// </summary>
+        [Intrinsic]
+        public static unsafe Vector128<short>  LoadVector128(short*  address) => LoadVector128(address);
+        /// <summary>
+        ///   v128.load
+        /// </summary>
+        [Intrinsic]
+        public static unsafe Vector128<ushort> LoadVector128(ushort* address) => LoadVector128(address);
+        /// <summary>
+        ///   v128.load
+        /// </summary>
+        [Intrinsic]
+        public static unsafe Vector128<int>    LoadVector128(int*    address) => LoadVector128(address);
+        /// <summary>
+        ///   v128.load
+        /// </summary>
+        [Intrinsic]
+        public static unsafe Vector128<uint>   LoadVector128(uint*   address) => LoadVector128(address);
+        /// <summary>
+        ///   v128.load
+        /// </summary>
+        [Intrinsic]
+        public static unsafe Vector128<long>   LoadVector128(long*   address) => LoadVector128(address);
+        /// <summary>
+        ///   v128.load
+        /// </summary>
+        [Intrinsic]
+        public static unsafe Vector128<ulong>  LoadVector128(ulong*  address) => LoadVector128(address);
+        /// <summary>
+        ///   v128.load
+        /// </summary>
+        [Intrinsic]
+        public static unsafe Vector128<float>  LoadVector128(float*  address) => LoadVector128(address);
+        /// <summary>
+        ///   v128.load
+        /// </summary>
+        [Intrinsic]
+        public static unsafe Vector128<double> LoadVector128(double* address) => LoadVector128(address);
+        /// <summary>
+        ///   v128.load
+        /// </summary>
+        [Intrinsic]
+        public static unsafe Vector128<nint>   LoadVector128(nint*   address) => LoadVector128(address);
+        /// <summary>
+        ///   v128.load
+        /// </summary>
+        [Intrinsic]
+        public static unsafe Vector128<nuint>  LoadVector128(nuint*  address) => LoadVector128(address);
+
+        /// <summary>
+        ///   v128.load32.zero
+        /// </summary>
+        [Intrinsic]
+        public static unsafe Vector128<int>    LoadScalarVector128(int*    address) => LoadScalarVector128(address);
+        /// <summary>
+        ///   v128.load32.zero
+        /// </summary>
+        [Intrinsic]
+        public static unsafe Vector128<uint>   LoadScalarVector128(uint*   address) => LoadScalarVector128(address);
+        /// <summary>
+        ///   v128.load64.zero
+        /// </summary>
+        [Intrinsic]
+        public static unsafe Vector128<long>   LoadScalarVector128(long*   address) => LoadScalarVector128(address);
+        /// <summary>
+        ///   v128.load64.zero
+        /// </summary>
+        [Intrinsic]
+        public static unsafe Vector128<ulong>  LoadScalarVector128(ulong*  address) => LoadScalarVector128(address);
+        /// <summary>
+        ///   v128.load32.zero
+        /// </summary>
+        [Intrinsic]
+        public static unsafe Vector128<float>  LoadScalarVector128(float*  address) => LoadScalarVector128(address);
+        /// <summary>
+        ///   v128.load64.zero
+        /// </summary>
+        [Intrinsic]
+        public static unsafe Vector128<double> LoadScalarVector128(double* address) => LoadScalarVector128(address);
+        /// <summary>
+        ///   v128.load32.zero
+        /// </summary>
+        [Intrinsic]
+        public static unsafe Vector128<nint>   LoadScalarVector128(nint*   address) => LoadScalarVector128(address);
+        /// <summary>
+        ///   v128.load32.zero
+        /// </summary>
+        [Intrinsic]
+        public static unsafe Vector128<nuint>  LoadScalarVector128(nuint*  address) => LoadScalarVector128(address);
+
+        /// <summary>
+        ///   v128.load8_splat
+        /// </summary>
+        [Intrinsic]
+        public static unsafe Vector128<sbyte>  LoadScalarAndSplatVector128(sbyte*  address) => LoadScalarAndSplatVector128(address);
+        /// <summary>
+        ///   v128.load8_splat
+        /// </summary>
+        [Intrinsic]
+        public static unsafe Vector128<byte>   LoadScalarAndSplatVector128(byte*   address) => LoadScalarAndSplatVector128(address);
+        /// <summary>
+        ///   v128.load16_splat
+        /// </summary>
+        [Intrinsic]
+        public static unsafe Vector128<short>  LoadScalarAndSplatVector128(short*  address) => LoadScalarAndSplatVector128(address);
+        /// <summary>
+        ///   v128.load16_splat
+        /// </summary>
+        [Intrinsic]
+        public static unsafe Vector128<ushort> LoadScalarAndSplatVector128(ushort* address) => LoadScalarAndSplatVector128(address);
+        /// <summary>
+        ///   v128.load32_splat
+        /// </summary>
+        [Intrinsic]
+        public static unsafe Vector128<int>    LoadScalarAndSplatVector128(int*    address) => LoadScalarAndSplatVector128(address);
+        /// <summary>
+        ///   v128.load32_splat
+        /// </summary>
+        [Intrinsic]
+        public static unsafe Vector128<uint>   LoadScalarAndSplatVector128(uint*   address) => LoadScalarAndSplatVector128(address);
+        /// <summary>
+        ///   v128.load64_splat
+        /// </summary>
+        [Intrinsic]
+        public static unsafe Vector128<long>   LoadScalarAndSplatVector128(long*   address) => LoadScalarAndSplatVector128(address);
+        /// <summary>
+        ///   v128.load64_splat
+        /// </summary>
+        [Intrinsic]
+        public static unsafe Vector128<ulong>  LoadScalarAndSplatVector128(ulong*  address) => LoadScalarAndSplatVector128(address);
+        /// <summary>
+        ///   v128.load64_splat
+        /// </summary>
+        [Intrinsic]
+        public static unsafe Vector128<float>  LoadScalarAndSplatVector128(float*  address) => LoadScalarAndSplatVector128(address);
+        /// <summary>
+        ///   v128.load64_splat
+        /// </summary>
+        [Intrinsic]
+        public static unsafe Vector128<double> LoadScalarAndSplatVector128(double* address) => LoadScalarAndSplatVector128(address);
+        /// <summary>
+        ///   v128.load64_splat
+        /// </summary>
+        [Intrinsic]
+        public static unsafe Vector128<nint>   LoadScalarAndSplatVector128(nint*   address) => LoadScalarAndSplatVector128(address);
+        /// <summary>
+        ///   v128.load64_splat
+        /// </summary>
+        [Intrinsic]
+        public static unsafe Vector128<nuint>  LoadScalarAndSplatVector128(nuint*  address) => LoadScalarAndSplatVector128(address);
+
+        /// <summary>
+        ///   v128.load8_lane
+        /// </summary>
+        [Intrinsic]
+        public static unsafe Vector128<sbyte>  LoadScalarAndInsert(sbyte*  address, Vector128<sbyte>  vector, [ConstantExpected(Max = (byte)(15))] byte index) => LoadScalarAndInsert(address, vector, index); // takes ImmLaneIdx16
+        /// <summary>
+        ///   v128.load8_lane
+        /// </summary>
+        [Intrinsic]
+        public static unsafe Vector128<byte>   LoadScalarAndInsert(byte*   address, Vector128<byte>   vector, [ConstantExpected(Max = (byte)(15))] byte index) => LoadScalarAndInsert(address, vector, index); // takes ImmLaneIdx16
+        /// <summary>
+        ///   v128.load16_lane
+        /// </summary>
+        [Intrinsic]
+        public static unsafe Vector128<short>  LoadScalarAndInsert(short*  address, Vector128<short>  vector, [ConstantExpected(Max = (byte)(7))] byte index) => LoadScalarAndInsert(address, vector, index); // takes ImmLaneIdx8
+        /// <summary>
+        ///   v128.load16_lane
+        /// </summary>
+        [Intrinsic]
+        public static unsafe Vector128<ushort> LoadScalarAndInsert(ushort* address, Vector128<ushort> vector, [ConstantExpected(Max = (byte)(7))] byte index) => LoadScalarAndInsert(address, vector, index); // takes ImmLaneIdx8
+        /// <summary>
+        ///   v128.load32_lane
+        /// </summary>
+        [Intrinsic]
+        public static unsafe Vector128<int>    LoadScalarAndInsert(int*    address, Vector128<int>    vector, [ConstantExpected(Max = (byte)(3))] byte index) => LoadScalarAndInsert(address, vector, index); // takes ImmLaneIdx4
+        /// <summary>
+        ///   v128.load32_lane
+        /// </summary>
+        [Intrinsic]
+        public static unsafe Vector128<uint>   LoadScalarAndInsert(uint*   address, Vector128<uint>   vector, [ConstantExpected(Max = (byte)(3))] byte index) => LoadScalarAndInsert(address, vector, index); // takes ImmLaneIdx4
+        /// <summary>
+        ///   v128.load64_lane
+        /// </summary>
+        [Intrinsic]
+        public static unsafe Vector128<long>   LoadScalarAndInsert(long*   address, Vector128<long>   vector, [ConstantExpected(Max = (byte)(1))] byte index) => LoadScalarAndInsert(address, vector, index); // takes ImmLaneIdx2
+        /// <summary>
+        ///   v128.load64_lane
+        /// </summary>
+        [Intrinsic]
+        public static unsafe Vector128<ulong>  LoadScalarAndInsert(ulong*  address, Vector128<ulong>  vector, [ConstantExpected(Max = (byte)(1))] byte index) => LoadScalarAndInsert(address, vector, index); // takes ImmLaneIdx2
+        /// <summary>
+        ///   v128.load32_lane
+        /// </summary>
+        [Intrinsic]
+        public static unsafe Vector128<float>  LoadScalarAndInsert(float*  address, Vector128<float>  vector, [ConstantExpected(Max = (byte)(3))] byte index) => LoadScalarAndInsert(address, vector, index); // takes ImmLaneIdx4
+        /// <summary>
+        ///   v128.load64_lane
+        /// </summary>
+        [Intrinsic]
+        public static unsafe Vector128<double> LoadScalarAndInsert(double* address, Vector128<double> vector, [ConstantExpected(Max = (byte)(1))] byte index) => LoadScalarAndInsert(address, vector, index); // takes ImmLaneIdx2
+        /// <summary>
+        ///   v128.load32_lane
+        /// </summary>
+        [Intrinsic]
+        public static unsafe Vector128<nint>   LoadScalarAndInsert(nint*   address, Vector128<nint>   vector, [ConstantExpected(Max = (byte)(3))] byte index) => LoadScalarAndInsert(address, vector, index); // takes ImmLaneIdx4
+        /// <summary>
+        ///   v128.load32_lane
+        /// </summary>
+        [Intrinsic]
+        public static unsafe Vector128<nuint>  LoadScalarAndInsert(nuint*  address, Vector128<nuint>  vector, [ConstantExpected(Max = (byte)(3))] byte index) => LoadScalarAndInsert(address, vector, index); // takes ImmLaneIdx4
+
+        /// <summary>
+        ///   v128.load8x8_s
+        /// </summary>
+        [Intrinsic]
+        public static unsafe Vector128<short>  LoadWideningVector128(sbyte*  address) => LoadWideningVector128(address);
+        /// <summary>
+        ///   v128.load8x8_u
+        /// </summary>
+        [Intrinsic]
+        public static unsafe Vector128<ushort> LoadWideningVector128(byte*   address) => LoadWideningVector128(address);
+        /// <summary>
+        ///   v128.load16x4_s
+        /// </summary>
+        [Intrinsic]
+        public static unsafe Vector128<int>    LoadWideningVector128(short*  address) => LoadWideningVector128(address);
+        /// <summary>
+        ///   v128.load16x4_u
+        /// </summary>
+        [Intrinsic]
+        public static unsafe Vector128<uint>   LoadWideningVector128(ushort* address) => LoadWideningVector128(address);
+        /// <summary>
+        ///   v128.load32x2_s
+        /// </summary>
+        [Intrinsic]
+        public static unsafe Vector128<long>   LoadWideningVector128(int*    address) => LoadWideningVector128(address);
+        /// <summary>
+        ///   v128.load32x2_u
+        /// </summary>
+        [Intrinsic]
+        public static unsafe Vector128<ulong>  LoadWideningVector128(uint*   address) => LoadWideningVector128(address);
+
+        // Floating-point sign bit operations
 
         /// <summary>
         ///   f32x4.neg
@@ -1873,6 +2130,60 @@ namespace System.Runtime.Intrinsics.Wasm
         // Conversions
 
         /// <summary>
+        ///   f32x4.convert_i32x4_s
+        /// </summary>
+        [Intrinsic]
+        public static Vector128<float> ConvertToSingle(Vector128<int>    value) => ConvertToSingle(value);
+        /// <summary>
+        ///   f32x4.convert_i32x4_u
+        /// </summary>
+        [Intrinsic]
+        public static Vector128<float> ConvertToSingle(Vector128<uint>   value) => ConvertToSingle(value);
+        /// <summary>
+        /// f32x4.demote_f64x2_zero
+        /// </summary>
+        [Intrinsic]
+        public static Vector128<float> ConvertToSingle(Vector128<double> value) => ConvertToSingle(value);
+
+        /// <summary>
+        ///   f64x2.convert_low_i32x4_s
+        /// </summary>
+        [Intrinsic]
+        public static Vector128<double> ConvertToDoubleLower(Vector128<int>   value) => ConvertToDoubleLower(value);
+        /// <summary>
+        ///   f64x2.convert_low_i32x4_u
+        /// </summary>
+        [Intrinsic]
+        public static Vector128<double> ConvertToDoubleLower(Vector128<uint>  value) => ConvertToDoubleLower(value);
+        /// <summary>
+        ///   f64x2.promote_low_f32x4
+        /// </summary>
+        [Intrinsic]
+        public static Vector128<double> ConvertToDoubleLower(Vector128<float> value) => ConvertToDoubleLower(value);
+
+        /// <summary>
+        ///   i32x4.trunc_sat_f32x4_s
+        /// </summary>
+        [Intrinsic]
+        public static Vector128<int>  ConvertToInt32Saturate(Vector128<float> value) => ConvertToInt32Saturate(value);
+        /// <summary>
+        ///   i32x4.trunc_sat_f32x4_u
+        /// </summary>
+        [Intrinsic]
+        internal static Vector128<uint> ConvertToUnsignedInt32Saturate(Vector128<float> value) => ConvertToUnsignedInt32Saturate(value);
+
+        /// <summary>
+        ///   i32x4.trunc_sat_f64x2_s_zero
+        /// </summary>
+        [Intrinsic]
+        public static Vector128<int>  ConvertToInt32Saturate(Vector128<double> value) => ConvertToInt32Saturate(value);
+        /// <summary>
+        ///   i32x4.trunc_sat_f64x2_u_zero
+        /// </summary>
+        [Intrinsic]
+        internal static Vector128<uint> ConvertToUnsignedInt32Saturate(Vector128<double> value) => ConvertToUnsignedInt32Saturate(value);
+
+        /// <summary>
         ///   i8x16.narrow_i16x8_s
         /// </summary>
         [Intrinsic]
@@ -1895,5 +2206,129 @@ namespace System.Runtime.Intrinsics.Wasm
         /// </summary>
         [Intrinsic]
         internal static Vector128<ushort> ConvertNarrowingUnsignedSaturate(Vector128<int>  lower, Vector128<int>   upper) => ConvertNarrowingUnsignedSaturate(lower, upper);
+
+        /// <summary>
+        ///   i16x8.extend_low_i8x16_s
+        /// </summary>
+        [Intrinsic]
+        public static Vector128<short>  SignExtendWideningLower(Vector128<sbyte>  value) => SignExtendWideningLower(value);
+        /// <summary>
+        ///   i16x8.extend_low_i8x16_s
+        /// </summary>
+        [Intrinsic]
+        public static Vector128<ushort> SignExtendWideningLower(Vector128<byte>   value) => SignExtendWideningLower(value);
+        /// <summary>
+        ///   i32x4.extend_low_i16x8_s
+        /// </summary>
+        [Intrinsic]
+        public static Vector128<int>    SignExtendWideningLower(Vector128<short>  value) => SignExtendWideningLower(value);
+        /// <summary>
+        ///   i32x4.extend_low_i16x8_s
+        /// </summary>
+        [Intrinsic]
+        public static Vector128<uint>   SignExtendWideningLower(Vector128<ushort> value) => SignExtendWideningLower(value);
+        /// <summary>
+        ///   i64x2.extend_low_i32x4_s
+        /// </summary>
+        [Intrinsic]
+        public static Vector128<long>   SignExtendWideningLower(Vector128<int>    value) => SignExtendWideningLower(value);
+        /// <summary>
+        ///   i64x2.extend_low_i32x4_s
+        /// </summary>
+        [Intrinsic]
+        public static Vector128<ulong>  SignExtendWideningLower(Vector128<uint>   value) => SignExtendWideningLower(value);
+
+        /// <summary>
+        ///   i16x8.extend_high_i8x16_s
+        /// </summary>
+        [Intrinsic]
+        public static Vector128<short>  SignExtendWideningUpper(Vector128<sbyte>  value) => SignExtendWideningUpper(value);
+        /// <summary>
+        ///   i16x8.extend_high_i8x16_s
+        /// </summary>
+        [Intrinsic]
+        public static Vector128<ushort> SignExtendWideningUpper(Vector128<byte>   value) => SignExtendWideningUpper(value);
+        /// <summary>
+        ///   i32x4.extend_high_i16x8_s
+        /// </summary>
+        [Intrinsic]
+        public static Vector128<int>    SignExtendWideningUpper(Vector128<short>  value) => SignExtendWideningUpper(value);
+        /// <summary>
+        ///   i32x4.extend_high_i16x8_s
+        /// </summary>
+        [Intrinsic]
+        public static Vector128<uint>   SignExtendWideningUpper(Vector128<ushort> value) => SignExtendWideningUpper(value);
+        /// <summary>
+        ///   i64x2.extend_high_i32x4_s
+        /// </summary>
+        [Intrinsic]
+        public static Vector128<long>   SignExtendWideningUpper(Vector128<int>    value) => SignExtendWideningUpper(value);
+        /// <summary>
+        ///   i64x2.extend_high_i32x4_s
+        /// </summary>
+        [Intrinsic]
+        public static Vector128<ulong>  SignExtendWideningUpper(Vector128<uint>   value) => SignExtendWideningUpper(value);
+
+        /// <summary>
+        ///   i16x8.extend_low_i8x16_u
+        /// </summary>
+        [Intrinsic]
+        public static Vector128<short>  ZeroExtendWideningLower(Vector128<sbyte>  value) => ZeroExtendWideningLower(value);
+        /// <summary>
+        ///   i16x8.extend_low_i8x16_u
+        /// </summary>
+        [Intrinsic]
+        public static Vector128<ushort> ZeroExtendWideningLower(Vector128<byte>   value) => ZeroExtendWideningLower(value);
+        /// <summary>
+        ///   i32x4.extend_low_i16x8_u
+        /// </summary>
+        [Intrinsic]
+        public static Vector128<int>    ZeroExtendWideningLower(Vector128<short>  value) => ZeroExtendWideningLower(value);
+        /// <summary>
+        ///   i32x4.extend_low_i16x8_u
+        /// </summary>
+        [Intrinsic]
+        public static Vector128<uint>   ZeroExtendWideningLower(Vector128<ushort> value) => ZeroExtendWideningLower(value);
+        /// <summary>
+        ///   i64x2.extend_low_i32x4_u
+        /// </summary>
+        [Intrinsic]
+        public static Vector128<long>   ZeroExtendWideningLower(Vector128<int>    value) => ZeroExtendWideningLower(value);
+        /// <summary>
+        ///   i64x2.extend_low_i32x4_u
+        /// </summary>
+        [Intrinsic]
+        public static Vector128<ulong>  ZeroExtendWideningLower(Vector128<uint>   value) => ZeroExtendWideningLower(value);
+
+        /// <summary>
+        ///   i16x8.extend_high_i8x16_u
+        /// </summary>
+        [Intrinsic]
+        public static Vector128<short>  ZeroExtendWideningUpper(Vector128<sbyte>  value) => ZeroExtendWideningUpper(value);
+        /// <summary>
+        ///   i16x8.extend_high_i8x16_u
+        /// </summary>
+        [Intrinsic]
+        public static Vector128<ushort> ZeroExtendWideningUpper(Vector128<byte>   value) => ZeroExtendWideningUpper(value);
+        /// <summary>
+        ///   i32x4.extend_high_i16x8_u
+        /// </summary>
+        [Intrinsic]
+        public static Vector128<int>    ZeroExtendWideningUpper(Vector128<short>  value) => ZeroExtendWideningUpper(value);
+        /// <summary>
+        ///   i32x4.extend_high_i16x8_u
+        /// </summary>
+        [Intrinsic]
+        public static Vector128<uint>   ZeroExtendWideningUpper(Vector128<ushort> value) => ZeroExtendWideningUpper(value);
+        /// <summary>
+        ///   i64x2.extend_high_i32x4_u
+        /// </summary>
+        [Intrinsic]
+        public static Vector128<long>   ZeroExtendWideningUpper(Vector128<int>    value) => ZeroExtendWideningUpper(value);
+        /// <summary>
+        ///   i64x2.extend_high_i32x4_u
+        /// </summary>
+        [Intrinsic]
+        public static Vector128<ulong>  ZeroExtendWideningUpper(Vector128<uint>   value) => ZeroExtendWideningUpper(value);
     }
 }

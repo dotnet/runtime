@@ -101,7 +101,6 @@ set(utils_common_sources
     mono-forward-internal.h
     mono-machine.h
     mono-math.h
-    mono-membar.h
     mono-path.h
     mono-poll.h
     mono-uri.h
@@ -184,7 +183,10 @@ set(utils_common_sources
     options.h
     options-def.h
     options.c
-	ftnptr.h)
+    ftnptr.h
+    wasm-module-reader.h
+    wasm-module-reader.c
+  )
 
 if(MONO_CROSS_COMPILE)
 set(utils_arch_sources mach-support-unknown.c)

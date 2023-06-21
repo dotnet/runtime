@@ -11,7 +11,8 @@
   "types": "dotnet.d.ts",
   "scripts": {
     "rollup": "rollup -c",
-    "lint": "eslint --no-color --max-warnings=0 \"./**/*.ts\" \"./*.js\""
+    "lint": "eslint --no-color --max-warnings=0 \"./**/*.ts\" \"./*.js\"",
+    "format": "eslint --fix \"./**/*.ts\" \"./*.js\""
   },
   "keywords": [
     "dotnet",

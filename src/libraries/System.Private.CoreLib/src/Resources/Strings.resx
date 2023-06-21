@@ -172,17 +172,29 @@
   <data name="AppDomain_Policy_PrincipalTwice" xml:space="preserve">
     <value>Default principal object cannot be set twice.</value>
   </data>
-  <data name="AmbiguousImplementationException_NullMessage" xml:space="preserve">
-    <value>Ambiguous implementation found.</value>
-  </data>
   <data name="Arg_AccessException" xml:space="preserve">
     <value>Cannot access member.</value>
   </data>
   <data name="Arg_AccessViolationException" xml:space="preserve">
     <value>Attempted to read or write protected memory. This is often an indication that other memory is corrupt.</value>
   </data>
-  <data name="Arg_AmbiguousMatchException" xml:space="preserve">
+  <data name="Arg_AmbiguousImplementationException_NoMessage" xml:space="preserve">
+    <value>Ambiguous implementation found.</value>
+  </data>
+  <data name="Arg_AmbiguousMatchException_Attribute" xml:space="preserve">
+    <value>Multiple custom attributes of the same type '{0}' found.</value>
+  </data>
+  <data name="Arg_AmbiguousMatchException_NoMessage" xml:space="preserve">
     <value>Ambiguous match found.</value>
+  </data>
+  <data name="Arg_AmbiguousMatchException_CustomAttributeData" xml:space="preserve">
+    <value>Ambiguous match found for '{0}'.</value>
+  </data>
+  <data name="Arg_AmbiguousMatchException_MemberInfo" xml:space="preserve">
+    <value>Ambiguous match found for '{0} {1}'.</value>
+  </data>
+  <data name="Arg_AmbiguousMatchException_UnsafeAccessor" xml:space="preserve">
+    <value>Ambiguity in binding of UnsafeAccessorAttribute.</value>
   </data>
   <data name="Arg_ApplicationException" xml:space="preserve">
     <value>Error in the application.</value>
@@ -2042,21 +2054,6 @@
   <data name="CustomMarshaler_NullReturnForGetInstance" xml:space="preserve">
     <value>A call to GetInstance() for custom marshaler '{0}' returned null, which is not allowed.</value>
   </data>
-  <data name="event_TaskCompleted" xml:space="preserve">
-    <value>Task {2} completed.</value>
-  </data>
-  <data name="event_TaskScheduled" xml:space="preserve">
-    <value>Task {2} scheduled to TaskScheduler {0}.</value>
-  </data>
-  <data name="event_TaskStarted" xml:space="preserve">
-    <value>Task {2} executing.</value>
-  </data>
-  <data name="event_TaskWaitBegin" xml:space="preserve">
-    <value>Beginning wait ({3}) on Task {2}.</value>
-  </data>
-  <data name="event_TaskWaitEnd" xml:space="preserve">
-    <value>Ending wait on Task {2}.</value>
-  </data>
   <data name="EventSource_AbstractMustNotDeclareEventMethods" xml:space="preserve">
     <value>Abstract event source must not declare event methods ({0} with ID {1}).</value>
   </data>
@@ -3314,9 +3311,6 @@
   <data name="Resources_StreamNotValid" xml:space="preserve">
     <value>Stream is not a valid resource file.</value>
   </data>
-  <data name="RFLCT_AmbigCust" xml:space="preserve">
-    <value>Multiple custom attributes of the same type found.</value>
-  </data>
   <data name="InvalidFilterCriteriaException_CritInt" xml:space="preserve">
     <value>An Int32 must be provided for the filter criteria.</value>
   </data>
@@ -3517,6 +3511,9 @@
   </data>
   <data name="Task_WaitMulti_NullTask" xml:space="preserve">
     <value>The tasks array included at least one null element.</value>
+  </data>
+  <data name="TaskT_ConfigureAwait_InvalidOptions" xml:space="preserve">
+    <value>Task&lt;TResult&gt;.ConfigureAwait does not support ConfigureAwaitOptions.SuppressThrowing. To suppress throwing, instead cast the Task&lt;TResult&gt; to its base class Task and await that with SuppressThrowing.</value>
   </data>
   <data name="TaskCanceledException_ctor_DefaultMessage" xml:space="preserve">
     <value>A task was canceled.</value>
@@ -3845,6 +3842,9 @@
   <data name="InvalidOperation_SuppliedInnerMustBeMarkedAggregation" xml:space="preserve">
     <value>Supplying a non-null inner should also be marked as Aggregated.</value>
   </data>
+  <data name="InvalidOperationException_NoGCRegionCallbackAlreadyRegistered" xml:space="preserve">
+    <value>A NoGCRegion callback is already registered.</value>
+  </data>
   <data name="Argument_SpansMustHaveSameLength" xml:space="preserve">
     <value>Length of items must be same as length of keys.</value>
   </data>
@@ -4052,6 +4052,12 @@
   <data name="InvalidOperationException_NoGCRegionNotInProgress" xml:space="preserve">
     <value>NoGCRegion mode must be set.</value>
   </data>
+  <data name="InvalidOperationException_HardLimitTooLow" xml:space="preserve">
+    <value>RefreshMemoryLimit failed with too low hard limit.</value>
+  </data>
+  <data name="InvalidOperationException_HardLimitInvalid" xml:space="preserve">
+    <value>RefreshMemoryLimit failed with invalid hard limit.</value>
+  </data>
   <data name="PlatformNotSupported_ReflectionEmit" xml:space="preserve">
     <value>Dynamic code generation is not supported on this platform.</value>
   </data>
@@ -4059,10 +4065,13 @@
     <value>AssemblyName.GetAssemblyName() is not supported on this platform.</value>
   </data>
   <data name="PlatformNotSupported_HybridGlobalizationWithCompareOptions" xml:space="preserve">
-    <value>CompareOptions = {0} are not supported when HybridGlobalization=true. Disable it to load larger ICU bundle, then use this option.</value>
+    <value>CompareOptions = {0} are not supported when HybridGlobalization=true on this platform. Disable it to load larger ICU bundle, then use this option.</value>
+  </data>
+  <data name="PlatformNotSupported_HybridGlobalizationWithMixedCompositions" xml:space="preserve">
+    <value>Mixed compositions in string not supported when HybridGlobalization=true on this platform. Disable it to load larger ICU bundle, then use this option.</value>
   </data>
   <data name="PlatformNotSupported_HybridGlobalizationWithCompareOptionsForCulture" xml:space="preserve">
-    <value>CompareOptions = {0} are not supported for culture = {1} when HybridGlobalization=true. Disable it to load larger ICU bundle, then use this option.</value>
+    <value>CompareOptions = {0} are not supported for culture = {1} when HybridGlobalization=true on this platform. Disable it to load larger ICU bundle, then use this option.</value>
   </data>
   <data name="PlatformNotSupported_HybridGlobalizationWithMatchLength" xml:space="preserve">
     <value>Match length calculation is not supported when HybridGlobalization=true. Disable it to load larger ICU bundle, then use this function.</value>

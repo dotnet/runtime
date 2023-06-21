@@ -314,41 +314,6 @@ void CILJit::setTargetOS(CORINFO_OS os)
 #endif
 }
 
-/*****************************************************************************
- * Determine the maximum length of SIMD vector supported by this JIT.
- */
-
-unsigned CILJit::getMaxIntrinsicSIMDVectorLength(CORJIT_FLAGS cpuCompileFlags)
-{
-    JitFlags jitFlags;
-    jitFlags.SetFromFlags(cpuCompileFlags);
-
-#ifdef FEATURE_SIMD
-#if defined(TARGET_XARCH)
-    if (!jitFlags.IsSet(JitFlags::JIT_FLAG_PREJIT) &&
-        jitFlags.GetInstructionSetFlags().HasInstructionSet(InstructionSet_AVX2))
-    {
-        if (GetJitTls() != nullptr && JitTls::GetCompiler() != nullptr)
-        {
-            JITDUMP("getMaxIntrinsicSIMDVectorLength: returning 32\n");
-        }
-        return 32;
-    }
-#endif // defined(TARGET_XARCH)
-    if (GetJitTls() != nullptr && JitTls::GetCompiler() != nullptr)
-    {
-        JITDUMP("getMaxIntrinsicSIMDVectorLength: returning 16\n");
-    }
-    return 16;
-#else  // !FEATURE_SIMD
-    if (GetJitTls() != nullptr && JitTls::GetCompiler() != nullptr)
-    {
-        JITDUMP("getMaxIntrinsicSIMDVectorLength: returning 0\n");
-    }
-    return 0;
-#endif // !FEATURE_SIMD
-}
-
 //------------------------------------------------------------------------
 // eeGetArgSize: Returns the number of bytes required for the given type argument
 //   including padding after the actual value.
@@ -1395,11 +1360,6 @@ void Compiler::eeGetSystemVAmd64PassStructInRegisterDescriptor(
 }
 
 #endif // UNIX_AMD64_ABI
-
-bool Compiler::eeTryResolveToken(CORINFO_RESOLVED_TOKEN* resolvedToken)
-{
-    return info.compCompHnd->tryResolveToken(resolvedToken);
-}
 
 bool Compiler::eeRunWithErrorTrapImp(void (*function)(void*), void* param)
 {

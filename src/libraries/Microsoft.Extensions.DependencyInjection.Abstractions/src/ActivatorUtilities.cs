@@ -535,7 +535,7 @@ namespace Microsoft.Extensions.DependencyInjection
 
             public object CreateInstance(IServiceProvider provider)
             {
-                for (int index = 0; index != _parameters.Length; index++)
+                for (int index = 0; index < _parameters.Length; index++)
                 {
                     if (_parameterValues[index] == null)
                     {

@@ -2,10 +2,11 @@
   <PropertyGroup>
     <TargetFrameworks>$(NetCoreAppCurrent);$(NetFrameworkMinimum)</TargetFrameworks>
     <EmitCompilerGeneratedFiles>true</EmitCompilerGeneratedFiles>
-    <EnableDefaultItems>true</EnableDefaultItems>
     <DefineConstants>$(DefineConstants);BUILDING_SOURCE_GENERATOR_TESTS;ROSLYN4_0_OR_GREATER;ROSLYN4_4_OR_GREATER</DefineConstants>
-    <!-- Type not supported; property on type not suppported. -->
-    <NoWarn>SYSLIB1100,SYSLIB1101</NoWarn>
+    <!-- Type not supported; property on type not suppported; value types invalid for bind; generator could not parse target type -->
+    <NoWarn>SYSLIB1100,SYSLIB1101,SYSLIB1103,SYSLIB1104</NoWarn>
+    <!-- The SDK disables the configuration binding generator by default no matter how it was referenced, so we need to enable it here for testing. -->
+    <EnableConfigurationBindingGenerator>true</EnableConfigurationBindingGenerator>
   </PropertyGroup>
 
   <ItemGroup Condition="'$(TargetFrameworkIdentifier)' != '.NETCoreApp'">
@@ -14,6 +15,7 @@
 
   <ItemGroup>
     <Compile Include="$(CommonPath)..\tests\SourceGenerators\RoslynTestUtils.cs" Link="SourceGenerators\RoslynTestUtils.cs" />
+    <Compile Include="$(CoreLibSharedDir)System\Runtime\CompilerServices\IsExternalInit.cs" Link="Common\System\Runtime\CompilerServices\IsExternalInit.cs" />
     <Compile Include="$(LibrariesProjectRoot)Microsoft.Extensions.Configuration\tests\Common\ConfigurationProviderExtensions.cs" Link="Common\ConfigurationProviderExtensions.cs" />
     <Compile Include="$(LibrariesProjectRoot)Microsoft.Extensions.Configuration\tests\Common\TestStreamHelpers.cs" Link="Common\TestStreamHelpers.cs" />
     <Compile Include="..\Common\ConfigurationBinderTests.cs" Link="Common\ConfigurationBinderTests.cs" />
@@ -21,7 +23,6 @@
     <Compile Include="..\Common\ConfigurationBinderTests.Helpers.cs" Link="Common\ConfigurationBinderTests.Helpers.cs" />
     <Compile Include="..\Common\ConfigurationBinderTests.TestClasses.cs" Link="Common\ConfigurationBinderTests.TestClasses.cs" />
     <Compile Include="..\Common\ConfigurationBinderTests.TestClasses.Collections.cs" Link="Common\ConfigurationBinderTests.TestClasses.Collections.cs" />
-    <Compile Include="$(CoreLibSharedDir)System\Runtime\CompilerServices\IsExternalInit.cs" Link="Common\System\Runtime\CompilerServices\IsExternalInit.cs" /> 
   </ItemGroup>
 
   <ItemGroup>
@@ -36,10 +37,17 @@
     <ProjectReference Include="..\..\gen\Microsoft.Extensions.Configuration.Binder.SourceGeneration.csproj" OutputItemType="Analyzer" ReferenceOutputAssembly="true" />
   </ItemGroup>
 
-  <ItemGroup>
-    <Content Include="Baselines\*.generated.txt">
+  <ItemGroup Condition="'$(TargetFrameworkIdentifier)' == '.NETCoreApp'">
+    <Content Include="Baselines\*.generated.txt;
+             Baselines\ConfigurationBinder\*.generated.txt;
+             Baselines\OptionsBuilder\*.generated.txt;
+             Baselines\ServiceCollection\*.generated.txt">
       <CopyToOutputDirectory>PreserveNewest</CopyToOutputDirectory>
     </Content>
+
+    <Compile Include="ConfigurationBindingGeneratorTests.cs" />
+    <Compile Include="ConfigurationBindingGeneratorTests.Baselines.cs" />
+    <Compile Include="ConfigurationBindingGeneratorTests.Baselines.Options.cs" />
   </ItemGroup>
 
   <Target Name="FixIncrementalCoreCompileWithAnalyzers" BeforeTargets="CoreCompile">

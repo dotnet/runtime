@@ -32,6 +32,9 @@ public class ComputeWasmBuildAssets : Task
     public ITaskItem[] ProjectSatelliteAssemblies { get; set; }
 
     [Required]
+    public string DotNetJsVersion { get; set; }
+
+    [Required]
     public string OutputPath { get; set; }
 
     [Required]
@@ -114,7 +117,7 @@ public class ComputeWasmBuildAssets : Task
                     if (candidateFileName != "dotnet" || FingerprintDotNetJs)
                     {
                         var itemHash = FileHasher.GetFileHash(candidate.ItemSpec);
-                        newDotnetJSFileName = $"{candidateFileName}.{candidate.GetMetadata("NuGetPackageVersion")}.{itemHash}.js";
+                        newDotnetJSFileName = $"{candidateFileName}.{DotNetJsVersion}.{itemHash}.js";
 
                         var originalFileFullPath = Path.GetFullPath(candidate.ItemSpec);
                         var originalFileDirectory = Path.GetDirectoryName(originalFileFullPath);

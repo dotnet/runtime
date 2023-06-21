@@ -6,6 +6,8 @@ import type { BootJsonData, ResourceList } from "../../types/blazor";
 import { toAbsoluteUri } from "./_Polyfill";
 const networkFetchCacheMode = "no-cache";
 
+const cacheSkipResourceTypes = ["configuration"];
+
 export class WebAssemblyResourceLoader {
     private usedCacheKeys: { [key: string]: boolean } = {};
 
@@ -27,7 +29,7 @@ export class WebAssemblyResourceLoader {
     }
 
     loadResource(name: string, url: string, contentHash: string, resourceType: WebAssemblyBootResourceType): LoadingResource {
-        const response = this.cacheIfUsed
+        const response = this.cacheIfUsed && !cacheSkipResourceTypes.includes(resourceType)
             ? this.loadResourceWithCaching(this.cacheIfUsed, name, url, contentHash, resourceType)
             : this.loadResourceWithoutCaching(name, url, contentHash, resourceType);
 
@@ -46,20 +48,28 @@ export class WebAssemblyResourceLoader {
         }
 
         const linkerDisabledWarning = this.bootConfig.linkerEnabled ? "%c" : "\n%cThis application was built with linking (tree shaking) disabled. Published applications will be significantly smaller.";
+        // eslint-disable-next-line no-console
         console.groupCollapsed(`%cdotnet%c Loaded ${toDataSizeString(totalResponseBytes)} resources${linkerDisabledWarning}`, "background: purple; color: white; padding: 1px 3px; border-radius: 3px;", "font-weight: bold;", "font-weight: normal;");
 
         if (cacheLoadsEntries.length) {
+            // eslint-disable-next-line no-console
             console.groupCollapsed(`Loaded ${toDataSizeString(cacheResponseBytes)} resources from cache`);
+            // eslint-disable-next-line no-console
             console.table(this.cacheLoads);
+            // eslint-disable-next-line no-console
             console.groupEnd();
         }
 
         if (networkLoadsEntries.length) {
+            // eslint-disable-next-line no-console
             console.groupCollapsed(`Loaded ${toDataSizeString(networkResponseBytes)} resources from network`);
+            // eslint-disable-next-line no-console
             console.table(this.networkLoads);
+            // eslint-disable-next-line no-console
             console.groupEnd();
         }
 
+        // eslint-disable-next-line no-console
         console.groupEnd();
     }
 
@@ -127,10 +137,19 @@ export class WebAssemblyResourceLoader {
         // Note that if cacheBootResources was explicitly disabled, we also bypass hash checking
         // This is to give developers an easy opt-out from the entire caching/validation flow if
         // there's anything they don't like about it.
-        return fetch(url, {
-            cache: networkFetchCacheMode,
-            integrity: this.bootConfig.cacheBootResources ? contentHash : undefined,
-        });
+        const fetchOptions: RequestInit = {
+            cache: networkFetchCacheMode
+        };
+
+        if (resourceType === "configuration") {
+            // Include credentials so the server can allow download / provide user specific file
+            fetchOptions.credentials = "include";
+        } else {
+            // Any other resource than configuration should provide integrity check
+            fetchOptions.integrity = this.bootConfig.cacheBootResources ? contentHash : undefined;
+        }
+
+        return fetch(url, fetchOptions);
     }
 
     private async addToCacheAsync(cache: Cache, name: string, cacheKey: string, response: Response) {

@@ -34,6 +34,8 @@ namespace System.Text.RegularExpressions.Generator
         /// <inheritdoc />
         public override ImmutableArray<string> FixableDiagnosticIds => ImmutableArray.Create(DiagnosticDescriptors.UseRegexSourceGeneration.Id);
 
+        private static readonly char[] s_comma = new[] { ',' };
+
         public override FixAllProvider? GetFixAllProvider() => WellKnownFixAllProviders.BatchFixer;
 
         /// <inheritdoc />
@@ -313,7 +315,7 @@ namespace System.Text.RegularExpressions.Generator
 
                 // Parse the runtime-generated "Option1, Option2" into each piece and then concat
                 // them back together.
-                string[] parts = stringifiedRegexOptions.Split(new[] { ',' }, StringSplitOptions.RemoveEmptyEntries);
+                string[] parts = stringifiedRegexOptions.Split(s_comma, StringSplitOptions.RemoveEmptyEntries);
                 for (int i = 0; i < parts.Length; i++)
                 {
                     parts[i] = "RegexOptions." + parts[i].Trim();

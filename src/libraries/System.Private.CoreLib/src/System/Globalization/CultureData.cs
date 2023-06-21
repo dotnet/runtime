@@ -424,7 +424,7 @@ namespace System.Globalization
             // First do a shortcut for Invariant
             if (string.IsNullOrEmpty(cultureName))
             {
-                return CultureData.Invariant;
+                return Invariant;
             }
 
             // First check if GetCultureData() can find it (ie: its a real culture)
@@ -672,7 +672,7 @@ namespace System.Globalization
             // First do a shortcut for Invariant
             if (string.IsNullOrEmpty(cultureName))
             {
-                return CultureData.Invariant;
+                return Invariant;
             }
 
             if (GlobalizationMode.PredefinedCulturesOnly)
@@ -804,7 +804,7 @@ namespace System.Globalization
                 // Always map the "C" locale to Invariant to avoid mapping it to en_US_POSIX on Linux because POSIX
                 // locale collation doesn't support case insensitive comparisons.
                 // We do the same mapping on Windows for the sake of consistency.
-                return CultureData.Invariant;
+                return Invariant;
             }
 
             CultureData culture = new CultureData();
@@ -868,6 +868,16 @@ namespace System.Globalization
 
             if (GlobalizationMode.Invariant)
             {
+                if (!GlobalizationMode.PredefinedCulturesOnly)
+                {
+                    if (culture is < 1 or > 0xf_ffff)
+                    {
+                        throw new CultureNotFoundException(nameof(culture), culture, SR.Argument_CultureNotSupported);
+                    }
+
+                    return Invariant;
+                }
+
                 // LCID is not supported in the InvariantMode
                 throw new CultureNotFoundException(nameof(culture), culture, SR.Argument_CultureNotSupportedInInvariantMode);
             }
@@ -2102,7 +2112,7 @@ namespace System.Globalization
         private static int IndexOfTimePart(string format, int startIndex, string timeParts)
         {
             Debug.Assert(startIndex >= 0, "startIndex cannot be negative");
-            Debug.Assert(timeParts.AsSpan().IndexOfAny('\'', '\\') < 0, "timeParts cannot include quote characters");
+            Debug.Assert(!timeParts.AsSpan().ContainsAny('\'', '\\'), "timeParts cannot include quote characters");
             bool inQuote = false;
             for (int i = startIndex; i < format.Length; ++i)
             {

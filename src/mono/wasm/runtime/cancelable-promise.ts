@@ -8,7 +8,6 @@ import { ControllablePromise, GCHandle } from "./types/internal";
 
 export const _are_promises_supported = ((typeof Promise === "object") || (typeof Promise === "function")) && (typeof Promise.resolve === "function");
 
-// eslint-disable-next-line @typescript-eslint/explicit-module-boundary-types
 export function isThenable(js_obj: any): boolean {
     // When using an external Promise library like Bluebird the Promise.resolve may not be sufficient
     // to identify the object as a Promise.

@@ -44,7 +44,14 @@ namespace ILCompiler.DependencyAnalysis
                 dependencies.Add(factory.ReflectedMethod(entrypoint), "Reflectable entrypoint");
             }
 
-            CustomAttributeBasedDependencyAlgorithm.AddDependenciesDueToCustomAttributes(ref dependencies, factory, (EcmaAssembly)_module);
+            EcmaAssembly ecmaAssembly = (EcmaAssembly)_module;
+
+            CustomAttributeBasedDependencyAlgorithm.AddDependenciesDueToCustomAttributes(ref dependencies, factory, ecmaAssembly);
+
+            foreach (EcmaModule satelliteModule in ((UsageBasedMetadataManager)factory.MetadataManager).GetSatelliteAssemblies(ecmaAssembly))
+            {
+                dependencies.Add(factory.ModuleMetadata(satelliteModule), "Satellite assembly");
+            }
 
             return dependencies;
         }

@@ -1,31 +1,16 @@
 // Licensed to the .NET Foundation under one or more agreements.
 // The .NET Foundation licenses this file to you under the MIT license.
 
+import MonoWasmThreads from "consts:monoWasmThreads";
+
 import cwraps from "./cwraps";
+import { Module, loaderHelpers } from "./globals";
 
 let spread_timers_maximum = 0;
-export let isChromium = false;
 let pump_count = 0;
 
-if (globalThis.navigator) {
-    const nav: any = globalThis.navigator;
-    if (nav.userAgentData && nav.userAgentData.brands) {
-        isChromium = nav.userAgentData.brands.some((i: any) => i.brand == "Chromium");
-    }
-    else if (nav.userAgent) {
-        isChromium = nav.userAgent.includes("Chrome");
-    }
-}
-
-function pump_message() {
-    while (pump_count > 0) {
-        --pump_count;
-        cwraps.mono_background_exec();
-    }
-}
-
 export function prevent_timer_throttling(): void {
-    if (!isChromium) {
+    if (!loaderHelpers.isChromium) {
         return;
     }
 
@@ -37,28 +22,44 @@ export function prevent_timer_throttling(): void {
     const light_throttling_frequency = 1000;
     for (let schedule = next_reach_time; schedule < desired_reach_time; schedule += light_throttling_frequency) {
         const delay = schedule - now;
-        setTimeout(() => {
-            cwraps.mono_set_timeout_exec();
-            pump_count++;
-            pump_message();
-        }, delay);
+        globalThis.setTimeout(prevent_timer_throttling_tick, delay);
     }
     spread_timers_maximum = desired_reach_time;
 }
 
+function prevent_timer_throttling_tick() {
+    Module.maybeExit();
+    cwraps.mono_wasm_execute_timer();
+    pump_count++;
+    mono_background_exec_until_done();
+}
+
+function mono_background_exec_until_done() {
+    while (pump_count > 0) {
+        --pump_count;
+        cwraps.mono_background_exec();
+    }
+}
+
 export function schedule_background_exec(): void {
     ++pump_count;
-    setTimeout(pump_message, 0);
+    Module.safeSetTimeout(mono_background_exec_until_done, 0);
 }
 
 let lastScheduledTimeoutId: any = undefined;
-export function mono_set_timeout(timeout: number): void {
-    function mono_wasm_set_timeout_exec() {
-        cwraps.mono_set_timeout_exec();
-    }
+export function mono_wasm_schedule_timer(shortestDueTimeMs: number): void {
     if (lastScheduledTimeoutId) {
-        clearTimeout(lastScheduledTimeoutId);
+        globalThis.clearTimeout(lastScheduledTimeoutId);
         lastScheduledTimeoutId = undefined;
+        // NOTE: Multi-threaded Module.safeSetTimeout() does the runtimeKeepalivePush() 
+        // and non-Multi-threaded Module.safeSetTimeout does not runtimeKeepalivePush() 
+        // but clearTimeout does not runtimeKeepalivePop() so we need to do it here in MT only.
+        if (MonoWasmThreads) Module.runtimeKeepalivePop();
     }
-    lastScheduledTimeoutId = setTimeout(mono_wasm_set_timeout_exec, timeout);
+    lastScheduledTimeoutId = Module.safeSetTimeout(mono_wasm_schedule_timer_tick, shortestDueTimeMs);
+}
+
+function mono_wasm_schedule_timer_tick() {
+    lastScheduledTimeoutId = undefined;
+    cwraps.mono_wasm_execute_timer();
 }

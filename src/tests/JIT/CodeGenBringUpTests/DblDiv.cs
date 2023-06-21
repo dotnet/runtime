@@ -5,6 +5,7 @@
 
 using System;
 using System.Runtime.CompilerServices;
+using Xunit;
 public class BringUpTest_DblDiv
 {
     const int Pass = 100;
@@ -13,7 +14,8 @@ public class BringUpTest_DblDiv
     [MethodImplAttribute(MethodImplOptions.NoInlining)]
     public static double DblDiv(double x, double y) { return x/y; }
 
-    public static int Main()
+    [Fact]
+    public static int TestEntryPoint()
     {
         double y = DblDiv(81d, 3d);
         Console.WriteLine(y);

@@ -1,8 +1,34 @@
 // Licensed to the .NET Foundation under one or more agreements.
 // The .NET Foundation licenses this file to you under the MIT license.
 
-import { INTERNAL, Module, runtimeHelpers } from "./globals";
+/* eslint-disable no-console */
+import { INTERNAL, runtimeHelpers } from "./globals";
+import { utf8ToString } from "./strings";
 import { CharPtr, VoidPtr } from "./types/emscripten";
+
+let prefix = "MONO_WASM: ";
+
+export function mono_set_thread_id(tid: string) {
+    prefix = `MONO_WASM [${tid}]: `;
+}
+
+export function mono_log_debug(msg: string, ...data: any) {
+    if (runtimeHelpers.diagnosticTracing) {
+        console.debug(prefix + msg, ...data);
+    }
+}
+
+export function mono_log_info(msg: string, ...data: any) {
+    console.info(prefix + msg, ...data);
+}
+
+export function mono_log_warn(msg: string, ...data: any) {
+    console.warn(prefix + msg, ...data);
+}
+
+export function mono_log_error(msg: string, ...data: any) {
+    console.error(prefix + msg, ...data);
+}
 
 export const wasm_func_map = new Map<number, string>();
 const regexes: any[] = [];
@@ -54,7 +80,7 @@ export function mono_wasm_symbolicate_string(message: string): string {
 
         return origMessage;
     } catch (error) {
-        console.debug(`MONO_WASM: failed to symbolicate: ${error}`);
+        console.debug(`failed to symbolicate: ${error}`);
         return message;
     }
 }
@@ -70,11 +96,11 @@ export function mono_wasm_stringify_as_error_with_stack(err: Error | string): st
 }
 
 export function mono_wasm_trace_logger(log_domain_ptr: CharPtr, log_level_ptr: CharPtr, message_ptr: CharPtr, fatal: number, user_data: VoidPtr): void {
-    const origMessage = Module.UTF8ToString(message_ptr);
+    const origMessage = utf8ToString(message_ptr);
     const isFatal = !!fatal;
-    const domain = Module.UTF8ToString(log_domain_ptr);
+    const domain = utf8ToString(log_domain_ptr);
     const dataPtr = user_data;
-    const log_level = Module.UTF8ToString(log_level_ptr);
+    const log_level = utf8ToString(log_level_ptr);
 
     const message = `[MONO] ${origMessage}`;
 
@@ -117,5 +143,5 @@ export function parseSymbolMapFile(text: string) {
         wasm_func_map.set(Number(parts[0]), parts[1]);
     });
 
-    if (runtimeHelpers.diagnosticTracing) console.debug(`MONO_WASM: Loaded ${wasm_func_map.size} symbols`);
+    mono_log_debug(`Loaded ${wasm_func_map.size} symbols`);
 }

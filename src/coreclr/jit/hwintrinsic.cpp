@@ -9,7 +9,7 @@
 static const HWIntrinsicInfo hwIntrinsicInfoArray[] = {
 // clang-format off
 #if defined(TARGET_XARCH)
-#define HARDWARE_INTRINSIC(isa, name, size, numarg, t1, t2, t3, t4, t5, t6, t7, t8, t9, t10, category, flag) \
+#define HARDWARE_INTRINSIC(isa, name, size, numarg, extra, t1, t2, t3, t4, t5, t6, t7, t8, t9, t10, category, flag) \
     { \
             /* name */ #name, \
            /* flags */ static_cast<HWIntrinsicFlag>(flag), \
@@ -22,7 +22,7 @@ static const HWIntrinsicInfo hwIntrinsicInfoArray[] = {
     },
 #include "hwintrinsiclistxarch.h"
 #elif defined (TARGET_ARM64)
-#define HARDWARE_INTRINSIC(isa, name, size, numarg, t1, t2, t3, t4, t5, t6, t7, t8, t9, t10, category, flag) \
+#define HARDWARE_INTRINSIC(isa, name, size, numarg, extra, t1, t2, t3, t4, t5, t6, t7, t8, t9, t10, category, flag) \
     { \
             /* name */ #name, \
            /* flags */ static_cast<HWIntrinsicFlag>(flag), \
@@ -495,9 +495,9 @@ NamedIntrinsic HWIntrinsicInfo::lookupId(Compiler*         comp,
         return NI_Illegal;
     }
 
-    bool isIsaSupported = comp->compSupportsHWIntrinsic(isa);
-
+    bool isIsaSupported            = comp->compSupportsHWIntrinsic(isa);
     bool isHardwareAcceleratedProp = (strcmp(methodName, "get_IsHardwareAccelerated") == 0);
+
 #ifdef TARGET_XARCH
     if (isHardwareAcceleratedProp)
     {
@@ -515,7 +515,7 @@ NamedIntrinsic HWIntrinsicInfo::lookupId(Compiler*         comp,
         }
         else if (strcmp(className, "Vector512") == 0)
         {
-            isa = InstructionSet_Vector512;
+            isa = InstructionSet_AVX512F;
         }
     }
 #endif
@@ -541,22 +541,22 @@ NamedIntrinsic HWIntrinsicInfo::lookupId(Compiler*         comp,
         //
         // When the target hardware does support the instruction set, we can return a
         // constant true. When it doesn't then we want to report the check as dynamically
-        // supported instead. This allows some targets, such as AOT, to emit a check against
-        // a cached CPU query so lightup can still happen (such as for SSE4.1 when the target
-        // hardware is SSE2).
+        // supported instead if the opportunistic support does exist. This allows some targets,
+        // such as AOT, to emit a check against a cached CPU query so lightup can still happen
+        // (such as for SSE4.1 when the target hardware is SSE2).
         //
         // When the compiler doesn't support ISA or when it does but the target hardware does
         // not and we aren't in a scenario with support for a dynamic check, we want to return false.
 
-        if (isIsaSupported)
+        if (isIsaSupported && comp->compSupportsHWIntrinsic(isa))
         {
-            if (comp->compExactlyDependsOn(isa))
+            if (!comp->IsTargetAbi(CORINFO_NATIVEAOT_ABI) || comp->compExactlyDependsOn(isa))
             {
                 return NI_IsSupported_True;
             }
-
-            if (comp->IsTargetAbi(CORINFO_NATIVEAOT_ABI))
+            else
             {
+                assert(comp->IsTargetAbi(CORINFO_NATIVEAOT_ABI));
                 return NI_IsSupported_Dynamic;
             }
         }
@@ -600,10 +600,7 @@ NamedIntrinsic HWIntrinsicInfo::lookupId(Compiler*         comp,
     }
     else if (isa == InstructionSet_Vector512)
     {
-        // We support Vector512 intrinsics when AVX512F, AVX512BW, AVX512DQ are available.
-        if (!comp->compOpportunisticallyDependsOn(InstructionSet_AVX512F) &&
-            !comp->compOpportunisticallyDependsOn(InstructionSet_AVX512BW) &&
-            !comp->compOpportunisticallyDependsOn(InstructionSet_AVX512DQ))
+        if (!comp->IsBaselineVector512IsaSupportedOpportunistically())
         {
             return NI_Illegal;
         }
@@ -784,8 +781,7 @@ GenTree* Compiler::getArgForHWIntrinsic(var_types            argType,
 
             // push newobj result on type stack
             unsigned lclNum = arg->AsLclVarCommon()->GetLclNum();
-            impPushOnStack(gtNewLclvNode(lclNum, lvaGetRealType(lclNum)),
-                           verMakeTypeInfo(argClass).NormaliseForStack());
+            impPushOnStack(gtNewLclvNode(lclNum, lvaGetRealType(lclNum)), verMakeTypeInfo(argClass));
         }
     }
     else
@@ -917,8 +913,7 @@ bool Compiler::compSupportsHWIntrinsic(CORINFO_InstructionSet isa)
 //
 static bool impIsTableDrivenHWIntrinsic(NamedIntrinsic intrinsicId, HWIntrinsicCategory category)
 {
-    return (category != HW_Category_Special) && HWIntrinsicInfo::RequiresCodegen(intrinsicId) &&
-           !HWIntrinsicInfo::HasSpecialImport(intrinsicId);
+    return (category != HW_Category_Special) && !HWIntrinsicInfo::HasSpecialImport(intrinsicId);
 }
 
 //------------------------------------------------------------------------

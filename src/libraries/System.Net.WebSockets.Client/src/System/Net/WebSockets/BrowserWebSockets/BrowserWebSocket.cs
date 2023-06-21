@@ -190,9 +190,8 @@ namespace System.Net.WebSockets
 
                 _innerWebSocket = BrowserInterop.UnsafeCreate(uri.ToString(), subProtocols, responseStatusHandle.Value, onClose);
                 var openTask = BrowserInterop.WebSocketOpen(_innerWebSocket);
-                var wrappedTask = CancelationHelper(openTask!, cancellationToken, _state);
 
-                await wrappedTask.ConfigureAwait(true);
+                await CancelationHelper(openTask!, cancellationToken, _state).ConfigureAwait(true);
                 if (State == WebSocketState.Connecting)
                 {
                     _state = WebSocketState.Open;
@@ -224,13 +223,8 @@ namespace System.Net.WebSockets
                     // return synchronously
                     return;
                 }
-                var wrappedTask = CancelationHelper(sendTask, cancellationToken, _state);
 
-                await wrappedTask.ConfigureAwait(true);
-            }
-            catch (OperationCanceledException)
-            {
-                throw;
+                await CancelationHelper(sendTask, cancellationToken, _state).ConfigureAwait(true);
             }
             catch (JSException ex)
             {
@@ -256,15 +250,10 @@ namespace System.Net.WebSockets
                         return ConvertResponse();
                     }
 
-                    var wrappedTask = CancelationHelper(receiveTask, cancellationToken, _state);
-                    await wrappedTask.ConfigureAwait(true);
+                    await CancelationHelper(receiveTask, cancellationToken, _state).ConfigureAwait(true);
 
                     return ConvertResponse();
                 }
-            }
-            catch (OperationCanceledException)
-            {
-                throw;
             }
             catch (JSException ex)
             {
@@ -298,8 +287,7 @@ namespace System.Net.WebSockets
             var closeTask = BrowserInterop.WebSocketClose(_innerWebSocket!, (int)closeStatus, statusDescription, waitForCloseReceived);
             if (closeTask != null)
             {
-                var wrappedTask = CancelationHelper(closeTask, cancellationToken, _state);
-                await wrappedTask.ConfigureAwait(true);
+                await CancelationHelper(closeTask, cancellationToken, _state).ConfigureAwait(true);
             }
 
             var state = State;

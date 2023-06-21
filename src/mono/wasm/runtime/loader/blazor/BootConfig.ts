@@ -5,13 +5,13 @@ import type { BootJsonData } from "../../types/blazor";
 import type { WebAssemblyBootResourceType } from "../../types";
 import { loaderHelpers } from "../globals";
 
-type LoadBootResourceCallback = (type: WebAssemblyBootResourceType, name: string, defaultUri: string, integrity: string) => string | Promise<Response> | null | undefined;
+export type LoadBootResourceCallback = (type: WebAssemblyBootResourceType, name: string, defaultUri: string, integrity: string) => string | Promise<Response> | null | undefined;
 
 export class BootConfigResult {
     private constructor(public bootConfig: BootJsonData, public applicationEnvironment: string) {
     }
 
-    static fromFetchResponse(bootConfigResponse: Response, bootConfig: BootJsonData, environment?: string): BootConfigResult {
+    static fromFetchResponse(bootConfigResponse: Response, bootConfig: BootJsonData, environment: string | undefined): BootConfigResult {
         const applicationEnvironment = environment || (loaderHelpers.getApplicationEnvironment && loaderHelpers.getApplicationEnvironment(bootConfigResponse)) || "Production";
         bootConfig.modifiableAssemblies = bootConfigResponse.headers.get("DOTNET-MODIFIABLE-ASSEMBLIES");
         bootConfig.aspnetCoreBrowserTools = bootConfigResponse.headers.get("ASPNETCORE-BROWSER-TOOLS");
