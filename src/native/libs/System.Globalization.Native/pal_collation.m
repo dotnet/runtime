@@ -102,7 +102,7 @@ static int32_t IsIndexFound(int32_t fromBeginning, int32_t foundLocation, int32_
     if (!fromBeginning && foundLocation > newLocation)
         return 1;
     // first index
-    if (fromBeginning && foundLocation != -2 && foundLocation < newLocation)
+    if (fromBeginning && foundLocation > 0 && foundLocation < newLocation)
         return 1;
     return 0;
 }
@@ -115,7 +115,7 @@ Range GlobalizationNative_IndexOfNative(const uint16_t* localeName, int32_t lNam
                                         const uint16_t* lpSource, int32_t cwSourceLength, int32_t comparisonOptions, int32_t fromBeginning)
 {
     assert(cwTargetLength >= 0);
-    Range result = {-1, 0};
+    Range result = {-2, 0};
     NSStringCompareOptions options = ConvertFromCompareOptionsToNSStringCompareOptions(comparisonOptions);
     
     // in case mapping is not found
@@ -152,8 +152,8 @@ Range GlobalizationNative_IndexOfNative(const uint16_t* localeName, int32_t lNam
     if (containsRange.location == NSNotFound)
         return result;
 
-    // in case search string is inside source string but we can't find the index return -2
-    result.location = -2;
+    // in case search string is inside source string but we can't find the index return -3
+    result.location = -3;
     // sourceString and searchString possibly have the same composition of characters
     rangeOfReceiverToSearch = NSMakeRange(0, sourceStrCleaned.length);
     NSRange nsRange = [sourceStrCleaned rangeOfString:searchStrCleaned

@@ -2437,9 +2437,6 @@
     <Compile Include="$(CommonPath)Interop\OSX\Interop.libc.cs">
       <Link>Common\Interop\OSX\Interop.libc.cs</Link>
     </Compile>
-    <Compile Include="$(CommonPath)Interop\OSX\NSRange.cs">
-      <Link>Common\Interop\OSX\NSRange.cs</Link>
-    </Compile>
     <Compile Include="$(MSBuildThisFileDirectory)System\IO\FileStatus.SetTimes.OSX.cs" />
     <Compile Include="$(MSBuildThisFileDirectory)System\IO\FileSystem.TryCloneFile.OSX.cs" />
   </ItemGroup>

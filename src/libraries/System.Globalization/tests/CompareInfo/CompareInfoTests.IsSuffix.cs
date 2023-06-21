@@ -107,7 +107,7 @@ namespace System.Globalization.Tests
             {
                 yield return new object[] { s_hungarianCompare, "foobardzsdzs", "rddzs", CompareOptions.None, false, 0 };
                 yield return new object[] { s_frenchCompare, "\u0153", "oe", CompareOptions.None, false, 0 };
-                if (!PlatformDetection.IsHybridGlobalizationOnOSX) // TODO: check this for OSX
+                if (!PlatformDetection.IsHybridGlobalizationOnOSX)
                 {
                     yield return new object[] { s_invariantCompare, "\uD800\uDC00", "\uDC00", CompareOptions.None, false, 0 };
                     yield return new object[] { s_invariantCompare, "\uD800\uDC00", "\uDC00", CompareOptions.IgnoreCase, false, 0 };
