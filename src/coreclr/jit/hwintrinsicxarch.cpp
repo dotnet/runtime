@@ -1366,9 +1366,9 @@ GenTree* Compiler::impSpecialIntrinsic(NamedIntrinsic        intrinsic,
         case NI_Vector256_ConvertToDouble:
         case NI_Vector512_ConvertToDouble:
         {
+            assert(sig->numArgs == 1);
             if (IsBaselineVector512IsaSupportedOpportunistically())
             {
-                assert(sig->numArgs == 1);
                 assert(simdBaseType == TYP_LONG || simdBaseType == TYP_ULONG);
 
                 intrinsic = (simdSize == 16) ? NI_AVX512DQ_VL_ConvertToVector128Double
@@ -1378,7 +1378,6 @@ GenTree* Compiler::impSpecialIntrinsic(NamedIntrinsic        intrinsic,
                 op1     = impSIMDPopStack();
                 retNode = gtNewSimdHWIntrinsicNode(retType, op1, intrinsic, simdBaseJitType, simdSize);
             }
-
             break;
         }
 
@@ -1386,9 +1385,10 @@ GenTree* Compiler::impSpecialIntrinsic(NamedIntrinsic        intrinsic,
         case NI_Vector256_ConvertToInt64:
         case NI_Vector512_ConvertToInt64:
         {
+            assert(sig->numArgs == 1);
             if (IsBaselineVector512IsaSupportedOpportunistically())
             {
-                assert(sig->numArgs == 1);
+                
                 assert(simdBaseType == TYP_DOUBLE);
 
 #ifdef TARGET_XARCH
@@ -1404,7 +1404,6 @@ GenTree* Compiler::impSpecialIntrinsic(NamedIntrinsic        intrinsic,
                 op1     = impSIMDPopStack();
                 retNode = gtNewSimdHWIntrinsicNode(retType, op1, intrinsic, simdBaseJitType, simdSize);
             }
-
             break;
         }
 
@@ -1416,15 +1415,16 @@ GenTree* Compiler::impSpecialIntrinsic(NamedIntrinsic        intrinsic,
             // TODO-XARCH-CQ: These intrinsics should be accelerated
             // It is not accelerated for now because there is a difference between
             // non AVX512 and AVX512 machine in terms of output values for casting.
+            break;
         }
 
         case NI_Vector128_ConvertToUInt64:
         case NI_Vector256_ConvertToUInt64:
         case NI_Vector512_ConvertToUInt64:
         {
+            assert(sig->numArgs == 1);
             if (IsBaselineVector512IsaSupportedOpportunistically())
             {
-                assert(sig->numArgs == 1);
                 assert((simdBaseType == TYP_DOUBLE) || (simdBaseType == TYP_FLOAT));
 
 #ifdef TARGET_XARCH
@@ -1439,7 +1439,6 @@ GenTree* Compiler::impSpecialIntrinsic(NamedIntrinsic        intrinsic,
                 op1     = impSIMDPopStack();
                 retNode = gtNewSimdHWIntrinsicNode(retType, op1, intrinsic, simdBaseJitType, simdSize);
             }
-
             break;
         }
 
