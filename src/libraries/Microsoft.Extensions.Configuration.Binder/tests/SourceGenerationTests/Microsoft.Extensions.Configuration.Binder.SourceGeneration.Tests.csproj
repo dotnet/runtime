@@ -38,12 +38,16 @@
   </ItemGroup>
 
   <ItemGroup Condition="'$(TargetFrameworkIdentifier)' == '.NETCoreApp'">
-    <Content Include="Baselines\*.generated.txt">
+    <Content Include="Baselines\*.generated.txt;
+             Baselines\ConfigurationBinder\*.generated.txt;
+             Baselines\OptionsBuilder\*.generated.txt;
+             Baselines\ServiceCollection\*.generated.txt">
       <CopyToOutputDirectory>PreserveNewest</CopyToOutputDirectory>
     </Content>
 
     <Compile Include="ConfigurationBindingGeneratorTests.cs" />
     <Compile Include="ConfigurationBindingGeneratorTests.Baselines.cs" />
+    <Compile Include="ConfigurationBindingGeneratorTests.Baselines.Options.cs" />
   </ItemGroup>
 
   <Target Name="FixIncrementalCoreCompileWithAnalyzers" BeforeTargets="CoreCompile">

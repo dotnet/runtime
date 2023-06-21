@@ -374,10 +374,11 @@ The .NET Foundation licenses this file to you under the MIT license.
 
     <!-- strip symbols, see https://github.com/dotnet/runtime/blob/5d3288d/eng/native/functions.cmake#L374 -->
     <Exec Condition="'$(StripSymbols)' == 'true' and '$(_targetOS)' != 'win' and '$(_IsApplePlatform)' != 'true'"
-      Command="
-        &quot;$(ObjCopyName)&quot; --only-keep-debug &quot;$(NativeBinary)&quot; &quot;$(NativeBinary)$(NativeSymbolExt)&quot; &amp;&amp;
-        &quot;$(ObjCopyName)&quot; --strip-debug --strip-unneeded &quot;$(NativeBinary)&quot; &amp;&amp;
-        &quot;$(ObjCopyName)&quot; --add-gnu-debuglink=&quot;$(NativeBinary)$(NativeSymbolExt)&quot; &quot;$(NativeBinary)&quot;" />
+      Command="&quot;$(ObjCopyName)&quot; --only-keep-debug &quot;$(NativeBinary)&quot; &quot;$(NativeBinary)$(NativeSymbolExt)&quot;" />
+    <Exec Condition="'$(StripSymbols)' == 'true' and '$(_targetOS)' != 'win' and '$(_IsApplePlatform)' != 'true'"
+      Command="&quot;$(ObjCopyName)&quot; --strip-debug --strip-unneeded &quot;$(NativeBinary)&quot;" />
+    <Exec Condition="'$(StripSymbols)' == 'true' and '$(_targetOS)' != 'win' and '$(_IsApplePlatform)' != 'true'"
+      Command="&quot;$(ObjCopyName)&quot; --add-gnu-debuglink=&quot;$(NativeBinary)$(NativeSymbolExt)&quot; &quot;$(NativeBinary)&quot;" />
 
     <Exec Condition="'$(StripSymbols)' == 'true' and '$(_IsApplePlatform)' == 'true' and '$(NativeLib)' != 'Static'"
       Command="

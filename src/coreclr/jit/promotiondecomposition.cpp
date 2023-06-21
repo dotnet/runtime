@@ -427,8 +427,8 @@ private:
                 statements->AddStatement(store);
             }
 
-            entry.ToReplacement->NeedsWriteBack = true;
-            entry.ToReplacement->NeedsReadBack  = false;
+            m_replacer->ClearNeedsReadBack(*entry.ToReplacement);
+            m_replacer->SetNeedsWriteBack(*entry.ToReplacement);
         }
 
         RemainderStrategy remainderStrategy = DetermineRemainderStrategy(deaths);
@@ -520,7 +520,7 @@ private:
                         // The loop below will skip these replacements as an
                         // optimization if it is going to copy the struct
                         // anyway.
-                        rep->NeedsWriteBack = false;
+                        m_replacer->ClearNeedsWriteBack(*rep);
                     }
                 }
             }
@@ -690,8 +690,8 @@ private:
 
             if (entry.ToReplacement != nullptr)
             {
-                entry.ToReplacement->NeedsWriteBack = true;
-                entry.ToReplacement->NeedsReadBack  = false;
+                m_replacer->ClearNeedsReadBack(*entry.ToReplacement);
+                m_replacer->SetNeedsWriteBack(*entry.ToReplacement);
             }
 
             if (CanSkipEntry(entry, dstDeaths, remainderStrategy DEBUGARG(/* dump */ true)))
@@ -1096,12 +1096,12 @@ void ReplaceVisitor::HandleStructStore(GenTree** use, GenTree* user)
                     // We accomplish this by an initial write back, the struct copy, followed by a later read back.
                     // TODO-CQ: This is expensive and unreflected in heuristics, but it is also very rare.
                     result.AddStatement(Promotion::CreateWriteBack(m_compiler, dstLcl->GetLclNum(), *dstFirstRep));
-                    dstFirstRep->NeedsWriteBack = false;
+                    ClearNeedsWriteBack(*dstFirstRep);
                 }
 
+                SetNeedsReadBack(*dstFirstRep);
+
                 plan.MarkNonRemainderUseOfStructLocal();
-                dstFirstRep->NeedsReadBack = true;
-                m_hasPendingReadBacks      = true;
                 dstFirstRep++;
             }
 
@@ -1116,12 +1116,12 @@ void ReplaceVisitor::HandleStructStore(GenTree** use, GenTree* user)
                     if (dstLastRep->NeedsWriteBack)
                     {
                         result.AddStatement(Promotion::CreateWriteBack(m_compiler, dstLcl->GetLclNum(), *dstLastRep));
-                        dstLastRep->NeedsWriteBack = false;
+                        ClearNeedsWriteBack(*dstLastRep);
                     }
 
+                    SetNeedsReadBack(*dstLastRep);
+
                     plan.MarkNonRemainderUseOfStructLocal();
-                    dstLastRep->NeedsReadBack = true;
-                    m_hasPendingReadBacks     = true;
                     dstEndRep--;
                 }
             }
@@ -1140,7 +1140,7 @@ void ReplaceVisitor::HandleStructStore(GenTree** use, GenTree* user)
                 if (srcFirstRep->NeedsWriteBack)
                 {
                     result.AddStatement(Promotion::CreateWriteBack(m_compiler, srcLcl->GetLclNum(), *srcFirstRep));
-                    srcFirstRep->NeedsWriteBack = false;
+                    ClearNeedsWriteBack(*srcFirstRep);
                 }
 
                 srcFirstRep++;
@@ -1157,7 +1157,7 @@ void ReplaceVisitor::HandleStructStore(GenTree** use, GenTree* user)
                     if (srcLastRep->NeedsWriteBack)
                     {
                         result.AddStatement(Promotion::CreateWriteBack(m_compiler, srcLcl->GetLclNum(), *srcLastRep));
-                        srcLastRep->NeedsWriteBack = false;
+                        ClearNeedsWriteBack(*srcLastRep);
                     }
 
                     srcEndRep--;
@@ -1308,8 +1308,8 @@ void ReplaceVisitor::InitFields(GenTreeLclVarCommon* dstStore,
                     rep->Description);
 
             // We will need to read this one back after initing the struct.
-            rep->NeedsWriteBack = false;
-            rep->NeedsReadBack  = true;
+            ClearNeedsWriteBack(*rep);
+            SetNeedsReadBack(*rep);
             plan->MarkNonRemainderUseOfStructLocal();
             continue;
         }
@@ -1395,7 +1395,7 @@ void ReplaceVisitor::CopyBetweenFields(GenTree*                    store,
 
             assert(srcLcl != nullptr);
             statements->AddStatement(Promotion::CreateReadBack(m_compiler, srcLcl->GetLclNum(), *srcRep));
-            srcRep->NeedsReadBack = false;
+            ClearNeedsReadBack(*srcRep);
             assert(!srcRep->NeedsWriteBack);
         }
 
