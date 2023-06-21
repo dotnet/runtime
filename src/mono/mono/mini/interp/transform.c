@@ -1981,7 +1981,7 @@ interp_handle_intrinsics (TransformData *td, MonoMethod *target_method, MonoClas
 	const char *klass_name = m_class_get_name (target_method->klass);
 
 #ifdef INTERP_ENABLE_SIMD
-	if ((mono_interp_opt & INTERP_OPT_SIMD) && interp_emit_simd_intrinsics (td, target_method, csignature))
+	if ((mono_interp_opt & INTERP_OPT_SIMD) && interp_emit_simd_intrinsics (td, target_method, csignature, FALSE))
 		return TRUE;
 #endif
 
@@ -6290,7 +6290,7 @@ generate_code (TransformData *td, MonoMethod *method, MonoMethodHeader *header, 
 				td->last_ins->info.call_info->call_offset = call_offset;
 			} else {
 #ifdef INTERP_ENABLE_SIMD
-				if ((mono_interp_opt & INTERP_OPT_SIMD) && interp_emit_simd_intrinsics (td, m, csignature))
+				if ((mono_interp_opt & INTERP_OPT_SIMD) && interp_emit_simd_intrinsics (td, m, csignature, TRUE))
 					break;
 #endif
 				td->sp -= csignature->param_count;

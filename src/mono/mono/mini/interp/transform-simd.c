@@ -525,7 +525,7 @@ opcode_added:
 }
 
 static gboolean
-emit_sn_vector_t (TransformData *td, MonoMethod *cmethod, MonoMethodSignature *csignature)
+emit_sn_vector_t (TransformData *td, MonoMethod *cmethod, MonoMethodSignature *csignature, gboolean newobj)
 {
 	int id = lookup_intrins (sn_vector_t_methods, sizeof (sn_vector_t_methods), cmethod);
 	if (id == -1)
@@ -547,7 +547,11 @@ emit_sn_vector_t (TransformData *td, MonoMethod *cmethod, MonoMethodSignature *c
 	} else if (id == SN_ctor) {
 		if (csignature->param_count == vector_size / arg_size && atype == csignature->params [0]->type) {
 			emit_vector_create (td, csignature, vector_klass, vector_size);
-			// For newobj path, td->ip doesn't need to be bumped
+			if (!newobj) {
+				// If the ctor is called explicitly, then we need to store to the passed `this`
+				interp_emit_stobj (td, vector_klass, FALSE);
+				td->ip += 5;
+			}
 			return TRUE;
 		}
 	}
@@ -564,7 +568,7 @@ opcode_added:
 }
 
 static gboolean
-emit_sn_vector4 (TransformData *td, MonoMethod *cmethod, MonoMethodSignature *csignature)
+emit_sn_vector4 (TransformData *td, MonoMethod *cmethod, MonoMethodSignature *csignature, gboolean newobj)
 {
 	int id = lookup_intrins (sn_vector_t_methods, sizeof (sn_vector_t_methods), cmethod);
 	if (id == -1)
@@ -590,7 +594,11 @@ emit_sn_vector4 (TransformData *td, MonoMethod *cmethod, MonoMethodSignature *cs
 	} else if (id == SN_ctor) {
 		if (csignature->param_count == vector_size / arg_size && atype == csignature->params [0]->type) {
 			emit_vector_create (td, csignature, vector_klass, vector_size);
-			// For newobj path, td->ip doesn't need to be bumped
+			if (!newobj) {
+				// If the ctor is called explicitly, then we need to store to the passed `this`
+				interp_emit_stobj (td, vector_klass, FALSE);
+				td->ip += 5;
+			}
 			return TRUE;
 		}
 	}
@@ -873,7 +881,7 @@ opcode_added:
 }
 
 static gboolean
-interp_emit_simd_intrinsics (TransformData *td, MonoMethod *cmethod, MonoMethodSignature *csignature)
+interp_emit_simd_intrinsics (TransformData *td, MonoMethod *cmethod, MonoMethodSignature *csignature, gboolean newobj)
 {
 	const char *class_name;
 	const char *class_ns;
@@ -892,9 +900,9 @@ interp_emit_simd_intrinsics (TransformData *td, MonoMethod *cmethod, MonoMethodS
 			return emit_sri_vector128_t (td, cmethod, csignature);
 	} else if (!strcmp (class_ns, "System.Numerics")) {
 		if (!strcmp (class_name, "Vector`1"))
-			return emit_sn_vector_t (td, cmethod, csignature);
+			return emit_sn_vector_t (td, cmethod, csignature, newobj);
 		else if (!strcmp (class_name, "Vector4"))
-			return emit_sn_vector4 (td, cmethod, csignature);
+			return emit_sn_vector4 (td, cmethod, csignature, newobj);
 	} else if (!strcmp (class_ns, "System.Runtime.Intrinsics.Wasm")) {
 		if (!strcmp (class_name, "PackedSimd"))
 			return emit_sri_packedsimd (td, cmethod, csignature);
