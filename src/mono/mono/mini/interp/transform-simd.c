@@ -632,6 +632,8 @@ static PackedSimdIntrinsicInfo *sorted_packedsimd_intrinsic_infos;
 static int
 compare_packedsimd_intrinsic_info (const void *_lhs, const void *_rhs)
 {
+	g_assert (_lhs);
+	g_assert (_rhs);
 	const PackedSimdIntrinsicInfo *lhs = _lhs, *rhs = _rhs;
 	return strcmp (lhs->name, rhs->name);
 }
@@ -648,18 +650,20 @@ lookup_packedsimd_intrinsic (const char *name, MonoType *arg1)
 		return FALSE;
 
 	int arg_type_enum = arg_type->type,
-		search_begin_index;
+		search_begin_index,
+		num_intrinsics = sizeof(unsorted_packedsimd_intrinsic_infos) / sizeof(PackedSimdIntrinsicInfo);
 	if (arg_type_enum == MONO_TYPE_BOOLEAN)
 		return FALSE;
 
 	PackedSimdIntrinsicInfo *result = NULL, *search_begin;
+	PackedSimdIntrinsicInfo search_key = { name, name };
 
 	// Ensure we have a sorted version of the intrinsics table
 	if (!sorted_packedsimd_intrinsic_infos) {
-		int buf_size = sizeof(PackedSimdIntrinsicInfo) * sizeof(unsorted_packedsimd_intrinsic_infos);
+		int buf_size = sizeof(unsorted_packedsimd_intrinsic_infos);
 		PackedSimdIntrinsicInfo *temp_sorted = g_malloc0 (buf_size);
 		memcpy (temp_sorted, unsorted_packedsimd_intrinsic_infos, buf_size);
-		mono_qsort (temp_sorted, sizeof(unsorted_packedsimd_intrinsic_infos), sizeof(PackedSimdIntrinsicInfo), compare_packedsimd_intrinsic_info);
+		mono_qsort (temp_sorted, num_intrinsics, sizeof(PackedSimdIntrinsicInfo), compare_packedsimd_intrinsic_info);
 		mono_atomic_cas_ptr ((gpointer*)&sorted_packedsimd_intrinsic_infos, (gpointer)temp_sorted, NULL);
 		if (sorted_packedsimd_intrinsic_infos != temp_sorted)
 			g_free (temp_sorted);
@@ -667,20 +671,23 @@ lookup_packedsimd_intrinsic (const char *name, MonoType *arg1)
 
 	// Binary search by name to find a suitable starting location for our search
 	search_begin = (PackedSimdIntrinsicInfo*)mono_binary_search (
-		name, sorted_packedsimd_intrinsic_infos,
-		sizeof(unsorted_packedsimd_intrinsic_infos), sizeof(PackedSimdIntrinsicInfo),
+		&search_key, sorted_packedsimd_intrinsic_infos,
+		num_intrinsics, sizeof(PackedSimdIntrinsicInfo),
 		compare_packedsimd_intrinsic_info
 	);
+	if (!search_begin)
+		return FALSE;
+
 	search_begin_index = search_begin - sorted_packedsimd_intrinsic_infos;
 
 	// Search upwards and downwards through the table simultaneously from our starting location,
 	//  looking for an intrinsic with a matching name that also has a compatible argument type
 	// NOTE: If there are two suitable matches because you got the table wrong, this is nondeterministic
 	for (int low = search_begin_index, high = search_begin_index;
-		(low >= 0) || (high < sizeof (unsorted_packedsimd_intrinsic_infos));
+		(low >= 0) || (high < num_intrinsics);
 		--low, ++high) {
 		PackedSimdIntrinsicInfo *low_info = (low >= 0) ? &sorted_packedsimd_intrinsic_infos[low] : NULL,
-			*high_info = (high < sizeof (unsorted_packedsimd_intrinsic_infos)) ? &sorted_packedsimd_intrinsic_infos[high] : NULL;
+			*high_info = (high < num_intrinsics) ? &sorted_packedsimd_intrinsic_infos[high] : NULL;
 		// As long as either the low or high offset are within range and have a name match, we keep going
 		gboolean low_name_matches = low_info && !strcmp (name, low_info->name),
 			high_name_matches = high_info && !strcmp (name, high_info->name);
