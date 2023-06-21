@@ -2735,48 +2735,54 @@ namespace System.Tests
         public static void TryFormat_MatchesToString(string format)
         {
             DateTime dt = DateTime.UtcNow;
-            string expected = dt.ToString(format);
-
-            // UTF16
+            foreach (CultureInfo culture in CultureInfo.GetCultures(CultureTypes.AllCultures))
             {
-                // Just the right length, succeeds
-                Span<char> dest = new char[expected.Length];
-                Assert.True(dt.TryFormat(dest, out int charsWritten, format));
-                Assert.Equal(expected.Length, charsWritten);
-                Assert.Equal<char>(expected.ToCharArray(), dest.ToArray());
+                using (new ThreadCultureChange(culture))
+                {
+                    string expected = dt.ToString(format);
 
-                // Too short, fails
-                dest = new char[expected.Length - 1];
-                Assert.False(dt.TryFormat(dest, out charsWritten, format));
-                Assert.Equal(0, charsWritten);
+                    // UTF16
+                    {
+                        // Just the right length, succeeds
+                        Span<char> dest = new char[expected.Length];
+                        Assert.True(dt.TryFormat(dest, out int charsWritten, format));
+                        Assert.Equal(expected.Length, charsWritten);
+                        Assert.Equal<char>(expected.ToCharArray(), dest.ToArray());
 
-                // Longer than needed, succeeds
-                dest = new char[expected.Length + 1];
-                Assert.True(dt.TryFormat(dest, out charsWritten, format));
-                Assert.Equal(expected.Length, charsWritten);
-                Assert.Equal<char>(expected.ToCharArray(), dest.Slice(0, expected.Length).ToArray());
-                Assert.Equal(0, dest[dest.Length - 1]);
-            }
+                        // Too short, fails
+                        dest = new char[expected.Length - 1];
+                        Assert.False(dt.TryFormat(dest, out charsWritten, format));
+                        Assert.Equal(0, charsWritten);
 
-            // UTF8
-            {
-                // Just the right length, succeeds
-                Span<byte> dest = new byte[Encoding.UTF8.GetByteCount(expected)];
-                Assert.True(dt.TryFormat(dest, out int bytesWritten, format));
-                Assert.Equal(dest.Length, bytesWritten);
-                Assert.Equal(expected, Encoding.UTF8.GetString(dest));
+                        // Longer than needed, succeeds
+                        dest = new char[expected.Length + 1];
+                        Assert.True(dt.TryFormat(dest, out charsWritten, format));
+                        Assert.Equal(expected.Length, charsWritten);
+                        Assert.Equal<char>(expected.ToCharArray(), dest.Slice(0, expected.Length).ToArray());
+                        Assert.Equal(0, dest[dest.Length - 1]);
+                    }
 
-                // Too short, fails
-                dest = new byte[Encoding.UTF8.GetByteCount(expected) - 1];
-                Assert.False(dt.TryFormat(dest, out bytesWritten, format));
-                Assert.Equal(0, bytesWritten);
+                    // UTF8
+                    {
+                        // Just the right length, succeeds
+                        Span<byte> dest = new byte[Encoding.UTF8.GetByteCount(expected)];
+                        Assert.True(dt.TryFormat(dest, out int bytesWritten, format));
+                        Assert.Equal(dest.Length, bytesWritten);
+                        Assert.Equal(expected, Encoding.UTF8.GetString(dest));
 
-                // Longer than needed, succeeds
-                dest = new byte[Encoding.UTF8.GetByteCount(expected) + 1];
-                Assert.True(dt.TryFormat(dest, out bytesWritten, format));
-                Assert.Equal(dest.Length - 1, bytesWritten);
-                Assert.Equal(expected, Encoding.UTF8.GetString(dest.Slice(0, bytesWritten)));
-                Assert.Equal(0, dest[dest.Length - 1]);
+                        // Too short, fails
+                        dest = new byte[Encoding.UTF8.GetByteCount(expected) - 1];
+                        Assert.False(dt.TryFormat(dest, out bytesWritten, format));
+                        Assert.Equal(0, bytesWritten);
+
+                        // Longer than needed, succeeds
+                        dest = new byte[Encoding.UTF8.GetByteCount(expected) + 1];
+                        Assert.True(dt.TryFormat(dest, out bytesWritten, format));
+                        Assert.Equal(dest.Length - 1, bytesWritten);
+                        Assert.Equal(expected, Encoding.UTF8.GetString(dest.Slice(0, bytesWritten)));
+                        Assert.Equal(0, dest[dest.Length - 1]);
+                    }
+                }
             }
         }
 

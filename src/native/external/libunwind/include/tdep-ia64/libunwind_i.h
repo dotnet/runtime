@@ -152,7 +152,7 @@ struct cursor
     unsigned int pi_is_dynamic :1; /* proc_info found via dynamic proc info? */
     unw_proc_info_t pi;         /* info about current procedure */
 
-    /* In case of stack-discontiguities, such as those introduced by
+    /* In case of stack discontiguities, such as those introduced by
        signal-delivery on an alternate signal-stack (see
        sigaltstack(2)), we use the following data-structure to keep
        track of the register-backing-store areas across on which the

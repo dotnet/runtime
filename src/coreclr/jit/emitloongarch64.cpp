@@ -6668,7 +6668,7 @@ emitter::insExecutionCharacteristics emitter::getInsExecutionCharacteristics(ins
 // Return value:
 //    A string that represents a general-purpose register name or floating-point scalar register name.
 //
-const char* emitter::emitRegName(regNumber reg, emitAttr size, bool varName)
+const char* emitter::emitRegName(regNumber reg, emitAttr size, bool varName) const
 {
     assert(reg < REG_COUNT);
 

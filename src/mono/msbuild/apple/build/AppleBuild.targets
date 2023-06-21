@@ -279,7 +279,8 @@
   <Target Name="_AppleGenerateRuntimeConfig"
           Inputs="$(_AppleRuntimeConfigFilePath)"
           Outputs="$(_ParsedRuntimeConfigFilePath)"
-          Condition="Exists('$(_AppleRuntimeConfigFilePath)')">
+          Condition="Exists('$(_AppleRuntimeConfigFilePath)')"
+          BeforeTargets="_GenerateBundle">
     <ItemGroup>
       <_RuntimeConfigReservedProperties Include="RUNTIME_IDENTIFIER"/>
       <_RuntimeConfigReservedProperties Include="APP_CONTEXT_BASE_DIRECTORY"/>
