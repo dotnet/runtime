@@ -980,7 +980,7 @@ namespace System.Numerics
         [MethodImpl(MethodImplOptions.AggressiveInlining)]
         internal static ulong FlipBit(ulong value, int index)
         {
-            return value ^ (1UL << index);
+            return value ^ (1ul << index);
         }
     }
 }

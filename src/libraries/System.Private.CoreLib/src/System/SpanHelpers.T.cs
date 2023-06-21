@@ -3792,19 +3792,6 @@ namespace System
 
                         return count;
                     }
-                    // TODO : Verify this makes sense
-                    /*if (remaining > Vector256<T>.Count / 2)
-                    {
-                        Vector256<T> targetVector256 = Vector256.Create(value);
-                        uint mask = Vector256.Equals(Vector256.LoadUnsafe(ref oneVectorAwayFromEnd), targetVector256).ExtractMostSignificantBits();
-
-                        // The mask contains some elements that may be double-checked, so shift them away in order to get the correct pop-count.
-                        uint overlaps = (uint)Vector256<T>.Count - remaining;
-                        mask >>= (int)overlaps;
-                        count += BitOperations.PopCount(mask);
-
-                        return count;
-                    }*/
                 }
                 else if (Vector256.IsHardwareAccelerated && length >= Vector256<T>.Count)
                 {
