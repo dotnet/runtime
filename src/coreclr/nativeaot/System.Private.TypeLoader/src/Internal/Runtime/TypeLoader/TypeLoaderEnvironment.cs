@@ -5,6 +5,7 @@
 using System;
 using System.Threading;
 using System.Collections.Generic;
+using System.Runtime.CompilerServices;
 using System.Runtime.InteropServices;
 using System.Reflection.Runtime.General;
 
@@ -16,7 +17,6 @@ using Internal.NativeFormat;
 using Internal.TypeSystem;
 
 using Debug = System.Diagnostics.Debug;
-using System.Runtime.CompilerServices;
 
 namespace Internal.Runtime.TypeLoader
 {
@@ -34,6 +34,7 @@ namespace Internal.Runtime.TypeLoader
 
         public override IntPtr GetThreadStaticGCDescForDynamicType(TypeManagerHandle typeManagerHandle, int index)
         {
+            // We can use InstanceOrNull because we can't have a reference to a dynamic type without creating type loader first
             return TypeLoaderEnvironment.InstanceOrNull.GetThreadStaticGCDescForDynamicType(typeManagerHandle, (uint)index);
         }
 
@@ -121,21 +122,9 @@ namespace Internal.Runtime.TypeLoader
             return s_instance;
         }
 
-        public static TypeLoaderEnvironment Instance
-        {
-            get
-            {
-                return s_instance ?? InitializeInstance();
-            }
-        }
+        public static TypeLoaderEnvironment Instance => s_instance ?? InitializeInstance();
 
-        public static TypeLoaderEnvironment InstanceOrNull
-        {
-            get
-            {
-                return s_instance;
-            }
-        }
+        public static TypeLoaderEnvironment InstanceOrNull => s_instance;
 
         // Cache the NativeReader in each module to avoid looking up the NativeLayoutInfo blob each
         // time we call GetNativeLayoutInfoReader(). The dictionary is a thread static variable to ensure
