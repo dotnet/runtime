@@ -492,6 +492,7 @@ namespace System.Net.WebSockets.Client.Tests
 
         [OuterLoop("Uses external servers", typeof(PlatformDetection), nameof(PlatformDetection.LocalEchoServerIsNotAvailable))]
         [ConditionalTheory(nameof(WebSocketsSupported)), MemberData(nameof(EchoServers))]
+        [ActiveIssue("https://github.com/dotnet/runtime/issues/87839", typeof(PlatformDetection), nameof(PlatformDetection.IsWasmThreadingSupported))]
         public async Task ZeroByteReceive_CompletesWhenDataAvailable(Uri server)
         {
             using (ClientWebSocket cws = await GetConnectedWebSocket(server, TimeOutMilliseconds, _output))

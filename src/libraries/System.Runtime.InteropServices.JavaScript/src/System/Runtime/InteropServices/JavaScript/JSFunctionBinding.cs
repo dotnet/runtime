@@ -5,6 +5,7 @@ using System.ComponentModel;
 using System.Diagnostics.CodeAnalysis;
 using System.Runtime.CompilerServices;
 using System.Runtime.Versioning;
+using System.Threading;
 
 namespace System.Runtime.InteropServices.JavaScript
 {
@@ -204,6 +205,11 @@ namespace System.Runtime.InteropServices.JavaScript
 
         internal static unsafe JSFunctionBinding BindJSFunctionImpl(string functionName, string moduleName, ReadOnlySpan<JSMarshalerType> signatures)
         {
+            if (JSSynchronizationContext.CurrentJSSynchronizationContext == null)
+            {
+                throw new InvalidOperationException("Please use dedicated worker for working with JavaScript interop. See https://github.com/dotnet/runtime/blob/main/src/mono/wasm/threads.md#JS-interop-on-dedicated-threads " + Thread.CurrentThread.ManagedThreadId);
+            }
+
             var signature = JSHostImplementation.GetMethodSignature(signatures);
 
             Interop.Runtime.BindJSFunction(functionName, moduleName, signature.Header, out IntPtr jsFunctionHandle, out int isException, out object exceptionMessage);

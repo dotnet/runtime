@@ -12,6 +12,22 @@ namespace System.Runtime.InteropServices.JavaScript
         internal nint JSHandle;
 
 #if FEATURE_WASM_THREADS
+        private SynchronizationContext? m_SynchronizationContext;
+#endif
+
+        public SynchronizationContext SynchronizationContext
+        {
+            get
+            {
+#if FEATURE_WASM_THREADS
+                return m_SynchronizationContext!;
+#else
+                throw new PlatformNotSupportedException();
+#endif
+            }
+        }
+
+#if FEATURE_WASM_THREADS
         // the JavaScript object could only exist on the single web worker and can't migrate to other workers
         internal int OwnerThreadId;
 #endif
@@ -26,6 +42,11 @@ namespace System.Runtime.InteropServices.JavaScript
             JSHandle = jsHandle;
 #if FEATURE_WASM_THREADS
             OwnerThreadId = Thread.CurrentThread.ManagedThreadId;
+            m_SynchronizationContext = JSSynchronizationContext.CurrentJSSynchronizationContext;
+            if (m_SynchronizationContext == null)
+            {
+                throw new InvalidOperationException(); // should not happen
+            }
 #endif
         }
 
@@ -80,9 +101,16 @@ namespace System.Runtime.InteropServices.JavaScript
             }
             if (value is JSException jsException)
             {
-                if(jsException.jsException!=null && jsException.jsException.OwnerThreadId != Thread.CurrentThread.ManagedThreadId)
+                if (jsException.jsException != null && jsException.jsException.OwnerThreadId != Thread.CurrentThread.ManagedThreadId)
                 {
                     throw new InvalidOperationException("The JavaScript object can be used only on the thread where it was created.");
+                }
+            }
+            if (value is JSHostImplementation.TaskCallback holder)
+            {
+                if (holder.OwnerThreadId != Thread.CurrentThread.ManagedThreadId)
+                {
+                    throw new InvalidOperationException("The JavaScript promise can be used only on the thread where it was created.");
                 }
             }
         }
@@ -101,9 +129,19 @@ namespace System.Runtime.InteropServices.JavaScript
         {
             if (!_isDisposed)
             {
+#if FEATURE_WASM_THREADS
+                SynchronizationContext.Send(static (JSObject self) =>
+                {
+                    JSHostImplementation.ReleaseCSOwnedObject(self.JSHandle);
+                    self._isDisposed = true;
+                    self.JSHandle = IntPtr.Zero;
+                    self.m_SynchronizationContext = null;
+                }, this);
+#else
                 JSHostImplementation.ReleaseCSOwnedObject(JSHandle);
                 _isDisposed = true;
                 JSHandle = IntPtr.Zero;
+#endif
             }
         }
 
