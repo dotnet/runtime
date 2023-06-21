@@ -20,6 +20,7 @@
 
   <ItemGroup>
     <Compile Include="..\..\TestAssets\SharedTypes\ComInterfaces\*.cs" Link="ComInterfaceGenerator\ComInterfaces\%(FileName).cs" />
+    <Compile Include="$(CommonPath)DisableRuntimeMarshalling.cs" Link="Common\DisableRuntimeMarshalling.cs" />
   </ItemGroup>
 
   <!-- Until we use the live app host, use a prebuilt from the 7.0 SDK.

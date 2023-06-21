@@ -169,32 +169,32 @@
       </trans-unit>
       <trans-unit id="InstanceEventDeclaredInInterfaceDescription">
         <source>Events are not a concept in COM, so no interop code will be source generated for instance events on source-generated COM interfaces.</source>
-        <target state="new">Events are not a concept in COM, so no interop code will be source generated for instance events on source-generated COM interfaces.</target>
+        <target state="translated">イベントは COM の概念ではないため、ソース生成 COM インターフェイス上のインスタンス イベントに対して相互運用コードはソース生成されません。</target>
         <note />
       </trans-unit>
       <trans-unit id="InstanceEventDeclaredInInterfaceMessage">
         <source>The instance event '{0}' is declared in the interface '{1}', which has the 'GeneratedComInterfaceAttribute' applied</source>
-        <target state="new">The instance event '{0}' is declared in the interface '{1}', which has the 'GeneratedComInterfaceAttribute' applied</target>
+        <target state="translated">インスタンス イベント '{0}' は、'GeneratedComInterfaceAttribute' が適用されているインターフェイス '{1}' で宣言されています</target>
         <note />
       </trans-unit>
       <trans-unit id="InstanceEventDeclaredInInterfaceTitle">
         <source>Declaring an instance event in a type with the 'GeneratedComInterfaceAttribute' is not supported</source>
-        <target state="new">Declaring an instance event in a type with the 'GeneratedComInterfaceAttribute' is not supported</target>
+        <target state="translated">'GeneratedComInterfaceAttribute' を含む型のインスタンス イベントの宣言はサポートされていません</target>
         <note />
       </trans-unit>
       <trans-unit id="InstancePropertyDeclaredInInterfaceDescription">
         <source>Properties are not a concept in COM, so no interop code will be source generated for instance properties on source-generated COM interfaces.</source>
-        <target state="new">Properties are not a concept in COM, so no interop code will be source generated for instance properties on source-generated COM interfaces.</target>
+        <target state="translated">プロパティは COM の概念ではないため、ソース生成 COM インターフェイス上のインスタンス プロパティに対して相互運用コードはソース生成されません。</target>
         <note />
       </trans-unit>
       <trans-unit id="InstancePropertyDeclaredInInterfaceMessage">
         <source>The instance property '{0}' is declared in the interface '{1}', which has the 'GeneratedComInterfaceAttribute' applied</source>
-        <target state="new">The instance property '{0}' is declared in the interface '{1}', which has the 'GeneratedComInterfaceAttribute' applied</target>
+        <target state="translated">インスタンス プロパティ '{0}' は、'GeneratedComInterfaceAttribute' が適用されているインターフェイス '{1}' で宣言されています</target>
         <note />
       </trans-unit>
       <trans-unit id="InstancePropertyDeclaredInInterfaceTitle">
         <source>Declaring an instance property in a type with the 'GeneratedComInterfaceAttribute' is not supported</source>
-        <target state="new">Declaring an instance property in a type with the 'GeneratedComInterfaceAttribute' is not supported</target>
+        <target state="translated">'GeneratedComInterfaceAttribute' を含む型のインスタンス プロパティの宣言はサポートされていません</target>
         <note />
       </trans-unit>
       <trans-unit id="InterfaceTypeNotSupportedMessage">

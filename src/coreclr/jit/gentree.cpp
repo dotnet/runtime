@@ -2212,6 +2212,7 @@ InlineCandidateInfo* GenTreeCall::GetGDVCandidateInfo(uint8_t index)
 //
 void GenTreeCall::AddGDVCandidateInfo(Compiler* comp, InlineCandidateInfo* candidateInfo)
 {
+    assert((gtCallMoreFlags & GTF_CALL_M_GUARDED_DEVIRT_EXACT) == 0);
     assert(gtInlineInfoCount < MAX_GDV_TYPE_CHECKS);
     assert(candidateInfo != nullptr);
 
@@ -2248,6 +2249,9 @@ void GenTreeCall::AddGDVCandidateInfo(Compiler* comp, InlineCandidateInfo* candi
 //
 void GenTreeCall::RemoveGDVCandidateInfo(Compiler* comp, uint8_t index)
 {
+    // We change the number of candidates so it's no longer "doesn't need a fallback"
+    gtCallMoreFlags &= ~GTF_CALL_M_GUARDED_DEVIRT_EXACT;
+
     assert(index < gtInlineInfoCount);
 
     if (gtInlineInfoCount == 1)
@@ -5473,7 +5477,13 @@ unsigned Compiler::gtSetEvalOrder(GenTree* tree)
                         case NI_System_Math_Log2:
                         case NI_System_Math_Log10:
                         case NI_System_Math_Max:
+                        case NI_System_Math_MaxMagnitude:
+                        case NI_System_Math_MaxMagnitudeNumber:
+                        case NI_System_Math_MaxNumber:
                         case NI_System_Math_Min:
+                        case NI_System_Math_MinMagnitude:
+                        case NI_System_Math_MinMagnitudeNumber:
+                        case NI_System_Math_MinNumber:
                         case NI_System_Math_Pow:
                         case NI_System_Math_Round:
                         case NI_System_Math_Sin:
@@ -5820,9 +5830,17 @@ unsigned Compiler::gtSetEvalOrder(GenTree* tree)
                         break;
 
                     case NI_System_Math_Max:
+                    case NI_System_Math_MaxMagnitude:
+                    case NI_System_Math_MaxMagnitudeNumber:
+                    case NI_System_Math_MaxNumber:
                     case NI_System_Math_Min:
+                    case NI_System_Math_MinMagnitude:
+                    case NI_System_Math_MinMagnitudeNumber:
+                    case NI_System_Math_MinNumber:
+                    {
                         level++;
                         break;
+                    }
 
                     default:
                         assert(!"Unknown binary GT_INTRINSIC operator");
@@ -12231,8 +12249,26 @@ void Compiler::gtDispTree(GenTree*     tree,
                 case NI_System_Math_Max:
                     printf(" max");
                     break;
+                case NI_System_Math_MaxMagnitude:
+                    printf(" maxMagnitude");
+                    break;
+                case NI_System_Math_MaxMagnitudeNumber:
+                    printf(" maxMagnitudeNumber");
+                    break;
+                case NI_System_Math_MaxNumber:
+                    printf(" maxNumber");
+                    break;
                 case NI_System_Math_Min:
                     printf(" min");
+                    break;
+                case NI_System_Math_MinMagnitude:
+                    printf(" minMagnitude");
+                    break;
+                case NI_System_Math_MinMagnitudeNumber:
+                    printf(" minMagnitudeNumber");
+                    break;
+                case NI_System_Math_MinNumber:
+                    printf(" minNumber");
                     break;
                 case NI_System_Math_Pow:
                     printf(" pow");
@@ -18194,9 +18230,7 @@ CORINFO_CLASS_HANDLE Compiler::gtGetHelperCallClassHandle(GenTreeCall* call, boo
             // for the result, unless it is an interface type.
             //
             // TODO-CQ: when we have default interface methods then
-            // this might not be the best assumption. We could also
-            // explore calling something like mergeClasses to identify
-            // the more specific class. A similar issue arises when
+            // this might not be the best assumption. A similar issue arises when
             // typing the temp in impCastClassOrIsInstToTree, when we
             // expand the cast inline.
             if (castHnd != nullptr)
@@ -25838,9 +25872,9 @@ regNumber GenTree::ExtractTempReg(regMaskTP mask /* = (regMaskTP)-1 */)
 {
     regMaskTP availableSet = gtRsvdRegs & mask;
     assert(genCountBits(availableSet) >= 1);
-    regMaskTP tempRegMask = genFindLowestBit(availableSet);
-    gtRsvdRegs &= ~tempRegMask;
-    return genRegNumFromMask(tempRegMask);
+    regNumber tempReg = genFirstRegNumFromMask(availableSet);
+    gtRsvdRegs ^= genRegMask(tempReg);
+    return tempReg;
 }
 
 //------------------------------------------------------------------------

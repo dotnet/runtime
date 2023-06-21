@@ -27,7 +27,7 @@ The repository has a number of Visual Studio Solutions files (`*.sln`) that are 
      * `crossgen` - This is the host program that runs the JIT compiler and produces .NET Native images (`*.ni.dll`)
      for C# code.
      * This project can be automatically generated and opened in Visual Studio by running `./build.cmd -vs CoreCLR.sln -a <Arch> -c <BuildType>` from the root of the repository.
-   * `artifacts\obj\win-<Arch>.<BuildType>\corehost\ide\corehost.sln` - this solution contains the native (C++) projects for the [host components](../design/features/host-components)
+   * `artifacts\obj\win-<Arch>.<BuildType>\corehost\ide\corehost.sln` - this solution contains the native (C++) projects for the [host components](../design/features/host-components.md)
      * This project can be automatically generated and opened in Visual Studio by running `./build.cmd -vs corehost.sln -a <Arch> -c <BuildType>` from the root of the repository.
 
 Thus opening one of these solution files (double clicking on them in Explorer) is typically all you need

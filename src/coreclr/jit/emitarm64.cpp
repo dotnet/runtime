@@ -1352,7 +1352,7 @@ static const char * const  bRegNames[] =
 // Return value:
 //    A string that represents a general-purpose register name or SIMD and floating-point scalar register name.
 //
-const char* emitter::emitRegName(regNumber reg, emitAttr size, bool varName)
+const char* emitter::emitRegName(regNumber reg, emitAttr size, bool varName) const
 {
     assert(reg < REG_COUNT);
 
@@ -10222,10 +10222,10 @@ BYTE* emitter::emitOutputLJ(insGroup* ig, BYTE* dst, instrDesc* i)
 
             assert(fmt == IF_BI_0A);
             assert((distVal & 1) == 0);
-            code_t     code             = emitInsCode(ins, fmt);
-            const bool recordRelocation = emitComp->opts.compReloc && emitJumpCrossHotColdBoundary(srcOffs, dstOffs);
+            code_t     code               = emitInsCode(ins, fmt);
+            const bool doRecordRelocation = emitComp->opts.compReloc && emitJumpCrossHotColdBoundary(srcOffs, dstOffs);
 
-            if (recordRelocation)
+            if (doRecordRelocation)
             {
                 // dst isn't an actual final target location, just some intermediate
                 // location.  Thus we cannot make any guarantees about distVal (not
@@ -10246,7 +10246,7 @@ BYTE* emitter::emitOutputLJ(insGroup* ig, BYTE* dst, instrDesc* i)
 
             const unsigned instrSize = emitOutput_Instr(dst, code);
 
-            if (recordRelocation)
+            if (doRecordRelocation)
             {
                 assert(id->idjKeepLong);
                 if (emitComp->info.compMatchedVM)

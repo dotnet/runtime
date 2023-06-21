@@ -13,6 +13,7 @@
     <PublishTrimmed>true</PublishTrimmed>
     <TrimMode>Link</TrimMode>
     <Optimized Condition="'$(Configuration)' == 'Release'">true</Optimized>
+    <ShouldILStrip Condition="'$(RunAOTCompilation)' == 'true' and '$(MonoForceInterpreter)' != 'true'">true</ShouldILStrip>
 
     <EnableDefaultAssembliesToBundle>true</EnableDefaultAssembliesToBundle>
     <AppleGenerateAppBundle>true</AppleGenerateAppBundle>

@@ -169,32 +169,32 @@
       </trans-unit>
       <trans-unit id="InstanceEventDeclaredInInterfaceDescription">
         <source>Events are not a concept in COM, so no interop code will be source generated for instance events on source-generated COM interfaces.</source>
-        <target state="new">Events are not a concept in COM, so no interop code will be source generated for instance events on source-generated COM interfaces.</target>
+        <target state="translated">Les événements ne sont pas un concept dans COM. Par conséquent, aucun code d’interopérabilité n’est généré à la source pour les événements d’instance sur les interfaces COM générées par la source.</target>
         <note />
       </trans-unit>
       <trans-unit id="InstanceEventDeclaredInInterfaceMessage">
         <source>The instance event '{0}' is declared in the interface '{1}', which has the 'GeneratedComInterfaceAttribute' applied</source>
-        <target state="new">The instance event '{0}' is declared in the interface '{1}', which has the 'GeneratedComInterfaceAttribute' applied</target>
+        <target state="translated">L’événement d’instance « {0} » est déclaré dans l’interface « {1} », à laquelle « GeneratedComInterfaceAttribute » est appliqué</target>
         <note />
       </trans-unit>
       <trans-unit id="InstanceEventDeclaredInInterfaceTitle">
         <source>Declaring an instance event in a type with the 'GeneratedComInterfaceAttribute' is not supported</source>
-        <target state="new">Declaring an instance event in a type with the 'GeneratedComInterfaceAttribute' is not supported</target>
+        <target state="translated">La déclaration d’un événement d’instance dans un type avec « GeneratedComInterfaceAttribute » n’est pas prise en charge</target>
         <note />
       </trans-unit>
       <trans-unit id="InstancePropertyDeclaredInInterfaceDescription">
         <source>Properties are not a concept in COM, so no interop code will be source generated for instance properties on source-generated COM interfaces.</source>
-        <target state="new">Properties are not a concept in COM, so no interop code will be source generated for instance properties on source-generated COM interfaces.</target>
+        <target state="translated">Les propriétés ne sont pas un concept dans COM. Par conséquent, aucun code d’interopérabilité n’est généré à la source pour les propriétés d’instance sur les interfaces COM générées par la source.</target>
         <note />
       </trans-unit>
       <trans-unit id="InstancePropertyDeclaredInInterfaceMessage">
         <source>The instance property '{0}' is declared in the interface '{1}', which has the 'GeneratedComInterfaceAttribute' applied</source>
-        <target state="new">The instance property '{0}' is declared in the interface '{1}', which has the 'GeneratedComInterfaceAttribute' applied</target>
+        <target state="translated">La propriété d’instance « {0} » est déclarée dans l’interface « {1} », à laquelle « GeneratedComInterfaceAttribute » est appliqué</target>
         <note />
       </trans-unit>
       <trans-unit id="InstancePropertyDeclaredInInterfaceTitle">
         <source>Declaring an instance property in a type with the 'GeneratedComInterfaceAttribute' is not supported</source>
-        <target state="new">Declaring an instance property in a type with the 'GeneratedComInterfaceAttribute' is not supported</target>
+        <target state="translated">La déclaration d’une propriété d’instance dans un type avec « GeneratedComInterfaceAttribute » n’est pas prise en charge</target>
         <note />
       </trans-unit>
       <trans-unit id="InterfaceTypeNotSupportedMessage">
@@ -269,7 +269,7 @@
       </trans-unit>
       <trans-unit id="InvalidGeneratedComInterfaceAttributeUsageDescription">
         <source>Interfaces attributed with 'GeneratedComInterfaceAttribute' must have 'public' or 'internal' accessibility and be partial, non-generic, and must specify a GUID with 'System.Runtime.InteropServices.GuidAttribute'.</source>
-        <target state="new">Interfaces attributed with 'GeneratedComInterfaceAttribute' must have 'public' or 'internal' accessibility and be partial, non-generic, and must specify a GUID with 'System.Runtime.InteropServices.GuidAttribute'.</target>
+        <target state="translated">Les interfaces attribuées avec 'GeneratedComInterfaceAttribute' doivent avoir une accessibilité 'publique' ou "interne" et être partielles, non génériques, et doivent spécifier un GUID avec 'System.Runtime.InteropServices.GuidAttribute'.</target>
         <note />
       </trans-unit>
       <trans-unit id="InvalidGeneratedComInterfaceAttributeUsageInterfaceIsGeneric">
@@ -279,7 +279,7 @@
       </trans-unit>
       <trans-unit id="InvalidGeneratedComInterfaceAttributeUsageInterfaceNotAccessible">
         <source>Interface '{0}' is attributed with 'GeneratedComInterfaceAttribute' but is not accessible by generated code. The interface and all containing types must have accessibility 'internal' or 'public' for generated code to access it. {1}</source>
-        <target state="new">Interface '{0}' is attributed with 'GeneratedComInterfaceAttribute' but is not accessible by generated code. The interface and all containing types must have accessibility 'internal' or 'public' for generated code to access it. {1}</target>
+        <target state="translated">L’interface '{0}' est attribuée à 'GeneratedComInterfaceAttribute' mais n’est pas accessible par le code généré. L’interface et tous les types contenants doivent avoir l’accessibilité 'interne' ou 'publique' pour que le code généré y accède. {1}</target>
         <note>{1} is details about which type/containing type is not accessible</note>
       </trans-unit>
       <trans-unit id="InvalidGeneratedComInterfaceAttributeUsageMissingGuidAttribute">
@@ -389,7 +389,7 @@
       </trans-unit>
       <trans-unit id="StringMarshallingCustomTypeNotAccessibleByGeneratedCode">
         <source>The type '{0}' specified as 'GeneratedComInterfaceAttribute.StringMarshallingCustomType' is not accessible by generated code. The type must have at least 'internal' accessibility. {1}</source>
-        <target state="new">The type '{0}' specified as 'GeneratedComInterfaceAttribute.StringMarshallingCustomType' is not accessible by generated code. The type must have at least 'internal' accessibility. {1}</target>
+        <target state="translated">Le type '{0}' spécifié en tant que 'GeneratedComInterfaceAttribute.StringMarshallingCustomType' n’est pas accessible par le code généré. Le type doit avoir au moins l’accessibilité 'interne'. {1}</target>
         <note>{1} is details about which type/containing type is not accessible</note>
       </trans-unit>
       <trans-unit id="TypeNotSupportedDescription">

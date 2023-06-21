@@ -3957,8 +3957,17 @@ protected:
                               var_types             callType,
                               NamedIntrinsic        intrinsicName,
                               bool                  tailCall);
+    GenTree* impMinMaxIntrinsic(CORINFO_METHOD_HANDLE method,
+                                CORINFO_SIG_INFO*     sig,
+                                CorInfoType           callJitType,
+                                NamedIntrinsic        intrinsicName,
+                                bool                  tailCall,
+                                bool                  isMax,
+                                bool                  isMagnitude,
+                                bool                  isNumber);
     NamedIntrinsic lookupNamedIntrinsic(CORINFO_METHOD_HANDLE method);
-    NamedIntrinsic lookupPrimitiveNamedIntrinsic(CORINFO_METHOD_HANDLE method, const char* methodName);
+    NamedIntrinsic lookupPrimitiveFloatNamedIntrinsic(CORINFO_METHOD_HANDLE method, const char* methodName);
+    NamedIntrinsic lookupPrimitiveIntNamedIntrinsic(CORINFO_METHOD_HANDLE method, const char* methodName);
     GenTree* impUnsupportedNamedIntrinsic(unsigned              helper,
                                           CORINFO_METHOD_HANDLE method,
                                           CORINFO_SIG_INFO*     sig,
@@ -6137,6 +6146,7 @@ private:
     PhaseStatus fgForwardSub();
     bool fgForwardSubBlock(BasicBlock* block);
     bool fgForwardSubStatement(Statement* statement);
+    bool fgForwardSubHasStoreInterference(Statement* defStmt, Statement* nextStmt, GenTree* nextStmtUse);
     void fgForwardSubUpdateLiveness(GenTree* newSubListFirst, GenTree* newSubListLast);
 
     // The given local variable, required to be a struct variable, is being assigned via
@@ -7149,6 +7159,28 @@ public:
                                              unsigned              classAttr,
                                              unsigned              likelihood);
 
+    int getGDVMaxTypeChecks()
+    {
+        int typeChecks = JitConfig.JitGuardedDevirtualizationMaxTypeChecks();
+        if (typeChecks < 0)
+        {
+            // Negative value means "it's up to JIT to decide"
+            if (IsTargetAbi(CORINFO_NATIVEAOT_ABI) && !opts.jitFlags->IsSet(JitFlags::JIT_FLAG_SIZE_OPT))
+            {
+                return 3;
+            }
+
+            // We plan to use 3 for CoreCLR too, but we need to make sure it doesn't regress performance
+            // as CoreCLR heavily relies on Dynamic PGO while for NativeAOT we *usually* don't have it and
+            // can only perform the "exact" devirtualization.
+            return 1;
+        }
+
+        // MAX_GDV_TYPE_CHECKS is the upper limit. The constant can be changed, we just suspect that even
+        // 4 type checks is already too much.
+        return min(MAX_GDV_TYPE_CHECKS, typeChecks);
+    }
+
     bool doesMethodHaveExpRuntimeLookup()
     {
         return (optMethodFlags & OMF_HAS_EXPRUNTIMELOOKUP) != 0;
@@ -8072,9 +8104,7 @@ public:
 
     WORD eeGetRelocTypeHint(void* target);
 
-    // ICorStaticInfo wrapper functions
-
-    bool eeTryResolveToken(CORINFO_RESOLVED_TOKEN* resolvedToken);
+// ICorStaticInfo wrapper functions
 
 #if defined(UNIX_AMD64_ABI)
 #ifdef DEBUG
@@ -9758,7 +9788,6 @@ public:
         STRESS_MODE(CATCH_ARG)        /* Will spill catch arg */                                \
         STRESS_MODE(UNSAFE_BUFFER_CHECKS)                                                       \
         STRESS_MODE(NULL_OBJECT_CHECK)                                                          \
-        STRESS_MODE(PINVOKE_RESTORE_ESP)                                                        \
         STRESS_MODE(RANDOM_INLINE)                                                              \
         STRESS_MODE(SWITCH_CMP_BR_EXPANSION)                                                    \
         STRESS_MODE(GENERIC_VARN)                                                               \

@@ -7,8 +7,10 @@
 
 // because we can't pass custom define symbols to acorn optimizer, we use environment variables to pass other build options
 const DISABLE_LEGACY_JS_INTEROP = process.env.DISABLE_LEGACY_JS_INTEROP === "1";
+const ENABLE_BROWSER_PROFILER = process.env.ENABLE_BROWSER_PROFILER === "1";
+const ENABLE_AOT_PROFILER = process.env.ENABLE_AOT_PROFILER === "1";
 
-function setup(disableLegacyJsInterop) {
+function setup(linkerSetup) {
     const pthreadReplacements = {};
     const dotnet_replacements = {
         fetch: globalThis.fetch,
@@ -29,8 +31,8 @@ function setup(disableLegacyJsInterop) {
 
     Module.__dotnet_runtime.passEmscriptenInternals({
         isPThread: ENVIRONMENT_IS_PTHREAD,
-        disableLegacyJsInterop,
-        quit_, ExitStatus
+        quit_, ExitStatus,
+        ...linkerSetup
     });
     Module.__dotnet_runtime.initializeReplacements(dotnet_replacements);
 
@@ -58,7 +60,11 @@ function setup(disableLegacyJsInterop) {
 }
 
 const postset = `
-    DOTNET.setup(${DISABLE_LEGACY_JS_INTEROP ? "true" : "false"});
+    DOTNET.setup({ `+
+    `linkerDisableLegacyJsInterop: ${DISABLE_LEGACY_JS_INTEROP ? "true" : "false"},` +
+    `linkerEnableAotProfiler: ${ENABLE_AOT_PROFILER ? "true" : "false"}, ` +
+    `linkerEnableBrowserProfiler: ${ENABLE_BROWSER_PROFILER ? "true" : "false"}` +
+    `});
 `;
 
 const DotnetSupportLib = {
@@ -131,6 +137,22 @@ linked_functions = [...linked_functions,
     "mono_wasm_install_js_worker_interop",
     "mono_wasm_uninstall_js_worker_interop",
 ]
+
+if (ENABLE_AOT_PROFILER) {
+    linked_functions = [...linked_functions,
+        "mono_wasm_invoke_js_with_args_ref",
+        "mono_wasm_get_object_property_ref",
+        "mono_wasm_set_object_property_ref",
+        "mono_wasm_get_by_index_ref",
+        "mono_wasm_set_by_index_ref",
+        "mono_wasm_get_global_object_ref",
+        "mono_wasm_create_cs_owned_object_ref",
+        "mono_wasm_typed_array_to_array_ref",
+        "mono_wasm_typed_array_from_ref",
+        "mono_wasm_invoke_js_blazor",
+    ]
+}
+
 #endif
 if (!DISABLE_LEGACY_JS_INTEROP) {
     linked_functions = [...linked_functions,

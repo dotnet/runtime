@@ -6571,12 +6571,9 @@ generate_code (TransformData *td, MonoMethod *method, MonoMethodHeader *header, 
 						MonoClass *field_class = mono_class_from_mono_type_internal (ftype);
 						interp_emit_metadata_update_ldflda (td, field, error);
 						goto_if_nok (error, exit);
-						interp_add_ins (td, interp_get_ldind_for_mt (mt));
-						interp_ins_set_sreg (td->last_ins, td->sp [-1].local);
-						td->sp--;
-						push_type (td, stack_type [mt], field_class);
-						interp_ins_set_dreg (td->last_ins, td->sp[-1].local);
+						interp_emit_ldobj (td, field_class);
 						td->ip += 5;
+						BARRIER_IF_VOLATILE (td, MONO_MEMORY_BARRIER_ACQ);
 						break;
 					}
 					int opcode = MINT_LDFLD_I1 + mt - MINT_TYPE_I1;
