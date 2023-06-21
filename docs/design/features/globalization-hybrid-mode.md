@@ -368,17 +368,15 @@ Characters in general are represented by unicode code points, and some character
 `NSString` `rangeOfString:options:range:locale:` uses canonical equivalence to find the position of the `searchString` within the `sourceString`, however, it does not automatically handle comparison of precomposed (single code point representation) or decomposed (most code points representation). Because the `searchString` and `sourceString` can be of differing formats, to properly find the index, we need to ensure that the searchString is in the same form as the sourceString by checking the `rangeOfString:options:range:locale:` using every single normalization form.
 
 Here are the covered cases with diacritics:
-  1. Search string contains diaeresis and has same normalization form as in source string.
-  2. Search string contains diaeresis but with source string they have same letters with different char lengths but substring is normalized in source.
+  1. Search string contains diacritic and has same normalization form as in source string.
+  2. Search string contains diacritic but with source string they have same letters with different char lengths but substring is normalized in source.
 
      a. search string `normalizing to form C` is substring of source string. example: search string: `U\u0308` source string:  `Source is \u00DC` => matchLength is 1
 
      b. search string `normalizing to form D` is substring of source string. example: search string: `\u00FC` source string: `Source is \u0075\u0308` => matchLength is 2
 
 Not covered case:
-
-      Search string contains diacritics and with source string they have same letters with different char lengths but substring is not
-      normalized in source. example: search string: `U\u0308 and \u00FC` (Ü and ü) source string: `Source is \u00DC and \u0075\u0308` (Source is Ü and ü)
+      Source string's intended substring match containing characters of mixed composition forms cannot be matched by 2. because partial precomposition/decomposition is not performed. example: search string: `U\u0308 and \u00FC` (Ü and ü) source string: `Source is \u00DC and \u0075\u0308` (Source is Ü and ü)
       as it is visible from example normalizaing search string to form C or D will not help to find substring in source string.
 
 - `IgnoreSymbols`

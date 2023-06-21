@@ -36,8 +36,10 @@ namespace System.Globalization
         {
             AssertComparisonSupported(options);
 
-            NSRange result = Interop.Globalization.IndexOfNative(m_name, m_name.Length, target, cwTargetLength, pSource, cwSourceLength, options, fromBeginning);
+            Interop.Range result = Interop.Globalization.IndexOfNative(m_name, m_name.Length, target, cwTargetLength, pSource, cwSourceLength, options, fromBeginning);
             Debug.Assert(result.Location != -2);
+            if (result.Location == -3)
+                throw new PlatformNotSupportedException(SR.PlatformNotSupported_HybridGlobalizationWithMixedCompositions);
             if (matchLengthPtr != null)
                 *matchLengthPtr = result.Length;
 

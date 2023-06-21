@@ -8,6 +8,12 @@ using System.Runtime.InteropServices;
 
 internal static partial class Interop
 {
+    internal struct Range
+    {
+        public int Location;
+        public int Length;
+    }
+
     internal static partial class Globalization
     {
         [LibraryImport(Libraries.GlobalizationNative, EntryPoint = "GlobalizationNative_CompareStringNative", StringMarshalling = StringMarshalling.Utf16)]
@@ -18,7 +24,7 @@ internal static partial class Interop
         internal static unsafe partial int EndsWithNative(string localeName, int lNameLen, char* target, int cwTargetLength, char* source, int cwSourceLength, CompareOptions options);
 
         [LibraryImport(Libraries.GlobalizationNative, EntryPoint = "GlobalizationNative_IndexOfNative", StringMarshalling = StringMarshalling.Utf16)]
-        internal static unsafe partial NSRange IndexOfNative(string localeName, int lNameLen, char* target, int cwTargetLength, char* pSource, int cwSourceLength, CompareOptions options, [MarshalAs(UnmanagedType.Bool)] bool fromBeginning);
+        internal static unsafe partial Range IndexOfNative(string localeName, int lNameLen, char* target, int cwTargetLength, char* pSource, int cwSourceLength, CompareOptions options, [MarshalAs(UnmanagedType.Bool)] bool fromBeginning);
 
         [LibraryImport(Libraries.GlobalizationNative, EntryPoint = "GlobalizationNative_StartsWithNative", StringMarshalling = StringMarshalling.Utf16)]
         [MethodImpl(MethodImplOptions.NoInlining)]
