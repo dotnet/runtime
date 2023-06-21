@@ -205,10 +205,12 @@ namespace System.Runtime.InteropServices.JavaScript
 
         internal static unsafe JSFunctionBinding BindJSFunctionImpl(string functionName, string moduleName, ReadOnlySpan<JSMarshalerType> signatures)
         {
+#if FEATURE_WASM_THREADS
             if (JSSynchronizationContext.CurrentJSSynchronizationContext == null)
             {
                 throw new InvalidOperationException("Please use dedicated worker for working with JavaScript interop. See https://github.com/dotnet/runtime/blob/main/src/mono/wasm/threads.md#JS-interop-on-dedicated-threads " + Thread.CurrentThread.ManagedThreadId);
             }
+#endif
 
             var signature = JSHostImplementation.GetMethodSignature(signatures);
 
