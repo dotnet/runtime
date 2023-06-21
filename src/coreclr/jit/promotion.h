@@ -257,7 +257,7 @@ class ReplaceVisitor : public GenTreeVisitor<ReplaceVisitor>
     jitstd::vector<AggregateInfo*>& m_aggregates;
     PromotionLiveness*              m_liveness;
     bool                            m_madeChanges         = false;
-    bool                            m_hasPendingReadBacks = false;
+    unsigned                        m_numPendingReadBacks = 0;
     bool                            m_mayHaveForwardSub   = false;
     Statement*                      m_currentStmt         = nullptr;
     BasicBlock*                     m_currentBlock        = nullptr;
@@ -287,17 +287,16 @@ public:
 
     void StartBlock(BasicBlock* block);
     void EndBlock();
-
-    void StartStatement(Statement* stmt)
-    {
-        m_currentStmt       = stmt;
-        m_madeChanges       = false;
-        m_mayHaveForwardSub = false;
-    }
+    void StartStatement(Statement* stmt);
 
     fgWalkResult PostOrderVisit(GenTree** use, GenTree* user);
 
 private:
+    void SetNeedsWriteBack(Replacement& rep);
+    void ClearNeedsWriteBack(Replacement& rep);
+    void SetNeedsReadBack(Replacement& rep);
+    void ClearNeedsReadBack(Replacement& rep);
+
     GenTree** InsertMidTreeReadBacksIfNecessary(GenTree** use);
     void ReadBackAfterCall(GenTreeCall* call, GenTree* user);
     bool IsPromotedStructLocalDying(GenTreeLclVarCommon* structLcl);

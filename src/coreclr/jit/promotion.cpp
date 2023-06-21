@@ -1775,6 +1775,8 @@ void ReplaceVisitor::StartBlock(BasicBlock* block)
             assert(rep.NeedsWriteBack);
         }
     }
+
+    assert(m_numPendingReadBacks == 0);
 #endif
 
     // OSR locals and parameters may need an initial read back, which we mark
@@ -1802,11 +1804,11 @@ void ReplaceVisitor::StartBlock(BasicBlock* block)
 
         for (size_t i = 0; i < agg->Replacements.size(); i++)
         {
-            Replacement& rep   = agg->Replacements[i];
-            rep.NeedsWriteBack = false;
+            Replacement& rep = agg->Replacements[i];
+            ClearNeedsWriteBack(rep);
             if (m_liveness->IsReplacementLiveIn(block, agg->LclNum, (unsigned)i))
             {
-                rep.NeedsReadBack = true;
+                SetNeedsReadBack(rep);
                 JITDUMP("  V%02u (%s) marked\n", rep.LclNum, rep.Description);
             }
             else
@@ -1879,14 +1881,75 @@ void ReplaceVisitor::EndBlock()
                             m_currentBlock->bbNum);
                 }
 
-                rep.NeedsReadBack = false;
+                ClearNeedsReadBack(rep);
             }
 
-            rep.NeedsWriteBack = true;
+            SetNeedsWriteBack(rep);
         }
     }
 
-    m_hasPendingReadBacks = false;
+    assert(m_numPendingReadBacks == 0);
+}
+
+//------------------------------------------------------------------------
+// StartStatement:
+//   Handle starting replacements within a specified statement.
+//
+// Parameters:
+//   stmt - The statement
+//
+void ReplaceVisitor::StartStatement(Statement* stmt)
+{
+    m_currentStmt       = stmt;
+    m_madeChanges       = false;
+    m_mayHaveForwardSub = false;
+
+    if (m_numPendingReadBacks == 0)
+    {
+        return;
+    }
+
+    // If we have pending readbacks then insert them as new statements for any
+    // local that the statement is using. We could leave this up to ReplaceLocal
+    // but do it here for three reasons:
+    // 1. For QMARKs we cannot actually leave it up to ReplaceLocal since the
+    // local may be conditionally executed
+    // 2. This allows forward-sub to kick in
+    // 3. Creating embedded stores in ReplaceLocal disables local copy prop for
+    //    that local (see ReplaceLocal).
+
+    for (GenTreeLclVarCommon* lcl : stmt->LocalsTreeList())
+    {
+        if (lcl->TypeIs(TYP_STRUCT))
+        {
+            continue;
+        }
+
+        AggregateInfo* agg = m_aggregates[lcl->GetLclNum()];
+        if (agg == nullptr)
+        {
+            continue;
+        }
+
+        size_t index = Promotion::BinarySearch<Replacement, &Replacement::Offset>(agg->Replacements, lcl->GetLclOffs());
+        if ((ssize_t)index < 0)
+        {
+            continue;
+        }
+
+        Replacement& rep = agg->Replacements[index];
+        if (rep.NeedsReadBack)
+        {
+            JITDUMP("Reading back replacement V%02u.[%03u..%03u) -> V%02u before [%06u]:\n", agg->LclNum, rep.Offset,
+                    rep.Offset + genTypeSize(rep.AccessType), rep.LclNum, Compiler::dspTreeID(stmt->GetRootNode()));
+
+            GenTree*   readBack = Promotion::CreateReadBack(m_compiler, agg->LclNum, rep);
+            Statement* stmt     = m_compiler->fgNewStmtFromTree(readBack);
+            DISPSTMT(stmt);
+            m_compiler->fgInsertStmtBefore(m_currentBlock, m_currentStmt, stmt);
+            ClearNeedsReadBack(rep);
+        }
+    }
 }
 
 //------------------------------------------------------------------------
@@ -1938,6 +2001,69 @@ Compiler::fgWalkResult ReplaceVisitor::PostOrderVisit(GenTree** use, GenTree* us
 }
 
 //------------------------------------------------------------------------
+// SetNeedsWriteBack:
+//   Track that a replacement is more up-to-date in the field local than the
+//   struct local.
+//
+// Remarks:
+//   This is usually the case since we generally always keep a field's value in
+//   its created primitive local.
+//
+void ReplaceVisitor::SetNeedsWriteBack(Replacement& rep)
+{
+    rep.NeedsWriteBack = true;
+    assert(!rep.NeedsReadBack);
+}
+
+//------------------------------------------------------------------------
+// ClearNeedsWriteBack:
+//   Track that a replacement is not is more up-to-date in the field local than
+//   the struct local.
+//
+void ReplaceVisitor::ClearNeedsWriteBack(Replacement& rep)
+{
+    rep.NeedsWriteBack = false;
+}
+
+//------------------------------------------------------------------------
+// SetNeedsReadBack:
+//   Track that a replacement is more up-to-date in the struct local than the
+//   field local.
+//
+// Remarks:
+//   This occurs after the struct local is assigned in a way that cannot be
+//   decomposed directly into assignments to field locals; for example because
+//   it is passed as a retbuf.
+//
+void ReplaceVisitor::SetNeedsReadBack(Replacement& rep)
+{
+    if (rep.NeedsReadBack)
+    {
+        return;
+    }
+
+    rep.NeedsReadBack = true;
+    m_numPendingReadBacks++;
+}
+
+//------------------------------------------------------------------------
+// ClearNeedsReadBack:
+//   Track that a replacement is not more up-to-date in the struct local than
+//   the field local.
+//
+void ReplaceVisitor::ClearNeedsReadBack(Replacement& rep)
+{
+    if (!rep.NeedsReadBack)
+    {
+        return;
+    }
+
+    assert(m_numPendingReadBacks > 0);
+    rep.NeedsReadBack = false;
+    m_numPendingReadBacks--;
+}
+
+//------------------------------------------------------------------------
 // InsertMidTreeReadBacksIfNecessary:
 //   If necessary, insert IR to read back all replacements before the specified use.
 //
@@ -1960,7 +2086,7 @@ Compiler::fgWalkResult ReplaceVisitor::PostOrderVisit(GenTree** use, GenTree* us
 //
 GenTree** ReplaceVisitor::InsertMidTreeReadBacksIfNecessary(GenTree** use)
 {
-    if (!m_hasPendingReadBacks || !m_compiler->ehBlockHasExnFlowDsc(m_currentBlock))
+    if ((m_numPendingReadBacks == 0) || !m_compiler->ehBlockHasExnFlowDsc(m_currentBlock))
     {
         return use;
     }
@@ -1995,7 +2121,7 @@ GenTree** ReplaceVisitor::InsertMidTreeReadBacksIfNecessary(GenTree** use)
 
             JITDUMP("  V%02.[%03u..%03u) -> V%02u\n", agg->LclNum, rep.Offset, genTypeSize(rep.AccessType), rep.LclNum);
 
-            rep.NeedsReadBack = false;
+            ClearNeedsReadBack(rep);
             GenTree* readBack = Promotion::CreateReadBack(m_compiler, agg->LclNum, rep);
             *use =
                 m_compiler->gtNewOperNode(GT_COMMA, (*use)->IsValue() ? (*use)->TypeGet() : TYP_VOID, readBack, *use);
@@ -2004,7 +2130,7 @@ GenTree** ReplaceVisitor::InsertMidTreeReadBacksIfNecessary(GenTree** use)
         }
     }
 
-    m_hasPendingReadBacks = false;
+    assert(m_numPendingReadBacks == 0);
     return use;
 }
 
@@ -2185,17 +2311,22 @@ void ReplaceVisitor::ReplaceLocal(GenTree** use, GenTree* user)
 
     if (isDef)
     {
-        rep.NeedsWriteBack = true;
-        rep.NeedsReadBack  = false;
+        ClearNeedsReadBack(rep);
+        SetNeedsWriteBack(rep);
     }
     else if (rep.NeedsReadBack)
     {
+        // This is an uncommon case -- typically all readbacks are handled in
+        // ReplaceVisitor::StartStatement. This case is still needed to handle
+        // the situation where the readback was marked previously in this tree
+        // (e.g. due to a COMMA).
+
         JITDUMP("  ..needs a read back\n");
         *use = m_compiler->gtNewOperNode(GT_COMMA, (*use)->TypeGet(),
                                          Promotion::CreateReadBack(m_compiler, lclNum, rep), *use);
-        rep.NeedsReadBack = false;
+        ClearNeedsReadBack(rep);
 
-        // TODO-CQ: Local copy prop does not take into account that the
+        // TODO: Local copy prop does not take into account that the
         // uses of LCL_VAR occur at the user, which means it may introduce
         // illegally overlapping lifetimes, such as:
         //
@@ -2291,8 +2422,8 @@ void ReplaceVisitor::WriteBackBefore(GenTree** use, unsigned lcl, unsigned offs,
             *use = comma;
             use  = &comma->gtOp2;
 
-            rep.NeedsWriteBack = false;
-            m_madeChanges      = true;
+            ClearNeedsWriteBack(rep);
+            m_madeChanges = true;
         }
 
         index++;
@@ -2311,6 +2442,11 @@ void ReplaceVisitor::WriteBackBefore(GenTree** use, unsigned lcl, unsigned offs,
 //
 void ReplaceVisitor::MarkForReadBack(GenTreeLclVarCommon* lcl, unsigned size DEBUGARG(const char* reason))
 {
+    // We currently do not handle readbacks marked within a QMARK arm, but we
+    // never create this case and we expect to expand QMARKs in an earlier pass
+    // in the (relative) near future.
+    assert(m_compiler->fgGetTopLevelQmark(m_currentStmt->GetRootNode()) == nullptr);
+
     if (m_aggregates[lcl->GetLclNum()] == nullptr)
     {
         return;
@@ -2351,12 +2487,11 @@ void ReplaceVisitor::MarkForReadBack(GenTreeLclVarCommon* lcl, unsigned size DEB
         }
         else
         {
-            rep.NeedsReadBack     = true;
-            m_hasPendingReadBacks = true;
+            SetNeedsReadBack(rep);
             JITDUMP("  V%02u (%s) marked\n", rep.LclNum, rep.Description);
         }
 
-        rep.NeedsWriteBack = false;
+        ClearNeedsWriteBack(rep);
 
         index++;
     } while ((index < replacements.size()) && (replacements[index].Offset < end));
@@ -2443,6 +2578,7 @@ PhaseStatus Promotion::Run()
         for (Statement* stmt : bb->Statements())
         {
             DISPSTMT(stmt);
+
             replacer.StartStatement(stmt);
             replacer.WalkTree(stmt->GetRootNodePointer(), nullptr);
 

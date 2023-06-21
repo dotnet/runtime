@@ -834,5 +834,17 @@ namespace System.Text.Json.SourceGeneration.Tests
             Assert.Equal(1, value.WhenWritingNullAccessCounter);
             Assert.Equal(1, value.WhenWritingDefaultAccessCounter);
         }
+
+        [Fact]
+        public static void ContextWithInterpolatedAnnotations_WorksAsExpected()
+        {
+            // Regression test for https://github.com/dotnet/runtime/issues/82997 and https://github.com/dotnet/runtime/issues/69207
+            Assert.IsAssignableFrom<JsonTypeInfo<TestPoco>>(ContextWithInterpolatedAnnotations.Default.TestPocoSomeUniqueSuffixSuffix2);
+        }
+
+        [JsonSerializable(type: typeof(TestPoco), TypeInfoPropertyName = $"{nameof(TestPoco)}SomeUniqueSuffix" + "Suffix2")]
+        internal partial class ContextWithInterpolatedAnnotations : JsonSerializerContext
+        {
+        }
     }
 }

@@ -9,7 +9,7 @@
 #import <Foundation/Foundation.h>
 #import <Foundation/NSFormatter.h>
 
-char* DetectDefaultAppleLocaleName()
+char* DetectDefaultAppleLocaleName(void)
 {
     NSLocale *currentLocale = [NSLocale currentLocale];
     NSString *localeName = @"";
@@ -571,9 +571,17 @@ const char* GlobalizationNative_GetLocaleTimeFormatNative(const char* localeName
 #endif
 
 #if defined(TARGET_MACCATALYST) || defined(TARGET_IOS) || defined(TARGET_TVOS)
+const char* GlobalizationNative_GetICUDataPathRelativeToAppBundleRoot(const char* path)
+{
+    NSString *bundlePath = [[NSBundle mainBundle] bundlePath];
+    NSString *dataPath = [bundlePath stringByAppendingPathComponent: [NSString stringWithFormat:@"%s", path]];
+
+    return strdup([dataPath UTF8String]);
+}
+
 const char* GlobalizationNative_GetICUDataPathFallback(void)
 {
-    NSString *bundlePath = [[NSBundle mainBundle] pathForResource:@"icudt" ofType:@"dat"];
-    return strdup([bundlePath UTF8String]);
+    NSString *dataPath = [[NSBundle mainBundle] pathForResource:@"icudt" ofType:@"dat"];
+    return strdup([dataPath UTF8String]);
 }
 #endif
