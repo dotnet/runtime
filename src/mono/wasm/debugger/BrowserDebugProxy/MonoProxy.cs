@@ -63,13 +63,14 @@ namespace Microsoft.WebAssembly.Diagnostics
 
         internal bool TryGetCurrentExecutionContextValue(SessionId id, out ExecutionContext executionContext)
         {
+            System.Diagnostics.Debugger.Launch();
             executionContext = null;
             if (!contexts.TryGetValue(id, out ConcurrentBag<ExecutionContext> contextList))
                 return false;
             if (contextList.IsEmpty)
                 return false;
-            executionContext = contextList.Where(context => context.Destroyed = false).Last<ExecutionContext>();
-            return true;
+            executionContext = contextList.Where(context => context.Id == contextList.Where(context => context.Destroyed == false).Max(context => context.Id)).FirstOrDefault();
+            return executionContext != null;
         }
 
         internal virtual Task<Result> SendMonoCommand(SessionId id, MonoCommands cmd, CancellationToken token) => SendCommand(id, "Runtime.evaluate", JObject.FromObject(cmd), token);
