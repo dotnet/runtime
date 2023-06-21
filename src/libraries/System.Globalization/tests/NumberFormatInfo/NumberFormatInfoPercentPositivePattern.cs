@@ -13,7 +13,43 @@ namespace System.Globalization.Tests
         {
             yield return new object[] { CultureInfo.GetCultureInfo("en-US").NumberFormat, 1 };
             yield return new object[] { CultureInfo.GetCultureInfo("en-MY").NumberFormat, 1 };
-            yield return new object[] { CultureInfo.GetCultureInfo("tr").NumberFormat, 2 };
+            yield return new object[] { CultureInfo.GetCultureInfo("tr").NumberFormat, 2 };            
+            if (PlatformDetection.IsHybridGlobalizationOnBrowser)
+            {
+                yield return new object[] { CultureInfo.GetCultureInfo("ar-SA").NumberFormat, 1 };
+                yield return new object[] { CultureInfo.GetCultureInfo("cs-CZ").NumberFormat, 0 };
+                yield return new object[] { CultureInfo.GetCultureInfo("de-CH").NumberFormat, 1 };
+                yield return new object[] { CultureInfo.GetCultureInfo("de-DE").NumberFormat, 0 };
+                yield return new object[] { CultureInfo.GetCultureInfo("de-LI").NumberFormat, 1 };
+                yield return new object[] { CultureInfo.GetCultureInfo("de-LU").NumberFormat, 0 };
+                yield return new object[] { CultureInfo.GetCultureInfo("el-CY").NumberFormat, 1 };
+                yield return new object[] { CultureInfo.GetCultureInfo("en-AT").NumberFormat, 0 };
+                yield return new object[] { CultureInfo.GetCultureInfo("en-AU").NumberFormat, 1 };
+                yield return new object[] { CultureInfo.GetCultureInfo("en-DE").NumberFormat, 0 };
+                yield return new object[] { CultureInfo.GetCultureInfo("en-DM").NumberFormat, 1 };
+                yield return new object[] { CultureInfo.GetCultureInfo("en-FI").NumberFormat, 0 };
+                yield return new object[] { CultureInfo.GetCultureInfo("en-FJ").NumberFormat, 1 };
+                yield return new object[] { CultureInfo.GetCultureInfo("en-SE").NumberFormat, 0 };
+                yield return new object[] { CultureInfo.GetCultureInfo("en-SG").NumberFormat, 1 };
+                yield return new object[] { CultureInfo.GetCultureInfo("es-ES").NumberFormat, 0 };
+                yield return new object[] { CultureInfo.GetCultureInfo("et-EE").NumberFormat, 1 };
+                yield return new object[] { CultureInfo.GetCultureInfo("fi-FI").NumberFormat, 0 };
+                yield return new object[] { CultureInfo.GetCultureInfo("fil-PH").NumberFormat, 1 };
+                yield return new object[] { CultureInfo.GetCultureInfo("fr-BE").NumberFormat, 0 };
+                yield return new object[] { CultureInfo.GetCultureInfo("fr-CH").NumberFormat, 1 };
+                yield return new object[] { CultureInfo.GetCultureInfo("fr-FR").NumberFormat, 0 };
+                yield return new object[] { CultureInfo.GetCultureInfo("gu-IN").NumberFormat, 1 };
+                yield return new object[] { CultureInfo.GetCultureInfo("hr-BA").NumberFormat, 0 };
+                yield return new object[] { CultureInfo.GetCultureInfo("hu-HU").NumberFormat, 1 };
+                yield return new object[] { CultureInfo.GetCultureInfo("lt-LT").NumberFormat, 0 };
+                yield return new object[] { CultureInfo.GetCultureInfo("lv-LV").NumberFormat, 1 };
+                yield return new object[] { CultureInfo.GetCultureInfo("nb-NO").NumberFormat, 0 };
+                yield return new object[] { CultureInfo.GetCultureInfo("nl-AW").NumberFormat, 1 };
+                yield return new object[] { CultureInfo.GetCultureInfo("ro-RO").NumberFormat, 0 };
+                yield return new object[] { CultureInfo.GetCultureInfo("sr-Cyrl-RS").NumberFormat, 1 };
+                yield return new object[] { CultureInfo.GetCultureInfo("sv-AX").NumberFormat, 0 };
+                yield return new object[] { CultureInfo.GetCultureInfo("sw-CD").NumberFormat, 1 };
+            }
         }
 
         /// <summary>

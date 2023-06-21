@@ -12,6 +12,11 @@ namespace System.Globalization.Tests
         {
             yield return new object[] { NumberFormatInfo.InvariantInfo, "%" };
             yield return new object[] { CultureInfo.GetCultureInfo("en-US").NumberFormat, "%" };
+            if (PlatformDetection.IsHybridGlobalizationOnBrowser)
+            { // remaining WASM locales have the same symbol as "en-US"
+                yield return new object[] { CultureInfo.GetCultureInfo("ar-SA").NumberFormat, "\u066A\u061C" };
+                yield return new object[] { CultureInfo.GetCultureInfo("fa-IR").NumberFormat, "\u066A" };
+            }
         }
 
         [Theory]

@@ -11,7 +11,14 @@ namespace System.Globalization.Tests
         public static IEnumerable<object[]> PositiveSign_TestData()
         {
             yield return new object[] { NumberFormatInfo.InvariantInfo, "+" };
-            yield return new object[] { CultureInfo.GetCultureInfo("en-US").NumberFormat, "+" };
+            yield return new object[] { CultureInfo.GetCultureInfo("en-US").NumberFormat, "+" }; // \u002b
+            if (PlatformDetection.IsHybridGlobalizationOnBrowser)
+            {
+                // remaining locales return plus-sign, as "en-US"
+                yield return new object[] { CultureInfo.GetCultureInfo("ar-SA").NumberFormat, "\u061c\u002b" };
+                yield return new object[] { CultureInfo.GetCultureInfo("fa-IR").NumberFormat, "\u200e\u002b" };
+                yield return new object[] { CultureInfo.GetCultureInfo("he-IL").NumberFormat, "\u200e\u002b" };
+            }
         }
 
         [Theory]

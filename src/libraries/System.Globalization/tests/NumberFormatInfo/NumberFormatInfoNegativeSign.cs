@@ -11,7 +11,23 @@ namespace System.Globalization.Tests
         public static IEnumerable<object[]> NegativeSign_TestData()
         {
             yield return new object[] { NumberFormatInfo.InvariantInfo, "-" };
-            yield return new object[] { CultureInfo.GetCultureInfo("en-US").NumberFormat, "-" };
+            yield return new object[] { CultureInfo.GetCultureInfo("en-US").NumberFormat, "-" }; // \u002d
+            if (PlatformDetection.IsHybridGlobalizationOnBrowser)
+            {
+                // remaining locales return hyphen-minus, as "en-US"
+                yield return new object[] { CultureInfo.GetCultureInfo("ar-SA").NumberFormat, "\u061c\u002d" };
+                yield return new object[] { CultureInfo.GetCultureInfo("et-EE").NumberFormat, "\u2212" };
+                yield return new object[] { CultureInfo.GetCultureInfo("fa-IR").NumberFormat, "\u200e\u2212" };
+                yield return new object[] { CultureInfo.GetCultureInfo("fi-FI").NumberFormat, "\u2212" };
+                yield return new object[] { CultureInfo.GetCultureInfo("he-IL").NumberFormat, "\u200e\u002d" };
+                yield return new object[] { CultureInfo.GetCultureInfo("lt-LT").NumberFormat, "\u2212" };
+                yield return new object[] { CultureInfo.GetCultureInfo("nb-NO").NumberFormat, "\u2212" };
+                yield return new object[] { CultureInfo.GetCultureInfo("no").NumberFormat, "\u2212" };
+                yield return new object[] { CultureInfo.GetCultureInfo("no-NO").NumberFormat, "\u2212" };
+                yield return new object[] { CultureInfo.GetCultureInfo("sl-SI").NumberFormat, "\u2212" };
+                yield return new object[] { CultureInfo.GetCultureInfo("sv-AX").NumberFormat, "\u2212" };
+                yield return new object[] { CultureInfo.GetCultureInfo("sv-SE").NumberFormat, "\u2212" };
+            }
         }
 
         [Theory]

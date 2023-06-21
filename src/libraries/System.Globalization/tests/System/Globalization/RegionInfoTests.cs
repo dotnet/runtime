@@ -10,7 +10,7 @@ using Xunit;
 
 namespace System.Globalization.Tests
 {
-    public class RegionInfoPropertyTests
+    public class RegionInfoPropertyTests : RegionInfoTestData
     {
         [Theory]
         [InlineData("US", "US", "US")]
@@ -186,6 +186,22 @@ namespace System.Globalization.Tests
             Assert.Equal("$", new RegionInfo("en-US").CurrencySymbol);
             Assert.Contains(new RegionInfo("zh-CN").CurrencySymbol, new string[] { "\u00A5", "\uffe5" });
         }
+
+        // important only for hybrid globalization:
+        [ConditionalTheory(typeof(PlatformDetection), nameof(PlatformDetection.IsHybridGlobalizationOnBrowser))]
+        [MemberData(nameof(CurrencyDataOnWasm), true)]
+        public void CurrencySymbolForWasmLocales(CurrencyTestDataModel data)
+        {
+            Assert.Equal(data.Symbol, new RegionInfo(data.Locale).CurrencySymbol);
+        }
+
+        // important only for hybrid globalization:
+        [ConditionalTheory(typeof(PlatformDetection), nameof(PlatformDetection.IsHybridGlobalizationOnBrowser))]
+        [MemberData(nameof(CurrencyDataOnWasm), true)]
+        public void CurrencyISOSymbolForWasmLocales(CurrencyTestDataModel data)
+        {
+            Assert.Equal(data.ISOCode, new RegionInfo(data.Locale).ISOCurrencySymbol);
+        }        
 
         [Theory]
         [InlineData("en-US", "US")]

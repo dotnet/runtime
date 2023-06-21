@@ -12,6 +12,32 @@ namespace System.Globalization.Tests
         {
             yield return new object[] { DateTimeFormatInfo.InvariantInfo, "yyyy MMMM" };
             yield return new object[] { new CultureInfo("fr-FR").DateTimeFormat, "MMMM yyyy" };
+            if (PlatformDetection.IsHybridGlobalizationOnBrowser)
+            {
+                yield return new object[] { new CultureInfo("ar-SA").DateTimeFormat, "MMMM yyyy g" };
+                yield return new object[] { new CultureInfo("bg-BG").DateTimeFormat, "MMMM yyyy '\u0433'." };
+                yield return new object[] { new CultureInfo("ru-RU").DateTimeFormat, "MMMM yyyy '\u0433'." };
+                yield return new object[] { new CultureInfo("ca-AD").DateTimeFormat, "MMMM 'de' yyyy" };
+                yield return new object[] { new CultureInfo("pt-PT").DateTimeFormat, "MMMM 'de' yyyy" };
+                yield return new object[] { new CultureInfo("pt-BR").DateTimeFormat, "MMMM 'de' yyyy" };
+                yield return new object[] { new CultureInfo("ca-ES").DateTimeFormat, "MMMM 'de' yyyy" };
+                yield return new object[] { new CultureInfo("es-ES").DateTimeFormat, "MMMM 'de' yyyy" };
+                yield return new object[] { new CultureInfo("es-MX").DateTimeFormat, "MMMM 'de' yyyy" };
+                yield return new object[] { new CultureInfo("fa-IR").DateTimeFormat, "yyyy MMMM g" };
+                yield return new object[] { new CultureInfo("hr-BA").DateTimeFormat, "MMMM yyyy." };
+                yield return new object[] { new CultureInfo("hu-HU").DateTimeFormat, "yyyy. MMMM" };
+                yield return new object[] { new CultureInfo("ja-JP").DateTimeFormat, "yyyy\u5E74M\u6708" };
+                yield return new object[] { new CultureInfo("ko-KR").DateTimeFormat, "yyyy\uB144 MMMM" };
+                yield return new object[] { new CultureInfo("lt-LT").DateTimeFormat, "yyyy 'm'. MMMM" };
+                yield return new object[] { new CultureInfo("lv-LV").DateTimeFormat, "yyyy. 'g'. MMMM" };
+                yield return new object[] { new CultureInfo("ml-IN").DateTimeFormat, "yyyy MMMM" };
+                yield return new object[] { new CultureInfo("vi-VN").DateTimeFormat, "MMMM 'n\u0103m' yyyy" };
+                yield return new object[] { new CultureInfo("zh-CN").DateTimeFormat, "yyyy\u5E74M\u6708" };
+                yield return new object[] { new CultureInfo("zh-Hans-HK").DateTimeFormat, "yyyy\u5E74M\u6708" };
+                yield return new object[] { new CultureInfo("zh-SG").DateTimeFormat, "yyyy\u5E74M\u6708" };
+                yield return new object[] { new CultureInfo("zh-HK").DateTimeFormat, "yyyy\u5E74M\u6708" };
+                yield return new object[] { new CultureInfo("zh-TW").DateTimeFormat, "yyyy\u5E74M\u6708" };
+            }
         }
 
         [Theory]

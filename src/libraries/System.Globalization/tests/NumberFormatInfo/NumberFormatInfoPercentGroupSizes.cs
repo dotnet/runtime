@@ -12,6 +12,19 @@ namespace System.Globalization.Tests
         {
             yield return new object[] { NumberFormatInfo.InvariantInfo, new int[] { 3 } };
             yield return new object[] { CultureInfo.GetCultureInfo("en-US").NumberFormat, new int[] { 3 } };
+            if (PlatformDetection.IsHybridGlobalizationOnBrowser)
+            {
+                yield return new object[] { CultureInfo.GetCultureInfo("te-IN").NumberFormat, new int[] { 3, 2 } };
+                yield return new object[] { CultureInfo.GetCultureInfo("ta-LK").NumberFormat, new int[] { 3, 2 } };
+                yield return new object[] { CultureInfo.GetCultureInfo("ta-IN").NumberFormat, new int[] { 3, 2 } };
+                yield return new object[] { CultureInfo.GetCultureInfo("mr-IN").NumberFormat, new int[] { 3, 2 } };
+                yield return new object[] { CultureInfo.GetCultureInfo("ml-IN").NumberFormat, new int[] { 3, 2 } };
+                yield return new object[] { CultureInfo.GetCultureInfo("hi-IN").NumberFormat, new int[] { 3, 2 } };
+                yield return new object[] { CultureInfo.GetCultureInfo("gu-IN").NumberFormat, new int[] { 3, 2 } };
+                yield return new object[] { CultureInfo.GetCultureInfo("en-IN").NumberFormat, new int[] { 3, 2 } };
+                yield return new object[] { CultureInfo.GetCultureInfo("bn-IN").NumberFormat, new int[] { 3, 2 } };
+                yield return new object[] { CultureInfo.GetCultureInfo("kn-IN").NumberFormat, new int[] { 3 } }; // WASM: from "*-IN" only "kn-IN" is the same as "en-US"
+            }
         }
 
         [Theory]

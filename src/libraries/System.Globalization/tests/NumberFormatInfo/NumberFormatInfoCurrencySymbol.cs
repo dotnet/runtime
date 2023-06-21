@@ -5,7 +5,7 @@ using Xunit;
 
 namespace System.Globalization.Tests
 {
-    public class NumberFormatInfoCurrencySymbol
+    public class NumberFormatInfoCurrencySymbol : RegionInfoTestData
     {
         [Theory]
         [InlineData("en-US", "$")]
@@ -14,6 +14,13 @@ namespace System.Globalization.Tests
         public void CurrencySymbol_Get_ReturnsExpected(string name, string expected)
         {
             Assert.Equal(expected, CultureInfo.GetCultureInfo(name).NumberFormat.CurrencySymbol);
+        }
+
+        [ConditionalTheory(typeof(PlatformDetection), nameof(PlatformDetection.IsHybridGlobalizationOnBrowser))]
+        [MemberData(nameof(RegionInfoTestData.CurrencyDataOnWasm), false)]
+        public void CurrencySymbol_Get_ReturnsExpected_WasmLocales(RegionInfoTestData.CurrencyTestDataModel data)
+        {
+            Assert.Equal(data.Symbol, CultureInfo.GetCultureInfo(data.Locale).NumberFormat.CurrencySymbol);
         }
 
         [Theory]

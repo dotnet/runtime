@@ -14,5 +14,26 @@
     <Compile Include="..\CompareInfo\CompareInfoTests.IsSuffix.cs" />
     <Compile Include="..\CompareInfo\CompareInfoTests.IndexOf.cs" />
     <Compile Include="..\CompareInfo\CompareInfoTests.LastIndexOf.cs" />
+    <Compile Include="..\DateTimeFormatInfo\DateTimeFormatInfoData.cs" />
+    <Compile Include="..\DateTimeFormatInfo\DateTimeFormatInfoGetDayName.cs" />
+    <Compile Include="..\DateTimeFormatInfo\DateTimeFormatInfoGetEraName.cs" />
+    <Compile Include="..\DateTimeFormatInfo\DateTimeFormatInfoYearMonthPattern.cs" />
+    <Compile Include="..\NumberFormatInfo\NumberFormatInfoCurrencyDecimalDigits.cs" />
+    <Compile Include="..\NumberFormatInfo\NumberFormatInfoCurrencyGroupSizes.cs" />
+    <Compile Include="..\NumberFormatInfo\NumberFormatInfoCurrencyNegativePattern.cs" />
+    <Compile Include="..\NumberFormatInfo\NumberFormatInfoCurrencyPositivePattern.cs" />
+    <!-- <Compile Include="..\NumberFormatInfo\NumberFormatInfoCurrencySymbol.cs" /> -->
+    <Compile Include="..\NumberFormatInfo\NumberFormatInfoData.cs" />
+    <Compile Include="..\NumberFormatInfo\NumberFormatInfoNegativeSign.cs" />
+    <Compile Include="..\NumberFormatInfo\NumberFormatInfoNumberDecimalDigits.cs" />
+    <Compile Include="..\NumberFormatInfo\NumberFormatInfoNumberGroupSizes.cs" />
+    <Compile Include="..\NumberFormatInfo\NumberFormatInfoPercentDecimalDigits.cs" />
+    <Compile Include="..\NumberFormatInfo\NumberFormatInfoPercentGroupSizes.cs" />
+    <Compile Include="..\NumberFormatInfo\NumberFormatInfoPercentNegativePattern.cs" />
+    <Compile Include="..\NumberFormatInfo\NumberFormatInfoPercentPositivePattern.cs" />
+    <Compile Include="..\NumberFormatInfo\NumberFormatInfoPercentSymbol.cs" />
+    <Compile Include="..\NumberFormatInfo\NumberFormatInfoPositiveSign.cs" />
+    <!-- <Compile Include="..\System\Globalization\RegionInfoTests.cs" />
+    <Compile Include="..\System\Globalization\RegionInfoTestData.cs" /> -->
   </ItemGroup>
 </Project>
