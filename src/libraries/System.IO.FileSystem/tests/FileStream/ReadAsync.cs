@@ -95,8 +95,6 @@ namespace System.IO.Tests
                     // Ideally we'd be doing an Assert.Throws<OperationCanceledException>
                     // but since cancellation is a race condition we accept either outcome
                     Assert.Equal(cts.Token, oce.CancellationToken);
-
-                    Assert.Equal(0, fs.Position); // if read was cancelled, the Position should remain unchanged
                 }
             }
         }

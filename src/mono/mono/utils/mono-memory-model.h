@@ -12,7 +12,45 @@
 #define _MONO_UTILS_MONO_MEMMODEL_H_
 
 #include <config.h>
-#include <mono/utils/mono-membar.h>
+
+#if _MSC_VER
+#ifndef WIN32_LEAN_AND_MEAN
+#define WIN32_LEAN_AND_MEAN
+#endif
+#include <windows.h>
+#include <intrin.h>
+
+static inline void
+mono_memory_barrier (void)
+{
+	/* NOTE: _ReadWriteBarrier and friends only prevent the
+	   compiler from reordering loads and stores. To prevent
+	   the CPU from doing the same, we have to use the
+	   MemoryBarrier macro which expands to e.g. a serializing
+	   XCHG instruction on x86. Also note that the MemoryBarrier
+	   macro does *not* imply _ReadWriteBarrier, so that call
+	   cannot be eliminated. */
+	_ReadWriteBarrier ();
+	MemoryBarrier ();
+}
+
+#define mono_compiler_barrier() _ReadWriteBarrier ()
+
+#elif defined(USE_GCC_ATOMIC_OPS) || defined(HOST_WASM)
+
+static inline void
+mono_memory_barrier (void)
+{
+	__sync_synchronize ();
+}
+
+#define mono_compiler_barrier() asm volatile("": : :"memory")
+
+#else
+#error "Don't know how to do memory barriers!"
+#endif
+
+void mono_memory_barrier_process_wide (void);
 
 /*
 In order to allow for fast concurrent code, we must use fencing to properly order
@@ -46,8 +84,6 @@ enum {
 };
 
 #define MEMORY_BARRIER mono_memory_barrier ()
-#define LOAD_BARRIER mono_memory_read_barrier ()
-#define STORE_BARRIER mono_memory_write_barrier ()
 
 #if defined(__i386__) || defined(_M_IX86) || defined(__x86_64__) || defined(_M_X64)
 /*
@@ -77,8 +113,8 @@ AND R0, R0, #0
 LDR R3, [R4, R0]
 */
 
-#define STORE_STORE_FENCE STORE_BARRIER
-#define LOAD_LOAD_FENCE LOAD_BARRIER
+#define STORE_STORE_FENCE MEMORY_BARRIER
+#define LOAD_LOAD_FENCE MEMORY_BARRIER
 #define STORE_LOAD_FENCE MEMORY_BARRIER
 #define STORE_ACQUIRE_FENCE MEMORY_BARRIER
 #define STORE_RELEASE_FENCE MEMORY_BARRIER
@@ -96,8 +132,8 @@ LDR R3, [R4, R0]
 #else
 
 /*default implementation with the weakest possible memory model */
-#define STORE_STORE_FENCE STORE_BARRIER
-#define LOAD_LOAD_FENCE LOAD_BARRIER
+#define STORE_STORE_FENCE MEMORY_BARRIER
+#define LOAD_LOAD_FENCE MEMORY_BARRIER
 #define STORE_LOAD_FENCE MEMORY_BARRIER
 #define LOAD_STORE_FENCE MEMORY_BARRIER
 #define STORE_ACQUIRE_FENCE MEMORY_BARRIER
@@ -171,5 +207,18 @@ Acquire/release semantics macros.
 	*(target) = (value);	\
 	STORE_ACQUIRE_FENCE;	\
 	}
+
+
+static inline void
+mono_memory_read_barrier (void)
+{
+	LOAD_LOAD_FENCE;
+}
+
+static inline void
+mono_memory_write_barrier (void)
+{
+	STORE_STORE_FENCE;
+}
 
 #endif /* _MONO_UTILS_MONO_MEMMODEL_H_ */

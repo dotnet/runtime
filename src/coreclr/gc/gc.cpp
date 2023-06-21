@@ -1413,11 +1413,9 @@ bool gc_heap::should_move_heap (GCSpinLock* msl)
 
 // All the places where we could be stopped because there was a suspension should call should_move_heap to check if we need to return
 // so we can try another heap or we can continue the allocation on the same heap.
-enter_msl_status gc_heap::enter_spin_lock_msl (GCSpinLock* msl)
+enter_msl_status gc_heap::enter_spin_lock_msl_helper (GCSpinLock* msl)
 {
-retry:
-
-    if (Interlocked::CompareExchange (&msl->lock, lock_taken, lock_free) != lock_free)
+    do
     {
 #ifdef DYNAMIC_HEAP_COUNT
         uint64_t start = GetHighPrecisionTimeStamp();
@@ -1449,7 +1447,13 @@ retry:
                     }
                     if (VolatileLoad (&msl->lock) != lock_free && !IsGCInProgress ())
                     {
+#ifdef DYNAMIC_HEAP_COUNT
+                        start -= GetHighPrecisionTimeStamp();
+#endif //DYNAMIC_HEAP_COUNT
                         safe_switch_to_thread ();
+#ifdef DYNAMIC_HEAP_COUNT
+                        start += GetHighPrecisionTimeStamp();
+#endif //DYNAMIC_HEAP_COUNT
                     }
                 }
                 else
@@ -1459,17 +1463,33 @@ retry:
             }
             else
             {
+#ifdef DYNAMIC_HEAP_COUNT
+                start -= GetHighPrecisionTimeStamp();
+#endif //DYNAMIC_HEAP_COUNT
                 WaitLongerNoInstru (i);
+#ifdef DYNAMIC_HEAP_COUNT
+                start += GetHighPrecisionTimeStamp();
+#endif //DYNAMIC_HEAP_COUNT
             }
         }
 #ifdef DYNAMIC_HEAP_COUNT
         uint64_t end = GetHighPrecisionTimeStamp();
         Interlocked::ExchangeAdd64 (&msl->msl_wait_time, end - start);
+        dprintf (6666, ("wait for msl lock total time: %zd, total count: %zd, this time: %zd, this count: %u", msl->msl_wait_time, msl->msl_wait_count, end - start, i));
 #endif //DYNAMIC_HEAP_COUNT
-        goto retry;
     }
+    while (Interlocked::CompareExchange (&msl->lock, lock_taken, lock_free) != lock_free);
 
     return msl_entered;
+}
+
+inline
+enter_msl_status gc_heap::enter_spin_lock_msl (GCSpinLock* msl)
+{
+    if (Interlocked::CompareExchange (&msl->lock, lock_taken, lock_free) == lock_free)
+        return msl_entered;
+
+    return enter_spin_lock_msl_helper (msl);
 }
 
 //
@@ -24905,7 +24925,8 @@ void gc_heap::check_heap_count ()
     if (heap_number == 0)
     {
         // acquire data for the current sample
-        uint64_t    msl_wait_time = 0;
+        uint64_t    soh_msl_wait_time = 0;
+        uint64_t    uoh_msl_wait_time = 0;
         size_t      allocating_thread_count = 0;
         size_t      heap_size = 0;
         for (int i = 0; i < n_heaps; i++)
@@ -24914,11 +24935,13 @@ void gc_heap::check_heap_count ()
 
             allocating_thread_count += hp->alloc_contexts_used;
 
-            msl_wait_time += hp->more_space_lock_soh.msl_wait_time;
+            soh_msl_wait_time += hp->more_space_lock_soh.msl_wait_time;
             hp->more_space_lock_soh.msl_wait_time = 0;
+            hp->more_space_lock_soh.msl_wait_count = 0;
 
-            msl_wait_time += hp->more_space_lock_uoh.msl_wait_time;
+            uoh_msl_wait_time += hp->more_space_lock_uoh.msl_wait_time;
             hp->more_space_lock_uoh.msl_wait_time = 0;
+            hp->more_space_lock_uoh.msl_wait_count = 0;
 
             for (int gen_idx = 0; gen_idx < total_generation_count; gen_idx++)
             {
@@ -24935,15 +24958,17 @@ void gc_heap::check_heap_count ()
         // persist data for the current sample
         dynamic_heap_count_data_t::sample& sample = dynamic_heap_count_data.samples[dynamic_heap_count_data.sample_index];
 
-        sample.msl_wait_time = msl_wait_time;
+        sample.soh_msl_wait_time = soh_msl_wait_time / n_heaps;
+        sample.uoh_msl_wait_time = uoh_msl_wait_time / n_heaps;
         sample.elapsed_between_gcs = dd_time_clock (hp0_dd0) - dd_previous_time_clock (hp0_dd0);
         sample.gc_elapsed_time = dd_gc_elapsed_time (hp0_dd0);
         sample.allocating_thread_count = allocating_thread_count;
         sample.heap_size = heap_size;
 
-        dprintf (6666, ("sample %d: msl_wait_time: %zd, elapsed_between_gcs: %zd, gc_elapsed_time: %d, heap_size: %zd MB",
+        dprintf (6666, ("sample %d: soh_msl_wait_time: %zd, uoh_msl_wait_time: %zd, elapsed_between_gcs: %zd, gc_elapsed_time: %d, heap_size: %zd MB",
             dynamic_heap_count_data.sample_index,
-            sample.msl_wait_time,
+            sample.soh_msl_wait_time,
+            sample.uoh_msl_wait_time,
             sample.elapsed_between_gcs,
             sample.gc_elapsed_time,
             sample.heap_size/(1024*1024)));
@@ -24969,7 +24994,7 @@ void gc_heap::check_heap_count ()
             for (int i = 0; i < dynamic_heap_count_data_t::sample_size; i++)
             {
                 dynamic_heap_count_data_t::sample& sample = dynamic_heap_count_data.samples[i];
-                uint64_t overhead_time = (sample.msl_wait_time / n_heaps) + sample.gc_elapsed_time;
+                uint64_t overhead_time = sample.soh_msl_wait_time + sample.uoh_msl_wait_time + sample.gc_elapsed_time;
                 percent_overhead[i] = overhead_time * 100.0f / sample.elapsed_between_gcs;
                 if (percent_overhead[i] < 0)
                     percent_overhead[i] = 0;
@@ -25075,6 +25100,14 @@ void gc_heap::check_heap_count ()
 
             dynamic_heap_count_data.new_n_heaps = new_n_heaps;
 
+            // store data used for decision to emit in ETW event
+            dynamic_heap_count_data.median_percent_overhead           = median_percent_overhead;
+            dynamic_heap_count_data.percent_heap_space_cost_per_heap  = percent_heap_space_cost_per_heap;
+            dynamic_heap_count_data.overhead_reduction_per_step_up    = overhead_reduction_per_step_up;
+            dynamic_heap_count_data.overhead_increase_per_step_down   = overhead_increase_per_step_down;
+            dynamic_heap_count_data.space_cost_increase_per_step_up   = space_cost_increase_per_step_up;
+            dynamic_heap_count_data.space_cost_decrease_per_step_down = space_cost_decrease_per_step_down;
+
             if (new_n_heaps != n_heaps)
             {
                 // can't have threads allocating while we change the number of heaps
@@ -25091,6 +25124,7 @@ void gc_heap::check_heap_count ()
     else if (settings.gc_index < prev_change_heap_count_gc_index + 3)
     {
         // reconsider the decision every few gcs
+        dprintf (6666, ("checked heap count at %zd, now at %zd", prev_change_heap_count_gc_index, settings.gc_index));
         return;
     }
 
@@ -25107,6 +25141,7 @@ void gc_heap::check_heap_count ()
     if (dynamic_heap_count_data.new_n_heaps == n_heaps)
     {
         // heap count stays the same, no work to do
+        dprintf (6666, ("heap count stays the same, no work to do %d == %d", dynamic_heap_count_data.new_n_heaps, n_heaps));
         return;
     }
 
@@ -25266,8 +25301,12 @@ bool gc_heap::change_heap_count (int new_n_heaps)
         }
     }
 
-    if (dynamic_heap_count_data.new_n_heaps == n_heaps)
+    // gc_heap::n_heaps may have changed by now, compare to the snapshot *before* the join
+    if (dynamic_heap_count_data.new_n_heaps == old_n_heaps)
+    {
+        dprintf (6666, ("failed to change heap count, no work to do %d == %d", dynamic_heap_count_data.new_n_heaps, old_n_heaps));
         return false;
+    }
 
     if (heap_number == 0)
     {
@@ -44292,8 +44331,6 @@ BOOL gc_heap::ephemeral_gen_fit_p (gc_tuning_point tp)
 
 CObjectHeader* gc_heap::allocate_uoh_object (size_t jsize, uint32_t flags, int gen_number, int64_t& alloc_bytes)
 {
-    uint64_t start_us = GetHighPrecisionTimeStamp ();
-
     //create a new alloc context because gen3context is shared.
     alloc_context acontext;
     acontext.init();
@@ -44354,14 +44391,7 @@ CObjectHeader* gc_heap::allocate_uoh_object (size_t jsize, uint32_t flags, int g
         uint8_t* current_lowest_address = background_saved_lowest_address;
         uint8_t* current_highest_address = background_saved_highest_address;
 
-        if ((result < current_highest_address) && (result >= current_lowest_address))
-        {
-            dprintf (3, ("Clearing mark bit at address %zx",
-                     (size_t)(&mark_array [mark_word_of (result)])));
-
-            mark_array_clear_marked (result);
-        }
-        if (current_c_gc_state != c_gc_state_free)
+        if (current_c_gc_state == c_gc_state_planning)
         {
             dprintf (3, ("Concurrent allocation of a large object %zx",
                         (size_t)obj));
@@ -44388,13 +44418,6 @@ CObjectHeader* gc_heap::allocate_uoh_object (size_t jsize, uint32_t flags, int g
 
     assert (obj != 0);
     assert ((size_t)obj == Align ((size_t)obj, align_const));
-
-    uint64_t elapsed_us = GetHighPrecisionTimeStamp () - start_us;
-
-    //if (elapsed_us > 1000)
-    //{
-    //    dprintf (5555, ("LONG uoh alloc %Id (%I64dus)", size, elapsed_us));
-    //}
 
     return obj;
 }
@@ -50248,22 +50271,25 @@ void GCHeap::GetMemoryInfo(uint64_t* highMemLoadThresholdBytes,
     }
 
 #ifdef _DEBUG
-    if ((gc_kind)kind == gc_kind_ephemeral)
+    if (VolatileLoadWithoutBarrier (&last_gc_info->index) != 0)
     {
-        assert (last_gc_info->condemned_generation < max_generation);
-    }
-    else if ((gc_kind)kind == gc_kind_full_blocking)
-    {
-        assert (last_gc_info->condemned_generation == max_generation);
-        assert (last_gc_info->concurrent == false);
-    }
+        if ((gc_kind)kind == gc_kind_ephemeral)
+        {
+            assert (last_gc_info->condemned_generation < max_generation);
+        }
+        else if ((gc_kind)kind == gc_kind_full_blocking)
+        {
+            assert (last_gc_info->condemned_generation == max_generation);
+            assert (last_gc_info->concurrent == false);
+        }
 #ifdef BACKGROUND_GC
-    else if ((gc_kind)kind == gc_kind_background)
-    {
-        assert (last_gc_info->condemned_generation == max_generation);
-        assert (last_gc_info->concurrent == true);
-    }
+        else if ((gc_kind)kind == gc_kind_background)
+        {
+            assert (last_gc_info->condemned_generation == max_generation);
+            assert (last_gc_info->concurrent == true);
+        }
 #endif //BACKGROUND_GC
+    }
 #endif //_DEBUG
 }
 
@@ -50758,7 +50784,18 @@ retry:
         unsigned int i = 0;
         while (lock >= 0)
         {
-            YieldProcessor();           // indicate to the processor that we are spinning
+            if (g_num_processors > 1)
+            {
+                int spin_count = 128 * yp_spin_count_unit;
+                for (int j = 0; j < spin_count; j++)
+                {
+                    if (lock < 0)
+                        break;
+                    YieldProcessor ();           // indicate to the processor that we are spinning
+                }
+            }
+            if (lock < 0)
+                break;
             if (++i & 7)
                 GCToOSInterface::YieldThread (0);
             else

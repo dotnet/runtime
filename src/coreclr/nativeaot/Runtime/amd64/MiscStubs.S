@@ -45,6 +45,7 @@ LOCAL_LABEL(ProbeLoop):
         ret
 NESTED_END RhpStackProbe, _TEXT
 
+#ifndef TARGET_ANDROID
 NESTED_ENTRY RhpGetInlinedThreadStaticBase, _TEXT, NoHandler
         // On exit:
         //   rax - the thread static base for the given type
@@ -61,4 +62,4 @@ NESTED_ENTRY RhpGetInlinedThreadStaticBase, _TEXT, NoHandler
         // return it
         ret
 NESTED_END RhpGetInlinedThreadStaticBase, _TEXT
-
+#endif
