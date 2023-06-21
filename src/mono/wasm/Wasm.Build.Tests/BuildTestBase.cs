@@ -738,20 +738,20 @@ namespace Wasm.Build.Tests
                     case GlobalizationMode.PredefinedIcu:
                         if (string.IsNullOrEmpty(predefinedIcudt))
                             throw new ArgumentException("WasmBuildTest is invalid, value for predefinedIcudt is required when GlobalizationMode=PredefinedIcu.");
-                        AssertFilesExist(bundleDir, new[] { predefinedIcudt }, expectToExist: true);
+                        AssertFilesExist(bundleDir, new[] { Path.Combine("_framework", predefinedIcudt) }, expectToExist: true);
                         // predefined ICU name can be identical with the icu files from runtime pack
                         switch (predefinedIcudt)
                         {
-                            case "_framework/icudt.dat":
+                            case "icudt.dat":
                                 expectFULL = true;
                                 break;
-                            case "_framework/icudt_EFIGS.dat":
+                            case "icudt_EFIGS.dat":
                                 expectEFIGS = true;
                                 break;
-                            case "_framework/icudt_CJK.dat":
+                            case "icudt_CJK.dat":
                                 expectCJK = true;
                                 break;
-                            case "_framework/icudt_no_CJK.dat":
+                            case "icudt_no_CJK.dat":
                                 expectNOCJK = true;
                                 break;
                         }
@@ -763,11 +763,13 @@ namespace Wasm.Build.Tests
                         expectNOCJK = true;
                         break;
                 }
-                AssertFilesExist(bundleDir, new[] { "_framework/icudt.dat" }, expectToExist: expectFULL);
-                AssertFilesExist(bundleDir, new[] { "_framework/icudt_EFIGS.dat" }, expectToExist: expectEFIGS);
-                AssertFilesExist(bundleDir, new[] { "_framework/icudt_CJK.dat" }, expectToExist: expectCJK);
-                AssertFilesExist(bundleDir, new[] { "_framework/icudt_no_CJK.dat" }, expectToExist: expectNOCJK);
-                AssertFilesExist(bundleDir, new[] { "_framework/icudt_hybrid.dat" }, expectToExist: expectHYBRID);
+
+                var frameworkDir = Path.Combine(bundleDir, "_framework");
+                AssertFilesExist(frameworkDir, new[] { "icudt.dat" }, expectToExist: expectFULL);
+                AssertFilesExist(frameworkDir, new[] { "icudt_EFIGS.dat" }, expectToExist: expectEFIGS);
+                AssertFilesExist(frameworkDir, new[] { "icudt_CJK.dat" }, expectToExist: expectCJK);
+                AssertFilesExist(frameworkDir, new[] { "icudt_no_CJK.dat" }, expectToExist: expectNOCJK);
+                AssertFilesExist(frameworkDir, new[] { "icudt_hybrid.dat" }, expectToExist: expectHYBRID);
             }
         }
 
