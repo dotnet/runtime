@@ -169,7 +169,9 @@ export async function mono_download_assets(): Promise<void> {
                             cleanupAsset(asset);
                         }
 
-                        ++loaderHelpers.actual_downloaded_assets_count;
+                        if (skipBufferByAssetTypes[asset.behavior]) {
+                            ++loaderHelpers.actual_downloaded_assets_count;
+                        }
                     }
                 }
             })());
