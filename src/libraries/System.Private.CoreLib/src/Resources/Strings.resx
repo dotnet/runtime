@@ -193,6 +193,9 @@
   <data name="Arg_AmbiguousMatchException_MemberInfo" xml:space="preserve">
     <value>Ambiguous match found for '{0} {1}'.</value>
   </data>
+  <data name="Arg_AmbiguousMatchException_UnsafeAccessor" xml:space="preserve">
+    <value>Ambiguity in binding of UnsafeAccessorAttribute.</value>
+  </data>
   <data name="Arg_ApplicationException" xml:space="preserve">
     <value>Error in the application.</value>
   </data>

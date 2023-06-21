@@ -2,10 +2,10 @@
 // The .NET Foundation licenses this file to you under the MIT license.
 
 import MonoWasmThreads from "consts:monoWasmThreads";
-import WasmEnableLegacyJsInterop from "consts:WasmEnableLegacyJsInterop";
+import WasmEnableLegacyJsInterop from "consts:wasmEnableLegacyJsInterop";
 
 import { DotnetModuleInternal, CharPtrNull } from "./types/internal";
-import { disableLegacyJsInterop, ENVIRONMENT_IS_PTHREAD, exportedRuntimeAPI, INTERNAL, loaderHelpers, Module, runtimeHelpers } from "./globals";
+import { linkerDisableLegacyJsInterop, ENVIRONMENT_IS_PTHREAD, exportedRuntimeAPI, INTERNAL, loaderHelpers, Module, runtimeHelpers } from "./globals";
 import cwraps, { init_c_exports } from "./cwraps";
 import { mono_wasm_raise_debug_event, mono_wasm_runtime_ready } from "./debug";
 import { toBase64StringImpl } from "./base64";
@@ -232,10 +232,10 @@ async function onRuntimeInitializedAsync(userOnRuntimeInitialized: () => void) {
 
         await wait_for_all_assets();
 
-        // Diagnostics early are not supported with memory snapshot. See below how we enable them later.
+        // Threads early are not supported with memory snapshot. See below how we enable them later.
         // Please disable startupMemoryCache in order to be able to diagnose or pause runtime startup.
         if (MonoWasmThreads && !runtimeHelpers.config.startupMemoryCache) {
-            await mono_wasm_init_diagnostics();
+            await mono_wasm_init_threads();
         }
 
         // load runtime and apply environment settings (if necessary)
@@ -251,14 +251,8 @@ async function onRuntimeInitializedAsync(userOnRuntimeInitialized: () => void) {
             return;
         }
 
-        if (MonoWasmThreads) {
-            if (runtimeHelpers.config.startupMemoryCache) {
-                // we could enable diagnostics after the snapshot is taken
-                await mono_wasm_init_diagnostics();
-            }
-            const tid = getBrowserThreadID();
-            mono_set_thread_id(`0x${tid.toString(16)}-main`);
-            await instantiateWasmPThreadWorkerPool();
+        if (MonoWasmThreads && runtimeHelpers.config.startupMemoryCache) {
+            await mono_wasm_init_threads();
         }
 
         bindings_init();
@@ -318,6 +312,15 @@ async function postRunAsync(userpostRun: (() => void)[]) {
     runtimeHelpers.afterPostRun.promise_control.resolve();
 }
 
+async function mono_wasm_init_threads() {
+    if (!MonoWasmThreads) {
+        return;
+    }
+    const tid = getBrowserThreadID();
+    mono_set_thread_id(`0x${tid.toString(16)}-main`);
+    await instantiateWasmPThreadWorkerPool();
+    await mono_wasm_init_diagnostics();
+}
 
 function mono_wasm_pre_init_essential(isWorker: boolean): void {
     if (!isWorker)
@@ -327,7 +330,7 @@ function mono_wasm_pre_init_essential(isWorker: boolean): void {
 
     init_c_exports();
     cwraps_internal(INTERNAL);
-    if (WasmEnableLegacyJsInterop && !disableLegacyJsInterop) {
+    if (WasmEnableLegacyJsInterop && !linkerDisableLegacyJsInterop) {
         cwraps_mono_api(MONO);
         cwraps_binding_api(BINDING);
     }
@@ -581,7 +584,7 @@ export function bindings_init(): void {
         const mark = startMeasure();
         strings_init();
         init_managed_exports();
-        if (WasmEnableLegacyJsInterop && !disableLegacyJsInterop && !ENVIRONMENT_IS_PTHREAD) {
+        if (WasmEnableLegacyJsInterop && !linkerDisableLegacyJsInterop && !ENVIRONMENT_IS_PTHREAD) {
             init_legacy_exports();
         }
         initialize_marshalers_to_js();

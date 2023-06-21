@@ -114,14 +114,14 @@ namespace System.Globalization
                 char* a = ap;
                 char* b = bp;
 
-                if (target.IndexOfAnyExcept(s_nonSpecialAsciiChars) >= 0)
+                if (target.ContainsAnyExcept(s_nonSpecialAsciiChars))
                 {
                     goto InteropCall;
                 }
 
                 if (target.Length > source.Length)
                 {
-                    if (source.IndexOfAnyExcept(s_nonSpecialAsciiChars) >= 0)
+                    if (source.ContainsAnyExcept(s_nonSpecialAsciiChars))
                     {
                         goto InteropCall;
                     }
@@ -227,14 +227,14 @@ namespace System.Globalization
                 char* a = ap;
                 char* b = bp;
 
-                if (target.IndexOfAnyExcept(s_nonSpecialAsciiChars) >= 0)
+                if (target.ContainsAnyExcept(s_nonSpecialAsciiChars))
                 {
                     goto InteropCall;
                 }
 
                 if (target.Length > source.Length)
                 {
-                    if (source.IndexOfAnyExcept(s_nonSpecialAsciiChars) >= 0)
+                    if (source.ContainsAnyExcept(s_nonSpecialAsciiChars))
                     {
                         goto InteropCall;
                     }

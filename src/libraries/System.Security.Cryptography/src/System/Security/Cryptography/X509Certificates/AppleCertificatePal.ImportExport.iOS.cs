@@ -91,6 +91,7 @@ namespace System.Security.Cryptography.X509Certificates
             ReadOnlySpan<byte> rawData,
             X509ContentType contentType,
             SafePasswordHandle password,
+            bool readingFromFile,
             X509KeyStorageFlags keyStorageFlags)
         {
             Debug.Assert(password != null);
@@ -116,6 +117,7 @@ namespace System.Security.Cryptography.X509Certificates
                     throw new PlatformNotSupportedException(SR.Cryptography_X509_PKCS12_PersistKeySetNotSupported);
                 }
 
+                X509Certificate.EnforceIterationCountLimit(ref rawData, readingFromFile, password.PasswordProvided);
                 return ImportPkcs12(rawData, password, ephemeralSpecified);
             }
 
@@ -144,6 +146,15 @@ namespace System.Security.Cryptography.X509Certificates
             SafePasswordHandle password,
             X509KeyStorageFlags keyStorageFlags)
         {
+            return FromBlob(rawData, password, readingFromFile: false, keyStorageFlags);
+        }
+
+        private static ICertificatePal FromBlob(
+            ReadOnlySpan<byte> rawData,
+            SafePasswordHandle password,
+            bool readingFromFile,
+            X509KeyStorageFlags keyStorageFlags)
+        {
             Debug.Assert(password != null);
 
             ICertificatePal? result = null;
@@ -151,11 +162,11 @@ namespace System.Security.Cryptography.X509Certificates
                 rawData,
                 (derData, contentType) =>
                 {
-                    result = FromDerBlob(derData, contentType, password, keyStorageFlags);
+                    result = FromDerBlob(derData, contentType, password, readingFromFile, keyStorageFlags);
                     return false;
                 });
 
-            return result ?? FromDerBlob(rawData, GetDerCertContentType(rawData), password, keyStorageFlags);
+            return result ?? FromDerBlob(rawData, GetDerCertContentType(rawData), password, readingFromFile, keyStorageFlags);
         }
     }
 }

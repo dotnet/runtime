@@ -303,4 +303,5 @@ const char* GlobalizationNative_ChangeCaseInvariantNative(const char* lpSrc, int
     const char* retVal = strdup([result UTF8String]);
     return retVal;
 }
+
 #endif

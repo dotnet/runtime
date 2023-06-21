@@ -3,6 +3,7 @@
 
 using System;
 using System.Collections.Generic;
+using System.Collections.Immutable;
 using System.Diagnostics;
 using System.Linq;
 using Microsoft.CodeAnalysis;
@@ -15,9 +16,9 @@ namespace Microsoft.Interop
     /// </summary>
     public abstract record DiagnosticOr<T>
     {
-        public abstract bool IsValue { get; }
+        public abstract bool HasValue { get; }
 
-        public bool IsDiagnostic => !IsValue;
+        public abstract bool HasDiagnostic { get; }
 
         /// <summary>
         /// Throws <see cref="InvalidOperationException"/> if IsValue is false
@@ -27,33 +28,67 @@ namespace Microsoft.Interop
         /// <summary>
         /// Throws <see cref="InvalidOperationException"/> if IsDiagnostic is false
         /// </summary>
-        public abstract DiagnosticInfo Diagnostic { get; }
+        public abstract ImmutableArray<DiagnosticInfo> Diagnostics { get; }
 
         private sealed record Diag : DiagnosticOr<T>
         {
-            private readonly DiagnosticInfo _diagnostic;
-            internal Diag(DiagnosticInfo diagnostic) => _diagnostic = diagnostic;
-            public override bool IsValue => false;
+            private readonly SequenceEqualImmutableArray<DiagnosticInfo> _diagnostics;
+            internal Diag(ImmutableArray<DiagnosticInfo> diagnostics) => _diagnostics = diagnostics.ToSequenceEqual();
+            public override bool HasValue => false;
+            public override bool HasDiagnostic => true;
             public override T Value => throw new InvalidOperationException();
-            public override DiagnosticInfo Diagnostic => _diagnostic;
+            public override ImmutableArray<DiagnosticInfo> Diagnostics => _diagnostics.Array;
         }
 
         private sealed record Val : DiagnosticOr<T>
         {
             private readonly T _value;
             internal Val(T value) => _value = value;
-            public override bool IsValue => true;
+            public override bool HasValue => true;
+            public override bool HasDiagnostic => false;
             public override T Value => _value;
-            public override DiagnosticInfo Diagnostic => throw new InvalidOperationException();
+            public override ImmutableArray<DiagnosticInfo> Diagnostics => throw new InvalidOperationException();
         }
+
+        private sealed record ValueAndDiagnostic : DiagnosticOr<T>
+        {
+            private readonly T _value;
+            private readonly SequenceEqualImmutableArray<DiagnosticInfo> _diagnostics;
+            internal ValueAndDiagnostic(T value, ImmutableArray<DiagnosticInfo> diagnostics) => (_value, _diagnostics) = (value, diagnostics.ToSequenceEqual());
+            public override bool HasValue => true;
+            public override bool HasDiagnostic => true;
+            public override T Value => _value;
+            public override ImmutableArray<DiagnosticInfo> Diagnostics => _diagnostics.Array;
+        }
+
+        /// <summary>
+        /// Adds a diagnostic to the <see cref="DiagnosticOr{T}.Diagnostics"/> property
+        /// </summary>
+        public DiagnosticOr<T> AddDiagnostic(DiagnosticInfo diagnostic) => this switch
+        {
+            Diag d => new Diag(d.Diagnostics.Add(diagnostic)),
+            Val v => new ValueAndDiagnostic(v.Value, ImmutableArray.Create(diagnostic)),
+            ValueAndDiagnostic vad => new ValueAndDiagnostic(vad.Value, vad.Diagnostics.Add(diagnostic)),
+            _ => throw new UnreachableException()
+        };
+
+        /// <summary>
+        /// Creates a new <see cref="DiagnosticOr{T}"/> with the <see cref="DiagnosticOr{T}.Value"/> set to <paramref name="value"/>
+        /// </summary>
+        public DiagnosticOr<T> WithValue(T value) => this switch
+        {
+            Diag d => new ValueAndDiagnostic(value, d.Diagnostics),
+            Val => new Val(value),
+            ValueAndDiagnostic vad => new ValueAndDiagnostic(value, vad.Diagnostics),
+            _ => throw new UnreachableException()
+        };
 
         /// <summary>
         /// Create a Diagnostic variant
         /// </summary>
         public static DiagnosticOr<T> From(DiagnosticInfo diagnostic)
         {
-            Debug.Assert(diagnostic is not null);
-            return new Diag(diagnostic);
+            return new Diag(ImmutableArray.Create(diagnostic));
         }
 
         /// <summary>
@@ -64,17 +99,27 @@ namespace Microsoft.Interop
             Debug.Assert(value is not null);
             return new Val(value);
         }
+
+        /// <summary>
+        /// Create a ValueAndDiagnostic variant
+        /// </summary>
+        public static DiagnosticOr<T> From(T value, params DiagnosticInfo[] diagnostics)
+        {
+            Debug.Assert(value is not null);
+            Debug.Assert(diagnostics is not null);
+            return new ValueAndDiagnostic(value, ImmutableArray.Create(diagnostics));
+        }
     }
 
     public static class DiagnosticOrTHelperExtensions
     {
         /// <summary>
-        /// Splits the elements of <paramref name="provider"/> into a "values" provider and a "diagnositics" provider.
+        /// Splits the elements of <paramref name="provider"/> into a values provider and a diagnostics provider.
         /// </summary>
         public static (IncrementalValuesProvider<T>, IncrementalValuesProvider<DiagnosticInfo>) Split<T>(this IncrementalValuesProvider<DiagnosticOr<T>> provider)
         {
-            var values = provider.Where(x => x.IsValue).Select(static (x, ct) => x.Value);
-            var diagnostics = provider.Where(x => x.IsDiagnostic).Select(static (x, ct) => x.Diagnostic);
+            var values = provider.Where(x => x.HasValue).Select(static (x, ct) => x.Value);
+            var diagnostics = provider.Where(x => x.HasDiagnostic).SelectMany(static (x, ct) => x.Diagnostics);
             return (values, diagnostics);
         }
 
@@ -83,8 +128,8 @@ namespace Microsoft.Interop
         /// </summary>
         public static (IncrementalValuesProvider<SequenceEqualImmutableArray<T>>, IncrementalValuesProvider<DiagnosticInfo>) SplitArrays<T>(this IncrementalValuesProvider<SequenceEqualImmutableArray<DiagnosticOr<T>>> provider)
         {
-            var values = provider.Select((arr, ct) => arr.Where(x => x.IsValue).Select((x, ct) => x.Value).ToSequenceEqualImmutableArray());
-            var diagnostics = provider.SelectMany((arr, ct) => arr.Where(x => x.IsDiagnostic).Select((x, ct) => x.Diagnostic));
+            var values = provider.Select((arr, ct) => arr.Where(x => x.HasValue).Select((x, ct) => x.Value).ToSequenceEqualImmutableArray());
+            var diagnostics = provider.SelectMany((arr, ct) => arr.Where(x => x.HasDiagnostic).SelectMany((x, ct) => x.Diagnostics));
             return (values, diagnostics);
         }
 
@@ -93,8 +138,8 @@ namespace Microsoft.Interop
         /// </summary>
         public static (IncrementalValuesProvider<(T, T2)>, IncrementalValuesProvider<DiagnosticInfo>) Split<T, T2>(this IncrementalValuesProvider<(DiagnosticOr<T>, T2)> provider)
         {
-            var values = provider.Where(x => x.Item1.IsValue).Select(static (x, ct) => (x.Item1.Value, x.Item2));
-            var diagnostics = provider.Where(x => !x.Item1.IsValue).Select(static (x, ct) => x.Item1.Diagnostic);
+            var values = provider.Where(x => x.Item1.HasValue).Select(static (x, ct) => (x.Item1.Value, x.Item2));
+            var diagnostics = provider.Where(x => x.Item1.HasDiagnostic).SelectMany(static (x, ct) => x.Item1.Diagnostics);
             return (values, diagnostics);
         }
 
