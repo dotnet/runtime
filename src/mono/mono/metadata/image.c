@@ -471,6 +471,11 @@ load_metadata_ptrs (MonoImage *image, MonoCLIImageInfo *iinfo)
 		return FALSE;
 	image->raw_metadata = image->raw_data + offset;
 
+	bool success = md_create_handle(image->raw_metadata, size, &image->metadata_handle);
+	if (!success) {
+		return FALSE;
+	}
+
 	/* 24.2.1: Metadata root starts here */
 	ptr = image->raw_metadata;
 

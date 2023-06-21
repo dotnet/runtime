@@ -594,10 +594,14 @@ if(NOT DISABLE_EXECUTABLES)
       set_target_properties(mono-sgen PROPERTIES INSTALL_RPATH "$ORIGIN")
     endif()
   endif()
+<<<<<<< HEAD
   target_link_libraries(mono-sgen PRIVATE monoapi eglib_api monosgen-static)
   if (HOST_WASM)
     target_link_libraries(mono-sgen PRIVATE mono-wasm-nosimd)
   endif()
+=======
+  target_link_libraries(mono-sgen PRIVATE monoapi eglib_api monosgen-static dnmd::dnmd)
+>>>>>>> Create a dnmd handle for each metadata image loaded into Mono.
   if(HAVE_ICU_SHIM)
     target_link_libraries(mono-sgen PRIVATE icu_shim_objects)
   endif()

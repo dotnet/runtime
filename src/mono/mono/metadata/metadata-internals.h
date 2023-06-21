@@ -290,6 +290,8 @@ typedef struct {
 #endif
 } MonoImageStorage;
 
+typedef void* dnmd_md_handle_t;
+
 struct _MonoImage {
 	/*
 	 * This count is incremented during these situations:
@@ -351,6 +353,7 @@ struct _MonoImage {
 	MonoMemPool         *mempool; /*protected by the image lock*/
 
 	char                *raw_metadata;
+	dnmd_md_handle_t     metadata_handle;
 
 	MonoStreamHeader     heap_strings;
 	MonoStreamHeader     heap_us;
