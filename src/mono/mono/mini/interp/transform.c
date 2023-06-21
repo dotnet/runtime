@@ -9833,6 +9833,26 @@ retry:
 						dump_interp_inst (ins, td->data_items);
 					}
 				}
+			} else if (opcode == MINT_STOBJ_VT || opcode == MINT_STOBJ_VT_NOREF) {
+				InterpInst *ldloca = local_defs [sregs [0]].ins;
+				if (ldloca != NULL && ldloca->opcode == MINT_LDLOCA_S) {
+					int stsize = ins->data [0];
+					int local = ldloca->sregs [0];
+
+					if (stsize == td->locals [local].size) {
+						// Replace LDLOCA + STOBJ_VT with MOV_VT
+						local_ref_count [sregs [0]]--;
+						ins->opcode = MINT_MOV_VT;
+						sregs [0] = sregs [1];
+						ins->dreg = local;
+						needs_retry = TRUE;
+
+						if (td->verbose_level) {
+							g_print ("Replace ldloca/stobj_vt pair :\n\t");
+							dump_interp_inst (ins, td->data_items);
+						}
+					}
+				}
 			} else if (MINT_IS_STIND (opcode)) {
 				InterpInst *ldloca = local_defs [sregs [0]].ins;
 				if (ldloca != NULL && ldloca->opcode == MINT_LDLOCA_S) {
