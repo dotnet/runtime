@@ -42,10 +42,35 @@
 #error Unknown OS
 #endif
 
-#define QUOTE_MACRO_HELPER(x)       #x
-#define QUOTE_MACRO(x)              QUOTE_MACRO_HELPER(x)
+#undef PORTABLE_RID_ARCH
 
-const ep_char8_t* _ds_portable_rid_info = PORTABLE_RID_OS "-" QUOTE_MACRO(ARCH_TARGET_NAME);
+#if defined(TARGET_AMD64)
+#define PORTABLE_RID_ARCH "x64"
+#elif defined(TARGET_ARM)
+#define PORTABLE_RID_ARCH "arm"
+#elif defined(TARGET_ARM64)
+#define PORTABLE_RID_ARCH "arm64"
+#elif defined(TARGET_ARMV6)
+#define PORTABLE_RID_ARCH "armv6"
+#elif defined(TARGET_LOONGARCH64)
+#define PORTABLE_RID_ARCH "loongarch64"
+#elif defined(TARGET_MIPS64)
+#define PORTABLE_RID_ARCH "mips64"
+#elif defined(TARGET_POWERPC64)
+#define PORTABLE_RID_ARCH "ppc64le"
+#elif defined(TARGET_RISCV64)
+#define PORTABLE_RID_ARCH "riscv64"
+#elif defined(TARGET_S390X)
+#define PORTABLE_RID_ARCH "s390x"
+#elif defined(TARGET_WASM)
+#define PORTABLE_RID_ARCH "wasm"
+#elif defined(TARGET_X86)
+#define PORTABLE_RID_ARCH "x86"
+#else
+#error Unknown Architecture
+#endif
+
+const ep_char8_t* _ds_portable_rid_info = PORTABLE_RID_OS "-" PORTABLE_RID_ARCH;
 
 #endif /* ENABLE_PERFTRACING */
 
