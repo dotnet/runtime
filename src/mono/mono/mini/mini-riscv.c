@@ -2731,6 +2731,7 @@ mono_arch_lowering_pass (MonoCompile *cfg, MonoBasicBlock *bb)
 			ins->inst_imm = 48;
 			break;
 		case OP_ICONV_TO_I2:
+		case OP_LCONV_TO_I2:
 			// slli    a0, a0, 48
 			// srai    a0, a0, 48
 			NEW_INS_BEFORE (cfg, ins, temp, OP_ICONST);
