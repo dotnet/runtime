@@ -52,6 +52,7 @@
 #ifdef HAVE_UNISTD_H
 #include <unistd.h>
 #endif
+#include <dnmd.h>
 
 #define INVALID_ADDRESS 0xffffffff
 

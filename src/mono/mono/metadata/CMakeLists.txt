@@ -224,6 +224,8 @@ target_link_libraries(metadata_objects PRIVATE sgen_objects)
 if(NOT HOST_WIN32)
     target_compile_definitions(metadata_objects PRIVATE -DMONO_DLL_EXPORT)
 endif()
+
+target_link_libraries(metadata_objects PUBLIC dnmd::dnmd)
 target_include_directories(metadata_objects PRIVATE ${PROJECT_BINARY_DIR}/../..
   ${PROJECT_SOURCE_DIR}/../..
   ${PROJECT_SOURCE_DIR}/..)
