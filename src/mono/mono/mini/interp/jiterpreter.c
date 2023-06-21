@@ -1320,5 +1320,5 @@ mono_jiterp_is_imethod_var_address_taken (InterpMethod *imethod, int offset) {
 EMSCRIPTEN_KEEPALIVE
 #endif // HOST_BROWSER
 
-void jiterp_preserve_module () {
+void jiterp_preserve_module (void) {
 }

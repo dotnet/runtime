@@ -56,7 +56,7 @@ public class AssetsComputingHelper
             ".json" when fromMonoPackage && (fileName == "emcc-props" || fileName == "package") => $"{fileName}{extension} is not used by Blazor",
             ".ts" when fromMonoPackage && fileName == "dotnet.d" => "dotnet type definition is not used by Blazor",
             ".ts" when fromMonoPackage && fileName == "dotnet-legacy.d" => "dotnet type definition is not used by Blazor",
-            ".js" when assetType == "native" && !(dotnetJsSingleThreadNames.Contains(fileName) || enableThreads && fileName == "dotnet.native.worker") => $"{fileName}{extension} is not used by Blazor",
+            ".js" when assetType == "native" && !(dotnetJsSingleThreadNames.Contains(fileName) || (enableThreads && fileName == "dotnet.native.worker")) => $"{fileName}{extension} is not used by Blazor",
             ".pdb" when !copySymbols => "copying symbols is disabled",
             ".symbols" when fromMonoPackage => "extension .symbols is not required.",
             _ => null
