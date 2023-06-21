@@ -537,7 +537,7 @@ GenTree* Compiler::impSimdAsHWIntrinsicSpecial(NamedIntrinsic       intrinsic,
             // TODO-XARCH-CQ: These intrinsics should be accelerated
             // This is not accelerated because scalar float/double->uint
             // is not yet accelerated. Upon updating them for avx512, there
-            // will be a difference in values between non AVX512 and 
+            // will be a difference in values between non AVX512 and
             // AVX512 machine.
             return nullptr;
         }
@@ -1262,9 +1262,10 @@ GenTree* Compiler::impSimdAsHWIntrinsicSpecial(NamedIntrinsic       intrinsic,
                     {
                         assert(sig->numArgs == 1);
                         assert(simdBaseType == TYP_LONG || simdBaseType == TYP_ULONG);
-                        NamedIntrinsic convert = (simdSize == 16) ? NI_AVX512DQ_VL_ConvertToVector128Double
-                                               : (simdSize == 32) ? NI_AVX512DQ_VL_ConvertToVector256Double
-                                               :                    NI_AVX512DQ_ConvertToVector512Double;
+                        NamedIntrinsic convert = (simdSize == 16)
+                                                     ? NI_AVX512DQ_VL_ConvertToVector128Double
+                                                     : (simdSize == 32) ? NI_AVX512DQ_VL_ConvertToVector256Double
+                                                                        : NI_AVX512DQ_ConvertToVector512Double;
                         return gtNewSimdHWIntrinsicNode(retType, op1, convert, simdBaseJitType, simdSize);
                     }
                     return nullptr;
@@ -1279,13 +1280,15 @@ GenTree* Compiler::impSimdAsHWIntrinsicSpecial(NamedIntrinsic       intrinsic,
                         assert(sig->numArgs == 1);
                         assert((simdBaseType == TYP_DOUBLE) || (simdBaseType == TYP_FLOAT));
 #ifdef TARGET_XARCH
-                        NamedIntrinsic convert = (simdSize == 16) ? NI_AVX512DQ_VL_ConvertToVector128Int64WithTruncation
-                                               : (simdSize == 32) ? NI_AVX512DQ_VL_ConvertToVector256Int64WithTruncation
-                                               :                    NI_AVX512DQ_ConvertToVector512Int64WithTruncation;
+                        NamedIntrinsic convert =
+                            (simdSize == 16) ? NI_AVX512DQ_VL_ConvertToVector128Int64WithTruncation
+                                             : (simdSize == 32) ? NI_AVX512DQ_VL_ConvertToVector256Int64WithTruncation
+                                                                : NI_AVX512DQ_ConvertToVector512Int64WithTruncation;
 #else
-                        NamedIntrinsic convert = (simdSize == 16) ? NI_AVX512DQ_VL_ConvertToVector128Int64
-                                               : (simdSize == 32) ? NI_AVX512DQ_VL_ConvertToVector256Int64
-                                               :                    NI_AVX512DQ_ConvertToVector512Int64;
+                        NamedIntrinsic convert = (simdSize == 16)
+                                                     ? NI_AVX512DQ_VL_ConvertToVector128Int64
+                                                     : (simdSize == 32) ? NI_AVX512DQ_VL_ConvertToVector256Int64
+                                                                        : NI_AVX512DQ_ConvertToVector512Int64;
 #endif // TARGET_XARCH
                         return gtNewSimdHWIntrinsicNode(retType, op1, convert, simdBaseJitType, simdSize);
                     }
@@ -1301,14 +1304,16 @@ GenTree* Compiler::impSimdAsHWIntrinsicSpecial(NamedIntrinsic       intrinsic,
                         assert(sig->numArgs == 1);
                         assert((simdBaseType == TYP_DOUBLE) || (simdBaseType == TYP_FLOAT));
 #ifdef TARGET_XARCH
-                        NamedIntrinsic convert = (simdSize == 16) ? NI_AVX512DQ_VL_ConvertToVector128UInt64WithTruncation
-                                               : (simdSize == 32) ? NI_AVX512DQ_VL_ConvertToVector256UInt64WithTruncation
-                                               :                    NI_AVX512DQ_ConvertToVector512UInt64WithTruncation;
+                        NamedIntrinsic convert =
+                            (simdSize == 16) ? NI_AVX512DQ_VL_ConvertToVector128UInt64WithTruncation
+                                             : (simdSize == 32) ? NI_AVX512DQ_VL_ConvertToVector256UInt64WithTruncation
+                                                                : NI_AVX512DQ_ConvertToVector512UInt64WithTruncation;
 #else
-                        NamedIntrinsic convert = (simdSize == 16) ? NI_AVX512DQ_VL_ConvertToVector128UInt64
-                                               : (simdSize == 32) ? NI_AVX512DQ_VL_ConvertToVector256UInt64
-                                               :                    NI_AVX512DQ_ConvertToVector512UInt64;
-#endif //TARGET_XARCH
+                        NamedIntrinsic convert = (simdSize == 16)
+                                                     ? NI_AVX512DQ_VL_ConvertToVector128UInt64
+                                                     : (simdSize == 32) ? NI_AVX512DQ_VL_ConvertToVector256UInt64
+                                                                        : NI_AVX512DQ_ConvertToVector512UInt64;
+#endif // TARGET_XARCH
                         return gtNewSimdHWIntrinsicNode(retType, op1, convert, simdBaseJitType, simdSize);
                     }
                     return nullptr;

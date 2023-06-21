@@ -1372,8 +1372,8 @@ GenTree* Compiler::impSpecialIntrinsic(NamedIntrinsic        intrinsic,
                 assert(simdBaseType == TYP_LONG || simdBaseType == TYP_ULONG);
 
                 intrinsic = (simdSize == 16) ? NI_AVX512DQ_VL_ConvertToVector128Double
-                          : (simdSize == 32) ? NI_AVX512DQ_VL_ConvertToVector256Double
-                                             : NI_AVX512DQ_ConvertToVector512Double;
+                                             : (simdSize == 32) ? NI_AVX512DQ_VL_ConvertToVector256Double
+                                                                : NI_AVX512DQ_ConvertToVector512Double;
 
                 op1     = impSIMDPopStack();
                 retNode = gtNewSimdHWIntrinsicNode(retType, op1, intrinsic, simdBaseJitType, simdSize);
@@ -1388,17 +1388,17 @@ GenTree* Compiler::impSpecialIntrinsic(NamedIntrinsic        intrinsic,
             assert(sig->numArgs == 1);
             if (IsBaselineVector512IsaSupportedOpportunistically())
             {
-                
+
                 assert(simdBaseType == TYP_DOUBLE);
 
 #ifdef TARGET_XARCH
                 intrinsic = (simdSize == 16) ? NI_AVX512DQ_VL_ConvertToVector128Int64WithTruncation
-                          : (simdSize == 32) ? NI_AVX512DQ_VL_ConvertToVector256Int64WithTruncation
-                                             : NI_AVX512DQ_ConvertToVector512Int64WithTruncation;
+                                             : (simdSize == 32) ? NI_AVX512DQ_VL_ConvertToVector256Int64WithTruncation
+                                                                : NI_AVX512DQ_ConvertToVector512Int64WithTruncation;
 #else
                 intrinsic = (simdSize == 16) ? NI_AVX512DQ_VL_ConvertToVector128Int64
-                          : (simdSize == 32) ? NI_AVX512DQ_VL_ConvertToVector256Int64
-                                             : NI_AVX512DQ_ConvertToVector512Int64;
+                                             : (simdSize == 32) ? NI_AVX512DQ_VL_ConvertToVector256Int64
+                                                                : NI_AVX512DQ_ConvertToVector512Int64;
 #endif // TARGET_XARCH
 
                 op1     = impSIMDPopStack();
@@ -1429,12 +1429,12 @@ GenTree* Compiler::impSpecialIntrinsic(NamedIntrinsic        intrinsic,
 
 #ifdef TARGET_XARCH
                 intrinsic = (simdSize == 16) ? NI_AVX512DQ_VL_ConvertToVector128UInt64WithTruncation
-                          : (simdSize == 32) ? NI_AVX512DQ_VL_ConvertToVector256UInt64WithTruncation
-                                             : NI_AVX512DQ_ConvertToVector512UInt64WithTruncation;
+                                             : (simdSize == 32) ? NI_AVX512DQ_VL_ConvertToVector256UInt64WithTruncation
+                                                                : NI_AVX512DQ_ConvertToVector512UInt64WithTruncation;
 #else
                 intrinsic = (simdSize == 16) ? NI_AVX512DQ_VL_ConvertToVector128UInt64
-                          : (simdSize == 32) ? NI_AVX512DQ_VL_ConvertToVector256UInt64
-                                             : NI_AVX512DQ_ConvertToVector512UInt64;
+                                             : (simdSize == 32) ? NI_AVX512DQ_VL_ConvertToVector256UInt64
+                                                                : NI_AVX512DQ_ConvertToVector512UInt64;
 #endif // TARGET_XARCH
                 op1     = impSIMDPopStack();
                 retNode = gtNewSimdHWIntrinsicNode(retType, op1, intrinsic, simdBaseJitType, simdSize);
