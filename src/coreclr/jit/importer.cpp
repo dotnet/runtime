@@ -5435,6 +5435,23 @@ GenTree* Compiler::impCastClassOrIsInstToTree(
     bool shouldExpandInline = true;
     bool isClassExact       = impIsClassExact(pResolvedToken->hClass);
 
+    // ECMA-335 III.4.3:  If typeTok is a nullable type, Nullable<T>, it is interpreted as "boxed" T
+    // We can convert constant-ish tokens of nullable to its underlying type.
+    // However, when the type is shared generic parameter like Nullable<Struct<__Canon>>, the actual type will require
+    // runtime lookup. It's too complex to add another level of indirection in op2, fallback to the cast helper instead.
+    if (isClassExact && !(info.compCompHnd->getClassAttribs(pResolvedToken->hClass) & CORINFO_FLG_SHAREDINST))
+    {
+        CORINFO_CLASS_HANDLE hClass = info.compCompHnd->getTypeForBox(pResolvedToken->hClass);
+
+        if (hClass != pResolvedToken->hClass)
+        {
+            bool runtimeLookup;
+            pResolvedToken->hClass = hClass;
+            op2                    = impTokenToHandle(pResolvedToken, &runtimeLookup);
+            assert(!runtimeLookup);
+        }
+    }
+
     // Profitability check.
     //
     // Don't bother with inline expansion when jit is trying to generate code quickly

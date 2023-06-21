@@ -658,7 +658,7 @@ dwarf_callback (struct dl_phdr_info *info, size_t size, void *ptr)
     {
       if (p_dynamic)
         {
-          /* For dynamicly linked executables and shared libraries,
+          /* For dynamically linked executables and shared libraries,
              DT_PLTGOT is the value that data-relative addresses are
              relative to for that object.  We call this the "gp".  */
           Elf_W(Dyn) *dyn = (Elf_W(Dyn) *)(p_dynamic->p_vaddr + load_base);
@@ -966,7 +966,7 @@ dwarf_search_unwind_table (unw_addr_space_t as, unw_word_t ip,
   if (as == unw_local_addr_space)
     {
       e = lookup (table, table_len, ip - ip_base - di->load_offset);
-      if (e && &e[1] < &table[table_len])
+      if (e && &e[1] < &table[table_len / sizeof (unw_word_t)])
 	last_ip = e[1].start_ip_offset + ip_base + di->load_offset;
       else
 	last_ip = di->end_ip;

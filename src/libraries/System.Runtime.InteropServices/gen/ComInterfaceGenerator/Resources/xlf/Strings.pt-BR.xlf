@@ -57,6 +57,11 @@
         <target state="translated">A interface COM base falhou ao gerar a fonte. O código não será gerado para esta interface.</target>
         <note />
       </trans-unit>
+      <trans-unit id="BaseInterfaceMustGenerateAtLeastSameWrappers">
+        <source>A 'GeneratedComInterface' cannot specify 'ComInterfaceOptions.ManagedObjectWrapper' or 'ComInterfaceOptions.ComObjectWrapper' unless the base interface type did not specify options or specified at least the same options.</source>
+        <target state="new">A 'GeneratedComInterface' cannot specify 'ComInterfaceOptions.ManagedObjectWrapper' or 'ComInterfaceOptions.ComObjectWrapper' unless the base interface type did not specify options or specified at least the same options.</target>
+        <note />
+      </trans-unit>
       <trans-unit id="CastsBetweenRuntimeComAndSourceGeneratedComNotSupportedDescription">
         <source>Casting between a 'ComImport' type and a source-generated COM type is not supported and will fail at runtime</source>
         <target state="translated">A conversão entre um tipo 'ComImport' e um tipo COM gerado pela fonte não é suportada e falhará no tempo de execução</target>
@@ -297,6 +302,16 @@
         <target state="translated">A interface '{0}' ou um de seus tipos contém a palavra-chave 'parcial' ausente. O código não será gerado para '{0}'.</target>
         <note />
       </trans-unit>
+      <trans-unit id="InvalidOptionsOnInterfaceDescription">
+        <source>The specified 'ComInterfaceOptions' are invalid.</source>
+        <target state="new">The specified 'ComInterfaceOptions' are invalid.</target>
+        <note />
+      </trans-unit>
+      <trans-unit id="InvalidOptionsOnInterfaceMessage">
+        <source>The specified 'ComInterfaceOptions' on '{0}' are invalid. {1}</source>
+        <target state="new">The specified 'ComInterfaceOptions' on '{0}' are invalid. {1}</target>
+        <note />
+      </trans-unit>
       <trans-unit id="InvalidStringMarshallingConfigurationDescription">
         <source>The configuration of 'StringMarshalling' and 'StringMarshallingCustomType' is invalid.</source>
         <target state="translated">A configuração de 'StringMarshalling' e 'StringMarshallingCustomType' é inválida.</target>
@@ -355,6 +370,11 @@
       <trans-unit id="MultipleComInterfaceBaseTypesTitle">
         <source>Specified interface derives from two or more 'GeneratedComInterfaceAttribute'-attributed interfaces.</source>
         <target state="translated">A interface especificada deriva de duas ou mais interfaces atribuídas a 'GeneratedComInterfaceAttribute'.</target>
+        <note />
+      </trans-unit>
+      <trans-unit id="OneWrapperMustBeGenerated">
+        <source>Either 'ComInterfaceOptions.ManagedObjectWrapper' or 'ComInterfaceOptions.ComObjectWrapper' must be specified.</source>
+        <target state="new">Either 'ComInterfaceOptions.ManagedObjectWrapper' or 'ComInterfaceOptions.ComObjectWrapper' must be specified.</target>
         <note />
       </trans-unit>
       <trans-unit id="RequiresAllowUnsafeBlocksDescription">

@@ -8299,7 +8299,11 @@ MONO_RESTORE_WARNING
 #endif // defined(TARGET_X86) || defined(TARGET_AMD64) || defined(TARGET_ARM64) || defined(TARGET_WASM)
 
 #if defined(TARGET_X86) || defined(TARGET_AMD64) || defined(TARGET_WASM)
-
+		case OP_SIMD_STORE: {
+			LLVMValueRef dst_vec = convert (ctx, lhs, pointer_type (LLVMTypeOf (rhs)));
+			mono_llvm_build_aligned_store (builder, rhs, dst_vec, FALSE, ins->inst_c0);
+			break;
+		}
 		case OP_PADDB:
 		case OP_PADDW:
 		case OP_PADDD:
@@ -8957,12 +8961,6 @@ MONO_RESTORE_WARNING
 			int index = ins->opcode == OP_SSE2_MOVHPD_STORE ? 1 : 0;
 			LLVMValueRef val = LLVMBuildExtractElement (builder, rhs, const_int32 (index), "");
 			emit_store (builder, val, addr, FALSE);
-			break;
-		}
-
-		case OP_SSE_STORE: {
-			LLVMValueRef dst_vec = convert (ctx, lhs, pointer_type (LLVMTypeOf (rhs)));
-			mono_llvm_build_aligned_store (builder, rhs, dst_vec, FALSE, ins->inst_c0);
 			break;
 		}
 
@@ -10210,6 +10208,47 @@ MONO_RESTORE_WARNING
 			LLVMValueRef addr = convert (ctx, lhs, pointer_type (srctype));
 			LLVMValueRef scalar = mono_llvm_build_aligned_load (builder, srctype, addr, "", FALSE, 1);
 			values [ins->dreg] = broadcast_element (ctx, scalar, elems);
+			break;
+		}
+		case OP_WASM_SIMD_STORE_LANE: {
+			LLVMTypeRef rtype;
+			gboolean is_fp = FALSE;
+			switch(inst_c1_type (ins)) {
+				case MONO_TYPE_I1:
+				case MONO_TYPE_U1:
+					rtype = v128_i1_t;
+					break;
+				case MONO_TYPE_I2:
+				case MONO_TYPE_U2:
+					rtype = v128_i2_t;
+					break;
+				case MONO_TYPE_R4:
+					is_fp = TRUE;
+					rtype = v128_i4_t;
+					break;
+				case MONO_TYPE_I:
+				case MONO_TYPE_U:
+				case MONO_TYPE_I4:
+				case MONO_TYPE_U4:
+					rtype = v128_i4_t;
+					break;
+				case MONO_TYPE_R8:
+					is_fp = TRUE;
+					rtype = v128_i8_t;
+					break;
+				case MONO_TYPE_I8:
+				case MONO_TYPE_U8:
+					rtype = v128_i8_t;
+					break;
+				default:
+					g_assert_not_reached();
+			}
+
+			LLVMTypeRef srctype = LLVMGetElementType (rtype);
+			LLVMValueRef src = is_fp ? convert(ctx, rhs, rtype) : rhs;
+			LLVMValueRef address = convert (ctx, lhs, pointer_type (srctype));
+			LLVMValueRef elem = LLVMBuildExtractElement (builder, src, arg3, "");
+			mono_llvm_build_aligned_store (builder, elem, address, FALSE, 1);
 			break;
 		}
 #endif

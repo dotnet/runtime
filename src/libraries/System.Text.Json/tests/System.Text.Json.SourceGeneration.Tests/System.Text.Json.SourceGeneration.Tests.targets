@@ -9,7 +9,8 @@
     <!-- SYSLIB1038: Suppress JsonInclude on inaccessible members warning -->
     <!-- SYSLIB1039: Suppress Polymorphic types not supported warning -->
     <!-- SYSLIB1040: Suppress JsonStringEnumConverter use warnings -->
-    <NoWarn>$(NoWarn);SYSLIB0020;SYSLIB0049;SYSLIB1037;SYSLIB1038;SYSLIB1039;SYSLIB1040</NoWarn>
+    <!-- SYSLIB1040: Suppress invalid JsonConverterAttribute argument warnings -->
+    <NoWarn>$(NoWarn);SYSLIB0020;SYSLIB0049;SYSLIB1037;SYSLIB1038;SYSLIB1039;SYSLIB1040;SYSLIB1041</NoWarn>
     <IgnoreForCI Condition="'$(TargetsMobile)' == 'true' or '$(TargetsLinuxBionic)' == 'true' or '$(TargetArchitecture)' == 'ARMv6'">true</IgnoreForCI> 
   </PropertyGroup>
 
