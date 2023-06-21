@@ -801,49 +801,22 @@ namespace System.Text.Json.SourceGeneration.UnitTests
             result.AssertContainsType("string");
         }
 
-        [Fact]
-        public void ContextsNestedInGenericTypesAreSupported()
-        {
-            string source = """
-                using System.Text.Json.Serialization;
-
-                namespace HelloWorld
-                {
-                    public partial class GenericContainer<T>
-                    {
-                        [JsonSerializable(typeof(MyClass))]
-                        internal partial class JsonContext : JsonSerializerContext
-                        {
-                        }
-                    }
-
-                    public class MyClass
-                    {
-                    }
-                }
-                """;
-
-            Compilation compilation = CompilationHelper.CreateCompilation(source);
-
-            JsonSourceGeneratorResult result = CompilationHelper.RunJsonSourceGenerator(compilation);
-
-            // Make sure compilation was successful.
-            Assert.Empty(result.NewCompilation.GetDiagnostics());
-            Assert.Empty(result.Diagnostics);
-        }
-
         [Theory]
-        [InlineData("public partial interface IMyInterface")]
-        [InlineData("public partial struct MyStruct")]
-        [InlineData("public ref partial struct MyRefStruct")]
-        [InlineData("public readonly partial struct MyStruct")]
-        [InlineData("public readonly ref partial struct MyRefStruct")]
         [InlineData("public sealed partial class MySealedClass")]
+        [InlineData("public partial class MyGenericClass<T>")]
+        [InlineData("public partial interface IMyInterface")]
+        [InlineData("public partial interface IMyGenericInterface<T, U>")]
+        [InlineData("public partial struct MyStruct")]
+        [InlineData("public partial struct MyGenericStruct<T>")]
+        [InlineData("public ref partial struct MyRefStruct")]
+        [InlineData("public ref partial struct MyGenericRefStruct<T>")]
+        [InlineData("public readonly partial struct MyReadOnlyStruct")]
+        [InlineData("public readonly ref partial struct MyReadOnlyRefStruct")]
 #if ROSLYN4_0_OR_GREATER && NETCOREAPP
         [InlineData("public partial record MyRecord(int x)")]
         [InlineData("public partial record struct MyRecordStruct(int x)")]
 #endif
-        public void ContextsNestedInNonClassKindsAreSupported(string containingTypeDeclarationHeader)
+        public void NestedContextsAreSupported(string containingTypeDeclarationHeader)
         {
             string source = $$"""
                 using System.Text.Json.Serialization;
