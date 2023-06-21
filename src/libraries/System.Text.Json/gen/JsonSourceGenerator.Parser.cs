@@ -138,7 +138,7 @@ namespace System.Text.Json.SourceGeneration
                 {
                     ContextType = new(contextTypeSymbol),
                     GeneratedTypes = _generatedTypes.Values.OrderBy(t => t.TypeRef.FullyQualifiedName).ToImmutableEquatableArray(),
-                    Namespace = contextTypeSymbol.ContainingNamespace.ToDisplayString(),
+                    Namespace = contextTypeSymbol.ContainingNamespace is { IsGlobalNamespace: false } ns ? ns.ToDisplayString() : null,
                     ContextClassDeclarations = classDeclarationList.ToImmutableEquatableArray(),
                     DefaultIgnoreCondition = options.DefaultIgnoreCondition,
                     IgnoreReadOnlyFields = options.IgnoreReadOnlyFields,
