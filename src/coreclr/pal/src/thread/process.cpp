@@ -2219,16 +2219,31 @@ PAL_GetTransportName(
     else
 #endif // __APPLE__
     {
-        // Get a temp file location
-        dwRetVal = ::GetTempPathA(MAX_TRANSPORT_NAME_LENGTH, formatBuffer);
+        dwRetVal = GetEnvironmentVariableA("COMPlus_DiagnosticsIPCPath", formatBuffer, MAX_TRANSPORT_NAME_LENGTH);
         if (dwRetVal == 0)
         {
-            ERROR("GetTempPath failed (0x%08x)", ::GetLastError());
-            return;
+            dwRetVal = GetEnvironmentVariableA("DOTNET_DiagnosticsIPCPath", formatBuffer, MAX_TRANSPORT_NAME_LENGTH);
+
+            if (dwRetVal == 0)
+            {
+                //strcpy_s(formatBuffer, MAX_TRANSPORT_NAME_LENGTH, TEMP_DIRECTORY_PATH);
+                // Get a temp file location
+                dwRetVal = ::GetTempPathA(MAX_TRANSPORT_NAME_LENGTH, formatBuffer);
+                if (dwRetVal == 0)
+                {
+                    ERROR("GetTempPath failed (0x%08x)", ::GetLastError());
+                    return;
+                }
+                if (dwRetVal > MAX_TRANSPORT_NAME_LENGTH)
+                {
+                    ERROR("GetTempPath returned a path that was larger than MAX_TRANSPORT_NAME_LENGTH");
+                    return;
+                }
+            }
         }
         if (dwRetVal > MAX_TRANSPORT_NAME_LENGTH)
         {
-            ERROR("GetTempPath returned a path that was larger than MAX_TRANSPORT_NAME_LENGTH");
+            ERROR("DiagnosticsIPCPath returned a path that was larger than MAX_TRANSPORT_NAME_LENGTH");
             return;
         }
     }
