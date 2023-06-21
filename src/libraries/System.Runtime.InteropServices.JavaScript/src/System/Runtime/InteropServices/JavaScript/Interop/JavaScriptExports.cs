@@ -2,8 +2,10 @@
 // The .NET Foundation licenses this file to you under the MIT license.
 
 using System.Collections.Generic;
+using System.IO;
 using System.Reflection;
 using System.Runtime.CompilerServices;
+using System.Runtime.Loader;
 using System.Threading.Tasks;
 using System.Diagnostics.CodeAnalysis;
 
@@ -93,21 +95,19 @@ namespace System.Runtime.InteropServices.JavaScript
             }
         }
 
-        public static async Task LoadAssembly(List<Assembly> loadedAssemblies)
+        [RequiresUnreferencedCode("Types and members the loaded assemblies depend on might be removed")]
+        public static void LazyLoadAssembly(JSObject wrapper)
         {
-            using var files = await LazyAssemblyLoaderInterop.LoadLazyAssembly(assemblyToLoad);
+            var dllBytes = wrapper.GetPropertyAsByteArray("dll")!;
+            var pdbBytes = wrapper.GetPropertyAsByteArray("pdb");
 
-            var dllBytes = files.GetPropertyAsByteArray("dll")!;
-            var pdbBytes = files.GetPropertyAsByteArray("pdb");
-            Assembly loadedAssembly = pdbBytes == null
-                        ? AssemblyLoadContext.Default.LoadFromStream(new MemoryStream(dllBytes))
-                        : AssemblyLoadContext.Default.LoadFromStream(new MemoryStream(dllBytes), new MemoryStream(pdbBytes));
-
-            loadedAssemblies.Add(loadedAssembly);
-            _loadedAssemblyCache!.Add(assemblyToLoad);
-
+            if (pdbBytes == null)
+                AssemblyLoadContext.Default.LoadFromStream(new MemoryStream(dllBytes));
+            else
+                AssemblyLoadContext.Default.LoadFromStream(new MemoryStream(dllBytes), new MemoryStream(pdbBytes));
         }
 
+        [RequiresUnreferencedCode("Types and members the loaded assemblies depend on might be removed")]
         public static void LoadSatelliteAssembly(JSObject wrapper)
         {
             var dllBytes = wrapper.GetPropertyAsByteArray("dll")!;

@@ -1,10 +1,11 @@
 /* eslint-disable no-prototype-builtins */
 
-import { INTERNAL } from "./globals";
+import { mono_wasm_get_loaded_files } from "./assets";
+import { INTERNAL, runtimeHelpers } from "./globals";
 import { WebAssemblyResourceLoader } from "./loader/blazor/WebAssemblyResourceLoader";
 import { hasDebuggingEnabled } from "./loader/blazor/_Polyfill";
 
-export async function loadLazyAssembly(assemblyNameToLoad: string): Promise<void> {
+export async function loadLazyAssembly(assemblyNameToLoad: string): Promise<boolean> {
     const resourceLoader: WebAssemblyResourceLoader = INTERNAL.resourceLoader;
     const resources = resourceLoader.bootConfig.resources;
     const lazyAssemblies = resources.lazyAssembly;
@@ -16,28 +17,37 @@ export async function loadLazyAssembly(assemblyNameToLoad: string): Promise<void
     if (!assemblyMarkedAsLazy) {
         throw new Error(`${assemblyNameToLoad} must be marked with 'BlazorWebAssemblyLazyLoad' item group in your project file to allow lazy-loading.`);
     }
+
+    const loadedFiles = mono_wasm_get_loaded_files();
+    if (loadedFiles.includes(assemblyNameToLoad)) {
+        return false;
+    }
+
     const dllNameToLoad = assemblyNameToLoad;
     const pdbNameToLoad = changeExtension(assemblyNameToLoad, ".pdb");
     const shouldLoadPdb = hasDebuggingEnabled(resourceLoader.bootConfig) && resources.pdb && lazyAssemblies.hasOwnProperty(pdbNameToLoad);
 
     const dllBytesPromise = resourceLoader.loadResource(dllNameToLoad, `_framework/${dllNameToLoad}`, lazyAssemblies[dllNameToLoad], "assembly").response.then(response => response.arrayBuffer());
 
-    // TODO MF: call interop
-
+    let assembly = null;
     if (shouldLoadPdb) {
         const pdbBytesPromise = await resourceLoader.loadResource(pdbNameToLoad, `_framework/${pdbNameToLoad}`, lazyAssemblies[pdbNameToLoad], "pdb").response.then(response => response.arrayBuffer());
         const [dllBytes, pdbBytes] = await Promise.all([dllBytesPromise, pdbBytesPromise]);
-        return {
+
+        assembly = {
             dll: new Uint8Array(dllBytes),
             pdb: new Uint8Array(pdbBytes),
         };
     } else {
         const dllBytes = await dllBytesPromise;
-        return {
+        assembly = {
             dll: new Uint8Array(dllBytes),
             pdb: null,
         };
     }
+
+    runtimeHelpers.javaScriptExports.lazy_load_assembly(assembly);
+    return true;
 }
 
 function changeExtension(filename: string, newExtensionWithLeadingDot: string) {

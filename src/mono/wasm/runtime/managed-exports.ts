@@ -39,6 +39,8 @@ export function init_managed_exports(): void {
     mono_assert(get_managed_stack_trace_method, "Can't find GetManagedStackTrace method");
     const load_satellite_assembly_method = get_method("LoadSatelliteAssembly");
     mono_assert(load_satellite_assembly_method, "Can't find LoadSatelliteAssembly method");
+    const lazy_load_assembly_method = get_method("LazyLoadAssembly");
+    mono_assert(lazy_load_assembly_method, "Can't find LazyLoadAssembly method");
 
     runtimeHelpers.javaScriptExports.call_entry_point = async (entry_point: MonoMethod, program_args?: string[]): Promise<number> => {
         const sp = Module.stackSave();
@@ -71,6 +73,17 @@ export function init_managed_exports(): void {
             const arg1 = get_arg(args, 2);
             marshal_js_object_to_cs(arg1, assembly);
             invoke_method_and_handle_exception(load_satellite_assembly_method, args);
+        } finally {
+            Module.stackRestore(sp);
+        }
+    };
+    runtimeHelpers.javaScriptExports.lazy_load_assembly = (assembly: { dll: Uint8Array, pdb: Uint8Array | null }): void => {
+        const sp = Module.stackSave();
+        try {
+            const args = alloc_stack_frame(3);
+            const arg1 = get_arg(args, 2);
+            marshal_js_object_to_cs(arg1, assembly);
+            invoke_method_and_handle_exception(lazy_load_assembly_method, args);
         } finally {
             Module.stackRestore(sp);
         }

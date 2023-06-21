@@ -320,6 +320,7 @@ export interface JavaScriptExports {
     get_managed_stack_trace(exception_gc_handle: GCHandle): string | null
 
     load_satellite_assembly(assembly: { dll: Uint8Array }): void;
+    lazy_load_assembly(assembly: { dll: Uint8Array, pdb: Uint8Array | null }): void;
 }
 
 export type MarshalerToJs = (arg: JSMarshalerArgument, element_type?: MarshalerType, res_converter?: MarshalerToJs, arg1_converter?: MarshalerToCs, arg2_converter?: MarshalerToCs, arg3_converter?: MarshalerToCs) => any;
