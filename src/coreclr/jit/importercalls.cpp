@@ -3643,6 +3643,7 @@ GenTree* Compiler::impIntrinsic(GenTree*                newobjThis,
                     CORINFO_CLASS_HANDLE typeHnd = gtGetClassHandle(op1, &isExact, &notNull);
                     if ((typeHnd != NO_CLASS_HANDLE) && isExact)
                     {
+                        assert((info.compCompHnd->getClassAttribs(typeHnd) & CORINFO_FLG_GENERIC_TYPE_VARIABLE) == 0);
                         JITDUMP("Optimizing object.GetType() with known type to typeof\n");
                         op1 = impPopStack().val;
                         if (!notNull && fgAddrCouldBeNull(op1))

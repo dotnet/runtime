@@ -17853,6 +17853,7 @@ CORINFO_CLASS_HANDLE Compiler::gtGetClassHandle(GenTree* tree, bool* pIsExact, b
     var_types treeType = tree->TypeGet();
     if (treeType != TYP_REF)
     {
+        assert((objClass == NO_CLASS_HANDLE) || ((info.compCompHnd->getClassAttribs(typeHnd) & CORINFO_FLG_GENERIC_TYPE_VARIABLE) == 0));
         return objClass;
     }
 
@@ -17876,6 +17877,7 @@ CORINFO_CLASS_HANDLE Compiler::gtGetClassHandle(GenTree* tree, bool* pIsExact, b
 
             objClass  = lvaTable[objLcl].lvClassHnd;
             *pIsExact = lvaTable[objLcl].lvClassIsExact;
+            assert((objClass == NO_CLASS_HANDLE) || ((info.compCompHnd->getClassAttribs(typeHnd) & CORINFO_FLG_GENERIC_TYPE_VARIABLE) == 0));
             break;
         }
 
@@ -17889,6 +17891,7 @@ CORINFO_CLASS_HANDLE Compiler::gtGetClassHandle(GenTree* tree, bool* pIsExact, b
                     // if we managed to get a class handle it's definitely not null
                     *pIsNonNull = true;
                     *pIsExact   = true;
+                    assert((objClass == NO_CLASS_HANDLE) || ((info.compCompHnd->getClassAttribs(typeHnd) & CORINFO_FLG_GENERIC_TYPE_VARIABLE) == 0));
                 }
             }
             break;
@@ -17900,6 +17903,7 @@ CORINFO_CLASS_HANDLE Compiler::gtGetClassHandle(GenTree* tree, bool* pIsExact, b
             // return value expression.
             GenTree* retExpr = obj->AsRetExpr()->gtInlineCandidate;
             objClass         = gtGetClassHandle(retExpr, pIsExact, pIsNonNull);
+            assert((objClass == NO_CLASS_HANDLE) || ((info.compCompHnd->getClassAttribs(typeHnd) & CORINFO_FLG_GENERIC_TYPE_VARIABLE) == 0));
             break;
         }
 
@@ -17912,6 +17916,7 @@ CORINFO_CLASS_HANDLE Compiler::gtGetClassHandle(GenTree* tree, bool* pIsExact, b
                 if ((ni == NI_System_Array_Clone) || (ni == NI_System_Object_MemberwiseClone))
                 {
                     objClass = gtGetClassHandle(call->gtArgs.GetThisArg()->GetNode(), pIsExact, pIsNonNull);
+                    assert((objClass == NO_CLASS_HANDLE) || ((info.compCompHnd->getClassAttribs(typeHnd) & CORINFO_FLG_GENERIC_TYPE_VARIABLE) == 0));
                     break;
                 }
 
@@ -17921,6 +17926,7 @@ CORINFO_CLASS_HANDLE Compiler::gtGetClassHandle(GenTree* tree, bool* pIsExact, b
                     objClass    = specialObjClass;
                     *pIsExact   = true;
                     *pIsNonNull = true;
+                    assert((objClass == NO_CLASS_HANDLE) || ((info.compCompHnd->getClassAttribs(typeHnd) & CORINFO_FLG_GENERIC_TYPE_VARIABLE) == 0));
                     break;
                 }
             }
@@ -17936,6 +17942,7 @@ CORINFO_CLASS_HANDLE Compiler::gtGetClassHandle(GenTree* tree, bool* pIsExact, b
                 // Grab it as our first cut at a return type.
                 assert(inlInfo->methInfo.args.retType == CORINFO_TYPE_CLASS);
                 objClass = inlInfo->methInfo.args.retTypeClass;
+                assert((objClass == NO_CLASS_HANDLE) || ((info.compCompHnd->getClassAttribs(typeHnd) & CORINFO_FLG_GENERIC_TYPE_VARIABLE) == 0));
 
                 // If the method is shared, the above may not capture
                 // the most precise return type information (that is,
@@ -17961,6 +17968,7 @@ CORINFO_CLASS_HANDLE Compiler::gtGetClassHandle(GenTree* tree, bool* pIsExact, b
                         eeGetMethodSig(call->gtCallMethHnd, &sig, exactClass);
                         assert(sig.retType == CORINFO_TYPE_CLASS);
                         objClass = sig.retTypeClass;
+                        assert((objClass == NO_CLASS_HANDLE) || ((info.compCompHnd->getClassAttribs(typeHnd) & CORINFO_FLG_GENERIC_TYPE_VARIABLE) == 0));
                     }
                 }
             }
@@ -17982,16 +17990,19 @@ CORINFO_CLASS_HANDLE Compiler::gtGetClassHandle(GenTree* tree, bool* pIsExact, b
                     objClass    = info.compCompHnd->getMethodClass(method);
                     *pIsExact   = true;
                     *pIsNonNull = true;
+                    assert((objClass == NO_CLASS_HANDLE) || ((info.compCompHnd->getClassAttribs(typeHnd) & CORINFO_FLG_GENERIC_TYPE_VARIABLE) == 0));
                 }
                 else
                 {
                     assert(sig.retType == CORINFO_TYPE_CLASS);
                     objClass = sig.retTypeClass;
+                    assert((objClass == NO_CLASS_HANDLE) || ((info.compCompHnd->getClassAttribs(typeHnd) & CORINFO_FLG_GENERIC_TYPE_VARIABLE) == 0));
                 }
             }
             else if (call->gtCallType == CT_HELPER)
             {
                 objClass = gtGetHelperCallClassHandle(call, pIsExact, pIsNonNull);
+                assert((objClass == NO_CLASS_HANDLE) || ((info.compCompHnd->getClassAttribs(typeHnd) & CORINFO_FLG_GENERIC_TYPE_VARIABLE) == 0));
             }
 
             break;
@@ -18009,6 +18020,7 @@ CORINFO_CLASS_HANDLE Compiler::gtGetClassHandle(GenTree* tree, bool* pIsExact, b
                 objClass    = runtimeType;
                 *pIsExact   = false;
                 *pIsNonNull = true;
+                assert((objClass == NO_CLASS_HANDLE) || ((info.compCompHnd->getClassAttribs(typeHnd) & CORINFO_FLG_GENERIC_TYPE_VARIABLE) == 0));
             }
 
             break;
@@ -18021,6 +18033,7 @@ CORINFO_CLASS_HANDLE Compiler::gtGetClassHandle(GenTree* tree, bool* pIsExact, b
             objClass    = impGetStringClass();
             *pIsExact   = true;
             *pIsNonNull = true;
+            assert((objClass == NO_CLASS_HANDLE) || ((info.compCompHnd->getClassAttribs(typeHnd) & CORINFO_FLG_GENERIC_TYPE_VARIABLE) == 0));
             break;
         }
 
@@ -18038,6 +18051,7 @@ CORINFO_CLASS_HANDLE Compiler::gtGetClassHandle(GenTree* tree, bool* pIsExact, b
                 const unsigned objLcl = base->AsLclVarCommon()->GetLclNum();
                 objClass              = lvaTable[objLcl].lvClassHnd;
                 *pIsExact             = lvaTable[objLcl].lvClassIsExact;
+                assert((objClass == NO_CLASS_HANDLE) || ((info.compCompHnd->getClassAttribs(typeHnd) & CORINFO_FLG_GENERIC_TYPE_VARIABLE) == 0));
             }
             else if (base->OperIs(GT_INDEX_ADDR, GT_ARR_ELEM))
             {
@@ -18054,6 +18068,7 @@ CORINFO_CLASS_HANDLE Compiler::gtGetClassHandle(GenTree* tree, bool* pIsExact, b
 
                 *pIsExact   = false;
                 *pIsNonNull = false;
+                assert((objClass == NO_CLASS_HANDLE) || ((info.compCompHnd->getClassAttribs(typeHnd) & CORINFO_FLG_GENERIC_TYPE_VARIABLE) == 0));
             }
             else if (base->OperGet() == GT_ADD)
             {
@@ -18080,6 +18095,7 @@ CORINFO_CLASS_HANDLE Compiler::gtGetClassHandle(GenTree* tree, bool* pIsExact, b
                         if (fieldType == TYP_REF)
                         {
                             objClass = fieldClass;
+                            assert((objClass == NO_CLASS_HANDLE) || ((info.compCompHnd->getClassAttribs(typeHnd) & CORINFO_FLG_GENERIC_TYPE_VARIABLE) == 0));
                         }
                     }
                 }
@@ -18092,11 +18108,13 @@ CORINFO_CLASS_HANDLE Compiler::gtGetClassHandle(GenTree* tree, bool* pIsExact, b
                 {
                     CORINFO_FIELD_HANDLE fldHandle = base->AsIntCon()->gtFieldSeq->GetFieldHandle();
                     objClass                       = gtGetFieldClassHandle(fldHandle, pIsExact, pIsNonNull);
+                    assert((objClass == NO_CLASS_HANDLE) || ((info.compCompHnd->getClassAttribs(typeHnd) & CORINFO_FLG_GENERIC_TYPE_VARIABLE) == 0));
                 }
             }
             else if (base->OperIs(GT_FIELD_ADDR))
             {
                 objClass = gtGetFieldClassHandle(base->AsFieldAddr()->gtFldHnd, pIsExact, pIsNonNull);
+                assert((objClass == NO_CLASS_HANDLE) || ((info.compCompHnd->getClassAttribs(typeHnd) & CORINFO_FLG_GENERIC_TYPE_VARIABLE) == 0));
             }
             break;
         }
@@ -18113,14 +18131,18 @@ CORINFO_CLASS_HANDLE Compiler::gtGetClassHandle(GenTree* tree, bool* pIsExact, b
             objClass                  = lvaTable[boxTempLcl].lvClassHnd;
             *pIsExact                 = lvaTable[boxTempLcl].lvClassIsExact;
             *pIsNonNull               = true;
+            assert((objClass == NO_CLASS_HANDLE) || ((info.compCompHnd->getClassAttribs(typeHnd) & CORINFO_FLG_GENERIC_TYPE_VARIABLE) == 0));
             break;
         }
 
         default:
         {
+            assert((objClass == NO_CLASS_HANDLE) || ((info.compCompHnd->getClassAttribs(typeHnd) & CORINFO_FLG_GENERIC_TYPE_VARIABLE) == 0));
             break;
         }
     }
+
+    assert((objClass == NO_CLASS_HANDLE) || ((info.compCompHnd->getClassAttribs(typeHnd) & CORINFO_FLG_GENERIC_TYPE_VARIABLE) == 0));
 
     if ((objClass != NO_CLASS_HANDLE) && !*pIsExact && JitConfig.JitEnableExactDevirtualization())
     {
@@ -18129,8 +18151,11 @@ CORINFO_CLASS_HANDLE Compiler::gtGetClassHandle(GenTree* tree, bool* pIsExact, b
         {
             *pIsExact = true;
             objClass  = exactClass;
+            assert((objClass == NO_CLASS_HANDLE) || ((info.compCompHnd->getClassAttribs(typeHnd) & CORINFO_FLG_GENERIC_TYPE_VARIABLE) == 0));
         }
     }
+
+    assert((objClass == NO_CLASS_HANDLE) || ((info.compCompHnd->getClassAttribs(typeHnd) & CORINFO_FLG_GENERIC_TYPE_VARIABLE) == 0));
 
     return objClass;
 }
