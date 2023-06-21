@@ -2017,6 +2017,14 @@ bool Compiler::StructPromotionHelper::CanPromoteStructVar(unsigned lclNum)
         return false;
     }
 
+#if defined(TARGET_LOONGARCH64) || defined(TARGET_RISCV64)
+    if (varDsc->lvIsSplit)
+    {
+        JITDUMP("  struct promotion of V%02u is disabled because it is splitted\n", lclNum);
+        return false;
+    }
+#endif // TARGET_LOONGARCH64 || TARGET_RISCV64
+
     CORINFO_CLASS_HANDLE typeHnd = varDsc->GetLayout()->GetClassHandle();
     assert(typeHnd != NO_CLASS_HANDLE);
 
@@ -2502,13 +2510,6 @@ void Compiler::StructPromotionHelper::PromoteStructVar(unsigned lclNum)
                     {
                         assert(index == 1);
                         fieldRegNum = varDsc->GetOtherArgReg();
-#ifdef TARGET_RISCV64
-                        if (varDsc->lvIsSplit)
-                        {
-                            assert(fieldRegNum == REG_STK);
-                            fieldVarDsc->lvIsRegArg = 0;
-                        }
-#endif // TARGET_RISCV64
                     }
                     fieldVarDsc->SetArgReg(fieldRegNum);
                 }
