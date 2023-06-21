@@ -10224,6 +10224,8 @@ MONO_RESTORE_WARNING
 					break;
 				case MONO_TYPE_R4:
 					is_fp = TRUE;
+					rtype = v128_i4_t;
+					break;
 				case MONO_TYPE_I:
 				case MONO_TYPE_U:
 				case MONO_TYPE_I4:
@@ -10232,6 +10234,8 @@ MONO_RESTORE_WARNING
 					break;
 				case MONO_TYPE_R8:
 					is_fp = TRUE;
+					rtype = v128_i8_t;
+					break;
 				case MONO_TYPE_I8:
 				case MONO_TYPE_U8:
 					rtype = v128_i8_t;
