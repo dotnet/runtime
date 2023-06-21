@@ -330,7 +330,7 @@ namespace System.Formats.Tar
             Debug.Assert(!string.IsNullOrEmpty(destinationDirectoryPath));
             Debug.Assert(Path.IsPathFullyQualified(destinationDirectoryPath));
 
-            string name = ArchivingUtils.SanitizeEntryFilePath(Name);
+            string name = ArchivingUtils.SanitizeEntryFilePath(Name, preserveDriveRoot: true);
             string? fileDestinationPath = GetFullDestinationPath(
                                                 destinationDirectoryPath,
                                                 Path.IsPathFullyQualified(name) ? name : Path.Join(Path.GetDirectoryName(destinationDirectoryPath), name));
@@ -339,7 +339,7 @@ namespace System.Formats.Tar
                 throw new IOException(SR.Format(SR.TarExtractingResultsFileOutside, name, destinationDirectoryPath));
             }
 
-            string linkName = ArchivingUtils.SanitizeEntryFilePath(LinkName);
+            string linkName = ArchivingUtils.SanitizeEntryFilePath(LinkName, preserveDriveRoot: true);
             string? linkTargetPath = null;
             if (EntryType is TarEntryType.SymbolicLink)
             {
