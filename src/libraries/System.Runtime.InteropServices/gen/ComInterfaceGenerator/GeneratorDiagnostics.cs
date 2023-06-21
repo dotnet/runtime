@@ -97,6 +97,17 @@ namespace Microsoft.Interop
             isEnabledByDefault: true,
             description: GetResourceString(nameof(SR.GeneratedComInterfaceStringMarshallingMustMatchBase)));
 
+        /// <inheritdoc cref="SR.InvalidOptionsOnInterfaceMessage"/>
+        public static readonly DiagnosticDescriptor InvalidOptionsOnInterface =
+            new DiagnosticDescriptor(
+                Ids.InvalidGeneratedComInterfaceAttributeUsage,
+            GetResourceString(nameof(SR.InvalidGeneratedComInterfaceAttributeUsageTitle)),
+            GetResourceString(nameof(SR.InvalidOptionsOnInterfaceMessage)),
+            Category,
+            DiagnosticSeverity.Error,
+            isEnabledByDefault: true,
+            description: GetResourceString(nameof(SR.InvalidOptionsOnInterfaceDescription)));
+
         /// <inheritdoc cref="SR.InvalidStringMarshallingConfigurationOnMethodMessage"/>
         public static readonly DiagnosticDescriptor InvalidStringMarshallingConfigurationOnMethod =
             new DiagnosticDescriptor(

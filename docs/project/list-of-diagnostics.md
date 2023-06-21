@@ -235,7 +235,24 @@ The diagnostic id values reserved for .NET Libraries analyzer warnings are `SYSL
 |  __`SYSLIB1116`__ | *_`SYSLIB1100`-`SYSLIB1118` reserved for Microsoft.Extensions.Configuration.Binder.SourceGeneration.* |
 |  __`SYSLIB1117`__ | *_`SYSLIB1100`-`SYSLIB1118` reserved for Microsoft.Extensions.Configuration.Binder.SourceGeneration.* |
 |  __`SYSLIB1118`__ | *_`SYSLIB1100`-`SYSLIB1118` reserved for Microsoft.Extensions.Configuration.Binder.SourceGeneration.* |
-
+|  __`SYSLIB1201`__ | Options validation generator: Can't use 'ValidateObjectMembersAttribute' or `ValidateEnumeratedItemsAttribute` on fields or properties with open generic types. |
+|  __`SYSLIB1202`__ | Options validation generator: A member type has no fields or properties to validate. |
+|  __`SYSLIB1203`__ | Options validation generator: A type has no fields or properties to validate. |
+|  __`SYSLIB1204`__ | Options validation generator: A type annotated with `OptionsValidatorAttribute` doesn't implement the necessary interface. |
+|  __`SYSLIB1205`__ | Options validation generator: A type already includes an implementation of the 'Validate' method. |
+|  __`SYSLIB1206`__ | Options validation generator: Can't validate private fields or properties. |
+|  __`SYSLIB1207`__ | Options validation generator: Member type is not enumerable. |
+|  __`SYSLIB1208`__ | Options validation generator: Validators used for transitive or enumerable validation must have a constructor with no parameters. |
+|  __`SYSLIB1209`__ | Options validation generator: `OptionsValidatorAttribute` can't be applied to a static class. |
+|  __`SYSLIB1210`__ | Options validation generator: Null validator type specified for the `ValidateObjectMembersAttribute` or 'ValidateEnumeratedItemsAttribute' attributes. |
+|  __`SYSLIB1211`__ | Options validation generator: Unsupported circular references in model types. |
+|  __`SYSLIB1212`__ | Options validation generator: Member potentially missing transitive validation. |
+|  __`SYSLIB1213`__ | Options validation generator: Member potentially missing enumerable validation. |
+|  __`SYSLIB1214`__ | *_`SYSLIB1214`-`SYSLIB1218` reserved for Microsoft.Extensions.Options.SourceGeneration.* |
+|  __`SYSLIB1215`__ | *_`SYSLIB1214`-`SYSLIB1218` reserved for Microsoft.Extensions.Options.SourceGeneration.* |
+|  __`SYSLIB1216`__ | *_`SYSLIB1214`-`SYSLIB1218` reserved for Microsoft.Extensions.Options.SourceGeneration.* |
+|  __`SYSLIB1217`__ | *_`SYSLIB1214`-`SYSLIB1218` reserved for Microsoft.Extensions.Options.SourceGeneration.* |
+|  __`SYSLIB1218`__ | *_`SYSLIB1214`-`SYSLIB1218` reserved for Microsoft.Extensions.Options.SourceGeneration.* |
 
 ### Diagnostic Suppressions (`SYSLIBSUPPRESS****`)
 
