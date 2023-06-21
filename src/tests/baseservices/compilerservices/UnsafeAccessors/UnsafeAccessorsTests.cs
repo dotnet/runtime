@@ -124,6 +124,19 @@ static unsafe class UnsafeAccessorsTests
 
     [Fact]
     [ActiveIssue("https://github.com/dotnet/runtime/issues/86040", TestRuntimes.Mono)]
+    public static void Verify_CallCtorWithEmptyNotNullName()
+    {
+        Console.WriteLine($"Running {nameof(Verify_CallCtorWithEmptyNotNullName)}");
+
+        var local = CallPrivateConstructorWithEmptyName();
+        Assert.Equal(nameof(UserDataClass), local.GetType().Name);
+
+        [UnsafeAccessor(UnsafeAccessorKind.Constructor, Name="")]
+        extern static UserDataClass CallPrivateConstructorWithEmptyName();
+    }
+
+    [Fact]
+    [ActiveIssue("https://github.com/dotnet/runtime/issues/86040", TestRuntimes.Mono)]
     public static void Verify_CallCtorAsMethod()
     {
         Console.WriteLine($"Running {nameof(Verify_CallCtorAsMethod)}");
