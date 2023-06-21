@@ -15,6 +15,7 @@ using System.Net.Http;
 using BrowserDebugProxy;
 using static System.Formats.Asn1.AsnWriter;
 using System.Reflection;
+using System.Collections.Concurrent;
 
 namespace Microsoft.WebAssembly.Diagnostics
 {
@@ -24,7 +25,7 @@ namespace Microsoft.WebAssembly.Diagnostics
         internal string CachePathSymbolServer { get; private set; }
         private readonly HashSet<SessionId> sessions = new HashSet<SessionId>();
         private static readonly string[] s_executionContextIndependentCDPCommandNames = { "DotnetDebugger.setDebuggerProperty", "DotnetDebugger.runTests" };
-        protected Dictionary<SessionId, List<ExecutionContext>> contexts = new Dictionary<SessionId, List<ExecutionContext>>();
+        protected ConcurrentDictionary<SessionId, ConcurrentBag<ExecutionContext>> contexts = new ();
 
         public static HttpClient HttpClient => new HttpClient();
 
@@ -63,11 +64,11 @@ namespace Microsoft.WebAssembly.Diagnostics
         internal bool TryGetCurrentExecutionContextValue(SessionId id, out ExecutionContext executionContext)
         {
             executionContext = null;
-            if (!contexts.TryGetValue(id, out List<ExecutionContext> contextList))
+            if (!contexts.TryGetValue(id, out ConcurrentBag<ExecutionContext> contextList))
                 return false;
-            if (contextList.Count == 0)
+            if (contextList.IsEmpty)
                 return false;
-            executionContext = contextList.Last<ExecutionContext>();
+            executionContext = contextList.Where(context => context.Destroyed = false).Last<ExecutionContext>();
             return true;
         }
 
@@ -169,9 +170,8 @@ namespace Microsoft.WebAssembly.Diagnostics
                         int id = args["executionContextId"].Value<int>();
                         if (!contexts.TryGetValue(sessionId, out var contextList))
                             return false;
-                        contextList.RemoveAll(x => x.Id == id);
-                        if (contextList.Count == 0)
-                            contexts.Remove(sessionId);
+                        foreach (var context in contextList.Where(x => x.Id == id).ToList())
+                            context.Destroyed = true;
                         return false;
                     }
 

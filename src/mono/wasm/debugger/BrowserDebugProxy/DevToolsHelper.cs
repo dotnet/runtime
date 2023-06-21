@@ -404,6 +404,7 @@ namespace Microsoft.WebAssembly.Diagnostics
             AuxData = auxData;
             SdbAgent = sdbAgent;
             PauseOnExceptions = pauseOnExceptions;
+            Destroyed = false;
         }
         public ExecutionContext CreateChildAsyncExecutionContext(SessionId sessionId)
             => new ExecutionContext(null, Id, AuxData, PauseOnExceptions)
@@ -455,6 +456,8 @@ namespace Microsoft.WebAssembly.Diagnostics
 
         internal int TempBreakpointForSetNextIP { get; set; }
         internal bool FirstBreakpoint { get; set; }
+
+        internal bool Destroyed { get; set; }
 
         public DebugStore Store
         {
