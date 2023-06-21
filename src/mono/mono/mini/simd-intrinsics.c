@@ -2293,6 +2293,12 @@ emit_sri_vector (MonoCompile *cfg, MonoMethod *cmethod, MonoMethodSignature *fsi
 	}
 	case SN_WithLower:
 	case SN_WithUpper: {
+#ifdef TARGET_AMD64
+		if (!COMPILE_LLVM (cfg))
+		  /* These return a Vector64 */
+			return NULL;
+#endif
+
 		if (!is_element_type_primitive (fsig->params [0]))
 			return NULL;
 		int op = id == SN_WithLower ? OP_XINSERT_LOWER : OP_XINSERT_UPPER;
