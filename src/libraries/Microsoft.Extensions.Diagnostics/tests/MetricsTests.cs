@@ -116,69 +116,35 @@ namespace Microsoft.Extensions.Diagnostics.Metrics.Tests
             IMeterFactory meterFactory = sp.GetRequiredService<IMeterFactory>();
 
             Meter meter = meterFactory.Create("DisposableMeter");
-
             Counter<int> counter = meter.CreateCounter<int>("MyCounter");
-            InstrumentRecorder<int> recorder = new InstrumentRecorder<int>(counter);
+
+            using MeterListener listener = new MeterListener();
+            listener.InstrumentPublished = (instrument, theListener) =>
+            {
+                if (instrument == counter)
+                {
+                    listener.EnableMeasurementEvents(counter, counter);
+                }
+            };
+            int lastMeasurement = 0;
+            listener.SetMeasurementEventCallback<int>((inst, measurement, tags, state) => lastMeasurement = measurement);
+            listener.Start();
+
             counter.Add(10);
-            Assert.Equal(1, recorder.GetMeasurements().Count());
-            Assert.Equal(10, recorder.GetMeasurements().ElementAt(0).Value);
+            Assert.Equal(10, lastMeasurement);
             meter.Dispose(); // should be no-op
+
             counter.Add(20);
-            Assert.Equal(2, recorder.GetMeasurements().Count());
-            Assert.Equal(20, recorder.GetMeasurements().ElementAt(1).Value);
+            Assert.Equal(20, lastMeasurement);
 
             meter.Dispose(); // dispose again, should be no-op too
             counter.Add(30);
-            Assert.Equal(3, recorder.GetMeasurements().Count());
-            Assert.Equal(30, recorder.GetMeasurements().ElementAt(2).Value);
+            Assert.Equal(30, lastMeasurement);
 
             // Now dispose the factory, the meter should be disposed too
             meterFactory.Dispose();
             counter.Add(40); // recorder shouldn't observe this value as the meter created this instrument is disposed
-            Assert.Equal(3, recorder.GetMeasurements().Count());
-        }
-
-        [Fact]
-        public void InstrumentRecorderTest()
-        {
-            ServiceCollection services = new ServiceCollection();
-            services.AddMetrics();
-            var sp = services.BuildServiceProvider();
-            using IMeterFactory meterFactory = sp.GetRequiredService<IMeterFactory>();
-
-            MeterOptions options = new MeterOptions("name")
-            {
-                Version = "version",
-                Tags = new TagList() { { "key1", "value1" }, { "key2", "value2" } }
-            };
-
-            Meter meter = meterFactory.Create("MyMeter", "1.0.0", new TagList() { { "key1", "value1" }, { "key2", "value2" } });
-            Assert.Same(meterFactory, meter.Scope);
-
-            Counter<int> counter = meter.CreateCounter<int>("MyCounter");
-
-            InstrumentRecorder<int> recorder1 = new InstrumentRecorder<int>(counter);
-            Assert.Same(counter, recorder1.Instrument);
-
-            InstrumentRecorder<int> recorder2 = new InstrumentRecorder<int>(meter, "MyCounter");
-            Assert.Same(counter, recorder2.Instrument);
-
-            InstrumentRecorder<int> recorder3 = new InstrumentRecorder<int>(scopeFilter: meterFactory, "MyMeter", "MyCounter");
-            Assert.Same(counter, recorder3.Instrument);
-
-            counter.Add(100, new KeyValuePair<string, object?>("k", "v"));
-            Assert.Equal(1, recorder1.GetMeasurements().Count());
-            Assert.Equal(1, recorder2.GetMeasurements().Count());
-            Assert.Equal(1, recorder3.GetMeasurements().Count());
-
-            Assert.Equal(100, recorder1.GetMeasurements().ElementAt(0).Value);
-            Assert.Equal(100, recorder2.GetMeasurements().ElementAt(0).Value);
-            Assert.Equal(100, recorder2.GetMeasurements().ElementAt(0).Value);
-
-            KeyValuePair<string, object?>[] tags = new KeyValuePair<string, object?>[] { new KeyValuePair<string, object?>("k", "v") };
-            Assert.Equal(tags, recorder1.GetMeasurements().ElementAt(0).Tags.ToArray());
-            Assert.Equal(tags, recorder2.GetMeasurements().ElementAt(0).Tags.ToArray());
-            Assert.Equal(tags, recorder3.GetMeasurements().ElementAt(0).Tags.ToArray());
+            Assert.Equal(30, lastMeasurement);
         }
 
         [Fact]

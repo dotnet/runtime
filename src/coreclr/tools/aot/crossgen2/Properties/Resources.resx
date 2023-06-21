@@ -402,6 +402,9 @@
   <data name="Crossgen2BannerText" xml:space="preserve">
     <value>.NET Crossgen2 Compiler</value>
   </data>
+  <data name="TypeValidation" xml:space="preserve">
+    <value>Configure the runtime's behavior around validating the correctness of types defined in assemblies compiled via crossgen2</value>
+  </data>
   <data name="EnableGenericCycleDetection" xml:space="preserve">
     <value>Perform generic cycle detection during compilation (incurs longer compilation time)</value>
   </data>

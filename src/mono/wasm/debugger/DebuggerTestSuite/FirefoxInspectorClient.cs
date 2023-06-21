@@ -235,6 +235,7 @@ class FirefoxInspectorClient : InspectorClient
 
         msgId = new FirefoxMessageId("", 0, to_str);
         pending_cmds.AddOrUpdate(msgId, tcs,  (key, oldValue) => tcs);
+        logger.LogTrace($"SendCommand: to: {args}");
 
         var msg = args.ToString(Formatting.None);
         var bytes = Encoding.UTF8.GetBytes(msg);

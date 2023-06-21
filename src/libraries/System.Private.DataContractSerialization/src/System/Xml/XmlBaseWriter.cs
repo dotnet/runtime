@@ -962,7 +962,7 @@ namespace System.Xml
 
             ArgumentNullException.ThrowIfNull(whitespace);
 
-            if (whitespace.AsSpan().IndexOfAnyExcept(" \t\r\n") >= 0)
+            if (whitespace.AsSpan().ContainsAnyExcept(" \t\r\n"))
             {
                 throw new ArgumentException(SR.XmlOnlyWhitespace, nameof(whitespace));
             }

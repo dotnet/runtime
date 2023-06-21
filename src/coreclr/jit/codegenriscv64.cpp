@@ -3241,62 +3241,44 @@ void CodeGen::genFloatToIntCast(GenTree* treeNode)
     {
         if (srcType == TYP_DOUBLE)
         {
-            if (dstSize == EA_4BYTE)
-            {
-                ins = INS_fcvt_wu_d;
-            }
-            else
-            {
-                assert(dstSize == EA_8BYTE);
-                ins = INS_fcvt_lu_d;
-            }
+            ins = INS_fcvt_lu_d;
         }
         else
         {
             assert(srcType == TYP_FLOAT);
-            if (dstSize == EA_4BYTE)
-            {
-                ins = INS_fcvt_wu_s;
-            }
-            else
-            {
-                assert(dstSize == EA_8BYTE);
-                ins = INS_fcvt_lu_s;
-            }
+            ins = INS_fcvt_lu_s;
         }
     }
     else
     {
         if (srcType == TYP_DOUBLE)
         {
-            if (dstSize == EA_4BYTE)
-            {
-                ins = INS_fcvt_w_d;
-            }
-            else
-            {
-                assert(dstSize == EA_8BYTE);
-                ins = INS_fcvt_l_d;
-            }
+            ins = INS_fcvt_l_d;
         }
         else
         {
             assert(srcType == TYP_FLOAT);
-            if (dstSize == EA_4BYTE)
-            {
-                ins = INS_fcvt_w_s;
-            }
-            else
-            {
-                assert(dstSize == EA_8BYTE);
-                ins = INS_fcvt_l_s;
-            }
+            ins = INS_fcvt_l_s;
         }
     }
 
     genConsumeOperands(treeNode->AsOp());
 
-    GetEmitter()->emitIns_R_R(ins, emitActualTypeSize(dstType), treeNode->GetRegNum(), op1->GetRegNum());
+    GetEmitter()->emitIns_R_R(ins, EA_8BYTE, treeNode->GetRegNum(), op1->GetRegNum());
+    if (dstSize == EA_4BYTE)
+
+    {
+        emitAttr attr = emitActualTypeSize(dstType);
+        if (IsUnsigned)
+        {
+            GetEmitter()->emitIns_R_R_I(INS_slli, attr, treeNode->GetRegNum(), treeNode->GetRegNum(), 32);
+            GetEmitter()->emitIns_R_R_I(INS_srli, attr, treeNode->GetRegNum(), treeNode->GetRegNum(), 32);
+        }
+        else
+        {
+            GetEmitter()->emitIns_R_R_I(INS_addiw, attr, treeNode->GetRegNum(), treeNode->GetRegNum(), 0);
+        }
+    }
 
     genProduceReg(treeNode);
 }

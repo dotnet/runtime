@@ -8,7 +8,7 @@ using System.CommandLine.Help;
 using System.CommandLine.Parsing;
 using System.IO;
 using System.Runtime.InteropServices;
-
+using ILCompiler.DependencyAnalysis;
 using Internal.TypeSystem;
 
 namespace ILCompiler
@@ -39,6 +39,8 @@ namespace ILCompiler
             new(new[] { "--optimize-space", "--Os" }, SR.OptimizeSpaceOption);
         public Option<bool> OptimizeTime { get; } =
             new(new[] { "--optimize-time", "--Ot" }, SR.OptimizeSpeedOption);
+        public Option<TypeValidationRule> TypeValidation { get; } =
+            new(new[] { "--type-validation"}, () => TypeValidationRule.Automatic, SR.TypeValidation);
         public Option<bool> InputBubble { get; } =
             new(new[] { "--inputbubble" }, SR.InputBubbleOption);
         public Option<Dictionary<string, string>> InputBubbleReferenceFilePaths { get; } =
@@ -212,6 +214,7 @@ namespace ILCompiler
             AddOption(OptimizeDisabled);
             AddOption(OptimizeSpace);
             AddOption(OptimizeTime);
+            AddOption(TypeValidation);
             AddOption(InputBubble);
             AddOption(InputBubbleReferenceFilePaths);
             AddOption(Composite);
