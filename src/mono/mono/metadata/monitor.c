@@ -48,8 +48,8 @@ enum {
 };
 #undef OPDEF
 
-#define LOCK_DEBUG(a) do { a; } while (0)
-// #define LOCK_DEBUG(a)
+//#define LOCK_DEBUG(a) do { a; } while (0)
+#define LOCK_DEBUG(a)
 
 /*
  * The monitor implementation here is based on
