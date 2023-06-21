@@ -1,6 +1,8 @@
 <Project Sdk="Microsoft.NET.Sdk">
   <ItemGroup>
     <MergedWrapperProjectReference Include="opt/**/*.??proj" />
+    <!-- Issue: https://github.com/dotnet/runtime/issues/87879 -->
+    <MergedWrapperProjectReference Remove="opt/rngchk/RngchkStress2*.??proj" />
   </ItemGroup>
 
   <Import Project="$(TestSourceDir)MergedTestRunner.targets" />
