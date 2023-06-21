@@ -12,6 +12,8 @@ using System.Collections;
 using System.Collections.Generic;
 using System.Linq;
 using System.Threading;
+using Microsoft.Extensions.Compliance.Classification;
+using Microsoft.Extensions.Compliance.Redaction;
 using Microsoft.Extensions.DependencyInjection;
 using Microsoft.Extensions.Logging.Abstractions;
 
@@ -23,36 +25,6 @@ namespace Microsoft.Extensions.Logging.Tests.Redaction
         {
             builder.AddProcessor((serviceProvider, processor) => new RedactionProcessor(processor, serviceProvider.GetService<IRedactorProvider>()));
             return builder;
-        }
-    }
-
-    internal interface IRedactorProvider
-    {
-        IRedactor GetRedactor(DataClass dataClass);
-    }
-
-    internal interface IRedactor
-    {
-        string Redact(ReadOnlySpan<char> source);
-        int Redact(ReadOnlySpan<char> source, Span<char> destination);
-        int GetRedactedLength(ReadOnlySpan<char> source);
-    }
-
-    internal enum DataClass
-    {
-        Unknown,
-        EUPI
-    }
-
-    [AttributeUsage(AttributeTargets.Class | AttributeTargets.Struct | AttributeTargets.Property | AttributeTargets.Field | AttributeTargets.Interface | AttributeTargets.Parameter | AttributeTargets.ReturnValue, AllowMultiple = true)]
-    internal abstract class DataClassificationAttribute : Attribute
-    {
-        public string Notes { get; set; } = string.Empty;
-        public DataClass DataClass { get; }
-
-        protected DataClassificationAttribute(DataClass dataClass)
-        {
-            DataClass = dataClass;
         }
     }
 
@@ -95,7 +67,7 @@ namespace Microsoft.Extensions.Logging.Tests.Redaction
                 DataClassificationAttribute? dataClassAttr = propMetadata.Metadata.OfType<DataClassificationAttribute>().FirstOrDefault();
                 if (dataClassAttr != null)
                 {
-                    redactions.Add(new PropertyRedaction(i, _redactorProvider!.GetRedactor(dataClassAttr.DataClass)));
+                    redactions.Add(new PropertyRedaction(i, _redactorProvider!.GetRedactor(dataClassAttr.Classification)));
                 }
             }
             return redactions.ToArray();
@@ -134,13 +106,13 @@ namespace Microsoft.Extensions.Logging.Tests.Redaction
 
     internal struct PropertyRedaction
     {
-        public PropertyRedaction(int index, IRedactor redactor)
+        public PropertyRedaction(int index, Redactor redactor)
         {
             Index = index;
             Redactor = redactor;
         }
         public int Index;
-        public IRedactor Redactor;
+        public Redactor Redactor;
     }
 
     internal class RedactedLogMetadata<T> : ILogMetadata<RedactedValues<T>>
@@ -155,7 +127,7 @@ namespace Microsoft.Extensions.Logging.Tests.Redaction
             _redactions = redactions;
         }
 
-        public IRedactor? GetPropertyRedactor(int index)
+        public Redactor? GetPropertyRedactor(int index)
         {
             for (var i = 0; i < _redactions.Length; i++)
             {
@@ -214,7 +186,7 @@ namespace Microsoft.Extensions.Logging.Tests.Redaction
 
                 void Visit(int propIndex, PropType value, ref Span<byte> spanCookie, ref TCookie cookie)
                 {
-                    IRedactor? redactor = _metadata.GetPropertyRedactor(propIndex);
+                    Redactor? redactor = _metadata.GetPropertyRedactor(propIndex);
                     if(redactor == null)
                     {
                         unredactedVisit(propIndex, value, ref spanCookie, ref cookie);
@@ -279,7 +251,7 @@ namespace Microsoft.Extensions.Logging.Tests.Redaction
 
                 void Visit(int propIndex, scoped ReadOnlySpan<char> value, ref Span<byte> spanCookie, ref TCookie cookie)
                 {
-                    IRedactor? redactor = _metadata.GetPropertyRedactor(propIndex);
+                    Redactor? redactor = _metadata.GetPropertyRedactor(propIndex);
                     if (redactor == null)
                     {
                         _spanVisitor(propIndex, value, ref spanCookie, ref cookie);
