@@ -857,8 +857,6 @@ enum CorInfoFlag
     CORINFO_FLG_ARRAY                 = 0x00080000, // class is an array class (initialized differently)
     CORINFO_FLG_OVERLAPPING_FIELDS    = 0x00100000, // struct or class has fields that overlap (aka union)
     CORINFO_FLG_INTERFACE             = 0x00200000, // it is an interface
-    CORINFO_FLG_DONT_DIG_FIELDS       = 0x00400000, // don't ask field info (used for types outside of AOT compilation version bubble)
-    CORINFO_FLG_CUSTOMLAYOUT          = 0x00800000, // does this struct have custom layout?
     CORINFO_FLG_CONTAINS_GC_PTR       = 0x01000000, // does the class contain a gc ptr ?
     CORINFO_FLG_DELEGATE              = 0x02000000, // is this a subclass of delegate or multicast delegate ?
     CORINFO_FLG_INDEXABLE_FIELDS      = 0x04000000, // struct fields may be accessed via indexing (used for inline arrays)
@@ -1934,6 +1932,36 @@ struct CORINFO_VarArgInfo
                                             // (The CORINFO_VARARGS_HANDLE counts as an arg)
 };
 
+struct CORINFO_TYPE_LAYOUT_NODE
+{
+    // Type handle if type == CORINFO_TYPE_VALUECLASS
+    CORINFO_CLASS_HANDLE typeHnd;
+    // Field handle; only for diagnostic purposes, e.g. R2R does not support
+    // arbitrary queries for fields that are outside the version bubble.
+    CORINFO_FIELD_HANDLE fieldHnd;
+    // Index of parent node in the tree
+    unsigned parent;
+    // Offset into the root type of the field
+    unsigned offset;
+    // Size of the type.
+    unsigned size;
+    // Number of fields for type == CORINFO_TYPE_VALUECLASS. This is the number of nodes added.
+    unsigned numFields;
+    // Type of the field.
+    CorInfoType type;
+    // For type == CORINFO_TYPE_VALUECLASS indicates whether the type is an intrinsic type
+    bool isIntrinsicType;
+    // For type == CORINFO_TYPE_VALUECLASS indicates whether the type has significant padding.
+    bool hasSignificantPadding;
+};
+
+enum class GetTypeLayoutResult
+{
+    Success,
+    Partial,
+    Failure,
+};
+
 #define SIZEOF__CORINFO_Object                            TARGET_POINTER_SIZE /* methTable */
 
 #define CORINFO_Array_MaxLength                           0x7FFFFFC7
@@ -2402,6 +2430,31 @@ public:
             CORINFO_CLASS_HANDLE        clsHnd,
             int32_t                     num
             ) = 0;
+
+    //------------------------------------------------------------------------------
+    // getTypeLayout: Obtain a tree describing the layout of a type.
+    //
+    // Parameters:
+    //   typeHnd            - Handle of the type.
+    //   treeNodes          - [out] Pointer to tree node entries to write.
+    //   numTreeNodes       - [in, out] Size of 'treeNodes'. Updated to contain
+    //                         the number of entries written in 'treeNodes'.
+    //
+    // Returns:
+    //   A result indicating whether the type layout was successfully
+    //   retrieved and whether the result is partial or not.
+    //
+    // Remarks:
+    //   The type layout should be stored in preorder in 'treeNodes': the root
+    //   node is always at index 0, and the first child of any node is at its
+    //   own index + 1.
+    //
+    //   Intrinsic types are returned as a single entry without any children.
+    //
+    virtual GetTypeLayoutResult getTypeLayout(
+            CORINFO_CLASS_HANDLE typeHnd,
+            CORINFO_TYPE_LAYOUT_NODE* treeNodes,
+            size_t* numTreeNodes) = 0;
 
     virtual bool checkMethodModifier(
             CORINFO_METHOD_HANDLE       hMethod,

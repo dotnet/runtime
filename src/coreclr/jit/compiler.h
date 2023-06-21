@@ -593,8 +593,13 @@ public:
                                   // fgRetypeImplicitByRefArgs and fgMarkDemotedImplicitByRefArgs to indicate whether
                                   // references to the arg are being rewritten as references to a promoted shadow local.
     unsigned char lvIsStructField : 1; // Is this local var a field of a promoted struct local?
-    unsigned char lvContainsHoles : 1; // True when we have a promoted struct that contains holes
-    unsigned char lvCustomLayout : 1;  // True when this struct has "CustomLayout"
+    unsigned char lvContainsHoles : 1; // Is this a promoted struct whose fields do not cover the struct local?
+
+    // True for a promoted struct that has significant padding in it.
+    // Significant padding is any data in the struct that is not covered by a
+    // promoted field and that the EE told us we need to preserve on block
+    // copies/inits.
+    unsigned char lvAnySignificantPadding : 1;
 
     unsigned char lvIsMultiRegArg : 1; // true if this is a multireg LclVar struct used in an argument context
     unsigned char lvIsMultiRegRet : 1; // true if this is a multireg LclVar struct assigned from a multireg call
@@ -2055,7 +2060,6 @@ public:
     bool shouldUseVerboseSsa();
     bool treesBeforeAfterMorph; // If true, print trees before/after morphing (paired by an intra-compilation id:
     int  morphNum;              // This counts the trees that have been morphed, allowing us to label each uniquely.
-    bool doExtraSuperPmiQueries;
     void makeExtraStructQueries(CORINFO_CLASS_HANDLE structHandle, int level); // Make queries recursively 'level' deep.
 
     const char* VarNameToStr(VarName name)
@@ -3569,8 +3573,8 @@ public:
     struct lvaStructFieldInfo
     {
         CORINFO_FIELD_HANDLE fldHnd;
-        unsigned char        fldOffset;
-        unsigned char        fldOrdinal;
+        uint8_t              fldOffset;
+        uint8_t              fldOrdinal;
         var_types            fldType;
         unsigned             fldSize;
         CORINFO_CLASS_HANDLE fldTypeHnd;
@@ -3587,7 +3591,7 @@ public:
         CORINFO_CLASS_HANDLE typeHnd;
         bool                 canPromote;
         bool                 containsHoles;
-        bool                 customLayout;
+        bool                 anySignificantPadding;
         bool                 fieldsSorted;
         unsigned char        fieldCnt;
         lvaStructFieldInfo   fields[MAX_NumOfFieldsInPromotableStruct];
@@ -3596,16 +3600,11 @@ public:
             : typeHnd(typeHnd)
             , canPromote(false)
             , containsHoles(false)
-            , customLayout(false)
+            , anySignificantPadding(false)
             , fieldsSorted(false)
             , fieldCnt(0)
         {
         }
-    };
-
-    struct lvaFieldOffsetCmp
-    {
-        bool operator()(const lvaStructFieldInfo& field1, const lvaStructFieldInfo& field2);
     };
 
     // This class is responsible for checking validity and profitability of struct promotion.
@@ -3629,10 +3628,8 @@ public:
         void PromoteStructVar(unsigned lclNum);
         void SortStructFields();
 
-        bool CanConstructAndPromoteField(lvaStructPromotionInfo* structPromotionInfo);
-
-        lvaStructFieldInfo GetFieldInfo(CORINFO_FIELD_HANDLE fieldHnd, BYTE ordinal);
-        bool TryPromoteStructField(lvaStructFieldInfo& outerFieldInfo);
+        var_types TryPromoteValueClassAsPrimitive(CORINFO_TYPE_LAYOUT_NODE* treeNodes, size_t maxTreeNodes, size_t index);
+        void AdvanceSubTree(CORINFO_TYPE_LAYOUT_NODE* treeNodes, size_t maxTreeNodes, size_t* index);
 
     private:
         Compiler*              compiler;
@@ -8629,6 +8626,11 @@ private:
         return false;
     }
 
+    bool isRuntimeIntrinsicsNamespace(const char* ns)
+    {
+        return strcmp(ns, "System.Runtime.Intrinsics") == 0;
+    }
+
     bool isHWSIMDClass(CORINFO_CLASS_HANDLE clsHnd)
     {
 #ifdef FEATURE_HW_INTRINSICS
@@ -8636,7 +8638,7 @@ private:
         {
             const char* namespaceName = nullptr;
             (void)getClassNameFromMetadata(clsHnd, &namespaceName);
-            return strcmp(namespaceName, "System.Runtime.Intrinsics") == 0;
+            return isRuntimeIntrinsicsNamespace(namespaceName);
         }
 #endif // FEATURE_HW_INTRINSICS
         return false;

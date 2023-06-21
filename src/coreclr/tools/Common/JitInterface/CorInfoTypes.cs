@@ -4,6 +4,7 @@
 using System;
 using System.Diagnostics;
 using System.Runtime.InteropServices;
+using Internal.NativeFormat;
 using Internal.Pgo;
 
 namespace Internal.JitInterface
@@ -599,8 +600,6 @@ namespace Internal.JitInterface
         CORINFO_FLG_ARRAY = 0x00080000, // class is an array class (initialized differently)
         CORINFO_FLG_OVERLAPPING_FIELDS = 0x00100000, // struct or class has fields that overlap (aka union)
         CORINFO_FLG_INTERFACE = 0x00200000, // it is an interface
-        CORINFO_FLG_DONT_DIG_FIELDS = 0x00400000, // don't try to ask about fields outside of AOT compilation version bubble
-        CORINFO_FLG_CUSTOMLAYOUT = 0x00800000, // does this struct have custom layout?
         CORINFO_FLG_CONTAINS_GC_PTR = 0x01000000, // does the class contain a gc ptr ?
         CORINFO_FLG_DELEGATE = 0x02000000, // is this a subclass of delegate or multicast delegate ?
         CORINFO_FLG_INDEXABLE_FIELDS = 0x04000000, // struct fields may be accessed via indexing (used for inline arrays)
@@ -1454,5 +1453,27 @@ namespace Internal.JitInterface
         {
             return (_corJitFlags & (1UL << (int)flag)) != 0;
         }
+    }
+
+    public enum GetTypeLayoutResult
+    {
+        Success = 0,
+        Partial = 1,
+        Failure = 2,
+    }
+
+    public unsafe struct CORINFO_TYPE_LAYOUT_NODE
+    {
+        public CORINFO_CLASS_STRUCT_* typeHnd;
+        public CORINFO_FIELD_STRUCT_* fieldHnd;
+        public uint parent;
+        public uint offset;
+        public uint size;
+        public uint numFields;
+        public CorInfoType type;
+        private byte _isIntrinsicType;
+        public bool isIntrinsicType { get => _isIntrinsicType != 0; set => _isIntrinsicType = value ? (byte)1 : (byte)0; }
+        private byte _hasSignificantPadding;
+        public bool hasSignificantPadding { get => _hasSignificantPadding != 0; set => _hasSignificantPadding = value ? (byte)1 : (byte)0; }
     }
 }

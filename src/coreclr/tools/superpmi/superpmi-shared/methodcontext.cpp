@@ -4735,6 +4735,86 @@ CORINFO_FIELD_HANDLE MethodContext::repGetFieldInClass(CORINFO_CLASS_HANDLE clsH
     return result;
 }
 
+void MethodContext::recGetTypeLayout(GetTypeLayoutResult result, CORINFO_CLASS_HANDLE typeHnd, CORINFO_TYPE_LAYOUT_NODE* nodes, size_t numNodes)
+{
+    if (GetTypeLayout == nullptr)
+        GetTypeLayout = new LightWeightMap<DWORDLONG, Agnostic_GetTypeLayoutResult>();
+
+    DWORDLONG key = CastHandle(typeHnd);
+
+    int index = GetTypeLayout->GetIndex(key);
+    if (index != -1)
+    {
+        // If we already have this then just skip.
+        Agnostic_GetTypeLayoutResult existing = GetTypeLayout->GetItem(index);
+        if ((existing.result != (DWORD)GetTypeLayoutResult::Partial) ||
+            (result == GetTypeLayoutResult::Failure) ||
+            (numNodes <= existing.numNodes))
+        {
+            // No new data to add
+            return;
+        }
+
+        // Otherwise fall through and update the map with more information.
+    }
+
+    Agnostic_GetTypeLayoutResult value;
+    ZeroMemory(&value, sizeof(value));
+
+    value.result = (DWORD)result;
+    if (result == GetTypeLayoutResult::Failure)
+    {
+        value.nodesBuffer = UINT_MAX;
+    }
+    else
+    {
+        Agnostic_CORINFO_TYPE_LAYOUT_NODE* agnosticFields = new Agnostic_CORINFO_TYPE_LAYOUT_NODE[numNodes];
+        for (size_t i = 0; i < numNodes; i++)
+        {
+            agnosticFields[i] = SpmiRecordsHelper::StoreAgnostic_CORINFO_TYPE_LAYOUT_NODE(nodes[i]);
+        }
+
+        value.nodesBuffer = GetTypeLayout->AddBuffer((unsigned char*)agnosticFields, (unsigned int)(sizeof(Agnostic_CORINFO_TYPE_LAYOUT_NODE) * numNodes));
+        value.numNodes = (DWORD)numNodes;
+
+        delete[] agnosticFields;
+    }
+
+    if (index != -1)
+    {
+        GetTypeLayout->Update(index, value);
+    }
+    else
+    {
+        GetTypeLayout->Add(key, value);
+    }
+}
+void MethodContext::dmpGetTypeLayout(DWORDLONG key, const Agnostic_GetTypeLayoutResult& value)
+{
+    printf("FlattenType key type-%016" PRIX64 " value result=%d numNodes=%d", key, (DWORD)value.result, value.numNodes);
+}
+GetTypeLayoutResult MethodContext::repGetTypeLayout(CORINFO_CLASS_HANDLE typeHnd, CORINFO_TYPE_LAYOUT_NODE* nodes, size_t* numNodes)
+{
+    DWORDLONG key = CastHandle(typeHnd);
+    Agnostic_GetTypeLayoutResult value = LookupByKeyOrMiss(GetTypeLayout, key, ": key type-%016" PRIX64, key);
+
+    GetTypeLayoutResult result = (GetTypeLayoutResult)value.result;
+    if (result == GetTypeLayoutResult::Failure)
+    {
+        return result;
+    }
+
+    Agnostic_CORINFO_TYPE_LAYOUT_NODE* valueFields = (Agnostic_CORINFO_TYPE_LAYOUT_NODE*)GetTypeLayout->GetBuffer(value.nodesBuffer);
+    size_t nodesToWrite = min((size_t)value.numNodes, *numNodes);
+    for (size_t i = 0; i < nodesToWrite; i++)
+    {
+        nodes[i] = SpmiRecordsHelper::RestoreCORINFO_TYPE_LAYOUT_NODE(valueFields[i]);
+    }
+
+    *numNodes = nodesToWrite;
+    return value.numNodes > *numNodes ? GetTypeLayoutResult::Partial : GetTypeLayoutResult::Success;
+}
+
 void MethodContext::recGetFieldType(CORINFO_FIELD_HANDLE  field,
                                     CORINFO_CLASS_HANDLE* structType,
                                     CORINFO_CLASS_HANDLE  memberParent,

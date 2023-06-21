@@ -1983,10 +1983,6 @@ namespace Internal.JitInterface
                 if (metadataType.IsByRefLike)
                     result |= CorInfoFlag.CORINFO_FLG_BYREF_LIKE;
 
-                // The CLR has more complicated rules around CUSTOMLAYOUT, but this will do.
-                if (metadataType.IsExplicitLayout || (metadataType.IsSequentialLayout && metadataType.GetClassLayout().Size != 0) || metadataType.IsWellKnownType(WellKnownType.TypedReference))
-                    result |= CorInfoFlag.CORINFO_FLG_CUSTOMLAYOUT;
-
                 if (metadataType.IsUnsafeValueType)
                     result |= CorInfoFlag.CORINFO_FLG_UNSAFE_VALUECLASS;
 
@@ -2015,7 +2011,18 @@ namespace Internal.JitInterface
                     result |= CorInfoFlag.CORINFO_FLG_CONTAINS_GC_PTR;
 
                 if (metadataType.IsBeforeFieldInit)
-                    result |= CorInfoFlag.CORINFO_FLG_BEFOREFIELDINIT;
+                {
+                    bool makeBeforeFieldInit = true;
+
+#if READYTORUN
+                    makeBeforeFieldInit &= _compilation.CompilationModuleGroup.VersionsWithType(type);
+#endif
+
+                    if (makeBeforeFieldInit)
+                    {
+                        result |= CorInfoFlag.CORINFO_FLG_BEFOREFIELDINIT;
+                    }
+                }
 
                 // Assume overlapping fields for explicit layout.
                 if (metadataType.IsExplicitLayout)
@@ -2024,15 +2031,6 @@ namespace Internal.JitInterface
                 if (metadataType.IsAbstract)
                     result |= CorInfoFlag.CORINFO_FLG_ABSTRACT;
             }
-
-#if READYTORUN
-            if (!_compilation.CompilationModuleGroup.VersionsWithType(type))
-            {
-                // Prevent the JIT from drilling into types outside of the current versioning bubble
-                result |= CorInfoFlag.CORINFO_FLG_DONT_DIG_FIELDS;
-                result &= ~CorInfoFlag.CORINFO_FLG_BEFOREFIELDINIT;
-            }
-#endif
 
             return (uint)result;
         }
@@ -2352,6 +2350,124 @@ namespace Internal.JitInterface
 
             // We could not find the field that was searched for.
             throw new InvalidOperationException();
+        }
+
+        private GetTypeLayoutResult GetTypeLayoutHelper(MetadataType type, uint parentIndex, uint baseOffs, FieldDesc field, CORINFO_TYPE_LAYOUT_NODE* treeNodes, nuint maxTreeNodes, nuint* numTreeNodes)
+        {
+            if (*numTreeNodes >= maxTreeNodes)
+            {
+                return GetTypeLayoutResult.Partial;
+            }
+
+            uint structNodeIndex = (uint)(*numTreeNodes)++;
+            CORINFO_TYPE_LAYOUT_NODE* parNode = &treeNodes[structNodeIndex];
+            parNode->typeHnd = ObjectToHandle(type);
+            parNode->fieldHnd = field == null ? null : ObjectToHandle(field);
+            parNode->parent = parentIndex;
+            parNode->offset = baseOffs;
+            parNode->size = (uint)type.GetElementSize().AsInt;
+            parNode->numFields = 0;
+            parNode->type = CorInfoType.CORINFO_TYPE_VALUECLASS;
+            parNode->isIntrinsicType = type.IsIntrinsic;
+            parNode->hasSignificantPadding = false;
+
+            if (type.IsExplicitLayout || (type.IsSequentialLayout && type.GetClassLayout().Size != 0) || type.IsInlineArray)
+            {
+                if (!type.ContainsGCPointers && !type.IsByRefLike)
+                {
+                    parNode->hasSignificantPadding = true;
+                }
+            }
+
+            if (parNode->isIntrinsicType)
+            {
+                return GetTypeLayoutResult.Success;
+            }
+
+            foreach (FieldDesc fd in type.GetFields())
+            {
+                if (fd.IsStatic)
+                    continue;
+
+                parNode->numFields++;
+
+                Debug.Assert(fd.Offset != FieldAndOffset.InvalidOffset);
+
+                TypeDesc fieldType = fd.FieldType;
+                CorInfoType corInfoType = asCorInfoType(fieldType);
+                if (corInfoType == CorInfoType.CORINFO_TYPE_VALUECLASS)
+                {
+                    Debug.Assert(fieldType is MetadataType);
+                    GetTypeLayoutResult result = GetTypeLayoutHelper((MetadataType)fieldType, structNodeIndex, baseOffs + (uint)fd.Offset.AsInt, fd, treeNodes, maxTreeNodes, numTreeNodes);
+                    if (result != GetTypeLayoutResult.Success)
+                        return result;
+                }
+                else
+                {
+                    if (*numTreeNodes >= maxTreeNodes)
+                        return GetTypeLayoutResult.Partial;
+
+                    CORINFO_TYPE_LAYOUT_NODE* treeNode = &treeNodes[(*numTreeNodes)++];
+                    treeNode->typeHnd = null;
+                    treeNode->fieldHnd = ObjectToHandle(fd);
+                    treeNode->parent = structNodeIndex;
+                    treeNode->offset = baseOffs + (uint)fd.Offset.AsInt;
+                    treeNode->size = (uint)fieldType.GetElementSize().AsInt;
+                    treeNode->numFields = 0;
+                    treeNode->type = corInfoType;
+                    treeNode->isIntrinsicType = false;
+                    treeNode->hasSignificantPadding = false;
+                }
+
+                if (type.IsInlineArray)
+                {
+                    nuint treeNodeEnd = *numTreeNodes;
+                    int elemSize = fieldType.GetElementSize().AsInt;
+                    int arrSize = type.GetElementSize().AsInt;
+
+                    for (int elemOffset = elemSize; elemOffset < arrSize; elemOffset += elemSize)
+                    {
+                        for (nuint templateTreeNodeIndex = structNodeIndex + 1; templateTreeNodeIndex < treeNodeEnd; templateTreeNodeIndex++)
+                        {
+                            if (*numTreeNodes >= maxTreeNodes)
+                                return GetTypeLayoutResult.Partial;
+
+                            CORINFO_TYPE_LAYOUT_NODE* treeNode = &treeNodes[(*numTreeNodes)++];
+                            *treeNode = treeNodes[templateTreeNodeIndex];
+                            treeNode->offset += (uint)elemOffset;
+
+                            parNode->numFields++;
+
+                        }
+                    }
+                }
+            }
+
+            return GetTypeLayoutResult.Success;
+        }
+
+        private GetTypeLayoutResult getTypeLayout(CORINFO_CLASS_STRUCT_* typeHnd, CORINFO_TYPE_LAYOUT_NODE* treeNodes, UIntPtr* numTreeNodes)
+        {
+            TypeDesc type = HandleToObject(typeHnd);
+
+            if (type is not MetadataType metadataType || !type.IsValueType)
+                return GetTypeLayoutResult.Failure;
+
+            nuint maxFields = *numTreeNodes;
+            *numTreeNodes = 0;
+            GetTypeLayoutResult result = GetTypeLayoutHelper(metadataType, uint.MaxValue, 0, null, treeNodes, maxFields, numTreeNodes);
+
+#if READYTORUN
+            // TODO: Do we need a version bubble check here if we're going to
+            // add this type layout check anyway?
+            if (NeedsTypeLayoutCheck(type))
+            {
+                ISymbolNode node = _compilation.SymbolNodeFactory.CheckTypeLayout(type);
+                AddPrecodeFixup(node);
+            }
+#endif
+
+            return result;
         }
 
         private bool checkMethodModifier(CORINFO_METHOD_STRUCT_* hMethod, byte* modifier, bool fOptional)
