@@ -6421,6 +6421,30 @@ process_bb (EmitContext *ctx, MonoBasicBlock *bb)
 		case OP_SHR_UN_IMM: {
 			LLVMValueRef imm;
 
+			gboolean shift_ovf = FALSE;
+			switch (ins->opcode) {
+			case OP_ISHL_IMM:
+			case OP_ISHR_IMM:
+			case OP_ISHR_UN_IMM:
+				if (ins->inst_imm < 0 || ins->inst_imm >= 32)
+					shift_ovf = TRUE;
+				break;
+			case OP_LSHL_IMM:
+			case OP_LSHR_IMM:
+			case OP_LSHR_UN_IMM:
+				if (ins->inst_imm < 0 || ins->inst_imm >= 64)
+					shift_ovf = TRUE;
+				break;
+			case OP_SHL_IMM:
+			case OP_SHR_IMM:
+			case OP_SHR_UN_IMM:
+				if (ins->inst_imm < 0 || ins->inst_imm >= TARGET_SIZEOF_VOID_P * 8)
+					shift_ovf = TRUE;
+				break;
+			default:
+				break;
+			}
+
 			if (spec [MONO_INST_SRC1] == 'l') {
 				imm = const_int64 (GET_LONG_IMM (ins));
 			} else {
@@ -6485,7 +6509,10 @@ process_bb (EmitContext *ctx, MonoBasicBlock *bb)
 				break;
 			case OP_ISHL_IMM:
 			case OP_LSHL_IMM:
-				values [ins->dreg] = LLVMBuildShl (builder, lhs, imm, dname);
+				if (shift_ovf)
+					values [ins->dreg] = LLVMConstNull (LLVMTypeOf (lhs));
+				else
+					values [ins->dreg] = LLVMBuildShl (builder, lhs, imm, dname);
 				break;
 			case OP_SHL_IMM:
 MONO_DISABLE_WARNING(4127) /* conditional expression is constant */
@@ -6495,22 +6522,34 @@ MONO_DISABLE_WARNING(4127) /* conditional expression is constant */
 					imm = convert (ctx, imm, LLVMInt64Type ());
 				}
 MONO_RESTORE_WARNING
-				values [ins->dreg] = LLVMBuildShl (builder, lhs, imm, dname);
+				if (shift_ovf)
+					values [ins->dreg] = LLVMConstNull (LLVMTypeOf (lhs));
+				else
+					values [ins->dreg] = LLVMBuildShl (builder, lhs, imm, dname);
 				break;
 			case OP_ISHR_IMM:
 			case OP_LSHR_IMM:
 			case OP_SHR_IMM:
-				values [ins->dreg] = LLVMBuildAShr (builder, lhs, imm, dname);
+				if (shift_ovf)
+					values [ins->dreg] = LLVMConstNull (LLVMTypeOf (lhs));
+				else
+					values [ins->dreg] = LLVMBuildAShr (builder, lhs, imm, dname);
 				break;
 			case OP_ISHR_UN_IMM:
 				/* This is used to implement conv.u4, so the lhs could be an i8 */
 				lhs = convert (ctx, lhs, LLVMInt32Type ());
 				imm = convert (ctx, imm, LLVMInt32Type ());
-				values [ins->dreg] = LLVMBuildLShr (builder, lhs, imm, dname);
+				if (shift_ovf)
+					values [ins->dreg] = LLVMConstNull (LLVMTypeOf (lhs));
+				else
+					values [ins->dreg] = LLVMBuildLShr (builder, lhs, imm, dname);
 				break;
 			case OP_LSHR_UN_IMM:
 			case OP_SHR_UN_IMM:
-				values [ins->dreg] = LLVMBuildLShr (builder, lhs, imm, dname);
+				if (shift_ovf)
+					values [ins->dreg] = LLVMConstNull (LLVMTypeOf (lhs));
+				else
+					values [ins->dreg] = LLVMBuildLShr (builder, lhs, imm, dname);
 				break;
 			default:
 				g_assert_not_reached ();
