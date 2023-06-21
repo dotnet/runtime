@@ -822,7 +822,8 @@ namespace Microsoft.Extensions.Logging.Generators
 
         /// <summary>
         /// Returns a non-randomized hash code for the given string.
-        /// This implementation is porting the one used in the core https://github.com/dotnet/runtime/blob/f3b599e5777eb1db7c396fdc1597c390f22879e6/src/libraries/System.Private.CoreLib/src/System/String.Comparison.cs.
+        /// This implementation is porting the one used in the core
+        /// https://github.com/dotnet/runtime/blob/f3b599e5777eb1db7c396fdc1597c390f22879e6/src/libraries/System.Private.CoreLib/src/System/String.Comparison.cs#L815
         /// We always return a positive value.
         /// </summary>
         private static int GetNonRandomizedHashCode(string source)
