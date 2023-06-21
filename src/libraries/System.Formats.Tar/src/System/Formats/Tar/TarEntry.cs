@@ -339,10 +339,11 @@ namespace System.Formats.Tar
                 throw new IOException(SR.Format(SR.TarExtractingResultsFileOutside, name, destinationDirectoryPath));
             }
 
-            string linkName = ArchivingUtils.SanitizeEntryFilePath(LinkName, preserveDriveRoot: true);
             string? linkTargetPath = null;
             if (EntryType is TarEntryType.SymbolicLink)
             {
+                // LinkName is an absolute path, or path relative to the fileDestinationPath directory.
+                string linkName = ArchivingUtils.SanitizeEntryFilePath(LinkName, preserveDriveRoot: true);
                 if (linkName.Length == 0)
                 {
                     throw new InvalidDataException(SR.TarEntryHardLinkOrSymlinkLinkNameEmpty);
@@ -360,6 +361,8 @@ namespace System.Formats.Tar
             }
             else if (EntryType is TarEntryType.HardLink)
             {
+                // LinkName is path relative to the destinationDirectoryPath.
+                string linkName = ArchivingUtils.SanitizeEntryFilePath(LinkName, preserveDriveRoot: false);
                 if (linkName.Length == 0)
                 {
                     throw new InvalidDataException(SR.TarEntryHardLinkOrSymlinkLinkNameEmpty);
