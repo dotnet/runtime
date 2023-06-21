@@ -21,8 +21,10 @@
 
     <_IsLibraryMode Condition="'$(NativeLib)' != ''">true</_IsLibraryMode>
 
-    <_AotCompileTargetName Condition="'$(RunAOTCompilation)' == 'true'">_AppleAotCompile;</_AotCompileTargetName>
-    <_AotCompileTargetName Condition="'$(UseNativeAOTRuntime)' == 'true'">_AppleNativeAotCompile;</_AotCompileTargetName>
+    <!-- <_AotCompileTargetName Condition="'$(RunAOTCompilation)' == 'true'">_AppleAotCompile;</_AotCompileTargetName> -->
+    <!-- <_AotCompileTargetName Condition="'$(UseNativeAOTRuntime)' == 'true'">_AppleNativeAotCompile;</_AotCompileTargetName> -->
+    <_AotCompileTargetName>_AppleNativeAotCompile;</_AotCompileTargetName>
+    <IlcCompileDependsOn>ComputeIlcCompileInputs;SetupOSSpecificProps;PrepareForILLink</IlcCompileDependsOn>
 
     <AppleBuildAfterThisTarget Condition="'$(AppleBuildAfterThisTarget)' == ''">Publish</AppleBuildAfterThisTarget>
     <AppleBuildDependsOn>

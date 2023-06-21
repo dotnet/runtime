@@ -95,7 +95,11 @@
 
     <!-- Remove the runtime pack parts from the self contained app.  We'll restore on helix -->
     <Delete Condition="'$(UsePortableRuntimePack)' == 'true'" Files="@(_RuntimePackFilesToDelete)" />
-
+    <PropertyGroup>
+      <_IsApplePlatform>true</_IsApplePlatform>
+      <TargetsAppleMobile>true</TargetsAppleMobile>
+      <_targetOS>$(TargetOS)</_targetOS>
+    </PropertyGroup>
     <!-- To recreate the original project on helix, we need to set the apple properties also, same as the
          library test project. Eg. $(InvariantGlobalization) -->
     <ItemGroup>
@@ -105,6 +109,13 @@
       <_ApplePropertyNames Include="MonoEnableLLVM" />
       <_ApplePropertyNames Include="MainLibraryFileName" />
       <_ApplePropertyNames Include="UseConsoleUITemplate" />
+      <_ApplePropertyNames Include="UseNativeAOTRuntime" />
+      <_ApplePropertyNames Include="NativeLib" />
+      <_ApplePropertyNames Include="CustomNativeMain" />
+      <_ApplePropertyNames Include="NativeCompilationDuringPublish" />
+      <_ApplePropertyNames Include="_IsApplePlatform" />
+      <_ApplePropertyNames Include="TargetsAppleMobile" />
+      <_ApplePropertyNames Include="_targetOS" />
 
       <_ApplePropertiesToPass
         Include="$(%(_ApplePropertyNames.Identity))"
