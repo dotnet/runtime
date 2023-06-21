@@ -180,6 +180,21 @@ EXTERN_C NATIVEAOT_API UInt32_BOOL __cdecl RhEventPipeInternal_WaitForSessionSig
     return EventPipeAdapter::WaitForSessionSignal(sessionID, timeoutMs);
 }
 
+EXTERN_C NATIVEAOT_API void __cdecl RhEventPipeInternal_LogContentionLockCreated(intptr_t LockID, intptr_t AssociatedObjectID, uint16_t ClrInstanceID)
+{
+    FireEtwContentionLockCreated(reinterpret_cast<const void*>(LockID), reinterpret_cast<const void*>(AssociatedObjectID), ClrInstanceID);
+}
+
+EXTERN_C NATIVEAOT_API void __cdecl RhEventPipeInternal_LogContentionStart(uint16_t ContentionFlags, uint16_t ClrInstanceID, intptr_t LockID, intptr_t AssociatedObjectID, uint64_t LockOwnerThreadID)
+{
+    FireEtwContentionStart_V2((const unsigned char)(ContentionFlags), ClrInstanceID, reinterpret_cast<const void*>(LockID), reinterpret_cast<const void*>(AssociatedObjectID), LockOwnerThreadID);
+}
+
+EXTERN_C NATIVEAOT_API void __cdecl RhEventPipeInternal_LogContentionStop(uint16_t ContentionFlags, uint16_t ClrInstanceID, double DurationNs)
+{
+    FireEtwContentionStop_V1((const unsigned char)(ContentionFlags), ClrInstanceID, DurationNs);
+}
+
 EXTERN_C NATIVEAOT_API void __cdecl RhEventPipeInternal_LogThreadPoolWorkerThreadStart(uint32_t activeWorkerThreadCount, uint32_t retiredWorkerThreadCount, uint16_t clrInstanceID)
 {
     FireEtwThreadPoolWorkerThreadStart(activeWorkerThreadCount, retiredWorkerThreadCount, clrInstanceID);

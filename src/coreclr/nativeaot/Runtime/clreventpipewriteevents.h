@@ -394,6 +394,32 @@ ULONG EventPipeWriteEventGCFinalizersEnd_V1(
     const GUID * ActivityId = nullptr,
     const GUID * RelatedActivityId = nullptr
 );
+BOOL EventPipeEventEnabledContentionStart_V2(void);
+ULONG EventPipeWriteEventContentionStart_V2(
+    const unsigned char  ContentionFlags,
+    const unsigned short  ClrInstanceID,
+    const void*  LockID,
+    const void*  AssociatedObjectID,
+    const unsigned __int64  LockOwnerThreadID,
+    const GUID * ActivityId = nullptr,
+    const GUID * RelatedActivityId = nullptr
+);
+BOOL EventPipeEventEnabledContentionStop_V1(void);
+ULONG EventPipeWriteEventContentionStop_V1(
+    const unsigned char  ContentionFlags,
+    const unsigned short  ClrInstanceID,
+    const double  DurationNs,
+    const GUID * ActivityId = nullptr,
+    const GUID * RelatedActivityId = nullptr
+);
+BOOL EventPipeEventEnabledContentionLockCreated(void);
+ULONG EventPipeWriteEventContentionLockCreated(
+    const void*  LockID,
+    const void*  AssociatedObjectID,
+    const unsigned short  ClrInstanceID,
+    const GUID * ActivityId = nullptr,
+    const GUID * RelatedActivityId = nullptr
+);
 BOOL EventPipeEventEnabledThreadPoolWorkerThreadStart(void);
 ULONG EventPipeWriteEventThreadPoolWorkerThreadStart(
     const unsigned int  ActiveWorkerThreadCount,

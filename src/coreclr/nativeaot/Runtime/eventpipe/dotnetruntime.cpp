@@ -134,6 +134,9 @@ EventPipeEvent *EventPipeEventDecreaseMemoryPressure = nullptr;
 EventPipeEvent *EventPipeEventFinalizeObject = nullptr;
 EventPipeEvent *EventPipeEventGCFinalizersBegin_V1 = nullptr;
 EventPipeEvent *EventPipeEventGCFinalizersEnd_V1 = nullptr;
+EventPipeEvent *EventPipeEventContentionStart_V2 = nullptr;
+EventPipeEvent *EventPipeEventContentionStop_V1 = nullptr;
+EventPipeEvent *EventPipeEventContentionLockCreated = nullptr;
 EventPipeEvent *EventPipeEventThreadPoolWorkerThreadStart = nullptr;
 EventPipeEvent *EventPipeEventThreadPoolWorkerThreadStop = nullptr;
 EventPipeEvent *EventPipeEventThreadPoolWorkerThreadWait = nullptr;
@@ -1995,6 +1998,136 @@ ULONG EventPipeWriteEventGCFinalizersEnd_V1(
     return ERROR_SUCCESS;
 }
 
+BOOL EventPipeEventEnabledContentionStart_V2(void)
+{
+    return EventPipeAdapter::EventIsEnabled(EventPipeEventContentionStart_V2);
+}
+
+ULONG EventPipeWriteEventContentionStart_V2(
+    const unsigned char ContentionFlags,
+    const unsigned short ClrInstanceID,
+    const void* LockID,
+    const void* AssociatedObjectID,
+    const unsigned __int64 LockOwnerThreadID,
+    const GUID * ActivityId,
+    const GUID * RelatedActivityId)
+{
+    if (!EventPipeEventEnabledContentionStart_V2())
+        return ERROR_SUCCESS;
+
+    size_t size = 32;
+    BYTE stackBuffer[32];
+    BYTE *buffer = stackBuffer;
+    size_t offset = 0;
+    bool fixedBuffer = true;
+    bool success = true;
+
+    success &= WriteToBuffer(ContentionFlags, buffer, offset, size, fixedBuffer);
+    success &= WriteToBuffer(ClrInstanceID, buffer, offset, size, fixedBuffer);
+    success &= WriteToBuffer(LockID, buffer, offset, size, fixedBuffer);
+    success &= WriteToBuffer(AssociatedObjectID, buffer, offset, size, fixedBuffer);
+    success &= WriteToBuffer(LockOwnerThreadID, buffer, offset, size, fixedBuffer);
+
+    if (!success)
+    {
+        if (!fixedBuffer)
+            delete[] buffer;
+        return ERROR_WRITE_FAULT;
+    }
+
+    EventPipeAdapter::WriteEvent(EventPipeEventContentionStart_V2, (BYTE *)buffer, (unsigned int)offset, ActivityId, RelatedActivityId);
+
+    if (!fixedBuffer)
+        delete[] buffer;
+
+
+    return ERROR_SUCCESS;
+}
+
+BOOL EventPipeEventEnabledContentionStop_V1(void)
+{
+    return EventPipeAdapter::EventIsEnabled(EventPipeEventContentionStop_V1);
+}
+
+ULONG EventPipeWriteEventContentionStop_V1(
+    const unsigned char ContentionFlags,
+    const unsigned short ClrInstanceID,
+    const double DurationNs,
+    const GUID * ActivityId,
+    const GUID * RelatedActivityId)
+{
+    if (!EventPipeEventEnabledContentionStop_V1())
+        return ERROR_SUCCESS;
+
+    size_t size = 32;
+    BYTE stackBuffer[32];
+    BYTE *buffer = stackBuffer;
+    size_t offset = 0;
+    bool fixedBuffer = true;
+    bool success = true;
+
+    success &= WriteToBuffer(ContentionFlags, buffer, offset, size, fixedBuffer);
+    success &= WriteToBuffer(ClrInstanceID, buffer, offset, size, fixedBuffer);
+    success &= WriteToBuffer(DurationNs, buffer, offset, size, fixedBuffer);
+
+    if (!success)
+    {
+        if (!fixedBuffer)
+            delete[] buffer;
+        return ERROR_WRITE_FAULT;
+    }
+
+    EventPipeAdapter::WriteEvent(EventPipeEventContentionStop_V1, (BYTE *)buffer, (unsigned int)offset, ActivityId, RelatedActivityId);
+
+    if (!fixedBuffer)
+        delete[] buffer;
+
+
+    return ERROR_SUCCESS;
+}
+
+BOOL EventPipeEventEnabledContentionLockCreated(void)
+{
+    return EventPipeAdapter::EventIsEnabled(EventPipeEventContentionLockCreated);
+}
+
+ULONG EventPipeWriteEventContentionLockCreated(
+    const void* LockID,
+    const void* AssociatedObjectID,
+    const unsigned short ClrInstanceID,
+    const GUID * ActivityId,
+    const GUID * RelatedActivityId)
+{
+    if (!EventPipeEventEnabledContentionLockCreated())
+        return ERROR_SUCCESS;
+
+    size_t size = 32;
+    BYTE stackBuffer[32];
+    BYTE *buffer = stackBuffer;
+    size_t offset = 0;
+    bool fixedBuffer = true;
+    bool success = true;
+
+    success &= WriteToBuffer(LockID, buffer, offset, size, fixedBuffer);
+    success &= WriteToBuffer(AssociatedObjectID, buffer, offset, size, fixedBuffer);
+    success &= WriteToBuffer(ClrInstanceID, buffer, offset, size, fixedBuffer);
+
+    if (!success)
+    {
+        if (!fixedBuffer)
+            delete[] buffer;
+        return ERROR_WRITE_FAULT;
+    }
+
+    EventPipeAdapter::WriteEvent(EventPipeEventContentionLockCreated, (BYTE *)buffer, (unsigned int)offset, ActivityId, RelatedActivityId);
+
+    if (!fixedBuffer)
+        delete[] buffer;
+
+
+    return ERROR_SUCCESS;
+}
+
 BOOL EventPipeEventEnabledThreadPoolWorkerThreadStart(void)
 {
     return EventPipeAdapter::EventIsEnabled(EventPipeEventThreadPoolWorkerThreadStart);
@@ -3228,6 +3361,9 @@ void InitDotNETRuntime(void)
     EventPipeEventFinalizeObject = EventPipeAdapter::AddEvent(EventPipeProviderDotNETRuntime,29,1,0,EP_EVENT_LEVEL_VERBOSE,false);
     EventPipeEventGCFinalizersBegin_V1 = EventPipeAdapter::AddEvent(EventPipeProviderDotNETRuntime,14,1,1,EP_EVENT_LEVEL_INFORMATIONAL,false);
     EventPipeEventGCFinalizersEnd_V1 = EventPipeAdapter::AddEvent(EventPipeProviderDotNETRuntime,13,1,1,EP_EVENT_LEVEL_INFORMATIONAL,false);
+    EventPipeEventContentionStart_V2 = EventPipeAdapter::AddEvent(EventPipeProviderDotNETRuntime,81,16384,2,EP_EVENT_LEVEL_INFORMATIONAL,true);
+    EventPipeEventContentionStop_V1 = EventPipeAdapter::AddEvent(EventPipeProviderDotNETRuntime,91,16384,1,EP_EVENT_LEVEL_INFORMATIONAL,false);
+    EventPipeEventContentionLockCreated = EventPipeAdapter::AddEvent(EventPipeProviderDotNETRuntime,90,16384,0,EP_EVENT_LEVEL_INFORMATIONAL,true);
     EventPipeEventThreadPoolWorkerThreadStart = EventPipeAdapter::AddEvent(EventPipeProviderDotNETRuntime,50,65536,0,EP_EVENT_LEVEL_INFORMATIONAL,false);
     EventPipeEventThreadPoolWorkerThreadStop = EventPipeAdapter::AddEvent(EventPipeProviderDotNETRuntime,51,65536,0,EP_EVENT_LEVEL_INFORMATIONAL,false);
     EventPipeEventThreadPoolWorkerThreadWait = EventPipeAdapter::AddEvent(EventPipeProviderDotNETRuntime,57,65536,0,EP_EVENT_LEVEL_INFORMATIONAL,false);

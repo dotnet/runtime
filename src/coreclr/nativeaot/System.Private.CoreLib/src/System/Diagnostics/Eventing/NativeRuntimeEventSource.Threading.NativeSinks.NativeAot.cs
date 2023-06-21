@@ -16,6 +16,32 @@ namespace System.Diagnostics.Tracing
     // It contains the runtime specific interop to native event sinks.
     internal sealed partial class NativeRuntimeEventSource : EventSource
     {
+        // We don't have these keywords defined from the genRuntimeEventSources.py, so we need to manually define them here.
+        public static partial class Keywords
+        {
+            public const EventKeywords ContentionKeyword = (EventKeywords)0x4000;
+            public const EventKeywords ThreadingKeyword = (EventKeywords)0x10000;
+            public const EventKeywords ThreadTransferKeyword = (EventKeywords)0x80000000;
+        }
+
+        [NonEvent]
+        internal static void LogContentionLockCreated(nint LockID, nint AssociatedObjectID, ushort ClrInstanceID)
+        {
+            RuntimeImports.RhEventPipeInternal_LogContentionLockCreated(LockID, AssociatedObjectID, ClrInstanceID);
+        }
+
+        [NonEvent]
+        internal static void LogContentionStart(ContentionFlagsMap ContentionFlags, ushort ClrInstanceID, nint LockID, nint AssociatedObjectID, ulong LockOwnerThreadID)
+        {
+            RuntimeImports.RhEventPipeInternal_LogContentionStart((byte)ContentionFlags, ClrInstanceID, LockID, AssociatedObjectID, LockOwnerThreadID);
+        }
+
+        [NonEvent]
+        internal static void LogContentionStop(ContentionFlagsMap ContentionFlags, ushort ClrInstanceID, double DurationNs)
+        {
+            RuntimeImports.RhEventPipeInternal_LogContentionStop((byte)ContentionFlags, ClrInstanceID, DurationNs);
+        }
+
         [NonEvent]
         internal static void LogThreadPoolWorkerThreadStart(uint ActiveWorkerThreadCount, uint RetiredWorkerThreadCount, ushort ClrInstanceID)
         {
@@ -46,15 +72,11 @@ namespace System.Diagnostics.Tracing
             RuntimeImports.RhEventPipeInternal_LogThreadPoolWorkerThreadAdjustmentSample(Throughput, ClrInstanceID);
         }
 
-#if TARGET_UNIX
-        // Reason parameter is an enum in NativeRuntimeEventSource but passed here as the underlying type
-        // In Windows, this event is not fired in managed code
         [NonEvent]
         internal static void LogThreadPoolWorkerThreadAdjustmentAdjustment(double AverageThroughput, uint NewWorkerThreadCount, ThreadAdjustmentReasonMap Reason, ushort ClrInstanceID)
         {
             RuntimeImports.RhEventPipeInternal_LogThreadPoolWorkerThreadAdjustmentAdjustment(AverageThroughput, NewWorkerThreadCount, (uint)Reason, ClrInstanceID);
         }
-#endif
 
         [NonEvent]
         internal static void LogThreadPoolWorkerThreadAdjustmentStats(

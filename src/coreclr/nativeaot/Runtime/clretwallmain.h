@@ -717,7 +717,7 @@ inline ULONG FireEtwDecreaseMemoryPressure(
     return status;
 }
 
-inline BOOL EventEnabledFinalizeObject(void) {return EventPipeEventEnabledFinalizeObject();}// || EventXplatEnabledFinalizeObject();}
+inline BOOL EventEnabledFinalizeObject(void) {return EventPipeEventEnabledFinalizeObject();}
 
 inline ULONG FireEtwFinalizeObject(
     const void*  TypeID,
@@ -731,7 +731,7 @@ inline ULONG FireEtwFinalizeObject(
     return status;
 }
 
-inline BOOL EventEnabledGCFinalizersBegin_V1(void) {return EventPipeEventEnabledGCFinalizersBegin_V1();}// || EventXplatEnabledGCFinalizersBegin_V1();}
+inline BOOL EventEnabledGCFinalizersBegin_V1(void) {return EventPipeEventEnabledGCFinalizersBegin_V1();}
 
 inline ULONG FireEtwGCFinalizersBegin_V1(
     const unsigned short  ClrInstanceID,
@@ -743,7 +743,7 @@ inline ULONG FireEtwGCFinalizersBegin_V1(
     return status;
 }
 
-inline BOOL EventEnabledGCFinalizersEnd_V1(void) {return EventPipeEventEnabledGCFinalizersEnd_V1();}// || EventXplatEnabledGCFinalizersEnd_V1();}
+inline BOOL EventEnabledGCFinalizersEnd_V1(void) {return EventPipeEventEnabledGCFinalizersEnd_V1();}
 
 inline ULONG FireEtwGCFinalizersEnd_V1(
     const unsigned int  Count,
@@ -756,7 +756,51 @@ inline ULONG FireEtwGCFinalizersEnd_V1(
     return status;
 }
 
-inline BOOL EventEnabledThreadPoolWorkerThreadStart(void) {return EventPipeEventEnabledThreadPoolWorkerThreadStart();}// || EventXplatEnabledThreadPoolWorkerThreadStart();}
+inline BOOL EventEnabledContentionStart_V2(void) {return EventPipeEventEnabledContentionStart_V2();}
+
+inline ULONG FireEtwContentionStart_V2(
+    const unsigned char  ContentionFlags,
+    const unsigned short  ClrInstanceID,
+    const void*  LockID,
+    const void*  AssociatedObjectID,
+    const unsigned __int64  LockOwnerThreadID,
+    const GUID *  ActivityId = nullptr,
+    const GUID *  RelatedActivityId = nullptr
+)
+{
+    ULONG status = EventPipeWriteEventContentionStart_V2(ContentionFlags,ClrInstanceID,LockID,AssociatedObjectID,LockOwnerThreadID,ActivityId,RelatedActivityId);
+    return status;
+}
+
+inline BOOL EventEnabledContentionStop_V1(void) {return EventPipeEventEnabledContentionStop_V1();}
+
+inline ULONG FireEtwContentionStop_V1(
+    const unsigned char  ContentionFlags,
+    const unsigned short  ClrInstanceID,
+    const double  DurationNs,
+    const GUID *  ActivityId = nullptr,
+    const GUID *  RelatedActivityId = nullptr
+)
+{
+    ULONG status = EventPipeWriteEventContentionStop_V1(ContentionFlags,ClrInstanceID,DurationNs,ActivityId,RelatedActivityId);
+    return status;
+}
+
+inline BOOL EventEnabledContentionLockCreated(void) {return EventPipeEventEnabledContentionLockCreated();}
+
+inline ULONG FireEtwContentionLockCreated(
+    const void*  LockID,
+    const void*  AssociatedObjectID,
+    const unsigned short  ClrInstanceID,
+    const GUID *  ActivityId = nullptr,
+    const GUID *  RelatedActivityId = nullptr
+)
+{
+    ULONG status = EventPipeWriteEventContentionLockCreated(LockID,AssociatedObjectID,ClrInstanceID,ActivityId,RelatedActivityId);
+    return status;
+}
+
+inline BOOL EventEnabledThreadPoolWorkerThreadStart(void) {return EventPipeEventEnabledThreadPoolWorkerThreadStart();}
 
 inline uint32_t FireEtwThreadPoolWorkerThreadStart(
     const unsigned int  ActiveWorkerThreadCount,

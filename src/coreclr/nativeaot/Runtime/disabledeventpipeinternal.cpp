@@ -101,6 +101,21 @@ EXTERN_C NATIVEAOT_API UInt32_BOOL __cdecl RhEventPipeInternal_WaitForSessionSig
     return FALSE;
 }
 
+EXTERN_C NATIVEAOT_API void __cdecl RhEventPipeInternal_LogContentionLockCreated(intptr_t LockID, intptr_t AssociatedObjectID, uint16_t ClrInstanceID)
+{
+    PalDebugBreak();
+}
+
+EXTERN_C NATIVEAOT_API void __cdecl RhEventPipeInternal_LogContentionStart(uint16_t ContentionFlags, uint16_t ClrInstanceID, intptr_t LockID, intptr_t AssociatedObjectID, uint64_t LockOwnerThreadID)
+{
+    PalDebugBreak();
+}
+
+EXTERN_C NATIVEAOT_API void __cdecl RhEventPipeInternal_LogContentionStop(uint16_t ContentionFlags, uint16_t ClrInstanceID, double DurationNs)
+{
+    PalDebugBreak();
+}
+
 EXTERN_C NATIVEAOT_API void __cdecl RhEventPipeInternal_LogThreadPoolWorkerThreadStart(uint32_t activeWorkerThreadCount, uint32_t retiredWorkerThreadCount, uint16_t clrInstanceID)
 {
     PalDebugBreak();
