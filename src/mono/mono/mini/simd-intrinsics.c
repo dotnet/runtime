@@ -325,6 +325,10 @@ emit_simd_ins_for_binary_op (MonoCompile *cfg, MonoClass *klass, MonoMethodSigna
 			case SN_Divide:
 			case SN_op_Division: {
 				const char *class_name = m_class_get_name (klass);
+				if (!strcmp("Vector4", class_name) && fsig->params [1]->type == MONO_TYPE_R4) {
+					// Handles  Vector4 / scalar
+					return handle_mul_div_by_scalar (cfg, klass, MONO_TYPE_R4, args [1]->dreg, args [0]->dreg, OP_FDIV);	
+				}
 				if (strcmp ("Vector2", class_name) && strcmp ("Vector4", class_name) && strcmp ("Quaternion", class_name) && strcmp ("Plane", class_name)) {
 					if ((fsig->params [0]->type == MONO_TYPE_GENERICINST) && (fsig->params [1]->type != MONO_TYPE_GENERICINST))
 						return handle_mul_div_by_scalar (cfg, klass, arg_type, args [1]->dreg, args [0]->dreg, OP_FDIV);
@@ -347,6 +351,14 @@ emit_simd_ins_for_binary_op (MonoCompile *cfg, MonoClass *klass, MonoMethodSigna
 			case SN_Multiply:
 			case SN_op_Multiply: {
 				const char *class_name = m_class_get_name (klass);
+				if (!strcmp("Vector4", class_name)) {
+					// Handles scalar * Vector4 and Vector4 * scalar
+					if (fsig->params [0]->type == MONO_TYPE_R4) {
+						return handle_mul_div_by_scalar (cfg, klass, MONO_TYPE_R4, args [0]->dreg, args [1]->dreg, OP_FMUL);
+					} else if (fsig->params [1]->type == MONO_TYPE_R4) {
+						return handle_mul_div_by_scalar (cfg, klass, MONO_TYPE_R4, args [1]->dreg, args [0]->dreg, OP_FMUL);
+					}
+				}
 				if (strcmp ("Vector2", class_name) && strcmp ("Vector4", class_name) && strcmp ("Quaternion", class_name) && strcmp ("Plane", class_name)) {
 					if (fsig->params [1]->type != MONO_TYPE_GENERICINST)
 						return handle_mul_div_by_scalar (cfg, klass, arg_type, args [1]->dreg, args [0]->dreg, OP_FMUL);
@@ -2573,14 +2585,49 @@ emit_vector_2_3_4 (MonoCompile *cfg, MonoMethod *cmethod, MonoMethodSignature *f
 	MonoClass *klass;
 	MonoType *type, *etype;
 
-	if (!COMPILE_LLVM (cfg))
-		return NULL;
 
 	id = lookup_intrins (vector2_methods, sizeof (vector2_methods), cmethod);
 	if (id == -1) {
 		// https://github.com/dotnet/runtime/issues/81961
 		// check_no_intrinsic_cattr (cmethod);
 		return NULL;
+	}
+
+	if (!COMPILE_LLVM (cfg)) {
+#ifndef TARGET_ARM64
+		return NULL;
+#else
+		// when a method gets enabled should be removed from here
+		switch (id) {
+		case SN_ctor:
+		case SN_Clamp:
+		case SN_Conjugate:
+		case SN_CopyTo:
+		case SN_Distance:
+		case SN_DistanceSquared:
+		case SN_Dot:
+		case SN_Length:
+		case SN_LengthSquared:
+		case SN_Lerp:
+		case SN_Negate:
+		case SN_Normalize:
+		case SN_get_Identity:
+		case SN_get_Item:
+		case SN_get_One:
+		case SN_get_UnitW:
+		case SN_get_UnitX:
+		case SN_get_UnitY:
+		case SN_get_UnitZ:
+		case SN_get_Zero:
+		case SN_op_Equality:
+		case SN_op_Inequality:
+		case SN_op_UnaryNegation:
+		case SN_set_Item:
+			return NULL;
+		default:
+			break;
+		}
+#endif
 	}
 
 	if (cfg->verbose_level > 1) {
@@ -2774,6 +2821,11 @@ emit_vector_2_3_4 (MonoCompile *cfg, MonoMethod *cmethod, MonoMethodSignature *f
 #endif
 	}
 	case SN_Abs: {
+		if (!COMPILE_LLVM (cfg)) {
+#ifdef TARGET_ARM64
+			return emit_simd_ins_for_sig (cfg, cmethod->klass, OP_XOP_OVR_X_X, INTRINS_AARCH64_ADV_SIMD_FABS, MONO_TYPE_R4, fsig, args);
+#endif
+		}
 		// MAX(x,0-x)
 		MonoInst *zero = emit_xzero (cfg, klass);
 		MonoInst *neg = emit_simd_ins (cfg, klass, OP_XBINOP, zero->dreg, args [0]->dreg);
