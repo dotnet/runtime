@@ -979,9 +979,6 @@ mono_custom_attrs_from_builders_handle (MonoImage *alloc_img, MonoImage *image, 
 
 	int const count = GUINTPTR_TO_INT (mono_array_handle_length (cattrs));
 	MonoMethod *ctor_method =  NULL;
-
-	/* Skip nonpublic attributes since MS.NET seems to do the same */
-	/* FIXME: This needs to be done more globally */
 	int count_visible = 0;
 
 	if (respect_cattr_visibility) {
