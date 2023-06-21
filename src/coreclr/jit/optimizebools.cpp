@@ -1991,16 +1991,14 @@ bool OptRangePatternDsc::optMakeSwitchBBdesc()
     }
 
     // Change from GT_JTRUE to GT_SWITCH
-    rootTree->ChangeOper(GT_SWITCH, GenTree::PRESERVE_VN);
-    rootTree->gtFlags &= ~GTF_ASG;                      // TODO check the right value to set
+    rootTree->ChangeOper(GT_SWITCH);
 
     // Change from GT_EQ or GT_NE to GT_SUB
     //      tree: SUB
     //      op1: LCL_VAR
     //      op2: GT_CNS_INT
     GenTree* tree = rootTree->gtGetOp1(); // GT_EQ or GT_NE node to chnage to GT_SUB
-    tree->ChangeOper(GT_SUB, GenTree::PRESERVE_VN);
-    tree->gtFlags &= ~GTF_ASG;                          // TODO check the right value to set
+    tree->ChangeOper(GT_SUB);
 
     // get LCL_VAR node in case of COMMA node
     if (tree->gtGetOp1()->OperIs(GT_COMMA))
@@ -2019,7 +2017,6 @@ bool OptRangePatternDsc::optMakeSwitchBBdesc()
     }
 
     // Change CNS_INT node if siwtch tree does not have the mininum pattern
-
     assert(tree->gtGetOp2() != nullptr);
     if (tree->gtGetOp2()->AsIntCon()->IconValue() != optGetMinPattern())
     {
@@ -2031,6 +2028,8 @@ bool OptRangePatternDsc::optMakeSwitchBBdesc()
 
         DEBUG_DESTROY_NODE(op2);
     }
+
+    m_comp->gtUpdateStmtSideEffects(stmt);
 
     return true;
 }
@@ -2075,7 +2074,6 @@ PhaseStatus Compiler::optFindSpecificPattern()
 
     for (BasicBlock* currBb = fgFirstBB->bbNext; currBb != nullptr; currBb = currBb->bbNext)
     {
-        //if ((currBb->KindIs(BBJ_COND) || currBb->KindIs(BBJ_RETURN)) && prevBb != nullptr && prevBb->KindIs(BBJ_COND))
         if (currBb->KindIs(BBJ_COND) && prevBb != nullptr && prevBb->KindIs(BBJ_COND))
         {
 #ifdef DEBUG
@@ -2104,8 +2102,8 @@ PhaseStatus Compiler::optFindSpecificPattern()
                         {
                             auto leftCondition1 = condition1->gtGetOp1(); // op1 of condition1 from currBb
                             auto leftCondition2 = condition2->gtGetOp1(); // op1 of condition2 from prevBb
-                            if (leftCondition1->IsLocal() &&
-                                ((leftCondition2->IsLocal() && leftCondition1->AsLclVarCommon()->GetLclNum() ==
+                            if (leftCondition1->OperIs(GT_LCL_VAR) &&
+                                ((leftCondition2->OperIs(GT_LCL_VAR) && leftCondition1->AsLclVarCommon()->GetLclNum() ==
                                                                    leftCondition2->AsLclVarCommon()->GetLclNum()) ||
                                  (leftCondition2->OperIs(GT_COMMA) &&
                                   leftCondition1->AsLclVarCommon()->GetLclNum() ==
