@@ -228,10 +228,11 @@ Copyright (c) .NET Foundation. All rights reserved.
     </ComputeWasmBuildAssets>
 
     <PropertyGroup>
-      <_WasmBuildWebCilPath>$(IntermediateOutputPath)webcil</_WasmBuildWebCilPath>
+      <_WasmBuildWebCilPath>$([MSBuild]::NormalizeDirectory($(IntermediateOutputPath), 'webcil'))</_WasmBuildWebCilPath>
+      <_WasmBuildTmpWebCilPath>$([MSBuild]::NormalizeDirectory($(IntermediateOutputPath), 'tmp-webcil'))</_WasmBuildTmpWebCilPath>
     </PropertyGroup>
 
-    <ConvertDllsToWebCil Candidates="@(_BuildAssetsCandidates)" IntermediateOutputPath="$(IntermediateOutputPath)tmp-webcil" OutputPath="$(_WasmBuildWebCilPath)" IsEnabled="$(_WasmEnableWebcil)">
+    <ConvertDllsToWebCil Candidates="@(_BuildAssetsCandidates)" IntermediateOutputPath="$(_WasmBuildTmpWebCilPath)" OutputPath="$(_WasmBuildWebCilPath)" IsEnabled="$(_WasmEnableWebcil)">
       <Output TaskParameter="WebCilCandidates" ItemName="_WebCilAssetsCandidates" />
       <Output TaskParameter="FileWrites" ItemName="FileWrites" />
     </ConvertDllsToWebCil>
