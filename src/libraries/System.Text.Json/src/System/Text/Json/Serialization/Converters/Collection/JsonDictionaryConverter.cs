@@ -1,6 +1,7 @@
 // Licensed to the .NET Foundation under one or more agreements.
 // The .NET Foundation licenses this file to you under the MIT license.
 
+using System.Buffers;
 using System.Diagnostics;
 using System.Diagnostics.CodeAnalysis;
 using System.Text.Json.Serialization.Metadata;
@@ -120,13 +121,17 @@ namespace System.Text.Json.Serialization
                         Debug.Assert(reader.TokenType == JsonTokenType.PropertyName);
 
                         state.Current.JsonPropertyInfo = keyTypeInfo.PropertyInfoForTypeInfo;
-                        TKey key = ReadDictionaryKey(_keyConverter, ref reader, ref state, options);
+                        TKey? key = TryReadDictionaryKey(_keyConverter, ref reader, ref state, options);
 
-                        // Read the value and add.
+                        // Read the value
                         reader.ReadWithVerify();
-                        state.Current.JsonPropertyInfo = elementTypeInfo.PropertyInfoForTypeInfo;
-                        TValue? element = _valueConverter.Read(ref reader, ElementType, options);
-                        Add(key, element!, options, ref state);
+                        if (key is not null)
+                        {
+                            // Get the value from the converter and add it.
+                            state.Current.JsonPropertyInfo = elementTypeInfo.PropertyInfoForTypeInfo;
+                            TValue? element = _valueConverter.Read(ref reader, ElementType, options);
+                            Add(key, element!, options, ref state);
+                        }
                     }
                 }
                 else
@@ -145,14 +150,17 @@ namespace System.Text.Json.Serialization
                         // Read method would have thrown if otherwise.
                         Debug.Assert(reader.TokenType == JsonTokenType.PropertyName);
                         state.Current.JsonPropertyInfo = keyTypeInfo.PropertyInfoForTypeInfo;
-                        TKey key = ReadDictionaryKey(_keyConverter, ref reader, ref state, options);
+                        TKey? key = TryReadDictionaryKey(_keyConverter, ref reader, ref state, options);
 
+                        // Read the value
                         reader.ReadWithVerify();
-
-                        // Get the value from the converter and add it.
-                        state.Current.JsonPropertyInfo = elementTypeInfo.PropertyInfoForTypeInfo;
-                        _valueConverter.TryRead(ref reader, ElementType, options, ref state, out TValue? element, out _);
-                        Add(key, element!, options, ref state);
+                        if (key is not null)
+                        {
+                            // Get the value from the converter and add it.
+                            state.Current.JsonPropertyInfo = elementTypeInfo.PropertyInfoForTypeInfo;
+                            _valueConverter.TryRead(ref reader, ElementType, options, ref state, out TValue? element, out _);
+                            Add(key, element!, options, ref state);
+                        }
                     }
                 }
             }
@@ -305,6 +313,38 @@ namespace System.Text.Json.Serialization
             ConvertCollection(ref state, options);
             value = (TDictionary)state.Current.ReturnValue!;
             return true;
+
+            static TKey? TryReadDictionaryKey(JsonConverter<TKey> keyConverter, ref Utf8JsonReader reader, scoped ref ReadStack state, JsonSerializerOptions options)
+            {
+                if (options.DictionaryKeyFilter is JsonDictionaryKeyFilter keyFilter)
+                {
+                    ReadOnlySpan<byte> span = reader.HasValueSequence ? reader.ValueSequence.ToArray() : reader.ValueSpan;
+                    if (reader.ValueIsEscaped)
+                    {
+                        span = JsonReaderHelper.GetUnescapedSpan(span);
+                    }
+                    if (keyFilter.IgnoreKey(span))
+                    {
+                        return default;
+                    }
+                }
+
+                TKey key;
+                string unescapedPropertyNameAsString = reader.GetString()!;
+                state.Current.JsonPropertyNameAsString = unescapedPropertyNameAsString; // Copy key name for JSON Path support in case of error.
+
+                // Special case string to avoid calling GetString twice and save one allocation.
+                if (keyConverter.IsInternalConverter && keyConverter.Type == typeof(string))
+                {
+                    key = (TKey)(object)unescapedPropertyNameAsString;
+                }
+                else
+                {
+                    key = keyConverter.ReadAsPropertyNameCore(ref reader, keyConverter.Type, options);
+                }
+
+                return key;
+            }
 
             static TKey ReadDictionaryKey(JsonConverter<TKey> keyConverter, ref Utf8JsonReader reader, scoped ref ReadStack state, JsonSerializerOptions options)
             {

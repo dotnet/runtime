@@ -357,6 +357,7 @@ namespace System.Text.Json.Serialization.Tests
                 yield return (GetProp(nameof(JsonSerializerOptions.AllowTrailingCommas)), true);
                 yield return (GetProp(nameof(JsonSerializerOptions.DefaultBufferSize)), 42);
                 yield return (GetProp(nameof(JsonSerializerOptions.Encoder)), JavaScriptEncoder.UnsafeRelaxedJsonEscaping);
+                yield return (GetProp(nameof(JsonSerializerOptions.DictionaryKeyFilter)), JsonDictionaryKeyFilter.IgnoreMetadataNames);
                 yield return (GetProp(nameof(JsonSerializerOptions.DictionaryKeyPolicy)), JsonNamingPolicy.CamelCase);
                 yield return (GetProp(nameof(JsonSerializerOptions.IgnoreNullValues)), true);
                 yield return (GetProp(nameof(JsonSerializerOptions.DefaultIgnoreCondition)), JsonIgnoreCondition.WhenWritingDefault);

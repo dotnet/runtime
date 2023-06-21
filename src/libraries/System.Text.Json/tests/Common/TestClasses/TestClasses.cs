@@ -1989,6 +1989,24 @@ namespace System.Text.Json.Serialization.Tests
         public int Id { get; set; }
     }
 
+    public class IgnoreNamesWithAtCharDictionaryKeyFilter : JsonDictionaryKeyFilter
+    {
+        public override bool IgnoreKey(ReadOnlySpan<byte> utf8Key)
+            => utf8Key.IndexOf("@"u8) < 0;
+    }
+
+    public class IgnoreAllNamesDictionaryKeyFilter : JsonDictionaryKeyFilter
+    {
+        public override bool IgnoreKey(ReadOnlySpan<byte> utf8Key)
+            => true;
+    }
+
+    public class AcceptAllNamesDictionaryKeyFilter : JsonDictionaryKeyFilter
+    {
+        public override bool IgnoreKey(ReadOnlySpan<byte> utf8Key)
+            => false;
+    }
+
     public class UppercaseNamingPolicy : JsonNamingPolicy
     {
         public override string ConvertName(string name)

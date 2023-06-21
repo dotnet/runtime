@@ -1,0 +1,558 @@
+MSBuild version 17.7.0-preview-23251-02+59879b095 for .NET
+  ��।������ �஥�⮢ ��� ����⠭�������...
+  �� �஥��� ��������� ��� ����⠭�������.
+C:\Users\Alex\.nuget\packages\microsoft.dotnet.build.tasks.targetframework\8.0.0-beta.23309.8\buildMultiTargeting\Microsoft.DotNet.Build.Tasks.TargetFramework.targets(54,49): message : MSB4120: Item 'InnerBuildProjectsWithBestTargetFramework' definition within target references itself via (qualified or unqualified) metadatum 'Identity'. This can lead to unintended expansion and cross-applying of pre-existing items. More info: https://aka.ms/msbuild/metadata-self-ref [C:\AProj\runtime\src\libraries\System.Text.Json\tests\System.Text.Json.Tests\System.Text.Json.Tests.csproj]
+  Microsoft.Interop.SourceGeneration -> C:\AProj\runtime\artifacts\bin\Microsoft.Interop.SourceGeneration\Debug\netstandard2.0\Microsoft.Interop.SourceGeneration.dll
+  LibraryImportGenerator -> C:\AProj\runtime\artifacts\bin\LibraryImportGenerator\Debug\netstandard2.0\Microsoft.Interop.LibraryImportGenerator.dll
+  TestUtilities -> C:\AProj\runtime\artifacts\bin\TestUtilities\Debug\net6.0\TestUtilities.dll
+  System.Runtime -> C:\AProj\runtime\artifacts\bin\System.Runtime\ref\Debug\net8.0\System.Runtime.dll
+  ComInterfaceGenerator -> C:\AProj\runtime\artifacts\bin\ComInterfaceGenerator\Debug\netstandard2.0\Microsoft.Interop.ComInterfaceGenerator.dll
+  System.Text.Encodings.Web -> C:\AProj\runtime\artifacts\bin\System.Text.Encodings.Web\ref\Debug\net8.0\System.Text.Encodings.Web.dll
+  System.Text.Encodings.Web -> C:\AProj\runtime\artifacts\bin\System.Text.Encodings.Web\Debug\net8.0\System.Text.Encodings.Web.dll
+  System.IO.Pipelines -> C:\AProj\runtime\artifacts\bin\System.IO.Pipelines\ref\Debug\net8.0\System.IO.Pipelines.dll
+  System.Text.Json.SourceGeneration.Roslyn3.11 -> C:\AProj\runtime\artifacts\bin\System.Text.Json.SourceGeneration.Roslyn3.11\Debug\netstandard2.0\System.Text.Json.SourceGeneration.dll
+  System.Text.Json.SourceGeneration.Roslyn4.0 -> C:\AProj\runtime\artifacts\bin\System.Text.Json.SourceGeneration.Roslyn4.0\Debug\netstandard2.0\System.Text.Json.SourceGeneration.dll
+  System.IO.Pipelines -> C:\AProj\runtime\artifacts\bin\System.IO.Pipelines\Debug\net8.0\System.IO.Pipelines.dll
+  System.Text.Json.SourceGeneration.Roslyn4.4 -> C:\AProj\runtime\artifacts\bin\System.Text.Json.SourceGeneration.Roslyn4.4\Debug\net8.0\System.Text.Json.SourceGeneration.dll
+  System.Collections -> C:\AProj\runtime\artifacts\bin\System.Collections\ref\Debug\net8.0\System.Collections.dll
+  System.Memory -> C:\AProj\runtime\artifacts\bin\System.Memory\ref\Debug\net8.0\System.Memory.dll
+  System.Collections.Concurrent -> C:\AProj\runtime\artifacts\bin\System.Collections.Concurrent\ref\Debug\net8.0\System.Collections.Concurrent.dll
+  System.Text.Json -> C:\AProj\runtime\artifacts\bin\System.Text.Json\ref\Debug\net8.0\System.Text.Json.dll
+  System.Text.Json -> C:\AProj\runtime\artifacts\bin\System.Text.Json\Debug\net8.0\System.Text.Json.dll
+  System.Text.Json.Tests -> C:\AProj\runtime\artifacts\bin\System.Text.Json.Tests\Debug\net8.0\System.Text.Json.Tests.dll
+  ----- start 21.06.2023 17:26:18,87 ===============  To repro directly: =====================================================
+  pushd C:\AProj\runtime\artifacts\bin\System.Text.Json.Tests\Debug\net8.0\
+  "C:\AProj\runtime\artifacts\bin\testhost\net8.0-windows-Debug-x64\dotnet.exe" exec --runtimeconfig System.Text.Json.Tests.runtimeconfig.json --depsfile System.Text.Json.Tests.deps.json xunit.console.dll System.Text.Json.Tests.dll -xml testResults.xml -nologo -notrait category=OuterLoop -notrait category=failing 
+  popd
+  ===========================================================================================================
+    Discovering: System.Text.Json.Tests (method display = ClassAndMethod, method display options = None)
+    Discovered:  System.Text.Json.Tests (found 7099 of 7150 test cases)
+    Starting:    System.Text.Json.Tests (parallel test collections = on, max threads = 8)
+      System.Text.Json.Serialization.Tests.CollectionTestsDynamic_AsyncStream.DictionaryKeyFilter_MetadataNamesDeserialize [FAIL]
+        Assert.Equal() Failure
+        Expected: 2
+        Actual:   3
+        Stack Trace:
+          C:\AProj\runtime\src\libraries\System.Text.Json\tests\Common\CollectionTests\CollectionTests.Dictionary.KeyFilter.cs(42,0): at System.Text.Json.Serialization.Tests.CollectionTests.DictionaryKeyFilter_MetadataNamesDeserialize()
+          --- End of stack trace from previous location ---
+      System.Text.Json.Serialization.Tests.CustomConverterTests.InvalidCustomKeyConverter_Deserialization(invalidOperationType: ReturnNull, exceptionType: typeof(System.ArgumentNullException)) [FAIL]
+        Assert.Throws() Failure
+        Expected: typeof(System.ArgumentNullException)
+        Actual:   (No exception was thrown)
+        Stack Trace:
+          C:\AProj\runtime\src\libraries\System.Text.Json\tests\System.Text.Json.Tests\Serialization\CustomConverterTests\CustomConverterTests.KeyConverters.cs(89,0): at System.Text.Json.Serialization.Tests.CustomConverterTests.InvalidCustomKeyConverter_Deserialization(InvalidOperationType invalidOperationType, Type exceptionType)
+             at InvokeStub_CustomConverterTests.InvalidCustomKeyConverter_Deserialization(Object, Object, IntPtr*)
+             at System.Reflection.MethodInvoker.Invoke(Object obj, IntPtr* args, BindingFlags invokeAttr)
+      System.Text.Json.Serialization.Tests.CollectionTestsDynamic_String.DictionaryKeyFilter_IgnoreForExtensionData [FAIL]
+        System.Text.Json.JsonException : ',' is an invalid start of a value. Path: $.$metadataUndefined | LineNumber: 0 | BytePositionInLine: 71.
+        ---- System.Text.Json.JsonReaderException : ',' is an invalid start of a value. LineNumber: 0 | BytePositionInLine: 71.
+        Stack Trace:
+          C:\AProj\runtime\src\libraries\System.Text.Json\src\System\Text\Json\ThrowHelper.Serialization.cs(417,0): at System.Text.Json.ThrowHelper.ReThrowWithPath(ReadStack& state, JsonReaderException ex)
+          C:\AProj\runtime\src\libraries\System.Text.Json\src\System\Text\Json\Serialization\JsonConverterOfT.ReadCore.cs(68,0): at System.Text.Json.Serialization.JsonConverter`1.ReadCore(Utf8JsonReader& reader, JsonSerializerOptions options, ReadStack& state)
+          C:\AProj\runtime\src\libraries\System.Text.Json\src\System\Text\Json\Serialization\Metadata\JsonTypeInfoOfT.ReadHelper.cs(22,0): at System.Text.Json.Serialization.Metadata.JsonTypeInfo`1.Deserialize(Utf8JsonReader& reader, ReadStack& state)
+          C:\AProj\runtime\src\libraries\System.Text.Json\src\System\Text\Json\Serialization\JsonSerializer.Read.Span.cs(160,0): at System.Text.Json.JsonSerializer.ReadFromSpan[TValue](ReadOnlySpan`1 utf8Json, JsonTypeInfo`1 jsonTypeInfo, Nullable`1 actualByteCount)
+          C:\AProj\runtime\src\libraries\System.Text.Json\src\System\Text\Json\Serialization\JsonSerializer.Read.String.cs(443,0): at System.Text.Json.JsonSerializer.ReadFromSpan[TValue](ReadOnlySpan`1 json, JsonTypeInfo`1 jsonTypeInfo)
+          C:\AProj\runtime\src\libraries\System.Text.Json\src\System\Text\Json\Serialization\JsonSerializer.Read.String.cs(55,0): at System.Text.Json.JsonSerializer.Deserialize[TValue](String json, JsonSerializerOptions options)
+          C:\AProj\runtime\src\libraries\System.Text.Json\tests\System.Text.Json.Tests\Serialization\JsonSerializerWrapper.Reflection.cs(129,0): at System.Text.Json.Serialization.Tests.JsonSerializerWrapper.StringSerializerWrapper.DeserializeWrapper[T](String json, JsonSerializerOptions options)
+          C:\AProj\runtime\src\libraries\System.Text.Json\tests\Common\CollectionTests\CollectionTests.Dictionary.KeyFilter.cs(89,0): at System.Text.Json.Serialization.Tests.CollectionTests.DictionaryKeyFilter_IgnoreForExtensionData()
+          --- End of stack trace from previous location ---
+          ----- Inner Stack Trace -----
+          C:\AProj\runtime\src\libraries\System.Text.Json\src\System\Text\Json\ThrowHelper.cs(315,0): at System.Text.Json.ThrowHelper.ThrowJsonReaderException(Utf8JsonReader& json, ExceptionResource resource, Byte nextByte, ReadOnlySpan`1 bytes)
+          C:\AProj\runtime\src\libraries\System.Text.Json\src\System\Text\Json\Reader\Utf8JsonReader.cs(1111,0): at System.Text.Json.Utf8JsonReader.ConsumeValue(Byte marker)
+          C:\AProj\runtime\src\libraries\System.Text.Json\src\System\Text\Json\Reader\Utf8JsonReader.cs(879,0): at System.Text.Json.Utf8JsonReader.ReadSingleSegment()
+          C:\AProj\runtime\src\libraries\System.Text.Json\src\System\Text\Json\Reader\Utf8JsonReader.cs(279,0): at System.Text.Json.Utf8JsonReader.Read()
+          C:\AProj\runtime\src\libraries\System.Text.Json\src\System\Text\Json\Serialization\Converters\Object\ObjectDefaultConverter.cs(49,0): at System.Text.Json.Serialization.Converters.ObjectDefaultConverter`1.OnTryRead(Utf8JsonReader& reader, Type typeToConvert, JsonSerializerOptions options, ReadStack& state, T& value)
+          C:\AProj\runtime\src\libraries\System.Text.Json\src\System\Text\Json\Serialization\JsonConverterOfT.cs(258,0): at System.Text.Json.Serialization.JsonConverter`1.TryRead(Utf8JsonReader& reader, Type typeToConvert, JsonSerializerOptions options, ReadStack& state, T& value, Boolean& isPopulatedValue)
+          C:\AProj\runtime\src\libraries\System.Text.Json\src\System\Text\Json\Serialization\JsonConverterOfT.ReadCore.cs(51,0): at System.Text.Json.Serialization.JsonConverter`1.ReadCore(Utf8JsonReader& reader, JsonSerializerOptions options, ReadStack& state)
+      System.Text.Json.Serialization.Tests.CollectionTestsDynamic_String.DictionaryKeyFilter_MetadataNamesDeserialize [FAIL]
+        Assert.Equal() Failure
+        Expected: 2
+        Actual:   3
+        Stack Trace:
+          C:\AProj\runtime\src\libraries\System.Text.Json\tests\Common\CollectionTests\CollectionTests.Dictionary.KeyFilter.cs(42,0): at System.Text.Json.Serialization.Tests.CollectionTests.DictionaryKeyFilter_MetadataNamesDeserialize()
+          --- End of stack trace from previous location ---
+      System.Text.Json.Serialization.Tests.CollectionTestsDynamic_String.DictionaryKeyFilter_IgnoreOnSerialize [FAIL]
+        Assert.Equal() Failure
+                                 (pos 14)
+        Expected: [{"$metadata":1,"Key1":1,"Key2":2},{"Key1":3,"Key2":4,"···
+        Actual:   [{"$metadata":-1,"Key1":1,"Key2":2},{"Key1":3,"Key2":4,···
+                                 (pos 14)
+        Stack Trace:
+          C:\AProj\runtime\src\libraries\System.Text.Json\tests\Common\CollectionTests\CollectionTests.Dictionary.KeyFilter.cs(69,0): at System.Text.Json.Serialization.Tests.CollectionTests.DictionaryKeyFilter_IgnoreOnSerialize()
+          --- End of stack trace from previous location ---
+      System.Text.Json.Serialization.Tests.CollectionTestsDynamic_SyncStream.DictionaryKeyFilter_MetadataNamesDeserialize [FAIL]
+        Assert.Equal() Failure
+        Expected: 2
+        Actual:   3
+        Stack Trace:
+          C:\AProj\runtime\src\libraries\System.Text.Json\tests\Common\CollectionTests\CollectionTests.Dictionary.KeyFilter.cs(42,0): at System.Text.Json.Serialization.Tests.CollectionTests.DictionaryKeyFilter_MetadataNamesDeserialize()
+          --- End of stack trace from previous location ---
+      System.Text.Json.Serialization.Tests.CollectionTestsDynamic_SyncStream.DictionaryKeyFilter_IgnoreForExtensionData [FAIL]
+        System.Text.Json.JsonException : ',' is an invalid start of a value. Path: $.$metadataUndefined | LineNumber: 0 | BytePositionInLine: 71.
+        ---- System.Text.Json.JsonReaderException : ',' is an invalid start of a value. LineNumber: 0 | BytePositionInLine: 71.
+        Stack Trace:
+          C:\AProj\runtime\src\libraries\System.Text.Json\src\System\Text\Json\ThrowHelper.Serialization.cs(417,0): at System.Text.Json.ThrowHelper.ReThrowWithPath(ReadStack& state, JsonReaderException ex)
+          C:\AProj\runtime\src\libraries\System.Text.Json\src\System\Text\Json\Serialization\JsonConverterOfT.ReadCore.cs(68,0): at System.Text.Json.Serialization.JsonConverter`1.ReadCore(Utf8JsonReader& reader, JsonSerializerOptions options, ReadStack& state)
+          C:\AProj\runtime\src\libraries\System.Text.Json\src\System\Text\Json\Serialization\Metadata\JsonTypeInfoOfT.ReadHelper.cs(114,0): at System.Text.Json.Serialization.Metadata.JsonTypeInfo`1.ContinueDeserialize(ReadBufferState& bufferState, JsonReaderState& jsonReaderState, ReadStack& readStack)
+          C:\AProj\runtime\src\libraries\System.Text.Json\src\System\Text\Json\Serialization\Metadata\JsonTypeInfoOfT.ReadHelper.cs(67,0): at System.Text.Json.Serialization.Metadata.JsonTypeInfo`1.Deserialize(Stream utf8Json)
+          C:\AProj\runtime\src\libraries\System.Text.Json\src\System\Text\Json\Serialization\JsonSerializer.Read.Stream.cs(90,0): at System.Text.Json.JsonSerializer.Deserialize[TValue](Stream utf8Json, JsonSerializerOptions options)
+          C:\AProj\runtime\src\libraries\System.Text.Json\tests\System.Text.Json.Tests\Serialization\JsonSerializerWrapper.Reflection.cs(278,0): at System.Text.Json.Serialization.Tests.JsonSerializerWrapper.SyncStreamSerializerWrapper.DeserializeWrapper[T](Stream utf8Json, JsonSerializerOptions options)
+             at System.Text.Json.Serialization.Tests.StreamingJsonSerializerWrapper.DeserializeWrapper[T](String json, JsonSerializerOptions options)
+          C:\AProj\runtime\src\libraries\System.Text.Json\tests\Common\CollectionTests\CollectionTests.Dictionary.KeyFilter.cs(89,0): at System.Text.Json.Serialization.Tests.CollectionTests.DictionaryKeyFilter_IgnoreForExtensionData()
+          --- End of stack trace from previous location ---
+          ----- Inner Stack Trace -----
+          C:\AProj\runtime\src\libraries\System.Text.Json\src\System\Text\Json\ThrowHelper.cs(315,0): at System.Text.Json.ThrowHelper.ThrowJsonReaderException(Utf8JsonReader& json, ExceptionResource resource, Byte nextByte, ReadOnlySpan`1 bytes)
+          C:\AProj\runtime\src\libraries\System.Text.Json\src\System\Text\Json\Reader\Utf8JsonReader.cs(1111,0): at System.Text.Json.Utf8JsonReader.ConsumeValue(Byte marker)
+          C:\AProj\runtime\src\libraries\System.Text.Json\src\System\Text\Json\Reader\Utf8JsonReader.cs(879,0): at System.Text.Json.Utf8JsonReader.ReadSingleSegment()
+          C:\AProj\runtime\src\libraries\System.Text.Json\src\System\Text\Json\Reader\Utf8JsonReader.cs(279,0): at System.Text.Json.Utf8JsonReader.Read()
+          C:\AProj\runtime\src\libraries\System.Text.Json\src\System\Text\Json\Serialization\Converters\Object\ObjectDefaultConverter.cs(494,0): at System.Text.Json.Serialization.Converters.ObjectDefaultConverter`1.ReadAheadPropertyValue(ReadStack& state, Utf8JsonReader& reader, JsonPropertyInfo jsonPropertyInfo)
+          C:\AProj\runtime\src\libraries\System.Text.Json\src\System\Text\Json\Serialization\Converters\Object\ObjectDefaultConverter.cs(208,0): at System.Text.Json.Serialization.Converters.ObjectDefaultConverter`1.OnTryRead(Utf8JsonReader& reader, Type typeToConvert, JsonSerializerOptions options, ReadStack& state, T& value)
+          C:\AProj\runtime\src\libraries\System.Text.Json\src\System\Text\Json\Serialization\JsonConverterOfT.cs(258,0): at System.Text.Json.Serialization.JsonConverter`1.TryRead(Utf8JsonReader& reader, Type typeToConvert, JsonSerializerOptions options, ReadStack& state, T& value, Boolean& isPopulatedValue)
+          C:\AProj\runtime\src\libraries\System.Text.Json\src\System\Text\Json\Serialization\JsonConverterOfT.ReadCore.cs(51,0): at System.Text.Json.Serialization.JsonConverter`1.ReadCore(Utf8JsonReader& reader, JsonSerializerOptions options, ReadStack& state)
+      System.Text.Json.Serialization.Tests.CollectionTestsDynamic_SyncStream.DictionaryKeyFilter_IgnoreOnSerialize [FAIL]
+        Assert.Equal() Failure
+                                 (pos 14)
+        Expected: [{"$metadata":1,"Key1":1,"Key2":2},{"Key1":3,"Key2":4,"···
+        Actual:   [{"$metadata":-1,"Key1":1,"Key2":2},{"Key1":3,"Key2":4,···
+                                 (pos 14)
+        Stack Trace:
+          C:\AProj\runtime\src\libraries\System.Text.Json\tests\Common\CollectionTests\CollectionTests.Dictionary.KeyFilter.cs(69,0): at System.Text.Json.Serialization.Tests.CollectionTests.DictionaryKeyFilter_IgnoreOnSerialize()
+          --- End of stack trace from previous location ---
+      System.Text.Json.Serialization.Tests.CollectionTestsDynamic_AsyncStream.DictionaryKeyFilter_IgnoreForExtensionData [FAIL]
+        System.Text.Json.JsonException : ',' is an invalid start of a value. Path: $.$metadataUndefined | LineNumber: 0 | BytePositionInLine: 71.
+        ---- System.Text.Json.JsonReaderException : ',' is an invalid start of a value. LineNumber: 0 | BytePositionInLine: 71.
+        Stack Trace:
+          C:\AProj\runtime\src\libraries\System.Text.Json\src\System\Text\Json\ThrowHelper.Serialization.cs(417,0): at System.Text.Json.ThrowHelper.ReThrowWithPath(ReadStack& state, JsonReaderException ex)
+          C:\AProj\runtime\src\libraries\System.Text.Json\src\System\Text\Json\Serialization\JsonConverterOfT.ReadCore.cs(68,0): at System.Text.Json.Serialization.JsonConverter`1.ReadCore(Utf8JsonReader& reader, JsonSerializerOptions options, ReadStack& state)
+          C:\AProj\runtime\src\libraries\System.Text.Json\src\System\Text\Json\Serialization\Metadata\JsonTypeInfoOfT.ReadHelper.cs(114,0): at System.Text.Json.Serialization.Metadata.JsonTypeInfo`1.ContinueDeserialize(ReadBufferState& bufferState, JsonReaderState& jsonReaderState, ReadStack& readStack)
+          C:\AProj\runtime\src\libraries\System.Text.Json\src\System\Text\Json\Serialization\Metadata\JsonTypeInfoOfT.ReadHelper.cs(39,0): at System.Text.Json.Serialization.Metadata.JsonTypeInfo`1.DeserializeAsync(Stream utf8Json, CancellationToken cancellationToken)
+          C:\AProj\runtime\src\libraries\System.Text.Json\tests\System.Text.Json.Tests\Serialization\JsonSerializerWrapper.Reflection.cs(201,0): at System.Text.Json.Serialization.Tests.JsonSerializerWrapper.AsyncStreamSerializerWrapper.DeserializeWrapper[T](Stream utf8Json, JsonSerializerOptions options)
+          C:\AProj\runtime\src\libraries\System.Text.Json\tests\Common\StreamingJsonSerializerWrapper.cs(70,0): at System.Text.Json.Serialization.Tests.StreamingJsonSerializerWrapper.DeserializeWrapper[T](String json, JsonSerializerOptions options)
+          C:\AProj\runtime\src\libraries\System.Text.Json\tests\Common\CollectionTests\CollectionTests.Dictionary.KeyFilter.cs(89,0): at System.Text.Json.Serialization.Tests.CollectionTests.DictionaryKeyFilter_IgnoreForExtensionData()
+          --- End of stack trace from previous location ---
+          ----- Inner Stack Trace -----
+          C:\AProj\runtime\src\libraries\System.Text.Json\src\System\Text\Json\ThrowHelper.cs(315,0): at System.Text.Json.ThrowHelper.ThrowJsonReaderException(Utf8JsonReader& json, ExceptionResource resource, Byte nextByte, ReadOnlySpan`1 bytes)
+          C:\AProj\runtime\src\libraries\System.Text.Json\src\System\Text\Json\Reader\Utf8JsonReader.cs(1111,0): at System.Text.Json.Utf8JsonReader.ConsumeValue(Byte marker)
+          C:\AProj\runtime\src\libraries\System.Text.Json\src\System\Text\Json\Reader\Utf8JsonReader.cs(879,0): at System.Text.Json.Utf8JsonReader.ReadSingleSegment()
+          C:\AProj\runtime\src\libraries\System.Text.Json\src\System\Text\Json\Reader\Utf8JsonReader.cs(279,0): at System.Text.Json.Utf8JsonReader.Read()
+          C:\AProj\runtime\src\libraries\System.Text.Json\src\System\Text\Json\Serialization\Converters\Object\ObjectDefaultConverter.cs(494,0): at System.Text.Json.Serialization.Converters.ObjectDefaultConverter`1.ReadAheadPropertyValue(ReadStack& state, Utf8JsonReader& reader, JsonPropertyInfo jsonPropertyInfo)
+          C:\AProj\runtime\src\libraries\System.Text.Json\src\System\Text\Json\Serialization\Converters\Object\ObjectDefaultConverter.cs(208,0): at System.Text.Json.Serialization.Converters.ObjectDefaultConverter`1.OnTryRead(Utf8JsonReader& reader, Type typeToConvert, JsonSerializerOptions options, ReadStack& state, T& value)
+          C:\AProj\runtime\src\libraries\System.Text.Json\src\System\Text\Json\Serialization\JsonConverterOfT.cs(258,0): at System.Text.Json.Serialization.JsonConverter`1.TryRead(Utf8JsonReader& reader, Type typeToConvert, JsonSerializerOptions options, ReadStack& state, T& value, Boolean& isPopulatedValue)
+          C:\AProj\runtime\src\libraries\System.Text.Json\src\System\Text\Json\Serialization\JsonConverterOfT.ReadCore.cs(51,0): at System.Text.Json.Serialization.JsonConverter`1.ReadCore(Utf8JsonReader& reader, JsonSerializerOptions options, ReadStack& state)
+      System.Text.Json.Serialization.Tests.CollectionTestsDynamic_AsyncStreamWithSmallBuffer.DictionaryKeyFilter_MetadataNamesDeserialize [FAIL]
+        Assert.Equal() Failure
+        Expected: 2
+        Actual:   3
+        Stack Trace:
+          C:\AProj\runtime\src\libraries\System.Text.Json\tests\Common\CollectionTests\CollectionTests.Dictionary.KeyFilter.cs(42,0): at System.Text.Json.Serialization.Tests.CollectionTests.DictionaryKeyFilter_MetadataNamesDeserialize()
+          --- End of stack trace from previous location ---
+      System.Text.Json.Serialization.Tests.CollectionTestsDynamic_AsyncStream.DictionaryKeyFilter_IgnoreOnSerialize [FAIL]
+        Assert.Equal() Failure
+                                 (pos 14)
+        Expected: [{"$metadata":1,"Key1":1,"Key2":2},{"Key1":3,"Key2":4,"···
+        Actual:   [{"$metadata":-1,"Key1":1,"Key2":2},{"Key1":3,"Key2":4,···
+                                 (pos 14)
+        Stack Trace:
+          C:\AProj\runtime\src\libraries\System.Text.Json\tests\Common\CollectionTests\CollectionTests.Dictionary.KeyFilter.cs(69,0): at System.Text.Json.Serialization.Tests.CollectionTests.DictionaryKeyFilter_IgnoreOnSerialize()
+          --- End of stack trace from previous location ---
+      System.Text.Json.Serialization.Tests.CollectionTestsDynamic_AsyncStreamWithSmallBuffer.DictionaryKeyFilter_IgnoreOnSerialize [FAIL]
+        Assert.Equal() Failure
+                                 (pos 14)
+        Expected: [{"$metadata":1,"Key1":1,"Key2":2},{"Key1":3,"Key2":4,"···
+        Actual:   [{"$metadata":-1,"Key1":1,"Key2":2},{"Key1":3,"Key2":4,···
+                                 (pos 14)
+        Stack Trace:
+          C:\AProj\runtime\src\libraries\System.Text.Json\tests\Common\CollectionTests\CollectionTests.Dictionary.KeyFilter.cs(69,0): at System.Text.Json.Serialization.Tests.CollectionTests.DictionaryKeyFilter_IgnoreOnSerialize()
+          --- End of stack trace from previous location ---
+      System.Text.Json.Serialization.Tests.CollectionTestsDynamic_AsyncStreamWithSmallBuffer.DictionaryKeyFilter_IgnoreForExtensionData [FAIL]
+        System.Text.Json.JsonException : ',' is an invalid start of a value. Path: $.$metadataUndefined | LineNumber: 0 | BytePositionInLine: 71.
+        ---- System.Text.Json.JsonReaderException : ',' is an invalid start of a value. LineNumber: 0 | BytePositionInLine: 71.
+        Stack Trace:
+          C:\AProj\runtime\src\libraries\System.Text.Json\src\System\Text\Json\ThrowHelper.Serialization.cs(417,0): at System.Text.Json.ThrowHelper.ReThrowWithPath(ReadStack& state, JsonReaderException ex)
+          C:\AProj\runtime\src\libraries\System.Text.Json\src\System\Text\Json\Serialization\JsonConverterOfT.ReadCore.cs(68,0): at System.Text.Json.Serialization.JsonConverter`1.ReadCore(Utf8JsonReader& reader, JsonSerializerOptions options, ReadStack& state)
+          C:\AProj\runtime\src\libraries\System.Text.Json\src\System\Text\Json\Serialization\Metadata\JsonTypeInfoOfT.ReadHelper.cs(114,0): at System.Text.Json.Serialization.Metadata.JsonTypeInfo`1.ContinueDeserialize(ReadBufferState& bufferState, JsonReaderState& jsonReaderState, ReadStack& readStack)
+          C:\AProj\runtime\src\libraries\System.Text.Json\src\System\Text\Json\Serialization\Metadata\JsonTypeInfoOfT.ReadHelper.cs(39,0): at System.Text.Json.Serialization.Metadata.JsonTypeInfo`1.DeserializeAsync(Stream utf8Json, CancellationToken cancellationToken)
+          C:\AProj\runtime\src\libraries\System.Text.Json\tests\System.Text.Json.Tests\Serialization\JsonSerializerWrapper.Reflection.cs(201,0): at System.Text.Json.Serialization.Tests.JsonSerializerWrapper.AsyncStreamSerializerWrapper.DeserializeWrapper[T](Stream utf8Json, JsonSerializerOptions options)
+          C:\AProj\runtime\src\libraries\System.Text.Json\tests\Common\StreamingJsonSerializerWrapper.cs(70,0): at System.Text.Json.Serialization.Tests.StreamingJsonSerializerWrapper.DeserializeWrapper[T](String json, JsonSerializerOptions options)
+          C:\AProj\runtime\src\libraries\System.Text.Json\tests\Common\CollectionTests\CollectionTests.Dictionary.KeyFilter.cs(89,0): at System.Text.Json.Serialization.Tests.CollectionTests.DictionaryKeyFilter_IgnoreForExtensionData()
+          --- End of stack trace from previous location ---
+          ----- Inner Stack Trace -----
+          C:\AProj\runtime\src\libraries\System.Text.Json\src\System\Text\Json\ThrowHelper.cs(315,0): at System.Text.Json.ThrowHelper.ThrowJsonReaderException(Utf8JsonReader& json, ExceptionResource resource, Byte nextByte, ReadOnlySpan`1 bytes)
+          C:\AProj\runtime\src\libraries\System.Text.Json\src\System\Text\Json\Reader\Utf8JsonReader.cs(1111,0): at System.Text.Json.Utf8JsonReader.ConsumeValue(Byte marker)
+          C:\AProj\runtime\src\libraries\System.Text.Json\src\System\Text\Json\Reader\Utf8JsonReader.cs(879,0): at System.Text.Json.Utf8JsonReader.ReadSingleSegment()
+          C:\AProj\runtime\src\libraries\System.Text.Json\src\System\Text\Json\Reader\Utf8JsonReader.cs(279,0): at System.Text.Json.Utf8JsonReader.Read()
+          C:\AProj\runtime\src\libraries\System.Text.Json\src\System\Text\Json\Serialization\JsonConverter.ReadAhead.cs(37,0): at System.Text.Json.Serialization.JsonConverter.DoSingleValueReadWithReadAhead(Utf8JsonReader& reader)
+          C:\AProj\runtime\src\libraries\System.Text.Json\src\System\Text\Json\Serialization\Converters\Object\ObjectDefaultConverter.cs(494,0): at System.Text.Json.Serialization.Converters.ObjectDefaultConverter`1.ReadAheadPropertyValue(ReadStack& state, Utf8JsonReader& reader, JsonPropertyInfo jsonPropertyInfo)
+          C:\AProj\runtime\src\libraries\System.Text.Json\src\System\Text\Json\Serialization\Converters\Object\ObjectDefaultConverter.cs(208,0): at System.Text.Json.Serialization.Converters.ObjectDefaultConverter`1.OnTryRead(Utf8JsonReader& reader, Type typeToConvert, JsonSerializerOptions options, ReadStack& state, T& value)
+          C:\AProj\runtime\src\libraries\System.Text.Json\src\System\Text\Json\Serialization\JsonConverterOfT.cs(258,0): at System.Text.Json.Serialization.JsonConverter`1.TryRead(Utf8JsonReader& reader, Type typeToConvert, JsonSerializerOptions options, ReadStack& state, T& value, Boolean& isPopulatedValue)
+          C:\AProj\runtime\src\libraries\System.Text.Json\src\System\Text\Json\Serialization\JsonConverterOfT.ReadCore.cs(51,0): at System.Text.Json.Serialization.JsonConverter`1.ReadCore(Utf8JsonReader& reader, JsonSerializerOptions options, ReadStack& state)
+    Finished:    System.Text.Json.Tests
+  === TEST EXECUTION SUMMARY ===
+     System.Text.Json.Tests  Total: 30915, Errors: 0, Failed: 13, Skipped: 0, Time: 67,617s
+  ----- end 21.06.2023 17:27:30,26 ----- exit code 0 ----------------------------------------------------------
+  System.IO.Pipelines -> C:\AProj\runtime\artifacts\bin\System.IO.Pipelines\ref\Debug\net462\System.IO.Pipelines.dll
+  System.Text.Encodings.Web -> C:\AProj\runtime\artifacts\bin\System.Text.Encodings.Web\ref\Debug\net462\System.Text.Encodings.Web.dll
+  TestUtilities -> C:\AProj\runtime\artifacts\bin\TestUtilities\Debug\net462\TestUtilities.dll
+  Microsoft.Bcl.AsyncInterfaces -> C:\AProj\runtime\artifacts\bin\Microsoft.Bcl.AsyncInterfaces\ref\Debug\net462\Microsoft.Bcl.AsyncInterfaces.dll
+  System.Text.Encodings.Web -> C:\AProj\runtime\artifacts\bin\System.Text.Encodings.Web\Debug\net462\System.Text.Encodings.Web.dll
+  System.Collections.Immutable -> C:\AProj\runtime\artifacts\bin\System.Collections.Immutable\ref\Debug\net462\System.Collections.Immutable.dll
+  System.IO.Pipelines -> C:\AProj\runtime\artifacts\bin\System.IO.Pipelines\Debug\net462\System.IO.Pipelines.dll
+  Microsoft.Bcl.AsyncInterfaces -> C:\AProj\runtime\artifacts\bin\Microsoft.Bcl.AsyncInterfaces\Debug\net462\Microsoft.Bcl.AsyncInterfaces.dll
+  System.Collections.Immutable -> C:\AProj\runtime\artifacts\bin\System.Collections.Immutable\Debug\net462\System.Collections.Immutable.dll
+  System.Text.Json.SourceGeneration.Roslyn4.4 -> C:\AProj\runtime\artifacts\bin\System.Text.Json.SourceGeneration.Roslyn4.4\Debug\netstandard2.0\System.Text.Json.SourceGeneration.dll
+  System.Text.Json -> C:\AProj\runtime\artifacts\bin\System.Text.Json\ref\Debug\net462\System.Text.Json.dll
+  System.Text.Json -> C:\AProj\runtime\artifacts\bin\System.Text.Json\Debug\net462\System.Text.Json.dll
+  System.Text.Json.Tests -> C:\AProj\runtime\artifacts\bin\System.Text.Json.Tests\Debug\net462\System.Text.Json.Tests.dll
+  ----- start 21.06.2023 17:27:32,00 ===============  To repro directly: =====================================================
+  pushd C:\AProj\runtime\artifacts\bin\System.Text.Json.Tests\Debug\net462\
+  xunit.console.exe System.Text.Json.Tests.dll -xml testResults.xml -nologo -notrait category=OuterLoop -notrait category=failing 
+  popd
+  ===========================================================================================================
+    Discovering: System.Text.Json.Tests (app domain = on [no shadow copy], method display = ClassAndMethod, method display options = None)
+    Discovered:  System.Text.Json.Tests (found 7077 of 7139 test cases)
+    Starting:    System.Text.Json.Tests (parallel test collections = on, max threads = 8)
+      System.Text.Json.Serialization.Tests.CollectionTestsDynamic_AsyncStream.DictionaryKeyFilter_MetadataNamesDeserialize [FAIL]
+        Assert.Equal() Failure
+        Expected: 2
+        Actual:   3
+        Stack Trace:
+             в Xunit.Assert.Equal[T](T expected, T actual, IEqualityComparer`1 comparer) в /_/src/xunit.assert/Asserts/EqualityAsserts.cs:строка 96
+             в System.Text.Json.Serialization.Tests.CollectionTests.<DictionaryKeyFilter_MetadataNamesDeserialize>d__114.MoveNext() в C:\AProj\runtime\src\libraries\System.Text.Json\tests\Common\CollectionTests\CollectionTests.Dictionary.KeyFilter.cs:строка 42
+          --- Конец трассировка стека из предыдущего расположения, где возникло исключение ---
+             в System.Runtime.ExceptionServices.ExceptionDispatchInfo.Throw()
+             в System.Runtime.CompilerServices.TaskAwaiter.HandleNonSuccessAndDebuggerNotification(Task task)
+             в Xunit.Sdk.TestInvoker`1.<>c__DisplayClass48_0.<<InvokeTestMethodAsync>b__1>d.MoveNext() в /_/src/xunit.execution/Sdk/Frameworks/Runners/TestInvoker.cs:строка 264
+          --- Конец трассировка стека из предыдущего расположения, где возникло исключение ---
+             в System.Runtime.ExceptionServices.ExceptionDispatchInfo.Throw()
+             в System.Runtime.CompilerServices.TaskAwaiter.HandleNonSuccessAndDebuggerNotification(Task task)
+             в Xunit.Sdk.ExecutionTimer.<AggregateAsync>d__4.MoveNext() в /_/src/xunit.execution/Sdk/Frameworks/ExecutionTimer.cs:строка 48
+          --- Конец трассировка стека из предыдущего расположения, где возникло исключение ---
+             в System.Runtime.ExceptionServices.ExceptionDispatchInfo.Throw()
+             в System.Runtime.CompilerServices.TaskAwaiter.HandleNonSuccessAndDebuggerNotification(Task task)
+             в Xunit.Sdk.ExceptionAggregator.<RunAsync>d__9.MoveNext() в /_/src/xunit.core/Sdk/ExceptionAggregator.cs:строка 90
+      System.Text.Json.Serialization.Tests.CustomConverterTests.InvalidCustomKeyConverter_Deserialization(invalidOperationType: ReturnNull, exceptionType: typeof(System.ArgumentNullException)) [FAIL]
+        Assert.Throws() Failure
+        Expected: typeof(System.ArgumentNullException)
+        Actual:   (No exception was thrown)
+        Stack Trace:
+             в Xunit.Assert.Throws(Type exceptionType, Exception exception) в /_/src/xunit.assert/Asserts/ExceptionAsserts.cs:строка 229
+             в System.Text.Json.Serialization.Tests.CustomConverterTests.InvalidCustomKeyConverter_Deserialization(InvalidOperationType invalidOperationType, Type exceptionType) в C:\AProj\runtime\src\libraries\System.Text.Json\tests\System.Text.Json.Tests\Serialization\CustomConverterTests\CustomConverterTests.KeyConverters.cs:строка 89
+      System.Text.Json.Serialization.Tests.CollectionTestsDynamic_String.DictionaryKeyFilter_IgnoreForExtensionData [FAIL]
+        System.Text.Json.JsonException : ',' is an invalid start of a value. Path: $.$metadataUndefined | LineNumber: 0 | BytePositionInLine: 71.
+        ---- System.Text.Json.JsonReaderException : ',' is an invalid start of a value. LineNumber: 0 | BytePositionInLine: 71.
+        Stack Trace:
+             в System.Text.Json.ThrowHelper.ReThrowWithPath(ReadStack& state, JsonReaderException ex) в C:\AProj\runtime\src\libraries\System.Text.Json\src\System\Text\Json\ThrowHelper.Serialization.cs:строка 417
+             в System.Text.Json.Serialization.JsonConverter`1.ReadCore(Utf8JsonReader& reader, JsonSerializerOptions options, ReadStack& state) в C:\AProj\runtime\src\libraries\System.Text.Json\src\System\Text\Json\Serialization\JsonConverterOfT.ReadCore.cs:строка 68
+             в System.Text.Json.Serialization.Metadata.JsonTypeInfo`1.Deserialize(Utf8JsonReader& reader, ReadStack& state) в C:\AProj\runtime\src\libraries\System.Text.Json\src\System\Text\Json\Serialization\Metadata\JsonTypeInfoOfT.ReadHelper.cs:строка 22
+             в System.Text.Json.JsonSerializer.ReadFromSpan[TValue](ReadOnlySpan`1 utf8Json, JsonTypeInfo`1 jsonTypeInfo, Nullable`1 actualByteCount) в C:\AProj\runtime\src\libraries\System.Text.Json\src\System\Text\Json\Serialization\JsonSerializer.Read.Span.cs:строка 160
+             в System.Text.Json.JsonSerializer.ReadFromSpan[TValue](ReadOnlySpan`1 json, JsonTypeInfo`1 jsonTypeInfo) в C:\AProj\runtime\src\libraries\System.Text.Json\src\System\Text\Json\Serialization\JsonSerializer.Read.String.cs:строка 443
+             в System.Text.Json.JsonSerializer.Deserialize[TValue](String json, JsonSerializerOptions options) в C:\AProj\runtime\src\libraries\System.Text.Json\src\System\Text\Json\Serialization\JsonSerializer.Read.String.cs:строка 55
+             в System.Text.Json.Serialization.Tests.JsonSerializerWrapper.StringSerializerWrapper.DeserializeWrapper[T](String json, JsonSerializerOptions options) в C:\AProj\runtime\src\libraries\System.Text.Json\tests\System.Text.Json.Tests\Serialization\JsonSerializerWrapper.Reflection.cs:строка 129
+             в System.Text.Json.Serialization.Tests.CollectionTests.<DictionaryKeyFilter_IgnoreForExtensionData>d__116.MoveNext() в C:\AProj\runtime\src\libraries\System.Text.Json\tests\Common\CollectionTests\CollectionTests.Dictionary.KeyFilter.cs:строка 89
+          --- Конец трассировка стека из предыдущего расположения, где возникло исключение ---
+             в System.Runtime.ExceptionServices.ExceptionDispatchInfo.Throw()
+             в System.Runtime.CompilerServices.TaskAwaiter.HandleNonSuccessAndDebuggerNotification(Task task)
+             в Xunit.Sdk.TestInvoker`1.<>c__DisplayClass48_0.<<InvokeTestMethodAsync>b__1>d.MoveNext() в /_/src/xunit.execution/Sdk/Frameworks/Runners/TestInvoker.cs:строка 264
+          --- Конец трассировка стека из предыдущего расположения, где возникло исключение ---
+             в System.Runtime.ExceptionServices.ExceptionDispatchInfo.Throw()
+             в System.Runtime.CompilerServices.TaskAwaiter.HandleNonSuccessAndDebuggerNotification(Task task)
+             в Xunit.Sdk.ExecutionTimer.<AggregateAsync>d__4.MoveNext() в /_/src/xunit.execution/Sdk/Frameworks/ExecutionTimer.cs:строка 48
+          --- Конец трассировка стека из предыдущего расположения, где возникло исключение ---
+             в System.Runtime.ExceptionServices.ExceptionDispatchInfo.Throw()
+             в System.Runtime.CompilerServices.TaskAwaiter.HandleNonSuccessAndDebuggerNotification(Task task)
+             в Xunit.Sdk.ExceptionAggregator.<RunAsync>d__9.MoveNext() в /_/src/xunit.core/Sdk/ExceptionAggregator.cs:строка 90
+          ----- Inner Stack Trace -----
+             в System.Text.Json.ThrowHelper.ThrowJsonReaderException(Utf8JsonReader& json, ExceptionResource resource, Byte nextByte, ReadOnlySpan`1 bytes) в C:\AProj\runtime\src\libraries\System.Text.Json\src\System\Text\Json\ThrowHelper.cs:строка 315
+             в System.Text.Json.Utf8JsonReader.ConsumeValue(Byte marker) в C:\AProj\runtime\src\libraries\System.Text.Json\src\System\Text\Json\Reader\Utf8JsonReader.cs:строка 1111
+             в System.Text.Json.Utf8JsonReader.ReadSingleSegment() в C:\AProj\runtime\src\libraries\System.Text.Json\src\System\Text\Json\Reader\Utf8JsonReader.cs:строка 879
+             в System.Text.Json.Utf8JsonReader.Read() в C:\AProj\runtime\src\libraries\System.Text.Json\src\System\Text\Json\Reader\Utf8JsonReader.cs:строка 279
+             в System.Text.Json.JsonHelpers.ReadWithVerify(Utf8JsonReader& reader) в C:\AProj\runtime\src\libraries\System.Text.Json\src\System\Text\Json\JsonHelpers.cs:строка 85
+             в System.Text.Json.Serialization.Converters.ObjectDefaultConverter`1.ReadPropertyValue(Object obj, ReadStack& state, Utf8JsonReader& reader, JsonPropertyInfo jsonPropertyInfo, Boolean useExtensionProperty) в C:\AProj\runtime\src\libraries\System.Text.Json\src\System\Text\Json\Serialization\Converters\Object\ObjectDefaultConverter.cs:строка 463
+             в System.Text.Json.Serialization.Converters.ObjectDefaultConverter`1.PopulatePropertiesFastPath(Object obj, JsonTypeInfo jsonTypeInfo, JsonSerializerOptions options, Utf8JsonReader& reader, ReadStack& state) в C:\AProj\runtime\src\libraries\System.Text.Json\src\System\Text\Json\Serialization\Converters\Object\ObjectDefaultConverter.cs:строка 291
+             в System.Text.Json.Serialization.Converters.ObjectDefaultConverter`1.OnTryRead(Utf8JsonReader& reader, Type typeToConvert, JsonSerializerOptions options, ReadStack& state, T& value) в C:\AProj\runtime\src\libraries\System.Text.Json\src\System\Text\Json\Serialization\Converters\Object\ObjectDefaultConverter.cs:строка 49
+             в System.Text.Json.Serialization.JsonConverter`1.TryRead(Utf8JsonReader& reader, Type typeToConvert, JsonSerializerOptions options, ReadStack& state, T& value, Boolean& isPopulatedValue) в C:\AProj\runtime\src\libraries\System.Text.Json\src\System\Text\Json\Serialization\JsonConverterOfT.cs:строка 258
+             в System.Text.Json.Serialization.JsonConverter`1.ReadCore(Utf8JsonReader& reader, JsonSerializerOptions options, ReadStack& state) в C:\AProj\runtime\src\libraries\System.Text.Json\src\System\Text\Json\Serialization\JsonConverterOfT.ReadCore.cs:строка 51
+      System.Text.Json.Serialization.Tests.CollectionTestsDynamic_String.DictionaryKeyFilter_MetadataNamesDeserialize [FAIL]
+        Assert.Equal() Failure
+        Expected: 2
+        Actual:   3
+        Stack Trace:
+             в Xunit.Assert.Equal[T](T expected, T actual, IEqualityComparer`1 comparer) в /_/src/xunit.assert/Asserts/EqualityAsserts.cs:строка 96
+             в System.Text.Json.Serialization.Tests.CollectionTests.<DictionaryKeyFilter_MetadataNamesDeserialize>d__114.MoveNext() в C:\AProj\runtime\src\libraries\System.Text.Json\tests\Common\CollectionTests\CollectionTests.Dictionary.KeyFilter.cs:строка 42
+          --- Конец трассировка стека из предыдущего расположения, где возникло исключение ---
+             в System.Runtime.ExceptionServices.ExceptionDispatchInfo.Throw()
+             в System.Runtime.CompilerServices.TaskAwaiter.HandleNonSuccessAndDebuggerNotification(Task task)
+             в Xunit.Sdk.TestInvoker`1.<>c__DisplayClass48_0.<<InvokeTestMethodAsync>b__1>d.MoveNext() в /_/src/xunit.execution/Sdk/Frameworks/Runners/TestInvoker.cs:строка 264
+          --- Конец трассировка стека из предыдущего расположения, где возникло исключение ---
+             в System.Runtime.ExceptionServices.ExceptionDispatchInfo.Throw()
+             в System.Runtime.CompilerServices.TaskAwaiter.HandleNonSuccessAndDebuggerNotification(Task task)
+             в Xunit.Sdk.ExecutionTimer.<AggregateAsync>d__4.MoveNext() в /_/src/xunit.execution/Sdk/Frameworks/ExecutionTimer.cs:строка 48
+          --- Конец трассировка стека из предыдущего расположения, где возникло исключение ---
+             в System.Runtime.ExceptionServices.ExceptionDispatchInfo.Throw()
+             в System.Runtime.CompilerServices.TaskAwaiter.HandleNonSuccessAndDebuggerNotification(Task task)
+             в Xunit.Sdk.ExceptionAggregator.<RunAsync>d__9.MoveNext() в /_/src/xunit.core/Sdk/ExceptionAggregator.cs:строка 90
+      System.Text.Json.Serialization.Tests.CollectionTestsDynamic_String.DictionaryKeyFilter_IgnoreOnSerialize [FAIL]
+        Assert.Equal() Failure
+                                 (pos 14)
+        Expected: [{"$metadata":1,"Key1":1,"Key2":2},{"Key1":3,"Key2":4,"···
+        Actual:   [{"$metadata":-1,"Key1":1,"Key2":2},{"Key1":3,"Key2":4,···
+                                 (pos 14)
+        Stack Trace:
+             в Xunit.Assert.Equal(String expected, String actual, Boolean ignoreCase, Boolean ignoreLineEndingDifferences, Boolean ignoreWhiteSpaceDifferences) в /_/src/xunit.assert/Asserts/StringAsserts.cs:строка 326
+             в Xunit.Assert.Equal(String expected, String actual) в /_/src/xunit.assert/Asserts/StringAsserts.cs:строка 235
+             в System.Text.Json.Serialization.Tests.CollectionTests.<DictionaryKeyFilter_IgnoreOnSerialize>d__115.MoveNext() в C:\AProj\runtime\src\libraries\System.Text.Json\tests\Common\CollectionTests\CollectionTests.Dictionary.KeyFilter.cs:строка 69
+          --- Конец трассировка стека из предыдущего расположения, где возникло исключение ---
+             в System.Runtime.ExceptionServices.ExceptionDispatchInfo.Throw()
+             в System.Runtime.CompilerServices.TaskAwaiter.HandleNonSuccessAndDebuggerNotification(Task task)
+             в Xunit.Sdk.TestInvoker`1.<>c__DisplayClass48_0.<<InvokeTestMethodAsync>b__1>d.MoveNext() в /_/src/xunit.execution/Sdk/Frameworks/Runners/TestInvoker.cs:строка 264
+          --- Конец трассировка стека из предыдущего расположения, где возникло исключение ---
+             в System.Runtime.ExceptionServices.ExceptionDispatchInfo.Throw()
+             в System.Runtime.CompilerServices.TaskAwaiter.HandleNonSuccessAndDebuggerNotification(Task task)
+             в Xunit.Sdk.ExecutionTimer.<AggregateAsync>d__4.MoveNext() в /_/src/xunit.execution/Sdk/Frameworks/ExecutionTimer.cs:строка 48
+          --- Конец трассировка стека из предыдущего расположения, где возникло исключение ---
+             в System.Runtime.ExceptionServices.ExceptionDispatchInfo.Throw()
+             в System.Runtime.CompilerServices.TaskAwaiter.HandleNonSuccessAndDebuggerNotification(Task task)
+             в Xunit.Sdk.ExceptionAggregator.<RunAsync>d__9.MoveNext() в /_/src/xunit.core/Sdk/ExceptionAggregator.cs:строка 90
+      System.Text.Json.Serialization.Tests.CollectionTestsDynamic_SyncStream.DictionaryKeyFilter_MetadataNamesDeserialize [FAIL]
+        Assert.Equal() Failure
+        Expected: 2
+        Actual:   3
+        Stack Trace:
+             в Xunit.Assert.Equal[T](T expected, T actual, IEqualityComparer`1 comparer) в /_/src/xunit.assert/Asserts/EqualityAsserts.cs:строка 96
+             в System.Text.Json.Serialization.Tests.CollectionTests.<DictionaryKeyFilter_MetadataNamesDeserialize>d__114.MoveNext() в C:\AProj\runtime\src\libraries\System.Text.Json\tests\Common\CollectionTests\CollectionTests.Dictionary.KeyFilter.cs:строка 42
+          --- Конец трассировка стека из предыдущего расположения, где возникло исключение ---
+             в System.Runtime.ExceptionServices.ExceptionDispatchInfo.Throw()
+             в System.Runtime.CompilerServices.TaskAwaiter.HandleNonSuccessAndDebuggerNotification(Task task)
+             в Xunit.Sdk.TestInvoker`1.<>c__DisplayClass48_0.<<InvokeTestMethodAsync>b__1>d.MoveNext() в /_/src/xunit.execution/Sdk/Frameworks/Runners/TestInvoker.cs:строка 264
+          --- Конец трассировка стека из предыдущего расположения, где возникло исключение ---
+             в System.Runtime.ExceptionServices.ExceptionDispatchInfo.Throw()
+             в System.Runtime.CompilerServices.TaskAwaiter.HandleNonSuccessAndDebuggerNotification(Task task)
+             в Xunit.Sdk.ExecutionTimer.<AggregateAsync>d__4.MoveNext() в /_/src/xunit.execution/Sdk/Frameworks/ExecutionTimer.cs:строка 48
+          --- Конец трассировка стека из предыдущего расположения, где возникло исключение ---
+             в System.Runtime.ExceptionServices.ExceptionDispatchInfo.Throw()
+             в System.Runtime.CompilerServices.TaskAwaiter.HandleNonSuccessAndDebuggerNotification(Task task)
+             в Xunit.Sdk.ExceptionAggregator.<RunAsync>d__9.MoveNext() в /_/src/xunit.core/Sdk/ExceptionAggregator.cs:строка 90
+      System.Text.Json.Serialization.Tests.CollectionTestsDynamic_SyncStream.DictionaryKeyFilter_IgnoreForExtensionData [FAIL]
+        System.Text.Json.JsonException : ',' is an invalid start of a value. Path: $.$metadataUndefined | LineNumber: 0 | BytePositionInLine: 71.
+        ---- System.Text.Json.JsonReaderException : ',' is an invalid start of a value. LineNumber: 0 | BytePositionInLine: 71.
+        Stack Trace:
+             в System.Text.Json.ThrowHelper.ReThrowWithPath(ReadStack& state, JsonReaderException ex) в C:\AProj\runtime\src\libraries\System.Text.Json\src\System\Text\Json\ThrowHelper.Serialization.cs:строка 417
+             в System.Text.Json.Serialization.JsonConverter`1.ReadCore(Utf8JsonReader& reader, JsonSerializerOptions options, ReadStack& state) в C:\AProj\runtime\src\libraries\System.Text.Json\src\System\Text\Json\Serialization\JsonConverterOfT.ReadCore.cs:строка 68
+             в System.Text.Json.Serialization.Metadata.JsonTypeInfo`1.ContinueDeserialize(ReadBufferState& bufferState, JsonReaderState& jsonReaderState, ReadStack& readStack) в C:\AProj\runtime\src\libraries\System.Text.Json\src\System\Text\Json\Serialization\Metadata\JsonTypeInfoOfT.ReadHelper.cs:строка 114
+             в System.Text.Json.Serialization.Metadata.JsonTypeInfo`1.Deserialize(Stream utf8Json) в C:\AProj\runtime\src\libraries\System.Text.Json\src\System\Text\Json\Serialization\Metadata\JsonTypeInfoOfT.ReadHelper.cs:строка 67
+             в System.Text.Json.JsonSerializer.Deserialize[TValue](Stream utf8Json, JsonSerializerOptions options) в C:\AProj\runtime\src\libraries\System.Text.Json\src\System\Text\Json\Serialization\JsonSerializer.Read.Stream.cs:строка 90
+             в System.Text.Json.Serialization.Tests.JsonSerializerWrapper.SyncStreamSerializerWrapper.DeserializeWrapper[T](Stream utf8Json, JsonSerializerOptions options) в C:\AProj\runtime\src\libraries\System.Text.Json\tests\System.Text.Json.Tests\Serialization\JsonSerializerWrapper.Reflection.cs:строка 278
+             в System.Text.Json.Serialization.Tests.StreamingJsonSerializerWrapper.<DeserializeWrapper>d__20`1.MoveNext() в C:\AProj\runtime\src\libraries\System.Text.Json\tests\Common\StreamingJsonSerializerWrapper.cs:строка 70
+          --- Конец трассировка стека из предыдущего расположения, где возникло исключение ---
+             в System.Runtime.ExceptionServices.ExceptionDispatchInfo.Throw()
+             в System.Runtime.CompilerServices.TaskAwaiter.HandleNonSuccessAndDebuggerNotification(Task task)
+             в System.Runtime.CompilerServices.TaskAwaiter`1.GetResult()
+             в System.Text.Json.Serialization.Tests.CollectionTests.<DictionaryKeyFilter_IgnoreForExtensionData>d__116.MoveNext() в C:\AProj\runtime\src\libraries\System.Text.Json\tests\Common\CollectionTests\CollectionTests.Dictionary.KeyFilter.cs:строка 89
+          --- Конец трассировка стека из предыдущего расположения, где возникло исключение ---
+             в System.Runtime.ExceptionServices.ExceptionDispatchInfo.Throw()
+             в System.Runtime.CompilerServices.TaskAwaiter.HandleNonSuccessAndDebuggerNotification(Task task)
+             в Xunit.Sdk.TestInvoker`1.<>c__DisplayClass48_0.<<InvokeTestMethodAsync>b__1>d.MoveNext() в /_/src/xunit.execution/Sdk/Frameworks/Runners/TestInvoker.cs:строка 264
+          --- Конец трассировка стека из предыдущего расположения, где возникло исключение ---
+             в System.Runtime.ExceptionServices.ExceptionDispatchInfo.Throw()
+             в System.Runtime.CompilerServices.TaskAwaiter.HandleNonSuccessAndDebuggerNotification(Task task)
+             в Xunit.Sdk.ExecutionTimer.<AggregateAsync>d__4.MoveNext() в /_/src/xunit.execution/Sdk/Frameworks/ExecutionTimer.cs:строка 48
+          --- Конец трассировка стека из предыдущего расположения, где возникло исключение ---
+             в System.Runtime.ExceptionServices.ExceptionDispatchInfo.Throw()
+             в System.Runtime.CompilerServices.TaskAwaiter.HandleNonSuccessAndDebuggerNotification(Task task)
+             в Xunit.Sdk.ExceptionAggregator.<RunAsync>d__9.MoveNext() в /_/src/xunit.core/Sdk/ExceptionAggregator.cs:строка 90
+          ----- Inner Stack Trace -----
+             в System.Text.Json.ThrowHelper.ThrowJsonReaderException(Utf8JsonReader& json, ExceptionResource resource, Byte nextByte, ReadOnlySpan`1 bytes) в C:\AProj\runtime\src\libraries\System.Text.Json\src\System\Text\Json\ThrowHelper.cs:строка 315
+             в System.Text.Json.Utf8JsonReader.ConsumeValue(Byte marker) в C:\AProj\runtime\src\libraries\System.Text.Json\src\System\Text\Json\Reader\Utf8JsonReader.cs:строка 1111
+             в System.Text.Json.Utf8JsonReader.ReadSingleSegment() в C:\AProj\runtime\src\libraries\System.Text.Json\src\System\Text\Json\Reader\Utf8JsonReader.cs:строка 879
+             в System.Text.Json.Utf8JsonReader.Read() в C:\AProj\runtime\src\libraries\System.Text.Json\src\System\Text\Json\Reader\Utf8JsonReader.cs:строка 279
+             в System.Text.Json.Serialization.JsonConverter.SingleValueReadWithReadAhead(Boolean requiresReadAhead, Utf8JsonReader& reader, ReadStack& state) в C:\AProj\runtime\src\libraries\System.Text.Json\src\System\Text\Json\Serialization\JsonConverter.ReadAhead.cs:строка 25
+             в System.Text.Json.Serialization.Converters.ObjectDefaultConverter`1.ReadAheadPropertyValue(ReadStack& state, Utf8JsonReader& reader, JsonPropertyInfo jsonPropertyInfo) в C:\AProj\runtime\src\libraries\System.Text.Json\src\System\Text\Json\Serialization\Converters\Object\ObjectDefaultConverter.cs:строка 494
+             в System.Text.Json.Serialization.Converters.ObjectDefaultConverter`1.OnTryRead(Utf8JsonReader& reader, Type typeToConvert, JsonSerializerOptions options, ReadStack& state, T& value) в C:\AProj\runtime\src\libraries\System.Text.Json\src\System\Text\Json\Serialization\Converters\Object\ObjectDefaultConverter.cs:строка 208
+             в System.Text.Json.Serialization.JsonConverter`1.TryRead(Utf8JsonReader& reader, Type typeToConvert, JsonSerializerOptions options, ReadStack& state, T& value, Boolean& isPopulatedValue) в C:\AProj\runtime\src\libraries\System.Text.Json\src\System\Text\Json\Serialization\JsonConverterOfT.cs:строка 258
+             в System.Text.Json.Serialization.JsonConverter`1.ReadCore(Utf8JsonReader& reader, JsonSerializerOptions options, ReadStack& state) в C:\AProj\runtime\src\libraries\System.Text.Json\src\System\Text\Json\Serialization\JsonConverterOfT.ReadCore.cs:строка 51
+      System.Text.Json.Serialization.Tests.CollectionTestsDynamic_SyncStream.DictionaryKeyFilter_IgnoreOnSerialize [FAIL]
+        Assert.Equal() Failure
+                                 (pos 14)
+        Expected: [{"$metadata":1,"Key1":1,"Key2":2},{"Key1":3,"Key2":4,"···
+        Actual:   [{"$metadata":-1,"Key1":1,"Key2":2},{"Key1":3,"Key2":4,···
+                                 (pos 14)
+        Stack Trace:
+             в Xunit.Assert.Equal(String expected, String actual, Boolean ignoreCase, Boolean ignoreLineEndingDifferences, Boolean ignoreWhiteSpaceDifferences) в /_/src/xunit.assert/Asserts/StringAsserts.cs:строка 326
+             в Xunit.Assert.Equal(String expected, String actual) в /_/src/xunit.assert/Asserts/StringAsserts.cs:строка 235
+             в System.Text.Json.Serialization.Tests.CollectionTests.<DictionaryKeyFilter_IgnoreOnSerialize>d__115.MoveNext() в C:\AProj\runtime\src\libraries\System.Text.Json\tests\Common\CollectionTests\CollectionTests.Dictionary.KeyFilter.cs:строка 69
+          --- Конец трассировка стека из предыдущего расположения, где возникло исключение ---
+             в System.Runtime.ExceptionServices.ExceptionDispatchInfo.Throw()
+             в System.Runtime.CompilerServices.TaskAwaiter.HandleNonSuccessAndDebuggerNotification(Task task)
+             в Xunit.Sdk.TestInvoker`1.<>c__DisplayClass48_0.<<InvokeTestMethodAsync>b__1>d.MoveNext() в /_/src/xunit.execution/Sdk/Frameworks/Runners/TestInvoker.cs:строка 264
+          --- Конец трассировка стека из предыдущего расположения, где возникло исключение ---
+             в System.Runtime.ExceptionServices.ExceptionDispatchInfo.Throw()
+             в System.Runtime.CompilerServices.TaskAwaiter.HandleNonSuccessAndDebuggerNotification(Task task)
+             в Xunit.Sdk.ExecutionTimer.<AggregateAsync>d__4.MoveNext() в /_/src/xunit.execution/Sdk/Frameworks/ExecutionTimer.cs:строка 48
+          --- Конец трассировка стека из предыдущего расположения, где возникло исключение ---
+             в System.Runtime.ExceptionServices.ExceptionDispatchInfo.Throw()
+             в System.Runtime.CompilerServices.TaskAwaiter.HandleNonSuccessAndDebuggerNotification(Task task)
+             в Xunit.Sdk.ExceptionAggregator.<RunAsync>d__9.MoveNext() в /_/src/xunit.core/Sdk/ExceptionAggregator.cs:строка 90
+      System.Text.Json.Serialization.Tests.CollectionTestsDynamic_AsyncStream.DictionaryKeyFilter_IgnoreForExtensionData [FAIL]
+        System.Text.Json.JsonException : ',' is an invalid start of a value. Path: $.$metadataUndefined | LineNumber: 0 | BytePositionInLine: 71.
+        ---- System.Text.Json.JsonReaderException : ',' is an invalid start of a value. LineNumber: 0 | BytePositionInLine: 71.
+        Stack Trace:
+             в System.Text.Json.ThrowHelper.ReThrowWithPath(ReadStack& state, JsonReaderException ex) в C:\AProj\runtime\src\libraries\System.Text.Json\src\System\Text\Json\ThrowHelper.Serialization.cs:строка 417
+             в System.Text.Json.Serialization.JsonConverter`1.ReadCore(Utf8JsonReader& reader, JsonSerializerOptions options, ReadStack& state) в C:\AProj\runtime\src\libraries\System.Text.Json\src\System\Text\Json\Serialization\JsonConverterOfT.ReadCore.cs:строка 68
+             в System.Text.Json.Serialization.Metadata.JsonTypeInfo`1.ContinueDeserialize(ReadBufferState& bufferState, JsonReaderState& jsonReaderState, ReadStack& readStack) в C:\AProj\runtime\src\libraries\System.Text.Json\src\System\Text\Json\Serialization\Metadata\JsonTypeInfoOfT.ReadHelper.cs:строка 114
+             в System.Text.Json.Serialization.Metadata.JsonTypeInfo`1.<DeserializeAsync>d__1.MoveNext() в C:\AProj\runtime\src\libraries\System.Text.Json\src\System\Text\Json\Serialization\Metadata\JsonTypeInfoOfT.ReadHelper.cs:строка 39
+          --- Конец трассировка стека из предыдущего расположения, где возникло исключение ---
+             в System.Runtime.ExceptionServices.ExceptionDispatchInfo.Throw()
+             в System.Runtime.CompilerServices.TaskAwaiter.HandleNonSuccessAndDebuggerNotification(Task task)
+             в System.Threading.Tasks.ValueTask`1.get_Result()
+             в System.Text.Json.Serialization.Tests.JsonSerializerWrapper.AsyncStreamSerializerWrapper.<DeserializeWrapper>d__16`1.MoveNext() в C:\AProj\runtime\src\libraries\System.Text.Json\tests\System.Text.Json.Tests\Serialization\JsonSerializerWrapper.Reflection.cs:строка 201
+          --- Конец трассировка стека из предыдущего расположения, где возникло исключение ---
+             в System.Runtime.ExceptionServices.ExceptionDispatchInfo.Throw()
+             в System.Runtime.CompilerServices.TaskAwaiter.HandleNonSuccessAndDebuggerNotification(Task task)
+             в System.Runtime.CompilerServices.TaskAwaiter`1.GetResult()
+             в System.Text.Json.Serialization.Tests.StreamingJsonSerializerWrapper.<DeserializeWrapper>d__20`1.MoveNext() в C:\AProj\runtime\src\libraries\System.Text.Json\tests\Common\StreamingJsonSerializerWrapper.cs:строка 70
+          --- Конец трассировка стека из предыдущего расположения, где возникло исключение ---
+             в System.Runtime.ExceptionServices.ExceptionDispatchInfo.Throw()
+             в System.Runtime.CompilerServices.TaskAwaiter.HandleNonSuccessAndDebuggerNotification(Task task)
+             в System.Runtime.CompilerServices.TaskAwaiter`1.GetResult()
+             в System.Text.Json.Serialization.Tests.CollectionTests.<DictionaryKeyFilter_IgnoreForExtensionData>d__116.MoveNext() в C:\AProj\runtime\src\libraries\System.Text.Json\tests\Common\CollectionTests\CollectionTests.Dictionary.KeyFilter.cs:строка 89
+          --- Конец трассировка стека из предыдущего расположения, где возникло исключение ---
+             в System.Runtime.ExceptionServices.ExceptionDispatchInfo.Throw()
+             в System.Runtime.CompilerServices.TaskAwaiter.HandleNonSuccessAndDebuggerNotification(Task task)
+             в Xunit.Sdk.TestInvoker`1.<>c__DisplayClass48_0.<<InvokeTestMethodAsync>b__1>d.MoveNext() в /_/src/xunit.execution/Sdk/Frameworks/Runners/TestInvoker.cs:строка 264
+          --- Конец трассировка стека из предыдущего расположения, где возникло исключение ---
+             в System.Runtime.ExceptionServices.ExceptionDispatchInfo.Throw()
+             в System.Runtime.CompilerServices.TaskAwaiter.HandleNonSuccessAndDebuggerNotification(Task task)
+             в Xunit.Sdk.ExecutionTimer.<AggregateAsync>d__4.MoveNext() в /_/src/xunit.execution/Sdk/Frameworks/ExecutionTimer.cs:строка 48
+          --- Конец трассировка стека из предыдущего расположения, где возникло исключение ---
+             в System.Runtime.ExceptionServices.ExceptionDispatchInfo.Throw()
+             в System.Runtime.CompilerServices.TaskAwaiter.HandleNonSuccessAndDebuggerNotification(Task task)
+             в Xunit.Sdk.ExceptionAggregator.<RunAsync>d__9.MoveNext() в /_/src/xunit.core/Sdk/ExceptionAggregator.cs:строка 90
+          ----- Inner Stack Trace -----
+             в System.Text.Json.ThrowHelper.ThrowJsonReaderException(Utf8JsonReader& json, ExceptionResource resource, Byte nextByte, ReadOnlySpan`1 bytes) в C:\AProj\runtime\src\libraries\System.Text.Json\src\System\Text\Json\ThrowHelper.cs:строка 315
+             в System.Text.Json.Utf8JsonReader.ConsumeValue(Byte marker) в C:\AProj\runtime\src\libraries\System.Text.Json\src\System\Text\Json\Reader\Utf8JsonReader.cs:строка 1111
+             в System.Text.Json.Utf8JsonReader.ReadSingleSegment() в C:\AProj\runtime\src\libraries\System.Text.Json\src\System\Text\Json\Reader\Utf8JsonReader.cs:строка 879
+             в System.Text.Json.Utf8JsonReader.Read() в C:\AProj\runtime\src\libraries\System.Text.Json\src\System\Text\Json\Reader\Utf8JsonReader.cs:строка 279
+             в System.Text.Json.Serialization.JsonConverter.SingleValueReadWithReadAhead(Boolean requiresReadAhead, Utf8JsonReader& reader, ReadStack& state) в C:\AProj\runtime\src\libraries\System.Text.Json\src\System\Text\Json\Serialization\JsonConverter.ReadAhead.cs:строка 25
+             в System.Text.Json.Serialization.Converters.ObjectDefaultConverter`1.ReadAheadPropertyValue(ReadStack& state, Utf8JsonReader& reader, JsonPropertyInfo jsonPropertyInfo) в C:\AProj\runtime\src\libraries\System.Text.Json\src\System\Text\Json\Serialization\Converters\Object\ObjectDefaultConverter.cs:строка 494
+             в System.Text.Json.Serialization.Converters.ObjectDefaultConverter`1.OnTryRead(Utf8JsonReader& reader, Type typeToConvert, JsonSerializerOptions options, ReadStack& state, T& value) в C:\AProj\runtime\src\libraries\System.Text.Json\src\System\Text\Json\Serialization\Converters\Object\ObjectDefaultConverter.cs:строка 208
+             в System.Text.Json.Serialization.JsonConverter`1.TryRead(Utf8JsonReader& reader, Type typeToConvert, JsonSerializerOptions options, ReadStack& state, T& value, Boolean& isPopulatedValue) в C:\AProj\runtime\src\libraries\System.Text.Json\src\System\Text\Json\Serialization\JsonConverterOfT.cs:строка 258
+             в System.Text.Json.Serialization.JsonConverter`1.ReadCore(Utf8JsonReader& reader, JsonSerializerOptions options, ReadStack& state) в C:\AProj\runtime\src\libraries\System.Text.Json\src\System\Text\Json\Serialization\JsonConverterOfT.ReadCore.cs:строка 51
+      System.Text.Json.Serialization.Tests.CollectionTestsDynamic_AsyncStreamWithSmallBuffer.DictionaryKeyFilter_MetadataNamesDeserialize [FAIL]
+        Assert.Equal() Failure
+        Expected: 2
+        Actual:   3
+        Stack Trace:
+             в Xunit.Assert.Equal[T](T expected, T actual, IEqualityComparer`1 comparer) в /_/src/xunit.assert/Asserts/EqualityAsserts.cs:строка 96
+             в System.Text.Json.Serialization.Tests.CollectionTests.<DictionaryKeyFilter_MetadataNamesDeserialize>d__114.MoveNext() в C:\AProj\runtime\src\libraries\System.Text.Json\tests\Common\CollectionTests\CollectionTests.Dictionary.KeyFilter.cs:строка 42
+          --- Конец трассировка стека из предыдущего расположения, где возникло исключение ---
+             в System.Runtime.ExceptionServices.ExceptionDispatchInfo.Throw()
+             в System.Runtime.CompilerServices.TaskAwaiter.HandleNonSuccessAndDebuggerNotification(Task task)
+             в Xunit.Sdk.TestInvoker`1.<>c__DisplayClass48_0.<<InvokeTestMethodAsync>b__1>d.MoveNext() в /_/src/xunit.execution/Sdk/Frameworks/Runners/TestInvoker.cs:строка 264
+          --- Конец трассировка стека из предыдущего расположения, где возникло исключение ---
+             в System.Runtime.ExceptionServices.ExceptionDispatchInfo.Throw()
+             в System.Runtime.CompilerServices.TaskAwaiter.HandleNonSuccessAndDebuggerNotification(Task task)
+             в Xunit.Sdk.ExecutionTimer.<AggregateAsync>d__4.MoveNext() в /_/src/xunit.execution/Sdk/Frameworks/ExecutionTimer.cs:строка 48
+          --- Конец трассировка стека из предыдущего расположения, где возникло исключение ---
+             в System.Runtime.ExceptionServices.ExceptionDispatchInfo.Throw()
+             в System.Runtime.CompilerServices.TaskAwaiter.HandleNonSuccessAndDebuggerNotification(Task task)
+             в Xunit.Sdk.ExceptionAggregator.<RunAsync>d__9.MoveNext() в /_/src/xunit.core/Sdk/ExceptionAggregator.cs:строка 90
+        Assert.Equal() Failure
+      System.Text.Json.Serialization.Tests.CollectionTestsDynamic_AsyncStream.DictionaryKeyFilter_IgnoreOnSerialize [FAIL]
+                                 (pos 14)
+        Expected: [{"$metadata":1,"Key1":1,"Key2":2},{"Key1":3,"Key2":4,"···
+        Actual:   [{"$metadata":-1,"Key1":1,"Key2":2},{"Key1":3,"Key2":4,···
+                                 (pos 14)
+        Stack Trace:
+             в Xunit.Assert.Equal(String expected, String actual, Boolean ignoreCase, Boolean ignoreLineEndingDifferences, Boolean ignoreWhiteSpaceDifferences) в /_/src/xunit.assert/Asserts/StringAsserts.cs:строка 326
+             в Xunit.Assert.Equal(String expected, String actual) в /_/src/xunit.assert/Asserts/StringAsserts.cs:строка 235
+             в System.Text.Json.Serialization.Tests.CollectionTests.<DictionaryKeyFilter_IgnoreOnSerialize>d__115.MoveNext() в C:\AProj\runtime\src\libraries\System.Text.Json\tests\Common\CollectionTests\CollectionTests.Dictionary.KeyFilter.cs:строка 69
+          --- Конец трассировка стека из предыдущего расположения, где возникло исключение ---
+             в System.Runtime.ExceptionServices.ExceptionDispatchInfo.Throw()
+             в System.Runtime.CompilerServices.TaskAwaiter.HandleNonSuccessAndDebuggerNotification(Task task)
+             в Xunit.Sdk.TestInvoker`1.<>c__DisplayClass48_0.<<InvokeTestMethodAsync>b__1>d.MoveNext() в /_/src/xunit.execution/Sdk/Frameworks/Runners/TestInvoker.cs:строка 264
+          --- Конец трассировка стека из предыдущего расположения, где возникло исключение ---
+             в System.Runtime.ExceptionServices.ExceptionDispatchInfo.Throw()
+             в System.Runtime.CompilerServices.TaskAwaiter.HandleNonSuccessAndDebuggerNotification(Task task)
+             в Xunit.Sdk.ExecutionTimer.<AggregateAsync>d__4.MoveNext() в /_/src/xunit.execution/Sdk/Frameworks/ExecutionTimer.cs:строка 48
+          --- Конец трассировка стека из предыдущего расположения, где возникло исключение ---
+             в System.Runtime.ExceptionServices.ExceptionDispatchInfo.Throw()
+             в System.Runtime.CompilerServices.TaskAwaiter.HandleNonSuccessAndDebuggerNotification(Task task)
+             в Xunit.Sdk.ExceptionAggregator.<RunAsync>d__9.MoveNext() в /_/src/xunit.core/Sdk/ExceptionAggregator.cs:строка 90
+      System.Text.Json.Serialization.Tests.CollectionTestsDynamic_AsyncStreamWithSmallBuffer.DictionaryKeyFilter_IgnoreOnSerialize [FAIL]
+        Assert.Equal() Failure
+                                 (pos 14)
+        Expected: [{"$metadata":1,"Key1":1,"Key2":2},{"Key1":3,"Key2":4,"···
+        Actual:   [{"$metadata":-1,"Key1":1,"Key2":2},{"Key1":3,"Key2":4,···
+                                 (pos 14)
+        Stack Trace:
+             в Xunit.Assert.Equal(String expected, String actual, Boolean ignoreCase, Boolean ignoreLineEndingDifferences, Boolean ignoreWhiteSpaceDifferences) в /_/src/xunit.assert/Asserts/StringAsserts.cs:строка 326
+             в Xunit.Assert.Equal(String expected, String actual) в /_/src/xunit.assert/Asserts/StringAsserts.cs:строка 235
+             в System.Text.Json.Serialization.Tests.CollectionTests.<DictionaryKeyFilter_IgnoreOnSerialize>d__115.MoveNext() в C:\AProj\runtime\src\libraries\System.Text.Json\tests\Common\CollectionTests\CollectionTests.Dictionary.KeyFilter.cs:строка 69
+          --- Конец трассировка стека из предыдущего расположения, где возникло исключение ---
+             в System.Runtime.ExceptionServices.ExceptionDispatchInfo.Throw()
+             в System.Runtime.CompilerServices.TaskAwaiter.HandleNonSuccessAndDebuggerNotification(Task task)
+             в Xunit.Sdk.TestInvoker`1.<>c__DisplayClass48_0.<<InvokeTestMethodAsync>b__1>d.MoveNext() в /_/src/xunit.execution/Sdk/Frameworks/Runners/TestInvoker.cs:строка 264
+          --- Конец трассировка стека из предыдущего расположения, где возникло исключение ---
+             в System.Runtime.ExceptionServices.ExceptionDispatchInfo.Throw()
+             в System.Runtime.CompilerServices.TaskAwaiter.HandleNonSuccessAndDebuggerNotification(Task task)
+             в Xunit.Sdk.ExecutionTimer.<AggregateAsync>d__4.MoveNext() в /_/src/xunit.execution/Sdk/Frameworks/ExecutionTimer.cs:строка 48
+          --- Конец трассировка стека из предыдущего расположения, где возникло исключение ---
+             в System.Runtime.ExceptionServices.ExceptionDispatchInfo.Throw()
+             в System.Runtime.CompilerServices.TaskAwaiter.HandleNonSuccessAndDebuggerNotification(Task task)
+             в Xunit.Sdk.ExceptionAggregator.<RunAsync>d__9.MoveNext() в /_/src/xunit.core/Sdk/ExceptionAggregator.cs:строка 90
+      System.Text.Json.Serialization.Tests.CollectionTestsDynamic_AsyncStreamWithSmallBuffer.DictionaryKeyFilter_IgnoreForExtensionData [FAIL]
+        System.Text.Json.JsonException : ',' is an invalid start of a value. Path: $.$metadataUndefined | LineNumber: 0 | BytePositionInLine: 71.
+        ---- System.Text.Json.JsonReaderException : ',' is an invalid start of a value. LineNumber: 0 | BytePositionInLine: 71.
+        Stack Trace:
+             в System.Text.Json.ThrowHelper.ReThrowWithPath(ReadStack& state, JsonReaderException ex) в C:\AProj\runtime\src\libraries\System.Text.Json\src\System\Text\Json\ThrowHelper.Serialization.cs:строка 417
+             в System.Text.Json.Serialization.JsonConverter`1.ReadCore(Utf8JsonReader& reader, JsonSerializerOptions options, ReadStack& state) в C:\AProj\runtime\src\libraries\System.Text.Json\src\System\Text\Json\Serialization\JsonConverterOfT.ReadCore.cs:строка 68
+             в System.Text.Json.Serialization.Metadata.JsonTypeInfo`1.ContinueDeserialize(ReadBufferState& bufferState, JsonReaderState& jsonReaderState, ReadStack& readStack) в C:\AProj\runtime\src\libraries\System.Text.Json\src\System\Text\Json\Serialization\Metadata\JsonTypeInfoOfT.ReadHelper.cs:строка 114
+             в System.Text.Json.Serialization.Metadata.JsonTypeInfo`1.<DeserializeAsync>d__1.MoveNext() в C:\AProj\runtime\src\libraries\System.Text.Json\src\System\Text\Json\Serialization\Metadata\JsonTypeInfoOfT.ReadHelper.cs:строка 39
+          --- Конец трассировка стека из предыдущего расположения, где возникло исключение ---
+             в System.Runtime.ExceptionServices.ExceptionDispatchInfo.Throw()
+             в System.Runtime.CompilerServices.TaskAwaiter.HandleNonSuccessAndDebuggerNotification(Task task)
+             в System.Threading.Tasks.ValueTask`1.get_Result()
+             в System.Text.Json.Serialization.Tests.JsonSerializerWrapper.AsyncStreamSerializerWrapper.<DeserializeWrapper>d__16`1.MoveNext() в C:\AProj\runtime\src\libraries\System.Text.Json\tests\System.Text.Json.Tests\Serialization\JsonSerializerWrapper.Reflection.cs:строка 201
+          --- Конец трассировка стека из предыдущего расположения, где возникло исключение ---
+             в System.Runtime.ExceptionServices.ExceptionDispatchInfo.Throw()
+             в System.Runtime.CompilerServices.TaskAwaiter.HandleNonSuccessAndDebuggerNotification(Task task)
+             в System.Runtime.CompilerServices.TaskAwaiter`1.GetResult()
+             в System.Text.Json.Serialization.Tests.StreamingJsonSerializerWrapper.<DeserializeWrapper>d__20`1.MoveNext() в C:\AProj\runtime\src\libraries\System.Text.Json\tests\Common\StreamingJsonSerializerWrapper.cs:строка 70
+          --- Конец трассировка стека из предыдущего расположения, где возникло исключение ---
+             в System.Runtime.ExceptionServices.ExceptionDispatchInfo.Throw()
+             в System.Runtime.CompilerServices.TaskAwaiter.HandleNonSuccessAndDebuggerNotification(Task task)
+             в System.Runtime.CompilerServices.TaskAwaiter`1.GetResult()
+             в System.Text.Json.Serialization.Tests.CollectionTests.<DictionaryKeyFilter_IgnoreForExtensionData>d__116.MoveNext() в C:\AProj\runtime\src\libraries\System.Text.Json\tests\Common\CollectionTests\CollectionTests.Dictionary.KeyFilter.cs:строка 89
+          --- Конец трассировка стека из предыдущего расположения, где возникло исключение ---
+             в System.Runtime.ExceptionServices.ExceptionDispatchInfo.Throw()
+             в System.Runtime.CompilerServices.TaskAwaiter.HandleNonSuccessAndDebuggerNotification(Task task)
+             в Xunit.Sdk.TestInvoker`1.<>c__DisplayClass48_0.<<InvokeTestMethodAsync>b__1>d.MoveNext() в /_/src/xunit.execution/Sdk/Frameworks/Runners/TestInvoker.cs:строка 264
+          --- Конец трассировка стека из предыдущего расположения, где возникло исключение ---
+             в System.Runtime.ExceptionServices.ExceptionDispatchInfo.Throw()
+             в System.Runtime.CompilerServices.TaskAwaiter.HandleNonSuccessAndDebuggerNotification(Task task)
+             в Xunit.Sdk.ExecutionTimer.<AggregateAsync>d__4.MoveNext() в /_/src/xunit.execution/Sdk/Frameworks/ExecutionTimer.cs:строка 48
+          --- Конец трассировка стека из предыдущего расположения, где возникло исключение ---
+             в System.Runtime.ExceptionServices.ExceptionDispatchInfo.Throw()
+             в System.Runtime.CompilerServices.TaskAwaiter.HandleNonSuccessAndDebuggerNotification(Task task)
+             в Xunit.Sdk.ExceptionAggregator.<RunAsync>d__9.MoveNext() в /_/src/xunit.core/Sdk/ExceptionAggregator.cs:строка 90
+          ----- Inner Stack Trace -----
+             в System.Text.Json.ThrowHelper.ThrowJsonReaderException(Utf8JsonReader& json, ExceptionResource resource, Byte nextByte, ReadOnlySpan`1 bytes) в C:\AProj\runtime\src\libraries\System.Text.Json\src\System\Text\Json\ThrowHelper.cs:строка 315
+             в System.Text.Json.Utf8JsonReader.ConsumeValue(Byte marker) в C:\AProj\runtime\src\libraries\System.Text.Json\src\System\Text\Json\Reader\Utf8JsonReader.cs:строка 1111
+             в System.Text.Json.Utf8JsonReader.ReadSingleSegment() в C:\AProj\runtime\src\libraries\System.Text.Json\src\System\Text\Json\Reader\Utf8JsonReader.cs:строка 879
+             в System.Text.Json.Utf8JsonReader.Read() в C:\AProj\runtime\src\libraries\System.Text.Json\src\System\Text\Json\Reader\Utf8JsonReader.cs:строка 279
+             в System.Text.Json.Serialization.JsonConverter.DoSingleValueReadWithReadAhead(Utf8JsonReader& reader) в C:\AProj\runtime\src\libraries\System.Text.Json\src\System\Text\Json\Serialization\JsonConverter.ReadAhead.cs:строка 37
+             в System.Text.Json.Serialization.JsonConverter.SingleValueReadWithReadAhead(Boolean requiresReadAhead, Utf8JsonReader& reader, ReadStack& state) в C:\AProj\runtime\src\libraries\System.Text.Json\src\System\Text\Json\Serialization\JsonConverter.ReadAhead.cs:строка 28
+             в System.Text.Json.Serialization.Converters.ObjectDefaultConverter`1.ReadAheadPropertyValue(ReadStack& state, Utf8JsonReader& reader, JsonPropertyInfo jsonPropertyInfo) в C:\AProj\runtime\src\libraries\System.Text.Json\src\System\Text\Json\Serialization\Converters\Object\ObjectDefaultConverter.cs:строка 494
+             в System.Text.Json.Serialization.Converters.ObjectDefaultConverter`1.OnTryRead(Utf8JsonReader& reader, Type typeToConvert, JsonSerializerOptions options, ReadStack& state, T& value) в C:\AProj\runtime\src\libraries\System.Text.Json\src\System\Text\Json\Serialization\Converters\Object\ObjectDefaultConverter.cs:строка 208
+             в System.Text.Json.Serialization.JsonConverter`1.TryRead(Utf8JsonReader& reader, Type typeToConvert, JsonSerializerOptions options, ReadStack& state, T& value, Boolean& isPopulatedValue) в C:\AProj\runtime\src\libraries\System.Text.Json\src\System\Text\Json\Serialization\JsonConverterOfT.cs:строка 258
+             в System.Text.Json.Serialization.JsonConverter`1.ReadCore(Utf8JsonReader& reader, JsonSerializerOptions options, ReadStack& state) в C:\AProj\runtime\src\libraries\System.Text.Json\src\System\Text\Json\Serialization\JsonConverterOfT.ReadCore.cs:строка 51
+    Finished:    System.Text.Json.Tests
+  === TEST EXECUTION SUMMARY ===
+     System.Text.Json.Tests  Total: 31203, Errors: 0, Failed: 13, Skipped: 0, Time: 187,798s
+  ----- end 21.06.2023 17:30:46,98 ----- exit code 0 ----------------------------------------------------------
+
+Build succeeded.
+    0 Warning(s)
+    0 Error(s)
+
+Time Elapsed 00:04:37.74

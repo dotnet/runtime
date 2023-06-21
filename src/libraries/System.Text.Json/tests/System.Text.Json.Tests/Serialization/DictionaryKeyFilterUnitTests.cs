@@ -8,7 +8,7 @@ namespace System.Text.Json.Serialization.Tests
     public static class DictionaryKeyFilterUnitTests
     {
         [Fact]
-        public static void ToCamelCaseTest()
+        public static void IgnoreMetadataNamesTest()
         {
             Assert.True(IgnoreKey("$key"));
             Assert.True(IgnoreKey("$ key"));
@@ -28,7 +28,6 @@ namespace System.Text.Json.Serialization.Tests
             Assert.False(IgnoreKey("_$"));
             Assert.False(IgnoreKey("\0$"));
             Assert.False(IgnoreKey(""));
-            Assert.False(IgnoreKey(null));
 
             static bool IgnoreKey(string name)
                 => JsonDictionaryKeyFilter.IgnoreMetadataNames.IgnoreKey(Encoding.UTF8.GetBytes(name));
