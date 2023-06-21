@@ -7341,8 +7341,7 @@ void CodeGen::genIntToFloatCast(GenTree* treeNode)
 
     if (compiler->compOpportunisticallyDependsOn(InstructionSet_AVX512F))
     {
-        if ( (srcType == TYP_ULONG || srcType == TYP_UINT) 
-              && (dstType == TYP_DOUBLE || dstType == TYP_FLOAT))
+        if ( srcType == TYP_ULONG && (dstType == TYP_DOUBLE || dstType == TYP_FLOAT))
         {
             genConsumeOperands(treeNode->AsOp());
             instruction ins = ins_FloatConv(dstType, srcType, emitTypeSize(srcType));
