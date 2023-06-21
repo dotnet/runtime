@@ -155,7 +155,7 @@ namespace Wasm.Build.Tests
                                            string targetFramework = DefaultTargetFramework,
                                            string? extraXHarnessMonoArgs = null,
                                            string? extraXHarnessArgs = null,
-                                           string jsRelativePath = "test-main.js",
+                                           string jsRelativePath = "test-main.mjs",
                                            string environmentLocale = DefaultEnvironmentLocale)
         {
             buildDir ??= _projectDir;
@@ -330,7 +330,7 @@ namespace Wasm.Build.Tests
                 <TargetFramework>{DefaultTargetFramework}</TargetFramework>
                 <OutputType>Exe</OutputType>
                 <WasmGenerateRunV8Script>true</WasmGenerateRunV8Script>
-                <WasmMainJSPath>test-main.js</WasmMainJSPath>
+                <WasmMainJSPath>test-main.mjs</WasmMainJSPath>
                 ##EXTRA_PROPERTIES##
               </PropertyGroup>
               <ItemGroup>
@@ -390,13 +390,13 @@ namespace Wasm.Build.Tests
                     Path.Combine(
                         AppContext.BaseDirectory,
                         string.IsNullOrEmpty(options.TargetFramework) || options.TargetFramework == "net8.0"
-                            ? "test-main.js"
+                            ? "test-main.mjs"
                             : "data/test-main-7.0.js"
                     ),
-                    Path.Combine(_projectDir, "test-main.js")
+                    Path.Combine(_projectDir, "test-main.mjs")
                 );
 
-                File.WriteAllText(Path.Combine(_projectDir!, "index.html"), @"<html><body><script type=""module"" src=""test-main.js""></script></body></html>");
+                File.WriteAllText(Path.Combine(_projectDir!, "index.html"), @"<html><body><script type=""module"" src=""test-main.mjs""></script></body></html>");
             }
             else if (_projectDir is null)
             {
@@ -445,7 +445,7 @@ namespace Wasm.Build.Tests
                     AssertBasicAppBundle(bundleDir,
                                          buildArgs.ProjectName,
                                          buildArgs.Config,
-                                         options.MainJS ?? "test-main.js",
+                                         options.MainJS ?? "test-main.mjs",
                                          options.HasV8Script,
                                          options.TargetFramework ?? DefaultTargetFramework,
                                          options.GlobalizationMode,
