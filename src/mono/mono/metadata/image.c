@@ -440,16 +440,20 @@ mono_image_load_cli_header (MonoImage *image, MonoCLIImageInfo *iinfo)
 /**
  * mono_metadata_module_mvid:
  *
- * Return the module mvid GUID or NULL if the image doesn't have a module table.
+ * Return the module mvid GUID or FALSE if the image doesn't have a module table.
  */
-static const guint8 *
-mono_metadata_module_mvid (MonoImage *image)
+static const gboolean
+mono_metadata_module_mvid (MonoImage *image, GUID* pmvid)
 {
-	if (!image->tables [MONO_TABLE_MODULE].base)
-		return NULL;
-	guint32 module_cols [MONO_MODULE_SIZE];
-	mono_metadata_decode_row (&image->tables [MONO_TABLE_MODULE], 0, module_cols, MONO_MODULE_SIZE);
-	return (const guint8*) mono_metadata_guid_heap (image, module_cols [MONO_MODULE_MVID]);
+	if (image->metadata_handle == NULL)
+		return FALSE;
+	
+	mdcursor_t cursor;
+	guint32 count;
+	if (!md_create_cursor(image->metadata_handle, mdtid_Module, &cursor, &count))
+		return FALSE;
+
+	return 1 == md_get_column_value_as_guid(cursor, mdtModule_Mvid, 1, pmvid) ? TRUE : FALSE;
 }
 
 static gboolean
@@ -574,9 +578,9 @@ load_metadata_ptrs (MonoImage *image, MonoCLIImageInfo *iinfo)
 
 		image->guid = mono_guid_to_string ((guint8*)image->heap_guid.data);
 	} else {
-		const guint8 *guid = mono_metadata_module_mvid (image);
-		if (guid)
-			image->guid = mono_guid_to_string (guid);
+		GUID mvid;
+		if (mono_metadata_module_mvid(image, &mvid))
+			image->guid = mono_guid_to_string ((const guint8*)&mvid);
 		else {
 			/* PPDB files have no guid */
 			guint8 empty_guid [16];
