@@ -43680,7 +43680,7 @@ ptrdiff_t gc_heap::estimate_gen_growth (int gen_number, bool for_bgc)
         // In case we were repeatedly unable to use the reserved space for partially used regions, we should 
         // discount the region end space as unusable. This happens rarely in SOH, but could be signficant for
         // pathological LOH/POH usage (e.g. always allocates slightly more than 16M).
-        usable_reserved_not_in_use = (ptrdiff_t)((double)reserved_not_in_use * min((1.0 - (double)uoh_try_fit_segment_end_fail_count/(double)uoh_try_fit_segment_end_count), 0));
+        usable_reserved_not_in_use = (ptrdiff_t)((double)reserved_not_in_use * (1.0 - (double)uoh_try_fit_segment_end_fail_count/(double)uoh_try_fit_segment_end_count));
     }
 
     // compute how much of the allocated space is on the free list
