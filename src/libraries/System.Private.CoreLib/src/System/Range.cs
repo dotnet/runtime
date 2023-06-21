@@ -137,7 +137,7 @@ namespace System
             return (start, end - start);
         }
 
-        private void ThrowArgumentOutOfRangeException()
+        private static void ThrowArgumentOutOfRangeException()
         {
 #if SYSTEM_PRIVATE_CORELIB
             ThrowHelper.ThrowArgumentOutOfRangeException(ExceptionArgument.length);

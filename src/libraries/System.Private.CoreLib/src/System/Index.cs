@@ -143,7 +143,7 @@ namespace System
             return ((uint)Value).ToString();
         }
 
-        private void ThrowValueArgumentOutOfRange_NeedNonNegNumException()
+        private static void ThrowValueArgumentOutOfRange_NeedNonNegNumException()
         {
 #if SYSTEM_PRIVATE_CORELIB
             ThrowHelper.ThrowValueArgumentOutOfRange_NeedNonNegNumException();
