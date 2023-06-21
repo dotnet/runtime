@@ -301,9 +301,6 @@ void Compiler::raMarkStkVars()
         // Unused variables typically don't get any frame space
         else if (varDsc->lvRefCnt() == 0)
         {
-            bool stkFixedArgInVarArgs =
-                info.compIsVarArgs && varDsc->lvIsParam && !varDsc->lvIsRegArg && (lclNum != lvaVarargsHandleArg);
-
 #ifdef DEBUG
             // For debugging, note that we have to reserve space even for
             // unused variables if they are ever in scope. However, this is not
@@ -317,14 +314,6 @@ void Compiler::raMarkStkVars()
                 }
             }
 #endif
-            // For Debug Code, we have to reserve space even if the variable is never
-            // in scope. We will also need to initialize it if it is a GC var.
-            // So we set lvMustInit and verify it has a nonzero ref-cnt.
-
-            if (opts.compDbgCode && !stkFixedArgInVarArgs && (lclNum < info.compLocalsCount))
-            {
-                assert(!"unreferenced local in debug codegen");
-            }
 
             varDsc->lvOnFrame = false;
             // Clear the lvMustInit flag in case it is set
