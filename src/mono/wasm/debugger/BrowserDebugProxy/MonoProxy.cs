@@ -56,14 +56,13 @@ namespace Microsoft.WebAssembly.Diagnostics
         {
             bool previous = TryGetCurrentExecutionContextValue(sessionId, out previousExecutionContext);
             if (!previous)
-                contexts[sessionId] = new();
+                contexts.GetOrAdd(sessionId, new ConcurrentBag<ExecutionContext>());
             contexts[sessionId].Add(executionContext);
             return previous;
         }
 
         internal bool TryGetCurrentExecutionContextValue(SessionId id, out ExecutionContext executionContext)
         {
-            System.Diagnostics.Debugger.Launch();
             executionContext = null;
             if (!contexts.TryGetValue(id, out ConcurrentBag<ExecutionContext> contextList))
                 return false;
