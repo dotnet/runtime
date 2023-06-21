@@ -42,10 +42,27 @@ namespace Mono.Linker.Tests.Cases.Reflection
 				extern static DefaultConstructorTarget InvokeWithName (int i);
 
 				[Kept]
+				class UseLocalFunction
+				{
+					[Kept]
+					private UseLocalFunction () { }
+
+					[Kept]
+					public static void Test ()
+					{
+						InvokeDefaultConstructorLocal ();
+
+						[UnsafeAccessor (UnsafeAccessorKind.Constructor)]
+						extern static UseLocalFunction InvokeDefaultConstructorLocal ();
+					}
+				}
+
+				[Kept]
 				public static void Test ()
 				{
 					InvokeDefaultConstructor ();
 					InvokeWithName (0);
+					UseLocalFunction.Test ();
 				}
 			}
 
@@ -72,7 +89,6 @@ namespace Mono.Linker.Tests.Cases.Reflection
 
 				[Kept]
 				[KeptAttributeAttribute (typeof (UnsafeAccessorAttribute))]
-				// ??? Should this resolve?
 				[UnsafeAccessor (UnsafeAccessorKind.Constructor, Name = "")]
 				extern static ConstructorWithParameterTarget InvokeWithEmptyName (string s);
 
