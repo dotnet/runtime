@@ -506,17 +506,10 @@ GenTree* Compiler::fgMorphExpandCast(GenTreeCast* tree)
         }
         else if (srcType == TYP_UINT)
         {
-#if defined(TARGET_AMD64)
-            if (!compOpportunisticallyDependsOn(InstructionSet_AVX512F))
-            {
-#endif
             oper = gtNewCastNode(TYP_LONG, oper, true, TYP_LONG);
             oper->gtFlags |= (tree->gtFlags & (GTF_OVERFLOW | GTF_EXCEPT));
             tree->ClearUnsigned();
             tree->CastOp() = oper;
-#if defined(TARGET_AMD64)
-            }
-#endif
         }
     }
 #endif // TARGET_AMD64
