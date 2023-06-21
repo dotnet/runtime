@@ -278,18 +278,19 @@ void SystemNative_Abort(void)
     abort();
 }
 
-#ifdef TARGET_OSX
-
 // Gets a non-truncated OS thread ID that is also suitable for diagnostics, for platforms that offer a 64-bit ID
 uint64_t SystemNative_GetUInt64OSThreadId(void)
 {
+#ifdef __APPLE__
     uint64_t threadId;
     int result = pthread_threadid_np(pthread_self(), &threadId);
     assert(result == 0);
     return threadId;
+#else
+    assert(false);
+    return 0;
+#endif
 }
-
-#else // !TARGET_OSX
 
 #if defined(__linux__)
 #include <sys/syscall.h>
@@ -324,5 +325,3 @@ uint32_t SystemNative_TryGetUInt32OSThreadId(void)
     return InvalidId;
 #endif
 }
-
-#endif // TARGET_OSX

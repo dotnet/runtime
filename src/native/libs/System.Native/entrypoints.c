@@ -275,11 +275,8 @@ static const Entry s_sysNative[] =
     DllImportEntry(SystemNative_GetEnviron)
     DllImportEntry(SystemNative_FreeEnviron)
     DllImportEntry(SystemNative_GetGroupName)
-#ifdef TARGET_OSX
     DllImportEntry(SystemNative_GetUInt64OSThreadId)
-#else
     DllImportEntry(SystemNative_TryGetUInt32OSThreadId)
-#endif
 };
 
 EXTERN_C const void* SystemResolveDllImport(const char* name);

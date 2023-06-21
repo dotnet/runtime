@@ -116,10 +116,14 @@ namespace System.Threading
                             Thread.SpinWait(1);
                         }
 
-                        if ((StaticsInitializationStage)Volatile.Read(ref s_staticsInitializationStage) ==
-                            StaticsInitializationStage.Complete)
+                        stage = (StaticsInitializationStage)Volatile.Read(ref s_staticsInitializationStage);
+                        if (stage == StaticsInitializationStage.Complete)
                         {
                             goto case StaticsInitializationStage.Complete;
+                        }
+                        else if (stage == StaticsInitializationStage.NotStarted)
+                        {
+                            goto case default;
                         }
 
                         if (State.TryLock(this))
@@ -158,12 +162,20 @@ namespace System.Threading
                     return true;
             }
 
-            s_isSingleProcessor = Environment.IsSingleProcessor;
-            s_maxSpinCount = DetermineMaxSpinCount();
-            s_minSpinCount = DetermineMinSpinCount();
+            try
+            {
+                s_isSingleProcessor = Environment.IsSingleProcessor;
+                s_maxSpinCount = DetermineMaxSpinCount();
+                s_minSpinCount = DetermineMinSpinCount();
 
-            // Also initialize some types that are used later to prevent potential class construction cycles
-            NativeRuntimeEventSource.Log.IsEnabled();
+                // Also initialize some types that are used later to prevent potential class construction cycles
+                NativeRuntimeEventSource.Log.IsEnabled();
+            }
+            catch
+            {
+                s_staticsInitializationStage = (int)StaticsInitializationStage.NotStarted;
+                throw;
+            }
 
             Volatile.Write(ref s_staticsInitializationStage, (int)StaticsInitializationStage.Complete);
             return true;

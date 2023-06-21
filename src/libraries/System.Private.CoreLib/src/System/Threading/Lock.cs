@@ -766,8 +766,8 @@ namespace System.Threading
             [MethodImpl(MethodImplOptions.AggressiveInlining)]
             public static bool TryLock(Lock lockObj)
             {
-                // The lock is fair to release waiters in FIFO order, but allows non-waiters to acquire the lock if it's
-                // available to avoid lock convoys.
+                // The lock is mostly fair to release waiters in a typically FIFO order (though the order is not guaranteed).
+                // However, it allows non-waiters to acquire the lock if it's available to avoid lock convoys.
                 //
                 // Lock convoys can be detrimental to performance in scenarios where work is being done on multiple threads and
                 // the work involves periodically taking a particular lock for a short time to access shared resources. With a

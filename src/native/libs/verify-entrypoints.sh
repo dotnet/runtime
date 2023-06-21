@@ -12,8 +12,7 @@ IFS=$'\n'
 dllList=()
 for line in $($nmCommand $1); do
   pattern='^[[:xdigit:]]+ T _?([[:alnum:]_]+)'
-  # Individual platform-specific exports are excluded
-  if [[ $line =~ $pattern ]] && [[ "${BASH_REMATCH[1]}" != "SystemNative_GetUInt64OSThreadId" ]] && [[ "${BASH_REMATCH[1]}" != "SystemNative_TryGetUInt32OSThreadId" ]]; then
+  if [[ $line =~ $pattern ]]; then
     # skip symbols that we don't want to consider
     case ${BASH_REMATCH[1]} in
       init) ;;
@@ -31,8 +30,7 @@ done
 entriesList=()
 for line in $(<$2); do
   pattern='^[[:space:]]+DllImportEntry\(([[:alnum:]_]+)\)'
-  # Individual platform-specific exports are excluded
-  if [[ $line =~ $pattern ]] && [[ "${BASH_REMATCH[1]}" != "SystemNative_GetUInt64OSThreadId" ]] && [[ "${BASH_REMATCH[1]}" != "SystemNative_TryGetUInt32OSThreadId" ]]; then
+  if [[ $line =~ $pattern ]]; then
     entriesList+=(${BASH_REMATCH[1]})
   fi
 done
