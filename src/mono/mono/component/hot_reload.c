@@ -2510,7 +2510,14 @@ void
 hot_reload_apply_changes (int origin, MonoImage *image_base, gconstpointer dmeta_bytes, uint32_t dmeta_length, gconstpointer dil_bytes_orig, uint32_t dil_length, gconstpointer dpdb_bytes_orig, uint32_t dpdb_length, MonoError *error)
 {
 	if (!assembly_update_supported (image_base->assembly)) {
-		mono_error_set_invalid_operation (error, "The assembly can not be edited or changed.");
+		int modifiable = 0;
+		const char *msg = "";
+		if (!hot_reload_update_enabled (&modifiable) || modifiable != MONO_MODIFIABLE_ASSM_DEBUG) {
+			msg = "environment variable DOTNET_MODIFIABLE_ASSEMBLIES=\"Debug\" is not set";
+		} else if (!mono_assembly_is_jit_optimizer_disabled (image_base->assembly)) {
+			msg = "assembly does not have a System.Diagnostics.DebuggableAttribute with the DebuggingModes.DisableOptimizations flag (editing Release build assemblies is not supported)";
+		}
+		mono_error_set_invalid_operation (error, "The assembly '%s' can not be edited or changed, because %s", image_base->name, msg);
 		return;
 	}
 
