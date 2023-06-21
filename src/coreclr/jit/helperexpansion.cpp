@@ -478,13 +478,20 @@ bool Compiler::fgExpandThreadLocalAccessForCall(BasicBlock** pBlock, Statement* 
         return false;
     }
 
+#if defined(FEATURE_READYTORUN)
+    assert(!"Unsupported scenario of optimizing TLS access for ReadyToRun");
+#endif
+#if defined(TARGET_ALPINE_LINUX)
+    assert(!"Unsupported scenario of optimizing TLS access on Linux Alpine");
+#endif
+
     if (TargetOS::IsUnix)
     {
 #if defined(TARGET_ARM) || !defined(TARGET_64BIT)
         // On Arm, Thread execution blocks are accessed using co-processor registers and instructions such
         // as MRC and MCR are used to access them. We do not support them and so should never optimize the
         // field access using TLS.
-        assert(!"Unsupported scenario of optimizing TLS access on Arm32/x86");
+        assert(!"Unsupported scenario of optimizing TLS access on Linux Arm32/x86");
 #endif
     }
     else
@@ -493,7 +500,7 @@ bool Compiler::fgExpandThreadLocalAccessForCall(BasicBlock** pBlock, Statement* 
         // On Arm, Thread execution blocks are accessed using co-processor registers and instructions such
         // as MRC and MCR are used to access them. We do not support them and so should never optimize the
         // field access using TLS.
-        assert(!"Unsupported scenario of optimizing TLS access on Arm32");
+        assert(!"Unsupported scenario of optimizing TLS access on Windows Arm32");
 #endif
     }
 
