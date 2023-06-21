@@ -5931,8 +5931,8 @@ void Compiler::considerGuardedDevirtualization(GenTreeCall*            call,
                     likelyHood += 100 - likelyHood * numExactClasses;
                 }
 
-                addGuardedDevirtualizationCandidate(call, exactMethod, exactCls, exactMethodAttrs, clsAttrs,
-                                                    likelyHood);
+                addGuardedDevirtualizationCandidate(call, exactMethod, exactCls, dvInfo.exactContext, exactMethodAttrs,
+                                                    clsAttrs, likelyHood);
             }
 
             if (call->GetInlineCandidatesCount() == numExactClasses)
@@ -5958,6 +5958,8 @@ void Compiler::considerGuardedDevirtualization(GenTreeCall*            call,
         CORINFO_CLASS_HANDLE  likelyClass  = likelyClasses[candidateId];
         CORINFO_METHOD_HANDLE likelyMethod = likelyMethodes[candidateId];
         unsigned              likelihood   = likelihoods[candidateId];
+
+        CORINFO_CONTEXT_HANDLE likelyContext = NULL;
 
         uint32_t likelyClassAttribs = 0;
         if (likelyClass != NO_CLASS_HANDLE)
@@ -5993,8 +5995,8 @@ void Compiler::considerGuardedDevirtualization(GenTreeCall*            call,
                 // Continue checking other candidates, maybe some of them will succeed.
                 break;
             }
-
-            likelyMethod = dvInfo.devirtualizedMethod;
+            likelyContext = dvInfo.exactContext;
+            likelyMethod  = dvInfo.devirtualizedMethod;
         }
 
         uint32_t likelyMethodAttribs = info.compCompHnd->getMethodAttribs(likelyMethod);
@@ -6062,8 +6064,8 @@ void Compiler::considerGuardedDevirtualization(GenTreeCall*            call,
 
         // Add this as a potential candidate.
         //
-        addGuardedDevirtualizationCandidate(call, likelyMethod, likelyClass, likelyMethodAttribs, likelyClassAttribs,
-                                            likelihood);
+        addGuardedDevirtualizationCandidate(call, likelyMethod, likelyClass, likelyContext, likelyMethodAttribs,
+                                            likelyClassAttribs, likelihood);
     }
 }
 
@@ -6088,12 +6090,13 @@ void Compiler::considerGuardedDevirtualization(GenTreeCall*            call,
 //    classAttr - attributes of the class
 //    likelihood - odds that this class is the class seen at runtime
 //
-void Compiler::addGuardedDevirtualizationCandidate(GenTreeCall*          call,
-                                                   CORINFO_METHOD_HANDLE methodHandle,
-                                                   CORINFO_CLASS_HANDLE  classHandle,
-                                                   unsigned              methodAttr,
-                                                   unsigned              classAttr,
-                                                   unsigned              likelihood)
+void Compiler::addGuardedDevirtualizationCandidate(GenTreeCall*           call,
+                                                   CORINFO_METHOD_HANDLE  methodHandle,
+                                                   CORINFO_CLASS_HANDLE   classHandle,
+                                                   CORINFO_CONTEXT_HANDLE contextHandle,
+                                                   unsigned               methodAttr,
+                                                   unsigned               classAttr,
+                                                   unsigned               likelihood)
 {
     // This transformation only makes sense for delegate and virtual calls
     assert(call->IsDelegateInvoke() || call->IsVirtual());
@@ -6166,6 +6169,7 @@ void Compiler::addGuardedDevirtualizationCandidate(GenTreeCall*          call,
     pInfo->guardedClassHandle              = classHandle;
     pInfo->likelihood                      = likelihood;
     pInfo->requiresInstMethodTableArg      = false;
+    pInfo->exactContextHnd                 = contextHandle;
 
     // If the guarded class is a value class, look for an unboxed entry point.
     //
@@ -7754,13 +7758,20 @@ void Compiler::impCheckCanInline(GenTreeCall*           call,
                 return;
             }
 
+            CORINFO_CONTEXT_HANDLE exactContext = pParam->exactContextHnd;
+            if (pParam->call->IsGuardedDevirtualizationCandidate())
+            {
+                auto tmp = pParam->call->GetGDVCandidateInfo(pParam->candidateIndex)->exactContextHnd;
+                if (tmp != NULL)
+                {
+                    exactContext = tmp;
+                }
+            }
+
             // Speculatively check if initClass() can be done.
             // If it can be done, we will try to inline the method.
             CorInfoInitClassResult const initClassResult =
-                compCompHnd->initClass(nullptr /* field */, ftn /* method */,
-                                       pParam->call->IsGuardedDevirtualizationCandidate()
-                                           ? MAKE_METHODCONTEXT(ftn)
-                                           : pParam->exactContextHnd /* context */);
+                compCompHnd->initClass(nullptr /* field */, ftn /* method */, exactContext /* context */);
 
             if (initClassResult & CORINFO_INITCLASS_DONT_INLINE)
             {
