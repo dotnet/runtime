@@ -54,7 +54,7 @@ namespace System.Net.WebSockets
                     } //lock
                 }, this);
 #else
-                return FastState = GetReadyState();
+                return FastState = GetReadyState(_innerWebSocket!);
 #endif
             }
         }
