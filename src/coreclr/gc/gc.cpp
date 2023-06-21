@@ -25594,7 +25594,7 @@ bool gc_heap::change_heap_count (int new_n_heaps)
                 size_t gen_size = hp->generation_size (gen_idx);
                 dd_fragmentation (dd) = generation_free_list_space (gen);
                 assert (gen_size >= dd_fragmentation (dd));
-                dd_current_size (dd) = gen_size;
+                dd_current_size (dd) = gen_size - dd_fragmentation (dd);
 
                 dprintf (6666, ("h%d g%d: new allocation: %zd generation_size: %zd fragmentation: %zd current_size: %zd",
                     i,
