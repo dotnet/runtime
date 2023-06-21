@@ -1142,6 +1142,7 @@ mono_arch_opcode_needs_emulation (MonoCompile *cfg, int opcode)
 	case OP_IREM_UN:
 	case OP_IMUL:
 	case OP_MUL_IMM:
+	case OP_IREM_UN_IMM:
 #ifdef TARGET_RISCV64
 	case OP_LMUL_IMM:
 	case OP_LDIV:
@@ -2091,6 +2092,7 @@ mono_arch_lowering_pass (MonoCompile *cfg, MonoBasicBlock *bb)
 		case OP_ATOMIC_STORE_U1:
 		case OP_ATOMIC_STORE_I4:
 		case OP_ATOMIC_STORE_U8:
+		case OP_ATOMIC_LOAD_U1:
 		case OP_ATOMIC_LOAD_I4:
 		case OP_ATOMIC_LOAD_I8:
 		case OP_ATOMIC_LOAD_U8:
@@ -2673,6 +2675,7 @@ mono_arch_lowering_pass (MonoCompile *cfg, MonoBasicBlock *bb)
 			break;
 		}
 		case OP_IREM_IMM:
+		case OP_IREM_UN_IMM:
 		case OP_LREM_UN_IMM:
 			mono_decompose_op_imm (cfg, bb, ins);
 			break;
@@ -3966,6 +3969,12 @@ mono_arch_output_basic_block (MonoCompile *cfg, MonoBasicBlock *bb)
 		case OP_ATOMIC_LOAD_I4: {
 			riscv_fence (code, RISCV_FENCE_MEM, RISCV_FENCE_MEM);
 			code = mono_riscv_emit_load (code, ins->dreg, ins->sreg1, ins->inst_offset, 4);
+			riscv_fence (code, RISCV_FENCE_R, RISCV_FENCE_MEM);
+			break;
+		}
+		case OP_ATOMIC_LOAD_U1:{
+			riscv_fence (code, RISCV_FENCE_MEM, RISCV_FENCE_MEM);
+			code = mono_riscv_emit_load (code, ins->dreg, ins->sreg1, ins->inst_offset, 1);
 			riscv_fence (code, RISCV_FENCE_R, RISCV_FENCE_MEM);
 			break;
 		}
