@@ -857,6 +857,10 @@ namespace Internal.JitInterface
             sig->_retType = (byte)corInfoRetType;
             sig->retTypeSigClass = ObjectToHandle(signature.ReturnType);
 
+#if READYTORUN
+            ValidateSafetyOfUsingTypeEquivalenceOfType(signature.ReturnType);
+#endif
+
             sig->flags = 0;    // used by IL stubs code
 
             sig->numArgs = (ushort)signature.Length;
@@ -1754,6 +1758,7 @@ namespace Internal.JitInterface
                     ModuleToken methodModuleToken = HandleToModuleToken(ref pResolvedToken);
                     var resolver = _compilation.NodeFactory.Resolver;
                     resolver.AddModuleTokenForMethod(method, methodModuleToken);
+                    ValidateSafetyOfUsingTypeEquivalenceInSignature(method.Signature);
                 }
 #else
                 _compilation.NodeFactory.MetadataManager.GetDependenciesDueToAccess(ref _additionalDependencies, _compilation.NodeFactory, (MethodIL)methodIL, method);
@@ -1780,6 +1785,8 @@ namespace Internal.JitInterface
 
 #if !READYTORUN
                 _compilation.NodeFactory.MetadataManager.GetDependenciesDueToAccess(ref _additionalDependencies, _compilation.NodeFactory, (MethodIL)methodIL, field);
+#else
+                ValidateSafetyOfUsingTypeEquivalenceOfType(field.Type);
 #endif
             }
             else
@@ -1811,6 +1818,28 @@ namespace Internal.JitInterface
             pResolvedToken.cbTypeSpec = 0;
             pResolvedToken.pMethodSpec = null;
             pResolvedToken.cbMethodSpec = 0;
+        }
+
+        private void ValidateSafetyOfUsingTypeEquivalenceInSignature(MethodSignature signature)
+        {
+            // Type equivalent valuetypes not in the current version bubble are problematic, and cannot be referred to in our current token
+            // scheme except through type references. So we need to detect them, and if they aren't referred to by type reference from a module
+            // in the current build, then we need to fallback to runtime jit.
+            ValidateSafetyOfUsingTypeEquivalenceOfType(signature.ReturnType);
+            foreach (var type in signature)
+            {
+                ValidateSafetyOfUsingTypeEquivalenceOfType(type);
+            }
+        }
+
+        void ValidateSafetyOfUsingTypeEquivalenceOfType(TypeDesc type)
+        {
+            if (type.IsValueType && type.IsTypeDefEquivalent && !_compilation.CompilationModuleGroup.VersionsWithTypeReference(type))
+            {
+                // Technically this is a bit pickier than needed, as cross module inlineable cases will be hit by this, but type equivalence is a
+                // rarely used feature, and we can fix that if we need to.
+                throw new RequiresRuntimeJitException($"Type equivalent valuetype '{type}' not directly referenced from member reference");
+            }
         }
 
         private bool tryResolveToken(ref CORINFO_RESOLVED_TOKEN pResolvedToken)

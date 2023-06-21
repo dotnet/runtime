@@ -2295,6 +2295,10 @@ namespace Internal.JitInterface
                 }
             }
 
+            // We validate the safety of the signature here, as it could have been adjusted
+            // by virtual resolution during getCallInfo (virtual resolution could find a result using type equivalence)
+            ValidateSafetyOfUsingTypeEquivalenceInSignature(targetMethod.GetTypicalMethodDefinition().Signature);
+
             // OK, if the EE said we're not doing a stub dispatch then just return the kind to
             // the caller.  No other kinds of virtual calls have extra information attached.
             switch (pResult->kind)
