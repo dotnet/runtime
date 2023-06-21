@@ -214,9 +214,9 @@ def main(main_args):
             inside_diff = False
             new_lines.append(html_color_diff(cur_diff_lines))
         elif inside_diff:
-            cur_diff_lines.append(html.escape(line))
+            cur_diff_lines.append(html.escape(line, False))
         else:
-            new_lines.append(html.escape(line))
+            new_lines.append(line)
 
     with open(final_md_path, "w") as f:
         for line in new_lines:
