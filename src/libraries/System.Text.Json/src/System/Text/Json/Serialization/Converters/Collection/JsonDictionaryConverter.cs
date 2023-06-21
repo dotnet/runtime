@@ -17,6 +17,12 @@ namespace System.Text.Json.Serialization
         private protected sealed override ConverterStrategy GetDefaultConverterStrategy() => ConverterStrategy.Dictionary;
 
         protected internal abstract bool OnWriteResume(Utf8JsonWriter writer, TDictionary dictionary, JsonSerializerOptions options, ref WriteStack state);
+
+        internal override void ConfigureJsonTypeInfo(JsonTypeInfo jsonTypeInfo, JsonSerializerOptions options)
+        {
+            base.ConfigureJsonTypeInfo(jsonTypeInfo, options);
+            //jsonTypeInfo.Options.DictionaryKeyFilter = options.DictionaryKeyFilter;
+        }
     }
 
     /// <summary>
