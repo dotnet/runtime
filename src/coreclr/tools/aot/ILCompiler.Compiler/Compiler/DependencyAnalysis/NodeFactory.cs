@@ -108,21 +108,14 @@ namespace ILCompiler.DependencyAnalysis
             get;
         }
 
-        // Temporary workaround that is used to disable certain features from lighting up
-        // in CppCodegen because they're not fully implemented yet.
-        public virtual bool IsCppCodegenTemporaryWorkaround
-        {
-            get { return false; }
-        }
-
         /// <summary>
         /// Return true if the type is not permitted by the rules of the runtime to have an MethodTable.
         /// The implementation here is not intended to be complete, but represents many conditions
         /// which make a type ineligible to be an MethodTable. (This function is intended for use in assertions only)
         /// </summary>
-        private bool TypeCannotHaveEEType(TypeDesc type)
+        private static bool TypeCannotHaveEEType(TypeDesc type)
         {
-            if (!IsCppCodegenTemporaryWorkaround && type.GetTypeDefinition() is INonEmittableType)
+            if (type.GetTypeDefinition() is INonEmittableType)
                 return true;
 
             if (type.IsRuntimeDeterminedSubtype)
@@ -298,9 +291,19 @@ namespace ILCompiler.DependencyAnalysis
                 return new GenericVirtualMethodImplNode(method);
             });
 
+            _genericMethodEntries = new NodeCache<MethodDesc, GenericMethodsHashtableEntryNode>(method =>
+            {
+                return new GenericMethodsHashtableEntryNode(method);
+            });
+
             _gvmTableEntries = new NodeCache<TypeDesc, TypeGVMEntriesNode>(type =>
             {
                 return new TypeGVMEntriesNode(type);
+            });
+
+            _delegateTargetMethods = new NodeCache<MethodDesc, DelegateTargetVirtualMethodNode>(method =>
+            {
+                return new DelegateTargetVirtualMethodNode(method);
             });
 
             _reflectedMethods = new NodeCache<MethodDesc, ReflectedMethodNode>(method =>
@@ -961,10 +964,22 @@ namespace ILCompiler.DependencyAnalysis
             return _gvmImpls.GetOrAdd(method);
         }
 
+        private NodeCache<MethodDesc, GenericMethodsHashtableEntryNode> _genericMethodEntries;
+        public GenericMethodsHashtableEntryNode GenericMethodsHashtableEntry(MethodDesc method)
+        {
+            return _genericMethodEntries.GetOrAdd(method);
+        }
+
         private NodeCache<TypeDesc, TypeGVMEntriesNode> _gvmTableEntries;
         internal TypeGVMEntriesNode TypeGVMEntries(TypeDesc type)
         {
             return _gvmTableEntries.GetOrAdd(type);
+        }
+
+        private NodeCache<MethodDesc, DelegateTargetVirtualMethodNode> _delegateTargetMethods;
+        public DelegateTargetVirtualMethodNode DelegateTargetVirtualMethod(MethodDesc method)
+        {
+            return _delegateTargetMethods.GetOrAdd(method);
         }
 
         private NodeCache<MethodDesc, ReflectedMethodNode> _reflectedMethods;

@@ -8,7 +8,7 @@ namespace Mono.Linker.Tests.Cases.UnreachableBlock
 	[SetupCompileArgument ("/optimize+")]
 	[SetupLinkerArgument ("--enable-opt", "ipconstprop")]
 	[SetupCompileBefore ("library.dll", new string[] { "Dependencies/ReferencedAssemblyWithUnreachableBlocks.cs" },
-		addAsReference: false, additionalArguments: "/optimize+", compilerToUse: "csc")]
+		addAsReference: false, additionalArguments: new[] { "/optimize+" }, compilerToUse: "csc")]
 	[RemovedMemberInAssembly ("library.dll", "Mono.Linker.Tests.Cases.UnreachableBlock.Dependencies.AssemblyWithUnreachableBlocks",
 		new string[] { "NeverReached()" })]
 	[ExpectedInstructionSequenceOnMemberInAssembly ("library.dll",

@@ -35,7 +35,7 @@ unw_step (unw_cursor_t *cursor)
   Debug (1, "(cursor=%p, ip=0x%016lx, sp=0x%016lx)\n",
          c, c->dwarf.ip, c->dwarf.cfa);
 
-  /* Special handling the singal frame. */
+  /* Special handling the signal frame. */
   if (unw_is_signal_frame (cursor) > 0)
     return tilegx_handle_signal_frame (cursor);
 

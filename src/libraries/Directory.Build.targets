@@ -90,7 +90,7 @@
     </BinPlaceTargetFrameworks>
 
     <!-- Source generator projects might multi-target. Make sure that only the netstandard2.0 compiled assets get binplaced. -->
-    <BinPlaceDir Include="$(MicrosoftNetCoreAppRefPackDir)analyzers\dotnet\$(AnalyzerLanguage)"
+    <BinPlaceDir Include="$(MicrosoftNetCoreAppRefPackDir)$(GeneratorProjectBaseTargetPath)"
                  Condition="'$(IsNETCoreAppAnalyzer)' == 'true' and
                             '$(TargetFramework)' == 'netstandard2.0'" />
 

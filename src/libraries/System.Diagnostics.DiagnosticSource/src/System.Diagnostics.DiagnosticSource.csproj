@@ -52,7 +52,6 @@ System.Diagnostics.DiagnosticSource</PackageDescription>
     <Compile Include="System\Diagnostics\Metrics\Histogram.cs" />
     <Compile Include="System\Diagnostics\Metrics\Instrument.cs" />
     <Compile Include="System\Diagnostics\Metrics\Instrument.common.cs" />
-    <Compile Include="System\Diagnostics\Metrics\InstrumentRecorder.cs" />
     <Compile Include="System\Diagnostics\Metrics\InstrumentState.cs" />
     <Compile Include="System\Diagnostics\Metrics\LastValueAggregator.cs" />
     <Compile Include="System\Diagnostics\Metrics\Measurement.cs" />

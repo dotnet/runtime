@@ -171,6 +171,17 @@ namespace System.Text.Json.SourceGeneration.Tests
             await Assert.ThrowsAsync<NotSupportedException>(() => Serializer.DeserializeWrapper<DictionaryWithPrivateKeyAndValueType>(json));
         }
 
+        [Fact]
+        public override async Task ClassWithIgnoredAndPrivateMembers_DoesNotIncludeIgnoredMetadata()
+        {
+            // The type referenced by the ignored/private properties should
+            // not be included in the supported types by the generator.
+            JsonSerializerOptions options = Serializer.DefaultOptions;
+            Assert.Null(options.TypeInfoResolver.GetTypeInfo(typeof(TypeThatShouldNotBeGenerated), options));
+
+            await base.ClassWithIgnoredAndPrivateMembers_DoesNotIncludeIgnoredMetadata();
+        }
+
         [JsonSourceGenerationOptions(GenerationMode = JsonSourceGenerationMode.Metadata)]
         [JsonSerializable(typeof(ClassWithNewSlotField))]
         [JsonSerializable(typeof(int))]
@@ -289,12 +300,10 @@ namespace System.Text.Json.SourceGeneration.Tests
         [JsonSerializable(typeof(ClassWithNewSlotAttributedDecimalProperty))]
         [JsonSerializable(typeof(ClassWithNewSlotDecimalProperty))]
         [JsonSerializable(typeof(LargeStructWithValueAndReferenceTypes))]
-#if !NETFRAMEWORK
         [JsonSerializable(typeof(ClassWithUnsupportedBigInteger))]
         [JsonSerializable(typeof(WrapperForClassWithUnsupportedBigInteger))]
         [JsonSerializable(typeof(ClassWithIgnoredUnsupportedBigInteger))]
         [JsonSerializable(typeof(WrapperForClassWithIgnoredUnsupportedBigInteger))]
-#endif
         [JsonSerializable(typeof(ClassWithThingsToIgnore))]
         [JsonSerializable(typeof(ClassWithMixedPropertyAccessors_PropertyAttributes))]
         [JsonSerializable(typeof(ClassWithPropertyPolicyConflictWhichThrows))]
@@ -320,7 +329,13 @@ namespace System.Text.Json.SourceGeneration.Tests
         [JsonSerializable(typeof(IDiamondInterfaceHierarchyWithNamingConflict.IJoinInterface), TypeInfoPropertyName = "IDiamondInterfaceHierarchyWithNamingConflictIJoinInterface")]
         [JsonSerializable(typeof(IDiamondInterfaceHierarchyWithNamingConflictUsingAttribute.IJoinInterface), TypeInfoPropertyName = "IDiamondInterfaceHierarchyWithNamingConflictUsingAttributeIJoinInterface")]
         [JsonSerializable(typeof(CollectionWithPrivateElementType))]
-        [JsonSerializable(typeof(DictionaryWithPrivateKeyAndValueType))]
+        [JsonSerializable(typeof(DictionaryWithPrivateKeyAndValueType))][JsonSerializable(typeof(ClassWithIgnoredAndPrivateMembers))]
+        [JsonSerializable(typeof(ClassWithInternalJsonIncludeProperties))]
+        [JsonSerializable(typeof(ClassWithIgnoredAndPrivateMembers))]
+        [JsonSerializable(typeof(Class1))]
+        [JsonSerializable(typeof(Class2))]
+        [JsonSerializable(typeof(NamespaceBase.Class1), TypeInfoPropertyName = "Class1FromNamespaceBase")]
+        [JsonSerializable(typeof(NamespaceBase.Class2), TypeInfoPropertyName = "Class2FromNamespaceBase")]
         internal sealed partial class PropertyVisibilityTestsContext_Metadata : JsonSerializerContext
         {
         }
@@ -544,12 +559,10 @@ namespace System.Text.Json.SourceGeneration.Tests
         [JsonSerializable(typeof(ClassWithNewSlotAttributedDecimalProperty))]
         [JsonSerializable(typeof(ClassWithNewSlotDecimalProperty))]
         [JsonSerializable(typeof(LargeStructWithValueAndReferenceTypes))]
-#if !NETFRAMEWORK
         [JsonSerializable(typeof(ClassWithUnsupportedBigInteger))]
         [JsonSerializable(typeof(WrapperForClassWithUnsupportedBigInteger))]
         [JsonSerializable(typeof(ClassWithIgnoredUnsupportedBigInteger))]
         [JsonSerializable(typeof(WrapperForClassWithIgnoredUnsupportedBigInteger))]
-#endif
         [JsonSerializable(typeof(ClassWithThingsToIgnore))]
         [JsonSerializable(typeof(ClassWithMixedPropertyAccessors_PropertyAttributes))]
         [JsonSerializable(typeof(ClassWithPropertyPolicyConflictWhichThrows))]
@@ -576,6 +589,12 @@ namespace System.Text.Json.SourceGeneration.Tests
         [JsonSerializable(typeof(IDiamondInterfaceHierarchyWithNamingConflictUsingAttribute.IJoinInterface), TypeInfoPropertyName = "IDiamondInterfaceHierarchyWithNamingConflictUsingAttributeIJoinInterface")]
         [JsonSerializable(typeof(CollectionWithPrivateElementType))]
         [JsonSerializable(typeof(DictionaryWithPrivateKeyAndValueType))]
+        [JsonSerializable(typeof(ClassWithInternalJsonIncludeProperties))]
+        [JsonSerializable(typeof(ClassWithIgnoredAndPrivateMembers))]
+        [JsonSerializable(typeof(Class1))]
+        [JsonSerializable(typeof(Class2))]
+        [JsonSerializable(typeof(NamespaceBase.Class1), TypeInfoPropertyName = "Class1FromNamespaceBase")]
+        [JsonSerializable(typeof(NamespaceBase.Class2), TypeInfoPropertyName = "Class2FromNamespaceBase")]
         internal sealed partial class PropertyVisibilityTestsContext_Default : JsonSerializerContext
         {
         }

@@ -8135,7 +8135,11 @@ mono_runtime_run_startup_hooks (void)
 	mono_error_cleanup (error);
 	if (!method)
 		return;
-	mono_runtime_invoke_checked (method, NULL, NULL, error);
+
+	gpointer args [1];
+	args[0] = mono_string_empty_internal (mono_domain_get ());
+
+	mono_runtime_invoke_checked (method, NULL, args, error);
 	// runtime hooks design doc says not to catch exceptions from the hooks
 	mono_error_raise_exception_deprecated (error);
 }

@@ -251,6 +251,11 @@ namespace ILCompiler
             {
                 flags |= ReadyToRunFlags.READYTORUN_FLAG_PlatformNeutralSource;
             }
+            bool automaticTypeValidation = _nodeFactoryOptimizationFlags.TypeValidation == TypeValidationRule.Automatic || _nodeFactoryOptimizationFlags.TypeValidation == TypeValidationRule.AutomaticWithLogging;
+            if (_nodeFactoryOptimizationFlags.TypeValidation == TypeValidationRule.SkipTypeValidation)
+            {
+                flags |= ReadyToRunFlags.READYTORUN_FLAG_SkipTypeValidation;
+            }
             flags |= _compilationGroup.GetReadyToRunFlags();
 
             NodeFactory factory = new NodeFactory(
@@ -264,6 +269,7 @@ namespace ILCompiler
                 flags,
                 _nodeFactoryOptimizationFlags,
                 _imageBase,
+                automaticTypeValidation ? singleModule : null,
                 genericCycleDepthCutoff: _genericCycleDetectionDepthCutoff,
                 genericCycleBreadthCutoff: _genericCycleDetectionBreadthCutoff
                 );

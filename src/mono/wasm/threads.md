@@ -4,15 +4,10 @@
 
 Build the runtime with `/p:MonoWasmBuildVariant=multithread` to enable support for multi-threading.
 
-Build with `/p:MonoWasmBuildVariant=perftrace` to enable support for EventPipe diagnostics - this enabled threading, but only for "internal" utility threads.  User code is not allowed to start threads.
-
-Do not combine these options, just turn on one or the other.
-
 ## Building sample apps ##
 
-Sample apps use the "public" properties `WasmEnableThreads` and `WasmEnablePerfTracing` to enable
-the relevant functionality.  This also works with released versions of .NET 7 or later and the
-`wasmbrowser` template.
+Sample apps use the "public" properties `WasmEnableThreads` to enable the relevant functionality.
+This also works with released versions of .NET 7 or later and the `wasmbrowser` template.
 
 ## Libraries feature defines ##
 
@@ -55,10 +50,6 @@ runtime constant* and throw PNSE if diagnostics are not enabled.
 In `src/mono/mono` and `src/mono/wasm` `DISABLE_THREADS` is defined for single-threaded builds (same
 as mono's existing `-DENABLE_MINIMAL=threads` option).  In multi-threaded builds, `DISABLE_THREADS`
 is _not_ defined.
-
-For `WasmEnablePerfTracing`, `DISABLE_THREADS` is undefined (ie threading is enabled), but starting
-user threads is not supported and `DISABLE_WASM_USER_THREADS` is defined (ie there is a
-`-DENABLE_MINIMAL=wasm-user-threads` option)
 
 Additionally, `__EMSCRIPTEN_THREADS__` is defined by emscripten if threading is enabled.
 

@@ -162,6 +162,9 @@
     <Compile Include="..\..\Common\TypeSystem\Common\TypeSystemException.cs">
       <Link>TypeSystem\Common\TypeSystemException.cs</Link>
     </Compile>
+    <Compile Include="..\..\Common\TypeSystem\Common\SimpleArrayOfTRuntimeInterfacesAlgorithm.cs">
+      <Link>TypeSystem\Common\SimpleArrayOfTRuntimeInterfacesAlgorithm.cs</Link>
+    </Compile>
     <Compile Include="..\..\Common\TypeSystem\Common\TypeSystemException.Resources.cs">
       <Link>TypeSystem\Common\TypeSystemException.Resources.cs</Link>
     </Compile>
@@ -492,6 +495,9 @@
     <Compile Include="..\..\Common\TypeSystem\IL\EcmaMethodIL.Symbols.cs">
       <Link>IL\EcmaMethodIL.Symbols.cs</Link>
     </Compile>
+    <Compile Include="..\..\Common\TypeSystem\IL\HelperExtensions.cs">
+      <Link>IL\HelperExtensions.cs</Link>
+    </Compile>
     <Compile Include="..\..\Common\TypeSystem\IL\MethodIL.cs">
       <Link>IL\MethodIL.cs</Link>
     </Compile>
@@ -521,6 +527,9 @@
     </Compile>
     <Compile Include="..\..\Common\TypeSystem\IL\ILReader.cs">
       <Link>IL\ILReader.cs</Link>
+    </Compile>
+    <Compile Include="..\..\Common\TypeSystem\IL\UnsafeAccessors.cs">
+      <Link>IL\UnsafeAccessors.cs</Link>
     </Compile>
     <Compile Include="..\..\Common\TypeSystem\IL\Stubs\ILEmitter.cs">
       <Link>IL\Stubs\ILEmitter.cs</Link>

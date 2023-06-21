@@ -1347,6 +1347,8 @@ namespace System.Text.Json.Serialization.Metadata
             {
                 Debug.Assert(!_jsonTypeInfo.IsConfigured);
                 Debug.Assert(jsonPropertyInfo.MemberName != null, "MemberName can be null in custom JsonPropertyInfo instances and should never be passed in this method");
+
+                // Algorithm should be kept in sync with the Roslyn equivalent in JsonSourceGenerator.Emitter.cs
                 string memberName = jsonPropertyInfo.MemberName;
 
                 if (state.AddedProperties.TryAdd(jsonPropertyInfo.Name, (jsonPropertyInfo, Count)))
@@ -1405,8 +1407,7 @@ namespace System.Text.Json.Serialization.Metadata
 
                 if (jsonPropertyInfo.IsIgnored)
                 {
-                    state.IgnoredProperties ??= new();
-                    state.IgnoredProperties[memberName] = jsonPropertyInfo;
+                    (state.IgnoredProperties ??= new())[memberName] = jsonPropertyInfo;
                 }
             }
         }
