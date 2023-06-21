@@ -14,7 +14,9 @@ namespace System.Net.WebSockets
     /// </summary>
     internal sealed class BrowserWebSocket : WebSocket
     {
+#if FEATURE_WASM_THREADS
         private readonly object _thisLock = new object();
+#endif
 
         private WebSocketCloseStatus? _closeStatus;
         private string? _closeStatusDescription;
