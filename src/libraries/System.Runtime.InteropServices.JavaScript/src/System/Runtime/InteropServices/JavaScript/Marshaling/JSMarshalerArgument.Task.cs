@@ -139,7 +139,11 @@ namespace System.Runtime.InteropServices.JavaScript
             slot.JSHandle = jsHandle;
             JSObject promise = JSHostImplementation.CreateCSOwnedProxy(jsHandle);
 
+#if FEATURE_WASM_THREADS
             task.ContinueWith(_ => Complete(), TaskScheduler.FromCurrentSynchronizationContext());
+#else
+            task.GetAwaiter().OnCompleted(Complete);
+#endif
 
             void Complete()
             {
@@ -216,7 +220,11 @@ namespace System.Runtime.InteropServices.JavaScript
             slot.JSHandle = jsHandle;
             JSObject promise = JSHostImplementation.CreateCSOwnedProxy(jsHandle);
 
+#if FEATURE_WASM_THREADS
             task.ContinueWith(_ => Complete(), TaskScheduler.FromCurrentSynchronizationContext());
+#else
+            task.GetAwaiter().OnCompleted(Complete);
+#endif
 
             void Complete()
             {
@@ -290,7 +298,11 @@ namespace System.Runtime.InteropServices.JavaScript
             slot.JSHandle = jsHandle;
             JSObject promise = JSHostImplementation.CreateCSOwnedProxy(jsHandle);
 
+#if FEATURE_WASM_THREADS
             task.ContinueWith(_ => Complete(), TaskScheduler.FromCurrentSynchronizationContext());
+#else
+            task.GetAwaiter().OnCompleted(Complete);
+#endif
 
             void Complete()
             {
