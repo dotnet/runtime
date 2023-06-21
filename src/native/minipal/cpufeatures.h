@@ -1,10 +1,14 @@
 // Licensed to the .NET Foundation under one or more agreements.
 // The .NET Foundation licenses this file to you under the MIT license.
 
-#ifndef INTRINSICCONSTANTS_INCLUDED
-#define INTRINSICCONSTANTS_INCLUDED
+#ifndef HAVE_MINIPAL_CPUFEATURES_H
+#define HAVE_MINIPAL_CPUFEATURES_H
 
+#include "utils.h"
+
+//
 // Should match the constants defined in the compiler in HardwareIntrinsicHelpers.Aot.cs
+//
 
 #if defined(HOST_X86) || defined(HOST_AMD64)
 enum XArchIntrinsicConstants
@@ -39,7 +43,7 @@ enum XArchIntrinsicConstants
     XArchIntrinsicConstants_VectorT256 = 0x8000000,
     XArchIntrinsicConstants_VectorT512 = 0x10000000,
 };
-#endif //HOST_X86 || HOST_AMD64
+#endif // HOST_X86 || HOST_AMD64
 
 #if defined(HOST_ARM64)
 enum ARM64IntrinsicConstants
@@ -60,6 +64,12 @@ enum ARM64IntrinsicConstants
 static const int ARM64_ATOMICS_FEATURE_FLAG_BIT = 7;
 static_assert((1 << ARM64_ATOMICS_FEATURE_FLAG_BIT) == ARM64IntrinsicConstants_Atomics, "ARM64_ATOMICS_FEATURE_FLAG_BIT must match with ARM64IntrinsicConstants_Atomics");
 
-#endif //HOST_ARM64
+#endif // HOST_ARM64
 
-#endif //!INTRINSICCONSTANTS_INCLUDED
+EXTERN_C int minipal_getcpufeatures(void);
+
+#if defined(TARGET_X86) || defined(TARGET_AMD64)
+EXTERN_C void minipal_cpuidex(int cpuInfo[4], int function_id, int subFunction_id);
+#endif
+
+#endif

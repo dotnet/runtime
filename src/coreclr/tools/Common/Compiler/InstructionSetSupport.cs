@@ -211,6 +211,8 @@ namespace ILCompiler
         private readonly SortedSet<string> _unsupportedInstructionSets;
         private readonly TargetArchitecture _architecture;
 
+        public TargetArchitecture Architecture => _architecture;
+
         public InstructionSetSupportBuilder(TargetArchitecture architecture)
         {
             _supportedInstructionSets = new SortedSet<string>();

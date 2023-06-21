@@ -5,6 +5,8 @@ set(NATIVE_SOURCES
     jitinterface.cpp
     jitwrapper.cpp
     corinfoexception.cpp
+
+    ${CLR_SRC_NATIVE_DIR}/minipal/cpufeatures.c
 )
 
 if(CLR_CMAKE_TARGET_WIN32)
