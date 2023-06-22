@@ -846,7 +846,7 @@ namespace System.Numerics
                 result.Y = new Vector4(0f, -result.W.Y, 0f, 0f);
                 result.Z = new Vector4(0f, 0f, maxDepth - minDepth, 0f);
                 result.W += new Vector4(x, y, minDepth, 1f);
-                
+
                 return result;
             }
 
