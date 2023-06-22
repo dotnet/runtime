@@ -2,11 +2,16 @@
 // The .NET Foundation licenses this file to you under the MIT license.
 
 using System;
+using System.Collections;
+using System.Collections.Generic;
+using System.Diagnostics;
 using System.Diagnostics.CodeAnalysis;
+using System.Linq;
 using System.Net.Http;
 using Microsoft.Extensions.DependencyInjection.Extensions;
 using Microsoft.Extensions.Http;
 using Microsoft.Extensions.Internal;
+using Microsoft.Extensions.Options;
 
 namespace Microsoft.Extensions.DependencyInjection
 {
@@ -50,6 +55,9 @@ namespace Microsoft.Extensions.DependencyInjection
             // because we access it by reaching into the service collection.
             services.TryAddSingleton(new HttpClientMappingRegistry());
 
+            // This is used to track the default builder.
+            services.TryAddSingleton(new DefaultHttpClientBuilderTracker());
+
             // Register default client as HttpClient
             services.TryAddTransient(s =>
             {
@@ -57,6 +65,80 @@ namespace Microsoft.Extensions.DependencyInjection
             });
 
             return services;
+        }
+
+        /// <summary>
+        /// Adds the <see cref="IHttpClientFactory"/> and related services to the <see cref="IServiceCollection"/> and configures
+        /// defaults for all <see cref="HttpClient"/>s.
+        /// </summary>
+        /// <param name="services">The <see cref="IServiceCollection"/>.</param>
+        /// <returns>An <see cref="IHttpClientBuilder"/> that can be used to configure the client defaults.</returns>
+        /// <remarks>
+        /// <para>
+        /// The defaults will be applied to all <see cref="HttpClient"/> instances for all configurations, before name-specific congfiguration is applied.
+        /// </para>
+        /// </remarks>
+        public static IHttpClientBuilder AddHttpClientDefaults(this IServiceCollection services)
+        {
+            ThrowHelper.ThrowIfNull(services);
+
+            AddHttpClient(services);
+
+            var tracker = (DefaultHttpClientBuilderTracker?)services.Single(sd => sd.ServiceType == typeof(DefaultHttpClientBuilderTracker)).ImplementationInstance;
+            Debug.Assert(tracker != null);
+
+            // Create builder if it doesn't already exist.
+            tracker.Instance ??= new DefaultHttpClientBuilder(new DefaultServiceCollection(services), name: null!);
+
+            return tracker.Instance;
+        }
+
+        private sealed class DefaultServiceCollection : IServiceCollection
+        {
+            private readonly IServiceCollection _services;
+            private ServiceDescriptor? _lastAdded;
+
+            public DefaultServiceCollection(IServiceCollection services)
+            {
+                _services = services;
+            }
+
+            public ServiceDescriptor this[int index]
+            {
+                get => _services[index];
+                set => _services[index] = value;
+            }
+
+            public int Count => _services.Count;
+            public bool IsReadOnly => _services.IsReadOnly;
+
+            public void Add(ServiceDescriptor item)
+            {
+                // Insert configuration definitions into the collect before other definitions so they run first.
+                if (item.ServiceType.IsGenericType && item.ServiceType.GetGenericTypeDefinition() == typeof(IConfigureOptions<>))
+                {
+                    var insertIndex = 0;
+                    if (_lastAdded is not null && _services.IndexOf(_lastAdded) is var index && index != -1)
+                    {
+                        insertIndex = index + 1;
+                    }
+
+                    _services.Insert(insertIndex, item);
+                    _lastAdded = item;
+                    return;
+                }
+
+                _services.Add(item);
+            }
+            public void Clear() => _services.Clear();
+            public bool Contains(ServiceDescriptor item) => _services.Contains(item);
+            public void CopyTo(ServiceDescriptor[] array, int arrayIndex) => _services.CopyTo(array, arrayIndex);
+            public IEnumerator<ServiceDescriptor> GetEnumerator() => _services.GetEnumerator();
+            public int IndexOf(ServiceDescriptor item) => _services.IndexOf(item);
+            public void Insert(int index, ServiceDescriptor item) => _services.Insert(index, item);
+            public bool Remove(ServiceDescriptor item) => _services.Remove(item);
+            public void RemoveAt(int index) => _services.RemoveAt(index);
+            IEnumerator IEnumerable.GetEnumerator() => GetEnumerator();
         }
 
         /// <summary>

@@ -275,6 +275,11 @@ namespace Microsoft.Extensions.DependencyInjection
             this IHttpClientBuilder builder, bool validateSingleType)
             where TClient : class
         {
+            if (builder.Name is null)
+            {
+                throw new InvalidOperationException("AddTypedClient isn't supported with AddHttpClientDefaults.");
+            }
+
             ReserveClient(builder, typeof(TClient), builder.Name, validateSingleType);
 
             builder.Services.AddTransient(s => AddTransientHelper<TClient>(s, builder));

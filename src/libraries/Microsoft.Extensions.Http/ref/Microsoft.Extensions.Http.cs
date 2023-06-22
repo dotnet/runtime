@@ -25,6 +25,7 @@ namespace Microsoft.Extensions.DependencyInjection
     public static partial class HttpClientFactoryServiceCollectionExtensions
     {
         public static Microsoft.Extensions.DependencyInjection.IServiceCollection AddHttpClient(this Microsoft.Extensions.DependencyInjection.IServiceCollection services) { throw null; }
+        public static Microsoft.Extensions.DependencyInjection.IHttpClientBuilder AddHttpClientDefaults(Microsoft.Extensions.DependencyInjection.IServiceCollection services) { throw null; }
         public static Microsoft.Extensions.DependencyInjection.IHttpClientBuilder AddHttpClient(this Microsoft.Extensions.DependencyInjection.IServiceCollection services, string name) { throw null; }
         public static Microsoft.Extensions.DependencyInjection.IHttpClientBuilder AddHttpClient(this Microsoft.Extensions.DependencyInjection.IServiceCollection services, string name, System.Action<System.IServiceProvider, System.Net.Http.HttpClient> configureClient) { throw null; }
         public static Microsoft.Extensions.DependencyInjection.IHttpClientBuilder AddHttpClient(this Microsoft.Extensions.DependencyInjection.IServiceCollection services, string name, System.Action<System.Net.Http.HttpClient> configureClient) { throw null; }

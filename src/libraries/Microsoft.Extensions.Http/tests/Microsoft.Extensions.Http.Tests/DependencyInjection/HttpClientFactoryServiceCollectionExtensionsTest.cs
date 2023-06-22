@@ -144,6 +144,27 @@ namespace Microsoft.Extensions.DependencyInjection
         }
 
         [ConditionalFact(typeof(PlatformDetection), nameof(PlatformDetection.IsThreadingSupported))]
+        public void AddHttpClient_WithDefaults_ConfiguresClient()
+        {
+            // Arrange
+            var serviceCollection = new ServiceCollection();
+
+            // Act1
+            serviceCollection.AddHttpClient("example.com", c => c.BaseAddress = new Uri("http://example.com/"));
+            serviceCollection.AddHttpClientDefaults().ConfigureHttpClient(c => c.BaseAddress = new Uri("http://default.com/"));
+
+            var services = serviceCollection.BuildServiceProvider();
+            var factory = services.GetRequiredService<IHttpClientFactory>();
+
+            // Act2
+            var client = factory.CreateClient("example.com");
+
+            // Assert
+            Assert.NotNull(client);
+            Assert.Equal("http://example.com/", client.BaseAddress.AbsoluteUri);
+        }
+
+        [ConditionalFact(typeof(PlatformDetection), nameof(PlatformDetection.IsThreadingSupported))]
         public void AddHttpClient_WithTypedClient_ConfiguresNamedClient()
         {
             // Arrange
