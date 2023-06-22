@@ -285,8 +285,8 @@ namespace System.Net.WebSockets
                         return Task.CompletedTask;
                     }
 
-                    promise = CloseAsyncCore(closeStatus, statusDescription, state != WebSocketState.Aborted, cancellationToken);
 #if FEATURE_WASM_THREADS
+                    promise = CloseAsyncCore(closeStatus, statusDescription, state != WebSocketState.Aborted, cancellationToken);
                 } //lock will unlock synchronously before task is resolved!
                 return promise;
             });
