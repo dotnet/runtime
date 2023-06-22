@@ -8506,6 +8506,16 @@ private:
         return info.compCompHnd->getTypeInstantiationArgument(cls, index);
     }
 
+    bool isNumericsNamespace(const char* ns)
+    {
+        return strcmp(ns, "System.Numerics") == 0;
+    }
+
+    bool isRuntimeIntrinsicsNamespace(const char* ns)
+    {
+        return strcmp(ns, "System.Runtime.Intrinsics") == 0;
+    }
+
 #ifdef FEATURE_SIMD
     // Have we identified any SIMD types?
     // This is currently used by struct promotion to avoid getting type information for a struct
@@ -8610,11 +8620,6 @@ private:
         return isOpaqueSIMDType(varDsc->GetLayout());
     }
 
-    bool isNumericsNamespace(const char* ns)
-    {
-        return strcmp(ns, "System.Numerics") == 0;
-    }
-
     bool isSIMDClass(CORINFO_CLASS_HANDLE clsHnd)
     {
         if (isIntrinsicType(clsHnd))
@@ -8624,11 +8629,6 @@ private:
             return isNumericsNamespace(namespaceName);
         }
         return false;
-    }
-
-    bool isRuntimeIntrinsicsNamespace(const char* ns)
-    {
-        return strcmp(ns, "System.Runtime.Intrinsics") == 0;
     }
 
     bool isHWSIMDClass(CORINFO_CLASS_HANDLE clsHnd)
