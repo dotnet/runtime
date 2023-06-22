@@ -7886,9 +7886,11 @@ void Compiler::impImportBlockCode(BasicBlock* block)
 #ifdef TARGET_AMD64
                     // If AVX512 is present and we are not checking for overflow, we do not need
                     // a large node. In this case, we will not fallback to a helper function but
-                    // will use the intrinsic instead. Hence setting the callNode to false to
+                    // will use the intrinsic instead. This is done for all long/ulong to floating
+                    // point conversions. Hence setting the callNode to false to
                     // avoid generating a large node.
-                    if (callNode && compOpportunisticallyDependsOn(InstructionSet_AVX512F) && !ovfl)
+                    if (callNode && !ovfl && varTypeIsLong(impStackTop().val) &&
+                        compOpportunisticallyDependsOn(InstructionSet_AVX512F))
                     {
                         callNode = false;
                     }

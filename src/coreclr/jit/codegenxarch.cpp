@@ -7339,16 +7339,15 @@ void CodeGen::genIntToFloatCast(GenTree* treeNode)
     assert((srcType != TYP_ULONG) || (dstType != TYP_FLOAT) ||
            compiler->compIsaSupportedDebugOnly(InstructionSet_AVX512F));
 
-    if (compiler->compOpportunisticallyDependsOn(InstructionSet_AVX512F))
+    if ((srcType == TYP_ULONG) && varTypeIsFloating(dstType) &&
+        compiler->compOpportunisticallyDependsOn(InstructionSet_AVX512F))
     {
-        if (srcType == TYP_ULONG && (dstType == TYP_DOUBLE || dstType == TYP_FLOAT))
-        {
-            genConsumeOperands(treeNode->AsOp());
-            instruction ins = ins_FloatConv(dstType, srcType, emitTypeSize(srcType));
-            GetEmitter()->emitInsBinary(ins, emitTypeSize(srcType), treeNode, op1);
-            genProduceReg(treeNode);
-            return;
-        }
+        assert(compiler->compIsaSupportedDebugOnly(InstructionSet_AVX512F));
+        genConsumeOperands(treeNode->AsOp());
+        instruction ins = ins_FloatConv(dstType, srcType, emitTypeSize(srcType));
+        GetEmitter()->emitInsBinary(ins, emitTypeSize(srcType), treeNode, op1);
+        genProduceReg(treeNode);
+        return;
     }
 
     // To convert int to a float/double, cvtsi2ss/sd SSE2 instruction is used
