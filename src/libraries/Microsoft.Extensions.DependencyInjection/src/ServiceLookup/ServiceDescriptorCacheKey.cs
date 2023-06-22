@@ -61,5 +61,13 @@ namespace Microsoft.Extensions.DependencyInjection.ServiceLookup
         public bool IsConstructedGenericType => ServiceType.IsConstructedGenericType;
 
         public ServiceIdentifier GetGenericTypeDefinition() => new ServiceIdentifier(ServiceKey, ServiceType.GetGenericTypeDefinition());
+
+        public override string? ToString()
+        {
+            if (ServiceKey == null)
+                return ServiceType.ToString();
+
+            return $"({ServiceKey}, {ServiceType})";
+        }
     }
 }
