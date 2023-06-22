@@ -146,6 +146,10 @@ internal sealed class MetricsHandler : HttpMessageHandlerStage, IHttpMetricsLogg
         }
 
         HttpMetricsEnrichmentContext enrichmentContext = _cachedEnrichmentContext.Value!;
+        if (enrichmentContext.InProgress)
+        {
+            enrichmentContext = new HttpMetricsEnrichmentContext(); // Protect against re-reentrancy
+        }
         enrichmentContext.ApplyEnrichment(request, response, exception, ref tags);
     }
 

@@ -46,6 +46,8 @@ public class HttpMetricsEnrichmentContext
         }
     }
 
+    internal bool InProgress => _request != null;
+
     public ICollection<KeyValuePair<string, object?>> CustomTags => _tags;
 
     internal void ApplyEnrichment(HttpRequestMessage request, HttpResponseMessage? response, Exception? exception, ref TagList tags)
