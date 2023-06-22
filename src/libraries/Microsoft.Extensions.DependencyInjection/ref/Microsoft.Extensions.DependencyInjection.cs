@@ -4,6 +4,8 @@
 // Changes to this file must follow the https://aka.ms/api-review process.
 // ------------------------------------------------------------------------------
 
+using System;
+
 namespace Microsoft.Extensions.DependencyInjection
 {
     public partial class DefaultServiceProviderFactory : Microsoft.Extensions.DependencyInjection.IServiceProviderFactory<Microsoft.Extensions.DependencyInjection.IServiceCollection>
@@ -25,6 +27,7 @@ namespace Microsoft.Extensions.DependencyInjection
         public void Dispose() { }
         public System.Threading.Tasks.ValueTask DisposeAsync() { throw null; }
         public object GetKeyedService(System.Type serviceType, object serviceKey) { throw null; }
+        public object GetRequiredKeyedService(Type serviceType, object serviceKey) { throw null; }
         public object? GetService(System.Type serviceType) { throw null; }
     }
     public partial class ServiceProviderOptions

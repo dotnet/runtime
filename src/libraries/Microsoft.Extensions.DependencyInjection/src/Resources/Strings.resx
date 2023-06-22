@@ -186,4 +186,7 @@
   <data name="AotCannotCreateGenericValueType" xml:space="preserve">
     <value>Unable to create a generic service for type '{0}' because '{1}' is a ValueType. Native code to support creating generic services might not be available with native AOT.</value>
   </data>
+  <data name="NoServiceRegistered" xml:space="preserve">
+    <value>No service for type '{0}' has been registered.</value>
+  </data>
 </root>

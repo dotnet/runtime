@@ -99,6 +99,16 @@ namespace Microsoft.Extensions.DependencyInjection
         public object? GetKeyedService(Type serviceType, object serviceKey)
             => GetService(new ServiceIdentifier(serviceKey, serviceType), Root);
 
+        public object GetRequiredKeyedService(Type serviceType, object serviceKey)
+        {
+            object? service = GetKeyedService(serviceType, serviceKey);
+            if (service == null)
+            {
+                throw new InvalidOperationException(SR.Format(SR.NoServiceRegistered, serviceType));
+            }
+            return service;
+        }
+
         internal bool IsDisposed() => _disposed;
 
         /// <inheritdoc />
