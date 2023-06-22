@@ -3573,17 +3573,13 @@ void MethodContext::recGetThreadLocalStaticBlocksInfo(CORINFO_THREAD_STATIC_BLOC
     Agnostic_GetThreadLocalStaticBlocksInfo value;
     ZeroMemory(&value, sizeof(value));
 
-#ifdef TARGET_WINDOWS
     value.tlsIndex.handle                       = CastHandle(pInfo->tlsIndex.addr);
     value.tlsIndex.accessType                   = pInfo->tlsIndex.accessType;
     value.offsetOfMaxThreadStaticBlocks         = pInfo->offsetOfMaxThreadStaticBlocks;
     value.offsetOfThreadLocalStoragePointer     = pInfo->offsetOfThreadLocalStoragePointer;
     value.offsetOfThreadStaticBlocks            = pInfo->offsetOfThreadStaticBlocks;
-#else
     value.tlsGetAddrFtnPtr                      = pInfo->tlsGetAddrFtnPtr;
     value.descrAddrOfMaxThreadStaticBlock       = pInfo->descrAddrOfMaxThreadStaticBlock;
-    value.offsetOfThreadStaticBlocks            = pInfo->offsetOfThreadStaticBlocks;
-#endif // TARGET_WINDOWS
     value.offsetOfGCDataPointer                 = pInfo->offsetOfGCDataPointer;
 
     // This data is same for entire process, so just add it against key '0'.
@@ -3594,17 +3590,13 @@ void MethodContext::recGetThreadLocalStaticBlocksInfo(CORINFO_THREAD_STATIC_BLOC
 
 void MethodContext::dmpGetThreadLocalStaticBlocksInfo(DWORD key, const Agnostic_GetThreadLocalStaticBlocksInfo& value)
 {
-#ifdef TARGET_WINDOWS
     printf("GetThreadLocalStaticBlocksInfo key %u, value tlsIndex-%016" PRIX64
            ", offsetOfThreadLocalStoragePointer-%u, offsetOfMaxThreadStaticBlocks-%u"
-           ", offsetOfThreadStaticBlocks-%u offsetOfGCDataPointer-%u",
+           ", offsetOfThreadStaticBlocks-%u offsetOfGCDataPointer-%u"
+           ", value tlsGetAddrFtnPtr-%llu, descrAddrOfMaxThreadStaticBlock-%llu",
            key, value.tlsIndex.handle, value.offsetOfThreadLocalStoragePointer,
-           value.offsetOfMaxThreadStaticBlocks, value.offsetOfThreadStaticBlocks, value.offsetOfGCDataPointer);
-#else
-    printf("GetThreadLocalStaticBlocksInfo key %u, value tlsGetAddrFtnPtr-%u"
-           ", descrAddrOfMaxThreadStaticBlock-%u, offsetOfThreadStaticBlocks-%u",
-           key, value.tlsGetAddrFtnPtr, value.descrAddrOfMaxThreadStaticBlock, value.offsetOfThreadStaticBlocks);
-#endif // TARGET_WINDOWS
+           value.offsetOfMaxThreadStaticBlocks, value.offsetOfThreadStaticBlocks, value.offsetOfGCDataPointer,
+           value.tlsGetAddrFtnPtr, value.descrAddrOfMaxThreadStaticBlock);
 }
 
 void MethodContext::repGetThreadLocalStaticBlocksInfo(CORINFO_THREAD_STATIC_BLOCKS_INFO* pInfo, bool isGCType)
@@ -3614,17 +3606,13 @@ void MethodContext::repGetThreadLocalStaticBlocksInfo(CORINFO_THREAD_STATIC_BLOC
 
     DEBUG_REP(dmpGetThreadLocalStaticBlocksInfo(key, value));
 
-#ifdef _MSC_VER
     pInfo->tlsIndex.accessType                  = (InfoAccessType)value.tlsIndex.accessType;
     pInfo->tlsIndex.addr                        = (void*)value.tlsIndex.handle;
     pInfo->offsetOfMaxThreadStaticBlocks        = value.offsetOfMaxThreadStaticBlocks;
     pInfo->offsetOfThreadLocalStoragePointer    = value.offsetOfThreadLocalStoragePointer;
     pInfo->offsetOfThreadStaticBlocks           = value.offsetOfThreadStaticBlocks;
-#else
     pInfo->tlsGetAddrFtnPtr                     = value.tlsGetAddrFtnPtr;
     pInfo->descrAddrOfMaxThreadStaticBlock      = value.descrAddrOfMaxThreadStaticBlock;
-    pInfo->offsetOfThreadStaticBlocks           = value.offsetOfThreadStaticBlocks;
-#endif
     pInfo->offsetOfGCDataPointer                = value.offsetOfGCDataPointer;
 }
 

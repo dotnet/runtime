@@ -478,9 +478,8 @@ bool Compiler::fgExpandThreadLocalAccessForCall(BasicBlock** pBlock, Statement* 
         return false;
     }
 
-#if defined(FEATURE_READYTORUN)
-    assert(!"Unsupported scenario of optimizing TLS access for ReadyToRun");
-#endif
+    assert(!opts.IsReadyToRun());
+
 #if defined(TARGET_ALPINE_LINUX)
     assert(!"Unsupported scenario of optimizing TLS access on Linux Alpine");
 #endif
@@ -641,7 +640,7 @@ bool Compiler::fgExpandThreadLocalAccessForCall(BasicBlock** pBlock, Statement* 
         GenTreeCall* tlsRefCall   = tlsValue->AsCall();
 
         // This is a syscall indirect call which takes an argument.
-        // Populate and set the ABI apporpriately.
+        // Populate and set the ABI appropriately.
         GenTree* tlsArg = gtNewIconNode(threadStaticBlocksInfo.descrAddrOfMaxThreadStaticBlock, TYP_I_IMPL);
         tlsRefCall->gtArgs.InsertAfterThisOrFirst(this, NewCallArg::Primitive(tlsArg));
 
