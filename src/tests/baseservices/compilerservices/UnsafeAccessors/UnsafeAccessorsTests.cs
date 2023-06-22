@@ -423,6 +423,12 @@ static unsafe class UnsafeAccessorsTests
         extern static string CallAmbiguousMethod(UserDataClass d, delegate* unmanaged[Stdcall, SuppressGCTransition]<void> fptr);
     }
 
+    class Invalid
+    {
+        [UnsafeAccessor(UnsafeAccessorKind.Method, Name=nameof(ToString))]
+        public extern string NonStatic(string a);
+    }
+
     [Fact]
     [ActiveIssue("https://github.com/dotnet/runtime/issues/86040", TestRuntimes.Mono)]
     public static void Verify_InvalidUseUnsafeAccessor()
@@ -445,6 +451,7 @@ static unsafe class UnsafeAccessorsTests
         Assert.Throws<BadImageFormatException>(() => InvalidCtorType());
         Assert.Throws<BadImageFormatException>(() => LookUpFailsOnPointers(null));
         Assert.Throws<BadImageFormatException>(() => LookUpFailsOnFunctionPointers(null));
+        Assert.Throws<BadImageFormatException>(() => new Invalid().NonStatic(string.Empty));
 
         [UnsafeAccessor(UnsafeAccessorKind.Field, Name=UserDataValue.FieldName)]
         extern static string FieldReturnMustBeByRefClass(UserDataClass d);

@@ -1439,6 +1439,10 @@ bool MethodDesc::TryGenerateUnsafeAccessor(DynamicResolver** resolver, COR_ILMET
     if (hr != S_OK)
         return false;
 
+    // UnsafeAccessor must be on a static method
+    if (!IsStatic())
+        ThrowHR(COR_E_BADIMAGEFORMAT, BFA_INVALID_UNSAFEACCESSOR);
+
     UnsafeAccessorKind kind;
     SString name;
 
