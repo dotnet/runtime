@@ -105,15 +105,30 @@ namespace System.Net.Http
                 using (var operationRegistration = cancellationToken.Register(() =>
                 {
                     CancelablePromise.CancelPromise(promise);
+#pragma warning disable IDE0031
                     if (abortController != null)
                     {
-                        AbortRequest(abortController);
+#if FEATURE_WASM_THREADS
+                        abortController.SynchronizationContext.Send(static (JSObject _abortController) =>
+                        {
+#endif
+                            AbortRequest(_abortController);
+#if FEATURE_WASM_THREADS
+                        }, abortController);
+#endif
                     }
                     if (fetchResponse != null)
                     {
-                        AbortResponse(fetchResponse);
+#if FEATURE_WASM_THREADS
+                        fetchResponse.SynchronizationContext.Send(static (JSObject _fetchResponse) =>
+                        {
+#endif
+                            AbortResponse(_fetchResponse);
+#if FEATURE_WASM_THREADS
+                        }, fetchResponse);
+#endif
+#pragma warning restore IDE0031
                     }
-
                 }))
                 {
                     return await promise.ConfigureAwait(true);
