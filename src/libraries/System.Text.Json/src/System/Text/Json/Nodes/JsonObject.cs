@@ -152,11 +152,13 @@ namespace System.Text.Json.Nodes
                 return false;
             }
 
-            if (node is not JsonObject jsonObject)
+            if (node is JsonValue value)
             {
-                return node.DeepEquals(this);
+                // JsonValueTrimmable/NonTrimmable can hold the object type so calling this method to continue the deep comparision.
+                return value.DeepEquals(this);
             }
 
+            JsonObject jsonObject = node.AsObject();
             InitializeIfRequired();
             jsonObject.InitializeIfRequired();
 
