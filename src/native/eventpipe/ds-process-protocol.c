@@ -407,7 +407,7 @@ process_info_3_payload_get_size (DiagnosticsProcessInfo3Payload *payload)
 		(ep_rt_utf16_string_len (payload->clr_product_version) + 1) * sizeof(ep_char16_t) : 0;
 
 	size += sizeof(uint32_t);
-	size += (payload->clr_product_version != NULL) ?
+	size += (payload->portable_rid != NULL) ?
 		(ep_rt_utf16_string_len (payload->portable_rid) + 1) * sizeof(ep_char16_t) : 0;
 
 	EP_ASSERT (size <= UINT16_MAX);
