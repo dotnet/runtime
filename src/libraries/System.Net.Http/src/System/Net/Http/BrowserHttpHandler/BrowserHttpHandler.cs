@@ -230,7 +230,7 @@ namespace System.Net.Http
                 }
 
                 cancellationToken.ThrowIfCancellationRequested();
-                JSObject fetchResponse = await BrowserHttpInterop.CancelationHelper(promise, cancellationToken, abortController).ConfigureAwait(true);
+                JSObject fetchResponse = await BrowserHttpInterop.CancelationHelper(promise, cancellationToken, abortController, null).ConfigureAwait(true);
                 return new WasmFetchResponse(fetchResponse, abortRegistration.Value);
             }
             catch (Exception)

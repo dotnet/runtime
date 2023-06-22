@@ -94,7 +94,7 @@ namespace System.Net.Http
             [JSMarshalAs<JSType.MemoryView>] Span<byte> buffer);
 
 
-        public static async ValueTask<T> CancelationHelper<T>(Task<T> promise, CancellationToken cancellationToken, JSObject? abortController = null, JSObject? fetchResponse = null)
+        public static async ValueTask<T> CancelationHelper<T>(Task<T> promise, CancellationToken cancellationToken, JSObject? abortController, JSObject? fetchResponse)
         {
             if (promise.IsCompletedSuccessfully)
             {
@@ -104,31 +104,17 @@ namespace System.Net.Http
             {
                 using (var operationRegistration = cancellationToken.Register(() =>
                 {
-                    CancelablePromise.CancelPromise(promise);
-#pragma warning disable IDE0031
-                    if (abortController != null)
+                    CancelablePromise.CancelPromise(promise, static (JSObject? _fetchResponse, JSObject? _abortController) =>
                     {
-#if FEATURE_WASM_THREADS
-                        abortController.SynchronizationContext.Send(static (JSObject _abortController) =>
+                        if (_abortController != null)
                         {
-#endif
                             AbortRequest(_abortController);
-#if FEATURE_WASM_THREADS
-                        }, abortController);
-#endif
-                    }
-                    if (fetchResponse != null)
-                    {
-#if FEATURE_WASM_THREADS
-                        fetchResponse.SynchronizationContext.Send(static (JSObject _fetchResponse) =>
+                        }
+                        if (_fetchResponse != null)
                         {
-#endif
                             AbortResponse(_fetchResponse);
-#if FEATURE_WASM_THREADS
-                        }, fetchResponse);
-#endif
-#pragma warning restore IDE0031
-                    }
+                        }
+                    }, fetchResponse, abortController);
                 }))
                 {
                     return await promise.ConfigureAwait(true);

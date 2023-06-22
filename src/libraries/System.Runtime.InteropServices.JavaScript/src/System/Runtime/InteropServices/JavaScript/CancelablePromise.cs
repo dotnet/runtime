@@ -26,8 +26,31 @@ namespace System.Runtime.InteropServices.JavaScript
             holder.SynchronizationContext!.Send(static (JSHostImplementation.TaskCallback holder) =>
             {
 #endif
+            var handle = JSHostImplementation.GetJSOwnedObjectGCHandle(holder);
+            _CancelPromise(handle);
+#if FEATURE_WASM_THREADS
+            }, holder);
+#endif
+        }
+
+        public static void CancelPromise<T1, T2>(Task promise, Action<T1, T2> callback, T1 state1, T2 state2)
+        {
+            // this check makes sure that promiseGCHandle is still valid handle
+            if (promise.IsCompleted)
+            {
+                return;
+            }
+            JSHostImplementation.TaskCallback? holder = promise.AsyncState as JSHostImplementation.TaskCallback;
+            if (holder == null) throw new InvalidOperationException("Expected Task converted from JS Promise");
+
+
+#if FEATURE_WASM_THREADS
+            holder.SynchronizationContext!.Send(static (JSHostImplementation.TaskCallback holder) =>
+            {
+#endif
                 var handle = JSHostImplementation.GetJSOwnedObjectGCHandle(holder);
                 _CancelPromise(handle);
+                callback.Invoke(state1, state2);
 #if FEATURE_WASM_THREADS
             }, holder);
 #endif
