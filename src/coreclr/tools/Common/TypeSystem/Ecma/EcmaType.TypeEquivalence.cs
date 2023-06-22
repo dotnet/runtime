@@ -8,6 +8,8 @@ namespace Internal.TypeSystem.Ecma
 {
     public partial class EcmaType
     {
+        private  TypeIdentifierData _data;
+
         private TypeIdentifierData ComputeTypeIdentifierFromGuids()
         {
             CustomAttributeValue<TypeDesc>? guidAttribute;
@@ -42,92 +44,101 @@ namespace Internal.TypeSystem.Ecma
 
             return new TypeIdentifierData(scope, name);
         }
+
+        private TypeIdentifierData ComputeTypeIdentifierData()
+        {
+            if (!Context.SupportsTypeEquivalence)
+                return null;
+
+            // Check for type identifier attribute
+            var typeIdentifierAttribute = this.GetDecodedCustomAttribute("System.Runtime.InteropServices", "TypeIdentifierAttribute");
+            if (typeIdentifierAttribute.HasValue)
+            {
+                // If the type has a type identifier attribute it is always considered to be type equivalent
+                if (typeIdentifierAttribute.Value.FixedArguments.Length == 0)
+                    return ComputeTypeIdentifierFromGuids();
+
+                if (typeIdentifierAttribute.Value.FixedArguments.Length != 2)
+                    return null;
+
+                if (typeIdentifierAttribute.Value.FixedArguments[0].Type != Context.GetWellKnownType(WellKnownType.String))
+                    return null;
+
+                if (typeIdentifierAttribute.Value.FixedArguments[1].Type != Context.GetWellKnownType(WellKnownType.String))
+                    return null;
+
+                _data = new TypeIdentifierData((string)typeIdentifierAttribute.Value.FixedArguments[0].Value, (string)typeIdentifierAttribute.Value.FixedArguments[1].Value);
+                return _data;
+            }
+            else
+            {
+                // In addition to the TypeIdentifierAttribute certain other types may also be opted in to type equivalence
+                if (Context.SupportsCOMInterop)
+                {
+                    // 1. Type is within assembly marked with ImportedFromTypeLibAttribute or PrimaryInteropAssemblyAttribute
+                    if (this.HasCustomAttribute("System.Runtime.InteropServices", "ImportedFromTypeLibAttribute") || this.HasCustomAttribute("System.Runtime.InteropServices", "PrimaryInteropAssemblyAttribute"))
+                    {
+                        // This type has a TypeIdentifier attribute if it has an appropriate shape to be considered type equivalent
+                    }
+
+                    if (!TypeHasCharacteristicsRequiredToBeTypeEquivalent)
+                        return null;
+
+                    _data = ComputeTypeIdentifierFromGuids();
+                }
+
+                return null;
+            }
+        }
+
         public override TypeIdentifierData TypeIdentifierData
         {
             get
             {
-                if (!Context.SupportsTypeEquivalence)
-                    return null;
-
-                // Check for type identifier attribute
-                var typeIdentifierAttribute = this.GetDecodedCustomAttribute("System.Runtime.InteropServices", "TypeIdentifierAttribute");
-                if (typeIdentifierAttribute.HasValue)
+                if (_data != null)
                 {
-                    // If the type has a type identifier attribute it is always considered to be type equivalent
-                    if (typeIdentifierAttribute.Value.FixedArguments.Length == 0)
-                        return ComputeTypeIdentifierFromGuids();
-
-                    if (typeIdentifierAttribute.Value.FixedArguments.Length != 2)
+                    if (object.ReferenceEquals(_data, TypeIdentifierData.Empty))
                         return null;
-
-                    if (typeIdentifierAttribute.Value.FixedArguments[0].Type != Context.GetWellKnownType(WellKnownType.String))
-                        return null;
-
-                    if (typeIdentifierAttribute.Value.FixedArguments[1].Type != Context.GetWellKnownType(WellKnownType.String))
-                        return null;
-
-                    return new TypeIdentifierData((string)typeIdentifierAttribute.Value.FixedArguments[0].Value, (string)typeIdentifierAttribute.Value.FixedArguments[1].Value);
+                    return _data;
                 }
-                else
+                lock(this)
                 {
-                    // In addition to the TypeIdentifierAttribute certain other types may also be opted in to type equivalence
-                    if (Context.SupportsCOMInterop)
+                    var data = ComputeTypeIdentifierData();
+                    if (data == null)
                     {
-                        // 1. Type is within assembly marked with ImportedFromTypeLibAttribute or PrimaryInteropAssemblyAttribute
-                        if (this.HasCustomAttribute("System.Runtime.InteropServices", "ImportedFromTypeLibAttribute") || this.HasCustomAttribute("System.Runtime.InteropServices", "PrimaryInteropAssemblyAttribute"))
-                        {
-                            // This type has a TypeIdentifier attribute if it has an appropriate shape to be considered type equivalent
-
-                        }
-
-                        // 2. Type is a COMImport/COMEvent interface, enum, struct, or delegate
-                        bool isCOMInterface = false;
-                        if (this.IsInterface)
-                        {
-                            if (_typeDefinition.Attributes.HasFlag(TypeAttributes.Import))
-                                isCOMInterface = true;
-                            else if (HasCustomAttribute("System.Runtime.InteropServices", "ComEventInterfaceAttribute"))
-                                isCOMInterface = true;
-                        }
-
-                        if (!isCOMInterface && !IsValueType && !IsDelegate)
-                        {
-                            return null;
-                        }
-
-                        // 3. Type is not generic
-                        if (HasInstantiation)
-                        {
-                            return null;
-                        }
-
-                        // 4. Type is externally visible (i.e. public)
-                        if (!this.GetEffectiveVisibility().IsExposedOutsideOfThisAssembly(false))
-                        {
-                            return null;
-                        }
-
-                        // 5. Type is not tdWindowsRuntime
-                        if (_typeDefinition.Attributes.HasFlag(TypeAttributes.WindowsRuntime))
-                        {
-                            return null;
-                        }
-
-                        // 6. If type is nested, nesting type must be equivalent.
-                        var containingType = ContainingType;
-                        if (ContainingType != null)
-                        {
-                            if (containingType.TypeIdentifierData == null)
-                            {
-                                return null;
-                            }
-                        }
-
-                        return ComputeTypeIdentifierFromGuids();
+                        _data = TypeIdentifierData.Empty;
+                        return null;
                     }
-
-                    return null;
+                    else
+                    {
+                        _data = data;
+                        return data;
+                    }
                 }
+            }
+        }
+
+        public override bool IsWindowsRuntime
+        {
+            get
+            {
+                return _typeDefinition.Attributes.HasFlag(TypeAttributes.WindowsRuntime);
+            }
+        }
+
+        public override bool IsComImport
+        {
+            get
+            {
+                return _typeDefinition.Attributes.HasFlag(TypeAttributes.Import);
+            }
+        }
+
+        public override bool IsComEventInterface
+        {
+            get
+            {
+                return HasCustomAttribute("System.Runtime.InteropServices", "ComEventInterfaceAttribute");
             }
         }
     }

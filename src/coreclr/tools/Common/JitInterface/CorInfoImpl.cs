@@ -1768,7 +1768,7 @@ namespace Internal.JitInterface
 #if !READYTORUN
                 _compilation.NodeFactory.MetadataManager.GetDependenciesDueToAccess(ref _additionalDependencies, _compilation.NodeFactory, (MethodIL)methodIL, field);
 #else
-                ValidateSafetyOfUsingTypeEquivalenceOfType(field.Type);
+                ValidateSafetyOfUsingTypeEquivalenceOfType(field.FieldType);
 #endif
             }
             else
@@ -1800,28 +1800,6 @@ namespace Internal.JitInterface
             pResolvedToken.cbTypeSpec = 0;
             pResolvedToken.pMethodSpec = null;
             pResolvedToken.cbMethodSpec = 0;
-        }
-
-        private void ValidateSafetyOfUsingTypeEquivalenceInSignature(MethodSignature signature)
-        {
-            // Type equivalent valuetypes not in the current version bubble are problematic, and cannot be referred to in our current token
-            // scheme except through type references. So we need to detect them, and if they aren't referred to by type reference from a module
-            // in the current build, then we need to fallback to runtime jit.
-            ValidateSafetyOfUsingTypeEquivalenceOfType(signature.ReturnType);
-            foreach (var type in signature)
-            {
-                ValidateSafetyOfUsingTypeEquivalenceOfType(type);
-            }
-        }
-
-        void ValidateSafetyOfUsingTypeEquivalenceOfType(TypeDesc type)
-        {
-            if (type.IsValueType && type.IsTypeDefEquivalent && !_compilation.CompilationModuleGroup.VersionsWithTypeReference(type))
-            {
-                // Technically this is a bit pickier than needed, as cross module inlineable cases will be hit by this, but type equivalence is a
-                // rarely used feature, and we can fix that if we need to.
-                throw new RequiresRuntimeJitException($"Type equivalent valuetype '{type}' not directly referenced from member reference");
-            }
         }
 
         private void findSig(CORINFO_MODULE_STRUCT_* module, uint sigTOK, CORINFO_CONTEXT_STRUCT* context, CORINFO_SIG_INFO* sig)

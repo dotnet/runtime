@@ -2,7 +2,6 @@
 // The .NET Foundation licenses this file to you under the MIT license.
 
 using Debug = System.Diagnostics.Debug;
-using System.Collections.Generic;
 
 namespace Internal.TypeSystem
 {
@@ -573,21 +572,17 @@ namespace Internal.TypeSystem
     internal sealed class StackOverflowProtect
     {
         private CastingPair _value;
-        private bool _typeEquivalenceForbiddenScope;
         private StackOverflowProtect _previous;
 
         public StackOverflowProtect(CastingPair value, StackOverflowProtect previous)
         {
             _value = value;
             _previous = previous;
-            if (_previous != null)
-                _typeEquivalenceForbiddenScope = previous._typeEquivalenceForbiddenScope;
         }
 
         public static StackOverflowProtect GetTypeEquivalentForbiddenScope(StackOverflowProtect previous)
         {
             var protect = new StackOverflowProtect(default(CastingPair), previous);
-            protect._typeEquivalenceForbiddenScope = true;
             return protect;
         }
 
@@ -600,8 +595,6 @@ namespace Internal.TypeSystem
             }
             return false;
         }
-
-        public bool InTypeEquivalenceForbiddenScope => _typeEquivalenceForbiddenScope;
     }
 
     internal struct CastingPair

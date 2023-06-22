@@ -4,10 +4,9 @@
 using System;
 using System.Diagnostics;
 using System.Reflection;
-using Internal.TypeSystem;
 using Internal.TypeSystem.Ecma;
 
-namespace Internal.TypeSystem.Ecma
+namespace Internal.TypeSystem
 {
     public enum EffectiveVisibility
     {
@@ -136,6 +135,23 @@ namespace Internal.TypeSystem.Ecma
                 visibility = visibility.ConstrainToVisibility(type.Attributes.ToEffectiveVisibility());
             }
             return visibility;
+        }
+
+        public static EffectiveVisibility GetEffectiveVisibility(this TypeDesc type)
+        {
+            var definitionType = type.GetTypeDefinition();
+            if (definitionType is MetadataType)
+            {
+                if (definitionType is EcmaType ecmaType)
+                {
+                    return ecmaType.GetEffectiveVisibility();
+                }
+                return EffectiveVisibility.Public;
+            }
+            else
+            {
+                return EffectiveVisibility.Public;
+            }
         }
 
         public static EffectiveVisibility GetEffectiveVisibility(this EcmaField field)

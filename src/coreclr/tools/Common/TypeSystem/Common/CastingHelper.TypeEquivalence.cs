@@ -86,11 +86,6 @@ namespace Internal.TypeSystem
                 var stackOverflowProtectKey = new CastingPair(type1, type2);
                 if (visited != null)
                 {
-                    if (visited.InTypeEquivalenceForbiddenScope)
-                    {
-                        // we limit variance on generics only to interfaces
-                        return false;
-                    }
                     if (visited.Contains(stackOverflowProtectKey))
                     {
                         // we are in the process of comparing these tokens already. Assume success
