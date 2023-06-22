@@ -443,7 +443,7 @@ mono_image_load_cli_header (MonoImage *image, MonoCLIImageInfo *iinfo)
  * Return the module mvid GUID or FALSE if the image doesn't have a module table.
  */
 static const gboolean
-mono_metadata_module_mvid (MonoImage *image, GUID* pmvid)
+mono_metadata_module_mvid (MonoImage *image, md_guid_t* pmvid)
 {
 	if (image->metadata_handle == NULL)
 		return FALSE;
@@ -491,6 +491,7 @@ load_metadata_ptrs (MonoImage *image, MonoCLIImageInfo *iinfo)
 		ptr += 2;
 		image->md_version_minor = read16 (ptr);
 		ptr += 6;
+
 
 		version_string_len = read32 (ptr);
 		ptr += 4;
@@ -578,7 +579,7 @@ load_metadata_ptrs (MonoImage *image, MonoCLIImageInfo *iinfo)
 
 		image->guid = mono_guid_to_string ((guint8*)image->heap_guid.data);
 	} else {
-		GUID mvid;
+		md_guid_t mvid;
 		if (mono_metadata_module_mvid(image, &mvid))
 			image->guid = mono_guid_to_string ((const guint8*)&mvid);
 		else {
@@ -675,28 +676,44 @@ mono_image_load_metadata (MonoImage *image, MonoCLIImageInfo *iinfo)
 void
 mono_image_check_for_module_cctor (MonoImage *image)
 {
-	MonoTableInfo *t, *mt;
-	t = &image->tables [MONO_TABLE_TYPEDEF];
-	mt = &image->tables [MONO_TABLE_METHOD];
 	if (image_is_dynamic (image)) {
 		/* FIXME: */
 		image->checked_module_cctor = TRUE;
 		return;
 	}
-	if (table_info_get_rows (t) >= 1) {
-		guint32 nameidx = mono_metadata_decode_row_col (t, 0, MONO_TYPEDEF_NAME);
-		const char *name = mono_metadata_string_heap (image, nameidx);
+
+	mdcursor_t c;
+	uint32_t count;
+	if (!md_create_cursor(image->metadata_handle, mdtid_TypeDef, &c, &count)) {
+		image->has_module_cctor = FALSE;
+		image->checked_module_cctor = TRUE;
+		return;
+	}
+
+	for (uint32_t i = 0; i < count; ++i, md_cursor_next(&c)) {
+		const char *name;
+		if (1 != md_get_column_value_as_utf8 (c, mdtTypeDef_TypeName, 1, &name)) {
+			image->has_module_cctor = FALSE;
+			image->checked_module_cctor = TRUE;
+			return;
+		}
 		if (strcmp (name, "<Module>") == 0) {
-			guint32 first_method = mono_metadata_decode_row_col (t, 0, MONO_TYPEDEF_METHOD_LIST) - 1;
-			guint32 last_method;
-			if (table_info_get_rows (t) > 1)
-				last_method = mono_metadata_decode_row_col (t, 1, MONO_TYPEDEF_METHOD_LIST) - 1;
-			else
-				last_method = table_info_get_rows (mt);
-			for (; first_method < last_method; first_method++) {
-				nameidx = mono_metadata_decode_row_col (mt, first_method, MONO_METHOD_NAME);
-				name = mono_metadata_string_heap (image, nameidx);
-				if (strcmp (name, ".cctor") == 0) {
+			mdcursor_t method;
+			uint32_t method_count;
+			if (!md_get_column_value_as_range (c, mdtTypeDef_MethodList, &method, &method_count)) {
+				image->has_module_cctor = FALSE;
+				image->checked_module_cctor = TRUE;
+				return;
+			}
+			for (uint32_t j = 0; j < method_count; j++, md_cursor_next(&method))
+			{
+				const char *method_name;
+				if (1 != md_get_column_value_as_utf8 (method, mdtMethodDef_Name, 1, &method_name)) {
+					image->has_module_cctor = FALSE;
+					image->checked_module_cctor = TRUE;
+					return;
+				}
+				if (strcmp (method_name, ".cctor") == 0) {
 					image->has_module_cctor = TRUE;
 					image->checked_module_cctor = TRUE;
 					return;
@@ -704,6 +721,7 @@ mono_image_check_for_module_cctor (MonoImage *image)
 			}
 		}
 	}
+	
 	image->has_module_cctor = FALSE;
 	image->checked_module_cctor = TRUE;
 }
