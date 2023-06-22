@@ -4901,11 +4901,10 @@ mono_arch_output_basic_block (MonoCompile *cfg, MonoBasicBlock *bb)
 			arm_uxthw (code, dreg, dreg);
 			break;
 		case OP_FCONV_TO_I4:
-			arm_fcvtzs_dx (code, dreg, sreg1);
-			arm_sxtwx (code, dreg, dreg);
+			arm_fcvtzs_dw (code, dreg, sreg1);
 			break;
 		case OP_FCONV_TO_U4:
-			arm_fcvtzu_dx (code, dreg, sreg1);
+			arm_fcvtzu_dw (code, dreg, sreg1);
 			break;
 		case OP_FCONV_TO_I8:
 			arm_fcvtzs_dx (code, dreg, sreg1);
@@ -5002,11 +5001,10 @@ mono_arch_output_basic_block (MonoCompile *cfg, MonoBasicBlock *bb)
 			arm_uxthw (code, dreg, dreg);
 			break;
 		case OP_RCONV_TO_I4:
-			arm_fcvtzs_sx (code, dreg, sreg1);
-			arm_sxtwx (code, dreg, dreg);
+			arm_fcvtzs_sw (code, dreg, sreg1);
 			break;
 		case OP_RCONV_TO_U4:
-			arm_fcvtzu_sx (code, dreg, sreg1);
+			arm_fcvtzu_sw (code, dreg, sreg1);
 			break;
 		case OP_RCONV_TO_I8:
 			arm_fcvtzs_sx (code, dreg, sreg1);
