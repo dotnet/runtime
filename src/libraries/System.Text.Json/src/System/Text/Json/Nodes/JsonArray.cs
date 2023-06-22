@@ -57,9 +57,11 @@ namespace System.Text.Json.Nodes
 
             var jsonArray = new JsonArray(Options);
 
-            for (int i = 0; i < List.Count; i++)
+            List<JsonNode?> list = List;
+
+            for (int i = 0; i < list.Count; i++)
             {
-                JsonNode? item = List[i];
+                JsonNode? item = list[i];
                 if (item is null)
                 {
                     jsonArray.Add(null);
@@ -85,15 +87,18 @@ namespace System.Text.Json.Nodes
                 return node.DeepEquals(this);
             }
 
-            if (List.Count != array.List.Count)
+            List<JsonNode?> currentList = List;
+            List<JsonNode?> otherList = array.List;
+
+            if (currentList.Count != otherList.Count)
             {
                 return false;
             }
 
-            for (int i = 0; i < List.Count; i++)
+            for (int i = 0; i < currentList.Count; i++)
             {
-                JsonNode? currentItem = List[i];
-                JsonNode? otherItem = array.List[i];
+                JsonNode? currentItem = currentList[i];
+                JsonNode? otherItem = otherList[i];
 
                 if (!DeepEquals(currentItem, otherItem))
                 {
@@ -117,7 +122,7 @@ namespace System.Text.Json.Nodes
         {
             foreach (JsonNode? item in List)
             {
-                yield return item!.GetValue<T>();
+                yield return item is null ? (T)(object?)null! : item.GetValue<T>();
             }
         }
 

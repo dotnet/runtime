@@ -273,10 +273,10 @@ namespace System.Text.Json.Nodes
         }
 
         /// <summary>
-        /// Returns property name from parent object.
+        /// Returns property name of the current node from the parent object.
         /// </summary>
         /// <exception cref="InvalidOperationException">
-        /// The current parent is not a <see cref="JsonObject"/>
+        /// The current parent is not a <see cref="JsonObject"/>.
         /// </exception>
         public string GetPropertyName()
         {
@@ -289,10 +289,10 @@ namespace System.Text.Json.Nodes
         }
 
         /// <summary>
-        /// Returns index from parent array.
+        /// Returns index of the current node from the parent <see cref="JsonArray" />.
         /// </summary>
         /// <exception cref="InvalidOperationException">
-        /// The current parent is not a <see cref="JsonArray"/>
+        /// The current parent is not a <see cref="JsonArray"/>.
         /// </exception>
         public int GetElementIndex()
         {
@@ -314,12 +314,7 @@ namespace System.Text.Json.Nodes
         {
             if (node1 is null && node2 is null)
             {
-                return true;
-            }
-
-            if (node1 is null && node2 is not null)
-            {
-                return false;
+                return node2 is null;
             }
 
             if (node1 is JsonObject jsonObject)
