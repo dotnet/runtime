@@ -217,37 +217,27 @@ namespace System.Collections.Frozen
 
             int bestNumBuckets = maxNumBuckets;
             int bestNumCollisions = uniqueCodesCount;
+            int numBuckets = 0, numCollisions = 0;
 
             // Iterate through each available prime between the min and max discovered. For each, compute
             // the collision ratio.
             for (int primeIndex = minPrimeIndexInclusive; primeIndex < maxPrimeIndexExclusive; primeIndex++)
             {
                 // Get the number of buckets to try, and clear our seen bucket bitmap.
-                int numBuckets = primes[primeIndex];
+                numBuckets = primes[primeIndex];
                 Array.Clear(seenBuckets, 0, Math.Min(numBuckets, seenBuckets.Length));
 
                 // Determine the bucket for each hash code and mark it as seen. If it was already seen,
                 // track it as a collision.
-                int numCollisions = 0;
+                numCollisions = 0;
 
                 if (codes is not null && uniqueCodesCount != hashCodes.Length)
                 {
                     foreach (int code in codes)
                     {
-                        uint bucketNum = (uint)code % (uint)numBuckets;
-                        if ((seenBuckets[bucketNum / BitsPerInt32] & (1 << (int)bucketNum)) != 0)
+                        if (!IsBucketFirstVisit(code))
                         {
-                            numCollisions++;
-                            if (numCollisions >= bestNumCollisions)
-                            {
-                                // If we've already hit the previously known best number of collisions,
-                                // there's no point in continuing as worst case we'd just use that.
-                                break;
-                            }
-                        }
-                        else
-                        {
-                            seenBuckets[bucketNum / BitsPerInt32] |= 1 << (int)bucketNum;
+                            break;
                         }
                     }
                 }
@@ -256,20 +246,9 @@ namespace System.Collections.Frozen
                     // All of the hash codes in hashCodes are unique. In such scenario, it's faster to iterate over a span.
                     foreach (int code in hashCodes)
                     {
-                        uint bucketNum = (uint)code % (uint)numBuckets;
-                        if ((seenBuckets[bucketNum / BitsPerInt32] & (1 << (int)bucketNum)) != 0)
+                        if (!IsBucketFirstVisit(code))
                         {
-                            numCollisions++;
-                            if (numCollisions >= bestNumCollisions)
-                            {
-                                // If we've already hit the previously known best number of collisions,
-                                // there's no point in continuing as worst case we'd just use that.
-                                break;
-                            }
-                        }
-                        else
-                        {
-                            seenBuckets[bucketNum / BitsPerInt32] |= 1 << (int)bucketNum;
+                            break;
                         }
                     }
                 }
@@ -292,6 +271,28 @@ namespace System.Collections.Frozen
             ArrayPool<int>.Shared.Return(seenBuckets);
 
             return bestNumBuckets;
+
+            [MethodImpl(MethodImplOptions.AggressiveInlining)]
+            bool IsBucketFirstVisit(int code)
+            {
+                uint bucketNum = (uint)code % (uint)numBuckets;
+                if ((seenBuckets[bucketNum / BitsPerInt32] & (1 << (int)bucketNum)) != 0)
+                {
+                    numCollisions++;
+                    if (numCollisions >= bestNumCollisions)
+                    {
+                        // If we've already hit the previously known best number of collisions,
+                        // there's no point in continuing as worst case we'd just use that.
+                        return false;
+                    }
+                }
+                else
+                {
+                    seenBuckets[bucketNum / BitsPerInt32] |= 1 << (int)bucketNum;
+                }
+
+                return true;
+            }
         }
 
         private readonly struct Bucket
