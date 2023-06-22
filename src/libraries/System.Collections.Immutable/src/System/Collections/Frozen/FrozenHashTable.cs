@@ -178,12 +178,16 @@ namespace System.Collections.Frozen
             }
             Debug.Assert(uniqueCodesCount != 0);
 
+            // Based on our observations, in more than 99.5% of cases the number of buckets that meets our criteria is
+            // at least twice as big as the number of unique hash codes.
+            int minNumBuckets = uniqueCodesCount * 2;
+
             // In our precomputed primes table, find the index of the smallest prime that's at least as large as our number of
             // hash codes. If there are more codes than in our precomputed primes table, which accommodates millions of values,
             // give up and just use the next prime.
             ReadOnlySpan<int> primes = HashHelpers.Primes;
             int minPrimeIndexInclusive = 0;
-            while ((uint)minPrimeIndexInclusive < (uint)primes.Length && uniqueCodesCount > primes[minPrimeIndexInclusive])
+            while ((uint)minPrimeIndexInclusive < (uint)primes.Length && minNumBuckets > primes[minPrimeIndexInclusive])
             {
                 minPrimeIndexInclusive++;
             }
