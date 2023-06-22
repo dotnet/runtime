@@ -66,7 +66,8 @@ namespace Microsoft.Extensions.DependencyInjection.Extensions
             int count = collection.Count;
             for (int i = 0; i < count; i++)
             {
-                if (collection[i].ServiceType == descriptor.ServiceType)
+                if (collection[i].ServiceType == descriptor.ServiceType
+                    && collection[i].ServiceKey == descriptor.ServiceKey)
                 {
                     // Already added
                     return;
