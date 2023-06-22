@@ -123,7 +123,7 @@ namespace System.Threading
                         }
                         else if (stage == StaticsInitializationStage.NotStarted)
                         {
-                            goto case default;
+                            goto default;
                         }
 
                         if (State.TryLock(this))
