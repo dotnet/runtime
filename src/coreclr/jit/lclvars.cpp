@@ -2017,14 +2017,6 @@ bool Compiler::StructPromotionHelper::CanPromoteStructVar(unsigned lclNum)
         return false;
     }
 
-#if defined(TARGET_LOONGARCH64) || defined(TARGET_RISCV64)
-    if (varDsc->lvIsSplit)
-    {
-        JITDUMP("  struct promotion of V%02u is disabled because it is splitted\n", lclNum);
-        return false;
-    }
-#endif // TARGET_LOONGARCH64 || TARGET_RISCV64
-
     CORINFO_CLASS_HANDLE typeHnd = varDsc->GetLayout()->GetClassHandle();
     assert(typeHnd != NO_CLASS_HANDLE);
 
@@ -2183,6 +2175,13 @@ bool Compiler::StructPromotionHelper::ShouldPromoteStructVar(unsigned lclNum)
                         lclNum);
                 shouldPromote = false;
             }
+#if defined(TARGET_LOONGARCH64) || defined(TARGET_RISCV64)
+            else if (varDsc->lvIsSplit)
+            {
+                JITDUMP("Not promoting multireg struct local V%02u, because it is splitted.\n", lclNum);
+                shouldPromote = false;
+            }
+#endif // TARGET_LOONGARCH64 || TARGET_RISCV64
         }
         else
 #endif // !FEATURE_MULTIREG_STRUCT_PROMOTE
