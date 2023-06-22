@@ -221,8 +221,11 @@ namespace System.Net.Sockets.Tests
         [Fact]
         public async Task Connect_DatagramSockets_DontThrowConnectedException_OnSecondAttempt()
         {
+            using Socket listener = new Socket(AddressFamily.InterNetwork, SocketType.Dgram, ProtocolType.Udp);
             using Socket s = new Socket(AddressFamily.InterNetwork, SocketType.Dgram, ProtocolType.Udp);
-            await ConnectAsync(s, new IPEndPoint(IPAddress.Loopback, 1));
+            listener.Bind(new IPEndPoint(IPAddress.Loopback, 0));
+
+            await ConnectAsync(s, new IPEndPoint(IPAddress.Loopback, ((IPEndPoint)listener.LocalEndPoint).Port));
             Assert.True(s.Connected);
             
             await ConnectAsync(s, new IPEndPoint(IPAddress.Any, 0));
