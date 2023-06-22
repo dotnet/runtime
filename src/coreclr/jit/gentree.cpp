@@ -11912,7 +11912,7 @@ void Compiler::gtDispLocal(GenTreeLclVarCommon* tree, IndentStack* indentStack)
                 printIndent(indentStack);
                 printf("    %-6s %s -> ", varTypeName(fieldVarDsc->TypeGet()), fieldVarDsc->lvReason);
                 gtDispLclVar(fieldLclNum);
-                gtDispSsaName(fieldLclNum, tree->AsLclVarCommon()->GetSsaNum(this, index), isDef);
+                gtDispSsaName(fieldLclNum, tree->GetSsaNum(this, index), isDef);
 
                 if (fieldVarDsc->lvRegister)
                 {
@@ -11920,7 +11920,7 @@ void Compiler::gtDispLocal(GenTreeLclVarCommon* tree, IndentStack* indentStack)
                     fieldVarDsc->PrintVarReg();
                 }
 
-                if (fieldVarDsc->lvTracked && fgLocalVarLivenessDone && tree->AsLclVarCommon()->IsLastUse(index))
+                if (fieldVarDsc->lvTracked && fgLocalVarLivenessDone && tree->IsLastUse(index))
                 {
                     printf(" (last use)");
                 }
