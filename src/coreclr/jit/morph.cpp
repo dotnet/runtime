@@ -299,34 +299,32 @@ GenTree* Compiler::fgMorphExpandCast(GenTreeCast* tree)
     // GT_CAST(GT_CAST(TYP_ULONG, TYP_DOUBLE), TYP_FLOAT) into a single
     // node i.e. GT_CAST(TYP_ULONG, TYP_FLOAT). At this point, we already
     // have the 2 GT_CAST nodes in the tree and we are combining them below.
-    if (compOpportunisticallyDependsOn(InstructionSet_AVX512F))
+    if (oper->OperIs(GT_CAST))
     {
-        if (oper->OperIs(GT_CAST))
+        GenTreeCast* innerCast = static_cast<GenTreeCast*>(oper);
+
+        if (innerCast->IsUnsigned())
         {
-            GenTreeCast* innerCast = static_cast<GenTreeCast*>(oper);
+            GenTree*  innerOper    = innerCast->CastOp();
+            var_types innerSrcType = genActualType(innerOper);
+            var_types innerDstType = innerCast->CastToType();
+            unsigned  innerDstSize = genTypeSize(innerDstType);
+            innerSrcType           = varTypeToUnsigned(innerSrcType);
 
-            if (innerCast->IsUnsigned())
+            // Check if we are going from ulong->double->float
+            if (innerSrcType == TYP_ULONG && innerDstType == TYP_DOUBLE && dstType == TYP_FLOAT)
             {
-                GenTree*  innerOper    = innerCast->CastOp();
-                var_types innerSrcType = genActualType(innerOper);
-                var_types innerDstType = innerCast->CastToType();
-                unsigned  innerDstSize = genTypeSize(innerDstType);
-                innerSrcType           = varTypeToUnsigned(innerSrcType);
-
-                if (innerSrcType == TYP_ULONG)
+                if (compOpportunisticallyDependsOn(InstructionSet_AVX512F))
                 {
-                    if (dstType == TYP_FLOAT && innerDstType == TYP_DOUBLE)
-                    {
-                        // One optimized cast here
-                        tree         = gtNewCastNode(TYP_ULONG, innerOper, true, TYP_FLOAT);
-                        tree->gtType = TYP_FLOAT;
-                        return fgMorphTree(tree);
-                    }
+                    // One optimized (combined) cast here
+                    tree         = gtNewCastNode(TYP_ULONG, innerOper, true, TYP_FLOAT);
+                    tree->gtType = TYP_FLOAT;
+                    return fgMorphTree(tree);
                 }
             }
         }
     }
-#endif
+#endif // TARGET_AMD64
 
     // See if the cast has to be done in two steps.  R -> I
     if (varTypeIsFloating(srcType) && varTypeIsIntegral(dstType))
