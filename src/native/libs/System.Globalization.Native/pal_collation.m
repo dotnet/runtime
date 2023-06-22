@@ -270,22 +270,58 @@ int32_t GlobalizationNative_EndsWithNative(const uint16_t* localeName, int32_t l
     return result == NSOrderedSame ? 1 : 0;
 }
 
+/**
+ * Append a code point to a string, overwriting 1 or 2 code units.
+ * The offset points to the current end of the string contents
+ * and is advanced (post-increment).
+ * "Safe" macro, checks for a valid code point.
+ * If a surrogate pair is written, checks for sufficient space in the string.
+ * If the code point is not valid or a trail surrogate does not fit,
+ * then isError is set to true.
+ *
+ * @param s const UChar * string buffer
+ * @param i string offset, must be i<capacity
+ * @param capacity size of the string buffer
+ * @param c code point to append
+ * @param isError output UBool set to true if an error occurs, otherwise not modified
+ * @stable ICU 2.4
+ */
+#define Append(s, i, capacity, c, isError) UPRV_BLOCK_MACRO_BEGIN { \
+    if((uint32_t)(c)<=0xffff) { \
+        (s)[(i)++]=(uint16_t)(c); \
+    } else if((uint32_t)(c)<=0x10ffff && (i)+1<(capacity)) { \
+        (s)[(i)++]=(uint16_t)(((c)>>10)+0xd7c0); \
+        (s)[(i)++]=(uint16_t)(((c)&0x3ff)|0xdc00); \
+    } else /* c>0x10ffff or not enough space */ { \
+        (isError)=true; \
+    } \
+} UPRV_BLOCK_MACRO_END
+
 /*
 Function:
 ChangeCaseNative
 
 Returns upper or lower casing of a string, taking into account the specified locale.
 */
-const char* GlobalizationNative_ChangeCaseNative(const char* localeName, int32_t lNameLength,
-                                                     const char* lpSrc, int32_t cwSrcLength, int32_t bToUpper)
+int32_t GlobalizationNative_ChangeCaseNative(const uint16_t* localeName, int32_t lNameLength,
+                                                 const uint16_t* lpSrc, int32_t cwSrcLength, uint16_t* lpDst, int32_t cwDstLength, int32_t bToUpper)
 {
-    //NSLocale *currentLocale = GetCurrentLocale(localeName, lNameLength);
-    NSString *locName = [NSString stringWithFormat:@"%s", localeName];
-    NSLocale *currentLocale = [[NSLocale alloc] initWithLocaleIdentifier:locName];
-    NSString *source = [NSString stringWithFormat:@"%s", lpSrc];//[NSString stringWithCharacters: lpSrc length: cwSrcLength];
+    NSLocale *currentLocale = GetCurrentLocale(localeName, lNameLength);
+    NSString *source = [NSString stringWithCharacters: lpSrc length: cwSrcLength];
     NSString *result = bToUpper ? [source uppercaseStringWithLocale:currentLocale] : [source lowercaseStringWithLocale:currentLocale];
-    const char* retVal = strdup([result UTF8String]);
-    return retVal;
+
+    int32_t srcIdx = 0, dstIdx = 0, isError = false;
+    uint16_t dstCodepoint;
+    if (result.length > cwDstLength)
+        result = source;
+    while (srcIdx < result.length)
+    {
+        dstCodepoint = [result characterAtIndex:srcIdx];
+        Append(lpDst, dstIdx, cwDstLength, dstCodepoint, isError);
+        srcIdx++;
+        //assert(isError == false && srcIdx == dstIdx);
+    }
+    return 0;
 }
 
 /*
@@ -294,14 +330,23 @@ ChangeCaseInvariantNative
 
 Returns upper or lower casing of a string.
 */
-const char* GlobalizationNative_ChangeCaseInvariantNative(const char* lpSrc, int32_t cwSrcLength, int32_t bToUpper)
+int32_t GlobalizationNative_ChangeCaseInvariantNative(const uint16_t* lpSrc, int32_t cwSrcLength, uint16_t* lpDst, int32_t cwDstLength, int32_t bToUpper)
 {
-    //NSString *source = [NSString stringWithCharacters: lpSrc length: cwSrcLength];
-    NSString *source = [NSString stringWithFormat:@"%s", lpSrc];
+    NSString *source = [NSString stringWithCharacters: lpSrc length: cwSrcLength];
     NSString *result = bToUpper ? source.uppercaseString : source.lowercaseString;
 
-    const char* retVal = strdup([result UTF8String]);
-    return retVal;
+    int32_t srcIdx = 0, dstIdx = 0, isError = false;
+    uint16_t dstCodepoint;
+    if (result.length > cwDstLength)
+        result = source;
+    while (srcIdx < cwSrcLength)
+    {
+        dstCodepoint = [result characterAtIndex:srcIdx];
+        Append(lpDst, dstIdx, cwDstLength, dstCodepoint, isError);
+        srcIdx++;
+        //assert(isError == false && srcIdx == dstIdx);
+    }
+    return 0;
 }
 
 #endif

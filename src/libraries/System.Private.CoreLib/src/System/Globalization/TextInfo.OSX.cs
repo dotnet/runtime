@@ -14,41 +14,20 @@ namespace System.Globalization
 {
     public partial class TextInfo
     {
-        internal unsafe char* ChangeCaseNative(char* src, int srcLen, bool toUpper)
+        internal unsafe void ChangeCaseNative(char* src, int srcLen, char* dstBuffer, int dstBufferCapacity, bool toUpper)
         {
             Debug.Assert(!GlobalizationMode.Invariant);
             Debug.Assert(!GlobalizationMode.UseNls);
             Debug.Assert(GlobalizationMode.Hybrid);
-            string result="";
+            int result;
 
             if (HasEmptyCultureName)
-            {
-                result = Interop.Globalization.ChangeCaseInvariantNative(src, srcLen, toUpper);
-                //var resultSpan = result.AsSpan();
-                /*fixed (char* changedStr= &MemoryMarshal.GetReference(resultSpan))
-                {
-                    System.Diagnostics.Debug.WriteLine("ChangeCaseNative:result is " + result);
-                    return changedStr;
-                }*/
-            }
+                result = Interop.Globalization.ChangeCaseInvariantNative(src, srcLen, dstBuffer, dstBufferCapacity, toUpper);
             else
-            {
-                result = Interop.Globalization.ChangeCaseNative(_cultureName, _cultureName.Length, src, srcLen, toUpper);
-                /*var resultSpan = result.AsSpan();
-                fixed (char* changedStr= &MemoryMarshal.GetReference(resultSpan))
-                {
-                    System.Diagnostics.Debug.WriteLine("ChangeCaseNative:result is " + result);
-                    return changedStr;
-                    ref MemoryMarshal.GetReference(
-                }*/
-            }
-            ReadOnlySpan<char> resultSpan = result.AsSpan();
-            System.Diagnostics.Debug.WriteLine("ChangeCaseNative:result is " + result);
-            System.Diagnostics.Debug.WriteLine("ChangeCaseNative:result is " + resultSpan.ToString());
-            fixed (char* pSource = &MemoryMarshal.GetReference(resultSpan))
-            {
-                return pSource;
-            }
+                result = Interop.Globalization.ChangeCaseNative(_cultureName, _cultureName.Length, src, srcLen, dstBuffer, dstBufferCapacity, toUpper);
+
+            if (result == -1)
+                throw new Exception("Exception while case changing");
         }
     }
 }

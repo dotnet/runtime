@@ -25,13 +25,17 @@ PALEXPORT void GlobalizationNative_ChangeCaseTurkish(const UChar* lpSrc,
 PALEXPORT void GlobalizationNative_InitOrdinalCasingPage(int32_t pageNumber, UChar* pTarget);
 
 #ifdef __APPLE__
-PALEXPORT const char* GlobalizationNative_ChangeCaseNative(const char* localeName,
-                                                               int32_t lNameLength,
-                                                               const char* lpSrc,
-                                                               int32_t cwSrcLength,
-                                                               int32_t bToUpper);
+PALEXPORT int32_t GlobalizationNative_ChangeCaseNative(const uint16_t* localeName,
+                                                       int32_t lNameLength,
+                                                       const uint16_t* lpSrc,
+                                                       int32_t cwSrcLength,
+                                                       uint16_t* lpDst,
+                                                       int32_t cwDstLength,
+                                                       int32_t bToUpper);
 
-PALEXPORT const char* GlobalizationNative_ChangeCaseInvariantNative(const char* lpSrc,
+PALEXPORT int32_t GlobalizationNative_ChangeCaseInvariantNative(const uint16_t* lpSrc,
                                                                int32_t cwSrcLength,
+                                                               uint16_t* lpDst,
+                                                               int32_t cwDstLength,
                                                                int32_t bToUpper);
 #endif

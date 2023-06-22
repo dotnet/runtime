@@ -695,7 +695,7 @@ namespace System.Globalization
 #elif TARGET_OSX || TARGET_MACCATALYST || TARGET_IOS || TARGET_TVOS
             if (GlobalizationMode.Hybrid)
             {
-                dstBuffer = ChangeCaseNative(src, srcLen, bToUpper);
+                ChangeCaseNative(src, srcLen, dstBuffer, dstBufferCapacity, bToUpper);
                 return;
             }
 #endif
