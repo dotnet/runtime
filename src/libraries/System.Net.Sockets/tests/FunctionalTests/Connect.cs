@@ -218,17 +218,18 @@ namespace System.Net.Sockets.Tests
             }
         }
 
-        [Fact]
-        public async Task Connect_DatagramSockets_DontThrowConnectedException_OnSecondAttempt()
+        [Theory]
+        [MemberData(nameof(LoopbacksAndAny))]
+        public async Task Connect_DatagramSockets_DontThrowConnectedException_OnSecondAttempt(IPAddress listenAt, IPAddress secondConnection)
         {
-            using Socket listener = new Socket(AddressFamily.InterNetwork, SocketType.Dgram, ProtocolType.Udp);
-            using Socket s = new Socket(AddressFamily.InterNetwork, SocketType.Dgram, ProtocolType.Udp);
-            listener.Bind(new IPEndPoint(IPAddress.Loopback, 0));
+            using Socket listener = new Socket(listenAt.AddressFamily, SocketType.Dgram, ProtocolType.Udp);
+            using Socket s = new Socket(listenAt.AddressFamily, SocketType.Dgram, ProtocolType.Udp);
+            listener.Bind(new IPEndPoint(listenAt, 0));
 
             await ConnectAsync(s, new IPEndPoint(IPAddress.Loopback, ((IPEndPoint)listener.LocalEndPoint).Port));
             Assert.True(s.Connected);
             
-            await ConnectAsync(s, new IPEndPoint(IPAddress.Any, 0));
+            await ConnectAsync(s, new IPEndPoint(secondConnection, 0));
             Assert.True(s.Connected);
         }
     }
