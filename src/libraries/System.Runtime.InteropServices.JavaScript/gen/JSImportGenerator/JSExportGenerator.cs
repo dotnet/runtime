@@ -299,7 +299,7 @@ namespace Microsoft.Interop.JavaScript
                 incrementalContext.SignatureContext.SignatureContext.ElementTypeInformation,
                 incrementalContext.JSExportData,
                 incrementalContext.SignatureContext,
-                diagnostics.ReportGeneratorDiagnostic,
+                diagnostics,
                 incrementalContext.GeneratorFactoryKey.GeneratorFactory);
 
             var wrapperName = "__Wrapper_" + incrementalContext.StubMethodSyntaxTemplate.Identifier + "_" + incrementalContext.SignatureContext.TypesHash;

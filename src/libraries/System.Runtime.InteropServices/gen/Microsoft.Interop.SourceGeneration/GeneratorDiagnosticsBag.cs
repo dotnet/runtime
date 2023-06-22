@@ -3,6 +3,7 @@
 
 using System;
 using System.Collections.Generic;
+using System.Collections.Immutable;
 using System.Resources;
 using Microsoft.CodeAnalysis;
 
@@ -102,6 +103,19 @@ namespace Microsoft.Interop
                 return;
             }
             _diagnostics.Add(_locations.CreateDiagnosticInfo(descriptor, diagnostic));
+        }
+
+        /// <summary>
+        /// Report a diagnostic generated when resolving a generator.
+        /// </summary>
+        /// <param name="diagnostic">The generated diagnostic.</param>
+        /// <exception cref="InvalidOperationException">The <see cref="IDiagnosticDescriptorProvider"/> did not provide a diagnostic for a fatal diagnostic.</exception>
+        public void ReportGeneratorDiagnostics(ImmutableArray<GeneratorDiagnostic> diagnostics)
+        {
+            foreach (var diagnostic in diagnostics)
+            {
+                ReportGeneratorDiagnostic(diagnostic);
+            }
         }
     }
 

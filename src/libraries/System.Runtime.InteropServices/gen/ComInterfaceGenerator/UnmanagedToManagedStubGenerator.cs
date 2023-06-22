@@ -24,16 +24,13 @@ namespace Microsoft.Interop
             TargetFramework targetFramework,
             Version targetFrameworkVersion,
             ImmutableArray<TypePositionInfo> argTypes,
-            Action<GeneratorDiagnostic> marshallingNotSupportedCallback,
+            GeneratorDiagnosticsBag diagnosticsBag,
             IMarshallingGeneratorFactory generatorFactory)
         {
             _context = new NativeToManagedStubCodeContext(targetFramework, targetFrameworkVersion, ReturnIdentifier, ReturnIdentifier);
             _marshallers = BoundGenerators.Create(argTypes, generatorFactory, _context, new Forwarder(), out var bindingDiagnostics);
 
-            foreach (var diagnostic in bindingDiagnostics)
-            {
-                marshallingNotSupportedCallback(diagnostic);
-            }
+            diagnosticsBag.ReportGeneratorDiagnostics(bindingDiagnostics);
 
             if (_marshallers.NativeReturnMarshaller.Generator.UsesNativeIdentifier(_marshallers.NativeReturnMarshaller.TypeInfo, _context))
             {

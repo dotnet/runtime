@@ -27,7 +27,7 @@ namespace Microsoft.Interop
                 methodStub.SignatureContext.ElementTypeInformation,
                 methodStub.VtableIndexData.SetLastError,
                 methodStub.VtableIndexData.ImplicitThisParameter,
-                diagnostics.ReportGeneratorDiagnostic,
+                diagnostics,
                 methodStub.ManagedToUnmanagedGeneratorFactory.GeneratorFactory);
 
             BlockSyntax code = stubGenerator.GenerateStubBody(
@@ -74,7 +74,7 @@ namespace Microsoft.Interop
                 methodStub.UnmanagedToManagedGeneratorFactory.Key.TargetFramework,
                 methodStub.UnmanagedToManagedGeneratorFactory.Key.TargetFrameworkVersion,
                 elements,
-                diagnostics.ReportGeneratorDiagnostic,
+                diagnostics,
                 methodStub.UnmanagedToManagedGeneratorFactory.GeneratorFactory);
 
             BlockSyntax code = stubGenerator.GenerateStubBody(
@@ -169,12 +169,13 @@ namespace Microsoft.Interop
 
         private static FunctionPointerTypeSyntax GenerateUnmanagedFunctionPointerTypeForMethod(IncrementalMethodStubGenerationContext method)
         {
+            var diagnostics = new GeneratorDiagnosticsBag(new DiagnosticDescriptorProvider(), method.DiagnosticLocation, SR.ResourceManager, typeof(FxResources.Microsoft.Interop.ComInterfaceGenerator.SR));
+
             var stubGenerator = new UnmanagedToManagedStubGenerator(
                 method.UnmanagedToManagedGeneratorFactory.Key.TargetFramework,
                 method.UnmanagedToManagedGeneratorFactory.Key.TargetFrameworkVersion,
                 AddImplicitElementInfos(method),
-                // Swallow diagnostics here since the diagnostics will be reported by the unmanaged->managed stub generation
-                diag => { },
+                diagnostics,
                 method.UnmanagedToManagedGeneratorFactory.GeneratorFactory);
 
             List<FunctionPointerParameterSyntax> functionPointerParameters = new();

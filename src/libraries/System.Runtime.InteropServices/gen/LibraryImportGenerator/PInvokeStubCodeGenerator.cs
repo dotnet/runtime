@@ -50,7 +50,7 @@ namespace Microsoft.Interop
             Version targetFrameworkVersion,
             ImmutableArray<TypePositionInfo> argTypes,
             bool setLastError,
-            Action<GeneratorDiagnostic> marshallingNotSupportedCallback,
+            GeneratorDiagnosticsBag diagnosticsBag,
             IMarshallingGeneratorFactory generatorFactory)
         {
             _setLastError = setLastError;
@@ -70,10 +70,7 @@ namespace Microsoft.Interop
             _context = new ManagedToNativeStubCodeContext(targetFramework, targetFrameworkVersion, ReturnIdentifier, ReturnIdentifier);
             _marshallers = BoundGenerators.Create(argTypes, generatorFactory, _context, new Forwarder(), out var bindingDiagnostics);
 
-            foreach (var diagnostic in bindingDiagnostics)
-            {
-                marshallingNotSupportedCallback(diagnostic);
-            }
+            diagnosticsBag.ReportGeneratorDiagnostics(bindingDiagnostics);
 
             if (_marshallers.ManagedReturnMarshaller.Generator.UsesNativeIdentifier(_marshallers.ManagedReturnMarshaller.TypeInfo, _context))
             {

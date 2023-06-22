@@ -25,7 +25,7 @@ namespace Microsoft.Interop.JavaScript
             ImmutableArray<TypePositionInfo> argTypes,
             JSExportData attributeData,
             JSSignatureContext signatureContext,
-            Action<GeneratorDiagnostic> marshallingNotSupportedCallback,
+            GeneratorDiagnosticsBag diagnosticsBag,
             IMarshallingGeneratorFactory generatorFactory)
         {
             _signatureContext = signatureContext;
@@ -33,10 +33,8 @@ namespace Microsoft.Interop.JavaScript
             _context = new JSExportCodeContext(attributeData, innerContext);
 
             _marshallers = BoundGenerators.Create(argTypes, generatorFactory, _context, new EmptyJSGenerator(), out var bindingFailures);
-            foreach (var failure in bindingFailures)
-            {
-                marshallingNotSupportedCallback(failure);
-            }
+
+            diagnosticsBag.ReportGeneratorDiagnostics(bindingFailures);
 
             if (_marshallers.ManagedReturnMarshaller.Generator.UsesNativeIdentifier(_marshallers.ManagedReturnMarshaller.TypeInfo, null))
             {
@@ -51,7 +49,7 @@ namespace Microsoft.Interop.JavaScript
                 BoundGenerator spanArg = _marshallers.SignatureMarshallers.FirstOrDefault(m => m.TypeInfo.MarshallingAttributeInfo is JSMarshallingInfo(_, JSSpanTypeInfo));
                 if (spanArg != default)
                 {
-                    marshallingNotSupportedCallback(new GeneratorDiagnostic.NotSupported(spanArg.TypeInfo, _context)
+                    diagnosticsBag.ReportGeneratorDiagnostic(new GeneratorDiagnostic.NotSupported(spanArg.TypeInfo, _context)
                     {
                         NotSupportedDetails = SR.SpanAndTaskNotSupported
                     });

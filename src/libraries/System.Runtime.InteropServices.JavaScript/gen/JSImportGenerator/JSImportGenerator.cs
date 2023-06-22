@@ -224,7 +224,7 @@ namespace Microsoft.Interop.JavaScript
                 incrementalContext.SignatureContext.SignatureContext.ElementTypeInformation,
                 incrementalContext.JSImportData,
                 incrementalContext.SignatureContext,
-                diagnostics.ReportGeneratorDiagnostic,
+                diagnostics,
                 incrementalContext.GeneratorFactoryKey.GeneratorFactory);
 
             BlockSyntax code = stubGenerator.GenerateJSImportBody();
