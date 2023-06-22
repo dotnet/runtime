@@ -21,7 +21,7 @@
 #endif
 
 #if defined(TARGET_UNIX)
-#if defined(HOST_X86) || defined(HOST_AMD64)
+#if defined(TARGET_X86) || defined(TARGET_AMD64)
 // MSVC directly defines intrinsics for __cpuid and __cpuidex matching the below signatures
 // We define matching signatures for use on Unix platforms.
 //
@@ -55,7 +55,7 @@ static void __cpuidex(int cpuInfo[4], int function_id, int subFunction_id)
 
 static uint32_t xmmYmmStateSupport()
 {
-    DWORD eax;
+    uint32_t eax;
     __asm("  xgetbv\n" \
         : "=a"(eax) /*output in eax*/\
         : "c"(0) /*inputs - 0 in ecx*/\
@@ -85,7 +85,7 @@ static uint32_t avx512StateSupport()
 
     return false;
 #else
-    DWORD eax;
+    uint32_t eax;
     __asm("  xgetbv\n" \
         : "=a"(eax) /*output in eax*/\
         : "c"(0) /*inputs - 0 in ecx*/\
@@ -105,11 +105,11 @@ static bool PalIsAvx512Enabled()
 {
     return true;
 }
-#endif // defined(HOST_X86) || defined(HOST_AMD64)
+#endif // defined(TARGET_X86) || defined(TARGET_AMD64)
 #endif // TARGET_UNIX
 
 #if defined(TARGET_WINDOWS)
-#if defined(HOST_X86) || defined(HOST_AMD64)
+#if defined(TARGET_X86) || defined(TARGET_AMD64)
 static uint32_t xmmYmmStateSupport()
 {
     // check OS has enabled both XMM and YMM state support
@@ -176,14 +176,14 @@ static bool PalIsAvx512Enabled()
 
     return TRUE;
 }
-#endif // defined(HOST_X86) || defined(HOST_AMD64)
+#endif // defined(TARGET_X86) || defined(TARGET_AMD64)
 #endif // TARGET_WINDOWS
 
 int minipal_getcpufeatures(void)
 {
     int result = 0;
 
-#if defined(HOST_X86) || defined(HOST_AMD64)
+#if defined(TARGET_X86) || defined(TARGET_AMD64)
 
     int cpuidInfo[4];
 
@@ -367,9 +367,9 @@ int minipal_getcpufeatures(void)
         }
 
     }
-#endif // HOST_X86 || HOST_AMD64
+#endif // TARGET_X86 || TARGET_AMD64
 
-#if defined(HOST_ARM64)
+#if defined(TARGET_ARM64)
 #if defined(TARGET_UNIX)
     #if HAVE_AUXV_HWCAP_H
     unsigned long hwCap = getauxval(AT_HWCAP);
@@ -590,7 +590,7 @@ int minipal_getcpufeatures(void)
     }
 #endif // TARGET_WINDOWS
 
-#endif // HOST_ARM64
+#endif // TARGET_ARM64
 
     return result;
 }
