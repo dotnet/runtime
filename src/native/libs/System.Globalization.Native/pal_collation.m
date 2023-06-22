@@ -114,12 +114,15 @@ Range GlobalizationNative_IndexOfNative(const uint16_t* localeName, int32_t lNam
                                         const uint16_t* lpSource, int32_t cwSourceLength, int32_t comparisonOptions, int32_t fromBeginning)
 {
     assert(cwTargetLength >= 0);
-    Range result = {-2, 0};
+    Range result = {-1, 0};
     NSStringCompareOptions options = ConvertFromCompareOptionsToNSStringCompareOptions(comparisonOptions);
     
     // in case mapping is not found
     if (options == 0)
+    {
+        result.location = -2;
         return result;
+    }
     
     NSString *searchString = [NSString stringWithCharacters: lpTarget length: cwTargetLength];
     NSString *searchStrCleaned = RemoveWeightlessCharacters(searchString);
