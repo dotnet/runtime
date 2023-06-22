@@ -21,14 +21,17 @@ namespace System.Timers
         /// </summary>
         public TimersDescriptionAttribute(string description) : base(description) { }
 
-        /// <summary>
-        /// Constructs a new localized sys description.
-        /// </summary>
-        internal TimersDescriptionAttribute(string description, string? unused) : base(SR.GetResourceString(description))
-        {
-            // Needed for overload resolution
-            Debug.Assert(unused == null);
-        }
+#pragma warning disable CS8524 // "switch is not exhaustive". It actually is.
+        internal TimersDescriptionAttribute(TimersDescriptionStringId id) : base(
+            id switch
+            {
+                TimersDescriptionStringId.TimerAutoReset => SR.TimerAutoReset,
+                TimersDescriptionStringId.TimerEnabled => SR.TimerEnabled,
+                TimersDescriptionStringId.TimerInterval => SR.TimerInterval,
+                TimersDescriptionStringId.TimerIntervalElapsed => SR.TimerIntervalElapsed,
+                TimersDescriptionStringId.TimerSynchronizingObject => SR.TimerSynchronizingObject,
+            }) { }
+#pragma warning restore CS8524
 
         /// <summary>
         /// Retrieves the description text.
@@ -48,5 +51,14 @@ namespace System.Timers
                 return base.Description;
             }
         }
+    }
+
+    internal enum TimersDescriptionStringId
+    {
+        TimerAutoReset,
+        TimerEnabled,
+        TimerInterval,
+        TimerIntervalElapsed,
+        TimerSynchronizingObject
     }
 }
