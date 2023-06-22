@@ -365,7 +365,7 @@ namespace System.Net.Http
             {
                 if (!FetchResponse.IsDisposed)
                 {
-                    BrowserHttpInterop.AbortRequest(FetchResponse);
+                    BrowserHttpInterop.AbortResponse(FetchResponse);
                 }
                 FetchResponse.Dispose();
                 FetchResponse = null;
