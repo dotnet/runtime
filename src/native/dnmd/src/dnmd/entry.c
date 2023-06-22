@@ -281,7 +281,7 @@ static bool dump_table_rows(mdtable_t* table)
     }
 
     char const* str;
-    GUID guid;
+    md_guid_t guid;
     uint8_t const* blob;
     uint32_t blob_len;
     uint32_t constant;
@@ -312,11 +312,11 @@ static bool dump_table_rows(mdtable_t* table)
             {
                 IF_NOT_ONE_REPORT_RETURN(md_get_column_value_as_guid(cursor, IDX(j), 1, &guid));
                 printf("{%08x-%04x-%04x-%02x%02x-%02x%02x%02x%02x%02x%02x}|",
-                    guid.Data1, guid.Data2, guid.Data3,
-                    guid.Data4[0], guid.Data4[1],
-                    guid.Data4[2], guid.Data4[3],
-                    guid.Data4[4], guid.Data4[5],
-                    guid.Data4[6], guid.Data4[7]);
+                    guid.data1, guid.data2, guid.data3,
+                    guid.data4[0], guid.data4[1],
+                    guid.data4[2], guid.data4[3],
+                    guid.data4[4], guid.data4[5],
+                    guid.data4[6], guid.data4[7]);
             }
             else if (table->column_details[j] & mdtc_hblob)
             {

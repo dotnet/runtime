@@ -491,7 +491,7 @@ int32_t md_get_column_value_as_blob(mdcursor_t c, col_index_t col_idx, uint32_t 
     return read_in;
 }
 
-int32_t md_get_column_value_as_guid(mdcursor_t c, col_index_t col_idx, uint32_t out_length, GUID* guid)
+int32_t md_get_column_value_as_guid(mdcursor_t c, col_index_t col_idx, uint32_t out_length, md_guid_t* guid)
 {
     if (out_length == 0)
         return 0;

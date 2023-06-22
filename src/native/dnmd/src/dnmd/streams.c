@@ -52,7 +52,7 @@ bool try_get_user_string(mdcxt_t* cxt, size_t offset, mduserstring_t* str, size_
         // There is an additional terminal byte which holds a 1 or 0.
         // The 1 signifies Unicode characters that require handling beyond
         // that normally provided for 8-bit encoding sets.
-        str->str = (WCHAR const*)begin;
+        str->str = (char16_t const*)begin;
         str->str_bytes = byte_count;
         str->final_byte = begin[byte_count - 1];
     }
@@ -111,12 +111,12 @@ bool validate_blob_heap(mdcxt_t* cxt)
     return true;
 }
 
-bool try_get_guid(mdcxt_t* cxt, size_t idx, GUID* guid)
+bool try_get_guid(mdcxt_t* cxt, size_t idx, md_guid_t* guid)
 {
     assert(cxt != NULL && guid != NULL);
 
     mdstream_t* h = &cxt->guid_heap;
-    size_t count = h->size / sizeof(GUID);
+    size_t count = h->size / sizeof(md_guid_t);
 
     if (count < idx)
         return false;
@@ -130,7 +130,7 @@ bool try_get_guid(mdcxt_t* cxt, size_t idx, GUID* guid)
         return true;
     }
 
-    GUID* guids = (GUID*)h->ptr;
+    md_guid_t* guids = (md_guid_t*)h->ptr;
     *guid = guids[idx - 1];
     return true;
 }
@@ -140,7 +140,7 @@ bool validate_guid_heap(mdcxt_t* cxt)
     assert(cxt != NULL);
 
     mdstream_t* h = &cxt->guid_heap;
-    if (h->size % sizeof(GUID) != 0)
+    if (h->size % sizeof(md_guid_t) != 0)
         return false;
 
     return true;

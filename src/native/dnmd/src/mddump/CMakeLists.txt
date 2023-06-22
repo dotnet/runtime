@@ -7,8 +7,8 @@ add_executable(mddump
 )
 
 target_link_libraries(mddump
-  dnmd
-  dncp)
+  dnmd::dnmd
+  dncp::dncp)
 
 if(NOT MSVC)
   target_link_libraries(mddump dncp::winhdrs)

@@ -9,12 +9,14 @@ add_library(regnative
 )
 
 target_link_libraries(regnative
-  dnmd_interfaces
-  dncp)
+  dnmd::interfaces
+  dncp::dncp)
 
 if(NOT MSVC)
   target_link_libraries(regnative dncp::winhdrs)
 endif()
 
 install(TARGETS regnative
-  DESTINATION bin)
+  ARCHIVE DESTINATION lib
+  LIBRARY DESTINATION lib
+  RUNTIME DESTINATION bin)

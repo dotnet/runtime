@@ -566,7 +566,7 @@ HRESULT STDMETHODCALLTYPE MetadataImportRO::GetScopeProps(
         return CLDB_E_INDEX_NOTFOUND;
 
     GUID mvid;
-    if (1 != md_get_column_value_as_guid(cursor, mdtModule_Mvid, 1, &mvid))
+    if (1 != md_get_column_value_as_guid(cursor, mdtModule_Mvid, 1, reinterpret_cast<md_guid_t*>(&mvid)))
         return CLDB_E_FILE_CORRUPT;
     *pmvid = mvid;
 

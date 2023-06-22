@@ -16,9 +16,10 @@ jobs:
       matrix:
         os: [windows-latest, macos-latest, ubuntu-latest]
         flavor: [Debug, Release]
+        use-vendored-libs: [true, false]
       fail-fast: false
     runs-on: ${{ matrix.os }}
-    name: Build (${{ matrix.os }}, ${{ matrix.flavor }})
+    name: Build (${{ matrix.os }}, ${{ matrix.flavor }}, Single Build = ${{ matrix.use-vendored-libs }})
     steps:
     - uses: actions/checkout@v2
       with:
@@ -28,11 +29,21 @@ jobs:
       with:
         dotnet-version: '7.0.x'
         include-prerelease: true
+    
+    - name: Build Vendored Dependencies
+      if: ${{ !matrix.use-vendored-libs }}
+      run: |
+        cmake -S external/dncp -B dncp-artifacts -DCMAKE_BUILD_TYPE=${{ matrix.flavor }}
+        cmake --build dncp-artifacts --config ${{ matrix.flavor }} --target install
+
+    - name: Set CMake Module Path
+      if: ${{ !matrix.use-vendored-libs }}
+      run: echo "CMAKE_PREFIX_PATH=${{ github.workspace }}/dncp-artifacts" >> $GITHUB_ENV
+      shell: bash
 
     - name: Build
       run: |
-        mkdir artifacts
-        cmake -S . -B artifacts -DCMAKE_BUILD_TYPE=${{ matrix.flavor }}
+        cmake -S . -B artifacts -DCMAKE_BUILD_TYPE=${{ matrix.flavor }} -DINCLUDE_VENDORED_LIBS=${{ matrix.use-vendored-libs }}
         cmake --build artifacts --config ${{ matrix.flavor }} --target install
 
     - name: Build Managed Test Components

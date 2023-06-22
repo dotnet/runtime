@@ -14,7 +14,8 @@
         <!-- Define the intermediate and output paths so the configuration isn't appended -->
         <IntermediateOutputPath>$(BaseIntermediateOutputPath)</IntermediateOutputPath>
         <OutputPath>$(BaseOutputPath)</OutputPath>
-        <NativeOutputPath>$(BaseArtifactsPath)/bin</NativeOutputPath>
+        <NativeOutputPath Condition="$([MSBuild]::IsOSPlatform('Windows'))">$(BaseArtifactsPath)/bin</NativeOutputPath>
+        <NativeOutputPath Condition="!$([MSBuild]::IsOSPlatform('Windows'))">$(BaseArtifactsPath)/lib</NativeOutputPath>
 
         <TargetFrameworkLatest>net7.0</TargetFrameworkLatest>
     </PropertyGroup>

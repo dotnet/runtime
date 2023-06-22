@@ -1,9 +1,32 @@
 #ifndef _SRC_INC_DNMD_H_
 #define _SRC_INC_DNMD_H_
 
+#include <stdint.h>
+#include <stddef.h>
+#include <stdbool.h>
+// MacOS doesn't have uchar.h
+#if defined(__has_include)
+#if __has_include(<uchar.h>)
+#include <uchar.h>
+#elif !defined(__cplusplus)
+// When uchar.h isn't available and we're in C, define char16_t as per the C standard.
+typedef uint_least16_t char16_t;
+#endif
+
+#endif
+
 #ifdef __cplusplus
 extern "C" {
 #endif
+
+typedef uint32_t mdToken;
+
+typedef struct md_guid_t {
+    uint32_t data1;
+    uint16_t data2;
+    uint16_t data3;
+    uint8_t  data4[8];
+} md_guid_t;
 
 typedef void* mdhandle_t;
 
@@ -120,7 +143,7 @@ typedef intptr_t mduserstringcursor_t;
 
 typedef struct _mduserstring_t
 {
-    WCHAR const* str;
+    char16_t const* str;
     uint32_t str_bytes;
     uint8_t final_byte;
 } mduserstring_t;
@@ -401,7 +424,7 @@ int32_t md_get_column_value_as_constant(mdcursor_t c, col_index_t col_idx, uint3
 int32_t md_get_column_value_as_utf8(mdcursor_t c, col_index_t col_idx, uint32_t out_length, char const** str);
 int32_t md_get_column_value_as_userstring(mdcursor_t c, col_index_t col_idx, uint32_t out_length, mduserstring_t* strings);
 int32_t md_get_column_value_as_blob(mdcursor_t c, col_index_t col_idx, uint32_t out_length, uint8_t const** blob, uint32_t* blob_len);
-int32_t md_get_column_value_as_guid(mdcursor_t c,col_index_t col_idx, uint32_t out_length, GUID* guid);
+int32_t md_get_column_value_as_guid(mdcursor_t c,col_index_t col_idx, uint32_t out_length, md_guid_t* guid);
 
 // Find a row or range of rows where the supplied column has the expected value.
 // These APIs assume the value to look for is the value in the table, typically record IDs (RID)

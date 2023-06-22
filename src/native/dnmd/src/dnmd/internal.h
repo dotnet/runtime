@@ -6,16 +6,8 @@
 #include <stdbool.h>
 #include <assert.h>
 #include <string.h>
-
-// Reused Win32 data types
-typedef uint16_t WCHAR;
-typedef struct _GUID
-{
-    uint32_t Data1;
-    uint16_t Data2;
-    uint16_t Data3;
-    uint8_t  Data4[8];
-} GUID;
+#include <corhdr.h>
+#include <dnmd.h>
 
 // Implementations for missing bounds checking APIs.
 // See https://en.cppreference.com/w/c/error#Bounds_checking
@@ -23,9 +15,6 @@ typedef struct _GUID
 typedef size_t rsize_t;
 #endif // !__STDC_LIB_EXT1__
 
-#include <corhdr.h>
-
-#include <dnmd.h>
 
 #define ARRAY_SIZE(a) (sizeof(a) / sizeof(*a))
 
@@ -174,7 +163,7 @@ bool try_get_blob(mdcxt_t* cxt, size_t offset, uint8_t const** blob, uint32_t* b
 bool validate_blob_heap(mdcxt_t* cxt);
 
 // GUID heap, #GUID - II.24.2.5
-bool try_get_guid(mdcxt_t* cxt, size_t idx, GUID* guid);
+bool try_get_guid(mdcxt_t* cxt, size_t idx, md_guid_t* guid);
 bool validate_guid_heap(mdcxt_t* cxt);
 
 // Table heap, #~ - II.24.2.6

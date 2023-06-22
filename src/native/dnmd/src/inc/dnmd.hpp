@@ -3,7 +3,6 @@
 
 #include "dnmd.h"
 #include <memory>
-#include <cstdlib>
 
 struct mdhandle_deleter_t
 {
@@ -16,19 +15,5 @@ struct mdhandle_deleter_t
 
 // C++ lifetime wrapper for mdhandle_t type
 using mdhandle_ptr = std::unique_ptr<mdhandle_t, mdhandle_deleter_t>;
-
-template<typename T>
-struct malloc_deleter_t
-{
-    using pointer = T*;
-    void operator()(T* mem)
-    {
-        ::free((void*)mem);
-    }
-};
-
-// C++ lifetime wrapper for malloc'd memory
-template<typename T>
-using malloc_ptr = std::unique_ptr<T, malloc_deleter_t<T>>;
 
 #endif // _SRC_INC_DNMD_HPP_
