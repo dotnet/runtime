@@ -40,7 +40,7 @@ Install the following packages for the toolchain:
 * zlib1g-dev
 * ninja-build (optional, enables building native code with ninja instead of make)
 
-**NOTE**: If you have an Ubuntu version older than 22.04 LTS, don't install `cmake` using `apt` directly. Follow the note written down below.
+**NOTE**: If you have an Ubuntu version older than 22.04 LTS, or Debian version older than 12, don't install `cmake` using `apt` directly. Follow the note written down below.
 
 ```bash
 sudo apt install -y cmake llvm lld clang build-essential \
@@ -48,7 +48,7 @@ python-is-python3 curl git lldb libicu-dev liblttng-ust-dev \
 libssl-dev libkrb5-dev zlib1g-dev ninja-build
 ```
 
-**NOTE**: As of now, Ubuntu's `apt` only has until CMake version 3.16.3 if you're using Ubuntu 20.04 LTS (or less in older Ubuntu versions), which is lower than the required 3.20. For this case, we can use the `snap` package manager or the _Kitware APT feed_ to get a new enough version of CMake.
+**NOTE**: As of now, Ubuntu's `apt` only has until CMake version 3.16.3 if you're using Ubuntu 20.04 LTS (less in older Ubuntu versions), and version 3.18.4 in Debian 11 (less in older Debian versions). This is lower than the required 3.20, which in turn makes it incompatible with the repo. For this case, we can use the `snap` package manager or the _Kitware APT feed_ to get a new enough version of CMake.
 
 For snap:
 
