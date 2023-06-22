@@ -799,7 +799,7 @@ namespace System.Net.Sockets
 
             // We're ignoring datagram sockets even if it's connected.
             // Because, we can disconnect some protocols by connecting another endpoint. (for ex: UDP)
-            if (_isConnected && _socketType != SocketType.Dgram)
+            if (_isConnected && _socketType == SocketType.Stream)
             {
                 throw new SocketException((int)SocketError.IsConnected);
             }
@@ -841,7 +841,7 @@ namespace System.Net.Sockets
                 throw new ArgumentOutOfRangeException(nameof(port));
             }
 
-            if (_isConnected)
+            if (_isConnected && _socketType == SocketType.Stream)
             {
                 throw new SocketException((int)SocketError.IsConnected);
             }
@@ -904,7 +904,7 @@ namespace System.Net.Sockets
                 throw new NotSupportedException(SR.net_invalidversion);
             }
 
-            if (_isConnected)
+            if (_isConnected && _socketType == SocketType.Stream)
             {
                 throw new SocketException((int)SocketError.IsConnected);
             }
@@ -2650,7 +2650,7 @@ namespace System.Net.Sockets
                 throw new InvalidOperationException(SR.net_sockets_mustnotlisten);
             }
 
-            if (_isConnected)
+            if (_isConnected && _socketType == SocketType.Stream)
             {
                 throw new SocketException((int)SocketError.IsConnected);
             }
