@@ -19,13 +19,13 @@ namespace Microsoft.Extensions.DependencyInjection
 
         public void Add(ServiceDescriptor item)
         {
-            // Insert IConfigureOptions<T> services into the collection before other definitions.
-            // This ensures they run first, apply configuration, then named clients run afterwards.
+            // Insert IConfigureOptions<T> services into the collection before other descriptors.
+            // This ensures they run and apply configuration first. Configuration for named clients run afterwards.
             if (item.ServiceType.IsGenericType && item.ServiceType.GetGenericTypeDefinition() == typeof(IConfigureOptions<>))
             {
                 var insertIndex = 0;
 
-                // If configuration has already been added, additional configuration should come after.
+                // If default configuration has already been added, additional default configuration should come after.
                 // This is done to preserve the order that default configuration is run.
                 if (_lastAdded is not null && _services.IndexOf(_lastAdded) is var index && index != -1)
                 {
