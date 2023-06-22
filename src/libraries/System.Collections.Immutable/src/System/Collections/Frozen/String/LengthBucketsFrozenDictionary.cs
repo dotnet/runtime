@@ -11,6 +11,8 @@ namespace System.Collections.Frozen
     /// <summary>Provides a frozen dictionary implementation where strings are grouped by their lengths.</summary>
     internal sealed class LengthBucketsFrozenDictionary<TValue> : FrozenDictionary<string, TValue>
     {
+        /// <summary>Allowed ratio between buckets with values and total buckets.  Under this ratio, this implementation won't be used due to too much wasted space.</summary>
+        private const double EmptyLengthsRatio = 0.2;
         /// <summary>The maximum number of items allowed per bucket.  The larger the value, the longer it can take to search a bucket, which is sequentially examined.</summary>
         private const int MaxPerLength = 5;
 
@@ -50,12 +52,11 @@ namespace System.Collections.Frozen
 
             int arraySize = spread * MaxPerLength;
 #if NET6_0_OR_GREATER
-            if (arraySize >= Array.MaxLength)
+            if (arraySize > Array.MaxLength)
 #else
-            if (arraySize >= 0X7FFFFFC7)
+            if (arraySize > 0X7FFFFFC7)
 #endif
             {
-                // This size check prevents OOM.
                 // In the future we may lower the value, as it may be quite unlikely
                 // to have a LOT of strings of different sizes.
                 return null;
@@ -69,18 +70,32 @@ namespace System.Collections.Frozen
             int[] buckets = ArrayPool<int>.Shared.Rent(arraySize);
             buckets.AsSpan(0, arraySize).Fill(-1);
 
+            int nonEmptyCount = 0;
             for (int i = 0; i < keys.Length; i++)
             {
                 string key = keys[i];
+                int startIndex = (key.Length - minLength) * MaxPerLength;
+                int endIndex = startIndex + MaxPerLength;
+                int index = startIndex;
 
-                int index = (key.Length - minLength) * MaxPerLength;
+                while (index < endIndex)
+                {
+                    ref int bucket = ref buckets[index];
+                    if (bucket < 0)
+                    {
+                        if (index == startIndex)
+                        {
+                            nonEmptyCount++;
+                        }
 
-                if (buckets[index] < 0) buckets[index] = i;
-                else if (buckets[index + 1] < 0) buckets[index + 1] = i;
-                else if (buckets[index + 2] < 0) buckets[index + 2] = i;
-                else if (buckets[index + 3] < 0) buckets[index + 3] = i;
-                else if (buckets[index + 4] < 0) buckets[index + 4] = i;
-                else
+                        bucket = i;
+                        break;
+                    }
+
+                    index++;
+                }
+
+                if (index == endIndex)
                 {
                     // If we've already hit the max per-bucket limit, bail.
                     ArrayPool<int>.Shared.Return(buckets);
@@ -88,12 +103,16 @@ namespace System.Collections.Frozen
                 }
             }
 
+            // If there would be too much empty space in the lookup array, bail.
+            if (nonEmptyCount / (double)spread < EmptyLengthsRatio)
+            {
+                ArrayPool<int>.Shared.Return(buckets);
+                return null;
+            }
+
 #if NET6_0_OR_GREATER
             // We don't need an array with every value initialized to zero if we are just about to overwrite every value anyway.
-            // AllocateUninitializedArray is slower for small inputs, hence the size check.
-            int[] copy = arraySize < 1000
-                ? new int[arraySize]
-                : GC.AllocateUninitializedArray<int>(arraySize);
+            int[] copy = GC.AllocateUninitializedArray<int>(arraySize);
             Array.Copy(buckets, copy, arraySize);
 #else
             int[] copy = buckets.AsSpan(0, arraySize).ToArray();
@@ -120,32 +139,48 @@ namespace System.Collections.Frozen
         {
             // If the length doesn't have an associated bucket, the key isn't in the dictionary.
             int bucketIndex = (key.Length - _minLength) * MaxPerLength;
-            if (bucketIndex >= 0 && bucketIndex < _lengthBuckets.Length)
+            int bucketEndIndex = bucketIndex + MaxPerLength;
+            int[] lengthBuckets = _lengthBuckets;
+            if (bucketIndex >= 0 && bucketEndIndex <= lengthBuckets.Length)
             {
-                ReadOnlySpan<int> bucket = _lengthBuckets.AsSpan(bucketIndex, MaxPerLength);
                 string[] keys = _keys;
                 TValue[] values = _values;
 
-                foreach (int index in bucket)
+                if (!_ignoreCase)
                 {
-                    // -1 is used to indicate a null
-                    if (index < 0)
+                    for (; bucketIndex < bucketEndIndex; bucketIndex++)
                     {
-                        break;
-                    }
-
-                    if (_ignoreCase)
-                    {
-                        if (StringComparer.OrdinalIgnoreCase.Equals(key, keys[index]))
+                        uint index = (uint)lengthBuckets[bucketIndex];
+                        if (index < keys.Length)
                         {
-                            return ref values[index];
+                            if (key == keys[index])
+                            {
+                                return ref values[index];
+                            }
+                        }
+                        else
+                        {
+                            // -1 is used to indicate a null, when it's casted to unit it becomes > keys.Length
+                            break;
                         }
                     }
-                    else
+                }
+                else
+                {
+                    for (; bucketIndex < bucketEndIndex; bucketIndex++)
                     {
-                        if (key == keys[index])
+                        uint index = (uint)lengthBuckets[bucketIndex];
+                        if (index < keys.Length)
                         {
-                            return ref values[index];
+                            if (StringComparer.OrdinalIgnoreCase.Equals(key, keys[index]))
+                            {
+                                return ref values[index];
+                            }
+                        }
+                        else
+                        {
+                            // -1 is used to indicate a null, when it's casted to unit it becomes > keys.Length
+                            break;
                         }
                     }
                 }
