@@ -1785,7 +1785,6 @@ bool Compiler::StructPromotionHelper::CanPromoteStructType(CORINFO_CLASS_HANDLE 
 
     if ((result != GetTypeLayoutResult::Success) || (numTreeNodes <= 1))
     {
-        JITDUMP("Got result %d and num nodes %d\n", (int)result, numTreeNodes);
         return false;
     }
 
@@ -1807,7 +1806,6 @@ bool Compiler::StructPromotionHelper::CanPromoteStructType(CORINFO_CLASS_HANDLE 
     {
         if (structPromotionInfo.fieldCnt >= MAX_NumOfFieldsInPromotableStruct)
         {
-            JITDUMP("Too many fields\n");
             return false;
         }
 
@@ -1830,7 +1828,6 @@ bool Compiler::StructPromotionHelper::CanPromoteStructType(CORINFO_CLASS_HANDLE 
             var_types fldType = TryPromoteValueClassAsPrimitive(treeNodes, numTreeNodes, i);
             if (fldType == TYP_UNDEF)
             {
-                JITDUMP("Could not promote class as primitive\n");
                 return false;
             }
 
