@@ -1411,7 +1411,7 @@ GenTree* Compiler::impSpecialIntrinsic(NamedIntrinsic        intrinsic,
             assert(sig->numArgs == 1);
             // TODO-XARCH-CQ: These intrinsics should be accelerated
             // It is not accelerated for now because there is a difference between
-            // non AVX512 and AVX512 machine in terms of output values for scalar 
+            // non AVX512 and AVX512 machine in terms of output values for scalar
             // casting.
             break;
         }
