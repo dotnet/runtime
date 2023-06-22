@@ -217,6 +217,17 @@ namespace System.Net.Sockets.Tests
                 Assert.Contains(a.LocalEndPoint.ToString(), ex.Message);
             }
         }
+
+        [Fact]
+        public async Task Connect_DatagramSockets_DontThrowConnectedException_OnSecondAttempt()
+        {
+            using Socket s = new Socket(AddressFamily.InterNetwork, SocketType.Dgram, ProtocolType.Udp);
+            await ConnectAsync(s, new IPEndPoint(IPAddress.Loopback, 1));
+            Assert.True(s.Connected);
+            
+            await ConnectAsync(s, new IPEndPoint(IPAddress.Any, 0));
+            Assert.True(s.Connected);
+        }
     }
 
     public sealed class ConnectSync : Connect<SocketHelperArraySync>

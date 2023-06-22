@@ -797,7 +797,9 @@ namespace System.Net.Sockets
                 throw new InvalidOperationException(SR.net_sockets_mustnotlisten);
             }
 
-            if (_isConnected)
+            // We're ignoring datagram sockets even if it's connected.
+            // Because, we can disconnect some protocols by connecting another endpoint. (for ex: UDP)
+            if (_isConnected && _socketType != SocketType.Dgram)
             {
                 throw new SocketException((int)SocketError.IsConnected);
             }
