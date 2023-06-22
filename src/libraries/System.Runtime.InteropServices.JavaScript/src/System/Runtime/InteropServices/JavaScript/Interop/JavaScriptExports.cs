@@ -132,7 +132,7 @@ namespace System.Runtime.InteropServices.JavaScript
                 holder.SynchronizationContext = SynchronizationContext.Current ?? new SynchronizationContext();
 #endif
                 arg_return.slot.Type = MarshalerType.Object;
-                arg_return.slot.GCHandle = JSHostImplementation.GetJSOwnedObjectGCHandle(holder);
+                arg_return.slot.GCHandle = holder.GCHandle = JSHostImplementation.GetJSOwnedObjectGCHandle(holder);
             }
             catch (Exception ex)
             {

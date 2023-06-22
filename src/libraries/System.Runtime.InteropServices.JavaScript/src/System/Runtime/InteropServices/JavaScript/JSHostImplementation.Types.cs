@@ -11,6 +11,7 @@ namespace System.Runtime.InteropServices.JavaScript
 
         public sealed class TaskCallback
         {
+            public nint GCHandle;
             public ToManagedCallback? Callback;
 #if FEATURE_WASM_THREADS
             // the JavaScript object could only exist on the single web worker and can't migrate to other workers

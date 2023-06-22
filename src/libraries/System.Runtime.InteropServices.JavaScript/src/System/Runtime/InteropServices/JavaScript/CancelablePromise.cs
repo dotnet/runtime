@@ -26,8 +26,7 @@ namespace System.Runtime.InteropServices.JavaScript
             holder.SynchronizationContext!.Send(static (JSHostImplementation.TaskCallback holder) =>
             {
 #endif
-            var handle = JSHostImplementation.GetJSOwnedObjectGCHandle(holder);
-            _CancelPromise(handle);
+            _CancelPromise(holder.GCHandle);
 #if FEATURE_WASM_THREADS
             }, holder);
 #endif
@@ -45,11 +44,10 @@ namespace System.Runtime.InteropServices.JavaScript
 
 
 #if FEATURE_WASM_THREADS
-            holder.SynchronizationContext!.Send(static (JSHostImplementation.TaskCallback holder) =>
+            holder.SynchronizationContext!.Send((JSHostImplementation.TaskCallback holder) =>
             {
 #endif
-                var handle = JSHostImplementation.GetJSOwnedObjectGCHandle(holder);
-                _CancelPromise(handle);
+                _CancelPromise(holder.GCHandle);
                 callback.Invoke(state1, state2);
 #if FEATURE_WASM_THREADS
             }, holder);

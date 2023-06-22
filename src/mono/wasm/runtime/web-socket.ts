@@ -185,11 +185,6 @@ export function ws_wasm_abort(ws: WebSocketExtension): void {
 
 // send and return promise
 function _mono_wasm_web_socket_send_and_wait(ws: WebSocketExtension, buffer_view: Uint8Array | string): Promise<void> | null {
-    const readyState = ws.readyState;
-    if (readyState != WebSocket.OPEN && readyState != WebSocket.CLOSING) {
-        throw new Error(`InvalidState: ${readyState} The WebSocket is not connected.`);
-    }
-
     ws.send(buffer_view);
     ws[wasm_ws_pending_send_buffer] = null;
 
