@@ -8,6 +8,7 @@ using System.Linq;
 using System.Runtime.InteropServices;
 
 using Microsoft.CodeAnalysis;
+using Microsoft.CodeAnalysis.CSharp.Syntax;
 using Microsoft.CodeAnalysis.Diagnostics;
 using Microsoft.CodeAnalysis.DotnetRuntime.Extensions;
 using static Microsoft.Interop.Analyzers.AnalyzerDiagnostics;
@@ -111,13 +112,13 @@ namespace Microsoft.Interop.Analyzers
             // Use the DllImport attribute data and the method signature to do some of the work the generator will do after conversion.
             // If any diagnostics or failures to marshal are reported, then mark this diagnostic with a property signifying that it may require
             // later user work.
-            AnyDiagnosticsSink diagnostics = new();
+            GeneratorDiagnosticsBag diagnostics = new(new DiagnosticDescriptorProvider(), new MethodSignatureDiagnosticLocations((MethodDeclarationSyntax)method.DeclaringSyntaxReferences[0].GetSyntax()), SR.ResourceManager, typeof(FxResources.Microsoft.Interop.LibraryImportGenerator.SR));
             AttributeData dllImportAttribute = method.GetAttributes().First(attr => attr.AttributeClass.ToDisplayString() == TypeNames.DllImportAttribute);
             SignatureContext targetSignatureContext = SignatureContext.Create(method, DefaultMarshallingInfoParser.Create(env, diagnostics, method, CreateInteropAttributeDataFromDllImport(dllImportData), dllImportAttribute), env, typeof(ConvertToLibraryImportAnalyzer).Assembly);
 
             var generatorFactoryKey = LibraryImportGeneratorHelpers.CreateGeneratorFactory(env, new LibraryImportGeneratorOptions(context.Options.AnalyzerConfigOptionsProvider.GlobalOptions));
 
-            bool mayRequireAdditionalWork = diagnostics.AnyDiagnostics;
+            bool mayRequireAdditionalWork = diagnostics.Diagnostics.Any();
             bool anyExplicitlyUnsupportedInfo = false;
 
             var stubCodeContext = new ManagedToNativeStubCodeContext(env.TargetFramework, env.TargetFrameworkVersion, "return", "nativeReturn");
@@ -129,17 +130,17 @@ namespace Microsoft.Interop.Analyzers
                 if (s_unsupportedTypeNames.Contains(info.ManagedType.FullTypeName))
                 {
                     anyExplicitlyUnsupportedInfo = true;
-                    return forwarder;
+                    return ResolvedGenerator.Resolved(forwarder);
                 }
                 if (HasUnsupportedMarshalAsInfo(info))
                 {
                     anyExplicitlyUnsupportedInfo = true;
-                    return forwarder;
+                    return ResolvedGenerator.Resolved(forwarder);
                 }
                 return generatorFactoryKey.GeneratorFactory.Create(info, stubCodeContext);
             }), stubCodeContext, forwarder, out var bindingFailures);
 
-            mayRequireAdditionalWork |= bindingFailures.Length > 0;
+            mayRequireAdditionalWork |= bindingFailures.Any(d => d.IsFatal);
 
             if (anyExplicitlyUnsupportedInfo)
             {
@@ -208,23 +209,16 @@ namespace Microsoft.Interop.Analyzers
             return interopData;
         }
 
-        private sealed class AnyDiagnosticsSink : IGeneratorDiagnostics
-        {
-            public bool AnyDiagnostics { get; private set; }
-            public void ReportConfigurationNotSupported(AttributeData attributeData, string configurationName, string? unsupportedValue) => AnyDiagnostics = true;
-            public void ReportInvalidMarshallingAttributeInfo(AttributeData attributeData, string reasonResourceName, params string[] reasonArgs) => AnyDiagnostics = true;
-        }
-
         private sealed class CallbackGeneratorFactory : IMarshallingGeneratorFactory
         {
-            private readonly Func<TypePositionInfo, StubCodeContext, IMarshallingGenerator> _func;
+            private readonly Func<TypePositionInfo, StubCodeContext, ResolvedGenerator> _func;
 
-            public CallbackGeneratorFactory(Func<TypePositionInfo, StubCodeContext, IMarshallingGenerator> func)
+            public CallbackGeneratorFactory(Func<TypePositionInfo, StubCodeContext, ResolvedGenerator> func)
             {
                 _func = func;
             }
 
-            public IMarshallingGenerator Create(TypePositionInfo info, StubCodeContext context) => _func(info, context);
+            public ResolvedGenerator Create(TypePositionInfo info, StubCodeContext context) => _func(info, context);
         }
     }
 }

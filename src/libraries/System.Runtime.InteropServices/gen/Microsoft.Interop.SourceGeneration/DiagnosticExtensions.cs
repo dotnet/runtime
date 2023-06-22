@@ -217,35 +217,4 @@ namespace Microsoft.Interop
                 messageArgs: args);
         }
     }
-
-
-    public interface IGeneratorDiagnostics
-    {
-        /// <summary>
-        /// Report diagnostic for configuration that is not supported by the DLL import source generator
-        /// </summary>
-        /// <param name="attributeData">Attribute specifying the unsupported configuration</param>
-        /// <param name="configurationName">Name of the configuration</param>
-        /// <param name="unsupportedValue">[Optiona] Unsupported configuration value</param>
-        void ReportConfigurationNotSupported(
-            AttributeData attributeData,
-            string configurationName,
-            string? unsupportedValue);
-
-        void ReportInvalidMarshallingAttributeInfo(
-            AttributeData attributeData,
-            string reasonResourceName,
-            params string[] reasonArgs);
-    }
-
-    public static class IGeneratorDiagnosticsExtensions
-    {
-        public static void ReportConfigurationNotSupported(this IGeneratorDiagnostics diagnostics, AttributeData attributeData, string configurationName)
-            => diagnostics.ReportConfigurationNotSupported(attributeData, configurationName, null);
-    }
-
-    public class GeneratorDiagnosticProperties
-    {
-        public const string AddDisableRuntimeMarshallingAttribute = nameof(AddDisableRuntimeMarshallingAttribute);
-    }
 }
