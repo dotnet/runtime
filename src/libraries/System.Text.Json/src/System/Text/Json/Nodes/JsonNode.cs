@@ -312,23 +312,13 @@ namespace System.Text.Json.Nodes
         /// <returns><c>true</c> if the tokens are equal; otherwise <c>false</c>.</returns>
         public static bool DeepEquals(JsonNode? node1, JsonNode? node2)
         {
-            if (node1 is null && node2 is null)
+            if (node1 is null)
             {
                 return node2 is null;
             }
 
-            if (node1 is JsonObject jsonObject)
-            {
-                return jsonObject.DeepEquals(node2);
-            }
-
-            if (node1 is JsonArray jsonArray)
-            {
-                return jsonArray.DeepEquals(node2);
-            }
-
             Debug.Assert(node1 is not null);
-            return node1.AsValue().DeepEquals(node2);
+            return node1.DeepEquals(node2);
         }
 
         internal abstract bool DeepEquals(JsonNode? node);
