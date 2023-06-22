@@ -859,9 +859,10 @@ public:
 
         if (tree->OperIsAnyLocal())
         {
-            GenTreeLclVarCommon* lcl = tree->AsLclVarCommon();
-            LclVarDsc*           dsc = m_compiler->lvaGetDesc(lcl);
-            if (Promotion::IsCandidateForPhysicalPromotion(dsc))
+            GenTreeLclVarCommon* lcl         = tree->AsLclVarCommon();
+            LclVarDsc*           dsc         = m_compiler->lvaGetDesc(lcl);
+            bool                 isCandidate = Promotion::IsCandidateForPhysicalPromotion(dsc);
+            if (isCandidate)
             {
                 var_types       accessType;
                 ClassLayout*    accessLayout;
@@ -887,21 +888,21 @@ public:
                     accessType   = lcl->TypeGet();
                     accessLayout = accessType == TYP_STRUCT ? lcl->GetLayout(m_compiler) : nullptr;
                     accessFlags  = ClassifyLocalAccess(lcl, effectiveUser);
-
-                    if (lcl->TypeIs(TYP_STRUCT) &&
-                        ((user != nullptr) && user->OperIsLocalStore() && user->Data()->OperIsLocalRead()))
-                    {
-                        // Make sure we add it only once if both the destination and source are candidates.
-                        if ((m_candidateStores.Height() <= 0) || (m_candidateStores.Top().Store != user))
-                        {
-                            m_candidateStores.Push(CandidateStore{user->AsLclVarCommon(), m_curBB});
-                        }
-                    }
                 }
 
                 LocalUses* uses = GetOrCreateUses(lcl->GetLclNum());
                 unsigned   offs = lcl->GetLclOffs();
                 uses->RecordAccess(offs, accessType, accessLayout, accessFlags, m_curBB->getBBWeight(m_compiler));
+            }
+
+            if (tree->OperIsLocalStore() && tree->TypeIs(TYP_STRUCT))
+            {
+                GenTree* data = tree->Data()->gtEffectiveVal();
+                if (data->OperIsLocalRead() && (isCandidate || Promotion::IsCandidateForPhysicalPromotion(
+                                                                   m_compiler->lvaGetDesc(data->AsLclVarCommon()))))
+                {
+                    m_candidateStores.Push(CandidateStore{tree->AsLclVarCommon(), m_curBB});
+                }
             }
         }
 
@@ -966,11 +967,6 @@ public:
             }
         }
 
-        if (totalNumPromotions <= 0)
-        {
-            return false;
-        }
-
         if ((m_candidateStores.Height() > 0) && (totalNumPromotions < maxTotalNumPromotions))
         {
             // Now look for induced accesses due to assignment decomposition.
@@ -989,9 +985,9 @@ public:
                     GenTreeLclVarCommon*  store          = candidateStore.Store;
 
                     assert(store->TypeIs(TYP_STRUCT));
-                    assert(store->Data()->OperIsLocalRead());
+                    assert(store->Data()->gtEffectiveVal()->OperIsLocalRead());
 
-                    GenTreeLclVarCommon* src = store->Data()->AsLclVarCommon();
+                    GenTreeLclVarCommon* src = store->Data()->gtEffectiveVal()->AsLclVarCommon();
 
                     LclVarDsc* dstDsc = m_compiler->lvaGetDesc(store);
                     LclVarDsc* srcDsc = m_compiler->lvaGetDesc(src);
@@ -1064,6 +1060,11 @@ public:
             }
         }
 
+        if (totalNumPromotions <= 0)
+        {
+            return false;
+        }
+
         for (AggregateInfo* agg : aggregates)
         {
             if (agg == nullptr)
@@ -1126,7 +1127,7 @@ public:
             }
         }
 
-        return totalNumPromotions > 0;
+        return true;
     }
 
 private:
@@ -2252,7 +2253,7 @@ void ReplaceVisitor::ReplaceLocal(GenTree** use, GenTree* user)
         {
             // Source of store. Will be handled by decomposition when we get to
             // the store, so we should not introduce any writebacks.
-            assert(effectiveUser->Data() == lcl);
+            assert(effectiveUser->Data()->gtEffectiveVal() == lcl);
             return;
         }
 
