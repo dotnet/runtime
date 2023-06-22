@@ -2060,11 +2060,20 @@ void CallArgs::AddFinalArgsAndDetermineABIInfo(Compiler* comp, GenTreeCall* call
         noway_assert(arg != nullptr);
         call->gtCallCookie = nullptr;
 
-        // All architectures pass the cookie in a register.
-        InsertAfterThisOrFirst(comp, NewCallArg::Primitive(arg).WellKnown(WellKnownArg::PInvokeCookie));
-        // put destination into R10/EAX
+        // Move cookie and call address into the argument list. Add them at the
+        // back of the list to preserve the proper evaluation order with other
+        // arguments (normal ordering is args -> cookie -> target). They have
+        // custom register assignments so their position does not change how
+        // they are passed.
+        CallArg* cookieArg = PushBack(comp, NewCallArg::Primitive(arg).WellKnown(WellKnownArg::PInvokeCookie));
+
         arg = comp->gtClone(call->gtCallAddr, true);
-        InsertAfterThisOrFirst(comp, NewCallArg::Primitive(arg).WellKnown(WellKnownArg::PInvokeTarget));
+        if (arg == nullptr)
+        {
+            arg = comp->fgMakeMultiUse(&call->gtCallAddr);
+            std::swap(arg, call->gtCallAddr);
+        }
+        InsertAfter(comp, cookieArg, NewCallArg::Primitive(arg).WellKnown(WellKnownArg::PInvokeTarget));
 
         // finally change this call to a helper call
         call->gtCallType    = CT_HELPER;
