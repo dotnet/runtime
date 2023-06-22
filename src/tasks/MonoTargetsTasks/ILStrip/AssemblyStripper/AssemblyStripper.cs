@@ -12,6 +12,16 @@ using CilStrip.Mono.Cecil.Metadata;
 
 namespace AssemblyStripper
 {
+    class CustomAttrRowComparer : IComparer
+    {
+        public int Compare(object left, object right)
+        {
+            CustomAttributeRow row_left = (CustomAttributeRow)left;
+            CustomAttributeRow row_right = (CustomAttributeRow)right;
+            return row_left.Parent.RID.CompareTo(row_right.Parent.RID);
+        }
+    }
+
     public class AssemblyStripper
     {
         AssemblyDefinition assembly;
@@ -40,6 +50,7 @@ namespace AssemblyStripper
             PatchMethods();
             PatchFields();
             PatchResources();
+            SortCustomAttributes();
             Write();
         }
 
@@ -192,6 +203,15 @@ namespace AssemblyStripper
             }
         }
 
+        void SortCustomAttributes()
+        {
+            CustomAttributeTable table = (CustomAttributeTable)stripped_tables[CustomAttributeTable.RId];
+            if (table == null)
+                return;
+
+            table.Rows.Sort(new CustomAttrRowComparer());
+        }
+        
         void Write()
         {
             stripped.MetadataRoot.Accept(metadata_writer);
@@ -209,7 +229,7 @@ namespace AssemblyStripper
         {
             AssemblyDefinition assembly = AssemblyFactory.GetAssembly(assemblyFile);
             AssemblyStripper.StripAssembly(assembly, outputPath);
-            
+
         }
     }
 }
