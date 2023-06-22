@@ -211,7 +211,7 @@ namespace AssemblyStripper
 
             table.Rows.Sort(new CustomAttrRowComparer());
         }
-        
+
         void Write()
         {
             stripped.MetadataRoot.Accept(metadata_writer);
