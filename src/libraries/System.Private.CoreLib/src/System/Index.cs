@@ -146,7 +146,7 @@ namespace System
         private static void ThrowValueArgumentOutOfRange_NeedNonNegNumException()
         {
 #if SYSTEM_PRIVATE_CORELIB
-            throw new ArgumentOutOfRangeException("value", SR.ArgumentOutOfRange_NeedNonNegNum)
+            throw new ArgumentOutOfRangeException("value", SR.ArgumentOutOfRange_NeedNonNegNum);
 #else
             throw new ArgumentOutOfRangeException("value", "value must be non-negative");
 #endif
