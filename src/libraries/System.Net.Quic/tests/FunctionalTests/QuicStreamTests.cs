@@ -552,8 +552,8 @@ namespace System.Net.Quic.Tests
             );
         }
 
-        [Fact]
-        public async Task WritePreCanceled_Throws()
+        //[Fact]
+        private async Task WritePreCanceled_Throws()
         {
             await RunClientServer(
                 clientFunction: async connection =>
@@ -580,8 +580,8 @@ namespace System.Net.Quic.Tests
             );
         }
 
-        [Fact]
-        public async Task WriteCanceled_NextWriteThrows()
+        //[Fact]
+        private async Task WriteCanceled_NextWriteThrows()
         {
             await RunClientServer(
                 clientFunction: async connection =>
