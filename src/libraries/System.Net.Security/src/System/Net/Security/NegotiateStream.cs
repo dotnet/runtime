@@ -640,7 +640,7 @@ namespace System.Net.Security
             ArgumentNullException.ThrowIfNull(credential);
             ArgumentNullException.ThrowIfNull(servicePrincipalName);
 
-            NegotiateStreamPal.ValidateImpersonationLevel(impersonationLevel);
+            ValidateImpersonationLevel(impersonationLevel);
             if (_context is not null && IsServer != isServer)
             {
                 throw new InvalidOperationException(SR.net_auth_client_server);
