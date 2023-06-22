@@ -5,5 +5,5 @@ namespace System.Net.Http;
 
 internal interface IHttpMetricsLogger
 {
-    void LogRequestFailed(HttpResponseMessage response);
+    void LogRequestFailed(HttpResponseMessage response, Exception exception);
 }

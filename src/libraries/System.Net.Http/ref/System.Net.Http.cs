@@ -301,11 +301,6 @@ namespace System.Net.Http
         public void Set<TValue>(HttpRequestOptionsKey<TValue> key, TValue value) { throw null; }
     }
 
-    public static class HttpRequestOptionsExtensions
-    {
-        public static ICollection<KeyValuePair<string, object?>> GetCustomMetricsTags(this HttpRequestOptions options) { throw null; }
-    }
-
     public partial class HttpResponseMessage : System.IDisposable
     {
         public HttpResponseMessage() { }
@@ -902,5 +897,22 @@ namespace System.Net.Http.Headers
         object System.ICloneable.Clone() { throw null; }
         public override string ToString() { throw null; }
         public static bool TryParse([System.Diagnostics.CodeAnalysis.NotNullWhenAttribute(true)] string? input, [System.Diagnostics.CodeAnalysis.NotNullWhenAttribute(true)] out System.Net.Http.Headers.WarningHeaderValue? parsedValue) { throw null; }
+    }
+}
+namespace System.Net.Http.Metrics
+{
+    public class HttpMetricsEnrichmentContext
+    {
+        public HttpMetricsEnrichmentContext() { throw null; }
+        public HttpRequestMessage Request { get { throw null; } }
+
+        public HttpResponseMessage? Response { get { throw null; } }
+
+        public Exception? Exception { get { throw null; } }
+        public ICollection<KeyValuePair<string, object?>> CustomTags { get { throw null; } }
+    }
+    public static class MetricsHttpRequestOptionsExtensions
+    {
+        public static void AddMetricsEnrichmentCallback(this HttpRequestOptions options, Action<HttpMetricsEnrichmentContext> callback) { throw null; }
     }
 }

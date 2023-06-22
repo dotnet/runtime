@@ -4,6 +4,7 @@
 using System.Collections.Generic;
 using System.Diagnostics;
 using System.Diagnostics.Metrics;
+using System.Net.Http.Metrics;
 using System.Threading;
 using System.Threading.Tasks;
 
@@ -16,6 +17,8 @@ internal sealed class MetricsHandler : HttpMessageHandlerStage, IHttpMetricsLogg
     private readonly UpDownCounter<long> _currentRequests;
     private readonly Counter<long> _failedRequests;
     private readonly Histogram<double> _requestsDuration;
+
+    private ThreadLocal<HttpMetricsEnrichmentContext> _cachedEnrichmentContext = new ThreadLocal<HttpMetricsEnrichmentContext>(() => new HttpMetricsEnrichmentContext());
 
     public MetricsHandler(HttpMessageHandler innerHandler, Meter meter)
     {
@@ -55,6 +58,7 @@ internal sealed class MetricsHandler : HttpMessageHandlerStage, IHttpMetricsLogg
     {
         (long startTimestamp, bool recordCurrentRequests) = RequestStart(request);
         HttpResponseMessage? response = null;
+        Exception? exception = null;
         try
         {
             response = async ?
@@ -68,9 +72,14 @@ internal sealed class MetricsHandler : HttpMessageHandlerStage, IHttpMetricsLogg
             }
             return response;
         }
+        catch (Exception ex)
+        {
+            exception = ex;
+            throw;
+        }
         finally
         {
-            RequestStop(request, response, startTimestamp, recordCurrentRequests);
+            RequestStop(request, response, exception, startTimestamp, recordCurrentRequests);
         }
     }
 
@@ -79,6 +88,7 @@ internal sealed class MetricsHandler : HttpMessageHandlerStage, IHttpMetricsLogg
         if (disposing)
         {
             _innerHandler.Dispose();
+            _cachedEnrichmentContext.Dispose();
         }
 
         base.Dispose(disposing);
@@ -98,7 +108,7 @@ internal sealed class MetricsHandler : HttpMessageHandlerStage, IHttpMetricsLogg
         return (startTimestamp, recordCurrentRequests);
     }
 
-    private void RequestStop(HttpRequestMessage request, HttpResponseMessage? response, long startTimestamp, bool recordCurrentRequsts)
+    private void RequestStop(HttpRequestMessage request, HttpResponseMessage? response, Exception? exception, long startTimestamp, bool recordCurrentRequsts)
     {
         TagList tags = InitializeCommonTags(request);
 
@@ -112,7 +122,7 @@ internal sealed class MetricsHandler : HttpMessageHandlerStage, IHttpMetricsLogg
 
         if (recordRequestDuration || recordFailedRequests)
         {
-            ApplyExtendedTags(ref tags, request, response);
+            ApplyExtendedTags(ref tags, request, response, exception);
         }
 
         if (recordRequestDuration)
@@ -127,7 +137,7 @@ internal sealed class MetricsHandler : HttpMessageHandlerStage, IHttpMetricsLogg
         }
     }
 
-    private static void ApplyExtendedTags(ref TagList tags, HttpRequestMessage request, HttpResponseMessage? response)
+    private void ApplyExtendedTags(ref TagList tags, HttpRequestMessage request, HttpResponseMessage? response, Exception? exception)
     {
         if (response is not null)
         {
@@ -135,26 +145,8 @@ internal sealed class MetricsHandler : HttpMessageHandlerStage, IHttpMetricsLogg
             tags.Add("protocol", GetProtocolName(response.Version));
         }
 
-        if (request._options?.TryGetCustomMetricsTags(out ICollection<KeyValuePair<string, object?>>? customTags) is true)
-        {
-            // Normally, customTags should be a boxed TagList.
-            if (customTags is TagList tagList)
-            {
-                // TagList enumerator allocates, see https://github.com/dotnet/runtime/issues/87022, iterating using an indexer.
-                for (int i = 0; i < tagList.Count; i++)
-                {
-                    KeyValuePair<string, object?> customTag = tagList[i];
-                    tags.Add(customTag);
-                }
-            }
-            else
-            {
-                foreach (KeyValuePair<string, object?> customTag in customTags!)
-                {
-                    tags.Add(customTag);
-                }
-            }
-        }
+        HttpMetricsEnrichmentContext enrichmentContext = _cachedEnrichmentContext.Value!;
+        enrichmentContext.ApplyEnrichment(request, response, exception, ref tags);
     }
 
     private static string GetProtocolName(Version httpVersion) => (httpVersion.Major, httpVersion.Minor) switch
@@ -190,11 +182,11 @@ internal sealed class MetricsHandler : HttpMessageHandlerStage, IHttpMetricsLogg
         return tags;
     }
 
-    void IHttpMetricsLogger.LogRequestFailed(HttpResponseMessage response)
+    void IHttpMetricsLogger.LogRequestFailed(HttpResponseMessage response, Exception exception)
     {
         Debug.Assert(response.RequestMessage is not null);
         TagList tags = InitializeCommonTags(response.RequestMessage);
-        ApplyExtendedTags(ref tags, response.RequestMessage, response);
+        ApplyExtendedTags(ref tags, response.RequestMessage, response, exception);
         _failedRequests.Add(1, tags);
     }
 

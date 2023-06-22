@@ -5,6 +5,7 @@ using System.Collections.Generic;
 using System.Diagnostics;
 using System.Diagnostics.Metrics;
 using System.Linq;
+using System.Net.Http.Metrics;
 using System.Net.Test.Common;
 using System.Reflection;
 using System.Text;
@@ -98,10 +99,8 @@ namespace System.Net.Http.Functional.Tests
             });
         }
 
-        [Theory]
-        [InlineData(false)]
-        [InlineData(true)]
-        public Task RequestDuration_CustomTags_Recorded(bool manualKeyAccess)
+        [Fact]
+        public Task RequestDuration_CustomTags_Recorded()
         {
             // Access the key manually i
             HttpRequestOptionsKey<ICollection<KeyValuePair<string, object?>>> customMetricsTagsKey = new("CustomMetricsTags");
@@ -111,15 +110,12 @@ namespace System.Net.Http.Functional.Tests
                 using HttpMessageInvoker client = CreateHttpMessageInvoker();
                 using InstrumentRecorder<double> recorder = SetupInstrumentRecorder<double>("http-client-request-duration");
                 using HttpRequestMessage request = new(HttpMethod.Get, uri) { Version = UseVersion };
-                KeyValuePair<string, object> tag = new("route", "/test");
-                if (manualKeyAccess)
+
+                request.Options.AddMetricsEnrichmentCallback(static ctx =>
                 {
-                    request.Options.Set(customMetricsTagsKey, new[] { tag });
-                }
-                else
-                {
-                    request.Options.GetCustomMetricsTags().Add(tag);
-                }
+                    ctx.CustomTags.Add(new("route", "/test"));
+                });
+                
                 using HttpResponseMessage response = await SendAsync(client, request);
 
                 Measurement<double> m = recorder.GetMeasurements().Single();
@@ -151,7 +147,10 @@ namespace System.Net.Http.Functional.Tests
                 if (kv.Key == eventName)
                 {
                     HttpRequestMessage request = GetProperty<HttpRequestMessage>(kv.Value, "Request");
-                    request.Options.GetCustomMetricsTags().Add(new KeyValuePair<string, object>("observed?", "observed!"));
+                    request.Options.AddMetricsEnrichmentCallback(static ctx =>
+                    {
+                        ctx.CustomTags.Add(new("observed?", "observed!"));
+                    });
                 }
             });
 
@@ -163,7 +162,10 @@ namespace System.Net.Http.Functional.Tests
                 using HttpMessageInvoker client = CreateHttpMessageInvoker();
                 using InstrumentRecorder<double> recorder = SetupInstrumentRecorder<double>("http-client-request-duration");
                 using HttpRequestMessage request = new(HttpMethod.Get, uri) { Version = UseVersion };
-                request.Options.GetCustomMetricsTags().Add(new KeyValuePair<string, object>("route", "/test"));
+                request.Options.AddMetricsEnrichmentCallback(static ctx =>
+                {
+                    ctx.CustomTags.Add(new("route", "/test"));
+                });
 
                 using HttpResponseMessage response = await SendAsync(client, request);
 
@@ -380,15 +382,17 @@ namespace System.Net.Http.Functional.Tests
 
             protected override HttpResponseMessage Send(HttpRequestMessage request, CancellationToken cancellationToken)
             {
-                request.Options.GetCustomMetricsTags().Add(new KeyValuePair<string, object?>("before", "before!"));
+                request.Options.AddMetricsEnrichmentCallback(Enrich);
                 return base.Send(request, cancellationToken);
             }
 
             protected override Task<HttpResponseMessage> SendAsync(HttpRequestMessage request, CancellationToken cancellationToken)
             {
-                request.Options.GetCustomMetricsTags().Add(new KeyValuePair<string, object?>("before", "before!"));
+                request.Options.AddMetricsEnrichmentCallback(Enrich);
                 return base.SendAsync(request, cancellationToken);
             }
+
+            private static void Enrich(HttpMetricsEnrichmentContext context) => context.CustomTags.Add(new("before", "before!"));
         }
     }
 
