@@ -69,14 +69,6 @@
 EXTERN_C uint32_t _tls_index;
 #endif
 
-#ifdef _MSC_VER
-__declspec(selectany) __declspec(thread) uint32_t t_NonGCMaxThreadStaticBlocks;
-__declspec(selectany) __declspec(thread) uint32_t t_GCMaxThreadStaticBlocks;
-
-__declspec(selectany) __declspec(thread) void** t_NonGCThreadStaticBlocks;
-__declspec(selectany) __declspec(thread) void** t_GCThreadStaticBlocks;
-#else
-extern "C" void* __tls_get_addr(void* ti);
 struct ThreadStaticBlockInfo
 {
     uint32_t NonGCMaxThreadStaticBlocks;
@@ -85,6 +77,12 @@ struct ThreadStaticBlockInfo
     uint32_t GCMaxThreadStaticBlocks;
     void** GCThreadStaticBlocks;
 };
+#ifdef _MSC_VER
+__declspec(selectany) __declspec(thread)  ThreadStaticBlockInfo t_ThreadStatics;
+__declspec(selectany) __declspec(thread)  uint32_t t_NonGCThreadStaticBlocksSize;
+__declspec(selectany) __declspec(thread)  uint32_t t_GCThreadStaticBlocksSize;
+#else
+extern "C" void* __tls_get_addr(void* ti);
 __thread ThreadStaticBlockInfo t_ThreadStatics;
 __thread uint32_t t_NonGCThreadStaticBlocksSize;
 __thread uint32_t t_GCThreadStaticBlocksSize;
@@ -1780,51 +1778,39 @@ void CEEInfo::getThreadLocalStaticBlocksInfo (CORINFO_THREAD_STATIC_BLOCKS_INFO*
 
     JIT_TO_EE_TRANSITION();
 
+    uint64_t threadStaticBaseOffset = 0;
+
 #ifdef _MSC_VER
     pInfo->tlsIndex.addr = (void*)static_cast<uintptr_t>(_tls_index);
     pInfo->tlsIndex.accessType = IAT_VALUE;
 
     pInfo->offsetOfThreadLocalStoragePointer = offsetof(_TEB, ThreadLocalStoragePointer);
-    if (isGCType)
-    {
-        pInfo->offsetOfThreadStaticBlocks = ThreadLocalOffset(&t_GCThreadStaticBlocks);
-        pInfo->offsetOfMaxThreadStaticBlocks = ThreadLocalOffset(&t_GCMaxThreadStaticBlocks);
-    }
-    else
-    {
-        pInfo->offsetOfThreadStaticBlocks = ThreadLocalOffset(&t_NonGCThreadStaticBlocks);
-        pInfo->offsetOfMaxThreadStaticBlocks = ThreadLocalOffset(&t_NonGCMaxThreadStaticBlocks);
-    }
-#else
-    uint64_t threadStaticBaseOffset = 0;
-#if defined(TARGET_AMD64)
+    threadStaticBaseOffset = ThreadLocalOffset(&t_ThreadStatics);
 
-#ifdef TARGET_OSX
-    // For OSX/x64, need to get the address of relevant tlv_get_addr of thread static
+#elif defined(TARGET_OSX)
+
+    // For OSX x64/arm64, need to get the address of relevant tlv_get_addr of thread static
     // variable that will be invoked during runtime to get the right address of corresponding
     // thread.
     pInfo->descrAddrOfMaxThreadStaticBlock = (size_t)getThreadStaticsBaseOffset();
-#else
+
+#elif defined(TARGET_AMD64)
+
     // For Linux/x64, get the address of tls_get_addr system method and the base address
     // of struct that we will pass to it.
     pInfo->tlsGetAddrFtnPtr = (size_t)&__tls_get_addr;
     pInfo->descrAddrOfMaxThreadStaticBlock = (size_t)getThreadStaticsBaseOffset();
-#endif // TARGET_OSX
 
 #elif defined(TARGET_ARM64)
-#ifdef TARGET_OSX
-    // For OSX/arm64, need to get the address of relevant tlv_get_addr of thread static
-    // variable that will be invoked during runtime to get the right address of corresponding
-    // thread.
-    pInfo->descrAddrOfMaxThreadStaticBlock = (size_t)getThreadStaticsBaseOffset();
-#else
+
     // For Linux/arm64, just get the offset of thread static variable, and during execution,
     // this offset, taken from trpid_elp0 system register gives back the thread variable address.
     threadStaticBaseOffset = getThreadStaticsBaseOffset();
-#endif // TARGET_OSX
+
 #else
     _ASSERTE_MSG(false, "Unsupported scenario of optimizing TLS access on Linux Arm32/x86");
-#endif // TARGET_AMD64
+#endif // _MSC_VER
+
     if (isGCType)
     {
         pInfo->offsetOfMaxThreadStaticBlocks = threadStaticBaseOffset + offsetof(ThreadStaticBlockInfo, GCMaxThreadStaticBlocks);
@@ -1835,7 +1821,6 @@ void CEEInfo::getThreadLocalStaticBlocksInfo (CORINFO_THREAD_STATIC_BLOCKS_INFO*
         pInfo->offsetOfMaxThreadStaticBlocks = threadStaticBaseOffset + offsetof(ThreadStaticBlockInfo, NonGCMaxThreadStaticBlocks);
         pInfo->offsetOfThreadStaticBlocks = threadStaticBaseOffset + offsetof(ThreadStaticBlockInfo, NonGCThreadStaticBlocks);
     }
-#endif // _MSC_VER
     pInfo->offsetOfGCDataPointer = static_cast<uint32_t>(PtrArray::GetDataOffset());
 
     EE_TO_JIT_TRANSITION();
