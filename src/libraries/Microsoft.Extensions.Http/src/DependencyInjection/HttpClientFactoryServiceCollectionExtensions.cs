@@ -84,61 +84,15 @@ namespace Microsoft.Extensions.DependencyInjection
 
             AddHttpClient(services);
 
+            // We want to return the same builder instance for multiple calls.
+            // This is required because the service collection wrapper has state (last added position) that we want to maintain.
             var tracker = (DefaultHttpClientBuilderTracker?)services.Single(sd => sd.ServiceType == typeof(DefaultHttpClientBuilderTracker)).ImplementationInstance;
             Debug.Assert(tracker != null);
 
             // Create builder if it doesn't already exist.
-            tracker.Instance ??= new DefaultHttpClientBuilder(new DefaultServiceCollection(services), name: null!);
+            tracker.Instance ??= new DefaultHttpClientBuilder(new DefaultHttpClientBuilderServiceCollection(services), name: null!);
 
             return tracker.Instance;
-        }
-
-        private sealed class DefaultServiceCollection : IServiceCollection
-        {
-            private readonly IServiceCollection _services;
-            private ServiceDescriptor? _lastAdded;
-
-            public DefaultServiceCollection(IServiceCollection services)
-            {
-                _services = services;
-            }
-
-            public ServiceDescriptor this[int index]
-            {
-                get => _services[index];
-                set => _services[index] = value;
-            }
-
-            public int Count => _services.Count;
-            public bool IsReadOnly => _services.IsReadOnly;
-
-            public void Add(ServiceDescriptor item)
-            {
-                // Insert configuration definitions into the collect before other definitions so they run first.
-                if (item.ServiceType.IsGenericType && item.ServiceType.GetGenericTypeDefinition() == typeof(IConfigureOptions<>))
-                {
-                    var insertIndex = 0;
-                    if (_lastAdded is not null && _services.IndexOf(_lastAdded) is var index && index != -1)
-                    {
-                        insertIndex = index + 1;
-                    }
-
-                    _services.Insert(insertIndex, item);
-                    _lastAdded = item;
-                    return;
-                }
-
-                _services.Add(item);
-            }
-            public void Clear() => _services.Clear();
-            public bool Contains(ServiceDescriptor item) => _services.Contains(item);
-            public void CopyTo(ServiceDescriptor[] array, int arrayIndex) => _services.CopyTo(array, arrayIndex);
-            public IEnumerator<ServiceDescriptor> GetEnumerator() => _services.GetEnumerator();
-            public int IndexOf(ServiceDescriptor item) => _services.IndexOf(item);
-            public void Insert(int index, ServiceDescriptor item) => _services.Insert(index, item);
-            public bool Remove(ServiceDescriptor item) => _services.Remove(item);
-            public void RemoveAt(int index) => _services.RemoveAt(index);
-            IEnumerator IEnumerable.GetEnumerator() => GetEnumerator();
         }
 
         /// <summary>
