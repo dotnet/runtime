@@ -11,7 +11,7 @@ using Microsoft.Extensions.Internal;
 
 namespace Microsoft.Extensions.DependencyInjection.ServiceLookup
 {
-    internal sealed class CallSiteFactory : IServiceProviderIsService
+    internal sealed class CallSiteFactory : IServiceProviderIsService, IServiceProviderIsServiceKeyed
     {
         private const int DefaultSlot = 0;
         private readonly ServiceDescriptor[] _descriptors;
