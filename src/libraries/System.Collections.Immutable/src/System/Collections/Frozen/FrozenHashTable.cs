@@ -160,20 +160,22 @@ namespace System.Collections.Frozen
             }
 
             // Filter out duplicate codes, since no increase in buckets will avoid collisions from duplicate input hash codes.
-            HashSet<int>? codes = hashCodesAreUnique ? null :
-#if NETCOREAPP2_0_OR_GREATER
-                new HashSet<int>(hashCodes.Length);
-#else
-                new HashSet<int>();
-#endif
-            if (codes is not null)
+            HashSet<int>? codes = null;
+            int uniqueCodesCount = hashCodes.Length;
+            if (!hashCodesAreUnique)
             {
+                codes =
+#if NETCOREAPP2_0_OR_GREATER
+                    new HashSet<int>(hashCodes.Length);
+#else
+                    new HashSet<int>();
+#endif
                 foreach (int hashCode in hashCodes)
                 {
                     codes.Add(hashCode);
                 }
+                uniqueCodesCount = codes.Count;
             }
-            int uniqueCodesCount = hashCodesAreUnique ? hashCodes.Length : codes!.Count;
             Debug.Assert(uniqueCodesCount != 0);
 
             // In our precomputed primes table, find the index of the smallest prime that's at least as large as our number of
