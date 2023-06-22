@@ -2207,7 +2207,7 @@ GetTypeLayoutResult CEEInfo::getTypeLayout(
 
     if (typeHnd.IsNativeValueType())
     {
-        if (numTreeNodes > 0)
+        if (*numTreeNodes > 0)
         {
             *numTreeNodes = 1;
             treeNodes[0].typeHnd = clsHnd;
