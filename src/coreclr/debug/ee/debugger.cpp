@@ -1939,7 +1939,8 @@ HRESULT Debugger::Startup(void)
         if (FAILED(hr))
         {
             ShutdownTransport();
-            ThrowHR(hr);
+            //ThrowHR(hr);
+            return S_OK; // we do not want debugger IPC to block runtime initialization
         }
     #endif // FEATURE_DBGIPC_TRANSPORT_VM
 
