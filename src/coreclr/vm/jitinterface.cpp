@@ -1417,23 +1417,24 @@ void CEEInfo::getFieldInfo (CORINFO_RESOLVED_TOKEN * pResolvedToken,
                 // Optimization is disabled for linux/x86
 #elif defined(TARGET_ALPINE_LINUX)
                 // Optimization is disabled for linux/alpine
-#elif defined(FEATURE_READYTORUN)
-                // Optimization is disabled for R2R
 #else
-                // For windows x64/x86/arm64, linux x64/arm64:
-                // We convert the TLS access to the optimized helper where we will store
-                // the static blocks in TLS directly and access them via inline code.
-                if ((pResult->helper == CORINFO_HELP_GETSHARED_NONGCTHREADSTATIC_BASE_NOCTOR) ||
-                    (pResult->helper == CORINFO_HELP_GETSHARED_NONGCTHREADSTATIC_BASE))
+                if (!pFieldMT->GetModule()->IsReadyToRun())
                 {
-                    fieldAccessor = CORINFO_FIELD_STATIC_TLS_MANAGED;
-                    pResult->helper = CORINFO_HELP_GETSHARED_NONGCTHREADSTATIC_BASE_NOCTOR_OPTIMIZED;
-                }
-                else if ((pResult->helper == CORINFO_HELP_GETSHARED_GCTHREADSTATIC_BASE_NOCTOR) ||
-                            (pResult->helper == CORINFO_HELP_GETSHARED_GCTHREADSTATIC_BASE))
-                {
-                    fieldAccessor = CORINFO_FIELD_STATIC_TLS_MANAGED;
-                    pResult->helper = CORINFO_HELP_GETSHARED_GCTHREADSTATIC_BASE_NOCTOR_OPTIMIZED;
+                    // For windows x64/x86/arm64, linux x64/arm64:
+                    // We convert the TLS access to the optimized helper where we will store
+                    // the static blocks in TLS directly and access them via inline code.
+                    if ((pResult->helper == CORINFO_HELP_GETSHARED_NONGCTHREADSTATIC_BASE_NOCTOR) ||
+                        (pResult->helper == CORINFO_HELP_GETSHARED_NONGCTHREADSTATIC_BASE))
+                    {
+                        fieldAccessor = CORINFO_FIELD_STATIC_TLS_MANAGED;
+                        pResult->helper = CORINFO_HELP_GETSHARED_NONGCTHREADSTATIC_BASE_NOCTOR_OPTIMIZED;
+                    }
+                    else if ((pResult->helper == CORINFO_HELP_GETSHARED_GCTHREADSTATIC_BASE_NOCTOR) ||
+                                (pResult->helper == CORINFO_HELP_GETSHARED_GCTHREADSTATIC_BASE))
+                    {
+                        fieldAccessor = CORINFO_FIELD_STATIC_TLS_MANAGED;
+                        pResult->helper = CORINFO_HELP_GETSHARED_GCTHREADSTATIC_BASE_NOCTOR_OPTIMIZED;
+                    }
                 }
 #endif // TARGET_ARM
             }
