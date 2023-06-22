@@ -836,14 +836,20 @@ namespace System.Numerics
             [MethodImpl(MethodImplOptions.AggressiveInlining)]
             public static Impl CreateViewport(float x, float y, float width, float height, float minDepth, float maxDepth)
             {
-                Impl result = Identity;
+                Impl result;
 
-                result.X.X = width * 0.5f;
-                result.Y.Y = -height * 0.5f;
-                result.Z.Z = maxDepth - minDepth;
-                result.W.X = x + result.X.X;
-                result.W.Y = y - result.Y.Y;
-                result.W.Z = minDepth;
+                // 4x SIMD fields to get a lot better codegen
+
+                Vector4 W = new Vector4(width, height, 0f, 0f);
+                W *= new Vector4(0.5f, -0.5f, 0f, 0f);
+
+                result.X = new Vector4(W.X, 0f, 0f, 0f);
+                result.Y = new Vector4(0f, W.Y, 0f, 0f);
+                result.Z = new Vector4(0f, 0f, maxDepth - minDepth, 0f);
+
+                W *= new Vector4(1f, -1f, 0f, 0f);
+                W += new Vector4(x, y, minDepth, 1f);
+                result.W = W;
 
                 return result;
             }
