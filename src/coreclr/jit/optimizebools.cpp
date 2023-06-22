@@ -1589,10 +1589,10 @@ private:
     Compiler*   m_comp       = nullptr; // The pointer to the Compiler instance
     BasicBlock* switchBBdesc = nullptr; // The switch basic block descriptor
 
-    int          m_patterns[m_sizePatterns] = {}; // Reserved patterns
+    ssize_t      m_patterns[m_sizePatterns] = {}; // Reserved patterns
     int          m_numFoundPatterns         = 0;  // The number of patterns found
-    int          m_minPattern               = 0;  // The minimum pattern
-    int          m_maxPattern               = 0;  // The maximum pattern
+    ssize_t      m_minPattern               = 0;  // The minimum pattern
+    ssize_t      m_maxPattern               = 0;  // The maximum pattern
     int          m_rangePattern             = 0;  // The range of values in patterns[]
     unsigned int bitmapPatterns             = 0;  // The bitmap of patterns found
 
@@ -1604,13 +1604,15 @@ private:
     unsigned m_bbCodeOffs    = 0; // IL code offset of the switch basic block
     unsigned m_bbCodeOffsEnd = 0; // IL code offset end of the switch basic block
 
+    bool optIsInIntegralRange(ssize_t val, GenTree* node); // Checks if the value is in INT32 or INT64 range
+
 public:
-    int optGetPattern(int idxPattern);
-    bool optSetPattern(int idxPattern, int patternVal);
-    int optGetMinPattern();
-    void optSetMinPattern(int patternVal);
-    int optGetMaxPattern();
-    void optSetMaxPattern(int patternVal);
+    ssize_t optGetPattern(int idxPattern);
+    bool    optSetPattern(int idxPattern, ssize_t patternVal, GenTree* node);
+    ssize_t optGetMinPattern();
+    bool    optSetMinPattern(ssize_t patternVal, GenTree* node);
+    ssize_t optGetMaxPattern();
+    bool    optSetMaxPattern(ssize_t patternVal, GenTree* node);
     void optSetRangePattern(int rangeVal);
     void optSetPatternCount(int patternCounts);
     void optSetBitmapPatterns(unsigned int bitmapVal);
@@ -1627,48 +1629,92 @@ public:
 
 // Methods to set and get the values of the OptRangePatternDsc class members
 
-int OptRangePatternDsc::optGetPattern(int idxPattern)
+//-----------------------------------------------------------------------------
+// optIsInINTRange: Checks if the value is within min and max range of INT32 or INT64
+//
+// Return Value:
+//    true if the value is within min and max range of INT32 or INT64
+//    false otherwise.
+//
+// Arguments:
+//    val - the value to check
+//    node - the node to check the integral range
+//
+bool OptRangePatternDsc::optIsInIntegralRange(ssize_t val, GenTree* node)
+{
+#ifdef TARGET_64BIT
+    if (val < _I64_MIN || val > _I64_MAX)
+    {
+        printf("val out of range");
+        return false;
+    }
+#else  // !TARGET_64BIT
+    IntegralRange integralRange = IntegralRange::ForNode(node, m_comp);
+    int64_t       integralMin   = IntegralRange::SymbolicToRealValue(integralRange.GetLowerBound());
+    int64_t       integralMax   = IntegralRange::SymbolicToRealValue(integralRange.GetUpperBound());
+
+    if (val < integralMin || val > integralMax)
+    {
+        printf("val out of range");
+        return false;
+    }
+#endif // !TARGET_64BIT
+    return true;
+}
+
+ssize_t OptRangePatternDsc::optGetPattern(int idxPattern)
 {
     assert(idxPattern >= 0 && idxPattern < m_sizePatterns);
     return m_patterns[idxPattern];
 }
 
-bool OptRangePatternDsc::optSetPattern(int idxPattern, int patternVal)
+bool OptRangePatternDsc::optSetPattern(int idxPattern, ssize_t patternVal, GenTree* node)
 {
     if (idxPattern < 0 || idxPattern >= m_sizePatterns)
     {
-        assert(false && "idxPattern out of range");
+        printf("idxPattern out of range");
         return false;
     }
-    if (patternVal < 0 || patternVal > INT_MAX)
+
+    if (!optIsInIntegralRange(patternVal, node))
     {
-        assert(false && "patternVal out of range");
         return false;
     }
+
     m_patterns[idxPattern] = patternVal;
     return true;
 }
 
-int OptRangePatternDsc::optGetMinPattern()
+ssize_t OptRangePatternDsc::optGetMinPattern()
 {
     return m_minPattern;
 }
 
-void OptRangePatternDsc::optSetMinPattern(int patternVal)
+bool OptRangePatternDsc::optSetMinPattern(ssize_t patternVal, GenTree* node)
 {
-    assert(patternVal >= 0 && patternVal <= INT_MAX);
+    if (!optIsInIntegralRange(patternVal, node))
+    {
+        return false;
+    }
+
     m_minPattern = patternVal;
+    return true;
 }
 
-int OptRangePatternDsc::optGetMaxPattern()
+ssize_t OptRangePatternDsc::optGetMaxPattern()
 {
     return m_maxPattern;
 }
 
-void OptRangePatternDsc::optSetMaxPattern(int patternVal)
+bool OptRangePatternDsc::optSetMaxPattern(ssize_t patternVal, GenTree* node)
 {
-    assert(patternVal >= 0 && patternVal <= INT_MAX);
+    if (!optIsInIntegralRange(patternVal, node))
+    {
+        return false;
+    }
+
     m_maxPattern = patternVal;
+    return true;
 }
 
 void OptRangePatternDsc::optSetRangePattern(int rangeVal)
@@ -1691,7 +1737,7 @@ void OptRangePatternDsc::optSetBitmapPatterns(unsigned int bitmapVal)
 
 void OptRangePatternDsc::optSetMinOp(GenTree* minOpNode)
 {
-    assert(minOpNode != nullptr && minOpNode->OperIs(GT_CNS_INT));
+    assert(minOpNode != nullptr && minOpNode->IsIntegralConst());
     m_minOp = minOpNode;
 }
 
@@ -1996,7 +2042,7 @@ bool OptRangePatternDsc::optMakeSwitchBBdesc()
     // Change from GT_EQ or GT_NE to GT_SUB
     //      tree: SUB
     //      op1: LCL_VAR
-    //      op2: GT_CNS_INT
+    //      op2: GT_CNS_INT or GT_CNS_LNG
     GenTree* tree = rootTree->gtGetOp1(); // GT_EQ or GT_NE node to chnage to GT_SUB
     tree->ChangeOper(GT_SUB);
 
@@ -2016,11 +2062,11 @@ bool OptRangePatternDsc::optMakeSwitchBBdesc()
         DEBUG_DESTROY_NODE(commaNode); // Destroy COMMA node
     }
 
-    // Change CNS_INT node if siwtch tree does not have the mininum pattern
+    // Change constant node if siwtch tree does not have the mininum pattern
     assert(tree->gtGetOp2() != nullptr);
     if (tree->gtGetOp2()->AsIntCon()->IconValue() != optGetMinPattern())
     {
-        GenTree* op2 = tree->gtGetOp2();                // GT_CNS_INT node
+        GenTree* op2 = tree->gtGetOp2();                // GT_CNS_INT or GT_CNS_LNG node
         tree->AsOp()->gtOp2 = m_minOp;
 
         m_comp->gtSetStmtInfo(stmt);
@@ -2058,6 +2104,16 @@ PhaseStatus Compiler::optFindSpecificPattern()
     {
         return PhaseStatus::MODIFIED_NOTHING;
     }
+
+//#ifdef DEBUG            // TODO cleanup code
+//    if (this->verbose)
+//    {
+//        if (!ISMETHOD("FooNum2"))
+//        {
+//            return PhaseStatus::MODIFIED_NOTHING;
+//        }
+//    }
+//#endif // DEBUG
 
     OptRangePatternDsc optRngPattern(this);
 
@@ -2100,6 +2156,7 @@ PhaseStatus Compiler::optFindSpecificPattern()
                         // Check both conditions to have constant on the right side
                         if (condition1->gtGetOp2()->IsIntegralConst() && condition2->gtGetOp2()->IsIntegralConst())
                         {
+                            // Check both conditions to have the same local variable number
                             auto leftCondition1 = condition1->gtGetOp1(); // op1 of condition1 from currBb
                             auto leftCondition2 = condition2->gtGetOp1(); // op1 of condition2 from prevBb
                             if (leftCondition1->OperIs(GT_LCL_VAR) &&
@@ -2128,12 +2185,17 @@ PhaseStatus Compiler::optFindSpecificPattern()
                                     return PhaseStatus::MODIFIED_NOTHING;
                                 }
 
-                                // Previous pattern
-                                if (!foundPattern)  // First pattern found
+                                // First pattern found
+                                if (!foundPattern)
                                 {
-                                    int firstPatternVal = (int)condition2->gtGetOp2()->AsIntCon()->IconValue();
+                                    ssize_t firstPatternVal = condition2->gtGetOp2()->AsIntCon()->IconValue();
                                     assert(patternIndex == 0);
-                                    optRngPattern.optSetPattern(patternIndex, firstPatternVal);
+                                    if (!optRngPattern.optSetPattern(patternIndex, firstPatternVal,
+                                                                     condition2->gtGetOp2()))
+                                    {
+                                        return PhaseStatus::MODIFIED_NOTHING;
+                                    }
+                                    
                                     optRngPattern.optSetFirstPatternBB(prevBb);
                                     firstPatternBBNum        = prevBb->bbNum;
 
@@ -2141,8 +2203,8 @@ PhaseStatus Compiler::optFindSpecificPattern()
                                     optRngPattern.optSetTrueJmpBB(prevBb->bbJumpDest);
 
                                     // min and max patterns. Both are set to the first pattern
-                                    optRngPattern.optSetMinPattern(firstPatternVal);
-                                    optRngPattern.optSetMaxPattern(firstPatternVal);
+                                    optRngPattern.optSetMinPattern(firstPatternVal, condition2->gtGetOp2());
+                                    optRngPattern.optSetMaxPattern(firstPatternVal, condition2->gtGetOp2());
 
                                     // Update the code offset range
                                     optRngPattern.optSetBbCodeOffs(prevBb->bbCodeOffs);
@@ -2152,29 +2214,38 @@ PhaseStatus Compiler::optFindSpecificPattern()
                                 }
 
                                 // Current pattern
-                                int currentPattern = (int)condition1->gtGetOp2()->AsIntCon()->IconValue();
-                                if (currentPattern <0 || !optRngPattern.optSetPattern(patternIndex, currentPattern))
+                                ssize_t currentPattern = condition1->gtGetOp2()->AsIntCon()->IconValue();
+                                if (!optRngPattern.optSetPattern(patternIndex, currentPattern, condition1->gtGetOp2()))
                                 {
                                     return PhaseStatus::MODIFIED_NOTHING;
                                 }
 
                                 // False jump
-                                if (condition1->OperIs(GT_NE))
+                                if (condition1->OperIs(GT_EQ))
+                                {
+                                    optRngPattern.optSetFalseJmpBB(currBb->bbNext);
+                                }
+                                else if (condition1->OperIs(GT_NE))
                                 {
                                     optRngPattern.optSetFalseJmpBB(currBb->bbJumpDest);
+                                }
+                                else
+                                {
+                                    printf("Unexpected condition1->gtOper\n");
+                                    return PhaseStatus::MODIFIED_NOTHING;
                                 }
 
                                 // Update min and max patterns
                                 if (currentPattern < optRngPattern.optGetMinPattern())
                                 {
-                                    // Update the min pattern and the minOp to the CNS_INT tree with the min pattern
-                                    optRngPattern.optSetMinPattern(currentPattern);
+                                    // Update the min pattern and the minOp to the CNS_INT or CNS_LNG tree with the min pattern
+                                    optRngPattern.optSetMinPattern(currentPattern, condition1->gtGetOp2());
                                     optRngPattern.optSetMinOp(condition1->gtGetOp2());
                                 }
                                 else if (currentPattern > optRngPattern.optGetMaxPattern())
                                 {
                                     // Update the max pattern
-                                    optRngPattern.optSetMaxPattern(currentPattern);
+                                    optRngPattern.optSetMaxPattern(currentPattern, condition1->gtGetOp2());
                                 }
                                 patternIndex++;
 
@@ -2209,23 +2280,32 @@ PhaseStatus Compiler::optFindSpecificPattern()
             printf("Reserved patterns:\n");
             for (int idx = 0; idx < patternCount; idx++)
             {
+#ifdef TARGET_64BIT
+                printf("%lld ", optRngPattern.optGetPattern(idx));
+#else // !TARGET_64BIT
                 printf("%d ", optRngPattern.optGetPattern(idx));
+#endif  // !TARGET_64BIT
             }
             printf("\n\n");
         }
 #endif
         // Find range of pattern values
-        int minPattern = optRngPattern.optGetMinPattern();
-        int maxPattern = optRngPattern.optGetMaxPattern();
+        ssize_t minPattern = optRngPattern.optGetMinPattern();
+        ssize_t maxPattern = optRngPattern.optGetMaxPattern();
 #ifdef DEBUG
         if (this->verbose)
         {
+#ifdef TARGET_64BIT
+            printf("Min pattern value: %lld\n", minPattern);
+            printf("Max pattern value: %lld\n", maxPattern);
+#else // !TARGET_64BIT
             printf("Min pattern value: %d\n", minPattern);
             printf("Max pattern value: %d\n", maxPattern);
+#endif  // !TARGET_64BIT
         }
 #endif // DEBUG
 
-        int rangePattern = maxPattern - minPattern + 1;
+        int rangePattern = (int)(maxPattern - minPattern + 1);
 #ifdef DEBUG
         if (this->verbose)
         {
