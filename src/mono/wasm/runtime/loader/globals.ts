@@ -7,6 +7,7 @@ import { abort_startup, mono_exit } from "./exit";
 import { assertIsControllablePromise, createPromiseController, getPromiseController } from "./promise-controller";
 import { mono_download_assets, resolve_asset_path } from "./assets";
 import { setup_proxy_console } from "./logging";
+import { hasDebuggingEnabled } from "./blazor/_Polyfill";
 
 export const ENVIRONMENT_IS_NODE = typeof process == "object" && typeof process.versions == "object" && typeof process.versions.node == "string";
 export const ENVIRONMENT_IS_WEB = typeof window == "object";
@@ -55,6 +56,8 @@ export function setLoaderGlobals(
         javaScriptExports: {} as any,
         config: globalObjects.module.config,
         diagnosticTracing: false,
+        hasDebuggingEnabled: hasDebuggingEnabled,
+        locateFile: loaderHelpers.locateFile
     });
     Object.assign(loaderHelpers, {
         config: globalObjects.module.config,

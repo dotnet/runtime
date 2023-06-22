@@ -1,7 +1,7 @@
 /* eslint-disable no-prototype-builtins */
 
 import { INTERNAL, runtimeHelpers } from "./globals";
-import { WebAssemblyResourceLoader } from "./loader/blazor/WebAssemblyResourceLoader";
+import type { WebAssemblyResourceLoader } from "./loader/blazor/WebAssemblyResourceLoader";
 import { LoadingResource } from "./types";
 
 export async function loadSatelliteAssemblies(culturesToLoad: string[]): Promise<void> {
@@ -13,7 +13,7 @@ export async function loadSatelliteAssemblies(culturesToLoad: string[]): Promise
 
     await Promise.all(culturesToLoad!
         .filter(culture => satelliteResources.hasOwnProperty(culture))
-        .map(culture => resourceLoader.loadResources(satelliteResources[culture], fileName => `_framework/${fileName}`, "assembly"))
+        .map(culture => resourceLoader.loadResources(satelliteResources[culture], fileName => runtimeHelpers.locateFile(fileName), "assembly"))
         .reduce((previous, next) => previous.concat(next), new Array<LoadingResource>())
         .map(async resource => {
             const response = await resource.response;

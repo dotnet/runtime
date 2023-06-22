@@ -2,8 +2,7 @@
 
 import { mono_wasm_get_loaded_files } from "./assets";
 import { INTERNAL, runtimeHelpers } from "./globals";
-import { WebAssemblyResourceLoader } from "./loader/blazor/WebAssemblyResourceLoader";
-import { hasDebuggingEnabled } from "./loader/blazor/_Polyfill";
+import type { WebAssemblyResourceLoader } from "./loader/blazor/WebAssemblyResourceLoader";
 
 export async function loadLazyAssembly(assemblyNameToLoad: string): Promise<boolean> {
     const resourceLoader: WebAssemblyResourceLoader = INTERNAL.resourceLoader;
@@ -25,13 +24,13 @@ export async function loadLazyAssembly(assemblyNameToLoad: string): Promise<bool
 
     const dllNameToLoad = assemblyNameToLoad;
     const pdbNameToLoad = changeExtension(assemblyNameToLoad, ".pdb");
-    const shouldLoadPdb = hasDebuggingEnabled(resourceLoader.bootConfig) && resources.pdb && lazyAssemblies.hasOwnProperty(pdbNameToLoad);
+    const shouldLoadPdb = runtimeHelpers.hasDebuggingEnabled(resourceLoader.bootConfig) && resources.pdb && lazyAssemblies.hasOwnProperty(pdbNameToLoad);
 
-    const dllBytesPromise = resourceLoader.loadResource(dllNameToLoad, `_framework/${dllNameToLoad}`, lazyAssemblies[dllNameToLoad], "assembly").response.then(response => response.arrayBuffer());
+    const dllBytesPromise = resourceLoader.loadResource(dllNameToLoad, runtimeHelpers.locateFile(dllNameToLoad), lazyAssemblies[dllNameToLoad], "assembly").response.then(response => response.arrayBuffer());
 
     let assembly = null;
     if (shouldLoadPdb) {
-        const pdbBytesPromise = await resourceLoader.loadResource(pdbNameToLoad, `_framework/${pdbNameToLoad}`, lazyAssemblies[pdbNameToLoad], "pdb").response.then(response => response.arrayBuffer());
+        const pdbBytesPromise = await resourceLoader.loadResource(pdbNameToLoad, runtimeHelpers.locateFile(pdbNameToLoad), lazyAssemblies[pdbNameToLoad], "pdb").response.then(response => response.arrayBuffer());
         const [dllBytes, pdbBytes] = await Promise.all([dllBytesPromise, pdbBytesPromise]);
 
         assembly = {
@@ -56,5 +55,5 @@ function changeExtension(filename: string, newExtensionWithLeadingDot: string) {
         throw new Error(`No extension to replace in '${filename}'`);
     }
 
-    return filename.substr(0, lastDotIndex) + newExtensionWithLeadingDot;
+    return filename.substring(0, lastDotIndex) + newExtensionWithLeadingDot;
 }

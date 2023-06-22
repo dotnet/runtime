@@ -2,6 +2,7 @@
 // The .NET Foundation licenses this file to you under the MIT license.
 
 import type { AssetBehaviours, AssetEntry, DotnetModuleConfig, LoadingResource, MonoConfig, ResourceRequest, RuntimeAPI, WebAssemblyStartOptions } from ".";
+import type { BootJsonData } from "./blazor";
 import type { CharPtr, EmscriptenModule, ManagedPointer, NativePointer, VoidPtr, Int32Ptr } from "./emscripten";
 
 export type GCHandle = {
@@ -179,6 +180,9 @@ export type RuntimeHelpers = {
     instantiate_asset: (asset: AssetEntry, url: string, bytes: Uint8Array) => void,
     instantiate_symbols_asset: (pendingAsset: AssetEntryInternal) => Promise<void>,
     jiterpreter_dump_stats?: (x: boolean) => string,
+
+    hasDebuggingEnabled(bootConfig: BootJsonData): boolean,
+    locateFile: (path: string, prefix?: string) => string,
 }
 
 export type AOTProfilerOptions = {

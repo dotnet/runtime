@@ -275,35 +275,6 @@ type ModuleAPI = {
 };
 type CreateDotnetRuntimeType = (moduleFactory: DotnetModuleConfig | ((api: RuntimeAPI) => DotnetModuleConfig)) => Promise<RuntimeAPI>;
 
-interface IDisposable {
-    dispose(): void;
-    get isDisposed(): boolean;
-}
-interface IMemoryView extends IDisposable {
-    /**
-     * copies elements from provided source to the wasm memory.
-     * target has to have the elements of the same type as the underlying C# array.
-     * same as TypedArray.set()
-     */
-    set(source: TypedArray, targetOffset?: number): void;
-    /**
-     * copies elements from wasm memory to provided target.
-     * target has to have the elements of the same type as the underlying C# array.
-     */
-    copyTo(target: TypedArray, sourceOffset?: number): void;
-    /**
-     * same as TypedArray.slice()
-     */
-    slice(start?: number, end?: number): TypedArray;
-    get length(): number;
-    get byteLength(): number;
-}
-
-declare function mono_exit(exit_code: number, reason?: any): void;
-
-declare const dotnet: DotnetHostBuilder;
-declare const exit: typeof mono_exit;
-
 interface BootJsonData {
     readonly entryAssembly: string;
     readonly resources: ResourceGroups;
@@ -349,6 +320,35 @@ declare enum ICUDataMode {
     Custom = 3,
     Hybrid = 4
 }
+
+interface IDisposable {
+    dispose(): void;
+    get isDisposed(): boolean;
+}
+interface IMemoryView extends IDisposable {
+    /**
+     * copies elements from provided source to the wasm memory.
+     * target has to have the elements of the same type as the underlying C# array.
+     * same as TypedArray.set()
+     */
+    set(source: TypedArray, targetOffset?: number): void;
+    /**
+     * copies elements from wasm memory to provided target.
+     * target has to have the elements of the same type as the underlying C# array.
+     */
+    copyTo(target: TypedArray, sourceOffset?: number): void;
+    /**
+     * same as TypedArray.slice()
+     */
+    slice(start?: number, end?: number): TypedArray;
+    get length(): number;
+    get byteLength(): number;
+}
+
+declare function mono_exit(exit_code: number, reason?: any): void;
+
+declare const dotnet: DotnetHostBuilder;
+declare const exit: typeof mono_exit;
 
 declare global {
     function getDotnetRuntime(runtimeId: number): RuntimeAPI | undefined;

@@ -203,8 +203,7 @@ function getICUResourceName(bootConfig: BootJsonData, culture: string | undefine
         }
     }
 
-    if (bootConfig.icuDataMode === ICUDataMode.Hybrid)
-    {
+    if (bootConfig.icuDataMode === ICUDataMode.Hybrid) {
         const reducedICUResourceName = "icudt_hybrid.dat";
         return reducedICUResourceName;
     }
