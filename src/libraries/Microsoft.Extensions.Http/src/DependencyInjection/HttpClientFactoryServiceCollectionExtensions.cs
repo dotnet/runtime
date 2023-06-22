@@ -82,12 +82,12 @@ namespace Microsoft.Extensions.DependencyInjection
 
             AddHttpClient(services);
 
-            // We want to return the same builder instance for multiple calls.
+            // We want to return the same default builder instance for each call.
             // This is required because the service collection wrapper has state (last added position) that we want to maintain.
             var tracker = (DefaultHttpClientBuilderTracker?)services.Single(sd => sd.ServiceType == typeof(DefaultHttpClientBuilderTracker)).ImplementationInstance;
             Debug.Assert(tracker != null);
 
-            // Create builder if it doesn't already exist.
+            // Create default builder if it doesn't already exist.
             tracker.Instance ??= new DefaultHttpClientBuilder(new DefaultHttpClientBuilderServiceCollection(services), name: null!);
 
             return tracker.Instance;
