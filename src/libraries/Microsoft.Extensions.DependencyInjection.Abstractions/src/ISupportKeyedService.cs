@@ -18,6 +18,11 @@ namespace Microsoft.Extensions.DependencyInjection
 
     public static class KeyedService
     {
-        public static object AnyKey { get; } = new object();
+        public static object AnyKey { get; } = new AnyKeyObj();
+
+        private class AnyKeyObj
+        {
+            public override string? ToString() => "*";
+        }
     }
 }
