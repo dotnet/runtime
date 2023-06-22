@@ -9,21 +9,10 @@ namespace System.Text;
 /// <summary>
 /// The position in unicode data that allows deeper data inspection.
 /// </summary>
-/// <param name="Rune">
-/// Unicode scalar value <see cref="System.Text.Rune"/> of the current char in unicode data.
-/// Invalid encoded unicode char will be represented by <see cref="Rune.ReplacementChar"/> value.
-/// </param>
-/// <param name="StartIndex">The index of current char in unicode data.</param>
-/// <param name="Length">The length of current char in unicode data.</param>
-/// <param name="WasReplaced">
-/// true if current char is invalid encoded and <see cref="Rune"/> was replaced by <see cref="System.Text.Rune.ReplacementChar"/>.
-/// false it current char is correct encoded and <see cref="Rune"/> contain its scalar value.
-/// </param>
 /// <remarks>
-/// Invalid unicode char will be represented in <see cref="Rune"/> by <see cref="Rune.ReplacementChar"/>.
+/// Invalid unicode char will be represented in <see cref="RunePosition.Rune"/> by <see cref="Rune.ReplacementChar"/> value.
 /// </remarks>
-public readonly record struct RunePosition(Rune Rune, int StartIndex, int Length, bool WasReplaced)
-    : IEquatable<RunePosition>
+public readonly struct RunePosition : IEquatable<RunePosition>
 {
     /// <summary>
     /// Returns an enumeration of <see cref="RunePosition"/> from the provided span that allows deeper data inspection.
@@ -31,10 +20,9 @@ public readonly record struct RunePosition(Rune Rune, int StartIndex, int Length
     /// <param name="span">The <see cref="ReadOnlySpan{T}"/> with unicode data.</param>
     /// <returns><see cref="Utf16Enumerator"/> to enumerate <see cref="RunePosition"/> from the provided span with unicode data.</returns>
     /// <remarks>
-    /// Invalid unicode chars will be represented the enumeration by <see cref="Rune.ReplacementChar"/>.
+    /// Invalid unicode chars will be represented the enumeration by <see cref="Rune.ReplacementChar"/> value.
     /// </remarks>
-    public static Utf16Enumerator EnumerateUtf16(ReadOnlySpan<char> span)
-        => new Utf16Enumerator(span);
+    public static Utf16Enumerator EnumerateUtf16(ReadOnlySpan<char> span) => new Utf16Enumerator(span);
 
     /// <summary>
     /// Returns an enumeration of <see cref="RunePosition"/> from the provided span that allows deeper data inspection.
@@ -42,25 +30,54 @@ public readonly record struct RunePosition(Rune Rune, int StartIndex, int Length
     /// <param name="span">The <see cref="ReadOnlySpan{T}"/> with unicode data.</param>
     /// <returns><see cref="Utf8Enumerator"/> to enumerate <see cref="RunePosition"/> from the provided span with unicode data.</returns>
     /// <remarks>
-    /// Invalid unicode chars will be represented the enumeration by <see cref="Rune.ReplacementChar"/>.
+    /// Invalid unicode chars will be represented the enumeration by <see cref="Rune.ReplacementChar"/> value.
     /// </remarks>
-    public static Utf8Enumerator EnumerateUtf8(ReadOnlySpan<byte> span)
-        => new Utf8Enumerator(span);
+    public static Utf8Enumerator EnumerateUtf8(ReadOnlySpan<byte> span) => new Utf8Enumerator(span);
+
+    /// <summary>
+    /// Unicode scalar value <see cref="System.Text.Rune"/> of the current char in unicode data.
+    /// Invalid unicode char will be represented by <see cref="Rune.ReplacementChar"/> value.
+    /// </summary>
+    public Rune Rune { get; }
+
+    /// <summary>
+    /// The index of current char in unicode data.
+    /// </summary>
+    public int StartIndex { get; }
+
+    /// <summary>
+    /// The length of current char in unicode data.
+    /// </summary>
+    public int Length { get; }
+
+    /// <summary>
+    /// false it current char is correct encoded and <see cref="RunePosition.Rune"/> contain its scalar value.
+    /// true if current char is invalid encoded and <see cref="RunePosition.Rune"/> was replaced by <see cref="System.Text.Rune.ReplacementChar"/> value.
+    /// </summary>
+    public bool WasReplaced { get; }
+
+    public RunePosition(Rune rune, int startIndex, int length, bool wasReplaced) =>
+        (Rune, StartIndex, Length, WasReplaced) = (rune, startIndex, length, wasReplaced);
+
+    public bool Equals(RunePosition other) =>
+        Rune == other.Rune && StartIndex == other.StartIndex && Length == other.Length && WasReplaced == other.WasReplaced;
+
+    public override bool Equals(object? obj) =>
+        obj is RunePosition runePosition ? Equals(runePosition) : false;
+
+    public override int GetHashCode() =>
+        ((Rune.GetHashCode() * -1521134295 + StartIndex.GetHashCode()) * -1521134295 + Length.GetHashCode()) * -1521134295 + WasReplaced.GetHashCode();
 
     [EditorBrowsable(EditorBrowsableState.Never)]
-    public void Deconstruct(out Rune rune, out int startIndex)
-    {
-        rune = Rune;
-        startIndex = StartIndex;
-    }
+    public void Deconstruct(out Rune rune, out int startIndex) =>
+        (rune, startIndex) = (Rune, StartIndex);
 
     [EditorBrowsable(EditorBrowsableState.Never)]
-    public void Deconstruct(out Rune rune, out int startIndex, out int length)
-    {
-        rune = Rune;
-        startIndex = StartIndex;
-        length = Length;
-    }
+    public void Deconstruct(out Rune rune, out int startIndex, out int length) =>
+        (rune, startIndex, length) = (Rune, StartIndex, Length);
+
+    public static bool operator ==(RunePosition left, RunePosition right) => left.Equals(right);
+    public static bool operator !=(RunePosition left, RunePosition right) => !(left == right);
 
     /// <summary>
     /// An enumerator for retrieving <see cref="RunePosition"/> instances from unicode data.
@@ -71,24 +88,23 @@ public readonly record struct RunePosition(Rune Rune, int StartIndex, int Length
     public ref struct Utf16Enumerator
     {
         private ReadOnlySpan<char> _remaining;
-        private RunePosition _current;
+
+        public RunePosition Current { get; private set; }
+
+        public Utf16Enumerator GetEnumerator() => this;
 
         internal Utf16Enumerator(ReadOnlySpan<char> buffer)
         {
             _remaining = buffer;
-            _current = default;
+            Current = default;
         }
-
-        public RunePosition Current => _current;
-
-        public Utf16Enumerator GetEnumerator() => this;
 
         public bool MoveNext()
         {
             if (_remaining.IsEmpty)
             {
                 // reached the end of the buffer
-                _current = default;
+                Current = default;
                 return false;
             }
 
@@ -103,12 +119,12 @@ public readonly record struct RunePosition(Rune Rune, int StartIndex, int Length
             {
                 Rune rune = Rune.UnsafeCreate((uint)scalarValue);
                 int length = rune.Utf16SequenceLength;
-                _current = new RunePosition(rune, _current.StartIndex + _current.Length, length, false);
+                Current = new RunePosition(rune, Current.StartIndex + Current.Length, length, false);
                 _remaining = _remaining.Slice(length);
             }
             else
             {
-                _current = new RunePosition(Rune.ReplacementChar, _current.StartIndex + _current.Length, 1, true);
+                Current = new RunePosition(Rune.ReplacementChar, Current.StartIndex + Current.Length, 1, true);
                 _remaining = _remaining.Slice(1);
             }
             return true;
@@ -124,29 +140,28 @@ public readonly record struct RunePosition(Rune Rune, int StartIndex, int Length
     public ref struct Utf8Enumerator
     {
         private ReadOnlySpan<byte> _remaining;
-        private RunePosition _current;
+
+        public RunePosition Current { get; private set; }
+
+        public Utf8Enumerator GetEnumerator() => this;
 
         internal Utf8Enumerator(ReadOnlySpan<byte> buffer)
         {
             _remaining = buffer;
-            _current = default;
+            Current = default;
         }
-
-        public RunePosition Current => _current;
-
-        public Utf8Enumerator GetEnumerator() => this;
 
         public bool MoveNext()
         {
             if (_remaining.IsEmpty)
             {
                 // reached the end of the buffer
-                _current = default;
+                Current = default;
                 return false;
             }
 
             bool wasReplaced = Rune.DecodeFromUtf8(_remaining, out Rune rune, out int charsConsumed) != OperationStatus.Done;
-            _current = new RunePosition(rune, _current.StartIndex + _current.Length, charsConsumed, wasReplaced);
+            Current = new RunePosition(rune, Current.StartIndex + Current.Length, charsConsumed, wasReplaced);
             _remaining = _remaining.Slice(charsConsumed);
             return true;
         }

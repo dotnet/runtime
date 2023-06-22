@@ -10,9 +10,6 @@ namespace System.SpanTests
 {
     public static partial class SpanTests
     {
-        private static string RunePositionString(RunePosition runePosition) =>
-            $$"""RunePosition { Rune = {{runePosition.Rune}}, StartIndex = {{runePosition.StartIndex}}, Length = {{runePosition.Length}}, WasReplaced = {{runePosition.WasReplaced}} }""";
-
         private static void RunePosition_TestProps(Rune rune, int startIndex, int length, bool wasReplaced, RunePosition runePosition)
         {
             Assert.Equal(rune, runePosition.Rune);
@@ -20,6 +17,7 @@ namespace System.SpanTests
             Assert.Equal(length, runePosition.Length);
             Assert.Equal(wasReplaced, runePosition.WasReplaced);
         }
+
         private static void RunePosition_TestEquals(RunePosition expected, RunePosition runePosition)
         {
             if (expected.Rune == runePosition.Rune && expected.StartIndex == runePosition.StartIndex &&
@@ -76,13 +74,6 @@ namespace System.SpanTests
                 Assert.Equal(runePosition.StartIndex, startIndex);
                 Assert.Equal(runePosition.Length, length);
             }
-            {
-                (Rune rune, int startIndex, int length, bool wasReplaced) = runePosition;
-                Assert.Equal(runePosition.Rune, rune);
-                Assert.Equal(runePosition.StartIndex, startIndex);
-                Assert.Equal(runePosition.Length, length);
-                Assert.Equal(runePosition.WasReplaced, wasReplaced);
-            }
         }
 
         [Fact]
@@ -91,23 +82,12 @@ namespace System.SpanTests
             RunePosition runePosition = default;
             RunePosition_TestProps(default, 0, 0, false, runePosition);
             RunePosition_TestEquals(default, runePosition);
-            Assert.Equal(RunePositionString(default), runePosition.ToString());
             RunePosition_TestDeconstruct(runePosition);
 
             runePosition = new RunePosition();
             RunePosition_TestProps(default, 0, 0, false, runePosition);
             RunePosition_TestEquals(default, runePosition);
-            Assert.Equal(RunePositionString(runePosition), runePosition.ToString());
             RunePosition_TestDeconstruct(runePosition);
-
-            runePosition = runePosition with { Rune = new Rune('y') };
-            RunePosition_TestProps(new Rune('y'), 0, 0, false, runePosition);
-            runePosition = runePosition with { StartIndex = 54 };
-            RunePosition_TestProps(new Rune('y'), 54, 0, false, runePosition);
-            runePosition = runePosition with { Length = 3 };
-            RunePosition_TestProps(new Rune('y'), 54, 3, false, runePosition);
-            runePosition = runePosition with { WasReplaced = true };
-            RunePosition_TestProps(new Rune('y'), 54, 3, true, runePosition);
         }
 
         [Theory]
@@ -134,18 +114,7 @@ namespace System.SpanTests
                     RunePosition_TestEquals(runePosition1, runePosition);
                     RunePosition_TestEquals(runePosition2, runePosition);
                     RunePosition_TestEquals(runePosition3, runePosition);
-
-                    Assert.Equal(RunePositionString(runePosition), runePosition.ToString());
                     RunePosition_TestDeconstruct(runePosition);
-
-                    runePosition = runePosition with { Rune = new Rune('y') };
-                    RunePosition_TestProps(new Rune('y'), startIndex, rune.Utf16SequenceLength, wasReplaced, runePosition);
-                    runePosition = runePosition with { StartIndex = 54 };
-                    RunePosition_TestProps(new Rune('y'), 54, rune.Utf16SequenceLength, wasReplaced, runePosition);
-                    runePosition = runePosition with { Length = 3 };
-                    RunePosition_TestProps(new Rune('y'), 54, 3, wasReplaced, runePosition);
-                    runePosition = runePosition with { WasReplaced = !wasReplaced };
-                    RunePosition_TestProps(new Rune('y'), 54, 3, !wasReplaced, runePosition);
                 }
             }
         }
