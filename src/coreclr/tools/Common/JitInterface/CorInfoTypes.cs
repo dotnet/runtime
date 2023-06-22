@@ -1153,9 +1153,9 @@ namespace Internal.JitInterface
         public uint offsetOfThreadLocalStoragePointer;
         public nuint tlsGetAddrFtnPtr;
         public nuint descrAddrOfMaxThreadStaticBlock;
-        public CORINFO_CONST_LOOKUP offsetOfMaxThreadStaticBlocks;
-        public CORINFO_CONST_LOOKUP offsetOfThreadStaticBlocks;
-        public CORINFO_CONST_LOOKUP offsetOfGCDataPointer;
+        public nuint offsetOfMaxThreadStaticBlocks;
+        public nuint offsetOfThreadStaticBlocks;
+        public uint offsetOfGCDataPointer;
     };
 
     // System V struct passing

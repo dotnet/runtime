@@ -3608,11 +3608,11 @@ void MethodContext::repGetThreadLocalStaticBlocksInfo(CORINFO_THREAD_STATIC_BLOC
 
     pInfo->tlsIndex.accessType                  = (InfoAccessType)value.tlsIndex.accessType;
     pInfo->tlsIndex.addr                        = (void*)value.tlsIndex.handle;
-    pInfo->offsetOfMaxThreadStaticBlocks        = value.offsetOfMaxThreadStaticBlocks;
+    pInfo->offsetOfMaxThreadStaticBlocks        = (DWORD)value.offsetOfMaxThreadStaticBlocks;
     pInfo->offsetOfThreadLocalStoragePointer    = value.offsetOfThreadLocalStoragePointer;
-    pInfo->offsetOfThreadStaticBlocks           = value.offsetOfThreadStaticBlocks;
-    pInfo->tlsGetAddrFtnPtr                     = value.tlsGetAddrFtnPtr;
-    pInfo->descrAddrOfMaxThreadStaticBlock      = value.descrAddrOfMaxThreadStaticBlock;
+    pInfo->offsetOfThreadStaticBlocks           = (DWORD)value.offsetOfThreadStaticBlocks;
+    pInfo->tlsGetAddrFtnPtr                     = (DWORD)value.tlsGetAddrFtnPtr;
+    pInfo->descrAddrOfMaxThreadStaticBlock      = (DWORD)value.descrAddrOfMaxThreadStaticBlock;
     pInfo->offsetOfGCDataPointer                = value.offsetOfGCDataPointer;
 }
 

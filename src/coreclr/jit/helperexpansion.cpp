@@ -480,10 +480,6 @@ bool Compiler::fgExpandThreadLocalAccessForCall(BasicBlock** pBlock, Statement* 
 
     assert(!opts.IsReadyToRun());
 
-#if defined(TARGET_ALPINE_LINUX)
-    assert(!"Unsupported scenario of optimizing TLS access on Linux Alpine");
-#endif
-
     if (TargetOS::IsUnix)
     {
 #if defined(TARGET_ARM) || !defined(TARGET_64BIT)
