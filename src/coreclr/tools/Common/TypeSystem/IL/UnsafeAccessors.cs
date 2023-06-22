@@ -29,6 +29,12 @@ namespace Internal.IL
                 return GenerateAccessorBadImageFailure(method);
             }
 
+            // Block generic support early
+            if (method.HasInstantiation || method.OwningType.HasInstantiation)
+            {
+                return GenerateAccessorBadImageFailure(method);
+            }
+
             if (!TryParseUnsafeAccessorAttribute(method, decodedAttribute.Value, out UnsafeAccessorKind kind, out string name))
             {
                 return GenerateAccessorBadImageFailure(method);
