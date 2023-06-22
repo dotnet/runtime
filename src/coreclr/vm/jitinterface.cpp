@@ -2106,7 +2106,7 @@ static GetTypeLayoutResult GetTypeLayoutHelper(
     parNode.size = pMT->GetNumInstanceFieldBytes();
     parNode.numFields = 0;
     parNode.type = CorInfoType::CORINFO_TYPE_VALUECLASS;
-    parNode.isIntrinsicType = pMT->IsIntrinsicType();
+    parNode.isSIMDType = false;
     parNode.hasSignificantPadding = false;
 
     EEClass* pClass = pMT->GetClass();
@@ -2122,9 +2122,22 @@ static GetTypeLayoutResult GetTypeLayoutHelper(
         }
     }
 
-    if (parNode.isIntrinsicType)
+    // The intrinsic SIMD/HW SIMD types have a lot of fields that the JIT does
+    // not care about since they are considered primitives by the JIT.
+    if (pMT->IsIntrinsicType())
     {
-        return GetTypeLayoutResult::Success;
+        const char* nsName;
+        pMT->GetFullyQualifiedNameInfo(&nsName);
+
+        if ((strcmp(nsName, "System.Runtime.Intrinsics") == 0) ||
+            (strcmp(nsName, "System.Numerics") == 0))
+        {
+            parNode.isSIMDType = true;
+            if (parentIndex != UINT32_MAX)
+            {
+                return GetTypeLayoutResult::Success;
+            }
+        }
     }
 
     ApproxFieldDescIterator fieldIterator(pMT, ApproxFieldDescIterator::INSTANCE_FIELDS);
@@ -2160,7 +2173,7 @@ static GetTypeLayoutResult GetTypeLayoutHelper(
             treeNode.size = GetSizeForCorElementType(fieldType);
             treeNode.numFields = 0;
             treeNode.type = corInfoType;
-            treeNode.isIntrinsicType = false;
+            treeNode.isSIMDType = false;
             treeNode.hasSignificantPadding = false;
         }
 
@@ -2217,7 +2230,7 @@ GetTypeLayoutResult CEEInfo::getTypeLayout(
             treeNodes[0].size = typeHnd.GetSize();
             treeNodes[0].numFields = 0;
             treeNodes[0].type = CORINFO_TYPE_VALUECLASS;
-            treeNodes[0].isIntrinsicType = false;
+            treeNodes[0].isSIMDType = false;
             treeNodes[0].hasSignificantPadding = true;
             result = GetTypeLayoutResult::Success;
         }

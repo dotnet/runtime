@@ -555,7 +555,7 @@ inline Agnostic_CORINFO_TYPE_LAYOUT_NODE SpmiRecordsHelper::StoreAgnostic_CORINF
     result.size = node.size;
     result.numFields = node.numFields;
     result.type = (BYTE)node.type;
-    result.isIntrinsicType = node.isIntrinsicType;
+    result.isSIMDType = node.isSIMDType;
     result.hasSignificantPadding = node.hasSignificantPadding;
     return result;
 }
@@ -570,7 +570,7 @@ inline CORINFO_TYPE_LAYOUT_NODE SpmiRecordsHelper::RestoreCORINFO_TYPE_LAYOUT_NO
     result.size = node.size;
     result.numFields = node.numFields;
     result.type = (CorInfoType)node.type;
-    result.isIntrinsicType = node.isIntrinsicType;
+    result.isSIMDType = node.isSIMDType;
     result.hasSignificantPadding = node.hasSignificantPadding;
     return result;
 }

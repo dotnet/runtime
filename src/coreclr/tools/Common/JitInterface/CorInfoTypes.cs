@@ -1471,8 +1471,8 @@ namespace Internal.JitInterface
         public uint size;
         public uint numFields;
         public CorInfoType type;
-        private byte _isIntrinsicType;
-        public bool isIntrinsicType { get => _isIntrinsicType != 0; set => _isIntrinsicType = value ? (byte)1 : (byte)0; }
+        private byte _isVectorType;
+        public bool isSIMDType { get => _isVectorType != 0; set => _isVectorType = value ? (byte)1 : (byte)0; }
         private byte _hasSignificantPadding;
         public bool hasSignificantPadding { get => _hasSignificantPadding != 0; set => _hasSignificantPadding = value ? (byte)1 : (byte)0; }
     }

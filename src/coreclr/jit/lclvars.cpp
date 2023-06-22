@@ -1779,13 +1779,13 @@ bool Compiler::StructPromotionHelper::CanPromoteStructType(CORINFO_CLASS_HANDLE 
     unsigned structAlignment = roundUp(compHandle->getClassAlignmentRequirement(typeHnd), TARGET_POINTER_SIZE);
 #endif // TARGET_ARM
 
-    // At most 1 (root node) + (4 promoted fields) + (each could be a wrapped primitive)
     CORINFO_TYPE_LAYOUT_NODE treeNodes[1 + MAX_NumOfFieldsInPromotableStruct * 2];
     size_t                   numTreeNodes = ArrLen(treeNodes);
     GetTypeLayoutResult      result       = compHandle->getTypeLayout(typeHnd, treeNodes, &numTreeNodes);
 
     if ((result != GetTypeLayoutResult::Success) || (numTreeNodes <= 1))
     {
+        JITDUMP("Got result %d and num nodes %d\n", (int)result, numTreeNodes);
         return false;
     }
 
@@ -1807,6 +1807,7 @@ bool Compiler::StructPromotionHelper::CanPromoteStructType(CORINFO_CLASS_HANDLE 
     {
         if (structPromotionInfo.fieldCnt >= MAX_NumOfFieldsInPromotableStruct)
         {
+            JITDUMP("Too many fields\n");
             return false;
         }
 
@@ -1829,6 +1830,7 @@ bool Compiler::StructPromotionHelper::CanPromoteStructType(CORINFO_CLASS_HANDLE 
             var_types fldType = TryPromoteValueClassAsPrimitive(treeNodes, numTreeNodes, i);
             if (fldType == TYP_UNDEF)
             {
+                JITDUMP("Could not promote class as primitive\n");
                 return false;
             }
 
@@ -1897,7 +1899,7 @@ var_types Compiler::StructPromotionHelper::TryPromoteValueClassAsPrimitive(CORIN
     CORINFO_TYPE_LAYOUT_NODE& node = treeNodes[index];
     assert(node.type == CORINFO_TYPE_VALUECLASS);
 
-    if (node.isIntrinsicType)
+    if (node.isSIMDType)
     {
         const char* namespaceName = nullptr;
         const char* className     = compiler->info.compCompHnd->getClassNameFromMetadata(node.typeHnd, &namespaceName);
@@ -1918,11 +1920,6 @@ var_types Compiler::StructPromotionHelper::TryPromoteValueClassAsPrimitive(CORIN
             }
         }
 #endif
-
-        if ((strcmp(namespaceName, "System.Runtime.InteropServices") == 0) && (strcmp(className, "NFloat") == 0))
-        {
-            return (TARGET_POINTER_SIZE == 4) ? TYP_FLOAT : TYP_DOUBLE;
-        }
 
 #ifdef TARGET_64BIT
         // TODO-Quirk: Vector64 is an intrinsic type with one 64-bit field, so when

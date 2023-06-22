@@ -1949,8 +1949,8 @@ struct CORINFO_TYPE_LAYOUT_NODE
     unsigned numFields;
     // Type of the field.
     CorInfoType type;
-    // For type == CORINFO_TYPE_VALUECLASS indicates whether the type is an intrinsic type
-    bool isIntrinsicType;
+    // For type == CORINFO_TYPE_VALUECLASS indicates whether the type is a SIMD type
+    bool isSIMDType;
     // For type == CORINFO_TYPE_VALUECLASS indicates whether the type has significant padding.
     bool hasSignificantPadding;
 };
@@ -2449,7 +2449,8 @@ public:
     //   node is always at index 0, and the first child of any node is at its
     //   own index + 1.
     //
-    //   Intrinsic types are returned as a single entry without any children.
+    //   SIMD and HW SIMD types are returned as a single entry without any
+    //   children.
     //
     virtual GetTypeLayoutResult getTypeLayout(
             CORINFO_CLASS_HANDLE typeHnd,

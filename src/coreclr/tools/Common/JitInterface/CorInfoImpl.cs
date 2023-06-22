@@ -2368,7 +2368,7 @@ namespace Internal.JitInterface
             parNode->size = (uint)type.GetElementSize().AsInt;
             parNode->numFields = 0;
             parNode->type = CorInfoType.CORINFO_TYPE_VALUECLASS;
-            parNode->isIntrinsicType = type.IsIntrinsic;
+            parNode->isSIMDType = false;
             parNode->hasSignificantPadding = false;
 
             if (type.IsExplicitLayout || (type.IsSequentialLayout && type.GetClassLayout().Size != 0) || type.IsInlineArray)
@@ -2379,9 +2379,19 @@ namespace Internal.JitInterface
                 }
             }
 
-            if (parNode->isIntrinsicType)
+            // The intrinsic SIMD/HW SIMD types have a lot of fields that the JIT does
+            // not care about since they are considered primitives by the JIT.
+            if (type.IsIntrinsic)
             {
-                return GetTypeLayoutResult.Success;
+                string ns = type.Namespace;
+                if (ns == "System.Runtime.Intrinsics" || ns == "System.Numerics")
+                {
+                    parNode->isSIMDType = true;
+                    if (parentIndex != uint.MaxValue)
+                    {
+                        return GetTypeLayoutResult.Success;
+                    }
+                }
             }
 
             foreach (FieldDesc fd in type.GetFields())
@@ -2415,7 +2425,7 @@ namespace Internal.JitInterface
                     treeNode->size = (uint)fieldType.GetElementSize().AsInt;
                     treeNode->numFields = 0;
                     treeNode->type = corInfoType;
-                    treeNode->isIntrinsicType = false;
+                    treeNode->isSIMDType = false;
                     treeNode->hasSignificantPadding = false;
                 }
 
@@ -2437,7 +2447,6 @@ namespace Internal.JitInterface
                             treeNode->offset += (uint)elemOffset;
 
                             parNode->numFields++;
-
                         }
                     }
                 }
