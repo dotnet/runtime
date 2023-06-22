@@ -645,7 +645,7 @@ namespace System.Text.Json.Nodes.Tests
         }
 
         [Fact]
-        public static void GetValues()
+        public static void GetValues_ValueType()
         {
             JsonArray jsonArray = new JsonArray(1, 2, 3, 2);
             
@@ -656,6 +656,26 @@ namespace System.Text.Json.Nodes.Tests
             Assert.Equal(2, values.ElementAt(1));
             Assert.Equal(3, values.ElementAt(2));
             Assert.Equal(2, values.ElementAt(3));
+        }
+
+        [Fact]
+        public static void GetValues_ReferenceType()
+        {
+            var student1 = new Student();
+            var student2 = new Student();
+            JsonArray jsonArray = new JsonArray(JsonValue.Create(student1), null, JsonValue.Create(student2));
+
+            IEnumerable<Student> values = jsonArray.GetValues<Student>();
+
+            Assert.Equal(jsonArray.Count, values.Count());
+            Assert.Equal(student1, values.ElementAt(0));
+            Assert.Null(values.ElementAt(1));
+            Assert.Equal(student2, values.ElementAt(2));
+        }
+
+        private class Student
+        {
+            public string Name { get; set; }
         }
 
         [Fact]
