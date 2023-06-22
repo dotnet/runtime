@@ -203,6 +203,11 @@ namespace AssemblyStripper
             }
         }
 
+        // Types that are trimmed away also have their respective rows removed from the 
+        // custom attribute table. This introduces holes in their places, causing the table 
+        // to no longer be sorted by Parent, corrupting the assembly. Runtimes assume ordering
+        // and may fail to locate the attributes set for a particular type. This step sorts 
+        // the custom attribute table again.
         void SortCustomAttributes()
         {
             CustomAttributeTable table = (CustomAttributeTable)stripped_tables[CustomAttributeTable.RId];
