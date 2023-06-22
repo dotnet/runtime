@@ -253,9 +253,7 @@ namespace System.Collections.Frozen
                 }
                 else
                 {
-                    // We can get here in two cases:
-                    // 1. hashCodesAreUnique was true (the input comes from a unique collection of integers), so we have skipped the hash set creation.
-                    // 2. all hash codes turned out to be unique. In such scenario, it's faster to iterate over a span.
+                    // All of the hash codes in hashCodes are unique. In such scenario, it's faster to iterate over a span.
                     foreach (int code in hashCodes)
                     {
                         uint bucketNum = (uint)code % (uint)numBuckets;
