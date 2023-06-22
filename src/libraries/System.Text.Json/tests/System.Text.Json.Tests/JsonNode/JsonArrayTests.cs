@@ -656,6 +656,9 @@ namespace System.Text.Json.Nodes.Tests
             Assert.Equal(2, values.ElementAt(1));
             Assert.Equal(3, values.ElementAt(2));
             Assert.Equal(2, values.ElementAt(3));
+
+            jsonArray = new JsonArray(1, null);
+            Assert.Throws<NullReferenceException>(() => jsonArray.GetValues<int>().Count());
         }
 
         [Fact]
