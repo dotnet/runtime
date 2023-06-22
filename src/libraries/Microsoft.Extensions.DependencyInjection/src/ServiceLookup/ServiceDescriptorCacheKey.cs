@@ -65,7 +65,9 @@ namespace Microsoft.Extensions.DependencyInjection.ServiceLookup
         public override string? ToString()
         {
             if (ServiceKey == null)
+            {
                 return ServiceType.ToString();
+            }
 
             return $"({ServiceKey}, {ServiceType})";
         }

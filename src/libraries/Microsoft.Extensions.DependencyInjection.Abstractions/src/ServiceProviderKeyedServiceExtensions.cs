@@ -44,19 +44,9 @@ namespace Microsoft.Extensions.DependencyInjection
             ThrowHelper.ThrowIfNull(provider);
             ThrowHelper.ThrowIfNull(serviceType);
 
-            if (provider is ISupportRequiredKeyedService requiredServiceSupportingProvider)
+            if (provider is ISupportKeyedService requiredServiceSupportingProvider)
             {
                 return requiredServiceSupportingProvider.GetRequiredKeyedService(serviceType, serviceKey);
-            }
-
-            if (provider is ISupportKeyedService keyedServiceProvider)
-            {
-                object? service = keyedServiceProvider.GetKeyedService(serviceType, serviceKey);
-                if (service == null)
-                {
-                    throw new InvalidOperationException(SR.Format(SR.NoServiceRegistered, serviceType));
-                }
-                return service;
             }
 
             throw new InvalidOperationException(SR.KeyedServicesNotSupported);
