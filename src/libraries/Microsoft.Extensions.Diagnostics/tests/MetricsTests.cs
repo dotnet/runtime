@@ -122,7 +122,6 @@ namespace Microsoft.Extensions.Diagnostics.Metrics.Tests
             int lastMeasurement = 0;
             listener.SetMeasurementEventCallback<int>((inst, measurement, tags, state) => lastMeasurement = measurement);
             listener.EnableMeasurementEvents(counter, null);
-            listener.Start();
 
             counter.Add(10);
             Assert.Equal(10, lastMeasurement);
