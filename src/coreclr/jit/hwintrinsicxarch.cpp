@@ -1367,10 +1367,9 @@ GenTree* Compiler::impSpecialIntrinsic(NamedIntrinsic        intrinsic,
         case NI_Vector512_ConvertToDouble:
         {
             assert(sig->numArgs == 1);
+            assert(varTypeIsLong(simdBaseType));
             if (IsBaselineVector512IsaSupportedOpportunistically())
             {
-                assert(simdBaseType == TYP_LONG || simdBaseType == TYP_ULONG);
-
                 intrinsic = (simdSize == 16) ? NI_AVX512DQ_VL_ConvertToVector128Double
                                              : (simdSize == 32) ? NI_AVX512DQ_VL_ConvertToVector256Double
                                                                 : NI_AVX512DQ_ConvertToVector512Double;
@@ -1388,9 +1387,7 @@ GenTree* Compiler::impSpecialIntrinsic(NamedIntrinsic        intrinsic,
             assert(sig->numArgs == 1);
             if (IsBaselineVector512IsaSupportedOpportunistically())
             {
-
                 assert(simdBaseType == TYP_DOUBLE);
-
 #ifdef TARGET_XARCH
                 intrinsic = (simdSize == 16) ? NI_AVX512DQ_VL_ConvertToVector128Int64WithTruncation
                                              : (simdSize == 32) ? NI_AVX512DQ_VL_ConvertToVector256Int64WithTruncation
@@ -1414,7 +1411,8 @@ GenTree* Compiler::impSpecialIntrinsic(NamedIntrinsic        intrinsic,
             assert(sig->numArgs == 1);
             // TODO-XARCH-CQ: These intrinsics should be accelerated
             // It is not accelerated for now because there is a difference between
-            // non AVX512 and AVX512 machine in terms of output values for casting.
+            // non AVX512 and AVX512 machine in terms of output values for scalar 
+            // casting.
             break;
         }
 
@@ -1423,10 +1421,9 @@ GenTree* Compiler::impSpecialIntrinsic(NamedIntrinsic        intrinsic,
         case NI_Vector512_ConvertToUInt64:
         {
             assert(sig->numArgs == 1);
+            assert(varTypeIsFloating(simdBaseType));
             if (IsBaselineVector512IsaSupportedOpportunistically())
             {
-                assert((simdBaseType == TYP_DOUBLE) || (simdBaseType == TYP_FLOAT));
-
 #ifdef TARGET_XARCH
                 intrinsic = (simdSize == 16) ? NI_AVX512DQ_VL_ConvertToVector128UInt64WithTruncation
                                              : (simdSize == 32) ? NI_AVX512DQ_VL_ConvertToVector256UInt64WithTruncation
