@@ -34,8 +34,8 @@ PALEXPORT int32_t GlobalizationNative_ChangeCaseNative(const uint16_t* localeNam
                                                        int32_t bToUpper);
 
 PALEXPORT int32_t GlobalizationNative_ChangeCaseInvariantNative(const uint16_t* lpSrc,
-                                                               int32_t cwSrcLength,
-                                                               uint16_t* lpDst,
-                                                               int32_t cwDstLength,
-                                                               int32_t bToUpper);
+                                                                int32_t cwSrcLength,
+                                                                uint16_t* lpDst,
+                                                                int32_t cwDstLength,
+                                                                int32_t bToUpper);
 #endif

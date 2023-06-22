@@ -279,20 +279,20 @@ int32_t GlobalizationNative_EndsWithNative(const uint16_t* localeName, int32_t l
  * If the code point is not valid or a trail surrogate does not fit,
  * then isError is set to true.
  *
- * @param s const uint16_t * string buffer
- * @param i string offset, must be i<capacity
+ * @param buffer const uint16_t * string buffer
+ * @param offset string offset, must be offset<capacity
  * @param capacity size of the string buffer
- * @param c code point to append
+ * @param codePoint code point to append
  * @param isError output bool set to true if an error occurs, otherwise not modified
  */
-#define Append(s, i, capacity, c, isError) { \
-    if((uint32_t)(c)<=0xffff) { \
-        (s)[(i)++]=(uint16_t)(c); \
-    } else if((uint32_t)(c)<=0x10ffff && (i)+1<(capacity)) { \
-        (s)[(i)++]=(uint16_t)(((c)>>10)+0xd7c0); \
-        (s)[(i)++]=(uint16_t)(((c)&0x3ff)|0xdc00); \
+#define Append(buffer, offset, capacity, codePoint, isError) { \
+    if ((uint32_t)(codePoint) <= 0xffff) { \
+        (buffer)[(offset)++] = (uint16_t)(codePoint); \
+    } else if ((uint32_t)(codePoint) <= 0x10ffff && (offset) + 1 < (capacity)) { \
+        (buffer)[(offset)++] = (uint16_t)(((codePoint) >> 10) + 0xd7c0); \
+        (buffer)[(offset)++] = (uint16_t)(((codePoint)&0x3ff) | 0xdc00); \
     } else /* c>0x10ffff or not enough space */ { \
-        (isError)=true; \
+        (isError) = true; \
     } \
 }
 
@@ -303,7 +303,7 @@ ChangeCaseNative
 Returns upper or lower casing of a string, taking into account the specified locale.
 */
 int32_t GlobalizationNative_ChangeCaseNative(const uint16_t* localeName, int32_t lNameLength,
-                                                 const uint16_t* lpSrc, int32_t cwSrcLength, uint16_t* lpDst, int32_t cwDstLength, int32_t bToUpper)
+                                             const uint16_t* lpSrc, int32_t cwSrcLength, uint16_t* lpDst, int32_t cwDstLength, int32_t bToUpper)
 {
     NSLocale *currentLocale = GetCurrentLocale(localeName, lNameLength);
     NSString *source = [NSString stringWithCharacters: lpSrc length: cwSrcLength];
