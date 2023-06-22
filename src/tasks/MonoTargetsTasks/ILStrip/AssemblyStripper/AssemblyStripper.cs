@@ -229,7 +229,6 @@ namespace AssemblyStripper
         {
             AssemblyDefinition assembly = AssemblyFactory.GetAssembly(assemblyFile);
             AssemblyStripper.StripAssembly(assembly, outputPath);
-
         }
     }
 }
