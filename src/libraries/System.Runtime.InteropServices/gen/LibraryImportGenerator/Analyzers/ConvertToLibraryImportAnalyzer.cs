@@ -82,13 +82,10 @@ namespace Microsoft.Interop.Analyzers
                 return;
             }
 
-            if (dllImportData.BestFitMapping != false)
+            // LibraryImportGenerator doesn't support BestFitMapping = true
+            if (IsBestFitMapping(method, dllImportData))
             {
-                // LibraryImportGenerator doesn't support BestFitMapping = true
-                if (IsBestFitMapping(method, dllImportData))
-                {
-                    return;
-                }
+                return;
             }
 
             if (method.IsVararg)
@@ -162,15 +159,17 @@ namespace Microsoft.Interop.Analyzers
 
         private static bool IsBestFitMapping(IMethodSymbol method, DllImportData? dllImportData)
         {
-            if (dllImportData.BestFitMapping == true)
+            if (dllImportData.BestFitMapping.HasValue)
             {
-                return true;
+                return dllImportData.BestFitMapping.Value;
             }
+
             AttributeData? bestFitMappingContainingType = method.ContainingType.GetAttributes().FirstOrDefault(attr => attr.AttributeClass.ToDisplayString() == TypeNames.System_Runtime_InteropServices_BestFitMappingAttribute);
             if (bestFitMappingContainingType is not null)
             {
                 return bestFitMappingContainingType.ConstructorArguments[0].Value is true;
             }
+
             AttributeData? bestFitMappingContainingAssembly = method.ContainingAssembly.GetAttributes().FirstOrDefault(attr => attr.AttributeClass.ToDisplayString() == TypeNames.System_Runtime_InteropServices_BestFitMappingAttribute);
             if (bestFitMappingContainingAssembly is not null)
             {
