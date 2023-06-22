@@ -839,17 +839,15 @@ namespace System.Numerics
                 Impl result;
 
                 // 4x SIMD fields to get a lot better codegen
+                result.W = new Vector4(width, height, 0f, 0f);
+                result.W *= new Vector4(0.5f, 0.5f, 0f, 0f);
 
-                Vector4 W = new Vector4(width, height, 0f, 0f);
-                W *= new Vector4(0.5f, -0.5f, 0f, 0f);
-
-                result.X = new Vector4(W.X, 0f, 0f, 0f);
-                result.Y = new Vector4(0f, W.Y, 0f, 0f);
+                result.X = new Vector4(result.W.X, 0f, 0f, 0f);
+                result.Y = new Vector4(0f, -result.W.Y, 0f, 0f);
                 result.Z = new Vector4(0f, 0f, maxDepth - minDepth, 0f);
 
-                W *= new Vector4(1f, -1f, 0f, 0f);
-                W += new Vector4(x, y, minDepth, 1f);
-                result.W = W;
+                result.W += new Vector4(x, y, minDepth, 1f);
+                
 
                 return result;
             }
