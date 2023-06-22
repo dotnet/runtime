@@ -2212,6 +2212,7 @@ InlineCandidateInfo* GenTreeCall::GetGDVCandidateInfo(uint8_t index)
 //
 void GenTreeCall::AddGDVCandidateInfo(Compiler* comp, InlineCandidateInfo* candidateInfo)
 {
+    assert((gtCallMoreFlags & GTF_CALL_M_GUARDED_DEVIRT_EXACT) == 0);
     assert(gtInlineInfoCount < MAX_GDV_TYPE_CHECKS);
     assert(candidateInfo != nullptr);
 
@@ -2248,6 +2249,9 @@ void GenTreeCall::AddGDVCandidateInfo(Compiler* comp, InlineCandidateInfo* candi
 //
 void GenTreeCall::RemoveGDVCandidateInfo(Compiler* comp, uint8_t index)
 {
+    // We change the number of candidates so it's no longer "doesn't need a fallback"
+    gtCallMoreFlags &= ~GTF_CALL_M_GUARDED_DEVIRT_EXACT;
+
     assert(index < gtInlineInfoCount);
 
     if (gtInlineInfoCount == 1)
@@ -5473,7 +5477,13 @@ unsigned Compiler::gtSetEvalOrder(GenTree* tree)
                         case NI_System_Math_Log2:
                         case NI_System_Math_Log10:
                         case NI_System_Math_Max:
+                        case NI_System_Math_MaxMagnitude:
+                        case NI_System_Math_MaxMagnitudeNumber:
+                        case NI_System_Math_MaxNumber:
                         case NI_System_Math_Min:
+                        case NI_System_Math_MinMagnitude:
+                        case NI_System_Math_MinMagnitudeNumber:
+                        case NI_System_Math_MinNumber:
                         case NI_System_Math_Pow:
                         case NI_System_Math_Round:
                         case NI_System_Math_Sin:
@@ -5820,9 +5830,17 @@ unsigned Compiler::gtSetEvalOrder(GenTree* tree)
                         break;
 
                     case NI_System_Math_Max:
+                    case NI_System_Math_MaxMagnitude:
+                    case NI_System_Math_MaxMagnitudeNumber:
+                    case NI_System_Math_MaxNumber:
                     case NI_System_Math_Min:
+                    case NI_System_Math_MinMagnitude:
+                    case NI_System_Math_MinMagnitudeNumber:
+                    case NI_System_Math_MinNumber:
+                    {
                         level++;
                         break;
+                    }
 
                     default:
                         assert(!"Unknown binary GT_INTRINSIC operator");
@@ -7191,9 +7209,9 @@ GenTreeOpCC* Compiler::gtNewOperCC(genTreeOps oper, var_types type, GenCondition
     return node;
 }
 
-GenTreeColon* Compiler::gtNewColonNode(var_types type, GenTree* elseNode, GenTree* thenNode)
+GenTreeColon* Compiler::gtNewColonNode(var_types type, GenTree* thenNode, GenTree* elseNode)
 {
-    return new (this, GT_COLON) GenTreeColon(TYP_INT, elseNode, thenNode);
+    return new (this, GT_COLON) GenTreeColon(type, thenNode, elseNode);
 }
 
 GenTreeQmark* Compiler::gtNewQmarkNode(var_types type, GenTree* cond, GenTreeColon* colon)
@@ -12231,8 +12249,26 @@ void Compiler::gtDispTree(GenTree*     tree,
                 case NI_System_Math_Max:
                     printf(" max");
                     break;
+                case NI_System_Math_MaxMagnitude:
+                    printf(" maxMagnitude");
+                    break;
+                case NI_System_Math_MaxMagnitudeNumber:
+                    printf(" maxMagnitudeNumber");
+                    break;
+                case NI_System_Math_MaxNumber:
+                    printf(" maxNumber");
+                    break;
                 case NI_System_Math_Min:
                     printf(" min");
+                    break;
+                case NI_System_Math_MinMagnitude:
+                    printf(" minMagnitude");
+                    break;
+                case NI_System_Math_MinMagnitudeNumber:
+                    printf(" minMagnitudeNumber");
+                    break;
+                case NI_System_Math_MinNumber:
+                    printf(" minNumber");
                     break;
                 case NI_System_Math_Pow:
                     printf(" pow");
@@ -17881,9 +17917,9 @@ CORINFO_CLASS_HANDLE Compiler::gtGetClassHandle(GenTree* tree, bool* pIsExact, b
 
         case GT_CNS_INT:
         {
-            if (tree->IsIconHandle(GTF_ICON_OBJ_HDL))
+            if (obj->IsIconHandle(GTF_ICON_OBJ_HDL))
             {
-                objClass = info.compCompHnd->getObjectType((CORINFO_OBJECT_HANDLE)tree->AsIntCon()->IconValue());
+                objClass = info.compCompHnd->getObjectType((CORINFO_OBJECT_HANDLE)obj->AsIntCon()->IconValue());
                 if (objClass != NO_CLASS_HANDLE)
                 {
                     // if we managed to get a class handle it's definitely not null
@@ -17898,14 +17934,14 @@ CORINFO_CLASS_HANDLE Compiler::gtGetClassHandle(GenTree* tree, bool* pIsExact, b
         {
             // If we see a RET_EXPR, recurse through to examine the
             // return value expression.
-            GenTree* retExpr = tree->AsRetExpr()->gtInlineCandidate;
+            GenTree* retExpr = obj->AsRetExpr()->gtInlineCandidate;
             objClass         = gtGetClassHandle(retExpr, pIsExact, pIsNonNull);
             break;
         }
 
         case GT_CALL:
         {
-            GenTreeCall* call = tree->AsCall();
+            GenTreeCall* call = obj->AsCall();
             if (call->gtCallMoreFlags & GTF_CALL_M_SPECIAL_INTRINSIC)
             {
                 NamedIntrinsic ni = lookupNamedIntrinsic(call->gtCallMethHnd);
@@ -18194,9 +18230,7 @@ CORINFO_CLASS_HANDLE Compiler::gtGetHelperCallClassHandle(GenTreeCall* call, boo
             // for the result, unless it is an interface type.
             //
             // TODO-CQ: when we have default interface methods then
-            // this might not be the best assumption. We could also
-            // explore calling something like mergeClasses to identify
-            // the more specific class. A similar issue arises when
+            // this might not be the best assumption. A similar issue arises when
             // typing the temp in impCastClassOrIsInstToTree, when we
             // expand the cast inline.
             if (castHnd != nullptr)
@@ -20513,7 +20547,7 @@ GenTree* Compiler::gtNewSimdCmpOpNode(
 
         case GT_GE:
         {
-            if (IsBaselineVector512IsaSupported())
+            if (IsBaselineVector512IsaSupportedOpportunistically())
             {
                 if (simdSize == 64)
                 {
@@ -20608,7 +20642,7 @@ GenTree* Compiler::gtNewSimdCmpOpNode(
 
         case GT_GT:
         {
-            if (IsBaselineVector512IsaSupported())
+            if (IsBaselineVector512IsaSupportedOpportunistically())
             {
                 if (simdSize == 64)
                 {
@@ -20810,7 +20844,7 @@ GenTree* Compiler::gtNewSimdCmpOpNode(
 
         case GT_LE:
         {
-            if (IsBaselineVector512IsaSupported())
+            if (IsBaselineVector512IsaSupportedOpportunistically())
             {
                 if (simdSize == 64)
                 {
@@ -20905,7 +20939,7 @@ GenTree* Compiler::gtNewSimdCmpOpNode(
 
         case GT_LT:
         {
-            if (IsBaselineVector512IsaSupported())
+            if (IsBaselineVector512IsaSupportedOpportunistically())
             {
                 if (simdSize == 64)
                 {
@@ -22788,7 +22822,7 @@ GenTree* Compiler::gtNewSimdNarrowNode(
     GenTree* tmp3;
     GenTree* tmp4;
 
-    if (IsBaselineVector512IsaSupported())
+    if (IsBaselineVector512IsaSupportedOpportunistically())
     {
         // This is the same in principle to the other comments below, however due to
         // code formatting, its too long to reasonably display here.
@@ -23322,7 +23356,7 @@ GenTree* Compiler::gtNewSimdShuffleNode(
 #if defined(TARGET_XARCH)
     uint8_t  control   = 0;
     bool     crossLane = false;
-    bool     needsZero = varTypeIsSmallInt(simdBaseType) && (simdSize != 64);
+    bool     needsZero = varTypeIsSmallInt(simdBaseType) && (simdSize <= 16);
     uint64_t value     = 0;
     simd_t   vecCns    = {};
     simd_t   mskCns    = {};
@@ -23395,7 +23429,8 @@ GenTree* Compiler::gtNewSimdShuffleNode(
     {
         assert(compIsaSupportedDebugOnly(InstructionSet_AVX2));
 
-        if (varTypeIsSmallInt(simdBaseType))
+        if ((varTypeIsByte(simdBaseType) && !compOpportunisticallyDependsOn(InstructionSet_AVX512VBMI_VL)) ||
+            (varTypeIsShort(simdBaseType) && !compOpportunisticallyDependsOn(InstructionSet_AVX512BW_VL)))
         {
             if (crossLane)
             {
@@ -23448,6 +23483,31 @@ GenTree* Compiler::gtNewSimdShuffleNode(
             // swap the operands to match the encoding requirements
             retNode = gtNewSimdHWIntrinsicNode(type, op2, op1, NI_AVX2_PermuteVar8x32, simdBaseJitType, simdSize);
         }
+        else if (elementSize == 2)
+        {
+            assert(compIsaSupportedDebugOnly(InstructionSet_AVX512BW_VL));
+            for (uint32_t i = 0; i < elementCount; i++)
+            {
+                vecCns.u16[i] = (uint8_t)(vecCns.u8[i * elementSize] / elementSize);
+            }
+
+            op2                        = gtNewVconNode(type);
+            op2->AsVecCon()->gtSimdVal = vecCns;
+
+            // swap the operands to match the encoding requirements
+            retNode =
+                gtNewSimdHWIntrinsicNode(type, op2, op1, NI_AVX512BW_VL_PermuteVar16x16, simdBaseJitType, simdSize);
+        }
+        else if (elementSize == 1)
+        {
+            assert(compIsaSupportedDebugOnly(InstructionSet_AVX512VBMI_VL));
+            op2                        = gtNewVconNode(type);
+            op2->AsVecCon()->gtSimdVal = vecCns;
+
+            // swap the operands to match the encoding requirements
+            retNode =
+                gtNewSimdHWIntrinsicNode(type, op2, op1, NI_AVX512VBMI_VL_PermuteVar32x8, simdBaseJitType, simdSize);
+        }
         else
         {
             assert(elementSize == 8);
@@ -23458,6 +23518,7 @@ GenTree* Compiler::gtNewSimdShuffleNode(
     }
     else if (simdSize == 64)
     {
+        assert(IsBaselineVector512IsaSupportedDebugOnly());
         if (elementSize == 4)
         {
             for (uint32_t i = 0; i < elementCount; i++)
@@ -23483,6 +23544,15 @@ GenTree* Compiler::gtNewSimdShuffleNode(
 
             // swap the operands to match the encoding requirements
             retNode = gtNewSimdHWIntrinsicNode(type, op2, op1, NI_AVX512BW_PermuteVar32x16, simdBaseJitType, simdSize);
+        }
+        else if (elementSize == 1)
+        {
+            assert(compIsaSupportedDebugOnly(InstructionSet_AVX512VBMI));
+            op2                        = gtNewVconNode(type);
+            op2->AsVecCon()->gtSimdVal = vecCns;
+
+            // swap the operands to match the encoding requirements
+            retNode = gtNewSimdHWIntrinsicNode(type, op2, op1, NI_AVX512VBMI_PermuteVar64x8, simdBaseJitType, simdSize);
         }
         else
         {
@@ -25802,9 +25872,9 @@ regNumber GenTree::ExtractTempReg(regMaskTP mask /* = (regMaskTP)-1 */)
 {
     regMaskTP availableSet = gtRsvdRegs & mask;
     assert(genCountBits(availableSet) >= 1);
-    regMaskTP tempRegMask = genFindLowestBit(availableSet);
-    gtRsvdRegs &= ~tempRegMask;
-    return genRegNumFromMask(tempRegMask);
+    regNumber tempReg = genFirstRegNumFromMask(availableSet);
+    gtRsvdRegs ^= genRegMask(tempReg);
+    return tempReg;
 }
 
 //------------------------------------------------------------------------

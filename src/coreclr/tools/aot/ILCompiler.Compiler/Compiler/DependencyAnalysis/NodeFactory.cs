@@ -298,9 +298,19 @@ namespace ILCompiler.DependencyAnalysis
                 return new GenericVirtualMethodImplNode(method);
             });
 
+            _genericMethodEntries = new NodeCache<MethodDesc, GenericMethodsHashtableEntryNode>(method =>
+            {
+                return new GenericMethodsHashtableEntryNode(method);
+            });
+
             _gvmTableEntries = new NodeCache<TypeDesc, TypeGVMEntriesNode>(type =>
             {
                 return new TypeGVMEntriesNode(type);
+            });
+
+            _delegateTargetMethods = new NodeCache<MethodDesc, DelegateTargetVirtualMethodNode>(method =>
+            {
+                return new DelegateTargetVirtualMethodNode(method);
             });
 
             _reflectedMethods = new NodeCache<MethodDesc, ReflectedMethodNode>(method =>
@@ -961,10 +971,22 @@ namespace ILCompiler.DependencyAnalysis
             return _gvmImpls.GetOrAdd(method);
         }
 
+        private NodeCache<MethodDesc, GenericMethodsHashtableEntryNode> _genericMethodEntries;
+        public GenericMethodsHashtableEntryNode GenericMethodsHashtableEntry(MethodDesc method)
+        {
+            return _genericMethodEntries.GetOrAdd(method);
+        }
+
         private NodeCache<TypeDesc, TypeGVMEntriesNode> _gvmTableEntries;
         internal TypeGVMEntriesNode TypeGVMEntries(TypeDesc type)
         {
             return _gvmTableEntries.GetOrAdd(type);
+        }
+
+        private NodeCache<MethodDesc, DelegateTargetVirtualMethodNode> _delegateTargetMethods;
+        public DelegateTargetVirtualMethodNode DelegateTargetVirtualMethod(MethodDesc method)
+        {
+            return _delegateTargetMethods.GetOrAdd(method);
         }
 
         private NodeCache<MethodDesc, ReflectedMethodNode> _reflectedMethods;

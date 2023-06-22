@@ -22,36 +22,27 @@ namespace System.Net.Http
     public partial class HttpClientHandler : HttpMessageHandler
     {
         private readonly SocketsHttpHandler? _socketHandler;
-        private readonly DiagnosticsHandler? _diagnosticsHandler;
-
         private readonly HttpMessageHandler? _nativeHandler;
+        private HttpMessageHandler? _handler;
 
         private static readonly ConcurrentDictionary<string, MethodInfo?> s_cachedMethods =
             new ConcurrentDictionary<string, MethodInfo?>();
 
+        private Meter _meter = MetricsHandler.DefaultMeter;
         private ClientCertificateOption _clientCertificateOptions;
 
         private volatile bool _disposed;
 
         public HttpClientHandler()
         {
-            HttpMessageHandler handler;
-
             if (IsNativeHandlerEnabled)
             {
                 _nativeHandler = CreateNativeHandler();
-                handler = _nativeHandler;
             }
             else
             {
                 _socketHandler = new SocketsHttpHandler();
-                handler = _socketHandler;
                 ClientCertificateOptions = ClientCertificateOption.Manual;
-            }
-
-            if (DiagnosticsHandler.IsGloballyEnabled())
-            {
-                _diagnosticsHandler = new DiagnosticsHandler(handler, DistributedContextPropagator.Current);
             }
         }
 
@@ -77,8 +68,18 @@ namespace System.Net.Http
         [CLSCompliant(false)]
         public Meter Meter
         {
-            get => throw new NotImplementedException();
-            set => throw new NotImplementedException();
+            get => _meter;
+            set
+            {
+                ArgumentNullException.ThrowIfNull(value);
+                if (value.Name != "System.Net.Http")
+                {
+                    throw new ArgumentException("Meter name must be 'System.Net.Http'.");
+                }
+
+                CheckDisposedOrStarted();
+                _meter = value;
+            }
         }
 
         [UnsupportedOSPlatform("browser")]
@@ -721,19 +722,8 @@ namespace System.Net.Http
         protected internal override Task<HttpResponseMessage> SendAsync(HttpRequestMessage request,
             CancellationToken cancellationToken)
         {
-            if (DiagnosticsHandler.IsGloballyEnabled() && _diagnosticsHandler != null)
-            {
-                return _diagnosticsHandler!.SendAsync(request, cancellationToken);
-            }
-
-            if (IsNativeHandlerEnabled)
-            {
-                return _nativeHandler!.SendAsync(request, cancellationToken);
-            }
-            else
-            {
-                return _socketHandler!.SendAsync(request, cancellationToken);
-            }
+            HttpMessageHandler handler = _handler ?? SetupHandlerChain();
+            return handler.SendAsync(request, cancellationToken);
         }
 
         // lazy-load the validator func so it can be trimmed by the ILLinker if it isn't used.
@@ -746,6 +736,32 @@ namespace System.Net.Http
                 return Volatile.Read(ref s_dangerousAcceptAnyServerCertificateValidator) ??
                 Interlocked.CompareExchange(ref s_dangerousAcceptAnyServerCertificateValidator, delegate { return true; }, null) ??
                 s_dangerousAcceptAnyServerCertificateValidator;
+            }
+        }
+
+        private HttpMessageHandler SetupHandlerChain()
+        {
+            HttpMessageHandler handler = IsNativeHandlerEnabled ? _nativeHandler! : _socketHandler!;
+            if (DiagnosticsHandler.IsGloballyEnabled())
+            {
+                handler = new DiagnosticsHandler(handler, DistributedContextPropagator.Current);
+            }
+            handler = new MetricsHandler(handler, _meter);
+
+            // Ensure a single handler is used for all requests.
+            if (Interlocked.CompareExchange(ref _handler, handler, null) != null)
+            {
+                handler.Dispose();
+            }
+            return handler;
+        }
+
+        private void CheckDisposedOrStarted()
+        {
+            ObjectDisposedException.ThrowIf(_disposed, this);
+            if (_handler != null)
+            {
+                throw new InvalidOperationException(SR.net_http_operation_started);
             }
         }
 

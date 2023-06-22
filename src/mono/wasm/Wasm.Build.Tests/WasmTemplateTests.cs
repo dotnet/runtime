@@ -154,9 +154,11 @@ namespace Wasm.Build.Tests
 
             AssertDotNetJsSymbols(Path.Combine(GetBinDir(config), "AppBundle"), fromRuntimePack: true, targetFramework: DefaultTargetFramework);
 
-            (int exitCode, string output) = RunProcess(s_buildEnv.DotNet, _testOutput, args: $"run --no-build -c {config}", workingDir: _projectDir);
-            Assert.Equal(0, exitCode);
-            Assert.Contains("Hello, Console!", output);
+            CommandResult res = new RunCommand(s_buildEnv, _testOutput)
+                                        .WithWorkingDirectory(_projectDir!)
+                                        .ExecuteWithCapturedOutput($"run --no-silent --no-build -c {config}")
+                                        .EnsureSuccessful();
+            Assert.Contains("Hello, Console!", res.Output);
 
             if (!_buildContext.TryGetBuildFor(buildArgs, out BuildProduct? product))
                 throw new XunitException($"Test bug: could not get the build product in the cache");
@@ -224,12 +226,14 @@ namespace Wasm.Build.Tests
 
             AssertDotNetJsSymbols(Path.Combine(GetBinDir(config, expectedTFM), "AppBundle"), fromRuntimePack: !relinking, targetFramework: expectedTFM);
 
-            (int exitCode, string output) = RunProcess(s_buildEnv.DotNet, _testOutput, args: $"run --no-build -c {config} x y z", workingDir: _projectDir);
-            Assert.Equal(42, exitCode);
+            CommandResult res = new RunCommand(s_buildEnv, _testOutput)
+                                        .WithWorkingDirectory(_projectDir!)
+                                        .ExecuteWithCapturedOutput($"run --no-silent --no-build -c {config} x y z")
+                                        .EnsureExitCode(42);
 
-            Assert.Contains("args[0] = x", output);
-            Assert.Contains("args[1] = y", output);
-            Assert.Contains("args[2] = z", output);
+            Assert.Contains("args[0] = x", res.Output);
+            Assert.Contains("args[1] = y", res.Output);
+            Assert.Contains("args[2] = z", res.Output);
         }
 
         public static TheoryData<bool, bool, string> TestDataForAppBundleDir()
@@ -279,7 +283,7 @@ namespace Wasm.Build.Tests
                                             .WithWorkingDirectory(workingDir);
 
                 await using var runner = new BrowserRunner(_testOutput);
-                var page = await runner.RunAsync(runCommand, $"run -c {config} --project {projectFile} --forward-console");
+                var page = await runner.RunAsync(runCommand, $"run --no-silent -c {config} --project {projectFile} --forward-console");
                 await runner.WaitForExitMessageAsync(TimeSpan.FromMinutes(2));
                 Assert.Contains("Hello, Browser!", string.Join(Environment.NewLine, runner.OutputLines));
             }
@@ -289,7 +293,7 @@ namespace Wasm.Build.Tests
                                             .WithWorkingDirectory(workingDir);
 
                 await using var runner = new BrowserRunner(_testOutput);
-                var page = await runner.RunAsync(runCommand, $"run -c {config} --no-build --project {projectFile} --forward-console");
+                var page = await runner.RunAsync(runCommand, $"run --no-silent -c {config} --no-build --project {projectFile} --forward-console");
                 await runner.WaitForExitMessageAsync(TimeSpan.FromMinutes(2));
                 Assert.Contains("Hello, Browser!", string.Join(Environment.NewLine, runner.OutputLines));
             }
@@ -309,7 +313,7 @@ namespace Wasm.Build.Tests
             string workingDir = runOutsideProjectDirectory ? BuildEnvironment.TmpPath : _projectDir!;
 
             {
-                string runArgs = $"run -c {config} --project {projectFile}";
+                string runArgs = $"run --no-silent -c {config} --project {projectFile}";
                 runArgs += " x y z";
                 using var cmd = new RunCommand(s_buildEnv, _testOutput, label: id)
                                     .WithWorkingDirectory(workingDir)
@@ -325,7 +329,7 @@ namespace Wasm.Build.Tests
 
             {
                 // Run with --no-build
-                string runArgs = $"run -c {config} --project {projectFile} --no-build";
+                string runArgs = $"run --no-silent -c {config} --project {projectFile} --no-build";
                 runArgs += " x y z";
                 using var cmd = new RunCommand(s_buildEnv, _testOutput, label: id)
                                 .WithWorkingDirectory(workingDir);
@@ -404,7 +408,7 @@ namespace Wasm.Build.Tests
                 AssertFilesDontExist(Path.Combine(GetBinDir(config), "AppBundle"), new[] { "dotnet.native.js.symbols" });
             }
 
-            string runArgs = $"run --no-build -c {config}";
+            string runArgs = $"run --no-silent --no-build -c {config}";
             runArgs += " x y z";
             var res = new RunCommand(s_buildEnv, _testOutput, label: id)
                                 .WithWorkingDirectory(_projectDir!)
@@ -440,7 +444,7 @@ namespace Wasm.Build.Tests
                                         .WithWorkingDirectory(_projectDir!);
 
             await using var runner = new BrowserRunner(_testOutput);
-            var page = await runner.RunAsync(runCommand, $"run -c {config} --no-build -r browser-wasm --forward-console");
+            var page = await runner.RunAsync(runCommand, $"run --no-silent -c {config} --no-build -r browser-wasm --forward-console");
             await runner.WaitForExitMessageAsync(TimeSpan.FromMinutes(2));
             Assert.Contains("Hello, Browser!", string.Join(Environment.NewLine, runner.OutputLines));
         }

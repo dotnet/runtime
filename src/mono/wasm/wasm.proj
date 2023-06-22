@@ -16,8 +16,7 @@
   </PropertyGroup>
 
   <PropertyGroup>
-    <MonoWasmThreads Condition="'$(MonoWasmBuildVariant)' == 'multithread' or '$(MonoWasmBuildVariant)' == 'perftrace'">true</MonoWasmThreads>
-    <MonoWasmThreadsNoUser Condition="'$(MonoWasmBuildVariant)' == 'perftrace'">true</MonoWasmThreadsNoUser>
+    <MonoWasmThreads Condition="'$(MonoWasmBuildVariant)' == 'multithread'">true</MonoWasmThreads>
     <MonoDiagnosticsMock Condition="'$(MonoDiagnosticsMock)' == '' and '$(Configuration)' == 'Release'">false</MonoDiagnosticsMock>
     <MonoDiagnosticsMock Condition="'$(MonoDiagnosticsMock)' == '' and '$(Configuration)' == 'Debug'">true</MonoDiagnosticsMock>
   </PropertyGroup>
@@ -199,6 +198,10 @@
       <EmccExportedRuntimeMethod Include="removeRunDependency" />
       <EmccExportedRuntimeMethod Include="addRunDependency" />
       <EmccExportedRuntimeMethod Include="addFunction" />
+      <EmccExportedRuntimeMethod Include="safeSetTimeout" />
+      <EmccExportedRuntimeMethod Include="runtimeKeepalivePush" />
+      <EmccExportedRuntimeMethod Include="runtimeKeepalivePop" />
+      <EmccExportedRuntimeMethod Include="maybeExit" />
 
       <EmccExportedFunction Include="_free" />
       <EmccExportedFunction Include="_htons" />
@@ -256,6 +259,9 @@
       <EmccExportedFunction Include="_sinhf" />
       <EmccExportedFunction Include="_tanf" />
       <EmccExportedFunction Include="_tanhf" />
+    </ItemGroup>
+    <ItemGroup Condition="'$(MonoWasmThreads)' == 'true'">
+      <EmccExportedFunction Include="_emscripten_main_runtime_thread_id"  />
     </ItemGroup>
     <ItemGroup Condition="'$(MonoWasmThreads)' == 'true'">
       <EmccExportedFunction Include="_emscripten_main_runtime_thread_id"  />
@@ -389,7 +395,6 @@
       <CMakeBuildRuntimeConfigureCmd>$(CMakeBuildRuntimeConfigureCmd) -DNATIVE_BIN_DIR=&quot;$(NativeBinDir.TrimEnd('\/').Replace('\','/'))&quot;</CMakeBuildRuntimeConfigureCmd>
       <CMakeBuildRuntimeConfigureCmd Condition="'$(WasmEnableSIMD)' == 'true' and '$(Configuration)' == 'Release'">$(CMakeBuildRuntimeConfigureCmd) -DWASM_OPT_ADDITIONAL_FLAGS=&quot;--enable-simd&quot;</CMakeBuildRuntimeConfigureCmd>
       <CMakeBuildRuntimeConfigureCmd Condition="'$(MonoWasmThreads)' == 'true'">$(CMakeBuildRuntimeConfigureCmd) -DDISABLE_THREADS=0</CMakeBuildRuntimeConfigureCmd>
-      <CMakeBuildRuntimeConfigureCmd Condition="'$(MonoWasmThreadsNoUser)' == 'true'">$(CMakeBuildRuntimeConfigureCmd) -DDISABLE_WASM_USER_THREADS=1</CMakeBuildRuntimeConfigureCmd>
       <CMakeBuildRuntimeConfigureCmd Condition="'$(WasmEnableLegacyJsInterop)' == 'false'">$(CMakeBuildRuntimeConfigureCmd) -DDISABLE_LEGACY_JS_INTEROP=1</CMakeBuildRuntimeConfigureCmd>
       <CMakeBuildRuntimeConfigureCmd>$(CMakeBuildRuntimeConfigureCmd) $(CMakeConfigurationEmsdkPath)</CMakeBuildRuntimeConfigureCmd>
 

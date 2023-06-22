@@ -4,13 +4,12 @@
 using System.Collections.Generic;
 using System.Diagnostics;
 using System.Diagnostics.Metrics;
-using System.IO;
 using System.Threading;
 using System.Threading.Tasks;
 
 namespace System.Net.Http;
 
-internal sealed class MetricsHandler : HttpMessageHandlerStage
+internal sealed class MetricsHandler : HttpMessageHandlerStage, IHttpMetricsLogger
 {
     private readonly HttpMessageHandler _innerHandler;
     private readonly Meter _meter;
@@ -65,7 +64,7 @@ internal sealed class MetricsHandler : HttpMessageHandlerStage
             {
                 // No exception has been thrown to the point of reading headers, but errors can still occur while buffering the response content in HttpClient.
                 // We need to report http-client-failed-requests if it happens.
-                response.RequestFailedMetricsLogger = LogRequestFailed;
+                response.HttpMetricsLogger = this;
             }
             return response;
         }
@@ -136,11 +135,24 @@ internal sealed class MetricsHandler : HttpMessageHandlerStage
             tags.Add("protocol", GetProtocolName(response.Version));
         }
 
-        if (request._options?.TryGetCustomMetricsTags(out IReadOnlyCollection<KeyValuePair<string, object?>>? customTags) is true)
+        if (request._options?.TryGetCustomMetricsTags(out ICollection<KeyValuePair<string, object?>>? customTags) is true)
         {
-            foreach (var customTag in customTags!)
+            // Normally, customTags should be a boxed TagList.
+            if (customTags is TagList tagList)
             {
-                tags.Add(customTag);
+                // TagList enumerator allocates, see https://github.com/dotnet/runtime/issues/87022, iterating using an indexer.
+                for (int i = 0; i < tagList.Count; i++)
+                {
+                    KeyValuePair<string, object?> customTag = tagList[i];
+                    tags.Add(customTag);
+                }
+            }
+            else
+            {
+                foreach (KeyValuePair<string, object?> customTag in customTags!)
+                {
+                    tags.Add(customTag);
+                }
             }
         }
     }
@@ -178,7 +190,7 @@ internal sealed class MetricsHandler : HttpMessageHandlerStage
         return tags;
     }
 
-    private void LogRequestFailed(HttpResponseMessage response)
+    void IHttpMetricsLogger.LogRequestFailed(HttpResponseMessage response)
     {
         Debug.Assert(response.RequestMessage is not null);
         TagList tags = InitializeCommonTags(response.RequestMessage);

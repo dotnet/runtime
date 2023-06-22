@@ -2,7 +2,7 @@
 // The .NET Foundation licenses this file to you under the MIT license.
 
 import { get_js_obj, mono_wasm_get_jsobj_from_js_handle } from "../gc-handles";
-import { Module, runtimeHelpers, INTERNAL } from "../globals";
+import { Module, INTERNAL } from "../globals";
 import { wrap_error_root, wrap_no_error_root } from "../invoke-js";
 import { _release_temp_frame } from "../memory";
 import { mono_wasm_new_external_root, mono_wasm_new_root } from "../roots";
@@ -12,8 +12,7 @@ import { JSHandle, MonoStringRef, MonoObjectRef, MonoArray, MonoString, MonoObje
 import { Int32Ptr, VoidPtr } from "../types/emscripten";
 import { mono_array_root_to_js_array, unbox_mono_obj_root } from "./cs-to-js";
 import { js_array_to_mono_array, js_to_mono_obj_root } from "./js-to-cs";
-import { Converter, BoundMethodToken, mono_method_resolve, mono_method_get_call_signature_ref, mono_bind_method } from "./method-binding";
-import { assert_legacy_interop } from "../pthreads/shared";
+import { Converter, BoundMethodToken, mono_method_resolve, mono_method_get_call_signature_ref, mono_bind_method, assert_legacy_interop } from "./method-binding";
 
 const boundMethodsByFqn: Map<string, Function> = new Map();
 
@@ -52,7 +51,6 @@ export function _teardown_after_call(
 }
 
 export function mono_bind_static_method(fqn: string, signature?: string/*ArgsMarshalString*/): Function {
-    mono_assert(runtimeHelpers.mono_wasm_bindings_is_ready, "The runtime must be initialized.");
     assert_legacy_interop();
 
     const key = `${fqn}-${signature}`;
@@ -85,7 +83,6 @@ export function mono_bind_assembly_entry_point(assembly: string, signature?: str
 }
 
 export function mono_call_assembly_entry_point(assembly: string, args?: any[], signature?: string/*ArgsMarshalString*/): number {
-    mono_assert(runtimeHelpers.mono_wasm_bindings_is_ready, "The runtime must be initialized.");
     assert_legacy_interop();
     if (!args) {
         args = [[]];

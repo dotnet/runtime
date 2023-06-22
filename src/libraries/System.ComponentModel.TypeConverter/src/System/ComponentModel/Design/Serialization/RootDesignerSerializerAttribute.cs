@@ -79,13 +79,13 @@ namespace System.ComponentModel.Design.Serialization
             {
                 if (_typeId == null)
                 {
-                    string baseType = SerializerBaseTypeName ?? string.Empty;
+                    ReadOnlySpan<char> baseType = SerializerBaseTypeName;
                     int comma = baseType.IndexOf(',');
-                    if (comma != -1)
+                    if (comma >= 0)
                     {
-                        baseType = baseType.Substring(0, comma);
+                        baseType = baseType.Slice(0, comma);
                     }
-                    _typeId = GetType().FullName + baseType;
+                    _typeId = string.Concat(GetType().FullName, baseType);
                 }
                 return _typeId;
             }
