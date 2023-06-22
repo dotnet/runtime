@@ -18,8 +18,6 @@ export async function loadSatelliteAssemblies(culturesToLoad: string[]): Promise
         .map(async resource => {
             const response = await resource.response;
             const bytes = await response.arrayBuffer();
-            const wrapper = { dll: new Uint8Array(bytes) };
-
-            runtimeHelpers.javaScriptExports.load_satellite_assembly(wrapper);
+            runtimeHelpers.javaScriptExports.load_satellite_assembly(new Uint8Array(bytes));
         }));
 }

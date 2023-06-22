@@ -24,7 +24,7 @@ import { addUnsettledPromise, settleUnsettledPromise } from "./pthreads/shared/e
 
 export function initialize_marshalers_to_cs(): void {
     if (js_to_cs_marshalers.size == 0) {
-        js_to_cs_marshalers.set(MarshalerType.Array, _marshal_array_to_cs);
+        js_to_cs_marshalers.set(MarshalerType.Array, marshal_array_to_cs);
         js_to_cs_marshalers.set(MarshalerType.Span, _marshal_span_to_cs);
         js_to_cs_marshalers.set(MarshalerType.ArraySegment, _marshal_array_segment_to_cs);
         js_to_cs_marshalers.set(MarshalerType.Boolean, _marshal_bool_to_cs);
@@ -453,12 +453,12 @@ function _marshal_cs_object_to_cs(arg: JSMarshalerArgument, value: any): void {
     }
 }
 
-function _marshal_array_to_cs(arg: JSMarshalerArgument, value: Array<any> | TypedArray, element_type?: MarshalerType): void {
+export function marshal_array_to_cs(arg: JSMarshalerArgument, value: Array<any> | TypedArray | undefined | null, element_type?: MarshalerType): void {
     mono_assert(!!element_type, "Expected valid element_type parameter");
     marshal_array_to_cs_impl(arg, value, element_type);
 }
 
-export function marshal_array_to_cs_impl(arg: JSMarshalerArgument, value: Array<any> | TypedArray | undefined, element_type: MarshalerType): void {
+export function marshal_array_to_cs_impl(arg: JSMarshalerArgument, value: Array<any> | TypedArray | undefined | null, element_type: MarshalerType): void {
     if (value === null || value === undefined) {
         set_arg_type(arg, MarshalerType.None);
     }

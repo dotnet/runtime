@@ -59,6 +59,8 @@ export function setRuntimeGlobals(globalObjects: GlobalObjects) {
         beforeOnRuntimeInitialized: createPromiseController<void>(),
         afterOnRuntimeInitialized: createPromiseController<void>(),
         afterPostRun: createPromiseController<void>(),
+        hasDebuggingEnabled: loaderHelpers.hasDebuggingEnabled,
+        locateFile: loaderHelpers.locateFile,
     });
 
     Object.assign(globalObjects.module.config!, {}) as any;

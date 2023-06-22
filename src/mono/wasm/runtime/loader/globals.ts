@@ -55,9 +55,7 @@ export function setLoaderGlobals(
         mono_wasm_bindings_is_ready: false,
         javaScriptExports: {} as any,
         config: globalObjects.module.config,
-        diagnosticTracing: false,
-        hasDebuggingEnabled: hasDebuggingEnabled,
-        locateFile: loaderHelpers.locateFile
+        diagnosticTracing: false
     });
     Object.assign(loaderHelpers, {
         config: globalObjects.module.config,
@@ -86,6 +84,8 @@ export function setLoaderGlobals(
         mono_download_assets,
         resolve_asset_path,
         setup_proxy_console,
+
+        hasDebuggingEnabled,
 
     } as Partial<LoaderHelpers>);
 }

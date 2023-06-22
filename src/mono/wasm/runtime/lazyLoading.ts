@@ -18,7 +18,7 @@ export async function loadLazyAssembly(assemblyNameToLoad: string): Promise<bool
     }
 
     const loadedFiles = mono_wasm_get_loaded_files();
-    if (loadedFiles.includes(assemblyNameToLoad)) {
+    if (loadedFiles.some(f => f.includes(assemblyNameToLoad))) {
         return false;
     }
 
@@ -28,24 +28,23 @@ export async function loadLazyAssembly(assemblyNameToLoad: string): Promise<bool
 
     const dllBytesPromise = resourceLoader.loadResource(dllNameToLoad, runtimeHelpers.locateFile(dllNameToLoad), lazyAssemblies[dllNameToLoad], "assembly").response.then(response => response.arrayBuffer());
 
-    let assembly = null;
+    let dll = null;
+    let pdb = null;
     if (shouldLoadPdb) {
         const pdbBytesPromise = await resourceLoader.loadResource(pdbNameToLoad, runtimeHelpers.locateFile(pdbNameToLoad), lazyAssemblies[pdbNameToLoad], "pdb").response.then(response => response.arrayBuffer());
         const [dllBytes, pdbBytes] = await Promise.all([dllBytesPromise, pdbBytesPromise]);
 
-        assembly = {
-            dll: new Uint8Array(dllBytes),
-            pdb: new Uint8Array(pdbBytes),
-        };
+        dll = new Uint8Array(dllBytes);
+        pdb = new Uint8Array(pdbBytes);
     } else {
         const dllBytes = await dllBytesPromise;
-        assembly = {
-            dll: new Uint8Array(dllBytes),
-            pdb: null,
-        };
+        dll = new Uint8Array(dllBytes);
+        pdb = null;
     }
 
-    runtimeHelpers.javaScriptExports.lazy_load_assembly(assembly);
+    // TODO MF: Push to loaderHelpers.loadedFiles
+
+    runtimeHelpers.javaScriptExports.load_lazy_assembly(dll, pdb);
     return true;
 }
 

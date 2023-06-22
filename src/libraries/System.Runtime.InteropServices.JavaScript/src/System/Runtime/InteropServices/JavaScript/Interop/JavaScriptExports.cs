@@ -5,7 +5,6 @@ using System.Collections.Generic;
 using System.IO;
 using System.Reflection;
 using System.Runtime.CompilerServices;
-using System.Runtime.Loader;
 using System.Threading.Tasks;
 using System.Diagnostics.CodeAnalysis;
 
@@ -95,25 +94,40 @@ namespace System.Runtime.InteropServices.JavaScript
             }
         }
 
-        [RequiresUnreferencedCode("Types and members the loaded assemblies depend on might be removed")]
-        public static void LazyLoadAssembly(JSObject wrapper)
+        public static void LoadLazyAssembly(JSMarshalerArgument* arguments_buffer)
         {
-            var dllBytes = wrapper.GetPropertyAsByteArray("dll")!;
-            var pdbBytes = wrapper.GetPropertyAsByteArray("pdb");
+            ref JSMarshalerArgument arg_exc = ref arguments_buffer[0];
+            ref JSMarshalerArgument arg_1 = ref arguments_buffer[2];
+            ref JSMarshalerArgument arg_2 = ref arguments_buffer[3];
+            try
+            {
+                arg_1.ToManaged(out byte[]? dllBytes);
+                arg_2.ToManaged(out byte[]? pdbBytes);
 
-            if (pdbBytes == null)
-                AssemblyLoadContext.Default.LoadFromStream(new MemoryStream(dllBytes));
-            else
-                AssemblyLoadContext.Default.LoadFromStream(new MemoryStream(dllBytes), new MemoryStream(pdbBytes));
+                if (dllBytes != null)
+                    JSHostImplementation.LoadLazyAssembly(dllBytes, pdbBytes);
+            }
+            catch (Exception ex)
+            {
+                arg_exc.ToJS(ex);
+            }
         }
 
-        [RequiresUnreferencedCode("Types and members the loaded assemblies depend on might be removed")]
-        public static void LoadSatelliteAssembly(JSObject wrapper)
+        public static void LoadSatelliteAssembly(JSMarshalerArgument* arguments_buffer)
         {
-            var dllBytes = wrapper.GetPropertyAsByteArray("dll")!;
-            using var stream = new MemoryStream(dllBytes);
-            AssemblyLoadContext.Default.LoadFromStream(stream);
-            wrapper.Dispose();
+            ref JSMarshalerArgument arg_exc = ref arguments_buffer[0];
+            ref JSMarshalerArgument arg_1 = ref arguments_buffer[2];
+            try
+            {
+                arg_1.ToManaged(out byte[]? dllBytes);
+
+                if (dllBytes != null)
+                    JSHostImplementation.LoadSatelliteAssembly(dllBytes);
+            }
+            catch (Exception ex)
+            {
+                arg_exc.ToJS(ex);
+            }
         }
 
         // The JS layer invokes this method when the JS wrapper for a JS owned object
