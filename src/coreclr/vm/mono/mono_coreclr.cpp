@@ -2824,8 +2824,18 @@ extern "C" EXPORT_API MonoClass* EXPORT_CC mono_unity_class_get_generic_type_def
 
 extern "C" EXPORT_API gboolean EXPORT_CC mono_unity_class_has_failure (MonoClass * klass)
 {
-    ASSERT_NOT_IMPLEMENTED;
+#ifndef DACCESS_COMPILE
+    MonoClass_clr* clrClass = reinterpret_cast<MonoClass_clr*>(klass);
+    // If the class is inited, it can't have a failure (see MethodTable::DoRunClassInitThrowing() for details)
+    if (clrClass->IsClassInited())
+        return FALSE;
+
+    // Otherwise it is either not loaded or failed init
+    return clrClass->IsInitError();
+#else
+    // No way to check this without IsInitError missing
     return FALSE;
+#endif
 }
 
 extern "C" EXPORT_API gboolean EXPORT_CC mono_unity_class_is_abstract(MonoClass* klass)
