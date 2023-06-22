@@ -274,7 +274,7 @@ namespace System.Globalization.Tests
                 // we also don't preform.
                 // Greek Capital Letter Sigma (does not case to U+03C2 with "final sigma" rule).
                 yield return new object[] { cultureName, "\u03A3", "\u03C3" };
-                if (PlatformDetection.IsHybridGlobalizationOnBrowser || PlatformDetection.IsHybridGlobalizationOnOSX) // TODO check for OSX
+                if (PlatformDetection.IsHybridGlobalizationOnBrowser || PlatformDetection.IsHybridGlobalizationOnOSX)
                 {
                     // JS is using "final sigma" rule correctly - it's costly to unify it with ICU's behavior
                     yield return new object[] { cultureName, "O\u03A3", "o\u03C2" };
@@ -403,7 +403,8 @@ namespace System.Globalization.Tests
                 // we also don't preform.
                 // es-zed does not case to SS when uppercased.
                 yield return new object[] { cultureName, "\u00DF", "\u00DF" };
-                if (!PlatformDetection.IsHybridGlobalizationOnOSX) // TODO check for OSX
+                // Capitalizing the German letter ß (sharp S) gives SS on OSX
+                if (!PlatformDetection.IsHybridGlobalizationOnOSX)
                 {
                     yield return new object[] { cultureName, "stra\u00DFe", "STRA\u00DFE" };
                     if (!PlatformDetection.IsNlsGlobalization)

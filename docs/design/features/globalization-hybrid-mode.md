@@ -409,3 +409,26 @@ Affected public APIs:
 - CompareInfo.GetHashCode
 
 Apple Native API does not have an equivalent, so they throw `PlatformNotSupportedException`.
+
+
+## Case change
+
+Affected public APIs:
+- TextInfo.ToLower,
+- TextInfo.ToUpper
+
+Below function are used from apple native functions:
+- [uppercaseString](https://developer.apple.com/documentation/foundation/nsstring/1409855-uppercasestring)
+- [lowercaseString](https://developer.apple.com/documentation/foundation/nsstring/1408467-lowercasestring)
+- [uppercaseStringWithLocale](https://developer.apple.com/documentation/foundation/nsstring/1413316-uppercasestringwithlocale?language=objc)
+- [lowercaseStringWithLocale](https://developer.apple.com/documentation/foundation/nsstring/1417298-lowercasestringwithlocale?language=objc)
+
+Behavioural changes compared to ICU
+
+   - Capitalizing the German letter ß (sharp S) gives SS when using Apple native functions.
+
+   - Final sigma behavior correction:
+
+     ICU-based case change does not respect final-sigma rule, but hybrid does, so "ΒΌΛΟΣ" -> "βόλος", not "βόλοσ".
+
+

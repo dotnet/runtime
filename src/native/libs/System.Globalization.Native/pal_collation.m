@@ -279,14 +279,13 @@ int32_t GlobalizationNative_EndsWithNative(const uint16_t* localeName, int32_t l
  * If the code point is not valid or a trail surrogate does not fit,
  * then isError is set to true.
  *
- * @param s const UChar * string buffer
+ * @param s const uint16_t * string buffer
  * @param i string offset, must be i<capacity
  * @param capacity size of the string buffer
  * @param c code point to append
- * @param isError output UBool set to true if an error occurs, otherwise not modified
- * @stable ICU 2.4
+ * @param isError output bool set to true if an error occurs, otherwise not modified
  */
-#define Append(s, i, capacity, c, isError) UPRV_BLOCK_MACRO_BEGIN { \
+#define Append(s, i, capacity, c, isError) { \
     if((uint32_t)(c)<=0xffff) { \
         (s)[(i)++]=(uint16_t)(c); \
     } else if((uint32_t)(c)<=0x10ffff && (i)+1<(capacity)) { \
@@ -295,7 +294,7 @@ int32_t GlobalizationNative_EndsWithNative(const uint16_t* localeName, int32_t l
     } else /* c>0x10ffff or not enough space */ { \
         (isError)=true; \
     } \
-} UPRV_BLOCK_MACRO_END
+}
 
 /*
 Function:
@@ -318,10 +317,10 @@ int32_t GlobalizationNative_ChangeCaseNative(const uint16_t* localeName, int32_t
     {
         dstCodepoint = [result characterAtIndex:srcIdx];
         Append(lpDst, dstIdx, cwDstLength, dstCodepoint, isError);
+        assert(isError == false);
         srcIdx++;
-        //assert(isError == false && srcIdx == dstIdx);
     }
-    return 0;
+    return isError ? -1 : 0;
 }
 
 /*
@@ -343,10 +342,10 @@ int32_t GlobalizationNative_ChangeCaseInvariantNative(const uint16_t* lpSrc, int
     {
         dstCodepoint = [result characterAtIndex:srcIdx];
         Append(lpDst, dstIdx, cwDstLength, dstCodepoint, isError);
+        assert(isError == false);
         srcIdx++;
-        //assert(isError == false && srcIdx == dstIdx);
     }
-    return 0;
+    return isError ? -1 : 0;
 }
 
 #endif

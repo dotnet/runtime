@@ -26,8 +26,8 @@ namespace System.Globalization
             else
                 result = Interop.Globalization.ChangeCaseNative(_cultureName, _cultureName.Length, src, srcLen, dstBuffer, dstBufferCapacity, toUpper);
 
-            if (result == -1)
-                throw new Exception("Exception while case changing");
+            if (result != 0)
+                throw new Exception("Exception occured while case changing");
         }
     }
 }
