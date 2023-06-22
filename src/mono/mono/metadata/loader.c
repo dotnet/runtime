@@ -46,7 +46,7 @@
 #include <mono/metadata/jit-info.h>
 #include <mono/utils/mono-logger-internals.h>
 #include <mono/utils/mono-dl.h>
-#include <mono/utils/mono-membar.h>
+#include <mono/utils/mono-memory-model.h>
 #include <mono/utils/mono-counters.h>
 #include <mono/utils/mono-error-internals.h>
 #include <mono/utils/mono-tls.h>

@@ -4097,7 +4097,8 @@ decode_patch (MonoAotModule *aot_module, MonoMemPool *mp, MonoJumpInfo *ji, guin
 			case MONO_PATCH_INFO_DELEGATE_INFO:
 			case MONO_PATCH_INFO_VIRT_METHOD:
 			case MONO_PATCH_INFO_GSHAREDVT_METHOD:
-			case MONO_PATCH_INFO_GSHAREDVT_CALL: {
+			case MONO_PATCH_INFO_GSHAREDVT_CALL:
+			case MONO_PATCH_INFO_SIGNATURE: {
 				MonoJumpInfo tmp;
 				tmp.type = patch_type;
 				if (!decode_patch (aot_module, mp, &tmp, p, &p))

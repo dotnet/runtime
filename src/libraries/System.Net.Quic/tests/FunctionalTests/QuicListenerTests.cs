@@ -372,5 +372,103 @@ namespace System.Net.Quic.Tests
                     await connection.DisposeAsync();
                 }).WaitAsync(TimeSpan.FromSeconds(5)));
         }
+
+        [Fact]
+        public async Task Listener_AlpnNarrowingDown_Success()
+        {
+            using CancellationTokenSource testTimeoutCts = new CancellationTokenSource(PassingTestTimeout);
+            CancellationToken timeoutToken = testTimeoutCts.Token;
+
+            var listenerOptions = new QuicListenerOptions()
+            {
+                ListenEndPoint = new IPEndPoint(IPAddress.Loopback, 0),
+                ApplicationProtocols = new List<SslApplicationProtocol>()
+                {
+                    new SslApplicationProtocol("foo"),
+                    new SslApplicationProtocol("bar"),
+                    new SslApplicationProtocol("test"),
+                },
+                ConnectionOptionsCallback = (_, _, _) =>
+                {
+                    // Narrowing down alpn list to more specific.
+                    var options = CreateQuicServerOptions();
+                    options.ServerAuthenticationOptions.ApplicationProtocols = new()
+                    {
+                        new SslApplicationProtocol("bar"),
+                        new SslApplicationProtocol("test"),
+                    };
+                    return ValueTask.FromResult(options);
+                }
+            };
+            await using QuicListener listener = await CreateQuicListener(listenerOptions);
+
+            // Successful connection with bar ALPN
+            QuicClientConnectionOptions clientOptions1 = CreateQuicClientOptions(listener.LocalEndPoint);
+            clientOptions1.ClientAuthenticationOptions.ApplicationProtocols = new()
+            {
+                new SslApplicationProtocol("foo"),
+                new SslApplicationProtocol("bar"),
+            };
+            ValueTask<QuicConnection> connectTask1 = CreateQuicConnection(clientOptions1);
+            await using QuicConnection serverConnection1 = await listener.AcceptConnectionAsync().AsTask().WaitAsync(timeoutToken);
+            await using QuicConnection clientConnection1 = await connectTask1.AsTask().WaitAsync(timeoutToken);
+
+            Assert.Equal(new SslApplicationProtocol("bar"), clientConnection1.NegotiatedApplicationProtocol);
+
+            // Successful connection with test ALPN
+            QuicClientConnectionOptions clientOptions2 = CreateQuicClientOptions(listener.LocalEndPoint);
+            clientOptions2.ClientAuthenticationOptions.ApplicationProtocols = new()
+            {
+                new SslApplicationProtocol("foo"),
+                new SslApplicationProtocol("test"),
+            };
+            ValueTask<QuicConnection> connectTask2 = CreateQuicConnection(clientOptions2);
+            await using QuicConnection serverConnection2 = await listener.AcceptConnectionAsync().AsTask().WaitAsync(timeoutToken);
+            await using QuicConnection clientConnection2 = await connectTask2.AsTask().WaitAsync(timeoutToken);
+
+            Assert.Equal(new SslApplicationProtocol("test"), clientConnection2.NegotiatedApplicationProtocol);
+        }
+
+        [ActiveIssue("https://github.com/dotnet/runtime/issues/86701")]
+        [Theory]
+        [InlineData("foo")]
+        [InlineData("not_existing")]
+        public async Task Listener_AlpnNarrowingDown_Failure(string alpn)
+        {
+            using CancellationTokenSource testTimeoutCts = new CancellationTokenSource(PassingTestTimeout);
+            CancellationToken timeoutToken = testTimeoutCts.Token;
+
+            var listenerOptions = new QuicListenerOptions()
+            {
+                ListenEndPoint = new IPEndPoint(IPAddress.Loopback, 0),
+                ApplicationProtocols = new List<SslApplicationProtocol>()
+                {
+                    new SslApplicationProtocol("foo"),
+                    new SslApplicationProtocol("bar"),
+                    new SslApplicationProtocol("test"),
+                },
+                ConnectionOptionsCallback = (_, _, _) =>
+                {
+                    // Narrowing down alpn list to more specific.
+                    var options = CreateQuicServerOptions();
+                    options.ServerAuthenticationOptions.ApplicationProtocols = new()
+                    {
+                        new SslApplicationProtocol("bar"),
+                        new SslApplicationProtocol("test"),
+                    };
+                    return ValueTask.FromResult(options);
+                }
+            };
+            await using QuicListener listener = await CreateQuicListener(listenerOptions);
+
+            QuicClientConnectionOptions clientOptions = CreateQuicClientOptions(listener.LocalEndPoint);
+            clientOptions.ClientAuthenticationOptions.ApplicationProtocols = new()
+            {
+                new SslApplicationProtocol(alpn),
+            };
+            ValueTask<QuicConnection> connectTask = CreateQuicConnection(clientOptions);
+            await Assert.ThrowsAsync<AuthenticationException>(() => listener.AcceptConnectionAsync().AsTask().WaitAsync(timeoutToken));
+            await Assert.ThrowsAsync<AuthenticationException>(() => connectTask.AsTask().WaitAsync(timeoutToken));
+        }
     }
 }

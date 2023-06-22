@@ -649,7 +649,7 @@ bool emitter::emitInsMayWriteMultipleRegs(instrDesc* id)
  *  Return a string that represents the given register.
  */
 
-const char* emitter::emitRegName(regNumber reg, emitAttr attr, bool varName)
+const char* emitter::emitRegName(regNumber reg, emitAttr attr, bool varName) const
 {
     assert(reg < REG_COUNT);
 
@@ -7089,14 +7089,10 @@ void emitter::emitDispGC(emitAttr attr)
 
 void emitter::emitDispInsHex(instrDesc* id, BYTE* code, size_t sz)
 {
-#ifdef DEBUG
-    if (!emitComp->opts.disAddr)
+    if (!emitComp->opts.disCodeBytes)
     {
         return;
     }
-#else // DEBUG
-    return;
-#endif
 
     // We do not display the instruction hex if we want diff-able disassembly
     if (!emitComp->opts.disDiffable)

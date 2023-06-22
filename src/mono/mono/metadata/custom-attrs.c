@@ -52,7 +52,7 @@ static GENERATE_GET_CLASS_WITH_CACHE (custom_attribute_named_argument, "System.R
 static GENERATE_TRY_GET_CLASS_WITH_CACHE (customattribute_data, "System.Reflection", "RuntimeCustomAttributeData");
 
 static MonoCustomAttrInfo*
-mono_custom_attrs_from_builders_handle (MonoImage *alloc_img, MonoImage *image, MonoArrayHandle cattrs);
+mono_custom_attrs_from_builders_handle (MonoImage *alloc_img, MonoImage *image, MonoArrayHandle cattrs, gboolean respect_cattr_visibility);
 
 static gboolean
 bcheck_blob (const char *ptr, int bump, const char *endp, MonoError *error);
@@ -90,21 +90,49 @@ lookup_custom_attr (MonoImage *image, gpointer member)
 	return res;
 }
 
-static gboolean
-custom_attr_visible (MonoImage *image, MonoReflectionCustomAttrHandle cattr, MonoReflectionMethodHandle ctor_handle, MonoMethod **ctor_method)
-// ctor_handle is local to this function, allocated by its caller for efficiency.
+/**
+ * get_attr_ctor_method_from_handle:
+ * \param cattr custom attribute runtime handle
+ * \param ctor_handle constructor handle (allocated by the caller for efficiency)
+ *
+ * \returns the custom attribute constructor as MonoMethod
+ */
+static MonoMethod*
+get_attr_ctor_method_from_handle (MonoReflectionCustomAttrHandle cattr, MonoReflectionMethodHandle ctor_handle)
 {
 	MONO_REQ_GC_UNSAFE_MODE;
 
 	MONO_HANDLE_GET (ctor_handle, cattr, ctor);
-	*ctor_method = MONO_HANDLE_GETVAL (ctor_handle, method);
+	return MONO_HANDLE_GETVAL (ctor_handle, method);
+}
+
+/**
+ * custom_attr_visible:
+ * \param target_image decorated target
+ * \param cattr custom attribute runtime handle
+ * \param ctor_handle constructor handle (allocated by the caller for efficiency)
+ * \param ctor_method (out param) the custom attribute constructor as MonoMethod if the custom attribute is visible, otherwise NULL
+ *
+ * \returns TRUE if the custom attribute is visible on a decorated type, otherwise FALSE
+ * 
+ * Determines if a custom attribute is visible for a decorated target \p target_image
+ * 
+ * FIXME: the return value is also TRUE when custom attribute constructor is NULL, which is probably a bug
+ */
+static gboolean
+custom_attr_visible (MonoImage *target_image, MonoReflectionCustomAttrHandle cattr, MonoReflectionMethodHandle ctor_handle, MonoMethod **ctor_method)
+{
+	*ctor_method = get_attr_ctor_method_from_handle(cattr, ctor_handle);
 
 	/* FIXME: Need to do more checks */
 	if (*ctor_method) {
-		MonoClass *klass = (*ctor_method)->klass;
-		if (m_class_get_image (klass) != image) {
-			const int visibility = (mono_class_get_flags (klass) & TYPE_ATTRIBUTE_VISIBILITY_MASK);
-			if ((visibility != TYPE_ATTRIBUTE_PUBLIC) && (visibility != TYPE_ATTRIBUTE_NESTED_PUBLIC))
+		MonoClass *cattr_klass = (*ctor_method)->klass;
+		MonoImage *cattr_image = m_class_get_image (cattr_klass);
+		// To determine the visibility of a custom attribute we need to compare assembly images of the source: custom attribute, and the target: type/module/assembly
+		// This is required as a module has a different MonoImage compared to its owning assembly.
+		if (cattr_image->assembly->image != target_image->assembly->image) {
+			const int cattr_visibility = (mono_class_get_flags (cattr_klass) & TYPE_ATTRIBUTE_VISIBILITY_MASK);
+			if ((cattr_visibility != TYPE_ATTRIBUTE_PUBLIC) && (cattr_visibility != TYPE_ATTRIBUTE_NESTED_PUBLIC))
 				return FALSE;
 		}
 	}
@@ -924,8 +952,17 @@ create_cattr_named_arg (void *minfo, MonoObject *typedarg, MonoError *error)
 	return retval;
 }
 
+/**
+ * mono_custom_attrs_from_builders_handle:
+ * \param alloc_img allocated memory (dynamic assemblies) or image mempool
+ * \param image target image
+ * \param cattrs custom attributes handles array
+ * \param respect_cattr_visibility flag indicating whether visibility should be taken into account when resolving custom attributes
+ *
+ * \returns the custom attribute info for attributes defined for the reflection builders handle
+ */
 static MonoCustomAttrInfo*
-mono_custom_attrs_from_builders_handle (MonoImage *alloc_img, MonoImage *image, MonoArrayHandle cattrs)
+mono_custom_attrs_from_builders_handle (MonoImage *alloc_img, MonoImage *image, MonoArrayHandle cattrs, gboolean respect_cattr_visibility)
 {
 	MONO_REQ_GC_UNSAFE_MODE;
 
@@ -942,13 +979,15 @@ mono_custom_attrs_from_builders_handle (MonoImage *alloc_img, MonoImage *image, 
 
 	int const count = GUINTPTR_TO_INT (mono_array_handle_length (cattrs));
 	MonoMethod *ctor_method =  NULL;
-
-	/* Skip nonpublic attributes since MS.NET seems to do the same */
-	/* FIXME: This needs to be done more globally */
 	int count_visible = 0;
-	for (int i = 0; i < count; ++i) {
-		MONO_HANDLE_ARRAY_GETREF (cattr, cattrs, i);
-		count_visible += custom_attr_visible (image, cattr, ctor_handle, &ctor_method);
+
+	if (respect_cattr_visibility) {
+		for (int i = 0; i < count; ++i) {
+			MONO_HANDLE_ARRAY_GETREF (cattr, cattrs, i);
+			count_visible += custom_attr_visible (image, cattr, ctor_handle, &ctor_method);
+		}
+	} else {
+		count_visible = count;
 	}
 
 	MonoCustomAttrInfo *ainfo;
@@ -960,8 +999,13 @@ mono_custom_attrs_from_builders_handle (MonoImage *alloc_img, MonoImage *image, 
 	int index = 0;
 	for (int i = 0; i < count; ++i) {
 		MONO_HANDLE_ARRAY_GETREF (cattr, cattrs, i);
-		if (!custom_attr_visible (image, cattr, ctor_handle, &ctor_method))
-			continue;
+		if (respect_cattr_visibility) {
+			if (!custom_attr_visible (image, cattr, ctor_handle, &ctor_method)) {
+				continue;
+			}
+		}  else {
+			ctor_method = get_attr_ctor_method_from_handle(cattr, ctor_handle);
+		}
 
 		if (image_is_dynamic (image))
 			mono_reflection_resolution_scope_from_image ((MonoDynamicImage *)image->assembly->image, m_class_get_image (ctor_method->klass));
@@ -981,11 +1025,20 @@ mono_custom_attrs_from_builders_handle (MonoImage *alloc_img, MonoImage *image, 
 	HANDLE_FUNCTION_RETURN_VAL (ainfo);
 }
 
+/**
+ * mono_custom_attrs_from_builders:
+ * \param alloc_img allocated memory (dynamic assemblies) or image mempool
+ * \param image target image
+ * \param cattrs custom attributes array
+ * \param respect_cattr_visibility flag indicating whether visibility should be taken into account when resolving custom attributes
+ *
+ * \returns the custom attribute info for attributes defined for the reflection builders
+ */
 MonoCustomAttrInfo*
-mono_custom_attrs_from_builders (MonoImage *alloc_img, MonoImage *image, MonoArray* cattrs)
+mono_custom_attrs_from_builders (MonoImage *alloc_img, MonoImage *image, MonoArray* cattrs, gboolean respect_cattr_visibility)
 {
 	HANDLE_FUNCTION_ENTER ();
-	MonoCustomAttrInfo* const result = mono_custom_attrs_from_builders_handle (alloc_img, image, MONO_HANDLE_NEW (MonoArray, cattrs));
+	MonoCustomAttrInfo* const result = mono_custom_attrs_from_builders_handle (alloc_img, image, MONO_HANDLE_NEW (MonoArray, cattrs), respect_cattr_visibility);
 	HANDLE_FUNCTION_RETURN_VAL (result);
 }
 
@@ -2353,7 +2406,8 @@ mono_reflection_get_custom_attrs_info (MonoObject *obj_raw)
 	HANDLE_FUNCTION_ENTER ();
 	ERROR_DECL (error);
 	MONO_HANDLE_DCL (MonoObject, obj);
-	MonoCustomAttrInfo * const result = mono_reflection_get_custom_attrs_info_checked (obj, error);
+	// fetching custom attributes defined on the reflection handle should always respect custom attribute visibility
+	MonoCustomAttrInfo * const result = mono_reflection_get_custom_attrs_info_checked (obj, error, TRUE);
 	mono_error_assert_ok (error);
 	HANDLE_FUNCTION_RETURN_VAL (result);
 }
@@ -2362,6 +2416,7 @@ mono_reflection_get_custom_attrs_info (MonoObject *obj_raw)
  * mono_reflection_get_custom_attrs_info_checked:
  * \param obj a reflection object handle
  * \param error set on error
+ * \param respect_cattr_visibility flag indicating whether visibility should be taken into account when resolving custom attributes
  *
  * \returns the custom attribute info for attributes defined for the
  * reflection handle \p obj. The objects. On failure returns NULL and sets \p error.
@@ -2369,7 +2424,7 @@ mono_reflection_get_custom_attrs_info (MonoObject *obj_raw)
  * FIXME this function leaks like a sieve for SRE objects.
  */
 MonoCustomAttrInfo*
-mono_reflection_get_custom_attrs_info_checked (MonoObjectHandle obj, MonoError *error)
+mono_reflection_get_custom_attrs_info_checked (MonoObjectHandle obj, MonoError *error, gboolean respect_cattr_visibility)
 {
 	HANDLE_FUNCTION_ENTER ();
 	MonoClass *klass;
@@ -2459,18 +2514,18 @@ mono_reflection_get_custom_attrs_info_checked (MonoObjectHandle obj, MonoError *
 		MonoArrayHandle cattrs = MONO_HANDLE_NEW_GET (MonoArray, assemblyb, cattrs);
 		MonoImage * image = MONO_HANDLE_GETVAL (assembly, assembly)->image;
 		g_assert (image);
-		cinfo = mono_custom_attrs_from_builders_handle (NULL, image, cattrs);
+		cinfo = mono_custom_attrs_from_builders_handle (NULL, image, cattrs, respect_cattr_visibility);
 	} else if (mono_is_sre_type_builder (klass)) {
 		MonoReflectionTypeBuilderHandle tb = MONO_HANDLE_CAST (MonoReflectionTypeBuilder, obj);
 		MonoReflectionModuleBuilderHandle module = MONO_HANDLE_NEW_GET (MonoReflectionModuleBuilder, tb, module);
 		MonoDynamicImage *dynamic_image = MONO_HANDLE_GETVAL (module, dynamic_image);
 		MonoArrayHandle cattrs = MONO_HANDLE_NEW_GET (MonoArray, tb, cattrs);
-		cinfo = mono_custom_attrs_from_builders_handle (NULL, &dynamic_image->image, cattrs);
+		cinfo = mono_custom_attrs_from_builders_handle (NULL, &dynamic_image->image, cattrs, respect_cattr_visibility);
 	} else if (mono_is_sre_module_builder (klass)) {
 		MonoReflectionModuleBuilderHandle mb = MONO_HANDLE_CAST (MonoReflectionModuleBuilder, obj);
 		MonoDynamicImage *dynamic_image = MONO_HANDLE_GETVAL (mb, dynamic_image);
 		MonoArrayHandle cattrs = MONO_HANDLE_NEW_GET (MonoArray, mb, cattrs);
-		cinfo = mono_custom_attrs_from_builders_handle (NULL, &dynamic_image->image, cattrs);
+		cinfo = mono_custom_attrs_from_builders_handle (NULL, &dynamic_image->image, cattrs, respect_cattr_visibility);
 	} else if (mono_is_sre_ctor_builder (klass)) {
 		mono_error_set_not_supported (error, "");
 		goto leave;
@@ -2478,18 +2533,18 @@ mono_reflection_get_custom_attrs_info_checked (MonoObjectHandle obj, MonoError *
 		MonoReflectionMethodBuilderHandle mb = MONO_HANDLE_CAST (MonoReflectionMethodBuilder, obj);
 		MonoMethod *mhandle = MONO_HANDLE_GETVAL (mb, mhandle);
 		MonoArrayHandle cattrs = MONO_HANDLE_NEW_GET (MonoArray, mb, cattrs);
-		cinfo = mono_custom_attrs_from_builders_handle (NULL, m_class_get_image (mhandle->klass), cattrs);
+		cinfo = mono_custom_attrs_from_builders_handle (NULL, m_class_get_image (mhandle->klass), cattrs, respect_cattr_visibility);
 	} else if (mono_is_sre_field_builder (klass)) {
 		MonoReflectionFieldBuilderHandle fb = MONO_HANDLE_CAST (MonoReflectionFieldBuilder, obj);
 		MonoReflectionTypeBuilderHandle tb = MONO_HANDLE_CAST (MonoReflectionTypeBuilder, MONO_HANDLE_NEW_GET (MonoReflectionType, fb, typeb));
 		MonoReflectionModuleBuilderHandle mb = MONO_HANDLE_NEW_GET (MonoReflectionModuleBuilder, tb, module);
 		MonoDynamicImage *dynamic_image = MONO_HANDLE_GETVAL (mb, dynamic_image);
 		MonoArrayHandle cattrs = MONO_HANDLE_NEW_GET (MonoArray, fb, cattrs);
-		cinfo = mono_custom_attrs_from_builders_handle (NULL, &dynamic_image->image, cattrs);
+		cinfo = mono_custom_attrs_from_builders_handle (NULL, &dynamic_image->image, cattrs, respect_cattr_visibility);
 	} else if (strcmp ("MonoGenericClass", klass_name) == 0) {
 		MonoReflectionGenericClassHandle gclass = MONO_HANDLE_CAST (MonoReflectionGenericClass, obj);
 		MonoReflectionTypeHandle generic_type = MONO_HANDLE_NEW_GET (MonoReflectionType, gclass, generic_type);
-		cinfo = mono_reflection_get_custom_attrs_info_checked (MONO_HANDLE_CAST (MonoObject, generic_type), error);
+		cinfo = mono_reflection_get_custom_attrs_info_checked (MONO_HANDLE_CAST (MonoObject, generic_type), error, respect_cattr_visibility);
 		goto_if_nok (error, leave);
 	} else { /* handle other types here... */
 		g_error ("get custom attrs not yet supported for %s", m_class_get_name (klass));
@@ -2524,7 +2579,8 @@ mono_reflection_get_custom_attrs_by_type_handle (MonoObjectHandle obj, MonoClass
 
 	error_init (error);
 
-	cinfo = mono_reflection_get_custom_attrs_info_checked (obj, error);
+	// fetching custom attributes defined on the reflection handle should always respect custom attribute visibility
+	cinfo = mono_reflection_get_custom_attrs_info_checked (obj, error, TRUE);
 	goto_if_nok (error, leave);
 	if (cinfo) {
 		MONO_HANDLE_ASSIGN (result, mono_custom_attrs_construct_by_type (cinfo, attr_klass, error));
@@ -2589,7 +2645,8 @@ mono_reflection_get_custom_attrs_data_checked (MonoObjectHandle obj, MonoError *
 	MonoArrayHandle result = MONO_HANDLE_NEW (MonoArray, NULL);
 	MonoCustomAttrInfo *cinfo;
 
-	cinfo = mono_reflection_get_custom_attrs_info_checked (obj, error);
+	// fetching custom attributes data defined on the reflection handle should not respect custom attribute visibility
+	cinfo = mono_reflection_get_custom_attrs_info_checked (obj, error, FALSE);
 	goto_if_nok (error, leave);
 	if (cinfo) {
 		MONO_HANDLE_ASSIGN (result, mono_custom_attrs_data_construct (cinfo, error));

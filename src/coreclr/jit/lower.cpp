@@ -1900,7 +1900,7 @@ GenTree* Lowering::LowerCallMemcmp(GenTreeCall* call)
             ssize_t MaxUnrollSize = comp->IsBaselineSimdIsaSupported() ? 32 : 16;
 
 #if defined(FEATURE_SIMD) && defined(TARGET_XARCH)
-            if (comp->compOpportunisticallyDependsOn(InstructionSet_Vector512))
+            if (comp->IsBaselineVector512IsaSupportedOpportunistically())
             {
                 MaxUnrollSize = 128;
             }

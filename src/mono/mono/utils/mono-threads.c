@@ -648,6 +648,10 @@ unregister_thread (void *arg)
 
 	mono_thread_info_suspend_unlock ();
 
+#ifdef HOST_BROWSER
+	mono_threads_wasm_on_thread_detached ();
+#endif
+
 	g_byte_array_free (info->stackdata, /*free_segment=*/TRUE);
 
 	/*now it's safe to free the thread info.*/
