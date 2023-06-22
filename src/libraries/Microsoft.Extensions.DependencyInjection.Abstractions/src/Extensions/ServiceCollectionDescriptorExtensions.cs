@@ -473,7 +473,8 @@ namespace Microsoft.Extensions.DependencyInjection.Extensions
             {
                 ServiceDescriptor service = services[i];
                 if (service.ServiceType == descriptor.ServiceType &&
-                    service.GetImplementationType() == implementationType)
+                    service.GetImplementationType() == implementationType &&
+                    service.ServiceKey == descriptor.ServiceKey)
                 {
                     // Already added
                     return;
@@ -531,7 +532,7 @@ namespace Microsoft.Extensions.DependencyInjection.Extensions
             int count = collection.Count;
             for (int i = 0; i < count; i++)
             {
-                if (collection[i].ServiceType == descriptor.ServiceType)
+                if (collection[i].ServiceType == descriptor.ServiceType && collection[i].ServiceKey == descriptor.ServiceKey)
                 {
                     collection.RemoveAt(i);
                     break;
@@ -565,7 +566,7 @@ namespace Microsoft.Extensions.DependencyInjection.Extensions
             for (int i = collection.Count - 1; i >= 0; i--)
             {
                 ServiceDescriptor? descriptor = collection[i];
-                if (descriptor.ServiceType == serviceType)
+                if (descriptor.ServiceType == serviceType && descriptor.ServiceKey == null)
                 {
                     collection.RemoveAt(i);
                 }
