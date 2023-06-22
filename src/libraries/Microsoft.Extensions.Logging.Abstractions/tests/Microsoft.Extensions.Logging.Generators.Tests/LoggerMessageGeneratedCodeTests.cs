@@ -209,7 +209,7 @@ namespace Microsoft.Extensions.Logging.Generators.Tests
             Assert.Null(logger.LastException);
             Assert.Equal(string.Empty, logger.LastFormattedString);
             Assert.Equal(LogLevel.Trace, logger.LastLogLevel);
-            Assert.Equal(350_427_049, logger.LastEventId.Id);
+            Assert.Equal(400_526_807, logger.LastEventId.Id);
             Assert.Equal(1, logger.CallCount);
 
             logger.Reset();
@@ -291,7 +291,7 @@ namespace Microsoft.Extensions.Logging.Generators.Tests
             Assert.Null(logger.LastException);
             Assert.Equal("M2 Bar", logger.LastFormattedString);
             Assert.Equal(LogLevel.Information, logger.LastLogLevel);
-            Assert.Equal(1_924_405_161, logger.LastEventId.Id);
+            Assert.Equal(350_193_950, logger.LastEventId.Id);
 
             // [LoggerMessage("M3 {p1}")]
             logger.Reset();
@@ -299,7 +299,7 @@ namespace Microsoft.Extensions.Logging.Generators.Tests
             Assert.Null(logger.LastException);
             Assert.Equal("M3 Foo Bar", logger.LastFormattedString);
             Assert.Equal(LogLevel.Critical, logger.LastLogLevel);
-            Assert.Equal(31_909_975, logger.LastEventId.Id);
+            Assert.Equal(366_971_569, logger.LastEventId.Id);
 
             // [LoggerMessage(LogLevel.Debug)]
             logger.Reset();
@@ -307,7 +307,7 @@ namespace Microsoft.Extensions.Logging.Generators.Tests
             Assert.Null(logger.LastException);
             Assert.Equal("", logger.LastFormattedString);
             Assert.Equal(LogLevel.Debug, logger.LastLogLevel);
-            Assert.Equal(1_988_225_111, logger.LastEventId.Id);
+            Assert.Equal(383_749_188, logger.LastEventId.Id);
 
             // [LoggerMessage(level: LogLevel.Warning, message: "custom message {v}", eventId: 12341)]
             logger.Reset();
@@ -324,7 +324,7 @@ namespace Microsoft.Extensions.Logging.Generators.Tests
             Assert.Equal("M6 - Generate event Id", logger.LastFormattedString);
             Assert.Equal(LogLevel.Information, logger.LastLogLevel);
             Assert.Equal("My Event Name", logger.LastEventId.Name);
-            Assert.Equal(508_718_732, logger.LastEventId.Id);
+            Assert.Equal(26_601_394, logger.LastEventId.Id);
 
             // [LoggerMessage(Level = LogLevel.Warning, Message = "M7 - {p1}")]
             logger.Reset();
@@ -333,7 +333,7 @@ namespace Microsoft.Extensions.Logging.Generators.Tests
             Assert.Equal("M7 - Generate event Id", logger.LastFormattedString);
             Assert.Equal(LogLevel.Warning, logger.LastLogLevel);
             Assert.Equal("M7", logger.LastEventId.Name);
-            Assert.Equal(732_764_073, logger.LastEventId.Id);
+            Assert.Equal(434_082_045, logger.LastEventId.Id);
 
             // [LoggerMessage(EventId = 100, Level = LogLevel.Warning, Message = "M8 - {p1}")]
             logger.Reset();

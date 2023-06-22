@@ -6,7 +6,6 @@ using System.Collections.Generic;
 using System.Collections.Immutable;
 using System.Diagnostics;
 using System.Linq;
-using System.Runtime.CompilerServices;
 using System.Threading;
 using Microsoft.CodeAnalysis;
 using Microsoft.CodeAnalysis.CSharp;
@@ -817,47 +816,18 @@ namespace Microsoft.Extensions.Logging.Generators
             public bool IsTemplateParameter => !IsLogger && !IsException && !IsLogLevel;
         }
 
-        [MethodImpl(MethodImplOptions.AggressiveInlining)]
-        public static uint RotateLeft(uint value, int offset) => (value << offset) | (value >> (32 - offset));
-
         /// <summary>
         /// Returns a non-randomized hash code for the given string.
-        /// This implementation is porting the one used in the core
-        /// https://github.com/dotnet/runtime/blob/f3b599e5777eb1db7c396fdc1597c390f22879e6/src/libraries/System.Private.CoreLib/src/System/String.Comparison.cs#L815
         /// We always return a positive value.
         /// </summary>
-        private static int GetNonRandomizedHashCode(string source)
+        internal static int GetNonRandomizedHashCode(string s)
         {
-            uint hash1 = (5381 << 16) + 5381;
-            uint hash2 = hash1;
-
-            int index = 0;
-            int length = source.Length;
-
-            while (index <= length - 4)
+            uint result = 2166136261u;
+            foreach (char c in s)
             {
-                hash1 = (RotateLeft(hash1, 5) + hash1) ^ (uint)(source[index] | (source[index + 1] << 16));
-                hash2 = (RotateLeft(hash2, 5) + hash2) ^ (uint)(source[index + 2] | ((uint)source[index + 3] << 16));
-                index += 4;
+                result = (c ^ result) * 16777619;
             }
-
-            switch (length - index)
-            {
-                case 1:
-                    hash2 = (RotateLeft(hash1, 5) + hash2) ^ (uint)(source[index]);
-                    break;
-
-                case 2:
-                    hash2 = (RotateLeft(hash1, 5) + hash2) ^ (uint)(source[index] | (source[index + 1] << 16));
-                    break;
-
-                case 3:
-                    hash1 = (RotateLeft(hash1, 5) + hash1) ^ (uint)(source[index] | ((uint)source[index + 1] << 16));
-                    hash2 = (RotateLeft(hash2, 5) + hash2) ^ (uint)source[index + 2];
-                    break;
-            }
-
-            return Math.Abs((int)(hash1 + (hash2 * 1566083941)));
+            return Math.Abs((int)result);
         }
     }
 }
