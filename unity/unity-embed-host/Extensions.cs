@@ -34,6 +34,4 @@ static class Extensions
         => GCHandle.FromIntPtr(intPtr);
 
     public static Assembly AssemblyFromGCHandleIntPtr(this nint intPtr) => (Assembly)intPtr.ToGCHandle().Target;
-
-    public static ALCWrapper ALCWrapperFromGCHandleIntPtr(this nint intPtr) => (ALCWrapper)intPtr.ToGCHandle().Target;
 }

@@ -523,7 +523,7 @@ public abstract class BaseEmbeddingApiTests
             byte[] utf8Bytes = Encoding.UTF8.GetBytes(location);
             fixed (byte* bytes = utf8Bytes)
             {
-                var asm = CoreCLRHost.load_assembly_from_path(IntPtr.Zero, bytes, utf8Bytes.Length);
+                var asm = CoreCLRHost.load_assembly_from_path(bytes, utf8Bytes.Length);
                 var result = (Assembly)ClrHost.assembly_get_object(asm);
                 Assert.That(result.Location, Is.EqualTo(GetType().Assembly.Location));
             }
