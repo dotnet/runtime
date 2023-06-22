@@ -5,7 +5,7 @@
 // -----------------------------------------------------------------------------------------------------------
 //
 // Minimal Crst implementation based on CRITICAL_SECTION. Doesn't support much except for the basic locking
-// functionality (in particular there is no rank violation checking)
+// functionality (in particular there is no rank violation checking)..
 //
 
 #ifndef __Crst_h__
