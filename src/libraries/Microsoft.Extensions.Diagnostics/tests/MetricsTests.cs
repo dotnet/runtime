@@ -119,16 +119,9 @@ namespace Microsoft.Extensions.Diagnostics.Metrics.Tests
             Counter<int> counter = meter.CreateCounter<int>("MyCounter");
 
             using MeterListener listener = new MeterListener();
-            listener.InstrumentPublished = (instrument, theListener) =>
-            {
-                if (instrument == counter)
-                {
-                    listener.EnableMeasurementEvents(counter, counter);
-                }
-            };
             int lastMeasurement = 0;
             listener.SetMeasurementEventCallback<int>((inst, measurement, tags, state) => lastMeasurement = measurement);
-            listener.Start();
+            listener.EnableMeasurementEvents(counter, null);
 
             counter.Add(10);
             Assert.Equal(10, lastMeasurement);
