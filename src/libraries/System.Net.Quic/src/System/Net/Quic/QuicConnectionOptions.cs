@@ -132,11 +132,6 @@ public sealed class QuicClientConnectionOptions : QuicConnectionOptions
         {
             throw new ArgumentNullException(SR.Format(SR.net_quic_not_null_open_connection, nameof(QuicClientConnectionOptions.RemoteEndPoint)), argumentName);
         }
-
-        if (RemoteEndPoint.AddressFamily == AddressFamily.InterNetwork && !Socket.OSSupportsIPv4)
-        {
-            throw new SocketException((int)SocketError.AddressFamilyNotSupported);
-        }
     }
 }
 

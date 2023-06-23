@@ -47,11 +47,6 @@ public sealed class QuicListenerOptions
             throw new ArgumentNullException(SR.Format(SR.net_quic_not_null_listener, nameof(QuicListenerOptions.ListenEndPoint)), argumentName);
         }
 
-        if (ListenEndPoint.AddressFamily == AddressFamily.InterNetwork && !Socket.OSSupportsIPv4)
-        {
-            throw new SocketException((int)SocketError.AddressFamilyNotSupported);
-        }
-
         if (ApplicationProtocols is null || ApplicationProtocols.Count <= 0)
         {
             throw new ArgumentNullException(SR.Format(SR.net_quic_not_null_not_empty_listener, nameof(QuicListenerOptions.ApplicationProtocols)), argumentName);
