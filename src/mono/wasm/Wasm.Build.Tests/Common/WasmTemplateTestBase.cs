@@ -5,6 +5,7 @@
 
 using System.IO;
 using System.Runtime.Serialization.Json;
+using System.Text;
 using Microsoft.NET.Sdk.WebAssembly;
 using Xunit;
 using Xunit.Abstractions;
@@ -56,6 +57,47 @@ public abstract class WasmTemplateTestBase : BuildTestBase
         AddItemsPropertiesToProject(projectfile, extraProperties, extraItems);
 
         return projectfile;
+    }
+
+    public (string projectDir, string buildOutput) BuildProject(BuildArgs buildArgs,
+                              string id,
+                              BuildProjectOptions buildProjectOptions,
+                              AssertTestMainJsAppBundleOptions? assertAppBundleOptions = null)
+    {
+        StringBuilder buildCmdLine = new();
+        buildCmdLine.Append(buildProjectOptions.Publish ? "publish" : "build");
+        buildCmdLine.Append($" -c {buildArgs.Config} -bl:{Path.Combine(s_buildEnv.LogRootPath, $"{id}.binlog")} {buildArgs.ExtraBuildArgs}");
+        if (buildProjectOptions.Publish && buildProjectOptions.BuildOnlyAfterPublish)
+            buildCmdLine.Append(" -p:WasmBuildOnlyAfterPublish=true");
+
+        CommandResult res = new DotNetCommand(s_buildEnv, _testOutput)
+                                .WithWorkingDirectory(_projectDir!)
+                                .WithEnvironmentVariables(buildProjectOptions.ExtraBuildEnvironmentVariables)
+                                .ExecuteWithCapturedOutput(buildCmdLine.ToString());
+        if (buildProjectOptions.ExpectSuccess)
+            res.EnsureSuccessful();
+        else
+            Assert.NotEqual(0, res.ExitCode);
+
+
+        TestMainJsProjectProvider.AssertRuntimePackPath(res.Output, buildProjectOptions.TargetFramework ?? DefaultTargetFramework);
+        string bundleDir = Path.Combine(GetBinDir(config: buildArgs.Config, targetFramework: buildProjectOptions.TargetFramework ?? DefaultTargetFramework), "AppBundle");
+
+        assertAppBundleOptions ??= new AssertTestMainJsAppBundleOptions(
+                                        bundleDir,
+                                        buildArgs.ProjectName,
+                                        buildArgs.Config,
+                                        buildProjectOptions.MainJS ?? "test-main.js",
+                                        buildProjectOptions.HasV8Script,
+                                        buildProjectOptions.TargetFramework ?? DefaultTargetFramework,
+                                        buildProjectOptions.GlobalizationMode,
+                                        buildProjectOptions.PredefinedIcudt ?? "",
+                                        buildProjectOptions.DotnetWasmFromRuntimePack ?? !buildArgs.AOT,
+                                        UseWebcil,
+                                        buildProjectOptions.IsBrowserProject);
+        TestMainJsProjectProvider.AssertBasicAppBundle(assertAppBundleOptions);
+
+        return (_projectDir!, res.Output);
     }
 
     protected static BootJsonData ParseBootData(Stream stream)

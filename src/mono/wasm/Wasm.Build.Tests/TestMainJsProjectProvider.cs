@@ -31,21 +31,11 @@ public class TestMainJsProjectProvider
             throw new XunitException($"Runtime pack path doesn't match.{Environment.NewLine}Expected: '{expectedRuntimePackDir}'{Environment.NewLine}Actual:   '{actualPath}'");
     }
 
-    public static void AssertBasicAppBundle(string bundleDir,
-                                               string projectName,
-                                               string config,
-                                               string mainJS,
-                                               bool hasV8Script,
-                                               string targetFramework,
-                                               GlobalizationMode? globalizationMode,
-                                               string predefinedIcudt = "",
-                                               bool dotnetWasmFromRuntimePack = true,
-                                               bool useWebcil = true,
-                                               bool isBrowserProject = true)
+    public static void AssertBasicAppBundle(AssertTestMainJsAppBundleOptions options)
     {
         var filesToExist = new List<string>()
         {
-            mainJS,
+            options.mainJS,
             "dotnet.native.wasm",
             "_framework/blazor.boot.json",
             "dotnet.js",
@@ -53,20 +43,20 @@ public class TestMainJsProjectProvider
             "dotnet.runtime.js"
         };
 
-        if (isBrowserProject)
+        if (options.isBrowserProject)
             filesToExist.Add("index.html");
 
-        BuildTestBase.AssertFilesExist(bundleDir, filesToExist);
+        BuildTestBase.AssertFilesExist(options.bundleDir, filesToExist);
 
-        BuildTestBase.AssertFilesExist(bundleDir, new[] { "run-v8.sh" }, expectToExist: hasV8Script);
+        BuildTestBase.AssertFilesExist(options.bundleDir, new[] { "run-v8.sh" }, expectToExist: options.hasV8Script);
         AssertIcuAssets();
 
-        string managedDir = Path.Combine(bundleDir, "managed");
+        string managedDir = Path.Combine(options.bundleDir, "managed");
         string bundledMainAppAssembly =
-            useWebcil ? $"{projectName}{BuildTestBase.WebcilInWasmExtension}" : $"{projectName}.dll";
+            options.useWebcil ? $"{options.projectName}{BuildTestBase.WebcilInWasmExtension}" : $"{options.projectName}.dll";
         BuildTestBase.AssertFilesExist(managedDir, new[] { bundledMainAppAssembly });
 
-        bool is_debug = config == "Debug";
+        bool is_debug = options.config == "Debug";
         if (is_debug)
         {
             // Use cecil to check embedded pdb?
@@ -80,7 +70,7 @@ public class TestMainJsProjectProvider
             //}
         }
 
-        AssertDotNetWasmJs(bundleDir, fromRuntimePack: dotnetWasmFromRuntimePack, targetFramework);
+        AssertDotNetWasmJs(options.bundleDir, fromRuntimePack: options.dotnetWasmFromRuntimePack, options.targetFramework);
 
         void AssertIcuAssets()
         {
@@ -89,7 +79,7 @@ public class TestMainJsProjectProvider
             bool expectNOCJK = false;
             bool expectFULL = false;
             bool expectHYBRID = false;
-            switch (globalizationMode)
+            switch (options.globalizationMode)
             {
                 case GlobalizationMode.Invariant:
                     break;
@@ -100,11 +90,11 @@ public class TestMainJsProjectProvider
                     expectHYBRID = true;
                     break;
                 case GlobalizationMode.PredefinedIcu:
-                    if (string.IsNullOrEmpty(predefinedIcudt))
+                    if (string.IsNullOrEmpty(options.predefinedIcudt))
                         throw new ArgumentException("WasmBuildTest is invalid, value for predefinedIcudt is required when GlobalizationMode=PredefinedIcu.");
-                    BuildTestBase.AssertFilesExist(bundleDir, new[] { predefinedIcudt }, expectToExist: true);
+                    BuildTestBase.AssertFilesExist(options.bundleDir, new[] { options.predefinedIcudt }, expectToExist: true);
                     // predefined ICU name can be identical with the icu files from runtime pack
-                    switch (predefinedIcudt)
+                    switch (options.predefinedIcudt)
                     {
                         case "icudt.dat":
                             expectFULL = true;
@@ -127,11 +117,11 @@ public class TestMainJsProjectProvider
                     expectNOCJK = true;
                     break;
             }
-            BuildTestBase.AssertFilesExist(bundleDir, new[] { "icudt.dat" }, expectToExist: expectFULL);
-            BuildTestBase.AssertFilesExist(bundleDir, new[] { "icudt_EFIGS.dat" }, expectToExist: expectEFIGS);
-            BuildTestBase.AssertFilesExist(bundleDir, new[] { "icudt_CJK.dat" }, expectToExist: expectCJK);
-            BuildTestBase.AssertFilesExist(bundleDir, new[] { "icudt_no_CJK.dat" }, expectToExist: expectNOCJK);
-            BuildTestBase.AssertFilesExist(bundleDir, new[] { "icudt_hybrid.dat" }, expectToExist: expectHYBRID);
+            BuildTestBase.AssertFilesExist(options.bundleDir, new[] { "icudt.dat" }, expectToExist: expectFULL);
+            BuildTestBase.AssertFilesExist(options.bundleDir, new[] { "icudt_EFIGS.dat" }, expectToExist: expectEFIGS);
+            BuildTestBase.AssertFilesExist(options.bundleDir, new[] { "icudt_CJK.dat" }, expectToExist: expectCJK);
+            BuildTestBase.AssertFilesExist(options.bundleDir, new[] { "icudt_no_CJK.dat" }, expectToExist: expectNOCJK);
+            BuildTestBase.AssertFilesExist(options.bundleDir, new[] { "icudt_hybrid.dat" }, expectToExist: expectHYBRID);
         }
     }
 
@@ -149,3 +139,18 @@ public class TestMainJsProjectProvider
     }
 
 }
+
+public record AssertTestMainJsAppBundleOptions
+(
+   string bundleDir,
+   string projectName,
+   string config,
+   string mainJS,
+   bool hasV8Script,
+   string targetFramework,
+   GlobalizationMode? globalizationMode,
+   string predefinedIcudt = "",
+   bool dotnetWasmFromRuntimePack = true,
+   bool useWebcil = true,
+   bool isBrowserProject = true
+);

@@ -99,17 +99,19 @@ public abstract class TestMainJsTestBase : BuildTestBase
                 TestMainJsProjectProvider.AssertRuntimePackPath(result.buildOutput, options.TargetFramework ?? DefaultTargetFramework);
 
                 string bundleDir = Path.Combine(GetBinDir(config: buildArgs.Config, targetFramework: options.TargetFramework ?? DefaultTargetFramework), "AppBundle");
-                TestMainJsProjectProvider.AssertBasicAppBundle(bundleDir,
-                                     buildArgs.ProjectName,
-                                     buildArgs.Config,
-                                     options.MainJS ?? "test-main.js",
-                                     options.HasV8Script,
-                                     options.TargetFramework ?? DefaultTargetFramework,
-                                     options.GlobalizationMode,
-                                     options.PredefinedIcudt ?? "",
-                                     options.DotnetWasmFromRuntimePack ?? !buildArgs.AOT,
-                                     UseWebcil,
-                                     options.IsBrowserProject);
+                TestMainJsProjectProvider.AssertBasicAppBundle(
+                    new AssertTestMainJsAppBundleOptions(
+                        bundleDir,
+                        buildArgs.ProjectName,
+                        buildArgs.Config,
+                        options.MainJS ?? "test-main.js",
+                        options.HasV8Script,
+                        options.TargetFramework ?? DefaultTargetFramework,
+                        options.GlobalizationMode,
+                        options.PredefinedIcudt ?? "",
+                        options.DotnetWasmFromRuntimePack ?? !buildArgs.AOT,
+                        UseWebcil,
+                        options.IsBrowserProject));
             }
 
             if (options.UseCache)
@@ -124,7 +126,6 @@ public abstract class TestMainJsTestBase : BuildTestBase
             throw;
         }
     }
-
 
     private (int exitCode, string buildOutput) AssertBuild(string args, string label = "build", bool expectSuccess = true, IDictionary<string, string>? envVars = null, int? timeoutMs = null)
     {
