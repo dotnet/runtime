@@ -24,7 +24,7 @@ namespace ILCompiler.DependencyAnalysis
 
         public override ObjectNodeSection GetSection(NodeFactory factory) => _owningMethod.Context.Target.IsWindows
             ? ObjectNodeSection.FoldableReadOnlyDataSection
-            : ObjectNodeSection.DataSection;
+            : ObjectNodeSection.FoldableTextSection;
 
         public override bool StaticDependenciesAreComputed => true;
 

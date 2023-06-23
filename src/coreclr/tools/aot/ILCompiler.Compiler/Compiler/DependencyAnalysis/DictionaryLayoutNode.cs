@@ -49,22 +49,21 @@ namespace ILCompiler.DependencyAnalysis
 
         public virtual ObjectNodeSection DictionarySection(NodeFactory factory)
         {
-            if (factory.Target.IsWindows)
+            (ObjectNodeSection foldableSection, ObjectNodeSection unfoldableSection) = factory.Target.OperatingSystem switch
             {
-                if (_owningMethodOrType is TypeDesc)
-                {
-                    return ObjectNodeSection.FoldableReadOnlyDataSection;
-                }
-                else
-                {
-                    // Method dictionary serves as an identity at runtime which means they are not foldable.
-                    Debug.Assert(_owningMethodOrType is MethodDesc);
-                    return ObjectNodeSection.ReadOnlyDataSection;
-                }
+                TargetOS.Windows => (ObjectNodeSection.FoldableReadOnlyDataSection, ObjectNodeSection.ReadOnlyDataSection),
+                _ => (ObjectNodeSection.FoldableTextSection, ObjectNodeSection.TextSection),
+            };
+
+            if (_owningMethodOrType is TypeDesc)
+            {
+                return foldableSection;
             }
             else
             {
-                return ObjectNodeSection.DataSection;
+                // Method dictionary serves as an identity at runtime which means they are not foldable.
+                Debug.Assert(_owningMethodOrType is MethodDesc);
+                return unfoldableSection;
             }
         }
 
