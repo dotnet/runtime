@@ -1,4 +1,5 @@
 <Project DefaultTargets="BundleTestAppleApp" Sdk="Microsoft.NET.Sdk">
+  <Import Project="Directory.Build.props" />
   <Import Project="$(MSBuildThisFileDirectory)$(MSBuildThisFileName).props" />
   <PropertyGroup>
     <MonoEnableLLVM>true</MonoEnableLLVM>
@@ -91,4 +92,5 @@
 
     <Message Importance="High" Text="App moved to: $(_XHarnessAppPath)"/>
   </Target>
+  <Import Project="Directory.Build.targets" />
 </Project>
