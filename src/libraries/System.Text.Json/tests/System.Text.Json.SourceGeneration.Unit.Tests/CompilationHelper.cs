@@ -34,12 +34,17 @@ namespace System.Text.Json.SourceGeneration.UnitTests
 
     public static class CompilationHelper
     {
-        private static readonly CSharpParseOptions s_parseOptions =
-            new CSharpParseOptions(kind: SourceCodeKind.Regular, documentationMode: DocumentationMode.Parse);
+        private readonly static CSharpParseOptions s_defaultParseOptions = CreateParseOptions();
 
-#if ROSLYN4_0_OR_GREATER
-        private static readonly GeneratorDriverOptions s_generatorDriverOptions = new GeneratorDriverOptions(disabledOutputs: IncrementalGeneratorOutputKind.None, trackIncrementalGeneratorSteps: true);
-#endif
+        public static CSharpParseOptions CreateParseOptions(
+            LanguageVersion? version = null,
+            DocumentationMode? documentationMode = null)
+        {
+            return new CSharpParseOptions(
+                kind: SourceCodeKind.Regular,
+                languageVersion: version ?? LanguageVersion.CSharp9, // C# 9 is the minimum supported lang version by the source generator.
+                documentationMode: documentationMode ?? DocumentationMode.Parse);
+        }
 
 #if NETCOREAPP
         private static readonly Assembly systemRuntimeAssembly = Assembly.Load(new AssemblyName("System.Runtime"));
@@ -50,7 +55,7 @@ namespace System.Text.Json.SourceGeneration.UnitTests
             MetadataReference[] additionalReferences = null,
             string assemblyName = "TestAssembly",
             bool includeSTJ = true,
-            Func<CSharpParseOptions, CSharpParseOptions> configureParseOptions = null)
+            CSharpParseOptions? parseOptions = null)
         {
 
             List<MetadataReference> references = new() {
@@ -62,6 +67,7 @@ namespace System.Text.Json.SourceGeneration.UnitTests
                 MetadataReference.CreateFromFile(typeof(JavaScriptEncoder).Assembly.Location),
                 MetadataReference.CreateFromFile(typeof(GeneratedCodeAttribute).Assembly.Location),
                 MetadataReference.CreateFromFile(typeof(ReadOnlySpan<>).Assembly.Location),
+                MetadataReference.CreateFromFile(typeof(Console).Assembly.Location),
 #if NETCOREAPP
                 MetadataReference.CreateFromFile(typeof(LinkedList<>).Assembly.Location),
                 MetadataReference.CreateFromFile(systemRuntimeAssembly.Location),
@@ -84,37 +90,50 @@ namespace System.Text.Json.SourceGeneration.UnitTests
                 }
             }
 
-            var parseOptions = configureParseOptions?.Invoke(s_parseOptions) ?? s_parseOptions;
+            parseOptions ??= s_defaultParseOptions;
+            SyntaxTree[] syntaxTrees = new[]
+            {
+                CSharpSyntaxTree.ParseText(source, parseOptions),
+#if !NETCOREAPP
+                CSharpSyntaxTree.ParseText(NetfxPolyfillAttributes, parseOptions),
+#endif
+            };
+
             return CSharpCompilation.Create(
                 assemblyName,
-                syntaxTrees: new[] { CSharpSyntaxTree.ParseText(source, parseOptions) },
+                syntaxTrees: syntaxTrees,
                 references: references,
                 options: new CSharpCompilationOptions(OutputKind.DynamicallyLinkedLibrary)
             );
         }
 
-        public static SyntaxTree ParseSource(string source)
-            => CSharpSyntaxTree.ParseText(source, new CSharpParseOptions(LanguageVersion.Preview));
+        public static SyntaxTree ParseSource(string source, CSharpParseOptions? options = null)
+            => CSharpSyntaxTree.ParseText(source, options ?? s_defaultParseOptions);
 
-        public static CSharpGeneratorDriver CreateJsonSourceGeneratorDriver(JsonSourceGenerator? generator = null)
+        public static CSharpGeneratorDriver CreateJsonSourceGeneratorDriver(Compilation compilation, JsonSourceGenerator? generator = null)
         {
             generator ??= new();
+            CSharpParseOptions parseOptions = compilation.SyntaxTrees
+                .OfType<CSharpSyntaxTree>()
+                .Select(tree => tree.Options)
+                .FirstOrDefault() ?? s_defaultParseOptions;
+
             return
 #if ROSLYN4_0_OR_GREATER
                 CSharpGeneratorDriver.Create(
                     generators: new ISourceGenerator[] { generator.AsSourceGenerator() },
-                    parseOptions: s_parseOptions,
+                    parseOptions: parseOptions,
                     driverOptions: new GeneratorDriverOptions(
                         disabledOutputs: IncrementalGeneratorOutputKind.None,
                         trackIncrementalGeneratorSteps: true));
 #else
                 CSharpGeneratorDriver.Create(
                     generators: new ISourceGenerator[] { generator },
-                    parseOptions: s_parseOptions);
+                    parseOptions: parseOptions);
 #endif
         }
 
-        public static JsonSourceGeneratorResult RunJsonSourceGenerator(Compilation compilation)
+        public static JsonSourceGeneratorResult RunJsonSourceGenerator(Compilation compilation, bool disableDiagnosticValidation = false)
         {
             var generatedSpecs = ImmutableArray<ContextGenerationSpec>.Empty;
             var generator = new JsonSourceGenerator
@@ -122,8 +141,15 @@ namespace System.Text.Json.SourceGeneration.UnitTests
                 OnSourceEmitting = specs => generatedSpecs = specs
             };
 
-            CSharpGeneratorDriver driver = CreateJsonSourceGeneratorDriver(generator);
+            CSharpGeneratorDriver driver = CreateJsonSourceGeneratorDriver(compilation, generator);
             driver.RunGeneratorsAndUpdateCompilation(compilation, out Compilation outCompilation, out ImmutableArray<Diagnostic> diagnostics);
+
+            if (!disableDiagnosticValidation)
+            {
+                outCompilation.GetDiagnostics().AssertMaxSeverity(DiagnosticSeverity.Info);
+                diagnostics.AssertMaxSeverity(DiagnosticSeverity.Info);
+            }
+
             return new()
             {
                 NewCompilation = outCompilation,
@@ -142,6 +168,24 @@ namespace System.Text.Json.SourceGeneration.UnitTests
             }
             return ms.ToArray();
         }
+
+#if !NETCOREAPP
+        private const string NetfxPolyfillAttributes = """
+            namespace System.Runtime.CompilerServices
+            {
+                internal static class IsExternalInit { }
+
+                [AttributeUsage(AttributeTargets.Class | AttributeTargets.Struct | AttributeTargets.Field | AttributeTargets.Property, AllowMultiple = false, Inherited = false)]
+                internal sealed class RequiredMemberAttribute : Attribute { }
+
+                [AttributeUsage(AttributeTargets.All, AllowMultiple = true, Inherited = false)]
+                internal sealed class CompilerFeatureRequiredAttribute : Attribute
+                {
+                    public CompilerFeatureRequiredAttribute(string featureName) { }
+                }
+            }
+            """;
+#endif
 
         public static Compilation CreateReferencedLocationCompilation()
         {
@@ -228,9 +272,6 @@ namespace System.Text.Json.SourceGeneration.UnitTests
         public static Compilation CreateRepeatedLocationsCompilation()
         {
             string source = """
-                using System;
-                using System.Collections;
-                using System.Collections.Generic;
                 using System.Text.Json.Serialization;
 
                 namespace JsonSourceGeneration
@@ -278,57 +319,9 @@ namespace System.Text.Json.SourceGeneration.UnitTests
             return CreateCompilation(source);
         }
 
-        public static Compilation CreateRepeatedLocationsWithResolutionCompilation()
-        {
-            string source = """
-                using System;
-                using System.Collections;
-                using System.Collections.Generic;
-                using System.Text.Json.Serialization;
-
-                [assembly: JsonSerializable(typeof(Fake.Location))]
-                [assembly: JsonSerializable(typeof(HelloWorld.Location), TypeInfoPropertyName = ""RepeatedLocation"")]
-
-                namespace Fake
-                {
-                    public class Location
-                    {
-                        public int FakeId { get; set; }
-                        public string FakeAddress1 { get; set; }
-                        public string FakeAddress2 { get; set; }
-                        public string FakeCity { get; set; }
-                        public string FakeState { get; set; }
-                        public string FakePostalCode { get; set; }
-                        public string FakeName { get; set; }
-                        public string FakePhoneNumber { get; set; }
-                        public string FakeCountry { get; set; }
-                    }
-                }
-
-                namespace HelloWorld
-                {                
-                    public class Location
-                    {
-                        public int Id { get; set; }
-                        public string Address1 { get; set; }
-                        public string Address2 { get; set; }
-                        public string City { get; set; }
-                        public string State { get; set; }
-                        public string PostalCode { get; set; }
-                        public string Name { get; set; }
-                        public string PhoneNumber { get; set; }
-                        public string Country { get; set; }
-                    }
-                }
-                """;
-
-            return CreateCompilation(source);
-        }
-
         public static Compilation CreateCompilationWithInitOnlyProperties()
         {
             string source = """
-                using System;
                 using System.Text.Json.Serialization;
 
                 namespace HelloWorld
@@ -359,7 +352,6 @@ namespace System.Text.Json.SourceGeneration.UnitTests
         public static Compilation CreateCompilationWithConstructorInitOnlyProperties()
         {
             string source = """
-                using System;
                 using System.Text.Json.Serialization;
 
                 namespace HelloWorld
@@ -387,7 +379,6 @@ namespace System.Text.Json.SourceGeneration.UnitTests
         public static Compilation CreateCompilationWithMixedInitOnlyProperties()
         {
             string source = """
-                using System;
                 using System.Text.Json.Serialization;
 
                 namespace HelloWorld
@@ -413,10 +404,10 @@ namespace System.Text.Json.SourceGeneration.UnitTests
             return CreateCompilation(source);
         }
 
+#if ROSLYN4_4_OR_GREATER
         public static Compilation CreateCompilationWithRequiredProperties()
         {
             string source = """
-                using System;
                 using System.Text.Json.Serialization;
 
                 namespace HelloWorld
@@ -439,13 +430,14 @@ namespace System.Text.Json.SourceGeneration.UnitTests
                 }
                 """;
 
-            return CreateCompilation(source);
+            CSharpParseOptions parseOptions = CreateParseOptions(LanguageVersion.CSharp11);
+            return CreateCompilation(source, parseOptions: parseOptions);
         }
+#endif
 
         public static Compilation CreateCompilationWithRecordPositionalParameters()
         {
             string source = """
-                using System;
                 using System.Text.Json.Serialization;
 
                 namespace HelloWorld
@@ -476,7 +468,6 @@ namespace System.Text.Json.SourceGeneration.UnitTests
         public static Compilation CreateCompilationWithInaccessibleJsonIncludeProperties()
         {
             string source = """
-                using System;
                 using System.Text.Json.Serialization;
 
                 namespace HelloWorld
@@ -484,11 +475,11 @@ namespace System.Text.Json.SourceGeneration.UnitTests
                     public class Location
                     {
                         [JsonInclude]
-                        public int publicField;
+                        public int publicField = 1;
                         [JsonInclude]
-                        internal int internalField;
+                        internal int internalField = 2;
                         [JsonInclude]
-                        private int privateField;
+                        private int privateField = 4;
 
                         [JsonInclude]
                         public int Id { get; private set; }
@@ -500,6 +491,8 @@ namespace System.Text.Json.SourceGeneration.UnitTests
                         public string PhoneNumber { internal get; set; }
                         [JsonInclude]
                         public string Country { private get; set; }
+
+                        public int GetPrivateField() => privateField;
                     }
 
                     [JsonSerializable(typeof(Location))]
@@ -650,6 +643,8 @@ namespace System.Text.Json.SourceGeneration.UnitTests
         public static Compilation CreateTypesWithInvalidJsonConverterAttributeType()
         {
             string source = """
+                using System;
+                using System.Text.Json;
                 using System.Text.Json.Serialization;
 
                 namespace HelloWorld
@@ -664,7 +659,7 @@ namespace System.Text.Json.SourceGeneration.UnitTests
                         [JsonConverter(null)]
                         public int Value1 { get; set; }
 
-                        [JsonConverter(typeof(int)]
+                        [JsonConverter(typeof(int))]
                         public int Value2 { get; set; }
 
                         [JsonConverter(typeof(InacessibleConverter))]
@@ -742,6 +737,11 @@ namespace System.Text.Json.SourceGeneration.UnitTests
         {
             SyntaxReference? reference = attributeData.ApplicationSyntaxReference;
             return reference?.SyntaxTree.GetLocation(reference.Span);
+        }
+
+        internal static void AssertMaxSeverity(this IEnumerable<Diagnostic> diagnostics, DiagnosticSeverity maxSeverity)
+        {
+            Assert.Empty(diagnostics.Where(diagnostic => diagnostic.Severity > maxSeverity));
         }
     }
 

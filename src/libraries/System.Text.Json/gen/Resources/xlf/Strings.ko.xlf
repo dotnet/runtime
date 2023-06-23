@@ -82,6 +82,16 @@
         <target state="translated">제네릭이 아닌 'JsonStringEnumConverter'에는 동적 코드가 필요합니다.</target>
         <note />
       </trans-unit>
+      <trans-unit id="JsonUnsupportedLanguageVersionMessageFormat">
+        <source>The System.Text.Json source generator is not available in C# '{0}'. Please use language version {1} or greater.</source>
+        <target state="new">The System.Text.Json source generator is not available in C# '{0}'. Please use language version {1} or greater.</target>
+        <note />
+      </trans-unit>
+      <trans-unit id="JsonUnsupportedLanguageVersionTitle">
+        <source>C# language version not supported by the source generator.</source>
+        <target state="new">C# language version not supported by the source generator.</target>
+        <note />
+      </trans-unit>
       <trans-unit id="MultipleJsonConstructorAttributeFormat">
         <source>Type '{0}' has multiple constructors annotated with 'JsonConstructorAttribute'.</source>
         <target state="translated">'{0}' 형식에 'JsonConstructorAttribute'로 주석이 추가된 여러 생성자가 있습니다.</target>
