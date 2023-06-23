@@ -411,7 +411,7 @@ namespace System.Xml.Serialization
 #if DEBUG
                 const string escapeChars = "<>\"'&";
                 ReadOnlySpan<char> span = _primitivesBuffer;
-                Debug.Assert(span.Slice(0, charsWritten).IndexOfAny(escapeChars) == -1, "Primitive value contains illegal xml char.");
+                Debug.Assert(!span.Slice(0, charsWritten).ContainsAny(escapeChars), "Primitive value contains illegal xml char.");
 #endif
                 //all the primitive types except string and XmlQualifiedName writes to the buffer
                 _w.WriteRaw(_primitivesBuffer, 0, charsWritten);

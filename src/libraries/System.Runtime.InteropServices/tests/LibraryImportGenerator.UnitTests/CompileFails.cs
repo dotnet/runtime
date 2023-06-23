@@ -882,35 +882,43 @@ namespace LibraryImportGenerator.UnitTests
         [Fact]
         public async Task ValidateDisableRuntimeMarshallingForBlittabilityCheckFromAssemblyReference()
         {
-            // Emit the referenced assembly to a stream so we reference it through a metadata reference.
-            // Our check for strict blittability doesn't work correctly when using source compilation references.
-            // (There are sometimes false-positives.)
-            // This causes any diagnostics that depend on strict blittability being correctly calculated to
-            // not show up in the IDE experience. However, since they correctly show up when doing builds,
-            // either by running the Build command in the IDE or a command line build, we aren't allowing invalid code.
-            // This test validates the Build-like experience. In the future, we should update this test to validate the
-            // IDE-like experience once we fix that case
-            // (If the IDE experience works, then the command-line experience will also work.)
-            // This bug is tracked in https://github.com/dotnet/runtime/issues/84739.
             string assemblySource = $$"""
                 using System.Runtime.InteropServices.Marshalling;
                 {{CodeSnippets.ValidateDisableRuntimeMarshalling.NonBlittableUserDefinedTypeWithNativeType}}
                 """;
-            Compilation assemblyComp = await TestUtils.CreateCompilation(assemblySource);
-            Assert.Empty(assemblyComp.GetDiagnostics());
-
-            var ms = new MemoryStream();
-            Assert.True(assemblyComp.Emit(ms).Success);
 
             string testSource = CodeSnippets.ValidateDisableRuntimeMarshalling.TypeUsage(string.Empty);
 
+            const string AdditionalProjectName = "AdditionalProject";
+
             VerifyCS.Test test = new(referenceAncillaryInterop: false)
             {
-                TestCode = testSource,
+                TestState =
+                {
+                    Sources =
+                    {
+                        testSource
+                    },
+                    AdditionalProjectReferences =
+                    {
+                        AdditionalProjectName
+                    },
+                    AdditionalProjects =
+                    {
+                        [AdditionalProjectName] =
+                        {
+                            Sources =
+                            {
+                                assemblySource
+
+                            }
+                        }
+                    }
+                },
                 TestBehaviors = TestBehaviors.SkipGeneratedSourcesCheck
             };
 
-            test.TestState.AdditionalReferences.Add(MetadataReference.CreateFromImage(ms.ToArray()));
+            test.TestState.AdditionalProjects[AdditionalProjectName].AdditionalReferences.AddRange(test.TestState.AdditionalReferences);
 
             // The errors should indicate the DisableRuntimeMarshalling is required.
             test.ExpectedDiagnostics.Add(

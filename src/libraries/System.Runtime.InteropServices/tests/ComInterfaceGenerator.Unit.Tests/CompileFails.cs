@@ -35,6 +35,15 @@ namespace ComInterfaceGenerator.Unit.Tests
                     .WithLocation(0)
                     .WithArguments("IComInterface2")
             } };
+            yield return new object[] { ID(), codeSnippets.InterfaceWithPropertiesAndEvents, new[]
+            {
+               VerifyComInterfaceGenerator.Diagnostic(GeneratorDiagnostics.InstancePropertyDeclaredInInterface)
+                   .WithLocation(0)
+                   .WithArguments("Property", "INativeAPI"),
+               VerifyComInterfaceGenerator.Diagnostic(GeneratorDiagnostics.InstanceEventDeclaredInInterface)
+                   .WithLocation(1)
+                   .WithArguments("Event", "INativeAPI"),
+            } };
         }
 
         [Theory]
@@ -49,6 +58,8 @@ namespace ComInterfaceGenerator.Unit.Tests
             => generator switch
             {
                 GeneratorKind.VTableIndexStubGenerator => new VirtualMethodIndexAttributeProvider(),
+                GeneratorKind.ComInterfaceGeneratorManagedObjectWrapper => new GeneratedComInterfaceAttributeProvider(System.Runtime.InteropServices.Marshalling.ComInterfaceOptions.ManagedObjectWrapper),
+                GeneratorKind.ComInterfaceGeneratorComObjectWrapper => new GeneratedComInterfaceAttributeProvider(System.Runtime.InteropServices.Marshalling.ComInterfaceOptions.ComObjectWrapper),
                 GeneratorKind.ComInterfaceGenerator => new GeneratedComInterfaceAttributeProvider(),
                 _ => throw new UnreachableException(),
             };

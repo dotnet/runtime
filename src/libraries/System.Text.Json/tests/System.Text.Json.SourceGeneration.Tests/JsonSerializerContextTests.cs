@@ -144,7 +144,6 @@ namespace System.Text.Json.SourceGeneration.Tests
         }
 
         [ConditionalFact(typeof(RemoteExecutor), nameof(RemoteExecutor.IsSupported))]
-        [ActiveIssue("https://github.com/dotnet/runtime/issues/63802", TargetFrameworkMonikers.NetFramework)]
         public static void Converters_AndTypeInfoCreator_NotRooted_WhenMetadataNotPresent()
         {
             RemoteExecutor.Invoke(
@@ -536,6 +535,7 @@ namespace System.Text.Json.SourceGeneration.Tests
 
         [JsonSourceGenerationOptions(GenerationMode = JsonSourceGenerationMode.Serialization)]
         [JsonSerializable(typeof(JsonMessage))]
+        [JsonSerializable(typeof(AllocatingOnPropertyAccess))]
         public partial class FastPathSerializationContext : JsonSerializerContext
         { }
 
@@ -816,6 +816,35 @@ namespace System.Text.Json.SourceGeneration.Tests
             }
 
             public JsonTypeInfo? GetTypeInfo(Type type, JsonSerializerOptions options) => _getTypeInfo(type, options);
+        }
+
+        [Fact]
+        public static void FastPathSerialization_EvaluatePropertyOnlyOnceWhenIgnoreNullOrDefaultIsSpecified()
+        {
+            JsonSerializerOptions options = FastPathSerializationContext.Default.Options;
+            JsonTypeInfo<AllocatingOnPropertyAccess> allocatingOnPropertyAccessInfo = (JsonTypeInfo<AllocatingOnPropertyAccess>)options.GetTypeInfo(typeof(AllocatingOnPropertyAccess));
+            Assert.NotNull(allocatingOnPropertyAccessInfo.SerializeHandler);
+
+            var value = new AllocatingOnPropertyAccess();
+            Assert.Equal(0, value.WhenWritingNullAccessCounter);
+            Assert.Equal(0, value.WhenWritingDefaultAccessCounter);
+
+            string expectedJson = """{"SomeAllocatingProperty":"Current Value: 1","SomeAllocatingProperty2":"Current Value: 1"}""";
+            Assert.Equal(expectedJson, JsonSerializer.Serialize(value, options));
+            Assert.Equal(1, value.WhenWritingNullAccessCounter);
+            Assert.Equal(1, value.WhenWritingDefaultAccessCounter);
+        }
+
+        [Fact]
+        public static void ContextWithInterpolatedAnnotations_WorksAsExpected()
+        {
+            // Regression test for https://github.com/dotnet/runtime/issues/82997 and https://github.com/dotnet/runtime/issues/69207
+            Assert.IsAssignableFrom<JsonTypeInfo<TestPoco>>(ContextWithInterpolatedAnnotations.Default.TestPocoSomeUniqueSuffixSuffix2);
+        }
+
+        [JsonSerializable(type: typeof(TestPoco), TypeInfoPropertyName = $"{nameof(TestPoco)}SomeUniqueSuffix" + "Suffix2")]
+        internal partial class ContextWithInterpolatedAnnotations : JsonSerializerContext
+        {
         }
     }
 }

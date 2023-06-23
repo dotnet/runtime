@@ -82,7 +82,7 @@ namespace System.Net.Http
                 throw new ArgumentException(SR.Format(System.Globalization.CultureInfo.InvariantCulture, SR.net_http_headers_invalid_value, boundary), nameof(boundary));
             }
 
-            if (boundary.AsSpan().IndexOfAnyExcept(s_allowedBoundaryChars) >= 0)
+            if (boundary.AsSpan().ContainsAnyExcept(s_allowedBoundaryChars))
             {
                 throw new ArgumentException(SR.Format(System.Globalization.CultureInfo.InvariantCulture, SR.net_http_headers_invalid_value, boundary), nameof(boundary));
             }

@@ -1014,7 +1014,7 @@ MethodTableBuilder::bmtMDMethod::bmtMDMethod(
     DWORD dwDeclAttrs,
     DWORD dwImplAttrs,
     DWORD dwRVA,
-    METHOD_TYPE type,
+    MethodClassification type,
     METHOD_IMPL_TYPE implType)
     : m_pOwningType(pOwningType),
       m_dwDeclAttrs(dwDeclAttrs),
@@ -2711,7 +2711,7 @@ MethodTableBuilder::EnumerateClassMethods()
     {
         ULONG dwMethodRVA;
         DWORD dwImplFlags;
-        METHOD_TYPE type;
+        MethodClassification type;
         METHOD_IMPL_TYPE implType;
         LPSTR strMethodName;
 
@@ -3160,31 +3160,31 @@ MethodTableBuilder::EnumerateClassMethods()
                 {
                     // ComImport classes have methods which are just used
                     // for implementing all interfaces the class supports
-                    type = METHOD_TYPE_COMINTEROP;
+                    type = mcComInterop;
 
                     // constructor is special
                     if (IsMdRTSpecialName(dwMemberAttrs))
                     {
                         // Note: Method name (.ctor) will be checked in code:ValidateMethods
-                        type = METHOD_TYPE_FCALL;
+                        type = mcFCall;
                     }
                 }
                 else
 #endif //FEATURE_COMINTEROP
                 if (dwMethodRVA == 0)
                 {
-                    type = METHOD_TYPE_FCALL;
+                    type = mcFCall;
                 }
                 else
                 {
-                    type = METHOD_TYPE_NDIRECT;
+                    type = mcNDirect;
                 }
             }
             // The NAT_L attribute is present, marking this method as NDirect
             else
             {
                 CONSISTENCY_CHECK(hr == S_OK);
-                type = METHOD_TYPE_NDIRECT;
+                type = mcNDirect;
             }
         }
         else if (IsMiRuntime(dwImplFlags))
@@ -3204,7 +3204,7 @@ MethodTableBuilder::EnumerateClassMethods()
                     BuildMethodTableThrowException(BFA_BAD_FLAGS_ON_DELEGATE);
                 }
                 newDelegateMethodSeen = SeenCtor;
-                type = METHOD_TYPE_FCALL;
+                type = mcFCall;
             }
             else
             {
@@ -3218,7 +3218,7 @@ MethodTableBuilder::EnumerateClassMethods()
                 {
                     BuildMethodTableThrowException(BFA_UNKNOWN_DELEGATE_METHOD);
                 }
-                type = METHOD_TYPE_EEIMPL;
+                type = mcEEImpl;
             }
 
             // If we get here we have either set newDelegateMethodSeen or we have thrown a BMT exception
@@ -3234,7 +3234,7 @@ MethodTableBuilder::EnumerateClassMethods()
         else if (hasGenericMethodArgs)
         {
             //We use an instantiated method desc to represent a generic method
-            type = METHOD_TYPE_INSTANTIATED;
+            type = mcInstantiated;
         }
         else if (fIsClassInterface)
         {
@@ -3242,18 +3242,18 @@ MethodTableBuilder::EnumerateClassMethods()
             if (IsMdStatic(dwMemberAttrs))
             {
                 // Static methods in interfaces need nothing special.
-                type = METHOD_TYPE_NORMAL;
+                type = mcIL;
             }
             else if (bmtGenerics->GetNumGenericArgs() != 0 &&
                 (bmtGenerics->fSharedByGenericInstantiations))
             {
                 // Methods in instantiated interfaces need nothing special - they are not visible from COM etc.
-                type = METHOD_TYPE_NORMAL;
+                type = mcIL;
             }
             else if (bmtProp->fIsMngStandardItf)
             {
                 // If the interface is a standard managed interface then allocate space for an FCall method desc.
-                type = METHOD_TYPE_FCALL;
+                type = mcFCall;
             }
             else if (IsMdAbstract(dwMemberAttrs))
             {
@@ -3261,21 +3261,21 @@ MethodTableBuilder::EnumerateClassMethods()
                 // accessed via COM interop. mcComInterop MDs have an additional
                 // pointer-sized field pointing to COM interop data which are
                 // allocated lazily when/if the MD actually gets used for interop.
-                type = METHOD_TYPE_COMINTEROP;
+                type = mcComInterop;
             }
             else
 #endif // !FEATURE_COMINTEROP
             {
-                type = METHOD_TYPE_NORMAL;
+                type = mcIL;
             }
         }
         else
         {
-            type = METHOD_TYPE_NORMAL;
+            type = mcIL;
         }
 
-        // Generic methods should always be METHOD_TYPE_INSTANTIATED
-        if (hasGenericMethodArgs && (type != METHOD_TYPE_INSTANTIATED))
+        // Generic methods should always be mcInstantiated
+        if (hasGenericMethodArgs && (type != mcInstantiated))
         {
             BuildMethodTableThrowException(BFA_GENERIC_METHODS_INST);
         }
@@ -3752,7 +3752,7 @@ BOOL MethodTableBuilder::IsSelfReferencingStaticValueTypeField(mdToken     dwByV
     return MetaSig::CompareElementType(pFakeSig, pFieldSig,
                                        pFakeSig + cFakeSig,  pMemberSignature + cMemberSignature,
                                        GetModule(), GetModule(),
-                                       NULL, NULL, FALSE);
+                                       NULL, NULL);
 
 }
 
@@ -5015,23 +5015,6 @@ MethodTableBuilder::ValidateMethods()
     DeclaredMethodIterator it(*this);
     while (it.Next())
     {
-        // The RVA is only valid/testable if it has not been overwritten
-        // for something like edit-and-continue
-        // Complete validation of non-zero RVAs is done later inside MethodDesc::GetILHeader.
-        if ((it.RVA() == 0) && (pModule->GetDynamicIL(it.Token(), FALSE) == NULL))
-        {
-            // for IL code that is implemented here must have a valid code RVA
-            // this came up due to a linker bug where the ImplFlags/DescrOffset were
-            // being set to null and we weren't coping with it
-            if((IsMiIL(it.ImplFlags()) || IsMiOPTIL(it.ImplFlags())) &&
-                   !IsMdAbstract(it.Attrs()) &&
-                   !IsReallyMdPinvokeImpl(it.Attrs()) &&
-                !IsMiInternalCall(it.ImplFlags()))
-            {
-                BuildMethodTableThrowException(IDS_CLASSLOAD_MISSINGMETHODRVA, it.Token());
-            }
-        }
-
         if (IsMdRTSpecialName(it.Attrs()))
         {
             if (IsMdVirtual(it.Attrs()))
@@ -5079,7 +5062,7 @@ MethodTableBuilder::ValidateMethods()
         }
 
         // Make sure that fcalls have a 0 rva.  This is assumed by the prejit fixup logic
-        if (it.MethodType() == METHOD_TYPE_FCALL && it.RVA() != 0)
+        if (it.MethodType() == mcFCall && it.RVA() != 0)
         {
             BuildMethodTableThrowException(BFA_ECALLS_MUST_HAVE_ZERO_RVA, it.Token());
         }
@@ -5116,7 +5099,7 @@ MethodTableBuilder::ValidateMethods()
             {
                 BuildMethodTableThrowException(IDS_CLASSLOAD_BAD_UNMANAGED_RVA, it.Token());
             }
-            if (it.MethodType() != METHOD_TYPE_NDIRECT)
+            if (it.MethodType() != mcNDirect)
             {
                 BuildMethodTableThrowException(BFA_BAD_UNMANAGED_ENTRY_POINT);
             }
@@ -5124,7 +5107,7 @@ MethodTableBuilder::ValidateMethods()
 
         // Vararg methods are not allowed inside generic classes
         // and nor can they be generic methods.
-        if (bmtGenerics->GetNumGenericArgs() > 0 || (it.MethodType() == METHOD_TYPE_INSTANTIATED) )
+        if (bmtGenerics->GetNumGenericArgs() > 0 || (it.MethodType() == mcInstantiated) )
         {
             DWORD cMemberSignature;
             PCCOR_SIGNATURE pMemberSignature = it.GetSig(&cMemberSignature);
@@ -5180,7 +5163,7 @@ MethodTableBuilder::InitNewMethodDesc(
     //
     // First, set all flags that control layout of optional slots
     //
-    pNewMD->SetClassification(GetMethodClassification(pMethod->GetMethodType()));
+    pNewMD->SetClassification(pMethod->GetMethodType());
 
     if (pMethod->GetMethodImplType() == METHOD_IMPL)
         pNewMD->SetHasMethodImplSlot();
@@ -5220,7 +5203,7 @@ MethodTableBuilder::InitNewMethodDesc(
 
     // Do the init specific to each classification of MethodDesc & assign some common fields
     InitMethodDesc(pNewMD,
-                   GetMethodClassification(pMethod->GetMethodType()),
+                   pMethod->GetMethodType(),
                    pMethod->GetMethodSignature().GetToken(),
                    pMethod->GetImplAttrs(),
                    pMethod->GetDeclAttrs(),
@@ -5341,7 +5324,7 @@ MethodTableBuilder::PlaceNonVirtualMethods()
 #endif // _DEBUG
 
         if (!fCanHaveNonVtableSlots ||
-            it->GetMethodType() == METHOD_TYPE_INSTANTIATED)
+            it->GetMethodType() == mcInstantiated)
         {
             // We use slot during remoting and to map methods between generic instantiations
             // (see MethodTable::GetParallelMethodDesc). The current implementation
@@ -6990,7 +6973,7 @@ VOID MethodTableBuilder::AllocAndInitMethodDescs()
         // the code will still work with small performance penalty (method desc chunk layout will be less efficient).
         _ASSERTE(tokenRange >= currentTokenRange);
 
-        SIZE_T size = MethodDesc::GetBaseSize(GetMethodClassification(it->GetMethodType()));
+        SIZE_T size = MethodDesc::GetBaseSize(it->GetMethodType());
 
         // Add size of optional slots
 
@@ -7168,7 +7151,7 @@ MethodTableBuilder::NeedsTightlyBoundUnboxingStub(bmtMDMethod * pMDMethod)
     return IsValueClass() &&
            !IsMdStatic(pMDMethod->GetDeclAttrs()) &&
            IsMdVirtual(pMDMethod->GetDeclAttrs()) &&
-           (pMDMethod->GetMethodType() != METHOD_TYPE_INSTANTIATED) &&
+           (pMDMethod->GetMethodType() != mcInstantiated) &&
            !IsMdRTSpecialName(pMDMethod->GetDeclAttrs());
 }
 
@@ -7187,7 +7170,7 @@ MethodTableBuilder::NeedsNativeCodeSlot(bmtMDMethod * pMDMethod)
         // for tiering currently to avoid some unnecessary overhead
         (g_pConfig->TieredCompilation_QuickJit() || GetModule()->IsReadyToRun()) &&
 
-        (pMDMethod->GetMethodType() == METHOD_TYPE_NORMAL || pMDMethod->GetMethodType() == METHOD_TYPE_INSTANTIATED))
+        (pMDMethod->GetMethodType() == mcIL || pMDMethod->GetMethodType() == mcInstantiated))
 
 #ifdef FEATURE_REJIT
         ||
@@ -7195,7 +7178,7 @@ MethodTableBuilder::NeedsNativeCodeSlot(bmtMDMethod * pMDMethod)
         // Methods that are R2R need precode if ReJIT is enabled. Keep this in sync with MethodDesc::IsEligibleForReJIT()
         (ReJitManager::IsReJITEnabled() &&
 
-            GetMethodClassification(pMDMethod->GetMethodType()) == mcIL &&
+            pMDMethod->GetMethodType() == mcIL &&
 
             !GetModule()->IsCollectible() &&
 
