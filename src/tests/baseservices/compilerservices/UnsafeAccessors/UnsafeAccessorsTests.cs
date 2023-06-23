@@ -450,14 +450,6 @@ static unsafe class UnsafeAccessorsTests
         extern static int StaticMethodWithDifferentReturnType(UserDataClass d, string s, ref string sr, in string si);
     }
 
-    class InstanceAccessors
-    {
-        public InstanceAccessors() { }
-
-        [UnsafeAccessor(UnsafeAccessorKind.Constructor)]
-        public extern InstanceAccessors UnsafeNonStaticAccessorForConstructor();
-    }
-
     class Invalid
     {
         [UnsafeAccessor(UnsafeAccessorKind.Method, Name=nameof(ToString))]
@@ -497,9 +489,6 @@ static unsafe class UnsafeAccessorsTests
         Assert.Throws<BadImageFormatException>(() => new Invalid().NonStatic(string.Empty));
         Assert.Throws<BadImageFormatException>(() => Invalid.CallToString<string>(string.Empty));
         Assert.Throws<BadImageFormatException>(() => Invalid<string>.CallToString(string.Empty));
-
-        // BUG https://github.com/dotnet/runtime/issues/87881
-        // Assert.Throws<BadImageFormatException>(() => (new InstanceAccessors()).UnsafeNonStaticAccessorForConstructor());
 
         [UnsafeAccessor(UnsafeAccessorKind.Field, Name=UserDataValue.FieldName)]
         extern static string FieldReturnMustBeByRefClass(UserDataClass d);
