@@ -24,6 +24,7 @@ namespace System.Text.Json.SourceGeneration
             Debug.Assert(type.FullName != null);
             return compilation.GetBestTypeByMetadataName(type.FullName);
         }
+
         public static string GetFullyQualifiedName(this ITypeSymbol type) => type.ToDisplayString(SymbolDisplayFormat.FullyQualifiedFormat);
 
         public static Location? GetDiagnosticLocation(this ISymbol typeSymbol)
