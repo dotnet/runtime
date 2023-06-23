@@ -413,6 +413,10 @@ static unsafe class UnsafeAccessorsTests
         Assert.Throws<AmbiguousMatchException>(
             () => CallAmbiguousMethod(CallPrivateConstructorClass(), null));
 
+        AssertExtensions.ThrowsMissingMemberException<MissingMethodException>(
+            isNativeAot ? null : UserDataClass.StaticMethodName,
+            () => { string sr = string.Empty; StaticMethodWithDifferentReturnType(null, null, ref sr, string.Empty); });
+
         [UnsafeAccessor(UnsafeAccessorKind.Method, Name=DoesNotExist)]
         extern static void MethodNotFound(UserDataClass d);
 
@@ -434,6 +438,17 @@ static unsafe class UnsafeAccessorsTests
         // precise match and that also fails because the custom modifiers don't match precisely.
         [UnsafeAccessor(UnsafeAccessorKind.Method, Name=UserDataClass.MethodNameAmbiguous)]
         extern static string CallAmbiguousMethod(UserDataClass d, delegate* unmanaged[Stdcall, SuppressGCTransition]<void> fptr);
+
+        [UnsafeAccessor(UnsafeAccessorKind.StaticMethod, Name=UserDataClass.StaticMethodName)]
+        extern static int StaticMethodWithDifferentReturnType(UserDataClass d, string s, ref string sr, in string si);
+    }
+
+    class InstanceAccessors
+    {
+        public InstanceAccessors() { }
+
+        [UnsafeAccessor(UnsafeAccessorKind.Constructor)]
+        public extern InstanceAccessors UnsafeNonStaticAccessorForConstructor();
     }
 
     class Invalid
@@ -476,6 +491,9 @@ static unsafe class UnsafeAccessorsTests
         Assert.Throws<BadImageFormatException>(() => new Invalid().NonStatic(string.Empty));
         Assert.Throws<BadImageFormatException>(() => Invalid.CallToString<string>(string.Empty));
         Assert.Throws<BadImageFormatException>(() => Invalid<string>.CallToString(string.Empty));
+
+        // BUG https://github.com/dotnet/runtime/issues/87881
+        // Assert.Throws<BadImageFormatException>(() => (new InstanceAccessors()).UnsafeNonStaticAccessorForConstructor());
 
         [UnsafeAccessor(UnsafeAccessorKind.Field, Name=UserDataValue.FieldName)]
         extern static string FieldReturnMustBeByRefClass(UserDataClass d);
