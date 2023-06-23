@@ -8655,6 +8655,8 @@ GenTree* Compiler::gtClone(GenTree* tree, bool complexOK)
         case GT_FTN_ADDR:
         {
             copy = new (this, tree->OperGet()) GenTreeFptrVal(tree->TypeGet(), tree->AsFptrVal()->gtFptrMethod);
+            copy->AsFptrVal()->gtFptrDelegateTarget = tree->AsFptrVal()->gtFptrDelegateTarget;
+
 #ifdef FEATURE_READYTORUN
             copy->AsFptrVal()->gtEntryPoint = tree->AsFptrVal()->gtEntryPoint;
 #endif
@@ -8888,6 +8890,7 @@ GenTree* Compiler::gtCloneExpr(
 
             case GT_FTN_ADDR:
                 copy = new (this, oper) GenTreeFptrVal(tree->gtType, tree->AsFptrVal()->gtFptrMethod);
+                copy->AsFptrVal()->gtFptrDelegateTarget = tree->AsFptrVal()->gtFptrDelegateTarget;
 
 #ifdef FEATURE_READYTORUN
                 copy->AsFptrVal()->gtEntryPoint = tree->AsFptrVal()->gtEntryPoint;
