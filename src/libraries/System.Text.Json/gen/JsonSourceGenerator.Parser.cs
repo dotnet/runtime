@@ -110,7 +110,7 @@ namespace System.Text.Json.SourceGeneration
                 if (langVersion is null or < MinimumSupportedLanguageVersion)
                 {
                     // Unsupported lang version should be the first (and only) diagnostic emitted by the generator.
-                    ReportDiagnostic(DiagnosticDescriptors.JsonUnsupportedLanguageVersion, contextTypeSymbol.GetDiagnosticLocation(), langVersion?.ToDisplayString());
+                    ReportDiagnostic(DiagnosticDescriptors.JsonUnsupportedLanguageVersion, contextTypeSymbol.GetDiagnosticLocation(), langVersion?.ToDisplayString(), MinimumSupportedLanguageVersion.ToDisplayString());
                     return null;
                 }
 
