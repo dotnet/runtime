@@ -17,7 +17,8 @@ internal sealed class MetricsHandler : HttpMessageHandlerStage, IHttpMetricsLogg
     private readonly Counter<long> _failedRequests;
     private readonly Histogram<double> _requestsDuration;
 
-    private ThreadLocal<HttpMetricsEnrichmentContext> _cachedEnrichmentContext = new ThreadLocal<HttpMetricsEnrichmentContext>(() => new HttpMetricsEnrichmentContext());
+    [ThreadStatic]
+    private static HttpMetricsEnrichmentContext? s_cachedEnrichmentContext;
 
     public MetricsHandler(HttpMessageHandler innerHandler, Meter meter)
     {
@@ -87,7 +88,6 @@ internal sealed class MetricsHandler : HttpMessageHandlerStage, IHttpMetricsLogg
         if (disposing)
         {
             _innerHandler.Dispose();
-            _cachedEnrichmentContext.Dispose();
         }
 
         base.Dispose(disposing);
@@ -136,7 +136,7 @@ internal sealed class MetricsHandler : HttpMessageHandlerStage, IHttpMetricsLogg
         }
     }
 
-    private void ApplyExtendedTags(ref TagList tags, HttpRequestMessage request, HttpResponseMessage? response, Exception? exception)
+    private static void ApplyExtendedTags(ref TagList tags, HttpRequestMessage request, HttpResponseMessage? response, Exception? exception)
     {
         if (response is not null)
         {
@@ -144,11 +144,13 @@ internal sealed class MetricsHandler : HttpMessageHandlerStage, IHttpMetricsLogg
             tags.Add("protocol", GetProtocolName(response.Version));
         }
 
-        HttpMetricsEnrichmentContext enrichmentContext = _cachedEnrichmentContext.Value!;
-        if (enrichmentContext.InProgress)
-        {
-            enrichmentContext = new HttpMetricsEnrichmentContext(); // Protect against re-reentrancy
-        }
+        s_cachedEnrichmentContext ??= new HttpMetricsEnrichmentContext();
+
+        // Protect against re-entrancy
+        HttpMetricsEnrichmentContext enrichmentContext = s_cachedEnrichmentContext.InProgress ?
+            new HttpMetricsEnrichmentContext() :
+            s_cachedEnrichmentContext;
+
         enrichmentContext.ApplyEnrichment(request, response, exception, ref tags);
     }
 
