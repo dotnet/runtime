@@ -301,7 +301,7 @@ int32_t GlobalizationNative_EndsWithNative(const uint16_t* localeName, int32_t l
     } else if ((uint32_t)(codePoint) <= 0x10ffff && (offset) + 1 < (capacity)) { \
         (buffer)[(offset)++] = (uint16_t)(((codePoint) >> 10) + 0xd7c0); \
         (buffer)[(offset)++] = (uint16_t)(((codePoint)&0x3ff) | 0xdc00); \
-    } else /* c>0x10ffff or not enough space */ { \
+    } else /* codePoint > 0x10ffff or not enough space */ { \
         (isError) = true; \
     } \
 }
@@ -325,12 +325,12 @@ int32_t GlobalizationNative_ChangeCaseNative(const uint16_t* localeName, int32_t
         result = source;
     while (srcIdx < result.length)
     {
-        dstCodepoint = [result characterAtIndex:srcIdx];
+        dstCodepoint = [result characterAtIndex:srcIdx++];
         Append(lpDst, dstIdx, cwDstLength, dstCodepoint, isError);
-        assert(isError == false);
-        srcIdx++;
+        if (isError)
+            return -1;
     }
-    return isError ? -1 : 0;
+    return 0;
 }
 
 /*
@@ -350,12 +350,12 @@ int32_t GlobalizationNative_ChangeCaseInvariantNative(const uint16_t* lpSrc, int
         result = source;
     while (srcIdx < cwSrcLength)
     {
-        dstCodepoint = [result characterAtIndex:srcIdx];
+        dstCodepoint = [result characterAtIndex:srcIdx++];
         Append(lpDst, dstIdx, cwDstLength, dstCodepoint, isError);
-        assert(isError == false);
-        srcIdx++;
+        if (isError)
+            return -1;
     }
-    return isError ? -1 : 0;
+    return 0;
 }
 
 #endif
