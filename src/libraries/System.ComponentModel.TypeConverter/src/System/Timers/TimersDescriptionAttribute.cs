@@ -21,17 +21,22 @@ namespace System.Timers
         /// </summary>
         public TimersDescriptionAttribute(string description) : base(description) { }
 
-#pragma warning disable CS8524 // "switch is not exhaustive". It actually is.
-        internal TimersDescriptionAttribute(TimersDescriptionStringId id) : base(
-            id switch
+        internal TimersDescriptionAttribute(TimersDescriptionStringId id) : base(GetResourceString(id)) { }
+
+        private static string GetResourceString(TimersDescriptionStringId id)
+        {
+            switch (id)
             {
-                TimersDescriptionStringId.TimerAutoReset => SR.TimerAutoReset,
-                TimersDescriptionStringId.TimerEnabled => SR.TimerEnabled,
-                TimersDescriptionStringId.TimerInterval => SR.TimerInterval,
-                TimersDescriptionStringId.TimerIntervalElapsed => SR.TimerIntervalElapsed,
-                TimersDescriptionStringId.TimerSynchronizingObject => SR.TimerSynchronizingObject,
-            }) { }
-#pragma warning restore CS8524
+                case TimersDescriptionStringId.TimerAutoReset: return SR.TimerAutoReset;
+                case TimersDescriptionStringId.TimerEnabled: return SR.TimerEnabled;
+                case TimersDescriptionStringId.TimerInterval: return SR.TimerInterval;
+                case TimersDescriptionStringId.TimerIntervalElapsed: return SR.TimerIntervalElapsed;
+                case TimersDescriptionStringId.TimerSynchronizingObject: return SR.TimerSynchronizingObject;
+                default:
+                    Debug.Fail($"Unexpected resource {id}");
+                    return "";
+            }
+        }
 
         /// <summary>
         /// Retrieves the description text.

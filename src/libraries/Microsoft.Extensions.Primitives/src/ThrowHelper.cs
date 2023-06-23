@@ -61,16 +61,17 @@ namespace Microsoft.Extensions.Primitives
             Debug.Assert(Enum.IsDefined(typeof(ExceptionResource), resource),
                 "The enum value is not defined, please check the ExceptionResource Enum.");
 
-#pragma warning disable CS8524 // "switch is not exhaustive". It actually is.
-            return resource switch
+            switch (resource)
             {
-                ExceptionResource.Argument_InvalidOffsetLength => SR.Argument_InvalidOffsetLength,
-                ExceptionResource.Argument_InvalidOffsetLengthStringSegment => SR.Argument_InvalidOffsetLengthStringSegment,
-                ExceptionResource.Capacity_CannotChangeAfterWriteStarted => SR.Capacity_CannotChangeAfterWriteStarted,
-                ExceptionResource.Capacity_NotEnough => SR.Capacity_NotEnough,
-                ExceptionResource.Capacity_NotUsedEntirely => SR.Capacity_NotUsedEntirely,
-            };
-#pragma warning restore CS8524
+                case ExceptionResource.Argument_InvalidOffsetLength: return SR.Argument_InvalidOffsetLength;
+                case ExceptionResource.Argument_InvalidOffsetLengthStringSegment: return SR.Argument_InvalidOffsetLengthStringSegment;
+                case ExceptionResource.Capacity_CannotChangeAfterWriteStarted: return SR.Capacity_CannotChangeAfterWriteStarted;
+                case ExceptionResource.Capacity_NotEnough: return SR.Capacity_NotEnough;
+                case ExceptionResource.Capacity_NotUsedEntirely: return SR.Capacity_NotUsedEntirely;
+                default:
+                    Debug.Fail($"Unexpected resource {resource}");
+                    return "";
+            }
         }
 
         private static string GetArgumentName(ExceptionArgument argument)
