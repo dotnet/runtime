@@ -30,7 +30,7 @@ namespace Microsoft.Extensions.DependencyInjection
     {
         public static object AnyKey { get; } = new AnyKeyObj();
 
-        private class AnyKeyObj
+        private sealed class AnyKeyObj
         {
             public override string? ToString() => "*";
         }
