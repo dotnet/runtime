@@ -32,6 +32,10 @@ namespace HttpStress
 
         public StressClient((string name, Func<RequestContext, Task> operation)[] clientOperations, Configuration configuration)
         {
+            _cts.Token.Register(() =>
+            {
+                Console.WriteLine($"!!!Client cancellation invoked!!!");
+            });
             _clientOperations = clientOperations;
             _config = configuration;
             _baseAddress = new Uri(configuration.ServerUri);
@@ -95,6 +99,7 @@ namespace HttpStress
 
         public void Stop()
         {
+            Console.WriteLine($"Client cancellation issued from: {Environment.StackTrace}");
             _cts.Cancel();
             for (int i = 0; i < 60; ++i)
             {
@@ -211,7 +216,7 @@ namespace HttpStress
                     }
                     catch (Exception e)
                     {
-                        _aggregator.RecordFailure(e, opIndex, stopwatch.Elapsed, requestContext.IsCancellationRequested, taskNum: taskNum, iteration: i);
+                        _aggregator.RecordFailure(e, opIndex, stopwatch.Elapsed, requestContext.IsCancellationRequested, _cts.IsCancellationRequested, taskNum: taskNum, iteration: i);
                     }
                 }
 
@@ -230,12 +235,12 @@ namespace HttpStress
             // Representative error text of stress failure
             public string ErrorText { get; }
             // Operation id => failure timestamps
-            public Dictionary<int, List<(DateTime timestamp, TimeSpan duration, bool isCancelled)>> Failures { get; }
+            public Dictionary<int, List<(DateTime timestamp, TimeSpan duration, bool isCancelled, bool ctsState)>> Failures { get; }
 
             public StressFailureType(string errorText)
             {
                 ErrorText = errorText;
-                Failures = new Dictionary<int, List<(DateTime timestamp, TimeSpan duration, bool isCancelled)>>();
+                Failures = new Dictionary<int, List<(DateTime timestamp, TimeSpan duration, bool isCancelled, bool ctsState)>>();
             }
 
             public int FailureCount => Failures.Values.Select(x => x.Count).Sum();
@@ -280,7 +285,7 @@ namespace HttpStress
                 _latencies.Add(elapsed.TotalMilliseconds);
             }
 
-            public void RecordFailure(Exception exn, int operationIndex, TimeSpan elapsed, bool isCancelled, int taskNum, long iteration)
+            public void RecordFailure(Exception exn, int operationIndex, TimeSpan elapsed, bool isCancelled, bool ctsState, int taskNum, long iteration)
             {
                 DateTime timestamp = DateTime.Now;
 
@@ -301,13 +306,13 @@ namespace HttpStress
 
                     lock (failureType)
                     {
-                        if(!failureType.Failures.TryGetValue(operationIndex, out List<(DateTime timestamp, TimeSpan duration, bool isCancelled)>? details))
+                        if (!failureType.Failures.TryGetValue(operationIndex, out List<(DateTime timestamp, TimeSpan duration, bool isCancelled, bool ctsState)>? details))
                         {
-                            details = new List<(DateTime timestamp, TimeSpan duration, bool isCancelled)>();
+                            details = new List<(DateTime timestamp, TimeSpan duration, bool isCancelled, bool ctsState)>();
                             failureType.Failures.Add(operationIndex, details);
                         }
 
-                        details.Add((timestamp, elapsed, isCancelled));
+                        details.Add((timestamp, elapsed, isCancelled, ctsState));
                     }
 
                     (Type exception, string message, string callSite)[] ClassifyFailure(Exception exn)
@@ -447,7 +452,7 @@ namespace HttpStress
                     Console.WriteLine(failure.ErrorText);
                     Console.WriteLine();
                     Console.ForegroundColor = ConsoleColor.Yellow;
-                    foreach (KeyValuePair<int, List<(DateTime timestamp, TimeSpan duration, bool isCancelled)>> operation in failure.Failures)
+                    foreach (KeyValuePair<int, List<(DateTime timestamp, TimeSpan duration, bool isCancelled, bool ctsState)>> operation in failure.Failures)
                     {
                         Console.ForegroundColor = ConsoleColor.Cyan;
                         Console.Write($"\t{_operationNames[operation.Key].PadRight(30)}");
@@ -456,7 +461,7 @@ namespace HttpStress
                         Console.Write("Fail: ");
                         Console.ResetColor();
                         Console.Write(operation.Value.Count);
-                        Console.WriteLine($"\t{string.Join(", ", operation.Value.Select(x => $"Timestamps: {x.timestamp:HH:mm:ss.fffffff}, Duration: {x.duration}, Cancelled: {x.isCancelled}"))}");
+                        Console.WriteLine($"\t{string.Join(", ", operation.Value.Select(x => $"Timestamps: {x.timestamp:HH:mm:ss.fffffff}, Duration: {x.duration}, Cancelled: {x.isCancelled}, Stop Issued: {x.ctsState}"))}");
                     }
 
                     Console.ForegroundColor = ConsoleColor.Cyan;
