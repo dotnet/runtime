@@ -669,6 +669,24 @@ bool ep_rt_aot_spin_lock_release (ep_rt_spin_lock_handle_t *spin_lock)
     return false;
 }
 
+#ifndef HOST_WIN32
+#if defined(__APPLE__)
+#if defined (HOST_OSX)
+extern "C" {
+gchar ***_NSGetEnviron(void);
+}
+#define environ (*_NSGetEnviron())
+#else
+static char *_ep_rt_aot_environ[1] = { NULL };
+#define environ _ep_rt_aot_environ
+#endif /* defined (HOST_OSX) */
+#else
+extern "C" {
+extern char **environ;
+}
+#endif /* defined (__APPLE__) */
+#endif /* !defined (HOST_WIN32) */
+
 void ep_rt_aot_os_environment_get_utf16 (dn_vector_ptr_t *env_array)
 {
     STATIC_CONTRACT_NOTHROW;
