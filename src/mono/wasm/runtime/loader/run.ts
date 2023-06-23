@@ -277,7 +277,9 @@ export class HostBuilder implements DotnetHostBuilder {
 
     withStartupOptions(startupOptions: Partial<WebAssemblyStartOptions>): DotnetHostBuilder {
         deep_merge_config(monoConfig, {
-            startupOptions
+            applicationEnvironment: startupOptions.environment,
+            applicationCulture: startupOptions.applicationCulture,
+            loadBootResource: startupOptions.loadBootResource,
         });
         return this;
     }

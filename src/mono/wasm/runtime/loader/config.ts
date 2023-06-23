@@ -18,9 +18,6 @@ export function deep_merge_config(target: MonoConfigInternal, source: MonoConfig
     if (providedConfig.environmentVariables) {
         providedConfig.environmentVariables = { ...(target.environmentVariables || {}), ...(providedConfig.environmentVariables || {}) };
     }
-    if (providedConfig.startupOptions) {
-        providedConfig.startupOptions = { ...(target.startupOptions || {}), ...(providedConfig.startupOptions || {}) };
-    }
     if (providedConfig.runtimeOptions) {
         providedConfig.runtimeOptions = [...(target.runtimeOptions || []), ...(providedConfig.runtimeOptions || [])];
     }
@@ -82,9 +79,9 @@ export async function mono_wasm_load_config(module: DotnetModuleInternal): Promi
     }
     mono_log_debug("mono_wasm_load_config");
     try {
-        loaderHelpers.config.applicationEnvironment = loaderHelpers.config.applicationEnvironment ?? loaderHelpers.config.startupOptions?.environment ?? "Production";
+        loaderHelpers.config.applicationEnvironment = loaderHelpers.config.applicationEnvironment ?? "Production";
 
-        if (loaderHelpers.config.startupOptions && loaderHelpers.config.startupOptions.loadBootResource) {
+        if (loaderHelpers.config.loadBootResource) {
             // If we have custom loadBootResource
             await loadBootConfig(loaderHelpers.config, module);
         } else {
@@ -94,7 +91,7 @@ export async function mono_wasm_load_config(module: DotnetModuleInternal): Promi
             const loadedAnyConfig: any = (await configResponse.json()) || {};
             if (loadedAnyConfig.resources) {
                 // If we found boot config schema
-                await initializeBootConfig(BootConfigResult.fromFetchResponse(configResponse, loadedAnyConfig as BootJsonData, loaderHelpers.config.applicationEnvironment), module, loaderHelpers.config.startupOptions);
+                await initializeBootConfig(BootConfigResult.fromFetchResponse(configResponse, loadedAnyConfig as BootJsonData, loaderHelpers.config.applicationEnvironment), module, loaderHelpers.config.loadBootResource);
             } else {
                 // Otherwise we found mono config schema
                 const loadedConfig = loadedAnyConfig as MonoConfigInternal;

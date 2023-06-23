@@ -1,7 +1,7 @@
 // Licensed to the .NET Foundation under one or more agreements.
 // The .NET Foundation licenses this file to you under the MIT license.
 
-import type { AssetBehaviours, AssetEntry, DotnetModuleConfig, LoadingResource, MonoConfig, ResourceRequest, RuntimeAPI, WebAssemblyStartOptions } from ".";
+import type { AssetBehaviours, AssetEntry, DotnetModuleConfig, LoadingResource, MonoConfig, ResourceRequest, RuntimeAPI } from ".";
 import type { BootJsonData } from "./blazor";
 import type { CharPtr, EmscriptenModule, ManagedPointer, NativePointer, VoidPtr, Int32Ptr } from "./emscripten";
 
@@ -76,8 +76,7 @@ export type MonoConfigInternal = MonoConfig & {
     logExitCode?: boolean
     forwardConsoleLogsToWS?: boolean,
     asyncFlushOnExit?: boolean
-    exitAfterSnapshot?: number,
-    startupOptions?: Partial<WebAssemblyStartOptions>
+    exitAfterSnapshot?: number
 };
 
 export type RunArguments = {

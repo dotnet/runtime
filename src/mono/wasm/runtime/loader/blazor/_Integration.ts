@@ -2,7 +2,7 @@
 // The .NET Foundation licenses this file to you under the MIT license.
 
 import type { DotnetModuleInternal, MonoConfigInternal } from "../../types/internal";
-import type { AssetBehaviours, AssetEntry, LoadingResource, WebAssemblyBootResourceType, WebAssemblyStartOptions } from "../../types";
+import type { AssetBehaviours, AssetEntry, LoadBootResourceCallback, LoadingResource, WebAssemblyBootResourceType } from "../../types";
 import type { BootJsonData } from "../../types/blazor";
 
 import { INTERNAL, loaderHelpers } from "../globals";
@@ -14,13 +14,13 @@ import { ICUDataMode } from "../../types/blazor";
 let resourceLoader: WebAssemblyResourceLoader;
 
 export async function loadBootConfig(config: MonoConfigInternal, module: DotnetModuleInternal) {
-    const bootConfigPromise = BootConfigResult.initAsync(config.startupOptions?.loadBootResource, config.applicationEnvironment);
+    const bootConfigPromise = BootConfigResult.initAsync(config.loadBootResource, config.applicationEnvironment);
     const bootConfigResult: BootConfigResult = await bootConfigPromise;
-    await initializeBootConfig(bootConfigResult, module, config.startupOptions);
+    await initializeBootConfig(bootConfigResult, module, config.loadBootResource);
 }
 
-export async function initializeBootConfig(bootConfigResult: BootConfigResult, module: DotnetModuleInternal, startupOptions?: Partial<WebAssemblyStartOptions>) {
-    INTERNAL.resourceLoader = resourceLoader = await WebAssemblyResourceLoader.initAsync(bootConfigResult.bootConfig, startupOptions ?? {});
+export async function initializeBootConfig(bootConfigResult: BootConfigResult, module: DotnetModuleInternal, loadBootResource?: LoadBootResourceCallback) {
+    INTERNAL.resourceLoader = resourceLoader = await WebAssemblyResourceLoader.initAsync(bootConfigResult.bootConfig, loadBootResource);
     mapBootConfigToMonoConfig(loaderHelpers.config, bootConfigResult.applicationEnvironment);
     setupModuleForBlazor(module);
 }
@@ -130,7 +130,7 @@ export function mapBootConfigToMonoConfig(moduleConfig: MonoConfigInternal, appl
             assets.push(asset);
         }
     }
-    const applicationCulture = resourceLoader.startOptions.applicationCulture || (navigator.languages && navigator.languages[0]);
+    const applicationCulture = moduleConfig.applicationCulture || (navigator.languages && navigator.languages[0]);
     const icuDataResourceName = getICUResourceName(resourceLoader.bootConfig, applicationCulture);
     let hasIcuData = false;
     for (const name in resources.runtime) {
@@ -178,9 +178,9 @@ export function mapBootConfigToMonoConfig(moduleConfig: MonoConfigInternal, appl
         environmentVariables["DOTNET_MODIFIABLE_ASSEMBLIES"] = resourceLoader.bootConfig.modifiableAssemblies;
     }
 
-    if (resourceLoader.startOptions.applicationCulture) {
+    if (moduleConfig.applicationCulture) {
         // If a culture is specified via start options use that to initialize the Emscripten \  .NET culture.
-        environmentVariables["LANG"] = `${resourceLoader.startOptions.applicationCulture}.UTF-8`;
+        environmentVariables["LANG"] = `${moduleConfig.applicationCulture}.UTF-8`;
     }
 
     if (resourceLoader.bootConfig.startupMemoryCache !== undefined) {

@@ -1,7 +1,7 @@
 // Licensed to the .NET Foundation under one or more agreements.
 // The .NET Foundation licenses this file to you under the MIT license.
 
-import type { WebAssemblyBootResourceType, WebAssemblyStartOptions } from "../../types";
+import type { LoadBootResourceCallback, WebAssemblyBootResourceType } from "../../types";
 import type { BootJsonData, ResourceList } from "../../types/blazor";
 import { toAbsoluteUri } from "./_Polyfill";
 const networkFetchCacheMode = "no-cache";
@@ -15,12 +15,12 @@ export class WebAssemblyResourceLoader {
 
     private cacheLoads: { [name: string]: LoadLogEntry } = {};
 
-    static async initAsync(bootConfig: BootJsonData, startOptions: Partial<WebAssemblyStartOptions>): Promise<WebAssemblyResourceLoader> {
+    static async initAsync(bootConfig: BootJsonData, loadBootResource?: LoadBootResourceCallback): Promise<WebAssemblyResourceLoader> {
         const cache = await getCacheToUseIfEnabled(bootConfig);
-        return new WebAssemblyResourceLoader(bootConfig, cache, startOptions);
+        return new WebAssemblyResourceLoader(bootConfig, cache, loadBootResource);
     }
 
-    constructor(readonly bootConfig: BootJsonData, readonly cacheIfUsed: Cache | null, readonly startOptions: Partial<WebAssemblyStartOptions>) {
+    constructor(readonly bootConfig: BootJsonData, readonly cacheIfUsed: Cache | null, readonly loadBootResource?: LoadBootResourceCallback) {
     }
 
     loadResources(resources: ResourceList, url: (name: string) => string, resourceType: WebAssemblyBootResourceType): LoadingResource[] {
@@ -123,8 +123,8 @@ export class WebAssemblyResourceLoader {
 
     private loadResourceWithoutCaching(name: string, url: string, contentHash: string, resourceType: WebAssemblyBootResourceType): Promise<Response> {
         // Allow developers to override how the resource is loaded
-        if (this.startOptions.loadBootResource) {
-            const customLoadResult = this.startOptions.loadBootResource(resourceType, name, url, contentHash);
+        if (this.loadBootResource) {
+            const customLoadResult = this.loadBootResource(resourceType, name, url, contentHash);
             if (customLoadResult instanceof Promise) {
                 // They are supplying an entire custom response, so just use that
                 return customLoadResult;

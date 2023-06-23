@@ -153,7 +153,22 @@ type MonoConfig = {
      * query string to be used for asset loading
      */
     assetUniqueQuery?: string;
+    /**
+     * Gets the application culture. This is a name specified in the BCP 47 format. See https://tools.ietf.org/html/bcp47
+     */
+    applicationCulture?: string;
+    /**
+     * Overrides the built-in boot resource loading mechanism so that boot resources can be fetched
+     * from a custom source, such as an external CDN.
+     * @param type The type of the resource to be loaded.
+     * @param name The name of the resource to be loaded.
+     * @param defaultUri The URI from which the framework would fetch the resource by default. The URI may be relative or absolute.
+     * @param integrity The integrity string representing the expected content in the response.
+     * @returns A URI string or a Response promise to override the loading process, or null/undefined to allow the default loading behavior.
+     */
+    loadBootResource?: LoadBootResourceCallback;
 };
+type LoadBootResourceCallback = (type: WebAssemblyBootResourceType, name: string, defaultUri: string, integrity: string) => string | Promise<Response> | null | undefined;
 interface ResourceRequest {
     name: string;
     behavior: AssetBehaviours;
@@ -274,6 +289,7 @@ type ModuleAPI = {
     exit: (code: number, reason?: any) => void;
 };
 type CreateDotnetRuntimeType = (moduleFactory: DotnetModuleConfig | ((api: RuntimeAPI) => DotnetModuleConfig)) => Promise<RuntimeAPI>;
+type WebAssemblyBootResourceType = "assembly" | "pdb" | "dotnetjs" | "dotnetwasm" | "globalization" | "manifest" | "configuration";
 
 interface BootJsonData {
     readonly entryAssembly: string;
