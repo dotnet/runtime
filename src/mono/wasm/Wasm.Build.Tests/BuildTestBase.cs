@@ -730,7 +730,7 @@ namespace Wasm.Build.Tests
                 throw new XunitException($"{label}:{Environment.NewLine}  File sizes should not match for {file0} ({finfo0.Length}), and {file1} ({finfo1.Length})");
         }
 
-        protected (int exitCode, string buildOutput) AssertBuild(string args, string label = "build", bool expectSuccess = true, IDictionary<string, string>? envVars = null, int? timeoutMs = null)
+        private (int exitCode, string buildOutput) AssertBuild(string args, string label = "build", bool expectSuccess = true, IDictionary<string, string>? envVars = null, int? timeoutMs = null)
         {
             var result = RunProcess(s_buildEnv.DotNet, _testOutput, args, workingDir: _projectDir, label: label, envVars: envVars, timeoutMs: timeoutMs ?? s_defaultPerTestTimeoutMs);
             if (expectSuccess && result.exitCode != 0)
@@ -739,19 +739,6 @@ namespace Wasm.Build.Tests
                 throw new XunitException($"Build should have failed, but it didn't. Process exited with exitCode : {result.exitCode}");
 
             return result;
-        }
-
-
-        protected static BootJsonData ParseBootData(Stream stream)
-        {
-            stream.Position = 0;
-            var serializer = new DataContractJsonSerializer(
-                typeof(BootJsonData),
-                new DataContractJsonSerializerSettings { UseSimpleDictionaryFormat = true });
-
-            var config = (BootJsonData?)serializer.ReadObject(stream);
-            Assert.NotNull(config);
-            return config;
         }
 
         protected string FindSubDirIgnoringCase(string parentDir, string dirName)
@@ -781,8 +768,7 @@ namespace Wasm.Build.Tests
             return Path.Combine(dir!, "obj", config, targetFramework, "browser-wasm");
         }
 
-
-        public static (int exitCode, string buildOutput) RunProcess(string path,
+        private static (int exitCode, string buildOutput) RunProcess(string path,
                                          ITestOutputHelper _testOutput,
                                          string args = "",
                                          IDictionary<string, string>? envVars = null,
@@ -796,7 +782,7 @@ namespace Wasm.Build.Tests
             return t.Result;
         }
 
-        public static async Task<(int exitCode, string buildOutput)> RunProcessAsync(string path,
+        private static async Task<(int exitCode, string buildOutput)> RunProcessAsync(string path,
                                          ITestOutputHelper _testOutput,
                                          string args = "",
                                          IDictionary<string, string>? envVars = null,

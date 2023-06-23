@@ -4,6 +4,9 @@
 #nullable enable
 
 using System.IO;
+using System.Runtime.Serialization.Json;
+using Microsoft.NET.Sdk.WebAssembly;
+using Xunit;
 using Xunit.Abstractions;
 
 namespace Wasm.Build.Tests;
@@ -54,4 +57,17 @@ public abstract class WasmTemplateTestBase : BuildTestBase
 
         return projectfile;
     }
+
+    protected static BootJsonData ParseBootData(Stream stream)
+    {
+        stream.Position = 0;
+        var serializer = new DataContractJsonSerializer(
+            typeof(BootJsonData),
+            new DataContractJsonSerializerSettings { UseSimpleDictionaryFormat = true });
+
+        var config = (BootJsonData?)serializer.ReadObject(stream);
+        Assert.NotNull(config);
+        return config;
+    }
+
 }

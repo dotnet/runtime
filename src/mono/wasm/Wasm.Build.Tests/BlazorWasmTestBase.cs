@@ -252,30 +252,6 @@ public abstract class BlazorWasmTestBase : WasmTemplateTestBase
         return projectFile;
     }
 
-    public void BlazorAddRazorButton(string buttonText, string customCode, string methodName = "test", string razorPage = "Pages/Counter.razor")
-    {
-        string additionalCode = $$"""
-            <p role="{{methodName}}">Output: @outputText</p>
-            <button class="btn btn-primary" @onclick="{{methodName}}">{{buttonText}}</button>
-
-            @code {
-                private string outputText = string.Empty;
-                public void {{methodName}}()
-                {
-                    {{customCode}}
-                }
-            }
-        """;
-
-        // find blazor's Counter.razor
-        string counterRazorPath = Path.Combine(_projectDir!, razorPage);
-        if (!File.Exists(counterRazorPath))
-            throw new FileNotFoundException($"Could not find {counterRazorPath}");
-
-        string oldContent = File.ReadAllText(counterRazorPath);
-        File.WriteAllText(counterRazorPath, oldContent + additionalCode);
-    }
-
     // Keeping these methods with explicit Build/Publish in the name
     // so in the test code it is evident which is being run!
     public Task BlazorRunForBuildWithDotnetRun(string config, Func<IPage, Task>? test = null, string extraArgs = "--no-build", Action<IConsoleMessage>? onConsoleMessage = null)
