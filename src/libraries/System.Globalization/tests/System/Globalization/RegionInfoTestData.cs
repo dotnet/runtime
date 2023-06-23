@@ -16,7 +16,7 @@ namespace System.Globalization.Tests
 
         public static IEnumerable<object[]> CurrencyDataOnWasm(bool isTestingRegionInfoProperty)
         {
-            yield return new object[] { new CurrencyTestDataModel ( "ar-SA", "SAR", "\u0631.\u0633.\u200F" )};
+            yield return new object[] { new CurrencyTestDataModel ( "ar-SA", "SAR", "\u0631.\u0633.\u200f" )}; // ICU: \u0631.\u0633.\u200f
             yield return new object[] { new CurrencyTestDataModel ( "am-ET", "ETB", "\u1265\u122D" )};
             yield return new object[] { new CurrencyTestDataModel ( "bg-BG", "BGN", "\u043B\u0432." )};
             yield return new object[] { new CurrencyTestDataModel ( "bn-BD", "BDT", "\u09F3" )};
@@ -69,7 +69,7 @@ namespace System.Globalization.Tests
             yield return new object[] { new CurrencyTestDataModel ( "en-SB", "SBD", "$" )};
             yield return new object[] { new CurrencyTestDataModel ( "en-SC", "SCR", "SR" )};
             yield return new object[] { new CurrencyTestDataModel ( "en-SH", "SHP", "£" )};
-            yield return new object[] { new CurrencyTestDataModel ( "en-SL", "SLL", "Le" )};
+            yield return new object[] { new CurrencyTestDataModel ( "en-SL", "SLL", "SLL" )}; // ICU: le
             yield return new object[] { new CurrencyTestDataModel ( "en-SS", "SSP", "£" )};
             yield return new object[] { new CurrencyTestDataModel ( "en-SX", "ANG", "NAf." )};
             yield return new object[] { new CurrencyTestDataModel ( "en-SZ", "SZL", "E" )};
@@ -92,7 +92,7 @@ namespace System.Globalization.Tests
             yield return new object[] { new CurrencyTestDataModel ( "fa-IR", "IRR", "\u200e\u0631\u06CC\u0627\u0644" )};
             yield return new object[] { new CurrencyTestDataModel ( "fil-PH", "PHP", "\u20B1" )};
             yield return new object[] { new CurrencyTestDataModel ( "fr-CA", "CAD", "$" )};
-            yield return new object[] { new CurrencyTestDataModel ( "he-IL", "ILS", "\u200f\u00a0\u20aa" )};
+            yield return new object[] { new CurrencyTestDataModel ( "he-IL", "ILS", "\u200f\u20aa" )}; // ICU: \u20aa
             yield return new object[] { new CurrencyTestDataModel ( "hr-BA", "BAM", "KM" )};
             yield return new object[] { new CurrencyTestDataModel ( "hr-HR", "HRK", "kn" )}; // ICU: HRK
             yield return new object[] { new CurrencyTestDataModel ( "hu-HU", "HUF", "Ft" )};

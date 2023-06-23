@@ -212,7 +212,9 @@
     <Compile Include="..\System\Globalization\GraphemeBreakTest.cs"
              Link="System\Globalization\GraphemeBreakTest.cs" />
     <Compile Include="..\System\Globalization\RegionInfoTests.cs"
-             Link="System\Globalization\RegionInfoTests.cs" />
+             Link="System\Globalization\RegionInfoTests.cs" />    
+    <Compile Include="..\System\Globalization\RegionInfoTestData.cs"
+             Link="System\Globalization\RegionInfoTestData.cs" />
     <Compile Include="..\System\Globalization\StringInfoTests.cs"
              Link="System\Globalization\StringInfoTests.cs" />
     <Compile Include="..\System\Globalization\SortVersionTests.cs"
