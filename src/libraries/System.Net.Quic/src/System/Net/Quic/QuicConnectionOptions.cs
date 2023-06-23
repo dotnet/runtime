@@ -2,7 +2,6 @@
 // The .NET Foundation licenses this file to you under the MIT license.
 
 using System.Net.Security;
-using System.Net.Sockets;
 using System.Threading;
 
 namespace System.Net.Quic;
