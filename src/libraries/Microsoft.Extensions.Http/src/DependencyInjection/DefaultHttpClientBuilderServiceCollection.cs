@@ -27,6 +27,7 @@ namespace Microsoft.Extensions.DependencyInjection
             if (item.ServiceType != typeof(IConfigureOptions<HttpClientFactoryOptions>))
             {
                 _services.Add(item);
+                return;
             }
 
             if (_isDefault)
