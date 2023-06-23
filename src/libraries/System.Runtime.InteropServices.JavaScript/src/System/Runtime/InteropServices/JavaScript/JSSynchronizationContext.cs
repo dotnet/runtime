@@ -24,6 +24,8 @@ namespace System.Runtime.InteropServices.JavaScript
         public readonly IntPtr TargetThreadId;
         private readonly WorkItemQueueType Queue;
 
+        internal static JSSynchronizationContext? MainJSSynchronizationContext;
+
         [ThreadStatic]
         internal static JSSynchronizationContext? CurrentJSSynchronizationContext;
         internal SynchronizationContext? previousSynchronizationContext;
