@@ -15,7 +15,7 @@ using Xunit.Sdk;
 
 namespace Wasm.Build.Tests
 {
-    public class WorkloadTests : BuildTestBase
+    public class WorkloadTests : TestMainJsTestBase
     {
         public WorkloadTests(ITestOutputHelper output, SharedBuildPerTestClassFixture buildContext)
             : base(output, buildContext)

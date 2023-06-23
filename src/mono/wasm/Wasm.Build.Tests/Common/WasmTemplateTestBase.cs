@@ -70,4 +70,9 @@ public abstract class WasmTemplateTestBase : BuildTestBase
         return config;
     }
 
+    protected static void AssertDotNetJsSymbols(string bundleDir, bool fromRuntimePack, string targetFramework)
+        => AssertFile(Path.Combine(s_buildEnv.GetRuntimeNativeDir(targetFramework), "dotnet.native.js.symbols"),
+                        Path.Combine(bundleDir, "dotnet.native.js.symbols"),
+                        same: fromRuntimePack);
+
 }

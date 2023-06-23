@@ -13,7 +13,7 @@ using Xunit.Sdk;
 
 namespace Wasm.Build.Tests
 {
-    public class RebuildTests : BuildTestBase
+    public class RebuildTests : TestMainJsTestBase
     {
         public RebuildTests(ITestOutputHelper output, SharedBuildPerTestClassFixture buildContext)
             : base(output, buildContext)

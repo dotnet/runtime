@@ -159,6 +159,7 @@ public abstract class BlazorWasmTestBase : WasmTemplateTestBase
             AssertNotSameFile(Path.Combine(s_buildEnv.GetRuntimeNativeDir(targetFramework), "dotnet.native.js"), dotnetJsPath!, label);
         }
     }
+
     protected void AssertBlazorBundle(string config, bool isPublish, bool dotnetWasmFromRuntimePack, string targetFramework = DefaultTargetFrameworkForBlazor, string? binFrameworkDir = null, bool expectFingerprintOnDotnetJs = false)
     {
         binFrameworkDir ??= FindBlazorBinFrameworkDir(config, isPublish, targetFramework);

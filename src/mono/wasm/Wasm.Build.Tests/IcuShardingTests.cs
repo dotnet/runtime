@@ -12,7 +12,7 @@ using System.Collections.Generic;
 
 namespace Wasm.Build.Tests;
 
-public class IcuShardingTests : BuildTestBase
+public class IcuShardingTests : TestMainJsTestBase
 {
     public IcuShardingTests(ITestOutputHelper output, SharedBuildPerTestClassFixture buildContext)
         : base(output, buildContext) { }

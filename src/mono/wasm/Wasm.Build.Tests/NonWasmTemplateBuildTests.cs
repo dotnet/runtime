@@ -11,7 +11,7 @@ using Xunit.Abstractions;
 
 namespace Wasm.Build.Tests;
 
-public class NonWasmTemplateBuildTests : BuildTestBase
+public class NonWasmTemplateBuildTests : TestMainJsTestBase
 {
     public NonWasmTemplateBuildTests(ITestOutputHelper output, SharedBuildPerTestClassFixture buildContext)
         : base(output, buildContext)
