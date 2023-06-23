@@ -12,20 +12,6 @@ namespace Microsoft.Extensions.DependencyInjection
     public class AddHttpClientDefaultsTest
     {
         [ConditionalFact(typeof(PlatformDetection), nameof(PlatformDetection.IsThreadingSupported))]
-        public void AddHttpClientDefaults_MultipleCalls_SameInstance()
-        {
-            // Arrange
-            var serviceCollection = new ServiceCollection();
-
-            // Act
-            var d1 = serviceCollection.AddHttpClientDefaults();
-            var d2 = serviceCollection.AddHttpClientDefaults();
-
-            // Assert
-            Assert.Same(d1, d2);
-        }
-
-        [ConditionalFact(typeof(PlatformDetection), nameof(PlatformDetection.IsThreadingSupported))]
         public void AddHttpClientDefaults_WithNameConfig_NameConfigUsed()
         {
             // Arrange

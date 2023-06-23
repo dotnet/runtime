@@ -3,8 +3,8 @@
 
 namespace Microsoft.Extensions.DependencyInjection
 {
-    internal sealed class DefaultHttpClientBuilderTracker
+    internal sealed class DefaultHttpClientConfigurationTracker
     {
-        public IHttpClientBuilder? Instance { get; set; }
+        public ServiceDescriptor? InsertDefaultsAfterDescriptor { get; set; }
     }
 }

@@ -3,6 +3,7 @@
 
 using System.Collections;
 using System.Collections.Generic;
+using System.Linq;
 using Microsoft.Extensions.Options;
 
 namespace Microsoft.Extensions.DependencyInjection
@@ -10,35 +11,51 @@ namespace Microsoft.Extensions.DependencyInjection
     internal sealed class DefaultHttpClientBuilderServiceCollection : IServiceCollection
     {
         private readonly IServiceCollection _services;
-        private ServiceDescriptor? _lastAdded;
+        private readonly bool _isDefault;
+        private readonly DefaultHttpClientConfigurationTracker _tracker;
 
-        public DefaultHttpClientBuilderServiceCollection(IServiceCollection services)
+        public DefaultHttpClientBuilderServiceCollection(IServiceCollection services, bool isDefault, DefaultHttpClientConfigurationTracker tracker)
         {
             _services = services;
+            _isDefault = isDefault;
+            _tracker = tracker;
         }
 
         public void Add(ServiceDescriptor item)
         {
-            // Insert IConfigureOptions<T> services into the collection before other descriptors.
-            // This ensures they run and apply configuration first. Configuration for named clients run afterwards.
-            if (item.ServiceType.IsGenericType && item.ServiceType.GetGenericTypeDefinition() == typeof(IConfigureOptions<>))
+            if (_isDefault)
             {
-                var insertIndex = 0;
-
-                // If default configuration has already been added, additional default configuration should come after.
-                // This is done to preserve the order that default configuration is run.
-                if (_lastAdded is not null && _services.IndexOf(_lastAdded) is var index && index != -1)
+                // Insert IConfigureOptions<T> services into the collection before other descriptors.
+                // This ensures they run and apply configuration first. Configuration for named clients run afterwards.
+                if (IsConfigurationOptions(item))
                 {
-                    insertIndex = index + 1;
+                    if (_tracker.InsertDefaultsAfterDescriptor != null &&
+                        _services.IndexOf(_tracker.InsertDefaultsAfterDescriptor) is var index && index != -1)
+                    {
+                        index++;
+                        _services.Insert(index, item);
+                    }
+                    else
+                    {
+                        _services.Add(item);
+                    }
+
+                    _tracker.InsertDefaultsAfterDescriptor = item;
+                    return;
+                }
+            }
+            else
+            {
+                if (_tracker.InsertDefaultsAfterDescriptor == null && IsConfigurationOptions(item))
+                {
+                    _tracker.InsertDefaultsAfterDescriptor = _services.Last();
                 }
 
-                _services.Insert(insertIndex, item);
-                _lastAdded = item;
-                return;
+                _services.Add(item);
             }
-
-            _services.Add(item);
         }
+
+        private static bool IsConfigurationOptions(ServiceDescriptor item) => item.ServiceType.IsGenericType && item.ServiceType.GetGenericTypeDefinition() == typeof(IConfigureOptions<>);
 
         public ServiceDescriptor this[int index]
         {

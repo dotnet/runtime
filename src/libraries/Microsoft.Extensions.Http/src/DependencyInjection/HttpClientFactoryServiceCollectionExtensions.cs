@@ -53,8 +53,8 @@ namespace Microsoft.Extensions.DependencyInjection
             // because we access it by reaching into the service collection.
             services.TryAddSingleton(new HttpClientMappingRegistry());
 
-            // This is used to track the default builder.
-            services.TryAddSingleton(new DefaultHttpClientBuilderTracker());
+            // This is used to store configuration for the default builder.
+            services.TryAddSingleton(new DefaultHttpClientConfigurationTracker());
 
             // Register default client as HttpClient
             services.TryAddTransient(s =>
@@ -82,15 +82,7 @@ namespace Microsoft.Extensions.DependencyInjection
 
             AddHttpClient(services);
 
-            // We want to return the same default builder instance for each call.
-            // This is required because the service collection wrapper has state (last added position) that we want to maintain.
-            var tracker = (DefaultHttpClientBuilderTracker?)services.Single(sd => sd.ServiceType == typeof(DefaultHttpClientBuilderTracker)).ImplementationInstance;
-            Debug.Assert(tracker != null);
-
-            // Create default builder if it doesn't already exist.
-            tracker.Instance ??= new DefaultHttpClientBuilder(new DefaultHttpClientBuilderServiceCollection(services), name: null!);
-
-            return tracker.Instance;
+            return new DefaultHttpClientBuilder(services, name: null!);
         }
 
         /// <summary>
