@@ -50,5 +50,7 @@ namespace Internal.TypeSystem
 
         // AmbiguousMatchException
         AmbiguousMatchUnsafeAccessor,
+
+        ExplicitMethodOverrideOnUnrelatedType,
     }
 }
