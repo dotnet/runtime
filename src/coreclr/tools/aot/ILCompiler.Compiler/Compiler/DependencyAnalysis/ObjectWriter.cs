@@ -850,10 +850,10 @@ namespace ILCompiler.DependencyAnalysis
         {
             var triple = GetLLVMTripleFromTarget(factory.Target);
 
-            _nativeObjectWriter = InitObjWriter(objectFilePath, triple);
+            _nativeObjectWriter = InitObjWriter(Path.GetFullPath(objectFilePath), triple);
             if (_nativeObjectWriter == IntPtr.Zero)
             {
-                throw new IOException("Fail to initialize Native Object Writer");
+                throw new IOException("Failed to initialize Native Object Writer");
             }
             _nodeFactory = factory;
             _targetPlatform = _nodeFactory.Target;
