@@ -105,6 +105,8 @@ public class WasmAppBuilder : WasmAppBuilderBaseTask
             ? Path.Combine(AppDir, RuntimeAssetsLocation)
             : AppDir;
 
+        Log.LogMessage(MessageImportance.Low, $"Runtime assets output path {runtimeAssetsPath}");
+
         Directory.CreateDirectory(AppDir!);
         Directory.CreateDirectory(runtimeAssetsPath);
 
