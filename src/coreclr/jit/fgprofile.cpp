@@ -3341,11 +3341,6 @@ void EfficientEdgeCountReconstructor::Solve()
     unsigned       nPasses = 0;
     unsigned const nLimit  = 10;
 
-    // If we end up with negative edge weights because of inconsistent counts, we use this factor to
-    // substitute a small positive one.
-    //
-    weight_t const smallFactor = 0.001;
-
     JITDUMP("\nSolver: %u blocks, %u unknown; %u edges, %u unknown, %u zero\n", m_blocks, m_unknownBlocks, m_edges,
             m_unknownEdges, m_zeroEdges);
 
@@ -3454,7 +3449,7 @@ void EfficientEdgeCountReconstructor::Solve()
                                "\n",
                         resolvedEdge->m_sourceBlock->bbNum, resolvedEdge->m_targetBlock->bbNum, weight);
 
-                // If we arrive at a negative count for this edge, set it to 1% of the block weight.
+                // If we arrive at a negative count for this edge, set it to a small fraction of the block weight.
                 //
                 // Note this can happen somewhat frequently because of inconsistent counts from
                 // scalable or racing counters.
@@ -3462,7 +3457,7 @@ void EfficientEdgeCountReconstructor::Solve()
                 if (weight < 0)
                 {
                     NegativeCount();
-                    weight = info->m_weight * smallFactor;
+                    weight = info->m_weight * ProfileSynthesis::epsilon;
                     JITDUMP(" .... weight was negative, setting it to " FMT_WT "\n", weight);
                 }
 
@@ -3504,7 +3499,7 @@ void EfficientEdgeCountReconstructor::Solve()
                                "\n",
                         resolvedEdge->m_sourceBlock->bbNum, resolvedEdge->m_targetBlock->bbNum, weight);
 
-                // If we arrive at a negative count for this edge, set it to 1% of the block weight.
+                // If we arrive at a negative count for this edge, set it to a small fraction of the block weight.
                 //
                 // Note this can happen somewhat frequently because of inconsistent counts from
                 // scalable or racing counters.
@@ -3512,7 +3507,7 @@ void EfficientEdgeCountReconstructor::Solve()
                 if (weight < 0)
                 {
                     NegativeCount();
-                    weight = info->m_weight * smallFactor;
+                    weight = info->m_weight * ProfileSynthesis::epsilon;
                     JITDUMP(" .... weight was negative, setting it to " FMT_WT "\n", weight);
                 }
 
