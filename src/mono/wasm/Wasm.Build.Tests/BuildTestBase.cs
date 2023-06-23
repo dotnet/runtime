@@ -472,47 +472,6 @@ namespace Wasm.Build.Tests
             return contents.Replace(s_nugetInsertionTag, $@"<add key=""nuget-local"" value=""{localNuGetsPath}"" />");
         }
 
-        public string CreateWasmTemplateProject(string id, string template = "wasmbrowser", string extraArgs = "", bool runAnalyzers = true)
-        {
-            InitPaths(id);
-            InitProjectDir(_projectDir, addNuGetSourceForLocalPackages: true);
-
-            File.WriteAllText(Path.Combine(_projectDir, "Directory.Build.props"), "<Project />");
-            File.WriteAllText(Path.Combine(_projectDir, "Directory.Build.targets"),
-                """
-                <Project>
-                  <Target Name="PrintRuntimePackPath" BeforeTargets="Build">
-                      <Message Text="** MicrosoftNetCoreAppRuntimePackDir : '@(ResolvedRuntimePack -> '%(PackageDirectory)')'" Importance="High" Condition="@(ResolvedRuntimePack->Count()) > 0" />
-                  </Target>
-                </Project>
-                """);
-
-            new DotNetCommand(s_buildEnv, _testOutput, useDefaultArgs: false)
-                    .WithWorkingDirectory(_projectDir!)
-                    .ExecuteWithCapturedOutput($"new {template} {extraArgs}")
-                    .EnsureSuccessful();
-
-            string projectfile = Path.Combine(_projectDir!, $"{id}.csproj");
-            string extraProperties = string.Empty;
-            extraProperties += "<TreatWarningsAsErrors>true</TreatWarningsAsErrors>";
-            if (runAnalyzers)
-                extraProperties += "<RunAnalyzers>true</RunAnalyzers>";
-            if (!UseWebcil)
-                extraProperties += "<WasmEnableWebcil>false</WasmEnableWebcil>";
-
-            // TODO: Can be removed after updated templates propagate in.
-            string extraItems = string.Empty;
-            if (template == "wasmbrowser")
-                extraItems += "<WasmExtraFilesToDeploy Include=\"main.js\" />";
-            else
-                extraItems += "<WasmExtraFilesToDeploy Include=\"main.mjs\" />";
-
-            AddItemsPropertiesToProject(projectfile, extraProperties, extraItems);
-
-            return projectfile;
-        }
-
-
         static void AssertRuntimePackPath(string buildOutput, string targetFramework)
         {
             var match = s_runtimePackPathRegex.Match(buildOutput);

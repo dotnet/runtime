@@ -15,7 +15,7 @@ using Xunit.Sdk;
 
 namespace Wasm.Build.Tests;
 
-public abstract class BlazorWasmTestBase : BuildTestBase
+public abstract class BlazorWasmTestBase : WasmTemplateTestBase
 {
     protected BlazorWasmTestBase(ITestOutputHelper output, SharedBuildPerTestClassFixture buildContext)
                 : base(output, buildContext)
