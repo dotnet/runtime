@@ -78,7 +78,7 @@
       <HelixCorrelationPayload Include="$(CoreCLRILCompilerDir)"                 Destination="build/ilc"                        Condition="'$(UseNativeAOTRuntime)' == 'true'" />
       <HelixCorrelationPayload Include="$(NativeAotTargetsPath)"                 Destination="build/BuildIntegration"           Condition="'$(UseNativeAOTRuntime)' == 'true'" />
       <HelixCorrelationPayload Include="$(IlcSdkDir)"                            Destination="build/aotsdk"                     Condition="'$(UseNativeAOTRuntime)' == 'true'" />
-      <HelixCorrelationPayload Include="$(ILLinkDir)"                            Destination="build/microsoft.net.illink.tasks" Condition="'$(UseNativeAOTRuntime)' == 'true'"  />
+      <HelixCorrelationPayload Include="$(ILLinkDir)"                            Destination="build/microsoft.net.illink.tasks" />
     </ItemGroup>
 
     <ItemGroup Condition="'$(TargetsAppleMobile)' == 'true'">
