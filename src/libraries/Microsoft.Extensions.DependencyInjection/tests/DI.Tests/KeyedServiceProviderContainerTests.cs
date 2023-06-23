@@ -8,7 +8,6 @@ using Xunit;
 
 namespace Microsoft.Extensions.DependencyInjection.Tests
 {
-
     public class KeyedServiceProviderDefaultContainerTests : KeyedDependencyInjectionSpecificationTests
     {
         protected override IServiceProvider CreateServiceProvider(IServiceCollection collection) => collection.BuildServiceProvider(ServiceProviderMode.Default);

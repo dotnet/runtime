@@ -48,12 +48,12 @@ namespace Microsoft.Extensions.DependencyInjection.ServiceLookup
 
         public override int GetHashCode()
         {
+            if (ServiceKey == null)
+            {
+                return ServiceType.GetHashCode();
+            }
             unchecked
             {
-                if (ServiceKey == null)
-                {
-                    return ServiceType.GetHashCode();
-                }
                 return ((ServiceType?.GetHashCode() ?? 23) * 397) ^ ServiceKey.GetHashCode();
             }
         }

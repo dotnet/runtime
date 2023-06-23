@@ -315,7 +315,7 @@ namespace Microsoft.Extensions.DependencyInjection.ServiceLookup
                     int slot = 0;
                     for (int i = _descriptors.Length - 1; i >= 0; i--)
                     {
-                        if (KeyEquals(_descriptors[i].ServiceKey, cacheKey.ServiceKey))
+                        if (KeysMatch(_descriptors[i].ServiceKey, cacheKey.ServiceKey))
                         {
                             if (TryCreateExact(_descriptors[i], cacheKey, callSiteChain, slot) is { } callSite)
                             {
@@ -325,7 +325,7 @@ namespace Microsoft.Extensions.DependencyInjection.ServiceLookup
                     }
                     for (int i = _descriptors.Length - 1; i >= 0; i--)
                     {
-                        if (KeyEquals(_descriptors[i].ServiceKey, cacheKey.ServiceKey))
+                        if (KeysMatch(_descriptors[i].ServiceKey, cacheKey.ServiceKey))
                         {
                             if (TryCreateOpenGeneric(_descriptors[i], cacheKey, callSiteChain, slot, throwOnConstraintViolation: false) is { } callSite)
                             {
@@ -685,7 +685,7 @@ namespace Microsoft.Extensions.DependencyInjection.ServiceLookup
         /// <summary>
         /// Returns true if both keys are null or equals, or if key1 is KeyedService.AnyKey and key2 is not null
         /// </summary>
-        private static bool KeyEquals(object? key1, object? key2)
+        private static bool KeysMatch(object? key1, object? key2)
         {
             if (key1 == null && key2 == null)
                 return true;
