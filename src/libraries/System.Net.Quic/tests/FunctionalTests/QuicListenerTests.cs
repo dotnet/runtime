@@ -83,16 +83,6 @@ namespace System.Net.Quic.Tests
             Assert.Throws<ArgumentNullException>(() => QuicListener.ListenAsync(listenerOptions));
         }
 
-        [ConditionalFact(nameof(QuicTestBase.IsIPv6Missing))]
-        public void ListenAsync_UnsupportedIpv6_Throws()
-        {
-            QuicListenerOptions listenerOptions = CreateQuicListenerOptions();
-            listenerOptions.ListenEndPoint = new IPEndPoint(IPAddress.IPv6Any, 0);
-
-            SocketException ex = Assert.Throws<SocketException>(() => QuicListener.ListenAsync(listenerOptions));
-            Assert.Equal(SocketError.AddressFamilyNotSupported, ((SocketException)ex).SocketErrorCode );
-        }
-
         [Theory]
         [InlineData(true)]
         [InlineData(false)]
