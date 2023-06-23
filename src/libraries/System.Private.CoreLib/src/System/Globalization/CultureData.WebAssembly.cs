@@ -10,7 +10,7 @@ namespace System.Globalization
 {
     internal sealed partial class CultureData
     {
-        private string JsGetLanguageDisplayName(string cultureName) => 
+        private string JsGetLanguageDisplayName(string cultureName) =>
             JsGetLocaleInfo(cultureName, LocaleStringData.LocalizedDisplayName, CultureInfo.CurrentUICulture.Name);
             // from some reason always CultureInfo.CurrentUICulture.Name == cultureName
 
@@ -108,6 +108,8 @@ namespace System.Globalization
                     // ICU does not have this data for sure, it's CultureData.CurrencySymbol == RegionInfo.CurrencySymbol
                     return GetISOSymbolFromStaticData(localeName, localeFamily);
                 case LocaleStringData.MonetaryDecimalSeparator:
+                    if (localeName == "es-419")
+                        return ".";
                     string isoSymbolMDS = GetISOSymbolFromStaticData(localeName, localeFamily);
                     if (string.IsNullOrEmpty(isoSymbolMDS))
                         return string.Empty;
@@ -117,6 +119,8 @@ namespace System.Globalization
                         throw new Exception((string)exResultMDS);
                     return new string(bufferMDS, 0, resultLenMDS);
                 case LocaleStringData.MonetaryThousandSeparator:
+                    if (localeName == "es-419")
+                        return " ";
                     string isoSymbolMTS = GetISOSymbolFromStaticData(localeName, localeFamily);
                     if (string.IsNullOrEmpty(isoSymbolMTS))
                         return string.Empty;
@@ -192,7 +196,9 @@ namespace System.Globalization
                 // case LocaleStringData.ConsoleFallbackName:
                     // used by NLS only
                 case LocaleStringData.PercentSymbol:
-                    if (localeFamily == "ar" || localeFamily == "fa")
+                    if (localeFamily == "ar")
+                        return "\u066a\u061c";
+                    if (localeFamily == "fa")
                         return "\u066a";
                     return "\u0025";
                 case LocaleStringData.PerMilleSymbol:

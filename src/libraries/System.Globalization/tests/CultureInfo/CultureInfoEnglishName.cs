@@ -21,6 +21,15 @@ namespace System.Globalization.Tests
                 yield return new object[] { "fr-FR", "French (France)" };
                 yield return new object[] { "uz-Cyrl", "Uzbek (Cyrillic)" };
             }
+            else if (PlatformDetection.IsHybridGlobalizationOnBrowser)
+            {
+                yield return new object[] { "bn-BD", "Bangla (Bangladesh)" };
+                yield return new object[] { "en-CC", "English (Cocos [Keeling] Islands)" };
+                yield return new object[] { "en-MP", "English (Northern Mariana Islands)" };
+                yield return new object[] { "en-US", "American English" };
+                yield return new object[] { "fr-FR", "French (France)" };
+                yield return new object[] { "hr-BA", "Croatian (Bosnia & Herzegovina)" };
+            }
             else
             {
                 // Mobile / Browser ICU doesn't contain CultureInfo.EnglishName

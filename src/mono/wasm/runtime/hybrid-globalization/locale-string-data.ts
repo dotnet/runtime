@@ -17,8 +17,6 @@ export function mono_wasm_get_monetary_symbol(culture: MonoStringRef, iosSymbol:
             throw new Error("ISO symbol name has to have a value.");
         const cultureName = monoStringToString(cultureRoot);
         const locale = cultureName ? cultureName : undefined;
-        const getCurrencySymbol = (locale: Intl.LocalesArgument, currency: string) => 
-            (0).toLocaleString(locale, { style: "currency", currency, minimumFractionDigits: 0, maximumFractionDigits: 0 }).replace(/\d/g, "").trim();
         const result = getCurrencySymbol(locale, isoSymbolName);
         if (result.length > bufferLength) // quite impossible
         {
@@ -38,6 +36,9 @@ export function mono_wasm_get_monetary_symbol(culture: MonoStringRef, iosSymbol:
         exceptionRoot.release();
     }
 }
+
+const currencyRegex = (locale: Intl.LocalesArgument, num: number) => new RegExp(`[${numberToLocaleString(locale, num)}]`);
+const getCurrencySymbol = (locale: Intl.LocalesArgument, currency: any) => (0).toLocaleString(locale, { style: "currency", currency, minimumFractionDigits: 0, maximumFractionDigits: 0 }).replace(currencyRegex(locale, 0), "").trim();
 
 export function mono_wasm_get_monetary_decimal_separator(culture: MonoStringRef, iosSymbol: MonoStringRef, buffer: number, bufferLength: number, isException: Int32Ptr, exAddress: MonoObjectRef): number {
     const cultureRoot = mono_wasm_new_external_root<MonoString>(culture),
@@ -191,8 +192,16 @@ export function mono_wasm_get_currency_name(culture: MonoStringRef, iosSymbol: M
             throw new Error("ISO symbol name has to have a value.");
         const cultureName = monoStringToString(cultureRoot);
         const locale = cultureName ? cultureName : undefined;
-        const getCurrencyFullName = (locale: Intl.LocalesArgument, currency: any) => (1).toLocaleString(locale, { style: "currency", currency, currencyDisplay: "name", }).replace(/\d.*\d/g, "").trim();
-        const result = getCurrencyFullName(locale, isoSymbolName);
+        const getCurrencyFullName = (locale: Intl.LocalesArgument, currency: any) => (1).toLocaleString(locale, { style: "currency", currency, currencyDisplay: "name", maximumFractionDigits: 0, }).replace(currencyRegex(locale, 1), "").trim();
+        let result = getCurrencyFullName(locale, isoSymbolName);
+        const words = result.split(" ");
+        if (words.length > 1)
+        {
+            // names with multiple words should have all words' first letter capitalized, only few cases require it
+            result = words[0];
+            for (let i=1; i<words.length; i++)
+                result += ` ${words[i][0].toLocaleUpperCase(locale)}${words[i].slice(1)}`;
+        }
         if (result.length > bufferLength) // quite impossible
         {
             throw new Error(`Currency name exceeds length of ${bufferLength}.`);
@@ -313,7 +322,6 @@ export function mono_wasm_get_display_name(culture: MonoStringRef, displayCultur
             throw new Error("Locale name is undefined.");
         }
         const result = getLanguageName(locale, displayCultureName);
-        console.log(`displayCultureName=${displayCultureName}, cultureName=${cultureName}, result=${result}`);
         if (result!.length > bufferLength) // quite impossible
         {
             throw new Error(`Display name exceeds length of ${bufferLength}.`);

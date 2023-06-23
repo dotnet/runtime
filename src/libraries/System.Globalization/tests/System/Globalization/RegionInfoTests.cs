@@ -112,7 +112,7 @@ namespace System.Globalization.Tests
         public static IEnumerable<object[]> NativeName_TestData()
         {
             // Android has its own ICU, which doesn't 100% map to UsingLimitedCultures
-            if (PlatformDetection.IsNotUsingLimitedCultures || PlatformDetection.IsAndroid)
+            if (PlatformDetection.IsNotUsingLimitedCultures || PlatformDetection.IsAndroid || PlatformDetection.IsHybridGlobalizationOnBrowser)
             {
                 yield return new object[] { "GB", "United Kingdom" };
                 yield return new object[] { "SE", "Sverige" };
@@ -137,7 +137,7 @@ namespace System.Globalization.Tests
         public static IEnumerable<object[]> EnglishName_TestData()
         {
             // Android has its own ICU, which doesn't 100% map to UsingLimitedCultures
-            if (PlatformDetection.IsNotUsingLimitedCultures || PlatformDetection.IsAndroid)
+            if (PlatformDetection.IsNotUsingLimitedCultures || PlatformDetection.IsAndroid || PlatformDetection.IsHybridGlobalizationOnBrowser)
             {
                 yield return new object[] { "en-US", new string[] { "United States" } };
                 yield return new object[] { "US", new string[] { "United States" } };
@@ -215,27 +215,32 @@ namespace System.Globalization.Tests
 
         public static IEnumerable<object[]> RegionInfo_TestData()
         {
-            yield return new object[] { 0x409, 244, "US Dollar", "USD", "US Dollar", "\u0055\u0053\u0020\u0044\u006f\u006c\u006c\u0061\u0072", "USA", "USA" };
-            yield return new object[] { 0x411, 122, "Japanese Yen", "JPY", "Japanese Yen", PlatformDetection.IsNlsGlobalization ? "\u5186" : "\u65e5\u672c\u5186", "JPN", "JPN" };
-            yield return new object[] { 0x804, 45, "Chinese Yuan", "CNY", "PRC Yuan Renminbi", "\u4eba\u6c11\u5e01", "CHN", "CHN" };
+            yield return new object[] { 0x409, 244, "US Dollar", "USD", "US Dollar", "\u0055\u0053\u0020\u0044\u006f\u006c\u006c\u0061\u0072", "USA", "USA", "US Dollar" };
+            yield return new object[] { 0x411, 122, "Japanese Yen", "JPY", "Japanese Yen", PlatformDetection.IsNlsGlobalization ? "\u5186" : "\u65e5\u672c\u5186", "JPN", "JPN", "\u5186" };
+            yield return new object[] { 0x804, 45, "Chinese Yuan", "CNY", "PRC Yuan Renminbi", "\u4eba\u6c11\u5e01", "CHN", "CHN", "\u4eba\u6c11\u5e01" };
             yield return new object[] { 0x401, 205, "Saudi Riyal", "SAR", "Saudi Riyal", PlatformDetection.IsNlsGlobalization ?
                                                     "\u0631\u064a\u0627\u0644\u00a0\u0633\u0639\u0648\u062f\u064a" :
                                                     "\u0631\u064a\u0627\u0644\u0020\u0633\u0639\u0648\u062f\u064a",
-                                                    "SAU", "SAU" };
-            yield return new object[] { 0x412, 134, "South Korean Won", "KRW", "Korean Won", PlatformDetection.IsNlsGlobalization ? "\uc6d0" : "\ub300\ud55c\ubbfc\uad6d\u0020\uc6d0", "KOR", "KOR" };
+                                                    "SAU", "SAU", "\u0631\u064a\u0627\u0644\u0020\u0633\u0639\u0648\u062f\u064a" };
+            yield return new object[] { 0x412, 134, "South Korean Won", "KRW", "Korean Won", PlatformDetection.IsNlsGlobalization ? "\uc6d0" : "\ub300\ud55c\ubbfc\uad6d\u0020\uc6d0", "KOR", "KOR", "\ub300\ud55c\ubbfc\uad6d\u0020\uc6d0" };
             yield return new object[] { 0x40d, 117, "Israeli New Shekel", "ILS", "Israeli New Sheqel",
-                                                    PlatformDetection.IsNlsGlobalization || PlatformDetection.ICUVersion.Major >= 58 ? "\u05e9\u05e7\u05dc\u0020\u05d7\u05d3\u05e9" : "\u05e9\u05f4\u05d7", "ISR", "ISR" };
+                                                    PlatformDetection.IsNlsGlobalization || PlatformDetection.ICUVersion.Major >= 58 ? "\u05e9\u05e7\u05dc\u0020\u05d7\u05d3\u05e9" : "\u05e9\u05f4\u05d7", "ISR", "ISR", "\u05e9\u05e7\u05dc\u0020\u05d7\u05d3\u05e9" };
         }
 
         [Theory]
         [MemberData(nameof(RegionInfo_TestData))]
-        public void MiscTest(int lcid, int geoId, string currencyEnglishName, string currencyShortName, string alternativeCurrencyEnglishName, string currencyNativeName, string threeLetterISORegionName, string threeLetterWindowsRegionName)
+        public void MiscTest(int lcid, int geoId, string currencyEnglishName, string currencyShortName, string alternativeCurrencyEnglishName, string currencyNativeName, string threeLetterISORegionName, string threeLetterWindowsRegionName, string currencyNativeJSForm)
         {
             RegionInfo ri = new RegionInfo(lcid); // create it with lcid
             Assert.Equal(geoId, ri.GeoId);
 
+            if (PlatformDetection.IsHybridGlobalizationOnBrowser)
+            {
+                Assert.True(currencyEnglishName.Equals(ri.CurrencyEnglishName), $"Wrong currency English Name {ri.CurrencyEnglishName} when expected {currencyEnglishName}");
+                Assert.Equal(currencyNativeJSForm, ri.CurrencyNativeName);
+            }
             // Android has its own ICU, which doesn't 100% map to UsingLimitedCultures
-            if (PlatformDetection.IsUsingLimitedCultures && !PlatformDetection.IsAndroid)
+            else if (PlatformDetection.IsUsingLimitedCultures && !PlatformDetection.IsAndroid)
             {
                 Assert.Equal(currencyShortName, ri.CurrencyEnglishName);
                 Assert.Equal(currencyShortName, ri.CurrencyNativeName);
@@ -243,7 +248,7 @@ namespace System.Globalization.Tests
             else
             {
                 Assert.True(currencyEnglishName.Equals(ri.CurrencyEnglishName) ||
-                            alternativeCurrencyEnglishName.Equals(ri.CurrencyEnglishName), "Wrong currency English Name");
+                            alternativeCurrencyEnglishName.Equals(ri.CurrencyEnglishName), $"Wrong currency English Name {ri.CurrencyEnglishName} when expected {currencyEnglishName} or {alternativeCurrencyEnglishName}");
                 Assert.Equal(currencyNativeName, ri.CurrencyNativeName);
             }
             Assert.Equal(threeLetterISORegionName, ri.ThreeLetterISORegionName);
