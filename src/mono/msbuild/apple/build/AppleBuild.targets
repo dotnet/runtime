@@ -18,6 +18,8 @@
   <!-- Fix temporary regression, will be fixed on the main in a separate PR: https://github.com/dotnet/runtime/issues/80911 -->
   <Import Condition="'$(UseNativeAOTRuntime)' == 'true'"
           Project="$(ILCompilerTargetsPath)" />
+  <Import Condition="'$(UseNativeAOTRuntime)' == 'true'"
+          Project="$(ILLinkTargetsPath)" />
 
   <Target Name="_CleanPublish" 
           BeforeTargets="Build">

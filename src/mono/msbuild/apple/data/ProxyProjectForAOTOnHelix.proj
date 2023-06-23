@@ -1,5 +1,5 @@
-<Project DefaultTargets="BundleTestAppleApp">
-  <Import Project="Directory.Build.props" />
+<Project DefaultTargets="BundleTestAppleApp" Sdk="Microsoft.NET.Sdk">
+  <Import Project="$(MSBuildThisFileDirectory)$(MSBuildThisFileName).props" />
   <PropertyGroup>
     <MonoEnableLLVM>true</MonoEnableLLVM>
   </PropertyGroup>
@@ -8,16 +8,32 @@
     <TestRootDir Condition="'$(HELIX_WORKITEM_ROOT)' == ''">$(MSBuildThisFileDirectory)..\apple_build\</TestRootDir>
 
     <RunAOTCompilation Condition="'$(RunAOTCompilation)' == ''">true</RunAOTCompilation>
-    <OriginalPublishDir>$(TestRootDir)..\publish\</OriginalPublishDir>
+    <OriginalPublishDir Condition="'$(UseNativeAOTRuntime)' != 'true'">$(TestRootDir)..\publish\</OriginalPublishDir>
+    <OriginalPublishDir Condition="'$(UseNativeAOTRuntime)' == 'true'">$(HELIX_WORKITEM_ROOT)\publish\</OriginalPublishDir>
     <ExtraFilesPath>$(OriginalPublishDir)..\extraFiles\</ExtraFilesPath>
-    <IntermediateOutputPath>$(TestRootDir)\obj\</IntermediateOutputPath>
+    <IntermediateOutputPath Condition="'$(UseNativeAOTRuntime)' == 'true'">$(OriginalPublishDir)</IntermediateOutputPath>
 
-    <AppleBuildDependsOn>_PrepareForAppleBuildAppOnHelix;$(AppleBuildDependsOn);_AfterAppleBuildOnHelix</AppleBuildDependsOn>
+    <_AotCompileTargetName Condition="'$(UseNativeAOTRuntime)' != 'true'">_AppleAotCompile;</_AotCompileTargetName>
+    <_AotCompileTargetName Condition="'$(UseNativeAOTRuntime)' == 'true'">_AppleNativeAotCompile;</_AotCompileTargetName>
+    <AppleBuildDependsOn>
+        _PrepareForAppleBuildAppOnHelix;
+        _InitializeCommonProperties;
+        _BeforeAppleBuild;
+        _AppleResolveReferences;
+        $(_AotCompileTargetName)
+        _BuildNativeLibrary;
+        _AppleGenerateAppBundle;
+        _AfterAppleBuild;
+        _AfterAppleBuildOnHelix;
+    </AppleBuildDependsOn>
+    <UseArtifactsIntermediateOutput Condition="'$(UseNativeAOTRuntime)' == 'true'">true</UseArtifactsIntermediateOutput>
 
-    <_PropsFile>$(MSBuildThisFileDirectory)$(MSBuildThisFileName).props</_PropsFile>
   </PropertyGroup>
 
-  <Import Project="$(_PropsFile)" />
+  <ItemGroup Condition="'$(UseNativeAOTRuntime)' == 'true'">
+    <DirectPInvoke Include="__Internal" />
+  </ItemGroup>
+
 
   <Target Name="BundleTestAppleApp" DependsOnTargets="AppleBuild" />
 
@@ -75,6 +91,4 @@
 
     <Message Importance="High" Text="App moved to: $(_XHarnessAppPath)"/>
   </Target>
-
-  <Import Project="Directory.Build.targets" />
 </Project>
