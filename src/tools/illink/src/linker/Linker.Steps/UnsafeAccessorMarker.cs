@@ -42,6 +42,9 @@ namespace Mono.Linker.Steps
 						case UnsafeAccessorKind.StaticMethod:
 							ProcessStaticMethodAccessor (method, name);
 							break;
+						case UnsafeAccessorKind.Method:
+							ProcessInstanceMethodAccessor (method, name);
+							break;
 						default:
 							break;
 						}
@@ -56,7 +59,6 @@ namespace Mono.Linker.Steps
 
 		void ProcessConstructorAccessor (MethodDefinition method, string? name)
 		{
-			// TODO - test specifying name but using empty string
 			// A return type is required for a constructor, otherwise
 			// we don't know the type to construct.
 			// Types should not be parameterized (that is, byref).
@@ -73,10 +75,9 @@ namespace Mono.Linker.Steps
 				targetMethodReference.Parameters.Add (new ParameterDefinition (parameter.Name, parameter.Attributes, parameter.ParameterType));
 			}
 
-			MethodDefinition? targetMethodDefinition = ResolveMethodReference (targetMethodReference, false);
-			// TODO - define a new DependencyKind
+			MethodDefinition? targetMethodDefinition = ResolveMethodReference (targetMethodReference, isStatic: false);
 			if (targetMethodDefinition != null)
-				_markStep.MarkMethodVisibleToReflection (targetMethodDefinition, new DependencyInfo (DependencyKind.ReferencedBySpecialAttribute, method), new MessageOrigin (method));
+				_markStep.MarkMethodVisibleToReflection (targetMethodDefinition, new DependencyInfo (DependencyKind.UnsafeAccessorTarget, method), new MessageOrigin (method));
 		}
 
 		void ProcessStaticMethodAccessor (MethodDefinition method, string? name)
@@ -85,7 +86,6 @@ namespace Mono.Linker.Steps
 			if (method.Parameters.Count == 0)
 				return;
 
-			// TODO - what happens for empty string? Should it fail or should it default to method name?
 			if (string.IsNullOrEmpty (name))
 				name = method.Name;
 
@@ -107,10 +107,41 @@ namespace Mono.Linker.Steps
 				targetMethodReference.Parameters.Add (new ParameterDefinition (parameter.Name, parameter.Attributes, parameter.ParameterType));
 			}
 
-			MethodDefinition? targetMethodDefinition = ResolveMethodReference (targetMethodReference, true);
-			// TODO - define a new DependencyKind
+			MethodDefinition? targetMethodDefinition = ResolveMethodReference (targetMethodReference, isStatic: true);
 			if (targetMethodDefinition != null)
-				_markStep.MarkMethodVisibleToReflection (targetMethodDefinition, new DependencyInfo (DependencyKind.ReferencedBySpecialAttribute, method), new MessageOrigin (method));
+				_markStep.MarkMethodVisibleToReflection (targetMethodDefinition, new DependencyInfo (DependencyKind.UnsafeAccessorTarget, method), new MessageOrigin (method));
+		}
+
+		void ProcessInstanceMethodAccessor (MethodDefinition method, string? name)
+		{
+			// Method access requires a target type.
+			if (method.Parameters.Count == 0)
+				return;
+
+			if (string.IsNullOrEmpty (name))
+				name = method.Name;
+
+			// TODO - struct values should be by-ref, we probably need to unwrap/resolve it here
+			TypeReference targetType = method.Parameters[0].ParameterType;
+
+			MethodReference targetMethodReference = new MethodReference (name, method.ReturnType, targetType) {
+				CallingConvention = method.CallingConvention
+			};
+
+			bool first = true;
+			foreach (ParameterDefinition? parameter in method.Parameters) {
+				// Skip the first parameter which is the target type
+				if (first) {
+					first = false;
+					continue;
+				}
+
+				targetMethodReference.Parameters.Add (new ParameterDefinition (parameter.Name, parameter.Attributes, parameter.ParameterType));
+			}
+
+			MethodDefinition? targetMethodDefinition = ResolveMethodReference (targetMethodReference, isStatic: false);
+			if (targetMethodDefinition != null)
+				_markStep.MarkMethodVisibleToReflection (targetMethodDefinition, new DependencyInfo (DependencyKind.UnsafeAccessorTarget, method), new MessageOrigin (method));
 		}
 
 		static MethodDefinition? ResolveMethodReference(MethodReference reference, bool isStatic)

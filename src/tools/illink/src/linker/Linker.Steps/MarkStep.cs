@@ -128,6 +128,7 @@ namespace Mono.Linker.Steps
 			DependencyKind.ReferencedBySpecialAttribute,
 			DependencyKind.TypePreserve,
 			DependencyKind.XmlDescriptor,
+			DependencyKind.UnsafeAccessorTarget,
 		};
 
 		static readonly DependencyKind[] _typeReasons = new DependencyKind[] {
@@ -212,6 +213,7 @@ namespace Mono.Linker.Steps
 			DependencyKind.FieldMarshalSpec,
 			DependencyKind.ReturnTypeMarshalSpec,
 			DependencyKind.XmlDescriptor,
+			DependencyKind.UnsafeAccessorTarget,
 		};
 #endif
 
