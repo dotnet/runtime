@@ -96,7 +96,6 @@ namespace Mono.Linker.Tests.Cases.Reflection
 				[Kept]
 				class ConstructorWithParameterTarget
 				{
-					[Kept (By = Tool.NativeAot)] // BUG https://github.com/dotnet/runtime/issues/87881
 					private ConstructorWithParameterTarget () { }
 
 					[Kept]
