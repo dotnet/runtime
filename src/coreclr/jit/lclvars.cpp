@@ -1779,6 +1779,7 @@ bool Compiler::StructPromotionHelper::CanPromoteStructType(CORINFO_CLASS_HANDLE 
     unsigned structAlignment = roundUp(compHandle->getClassAlignmentRequirement(typeHnd), TARGET_POINTER_SIZE);
 #endif // TARGET_ARM
 
+    // At most 1 (root node) + (4 promoted fields) + (each could be a wrapped primitive)
     CORINFO_TYPE_LAYOUT_NODE treeNodes[1 + MAX_NumOfFieldsInPromotableStruct * 2];
     size_t                   numTreeNodes = ArrLen(treeNodes);
     GetTypeLayoutResult      result       = compHandle->getTypeLayout(typeHnd, treeNodes, &numTreeNodes);
@@ -2101,7 +2102,8 @@ bool Compiler::StructPromotionHelper::CanPromoteStructVar(unsigned lclNum)
 #if defined(FEATURE_SIMD)
                 // If we have a register-passed struct with mixed non-opaque SIMD types (i.e. with defined fields)
                 // and non-SIMD types, we don't currently handle that case in the prolog, so we can't promote.
-                else if ((fieldCnt > 1) && (structPromotionInfo.fields[i].fldSIMDTypeHnd != NO_CLASS_HANDLE) &&
+                else if ((fieldCnt > 1) && varTypeIsStruct(fieldType) &&
+                         (structPromotionInfo.fields[i].fldSIMDTypeHnd != NO_CLASS_HANDLE) &&
                          !compiler->isOpaqueSIMDType(structPromotionInfo.fields[i].fldSIMDTypeHnd))
                 {
                     canPromote = false;
