@@ -13,7 +13,7 @@ using Xunit.Sdk;
 
 namespace Wasm.Build.Tests;
 
-public class CleanTests : NativeRebuildTestsBase
+public class CleanTests : BlazorWasmTestBase
 {
     public CleanTests(ITestOutputHelper output, SharedBuildPerTestClassFixture buildContext)
         : base(output, buildContext)
