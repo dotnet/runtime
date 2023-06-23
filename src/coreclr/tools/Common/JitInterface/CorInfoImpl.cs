@@ -2381,16 +2381,13 @@ namespace Internal.JitInterface
             // amenable to the optimizations that this unlocks if they already
             // went through EncodeFieldBaseOffset.
             //
-            if (NeedsTypeLayoutCheck(type))
+            if (!_compilation.IsLayoutFixedInCurrentVersionBubble(type))
             {
-                // For types that need type layout check the JIT is not allowed to
-                // rely on padding bits being insignificant, since fields could be
-                // added later inside that padding without invalidating the
+                // For types without fixed layout the JIT is not allowed to
+                // rely on padding bits being insignificant, since fields could
+                // be added later inside that padding without invalidating the
                 // generated code.
                 parNode->hasSignificantPadding = true;
-
-                ISymbolNode node = _compilation.SymbolNodeFactory.CheckTypeLayout(type);
-                AddPrecodeFixup(node);
             }
 #endif
 
@@ -2489,8 +2486,6 @@ namespace Internal.JitInterface
             GetTypeLayoutResult result = GetTypeLayoutHelper(metadataType, uint.MaxValue, 0, null, treeNodes, maxFields, numTreeNodes);
 
 #if READYTORUN
-            // TODO: Do we need a version bubble check here if we're going to
-            // add this type layout check anyway?
             if (NeedsTypeLayoutCheck(type))
             {
                 ISymbolNode node = _compilation.SymbolNodeFactory.CheckTypeLayout(type);
