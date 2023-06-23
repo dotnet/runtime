@@ -200,7 +200,7 @@ The .NET Foundation licenses this file to you under the MIT license.
 
     <ItemGroup>
       <!-- Grab the raw ItemGroup that ILLinker accepts in two form: as file names, and as assembly names -->
-      <_IlcRootedAssembliesRaw Include="@(TrimmerRootAssembly)" />
+      <_IlcRootedAssembliesRaw Include="@(TrimmerRootAssembly)" Condition="%(TrimmerRootAssembly.RootMode) != 'EntryPoint'" />
       <_IlcRootedAssembliesRaw Include="@(ManagedAssemblyToLink)" Condition="%(ManagedAssemblyToLink.TrimMode) == 'copy'" />
       <_IlcConditionallyRootedAssembliesRaw Include="@(ManagedAssemblyToLink)" Condition="%(ManagedAssemblyToLink.TrimMode) == 'copyused'" />
       <_IlcTrimmedAssembliesRaw Include="@(ManagedAssemblyToLink)" Condition="%(ManagedAssemblyToLink.TrimMode) == 'link'" />
