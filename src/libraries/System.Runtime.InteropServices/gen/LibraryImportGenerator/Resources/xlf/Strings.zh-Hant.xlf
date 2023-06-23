@@ -319,12 +319,12 @@
       </trans-unit>
       <trans-unit id="MarshalAsConfigurationNotSupportedMessageParameter">
         <source>The specified 'MarshalAsAttribute' configuration for parameter '{1}' is not supported by source-generated P/Invokes. If the specified configuration is required, use a regular 'DllImport' instead.</source>
-        <target state="new">The specified 'MarshalAsAttribute' configuration for parameter '{1}' is not supported by source-generated P/Invokes. If the specified configuration is required, use a regular 'DllImport' instead.</target>
+        <target state="translated">來源產生的 P/Invokes 不支援為參數 '{1}' 指定 'MarshalAsAttribute' 設定。如果需要指定的設定，請改用一般 'DllImport'。</target>
         <note />
       </trans-unit>
       <trans-unit id="MarshalAsConfigurationNotSupportedMessageReturn">
         <source>The specified 'MarshalAsAttribute' configuration for the return value of method '{1}' is not supported by source-generated P/Invokes. If the specified configuration is required, use a regular 'DllImport' instead.</source>
-        <target state="new">The specified 'MarshalAsAttribute' configuration for the return value of method '{1}' is not supported by source-generated P/Invokes. If the specified configuration is required, use a regular 'DllImport' instead.</target>
+        <target state="translated">來源產生的 P/Invokes 不支援為方法 '{1}' 的傳回值指定 'MarshalAsAttribute' 設定。如果需要指定的設定，請改用一般 'DllImport'。</target>
         <note />
       </trans-unit>
       <trans-unit id="MarshalModeMustBeValidEnumValue">
