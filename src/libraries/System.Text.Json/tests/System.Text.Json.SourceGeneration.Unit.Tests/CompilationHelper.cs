@@ -32,7 +32,7 @@ namespace System.Text.Json.SourceGeneration.UnitTests
                     spec => spec.TypeRef.FullyQualifiedName == fullyQualifiedName);
     }
 
-    public class CompilationHelper
+    public static class CompilationHelper
     {
         private static readonly CSharpParseOptions s_parseOptions =
             new CSharpParseOptions(kind: SourceCodeKind.Regular, documentationMode: DocumentationMode.Parse);
@@ -53,7 +53,7 @@ namespace System.Text.Json.SourceGeneration.UnitTests
             Func<CSharpParseOptions, CSharpParseOptions> configureParseOptions = null)
         {
 
-            List<MetadataReference> references = new List<MetadataReference> {
+            List<MetadataReference> references = new() {
                 MetadataReference.CreateFromFile(typeof(object).Assembly.Location),
                 MetadataReference.CreateFromFile(typeof(Attribute).Assembly.Location),
                 MetadataReference.CreateFromFile(typeof(Type).Assembly.Location),
@@ -88,7 +88,7 @@ namespace System.Text.Json.SourceGeneration.UnitTests
             return CSharpCompilation.Create(
                 assemblyName,
                 syntaxTrees: new[] { CSharpSyntaxTree.ParseText(source, parseOptions) },
-                references: references.ToArray(),
+                references: references,
                 options: new CSharpCompilationOptions(OutputKind.DynamicallyLinkedLibrary)
             );
         }
@@ -183,7 +183,7 @@ namespace System.Text.Json.SourceGeneration.UnitTests
                 }
                 """;
 
-            return CreateCompilation(source);
+            return CreateCompilation(source, assemblyName: "CampaignSummaryAssembly");
         }
 
         public static Compilation CreateActiveOrUpcomingEventCompilation()
@@ -617,40 +617,148 @@ namespace System.Text.Json.SourceGeneration.UnitTests
             return CreateCompilation(source);
         }
 
-        internal static void CheckDiagnosticMessages(
-            DiagnosticSeverity level,
-            ImmutableArray<Diagnostic> diagnostics,
-            (Location Location, string Message)[] expectedDiags,
-            bool sort = true)
+        public static Compilation CreateTypesAnnotatedWithJsonStringEnumConverter()
         {
-            ((string FileName, TextSpan, LinePositionSpan), string)[] actualDiags = diagnostics
-                .Where(diagnostic => diagnostic.Severity == level)
-                .Select(diagnostic => (GetLocationNormalForm(diagnostic.Location), diagnostic.GetMessage()))
-                .ToArray();
+            string source = """
+                using System.Text.Json.Serialization;
 
-            if (CultureInfo.CurrentUICulture.Name.StartsWith("en", StringComparison.OrdinalIgnoreCase))
-            {
-                ((string FileName, TextSpan, LinePositionSpan), string Message)[] expectedDiagsNormalized = expectedDiags
-                    .Select(diag => (GetLocationNormalForm(diag.Location), diag.Message))
-                    .ToArray();
-
-                if (sort)
+                namespace HelloWorld
                 {
-                    // Can't depend on reflection order when generating type metadata.
-                    Array.Sort(actualDiags);
-                    Array.Sort(expectedDiagsNormalized);
+                    [JsonSerializable(typeof(MyClass))]
+                    internal partial class JsonContext : JsonSerializerContext
+                    {
+                    }
+
+                    public class MyClass
+                    {
+                        public Enum1 Enum1Prop { get; set; }
+
+                        [JsonConverter(typeof(JsonStringEnumConverter))]
+                        public Enum2 Enum2Prop { get; set; }
+                    }
+
+                    [JsonConverter(typeof(JsonStringEnumConverter))]
+                    public enum Enum1 { A, B, C };
+                    
+                    public enum Enum2 { A, B, C };
                 }
+                """;
 
-                Assert.Equal(expectedDiagsNormalized, actualDiags);
-            }
-            else
-            {
-                // for non-English runs, just compare the number of messages are the same
-                Assert.Equal(expectedDiags.Length, actualDiags.Length);
-            }
-
-            static (string FileName, TextSpan, LinePositionSpan) GetLocationNormalForm(Location location)
-                => (location.SourceTree?.FilePath ?? "", location.SourceSpan, location.GetLineSpan().Span);
+            return CreateCompilation(source);
         }
+
+        public static Compilation CreateTypesWithInvalidJsonConverterAttributeType()
+        {
+            string source = """
+                using System.Text.Json.Serialization;
+
+                namespace HelloWorld
+                {
+                    [JsonSerializable(typeof(MyClass))]
+                    internal partial class JsonContext : JsonSerializerContext
+                    {
+                    }
+
+                    public class MyClass
+                    {
+                        [JsonConverter(null)]
+                        public int Value1 { get; set; }
+
+                        [JsonConverter(typeof(int)]
+                        public int Value2 { get; set; }
+
+                        [JsonConverter(typeof(InacessibleConverter))]
+                        public int Value3 { get; set; }
+                    }
+
+                    public class InacessibleConverter : JsonConverter<int>
+                    {
+                        private InacessibleConverter()
+                        { }
+
+                        public override int Read(ref Utf8JsonReader reader, Type typeToConvert, JsonSerializerOptions options)
+                        {
+                            throw new NotImplementedException();
+                        }
+
+                        public override void Write(Utf8JsonWriter writer, int value, JsonSerializerOptions options)
+                        {
+                            throw new NotImplementedException();
+                        }
+                    }
+                }
+                """;
+
+            return CreateCompilation(source);
+        }
+
+        public static Compilation CreateContextWithUnboundGenericTypeDeclarations()
+        {
+            string source = """
+                using System.Collections.Generic;
+                using System.Text.Json.Serialization;
+
+                namespace HelloWorld
+                {
+                    [JsonSerializable(typeof(List<>))]
+                    [JsonSerializable(typeof(Dictionary<,>))]
+                    internal partial class JsonContext : JsonSerializerContext
+                    {
+                    }
+                }
+                """;
+
+            return CreateCompilation(source);
+        }
+
+        public static Compilation CreateContextWithErrorTypeDeclarations()
+        {
+            string source = """
+                using System.Text.Json.Serialization;
+
+                namespace HelloWorld
+                {
+                    [JsonSerializable(typeof(BogusType))]
+                    [JsonSerializable(typeof(BogusType<int>))]
+                    internal partial class JsonContext : JsonSerializerContext
+                    {
+                    }
+                }
+                """;
+
+            return CreateCompilation(source);
+        }
+
+        internal static void AssertEqualDiagnosticMessages(
+            IEnumerable<DiagnosticData> expectedDiags,
+            IEnumerable<Diagnostic> actualDiags)
+        {
+            HashSet<DiagnosticData> expectedSet = new(expectedDiags);
+            HashSet<DiagnosticData> actualSet = new(actualDiags.Select(d => new DiagnosticData(d.Severity, d.Location, d.GetMessage())));
+            AssertExtensions.Equal(expectedSet, actualSet);
+        }
+
+        internal static Location? GetLocation(this AttributeData attributeData)
+        {
+            SyntaxReference? reference = attributeData.ApplicationSyntaxReference;
+            return reference?.SyntaxTree.GetLocation(reference.Span);
+        }
+    }
+
+    public record struct DiagnosticData(
+        DiagnosticSeverity Severity,
+        string FilePath,
+        LinePositionSpan LinePositionSpan,
+        string Message)
+    {
+        public DiagnosticData(DiagnosticSeverity severity, Location location, string message)
+            : this(severity, location.SourceTree?.FilePath ?? "", location.GetLineSpan().Span, TrimCultureSensitiveMessage(message))
+        {
+        }
+
+        // for non-English runs, trim the message content since it might be translated.
+        private static string TrimCultureSensitiveMessage(string message) => s_IsEnglishCulture ? message : "";
+        private readonly static bool s_IsEnglishCulture = CultureInfo.CurrentUICulture.Name.StartsWith("en", StringComparison.OrdinalIgnoreCase);
+        public override string ToString() => $"{Severity}, {Message}, {FilePath}@{LinePositionSpan}";
     }
 }

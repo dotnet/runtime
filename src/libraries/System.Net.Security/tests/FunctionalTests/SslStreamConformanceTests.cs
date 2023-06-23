@@ -16,6 +16,7 @@ namespace System.Net.Security.Tests
         protected override bool BlocksOnZeroByteReads => true;
         protected override bool ZeroByteReadPerformsZeroByteReadOnUnderlyingStream => true;
         protected override Type UnsupportedConcurrentExceptionType => typeof(NotSupportedException);
+        protected override bool ExtraZeroByteReadsAllowed => true;
 
         protected virtual SslProtocols GetSslProtocols() => SslProtocols.None;
 

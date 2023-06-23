@@ -8,7 +8,9 @@
     <!-- SYSLIB1037: Suppress init-only property deserialization warning -->
     <!-- SYSLIB1038: Suppress JsonInclude on inaccessible members warning -->
     <!-- SYSLIB1039: Suppress Polymorphic types not supported warning -->
-    <NoWarn>$(NoWarn);SYSLIB0020;SYSLIB0049;SYSLIB1037;SYSLIB1038;SYSLIB1039</NoWarn>
+    <!-- SYSLIB1040: Suppress JsonStringEnumConverter use warnings -->
+    <!-- SYSLIB1040: Suppress invalid JsonConverterAttribute argument warnings -->
+    <NoWarn>$(NoWarn);SYSLIB0020;SYSLIB0049;SYSLIB1037;SYSLIB1038;SYSLIB1039;SYSLIB1040;SYSLIB1041</NoWarn>
     <IgnoreForCI Condition="'$(TargetsMobile)' == 'true' or '$(TargetsLinuxBionic)' == 'true' or '$(TargetArchitecture)' == 'ARMv6'">true</IgnoreForCI> 
   </PropertyGroup>
 
@@ -75,7 +77,9 @@
     <Compile Include="..\Common\JsonCreationHandlingTests.Enumerable.cs" Link="CommonTest\System\Text\Json\Tests\Serialization\JsonCreationHandlingTests.Enumerable.cs" />
     <Compile Include="..\Common\JsonCreationHandlingTests.Generic.cs" Link="CommonTest\System\Text\Json\Tests\Serialization\JsonCreationHandlingTests.Generic.cs" />
     <Compile Include="..\Common\JsonCreationHandlingTests.Object.cs" Link="CommonTest\System\Text\Json\Tests\Serialization\JsonCreationHandlingTests.Object.cs" />
+    <Compile Include="..\Common\JsonNumberTestData.cs" Link="CommonTest\System\Text\Json\Tests\JsonNumberTestData" />
     <Compile Include="..\Common\NodeInteropTests.cs" Link="CommonTest\System\Text\Json\Tests\Serialization\NodeInteropTests.cs" />
+    <Compile Include="..\Common\NumberHandlingTests.cs" Link="CommonTest\System\Text\Json\Tests\Serialization\NumberHandlingTests.cs" />
     <Compile Include="..\Common\PropertyNameTests.cs" Link="CommonTest\System\Text\Json\Tests\Serialization\PropertyNameTests.cs" />
     <Compile Include="..\Common\PropertyVisibilityTests.cs" Link="CommonTest\System\Text\Json\Tests\Serialization\PropertyVisibilityTests.cs" />
     <Compile Include="..\Common\PropertyVisibilityTests.InitOnly.cs" Link="CommonTest\System\Text\Json\Tests\Serialization\PropertyVisibilityTests.InitOnly.cs" />
@@ -111,6 +115,7 @@
     <Compile Include="Serialization\ReferenceHandlerTests.cs" />
     <Compile Include="Serialization\ReferenceHandlerTests.IgnoreCycles.cs" />
     <Compile Include="Serialization\NodeInteropTests.cs" />
+    <Compile Include="Serialization\NumberHandlingTests.cs" />
     <Compile Include="Serialization\PropertyNameTests.cs" />
     <Compile Include="Serialization\PropertyVisibilityTests.cs" />
     <Compile Include="Serialization\UnmappedMemberHandlingTests.cs" />
@@ -136,6 +141,7 @@
   </ItemGroup>
 
   <ItemGroup>
+    <DefaultReferenceExclusion Include="System.Text.Json.SourceGeneration" />
     <ProjectReference Include="$(LibrariesProjectRoot)Microsoft.Extensions.Primitives\src\Microsoft.Extensions.Primitives.csproj" />
   </ItemGroup>
 

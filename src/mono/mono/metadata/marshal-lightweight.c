@@ -523,7 +523,7 @@ emit_runtime_invoke_body_ilgen (MonoMethodBuilder *mb, const char **param_names,
 	emit_thread_force_interrupt_checkpoint (mb);
 	emit_invoke_call (mb, method, sig, callsig, loc_res, virtual_, need_direct_wrapper);
 
-	mono_mb_emit_ldloc (mb, 0);
+	mono_mb_emit_ldloc (mb, loc_res);
 	mono_mb_emit_byte (mb, CEE_RET);
 }
 

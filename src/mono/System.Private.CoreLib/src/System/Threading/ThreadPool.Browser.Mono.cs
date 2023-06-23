@@ -13,14 +13,19 @@ using Microsoft.Win32.SafeHandles;
 
 namespace System.Threading
 {
-#if !FEATURE_WASM_THREADS
-    [System.Runtime.Versioning.UnsupportedOSPlatformAttribute("browser")]
+#if FEATURE_WASM_THREADS
+#error when compiled with FEATURE_WASM_THREADS, we use PortableThreadPool.WorkerThread.Browser.Threads.Mono.cs
 #endif
+    [System.Runtime.Versioning.UnsupportedOSPlatformAttribute("browser")]
     public sealed class RegisteredWaitHandle : MarshalByRefObject
     {
         internal RegisteredWaitHandle()
         {
         }
+
+#pragma warning disable CA1822 // Mark members as static
+        internal bool Repeating => false;
+#pragma warning restore CA1822
 
         public bool Unregister(WaitHandle? waitObject)
         {
@@ -159,6 +164,12 @@ namespace System.Threading
         public static bool BindHandle(SafeHandle osHandle)
         {
             throw new PlatformNotSupportedException(SR.Arg_PlatformNotSupported); // Replaced by ThreadPoolBoundHandle.BindHandle
+        }
+
+        [Conditional("unnecessary")]
+        internal static void ReportThreadStatus(bool isWorking)
+        {
+
         }
     }
 }

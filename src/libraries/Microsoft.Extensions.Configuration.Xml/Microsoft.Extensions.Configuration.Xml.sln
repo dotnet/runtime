@@ -5,6 +5,8 @@ Project("{9A19103F-16F7-4668-BE54-9A1E7A4F7556}") = "Microsoft.Extensions.Config
 EndProject
 Project("{9A19103F-16F7-4668-BE54-9A1E7A4F7556}") = "Microsoft.Extensions.Configuration.Abstractions", "..\Microsoft.Extensions.Configuration.Abstractions\src\Microsoft.Extensions.Configuration.Abstractions.csproj", "{9C73A2E3-B370-4B24-ACB0-0C3A9069250D}"
 EndProject
+Project("{9A19103F-16F7-4668-BE54-9A1E7A4F7556}") = "Microsoft.Extensions.Configuration.Binder.SourceGeneration", "..\Microsoft.Extensions.Configuration.Binder\gen\Microsoft.Extensions.Configuration.Binder.SourceGeneration.csproj", "{880064B4-71DF-49DC-B052-38F93DF02527}"
+EndProject
 Project("{9A19103F-16F7-4668-BE54-9A1E7A4F7556}") = "Microsoft.Extensions.Configuration.Binder", "..\Microsoft.Extensions.Configuration.Binder\ref\Microsoft.Extensions.Configuration.Binder.csproj", "{81370E0B-BC7E-4F49-BCF1-49E0F67F75F4}"
 EndProject
 Project("{9A19103F-16F7-4668-BE54-9A1E7A4F7556}") = "Microsoft.Extensions.Configuration.Binder", "..\Microsoft.Extensions.Configuration.Binder\src\Microsoft.Extensions.Configuration.Binder.csproj", "{21E44CA2-5355-4092-9EF7-A94520EBDD40}"
@@ -44,6 +46,8 @@ EndProject
 Project("{9A19103F-16F7-4668-BE54-9A1E7A4F7556}") = "System.Formats.Asn1", "..\System.Formats.Asn1\ref\System.Formats.Asn1.csproj", "{F7D18116-335D-4CE6-980A-3330AAD05507}"
 EndProject
 Project("{9A19103F-16F7-4668-BE54-9A1E7A4F7556}") = "System.Formats.Asn1", "..\System.Formats.Asn1\src\System.Formats.Asn1.csproj", "{84E43ED2-A2ED-49F9-B592-92270F0F2EC3}"
+EndProject
+Project("{9A19103F-16F7-4668-BE54-9A1E7A4F7556}") = "ComInterfaceGenerator", "..\System.Runtime.InteropServices\gen\ComInterfaceGenerator\ComInterfaceGenerator.csproj", "{38A073CB-D9DA-4075-B8A1-57B491AA0CDA}"
 EndProject
 Project("{9A19103F-16F7-4668-BE54-9A1E7A4F7556}") = "LibraryImportGenerator", "..\System.Runtime.InteropServices\gen\LibraryImportGenerator\LibraryImportGenerator.csproj", "{03B854C7-609C-4C64-B7EA-266D65E2E548}"
 EndProject
@@ -87,6 +91,10 @@ Global
 		{9C73A2E3-B370-4B24-ACB0-0C3A9069250D}.Debug|Any CPU.Build.0 = Debug|Any CPU
 		{9C73A2E3-B370-4B24-ACB0-0C3A9069250D}.Release|Any CPU.ActiveCfg = Release|Any CPU
 		{9C73A2E3-B370-4B24-ACB0-0C3A9069250D}.Release|Any CPU.Build.0 = Release|Any CPU
+		{880064B4-71DF-49DC-B052-38F93DF02527}.Debug|Any CPU.ActiveCfg = Debug|Any CPU
+		{880064B4-71DF-49DC-B052-38F93DF02527}.Debug|Any CPU.Build.0 = Debug|Any CPU
+		{880064B4-71DF-49DC-B052-38F93DF02527}.Release|Any CPU.ActiveCfg = Release|Any CPU
+		{880064B4-71DF-49DC-B052-38F93DF02527}.Release|Any CPU.Build.0 = Release|Any CPU
 		{81370E0B-BC7E-4F49-BCF1-49E0F67F75F4}.Debug|Any CPU.ActiveCfg = Debug|Any CPU
 		{81370E0B-BC7E-4F49-BCF1-49E0F67F75F4}.Debug|Any CPU.Build.0 = Debug|Any CPU
 		{81370E0B-BC7E-4F49-BCF1-49E0F67F75F4}.Release|Any CPU.ActiveCfg = Release|Any CPU
@@ -167,6 +175,10 @@ Global
 		{84E43ED2-A2ED-49F9-B592-92270F0F2EC3}.Debug|Any CPU.Build.0 = Debug|Any CPU
 		{84E43ED2-A2ED-49F9-B592-92270F0F2EC3}.Release|Any CPU.ActiveCfg = Release|Any CPU
 		{84E43ED2-A2ED-49F9-B592-92270F0F2EC3}.Release|Any CPU.Build.0 = Release|Any CPU
+		{38A073CB-D9DA-4075-B8A1-57B491AA0CDA}.Debug|Any CPU.ActiveCfg = Debug|Any CPU
+		{38A073CB-D9DA-4075-B8A1-57B491AA0CDA}.Debug|Any CPU.Build.0 = Debug|Any CPU
+		{38A073CB-D9DA-4075-B8A1-57B491AA0CDA}.Release|Any CPU.ActiveCfg = Release|Any CPU
+		{38A073CB-D9DA-4075-B8A1-57B491AA0CDA}.Release|Any CPU.Build.0 = Release|Any CPU
 		{03B854C7-609C-4C64-B7EA-266D65E2E548}.Debug|Any CPU.ActiveCfg = Debug|Any CPU
 		{03B854C7-609C-4C64-B7EA-266D65E2E548}.Debug|Any CPU.Build.0 = Debug|Any CPU
 		{03B854C7-609C-4C64-B7EA-266D65E2E548}.Release|Any CPU.ActiveCfg = Release|Any CPU
@@ -233,6 +245,8 @@ Global
 		{84E43ED2-A2ED-49F9-B592-92270F0F2EC3} = {373E0EA7-D9A1-4D7A-A300-9B2583AA09FD}
 		{A00E22C3-A552-4F4C-AF2C-813B96A54582} = {373E0EA7-D9A1-4D7A-A300-9B2583AA09FD}
 		{8CBDDA63-8388-42AF-934E-7C60832A9B1C} = {373E0EA7-D9A1-4D7A-A300-9B2583AA09FD}
+		{880064B4-71DF-49DC-B052-38F93DF02527} = {A3D28D8F-E2E7-4A24-A8E6-12C51D7A55E9}
+		{38A073CB-D9DA-4075-B8A1-57B491AA0CDA} = {A3D28D8F-E2E7-4A24-A8E6-12C51D7A55E9}
 		{03B854C7-609C-4C64-B7EA-266D65E2E548} = {A3D28D8F-E2E7-4A24-A8E6-12C51D7A55E9}
 		{B9613E48-832E-496D-9788-C2304BBEAF1F} = {A3D28D8F-E2E7-4A24-A8E6-12C51D7A55E9}
 	EndGlobalSection

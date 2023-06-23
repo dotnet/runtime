@@ -72,6 +72,22 @@ namespace System.Text.Json.SourceGeneration
                 category: JsonConstants.SystemTextJsonSourceGenerationName,
                 defaultSeverity: DiagnosticSeverity.Warning,
                 isEnabledByDefault: true);
+
+            public static DiagnosticDescriptor JsonStringEnumConverterNotSupportedInAot { get; } = new DiagnosticDescriptor(
+                id: "SYSLIB1040",
+                title: new LocalizableResourceString(nameof(SR.JsonStringEnumConverterNotSupportedTitle), SR.ResourceManager, typeof(FxResources.System.Text.Json.SourceGeneration.SR)),
+                messageFormat: new LocalizableResourceString(nameof(SR.JsonStringEnumConverterNotSupportedMessageFormat), SR.ResourceManager, typeof(FxResources.System.Text.Json.SourceGeneration.SR)),
+                category: JsonConstants.SystemTextJsonSourceGenerationName,
+                defaultSeverity: DiagnosticSeverity.Warning,
+                isEnabledByDefault: true);
+
+            public static DiagnosticDescriptor JsonConverterAttributeInvalidType { get; } = new DiagnosticDescriptor(
+                id: "SYSLIB1041",
+                title: new LocalizableResourceString(nameof(SR.JsonConverterAttributeInvalidTypeTitle), SR.ResourceManager, typeof(FxResources.System.Text.Json.SourceGeneration.SR)),
+                messageFormat: new LocalizableResourceString(nameof(SR.JsonConverterAttributeInvalidTypeMessageFormat), SR.ResourceManager, typeof(FxResources.System.Text.Json.SourceGeneration.SR)),
+                category: JsonConstants.SystemTextJsonSourceGenerationName,
+                defaultSeverity: DiagnosticSeverity.Warning,
+                isEnabledByDefault: true);
         }
     }
 }

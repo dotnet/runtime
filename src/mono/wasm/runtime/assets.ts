@@ -10,7 +10,6 @@ import { endMeasure, MeasuredBlock, startMeasure } from "./profiler";
 import { AssetEntryInternal } from "./types/internal";
 import { AssetEntry } from "./types";
 import { InstantiateWasmSuccessCallback, VoidPtr } from "./types/emscripten";
-import { utf8BufferToString } from "./strings";
 
 // this need to be run only after onRuntimeInitialized event, when the memory is ready
 export function instantiate_asset(asset: AssetEntry, url: string, bytes: Uint8Array): void {
@@ -61,12 +60,10 @@ export function instantiate_asset(asset: AssetEntry, url: string, bytes: Uint8Ar
 
             mono_log_debug(`Creating file '${fileName}' in directory '${parentDirectory}'`);
 
-            if (!mono_wasm_load_data_archive(bytes, parentDirectory)) {
-                Module.FS_createDataFile(
-                    parentDirectory, fileName,
-                    bytes, true /* canRead */, true /* canWrite */, true /* canOwn */
-                );
-            }
+            Module.FS_createDataFile(
+                parentDirectory, fileName,
+                bytes, true /* canRead */, true /* canWrite */, true /* canOwn */
+            );
             break;
         }
         default:
@@ -139,55 +136,6 @@ export async function instantiate_symbols_asset(pendingAsset: AssetEntryInternal
     } catch (error: any) {
         mono_log_info(`Error loading symbol file ${pendingAsset.name}: ${JSON.stringify(error)}`);
     }
-}
-
-// used from Blazor
-export function mono_wasm_load_data_archive(data: Uint8Array, prefix: string): boolean {
-    if (data.length < 8)
-        return false;
-
-    const dataview = new DataView(data.buffer);
-    const magic = dataview.getUint32(0, true);
-    //    get magic number
-    if (magic != 0x626c6174) {
-        return false;
-    }
-    const manifestSize = dataview.getUint32(4, true);
-    if (manifestSize == 0 || data.length < manifestSize + 8)
-        return false;
-
-    let manifest;
-    try {
-        const manifestContent = utf8BufferToString(data, 8, manifestSize);
-        manifest = JSON.parse(manifestContent);
-        if (!(manifest instanceof Array))
-            return false;
-    } catch (exc) {
-        return false;
-    }
-
-    data = data.slice(manifestSize + 8);
-
-    // Create the folder structure
-    const folders = new Set<string>();
-    manifest.filter(m => {
-        const file = m[0];
-        const last = file.lastIndexOf("/");
-        const directory = file.slice(0, last + 1);
-        folders.add(directory);
-    });
-    folders.forEach(folder => {
-        Module["FS_createPath"](prefix, folder, true, true);
-    });
-
-    for (const row of manifest) {
-        const name = row[0];
-        const length = row[1];
-        const bytes = data.slice(0, length);
-        Module["FS_createDataFile"](prefix, name, bytes, true, true);
-        data = data.slice(length);
-    }
-    return true;
 }
 
 export async function wait_for_all_assets() {
