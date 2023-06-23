@@ -198,42 +198,42 @@ namespace System.Text.Json.Nodes.Tests
             yield return new object[]
             {
                 JsonNode.Parse("""{"$myRoot":{"foo['bar":"baz"}}""")["$myRoot"]["foo['bar"],
-                "$.$myRoot['foo[\\'bar']"
+                "$.$myRoot['foo[\\u0027bar']"
             };
             yield return new object[]
             {
                 JsonNode.Parse("""{"$myRoot":{"foo[\"bar":"baz"}}""")["$myRoot"]["foo[\"bar"],
-                "$.$myRoot['foo[\\\"bar']"
+                "$.$myRoot['foo[\\u0022bar']"
             };
             yield return new object[]
             {
                 JsonNode.Parse("""{"$myRoot":{"foo['b\"ar":"baz"}}""")["$myRoot"]["foo['b\"ar"],
-                "$.$myRoot['foo[\\'b\\\"ar']"
+                "$.$myRoot['foo[\\u0027b\\u0022ar']"
             };
             yield return new object[]
             {
                 JsonNode.Parse("""{"$myRoot": {"myRoot'child": {"myRoot'child'secondLevelChild": "value1"}}}""")["$myRoot"]["myRoot'child"]["myRoot'child'secondLevelChild"],
-                "$.$myRoot['myRoot\\'child']['myRoot\\'child\\'secondLevelChild']"
+                "$.$myRoot['myRoot\\u0027child']['myRoot\\u0027child\\u0027secondLevelChild']"
             };
             yield return new object[]
             {
                 JsonNode.Parse("""{"$myRoot": {"myRoot\"child": {"myRoot\"child\"secondLevelChild": "value1"}}}""")["$myRoot"]["myRoot\"child"]["myRoot\"child\"secondLevelChild"],
-                "$.$myRoot['myRoot\\\"child']['myRoot\\\"child\\\"secondLevelChild']"
+                "$.$myRoot['myRoot\\u0022child']['myRoot\\u0022child\\u0022secondLevelChild']"
             };
             yield return new object[]
             {
                 JsonNode.Parse("""{"$myRoot": {"myRoot\"child": {"myRoot'child\"secondLevelChild": "value1"}}}""")["$myRoot"]["myRoot\"child"]["myRoot'child\"secondLevelChild"],
-                "$.$myRoot['myRoot\\\"child']['myRoot\\'child\\\"secondLevelChild']"
+                "$.$myRoot['myRoot\\u0022child']['myRoot\\u0027child\\u0022secondLevelChild']"
             };
             yield return new object[]
             {
                 JsonNode.Parse("""{"$myRoot": {"myRoot'child": {"secondLevelChildWithoutEscaping": "value2"}}}""")["$myRoot"]["myRoot'child"]["secondLevelChildWithoutEscaping"],
-                "$.$myRoot['myRoot\\'child'].secondLevelChildWithoutEscaping"
+                "$.$myRoot['myRoot\\u0027child'].secondLevelChildWithoutEscaping"
             };
             yield return new object[]
             {
                 JsonNode.Parse("""{"$myRoot": {"myRoot\"child": {"secondLevelChildWithoutEscaping": "value2"}}}""")["$myRoot"]["myRoot\"child"]["secondLevelChildWithoutEscaping"],
-                "$.$myRoot['myRoot\\\"child'].secondLevelChildWithoutEscaping"
+                "$.$myRoot['myRoot\\u0022child'].secondLevelChildWithoutEscaping"
             };
         }
     }

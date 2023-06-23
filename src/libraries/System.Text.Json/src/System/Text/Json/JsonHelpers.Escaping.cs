@@ -64,7 +64,7 @@ namespace System.Text.Json
 
             if (indexOfFirstCharacterToEncode != -1)
             {
-                returnValue = GetEscapedPropertyName(rawPropertyName);
+                returnValue = GetEscapedPropertyName(rawPropertyName, encoder);
             }
             else
             {
@@ -74,20 +74,11 @@ namespace System.Text.Json
             return returnValue;
         }
 
-        private static string GetEscapedPropertyName(string rawPropertyName)
+        private static string GetEscapedPropertyName(
+            string rawPropertyName,
+            JavaScriptEncoder? encoder)
         {
-            const string Quote = "\"";
-            const string EscapedQuote = "\\\"";
-            const string SingleQuote = "'";
-            const string EscapedSingleQuote = "\\'";
-
-            string returnValue;
-
-            returnValue = rawPropertyName
-                .Replace(Quote, EscapedQuote)
-                .Replace(SingleQuote, EscapedSingleQuote);
-
-            return returnValue;
+            return (encoder ?? JavaScriptEncoder.Default).Encode(rawPropertyName);
         }
 
         private static byte[] GetEscapedPropertyNameSection(
