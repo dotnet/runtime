@@ -3008,7 +3008,8 @@ void Compiler::lvaSetStruct(unsigned varNum, ClassLayout* layout, bool unsafeVal
 //
 void Compiler::lvaSetStruct(unsigned varNum, CORINFO_CLASS_HANDLE typeHnd, bool unsafeValueClsCheck)
 {
-    assert((typeHnd == NO_CLASS_HANDLE) || ((info.compCompHnd->getClassAttribs(typeHnd) & CORINFO_FLG_GENERIC_TYPE_VARIABLE) == 0));
+    assert((typeHnd == NO_CLASS_HANDLE) ||
+           ((info.compCompHnd->getClassAttribs(typeHnd) & CORINFO_FLG_GENERIC_TYPE_VARIABLE) == 0));
     lvaSetStruct(varNum, typGetObjLayout(typeHnd), unsafeValueClsCheck);
 }
 
@@ -3107,7 +3108,8 @@ void Compiler::lvaSetStructUsedAsVarArg(unsigned varNum)
 
 void Compiler::lvaSetClass(unsigned varNum, CORINFO_CLASS_HANDLE clsHnd, bool isExact)
 {
-    assert((clsHnd == NO_CLASS_HANDLE) || ((info.compCompHnd->getClassAttribs(clsHnd) & CORINFO_FLG_GENERIC_TYPE_VARIABLE) == 0));
+    assert((clsHnd == NO_CLASS_HANDLE) ||
+           ((info.compCompHnd->getClassAttribs(clsHnd) & CORINFO_FLG_GENERIC_TYPE_VARIABLE) == 0));
     noway_assert(varNum < lvaCount);
 
     if (clsHnd != NO_CLASS_HANDLE && !isExact && JitConfig.JitEnableExactDevirtualization())
@@ -3152,11 +3154,13 @@ void Compiler::lvaSetClass(unsigned varNum, CORINFO_CLASS_HANDLE clsHnd, bool is
 
 void Compiler::lvaSetClass(unsigned varNum, GenTree* tree, CORINFO_CLASS_HANDLE stackHnd)
 {
-    assert((stackHnd == NO_CLASS_HANDLE) || ((info.compCompHnd->getClassAttribs(stackHnd) & CORINFO_FLG_GENERIC_TYPE_VARIABLE) == 0));
+    assert((stackHnd == NO_CLASS_HANDLE) ||
+           ((info.compCompHnd->getClassAttribs(stackHnd) & CORINFO_FLG_GENERIC_TYPE_VARIABLE) == 0));
     bool                 isExact   = false;
     bool                 isNonNull = false;
     CORINFO_CLASS_HANDLE clsHnd    = gtGetClassHandle(tree, &isExact, &isNonNull);
-    assert((clsHnd == NO_CLASS_HANDLE) || ((info.compCompHnd->getClassAttribs(clsHnd) & CORINFO_FLG_GENERIC_TYPE_VARIABLE) == 0));
+    assert((clsHnd == NO_CLASS_HANDLE) ||
+           ((info.compCompHnd->getClassAttribs(clsHnd) & CORINFO_FLG_GENERIC_TYPE_VARIABLE) == 0));
 
     if (clsHnd != nullptr)
     {
@@ -3198,7 +3202,8 @@ void Compiler::lvaSetClass(unsigned varNum, GenTree* tree, CORINFO_CLASS_HANDLE 
 
 void Compiler::lvaUpdateClass(unsigned varNum, CORINFO_CLASS_HANDLE clsHnd, bool isExact)
 {
-    assert((clsHnd == NO_CLASS_HANDLE) || ((info.compCompHnd->getClassAttribs(clsHnd) & CORINFO_FLG_GENERIC_TYPE_VARIABLE) == 0));
+    assert((clsHnd == NO_CLASS_HANDLE) ||
+           ((info.compCompHnd->getClassAttribs(clsHnd) & CORINFO_FLG_GENERIC_TYPE_VARIABLE) == 0));
     assert(varNum < lvaCount);
 
     // Else we should have a class handle to consider
@@ -3273,11 +3278,13 @@ void Compiler::lvaUpdateClass(unsigned varNum, CORINFO_CLASS_HANDLE clsHnd, bool
 
 void Compiler::lvaUpdateClass(unsigned varNum, GenTree* tree, CORINFO_CLASS_HANDLE stackHnd)
 {
-    assert((stackHnd == NO_CLASS_HANDLE) || ((info.compCompHnd->getClassAttribs(stackHnd) & CORINFO_FLG_GENERIC_TYPE_VARIABLE) == 0));
+    assert((stackHnd == NO_CLASS_HANDLE) ||
+           ((info.compCompHnd->getClassAttribs(stackHnd) & CORINFO_FLG_GENERIC_TYPE_VARIABLE) == 0));
     bool                 isExact   = false;
     bool                 isNonNull = false;
     CORINFO_CLASS_HANDLE clsHnd    = gtGetClassHandle(tree, &isExact, &isNonNull);
-    assert((clsHnd == NO_CLASS_HANDLE) || ((info.compCompHnd->getClassAttribs(clsHnd) & CORINFO_FLG_GENERIC_TYPE_VARIABLE) == 0));
+    assert((clsHnd == NO_CLASS_HANDLE) ||
+           ((info.compCompHnd->getClassAttribs(clsHnd) & CORINFO_FLG_GENERIC_TYPE_VARIABLE) == 0));
 
     if (clsHnd != nullptr)
     {
