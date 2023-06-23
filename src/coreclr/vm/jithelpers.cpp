@@ -584,7 +584,7 @@ FORCEINLINE INT64 FastDbl2Lng(double val)
 // 
 double TruncateDouble(double val)
 {
-    FCALL_CONTRACT;
+    LIMITED_METHOD_CONTRACT;
     int64_t *dintVal = (int64_t *)&val;
 
     uint64_t uintVal = (uint64_t)*dintVal;
