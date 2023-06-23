@@ -234,12 +234,12 @@ namespace ILCompiler.DependencyAnalysis
             ISymbolNode tlsRoot = factory.TlsRoot;
             // IsSingleFileCompilation is not enough to guarantee that we can use "Initial Executable" optimizations.
             // we need a special compiler flag analogous to /GA. Just assume "false" for now.
-            // bool singleFileExe = factory.CompilationModuleGroup.IsSingleFileCompilation;
-            bool singleFileExe = false;
+            // bool isInitialExecutable = factory.CompilationModuleGroup.IsSingleFileCompilation;
+            bool isInitialExecutable = false;
 
             if (factory.Target.IsWindows)
             {
-                if (singleFileExe)
+                if (isInitialExecutable)
                 {
                     // mov         rax,qword ptr gs:[58h]
                     encoder.Builder.EmitBytes(new byte[] { 0x65, 0x48, 0x8B, 0x04, 0x25, 0x58, 0x00, 0x00, 0x00 });
@@ -279,7 +279,7 @@ namespace ILCompiler.DependencyAnalysis
             }
             else if (factory.Target.OperatingSystem == TargetOS.Linux)
             {
-                if (singleFileExe)
+                if (isInitialExecutable)
                 {
                     // movq %fs:0x0,%rax
                     encoder.Builder.EmitBytes(new byte[] { 0x64, 0x48, 0x8B, 0x04, 0x25, 0x00, 0x00, 0x00, 0x00 });

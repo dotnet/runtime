@@ -9,7 +9,6 @@ namespace ILCompiler.DependencyAnalysis
     {
         public void AppendMangledName(NameMangler nameMangler, Utf8StringBuilder sb)
         {
-            // tls_InlinedThreadStatics
             sb.Append(nameMangler.CompilationUnitPrefix).Append("tls_InlinedThreadStatics");
         }
         public int Offset => 0;

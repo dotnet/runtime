@@ -36,7 +36,7 @@ namespace Internal.Runtime
         {
             Debug.Assert(threadStorage == null);
             // Allocate an object that will represent a memory block for all thread static fields
-            TypeManagerHandle typeManager = (new object()).GetMethodTable()->TypeManager;
+            TypeManagerHandle typeManager = EETypePtr.EETypePtrOf<object>().ToPointer()->TypeManager;
             object threadStaticBase = AllocateThreadStaticStorageForType(typeManager, 0);
 
             // register the storage location with the thread for GC reporting.
