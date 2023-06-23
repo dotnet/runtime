@@ -21,7 +21,8 @@ static unsafe partial class CoreCLRHost
     private static HostStructNative* _hostStructNative;
 
     // Loaded assemblies cache.
-    // Contains data needed for frequent queries from the native code. 
+    // Contains data needed for frequent queries from the native code for MonoImage* and name queries.
+    // AssemblyCachedInfo is owned by k_AssemblyCache, so that all queries return same handles
     static readonly Dictionary<Assembly, AssemblyCachedInfo> k_AssemblyCache = new ();
     static readonly Dictionary<string, AssemblyCachedInfo> k_AssemblyNameCache = new ();
 
@@ -121,7 +122,10 @@ static unsafe partial class CoreCLRHost
                 {
                     if (Path.GetFileNameWithoutExtension(asm.GetLoadedModules(getResourceModules: true)[0].Name).Equals(assemblySimpleName))
                     {
-                        return GetInfoForAssembly(asm);
+                        // Cache the result, but through the k_AssemblyCache, so that we have same assembly (MonoImage*) handle.
+                        info = GetInfoForAssembly(asm);
+                        k_AssemblyNameCache[assemblySimpleName] = info;
+                        return info;
                     }
                 }
             }
@@ -159,22 +163,9 @@ static unsafe partial class CoreCLRHost
     {
         string sname = new(name);
 
-        // Quick path for already cached assemblies
-        var assemblyInfo = GetInfoForAssembly(sname);
-        if (assemblyInfo != null)
-            return assemblyInfo.handle;
-
-        // Slow path for assemblies which are not cached yet
-        foreach (var context in AssemblyLoadContext.All)
-        {
-            foreach (var asm in context.Assemblies)
-            {
-                if (Path.GetFileNameWithoutExtension(asm.GetLoadedModules(getResourceModules: true)[0].Name).Equals(sname))
-                    return GetInfoForAssembly(asm).handle;
-            }
-        }
-
-        return nint.Zero;
+        // Retrieve from cache or add to cache
+        AssemblyCachedInfo assemblyInfo = GetInfoForAssembly(sname);
+        return assemblyInfo != null ? assemblyInfo.handle : nint.Zero;
     }
 
     [return: NativeCallbackType("MonoAssembly*")]
@@ -332,7 +323,11 @@ static unsafe partial class CoreCLRHost
         // Cache module acquisition to avoid unnecessary allocation of Module[]
         var assemblyInfo = GetInfoForAssembly(assembly);
         var typeHandle = assemblyInfo.module.ModuleHandle.GetRuntimeTypeHandleFromMetadataToken((int)token);
-        // Loads type if not already loaded
+        // TODO: Remove MethodBase.GetMethodFromHandle(methodHandle) part once we move method and type utilities to C#
+        // https://jira.unity3d.com/browse/VM-2081
+        // We have to load method and types currently as the native methods don't enforce loading
+        // (e.g. reinterpret_cast<MonoClass_clr*>(klass)->GetParentMethodTable() in mono_class_get_parent may crash if klass is not fully loaded)
+        // and adding loading boilerplate is roughly equivalent of moving implementation to C#
         return Type.GetTypeFromHandle(typeHandle).TypeHandleIntPtr();
     }
 
@@ -348,7 +343,11 @@ static unsafe partial class CoreCLRHost
         // Cache module acquisition to avoid unnecessary allocation of Module[]
         var assemblyInfo = GetInfoForAssembly(assembly);
         var methodHandle = assemblyInfo.module.ModuleHandle.GetRuntimeMethodHandleFromMetadataToken((int)token);
-        // Loads method if not already loaded
+        // TODO: Remove MethodBase.GetMethodFromHandle(methodHandle) part once we move method and type utilities to C#
+        // https://jira.unity3d.com/browse/VM-2081
+        // We have to load method and types currently as the native methods don't enforce loading
+        // (e.g. reinterpret_cast<MonoClass_clr*>(klass)->GetParentMethodTable() in mono_class_get_parent may crash if klass is not fully loaded)
+        // and adding loading boilerplate is roughly equivalent of moving implementation to C#
         return MethodBase.GetMethodFromHandle(methodHandle).MethodHandle.MethodHandleIntPtr();
     }
 
