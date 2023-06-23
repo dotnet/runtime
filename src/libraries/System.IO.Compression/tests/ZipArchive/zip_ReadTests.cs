@@ -250,7 +250,6 @@ namespace System.IO.Compression.Tests
             Assert.Equal(expectedEntries, entriesEncrypted);
         }
 
-
         [Fact]
         public static async Task EnsureDisposeIsCalledOnlyOnce()
         {
