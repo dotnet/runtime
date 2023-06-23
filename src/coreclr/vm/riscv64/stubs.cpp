@@ -1026,9 +1026,12 @@ void StubLinkerCPU::EmitMovConstant(IntReg reg, UINT64 imm)
 
     BitScanReverse64(&msb, imm);
 
-    if (msb > 30) {
+    if (msb > 30)
+    {
         high31 = (imm >> (msb - 30)) & 0x7FffFFff;
-    } else {
+    }
+    else
+    {
         high31 = imm & 0x7FffFFff;
     }
 
@@ -1038,10 +1041,13 @@ void StubLinkerCPU::EmitMovConstant(IntReg reg, UINT64 imm)
     UINT32 high19 = (high31 + 0x800) >> 12;
 
     EmitLuImm(reg, high19);
-    if (high31 & 0x800) {
+    if (high31 & 0x800)
+    {
         // EmitAddImm does not allow negative immediate values, so use EmitSubImm.
         EmitSubImm(reg, reg, ~high31 + 1 & 0xFFF);
-    } else {
+    }
+    else
+    {
         EmitAddImm(reg, reg, high31 & 0x7FF);
     }
 
@@ -1052,14 +1058,16 @@ void StubLinkerCPU::EmitMovConstant(IntReg reg, UINT64 imm)
     // if immediate bits `low11` for this iteration are zero.
     UINT32 shiftAccumulator = 0;
 
-    while (remainingShift > 0) {
+    while (remainingShift > 0)
+    {
         UINT32 shift = remainingShift >= 11 ? 11 : remainingShift % 11;
-        UINT32  mask  = 0x7ff >> (11 - shift);
+        UINT32 mask = 0x7ff >> (11 - shift);
         remainingShift -= shift;
-        ssize_t low11 = (imm >> remainingShift) & mask;
+        UINT32 low11 = (imm >> remainingShift) & mask;
         shiftAccumulator += shift;
 
-        if (low11) {
+        if (low11)
+        {
             EmitSllImm(reg, reg, shiftAccumulator);
             shiftAccumulator = 0;
 
@@ -1067,7 +1075,8 @@ void StubLinkerCPU::EmitMovConstant(IntReg reg, UINT64 imm)
         }
     }
 
-    if (shiftAccumulator) {
+    if (shiftAccumulator)
+    {
         EmitSllImm(reg, reg, shiftAccumulator);
     }
 }
