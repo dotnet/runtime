@@ -3017,7 +3017,20 @@ void CodeGen::genFnPrologCalleeRegArgs(regNumber xtraReg, bool* pXtraRegClobbere
 #if defined(UNIX_AMD64_ABI)
         if (varTypeIsStruct(varDsc))
         {
-            CORINFO_CLASS_HANDLE typeHnd = varDsc->GetLayout()->GetClassHandle();
+            CORINFO_CLASS_HANDLE typeHnd;
+            if (varDsc->lvIsStructField)
+            {
+                // The only case we currently permit is a wrapped SIMD field,
+                // where we won't have the class handle available, so get it
+                // from the parent struct -- they will agree on ABI details.
+                LclVarDsc* parentDsc = compiler->lvaGetDesc(varDsc->lvParentLcl);
+                assert(varTypeIsSIMD(varDsc) && (parentDsc->lvFieldCnt == 1));
+                typeHnd = parentDsc->GetLayout()->GetClassHandle();
+            }
+            else
+            {
+                typeHnd = varDsc->GetLayout()->GetClassHandle();
+            }
             assert(typeHnd != nullptr);
             SYSTEMV_AMD64_CORINFO_STRUCT_REG_PASSING_DESCRIPTOR structDesc;
             compiler->eeGetSystemVAmd64PassStructInRegisterDescriptor(typeHnd, &structDesc);
