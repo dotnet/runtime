@@ -10,7 +10,6 @@ using System.IO;
 using System.Linq;
 using System.Runtime.InteropServices;
 using System.Text;
-using System.Text.Json.Nodes;
 using System.Text.RegularExpressions;
 using System.Threading.Tasks;
 using System.Threading;
@@ -18,8 +17,6 @@ using System.Xml;
 using Xunit;
 using Xunit.Abstractions;
 using Xunit.Sdk;
-using System.Runtime.Serialization.Json;
-using Microsoft.NET.Sdk.WebAssembly;
 
 #nullable enable
 
@@ -50,10 +47,10 @@ namespace Wasm.Build.Tests
         protected static RunHost s_hostsForOSLocaleSensitiveTests = RunHost.Chrome;
         // FIXME: use an envvar to override this
         protected static int s_defaultPerTestTimeoutMs = s_isWindows ? 30 * 60 * 1000 : 15 * 60 * 1000;
-        protected static BuildEnvironment s_buildEnv;
-        protected const string s_runtimePackPathPattern = "\\*\\* MicrosoftNetCoreAppRuntimePackDir : '([^ ']*)'";
+        public static BuildEnvironment s_buildEnv;
+        public const string s_runtimePackPathPattern = "\\*\\* MicrosoftNetCoreAppRuntimePackDir : '([^ ']*)'";
         private const string s_nugetInsertionTag = "<!-- TEST_RESTORE_SOURCES_INSERTION_LINE -->";
-        protected static Regex s_runtimePackPathRegex;
+        public static Regex s_runtimePackPathRegex;
         protected static int s_testCounter;
         protected readonly int _testIdx;
 
@@ -390,10 +387,10 @@ namespace Wasm.Build.Tests
 
             return dict;
         }
-        protected static void AssertFilesDontExist(string dir, string[] filenames, string? label = null)
+        public static void AssertFilesDontExist(string dir, string[] filenames, string? label = null)
             => AssertFilesExist(dir, filenames, label, expectToExist: false);
 
-        protected static void AssertFilesExist(string dir, IEnumerable<string> filenames, string? label = null, bool expectToExist = true)
+        public static void AssertFilesExist(string dir, IEnumerable<string> filenames, string? label = null, bool expectToExist = true)
         {
             string prefix = label != null ? $"{label}: " : string.Empty;
             if (!Directory.Exists(dir))
@@ -412,7 +409,7 @@ namespace Wasm.Build.Tests
         protected static void AssertSameFile(string file0, string file1, string? label = null) => AssertFile(file0, file1, label, same: true);
         protected static void AssertNotSameFile(string file0, string file1, string? label = null) => AssertFile(file0, file1, label, same: false);
 
-        protected static void AssertFile(string file0, string file1, string? label = null, bool same = true)
+        public static void AssertFile(string file0, string file1, string? label = null, bool same = true)
         {
             Assert.True(File.Exists(file0), $"{label}: Expected to find {file0}");
             Assert.True(File.Exists(file1), $"{label}: Expected to find {file1}");
@@ -671,7 +668,7 @@ namespace Wasm.Build.Tests
                 }
             }";
 
-        private IHostRunner GetHostRunnerFromRunHost(RunHost host) => host switch
+        protected IHostRunner GetHostRunnerFromRunHost(RunHost host) => host switch
         {
             RunHost.V8 => new V8HostRunner(),
             RunHost.NodeJS => new NodeJSHostRunner(),

@@ -38,10 +38,10 @@ namespace Wasm.Build.Tests
 
         // FIXME: use an envvar to override this
         protected static int s_defaultPerTestTimeoutMs = RuntimeInformation.IsOSPlatform(OSPlatform.Windows) ? 30*60*1000 : 15*60*1000;
-        protected static BuildEnvironment s_buildEnv;
-        private const string s_runtimePackPathPattern = "\\*\\* MicrosoftNetCoreAppRuntimePackDir : '([^ ']*)'";
+        public static BuildEnvironment s_buildEnv;
+        public const string s_runtimePackPathPattern = "\\*\\* MicrosoftNetCoreAppRuntimePackDir : '([^ ']*)'";
         private const string s_nugetInsertionTag = "<!-- TEST_RESTORE_SOURCES_INSERTION_LINE -->";
-        private static Regex s_runtimePackPathRegex;
+        public static Regex s_runtimePackPathRegex;
         private static int s_testCounter;
         private readonly int _testIdx;
 
@@ -306,61 +306,6 @@ namespace Wasm.Build.Tests
                                         .EnsureSuccessful();
 
             return (res, logPath);
-        }
-
-        static void AssertRuntimePackPath(string buildOutput, string targetFramework)
-        {
-            var match = s_runtimePackPathRegex.Match(buildOutput);
-            if (!match.Success || match.Groups.Count != 2)
-                throw new XunitException($"Could not find the pattern in the build output: '{s_runtimePackPathPattern}'.{Environment.NewLine}Build output: {buildOutput}");
-
-            string expectedRuntimePackDir = s_buildEnv.GetRuntimePackDir(targetFramework);
-            string actualPath = match.Groups[1].Value;
-            if (string.Compare(actualPath, expectedRuntimePackDir) != 0)
-                throw new XunitException($"Runtime pack path doesn't match.{Environment.NewLine}Expected: '{expectedRuntimePackDir}'{Environment.NewLine}Actual:   '{actualPath}'");
-        }
-
-        protected static void AssertBasicAppBundle(string bundleDir,
-                                                   string projectName,
-                                                   string config,
-                                                   string mainJS,
-                                                   bool hasV8Script,
-                                                   string targetFramework,
-                                                   bool hasIcudt = true,
-                                                   bool dotnetWasmFromRuntimePack = true)
-        {
-#if false
-            AssertFilesExist(bundleDir, new []
-            {
-                "index.html",
-                mainJS,
-                "dotnet.wasm",
-                "_framework/blazor.boot.json",
-                "dotnet.js"
-            });
-
-            AssertFilesExist(bundleDir, new[] { "run-v8.sh" }, expectToExist: hasV8Script);
-            AssertFilesExist(bundleDir, new[] { "icudt.dat" }, expectToExist: hasIcudt);
-
-            string managedDir = Path.Combine(bundleDir, "managed");
-            AssertFilesExist(managedDir, new[] { $"{projectName}.dll" });
-
-            bool is_debug = config == "Debug";
-            if (is_debug)
-            {
-                // Use cecil to check embedded pdb?
-                // AssertFilesExist(managedDir, new[] { $"{projectName}.pdb" });
-
-                //FIXME: um.. what about these? embedded? why is linker omitting them?
-                //foreach (string file in Directory.EnumerateFiles(managedDir, "*.dll"))
-                //{
-                    //string pdb = Path.ChangeExtension(file, ".pdb");
-                    //Assert.True(File.Exists(pdb), $"Could not find {pdb} for {file}");
-                //}
-            }
-
-            AssertDotNetWasmJs(bundleDir, fromRuntimePack: dotnetWasmFromRuntimePack, targetFramework);
-#endif
         }
 
         protected static void AssertFilesDontExist(string dir, string[] filenames, string? label = null)

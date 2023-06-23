@@ -96,10 +96,10 @@ public abstract class TestMainJsTestBase : BuildTestBase
 
             if (options.ExpectSuccess && options.AssertAppBundle)
             {
-                AssertRuntimePackPath(result.buildOutput, options.TargetFramework ?? DefaultTargetFramework);
+                TestMainJsProjectProvider.AssertRuntimePackPath(result.buildOutput, options.TargetFramework ?? DefaultTargetFramework);
 
                 string bundleDir = Path.Combine(GetBinDir(config: buildArgs.Config, targetFramework: options.TargetFramework ?? DefaultTargetFramework), "AppBundle");
-                AssertBasicAppBundle(bundleDir,
+                TestMainJsProjectProvider.AssertBasicAppBundle(bundleDir,
                                      buildArgs.ProjectName,
                                      buildArgs.Config,
                                      options.MainJS ?? "test-main.js",
@@ -125,121 +125,6 @@ public abstract class TestMainJsTestBase : BuildTestBase
         }
     }
 
-    static void AssertRuntimePackPath(string buildOutput, string targetFramework)
-    {
-        var match = s_runtimePackPathRegex.Match(buildOutput);
-        if (!match.Success || match.Groups.Count != 2)
-            throw new XunitException($"Could not find the pattern in the build output: '{s_runtimePackPathPattern}'.{Environment.NewLine}Build output: {buildOutput}");
-
-        string expectedRuntimePackDir = s_buildEnv.GetRuntimePackDir(targetFramework);
-        string actualPath = match.Groups[1].Value;
-        if (string.Compare(actualPath, expectedRuntimePackDir) != 0)
-            throw new XunitException($"Runtime pack path doesn't match.{Environment.NewLine}Expected: '{expectedRuntimePackDir}'{Environment.NewLine}Actual:   '{actualPath}'");
-    }
-
-    private static void AssertBasicAppBundle(string bundleDir,
-                                               string projectName,
-                                               string config,
-                                               string mainJS,
-                                               bool hasV8Script,
-                                               string targetFramework,
-                                               GlobalizationMode? globalizationMode,
-                                               string predefinedIcudt = "",
-                                               bool dotnetWasmFromRuntimePack = true,
-                                               bool useWebcil = true,
-                                               bool isBrowserProject = true)
-    {
-        var filesToExist = new List<string>()
-        {
-            mainJS,
-            "dotnet.native.wasm",
-            "_framework/blazor.boot.json",
-            "dotnet.js",
-            "dotnet.native.js",
-            "dotnet.runtime.js"
-        };
-
-        if (isBrowserProject)
-            filesToExist.Add("index.html");
-
-        AssertFilesExist(bundleDir, filesToExist);
-
-        AssertFilesExist(bundleDir, new[] { "run-v8.sh" }, expectToExist: hasV8Script);
-        AssertIcuAssets();
-
-        string managedDir = Path.Combine(bundleDir, "managed");
-        string bundledMainAppAssembly =
-            useWebcil ? $"{projectName}{WebcilInWasmExtension}" : $"{projectName}.dll";
-        AssertFilesExist(managedDir, new[] { bundledMainAppAssembly });
-
-        bool is_debug = config == "Debug";
-        if (is_debug)
-        {
-            // Use cecil to check embedded pdb?
-            // AssertFilesExist(managedDir, new[] { $"{projectName}.pdb" });
-
-            //FIXME: um.. what about these? embedded? why is linker omitting them?
-            //foreach (string file in Directory.EnumerateFiles(managedDir, "*.dll"))
-            //{
-            //string pdb = Path.ChangeExtension(file, ".pdb");
-            //Assert.True(File.Exists(pdb), $"Could not find {pdb} for {file}");
-            //}
-        }
-
-        AssertDotNetWasmJs(bundleDir, fromRuntimePack: dotnetWasmFromRuntimePack, targetFramework);
-
-        void AssertIcuAssets()
-        {
-            bool expectEFIGS = false;
-            bool expectCJK = false;
-            bool expectNOCJK = false;
-            bool expectFULL = false;
-            bool expectHYBRID = false;
-            switch (globalizationMode)
-            {
-                case GlobalizationMode.Invariant:
-                    break;
-                case GlobalizationMode.FullIcu:
-                    expectFULL = true;
-                    break;
-                case GlobalizationMode.Hybrid:
-                    expectHYBRID = true;
-                    break;
-                case GlobalizationMode.PredefinedIcu:
-                    if (string.IsNullOrEmpty(predefinedIcudt))
-                        throw new ArgumentException("WasmBuildTest is invalid, value for predefinedIcudt is required when GlobalizationMode=PredefinedIcu.");
-                    AssertFilesExist(bundleDir, new[] { predefinedIcudt }, expectToExist: true);
-                    // predefined ICU name can be identical with the icu files from runtime pack
-                    switch (predefinedIcudt)
-                    {
-                        case "icudt.dat":
-                            expectFULL = true;
-                            break;
-                        case "icudt_EFIGS.dat":
-                            expectEFIGS = true;
-                            break;
-                        case "icudt_CJK.dat":
-                            expectCJK = true;
-                            break;
-                        case "icudt_no_CJK.dat":
-                            expectNOCJK = true;
-                            break;
-                    }
-                    break;
-                default:
-                    // icu shard chosen based on the locale
-                    expectCJK = true;
-                    expectEFIGS = true;
-                    expectNOCJK = true;
-                    break;
-            }
-            AssertFilesExist(bundleDir, new[] { "icudt.dat" }, expectToExist: expectFULL);
-            AssertFilesExist(bundleDir, new[] { "icudt_EFIGS.dat" }, expectToExist: expectEFIGS);
-            AssertFilesExist(bundleDir, new[] { "icudt_CJK.dat" }, expectToExist: expectCJK);
-            AssertFilesExist(bundleDir, new[] { "icudt_no_CJK.dat" }, expectToExist: expectNOCJK);
-            AssertFilesExist(bundleDir, new[] { "icudt_hybrid.dat" }, expectToExist: expectHYBRID);
-        }
-    }
 
     private (int exitCode, string buildOutput) AssertBuild(string args, string label = "build", bool expectSuccess = true, IDictionary<string, string>? envVars = null, int? timeoutMs = null)
     {
@@ -250,19 +135,6 @@ public abstract class TestMainJsTestBase : BuildTestBase
             throw new XunitException($"Build should have failed, but it didn't. Process exited with exitCode : {result.exitCode}");
 
         return result;
-    }
-
-    protected static void AssertDotNetWasmJs(string bundleDir, bool fromRuntimePack, string targetFramework)
-    {
-        AssertFile(Path.Combine(s_buildEnv.GetRuntimeNativeDir(targetFramework), "dotnet.native.wasm"),
-                   Path.Combine(bundleDir, "dotnet.native.wasm"),
-                   "Expected dotnet.native.wasm to be same as the runtime pack",
-                   same: fromRuntimePack);
-
-        AssertFile(Path.Combine(s_buildEnv.GetRuntimeNativeDir(targetFramework), "dotnet.native.js"),
-                   Path.Combine(bundleDir, "dotnet.native.js"),
-                   "Expected dotnet.native.js to be same as the runtime pack",
-                   same: fromRuntimePack);
     }
 
     protected string RunAndTestWasmApp(BuildArgs buildArgs,
