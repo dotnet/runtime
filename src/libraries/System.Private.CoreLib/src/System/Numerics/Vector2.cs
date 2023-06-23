@@ -326,6 +326,26 @@ namespace System.Numerics
                  + (value1.Y * value2.Y);
         }
 
+        /// <summary>
+        /// Returns the z-value of the cross product of two vectors.
+        /// Since the Vector2 is in the x-y plane, a 3D cross product only produces the z-value.
+        /// </summary>
+        /// <param name="value1">The first vector.</param>
+        /// <param name="value2">The second vector.</param>
+        /// <returns>The value of the z-coordinate from the cross product.</returns>
+        /// <remarks>
+        /// Return z-value = value1.X * value2.Y - value1.Y * value2.X
+        /// <see cref="Cross"/> is the same as taking the <see cref="Dot"/> with the second vector
+        /// that has been rotated 90-degrees.
+        /// </remarks>
+        [Intrinsic]
+        [MethodImpl(MethodImplOptions.AggressiveInlining)]
+        public static float Cross(Vector2 value1, Vector2 value2)
+        {
+            return (value1.X * value2.Y)
+                 - (value1.Y * value2.X);
+        }
+
         /// <summary>Performs a linear interpolation between two vectors based on the given weighting.</summary>
         /// <param name="value1">The first vector.</param>
         /// <param name="value2">The second vector.</param>

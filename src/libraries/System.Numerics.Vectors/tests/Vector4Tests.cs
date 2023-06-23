@@ -244,6 +244,39 @@ namespace System.Numerics.Tests
             Assert.True(MathHelper.Equal(0.0f, actual), "Vector4f.Dot did not return the expected value.");
         }
 
+        // A test for Cross (Vector4f, Vector4f)
+        [Fact]
+        public void Vector4CrossTest()
+        {
+            Vector3 a3 = new Vector3(1.0f, 0.0f, 0.0f);
+            Vector3 b3 = new Vector3(0.0f, 1.0f, 0.0f);
+            Vector3 e3 = Vector3.Cross(a3, b3);
+
+            Vector4 a4 = new Vector4(a3, 2.0f);
+            Vector4 b4 = new Vector4(b3, 3.0f);
+            Vector4 e4 = new Vector4(e3, a4.W * b4.W);
+
+            Vector4 actual = Vector4.Cross(a4, b4);
+            Assert.True(MathHelper.Equal(e4, actual), "Vector4f.Cross did not return the expected value.");
+        }
+
+        // A test for Cross (Vector4f, Vector4f)
+        // Cross test of the same vector
+        [Fact]
+        public void Vector4CrossTest1()
+        {
+            Vector3 a3 = new Vector3(0.0f, 1.0f, 0.0f);
+            Vector3 b3 = new Vector3(0.0f, 1.0f, 0.0f);
+            Vector3 e3 = Vector3.Cross(a3, b3);
+
+            Vector4 a4 = new Vector4(a3, 3.0f);
+            Vector4 b4 = new Vector4(b3, 4.0f);
+            Vector4 e4 = new Vector4(e3, a4.W * b4.W);
+
+            Vector4 actual = Vector4.Cross(a4, b4);
+            Assert.True(MathHelper.Equal(e4, actual), "Vector4f.Cross did not return the expected value.");
+        }
+
         // A test for Length ()
         [Fact]
         public void Vector4LengthTest()

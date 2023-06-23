@@ -384,6 +384,31 @@ namespace System.Numerics
                  + (vector1.W * vector2.W);
         }
 
+        /// <summary>
+        /// Computes the cross product of two vectors. For homogeneous coordinates,
+        /// the product of the weights is the new weight for the resulting product.
+        /// </summary>
+        /// <param name="vector1">The first vector.</param>
+        /// <param name="vector2">The second vector.</param>
+        /// <returns>The cross product.</returns>
+        /// <remarks>
+        /// The proposed Cross function for <see cref="Vector4"/> is nearly the same as that for
+        /// <see cref="Vector3.Cross"/> with the addition of the fourth value which is
+        /// the product of the original two w's. This can be derived by symbolically performing
+        /// the cross product for <see cref="Vector3"/> with values [x_1/w_1, y_1/w_1, z_1/w_1]
+        /// and [x_2/w_2, y_2/w_2, z_2/w_2].
+        /// </remarks>
+        [MethodImpl(MethodImplOptions.AggressiveInlining)]
+        public static Vector4 Cross(Vector4 vector1, Vector4 vector2)
+        {
+            return new Vector4(
+                (vector1.Y * vector2.Z) - (vector1.Z * vector2.Y),
+                (vector1.Z * vector2.X) - (vector1.X * vector2.Z),
+                (vector1.X * vector2.Y) - (vector1.Y * vector2.X),
+                (vector1.W * vector2.W)
+            );
+        }
+
         /// <summary>Performs a linear interpolation between two vectors based on the given weighting.</summary>
         /// <param name="value1">The first vector.</param>
         /// <param name="value2">The second vector.</param>
