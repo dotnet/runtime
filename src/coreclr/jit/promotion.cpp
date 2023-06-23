@@ -1948,52 +1948,8 @@ void ReplaceVisitor::StartStatement(Statement* stmt)
     m_madeChanges       = false;
     m_mayHaveForwardSub = false;
 
-    if (m_numPendingReadBacks == 0)
-    {
-        return;
-    }
-
-    // If we have pending readbacks then insert them as new statements for any
-    // local that the statement is using. We could leave this up to ReplaceLocal
-    // but do it here for three reasons:
-    // 1. For QMARKs we cannot actually leave it up to ReplaceLocal since the
-    // local may be conditionally executed
-    // 2. This allows forward-sub to kick in
-    // 3. Creating embedded stores in ReplaceLocal disables local copy prop for
-    //    that local (see ReplaceLocal).
-
-    for (GenTreeLclVarCommon* lcl : stmt->LocalsTreeList())
-    {
-        if (lcl->TypeIs(TYP_STRUCT))
-        {
-            continue;
-        }
-
-        AggregateInfo* agg = m_aggregates[lcl->GetLclNum()];
-        if (agg == nullptr)
-        {
-            continue;
-        }
-
-        size_t index = Promotion::BinarySearch<Replacement, &Replacement::Offset>(agg->Replacements, lcl->GetLclOffs());
-        if ((ssize_t)index < 0)
-        {
-            continue;
-        }
-
-        Replacement& rep = agg->Replacements[index];
-        if (rep.NeedsReadBack)
-        {
-            JITDUMP("Reading back replacement V%02u.[%03u..%03u) -> V%02u before [%06u]:\n", agg->LclNum, rep.Offset,
-                    rep.Offset + genTypeSize(rep.AccessType), rep.LclNum, Compiler::dspTreeID(stmt->GetRootNode()));
-
-            GenTree*   readBack = Promotion::CreateReadBack(m_compiler, agg->LclNum, rep);
-            Statement* stmt     = m_compiler->fgNewStmtFromTree(readBack);
-            DISPSTMT(stmt);
-            m_compiler->fgInsertStmtBefore(m_currentBlock, m_currentStmt, stmt);
-            ClearNeedsReadBack(rep);
-        }
-    }
+    InsertPreStatementWriteBacks();
+    InsertPreStatementReadBacks();
 }
 
 //------------------------------------------------------------------------
@@ -2012,7 +1968,7 @@ Compiler::fgWalkResult ReplaceVisitor::PostOrderVisit(GenTree** use, GenTree* us
 {
     GenTree* tree = *use;
 
-    use = InsertMidTreeReadBacksIfNecessary(use);
+    use = InsertMidTreeReadBacks(use);
 
     if (tree->OperIsStore())
     {
@@ -2108,7 +2064,162 @@ void ReplaceVisitor::ClearNeedsReadBack(Replacement& rep)
 }
 
 //------------------------------------------------------------------------
-// InsertMidTreeReadBacksIfNecessary:
+// InsertPreStatementReadBacks:
+//   Insert readbacks before starting the current statement.
+//
+void ReplaceVisitor::InsertPreStatementReadBacks()
+{
+    if (m_numPendingReadBacks <= 0)
+    {
+        return;
+    }
+
+    // If we have pending readbacks then insert them as new statements for any
+    // local that the statement is using. We could leave this up to ReplaceLocal
+    // but do it here for three reasons:
+    // 1. For QMARKs we cannot actually leave it up to ReplaceLocal since the
+    // local may be conditionally executed
+    // 2. This allows forward-sub to kick in
+    // 3. Creating embedded stores in ReplaceLocal disables local copy prop for
+    //    that local (see ReplaceLocal).
+
+    for (GenTreeLclVarCommon* lcl : m_currentStmt->LocalsTreeList())
+    {
+        if (lcl->TypeIs(TYP_STRUCT))
+        {
+            continue;
+        }
+
+        AggregateInfo* agg = m_aggregates[lcl->GetLclNum()];
+        if (agg == nullptr)
+        {
+            continue;
+        }
+
+        size_t index = Promotion::BinarySearch<Replacement, &Replacement::Offset>(agg->Replacements, lcl->GetLclOffs());
+        if ((ssize_t)index < 0)
+        {
+            continue;
+        }
+
+        Replacement& rep = agg->Replacements[index];
+        if (rep.NeedsReadBack)
+        {
+            JITDUMP("Reading back replacement V%02u.[%03u..%03u) -> V%02u before [%06u]:\n", agg->LclNum, rep.Offset,
+                    rep.Offset + genTypeSize(rep.AccessType), rep.LclNum,
+                    Compiler::dspTreeID(m_currentStmt->GetRootNode()));
+
+            GenTree*   readBack = Promotion::CreateReadBack(m_compiler, agg->LclNum, rep);
+            Statement* stmt     = m_compiler->fgNewStmtFromTree(readBack);
+            DISPSTMT(stmt);
+            m_compiler->fgInsertStmtBefore(m_currentBlock, m_currentStmt, stmt);
+            ClearNeedsReadBack(rep);
+        }
+    }
+}
+
+//------------------------------------------------------------------------
+// VisitOverlappingReplacements:
+//   Call a function for every replacement that overlaps a specified segment.
+//
+// Parameters:
+//   lcl  - The local
+//   offs - Start offset of the segment
+//   size - Size of the segment
+//   func - Callback
+//
+template <typename Func>
+void ReplaceVisitor::VisitOverlappingReplacements(unsigned lcl, unsigned offs, unsigned size, Func func)
+{
+    if (m_aggregates[lcl] == nullptr)
+    {
+        return;
+    }
+
+    jitstd::vector<Replacement>& replacements = m_aggregates[lcl]->Replacements;
+    size_t                       index = Promotion::BinarySearch<Replacement, &Replacement::Offset>(replacements, offs);
+
+    if ((ssize_t)index < 0)
+    {
+        index = ~index;
+        if ((index > 0) && replacements[index - 1].Overlaps(offs, size))
+        {
+            index--;
+        }
+    }
+
+    unsigned end = offs + size;
+    while ((index < replacements.size()) && (replacements[index].Offset < end))
+    {
+        Replacement& rep = replacements[index];
+        func(rep);
+
+        index++;
+    }
+}
+
+//------------------------------------------------------------------------
+// InsertPreStatementWriteBacks:
+//   Write back promoted fields for the upcoming statement if it may be
+//   beneficial to do so.
+//
+void ReplaceVisitor::InsertPreStatementWriteBacks()
+{
+    GenTree* rootNode = m_currentStmt->GetRootNode();
+    if ((rootNode->gtFlags & GTF_CALL) == 0)
+    {
+        return;
+    }
+
+    class Visitor : public GenTreeVisitor<Visitor>
+    {
+        ReplaceVisitor* m_replacer;
+
+    public:
+        enum
+        {
+            DoPreOrder = true,
+        };
+
+        Visitor(Compiler* comp, ReplaceVisitor* replacer) : GenTreeVisitor(comp), m_replacer(replacer)
+        {
+        }
+
+        fgWalkResult PreOrderVisit(GenTree** use, GenTree* user)
+        {
+            GenTree* node = *use;
+            if ((node->gtFlags & GTF_CALL) == 0)
+            {
+                return fgWalkResult::WALK_SKIP_SUBTREES;
+            }
+
+            if (node->IsCall())
+            {
+                GenTreeCall* call = node->AsCall();
+                for (CallArg& arg : call->gtArgs.Args())
+                {
+                    GenTree* node = arg.GetNode()->gtEffectiveVal();
+                    if (!node->TypeIs(TYP_STRUCT) || !node->OperIsLocalRead())
+                    {
+                        continue;
+                    }
+
+                    GenTreeLclVarCommon* lcl = node->AsLclVarCommon();
+                    m_replacer->WriteBackBeforeCurrentStatement(lcl->GetLclNum(), lcl->GetLclOffs(),
+                                                                lcl->GetLayout(m_compiler)->GetSize());
+                }
+            }
+
+            return fgWalkResult::WALK_CONTINUE;
+        }
+    };
+
+    Visitor visitor(m_compiler, this);
+    visitor.WalkTree(m_currentStmt->GetRootNodePointer(), nullptr);
+}
+
+//------------------------------------------------------------------------
+// InsertMidTreeReadBacks:
 //   If necessary, insert IR to read back all replacements before the specified use.
 //
 // Parameters:
@@ -2128,7 +2239,7 @@ void ReplaceVisitor::ClearNeedsReadBack(Replacement& rep)
 //   try-region (or filter block) and we find a tree that may throw it eagerly
 //   inserts pending readbacks.
 //
-GenTree** ReplaceVisitor::InsertMidTreeReadBacksIfNecessary(GenTree** use)
+GenTree** ReplaceVisitor::InsertMidTreeReadBacks(GenTree** use)
 {
     if ((m_numPendingReadBacks == 0) || !m_compiler->ehBlockHasExnFlowDsc(m_currentBlock))
     {
@@ -2305,9 +2416,9 @@ void ReplaceVisitor::ReplaceLocal(GenTree** use, GenTree* user)
 
         assert(effectiveUser->OperIs(GT_CALL, GT_RETURN));
         unsigned size = lcl->GetLayout(m_compiler)->GetSize();
-        WriteBackBefore(use, lclNum, lcl->GetLclOffs(), size);
+        WriteBackBeforeUse(use, lclNum, lcl->GetLclOffs(), size);
 
-        if ((m_aggregates[lclNum] != nullptr) && IsPromotedStructLocalDying(lcl))
+        if (IsPromotedStructLocalDying(lcl))
         {
             lcl->gtFlags |= GTF_VAR_DEATH;
             CheckForwardSubForLastUse(lclNum);
@@ -2361,8 +2472,8 @@ void ReplaceVisitor::ReplaceLocal(GenTree** use, GenTree* user)
     else if (rep.NeedsReadBack)
     {
         // This is an uncommon case -- typically all readbacks are handled in
-        // ReplaceVisitor::StartStatement. This case is still needed to handle
-        // the situation where the readback was marked previously in this tree
+        // InsertPreStatementReadBacks. This case is still needed to handle the
+        // situation where the readback was marked previously in this tree
         // (e.g. due to a COMMA).
 
         JITDUMP("  ..needs a read back\n");
@@ -2426,7 +2537,34 @@ void ReplaceVisitor::CheckForwardSubForLastUse(unsigned lclNum)
 }
 
 //------------------------------------------------------------------------
-// WriteBackBefore:
+// WriteBackBeforeCurrentStatement:
+//   Insert statements before the current that write back all overlapping
+//   replacements.
+//
+// Parameters:
+//   lcl  - The struct local
+//   offs - The starting offset into the struct local of the overlapping range to write back to
+//   size - The size of the overlapping range
+//
+void ReplaceVisitor::WriteBackBeforeCurrentStatement(unsigned lcl, unsigned offs, unsigned size)
+{
+    VisitOverlappingReplacements(lcl, offs, size, [this, lcl](Replacement& rep) {
+        if (!rep.NeedsWriteBack)
+        {
+            return;
+        }
+
+        GenTree*   readBack = Promotion::CreateWriteBack(m_compiler, lcl, rep);
+        Statement* stmt     = m_compiler->fgNewStmtFromTree(readBack);
+        JITDUMP("Writing back %s before " FMT_STMT "\n", rep.Description, stmt->GetID());
+        DISPSTMT(stmt);
+        m_compiler->fgInsertStmtBefore(m_currentBlock, m_currentStmt, stmt);
+        ClearNeedsWriteBack(rep);
+    });
+}
+
+//------------------------------------------------------------------------
+// WriteBackBeforeUse:
 //   Update the use with IR that writes back all necessary overlapping
 //   replacements into a struct local.
 //
@@ -2436,42 +2574,22 @@ void ReplaceVisitor::CheckForwardSubForLastUse(unsigned lclNum)
 //   offs - The starting offset into the struct local of the overlapping range to write back to
 //   size - The size of the overlapping range
 //
-void ReplaceVisitor::WriteBackBefore(GenTree** use, unsigned lcl, unsigned offs, unsigned size)
+void ReplaceVisitor::WriteBackBeforeUse(GenTree** use, unsigned lcl, unsigned offs, unsigned size)
 {
-    if (m_aggregates[lcl] == nullptr)
-    {
-        return;
-    }
-
-    jitstd::vector<Replacement>& replacements = m_aggregates[lcl]->Replacements;
-    size_t                       index = Promotion::BinarySearch<Replacement, &Replacement::Offset>(replacements, offs);
-
-    if ((ssize_t)index < 0)
-    {
-        index = ~index;
-        if ((index > 0) && replacements[index - 1].Overlaps(offs, size))
+    VisitOverlappingReplacements(lcl, offs, size, [this, &use, lcl](Replacement& rep) {
+        if (!rep.NeedsWriteBack)
         {
-            index--;
-        }
-    }
-
-    unsigned end = offs + size;
-    while ((index < replacements.size()) && (replacements[index].Offset < end))
-    {
-        Replacement& rep = replacements[index];
-        if (rep.NeedsWriteBack)
-        {
-            GenTreeOp* comma = m_compiler->gtNewOperNode(GT_COMMA, (*use)->TypeGet(),
-                                                         Promotion::CreateWriteBack(m_compiler, lcl, rep), *use);
-            *use = comma;
-            use  = &comma->gtOp2;
-
-            ClearNeedsWriteBack(rep);
-            m_madeChanges = true;
+            return;
         }
 
-        index++;
-    }
+        GenTreeOp* comma = m_compiler->gtNewOperNode(GT_COMMA, (*use)->TypeGet(),
+                                                     Promotion::CreateWriteBack(m_compiler, lcl, rep), *use);
+        *use = comma;
+        use  = &comma->gtOp2;
+
+        ClearNeedsWriteBack(rep);
+        m_madeChanges = true;
+    });
 }
 
 //------------------------------------------------------------------------
@@ -2621,9 +2739,10 @@ PhaseStatus Promotion::Run()
 
         for (Statement* stmt : bb->Statements())
         {
+            replacer.StartStatement(stmt);
+
             DISPSTMT(stmt);
 
-            replacer.StartStatement(stmt);
             replacer.WalkTree(stmt->GetRootNodePointer(), nullptr);
 
             if (replacer.MadeChanges())
