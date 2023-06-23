@@ -2406,6 +2406,23 @@ namespace Internal.JitInterface
                 string ns = type.Namespace;
                 if (ns == "System.Runtime.Intrinsics" || ns == "System.Numerics")
                 {
+#if READYTORUN
+                    if (NeedsTypeLayoutCheck(type))
+                    {
+                        // We cannot allow the JIT to call getClassSize for
+                        // this type as it will insert a fixup that we may not
+                        // be able to encode. We could skip the field, but that
+                        // will make prejit promotion different from the
+                        // runtime promotion. We could also change the JIT to
+                        // avoid calling getClassSize and just use the size
+                        // from the returned node, but for that we would need
+                        // to be sure that the type layout check fixup added in
+                        // getTypeLayout is sufficient to guarantee the size of
+                        // all these intrinsically handled SIMD types.
+                        return GetTypeLayoutResult.Failure;
+                    }
+#endif
+
                     parNode->simdTypeHnd = ObjectToHandle(type);
                     if (parentIndex != uint.MaxValue)
                     {

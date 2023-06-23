@@ -213,7 +213,6 @@ struct Agnostic_CORINFO_TYPE_LAYOUT_NODE
     DWORD size;
     DWORD numFields;
     BYTE type;
-    bool isSIMDType;
     bool hasSignificantPadding;
 };
 
