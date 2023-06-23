@@ -1,4 +1,4 @@
-<Project DefaultTargets="BundleTestAppleApp" Sdk="Microsoft.NET.Sdk">
+<Project DefaultTargets="BundleTestAppleApp">
   <Import Project="Directory.Build.props" />
   <Import Project="$(MSBuildThisFileDirectory)$(MSBuildThisFileName).props" />
   <PropertyGroup>
