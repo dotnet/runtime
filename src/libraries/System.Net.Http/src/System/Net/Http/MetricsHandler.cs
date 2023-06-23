@@ -23,17 +23,17 @@ internal sealed class MetricsHandler : HttpMessageHandlerStage, IHttpMetricsLogg
     {
         _innerHandler = innerHandler;
 
-        if (meter is SharedMeter sharedMeter)
-        {
-            Debug.Assert(ReferenceEquals(meter, DefaultMeter));
-            _currentRequests = sharedMeter._currentRequests;
-            _failedRequests = sharedMeter._failedRequests;
-            _requestsDuration = sharedMeter._requestsDuration;
-        }
-        else
-        {
-            CreateInstruments(meter, out _currentRequests, out _failedRequests, out _requestsDuration);
-        }
+        // Meter has a cache for
+        _currentRequests = meter.CreateUpDownCounter<long>(
+            "http-client-current-requests",
+            description: "Number of outbound HTTP requests that are currently active on the client.");
+        _failedRequests = meter.CreateCounter<long>(
+            "http-client-failed-requests",
+            description: "Number of outbound HTTP requests that have failed.");
+        _requestsDuration = meter.CreateHistogram<double>(
+            "http-client-request-duration",
+            unit: "s",
+            description: "The duration of outbound HTTP requests.");
     }
 
     public static Meter DefaultMeter { get; } = new SharedMeter();
@@ -193,20 +193,6 @@ internal sealed class MetricsHandler : HttpMessageHandlerStage, IHttpMetricsLogg
         _failedRequests.Add(1, tags);
     }
 
-    private static void CreateInstruments(Meter meter, out UpDownCounter<long> currentRequests, out Counter<long> failedRequests, out Histogram<double> requestsDuration)
-    {
-        currentRequests = meter.CreateUpDownCounter<long>(
-            "http-client-current-requests",
-            description: "Number of outbound HTTP requests that are currently active on the client.");
-        failedRequests = meter.CreateCounter<long>(
-            "http-client-failed-requests",
-            description: "Number of outbound HTTP requests that have failed.");
-        requestsDuration = meter.CreateHistogram<double>(
-            "http-client-request-duration",
-            unit: "s",
-            description: "The duration of outbound HTTP requests.");
-    }
-
     private static class StatusCodeCache
     {
         private static readonly object OK = (int)HttpStatusCode.OK;
@@ -234,14 +220,9 @@ internal sealed class MetricsHandler : HttpMessageHandlerStage, IHttpMetricsLogg
 
     private sealed class SharedMeter : Meter
     {
-        internal UpDownCounter<long> _currentRequests;
-        internal Counter<long> _failedRequests;
-        internal Histogram<double> _requestsDuration;
-
         public SharedMeter()
             : base("System.Net.Http")
         {
-            CreateInstruments(this, out _currentRequests, out _failedRequests, out _requestsDuration);
         }
 
         protected override void Dispose(bool disposing)
