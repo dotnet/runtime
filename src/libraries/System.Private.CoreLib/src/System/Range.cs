@@ -139,11 +139,7 @@ namespace System
 
         private static void ThrowArgumentOutOfRangeException()
         {
-#if SYSTEM_PRIVATE_CORELIB
-            throw new ArgumentOutOfRangeException(ExceptionArgument.length);
-#else
             throw new ArgumentOutOfRangeException("length");
-#endif
         }
     }
 }
