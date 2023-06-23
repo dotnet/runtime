@@ -428,7 +428,6 @@
     <Compile Include="System\Reflection\Runtime\MethodInfos\CustomMethodMapper.String.cs" />
     <Compile Include="System\Reflection\Runtime\MethodInfos\InvokerOptions.cs" />
     <Compile Include="System\Reflection\Runtime\MethodInfos\OpenMethodInvoker.cs" />
-    <Compile Include="System\Reflection\Runtime\MethodInfos\RuntimeClsIdNullaryConstructorInfo.cs" Condition="'$(FeatureComInterop)' == 'true'" />
     <Compile Include="System\Reflection\Runtime\MethodInfos\RuntimeConstructedGenericMethodInfo.cs" />
     <Compile Include="System\Reflection\Runtime\MethodInfos\RuntimeConstructorInfo.cs" />
     <Compile Include="System\Reflection\Runtime\MethodInfos\RuntimeDummyMethodInfo.cs" />
@@ -458,8 +457,6 @@
     <Compile Include="System\Reflection\Runtime\TypeInfos\NativeFormat\NativeFormatRuntimeTypeInfo.CoreGetDeclared.cs" />
     <Compile Include="System\Reflection\Runtime\TypeInfos\RuntimeArrayTypeInfo.cs" />
     <Compile Include="System\Reflection\Runtime\TypeInfos\RuntimeByRefTypeInfo.cs" />
-    <Compile Include="System\Reflection\Runtime\TypeInfos\RuntimeClsIdTypeInfo.cs" Condition="'$(FeatureComInterop)' == 'true'" />
-    <Compile Include="System\Reflection\Runtime\TypeInfos\RuntimeClsIdTypeInfo.UnificationKey.cs" Condition="'$(FeatureComInterop)' == 'true'" />
     <Compile Include="System\Reflection\Runtime\TypeInfos\RuntimeConstructedGenericTypeInfo.cs" />
     <Compile Include="System\Reflection\Runtime\TypeInfos\RuntimeConstructedGenericTypeInfo.UnificationKey.cs" />
     <Compile Include="System\Reflection\Runtime\TypeInfos\RuntimeGenericParameterTypeInfo.cs" />
