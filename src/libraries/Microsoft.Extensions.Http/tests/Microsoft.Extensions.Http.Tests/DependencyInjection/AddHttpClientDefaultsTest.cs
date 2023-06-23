@@ -55,7 +55,7 @@ namespace Microsoft.Extensions.DependencyInjection
         }
 
         [ConditionalFact(typeof(PlatformDetection), nameof(PlatformDetection.IsThreadingSupported))]
-        public void AddTypedClient_MultipleTimes_Error()
+        public void AddTypedClient_Error()
         {
             // Arrange
             var serviceCollection = new ServiceCollection();
