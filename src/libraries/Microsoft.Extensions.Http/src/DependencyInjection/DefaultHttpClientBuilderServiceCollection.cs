@@ -4,6 +4,7 @@
 using System.Collections;
 using System.Collections.Generic;
 using System.Linq;
+using Microsoft.Extensions.Http;
 using Microsoft.Extensions.Options;
 
 namespace Microsoft.Extensions.DependencyInjection
@@ -23,39 +24,36 @@ namespace Microsoft.Extensions.DependencyInjection
 
         public void Add(ServiceDescriptor item)
         {
+            if (item.ServiceType != typeof(IConfigureOptions<HttpClientFactoryOptions>))
+            {
+                _services.Add(item);
+            }
+
             if (_isDefault)
             {
-                // Insert IConfigureOptions<T> services into the collection before other descriptors.
+                // Insert IConfigureOptions<HttpClientFactoryOptions> services into the collection before named config descriptors.
                 // This ensures they run and apply configuration first. Configuration for named clients run afterwards.
-                if (IsConfigurationOptions(item))
+                if (_tracker.InsertDefaultsAfterDescriptor != null &&
+                    _services.IndexOf(_tracker.InsertDefaultsAfterDescriptor) is var index && index != -1)
                 {
-                    if (_tracker.InsertDefaultsAfterDescriptor != null &&
-                        _services.IndexOf(_tracker.InsertDefaultsAfterDescriptor) is var index && index != -1)
-                    {
-                        index++;
-                        _services.Insert(index, item);
-                    }
-                    else
-                    {
-                        _services.Add(item);
-                    }
-
-                    _tracker.InsertDefaultsAfterDescriptor = item;
-                    return;
+                    index++;
+                    _services.Insert(index, item);
                 }
+                else
+                {
+                    _services.Add(item);
+                }
+
+                _tracker.InsertDefaultsAfterDescriptor = item;
             }
             else
             {
-                if (_tracker.InsertDefaultsAfterDescriptor == null && IsConfigurationOptions(item))
-                {
-                    _tracker.InsertDefaultsAfterDescriptor = _services.Last();
-                }
+                // Track the location of where the first named config descriptor was added.
+                _tracker.InsertDefaultsAfterDescriptor ??= _services.Last();
 
                 _services.Add(item);
             }
         }
-
-        private static bool IsConfigurationOptions(ServiceDescriptor item) => item.ServiceType.IsGenericType && item.ServiceType.GetGenericTypeDefinition() == typeof(IConfigureOptions<>);
 
         public ServiceDescriptor this[int index]
         {
