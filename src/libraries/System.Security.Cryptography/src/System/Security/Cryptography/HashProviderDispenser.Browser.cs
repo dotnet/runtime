@@ -5,6 +5,22 @@ namespace System.Security.Cryptography
 {
     internal static partial class HashProviderDispenser
     {
+        internal static bool HashSupported(string hashAlgorithmId)
+        {
+            switch (hashAlgorithmId)
+            {
+                case HashAlgorithmNames.SHA1:
+                case HashAlgorithmNames.SHA256:
+                case HashAlgorithmNames.SHA384:
+                case HashAlgorithmNames.SHA512:
+                    return true;
+                default:
+                    return false;
+            }
+        }
+
+        internal static bool MacSupported(string hashAlgorithmId) => HashSupported(hashAlgorithmId);
+
         public static HashProvider CreateHashProvider(string hashAlgorithmId)
         {
             switch (hashAlgorithmId)

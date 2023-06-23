@@ -430,13 +430,6 @@ inline void emitBackToBackJump(LPBYTE pBufferRX, LPBYTE pBufferRW, LPVOID target
     emitJump(pBufferRX, pBufferRW, target);
 }
 
-inline BOOL isBackToBackJump(PCODE pCode)
-{
-    WRAPPER_NO_CONTRACT;
-    SUPPORTS_DAC;
-    return isJumpRel32(pCode) || isJumpRel64(pCode);
-}
-
 inline PCODE decodeBackToBackJump(PCODE pCode)
 {
     WRAPPER_NO_CONTRACT;

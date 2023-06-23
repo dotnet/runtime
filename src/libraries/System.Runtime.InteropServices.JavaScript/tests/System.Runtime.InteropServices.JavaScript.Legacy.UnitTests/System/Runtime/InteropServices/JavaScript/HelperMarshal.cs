@@ -7,7 +7,7 @@ namespace System.Runtime.InteropServices.JavaScript.Tests
 {
     public static class HelperMarshal
     {
-        internal const string INTEROP_CLASS = "[System.Runtime.InteropServices.JavaScript.Legacy.UnitTests]System.Runtime.InteropServices.JavaScript.Tests.HelperMarshal:";
+        internal const string INTEROP_CLASS = "[System.Runtime.InteropServices.JavaScript.Legacy.Tests]System.Runtime.InteropServices.JavaScript.Tests.HelperMarshal:";
         internal static int _i32Value;
         private static void InvokeI32(int a, int b)
         {

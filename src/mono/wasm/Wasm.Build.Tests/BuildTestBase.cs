@@ -19,6 +19,8 @@ using Xunit;
 using Xunit.Abstractions;
 using Xunit.Sdk;
 using Microsoft.Playwright;
+using System.Runtime.Serialization.Json;
+using Microsoft.NET.Sdk.WebAssembly;
 
 #nullable enable
 
@@ -83,6 +85,8 @@ namespace Wasm.Build.Tests
                 Console.WriteLine($"=============== Running with {(s_buildEnv.IsWorkload ? "Workloads" : "No workloads")} ===============");
                 if (UseWebcil)
                     Console.WriteLine($"=============== Using webcil-in-wasm ===============");
+                else
+                    Console.WriteLine($"=============== Webcil disabled ===============");
                 Console.WriteLine($"==============================================================================================");
                 Console.WriteLine("");
             }
@@ -343,9 +347,9 @@ namespace Wasm.Build.Tests
                 extraProperties += $"\n<EmccVerbose>{s_isWindows}</EmccVerbose>\n";
             }
 
-            if (UseWebcil)
+            if (!UseWebcil)
             {
-                extraProperties += "<WasmEnableWebcil>true</WasmEnableWebcil>\n";
+                extraProperties += "<WasmEnableWebcil>false</WasmEnableWebcil>\n";
             }
 
             extraItems += "<WasmExtraFilesToDeploy Include='index.html' />";
@@ -508,8 +512,8 @@ namespace Wasm.Build.Tests
             extraProperties += "<TreatWarningsAsErrors>true</TreatWarningsAsErrors>";
             if (runAnalyzers)
                 extraProperties += "<RunAnalyzers>true</RunAnalyzers>";
-            if (UseWebcil)
-                extraProperties += "<WasmEnableWebcil>true</WasmEnableWebcil>";
+            if (!UseWebcil)
+                extraProperties += "<WasmEnableWebcil>false</WasmEnableWebcil>";
 
             // TODO: Can be removed after updated templates propagate in.
             string extraItems = string.Empty;
@@ -533,8 +537,8 @@ namespace Wasm.Build.Tests
                     .EnsureSuccessful();
 
             string projectFile = Path.Combine(_projectDir!, $"{id}.csproj");
-            if (UseWebcil)
-                AddItemsPropertiesToProject(projectFile, "<WasmEnableWebcil>true</WasmEnableWebcil>");
+            if (!UseWebcil)
+                AddItemsPropertiesToProject(projectFile, "<WasmEnableWebcil>false</WasmEnableWebcil>");
             return projectFile;
         }
 
@@ -549,7 +553,8 @@ namespace Wasm.Build.Tests
             AssertBlazorBundle(options.Config,
                                isPublish: false,
                                dotnetWasmFromRuntimePack: options.ExpectedFileType == NativeFilesType.FromRuntimePack,
-                               targetFramework: options.TargetFramework);
+                               targetFramework: options.TargetFramework,
+                               expectFingerprintOnDotnetJs: options.ExpectFingerprintOnDotnetJs);
 
             return res;
         }
@@ -561,7 +566,8 @@ namespace Wasm.Build.Tests
             AssertBlazorBundle(options.Config,
                                isPublish: true,
                                dotnetWasmFromRuntimePack: options.ExpectedFileType == NativeFilesType.FromRuntimePack,
-                               targetFramework: options.TargetFramework);
+                               targetFramework: options.TargetFramework,
+                               expectFingerprintOnDotnetJs: options.ExpectFingerprintOnDotnetJs);
 
             if (options.ExpectedFileType == NativeFilesType.AOT)
             {
@@ -577,7 +583,7 @@ namespace Wasm.Build.Tests
             string objBuildDir = Path.Combine(_projectDir!, "obj", options.Config, options.TargetFramework, "wasm", "for-build");
             // Check that we linked only for publish
             if (options.ExpectRelinkDirWhenPublishing)
-                Assert.True(Directory.Exists(objBuildDir), $"Could not find expected {objBuildDir}, which gets created when relinking during Build. This is liokely a test authoring error");
+                Assert.True(Directory.Exists(objBuildDir), $"Could not find expected {objBuildDir}, which gets created when relinking during Build. This is likely a test authoring error");
             else
                 Assert.False(Directory.Exists(objBuildDir), $"Found unexpected {objBuildDir}, which gets created when relinking during Build");
 
@@ -595,7 +601,7 @@ namespace Wasm.Build.Tests
                 label, // same as the command name
                 $"-bl:{logPath}",
                 $"-p:Configuration={config}",
-                UseWebcil ? "-p:WasmEnableWebcil=true" : string.Empty,
+                !UseWebcil ? "-p:WasmEnableWebcil=false" : string.Empty,
                 "-p:BlazorEnableCompression=false",
                 "-nr:false",
                 setWasmDevel ? "-p:_WasmDevel=true" : string.Empty
@@ -712,12 +718,16 @@ namespace Wasm.Build.Tests
                 bool expectCJK = false;
                 bool expectNOCJK = false;
                 bool expectFULL = false;
+                bool expectHYBRID = false;
                 switch (globalizationMode)
                 {
                     case GlobalizationMode.Invariant:
                         break;
                     case GlobalizationMode.FullIcu:
                         expectFULL = true;
+                        break;
+                    case GlobalizationMode.Hybrid:
+                        expectHYBRID = true;
                         break;
                     case GlobalizationMode.PredefinedIcu:
                         if (string.IsNullOrEmpty(predefinedIcudt))
@@ -751,6 +761,7 @@ namespace Wasm.Build.Tests
                 AssertFilesExist(bundleDir, new[] { "icudt_EFIGS.dat" }, expectToExist: expectEFIGS);
                 AssertFilesExist(bundleDir, new[] { "icudt_CJK.dat" }, expectToExist: expectCJK);
                 AssertFilesExist(bundleDir, new[] { "icudt_no_CJK.dat" }, expectToExist: expectNOCJK);
+                AssertFilesExist(bundleDir, new[] { "icudt_hybrid.dat" }, expectToExist: expectHYBRID);
             }
         }
 
@@ -820,7 +831,7 @@ namespace Wasm.Build.Tests
             return result;
         }
 
-        protected void AssertBlazorBundle(string config, bool isPublish, bool dotnetWasmFromRuntimePack, string targetFramework = DefaultTargetFrameworkForBlazor, string? binFrameworkDir = null)
+        protected void AssertBlazorBundle(string config, bool isPublish, bool dotnetWasmFromRuntimePack, string targetFramework = DefaultTargetFrameworkForBlazor, string? binFrameworkDir = null, bool expectFingerprintOnDotnetJs = false)
         {
             binFrameworkDir ??= FindBlazorBinFrameworkDir(config, isPublish, targetFramework);
 
@@ -837,6 +848,50 @@ namespace Wasm.Build.Tests
                         dotnetJsPath!,
                         "Expected dotnet.native.js to be same as the runtime pack",
                         same: dotnetWasmFromRuntimePack);
+
+            string bootConfigPath = Path.Combine(binFrameworkDir, "blazor.boot.json");
+            Assert.True(File.Exists(bootConfigPath), $"Expected to find '{bootConfigPath}'");
+
+            using (var bootConfigContent = File.OpenRead(bootConfigPath))
+            {
+                var bootConfig = ParseBootData(bootConfigContent);
+                var dotnetJsEntries = bootConfig.resources.runtime.Keys.Where(k => k.StartsWith("dotnet.") && k.EndsWith(".js")).ToArray();
+
+                void AssertFileExists(string fileName)
+                {
+                    string absolutePath = Path.Combine(binFrameworkDir, fileName);
+                    Assert.True(File.Exists(absolutePath), $"Expected to find '{absolutePath}'");
+                }
+
+                string versionHashRegex = @"\.(?<version>.+)\.(?<hash>[a-zA-Z0-9]+)\.";
+
+                Assert.Collection(
+                    dotnetJsEntries.OrderBy(f => f),
+                    item =>
+                    {
+                        if (expectFingerprintOnDotnetJs)
+                            Assert.Matches($"dotnet{versionHashRegex}js", item);
+                        else
+                            Assert.Equal("dotnet.js", item);
+
+                        AssertFileExists(item);
+                    },
+                    item => { Assert.Matches($"dotnet\\.native{versionHashRegex}js", item); AssertFileExists(item); },
+                    item => { Assert.Matches($"dotnet\\.runtime{versionHashRegex}js", item); AssertFileExists(item); }
+                );
+            }
+        }
+
+        private static BootJsonData ParseBootData(Stream stream)
+        {
+            stream.Position = 0;
+            var serializer = new DataContractJsonSerializer(
+                typeof(BootJsonData),
+                new DataContractJsonSerializerSettings { UseSimpleDictionaryFormat = true });
+
+            var config = (BootJsonData?)serializer.ReadObject(stream);
+            Assert.NotNull(config);
+            return config;
         }
 
         protected void AssertBlazorBootJson(string config, bool isPublish, bool isNet7AndBelow, string targetFramework = DefaultTargetFrameworkForBlazor, string? binFrameworkDir = null)
@@ -1251,14 +1306,16 @@ namespace Wasm.Build.Tests
         NativeFilesType ExpectedFileType,
         string TargetFramework = BuildTestBase.DefaultTargetFrameworkForBlazor,
         bool WarnAsError = true,
-        bool ExpectRelinkDirWhenPublishing = false
+        bool ExpectRelinkDirWhenPublishing = false,
+        bool ExpectFingerprintOnDotnetJs = false
     );
 
     public enum GlobalizationMode
     {
         Invariant,       // no icu
         FullIcu,         // full icu data: icudt.dat is loaded
-        PredefinedIcu   // user set WasmIcuDataFileName value and we are loading that file
+        PredefinedIcu,   // user set WasmIcuDataFileName value and we are loading that file
+        Hybrid           // reduced icu, missing data is provided by platform-native functions (web api for wasm)
     };
 
     public enum NativeFilesType { FromRuntimePack, Relinked, AOT };

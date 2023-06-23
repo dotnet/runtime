@@ -93,8 +93,8 @@ namespace Mono.Linker.Tests.TestCasesRunner
 			bool HasActiveSkipKeptItemsValidationAttribute(ICustomAttributeProvider provider)
 			{
 				if (TryGetCustomAttribute(provider, nameof(SkipKeptItemsValidationAttribute), out var attribute)) {
-					object? keptBy = attribute.GetPropertyValue (nameof (SkipKeptItemsValidationAttribute.By));
-					return keptBy is null ? true : ((Tool) keptBy).HasFlag (Tool.NativeAot);
+					object? by = attribute.GetPropertyValue (nameof (SkipKeptItemsValidationAttribute.By));
+					return by is null ? true : ((Tool) by).HasFlag (Tool.NativeAot);
 				}
 
 				return false;

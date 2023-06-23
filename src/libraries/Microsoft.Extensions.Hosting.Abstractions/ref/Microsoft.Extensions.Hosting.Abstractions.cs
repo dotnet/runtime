@@ -97,6 +97,15 @@ namespace Microsoft.Extensions.Hosting
         System.Threading.Tasks.Task StartAsync(System.Threading.CancellationToken cancellationToken = default(System.Threading.CancellationToken));
         System.Threading.Tasks.Task StopAsync(System.Threading.CancellationToken cancellationToken = default(System.Threading.CancellationToken));
     }
+    public partial interface IHostApplicationBuilder
+    {
+        Microsoft.Extensions.Configuration.IConfigurationManager Configuration { get; }
+        Microsoft.Extensions.Hosting.IHostEnvironment Environment { get; }
+        Microsoft.Extensions.Logging.ILoggingBuilder Logging { get; }
+        System.Collections.Generic.IDictionary<object, object> Properties { get; }
+        Microsoft.Extensions.DependencyInjection.IServiceCollection Services { get; }
+        void ConfigureContainer<TContainerBuilder>(Microsoft.Extensions.DependencyInjection.IServiceProviderFactory<TContainerBuilder> factory, System.Action<TContainerBuilder>? configure = null) where TContainerBuilder : notnull;
+    }
     public partial interface IHostApplicationLifetime
     {
         System.Threading.CancellationToken ApplicationStarted { get; }

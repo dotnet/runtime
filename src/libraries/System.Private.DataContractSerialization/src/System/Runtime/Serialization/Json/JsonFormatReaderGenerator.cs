@@ -419,7 +419,7 @@ namespace System.Runtime.Serialization.Json
                 _ilg.Load(localArray);
             }
 
-            private int SetRequiredElements(ClassDataContract contract, byte[] requiredElements)
+            private static int SetRequiredElements(ClassDataContract contract, byte[] requiredElements)
             {
                 int memberCount = (contract.BaseClassContract == null) ? 0 :
                     SetRequiredElements(contract.BaseClassContract, requiredElements);

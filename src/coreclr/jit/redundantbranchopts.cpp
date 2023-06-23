@@ -459,11 +459,6 @@ bool Compiler::optRedundantBranch(BasicBlock* const block)
     unsigned       matchCount  = 0;
     const unsigned matchLimit  = 4;
 
-    if (domBlock == nullptr)
-    {
-        return false;
-    }
-
     // Unpack the tree's VN
     //
     ValueNum treeNormVN;
@@ -482,6 +477,11 @@ bool Compiler::optRedundantBranch(BasicBlock* const block)
     }
     else
     {
+        if (domBlock == nullptr)
+        {
+            return false;
+        }
+
         JITDUMP("Relop [%06u] " FMT_BB " value unknown, trying inference\n", dspTreeID(tree), block->bbNum);
     }
 
@@ -1638,21 +1638,18 @@ bool Compiler::optJumpThreadCore(JumpThreadInfo& jti)
 // Here's a walkthrough of how this operates. Given a block like
 //
 // STMT00388 (IL 0x30D...  ???)
-//  *  ASG       ref    <l:$9d3, c:$9d4>
-//  +--*  LCL_VAR   ref    V121 tmp97       d:1 <l:$2c8, c:$99f>
+//  *  STORE_LCL_VAR ref    V121 tmp97       d:1
 //   \--*  IND       ref    <l:$9d3, c:$9d4>
 //       \--*  LCL_VAR   byref  V116 tmp92       u:1 (last use) Zero Fseq[m_task] $18c
 //
 // STMT00390 (IL 0x30D...  ???)
-//  *  ASG       bool   <l:$8ff, c:$a02>
-//  +--*  LCL_VAR   int    V123 tmp99       d:1 <l:$8ff, c:$a02>
+//  *  STORE_LCL_VAR int    V123 tmp99       d:1
 //  \--*  NE        int    <l:$8ff, c:$a02>
 //     +--*  LCL_VAR   ref    V121 tmp97       u:1 <l:$2c8, c:$99f>
 //     \--*  CNS_INT   ref    null $VN.Null
 //
 // STMT00391
-//  *  ASG       ref    $133
-//  +--*  LCL_VAR   ref    V124 tmp100      d:1 $133
+//  *  STORE_LCL_VAR ref    V124 tmp100      d:1
 //  \--*  IND       ref    $133
 //     \--*  CNS_INT(h) long   0x31BD3020 [ICON_STR_HDL] $34f
 //
@@ -1662,41 +1659,39 @@ bool Compiler::optJumpThreadCore(JumpThreadInfo& jti)
 //     +--*  LCL_VAR   int    V123 tmp99       u:1 (last use) <l:$8ff, c:$a02>
 //     \--*  CNS_INT   int    0 $40
 //
-// We will first consider STMT00391. It is a local assign but the RHS value number
+// We will first consider STMT00391. It is a local store but the value's VN
 // isn't related to $8ff. So we continue searching and add V124 to the array
 // of defined locals.
 //
-// Next we consider STMT00390. It is a local assign and the RHS value number is
-// the same, $8ff. So this compare is a fwd-sub candidate. We check if any local
-// on the RHS is in the defined locals array. The answer is no. So the RHS tree
-// can be safely forwarded in place of the compare in STMT00392. We check if V123 is
-// live out of the block. The answer is no. So This RHS tree becomes the candidate tree.
-// We add V123 to the array of defined locals and keep searching.
+// Next we consider STMT00390. It is a local store and the value's VN is the
+// same, $8ff. So this compare is a fwd-sub candidate. We check if any local
+// in the value tree in the defined locals array. The answer is no. So the
+// value tree can be safely forwarded in place of the compare in STMT00392.
+// We check if V123 is live out of the block. The answer is no. So this value
+// tree becomes the candidate tree. We add V123 to the array of defined locals
+// and keep searching.
 //
-// Next we consider STMT00388, It is a local assign but the RHS value number
-// isn't related to $8ff. So we continue searching and add V121 to the array
-// of defined locals.
+// Next we consider STMT00388, It is a local store but the value's VN isn't
+// related to $8ff. So we continue searching and add V121 to the array of
+// defined locals.
 //
 // We reach the end of the block and stop searching.
 //
 // Since we found a viable candidate, we clone it and substitute into the jump:
 //
 // STMT00388 (IL 0x30D...  ???)
-//  *  ASG       ref    <l:$9d3, c:$9d4>
-//  +--*  LCL_VAR   ref    V121 tmp97       d:1 <l:$2c8, c:$99f>
+//  *  STORE_LCL_VAR ref    V121 tmp97       d:1
 //   \--*  IND       ref    <l:$9d3, c:$9d4>
 //       \--*  LCL_VAR   byref  V116 tmp92       u:1 (last use) Zero Fseq[m_task] $18c
 //
 // STMT00390 (IL 0x30D...  ???)
-//  *  ASG       bool   <l:$8ff, c:$a02>
-//  +--*  LCL_VAR   int    V123 tmp99       d:1 <l:$8ff, c:$a02>
+//  *  STORE_LCL_VAR int    V123 tmp99       d:1
 //  \--*  NE        int    <l:$8ff, c:$a02>
 //     +--*  LCL_VAR   ref    V121 tmp97       u:1 <l:$2c8, c:$99f>
 //     \--*  CNS_INT   ref    null $VN.Null
 //
 // STMT00391
-//  *  ASG       ref    $133
-//  +--*  LCL_VAR   ref    V124 tmp100      d:1 $133
+//  *  STORE_LCL_VAR ref    V124 tmp100      d:1
 //  \--*  IND       ref    $133
 //     \--*  CNS_INT(h) long   0x31BD3020 [ICON_STR_HDL] $34f
 //
@@ -1811,7 +1806,7 @@ bool Compiler::optRedundantRelop(BasicBlock* const block)
             break;
         }
 
-        // We are looking for ASG(lcl, ...)
+        // We are looking for STORE_LCL_VAR(...)
         //
         GenTree* const prevTree = prevStmt->GetRootNode();
 
@@ -2102,21 +2097,26 @@ bool Compiler::optReachable(BasicBlock* const fromBlock, BasicBlock* const toBlo
             continue;
         }
 
-        for (BasicBlock* succ : nextBlock->GetAllSuccs(this))
-        {
+        BasicBlockVisit result = nextBlock->VisitAllSuccs(this, [this, toBlock, &stack](BasicBlock* succ) {
             if (succ == toBlock)
             {
-                return true;
+                return BasicBlockVisit::Abort;
             }
 
             if (BitVecOps::IsMember(optReachableBitVecTraits, optReachableBitVec, succ->bbNum))
             {
-                continue;
+                return BasicBlockVisit::Continue;
             }
 
             BitVecOps::AddElemD(optReachableBitVecTraits, optReachableBitVec, succ->bbNum);
 
             stack.Push(succ);
+            return BasicBlockVisit::Continue;
+        });
+
+        if (result == BasicBlockVisit::Abort)
+        {
+            return true;
         }
     }
 

@@ -5,6 +5,7 @@
 
 using System;
 using System.Runtime.CompilerServices;
+using Xunit;
 public class BringUpTest_FPRem
 {
     const int Pass = 100;
@@ -13,7 +14,8 @@ public class BringUpTest_FPRem
     [MethodImplAttribute(MethodImplOptions.NoInlining)]
     public static float FPRem(float x, float y) { return x%y; }
 
-    public static int Main()
+    [Fact]
+    public static int TestEntryPoint()
     {
         float y = FPRem(81f, 16f);
         Console.WriteLine(y);

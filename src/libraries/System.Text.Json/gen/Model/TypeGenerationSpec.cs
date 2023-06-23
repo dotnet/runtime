@@ -49,6 +49,8 @@ namespace System.Text.Json.SourceGeneration
 
         public required bool IsPolymorphic { get; init; }
 
+        public required bool IsValueTuple { get; init; }
+
         public required JsonNumberHandling? NumberHandling { get; init; }
         public required JsonUnmappedMemberHandling? UnmappedMemberHandling { get; init; }
         public required JsonObjectCreationHandling? PreferredPropertyObjectCreationHandling { get; init; }
@@ -75,16 +77,12 @@ namespace System.Text.Json.SourceGeneration
         /// Supports deserialization of extension data dictionaries typed as <c>I[ReadOnly]Dictionary&lt;string, object/JsonElement&gt;</c>.
         /// Specifies a concrete type to instantiate, which would be <c>Dictionary&lt;string, object/JsonElement&gt;</c>.
         /// </summary>
-        public required string? RuntimeTypeRef { get; init; }
+        public required TypeRef? RuntimeTypeRef { get; init; }
 
         public required TypeRef? ExtensionDataPropertyType { get; init; }
 
-        public required string? ConverterInstantiationLogic { get; init; }
+        public required TypeRef? ConverterType { get; init; }
 
-        // Only generate certain helper methods if necessary.
-        public required bool HasPropertyFactoryConverters { get; init; }
-        public required bool HasTypeFactoryConverter { get; init; }
-
-        public required string? ImmutableCollectionBuilderName { get; init; }
+        public required string? ImmutableCollectionFactoryMethod { get; init; }
     }
 }

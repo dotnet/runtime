@@ -15,6 +15,8 @@ import {
     getWasmFunctionTable, recordFailure, getOptions,
     JiterpreterOptions, getMemberOffset, JiterpMember
 } from "./jiterpreter-support";
+import { mono_log_error, mono_log_info } from "./logging";
+import { utf8ToString } from "./strings";
 
 // Controls miscellaneous diagnostic output.
 const trace = 0;
@@ -165,7 +167,7 @@ export function mono_interp_jit_wasm_entry_trampoline(
 
     const info = new TrampolineInfo(
         imethod, method, argumentCount, pParamTypes,
-        unbox, hasThisReference, hasReturnValue, Module.UTF8ToString(<any>name),
+        unbox, hasThisReference, hasReturnValue, utf8ToString(<any>name),
         defaultImplementation
     );
     if (!fnTable)
@@ -344,7 +346,7 @@ function flush_wasm_entry_trampoline_jit_queue() {
         compileStarted = _now();
         const buffer = builder.getArrayView();
         if (trace > 0)
-            console.log(`jit queue generated ${buffer.length} byte(s) of wasm`);
+            mono_log_info(`jit queue generated ${buffer.length} byte(s) of wasm`);
         counters.bytesGenerated += buffer.length;
         const traceModule = new WebAssembly.Module(buffer);
         const wasmImports = builder.getWasmImports();
@@ -369,7 +371,7 @@ function flush_wasm_entry_trampoline_jit_queue() {
         rejected = false;
         // console.error(`${traceName} failed: ${exc} ${exc.stack}`);
         // HACK: exc.stack is enormous garbage in v8 console
-        console.error(`MONO_WASM: interp_entry code generation failed: ${exc}`);
+        mono_log_error(`interp_entry code generation failed: ${exc}`);
         recordFailure();
     } finally {
         const finished = _now();
@@ -381,7 +383,7 @@ function flush_wasm_entry_trampoline_jit_queue() {
         }
 
         if (threw || (!rejected && ((trace >= 2) || dumpWrappers))) {
-            console.log(`// MONO_WASM: ${jitQueue.length} trampolines generated, blob follows //`);
+            mono_log_info(`// ${jitQueue.length} trampolines generated, blob follows //`);
             let s = "", j = 0;
             try {
                 if (builder.inSection)
@@ -399,15 +401,15 @@ function flush_wasm_entry_trampoline_jit_queue() {
                 s += b.toString(16);
                 s += " ";
                 if ((s.length % 10) === 0) {
-                    console.log(`${j}\t${s}`);
+                    mono_log_info(`${j}\t${s}`);
                     s = "";
                     j = i + 1;
                 }
             }
-            console.log(`${j}\t${s}`);
-            console.log("// end blob //");
+            mono_log_info(`${j}\t${s}`);
+            mono_log_info("// end blob //");
         } else if (rejected && !threw) {
-            console.error("MONO_WASM: failed to generate trampoline for unknown reason");
+            mono_log_error("failed to generate trampoline for unknown reason");
         }
 
         jitQueue.length = 0;

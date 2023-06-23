@@ -9,7 +9,7 @@ import { deep_merge_config, deep_merge_module, mono_wasm_load_config } from "./c
 import { mono_exit } from "./exit";
 import { setup_proxy_console } from "./logging";
 import { resolve_asset_path, start_asset_download } from "./assets";
-import { init_polyfills } from "./polyfills";
+import { detect_features_and_polyfill } from "./polyfills";
 import { runtimeHelpers, loaderHelpers } from "./globals";
 import { init_globalization } from "./icu";
 import { setupPreloadChannelToMainThread } from "./worker";
@@ -344,7 +344,7 @@ export async function createEmscripten(moduleFactory: DotnetModuleConfig | ((api
     if (typeof moduleFactory === "function") {
         const extension = moduleFactory(globalObjectsRoot.api) as any;
         if (extension.ready) {
-            throw new Error("MONO_WASM: Module.ready couldn't be redefined.");
+            throw new Error("Module.ready couldn't be redefined.");
         }
         Object.assign(module, extension);
         deep_merge_module(module, extension);
@@ -353,7 +353,7 @@ export async function createEmscripten(moduleFactory: DotnetModuleConfig | ((api
         deep_merge_module(module, moduleFactory);
     }
     else {
-        throw new Error("MONO_WASM: Can't use moduleFactory callback of createDotnetRuntime function.");
+        throw new Error("Can't use moduleFactory callback of createDotnetRuntime function.");
     }
 
     return module.ENVIRONMENT_IS_PTHREAD
@@ -391,7 +391,7 @@ function initializeModules(es6Modules: [RuntimeModuleExportsInternal, NativeModu
 }
 
 async function createEmscriptenMain(): Promise<RuntimeAPI> {
-    await init_polyfills(module);
+    await detect_features_and_polyfill(module);
 
     if (!module.configSrc && (!module.config || Object.keys(module.config).length === 0 || !module.config.assets)) {
         // if config file location nor assets are provided
@@ -425,7 +425,7 @@ async function createEmscriptenMain(): Promise<RuntimeAPI> {
 }
 
 async function createEmscriptenWorker(): Promise<EmscriptenModuleInternal> {
-    await init_polyfills(module);
+    await detect_features_and_polyfill(module);
 
     setupPreloadChannelToMainThread();
 

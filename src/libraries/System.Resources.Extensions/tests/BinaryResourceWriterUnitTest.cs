@@ -526,9 +526,15 @@ namespace System.Resources.Extensions.Tests
 
             const int Threads = 10;
             using Barrier barrier = new(Threads);
-            Task task = Task.WhenAll(Enumerable.Range(0, Threads).Select(_ => Task.Run(WaitForBarrierThenEnumerateResources)));
+            Task[] tasks = Enumerable.Range(0, Threads)
+                .Select(_ => Task.Factory.StartNew(
+                    WaitForBarrierThenEnumerateResources,
+                    CancellationToken.None,
+                    TaskCreationOptions.LongRunning,
+                    TaskScheduler.Default))
+                .ToArray();
 
-            Assert.True(task.Wait(TimeSpan.FromSeconds(30)));
+            Assert.True(Task.WaitAll(tasks, TimeSpan.FromSeconds(30)));
 
             void WaitForBarrierThenEnumerateResources()
             {

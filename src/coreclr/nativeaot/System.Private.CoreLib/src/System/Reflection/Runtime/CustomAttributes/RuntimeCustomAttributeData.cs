@@ -152,7 +152,7 @@ namespace System.Reflection.Runtime.CustomAttributes
         // Wrap a custom attribute argument (or an element of an array-typed custom attribute argument) in a CustomAttributeTypeArgument structure
         // for insertion into a CustomAttributeData value.
         //
-        protected CustomAttributeTypedArgument WrapInCustomAttributeTypedArgument(object? value, Type argumentType)
+        protected static CustomAttributeTypedArgument WrapInCustomAttributeTypedArgument(object? value, Type argumentType)
         {
             if (argumentType == typeof(object))
             {

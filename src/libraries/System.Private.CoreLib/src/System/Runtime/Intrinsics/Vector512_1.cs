@@ -28,7 +28,6 @@ namespace System.Runtime.Intrinsics
     [DebuggerTypeProxy(typeof(Vector512DebugView<>))]
     [StructLayout(LayoutKind.Sequential, Size = Vector512.Size)]
     public readonly struct Vector512<T> : IEquatable<Vector512<T>>
-        where T : struct
     {
         internal readonly Vector256<T> _lower;
         internal readonly Vector256<T> _upper;

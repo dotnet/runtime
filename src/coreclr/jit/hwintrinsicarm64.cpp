@@ -1846,7 +1846,7 @@ GenTree* Compiler::impSpecialIntrinsic(NamedIntrinsic        intrinsic,
             assert(HWIntrinsicInfo::IsMultiReg(intrinsic));
 
             op1     = gtNewSimdHWIntrinsicNode(retType, op1, intrinsic, simdBaseJitType, simdSize);
-            retNode = impAssignMultiRegTypeToVar(op1, sig->retTypeSigClass DEBUGARG(CorInfoCallConvExtension::Managed));
+            retNode = impStoreMultiRegValueToVar(op1, sig->retTypeSigClass DEBUGARG(CorInfoCallConvExtension::Managed));
             break;
         }
         case NI_AdvSimd_VectorTableLookup:
@@ -1873,7 +1873,7 @@ GenTree* Compiler::impSpecialIntrinsic(NamedIntrinsic        intrinsic,
                 {
                     unsigned tmp = lvaGrabTemp(true DEBUGARG("VectorTableLookup temp tree"));
 
-                    impAssignTempGen(tmp, op1, CHECK_SPILL_NONE);
+                    impStoreTemp(tmp, op1, CHECK_SPILL_NONE);
                     op1 = gtNewLclvNode(tmp, argType);
                 }
 
@@ -1913,7 +1913,7 @@ GenTree* Compiler::impSpecialIntrinsic(NamedIntrinsic        intrinsic,
                 {
                     unsigned tmp = lvaGrabTemp(true DEBUGARG("VectorTableLookupExtension temp tree"));
 
-                    impAssignTempGen(tmp, op2, CHECK_SPILL_NONE);
+                    impStoreTemp(tmp, op2, CHECK_SPILL_NONE);
                     op2 = gtNewLclvNode(tmp, argType);
                 }
 

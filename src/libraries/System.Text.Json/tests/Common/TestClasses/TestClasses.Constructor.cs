@@ -659,60 +659,33 @@ namespace System.Text.Json.Serialization.Tests
             Assert.Equal("f2c92fcc-459f-4287-90b6-a7cbd82aeb0e", Id.ToString());
             Assert.Equal(24, Age);
 
-            string serialized = JsonSerializer.Serialize(this);
-            Assert.Contains(@"""Point2D"":{", serialized);
-            Assert.Contains(@"""ReadOnlyPoint2D"":{", serialized);
-            Assert.Contains(@"""Point2DWithExtDataClass"":{", serialized);
-            Assert.Contains(@"""ReadOnlyPoint2DWithExtDataClass"":{", serialized);
-            Assert.Contains(@"""Point3DStruct"":{", serialized);
-            Assert.Contains(@"""ReadOnlyPoint3DStruct"":{", serialized);
-            Assert.Contains(@"""Point2DWithExtData"":{", serialized);
-            Assert.Contains(@"""ReadOnlyPoint2DWithExtData"":{", serialized);
+            Point2D.Verify();
+            ReadOnlyPoint2D.Verify();
 
-            serialized = JsonSerializer.Serialize(Point2D);
-            Assert.Contains(@"""X"":1", serialized);
-            Assert.Contains(@"""Y"":2", serialized);
+            Assert.Equal(1, Point2DWithExtDataClass.X);
+            Assert.Equal(2, Point2DWithExtDataClass.Y);
+            Assert.True(Point2DWithExtDataClass.ExtensionData.ContainsKey("b"));
 
-            serialized = JsonSerializer.Serialize(ReadOnlyPoint2D);
-            Assert.Contains(@"""X"":1", serialized);
-            Assert.Contains(@"""Y"":2", serialized);
+            Assert.Equal(1, Point3DStruct.X);
+            Assert.Equal(2, Point3DStruct.Y);
+            Assert.Equal(3, Point3DStruct.Z);
 
-            serialized = JsonSerializer.Serialize(Point2DWithExtDataClass);
-            Assert.Contains(@"""X"":1", serialized);
-            Assert.Contains(@"""Y"":2", serialized);
-            Assert.Contains(@"""b"":3", serialized);
+            Assert.Equal(1, ReadOnlyPoint3DStruct.X);
+            Assert.Equal(2, ReadOnlyPoint3DStruct.Y);
+            Assert.Equal(3, ReadOnlyPoint3DStruct.Z);
 
-            serialized = JsonSerializer.Serialize(ReadOnlyPoint2DWithExtDataClass);
-            Assert.Contains(@"""X"":1", serialized);
-            Assert.Contains(@"""Y"":2", serialized);
-            Assert.Contains(@"""b"":3", serialized);
+            Assert.Equal(1, Point2DWithExtData.X);
+            Assert.Equal(2, Point2DWithExtData.Y);
+            Assert.True(Point2DWithExtData.ExtensionData.ContainsKey("b"));
 
-            serialized = JsonSerializer.Serialize(Point3DStruct);
-            Assert.Contains(@"""X"":1", serialized);
-            Assert.Contains(@"""Y"":2", serialized);
-            Assert.Contains(@"""Z"":3", serialized);
-
-            serialized = JsonSerializer.Serialize(ReadOnlyPoint3DStruct);
-            Assert.Contains(@"""X"":1", serialized);
-            Assert.Contains(@"""Y"":2", serialized);
-            Assert.Contains(@"""Z"":3", serialized);
-
-            serialized = JsonSerializer.Serialize(Point2DWithExtData);
-            Assert.Contains(@"""X"":1", serialized);
-            Assert.Contains(@"""Y"":2", serialized);
-            Assert.Contains(@"""b"":3", serialized);
-
-            serialized = JsonSerializer.Serialize(ReadOnlyPoint2DWithExtData);
-            Assert.Contains(@"""X"":1", serialized);
-            Assert.Contains(@"""Y"":2", serialized);
-            Assert.Contains(@"""b"":3", serialized);
+            Assert.Equal(1, ReadOnlyPoint2DWithExtData.X);
+            Assert.Equal(2, ReadOnlyPoint2DWithExtData.Y);
+            Assert.True(ReadOnlyPoint2DWithExtData.ExtensionData.ContainsKey("b"));
         }
 
         public void VerifyMinimal()
         {
-            string serialized = JsonSerializer.Serialize(ReadOnlyPoint2D);
-            Assert.Contains(@"""X"":1", serialized);
-            Assert.Contains(@"""Y"":2", serialized);
+            ReadOnlyPoint2D.Verify();
         }
     }
 
@@ -802,53 +775,28 @@ namespace System.Text.Json.Serialization.Tests
             Assert.Equal("f2c92fcc-459f-4287-90b6-a7cbd82aeb0e", Id.ToString());
             Assert.Equal(24, Age);
 
-            string serialized = JsonSerializer.Serialize(this);
-            Assert.Contains(@"""Point2D"":{", serialized);
-            Assert.Contains(@"""ReadOnlyPoint2D"":{", serialized);
-            Assert.Contains(@"""Point2DWithExtDataClass"":{", serialized);
-            Assert.Contains(@"""ReadOnlyPoint2DWithExtDataClass"":{", serialized);
-            Assert.Contains(@"""Point3DStruct"":{", serialized);
-            Assert.Contains(@"""ReadOnlyPoint3DStruct"":{", serialized);
-            Assert.Contains(@"""Point2DWithExtData"":{", serialized);
-            Assert.Contains(@"""ReadOnlyPoint2DWithExtData"":{", serialized);
+            Point2D.Verify();
+            ReadOnlyPoint2D.Verify();
 
-            serialized = JsonSerializer.Serialize(Point2D);
-            Assert.Contains(@"""X"":1", serialized);
-            Assert.Contains(@"""Y"":2", serialized);
+            Assert.Equal(1, Point2DWithExtDataClass.X);
+            Assert.Equal(2, Point2DWithExtDataClass.Y);
+            Assert.True(Point2DWithExtDataClass.ExtensionData.ContainsKey("b"));
 
-            serialized = JsonSerializer.Serialize(ReadOnlyPoint2D);
-            Assert.Contains(@"""X"":1", serialized);
-            Assert.Contains(@"""Y"":2", serialized);
+            Assert.Equal(1, Point3DStruct.X);
+            Assert.Equal(2, Point3DStruct.Y);
+            Assert.Equal(3, Point3DStruct.Z);
 
-            serialized = JsonSerializer.Serialize(Point2DWithExtDataClass);
-            Assert.Contains(@"""X"":1", serialized);
-            Assert.Contains(@"""Y"":2", serialized);
-            Assert.Contains(@"""b"":3", serialized);
+            Assert.Equal(1, ReadOnlyPoint3DStruct.X);
+            Assert.Equal(2, ReadOnlyPoint3DStruct.Y);
+            Assert.Equal(3, ReadOnlyPoint3DStruct.Z);
 
-            serialized = JsonSerializer.Serialize(ReadOnlyPoint2DWithExtDataClass);
-            Assert.Contains(@"""X"":1", serialized);
-            Assert.Contains(@"""Y"":2", serialized);
-            Assert.Contains(@"""b"":3", serialized);
+            Assert.Equal(1, Point2DWithExtData.X);
+            Assert.Equal(2, Point2DWithExtData.Y);
+            Assert.True(Point2DWithExtData.ExtensionData.ContainsKey("b"));
 
-            serialized = JsonSerializer.Serialize(Point3DStruct);
-            Assert.Contains(@"""X"":1", serialized);
-            Assert.Contains(@"""Y"":2", serialized);
-            Assert.Contains(@"""Z"":3", serialized);
-
-            serialized = JsonSerializer.Serialize(ReadOnlyPoint3DStruct);
-            Assert.Contains(@"""X"":1", serialized);
-            Assert.Contains(@"""Y"":2", serialized);
-            Assert.Contains(@"""Z"":3", serialized);
-
-            serialized = JsonSerializer.Serialize(Point2DWithExtData);
-            Assert.Contains(@"""X"":1", serialized);
-            Assert.Contains(@"""Y"":2", serialized);
-            Assert.Contains(@"""b"":3", serialized);
-
-            serialized = JsonSerializer.Serialize(ReadOnlyPoint2DWithExtData);
-            Assert.Contains(@"""X"":1", serialized);
-            Assert.Contains(@"""Y"":2", serialized);
-            Assert.Contains(@"""b"":3", serialized);
+            Assert.Equal(1, ReadOnlyPoint2DWithExtData.X);
+            Assert.Equal(2, ReadOnlyPoint2DWithExtData.Y);
+            Assert.True(ReadOnlyPoint2DWithExtData.ExtensionData.ContainsKey("b"));
         }
     }
 
@@ -1014,7 +962,11 @@ namespace System.Text.Json.Serialization.Tests
         }
 
         public static ObjWCtorMixedParams GetInstance() =>
+#if BUILDING_SOURCE_GENERATOR_TESTS
+            JsonSerializer.Deserialize(s_json, System.Text.Json.SourceGeneration.Tests.ConstructorTests_Default.ConstructorTestsContext_Default.Default.ObjWCtorMixedParams);
+#else
             JsonSerializer.Deserialize<ObjWCtorMixedParams>(s_json);
+#endif
 
         public static string s_json => $"{{{s_partialJson1},{s_partialJson2}}}";
 
@@ -2392,7 +2344,6 @@ namespace System.Text.Json.Serialization.Tests
         public StructWithFourArgs(int w, int x, int y, int z) => (W, X, Y, Z) = (w, x, y, z);
     }
 
-#if FIXED // https://github.com/dotnet/roslyn/issues/66900
     public record ClassWithManyConstructorParameters(
         int P000, int P001, int P002, int P003, int P004, int P005, int P006, int P007, int P008, int P009,
         int P010, int P011, int P012, int P013, int P014, int P015, int P016, int P017, int P018, int P019,
@@ -2600,5 +2551,4 @@ namespace System.Text.Json.Serialization.Tests
                 P990: 990, P991: 991, P992: 992, P993: 993, P994: 994, P995: 995, P996: 996, P997: 997, P998: 998, P999: 999);
         }
     }
-#endif
 }

@@ -18,7 +18,7 @@ namespace System.IO.Compression
     {
         private ZipArchive _archive;
         private readonly bool _originallyInArchive;
-        private readonly int _diskNumberStart;
+        private readonly uint _diskNumberStart;
         private readonly ZipVersionMadeByPlatform _versionMadeByPlatform;
         private ZipVersionNeededValues _versionMadeBySpecification;
         internal ZipVersionNeededValues _versionToExtract;

@@ -223,7 +223,6 @@
       <Compile Include="$(BclSourcesRoot)\System\Reflection\Emit\DynamicILInfo.cs" />
       <Compile Include="$(BclSourcesRoot)\System\Reflection\Emit\DynamicMethod.Mono.cs" />
       <Compile Include="$(BclSourcesRoot)\System\Reflection\Emit\FieldOnTypeBuilderInstantiation.Mono.cs" />
-      <Compile Include="$(BclSourcesRoot)\System\Reflection\Emit\ILGenerator.Mono.cs" />
       <Compile Include="$(BclSourcesRoot)\System\Reflection\Emit\LocalBuilder.Mono.cs" />
       <Compile Include="$(BclSourcesRoot)\System\Reflection\Emit\MethodOnTypeBuilderInstantiation.Mono.cs" />
       <Compile Include="$(BclSourcesRoot)\System\Reflection\Emit\MonoArrayMethod.cs" />
@@ -233,6 +232,7 @@
       <Compile Include="$(BclSourcesRoot)\System\Reflection\Emit\RuntimeEventBuilder.Mono.cs" />
       <Compile Include="$(BclSourcesRoot)\System\Reflection\Emit\RuntimeFieldBuilder.Mono.cs" />
       <Compile Include="$(BclSourcesRoot)\System\Reflection\Emit\RuntimeGenericTypeParameterBuilder.cs" />
+      <Compile Include="$(BclSourcesRoot)\System\Reflection\Emit\RuntimeILGenerator.Mono.cs" />
       <Compile Include="$(BclSourcesRoot)\System\Reflection\Emit\RuntimeMethodBuilder.Mono.cs" />
       <Compile Include="$(BclSourcesRoot)\System\Reflection\Emit\RuntimeModuleBuilder.Mono.cs" />
       <Compile Include="$(BclSourcesRoot)\System\Reflection\Emit\RuntimeParameterBuilder.Mono.cs" />
