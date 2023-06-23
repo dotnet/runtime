@@ -577,8 +577,13 @@ namespace Microsoft.Extensions.DependencyInjection.ServiceLookup
                 {
                     foreach (var attribute in parameters[index].GetCustomAttributes(true))
                     {
-                        if (attribute is ServiceKeyAttribute)
+                        if (serviceIdentifier.ServiceKey != null && attribute is ServiceKeyAttribute)
                         {
+                            // Check if the parameter type matches
+                            if (parameterType != serviceIdentifier.ServiceKey.GetType())
+                            {
+                                throw new InvalidOperationException(SR.InvalidServiceKeyType);
+                            }
                             callSite = new ConstantCallSite(parameterType, serviceIdentifier.ServiceKey);
                             break;
                         }

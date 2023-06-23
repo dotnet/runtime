@@ -5,6 +5,7 @@ using System;
 using Xunit;
 using Microsoft.Extensions.DependencyInjection.Specification.Fakes;
 using System.Linq;
+using System.Security.Cryptography;
 
 namespace Microsoft.Extensions.DependencyInjection.Specification
 {
@@ -206,6 +207,19 @@ namespace Microsoft.Extensions.DependencyInjection.Specification
         }
 
         [Fact]
+        public void ResolveKeyedServiceSingletonFactoryWithAnyKeyIgnoreWrongType()
+        {
+            var serviceCollection = new ServiceCollection();
+            serviceCollection.AddKeyedTransient<IService, ServiceWithIntKey>(KeyedService.AnyKey);
+
+            var provider = CreateServiceProvider(serviceCollection);
+
+            Assert.Null(provider.GetService<IService>());
+            Assert.NotNull(provider.GetKeyedService<IService>(87));
+            Assert.ThrowsAny<InvalidOperationException>(() => provider.GetKeyedService<IService>(new object()));
+        }
+
+        [Fact]
         public void ResolveKeyedServiceSingletonType()
         {
             var serviceCollection = new ServiceCollection();
@@ -287,6 +301,13 @@ namespace Microsoft.Extensions.DependencyInjection.Specification
             public IService Service1 { get; }
 
             public IService Service2 { get; }
+        }
+
+        internal class ServiceWithIntKey : IService
+        {
+            private readonly int _id;
+
+            public ServiceWithIntKey([ServiceKey] int id) => _id = id;
         }
     }
 }
