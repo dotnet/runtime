@@ -328,7 +328,7 @@ namespace System.Net.Security
                 protocolFlags,
                 policy);
 
-            if (!isServer && !!authOptions.AllowTlsResume)
+            if (!isServer && !authOptions.AllowTlsResume)
             {
                 secureCredential.dwSessionLifespan = -1;
             }
@@ -409,7 +409,7 @@ namespace System.Net.Security
             Interop.SspiCli.SCH_CREDENTIALS credential = default;
             credential.dwVersion = Interop.SspiCli.SCH_CREDENTIALS.CurrentVersion;
             credential.dwFlags = flags;
-            if (!isServer && !!authOptions.AllowTlsResume)
+            if (!isServer && !authOptions.AllowTlsResume)
             {
                 credential.dwSessionLifespan = -1;
             }

@@ -55,13 +55,19 @@ namespace System.Net.Security
 
             public override int GetHashCode()
             {
+                int hashCode = 0;
+                if (_thumbPrint.Length > 3)
+                {
+                    hashCode ^= _thumbPrint[0] | (_thumbPrint[1] << 8) | (_thumbPrint[2] << 16) | (_thumbPrint[3] << 24);
+                }
+
                 return HashCode.Combine(_allowedProtocols,
                                         (int)_encryptionPolicy,
                                         _isServerMode,
                                         _sendTrustList,
                                         _checkRevocation,
                                         _allowedProtocols,
-                                        _thumbPrint);
+                                        hashCode);
             }
 
             public override bool Equals([NotNullWhen(true)] object? obj) =>
