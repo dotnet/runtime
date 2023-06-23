@@ -211,7 +211,6 @@ public class BuildPublishTests : BlazorWasmTestBase
                 .ExecuteWithCapturedOutput("new blazorwasm")
                 .EnsureSuccessful();
 
-
         string razorProjectDir = Path.Combine(_projectDir!, "RazorClassLibrary");
         Directory.CreateDirectory(razorProjectDir);
         new DotNetCommand(s_buildEnv, _testOutput, useDefaultArgs: false)

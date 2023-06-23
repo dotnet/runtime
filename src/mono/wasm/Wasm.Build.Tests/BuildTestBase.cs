@@ -18,7 +18,6 @@ using System.Xml;
 using Xunit;
 using Xunit.Abstractions;
 using Xunit.Sdk;
-using Microsoft.Playwright;
 using System.Runtime.Serialization.Json;
 using Microsoft.NET.Sdk.WebAssembly;
 
@@ -1030,25 +1029,6 @@ namespace Wasm.Build.Tests
         bool IsBrowserProject = true,
         IDictionary<string, string>? ExtraBuildEnvironmentVariables = null
     );
-
-    public record BlazorBuildOptions
-    (
-        string Id,
-        string Config,
-        NativeFilesType ExpectedFileType,
-        string TargetFramework = BuildTestBase.DefaultTargetFrameworkForBlazor,
-        bool WarnAsError = true,
-        bool ExpectRelinkDirWhenPublishing = false,
-        bool ExpectFingerprintOnDotnetJs = false
-    );
-
-    public enum GlobalizationMode
-    {
-        Invariant,       // no icu
-        FullIcu,         // full icu data: icudt.dat is loaded
-        PredefinedIcu,   // user set WasmIcuDataFileName value and we are loading that file
-        Hybrid           // reduced icu, missing data is provided by platform-native functions (web api for wasm)
-    };
 
     public enum NativeFilesType { FromRuntimePack, Relinked, AOT };
 }

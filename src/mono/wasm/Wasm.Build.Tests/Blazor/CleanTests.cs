@@ -27,7 +27,6 @@ public class CleanTests : BlazorWasmTestBase
     {
         string id = Path.GetRandomFileName();
 
-        InitBlazorWasmProjectDir(id);
         string projectFile = CreateBlazorWasmTemplateProject(id);
 
         string extraProperties = @"<_WasmDevel>true</_WasmDevel>
@@ -65,7 +64,6 @@ public class CleanTests : BlazorWasmTestBase
     {
         string id = Path.GetRandomFileName();
 
-        InitBlazorWasmProjectDir(id);
         string projectFile = CreateBlazorWasmTemplateProject(id);
 
         string extraProperties = @"<_WasmDevel>true</_WasmDevel>";
