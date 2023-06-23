@@ -307,7 +307,8 @@ namespace Microsoft.Extensions.Logging.Generators
                                     }
 
                                     // ensure there are no duplicate event ids.
-                                    if (!eventIds.Add(lm.EventId))
+                                    // We don't check Id duplication for the auto-generated event id.
+                                    if (suppliedEventId && !eventIds.Add(lm.EventId))
                                     {
                                         Diag(DiagnosticDescriptors.ShouldntReuseEventIds, ma.GetLocation(), lm.EventId, classDec.Identifier.Text);
                                     }
