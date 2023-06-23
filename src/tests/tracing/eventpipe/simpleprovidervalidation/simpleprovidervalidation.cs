@@ -22,18 +22,30 @@ namespace Tracing.Tests.SimpleProviderValidation
             // Its currently not enabled in NativeAOT runs and the below issue tracks the work
             // https://github.com/dotnet/runtime/issues/84701
 
-            var providers = new List<EventPipeProvider>()
-            {
-                new EventPipeProvider("Microsoft-DotNETCore-SampleProfiler", EventLevel.Verbose),
+            var ret = IpcTraceTest.RunAndValidateEventCounts(
+                // Validation is done with _DoesTraceContainEvents
+                new Dictionary<string, ExpectedEventCount>(){{ "Microsoft-Windows-DotNETRuntime", -1 }},
+                _eventGeneratingActionForGC, 
                 //GCKeyword (0x1): 0b1
-                new EventPipeProvider("Microsoft-Windows-DotNETRuntime", EventLevel.Informational, 0b1)
-            };
-
-            var ret = IpcTraceTest.RunAndValidateEventCounts(_expectedEventCounts, _eventGeneratingAction, providers, 1024, _DoesTraceContainEvents, enableRundownProvider:false);
+                new List<EventPipeProvider>(){new EventPipeProvider("Microsoft-Windows-DotNETRuntime", EventLevel.Informational, 0b1)}, 
+                1024, _DoesTraceContainEvents, enableRundownProvider:false);
 
             GC.Collect();
             GC.WaitForPendingFinalizers();
             GC.Collect();
+
+            // Run the 2nd test scenario only if the first one passes
+            if(ret== 100)
+            {
+                ret = IpcTraceTest.RunAndValidateEventCounts(
+                    // Validate the exception type and message after the below issue is fixed. For now, check that the event is fired
+                    // https://github.com/dotnet/runtime/issues/87978
+                    new Dictionary<string, ExpectedEventCount>(){{ "Microsoft-Windows-DotNETRuntime", 1000 }}, 
+                    _eventGeneratingActionForExceptions, 
+                    //ExceptionKeyword (0x8000): 0b1000_0000_0000_0000
+                    new List<EventPipeProvider>(){new EventPipeProvider("Microsoft-Windows-DotNETRuntime", EventLevel.Warning, 0b1000_0000_0000_0000)}, 
+                    1024, enableRundownProvider:false);
+            }
 
             if (ret < 0)
                 return ret;
@@ -41,12 +53,7 @@ namespace Tracing.Tests.SimpleProviderValidation
                 return 100;
         }
 
-        private static Dictionary<string, ExpectedEventCount> _expectedEventCounts = new Dictionary<string, ExpectedEventCount>()
-        {
-            { "Microsoft-Windows-DotNETRuntime", -1 }
-        };
-
-        private static Action _eventGeneratingAction = () => 
+        private static Action _eventGeneratingActionForGC = () => 
         {
             for (int i = 0; i < 50; i++)
             {
@@ -58,6 +65,24 @@ namespace Tracing.Tests.SimpleProviderValidation
             }
         };
 
+        private static Action _eventGeneratingActionForExceptions = () => 
+        {
+            for (int i = 0; i < 1000; i++)
+            {
+                if (i % 100 == 0)
+                    Logger.logger.Log($"Thrown an exception {i} times...");
+                try
+                {
+                    throw new ArgumentNullException("Throw ArgumentNullException");
+                }
+                catch (Exception e)
+                {
+                    //Do nothing
+                }
+            }
+        };
+
+
         private static Func<EventPipeEventSource, Func<int>> _DoesTraceContainEvents = (source) =>
         {
             int GCStartEvents = 0;
@@ -68,7 +93,7 @@ namespace Tracing.Tests.SimpleProviderValidation
             int GCRestartEEStartEvents = 0;
             int GCRestartEEStopEvents = 0;
             source.Clr.GCRestartEEStart += (eventData) => GCRestartEEStartEvents += 1;
-            source.Clr.GCRestartEEStop += (eventData) => GCRestartEEStopEvents += 1;
+            source.Clr.GCRestartEEStop += (eventData) => GCRestartEEStopEvents += 1;            
 
             int GCSuspendEEEvents = 0;
             int GCSuspendEEEndEvents = 0;

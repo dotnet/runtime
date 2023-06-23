@@ -192,8 +192,15 @@ void GCToCLREventSink::FireGCAllocationTick_V4(uint64_t allocationAmount,
 
 void GCToCLREventSink::FirePinObjectAtGCTime(void* object, uint8_t** ppObject)
 {
-    UNREFERENCED_PARAMETER(object);
-    UNREFERENCED_PARAMETER(ppObject);
+    LIMITED_METHOD_CONTRACT;
+
+    Object* obj = (Object*)object;
+
+    FireEtwPinObjectAtGCTime(ppObject,
+                            object,
+                            obj->GetSize(),
+                            NULL,
+                            GetClrInstanceId());
 }
 
 void GCToCLREventSink::FireGCLOHCompact(uint16_t count, uint32_t valuesLen, void* values)

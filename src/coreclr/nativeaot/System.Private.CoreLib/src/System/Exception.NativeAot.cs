@@ -135,8 +135,7 @@ namespace System
                 if (!fatalOutOfMemory)
                     ex.AppendStackIP(IP, isFirstRethrowFrame);
 
-                // UNIX-TODO: RhpEtwExceptionThrown
-#if TARGET_WINDOWS
+ #if FEATURE_PERFTRACING
                 if (isFirstFrame)
                 {
                     string typeName = !fatalOutOfMemory  ? ex.GetType().ToString() : "System.OutOfMemoryException";
