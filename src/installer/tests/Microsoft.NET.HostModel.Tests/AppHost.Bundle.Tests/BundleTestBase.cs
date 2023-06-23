@@ -77,6 +77,7 @@ namespace AppHost.Bundle.Tests
                 testFixture
                     .EnsureRestoredForRid(testFixture.CurrentRid)
                     .PublishProject(runtime: testFixture.CurrentRid,
+                                    selfContained: true,
                                     outputDirectory: BundleHelper.GetPublishPath(testFixture),
                                     extraArgs: extraArgs);
 
