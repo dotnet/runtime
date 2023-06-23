@@ -340,7 +340,7 @@ namespace HttpStress
                         lock (Console.Out)
                         {
                             Console.ForegroundColor = ConsoleColor.Yellow;
-                            Console.WriteLine($"Error from iteration {iteration} ({_operationNames[operationIndex]}) in task {taskNum} with {_successes.Sum()} successes / {_failures.Sum()} fails:");
+                            Console.WriteLine($"Error from iteration {iteration} ({_operationNames[operationIndex]}) in task {taskNum}, cancelled: {isCancelled}, is stop issues: {ctsState}, duration: {elapsed} with {_successes.Sum()} successes / {_failures.Sum()} fails:");
                             Console.ResetColor();
                             Console.WriteLine(exn);
                             Console.WriteLine();
