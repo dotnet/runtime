@@ -3,6 +3,7 @@
 
 using System.Reflection;
 using System.Reflection.Metadata;
+using System.Threading;
 
 namespace Internal.TypeSystem.Ecma
 {
@@ -101,20 +102,12 @@ namespace Internal.TypeSystem.Ecma
                         return null;
                     return _data;
                 }
-                lock(this)
-                {
-                    var data = ComputeTypeIdentifierData();
-                    if (data == null)
-                    {
-                        _data = TypeIdentifierData.Empty;
-                        return null;
-                    }
-                    else
-                    {
-                        _data = data;
-                        return data;
-                    }
-                }
+                var data = ComputeTypeIdentifierData() ?? TypeIdentifierData.Empty;
+
+                Interlocked.CompareExchange(ref _data, data, null);
+
+                // Recurse to read from _data and return a consistent result
+                return this.TypeIdentifierData;
             }
         }
 
