@@ -130,6 +130,10 @@ namespace System.Net.Http
             }
             catch (Exception ex)
             {
+                if (ex is OperationCanceledException)
+                {
+                    throw;
+                }
                 throw CreateWrappedException(ex, endPoint.Host, endPoint.Port, cancellationToken);
             }
         }
