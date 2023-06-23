@@ -86,7 +86,7 @@ namespace System.Globalization
                     return new string(bufferD, 0, resultLenD);
                 case LocaleStringData.MonetarySymbol:
                     // ICU does not have this data for sure, we can get it using Iso4217MonetarySymbol, it's RegionInfo.ISOCurrencySymbol
-                    if (localeName == "es-419" || localeName == "no")
+                    if (localeName == "es-419")
                         return "\u00a4"; // invariant symbol
                     string isoSymbolMS = GetISOSymbolFromStaticData(localeName, localeFamily);
                     if (string.IsNullOrEmpty(isoSymbolMS))
