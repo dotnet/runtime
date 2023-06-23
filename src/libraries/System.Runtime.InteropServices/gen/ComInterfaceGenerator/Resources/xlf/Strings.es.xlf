@@ -59,7 +59,7 @@
       </trans-unit>
       <trans-unit id="BaseInterfaceMustGenerateAtLeastSameWrappers">
         <source>A 'GeneratedComInterface' cannot specify 'ComInterfaceOptions.ManagedObjectWrapper' or 'ComInterfaceOptions.ComObjectWrapper' unless the base interface type did not specify options or specified at least the same options.</source>
-        <target state="new">A 'GeneratedComInterface' cannot specify 'ComInterfaceOptions.ManagedObjectWrapper' or 'ComInterfaceOptions.ComObjectWrapper' unless the base interface type did not specify options or specified at least the same options.</target>
+        <target state="translated">''GeneratedComInterface'' no puede especificar ''ComInterfaceOptions.ManagedObjectWrapper'' o ''ComInterfaceOptions.ComObjectWrapper'' a menos que el tipo de interfaz base no especifique opciones o especifique al menos las mismas opciones.</target>
         <note />
       </trans-unit>
       <trans-unit id="CastsBetweenRuntimeComAndSourceGeneratedComNotSupportedDescription">
@@ -304,12 +304,12 @@
       </trans-unit>
       <trans-unit id="InvalidOptionsOnInterfaceDescription">
         <source>The specified 'ComInterfaceOptions' are invalid.</source>
-        <target state="new">The specified 'ComInterfaceOptions' are invalid.</target>
+        <target state="translated">El elemento ''ComInterfaceOptions'' especificado no es válido.</target>
         <note />
       </trans-unit>
       <trans-unit id="InvalidOptionsOnInterfaceMessage">
         <source>The specified 'ComInterfaceOptions' on '{0}' are invalid. {1}</source>
-        <target state="new">The specified 'ComInterfaceOptions' on '{0}' are invalid. {1}</target>
+        <target state="translated">El elemento ''ComInterfaceOptions'' especificado en ''{0}'' no es válido. {1}</target>
         <note />
       </trans-unit>
       <trans-unit id="InvalidStringMarshallingConfigurationDescription">
@@ -384,7 +384,7 @@
       </trans-unit>
       <trans-unit id="OneWrapperMustBeGenerated">
         <source>Either 'ComInterfaceOptions.ManagedObjectWrapper' or 'ComInterfaceOptions.ComObjectWrapper' must be specified.</source>
-        <target state="new">Either 'ComInterfaceOptions.ManagedObjectWrapper' or 'ComInterfaceOptions.ComObjectWrapper' must be specified.</target>
+        <target state="translated">Debe especificarse ''ComInterfaceOptions.ManagedObjectWrapper'' o ''ComInterfaceOptions.ComObjectWrapper''.</target>
         <note />
       </trans-unit>
       <trans-unit id="RequiresAllowUnsafeBlocksDescription">

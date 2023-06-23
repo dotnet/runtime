@@ -59,7 +59,7 @@
       </trans-unit>
       <trans-unit id="BaseInterfaceMustGenerateAtLeastSameWrappers">
         <source>A 'GeneratedComInterface' cannot specify 'ComInterfaceOptions.ManagedObjectWrapper' or 'ComInterfaceOptions.ComObjectWrapper' unless the base interface type did not specify options or specified at least the same options.</source>
-        <target state="new">A 'GeneratedComInterface' cannot specify 'ComInterfaceOptions.ManagedObjectWrapper' or 'ComInterfaceOptions.ComObjectWrapper' unless the base interface type did not specify options or specified at least the same options.</target>
+        <target state="translated">基底インターフェイスの型でオプションが指定されていないか、少なくとも同じオプションが指定されていない限り、'GeneratedComInterface' では 'ComInterfaceOptions.ManagedObjectWrapper' または 'ComInterfaceOptions.ComObjectWrapper' を指定できません。</target>
         <note />
       </trans-unit>
       <trans-unit id="CastsBetweenRuntimeComAndSourceGeneratedComNotSupportedDescription">
@@ -304,12 +304,12 @@
       </trans-unit>
       <trans-unit id="InvalidOptionsOnInterfaceDescription">
         <source>The specified 'ComInterfaceOptions' are invalid.</source>
-        <target state="new">The specified 'ComInterfaceOptions' are invalid.</target>
+        <target state="translated">指定された 'ComInterfaceOptions' が無効です。</target>
         <note />
       </trans-unit>
       <trans-unit id="InvalidOptionsOnInterfaceMessage">
         <source>The specified 'ComInterfaceOptions' on '{0}' are invalid. {1}</source>
-        <target state="new">The specified 'ComInterfaceOptions' on '{0}' are invalid. {1}</target>
+        <target state="translated">'' で指定された '{0}' の 'ComInterfaceOptions' が無効です。{1}</target>
         <note />
       </trans-unit>
       <trans-unit id="InvalidStringMarshallingConfigurationDescription">
@@ -384,7 +384,7 @@
       </trans-unit>
       <trans-unit id="OneWrapperMustBeGenerated">
         <source>Either 'ComInterfaceOptions.ManagedObjectWrapper' or 'ComInterfaceOptions.ComObjectWrapper' must be specified.</source>
-        <target state="new">Either 'ComInterfaceOptions.ManagedObjectWrapper' or 'ComInterfaceOptions.ComObjectWrapper' must be specified.</target>
+        <target state="translated">'ComInterfaceOptions.ManagedObjectWrapper' または 'ComInterfaceOptions.ComObjectWrapper' を指定する必要があります。</target>
         <note />
       </trans-unit>
       <trans-unit id="RequiresAllowUnsafeBlocksDescription">
