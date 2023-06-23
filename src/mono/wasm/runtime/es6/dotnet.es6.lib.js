@@ -118,6 +118,16 @@ let linked_functions = [
     "mono_wasm_starts_with",
     "mono_wasm_ends_with",
     "mono_wasm_index_of",
+    "mono_wasm_get_monetary_symbol",
+    "mono_wasm_get_monetary_decimal_separator",
+    "mono_wasm_get_number_decimal_separator",
+    "mono_wasm_get_monetary_thousand_separator",
+    "mono_wasm_get_number_thousand_separator",
+    "mono_wasm_get_digits",
+    "mono_wasm_get_currency_name",
+    "mono_wasm_get_country_name",
+    "mono_wasm_get_language_name",
+    "mono_wasm_get_display_name",
 
     "icudt68_dat",
 ];

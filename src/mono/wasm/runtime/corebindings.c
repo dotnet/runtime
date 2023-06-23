@@ -55,6 +55,16 @@ extern int mono_wasm_compare_string(MonoString **culture, const uint16_t* str1, 
 extern mono_bool mono_wasm_starts_with(MonoString **culture, const uint16_t* str1, int32_t str1Length, const uint16_t* str2, int32_t str2Length, int32_t options, int *is_exception, MonoObject** ex_result);
 extern mono_bool mono_wasm_ends_with(MonoString **culture, const uint16_t* str1, int32_t str1Length, const uint16_t* str2, int32_t str2Length, int32_t options, int *is_exception, MonoObject** ex_result);
 extern int mono_wasm_index_of(MonoString **culture, const uint16_t* str1, int32_t str1Length, const uint16_t* str2, int32_t str2Length, int32_t options, mono_bool fromBeginning, int *is_exception, MonoObject** ex_result);
+extern int mono_wasm_get_monetary_symbol(MonoString **culture, MonoString **isoSymbol, const uint16_t* result, int32_t resultLength, int *is_exception, MonoObject** ex_result);
+extern int mono_wasm_get_monetary_decimal_separator(MonoString **culture, MonoString **isoSymbol, const uint16_t* result, int32_t resultLength, int *is_exception, MonoObject** ex_result);
+extern int mono_wasm_get_number_decimal_separator(MonoString **culture, const uint16_t* result, int32_t resultLength, int *is_exception, MonoObject** ex_result);
+extern int mono_wasm_get_monetary_thousand_separator(MonoString **culture, MonoString **isoSymbol, const uint16_t* result, int32_t resultLength, int *is_exception, MonoObject** ex_result);
+extern int mono_wasm_get_number_thousand_separator(MonoString **culture, const uint16_t* result, int32_t resultLength, int *is_exception, MonoObject** ex_result);
+extern int mono_wasm_get_digits(MonoString **culture, const uint16_t* result, int32_t resultLength, int *is_exception, MonoObject** ex_result);
+extern int mono_wasm_get_currency_name(MonoString **culture, MonoString **isoSymbol, const uint16_t* result, int32_t resultLength, int *is_exception, MonoObject** ex_result);
+extern int mono_wasm_get_country_name(MonoString **culture, MonoString **region, const uint16_t* result, int32_t resultLength, int *is_exception, MonoObject** ex_result);
+extern int mono_wasm_get_language_name(MonoString **culture, MonoString **region, const uint16_t* result, int32_t resultLength, int *is_exception, MonoObject** ex_result);
+extern int mono_wasm_get_display_name(MonoString **culture, MonoString **region, const uint16_t* result, int32_t resultLength, int *is_exception, MonoObject** ex_result);
 
 void bindings_initialize_internals (void)
 {
@@ -93,4 +103,14 @@ void bindings_initialize_internals (void)
 	mono_add_internal_call ("Interop/JsGlobalization::StartsWith", mono_wasm_starts_with);
 	mono_add_internal_call ("Interop/JsGlobalization::EndsWith", mono_wasm_ends_with);
 	mono_add_internal_call ("Interop/JsGlobalization::IndexOf", mono_wasm_index_of);
+	mono_add_internal_call ("Interop/JsGlobalization::JsGetMonetarySymbol", mono_wasm_get_monetary_symbol);
+	mono_add_internal_call ("Interop/JsGlobalization::JsGetMonetaryDecimalSeparator", mono_wasm_get_monetary_decimal_separator);
+	mono_add_internal_call ("Interop/JsGlobalization::JsGetDecimalSeparator", mono_wasm_get_number_decimal_separator);
+	mono_add_internal_call ("Interop/JsGlobalization::JsGetMonetaryThousandSeparator", mono_wasm_get_monetary_thousand_separator);
+	mono_add_internal_call ("Interop/JsGlobalization::JsGetThousandSeparator", mono_wasm_get_number_thousand_separator);
+	mono_add_internal_call ("Interop/JsGlobalization::JsGetDigits", mono_wasm_get_digits);
+	mono_add_internal_call ("Interop/JsGlobalization::JsGeCurrencyName", mono_wasm_get_currency_name);
+	mono_add_internal_call ("Interop/JsGlobalization::JsGetCountryName", mono_wasm_get_country_name);
+	mono_add_internal_call ("Interop/JsGlobalization::JsGetLanguageName", mono_wasm_get_language_name);
+	mono_add_internal_call ("Interop/JsGlobalization::JsGetDisplayName", mono_wasm_get_display_name);
 }

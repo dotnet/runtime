@@ -17,6 +17,7 @@ namespace System.Globalization.Tests
                 // remaining locales return hyphen-minus, as "en-US"
                 yield return new object[] { CultureInfo.GetCultureInfo("ar-SA").NumberFormat, "\u061c\u002d" };
                 yield return new object[] { CultureInfo.GetCultureInfo("et-EE").NumberFormat, "\u2212" };
+                yield return new object[] { CultureInfo.GetCultureInfo("fa").NumberFormat, "\u2212" };
                 yield return new object[] { CultureInfo.GetCultureInfo("fa-IR").NumberFormat, "\u200e\u2212" };
                 yield return new object[] { CultureInfo.GetCultureInfo("fi-FI").NumberFormat, "\u2212" };
                 yield return new object[] { CultureInfo.GetCultureInfo("he-IL").NumberFormat, "\u200e\u002d" };

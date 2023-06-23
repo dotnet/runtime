@@ -967,9 +967,14 @@ namespace System.Globalization
             }
         }
 
-        private string GetLanguageDisplayNameCore(string cultureName) => GlobalizationMode.UseNls ?
-                                                                            NlsGetLanguageDisplayName(cultureName) :
-                                                                            IcuGetLanguageDisplayName(cultureName);
+        private string GetLanguageDisplayNameCore(string cultureName) =>
+            GlobalizationMode.UseNls ?
+                NlsGetLanguageDisplayName(cultureName) :
+#if TARGET_BROWSER
+                GlobalizationMode.Hybrid ?
+                    JsGetLanguageDisplayName(cultureName) :
+#endif
+                IcuGetLanguageDisplayName(cultureName);
 
         /// <summary>
         /// English pretty name for this locale (ie: English (United States))
@@ -2330,6 +2335,8 @@ namespace System.Globalization
 
 #if TARGET_OSX || TARGET_MACCATALYST || TARGET_IOS || TARGET_TVOS
             return GlobalizationMode.Hybrid ? GetLocaleInfoNative(type) : IcuGetLocaleInfo(type);
+#elif TARGET_BROWSER
+            return GlobalizationMode.Hybrid ? JsGetLocaleInfo(type) : IcuGetLocaleInfo(type);
 #else
             return ShouldUseUserOverrideNlsData ? NlsGetLocaleInfo(type) : IcuGetLocaleInfo(type);
 #endif
@@ -2343,6 +2350,8 @@ namespace System.Globalization
 
 #if TARGET_OSX || TARGET_MACCATALYST || TARGET_IOS || TARGET_TVOS
             return GlobalizationMode.Hybrid ? GetLocaleInfoNative(type) : IcuGetLocaleInfo(type, uiCultureName);
+#elif TARGET_BROWSER
+           return GlobalizationMode.Hybrid ? JsGetLocaleInfo(type) : IcuGetLocaleInfo(type, uiCultureName);
 #else
             return GlobalizationMode.UseNls ? NlsGetLocaleInfo(type) : IcuGetLocaleInfo(type, uiCultureName);
 #endif
@@ -2356,6 +2365,8 @@ namespace System.Globalization
 
 #if TARGET_OSX || TARGET_MACCATALYST || TARGET_IOS || TARGET_TVOS
             return GlobalizationMode.Hybrid ? GetLocaleInfoNative(localeName, type) : IcuGetLocaleInfo(localeName, type, uiCultureName);
+#elif TARGET_BROWSER
+            return GlobalizationMode.Hybrid ? JsGetLocaleInfo(localeName, type) : IcuGetLocaleInfo(localeName, type, uiCultureName);
 #else
             return GlobalizationMode.UseNls ? NlsGetLocaleInfo(localeName, type) : IcuGetLocaleInfo(localeName, type, uiCultureName);
 #endif
