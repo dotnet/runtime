@@ -103,6 +103,7 @@ public class GenerateWasmBootJson : Task
             entryAssembly = entryAssemblyName,
             cacheBootResources = CacheBootResources,
             debugBuild = DebugBuild,
+            debugLevel = DebugBuild ? 1 : 0,
             linkerEnabled = LinkerEnabled,
             resources = new ResourcesData(),
             config = new List<string>(),

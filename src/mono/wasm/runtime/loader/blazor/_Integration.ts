@@ -102,7 +102,7 @@ export function mapBootConfigToMonoConfig(moduleConfig: MonoConfigInternal, appl
     moduleConfig.assetsHash = resourceLoader.bootConfig.resources.hash;
     moduleConfig.assets = assets;
     moduleConfig.globalizationMode = "icu";
-    moduleConfig.debugLevel = hasDebuggingEnabled(resourceLoader.bootConfig) ? 1 : 0;
+    moduleConfig.debugLevel = hasDebuggingEnabled(resourceLoader.bootConfig) ? resourceLoader.bootConfig.debugLevel : 0;
     moduleConfig.mainAssemblyName = resourceLoader.bootConfig.entryAssembly;
 
     const anyBootConfig = (resourceLoader.bootConfig as any);

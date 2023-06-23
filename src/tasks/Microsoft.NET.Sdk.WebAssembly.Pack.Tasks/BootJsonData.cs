@@ -42,6 +42,11 @@ public class BootJsonData
     public bool debugBuild { get; set; }
 
     /// <summary>
+    /// Gets a value that determines what level of debugging is configured.
+    /// </summary>
+    public int debugLevel { get; set; }
+
+    /// <summary>
     /// Gets a value that determines if the linker is enabled.
     /// </summary>
     public bool linkerEnabled { get; set; }
