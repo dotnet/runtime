@@ -14,7 +14,7 @@ namespace System.Collections.Frozen
         private protected readonly FrozenHashTable _hashTable;
         private protected readonly T[] _items;
 
-        protected ItemsFrozenSet(HashSet<T> source, bool optimizeForReading = true) : base(source.Comparer)
+        protected ItemsFrozenSet(HashSet<T> source) : base(source.Comparer)
         {
             Debug.Assert(source.Count != 0);
 
@@ -30,7 +30,7 @@ namespace System.Collections.Frozen
                 hashCodes[i] = entries[i] is T t ? Comparer.GetHashCode(t) : 0;
             }
 
-            _hashTable = FrozenHashTable.Create(hashCodes, optimizeForReading);
+            _hashTable = FrozenHashTable.Create(hashCodes);
 
             for (int srcIndex = 0; srcIndex < hashCodes.Length; srcIndex++)
             {

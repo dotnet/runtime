@@ -37,7 +37,6 @@ namespace System.Collections.Frozen
 
         /// <summary>Initializes a frozen hash table.</summary>
         /// <param name="hashCodes">Pre-calculated hash codes. When the method finishes, it assigns each value to destination index.</param>
-        /// <param name="optimizeForReading">true to spend additional effort tuning for subsequent read speed on the table; false to prioritize construction time.</param>
         /// <param name="hashCodesAreUnique">True when the input hash codes are already unique (provided from a dictionary of integers for example).</param>
         /// <remarks>
         /// It will then determine the optimal number of hash buckets to allocate and will populate the
@@ -45,12 +44,12 @@ namespace System.Collections.Frozen
         /// <see cref="FindMatchingEntries(int, out int, out int)"/> then uses this index to reference individual entries by indexing into <see cref="HashCodes"/>.
         /// </remarks>
         /// <returns>A frozen hash table.</returns>
-        public static FrozenHashTable Create(Span<int> hashCodes, bool optimizeForReading = true, bool hashCodesAreUnique = false)
+        public static FrozenHashTable Create(Span<int> hashCodes, bool hashCodesAreUnique = false)
         {
             // Determine how many buckets to use.  This might be fewer than the number of entries
             // if any entries have identical hashcodes (not just different hashcodes that might
             // map to the same bucket).
-            int numBuckets = CalcNumBuckets(hashCodes, optimizeForReading, hashCodesAreUnique);
+            int numBuckets = CalcNumBuckets(hashCodes, hashCodesAreUnique);
             ulong fastModMultiplier = HashHelpers.GetFastModMultiplier((uint)numBuckets);
 
             // Create two spans:
@@ -144,7 +143,7 @@ namespace System.Collections.Frozen
         /// sizes, starting at the exact number of hash codes and incrementing the bucket count by 1 per trial,
         /// this is a trade-off between speed of determining a good number of buckets and maximal density.
         /// </remarks>
-        private static int CalcNumBuckets(ReadOnlySpan<int> hashCodes, bool optimizeForReading, bool hashCodesAreUnique)
+        private static int CalcNumBuckets(ReadOnlySpan<int> hashCodes, bool hashCodesAreUnique)
         {
             Debug.Assert(hashCodes.Length != 0);
             Debug.Assert(!hashCodesAreUnique || new HashSet<int>(hashCodes.ToArray()).Count == hashCodes.Length);
@@ -153,11 +152,6 @@ namespace System.Collections.Frozen
             const int LargeInputSizeThreshold = 1000;     // What is the limit for an input to be considered "small"?
             const int MaxSmallBucketTableMultiplier = 16; // How large a bucket table should be allowed for small inputs?
             const int MaxLargeBucketTableMultiplier = 3;  // How large a bucket table should be allowed for large inputs?
-
-            if (!optimizeForReading)
-            {
-                return HashHelpers.GetPrime(hashCodes.Length);
-            }
 
             // Filter out duplicate codes, since no increase in buckets will avoid collisions from duplicate input hash codes.
             HashSet<int>? codes = null;
