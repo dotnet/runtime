@@ -19,19 +19,37 @@ static unsafe partial class CoreCLRHost
     static ALCWrapper alcWrapper;
     static FieldInfo assemblyHandleField;
     private static HostStructNative* _hostStructNative;
-    private static readonly Dictionary<Assembly, AssemblyInfo> m_assemblies = new ();
 
-    private readonly struct AssemblyInfo
+    // Loaded assemblies cache.
+    // Contains data needed for frequent queries from the native code for MonoImage* and name queries.
+    // AssemblyCachedInfo is owned by k_AssemblyCache, so that all queries return same handles
+    static readonly Dictionary<Assembly, AssemblyCachedInfo> k_AssemblyCache = new ();
+    static readonly Dictionary<string, AssemblyCachedInfo> k_AssemblyNameCache = new ();
+
+    class AssemblyCachedInfo : IDisposable
     {
-        public AssemblyInfo(IntPtr handle, IntPtr name, IntPtr filename)
+        public AssemblyCachedInfo(Assembly assembly)
         {
-            this.handle = handle;
-            this.name = name;
-            this.filename = filename;
+            handle = GCHandle.ToIntPtr(GCHandle.Alloc(assembly));
+            name = Marshal.StringToHGlobalAnsi(assembly.GetName().Name);
+            filename = Marshal.StringToHGlobalAnsi(assembly.Location);
+            module = assembly.GetLoadedModules(true)[0];
         }
+
+        public void Dispose()
+        {
+            GCHandle.FromIntPtr(handle).Free();
+            Marshal.FreeHGlobal(name);
+            Marshal.FreeHGlobal(filename);
+        }
+
+        // Data for the return to the native code. Don't forget to release handle!
         public readonly IntPtr handle;
         public readonly IntPtr name;
         public readonly IntPtr filename;
+
+        // For acceleration of managed code
+        public readonly Module module;
     }
 
     internal static int InitMethod(HostStruct* functionStruct, int structSize, HostStructNative* functionStructNative, int structSizeNative)
@@ -75,19 +93,45 @@ static unsafe partial class CoreCLRHost
         return GetInfoForAssembly(assembly).handle;
     }
 
-    private static AssemblyInfo GetInfoForAssembly(Assembly assembly)
+    static AssemblyCachedInfo GetInfoForAssembly(Assembly assembly)
     {
-        lock (m_assemblies)
+        lock (k_AssemblyCache)
         {
-            if (!m_assemblies.TryGetValue(assembly, out var info))
+            if (!k_AssemblyCache.TryGetValue(assembly, out var info))
             {
-                info = new AssemblyInfo(GCHandle.ToIntPtr(GCHandle.Alloc(assembly)),
-                    Marshal.StringToHGlobalAnsi(assembly.GetName().Name),
-                    Marshal.StringToHGlobalAnsi(assembly.Location));
-                m_assemblies[assembly] = info;
+                info = new AssemblyCachedInfo(assembly);
+                k_AssemblyCache[assembly] = info;
             }
             return info;
         }
+    }
+
+    static AssemblyCachedInfo GetInfoForAssembly(string assemblySimpleName)
+    {
+        lock (k_AssemblyNameCache)
+        {
+            if (k_AssemblyNameCache.TryGetValue(assemblySimpleName, out var info))
+                return info;
+
+            // Slow path for assemblies in all ALCs.
+            // Need to watch out for assemblies with the same name, but in different ALCs.
+            // That should be validated by the Unity side.
+            foreach (var context in AssemblyLoadContext.All)
+            {
+                foreach (var asm in context.Assemblies)
+                {
+                    if (Path.GetFileNameWithoutExtension(asm.GetLoadedModules(getResourceModules: true)[0].Name).Equals(assemblySimpleName))
+                    {
+                        // Cache the result, but through the k_AssemblyCache, so that we have same assembly (MonoImage*) handle.
+                        info = GetInfoForAssembly(asm);
+                        k_AssemblyNameCache[assemblySimpleName] = info;
+                        return info;
+                    }
+                }
+            }
+        }
+
+        return null;
     }
 
     [NativeFunction(NativeFunctionOptions.DoNotGenerate)]
@@ -107,25 +151,6 @@ static unsafe partial class CoreCLRHost
         return assembly.GetType(assemblyQualified, false, ignoreCase).TypeHandleIntPtr();
     }
 
-    public static int image_get_table_rows([NativeCallbackType("MonoImage*")] IntPtr image, int table_id)
-    {
-        const int MONO_TABLE_TYPEDEF = 2;
-        if (table_id == MONO_TABLE_TYPEDEF)
-        {
-            Assembly assembly = image.AssemblyFromGCHandleIntPtr();
-            return assembly.GetTypes().Length;
-        }
-
-        return 0;
-    }
-
-    [return: NativeCallbackType("MonoClass*")]
-    public static IntPtr unity_class_get([NativeCallbackType("MonoImage*")] IntPtr image, uint type_token)
-    {
-        Assembly assembly = image.AssemblyFromGCHandleIntPtr();
-        return RuntimeTypeHandle.ToIntPtr(assembly.GetLoadedModules(getResourceModules: true)[0].ModuleHandle.GetRuntimeTypeHandleFromMetadataToken((int)type_token));
-    }
-
     [return: NativeCallbackType("MonoImage*")]
     public static IntPtr class_get_image([NativeCallbackType("MonoClass*")] IntPtr klass)
     {
@@ -137,22 +162,10 @@ static unsafe partial class CoreCLRHost
     public static IntPtr image_loaded([NativeCallbackType("const char*")] sbyte* name)
     {
         string sname = new(name);
-        foreach (var context in AssemblyLoadContext.All)
-        {
-            foreach (var asm in context.Assemblies)
-            {
-                if (Path.GetFileNameWithoutExtension(asm.GetLoadedModules(getResourceModules: true)[0].Name).Equals(sname))
-                    return GetInfoForAssembly(asm).handle;
-            }
-        }
 
-        foreach (var asm in alcWrapper.Assemblies)
-        {
-            if (Path.GetFileNameWithoutExtension(asm.GetLoadedModules(getResourceModules: true)[0].Name).Equals(sname))
-                return GetInfoForAssembly(asm).handle;
-        }
-
-        return nint.Zero;
+        // Retrieve from cache or add to cache
+        AssemblyCachedInfo assemblyInfo = GetInfoForAssembly(sname);
+        return assemblyInfo != null ? assemblyInfo.handle : nint.Zero;
     }
 
     [return: NativeCallbackType("MonoAssembly*")]
@@ -297,6 +310,46 @@ static unsafe partial class CoreCLRHost
         IntPtr domain,
         [NativeCallbackType("MonoType*")] IntPtr type)
         => type.TypeFromHandleIntPtr().ToNativeRepresentation();
+
+    // Keeping for reference for the move to C#
+    // Currently Type is not loaded
+    [NativeFunction(NativeFunctionOptions.DoNotGenerate)]
+    [return: NativeCallbackType("MonoClass*")]
+    public static IntPtr unity_class_get(
+        [NativeCallbackType("MonoImage*")] IntPtr image,
+        uint token)
+    {
+        Assembly assembly = image.AssemblyFromGCHandleIntPtr();
+        // Cache module acquisition to avoid unnecessary allocation of Module[]
+        var assemblyInfo = GetInfoForAssembly(assembly);
+        var typeHandle = assemblyInfo.module.ModuleHandle.GetRuntimeTypeHandleFromMetadataToken((int)token);
+        // TODO: Remove MethodBase.GetMethodFromHandle(methodHandle) part once we move method and type utilities to C#
+        // https://jira.unity3d.com/browse/VM-2081
+        // We have to load method and types currently as the native methods don't enforce loading
+        // (e.g. reinterpret_cast<MonoClass_clr*>(klass)->GetParentMethodTable() in mono_class_get_parent may crash if klass is not fully loaded)
+        // and adding loading boilerplate is roughly equivalent of moving implementation to C#
+        return Type.GetTypeFromHandle(typeHandle).TypeHandleIntPtr();
+    }
+
+    // Keeping for reference for the move to C#
+    [NativeFunction(NativeFunctionOptions.DoNotGenerate)]
+    [return: NativeCallbackType("MonoMethod*")]
+    public static IntPtr get_method(
+        [NativeCallbackType("MonoImage*")] IntPtr image,
+        uint token,
+        [NativeCallbackType("MonoClass*")] IntPtr klass)
+    {
+        Assembly assembly = image.AssemblyFromGCHandleIntPtr();
+        // Cache module acquisition to avoid unnecessary allocation of Module[]
+        var assemblyInfo = GetInfoForAssembly(assembly);
+        var methodHandle = assemblyInfo.module.ModuleHandle.GetRuntimeMethodHandleFromMetadataToken((int)token);
+        // TODO: Remove MethodBase.GetMethodFromHandle(methodHandle) part once we move method and type utilities to C#
+        // https://jira.unity3d.com/browse/VM-2081
+        // We have to load method and types currently as the native methods don't enforce loading
+        // (e.g. reinterpret_cast<MonoClass_clr*>(klass)->GetParentMethodTable() in mono_class_get_parent may crash if klass is not fully loaded)
+        // and adding loading boilerplate is roughly equivalent of moving implementation to C#
+        return MethodBase.GetMethodFromHandle(methodHandle).MethodHandle.MethodHandleIntPtr();
+    }
 
     [return: NativeCallbackType("MonoObject*")]
     public static IntPtr unity_class_get_attribute(

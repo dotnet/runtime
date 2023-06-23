@@ -433,6 +433,25 @@ public abstract class BaseEmbeddingApiTests
 
     [TestCase(typeof(object))]
     [TestCase(typeof(Mammal))]
+    [TestCase(typeof(Cat))]
+    [TestCase(typeof(Rock))]
+    [TestCase(typeof(CatOnlyInterface))]
+    public void MethodGet(Type type)
+    {
+        // Test only methods on the type itself to ensure they belong to the same module
+        var typeMethods = type.GetMethods(BindingFlags.NonPublic | BindingFlags.Public | BindingFlags.Instance | BindingFlags.Static | BindingFlags.DeclaredOnly);
+        foreach (var m in typeMethods)
+        {
+            var token = m.MetadataToken;
+            var expected = m.MethodHandle;
+            var actual = ClrHost.get_method(ClrHost.class_get_image(type), (uint)token, null);
+            Assert.NotNull(actual);
+            Assert.AreEqual(expected, actual);
+        }
+    }
+
+    [TestCase(typeof(object))]
+    [TestCase(typeof(Mammal))]
     [TestCase(typeof(Socket))]
     public void ClassGetImage(Type type)
     {
