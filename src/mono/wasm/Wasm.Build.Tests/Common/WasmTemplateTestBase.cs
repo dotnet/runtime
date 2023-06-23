@@ -3,15 +3,8 @@
 
 #nullable enable
 
-using System;
 using System.IO;
-using System.Linq;
-using System.Text.Json.Nodes;
-using System.Threading.Tasks;
-using Microsoft.Playwright;
-using Xunit;
 using Xunit.Abstractions;
-using Xunit.Sdk;
 
 namespace Wasm.Build.Tests;
 
