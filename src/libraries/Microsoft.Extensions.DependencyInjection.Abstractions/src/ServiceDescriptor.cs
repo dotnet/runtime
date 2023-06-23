@@ -591,7 +591,7 @@ namespace Microsoft.Extensions.DependencyInjection
         /// <typeparam name="TImplementation">The type of the implementation.</typeparam>
         /// <param name="serviceKey">The <see cref="ServiceDescriptor.ServiceKey"/> of the service.</param>
         /// <returns>A new instance of <see cref="ServiceDescriptor"/>.</returns>
-        public static ServiceDescriptor Singleton<TService, [DynamicallyAccessedMembers(DynamicallyAccessedMemberTypes.PublicConstructors)] TImplementation>(
+        public static ServiceDescriptor KeyedSingleton<TService, [DynamicallyAccessedMembers(DynamicallyAccessedMemberTypes.PublicConstructors)] TImplementation>(
             object serviceKey)
             where TService : class
             where TImplementation : class, TService
