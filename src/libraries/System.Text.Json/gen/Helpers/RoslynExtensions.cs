@@ -15,13 +15,15 @@ namespace System.Text.Json.SourceGeneration
 {
     internal static class RoslynExtensions
     {
+        public static LanguageVersion? GetLanguageVersion(this Compilation compilation)
+            => compilation is CSharpCompilation csc ? csc.LanguageVersion : null;
+
         public static INamedTypeSymbol? GetBestTypeByMetadataName(this Compilation compilation, Type type)
         {
             Debug.Assert(!type.IsArray, "Resolution logic only capable of handling named types.");
             Debug.Assert(type.FullName != null);
             return compilation.GetBestTypeByMetadataName(type.FullName);
         }
-
         public static string GetFullyQualifiedName(this ITypeSymbol type) => type.ToDisplayString(SymbolDisplayFormat.FullyQualifiedFormat);
 
         public static Location? GetDiagnosticLocation(this ISymbol typeSymbol)
