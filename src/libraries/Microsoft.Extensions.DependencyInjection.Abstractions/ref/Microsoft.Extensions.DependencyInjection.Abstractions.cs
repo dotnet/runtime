@@ -156,7 +156,11 @@ namespace Microsoft.Extensions.DependencyInjection
         public object? ImplementationInstance { get { throw null; } }
         [System.Diagnostics.CodeAnalysis.DynamicallyAccessedMembersAttribute(System.Diagnostics.CodeAnalysis.DynamicallyAccessedMemberTypes.PublicConstructors)]
         public System.Type? ImplementationType { get { throw null; } }
+        public bool IsKeyedService { get { throw null; } }
         public System.Func<System.IServiceProvider, object, object>? KeyedImplementationFactory { get { throw null; } }
+        public object? KeyedImplementationInstance { get { throw null; } }
+        [System.Diagnostics.CodeAnalysis.DynamicallyAccessedMembersAttribute(System.Diagnostics.CodeAnalysis.DynamicallyAccessedMemberTypes.PublicConstructors)]
+        public System.Type? KeyedImplementationType { get { throw null; } }
         public Microsoft.Extensions.DependencyInjection.ServiceLifetime Lifetime { get { throw null; } }
         public object? ServiceKey { get { throw null; } }
         public System.Type ServiceType { get { throw null; } }

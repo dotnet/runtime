@@ -39,7 +39,7 @@ namespace Microsoft.Extensions.DependencyInjection.ServiceLookup
                 Type serviceType = descriptor.ServiceType;
                 if (serviceType.IsGenericTypeDefinition)
                 {
-                    Type? implementationType = descriptor.ImplementationType;
+                    Type? implementationType = descriptor.GetImplementationType();
 
                     if (implementationType == null || !implementationType.IsGenericTypeDefinition)
                     {
@@ -67,10 +67,10 @@ namespace Microsoft.Extensions.DependencyInjection.ServiceLookup
                         ValidateTrimmingAnnotations(serviceType, serviceTypeGenericArguments, implementationType, implementationTypeGenericArguments);
                     }
                 }
-                else if (descriptor.ImplementationInstance == null && descriptor.ImplementationFactory == null && descriptor.KeyedImplementationFactory == null)
+                else if (!descriptor.HasImplementationInstance() && !descriptor.HasImplementationFactory())
                 {
-                    Debug.Assert(descriptor.ImplementationType != null);
-                    Type implementationType = descriptor.ImplementationType;
+                    Type? implementationType = descriptor.GetImplementationType();
+                    Debug.Assert(implementationType != null);
 
                     if (implementationType.IsGenericTypeDefinition ||
                         implementationType.IsAbstract ||
@@ -377,21 +377,21 @@ namespace Microsoft.Extensions.DependencyInjection.ServiceLookup
 
                 ServiceCallSite callSite;
                 var lifetime = new ResultCache(descriptor.Lifetime, serviceIdentifier, slot);
-                if (descriptor.ImplementationInstance != null)
+                if (descriptor.HasImplementationInstance())
                 {
-                    callSite = new ConstantCallSite(descriptor.ServiceType, descriptor.ImplementationInstance);
+                    callSite = new ConstantCallSite(descriptor.ServiceType, descriptor.GetImplementationInstance());
                 }
-                else if (descriptor.ImplementationFactory != null)
+                else if (!descriptor.IsKeyedService && descriptor.ImplementationFactory != null)
                 {
                     callSite = new FactoryCallSite(lifetime, descriptor.ServiceType, descriptor.ImplementationFactory);
                 }
-                else if (descriptor.KeyedImplementationFactory != null)
+                else if (descriptor.IsKeyedService && descriptor.KeyedImplementationFactory != null)
                 {
                     callSite = new FactoryCallSite(lifetime, descriptor.ServiceType, serviceIdentifier.ServiceKey!, descriptor.KeyedImplementationFactory);
                 }
-                else if (descriptor.ImplementationType != null)
+                else if (descriptor.HasImplementationType())
                 {
-                    callSite = CreateConstructorCallSite(lifetime, serviceIdentifier, descriptor.ImplementationType, callSiteChain);
+                    callSite = CreateConstructorCallSite(lifetime, serviceIdentifier, descriptor.GetImplementationType()!, callSiteChain);
                 }
                 else
                 {
@@ -423,7 +423,8 @@ namespace Microsoft.Extensions.DependencyInjection.ServiceLookup
                     return serviceCallSite;
                 }
 
-                Debug.Assert(descriptor.ImplementationType != null, "descriptor.ImplementationType != null");
+                Type? implementationType = descriptor.GetImplementationType();
+                Debug.Assert(implementationType != null, "descriptor.ImplementationType != null");
                 var lifetime = new ResultCache(descriptor.Lifetime, serviceIdentifier, slot);
                 Type closedType;
                 try
@@ -434,7 +435,7 @@ namespace Microsoft.Extensions.DependencyInjection.ServiceLookup
                         VerifyOpenGenericAotCompatibility(serviceIdentifier.ServiceType, genericTypeArguments);
                     }
 
-                    closedType = descriptor.ImplementationType.MakeGenericType(genericTypeArguments);
+                    closedType = implementationType.MakeGenericType(genericTypeArguments);
                 }
                 catch (ArgumentException)
                 {

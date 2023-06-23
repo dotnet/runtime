@@ -44,7 +44,7 @@ namespace Microsoft.Extensions.DependencyInjection
             ThrowHelper.ThrowIfNull(serviceType);
             ThrowHelper.ThrowIfNull(implementationType);
 
-            ImplementationType = implementationType;
+            _implementationType = implementationType;
         }
 
         /// <summary>
@@ -76,7 +76,7 @@ namespace Microsoft.Extensions.DependencyInjection
             ThrowHelper.ThrowIfNull(serviceType);
             ThrowHelper.ThrowIfNull(instance);
 
-            ImplementationInstance = instance;
+            _implementationInstance = instance;
         }
 
         /// <summary>
@@ -94,7 +94,7 @@ namespace Microsoft.Extensions.DependencyInjection
             ThrowHelper.ThrowIfNull(serviceType);
             ThrowHelper.ThrowIfNull(factory);
 
-            ImplementationFactory = factory;
+            _implementationFactory = factory;
         }
 
         /// <summary>
@@ -114,7 +114,7 @@ namespace Microsoft.Extensions.DependencyInjection
             ThrowHelper.ThrowIfNull(serviceType);
             ThrowHelper.ThrowIfNull(factory);
 
-            KeyedImplementationFactory = factory;
+            _implementationFactory = factory;
         }
 
         private ServiceDescriptor(Type serviceType, object? serviceKey, ServiceLifetime lifetime)
@@ -139,80 +139,183 @@ namespace Microsoft.Extensions.DependencyInjection
         /// </summary>
         public Type ServiceType { get; }
 
+        [DynamicallyAccessedMembers(DynamicallyAccessedMemberTypes.PublicConstructors)]
+        private Type? _implementationType;
+
         /// <summary>
         /// Gets the <see cref="Type"/> that implements the service.
         /// </summary>
         [DynamicallyAccessedMembers(DynamicallyAccessedMemberTypes.PublicConstructors)]
-        public Type? ImplementationType { get; }
+        public Type? ImplementationType
+        {
+            get
+            {
+                if (IsKeyedService)
+                {
+                    ThrowKeyedDescriptor();
+                }
+                return _implementationType;
+            }
+        }
+
+        /// <summary>
+        /// Gets the <see cref="Type"/> that implements the service.
+        /// </summary>
+        [DynamicallyAccessedMembers(DynamicallyAccessedMemberTypes.PublicConstructors)]
+        public Type? KeyedImplementationType
+        {
+            get
+            {
+                if (!IsKeyedService)
+                {
+                    ThrowNonKeyedDescriptor();
+                }
+                return _implementationType;
+            }
+        }
+
+        private object? _implementationInstance;
 
         /// <summary>
         /// Gets the instance that implements the service.
         /// </summary>
-        public object? ImplementationInstance { get; }
+        public object? ImplementationInstance
+        {
+            get
+            {
+                if (IsKeyedService)
+                {
+                    ThrowKeyedDescriptor();
+                }
+                return _implementationInstance;
+            }
+        }
+
+        /// <summary>
+        /// Gets the instance that implements the service.
+        /// </summary>
+        public object? KeyedImplementationInstance
+        {
+            get
+            {
+                if (!IsKeyedService)
+                {
+                    ThrowNonKeyedDescriptor();
+                }
+                return _implementationInstance;
+            }
+        }
+
+        private object? _implementationFactory;
 
         /// <summary>
         /// Gets the factory used for creating service instances.
         /// </summary>
-        public Func<IServiceProvider, object>? ImplementationFactory { get; }
+        public Func<IServiceProvider, object>? ImplementationFactory
+        {
+            get
+            {
+                if (IsKeyedService)
+                {
+                    ThrowKeyedDescriptor();
+                }
+                return (Func<IServiceProvider, object>?) _implementationFactory;
+            }
+        }
 
         /// <summary>
         /// Gets the factory used for creating Keyed service instances.
         /// </summary>
-        public Func<IServiceProvider, object, object>? KeyedImplementationFactory { get; }
+        public Func<IServiceProvider, object, object>? KeyedImplementationFactory
+        {
+            get
+            {
+                if (!IsKeyedService)
+                {
+                    ThrowNonKeyedDescriptor();
+                }
+                return (Func<IServiceProvider, object, object>?) _implementationFactory;
+            }
+        }
+
+        public bool IsKeyedService => ServiceKey != null;
 
         /// <inheritdoc />
         public override string ToString()
         {
             string? lifetime = $"{nameof(ServiceType)}: {ServiceType} {nameof(Lifetime)}: {Lifetime} ";
 
-            if (ServiceKey != null)
+            if (IsKeyedService)
             {
                 lifetime += $"{nameof(ServiceKey)}: {ServiceKey} ";
-            }
 
-            if (ImplementationType != null)
+                if (KeyedImplementationType != null)
+                {
+                    return lifetime + $"{nameof(KeyedImplementationType)}: {KeyedImplementationType}";
+                }
+
+                if (KeyedImplementationFactory != null)
+                {
+                    return lifetime + $"{nameof(KeyedImplementationFactory)}: {KeyedImplementationFactory.Method}";
+                }
+
+                return lifetime + $"{nameof(KeyedImplementationInstance)}: {KeyedImplementationInstance}";
+            }
+            else
             {
-                return lifetime + $"{nameof(ImplementationType)}: {ImplementationType}";
-            }
+                if (ImplementationType != null)
+                {
+                    return lifetime + $"{nameof(ImplementationType)}: {ImplementationType}";
+                }
 
-            if (ImplementationFactory != null)
-            {
-                return lifetime + $"{nameof(ImplementationFactory)}: {ImplementationFactory.Method}";
-            }
+                if (ImplementationFactory != null)
+                {
+                    return lifetime + $"{nameof(ImplementationFactory)}: {ImplementationFactory.Method}";
+                }
 
-            if (KeyedImplementationFactory != null)
-            {
-                return lifetime + $"{nameof(KeyedImplementationFactory)}: {KeyedImplementationFactory.Method}";
+                return lifetime + $"{nameof(ImplementationInstance)}: {ImplementationInstance}";
             }
-
-            return lifetime + $"{nameof(ImplementationInstance)}: {ImplementationInstance}";
         }
 
         internal Type GetImplementationType()
         {
-            if (ImplementationType != null)
+            if (ServiceKey == null)
             {
-                return ImplementationType;
+                if (ImplementationType != null)
+                {
+                    return ImplementationType;
+                }
+                else if (ImplementationInstance != null)
+                {
+                    return ImplementationInstance.GetType();
+                }
+                else if (ImplementationFactory != null)
+                {
+                    Type[]? typeArguments = ImplementationFactory.GetType().GenericTypeArguments;
+
+                    Debug.Assert(typeArguments.Length == 2);
+
+                    return typeArguments[1];
+                }
             }
-            else if (ImplementationInstance != null)
+            else
             {
-                return ImplementationInstance.GetType();
-            }
-            else if (ImplementationFactory != null)
-            {
-                Type[]? typeArguments = ImplementationFactory.GetType().GenericTypeArguments;
+                if (KeyedImplementationType != null)
+                {
+                    return KeyedImplementationType;
+                }
+                else if (KeyedImplementationInstance != null)
+                {
+                    return KeyedImplementationInstance.GetType();
+                }
+                else if (KeyedImplementationFactory != null)
+                {
+                    Type[]? typeArguments = KeyedImplementationFactory.GetType().GenericTypeArguments;
 
-                Debug.Assert(typeArguments.Length == 2);
+                    Debug.Assert(typeArguments.Length == 2);
 
-                return typeArguments[1];
-            }
-            else if (KeyedImplementationFactory != null)
-            {
-                Type[]? typeArguments = KeyedImplementationFactory.GetType().GenericTypeArguments;
-
-                Debug.Assert(typeArguments.Length == 3);
-
-                return typeArguments[2];
+                    return typeArguments[1];
+                }
             }
 
             Debug.Assert(false, "ImplementationType, ImplementationInstance, ImplementationFactory or KeyedImplementationFactory must be non null");
@@ -923,5 +1026,9 @@ namespace Microsoft.Extensions.DependencyInjection
 
             return debugText;
         }
+
+        private static void ThrowKeyedDescriptor() => throw new InvalidOperationException(SR.KeyedDescriptorMisuse);
+
+        private static void ThrowNonKeyedDescriptor() => throw new InvalidOperationException(SR.NonKeyedDescriptorMisuse);
     }
 }
