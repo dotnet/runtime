@@ -249,5 +249,38 @@ namespace System.IO.Compression.Tests
 
             Assert.Equal(expectedEntries, entriesEncrypted);
         }
+
+
+        [Fact]
+        public static async Task EnsureDisposeIsCalledOnlyOnce()
+        {
+            var disposeCallCountingStream = new DisposeCallCountingStream();
+            using (var tempStream = await StreamHelpers.CreateTempCopyStream(zfile("small.zip")))
+            {
+                tempStream.CopyTo(disposeCallCountingStream);
+            }
+
+            using (ZipArchive archive = new ZipArchive(disposeCallCountingStream, ZipArchiveMode.Read))
+            {
+                // Iterate through entries to ensure read of zip file
+                foreach (ZipArchiveEntry entry in archive.Entries)
+                {
+                    Assert.False(entry.IsEncrypted);
+                }
+            }
+
+            Assert.Equal(1, disposeCallCountingStream.NumberOfDisposeCalls);
+        }
+
+        private class DisposeCallCountingStream : MemoryStream
+        {
+            public int NumberOfDisposeCalls { get; private set; }
+
+            protected override void Dispose(bool disposing)
+            {
+                NumberOfDisposeCalls++;
+                base.Dispose(disposing);
+            }
+        }
     }
 }
