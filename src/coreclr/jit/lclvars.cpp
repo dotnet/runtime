@@ -2453,7 +2453,7 @@ void Compiler::StructPromotionHelper::PromoteStructVar(unsigned lclNum)
             if (GlobalJitOptions::compFeatureHfa && (pFieldInfo->fldSize <= MAX_PASS_MULTIREG_BYTES))
             {
                 // hfaType is set to float, double or SIMD type if it is an HFA, otherwise TYP_UNDEF
-                var_types hfaType = compiler->GetHfaType(pFieldInfo->fldTypeHnd);
+                var_types hfaType = compiler->GetHfaType(pFieldInfo->fldSIMDTypeHnd);
                 if (varTypeIsValidHfaType(hfaType))
                 {
                     fieldVarDsc->SetHfaType(hfaType);

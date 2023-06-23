@@ -3579,7 +3579,6 @@ public:
         uint8_t              fldOrdinal = 0;
         var_types            fldType = TYP_UNDEF;
         unsigned             fldSize = 0;
-        bool                 isOpaqueSIMDType = false;
 
 #ifdef DEBUG
         // Field handle for diagnostic purposes only. See CORINFO_TYPE_LAYOUT_NODE.
