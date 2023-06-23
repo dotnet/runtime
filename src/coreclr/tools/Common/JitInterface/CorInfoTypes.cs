@@ -1462,17 +1462,18 @@ namespace Internal.JitInterface
         Failure = 2,
     }
 
+    // See comments in interface declaration. There are important restrictions
+    // on the fields of this structure and how the JIT uses them and is allowed
+    // to use them.
     public unsafe struct CORINFO_TYPE_LAYOUT_NODE
     {
-        public CORINFO_CLASS_STRUCT_* typeHnd;
-        public CORINFO_FIELD_STRUCT_* fieldHnd;
+        public CORINFO_CLASS_STRUCT_* simdTypeHnd;
+        public CORINFO_FIELD_STRUCT_* diagFieldHnd;
         public uint parent;
         public uint offset;
         public uint size;
         public uint numFields;
         public CorInfoType type;
-        private byte _isVectorType;
-        public bool isSIMDType { get => _isVectorType != 0; set => _isVectorType = value ? (byte)1 : (byte)0; }
         private byte _hasSignificantPadding;
         public bool hasSignificantPadding { get => _hasSignificantPadding != 0; set => _hasSignificantPadding = value ? (byte)1 : (byte)0; }
     }

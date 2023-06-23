@@ -2099,14 +2099,13 @@ static GetTypeLayoutResult GetTypeLayoutHelper(
 
     unsigned structNodeIndex = (unsigned)(*numTreeNodes)++;
     CORINFO_TYPE_LAYOUT_NODE& parNode = treeNodes[structNodeIndex];
-    parNode.typeHnd = CORINFO_CLASS_HANDLE(pMT);
-    parNode.fieldHnd = CORINFO_FIELD_HANDLE(pFD);
+    parNode.simdTypeHnd = NULL;
+    parNode.diagFieldHnd = CORINFO_FIELD_HANDLE(pFD);
     parNode.parent = parentIndex;
     parNode.offset = baseOffs;
     parNode.size = pMT->GetNumInstanceFieldBytes();
     parNode.numFields = 0;
     parNode.type = CorInfoType::CORINFO_TYPE_VALUECLASS;
-    parNode.isSIMDType = false;
     parNode.hasSignificantPadding = false;
 
     EEClass* pClass = pMT->GetClass();
@@ -2132,7 +2131,7 @@ static GetTypeLayoutResult GetTypeLayoutHelper(
         if ((strcmp(nsName, "System.Runtime.Intrinsics") == 0) ||
             (strcmp(nsName, "System.Numerics") == 0))
         {
-            parNode.isSIMDType = true;
+            parNode.simdTypeHnd = CORINFO_CLASS_HANDLE(pMT);
             if (parentIndex != UINT32_MAX)
             {
                 return GetTypeLayoutResult::Success;
@@ -2166,14 +2165,13 @@ static GetTypeLayoutResult GetTypeLayoutHelper(
             _ASSERTE(corInfoType != CORINFO_TYPE_UNDEF);
 
             CORINFO_TYPE_LAYOUT_NODE& treeNode = treeNodes[(*numTreeNodes)++];
-            treeNode.typeHnd = NULL;
-            treeNode.fieldHnd = CORINFO_FIELD_HANDLE(pFD);
+            treeNode.simdTypeHnd = NULL;
+            treeNode.diagFieldHnd = CORINFO_FIELD_HANDLE(pFD);
             treeNode.parent = structNodeIndex;
             treeNode.offset = baseOffs + pFD->GetOffset();
             treeNode.size = GetSizeForCorElementType(fieldType);
             treeNode.numFields = 0;
             treeNode.type = corInfoType;
-            treeNode.isSIMDType = false;
             treeNode.hasSignificantPadding = false;
         }
 
@@ -2223,14 +2221,13 @@ GetTypeLayoutResult CEEInfo::getTypeLayout(
         if (*numTreeNodes > 0)
         {
             *numTreeNodes = 1;
-            treeNodes[0].typeHnd = clsHnd;
-            treeNodes[0].fieldHnd = NULL;
+            treeNodes[0].simdTypeHnd = NULL;
+            treeNodes[0].diagFieldHnd = NULL;
             treeNodes[0].parent = UINT32_MAX;
             treeNodes[0].offset = 0;
             treeNodes[0].size = typeHnd.GetSize();
             treeNodes[0].numFields = 0;
             treeNodes[0].type = CORINFO_TYPE_VALUECLASS;
-            treeNodes[0].isSIMDType = false;
             treeNodes[0].hasSignificantPadding = true;
             result = GetTypeLayoutResult::Success;
         }

@@ -1812,7 +1812,7 @@ bool Compiler::StructPromotionHelper::CanPromoteStructType(CORINFO_CLASS_HANDLE 
         const CORINFO_TYPE_LAYOUT_NODE& node = treeNodes[i];
         assert(node.parent == 0);
         lvaStructFieldInfo& promField = structPromotionInfo.fields[structPromotionInfo.fieldCnt];
-        promField.fldHnd              = node.fieldHnd;
+        INDEBUG(promField.diagFldHnd = node.diagFieldHnd);
 
         // Ensured by assertion on size above.
         assert(FitsIn<decltype(promField.fldOffset)>(node.offset));
@@ -1831,14 +1831,13 @@ bool Compiler::StructPromotionHelper::CanPromoteStructType(CORINFO_CLASS_HANDLE 
                 return false;
             }
 
-            promField.fldType    = fldType;
-            promField.fldTypeHnd = node.typeHnd;
+            promField.fldType        = fldType;
+            promField.fldSIMDTypeHnd = node.simdTypeHnd;
             AdvanceSubTree(treeNodes, numTreeNodes, &i);
         }
         else
         {
-            promField.fldType    = JITtype2varType(node.type);
-            promField.fldTypeHnd = NO_CLASS_HANDLE;
+            promField.fldType = JITtype2varType(node.type);
             i++;
         }
 
@@ -1896,17 +1895,17 @@ var_types Compiler::StructPromotionHelper::TryPromoteValueClassAsPrimitive(CORIN
     CORINFO_TYPE_LAYOUT_NODE& node = treeNodes[index];
     assert(node.type == CORINFO_TYPE_VALUECLASS);
 
-    if (node.isSIMDType)
+    if (node.simdTypeHnd != NO_CLASS_HANDLE)
     {
         const char* namespaceName = nullptr;
-        const char* className     = compiler->info.compCompHnd->getClassNameFromMetadata(node.typeHnd, &namespaceName);
+        const char* className = compiler->info.compCompHnd->getClassNameFromMetadata(node.simdTypeHnd, &namespaceName);
 
 #ifdef FEATURE_SIMD
         if (compiler->usesSIMDTypes() &&
             (compiler->isRuntimeIntrinsicsNamespace(namespaceName) || compiler->isNumericsNamespace(namespaceName)))
         {
             unsigned    simdSize;
-            CorInfoType simdBaseJitType = compiler->getBaseJitTypeAndSizeOfSIMDType(node.typeHnd, &simdSize);
+            CorInfoType simdBaseJitType = compiler->getBaseJitTypeAndSizeOfSIMDType(node.simdTypeHnd, &simdSize);
             // We will only promote fields of SIMD types that fit into a SIMD register.
             if (simdBaseJitType != CORINFO_TYPE_UNDEF)
             {
@@ -1919,7 +1918,7 @@ var_types Compiler::StructPromotionHelper::TryPromoteValueClassAsPrimitive(CORIN
 #endif
 
 #ifdef TARGET_64BIT
-        // TODO-Quirk: Vector64 is an intrinsic type with one 64-bit field, so when
+        // TODO-Quirk: Vector64 is a SIMD type with one 64-bit field, so when
         // compiler->usesSIMDTypes() == false, it used to be promoted as a long
         // field.
         if (compiler->isRuntimeIntrinsicsNamespace(namespaceName) && (strcmp(className, "Vector64`1") == 0))
@@ -2102,8 +2101,8 @@ bool Compiler::StructPromotionHelper::CanPromoteStructVar(unsigned lclNum)
 #if defined(FEATURE_SIMD)
                 // If we have a register-passed struct with mixed non-opaque SIMD types (i.e. with defined fields)
                 // and non-SIMD types, we don't currently handle that case in the prolog, so we can't promote.
-                else if ((fieldCnt > 1) && varTypeIsStruct(fieldType) &&
-                         !compiler->isOpaqueSIMDType(structPromotionInfo.fields[i].fldTypeHnd))
+                else if ((fieldCnt > 1) && (structPromotionInfo.fields[i].fldSIMDTypeHnd != NO_CLASS_HANDLE) &&
+                         !compiler->isOpaqueSIMDType(structPromotionInfo.fields[i].fldSIMDTypeHnd))
                 {
                     canPromote = false;
                 }
@@ -2346,7 +2345,7 @@ void Compiler::StructPromotionHelper::PromoteStructVar(unsigned lclNum)
         char        buf[200];
         char        fieldNameBuffer[128];
         const char* fieldName =
-            compiler->eeGetFieldName(pFieldInfo->fldHnd, false, fieldNameBuffer, sizeof(fieldNameBuffer));
+            compiler->eeGetFieldName(pFieldInfo->diagFldHnd, false, fieldNameBuffer, sizeof(fieldNameBuffer));
         sprintf_s(buf, sizeof(buf), "field V%02u.%s (fldOffset=0x%x)", lclNum, fieldName, pFieldInfo->fldOffset);
 
         // We need to copy 'buf' as lvaGrabTemp() below caches a copy to its argument.
@@ -2442,7 +2441,6 @@ void Compiler::StructPromotionHelper::PromoteStructVar(unsigned lclNum)
 #ifdef FEATURE_SIMD
         if (varTypeIsSIMD(pFieldInfo->fldType))
         {
-            compiler->lvaSetStruct(varNum, pFieldInfo->fldTypeHnd, false);
             // We will not recursively promote this, so mark it as 'lvRegStruct' (note that we wouldn't
             // be promoting this if we didn't think it could be enregistered.
             fieldVarDsc->lvRegStruct = true;

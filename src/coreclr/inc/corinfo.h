@@ -1934,11 +1934,20 @@ struct CORINFO_VarArgInfo
 
 struct CORINFO_TYPE_LAYOUT_NODE
 {
-    // Type handle if type == CORINFO_TYPE_VALUECLASS
-    CORINFO_CLASS_HANDLE typeHnd;
-    // Field handle; only for diagnostic purposes, e.g. R2R does not support
-    // arbitrary queries for fields that are outside the version bubble.
-    CORINFO_FIELD_HANDLE fieldHnd;
+    // Type handle if this is a SIMD type, i.e. for intrinsic types in
+    // System.Numerics and System.Runtime.Intrinsics namespaces. This handle
+    // should be used for SIMD type recognition ONLY. During prejitting the
+    // returned handle cannot safely be used for arbitrary JIT-EE calls. The
+    // safe operations on this handle are:
+    // - getClassNameFromMetadata
+    // - getClassSize
+    // - getTypeInstantiationArgument, but only under the assumption that the returned type handle
+    //   is used for primitive type recognition via getTypeForPrimitiveNumericClass
+    CORINFO_CLASS_HANDLE simdTypeHnd;
+    // Field handle that should only be used for diagnostic purposes. During
+    // prejit we cannot allow arbitrary JIT-EE calls with this field handle, but it can be used
+    // for diagnostic purposes (e.g. to obtain the field name).
+    CORINFO_FIELD_HANDLE diagFieldHnd;
     // Index of parent node in the tree
     unsigned parent;
     // Offset into the root type of the field
@@ -1949,9 +1958,9 @@ struct CORINFO_TYPE_LAYOUT_NODE
     unsigned numFields;
     // Type of the field.
     CorInfoType type;
-    // For type == CORINFO_TYPE_VALUECLASS indicates whether the type is a SIMD type
-    bool isSIMDType;
     // For type == CORINFO_TYPE_VALUECLASS indicates whether the type has significant padding.
+    // That is, whether or not the JIT always needs to preserve data stored in
+    // the parts that are not covered by fields.
     bool hasSignificantPadding;
 };
 
@@ -2450,7 +2459,17 @@ public:
     //   own index + 1.
     //
     //   SIMD and HW SIMD types are returned as a single entry without any
-    //   children.
+    //   children. For those, CORINFO_TYPE_LAYOUT_NODE::simdTypeHnd is set, but
+    //   can only be used in a very restricted capacity; see
+    //   CORINFO_TYPE_LAYOUT_NODE.
+    //
+    //   IMPORTANT: except for GC pointers the fields returned to the JIT by
+    //   this function should be considered as a hint only. The JIT CANNOT make
+    //   assumptions in its codegen that the specified fields are actually part
+    //   of the type when the code finally runs. This means the JIT should not
+    //   make optimizations based on the field information returned by this
+    //   function that would break if those fields were removed or shifted
+    //   around.
     //
     virtual GetTypeLayoutResult getTypeLayout(
             CORINFO_CLASS_HANDLE typeHnd,

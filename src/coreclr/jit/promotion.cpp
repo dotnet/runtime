@@ -1639,7 +1639,8 @@ StructSegments Promotion::SignificantSegments(ClassLayout* layout)
             for (size_t i = 0; i < numNodes; i++)
             {
                 const CORINFO_TYPE_LAYOUT_NODE& node = nodes[i];
-                if ((node.type != CORINFO_TYPE_VALUECLASS) || node.isSIMDType || node.hasSignificantPadding)
+                if ((node.type != CORINFO_TYPE_VALUECLASS) || (node.simdTypeHnd != NO_CLASS_HANDLE) ||
+                    node.hasSignificantPadding)
                 {
                     segments.Add(StructSegments::Segment(node.offset, node.offset + node.size));
                 }

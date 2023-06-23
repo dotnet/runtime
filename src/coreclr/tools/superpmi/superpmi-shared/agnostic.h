@@ -206,8 +206,8 @@ struct Agnostic_GetStaticFieldCurrentClass
 
 struct Agnostic_CORINFO_TYPE_LAYOUT_NODE
 {
-    DWORDLONG typeHnd;
-    DWORDLONG fieldHnd;
+    DWORDLONG simdTypeHnd;
+    DWORDLONG diagFieldHnd;
     DWORD parent;
     DWORD offset;
     DWORD size;

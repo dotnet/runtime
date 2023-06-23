@@ -548,14 +548,13 @@ inline CORINFO_LOOKUP SpmiRecordsHelper::RestoreCORINFO_LOOKUP(Agnostic_CORINFO_
 inline Agnostic_CORINFO_TYPE_LAYOUT_NODE SpmiRecordsHelper::StoreAgnostic_CORINFO_TYPE_LAYOUT_NODE(const CORINFO_TYPE_LAYOUT_NODE& node)
 {
     Agnostic_CORINFO_TYPE_LAYOUT_NODE result;
-    result.typeHnd = CastHandle(node.typeHnd);
-    result.fieldHnd = CastHandle(node.fieldHnd);
+    result.simdTypeHnd = CastHandle(node.simdTypeHnd);
+    result.diagFieldHnd = CastHandle(node.diagFieldHnd);
     result.parent = node.parent;
     result.offset = node.offset;
     result.size = node.size;
     result.numFields = node.numFields;
     result.type = (BYTE)node.type;
-    result.isSIMDType = node.isSIMDType;
     result.hasSignificantPadding = node.hasSignificantPadding;
     return result;
 }
@@ -563,14 +562,13 @@ inline Agnostic_CORINFO_TYPE_LAYOUT_NODE SpmiRecordsHelper::StoreAgnostic_CORINF
 inline CORINFO_TYPE_LAYOUT_NODE SpmiRecordsHelper::RestoreCORINFO_TYPE_LAYOUT_NODE(const Agnostic_CORINFO_TYPE_LAYOUT_NODE& node)
 {
     CORINFO_TYPE_LAYOUT_NODE result;
-    result.typeHnd = (CORINFO_CLASS_HANDLE)node.typeHnd;
-    result.fieldHnd = (CORINFO_FIELD_HANDLE)node.fieldHnd;
+    result.simdTypeHnd = (CORINFO_CLASS_HANDLE)node.simdTypeHnd;
+    result.diagFieldHnd = (CORINFO_FIELD_HANDLE)node.diagFieldHnd;
     result.parent = node.parent;
     result.offset = node.offset;
     result.size = node.size;
     result.numFields = node.numFields;
     result.type = (CorInfoType)node.type;
-    result.isSIMDType = node.isSIMDType;
     result.hasSignificantPadding = node.hasSignificantPadding;
     return result;
 }
