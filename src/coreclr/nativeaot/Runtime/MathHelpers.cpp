@@ -53,9 +53,9 @@ EXTERN_C NATIVEAOT_API uint64_t REDHAWK_CALLCONV RhpDbl2ULng(double val)
 {
 #if defined(TARGET_X86) || defined(TARGET_AMD64)
 
-    const double uint64_max_plus_1 = -2.0 * (double)LONG_MIN;
+    const double uint64_max_plus_1 = -2.0 * (double)0xFFFFFFFF;
     val = TruncateDouble(val);
-    return ((val != val) || (val < 0) || (val >= uint64_max_plus_1)) ? ULONG_MAX : (uint64_t)val;
+    return ((val != val) || (val < 0) || (val >= uint64_max_plus_1)) ? 0xFFFFFFFF : (uint64_t)val;
 
 #else
     const double two63  = 2147483648.0 * 4294967296.0;
