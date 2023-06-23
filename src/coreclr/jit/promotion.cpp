@@ -617,7 +617,7 @@ public:
         // Write backs with TYP_REFs when the base local is an implicit byref
         // involves checked write barriers, so they are very expensive. We cost that at 10 cycles.
         const weight_t COST_WRITEBARRIER_CYCLES = 10;
-        const int      COST_WRITEBARRIER_SIZE   = 10;
+        const weight_t COST_WRITEBARRIER_SIZE   = 10;
 
         // TODO-CQ: This should be adjusted once we type implicit byrefs as TYP_I_IMPL.
         // Otherwise we cost it like a store to stack at 3 cycles.
@@ -642,7 +642,7 @@ public:
         // (Additionally, if it weren't we could teach the backend some
         // store-forwarding/forward sub to make the write backs "free".)
         weight_t countWriteBacksWtd = countOverlappedCallArgWtd;
-        int      countWriteBacks    = countOverlappedCallArg;
+        unsigned countWriteBacks    = countOverlappedCallArg;
         costWith += countWriteBacksWtd * writeBackCost;
         sizeWith += countWriteBacks * writeBackSize;
 
@@ -671,17 +671,18 @@ public:
         JITDUMP("    Single write-back cost: " FMT_WT "\n", writeBackCost);
         JITDUMP("    Write backs: " FMT_WT "\n", countWriteBacksWtd);
         JITDUMP("    Read backs: " FMT_WT "\n", countReadBacksWtd);
-        JITDUMP("    Estimated cycle improvement: " FMT_WT " cycles per invocation \n", cycleImprovementPerInvoc);
+        JITDUMP("    Estimated cycle improvement: " FMT_WT " cycles per invocation\n", cycleImprovementPerInvoc);
         JITDUMP("    Estimated size improvement: " FMT_WT " bytes\n", sizeImprovement);
 
         // We allow X bytes of code size regressions for every cycle of
-        // estimated improvement. Note that generally both estimates are
-        // positive, so this is really only for rare cases where we have many
-        // call arg uses in rarely executed blocks.
-        const weight_t allowedSizeRegressionPerCycleImprovement = 2;
+        // estimated improvement. Note that generally both estimates agree on
+        // whether promotion is an improvement or regression, so this is really
+        // only for rare cases where we have many call arg uses in rarely
+        // executed blocks.
+        const weight_t ALLOWED_SIZE_REGRESSION_PER_CYCLE_IMPROVEMENT = 2;
 
         if ((cycleImprovementPerInvoc > 0) &&
-            ((cycleImprovementPerInvoc * allowedSizeRegressionPerCycleImprovement) >= -sizeImprovement))
+            ((cycleImprovementPerInvoc * ALLOWED_SIZE_REGRESSION_PER_CYCLE_IMPROVEMENT) >= -sizeImprovement))
         {
             JITDUMP("  Promoting replacement\n\n");
             return true;
