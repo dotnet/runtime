@@ -79,8 +79,8 @@ namespace System.Runtime.InteropServices.Marshalling
 
         private static ConstructorInfo GetIgnoresAccessChecksToAttributeConstructor(ModuleBuilder moduleBuilder)
         {
-            var magicAttribute = EmitIgnoresAccessChecksToAttribute(moduleBuilder);
-            return magicAttribute.GetConstructor(new Type[] { typeof(string) })!;
+            Type attributeType = EmitIgnoresAccessChecksToAttribute(moduleBuilder);
+            return attributeType.GetConstructor(new Type[] { typeof(string) })!;
         }
 
         [return: DynamicallyAccessedMembers(DynamicallyAccessedMemberTypes.PublicConstructors)]
