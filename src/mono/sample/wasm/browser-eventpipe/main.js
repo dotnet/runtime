@@ -66,6 +66,11 @@ async function main() {
     btn.style.backgroundColor = "rgb(192,255,192)";
     btn.onclick = () => doWork(exports.Sample.Test.StartAsyncWork, exports.Sample.Test.StopWork, exports.Sample.Test.GetIterationsDone);
 
+    if (INTERNAL.diagnosticServerThread === undefined) {
+        console.warn("please recompile runtime with /p:MonoWasmBuildVariant=multithread /p:MonoDiagnosticsMock=true" + event.type)
+        return;
+    }
+
     INTERNAL.diagnosticServerThread.port.addEventListener("message", (event) => {
         console.warn("diagnosticServerThread" + event.type)
 

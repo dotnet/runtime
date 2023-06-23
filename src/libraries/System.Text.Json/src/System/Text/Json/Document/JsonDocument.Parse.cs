@@ -673,7 +673,7 @@ namespace System.Text.Json
             {
                 MetadataDb database = MetadataDb.CreateLocked(utf8Json.Length);
                 database.Append(tokenType, startLocation: 0, utf8Json.Length);
-                return new JsonDocument(utf8Json, database);
+                return new JsonDocument(utf8Json, database, isDisposable: false);
             }
         }
 
@@ -739,7 +739,7 @@ namespace System.Text.Json
                 }
             }
 
-            return new JsonDocument(utf8Json, database);
+            return new JsonDocument(utf8Json, database, isDisposable: false);
         }
 
         private static ArraySegment<byte> ReadToEnd(Stream stream)

@@ -10,11 +10,10 @@ namespace Microsoft.Interop.Analyzers
         public static class Ids
         {
             public const string Prefix = "SYSLIB";
-            public const string InvalidGeneratedComAttributeUsage = Prefix + "1090";
             public const string ConvertToGeneratedComInterface = Prefix + "1096";
             public const string AddGeneratedComClassAttribute = Prefix + "1097";
             public const string ComHostingDoesNotSupportGeneratedComInterface = Prefix + "1098";
-            public const string RuntimeComApisDoNotSupportSourceGeneratedCom = Prefix + "1099";
+            public const string RuntimeComAndGeneratedComDoNotMix = Prefix + "1099";
         }
 
         public static class Metadata
@@ -29,16 +28,6 @@ namespace Microsoft.Interop.Analyzers
         {
             return new LocalizableResourceString(resourceName, SR.ResourceManager, typeof(FxResources.Microsoft.Interop.ComInterfaceGenerator.SR));
         }
-
-        public static readonly DiagnosticDescriptor InterfaceTypeNotSupported =
-            new DiagnosticDescriptor(
-                Ids.InvalidGeneratedComAttributeUsage,
-                GetResourceString(nameof(SR.InterfaceTypeNotSupportedTitle)),
-                GetResourceString(nameof(SR.InterfaceTypeNotSupportedMessage)),
-                Category,
-                DiagnosticSeverity.Error,
-                isEnabledByDefault: true,
-                description: GetResourceString(nameof(SR.InterfaceTypeNotSupportedMessage)));
 
         public static readonly DiagnosticDescriptor ConvertToGeneratedComInterface =
             new DiagnosticDescriptor(
@@ -72,12 +61,22 @@ namespace Microsoft.Interop.Analyzers
 
         public static readonly DiagnosticDescriptor RuntimeComApisDoNotSupportSourceGeneratedCom =
             new DiagnosticDescriptor(
-                Ids.RuntimeComApisDoNotSupportSourceGeneratedCom,
+                Ids.RuntimeComAndGeneratedComDoNotMix,
                 GetResourceString(nameof(SR.RuntimeComApisDoNotSupportSourceGeneratedComTitle)),
                 GetResourceString(nameof(SR.RuntimeComApisDoNotSupportSourceGeneratedComMessage)),
                 Category,
                 DiagnosticSeverity.Warning,
                 isEnabledByDefault: true,
                 description: GetResourceString(nameof(SR.RuntimeComApisDoNotSupportSourceGeneratedComDescription)));
+
+        public static readonly DiagnosticDescriptor CastsBetweenRuntimeComAndSourceGeneratedComNotSupported =
+            new DiagnosticDescriptor(
+                Ids.RuntimeComAndGeneratedComDoNotMix,
+                GetResourceString(nameof(SR.CastsBetweenRuntimeComAndSourceGeneratedComNotSupportedTitle)),
+                GetResourceString(nameof(SR.CastsBetweenRuntimeComAndSourceGeneratedComNotSupportedMessage)),
+                Category,
+                DiagnosticSeverity.Warning,
+                isEnabledByDefault: true,
+                description: GetResourceString(nameof(SR.CastsBetweenRuntimeComAndSourceGeneratedComNotSupportedDescription)));
     }
 }
