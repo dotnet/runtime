@@ -3641,7 +3641,7 @@ GenTree* Compiler::impIntrinsic(GenTree*                newobjThis,
                     bool                 isExact = false;
                     bool                 notNull = false;
                     CORINFO_CLASS_HANDLE typeHnd = gtGetClassHandle(op1, &isExact, &notNull);
-                    if ((typeHnd != NO_CLASS_HANDLE) && isExact)
+                    if ((typeHnd != NO_CLASS_HANDLE) && isExact && ((info.compCompHnd->getClassAttribs(typeHnd) & CORINFO_FLG_SHAREDINST) != 0))
                     {
                         assert((info.compCompHnd->getClassAttribs(typeHnd) & CORINFO_FLG_GENERIC_TYPE_VARIABLE) == 0);
                         JITDUMP("Optimizing object.GetType() with known type to typeof\n");
