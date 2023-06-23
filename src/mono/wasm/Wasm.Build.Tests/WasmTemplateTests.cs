@@ -263,8 +263,7 @@ namespace Wasm.Build.Tests
             return data;
         }
 
-        // [ConditionalTheory(typeof(BuildTestBase), nameof(IsUsingWorkloads))]
-        [Theory]
+        [ConditionalTheory(typeof(BuildTestBase), nameof(IsUsingWorkloads))]
         [MemberData(nameof(TestDataForAppBundleDir))]
         public async Task RunWithDifferentAppBundleLocations(bool forConsole, bool runOutsideProjectDirectory, string extraProperties)
             => await (forConsole
