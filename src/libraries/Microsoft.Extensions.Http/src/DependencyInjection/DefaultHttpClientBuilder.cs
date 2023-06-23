@@ -8,10 +8,9 @@ namespace Microsoft.Extensions.DependencyInjection
 {
     internal sealed class DefaultHttpClientBuilder : IHttpClientBuilder
     {
-        public DefaultHttpClientBuilder(IServiceCollection services, string? name)
+        public DefaultHttpClientBuilder(IServiceCollection services, string name)
         {
-            // We want to return the same default builder instance for each call.
-            // This is required because the service collection wrapper has state (last added position) that we want to maintain.
+            // The tracker references a descriptor. It marks the position of where default services are added to the collection.
             var tracker = (DefaultHttpClientConfigurationTracker?)services.Single(sd => sd.ServiceType == typeof(DefaultHttpClientConfigurationTracker)).ImplementationInstance;
             Debug.Assert(tracker != null);
 
