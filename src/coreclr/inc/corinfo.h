@@ -1941,6 +1941,7 @@ struct CORINFO_TYPE_LAYOUT_NODE
     // safe operations on this handle are:
     // - getClassNameFromMetadata
     // - getClassSize
+    // - getHfaType
     // - getTypeInstantiationArgument, but only under the assumption that the returned type handle
     //   is used for primitive type recognition via getTypeForPrimitiveNumericClass
     CORINFO_CLASS_HANDLE simdTypeHnd;
