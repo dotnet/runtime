@@ -537,15 +537,13 @@ namespace System.Text.Json.Nodes.Tests
         [Fact]
         public static void DeepCloneFromElement()
         {
-            using (JsonDocument document = JsonDocument.Parse("[\"abc\", 10]"))
-            {
-                JsonArray jArray = JsonArray.Create(document.RootElement);
-                var clone = jArray.DeepClone().AsArray();
+            JsonDocument document = JsonDocument.Parse("[\"abc\", 10]");
+            JsonArray jArray = JsonArray.Create(document.RootElement);
+            var clone = jArray.DeepClone().AsArray();
 
-                Assert.True(JsonNode.DeepEquals(jArray, clone));
-                Assert.Equal(10, clone[1].GetValue<int>());
-                Assert.Equal("abc", clone[0].GetValue<string>());
-            }
+            Assert.True(JsonNode.DeepEquals(jArray, clone));
+            Assert.Equal(10, clone[1].GetValue<int>());
+            Assert.Equal("abc", clone[0].GetValue<string>());
         }
 
         [Fact]
@@ -585,7 +583,6 @@ namespace System.Text.Json.Nodes.Tests
         public static void DeepEqualsFromElement()
         {
             using JsonDocument document = JsonDocument.Parse("[1, 2, 4]");
-
             JsonArray array = JsonArray.Create(document.RootElement);
 
             using JsonDocument document2 = JsonDocument.Parse("[1, 2,    4]");
@@ -595,8 +592,6 @@ namespace System.Text.Json.Nodes.Tests
             using JsonDocument document3 = JsonDocument.Parse("[2, 1, 4]");
             JsonArray array3 = JsonArray.Create(document3.RootElement);
             Assert.False(JsonNode.DeepEquals(array, array3));
-
-
         }
 
         [Fact]

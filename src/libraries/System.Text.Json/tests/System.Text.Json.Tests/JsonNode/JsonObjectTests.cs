@@ -1025,15 +1025,13 @@ namespace System.Text.Json.Nodes.Tests
         [Fact]
         public static void DeepClone_FromElement()
         {
-            using (JsonDocument document = JsonDocument.Parse("{\"One\": 1, \"String\": \"abc\"}"))
-            {
-                JsonObject jObject = JsonObject.Create(document.RootElement);
-                var clone = jObject.DeepClone().AsObject();
+            JsonDocument document = JsonDocument.Parse("{\"One\": 1, \"String\": \"abc\"}");
+            JsonObject jObject = JsonObject.Create(document.RootElement);
+            var clone = jObject.DeepClone().AsObject();
 
-                Assert.True(JsonNode.DeepEquals(jObject, clone));
-                Assert.Equal(1, clone["One"].GetValue<int>());
-                Assert.Equal("abc", clone["String"].GetValue<string>());
-            }
+            Assert.True(JsonNode.DeepEquals(jObject, clone));
+            Assert.Equal(1, clone["One"].GetValue<int>());
+            Assert.Equal("abc", clone["String"].GetValue<string>());
         }
 
         [Fact]
