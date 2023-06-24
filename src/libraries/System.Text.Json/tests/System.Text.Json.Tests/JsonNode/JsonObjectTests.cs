@@ -1065,20 +1065,16 @@ namespace System.Text.Json.Nodes.Tests
         [Fact]
         public static void DeepEqualFromElement()
         {
-            using (JsonDocument document = JsonDocument.Parse("{\"One\": 1, \"String\": \"abc\"}"))
-            {
-                JsonObject jObject = JsonObject.Create(document.RootElement);
-                using (JsonDocument document2 = JsonDocument.Parse("{\"One\":     1, \"String\":     \"abc\"}   "))
-                {
-                    JsonObject jObject2 = JsonObject.Create(document2.RootElement);
-                    Assert.True(JsonNode.DeepEquals(jObject, jObject2));
-                }
-                using (JsonDocument document3 = JsonDocument.Parse("{\"One\": 3, \"String\": \"abc\"}"))
-                {
-                    JsonObject jObject3 = JsonObject.Create(document3.RootElement);
-                    Assert.False(JsonNode.DeepEquals(jObject, jObject3));
-                }
-            }
+            using JsonDocument document = JsonDocument.Parse("{\"One\": 1, \"String\": \"abc\"}");
+            JsonObject jObject = JsonObject.Create(document.RootElement);
+
+            using JsonDocument document2 = JsonDocument.Parse("{\"One\":     1, \"String\":     \"abc\"}   ");
+            JsonObject jObject2 = JsonObject.Create(document2.RootElement);
+            Assert.True(JsonNode.DeepEquals(jObject, jObject2));
+
+            using JsonDocument document3 = JsonDocument.Parse("{\"One\": 3, \"String\": \"abc\"}");
+            JsonObject jObject3 = JsonObject.Create(document3.RootElement);
+            Assert.False(JsonNode.DeepEquals(jObject, jObject3));        
         }
 
         [Fact]

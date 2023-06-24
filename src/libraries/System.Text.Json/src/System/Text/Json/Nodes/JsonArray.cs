@@ -48,7 +48,7 @@ namespace System.Text.Json.Nodes
             InitializeFromArray(items);
         }
 
-        internal JsonNode DeepCloneArray()
+        internal override JsonNode InternalDeepClone()
         {
             if (_jsonElement.HasValue)
             {
@@ -77,39 +77,35 @@ namespace System.Text.Json.Nodes
 
         internal override bool DeepEquals(JsonNode? node)
         {
-            if (node is null || node is JsonObject)
+            switch (node)
             {
-                return false;
-            }
-
-            if (node is JsonValue value)
-            {
-                // JsonValueTrimmable/NonTrimmable can hold the array type so calling this method to continue the deep comparision.
-                return value.DeepEquals(this);
-            }
-
-            JsonArray array = node.AsArray();
-
-            List<JsonNode?> currentList = List;
-            List<JsonNode?> otherList = array.List;
-
-            if (currentList.Count != otherList.Count)
-            {
-                return false;
-            }
-
-            for (int i = 0; i < currentList.Count; i++)
-            {
-                JsonNode? currentItem = currentList[i];
-                JsonNode? otherItem = otherList[i];
-
-                if (!DeepEquals(currentItem, otherItem))
-                {
+                case null or JsonObject:
                     return false;
-                }
-            }
+                case JsonValue value:
+                    // JsonValueTrimmable/NonTrimmable can hold the array type so calling this method to continue the deep comparision.
+                    return value.DeepEquals(this);
+                case JsonArray array:
+                    List<JsonNode?> currentList = List;
+                    List<JsonNode?> otherList = array.List;
 
-            return true;
+                    if (currentList.Count != otherList.Count)
+                    {
+                        return false;
+                    }
+
+                    for (int i = 0; i < currentList.Count; i++)
+                    {
+                        if (!DeepEquals(currentList[i], otherList[i]))
+                        {
+                            return false;
+                        }
+                    }
+
+                    return true;
+                default:
+                    Debug.Fail("Impossible case");
+                    return false;
+            }
         }
 
         internal int GetElementIndex(JsonNode? node)

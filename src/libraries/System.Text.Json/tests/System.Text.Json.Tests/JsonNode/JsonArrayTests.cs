@@ -6,7 +6,6 @@ using System.Collections.Generic;
 using System.IO;
 using System.Linq;
 using System.Threading.Tasks;
-using System.Xml.Linq;
 using Xunit;
 
 namespace System.Text.Json.Nodes.Tests
@@ -35,7 +34,7 @@ namespace System.Text.Json.Nodes.Tests
         public static void FromElement_WrongNodeTypeThrows(string json)
         {
             using (JsonDocument document = JsonDocument.Parse(json))
-                Assert.Throws<InvalidOperationException>(() => JsonArray.Create(document.RootElement));
+            Assert.Throws<InvalidOperationException>(() => JsonArray.Create(document.RootElement));
         }
 
         [Fact]
@@ -585,27 +584,26 @@ namespace System.Text.Json.Nodes.Tests
         [Fact]
         public static void DeepEqualsFromElement()
         {
-            using (JsonDocument document = JsonDocument.Parse("[1, 2, 4]"))
-            {
-                JsonArray array = JsonArray.Create(document.RootElement);
-                using (JsonDocument document2 = JsonDocument.Parse("[1, 2,    4]"))
-                {
-                    JsonArray array2 = JsonArray.Create(document2.RootElement);
-                    Assert.True(JsonNode.DeepEquals(array, array2));
-                }
-                using (JsonDocument document3 = JsonDocument.Parse("[2, 1, 4]"))
-                {
-                    JsonArray array2 = JsonArray.Create(document3.RootElement);
-                    Assert.False(JsonNode.DeepEquals(array, array2));
-                }
-            }
+            using JsonDocument document = JsonDocument.Parse("[1, 2, 4]");
+
+            JsonArray array = JsonArray.Create(document.RootElement);
+
+            using JsonDocument document2 = JsonDocument.Parse("[1, 2,    4]");
+            JsonArray array2 = JsonArray.Create(document2.RootElement);
+            Assert.True(JsonNode.DeepEquals(array, array2));
+
+            using JsonDocument document3 = JsonDocument.Parse("[2, 1, 4]");
+            JsonArray array3 = JsonArray.Create(document3.RootElement);
+            Assert.False(JsonNode.DeepEquals(array, array3));
+
+
         }
 
         [Fact]
         public static void UpdateClonedObjectNotAffectOriginal()
         {
             var jArray = new JsonArray(10, 20);
-            
+
             var clone = jArray.DeepClone().AsArray();
             clone[1] = 3;
 
@@ -648,7 +646,7 @@ namespace System.Text.Json.Nodes.Tests
         public static void GetValues_ValueType()
         {
             JsonArray jsonArray = new JsonArray(1, 2, 3, 2);
-            
+
             IEnumerable<int> values = jsonArray.GetValues<int>();
 
             Assert.Equal(jsonArray.Count, values.Count());

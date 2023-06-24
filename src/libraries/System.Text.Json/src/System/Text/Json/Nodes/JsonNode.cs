@@ -52,12 +52,14 @@ namespace System.Text.Json.Nodes
         /// </exception>
         public JsonArray AsArray()
         {
-            if (this is JsonArray jArray)
+            JsonArray? jArray = this as JsonArray;
+
+            if (jArray is null)
             {
-                return jArray;
+                ThrowHelper.ThrowInvalidOperationException_NodeWrongType(nameof(JsonArray));
             }
 
-            throw new InvalidOperationException(SR.Format(SR.NodeWrongType, nameof(JsonArray)));
+            return jArray;
         }
 
         /// <summary>
@@ -71,12 +73,14 @@ namespace System.Text.Json.Nodes
         /// </exception>
         public JsonObject AsObject()
         {
-            if (this is JsonObject jObject)
+            JsonObject? jObject = this as JsonObject;
+
+            if (jObject is null)
             {
-                return jObject;
+                ThrowHelper.ThrowInvalidOperationException_NodeWrongType(nameof(JsonObject));
             }
 
-            throw new InvalidOperationException(SR.Format(SR.NodeWrongType, nameof(JsonObject)));
+            return jObject;
         }
 
         /// <summary>
@@ -90,12 +94,14 @@ namespace System.Text.Json.Nodes
         /// </exception>
         public JsonValue AsValue()
         {
-            if (this is JsonValue jValue)
+            JsonValue? jValue = this as JsonValue;
+
+            if (jValue is null)
             {
-                return jValue;
+                ThrowHelper.ThrowInvalidOperationException_NodeWrongType(nameof(JsonValue));
             }
 
-            throw new InvalidOperationException(SR.Format(SR.NodeWrongType, nameof(JsonValue)));
+            return jValue;
         }
 
         /// <summary>
@@ -239,37 +245,22 @@ namespace System.Text.Json.Nodes
         /// </summary>
         public JsonNode DeepClone()
         {
-            if (this is JsonObject jObject)
-            {
-                return jObject.DeepCloneObject();
-            }
-            else if (this is JsonArray jArray)
-            {
-                return jArray.DeepCloneArray();
-            }
-            else
-            {
-                return AsValue().DeepCloneValue();
-            }
+            return InternalDeepClone();
         }
+
+        internal abstract JsonNode InternalDeepClone();
 
         /// <summary>
         /// Returns <see cref="JsonValueKind"/> of current instance.
         /// </summary>
         public JsonValueKind GetValueKind()
         {
-            if (this is JsonObject)
+            return this switch
             {
-                return JsonValueKind.Object;
-            }
-            else if (this is JsonArray)
-            {
-                return JsonValueKind.Array;
-            }
-            else
-            {
-                return AsValue().GetInternalValueKind();
-            }
+                JsonObject => JsonValueKind.Object,
+                JsonArray => JsonValueKind.Array,
+                _ => AsValue().GetInternalValueKind(),
+            };
         }
 
         /// <summary>
@@ -280,12 +271,7 @@ namespace System.Text.Json.Nodes
         /// </exception>
         public string GetPropertyName()
         {
-            if (_parent is JsonObject jObject)
-            {
-                return jObject.GetPropertyName(this);
-            }
-
-            throw new InvalidOperationException(SR.Format(SR.NodeWrongType, nameof(JsonObject)));
+            return AsObject().GetPropertyName(this);
         }
 
         /// <summary>
@@ -296,12 +282,7 @@ namespace System.Text.Json.Nodes
         /// </exception>
         public int GetElementIndex()
         {
-            if (_parent is JsonArray jArray)
-            {
-                return jArray.GetElementIndex(this);
-            }
-
-            throw new InvalidOperationException(SR.Format(SR.NodeWrongType, nameof(JsonArray)));
+            return AsArray().GetElementIndex(this);
         }
 
         /// <summary>
@@ -317,7 +298,6 @@ namespace System.Text.Json.Nodes
                 return node2 is null;
             }
 
-            Debug.Assert(node1 is not null);
             return node1.DeepEquals(node2);
         }
 

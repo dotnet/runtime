@@ -70,7 +70,7 @@ namespace System.Text.Json.Nodes
             _jsonElement = element;
         }
 
-        internal JsonNode DeepCloneObject()
+        internal override JsonNode InternalDeepClone()
         {
             if (_jsonElement.HasValue)
             {
@@ -81,7 +81,7 @@ namespace System.Text.Json.Nodes
 
             if (_dictionary is not null)
             {
-                foreach (var item in _dictionary)
+                foreach (KeyValuePair<string, JsonNode?> item in _dictionary)
                 {
                     if (item.Value is not null)
                     {
@@ -147,40 +147,39 @@ namespace System.Text.Json.Nodes
 
         internal override bool DeepEquals(JsonNode? node)
         {
-            if (node is null || node is JsonArray)
+            switch (node)
             {
-                return false;
-            }
-
-            if (node is JsonValue value)
-            {
-                // JsonValueTrimmable/NonTrimmable can hold the object type so calling this method to continue the deep comparision.
-                return value.DeepEquals(this);
-            }
-
-            JsonObject jsonObject = node.AsObject();
-            InitializeIfRequired();
-            jsonObject.InitializeIfRequired();
-
-            Debug.Assert(_dictionary is not null);
-            Debug.Assert(jsonObject._dictionary is not null);
-
-            if (_dictionary.Count != jsonObject._dictionary.Count)
-            {
-                return false;
-            }
-
-            foreach (KeyValuePair<string, JsonNode?> item in this)
-            {
-                JsonNode? jsonNode = jsonObject._dictionary[item.Key];
-
-                if (!DeepEquals(item.Value, jsonNode))
-                {
+                case null or JsonArray:
                     return false;
-                }
-            }
+                case JsonValue value:
+                    // JsonValueTrimmable/NonTrimmable can hold the object type so calling this method to continue the deep comparision.
+                    return value.DeepEquals(this);
+                case JsonObject jsonObject:
+                    InitializeIfRequired();
+                    jsonObject.InitializeIfRequired();
+                    Debug.Assert(_dictionary is not null);
+                    Debug.Assert(jsonObject._dictionary is not null);
 
-            return true;
+                    if (_dictionary.Count != jsonObject._dictionary.Count)
+                    {
+                        return false;
+                    }
+
+                    foreach (KeyValuePair<string, JsonNode?> item in this)
+                    {
+                        JsonNode? jsonNode = jsonObject._dictionary[item.Key];
+
+                        if (!DeepEquals(item.Value, jsonNode))
+                        {
+                            return false;
+                        }
+                    }
+
+                    return true;
+                default:
+                    Debug.Fail("Impossible case");
+                    return false;
+            }
         }
 
         internal JsonNode? GetItem(string propertyName)

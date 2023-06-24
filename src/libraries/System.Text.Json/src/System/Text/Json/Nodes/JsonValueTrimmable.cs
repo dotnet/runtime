@@ -52,7 +52,7 @@ namespace System.Text.Json.Nodes
             }
         }
 
-        internal override JsonNode DeepCloneValue()
+        internal override JsonNode InternalDeepClone()
         {
             if (_converter is not null)
             {
