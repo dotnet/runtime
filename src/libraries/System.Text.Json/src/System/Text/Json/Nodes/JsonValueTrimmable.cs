@@ -96,7 +96,6 @@ namespace System.Text.Json.Nodes
                     switch (jsonElementCurrent.ValueKind)
                     {
                         case JsonValueKind.String:
-                            return jsonElementCurrent.ValueEquals(jsonElementNodeOther._value.GetString());
                         case JsonValueKind.Number:
                         case JsonValueKind.True:
                         case JsonValueKind.False:
