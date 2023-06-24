@@ -82,7 +82,6 @@ namespace System.Net
                 Debug.Assert(clientOptions.Package == NegotiationInfoClass.Negotiate);
                 _clientOptions = clientOptions;
                 _supportKerberos = supportKerberos;
-                Console.WriteLine("ManagedSpnegoNegotiateAuthenticationPal!");
             }
 
             public override void Dispose()
@@ -96,21 +95,14 @@ namespace System.Net
 
             public override unsafe byte[]? GetOutgoingBlob(ReadOnlySpan<byte> incomingBlob, out NegotiateAuthenticationStatusCode statusCode)
             {
-                Console.WriteLine($"ManagedSpnegoNegotiateAuthenticationPal.GetOutgoingBlob > {Convert.ToBase64String(incomingBlob)}");
-
-                byte[]? outgoingBlob;
                 if (_spnegoMechList == null)
                 {
-                    outgoingBlob = CreateSpNegoNegotiateMessage(incomingBlob, out statusCode);
+                    return CreateSpNegoNegotiateMessage(incomingBlob, out statusCode);
                 }
                 else
                 {
-                    outgoingBlob = ProcessSpNegoChallenge(incomingBlob, out statusCode);
+                    return ProcessSpNegoChallenge(incomingBlob, out statusCode);
                 }
-
-                Console.WriteLine($"ManagedSpnegoNegotiateAuthenticationPal.GetOutgoingBlob < {(outgoingBlob == null ? "null" : Convert.ToBase64String(outgoingBlob))} {statusCode}");
-
-                return outgoingBlob;
             }
 
             private NegotiateAuthenticationPal CreateMechanismForPackage(string packageName)
