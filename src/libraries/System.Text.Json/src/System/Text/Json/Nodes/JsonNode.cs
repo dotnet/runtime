@@ -270,7 +270,14 @@ namespace System.Text.Json.Nodes
         /// </exception>
         public string GetPropertyName()
         {
-            return AsObject().GetPropertyName(this);
+            JsonObject? jsonObject = _parent as JsonObject;
+
+            if (jsonObject is null)
+            {
+                ThrowHelper.ThrowInvalidOperationException_NodeWrongType(nameof(JsonObject));
+            }
+
+            return jsonObject.GetPropertyName(this);
         }
 
         /// <summary>
@@ -281,7 +288,14 @@ namespace System.Text.Json.Nodes
         /// </exception>
         public int GetElementIndex()
         {
-            return AsArray().GetElementIndex(this);
+            JsonArray? jsonArray = _parent as JsonArray;
+
+            if (jsonArray is null)
+            {
+                ThrowHelper.ThrowInvalidOperationException_NodeWrongType(nameof(JsonArray));
+            }
+
+            return jsonArray.GetElementIndex(this);
         }
 
         /// <summary>
