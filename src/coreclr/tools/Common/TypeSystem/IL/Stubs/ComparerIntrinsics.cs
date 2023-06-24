@@ -75,7 +75,7 @@ namespace Internal.IL.Stubs
         /// Gets the comparer type that is suitable to compare instances of <paramref name="type"/>
         /// or null if such comparer cannot be determined at compile time.
         /// </summary>
-        private static InstantiatedType GetComparerForType(TypeDesc type, string flavor, string interfaceName)
+        private static TypeDesc GetComparerForType(TypeDesc type, string flavor, string interfaceName)
         {
             TypeSystemContext context = type.Context;
 
@@ -85,7 +85,7 @@ namespace Internal.IL.Stubs
                 // The comparer will be determined at runtime. We can't tell the exact type at compile time.
                 return null;
             }
-            else if (flavor == "EqualityComparer" && type.GetRuntimeTypeHandle() == typeof(byte).TypeHandle)
+            else if (flavor == "EqualityComparer" && context.SystemModule.GetKnownType("System", "Byte").Equals(type))
             {
                 return context.SystemModule.GetKnownType("System.Collections.Generic", $"ByteEqualityComparer");
             }

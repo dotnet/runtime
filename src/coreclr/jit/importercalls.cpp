@@ -7494,7 +7494,7 @@ CORINFO_CLASS_HANDLE Compiler::impGetSpecialIntrinsicExactReturnType(GenTreeCall
     JITDUMP("Special intrinsic: looking for exact type returned by %s\n", eeGetMethodFullName(methodHnd));
 
     CORINFO_CLASS_HANDLE result = nullptr;
-    *pIsExact = false;
+    *pIsExact                   = false;
 
     // See what intrinsic we have...
     const NamedIntrinsic ni = lookupNamedIntrinsic(methodHnd);
