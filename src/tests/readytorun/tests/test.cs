@@ -14,13 +14,17 @@ public static class Assert
 {
     public static bool HasAssertFired;
 
+    [MethodImplAttribute(MethodImplOptions.NoInlining)]
     public static void AreEqual(Object actual, Object expected)
     {
-        if (!(actual == null && expected == null) && !actual.Equals(expected))
+        if (ReferenceEquals(expected, actual))
+            return;
+        
+        if (ReferenceEquals(expected, null) || !expected.Equals(actual))
         {
             Console.WriteLine("Not equal!");
-            Console.WriteLine("actual   = " + actual.ToString());
-            Console.WriteLine("expected = " + expected.ToString());
+            Console.WriteLine("expected = " + expected?.ToString());
+            Console.WriteLine("actual   = " + actual?.ToString());
             HasAssertFired = true;
         }
     }
@@ -623,8 +627,6 @@ public class ILInliningVersioningTest<T>
         Assert.AreEqual(o.ChangedToVirtual<WeakReference>(), typeof(List<WeakReference>).ToString());
     }
 
-
-
     [MethodImplAttribute(MethodImplOptions.NoInlining)]
     static void TestMovedGenericVirtualMethodOnNullReference()
     {
@@ -729,9 +731,9 @@ public class ILInliningVersioningTest<T>
     [MethodImplAttribute(MethodImplOptions.NoInlining)]
     static void TestGetType()
     {
-        Use(new MyClass().GetType().ToString());
+        NoInline(new MyClass()).GetType().ToString();
         [MethodImplAttribute(MethodImplOptions.NoInlining)]
-        static void Use(object o) { }
+        static object NoInline(object o) => o;
     }
 
     [MethodImplAttribute(MethodImplOptions.NoInlining)]
@@ -850,17 +852,17 @@ public class ILInliningVersioningTest<T>
             string expectedDllField4 = "System.Collections.Generic.KeyValuePair`2[???,System.Int32] MyGeneric`2[???,???]::m_Field4".Replace("???", instArg.ToString());
             string expectedDllField5 = "System.Int32 MyGeneric`2[???,???]::m_Field5".Replace("???", instArg.ToString());
 
-            Assert.AreEqual(expectedField1, FieldFullName(getter.GetGenT_Field1()));
-            Assert.AreEqual(expectedField2, FieldFullName(getter.GetGenT_Field2()));
-            Assert.AreEqual(expectedField3, FieldFullName(getter.GetGenT_Field3()));
-            Assert.AreEqual(expectedField4, FieldFullName(getter.GetGenT_Field4()));
-            Assert.AreEqual(expectedField5, FieldFullName(getter.GetGenT_Field5()));
+            Assert.AreEqual(FieldFullName(getter.GetGenT_Field1()), expectedField1);
+            Assert.AreEqual(FieldFullName(getter.GetGenT_Field2()), expectedField2);
+            Assert.AreEqual(FieldFullName(getter.GetGenT_Field3()), expectedField3);
+            Assert.AreEqual(FieldFullName(getter.GetGenT_Field4()), expectedField4);
+            Assert.AreEqual(FieldFullName(getter.GetGenT_Field5()), expectedField5);
 
-            Assert.AreEqual(expectedDllField1, FieldFullName(getter.GetGenDllT_Field1()));
-            Assert.AreEqual(expectedDllField2, FieldFullName(getter.GetGenDllT_Field2()));
-            Assert.AreEqual(expectedDllField3, FieldFullName(getter.GetGenDllT_Field3()));
-            Assert.AreEqual(expectedDllField4, FieldFullName(getter.GetGenDllT_Field4()));
-            Assert.AreEqual(expectedDllField5, FieldFullName(getter.GetGenDllT_Field5()));
+            Assert.AreEqual(FieldFullName(getter.GetGenDllT_Field1()), expectedDllField1);
+            Assert.AreEqual(FieldFullName(getter.GetGenDllT_Field2()), expectedDllField2);
+            Assert.AreEqual(FieldFullName(getter.GetGenDllT_Field3()), expectedDllField3);
+            Assert.AreEqual(FieldFullName(getter.GetGenDllT_Field4()), expectedDllField4);
+            Assert.AreEqual(FieldFullName(getter.GetGenDllT_Field5()), expectedDllField5);
         }
     }
 
@@ -890,7 +892,7 @@ public class ILInliningVersioningTest<T>
                 found = true;
         }
         Console.WriteLine($"Found:{found}");
-        Assert.AreEqual(expectedToBePresent, found);
+        Assert.AreEqual(found, expectedToBePresent);
     }
 
     public static void RunAllTests(Assembly assembly)
