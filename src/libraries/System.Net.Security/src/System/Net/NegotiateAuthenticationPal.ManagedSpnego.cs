@@ -160,7 +160,6 @@ namespace System.Net
                                     if (_supportKerberos &&
                                         (_optimisticMechanism = CreateMechanismForPackage(NegotiationInfoClass.Kerberos)) is not UnsupportedNegotiateAuthenticationPal)
                                     {
-                                        Console.WriteLine($"_optimisticMechanism: {_optimisticMechanism}");
                                         mechListWriter.WriteObjectIdentifier(KerberosOid);
                                     }
                                     else
