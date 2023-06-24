@@ -62,11 +62,7 @@ void GCHeap::ReportGenerationBounds()
     {
         g_theGCHeap->DiagDescrGenerations([](void*, int generation, uint8_t* rangeStart, uint8_t* rangeEnd, uint8_t* rangeEndReserved)
         {
-            // TODO: What shall we do with the GCGenerationRange event with frozen segments?
-            if (generation == INT32_MAX)
-            {
-                generation = 2;
-            }
+            ASSERT((0 <= generation) && (generation <= poh_generation));
             uint64_t range = static_cast<uint64_t>(rangeEnd - rangeStart);
             uint64_t rangeReserved = static_cast<uint64_t>(rangeEndReserved - rangeStart);
             FIRE_EVENT(GCGenerationRange, (uint8_t)generation, rangeStart, range, rangeReserved);

@@ -46166,16 +46166,15 @@ void gc_heap::descr_generations_to_profiler (gen_walk_fn fn, void *context)
         for (int curr_gen_number = total_generation_count-1; curr_gen_number >= 0; curr_gen_number--)
         {
             generation* gen = hp->generation_of (curr_gen_number);
-            heap_segment* seg = generation_start_segment (gen);
+            heap_segment* seg = heap_segment_rw (generation_start_segment (gen));
 #ifdef USE_REGIONS
             while (seg)
             {
-                int gen_num = heap_segment_read_only_p (seg) ? INT32_MAX : curr_gen_number;
-                fn(context, gen_num, heap_segment_mem (seg),
+                fn(context, curr_gen_number, heap_segment_mem (seg),
                                      heap_segment_allocated (seg),
                                      heap_segment_reserved (seg));
 
-                seg = heap_segment_next (seg);
+                seg = heap_segment_next_rw (seg);
             }
 #else
             while (seg && (seg != hp->ephemeral_heap_segment))
@@ -46186,13 +46185,12 @@ void gc_heap::descr_generations_to_profiler (gen_walk_fn fn, void *context)
                 // heap_segment_allocated (seg);
                 // for generation # curr_gen_number
                 // for heap # heap_no
-                int gen_num = heap_segment_read_only_p (seg) ? INT32_MAX : curr_gen_number;
-                fn(context, gen_num, heap_segment_mem (seg),
+                fn(context, curr_gen_number, heap_segment_mem (seg),
                                      heap_segment_allocated (seg),
                                      (curr_gen_number > max_generation) ?
                                        heap_segment_reserved (seg) : heap_segment_allocated (seg));
 
-                seg = heap_segment_next (seg);
+                seg = heap_segment_next_rw (seg);
             }
 
             if (seg)

@@ -883,17 +883,14 @@ static void GenWalkFunc(void * context,
         GC_NOTRIGGER;
         MODE_ANY; // can be called even on GC threads
         PRECONDITION(CheckPointer(context));
-        PRECONDITION((0 <= generation && generation <= 4) || generation == INT32_MAX);
+        PRECONDITION(0 <= generation && generation <= 4);
         PRECONDITION(CheckPointer(rangeStart));
         PRECONDITION(CheckPointer(rangeEnd));
         PRECONDITION(CheckPointer(rangeEndReserved));
     } CONTRACT_END;
 
     GenerationTable *generationTable = (GenerationTable *)context;
-    if (generation != INT32_MAX)
-    {
-        generationTable->AddRecordNoLock(generation, rangeStart, rangeEnd, rangeEndReserved);
-    }
+    generationTable->AddRecordNoLock(generation, rangeStart, rangeEnd, rangeEndReserved);
     RETURN;
 }
 
