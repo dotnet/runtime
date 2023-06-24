@@ -8425,22 +8425,22 @@ bool CEEInfo::resolveVirtualMethodHelper(CORINFO_DEVIRTUALIZATION_INFO * info)
         return false;
     }
 
-    if (pBaseMT->IsInterface())
-    {
-
 #ifdef FEATURE_COMINTEROP
-        // Don't try and devirtualize com interface calls.
-        if (pObjMT->IsComObjectType())
-        {
-            info->detail = CORINFO_DEVIRTUALIZATION_FAILED_COM;
-            return false;
-        }
+    // Don't try and devirtualize com interface calls.
+    if (pBaseMT->IsInterface() && pObjMT->IsComObjectType())
+    {
+        info->detail = CORINFO_DEVIRTUALIZATION_FAILED_COM;
+        return false;
+    }
 #endif // FEATURE_COMINTEROP
 
-        if (info->context != nullptr)
-        {
-            pBaseMT = GetTypeFromContext(info->context).GetMethodTable();
-        }
+    if (info->context != nullptr)
+    {
+        pBaseMT = GetTypeFromContext(info->context).GetMethodTable();
+    }
+
+    if (pBaseMT->IsInterface())
+    {
 
         // Interface call devirtualization.
         //
