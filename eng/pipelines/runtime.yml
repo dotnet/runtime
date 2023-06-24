@@ -1364,6 +1364,7 @@ extends:
             testGroup: innerloop
             nameSuffix: AllSubsets_Mono_RuntimeTests
             buildArgs: -s mono+libs -c $(_BuildConfig)
+            interpreter: true
             timeoutInMinutes: 240
             # extra steps, run tests
             extraVariablesTemplates:
