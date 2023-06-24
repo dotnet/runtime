@@ -8,7 +8,7 @@
     <RunScriptOutputPath>$([MSBuild]::NormalizePath('$(BundleDir)', '$(RunScriptOutputName)'))</RunScriptOutputPath>
 
     <PublishingTestsRun>true</PublishingTestsRun>
-    <PublishTestAsSelfContainedDependsOn>Publish</PublishTestAsSelfContainedDependsOn>
+    <PublishTestAsSelfContainedDependsOn Condition="'$(PublishTestAsSelfContainedDependsOn)' == ''">Publish</PublishTestAsSelfContainedDependsOn>
 
     <SkipWorkloadsTestingTargetsImport Condition="'$(SkipWorkloadsTestingTargetsImport)' == ''">true</SkipWorkloadsTestingTargetsImport>
   </PropertyGroup>

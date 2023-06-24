@@ -1,12 +1,13 @@
 <Project Sdk="Microsoft.NET.Sdk">
   <PropertyGroup>
-    <!-- <OutputType>Exe</OutputType> -->
+    <OutputType>Exe</OutputType>
     <OutputPath>bin</OutputPath>
     <IntermediateOutputPath>$(MSBuildThisFileDirectory)obj/</IntermediateOutputPath>
     <TargetFramework>$(NetCoreAppCurrent)</TargetFramework>
     <TargetOS Condition="'$(TargetOS)' == ''">iossimulator</TargetOS>
     <RuntimeIdentifier>$(TargetOS)-$(TargetArchitecture)</RuntimeIdentifier>
     <DefineConstants Condition="'$(ArchiveTests)' == 'true'">$(DefineConstants);CI_TEST</DefineConstants>
+    <PublishTestAsSelfContainedDependsOn>Build</PublishTestAsSelfContainedDependsOn>
     <AppName>HelloiOS</AppName>
     <MainLibraryFileName>$(AssemblyName).dll</MainLibraryFileName>
 
@@ -25,6 +26,10 @@
     <BuildAppBundleAfterTargets Condition="'$(ArchiveTests)' == 'true'">CopyFilesToPublishDirectory;Build</BuildAppBundleAfterTargets>
     <BuildAppBundleDependsOnTargets Condition="'$(ArchiveTests)' == 'true'">Publish</BuildAppBundleDependsOnTargets>
   </PropertyGroup>
+
+  <ItemGroup>
+    <Compile Include="Program.cs" Link="Program.cs" />
+  </ItemGroup>
 
   <Target Name="BuildAppBundle" Condition="'$(ArchiveTests)' != 'true' or ('$(ArchiveTests)' == 'true' and '$(TargetOS)' !='ios')" AfterTargets="$(BuildAppBundleAfterTargets)" DependsOnTargets="$(BuildAppBundleDependsOnTargets)"/>
   <Target Name="_SetAppleGenerateAppBundleProps" Condition="'$(TargetOS)' != 'ios' and '$(ArchiveTests)' != 'true'" BeforeTargets="_AppleGenerateAppBundle">
