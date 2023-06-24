@@ -1311,7 +1311,7 @@ namespace System.Text.Json.SourceGeneration
 
                 foreach (KeyValuePair<string, string> name_varName_pair in _propertyNames)
                 {
-                    writer.WriteLine($$"""private static readonly {{JsonEncodedTextTypeRef}} {{name_varName_pair.Value}} = {{JsonEncodedTextTypeRef}}.Encode("{{name_varName_pair.Key}}");""");
+                    writer.WriteLine($$"""private static readonly {{JsonEncodedTextTypeRef}} {{name_varName_pair.Value}} = {{JsonEncodedTextTypeRef}}.Encode({{FormatStringLiteral(name_varName_pair.Key)}});""");
                 }
 
                 return CompleteSourceFileAndReturnText(writer);
@@ -1343,7 +1343,21 @@ namespace System.Text.Json.SourceGeneration
             private static string GetCreateValueInfoMethodRef(string typeCompilableName) => $"{CreateValueInfoMethodName}<{typeCompilableName}>";
 
             private static string FormatBool(bool value) => value ? "true" : "false";
-            private static string FormatStringLiteral(string? value) => value is null ? "null" : $"\"{value}\"";
+            private static string FormatStringLiteral(string? value)
+            {
+                string returnValue;
+
+                if (value is null)
+                {
+                    returnValue = "null";
+                }
+                else
+                {
+                    returnValue = SyntaxFactory.Literal(value).ToFullString();
+                }
+
+                return returnValue;
+            }
 
             /// <summary>
             /// Method used to generate JsonTypeInfo given options instance
