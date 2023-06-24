@@ -680,7 +680,7 @@ namespace System.Net
                 Span<byte> signature)
             {
                 BinaryPrimitives.WriteInt32LittleEndian(signature, 1);
-                BinaryPrimitives.WriteUInt32LittleEndian(signature.Slice(12), _serverSequenceNumber);
+                BinaryPrimitives.WriteUInt32LittleEndian(signature.Slice(12), sequenceNumber);
                 using (var hmac = IncrementalHash.CreateHMAC(HashAlgorithmName.MD5, signingKey))
                 {
                     hmac.AppendData(signature.Slice(12, 4));
@@ -719,17 +719,6 @@ namespace System.Net
                 CalculateSignature(message, _clientSequenceNumber, _clientSigningKey, _clientSeal, signatureBuffer);
                 _clientSequenceNumber++;
                 signature.Advance(SignatureLength);
-            }
-
-            private byte[] GetMIC(ReadOnlySpan<byte> message)
-            {
-                Debug.Assert(_clientSeal is not null);
-                Debug.Assert(_clientSigningKey is not null);
-
-                byte[] signature = new byte[SignatureLength];
-                CalculateSignature(message, _clientSequenceNumber, _clientSigningKey, _clientSeal, signature);
-                _clientSequenceNumber++;
-                return signature;
             }
 
             public override NegotiateAuthenticationStatusCode Wrap(ReadOnlySpan<byte> input, IBufferWriter<byte> outputWriter, bool _/*requestEncryption*/, out bool isEncrypted)
