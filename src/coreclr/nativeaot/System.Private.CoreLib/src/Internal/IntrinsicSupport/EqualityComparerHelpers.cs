@@ -59,7 +59,7 @@ namespace Internal.IntrinsicSupport
             RuntimeTypeHandle openComparerType = default(RuntimeTypeHandle);
             RuntimeTypeHandle comparerTypeArgument = default(RuntimeTypeHandle);
 
-            if (t == typeof(byte).TypeHandle)
+            if (typeof(byte).TypeHandle.Equals(t))
             {
                 return new ByteEqualityComparer();
             }
