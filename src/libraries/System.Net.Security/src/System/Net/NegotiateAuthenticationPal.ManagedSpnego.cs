@@ -95,14 +95,21 @@ namespace System.Net
 
             public override unsafe byte[]? GetOutgoingBlob(ReadOnlySpan<byte> incomingBlob, out NegotiateAuthenticationStatusCode statusCode)
             {
+                //Console.WriteLine($"ManagedSpnegoNegotiateAuthenticationPal.GetOutgoingBlob > {Convert.ToBase64String(incomingBlob)}");
+
+                byte[]? outgoingBlob;
                 if (_spnegoMechList == null)
                 {
-                    return CreateSpNegoNegotiateMessage(incomingBlob, out statusCode);
+                    outgoingBlob = CreateSpNegoNegotiateMessage(incomingBlob, out statusCode);
                 }
                 else
                 {
-                    return ProcessSpNegoChallenge(incomingBlob, out statusCode);
+                    outgoingBlob = ProcessSpNegoChallenge(incomingBlob, out statusCode);
                 }
+
+                //Console.WriteLine($"ManagedSpnegoNegotiateAuthenticationPal.GetOutgoingBlob < {(outgoingBlob == null ? "null" : Convert.ToBase64String(outgoingBlob))} {statusCode}");
+
+                return outgoingBlob;
             }
 
             private NegotiateAuthenticationPal CreateMechanismForPackage(string packageName)
@@ -150,9 +157,10 @@ namespace System.Net
 
                                 using (mechListWriter.PushSequence())
                                 {
-                                    if (_supportKerberos)
+                                    if (_supportKerberos &&
+                                        (_optimisticMechanism = CreateMechanismForPackage(NegotiationInfoClass.Kerberos)) is not UnsupportedNegotiateAuthenticationPal)
                                     {
-                                        _optimisticMechanism = CreateMechanismForPackage(NegotiationInfoClass.Kerberos);
+                                        Console.WriteLine($"_optimisticMechanism: {_optimisticMechanism}");
                                         mechListWriter.WriteObjectIdentifier(KerberosOid);
                                     }
                                     else
@@ -293,7 +301,8 @@ namespace System.Net
                 }
                 else
                 {
-                    if (_mechanism.Package != requestedPackage)
+                    if (requestedPackage != null &&
+                        _mechanism.Package != requestedPackage)
                     {
                         statusCode = NegotiateAuthenticationStatusCode.InvalidToken;
                         return null;
@@ -350,7 +359,7 @@ namespace System.Net
                         return null;
                     }
 
-                    if (!VerifyMIC(_spnegoMechList, mechListMIC))
+                    if (!_mechanism.VerifyMIC(_spnegoMechList, mechListMIC))
                     {
                         statusCode = NegotiateAuthenticationStatusCode.MessageAltered;
                         return null;
