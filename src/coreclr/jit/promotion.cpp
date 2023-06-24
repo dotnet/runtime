@@ -220,7 +220,7 @@ bool AggregateInfo::OverlappingReplacements(unsigned      offset,
 //   numLocals - Number of locals to support in the map
 //
 AggregateInfoMap::AggregateInfoMap(CompAllocator allocator, unsigned numLocals)
-    : Aggregates(allocator), m_numLocals(numLocals)
+    : m_aggregates(allocator), m_numLocals(numLocals)
 {
     m_lclNumToAggregateIndex = new (allocator) unsigned[numLocals];
     for (unsigned i = 0; i < numLocals; i++)
@@ -241,8 +241,8 @@ void AggregateInfoMap::Add(AggregateInfo* agg)
     assert(agg->LclNum < m_numLocals);
     assert(m_lclNumToAggregateIndex[agg->LclNum] == UINT_MAX);
 
-    m_lclNumToAggregateIndex[agg->LclNum] = static_cast<unsigned>(Aggregates.size());
-    Aggregates.push_back(agg);
+    m_lclNumToAggregateIndex[agg->LclNum] = static_cast<unsigned>(m_aggregates.size());
+    m_aggregates.push_back(agg);
 }
 
 //------------------------------------------------------------------------
@@ -266,8 +266,8 @@ AggregateInfo* AggregateInfoMap::Lookup(unsigned lclNum)
         return nullptr;
     }
 
-    assert(Aggregates.size() > index);
-    return Aggregates[index];
+    assert(m_aggregates.size() > index);
+    return m_aggregates[index];
 }
 
 struct PrimitiveAccess

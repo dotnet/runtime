@@ -106,7 +106,7 @@ struct AggregateInfo
 // Map that stores information about promotions made for each local.
 class AggregateInfoMap
 {
-    jitstd::vector<AggregateInfo*> Aggregates;
+    jitstd::vector<AggregateInfo*> m_aggregates;
     unsigned                       m_numLocals;
     unsigned*                      m_lclNumToAggregateIndex;
 
@@ -117,12 +117,12 @@ public:
 
     jitstd::vector<AggregateInfo*>::iterator begin()
     {
-        return Aggregates.begin();
+        return m_aggregates.begin();
     }
 
     jitstd::vector<AggregateInfo*>::iterator end()
     {
-        return Aggregates.end();
+        return m_aggregates.end();
     }
 };
 
