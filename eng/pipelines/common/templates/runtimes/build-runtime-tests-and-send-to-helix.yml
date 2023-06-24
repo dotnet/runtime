@@ -87,7 +87,7 @@ steps:
               /p:Configuration=${{ parameters.buildConfig }}
               /p:TargetOS=${{ parameters.osGroup }}
               /p:MonoForceInterpreter=${{ parameters.interpreter }}
-              /p:TestScope=${{ parameters.testScope }}
+              /p:TestScope=innerloop
               /p:TestRunNamePrefixSuffix=${{ parameters.testRunNamePrefixSuffix }}
               /p:HelixBuild=$(Build.BuildNumber)
               ${{ parameters.extraHelixArguments }}
@@ -97,7 +97,7 @@ steps:
       continueOnError: ${{ eq(parameters.shouldContinueOnError, true) }}
       env:
         SYSTEM_ACCESSTOKEN: $(System.AccessToken) # We need to set this env var to publish helix results to Azure Dev Ops
-        _Scenarios: ${{ join(',', parameters.scenarios) }} # Pass scenarios to MSBuild as env var to avoid need of escaping comma separated list
+        # _Scenarios: ${{ join(',', parameters.scenarios) }} # Pass scenarios to MSBuild as env var to avoid need of escaping comma separated list
 
         ${{ if eq(variables['System.TeamProject'], 'internal') }}:
           HelixAccessToken: $(HelixApiAccessToken)
