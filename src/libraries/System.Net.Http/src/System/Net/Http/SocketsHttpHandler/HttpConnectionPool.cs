@@ -114,6 +114,7 @@ namespace System.Net.Http
         private readonly SslClientAuthenticationOptions? _sslOptionsHttp2;
         private readonly SslClientAuthenticationOptions? _sslOptionsHttp2Only;
         private SslClientAuthenticationOptions? _sslOptionsHttp3;
+        private SslClientAuthenticationOptions? _sslOptionsProxy;
 
         /// <summary>Whether the pool has been used since the last time a cleanup occurred.</summary>
         private bool _usedSinceLastCleanup = true;
@@ -300,6 +301,12 @@ namespace System.Net.Http
             if (_http2Enabled)
             {
                 _http2RequestQueue = new RequestQueue<Http2Connection?>();
+            }
+
+            if (_proxyUri != null && HttpUtilities.IsSupportedSecureScheme(_proxyUri.Scheme))
+            {
+                _sslOptionsProxy = ConstructSslOptions(poolManager, _proxyUri.IdnHost);
+                _sslOptionsProxy.ApplicationProtocols = null;
             }
 
             if (NetEventSource.Log.IsEnabled()) Trace($"{this}");
@@ -1525,10 +1532,18 @@ namespace System.Net.Http
                 case HttpConnectionKind.ProxyConnect:
                     Debug.Assert(_originAuthority != null);
                     stream = await ConnectToTcpHostAsync(_originAuthority.IdnHost, _originAuthority.Port, request, async, cancellationToken).ConfigureAwait(false);
+                    if (_kind == HttpConnectionKind.ProxyConnect && _sslOptionsProxy != null)
+                    {
+                        stream = await ConnectHelper.EstablishSslConnectionAsync(_sslOptionsProxy, request, async, stream, cancellationToken).ConfigureAwait(false);
+                    }
                     break;
 
                 case HttpConnectionKind.Proxy:
                     stream = await ConnectToTcpHostAsync(_proxyUri!.IdnHost, _proxyUri.Port, request, async, cancellationToken).ConfigureAwait(false);
+                    if (_sslOptionsProxy != null)
+                    {
+                        stream = await ConnectHelper.EstablishSslConnectionAsync(_sslOptionsProxy, request, async, stream, cancellationToken).ConfigureAwait(false);
+                    }
                     break;
 
                 case HttpConnectionKind.ProxyTunnel:

@@ -48,6 +48,8 @@
     <Compile Include="System\Net\Security\TlsAlertType.cs" />
     <Compile Include="System\Net\Security\TlsFrameHelper.cs" />
     <!-- NegotiateStream -->
+    <Compile Include="System\Net\ContextFlagsPal.cs" />
+    <Compile Include="System\Net\SecurityStatusPal.cs" />
     <Compile Include="System\Net\NTAuthentication.cs" />
     <Compile Include="System\Net\StreamFramer.cs" />
     <Compile Include="System\Net\Security\NegotiateStream.cs" />
@@ -98,15 +100,10 @@
              Link="Common\System\Net\Security\SafeCredentialReference.cs" />
     <Compile Include="$(CommonPath)System\Net\Security\SSPIHandleCache.cs"
              Link="Common\System\Net\Security\SSPIHandleCache.cs" />
-    <Compile Include="$(CommonPath)System\Net\ContextFlagsPal.cs"
-             Link="Common\System\Net\ContextFlagsPal.cs" />
     <Compile Include="$(CommonPath)System\Net\NegotiationInfoClass.cs"
              Link="Common\System\Net\NegotiationInfoClass.cs" />
-    <Compile Include="$(CommonPath)System\Net\NTAuthentication.Common.cs"
-             Link="Common\System\Net\NTAuthentication.Common.cs"
+    <Compile Include="System\Net\NTAuthentication.Common.cs"
              Condition="'$(UseManagedNtlm)' != 'true'" />
-    <Compile Include="$(CommonPath)System\Net\SecurityStatusPal.cs"
-             Link="Common\System\Net\SecurityStatusPal.cs" />
     <Compile Include="$(CommonPath)System\HexConverter.cs"
              Link="Common\System\HexConverter.cs" />
     <Compile Include="$(CommonPath)System\Obsoletions.cs"
@@ -170,12 +167,8 @@
     <Compile Include="$(CommonPath)System\Net\Security\SecurityBufferType.Windows.cs"
              Link="Common\System\Net\Security\SecurityBufferType.Windows.cs" />
     <!-- NegotiateStream -->
-    <Compile Include="$(CommonPath)System\Net\SecurityStatusAdapterPal.Windows.cs"
-             Link="Common\System\Net\SecurityStatusAdapterPal.Windows.cs" />
-    <Compile Include="$(CommonPath)System\Net\ContextFlagsAdapterPal.Windows.cs"
-             Link="Common\System\Net\ContextFlagsAdapterPal.Windows.cs" />
-    <Compile Include="$(CommonPath)System\Net\Security\NegotiateStreamPal.Windows.cs"
-             Link="Common\System\Net\Security\NegotiateStreamPal.Windows.cs" />
+    <Compile Include="System\Net\SecurityStatusAdapterPal.Windows.cs" />
+    <Compile Include="System\Net\ContextFlagsAdapterPal.Windows.cs" />
     <Compile Include="$(CommonPath)System\Net\Security\SecurityContextTokenHandle.cs"
              Link="Common\System\Net\Security\SecurityContextTokenHandle.cs" />
     <!-- Interop -->
@@ -295,8 +288,7 @@
              Link="Common\System\Net\Security\Unix\SafeDeleteNegoContext.cs" />
     <Compile Include="$(CommonPath)System\Net\Security\Unix\SafeFreeNegoCredentials.cs"
              Link="Common\System\Net\Security\Unix\SafeFreeNegoCredentials.cs" />
-    <Compile Include="$(CommonPath)System\Net\ContextFlagsAdapterPal.Unix.cs"
-             Link="Common\System\Net\ContextFlagsAdapterPal.Unix.cs" />
+    <Compile Include="System\Net\ContextFlagsAdapterPal.Unix.cs" />
     <Compile Include="$(CommonPath)Interop\Unix\System.Net.Security.Native\Interop.Initialization.cs"
              Link="Common\Interop\Unix\System.Net.Security.Native\Interop.Initialization.cs" />
     <Compile Include="$(CommonPath)Interop\Unix\System.Net.Security.Native\Interop.GssApiException.cs"
@@ -307,14 +299,11 @@
              Link="Common\Interop\Unix\System.Net.Security.Native\Interop.NetSecurityNative.cs" />
     <Compile Include="$(CommonPath)Interop\Unix\System.Net.Security.Native\Interop.NetSecurityNative.IsNtlmInstalled.cs"
              Link="Common\Interop\Unix\System.Net.Security.Native\Interop.NetSecurityNative.IsNtlmInstalled.cs" />
-    <Compile Include="$(CommonPath)System\Net\Security\NegotiateStreamPal.Unix.cs"
-             Link="Common\System\Net\Security\NegotiateStreamPal.Unix.cs" />
     <Compile Include="System\Net\Security\NegotiateStreamPal.Unix.cs" />
   </ItemGroup>
   <ItemGroup Condition="'$(UseManagedNtlm)' == 'true'">
     <Compile Include="System\Net\Security\NegotiateStreamPal.Managed.cs" />
-    <Compile Include="$(CommonPath)System\Net\NTAuthentication.Managed.cs"
-             Link="Common\System\Net\NTAuthentication.Managed.cs" />
+    <Compile Include="System\Net\NTAuthentication.Managed.cs" />
     <Compile Include="$(CommonPath)System\Net\Security\MD4.cs"
              Link="Common\System\Net\Security\MD4.cs" />
     <Compile Include="$(CommonPath)System\Net\Security\RC4.cs"

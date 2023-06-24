@@ -1241,9 +1241,9 @@ namespace Wasm.Build.Tests
         }
 
         protected static string GetSkiaSharpReferenceItems()
-            => @"<PackageReference Include=""SkiaSharp"" Version=""2.88.3"" />
-                <PackageReference Include=""SkiaSharp.NativeAssets.WebAssembly"" Version=""2.88.3"" />
-                <NativeFileReference Include=""$(SkiaSharpStaticLibraryPath)\3.1.12\st\*.a"" />";
+            => @"<PackageReference Include=""SkiaSharp"" Version=""2.88.4-preview.76"" />
+                <PackageReference Include=""SkiaSharp.NativeAssets.WebAssembly"" Version=""2.88.4-preview.76"" />
+                <NativeFileReference Include=""$(SkiaSharpStaticLibraryPath)\3.1.34\st\*.a"" />";
 
         protected static string s_mainReturns42 = @"
             public class TestClass {

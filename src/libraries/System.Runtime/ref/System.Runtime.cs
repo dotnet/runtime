@@ -8197,6 +8197,7 @@ namespace System.Diagnostics
         public void Start() { }
         public static System.Diagnostics.Stopwatch StartNew() { throw null; }
         public void Stop() { }
+        public override string ToString() { throw null; }
     }
     public sealed partial class UnreachableException : System.Exception
     {

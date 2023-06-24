@@ -50271,22 +50271,25 @@ void GCHeap::GetMemoryInfo(uint64_t* highMemLoadThresholdBytes,
     }
 
 #ifdef _DEBUG
-    if ((gc_kind)kind == gc_kind_ephemeral)
+    if (VolatileLoadWithoutBarrier (&last_gc_info->index) != 0)
     {
-        assert (last_gc_info->condemned_generation < max_generation);
-    }
-    else if ((gc_kind)kind == gc_kind_full_blocking)
-    {
-        assert (last_gc_info->condemned_generation == max_generation);
-        assert (last_gc_info->concurrent == false);
-    }
+        if ((gc_kind)kind == gc_kind_ephemeral)
+        {
+            assert (last_gc_info->condemned_generation < max_generation);
+        }
+        else if ((gc_kind)kind == gc_kind_full_blocking)
+        {
+            assert (last_gc_info->condemned_generation == max_generation);
+            assert (last_gc_info->concurrent == false);
+        }
 #ifdef BACKGROUND_GC
-    else if ((gc_kind)kind == gc_kind_background)
-    {
-        assert (last_gc_info->condemned_generation == max_generation);
-        assert (last_gc_info->concurrent == true);
-    }
+        else if ((gc_kind)kind == gc_kind_background)
+        {
+            assert (last_gc_info->condemned_generation == max_generation);
+            assert (last_gc_info->concurrent == true);
+        }
 #endif //BACKGROUND_GC
+    }
 #endif //_DEBUG
 }
 

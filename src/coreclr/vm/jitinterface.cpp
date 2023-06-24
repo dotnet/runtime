@@ -3220,6 +3220,23 @@ void CEEInfo::AddTransientMethodDetails(TransientMethodDetails details)
     m_transientDetails->Append(std::move(details));
 }
 
+TransientMethodDetails CEEInfo::RemoveTransientMethodDetails(MethodDesc* pMD)
+{
+    STANDARD_VM_CONTRACT;
+    _ASSERTE(pMD != NULL);
+
+    TransientMethodDetails local{};
+    TransientMethodDetails* details;
+    if (FindTransientMethodDetails(pMD, &details))
+    {
+        // Details found, move contents to return
+        // and default initialize the found instance.
+        local = std::move(*details);
+        *details = {};
+    }
+    return local;
+}
+
 bool CEEInfo::FindTransientMethodDetails(MethodDesc* pMD, TransientMethodDetails** details)
 {
     STANDARD_VM_CONTRACT;
@@ -7349,39 +7366,58 @@ public:
         _ASSERTE(pMD != NULL);
     }
 
-    MethodInfoHelperContext(const TransientMethodDetails* details)
-        : Method{ details->Method }
-        , Header{ details->Header }
-        , TransientResolver{ NULL }
-    {
-        LIMITED_METHOD_CONTRACT;
-        if (IsDynamicScope(details->Scope))
-            TransientResolver = GetDynamicResolver(details->Scope);
-    }
-
     MethodInfoHelperContext(const MethodInfoHelperContext&) = delete;
     MethodInfoHelperContext(MethodInfoHelperContext&& other) = delete;
 
-    ~MethodInfoHelperContext() = default;
+    ~MethodInfoHelperContext()
+    {
+        STANDARD_VM_CONTRACT;
+        delete TransientResolver;
+    }
 
     MethodInfoHelperContext& operator=(const MethodInfoHelperContext&) = delete;
     MethodInfoHelperContext& operator=(MethodInfoHelperContext&& other) = delete;
 
     bool HasTransientMethodDetails() const
     {
+        LIMITED_METHOD_CONTRACT;
         return TransientResolver != NULL;
     }
 
     CORINFO_MODULE_HANDLE CreateScopeHandle() const
     {
+        LIMITED_METHOD_CONTRACT;
         _ASSERTE(HasTransientMethodDetails());
         return MakeDynamicScope(TransientResolver);
     }
 
-    TransientMethodDetails CreateTransientMethodDetails() const
+    // This operation transfers any ownership to a
+    // TransientMethodDetails instance.
+    TransientMethodDetails CreateTransientMethodDetails()
     {
+        STANDARD_VM_CONTRACT;
         _ASSERTE(HasTransientMethodDetails());
-        return TransientMethodDetails{Method, Header, CreateScopeHandle() };
+
+        CORINFO_MODULE_HANDLE handle = CreateScopeHandle();
+        TransientResolver = NULL;
+        return TransientMethodDetails{ Method, Header, handle };
+    }
+
+    void UpdateWith(const TransientMethodDetails& details)
+    {
+        LIMITED_METHOD_CONTRACT;
+        Header = details.Header;
+        TransientResolver = details.Scope != NULL ? GetDynamicResolver(details.Scope) : NULL;
+    }
+
+    void TakeOwnership(TransientMethodDetails details)
+    {
+        LIMITED_METHOD_CONTRACT;
+        UpdateWith(details);
+
+        // Default initialize local instance since we are
+        // taking ownership of the transient method details.
+        details = {};
     }
 };
 
@@ -7580,16 +7616,31 @@ CEEInfo::getMethodInfo(
     }
     else if (ftn->IsIL() && ftn->GetRVA() == 0)
     {
+        // We will either find or create transient method details.
+        _ASSERTE(!cxt.HasTransientMethodDetails());
+
         // IL methods with no RVA indicate there is no implementation defined in metadata.
         // Check if we previously generated details/implementation for this method.
         TransientMethodDetails* detailsMaybe = NULL;
         if (FindTransientMethodDetails(ftn, &detailsMaybe))
-        {
-            cxt.Header = detailsMaybe->Header;
-            cxt.TransientResolver = GetDynamicResolver(detailsMaybe->Scope);
-        }
+            cxt.UpdateWith(*detailsMaybe);
 
         getMethodInfoHelper(cxt, methInfo);
+
+        // If we have transient method details we need to handle
+        // the lifetime of the details.
+        if (cxt.HasTransientMethodDetails())
+        {
+            // If we didn't find transient details, but we have them
+            // after getting method info, store them for cleanup.
+            if (detailsMaybe == NULL)
+                AddTransientMethodDetails(cxt.CreateTransientMethodDetails());
+
+            // Reset the context because ownership has either been
+            // transferred or was found in this instance.
+            cxt.UpdateWith({});
+        }
+
         result = true;
     }
 
@@ -12795,6 +12846,12 @@ PCODE UnsafeJitFunction(PrepareCodeConfig* config,
 #endif // TARGET_ARM64
 
             reserveForJumpStubs = jitInfo.GetReserveForJumpStubs();
+
+            // Get any transient method details and take ownership
+            // from the JITInfo instance. We are going to be recreating
+            // a new JITInfo and will reuse these details there.
+            TransientMethodDetails details = jitInfo.RemoveTransientMethodDetails(ftn);
+            cxt.TakeOwnership(std::move(details));
             continue;
         }
 #endif // (TARGET_AMD64 || TARGET_ARM64)

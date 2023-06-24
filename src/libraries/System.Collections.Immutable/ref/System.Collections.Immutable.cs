@@ -561,8 +561,10 @@ namespace System.Collections.Immutable
         public static System.Collections.Immutable.ImmutableHashSet<T> Create<T>(System.Collections.Generic.IEqualityComparer<T>? equalityComparer) { throw null; }
         public static System.Collections.Immutable.ImmutableHashSet<T> Create<T>(System.Collections.Generic.IEqualityComparer<T>? equalityComparer, T item) { throw null; }
         public static System.Collections.Immutable.ImmutableHashSet<T> Create<T>(System.Collections.Generic.IEqualityComparer<T>? equalityComparer, params T[] items) { throw null; }
+        public static System.Collections.Immutable.ImmutableHashSet<T> Create<T>(System.Collections.Generic.IEqualityComparer<T>? equalityComparer, System.ReadOnlySpan<T> items) { throw null; }
         public static System.Collections.Immutable.ImmutableHashSet<T> Create<T>(T item) { throw null; }
         public static System.Collections.Immutable.ImmutableHashSet<T> Create<T>(params T[] items) { throw null; }
+        public static System.Collections.Immutable.ImmutableHashSet<T> Create<T>(System.ReadOnlySpan<T> items) { throw null; }
         public static System.Collections.Immutable.ImmutableHashSet<TSource> ToImmutableHashSet<TSource>(this System.Collections.Generic.IEnumerable<TSource> source) { throw null; }
         public static System.Collections.Immutable.ImmutableHashSet<TSource> ToImmutableHashSet<TSource>(this System.Collections.Generic.IEnumerable<TSource> source, System.Collections.Generic.IEqualityComparer<TSource>? equalityComparer) { throw null; }
         public static System.Collections.Immutable.ImmutableHashSet<TSource> ToImmutableHashSet<TSource>(this System.Collections.Immutable.ImmutableHashSet<TSource>.Builder builder) { throw null; }
@@ -687,6 +689,7 @@ namespace System.Collections.Immutable
         public static System.Collections.Immutable.ImmutableList<T> Create<T>() { throw null; }
         public static System.Collections.Immutable.ImmutableList<T> Create<T>(T item) { throw null; }
         public static System.Collections.Immutable.ImmutableList<T> Create<T>(params T[] items) { throw null; }
+        public static System.Collections.Immutable.ImmutableList<T> Create<T>(System.ReadOnlySpan<T> items) { throw null; }
         public static int IndexOf<T>(this System.Collections.Immutable.IImmutableList<T> list, T item) { throw null; }
         public static int IndexOf<T>(this System.Collections.Immutable.IImmutableList<T> list, T item, System.Collections.Generic.IEqualityComparer<T>? equalityComparer) { throw null; }
         public static int IndexOf<T>(this System.Collections.Immutable.IImmutableList<T> list, T item, int startIndex) { throw null; }
@@ -881,6 +884,7 @@ namespace System.Collections.Immutable
         public static System.Collections.Immutable.ImmutableQueue<T> Create<T>() { throw null; }
         public static System.Collections.Immutable.ImmutableQueue<T> Create<T>(T item) { throw null; }
         public static System.Collections.Immutable.ImmutableQueue<T> Create<T>(params T[] items) { throw null; }
+        public static System.Collections.Immutable.ImmutableQueue<T> Create<T>(System.ReadOnlySpan<T> items) { throw null; }
         public static System.Collections.Immutable.IImmutableQueue<T> Dequeue<T>(this System.Collections.Immutable.IImmutableQueue<T> queue, out T value) { throw null; }
     }
     public sealed partial class ImmutableQueue<T> : System.Collections.Generic.IEnumerable<T>, System.Collections.IEnumerable, System.Collections.Immutable.IImmutableQueue<T>
@@ -1055,8 +1059,10 @@ namespace System.Collections.Immutable
         public static System.Collections.Immutable.ImmutableSortedSet<T> Create<T>(System.Collections.Generic.IComparer<T>? comparer) { throw null; }
         public static System.Collections.Immutable.ImmutableSortedSet<T> Create<T>(System.Collections.Generic.IComparer<T>? comparer, T item) { throw null; }
         public static System.Collections.Immutable.ImmutableSortedSet<T> Create<T>(System.Collections.Generic.IComparer<T>? comparer, params T[] items) { throw null; }
+        public static System.Collections.Immutable.ImmutableSortedSet<T> Create<T>(System.Collections.Generic.IComparer<T>? comparer, System.ReadOnlySpan<T> items) { throw null; }
         public static System.Collections.Immutable.ImmutableSortedSet<T> Create<T>(T item) { throw null; }
         public static System.Collections.Immutable.ImmutableSortedSet<T> Create<T>(params T[] items) { throw null; }
+        public static System.Collections.Immutable.ImmutableSortedSet<T> Create<T>(System.ReadOnlySpan<T> items) { throw null; }
         public static System.Collections.Immutable.ImmutableSortedSet<TSource> ToImmutableSortedSet<TSource>(this System.Collections.Generic.IEnumerable<TSource> source) { throw null; }
         public static System.Collections.Immutable.ImmutableSortedSet<TSource> ToImmutableSortedSet<TSource>(this System.Collections.Generic.IEnumerable<TSource> source, System.Collections.Generic.IComparer<TSource>? comparer) { throw null; }
         public static System.Collections.Immutable.ImmutableSortedSet<TSource> ToImmutableSortedSet<TSource>(this System.Collections.Immutable.ImmutableSortedSet<TSource>.Builder builder) { throw null; }
@@ -1187,6 +1193,7 @@ namespace System.Collections.Immutable
         public static System.Collections.Immutable.ImmutableStack<T> Create<T>() { throw null; }
         public static System.Collections.Immutable.ImmutableStack<T> Create<T>(T item) { throw null; }
         public static System.Collections.Immutable.ImmutableStack<T> Create<T>(params T[] items) { throw null; }
+        public static System.Collections.Immutable.ImmutableStack<T> Create<T>(System.ReadOnlySpan<T> items) { throw null; }
         public static System.Collections.Immutable.IImmutableStack<T> Pop<T>(this System.Collections.Immutable.IImmutableStack<T> stack, out T value) { throw null; }
     }
     public sealed partial class ImmutableStack<T> : System.Collections.Generic.IEnumerable<T>, System.Collections.IEnumerable, System.Collections.Immutable.IImmutableStack<T>
