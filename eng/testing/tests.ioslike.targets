@@ -106,6 +106,8 @@
       <_ApplePropertyNames Include="MonoEnableLLVM" />
       <_ApplePropertyNames Include="CoreRootPath" />
       <_ApplePropertyNames Include="RuntimeTests" />
+      <_ApplePropertyNames Include="MonoForceInterpreter" />
+      <_ApplePropertyNames Include="UseMonoJustInterp" />
 
       <_ApplePropertiesToPass
         Include="$(%(_ApplePropertyNames.Identity))"
