@@ -112,13 +112,17 @@ public static class Assert
 {
     public static bool HasAssertFired;
 
+    [MethodImplAttribute(MethodImplOptions.NoInlining)]
     public static void AreEqual(Object actual, Object expected)
     {
-        if (!(actual == null && expected == null) && !actual.Equals(expected))
+        if (ReferenceEquals(expected, actual))
+            return;
+        
+        if (ReferenceEquals(expected, null) || !expected.Equals(actual))
         {
             Console.WriteLine("Not equal!");
-            Console.WriteLine("actual   = " + actual.ToString());
-            Console.WriteLine("expected = " + expected.ToString());
+            Console.WriteLine("expected = " + expected?.ToString());
+            Console.WriteLine("actual   = " + actual?.ToString());
             HasAssertFired = true;
         }
     }
