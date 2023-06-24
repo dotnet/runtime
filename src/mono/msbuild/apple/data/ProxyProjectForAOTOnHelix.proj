@@ -1,5 +1,4 @@
 <Project DefaultTargets="BundleTestAppleApp" Sdk="Microsoft.NET.Sdk">
-  <Import Project="Directory.Build.props" />
   <Import Project="$(MSBuildThisFileDirectory)$(MSBuildThisFileName).props" />
   <PropertyGroup>
     <MonoEnableLLVM>true</MonoEnableLLVM>
@@ -13,6 +12,7 @@
     <OriginalPublishDir Condition="'$(UseNativeAOTRuntime)' == 'true'">$(HELIX_WORKITEM_ROOT)\publish\</OriginalPublishDir>
     <ExtraFilesPath>$(OriginalPublishDir)..\extraFiles\</ExtraFilesPath>
     <IntermediateOutputPath Condition="'$(UseNativeAOTRuntime)' == 'true'">$(OriginalPublishDir)</IntermediateOutputPath>
+    <AppendTargetFrameworkToOutputPath Condition="'$(UseNativeAOTRuntime)' == 'true'">false</AppendTargetFrameworkToOutputPath>
 
     <_AotCompileTargetName Condition="'$(UseNativeAOTRuntime)' != 'true'">_AppleAotCompile;</_AotCompileTargetName>
     <_AotCompileTargetName Condition="'$(UseNativeAOTRuntime)' == 'true'">_AppleNativeAotCompile;</_AotCompileTargetName>
@@ -28,7 +28,6 @@
         _AfterAppleBuildOnHelix;
     </AppleBuildDependsOn>
     <UseArtifactsIntermediateOutput Condition="'$(UseNativeAOTRuntime)' == 'true'">true</UseArtifactsIntermediateOutput>
-
   </PropertyGroup>
 
   <ItemGroup Condition="'$(UseNativeAOTRuntime)' == 'true'">
@@ -92,5 +91,4 @@
 
     <Message Importance="High" Text="App moved to: $(_XHarnessAppPath)"/>
   </Target>
-  <Import Project="Directory.Build.targets" />
 </Project>
