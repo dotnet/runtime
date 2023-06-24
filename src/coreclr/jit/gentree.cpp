@@ -17963,11 +17963,12 @@ CORINFO_CLASS_HANDLE Compiler::gtGetClassHandle(GenTree* tree, bool* pIsExact, b
                     break;
                 }
 
-                CORINFO_CLASS_HANDLE specialObjClass = impGetSpecialIntrinsicExactReturnType(call);
+                bool isExact = false;
+                CORINFO_CLASS_HANDLE specialObjClass = impGetSpecialIntrinsicExactReturnType(call, &isExact);
                 if (specialObjClass != nullptr)
                 {
                     objClass    = specialObjClass;
-                    *pIsExact   = true;
+                    *pIsExact   = isExact;
                     *pIsNonNull = true;
                     break;
                 }

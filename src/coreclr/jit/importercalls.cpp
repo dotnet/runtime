@@ -7483,16 +7483,18 @@ Compiler::GDVProbeType Compiler::compClassifyGDVProbeType(GenTreeCall* call)
 //
 // Arguments:
 //     methodHnd -- handle for the special intrinsic method
+//     pIsExact  -- returns whether the type is exact
 //
 // Returns:
 //     Exact class handle returned by the intrinsic call, if known.
 //     Nullptr if not known, or not likely to lead to beneficial optimization.
-CORINFO_CLASS_HANDLE Compiler::impGetSpecialIntrinsicExactReturnType(GenTreeCall* call)
+CORINFO_CLASS_HANDLE Compiler::impGetSpecialIntrinsicExactReturnType(GenTreeCall* call, bool* pIsExact)
 {
     CORINFO_METHOD_HANDLE methodHnd = call->gtCallMethHnd;
     JITDUMP("Special intrinsic: looking for exact type returned by %s\n", eeGetMethodFullName(methodHnd));
 
     CORINFO_CLASS_HANDLE result = nullptr;
+    *pIsExact = false;
 
     // See what intrinsic we have...
     const NamedIntrinsic ni = lookupNamedIntrinsic(methodHnd);
@@ -7510,15 +7512,10 @@ CORINFO_CLASS_HANDLE Compiler::impGetSpecialIntrinsicExactReturnType(GenTreeCall
 
             // Lookup can incorrect when we have __Canon as it won't appear
             // to implement any interface types.
-            //
-            // And if we do not have a final type, devirt & inlining is
-            // unlikely to result in much simplification.
-            //
-            // We can use CORINFO_FLG_FINAL to screen out both of these cases.
             const DWORD typeAttribs = info.compCompHnd->getClassAttribs(typeHnd);
-            bool        isFinalType = ((typeAttribs & CORINFO_FLG_FINAL) != 0);
+            bool        isNonShared = ((typeAttribs & CORINFO_FLG_SHAREDINST) != 0);
 
-            if (!isFinalType)
+            if (!isNonShared)
             {
                 CallArg* instParam = call->gtArgs.FindWellKnownArg(WellKnownArg::InstParam);
                 if (instParam != nullptr)
@@ -7528,16 +7525,16 @@ CORINFO_CLASS_HANDLE Compiler::impGetSpecialIntrinsicExactReturnType(GenTreeCall
                     if (hClass != NO_CLASS_HANDLE)
                     {
                         hClass = getTypeInstantiationArgument(hClass, 0);
-                        if ((info.compCompHnd->getClassAttribs(hClass) & CORINFO_FLG_FINAL) != 0)
+                        if ((info.compCompHnd->getClassAttribs(hClass) & CORINFO_FLG_SHAREDINST) != 0)
                         {
                             typeHnd     = hClass;
-                            isFinalType = true;
+                            isNonShared = true;
                         }
                     }
                 }
             }
 
-            if (isFinalType)
+            if (isNonShared)
             {
                 if (ni == NI_System_Collections_Generic_EqualityComparer_get_Default)
                 {
@@ -7548,12 +7545,13 @@ CORINFO_CLASS_HANDLE Compiler::impGetSpecialIntrinsicExactReturnType(GenTreeCall
                     assert(ni == NI_System_Collections_Generic_Comparer_get_Default);
                     result = info.compCompHnd->getDefaultComparerClass(typeHnd);
                 }
+                *pIsExact = result != nullptr;
                 JITDUMP("Special intrinsic for type %s: return type is %s\n", eeGetClassName(typeHnd),
                         result != nullptr ? eeGetClassName(result) : "unknown");
             }
             else
             {
-                JITDUMP("Special intrinsic for type %s: type not final, so deferring opt\n", eeGetClassName(typeHnd));
+                JITDUMP("Special intrinsic for type %s: type shared, so deferring opt\n", eeGetClassName(typeHnd));
             }
 
             break;

@@ -85,6 +85,10 @@ namespace Internal.IL.Stubs
                 // The comparer will be determined at runtime. We can't tell the exact type at compile time.
                 return null;
             }
+            else if (flavor == "EqualityComparer" && type.GetRuntimeTypeHandle() == typeof(byte).TypeHandle)
+            {
+                return context.SystemModule.GetKnownType("System.Collections.Generic", $"ByteEqualityComparer");
+            }
             else if (type.IsNullable)
             {
                 TypeDesc nullableType = type.Instantiation[0];

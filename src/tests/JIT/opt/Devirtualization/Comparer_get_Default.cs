@@ -92,19 +92,19 @@ public class Program
     [Fact]
     public static int TestEntryPoint()
     {
-        long[] values = 
+        long[] values =
             {
                 -2, -1, 0, 1, 2,
-                sbyte.MinValue - 1, sbyte.MinValue, sbyte.MinValue + 1, 
+                sbyte.MinValue - 1, sbyte.MinValue, sbyte.MinValue + 1,
                 sbyte.MaxValue - 1, sbyte.MaxValue, sbyte.MaxValue + 1,
                 byte.MaxValue - 1, byte.MaxValue, byte.MaxValue + 1,
-                short.MinValue, short.MinValue + 1, 
+                short.MinValue, short.MinValue + 1,
                 short.MaxValue - 1, short.MaxValue, short.MaxValue + 1,
                 ushort.MaxValue - 1, ushort.MaxValue, ushort.MaxValue + 1,
-                int.MinValue, int.MinValue + 1, 
+                int.MinValue, int.MinValue + 1,
                 int.MaxValue - 1, int.MaxValue, int.MaxValue + 1L,
                 uint.MaxValue - 1, uint.MaxValue, uint.MaxValue + 1L,
-                long.MinValue, long.MinValue + 1, 
+                long.MinValue, long.MinValue + 1,
                 long.MaxValue - 1, long.MaxValue
             };
 
@@ -217,16 +217,26 @@ public class Program
 
     private static void GetTypeTests()
     {
+        AssertEquals("System.Collections.Generic.GenericComparer`1[System.Byte]", Comparer<byte>.Default.GetType().ToString());
         AssertEquals("System.Collections.Generic.GenericComparer`1[System.Int32]", Comparer<int>.Default.GetType().ToString());
         AssertEquals("System.Collections.Generic.GenericComparer`1[System.String]", Comparer<string>.Default.GetType().ToString());
         AssertEquals("System.Collections.Generic.GenericComparer`1[System.Guid]", Comparer<Guid>.Default.GetType().ToString());
         AssertEquals("System.Collections.Generic.EnumComparer`1[System.Runtime.CompilerServices.MethodImplOptions]", Comparer<MethodImplOptions>.Default.GetType().ToString());
-        AssertEquals("System.Collections.Generic.NullableComparer`1[System.Byte]", Comparer<byte?>.Default.GetType().ToString());
         AssertEquals("System.Collections.Generic.ObjectComparer`1[Struct1]", Comparer<Struct1>.Default.GetType().ToString());
-
+        AssertEquals("System.Collections.Generic.NullableComparer`1[System.Byte]", Comparer<byte?>.Default.GetType().ToString());
+        AssertEquals("System.Collections.Generic.NullableComparer`1[System.Int32]", Comparer<int?>.Default.GetType().ToString());
         AssertEquals("System.Collections.Generic.NullableComparer`1[System.Runtime.CompilerServices.MethodImplOptions]", Comparer<MethodImplOptions?>.Default.GetType().ToString());
-        AssertEquals("System.Collections.Generic.NullableEqualityComparer`1[System.Runtime.CompilerServices.MethodImplOptions]", EqualityComparer<MethodImplOptions?>.Default.GetType().ToString());
         AssertEquals("System.Collections.Generic.NullableComparer`1[Struct1]", Comparer<Struct1?>.Default.GetType().ToString());
+
+        AssertEquals("System.Collections.Generic.ByteEqualityComparer", EqualityComparer<byte>.Default.GetType().ToString());
+        AssertEquals("System.Collections.Generic.GenericEqualityComparer`1[System.Int32]", EqualityComparer<int>.Default.GetType().ToString());
+        AssertEquals("System.Collections.Generic.GenericEqualityComparer`1[System.String]", EqualityComparer<string>.Default.GetType().ToString());
+        AssertEquals("System.Collections.Generic.GenericEqualityComparer`1[System.Guid]", EqualityComparer<Guid>.Default.GetType().ToString());
+        AssertEquals("System.Collections.Generic.EnumEqualityComparer`1[System.Runtime.CompilerServices.MethodImplOptions]", EqualityComparer<MethodImplOptions>.Default.GetType().ToString());
+        AssertEquals("System.Collections.Generic.ObjectEqualityComparer`1[Struct1]", EqualityComparer<Struct1>.Default.GetType().ToString());
+        AssertEquals("System.Collections.Generic.NullableEqualityComparer`1[System.Byte]", EqualityComparer<byte?>.Default.GetType().ToString());
+        AssertEquals("System.Collections.Generic.NullableEqualityComparer`1[System.Int32]", EqualityComparer<int?>.Default.GetType().ToString());
+        AssertEquals("System.Collections.Generic.NullableEqualityComparer`1[System.Runtime.CompilerServices.MethodImplOptions]", EqualityComparer<MethodImplOptions?>.Default.GetType().ToString());
         AssertEquals("System.Collections.Generic.NullableEqualityComparer`1[Struct1]", EqualityComparer<Struct1?>.Default.GetType().ToString());
     }
     private static int GetHashCodeTests()

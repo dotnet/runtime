@@ -8741,44 +8741,15 @@ CORINFO_CLASS_HANDLE CEEInfo::getDefaultComparerClassHelper(CORINFO_CLASS_HANDLE
     if (Nullable::IsNullableType(elemTypeHnd))
     {
         Instantiation nullableInst = elemTypeHnd.AsMethodTable()->GetInstantiation();
-        TypeHandle iequatable = TypeHandle(CoreLibBinder::GetClass(CLASS__IEQUATABLEGENERIC)).Instantiate(nullableInst);
-        if (nullableInst[0].CanCastTo(iequatable))
-        {
-            TypeHandle resultTh = ((TypeHandle)CoreLibBinder::GetClass(CLASS__NULLABLE_COMPARER)).Instantiate(nullableInst);
-            return CORINFO_CLASS_HANDLE(resultTh.GetMethodTable());
-        }
+        TypeHandle resultTh = ((TypeHandle)CoreLibBinder::GetClass(CLASS__NULLABLE_COMPARER)).Instantiate(nullableInst);
+        return CORINFO_CLASS_HANDLE(resultTh.GetMethodTable());
     }
 
     // We need to special case the Enum comparers based on their underlying type to avoid boxing
     if (elemTypeHnd.IsEnum())
     {
-        MethodTable* targetClass = NULL;
-        CorElementType normType = elemTypeHnd.GetVerifierCorElementType();
-
-        switch(normType)
-        {
-            case ELEMENT_TYPE_I1:
-            case ELEMENT_TYPE_I2:
-            case ELEMENT_TYPE_U1:
-            case ELEMENT_TYPE_U2:
-            case ELEMENT_TYPE_I4:
-            case ELEMENT_TYPE_U4:
-            case ELEMENT_TYPE_I8:
-            case ELEMENT_TYPE_U8:
-            {
-                targetClass = CoreLibBinder::GetClass(CLASS__ENUM_COMPARER);
-                break;
-            }
-
-            default:
-                break;
-        }
-
-        if (targetClass != NULL)
-        {
-            TypeHandle resultTh = ((TypeHandle)targetClass->GetCanonicalMethodTable()).Instantiate(inst);
-            return CORINFO_CLASS_HANDLE(resultTh.GetMethodTable());
-        }
+        TypeHandle resultTh = ((TypeHandle)CoreLibBinder::GetClass(CLASS__ENUM_COMPARER)).Instantiate(inst);
+        return CORINFO_CLASS_HANDLE(resultTh.GetMethodTable());
     }
 
     // Default case
@@ -8852,33 +8823,8 @@ CORINFO_CLASS_HANDLE CEEInfo::getDefaultEqualityComparerClassHelper(CORINFO_CLAS
     // to avoid boxing and call the correct versions of GetHashCode.
     if (elemTypeHnd.IsEnum())
     {
-        MethodTable* targetClass = NULL;
-        CorElementType normType = elemTypeHnd.GetVerifierCorElementType();
-
-        switch(normType)
-        {
-            case ELEMENT_TYPE_I1:
-            case ELEMENT_TYPE_I2:
-            case ELEMENT_TYPE_U1:
-            case ELEMENT_TYPE_U2:
-            case ELEMENT_TYPE_I4:
-            case ELEMENT_TYPE_U4:
-            case ELEMENT_TYPE_I8:
-            case ELEMENT_TYPE_U8:
-            {
-                targetClass = CoreLibBinder::GetClass(CLASS__ENUM_EQUALITYCOMPARER);
-                break;
-            }
-
-            default:
-                break;
-        }
-
-        if (targetClass != NULL)
-        {
-            TypeHandle resultTh = ((TypeHandle)targetClass->GetCanonicalMethodTable()).Instantiate(inst);
-            return CORINFO_CLASS_HANDLE(resultTh.GetMethodTable());
-        }
+        TypeHandle resultTh = ((TypeHandle)CoreLibBinder::GetClass(CLASS__ENUM_EQUALITYCOMPARER)).Instantiate(inst);
+        return CORINFO_CLASS_HANDLE(resultTh.GetMethodTable());
     }
 
     // Default case
