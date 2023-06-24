@@ -708,17 +708,7 @@ namespace System.Text.Unicode
         /// </summary>
         /// <param name="value">The <see cref="ReadOnlySpan{T}"/> string.</param>
         /// <returns><c>true</c> if value is well-formed UTF-8, <c>false</c> otherwise.</returns>
-        public static unsafe bool IsValid(ReadOnlySpan<byte> value)
-        {
-            int length = value.Length; // Throwaway span accesses https://github.com/dotnet/runtime/issues/12332
-            fixed (byte* pOriginalSource = &MemoryMarshal.GetReference(value))
-            {
-                byte* pFirstInvalidByte = Utf8Utility.GetPointerToFirstInvalidByte(pOriginalSource, length, out _, out _);
-
-                Debug.Assert(pFirstInvalidByte >= pOriginalSource);
-                Debug.Assert(pFirstInvalidByte <= pOriginalSource + length);
-                return pFirstInvalidByte == pOriginalSource + length;
-            }
-        }
+        public static unsafe bool IsValid(ReadOnlySpan<byte> value) =>
+            Utf8Utility.GetIndexOfFirstInvalidUtf8Sequence(value, out _) < 0;
     }
 }
