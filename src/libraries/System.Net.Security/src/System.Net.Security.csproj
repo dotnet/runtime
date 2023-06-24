@@ -17,7 +17,7 @@
     <DefineConstants Condition="'$(UseAndroidCrypto)' == 'true' or '$(UseAppleCrypto)' == 'true'">$(DefineConstants);SYSNETSECURITY_NO_OPENSSL</DefineConstants>
     <GenAPIExcludeApiList>ReferenceAssemblyExclusions.txt</GenAPIExcludeApiList>
   </PropertyGroup>
-  <Import Project="$(CommonPath)System\Security\Cryptography\Asn1Reader\System.Security.Cryptography.Asn1Reader.Shared.projitems" Condition="'$(UseManagedNtlm)' == 'true'" />
+  <Import Project="$(CommonPath)System\Security\Cryptography\Asn1Reader\System.Security.Cryptography.Asn1Reader.Shared.projitems" Condition="'$(TargetPlatformIdentifier)' != '' and '$(TargetPlatformIdentifier)' != 'windows'" />
   <ItemGroup Condition="'$(TargetPlatformIdentifier)' != ''">
     <Compile Include="System\Net\CertificateValidationPal.cs" />
     <Compile Include="System\Net\NegotiateAuthenticationPal.cs" />
@@ -295,6 +295,10 @@
   </ItemGroup>
   <ItemGroup Condition="'$(UseManagedNtlm)' == 'true'">
     <Compile Include="System\Net\NegotiateAuthenticationPal.Managed.cs" />
+  </ItemGroup>
+  <ItemGroup Condition="'$(TargetPlatformIdentifier)' != '' and '$(TargetPlatformIdentifier)' != 'windows'">
+    <Compile Include="System\Net\NegotiateAuthenticationPal.ManagedNtlm.cs" />
+    <Compile Include="System\Net\NegotiateAuthenticationPal.ManagedSpnego.cs" />
     <Compile Include="$(CommonPath)System\Net\Security\MD4.cs"
              Link="Common\System\Net\Security\MD4.cs" />
     <Compile Include="$(CommonPath)System\Net\Security\RC4.cs"
@@ -441,9 +445,7 @@
   <ItemGroup Condition="'$(TargetPlatformIdentifier)' != '' and '$(TargetPlatformIdentifier)' != 'windows'">
     <Reference Include="System.Diagnostics.StackTrace" />
     <Reference Include="System.Security.Cryptography" />
-  </ItemGroup>
-  <ItemGroup Condition="'$(UseManagedNtlm)' == 'true'">
-    <ProjectReference Include="$(LibrariesProjectRoot)System.Formats.Asn1\src\System.Formats.Asn1.csproj" />
     <Reference Include="System.Runtime.Numerics" />
+    <ProjectReference Include="$(LibrariesProjectRoot)System.Formats.Asn1\src\System.Formats.Asn1.csproj" />
   </ItemGroup>
 </Project>

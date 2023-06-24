@@ -19,8 +19,23 @@ namespace System.Net
 {
     internal partial class NegotiateAuthenticationPal
     {
+        private static bool UseManagedNtlm = !AppContext.TryGetSwitch("System.Net.Security.UseManagedNtlm", out bool useManagedNtlm) || useManagedNtlm;
+        //private static bool UseManagedNtlm = AppContext.TryGetSwitch("System.Net.Security.UseManagedNtlm", out bool useManagedNtlm) && useManagedNtlm;
+
         public static NegotiateAuthenticationPal Create(NegotiateAuthenticationClientOptions clientOptions)
         {
+            if (UseManagedNtlm)
+            {
+                switch (clientOptions.Package)
+                {
+                    case NegotiationInfoClass.NTLM:
+                        return new ManagedNtlmNegotiateAuthenticationPal(clientOptions);
+
+                    case NegotiationInfoClass.Negotiate:
+                        return new ManagedSpnegoNegotiateAuthenticationPal(clientOptions, supportKerberos: true);
+                }
+            }
+
             try
             {
                 return new UnixNegotiateAuthenticationPal(clientOptions);
