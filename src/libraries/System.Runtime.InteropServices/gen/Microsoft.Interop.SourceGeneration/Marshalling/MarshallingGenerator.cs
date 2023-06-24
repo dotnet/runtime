@@ -138,42 +138,4 @@ namespace Microsoft.Interop
         /// <returns></returns>
         bool SupportsByValueMarshalKind(ByValueContentsMarshalKind marshalKind, StubCodeContext context);
     }
-
-
-    /// <summary>
-    /// Exception used to indicate marshalling isn't supported.
-    /// </summary>
-    public sealed class MarshallingNotSupportedException : Exception
-    {
-        /// <summary>
-        /// Construct a new <see cref="MarshallingNotSupportedException"/> instance.
-        /// </summary>
-        /// <param name="info"><see cref="Microsoft.Interop.TypePositionInfo"/> instance</param>
-        /// <param name="context"><see cref="Microsoft.Interop.StubCodeContext"/> instance</param>
-        public MarshallingNotSupportedException(TypePositionInfo info, StubCodeContext context)
-        {
-            TypePositionInfo = info;
-            StubCodeContext = context;
-        }
-
-        /// <summary>
-        /// Type that is being marshalled.
-        /// </summary>
-        public TypePositionInfo TypePositionInfo { get; private init; }
-
-        /// <summary>
-        /// Context in which the marshalling is taking place.
-        /// </summary>
-        public StubCodeContext StubCodeContext { get; private init; }
-
-        /// <summary>
-        /// [Optional] Specific reason marshalling of the supplied type isn't supported.
-        /// </summary>
-        public string? NotSupportedDetails { get; init; }
-
-        /// <summary>
-        /// [Optional] Properties to attach to any diagnostic emitted due to this exception.
-        /// </summary>
-        public ImmutableDictionary<string, string>? DiagnosticProperties { get; init; }
-    }
 }

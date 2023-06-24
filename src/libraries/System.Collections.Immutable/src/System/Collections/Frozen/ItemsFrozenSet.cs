@@ -30,10 +30,14 @@ namespace System.Collections.Frozen
                 hashCodes[i] = entries[i] is T t ? Comparer.GetHashCode(t) : 0;
             }
 
-            _hashTable = FrozenHashTable.Create(
-                hashCodes,
-                (destIndex, srcIndex) => _items[destIndex] = entries[srcIndex],
-                optimizeForReading);
+            _hashTable = FrozenHashTable.Create(hashCodes, optimizeForReading);
+
+            for (int srcIndex = 0; srcIndex < hashCodes.Length; srcIndex++)
+            {
+                int destIndex = hashCodes[srcIndex];
+
+                _items[destIndex] = entries[srcIndex];
+            }
 
             ArrayPool<int>.Shared.Return(arrayPoolHashCodes);
         }

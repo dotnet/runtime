@@ -526,6 +526,7 @@
     <Compile Include="Compiler\DependencyAnalysis\ReadyToRunHeaderNode.cs" />
     <Compile Include="Compiler\DependencyAnalysis\ModulesSectionNode.cs" />
     <Compile Include="Compiler\DependencyAnalysis\TypeManagerIndirectionNode.cs" />
+    <Compile Include="Compiler\DependencyAnalysis\TlsRootNode.cs" />
     <Compile Include="Compiler\DependencyAnalysis\BlobNode.cs" />
     <Compile Include="Compiler\DependencyAnalysis\EETypeNode.cs" />
     <Compile Include="Compiler\DependencyAnalysis\CanonicalDefinitionEETypeNode.cs" />

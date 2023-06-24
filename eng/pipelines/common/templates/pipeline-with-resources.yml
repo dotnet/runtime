@@ -105,7 +105,7 @@ resources:
         ROOTFS_DIR: /crossrootfs/armel
 
     - container: debpkg
-      image: mcr.microsoft.com/dotnet-buildtools/prereqs:ubuntu-18.04-debpkg
+      image: mcr.microsoft.com/dotnet-buildtools/prereqs:ubuntu-22.04-debpkg
 
     - container: rpmpkg
       image: mcr.microsoft.com/dotnet-buildtools/prereqs:cbl-mariner-2.0-fpm
