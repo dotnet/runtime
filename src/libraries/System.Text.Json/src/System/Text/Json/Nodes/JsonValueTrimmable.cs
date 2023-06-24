@@ -117,7 +117,7 @@ namespace System.Text.Json.Nodes
                     node.WriteTo(writer);
                 }
 
-                return Encoding.UTF8.GetString(currentOutput.WrittenMemory.ToArray()) == Encoding.UTF8.GetString(anotherOutput.WrittenMemory.ToArray());
+                return currentOutput.WrittenMemory.Span.SequenceEqual(anotherOutput.WrittenMemory.Span);
             }
         }
 
