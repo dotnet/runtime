@@ -2,6 +2,7 @@
 // The .NET Foundation licenses this file to you under the MIT license.
 
 using System.Diagnostics;
+using System.Runtime.CompilerServices;
 
 namespace System.Buffers
 {
@@ -79,14 +80,39 @@ namespace System.Buffers
 
         /// <summary>
         /// Clears the data written to the underlying buffer.
+        /// When <c>T</c> is not reference and not contains reference,
+        /// using <seealso cref="ResetWrittenCount"/> is more performance effective.
         /// </summary>
         /// <remarks>
-        /// You must clear the <see cref="ArrayBufferWriter{T}"/> before trying to re-use it.
+        /// You must reset or clear the <see cref="ArrayBufferWriter{T}"/> before trying
+        /// to re-use it.
         /// </remarks>
+        /// <seealso cref="ResetWrittenCount"/>
+        /// <seealso cref="RuntimeHelpers.IsReferenceOrContainsReferences{T}"/>
         public void Clear()
         {
             Debug.Assert(_buffer.Length >= _index);
             _buffer.AsSpan(0, _index).Clear();
+            _index = 0;
+        }
+
+        /// <summary>
+        /// Resets the data written to the underlying buffer without zeroing memory
+        /// when <c>T</c> is not reference and not contains reference, otherwise clears them.
+        /// </summary>
+        /// <remarks>
+        /// You must reset or clear the <see cref="ArrayBufferWriter{T}"/> before trying
+        /// to re-use it.
+        /// </remarks>
+        /// <seealso cref="Clear"/>
+        /// <seealso cref="RuntimeHelpers.IsReferenceOrContainsReferences{T}"/>
+        public void ResetWrittenCount()
+        {
+            Debug.Assert(_buffer.Length >= _index);
+            if (RuntimeHelpers.IsReferenceOrContainsReferences<T>())
+            {
+                _buffer.AsSpan(0, _index).Clear();
+            }
             _index = 0;
         }
 
