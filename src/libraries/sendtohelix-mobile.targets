@@ -58,12 +58,12 @@
       <_XHarnessAppleCustomCommand Condition="'$(NeedsiOSSDK)' == 'true'">
         source build-apple-app.sh
       </_XHarnessAppleCustomCommand>
+      <ILLinkDir>$([MSBuild]::NormalizeDirectory('$(ArtifactsDir)', '..', '.packages', 'microsoft.net.illink.tasks', '$(MicrosoftNETILLinkTasksVersion)'))</ILLinkDir>
     </PropertyGroup>
 
     <PropertyGroup Condition="'$(TargetsAppleMobile)' == 'true' and '$(RuntimeFlavor)' == 'coreclr'">
         <CoreCLRILCompilerDir>$([MSBuild]::NormalizeDirectory('$(ArtifactsBinDir)', 'coreclr', '$(HostOS).$(BuildArchitecture).$(CoreCLRConfiguration)', 'ilc'))</CoreCLRILCompilerDir>
         <IlcSdkDir>$([MSBuild]::NormalizeDirectory('$(ArtifactsBinDir)', 'coreclr', '$(TargetOS).$(TargetArchitecture).$(CoreCLRConfiguration)', 'aotsdk'))</IlcSdkDir>
-        <ILLinkDir>$([MSBuild]::NormalizeDirectory('$(ArtifactsDir)', '..', '.packages', 'microsoft.net.illink.tasks', '$(MicrosoftNETILLinkTasksVersion)'))</ILLinkDir>
     </PropertyGroup>
 
     <ItemGroup Condition="'$(NeedsiOSSDK)' == 'true'">
