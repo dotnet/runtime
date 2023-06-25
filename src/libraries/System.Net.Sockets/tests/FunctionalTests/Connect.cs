@@ -226,7 +226,7 @@ namespace System.Net.Sockets.Tests
             using Socket s = new Socket(listenAt.AddressFamily, SocketType.Dgram, ProtocolType.Udp);
             listener.Bind(new IPEndPoint(listenAt, 0));
 
-            await ConnectAsync(s, new IPEndPoint(IPAddress.Loopback, ((IPEndPoint)listener.LocalEndPoint).Port));
+            await ConnectAsync(s, new IPEndPoint(listenAt, ((IPEndPoint)listener.LocalEndPoint).Port));
             Assert.True(s.Connected);
             
             await ConnectAsync(s, new IPEndPoint(secondConnection, 0));
