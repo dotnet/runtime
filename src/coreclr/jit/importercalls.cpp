@@ -7513,9 +7513,9 @@ CORINFO_CLASS_HANDLE Compiler::impGetSpecialIntrinsicExactReturnType(GenTreeCall
             // Lookup can incorrect when we have __Canon as it won't appear
             // to implement any interface types.
             const DWORD typeAttribs = info.compCompHnd->getClassAttribs(typeHnd);
-            bool        isNonShared = ((typeAttribs & CORINFO_FLG_SHAREDINST) == 0);
+            bool        isShared    = ((typeAttribs & CORINFO_FLG_SHAREDINST) != 0);
 
-            if (!isNonShared)
+            if (isShared)
             {
                 CallArg* instParam = call->gtArgs.FindWellKnownArg(WellKnownArg::InstParam);
                 if (instParam != nullptr)
@@ -7525,16 +7525,16 @@ CORINFO_CLASS_HANDLE Compiler::impGetSpecialIntrinsicExactReturnType(GenTreeCall
                     if (hClass != NO_CLASS_HANDLE)
                     {
                         hClass = getTypeInstantiationArgument(hClass, 0);
-                        if ((info.compCompHnd->getClassAttribs(hClass) & CORINFO_FLG_SHAREDINST) != 0)
+                        if ((info.compCompHnd->getClassAttribs(hClass) & CORINFO_FLG_SHAREDINST) == 0)
                         {
-                            typeHnd     = hClass;
-                            isNonShared = true;
+                            typeHnd  = hClass;
+                            isShared = false;
                         }
                     }
                 }
             }
 
-            if (isNonShared)
+            if (!isShared)
             {
                 if (ni == NI_System_Collections_Generic_EqualityComparer_get_Default)
                 {
