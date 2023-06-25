@@ -117,8 +117,10 @@
           Condition="'$(RunAOTCompilation)' == 'true'">
 
     <PropertyGroup>
-      <_AOTMode Condition="'$(UseMonoJustInterp)' != 'true'">Full</_AOTMode>
-      <_AOTMode Condition="'$(UseMonoJustInterp)' == 'true'">JustInterp</_AOTMode>
+      <!-- <_AOTMode Condition="'$(UseMonoJustInterp)' != 'true'">Full</_AOTMode> -->
+      <!-- <_AOTMode Condition="'$(UseMonoJustInterp)' == 'true'">JustInterp</_AOTMode> -->
+      <_AOTMode>JustInterp</_AOTMode>
+      <MonoForceInterpreter>true</MonoForceInterpreter>
     </PropertyGroup>
 
     <PropertyGroup Condition="'$(_IsLibraryMode)' == 'true'">
