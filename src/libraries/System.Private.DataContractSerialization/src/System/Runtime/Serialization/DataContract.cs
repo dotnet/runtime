@@ -1673,7 +1673,7 @@ namespace System.Runtime.Serialization.DataContracts
             {
                 string trimmedNs = dataContractNs.Trim();
                 // Code similar to XmlConvert.ToUri (string.Empty is a valid uri but not "   ")
-                if (trimmedNs.Length == 0 || trimmedNs.IndexOf("##", StringComparison.Ordinal) >= 0)
+                if (trimmedNs.Length == 0 || trimmedNs.Contains("##", StringComparison.Ordinal))
                 {
                     ThrowInvalidDataContractException(SR.Format(SR.DataContractNamespaceIsNotValid, dataContractNs), type);
                 }
