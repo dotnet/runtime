@@ -9,6 +9,7 @@
     <RuntimeIdentifier>$(TargetOS)-$(TargetArchitecture)</RuntimeIdentifier>
     <AppName>HelloiOS</AppName>
     <DefineConstants Condition="'$(ArchiveTests)' == 'true'">$(DefineConstants);CI_TEST</DefineConstants>
+    <DefineConstants Condition="'$(ArchiveTests)' == 'true' and '$(TargetOS)' == 'ios'">$(DefineConstants);CI_TEST_IOS</DefineConstants>
     <UseNativeAOTRuntime Condition="'$(UseNativeAOTRuntime)' == ''">true</UseNativeAOTRuntime>
     <PublishDir Condition="'$(PublishDir)' == ''">$(MSBuildThisFileDirectory)/$(OutputPath)/publish</PublishDir>
     <NativeLib>static</NativeLib>

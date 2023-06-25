@@ -18,6 +18,7 @@
     <TrimMode Condition="'$(ArchiveTests)' != 'true'">Link</TrimMode>
     <ShouldILStrip Condition="'$(ArchiveTests)' != 'true' and '$(RunAOTCompilation)' == 'true' and '$(MonoForceInterpreter)' != 'true'">true</ShouldILStrip>
     <DefineConstants Condition="'$(ArchiveTests)' == 'true'">$(DefineConstants);CI_TEST</DefineConstants>
+    <DefineConstants Condition="'$(ArchiveTests)' == 'true' and '$(TargetOS)' == 'ios'">$(DefineConstants);CI_TEST_IOS</DefineConstants>
   </PropertyGroup>
 
   <ItemGroup>

@@ -99,10 +99,6 @@
         <CustomCommands>$(_XHarnessAppleCustomCommand)</CustomCommands>
       </XHarnessAppBundleToTest>
 
-      <XHarnessAppBundleToTest Condition="'%(Filename)' == 'Program'">
-        <ExpectedExitCode>42</ExpectedExitCode>
-      </XHarnessAppBundleToTest>
-
       <!--
         Create work items for run-only apps
 
