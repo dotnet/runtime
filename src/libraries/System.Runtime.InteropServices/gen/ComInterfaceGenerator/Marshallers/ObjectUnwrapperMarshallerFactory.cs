@@ -20,8 +20,8 @@ namespace Microsoft.Interop
             _inner = inner;
         }
 
-        public IMarshallingGenerator Create(TypePositionInfo info, StubCodeContext context)
-            => info.MarshallingAttributeInfo is ObjectUnwrapperInfo ? new Marshaller() : _inner.Create(info, context);
+        public ResolvedGenerator Create(TypePositionInfo info, StubCodeContext context)
+            => info.MarshallingAttributeInfo is ObjectUnwrapperInfo ? ResolvedGenerator.Resolved(new Marshaller()) : _inner.Create(info, context);
 
         private sealed class Marshaller : IMarshallingGenerator
         {

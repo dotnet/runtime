@@ -6,7 +6,6 @@ using System.Collections.Immutable;
 using System.Diagnostics;
 using System.Diagnostics.CodeAnalysis;
 using System.Linq;
-using System.Reflection;
 using System.Text.Json.Serialization;
 using System.Threading;
 using Microsoft.CodeAnalysis;
@@ -17,6 +16,9 @@ namespace System.Text.Json.SourceGeneration
 {
     public sealed partial class JsonSourceGenerator
     {
+        // The source generator requires NRT and init-only property support.
+        private const LanguageVersion MinimumSupportedLanguageVersion = LanguageVersion.CSharp9;
+
         private sealed class Parser
         {
             private const string SystemTextJsonNamespace = "System.Text.Json";
@@ -81,13 +83,13 @@ namespace System.Text.Json.SourceGeneration
                 Debug.Assert(_typesToGenerate.Count == 0);
                 Debug.Assert(_generatedTypes.Count == 0);
 
-                if (!DerivesFromJsonSerializerContext(contextClassDeclaration, _knownSymbols.JsonSerializerContextType, semanticModel, cancellationToken))
+                INamedTypeSymbol? contextTypeSymbol = semanticModel.GetDeclaredSymbol(contextClassDeclaration, cancellationToken);
+                Debug.Assert(contextTypeSymbol != null);
+
+                if (!_knownSymbols.JsonSerializerContextType.IsAssignableFrom(contextTypeSymbol))
                 {
                     return null;
                 }
-
-                INamedTypeSymbol? contextTypeSymbol = semanticModel.GetDeclaredSymbol(contextClassDeclaration, cancellationToken);
-                Debug.Assert(contextTypeSymbol != null);
 
                 if (!TryParseJsonSerializerContextAttributes(
                     contextTypeSymbol,
@@ -104,8 +106,16 @@ namespace System.Text.Json.SourceGeneration
                     return null;
                 }
 
+                LanguageVersion? langVersion = _knownSymbols.Compilation.GetLanguageVersion();
+                if (langVersion is null or < MinimumSupportedLanguageVersion)
+                {
+                    // Unsupported lang version should be the first (and only) diagnostic emitted by the generator.
+                    ReportDiagnostic(DiagnosticDescriptors.JsonUnsupportedLanguageVersion, contextTypeSymbol.GetDiagnosticLocation(), langVersion?.ToDisplayString(), MinimumSupportedLanguageVersion.ToDisplayString());
+                    return null;
+                }
+
                 Location contextLocation = contextClassDeclaration.GetLocation();
-                if (!TryGetClassDeclarationList(contextTypeSymbol, out List<string>? classDeclarationList))
+                if (!TryGetNestedTypeDeclarations(contextClassDeclaration, semanticModel, cancellationToken, out List<string>? classDeclarationList))
                 {
                     // Class or one of its containing types is not partial so we can't add to it.
                     ReportDiagnostic(DiagnosticDescriptors.ContextClassesMustBePartial, contextLocation, contextTypeSymbol.Name);
@@ -138,7 +148,7 @@ namespace System.Text.Json.SourceGeneration
                 {
                     ContextType = new(contextTypeSymbol),
                     GeneratedTypes = _generatedTypes.Values.OrderBy(t => t.TypeRef.FullyQualifiedName).ToImmutableEquatableArray(),
-                    Namespace = contextTypeSymbol.ContainingNamespace.ToDisplayString(),
+                    Namespace = contextTypeSymbol.ContainingNamespace is { IsGlobalNamespace: false } ns ? ns.ToDisplayString() : null,
                     ContextClassDeclarations = classDeclarationList.ToImmutableEquatableArray(),
                     DefaultIgnoreCondition = options.DefaultIgnoreCondition,
                     IgnoreReadOnlyFields = options.IgnoreReadOnlyFields,
@@ -154,112 +164,42 @@ namespace System.Text.Json.SourceGeneration
                 return contextGenSpec;
             }
 
-            // Returns true if a given type derives directly from JsonSerializerContext.
-            private static bool DerivesFromJsonSerializerContext(
-                ClassDeclarationSyntax classDeclarationSyntax,
-                INamedTypeSymbol jsonSerializerContextSymbol,
-                SemanticModel compilationSemanticModel,
-                CancellationToken cancellationToken)
+            private static bool TryGetNestedTypeDeclarations(ClassDeclarationSyntax contextClassSyntax, SemanticModel semanticModel, CancellationToken cancellationToken, [NotNullWhen(true)] out List<string>? typeDeclarations)
             {
-                SeparatedSyntaxList<BaseTypeSyntax>? baseTypeSyntaxList = classDeclarationSyntax.BaseList?.Types;
-                if (baseTypeSyntaxList == null)
-                {
-                    return false;
-                }
+                typeDeclarations = null;
 
-                INamedTypeSymbol? match = null;
-
-                foreach (BaseTypeSyntax baseTypeSyntax in baseTypeSyntaxList)
+                for (TypeDeclarationSyntax? currentType = contextClassSyntax; currentType != null; currentType = currentType.Parent as TypeDeclarationSyntax)
                 {
-                    INamedTypeSymbol? candidate = compilationSemanticModel.GetSymbolInfo(baseTypeSyntax.Type, cancellationToken).Symbol as INamedTypeSymbol;
-                    if (candidate != null && jsonSerializerContextSymbol.Equals(candidate, SymbolEqualityComparer.Default))
+                    StringBuilder stringBuilder = new();
+                    bool isPartialType = false;
+
+                    foreach (SyntaxToken modifier in currentType.Modifiers)
                     {
-                        match = candidate;
-                        break;
-                    }
-                }
-
-                return match != null;
-            }
-
-            private static bool TryGetClassDeclarationList(INamedTypeSymbol typeSymbol, [NotNullWhen(true)] out List<string>? classDeclarationList)
-            {
-                INamedTypeSymbol currentSymbol = typeSymbol;
-                classDeclarationList = null;
-
-                while (currentSymbol != null)
-                {
-                    ClassDeclarationSyntax? classDeclarationSyntax = currentSymbol.DeclaringSyntaxReferences.First().GetSyntax() as ClassDeclarationSyntax;
-
-                    if (classDeclarationSyntax != null)
-                    {
-                        SyntaxTokenList tokenList = classDeclarationSyntax.Modifiers;
-                        int tokenCount = tokenList.Count;
-
-                        bool isPartial = false;
-
-                        string[] declarationElements = new string[tokenCount + 2];
-
-                        for (int i = 0; i < tokenCount; i++)
-                        {
-                            SyntaxToken token = tokenList[i];
-                            declarationElements[i] = token.Text;
-
-                            if (token.IsKind(SyntaxKind.PartialKeyword))
-                            {
-                                isPartial = true;
-                            }
-                        }
-
-                        if (!isPartial)
-                        {
-                            classDeclarationList = null;
-                            return false;
-                        }
-
-                        declarationElements[tokenCount] = "class";
-                        declarationElements[tokenCount + 1] = GetClassDeclarationName(currentSymbol);
-
-                        (classDeclarationList ??= new List<string>()).Add(string.Join(" ", declarationElements));
+                        stringBuilder.Append(modifier.Text);
+                        stringBuilder.Append(' ');
+                        isPartialType |= modifier.IsKind(SyntaxKind.PartialKeyword);
                     }
 
-                    currentSymbol = currentSymbol.ContainingType;
+                    if (!isPartialType)
+                    {
+                        typeDeclarations = null;
+                        return false;
+                    }
+
+                    stringBuilder.Append(currentType.GetTypeKindKeyword());
+                    stringBuilder.Append(' ');
+
+                    INamedTypeSymbol? typeSymbol = semanticModel.GetDeclaredSymbol(currentType, cancellationToken);
+                    Debug.Assert(typeSymbol != null);
+
+                    string typeName = typeSymbol.ToDisplayString(SymbolDisplayFormat.MinimallyQualifiedFormat);
+                    stringBuilder.Append(typeName);
+
+                    (typeDeclarations ??= new()).Add(stringBuilder.ToString());
                 }
 
-                Debug.Assert(classDeclarationList?.Count > 0);
+                Debug.Assert(typeDeclarations?.Count > 0);
                 return true;
-            }
-
-            private static string GetClassDeclarationName(INamedTypeSymbol typeSymbol)
-            {
-                if (typeSymbol.TypeArguments.Length == 0)
-                {
-                    return typeSymbol.Name;
-                }
-
-                StringBuilder sb = new StringBuilder();
-
-                sb.Append(typeSymbol.Name);
-                sb.Append('<');
-
-                bool first = true;
-                foreach (ITypeSymbol typeArg in typeSymbol.TypeArguments)
-                {
-                    if (!first)
-                    {
-                        sb.Append(", ");
-                    }
-                    else
-                    {
-                        first = false;
-                    }
-
-                    sb.Append(typeArg.Name);
-                }
-
-                sb.Append('>');
-
-                return sb.ToString();
             }
 
             private TypeRef EnqueueType(ITypeSymbol type, JsonSourceGenerationMode? generationMode, string? typeInfoPropertyName = null, Location? attributeLocation = null)

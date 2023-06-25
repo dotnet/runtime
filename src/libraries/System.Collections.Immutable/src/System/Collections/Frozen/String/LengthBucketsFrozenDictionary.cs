@@ -1,10 +1,10 @@
 ﻿// Licensed to the .NET Foundation under one or more agreements.
 // The .NET Foundation licenses this file to you under the MIT license.
 
+using System.Buffers;
 using System.Collections.Generic;
 using System.Diagnostics;
 using System.Runtime.CompilerServices;
-using System.Runtime.InteropServices;
 
 namespace System.Collections.Frozen
 {
@@ -16,14 +16,14 @@ namespace System.Collections.Frozen
         /// <summary>The maximum number of items allowed per bucket.  The larger the value, the longer it can take to search a bucket, which is sequentially examined.</summary>
         private const int MaxPerLength = 5;
 
-        private readonly KeyValuePair<string, int>[][] _lengthBuckets;
+        private readonly int[] _lengthBuckets;
         private readonly int _minLength;
         private readonly string[] _keys;
         private readonly TValue[] _values;
         private readonly bool _ignoreCase;
 
         private LengthBucketsFrozenDictionary(
-            string[] keys, TValue[] values, KeyValuePair<string, int>[][] lengthBuckets, int minLength, IEqualityComparer<string> comparer)
+            string[] keys, TValue[] values, int[] lengthBuckets, int minLength, IEqualityComparer<string> comparer)
             : base(comparer)
         {
             Debug.Assert(comparer == EqualityComparer<string>.Default || comparer == StringComparer.Ordinal || comparer == StringComparer.OrdinalIgnoreCase);
@@ -50,59 +50,76 @@ namespace System.Collections.Frozen
                 return null;
             }
 
-            // Iterate through all of the inputs, bucketing them based on the length of the string.
-            var groupedByLength = new Dictionary<int, List<KeyValuePair<string, TValue>>>();
-            for (int i = 0; i < keys.Length; i++)
-            {
-                string s = keys[i];
-                Debug.Assert(s.Length >= minLength && s.Length <= maxLength);
-
+            int arraySize = spread * MaxPerLength;
 #if NET6_0_OR_GREATER
-                List<KeyValuePair<string, TValue>> list = CollectionsMarshal.GetValueRefOrAddDefault(groupedByLength, s.Length, out _) ??= new List<KeyValuePair<string, TValue>>(MaxPerLength);
+            if (arraySize > Array.MaxLength)
 #else
-                if (!groupedByLength.TryGetValue(s.Length, out List<KeyValuePair<string, TValue>>? list))
-                {
-                    groupedByLength[s.Length] = list = new List<KeyValuePair<string, TValue>>(MaxPerLength);
-                }
+            if (arraySize > 0X7FFFFFC7)
 #endif
-
-                // If we've already hit the max per-bucket limit, bail.
-                if (list.Count == MaxPerLength)
-                {
-                    return null;
-                }
-
-                list.Add(new KeyValuePair<string, TValue>(s, values[i]));
-            }
-
-            // If there would be too much empty space in the lookup array, bail.
-            if (groupedByLength.Count / (double)spread < EmptyLengthsRatio)
             {
+                // In the future we may lower the value, as it may be quite unlikely
+                // to have a LOT of strings of different sizes.
                 return null;
             }
 
-            var lengthBuckets = new KeyValuePair<string, int>[spread][];
+            // Instead of creating a dictionary of lists or a multi-dimensional array
+            // we rent a single dimension array, where every bucket has five slots.
+            // The bucket starts at (key.Length - minLength) * 5.
+            // Each value is an index of the key from _keys array
+            // or just -1, which represents "null".
+            int[] buckets = ArrayPool<int>.Shared.Rent(arraySize);
+            buckets.AsSpan(0, arraySize).Fill(-1);
 
-            // Iterate through each bucket, filling the keys/values arrays, and creating a lookup array such that
-            // given a string length we can index into that array to find the array of string,int pairs: the string
-            // is the key and the int is the index into the keys/values array for the corresponding entry.
-            int index = 0;
-            foreach (KeyValuePair<int, List<KeyValuePair<string, TValue>>> group in groupedByLength)
+            int nonEmptyCount = 0;
+            for (int i = 0; i < keys.Length; i++)
             {
-                KeyValuePair<string, int>[] length = lengthBuckets[group.Key - minLength] = new KeyValuePair<string, int>[group.Value.Count];
-                int i = 0;
-                foreach (KeyValuePair<string, TValue> pair in group.Value)
-                {
-                    length[i] = new KeyValuePair<string, int>(pair.Key, index);
-                    keys[index] = pair.Key;
-                    values[index] = pair.Value;
+                string key = keys[i];
+                int startIndex = (key.Length - minLength) * MaxPerLength;
+                int endIndex = startIndex + MaxPerLength;
+                int index = startIndex;
 
-                    i++;
+                while (index < endIndex)
+                {
+                    ref int bucket = ref buckets[index];
+                    if (bucket < 0)
+                    {
+                        if (index == startIndex)
+                        {
+                            nonEmptyCount++;
+                        }
+
+                        bucket = i;
+                        break;
+                    }
+
                     index++;
+                }
+
+                if (index == endIndex)
+                {
+                    // If we've already hit the max per-bucket limit, bail.
+                    ArrayPool<int>.Shared.Return(buckets);
+                    return null;
                 }
             }
 
-            return new LengthBucketsFrozenDictionary<TValue>(keys, values, lengthBuckets, minLength, comparer);
+            // If there would be too much empty space in the lookup array, bail.
+            if (nonEmptyCount / (double)spread < EmptyLengthsRatio)
+            {
+                ArrayPool<int>.Shared.Return(buckets);
+                return null;
+            }
+
+#if NET6_0_OR_GREATER
+            // We don't need an array with every value initialized to zero if we are just about to overwrite every value anyway.
+            int[] copy = GC.AllocateUninitializedArray<int>(arraySize);
+            Array.Copy(buckets, copy, arraySize);
+#else
+            int[] copy = buckets.AsSpan(0, arraySize).ToArray();
+#endif
+            ArrayPool<int>.Shared.Return(buckets);
+
+            return new LengthBucketsFrozenDictionary<TValue>(keys, values, copy, minLength, comparer);
         }
 
         /// <inheritdoc />
@@ -121,32 +138,49 @@ namespace System.Collections.Frozen
         private protected override ref readonly TValue GetValueRefOrNullRefCore(string key)
         {
             // If the length doesn't have an associated bucket, the key isn't in the dictionary.
-            int length = key.Length - _minLength;
-            if (length >= 0)
+            int bucketIndex = (key.Length - _minLength) * MaxPerLength;
+            int bucketEndIndex = bucketIndex + MaxPerLength;
+            int[] lengthBuckets = _lengthBuckets;
+            if (bucketIndex >= 0 && bucketEndIndex <= lengthBuckets.Length)
             {
-                // Get the bucket for this key's length.  If it's null, the key isn't in the dictionary.
-                KeyValuePair<string, int>[][] lengths = _lengthBuckets;
-                if ((uint)length < (uint)lengths.Length && lengths[length] is KeyValuePair<string, int>[] subset)
+                string[] keys = _keys;
+                TValue[] values = _values;
+
+                if (!_ignoreCase)
                 {
-                    // Now iterate through every key in the bucket to see whether this is a match.
-                    if (_ignoreCase)
+                    for (; bucketIndex < bucketEndIndex; bucketIndex++)
                     {
-                        foreach (KeyValuePair<string, int> kvp in subset)
+                        uint index = (uint)lengthBuckets[bucketIndex];
+                        if (index < keys.Length)
                         {
-                            if (StringComparer.OrdinalIgnoreCase.Equals(key, kvp.Key))
+                            if (key == keys[index])
                             {
-                                return ref _values[kvp.Value];
+                                return ref values[index];
                             }
                         }
-                    }
-                    else
-                    {
-                        foreach (KeyValuePair<string, int> kvp in subset)
+                        else
                         {
-                            if (key == kvp.Key)
+                            // -1 is used to indicate a null, when it's casted to unit it becomes > keys.Length
+                            break;
+                        }
+                    }
+                }
+                else
+                {
+                    for (; bucketIndex < bucketEndIndex; bucketIndex++)
+                    {
+                        uint index = (uint)lengthBuckets[bucketIndex];
+                        if (index < keys.Length)
+                        {
+                            if (StringComparer.OrdinalIgnoreCase.Equals(key, keys[index]))
                             {
-                                return ref _values[kvp.Value];
+                                return ref values[index];
                             }
+                        }
+                        else
+                        {
+                            // -1 is used to indicate a null, when it's casted to unit it becomes > keys.Length
+                            break;
                         }
                     }
                 }

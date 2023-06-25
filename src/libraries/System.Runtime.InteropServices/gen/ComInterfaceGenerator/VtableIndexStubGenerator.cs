@@ -9,6 +9,7 @@ using System.Threading;
 using Microsoft.CodeAnalysis;
 using Microsoft.CodeAnalysis.CSharp;
 using Microsoft.CodeAnalysis.CSharp.Syntax;
+using Microsoft.Interop.Analyzers;
 using static Microsoft.CodeAnalysis.CSharp.SyntaxFactory;
 
 [assembly: System.Resources.NeutralResourcesLanguage("en-US")]
@@ -229,7 +230,8 @@ namespace Microsoft.Interop
 
             Debug.Assert(virtualMethodIndexAttr is not null);
 
-            var generatorDiagnostics = new GeneratorDiagnostics();
+            var locations = new MethodSignatureDiagnosticLocations(syntax);
+            var generatorDiagnostics = new GeneratorDiagnosticsBag(new DiagnosticDescriptorProvider(), locations, SR.ResourceManager, typeof(FxResources.Microsoft.Interop.ComInterfaceGenerator.SR));
 
             // Process the LibraryImport attribute
             VirtualMethodIndexCompilationData? virtualMethodIndexData = ProcessVirtualMethodIndexAttribute(virtualMethodIndexAttr!);
@@ -303,7 +305,7 @@ namespace Microsoft.Interop
                 signatureContext,
                 containingSyntaxContext,
                 methodSyntaxTemplate,
-                new MethodSignatureDiagnosticLocations(syntax),
+                locations,
                 new SequenceEqualImmutableArray<FunctionPointerUnmanagedCallingConventionSyntax>(callConv, SyntaxEquivalentComparer.Instance),
                 VirtualMethodIndexData.From(virtualMethodIndexData),
                 exceptionMarshallingInfo,
@@ -315,7 +317,7 @@ namespace Microsoft.Interop
                 new ObjectUnwrapperInfo(unwrapperSyntax));
         }
 
-        private static MarshallingInfo CreateExceptionMarshallingInfo(AttributeData virtualMethodIndexAttr, ISymbol symbol, Compilation compilation, GeneratorDiagnostics diagnostics, VirtualMethodIndexCompilationData virtualMethodIndexData)
+        private static MarshallingInfo CreateExceptionMarshallingInfo(AttributeData virtualMethodIndexAttr, ISymbol symbol, Compilation compilation, GeneratorDiagnosticsBag diagnostics, VirtualMethodIndexCompilationData virtualMethodIndexData)
         {
             if (virtualMethodIndexData.ExceptionMarshallingDefined)
             {

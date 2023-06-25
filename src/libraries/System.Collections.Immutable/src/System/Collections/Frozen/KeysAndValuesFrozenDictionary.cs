@@ -32,14 +32,15 @@ namespace System.Collections.Frozen
                 hashCodes[i] = Comparer.GetHashCode(entries[i].Key);
             }
 
-            _hashTable = FrozenHashTable.Create(
-                hashCodes,
-                (destIndex, srcIndex) =>
-                {
-                    _keys[destIndex] = entries[srcIndex].Key;
-                    _values[destIndex] = entries[srcIndex].Value;
-                },
-                optimizeForReading);
+            _hashTable = FrozenHashTable.Create(hashCodes, optimizeForReading);
+
+            for (int srcIndex = 0; srcIndex < hashCodes.Length; srcIndex++)
+            {
+                int destIndex = hashCodes[srcIndex];
+
+                _keys[destIndex] = entries[srcIndex].Key;
+                _values[destIndex] = entries[srcIndex].Value;
+            }
 
             ArrayPool<int>.Shared.Return(arrayPoolHashCodes);
         }

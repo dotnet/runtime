@@ -141,7 +141,7 @@ namespace System.Text.Json.SourceGeneration
 
                     """);
 
-                if (contextSpec.Namespace != JsonConstants.GlobalNamespaceValue)
+                if (contextSpec.Namespace != null)
                 {
                     writer.WriteLine($"namespace {contextSpec.Namespace}");
                     writer.WriteLine('{');

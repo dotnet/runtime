@@ -11,6 +11,13 @@ namespace System.Globalization
 {
     public partial class CompareInfo
     {
+        private enum ErrorCodes
+        {
+            ERROR_INDEX_NOT_FOUND = -1,
+            ERROR_COMPARISON_OPTIONS_NOT_FOUND = -2,
+            ERROR_MIXED_COMPOSITION_NOT_FOUND = -3,
+        }
+
         private unsafe int CompareStringNative(ReadOnlySpan<char> string1, ReadOnlySpan<char> string2, CompareOptions options)
         {
             Debug.Assert(!GlobalizationMode.Invariant);
@@ -27,9 +34,43 @@ namespace System.Globalization
                 result = Interop.Globalization.CompareStringNative(m_name, m_name.Length, pString1, string1.Length, pString2, string2.Length, options);
             }
 
-            Debug.Assert(result != -2);
+            Debug.Assert(result != (int)ErrorCodes.ERROR_COMPARISON_OPTIONS_NOT_FOUND);
 
             return result;
+        }
+
+        private unsafe int IndexOfCoreNative(char* target, int cwTargetLength, char* pSource, int cwSourceLength, CompareOptions options, bool fromBeginning, int* matchLengthPtr)
+        {
+            AssertComparisonSupported(options);
+
+            Interop.Range result = Interop.Globalization.IndexOfNative(m_name, m_name.Length, target, cwTargetLength, pSource, cwSourceLength, options, fromBeginning);
+            Debug.Assert(result.Location != (int)ErrorCodes.ERROR_COMPARISON_OPTIONS_NOT_FOUND);
+            if (result.Location == (int)ErrorCodes.ERROR_MIXED_COMPOSITION_NOT_FOUND)
+                throw new PlatformNotSupportedException(SR.PlatformNotSupported_HybridGlobalizationWithMixedCompositions);
+            if (matchLengthPtr != null)
+                *matchLengthPtr = result.Length;
+
+            return result.Location;
+        }
+
+        private unsafe bool NativeStartsWith(char* pPrefix, int cwPrefixLength, char* pSource, int cwSourceLength, CompareOptions options)
+        {
+            AssertComparisonSupported(options);
+
+            int result = Interop.Globalization.StartsWithNative(m_name, m_name.Length, pPrefix, cwPrefixLength, pSource, cwSourceLength, options);
+            Debug.Assert(result != (int)ErrorCodes.ERROR_COMPARISON_OPTIONS_NOT_FOUND);
+
+            return result > 0 ? true : false;
+        }
+
+        private unsafe bool NativeEndsWith(char* pSuffix, int cwSuffixLength, char* pSource, int cwSourceLength, CompareOptions options)
+        {
+            AssertComparisonSupported(options);
+
+            int result = Interop.Globalization.EndsWithNative(m_name, m_name.Length, pSuffix, cwSuffixLength, pSource, cwSourceLength, options);
+            Debug.Assert(result != (int)ErrorCodes.ERROR_COMPARISON_OPTIONS_NOT_FOUND);
+
+            return result > 0 ? true : false;
         }
 
         private static void AssertComparisonSupported(CompareOptions options)

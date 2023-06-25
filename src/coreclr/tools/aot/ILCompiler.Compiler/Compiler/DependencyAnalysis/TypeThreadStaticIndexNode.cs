@@ -83,7 +83,12 @@ namespace ILCompiler.DependencyAnalysis
                 }
             }
 
+            // needed to construct storage
             objData.EmitPointerReloc(factory.TypeManagerIndirection);
+
+            // tls storage ID for uninlined types. used to:
+            // - get the type from the type manager
+            // - get the slot from the per-type storage array
             objData.EmitNaturalInt(typeTlsIndex);
 
             return objData.ToObjectData();

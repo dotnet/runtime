@@ -61,7 +61,6 @@
     </PropertyGroup>
   </Target>
 
-
   <Target Name="RunAppBundle"
           AfterTargets="BuildAppBundle"
           Condition="'$(DeployAndRun)' == 'true' and '$(ArchiveTests)' != 'true'">
