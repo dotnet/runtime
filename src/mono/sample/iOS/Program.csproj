@@ -13,8 +13,8 @@
     <RunAOTCompilation Condition="'$(RunAOTCompilation)' == ''">true</RunAOTCompilation>
     <TargetOS Condition="'$(TargetOS)' == ''">iossimulator</TargetOS>
     <Optimized Condition="'$(Configuration)' == 'Release'">true</Optimized>
-    <PublishTrimmed Condition="'$(ArchiveTests)' != 'true'">true</PublishTrimmed>
-    <TrimMode Condition="'$(ArchiveTests)' != 'true'">Link</TrimMode>
+    <PublishTrimmed>true</PublishTrimmed>
+    <TrimMode>Link</TrimMode>
     <ShouldILStrip Condition="'$(ArchiveTests)' != 'true' and '$(RunAOTCompilation)' == 'true' and '$(MonoForceInterpreter)' != 'true'">true</ShouldILStrip>
     <DefineConstants Condition="'$(ArchiveTests)' == 'true'">$(DefineConstants);CI_TEST</DefineConstants>
     <ExpectedExitCode>42</ExpectedExitCode>
