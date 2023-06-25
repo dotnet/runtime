@@ -491,10 +491,9 @@ namespace ILCompiler
                     builder.UsePreinitializationManager(preinitManager);
                 }
 
-                // If we have a scanner, we can inline threadstatics storage using the information
-                // we collected at scanning time.
-                // Inlined storage implies a single type manager, thus we do not do it in multifile case.
-                if (!multiFile && !Get(_command.NoInlineTls))
+                // If we have a scanner, we can inline threadstatics storage using the information we collected at scanning time.
+                if (!Get(_command.NoInlineTls) &&
+                    (targetOS == TargetOS.Linux || (targetArchitecture == TargetArchitecture.X64 && targetOS == TargetOS.Windows)))
                 {
                     builder.UseInlinedThreadStatics(scanResults.GetInlinedThreadStatics());
                 }

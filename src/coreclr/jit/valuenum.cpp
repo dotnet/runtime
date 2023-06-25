@@ -8454,11 +8454,59 @@ ValueNum ValueNumStore::EvalMathFuncBinary(var_types typ, NamedIntrinsic gtMathF
                     break;
                 }
 
+                case NI_System_Math_MaxMagnitude:
+                {
+                    assert(typ == TypeOfVN(arg1VN));
+                    float arg1Val = GetConstantSingle(arg1VN);
+                    res           = FloatingPointUtils::maximumMagnitude(arg0Val, arg1Val);
+                    break;
+                }
+
+                case NI_System_Math_MaxMagnitudeNumber:
+                {
+                    assert(typ == TypeOfVN(arg1VN));
+                    float arg1Val = GetConstantSingle(arg1VN);
+                    res           = FloatingPointUtils::maximumMagnitudeNumber(arg0Val, arg1Val);
+                    break;
+                }
+
+                case NI_System_Math_MaxNumber:
+                {
+                    assert(typ == TypeOfVN(arg1VN));
+                    float arg1Val = GetConstantSingle(arg1VN);
+                    res           = FloatingPointUtils::maximumNumber(arg0Val, arg1Val);
+                    break;
+                }
+
                 case NI_System_Math_Min:
                 {
                     assert(typ == TypeOfVN(arg1VN));
                     float arg1Val = GetConstantSingle(arg1VN);
                     res           = FloatingPointUtils::minimum(arg0Val, arg1Val);
+                    break;
+                }
+
+                case NI_System_Math_MinMagnitude:
+                {
+                    assert(typ == TypeOfVN(arg1VN));
+                    float arg1Val = GetConstantSingle(arg1VN);
+                    res           = FloatingPointUtils::minimumMagnitude(arg0Val, arg1Val);
+                    break;
+                }
+
+                case NI_System_Math_MinMagnitudeNumber:
+                {
+                    assert(typ == TypeOfVN(arg1VN));
+                    float arg1Val = GetConstantSingle(arg1VN);
+                    res           = FloatingPointUtils::minimumMagnitudeNumber(arg0Val, arg1Val);
+                    break;
+                }
+
+                case NI_System_Math_MinNumber:
+                {
+                    assert(typ == TypeOfVN(arg1VN));
+                    float arg1Val = GetConstantSingle(arg1VN);
+                    res           = FloatingPointUtils::minimumNumber(arg0Val, arg1Val);
                     break;
                 }
 

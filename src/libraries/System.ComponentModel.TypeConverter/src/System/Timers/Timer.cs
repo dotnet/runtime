@@ -76,7 +76,7 @@ namespace System.Timers
         /// Gets or sets a value indicating whether the Timer raises the Tick event each time the specified
         /// Interval has elapsed, when Enabled is set to true.
         /// </summary>
-        [TimersDescription(nameof(SR.TimerAutoReset), null), DefaultValue(true)]
+        [TimersDescription(TimersDescriptionStringId.TimerAutoReset), DefaultValue(true)]
         public bool AutoReset
         {
             get => _autoReset;
@@ -102,7 +102,7 @@ namespace System.Timers
         /// is able to raise events at a defined interval.
         /// The default value by design is false, don't change it.
         /// </summary>
-        [TimersDescription(nameof(SR.TimerEnabled), null), DefaultValue(false)]
+        [TimersDescription(TimersDescriptionStringId.TimerEnabled), DefaultValue(false)]
         public bool Enabled
         {
             get => _enabled;
@@ -160,7 +160,7 @@ namespace System.Timers
         /// <summary>
         /// Gets or sets the interval on which to raise events.
         /// </summary>
-        [TimersDescription(nameof(SR.TimerInterval), null), DefaultValue(100d)]
+        [TimersDescription(TimersDescriptionStringId.TimerInterval), DefaultValue(100d)]
         public double Interval
         {
             get => _interval;
@@ -184,7 +184,7 @@ namespace System.Timers
         /// Occurs when the <see cref='System.Timers.Timer.Interval'/> has
         /// elapsed.
         /// </summary>
-        [TimersDescription(nameof(SR.TimerIntervalElapsed), null)]
+        [TimersDescription(TimersDescriptionStringId.TimerIntervalElapsed)]
         public event ElapsedEventHandler Elapsed
         {
             add => _onIntervalElapsed += value;
@@ -212,7 +212,7 @@ namespace System.Timers
         /// Gets or sets the object used to marshal event-handler calls that are issued when
         /// an interval has elapsed.
         /// </summary>
-        [DefaultValue(null), TimersDescription(nameof(SR.TimerSynchronizingObject), null)]
+        [DefaultValue(null), TimersDescription(TimersDescriptionStringId.TimerSynchronizingObject)]
         public ISynchronizeInvoke? SynchronizingObject
         {
             get
