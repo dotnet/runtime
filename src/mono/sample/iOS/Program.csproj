@@ -17,7 +17,6 @@
     <TrimMode>Link</TrimMode>
     <ShouldILStrip Condition="'$(ArchiveTests)' != 'true' and '$(RunAOTCompilation)' == 'true' and '$(MonoForceInterpreter)' != 'true'">true</ShouldILStrip>
     <DefineConstants Condition="'$(ArchiveTests)' == 'true'">$(DefineConstants);CI_TEST</DefineConstants>
-    <ExpectedExitCode>42</ExpectedExitCode>
   </PropertyGroup>
 
   <ItemGroup>
