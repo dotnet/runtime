@@ -254,6 +254,11 @@
       <_NativeDependencies Include="%(ManagedBinary.IlcOutputFile)" />
     </ItemGroup>
 
+    <ItemGroup>
+      <_ExcludeFromAppDir Condition="'$(UseNativeAOTRuntime)' == 'true'" Include=".dll" />
+      <_ExcludeFromAppDir Condition="'$(UseNativeAOTRuntime)' == 'true'" Include=".a" />
+    </ItemGroup>
+
     <AppleAppBuilderTask
       UseNativeAOTRuntime="$(UseNativeAOTRuntime)"
       NativeDependencies="@(_NativeDependencies)"
