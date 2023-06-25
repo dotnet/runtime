@@ -7586,7 +7586,8 @@ static void getMethodInfoHelper(
 bool
 CEEInfo::getMethodInfo(
     CORINFO_METHOD_HANDLE ftnHnd,
-    CORINFO_METHOD_INFO * methInfo)
+    CORINFO_METHOD_INFO * methInfo,
+    CORINFO_CONTEXT_HANDLE context)
 {
     CONTRACTL {
         THROWS;
