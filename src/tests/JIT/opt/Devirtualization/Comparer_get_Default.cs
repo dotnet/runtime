@@ -21,6 +21,23 @@ public class Program
         }
     }
 
+    private static void AssertThrows<TException>(Action action, [CallerLineNumber] int line = 0) where T : Exception
+    {
+        try
+        {
+            action();
+            Console.WriteLine($"no {typeof(TException).FullName}, L{line}");
+            s_ReturnCode++;
+        }
+        catch (Exception ex)
+        {
+            if (ex.GetType() == typeof(TException))
+                return;
+            Console.WriteLine($"{ex.GetType().FullName} != {typeof(TException).FullName}, L{line}");
+            s_ReturnCode++;
+        }
+    }
+
     private static void Compare_Boolean(Boolean a, Boolean b) =>
         AssertEquals(a.CompareTo(b), Comparer<Boolean>.Default.Compare(a, b));
 
@@ -75,9 +92,6 @@ public class Program
     private static void Compare_DateTime(DateTime a, DateTime b) =>
         AssertEquals(a.CompareTo(b), Comparer<DateTime>.Default.Compare(a, b));
 
-    private static void Compare_Struct1(Struct1 a, Struct1 b) =>
-        AssertEquals(a.CompareTo(b), Comparer<Struct1>.Default.Compare(a, b));
-
     private static void Compare_Int32_Nullable(long? a, long? b)
     {
         int actual = Comparer<long?>.Default.Compare(a, b);
@@ -87,6 +101,38 @@ public class Program
         else
             expected = b.HasValue ? -1 : 0;
         AssertEquals(expected, actual);
+    }
+
+    private static void Compare_Enum_Int32_Nullable(MethodImplOptions? a, MethodImplOptions? b)
+    {
+        int actual = Comparer<MethodImplOptions?>.Default.Compare(a, b);
+        int expected = 0;
+        if (a.HasValue)
+            expected = b.HasValue ? a.Value.CompareTo(b.Value) : 1;
+        else
+            expected = b.HasValue ? -1 : 0;
+        AssertEquals(expected, actual);
+    }
+
+    private static void Compare_Struct1(Struct1 a, Struct1 b) =>
+        AssertEquals(a.CompareTo(b), Comparer<Struct1>.Default.Compare(a, b));
+    
+    private static void Compare_Struct2(Struct2 a, Struct2 b) =>
+        AssertThrows<ArgumentException>(() => Comparer<Struct2>.Default.Compare(a, b));
+
+    private static void Compare_Struct1_Nullable(Struct1? a, Struct1? b) =>
+        AssertEquals(a.CompareTo(b), Comparer<Struct1?>.Default.Compare(a, b));
+    
+    private static void Compare_Struct2_Nullable(Struct2? a, Struct2? b)
+    {
+        if (a.IsNull && b.IsNull)
+            AssertEquals(0, Comparer<Struct2?>.Default.Compare(a, b));
+        else if (a.IsNull)
+            AssertEquals(-1, Comparer<Struct2?>.Default.Compare(a, b));
+        else if (b.IsNull)
+            AssertEquals(1, Comparer<Struct2?>.Default.Compare(a, b));
+        else
+            AssertThrows<ArgumentException>(() => Comparer<Struct2?>.Default.Compare(a, b));
     }
 
     [Fact]
@@ -179,15 +225,41 @@ public class Program
                 var enumByteB = Unsafe.As<long, Enum_byte>(ref b);
                 Compare_Enum_Byte(enumByteA, enumByteB);
 
-                var structA = new Struct1 {a = a, b = b};
-                var structB = new Struct1 {a = b, b = a};
-                Compare_Struct1(structA, structB);
-
                 Compare_DateTime(
                     new DateTime(Math.Clamp(a, DateTime.MinValue.Ticks, DateTime.MaxValue.Ticks)),
                     new DateTime(Math.Clamp(b, DateTime.MinValue.Ticks, DateTime.MaxValue.Ticks)));
 
                 Compare_Int32_Nullable(a, b);
+                Compare_Enum_Int32_Nullable(enumIntA, enumByteB);
+
+                Compare_Int32_Nullable(null, b);
+                Compare_Enum_Int32_Nullable(null, enumByteB);
+
+                Compare_Int32_Nullable(a, null);
+                Compare_Enum_Int32_Nullable(enumIntA, null);
+
+                Compare_Int32_Nullable(null, null);
+                Compare_Enum_Int32_Nullable(null, null);
+
+                var structA = new Struct1 {a = a, b = b};
+                var structB = new Struct1 {a = b, b = a};
+                Compare_Struct1(structA, structB);                
+
+                var struct2A = new Struct2 {a = a, b = b};
+                var struct2B = new Struct2 {a = b, b = a};
+                Compare_Struct2(struct2A, struct2B);
+
+                Compare_Struct1_Nullable(structA, structB);
+                Compare_Struct2_Nullable(struct2A, struct2B);
+
+                Compare_Struct1_Nullable(null, structB);
+                Compare_Struct2_Nullable(null, struct2B);
+
+                Compare_Struct1_Nullable(structA, null);
+                Compare_Struct2_Nullable(struct2A, null);
+
+                Compare_Struct1_Nullable(null, null);
+                Compare_Struct2_Nullable(null, null);
             }
         }
 
@@ -223,10 +295,12 @@ public class Program
         AssertEquals("System.Collections.Generic.GenericComparer`1[System.Guid]", Comparer<Guid>.Default.GetType().ToString());
         AssertEquals("System.Collections.Generic.EnumComparer`1[System.Runtime.CompilerServices.MethodImplOptions]", Comparer<MethodImplOptions>.Default.GetType().ToString());
         AssertEquals("System.Collections.Generic.ObjectComparer`1[Struct1]", Comparer<Struct1>.Default.GetType().ToString());
+        AssertEquals("System.Collections.Generic.ObjectComparer`1[Struct2]", Comparer<Struct2>.Default.GetType().ToString());
         AssertEquals("System.Collections.Generic.NullableComparer`1[System.Byte]", Comparer<byte?>.Default.GetType().ToString());
         AssertEquals("System.Collections.Generic.NullableComparer`1[System.Int32]", Comparer<int?>.Default.GetType().ToString());
         AssertEquals("System.Collections.Generic.NullableComparer`1[System.Runtime.CompilerServices.MethodImplOptions]", Comparer<MethodImplOptions?>.Default.GetType().ToString());
         AssertEquals("System.Collections.Generic.NullableComparer`1[Struct1]", Comparer<Struct1?>.Default.GetType().ToString());
+        AssertEquals("System.Collections.Generic.NullableComparer`1[Struct2]", Comparer<Struct2?>.Default.GetType().ToString());
 
         AssertEquals("System.Collections.Generic.ByteEqualityComparer", EqualityComparer<byte>.Default.GetType().ToString());
         AssertEquals("System.Collections.Generic.GenericEqualityComparer`1[System.Int32]", EqualityComparer<int>.Default.GetType().ToString());
@@ -234,10 +308,12 @@ public class Program
         AssertEquals("System.Collections.Generic.GenericEqualityComparer`1[System.Guid]", EqualityComparer<Guid>.Default.GetType().ToString());
         AssertEquals("System.Collections.Generic.EnumEqualityComparer`1[System.Runtime.CompilerServices.MethodImplOptions]", EqualityComparer<MethodImplOptions>.Default.GetType().ToString());
         AssertEquals("System.Collections.Generic.ObjectEqualityComparer`1[Struct1]", EqualityComparer<Struct1>.Default.GetType().ToString());
+        AssertEquals("System.Collections.Generic.ObjectEqualityComparer`1[Struct2]", EqualityComparer<Struct2>.Default.GetType().ToString());
         AssertEquals("System.Collections.Generic.NullableEqualityComparer`1[System.Byte]", EqualityComparer<byte?>.Default.GetType().ToString());
         AssertEquals("System.Collections.Generic.NullableEqualityComparer`1[System.Int32]", EqualityComparer<int?>.Default.GetType().ToString());
         AssertEquals("System.Collections.Generic.NullableEqualityComparer`1[System.Runtime.CompilerServices.MethodImplOptions]", EqualityComparer<MethodImplOptions?>.Default.GetType().ToString());
         AssertEquals("System.Collections.Generic.NullableEqualityComparer`1[Struct1]", EqualityComparer<Struct1?>.Default.GetType().ToString());
+        AssertEquals("System.Collections.Generic.NullableEqualityComparer`1[Struct2]", EqualityComparer<Struct2?>.Default.GetType().ToString());
     }
     private static int GetHashCodeTests()
     {
@@ -245,9 +321,13 @@ public class Program
         return Comparer<int>.Default.GetHashCode() +
                Comparer<string>.Default.GetHashCode() +
                Comparer<MethodImplOptions>.Default.GetHashCode() +
+               Comparer<MethodImplOptions?>.Default.GetHashCode() +
                Comparer<byte?>.Default.GetHashCode() +
                Comparer<Guid>.Default.GetHashCode() +
-               Comparer<Struct1>.Default.GetHashCode();
+               Comparer<Struct1>.Default.GetHashCode() +
+               Comparer<Struct2>.Default.GetHashCode() +
+               Comparer<Struct1?>.Default.GetHashCode() +
+               Comparer<Struct2?>.Default.GetHashCode();
     }
 }
 
@@ -264,4 +344,10 @@ public struct Struct1 : IComparable
     {
         return b.CompareTo(((Struct1) obj).b);
     }
+}
+
+public struct Struct2
+{
+    public long a;
+    public long b;
 }
