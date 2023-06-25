@@ -853,9 +853,6 @@ namespace System.Tests
             var bytes = new byte[16];
             Assert.True(guid.TryWriteBytes(new Span<byte>(bytes)));
             Assert.Equal(b, bytes);
-            Assert.True(guid.TryWriteBytes(new Span<byte>(bytes), out int bytesWritten));
-            Assert.Equal(b, bytes);
-            Assert.Equal(16, bytesWritten);
         }
 
         [Theory]
@@ -874,9 +871,7 @@ namespace System.Tests
         public static void TryWriteBytes_LengthTooShort_ReturnsFalse(int length)
         {
             Assert.False(s_testGuid.TryWriteBytes(new Span<byte>(new byte[length])));
-            Assert.False(s_testGuid.TryWriteBytes(new Span<byte>(new byte[length]), out int bytesWritten));
-            Assert.Equal(0, bytesWritten);
-            Assert.False(s_testGuid.TryWriteBytes(new Span<byte>(new byte[length]), true, out bytesWritten));
+            Assert.False(s_testGuid.TryWriteBytes(new Span<byte>(new byte[length]), true, out int bytesWritten));
             Assert.Equal(0, bytesWritten);
             Assert.False(s_testGuid.TryWriteBytes(new Span<byte>(new byte[length]), false, out bytesWritten));
             Assert.Equal(0, bytesWritten);
