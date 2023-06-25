@@ -80,15 +80,17 @@ namespace System.Buffers
 
         /// <summary>
         /// Clears the data written to the underlying buffer.
-        /// When <c>T</c> is not reference and not contains reference,
-        /// using <seealso cref="ResetWrittenCount"/> is more performance effective.
         /// </summary>
         /// <remarks>
-        /// You must reset or clear the <see cref="ArrayBufferWriter{T}"/> before trying
-        /// to re-use it.
+        /// You must reset or clear the <see cref="ArrayBufferWriter{T}"/> before trying to re-use it.
+        /// </remarks>
+        /// <remarks>
+        /// Using <seealso cref="ResetWrittenCount"/> method is more performance effective.
+        /// </remarks>
+        /// <remarks>
+        /// If you clear the buffer data by <see cref="Clear"/> method, <see cref="GetMemory"/> method will return clean <see cref="Memory{T}"/>.
         /// </remarks>
         /// <seealso cref="ResetWrittenCount"/>
-        /// <seealso cref="RuntimeHelpers.IsReferenceOrContainsReferences{T}"/>
         public void Clear()
         {
             Debug.Assert(_buffer.Length >= _index);
@@ -97,24 +99,23 @@ namespace System.Buffers
         }
 
         /// <summary>
-        /// Resets the data written to the underlying buffer without zeroing memory
-        /// when <c>T</c> is not reference and not contains reference, otherwise clears them.
+        /// Resets the data written to the underlying buffer without zeroing memory.
         /// </summary>
         /// <remarks>
-        /// You must reset or clear the <see cref="ArrayBufferWriter{T}"/> before trying
-        /// to re-use it.
+        /// You must reset or clear the <see cref="ArrayBufferWriter{T}"/> before trying to re-use it.
+        /// </remarks>
+        /// <remarks>
+        /// If you reset the buffer data by <see cref="ResetWrittenCount"/> method, <see cref="GetMemory"/> method may return non-clean <see cref="Memory{T}"/>.
+        /// </remarks>
+        /// <remarks>
+        /// To clear buffer data after <see cref="ResetWrittenCount"/> method next code can be used in user code:
+        /// <code>
+        /// buffer.Advance(buffer.FreeCapacity);
+        /// buffer.Clear();
+        /// </code>
         /// </remarks>
         /// <seealso cref="Clear"/>
-        /// <seealso cref="RuntimeHelpers.IsReferenceOrContainsReferences{T}"/>
-        public void ResetWrittenCount()
-        {
-            Debug.Assert(_buffer.Length >= _index);
-            if (RuntimeHelpers.IsReferenceOrContainsReferences<T>())
-            {
-                _buffer.AsSpan(0, _index).Clear();
-            }
-            _index = 0;
-        }
+        public void ResetWrittenCount() => _index = 0; // just reset index
 
         /// <summary>
         /// Notifies <see cref="IBufferWriter{T}"/> that <paramref name="count"/> amount of data was written to the output <see cref="Span{T}"/>/<see cref="Memory{T}"/>
@@ -154,6 +155,12 @@ namespace System.Buffers
         /// </remarks>
         /// <remarks>
         /// You must request a new buffer after calling Advance to continue writing more data and cannot write to a previously acquired buffer.
+        /// </remarks>
+        /// <remarks>
+        /// If you reset the buffer data by <see cref="ResetWrittenCount"/> method, <see cref="GetMemory"/> method may return non-clean <see cref="Memory{T}"/>.
+        /// </remarks>
+        /// <remarks>
+        /// If you clear the buffer data by <see cref="Clear"/> method, <see cref="GetMemory"/> method will return clean <see cref="Memory{T}"/>.
         /// </remarks>
         public Memory<T> GetMemory(int sizeHint = 0)
         {

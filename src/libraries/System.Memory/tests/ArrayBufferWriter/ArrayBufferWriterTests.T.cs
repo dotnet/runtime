@@ -57,7 +57,17 @@ namespace System.Buffers.Tests
             Assert.False(ReadOnlySpan<T>.Empty.SequenceEqual(output.WrittenSpan));
             Assert.False(ReadOnlyMemory<T>.Empty.Span.SequenceEqual(output.WrittenMemory.Span));
             Assert.True(output.WrittenSpan.SequenceEqual(output.WrittenMemory.Span));
+
+            ReadOnlyMemory<T> transientMemory = output.WrittenMemory;
+            ReadOnlySpan<T> transientSpan = output.WrittenSpan;
+            T t0 = transientMemory.Span[0];
+            T t1 = transientSpan[1];
+            Assert.NotEqual(default, t0);
+            Assert.NotEqual(default, t1);
             output.Clear();
+            Assert.Equal(default, transientMemory.Span[0]);
+            Assert.Equal(default, transientSpan[1]);
+
             Assert.Equal(0, output.WrittenCount);
             Assert.True(ReadOnlySpan<T>.Empty.SequenceEqual(output.WrittenSpan));
             Assert.True(ReadOnlyMemory<T>.Empty.Span.SequenceEqual(output.WrittenMemory.Span));
@@ -80,19 +90,11 @@ namespace System.Buffers.Tests
             ReadOnlySpan<T> transientSpan = output.WrittenSpan;
             T t0 = transientMemory.Span[0];
             T t1 = transientSpan[1];
-
+            Assert.NotEqual(default, t0);
+            Assert.NotEqual(default, t1);
             output.ResetWrittenCount();
-
-            if (RuntimeHelpers.IsReferenceOrContainsReferences<T>())
-            {
-                Assert.Equal(default, transientMemory.Span[0]);
-                Assert.Equal(default, transientSpan[0]);
-            }
-            else
-            {
-                Assert.Equal(t0, transientMemory.Span[0]);
-                Assert.Equal(t1, transientSpan[1]);
-            }
+            Assert.Equal(t0, transientMemory.Span[0]);
+            Assert.Equal(t1, transientSpan[1]);
 
             Assert.Equal(0, output.WrittenCount);
             Assert.True(ReadOnlySpan<T>.Empty.SequenceEqual(output.WrittenSpan));
