@@ -228,8 +228,8 @@ namespace System.Net.Sockets.Tests
 
             await ConnectAsync(s, new IPEndPoint(listenAt, ((IPEndPoint)listener.LocalEndPoint).Port));
             Assert.True(s.Connected);
-            
-            await ConnectAsync(s, new IPEndPoint(secondConnection, 0));
+
+            await ConnectAsync(s, new IPEndPoint(secondConnection, PlatformDetection.IsOSX ? 1 : 0));
             Assert.True(s.Connected);
         }
     }
