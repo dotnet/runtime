@@ -7761,7 +7761,12 @@ void Compiler::impCheckCanInline(GenTreeCall*           call,
             CORINFO_CONTEXT_HANDLE exactContext = pParam->exactContextHnd;
             if (pParam->call->IsGuardedDevirtualizationCandidate())
             {
-                exactContext = pParam->call->GetGDVCandidateInfo(pParam->candidateIndex)->exactContextHnd;
+                InlineCandidateInfo*   candidate        = pParam->call->GetGDVCandidateInfo(pParam->candidateIndex);
+                CORINFO_CONTEXT_HANDLE moreExactContext = candidate->exactContextHnd;
+                if (moreExactContext != NULL)
+                {
+                    exactContext = moreExactContext;
+                }
             }
 
             // Speculatively check if initClass() can be done.
