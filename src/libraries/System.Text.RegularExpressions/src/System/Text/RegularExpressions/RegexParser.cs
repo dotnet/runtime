@@ -2295,8 +2295,6 @@ namespace System.Text.RegularExpressions
         /// <summary>Moves the current position to the right.</summary>
         private void MoveRight() => _currentPos++;
 
-        private void MoveRight(int i) => _currentPos += i;
-
         /// <summary>Moves the current parsing position one to the left.</summary>
         private void MoveLeft() => --_currentPos;
 
