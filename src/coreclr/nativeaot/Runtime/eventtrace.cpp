@@ -417,7 +417,7 @@ void ETW::GCLog::EndMovedReferences(size_t profilingContext,
 }
 
 /***************************************************************************/
-/* This implements the public runtime provider's GCHeapCollectKeyword.  It
+/* This implements the public runtime provider's ManagedHeapCollectKeyword.  It
    performs a full, gen-2, blocking GC.
 /***************************************************************************/
 void ETW::GCLog::ForceGC(LONGLONG l64ClientSequenceNumber)
