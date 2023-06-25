@@ -97,6 +97,7 @@
         <TestTarget>$(AppleTestTarget)</TestTarget>
         <TestTimeout>$(_workItemTimeout)</TestTimeout>
         <CustomCommands>$(_XHarnessAppleCustomCommand)</CustomCommands>
+        <ExpectedExitCode>$(ExpectedExitCode)</ExpectedExitCode>
       </XHarnessAppBundleToTest>
 
       <!--

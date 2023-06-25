@@ -2,44 +2,29 @@
   <PropertyGroup>
     <OutputType>Exe</OutputType>
     <OutputPath>bin</OutputPath>
-    <IntermediateOutputPath>$(MSBuildThisFileDirectory)/obj/</IntermediateOutputPath>
     <TargetFramework>$(NetCoreAppCurrent)</TargetFramework>
-    <TargetOS Condition="'$(TargetOS)' == ''">iossimulator</TargetOS>
     <RuntimeIdentifier>$(TargetOS)-$(TargetArchitecture)</RuntimeIdentifier>
-    <DefineConstants Condition="'$(ArchiveTests)' == 'true'">$(DefineConstants);CI_TEST</DefineConstants>
-    <PublishTestAsSelfContainedDependsOn>Publish</PublishTestAsSelfContainedDependsOn>
+    <IntermediateOutputPath>$(MSBuildThisFileDirectory)/obj/</IntermediateOutputPath>
+    <PublishDir Condition="'$(PublishDir)' == ''">$(MSBuildThisFileDirectory)/$(OutputPath)/publish</PublishDir>
     <AppName>HelloiOS</AppName>
     <MainLibraryFileName>$(AssemblyName).dll</MainLibraryFileName>
-    <PublishDir Condition="'$(PublishDir)' == ''">$(OutputPath)/publish</PublishDir>
-
-    <RunAOTCompilation Condition="'$(RunAOTCompilation)' == ''">true</RunAOTCompilation>
-    <!-- <PublishTrimmed>true</PublishTrimmed> -->
-    <!-- <TrimMode>Link</TrimMode> -->
-    <Optimized Condition="'$(Configuration)' == 'Release'">true</Optimized>
-    <!-- <ShouldILStrip Condition="'$(RunAOTCompilation)' == 'true' and '$(MonoForceInterpreter)' != 'true'">true</ShouldILStrip> -->
-
-    <EnableDefaultAssembliesToBundle>true</EnableDefaultAssembliesToBundle>
-    <AppleGenerateAppBundle>true</AppleGenerateAppBundle>
-    <GenerateXcodeProject>true</GenerateXcodeProject>
     <UseConsoleUITemplate>false</UseConsoleUITemplate>
 
-    <BuildAppBundleAfterTargets Condition="'$(ArchiveTests)' != 'true'">CopyFilesToPublishDirectory</BuildAppBundleAfterTargets>
-    <BuildAppBundleAfterTargets Condition="'$(ArchiveTests)' == 'true'">CopyFilesToPublishDirectory;Build</BuildAppBundleAfterTargets>
-    <BuildAppBundleDependsOnTargets Condition="'$(ArchiveTests)' == 'true'">Publish</BuildAppBundleDependsOnTargets>
+    <RunAOTCompilation Condition="'$(RunAOTCompilation)' == ''">true</RunAOTCompilation>
+    <TargetOS Condition="'$(TargetOS)' == ''">iossimulator</TargetOS>
+    <Optimized Condition="'$(Configuration)' == 'Release'">true</Optimized>
+    <PublishTrimmed Condition="'$(ArchiveTests)' != 'true'">true</PublishTrimmed>
+    <TrimMode Condition="'$(ArchiveTests)' != 'true'">Link</TrimMode>
+    <ShouldILStrip Condition="'$(ArchiveTests)' != 'true' and '$(RunAOTCompilation)' == 'true' and '$(MonoForceInterpreter)' != 'true'">true</ShouldILStrip>
+    <DefineConstants Condition="'$(ArchiveTests)' == 'true'">$(DefineConstants);CI_TEST</DefineConstants>
+    <ExpectedExitCode>42</ExpectedExitCode>
   </PropertyGroup>
 
   <ItemGroup>
     <Compile Include="Program.cs" Link="Program.cs" />
   </ItemGroup>
 
-  <Target Name="BuildAppBundle" Condition="'$(ArchiveTests)' != 'true' or ('$(ArchiveTests)' == 'true' and '$(TargetOS)' !='ios')" AfterTargets="$(BuildAppBundleAfterTargets)" DependsOnTargets="$(BuildAppBundleDependsOnTargets)"/>
-  <Target Name="_SetAppleGenerateAppBundleProps" Condition="'$(TargetOS)' != 'ios' and '$(ArchiveTests)' != 'true'" BeforeTargets="_AppleGenerateAppBundle">
-    <PropertyGroup>
-      <RuntimeComponents>diagnostics_tracing;marshal-ilgen</RuntimeComponents>
-    </PropertyGroup>
-  </Target>
-
-  <Target Name="RunAppBundle"
+ <Target Name="RunAppBundle"
           AfterTargets="_AppleGenerateAppBundle"
           Condition="'$(ArchiveTests)' != 'true' and '$(DeployAndRun)' == 'true'">
     <!-- Install and run on a device or simulator -->

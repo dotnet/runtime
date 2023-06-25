@@ -17,6 +17,7 @@
     <NativeCompilationDuringPublish>false</NativeCompilationDuringPublish>
     <IlcCompileDependsOn>Compile;ComputeIlcCompileInputs;SetupOSSpecificProps;PrepareForILLink</IlcCompileDependsOn>
     <ILCompilerTargetsPath>$([MSBuild]::NormalizePath('$(NativeAotTargetsPath)', 'Microsoft.DotNet.ILCompiler.SingleEntry.targets'))</ILCompilerTargetsPath>
+    <ExpectedExitCode>42</ExpectedExitCode>
   </PropertyGroup>
 
   <PropertyGroup Condition="'$(PublishAotUsingRuntimePack)' == 'true'">
