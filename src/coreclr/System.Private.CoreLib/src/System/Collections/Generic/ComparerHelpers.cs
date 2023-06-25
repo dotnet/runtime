@@ -66,10 +66,9 @@ namespace System.Collections.Generic
             object? result = null;
             var runtimeType = (RuntimeType)type;
 
-            if (type == typeof(byte))
+            if (type == typeof(string))
             {
-                // Specialize for byte so Array.IndexOf is faster.
-                result = new ByteEqualityComparer();
+                return new GenericEqualityComparer<string>();
             }
             else if (type.IsAssignableTo(typeof(IEquatable<>).MakeGenericType(type)))
             {
@@ -85,9 +84,6 @@ namespace System.Collections.Generic
             else if (type.IsEnum)
             {
                 // The equality comparer for enums is specialized to avoid boxing.
-
-                // See the METHOD__JIT_HELPERS__UNSAFE_ENUM_CAST and METHOD__JIT_HELPERS__UNSAFE_ENUM_CAST_LONG cases in getILIntrinsicImplementation
-                // for how we cast the enum types to integral values in the comparer without boxing.
                 result = CreateInstanceForAnotherGenericParameter((RuntimeType)typeof(EnumEqualityComparer<>), runtimeType);
             }
 

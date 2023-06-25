@@ -116,13 +116,13 @@ public class Program
 
     private static void Compare_Struct1(Struct1 a, Struct1 b) =>
         AssertEquals(a.CompareTo(b), Comparer<Struct1>.Default.Compare(a, b));
-    
+
     private static void Compare_Struct2(Struct2 a, Struct2 b) =>
         AssertThrows<ArgumentException>(() => Comparer<Struct2>.Default.Compare(a, b));
 
     private static void Compare_Struct1_Nullable(Struct1? a, Struct1? b) =>
-        AssertEquals(((object)a).CompareTo(b), Comparer<Struct1?>.Default.Compare(a, b));
-    
+        AssertEquals(((IComparable)a).CompareTo(b), Comparer<Struct1?>.Default.Compare(a, b));
+
     private static void Compare_Struct2_Nullable(Struct2? a, Struct2? b)
     {
         if (a.HasValue && b.HasValue)
@@ -134,6 +134,9 @@ public class Program
         else
             AssertThrows<ArgumentException>(() => Comparer<Struct2?>.Default.Compare(a, b));
     }
+
+    private static void Compare_Generic_Enum<TEnum>(TEnum a, TEnum b) where TEnum : Enum =>
+        AssertEquals(a.CompareTo(b), Comparer<TEnum>.Default.Compare(a, b));
 
     [Fact]
     public static int TestEntryPoint()
@@ -151,7 +154,7 @@ public class Program
                 int.MaxValue - 1, int.MaxValue, int.MaxValue + 1L,
                 uint.MaxValue - 1, uint.MaxValue, uint.MaxValue + 1L,
                 long.MinValue, long.MinValue + 1,
-                long.MaxValue - 1, long.MaxValue
+                long.MaxValue - 1, long.MaxValue, BitConverter.DoubleToInt64Bits(double.NaN)
             };
 
         for (var i = 0; i < values.Length; i++)
@@ -230,20 +233,17 @@ public class Program
                     new DateTime(Math.Clamp(b, DateTime.MinValue.Ticks, DateTime.MaxValue.Ticks)));
 
                 Compare_Int32_Nullable(a, b);
-                Compare_Enum_Int32_Nullable(enumIntA, enumByteB);
+                Compare_Enum_Int32_Nullable(enumIntA, enumIntB);
 
                 Compare_Int32_Nullable(null, b);
-                Compare_Enum_Int32_Nullable(null, enumByteB);
+                Compare_Enum_Int32_Nullable(null, enumIntB);
 
                 Compare_Int32_Nullable(a, null);
                 Compare_Enum_Int32_Nullable(enumIntA, null);
 
-                Compare_Int32_Nullable(null, null);
-                Compare_Enum_Int32_Nullable(null, null);
-
                 var structA = new Struct1 {a = a, b = b};
                 var structB = new Struct1 {a = b, b = a};
-                Compare_Struct1(structA, structB);                
+                Compare_Struct1(structA, structB);
 
                 var struct2A = new Struct2 {a = a, b = b};
                 var struct2B = new Struct2 {a = b, b = a};
@@ -260,6 +260,30 @@ public class Program
 
                 Compare_Struct1_Nullable(null, null);
                 Compare_Struct2_Nullable(null, null);
+
+                var enumCharA = Unsafe.As<long, CharEnum>(ref a);
+                var enumCharB = Unsafe.As<long, CharEnum>(ref b);
+                Compare_Generic_Enum(enumCharA, enumCharB);
+
+                var enumBoolA = Unsafe.As<long, BoolEnum>(ref a);
+                var enumBoolB = Unsafe.As<long, BoolEnum>(ref b);
+                Compare_Generic_Enum(enumBoolA, enumBoolB);
+
+                var enumFloatA = Unsafe.As<long, FloatEnum>(ref a);
+                var enumFloatB = Unsafe.As<long, FloatEnum>(ref b);
+                Compare_Generic_Enum(enumFloatA, enumFloatB);
+
+                var enumDoubleA = Unsafe.As<long, DoubleEnum>(ref a);
+                var enumDoubleB = Unsafe.As<long, DoubleEnum>(ref b);
+                Compare_Generic_Enum(enumDoubleA, enumDoubleB);
+
+                var enumIntPtrA = Unsafe.As<long, IntPtrEnum>(ref a);
+                var enumIntPtrB = Unsafe.As<long, IntPtrEnum>(ref b);
+                Compare_Generic_Enum(enumIntPtrA, enumIntPtrB);
+
+                var enumUIntPtrA = Unsafe.As<long, UIntPtrEnum>(ref a);
+                var enumUIntPtrB = Unsafe.As<long, UIntPtrEnum>(ref b);
+                Compare_Generic_Enum(enumUIntPtrA, enumUIntPtrB);
             }
         }
 
@@ -280,6 +304,7 @@ public class Program
         Compare_Int32_Nullable(1, null);
         Compare_Int32_Nullable(null, -1);
         Compare_Int32_Nullable(-1, null);
+        Compare_Enum_Int32_Nullable(null, null);
 
         GetTypeTests();
         GetHashCodeTests();
@@ -294,24 +319,48 @@ public class Program
         AssertEquals("System.Collections.Generic.GenericComparer`1[System.String]", Comparer<string>.Default.GetType().ToString());
         AssertEquals("System.Collections.Generic.GenericComparer`1[System.Guid]", Comparer<Guid>.Default.GetType().ToString());
         AssertEquals("System.Collections.Generic.EnumComparer`1[System.Runtime.CompilerServices.MethodImplOptions]", Comparer<MethodImplOptions>.Default.GetType().ToString());
+        AssertEquals("System.Collections.Generic.EnumComparer`1[CharEnum]", Comparer<CharEnum>.Default.GetType().ToString());
+        AssertEquals("System.Collections.Generic.EnumComparer`1[BoolEnum]", Comparer<BoolEnum>.Default.GetType().ToString());
+        AssertEquals("System.Collections.Generic.EnumComparer`1[FloatEnum]", Comparer<FloatEnum>.Default.GetType().ToString());
+        AssertEquals("System.Collections.Generic.EnumComparer`1[DoubleEnum]", Comparer<DoubleEnum>.Default.GetType().ToString());
+        AssertEquals("System.Collections.Generic.EnumComparer`1[IntPtrEnum]", Comparer<IntPtrEnum>.Default.GetType().ToString());
+        AssertEquals("System.Collections.Generic.EnumComparer`1[UIntPtrEnum]", Comparer<UIntPtrEnum>.Default.GetType().ToString());
         AssertEquals("System.Collections.Generic.ObjectComparer`1[Struct1]", Comparer<Struct1>.Default.GetType().ToString());
         AssertEquals("System.Collections.Generic.ObjectComparer`1[Struct2]", Comparer<Struct2>.Default.GetType().ToString());
         AssertEquals("System.Collections.Generic.NullableComparer`1[System.Byte]", Comparer<byte?>.Default.GetType().ToString());
         AssertEquals("System.Collections.Generic.NullableComparer`1[System.Int32]", Comparer<int?>.Default.GetType().ToString());
         AssertEquals("System.Collections.Generic.NullableComparer`1[System.Runtime.CompilerServices.MethodImplOptions]", Comparer<MethodImplOptions?>.Default.GetType().ToString());
+        AssertEquals("System.Collections.Generic.NullableComparer`1[CharEnum]", Comparer<CharEnum?>.Default.GetType().ToString());
+        AssertEquals("System.Collections.Generic.NullableComparer`1[BoolEnum]", Comparer<BoolEnum?>.Default.GetType().ToString());
+        AssertEquals("System.Collections.Generic.NullableComparer`1[FloatEnum]", Comparer<FloatEnum?>.Default.GetType().ToString());
+        AssertEquals("System.Collections.Generic.NullableComparer`1[DoubleEnum]", Comparer<DoubleEnum?>.Default.GetType().ToString());
+        AssertEquals("System.Collections.Generic.NullableComparer`1[IntPtrEnum]", Comparer<IntPtrEnum?>.Default.GetType().ToString());
+        AssertEquals("System.Collections.Generic.NullableComparer`1[UIntPtrEnum]", Comparer<UIntPtrEnum?>.Default.GetType().ToString());
         AssertEquals("System.Collections.Generic.NullableComparer`1[Struct1]", Comparer<Struct1?>.Default.GetType().ToString());
         AssertEquals("System.Collections.Generic.NullableComparer`1[Struct2]", Comparer<Struct2?>.Default.GetType().ToString());
 
-        AssertEquals("System.Collections.Generic.ByteEqualityComparer", EqualityComparer<byte>.Default.GetType().ToString());
+        AssertEquals("System.Collections.Generic.GenericEqualityComparer`1[System.Byte]", EqualityComparer<byte>.Default.GetType().ToString());
         AssertEquals("System.Collections.Generic.GenericEqualityComparer`1[System.Int32]", EqualityComparer<int>.Default.GetType().ToString());
         AssertEquals("System.Collections.Generic.GenericEqualityComparer`1[System.String]", EqualityComparer<string>.Default.GetType().ToString());
         AssertEquals("System.Collections.Generic.GenericEqualityComparer`1[System.Guid]", EqualityComparer<Guid>.Default.GetType().ToString());
         AssertEquals("System.Collections.Generic.EnumEqualityComparer`1[System.Runtime.CompilerServices.MethodImplOptions]", EqualityComparer<MethodImplOptions>.Default.GetType().ToString());
+        AssertEquals("System.Collections.Generic.EnumEqualityComparer`1[CharEnum]", EqualityComparer<CharEnum>.Default.GetType().ToString());
+        AssertEquals("System.Collections.Generic.EnumEqualityComparer`1[BoolEnum]", EqualityComparer<BoolEnum>.Default.GetType().ToString());
+        AssertEquals("System.Collections.Generic.EnumEqualityComparer`1[FloatEnum]", EqualityComparer<FloatEnum>.Default.GetType().ToString());
+        AssertEquals("System.Collections.Generic.EnumEqualityComparer`1[DoubleEnum]", EqualityComparer<DoubleEnum>.Default.GetType().ToString());
+        AssertEquals("System.Collections.Generic.EnumEqualityComparer`1[IntPtrEnum]", EqualityComparer<IntPtrEnum>.Default.GetType().ToString());
+        AssertEquals("System.Collections.Generic.EnumEqualityComparer`1[UIntPtrEnum]", EqualityComparer<UIntPtrEnum>.Default.GetType().ToString());
         AssertEquals("System.Collections.Generic.ObjectEqualityComparer`1[Struct1]", EqualityComparer<Struct1>.Default.GetType().ToString());
         AssertEquals("System.Collections.Generic.ObjectEqualityComparer`1[Struct2]", EqualityComparer<Struct2>.Default.GetType().ToString());
         AssertEquals("System.Collections.Generic.NullableEqualityComparer`1[System.Byte]", EqualityComparer<byte?>.Default.GetType().ToString());
         AssertEquals("System.Collections.Generic.NullableEqualityComparer`1[System.Int32]", EqualityComparer<int?>.Default.GetType().ToString());
         AssertEquals("System.Collections.Generic.NullableEqualityComparer`1[System.Runtime.CompilerServices.MethodImplOptions]", EqualityComparer<MethodImplOptions?>.Default.GetType().ToString());
+        AssertEquals("System.Collections.Generic.NullableEqualityComparer`1[CharEnum]", EqualityComparer<CharEnum?>.Default.GetType().ToString());
+        AssertEquals("System.Collections.Generic.NullableEqualityComparer`1[BoolEnum]", EqualityComparer<BoolEnum?>.Default.GetType().ToString());
+        AssertEquals("System.Collections.Generic.NullableEqualityComparer`1[FloatEnum]", EqualityComparer<FloatEnum?>.Default.GetType().ToString());
+        AssertEquals("System.Collections.Generic.NullableEqualityComparer`1[DoubleEnum]", EqualityComparer<DoubleEnum?>.Default.GetType().ToString());
+        AssertEquals("System.Collections.Generic.NullableEqualityComparer`1[IntPtrEnum]", EqualityComparer<IntPtrEnum?>.Default.GetType().ToString());
+        AssertEquals("System.Collections.Generic.NullableEqualityComparer`1[UIntPtrEnum]", EqualityComparer<UIntPtrEnum?>.Default.GetType().ToString());
         AssertEquals("System.Collections.Generic.NullableEqualityComparer`1[Struct1]", EqualityComparer<Struct1?>.Default.GetType().ToString());
         AssertEquals("System.Collections.Generic.NullableEqualityComparer`1[Struct2]", EqualityComparer<Struct2?>.Default.GetType().ToString());
     }
