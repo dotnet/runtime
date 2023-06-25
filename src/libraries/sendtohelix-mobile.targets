@@ -97,7 +97,10 @@
         <TestTarget>$(AppleTestTarget)</TestTarget>
         <TestTimeout>$(_workItemTimeout)</TestTimeout>
         <CustomCommands>$(_XHarnessAppleCustomCommand)</CustomCommands>
-        <ExpectedExitCode Condition="'%(Filename)' == 'Program'">42</ExpectedExitCode>
+      </XHarnessAppBundleToTest>
+
+      <XHarnessAppBundleToTest Condition="'%(Filename)' == 'Program'">
+        <ExpectedExitCode>42</ExpectedExitCode>
       </XHarnessAppBundleToTest>
 
       <!--

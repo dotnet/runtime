@@ -10,9 +10,14 @@
     <AppName>HelloiOS</AppName>
     <DefineConstants Condition="'$(ArchiveTests)' == 'true'">$(DefineConstants);CI_TEST</DefineConstants>
     <UseNativeAOTRuntime Condition="'$(UseNativeAOTRuntime)' == ''">true</UseNativeAOTRuntime>
-    <PublishDir Condition="'$(PublishDir)' == ''">$(OutputPath)/publish</PublishDir>
+    <PublishDir Condition="'$(PublishDir)' == ''">$(MSBuildThisFileDirectory)/$(OutputPath)/publish</PublishDir>
     <NativeLib>static</NativeLib>
     <CustomNativeMain>true</CustomNativeMain>
+    <_AotCompileTargetName>_AppleNativeAotCompile;</_AotCompileTargetName>
+    <AppleGenerateAppBundle>true</AppleGenerateAppBundle>
+    <RunAOTCompilation>false</RunAOTCompilation>
+    <Optimized Condition="'$(Configuration)' == 'Release'">True</Optimized>
+    <StripDebugSymbols Condition="'$(StripDebugSymbols)' == ''">false</StripDebugSymbols>
     <!-- Escape NativeAOT bundling targets -->
     <NativeCompilationDuringPublish>false</NativeCompilationDuringPublish>
     <IlcCompileDependsOn>Compile;ComputeIlcCompileInputs;SetupOSSpecificProps;PrepareForILLink</IlcCompileDependsOn>
@@ -56,53 +61,6 @@
     </PropertyGroup>
   </Target>
 
-  <Target Name="BuildAppBundle"
-    Condition="'$(ArchiveTests)' != 'true'"
-    AfterTargets="Build"
-    DependsOnTargets="IlcCompile;CopyFilesToPublishDirectory">
-
-    <PropertyGroup>
-      <AppDir>$(MSBuildThisFileDirectory)$(PublishDir)\app</AppDir>
-      <Optimized Condition="'$(Configuration)' == 'Release'">True</Optimized>
-      <StripDebugSymbols Condition="'$(StripDebugSymbols)' == ''">false</StripDebugSymbols>
-      <DevTeamProvisioning Condition="'$(TargetOS)' == 'maccatalyst' and '$(DevTeamProvisioning)' == ''">adhoc</DevTeamProvisioning>
-      <EnableAppSandbox Condition="'$(TargetOS)' == 'maccatalyst' and '$(EnableAppSandbox)' == ''">false</EnableAppSandbox>
-    </PropertyGroup>
-
-    <ItemGroup>
-      <_LinkerFlagsToDrop Include="@(NativeFramework->'-framework %(Identity)')" />
-      <LinkerArg Remove="@(_LinkerFlagsToDrop)" />
-      <ExtraLinkerArguments Include="@(LinkerArg)" />
-      <_NativeDependencies Include="%(ManagedBinary.IlcOutputFile)" />
-    </ItemGroup>
-
-    <RemoveDir Directories="$(AppDir)" />
-
-    <AppleAppBuilderTask
-        UseNativeAOTRuntime="$(UseNativeAOTRuntime)"
-        NativeDependencies="@(_NativeDependencies)"
-        TargetOS="$(TargetOS)"
-        Arch="$(TargetArchitecture)"
-        ProjectName="$(AppName)"
-        Assemblies="@(BundleAssemblies)"
-        GenerateXcodeProject="True"
-        BuildAppBundle="True"
-        DevTeamProvisioning="$(DevTeamProvisioning)"
-        OutputDirectory="$(AppDir)"
-        Optimized="$(Optimized)"
-        InvariantGlobalization="$(InvariantGlobalization)"
-        EnableAppSandbox="$(EnableAppSandbox)"
-        StripSymbolTable="$(StripDebugSymbols)"
-        AppDir="$(MSBuildThisFileDirectory)$(PublishDir)" 
-        ExtraLinkerArguments="@(ExtraLinkerArguments)" >
-        <Output TaskParameter="AppBundlePath" PropertyName="AppBundlePath" />
-        <Output TaskParameter="XcodeProjectPath" PropertyName="XcodeProjectPath" />
-    </AppleAppBuilderTask>
-
-    <Message Importance="High" Text="Xcode: $(XcodeProjectPath)"/>
-    <Message Importance="High" Text="App:   $(AppBundlePath)"/>
-
-  </Target>
 
   <Target Name="RunAppBundle"
           AfterTargets="BuildAppBundle"
