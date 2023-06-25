@@ -121,15 +121,15 @@ public class Program
         AssertThrows<ArgumentException>(() => Comparer<Struct2>.Default.Compare(a, b));
 
     private static void Compare_Struct1_Nullable(Struct1? a, Struct1? b) =>
-        AssertEquals(a.CompareTo(b), Comparer<Struct1?>.Default.Compare(a, b));
+        AssertEquals(((object)a).CompareTo(b), Comparer<Struct1?>.Default.Compare(a, b));
     
     private static void Compare_Struct2_Nullable(Struct2? a, Struct2? b)
     {
-        if (a.IsNull && b.IsNull)
+        if (a.HasValue && b.HasValue)
             AssertEquals(0, Comparer<Struct2?>.Default.Compare(a, b));
-        else if (a.IsNull)
+        else if (a.HasValue)
             AssertEquals(-1, Comparer<Struct2?>.Default.Compare(a, b));
-        else if (b.IsNull)
+        else if (b.HasValue)
             AssertEquals(1, Comparer<Struct2?>.Default.Compare(a, b));
         else
             AssertThrows<ArgumentException>(() => Comparer<Struct2?>.Default.Compare(a, b));
