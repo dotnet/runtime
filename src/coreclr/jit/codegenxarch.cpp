@@ -4263,10 +4263,25 @@ void CodeGen::genCodeForLockAdd(GenTreeOp* node)
     {
         int imm = static_cast<int>(data->AsIntCon()->IconValue());
         assert(imm == data->AsIntCon()->IconValue());
-        GetEmitter()->emitIns_I_AR(INS_add, size, imm, addr->GetRegNum(), 0);
+        if (imm == 1)
+        {
+            // inc [addr]
+            GetEmitter()->emitIns_AR(INS_inc, size, addr->GetRegNum(), 0);
+        }
+        else if (imm == -1)
+        {
+            // dec [addr]
+            GetEmitter()->emitIns_AR(INS_dec, size, addr->GetRegNum(), 0);
+        }
+        else
+        {
+            // add [addr], imm
+            GetEmitter()->emitIns_I_AR(INS_add, size, imm, addr->GetRegNum(), 0);
+        }
     }
     else
     {
+        // add [addr], data
         GetEmitter()->emitIns_AR_R(INS_add, size, data->GetRegNum(), addr->GetRegNum(), 0);
     }
 }
@@ -5857,15 +5872,7 @@ void CodeGen::genCall(GenTreeCall* call)
 
     genCallInstruction(call X86_ARG(stackArgBytes));
 
-    // for pinvoke/intrinsic/tailcalls we may have needed to get the address of
-    // a label. In case it is indirect with CFG enabled make sure we do not get
-    // the address after the validation but only after the actual call that
-    // comes after.
-    if (genPendingCallLabel && !call->IsHelperCall(compiler, CORINFO_HELP_VALIDATE_INDIRECT_CALL))
-    {
-        genDefineInlineTempLabel(genPendingCallLabel);
-        genPendingCallLabel = nullptr;
-    }
+    genDefinePendingCallLabel(call);
 
 #ifdef DEBUG
     // We should not have GC pointers in killed registers live around the call.

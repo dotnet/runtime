@@ -4,6 +4,8 @@
 using System.Reflection;
 using System.Runtime.CompilerServices;
 using System.Threading.Tasks;
+using System.Diagnostics.CodeAnalysis;
+using System.Threading;
 
 namespace System.Runtime.InteropServices.JavaScript
 {
@@ -125,8 +127,12 @@ namespace System.Runtime.InteropServices.JavaScript
             try
             {
                 JSHostImplementation.TaskCallback holder = new JSHostImplementation.TaskCallback();
+#if FEATURE_WASM_THREADS
+                holder.OwnerThreadId = Thread.CurrentThread.ManagedThreadId;
+                holder.SynchronizationContext = SynchronizationContext.Current ?? new SynchronizationContext();
+#endif
                 arg_return.slot.Type = MarshalerType.Object;
-                arg_return.slot.GCHandle = JSHostImplementation.GetJSOwnedObjectGCHandle(holder);
+                arg_return.slot.GCHandle = holder.GCHandle = JSHostImplementation.GetJSOwnedObjectGCHandle(holder);
             }
             catch (Exception ex)
             {
@@ -219,11 +225,12 @@ namespace System.Runtime.InteropServices.JavaScript
 
         // the marshaled signature is:
         // void InstallSynchronizationContext()
+        [DynamicDependency(DynamicallyAccessedMemberTypes.PublicMethods, "System.Runtime.InteropServices.JavaScript.WebWorker", "System.Runtime.InteropServices.JavaScript")]
         public static void InstallSynchronizationContext (JSMarshalerArgument* arguments_buffer) {
             ref JSMarshalerArgument arg_exc = ref arguments_buffer[0]; // initialized by caller in alloc_stack_frame()
             try
             {
-                JSSynchronizationContext.Install();
+                JSHostImplementation.InstallWebWorkerInterop(true, true);
             }
             catch (Exception ex)
             {

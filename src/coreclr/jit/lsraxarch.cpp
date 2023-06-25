@@ -2978,20 +2978,21 @@ void LinearScan::SetContainsAVXFlags(unsigned sizeOfSIMDVector /* = 0*/)
         return;
     }
 
-    compiler->compExactlyDependsOn(InstructionSet_AVX);
     compiler->GetEmitter()->SetContainsAVX(true);
+
     if (sizeOfSIMDVector == 32)
     {
         compiler->GetEmitter()->SetContains256bitOrMoreAVX(true);
+    }
+
+    if (!compiler->canUseEvexEncoding())
+    {
         return;
     }
 
-    if (compiler->canUseEvexEncoding())
+    if (sizeOfSIMDVector == 64)
     {
-        if (compiler->compExactlyDependsOn(InstructionSet_AVX512F) && (sizeOfSIMDVector == 64))
-        {
-            compiler->GetEmitter()->SetContains256bitOrMoreAVX(true);
-        }
+        compiler->GetEmitter()->SetContains256bitOrMoreAVX(true);
     }
 }
 

@@ -6,6 +6,8 @@
     <Serviceable>true</Serviceable>
     <AllowUnsafeBlocks>true</AllowUnsafeBlocks>
     <CLSCompliant>false</CLSCompliant>
+    <!-- This library can't use the live targeting / runtime pack as it builds before the shared framework (as part of a task). -->
+    <UseLocalTargetingRuntimePack>false</UseLocalTargetingRuntimePack>
   </PropertyGroup>
 
   <ItemGroup>

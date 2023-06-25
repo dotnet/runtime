@@ -68,19 +68,8 @@ void InitJITHelpers2();
 
 PCODE UnsafeJitFunction(PrepareCodeConfig* config,
                         COR_ILMETHOD_DECODER* header,
-                        CORJIT_FLAGS flags,
-                        ULONG* sizeOfCode = NULL);
-
-void setILIntrinsicMethodInfo(CORINFO_METHOD_INFO* methInfo,
-                              uint8_t* ilcode,
-                              int ilsize,
-                              int maxstack);
-
-
-void getMethodInfoHelper(MethodDesc * ftn,
-                         CORINFO_METHOD_HANDLE ftnHnd,
-                         COR_ILMETHOD_DECODER * header,
-                         CORINFO_METHOD_INFO *  methInfo);
+                        CORJIT_FLAGS* pJitFlags,
+                        ULONG* pSizeOfCode);
 
 void getMethodInfoILMethodHeaderHelper(
     COR_ILMETHOD_DECODER* header,
@@ -406,9 +395,27 @@ extern "C"
 #endif // TARGET_ARM64
 };
 
+/*********************************************************************/
+/*********************************************************************/
 
-/*********************************************************************/
-/*********************************************************************/
+// Transient data for a MethodDesc involved
+// in the current JIT compilation.
+struct TransientMethodDetails final
+{
+    MethodDesc* Method;
+    COR_ILMETHOD_DECODER* Header;
+    CORINFO_MODULE_HANDLE Scope;
+
+    TransientMethodDetails() = default;
+    TransientMethodDetails(MethodDesc* pMD, _In_opt_ COR_ILMETHOD_DECODER* header, CORINFO_MODULE_HANDLE scope);
+    TransientMethodDetails(const TransientMethodDetails&) = delete;
+    TransientMethodDetails(TransientMethodDetails&&);
+    ~TransientMethodDetails();
+
+    TransientMethodDetails& operator=(const TransientMethodDetails&) = delete;
+    TransientMethodDetails& operator=(TransientMethodDetails&&);
+};
+
 class CEEInfo : public ICorJitInfo
 {
     friend class CEEDynamicCodeInfo;
@@ -439,22 +446,7 @@ public:
     static size_t findNameOfToken (Module* module, mdToken metaTOK,
                             _Out_writes_ (FQNameCapacity) char * szFQName, size_t FQNameCapacity);
 
-#ifdef HOST_WINDOWS
-    static uint32_t ThreadLocalOffset(void* p);
-#endif // HOST_WINDOWS
-
     DWORD getMethodAttribsInternal (CORINFO_METHOD_HANDLE ftnHnd);
-
-    // Given a method descriptor ftnHnd, extract signature information into sigInfo
-    // Obtain (representative) instantiation information from ftnHnd's owner class
-    //@GENERICSVER: added explicit owner parameter
-    // Internal version without JIT-EE transition
-    void getMethodSigInternal (
-            CORINFO_METHOD_HANDLE ftnHnd,
-            CORINFO_SIG_INFO* sigInfo,
-            CORINFO_CLASS_HANDLE owner = NULL,
-            SignatureKind signatureKind = SK_NOT_CALLSITE
-            );
 
     bool resolveVirtualMethodHelper(CORINFO_DEVIRTUALIZATION_INFO * info);
 
@@ -469,13 +461,6 @@ public:
     CorInfoType getFieldTypeInternal (CORINFO_FIELD_HANDLE field, CORINFO_CLASS_HANDLE* structType = NULL,CORINFO_CLASS_HANDLE owner = NULL);
 
 protected:
-
-    static void getEHinfoHelper(
-        CORINFO_METHOD_HANDLE   ftnHnd,
-        unsigned                EHnumber,
-        CORINFO_EH_CLAUSE*      clause,
-        COR_ILMETHOD_DECODER*   pILHeader);
-
     void freeArrayInternal(void* array);
 
 public:
@@ -497,6 +482,7 @@ public:
     CEEInfo(MethodDesc * fd = NULL, bool fAllowInlining = true) :
         m_pJitHandles(nullptr),
         m_pMethodBeingCompiled(fd),
+        m_transientDetails(NULL),
         m_pThread(GetThreadNULLOk()),
         m_hMethodForSecurity_Key(NULL),
         m_pMethodForSecurity_Value(NULL),
@@ -523,8 +509,9 @@ public:
                 DestroyHandle(elements[i]);
             }
             delete m_pJitHandles;
-            m_pJitHandles = nullptr;
         }
+
+        delete m_transientDetails;
 #endif
     }
 
@@ -550,27 +537,6 @@ private:
 #endif
 
 public:
-
-    enum ConvToJitSigFlags : int
-    {
-        CONV_TO_JITSIG_FLAGS_NONE                       = 0x0,
-        CONV_TO_JITSIG_FLAGS_LOCALSIG                   = 0x1,
-    };
-
-    //@GENERICS:
-    // The method handle is used to instantiate method and class type parameters
-    // It's also used to determine whether an extra dictionary parameter is required
-    static
-    void
-    ConvToJitSig(
-        PCCOR_SIGNATURE       pSig,
-        DWORD                 cbSig,
-        CORINFO_MODULE_HANDLE scopeHnd,
-        mdToken               token,
-        SigTypeContext*       context,
-        ConvToJitSigFlags     flags,
-        CORINFO_SIG_INFO *    sigRet);
-
     MethodDesc * GetMethodForSecurity(CORINFO_METHOD_HANDLE callerHandle);
 
     // Prepare the information about how to do a runtime lookup of the handle with shared
@@ -585,10 +551,16 @@ public:
     CalledMethod * GetCalledMethods() { return m_pCalledMethods; }
 #endif
 
+    // Add/Remove/Find transient method details.
+    void AddTransientMethodDetails(TransientMethodDetails details);
+    TransientMethodDetails RemoveTransientMethodDetails(MethodDesc* pMD);
+    bool FindTransientMethodDetails(MethodDesc* pMD, TransientMethodDetails** details);
+
 protected:
-    SArray<OBJECTHANDLE>*   m_pJitHandles;                      // GC handles used by JIT
-    MethodDesc*             m_pMethodBeingCompiled;             // Top-level method being compiled
-    Thread *                m_pThread;                          // Cached current thread for faster JIT-EE transitions
+    SArray<OBJECTHANDLE>*   m_pJitHandles;          // GC handles used by JIT
+    MethodDesc*             m_pMethodBeingCompiled; // Top-level method being compiled
+    SArray<TransientMethodDetails, FALSE>* m_transientDetails;   // Transient details for dynamic codegen scenarios.
+    Thread *                m_pThread;              // Cached current thread for faster JIT-EE transitions
     CORJIT_FLAGS            m_jitFlags;
 
     CORINFO_METHOD_HANDLE getMethodBeingCompiled()
@@ -682,7 +654,6 @@ public:
             void                    *locationRW,
             void                    *target,
             uint16_t                 fRelocType,
-            uint16_t                 slot,
             int32_t                  addlDelta) override final;
 
     uint16_t getRelocTypeHint(void * target) override final;
@@ -697,9 +668,7 @@ public:
         } CONTRACTL_END;
 
         if (m_CodeHeaderRW != m_CodeHeader)
-        {
-            delete [] (BYTE*)m_CodeHeaderRW;
-        }
+            freeArrayInternal(m_CodeHeaderRW);
 
         m_CodeHeader = NULL;
         m_CodeHeaderRW = NULL;
@@ -798,7 +767,7 @@ public:
         LIMITED_METHOD_CONTRACT;
         return 0;
     }
-#endif
+#endif // defined(TARGET_AMD64) || defined(TARGET_ARM64)
 
 #ifdef FEATURE_ON_STACK_REPLACEMENT
     // Called by the runtime to supply patchpoint information to the jit.
@@ -873,9 +842,7 @@ public:
         } CONTRACTL_END;
 
         if (m_CodeHeaderRW != m_CodeHeader)
-        {
-            delete [] (BYTE*)m_CodeHeaderRW;
-        }
+            freeArrayInternal(m_CodeHeaderRW);
 
         if (m_pOffsetMapping != NULL)
             freeArrayInternal(m_pOffsetMapping);

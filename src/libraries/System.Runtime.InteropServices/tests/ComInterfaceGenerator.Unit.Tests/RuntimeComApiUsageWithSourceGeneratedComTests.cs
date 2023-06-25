@@ -1,6 +1,8 @@
 ﻿// Licensed to the .NET Foundation under one or more agreements.
 // The .NET Foundation licenses this file to you under the MIT license.
 
+using System;
+using System.Threading;
 using System.Threading.Tasks;
 using Xunit;
 using VerifyCS = Microsoft.Interop.UnitTests.Verifiers.CSharpAnalyzerVerifier<
@@ -23,7 +25,7 @@ namespace ComInterfaceGenerator.Unit.Tests
                public interface I
                {
                }
-               
+
                [GeneratedComClass]
                public class C : I
                {
@@ -46,7 +48,7 @@ namespace ComInterfaceGenerator.Unit.Tests
                }
                """;
 
-            await VerifyCS.VerifyAnalyzerAsync(source);
+            await VerifyAnalyzerAsync(source);
         }
 
         [Fact]
@@ -61,12 +63,12 @@ namespace ComInterfaceGenerator.Unit.Tests
                public interface I
                {
                }
-               
+
                [GeneratedComClass]
                public class C : I
                {
                }
-               
+
                public static class Program
                {
                    public static void Foo(I i)
@@ -84,7 +86,7 @@ namespace ComInterfaceGenerator.Unit.Tests
                }
                """;
 
-            await VerifyCS.VerifyAnalyzerAsync(source);
+            await VerifyAnalyzerAsync(source);
         }
 
         [Fact]
@@ -93,13 +95,13 @@ namespace ComInterfaceGenerator.Unit.Tests
             string source = """
                using System.Runtime.InteropServices;
                using System.Runtime.InteropServices.Marshalling;
-               
+
                [GeneratedComInterface]
                [Guid("0B7171CD-04A3-41B6-AD10-FE86D52197DD")]
                public interface I
                {
                }
-               
+
                [GeneratedComClass]
                public class C : I
                {
@@ -122,7 +124,7 @@ namespace ComInterfaceGenerator.Unit.Tests
                }
                """;
 
-            await VerifyCS.VerifyAnalyzerAsync(source);
+            await VerifyAnalyzerAsync(source);
         }
 
         [Fact]
@@ -131,18 +133,18 @@ namespace ComInterfaceGenerator.Unit.Tests
             string source = """
                using System.Runtime.InteropServices;
                using System.Runtime.InteropServices.Marshalling;
-               
+
                [GeneratedComInterface]
                [Guid("0B7171CD-04A3-41B6-AD10-FE86D52197DD")]
                public interface I
                {
                }
-               
+
                [GeneratedComClass]
                public class C : I
                {
                }
-               
+
                public static class Program
                {
                    public static void Foo(I i)
@@ -160,7 +162,7 @@ namespace ComInterfaceGenerator.Unit.Tests
                }
                """;
 
-            await VerifyCS.VerifyAnalyzerAsync(source);
+            await VerifyAnalyzerAsync(source);
         }
 
         [Fact]
@@ -169,13 +171,13 @@ namespace ComInterfaceGenerator.Unit.Tests
             string source = """
                 using System.Runtime.InteropServices;
                 using System.Runtime.InteropServices.Marshalling;
-                
+
                 [GeneratedComInterface]
                 [Guid("0B7171CD-04A3-41B6-AD10-FE86D52197DD")]
                 public interface I
                 {
                 }
-                
+
                 [GeneratedComClass]
                 public class C : I
                 {
@@ -204,7 +206,7 @@ namespace ComInterfaceGenerator.Unit.Tests
                 }
                 """;
 
-            await VerifyCS.VerifyAnalyzerAsync(source);
+            await VerifyAnalyzerAsync(source);
         }
 
         [Fact]
@@ -266,8 +268,8 @@ namespace ComInterfaceGenerator.Unit.Tests
                 }
                 """;
 
-            await VerifyCS.VerifyAnalyzerAsync(source);
-        }        
+            await VerifyAnalyzerAsync(source);
+        }
 
         [Fact]
         public async Task GetTypedObjectForIUnknown()
@@ -298,7 +300,7 @@ namespace ComInterfaceGenerator.Unit.Tests
                 }
                 """;
 
-            await VerifyCS.VerifyAnalyzerAsync(source);
+            await VerifyAnalyzerAsync(source);
         }
 
         [Fact]
@@ -307,18 +309,18 @@ namespace ComInterfaceGenerator.Unit.Tests
             string source = """
                 using System.Runtime.InteropServices;
                 using System.Runtime.InteropServices.Marshalling;
-      
+
                 [GeneratedComInterface]
                 [Guid("0B7171CD-04A3-41B6-AD10-FE86D52197DD")]
                 public interface I
                 {
                 }
-      
+
                 [GeneratedComClass]
                 public class C : I
                 {
                 }
-      
+
                 public static class Program
                 {
                     public static void Foo(I i)
@@ -336,7 +338,7 @@ namespace ComInterfaceGenerator.Unit.Tests
                 }
                 """;
 
-            await VerifyCS.VerifyAnalyzerAsync(source);
+            await VerifyAnalyzerAsync(source);
         }
 
         [Fact]
@@ -345,18 +347,18 @@ namespace ComInterfaceGenerator.Unit.Tests
             string source = """
                 using System.Runtime.InteropServices;
                 using System.Runtime.InteropServices.Marshalling;
-      
+
                 [GeneratedComInterface]
                 [Guid("0B7171CD-04A3-41B6-AD10-FE86D52197DD")]
                 public interface I
                 {
                 }
-      
+
                 [GeneratedComClass]
                 public class C : I
                 {
                 }
-      
+
                 public static class Program
                 {
                     public static void Foo(I i)
@@ -374,7 +376,7 @@ namespace ComInterfaceGenerator.Unit.Tests
                 }
                 """;
 
-            await VerifyCS.VerifyAnalyzerAsync(source);
+            await VerifyAnalyzerAsync(source);
         }
 
         [Fact]
@@ -383,18 +385,18 @@ namespace ComInterfaceGenerator.Unit.Tests
             string source = """
                using System.Runtime.InteropServices;
                using System.Runtime.InteropServices.Marshalling;
-      
+
                [GeneratedComInterface]
                [Guid("0B7171CD-04A3-41B6-AD10-FE86D52197DD")]
                public interface I
                {
                }
-      
+
                [GeneratedComClass]
                public class C : I
                {
                }
-      
+
                public static class Program
                {
                    public static void Foo(I i)
@@ -421,7 +423,123 @@ namespace ComInterfaceGenerator.Unit.Tests
                }
                """;
 
-            await VerifyCS.VerifyAnalyzerAsync(source);
+            await VerifyAnalyzerAsync(source);
+        }
+
+        [Fact]
+        public async Task CastsBetweenComImportAndGeneratedComTypes()
+        {
+            string source = """
+              using System.Runtime.InteropServices;
+              using System.Runtime.InteropServices.Marshalling;
+
+              [GeneratedComInterface]
+              [Guid("0B7171CD-04A3-41B6-AD10-FE86D52197DD")]
+              public interface I
+              {
+              }
+
+              [GeneratedComClass]
+              public class C : I
+              {
+              }
+
+              [ComImport]
+              [Guid("0BADBF92-749A-44DB-9DA0-C8E2EEC783E2")]
+              public interface J
+              {
+              }
+
+              public static class Program
+              {
+                  public static void Foo(I i)
+                  {
+                      J j = [|(J)i|];
+                      i = [|(I)j|];
+                  }
+
+                  public static void Foo(C c)
+                  {
+                      J j = [|(J)c|];
+                      c = [|(C)j|];
+                  }
+
+                  public static void Foo(ComObject c)
+                  {
+                      J j = [|(J)(object)c|];
+                      c = [|(ComObject)(object)j|];
+                  }
+              }
+              """;
+
+            await VerifyAnalyzerAsync(source);
+        }
+
+
+
+        [Fact]
+        public async Task GetObjectForIUnknown()
+        {
+            string source = """
+                using System.Runtime.InteropServices;
+                using System.Runtime.InteropServices.Marshalling;
+
+                [GeneratedComInterface]
+                [Guid("0B7171CD-04A3-41B6-AD10-FE86D52197DD")]
+                public interface I
+                {
+                }
+
+                [GeneratedComClass]
+                public class C : I
+                {
+                }
+
+                public static class Program
+                {
+                    public static void Foo(nint i)
+                    {
+                        I io = [|(I)Marshal.GetObjectForIUnknown(i)|];
+                        C co = [|(C)Marshal.GetObjectForIUnknown(i)|];
+                        ComObject obj = [|(ComObject)Marshal.GetObjectForIUnknown(i)|];
+                    }
+                }
+                """;
+
+            await VerifyAnalyzerAsync(source);
+        }
+
+        [Fact]
+        public async Task SetNullToComImportField()
+        {
+            string source = """
+              using System.Runtime.InteropServices;
+              using System.Runtime.InteropServices.Marshalling;
+
+              [ComImport]
+              [Guid("0BADBF92-749A-44DB-9DA0-C8E2EEC783E2")]
+              public interface J
+              {
+              }
+
+              public class X
+              {
+                    public static J j = null;
+              }
+              """;
+
+              await VerifyAnalyzerAsync(source);
+        }
+
+        private Task VerifyAnalyzerAsync(string source)
+        {
+            var test = new VerifyCS.Test
+            {
+                TestCode = source,
+                MarkupOptions = Microsoft.CodeAnalysis.Testing.MarkupOptions.UseFirstDescriptor
+            };
+
+            return test.RunAsync(CancellationToken.None);
         }
     }
 }
