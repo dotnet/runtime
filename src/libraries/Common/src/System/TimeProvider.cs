@@ -239,23 +239,26 @@ namespace System
                 long dueTm = (long)dueTime.TotalMilliseconds;
                 long periodTm = (long)periodTime.TotalMilliseconds;
 
+                // MaxAllowedTimeout = 0xffffffff
+                // We have MaxSupportedTimeout = 0xfffffffe but we need to allow TimeSpan = Timeout.InfiniteTimeSpan which
+                // is -1. So we need to allow -1 milliseconds which equal to 0xffffffff.
+                const long MaxAllowedTimeout = (long)(unchecked((uint)Timeout.Infinite));
+
 #if SYSTEM_PRIVATE_CORELIB
                 ArgumentOutOfRangeException.ThrowIfLessThan(dueTm, -1, nameof(dueTime));
-                ArgumentOutOfRangeException.ThrowIfGreaterThan(dueTm, Timer.MaxSupportedTimeout, nameof(dueTime));
+                ArgumentOutOfRangeException.ThrowIfGreaterThan(dueTm, MaxAllowedTimeout, nameof(dueTime));
 
                 ArgumentOutOfRangeException.ThrowIfLessThan(periodTm, -1, nameof(periodTime));
-                ArgumentOutOfRangeException.ThrowIfGreaterThan(periodTm, Timer.MaxSupportedTimeout, nameof(periodTime));
+                ArgumentOutOfRangeException.ThrowIfGreaterThan(periodTm, MaxAllowedTimeout, nameof(periodTime));
 #else
-                const uint MaxSupportedTimeout = 0xfffffffe;
-
                 if (dueTm < -1)
                 {
                     throw new ArgumentOutOfRangeException(nameof(dueTime), dueTm, SR.Format(SR.ArgumentOutOfRange_Generic_MustBeGreaterOrEqual, nameof(dueTime), -1));
                 }
 
-                if (dueTm > MaxSupportedTimeout)
+                if (dueTm > MaxAllowedTimeout)
                 {
-                    throw new ArgumentOutOfRangeException(nameof(dueTime), dueTm, SR.Format(SR.ArgumentOutOfRange_Generic_MustBeLessOrEqual, nameof(dueTime), MaxSupportedTimeout));
+                    throw new ArgumentOutOfRangeException(nameof(dueTime), dueTm, SR.Format(SR.ArgumentOutOfRange_Generic_MustBeLessOrEqual, nameof(dueTime), MaxAllowedTimeout));
                 }
 
                 if (periodTm < -1)
@@ -263,9 +266,9 @@ namespace System
                     throw new ArgumentOutOfRangeException(nameof(periodTm), periodTm, SR.Format(SR.ArgumentOutOfRange_Generic_MustBeGreaterOrEqual, nameof(periodTm), -1));
                 }
 
-                if (periodTm > MaxSupportedTimeout)
+                if (periodTm > MaxAllowedTimeout)
                 {
-                    throw new ArgumentOutOfRangeException(nameof(periodTm), periodTm, SR.Format(SR.ArgumentOutOfRange_Generic_MustBeLessOrEqual, nameof(periodTm), MaxSupportedTimeout));
+                    throw new ArgumentOutOfRangeException(nameof(periodTm), periodTm, SR.Format(SR.ArgumentOutOfRange_Generic_MustBeLessOrEqual, nameof(periodTm), MaxAllowedTimeout));
                 }
 #endif // SYSTEM_PRIVATE_CORELIB
 
