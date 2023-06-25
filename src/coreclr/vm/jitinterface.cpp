@@ -7423,7 +7423,8 @@ public:
 
 static void getMethodInfoHelper(
     MethodInfoHelperContext& cxt,
-    CORINFO_METHOD_INFO* methInfo)
+    CORINFO_METHOD_INFO* methInfo,
+    CORINFO_CONTEXT_HANDLE exactContext = NULL)
 {
     STANDARD_VM_CONTRACT;
     _ASSERTE(methInfo != NULL);
@@ -7547,7 +7548,18 @@ static void getMethodInfoHelper(
     DWORD           cbSig = 0;
     ftn->GetSig(&pSig, &cbSig);
 
-    SigTypeContext context(ftn);
+    SigTypeContext context;
+
+    if ((exactContext == NULL) || (exactContext == METHOD_BEING_COMPILED_CONTEXT()) ||
+        (((size_t)exactContext & CORINFO_CONTEXTFLAGS_MASK) == CORINFO_CONTEXTFLAGS_METHOD))
+    {
+        SigTypeContext::InitTypeContext(ftn, &context);
+    }
+    else
+    {
+        TypeHandle th = TypeHandle((CORINFO_CLASS_HANDLE)((size_t)exactContext & ~CORINFO_CONTEXTFLAGS_MASK));
+        SigTypeContext::InitTypeContext(th, &context);
+    }
 
     /* Fetch the method signature */
     // Type parameters in the signature should be instantiated according to the
@@ -7605,14 +7617,14 @@ CEEInfo::getMethodInfo(
     MethodInfoHelperContext cxt{ ftn };
     if (ftn->IsDynamicMethod())
     {
-        getMethodInfoHelper(cxt, methInfo);
+        getMethodInfoHelper(cxt, methInfo, context);
         result = true;
     }
     else if (!ftn->IsWrapperStub() && ftn->HasILHeader())
     {
         COR_ILMETHOD_DECODER header(ftn->GetILHeader(TRUE), ftn->GetMDImport(), NULL);
         cxt.Header = &header;
-        getMethodInfoHelper(cxt, methInfo);
+        getMethodInfoHelper(cxt, methInfo, context);
         result = true;
     }
     else if (ftn->IsIL() && ftn->GetRVA() == 0)
