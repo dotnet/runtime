@@ -21,7 +21,7 @@ public class Program
         }
     }
 
-    private static void AssertThrows<TException>(Action action, [CallerLineNumber] int line = 0) where T : Exception
+    private static void AssertThrows<TException>(Action action, [CallerLineNumber] int line = 0) where TException : Exception
     {
         try
         {
