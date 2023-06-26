@@ -325,6 +325,9 @@ struct _BaselineInfo {
 /* See Note: Suppressed Columns */
 static guint16 m_SuppressedDeltaColumns [MONO_TABLE_NUM];
 
+static int
+hot_reload_update_enabled_slow_check (char **env_invalid_val_out);
+
 /**
  * mono_metadata_update_enable:
  * \param modifiable_assemblies_out: set to MonoModifiableAssemblies value
@@ -343,31 +346,58 @@ hot_reload_update_enabled (int *modifiable_assemblies_out)
 	static gboolean inited = FALSE;
 	static int modifiable = MONO_MODIFIABLE_ASSM_NONE;
 
+	gboolean result = FALSE;
 	if (!inited) {
-		char *val = g_getenv (DOTNET_MODIFIABLE_ASSEMBLIES);
-		if (val && !g_strcasecmp (val, "debug")) {
-			mono_trace (G_LOG_LEVEL_DEBUG, MONO_TRACE_METADATA_UPDATE, "Metadata update enabled for debuggable assemblies");
-			modifiable
-				= MONO_MODIFIABLE_ASSM_DEBUG;
-		}
-		g_free (val);
+		modifiable = hot_reload_update_enabled_slow_check (NULL);
 		inited = TRUE;
+		result = (modifiable != MONO_MODIFIABLE_ASSM_NONE);
+		if (result) {
+			mono_trace (G_LOG_LEVEL_DEBUG, MONO_TRACE_METADATA_UPDATE, "Metadata update enabled for debuggable assemblies");
+		}
 	}
 	if (modifiable_assemblies_out)
 		*modifiable_assemblies_out = modifiable;
-	return modifiable != MONO_MODIFIABLE_ASSM_NONE;
+	return result;
+}
+
+/**
+ * checks the DOTNET_MODIFIABLE_ASSEMBLIES environment value.  if it is recognized returns the
+ * aporporiate MONO_MODIFIABLE_ASSM_ enum value.  if it is unset or uncrecognized returns
+ * MONO_MODIFIABLE_ASSM_NONE and writes the value to \c env_invalid_val_out, if it is non-NULL;
+ */
+static int
+hot_reload_update_enabled_slow_check (char **env_invalid_val_out)
+{
+	int modifiable = MONO_MODIFIABLE_ASSM_NONE;
+	char *val = g_getenv (DOTNET_MODIFIABLE_ASSEMBLIES);
+	if (val && !g_strcasecmp (val, "debug")) {
+		modifiable = MONO_MODIFIABLE_ASSM_DEBUG;
+	} else {
+		/* unset or unrecognized value */
+		if (env_invalid_val_out != NULL) {
+			*env_invalid_val_out = val;
+		} else {
+			g_free (val);
+		}
+	}
+	return modifiable;
 }
 
 static gboolean
-assembly_update_supported (MonoAssembly *assm)
+assembly_update_supported (MonoImage *image_base, MonoError *error)
 {
 	int modifiable = 0;
-	if (!hot_reload_update_enabled (&modifiable))
+	char *invalid_env_val = NULL;
+	modifiable = hot_reload_update_enabled_slow_check (&invalid_env_val);
+	if (modifiable == MONO_MODIFIABLE_ASSM_NONE) {
+		mono_error_set_invalid_operation (error, "The assembly '%s' cannot be edited or changed, because environment variable DOTNET_MODIFIABLE_ASSEMBLIES is set to '%s', not 'Debug'", image_base->name, invalid_env_val);
+		g_free (invalid_env_val);
 		return FALSE;
-	if (modifiable == MONO_MODIFIABLE_ASSM_DEBUG &&
-	    mono_assembly_is_jit_optimizer_disabled (assm))
-		return TRUE;
-	return FALSE;
+	} else if (!mono_assembly_is_jit_optimizer_disabled (image_base->assembly)) {
+		mono_error_set_invalid_operation (error, "The assembly '%s' cannot be edited or changed, because it does not have a System.Diagnostics.DebuggableAttribute with the DebuggingModes.DisableOptimizations flag (editing Release build assemblies is not supported)", image_base->name);
+		return FALSE;
+	}
+	return TRUE;
 }
 
 /**
@@ -2509,8 +2539,7 @@ dump_methodbody (MonoImage *image)
 void
 hot_reload_apply_changes (int origin, MonoImage *image_base, gconstpointer dmeta_bytes, uint32_t dmeta_length, gconstpointer dil_bytes_orig, uint32_t dil_length, gconstpointer dpdb_bytes_orig, uint32_t dpdb_length, MonoError *error)
 {
-	if (!assembly_update_supported (image_base->assembly)) {
-		mono_error_set_invalid_operation (error, "The assembly can not be edited or changed.");
+	if (!assembly_update_supported (image_base, error)) {
 		return;
 	}
 

@@ -334,7 +334,7 @@ namespace Internal.TypeSystem.NoMetadata
             string enclosingDummy;
 
             // Try to get the name from metadata
-            if (TypeLoaderEnvironment.Instance.TryGetMetadataForNamedType(genericDefinitionHandle, out qTypeDefinition))
+            if (TypeLoaderEnvironment.TryGetMetadataForNamedType(genericDefinitionHandle, out qTypeDefinition))
             {
                 TypeDefinitionHandle typeDefHandle = qTypeDefinition.NativeFormatHandle;
                 typeDefHandle.GetFullName(qTypeDefinition.NativeFormatReader, out name, out enclosingDummy, out nsName);
