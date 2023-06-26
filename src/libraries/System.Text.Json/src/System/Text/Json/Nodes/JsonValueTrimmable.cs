@@ -93,6 +93,8 @@ namespace System.Text.Json.Nodes
                         return false;
                     }
 
+                    Debug.Assert(jsonElementCurrent.ValueKind != JsonValueKind.Object && jsonElementCurrent.ValueKind != JsonValueKind.Array);
+
                     switch (jsonElementCurrent.ValueKind)
                     {
                         case JsonValueKind.String:
