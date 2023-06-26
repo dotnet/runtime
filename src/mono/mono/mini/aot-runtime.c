@@ -4288,6 +4288,7 @@ load_method (MonoAotModule *amodule, MonoImage *image, MonoMethod *method, guint
 			}
 
 			printf ("NOT FOUND: %s\n", mono_method_get_full_name (method));
+			exit (1);
 #if 0
 #ifdef HOST_WASM
 			mono_wasm_print_stack_trace ();

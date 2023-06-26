@@ -10919,7 +10919,7 @@ emit_code (MonoAotCompile *acfg)
 			continue;
 
 		/* Emit unbox trampoline */
-		if (mono_aot_mode_is_full (&acfg->aot_opts) && m_class_is_valuetype (cfg->orig_method->klass)) {
+		if (mono_aot_mode_is_full (&acfg->aot_opts) && m_class_is_valuetype (cfg->orig_method->klass) && !mono_aot_can_specialize (method)) {
 			sprintf (symbol, "ut_%d", get_method_index (acfg, method));
 
 			emit_section_change (acfg, ".text", 0);
@@ -11018,15 +11018,20 @@ emit_code (MonoAotCompile *acfg)
 	for (guint32 i = 0; i < acfg->nmethods; ++i) {
 #ifdef MONO_ARCH_AOT_SUPPORTED
 		if (acfg->flags & MONO_AOT_FILE_FLAG_CODE_EXEC_ONLY) {
-			if (acfg->cfgs [i])
+			if (!ignore_cfg (acfg->cfgs [i]))
 				emit_pointer (acfg, acfg->cfgs [i]->asm_symbol);
 			else
 				emit_pointer (acfg, NULL);
 		} else {
-			if (acfg->cfgs [i])
-				arch_emit_label_address (acfg, acfg->cfgs [i]->asm_symbol, FALSE, acfg->thumb_mixed && acfg->cfgs [i]->compile_llvm, NULL, &acfg->call_table_entry_size);
-			else
+			if (!ignore_cfg (acfg->cfgs [i])) {
+				if (!mono_aot_can_specialize(acfg->cfgs [i]->method)) {
+					arch_emit_label_address (acfg, acfg->cfgs [i]->asm_symbol, FALSE, acfg->thumb_mixed && acfg->cfgs [i]->compile_llvm, NULL, &acfg->call_table_entry_size);
+				} else {
+					arch_emit_label_address (acfg, symbol, FALSE, FALSE, NULL, &acfg->call_table_entry_size);
+				}
+			} else {
 				arch_emit_label_address (acfg, symbol, FALSE, FALSE, NULL, &acfg->call_table_entry_size);
+			}
 		}
 #endif
 	}
@@ -11053,7 +11058,7 @@ emit_code (MonoAotCompile *acfg)
 
 		method = cfg->orig_method;
 
-		if (mono_aot_mode_is_full (&acfg->aot_opts) && m_class_is_valuetype (cfg->orig_method->klass)) {
+		if (mono_aot_mode_is_full (&acfg->aot_opts) && m_class_is_valuetype (cfg->orig_method->klass) && !mono_aot_can_specialize(method)) {
 			index = get_method_index (acfg, method);
 
 			emit_int32 (acfg, index);
@@ -11088,7 +11093,7 @@ emit_code (MonoAotCompile *acfg)
 		method = cfg->orig_method;
 		(void)method;
 
-		if (mono_aot_mode_is_full (&acfg->aot_opts) && m_class_is_valuetype (cfg->orig_method->klass)) {
+		if (mono_aot_mode_is_full (&acfg->aot_opts) && m_class_is_valuetype (cfg->orig_method->klass) && !mono_aot_can_specialize(method)) {
 #ifdef MONO_ARCH_AOT_SUPPORTED
 			const int index = get_method_index (acfg, method);
 			sprintf (symbol, "ut_%d", index);

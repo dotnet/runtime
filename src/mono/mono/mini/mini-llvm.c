@@ -12483,7 +12483,11 @@ emit_method_inner (EmitContext *ctx)
 			LLVMSetLinkage (method, LLVMInternalLinkage);
 			//all methods have internal visibility when doing llvm_only
 			if (!cfg->llvm_only && ctx->module->external_symbols) {
-				LLVMSetLinkage (method, LLVMExternalLinkage);
+				if (mono_aot_can_specialize(cfg->method))
+					LLVMSetLinkage (method, LLVMInternalLinkage);
+				else
+					LLVMSetLinkage (method, LLVMExternalLinkage);
+
 				LLVMSetVisibility (method, LLVMHiddenVisibility);
 			}
 		}
@@ -12963,7 +12967,9 @@ after_codegen_1:
 	if (mini_get_debug_options ()->llvm_disable_inlining)
 		mono_llvm_add_func_attr (method, LLVM_ATTR_NO_INLINE);
 	
+	int is_specialized = 0;
 	if (mono_aot_can_specialize (cfg->method)) {
+		is_specialized = 1;
 		printf ("MOO: %s\n", mono_method_get_full_name (cfg->method));
 		g_hash_table_insert (ctx->module->no_method_table_lmethods, method, method);
 	}
@@ -12992,8 +12998,10 @@ after_codegen:
 		g_print ("***\n\n");
 	}
 
-	if (cfg->compile_aot && !cfg->llvm_only)
+	if (cfg->compile_aot && !cfg->llvm_only && !is_specialized)
 		mark_as_used (ctx->module, method);
+
+	is_specialized = 0;
 
 	if (!cfg->llvm_only) {
 		LLVMValueRef md_args [16];
