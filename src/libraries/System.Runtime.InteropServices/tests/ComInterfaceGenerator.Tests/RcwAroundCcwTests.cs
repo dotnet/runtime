@@ -106,7 +106,7 @@ namespace ComInterfaceGenerator.Tests
             );
         }
 
-        [Fact]
+        [ConditionalFact(typeof(PlatformDetection), nameof(PlatformDetection.IsNotWindows7))]
         public void IJaggedArrayMarshallingFails()
         {
             var obj = CreateWrapper<IJaggedIntArrayMarshallingFailsImpl, IJaggedIntArrayMarshallingFails>();
