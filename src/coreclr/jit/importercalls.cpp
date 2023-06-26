@@ -3848,7 +3848,7 @@ GenTree* Compiler::impIntrinsic(GenTree*                newobjThis,
             case NI_System_Threading_Volatile_Read:
             {
 #if !TARGET_64BIT
-                if ((retType == TYP_LONG) ||(retType == TYP_ULONG) || (retType == TYP_DOUBLE))
+                if ((retType == TYP_LONG) || (retType == TYP_ULONG) || (retType == TYP_DOUBLE))
                 {
                     break;
                 }
@@ -3861,7 +3861,7 @@ GenTree* Compiler::impIntrinsic(GenTree*                newobjThis,
             case NI_System_Threading_Volatile_Write:
             {
 #if !TARGET_64BIT
-                if ((retType == TYP_LONG) || (retType == TYP_DOUBLE))
+                if ((retType == TYP_LONG) || (retType == TYP_ULONG) || (retType == TYP_DOUBLE))
                 {
                     break;
                 }
