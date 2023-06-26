@@ -19,12 +19,35 @@ namespace System.Net
 {
     internal partial class NegotiateAuthenticationPal
     {
-        private static bool UseManagedNtlm = !AppContext.TryGetSwitch("System.Net.Security.UseManagedNtlm", out bool useManagedNtlm) || useManagedNtlm;
-        //private static bool UseManagedNtlm = AppContext.TryGetSwitch("System.Net.Security.UseManagedNtlm", out bool useManagedNtlm) && useManagedNtlm;
+        private static bool _useManagedNtlm;
+        private static bool _isGssApiAvailable;
+
+#pragma warning disable CA1810 // explicit static cctor
+        static NegotiateAuthenticationPal()
+        {
+            try
+            {
+                if (!Interop.NetSecurityNative.IsNtlmInstalled())
+                {
+                    _useManagedNtlm = true;
+                }
+                else
+                {
+                    _useManagedNtlm = AppContext.TryGetSwitch("System.Net.Security.UseManagedNtlm", out bool useManagedNtlm) && useManagedNtlm;
+                }
+                _isGssApiAvailable = true;
+            }
+            catch (EntryPointNotFoundException)
+            {
+                // GSSAPI shim may not be available on some platforms (Linux Bionic)
+                _isGssApiAvailable = false;
+            }
+        }
+#pragma warning restore CA1810
 
         public static NegotiateAuthenticationPal Create(NegotiateAuthenticationClientOptions clientOptions)
         {
-            if (UseManagedNtlm)
+            if (_useManagedNtlm)
             {
                 switch (clientOptions.Package)
                 {
@@ -33,6 +56,11 @@ namespace System.Net
 
                     case NegotiationInfoClass.Negotiate:
                         return new ManagedSpnegoNegotiateAuthenticationPal(clientOptions, supportKerberos: true);
+                }
+
+                if (!_isGssApiAvailable)
+                {
+                    return new UnsupportedNegotiateAuthenticationPal(clientOptions);
                 }
             }
 
@@ -52,6 +80,11 @@ namespace System.Net
 
         public static NegotiateAuthenticationPal Create(NegotiateAuthenticationServerOptions serverOptions)
         {
+            if (!_isGssApiAvailable)
+            {
+                return new UnsupportedNegotiateAuthenticationPal(serverOptions);
+            }
+
             try
             {
                 return new UnixNegotiateAuthenticationPal(serverOptions);
@@ -204,20 +237,9 @@ namespace System.Net
                     _ => 0
                 };
 
-                // TODO: This was always ignored on Unix
-                /*if (serverOptions.Policy is not null)
-                {
-                    if (serverOptions.Policy.PolicyEnforcement == PolicyEnforcement.WhenSupported)
-                    {
-                        contextFlags |= ContextFlagsPal.AllowMissingBindings;
-                    }
-
-                    if (serverOptions.Policy.PolicyEnforcement != PolicyEnforcement.Never &&
-                        serverOptions.Policy.ProtectionScenario == ProtectionScenario.TrustedProxy)
-                    {
-                        contextFlags |= ContextFlagsPal.ProxyBindings;
-                    }
-                }*/
+                // NOTE: Historically serverOptions.Policy was ignore on Unix without an exception
+                // or error message. We continue to do so for compatibity reasons and because there
+                // are no direct equivalents in GSSAPI.
 
                 _isServer = true;
                 _securityContext = null;
@@ -237,8 +259,9 @@ namespace System.Net
                 }
                 else
                 {
-                    // TODO: The input parameter was previously ignored and SafeGssCredHandle.CreateAcceptor
-                    // was always used.
+                    // NOTE: The input parameter was previously ignored and SafeGssCredHandle.CreateAcceptor
+                    // was always used. We don't know of any uses with non-default credentials so this code
+                    // path is essentially untested.
                     _credentialsHandle = AcquireCredentialsHandle(serverOptions.Credential);
                 }
             }
@@ -252,7 +275,6 @@ namespace System.Net
 
             public override byte[]? GetOutgoingBlob(ReadOnlySpan<byte> incomingBlob, out NegotiateAuthenticationStatusCode statusCode)
             {
-                //bool firstTime = _securityContext == null;
                 int resultBlobLength;
                 if (!_isServer)
                 {
@@ -273,13 +295,13 @@ namespace System.Net
                 }
                 else
                 {
+                    // TODO: We don't currently check channel bindings.
+
                     // Server session.
                     statusCode = AcceptSecurityContext(
                         _credentialsHandle,
                         ref _securityContext,
-                        //_requestedContextFlags,
                         incomingBlob,
-                        //_channelBinding,
                         ref _tokenBuffer,
                         out resultBlobLength,
                         ref _contextFlags);
@@ -294,11 +316,6 @@ namespace System.Net
                     _tokenBuffer = null;
                     return null;
                 }
-                /*else if (firstTime && _credentialsHandle != null)
-                {
-                    // Cache until it is pushed out by newly incoming handles.
-                    SSPIHandleCache.CacheCredential(_credentialsHandle);
-                }*/
 
                 byte[]? result =
                     resultBlobLength == 0 || _tokenBuffer == null ? null :
