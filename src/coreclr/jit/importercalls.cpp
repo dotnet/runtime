@@ -3848,11 +3848,12 @@ GenTree* Compiler::impIntrinsic(GenTree*                newobjThis,
             case NI_System_Threading_Volatile_Read:
             {
 #if !TARGET_64BIT
-                if ((retType == TYP_LONG) || (retType == TYP_DOUBLE))
+                if ((retType == TYP_LONG) ||(retType == TYP_ULONG) || (retType == TYP_DOUBLE))
                 {
                     break;
                 }
 #endif // !TARGET_64BIT
+                assert(retType != TYP_STRUCT);
                 retNode = gtNewIndir(JITtype2varType(retType), impPopStack().val, GTF_IND_VOLATILE);
                 break;
             }
@@ -3867,12 +3868,12 @@ GenTree* Compiler::impIntrinsic(GenTree*                newobjThis,
 #endif // !TARGET_64BIT
                 CORINFO_CLASS_HANDLE typeHnd     = nullptr;
                 CorInfoType          baseJitType = strip(info.compCompHnd->getArgType(sig, info.compCompHnd->getArgNext(sig->args), &typeHnd));
-                var_types            type        = JITtype2varType(baseJitType);
+                assert(baseJitType != TYP_STRUCT);
 
                 GenTree* value = impPopStack().val;
                 GenTree* addr  = impPopStack().val;
 
-                retNode = gtNewStoreIndNode(type, addr, value, GTF_IND_VOLATILE);
+                retNode = gtNewStoreIndNode(JITtype2varType(baseJitType), addr, value, GTF_IND_VOLATILE);
                 break;
             }
 
