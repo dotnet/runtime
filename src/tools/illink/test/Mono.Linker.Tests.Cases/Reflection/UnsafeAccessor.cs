@@ -19,6 +19,12 @@ namespace Mono.Linker.Tests.Cases.Reflection
 			InstanceMethodAccess.Test ();
 		}
 
+		// Trimmer doesn't use method overload resolution for UnsafeAccessor and instead marks entire method groups (by name)
+		// NativeAOT on the other hand performs exact resolution
+		// This difference is currently by design - Mono.Cecil's method resolution is problematic and has bugs. It's also not extensible
+		//   and we would need that to correctly implement the desired behavior around custom modifiers. So for now we decided to not
+		//   duplicate the logic to tweak it and will just mark entire method groups.
+
 		class ConstructorAccess
 		{
 			[Kept]
@@ -30,6 +36,7 @@ namespace Mono.Linker.Tests.Cases.Reflection
 					[Kept]
 					private DefaultConstructorTarget () { }
 
+					[Kept (By = Tool.Trimmer)]
 					private DefaultConstructorTarget (int i) { }
 				}
 
@@ -96,6 +103,7 @@ namespace Mono.Linker.Tests.Cases.Reflection
 				[Kept]
 				class ConstructorWithParameterTarget
 				{
+					[Kept (By = Tool.Trimmer)]
 					private ConstructorWithParameterTarget () { }
 
 					[Kept]
@@ -208,27 +216,34 @@ namespace Mono.Linker.Tests.Cases.Reflection
 				[Kept]
 				class MethodWithParameterTarget
 				{
+					[Kept (By = Tool.Trimmer)]
 					private static void MethodWithOverloads () { }
 
 					[Kept]
 					private static void MethodWithOverloads (int i) { }
 
+					[Kept (By = Tool.Trimmer)]
 					private static void MethodWithGenericAndSpecificOverload (object o) { }
 
 					[Kept]
 					private static void MethodWithGenericAndSpecificOverload (string o) { }
 
+					[Kept (By = Tool.Trimmer)]
 					private static void MethodWithThreeInheritanceOverloads (SuperBase o) { }
 					[Kept]
 					private static void MethodWithThreeInheritanceOverloads (Base o) { }
+					[Kept (By = Tool.Trimmer)]
 					private static void MethodWithThreeInheritanceOverloads (Derived o) { }
 
+					[Kept (By = Tool.Trimmer)]
 					private static void MethodWithImperfectMatch (SuperBase o) { }
+					[Kept (By = Tool.Trimmer)]
 					private static void MethodWithImperfectMatch (Derived o) { }
 
 					[Kept]
 					private static string MoreParameters (string s, ref string sr, in string si) => s;
 
+					[Kept (By = Tool.Trimmer)]
 					private static string MoreParametersWithReturnValueMismatch (string s, ref string sr, in string si) => s;
 				}
 
@@ -343,27 +358,34 @@ namespace Mono.Linker.Tests.Cases.Reflection
 				[KeptMember (".ctor()")]
 				class MethodWithParameterTarget
 				{
+					[Kept (By = Tool.Trimmer)]
 					private void MethodWithOverloads () { }
 
 					[Kept]
 					private void MethodWithOverloads (int i) { }
 
+					[Kept (By = Tool.Trimmer)]
 					private void MethodWithGenericAndSpecificOverload (object o) { }
 
 					[Kept]
 					private void MethodWithGenericAndSpecificOverload (string o) { }
 
+					[Kept (By = Tool.Trimmer)]
 					private void MethodWithThreeInheritanceOverloads (SuperBase o) { }
 					[Kept]
 					private void MethodWithThreeInheritanceOverloads (Base o) { }
+					[Kept (By = Tool.Trimmer)]
 					private void MethodWithThreeInheritanceOverloads (Derived o) { }
 
+					[Kept (By = Tool.Trimmer)]
 					private void MethodWithImperfectMatch (SuperBase o) { }
+					[Kept (By = Tool.Trimmer)]
 					private void MethodWithImperfectMatch (Derived o) { }
 
 					[Kept]
 					private string MoreParameters (string s, ref string sr, in string si) => s;
 
+					[Kept (By = Tool.Trimmer)]
 					private string MoreParametersWithReturnValueMismatch (string s, ref string sr, in string si) => s;
 				}
 
@@ -419,6 +441,7 @@ namespace Mono.Linker.Tests.Cases.Reflection
 				[Kept]
 				class CustomModifiersTestTarget
 				{
+					[Kept (By = Tool.Trimmer)]
 					private static string _Ambiguous (delegate* unmanaged[Cdecl, MemberFunction]<void> fp) => nameof (CallConvCdecl);
 
 					[Kept]
@@ -453,8 +476,8 @@ namespace Mono.Linker.Tests.Cases.Reflection
 		[KeptBaseType (typeof (SuperBase), By = Tool.Trimmer)]
 		class Base : SuperBase { }
 
-		//[Kept]
-		//[KeptBaseType (typeof (Base))]
+		[Kept (By = Tool.Trimmer)] // NativeAOT doesn't preserve base type if it's not used anywhere
+		[KeptBaseType (typeof (Base), By = Tool.Trimmer)]
 		class Derived : Base { }
 	}
 }
