@@ -312,9 +312,9 @@ namespace Microsoft.Extensions.DependencyInjection
                 {
                     Type[]? typeArguments = KeyedImplementationFactory.GetType().GenericTypeArguments;
 
-                    Debug.Assert(typeArguments.Length == 2);
+                    Debug.Assert(typeArguments.Length == 3);
 
-                    return typeArguments[1];
+                    return typeArguments[2];
                 }
             }
 

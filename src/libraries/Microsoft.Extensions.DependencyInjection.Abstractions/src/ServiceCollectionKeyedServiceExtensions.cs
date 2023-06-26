@@ -476,7 +476,7 @@ namespace Microsoft.Extensions.DependencyInjection
         public static IServiceCollection AddKeyedSingleton<TService, TImplementation>(
             this IServiceCollection services,
             object serviceKey,
-            Func<IServiceProvider, TImplementation> implementationFactory)
+            Func<IServiceProvider, object, TImplementation> implementationFactory)
             where TService : class
             where TImplementation : class, TService
         {
