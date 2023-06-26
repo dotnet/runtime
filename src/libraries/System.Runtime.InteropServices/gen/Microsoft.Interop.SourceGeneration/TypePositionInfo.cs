@@ -66,6 +66,8 @@ namespace Microsoft.Interop
 
         public bool IsByRef => RefKind != RefKind.None;
 
+        public ScopedKind ScopedKind { get; init; } = ScopedKind.None;
+
         public ByValueContentsMarshalKind ByValueContentsMarshalKind { get; init; }
 
         public (Location? InLocation, Location? OutLocation) ByValueMarshalAttributeLocations { get; init; }
@@ -88,6 +90,7 @@ namespace Microsoft.Interop
                 RefKindSyntax = RefKindToSyntax(paramSymbol.RefKind),
                 ByValueContentsMarshalKind = byValueContentsMarshalKind,
                 ByValueMarshalAttributeLocations = (inLocation, outLocation)
+                ScopedKind = paramSymbol.ScopedKind
             };
 
             return typeInfo;

@@ -12,6 +12,8 @@ namespace Microsoft.Interop
     /// </summary>
     public class ByValueContentsMarshalKindValidator : IMarshallingGeneratorFactory
     {
+        private static readonly Forwarder s_forwarder = new();
+
         private readonly IMarshallingGeneratorFactory _inner;
 
         public ByValueContentsMarshalKindValidator(IMarshallingGeneratorFactory inner)
@@ -35,36 +37,27 @@ namespace Microsoft.Interop
 
             if (info.IsByRef && info.ByValueContentsMarshalKind != ByValueContentsMarshalKind.Default)
             {
-                return generator with
+                return ResolvedGenerator.ResolvedWithDiagnostics(s_forwarder, generator.Diagnostics.Add(new GeneratorDiagnostic.NotSupported(info, context)
                 {
-                    Diagnostics = generator.Diagnostics.Add(new GeneratorDiagnostic.NotSupported(info, context)
-                    {
-                        NotSupportedDetails = SR.InOutAttributeByRefNotSupported
-                    })
-                };
+                    NotSupportedDetails = SR.InOutAttributeByRefNotSupported
+                }));
             }
             else if (info.ByValueContentsMarshalKind == ByValueContentsMarshalKind.In)
             {
-                return generator with
+                return ResolvedGenerator.ResolvedWithDiagnostics(s_forwarder, generator.Diagnostics.Add(new GeneratorDiagnostic.NotSupported(info, context)
                 {
-                    Diagnostics = generator.Diagnostics.Add(new GeneratorDiagnostic.NotSupported(info, context)
-                    {
-                        NotSupportedDetails = SR.InAttributeNotSupportedWithoutOut
-                    })
-                };
+                    NotSupportedDetails = SR.InAttributeNotSupportedWithoutOut
+                }));
             }
             else if (info.ByValueContentsMarshalKind != ByValueContentsMarshalKind.Default)
             {
                 ByValueMarshalKindSupport support = generator.Generator.SupportsByValueMarshalKind(info.ByValueContentsMarshalKind, context);
                 if (support == ByValueMarshalKindSupport.NotSupported)
                 {
-                    return generator with
+                    return ResolvedGenerator.ResolvedWithDiagnostics(s_forwarder, generator.Diagnostics.Add(new GeneratorDiagnostic.NotSupported(info, context)
                     {
-                        Diagnostics = generator.Diagnostics.Add(new GeneratorDiagnostic.NotSupported(info, context)
-                        {
-                            NotSupportedDetails = SR.InOutAttributeMarshalerNotSupported
-                        })
-                    };
+                        NotSupportedDetails = SR.InOutAttributeMarshalerNotSupported
+                    }));
                 }
                 else if (support == ByValueMarshalKindSupport.Unnecessary)
                 {

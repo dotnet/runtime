@@ -49,25 +49,34 @@ struct Access
     unsigned     Offset;
     var_types    AccessType;
 
+    // Number of times we saw the access.
+    unsigned Count = 0;
+    // Number of times this is assigned from the result of a call. This
+    // includes being passed as the retbuf. These assignments cannot be
+    // decomposed and are handled via readback.
+    unsigned CountAssignedFromCall = 0;
+    // Number of times this is passed as a call arg. We insert writebacks
+    // before these.
+    unsigned CountCallArgs = 0;
+
     weight_t CountWtd                 = 0;
     weight_t CountAssignedFromCallWtd = 0;
     weight_t CountCallArgsWtd         = 0;
-    weight_t CountPassedAsRetbufWtd   = 0;
 
 #ifdef DEBUG
-    // Number of times we saw this access.
-    unsigned Count = 0;
     // Number of times this access is on the RHS of an assignment.
     unsigned CountAssignmentSource = 0;
     // Number of times this access is on the LHS of an assignment.
     unsigned CountAssignmentDestination = 0;
-    unsigned CountCallArgs              = 0;
     unsigned CountReturns               = 0;
-    unsigned CountPassedAsRetbuf        = 0;
+    // Number of times this is assigned by being passed as the retbuf.
+    // These assignments need a reabdack
+    unsigned CountPassedAsRetbuf = 0;
 
     weight_t CountAssignmentSourceWtd      = 0;
     weight_t CountAssignmentDestinationWtd = 0;
     weight_t CountReturnsWtd               = 0;
+    weight_t CountPassedAsRetbufWtd        = 0;
 #endif
 
     Access(unsigned offset, var_types accessType, ClassLayout* layout)
@@ -204,11 +213,10 @@ bool AggregateInfo::OverlappingReplacements(unsigned      offset,
 
 struct PrimitiveAccess
 {
+    unsigned  Count    = 0;
     weight_t  CountWtd = 0;
     unsigned  Offset;
     var_types AccessType;
-
-    INDEBUG(unsigned Count = 0);
 
     PrimitiveAccess(unsigned offset, var_types accessType) : Offset(offset), AccessType(accessType)
     {
@@ -272,25 +280,27 @@ public:
             access = &*m_accesses.insert(m_accesses.begin() + index, Access(offs, accessType, accessLayout));
         }
 
+        access->Count++;
         access->CountWtd += weight;
 
         if ((flags & AccessKindFlags::IsCallArg) != AccessKindFlags::None)
         {
+            access->CountCallArgs++;
             access->CountCallArgsWtd += weight;
         }
 
-        if ((flags & AccessKindFlags::IsCallRetBuf) != AccessKindFlags::None)
+        if ((flags & (AccessKindFlags::IsAssignedFromCall | AccessKindFlags::IsCallRetBuf)) != AccessKindFlags::None)
         {
-            access->CountPassedAsRetbufWtd += weight;
-        }
-
-        if ((flags & AccessKindFlags::IsAssignedFromCall) != AccessKindFlags::None)
-        {
+            access->CountAssignedFromCall++;
             access->CountAssignedFromCallWtd += weight;
         }
 
 #ifdef DEBUG
-        access->Count++;
+        if ((flags & AccessKindFlags::IsCallRetBuf) != AccessKindFlags::None)
+        {
+            access->CountPassedAsRetbuf++;
+            access->CountPassedAsRetbufWtd += weight;
+        }
 
         if ((flags & AccessKindFlags::IsAssignmentSource) != AccessKindFlags::None)
         {
@@ -302,16 +312,6 @@ public:
         {
             access->CountAssignmentDestination++;
             access->CountAssignmentDestinationWtd += weight;
-        }
-
-        if ((flags & AccessKindFlags::IsCallArg) != AccessKindFlags::None)
-        {
-            access->CountCallArgs++;
-        }
-
-        if ((flags & AccessKindFlags::IsCallRetBuf) != AccessKindFlags::None)
-        {
-            access->CountPassedAsRetbuf++;
         }
 
         if ((flags & AccessKindFlags::IsReturned) != AccessKindFlags::None)
@@ -407,7 +407,7 @@ public:
                 continue;
             }
 
-            if (!EvaluateReplacement(comp, lclNum, access, 0))
+            if (!EvaluateReplacement(comp, lclNum, access, 0, 0))
             {
                 continue;
             }
@@ -495,14 +495,14 @@ public:
             if (access == nullptr)
             {
                 Access fakeAccess(inducedAccess.Offset, inducedAccess.AccessType, nullptr);
-                if (!EvaluateReplacement(comp, lclNum, fakeAccess, inducedAccess.CountWtd))
+                if (!EvaluateReplacement(comp, lclNum, fakeAccess, inducedAccess.Count, inducedAccess.CountWtd))
                 {
                     continue;
                 }
             }
             else
             {
-                if (!EvaluateReplacement(comp, lclNum, *access, inducedAccess.CountWtd))
+                if (!EvaluateReplacement(comp, lclNum, *access, inducedAccess.Count, inducedAccess.CountWtd))
                 {
                     continue;
                 }
@@ -559,10 +559,13 @@ public:
     // Returns:
     //   True if we should promote this access and create a replacement; otherwise false.
     //
-    bool EvaluateReplacement(Compiler* comp, unsigned lclNum, const Access& access, weight_t inducedCountWtd)
+    bool EvaluateReplacement(
+        Compiler* comp, unsigned lclNum, const Access& access, unsigned inducedCount, weight_t inducedCountWtd)
     {
+        unsigned countOverlappedCallArg          = 0;
+        unsigned countOverlappedAssignedFromCall = 0;
+
         weight_t countOverlappedCallArgWtd          = 0;
-        weight_t countOverlappedRetbufsWtd          = 0;
         weight_t countOverlappedAssignedFromCallWtd = 0;
 
         bool overlap = false;
@@ -583,48 +586,75 @@ public:
                 return false;
             }
 
+            countOverlappedCallArg += otherAccess.CountCallArgs;
+            countOverlappedAssignedFromCall += otherAccess.CountAssignedFromCall;
+
             countOverlappedCallArgWtd += otherAccess.CountCallArgsWtd;
-            countOverlappedRetbufsWtd += otherAccess.CountPassedAsRetbufWtd;
             countOverlappedAssignedFromCallWtd += otherAccess.CountAssignedFromCallWtd;
         }
 
-        weight_t costWithout = 0;
-
         // We cost any normal access (which is a struct load or store) without promotion at 3 cycles.
-        costWithout += (access.CountWtd + inducedCountWtd) * 3;
+        const weight_t COST_STRUCT_ACCESS_CYCLES = 3;
+        // And at 4 bytes size
+        const weight_t COST_STRUCT_ACCESS_SIZE = 4;
+
+        weight_t costWithout = 0;
+        weight_t sizeWithout = 0;
+
+        costWithout += (access.CountWtd + inducedCountWtd) * COST_STRUCT_ACCESS_CYCLES;
+        sizeWithout += (access.Count + inducedCount) * COST_STRUCT_ACCESS_SIZE;
 
         weight_t costWith = 0;
+        weight_t sizeWith = 0;
 
         // For promoted accesses we expect these to turn into reg-reg movs (and in many cases be fully contained in the
         // parent).
         // We cost these at 0.5 cycles.
-        costWith += (access.CountWtd + inducedCountWtd) * 0.5;
+        const weight_t COST_REG_ACCESS_CYCLES = 0.5;
+        // And 2 byte size
+        const weight_t COST_REG_ACCESS_SIZE = 2;
+
+        costWith += (access.CountWtd + inducedCountWtd) * COST_REG_ACCESS_CYCLES;
+        sizeWith += (access.Count + inducedCount) * COST_REG_ACCESS_SIZE;
 
         // Now look at the overlapping struct uses that promotion will make more expensive.
 
+        unsigned   countReadBacks    = 0;
         weight_t   countReadBacksWtd = 0;
         LclVarDsc* lcl               = comp->lvaGetDesc(lclNum);
         // For parameters or OSR locals we always need one read back.
         if (lcl->lvIsParam || lcl->lvIsOSRLocal)
         {
+            countReadBacks++;
             countReadBacksWtd += comp->fgFirstBB->getBBWeight(comp);
         }
 
-        // If used as a retbuf we need a readback after.
-        countReadBacksWtd += countOverlappedRetbufsWtd;
-
-        // The same if the struct was assigned from a call, since we don't
-        // currently have any "forwarding" optimization for this case.
+        // If the struct is assigned from a call (either due to a multireg
+        // return or by being passed as the retbuffer) then we need a readback
+        // after.
+        //
+        // In the future we could allow multireg returns without a readback by
+        // a sort of forward substitution optimization in the backend.
         countReadBacksWtd += countOverlappedAssignedFromCallWtd;
+        countReadBacks += countOverlappedAssignedFromCall;
 
-        // A readback turns into a stack load that we costed at 3 above.
-        costWith += countReadBacksWtd * 3;
+        // A readback turns into a stack load.
+        costWith += countReadBacksWtd * COST_STRUCT_ACCESS_CYCLES;
+        sizeWith += countReadBacks * COST_STRUCT_ACCESS_SIZE;
 
         // Write backs with TYP_REFs when the base local is an implicit byref
         // involves checked write barriers, so they are very expensive. We cost that at 10 cycles.
+        const weight_t COST_WRITEBARRIER_CYCLES = 10;
+        const weight_t COST_WRITEBARRIER_SIZE   = 10;
+
         // TODO-CQ: This should be adjusted once we type implicit byrefs as TYP_I_IMPL.
         // Otherwise we cost it like a store to stack at 3 cycles.
-        weight_t writeBackCost = comp->lvaIsImplicitByRefLocal(lclNum) && (access.AccessType == TYP_REF) ? 10 : 3;
+        weight_t writeBackCost = comp->lvaIsImplicitByRefLocal(lclNum) && (access.AccessType == TYP_REF)
+                                     ? COST_WRITEBARRIER_CYCLES
+                                     : COST_STRUCT_ACCESS_CYCLES;
+        weight_t writeBackSize = comp->lvaIsImplicitByRefLocal(lclNum) && (access.AccessType == TYP_REF)
+                                     ? COST_WRITEBARRIER_SIZE
+                                     : COST_STRUCT_ACCESS_SIZE;
 
         // We write back before an overlapping struct use passed as an arg.
         // TODO-CQ: A store-forwarding optimization in lowering could get rid
@@ -640,7 +670,9 @@ public:
         // (Additionally, if it weren't we could teach the backend some
         // store-forwarding/forward sub to make the write backs "free".)
         weight_t countWriteBacksWtd = countOverlappedCallArgWtd;
+        unsigned countWriteBacks    = countOverlappedCallArg;
         costWith += countWriteBacksWtd * writeBackCost;
+        sizeWith += countWriteBacks * writeBackSize;
 
         // Overlapping assignments are decomposable so we don't cost them as
         // being more expensive than their unpromoted counterparts (i.e. we
@@ -660,14 +692,25 @@ public:
         // give a bonus to promoting remainders that may not have scalar uses
         // but will allow fully decomposing assignments away.
 
+        weight_t cycleImprovementPerInvoc = (costWithout - costWith) / comp->fgFirstBB->getBBWeight(comp);
+        weight_t sizeImprovement          = sizeWithout - sizeWith;
+
         JITDUMP("  Evaluating access %s @ %03u\n", varTypeName(access.AccessType), access.Offset);
         JITDUMP("    Single write-back cost: " FMT_WT "\n", writeBackCost);
         JITDUMP("    Write backs: " FMT_WT "\n", countWriteBacksWtd);
         JITDUMP("    Read backs: " FMT_WT "\n", countReadBacksWtd);
-        JITDUMP("    Cost with: " FMT_WT "\n", costWith);
-        JITDUMP("    Cost without: " FMT_WT "\n", costWithout);
+        JITDUMP("    Estimated cycle improvement: " FMT_WT " cycles per invocation\n", cycleImprovementPerInvoc);
+        JITDUMP("    Estimated size improvement: " FMT_WT " bytes\n", sizeImprovement);
 
-        if (costWith < costWithout)
+        // We allow X bytes of code size regressions for every cycle of
+        // estimated improvement. Note that generally both estimates agree on
+        // whether promotion is an improvement or regression, so this is really
+        // only for rare cases where we have many call arg uses in rarely
+        // executed blocks.
+        const weight_t ALLOWED_SIZE_REGRESSION_PER_CYCLE_IMPROVEMENT = 2;
+
+        if ((cycleImprovementPerInvoc > 0) &&
+            ((cycleImprovementPerInvoc * ALLOWED_SIZE_REGRESSION_PER_CYCLE_IMPROVEMENT) >= -sizeImprovement))
         {
             JITDUMP("  Promoting replacement\n\n");
             return true;
@@ -1905,52 +1948,8 @@ void ReplaceVisitor::StartStatement(Statement* stmt)
     m_madeChanges       = false;
     m_mayHaveForwardSub = false;
 
-    if (m_numPendingReadBacks == 0)
-    {
-        return;
-    }
-
-    // If we have pending readbacks then insert them as new statements for any
-    // local that the statement is using. We could leave this up to ReplaceLocal
-    // but do it here for three reasons:
-    // 1. For QMARKs we cannot actually leave it up to ReplaceLocal since the
-    // local may be conditionally executed
-    // 2. This allows forward-sub to kick in
-    // 3. Creating embedded stores in ReplaceLocal disables local copy prop for
-    //    that local (see ReplaceLocal).
-
-    for (GenTreeLclVarCommon* lcl : stmt->LocalsTreeList())
-    {
-        if (lcl->TypeIs(TYP_STRUCT))
-        {
-            continue;
-        }
-
-        AggregateInfo* agg = m_aggregates[lcl->GetLclNum()];
-        if (agg == nullptr)
-        {
-            continue;
-        }
-
-        size_t index = Promotion::BinarySearch<Replacement, &Replacement::Offset>(agg->Replacements, lcl->GetLclOffs());
-        if ((ssize_t)index < 0)
-        {
-            continue;
-        }
-
-        Replacement& rep = agg->Replacements[index];
-        if (rep.NeedsReadBack)
-        {
-            JITDUMP("Reading back replacement V%02u.[%03u..%03u) -> V%02u before [%06u]:\n", agg->LclNum, rep.Offset,
-                    rep.Offset + genTypeSize(rep.AccessType), rep.LclNum, Compiler::dspTreeID(stmt->GetRootNode()));
-
-            GenTree*   readBack = Promotion::CreateReadBack(m_compiler, agg->LclNum, rep);
-            Statement* stmt     = m_compiler->fgNewStmtFromTree(readBack);
-            DISPSTMT(stmt);
-            m_compiler->fgInsertStmtBefore(m_currentBlock, m_currentStmt, stmt);
-            ClearNeedsReadBack(rep);
-        }
-    }
+    InsertPreStatementWriteBacks();
+    InsertPreStatementReadBacks();
 }
 
 //------------------------------------------------------------------------
@@ -1969,7 +1968,7 @@ Compiler::fgWalkResult ReplaceVisitor::PostOrderVisit(GenTree** use, GenTree* us
 {
     GenTree* tree = *use;
 
-    use = InsertMidTreeReadBacksIfNecessary(use);
+    use = InsertMidTreeReadBacks(use);
 
     if (tree->OperIsStore())
     {
@@ -2065,7 +2064,162 @@ void ReplaceVisitor::ClearNeedsReadBack(Replacement& rep)
 }
 
 //------------------------------------------------------------------------
-// InsertMidTreeReadBacksIfNecessary:
+// InsertPreStatementReadBacks:
+//   Insert readbacks before starting the current statement.
+//
+void ReplaceVisitor::InsertPreStatementReadBacks()
+{
+    if (m_numPendingReadBacks <= 0)
+    {
+        return;
+    }
+
+    // If we have pending readbacks then insert them as new statements for any
+    // local that the statement is using. We could leave this up to ReplaceLocal
+    // but do it here for three reasons:
+    // 1. For QMARKs we cannot actually leave it up to ReplaceLocal since the
+    // local may be conditionally executed
+    // 2. This allows forward-sub to kick in
+    // 3. Creating embedded stores in ReplaceLocal disables local copy prop for
+    //    that local (see ReplaceLocal).
+
+    for (GenTreeLclVarCommon* lcl : m_currentStmt->LocalsTreeList())
+    {
+        if (lcl->TypeIs(TYP_STRUCT))
+        {
+            continue;
+        }
+
+        AggregateInfo* agg = m_aggregates[lcl->GetLclNum()];
+        if (agg == nullptr)
+        {
+            continue;
+        }
+
+        size_t index = Promotion::BinarySearch<Replacement, &Replacement::Offset>(agg->Replacements, lcl->GetLclOffs());
+        if ((ssize_t)index < 0)
+        {
+            continue;
+        }
+
+        Replacement& rep = agg->Replacements[index];
+        if (rep.NeedsReadBack)
+        {
+            JITDUMP("Reading back replacement V%02u.[%03u..%03u) -> V%02u before [%06u]:\n", agg->LclNum, rep.Offset,
+                    rep.Offset + genTypeSize(rep.AccessType), rep.LclNum,
+                    Compiler::dspTreeID(m_currentStmt->GetRootNode()));
+
+            GenTree*   readBack = Promotion::CreateReadBack(m_compiler, agg->LclNum, rep);
+            Statement* stmt     = m_compiler->fgNewStmtFromTree(readBack);
+            DISPSTMT(stmt);
+            m_compiler->fgInsertStmtBefore(m_currentBlock, m_currentStmt, stmt);
+            ClearNeedsReadBack(rep);
+        }
+    }
+}
+
+//------------------------------------------------------------------------
+// VisitOverlappingReplacements:
+//   Call a function for every replacement that overlaps a specified segment.
+//
+// Parameters:
+//   lcl  - The local
+//   offs - Start offset of the segment
+//   size - Size of the segment
+//   func - Callback
+//
+template <typename Func>
+void ReplaceVisitor::VisitOverlappingReplacements(unsigned lcl, unsigned offs, unsigned size, Func func)
+{
+    if (m_aggregates[lcl] == nullptr)
+    {
+        return;
+    }
+
+    jitstd::vector<Replacement>& replacements = m_aggregates[lcl]->Replacements;
+    size_t                       index = Promotion::BinarySearch<Replacement, &Replacement::Offset>(replacements, offs);
+
+    if ((ssize_t)index < 0)
+    {
+        index = ~index;
+        if ((index > 0) && replacements[index - 1].Overlaps(offs, size))
+        {
+            index--;
+        }
+    }
+
+    unsigned end = offs + size;
+    while ((index < replacements.size()) && (replacements[index].Offset < end))
+    {
+        Replacement& rep = replacements[index];
+        func(rep);
+
+        index++;
+    }
+}
+
+//------------------------------------------------------------------------
+// InsertPreStatementWriteBacks:
+//   Write back promoted fields for the upcoming statement if it may be
+//   beneficial to do so.
+//
+void ReplaceVisitor::InsertPreStatementWriteBacks()
+{
+    GenTree* rootNode = m_currentStmt->GetRootNode();
+    if ((rootNode->gtFlags & GTF_CALL) == 0)
+    {
+        return;
+    }
+
+    class Visitor : public GenTreeVisitor<Visitor>
+    {
+        ReplaceVisitor* m_replacer;
+
+    public:
+        enum
+        {
+            DoPreOrder = true,
+        };
+
+        Visitor(Compiler* comp, ReplaceVisitor* replacer) : GenTreeVisitor(comp), m_replacer(replacer)
+        {
+        }
+
+        fgWalkResult PreOrderVisit(GenTree** use, GenTree* user)
+        {
+            GenTree* node = *use;
+            if ((node->gtFlags & GTF_CALL) == 0)
+            {
+                return fgWalkResult::WALK_SKIP_SUBTREES;
+            }
+
+            if (node->IsCall())
+            {
+                GenTreeCall* call = node->AsCall();
+                for (CallArg& arg : call->gtArgs.Args())
+                {
+                    GenTree* node = arg.GetNode()->gtEffectiveVal();
+                    if (!node->TypeIs(TYP_STRUCT) || !node->OperIsLocalRead())
+                    {
+                        continue;
+                    }
+
+                    GenTreeLclVarCommon* lcl = node->AsLclVarCommon();
+                    m_replacer->WriteBackBeforeCurrentStatement(lcl->GetLclNum(), lcl->GetLclOffs(),
+                                                                lcl->GetLayout(m_compiler)->GetSize());
+                }
+            }
+
+            return fgWalkResult::WALK_CONTINUE;
+        }
+    };
+
+    Visitor visitor(m_compiler, this);
+    visitor.WalkTree(m_currentStmt->GetRootNodePointer(), nullptr);
+}
+
+//------------------------------------------------------------------------
+// InsertMidTreeReadBacks:
 //   If necessary, insert IR to read back all replacements before the specified use.
 //
 // Parameters:
@@ -2085,7 +2239,7 @@ void ReplaceVisitor::ClearNeedsReadBack(Replacement& rep)
 //   try-region (or filter block) and we find a tree that may throw it eagerly
 //   inserts pending readbacks.
 //
-GenTree** ReplaceVisitor::InsertMidTreeReadBacksIfNecessary(GenTree** use)
+GenTree** ReplaceVisitor::InsertMidTreeReadBacks(GenTree** use)
 {
     if ((m_numPendingReadBacks == 0) || !m_compiler->ehBlockHasExnFlowDsc(m_currentBlock))
     {
@@ -2262,9 +2416,9 @@ void ReplaceVisitor::ReplaceLocal(GenTree** use, GenTree* user)
 
         assert(effectiveUser->OperIs(GT_CALL, GT_RETURN));
         unsigned size = lcl->GetLayout(m_compiler)->GetSize();
-        WriteBackBefore(use, lclNum, lcl->GetLclOffs(), size);
+        WriteBackBeforeUse(use, lclNum, lcl->GetLclOffs(), size);
 
-        if ((m_aggregates[lclNum] != nullptr) && IsPromotedStructLocalDying(lcl))
+        if (IsPromotedStructLocalDying(lcl))
         {
             lcl->gtFlags |= GTF_VAR_DEATH;
             CheckForwardSubForLastUse(lclNum);
@@ -2318,8 +2472,8 @@ void ReplaceVisitor::ReplaceLocal(GenTree** use, GenTree* user)
     else if (rep.NeedsReadBack)
     {
         // This is an uncommon case -- typically all readbacks are handled in
-        // ReplaceVisitor::StartStatement. This case is still needed to handle
-        // the situation where the readback was marked previously in this tree
+        // InsertPreStatementReadBacks. This case is still needed to handle the
+        // situation where the readback was marked previously in this tree
         // (e.g. due to a COMMA).
 
         JITDUMP("  ..needs a read back\n");
@@ -2383,7 +2537,34 @@ void ReplaceVisitor::CheckForwardSubForLastUse(unsigned lclNum)
 }
 
 //------------------------------------------------------------------------
-// WriteBackBefore:
+// WriteBackBeforeCurrentStatement:
+//   Insert statements before the current that write back all overlapping
+//   replacements.
+//
+// Parameters:
+//   lcl  - The struct local
+//   offs - The starting offset into the struct local of the overlapping range to write back to
+//   size - The size of the overlapping range
+//
+void ReplaceVisitor::WriteBackBeforeCurrentStatement(unsigned lcl, unsigned offs, unsigned size)
+{
+    VisitOverlappingReplacements(lcl, offs, size, [this, lcl](Replacement& rep) {
+        if (!rep.NeedsWriteBack)
+        {
+            return;
+        }
+
+        GenTree*   readBack = Promotion::CreateWriteBack(m_compiler, lcl, rep);
+        Statement* stmt     = m_compiler->fgNewStmtFromTree(readBack);
+        JITDUMP("Writing back %s before " FMT_STMT "\n", rep.Description, stmt->GetID());
+        DISPSTMT(stmt);
+        m_compiler->fgInsertStmtBefore(m_currentBlock, m_currentStmt, stmt);
+        ClearNeedsWriteBack(rep);
+    });
+}
+
+//------------------------------------------------------------------------
+// WriteBackBeforeUse:
 //   Update the use with IR that writes back all necessary overlapping
 //   replacements into a struct local.
 //
@@ -2393,42 +2574,22 @@ void ReplaceVisitor::CheckForwardSubForLastUse(unsigned lclNum)
 //   offs - The starting offset into the struct local of the overlapping range to write back to
 //   size - The size of the overlapping range
 //
-void ReplaceVisitor::WriteBackBefore(GenTree** use, unsigned lcl, unsigned offs, unsigned size)
+void ReplaceVisitor::WriteBackBeforeUse(GenTree** use, unsigned lcl, unsigned offs, unsigned size)
 {
-    if (m_aggregates[lcl] == nullptr)
-    {
-        return;
-    }
-
-    jitstd::vector<Replacement>& replacements = m_aggregates[lcl]->Replacements;
-    size_t                       index = Promotion::BinarySearch<Replacement, &Replacement::Offset>(replacements, offs);
-
-    if ((ssize_t)index < 0)
-    {
-        index = ~index;
-        if ((index > 0) && replacements[index - 1].Overlaps(offs, size))
+    VisitOverlappingReplacements(lcl, offs, size, [this, &use, lcl](Replacement& rep) {
+        if (!rep.NeedsWriteBack)
         {
-            index--;
-        }
-    }
-
-    unsigned end = offs + size;
-    while ((index < replacements.size()) && (replacements[index].Offset < end))
-    {
-        Replacement& rep = replacements[index];
-        if (rep.NeedsWriteBack)
-        {
-            GenTreeOp* comma = m_compiler->gtNewOperNode(GT_COMMA, (*use)->TypeGet(),
-                                                         Promotion::CreateWriteBack(m_compiler, lcl, rep), *use);
-            *use = comma;
-            use  = &comma->gtOp2;
-
-            ClearNeedsWriteBack(rep);
-            m_madeChanges = true;
+            return;
         }
 
-        index++;
-    }
+        GenTreeOp* comma = m_compiler->gtNewOperNode(GT_COMMA, (*use)->TypeGet(),
+                                                     Promotion::CreateWriteBack(m_compiler, lcl, rep), *use);
+        *use = comma;
+        use  = &comma->gtOp2;
+
+        ClearNeedsWriteBack(rep);
+        m_madeChanges = true;
+    });
 }
 
 //------------------------------------------------------------------------
@@ -2578,9 +2739,10 @@ PhaseStatus Promotion::Run()
 
         for (Statement* stmt : bb->Statements())
         {
+            replacer.StartStatement(stmt);
+
             DISPSTMT(stmt);
 
-            replacer.StartStatement(stmt);
             replacer.WalkTree(stmt->GetRootNodePointer(), nullptr);
 
             if (replacer.MadeChanges())
