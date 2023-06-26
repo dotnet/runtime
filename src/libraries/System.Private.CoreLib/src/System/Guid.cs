@@ -49,39 +49,44 @@ namespace System
         }
 
         // Creates a new guid from a read-only span.
-        public Guid(ReadOnlySpan<byte> b) : this(b, false) { }
+        public Guid(ReadOnlySpan<byte> b)
+        {
+            if (b.Length != 16)
+            {
+                ThrowGuidArrayCtorArgumentException();
+            }
+
+            this = Unsafe.As<byte, Guid>(ref MemoryMarshal.GetReference(b));
+
+            if (!BitConverter.IsLittleEndian)
+            {
+                _a = BinaryPrimitives.ReverseEndianness(_a);
+                _b = BinaryPrimitives.ReverseEndianness(_b);
+                _c = BinaryPrimitives.ReverseEndianness(_c);
+            }
+        }
 
         public Guid(ReadOnlySpan<byte> b, bool bigEndian)
         {
             if (b.Length != 16)
             {
-                ThrowArgumentException();
+                ThrowGuidArrayCtorArgumentException();
             }
 
-            if (BitConverter.IsLittleEndian != bigEndian)
+            this = Unsafe.As<byte, Guid>(ref MemoryMarshal.GetReference(b));
+
+            if (BitConverter.IsLittleEndian == bigEndian)
             {
-                this = MemoryMarshal.Read<Guid>(b);
-                return;
+                _a = BinaryPrimitives.ReverseEndianness(_a);
+                _b = BinaryPrimitives.ReverseEndianness(_b);
+                _c = BinaryPrimitives.ReverseEndianness(_c);
             }
+        }
 
-            // slower path for ReverseEndianness:
-            _k = b[15];  // hoist bounds checks
-            _a = BinaryPrimitives.ReverseEndianness(MemoryMarshal.Read<int>(b));
-            _b = BinaryPrimitives.ReverseEndianness(MemoryMarshal.Read<short>(b.Slice(4)));
-            _c = BinaryPrimitives.ReverseEndianness(MemoryMarshal.Read<short>(b.Slice(6)));
-            _d = b[8];
-            _e = b[9];
-            _f = b[10];
-            _g = b[11];
-            _h = b[12];
-            _i = b[13];
-            _j = b[14];
-
-            [StackTraceHidden]
-            static void ThrowArgumentException()
-            {
-                throw new ArgumentException(SR.Format(SR.Arg_GuidArrayCtor, "16"), nameof(b));
-            }
+        [StackTraceHidden]
+        private static void ThrowGuidArrayCtorArgumentException()
+        {
+            throw new ArgumentException(SR.Format(SR.Arg_GuidArrayCtor, "16"), "b");
         }
 
         [CLSCompliant(false)]
@@ -852,14 +857,7 @@ namespace System
         public byte[] ToByteArray(bool bigEndian)
         {
             var g = new byte[16];
-            if (BitConverter.IsLittleEndian != bigEndian)
-            {
-                MemoryMarshal.TryWrite(g, ref Unsafe.AsRef(in this));
-            }
-            else
-            {
-                TryWriteBytes(g, bigEndian, out _);
-            }
+            TryWriteBytes(g, bigEndian, out _);
             return g;
         }
 
@@ -869,40 +867,21 @@ namespace System
         // Returns whether bytes are successfully written to given span.
         public bool TryWriteBytes(Span<byte> destination, bool bigEndian, out int bytesWritten)
         {
-            if (BitConverter.IsLittleEndian != bigEndian)
-            {
-                bool result = MemoryMarshal.TryWrite(destination, ref Unsafe.AsRef(in this));
-                bytesWritten = result ? 16 : 0;
-                return result;
-            }
-
-            // slower path for ReverseEndianness
             if (destination.Length < 16)
             {
                 bytesWritten = 0;
                 return false;
             }
 
-            destination[15] = _k; // hoist bounds checks
+            ref Guid guid = ref Unsafe.As<byte, Guid>(ref MemoryMarshal.GetReference(destination));
+            guid = this;
+
+            if (BitConverter.IsLittleEndian == bigEndian)
             {
-                int temp = BinaryPrimitives.ReverseEndianness(_a);
-                MemoryMarshal.Write(destination, ref temp);
+                Unsafe.AsRef(in guid._a) = BinaryPrimitives.ReverseEndianness(guid._a);
+                Unsafe.AsRef(in guid._b) = BinaryPrimitives.ReverseEndianness(guid._b);
+                Unsafe.AsRef(in guid._c) = BinaryPrimitives.ReverseEndianness(guid._c);
             }
-            {
-                short temp = BinaryPrimitives.ReverseEndianness(_b);
-                MemoryMarshal.Write(destination.Slice(4), ref temp);
-            }
-            {
-                short temp = BinaryPrimitives.ReverseEndianness(_c);
-                MemoryMarshal.Write(destination.Slice(6), ref temp);
-            }
-            destination[8] = _d;
-            destination[9] = _e;
-            destination[10] = _f;
-            destination[11] = _g;
-            destination[12] = _h;
-            destination[13] = _i;
-            destination[14] = _j;
 
             bytesWritten = 16;
             return true;
