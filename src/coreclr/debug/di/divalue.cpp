@@ -1250,7 +1250,7 @@ HRESULT CordbReferenceValue::Build(CordbAppDomain *          appdomain,
     HRESULT hr = S_OK;
 
     // We can find the AD from an object handle (but not a normal object), so the AppDomain may
-    // be NULL if if it's an OH.
+    // be NULL if it's an OH.
     //_ASSERTE((appdomain != NULL) || objectRefsInHandles);
 
     // A reference, possibly to an object or value class

@@ -645,7 +645,7 @@ namespace System.Transactions.Oletx
                 // Connect this object with the OutcomeEnlistment.
                 InternalClone = new OletxTransaction( this );
 
-                // We have have been created without an outcome enlistment if it was too late to create
+                // We have been created without an outcome enlistment if it was too late to create
                 // a clone from the ITransactionNative that we were created from.
                 if (_outcomeEnlistment != null)
                 {

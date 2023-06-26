@@ -781,7 +781,7 @@ namespace System.Data.Common
         // dangerous delegate around IDataInitialize::GetDataSource (4th vtable entry)
         [SuppressUnmanagedCodeSecurity]
         internal unsafe delegate System.Data.OleDb.OleDbHResult IDataInitializeGetDataSource(
-                IntPtr pThis, // first parameter is always the 'this' value, must use use result from QI
+                IntPtr pThis, // first parameter is always the 'this' value, must use result from QI
                 IntPtr pUnkOuter,
                 int dwClsCtx,
                 char* pwszInitializationString,
@@ -791,12 +791,12 @@ namespace System.Data.Common
         // dangerous wrapper around IDBInitialize::Initialize (4th vtable entry)
         [SuppressUnmanagedCodeSecurity]
         internal delegate System.Data.OleDb.OleDbHResult IDBInitializeInitialize(
-                IntPtr pThis); // first parameter is always the 'this' value, must use use result from QI
+                IntPtr pThis); // first parameter is always the 'this' value, must use result from QI
 
         // dangerous wrapper around IDBCreateSession::CreateSession (4th vtable entry)
         [SuppressUnmanagedCodeSecurity]
         internal unsafe delegate System.Data.OleDb.OleDbHResult IDBCreateSessionCreateSession(
-                IntPtr pThis, // first parameter is always the 'this' value, must use use result from QI
+                IntPtr pThis, // first parameter is always the 'this' value, must use result from QI
                 IntPtr pUnkOuter,
                 Guid* riid,
                 IntPtr* ppDBSession);
@@ -804,7 +804,7 @@ namespace System.Data.Common
         // dangerous wrapper around IDBCreateCommand::CreateCommand (4th vtable entry)
         [SuppressUnmanagedCodeSecurity]
         internal unsafe delegate System.Data.OleDb.OleDbHResult IDBCreateCommandCreateCommand(
-                IntPtr pThis, // first parameter is always the 'this' value, must use use result from QI
+                IntPtr pThis, // first parameter is always the 'this' value, must use result from QI
                 IntPtr pUnkOuter,
                 Guid* riid,
                 IntPtr* ppCommand);

@@ -111,7 +111,7 @@ namespace System.Reflection
         public override Type UnderlyingSystemType => _unmodifiedType;
 
         // Modified types do not support Equals. That would need to include custom modifiers and any parameterized types recursively.
-        // UnderlyingSystemType.Equals() should should be used if basic equality is necessary.
+        // UnderlyingSystemType.Equals() should be used if basic equality is necessary.
         public override bool Equals([NotNullWhen(true)] object? obj) => throw new NotSupportedException(SR.NotSupported_ModifiedType);
         public override bool Equals(Type? other) => throw new NotSupportedException(SR.NotSupported_ModifiedType);
         public override int GetHashCode() => throw new NotSupportedException(SR.NotSupported_ModifiedType);

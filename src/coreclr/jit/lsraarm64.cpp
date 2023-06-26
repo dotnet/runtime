@@ -970,7 +970,7 @@ int LinearScan::BuildNode(GenTree* tree)
             }
 
             // For ARMv8 exclusives the lifetime of the addr and data must be extended because
-            // it may be used used multiple during retries
+            // it may be used multiple during retries
 
             // For ARMv8.1 atomic cas the lifetime of the addr and data must be extended to prevent
             // them being reused as the target register which must be destroyed early
@@ -984,7 +984,7 @@ int LinearScan::BuildNode(GenTree* tree)
                 RefPosition* comparandUse = BuildUse(tree->AsCmpXchg()->gtOpComparand);
 
                 // For ARMv8 exclusives the lifetime of the comparand must be extended because
-                // it may be used used multiple during retries
+                // it may be used multiple during retries
                 if (!compiler->compOpportunisticallyDependsOn(InstructionSet_Atomics))
                 {
                     setDelayFree(comparandUse);
@@ -1031,7 +1031,7 @@ int LinearScan::BuildNode(GenTree* tree)
             }
 
             // For ARMv8 exclusives the lifetime of the addr and data must be extended because
-            // it may be used used multiple during retries
+            // it may be used multiple during retries
             if (!compiler->compOpportunisticallyDependsOn(InstructionSet_Atomics))
             {
                 // Internals may not collide with target

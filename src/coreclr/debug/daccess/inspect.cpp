@@ -3555,7 +3555,7 @@ ClrDataTypeInstance::GetDefinition(
             // Instead, just use the same type handle.
             // XXX Microsoft - Generics issues?
 
-            // Question - what does the GetCl return return here? The underlying element type?
+            // Question - what does the GetCl return here? The underlying element type?
             // If so, we are lossing information.
             //
             defType = m_typeHandle;

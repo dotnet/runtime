@@ -1099,7 +1099,7 @@ namespace System.Diagnostics.Tests
             const string fileExtension = ".dotnetRuntimeTestExtension";
             // associate Notepad with the new extension
             FileAssociations.EnsureAssociationSet(fileExtension, "Used For Testing ShellExecute", "notepad.exe", "Notepad");
-            // from here we can try to open with with given extension and be sure that Notepad is going to open it (not other text file editor like Notepad++)
+            // from here we can try to open with the given extension and be sure that Notepad is going to open it (not other text file editor like Notepad++)
 
             string tempFile = GetTestFilePath() + fileExtension;
             File.WriteAllText(tempFile, $"StartInfo_TextFile_ShellExecute");

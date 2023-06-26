@@ -873,7 +873,7 @@ void ConfigMethodRange::InitRanges(const WCHAR* rangeStr, unsigned capacity)
         lastRange++;
     }
 
-    // If we didn't parse the full range string, note index of the the
+    // If we didn't parse the full range string, note index of the
     // first bad char.
     if ((m_badChar != 0) && (*p != 0))
     {

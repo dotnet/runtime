@@ -1793,7 +1793,7 @@ namespace System.Net.Http
             // If the caller provided buffer, and thus the amount of data desired to be read,
             // is larger than the internal buffer, there's no point going through the internal
             // buffer, so just do an unbuffered read.
-            // Also avoid avoid using the internal buffer if the user requested a zero-byte read to allow
+            // Also avoid using the internal buffer if the user requested a zero-byte read to allow
             // underlying streams to efficiently handle such a read (e.g. SslStream defering buffer allocation).
             return destination.Length >= _readBuffer.Capacity || destination.Length == 0 ?
                 ReadAsync(destination) :

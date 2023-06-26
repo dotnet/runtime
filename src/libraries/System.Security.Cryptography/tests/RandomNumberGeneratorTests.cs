@@ -852,7 +852,7 @@ namespace System.Security.Cryptography.Tests
 
         public static IEnumerable<object[]> GetHexStringLengths()
         {
-            // These lengths exercise various aspects of the the hex generator.
+            // These lengths exercise various aspects of the hex generator.
             // Fill an individual character (I) if the length is odd.
             // Fill the remaining in block (B) sizes of 64 bytes, or 128 hex characters.
 

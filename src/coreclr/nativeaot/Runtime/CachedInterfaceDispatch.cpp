@@ -118,7 +118,7 @@ static void * UpdatePointerPairAtomically(void * pPairLocation,
     if (iUpdatedOldValue == iOldValue)
     {
         // Successful update. Return the previous value of the second pointer. For cache entry updates
-        // (fFailOnNonNull == true) this is guaranteed to be NULL in this case and the result being being
+        // (fFailOnNonNull == true) this is guaranteed to be NULL in this case and the result being
         // NULL in the success case is all the caller cares about. For indirection cell updates the second
         // pointer represents the old cache and the caller needs this data so they can schedule the cache
         // for deletion once it becomes safe to do so.

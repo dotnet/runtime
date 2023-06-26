@@ -1606,7 +1606,7 @@ namespace System
                 return (exponent, mantissa);
             }
 
-            // usually, we round *up*, but if we fall right in between and and we have an
+            // usually, we round *up*, but if we fall right in between and we have an
             // even basis, we need to round down
             // We are only concerned with the cases where 5**q fits in single 64-bit word.
             if ((product.low <= 1) && (q >= info.MinExponentRoundToEven) && (q <= info.MaxExponentRoundToEven) &&

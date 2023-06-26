@@ -985,7 +985,7 @@ insGroup* emitter::emitSavIG(bool emitAdd)
 
     if (!emitAdd)
     {
-        // Update the previous recorded live GC ref sets, but not if if we are
+        // Update the previous recorded live GC ref sets, but not if we are
         // starting an "overflow" buffer. Note that this is only used to
         // determine whether we need to store or not store the GC ref sets for
         // the next IG, which is dependent on exactly what the state of the

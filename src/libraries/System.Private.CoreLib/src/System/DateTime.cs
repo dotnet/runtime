@@ -1970,7 +1970,7 @@ namespace System
         }
 
         // Returns a string array containing all of the date and time options for the
-        // given format format and current culture.  The strings returned are properly formatted date and
+        // given format and current culture.  The strings returned are properly formatted date and
         // time strings for the current instance of DateTime.
         public string[] GetDateTimeFormats(char format)
         {
@@ -1978,7 +1978,7 @@ namespace System
         }
 
         // Returns a string array containing all of the date and time options for the
-        // given format format and given culture.  The strings returned are properly formatted date and
+        // given format and given culture.  The strings returned are properly formatted date and
         // time strings for the current instance of DateTime.
         public string[] GetDateTimeFormats(char format, IFormatProvider? provider)
         {

@@ -360,7 +360,7 @@ namespace Microsoft.Interop
             }
 
             // Due to how the source generator driver processes the input item tables and our limitation that methods on COM interfaces can only be defined in a single partial definition of the type,
-            // we can guarantee that, if the interface contexts are in order of I1, I2, I3, I4..., then then method contexts are ordered as follows:
+            // we can guarantee that, if the interface contexts are in order of I1, I2, I3, I4..., then method contexts are ordered as follows:
             // - I1.M1
             // - I1.M2
             // - I1.M3

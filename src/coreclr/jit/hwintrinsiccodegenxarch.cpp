@@ -1920,7 +1920,7 @@ void CodeGen::genAvxFamilyIntrinsic(GenTreeHWIntrinsic* node)
             emitAttr    kmovAttr = EA_4BYTE;
 
             // TODO-XARCH-AVX512 note that this type/kmov combination assumes 512-bit vector types but would change
-            // if used for other vector lengths, i.e., TYPE_BYTE requires kmovq for for 512-bit vector, but kmovd
+            // if used for other vector lengths, i.e., TYPE_BYTE requires kmovq for 512-bit vector, but kmovd
             // for 256-bit vector.
             switch (baseType)
             {

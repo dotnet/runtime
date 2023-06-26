@@ -140,7 +140,7 @@ namespace System.Net.Http
         // to avoid triggering the server's PING flood protection which may result in an unexpected GOAWAY.
         // With most servers we are fine to send PINGs, as long as we are reading their data, this rule is well formalized for gRPC:
         // https://github.com/grpc/proposal/blob/master/A8-client-side-keepalive.md
-        // As a rule of thumb, we can send send a PING whenever we receive DATA or HEADERS, however, there are some servers which allow receiving only
+        // As a rule of thumb, we can send a PING whenever we receive DATA or HEADERS, however, there are some servers which allow receiving only
         // a limited amount of PINGs within a given timeframe.
         // To deal with the conflicting requirements:
         // - We send an initial burst of 'InitialBurstCount' PINGs, to get a relatively good estimation fast

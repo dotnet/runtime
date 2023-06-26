@@ -4812,7 +4812,7 @@ public:
     // Create a type from metadata
     static HRESULT SigToType(CordbModule * pModule, SigParser * pSigParser, const Instantiation * pInst, CordbType ** ppResultType);
 
-    // Create a type from from the data received from the left-side
+    // Create a type from the data received from the left-side
     static HRESULT TypeDataToType(CordbAppDomain *appdomain, DebuggerIPCE_ExpandedTypeData *data, CordbType **pRes);
     static HRESULT TypeDataToType(CordbAppDomain *appdomain, DebuggerIPCE_BasicTypeData *data, CordbType **pRes);
     static HRESULT InstantiateFromTypeHandle(CordbAppDomain * appdomain,

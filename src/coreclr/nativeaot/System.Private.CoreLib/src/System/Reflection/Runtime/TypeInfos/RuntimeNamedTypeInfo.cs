@@ -161,7 +161,7 @@ namespace System.Reflection.Runtime.TypeInfos
         // Default implementation returns null which causes the Declared*** properties to return no members.
         //
         // Note that this does not apply to DeclaredNestedTypes. Nested types and their containers have completely separate generic instantiation environments
-        // (despite what C# might lead you to think.) Constructed generic types return the exact same same nested types that its generic type definition does
+        // (despite what C# might lead you to think.) Constructed generic types return the exact same nested types that its generic type definition does
         // - i.e. their DeclaringTypes refer back to the generic type definition, not the constructed generic type.)
         //
         // Note also that we cannot use this anchoring concept for base types because of generic parameters. Generic parameters return

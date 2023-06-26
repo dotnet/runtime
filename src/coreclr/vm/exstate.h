@@ -238,7 +238,7 @@ private:
                         Thread*                         pThread);
 
     friend class Thread;
-    // It it the following method that needs to be a friend.  But the prototype pulls in a lot more stuff,
+    // It is the following method that needs to be a friend.  But the prototype pulls in a lot more stuff,
     //  so just make the Thread class a friend.
     // friend StackWalkAction Thread::StackWalkFramesEx(PREGDISPLAY pRD, PSTACKWALKFRAMESCALLBACK pCallback,
     //                 VOID *pData, unsigned flags, Frame *pStartFrame);

@@ -134,7 +134,7 @@ BOOL ClrVirtualProtect(LPVOID lpAddress, SIZE_T dwSize, DWORD flNewProtect, PDWO
     //
     // Below, we double check that:
     //
-    // 1) the address being protected does not lie in the region of of the UEF.
+    // 1) the address being protected does not lie in the region of the UEF.
     // 2) the section after UEF is not having the same memory protection as UEF section.
     //
     // We assert if either of the two conditions above are true.

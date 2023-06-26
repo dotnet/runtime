@@ -1157,7 +1157,7 @@ StackWalkAction TrackUMChain(CrawlFrame *pCF, DebuggerFrameData *d)
         // This check is probably unnecessary.  The client of the debugger stackwalker should make
         // the decision themselves as to what to do with the UM chain callbacks.
         //
-        // -- INCORRECT SEE SEE "CORRECTION" BELOW --
+        // -- INCORRECT SEE "CORRECTION" BELOW --
         // Currently, both
         // ControllerStackInfo and InterceptorStackInfo ignore UM chains completely anyway.
         // (For an example, refer to the cctor example in the previous comment.)

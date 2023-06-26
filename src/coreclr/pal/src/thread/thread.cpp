@@ -641,7 +641,7 @@ CorUnix::InternalCreateThread(
             // Adjust the stack size to a minimum value that is likely to be accepted by pthread_attr_setstacksize(). If this
             // function fails, typically the caller will end up throwing OutOfMemoryException under the assumption that the
             // requested stack size is too large or the system does not have sufficient memory to create a thread. Try to
-            // prevent failing just just because the stack size value is too low.
+            // prevent failing just because the stack size value is too low.
             alignedStackSize = MinStackSize;
         }
 

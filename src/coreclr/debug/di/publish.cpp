@@ -716,7 +716,7 @@ HRESULT CorpubProcess::EnumAppDomains(ICorPublishAppDomainEnum **ppIEnum)
     }
     _ASSERTE(pADI != NULL);
 
-    // Collect all the AppDomain info info a list of CorpubAppDomains
+    // Collect all the AppDomain info into a list of CorpubAppDomains
     for (i = 0; i < tempBlock.m_iTotalSlots; i++)
     {
         if (!pADI[i].IsEmpty())

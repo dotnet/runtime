@@ -215,14 +215,14 @@ class LclSsaVarDsc
     // The SSA number associated with the previous definition for partial (GTF_USEASG) defs.
     unsigned m_useDefSsaNum = SsaConfig::RESERVED_SSA_NUM;
     // Number of uses of this SSA def (may be an over-estimate).
-    // May not be accurate for for promoted fields.
+    // May not be accurate for promoted fields.
     unsigned short m_numUses = 0;
     // True if there may be phi args uses of this def
-    // May not be accurate for for promoted fields.
+    // May not be accurate for promoted fields.
     // (false implies all uses are non-phi).
     bool m_hasPhiUse = false;
     // True if there may be uses of the def in a different block.
-    // May not be accurate for for promoted fields.
+    // May not be accurate for promoted fields.
     bool m_hasGlobalUse = false;
 
 public:
@@ -5267,7 +5267,7 @@ public:
 protected:
     bool fgReachable(BasicBlock* b1, BasicBlock* b2); // Returns true if block b1 can reach block b2
 
-    // Compute immediate dominators, the dominator tree and and its pre/post-order travsersal numbers.
+    // Compute immediate dominators, the dominator tree and its pre/post-order travsersal numbers.
     void fgComputeDoms();
 
     void fgCompDominatedByExceptionalEntryBlocks();

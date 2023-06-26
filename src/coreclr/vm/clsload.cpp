@@ -4592,7 +4592,7 @@ BOOL ClassLoader::CanAccessClass(                   // True if access is legal, 
             break;
         case tdNestedFamORAssem:
             // If we can access the class because we have assembly or friend access, we have satisfied the
-            // FamORAssem accessibility, so we we can simplify it down to public. Otherwise we require that
+            // FamORAssem accessibility, so we can simplify it down to public. Otherwise we require that
             // family access be allowed to grant access.
         case tdNestedFamANDAssem:
             // If we don't grant assembly or friend access to the target class, then there is no way we

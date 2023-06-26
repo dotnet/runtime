@@ -12,7 +12,7 @@ using System.Diagnostics.CodeAnalysis;
 namespace System.Data
 {
     /// <summary>
-    /// Represents a bindable, queryable DataView of DataRow, that can be created from from LINQ queries over DataTable
+    /// Represents a bindable, queryable DataView of DataRow, that can be created from LINQ queries over DataTable
     /// and from DataTable.
     /// </summary>
     internal sealed class LinqDataView : DataView, IBindingList, IBindingListView

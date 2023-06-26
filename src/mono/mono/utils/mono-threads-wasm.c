@@ -65,7 +65,7 @@ wasm_get_stack_size (void)
 	g_assert (data_end > 0);
 	g_assert (heap_base > data_end);
 
-	// this is the max available stack size size,
+	// this is the max available stack size,
 	// return a 16-byte aligned smaller size
 	return max_stack_size & ~0xF;
 }

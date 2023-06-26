@@ -3865,7 +3865,7 @@ void Compiler::compSetOptimizationLevel()
         theMinOptsValue = true;
     }
     // For PREJIT we never drop down to MinOpts
-    // unless unless CLFLG_MINOPT is set
+    // unless CLFLG_MINOPT is set
     else if (!opts.jitFlags->IsSet(JitFlags::JIT_FLAG_PREJIT))
     {
         if ((unsigned)JitConfig.JitMinOptsCodeSize() < info.compILCodeSize)
@@ -3907,7 +3907,7 @@ void Compiler::compSetOptimizationLevel()
 #else  // !DEBUG
     // Retail check if we should force Minopts due to the complexity of the method
     // For PREJIT we never drop down to MinOpts
-    // unless unless CLFLG_MINOPT is set
+    // unless CLFLG_MINOPT is set
     if (!theMinOptsValue && !opts.jitFlags->IsSet(JitFlags::JIT_FLAG_PREJIT) &&
         ((DEFAULT_MIN_OPTS_CODE_SIZE < info.compILCodeSize) || (DEFAULT_MIN_OPTS_INSTR_COUNT < opts.instrCount) ||
          (DEFAULT_MIN_OPTS_BB_COUNT < fgBBcount) || (DEFAULT_MIN_OPTS_LV_NUM_COUNT < lvaCount) ||

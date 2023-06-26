@@ -1515,7 +1515,7 @@ bool SystemDomain::IsReflectionInvocationMethod(MethodDesc* pMeth)
     if (pMeth->IsLCGMethod())
     {
         // Even if a user-created DynamicMethod uses the same naming convention, it will likely not
-        // get here since since DynamicMethods by default are created in a special (non-system) module.
+        // get here since DynamicMethods by default are created in a special (non-system) module.
         // If this is not sufficient for conflict prevention, we can create a new private module.
         return (strncmp(pMeth->GetName(), "InvokeStub_", ARRAY_SIZE("InvokeStub_") - 1) == 0);
     }

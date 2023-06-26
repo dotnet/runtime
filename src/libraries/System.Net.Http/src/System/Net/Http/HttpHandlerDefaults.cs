@@ -6,7 +6,7 @@ using System.Threading;
 namespace System.Net.Http
 {
     /// <summary>
-    /// Additional default values used used only in this assembly.
+    /// Additional default values used only in this assembly.
     /// </summary>
     internal static partial class HttpHandlerDefaults
     {

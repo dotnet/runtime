@@ -7209,7 +7209,7 @@ void Debugger::EnsureDebuggerAttached(Thread * pThread, EXCEPTION_POINTERS * pEx
     // Note that this isn't all that bad because if the debugger hasn't actually detached
     // in the middle then the second jit attach will complete almost instantly and thread 2
     // is unblocked. If the debugger did detach in the middle then it seems reasonable for
-    // thread 2 to continue to wait until until the debugger is attached once again for the
+    // thread 2 to continue to wait until the debugger is attached once again for the
     // second attach. Basically if one jit attach completes and restarts fast enough it might
     // just go unnoticed by some threads and it will be as if it never happened. Doesn't seem
     // that bad as long as we know another jit attach is again in progress.

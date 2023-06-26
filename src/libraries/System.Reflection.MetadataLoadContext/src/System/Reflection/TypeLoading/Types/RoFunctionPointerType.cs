@@ -109,7 +109,7 @@ namespace System.Reflection.TypeLoading
         public sealed override bool Equals([NotNullWhen(true)] Type? type) => Equals((object?)type);
         public sealed override bool Equals([NotNullWhen(true)] object? obj)
         {
-            // Treat as an unmodified type; do not not include the modified type values including
+            // Treat as an unmodified type; do not include the modified type values including
             // calling conventions and custom modifiers.
 
             if (obj is not RoFunctionPointerType other)

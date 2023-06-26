@@ -41,7 +41,7 @@ namespace Wasm.Build.Tests
             string mainJsPath = Path.Combine(_projectDir!, "main.js");
             string mainJsContent = File.ReadAllText(mainJsPath);
 
-            // .withExitOnUnhandledError() is available only only >net7.0
+            // .withExitOnUnhandledError() is available only >net7.0
             mainJsContent = mainJsContent.Replace(".create()",
                     targetFramework == "net8.0"
                         ? ".withConsoleForwarding().withElementOnExit().withExitCodeLogging().withExitOnUnhandledError().create()"

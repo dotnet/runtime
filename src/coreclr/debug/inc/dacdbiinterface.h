@@ -2767,7 +2767,7 @@ public:
     {
     public:
         //
-        // Store a copy of of the provided string.
+        // Store a copy of the provided string.
         //
         // Arguments:
         //     psz - The null-terminated unicode string to copy.

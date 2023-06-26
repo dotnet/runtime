@@ -7153,7 +7153,7 @@ void Compiler::impDevirtualizeCall(GenTreeCall*            call,
                     // So, revise the box to simply create a local copy, use the address of that copy
                     // as the this pointer, and update the entry point to the unboxed entry.
                     //
-                    // Ideally, we then inline the boxed method and and if it turns out not to modify
+                    // Ideally, we then inline the boxed method and if it turns out not to modify
                     // the copy, we can undo the copy too.
                     GenTree* localCopyThis = nullptr;
 

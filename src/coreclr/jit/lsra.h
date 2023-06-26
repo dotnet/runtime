@@ -1692,7 +1692,7 @@ private:
     // Locals that are currently placed in registers via PUTARG_REG. These
     // locals are available due to the special PUTARG treatment, and we keep
     // track of them between the PUTARG_REG and CALL to ensure we keep the
-    // register they are placed in in the preference set.
+    // register they are placed in the preference set.
     PlacedLocal placedArgLocals[REG_COUNT];
     size_t      numPlacedArgLocals;
 

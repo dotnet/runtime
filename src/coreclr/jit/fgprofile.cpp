@@ -3802,7 +3802,7 @@ void EfficientEdgeCountReconstructor::PropagateEdges(BasicBlock* block, BlockInf
         return;
     }
 
-    // We may not have have the same number of model edges and flow edges.
+    // We may not have the same number of model edges and flow edges.
     //
     // This can happen because bome BBJ_LEAVE blocks may have been missed during
     // our spanning tree walk since we don't know where all the finallies can return

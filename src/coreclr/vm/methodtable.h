@@ -2971,7 +2971,7 @@ protected:
 
         // NOTE: Use of these APIs are unlocked and may appear to be erroneous. However, since calls
         //       to ProcessMap will result in identical values being placed in the MethodDataObjectEntry
-        //       array, it it is not a problem if there is a race, since one thread may just end up
+        //       array, it is not a problem if there is a race, since one thread may just end up
         //       doing some duplicate work.
 
         inline UINT32 GetNextChainDepth()

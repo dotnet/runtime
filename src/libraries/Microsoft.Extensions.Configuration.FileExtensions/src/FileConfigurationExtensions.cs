@@ -76,7 +76,7 @@ namespace Microsoft.Extensions.Configuration
         /// Gets a default action to be invoked for file-based providers when an error occurs.
         /// </summary>
         /// <param name="builder">The <see cref="IConfigurationBuilder"/>.</param>
-        /// <returns>The The Action to be invoked on a file load exception, if set.</returns>
+        /// <returns>The Action to be invoked on a file load exception, if set.</returns>
         public static Action<FileLoadExceptionContext>? GetFileLoadExceptionHandler(this IConfigurationBuilder builder)
         {
             ThrowHelper.ThrowIfNull(builder);

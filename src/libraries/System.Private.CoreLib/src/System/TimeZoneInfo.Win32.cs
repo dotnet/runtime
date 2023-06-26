@@ -738,7 +738,7 @@ namespace System
         /// Try to find the time zone resources Dll matching the CurrentUICulture or one of its parent cultures.
         /// We try to check of such resource module e.g. %windir%\system32\[UI Culture Name]\tzres.dll.mui exist.
         /// If a localized resource file exists, we LoadString resource with the id specified inside resource input
-        /// string and and return it to our caller.
+        /// string and return it to our caller.
         /// </summary>
         private static string GetLocalizedNameByMuiNativeResource(string resource)
         {

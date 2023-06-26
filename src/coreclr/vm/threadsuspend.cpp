@@ -4249,7 +4249,7 @@ bool Thread::SysStartSuspendForDebug(AppDomain *pAppDomain)
 
             if (!UseContextBasedThreadRedirection())
             {
-                // There'a a race above between the moment we first check m_fPreemptiveGCDisabled
+                // There's a race above between the moment we first check m_fPreemptiveGCDisabled
                 // and the moment we enable TrapReturningThreads in MarkForSuspension.  However,
                 // nothing bad happens if the thread has transitioned to preemptive before marking
                 // the thread for suspension; the thread will later be identified as Synced in
@@ -4283,7 +4283,7 @@ bool Thread::SysStartSuspendForDebug(AppDomain *pAppDomain)
             thread->MarkForSuspension(TS_DebugSuspendPending);
 
             if (
-                // There'a a race above between the moment we first check m_fPreemptiveGCDisabled
+                // There's a race above between the moment we first check m_fPreemptiveGCDisabled
                 // and the moment we enable TrapReturningThreads in MarkForSuspension.  To account
                 // for that we check whether the thread moved into cooperative mode, and if it had
                 // we mark it as a DebugWillSync thread, that will be handled later in

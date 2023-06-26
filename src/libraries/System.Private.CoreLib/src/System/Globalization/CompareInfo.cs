@@ -1545,7 +1545,7 @@ namespace System.Globalization
         public override int GetHashCode() => Name.GetHashCode();
 
         /// <summary>
-        /// This method performs the equivalent of of creating a Sortkey for a string from CompareInfo,
+        /// This method performs the equivalent of creating a Sortkey for a string from CompareInfo,
         /// then generates a randomized hashcode value from the sort key.
         ///
         /// The hash code is guaranteed to be the same for string A and B where A.Equals(B) is true and both

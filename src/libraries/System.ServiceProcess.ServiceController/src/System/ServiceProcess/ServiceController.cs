@@ -19,7 +19,7 @@ namespace System.ServiceProcess
         private string _machineName; // Never null
         private const string DefaultMachineName = ".";
 
-        // Note that ServiceType currently does not include all of SERVICE_TYPE_ALL; see see Interop.Advapi32.ServiceTypeOptions
+        // Note that ServiceType currently does not include all of SERVICE_TYPE_ALL; see Interop.Advapi32.ServiceTypeOptions
         private const int AllServiceTypes = (int)(ServiceType.Adapter | ServiceType.FileSystemDriver | ServiceType.InteractiveProcess |
                                                   ServiceType.KernelDriver | ServiceType.RecognizerDriver | ServiceType.Win32OwnProcess |
                                                   ServiceType.Win32ShareProcess);

@@ -2860,7 +2860,7 @@ void StackFrameIterator::ProcessCurrentFrame(void)
                 }
                 else
                 {
-                    // we stop stop at the no-frame transition
+                    // we stop at the no-frame transition
                     m_frameState = SFITER_NO_FRAME_TRANSITION;
                     m_crawl.isNoFrameTransition = true;
                     m_crawl.taNoFrameTransitionMarker = pContextSP;

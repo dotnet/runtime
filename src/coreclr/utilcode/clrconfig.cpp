@@ -400,7 +400,7 @@ namespace
     #define CONFIG_STRING_INFO_EX(symbol, name, description, lookupOptions)
 #endif // _DEBUG
 
-    // Now that we have defined what what the macros in file:../inc/CLRConfigValues.h mean, include it to generate the code.
+    // Now that we have defined what the macros in file:../inc/CLRConfigValues.h mean, include it to generate the code.
     #include "clrconfigvalues.h"
 
 #undef RETAIL_CONFIG_DWORD_INFO

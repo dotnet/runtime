@@ -190,7 +190,7 @@ namespace System.Text.Json.Serialization.Tests
             string json = builder.ToString();
 
             var options = new JsonSerializerOptions();
-            // No customer converters registered; the built-in string converter converter will be used.
+            // No customer converters registered; the built-in string converter will be used.
 
             // Ensure buffer size is small as possible for read-ahead.
             options.DefaultBufferSize = 1;

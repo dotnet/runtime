@@ -3387,7 +3387,7 @@ CORINFO_GENERIC_HANDLE JIT_GenericHandleWorker(MethodDesc * pMD, MethodTable * p
         }
 
         // Add the normalized key (pDeclaringMT) here so that future lookups of any
-        // inherited types are faster next time rather than just just for this specific pMT.
+        // inherited types are faster next time rather than just for this specific pMT.
         JitGenericHandleCacheKey key((CORINFO_CLASS_HANDLE)pDeclaringMT, (CORINFO_METHOD_HANDLE)pMD, signature, pDictDomain);
         AddToGenericHandleCache(&key, (HashDatum)result);
     }

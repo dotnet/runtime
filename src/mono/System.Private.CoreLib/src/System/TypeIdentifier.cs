@@ -52,7 +52,7 @@ namespace System
     }
 
     // A type identifier is a single component of a type name.
-    // Unlike a general typename, a type identifier can be be
+    // Unlike a general typename, a type identifier can be
     // converted to internal form without loss of information.
     internal interface ITypeIdentifier : ITypeName
     {

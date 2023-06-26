@@ -482,7 +482,7 @@ int SequencePoints::MapSortILMap::Compare(DebuggerILToNativeMap * first,
     {
         return 1;
     }
-    // call_instruction goes at the very very end of the table.
+    // call_instruction goes at the very end of the table.
     else if ((first->source & call_inst) == call_inst
         && (second->source & call_inst) == call_inst)
     {

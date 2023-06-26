@@ -490,7 +490,7 @@ HRESULT EEClass::AddField(MethodTable* pMT, mdFieldDef fieldDef, FieldDesc** ppN
                     continue;
 
                 // For instance fields we only update instantiations of the generic MethodTable we updated above.
-                // For static fields we update the the canonical version and instantiations.
+                // For static fields we update the canonical version and instantiations.
                 MethodTable* pMTMaybe = th.AsMethodTable();
                 if ((!isStaticField && !pMTMaybe->IsCanonicalMethodTable())
                     || !pMT->HasSameTypeDefAs(pMTMaybe))

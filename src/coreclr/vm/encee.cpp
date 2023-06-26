@@ -1056,7 +1056,7 @@ PTR_EnCEEClassData EditAndContinueModule::GetEnCEEClassData(MethodTable * pMT, B
     }
 
 #ifndef DACCESS_COMPILE
-    // Create a new entry and add it to the end our our table
+    // Create a new entry and add it to the end of our table
     EnCEEClassData *pNewData = (EnCEEClassData*)(void*)pMT->GetLoaderAllocator()->GetLowFrequencyHeap()->AllocMem_NoThrow(S_SIZE_T(sizeof(EnCEEClassData)));
     pNewData->Init(pMT);
     ppData = loaderModule->m_ClassList.Append();

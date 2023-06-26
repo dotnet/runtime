@@ -415,7 +415,7 @@ namespace System.Security.Principal
         {
             get
             {
-                // In case of a race condition here here, both threads will set m_impersonationLevel to the same value,
+                // In case of a race condition here, both threads will set m_impersonationLevel to the same value,
                 // which is ok.
                 if (!_impersonationLevelInitialized)
                 {

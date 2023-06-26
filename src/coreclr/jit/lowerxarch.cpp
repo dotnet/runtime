@@ -597,7 +597,7 @@ void Lowering::LowerPutArgStk(GenTreePutArgStk* putArgStk)
                     // For the case where we cannot directly push the value, if we run out of registers,
                     // it would be better to defer computation until we are pushing the arguments rather
                     // than spilling, but this situation is not all that common, as most cases of FIELD_LIST
-                    // are promoted structs, which do not not have a large number of fields, and of those
+                    // are promoted structs, which do not have a large number of fields, and of those
                     // most are lclVars or copy-propagated constants.
 
                     fieldNode->SetRegOptional();
@@ -1769,7 +1769,7 @@ GenTree* Lowering::LowerHWIntrinsicCmpOp(GenTreeHWIntrinsic* node, genTreeOps cm
         //
         // However, if we have less than 8 elements then we have to change it up since we have less
         // than 8 bits in the output mask and unused bits will be set to 0. This occurs for 32-bit
-        // for Vector128 and and 64-bit elements when using either Vector128 or Vector256.
+        // for Vector128 and 64-bit elements when using either Vector128 or Vector256.
         //
         // To account for this, we will invert the comparison being done. So if the user wants
         // `x == y`, we will instead emit `mask = (x != y)`, we will still emit `kortest mask, mask`,

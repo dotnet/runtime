@@ -332,7 +332,7 @@ namespace System
         }
 
         // Determines whether two string regions match.  The substring of strA beginning
-        // at indexA of length length is compared with the substring of strB
+        // at indexA of length is compared with the substring of strB
         // beginning at indexB of the same length.  Case sensitivity is determined by the ignoreCase boolean,
         // and the culture is set by culture.
         //
@@ -343,7 +343,7 @@ namespace System
         }
 
         // Determines whether two string regions match.  The substring of strA beginning
-        // at indexA of length length is compared with the substring of strB
+        // at indexA of length is compared with the substring of strB
         // beginning at indexB of the same length.
         //
         public static int Compare(string? strA, int indexA, string? strB, int indexB, int length, CultureInfo? culture, CompareOptions options)

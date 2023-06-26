@@ -21,7 +21,7 @@ namespace System.IO.Hashing
                 // Reverse the byte order.
 
                 // SSSE3 is required to get PSHUFB acceleration for Vector128.Shuffle on x86/x64.
-                // However, the gains from vectorizing the rest of the operations seem to to be
+                // However, the gains from vectorizing the rest of the operations seem to be
                 // greater than the added cost of emulating the shuffle, so we don't require SSSE3 support.
                 vector = Vector128.Shuffle(vector,
                     Vector128.Create((byte)0x0F, 0x0E, 0x0D, 0x0C, 0x0B, 0x0A, 0x09, 0x08, 0x07, 0x06, 0x05, 0x04, 0x03,

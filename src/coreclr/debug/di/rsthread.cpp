@@ -705,7 +705,7 @@ HRESULT CordbThread::SetDebugState(CorDebugThreadState state)
 
         if (SUCCEEDED(hr))
         {
-            // This lets the debugger suspend / resume threads. This is only called when when the
+            // This lets the debugger suspend / resume threads. This is only called when the
             // target is already synchronized. That means all the threads are already suspended. So
             // setting the suspend bit here just means that the debugger's continue logic won't resume
             // this thread when we do a Continue.

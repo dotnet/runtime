@@ -148,7 +148,7 @@ namespace System.Net.Sockets.Tests
         }
 
         // Socket.Bind() auto-enables SO_REUSEADDR on Unix to allow Bind() during TIME_WAIT to emulate Windows behavior, see SystemNative_Bind() in 'pal_networking.c'.
-        // To prevent other sockets from succesfully binding to the same port port, we need to avoid this logic when binding the shadow socket.
+        // To prevent other sockets from succesfully binding to the same port, we need to avoid this logic when binding the shadow socket.
         // This method is doing a custom P/Invoke to bind() on Unix to achieve that.
         private static unsafe bool TryBindWithoutReuseAddress(Socket socket, IPEndPoint endPoint, out int port)
         {

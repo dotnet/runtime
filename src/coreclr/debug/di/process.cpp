@@ -3288,7 +3288,7 @@ HRESULT CordbProcess::Terminate(unsigned int exitCode)
     // Since we're currently holding the stop-go lock, that means we at least get some serialization.
     //
     // Note that on Windows, the process isn't really terminated until we receive the EXIT_PROCESS_DEBUG_EVENT.
-    // Before then, we can still still access the debuggee's address space.  On the other, for Mac debugging,
+    // Before then, we can still access the debuggee's address space.  On the other, for Mac debugging,
     // the process can die any time after this call, and so we can no longer call into the DAC.
     GetShim()->GetNativePipeline()->TerminateProcess(exitCode);
 
@@ -5531,7 +5531,7 @@ void CordbProcess::RawDispatchEvent(
             }
 
             // This release may send an DB_IPCE_FUNC_EVAL_CLEANUP IPC event. That's ok b/c
-            // we're still synced even if if Continue was called inside the callback.
+            // we're still synced even if Continue was called inside the callback.
             // That's because the StopContinueHolder bumped up the stopcount.
             // Corresponding AddRef() in CallFunction().
             // @todo - this is leaked if we don't get an EvalComplete event (eg, process exits with

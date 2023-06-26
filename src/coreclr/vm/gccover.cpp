@@ -1350,7 +1350,7 @@ BOOL OnGcCoverageInterrupt(PCONTEXT regs)
     // PInvoke stub, a method that has an inline PInvoke frame,
     // or be in a reverse PInvoke stub that's about to return.
     //
-    // The PInvoke cases should should properly report GC refs if we
+    // The PInvoke cases should properly report GC refs if we
     // trigger GC here. But a reverse PInvoke stub may over-report
     // leading to spurious failures, as we would not normally report
     // anything for this method at this point.

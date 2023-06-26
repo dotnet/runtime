@@ -1040,7 +1040,7 @@ if(NOT CLR_CMAKE_HOST_ARCH_ARM AND NOT CLR_CMAKE_HOST_ARCH_ARM64)
   set(CMAKE_REQUIRED_LIBRARIES pthread)
   check_cxx_source_runs("
   // This test case verifies the pthread process-shared robust mutex's cross-process abandon detection. The parent process starts
-  // a child process that locks the mutex, the process process then waits to acquire the lock, and the child process abandons the
+  // a child process that locks the mutex, the process then waits to acquire the lock, and the child process abandons the
   // mutex by exiting the process while holding the lock. The parent process should then be released from its wait, be assigned
   // ownership of the lock, and be notified that the mutex was abandoned.
 

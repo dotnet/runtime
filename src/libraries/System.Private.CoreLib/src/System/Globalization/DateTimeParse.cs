@@ -744,7 +744,7 @@ new DS[] { DS.ERROR,  DS.TX_NNN,  DS.TX_NNN,  DS.TX_NNN,  DS.ERROR,   DS.ERROR, 
                                     dtok.suffix = sep;
                                     break;
                                 default:
-                                    // Invalid separator after number number.
+                                    // Invalid separator after number.
                                     result.SetBadDateTimeFailure();
                                     LexTraceExit("0040 (Invalid separator after number)", dps);
                                     return false;
@@ -866,7 +866,7 @@ new DS[] { DS.ERROR,  DS.TX_NNN,  DS.TX_NNN,  DS.TX_NNN,  DS.ERROR,   DS.ERROR, 
                             raw.AddNumber(dtok.num);
                             break;
                         default:
-                            // Invalid separator after number number.
+                            // Invalid separator after number.
                             result.SetBadDateTimeFailure();
                             LexTraceExit("0080", dps);
                             return false;
@@ -904,7 +904,7 @@ new DS[] { DS.ERROR,  DS.TX_NNN,  DS.TX_NNN,  DS.TX_NNN,  DS.ERROR,   DS.ERROR, 
                                     }
                                     goto default;
                                 default:
-                                    // Invalid separator after number number.
+                                    // Invalid separator after number.
                                     result.SetBadDateTimeFailure();
                                     LexTraceExit("0090", dps);
                                     return false;
@@ -912,7 +912,7 @@ new DS[] { DS.ERROR,  DS.TX_NNN,  DS.TX_NNN,  DS.TX_NNN,  DS.ERROR,   DS.ERROR, 
                         }
                         else
                         {
-                            // Invalid separator after number number.
+                            // Invalid separator after number.
                             result.SetBadDateTimeFailure();
                             LexTraceExit("0100", dps);
                             return false;
@@ -953,7 +953,7 @@ new DS[] { DS.ERROR,  DS.TX_NNN,  DS.TX_NNN,  DS.TX_NNN,  DS.ERROR,   DS.ERROR, 
                                 }
                                 break;
                             default:
-                                // Invalid separator after number number.
+                                // Invalid separator after number.
                                 result.SetBadDateTimeFailure();
                                 LexTraceExit("0110", dps);
                                 return false;

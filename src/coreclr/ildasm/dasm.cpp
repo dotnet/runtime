@@ -886,7 +886,7 @@ void DumpMscorlib(void* GUICookie)
     //
     mdTypeDef tkObjectTypeDef = mdTypeDefNil;
 
-    // Lookup the type System.Object and see it it has a type definition in this assembly
+    // Lookup the type System.Object and see if it has a type definition in this assembly
     if (SUCCEEDED(g_pPubImport->FindTypeDefByName(W("System.Object"), mdTypeDefNil, &tkObjectTypeDef)))
     {
         if (tkObjectTypeDef != mdTypeDefNil)

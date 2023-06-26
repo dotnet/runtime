@@ -4124,7 +4124,7 @@ bool Compiler::fgOptimizeBranch(BasicBlock* bJump)
     }
 
     //
-    // We we are ngen-ing:
+    // We are ngen-ing:
     // If the uncondional branch is a rarely run block then
     // we are willing to have more code expansion since we
     // won't be running code from this page

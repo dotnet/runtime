@@ -1473,7 +1473,7 @@ CHECK PEDecoder::CheckILOnlyImportDlls() const
     CHECK(pID != NULL);
     PREFIX_ASSUME(pID != NULL);
 
-    // Entry 0: ILT, Name, IAT must be be non-null.  Forwarder, DateTime should be NULL.
+    // Entry 0: ILT, Name, IAT must be non-null.  Forwarder, DateTime should be NULL.
     CHECK( IMAGE_IMPORT_DESC_FIELD(pID[0], Characteristics) != 0
         && pID[0].TimeDateStamp == 0
         && (pID[0].ForwarderChain == 0 || pID[0].ForwarderChain == static_cast<ULONG>(-1))
@@ -2607,7 +2607,7 @@ BOOL PEDecoder::ForceRelocForDLL(LPCWSTR lpFileName)
 
     // Reserve the space so nobody can use it. A potential bug is likely to
     // result in a plain AV this way. It is not a good idea to use the original
-    // mapping for the reservation since since it would lock the file on the disk.
+    // mapping for the reservation since it would lock the file on the disk.
     if (!ClrVirtualAlloc(pPreferredBase, nVirtualSize, MEM_RESERVE, PAGE_NOACCESS))
         goto ErrExit;
 

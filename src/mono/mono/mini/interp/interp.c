@@ -8524,7 +8524,7 @@ interp_jit_info_foreach (InterpJitInfoFunc func, gpointer user_data)
 			InterpCopyJitInfoFuncUserData copy_jit_info_data;
 			// Can't keep memory manager lock while iterating and calling callback since it might take other locks
 			// causing poential deadlock situations. Instead, create copy of interpreter imethod jinfo pointers into
-			// plain array and use pointers from array when when running callbacks.
+			// plain array and use pointers from array when running callbacks.
 			copy_jit_info_data.size = mono_atomic_load_i32 (&(jit_mm->interp_code_hash.num_entries));
 			copy_jit_info_data.next = 0;
 			copy_jit_info_data.jit_info_array = (MonoJitInfo**) g_new (MonoJitInfo*, copy_jit_info_data.size);

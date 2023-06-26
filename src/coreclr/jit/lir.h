@@ -92,7 +92,7 @@ public:
     //     // View the block as a range
     //     LIR::Range& blockRange = LIR::AsRange(block);
     //
-    //     // Create a read only range from from it.
+    //     // Create a read only range from it.
     //     LIR::ReadOnlyRange readRange = blockRange;
     //
     //     // Remove the last node from the block

@@ -3677,7 +3677,7 @@ ClrDataAccess::StartEnumAppDomains(
 
     EX_TRY
     {
-        // Only one app domain - use 1 to indicate there there is a next value
+        // Only one app domain - use 1 to indicate that there is a next value
         *handle = 1;
         status = S_OK;
     }

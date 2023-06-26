@@ -816,7 +816,7 @@ int ValueNumStore::EvalComparison<double>(VNFunc vnf, double v0, double v1)
 {
     // Here we handle specialized double comparisons.
 
-    // We must check for a NaN argument as they they need special handling
+    // We must check for a NaN argument as they need special handling
     bool hasNanArg = (_isnan(v0) || _isnan(v1));
 
     if (vnf < VNF_Boundary)
@@ -880,7 +880,7 @@ int ValueNumStore::EvalComparison<float>(VNFunc vnf, float v0, float v1)
 {
     // Here we handle specialized float comparisons.
 
-    // We must check for a NaN argument as they they need special handling
+    // We must check for a NaN argument as they need special handling
     bool hasNanArg = (_isnanf(v0) || _isnanf(v1));
 
     if (vnf < VNF_Boundary)

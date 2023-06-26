@@ -7635,7 +7635,7 @@ MethodTableBuilder::PlaceInterfaceMethods()
                 // and possibly partially implemented, so we need to populate the
                 // bmtInterfaceSlotImpl table for this interface with the implementation slot
                 // information.
-                // 2 .The the interface has not been declared on the parent,
+                // 2 .The interface has not been declared on the parent,
                 // but an equivalent interface has been. So we need to populate the
                 // bmtInterfaceSlotImpl table for this interface with the implementation slot
                 // information from one of the parent equivalent interfaces. We may or may not
@@ -10790,7 +10790,7 @@ MethodTableBuilder::SetupMethodTable2(
     pMT->SetCl(GetCl());
 
     // The type is sufficiently initialized for most general purpose accessor methods to work.
-    // Mark the type as restored to avoid avoid asserts. Note that this also enables IBC logging.
+    // Mark the type as restored to avoid asserts. Note that this also enables IBC logging.
     pMT->GetWriteableDataForWrite_NoLogging()->SetIsRestoredForBuildMethodTable();
 
 #ifdef _DEBUG

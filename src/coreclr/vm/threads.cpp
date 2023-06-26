@@ -4957,7 +4957,7 @@ Thread::ApartmentState Thread::SetApartment(ApartmentState state)
     // Important note: For Win2k and above this can return AS_InMTA even if the current
     // thread has never been CoInitialized. Because of this we MUST NOT look at the
     // return value of GetApartment here. We can however look at the m_State flags
-    // since these will only be set to TS_InMTA if we know for a fact the the
+    // since these will only be set to TS_InMTA if we know for a fact that the
     // current thread has explicitly been made MTA (via a call to CoInitializeEx).
     GetApartment();
 

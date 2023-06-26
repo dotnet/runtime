@@ -1089,7 +1089,7 @@ private:
             JITDUMP("Hot pred block is " FMT_BB " and cold pred block is " FMT_BB "\n", hotBlock->bbNum,
                     coldBlock->bbNum);
 
-            // Clone and and copy the statements in the check block up to
+            // Clone and copy the statements in the check block up to
             // and including lastStmt over to the hot block.
             //
             // This will be the "hot" copy of the code.
