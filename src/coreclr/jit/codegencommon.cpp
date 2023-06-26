@@ -1785,7 +1785,7 @@ void CodeGen::genGenerateMachineCode()
 
         printf("\n");
 
-        printf("; %s\n", compiler->compGetTieringName(false));
+        printf("; %s code\n", compiler->compGetTieringName(false));
 
         if (compiler->opts.jitFlags->IsSet(JitFlags::JIT_FLAG_READYTORUN))
         {
