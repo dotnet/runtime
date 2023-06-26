@@ -598,6 +598,23 @@ struct HWIntrinsicInfo
 #endif
     }
 
+#if defined(TARGET_XARCH)
+    static bool IsBitwiseOperation(instruction ins)
+    {
+        switch (ins)
+        {
+            case INS_pand:
+            case INS_pandn:
+            case INS_por:
+            case INS_pxor:
+                return true;
+        
+            default:
+                return false;
+        }
+    }
+#endif //  TARGET_XARCH
+
     static bool RequiresCodegen(NamedIntrinsic id)
     {
         HWIntrinsicFlag flags = lookupFlags(id);

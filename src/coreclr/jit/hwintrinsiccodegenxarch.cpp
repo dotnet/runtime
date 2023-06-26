@@ -118,6 +118,34 @@ void CodeGen::genHWIntrinsic(GenTreeHWIntrinsic* node)
         assert(numArgs >= 0);
 
         instruction ins = HWIntrinsicInfo::lookupIns(intrinsicId, baseType);
+        if(compiler->compOpportunisticallyDependsOn(InstructionSet_AVX512F) && HWIntrinsicInfo::IsBitwiseOperation(ins))
+        {
+            // For bitwise operations, if AVX512 is available, try to make the data type match to the input
+            if(baseType == TYP_LONG || baseType == TYP_ULONG)
+            {
+                switch (ins)
+                {
+                    case INS_pand:
+                        ins = INS_vpandq;
+                        break;
+
+                    case INS_pandn:
+                        ins = INS_vpandnq;
+                        break;
+
+                    case INS_por:
+                        ins = INS_vporq;
+                        break;
+
+                    case INS_pxor:
+                        ins = INS_vpxorq;
+                        break;
+                
+                    default:
+                        break;
+                }
+            }
+        }
         assert(ins != INS_invalid);
 
         emitAttr simdSize = emitActualTypeSize(Compiler::getSIMDTypeForSize(node->GetSimdSize()));
