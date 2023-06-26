@@ -367,6 +367,32 @@ static unsafe class UnsafeAccessorsTests
         extern static string CallManagedMethod(UserDataClass d, delegate* unmanaged[Cdecl]<void> fptr);
     }
 
+    class InheritanceBase
+    {
+        private static string OnBase() => nameof(OnBase); 
+    }
+
+    class InheritanceDerived : InheritanceBase
+    {
+        private static string OnDerived() => nameof(OnDerived);
+    }
+
+    [Fact]
+    public static void Verify_InheritanceMethodResolution()
+    {
+        Console.WriteLine($"Running {nameof(Verify_InheritanceMethodResolution)}");
+
+        var instance = new InheritanceDerived();
+        Assert.Throws<MissingMethodException>(() => OnBase(instance));
+        Assert.Equal(nameof(OnDerived), OnDerived(instance));
+
+        [UnsafeAccessor(UnsafeAccessorKind.StaticMethod, Name = nameof(OnBase))]
+        extern static string OnBase(InheritanceDerived i);
+
+        [UnsafeAccessor(UnsafeAccessorKind.StaticMethod, Name = nameof(OnDerived))]
+        extern static string OnDerived(InheritanceDerived i);
+    }
+
     [Fact]
     public static void Verify_InvalidTargetUnsafeAccessor()
     {
