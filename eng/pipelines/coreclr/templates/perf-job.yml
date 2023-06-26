@@ -88,7 +88,7 @@ jobs:
       - ${{ if eq(parameters.runtimeType, 'iOSMono')}}:
         - ${{ 'build_ios_arm64_release_iOSMono' }}
       - ${{ if eq(parameters.runtimeType, 'iOSNativeAOT')}}:
-        - ${{ 'build_ios_arm64_osx_release_iOSNativeAOT' }}
+        - ${{ 'build_ios_arm64_release_iOSNativeAOT' }}
 
     ${{ if and(eq(parameters.osGroup, 'windows'), not(in(parameters.runtimeType, 'AndroidMono', 'iOSMono', 'iOSNativeAOT'))) }}:
       ${{ if eq(parameters.runtimeType, 'mono') }}:
