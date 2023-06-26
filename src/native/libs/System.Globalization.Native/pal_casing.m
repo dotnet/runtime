@@ -1,7 +1,6 @@
 // Licensed to the .NET Foundation under one or more agreements.
 // The .NET Foundation licenses this file to you under the MIT license.
 
-#include <stdlib.h>
 #include "pal_locale_internal.h"
 #include "pal_casing.h"
 

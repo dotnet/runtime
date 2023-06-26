@@ -4,7 +4,6 @@
 #include <stdlib.h>
 #include "pal_locale_internal.h"
 #include "pal_collation.h"
-#include "pal_casing.h"
 
 #import <Foundation/Foundation.h>
 
