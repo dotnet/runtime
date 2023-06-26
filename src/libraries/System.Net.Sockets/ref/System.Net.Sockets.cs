@@ -726,7 +726,6 @@ namespace System.Net.Sockets
         public void Start() { }
         public void Start(int backlog) { }
         public void Stop() { }
-
         void IDisposable.Dispose() { }
     }
     [System.FlagsAttribute]
