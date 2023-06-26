@@ -160,9 +160,7 @@ namespace System.Net.Sockets
             _active = true;
         }
 
-        /// <summary>
-        /// Closes the network connection.
-        /// </summary>
+        // Closes the network connection.
         public void Stop()
         {
             _serverSocket?.Dispose();

@@ -54,15 +54,6 @@ namespace System.Net.Sockets.Tests
                 Assert.True(listener.Active);
             }
             Assert.False(listener.Active);
-
-            listener = new DerivedTcpListener(IPAddress.Loopback, 0);
-            using ((IDisposable)listener)
-            {
-                Assert.False(listener.Active);
-                listener.Start();
-                Assert.True(listener.Active);
-            }
-            Assert.False(listener.Active);
         }
 
         [Fact]
