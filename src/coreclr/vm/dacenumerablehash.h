@@ -117,7 +117,9 @@ private:
     // a linked list if we found ourselves walking to the end of the expected list,
     // to the end of a list on an older bucket (which is OK), or to the end of a list
     // on a newer bucket. (which will require rewalking the entire list as we may have
-    // missed elements of the list that need to be found)
+    // missed elements of the list that need to be found. On the newer buckets we may
+    // find an end sentinel for the new bucket list, or an end sentinel for a different
+    // bucket from the current buckets.)
 
     static bool IsEndSentinel(PTR_VolatileEntry entry)
     {
@@ -134,19 +136,66 @@ private:
         return 1;
     }
 
-    static TADDR IncrementEndSentinel(TADDR previousSentinel)
+    static TADDR IncrementBaseEndSentinel(TADDR previousSentinel)
     {
         auto result = previousSentinel + 2;
         _ASSERTE(IsEndSentinel(result));
         return result;
     }
 
+    static TADDR ComputeEndSentinel(TADDR baseEndSentinel, DWORD bucketIndex)
+    {
+        return ((TADDR)bucketIndex << 6) | baseEndSentinel;
+    }
+
+    static DWORD BucketIndexFromEndSentinel(TADDR endSentinel)
+    {
+        _ASSERTE(IsEndSentinel(endSentinel));
+        return (DWORD)endSentinel >> 6;
+    }
+
+    static DWORD BucketsAgeFromEndSentinel(TADDR endSentinel)
+    {
+        _ASSERTE(IsEndSentinel(endSentinel));
+        return ((DWORD)endSentinel & 0x3E) >> 1;
+    }
+
+    static DWORD MaxBucketCountRepresentableWithEndSentinel()
+    {
+#ifdef TARGET_64BIT
+        return 0xFFFFFFFF;
+#else
+        return 0x03FFFFFF; // Bucket age and the IsEndSentinel bit take up 6 bits
+#endif
+    }
+
+    static DWORD MaxBucketAge()
+    {
+        return 0x3E >> 1;
+    }
+
     static bool AcceptableEndSentinel(PTR_VolatileEntry entry, TADDR expectedEndSentinel)
     {
         _ASSERTE(expectedEndSentinel != NULL);
         _ASSERTE(entry != NULL);
-        
-        return (dac_cast<TADDR>(entry)) <= expectedEndSentinel;
+
+        TADDR endSentinelEntry = dac_cast<TADDR>(entry);
+
+        // Exactly matching the end sentinel
+        if (endSentinelEntry == expectedEndSentinel)
+            return true;
+
+        // An end sentinel from an earlier BucketAge is also OK. This can happen when the bucket in the
+        // new set of buckets temporarily has the remnants of a list from the old buckets.
+        if (BucketsAgeFromEndSentinel(endSentinelEntry) < BucketsAgeFromEndSentinel(expectedEndSentinel))
+            return true;
+
+        // If we reach this point, we either have found an end sentinel from a higher age set of buckets
+        // OR we've found the end from the wrong list on the current bucket.
+        _ASSERTE((BucketsAgeFromEndSentinel(endSentinelEntry) > BucketsAgeFromEndSentinel(expectedEndSentinel)) ||
+                 (BucketsAgeFromEndSentinel(endSentinelEntry) == BucketsAgeFromEndSentinel(expectedEndSentinel)));
+
+        return false;
     }
 
 protected:
@@ -269,7 +318,7 @@ private:
         return (DWORD)dac_cast<TADDR>(buckets[SLOT_LENGTH]);
     }
 
-    static TADDR EndSentinel(DPTR(PTR_VolatileEntry) buckets)
+    static TADDR BaseEndSentinel(DPTR(PTR_VolatileEntry) buckets)
     {
         return dac_cast<TADDR>(buckets[SLOT_ENDSENTINEL]);
     }

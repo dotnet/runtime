@@ -50,14 +50,14 @@ DacEnumerableHashTable<DAC_ENUM_HASH_ARGS>::DacEnumerableHashTable(Module *pModu
     ((size_t*)pBuckets)[SLOT_LENGTH] = cInitialBuckets;
     ((size_t*)pBuckets)[SLOT_ENDSENTINEL] = InitialEndSentinel();
 
-    TADDR endSentinel = EndSentinel(pBuckets);
+    TADDR endSentinel = BaseEndSentinel(pBuckets);
 
     // All buckets are initially empty.
     // Note: Memory allocated on loader heap is zero filled, and since we need end sentinels, fill them in now
     for (DWORD i = 0; i < cInitialBuckets; i++)
     {
         DWORD dwCurBucket = i + SKIP_SPECIAL_SLOTS;
-        pBuckets[dwCurBucket] = dac_cast<PTR_VolatileEntry>(endSentinel);
+        pBuckets[dwCurBucket] = dac_cast<PTR_VolatileEntry>(ComputeEndSentinel(endSentinel, dwCurBucket));
     }
 
     // publish after setting the length
@@ -185,6 +185,18 @@ void DacEnumerableHashTable<DAC_ENUM_HASH_ARGS>::GrowTable()
 
     // Make the new bucket table larger by the scale factor requested by the subclass (but also prime).
     DWORD cNewBuckets = NextLargestPrime(cBuckets * SCALE_FACTOR);
+
+    // If NextLargestPrime is no longer incrementing,
+    // or the cBuckets can't be represented as a DWORD
+    // or the new bucket count can't be represented within and EndSentinel,
+    // or the bucket age has already reached its maximum value,
+    // just don't expand the table
+    if ((cNewBuckets == cBuckets) || 
+        (cBuckets > DWORD_MAX - SKIP_SPECIAL_SLOTS) ||
+        (SKIP_SPECIAL_SLOTS + cBuckets > MaxBucketCountRepresentableWithEndSentinel()) ||
+        (BucketsAgeFromEndSentinel(BaseEndSentinel(curBuckets)) == MaxBucketAge()))
+        return;
+
     // two extra slots - slot [0] contains the length of the table,
     //                   slot [1] will contain the next version of the table if it resizes
     S_SIZE_T cbNewBuckets = (S_SIZE_T(cNewBuckets) + S_SIZE_T(SKIP_SPECIAL_SLOTS)) * S_SIZE_T(sizeof(PTR_VolatileEntry));
@@ -195,25 +207,25 @@ void DacEnumerableHashTable<DAC_ENUM_HASH_ARGS>::GrowTable()
 
     // element 0 stores the length of the table
     ((size_t*)pNewBuckets)[SLOT_LENGTH] = cNewBuckets;
-    ((size_t*)pNewBuckets)[SLOT_ENDSENTINEL] = IncrementEndSentinel(EndSentinel(curBuckets));
+    ((size_t*)pNewBuckets)[SLOT_ENDSENTINEL] = IncrementBaseEndSentinel(BaseEndSentinel(curBuckets));
     // element 1 stores the next version of the table (after length is written)
     // NOTE: DAC does not call add/grow, so this cast is ok.
     VolatileStore(&((PTR_VolatileEntry**)curBuckets)[SLOT_NEXT], pNewBuckets);
 
-    TADDR newEndSentinel = EndSentinel(pNewBuckets);
+    TADDR newEndSentinel = BaseEndSentinel(pNewBuckets);
 
-    _ASSERTE(EndSentinel(curBuckets) != EndSentinel(pNewBuckets));
+    _ASSERTE(BaseEndSentinel(curBuckets) != BaseEndSentinel(pNewBuckets));
 
     // It is acceptable to walk a chain and find a sentinel from an older bucket, but not vice versa
-    _ASSERTE(AcceptableEndSentinel(dac_cast<PTR_VolatileEntry>(EndSentinel(curBuckets)), EndSentinel(pNewBuckets)));
-    _ASSERTE(!AcceptableEndSentinel(dac_cast<PTR_VolatileEntry>(EndSentinel(pNewBuckets)), EndSentinel(curBuckets)));
+    _ASSERTE(AcceptableEndSentinel(dac_cast<PTR_VolatileEntry>(BaseEndSentinel(curBuckets)), BaseEndSentinel(pNewBuckets)));
+    _ASSERTE(!AcceptableEndSentinel(dac_cast<PTR_VolatileEntry>(BaseEndSentinel(pNewBuckets)), BaseEndSentinel(curBuckets)));
 
     // All buckets are initially empty.
     // Note: Memory allocated on loader heap is zero filled, and since we need end sentinels, fill them in now
     for (DWORD i = 0; i < cNewBuckets; i++)
     {
         DWORD dwCurBucket = i + SKIP_SPECIAL_SLOTS;
-        pNewBuckets[dwCurBucket] = dac_cast<PTR_VolatileEntry>(newEndSentinel);
+        pNewBuckets[dwCurBucket] = dac_cast<PTR_VolatileEntry>(ComputeEndSentinel(newEndSentinel, dwCurBucket));
     }
 
     // Run through the old table and transfer all the entries. Be sure not to mess with the integrity of the
@@ -256,7 +268,7 @@ void DacEnumerableHashTable<DAC_ENUM_HASH_ARGS>::GrowTable()
             // NOTE: this can cause a race condition where a reader thread (which is unlocked relative to this logic)
             //       can be walking this list, and stop early, failing to walk the rest of the chain. We use an incrementing
             //       end sentinel to detect that case, and repeat the entire walk.
-            VolatileStore(&pEntry->m_pNextEntry, dac_cast<PTR_VolatileEntry>(newEndSentinel));
+            VolatileStore(&pEntry->m_pNextEntry, dac_cast<PTR_VolatileEntry>(ComputeEndSentinel(newEndSentinel, dwNewBucket)));
 
             pEntry = pNextEntry;
         }
@@ -338,7 +350,7 @@ DPTR(VALUE) DacEnumerableHashTable<DAC_ENUM_HASH_ARGS>::BaseFindFirstEntryByHash
 
         // Point at the first entry in the bucket chain that stores entries with the given hash code.
         PTR_VolatileEntry pEntry = VolatileLoadWithoutBarrier(&curBuckets[dwBucket]);
-        TADDR expectedEndSentinel = EndSentinel(curBuckets);
+        TADDR expectedEndSentinel = ComputeEndSentinel(BaseEndSentinel(curBuckets), dwBucket);
 
         // Walk the bucket chain one entry at a time.
         while (!IsEndSentinel(pEntry))
