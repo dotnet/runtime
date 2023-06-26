@@ -135,6 +135,9 @@ public class Program
             AssertThrows<ArgumentException>(() => Comparer<Struct2?>.Default.Compare(a, b));
     }
 
+    private static void Compare_Double_Enum(DoubleEnum a, DoubleEnum b) =>
+        AssertEquals(a.CompareTo(b), Comparer<DoubleEnum>.Default.Compare(a, b));
+    
     private static void Compare_Generic_Enum<TEnum>(TEnum a, TEnum b) where TEnum : Enum =>
         AssertEquals(a.CompareTo(b), Comparer<TEnum>.Default.Compare(a, b));
 
@@ -261,28 +264,32 @@ public class Program
                 Compare_Struct1_Nullable(null, null);
                 Compare_Struct2_Nullable(null, null);
 
-                var enumCharA = Unsafe.As<long, CharEnum>(ref a);
-                var enumCharB = Unsafe.As<long, CharEnum>(ref b);
+                // workaround for: https://github.com/dotnet/roslyn/issues/68770
+                static T Bitcast<T>(long l) => Unsafe.As<long, T>(ref l);
+
+                var enumCharA = Bitcast<CharEnum>(a);
+                var enumCharB = Bitcast<CharEnum>(b);
                 Compare_Generic_Enum(enumCharA, enumCharB);
 
-                var enumBoolA = Unsafe.As<long, BoolEnum>(ref a);
-                var enumBoolB = Unsafe.As<long, BoolEnum>(ref b);
+                var enumBoolA = Bitcast<BoolEnum>(a);
+                var enumBoolB = Bitcast<BoolEnum>(b);
                 Compare_Generic_Enum(enumBoolA, enumBoolB);
 
-                var enumFloatA = Unsafe.As<long, FloatEnum>(ref a);
-                var enumFloatB = Unsafe.As<long, FloatEnum>(ref b);
+                var enumFloatA = Bitcast<FloatEnum>(a);
+                var enumFloatB = Bitcast<FloatEnum>(b);
                 Compare_Generic_Enum(enumFloatA, enumFloatB);
 
-                var enumDoubleA = Unsafe.As<long, DoubleEnum>(ref a);
-                var enumDoubleB = Unsafe.As<long, DoubleEnum>(ref b);
+                var enumDoubleA = Bitcast<DoubleEnum>(a);
+                var enumDoubleB = Bitcast<DoubleEnum>(b);
                 Compare_Generic_Enum(enumDoubleA, enumDoubleB);
+                Compare_Double_Enum(enumDoubleA, enumDoubleB);
 
-                var enumIntPtrA = Unsafe.As<long, IntPtrEnum>(ref a);
-                var enumIntPtrB = Unsafe.As<long, IntPtrEnum>(ref b);
+                var enumIntPtrA = Bitcast<IntPtrEnum>(a);
+                var enumIntPtrB = Bitcast<IntPtrEnum>(b);
                 Compare_Generic_Enum(enumIntPtrA, enumIntPtrB);
 
-                var enumUIntPtrA = Unsafe.As<long, UIntPtrEnum>(ref a);
-                var enumUIntPtrB = Unsafe.As<long, UIntPtrEnum>(ref b);
+                var enumUIntPtrA = Bitcast<UIntPtrEnum>(a);
+                var enumUIntPtrB = Bitcast<UIntPtrEnum>(b);
                 Compare_Generic_Enum(enumUIntPtrA, enumUIntPtrB);
             }
         }
