@@ -30,7 +30,8 @@ namespace System.Text.RegularExpressions
         protected internal int runtextend;         // Because we now pass in a sliced span of the input into Scan,
                                                    // the runtextend will always match the length of that passed in span except for CompileToAssembly
                                                    // scenario, which still works over the original input.
-        /// <summary> Starting point for search</summary>
+        /// <summary>Index of the starting character for the search.</summary>
+        /// <remarks>The differs from <see cref="runtextbeg"/> in that lookbehinds will be able to see text before <see cref="runtextstart"/> but not before <see cref="runtextbeg"/>.</remarks>
         protected internal int runtextstart;
 
         /// <summary>Text to search. May be null if the input was supplied as a span.</summary>
