@@ -401,7 +401,7 @@ export class WasmBuilder {
             }
 
             if (isZero) {
-                mono_log_info("Detected that literal v128_const was zero");
+                // mono_log_info("Detected that literal v128_const was zero");
                 this.local("v128_zero");
             } else {
                 this.appendSimd(WasmSimdOpcode.v128_const);
