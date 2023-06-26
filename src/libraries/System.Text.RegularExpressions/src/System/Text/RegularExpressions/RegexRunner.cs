@@ -22,7 +22,7 @@ namespace System.Text.RegularExpressions
     [EditorBrowsable(EditorBrowsableState.Never)]
     public abstract class RegexRunner
     {
-        /// <summary> Beginning of text to search </summary>
+        /// <summary>Index of the first character to search</summary>
         protected internal int runtextbeg;         // We now always use a sliced span of the input
                                                    // from runtextbeg to runtextend, which means that runtextbeg is now always 0 except
                                                    // for CompiledToAssembly scenario which works over the original input.
