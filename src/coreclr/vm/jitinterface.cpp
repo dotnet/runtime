@@ -1700,27 +1700,14 @@ void* getThreadStaticDescriptor(uint8_t* p)
     return *(uint32_t*)p + (p + 4);
 }
 
-// Generates sequence for accessing offset in TLS for linux/x64
-// Note: This method is marked as NOINLINE, so we preserve `rbx
-// during the call because it is trashed in the inline assembly.
-NOINLINE void* getThreadStaticsBaseOffset()
+extern "C" void* JIT_GetThreadStaticsBaseOffset();
+
+void* getThreadStaticsBaseOffset()
 {
-    uint8_t* p;
-
-    __asm__("leaq 0(%%rip), %%rbx\n"
-            "data16\n"
-            "leaq t_ThreadStatics@TLSGD(%%rip), %%rdi\n"
-            "data16\n"
-            "data16\n"
-            "rex64\n"
-            "callq __tls_get_addr\n"
-            : [result] "=b" (p)
-            :
-            : "rdi"
-            );
-
+    uint8_t* p = (uint8_t*)JIT_GetThreadStaticsBaseOffset();
     return getThreadStaticDescriptor(p);
 }
+
 #endif // TARGET_OSX
 #endif // HOST_AMD64
 
