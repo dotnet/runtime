@@ -1787,7 +1787,11 @@ void CodeGen::genGenerateMachineCode()
 
         printf("; %s code\n", compiler->compGetTieringName(false));
 
-        if (compiler->opts.jitFlags->IsSet(JitFlags::JIT_FLAG_READYTORUN))
+        if (compiler->IsTargetAbi(CORINFO_NATIVEAOT_ABI))
+        {
+            printf("; NativeAOT compilation\n");
+        }
+        else if (compiler->opts.jitFlags->IsSet(JitFlags::JIT_FLAG_READYTORUN))
         {
             printf("; ReadyToRun compilation\n");
         }
