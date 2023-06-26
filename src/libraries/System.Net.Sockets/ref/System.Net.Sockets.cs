@@ -726,7 +726,7 @@ namespace System.Net.Sockets
         public void Start() { }
         public void Start(int backlog) { }
         public void Stop() { }
-        void IDisposable.Dispose() { }
+        public void Dispose() { }
     }
     [System.FlagsAttribute]
     public enum TransmitFileOptions

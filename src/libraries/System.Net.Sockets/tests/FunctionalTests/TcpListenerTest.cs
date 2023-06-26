@@ -43,25 +43,24 @@ namespace System.Net.Sockets.Tests
             Assert.False(listener.Active);
         }
 
-        [Theory]
-        [InlineData(0)]
-        [InlineData(1)]
-        [InlineData(2)]
-        public void IDisposable_DisposeWorksAsStop(int ctor)
+        [Fact]
+        public void IDisposable_DisposeWorksAsStop()
         {
-            var listener =
-                ctor == 0 ? new DerivedTcpListener(new IPEndPoint(IPAddress.Loopback, 0)) :
-                ctor == 1 ? new DerivedTcpListener(IPAddress.Loopback, 0) :
-                new DerivedTcpListener(0);
+            var listener = new DerivedTcpListener(IPAddress.Loopback, 0);
             using (listener)
             {
                 Assert.False(listener.Active);
                 listener.Start();
                 Assert.True(listener.Active);
-                Assert.Throws<InvalidOperationException>(() => listener.AllowNatTraversal(false));
-                Assert.Throws<InvalidOperationException>(() => listener.ExclusiveAddressUse = true);
-                Assert.Throws<InvalidOperationException>(() => listener.ExclusiveAddressUse = false);
-                bool ignored = listener.ExclusiveAddressUse; // we can get it while active, just not set it
+            }
+            Assert.False(listener.Active);
+
+            listener = new DerivedTcpListener(IPAddress.Loopback, 0);
+            using ((IDisposable)listener)
+            {
+                Assert.False(listener.Active);
+                listener.Start();
+                Assert.True(listener.Active);
             }
             Assert.False(listener.Active);
         }

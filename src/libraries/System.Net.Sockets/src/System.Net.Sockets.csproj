@@ -39,8 +39,8 @@
     <Compile Include="System\Net\Sockets\SocketOptionLevel.cs" />
     <Compile Include="System\Net\Sockets\SocketOptionName.cs" />
     <Compile Include="System\Net\Sockets\SocketShutdown.cs" />
-    <Compile Include="System\Net\Sockets\TCPClient.cs" />
-    <Compile Include="System\Net\Sockets\TCPListener.cs" />
+    <Compile Include="System\Net\Sockets\TcpClient.cs" />
+    <Compile Include="System\Net\Sockets\TcpListener.cs" />
     <Compile Include="System\Net\Sockets\TransmitFileOptions.cs" />
     <Compile Include="System\Net\Sockets\UDPClient.cs" />
     <Compile Include="System\Net\Sockets\UdpReceiveResult.cs" />

@@ -5,6 +5,7 @@ using System.Threading;
 using System.Threading.Tasks;
 using System.Runtime.Versioning;
 using System.Diagnostics;
+using System.ComponentModel;
 
 namespace System.Net.Sockets
 {
@@ -159,7 +160,9 @@ namespace System.Net.Sockets
             _active = true;
         }
 
-        // Closes the network connection.
+        /// <summary>
+        /// Closes the network connection.
+        /// </summary>
         public void Stop()
         {
             _serverSocket?.Dispose();
@@ -167,7 +170,11 @@ namespace System.Net.Sockets
             _serverSocket = null;
         }
 
-        void IDisposable.Dispose() => Stop();
+        /// <summary>
+        /// Closes the network connection.
+        /// </summary>
+        [EditorBrowsable(EditorBrowsableState.Never)]
+        public void Dispose() => Stop();
 
         // Determine if there are pending connection requests.
         public bool Pending()
