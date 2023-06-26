@@ -572,7 +572,7 @@ const char* GlobalizationNative_GetLocaleTimeFormatNative(const char* localeName
 
 #if defined(TARGET_MACCATALYST) || defined(TARGET_IOS) || defined(TARGET_TVOS)
 const char* GlobalizationNative_GetICUDataPathRelativeToAppBundleRoot(const char* path)
-{
+{//
     NSString *bundlePath = [[NSBundle mainBundle] bundlePath];
     NSString *dataPath = [bundlePath stringByAppendingPathComponent: [NSString stringWithFormat:@"%s", path]];
 
@@ -580,7 +580,7 @@ const char* GlobalizationNative_GetICUDataPathRelativeToAppBundleRoot(const char
 }
 
 const char* GlobalizationNative_GetICUDataPathFallback(void)
-{
+{//
     NSString *dataPath = [[NSBundle mainBundle] pathForResource:@"icudt" ofType:@"dat"];
     return strdup([dataPath UTF8String]);
 }

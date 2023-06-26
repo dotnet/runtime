@@ -4,7 +4,7 @@
 namespace System.Globalization
 {
     internal static partial class GlobalizationMode
-    {
+    {//
         private static int LoadICU() => Interop.Globalization.LoadICU();
     }
 }

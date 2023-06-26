@@ -8,7 +8,7 @@ using System.Runtime.InteropServices;
 internal static partial class Interop
 {
     internal static partial class Globalization
-    {
+    {//
         [LibraryImport(Libraries.GlobalizationNative, EntryPoint = "GlobalizationNative_LoadICU")]
         internal static partial int LoadICU();
 

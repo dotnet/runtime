@@ -7,7 +7,7 @@ using System.Runtime.InteropServices;
 internal static partial class Interop
 {
     internal static partial class Globalization
-    {
+    {//
         [LibraryImport(Libraries.GlobalizationNative, EntryPoint = "GlobalizationNative_LoadICUData", StringMarshalling = StringMarshalling.Utf8)]
         internal static partial int LoadICUData(string? path);
     }
