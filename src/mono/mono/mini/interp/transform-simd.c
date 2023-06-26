@@ -536,6 +536,8 @@ emit_sn_vector_t (TransformData *td, MonoMethod *cmethod, MonoMethodSignature *c
 
 	// First argument is always vector
 	MonoClass *vector_klass = cmethod->klass;
+	if (!m_class_is_simd_type (vector_klass))
+		return FALSE;
 
 	MonoTypeEnum atype;
 	int vector_size, arg_size, scalar_arg;
