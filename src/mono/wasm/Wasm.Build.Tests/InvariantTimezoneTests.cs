@@ -84,7 +84,7 @@ namespace Wasm.Build.Tests
 
             string output = RunAndTestWasmApp(buildArgs, expectedExitCode: 42, host: host, id: id);
             Assert.Contains("UTC BaseUtcOffset is 0", output);
-            if (invariantGlobalization == true)
+            if (invariantTimezone == true)
             {
                 Assert.Contains("Could not find Asia/Tokyo", output);
             }
