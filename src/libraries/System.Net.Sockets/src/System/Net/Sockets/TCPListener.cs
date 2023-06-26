@@ -5,7 +5,6 @@ using System.Threading;
 using System.Threading.Tasks;
 using System.Runtime.Versioning;
 using System.Diagnostics;
-using System.ComponentModel;
 
 namespace System.Net.Sockets
 {
