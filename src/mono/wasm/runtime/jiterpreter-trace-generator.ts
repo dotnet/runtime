@@ -1737,7 +1737,6 @@ function computeMemoryAlignment(offset: number, opcodeOrPrefix: WasmOpcode, simd
     // wasm spec prohibits alignment higher than natural alignment, just to be annoying
     switch (opcodeOrPrefix) {
         case WasmOpcode.PREFIX_simd:
-            // We can't assume 16-byte alignment unfortunately
             // For loads that aren't a regular v128 load, assume weird things might be happening with alignment
             alignment = (
                 (simdOpcode === WasmSimdOpcode.v128_load) ||
