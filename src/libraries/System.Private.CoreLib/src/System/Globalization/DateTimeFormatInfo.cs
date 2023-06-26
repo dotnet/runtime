@@ -297,7 +297,7 @@ namespace System.Globalization
         {
             get
             {
-                System.Globalization.CultureInfo culture = System.Globalization.CultureInfo.CurrentCulture;
+                CultureInfo culture = CultureInfo.CurrentCulture;
                 if (!culture._isInherited)
                 {
                     DateTimeFormatInfo? info = culture._dateTimeInfo;

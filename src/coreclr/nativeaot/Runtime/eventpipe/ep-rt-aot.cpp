@@ -9,6 +9,14 @@
 #include <eventpipe/ep-stack-contents.h>
 #include <eventpipe/ep-rt.h>
 
+#ifdef TARGET_WINDOWS
+#include <windows.h>
+#else
+#include <fcntl.h>
+#include <sys/stat.h>
+#include <unistd.h>
+#endif
+
 // The regdisplay.h, StackFrameIterator.h, and thread.h includes are present only to access the Thread
 // class and can be removed if it turns out that the required ep_rt_thread_handle_t can be
 // implemented in some manner that doesn't rely on the Thread class.
@@ -82,11 +90,20 @@ ep_rt_aot_entrypoint_assembly_name_get_utf8 (void)
 {
     // shipping criteria: no EVENTPIPE-NATIVEAOT-TODO left in the codebase
     // TODO: Implement EventPipe assembly name - return filename in nativeaot?
-    PalDebugBreak();
-
-    // fallback to the empty string if we can't get assembly info, e.g., if the runtime is
-    // suspended before an assembly is loaded.
     return reinterpret_cast<const ep_char8_t*>("");
+}
+
+const ep_char8_t *
+ep_rt_aot_diagnostics_command_line_get (void)
+{
+    // shipping criteria: no EVENTPIPE-NATIVEAOT-TODO left in the codebase
+    // TODO: revisit commandline for AOT
+#ifdef TARGET_WINDOWS
+    const ep_char16_t* command_line = reinterpret_cast<const ep_char16_t *>(::GetCommandLineW());
+    return ep_rt_utf16_to_utf8_string(command_line, -1);
+#else
+    return "";
+#endif
 }
 
 uint32_t
@@ -331,6 +348,73 @@ ep_rt_aot_system_timestamp_get (void)
     FILETIME value;
     GetSystemTimeAsFileTime (&value);
     return static_cast<int64_t>(((static_cast<uint64_t>(value.dwHighDateTime)) << 32) | static_cast<uint64_t>(value.dwLowDateTime));
+}
+
+ep_rt_file_handle_t
+ep_rt_aot_file_open_write (const ep_char8_t *path)
+{
+    if (!path)
+        return INVALID_HANDLE_VALUE;
+
+#ifdef TARGET_WINDOWS
+    ep_char16_t *path_utf16 = ep_rt_utf8_to_utf16le_string (path, -1);
+    if (!path_utf16)
+        return INVALID_HANDLE_VALUE;
+
+    HANDLE res = ::CreateFileW (reinterpret_cast<LPCWSTR>(path_utf16), GENERIC_WRITE, FILE_SHARE_READ, NULL, CREATE_ALWAYS, FILE_ATTRIBUTE_NORMAL, NULL);
+    ep_rt_utf16_string_free (path_utf16);
+    return static_cast<ep_rt_file_handle_t>(res);
+#else
+    mode_t perms = S_IRUSR | S_IWUSR | S_IRGRP | S_IWGRP | S_IROTH | S_IWOTH;
+    int fd = creat (path, perms);
+    if (fd == -1)
+        return INVALID_HANDLE_VALUE;
+
+    return (ep_rt_file_handle_t)(ptrdiff_t)fd;
+#endif
+}
+
+bool
+ep_rt_aot_file_close (ep_rt_file_handle_t file_handle)
+{
+#ifdef TARGET_WINDOWS
+    return ::CloseHandle (file_handle) != FALSE;
+#else
+    int fd = (int)(ptrdiff_t)file_handle;
+    close (fd);
+    return true;
+#endif
+}
+
+bool
+ep_rt_aot_file_write (
+	ep_rt_file_handle_t file_handle,
+	const uint8_t *buffer,
+	uint32_t bytes_to_write,
+	uint32_t *bytes_written)
+{
+#ifdef TARGET_WINDOWS
+    return ::WriteFile (file_handle, buffer, bytes_to_write, reinterpret_cast<LPDWORD>(bytes_written), NULL) != FALSE;
+#else
+    int fd = (int)(ptrdiff_t)file_handle;
+    int ret;
+    do {
+        ret = write (fd, buffer, bytes_to_write);
+    } while (ret == -1 && errno == EINTR);
+
+    if (ret == -1) {
+        if (bytes_written != NULL) {
+            *bytes_written = 0;
+        }
+
+        return false;
+    }
+
+    if (bytes_written != NULL)
+        *bytes_written = ret;
+
+    return true;
+#endif
 }
 
 uint8_t *

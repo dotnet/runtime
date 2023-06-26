@@ -103,7 +103,7 @@ namespace Internal.Reflection.Execution
         public sealed override QTypeDefinition GetMetadataForNamedType(RuntimeTypeHandle runtimeTypeHandle)
         {
             Debug.Assert(!RuntimeAugments.IsGenericType(runtimeTypeHandle));
-            if (!TypeLoaderEnvironment.Instance.TryGetMetadataForNamedType(runtimeTypeHandle, out QTypeDefinition qTypeDefinition))
+            if (!TypeLoaderEnvironment.TryGetMetadataForNamedType(runtimeTypeHandle, out QTypeDefinition qTypeDefinition))
             {
                 // This should be unreachable unless there's a compiler bug
                 throw new InvalidOperationException();
@@ -126,7 +126,7 @@ namespace Internal.Reflection.Execution
         /// <param name="runtimeTypeHandle">Runtime type handle (MethodTable) for the given type</param>
         public sealed override unsafe bool TryGetNamedTypeForMetadata(QTypeDefinition qTypeDefinition, out RuntimeTypeHandle runtimeTypeHandle)
         {
-            return TypeLoaderEnvironment.Instance.TryGetNamedTypeForMetadata(qTypeDefinition, out runtimeTypeHandle);
+            return TypeLoaderEnvironment.TryGetNamedTypeForMetadata(qTypeDefinition, out runtimeTypeHandle);
         }
 
         //
@@ -743,7 +743,7 @@ namespace Internal.Reflection.Execution
                     continue;
 
                 entryParser.SkipInteger(); // entryMethodHandleOrNameAndSigRaw
-                entryParser.SkipInteger(); // entryDeclaringTypeRaw
+                RuntimeTypeHandle declaringTypeHandle = externalReferences.GetRuntimeTypeHandleFromIndex(entryParser.GetUnsigned());
 
                 IntPtr entryMethodEntrypoint = externalReferences.GetFunctionPointerFromIndex(entryParser.GetUnsigned());
                 functionPointers.Add(new FunctionPointerOffsetPair(entryMethodEntrypoint, parserOffset));
@@ -752,17 +752,21 @@ namespace Internal.Reflection.Execution
                 // stack trace resolution - the reverse LdFtn lookup internally used by the reflection
                 // method resolution will work off an IP address on the stack which is an address
                 // within the actual method, not the stub.
-                IntPtr targetAddress = RuntimeAugments.GetCodeTarget(entryMethodEntrypoint);
-                if (targetAddress != IntPtr.Zero && targetAddress != entryMethodEntrypoint)
+                if (RuntimeAugments.IsValueType(declaringTypeHandle))
                 {
-                    functionPointers.Add(new FunctionPointerOffsetPair(targetAddress, parserOffset));
-                }
-                IntPtr targetAddress2;
-                if (TypeLoaderEnvironment.TryGetTargetOfUnboxingAndInstantiatingStub(entryMethodEntrypoint, out targetAddress2) &&
-                    targetAddress2 != entryMethodEntrypoint &&
-                    targetAddress2 != targetAddress)
-                {
-                    functionPointers.Add(new FunctionPointerOffsetPair(targetAddress2, parserOffset));
+                    IntPtr targetAddress = RuntimeAugments.GetCodeTarget(entryMethodEntrypoint);
+                    if (targetAddress != IntPtr.Zero && targetAddress != entryMethodEntrypoint)
+                    {
+                        functionPointers.Add(new FunctionPointerOffsetPair(targetAddress, parserOffset));
+                    }
+
+                    IntPtr targetAddress2;
+                    if (TypeLoaderEnvironment.TryGetTargetOfUnboxingAndInstantiatingStub(entryMethodEntrypoint, out targetAddress2) &&
+                        targetAddress2 != entryMethodEntrypoint &&
+                        targetAddress2 != targetAddress)
+                    {
+                        functionPointers.Add(new FunctionPointerOffsetPair(targetAddress2, parserOffset));
+                    }
                 }
             }
 
@@ -828,7 +832,7 @@ namespace Internal.Reflection.Execution
                 {
                     if ((entryFlags & InvokeTableFlags.RequiresInstArg) != 0)
                     {
-                        bool success = TypeLoaderEnvironment.Instance.TryGetGenericMethodComponents(instantiationArgument, out declaringTypeHandle, out genericMethodTypeArgumentHandles);
+                        bool success = TypeLoaderEnvironment.TryGetGenericMethodComponents(instantiationArgument, out declaringTypeHandle, out genericMethodTypeArgumentHandles);
                         Debug.Assert(success);
                     }
                     else

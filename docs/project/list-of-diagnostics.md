@@ -208,19 +208,19 @@ The diagnostic id values reserved for .NET Libraries analyzer warnings are `SYSL
 |  __`SYSLIB1089`__ | _`SYSLIB1070`-`SYSLIB1089` reserved for System.Runtime.InteropServices.JavaScript.JSImportGenerator._ |
 |  __`SYSLIB1090`__ | Invalid 'GeneratedComInterfaceAttribute' usage |
 |  __`SYSLIB1091`__ | Method is declared in different partial declaration than the 'GeneratedComInterface' attribute. |
-|  __`SYSLIB1092`__ | _`SYSLIB1092`-`SYSLIB1099` reserved for Microsoft.Interop.ComInteropGenerator._ |
-|  __`SYSLIB1093`__ | _`SYSLIB1092`-`SYSLIB1099` reserved for Microsoft.Interop.ComInteropGenerator._ |
-|  __`SYSLIB1094`__ | _`SYSLIB1092`-`SYSLIB1099` reserved for Microsoft.Interop.ComInteropGenerator._ |
-|  __`SYSLIB1095`__ | _`SYSLIB1092`-`SYSLIB1099` reserved for Microsoft.Interop.ComInteropGenerator._ |
-|  __`SYSLIB1096`__ | _`SYSLIB1092`-`SYSLIB1099` reserved for Microsoft.Interop.ComInteropGenerator._ |
-|  __`SYSLIB1097`__ | _`SYSLIB1092`-`SYSLIB1099` reserved for Microsoft.Interop.ComInteropGenerator._ |
-|  __`SYSLIB1098`__ | _`SYSLIB1092`-`SYSLIB1099` reserved for Microsoft.Interop.ComInteropGenerator._ |
-|  __`SYSLIB1099`__ | _`SYSLIB1092`-`SYSLIB1099` reserved for Microsoft.Interop.ComInteropGenerator._ |
+|  __`SYSLIB1092`__ | Specified interface derives from two or more 'GeneratedComInterfaceAttribute'-attributed interfaces. |
+|  __`SYSLIB1093`__ | Analysis for COM interface generation has failed |
+|  __`SYSLIB1094`__ | The base COM interface failed to generate source. Code will not be generated for this interface. |
+|  __`SYSLIB1095`__ | Invalid 'GeneratedComClassAttribute' usage |
+|  __`SYSLIB1096`__ | Use 'GeneratedComInterfaceAttribute' instead of 'ComImportAttribute' to generate COM marshalling code at compile time |
+|  __`SYSLIB1097`__ | This type implements at least one type with the 'GeneratedComInterfaceAttribute' attribute. Add the 'GeneratedComClassAttribute' to enable passing this type to COM and exposing the COM interfaces for the types with the 'GeneratedComInterfaceAttribute' from objects of this type. |
+|  __`SYSLIB1098`__ | .NET COM hosting with 'EnableComHosting' only supports built-in COM interop. It does not support source-generated COM interop with 'GeneratedComInterfaceAttribute'. |
+|  __`SYSLIB1099`__ | COM Interop APIs on 'System.Runtime.InteropServices.Marshal' do not support source-generated COM and will fail at runtime |
 |  __`SYSLIB1100`__ | Configuration binding generator: type is not supported. |
 |  __`SYSLIB1101`__ | Configuration binding generator: property on type is not supported. |
 |  __`SYSLIB1102`__ | Configuration binding generator: project's language version must be at least C# 11.|
-|  __`SYSLIB1103`__ | *_`SYSLIB1100`-`SYSLIB1118` reserved for Microsoft.Extensions.Configuration.Binder.SourceGeneration.* |
-|  __`SYSLIB1104`__ | *_`SYSLIB1100`-`SYSLIB1118` reserved for Microsoft.Extensions.Configuration.Binder.SourceGeneration.* |
+|  __`SYSLIB1103`__ | Configuration binding generator: value types are invalid inputs to configuration 'Bind' methods.* |
+|  __`SYSLIB1104`__ | Configuration binding generator: Generator cannot determine the target configuration type.* |
 |  __`SYSLIB1105`__ | *_`SYSLIB1100`-`SYSLIB1118` reserved for Microsoft.Extensions.Configuration.Binder.SourceGeneration.* |
 |  __`SYSLIB1106`__ | *_`SYSLIB1100`-`SYSLIB1118` reserved for Microsoft.Extensions.Configuration.Binder.SourceGeneration.* |
 |  __`SYSLIB1107`__ | *_`SYSLIB1100`-`SYSLIB1118` reserved for Microsoft.Extensions.Configuration.Binder.SourceGeneration.* |
@@ -235,7 +235,24 @@ The diagnostic id values reserved for .NET Libraries analyzer warnings are `SYSL
 |  __`SYSLIB1116`__ | *_`SYSLIB1100`-`SYSLIB1118` reserved for Microsoft.Extensions.Configuration.Binder.SourceGeneration.* |
 |  __`SYSLIB1117`__ | *_`SYSLIB1100`-`SYSLIB1118` reserved for Microsoft.Extensions.Configuration.Binder.SourceGeneration.* |
 |  __`SYSLIB1118`__ | *_`SYSLIB1100`-`SYSLIB1118` reserved for Microsoft.Extensions.Configuration.Binder.SourceGeneration.* |
-
+|  __`SYSLIB1201`__ | Options validation generator: Can't use 'ValidateObjectMembersAttribute' or `ValidateEnumeratedItemsAttribute` on fields or properties with open generic types. |
+|  __`SYSLIB1202`__ | Options validation generator: A member type has no fields or properties to validate. |
+|  __`SYSLIB1203`__ | Options validation generator: A type has no fields or properties to validate. |
+|  __`SYSLIB1204`__ | Options validation generator: A type annotated with `OptionsValidatorAttribute` doesn't implement the necessary interface. |
+|  __`SYSLIB1205`__ | Options validation generator: A type already includes an implementation of the 'Validate' method. |
+|  __`SYSLIB1206`__ | Options validation generator: Can't validate private fields or properties. |
+|  __`SYSLIB1207`__ | Options validation generator: Member type is not enumerable. |
+|  __`SYSLIB1208`__ | Options validation generator: Validators used for transitive or enumerable validation must have a constructor with no parameters. |
+|  __`SYSLIB1209`__ | Options validation generator: `OptionsValidatorAttribute` can't be applied to a static class. |
+|  __`SYSLIB1210`__ | Options validation generator: Null validator type specified for the `ValidateObjectMembersAttribute` or 'ValidateEnumeratedItemsAttribute' attributes. |
+|  __`SYSLIB1211`__ | Options validation generator: Unsupported circular references in model types. |
+|  __`SYSLIB1212`__ | Options validation generator: Member potentially missing transitive validation. |
+|  __`SYSLIB1213`__ | Options validation generator: Member potentially missing enumerable validation. |
+|  __`SYSLIB1214`__ | *_`SYSLIB1214`-`SYSLIB1218` reserved for Microsoft.Extensions.Options.SourceGeneration.* |
+|  __`SYSLIB1215`__ | *_`SYSLIB1214`-`SYSLIB1218` reserved for Microsoft.Extensions.Options.SourceGeneration.* |
+|  __`SYSLIB1216`__ | *_`SYSLIB1214`-`SYSLIB1218` reserved for Microsoft.Extensions.Options.SourceGeneration.* |
+|  __`SYSLIB1217`__ | *_`SYSLIB1214`-`SYSLIB1218` reserved for Microsoft.Extensions.Options.SourceGeneration.* |
+|  __`SYSLIB1218`__ | *_`SYSLIB1214`-`SYSLIB1218` reserved for Microsoft.Extensions.Options.SourceGeneration.* |
 
 ### Diagnostic Suppressions (`SYSLIBSUPPRESS****`)
 

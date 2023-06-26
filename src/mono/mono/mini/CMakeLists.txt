@@ -551,7 +551,7 @@ if(NOT DISABLE_EXECUTABLES)
   target_link_libraries(mono-sgen PRIVATE monoapi eglib_api monosgen-static)
   if(HAVE_ICU_SHIM)
     target_link_libraries(mono-sgen PRIVATE icu_shim_objects)
-  endif() 
+  endif()
   target_link_libraries(mono-sgen PRIVATE ${OS_LIBS} ${LLVM_LIBS} ${ICU_LIBS} ${Z_LIBS})
   # Alpine Linux implements ucontext in a different library
   if(CLR_CMAKE_HOST_ALPINE_LINUX AND TARGET_S390X)

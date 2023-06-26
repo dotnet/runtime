@@ -1,6 +1,7 @@
 // Licensed to the .NET Foundation under one or more agreements.
 // The .NET Foundation licenses this file to you under the MIT license.
 
+using System;
 using System.IO;
 using System.Linq;
 using System.Text.Json;
@@ -64,6 +65,24 @@ public class BuildPublishTests : BuildTestBase
         }
     }
 
+    [Theory]
+    [InlineData("Debug", false)]
+    [InlineData("Release", false)]
+    [InlineData("Debug", true)]
+    [InlineData("Release", true)]
+    public void DefaultTemplate_CheckFingerprinting(string config, bool expectFingerprintOnDotnetJs)
+    {
+        string id = $"blz_checkfingerprinting_{config}_{Path.GetRandomFileName()}";
+
+        CreateBlazorWasmTemplateProject(id);
+
+        var options = new BlazorBuildOptions(id, config, NativeFilesType.Relinked, ExpectRelinkDirWhenPublishing: true, ExpectFingerprintOnDotnetJs: expectFingerprintOnDotnetJs);
+        var finterprintingArg = expectFingerprintOnDotnetJs ? "/p:WasmFingerprintDotnetJs=true" : string.Empty;
+
+        BlazorBuild(options, "/p:WasmBuildNative=true", finterprintingArg);
+        BlazorPublish(options, "/p:WasmBuildNative=true", finterprintingArg);
+    }
+
     // Disabling for now - publish folder can have more than one dotnet*hash*js, and not sure
     // how to pick which one to check, for the test
     //[Theory]
@@ -71,18 +90,18 @@ public class BuildPublishTests : BuildTestBase
     //[InlineData("Release")]
     //public void DefaultTemplate_AOT_OnlyWithPublishCommandLine_Then_PublishNoAOT(string config)
     //{
-        //string id = $"blz_aot_pub_{config}";
-        //CreateBlazorWasmTemplateProject(id);
+    //string id = $"blz_aot_pub_{config}";
+    //CreateBlazorWasmTemplateProject(id);
 
-        //// No relinking, no AOT
-        //BlazorBuild(new BlazorBuildOptions(id, config, NativeFilesType.FromRuntimePack);
+    //// No relinking, no AOT
+    //BlazorBuild(new BlazorBuildOptions(id, config, NativeFilesType.FromRuntimePack);
 
-        //// AOT=true only for the publish command line, similar to what
-        //// would happen when setting it in Publish dialog for VS
-        //BlazorPublish(new BlazorBuildOptions(id, config, expectedFileType: NativeFilesType.AOT, "-p:RunAOTCompilation=true");
+    //// AOT=true only for the publish command line, similar to what
+    //// would happen when setting it in Publish dialog for VS
+    //BlazorPublish(new BlazorBuildOptions(id, config, expectedFileType: NativeFilesType.AOT, "-p:RunAOTCompilation=true");
 
-        //// publish again, no AOT
-        //BlazorPublish(new BlazorBuildOptions(id, config, NativeFilesType.Relinked);
+    //// publish again, no AOT
+    //BlazorPublish(new BlazorBuildOptions(id, config, NativeFilesType.Relinked);
     //}
 
     [Theory]
@@ -92,7 +111,7 @@ public class BuildPublishTests : BuildTestBase
     [InlineData("Release", /*build*/true, /*publish*/false)]
     [InlineData("Release", /*build*/false, /*publish*/true)]
     [InlineData("Release", /*build*/true, /*publish*/true)]
-    [ActiveIssue("https://github.com/dotnet/runtime/issues/82725")]
+    [ActiveIssue("https://github.com/dotnet/runtime/issues/87877", TestPlatforms.Windows)]
     public async Task WithDllImportInMainAssembly(string config, bool build, bool publish)
     {
         // Based on https://github.com/dotnet/runtime/issues/59255
@@ -135,16 +154,10 @@ public class BuildPublishTests : BuildTestBase
         """);
 
         if (build)
-        {
             BlazorBuild(new BlazorBuildOptions(id, config, NativeFilesType.Relinked));
-            CheckNativeFileLinked(forPublish: false);
-        }
 
         if (publish)
-        {
             BlazorPublish(new BlazorBuildOptions(id, config, NativeFilesType.Relinked, ExpectRelinkDirWhenPublishing: build));
-            CheckNativeFileLinked(forPublish: true);
-        }
 
         if (publish)
             await BlazorRunForPublishWithWebServer(config, TestDllImport);
@@ -156,20 +169,6 @@ public class BuildPublishTests : BuildTestBase
             await page.Locator("text=\"cpp_add\"").ClickAsync();
             var txt = await page.Locator("p[role='test']").InnerHTMLAsync();
             Assert.Equal("Output: 22", txt);
-        }
-
-        void CheckNativeFileLinked(bool forPublish)
-        {
-            // very crude way to check that the native file was linked in
-            // needed because we don't run the blazor app yet
-            string objBuildDir = Path.Combine(_projectDir!, "obj", config, DefaultTargetFrameworkForBlazor, "wasm", forPublish ? "for-publish" : "for-build");
-            string pinvokeTableHPath = Path.Combine(objBuildDir, "pinvoke-table.h");
-            Assert.True(File.Exists(pinvokeTableHPath), $"Could not find {pinvokeTableHPath}");
-
-            string pinvokeTableHContents = File.ReadAllText(pinvokeTableHPath);
-            string pattern = $"\"cpp_add\".*{id}";
-            Assert.True(Regex.IsMatch(pinvokeTableHContents, pattern),
-                            $"Could not find {pattern} in {pinvokeTableHPath}");
         }
     }
 
@@ -200,7 +199,7 @@ public class BuildPublishTests : BuildTestBase
         string razorClassLibraryFileName = UseWebcil ? $"RazorClassLibrary{WebcilInWasmExtension}" : "RazorClassLibrary.dll";
         AddItemsPropertiesToProject(wasmProjectFile, extraItems: @$"
             <ProjectReference Include=""..\\RazorClassLibrary\\RazorClassLibrary.csproj"" />
-            <BlazorWebAssemblyLazyLoad Include=""{ razorClassLibraryFileName }"" />
+            <BlazorWebAssemblyLazyLoad Include=""{razorClassLibraryFileName}"" />
         ");
 
         _projectDir = wasmProjectDir;
@@ -238,7 +237,6 @@ public class BuildPublishTests : BuildTestBase
         await BlazorRunForBuildWithDotnetRun(config);
     }
 
-    [ActiveIssue("https://github.com/dotnet/runtime/issues/82481")]
     [ConditionalTheory(typeof(BuildTestBase), nameof(IsUsingWorkloads))]
     [InlineData("Debug", false)]
     [InlineData("Debug", true)]
@@ -251,7 +249,11 @@ public class BuildPublishTests : BuildTestBase
         if (aot)
             AddItemsPropertiesToProject(projectFile, "<RunAOTCompilation>true</RunAOTCompilation>");
 
-        BlazorPublish(new BlazorBuildOptions(id, config, aot ? NativeFilesType.AOT : NativeFilesType.Relinked));
+        BlazorPublish(new BlazorBuildOptions(
+            id,
+            config,
+            aot ? NativeFilesType.AOT
+                : (config == "Release" ? NativeFilesType.Relinked : NativeFilesType.FromRuntimePack)));
         await BlazorRunForPublishWithWebServer(config);
     }
 

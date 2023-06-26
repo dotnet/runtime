@@ -157,8 +157,8 @@
   #define RBM_CALLEE_GCTRASH_WRITEBARRIER_BYREF RBM_CALLEE_TRASH_NOGC
 
   // GenericPInvokeCalliHelper VASigCookie Parameter
-  #define REG_PINVOKE_COOKIE_PARAM          REG_T0
-  #define RBM_PINVOKE_COOKIE_PARAM          RBM_T0
+  #define REG_PINVOKE_COOKIE_PARAM          REG_T3
+  #define RBM_PINVOKE_COOKIE_PARAM          RBM_T3
 
   // GenericPInvokeCalliHelper unmanaged target Parameter
   #define REG_PINVOKE_TARGET_PARAM          REG_T2
@@ -295,11 +295,8 @@
   extern const regNumber fltArgRegs [MAX_FLOAT_REG_ARG];
   extern const regMaskTP fltArgMasks[MAX_FLOAT_REG_ARG];
 
-  #define B_DIST_SMALL_MAX_NEG  (-131072)
-  #define B_DIST_SMALL_MAX_POS  (+131071)
-
-  #define OFFSET_DIST_SMALL_MAX_NEG   (-2048)
-  #define OFFSET_DIST_SMALL_MAX_POS   (+2047)
+  #define B_DIST_SMALL_MAX_NEG  (-4096)
+  #define B_DIST_SMALL_MAX_POS  (+4095)
 
   #define STACK_PROBE_BOUNDARY_THRESHOLD_BYTES 0
 

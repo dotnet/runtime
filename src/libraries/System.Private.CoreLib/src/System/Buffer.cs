@@ -85,7 +85,7 @@ namespace System
                 ThrowHelper.ThrowArgumentOutOfRangeException(ExceptionArgument.index);
             }
 
-            return Unsafe.Add<byte>(ref MemoryMarshal.GetArrayDataReference(array), index);
+            return Unsafe.Add(ref MemoryMarshal.GetArrayDataReference(array), index);
         }
 
         public static void SetByte(Array array, int index, byte value)
@@ -96,7 +96,7 @@ namespace System
                 ThrowHelper.ThrowArgumentOutOfRangeException(ExceptionArgument.index);
             }
 
-            Unsafe.Add<byte>(ref MemoryMarshal.GetArrayDataReference(array), index) = value;
+            Unsafe.Add(ref MemoryMarshal.GetArrayDataReference(array), index) = value;
         }
 
         // The attributes on this method are chosen for best JIT performance.

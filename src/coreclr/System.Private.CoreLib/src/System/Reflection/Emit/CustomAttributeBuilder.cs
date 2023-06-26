@@ -243,7 +243,7 @@ namespace System.Reflection.Emit
         }
 
         // Check that a type is suitable for use in a custom attribute.
-        private bool ValidateType(Type t)
+        private static bool ValidateType(Type t)
         {
             if (t.IsPrimitive)
             {

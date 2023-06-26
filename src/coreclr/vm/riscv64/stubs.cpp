@@ -914,7 +914,7 @@ UMEntryThunk * UMEntryThunk::Decode(void *pCallback)
     // stubs (see UMEntryThunkCode::Encode below) then we'll return NULL. Luckily in these scenarios our
     // caller will perform a hash lookup on successful return to verify our result in case random unmanaged
     // code happens to look like ours.
-    if ((pCode->m_code[0] == 0x00009f97) && // auipc t6, 0
+    if ((pCode->m_code[0] == 0x00000f97) && // auipc t6, 0
         (pCode->m_code[1] == 0x018fb383) && // ld    t2, 24(t6)
         (pCode->m_code[2] == 0x010fbf83) && // ld    t6, 16(t6)
         (pCode->m_code[3] == 0x000f8067))   // jalr  x0, 0(t6)
@@ -934,7 +934,7 @@ void UMEntryThunkCode::Encode(UMEntryThunkCode *pEntryThunkCodeRX, BYTE* pTarget
     // m_pTargetCode data
     // m_pvSecretParam data
 
-    m_code[0] = 0x00009f97; // auipc t6, 0
+    m_code[0] = 0x00000f97; // auipc t6, 0
     m_code[1] = 0x018fb383; // ld    t2, 24(t6)
     m_code[2] = 0x010fbf83; // ld    t6, 16(t6)
     m_code[3] = 0x000f8067; // jalr  x0, 0(t6)
@@ -1009,54 +1009,75 @@ BOOL GetAnyThunkTarget (T_CONTEXT *pctx, TADDR *pTarget, TADDR *pTargetMethodDes
 // StubLinkerCPU methods
 // ----------------------------------------------------------------
 
-void StubLinkerCPU::EmitMovConstant(IntReg target, UINT64 constant)
+void StubLinkerCPU::EmitMovConstant(IntReg reg, UINT64 imm)
 {
-    if (0 == ((constant + 0x800) >> 32)) {
-        if (((constant + 0x800) >> 12) != 0)
-        {
-            Emit32((DWORD)(0x00000037 | (((constant + 0x800) >> 12) << 12) | (target << 7))); // lui target, (constant + 0x800) >> 12
-            if ((constant & 0xFFF) != 0)
-            {
-                Emit32((DWORD)(0x00000013 | (constant & 0xFFF) << 20 | (target << 7) | (target << 15))); // addi target, target, constant
-            }
-        }
-        else
-        {
-            Emit32((DWORD)(0x00000013 | (constant & 0xFFF) << 20 | (target << 7))); // addi target, x0, constant
-        }
+    // Adaptation of emitLoadImmediate
+
+    if (isValidSimm12(imm))
+    {
+        EmitAddImm(reg, 0 /* zero register */, imm & 0xFFF);
+        return;
+    }
+
+    // TODO-RISCV64: maybe optimized via emitDataConst(), check #86790
+
+    UINT32 msb;
+    UINT32 high31;
+
+    BitScanReverse64(&msb, imm);
+
+    if (msb > 30)
+    {
+        high31 = (imm >> (msb - 30)) & 0x7FffFFff;
     }
     else
     {
-        UINT32 upper = constant >> 32;
-        if (((upper + 0x800) >> 12) != 0)
+        high31 = imm & 0x7FffFFff;
+    }
+
+    // Since ADDIW use sign extension for immediate
+    // we have to adjust higher 19 bit loaded by LUI
+    // for case when low part is bigger than 0x800.
+    UINT32 high19 = (high31 + 0x800) >> 12;
+
+    EmitLuImm(reg, high19);
+    if (high31 & 0x800)
+    {
+        // EmitAddImm does not allow negative immediate values, so use EmitSubImm.
+        EmitSubImm(reg, reg, ~high31 + 1 & 0xFFF);
+    }
+    else
+    {
+        EmitAddImm(reg, reg, high31 & 0x7FF);
+    }
+
+    // And load remaining part by batches of 11 bits size.
+    INT32 remainingShift = msb - 30;
+
+    // shiftAccumulator usage is an optimization allows to exclude `slli addi` iteration
+    // if immediate bits `low11` for this iteration are zero.
+    UINT32 shiftAccumulator = 0;
+
+    while (remainingShift > 0)
+    {
+        UINT32 shift = remainingShift >= 11 ? 11 : remainingShift % 11;
+        UINT32 mask = 0x7ff >> (11 - shift);
+        remainingShift -= shift;
+        UINT32 low11 = (imm >> remainingShift) & mask;
+        shiftAccumulator += shift;
+
+        if (low11)
         {
-            Emit32((DWORD)(0x00000037 | (((upper + 0x800) >> 12) << 12) | (target << 7))); // lui target, (upper + 0x800) >> 12
-            if ((upper & 0xFFF) != 0)
-            {
-                Emit32((DWORD)(0x00000013 | (upper & 0xFFF) << 20 | (target << 7) | (target << 15))); // addi target, target, upper 
-            }
+            EmitSllImm(reg, reg, shiftAccumulator);
+            shiftAccumulator = 0;
+
+            EmitAddImm(reg, reg, low11);
         }
-        else
-        {
-            Emit32((DWORD)(0x00000013 | (upper & 0xFFF) << 20 | (target << 7))); // addi target, x0, upper 
-        }
-        UINT32 lower = (constant << 32) >> 32;
-        UINT32 shift = 0;
-        for (int i = 32; i >= 0; i -= 11)
-        {
-            shift += i > 11 ? 11 : i;
-            UINT32 current = lower >> (i < 11 ? 0 : i - 11);
-            if (current != 0)
-            {
-                Emit32((DWORD)(0x00001013 | (shift << 20) | (target << 7) | (target << 15))); // slli target, target, shift
-                Emit32((DWORD)(0x00000013 | (current & 0x7FF) << 20 | (target << 7) | (target << 15))); // addi target, target, current
-                shift = 0;
-            }
-        }
-        if (shift)
-        {
-            Emit32((DWORD)(0x00001013 | (shift << 20) | (target << 7) | (target << 15))); // slli target, target, shift
-        }
+    }
+
+    if (shiftAccumulator)
+    {
+        EmitSllImm(reg, reg, shiftAccumulator);
     }
 }
 
@@ -1161,14 +1182,26 @@ void StubLinkerCPU::EmitMovReg(IntReg Xd, IntReg Xm)
 
 void StubLinkerCPU::EmitSubImm(IntReg Xd, IntReg Xn, unsigned int value)
 {
-    _ASSERTE((0 <= value) && (value <= 0x7FF));
+    _ASSERTE(value <= 0x800);
     Emit32((DWORD)(0x00000013 | (((~value + 0x1) & 0xFFF) << 20) | (Xn << 15) | (Xd << 7))); // addi Xd, Xn, (~value + 0x1) & 0xFFF
 }
 
 void StubLinkerCPU::EmitAddImm(IntReg Xd, IntReg Xn, unsigned int value)
 {
-    _ASSERTE((0 <= value) && (value <= 0x7FF));
+    _ASSERTE(value <= 0x7FF);
     Emit32((DWORD)(0x00000013 | (value << 20) | (Xn << 15) | (Xd << 7))); // addi Xd, Xn, value
+}
+
+void StubLinkerCPU::EmitSllImm(IntReg Xd, IntReg Xn, unsigned int value)
+{
+    _ASSERTE(value <= 0x3F);
+    Emit32((DWORD)(0x00001013 | (value << 20) | (Xn << 15) | (Xd << 7))); // sll Xd, Xn, value
+}
+
+void StubLinkerCPU::EmitLuImm(IntReg Xd, unsigned int value)
+{
+    _ASSERTE(value <= 0xFFFFF);
+    Emit32((DWORD)(0x00000037 | (value << 12) | (Xd << 7))); // lui Xd, value
 }
 
 void StubLinkerCPU::EmitCallRegister(IntReg reg)
@@ -1318,7 +1351,7 @@ VOID StubLinkerCPU::EmitComputedInstantiatingMethodStub(MethodDesc* pSharedMD, s
         _ASSERTE(pEntry->dstofs != ShuffleEntry::HELPERREG);
         _ASSERTE(pEntry->srcofs != ShuffleEntry::HELPERREG);
 
-        EmitMovReg(IntReg((pEntry->dstofs & ShuffleEntry::OFSREGMASK) + 4), IntReg((pEntry->srcofs & ShuffleEntry::OFSREGMASK) + 4));
+        EmitMovReg(IntReg((pEntry->dstofs & ShuffleEntry::OFSREGMASK) + 10), IntReg((pEntry->srcofs & ShuffleEntry::OFSREGMASK) + 10));
     }
 
     MetaSig msig(pSharedMD);

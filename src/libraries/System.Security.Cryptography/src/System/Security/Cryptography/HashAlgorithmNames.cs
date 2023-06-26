@@ -14,6 +14,14 @@ namespace System.Security.Cryptography
         public const string SHA384 = "SHA384";
         public const string SHA512 = "SHA512";
 
+        public const string SHA3_256 = "SHA3-256";
+        public const string SHA3_384 = "SHA3-384";
+        public const string SHA3_512 = "SHA3-512";
+        public const string SHAKE128 = "SHAKE128";
+        public const string SHAKE256 = "SHAKE256";
+        public const string CSHAKE128 = "CSHAKE128";
+        public const string CSHAKE256 = "CSHAKE256";
+
         /// <summary>
         /// Map HashAlgorithm type to string; .NET Framework uses CryptoConfig functionality.
         /// </summary>

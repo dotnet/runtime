@@ -65,7 +65,7 @@ namespace System
 
         public Version(string version)
         {
-            Version v = Version.Parse(version);
+            Version v = Parse(version);
             _Major = v.Major;
             _Minor = v.Minor;
             _Build = v.Build;
@@ -120,13 +120,13 @@ namespace System
                 return CompareTo(v);
             }
 
-            throw new ArgumentException(SR.Arg_MustBeVersion);
+            throw new ArgumentException(SR.Arg_MustBeVersion, nameof(version));
         }
 
         public int CompareTo(Version? value)
         {
             return
-                object.ReferenceEquals(value, this) ? 0 :
+                ReferenceEquals(value, this) ? 0 :
                 value is null ? 1 :
                 _Major != value._Major ? (_Major > value._Major ? 1 : -1) :
                 _Minor != value._Minor ? (_Minor > value._Minor ? 1 : -1) :
@@ -142,7 +142,7 @@ namespace System
 
         public bool Equals([NotNullWhen(true)] Version? obj)
         {
-            return object.ReferenceEquals(obj, this) ||
+            return ReferenceEquals(obj, this) ||
                 (!(obj is null) &&
                 _Major == obj._Major &&
                 _Minor == obj._Minor &&

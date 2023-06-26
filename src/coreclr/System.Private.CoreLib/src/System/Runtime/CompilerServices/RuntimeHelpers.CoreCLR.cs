@@ -49,7 +49,7 @@ namespace System.Runtime.CompilerServices
         // This call will generate an exception if the specified class constructor threw an
         // exception when it ran.
 
-        [LibraryImport(RuntimeHelpers.QCall, EntryPoint = "ReflectionInvocation_RunClassConstructor")]
+        [LibraryImport(QCall, EntryPoint = "ReflectionInvocation_RunClassConstructor")]
         private static partial void RunClassConstructor(QCallTypeHandle type);
 
         [RequiresUnreferencedCode("Trimmer can't guarantee existence of class constructor")]
@@ -70,7 +70,7 @@ namespace System.Runtime.CompilerServices
         // This call will generate an exception if the specified module constructor threw an
         // exception when it ran.
 
-        [LibraryImport(RuntimeHelpers.QCall, EntryPoint = "ReflectionInvocation_RunModuleConstructor")]
+        [LibraryImport(QCall, EntryPoint = "ReflectionInvocation_RunModuleConstructor")]
         private static partial void RunModuleConstructor(QCallModule module);
 
         public static void RunModuleConstructor(ModuleHandle module)
@@ -82,10 +82,10 @@ namespace System.Runtime.CompilerServices
             RunModuleConstructor(new QCallModule(ref rm));
         }
 
-        [LibraryImport(RuntimeHelpers.QCall, EntryPoint = "ReflectionInvocation_CompileMethod")]
+        [LibraryImport(QCall, EntryPoint = "ReflectionInvocation_CompileMethod")]
         internal static partial void CompileMethod(RuntimeMethodHandleInternal method);
 
-        [LibraryImport(RuntimeHelpers.QCall, EntryPoint = "ReflectionInvocation_PrepareMethod")]
+        [LibraryImport(QCall, EntryPoint = "ReflectionInvocation_PrepareMethod")]
         private static unsafe partial void PrepareMethod(RuntimeMethodHandleInternal method, IntPtr* pInstantiation, int cInstantiation);
 
         public static void PrepareMethod(RuntimeMethodHandle method) => PrepareMethod(method, null);
@@ -133,7 +133,7 @@ namespace System.Runtime.CompilerServices
         {
             // This offset is baked in by string indexer intrinsic, so there is no harm
             // in getting it baked in here as well.
-            [System.Runtime.Versioning.NonVersionable]
+            [NonVersionable]
             get =>
                 // Number of bytes from the address pointed to by a reference to
                 // a String to the first 16-bit character in the String.  Skip
@@ -182,7 +182,7 @@ namespace System.Runtime.CompilerServices
             return obj!;
         }
 
-        [LibraryImport(RuntimeHelpers.QCall, EntryPoint = "ReflectionSerialization_GetUninitializedObject")]
+        [LibraryImport(QCall, EntryPoint = "ReflectionSerialization_GetUninitializedObject")]
         private static partial void GetUninitializedObject(QCallTypeHandle type, ObjectHandleOnStack retObject);
 
         [MethodImpl(MethodImplOptions.InternalCall)]
@@ -309,13 +309,13 @@ namespace System.Runtime.CompilerServices
         }
 
 
-        [LibraryImport(RuntimeHelpers.QCall, EntryPoint = "MethodTable_AreTypesEquivalent")]
+        [LibraryImport(QCall, EntryPoint = "MethodTable_AreTypesEquivalent")]
         [return: MarshalAs(UnmanagedType.Bool)]
         internal static unsafe partial bool AreTypesEquivalent(MethodTable* pMTa, MethodTable* pMTb);
 
         /// <summary>
         /// Allocate memory that is associated with the <paramref name="type"/> and
-        /// will be freed if and when the <see cref="System.Type"/> is unloaded.
+        /// will be freed if and when the <see cref="Type"/> is unloaded.
         /// </summary>
         /// <param name="type">Type associated with the allocated memory.</param>
         /// <param name="size">Amount of memory in bytes to allocate.</param>
@@ -330,7 +330,7 @@ namespace System.Runtime.CompilerServices
             return AllocateTypeAssociatedMemory(new QCallTypeHandle(ref rt), (uint)size);
         }
 
-        [LibraryImport(RuntimeHelpers.QCall, EntryPoint = "RuntimeTypeHandle_AllocateTypeAssociatedMemory")]
+        [LibraryImport(QCall, EntryPoint = "RuntimeTypeHandle_AllocateTypeAssociatedMemory")]
         private static partial IntPtr AllocateTypeAssociatedMemory(QCallTypeHandle type, uint size);
 
         [MethodImpl(MethodImplOptions.InternalCall)]

@@ -22,6 +22,11 @@
         <target state="translated">De entre “ConstantElementCount” y “ElementCountInfo”, solo se puede usar uno de los dos en un “MarshalUsingAttribute” para un “ElementIndirectionDepth” determinado</target>
         <note />
       </trans-unit>
+      <trans-unit id="ContainingTypeAccessibilityDetails">
+        <source>Containing type '{0}' has accessibility '{1}'.</source>
+        <target state="translated">El tipo contenedor '{0}' tiene accesibilidad '{1}'.</target>
+        <note />
+      </trans-unit>
       <trans-unit id="CyclicalCountInfo">
         <source>This element cannot depend on '{0}' for collection size information without creating a dependency cycle</source>
         <target state="translated">Este elemento no puede depender de “{0}” para la información de tamaño de colección sin crear un ciclo de dependencia</target>
@@ -98,8 +103,8 @@
         <note />
       </trans-unit>
       <trans-unit id="MarshallingStringOrCharAsUndefinedNotSupported">
-        <source>Marshalling string or char without explicit marshalling information is not supported. Specify 'LibraryImportAttribute.StringMarshalling', 'LibraryImportAttribute.StringMarshallingCustomType', 'MarshalUsingAttribute' or 'MarshalAsAttribute'.</source>
-        <target state="translated">No se admite la serialización de cadenas o caracteres sin información de serialización explícita. Especifique \"LibraryImportAttribute.StringMars slaing\", \"LibraryImportAttribute.StringMars slaingCustomType\", \"MarshalUsingAttribute\" o \"MarshalAsAttribute\".</target>
+        <source>Marshalling string or char without explicit marshalling information is not supported. Specify '{0}.StringMarshalling', '{0}.StringMarshallingCustomType', 'MarshalUsingAttribute' or 'MarshalAsAttribute'.</source>
+        <target state="translated">No se admite la serialización de cadenas o caracteres sin información de serialización explícita. Especifique '{0}. StringMarshalling', '{0}. StringMars slaingCustomType", "MarshalUsingAttribute" o "MarshalAsAttribute".</target>
         <note />
       </trans-unit>
       <trans-unit id="RuntimeMarshallingMustBeDisabled">
@@ -110,6 +115,11 @@
       <trans-unit id="SafeHandleByRefMustBeConcrete">
         <source>An abstract type derived from 'SafeHandle' cannot be marshalled by reference. The provided type must be concrete.</source>
         <target state="translated">Un tipo abstracto derivado de “SafeHandle” no se puede serializar por referencia. El tipo proporcionado debe ser concreto.</target>
+        <note />
+      </trans-unit>
+      <trans-unit id="TypeAccessibilityDetails">
+        <source>'{0}' has accessibility '{1}'.</source>
+        <target state="translated">'{0}' tiene accesibilidad '{1}'.</target>
         <note />
       </trans-unit>
       <trans-unit id="UnmanagedToManagedMissingRequiredMarshaller">

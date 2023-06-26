@@ -16,25 +16,39 @@ namespace Microsoft.Interop
     /// </summary>
     internal sealed record ComMethodInfo(
         MethodDeclarationSyntax Syntax,
-        string MethodName)
+        string MethodName,
+        SequenceEqualImmutableArray<AttributeInfo> Attributes)
     {
         /// <summary>
         /// Returns a list of tuples of ComMethodInfo, IMethodSymbol, and Diagnostic. If ComMethodInfo is null, Diagnostic will not be null, and vice versa.
         /// </summary>
-        public static SequenceEqualImmutableArray<(ComMethodInfo? ComMethod, IMethodSymbol Symbol, Diagnostic? Diagnostic)> GetMethodsFromInterface((ComInterfaceInfo ifaceContext, INamedTypeSymbol ifaceSymbol) data, CancellationToken ct)
+        public static SequenceEqualImmutableArray<DiagnosticOr<(ComMethodInfo ComMethod, IMethodSymbol Symbol)>> GetMethodsFromInterface((ComInterfaceInfo ifaceContext, INamedTypeSymbol ifaceSymbol) data, CancellationToken ct)
         {
-            var methods = ImmutableArray.CreateBuilder<(ComMethodInfo, IMethodSymbol, Diagnostic?)>();
+            var methods = ImmutableArray.CreateBuilder<DiagnosticOr<(ComMethodInfo, IMethodSymbol)>>();
             foreach (var member in data.ifaceSymbol.GetMembers())
             {
-                if (IsComMethodCandidate(member))
+                if (member.IsStatic)
                 {
-                    methods.Add(CalculateMethodInfo(data.ifaceContext, (IMethodSymbol)member, ct));
+                    continue;
+                }
+
+                switch (member)
+                {
+                    case { Kind: SymbolKind.Property }:
+                        methods.Add(DiagnosticOr<(ComMethodInfo, IMethodSymbol)>.From(member.CreateDiagnosticInfo(GeneratorDiagnostics.InstancePropertyDeclaredInInterface, member.Name, data.ifaceSymbol.ToDisplayString())));
+                        break;
+                    case { Kind: SymbolKind.Event }:
+                        methods.Add(DiagnosticOr<(ComMethodInfo, IMethodSymbol)>.From(member.CreateDiagnosticInfo(GeneratorDiagnostics.InstanceEventDeclaredInInterface, member.Name, data.ifaceSymbol.ToDisplayString())));
+                        break;
+                    case IMethodSymbol { MethodKind: MethodKind.Ordinary }:
+                        methods.Add(CalculateMethodInfo(data.ifaceContext, (IMethodSymbol)member, ct));
+                        break;
                 }
             }
             return methods.ToImmutable().ToSequenceEqual();
         }
 
-        private static Diagnostic? GetDiagnosticIfInvalidMethodForGeneration(MethodDeclarationSyntax comMethodDeclaringSyntax, IMethodSymbol method)
+        private static DiagnosticInfo? GetDiagnosticIfInvalidMethodForGeneration(MethodDeclarationSyntax comMethodDeclaringSyntax, IMethodSymbol method)
         {
             // Verify the method has no generic types or defined implementation
             // and is not marked static or sealed
@@ -42,27 +56,22 @@ namespace Microsoft.Interop
                 || comMethodDeclaringSyntax.Body is not null
                 || comMethodDeclaringSyntax.Modifiers.Any(SyntaxKind.SealedKeyword))
             {
-                return Diagnostic.Create(GeneratorDiagnostics.InvalidAttributedMethodSignature, comMethodDeclaringSyntax.Identifier.GetLocation(), method.Name);
+                return DiagnosticInfo.Create(GeneratorDiagnostics.InvalidAttributedMethodSignature, comMethodDeclaringSyntax.Identifier.GetLocation(), method.Name);
             }
 
             // Verify the method does not have a ref return
             if (method.ReturnsByRef || method.ReturnsByRefReadonly)
             {
-                return Diagnostic.Create(GeneratorDiagnostics.ReturnConfigurationNotSupported, comMethodDeclaringSyntax.Identifier.GetLocation(), "ref return", method.ToDisplayString());
+                return DiagnosticInfo.Create(GeneratorDiagnostics.ReturnConfigurationNotSupported, comMethodDeclaringSyntax.Identifier.GetLocation(), "ref return", method.ToDisplayString());
             }
 
             return null;
         }
 
-        private static bool IsComMethodCandidate(ISymbol member)
-        {
-            return member.Kind == SymbolKind.Method && !member.IsStatic;
-        }
-
-        private static (ComMethodInfo?, IMethodSymbol, Diagnostic?) CalculateMethodInfo(ComInterfaceInfo ifaceContext, IMethodSymbol method, CancellationToken ct)
+        private static DiagnosticOr<(ComMethodInfo, IMethodSymbol)> CalculateMethodInfo(ComInterfaceInfo ifaceContext, IMethodSymbol method, CancellationToken ct)
         {
             ct.ThrowIfCancellationRequested();
-            Debug.Assert(IsComMethodCandidate(method));
+            Debug.Assert(method is { IsStatic: false, MethodKind: MethodKind.Ordinary });
 
             // We only support methods that are defined in the same partial interface definition as the
             // [GeneratedComInterface] attribute.
@@ -82,7 +91,7 @@ namespace Microsoft.Interop
 
             if (methodLocationInAttributedInterfaceDeclaration is null)
             {
-                return (null, method, Diagnostic.Create(GeneratorDiagnostics.MethodNotDeclaredInAttributedInterface, method.Locations.FirstOrDefault(), method.ToDisplayString()));
+                return DiagnosticOr<(ComMethodInfo, IMethodSymbol)>.From(DiagnosticInfo.Create(GeneratorDiagnostics.MethodNotDeclaredInAttributedInterface, method.Locations.FirstOrDefault(), method.ToDisplayString()));
             }
 
 
@@ -91,7 +100,6 @@ namespace Microsoft.Interop
             foreach (var declaringSyntaxReference in method.DeclaringSyntaxReferences)
             {
                 var declaringSyntax = declaringSyntaxReference.GetSyntax(ct);
-                Debug.Assert(declaringSyntax.IsKind(SyntaxKind.MethodDeclaration));
                 if (declaringSyntax.GetLocation().SourceSpan.Contains(methodLocationInAttributedInterfaceDeclaration.SourceSpan))
                 {
                     comMethodDeclaringSyntax = (MethodDeclarationSyntax)declaringSyntax;
@@ -100,16 +108,23 @@ namespace Microsoft.Interop
             }
             if (comMethodDeclaringSyntax is null)
             {
-                return (null, method, Diagnostic.Create(GeneratorDiagnostics.CannotAnalyzeMethodPattern, method.Locations.FirstOrDefault(), method.ToDisplayString()));
+                return DiagnosticOr<(ComMethodInfo, IMethodSymbol)>.From(DiagnosticInfo.Create(GeneratorDiagnostics.CannotAnalyzeMethodPattern, method.Locations.FirstOrDefault(), method.ToDisplayString()));
             }
 
             var diag = GetDiagnosticIfInvalidMethodForGeneration(comMethodDeclaringSyntax, method);
             if (diag is not null)
             {
-                return (null, method, diag);
+                return DiagnosticOr<(ComMethodInfo, IMethodSymbol)>.From(diag);
             }
-            var comMethodInfo = new ComMethodInfo(comMethodDeclaringSyntax, method.Name);
-            return (comMethodInfo, method, null);
+
+            var attributes = method.GetAttributes();
+            var attributeInfos = ImmutableArray.CreateBuilder<AttributeInfo>(attributes.Length);
+            foreach (var attr in attributes)
+            {
+                attributeInfos.Add(AttributeInfo.From(attr));
+            }
+            var comMethodInfo = new ComMethodInfo(comMethodDeclaringSyntax, method.Name, attributeInfos.MoveToImmutable().ToSequenceEqual());
+            return DiagnosticOr<(ComMethodInfo, IMethodSymbol)>.From((comMethodInfo, method));
         }
     }
 }

@@ -24,7 +24,7 @@ namespace System.Runtime.InteropServices.JavaScript
         {
             get
             {
-                s_csOwnedObjects ??= new ();
+                s_csOwnedObjects ??= new();
                 return s_csOwnedObjects;
             }
         }
@@ -131,8 +131,9 @@ namespace System.Runtime.InteropServices.JavaScript
         {
             Task<JSObject> modulePromise = JavaScriptImports.DynamicImport(moduleName, moduleUrl);
             var wrappedTask = CancelationHelper(modulePromise, cancellationToken);
-            await Task.Yield();// this helps to finish the import before we bind the module in [JSImport]
-            return await wrappedTask.ConfigureAwait(true);
+            return await wrappedTask.ConfigureAwait(
+                ConfigureAwaitOptions.ContinueOnCapturedContext |
+                ConfigureAwaitOptions.ForceYielding); // this helps to finish the import before we bind the module in [JSImport]
         }
 
         public static async Task<JSObject> CancelationHelper(Task<JSObject> jsTask, CancellationToken cancellationToken)
@@ -196,5 +197,75 @@ namespace System.Runtime.InteropServices.JavaScript
             }
             return res;
         }
+
+#if FEATURE_WASM_THREADS
+        public static void InstallWebWorkerInterop(bool installJSSynchronizationContext, bool isMainThread)
+        {
+            Interop.Runtime.InstallWebWorkerInterop(installJSSynchronizationContext);
+            if (installJSSynchronizationContext)
+            {
+                var currentThreadId = GetNativeThreadId();
+                var ctx = JSSynchronizationContext.CurrentJSSynchronizationContext;
+                if (ctx == null)
+                {
+                    ctx = new JSSynchronizationContext(Thread.CurrentThread, currentThreadId);
+                    ctx.previousSynchronizationContext = SynchronizationContext.Current;
+                    JSSynchronizationContext.CurrentJSSynchronizationContext = ctx;
+                    SynchronizationContext.SetSynchronizationContext(ctx);
+                    if (isMainThread)
+                    {
+                        JSSynchronizationContext.MainJSSynchronizationContext = ctx;
+                    }
+                }
+                else if (ctx.TargetThreadId != currentThreadId)
+                {
+                    Environment.FailFast($"JSSynchronizationContext.Install failed has wrong native thread id {ctx.TargetThreadId} != {currentThreadId}");
+                }
+                ctx.AwaitNewData();
+            }
+        }
+
+        public static void UninstallWebWorkerInterop()
+        {
+            var ctx = SynchronizationContext.Current as JSSynchronizationContext;
+            var uninstallJSSynchronizationContext = ctx != null;
+            if (uninstallJSSynchronizationContext)
+            {
+                SynchronizationContext.SetSynchronizationContext(ctx!.previousSynchronizationContext);
+                JSSynchronizationContext.CurrentJSSynchronizationContext = null;
+                ctx.isDisposed = true;
+            }
+            Interop.Runtime.UninstallWebWorkerInterop(uninstallJSSynchronizationContext);
+        }
+
+        private static FieldInfo? thread_id_Field;
+        private static FieldInfo? external_eventloop_Field;
+
+        // FIXME: after https://github.com/dotnet/runtime/issues/86040 replace with
+        // [UnsafeAccessor(UnsafeAccessorKind.Field, Name="external_eventloop")]
+        // static extern ref bool ThreadExternalEventloop(Thread @this);
+        [DynamicDependency(DynamicallyAccessedMemberTypes.NonPublicMethods, "System.Threading.Thread", "System.Private.CoreLib")]
+        public static void SetHasExternalEventLoop(Thread thread)
+        {
+            if (external_eventloop_Field == null)
+            {
+                external_eventloop_Field = typeof(Thread).GetField("external_eventloop", BindingFlags.NonPublic | BindingFlags.Instance)!;
+            }
+            external_eventloop_Field.SetValue(thread, true);
+        }
+
+        // FIXME: after https://github.com/dotnet/runtime/issues/86040
+        [DynamicDependency(DynamicallyAccessedMemberTypes.NonPublicFields, "System.Threading.Thread", "System.Private.CoreLib")]
+        public static IntPtr GetNativeThreadId()
+        {
+            if (thread_id_Field == null)
+            {
+                thread_id_Field = typeof(Thread).GetField("thread_id", BindingFlags.NonPublic | BindingFlags.Instance)!;
+            }
+            return (int)(long)thread_id_Field.GetValue(Thread.CurrentThread)!;
+        }
+
+#endif
+
     }
 }

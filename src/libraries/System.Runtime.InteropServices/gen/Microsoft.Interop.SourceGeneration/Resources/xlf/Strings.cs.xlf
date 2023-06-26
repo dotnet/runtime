@@ -22,6 +22,11 @@
         <target state="translated">U atributu MarshalUsingAttribute pro daný ElementIndirectionDepth se může se použít jen jeden z prvků ConstantElementCount nebo ElementCountInfo</target>
         <note />
       </trans-unit>
+      <trans-unit id="ContainingTypeAccessibilityDetails">
+        <source>Containing type '{0}' has accessibility '{1}'.</source>
+        <target state="translated">Obsahující typ „{0}“má přístupnost „{1}“.</target>
+        <note />
+      </trans-unit>
       <trans-unit id="CyclicalCountInfo">
         <source>This element cannot depend on '{0}' for collection size information without creating a dependency cycle</source>
         <target state="translated">Tento prvek nesmí záviset na {0} pro informace o velikost kolekce bez toho, aby došlo k vytvoření cyklu závislosti.</target>
@@ -98,8 +103,8 @@
         <note />
       </trans-unit>
       <trans-unit id="MarshallingStringOrCharAsUndefinedNotSupported">
-        <source>Marshalling string or char without explicit marshalling information is not supported. Specify 'LibraryImportAttribute.StringMarshalling', 'LibraryImportAttribute.StringMarshallingCustomType', 'MarshalUsingAttribute' or 'MarshalAsAttribute'.</source>
-        <target state="translated">Zařazování řetězce nebo znaku bez explicitních informací o zařazování se nepodporuje. Zadejte LibraryImportAttribute.StringMarshalling, LibraryImportAttribute.StringMarshallingCustomType, MarshalUsingAttribute nebo MarshalAsAttribute.</target>
+        <source>Marshalling string or char without explicit marshalling information is not supported. Specify '{0}.StringMarshalling', '{0}.StringMarshallingCustomType', 'MarshalUsingAttribute' or 'MarshalAsAttribute'.</source>
+        <target state="translated">Zařazování řetězce nebo znaku bez explicitních informací o zařazování se nepodporuje. Zadejte „{0}. StringMarshalling“, „{0}. StringMarshallingCustomType“, „MarshalUsingAttribute“ nebo „MarshalAsAttribute.“</target>
         <note />
       </trans-unit>
       <trans-unit id="RuntimeMarshallingMustBeDisabled">
@@ -110,6 +115,11 @@
       <trans-unit id="SafeHandleByRefMustBeConcrete">
         <source>An abstract type derived from 'SafeHandle' cannot be marshalled by reference. The provided type must be concrete.</source>
         <target state="translated">Abstraktní typ odvozený ze SafeHandle nelze zařadit pomocí odkazu. Poskytnutý typ musí být konkrétní.</target>
+        <note />
+      </trans-unit>
+      <trans-unit id="TypeAccessibilityDetails">
+        <source>'{0}' has accessibility '{1}'.</source>
+        <target state="translated">„{0}“ má přístupnost „{1}“.</target>
         <note />
       </trans-unit>
       <trans-unit id="UnmanagedToManagedMissingRequiredMarshaller">

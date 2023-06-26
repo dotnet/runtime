@@ -138,11 +138,11 @@ jobs:
       displayName: Run ci setup script (Linux/MAC)
       condition: and(succeeded(), ne(variables['Agent.Os'], 'Windows_NT'))
     # copy wasm packs if running on wasm
-    # Using test-main-7.0.js, since we are building with tfm:net7.0
     - script: >-
         mkdir -p $(librariesDownloadDir)/bin/wasm/data &&
         cp -r $(librariesDownloadDir)/BrowserWasm/staging/dotnet-latest $(librariesDownloadDir)/bin/wasm &&
-        cp src/mono/wasm/Wasm.Build.Tests/data/test-main-7.0.js $(librariesDownloadDir)/bin/wasm/data/test-main.js &&
+        cp -r $(librariesDownloadDir)/BrowserWasm/staging/built-nugets $(librariesDownloadDir)/bin/wasm &&
+        cp src/mono/wasm/test-main.js $(librariesDownloadDir)/bin/wasm/data/test-main.js &&
         find $(librariesDownloadDir)/bin/wasm -type f -exec chmod 664 {} \;
       displayName: "Create wasm directory (Linux)"
       condition: and(succeeded(), eq('${{ parameters.runtimeType }}', 'wasm'))
@@ -186,13 +186,14 @@ jobs:
         PERFLAB_TARGET_FRAMEWORKS: net7.0
       condition: and(succeeded(), eq(variables['Agent.Os'], 'Darwin'))
 
-    # Zip the workitem directory (for xharness based workitems)
-    - task: ArchiveFiles@2
-      inputs:
-        rootFolderOrFile: '$(WorkItemDirectory)'
-        includeRootFolder: false
-        archiveFile: '$(WorkItemDirectory).zip'
-        verbose: True
+    # Zip the workitem directory (for xharness (mobile) based workitems)
+    - ${{ if or(eq(parameters.runKind, 'android_scenarios'), eq(parameters.runKind, 'ios_scenarios')) }}:
+      - task: ArchiveFiles@2
+        inputs:
+          rootFolderOrFile: '$(WorkItemDirectory)'
+          includeRootFolder: false
+          archiveFile: '$(WorkItemDirectory).zip'
+          verbose: True
 
     # run perf testing in helix
     - template: /eng/pipelines/coreclr/templates/perf-send-to-helix.yml
@@ -215,6 +216,6 @@ jobs:
       displayName: Publish Logs
       inputs:
         targetPath: $(Build.SourcesDirectory)/artifacts/log
-        artifactName: 'Performance_Run_$(osGroup)$(osSubgroup)_$(archType)_$(buildConfig)_${{ parameters.runtimeType }}_${{ parameters.codeGenType }}_${{ parameters.runKind }}_$(iOSLlvmBuild)'
+        artifactName: 'Performance_Run_$(osGroup)$(osSubgroup)_$(archType)_$(buildConfig)_${{ parameters.runtimeType }}_${{ parameters.codeGenType }}_${{ parameters.runKind }}_$(iOSLlvmBuild)_$(iOSStripSymbols)'
       continueOnError: true
       condition: always()

@@ -121,6 +121,6 @@ namespace Microsoft.Extensions.Configuration
         /// Generates a string representing this provider name and relevant details.
         /// </summary>
         /// <returns> The configuration name. </returns>
-        public override string ToString() => $"{GetType().Name}";
+        public override string ToString() => GetType().Name;
     }
 }

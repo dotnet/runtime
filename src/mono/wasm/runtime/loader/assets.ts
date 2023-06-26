@@ -153,10 +153,6 @@ export async function mono_download_assets(): Promise<void> {
                         await runtimeHelpers.memorySnapshotSkippedOrDone.promise;
                         runtimeHelpers.instantiate_asset(asset, url, data);
                     }
-                    if (asset.behavior === "symbols") {
-                        await runtimeHelpers.instantiate_symbols_asset(asset);
-                        cleanupAsset(asset);
-                    }
                 } else {
                     const headersOnly = skipBufferByAssetTypes[asset.behavior];
                     if (!headersOnly) {
@@ -168,6 +164,11 @@ export async function mono_download_assets(): Promise<void> {
                             loaderHelpers.expected_instantiated_assets_count--;
                         }
                     } else {
+                        if (asset.behavior === "symbols") {
+                            await runtimeHelpers.instantiate_symbols_asset(asset);
+                            cleanupAsset(asset);
+                        }
+
                         if (skipBufferByAssetTypes[asset.behavior]) {
                             ++loaderHelpers.actual_downloaded_assets_count;
                         }
@@ -195,7 +196,7 @@ export async function mono_download_assets(): Promise<void> {
 }
 
 export function delay(ms: number): Promise<void> {
-    return new Promise(resolve => setTimeout(resolve, ms));
+    return new Promise(resolve => globalThis.setTimeout(resolve, ms));
 }
 
 // FIXME: Connection reset is probably the only good one for which we should retry

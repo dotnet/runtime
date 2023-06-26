@@ -200,12 +200,12 @@ public class ComputeWasmPublishAssets : Task
             if (isDotNetJs)
             {
                 var baseName = Path.GetFileNameWithoutExtension(key);
-                if (baseName.StartsWith("dotnet.native"))
+                if (baseName.StartsWith("dotnet.native.worker"))
+                    baseName = "dotnet.native.worker";
+                else if (baseName.StartsWith("dotnet.native"))
                     baseName = "dotnet.native";
                 else if (baseName.StartsWith("dotnet.runtime"))
                     baseName = "dotnet.runtime";
-                else if (baseName.StartsWith("dotnet.worker"))
-                    baseName = "dotnet.worker";
                 else if (baseName.StartsWith("dotnet"))
                     baseName = "dotnet";
 
@@ -216,7 +216,7 @@ public class ComputeWasmPublishAssets : Task
                     newDotNetJs = new TaskItem(Path.GetFullPath(aotDotNetJs.ItemSpec), asset.CloneCustomMetadata());
                     newDotNetJs.SetMetadata("OriginalItemSpec", aotDotNetJs.ItemSpec);
 
-                    string relativePath = FingerprintDotNetJs
+                    string relativePath = baseName != "dotnet" || FingerprintDotNetJs
                         ? $"_framework/{$"{baseName}.{DotNetJsVersion}.{FileHasher.GetFileHash(aotDotNetJs.ItemSpec)}.js"}"
                         : $"_framework/{baseName}.js";
 
@@ -242,8 +242,9 @@ public class ComputeWasmPublishAssets : Task
 
             if (isDotNetWasm)
             {
-                var aotDotNetWasm = WasmAotAssets.SingleOrDefault(a => {
-                    var name= $"{a.GetMetadata("FileName")}{a.GetMetadata("Extension")}";
+                var aotDotNetWasm = WasmAotAssets.SingleOrDefault(a =>
+                {
+                    var name = $"{a.GetMetadata("FileName")}{a.GetMetadata("Extension")}";
                     return name == "dotnet.native.wasm" || name == "dotnet.wasm";
                 });
                 ITaskItem newDotNetWasm = null;
@@ -589,7 +590,7 @@ public class ComputeWasmPublishAssets : Task
             }
 
             var extension = candidate.GetMetadata("Extension");
-            if (string.Equals(extension, ".dll", StringComparison.Ordinal) || string.Equals (extension, Utils.WebcilInWasmExtension, StringComparison.Ordinal))
+            if (string.Equals(extension, ".dll", StringComparison.Ordinal) || string.Equals(extension, Utils.WebcilInWasmExtension, StringComparison.Ordinal))
             {
                 var culture = candidate.GetMetadata("Culture");
                 var inferredCulture = candidate.GetMetadata("DestinationSubDirectory").Replace("\\", "/").Trim('/');

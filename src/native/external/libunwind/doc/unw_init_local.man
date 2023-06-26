@@ -1,5 +1,5 @@
 '\" t
-.\" Manual page created with latex2man on Wed Aug 16 12:11:05 PDT 2017
+.\" Manual page created with latex2man on Sun Aug 29 23:45:06 CEST 2021
 .\" NOTE: This file is generated, DO NOT EDIT.
 .de Vb
 .ft CW
@@ -10,7 +10,7 @@
 
 .fi
 ..
-.TH "UNW\\_INIT\\_LOCAL" "3" "16 August 2017" "Programming Library " "Programming Library "
+.TH "UNW\\_INIT\\_LOCAL" "3" "29 August 2021" "Programming Library " "Programming Library "
 .SH NAME
 unw_init_local
 \-\- initialize cursor for local unwinding 
@@ -44,11 +44,13 @@ As such, the machine\-state pointed to by
 ctxt
 identifies the initial stack frame at which unwinding 
 starts. The machine\-state is expected to be one provided by a call to 
-unw_getcontext; as such, the instruction pointer may point to the 
-instruction after the last instruction of a function, and libunwind 
-will back\-up the instruction pointer before beginning a walk up the 
-call stack. The machine\-state must remain valid for the duration for 
-which the cursor c
+unw_getcontext();
+as such, the instruction pointer may point to 
+the instruction after the last instruction of a function, and 
+libunwind
+will back\-up the instruction pointer before beginning 
+a walk up the call stack. The machine\-state must remain valid for the 
+duration for which the cursor c
 is in use. 
 .PP
 The unw_init_local()
@@ -66,11 +68,13 @@ including <libunwind.h>,
 whereas unw_init_remote()
 is not. 
 .PP
-If the unw_context_t is known to be a signal frame (i.e., from the 
-third argument in a sigaction handler on linux), 
+If the unw_context_t
+is known to be a signal frame (i.e., 
+from the third argument in a sigaction handler on linux), 
 unw_init_local2()
 should be used for correct initialization 
-on some platforms, passing the UNW_INIT_SIGNAL_FRAME flag. 
+on some platforms, passing the UNW_INIT_SIGNAL_FRAME
+flag. 
 .PP
 .SH RETURN VALUE
 

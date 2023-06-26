@@ -30,6 +30,7 @@ void jiterp_preserve_module (void);
 #include <mono/metadata/mono-config.h>
 #include <mono/utils/mono-threads.h>
 #include <mono/metadata/gc-internals.h>
+#include <mono/metadata/class-abi-details.h>
 
 #include "interp.h"
 #include "interp-internals.h"
@@ -164,29 +165,6 @@ mono_jiterp_object_unbox (MonoObject *obj) {
 }
 
 EMSCRIPTEN_KEEPALIVE int
-mono_jiterp_try_unbox_ref (
-	MonoClass *klass, void **dest, MonoObject **src
-) {
-	if (!klass)
-		return 0;
-
-	MonoObject *o = *src;
-	if (!o)
-		return 0;
-
-	if (
-		!(
-			(m_class_get_rank (o->vtable->klass) == 0) &&
-			(m_class_get_element_class (o->vtable->klass) == m_class_get_element_class (klass))
-		)
-	)
-		return 0;
-
-	*dest = mono_object_unbox_internal(o);
-	return 1;
-}
-
-EMSCRIPTEN_KEEPALIVE int
 mono_jiterp_type_is_byref (MonoType *type) {
 	if (!type)
 		return 0;
@@ -234,82 +212,63 @@ mono_jiterp_gettype_ref (
 }
 
 EMSCRIPTEN_KEEPALIVE int
-mono_jiterp_cast_ref (
-	MonoObject **destination, MonoObject **source,
+mono_jiterp_has_parent_fast (
+	MonoClass *klass, MonoClass *parent
+) {
+	// klass may be 0 if null check fusion is active, but that's fine:
+	// (m_class_get_idepth (0) >= m_class_get_idepth (parent)) in the fast check
+	// will fail since the idepth of the null ptr is going to be 0, and
+	//  we know parent->idepth >= 1 due to the [m_class_get_idepth (parent) - 1]
+	return mono_class_has_parent_fast (klass, parent);
+}
+
+EMSCRIPTEN_KEEPALIVE int
+mono_jiterp_implements_interface (
+	MonoVTable *vtable, MonoClass *klass
+) {
+	// If null check fusion is active, vtable->max_interface_id will be 0
+	return MONO_VTABLE_IMPLEMENTS_INTERFACE (vtable, m_class_get_interface_id (klass));
+}
+
+EMSCRIPTEN_KEEPALIVE int
+mono_jiterp_is_special_interface (MonoClass *klass)
+{
+	return m_class_is_array_special_interface (klass);
+}
+
+EMSCRIPTEN_KEEPALIVE int
+mono_jiterp_implements_special_interface (
+	MonoObject *obj, MonoVTable *vtable, MonoClass *klass
+) {
+	// If null check fusion is active, vtable->max_interface_id will be 0
+	return MONO_VTABLE_IMPLEMENTS_INTERFACE (vtable, m_class_get_interface_id (klass)) ||
+	// For special interfaces we need to do a more complex check to see whether the
+	//  cast to the interface is valid in case obj is an array.
+	// mono_jiterp_isinst will *not* handle nulls for us, and we don't want
+	//  to waste time running the full isinst machinery on nulls anyway, so nullcheck
+		(obj && mono_jiterp_isinst (obj, klass));
+}
+
+EMSCRIPTEN_KEEPALIVE int
+mono_jiterp_cast_v2 (
+	MonoObject **destination, MonoObject *obj,
 	MonoClass *klass, MintOpcode opcode
 ) {
-	if (!klass)
-		return 0;
-
-	MonoObject *obj = *source;
 	if (!obj) {
-		*destination = 0;
+		*destination = NULL;
+		return 1;
+		// FIXME push/pop LMF
+	} else if (!mono_jiterp_isinst (obj, klass)) {
+		// FIXME: do not swallow the error
+		if (opcode == MINT_ISINST) {
+			*destination = NULL;
+			return 1;
+		} else
+			return 0; // bailout
+	} else {
+		*destination = obj;
 		return 1;
 	}
-
-	switch (opcode) {
-		case MINT_CASTCLASS:
-		case MINT_ISINST: {
-			if (obj) {
-				// FIXME push/pop LMF
-				if (!mono_jiterp_isinst (obj, klass)) { // FIXME: do not swallow the error
-					if (opcode == MINT_ISINST)
-						*destination = NULL;
-					else
-						return 0; // bailout
-				} else {
-					*destination = obj;
-				}
-			} else {
-				*destination = NULL;
-			}
-			return 1;
-		}
-		case MINT_CASTCLASS_INTERFACE:
-		case MINT_ISINST_INTERFACE: {
-			gboolean isinst;
-			// FIXME: Perform some of this work at JIT time
-			if (MONO_VTABLE_IMPLEMENTS_INTERFACE (obj->vtable, m_class_get_interface_id (klass))) {
-				isinst = TRUE;
-			} else if (m_class_is_array_special_interface (klass)) {
-				/* slow path */
-				// FIXME push/pop LMF
-				isinst = mono_jiterp_isinst (obj, klass); // FIXME: do not swallow the error
-			} else {
-				isinst = FALSE;
-			}
-
-			if (!isinst) {
-				if (opcode == MINT_ISINST_INTERFACE)
-					*destination = NULL;
-				else
-					return 0; // bailout
-			} else {
-				*destination = obj;
-			}
-			return 1;
-		}
-		case MINT_CASTCLASS_COMMON:
-		case MINT_ISINST_COMMON: {
-			if (obj) {
-				gboolean isinst = mono_class_has_parent_fast (obj->vtable->klass, klass);
-
-				if (!isinst) {
-					if (opcode == MINT_ISINST_COMMON)
-						*destination = NULL;
-					else
-						return 0; // bailout
-				} else {
-					*destination = obj;
-				}
-			} else {
-				*destination = NULL;
-			}
-			return 1;
-		}
-	}
-
-	return 0;
 }
 
 EMSCRIPTEN_KEEPALIVE void
@@ -1170,6 +1129,11 @@ mono_jiterp_trace_transfer (
 #define JITERP_MEMBER_BACKWARD_BRANCH_OFFSETS_COUNT 11
 #define JITERP_MEMBER_CLAUSE_DATA_OFFSETS 12
 #define JITERP_MEMBER_PARAMS_COUNT 13
+#define JITERP_MEMBER_VTABLE 14
+#define JITERP_MEMBER_VTABLE_KLASS 15
+#define JITERP_MEMBER_CLASS_RANK 16
+#define JITERP_MEMBER_CLASS_ELEMENT_CLASS 17
+#define JITERP_MEMBER_BOXED_VALUE_DATA 18
 
 // we use these helpers at JIT time to figure out where to do memory loads and stores
 EMSCRIPTEN_KEEPALIVE size_t
@@ -1203,6 +1167,17 @@ mono_jiterp_get_member_offset (int member) {
 			return offsetof (MonoSpanOfVoid, _length);
 		case JITERP_MEMBER_SPAN_DATA:
 			return offsetof (MonoSpanOfVoid, _reference);
+		case JITERP_MEMBER_VTABLE:
+			return offsetof (MonoObject, vtable);
+		case JITERP_MEMBER_VTABLE_KLASS:
+			return offsetof (MonoVTable, klass);
+		case JITERP_MEMBER_CLASS_RANK:
+			return m_class_offsetof_rank();
+		case JITERP_MEMBER_CLASS_ELEMENT_CLASS:
+			return m_class_offsetof_element_class();
+		// see mono_object_get_data
+		case JITERP_MEMBER_BOXED_VALUE_DATA:
+			return MONO_ABI_SIZEOF (MonoObject);
 		default:
 			g_assert_not_reached();
 	}
@@ -1345,5 +1320,5 @@ mono_jiterp_is_imethod_var_address_taken (InterpMethod *imethod, int offset) {
 EMSCRIPTEN_KEEPALIVE
 #endif // HOST_BROWSER
 
-void jiterp_preserve_module () {
+void jiterp_preserve_module (void) {
 }

@@ -1,0 +1,137 @@
+﻿<?xml version="1.0" encoding="utf-8"?>
+<xliff xmlns="urn:oasis:names:tc:xliff:document:1.2" xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance" version="1.2" xsi:schemaLocation="urn:oasis:names:tc:xliff:document:1.2 xliff-core-1.2-transitional.xsd">
+  <file datatype="xml" source-language="en" target-language="pl" original="../Strings.resx">
+    <body>
+      <trans-unit id="AlreadyImplementsValidateMethodMessage">
+        <source>Type {0} already implements the Validate method.</source>
+        <target state="translated">Typ {0} już implementuje metodę Validate.</target>
+        <note />
+      </trans-unit>
+      <trans-unit id="AlreadyImplementsValidateMethodTitle">
+        <source>A type already includes an implementation of the 'Validate' method.</source>
+        <target state="translated">Typ zawiera już implementację metody „Validate”.</target>
+        <note />
+      </trans-unit>
+      <trans-unit id="CantBeStaticClassMessage">
+        <source>[OptionsValidator] cannot be applied to static class {0}.</source>
+        <target state="translated">Nie można zastosować elementu [OptionsValidator] do klasy statycznej {0}.</target>
+        <note />
+      </trans-unit>
+      <trans-unit id="CantBeStaticClassTitle">
+        <source>'OptionsValidatorAttribute' can't be applied to a static class.</source>
+        <target state="translated">Nie można zastosować elementu „OptionsValidatorAttribute” do klasy statycznej.</target>
+        <note />
+      </trans-unit>
+      <trans-unit id="CantUseWithGenericTypesMessage">
+        <source>Can't use [ValidateObjectMembers] or [ValidateEnumeratedItems] on fields or properties with open generic type {0}.</source>
+        <target state="translated">Nie można użyć atrybutu [ValidateObjectMembers] lub [ValidateEnumeratedItems] w polach lub właściwościach z otwartymi typami ogólnymi {0}.</target>
+        <note />
+      </trans-unit>
+      <trans-unit id="CantUseWithGenericTypesTitle">
+        <source>Can't use 'ValidateObjectMembersAttribute' or 'ValidateEnumeratedItemsAttribute' on fields or properties with open generic types.</source>
+        <target state="translated">Nie można użyć atrybutu „ValidateObjectMembersAttribute” lub „ValidateEnumeratedItemsAttribute” w polach lub właściwościach z otwartymi typami ogólnymi.</target>
+        <note />
+      </trans-unit>
+      <trans-unit id="CircularTypeReferencesMessage">
+        <source>There is a circular type reference involving type {0} preventing it from being used for static validation.</source>
+        <target state="translated">Istnieje cykliczne odwołanie do typu dotyczące typu {0} uniemożliwiające użycie go do weryfikacji statycznej.</target>
+        <note />
+      </trans-unit>
+      <trans-unit id="CircularTypeReferencesTitle">
+        <source>Unsupported circular references in model types.</source>
+        <target state="translated">Nieobsługiwane odwołania cykliczne w typach modeli.</target>
+        <note />
+      </trans-unit>
+      <trans-unit id="DoesntImplementIValidateOptionsMessage">
+        <source>Type {0} does not implement the required IValidateOptions&lt;{1}&gt; interface.</source>
+        <target state="translated">Typ {0} nie implementuje wymaganego interfejsu IValidateOptions&lt;{1}&gt;.</target>
+        <note />
+      </trans-unit>
+      <trans-unit id="DoesntImplementIValidateOptionsTitle">
+        <source>A type annotated with 'OptionsValidatorAttribute' doesn't implement the necessary interface.</source>
+        <target state="translated">Typ z adnotacją „OptionsValidatorAttribute” nie implementuje wymaganego interfejsu.</target>
+        <note />
+      </trans-unit>
+      <trans-unit id="MemberIsInaccessibleMessage">
+        <source>Can't apply validation attributes to private field or property {0}.</source>
+        <target state="translated">Nie można zastosować atrybutów weryfikacji do pola prywatnego lub właściwości {0}.</target>
+        <note />
+      </trans-unit>
+      <trans-unit id="MemberIsInaccessibleTitle">
+        <source>Can't validate private fields or properties.</source>
+        <target state="translated">Nie można zweryfikować prywatnych pól lub właściwości.</target>
+        <note />
+      </trans-unit>
+      <trans-unit id="NoEligibleMemberMessage">
+        <source>Type {0} has no fields or properties to validate, referenced from member {1}.</source>
+        <target state="translated">Typ {0} nie ma pól ani właściwości do zweryfikowania, do których odwołuje się element członkowski {1}.</target>
+        <note />
+      </trans-unit>
+      <trans-unit id="NoEligibleMemberTitle">
+        <source>A member type has no fields or properties to validate.</source>
+        <target state="translated">Typ elementu członkowskiego nie ma pól ani właściwości do zweryfikowania.</target>
+        <note />
+      </trans-unit>
+      <trans-unit id="NoEligibleMembersFromValidatorMessage">
+        <source>Type {0} has no fields or properties to validate, referenced by type {1}.</source>
+        <target state="translated">Typ {0} nie ma pól ani właściwości do zweryfikowania, do których odwołuje się typ {1}.</target>
+        <note />
+      </trans-unit>
+      <trans-unit id="NoEligibleMembersFromValidatorTitle">
+        <source>A type has no fields or properties to validate.</source>
+        <target state="translated">Typ nie ma pól ani właściwości do zweryfikowania.</target>
+        <note />
+      </trans-unit>
+      <trans-unit id="NotEnumerableTypeMessage">
+        <source>[ValidateEnumeratedItems] cannot be used on members of type {0} as it doesn't implement IEnumerable&lt;T&gt;.</source>
+        <target state="translated">Atrybutu [ValidateEnumeratedItems] nie można używać w przypadku elementów członkowskich typu {0}, ponieważ nie implementuje interfejsu IEnumerable&lt;T&gt;.</target>
+        <note />
+      </trans-unit>
+      <trans-unit id="NotEnumerableTypeTitle">
+        <source>Member type is not enumerable.</source>
+        <target state="translated">Nie można wyliczyć typu elementu członkowskiego.</target>
+        <note />
+      </trans-unit>
+      <trans-unit id="NullValidatorTypeMessage">
+        <source>Null validator type specified in [ValidateObjectMembers] or [ValidateEnumeratedItems] attributes.</source>
+        <target state="translated">W atrybutach [ValidateObjectMembers] lub [ValidateEnumeratedItems] określono typ modułu sprawdzania poprawności o wartości null.</target>
+        <note />
+      </trans-unit>
+      <trans-unit id="NullValidatorTypeTitle">
+        <source>Null validator type specified for the 'ValidateObjectMembersAttribute' or 'ValidateEnumeratedItemsAttribute' attributes.</source>
+        <target state="translated">Określono typ modułu sprawdzania poprawności o wartości null dla atrybutu „ValidateObjectMembersAttribute” lub „ValidateEnumeratedItemsAttribute”.</target>
+        <note />
+      </trans-unit>
+      <trans-unit id="PotentiallyMissingEnumerableValidationMessage">
+        <source>Type {0} has validation annotations, but member {1} doesn't specify [ValidateEnumeratedItems] which could be an oversight.</source>
+        <target state="translated">Typ {0} ma adnotacje walidacji, ale element członkowski {1} nie określa atrybutu [ValidateEnumeratedItems], co może być przeoczeniem.</target>
+        <note />
+      </trans-unit>
+      <trans-unit id="PotentiallyMissingEnumerableValidationTitle">
+        <source>Member potentially missing enumerable validation.</source>
+        <target state="translated">W elemencie członkowskim może brakować walidacji możliwej do wyliczenia.</target>
+        <note />
+      </trans-unit>
+      <trans-unit id="PotentiallyMissingTransitiveValidationMessage">
+        <source>Type {0} has validation annotations, but member {1} doesn't specify [ValidateObjectMembers] which could be an oversight.</source>
+        <target state="translated">Typ {0} ma adnotacje walidacji, ale element członkowski {1} nie określa atrybutu [ValidateObjectMembers], co może być przeoczeniem.</target>
+        <note />
+      </trans-unit>
+      <trans-unit id="PotentiallyMissingTransitiveValidationTitle">
+        <source>Member potentially missing transitive validation.</source>
+        <target state="translated">W przypadku elementu członkowskiego może potencjalnie brakować weryfikacji przechodniej.</target>
+        <note />
+      </trans-unit>
+      <trans-unit id="ValidatorsNeedSimpleConstructorMessage">
+        <source>Validator type {0} doesn't have a parameterless constructor.</source>
+        <target state="translated">Typ modułu sprawdzania poprawności {0} nie ma konstruktora bez parametrów.</target>
+        <note />
+      </trans-unit>
+      <trans-unit id="ValidatorsNeedSimpleConstructorTitle">
+        <source>Validators used for transitive or enumerable validation must have a constructor with no parameters.</source>
+        <target state="translated">Moduły sprawdzania poprawności używane do weryfikacji przechodniej lub weryfikacji możliwej do wyliczenia muszą mieć konstruktora bez żadnych parametrów.</target>
+        <note />
+      </trans-unit>
+    </body>
+  </file>
+</xliff>

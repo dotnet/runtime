@@ -160,10 +160,12 @@ namespace System.Collections.Frozen
                 !source.Contains(default!) &&
                 (ReferenceEquals(comparer, EqualityComparer<T>.Default) || ReferenceEquals(comparer, StringComparer.Ordinal) || ReferenceEquals(comparer, StringComparer.OrdinalIgnoreCase)))
             {
+                IEqualityComparer<string> stringComparer = (IEqualityComparer<string>)(object)comparer;
+
+                // Entries are needed for every strategy
                 HashSet<string> stringValues = (HashSet<string>)(object)source;
                 var entries = new string[stringValues.Count];
                 stringValues.CopyTo(entries);
-                IEqualityComparer<string> stringComparer = (IEqualityComparer<string>)(object)comparer;
 
                 // Calculate the minimum and maximum lengths of the strings in the set. Several of the analyses need this.
                 int minLength = int.MaxValue, maxLength = 0;

@@ -6,6 +6,7 @@ using System.Collections.Generic;
 using System.Diagnostics;
 using System.Diagnostics.CodeAnalysis;
 using System.Security.Cryptography;
+using System.Security.Cryptography.X509Certificates;
 using Microsoft.Win32.SafeHandles;
 
 namespace System.Security.Cryptography.X509Certificates
@@ -241,6 +242,7 @@ namespace System.Security.Cryptography.X509Certificates
             ReadOnlySpan<byte> rawData,
             SafePasswordHandle password,
             bool ephemeralSpecified,
+            bool readingFromFile,
             [NotNullWhen(true)] out ICertificatePal? certPal,
             out Exception? openSslException)
         {
@@ -249,6 +251,7 @@ namespace System.Security.Cryptography.X509Certificates
                 password,
                 single: true,
                 ephemeralSpecified,
+                readingFromFile,
                 out certPal!,
                 out _,
                 out openSslException);
@@ -258,6 +261,7 @@ namespace System.Security.Cryptography.X509Certificates
             ReadOnlySpan<byte> rawData,
             SafePasswordHandle password,
             bool ephemeralSpecified,
+            bool readingFromFile,
             [NotNullWhen(true)] out List<ICertificatePal>? certPals,
             out Exception? openSslException)
         {
@@ -266,6 +270,7 @@ namespace System.Security.Cryptography.X509Certificates
                 password,
                 single: false,
                 ephemeralSpecified,
+                readingFromFile,
                 out _,
                 out certPals!,
                 out openSslException);
@@ -276,6 +281,7 @@ namespace System.Security.Cryptography.X509Certificates
             SafePasswordHandle password,
             bool single,
             bool ephemeralSpecified,
+            bool readingFromFile,
             out ICertificatePal? readPal,
             out List<ICertificatePal>? readCerts,
             out Exception? openSslException)
@@ -292,18 +298,21 @@ namespace System.Security.Cryptography.X509Certificates
 
             using (pfx)
             {
-                return TryReadPkcs12(pfx, password, single, ephemeralSpecified, out readPal, out readCerts);
+                return TryReadPkcs12(rawData, pfx, password, single, ephemeralSpecified, readingFromFile, out readPal, out readCerts);
             }
         }
 
         private static bool TryReadPkcs12(
+            ReadOnlySpan<byte> rawData,
             OpenSslPkcs12Reader pfx,
             SafePasswordHandle password,
             bool single,
             bool ephemeralSpecified,
+            bool readingFromFile,
             out ICertificatePal? readPal,
             out List<ICertificatePal>? readCerts)
         {
+            X509Certificate.EnforceIterationCountLimit(ref rawData, readingFromFile, password.PasswordProvided);
             pfx.Decrypt(password, ephemeralSpecified);
 
             if (single)

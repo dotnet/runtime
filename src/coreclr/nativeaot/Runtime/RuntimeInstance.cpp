@@ -35,14 +35,6 @@ bool ShouldHijackForGcStress(uintptr_t CallsiteIP, HijackType ht);
 
 #include "shash.inl"
 
-#ifndef DACCESS_COMPILE
-COOP_PINVOKE_HELPER(uint8_t *, RhSetErrorInfoBuffer, (uint8_t * pNewBuffer))
-{
-    return (uint8_t *) PalSetWerDataBuffer(pNewBuffer);
-}
-#endif // DACCESS_COMPILE
-
-
 ThreadStore *   RuntimeInstance::GetThreadStore()
 {
     return m_pThreadStore;
@@ -273,25 +265,6 @@ COOP_PINVOKE_HELPER(void*, RhpRegisterOsModule, (HANDLE hOsModule))
 RuntimeInstance::TypeManagerList& RuntimeInstance::GetTypeManagerList()
 {
     return m_TypeManagerList;
-}
-
-TypeManager* RuntimeInstance::GetSingleTypeManager()
-{
-    auto head = m_TypeManagerList.GetHead();
-    if (head != NULL && head->m_pNext == NULL)
-    {
-        return head->m_pTypeManager;
-    }
-
-    return NULL;
-}
-
-COOP_PINVOKE_HELPER(TypeManagerHandle, RhGetSingleTypeManager, ())
-{
-    TypeManager* typeManager = GetRuntimeInstance()->GetSingleTypeManager();
-    ASSERT(typeManager != NULL);
-
-    return TypeManagerHandle::Create(typeManager);
 }
 
 // static

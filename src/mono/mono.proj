@@ -9,7 +9,6 @@
       - MonoVerboseBuild - enable verbose build
       - MonoThreadSuspend - coop,hybrid,preemptive - default thread suspend mode
       - MonoWasmThreads - build runtime with threading support for wasm
-      - MonoWasmThreadsNoUser - build runtime with threading support for wasm, but with only internal utility threads (MonoWasmThreads must be defined too)
   -->
 
   <PropertyGroup>
@@ -49,13 +48,12 @@
     <MonoAOTBundleLLVMOptimizer Condition="'$(MonoAOTEnableLLVM)' == 'true' and '$(TargetsBrowser)' != 'true' and '$(TargetsWasi)' != 'true'">true</MonoAOTBundleLLVMOptimizer>
     <MonoCCompiler>$(Compiler)</MonoCCompiler>
     <MonoCCompiler Condition="'$(MonoCCompiler)' == ''">clang</MonoCCompiler>
-    <_CompilerTargetArch Condition="'$(RealTargetArchitecture)' == ''">$(Platform)</_CompilerTargetArch>
-    <_CompilerTargetArch Condition="'$(RealTargetArchitecture)' != ''">$(RealTargetArchitecture)</_CompilerTargetArch>
+    <_CompilerTargetArch Condition="'$(AotHostArchitecture)' == ''">$(Platform)</_CompilerTargetArch>
+    <_CompilerTargetArch Condition="'$(AotHostArchitecture)' != ''">$(AotHostArchitecture)</_CompilerTargetArch>
     <RepositoryEngineeringCommonDir>$([MSBuild]::NormalizeDirectory('$(RepositoryEngineeringDir)', 'common'))</RepositoryEngineeringCommonDir>
     <CrossToolchainFile>$([MSBuild]::NormalizePath('$(RepositoryEngineeringCommonDir)', 'cross', 'toolchain.cmake'))</CrossToolchainFile>
     <MonoWasmThreads Condition="'$(MonoWasmBuildVariant)' == 'singlethread'">false</MonoWasmThreads>
-    <MonoWasmThreads Condition="'$(MonoWasmBuildVariant)' == 'multithread' or '$(MonoWasmBuildVariant)' == 'perftrace'">true</MonoWasmThreads>
-    <MonoWasmThreadsNoUser Condition="'$(MonoWasmBuildVariant)' == 'perftrace'">true</MonoWasmThreadsNoUser>
+    <MonoWasmThreads Condition="'$(MonoWasmBuildVariant)' == 'multithread'">true</MonoWasmThreads>
     <MonoEnableAssertMessages Condition="'$(MonoEnableAssertMessages)' == '' and '$(TargetsWasi)' == 'true'">true</MonoEnableAssertMessages>
   </PropertyGroup>
 
@@ -417,7 +415,6 @@
       <_MonoMinimal Condition="'$(Configuration)' == 'Release'">,debugger_agent,log_dest</_MonoMinimal>
       <_MonoMinimal Condition="'$(Configuration)' == 'Release' and '$(MonoEnableAssertMessages)' != 'true'">$(_MonoMinimal),assert_messages</_MonoMinimal>
       <_MonoMinimal Condition="'$(MonoWasmThreads)' != 'true'">$(_MonoMinimal),threads</_MonoMinimal>
-      <_MonoMinimal Condition="'$(MonoWasmThreadsNoUser)' == 'true'">$(_MonoMinimal),wasm_user_threads</_MonoMinimal>
     </PropertyGroup>
     <ItemGroup Condition="'$(TargetsBrowser)' == 'true' or '$(TargetsWasi)' == 'true'">
       <_MonoCMakeArgs Include="-DENABLE_MINIMAL=jit,sgen_major_marksweep_conc,sgen_split_nursery,sgen_gc_bridge,sgen_toggleref,sgen_debug_helpers,sgen_binary_protocol,logging,interpreter,qcalls$(_MonoMinimal)"/>
@@ -563,11 +560,11 @@
       <_MonoCXXFLAGS Include="-Wl,--build-id=sha1" />
       <_MonoCXXFLAGS Condition="'$(Platform)' == 'arm'" Include="-march=armv7-a" />
     </ItemGroup>
-    <ItemGroup Condition="'$(RealTargetOS)' == 'linux'">
+    <ItemGroup Condition="'$(AotHostOS)' == 'linux'">
       <_MonoAOTCFLAGS Include="-Wl,--build-id=sha1" />
-      <_MonoAOTCFLAGS Condition="'$(RealTargetArchitecture)' == 'arm'" Include="-march=armv7-a" />
+      <_MonoAOTCFLAGS Condition="'$(AotHostArchitecture)' == 'arm'" Include="-march=armv7-a" />
       <_MonoAOTCXXFLAGS Include="-Wl,--build-id=sha1" />
-      <_MonoAOTCXXFLAGS Condition="'$(RealTargetArchitecture)' == 'arm'" Include="-march=armv7-a" />
+      <_MonoAOTCXXFLAGS Condition="'$(AotHostArchitecture)' == 'arm'" Include="-march=armv7-a" />
     </ItemGroup>
 
     <!-- Devloop features -->
@@ -697,7 +694,7 @@
     </PropertyGroup>
 
     <!-- Linux specific options -->
-    <ItemGroup Condition="'$(RealTargetOS)' == 'linux' or $([MSBuild]::IsOSPlatform('Linux'))">
+    <ItemGroup Condition="'$(AotHostOS)' == 'linux' or $([MSBuild]::IsOSPlatform('Linux'))">
       <_LibClang Include="$(ANDROID_NDK_ROOT)/toolchains/llvm/prebuilt/$(MonoToolchainPrebuiltOS)/lib64/libclang.so.*"/>
     </ItemGroup>
     <PropertyGroup Condition="'$(TargetsLinux)' == 'true' and '$(Platform)' == 'arm64'">
@@ -710,19 +707,19 @@
 
     <PropertyGroup>
       <_MonoLLVMTargetArchitecture>$(BuildArchitecture)</_MonoLLVMTargetArchitecture>
-      <_MonoLLVMTargetArchitecture Condition="'$(RealTargetArchitecture)' != ''">$(RealTargetArchitecture)</_MonoLLVMTargetArchitecture>
+      <_MonoLLVMTargetArchitecture Condition="'$(AotHostArchitecture)' != ''">$(AotHostArchitecture)</_MonoLLVMTargetArchitecture>
     </PropertyGroup>
 
     <!-- macOS host specific options -->
-    <ItemGroup Condition="'$(RealTargetOS)' == 'osx' or $([MSBuild]::IsOSPlatform('OSX'))">
+    <ItemGroup Condition="'$(AotHostOS)' == 'osx' or $([MSBuild]::IsOSPlatform('OSX'))">
       <MonoAOTCMakeArgs Condition="'$(_MonoLLVMTargetArchitecture)' == 'x64'" Include="-DCMAKE_OSX_ARCHITECTURES=x86_64" />
       <MonoAOTCMakeArgs Condition="'$(_MonoLLVMTargetArchitecture)' == 'x86'" Include="-DCMAKE_OSX_ARCHITECTURES=i386" />
       <MonoAOTCMakeArgs Condition="'$(_MonoLLVMTargetArchitecture)' == 'arm64'" Include="-DCMAKE_OSX_ARCHITECTURES=arm64" />
       <MonoAOTCMakeArgs Condition="'$(_MonoLLVMTargetArchitecture)' == 'arm'" Include="&quot;-DCMAKE_OSX_ARCHITECTURES=armv7%3Barmv7s&quot;" />
       <MonoAOTCMakeArgs Include="-DCMAKE_OSX_DEPLOYMENT_TARGET=$(macOSVersionMin)" />
       <MonoAOTCMakeArgs Include="-DENABLE_ICALL_EXPORT=1"/>
-      <_MonoAOTCFLAGS Condition="'$(RealTargetArchitecture)' == 'arm64'" Include="-arch arm64" />
-      <_MonoAOTCXXFLAGS Condition="'$(RealTargetArchitecture)' == 'arm64'" Include="-arch arm64" />
+      <_MonoAOTCFLAGS Condition="'$(AotHostArchitecture)' == 'arm64'" Include="-arch arm64" />
+      <_MonoAOTCXXFLAGS Condition="'$(AotHostArchitecture)' == 'arm64'" Include="-arch arm64" />
       <!-- Force running as arm64 even when invoked from an x86 msbuild process -->
       <_MonoAotBuildEnv Condition="'$(BuildArchitecture)' == 'arm64'" Include="arch -arch arm64" />
     </ItemGroup>
@@ -730,7 +727,6 @@
     <!-- WASM specific options -->
     <PropertyGroup Condition="'$(TargetsBrowser)' == 'true' or '$(TargetsWasi)' == 'true'">
       <MonoUseCrossTool>true</MonoUseCrossTool>
-      <_MonoSkipInitCompiler>true</_MonoSkipInitCompiler>
       <MonoAotAbi Condition="'$(TargetsBrowser)' == 'true'">wasm32-unknown-none</MonoAotAbi>
       <MonoAotAbi Condition="'$(TargetsWasi)' == 'true'">wasm32-unknown-wasi</MonoAotAbi>
       <MonoAotOffsetsFile>$(MonoObjCrossDir)offsets-wasm32-unknown-none.h</MonoAotOffsetsFile>
@@ -741,7 +737,7 @@
     </PropertyGroup>
 
     <!-- Windows specific options -->
-    <ItemGroup Condition="'$(RealTargetOS)' == 'windows' or $([MSBuild]::IsOSPlatform('Windows'))">
+    <ItemGroup Condition="'$(AotHostOS)' == 'windows' or $([MSBuild]::IsOSPlatform('Windows'))">
       <_MonoAOTCPPFLAGS Include="-DHOST_WIN32" />
       <_MonoAOTCPPFLAGS Include="-D__WIN32__" />
       <_MonoAOTCPPFLAGS Include="-DWIN32" />
@@ -808,17 +804,19 @@
       <MonoAotCrossOffsetsToolParams Condition="'$(TargetsWasi)' == 'true'" Include="--wasi-sdk=&quot;$([MSBuild]::NormalizePath('$(WASI_SDK_PATH)'))&quot;" />
     </ItemGroup>
 
-    <!-- x64 Linux cross build options -->
-    <ItemGroup Condition="'$(RealTargetArchitecture)' == 'x64' and '$(RealTargetOS)' == 'linux'">
+    <!-- AOT compiler cross-build options  -->
+    <ItemGroup Condition="'$(AotHostArchitecture)' != '' and '$(MonoCrossDir)' != ''">
       <MonoAOTCMakeArgs Include="-DCMAKE_TOOLCHAIN_FILE=$(CrossToolchainFile)" />
-      <_MonoAotBuildEnv Include="TARGET_BUILD_ARCH=x64" />
+      <_MonoAotBuildEnv Include="TARGET_BUILD_ARCH=$(AotHostArchitecture)" />
+    </ItemGroup>
+
+    <!-- x64 Linux cross build options -->
+    <ItemGroup Condition="'$(AotHostArchitecture)' == 'x64' and '$(AotHostOS)' == 'linux'">
       <_MonoAotBuildEnv Include="PKG_CONFIG_PATH=$(MonoCrossDir)/usr/lib/x86_64-linux-gnu/pkgconfig" />
     </ItemGroup>
 
     <!-- ARM Linux cross build options on CI -->
-    <ItemGroup Condition="'$(RealTargetArchitecture)' == 'arm64' and '$(RealTargetOS)' == 'linux'">
-      <MonoAOTCMakeArgs Include="-DCMAKE_TOOLCHAIN_FILE=$(CrossToolchainFile)" />
-      <_MonoAotBuildEnv Include="TARGET_BUILD_ARCH=arm64" />
+    <ItemGroup Condition="'$(AotHostArchitecture)' == 'arm64' and '$(AotHostOS)' == 'linux'">
       <_MonoAotBuildEnv Include="PKG_CONFIG_PATH=$(MonoCrossDir)/usr/lib/aarch64-linux-gnu/pkgconfig" />
     </ItemGroup>
 
@@ -850,7 +848,7 @@
     </ItemGroup>
 
     <PropertyGroup>
-      <_MonoSkipInitCompiler Condition="'$(RealTargetArchitecture)' != '' and '$(RealTargetArchitecture)' != '$(BuildArchitecture)'">false</_MonoSkipInitCompiler>
+      <_MonoSkipInitCompiler Condition="'$(AotHostArchitecture)' != '' and '$(AotHostArchitecture)' != '$(BuildArchitecture)'">false</_MonoSkipInitCompiler>
       <_MonoSkipInitCompiler Condition="'$(CrossBuild)' == 'true'">false</_MonoSkipInitCompiler>
       <_MonoAotCrossOffsetsCommand Condition="'$(MonoUseCrossTool)' == 'true'">$(PythonCmd) $(MonoProjectRoot)mono/tools/offsets-tool/offsets-tool.py @(MonoAotCrossOffsetsToolParams, ' ')</_MonoAotCrossOffsetsCommand>
       <_MonoAotCMakeConfigureCommand>cmake @(MonoAOTCMakeArgs, ' ') $(MonoCMakeExtraArgs) &quot;$(MonoProjectRoot.TrimEnd('\/'))&quot;</_MonoAotCMakeConfigureCommand>
@@ -922,7 +920,7 @@
     </PropertyGroup>
     <PropertyGroup>
       <_MonoLLVMTargetArchitecture>$(BuildArchitecture)</_MonoLLVMTargetArchitecture>
-      <_MonoLLVMTargetArchitecture Condition="'$(TargetArchitecture)' != 'wasm' and '$(RealTargetArchitecture)' != ''">$(RealTargetArchitecture)</_MonoLLVMTargetArchitecture>
+      <_MonoLLVMTargetArchitecture Condition="'$(TargetArchitecture)' != 'wasm' and '$(AotHostArchitecture)' != ''">$(AotHostArchitecture)</_MonoLLVMTargetArchitecture>
     </PropertyGroup>
 
     <!-- Copy Mono runtime files to artifacts directory -->

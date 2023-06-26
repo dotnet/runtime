@@ -1,6 +1,10 @@
 project(System.Globalization.Native C)
 
 if(CLR_CMAKE_TARGET_UNIX OR CLR_CMAKE_TARGET_WASI)
+    if (ANDROID_FORCE_ICU_DATA_DIR)
+        add_definitions(-DANDROID_FORCE_ICU_DATA_DIR)
+    endif()
+
     add_compile_options(-Wno-switch-enum)
     add_compile_options(-Wno-covered-switch-default)
 
@@ -136,7 +140,7 @@ endif()
 
 install (TARGETS System.Globalization.Native-Static DESTINATION ${STATIC_LIB_DESTINATION} COMPONENT libs)
 
-if(NOT CLR_CMAKE_TARGET_APPLE AND NOT CLR_CMAKE_TARGET_ANDROID AND NOT CLR_CMAKE_TARGET_ALPINE_LINUX)
+if(NOT CLR_CMAKE_TARGET_APPLE AND NOT CLR_CMAKE_TARGET_ANDROID AND NOT CLR_CMAKE_TARGET_LINUX_MUSL)
     if (GEN_SHARED_LIB)
         add_custom_command(TARGET System.Globalization.Native POST_BUILD
             COMMENT "Verifying System.Globalization.Native.so dependencies"
