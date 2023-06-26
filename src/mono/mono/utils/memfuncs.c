@@ -42,6 +42,12 @@
 #include <sys/vmmeter.h>
 #endif
 
+#if defined (__FreeBSD__)
+#include <sys/param.h>
+#include <sys/sysctl.h>
+#include <sys/vmmeter.h>
+#include <vm/vm_param.h>
+#endif
 
 #if defined(TARGET_WIN32)
 #include <windows.h>
@@ -253,8 +259,8 @@ mono_determine_physical_ram_size (void)
 	memstat.dwLength = sizeof (memstat);
 	GlobalMemoryStatusEx (&memstat);
 	return (guint64)memstat.ullTotalPhys;
-#elif defined (__NetBSD__) || defined (__APPLE__)
-#ifdef __NetBSD__
+#elif defined (__NetBSD__) || defined (__APPLE__) || defined (__FreeBSD__)
+#if defined (__NetBSD__) || defined (__FreeBSD__) 
 	unsigned long value;
 #else
 	guint64 value;
@@ -263,6 +269,8 @@ mono_determine_physical_ram_size (void)
 		CTL_HW,
 #ifdef __NetBSD__
 		HW_PHYSMEM64
+#elif defined (__FreeBSD__)
+		HW_PHYSMEM
 #else
 		HW_MEMSIZE
 #endif
@@ -283,7 +291,7 @@ mono_determine_physical_ram_size (void)
 	page_size = (guint64)sysconf (_SC_PAGESIZE);
 #endif
 
-#ifdef _SC_PHYS_PAGES
+#ifdef _SC_PHYS_PAGES /* non-POSIX should work on: Linux, Solaris2, cygwin */
 	num_pages = (guint64)sysconf (_SC_PHYS_PAGES);
 #endif
 
@@ -343,25 +351,25 @@ mono_determine_physical_ram_available_size (void)
 	GlobalMemoryStatusEx (&memstat);
 	return (guint64)memstat.ullAvailPhys;
 
-#elif defined (__NetBSD__)
-	struct vmtotal vm_total;
-	guint64 page_size;
-	int mib[2];
-	size_t len;
+#elif defined (__NetBSD__) || defined (__FreeBSD__)
+        struct vmtotal vm_total;
+        guint64 page_size;
+        int mib[2];
+        size_t len;
 
-	mib[0] = CTL_VM;
-	mib[1] = VM_METER;
+        mib[0] = CTL_VM;
+        mib[1] = VM_METER;
+                
+        len = sizeof (vm_total);
+        sysctl (mib, 2, &vm_total, &len, NULL, 0);
+                
+        mib[0] = CTL_HW;
+        mib[1] = HW_PAGESIZE;
+                        
+        len = sizeof (page_size);
+        sysctl (mib, 2, &page_size, &len, NULL, 0);
 
-	len = sizeof (vm_total);
-	sysctl (mib, 2, &vm_total, &len, NULL, 0);
-
-	mib[0] = CTL_HW;
-	mib[1] = HW_PAGESIZE;
-
-	len = sizeof (page_size);
-	sysctl (mib, 2, &page_size, &len, NULL, 0);
-
-	return ((guint64) vm_total.t_free * page_size) / 1024;
+        return ((guint64) vm_total.t_free * page_size) / 1024;
 #elif defined (__APPLE__)
 	mach_msg_type_number_t count = HOST_VM_INFO_COUNT;
 	mach_port_t host = mach_host_self ();
@@ -392,7 +400,7 @@ mono_determine_physical_ram_available_size (void)
 	page_size = (guint64)sysconf (_SC_PAGESIZE);
 #endif
 
-#ifdef _SC_AVPHYS_PAGES
+#ifdef _SC_AVPHYS_PAGES /* non-POSIX should work on: Linux, Solaris2, cygwin */
 	num_pages = (guint64)sysconf (_SC_AVPHYS_PAGES);
 #endif
 
