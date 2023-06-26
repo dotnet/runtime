@@ -25,8 +25,7 @@
     <_AfterBuildCommands>
       mv $XHARNESS_OUT/AOTBuild.binlog &quot;$HELIX_WORKITEM_UPLOAD_ROOT&quot;
       sign &quot;$app&quot;
-      dotnet $CORE_ROOT/xunit/xunit.console.dll tracing/eventpipe/tracing.eventpipe.XUnitWrapper.dll -parallel none -nocolor -noshadow -xml testResults.xml
-      </_AfterBuildCommands>
+      xharness apple test --app &quot;$app&quot; --output-directory &quot;$output_directory&quot; --target &quot;$target&quot; --timeout &quot;$timeout&quot; --xcode &quot;$xcode_path&quot; -v --launch-timeout &quot;$launch_timeout&quot; $(_ResetSimulatorSwitch) $(_SignalAppEndSwitch) -- </_AfterBuildCommands>
 
     <RunScriptCommand>$(_AOTBuildCommand) $(_AfterBuildCommands)</RunScriptCommand>
   </PropertyGroup>
@@ -109,6 +108,7 @@
       <_ApplePropertyNames Include="RuntimeTests" />
       <_ApplePropertyNames Include="MonoForceInterpreter" />
       <_ApplePropertyNames Include="UseMonoJustInterp" />
+      <_ApplePropertyNames Include="MainLibraryFileName" />
 
       <_ApplePropertiesToPass
         Include="$(%(_ApplePropertyNames.Identity))"
