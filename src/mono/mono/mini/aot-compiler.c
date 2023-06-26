@@ -508,6 +508,12 @@ static inline const char*
 lookup_direct_pinvoke_symbol_name_aot (MonoAotCompile *acfg, MonoMethod *method);
 
 static gboolean
+ignore_cfg (MonoCompile *cfg)
+{
+	return !cfg/* || cfg->skip*/;
+}
+
+static gboolean
 mono_aot_mode_is_full (MonoAotOptions *opts)
 {
 	return opts->mode == MONO_AOT_MODE_FULL;
@@ -4760,6 +4766,7 @@ cleanup_true:
 	if (cattr)
 		mono_custom_attrs_free (cattr);
 	return TRUE;
+#endif
 }
 
 static gboolean
@@ -4787,7 +4794,6 @@ mono_aot_can_enter_interp (MonoMethod *method)
 	if (acfg->aot_opts.profile_only && !g_hash_table_lookup (acfg->profile_methods, method))
 		return TRUE;
 	return FALSE;
-#endif
 }
 
 static void
