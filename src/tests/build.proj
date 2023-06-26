@@ -412,7 +412,7 @@
       <PublishDir>$(BuildDir)/</PublishDir>
       <TestProjectName>$(AssemblyName)</TestProjectName>
       <CoreRootPath>$(CORE_ROOT)</CoreRootPath>
-      <MainLibraryFileName>testdir-processinfo2/processinfo2.dll</MainLibraryFileName>
+      <MainLibraryFileName>processinfo2.dll</MainLibraryFileName>
     </PropertyGroup>
     <Message Importance="High" Text="App: $(FinalPath)" />
   </Target>
