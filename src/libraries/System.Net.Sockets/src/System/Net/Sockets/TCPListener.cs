@@ -171,7 +171,7 @@ namespace System.Net.Sockets
         }
 
         /// <summary>
-        /// Closes the network connection.
+        /// Releases all resources used by the current <see cref="TcpListener"/> instance.
         /// </summary>
         [EditorBrowsable(EditorBrowsableState.Never)]
         public void Dispose() => Stop();
