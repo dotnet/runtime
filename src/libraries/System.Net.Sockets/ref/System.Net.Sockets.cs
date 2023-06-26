@@ -699,7 +699,7 @@ namespace System.Net.Sockets
         ~TcpClient() { }
         public System.Net.Sockets.NetworkStream GetStream() { throw null; }
     }
-    public partial class TcpListener
+    public partial class TcpListener : System.IDisposable
     {
         [System.ObsoleteAttribute("This constructor has been deprecated. Use TcpListener(IPAddress localaddr, int port) instead.")]
         public TcpListener(int port) { }
@@ -726,6 +726,8 @@ namespace System.Net.Sockets
         public void Start() { }
         public void Start(int backlog) { }
         public void Stop() { }
+
+        void IDisposable.Dispose() { }
     }
     [System.FlagsAttribute]
     public enum TransmitFileOptions
