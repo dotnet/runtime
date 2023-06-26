@@ -344,12 +344,12 @@
       </trans-unit>
       <trans-unit id="MarshalAsConfigurationNotSupportedMessageParameter">
         <source>The specified 'MarshalAsAttribute' configuration for parameter '{1}' is not supported by source-generated COM. If the specified configuration is required, use `ComImport` instead.</source>
-        <target state="new">The specified 'MarshalAsAttribute' configuration for parameter '{1}' is not supported by source-generated COM. If the specified configuration is required, use `ComImport` instead.</target>
+        <target state="translated">Określona konfiguracja atrybutu „MarshalAsAttribute” dla parametru „{1}” nie jest obsługiwana przez COM generowany przez źródło. Jeśli określona konfiguracja jest wymagana, użyj zamiast niej polecenia `ComImport`.</target>
         <note />
       </trans-unit>
       <trans-unit id="MarshalAsConfigurationNotSupportedMessageReturn">
         <source>The specified 'MarshalAsAttribute' configuration for the return value of method '{1}' is not supported by source-generated COM. If the specified configuration is required, use `ComImport` instead.</source>
-        <target state="new">The specified 'MarshalAsAttribute' configuration for the return value of method '{1}' is not supported by source-generated COM. If the specified configuration is required, use `ComImport` instead.</target>
+        <target state="translated">Określona konfiguracja atrybutu „MarshalAsAttribute” dla wartości zwracanej metody „{1}” nie jest obsługiwana przez COM generowany przez źródło. Jeśli określona konfiguracja jest wymagana, użyj zamiast niej polecenia `ComImport`.</target>
         <note />
       </trans-unit>
       <trans-unit id="MethodNotDeclaredInAttributedInterfaceDescription">

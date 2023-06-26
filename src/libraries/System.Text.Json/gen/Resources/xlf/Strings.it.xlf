@@ -64,12 +64,12 @@
       </trans-unit>
       <trans-unit id="JsonConverterAttributeInvalidTypeMessageFormat">
         <source>The 'JsonConverterAttribute' type '{0}' specified on member '{1}' is not a converter type or does not contain an accessible parameterless constructor.</source>
-        <target state="new">The 'JsonConverterAttribute' type '{0}' specified on member '{1}' is not a converter type or does not contain an accessible parameterless constructor.</target>
+        <target state="translated">Il tipo 'JsonConverterAttribute' '{0}' specificato nel membro '{1}' non è un tipo di convertitore o non contiene un costruttore senza parametri accessibile.</target>
         <note />
       </trans-unit>
       <trans-unit id="JsonConverterAttributeInvalidTypeTitle">
         <source>The 'JsonConverterAttribute.Type' contains an invalid or inaccessible argument.</source>
-        <target state="new">The 'JsonConverterAttribute.Type' contains an invalid or inaccessible argument.</target>
+        <target state="translated">'JsonConverterAttribute.Type' contiene un argomento non valido o inaccessibile.</target>
         <note />
       </trans-unit>
       <trans-unit id="JsonStringEnumConverterNotSupportedMessageFormat">

@@ -59,7 +59,7 @@
       </trans-unit>
       <trans-unit id="BaseInterfaceMustGenerateAtLeastSameWrappers">
         <source>A 'GeneratedComInterface' cannot specify 'ComInterfaceOptions.ManagedObjectWrapper' or 'ComInterfaceOptions.ComObjectWrapper' unless the base interface type did not specify options or specified at least the same options.</source>
-        <target state="new">A 'GeneratedComInterface' cannot specify 'ComInterfaceOptions.ManagedObjectWrapper' or 'ComInterfaceOptions.ComObjectWrapper' unless the base interface type did not specify options or specified at least the same options.</target>
+        <target state="translated">"GeneratedComInterface" 不能指定 "ComInterfaceOptions.ManagedObjectWrapper" 或 "ComInterfaceOptions.ComObjectWrapper"，除非基接口类型未指定选项或至少指定了相同的选项。</target>
         <note />
       </trans-unit>
       <trans-unit id="CastsBetweenRuntimeComAndSourceGeneratedComNotSupportedDescription">
@@ -304,12 +304,12 @@
       </trans-unit>
       <trans-unit id="InvalidOptionsOnInterfaceDescription">
         <source>The specified 'ComInterfaceOptions' are invalid.</source>
-        <target state="new">The specified 'ComInterfaceOptions' are invalid.</target>
+        <target state="translated">指定的 "ComInterfaceOptions" 无效。</target>
         <note />
       </trans-unit>
       <trans-unit id="InvalidOptionsOnInterfaceMessage">
         <source>The specified 'ComInterfaceOptions' on '{0}' are invalid. {1}</source>
-        <target state="new">The specified 'ComInterfaceOptions' on '{0}' are invalid. {1}</target>
+        <target state="translated">“{0}”上指定的 "ComInterfaceOptions" 无效。{1}</target>
         <note />
       </trans-unit>
       <trans-unit id="InvalidStringMarshallingConfigurationDescription">
@@ -384,7 +384,7 @@
       </trans-unit>
       <trans-unit id="OneWrapperMustBeGenerated">
         <source>Either 'ComInterfaceOptions.ManagedObjectWrapper' or 'ComInterfaceOptions.ComObjectWrapper' must be specified.</source>
-        <target state="new">Either 'ComInterfaceOptions.ManagedObjectWrapper' or 'ComInterfaceOptions.ComObjectWrapper' must be specified.</target>
+        <target state="translated">必须指定 "ComInterfaceOptions.ManagedObjectWrapper" 或 "ComInterfaceOptions.ComObjectWrapper"。</target>
         <note />
       </trans-unit>
       <trans-unit id="RequiresAllowUnsafeBlocksDescription">
