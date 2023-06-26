@@ -319,12 +319,12 @@
       </trans-unit>
       <trans-unit id="MarshalAsConfigurationNotSupportedMessageParameter">
         <source>The specified 'MarshalAsAttribute' configuration for parameter '{1}' is not supported by source-generated P/Invokes. If the specified configuration is required, use a regular 'DllImport' instead.</source>
-        <target state="new">The specified 'MarshalAsAttribute' configuration for parameter '{1}' is not supported by source-generated P/Invokes. If the specified configuration is required, use a regular 'DllImport' instead.</target>
+        <target state="translated">A configuração especificada "MarshalAsAttribute" para o parâmetro "{1}" não tem suporte do P/Invokes gerado pela origem. Se a configuração especificada for necessária, use "DllImport" no lugar.</target>
         <note />
       </trans-unit>
       <trans-unit id="MarshalAsConfigurationNotSupportedMessageReturn">
         <source>The specified 'MarshalAsAttribute' configuration for the return value of method '{1}' is not supported by source-generated P/Invokes. If the specified configuration is required, use a regular 'DllImport' instead.</source>
-        <target state="new">The specified 'MarshalAsAttribute' configuration for the return value of method '{1}' is not supported by source-generated P/Invokes. If the specified configuration is required, use a regular 'DllImport' instead.</target>
+        <target state="translated">A configuração especificada "MarshalAsAttribute" para o valor retornado do método "{1}" não tem suporte do P/Invokes gerado pela origem. Se a configuração especificada for necessária, use "DllImport" no lugar.</target>
         <note />
       </trans-unit>
       <trans-unit id="MarshalModeMustBeValidEnumValue">

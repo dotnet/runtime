@@ -59,7 +59,7 @@
       </trans-unit>
       <trans-unit id="BaseInterfaceMustGenerateAtLeastSameWrappers">
         <source>A 'GeneratedComInterface' cannot specify 'ComInterfaceOptions.ManagedObjectWrapper' or 'ComInterfaceOptions.ComObjectWrapper' unless the base interface type did not specify options or specified at least the same options.</source>
-        <target state="new">A 'GeneratedComInterface' cannot specify 'ComInterfaceOptions.ManagedObjectWrapper' or 'ComInterfaceOptions.ComObjectWrapper' unless the base interface type did not specify options or specified at least the same options.</target>
+        <target state="translated">Ein "GeneratedComInterface" kann nur dann "ComInterfaceOptions.ManagedObjectWrapper" oder "ComInterfaceOptions.ComObjectWrapper" angeben, wenn der Basisschnittstellentyp keine Optionen angegeben oder mindestens dieselben Optionen angegeben hat.</target>
         <note />
       </trans-unit>
       <trans-unit id="CastsBetweenRuntimeComAndSourceGeneratedComNotSupportedDescription">
@@ -304,12 +304,12 @@
       </trans-unit>
       <trans-unit id="InvalidOptionsOnInterfaceDescription">
         <source>The specified 'ComInterfaceOptions' are invalid.</source>
-        <target state="new">The specified 'ComInterfaceOptions' are invalid.</target>
+        <target state="translated">Die angegebenen 'ComInterfaceOptions' sind ungültig.</target>
         <note />
       </trans-unit>
       <trans-unit id="InvalidOptionsOnInterfaceMessage">
         <source>The specified 'ComInterfaceOptions' on '{0}' are invalid. {1}</source>
-        <target state="new">The specified 'ComInterfaceOptions' on '{0}' are invalid. {1}</target>
+        <target state="translated">Die angegebenen 'ComInterfaceOptions' auf '{0}' sind ungültig. {1}</target>
         <note />
       </trans-unit>
       <trans-unit id="InvalidStringMarshallingConfigurationDescription">
@@ -344,12 +344,12 @@
       </trans-unit>
       <trans-unit id="MarshalAsConfigurationNotSupportedMessageParameter">
         <source>The specified 'MarshalAsAttribute' configuration for parameter '{1}' is not supported by source-generated COM. If the specified configuration is required, use `ComImport` instead.</source>
-        <target state="new">The specified 'MarshalAsAttribute' configuration for parameter '{1}' is not supported by source-generated COM. If the specified configuration is required, use `ComImport` instead.</target>
+        <target state="translated">Die angegebene Konfiguration „MarshalAsAttribute“ für den Parameter „{1}“ wird vom quellgenerierten COM nicht unterstützt. Wenn die angegebene Konfiguration erforderlich ist, verwenden Sie stattdessen einen regulären „ComImport“.</target>
         <note />
       </trans-unit>
       <trans-unit id="MarshalAsConfigurationNotSupportedMessageReturn">
         <source>The specified 'MarshalAsAttribute' configuration for the return value of method '{1}' is not supported by source-generated COM. If the specified configuration is required, use `ComImport` instead.</source>
-        <target state="new">The specified 'MarshalAsAttribute' configuration for the return value of method '{1}' is not supported by source-generated COM. If the specified configuration is required, use `ComImport` instead.</target>
+        <target state="translated">Die angegebene Konfiguration „MarshalAsAttribute“ für den Rückgabewert der Methode „{1}“ wird vom quellgenerierten COM nicht unterstützt. Wenn die angegebene Konfiguration erforderlich ist, verwenden Sie stattdessen einen regulären „ComImport“.</target>
         <note />
       </trans-unit>
       <trans-unit id="MethodNotDeclaredInAttributedInterfaceDescription">
@@ -384,7 +384,7 @@
       </trans-unit>
       <trans-unit id="OneWrapperMustBeGenerated">
         <source>Either 'ComInterfaceOptions.ManagedObjectWrapper' or 'ComInterfaceOptions.ComObjectWrapper' must be specified.</source>
-        <target state="new">Either 'ComInterfaceOptions.ManagedObjectWrapper' or 'ComInterfaceOptions.ComObjectWrapper' must be specified.</target>
+        <target state="translated">Es muss entweder "ComInterfaceOptions.ManagedObjectWrapper" oder "ComInterfaceOptions.ComObjectWrapper" angegeben werden.</target>
         <note />
       </trans-unit>
       <trans-unit id="RequiresAllowUnsafeBlocksDescription">
