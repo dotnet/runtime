@@ -5,8 +5,6 @@ using System;
 using System.Collections.Generic;
 using System.CommandLine;
 using System.CommandLine.Help;
-using System.CommandLine.Parsing;
-using System.IO;
 
 using Internal.TypeSystem;
 
@@ -146,10 +144,10 @@ namespace ILCompiler
             new(new[] { "--maxgenericcyclebreadth" }, () => CompilerTypeSystemContext.DefaultGenericCycleBreadthCutoff, "Max breadth of generic cycle expansion");
         public Option<string[]> RootedAssemblies { get; } =
             new(new[] { "--root" }, Array.Empty<string>, "Fully generate given assembly");
-        public Option<IEnumerable<string>> ConditionallyRootedAssemblies { get; } =
-            new(new[] { "--conditionalroot" }, result => ILLinkify(result.Tokens), true, "Fully generate given assembly if it's used");
-        public Option<IEnumerable<string>> TrimmedAssemblies { get; } =
-            new(new[] { "--trim" }, result => ILLinkify(result.Tokens), true, "Trim the specified assembly");
+        public Option<string[]> ConditionallyRootedAssemblies { get; } =
+            new(new[] { "--conditionalroot" }, Array.Empty<string>, "Fully generate given assembly if it's used");
+        public Option<string[]> TrimmedAssemblies { get; } =
+            new(new[] { "--trim" }, Array.Empty<string>, "Trim the specified assembly");
         public Option<bool> RootDefaultAssemblies { get; } =
             new(new[] { "--defaultrooting" }, "Root assemblies that are not marked [IsTrimmable]");
         public Option<TargetArchitecture> TargetArchitecture { get; } =
@@ -363,29 +361,6 @@ namespace ILCompiler
                 Console.WriteLine("The following CPU names are predefined groups of instruction sets and can be used in --instruction-set too:");
                 Console.WriteLine(string.Join(", ", Internal.JitInterface.InstructionSetFlags.AllCpuNames));
             };
-        }
-
-        private static IEnumerable<string> ILLinkify(IReadOnlyList<Token> tokens)
-        {
-            if (tokens.Count == 0)
-            {
-                yield return string.Empty;
-                yield break;
-            }
-
-            foreach(Token token in tokens)
-            {
-                string rootedAssembly = token.Value;
-
-                // For compatibility with IL Linker, the parameter could be a file name or an assembly name.
-                // This is the logic IL Linker uses to decide how to interpret the string. Really.
-                string simpleName;
-                if (File.Exists(rootedAssembly))
-                    simpleName = Path.GetFileNameWithoutExtension(rootedAssembly);
-                else
-                    simpleName = rootedAssembly;
-                yield return simpleName;
-            }
         }
 
 #if DEBUG

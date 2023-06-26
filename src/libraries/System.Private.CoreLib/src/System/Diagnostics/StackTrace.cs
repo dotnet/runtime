@@ -197,10 +197,10 @@ namespace System.Diagnostics
         {
             // Passing a default string for "at" in case SR.UsingResourceKeys() is true
             // as this is a special case and we don't want to have "Word_At" on stack traces.
-            string word_At = SR.GetResourceString(nameof(SR.Word_At), defaultString: "at");
+            string word_At = SR.UsingResourceKeys() ? "at" : SR.Word_At;
             // We also want to pass in a default for inFileLineNumber.
-            string inFileLineNum = SR.GetResourceString(nameof(SR.StackTrace_InFileLineNumber), defaultString: "in {0}:line {1}");
-            string inFileILOffset = SR.GetResourceString(nameof(SR.StackTrace_InFileILOffset), defaultString: "in {0}:token 0x{1:x}+0x{2:x}");
+            string inFileLineNum = SR.UsingResourceKeys() ? "in {0}:line {1}" : SR.StackTrace_InFileLineNumber;
+            string inFileILOffset = SR.UsingResourceKeys() ? "in {0}:token 0x{1:x}+0x{2:x}" : SR.StackTrace_InFileILOffset;
             bool fFirstFrame = true;
             for (int iFrameIndex = 0; iFrameIndex < _numOfFrames; iFrameIndex++)
             {
@@ -340,8 +340,7 @@ namespace System.Diagnostics
                     {
                         sb.AppendLine();
                         // Passing default for Exception_EndStackTraceFromPreviousThrow in case SR.UsingResourceKeys is set.
-                        sb.Append(SR.GetResourceString(nameof(SR.Exception_EndStackTraceFromPreviousThrow),
-                            defaultString: "--- End of stack trace from previous location ---"));
+                        sb.Append(SR.UsingResourceKeys() ? "--- End of stack trace from previous location ---" : SR.Exception_EndStackTraceFromPreviousThrow);
                     }
                 }
             }

@@ -1185,7 +1185,7 @@ void ReplaceVisitor::HandleStructStore(GenTree** use, GenTree* user)
         {
             GenTreeLclVarCommon* srcLcl = store->Data()->AsLclVarCommon();
             unsigned             size   = srcLcl->GetLayout(m_compiler)->GetSize();
-            WriteBackBefore(&store->Data(), srcLcl->GetLclNum(), srcLcl->GetLclOffs(), size);
+            WriteBackBeforeUse(&store->Data(), srcLcl->GetLclNum(), srcLcl->GetLclOffs(), size);
         }
 
         if (store->OperIsLocalStore())

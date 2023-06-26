@@ -300,6 +300,22 @@
                             CMakeArgs=$(CMakeArgs) -DCLR_CROSS_COMPONENTS_BUILD=1" Category="clr" />
   </ItemGroup>
 
+  <!-- When targeting the iOS platforms with Native AOT, build the ClrAllJitsSubset and the Ilc for the host  -->
+  <PropertyGroup>
+    <IsNativeAOTHostBuildEnabled Condition="$(_subset.Contains('+clr.nativeaotruntime+')) and '$(NativeAotSupported)' == 'true' and '$(PrimaryRuntimeFlavor)' == 'CoreCLR' and '$(TargetsAppleMobile)' == 'true'">true</IsNativeAOTHostBuildEnabled>
+    <NativeAOTAdditionalProperties Condition="'$(IsNativeAOTHostBuildEnabled)' == 'true'">TargetOS=osx</NativeAOTAdditionalProperties>
+  </PropertyGroup>
+  <ItemGroup Condition="'$(IsNativeAOTHostBuildEnabled)' == 'true'">
+    <ProjectToBuild
+      Include="$(CoreClrProjectRoot)runtime.proj"
+      AdditionalProperties="$(NativeAOTAdditionalProperties);
+                            ClrAllJitsSubset=true"
+      Category="clr" />
+    <ProjectToBuild Include="$(CoreClrProjectRoot)tools\aot\ILCompiler\ILCompiler.csproj" Category="clr" AdditionalProperties="$(NativeAOTAdditionalProperties)" />
+    <ProjectToBuild Include="$(CoreClrProjectRoot)nativeaot\BuildIntegration\BuildIntegration.proj" Category="clr" AdditionalProperties="$(NativeAOTAdditionalProperties)" />
+    <ProjectToBuild Condition="'$(CrossBuild)' == 'true' or '$(BuildArchitecture)' != '$(TargetArchitecture)'" Include="$(CoreClrProjectRoot)tools\aot\ILCompiler\ILCompiler_crossarch.csproj" Category="clr" AdditionalProperties="$(NativeAOTAdditionalProperties)" />
+  </ItemGroup>
+
   <ItemGroup Condition="$(_subset.Contains('+crossdacpack+'))">
     <ProjectToBuild Include="$(CoreClrProjectRoot).nuget\Microsoft.CrossOsDiag.Private.CoreCLR\Microsoft.CrossOsDiag.Private.CoreCLR.proj" Category="clr" />
   </ItemGroup>
