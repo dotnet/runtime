@@ -3847,12 +3847,24 @@ GenTree* Compiler::impIntrinsic(GenTree*                newobjThis,
 
             case NI_System_Threading_Volatile_Read:
             {
-                retNode = gtNewIndir(TypeHandleToVarType(sig->retTypeSigClass), impPopStack().val, GTF_IND_VOLATILE);
+#if !TARGET_64BIT
+                if ((retType == TYP_LONG) || (retType == TYP_DOUBLE))
+                {
+                    break;
+                }
+#endif // !TARGET_64BIT
+                retNode = gtNewIndir(JITtype2varType(retType), impPopStack().val, GTF_IND_VOLATILE);
                 break;
             }
 
             case NI_System_Threading_Volatile_Write:
             {
+#if !TARGET_64BIT
+                if ((retType == TYP_LONG) || (retType == TYP_DOUBLE))
+                {
+                    break;
+                }
+#endif // !TARGET_64BIT
                 CORINFO_CLASS_HANDLE typeHnd     = nullptr;
                 CorInfoType          baseJitType = strip(info.compCompHnd->getArgType(sig, info.compCompHnd->getArgNext(sig->args), &typeHnd));
                 var_types            type        = JITtype2varType(baseJitType);
