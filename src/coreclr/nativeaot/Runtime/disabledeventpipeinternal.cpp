@@ -186,4 +186,9 @@ EXTERN_C NATIVEAOT_API void __cdecl RhEventPipeInternal_LogThreadPoolIOPack(uint
     PalDebugBreak();
 }
 
+EXTERN_C NATIVEAOT_API void __cdecl RhpEtwExceptionThrown(LPCWSTR exceptionTypeName, LPCWSTR exceptionMessage, void* faultingIP, HRESULT hresult)
+{
+    PalDebugBreak();
+}
+
 #endif // FEATURE_PERFTRACING
