@@ -263,12 +263,12 @@ namespace System
 
                 if (periodTm < -1)
                 {
-                    throw new ArgumentOutOfRangeException(nameof(periodTm), periodTm, SR.Format(SR.ArgumentOutOfRange_Generic_MustBeGreaterOrEqual, nameof(periodTm), -1));
+                    throw new ArgumentOutOfRangeException(nameof(periodTm), periodTm, SR.Format(SR.ArgumentOutOfRange_Generic_MustBeGreaterOrEqual, nameof(periodTime), -1));
                 }
 
                 if (periodTm > MaxAllowedTimeout)
                 {
-                    throw new ArgumentOutOfRangeException(nameof(periodTm), periodTm, SR.Format(SR.ArgumentOutOfRange_Generic_MustBeLessOrEqual, nameof(periodTm), MaxAllowedTimeout));
+                    throw new ArgumentOutOfRangeException(nameof(periodTm), periodTm, SR.Format(SR.ArgumentOutOfRange_Generic_MustBeLessOrEqual, nameof(periodTime), MaxAllowedTimeout));
                 }
 #endif // SYSTEM_PRIVATE_CORELIB
 
