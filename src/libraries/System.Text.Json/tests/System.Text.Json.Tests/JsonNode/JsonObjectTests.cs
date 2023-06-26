@@ -1072,7 +1072,11 @@ namespace System.Text.Json.Nodes.Tests
 
             using JsonDocument document3 = JsonDocument.Parse("{\"One\": 3, \"String\": \"abc\"}");
             JsonObject jObject3 = JsonObject.Create(document3.RootElement);
-            Assert.False(JsonNode.DeepEquals(jObject, jObject3));        
+            Assert.False(JsonNode.DeepEquals(jObject, jObject3));
+
+            using JsonDocument document4 = JsonDocument.Parse("{\"One\":     1, \"String\":     \"abc2\"}   ");
+            JsonObject jObject4 = JsonObject.Create(document4.RootElement);
+            Assert.False(JsonNode.DeepEquals(jObject, jObject4));
         }
 
         [Fact]

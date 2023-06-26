@@ -379,21 +379,29 @@ namespace System.Text.Json.Nodes.Tests
         }
 
         [Fact]
-        public static void DeeepEqualsJsonElement()
+        public static void DeepEqualsJsonElement()
         {
-            using (JsonDocument document1 = JsonDocument.Parse("10"))
-            {
-                JsonValue jsonValue1 = JsonValue.Create(document1.RootElement);
+            JsonDocument document1 = JsonDocument.Parse("10");
 
-                Assert.True(JsonNode.DeepEquals(jsonValue1, JsonValue.Create(10)));
+            JsonValue jsonValue1 = JsonValue.Create(document1.RootElement);
 
-                using (JsonDocument document2 = JsonDocument.Parse("\"10\""))
-                {
-                    JsonValue jsonValue2 = JsonValue.Create(document2.RootElement);
-                    Assert.False(JsonNode.DeepEquals(jsonValue1, jsonValue2));
-                    Assert.True(JsonNode.DeepEquals(jsonValue2, JsonValue.Create("10")));
-                }
-            }
+            Assert.True(JsonNode.DeepEquals(jsonValue1, JsonValue.Create(10)));
+
+            JsonDocument document2 = JsonDocument.Parse("\"10\"");
+
+            JsonValue jsonValue2 = JsonValue.Create(document2.RootElement);
+            Assert.False(JsonNode.DeepEquals(jsonValue1, jsonValue2));
+            Assert.True(JsonNode.DeepEquals(jsonValue2, JsonValue.Create("10")));
+        }
+
+        [Fact]
+        public static void DeepEqualsJsonElement_Boolean()
+        {
+            JsonValue trueValue = JsonValue.Create(JsonDocument.Parse("true").RootElement);
+            JsonValue falseValue = JsonValue.Create(JsonDocument.Parse("false").RootElement);
+
+            Assert.False(JsonNode.DeepEquals(trueValue, falseValue));
+            Assert.True(JsonNode.DeepEquals(trueValue, trueValue.DeepClone()));
         }
 
         [Fact]
@@ -407,6 +415,14 @@ namespace System.Text.Json.Nodes.Tests
                 JsonValue jsonValue = JsonValue.Create(document.RootElement);
                 Assert.Equal(JsonValueKind.Number, jsonValue.GetValueKind());
             }
+        }
+
+        [Fact]
+        public static void DeepEquals_EscapedString()
+        {
+            JsonValue jsonValue = JsonValue.Create(JsonDocument.Parse("\"It\'s alright\"").RootElement);
+            JsonValue escapedJsonValue = JsonValue.Create(JsonDocument.Parse("\"It\u0027s alright\"").RootElement);
+            Assert.True(JsonNode.DeepEquals(escapedJsonValue, jsonValue));
         }
 
         private class Student

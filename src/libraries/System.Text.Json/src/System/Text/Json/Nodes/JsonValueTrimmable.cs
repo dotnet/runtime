@@ -98,9 +98,11 @@ namespace System.Text.Json.Nodes
                     switch (jsonElementCurrent.ValueKind)
                     {
                         case JsonValueKind.String:
-                        case JsonValueKind.Number:
+                            return jsonElementCurrent.ValueEquals(jsonElementNodeOther._value.GetString());
                         case JsonValueKind.True:
                         case JsonValueKind.False:
+                            return jsonElementCurrent.GetBoolean() == jsonElementNodeOther._value.GetBoolean();
+                        case JsonValueKind.Number:
                             return jsonElementCurrent.GetRawValue().Span.SequenceEqual(jsonElementNodeOther._value.GetRawValue().Span);
                         default:
                             return false;
