@@ -106,11 +106,18 @@ private:
         DacEnumerableHashValue       m_iHashValue;       // The hash value associated with the entry
     };
 
-    static TADDR CreateEndSentinel(DPTR(PTR_VolatileEntry) buckets)
-    {
-        _ASSERTE(BucketsIndex(buckets) != 0);
-        return (TADDR)((BucketsIndex(buckets) << 1) | 1);
-    }
+
+    // End sentinel logic
+    // End sentinels indicate the end of the linked list of VolatileEntrys of each bucket
+    // As the list can be mutated while readers are reading, we use a specific end sentinel
+    // per list to identify the end of the list instead of NULL. We take advantage of the
+    // concept that VolatileEntry values are aligned, and distinguish an end sentinel
+    // from a normal pointer by means of the low bit, and we use an incrementing value
+    // for the rest of the end sentinel so that we can detect when we finish walking
+    // a linked list if we found ourselves walking to the end of the expected list,
+    // to the end of a list on an older bucket (which is OK), or to the end of a list
+    // on a newer bucket. (which will require rewalking the entire list as we may have
+    // missed elements of the list that need to be found)
 
     static bool IsEndSentinel(PTR_VolatileEntry entry)
     {
@@ -120,6 +127,18 @@ private:
     static bool IsEndSentinel(TADDR value)
     {
         return !!(value & 1);
+    }
+
+    static TADDR InitialEndSentinel()
+    {
+        return 1;
+    }
+
+    static TADDR IncrementEndSentinel(TADDR previousSentinel)
+    {
+        auto result = previousSentinel + 2;
+        _ASSERTE(IsEndSentinel(result));
+        return result;
     }
 
     static bool AcceptableEndSentinel(PTR_VolatileEntry entry, TADDR expectedEndSentinel)
@@ -241,7 +260,7 @@ private:
     //                                         slot [1] will contain the next version of the table if it resizes
     static const int SLOT_LENGTH = 0;
     static const int SLOT_NEXT = 1;
-    static const int SLOT_BUCKETSINDEX = 2;
+    static const int SLOT_ENDSENTINEL = 2;
     // normal slots start at slot #3
     static const int SKIP_SPECIAL_SLOTS = 3;
     
@@ -250,9 +269,9 @@ private:
         return (DWORD)dac_cast<TADDR>(buckets[SLOT_LENGTH]);
     }
 
-    static DWORD BucketsIndex(DPTR(PTR_VolatileEntry) buckets)
+    static TADDR EndSentinel(DPTR(PTR_VolatileEntry) buckets)
     {
-        return (DWORD)dac_cast<TADDR>(buckets[SLOT_BUCKETSINDEX]);
+        return dac_cast<TADDR>(buckets[SLOT_ENDSENTINEL]);
     }
 
     static DPTR(PTR_VolatileEntry) GetNext(DPTR(PTR_VolatileEntry) buckets)
