@@ -38,7 +38,7 @@ namespace Mono.Linker.Tests.TestCasesRunner
 			}
 
 			foreach (var trimAssembly in options.TrimAssemblies) {
-				EcmaModule module = typeSystemContext.GetModuleFromPath (trimAssembly);
+				EcmaModule module = typeSystemContext.GetModuleForSimpleName (trimAssembly);
 				inputModules.Add (module);
 			}
 

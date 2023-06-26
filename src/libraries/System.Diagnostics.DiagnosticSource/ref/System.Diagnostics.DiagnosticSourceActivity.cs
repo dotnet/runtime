@@ -389,15 +389,6 @@ namespace System.Diagnostics.Metrics
         protected void RecordMeasurement(T measurement, in TagList tagList) { throw null; }
         protected void RecordMeasurement(T measurement, ReadOnlySpan<System.Collections.Generic.KeyValuePair<string, object?>> tags) { throw null; }
     }
-    public sealed class InstrumentRecorder<T> : IDisposable where T : struct
-    {
-        public InstrumentRecorder(Instrument instrument) { throw null; }
-        public InstrumentRecorder(object? scopeFilter, string meterName, string instrumentName) { throw null; }
-        public InstrumentRecorder(Meter meter, string instrumentName) { throw null; }
-        public Instrument? Instrument { get { throw null; }  }
-        public System.Collections.Generic.IEnumerable<Measurement<T>> GetMeasurements(bool clear = false) { throw null; }
-        public void Dispose() { throw null; }
-    }
     public readonly struct Measurement<T> where T : struct
     {
         public Measurement(T value) { throw null; }
@@ -545,7 +536,7 @@ namespace System.Diagnostics.Metrics
         public System.Collections.Generic.IEnumerable<System.Collections.Generic.KeyValuePair<string,object?>>? Tags { get { throw null;} set { throw null;} }
         public object? Scope { get { throw null;} set { throw null;} }
         public MeterOptions(string name) { throw null;}
-    }    
+    }
     public sealed class ObservableCounter<T> : ObservableInstrument<T> where T : struct
     {
         internal ObservableCounter(Meter meter, string name, string? unit, string? description) : base(meter, name, unit, description) { throw null; }

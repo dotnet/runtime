@@ -66,6 +66,8 @@ namespace Microsoft.Interop
 
         public bool IsByRef => RefKind != RefKind.None;
 
+        public ScopedKind ScopedKind { get; init; } = ScopedKind.None;
+
         public ByValueContentsMarshalKind ByValueContentsMarshalKind { get; init; }
 
         public bool IsManagedReturnPosition { get => ManagedIndex == ReturnIndex; }
@@ -82,7 +84,8 @@ namespace Microsoft.Interop
                 InstanceIdentifier = ParseToken(paramSymbol.Name).IsReservedKeyword() ? $"@{paramSymbol.Name}" : paramSymbol.Name,
                 RefKind = paramSymbol.RefKind,
                 RefKindSyntax = RefKindToSyntax(paramSymbol.RefKind),
-                ByValueContentsMarshalKind = GetByValueContentsMarshalKind(paramSymbol.GetAttributes(), compilation)
+                ByValueContentsMarshalKind = GetByValueContentsMarshalKind(paramSymbol.GetAttributes(), compilation),
+                ScopedKind = paramSymbol.ScopedKind
             };
 
             return typeInfo;

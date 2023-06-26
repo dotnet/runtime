@@ -551,8 +551,9 @@ public:
     CalledMethod * GetCalledMethods() { return m_pCalledMethods; }
 #endif
 
-    // Add/Find transient method details.
+    // Add/Remove/Find transient method details.
     void AddTransientMethodDetails(TransientMethodDetails details);
+    TransientMethodDetails RemoveTransientMethodDetails(MethodDesc* pMD);
     bool FindTransientMethodDetails(MethodDesc* pMD, TransientMethodDetails** details);
 
 protected:
