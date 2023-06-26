@@ -123,7 +123,7 @@ HRESULT NonGcHeapProfiler::GarbageCollectionFinished()
         {
             printf("\tseg#%u, rangeStart=%p, rangeLength=%u, rangeLengthReserved=%u\n",
                 i, (void*)gc_segments[i].rangeStart, (ULONG)gc_segments[i].rangeLength, (ULONG)gc_segments[i].rangeLengthReserved);
-                
+
             if ((ULONG)gc_segments[i].rangeLength > (ULONG)gc_segments[i].rangeLengthReserved)
             {
                 printf("GetGenerationBounds: rangeLength > rangeLengthReserved");
