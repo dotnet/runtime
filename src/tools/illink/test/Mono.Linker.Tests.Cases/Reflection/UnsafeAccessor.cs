@@ -17,6 +17,9 @@ namespace Mono.Linker.Tests.Cases.Reflection
 			ConstructorAccess.Test ();
 			StaticMethodAccess.Test ();
 			InstanceMethodAccess.Test ();
+			StaticFieldAccess.Test ();
+			InstanceFieldAccess.Test ();
+			InheritanceTest.Test ();
 		}
 
 		// Trimmer doesn't use method overload resolution for UnsafeAccessor and instead marks entire method groups (by name)
@@ -461,80 +464,233 @@ namespace Mono.Linker.Tests.Cases.Reflection
 			}
 
 			[Kept]
-			class InheritanceTest
-			{
-				[Kept]
-				[KeptMember (".ctor()")]
-				class InheritanceTargetBase
-				{
-					private void OnBase () { }
-
-					private void OnBoth () { }
-
-					public void PublicOnBase () { }
-
-					public void PublicOnBoth () { }
-				}
-
-				[Kept]
-				[KeptMember (".ctor()")]
-				[KeptBaseType (typeof (InheritanceTargetBase))]
-				class InheritanceTargetDerived : InheritanceTargetBase
-				{
-					[Kept]
-					private void OnDerived () { }
-
-					[Kept (By = Tool.Trimmer)]
-					private void OnBoth (string s) { }
-
-					[Kept (By = Tool.Trimmer)]
-					public void PublicOnBoth (string s) { }
-				}
-
-				[Kept]
-				[KeptAttributeAttribute (typeof (UnsafeAccessorAttribute))]
-				[UnsafeAccessor (UnsafeAccessorKind.Method)]
-				extern static void OnBase (InheritanceTargetDerived t);
-
-				[Kept]
-				[KeptAttributeAttribute (typeof (UnsafeAccessorAttribute))]
-				[UnsafeAccessor (UnsafeAccessorKind.Method)]
-				extern static void OnDerived (InheritanceTargetDerived t);
-
-				[Kept]
-				[KeptAttributeAttribute (typeof (UnsafeAccessorAttribute))]
-				[UnsafeAccessor (UnsafeAccessorKind.Method)]
-				extern static void OnBoth (InheritanceTargetDerived t);
-
-				[Kept]
-				[KeptAttributeAttribute (typeof (UnsafeAccessorAttribute))]
-				[UnsafeAccessor (UnsafeAccessorKind.Method)]
-				extern static void PublicOnBase (InheritanceTargetDerived t);
-
-				[Kept]
-				[KeptAttributeAttribute (typeof (UnsafeAccessorAttribute))]
-				[UnsafeAccessor (UnsafeAccessorKind.Method)]
-				extern static void PublicOnBoth (InheritanceTargetDerived t);
-
-				[Kept]
-				public static void Test ()
-				{
-					InheritanceTargetDerived derived = new InheritanceTargetDerived ();
-					OnBase (derived);
-					OnDerived (derived);
-					OnBoth (derived);
-					PublicOnBase (derived);
-					PublicOnBoth (derived);
-				}
-			}
-
-			[Kept]
 			public static void Test ()
 			{
 				MethodWithoutParameters.Test ();
 				MethodWithParameter.Test ();
 				CustomModifiersTest.Test ();
-				InheritanceTest.Test ();
+			}
+		}
+
+		// We currently don't track fields in NativeAOT testing infra
+		[Kept]
+		class StaticFieldAccess
+		{
+			[Kept]
+			[KeptMember (".ctor()")]
+			class StaticFieldTarget
+			{
+				[Kept (By = Tool.Trimmer)]
+				private static int Field;
+
+				[Kept (By = Tool.Trimmer)]
+				private static int FieldWithDifferentType;
+
+				private static int FieldWithVoidType;
+
+				[Kept (By = Tool.Trimmer)]
+				private static int FieldByName;
+
+				private static int FieldWithParameters;
+
+				private int InstanceField;
+
+				private static int ExistingField;
+
+				private static string FieldWithoutRef;
+
+				[Kept (By = Tool.Trimmer)]
+				private static string FieldWithRef;
+			}
+
+			[Kept]
+			[KeptAttributeAttribute (typeof (UnsafeAccessorAttribute))]
+			[UnsafeAccessor (UnsafeAccessorKind.StaticField)]
+			extern static ref int Field(StaticFieldTarget target);
+
+			[Kept]
+			[KeptAttributeAttribute (typeof (UnsafeAccessorAttribute))]
+			// Verify that declaring more parameters means the accessor is ignored
+			[UnsafeAccessor (UnsafeAccessorKind.StaticField, Name = "FieldWithParameters")]
+			extern static ref int FieldWithParameters (StaticFieldTarget target, int i);
+
+			[Kept]
+			[KeptAttributeAttribute (typeof (UnsafeAccessorAttribute))]
+			// Verify that access the field with different type still marks it (same as method overload resolution problems)
+			[UnsafeAccessor (UnsafeAccessorKind.StaticField)]
+			extern static ref string FieldWithDifferentType (StaticFieldTarget target);
+
+			[Kept]
+			[KeptAttributeAttribute (typeof (UnsafeAccessorAttribute))]
+			// Verify that access the field with different type still marks it (same as method overload resolution problems)
+			[UnsafeAccessor (UnsafeAccessorKind.StaticField)]
+			extern static void FieldWithVoidType (StaticFieldTarget target);
+
+			[Kept]
+			[KeptAttributeAttribute (typeof (UnsafeAccessorAttribute))]
+			[UnsafeAccessor (UnsafeAccessorKind.StaticField, Name = "FieldByName")]
+			extern static ref int FieldByName (StaticFieldTarget target);
+
+			[Kept]
+			[KeptAttributeAttribute (typeof (UnsafeAccessorAttribute))]
+			[UnsafeAccessor (UnsafeAccessorKind.StaticField, Name = "InstanceField")]
+			extern static ref int InstanceFieldAsStaticField (StaticFieldTarget target);
+
+			[Kept]
+			[KeptAttributeAttribute (typeof (UnsafeAccessorAttribute))]
+			[UnsafeAccessor (UnsafeAccessorKind.StaticField)]
+			extern static ref int NonExistentField (StaticFieldTarget target);
+
+			[Kept]
+			[KeptAttributeAttribute (typeof (UnsafeAccessorAttribute))]
+			[UnsafeAccessor (UnsafeAccessorKind.StaticField)]
+			extern static string FieldWithoutRef (StaticFieldTarget target);
+
+			[Kept]
+			[KeptAttributeAttribute (typeof (UnsafeAccessorAttribute))]
+			[UnsafeAccessor (UnsafeAccessorKind.StaticField)]
+			extern static ref string FieldWithRef (StaticFieldTarget target);
+
+			[Kept]
+			public static void Test()
+			{
+				Field (null);
+				FieldWithParameters (null, 0);
+				FieldWithDifferentType (null);
+				FieldWithVoidType (null);
+				FieldByName (null);
+				NonExistentField (null);
+				FieldWithoutRef (null);
+				FieldWithRef (null);
+
+				StaticFieldTarget target = new StaticFieldTarget ();
+				InstanceFieldAsStaticField (target);
+			}
+		}
+
+		[Kept]
+		class InstanceFieldAccess
+		{
+			[Kept]
+			[KeptMember (".ctor()")]
+			class InstanceFieldTarget
+			{
+				[Kept (By = Tool.Trimmer)]
+				private int Field;
+
+				private static int StaticField;
+			}
+
+			[Kept]
+			[KeptAttributeAttribute (typeof (UnsafeAccessorAttribute))]
+			[UnsafeAccessor (UnsafeAccessorKind.Field)]
+			extern static ref int Field (InstanceFieldTarget target);
+
+			[Kept]
+			[KeptAttributeAttribute (typeof (UnsafeAccessorAttribute))]
+			[UnsafeAccessor (UnsafeAccessorKind.Field, Name = "StaticField")]
+			extern static ref int StaticFieldAsInstanceField (InstanceFieldTarget target);
+
+			[Kept]
+			public static void Test ()
+			{
+				InstanceFieldTarget target = new InstanceFieldTarget ();
+				Field (target);
+				StaticFieldAsInstanceField (target);
+			}
+		}
+
+		[Kept]
+		class InheritanceTest
+		{
+			[Kept]
+			[KeptMember (".ctor()")]
+			class InheritanceTargetBase
+			{
+				private void OnBase () { }
+
+				private void OnBoth () { }
+
+				public void PublicOnBase () { }
+
+				public void PublicOnBoth () { }
+
+				private int FieldOnBase;
+
+				public int PublicFieldOnBase;
+			}
+
+			[Kept]
+			[KeptMember (".ctor()")]
+			[KeptBaseType (typeof (InheritanceTargetBase))]
+			class InheritanceTargetDerived : InheritanceTargetBase
+			{
+				[Kept]
+				private void OnDerived () { }
+
+				[Kept (By = Tool.Trimmer)]
+				private void OnBoth (string s) { }
+
+				[Kept (By = Tool.Trimmer)]
+				public void PublicOnBoth (string s) { }
+
+				[Kept (By = Tool.Trimmer)]
+				private int FieldOnDerived;
+			}
+
+			[Kept]
+			[KeptAttributeAttribute (typeof (UnsafeAccessorAttribute))]
+			[UnsafeAccessor (UnsafeAccessorKind.Method)]
+			extern static void OnBase (InheritanceTargetDerived t);
+
+			[Kept]
+			[KeptAttributeAttribute (typeof (UnsafeAccessorAttribute))]
+			[UnsafeAccessor (UnsafeAccessorKind.Method)]
+			extern static void OnDerived (InheritanceTargetDerived t);
+
+			[Kept]
+			[KeptAttributeAttribute (typeof (UnsafeAccessorAttribute))]
+			[UnsafeAccessor (UnsafeAccessorKind.Method)]
+			extern static void OnBoth (InheritanceTargetDerived t);
+
+			[Kept]
+			[KeptAttributeAttribute (typeof (UnsafeAccessorAttribute))]
+			[UnsafeAccessor (UnsafeAccessorKind.Method)]
+			extern static void PublicOnBase (InheritanceTargetDerived t);
+
+			[Kept]
+			[KeptAttributeAttribute (typeof (UnsafeAccessorAttribute))]
+			[UnsafeAccessor (UnsafeAccessorKind.Method)]
+			extern static void PublicOnBoth (InheritanceTargetDerived t);
+
+			[Kept]
+			[KeptAttributeAttribute (typeof (UnsafeAccessorAttribute))]
+			[UnsafeAccessor (UnsafeAccessorKind.Field)]
+			extern static ref int FieldOnBase (InheritanceTargetDerived t);
+
+			[Kept]
+			[KeptAttributeAttribute (typeof (UnsafeAccessorAttribute))]
+			[UnsafeAccessor (UnsafeAccessorKind.Field)]
+			extern static ref int FieldOnDerived (InheritanceTargetDerived t);
+
+			[Kept]
+			[KeptAttributeAttribute (typeof (UnsafeAccessorAttribute))]
+			[UnsafeAccessor (UnsafeAccessorKind.Field)]
+			extern static ref int PublicFieldOnBase (InheritanceTargetDerived t);
+
+			[Kept]
+			public static void Test ()
+			{
+				InheritanceTargetDerived derived = new InheritanceTargetDerived ();
+				OnBase (derived);
+				OnDerived (derived);
+				OnBoth (derived);
+				PublicOnBase (derived);
+				PublicOnBoth (derived);
+
+				FieldOnBase (derived);
+				FieldOnDerived (derived);
+				PublicFieldOnBase (derived);
 			}
 		}
 

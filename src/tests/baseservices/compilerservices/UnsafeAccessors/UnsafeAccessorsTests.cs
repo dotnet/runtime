@@ -79,6 +79,8 @@ static unsafe class UnsafeAccessorsTests
 
         private static string _M(string s, ref string sr, in string si) => s;
         private string _m(string s, ref string sr, in string si) => s;
+
+        public string GetFieldValue() => _f;
     }
 
     [UnsafeAccessor(UnsafeAccessorKind.Constructor)]
@@ -202,6 +204,10 @@ static unsafe class UnsafeAccessorsTests
 
         UserDataValue local = new();
         Assert.Equal(Private, GetPrivateField(ref local));
+
+        const string newValue = "__NewValue__";
+        GetPrivateField(ref local) = newValue;
+        Assert.Equal(newValue, local.GetFieldValue());
 
         [UnsafeAccessor(UnsafeAccessorKind.Field, Name=UserDataValue.FieldName)]
         extern static ref string GetPrivateField(ref UserDataValue d);
@@ -369,12 +375,14 @@ static unsafe class UnsafeAccessorsTests
 
     class InheritanceBase
     {
-        private static string OnBase() => nameof(OnBase); 
+        private static string OnBase() => nameof(OnBase);
+        private static string FieldOnBase = nameof(FieldOnBase);
     }
 
     class InheritanceDerived : InheritanceBase
     {
         private static string OnDerived() => nameof(OnDerived);
+        private static string FieldOnDerived = nameof(FieldOnDerived);
     }
 
     [Fact]
@@ -391,6 +399,22 @@ static unsafe class UnsafeAccessorsTests
 
         [UnsafeAccessor(UnsafeAccessorKind.StaticMethod, Name = nameof(OnDerived))]
         extern static string OnDerived(InheritanceDerived i);
+    }
+
+    [Fact]
+    public static void Verify_InheritanceFieldResolution()
+    {
+        Console.WriteLine($"Running {nameof(Verify_InheritanceFieldResolution)}");
+
+        var instance = new InheritanceDerived();
+        Assert.Throws<MissingFieldException>(() => FieldOnBase(instance));
+        Assert.Equal(nameof(FieldOnDerived), FieldOnDerived(instance));
+
+        [UnsafeAccessor(UnsafeAccessorKind.StaticField, Name = nameof(FieldOnBase))]
+        extern static ref string FieldOnBase(InheritanceDerived i);
+
+        [UnsafeAccessor(UnsafeAccessorKind.StaticField, Name = nameof(FieldOnDerived))]
+        extern static ref string FieldOnDerived(InheritanceDerived i);
     }
 
     [Fact]
