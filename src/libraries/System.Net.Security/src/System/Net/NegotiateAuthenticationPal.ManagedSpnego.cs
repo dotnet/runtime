@@ -5,6 +5,7 @@ using System;
 using System.Buffers;
 using System.Buffers.Binary;
 using System.ComponentModel;
+using System.Collections.Generic;
 using System.Diagnostics;
 using System.Diagnostics.CodeAnalysis;
 using System.Formats.Asn1;
@@ -126,6 +127,16 @@ namespace System.Net
                 });
             }
 
+            private IEnumerable<KeyValuePair<string, string>> EnumerateMechanisms()
+            {
+                if (_supportKerberos)
+                {
+                    yield return new KeyValuePair<string, string>(NegotiationInfoClass.Kerberos, KerberosOid);
+                }
+
+                yield return new KeyValuePair<string, string>(NegotiationInfoClass.NTLM, NtlmOid);
+            }
+
             private byte[]? CreateSpNegoNegotiateMessage(ReadOnlySpan<byte> incomingBlob, out NegotiateAuthenticationStatusCode statusCode)
             {
                 AsnWriter writer = new AsnWriter(AsnEncodingRules.DER);
@@ -146,6 +157,8 @@ namespace System.Net
                     {
                         using (writer.PushSequence())
                         {
+                            byte[]? mechBlob = null;
+
                             // MechType::= OBJECT IDENTIFIER
                             //    -- OID represents each security mechanism as suggested by
                             //   --[RFC2743]
@@ -157,34 +170,40 @@ namespace System.Net
 
                                 using (mechListWriter.PushSequence())
                                 {
-                                    if (_supportKerberos &&
-                                        (_optimisticMechanism = CreateMechanismForPackage(NegotiationInfoClass.Kerberos)) is not UnsupportedNegotiateAuthenticationPal)
+                                    foreach (KeyValuePair<string, string> packageAndOid in EnumerateMechanisms())
                                     {
-                                        mechListWriter.WriteObjectIdentifier(KerberosOid);
+                                        if (_optimisticMechanism == null)
+                                        {
+                                            _optimisticMechanism = CreateMechanismForPackage(packageAndOid.Key);
+                                            mechBlob = _optimisticMechanism.GetOutgoingBlob(incomingBlob, out statusCode);
+                                            if (statusCode != NegotiateAuthenticationStatusCode.ContinueNeeded &&
+                                                statusCode != NegotiateAuthenticationStatusCode.Completed)
+                                            {
+                                                mechBlob = null;
+                                                _optimisticMechanism?.Dispose();
+                                                _optimisticMechanism = null;
+                                                if (statusCode != NegotiateAuthenticationStatusCode.Unsupported)
+                                                {
+                                                    return null;
+                                                }
+                                                continue;
+                                            }
+                                        }
+
+                                        mechListWriter.WriteObjectIdentifier(packageAndOid.Value);
                                     }
-                                    else
-                                    {
-                                        _optimisticMechanism = CreateMechanismForPackage(NegotiationInfoClass.NTLM);
-                                    }
-                                    mechListWriter.WriteObjectIdentifier(NtlmOid);
                                 }
 
                                 _spnegoMechList = mechListWriter.Encode();
                                 mechListWriter.CopyTo(writer);
                             }
 
-                            using (writer.PushSequence(new Asn1Tag(TagClass.ContextSpecific, (int)NegTokenInit.MechToken)))
+                            if (mechBlob != null)
                             {
-                                byte[]? mechBlob = _optimisticMechanism.GetOutgoingBlob(incomingBlob, out statusCode);
-                                if (statusCode != NegotiateAuthenticationStatusCode.ContinueNeeded &&
-                                    statusCode != NegotiateAuthenticationStatusCode.Completed)
+                                using (writer.PushSequence(new Asn1Tag(TagClass.ContextSpecific, (int)NegTokenInit.MechToken)))
                                 {
-                                    _optimisticMechanism?.Dispose();
-                                    _optimisticMechanism = null;
-                                    return null;
+                                    writer.WriteOctetString(mechBlob);
                                 }
-
-                                writer.WriteOctetString(mechBlob);
                             }
                         }
                     }

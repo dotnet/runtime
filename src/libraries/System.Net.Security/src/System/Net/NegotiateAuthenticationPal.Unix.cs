@@ -774,6 +774,7 @@ namespace System.Net
                     case Interop.NetSecurityNative.Status.GSS_S_BAD_SIG:
                         return NegotiateAuthenticationStatusCode.MessageAltered;
                     case Interop.NetSecurityNative.Status.GSS_S_BAD_MECH:
+                    case Interop.NetSecurityNative.Status.GSS_S_UNAVAILABLE:
                         return NegotiateAuthenticationStatusCode.Unsupported;
                     case Interop.NetSecurityNative.Status.GSS_S_NO_CONTEXT:
                     default:
