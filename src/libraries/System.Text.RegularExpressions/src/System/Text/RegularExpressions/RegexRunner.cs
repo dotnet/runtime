@@ -84,11 +84,11 @@ namespace System.Text.RegularExpressions
         /// <summary>Utility stack position</summary>
         protected internal int runstackpos;
 
-        // Crawl stack.
-        // Every time a group has a capture, we push its group number onto the runcrawl stack.
-        // In the case of a balanced match, we push BOTH groups onto the stack.
-
         /// <summary>Crawl stack</summary>
+        /// <remarks>
+        /// Every time a group has a capture, we push its group number onto the runcrawl stack.
+        /// In the case of a balanced match, we push BOTH groups onto the stack.
+        /// </remarks>
         protected internal int[]? runcrawl;
         /// <summary>Crawl stack position</summary>
         protected internal int runcrawlpos;
