@@ -44,10 +44,10 @@ namespace Mono.Linker.Steps
 							ProcessConstructorAccessor (method, name);
 							break;
 						case UnsafeAccessorKind.StaticMethod:
-							ProcessStaticMethodAccessor (method, name);
+							ProcessMethodAccessor (method, name, isStatic: true);
 							break;
 						case UnsafeAccessorKind.Method:
-							ProcessInstanceMethodAccessor (method, name);
+							ProcessMethodAccessor (method, name, isStatic: false);
 							break;
 						default:
 							break;
@@ -81,7 +81,7 @@ namespace Mono.Linker.Steps
 			}
 		}
 
-		void ProcessStaticMethodAccessor (MethodDefinition method, string? name)
+		void ProcessMethodAccessor (MethodDefinition method, string? name, bool isStatic)
 		{
 			// Method access requires a target type.
 			if (method.Parameters.Count == 0)
@@ -95,28 +95,7 @@ namespace Mono.Linker.Steps
 				return;
 
 			foreach (MethodDefinition targetMethod in targetType.Methods) {
-				if (targetMethod.Name != name || !targetMethod.IsStatic)
-					continue;
-
-				_markStep.MarkMethodVisibleToReflection (targetMethod, new DependencyInfo (DependencyKind.UnsafeAccessorTarget, method), new MessageOrigin (method));
-			}
-		}
-
-		void ProcessInstanceMethodAccessor (MethodDefinition method, string? name)
-		{
-			// Method access requires a target type.
-			if (method.Parameters.Count == 0)
-				return;
-
-			if (string.IsNullOrEmpty (name))
-				name = method.Name;
-
-			// TODO - struct values should be by-ref, we probably need to unwrap/resolve it here
-			if (_context.TryResolve (method.Parameters[0].ParameterType) is not TypeDefinition targetType)
-				return;
-
-			foreach (MethodDefinition targetMethod in targetType.Methods) {
-				if (targetMethod.Name != name || targetMethod.IsStatic)
+				if (targetMethod.Name != name || targetMethod.IsStatic != isStatic)
 					continue;
 
 				_markStep.MarkMethodVisibleToReflection (targetMethod, new DependencyInfo (DependencyKind.UnsafeAccessorTarget, method), new MessageOrigin (method));
