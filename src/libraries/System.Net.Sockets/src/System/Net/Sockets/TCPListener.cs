@@ -173,7 +173,6 @@ namespace System.Net.Sockets
         /// <summary>
         /// Releases all resources used by the current <see cref="TcpListener"/> instance.
         /// </summary>
-        [EditorBrowsable(EditorBrowsableState.Never)]
         public void Dispose() => Stop();
 
         // Determine if there are pending connection requests.
