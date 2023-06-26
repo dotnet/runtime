@@ -387,11 +387,6 @@ export class WasmBuilder {
                 this.appendSimd(WasmSimdOpcode.i64x2_splat);
             */
             this.local("v128_zero");
-            /*
-            this.appendSimd(WasmSimdOpcode.v128_const);
-            for (let i = 0; i < 16; i++)
-                this.appendU8(0);
-            */
         } else if (typeof (value) === "object") {
             mono_assert(value.byteLength === 16, "Expected v128_const arg to be 16 bytes in size");
             let isZero = true;
