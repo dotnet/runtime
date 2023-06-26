@@ -49,6 +49,12 @@ namespace Mono.Linker.Steps
 						case UnsafeAccessorKind.Method:
 							ProcessMethodAccessor (method, name, isStatic: false);
 							break;
+						case UnsafeAccessorKind.StaticField:
+							ProcessFieldAccessor (method, name, isStatic: true);
+							break;
+						case UnsafeAccessorKind.Field:
+							ProcessFieldAccessor (method, name, isStatic: false);
+							break;
 						default:
 							break;
 						}
@@ -99,6 +105,29 @@ namespace Mono.Linker.Steps
 					continue;
 
 				_markStep.MarkMethodVisibleToReflection (targetMethod, new DependencyInfo (DependencyKind.UnsafeAccessorTarget, method), new MessageOrigin (method));
+			}
+		}
+
+		void ProcessFieldAccessor (MethodDefinition method, string? name, bool isStatic)
+		{
+			// Field access requires exactly one parameter
+			if (method.Parameters.Count != 1)
+				return;
+
+			if (string.IsNullOrEmpty (name))
+				name = method.Name;
+
+			if (!method.ReturnType.IsByReference)
+				return;
+
+			if (_context.TryResolve (method.Parameters[0].ParameterType) is not TypeDefinition targetType)
+				return;
+
+			foreach (FieldDefinition targetField in targetType.Fields) {
+				if (targetField.Name != name || targetField.IsStatic != isStatic)
+					continue;
+
+				_markStep.MarkFieldVisibleToReflection (targetField, new DependencyInfo (DependencyKind.UnsafeAccessorTarget, method), new MessageOrigin (method));
 			}
 		}
 	}
