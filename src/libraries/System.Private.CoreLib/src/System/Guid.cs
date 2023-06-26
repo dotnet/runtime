@@ -851,19 +851,63 @@ namespace System
             str[i] == '0' &&
             (str[i + 1] | 0x20) == 'x';
 
+        [MethodImpl(MethodImplOptions.AggressiveInlining)]
+        private static unsafe ReadOnlySpan<byte> AsBytes(in Guid source) =>
+            new ReadOnlySpan<byte>(Unsafe.AsPointer(ref Unsafe.AsRef(in source)), sizeof(Guid));
+
         // Returns an unsigned byte array containing the GUID.
-        public byte[] ToByteArray() => ToByteArray(false);
+        public byte[] ToByteArray()
+        {
+            var g = new byte[16];
+            if (BitConverter.IsLittleEndian)
+            {
+                MemoryMarshal.TryWrite(g, ref Unsafe.AsRef(in this));
+            }
+            else
+            {
+                // slower path for BigEndian
+                Guid guid = new Guid(AsBytes(this), false);
+                MemoryMarshal.TryWrite(g, ref Unsafe.AsRef(in guid));
+            }
+            return g;
+        }
+
 
         // Returns an unsigned byte array containing the GUID.
         public byte[] ToByteArray(bool bigEndian)
         {
             var g = new byte[16];
-            TryWriteBytes(g, bigEndian, out _);
+            if (BitConverter.IsLittleEndian != bigEndian)
+            {
+                MemoryMarshal.TryWrite(g, ref Unsafe.AsRef(in this));
+            }
+            else
+            {
+                // slower path for Reverse
+                Guid guid = new Guid(AsBytes(this), bigEndian);
+                MemoryMarshal.TryWrite(g, ref Unsafe.AsRef(in guid));
+            }
             return g;
         }
 
         // Returns whether bytes are successfully written to given span.
-        public bool TryWriteBytes(Span<byte> destination) => TryWriteBytes(destination, false, out _);
+        public bool TryWriteBytes(Span<byte> destination)
+        {
+            if (destination.Length < 16)
+                return false;
+
+            if (BitConverter.IsLittleEndian)
+            {
+                MemoryMarshal.TryWrite(destination, ref Unsafe.AsRef(in this));
+            }
+            else
+            {
+                // slower path for BigEndian
+                Guid guid = new Guid(AsBytes(this), false);
+                MemoryMarshal.TryWrite(destination, ref Unsafe.AsRef(in guid));
+            }
+            return true;
+        }
 
         // Returns whether bytes are successfully written to given span.
         public bool TryWriteBytes(Span<byte> destination, bool bigEndian, out int bytesWritten)
@@ -874,16 +918,16 @@ namespace System
                 return false;
             }
 
-            ref Guid guid = ref MemoryMarshal.AsRef<Guid>(destination);
-            guid = this;
-
-            if (BitConverter.IsLittleEndian == bigEndian)
+            if (BitConverter.IsLittleEndian != bigEndian)
             {
-                Unsafe.AsRef(in guid._a) = BinaryPrimitives.ReverseEndianness(guid._a);
-                Unsafe.AsRef(in guid._b) = BinaryPrimitives.ReverseEndianness(guid._b);
-                Unsafe.AsRef(in guid._c) = BinaryPrimitives.ReverseEndianness(guid._c);
+                MemoryMarshal.TryWrite(destination, ref Unsafe.AsRef(in this));
             }
-
+            else
+            {
+                // slower path for Reverse
+                Guid guid = new Guid(AsBytes(this), bigEndian);
+                MemoryMarshal.TryWrite(destination, ref Unsafe.AsRef(in guid));
+            }
             bytesWritten = 16;
             return true;
         }
