@@ -320,48 +320,29 @@ namespace System
         /// This function will either return a valid TimeZoneInfo instance or
         /// it will throw 'InvalidTimeZoneException' / 'TimeZoneNotFoundException'.
         /// </summary>
-        public static TimeZoneInfo FindSystemTimeZoneById(string id)
+        private static TimeZoneInfoResult TryFindSystemTimeZoneById(string id, out TimeZoneInfo? timeZone, out Exception? e)
         {
-            ArgumentNullException.ThrowIfNull(id);
-
             // Special case for Utc to avoid having TryGetTimeZone creating a new Utc object
             if (string.Equals(id, UtcId, StringComparison.OrdinalIgnoreCase))
             {
-                return Utc;
+                timeZone = Utc;
+                e = default;
+                return TimeZoneInfoResult.Success;
             }
 
+            ArgumentNullException.ThrowIfNull(id);
             if (id.Length == 0 || id.Length > MaxKeyLength || id.Contains('\0'))
             {
-                throw new TimeZoneNotFoundException(SR.Format(SR.TimeZoneNotFound_MissingData, id));
+                timeZone = default;
+                e = default;
+                return TimeZoneInfoResult.TimeZoneNotFoundException;
             }
-
-            TimeZoneInfo? value;
-            Exception? e;
-
-            TimeZoneInfoResult result;
 
             CachedData cachedData = s_cachedData;
 
             lock (cachedData)
             {
-                result = TryGetTimeZone(id, false, out value, out e, cachedData);
-            }
-
-            if (result == TimeZoneInfoResult.Success)
-            {
-                return value!;
-            }
-            else if (result == TimeZoneInfoResult.InvalidTimeZoneException)
-            {
-                throw new InvalidTimeZoneException(SR.Format(SR.InvalidTimeZone_InvalidRegistryData, id), e);
-            }
-            else if (result == TimeZoneInfoResult.SecurityException)
-            {
-                throw new SecurityException(SR.Format(SR.Security_CannotReadRegistryData, id), e);
-            }
-            else
-            {
-                throw new TimeZoneNotFoundException(SR.Format(SR.TimeZoneNotFound_MissingData, id), e);
+                return TryGetTimeZone(id, false, out timeZone, out e, cachedData);
             }
         }
 

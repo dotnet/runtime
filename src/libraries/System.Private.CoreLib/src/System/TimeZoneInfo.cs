@@ -8,6 +8,7 @@ using System.Diagnostics.CodeAnalysis;
 using System.Globalization;
 using System.Runtime.CompilerServices;
 using System.Runtime.Serialization;
+using System.Security;
 using System.Threading;
 
 namespace System
@@ -555,6 +556,44 @@ namespace System
         /// </summary>
         public static DateTime ConvertTimeBySystemTimeZoneId(DateTime dateTime, string destinationTimeZoneId) =>
             ConvertTime(dateTime, FindSystemTimeZoneById(destinationTimeZoneId));
+
+        /// <summary>
+        /// Helper function for retrieving a TimeZoneInfo object by time_zone_name.
+        /// This function wraps the logic necessary to keep the private
+        /// SystemTimeZones cache in working order
+        ///
+        /// This function will either return a valid TimeZoneInfo instance or
+        /// it will throw 'InvalidTimeZoneException' / 'TimeZoneNotFoundException'.
+        /// </summary>
+        public static TimeZoneInfo FindSystemTimeZoneById(string id)
+        {
+            TimeZoneInfo? value;
+            Exception? e;
+
+            TimeZoneInfoResult result = TryFindSystemTimeZoneById(id, out value, out e);
+
+            if (result == TimeZoneInfoResult.Success)
+            {
+                return value!;
+            }
+            else if (result == TimeZoneInfoResult.InvalidTimeZoneException)
+            {
+                Debug.Assert(e is InvalidTimeZoneException,
+                    "TryGetTimeZone must create an InvalidTimeZoneException when it returns TimeZoneInfoResult.InvalidTimeZoneException");
+                throw e;
+            }
+            else if (result == TimeZoneInfoResult.SecurityException)
+            {
+                throw new SecurityException(SR.Format(SR.Security_CannotReadFileData, id), e);
+            }
+            else
+            {
+                throw new TimeZoneNotFoundException(SR.Format(SR.TimeZoneNotFound_MissingData, id), e);
+            }
+        }
+
+        public static bool TryFindSystemTimeZoneById(string id, [NotNullWhenAttribute(true)] out TimeZoneInfo? timeZoneInfo)
+            => TryFindSystemTimeZoneById(id, out timeZoneInfo, out _) == TimeZoneInfoResult.Success;
 
         /// <summary>
         /// Converts the value of a DateTime object from sourceTimeZone to destinationTimeZone.
