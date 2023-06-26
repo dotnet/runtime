@@ -1,37 +1,48 @@
 // Licensed to the .NET Foundation under one or more agreements.
 // The .NET Foundation licenses this file to you under the MIT license.
 
-// This RegexRunner class is a base class for source-generated regex extensibility
-// (and the old CompileToAssembly extensibility).  It's not intended to be used
-// by anything else.
-
-// Implementation notes:
-
-// It provides the driver code that calls the subclass's Scan
-// method for either scanning or direct execution.
-// It also maintains memory allocation for the backtracking stack,
-// the grouping stack and the longjump crawlstack, and provides
-// methods to push new subpattern match results into (or remove
-// backtracked results from) the Match instance.
-
 using System.ComponentModel;
 using System.Runtime.CompilerServices;
 
 namespace System.Text.RegularExpressions
 {
+    /// <summary>
+    /// Base class for source-generated regex extensibility
+    /// (and the old CompileToAssembly extensibility).
+    /// It's not intended to be used by anything else.
+    /// </summary>
+    /// <remarks>
+    /// Provides the driver code that calls the subclass's Scan
+    /// method for either scanning or direct execution.
+    /// Also maintains memory allocation for the backtracking stack,
+    /// the grouping stack and the longjump crawlstack, and provides
+    /// methods to push new subpattern match results into (or remove
+    /// backtracked results from) the Match instance.
+    /// </remarks>
     [EditorBrowsable(EditorBrowsableState.Never)]
     public abstract class RegexRunner
     {
         /// <summary>Index of the first character to search</summary>
-        protected internal int runtextbeg;         // We now always use a sliced span of the input
-                                                   // from runtextbeg to runtextend, which means that runtextbeg is now always 0 except
-                                                   // for CompiledToAssembly scenario which works over the original input.
+        /// <remarks>
+        /// We now always use a sliced span of the input
+        /// from runtextbeg to runtextend, which means that runtextbeg is now always 0 except
+        /// for CompiledToAssembly scenario which works over the original input.
+        /// </remarks>
+        protected internal int runtextbeg;
+
         /// <summary>Index just past the last character to search</summary>
-        protected internal int runtextend;         // Because we now pass in a sliced span of the input into Scan,
-                                                   // the runtextend will always match the length of that passed in span except for CompileToAssembly
-                                                   // scenario, which still works over the original input.
+        /// <remarks>
+        /// Because we now pass in a sliced span of the input into Scan,
+        /// the runtextend will always match the length of that passed in span except for CompileToAssembly
+        /// scenario, which still works over the original input.
+        /// </remarks>
+        protected internal int runtextend;
+
         /// <summary>Index of the starting character for the search.</summary>
-        /// <remarks>The differs from <see cref="runtextbeg"/> in that lookbehinds will be able to see text before <see cref="runtextstart"/> but not before <see cref="runtextbeg"/>.</remarks>
+        /// <remarks>
+        /// The differs from <see cref="runtextbeg"/> in that lookbehinds will be able to see text before
+        /// <see cref="runtextstart"/> but not before <see cref="runtextbeg"/>.
+        /// </remarks>
         protected internal int runtextstart;
 
         /// <summary>Text to search. May be null if the input was supplied as a span.</summary>
@@ -40,35 +51,35 @@ namespace System.Text.RegularExpressions
         /// <summary>Current position in text</summary>
         protected internal int runtextpos;
 
-        // Backtracking stack.
-        // Opcodes use this to store data regarding
-        // what they have matched and where to backtrack to.  Each "frame" on
-        // the stack takes the form of [CodePosition Data1 Data2...], where
-        // CodePosition is the position of the current opcode and
-        // the data values are all optional.  The CodePosition can be negative, and
-        // these values (also called "back2") are used by the BranchMark family of opcodes
-        // to indicate whether they are backtracking after a successful or failed
-        // match.
-        // When we backtrack, we pop the CodePosition off the stack, set the current
-        // instruction pointer to that code position, and mark the opcode
-        // with a backtracking flag ("Back").  Each opcode then knows how to
-        // handle its own data.
-
         /// <summary>Backtracking stack</summary>
+        /// <remarks>
+        /// Opcodes use this to store data regarding
+        /// what they have matched and where to backtrack to.  Each "frame" on
+        /// the stack takes the form of [CodePosition Data1 Data2...], where
+        /// CodePosition is the position of the current opcode and
+        /// the data values are all optional.  The CodePosition can be negative, and
+        /// these values (also called "back2") are used by the BranchMark family of opcodes
+        /// to indicate whether they are backtracking after a successful or failed
+        /// match.
+        /// When we backtrack, we pop the CodePosition off the stack, set the current
+        /// instruction pointer to that code position, and mark the opcode
+        /// with a backtracking flag ("Back").  Each opcode then knows how to
+        /// handle its own data.
+        /// </remarks>
         protected internal int[]? runtrack;
         /// <summary>Backtracking stack position</summary>
         protected internal int runtrackpos;
 
-        // Utility stack.
-        // This stack is used to track text positions across different opcodes.
-        // For example, in /(a*b)+/, the parentheses result in a SetMark/CaptureMark
-        // pair. SetMark records the text position before we match a*b.  Then
-        // CaptureMark uses that position to figure out where the capture starts.
-        // Opcodes which push onto this stack are always paired with other opcodes
-        // which will pop the value from it later.  A successful match should mean
-        // that this stack is empty.
-
         /// <summary>Utility stack</summary>
+        /// <remarks>
+        /// This stack is used to track text positions across different opcodes.
+        /// For example, in /(a*b)+/, the parentheses result in a SetMark/CaptureMark
+        /// pair. SetMark records the text position before we match a*b.  Then
+        /// CaptureMark uses that position to figure out where the capture starts.
+        /// Opcodes which push onto this stack are always paired with other opcodes
+        /// which will pop the value from it later.  A successful match should mean
+        /// that this stack is empty.
+        /// </remarks>
         protected internal int[]? runstack;
         /// <summary>Utility stack position</summary>
         protected internal int runstackpos;
