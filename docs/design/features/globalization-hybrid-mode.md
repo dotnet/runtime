@@ -272,6 +272,70 @@ Using `IgnoreNonSpace` for these two with `HybridGlobalization` off, also return
 new CultureInfo("de-DE").CompareInfo.IndexOf("strasse", "stra\u00DFe", 0, CompareOptions.IgnoreNonSpace); // 0 or -1
 ```
 
+**CultureInfo**
+
+Affected public APIs:
+- DisplayName
+- EnglishName
+- NativeName
+
+DisplayName, EnglishName and NativeName use []`Intl.DisplayNames`](https://developer.mozilla.org/en-US/docs/Web/JavaScript/Reference/Global_Objects/Intl/DisplayNames) with `{type: "language"}`, so some values can slightly differ, see on the example of `NativeName` (`DisplayName` and `EnglishName` differ accordingly):
+
+| **locale** |           **Non-Hybrid**          |               **Hybrid**              |
+|:----------:|:---------------------------------:|:-------------------------------------:|
+|  **de-AT** |        Deutsch (Österreich)       |        Österreichisches Deutsch       |
+|  **de-CH** |         Deutsch (Schweiz)         |         Schweizer Hochdeutsch         |
+|  **en-AU** |        English (Australia)        |           Australian English          |
+|  **en-CA** |         Australian English        |            Canadian English           |
+| **en-GB**  | English (United Kingdom)          | British English                       |
+| **en-VC**  | English (St Vincent & Grenadines) | English (St Vincent & the Grenadines) |
+| **en-US**  | English (United States)           | American English                      |
+| **es-419** | español (Latinoamérica)           | español latinoamericano               |
+| **es-ES**  | español (España)                  | español de España                     |
+| **es-MX**  | español (México)                  | español de México                     |
+| **fr-CA**  | français (Canada)                 | français canadien                     |
+| **fr-CH**  | français (Suisse)                 | français suisse                       |
+| **nl-BE**  | Nederlands (België)               | Vlaams                                |
+| **pt-PT**  | português (Portugal)              | português europeu                     |
+| **zh-SG**  | 中文（简体，中国香港特别行政区）     | 简体中文（中国香港特别行政区）          |
+
+
+**NumberFormatInfo**
+CurrencyDecimalDigits (Int: ToDo in the follow-up PR)
+- CurrencyDecimalSeparator
+- CurrencyGroupSeparator
+CurrencyGroupSizes (Int[]: ToDo in the follow-up PR)
+CurrencyNegativePattern (Int: ToDo in the follow-up PR)
+CurrencyPositivePattern (Int: ToDo in the follow-up PR)
+- CurrencySymbol
+- NaNSymbol
+- NativeDigits
+NegativeInfinitySymbol (Calendars: ToDo in the follow-up PR)
+- NegativeSign
+NumberDecimalDigits (Int: ToDo in the follow-up PR)
+- NumberDecimalSeparator
+- NumberGroupSeparator
+NumberGroupSizes (Int[]: ToDo in the follow-up PR)
+NumberNegativePattern (Int: ToDo in the follow-up PR)
+PercentDecimalDigits (Int: ToDo in the follow-up PR)
+- PercentDecimalSeparator
+- PercentGroupSeparator
+PercentGroupSizes (Int[]: ToDo in the follow-up PR)
+PercentNegativePattern (Int: ToDo in the follow-up PR)
+PercentPositivePattern (Int: ToDo in the follow-up PR)
+- PercentSymbol
+- PerMilleSymbol
+PositiveInfinitySymbol (Calendars: ToDo in the follow-up PR)
+- PositiveSign
+
+`CurrencySymbol` uses [`toLocaleString`](https://developer.mozilla.org/en-US/docs/Web/JavaScript/Reference/Global_Objects/Date/toLocaleString) with `{ style: "currency" }` that restuls in following differences:
+| **locale** |           **Non-Hybrid**          |               **Hybrid**              |
+|:----------:|:---------------------------------:|:-------------------------------------:|
+|  **en-SL** |                 Le                |                  SLL                  |
+|  **hr-HR** |                 HRK               |                  kn                   |
+
+**TextInfo**
+IsRightToLeft (Int: ToDo in the following PR)
 
 ### OSX
 

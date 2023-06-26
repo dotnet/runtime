@@ -38,7 +38,7 @@ export function mono_wasm_get_monetary_symbol(culture: MonoStringRef, iosSymbol:
 }
 
 const currencyRegex = (locale: Intl.LocalesArgument, num: number) => new RegExp(`[${numberToLocaleString(locale, num)}]`);
-const getCurrencySymbol = (locale: Intl.LocalesArgument, currency: any) => (0).toLocaleString(locale, { style: "currency", currency, minimumFractionDigits: 0, maximumFractionDigits: 0 }).replace(currencyRegex(locale, 0), "").replace("\u200F\u00a0", "").trim();
+const getCurrencySymbol = (locale: Intl.LocalesArgument, currency: any) => (0).toLocaleString(locale, { style: "currency", currency, minimumFractionDigits: 0, maximumFractionDigits: 0 }).replace(currencyRegex(locale, 0), "").replace(/^\u200F\u00a0\u200F|^\u200F|^\u200e|^\u00a0/, "").trim(); 
 
 export function mono_wasm_get_monetary_decimal_separator(culture: MonoStringRef, iosSymbol: MonoStringRef, buffer: number, bufferLength: number, isException: Int32Ptr, exAddress: MonoObjectRef): number {
     const cultureRoot = mono_wasm_new_external_root<MonoString>(culture),

@@ -120,7 +120,7 @@ namespace System.Globalization
                     return new string(bufferMDS, 0, resultLenMDS);
                 case LocaleStringData.MonetaryThousandSeparator:
                     if (localeName == "es-419")
-                        return " ";
+                        return ",";
                     string isoSymbolMTS = GetISOSymbolFromStaticData(localeName, localeFamily);
                     if (string.IsNullOrEmpty(isoSymbolMTS))
                         return string.Empty;
@@ -180,7 +180,9 @@ namespace System.Globalization
                         case "ru":
                             return "\u043d\u0435\u0020\u0447\u0438\u0441\u043b\u043e";
                         case "zh":
-                            return "\u975e\u6578\u503c";
+                            if (localeName == "zh-HK" || localeName == "zh-TW")
+                                return "\u975e\u6578\u503c";
+                            break;
                     }
                     return "NaN";
                 case LocaleStringData.PositiveInfinitySymbol:
