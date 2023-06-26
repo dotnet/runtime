@@ -106,6 +106,30 @@ private:
         DacEnumerableHashValue       m_iHashValue;       // The hash value associated with the entry
     };
 
+    static TADDR CreateEndSentinel(DPTR(PTR_VolatileEntry) buckets)
+    {
+        _ASSERTE(BucketsIndex(buckets) != 0);
+        return (TADDR)((BucketsIndex(buckets) << 1) | 1);
+    }
+
+    static bool IsEndSentinel(PTR_VolatileEntry entry)
+    {
+        return IsEndSentinel(dac_cast<TADDR>(entry));
+    }
+
+    static bool IsEndSentinel(TADDR value)
+    {
+        return !!(value & 1);
+    }
+
+    static bool AcceptableEndSentinel(PTR_VolatileEntry entry, TADDR expectedEndSentinel)
+    {
+        _ASSERTE(expectedEndSentinel != NULL);
+        _ASSERTE(entry != NULL);
+        
+        return (dac_cast<TADDR>(entry)) <= expectedEndSentinel;
+    }
+
 protected:
     // This opaque structure provides enumeration context when walking the set of entries which share a common
     // hash code. Initialized by BaseFindFirstEntryByHash and read/updated by BaseFindNextEntryByHash.
@@ -116,6 +140,9 @@ protected:
         TADDR   m_pEntry;               // The entry the caller is currently looking at (or NULL to begin
                                         // with). This is a VolatileEntry* and should always be a target address
                                         // not a DAC PTR_.
+        TADDR   m_expectedEndSentinel;  // A marker indicating which bucket list is being walked
+                                        // The algorihm may walk off of one list to another when the list is
+                                        // being updated, and this allows graceful handling of that case.
         DPTR(PTR_VolatileEntry)   m_curBuckets;   // The bucket table we are working with.
     };
 
@@ -214,12 +241,18 @@ private:
     //                                         slot [1] will contain the next version of the table if it resizes
     static const int SLOT_LENGTH = 0;
     static const int SLOT_NEXT = 1;
-    // normal slots start at slot #2
-    static const int SKIP_SPECIAL_SLOTS = 2;
+    static const int SLOT_BUCKETSINDEX = 2;
+    // normal slots start at slot #3
+    static const int SKIP_SPECIAL_SLOTS = 3;
     
     static DWORD GetLength(DPTR(PTR_VolatileEntry) buckets)
     {
         return (DWORD)dac_cast<TADDR>(buckets[SLOT_LENGTH]);
+    }
+
+    static DWORD BucketsIndex(DPTR(PTR_VolatileEntry) buckets)
+    {
+        return (DWORD)dac_cast<TADDR>(buckets[SLOT_BUCKETSINDEX]);
     }
 
     static DPTR(PTR_VolatileEntry) GetNext(DPTR(PTR_VolatileEntry) buckets)
