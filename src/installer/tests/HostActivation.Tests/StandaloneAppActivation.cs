@@ -321,7 +321,7 @@ namespace HostActivation.Tests
                 var publishFixture = new TestProjectFixture("StandaloneApp", RepoDirectories);
                 publishFixture
                     .EnsureRestoredForRid(publishFixture.CurrentRid)
-                    .PublishProject(runtime: publishFixture.CurrentRid);
+                    .PublishProject(runtime: publishFixture.CurrentRid, selfContained: true);
 
                 ReplaceTestProjectOutputHostInTestProjectFixture(buildFixture);
 

@@ -561,10 +561,6 @@ namespace System.Runtime
         internal static extern ref object[][] RhGetThreadStaticStorage();
 
         [MethodImplAttribute(MethodImplOptions.InternalCall)]
-        [RuntimeImport(RuntimeLibrary, "RhGetInlinedThreadStaticStorage")]
-        internal static extern ref object? RhGetInlinedThreadStaticStorage();
-
-        [MethodImplAttribute(MethodImplOptions.InternalCall)]
         [RuntimeImport(RuntimeLibrary, "RhRegisterInlinedThreadStaticRoot")]
         internal static extern void RhRegisterInlinedThreadStaticRoot(ref object? root);
 
@@ -591,10 +587,6 @@ namespace System.Runtime
         [MethodImplAttribute(MethodImplOptions.InternalCall)]
         [RuntimeImport(RuntimeLibrary, "RhGetTargetOfUnboxingAndInstantiatingStub")]
         public static extern IntPtr RhGetTargetOfUnboxingAndInstantiatingStub(IntPtr pCode);
-
-        [MethodImplAttribute(MethodImplOptions.InternalCall)]
-        [RuntimeImport(RuntimeLibrary, "RhGetSingleTypeManager")]
-        public static extern TypeManagerHandle RhGetSingleTypeManager();
 
         //
         // EH helpers

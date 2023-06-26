@@ -1,6 +1,10 @@
 <Project Sdk="Microsoft.NET.Sdk">
   <ItemGroup>
-    <MergedWrapperProjectReference Include="opt/**/*.??proj" />
+    <!-- Issue: https://github.com/dotnet/runtime/issues/87879 -->
+    <ProjectsToSkip Include="opt/rngchk/RngchkStress2_o.csproj" />
+    <ProjectsToSkip Include="opt/cse/hugeSimpleExpr1.csproj" />
+
+    <MergedWrapperProjectReference Include="opt/**/*.??proj" Exclude="@(ProjectsToSkip)" />
   </ItemGroup>
 
   <Import Project="$(TestSourceDir)MergedTestRunner.targets" />

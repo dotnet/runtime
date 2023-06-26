@@ -248,6 +248,9 @@ namespace LibraryImportGenerator.UnitTests
 
             // Type-level interop generator trigger attributes
             yield return new[] { ID(), CodeSnippets.GeneratedComInterface };
+
+            // Parameter modifiers
+            yield return new[] { ID(), CodeSnippets.SingleParameterWithModifier("int", "scoped ref") };
         }
 
         public static IEnumerable<object[]> CustomCollections()

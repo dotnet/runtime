@@ -342,6 +342,15 @@ namespace System.Runtime.InteropServices.Marshalling
     {
         public static void* ConvertToUnmanaged(T? managed) { throw null; }
         public static T? ConvertToManaged(void* unmanaged) { throw null; }
+        public static void Free(void* unmanaged) { }
+    }
+    [System.Flags]
+    public enum ComInterfaceOptions
+    {
+        [System.ComponentModel.EditorBrowsableAttribute(System.ComponentModel.EditorBrowsableState.Never)]
+        None = 0,
+        ManagedObjectWrapper = 0x1,
+        ComObjectWrapper = 0x2,
     }
     public sealed partial class ComObject : System.Runtime.InteropServices.IDynamicInterfaceCastable, System.Runtime.InteropServices.Marshalling.IUnmanagedVirtualMethodTableProvider
     {
@@ -381,8 +390,9 @@ namespace System.Runtime.InteropServices.Marshalling
     public partial class GeneratedComInterfaceAttribute : System.Attribute
     {
         public GeneratedComInterfaceAttribute() { }
-        public StringMarshalling StringMarshalling { get { throw null; } set { } }
-        public Type? StringMarshallingCustomType { get { throw null; } set { } }
+        public System.Runtime.InteropServices.Marshalling.ComInterfaceOptions Options { get { throw null; } set { } }
+        public System.Runtime.InteropServices.StringMarshalling StringMarshalling { get { throw null; } set { } }
+        public System.Type? StringMarshallingCustomType { get { throw null; } set { } }
     }
     [System.CLSCompliantAttribute(false)]
     public partial interface IComExposedClass
@@ -474,6 +484,7 @@ namespace System.Runtime.InteropServices.Marshalling
     {
         public static void* ConvertToUnmanaged(T? managed) { throw null; }
         public static T? ConvertToManaged(void* unmanaged) { throw null; }
+        public static void Free(void* unmanaged) { }
     }
     [System.CLSCompliantAttribute(false)]
     public readonly partial struct VirtualMethodTableInfo

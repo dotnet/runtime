@@ -57,6 +57,11 @@
         <target state="translated">Temel COM arabirimi, kaynak oluşturamadı. Bu arabirim için kod oluşturulmayacak.</target>
         <note />
       </trans-unit>
+      <trans-unit id="BaseInterfaceMustGenerateAtLeastSameWrappers">
+        <source>A 'GeneratedComInterface' cannot specify 'ComInterfaceOptions.ManagedObjectWrapper' or 'ComInterfaceOptions.ComObjectWrapper' unless the base interface type did not specify options or specified at least the same options.</source>
+        <target state="new">A 'GeneratedComInterface' cannot specify 'ComInterfaceOptions.ManagedObjectWrapper' or 'ComInterfaceOptions.ComObjectWrapper' unless the base interface type did not specify options or specified at least the same options.</target>
+        <note />
+      </trans-unit>
       <trans-unit id="CastsBetweenRuntimeComAndSourceGeneratedComNotSupportedDescription">
         <source>Casting between a 'ComImport' type and a source-generated COM type is not supported and will fail at runtime</source>
         <target state="translated">'ComImport' türü ile kaynak tarafından oluşturulan COM türü arasında dönüştürme desteklenmiyor ve çalışma zamanında başarısız olacak</target>
@@ -169,32 +174,32 @@
       </trans-unit>
       <trans-unit id="InstanceEventDeclaredInInterfaceDescription">
         <source>Events are not a concept in COM, so no interop code will be source generated for instance events on source-generated COM interfaces.</source>
-        <target state="new">Events are not a concept in COM, so no interop code will be source generated for instance events on source-generated COM interfaces.</target>
+        <target state="translated">Olaylar COM'da kavram olarak değerlendirilmez, bu nedenle kaynak tarafından oluşturulan COM arabirimleri üzerinde örnek olaylar için birlikte çalışma kodu oluşturulmaz.</target>
         <note />
       </trans-unit>
       <trans-unit id="InstanceEventDeclaredInInterfaceMessage">
         <source>The instance event '{0}' is declared in the interface '{1}', which has the 'GeneratedComInterfaceAttribute' applied</source>
-        <target state="new">The instance event '{0}' is declared in the interface '{1}', which has the 'GeneratedComInterfaceAttribute' applied</target>
+        <target state="translated">'{0}' örnek olayı '{1}' arabiriminde bildirildi ve bu arabirimde 'GeneratedComInterfaceAttribute' uygulanmış</target>
         <note />
       </trans-unit>
       <trans-unit id="InstanceEventDeclaredInInterfaceTitle">
         <source>Declaring an instance event in a type with the 'GeneratedComInterfaceAttribute' is not supported</source>
-        <target state="new">Declaring an instance event in a type with the 'GeneratedComInterfaceAttribute' is not supported</target>
+        <target state="translated">'GeneratedComInterfaceAttribute' içeren bir tür içinde bir örnek olay bildirilmesi desteklenmiyor</target>
         <note />
       </trans-unit>
       <trans-unit id="InstancePropertyDeclaredInInterfaceDescription">
         <source>Properties are not a concept in COM, so no interop code will be source generated for instance properties on source-generated COM interfaces.</source>
-        <target state="new">Properties are not a concept in COM, so no interop code will be source generated for instance properties on source-generated COM interfaces.</target>
+        <target state="translated">Özellikler COM'da kavram olarak değerlendirilmez, bu nedenle kaynak tarafından oluşturulan COM arabirimleri üzerinde örnek özellikler için birlikte çalışma kodu oluşturulmaz.</target>
         <note />
       </trans-unit>
       <trans-unit id="InstancePropertyDeclaredInInterfaceMessage">
         <source>The instance property '{0}' is declared in the interface '{1}', which has the 'GeneratedComInterfaceAttribute' applied</source>
-        <target state="new">The instance property '{0}' is declared in the interface '{1}', which has the 'GeneratedComInterfaceAttribute' applied</target>
+        <target state="translated">'{0}' örnek özelliği '{1}' arabiriminde bildirildi ve bu arabirimde 'GeneratedComInterfaceAttribute' uygulanmış</target>
         <note />
       </trans-unit>
       <trans-unit id="InstancePropertyDeclaredInInterfaceTitle">
         <source>Declaring an instance property in a type with the 'GeneratedComInterfaceAttribute' is not supported</source>
-        <target state="new">Declaring an instance property in a type with the 'GeneratedComInterfaceAttribute' is not supported</target>
+        <target state="translated">'GeneratedComInterfaceAttribute' içeren bir tür içinde bir örnek özellik bildirilmesi desteklenmiyor</target>
         <note />
       </trans-unit>
       <trans-unit id="InterfaceTypeNotSupportedMessage">
@@ -297,6 +302,16 @@
         <target state="translated">'{0}' arabirimi veya kapsayan türlerden birinde 'partial' anahtar sözcüğü eksik. '{0}' için kod üretilmeyecek.</target>
         <note />
       </trans-unit>
+      <trans-unit id="InvalidOptionsOnInterfaceDescription">
+        <source>The specified 'ComInterfaceOptions' are invalid.</source>
+        <target state="new">The specified 'ComInterfaceOptions' are invalid.</target>
+        <note />
+      </trans-unit>
+      <trans-unit id="InvalidOptionsOnInterfaceMessage">
+        <source>The specified 'ComInterfaceOptions' on '{0}' are invalid. {1}</source>
+        <target state="new">The specified 'ComInterfaceOptions' on '{0}' are invalid. {1}</target>
+        <note />
+      </trans-unit>
       <trans-unit id="InvalidStringMarshallingConfigurationDescription">
         <source>The configuration of 'StringMarshalling' and 'StringMarshallingCustomType' is invalid.</source>
         <target state="translated">'StringMarshalling' ve 'StringMarshallingCustomType' yapılandırması geçersiz.</target>
@@ -327,6 +342,16 @@
         <target state="translated">Geçersiz 'VirtualMethodIndexAttribute' kullanımı</target>
         <note />
       </trans-unit>
+      <trans-unit id="MarshalAsConfigurationNotSupportedMessageParameter">
+        <source>The specified 'MarshalAsAttribute' configuration for parameter '{1}' is not supported by source-generated COM. If the specified configuration is required, use `ComImport` instead.</source>
+        <target state="translated">'{1}' parametresi için belirtilen 'MarshalAsAttribute' yapılandırması, kaynak tarafından oluşturulan COM tarafından desteklenmiyor. Belirtilen yapılandırma gerekiyorsa, bunun yerine "ComImport" kullanın.</target>
+        <note />
+      </trans-unit>
+      <trans-unit id="MarshalAsConfigurationNotSupportedMessageReturn">
+        <source>The specified 'MarshalAsAttribute' configuration for the return value of method '{1}' is not supported by source-generated COM. If the specified configuration is required, use `ComImport` instead.</source>
+        <target state="translated">'{1}' yönteminin dönüş değeri için belirtilen 'MarshalAsAttribute' yapılandırması, kaynak tarafından oluşturulan COM tarafından desteklenmiyor. Belirtilen yapılandırma gerekiyorsa, bunun yerine "ComImport" kullanın.</target>
+        <note />
+      </trans-unit>
       <trans-unit id="MethodNotDeclaredInAttributedInterfaceDescription">
         <source>All methods must be declared in the same partial definition of a 'GeneratedComInterface'-attributed interface type to ensure reliable calculation for virtual method table offsets.</source>
         <target state="translated">Tüm yöntemler, sanal yöntem tablosu uzaklıkları için güvenilir hesaplamayı sağlamak amacıyla 'GeneratedComInterface' özniteliğine sahip arabirim türünün aynı kısmi tanımında bildirilmiş olmalıdır.</target>
@@ -355,6 +380,11 @@
       <trans-unit id="MultipleComInterfaceBaseTypesTitle">
         <source>Specified interface derives from two or more 'GeneratedComInterfaceAttribute'-attributed interfaces.</source>
         <target state="translated">Belirtilen arabirim 'GeneratedComInterfaceAttribute' özniteliğine sahip iki veya daha fazla arabirimden türetildi.</target>
+        <note />
+      </trans-unit>
+      <trans-unit id="OneWrapperMustBeGenerated">
+        <source>Either 'ComInterfaceOptions.ManagedObjectWrapper' or 'ComInterfaceOptions.ComObjectWrapper' must be specified.</source>
+        <target state="new">Either 'ComInterfaceOptions.ManagedObjectWrapper' or 'ComInterfaceOptions.ComObjectWrapper' must be specified.</target>
         <note />
       </trans-unit>
       <trans-unit id="RequiresAllowUnsafeBlocksDescription">

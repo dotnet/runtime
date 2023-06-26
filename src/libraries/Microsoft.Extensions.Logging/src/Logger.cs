@@ -3,12 +3,20 @@
 
 using System;
 using System.Collections.Generic;
+using System.Diagnostics;
 
 namespace Microsoft.Extensions.Logging
 {
+    [DebuggerDisplay("{DebuggerToString(),nq}")]
     internal sealed class Logger : ILogger
     {
-        public Logger(LoggerInformation[] loggers) => Loggers = loggers;
+        private readonly string _categoryName;
+
+        public Logger(string categoryName, LoggerInformation[] loggers)
+        {
+            _categoryName = categoryName;
+            Loggers = loggers;
+        }
 
         public LoggerInformation[] Loggers { get; set; }
         public MessageLogger[]? MessageLoggers { get; set; }
@@ -140,6 +148,11 @@ namespace Microsoft.Extensions.Logging
             }
 
             return scope;
+        }
+
+        internal string DebuggerToString()
+        {
+            return DebuggerDisplayFormatting.DebuggerToString(_categoryName, this);
         }
 
         private static void ThrowLoggingError(List<Exception> exceptions)

@@ -12,6 +12,8 @@ namespace Microsoft.Interop
     /// </summary>
     public class ByValueContentsMarshalKindValidator : IMarshallingGeneratorFactory
     {
+        private static readonly Forwarder s_forwarder = new();
+
         private readonly IMarshallingGeneratorFactory _inner;
 
         public ByValueContentsMarshalKindValidator(IMarshallingGeneratorFactory inner)
@@ -19,14 +21,15 @@ namespace Microsoft.Interop
             _inner = inner;
         }
 
-        public IMarshallingGenerator Create(TypePositionInfo info, StubCodeContext context)
+        public ResolvedGenerator Create(TypePositionInfo info, StubCodeContext context)
         {
-            return ValidateByValueMarshalKind(info, context, _inner.Create(info, context));
+            ResolvedGenerator generator = _inner.Create(info, context);
+            return generator.ResolvedSuccessfully ? ValidateByValueMarshalKind(info, context, generator) : generator;
         }
 
-        private static IMarshallingGenerator ValidateByValueMarshalKind(TypePositionInfo info, StubCodeContext context, IMarshallingGenerator generator)
+        private static ResolvedGenerator ValidateByValueMarshalKind(TypePositionInfo info, StubCodeContext context, ResolvedGenerator generator)
         {
-            if (generator is Forwarder)
+            if (generator.Generator is Forwarder)
             {
                 // Forwarder allows everything since it just forwards to a P/Invoke.
                 return generator;
@@ -34,25 +37,25 @@ namespace Microsoft.Interop
 
             if (info.IsByRef && info.ByValueContentsMarshalKind != ByValueContentsMarshalKind.Default)
             {
-                throw new MarshallingNotSupportedException(info, context)
+                return ResolvedGenerator.ResolvedWithDiagnostics(s_forwarder, generator.Diagnostics.Add(new GeneratorDiagnostic.NotSupported(info, context)
                 {
                     NotSupportedDetails = SR.InOutAttributeByRefNotSupported
-                };
+                }));
             }
             else if (info.ByValueContentsMarshalKind == ByValueContentsMarshalKind.In)
             {
-                throw new MarshallingNotSupportedException(info, context)
+                return ResolvedGenerator.ResolvedWithDiagnostics(s_forwarder, generator.Diagnostics.Add(new GeneratorDiagnostic.NotSupported(info, context)
                 {
                     NotSupportedDetails = SR.InAttributeNotSupportedWithoutOut
-                };
+                }));
             }
             else if (info.ByValueContentsMarshalKind != ByValueContentsMarshalKind.Default
-                && !generator.SupportsByValueMarshalKind(info.ByValueContentsMarshalKind, context))
+                && !generator.Generator.SupportsByValueMarshalKind(info.ByValueContentsMarshalKind, context))
             {
-                throw new MarshallingNotSupportedException(info, context)
+                return ResolvedGenerator.ResolvedWithDiagnostics(s_forwarder, generator.Diagnostics.Add(new GeneratorDiagnostic.NotSupported(info, context)
                 {
                     NotSupportedDetails = SR.InOutAttributeMarshalerNotSupported
-                };
+                }));
             }
             return generator;
         }
