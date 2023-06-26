@@ -4281,6 +4281,19 @@ load_method (MonoAotModule *amodule, MonoImage *image, MonoMethod *method, guint
 
 		/* JITted method */
 		if (amodule->methods [method_index] == GINT_TO_POINTER (-1)) {
+			if (!method) {
+				method = mono_get_method_checked (image, token, NULL, NULL, error);
+				if (!method)
+					return NULL;
+			}
+
+			printf ("NOT FOUND: %s\n", mono_method_get_full_name (method));
+#if 0
+#ifdef HOST_WASM
+			mono_wasm_print_stack_trace ();
+#endif
+			exit (1);
+#endif
 			if (mono_trace_is_traced (G_LOG_LEVEL_DEBUG, MONO_TRACE_AOT)) {
 				char *full_name;
 

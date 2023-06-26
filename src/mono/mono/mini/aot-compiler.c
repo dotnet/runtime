@@ -4689,8 +4689,37 @@ mono_aot_can_specialize (MonoMethod *method)
 		return FALSE;
 
 	// If it's not private, we can't specialize
-	if ((method->flags & METHOD_ATTRIBUTE_MEMBER_ACCESS_MASK) != METHOD_ATTRIBUTE_PRIVATE)
+	if ((method->flags & METHOD_ATTRIBUTE_MEMBER_ACCESS_MASK) != METHOD_ATTRIBUTE_PRIVATE && 
+			(method->flags & METHOD_ATTRIBUTE_MEMBER_ACCESS_MASK) != METHOD_ATTRIBUTE_ASSEM)
 		return FALSE;
+
+	if (method->is_inflated)
+		return FALSE;
+
+	if (!strcmp (method->name, ".cctor"))
+		return FALSE;
+
+	if (!strcmp (method->name, "FilterAttributeImpl"))
+		return FALSE;
+
+	if (!strcmp (method->name, "MonoLoadLibraryCallbackStub"))
+		return FALSE;
+
+	if (!strcmp (method->name, "MonoResolveUnmanagedDll"))
+		return FALSE;
+
+	if (!strcmp (method->name, "<.cctor>b__288_0"))
+		return FALSE;
+
+	if (!strcmp (method->name, "<.cctor>b__288_1"))
+		return FALSE;
+
+	if (!strcmp (method->name, "Setup"))
+		return FALSE;
+
+	return TRUE;
+
+	#if 0
 
 	// If it has the attribute disabling the specialization, we can't specialize
 	//
@@ -4758,6 +4787,7 @@ mono_aot_can_enter_interp (MonoMethod *method)
 	if (acfg->aot_opts.profile_only && !g_hash_table_lookup (acfg->profile_methods, method))
 		return TRUE;
 	return FALSE;
+#endif
 }
 
 static void

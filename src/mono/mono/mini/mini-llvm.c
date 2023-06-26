@@ -2966,10 +2966,11 @@ emit_get_method (MonoLLVMModule *module)
 		table_elems = g_new0 (LLVMValueRef, table_len);
 		for (guint i = 0; i < table_len; ++i) {
 			m = (LLVMValueRef)g_hash_table_lookup (module->idx_to_lmethod, GUINT_TO_POINTER (i));
-			if (m && !g_hash_table_lookup (module->no_method_table_lmethods, m))
+			if (m && !g_hash_table_lookup (module->no_method_table_lmethods, m)) {
 				table_elems [i] = build_ptr_cast (builder, m, rtype);
-			else
-				table_elems [i] = LLVMConstNull (rtype);
+			} else {
+				table_elems [i] = LLVMConstNull (rtype); //LLVMBuildIntToPtr (builder, LLVMConstInt (IntPtrType (), -2, TRUE), rtype, ""); //LLVMConstNull (rtype);
+			}
 		}
 		LLVMSetInitializer (table, LLVMConstArray (pointer_type (LLVMInt8Type ()), table_elems, table_len));
 	}
@@ -12961,6 +12962,11 @@ after_codegen_1:
 
 	if (mini_get_debug_options ()->llvm_disable_inlining)
 		mono_llvm_add_func_attr (method, LLVM_ATTR_NO_INLINE);
+	
+	if (mono_aot_can_specialize (cfg->method)) {
+		printf ("MOO: %s\n", mono_method_get_full_name (cfg->method));
+		g_hash_table_insert (ctx->module->no_method_table_lmethods, method, method);
+	}
 
 after_codegen:
 	if (cfg->compile_aot)
@@ -13645,7 +13651,7 @@ mono_llvm_fixup_aot_module (void)
 		g_free (site);
 	}
 
-	mono_llvm_propagate_nonnull_final (specializable, module);
+	//mono_llvm_propagate_nonnull_final (specializable, module);
 	g_hash_table_destroy (specializable);
 
 	for (guint i = 0; i < module->cfgs->len; ++i) {
