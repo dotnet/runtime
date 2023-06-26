@@ -4,7 +4,7 @@
 namespace System.Text.Json.Serialization;
 
 /// <summary>
-/// Determines dictionary key filter used to ignore some keys, such as metadata keys.
+/// Determines what JSON keys should be ignored on dictionary deserialization.
 /// </summary>
 public abstract class JsonDictionaryKeyFilter
 {
