@@ -57,6 +57,11 @@
         <target state="translated">베이스 COM 인터페이스에서 소스를 생성하지 못했습니다. 이 인터페이스에 대한 코드가 생성되지 않습니다.</target>
         <note />
       </trans-unit>
+      <trans-unit id="BaseInterfaceMustGenerateAtLeastSameWrappers">
+        <source>A 'GeneratedComInterface' cannot specify 'ComInterfaceOptions.ManagedObjectWrapper' or 'ComInterfaceOptions.ComObjectWrapper' unless the base interface type did not specify options or specified at least the same options.</source>
+        <target state="new">A 'GeneratedComInterface' cannot specify 'ComInterfaceOptions.ManagedObjectWrapper' or 'ComInterfaceOptions.ComObjectWrapper' unless the base interface type did not specify options or specified at least the same options.</target>
+        <note />
+      </trans-unit>
       <trans-unit id="CastsBetweenRuntimeComAndSourceGeneratedComNotSupportedDescription">
         <source>Casting between a 'ComImport' type and a source-generated COM type is not supported and will fail at runtime</source>
         <target state="translated">'ComImport' 형식과 소스 생성 COM 형식 간의 캐스팅은 지원되지 않으며 런타임에 실패합니다.</target>
@@ -169,32 +174,32 @@
       </trans-unit>
       <trans-unit id="InstanceEventDeclaredInInterfaceDescription">
         <source>Events are not a concept in COM, so no interop code will be source generated for instance events on source-generated COM interfaces.</source>
-        <target state="new">Events are not a concept in COM, so no interop code will be source generated for instance events on source-generated COM interfaces.</target>
+        <target state="translated">이벤트는 COM의 개념이 아니므로 소스 생성 COM 인터페이스의 인스턴스 이벤트에 대해 interop 코드가 생성되지 않습니다.</target>
         <note />
       </trans-unit>
       <trans-unit id="InstanceEventDeclaredInInterfaceMessage">
         <source>The instance event '{0}' is declared in the interface '{1}', which has the 'GeneratedComInterfaceAttribute' applied</source>
-        <target state="new">The instance event '{0}' is declared in the interface '{1}', which has the 'GeneratedComInterfaceAttribute' applied</target>
+        <target state="translated">'GeneratedComInterfaceAttribute'가 적용된 '{1}' 인터페이스에서 '{0}' 인스턴스 이벤트가 선언되었습니다.</target>
         <note />
       </trans-unit>
       <trans-unit id="InstanceEventDeclaredInInterfaceTitle">
         <source>Declaring an instance event in a type with the 'GeneratedComInterfaceAttribute' is not supported</source>
-        <target state="new">Declaring an instance event in a type with the 'GeneratedComInterfaceAttribute' is not supported</target>
+        <target state="translated">'GeneratedComInterfaceAttribute'를 사용하는 형식의 인스턴스 이벤트 선언은 지원되지 않습니다.</target>
         <note />
       </trans-unit>
       <trans-unit id="InstancePropertyDeclaredInInterfaceDescription">
         <source>Properties are not a concept in COM, so no interop code will be source generated for instance properties on source-generated COM interfaces.</source>
-        <target state="new">Properties are not a concept in COM, so no interop code will be source generated for instance properties on source-generated COM interfaces.</target>
+        <target state="translated">속성은 COM의 개념이 아니므로 소스 생성 COM 인터페이스의 인스턴스 속성에 대해 interop 코드가 생성되지 않습니다.</target>
         <note />
       </trans-unit>
       <trans-unit id="InstancePropertyDeclaredInInterfaceMessage">
         <source>The instance property '{0}' is declared in the interface '{1}', which has the 'GeneratedComInterfaceAttribute' applied</source>
-        <target state="new">The instance property '{0}' is declared in the interface '{1}', which has the 'GeneratedComInterfaceAttribute' applied</target>
+        <target state="translated">'GeneratedComInterfaceAttribute'가 적용된 '{1}' 인터페이스에서 '{0}' 인스턴스 속성이 선언되었습니다.</target>
         <note />
       </trans-unit>
       <trans-unit id="InstancePropertyDeclaredInInterfaceTitle">
         <source>Declaring an instance property in a type with the 'GeneratedComInterfaceAttribute' is not supported</source>
-        <target state="new">Declaring an instance property in a type with the 'GeneratedComInterfaceAttribute' is not supported</target>
+        <target state="translated">'GeneratedComInterfaceAttribute'를 사용하는 형식의 인스턴스 속성 선언은 지원되지 않습니다.</target>
         <note />
       </trans-unit>
       <trans-unit id="InterfaceTypeNotSupportedMessage">
@@ -269,7 +274,7 @@
       </trans-unit>
       <trans-unit id="InvalidGeneratedComInterfaceAttributeUsageDescription">
         <source>Interfaces attributed with 'GeneratedComInterfaceAttribute' must have 'public' or 'internal' accessibility and be partial, non-generic, and must specify a GUID with 'System.Runtime.InteropServices.GuidAttribute'.</source>
-        <target state="new">Interfaces attributed with 'GeneratedComInterfaceAttribute' must have 'public' or 'internal' accessibility and be partial, non-generic, and must specify a GUID with 'System.Runtime.InteropServices.GuidAttribute'.</target>
+        <target state="translated">'GeneratedComInterfaceAttribute'로 특성이 지정된 인터페이스에는 'public' 또는 'internal' 접근성이 있어야 하며 부분적이고 제네릭이 아니어야 하며 'System.Runtime.InteropServices.GuidAttribute'를 사용하여 GUID를 지정해야 합니다.</target>
         <note />
       </trans-unit>
       <trans-unit id="InvalidGeneratedComInterfaceAttributeUsageInterfaceIsGeneric">
@@ -279,7 +284,7 @@
       </trans-unit>
       <trans-unit id="InvalidGeneratedComInterfaceAttributeUsageInterfaceNotAccessible">
         <source>Interface '{0}' is attributed with 'GeneratedComInterfaceAttribute' but is not accessible by generated code. The interface and all containing types must have accessibility 'internal' or 'public' for generated code to access it. {1}</source>
-        <target state="new">Interface '{0}' is attributed with 'GeneratedComInterfaceAttribute' but is not accessible by generated code. The interface and all containing types must have accessibility 'internal' or 'public' for generated code to access it. {1}</target>
+        <target state="translated">인터페이스 '{0}'은(는) 'GeneratedComInterfaceAttribute'로 특성이 지정되었지만 생성된 코드에서 액세스할 수 없습니다. 인터페이스와 포함된 모든 형식에는 액세스하기 위해 생성된 코드에 대한 접근성 'internal' 또는 'public'이 있어야 합니다. {1}</target>
         <note>{1} is details about which type/containing type is not accessible</note>
       </trans-unit>
       <trans-unit id="InvalidGeneratedComInterfaceAttributeUsageMissingGuidAttribute">
@@ -295,6 +300,16 @@
       <trans-unit id="InvalidGeneratedComInterfaceUsageMissingPartialModifier">
         <source>The interface '{0}' or one of its containing types is missing the 'partial' keyword. Code will not be generated for '{0}'.</source>
         <target state="translated">'{0}' 인터페이스 또는 해당 포함된 형식 중 하나에 'partial' 키워드가 없습니다. '{0}'에 대한 코드가 생성되지 않습니다.</target>
+        <note />
+      </trans-unit>
+      <trans-unit id="InvalidOptionsOnInterfaceDescription">
+        <source>The specified 'ComInterfaceOptions' are invalid.</source>
+        <target state="new">The specified 'ComInterfaceOptions' are invalid.</target>
+        <note />
+      </trans-unit>
+      <trans-unit id="InvalidOptionsOnInterfaceMessage">
+        <source>The specified 'ComInterfaceOptions' on '{0}' are invalid. {1}</source>
+        <target state="new">The specified 'ComInterfaceOptions' on '{0}' are invalid. {1}</target>
         <note />
       </trans-unit>
       <trans-unit id="InvalidStringMarshallingConfigurationDescription">
@@ -327,6 +342,16 @@
         <target state="translated">잘못된 'VirtualMethodIndexAttribute' 사용</target>
         <note />
       </trans-unit>
+      <trans-unit id="MarshalAsConfigurationNotSupportedMessageParameter">
+        <source>The specified 'MarshalAsAttribute' configuration for parameter '{1}' is not supported by source-generated COM. If the specified configuration is required, use `ComImport` instead.</source>
+        <target state="new">The specified 'MarshalAsAttribute' configuration for parameter '{1}' is not supported by source-generated COM. If the specified configuration is required, use `ComImport` instead.</target>
+        <note />
+      </trans-unit>
+      <trans-unit id="MarshalAsConfigurationNotSupportedMessageReturn">
+        <source>The specified 'MarshalAsAttribute' configuration for the return value of method '{1}' is not supported by source-generated COM. If the specified configuration is required, use `ComImport` instead.</source>
+        <target state="new">The specified 'MarshalAsAttribute' configuration for the return value of method '{1}' is not supported by source-generated COM. If the specified configuration is required, use `ComImport` instead.</target>
+        <note />
+      </trans-unit>
       <trans-unit id="MethodNotDeclaredInAttributedInterfaceDescription">
         <source>All methods must be declared in the same partial definition of a 'GeneratedComInterface'-attributed interface type to ensure reliable calculation for virtual method table offsets.</source>
         <target state="translated">모든 메서드는 가상 메서드 테이블 오프셋에 대한 신뢰할 수 있는 계산을 보장하기 위해 'GeneratedComInterface' 속성 인터페이스 유형의 동일한 부분 정의에서 선언되어야 합니다.</target>
@@ -355,6 +380,11 @@
       <trans-unit id="MultipleComInterfaceBaseTypesTitle">
         <source>Specified interface derives from two or more 'GeneratedComInterfaceAttribute'-attributed interfaces.</source>
         <target state="translated">지정한 인터페이스는 두 개 이상의 'GeneratedComInterfaceAttribute' 특성 인터페이스에서 파생됩니다.</target>
+        <note />
+      </trans-unit>
+      <trans-unit id="OneWrapperMustBeGenerated">
+        <source>Either 'ComInterfaceOptions.ManagedObjectWrapper' or 'ComInterfaceOptions.ComObjectWrapper' must be specified.</source>
+        <target state="new">Either 'ComInterfaceOptions.ManagedObjectWrapper' or 'ComInterfaceOptions.ComObjectWrapper' must be specified.</target>
         <note />
       </trans-unit>
       <trans-unit id="RequiresAllowUnsafeBlocksDescription">
@@ -389,7 +419,7 @@
       </trans-unit>
       <trans-unit id="StringMarshallingCustomTypeNotAccessibleByGeneratedCode">
         <source>The type '{0}' specified as 'GeneratedComInterfaceAttribute.StringMarshallingCustomType' is not accessible by generated code. The type must have at least 'internal' accessibility. {1}</source>
-        <target state="new">The type '{0}' specified as 'GeneratedComInterfaceAttribute.StringMarshallingCustomType' is not accessible by generated code. The type must have at least 'internal' accessibility. {1}</target>
+        <target state="translated">생성된 코드에서 'GeneratedComInterfaceAttribute.StringMarscingingCustomType'으로 지정된 '{0}' 형식에 액세스할 수 없습니다. 형식에는 최소한 'internal' 접근성이 있어야 합니다. {1}</target>
         <note>{1} is details about which type/containing type is not accessible</note>
       </trans-unit>
       <trans-unit id="TypeNotSupportedDescription">

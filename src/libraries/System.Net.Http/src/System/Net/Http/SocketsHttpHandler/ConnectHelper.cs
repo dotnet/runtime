@@ -128,7 +128,7 @@ namespace System.Net.Http
                     ClientAuthenticationOptions = clientAuthenticationOptions
                 }, cancellationToken).ConfigureAwait(false);
             }
-            catch (Exception ex)
+            catch (Exception ex) when (ex is not OperationCanceledException)
             {
                 throw CreateWrappedException(ex, endPoint.Host, endPoint.Port, cancellationToken);
             }

@@ -341,6 +341,7 @@
           <!--EnvironmentVariables="@(EmscriptenEnvVars)" />-->
   <!--</Target>-->
 
+  <UsingTask TaskName="EmitBundleObjectFiles" AssemblyFile="$(MonoTargetsTasksAssemblyPath)" />
   <UsingTask TaskName="Microsoft.WebAssembly.Build.Tasks.EmitWasmBundleObjectFiles" AssemblyFile="$(WasmAppBuilderTasksAssemblyPath)" />
   <Target Name="_GenerateAssemblyObjectFiles" Returns="@(_WasiObjectFilesForBundle)"
     Condition="'$(WasmSingleFileBundle)' == 'true'"
@@ -348,61 +349,49 @@
     <!-- Get the file hashes of everything in @(_WasmBundleFiles), then pass it all to EmitWasmBundleObjectFiles. This
          will emit corresponding .o files for anything we don't already have on disk. -->
     <PropertyGroup>
-      <_WasmAssembliesBundleObjectFile>$(_WasmIntermediateOutputPath)wasi_bundled_assemblies.o</_WasmAssembliesBundleObjectFile>
-      <_WasmIcuBundleObjectFile>$(_WasmIntermediateOutputPath)wasi_bundled_icu.o</_WasmIcuBundleObjectFile>
+      <_WasmAssembliesBundleObjectFile>wasi_bundled_assemblies.o</_WasmAssembliesBundleObjectFile>
+      <_WasmIcuBundleObjectFile>wasi_bundled_icu.o</_WasmIcuBundleObjectFile>
     </PropertyGroup>
-    <GetFileHash Files="@(_WasmAssembliesInternal)">
-      <Output TaskParameter="Items" ItemName="WasmBundleAssembliesWithHashes" />
-    </GetFileHash>
-    <GetFileHash Files="$(MicrosoftNetCoreAppRuntimePackRidNativeDir)icudt.dat">
-      <Output TaskParameter="Items" ItemName="WasmBundleIcuWithHashes" />
-    </GetFileHash>
-    <ItemGroup>
-      <WasmBundleAssembliesWithHashes Update="@(WasmBundleAssembliesWithHashes)">
-        <DestinationFile>$(_WasmIntermediateOutputPath)%(WasmBundleAssembliesWithHashes.Filename)%(WasmBundleAssembliesWithHashes.Extension).$([System.String]::Copy(%(WasmBundleAssembliesWithHashes.FileHash)).Substring(0, 8)).o</DestinationFile>
-      </WasmBundleAssembliesWithHashes>
-      <WasmBundleIcuWithHashes Update="@(WasmBundleIcuWithHashes)">
-        <DestinationFile>$(_WasmIntermediateOutputPath)%(WasmBundleIcuWithHashes.Filename)%(WasmBundleIcuWithHashes.Extension).$([System.String]::Copy(%(WasmBundleIcuWithHashes.FileHash)).Substring(0, 8)).o</DestinationFile>
-      </WasmBundleIcuWithHashes>
-    </ItemGroup>
     <!-- TODO make this incremental compilation -->
-    <EmitWasmBundleObjectFiles
-      FilesToBundle="@(WasmBundleAssembliesWithHashes)"
+    <EmitBundleObjectFiles
+      FilesToBundle="@(_WasmAssembliesInternal)"
       ClangExecutable="$(WasiClang)"
-      BundleName="assemblies"
+      BundleRegistrationFunctionName="mono_register_assemblies_bundle"
       BundleFile="$(_WasmAssembliesBundleObjectFile)"
-      RegistrationCallbackFunctionName="mono_wasm_add_assembly"
-      />
+      OutputDirectory="$(_WasmIntermediateOutputPath)">
+      <Output TaskParameter="BundledResources" ItemName="_WasmBundledAssemblies" />
+    </EmitBundleObjectFiles>
 
     <ItemGroup>
-      <_WasiObjectFilesForBundle Include="$(_WasmAssembliesBundleObjectFile)" />
-      <_WasiObjectFilesForBundle Include="%(WasmBundleAssembliesWithHashes.DestinationFile)" />
+      <_WasiObjectFilesForBundle Include="$(_WasmIntermediateOutputPath)$(_WasmAssembliesBundleObjectFile)" />
+      <_WasiObjectFilesForBundle Include="%(_WasmBundledAssemblies.DestinationFile)" />
     </ItemGroup>
 
     <!-- Clean up the bundle-objects dir - remove anything we no longer need -->
     <ItemGroup>
       <WasmBundleFileToDelete Include="$(_WasmIntermediateOutputPath)*.o" />
-      <WasmBundleFileToDelete Remove="$(_WasmAssembliesBundleObjectFile)" />
-      <WasmBundleFileToDelete Remove="%(WasmBundleAssembliesWithHashes.DestinationFile)" />
+      <WasmBundleFileToDelete Remove="$(_WasmIntermediateOutputPath)$(_WasmAssembliesBundleObjectFile)" />
+      <WasmBundleFileToDelete Remove="%(_WasmBundledAssemblies.DestinationFile)" />
     </ItemGroup>
 
-    <EmitWasmBundleObjectFiles
+    <EmitBundleObjectFiles
       Condition="'$(InvariantGlobalization)' != 'true'"
-      FilesToBundle="@(WasmBundleIcuWithHashes)"
+      FilesToBundle="$(MicrosoftNetCoreAppRuntimePackRidNativeDir)icudt.dat"
       ClangExecutable="$(WasiClang)"
-      BundleName="icu"
+      BundleRegistrationFunctionName="mono_register_icu_bundle"
       BundleFile="$(_WasmIcuBundleObjectFile)"
-      RegistrationCallbackFunctionName="mono_wasm_add_bundled_file"
-      />
+      OutputDirectory="$(_WasmIntermediateOutputPath)">
+      <Output TaskParameter="BundledResources" ItemName="BundledWasmIcu" />
+    </EmitBundleObjectFiles>
 
     <ItemGroup Condition="'$(InvariantGlobalization)' != 'true'">
-      <_WasiObjectFilesForBundle Include="$(_WasmIcuBundleObjectFile)" />
-      <_WasiObjectFilesForBundle Include="%(WasmBundleIcuWithHashes.DestinationFile)" />
+      <_WasiObjectFilesForBundle Include="$(_WasmIntermediateOutputPath)$(_WasmIcuBundleObjectFile)" />
+      <_WasiObjectFilesForBundle Include="%(BundledWasmIcu.DestinationFile)" />
     </ItemGroup>
 
     <ItemGroup Condition="'$(InvariantGlobalization)' != 'true'">
-      <WasmBundleFileToDelete Remove="$(_WasmIcuBundleObjectFile)" />
-      <WasmBundleFileToDelete Remove="%(WasmBundleIcuWithHashes.DestinationFile)" />
+      <WasmBundleFileToDelete Remove="$(_WasmIntermediateOutputPath)$(_WasmIcuBundleObjectFile)" />
+      <WasmBundleFileToDelete Remove="%(BundledWasmIcu.DestinationFile)" />
     </ItemGroup>
     
     <Delete Files="@(WasmBundleFileToDelete)" />
@@ -518,7 +507,7 @@
       <MonoAOTCompilerDefaultAotArguments Include="deterministic" />
       <MonoAOTCompilerDefaultAotArguments Include="mattr=simd" Condition="'$(WasmEnableSIMD)' == 'true'" />
       <MonoAOTCompilerDefaultProcessArguments Include="--wasm-exceptions" Condition="'$(WasmEnableExceptionHandling)' == 'true'" />
-      <MonoAOTCompilerDefaultProcessArguments Include="--wasm-gc-safepoints" Condition="'$(WasmEnableThreads)' == 'true' or '$(WasmEnablePerfTracing)' == 'true'" />
+      <MonoAOTCompilerDefaultProcessArguments Include="--wasm-gc-safepoints" Condition="'$(WasmEnableThreads)' == 'true'" />
       <AotProfilePath Include="$(WasmAotProfilePath)"/>
     </ItemGroup>
     <ItemGroup>

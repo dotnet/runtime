@@ -19,7 +19,6 @@
       "packs": [
         "Microsoft.NET.Runtime.WebAssembly.Templates",
         "Microsoft.NETCore.App.Runtime.Mono.multithread.browser-wasm",
-        "Microsoft.NETCore.App.Runtime.Mono.perftrace.browser-wasm"
       ],
       "extends": [ "wasm-tools" ],
       "platforms": [ "win-x64", "win-arm64", "linux-x64", "osx-x64", "osx-arm64" ]
@@ -373,10 +372,6 @@
       "version": "${PackageVersion}"
     },
     "Microsoft.NETCore.App.Runtime.Mono.multithread.browser-wasm" : {
-      "kind": "framework",
-      "version": "${PackageVersion}"
-    },
-    "Microsoft.NETCore.App.Runtime.Mono.perftrace.browser-wasm" : {
       "kind": "framework",
       "version": "${PackageVersion}"
     },

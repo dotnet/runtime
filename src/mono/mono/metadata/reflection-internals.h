@@ -50,7 +50,7 @@ MonoObject*
 mono_custom_attrs_get_attr_checked (MonoCustomAttrInfo *ainfo, MonoClass *attr_klass, MonoError *error);
 
 MonoCustomAttrInfo*
-mono_reflection_get_custom_attrs_info_checked (MonoObjectHandle obj, MonoError *error);
+mono_reflection_get_custom_attrs_info_checked (MonoObjectHandle obj, MonoError *error, gboolean respect_cattr_visibility);
 
 MonoArrayHandle
 mono_reflection_get_custom_attrs_data_checked (MonoObjectHandle obj, MonoError *error);

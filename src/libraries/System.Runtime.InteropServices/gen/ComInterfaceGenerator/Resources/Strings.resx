@@ -377,4 +377,22 @@
   <data name="InstancePropertyDeclaredInInterfaceTitle" xml:space="preserve">
     <value>Declaring an instance property in a type with the 'GeneratedComInterfaceAttribute' is not supported</value>
   </data>
+  <data name="BaseInterfaceMustGenerateAtLeastSameWrappers" xml:space="preserve">
+    <value>A 'GeneratedComInterface' cannot specify 'ComInterfaceOptions.ManagedObjectWrapper' or 'ComInterfaceOptions.ComObjectWrapper' unless the base interface type did not specify options or specified at least the same options.</value>
+  </data>
+  <data name="InvalidOptionsOnInterfaceDescription" xml:space="preserve">
+    <value>The specified 'ComInterfaceOptions' are invalid.</value>
+  </data>
+  <data name="InvalidOptionsOnInterfaceMessage" xml:space="preserve">
+    <value>The specified 'ComInterfaceOptions' on '{0}' are invalid. {1}</value>
+  </data>
+  <data name="OneWrapperMustBeGenerated" xml:space="preserve">
+    <value>Either 'ComInterfaceOptions.ManagedObjectWrapper' or 'ComInterfaceOptions.ComObjectWrapper' must be specified.</value>
+  </data>
+  <data name="MarshalAsConfigurationNotSupportedMessageParameter" xml:space="preserve">
+    <value>The specified 'MarshalAsAttribute' configuration for parameter '{1}' is not supported by source-generated COM. If the specified configuration is required, use `ComImport` instead.</value>
+  </data>
+  <data name="MarshalAsConfigurationNotSupportedMessageReturn" xml:space="preserve">
+    <value>The specified 'MarshalAsAttribute' configuration for the return value of method '{1}' is not supported by source-generated COM. If the specified configuration is required, use `ComImport` instead.</value>
+  </data>
 </root>

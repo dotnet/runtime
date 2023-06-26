@@ -708,16 +708,13 @@ void CodeGen::genBuildRegPairsStack(regMaskTP regsMask, ArrayStack<RegPair>* reg
 
     while (regsMask != RBM_NONE)
     {
-        regMaskTP reg1Mask = genFindLowestBit(regsMask);
-        regNumber reg1     = genRegNumFromMask(reg1Mask);
-        regsMask &= ~reg1Mask;
+        regNumber reg1 = genFirstRegNumFromMaskAndToggle(regsMask);
         regsCount -= 1;
 
         bool isPairSave = false;
         if (regsCount > 0)
         {
-            regMaskTP reg2Mask = genFindLowestBit(regsMask);
-            regNumber reg2     = genRegNumFromMask(reg2Mask);
+            regNumber reg2 = genFirstRegNumFromMask(regsMask);
             if (reg2 == REG_NEXT(reg1))
             {
                 // The JIT doesn't allow saving pair (R28,FP), even though the
@@ -733,7 +730,7 @@ void CodeGen::genBuildRegPairsStack(regMaskTP regsMask, ArrayStack<RegPair>* reg
                     {
                         isPairSave = true;
 
-                        regsMask &= ~reg2Mask;
+                        regsMask ^= genRegMask(reg2);
                         regsCount -= 1;
 
                         regStack->Push(RegPair(reg1, reg2));

@@ -505,14 +505,6 @@ extends:
           scenarios:
             - WasmTestOnBrowser
 
-      - template: /eng/pipelines/common/templates/wasm-build-only.yml
-        parameters:
-          platforms:
-            - browser_wasm
-          nameSuffix: _Threading_PerfTracing
-          extraBuildArgs: /p:MonoWasmBuildVariant=perftrace /p:AotHostArchitecture=x64 /p:AotHostOS=$(_hostedOS)
-          alwaysRun: ${{ variables.isRollingBuild }}
-
       # WASI/WASM
 
       - template: /eng/pipelines/common/templates/wasm-library-tests.yml
