@@ -7,6 +7,7 @@ using System.Collections.Immutable;
 using System.Linq;
 using System.Runtime.InteropServices;
 using Microsoft.CodeAnalysis;
+using Microsoft.CodeAnalysis.CSharp.Syntax;
 using Microsoft.CodeAnalysis.Diagnostics;
 using Microsoft.CodeAnalysis.DotnetRuntime.Extensions;
 using static Microsoft.Interop.Analyzers.AnalyzerDiagnostics;
@@ -74,7 +75,7 @@ namespace Microsoft.Interop.Analyzers
                         // Use  the method signature to do some of the work the generator will do after conversion.
                         // If any diagnostics or failures to marshal are reported, then mark this diagnostic with a property signifying that it may require
                         // later user work.
-                        AnyDiagnosticsSink diagnostics = new();
+                        GeneratorDiagnosticsBag diagnostics = new(new DiagnosticDescriptorProvider(), new MethodSignatureDiagnosticLocations((MethodDeclarationSyntax)method.DeclaringSyntaxReferences[0].GetSyntax()), SR.ResourceManager, typeof(FxResources.Microsoft.Interop.ComInterfaceGenerator.SR));
                         AttributeData comImportAttribute = type.GetAttributes().First(attr => attr.AttributeClass.ToDisplayString() == TypeNames.System_Runtime_InteropServices_ComImportAttribute);
                         SignatureContext targetSignatureContext = SignatureContext.Create(
                             method,
@@ -85,7 +86,7 @@ namespace Microsoft.Interop.Analyzers
                         var managedToUnmanagedFactory = ComInterfaceGeneratorHelpers.CreateGeneratorFactory(env, MarshalDirection.ManagedToUnmanaged);
                         var unmanagedToManagedFactory = ComInterfaceGeneratorHelpers.CreateGeneratorFactory(env, MarshalDirection.UnmanagedToManaged);
 
-                        mayRequireAdditionalWork = diagnostics.AnyDiagnostics;
+                        mayRequireAdditionalWork = diagnostics.Diagnostics.Any();
                         bool anyExplicitlyUnsupportedInfo = false;
 
                         var managedToNativeStubCodeContext = new ManagedToNativeStubCodeContext(env.TargetFramework, env.TargetFrameworkVersion, "return", "nativeReturn");
@@ -98,17 +99,17 @@ namespace Microsoft.Interop.Analyzers
                             if (s_unsupportedTypeNames.Contains(info.ManagedType.FullTypeName))
                             {
                                 anyExplicitlyUnsupportedInfo = true;
-                                return forwarder;
+                                return ResolvedGenerator.Resolved(forwarder);
                             }
                             if (HasUnsupportedMarshalAsInfo(info))
                             {
                                 anyExplicitlyUnsupportedInfo = true;
-                                return forwarder;
+                                return ResolvedGenerator.Resolved(forwarder);
                             }
                             if (info.MarshallingAttributeInfo is TrackedMarshallingInfo(TrackedMarshallingInfoAnnotation.ExplicitlyUnsupported, _))
                             {
                                 anyExplicitlyUnsupportedInfo = true;
-                                return forwarder;
+                                return ResolvedGenerator.Resolved(forwarder);
                             }
                             if (info.MarshallingAttributeInfo is TrackedMarshallingInfo(TrackedMarshallingInfoAnnotation annotation, var inner))
                             {
@@ -119,11 +120,15 @@ namespace Microsoft.Interop.Analyzers
                                 info = info with { MarshallingAttributeInfo = inner };
                             }
                             // Run both factories and collect any binding failures.
-                            _ = unmanagedToManagedFactory.GeneratorFactory.Create(info, nativeToManagedStubCodeContext);
-                            return managedToUnmanagedFactory.GeneratorFactory.Create(info, managedToNativeStubCodeContext);
-                        }), managedToNativeStubCodeContext, forwarder, out var bindingFailures);
+                            ResolvedGenerator unmanagedToManagedGenerator = unmanagedToManagedFactory.GeneratorFactory.Create(info, nativeToManagedStubCodeContext);
+                            ResolvedGenerator managedToUnmanagedGenerator = managedToUnmanagedFactory.GeneratorFactory.Create(info, managedToNativeStubCodeContext);
+                            return managedToUnmanagedGenerator with
+                            {
+                                Diagnostics = managedToUnmanagedGenerator.Diagnostics.AddRange(unmanagedToManagedGenerator.Diagnostics)
+                            };
+                        }), managedToNativeStubCodeContext, forwarder, out var generatorDiagnostics);
 
-                        mayRequireAdditionalWork |= bindingFailures.Length > 0;
+                        mayRequireAdditionalWork |= generatorDiagnostics.Any(diag => diag.IsFatal);
 
                         if (anyExplicitlyUnsupportedInfo)
                         {
@@ -143,7 +148,7 @@ namespace Microsoft.Interop.Analyzers
             });
         }
 
-        private static MarshallingInfoParser CreateComImportMarshallingInfoParser(StubEnvironment env, IGeneratorDiagnostics diagnostics, IMethodSymbol method, AttributeData unparsedAttributeData)
+        private static MarshallingInfoParser CreateComImportMarshallingInfoParser(StubEnvironment env, GeneratorDiagnosticsBag diagnostics, IMethodSymbol method, AttributeData unparsedAttributeData)
         {
             var defaultInfo = new DefaultMarshallingInfo(CharEncoding.Utf16, null);
 
@@ -183,23 +188,16 @@ namespace Microsoft.Interop.Analyzers
                 || unmanagedType == UnmanagedType.SafeArray;
         }
 
-        private sealed class AnyDiagnosticsSink : IGeneratorDiagnostics
-        {
-            public bool AnyDiagnostics { get; private set; }
-            public void ReportConfigurationNotSupported(AttributeData attributeData, string configurationName, string? unsupportedValue) => AnyDiagnostics = true;
-            public void ReportInvalidMarshallingAttributeInfo(AttributeData attributeData, string reasonResourceName, params string[] reasonArgs) => AnyDiagnostics = true;
-        }
-
         private sealed class CallbackGeneratorFactory : IMarshallingGeneratorFactory
         {
-            private readonly Func<TypePositionInfo, StubCodeContext, IMarshallingGenerator> _func;
+            private readonly Func<TypePositionInfo, StubCodeContext, ResolvedGenerator> _func;
 
-            public CallbackGeneratorFactory(Func<TypePositionInfo, StubCodeContext, IMarshallingGenerator> func)
+            public CallbackGeneratorFactory(Func<TypePositionInfo, StubCodeContext, ResolvedGenerator> func)
             {
                 _func = func;
             }
 
-            public IMarshallingGenerator Create(TypePositionInfo info, StubCodeContext context) => _func(info, context);
+            public ResolvedGenerator Create(TypePositionInfo info, StubCodeContext context) => _func(info, context);
         }
 
         private enum TrackedMarshallingInfoAnnotation

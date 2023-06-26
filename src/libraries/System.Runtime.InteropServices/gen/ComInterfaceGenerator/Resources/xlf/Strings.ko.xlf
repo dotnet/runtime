@@ -57,6 +57,11 @@
         <target state="translated">베이스 COM 인터페이스에서 소스를 생성하지 못했습니다. 이 인터페이스에 대한 코드가 생성되지 않습니다.</target>
         <note />
       </trans-unit>
+      <trans-unit id="BaseInterfaceMustGenerateAtLeastSameWrappers">
+        <source>A 'GeneratedComInterface' cannot specify 'ComInterfaceOptions.ManagedObjectWrapper' or 'ComInterfaceOptions.ComObjectWrapper' unless the base interface type did not specify options or specified at least the same options.</source>
+        <target state="new">A 'GeneratedComInterface' cannot specify 'ComInterfaceOptions.ManagedObjectWrapper' or 'ComInterfaceOptions.ComObjectWrapper' unless the base interface type did not specify options or specified at least the same options.</target>
+        <note />
+      </trans-unit>
       <trans-unit id="CastsBetweenRuntimeComAndSourceGeneratedComNotSupportedDescription">
         <source>Casting between a 'ComImport' type and a source-generated COM type is not supported and will fail at runtime</source>
         <target state="translated">'ComImport' 형식과 소스 생성 COM 형식 간의 캐스팅은 지원되지 않으며 런타임에 실패합니다.</target>
@@ -297,6 +302,16 @@
         <target state="translated">'{0}' 인터페이스 또는 해당 포함된 형식 중 하나에 'partial' 키워드가 없습니다. '{0}'에 대한 코드가 생성되지 않습니다.</target>
         <note />
       </trans-unit>
+      <trans-unit id="InvalidOptionsOnInterfaceDescription">
+        <source>The specified 'ComInterfaceOptions' are invalid.</source>
+        <target state="new">The specified 'ComInterfaceOptions' are invalid.</target>
+        <note />
+      </trans-unit>
+      <trans-unit id="InvalidOptionsOnInterfaceMessage">
+        <source>The specified 'ComInterfaceOptions' on '{0}' are invalid. {1}</source>
+        <target state="new">The specified 'ComInterfaceOptions' on '{0}' are invalid. {1}</target>
+        <note />
+      </trans-unit>
       <trans-unit id="InvalidStringMarshallingConfigurationDescription">
         <source>The configuration of 'StringMarshalling' and 'StringMarshallingCustomType' is invalid.</source>
         <target state="translated">'StringMarshalling' 및 'StringMarshallingCustomType'의 구성이 잘못되었습니다.</target>
@@ -327,6 +342,16 @@
         <target state="translated">잘못된 'VirtualMethodIndexAttribute' 사용</target>
         <note />
       </trans-unit>
+      <trans-unit id="MarshalAsConfigurationNotSupportedMessageParameter">
+        <source>The specified 'MarshalAsAttribute' configuration for parameter '{1}' is not supported by source-generated COM. If the specified configuration is required, use `ComImport` instead.</source>
+        <target state="new">The specified 'MarshalAsAttribute' configuration for parameter '{1}' is not supported by source-generated COM. If the specified configuration is required, use `ComImport` instead.</target>
+        <note />
+      </trans-unit>
+      <trans-unit id="MarshalAsConfigurationNotSupportedMessageReturn">
+        <source>The specified 'MarshalAsAttribute' configuration for the return value of method '{1}' is not supported by source-generated COM. If the specified configuration is required, use `ComImport` instead.</source>
+        <target state="new">The specified 'MarshalAsAttribute' configuration for the return value of method '{1}' is not supported by source-generated COM. If the specified configuration is required, use `ComImport` instead.</target>
+        <note />
+      </trans-unit>
       <trans-unit id="MethodNotDeclaredInAttributedInterfaceDescription">
         <source>All methods must be declared in the same partial definition of a 'GeneratedComInterface'-attributed interface type to ensure reliable calculation for virtual method table offsets.</source>
         <target state="translated">모든 메서드는 가상 메서드 테이블 오프셋에 대한 신뢰할 수 있는 계산을 보장하기 위해 'GeneratedComInterface' 속성 인터페이스 유형의 동일한 부분 정의에서 선언되어야 합니다.</target>
@@ -355,6 +380,11 @@
       <trans-unit id="MultipleComInterfaceBaseTypesTitle">
         <source>Specified interface derives from two or more 'GeneratedComInterfaceAttribute'-attributed interfaces.</source>
         <target state="translated">지정한 인터페이스는 두 개 이상의 'GeneratedComInterfaceAttribute' 특성 인터페이스에서 파생됩니다.</target>
+        <note />
+      </trans-unit>
+      <trans-unit id="OneWrapperMustBeGenerated">
+        <source>Either 'ComInterfaceOptions.ManagedObjectWrapper' or 'ComInterfaceOptions.ComObjectWrapper' must be specified.</source>
+        <target state="new">Either 'ComInterfaceOptions.ManagedObjectWrapper' or 'ComInterfaceOptions.ComObjectWrapper' must be specified.</target>
         <note />
       </trans-unit>
       <trans-unit id="RequiresAllowUnsafeBlocksDescription">

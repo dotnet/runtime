@@ -56,6 +56,20 @@ namespace System.Runtime.CompilerServices
     /// Return type is considered for the signature match. modreqs and modopts are initially not considered for
     /// the signature match. However, if an ambiguity exists ignoring modreqs and modopts, a precise match
     /// is attempted. If an ambiguity still exists <see cref="System.Reflection.AmbiguousMatchException" /> is thrown.
+    ///
+    /// By default, the attributed method's name dictates the name of the method/field. This can cause confusion
+    /// in some cases since language abstractions, like C# local functions, generate mangled IL names. The
+    /// solution to this is to use the <code>nameof</code> mechanism and define the <see cref="Name"/> property.
+    ///
+    /// <code>
+    /// public void Method(Class c)
+    /// {
+    ///     PrivateMethod(c);
+    ///
+    ///     [UnsafeAccessor(UnsafeAccessorKind.Method, Name = nameof(PrivateMethod))]
+    ///     extern static void PrivateMethod(Class c);
+    /// }
+    /// </code>
     /// </remarks>
     [AttributeUsage(AttributeTargets.Method, AllowMultiple = false, Inherited = false)]
     public sealed class UnsafeAccessorAttribute : Attribute

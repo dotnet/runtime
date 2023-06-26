@@ -297,12 +297,19 @@ private:
     void SetNeedsReadBack(Replacement& rep);
     void ClearNeedsReadBack(Replacement& rep);
 
-    GenTree** InsertMidTreeReadBacksIfNecessary(GenTree** use);
+    template <typename Func>
+    void VisitOverlappingReplacements(unsigned lcl, unsigned offs, unsigned size, Func func);
+
+    void      InsertPreStatementReadBacks();
+    void      InsertPreStatementWriteBacks();
+    GenTree** InsertMidTreeReadBacks(GenTree** use);
+
     void ReadBackAfterCall(GenTreeCall* call, GenTree* user);
     bool IsPromotedStructLocalDying(GenTreeLclVarCommon* structLcl);
     void ReplaceLocal(GenTree** use, GenTree* user);
     void CheckForwardSubForLastUse(unsigned lclNum);
-    void WriteBackBefore(GenTree** use, unsigned lcl, unsigned offs, unsigned size);
+    void WriteBackBeforeCurrentStatement(unsigned lcl, unsigned offs, unsigned size);
+    void WriteBackBeforeUse(GenTree** use, unsigned lcl, unsigned offs, unsigned size);
     void MarkForReadBack(GenTreeLclVarCommon* lcl, unsigned size DEBUGARG(const char* reason));
 
     void HandleStructStore(GenTree** use, GenTree* user);

@@ -1,15 +1,29 @@
 // Licensed to the .NET Foundation under one or more agreements.
 // The .NET Foundation licenses this file to you under the MIT license.
 
+using Microsoft.DotNet.XUnitExtensions;
 using System.Collections.Generic;
+using System.Reflection;
+using System.Text;
 using Test.Cryptography;
+using Microsoft.DotNet.RemoteExecutor;
 using Xunit;
+using System.Linq;
 
 namespace System.Security.Cryptography.X509Certificates.Tests
 {
     [SkipOnPlatform(TestPlatforms.Browser, "Browser doesn't support X.509 certificates")]
     public static class PfxTests
     {
+        private const long UnspecifiedIterations = -2;
+        private const long UnlimitedIterations = -1;
+        internal const long DefaultIterations = 600_000;
+        private const long DefaultIterationsWindows = 600_000;
+
+        // We don't know for sure this is a correct Windows version when this support was added but
+        // we know for a fact lower versions don't support it.
+        public static bool Pkcs12PBES2Supported => !PlatformDetection.IsWindows || PlatformDetection.IsWindows10Version1703OrGreater;
+
         public static IEnumerable<object[]> BrainpoolCurvesPfx
         {
             get
@@ -454,6 +468,65 @@ namespace System.Security.Cryptography.X509Certificates.Tests
             }
         }
 
+        [ConditionalTheory]
+        [MemberData(memberName: nameof(PfxIterationCountTests.GetCertsWith_IterationCountNotExceedingDefaultLimit_AndNullOrEmptyPassword_MemberData), MemberType = typeof(PfxIterationCountTests))]
+        public static void TestIterationCounter(string name, bool usesPbes2, byte[] blob, int iterationCount)
+        {
+            _ = iterationCount;
+
+            MethodInfo method = typeof(X509Certificate).GetMethod("GetIterationCount", BindingFlags.Static | BindingFlags.NonPublic);
+            GetIterationCountDelegate target = method.CreateDelegate<GetIterationCountDelegate>();
+
+            if (usesPbes2 && !Pkcs12PBES2Supported)
+            {
+                throw new SkipTestException(name + " uses PBES2, which is not supported on this version.");
+            }
+
+            try
+            {
+                long count = (long)target(blob, out int bytesConsumed);
+                Assert.Equal(iterationCount, count);
+                Assert.Equal(blob.Length, bytesConsumed); // we currently don't have any cert with trailing data.
+            }
+            catch (Exception e)
+            {
+                throw new Exception($"There's an error on certificate {name}, see inner exception for details", e);
+            }
+        }
+
+        internal static bool IsPkcs12IterationCountAllowed(long iterationCount, long allowedIterations)
+        {
+            if (allowedIterations == UnlimitedIterations)
+            {
+                return true;
+            }
+
+            if (allowedIterations == UnspecifiedIterations)
+            {
+                allowedIterations = DefaultIterations;
+            }
+
+            Assert.True(allowedIterations >= 0);
+
+            return iterationCount <= allowedIterations;
+        }
+
+        // This is a horrible way to produce SecureString. SecureString is deprecated and should not be used.
+        // This is only reasonable because it is a test driver.
+        internal static SecureString GetSecureString(string password)
+        {
+            if (password == null)
+                return null;
+
+            SecureString secureString = new SecureString();
+            foreach (char c in password)
+            {
+                secureString.AppendChar(c);
+            }
+
+            return secureString;
+        }
+
         // Keep the ECDsaCng-ness contained within this helper method so that it doesn't trigger a
         // FileNotFoundException on Unix.
         private static void AssertEccAlgorithm(ECDsa ecdsa, string algorithmId)
@@ -482,5 +555,7 @@ namespace System.Security.Cryptography.X509Certificates.Tests
             c.Dispose();
             return newC;
         }
+
+        internal delegate ulong GetIterationCountDelegate(ReadOnlySpan<byte> pkcs12, out int bytesConsumed);
     }
 }

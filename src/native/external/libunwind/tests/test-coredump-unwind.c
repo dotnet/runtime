@@ -141,7 +141,7 @@ static void verror_msg_helper(const char *s,
   if (flags & LOGMODE_STDIO)
     {
       fflush(stdout);
-      write(STDERR_FILENO, msg, used + msgeol_len);
+      ssize_t written UNUSED = write(STDERR_FILENO, msg, used + msgeol_len);
     }
   msg[used] = '\0'; /* remove msg_eol (usually "\n") */
   if (flags & LOGMODE_SYSLOG)
@@ -244,8 +244,7 @@ void handle_sigsegv(int sig, siginfo_t *info, void *ucontext)
   {
     /* glibc extension */
     void *array[50];
-    int size;
-    size = backtrace(array, 50);
+    int size UNUSED = backtrace(array, 50);
 #if defined __linux__ && HAVE_EXECINFO_H
     backtrace_symbols_fd(array, size, 2);
 #endif
@@ -314,17 +313,6 @@ main(int argc UNUSED, char **argv)
     logmode = LOGMODE_NONE;
     argv++;
   }
-
-  while (*argv)
-    {
-      char *colon;
-      unsigned long vaddr = strtoul(*argv, &colon, 16);
-      if (*colon != ':')
-        error_msg_and_die("Bad format: '%s'", *argv);
-      if (_UCD_add_backing_file_at_vaddr(ui, vaddr, colon + 1) < 0)
-        error_msg("Can't add backing file '%s'", colon + 1);
-      argv++;
-    }
 
   for (;;)
     {

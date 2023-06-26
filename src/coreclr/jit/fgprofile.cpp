@@ -3449,13 +3449,16 @@ void EfficientEdgeCountReconstructor::Solve()
                                "\n",
                         resolvedEdge->m_sourceBlock->bbNum, resolvedEdge->m_targetBlock->bbNum, weight);
 
-                // If we arrive at a negative count for this edge, set it to zero.
+                // If we arrive at a negative count for this edge, set it to a small fraction of the block weight.
+                //
+                // Note this can happen somewhat frequently because of inconsistent counts from
+                // scalable or racing counters.
                 //
                 if (weight < 0)
                 {
-                    JITDUMP(" .... weight was negative, setting to zero\n");
                     NegativeCount();
-                    weight = 0;
+                    weight = info->m_weight * ProfileSynthesis::epsilon;
+                    JITDUMP(" .... weight was negative, setting it to " FMT_WT "\n", weight);
                 }
 
                 resolvedEdge->m_weight      = weight;
@@ -3496,13 +3499,16 @@ void EfficientEdgeCountReconstructor::Solve()
                                "\n",
                         resolvedEdge->m_sourceBlock->bbNum, resolvedEdge->m_targetBlock->bbNum, weight);
 
-                // If we arrive at a negative count for this edge, set it to zero.
+                // If we arrive at a negative count for this edge, set it to a small fraction of the block weight.
+                //
+                // Note this can happen somewhat frequently because of inconsistent counts from
+                // scalable or racing counters.
                 //
                 if (weight < 0)
                 {
-                    JITDUMP(" .... weight was negative, setting to zero\n");
                     NegativeCount();
-                    weight = 0;
+                    weight = info->m_weight * ProfileSynthesis::epsilon;
+                    JITDUMP(" .... weight was negative, setting it to " FMT_WT "\n", weight);
                 }
 
                 resolvedEdge->m_weight      = weight;
