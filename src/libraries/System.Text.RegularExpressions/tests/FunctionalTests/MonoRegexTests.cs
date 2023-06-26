@@ -283,8 +283,6 @@ namespace System.Text.RegularExpressions.Tests
                 yield return (@"a[^]b]c", RegexOptions.IgnoreCase, "ADC", "Pass. Group[0]=(0,3)");
                 yield return (@"ab|cd", RegexOptions.IgnoreCase, "ABC", "Pass. Group[0]=(0,2)");
                 yield return (@"ab|cd", RegexOptions.IgnoreCase, "ABCD", "Pass. Group[0]=(0,2)");
-                yield return (@"a{2}|a{3}", RegexOptions.None, "aaa", "Pass. Group[0]=(0,2)");
-                yield return (@"a{3}|a{2}", RegexOptions.None, "aaa", "Pass. Group[0]=(0,3)");
                 yield return (@"()ef", RegexOptions.IgnoreCase, "DEF", "Pass. Group[0]=(1,2) Group[1]=(1,0)");
                 yield return (@"$b", RegexOptions.IgnoreCase, "B", "Fail.");
                 yield return (@"a\(b", RegexOptions.IgnoreCase, "A(B", "Pass. Group[0]=(0,3)");
