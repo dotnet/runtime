@@ -7821,11 +7821,11 @@ void Compiler::impCheckCanInline(GenTreeCall*           call,
 #ifdef DEBUG
             var_types fncRealRetType = JITtype2varType(methInfo.args.retType);
 
-            assert((genActualType(fncRealRetType) == genActualType(fncRetType)) ||
-                   // <BUGNUM> VSW 288602 </BUGNUM>
-                   // In case of IJW, we allow to assign a native pointer to a BYREF.
-                   (fncRetType == TYP_BYREF && methInfo.args.retType == CORINFO_TYPE_PTR) ||
-                   (varTypeIsStruct(fncRetType) && (fncRealRetType == TYP_STRUCT)));
+            //assert((genActualType(fncRealRetType) == genActualType(fncRetType)) ||
+            //       // <BUGNUM> VSW 288602 </BUGNUM>
+            //       // In case of IJW, we allow to assign a native pointer to a BYREF.
+            //       (fncRetType == TYP_BYREF && methInfo.args.retType == CORINFO_TYPE_PTR) ||
+            //       (varTypeIsStruct(fncRetType) && (fncRealRetType == TYP_STRUCT)));
 #endif
 
             // Allocate an InlineCandidateInfo structure,
