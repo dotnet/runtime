@@ -874,7 +874,7 @@ namespace System
                 return false;
             }
 
-            ref Guid guid = ref Unsafe.As<byte, Guid>(ref MemoryMarshal.GetReference(destination));
+            ref Guid guid = ref MemoryMarshal.AsRef<Guid>(destination);
             guid = this;
 
             if (BitConverter.IsLittleEndian == bigEndian)
