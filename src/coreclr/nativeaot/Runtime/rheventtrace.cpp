@@ -355,13 +355,3 @@ void ETW::TypeSystemLog::LogTypeAndParametersIfNecessary(BulkTypeEventLogger * p
 
 #endif // defined(FEATURE_EVENT_TRACE)
 }
-
-EXTERN_C NATIVEAOT_API void __cdecl RhpEtwExceptionThrown(LPCWSTR exceptionTypeName, LPCWSTR exceptionMessage, void* faultingIP, HRESULT hresult)
-{
-    FireEtwExceptionThrown_V1(exceptionTypeName,
-        exceptionMessage,
-        faultingIP,
-        hresult,
-        0,
-        GetClrInstanceId());
-}

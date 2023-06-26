@@ -265,4 +265,14 @@ EXTERN_C NATIVEAOT_API void __cdecl RhEventPipeInternal_LogThreadPoolIOPack(uint
     FireEtwThreadPoolIOPack(NativeOverlapped, Overlapped, ClrInstanceID);
 }
 
+EXTERN_C NATIVEAOT_API void __cdecl RhpEtwExceptionThrown(LPCWSTR exceptionTypeName, LPCWSTR exceptionMessage, void* faultingIP, HRESULT hresult)
+{
+    FireEtwExceptionThrown_V1(exceptionTypeName,
+        exceptionMessage,
+        faultingIP,
+        hresult,
+        0,
+        GetClrInstanceId());
+}
+
 #endif // FEATURE_PERFTRACING
