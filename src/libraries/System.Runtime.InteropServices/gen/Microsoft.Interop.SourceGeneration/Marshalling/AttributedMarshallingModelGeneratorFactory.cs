@@ -429,7 +429,7 @@ namespace Microsoft.Interop
             ByValueMarshalKindSupport byValueMarshalKindSupport;
             if (info.ManagedType is not SzArrayType)
             {
-                // We only support any [In, Out] attribute combinations on array types.
+                // We only support the [In] and [Out] attributes on array types.
                 byValueMarshalKindSupport = ByValueMarshalKindSupport.NotSupported;
             }
             else if (!elementIsBlittable || ElementTypeIsSometimesNonBlittable(elementInfo))
