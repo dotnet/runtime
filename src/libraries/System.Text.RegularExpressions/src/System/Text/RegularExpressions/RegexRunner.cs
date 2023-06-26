@@ -33,7 +33,7 @@ namespace System.Text.RegularExpressions
         /// <summary> Starting point for search</summary>
         protected internal int runtextstart;
 
-        /// <summary>Text to search</summary>
+        /// <summary>Text to search. May be null if the input was supplied as a span.</summary>
         protected internal string? runtext;
 
         /// <summary>Current position in text</summary>
