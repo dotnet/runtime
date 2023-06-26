@@ -73,8 +73,12 @@ namespace Mono.Linker.Steps
 			if (_context.TryResolve (method.ReturnType) is not TypeDefinition targetType)
 				return;
 
-			foreach (MethodDefinition ctor in targetType.GetConstructorsOnType (null, bindingFlags: null))
-				_markStep.MarkMethodVisibleToReflection (ctor, new DependencyInfo (DependencyKind.UnsafeAccessorTarget, method), new MessageOrigin (method));
+			foreach (MethodDefinition targetMethod in targetType.Methods) {
+				if (!targetMethod.IsConstructor || targetMethod.IsStatic)
+					continue;
+
+				_markStep.MarkMethodVisibleToReflection (targetMethod, new DependencyInfo (DependencyKind.UnsafeAccessorTarget, method), new MessageOrigin (method));
+			}
 		}
 
 		void ProcessStaticMethodAccessor (MethodDefinition method, string? name)
@@ -90,11 +94,12 @@ namespace Mono.Linker.Steps
 			if (_context.TryResolve (method.Parameters[0].ParameterType) is not TypeDefinition targetType)
 				return;
 
-			foreach (MethodDefinition targetMethod in targetType.GetMethodsOnTypeHierarchy (_context, MethodFilter, bindingFlags: null))
-				_markStep.MarkMethodVisibleToReflection (targetMethod, new DependencyInfo (DependencyKind.UnsafeAccessorTarget, method), new MessageOrigin (method));
+			foreach (MethodDefinition targetMethod in targetType.Methods) {
+				if (targetMethod.Name != name || !targetMethod.IsStatic)
+					continue;
 
-			bool MethodFilter (MethodDefinition m)
-				=> m.Name == name && m.IsStatic;
+				_markStep.MarkMethodVisibleToReflection (targetMethod, new DependencyInfo (DependencyKind.UnsafeAccessorTarget, method), new MessageOrigin (method));
+			}
 		}
 
 		void ProcessInstanceMethodAccessor (MethodDefinition method, string? name)
@@ -110,11 +115,12 @@ namespace Mono.Linker.Steps
 			if (_context.TryResolve (method.Parameters[0].ParameterType) is not TypeDefinition targetType)
 				return;
 
-			foreach (MethodDefinition targetMethod in targetType.GetMethodsOnTypeHierarchy (_context, MethodFilter, bindingFlags: null))
-				_markStep.MarkMethodVisibleToReflection (targetMethod, new DependencyInfo (DependencyKind.UnsafeAccessorTarget, method), new MessageOrigin (method));
+			foreach (MethodDefinition targetMethod in targetType.Methods) {
+				if (targetMethod.Name != name || targetMethod.IsStatic)
+					continue;
 
-			bool MethodFilter (MethodDefinition m)
-				=> m.Name == name && !m.IsStatic;
+				_markStep.MarkMethodVisibleToReflection (targetMethod, new DependencyInfo (DependencyKind.UnsafeAccessorTarget, method), new MessageOrigin (method));
+			}
 		}
 	}
 }

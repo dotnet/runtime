@@ -81,7 +81,7 @@ namespace Mono.Linker.Tests.Cases.Reflection
 					[Kept]
 					public static void Test ()
 					{
-						var instance = (AccessCtorAsMethod)RuntimeHelpers.GetUninitializedObject(typeof(AccessCtorAsMethod));
+						var instance = (AccessCtorAsMethod) RuntimeHelpers.GetUninitializedObject (typeof (AccessCtorAsMethod));
 						CallPrivateConstructor (instance);
 					}
 				}
@@ -198,7 +198,7 @@ namespace Mono.Linker.Tests.Cases.Reflection
 				[Kept]
 				[KeptAttributeAttribute (typeof (UnsafeAccessorAttribute))]
 				[UnsafeAccessor (UnsafeAccessorKind.StaticMethod, Name = "NonExistingName")]
-				extern static void DifferentName(MethodWithoutParametersTarget target);
+				extern static void DifferentName (MethodWithoutParametersTarget target);
 
 				[Kept]
 				public static void Test ()
@@ -305,7 +305,7 @@ namespace Mono.Linker.Tests.Cases.Reflection
 			class MethodWithoutParameters
 			{
 				[Kept]
-				[KeptMember(".ctor()")]
+				[KeptMember (".ctor()")]
 				class MethodWithoutParametersTarget
 				{
 					[Kept]
@@ -461,11 +461,80 @@ namespace Mono.Linker.Tests.Cases.Reflection
 			}
 
 			[Kept]
+			class InheritanceTest
+			{
+				[Kept]
+				[KeptMember (".ctor()")]
+				class InheritanceTargetBase
+				{
+					private void OnBase () { }
+
+					private void OnBoth () { }
+
+					public void PublicOnBase () { }
+
+					public void PublicOnBoth () { }
+				}
+
+				[Kept]
+				[KeptMember (".ctor()")]
+				[KeptBaseType (typeof (InheritanceTargetBase))]
+				class InheritanceTargetDerived : InheritanceTargetBase
+				{
+					[Kept]
+					private void OnDerived () { }
+
+					[Kept (By = Tool.Trimmer)]
+					private void OnBoth (string s) { }
+
+					[Kept (By = Tool.Trimmer)]
+					public void PublicOnBoth (string s) { }
+				}
+
+				[Kept]
+				[KeptAttributeAttribute (typeof (UnsafeAccessorAttribute))]
+				[UnsafeAccessor (UnsafeAccessorKind.Method)]
+				extern static void OnBase (InheritanceTargetDerived t);
+
+				[Kept]
+				[KeptAttributeAttribute (typeof (UnsafeAccessorAttribute))]
+				[UnsafeAccessor (UnsafeAccessorKind.Method)]
+				extern static void OnDerived (InheritanceTargetDerived t);
+
+				[Kept]
+				[KeptAttributeAttribute (typeof (UnsafeAccessorAttribute))]
+				[UnsafeAccessor (UnsafeAccessorKind.Method)]
+				extern static void OnBoth (InheritanceTargetDerived t);
+
+				[Kept]
+				[KeptAttributeAttribute (typeof (UnsafeAccessorAttribute))]
+				[UnsafeAccessor (UnsafeAccessorKind.Method)]
+				extern static void PublicOnBase (InheritanceTargetDerived t);
+
+				[Kept]
+				[KeptAttributeAttribute (typeof (UnsafeAccessorAttribute))]
+				[UnsafeAccessor (UnsafeAccessorKind.Method)]
+				extern static void PublicOnBoth (InheritanceTargetDerived t);
+
+				[Kept]
+				public static void Test ()
+				{
+					InheritanceTargetDerived derived = new InheritanceTargetDerived ();
+					OnBase (derived);
+					OnDerived (derived);
+					OnBoth (derived);
+					PublicOnBase (derived);
+					PublicOnBoth (derived);
+				}
+			}
+
+			[Kept]
 			public static void Test ()
 			{
 				MethodWithoutParameters.Test ();
 				MethodWithParameter.Test ();
 				CustomModifiersTest.Test ();
+				InheritanceTest.Test ();
 			}
 		}
 
