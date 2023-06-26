@@ -48,6 +48,14 @@ namespace System.Runtime.CompilerServices.Tests
         }
 
         [Fact]
+        public static void CollectionBuilderAttributeTests()
+        {
+            var attr = new CollectionBuilderAttribute(typeof(AttributesTests), "Create");
+            Assert.Same(typeof(AttributesTests), attr.BuilderType);
+            Assert.Equal("Create", attr.MethodName);
+        }
+
+        [Fact]
         public static void CompilationRelaxationsAttributeTests()
         {
             var attr1 = new CompilationRelaxationsAttribute(42);
