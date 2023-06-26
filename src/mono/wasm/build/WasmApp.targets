@@ -28,6 +28,7 @@
       - $(WasmProfilers)     - Profilers to use
       - $(AOTProfilePath)    - profile data file to be used for profile-guided optimization
       - $(InvariantGlobalization)       - Whenever to disable ICU. Defaults to false.
+      - $(InvariantTimezone)            - Whenever to disable Timezone database. Defaults to false.
       - $(HybridGlobalization)          - Whenever to enable reduced ICU + native platform functions. Defaults to false and can be set only for InvariantGlobalization=false, WasmIncludeFullIcuData=false and empty WasmIcuDataFileName.
 
       - $(WasmResolveAssembliesBeforeBuild) - Resolve the assembly dependencies. Defaults to false
