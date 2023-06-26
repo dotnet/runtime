@@ -56,7 +56,7 @@ namespace System
                 ThrowGuidArrayCtorArgumentException();
             }
 
-            this = Unsafe.As<byte, Guid>(ref MemoryMarshal.GetReference(b));
+            this = MemoryMarshal.Read<Guid>(b);
 
             if (!BitConverter.IsLittleEndian)
             {
@@ -73,7 +73,7 @@ namespace System
                 ThrowGuidArrayCtorArgumentException();
             }
 
-            this = Unsafe.As<byte, Guid>(ref MemoryMarshal.GetReference(b));
+            this = MemoryMarshal.Read<Guid>(b);
 
             if (BitConverter.IsLittleEndian == bigEndian)
             {
@@ -83,6 +83,7 @@ namespace System
             }
         }
 
+        [DoesNotReturn]
         [StackTraceHidden]
         private static void ThrowGuidArrayCtorArgumentException()
         {
