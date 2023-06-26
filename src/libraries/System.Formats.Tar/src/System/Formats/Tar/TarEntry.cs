@@ -343,37 +343,32 @@ namespace System.Formats.Tar
             if (EntryType is TarEntryType.SymbolicLink)
             {
                 // LinkName is an absolute path, or path relative to the fileDestinationPath directory.
+                // We don't check if the LinkName is empty. In that case, creation of the link will fail because link targets can't be empty.
                 string linkName = ArchivingUtils.SanitizeEntryFilePath(LinkName, preserveDriveRoot: true);
-                if (linkName.Length == 0)
-                {
-                    throw new InvalidDataException(SR.TarEntryHardLinkOrSymlinkLinkNameEmpty);
-                }
-
-                // Disallow link targets that point outside the destination directory.
-                linkTargetPath = GetFullDestinationPath(
-                                    destinationDirectoryPath,
-                                    Path.IsPathFullyQualified(linkName) ? linkName : Path.Join(Path.GetDirectoryName(fileDestinationPath), linkName));
-                if (linkTargetPath == null)
+                string? linkDestination = GetFullDestinationPath(
+                                            destinationDirectoryPath,
+                                            Path.IsPathFullyQualified(linkName) ? linkName : Path.Join(Path.GetDirectoryName(fileDestinationPath), linkName));
+                if (linkDestination is null)
                 {
                     throw new IOException(SR.Format(SR.TarExtractingResultsLinkOutside, linkName, destinationDirectoryPath));
                 }
+                // Use the linkName for creating the symbolic link.
                 linkTargetPath = linkName;
             }
             else if (EntryType is TarEntryType.HardLink)
             {
                 // LinkName is path relative to the destinationDirectoryPath.
+                // We don't check if the LinkName is empty. In that case, creation of the link will fail because a hard link can't target a directory.
                 string linkName = ArchivingUtils.SanitizeEntryFilePath(LinkName, preserveDriveRoot: false);
-                if (linkName.Length == 0)
-                {
-                    throw new InvalidDataException(SR.TarEntryHardLinkOrSymlinkLinkNameEmpty);
-                }
-
-                // Disallow link targets that point outside the destination directory.
-                linkTargetPath = GetFullDestinationPath(destinationDirectoryPath, Path.Join(destinationDirectoryPath, linkName));
-                if (linkTargetPath == null)
+                string? linkDestination = GetFullDestinationPath(
+                                            destinationDirectoryPath,
+                                            Path.Join(destinationDirectoryPath, linkName));
+                if (linkDestination is null)
                 {
                     throw new IOException(SR.Format(SR.TarExtractingResultsLinkOutside, linkName, destinationDirectoryPath));
                 }
+                // Use the target path for creating the hard link.
+                linkTargetPath = linkDestination;
             }
 
             return (fileDestinationPath, linkTargetPath);
@@ -383,8 +378,7 @@ namespace System.Formats.Tar
         private static string? GetFullDestinationPath(string destinationDirectoryFullPath, string qualifiedPath)
         {
             Debug.Assert(Path.IsPathFullyQualified(qualifiedPath), $"{qualifiedPath} is not qualified");
-
-            destinationDirectoryFullPath = PathInternal.EnsureTrailingSeparator(destinationDirectoryFullPath);
+            Debug.Assert(PathInternal.EndsInDirectorySeparator(destinationDirectoryFullPath), "caller must ensure the path ends with a separator.");
 
             string fullPath = Path.GetFullPath(qualifiedPath); // Removes relative segments
 
