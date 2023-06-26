@@ -2589,6 +2589,9 @@ GenTree* Compiler::impIntrinsic(GenTree*                newobjThis,
             case NI_System_Threading_Interlocked_MemoryBarrier:
             case NI_System_Threading_Interlocked_ReadMemoryBarrier:
 
+            case NI_System_Threading_Volatile_Read:
+            case NI_System_Threading_Volatile_Write:
+
                 betterToExpand = true;
                 break;
 
@@ -3839,6 +3842,25 @@ GenTree* Compiler::impIntrinsic(GenTree*                newobjThis,
                     op1     = impImplicitR4orR8Cast(op1, TYP_FLOAT);
                     retNode = gtNewBitCastNode(TYP_INT, op1);
                 }
+                break;
+            }
+
+            case NI_System_Threading_Volatile_Read:
+            {
+                retNode = gtNewIndir(TypeHandleToVarType(sig->retTypeSigClass), impPopStack().val, GTF_IND_VOLATILE);
+                break;
+            }
+
+            case NI_System_Threading_Volatile_Write:
+            {
+                CORINFO_CLASS_HANDLE typeHnd     = nullptr;
+                CorInfoType          baseJitType = strip(info.compCompHnd->getArgType(sig, info.compCompHnd->getArgNext(sig->args), &typeHnd));
+                var_types            type        = JITtype2varType(baseJitType);
+
+                GenTree* value = impPopStack().val;
+                GenTree* addr  = impPopStack().val;
+
+                retNode = gtNewStoreIndNode(type, addr, value, GTF_IND_VOLATILE);
                 break;
             }
 
@@ -9153,6 +9175,17 @@ NamedIntrinsic Compiler::lookupNamedIntrinsic(CORINFO_METHOD_HANDLE method)
                     else if (strcmp(methodName, "get_ManagedThreadId") == 0)
                     {
                         result = NI_System_Threading_Thread_get_ManagedThreadId;
+                    }
+                }
+                else if (strcmp(className, "Volatile") == 0)
+                {
+                    if (strcmp(methodName, "Read") == 0)
+                    {
+                        result = NI_System_Threading_Volatile_Read;
+                    }
+                    else if (strcmp(methodName, "Write") == 0)
+                    {
+                        result = NI_System_Threading_Volatile_Write;
                     }
                 }
             }
