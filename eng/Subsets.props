@@ -317,6 +317,7 @@
                             CMakeArgs=$(CMakeArgs) -DCLR_CROSS_COMPONENTS_BUILD=1"
       Category="clr" />
     <ProjectToBuild Include="$(CoreClrProjectRoot)tools\aot\ILCompiler\ILCompiler.csproj" Category="clr" AdditionalProperties="$(NativeAOTAdditionalProperties)" />
+    <ProjectToBuild Include="$(CoreClrProjectRoot)tools\aot\ILCompiler.Build.Tasks\ILCompiler.Build.Tasks.csproj" Category="clr" AdditionalProperties="$(NativeAOTAdditionalProperties)" />
     <ProjectToBuild Include="$(CoreClrProjectRoot)nativeaot\BuildIntegration\BuildIntegration.proj" Category="clr" AdditionalProperties="$(NativeAOTAdditionalProperties)" />
   </ItemGroup>
 
