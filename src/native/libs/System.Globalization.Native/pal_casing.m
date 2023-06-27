@@ -8,21 +8,6 @@
 
 #if defined(TARGET_OSX) || defined(TARGET_MACCATALYST) || defined(TARGET_IOS) || defined(TARGET_TVOS)
 
-static NSLocale* GetCurrentLocale(const uint16_t* localeName, int32_t lNameLength)
-{
-    NSLocale *currentLocale;
-    if(localeName == NULL || lNameLength == 0)
-    {
-        currentLocale = [NSLocale systemLocale];
-    }
-    else
-    {
-        NSString *locName = [NSString stringWithCharacters: localeName length: lNameLength];
-        currentLocale = [NSLocale localeWithLocaleIdentifier:locName];
-    }
-    return currentLocale;
-}
-
 typedef enum
 {
     ERROR_SUCCESS = 0,
@@ -35,8 +20,10 @@ typedef enum
  * The offset points to the current end of the string contents
  * and is advanced (post-increment).
  * "Safe" macro, checks for a valid code point.
- * Converts code points outside of Basic Multilingual Plane into 
+ * Converts code points outside of Basic Multilingual Plane into
  * corresponding surrogate pairs if sufficient space in the string.
+ * High surrogate range: 0xD800 - 0xDBFF 
+ * Low surrogate range: 0xDC00 - 0xDFFF
  * If the code point is not valid or a trail surrogate does not fit,
  * then isError is set to true.
  *
@@ -69,7 +56,16 @@ Returns 0 for success, non-zero on failure see ErrorCodes.
 int32_t GlobalizationNative_ChangeCaseNative(const uint16_t* localeName, int32_t lNameLength,
                                              const uint16_t* lpSrc, int32_t cwSrcLength, uint16_t* lpDst, int32_t cwDstLength, int32_t bToUpper)
 {
-    NSLocale *currentLocale = GetCurrentLocale(localeName, lNameLength);
+    NSLocale *currentLocale;
+    if(localeName == NULL || lNameLength == 0)
+    {
+        currentLocale = [NSLocale systemLocale];
+    }
+    else
+    {
+        NSString *locName = [NSString stringWithCharacters: localeName length: lNameLength];
+        currentLocale = [NSLocale localeWithLocaleIdentifier:locName];
+    }
     NSString *source = [NSString stringWithCharacters: lpSrc length: cwSrcLength];
     NSString *result = bToUpper ? [source uppercaseStringWithLocale:currentLocale] : [source lowercaseStringWithLocale:currentLocale];
 
