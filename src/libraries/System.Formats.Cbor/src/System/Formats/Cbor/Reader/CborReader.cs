@@ -9,7 +9,7 @@ namespace System.Formats.Cbor
     /// <summary>A stateful, forward-only reader for Concise Binary Object Representation (CBOR) encoded data.</summary>
     public partial class CborReader
     {
-        private readonly ReadOnlyMemory<byte> _data;
+        private ReadOnlyMemory<byte> _data;
         private int _offset;
 
         private Stack<StackFrame>? _nestedDataItems;
@@ -60,7 +60,7 @@ namespace System.Formats.Cbor
             _data = data;
             ConformanceMode = conformanceMode;
             AllowMultipleRootLevelValues = allowMultipleRootLevelValues;
-            _definiteLength = allowMultipleRootLevelValues ? null : (int?)1;
+            _definiteLength = allowMultipleRootLevelValues ? null : 1;
         }
 
         /// <summary>Reads the next CBOR data item, returning a <see cref="ReadOnlyMemory{T}" /> view of the encoded value. For indefinite length encodings this includes the break byte.</summary>
@@ -79,6 +79,34 @@ namespace System.Formats.Cbor
 
             // return the slice corresponding to the consumed value
             return _data.Slice(initialOffset, _offset - initialOffset);
+        }
+
+        /// <summary>
+        /// Resets the <see cref="CborReader"/> instance over the specified <paramref name="data"/>
+        /// </summary>
+        /// <param name="data"></param>
+        public void Reset(ReadOnlyMemory<byte> data)
+        {
+            // ConformanceMode = conformanceMode;
+            // AllowMultipleRootLevelValues = allowMultipleRootLevelValues;
+
+            _data = data;
+            _offset = 0;
+
+            _nestedDataItems?.Clear();
+            _currentMajorType = default;
+            _definiteLength = AllowMultipleRootLevelValues ? null : 1;
+            _itemsRead = default;
+            _frameOffset = default;
+            _isTagContext = default;
+            _currentKeyOffset = default;
+            _previousKeyEncodingRange = default;
+            _keyEncodingRanges?.Clear();
+            _isConformanceModeCheckEnabled = true;
+            _cachedState = CborReaderState.Undefined;
+
+            _pooledKeyEncodingRangeAllocations?.Clear();
+            _indefiniteLengthStringRangeAllocation?.Clear();
         }
 
         private CborInitialByte PeekInitialByte()
