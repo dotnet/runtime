@@ -4078,7 +4078,7 @@ unsigned Compiler::gtSetMultiOpOrder(GenTreeMultiOp* multiOp)
            such cases, both sides have a level of 0. So encourage constants
            to be evaluated last in such cases */
 
-        if ((level == 0) && (level == lvl2) && op1->OperIsConst() &&
+        if ((level == 0) && (level == lvl2) && op1->OperIsConst() && !op2->OperIsConst() &&
             (multiOp->OperIsCommutative() || multiOp->OperIsCompare()))
         {
             lvl2++;
@@ -4091,7 +4091,7 @@ unsigned Compiler::gtSetMultiOpOrder(GenTreeMultiOp* multiOp)
         {
             if (multiOp->IsReverseOp())
             {
-                tryToSwap = (level > lvl2);
+                tryToSwap = (lvl2 < level);
             }
             else
             {
