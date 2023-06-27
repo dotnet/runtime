@@ -660,6 +660,7 @@ namespace System.Text.Json.Nodes
         public bool Contains(System.Text.Json.Nodes.JsonNode? item) { throw null; }
         public static System.Text.Json.Nodes.JsonArray? Create(System.Text.Json.JsonElement element, System.Text.Json.Nodes.JsonNodeOptions? options = default(System.Text.Json.Nodes.JsonNodeOptions?)) { throw null; }
         public System.Collections.Generic.IEnumerator<System.Text.Json.Nodes.JsonNode?> GetEnumerator() { throw null; }
+        public System.Collections.Generic.IEnumerable<T> GetValues<T>() { throw null; }
         public int IndexOf(System.Text.Json.Nodes.JsonNode? item) { throw null; }
         public void Insert(int index, System.Text.Json.Nodes.JsonNode? item) { }
         public bool Remove(System.Text.Json.Nodes.JsonNode? item) { throw null; }
@@ -679,8 +680,13 @@ namespace System.Text.Json.Nodes
         public System.Text.Json.Nodes.JsonArray AsArray() { throw null; }
         public System.Text.Json.Nodes.JsonObject AsObject() { throw null; }
         public System.Text.Json.Nodes.JsonValue AsValue() { throw null; }
+        public System.Text.Json.Nodes.JsonNode DeepClone() { throw null; }
+        public static bool DeepEquals(System.Text.Json.Nodes.JsonNode? node1, System.Text.Json.Nodes.JsonNode? node2) { throw null; }
+        public string GetPropertyName() { throw null; }
         public string GetPath() { throw null; }
         public virtual T GetValue<T>() { throw null; }
+        public JsonValueKind GetValueKind() { throw null; }
+        public int GetElementIndex() { throw null; }
         public static explicit operator bool (System.Text.Json.Nodes.JsonNode value) { throw null; }
         public static explicit operator byte (System.Text.Json.Nodes.JsonNode value) { throw null; }
         public static explicit operator char (System.Text.Json.Nodes.JsonNode value) { throw null; }
@@ -768,6 +774,10 @@ namespace System.Text.Json.Nodes
         public static System.Text.Json.Nodes.JsonNode? Parse(System.ReadOnlySpan<byte> utf8Json, System.Text.Json.Nodes.JsonNodeOptions? nodeOptions = default(System.Text.Json.Nodes.JsonNodeOptions?), System.Text.Json.JsonDocumentOptions documentOptions = default(System.Text.Json.JsonDocumentOptions)) { throw null; }
         public static System.Text.Json.Nodes.JsonNode? Parse([System.Diagnostics.CodeAnalysis.StringSyntaxAttribute("Json")] string json, System.Text.Json.Nodes.JsonNodeOptions? nodeOptions = default(System.Text.Json.Nodes.JsonNodeOptions?), System.Text.Json.JsonDocumentOptions documentOptions = default(System.Text.Json.JsonDocumentOptions)) { throw null; }
         public static System.Text.Json.Nodes.JsonNode? Parse(ref System.Text.Json.Utf8JsonReader reader, System.Text.Json.Nodes.JsonNodeOptions? nodeOptions = default(System.Text.Json.Nodes.JsonNodeOptions?)) { throw null; }
+
+        [System.Diagnostics.CodeAnalysis.RequiresDynamicCodeAttribute("Creating JsonValue instances with non-primitive types requires generating code at runtime.")]
+        [System.Diagnostics.CodeAnalysis.RequiresUnreferencedCodeAttribute("Creating JsonValue instances with non-primitive types is not compatible with trimming. It can result in non-primitive types being serialized, which may have their members trimmed.")]
+        public void ReplaceWith<T>(T value) { throw null; }
         public string ToJsonString(System.Text.Json.JsonSerializerOptions? options = null) { throw null; }
         public override string ToString() { throw null; }
         public abstract void WriteTo(System.Text.Json.Utf8JsonWriter writer, System.Text.Json.JsonSerializerOptions? options = null);
