@@ -3017,7 +3017,20 @@ void CodeGen::genFnPrologCalleeRegArgs(regNumber xtraReg, bool* pXtraRegClobbere
 #if defined(UNIX_AMD64_ABI)
         if (varTypeIsStruct(varDsc))
         {
-            CORINFO_CLASS_HANDLE typeHnd = varDsc->GetLayout()->GetClassHandle();
+            CORINFO_CLASS_HANDLE typeHnd;
+            if (varDsc->lvIsStructField)
+            {
+                // The only case we currently permit is a wrapped SIMD field,
+                // where we won't have the class handle available, so get it
+                // from the parent struct -- they will agree on ABI details.
+                LclVarDsc* parentDsc = compiler->lvaGetDesc(varDsc->lvParentLcl);
+                assert(varTypeIsSIMD(varDsc) && (parentDsc->lvFieldCnt == 1));
+                typeHnd = parentDsc->GetLayout()->GetClassHandle();
+            }
+            else
+            {
+                typeHnd = varDsc->GetLayout()->GetClassHandle();
+            }
             assert(typeHnd != nullptr);
             SYSTEMV_AMD64_CORINFO_STRUCT_REG_PASSING_DESCRIPTOR structDesc;
             compiler->eeGetSystemVAmd64PassStructInRegisterDescriptor(typeHnd, &structDesc);
@@ -3114,7 +3127,7 @@ void CodeGen::genFnPrologCalleeRegArgs(regNumber xtraReg, bool* pXtraRegClobbere
                 }
             }
 #if FEATURE_MULTIREG_ARGS
-            else if (compiler->lvaIsMultiregStruct(varDsc, compiler->info.compIsVarArgs))
+            else if (varDsc->lvIsMultiRegArg)
             {
                 if (varDsc->lvIsHfaRegArg())
                 {
@@ -3323,7 +3336,7 @@ void CodeGen::genFnPrologCalleeRegArgs(regNumber xtraReg, bool* pXtraRegClobbere
                 {
                     // This must be a SIMD type that's fully enregistered, but is passed as an HFA.
                     // Each field will be inserted into the same destination register.
-                    assert(varTypeIsSIMD(varDsc) && !compiler->isOpaqueSIMDType(varDsc->GetLayout()));
+                    assert(varTypeIsSIMD(varDsc));
                     assert(regArgTab[argNum].slot <= (int)varDsc->lvHfaSlots());
                     assert(argNum > 0);
                     assert(regArgTab[argNum - 1].varNum == varNum);

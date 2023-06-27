@@ -334,7 +334,7 @@ namespace System.Text.RegularExpressions
 
                     if (isQuantifier)
                     {
-                        AddUnitOne(CharAt(endpos - 1));
+                        _unit = RegexNode.CreateOneWithCaseConversion(CharAt(endpos - 1), _options, _culture, ref _caseBehavior);
                     }
                 }
 
@@ -380,7 +380,7 @@ namespace System.Text.RegularExpressions
                         PopGroup();
                         PopOptions();
 
-                        if (Unit() == null)
+                        if (_unit == null)
                         {
                             goto ContinueOuterScan;
                         }
@@ -392,15 +392,15 @@ namespace System.Text.RegularExpressions
                             throw MakeException(RegexParseError.UnescapedEndingBackslash, SR.UnescapedEndingBackslash);
                         }
 
-                        AddUnitNode(ScanBackslash(scanOnly: false)!);
+                        _unit = ScanBackslash(scanOnly: false)!;
                         break;
 
                     case '^':
-                        AddUnitType(UseOptionM() ? RegexNodeKind.Bol : RegexNodeKind.Beginning);
+                        _unit = new RegexNode(UseOptionM() ? RegexNodeKind.Bol : RegexNodeKind.Beginning, _options);
                         break;
 
                     case '$':
-                        AddUnitType(UseOptionM() ? RegexNodeKind.Eol : RegexNodeKind.EndZ);
+                        _unit = new RegexNode(UseOptionM() ? RegexNodeKind.Eol : RegexNodeKind.EndZ, _options);
                         break;
 
                     case '.':
@@ -413,7 +413,7 @@ namespace System.Text.RegularExpressions
                     case '*':
                     case '+':
                     case '?':
-                        if (Unit() == null)
+                        if (_unit == null)
                         {
                             throw wasPrevQuantifier ?
                                 MakeException(RegexParseError.NestedQuantifiersNotParenthesized, SR.Format(SR.NestedQuantifiersNotParenthesized, ch)) :
@@ -438,7 +438,7 @@ namespace System.Text.RegularExpressions
                 ch = RightCharMoveRight();
 
                 // Handle quantifiers
-                while (Unit() != null)
+                while (_unit != null)
                 {
                     int min = 0, max = 0;
 
@@ -514,7 +514,7 @@ namespace System.Text.RegularExpressions
 
             AddGroup();
 
-            return Unit()!.FinalOptimize();
+            return _unit!.FinalOptimize();
         }
 
         /*
@@ -547,7 +547,7 @@ namespace System.Text.RegularExpressions
                     if (RightCharMoveRight() == '$')
                     {
                         RegexNode node = ScanDollar();
-                        AddUnitNode(node);
+                        _unit = node;
                     }
 
                     AddConcatenate();
@@ -2246,18 +2246,6 @@ namespace System.Text.RegularExpressions
             _unit = null;
         }
 
-        /// <summary>Returns the current unit</summary>
-        private RegexNode? Unit() => _unit;
-
-        /// <summary>Sets the current unit to a single char node</summary>
-        private void AddUnitOne(char ch) => _unit = RegexNode.CreateOneWithCaseConversion(ch, _options, _culture, ref _caseBehavior);
-
-        /// <summary>Sets the current unit to a subtree</summary>
-        private void AddUnitNode(RegexNode node) => _unit = node;
-
-        /// <summary>Sets the current unit to an assertion of the specified type</summary>
-        private void AddUnitType(RegexNodeKind type) => _unit = new RegexNode(type, _options);
-
         /// <summary>Finish the current group (in response to a ')' or end)</summary>
         private void AddGroup()
         {
@@ -2306,8 +2294,6 @@ namespace System.Text.RegularExpressions
 
         /// <summary>Moves the current position to the right.</summary>
         private void MoveRight() => _currentPos++;
-
-        private void MoveRight(int i) => _currentPos += i;
 
         /// <summary>Moves the current parsing position one to the left.</summary>
         private void MoveLeft() => --_currentPos;

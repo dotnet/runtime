@@ -51,14 +51,11 @@ namespace Wasm.Build.Tests
         [Theory]
         [BuildAndRun(aot: false)]
         [BuildAndRun(aot: true)]
-        [ActiveIssue("https://github.com/dotnet/runtime/issues/82725")]
         public void ProjectUsingSkiaSharp(BuildArgs buildArgs, RunHost host, string id)
         {
             string projectName = $"AppUsingSkiaSharp";
             buildArgs = buildArgs with { ProjectName = projectName };
             buildArgs = ExpandBuildArgs(buildArgs,
-                            // FIXME: temporary, till `main` is either completely on 3.1.7, or 3.1.12
-                            extraProperties: "<EmccExtraLDFlags>-s ERROR_ON_UNDEFINED_SYMBOLS=0</EmccExtraLDFlags>",
                             extraItems: @$"
                                 {GetSkiaSharpReferenceItems()}
                                 <WasmFilesToIncludeInFileSystem Include=""{Path.Combine(BuildEnvironment.TestAssetsPath, "mono.png")}"" />

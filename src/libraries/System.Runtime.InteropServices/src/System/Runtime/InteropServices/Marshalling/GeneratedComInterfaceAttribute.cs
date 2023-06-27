@@ -7,6 +7,14 @@ namespace System.Runtime.InteropServices.Marshalling
     public class GeneratedComInterfaceAttribute : Attribute
     {
         /// <summary>
+        /// Options for how to generate COM interface interop with the COM interop source generator.
+        /// </summary>
+        /// <remarks>
+        /// The default options generate both a managed object wrapper and a COM object wrapper.
+        /// </remarks>
+        public ComInterfaceOptions Options { get; set; } = ComInterfaceOptions.ManagedObjectWrapper | ComInterfaceOptions.ComObjectWrapper;
+
+        /// <summary>
         /// Gets or sets how to marshal string arguments to all methods on the interface.
         /// If the attributed interface inherits from another interface with <see cref="GeneratedComInterfaceAttribute"/>,
         /// it must have the same values for <see cref="StringMarshalling"/> and <see cref="StringMarshallingCustomType"/>.

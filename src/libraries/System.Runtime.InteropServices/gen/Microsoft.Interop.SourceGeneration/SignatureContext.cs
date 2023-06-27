@@ -12,7 +12,6 @@ using System.Threading;
 using Microsoft.CodeAnalysis;
 using Microsoft.CodeAnalysis.CSharp;
 using Microsoft.CodeAnalysis.CSharp.Syntax;
-using Microsoft.CodeAnalysis.Diagnostics;
 using static Microsoft.CodeAnalysis.CSharp.SyntaxFactory;
 
 namespace Microsoft.Interop
@@ -43,9 +42,24 @@ namespace Microsoft.Interop
                     if (typeInfo.ManagedIndex != TypePositionInfo.UnsetIndex
                         && typeInfo.ManagedIndex != TypePositionInfo.ReturnIndex)
                     {
+                        SyntaxTokenList tokens = TokenList();
+
+                        // "out" parameters are implicitly scoped, so we can't put the "scoped" keyword on them.
+                        // All other cases of explicit parameters are only scoped when the "scoped" keyword is present.
+                        // When the "scoped" keyword is present, it must be present on all declarations.
+                        if (typeInfo.ScopedKind != ScopedKind.None && typeInfo.RefKind != RefKind.Out)
+                        {
+                            tokens = tokens.Add(Token(SyntaxKind.ScopedKeyword));
+                        }
+
+                        if (typeInfo.IsByRef)
+                        {
+                            tokens = tokens.Add(Token(typeInfo.RefKindSyntax));
+                        }
+
                         yield return Parameter(Identifier(typeInfo.InstanceIdentifier))
                             .WithType(typeInfo.ManagedType.Syntax)
-                            .WithModifiers(TokenList(Token(typeInfo.RefKindSyntax)));
+                            .WithModifiers(tokens);
                     }
                 }
             }

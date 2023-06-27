@@ -193,6 +193,9 @@
   <data name="Arg_AmbiguousMatchException_MemberInfo" xml:space="preserve">
     <value>Ambiguous match found for '{0} {1}'.</value>
   </data>
+  <data name="Arg_AmbiguousMatchException_UnsafeAccessor" xml:space="preserve">
+    <value>Ambiguity in binding of UnsafeAccessorAttribute.</value>
+  </data>
   <data name="Arg_ApplicationException" xml:space="preserve">
     <value>Error in the application.</value>
   </data>
@@ -4063,6 +4066,9 @@
   </data>
   <data name="PlatformNotSupported_HybridGlobalizationWithCompareOptions" xml:space="preserve">
     <value>CompareOptions = {0} are not supported when HybridGlobalization=true on this platform. Disable it to load larger ICU bundle, then use this option.</value>
+  </data>
+  <data name="PlatformNotSupported_HybridGlobalizationWithMixedCompositions" xml:space="preserve">
+    <value>Mixed compositions in string not supported when HybridGlobalization=true on this platform. Disable it to load larger ICU bundle, then use this option.</value>
   </data>
   <data name="PlatformNotSupported_HybridGlobalizationWithCompareOptionsForCulture" xml:space="preserve">
     <value>CompareOptions = {0} are not supported for culture = {1} when HybridGlobalization=true on this platform. Disable it to load larger ICU bundle, then use this option.</value>

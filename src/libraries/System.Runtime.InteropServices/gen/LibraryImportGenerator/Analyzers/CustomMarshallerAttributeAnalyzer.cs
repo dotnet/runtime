@@ -882,7 +882,7 @@ namespace Microsoft.Interop.Analyzers
                         // First verify all usages in the managed->unmanaged shape.
                         IMethodSymbol toUnmanagedMethod = methods.ToUnmanaged ?? methods.ToUnmanagedWithBuffer;
                         unmanagedType = toUnmanagedMethod.ReturnType;
-                        if (!unmanagedType.IsUnmanagedType && !unmanagedType.IsStrictlyBlittable())
+                        if (!unmanagedType.IsUnmanagedType && !unmanagedType.IsStrictlyBlittableInContext(_compilation))
                         {
                             diagnosticReporter.CreateAndReportDiagnostic(UnmanagedTypeMustBeUnmanagedRule, toUnmanagedMethod.ToDisplayString());
                         }
@@ -1198,7 +1198,7 @@ namespace Microsoft.Interop.Analyzers
                     {
                         // First verify all usages in the managed->unmanaged shape.
                         unmanagedType = methods.ToUnmanaged.ReturnType;
-                        if (!unmanagedType.IsUnmanagedType && !unmanagedType.IsStrictlyBlittable())
+                        if (!unmanagedType.IsUnmanagedType && !unmanagedType.IsStrictlyBlittableInContext(_compilation))
                         {
                             diagnosticReporter.CreateAndReportDiagnostic(UnmanagedTypeMustBeUnmanagedRule, methods.ToUnmanaged.ToDisplayString());
                         }
@@ -1217,7 +1217,7 @@ namespace Microsoft.Interop.Analyzers
                         {
                             unmanagedType = fromUnmanagedMethod.Parameters[0].Type;
 
-                            if (!unmanagedType.IsUnmanagedType && !unmanagedType.IsStrictlyBlittable())
+                            if (!unmanagedType.IsUnmanagedType && !unmanagedType.IsStrictlyBlittableInContext(_compilation))
                             {
                                 diagnosticReporter.CreateAndReportDiagnostic(UnmanagedTypeMustBeUnmanagedRule, fromUnmanagedMethod.ToDisplayString());
                             }

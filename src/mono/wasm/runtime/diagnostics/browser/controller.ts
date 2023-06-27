@@ -1,7 +1,9 @@
 // Licensed to the .NET Foundation under one or more agreements.
 // The .NET Foundation licenses this file to you under the MIT license.
 
-import cwraps from "../../cwraps";
+import MonoWasmThreads from "consts:monoWasmThreads";
+
+import { diagnostics_c_functions as cwraps } from "../../cwraps";
 import { INTERNAL } from "../../globals";
 import { mono_log_info, mono_log_debug, mono_log_warn } from "../../logging";
 import { withStackAlloc, getI32 } from "../../memory";
@@ -52,6 +54,7 @@ export function getController(): ServerController {
 }
 
 export async function startDiagnosticServer(websocket_url: string): Promise<ServerController | null> {
+    mono_assert(MonoWasmThreads, "The diagnostic server requires threads to be enabled during build time.");
     const sizeOfPthreadT = 4;
     mono_log_info(`starting the diagnostic server url: ${websocket_url}`);
     const result: number | undefined = withStackAlloc(sizeOfPthreadT, (pthreadIdPtr) => {

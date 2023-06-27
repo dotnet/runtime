@@ -365,9 +365,17 @@ namespace System.Formats.Tar
         // If the path can be extracted in the specified destination directory, returns the full path with sanitized file name. Otherwise, returns null.
         private static string? GetSanitizedFullPath(string destinationDirectoryFullPath, string path)
         {
+            destinationDirectoryFullPath = PathInternal.EnsureTrailingSeparator(destinationDirectoryFullPath);
+
             string fullyQualifiedPath = Path.IsPathFullyQualified(path) ? path : Path.Combine(destinationDirectoryFullPath, path);
             string normalizedPath = Path.GetFullPath(fullyQualifiedPath); // Removes relative segments
-            string sanitizedPath = Path.Join(Path.GetDirectoryName(normalizedPath), ArchivingUtils.SanitizeEntryFilePath(Path.GetFileName(normalizedPath)));
+            string? fileName = Path.GetFileName(normalizedPath);
+            if (string.IsNullOrEmpty(fileName)) // It's a directory
+            {
+                fileName = PathInternal.DirectorySeparatorCharAsString;
+            }
+
+            string sanitizedPath = Path.Join(Path.GetDirectoryName(normalizedPath), ArchivingUtils.SanitizeEntryFilePath(fileName));
             return sanitizedPath.StartsWith(destinationDirectoryFullPath, PathInternal.StringComparison) ? sanitizedPath : null;
         }
 

@@ -5297,13 +5297,15 @@ namespace System.Threading.Tasks
             }
             else if (!RuntimeHelpers.IsReferenceOrContainsReferences<TResult>())
             {
-                // For other value types, we special-case default(TResult) if we can easily compare bit patterns to default/0.
+                // For other value types, we special-case default(TResult) if we can efficiently compare bit patterns to default/0,
+                // which means any value type that's 1, 2, 4, 8, or 16 bytes in size and that doesn't contain references.
                 // We don't need to go through the equality operator of the TResult because we cached a task for default(TResult),
                 // so we only need to confirm that this TResult has the same bits as default(TResult).
                 if ((sizeof(TResult) == sizeof(byte) && *(byte*)&result == default(byte)) ||
                     (sizeof(TResult) == sizeof(ushort) && *(ushort*)&result == default(ushort)) ||
                     (sizeof(TResult) == sizeof(uint) && *(uint*)&result == default) ||
-                    (sizeof(TResult) == sizeof(ulong) && *(ulong*)&result == default))
+                    (sizeof(TResult) == sizeof(ulong) && *(ulong*)&result == default) ||
+                    (sizeof(TResult) == sizeof(UInt128) && *(UInt128*)&result == default))
                 {
                     return Task<TResult>.s_defaultResultTask;
                 }

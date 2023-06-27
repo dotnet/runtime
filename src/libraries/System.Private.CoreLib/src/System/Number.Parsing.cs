@@ -1219,7 +1219,7 @@ namespace System
         [MethodImpl(MethodImplOptions.NoInlining)] // rare slow path that shouldn't impact perf of the main use case
         private static bool TrailingZeros(ReadOnlySpan<char> value, int index) =>
             // For compatibility, we need to allow trailing zeros at the end of a number string
-            value.Slice(index).IndexOfAnyExcept('\0') < 0;
+            !value.Slice(index).ContainsAnyExcept('\0');
 
         private static bool IsSpaceReplacingChar(char c) => c == '\u00a0' || c == '\u202f';
 
