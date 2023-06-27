@@ -7,7 +7,7 @@ namespace System.Net.Test.Common
     {
         public static bool IsNtlmInstalled()
         {
-            return !OperatingSystem.IsBrowser();
+            return true;
         }
     }
 }
