@@ -135,11 +135,18 @@ public class Program
             AssertThrows<ArgumentException>(() => Comparer<Struct2?>.Default.Compare(a, b));
     }
 
+    private static string PrintBits<T>(T value)
+    {
+        ulong l = 0;
+        Unsafe.As<ulong, T>(ref l) = value;
+        return l.ToString();
+    }
+
     private static void Compare_Double_Enum(DoubleEnum a, DoubleEnum b) =>
-        AssertEquals(a.CompareTo(b), Comparer<DoubleEnum>.Default.Compare(a, b), $"({a}; {b}): ");
+        AssertEquals(a.CompareTo(b), Comparer<DoubleEnum>.Default.Compare(a, b), $"({PrintBits(a)}; {PrintBits(b)}): ");
     
     private static void Compare_Generic_Enum<TEnum>(TEnum a, TEnum b) where TEnum : Enum =>
-        AssertEquals(a.CompareTo(b), Comparer<TEnum>.Default.Compare(a, b), $"({a}; {b}): ");
+        AssertEquals(a.CompareTo(b), Comparer<TEnum>.Default.Compare(a, b), $"({PrintBits(a)}; {PrintBits(b)}): ");
 
     [Fact]
     public static int TestEntryPoint()
