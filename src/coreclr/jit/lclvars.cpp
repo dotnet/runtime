@@ -3213,7 +3213,7 @@ void Compiler::lvaUpdateClass(unsigned varNum, CORINFO_CLASS_HANDLE clsHnd, bool
     assert(varDsc->lvSingleDef);
 
     // Now see if we should update.
-    //
+
     // New information may not always be "better" so do some
     // simple analysis to decide if the update is worthwhile.
     const bool isNewClass   = (clsHnd != varDsc->lvClassHnd);
@@ -3232,7 +3232,7 @@ void Compiler::lvaUpdateClass(unsigned varNum, CORINFO_CLASS_HANDLE clsHnd, bool
             isExact = impIsClassExact(clsHnd);
         }
     }
-    
+
     // Are we attempting to update exactness?
     if (isExact && !varDsc->lvClassIsExact)
     {
