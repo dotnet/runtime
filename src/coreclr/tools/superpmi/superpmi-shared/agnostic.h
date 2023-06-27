@@ -534,7 +534,7 @@ struct Agnostic_GetThreadLocalStaticBlocksInfo
     DWORDLONG                     offsetOfMaxThreadStaticBlocks;
     DWORDLONG                     offsetOfThreadStaticBlocks;
     DWORDLONG                     tlsGetAddrFtnPtr;
-    DWORDLONG                     descrAddrOfMaxThreadStaticBlock;
+    DWORDLONG                     threadStaticsBaseOffset;
     UINT                          offsetOfGCDataPointer;
 };
 

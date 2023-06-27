@@ -1697,44 +1697,6 @@ uint64_t getThreadStaticsBaseOffset()
 {
     return reinterpret_cast<uint64_t>(JIT_GetThreadStaticsBaseOffset());
 }
-
-//#ifdef TARGET_OSX
-//
-//// Generates sequence for accessing offset in TLS for osx/arm64
-//uint64_t getThreadStaticsBaseOffset()
-//{
-//    uint64_t tlvGetAddr;
-//    __asm__ (
-//    "adrp x0, _t_ThreadStatics@TLVPPAGE\n"
-//    "ldr x0, [x0, _t_ThreadStatics@TLVPPAGEOFF]\n"
-//    "mov %[result], x0\n"
-//    : [result] "=r" (tlvGetAddr)
-//    :
-//    : "x0", "x1"
-//    );
-//    return tlvGetAddr;
-//}
-//#else
-//
-//// Generates sequence for accessing offset in TLS for linux/arm64
-//uint64_t getThreadStaticsBaseOffset()
-//{
-//    uint64_t offset;
-//    __asm__ (
-//        "adrp x0,  :tlsdesc:t_ThreadStatics\n"
-//        "ldr  x1,  [x0, #:tlsdesc_lo12:t_ThreadStatics]\n"
-//        "add  x0,  x0, :tlsdesc_lo12:t_ThreadStatics\n"
-//        ".tlsdesccall t_ThreadStatics\n"
-//        "blr  x1\n"
-//        "mov %[result], x0\n"
-//        : [result] "=r" (offset)
-//        :
-//        : "x0", "x1"
-//    );
-//
-//    return offset;
-//}
-//#endif // TARGET_OSX
 #endif  // HOST_ARM64
 #else
 /*********************************************************************/
@@ -1773,14 +1735,14 @@ void CEEInfo::getThreadLocalStaticBlocksInfo (CORINFO_THREAD_STATIC_BLOCKS_INFO*
     // For OSX x64/arm64, need to get the address of relevant tlv_get_addr of thread static
     // variable that will be invoked during runtime to get the right address of corresponding
     // thread.
-    pInfo->descrAddrOfMaxThreadStaticBlock = (size_t)getThreadStaticsBaseOffset();
+    pInfo->threadStaticsBaseOffset = (size_t)getThreadStaticsBaseOffset();
 
 #elif defined(TARGET_AMD64)
 
     // For Linux/x64, get the address of tls_get_addr system method and the base address
     // of struct that we will pass to it.
     pInfo->tlsGetAddrFtnPtr = (size_t)&__tls_get_addr;
-    pInfo->descrAddrOfMaxThreadStaticBlock = (size_t)getThreadStaticsBaseOffset();
+    pInfo->threadStaticsBaseOffset = (size_t)getThreadStaticsBaseOffset();
 
 #elif defined(TARGET_ARM64)
 

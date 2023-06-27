@@ -512,7 +512,7 @@ bool Compiler::fgExpandThreadLocalAccessForCall(BasicBlock** pBlock, Statement* 
 #ifdef TARGET_AMD64
     if (TargetOS::IsUnix || TargetOS::IsMacOS)
     {
-        if (threadStaticBlocksInfo.descrAddrOfMaxThreadStaticBlock == 0)
+        if (threadStaticBlocksInfo.threadStaticsBaseOffset == 0)
         {
             // We possibly compiled coreclr as single file and not .so file.
             // Do not perform this optimization for it.
@@ -530,7 +530,7 @@ bool Compiler::fgExpandThreadLocalAccessForCall(BasicBlock** pBlock, Statement* 
     JITDUMP("offsetOfThreadLocalStoragePointer= %u\n", threadStaticBlocksInfo.offsetOfThreadLocalStoragePointer);
     JITDUMP("offsetOfMaxThreadStaticBlocks= %u\n", offsetOfMaxThreadStaticBlocksVal);
     JITDUMP("tlsGetAddrFtnPtr= %u\n", threadStaticBlocksInfo.tlsGetAddrFtnPtr);
-    JITDUMP("descrAddrOfMaxThreadStaticBlock= %u\n", threadStaticBlocksInfo.descrAddrOfMaxThreadStaticBlock);
+    JITDUMP("threadStaticsBaseOffset= %u\n", threadStaticBlocksInfo.threadStaticsBaseOffset);
     JITDUMP("offsetOfGCDataPointer= %u\n", threadStaticBlocksInfo.offsetOfGCDataPointer);
 
     assert((eeGetHelperNum(call->gtCallMethHnd) == CORINFO_HELP_GETSHARED_NONGCTHREADSTATIC_BASE_NOCTOR_OPTIMIZED) ||
@@ -605,17 +605,17 @@ bool Compiler::fgExpandThreadLocalAccessForCall(BasicBlock** pBlock, Statement* 
     {
         // Code sequence to access thread local variable on osx/x64:
         //
-        //      mov rdi, descrAddrOfMaxThreadStaticBlock
+        //      mov rdi, threadStaticsBaseOffset
         //      call     [rdi]
         //
         // Code sequence to access thread local variable on osx/arm64:
         //
-        //      mov x0, descrAddrOfMaxThreadStaticBlock
+        //      mov x0, threadStaticsBaseOffset
         //      mov x1, [x0]
         //      blr x1
         //
         GenTree* tls_get_addr_val =
-            gtNewIconHandleNode(threadStaticBlocksInfo.descrAddrOfMaxThreadStaticBlock, GTF_ICON_FTN_ADDR);
+            gtNewIconHandleNode(threadStaticBlocksInfo.threadStaticsBaseOffset, GTF_ICON_FTN_ADDR);
 
         tls_get_addr_val = gtNewIndir(TYP_I_IMPL, tls_get_addr_val, GTF_IND_NONFAULTING | GTF_IND_INVARIANT);
 
@@ -624,7 +624,7 @@ bool Compiler::fgExpandThreadLocalAccessForCall(BasicBlock** pBlock, Statement* 
 
         // This is a syscall indirect call which takes an argument.
         // Populate and set the ABI apporpriately.
-        GenTree* tlsArg = gtNewIconNode(threadStaticBlocksInfo.descrAddrOfMaxThreadStaticBlock, TYP_I_IMPL);
+        GenTree* tlsArg = gtNewIconNode(threadStaticBlocksInfo.threadStaticsBaseOffset, TYP_I_IMPL);
         tlsRefCall->gtArgs.InsertAfterThisOrFirst(this, NewCallArg::Primitive(tlsArg));
 
         CallArg* arg0 = tlsRefCall->gtArgs.GetArgByIndex(0);
@@ -638,7 +638,7 @@ bool Compiler::fgExpandThreadLocalAccessForCall(BasicBlock** pBlock, Statement* 
 #if defined(TARGET_AMD64)
         // Code sequence to access thread local variable on linux/x64:
         //
-        //      mov      rdi, 0x7FE5C418CD28  ; descrAddrOfMaxThreadStaticBlock
+        //      mov      rdi, 0x7FE5C418CD28  ; threadStaticsBaseOffset
         //      mov      rax, 0x7FE5C47AFDB0  ; _tls_get_addr
         //      call     rax
         //
@@ -648,7 +648,7 @@ bool Compiler::fgExpandThreadLocalAccessForCall(BasicBlock** pBlock, Statement* 
 
         // This is a syscall indirect call which takes an argument.
         // Populate and set the ABI appropriately.
-        GenTree* tlsArg = gtNewIconNode(threadStaticBlocksInfo.descrAddrOfMaxThreadStaticBlock, TYP_I_IMPL);
+        GenTree* tlsArg = gtNewIconNode(threadStaticBlocksInfo.threadStaticsBaseOffset, TYP_I_IMPL);
         tlsRefCall->gtArgs.InsertAfterThisOrFirst(this, NewCallArg::Primitive(tlsArg));
 
         CallArg* arg0 = tlsRefCall->gtArgs.GetArgByIndex(0);
