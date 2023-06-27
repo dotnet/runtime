@@ -396,7 +396,6 @@ namespace System.Globalization.Tests
                 // RAINBOW (outside the BMP and does not case)
                 yield return new object[] { cultureName, "\U0001F308", "\U0001F308" };
 
-                // Capitalizing the German letter ß (sharp S) gives SS on OSX
                 if (!PlatformDetection.IsHybridGlobalizationOnOSX)
                 {
                     // Unicode defines some codepoints which expand into multiple codepoints
@@ -405,18 +404,21 @@ namespace System.Globalization.Tests
                     // which is non-intuitive. In addition, there are some context sensitive mappings which
                     // we also don't preform.
                     // es-zed does not case to SS when uppercased.
+                    // on OSX, capitalizing the German letter ß (sharp S) gives SS
                     yield return new object[] { cultureName, "\u00DF", "\u00DF" };
                     yield return new object[] { cultureName, "stra\u00DFe", "STRA\u00DFE" };
                     if (!PlatformDetection.IsNlsGlobalization)
                         yield return new object[] { cultureName, "st\uD801\uDC37ra\u00DFe", "ST\uD801\uDC0FRA\u00DFE" };
-                }
-                // Ligatures do not expand when cased.
-                yield return new object[] { cultureName, "\uFB00", PlatformDetection.IsHybridGlobalizationOnOSX ? "\u0046" : "\uFB00" };
 
-                // Precomposed character with no uppercase variant, we don't want to "decompose" this
-                // as part of casing.
-                // on OSX, this is uppercased to ʼN and as buffer size is 1 it will return "\u02BC" (ʼ)
-                yield return new object[] { cultureName, "\u0149", PlatformDetection.IsHybridGlobalizationOnOSX ? "\u02BC" : "\u0149" };
+                    // Ligatures do not expand when cased.
+                    // on OSX, this is uppercase to "FF"
+                    yield return new object[] { cultureName, "\uFB00", "\uFB00" };
+
+                    // Precomposed character with no uppercase variant, we don't want to "decompose" this
+                    // as part of casing.
+                    // on OSX, this is uppercased to "ʼN"
+                    yield return new object[] { cultureName, "\u0149", "\u0149" };
+                }
             }
 
             // Turkish i
