@@ -45,15 +45,13 @@ namespace System.Net.Security
         internal const bool StartMutualAuthAsAnonymous = true;
         internal const bool CanEncryptEmptyMessage = true;
 
-        // used to disable TLS resume on Windows
-        private static readonly Interop.SChannel.SCHANNEL_SESSION_TOKEN s_sessionToken = new Interop.SChannel.SCHANNEL_SESSION_TOKEN
-        {
-            dwTokenType = Interop.SChannel.SCHANNEL_SESSION,
-            dwFlags = Interop.SChannel.SSL_SESSION_DISABLE_RECONNECTS,
-        };
-
-        private static readonly byte[] s_sessionTokenBuffer = MemoryMarshal.AsBytes(new ReadOnlySpan<Interop.SChannel.SCHANNEL_SESSION_TOKEN>(s_sessionToken)).ToArray();
-
+        private static readonly byte[] s_sessionTokenBuffer = MemoryMarshal.AsBytes(new ReadOnlySpan<Interop.SChannel.SCHANNEL_SESSION_TOKEN>(
+            new Interop.SChannel.SCHANNEL_SESSION_TOKEN()
+            {
+                dwTokenType = Interop.SChannel.SCHANNEL_SESSION,
+                dwFlags = Interop.SChannel.SSL_SESSION_DISABLE_RECONNECTS,
+            }
+        )).ToArray();
 
         public static void VerifyPackageInfo()
         {
