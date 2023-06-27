@@ -303,7 +303,7 @@
   <!-- When targeting the iOS platforms with Native AOT, build the ClrAllJitsSubset and the Ilc for the host  -->
   <PropertyGroup>
     <IsNativeAOTHostBuildEnabled Condition="$(_subset.Contains('+clr.nativeaotruntime+')) and '$(NativeAotSupported)' == 'true' and '$(PrimaryRuntimeFlavor)' == 'CoreCLR' and '$(TargetsAppleMobile)' == 'true'">true</IsNativeAOTHostBuildEnabled>
-    <NativeAOTAdditionalProperties Condition="'$(IsNativeAOTHostBuildEnabled)' == 'true'">TargetOS=osx</NativeAOTAdditionalProperties>
+    <NativeAOTAdditionalProperties Condition="'$(IsNativeAOTHostBuildEnabled)' == 'true'">TargetOS=osx;TargetArchitecture=$(BuildArchitecture)</NativeAOTAdditionalProperties>
   </PropertyGroup>
   <ItemGroup Condition="'$(IsNativeAOTHostBuildEnabled)' == 'true'">
     <ProjectToBuild
