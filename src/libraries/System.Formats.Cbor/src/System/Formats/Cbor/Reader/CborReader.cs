@@ -82,9 +82,10 @@ namespace System.Formats.Cbor
         }
 
         /// <summary>
-        /// Resets the <see cref="CborReader"/> instance over the specified <paramref name="data"/>
+        /// Resets the <see cref="CborReader"/> instance over the specified <paramref name="data"/> with unchanged configuration.
+        /// <see cref="ConformanceMode"/> and <see cref="AllowMultipleRootLevelValues"/> are unchanged.
         /// </summary>
-        /// <param name="data"></param>
+        /// <param name="data">The CBOR-encoded data to read.</param>
         public void Reset(ReadOnlyMemory<byte> data)
         {
             // ConformanceMode = conformanceMode;
