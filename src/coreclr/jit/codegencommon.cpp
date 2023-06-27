@@ -5778,7 +5778,7 @@ void CodeGen::genFnProlog()
 
 #ifndef TARGET_LOONGARCH64
     // For LoongArch64's OSR root frames, we may need a scratch register for large
-    // offset addresses. But this is not conflict with REG_PINVOKE_FRAME.
+    // offset addresses. But this does not conflict with the REG_PINVOKE_FRAME.
     noway_assert(!compiler->compMethodRequiresPInvokeFrame() || (initReg != REG_PINVOKE_FRAME));
 #endif
 
