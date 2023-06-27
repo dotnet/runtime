@@ -1084,6 +1084,19 @@ namespace System.Text.Json.Nodes.Tests
             };
 
             Assert.True(JsonNode.DeepEquals(jObject, JsonValue.Create(poco)));
+
+            var diffPoco = new SimpleClass()
+            {
+                Id = 1,
+                Name = "First",
+                NestedObject = new SimpleClass()
+                {
+                    Id = 3,
+                    Name = "Last",
+                }
+            };
+
+            Assert.False(JsonNode.DeepEquals(jObject, JsonValue.Create(diffPoco)));
         }
 
         [Fact]
@@ -1102,6 +1115,15 @@ namespace System.Text.Json.Nodes.Tests
             };
 
             Assert.True(JsonNode.DeepEquals(jObject, JsonValue.Create(dictionary)));
+
+            var diffDictionary = new Dictionary<string, object>()
+            {
+                { "One", 1 },
+                { "array", new string[] { "a", "d" } },
+                { "obj", new { } }
+            };
+
+            Assert.False(JsonNode.DeepEquals(jObject, JsonValue.Create(diffDictionary)));
         }
 
         private class SimpleClass
