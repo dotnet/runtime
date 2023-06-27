@@ -394,6 +394,35 @@ namespace System.Net.Http.Functional.Tests
 
             private static void Enrich(HttpMetricsEnrichmentContext context) => context.CustomTags.Add(new("before", "before!"));
         }
+
+        protected sealed class InstrumentRecorder<T> : IDisposable where T : struct
+        {
+            private readonly string _instrumentName;
+            private readonly MeterListener _meterListener;
+            private readonly List<Measurement<T>> _values;
+            private Meter _meter;
+            
+            public InstrumentRecorder(Meter meter, string instrumentName, object? state = null)
+            {
+                _meter = meter;
+                _instrumentName = instrumentName;
+                _values = new List<Measurement<T>>();
+                _meterListener = new MeterListener();
+                _meterListener.InstrumentPublished = (instrument, listener) =>
+                {
+                    if (instrument.Meter == _meter && instrument.Name == _instrumentName)
+                    {
+                        listener.EnableMeasurementEvents(instrument, state);
+                    }
+                };
+                _meterListener.SetMeasurementEventCallback<T>(OnMeasurementRecorded);
+                _meterListener.Start();
+            }
+
+            private void OnMeasurementRecorded(Instrument instrument, T measurement, ReadOnlySpan<KeyValuePair<string, object?>> tags, object? state) => _values.Add(new Measurement<T>(measurement, tags));
+            public IReadOnlyList<Measurement<T>> GetMeasurements() => _values.ToArray();
+            public void Dispose() => _meterListener.Dispose();
+        }
     }
 
     public abstract class HttpMetricsTest_Http11 : HttpMetricsTest
