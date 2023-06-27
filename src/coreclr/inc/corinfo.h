@@ -2446,8 +2446,8 @@ public:
     //
     // Parameters:
     //   typeHnd            - Handle of the type.
-    //   treeNodes          - [out] Pointer to tree node entries to write.
-    //   numTreeNodes       - [in, out] Size of 'treeNodes'. Updated to contain
+    //   treeNodes          - [in, out] Pointer to tree node entries to write.
+    //   numTreeNodes       - [in, out] Size of 'treeNodes' on entry. Updated to contain
     //                         the number of entries written in 'treeNodes'.
     //
     // Returns:
@@ -2457,7 +2457,8 @@ public:
     // Remarks:
     //   The type layout should be stored in preorder in 'treeNodes': the root
     //   node is always at index 0, and the first child of any node is at its
-    //   own index + 1.
+    //   own index + 1. The fields returned are NOT guaranteed to be ordered
+    //   by offset.
     //
     //   SIMD and HW SIMD types are returned as a single entry without any
     //   children. For those, CORINFO_TYPE_LAYOUT_NODE::simdTypeHnd is set, but

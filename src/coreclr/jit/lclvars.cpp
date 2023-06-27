@@ -1890,10 +1890,12 @@ bool Compiler::StructPromotionHelper::CanPromoteStructType(CORINFO_CLASS_HANDLE 
 // TryPromoteValueClassAsPrimitive - Attempt to promote a value type as a primitive type.
 //
 // Arguments:
-//   node - type layout node
+//   treeNodes    - Layout tree
+//   maxTreeNodes - Size of 'treeNodes'
+//   index        - Index of layout tree node corresponding to the value class
 //
 // Return value:
-//   true if the struct type can be promoted.
+//   Primitive type to promote the field as.
 //
 var_types Compiler::StructPromotionHelper::TryPromoteValueClassAsPrimitive(CORINFO_TYPE_LAYOUT_NODE* treeNodes,
                                                                            size_t                    maxTreeNodes,

@@ -603,6 +603,7 @@ public:
 
     void recGetTypeLayout(GetTypeLayoutResult result, CORINFO_CLASS_HANDLE typeHnd, CORINFO_TYPE_LAYOUT_NODE* nodes, size_t numNodes);
     void dmpGetTypeLayout(DWORDLONG key, const Agnostic_GetTypeLayoutResult& value);
+    void dmpTypeLayoutTree(const Agnostic_CORINFO_TYPE_LAYOUT_NODE* nodes, size_t maxNodes, size_t* index, size_t indent);
     GetTypeLayoutResult repGetTypeLayout(CORINFO_CLASS_HANDLE typeHnd, CORINFO_TYPE_LAYOUT_NODE* nodes, size_t* numNodes);
 
     void recGetFieldType(CORINFO_FIELD_HANDLE  field,

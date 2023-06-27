@@ -4791,7 +4791,41 @@ void MethodContext::recGetTypeLayout(GetTypeLayoutResult result, CORINFO_CLASS_H
 }
 void MethodContext::dmpGetTypeLayout(DWORDLONG key, const Agnostic_GetTypeLayoutResult& value)
 {
-    printf("FlattenType key type-%016" PRIX64 " value result=%d numNodes=%d", key, (DWORD)value.result, value.numNodes);
+    printf("GetTypeLayout key type-%016" PRIX64 " value result=%d numNodes=%d", key, (DWORD)value.result, value.numNodes);
+    if (value.numNodes > 0)
+    {
+        Agnostic_CORINFO_TYPE_LAYOUT_NODE* nodes = reinterpret_cast<Agnostic_CORINFO_TYPE_LAYOUT_NODE*>(GetTypeLayout->GetBuffer(value.nodesBuffer));
+        size_t index = 0;
+        dmpTypeLayoutTree(nodes, value.numNodes, &index, 1);
+    }
+}
+void MethodContext::dmpTypeLayoutTree(const Agnostic_CORINFO_TYPE_LAYOUT_NODE* nodes, size_t maxNodes, size_t* index, size_t indent)
+{
+    for (size_t i = 0; i < indent; i++)
+    {
+        printf("  ");
+    }
+
+    const Agnostic_CORINFO_TYPE_LAYOUT_NODE* node = &nodes[*index];
+    printf("%zu: parent %u offset %u size %u type %s numFields %u hasSignificantPadding %s simdTypeHnd %016" PRIX64 " diagFieldHnd %016" PRIX64,
+        *index,
+        node->parent,
+        node->offset,
+        node->size,
+        toString((CorInfoType)node->type),
+        node->numFields,
+        node->hasSignificantPadding ? "yes" : "no",
+        node->simdTypeHnd,
+        node->diagFieldHnd);
+
+    (*index)++;
+    for (size_t i = 0; i < node->numFields; i++)
+    {
+        if (i >= maxNodes)
+            break;
+
+        dmpTypeLayoutTree(nodes, maxNodes, index, indent + 1);
+    }
 }
 GetTypeLayoutResult MethodContext::repGetTypeLayout(CORINFO_CLASS_HANDLE typeHnd, CORINFO_TYPE_LAYOUT_NODE* nodes, size_t* numNodes)
 {
