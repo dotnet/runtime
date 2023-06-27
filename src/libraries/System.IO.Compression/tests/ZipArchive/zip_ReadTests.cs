@@ -250,8 +250,10 @@ namespace System.IO.Compression.Tests
             Assert.Equal(expectedEntries, entriesEncrypted);
         }
 
-        [Fact]
-        public static async Task EnsureDisposeIsCalledOnlyOnce()
+        [Theory]
+        [InlineData(true, 0)]
+        [InlineData(false, 1)]
+        public static async Task EnsureDisposeIsCalledAsExpectedOnTheUnderlyingStream(bool leaveOpen, int expectedDisposeCalls)
         {
             var disposeCallCountingStream = new DisposeCallCountingStream();
             using (var tempStream = await StreamHelpers.CreateTempCopyStream(zfile("small.zip")))
@@ -259,7 +261,7 @@ namespace System.IO.Compression.Tests
                 tempStream.CopyTo(disposeCallCountingStream);
             }
 
-            using (ZipArchive archive = new ZipArchive(disposeCallCountingStream, ZipArchiveMode.Read))
+            using (ZipArchive archive = new ZipArchive(disposeCallCountingStream, ZipArchiveMode.Read, leaveOpen))
             {
                 // Iterate through entries to ensure read of zip file
                 foreach (ZipArchiveEntry entry in archive.Entries)
@@ -268,7 +270,7 @@ namespace System.IO.Compression.Tests
                 }
             }
 
-            Assert.Equal(1, disposeCallCountingStream.NumberOfDisposeCalls);
+            Assert.Equal(expectedDisposeCalls, disposeCallCountingStream.NumberOfDisposeCalls);
         }
 
         private class DisposeCallCountingStream : MemoryStream
