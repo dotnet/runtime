@@ -24,6 +24,8 @@ namespace Microsoft.Interop
                 GeneratorDiagnostic.NotSupported { NotSupportedDetails: null, TypePositionInfo: { IsManagedReturnPosition: false, MarshallingAttributeInfo: MarshalAsInfo } } => GeneratorDiagnostics.MarshalAsParameterConfigurationNotSupported,
                 GeneratorDiagnostic.NotSupported { NotSupportedDetails: not null, TypePositionInfo.IsManagedReturnPosition: true } => GeneratorDiagnostics.ReturnTypeNotSupportedWithDetails,
                 GeneratorDiagnostic.NotSupported { NotSupportedDetails: not null, TypePositionInfo.IsManagedReturnPosition: false } => GeneratorDiagnostics.ParameterTypeNotSupportedWithDetails,
+                GeneratorDiagnostic.UnnecessaryData { TypePositionInfo.IsManagedReturnPosition: false } => GeneratorDiagnostics.UnnecessaryParameterMarshallingInfo,
+                GeneratorDiagnostic.UnnecessaryData { TypePositionInfo.IsManagedReturnPosition: true } => GeneratorDiagnostics.UnnecessaryReturnMarshallingInfo,
                 { IsFatal: false } => null,
                 { TypePositionInfo.IsManagedReturnPosition: true } => GeneratorDiagnostics.ReturnTypeNotSupported,
                 { TypePositionInfo.IsManagedReturnPosition: false } => GeneratorDiagnostics.ParameterTypeNotSupported,

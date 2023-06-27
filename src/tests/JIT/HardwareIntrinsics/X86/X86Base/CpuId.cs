@@ -64,6 +64,8 @@ namespace XarchHardwareIntrinsicTest._CpuId
 
             (eax, ebx, ecx, edx) = X86Base.CpuId(0x00000001, 0x00000000);
 
+            int xarchCpuInfo = eax;
+
             if (IsBitIncorrect(edx, 25, typeof(Sse), Sse.IsSupported, "SSE", ref isHierarchyDisabled))
             {
                 testResult = Fail;
@@ -214,6 +216,37 @@ namespace XarchHardwareIntrinsicTest._CpuId
             }
 
             bool isAvx512HierarchyDisabled = isHierarchyDisabled;
+            if (isGenuineIntel && !isAvx512HierarchyDisabled)
+            {
+                int steppingId = xarchCpuInfo & (int)0b1111;
+                int model = (xarchCpuInfo >> 4) & (int)0b1111;
+                int familyID = (xarchCpuInfo >> 8) & (int)0b1111;
+                int extendedModelID = (xarchCpuInfo >> 16) & (int)0b1111;
+                if (familyID == 0x06)
+                {
+                    if (extendedModelID == 0x05)
+                    {
+                        if (model == 0x05)
+                        {
+                            // * Skylake (Server)
+                            // * Cascade Lake
+                            // * Cooper Lake
+
+                            isAvx512HierarchyDisabled = true;
+                        }
+                    }
+                    else if (extendedModelID == 0x06)
+                    {
+                        if (model == 0x06)
+                        {
+                            // * Cannon Lake
+
+                            isAvx512HierarchyDisabled = true;
+                        }
+                    }
+                }
+
+            }
 
             if (IsBitIncorrect(ecx, 1, typeof(Avx512Vbmi), Avx512Vbmi.IsSupported, "AVX512VBMI", ref isHierarchyDisabled))
             {

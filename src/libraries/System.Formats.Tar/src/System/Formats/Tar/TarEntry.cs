@@ -330,59 +330,65 @@ namespace System.Formats.Tar
             Debug.Assert(!string.IsNullOrEmpty(destinationDirectoryPath));
             Debug.Assert(Path.IsPathFullyQualified(destinationDirectoryPath));
 
-            destinationDirectoryPath = Path.TrimEndingDirectorySeparator(destinationDirectoryPath);
-
-            string? fileDestinationPath = GetSanitizedFullPath(destinationDirectoryPath, Name);
+            string name = ArchivingUtils.SanitizeEntryFilePath(Name, preserveDriveRoot: true);
+            string? fileDestinationPath = GetFullDestinationPath(
+                                                destinationDirectoryPath,
+                                                Path.IsPathFullyQualified(name) ? name : Path.Join(Path.GetDirectoryName(destinationDirectoryPath), name));
             if (fileDestinationPath == null)
             {
-                throw new IOException(SR.Format(SR.TarExtractingResultsFileOutside, Name, destinationDirectoryPath));
+                throw new IOException(SR.Format(SR.TarExtractingResultsFileOutside, name, destinationDirectoryPath));
             }
 
             string? linkTargetPath = null;
-            if (EntryType is TarEntryType.SymbolicLink or TarEntryType.HardLink)
+            if (EntryType is TarEntryType.SymbolicLink)
             {
-                if (string.IsNullOrEmpty(LinkName))
+                // LinkName is an absolute path, or path relative to the fileDestinationPath directory.
+                // We don't check if the LinkName is empty. In that case, creation of the link will fail because link targets can't be empty.
+                string linkName = ArchivingUtils.SanitizeEntryFilePath(LinkName, preserveDriveRoot: true);
+                string? linkDestination = GetFullDestinationPath(
+                                            destinationDirectoryPath,
+                                            Path.IsPathFullyQualified(linkName) ? linkName : Path.Join(Path.GetDirectoryName(fileDestinationPath), linkName));
+                if (linkDestination is null)
                 {
-                    throw new InvalidDataException(SR.TarEntryHardLinkOrSymlinkLinkNameEmpty);
+                    throw new IOException(SR.Format(SR.TarExtractingResultsLinkOutside, linkName, destinationDirectoryPath));
                 }
-
-                linkTargetPath = GetSanitizedFullPath(destinationDirectoryPath,
-                    Path.IsPathFullyQualified(LinkName) ? LinkName : Path.Join(Path.GetDirectoryName(fileDestinationPath), LinkName));
-
-                if (linkTargetPath == null)
+                // Use the linkName for creating the symbolic link.
+                linkTargetPath = linkName;
+            }
+            else if (EntryType is TarEntryType.HardLink)
+            {
+                // LinkName is path relative to the destinationDirectoryPath.
+                // We don't check if the LinkName is empty. In that case, creation of the link will fail because a hard link can't target a directory.
+                string linkName = ArchivingUtils.SanitizeEntryFilePath(LinkName, preserveDriveRoot: false);
+                string? linkDestination = GetFullDestinationPath(
+                                            destinationDirectoryPath,
+                                            Path.Join(destinationDirectoryPath, linkName));
+                if (linkDestination is null)
                 {
-                    throw new IOException(SR.Format(SR.TarExtractingResultsLinkOutside, LinkName, destinationDirectoryPath));
+                    throw new IOException(SR.Format(SR.TarExtractingResultsLinkOutside, linkName, destinationDirectoryPath));
                 }
-
-                // after TarExtractingResultsLinkOutside validation, preserve the original
-                // symlink target path (to match behavior of other utilities).
-                linkTargetPath = LinkName;
+                // Use the target path for creating the hard link.
+                linkTargetPath = linkDestination;
             }
 
             return (fileDestinationPath, linkTargetPath);
         }
 
-        // If the path can be extracted in the specified destination directory, returns the full path with sanitized file name. Otherwise, returns null.
-        private static string? GetSanitizedFullPath(string destinationDirectoryFullPath, string path)
+        // Returns the full destination path if the path is the destinationDirectory or a subpath. Otherwise, returns null.
+        private static string? GetFullDestinationPath(string destinationDirectoryFullPath, string qualifiedPath)
         {
-            destinationDirectoryFullPath = PathInternal.EnsureTrailingSeparator(destinationDirectoryFullPath);
+            Debug.Assert(Path.IsPathFullyQualified(qualifiedPath), $"{qualifiedPath} is not qualified");
+            Debug.Assert(PathInternal.EndsInDirectorySeparator(destinationDirectoryFullPath), "caller must ensure the path ends with a separator.");
 
-            string fullyQualifiedPath = Path.IsPathFullyQualified(path) ? path : Path.Combine(destinationDirectoryFullPath, path);
-            string normalizedPath = Path.GetFullPath(fullyQualifiedPath); // Removes relative segments
-            string? fileName = Path.GetFileName(normalizedPath);
-            if (string.IsNullOrEmpty(fileName)) // It's a directory
-            {
-                fileName = PathInternal.DirectorySeparatorCharAsString;
-            }
+            string fullPath = Path.GetFullPath(qualifiedPath); // Removes relative segments
 
-            string sanitizedPath = Path.Join(Path.GetDirectoryName(normalizedPath), ArchivingUtils.SanitizeEntryFilePath(fileName));
-            return sanitizedPath.StartsWith(destinationDirectoryFullPath, PathInternal.StringComparison) ? sanitizedPath : null;
+            return fullPath.StartsWith(destinationDirectoryFullPath, PathInternal.StringComparison) ? fullPath : null;
         }
 
         // Extracts the current entry into the filesystem, regardless of the entry type.
         private void ExtractToFileInternal(string filePath, string? linkTargetPath, bool overwrite)
         {
-            VerifyPathsForEntryType(filePath, linkTargetPath, overwrite);
+            VerifyDestinationPath(filePath, overwrite);
 
             if (EntryType is TarEntryType.RegularFile or TarEntryType.V7RegularFile or TarEntryType.ContiguousFile)
             {
@@ -401,7 +407,7 @@ namespace System.Formats.Tar
             {
                 return Task.FromCanceled(cancellationToken);
             }
-            VerifyPathsForEntryType(filePath, linkTargetPath, overwrite);
+            VerifyDestinationPath(filePath, overwrite);
 
             if (EntryType is TarEntryType.RegularFile or TarEntryType.V7RegularFile or TarEntryType.ContiguousFile)
             {
@@ -423,7 +429,7 @@ namespace System.Formats.Tar
                 case TarEntryType.Directory:
                 case TarEntryType.DirectoryList:
                     // Mode must only be used for the leaf directory.
-                    // VerifyPathsForEntryType ensures we're only creating a leaf.
+                    // VerifyDestinationPath ensures we're only creating a leaf.
                     Debug.Assert(Directory.Exists(Path.GetDirectoryName(filePath)));
                     Debug.Assert(!Directory.Exists(filePath));
 
@@ -476,8 +482,8 @@ namespace System.Formats.Tar
             }
         }
 
-        // Verifies if the specified paths make sense for the current type of entry.
-        private void VerifyPathsForEntryType(string filePath, string? linkTargetPath, bool overwrite)
+        // Verifies there's a writable destination.
+        private static void VerifyDestinationPath(string filePath, bool overwrite)
         {
             string? directoryPath = Path.GetDirectoryName(filePath);
             // If the destination contains a directory segment, need to check that it exists
@@ -503,35 +509,6 @@ namespace System.Formats.Tar
                 throw new IOException(SR.Format(SR.IO_AlreadyExists_Name, filePath));
             }
             File.Delete(filePath);
-
-            if (EntryType is TarEntryType.SymbolicLink or TarEntryType.HardLink)
-            {
-                if (!string.IsNullOrEmpty(linkTargetPath))
-                {
-                    string? targetDirectoryPath = Path.GetDirectoryName(linkTargetPath);
-                    // If the destination target contains a directory segment, need to check that it exists
-                    if (!string.IsNullOrEmpty(targetDirectoryPath) && !Path.Exists(targetDirectoryPath))
-                    {
-                        throw new IOException(SR.Format(SR.TarSymbolicLinkTargetNotExists, filePath, linkTargetPath));
-                    }
-
-                    if (EntryType is TarEntryType.HardLink)
-                    {
-                        if (!Path.Exists(linkTargetPath))
-                        {
-                            throw new IOException(SR.Format(SR.TarHardLinkTargetNotExists, filePath, linkTargetPath));
-                        }
-                        else if (Directory.Exists(linkTargetPath))
-                        {
-                            throw new IOException(SR.Format(SR.TarHardLinkToDirectoryNotAllowed, filePath, linkTargetPath));
-                        }
-                    }
-                }
-                else
-                {
-                    throw new InvalidDataException(SR.TarEntryHardLinkOrSymlinkLinkNameEmpty);
-                }
-            }
         }
 
         // Extracts the current entry as a regular file into the specified destination.

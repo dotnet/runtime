@@ -319,12 +319,12 @@
       </trans-unit>
       <trans-unit id="MarshalAsConfigurationNotSupportedMessageParameter">
         <source>The specified 'MarshalAsAttribute' configuration for parameter '{1}' is not supported by source-generated P/Invokes. If the specified configuration is required, use a regular 'DllImport' instead.</source>
-        <target state="new">The specified 'MarshalAsAttribute' configuration for parameter '{1}' is not supported by source-generated P/Invokes. If the specified configuration is required, use a regular 'DllImport' instead.</target>
+        <target state="translated">Die angegebene Konfiguration „MarshalAsAttribute“ für den Parameter „{1}“ wird von quellengenerierten P/Invokes nicht unterstützt. Wenn die angegebene Konfiguration erforderlich ist, verwenden Sie stattdessen einen regulären „DllImport“.</target>
         <note />
       </trans-unit>
       <trans-unit id="MarshalAsConfigurationNotSupportedMessageReturn">
         <source>The specified 'MarshalAsAttribute' configuration for the return value of method '{1}' is not supported by source-generated P/Invokes. If the specified configuration is required, use a regular 'DllImport' instead.</source>
-        <target state="new">The specified 'MarshalAsAttribute' configuration for the return value of method '{1}' is not supported by source-generated P/Invokes. If the specified configuration is required, use a regular 'DllImport' instead.</target>
+        <target state="translated">Die angegebene Konfiguration „MarshalAsAttribute“ für den Rückgabewert der Methode „{1}“ wird von quellengenerierten P/Invokes nicht unterstützt. Wenn die angegebene Konfiguration erforderlich ist, verwenden Sie stattdessen einen regulären „DllImport“.</target>
         <note />
       </trans-unit>
       <trans-unit id="MarshalModeMustBeValidEnumValue">
@@ -627,6 +627,26 @@
       <trans-unit id="TypeNotSupportedTitle">
         <source>Specified type is not supported by source-generated P/Invokes</source>
         <target state="translated">Der angegebene Typ wird von quellgenerierten P/Invokes nicht unterstützt.</target>
+        <note />
+      </trans-unit>
+      <trans-unit id="UnnecessaryMarshallingInfoDescription">
+        <source>Unnecesssary marshalling info was provided. This marshalling information can be removed without any change in behavior to the application.</source>
+        <target state="new">Unnecesssary marshalling info was provided. This marshalling information can be removed without any change in behavior to the application.</target>
+        <note />
+      </trans-unit>
+      <trans-unit id="UnnecessaryMarshallingInfoTitle">
+        <source>Unnecessary marshalling info was provided and can be removed.</source>
+        <target state="new">Unnecessary marshalling info was provided and can be removed.</target>
+        <note />
+      </trans-unit>
+      <trans-unit id="UnnecessaryParameterMarshallingInfoMessage">
+        <source>Unnecessary marshalling info '{0}' was provided for parameter '{1}'</source>
+        <target state="new">Unnecessary marshalling info '{0}' was provided for parameter '{1}'</target>
+        <note />
+      </trans-unit>
+      <trans-unit id="UnnecessaryReturnMarshallingInfoMessage">
+        <source>Unnecessary marshalling info '{0}' was provided for the return type of method '{1}'</source>
+        <target state="new">Unnecessary marshalling info '{0}' was provided for the return type of method '{1}'</target>
         <note />
       </trans-unit>
       <trans-unit id="ValueInCallerAllocatedBufferRequiresSpanConstructorDescription">

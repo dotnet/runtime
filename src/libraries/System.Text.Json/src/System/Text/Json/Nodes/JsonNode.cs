@@ -2,6 +2,7 @@
 // The .NET Foundation licenses this file to you under the MIT license.
 
 using System.Collections.Generic;
+using System.Diagnostics.CodeAnalysis;
 
 namespace System.Text.Json.Nodes
 {
@@ -50,12 +51,14 @@ namespace System.Text.Json.Nodes
         /// </exception>
         public JsonArray AsArray()
         {
-            if (this is JsonArray jArray)
+            JsonArray? jArray = this as JsonArray;
+
+            if (jArray is null)
             {
-                return jArray;
+                ThrowHelper.ThrowInvalidOperationException_NodeWrongType(nameof(JsonArray));
             }
 
-            throw new InvalidOperationException(SR.Format(SR.NodeWrongType, nameof(JsonArray)));
+            return jArray;
         }
 
         /// <summary>
@@ -69,12 +72,14 @@ namespace System.Text.Json.Nodes
         /// </exception>
         public JsonObject AsObject()
         {
-            if (this is JsonObject jObject)
+            JsonObject? jObject = this as JsonObject;
+
+            if (jObject is null)
             {
-                return jObject;
+                ThrowHelper.ThrowInvalidOperationException_NodeWrongType(nameof(JsonObject));
             }
 
-            throw new InvalidOperationException(SR.Format(SR.NodeWrongType, nameof(JsonObject)));
+            return jObject;
         }
 
         /// <summary>
@@ -88,12 +93,14 @@ namespace System.Text.Json.Nodes
         /// </exception>
         public JsonValue AsValue()
         {
-            if (this is JsonValue jValue)
+            JsonValue? jValue = this as JsonValue;
+
+            if (jValue is null)
             {
-                return jValue;
+                ThrowHelper.ThrowInvalidOperationException_NodeWrongType(nameof(JsonValue));
             }
 
-            throw new InvalidOperationException(SR.Format(SR.NodeWrongType, nameof(JsonValue)));
+            return jValue;
         }
 
         /// <summary>
@@ -229,6 +236,107 @@ namespace System.Text.Json.Nodes
             set
             {
                 AsObject().SetItem(propertyName, value);
+            }
+        }
+
+        /// <summary>
+        /// Creates a new instance of the <see cref="JsonNode"/>. All children nodes are recursively cloned.
+        /// </summary>
+        public JsonNode DeepClone()
+        {
+            return InternalDeepClone();
+        }
+
+        internal abstract JsonNode InternalDeepClone();
+
+        /// <summary>
+        /// Returns <see cref="JsonValueKind"/> of current instance.
+        /// </summary>
+        public JsonValueKind GetValueKind()
+        {
+            return this switch
+            {
+                JsonObject => JsonValueKind.Object,
+                JsonArray => JsonValueKind.Array,
+                _ => AsValue().GetInternalValueKind(),
+            };
+        }
+
+        /// <summary>
+        /// Returns property name of the current node from the parent object.
+        /// </summary>
+        /// <exception cref="InvalidOperationException">
+        /// The current parent is not a <see cref="JsonObject"/>.
+        /// </exception>
+        public string GetPropertyName()
+        {
+            JsonObject? jsonObject = _parent as JsonObject;
+
+            if (jsonObject is null)
+            {
+                ThrowHelper.ThrowInvalidOperationException_NodeWrongType(nameof(JsonObject));
+            }
+
+            return jsonObject.GetPropertyName(this);
+        }
+
+        /// <summary>
+        /// Returns index of the current node from the parent <see cref="JsonArray" />.
+        /// </summary>
+        /// <exception cref="InvalidOperationException">
+        /// The current parent is not a <see cref="JsonArray"/>.
+        /// </exception>
+        public int GetElementIndex()
+        {
+            JsonArray? jsonArray = _parent as JsonArray;
+
+            if (jsonArray is null)
+            {
+                ThrowHelper.ThrowInvalidOperationException_NodeWrongType(nameof(JsonArray));
+            }
+
+            return jsonArray.GetElementIndex(this);
+        }
+
+        /// <summary>
+        /// Compares the values of two nodes, including the values of all descendant nodes.
+        /// </summary>
+        /// <param name="node1">The <see cref="JsonNode"/> to compare.</param>
+        /// <param name="node2">The <see cref="JsonNode"/> to compare.</param>
+        /// <returns><c>true</c> if the tokens are equal; otherwise <c>false</c>.</returns>
+        public static bool DeepEquals(JsonNode? node1, JsonNode? node2)
+        {
+            if (node1 is null)
+            {
+                return node2 is null;
+            }
+
+            return node1.DeepEquals(node2);
+        }
+
+        internal abstract bool DeepEquals(JsonNode? node);
+
+        /// <summary>
+        /// Replaces this node with a new value.
+        /// </summary>
+        /// <typeparam name="T">The type of value to be replaced.</typeparam>
+        /// <param name="value">Value that replaces this node.</param>
+        [RequiresUnreferencedCode(JsonValue.CreateUnreferencedCodeMessage)]
+        [RequiresDynamicCode(JsonValue.CreateDynamicCodeMessage)]
+        public void ReplaceWith<T>(T value)
+        {
+            switch (_parent)
+            {
+                case null:
+                    return;
+                case JsonObject jsonObject:
+                    JsonValue? jsonValue = JsonValue.Create(value);
+                    jsonObject.SetItem(GetPropertyName(), jsonValue);
+                    return;
+                case JsonArray jsonArray:
+                    JsonValue? jValue = JsonValue.Create(value);
+                    jsonArray.SetItem(GetElementIndex(), jValue);
+                    return;
             }
         }
 

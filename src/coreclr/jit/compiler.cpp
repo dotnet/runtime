@@ -2298,7 +2298,7 @@ void Compiler::compSetProcessor()
 
         instructionSetFlags.AddInstructionSet(InstructionSet_Vector512);
 
-        if ((preferredVectorByteLength == 0) && jitFlags.IsSet(JitFlags::JIT_FLAG_VECTOR512_THROTTLING))
+        if ((preferredVectorByteLength == 0) && opts.Vector512Throttling())
         {
             // Some architectures can experience frequency throttling when
             // executing 512-bit width instructions. To account for this we set the

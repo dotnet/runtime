@@ -24,6 +24,7 @@ namespace Microsoft.Interop
             public const string CannotForwardToDllImport = Prefix + "1053";
 
             public const string RequiresAllowUnsafeBlocks = Prefix + "1062";
+            public const string UnnecessaryMarshallingInfo = Prefix + "1063";
         }
 
         private const string Category = "LibraryImportGenerator";
@@ -187,6 +188,33 @@ namespace Microsoft.Interop
                 DiagnosticSeverity.Error,
                 isEnabledByDefault: true,
                 description: GetResourceString(nameof(SR.RequiresAllowUnsafeBlocksDescription)));
+
+        public static readonly DiagnosticDescriptor UnnecessaryParameterMarshallingInfo =
+            new DiagnosticDescriptor(
+                Ids.UnnecessaryMarshallingInfo,
+                GetResourceString(nameof(SR.UnnecessaryMarshallingInfoTitle)),
+                GetResourceString(nameof(SR.UnnecessaryParameterMarshallingInfoMessage)),
+                Category,
+                DiagnosticSeverity.Info,
+                isEnabledByDefault: true,
+                description: GetResourceString(nameof(SR.UnnecessaryMarshallingInfoDescription)),
+                customTags: new[]
+                {
+                    WellKnownDiagnosticTags.Unnecessary
+                });
+        public static readonly DiagnosticDescriptor UnnecessaryReturnMarshallingInfo =
+            new DiagnosticDescriptor(
+                Ids.UnnecessaryMarshallingInfo,
+                GetResourceString(nameof(SR.UnnecessaryMarshallingInfoTitle)),
+                GetResourceString(nameof(SR.UnnecessaryReturnMarshallingInfoMessage)),
+                Category,
+                DiagnosticSeverity.Info,
+                isEnabledByDefault: true,
+                description: GetResourceString(nameof(SR.UnnecessaryMarshallingInfoDescription)),
+                customTags: new[]
+                {
+                    WellKnownDiagnosticTags.Unnecessary
+                });
 
         /// <summary>
         /// Report diagnostic for invalid configuration for string marshalling.

@@ -344,12 +344,12 @@
       </trans-unit>
       <trans-unit id="MarshalAsConfigurationNotSupportedMessageParameter">
         <source>The specified 'MarshalAsAttribute' configuration for parameter '{1}' is not supported by source-generated COM. If the specified configuration is required, use `ComImport` instead.</source>
-        <target state="new">The specified 'MarshalAsAttribute' configuration for parameter '{1}' is not supported by source-generated COM. If the specified configuration is required, use `ComImport` instead.</target>
+        <target state="translated">A configuração especificada "MarshalAsAttribute" para o parâmetro "{1}" não tem suporte do COM gerado pela origem. Se a configuração especificada for necessária, use "ComImport" no lugar.</target>
         <note />
       </trans-unit>
       <trans-unit id="MarshalAsConfigurationNotSupportedMessageReturn">
         <source>The specified 'MarshalAsAttribute' configuration for the return value of method '{1}' is not supported by source-generated COM. If the specified configuration is required, use `ComImport` instead.</source>
-        <target state="new">The specified 'MarshalAsAttribute' configuration for the return value of method '{1}' is not supported by source-generated COM. If the specified configuration is required, use `ComImport` instead.</target>
+        <target state="translated">A configuração especificada "MarshalAsAttribute" para o valor retornado do método "{1}" não tem suporte do COM gerado pela origem. Se a configuração especificada for necessária, use "ComImport" no lugar.</target>
         <note />
       </trans-unit>
       <trans-unit id="MethodNotDeclaredInAttributedInterfaceDescription">
@@ -452,6 +452,26 @@
       <trans-unit id="TypeNotSupportedTitle">
         <source>Specified type is not supported by source-generated COM</source>
         <target state="translated">Um COM gerado pela origem não dá suporte ao tipo especificado.</target>
+        <note />
+      </trans-unit>
+      <trans-unit id="UnnecessaryMarshallingInfoDescription">
+        <source>Unnecesssary marshalling info was provided. This marshalling information can be removed without any change in behavior to the application.</source>
+        <target state="new">Unnecesssary marshalling info was provided. This marshalling information can be removed without any change in behavior to the application.</target>
+        <note />
+      </trans-unit>
+      <trans-unit id="UnnecessaryMarshallingInfoTitle">
+        <source>Unnecessary marshalling info was provided and can be removed.</source>
+        <target state="new">Unnecessary marshalling info was provided and can be removed.</target>
+        <note />
+      </trans-unit>
+      <trans-unit id="UnnecessaryParameterMarshallingInfoMessage">
+        <source>Unnecessary marshalling info '{0}' was provided for parameter '{1}'</source>
+        <target state="new">Unnecessary marshalling info '{0}' was provided for parameter '{1}'</target>
+        <note />
+      </trans-unit>
+      <trans-unit id="UnnecessaryReturnMarshallingInfoMessage">
+        <source>Unnecessary marshalling info '{0}' was provided for the return type of method '{1}'</source>
+        <target state="new">Unnecessary marshalling info '{0}' was provided for the return type of method '{1}'</target>
         <note />
       </trans-unit>
     </body>

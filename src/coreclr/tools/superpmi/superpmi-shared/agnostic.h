@@ -204,6 +204,25 @@ struct Agnostic_GetStaticFieldCurrentClass
     bool      isSpeculative;
 };
 
+struct Agnostic_CORINFO_TYPE_LAYOUT_NODE
+{
+    DWORDLONG simdTypeHnd;
+    DWORDLONG diagFieldHnd;
+    DWORD parent;
+    DWORD offset;
+    DWORD size;
+    DWORD numFields;
+    BYTE type;
+    bool hasSignificantPadding;
+};
+
+struct Agnostic_GetTypeLayoutResult
+{
+    DWORD result;
+    DWORD nodesBuffer;
+    DWORD numNodes;
+};
+
 struct Agnostic_CORINFO_RESOLVED_TOKEN
 {
     Agnostic_CORINFO_RESOLVED_TOKENin inValue;
