@@ -530,26 +530,23 @@ LEAF_ENTRY JIT_DispatchIndirectCall, _TEST
         rex64 jmp rax
 LEAF_END JIT_DispatchIndirectCall, _TEST
 
-// Calculates the offset of native thread local variable `t_ThreadStatics`. The offset has to be found at runtime
-// once linker does its relocation and fixup of thread locals. It retrieves the current `instruction pointer` so
-// the caller can walk through the instruction bytes to retrieve the offset embedded by the linker and calculate the
+// Helper to calculate the offset of native thread local variable `t_ThreadStatics`. The offset has to be found at runtime
+// once linker does its relocation and fixup of thread locals. The runtime gets the address of this function, so
+// it can walk through the instruction bytes to retrieve the offset embedded by the linker and calculate the
 // final offset that should be passed to __tls_get_addr() in order to calculate the address of `t_ThreadStatics` for
 // the current thread. Here, we have to call `__tls_get_addr()`, because if the linker tries to find the code pattern
 // of "lea t_ThreadStatics@TLSGD", followed by `call __tls_get_addr()`. Without adding the call, the linker complains.
-// We do not use the result we get from `__tls_get_addr()` call, but instead just return the `instructino pointer` value
-// that we read in the beginning.
+// We never have to call this method directly, and hence there is a `int 3` at the end.
 LEAF_ENTRY JIT_GetThreadStaticsBaseOffset, _TEXT
-        push rbx
-        push rdi
-        lea rbx, [rip]                        // return the current instruction pointer
+#ifdef TARGET_OSX
+        movq  _t_ThreadStatics@TLVP(%%rip), %%rdi
+#else
+#endif
         data16
         lea rdi, t_ThreadStatics@TLSGD[rip]   // instruction where offset is embedded by the linker during compilation
         data16
         data16
         rex64
         call __tls_get_addr                   // dummy call to have linker see the code pattern to replace the offset
-        mov rax, rbx                          // return the instruction pointer
-        pop rdi
-        pop rbx
-        ret
+        int 3
 LEAF_END JIT_GetThreadStaticsBaseOffset, _TEXT

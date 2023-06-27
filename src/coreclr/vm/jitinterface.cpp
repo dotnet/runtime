@@ -1649,41 +1649,21 @@ uint32_t CEEInfo::getThreadLocalFieldInfo (CORINFO_FIELD_HANDLE  field, bool isG
 
 #ifdef HOST_AMD64
 
-#ifdef TARGET_OSX
+
 void* getThreadStaticDescriptor(uint8_t* p)
 {
-    _ASSERTE_MSG((p[0] == 0x48 && p[1] == 0x8d && p[2] == 0x3d),
-        "Unexpected instruction - this can happen when this is not compiled in .so (e.g. for single file)");
+#ifdef TARGET_OSX
+    if (!(p[0] == 0x48 && p[1] == 0x8d && p[2] == 0x3d))
+    {
+        // The optimization is disabled if coreclr is not compiled in .so format.
+        return 0;
+    }
 
     // At this point, `p` contains the instruction pointer and is pointing to the above opcodes.
     // These opcodes are patched by the dynamic linker.
     // Move beyond the opcodes that we have already checked above.
     p += 3;
-
-    // The descriptor address is located at *p at this point. Read that and add
-    // it to the instruction pointer to locate the address of `ti` that will be used
-    // to pass to __tls_get_addr during execution.
-    // (p + 4) below skips the descriptor address bytes embedded in the instruction and
-    // add it to the `instruction pointer` to find out the address.
-    return *(uint32_t*)p + (p + 4);
-}
-
-// Generates sequence for accessing offset in TLS for osx/x64
-void* getThreadStaticsBaseOffset()
-{
-    uint8_t* p;
-    __asm__ (
-        "leaq  0(%%rip), %%rdx\n"
-        "movq  _t_ThreadStatics@TLVP(%%rip), %%rdi\n"
-        : "=d"(p)
-        );
-
-    return getThreadStaticDescriptor(p);
-}
-
 #else
-void* getThreadStaticDescriptor(uint8_t* p)
-{
     if (!(p[0] == 0x66 && p[1] == 0x48 && p[2] == 0x8d && p[3] == 0x3d))
     {
         // The optimization is disabled if coreclr is not compiled in .so format.
@@ -1694,6 +1674,7 @@ void* getThreadStaticDescriptor(uint8_t* p)
     // These opcodes are patched by the dynamic linker.
     // Move beyond the opcodes that we have already checked above.
     p += 4;
+#endif
 
     // The descriptor address is located at *p at this point. Read that and add
     // it to the instruction pointer to locate the address of `ti` that will be used
@@ -1703,15 +1684,28 @@ void* getThreadStaticDescriptor(uint8_t* p)
     return *(uint32_t*)p + (p + 4);
 }
 
+//// Generates sequence for accessing offset in TLS for osx/x64
+//void* getThreadStaticsBaseOffset()
+//{
+//    uint8_t* p;
+//    __asm__ (
+//        "leaq  0(%%rip), %%rdx\n"
+//        "movq  _t_ThreadStatics@TLVP(%%rip), %%rdi\n"
+//        : "=d"(p)
+//        );
+//
+//    return getThreadStaticDescriptor(p);
+//}
+
+
 extern "C" void* JIT_GetThreadStaticsBaseOffset();
 
 void* getThreadStaticsBaseOffset()
 {
-    uint8_t* p = (uint8_t*)JIT_GetThreadStaticsBaseOffset();
+    uint8_t* p = reinterpret_cast<uint8_t*>(&JIT_GetThreadStaticsBaseOffset);
     return getThreadStaticDescriptor(p);
 }
 
-#endif // TARGET_OSX
 #endif // HOST_AMD64
 
 #ifdef HOST_ARM64
