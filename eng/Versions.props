@@ -87,6 +87,7 @@
     <MicrosoftDotNetCodeAnalysisVersion>8.0.0-beta.23320.3</MicrosoftDotNetCodeAnalysisVersion>
     <MicrosoftDotNetGenAPIVersion>8.0.0-beta.23320.3</MicrosoftDotNetGenAPIVersion>
     <MicrosoftDotNetGenFacadesVersion>8.0.0-beta.23320.3</MicrosoftDotNetGenFacadesVersion>
+    <MicrosoftDotNetXUnitAssertVersion>8.0.0-beta.23320.3</MicrosoftDotNetXUnitAssertVersion>
     <MicrosoftDotNetXUnitExtensionsVersion>8.0.0-beta.23320.3</MicrosoftDotNetXUnitExtensionsVersion>
     <MicrosoftDotNetXUnitConsoleRunnerVersion>2.5.1-beta.23320.3</MicrosoftDotNetXUnitConsoleRunnerVersion>
     <MicrosoftDotNetBuildTasksArchivesVersion>8.0.0-beta.23320.3</MicrosoftDotNetBuildTasksArchivesVersion>
