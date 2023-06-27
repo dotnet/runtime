@@ -125,12 +125,12 @@ public class Program
 
     private static void Compare_Struct2_Nullable(Struct2? a, Struct2? b)
     {
-        if (a.HasValue && b.HasValue)
+        if (!a.HasValue && !b.HasValue)
             AssertEquals(0, Comparer<Struct2?>.Default.Compare(a, b));
-        else if (a.HasValue)
-            AssertEquals(1, Comparer<Struct2?>.Default.Compare(a, b));
-        else if (b.HasValue)
+        else if (!a.HasValue)
             AssertEquals(-1, Comparer<Struct2?>.Default.Compare(a, b));
+        else if (!b.HasValue)
+            AssertEquals(1, Comparer<Struct2?>.Default.Compare(a, b));
         else
             AssertThrows<ArgumentException>(() => Comparer<Struct2?>.Default.Compare(a, b));
     }
@@ -398,7 +398,7 @@ public struct Struct1 : IComparable
     public long b;
     public int CompareTo(object obj)
     {
-        return b.CompareTo(((Struct1) obj).b);
+        return obj is Struct1 str ?  b.CompareTo(str.b) : 1;
     }
 }
 
