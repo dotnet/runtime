@@ -30,7 +30,7 @@ namespace Wasm.Build.Tests
 
         [Theory]
         [MemberData(nameof(SatelliteAssemblyTestData), parameters: new object[] { /*aot*/ false, /*relinking*/ false, RunHost.All })]
-        [MemberData(nameof(SatelliteAssemblyTestData), parameters: new object[] { /*aot*/ false, /*relinking*/ true, RunHost.All })]
+        [MemberData(nameof(SatelliteAssemblyTestData), parameters: new object[] { /*aot*/ false, /*relinking*/ true,  RunHost.All })]
         [MemberData(nameof(SatelliteAssemblyTestData), parameters: new object[] { /*aot*/ true,  /*relinking*/ false, RunHost.All })]
         public void ResourcesFromMainAssembly(BuildArgs buildArgs,
                                               bool nativeRelink,
@@ -72,7 +72,7 @@ namespace Wasm.Build.Tests
 
         [Theory]
         [MemberData(nameof(SatelliteAssemblyTestData), parameters: new object[] { /*aot*/ false, /*relinking*/ false, RunHost.All })]
-        [MemberData(nameof(SatelliteAssemblyTestData), parameters: new object[] { /*aot*/ false, /*relinking*/ true, RunHost.All })]
+        [MemberData(nameof(SatelliteAssemblyTestData), parameters: new object[] { /*aot*/ false, /*relinking*/ true,  RunHost.All })]
         [MemberData(nameof(SatelliteAssemblyTestData), parameters: new object[] { /*aot*/ true,  /*relinking*/ false, RunHost.All })]
         public void ResourcesFromProjectReference(BuildArgs buildArgs,
                                                   bool nativeRelink,
@@ -167,7 +167,7 @@ namespace Wasm.Build.Tests
                 <TargetFramework>{DefaultTargetFramework}</TargetFramework>
                 <OutputType>Exe</OutputType>
                 <WasmGenerateRunV8Script>true</WasmGenerateRunV8Script>
-                <WasmMainJSPath>test-main.mjs</WasmMainJSPath>
+                <WasmMainJSPath>test-main.js</WasmMainJSPath>
                 ##EXTRA_PROPERTIES##
               </PropertyGroup>
               <ItemGroup>

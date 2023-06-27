@@ -41,7 +41,7 @@ if /I [%XHARNESS_COMMAND%] == [test] (
         )
     )
     if [%MAIN_JS%] == [] (
-        set "MAIN_JS=--js-file^=test-main.mjs"
+        set "MAIN_JS=--js-file^=test-main.js"
     )
 
     if [%JS_ENGINE_ARGS%] == [] (

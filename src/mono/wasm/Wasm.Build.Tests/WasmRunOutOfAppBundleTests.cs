@@ -12,7 +12,7 @@ namespace Wasm.Build.Tests;
 public class WasmRunOutOfAppBundleTests : BuildTestBase
 {
     public WasmRunOutOfAppBundleTests(ITestOutputHelper output, SharedBuildPerTestClassFixture buildContext) : base(output, buildContext)
-    { }
+    {}
 
     [Theory]
     [BuildAndRun]
@@ -41,7 +41,7 @@ public class WasmRunOutOfAppBundleTests : BuildTestBase
             indexHtmlPath = Path.Combine(outerDir, "index.html");
             if (!File.Exists(indexHtmlPath))
             {
-                var html = @"<html><body><script type=""module"" src=""./AppBundle/test-main.mjs""></script></body></html>";
+                var html = @"<html><body><script type=""module"" src=""./AppBundle/test-main.js""></script></body></html>";
                 File.WriteAllText(indexHtmlPath, html);
             }
         }
@@ -51,6 +51,6 @@ public class WasmRunOutOfAppBundleTests : BuildTestBase
                             host: host,
                             id: id,
                             bundleDir: outerDir,
-                            jsRelativePath: "./AppBundle/test-main.mjs");
+                            jsRelativePath: "./AppBundle/test-main.js");
     }
 }
