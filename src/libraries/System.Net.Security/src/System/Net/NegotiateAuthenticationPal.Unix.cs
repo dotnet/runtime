@@ -29,7 +29,7 @@ namespace System.Net
             {
                 if (!Interop.NetSecurityNative.IsNtlmInstalled())
                 {
-                    _useManagedNtlm = true;
+                    _useManagedNtlm = !AppContext.TryGetSwitch("System.Net.Security.UseManagedNtlm", out bool useManagedNtlm) || useManagedNtlm;
                 }
                 else
                 {
