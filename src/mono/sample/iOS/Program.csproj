@@ -8,6 +8,7 @@
     <PublishDir Condition="'$(PublishDir)' == ''">$(MSBuildThisFileDirectory)/$(OutputPath)/publish</PublishDir>
     <AppName>HelloiOS</AppName>
     <MainLibraryFileName>$(AssemblyName).dll</MainLibraryFileName>
+    <SelfContained Condition="'$(ArchiveTests)' == 'true'">true</SelfContained>
     <UseConsoleUITemplate>false</UseConsoleUITemplate>
 
     <RunAOTCompilation Condition="'$(RunAOTCompilation)' == ''">true</RunAOTCompilation>
