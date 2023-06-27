@@ -318,6 +318,9 @@
     <ItemGroup>
       <RuntimePackNativeLibs Include="$(MicrosoftNetCoreAppRuntimePackDir)/**/*.dll;$(MicrosoftNetCoreAppRuntimePackDir)/native/**/*.a;$(MicrosoftNetCoreAppRuntimePackDir)/native/**/*.dylib;$(MicrosoftNetCoreAppRuntimePackDir)/native/icudt.dat" />
     </ItemGroup>
+    <ItemGroup>
+      <EntryPoints Include="testdir-%(TestDlls.Filename)/%(TestDlls.Filename).dll" />
+    </ItemGroup>
 
     <RemoveDir Directories="$(BundleDir)" />
     <RemoveDir Directories="$(BuildDir)" />
@@ -412,10 +415,53 @@
       <PublishDir>$(BuildDir)/</PublishDir>
       <TestProjectName>$(AssemblyName)</TestProjectName>
       <CoreRootPath>$(CORE_ROOT)</CoreRootPath>
-      <MainLibraryFileName>processinfo2.dll</MainLibraryFileName>
+      <MainLibraryFileName></MainLibraryFileName>
     </PropertyGroup>
     <Message Importance="High" Text="App: $(FinalPath)" />
+
+    <CustomTask EntryPoints="@(EntryPoints)" RunScriptCommand="$(RunScriptCommand)" >
+      <Output TaskParameter="OutputScript" PropertyName="RunScriptCommand" />
+    </CustomTask>
   </Target>
+
+  <UsingTask
+    TaskName="CustomTask"
+    TaskFactory="RoslynCodeTaskFactory"
+    AssemblyFile="$(MSBuildToolsPath)\Microsoft.Build.Tasks.Core.dll">
+  <ParameterGroup>
+    <EntryPoints ParameterType="Microsoft.Build.Framework.ITaskItem[]" Required="true" />
+    <RunScriptCommand ParameterType="System.String" Required="true" />
+    <OutputScript ParameterType="System.String" Output="true" />
+  </ParameterGroup>
+  <Task>
+    <Using Namespace="System"/>
+    <Using Namespace="Microsoft.Build.Framework"/>
+    <Using Namespace="Microsoft.Build.Utilities"/>
+    <Using Namespace="System.Linq"/>
+    <Using Namespace="System.Text"/>
+
+    <Code Type="Fragment" Language="cs">
+      <![CDATA[
+        string[] lines = RunScriptCommand.Split('\n');
+        string lastLine = lines[lines.Length - 1];
+        StringBuilder resultBuilder = new StringBuilder();
+
+        foreach (ITaskItem item in EntryPoints)
+        {
+            string value = item.ItemSpec;
+            string output = lastLine.Replace("--signal-app-end", $"--signal-app-end --set-env=MONO_APPLE_APP_ENTRY_POINT_LIB_NAME={value}");
+            resultBuilder.AppendLine(output);
+        }
+
+        StringBuilder outputScriptBuilder = new StringBuilder(string.Join("\n", lines.Take(lines.Length - 1)));
+        outputScriptBuilder.AppendLine();
+        outputScriptBuilder.Append(resultBuilder.ToString());
+
+        OutputScript = outputScriptBuilder.ToString();
+      ]]>
+    </Code>
+  </Task>
+</UsingTask>
 
   <Target Name="BuildAlliOSApp" DependsOnTargets="GetListOfTestCmds;FindCmdDirectories">
     <ItemGroup>
