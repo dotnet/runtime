@@ -25064,7 +25064,6 @@ void gc_heap::check_heap_count ()
 
         // the middle element is the median overhead percentage
         float median_percent_overhead = percent_overhead[1];
-        dprintf (6666, ("median overhead: %d%%", median_percent_overhead));
 
         // apply exponential smoothing and use 1/3 for the smoothing factor
         const float smoothing = 3;
@@ -25190,6 +25189,10 @@ void gc_heap::check_heap_count ()
     {
         // heap count stays the same, no work to do
         dprintf (6666, ("heap count stays the same, no work to do %d == %d", dynamic_heap_count_data.new_n_heaps, n_heaps));
+
+        // come back after 3 GCs to reconsider
+        prev_change_heap_count_gc_index = settings.gc_index;
+
         return;
     }
 
