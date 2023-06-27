@@ -3867,7 +3867,7 @@ GenTree* Compiler::impIntrinsic(GenTree*                newobjThis,
                 {
                     assert(sig->sigInst.methInstCount == 0);
                     CORINFO_CLASS_HANDLE typeHnd = nullptr;
-                    CorInfoType jitType = strip(info.compCompHnd->getArgType(sig, info.compCompHnd->getArgNext(sig->args), &typeHnd))
+                    CorInfoType jitType = strip(info.compCompHnd->getArgType(sig, info.compCompHnd->getArgNext(sig->args), &typeHnd));
                     assert(impIsPrimitive(jitType));
                     type = JITtype2varType(jitType);
 #if !TARGET_64BIT
