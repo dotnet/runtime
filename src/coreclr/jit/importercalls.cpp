@@ -3865,7 +3865,8 @@ GenTree* Compiler::impIntrinsic(GenTree*                newobjThis,
                 if (sig->sigInst.methInstCount != 1)
                 {
                     CORINFO_CLASS_HANDLE typeHnd = nullptr;
-                    type = JITtype2varType(strip(info.compCompHnd->getArgType(sig, info.compCompHnd->getArgNext(sig->args), &typeHnd)));
+                    type                         = JITtype2varType(
+                        strip(info.compCompHnd->getArgType(sig, info.compCompHnd->getArgNext(sig->args), &typeHnd)));
 #if !TARGET_64BIT
                     if ((type == TYP_LONG) || (type == TYP_ULONG) || (type == TYP_DOUBLE))
                     {
