@@ -458,6 +458,64 @@ namespace System.Security.Cryptography.X509Certificates.Tests
             Assert.Equal("1.2.840.113549.1.9.1", rdns[2].GetSingleElementType().Value);
         }
 
+        [Theory]
+        [InlineData("2.5.4.3", "3000", "CN=#3000")]
+        [InlineData("2.5.4.5", "0603550406", "SERIALNUMBER=#0603550406")]
+        [InlineData("0.0", "31020500", "OID.0.0=#31020500")]
+        [InlineData("2.5.4.3", "04023000", "CN=#3000")] // OCTET STRING is implicitly peeled off
+        [InlineData("2.5.4.3", "040404023000", "CN=#04023000")] // Only one OCTET STRING is peeled off
+        [InlineData("2.5.4.3", "0303003000", "CN=#0303003000")] // BIT STRING is not implicitly removed
+        [InlineData("2.5.4.8", "0500", "S=#0500")]
+        [InlineData("2.5.4.8", "0101FF", "S=#0101FF")]
+        public static void Format_ComponentWithNonStringContent(string oid, string attributeValue, string expected)
+        {
+            AsnWriter writer = new AsnWriter(AsnEncodingRules.DER);
+            using (writer.PushSequence())
+            using (writer.PushSetOf())
+            using (writer.PushSequence())
+            {
+                writer.WriteObjectIdentifier(oid);
+                writer.WriteEncodedValue(Convert.FromHexString(attributeValue));
+            }
+
+            X500DistinguishedName distinguishedName = new X500DistinguishedName(writer.Encode());
+            string dnString = distinguishedName.Format(false);
+            Assert.Equal(expected, dnString);
+
+            string decode = distinguishedName.Decode(X500DistinguishedNameFlags.None);
+            Assert.Equal(expected, decode);
+        }
+
+        [Fact]
+        public static void Format_MultiValueComponentWithNonStringContent()
+        {
+            AsnWriter writer = new AsnWriter(AsnEncodingRules.DER);
+
+            using (writer.PushSequence())
+            using (writer.PushSetOf())
+            {
+                using (writer.PushSequence())
+                {
+                    writer.WriteObjectIdentifier("2.5.4.3");
+                    writer.WriteEncodedValue(new byte[] { 0x30, 0x00 });
+                }
+
+                using (writer.PushSequence())
+                {
+                    writer.WriteObjectIdentifier("2.5.4.8");
+                    writer.WriteEncodedValue(new byte[] { 0x31, 0x00 });
+                }
+            }
+
+            const string Expected = "CN=#3000 + S=#3100";
+            X500DistinguishedName distinguishedName = new X500DistinguishedName(writer.Encode());
+            string dnString = distinguishedName.Format(false);
+            Assert.Equal(Expected, dnString);
+
+            string decode = distinguishedName.Decode(X500DistinguishedNameFlags.None);
+            Assert.Equal(Expected, decode);
+        }
+
         public static readonly object[][] WhitespaceBeforeCases =
         {
             // Regular space.
