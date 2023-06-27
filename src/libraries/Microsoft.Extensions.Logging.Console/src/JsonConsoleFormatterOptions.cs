@@ -21,10 +21,6 @@ namespace Microsoft.Extensions.Logging.Console
         /// </summary>
         public JsonWriterOptions JsonWriterOptions { get; set; }
 
-        internal override void Configure(IConfiguration configuration)
-        {
-            base.Configure(configuration);
-            configuration.Bind(this);
-        }
+        internal override void Configure(IConfiguration configuration) => configuration.Bind(this);
     }
 }
