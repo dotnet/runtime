@@ -12,11 +12,11 @@ public class Program
 {
     private static int s_ReturnCode = 100;
 
-    private static void AssertEquals<T>(T expected, T actual, [CallerLineNumber] int line = 0)
+    private static void AssertEquals<T>(T expected, T actual, string values = "", [CallerLineNumber] int line = 0)
     {
         if (!expected.Equals(actual))
         {
-            Console.WriteLine($"{expected} != {actual}, L{line}");
+            Console.WriteLine($"{values}{expected} != {actual}, L{line}");
             s_ReturnCode++;
         }
     }
@@ -39,58 +39,58 @@ public class Program
     }
 
     private static void Compare_Boolean(Boolean a, Boolean b) =>
-        AssertEquals(a.CompareTo(b), Comparer<Boolean>.Default.Compare(a, b));
+        AssertEquals(a.CompareTo(b), Comparer<Boolean>.Default.Compare(a, b), $"({a}; {b}): ");
 
     private static void Compare_Byte(Byte a, Byte b) =>
-        AssertEquals(a.CompareTo(b), Comparer<Byte>.Default.Compare(a, b));
+        AssertEquals(a.CompareTo(b), Comparer<Byte>.Default.Compare(a, b), $"({a}; {b}): ");
 
     private static void Compare_SByte(SByte a, SByte b) =>
-        AssertEquals(a.CompareTo(b), Comparer<SByte>.Default.Compare(a, b));
+        AssertEquals(a.CompareTo(b), Comparer<SByte>.Default.Compare(a, b), $"({a}; {b}): ");
 
     private static void Compare_Char(Char a, Char b) =>
-        AssertEquals(a.CompareTo(b), Comparer<Char>.Default.Compare(a, b));
+        AssertEquals(a.CompareTo(b), Comparer<Char>.Default.Compare(a, b), $"({a}; {b}): ");
 
     private static void Compare_UInt16(UInt16 a, UInt16 b) =>
-        AssertEquals(a.CompareTo(b), Comparer<UInt16>.Default.Compare(a, b));
+        AssertEquals(a.CompareTo(b), Comparer<UInt16>.Default.Compare(a, b), $"({a}; {b}): ");
 
     private static void Compare_Int16(Int16 a, Int16 b) =>
-        AssertEquals(a.CompareTo(b), Comparer<Int16>.Default.Compare(a, b));
+        AssertEquals(a.CompareTo(b), Comparer<Int16>.Default.Compare(a, b), $"({a}; {b}): ");
 
     private static void Compare_UInt32(UInt32 a, UInt32 b) =>
-        AssertEquals(a.CompareTo(b), Comparer<UInt32>.Default.Compare(a, b));
+        AssertEquals(a.CompareTo(b), Comparer<UInt32>.Default.Compare(a, b), $"({a}; {b}): ");
 
     private static void Compare_Int32(Int32 a, Int32 b) =>
-        AssertEquals(a.CompareTo(b), Comparer<Int32>.Default.Compare(a, b));
+        AssertEquals(a.CompareTo(b), Comparer<Int32>.Default.Compare(a, b), $"({a}; {b}): ");
 
     private static void Compare_Int64(Int64 a, Int64 b) =>
-        AssertEquals(a.CompareTo(b), Comparer<Int64>.Default.Compare(a, b));
+        AssertEquals(a.CompareTo(b), Comparer<Int64>.Default.Compare(a, b), $"({a}; {b}): ");
 
     private static void Compare_UInt64(UInt64 a, UInt64 b) =>
-        AssertEquals(a.CompareTo(b), Comparer<UInt64>.Default.Compare(a, b));
+        AssertEquals(a.CompareTo(b), Comparer<UInt64>.Default.Compare(a, b), $"({a}; {b}): ");
 
     private static void Compare_IntPtr(IntPtr a, IntPtr b) =>
-        AssertEquals(a.CompareTo(b), Comparer<IntPtr>.Default.Compare(a, b));
+        AssertEquals(a.CompareTo(b), Comparer<IntPtr>.Default.Compare(a, b), $"({a}; {b}): ");
 
     private static void Compare_UIntPtr(UIntPtr a, UIntPtr b) =>
-        AssertEquals(a.CompareTo(b), Comparer<UIntPtr>.Default.Compare(a, b));
+        AssertEquals(a.CompareTo(b), Comparer<UIntPtr>.Default.Compare(a, b), $"({a}; {b}): ");
 
     private static void Compare_nint(nint a, nint b) =>
-        AssertEquals(a.CompareTo(b), Comparer<nint>.Default.Compare(a, b));
+        AssertEquals(a.CompareTo(b), Comparer<nint>.Default.Compare(a, b), $"({a}; {b}): ");
 
     private static void Compare_nuint(nuint a, nuint b) =>
-        AssertEquals(a.CompareTo(b), Comparer<nuint>.Default.Compare(a, b));
+        AssertEquals(a.CompareTo(b), Comparer<nuint>.Default.Compare(a, b), $"({a}; {b}): ");
 
     private static void Compare_Enum_Int32(MethodImplOptions a, MethodImplOptions b) =>
-        AssertEquals(a.CompareTo(b), Comparer<MethodImplOptions>.Default.Compare(a, b));
+        AssertEquals(a.CompareTo(b), Comparer<MethodImplOptions>.Default.Compare(a, b)), $"({a}; {b}): ";
 
     private static void Compare_Enum_Byte(Enum_byte a, Enum_byte b) =>
-        AssertEquals(a.CompareTo(b), Comparer<Enum_byte>.Default.Compare(a, b));
+        AssertEquals(a.CompareTo(b), Comparer<Enum_byte>.Default.Compare(a, b), $"({a}; {b}): ");
 
     private static void Compare_String(String a, String b) =>
-        AssertEquals(a.CompareTo(b), Comparer<String>.Default.Compare(a, b));
+        AssertEquals(a.CompareTo(b), Comparer<String>.Default.Compare(a, b), $"({a}; {b}): ");
 
     private static void Compare_DateTime(DateTime a, DateTime b) =>
-        AssertEquals(a.CompareTo(b), Comparer<DateTime>.Default.Compare(a, b));
+        AssertEquals(a.CompareTo(b), Comparer<DateTime>.Default.Compare(a, b), $"({a}; {b}): ");
 
     private static void Compare_Int32_Nullable(long? a, long? b)
     {
@@ -100,7 +100,7 @@ public class Program
             expected = b.HasValue ? a.Value.CompareTo(b.Value) : 1;
         else
             expected = b.HasValue ? -1 : 0;
-        AssertEquals(expected, actual);
+        AssertEquals(expected, actual, $"({a}; {b}): ");
     }
 
     private static void Compare_Enum_Int32_Nullable(MethodImplOptions? a, MethodImplOptions? b)
@@ -111,35 +111,35 @@ public class Program
             expected = b.HasValue ? a.Value.CompareTo(b.Value) : 1;
         else
             expected = b.HasValue ? -1 : 0;
-        AssertEquals(expected, actual);
+        AssertEquals(expected, actual, $"({a}; {b}): ");
     }
 
     private static void Compare_Struct1(Struct1 a, Struct1 b) =>
-        AssertEquals(a.CompareTo(b), Comparer<Struct1>.Default.Compare(a, b));
+        AssertEquals(a.CompareTo(b), Comparer<Struct1>.Default.Compare(a, b), $"({a}; {b}): ");
 
     private static void Compare_Struct2(Struct2 a, Struct2 b) =>
-        AssertThrows<ArgumentException>(() => Comparer<Struct2>.Default.Compare(a, b));
+        AssertThrows<ArgumentException>(() => Comparer<Struct2>.Default.Compare(a, b), $"({a}; {b}): ");
 
     private static void Compare_Struct1_Nullable(Struct1? a, Struct1? b) =>
-        AssertEquals(((IComparable)a)?.CompareTo(b) ?? (b.HasValue ? -1 : 0), Comparer<Struct1?>.Default.Compare(a, b));
+        AssertEquals(((IComparable)a)?.CompareTo(b) ?? (b.HasValue ? -1 : 0), Comparer<Struct1?>.Default.Compare(a, b), $"({a}; {b}): ");
 
     private static void Compare_Struct2_Nullable(Struct2? a, Struct2? b)
     {
         if (!a.HasValue && !b.HasValue)
-            AssertEquals(0, Comparer<Struct2?>.Default.Compare(a, b));
+            AssertEquals(0, Comparer<Struct2?>.Default.Compare(a, b), $"({a}; {b}): ");
         else if (!a.HasValue)
-            AssertEquals(-1, Comparer<Struct2?>.Default.Compare(a, b));
+            AssertEquals(-1, Comparer<Struct2?>.Default.Compare(a, b), $"({a}; {b}): ");
         else if (!b.HasValue)
-            AssertEquals(1, Comparer<Struct2?>.Default.Compare(a, b));
+            AssertEquals(1, Comparer<Struct2?>.Default.Compare(a, b), $"({a}; {b}): ");
         else
             AssertThrows<ArgumentException>(() => Comparer<Struct2?>.Default.Compare(a, b));
     }
 
     private static void Compare_Double_Enum(DoubleEnum a, DoubleEnum b) =>
-        AssertEquals(a.CompareTo(b), Comparer<DoubleEnum>.Default.Compare(a, b));
+        AssertEquals(a.CompareTo(b), Comparer<DoubleEnum>.Default.Compare(a, b), $"({a}; {b}): ");
     
     private static void Compare_Generic_Enum<TEnum>(TEnum a, TEnum b) where TEnum : Enum =>
-        AssertEquals(a.CompareTo(b), Comparer<TEnum>.Default.Compare(a, b));
+        AssertEquals(a.CompareTo(b), Comparer<TEnum>.Default.Compare(a, b), $"({a}; {b}): ");
 
     [Fact]
     public static int TestEntryPoint()
