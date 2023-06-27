@@ -427,6 +427,10 @@ Behavioural changes compared to ICU
 
    - Capitalizing the German letter ß (sharp S) gives SS when using Apple native functions.
 
+   - Capitalizing ligatures gives different result on Apple platforms, eg. "\uFB00" (ﬀ) uppercase "\u0046" (F)
+
+   - "\u0149" (ŉ) on Apple platforms when captitalizing returns combination of  "\u02BC" (ʼ) and N -> (ʼN)
+
    - Final sigma behavior correction:
 
      ICU-based case change does not respect final-sigma rule, but hybrid does, so "ΒΌΛΟΣ" -> "βόλος", not "βόλοσ".

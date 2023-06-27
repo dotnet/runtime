@@ -75,8 +75,6 @@ int32_t GlobalizationNative_ChangeCaseNative(const uint16_t* localeName, int32_t
 
     int32_t srcIdx = 0, dstIdx = 0, isError = 0;
     uint16_t dstCodepoint;
-    if (result.length > cwDstLength)
-        result = source;
     while (srcIdx < result.length)
     {
         dstCodepoint = [result characterAtIndex:srcIdx++];
@@ -101,8 +99,6 @@ int32_t GlobalizationNative_ChangeCaseInvariantNative(const uint16_t* lpSrc, int
 
     int32_t srcIdx = 0, dstIdx = 0, isError = 0;
     uint16_t dstCodepoint;
-    if (result.length > cwDstLength)
-        result = source;
     while (srcIdx < cwSrcLength)
     {
         dstCodepoint = [result characterAtIndex:srcIdx++];

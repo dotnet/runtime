@@ -10,7 +10,8 @@ namespace System.Globalization
         private enum ErrorCodes
         {
             ERROR_SUCCESS = 0,
-            ERROR_INVALID_CODE_POINT = 1
+            ERROR_INVALID_CODE_POINT = 1,
+            ERROR_INSUFFICIENT_BUFFER = 2
         }
 
         internal unsafe void ChangeCaseNative(char* src, int srcLen, char* dstBuffer, int dstBufferCapacity, bool toUpper)
@@ -26,8 +27,8 @@ namespace System.Globalization
                 result = Interop.Globalization.ChangeCaseNative(_cultureName, _cultureName.Length, src, srcLen, dstBuffer, dstBufferCapacity, toUpper);
 
             if (result != (int)ErrorCodes.ERROR_SUCCESS)
-                throw new Exception(result == (int)ErrorCodes.ERROR_INVALID_CODE_POINT
-                                   ? "Invalid code point while case changing" : "Exception occurred while case changing");
+                throw new Exception(result == (int)ErrorCodes.ERROR_INVALID_CODE_POINT ? "Invalid code point while case changing"  :
+                                    result == (int)ErrorCodes.ERROR_INSUFFICIENT_BUFFER ? "Insufficiently sized destination buffer" : "Exception occurred while case changing");
         }
     }
 }
