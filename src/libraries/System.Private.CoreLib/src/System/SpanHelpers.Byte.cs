@@ -63,7 +63,68 @@ namespace System
             // Based on http://0x80.pl/articles/simd-strfind.html#algorithm-1-generic-simd "Algorithm 1: Generic SIMD" by Wojciech Mula
             // Some details about the implementation can also be found in https://github.com/dotnet/runtime/pull/63285
         SEARCH_TWO_BYTES:
-            if (Vector256.IsHardwareAccelerated && searchSpaceMinusValueTailLength - Vector256<byte>.Count >= 0)
+            if (Vector512.IsHardwareAccelerated && searchSpaceMinusValueTailLength - Vector512<byte>.Count >= 0)
+            {
+                // Find the last unique (which is not equal to ch1) byte
+                // the algorithm is fine if both are equal, just a little bit less efficient
+                byte ch2Val = Unsafe.Add(ref value, valueTailLength);
+                nint ch1ch2Distance = (nint)(uint)valueTailLength;
+                while (ch2Val == value && ch1ch2Distance > 1)
+                    ch2Val = Unsafe.Add(ref value, --ch1ch2Distance);
+
+                Vector512<byte> ch1 = Vector512.Create(value);
+                Vector512<byte> ch2 = Vector512.Create(ch2Val);
+
+                nint searchSpaceMinusValueTailLengthAndVector =
+                    searchSpaceMinusValueTailLength - (nint)Vector512<byte>.Count;
+
+                do
+                {
+                    Debug.Assert(offset >= 0);
+                    // Make sure we don't go out of bounds
+                    Debug.Assert(offset + ch1ch2Distance + Vector512<byte>.Count <= searchSpaceLength);
+
+                    Vector512<byte> cmpCh2 = Vector512.Equals(ch2, Vector512.LoadUnsafe(ref searchSpace, (nuint)(offset + ch1ch2Distance)));
+                    Vector512<byte> cmpCh1 = Vector512.Equals(ch1, Vector512.LoadUnsafe(ref searchSpace, (nuint)offset));
+                    Vector512<byte> cmpAnd = (cmpCh1 & cmpCh2).AsByte();
+
+                    // Early out: cmpAnd is all zeros
+                    if (cmpAnd != Vector512<byte>.Zero)
+                    {
+                        goto CANDIDATE_FOUND;
+                    }
+
+                LOOP_FOOTER:
+                    offset += Vector512<byte>.Count;
+
+                    if (offset == searchSpaceMinusValueTailLength)
+                        return -1;
+
+                    // Overlap with the current chunk for trailing elements
+                    if (offset > searchSpaceMinusValueTailLengthAndVector)
+                        offset = searchSpaceMinusValueTailLengthAndVector;
+
+                    continue;
+
+                CANDIDATE_FOUND:
+                    ulong mask = cmpAnd.ExtractMostSignificantBits();
+                    do
+                    {
+                        int bitPos = BitOperations.TrailingZeroCount(mask);
+                        if (valueLength == 2 || // we already matched two bytes
+                            SequenceEqual(
+                                ref Unsafe.Add(ref searchSpace, offset + bitPos),
+                                ref value, (nuint)(uint)valueLength)) // The (nuint)-cast is necessary to pick the correct overload
+                        {
+                            return (int)(offset + bitPos);
+                        }
+                        mask = BitOperations.ResetLowestSetBit(mask); // Clear the lowest set bit
+                    } while (mask != 0);
+                    goto LOOP_FOOTER;
+
+                } while (true);
+            }
+            else if (Vector256.IsHardwareAccelerated && searchSpaceMinusValueTailLength - Vector256<byte>.Count >= 0)
             {
                 // Find the last unique (which is not equal to ch1) byte
                 // the algorithm is fine if both are equal, just a little bit less efficient
@@ -235,7 +296,54 @@ namespace System
         // Based on http://0x80.pl/articles/simd-strfind.html#algorithm-1-generic-simd "Algorithm 1: Generic SIMD" by Wojciech Mula
         // Some details about the implementation can also be found in https://github.com/dotnet/runtime/pull/63285
         SEARCH_TWO_BYTES:
-            if (Vector256.IsHardwareAccelerated && searchSpaceMinusValueTailLength >= Vector256<byte>.Count)
+            if (Vector512.IsHardwareAccelerated && searchSpaceMinusValueTailLength >= Vector512<byte>.Count)
+            {
+                offset = searchSpaceMinusValueTailLength - Vector512<byte>.Count;
+
+                // Find the last unique (which is not equal to ch1) byte
+                // the algorithm is fine if both are equal, just a little bit less efficient
+                byte ch2Val = Unsafe.Add(ref value, valueTailLength);
+                int ch1ch2Distance = valueTailLength;
+                while (ch2Val == value && ch1ch2Distance > 1)
+                    ch2Val = Unsafe.Add(ref value, --ch1ch2Distance);
+
+                Vector512<byte> ch1 = Vector512.Create(value);
+                Vector512<byte> ch2 = Vector512.Create(ch2Val);
+                do
+                {
+                    Vector512<byte> cmpCh1 = Vector512.Equals(ch1, Vector512.LoadUnsafe(ref searchSpace, (nuint)offset));
+                    Vector512<byte> cmpCh2 = Vector512.Equals(ch2, Vector512.LoadUnsafe(ref searchSpace, (nuint)(offset + ch1ch2Distance)));
+                    Vector512<byte> cmpAnd = (cmpCh1 & cmpCh2).AsByte();
+
+                    // Early out: cmpAnd is all zeros
+                    if (cmpAnd != Vector512<byte>.Zero)
+                    {
+                        ulong mask = cmpAnd.ExtractMostSignificantBits();
+                        do
+                        {
+                            // unlike IndexOf, here we use LZCNT to process matches starting from the end
+                            int highestSetBitIndex = 63 - BitOperations.LeadingZeroCount(mask);
+                            if (valueLength == 2 || // we already matched two bytes
+                                SequenceEqual(
+                                    ref Unsafe.Add(ref searchSpace, offset + highestSetBitIndex),
+                                    ref value, (nuint)(uint)valueLength)) // The (nuint)-cast is necessary to pick the correct overload
+                            {
+                                return highestSetBitIndex + offset;
+                            }
+                            // Clear the highest set bit.
+                            mask = BitOperations.FlipBit(mask, highestSetBitIndex);
+                        } while (mask != 0);
+                    }
+
+                    offset -= Vector512<byte>.Count;
+                    if (offset == -Vector512<byte>.Count)
+                        return -1;
+                    // Overlap with the current chunk if there is not enough room for the next one
+                    if (offset < 0)
+                        offset = 0;
+                } while (true) ;
+            }
+            else if (Vector256.IsHardwareAccelerated && searchSpaceMinusValueTailLength >= Vector256<byte>.Count)
             {
                 offset = searchSpaceMinusValueTailLength - Vector256<byte>.Count;
 
@@ -345,7 +453,6 @@ namespace System
         internal static unsafe int IndexOfNullByte(byte* searchSpace)
         {
             const int Length = int.MaxValue;
-
             const uint uValue = 0; // Use uint for comparisons to avoid unnecessary 8->32 extensions
             nuint offset = 0; // Use nuint for arithmetic to avoid unnecessary 64->32->64 truncations
             nuint lengthToExamine = (nuint)(uint)Length;
@@ -416,7 +523,120 @@ namespace System
             // We get past SequentialScan only if IsHardwareAccelerated is true; and remain length is greater than Vector length.
             // However, we still have the redundant check to allow the JIT to see that the code is unreachable and eliminate it when the platform does not
             // have hardware accelerated. After processing Vector lengths we return to SequentialScan to finish any remaining.
-            if (Vector256.IsHardwareAccelerated)
+            if (Vector512.IsHardwareAccelerated)
+            {
+                if (offset < (nuint)(uint)Length)
+                {
+                    if ((((nuint)(uint)searchSpace + offset) & (nuint)(Vector256<byte>.Count - 1)) != 0)
+                    {
+                        // Not currently aligned to Vector256 (is aligned to Vector128); this can cause a problem for searches
+                        // with no upper bound e.g. String.strlen.
+                        // Start with a check on Vector128 to align to Vector256, before moving to processing Vector256.
+                        // This ensures we do not fault across memory pages while searching for an end of string.
+                        Vector128<byte> search = Vector128.Load(searchSpace + offset);
+
+                        // Same method as below
+                        uint matches = Vector128.Equals(Vector128<byte>.Zero, search).ExtractMostSignificantBits();
+                        if (matches == 0)
+                        {
+                            // Zero flags set so no matches
+                            offset += (nuint)Vector128<byte>.Count;
+                        }
+                        else
+                        {
+                            // Find bitflag offset of first match and add to current offset
+                            return (int)(offset + (uint)BitOperations.TrailingZeroCount(matches));
+                        }
+                    }
+
+                    if ((((nuint)(uint)searchSpace + offset) & (nuint)(Vector512<byte>.Count - 1)) != 0)
+                    {
+                        // Not currently aligned to Vector512 (is aligned to Vector256); this can cause a problem for searches
+                        // with no upper bound e.g. String.strlen.
+                        // Start with a check on Vector256 to align to Vector512, before moving to processing Vector256.
+                        // This ensures we do not fault across memory pages while searching for an end of string.
+                        Vector256<byte> search = Vector256.Load(searchSpace + offset);
+
+                        // Same method as below
+                        uint matches = Vector256.Equals(Vector256<byte>.Zero, search).ExtractMostSignificantBits();
+                        if (matches == 0)
+                        {
+                            // Zero flags set so no matches
+                            offset += (nuint)Vector256<byte>.Count;
+                        }
+                        else
+                        {
+                            // Find bitflag offset of first match and add to current offset
+                            return (int)(offset + (uint)BitOperations.TrailingZeroCount(matches));
+                        }
+                    }
+                    lengthToExamine = GetByteVector512SpanLength(offset, Length);
+                    if (lengthToExamine > offset)
+                    {
+                        do
+                        {
+                            Vector512<byte> search = Vector512.Load(searchSpace + offset);
+                            ulong matches = Vector512.Equals(Vector512<byte>.Zero, search).ExtractMostSignificantBits();
+                            // Note that MoveMask has converted the equal vector elements into a set of bit flags,
+                            // So the bit position in 'matches' corresponds to the element offset.
+                            if (matches == 0)
+                            {
+                                // Zero flags set so no matches
+                                offset += (nuint)Vector512<byte>.Count;
+                                continue;
+                            }
+
+                            // Find bitflag offset of first match and add to current offset
+                            return (int)(offset + (uint)BitOperations.TrailingZeroCount(matches));
+                        } while (lengthToExamine > offset);
+                    }
+
+                    lengthToExamine = GetByteVector256SpanLength(offset, Length);
+                    if (lengthToExamine > offset)
+                    {
+                        Vector256<byte> search = Vector256.Load(searchSpace + offset);
+
+                        // Same method as above
+                        uint matches = Vector256.Equals(Vector256<byte>.Zero, search).ExtractMostSignificantBits();
+                        if (matches == 0)
+                        {
+                            // Zero flags set so no matches
+                            offset += (nuint)Vector256<byte>.Count;
+                        }
+                        else
+                        {
+                            // Find bitflag offset of first match and add to current offset
+                            return (int)(offset + (uint)BitOperations.TrailingZeroCount(matches));
+                        }
+                    }
+
+                    lengthToExamine = GetByteVector128SpanLength(offset, Length);
+                    if (lengthToExamine > offset)
+                    {
+                        Vector128<byte> search = Vector128.Load(searchSpace + offset);
+
+                        // Same method as above
+                        uint matches = Vector128.Equals(Vector128<byte>.Zero, search).ExtractMostSignificantBits();
+                        if (matches == 0)
+                        {
+                            // Zero flags set so no matches
+                            offset += (nuint)Vector128<byte>.Count;
+                        }
+                        else
+                        {
+                            // Find bitflag offset of first match and add to current offset
+                            return (int)(offset + (uint)BitOperations.TrailingZeroCount(matches));
+                        }
+                    }
+
+                    if (offset < (nuint)(uint)Length)
+                    {
+                        lengthToExamine = ((nuint)(uint)Length - offset);
+                        goto SequentialScan;
+                    }
+                }
+            }
+            else if (Vector256.IsHardwareAccelerated)
             {
                 if (offset < (nuint)(uint)Length)
                 {
@@ -634,7 +854,37 @@ namespace System
         Vector:
             if (Vector128.IsHardwareAccelerated)
             {
-                if (Vector256.IsHardwareAccelerated && length >= (nuint)Vector256<byte>.Count)
+                if (Vector512.IsHardwareAccelerated && length >= (nuint)Vector512<byte>.Count)
+                {
+                    nuint offset = 0;
+                    nuint lengthToExamine = length - (nuint)Vector512<byte>.Count;
+                    // Unsigned, so it shouldn't have overflowed larger than length (rather than negative)
+                    Debug.Assert(lengthToExamine < length);
+                    if (lengthToExamine != 0)
+                    {
+                        do
+                        {
+                            if (Vector512.LoadUnsafe(ref first, offset) !=
+                                Vector512.LoadUnsafe(ref second, offset))
+                            {
+                                goto NotEqual;
+                            }
+                            offset += (nuint)Vector512<byte>.Count;
+                        } while (lengthToExamine > offset);
+                    }
+
+                    // Do final compare as Vector512<byte>.Count from end rather than start
+                    if (Vector512.LoadUnsafe(ref first, lengthToExamine) ==
+                        Vector512.LoadUnsafe(ref second, lengthToExamine))
+                    {
+                        // C# compiler inverts this test, making the outer goto the conditional jmp.
+                        goto Equal;
+                    }
+
+                    // This becomes a conditional jmp forward to not favor it.
+                    goto NotEqual;
+                }
+                else if (Vector256.IsHardwareAccelerated && length >= (nuint)Vector256<byte>.Count)
                 {
                     nuint offset = 0;
                     nuint lengthToExamine = length - (nuint)Vector256<byte>.Count;
@@ -789,6 +1039,47 @@ namespace System
 
             if (Vector256.IsHardwareAccelerated)
             {
+                if (Vector512.IsHardwareAccelerated && (lengthToExamine >= (nuint)Vector512<byte>.Count))
+                {
+                    lengthToExamine -= (nuint)Vector512<byte>.Count;
+                    ulong matches;
+                    while (lengthToExamine > offset)
+                    {
+                        matches = Vector512.Equals(Vector512.LoadUnsafe(ref first, offset), Vector512.LoadUnsafe(ref second, offset)).ExtractMostSignificantBits();
+                        // Note that MoveMask has converted the equal vector elements into a set of bit flags,
+                        // So the bit position in 'matches' corresponds to the element offset.
+
+                        // 32 elements in Vector256<byte> so we compare to uint.MaxValue to check if everything matched
+                        if (matches == ulong.MaxValue)
+                        {
+                            // All matched
+                            offset += (nuint)Vector512<byte>.Count;
+                            continue;
+                        }
+
+                        goto Difference;
+                    }
+                    // Move to Vector length from end for final compare
+                    offset = lengthToExamine;
+                    // Same as method as above
+                    matches = Vector512.Equals(Vector512.LoadUnsafe(ref first, offset), Vector512.LoadUnsafe(ref second, offset)).ExtractMostSignificantBits();
+                    if (matches == ulong.MaxValue)
+                    {
+                        // All matched
+                        goto Equal;
+                    }
+                Difference:
+                    // Invert matches to find differences
+                    ulong differences = ~matches;
+                    // Find bitflag offset of first difference and add to current offset
+                    offset += (uint)BitOperations.TrailingZeroCount(differences);
+
+                    int result = Unsafe.AddByteOffset(ref first, offset).CompareTo(Unsafe.AddByteOffset(ref second, offset));
+                    Debug.Assert(result != 0);
+
+                    return result;
+                }
+
                 if (lengthToExamine >= (nuint)Vector256<byte>.Count)
                 {
                     lengthToExamine -= (nuint)Vector256<byte>.Count;
@@ -1140,6 +1431,10 @@ namespace System
             => (nuint)(uint)((length - (int)offset) & ~(Vector256<byte>.Count - 1));
 
         [MethodImpl(MethodImplOptions.AggressiveInlining)]
+        private static nuint GetByteVector512SpanLength(nuint offset, int length)
+            => (nuint)(uint)((length - (int)offset) & ~(Vector512<byte>.Count - 1));
+
+        [MethodImpl(MethodImplOptions.AggressiveInlining)]
         private static unsafe nuint UnalignedCountVector128(byte* searchSpace)
         {
             nint unaligned = (nint)searchSpace & (Vector128<byte>.Count - 1);
@@ -1153,8 +1448,45 @@ namespace System
             nint remainder = (nint)length;
             nint offset = 0;
 
-            // overlapping has a positive performance benefit around 48 elements
-            if (Avx2.IsSupported && remainder >= (nint)(Vector256<byte>.Count * 1.5))
+            if (Vector512.IsHardwareAccelerated && remainder >= Vector512<byte>.Count * 2)
+            {
+                nint lastOffset = remainder - Vector512<byte>.Count;
+                do
+                {
+                    // Load the values into vectors
+                    Vector512<byte> tempFirst = Vector512.LoadUnsafe(ref buf, (nuint)offset);
+                    Vector512<byte> tempLast = Vector512.LoadUnsafe(ref buf, (nuint)lastOffset);
+
+                    // Shuffle to reverse each vector:
+                    //     +---------------------------------------------------------------+
+                    //     | A | B | C | D | E | F | G | H | I | J | K | L | M | N | O | P |
+                    //     +---------------------------------------------------------------+
+                    //          --->
+                    //     +---------------------------------------------------------------+
+                    //     | P | O | N | M | L | K | J | I | H | G | F | E | D | C | B | A |
+                    //     +---------------------------------------------------------------+
+                    tempFirst = Vector512.Shuffle(tempFirst, Vector512.Create(
+                        (byte)63, 62, 61, 60, 59, 58, 57, 56, 55, 54, 53, 52, 51, 50, 49, 48,
+                        47, 46, 45, 44, 43, 42, 41, 40, 39, 38, 37, 36, 35, 34, 33, 32,
+                        31, 30, 29, 28, 27, 26, 25, 24, 23, 22, 21, 20, 19, 18, 17, 16,
+                        15, 14, 13, 12, 11, 10, 9, 8, 7, 6, 5, 4, 3, 2, 1, 0));
+                    tempLast = Vector512.Shuffle(tempLast, Vector512.Create(
+                        (byte)63, 62, 61, 60, 59, 58, 57, 56, 55, 54, 53, 52, 51, 50, 49, 48,
+                        47, 46, 45, 44, 43, 42, 41, 40, 39, 38, 37, 36, 35, 34, 33, 32,
+                        31, 30, 29, 28, 27, 26, 25, 24, 23, 22, 21, 20, 19, 18, 17, 16,
+                        15, 14, 13, 12, 11, 10, 9, 8, 7, 6, 5, 4, 3, 2, 1, 0));
+
+                    // Store the reversed vectors
+                    tempLast.StoreUnsafe(ref buf, (nuint)offset);
+                    tempFirst.StoreUnsafe(ref buf, (nuint)lastOffset);
+
+                    offset += Vector512<byte>.Count;
+                    lastOffset -= Vector512<byte>.Count;
+                } while (lastOffset >= offset);
+
+                remainder = lastOffset + Vector512<byte>.Count - offset;
+            }
+            else if (Avx2.IsSupported && remainder >= (nint)(Vector256<byte>.Count * 1.5))
             {
                 Vector256<byte> reverseMask = Vector256.Create(
                     (byte)15, 14, 13, 12, 11, 10, 9, 8, 7, 6, 5, 4, 3, 2, 1, 0, // first 128-bit lane

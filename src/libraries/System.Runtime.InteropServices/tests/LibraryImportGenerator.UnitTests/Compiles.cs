@@ -20,6 +20,7 @@ using System.Collections.Immutable;
 using System.Threading;
 using Microsoft.CodeAnalysis.Text;
 using System.Text;
+using GeneratorDiagnostics = Microsoft.Interop.GeneratorDiagnostics;
 
 namespace LibraryImportGenerator.UnitTests
 {
@@ -248,6 +249,9 @@ namespace LibraryImportGenerator.UnitTests
 
             // Type-level interop generator trigger attributes
             yield return new[] { ID(), CodeSnippets.GeneratedComInterface };
+
+            // Parameter modifiers
+            yield return new[] { ID(), CodeSnippets.SingleParameterWithModifier("int", "scoped ref") };
         }
 
         public static IEnumerable<object[]> CustomCollections()
@@ -735,6 +739,35 @@ namespace LibraryImportGenerator.UnitTests
                 Assert.Same(originalCompilation, newCompilation);
                 return (newCompilation, diagnostics);
             }
+        }
+
+        public static IEnumerable<object[]> ByValueMarshalKindSnippets()
+        {
+            // Blittable array
+            yield return new object[] { ID(), CodeSnippets.ByValueParameterWithModifier<int[]>("{|#10:Out|}"), new[]
+            {
+                VerifyCS.Diagnostic(GeneratorDiagnostics.UnnecessaryParameterMarshallingInfo)
+                    .WithLocation(0)
+                    .WithLocation(10)
+                    .WithArguments("[In] and [Out] attributes", "p")
+            } };
+
+            yield return new object[] { ID(), CodeSnippets.ByValueParameterWithModifier<int[]>("{|#10:In|}, {|#11:Out|}"), new[]
+            {
+                VerifyCS.Diagnostic(GeneratorDiagnostics.UnnecessaryParameterMarshallingInfo)
+                    .WithLocation(0)
+                    .WithLocation(10)
+                    .WithLocation(11)
+                    .WithArguments("[In] and [Out] attributes", "p")
+            } };
+        }
+
+        [MemberData(nameof(ByValueMarshalKindSnippets))]
+        [Theory]
+        public async Task ValidateDiagnosticsForUnnecessaryByValueMarshalKindAttributes(string id, string source, DiagnosticResult[] diagnostics)
+        {
+            _ = id;
+            await VerifyCS.VerifySourceGeneratorAsync(source, diagnostics);
         }
     }
 }

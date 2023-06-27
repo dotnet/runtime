@@ -515,6 +515,11 @@ NamedIntrinsic HWIntrinsicInfo::lookupId(Compiler*         comp,
         }
         else if (strcmp(className, "Vector512") == 0)
         {
+            // If the JitFlags::JIT_FLAG_VECTOR512_THROTTLING flag is set, we do not need to do any further checks.
+            if (comp->opts.Vector512Throttling())
+            {
+                return NI_IsSupported_False;
+            }
             isa = InstructionSet_AVX512F;
         }
     }

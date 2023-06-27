@@ -28,8 +28,7 @@ namespace System.Reflection.Runtime.TypeInfos
 
         public abstract override bool IsByRefLike { get; }
 
-        // Left unsealed as RuntimeCLSIDTypeInfo has special behavior and needs to override.
-        public override bool HasSameMetadataDefinitionAs(MemberInfo other)
+        public sealed override bool HasSameMetadataDefinitionAs(MemberInfo other)
         {
             ArgumentNullException.ThrowIfNull(other);
 

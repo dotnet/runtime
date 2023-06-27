@@ -1,5 +1,5 @@
 '\" t
-.\" Manual page created with latex2man on Thu Aug 16 09:44:45 MDT 2007
+.\" Manual page created with latex2man on Sun Aug 29 23:45:06 CEST 2021
 .\" NOTE: This file is generated, DO NOT EDIT.
 .de Vb
 .ft CW
@@ -10,7 +10,7 @@
 
 .fi
 ..
-.TH "UNW\\_GET\\_PROC\\_INFO\\_BY\\_IP" "3" "16 August 2007" "Programming Library " "Programming Library "
+.TH "UNW\\_GET\\_PROC\\_INFO\\_BY\\_IP" "3" "29 August 2021" "Programming Library " "Programming Library "
 .SH NAME
 unw_get_proc_info_by_ip
 \-\- get procedure info by IP 
@@ -42,7 +42,7 @@ even if it is not part of the current call\-chain. However, since it
 is more flexible, it also tends to run slower (and often much slower) 
 than unw_get_proc_info().
 .PP
-The routine expects the followins arguments: as
+The routine expects the following arguments: as
 is the 
 address\-space in which the instruction\-pointer should be looked up. 
 For a look\-up in the local address\-space, 
@@ -68,7 +68,7 @@ argument.
 Note that for the purposes of libunwind,
 the code of a 
 procedure is assumed to occupy a single, contiguous range of 
-addresses. For this reason, it is alwas possible to describe the 
+addresses. For this reason, it is always possible to describe the 
 extent of a procedure with the start_ip
 and end_ip
 members. If a single function/routine is split into multiple, 
@@ -86,7 +86,7 @@ below is returned.
 .SH THREAD AND SIGNAL SAFETY
 
 .PP
-unw_get_proc_info()
+unw_get_proc_info_by_ip()
 is thread\-safe. If the local 
 address\-space is passed in argument as,
 this routine is also 
@@ -108,9 +108,9 @@ UNW_EBADVERSION
  The unwind\-info for the procedure has 
 version or format that is not understood by libunwind\&.
 .PP
-In addition, unw_get_proc_info()
-may return any error 
-returned by the access_mem()
+In addition, unw_get_proc_info_by_ip()
+may return any 
+error returned by the access_mem()
 call\-back (see 
 unw_create_addr_space(3)).
 .PP

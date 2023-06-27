@@ -147,7 +147,14 @@ namespace System.Net.Http
             sb.Append(_method);
 
             sb.Append(", RequestUri: '");
-            sb.Append(_requestUri == null ? "<null>" : _requestUri.ToString());
+            if (_requestUri is null)
+            {
+                sb.Append("<null>");
+            }
+            else
+            {
+                sb.Append($"{_requestUri}");
+            }
 
             sb.Append("', Version: ");
             sb.Append(_version);
