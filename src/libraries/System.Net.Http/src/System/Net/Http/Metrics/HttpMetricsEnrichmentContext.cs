@@ -12,12 +12,7 @@ public class HttpMetricsEnrichmentContext
     private HttpRequestMessage? _request;
     private HttpResponseMessage? _response;
     private Exception? _exception;
-    private TagCollection _tags;
-
-    public HttpMetricsEnrichmentContext()
-    {
-        _tags = new TagCollection();
-    }
+    private TagCollection _tags = new TagCollection();
 
     public HttpRequestMessage Request
     {
@@ -60,7 +55,6 @@ public class HttpMetricsEnrichmentContext
         _request = request;
         _response = response;
         _exception = exception;
-        _tags._tags.Clear();
         _tags._runningCallback = true;
 
         try
@@ -69,22 +63,19 @@ public class HttpMetricsEnrichmentContext
             {
                 callback(this);
             }
+
+            foreach (KeyValuePair<string, object?> tag in _tags._tags)
+            {
+                tags.Add(tag);
+            }
         }
         finally
         {
+            _tags._tags.Clear();
             _tags._runningCallback = false;
             _request = null;
             _response = null;
             _exception = null;
-        }
-        ref TagList enrichmentTags = ref _tags._tags;
-        if (enrichmentTags.Count > 0)
-        {
-            // TagList enumerator allocates, see https://github.com/dotnet/runtime/issues/87022, iterating using an indexer.
-            for (int i = 0; i < enrichmentTags.Count; i++)
-            {
-                tags.Add(enrichmentTags[i]);
-            }
         }
     }
 
@@ -96,7 +87,7 @@ public class HttpMetricsEnrichmentContext
     private sealed class TagCollection : ICollection<KeyValuePair<string, object?>>
     {
         public bool _runningCallback;
-        internal TagList _tags;
+        internal List<KeyValuePair<string, object?>> _tags = new();
 
         public int Count
         {
@@ -112,7 +103,7 @@ public class HttpMetricsEnrichmentContext
             get
             {
                 EnsureRunningCallback();
-                return _tags.IsReadOnly;
+                return false;
             }
         }
 

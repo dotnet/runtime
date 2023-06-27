@@ -156,26 +156,21 @@ internal sealed class MetricsHandler : HttpMessageHandlerStage, IHttpMetricsLogg
 
     private static string GetProtocolName(Version httpVersion) => (httpVersion.Major, httpVersion.Minor) switch
     {
+        (1, 0) => "HTTP/1.0",
         (1, 1) => "HTTP/1.1",
         (2, 0) => "HTTP/2",
         (3, 0) => "HTTP/3",
-        _ => "unknown"
+        _ => $"HTTP/{httpVersion.Major}.{httpVersion.Minor}"
     };
 
     private static TagList InitializeCommonTags(HttpRequestMessage request)
     {
         TagList tags = default;
 
-        if (request.RequestUri is { } requestUri && requestUri.IsAbsoluteUri)
+        if (request.RequestUri is Uri requestUri && requestUri.IsAbsoluteUri)
         {
-            if (requestUri.Scheme is not null)
-            {
-                tags.Add("scheme", requestUri.Scheme);
-            }
-            if (requestUri.Host is not null)
-            {
-                tags.Add("host", requestUri.Host);
-            }
+            tags.Add("scheme", requestUri.Scheme);
+            tags.Add("host", requestUri.Host);
             // Add port tag when not the default value for the current scheme
             if (!requestUri.IsDefaultPort)
             {

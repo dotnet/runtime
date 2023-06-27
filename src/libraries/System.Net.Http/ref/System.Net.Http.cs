@@ -909,7 +909,6 @@ namespace System.Net.Http.Metrics
 {
     public class HttpMetricsEnrichmentContext
     {
-        public HttpMetricsEnrichmentContext() { throw null; }
         public HttpRequestMessage Request { get { throw null; } }
 
         public HttpResponseMessage? Response { get { throw null; } }
