@@ -1061,6 +1061,59 @@ namespace System.Text.Json.Nodes.Tests
         }
 
         [Fact]
+        public static void DeepEquals_JsonObject_With_JsonValuePOCO()
+        {
+            var jObject = new JsonObject();
+            jObject["Id"] = 1;
+            jObject["Name"] = "First";
+            var nestedObject = new JsonObject();
+            nestedObject["Id"] = 2;
+            nestedObject["Name"] = "Last";
+            nestedObject["NestedObject"] = null;
+            jObject["NestedObject"] = nestedObject;
+
+            var poco = new SimpleClass()
+            {
+                Id = 1,
+                Name = "First",
+                NestedObject = new SimpleClass()
+                {
+                    Id = 2,
+                    Name = "Last",
+                }
+            };
+
+            Assert.True(JsonNode.DeepEquals(jObject, JsonValue.Create(poco)));
+        }
+
+        [Fact]
+        public static void DeepEquals_JsonObject_With_Dictionary()
+        {
+            var jObject = new JsonObject();
+            jObject["One"] = 1;
+            jObject["array"] = new JsonArray() { "a", "b" };
+            jObject["obj"] = new JsonObject();
+
+            var dictionary = new Dictionary<string, object>()
+            {
+                { "One", 1 },
+                { "array", new string[] { "a", "b" } },
+                { "obj", new { } }
+            };
+
+            Assert.True(JsonNode.DeepEquals(jObject, JsonValue.Create(dictionary)));
+        }
+
+        private class SimpleClass
+        {
+            public int Id { get; set; }
+
+            public string Name { get; set; }
+
+            public SimpleClass NestedObject { get; set; }
+        }
+
+        [Fact]
         public static void DeepEqualFromElement()
         {
             using JsonDocument document = JsonDocument.Parse("{\"One\": 1, \"String\": \"abc\"}");
