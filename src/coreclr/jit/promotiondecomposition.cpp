@@ -49,27 +49,27 @@ class DecompositionPlan
         var_types    Type;
     };
 
-    Promotion*                      m_promotion;
-    Compiler*                       m_compiler;
-    ReplaceVisitor*                 m_replacer;
-    jitstd::vector<AggregateInfo*>& m_aggregates;
-    PromotionLiveness*              m_liveness;
-    GenTree*                        m_store;
-    GenTree*                        m_src;
-    bool                            m_dstInvolvesReplacements;
-    bool                            m_srcInvolvesReplacements;
-    ArrayStack<Entry>               m_entries;
-    bool                            m_hasNonRemainderUseOfStructLocal = false;
+    Promotion*         m_promotion;
+    Compiler*          m_compiler;
+    ReplaceVisitor*    m_replacer;
+    AggregateInfoMap&  m_aggregates;
+    PromotionLiveness* m_liveness;
+    GenTree*           m_store;
+    GenTree*           m_src;
+    bool               m_dstInvolvesReplacements;
+    bool               m_srcInvolvesReplacements;
+    ArrayStack<Entry>  m_entries;
+    bool               m_hasNonRemainderUseOfStructLocal = false;
 
 public:
-    DecompositionPlan(Promotion*                      prom,
-                      ReplaceVisitor*                 replacer,
-                      jitstd::vector<AggregateInfo*>& aggregates,
-                      PromotionLiveness*              liveness,
-                      GenTree*                        store,
-                      GenTree*                        src,
-                      bool                            dstInvolvesReplacements,
-                      bool                            srcInvolvesReplacements)
+    DecompositionPlan(Promotion*         prom,
+                      ReplaceVisitor*    replacer,
+                      AggregateInfoMap&  aggregates,
+                      PromotionLiveness* liveness,
+                      GenTree*           store,
+                      GenTree*           src,
+                      bool               dstInvolvesReplacements,
+                      bool               srcInvolvesReplacements)
         : m_promotion(prom)
         , m_compiler(prom->m_compiler)
         , m_replacer(replacer)
@@ -408,7 +408,7 @@ private:
         uint8_t      initPattern = GetInitPattern();
         StructDeaths deaths      = m_liveness->GetDeathsForStructLocal(m_store->AsLclVarCommon());
 
-        AggregateInfo* agg = m_aggregates[m_store->AsLclVarCommon()->GetLclNum()];
+        AggregateInfo* agg = m_aggregates.Lookup(m_store->AsLclVarCommon()->GetLclNum());
         assert((agg != nullptr) && (agg->Replacements.size() > 0));
         Replacement* firstRep = agg->Replacements.data();
 
@@ -706,7 +706,7 @@ private:
 
                 if (entry.FromReplacement != nullptr)
                 {
-                    AggregateInfo* srcAgg   = m_aggregates[m_src->AsLclVarCommon()->GetLclNum()];
+                    AggregateInfo* srcAgg   = m_aggregates.Lookup(m_src->AsLclVarCommon()->GetLclNum());
                     Replacement*   firstRep = srcAgg->Replacements.data();
                     assert((entry.FromReplacement >= firstRep) &&
                            (entry.FromReplacement < (firstRep + srcAgg->Replacements.size())));
@@ -866,7 +866,7 @@ private:
             // Check if this entry is dying anyway.
             assert(m_dstInvolvesReplacements);
 
-            AggregateInfo* agg = m_aggregates[m_store->AsLclVarCommon()->GetLclNum()];
+            AggregateInfo* agg = m_aggregates.Lookup(m_store->AsLclVarCommon()->GetLclNum());
             assert((agg != nullptr) && (agg->Replacements.size() > 0));
             Replacement* firstRep = agg->Replacements.data();
             assert((entry.ToReplacement >= firstRep) && (entry.ToReplacement < (firstRep + agg->Replacements.size())));
@@ -1213,7 +1213,7 @@ bool ReplaceVisitor::OverlappingReplacements(GenTreeLclVarCommon* lcl,
                                              Replacement**        firstReplacement,
                                              Replacement**        endReplacement)
 {
-    AggregateInfo* agg = m_aggregates[lcl->GetLclNum()];
+    AggregateInfo* agg = m_aggregates.Lookup(lcl->GetLclNum());
     if (agg == nullptr)
     {
         return false;
@@ -1335,7 +1335,7 @@ void ReplaceVisitor::InitFields(GenTreeLclVarCommon* dstStore,
 const char* ReplaceVisitor::LastUseString(GenTreeLclVarCommon* lcl, Replacement* rep)
 {
     StructDeaths   deaths = m_liveness->GetDeathsForStructLocal(lcl);
-    AggregateInfo* agg    = m_aggregates[lcl->GetLclNum()];
+    AggregateInfo* agg    = m_aggregates.Lookup(lcl->GetLclNum());
     assert(agg != nullptr);
     Replacement* firstRep = agg->Replacements.data();
     assert((rep >= firstRep) && (rep < firstRep + agg->Replacements.size()));
