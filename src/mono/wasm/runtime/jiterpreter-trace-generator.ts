@@ -1887,11 +1887,10 @@ function append_ldloc_cknull(builder: WasmBuilder, localOffset: number, ip: Mint
         return;
     }
 
-    builder.block();
     append_ldloc(builder, localOffset, WasmOpcode.i32_load);
     builder.local("cknull_ptr", WasmOpcode.tee_local);
-    builder.appendU8(WasmOpcode.br_if);
-    builder.appendULeb(0);
+    builder.appendU8(WasmOpcode.i32_eqz);
+    builder.block(WasmValtype.void, WasmOpcode.if_);
     append_bailout(builder, ip, BailoutReason.NullCheck);
     builder.endBlock();
     if (leaveOnStack)
@@ -2733,20 +2732,19 @@ function emit_branch(
         case MintOpcode.MINT_BRFALSE_I8_S: {
             const is64 = (opcode === MintOpcode.MINT_BRTRUE_I8_S) ||
                 (opcode === MintOpcode.MINT_BRFALSE_I8_S);
-            // Wrap the conditional branch in a block so we can skip the
-            //  actual branch at the end of it
-            builder.block();
+
+            // Load the condition
 
             displacement = getArgI16(ip, 2);
             append_ldloc(builder, getArgU16(ip, 1), is64 ? WasmOpcode.i64_load : WasmOpcode.i32_load);
             if (
-                (opcode === MintOpcode.MINT_BRTRUE_I4_S) ||
-                (opcode === MintOpcode.MINT_BRTRUE_I4_SP)
+                (opcode === MintOpcode.MINT_BRFALSE_I4_S) ||
+                (opcode === MintOpcode.MINT_BRFALSE_I4_SP)
             )
                 builder.appendU8(WasmOpcode.i32_eqz);
-            else if (opcode === MintOpcode.MINT_BRTRUE_I8_S)
-                builder.appendU8(WasmOpcode.i64_eqz);
             else if (opcode === MintOpcode.MINT_BRFALSE_I8_S) {
+                builder.appendU8(WasmOpcode.i64_eqz);
+            } else if (opcode === MintOpcode.MINT_BRTRUE_I8_S) {
                 // do (i64 == 0) == 0 because br_if can only branch on an i32 operand
                 builder.appendU8(WasmOpcode.i64_eqz);
                 builder.appendU8(WasmOpcode.i32_eqz);
@@ -2764,7 +2762,6 @@ function emit_branch(
             if (cwraps.mono_jiterp_get_opcode_info(opcode, OpcodeInfoType.Length) !== 4)
                 throw new Error(`Unsupported long branch opcode: ${getOpcodeName(opcode)}`);
 
-            builder.appendU8(WasmOpcode.i32_eqz);
             break;
         }
     }
@@ -2778,8 +2775,7 @@ function emit_branch(
 
     // We generate a conditional branch that will skip past the rest of this
     //  tiny branch dispatch block to avoid performing the branch
-    builder.appendU8(WasmOpcode.br_if);
-    builder.appendULeb(0);
+    builder.block(WasmValtype.void, WasmOpcode.if_);
 
     if (displacement < 0) {
         if (isSafepoint)
@@ -2836,10 +2832,6 @@ function emit_relop_branch(
     if (!relopInfo && !intrinsicFpBinop)
         return false;
 
-    // We have to wrap the computation of the branch condition inside the
-    //  branch block because opening blocks destroys the contents of the
-    //  wasm execution stack for some reason
-    builder.block();
     const displacement = getArgI16(ip, 3);
     if (traceBranchDisplacements)
         mono_log_info(`relop @${ip} displacement=${displacement}`);
