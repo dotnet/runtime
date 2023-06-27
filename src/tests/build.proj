@@ -419,7 +419,7 @@
     </PropertyGroup>
     <Message Importance="High" Text="App: $(FinalPath)" />
 
-    <CustomTask EntryPoints="@(EntryPoints)" RunScriptCommand="$(RunScriptCommand)" >
+    <CustomTask EntryPoints="@(EntryPoints)" RunScriptCommand="$(RunScriptCommand)" AppName="$(Category)">
       <Output TaskParameter="OutputScript" PropertyName="RunScriptCommand" />
     </CustomTask>
   </Target>
@@ -431,6 +431,7 @@
   <ParameterGroup>
     <EntryPoints ParameterType="Microsoft.Build.Framework.ITaskItem[]" Required="true" />
     <RunScriptCommand ParameterType="System.String" Required="true" />
+    <AppName ParameterType="System.String" Required="true" />
     <OutputScript ParameterType="System.String" Output="true" />
   </ParameterGroup>
   <Task>
@@ -451,6 +452,7 @@
             string value = item.ItemSpec;
             string output = lastLine.Replace("--signal-app-end", $"--signal-app-end --set-env=MONO_APPLE_APP_ENTRY_POINT_LIB_NAME={value}");
             resultBuilder.AppendLine(output);
+            resultBuilder.AppendLine("mv \"${output_directory}/net.dot."+AppName+".log\" \"${output_directory}/"+value.Replace('/','_')+".log\"");
         }
 
         StringBuilder outputScriptBuilder = new StringBuilder(string.Join("\n", lines.Take(lines.Length - 1)));
