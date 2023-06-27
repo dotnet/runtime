@@ -318,7 +318,6 @@
       Category="clr" />
     <ProjectToBuild Include="$(CoreClrProjectRoot)tools\aot\ILCompiler\ILCompiler.csproj" Category="clr" AdditionalProperties="$(NativeAOTAdditionalProperties)" />
     <ProjectToBuild Include="$(CoreClrProjectRoot)nativeaot\BuildIntegration\BuildIntegration.proj" Category="clr" AdditionalProperties="$(NativeAOTAdditionalProperties)" />
-    <ProjectToBuild Condition="'$(CrossBuild)' == 'true' or '$(BuildArchitecture)' != '$(TargetArchitecture)'" Include="$(CoreClrProjectRoot)tools\aot\ILCompiler\ILCompiler_crossarch.csproj" Category="clr" AdditionalProperties="$(NativeAOTAdditionalProperties)" />
   </ItemGroup>
 
   <ItemGroup Condition="$(_subset.Contains('+crossdacpack+'))">
