@@ -81,7 +81,7 @@ public class Program
         AssertEquals(a.CompareTo(b), Comparer<nuint>.Default.Compare(a, b), $"({a}; {b}): ");
 
     private static void Compare_Enum_Int32(MethodImplOptions a, MethodImplOptions b) =>
-        AssertEquals(a.CompareTo(b), Comparer<MethodImplOptions>.Default.Compare(a, b)), $"({a}; {b}): ";
+        AssertEquals(a.CompareTo(b), Comparer<MethodImplOptions>.Default.Compare(a, b), $"({a}; {b}): ");
 
     private static void Compare_Enum_Byte(Enum_byte a, Enum_byte b) =>
         AssertEquals(a.CompareTo(b), Comparer<Enum_byte>.Default.Compare(a, b), $"({a}; {b}): ");
