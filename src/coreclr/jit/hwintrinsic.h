@@ -608,7 +608,7 @@ struct HWIntrinsicInfo
             case INS_por:
             case INS_pxor:
                 return true;
-        
+
             default:
                 return false;
         }
