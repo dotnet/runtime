@@ -38,9 +38,14 @@ namespace System.Collections.Frozen
                 hashCodes[i] = GetHashCode(entries[i]);
             }
 
-            _hashTable = FrozenHashTable.Create(
-                hashCodes,
-                (destIndex, srcIndex) => _items[destIndex] = entries[srcIndex]);
+            _hashTable = FrozenHashTable.Create(hashCodes);
+
+            for (int srcIndex = 0; srcIndex < hashCodes.Length; srcIndex++)
+            {
+                int destIndex = hashCodes[srcIndex];
+
+                _items[destIndex] = entries[srcIndex];
+            }
 
             ArrayPool<int>.Shared.Return(arrayPoolHashCodes);
         }

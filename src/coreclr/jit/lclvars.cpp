@@ -2175,6 +2175,13 @@ bool Compiler::StructPromotionHelper::ShouldPromoteStructVar(unsigned lclNum)
                         lclNum);
                 shouldPromote = false;
             }
+#if defined(TARGET_LOONGARCH64) || defined(TARGET_RISCV64)
+            else if (varDsc->lvIsSplit)
+            {
+                JITDUMP("Not promoting multireg struct local V%02u, because it is splitted.\n", lclNum);
+                shouldPromote = false;
+            }
+#endif // TARGET_LOONGARCH64 || TARGET_RISCV64
         }
         else
 #endif // !FEATURE_MULTIREG_STRUCT_PROMOTE
@@ -2516,10 +2523,23 @@ void Compiler::StructPromotionHelper::PromoteStructVar(unsigned lclNum)
 #ifdef FEATURE_SIMD
         if (varTypeIsSIMD(pFieldInfo->fldType))
         {
-            compiler->lvaSetStruct(varNum, pFieldInfo->fldTypeHnd, false);
             // We will not recursively promote this, so mark it as 'lvRegStruct' (note that we wouldn't
             // be promoting this if we didn't think it could be enregistered.
             fieldVarDsc->lvRegStruct = true;
+
+            // SIMD types may be HFAs so we need to set the correct state on
+            // the promoted fields to get the right ABI treatment in the
+            // backend.
+            if (GlobalJitOptions::compFeatureHfa && (pFieldInfo->fldSize <= MAX_PASS_MULTIREG_BYTES))
+            {
+                // hfaType is set to float, double or SIMD type if it is an HFA, otherwise TYP_UNDEF
+                var_types hfaType = compiler->GetHfaType(pFieldInfo->fldTypeHnd);
+                if (varTypeIsValidHfaType(hfaType))
+                {
+                    fieldVarDsc->SetHfaType(hfaType);
+                    fieldVarDsc->lvIsMultiRegArg = (varDsc->lvIsMultiRegArg != 0) && (fieldVarDsc->lvHfaSlots() > 1);
+                }
+            }
         }
 #endif // FEATURE_SIMD
 
@@ -2979,16 +2999,20 @@ void Compiler::lvaSetStruct(unsigned varNum, ClassLayout* layout, bool unsafeVal
         }
 #endif // not TARGET_64BIT
 
-        unsigned classAttribs = info.compCompHnd->getClassAttribs(layout->GetClassHandle());
-
         // Check whether this local is an unsafe value type and requires GS cookie protection.
         // GS checks require the stack to be re-ordered, which can't be done with EnC.
-        if (unsafeValueClsCheck && (classAttribs & CORINFO_FLG_UNSAFE_VALUECLASS) && !opts.compDbgEnC)
+        if (unsafeValueClsCheck)
         {
-            setNeedsGSSecurityCookie();
-            compGSReorderStackLayout = true;
-            varDsc->lvIsUnsafeBuffer = true;
+            unsigned classAttribs = info.compCompHnd->getClassAttribs(layout->GetClassHandle());
+
+            if ((classAttribs & CORINFO_FLG_UNSAFE_VALUECLASS) && !opts.compDbgEnC)
+            {
+                setNeedsGSSecurityCookie();
+                compGSReorderStackLayout = true;
+                varDsc->lvIsUnsafeBuffer = true;
+            }
         }
+
 #ifdef DEBUG
         if (JitConfig.EnableExtraSuperPmiQueries())
         {

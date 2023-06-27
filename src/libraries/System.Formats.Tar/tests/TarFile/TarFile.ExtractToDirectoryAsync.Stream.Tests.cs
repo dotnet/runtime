@@ -11,7 +11,7 @@ using Xunit;
 
 namespace System.Formats.Tar.Tests
 {
-    public class TarFile_ExtractToDirectoryAsync_Stream_Tests : TarTestsBase
+    public class TarFile_ExtractToDirectoryAsync_Stream_Tests : TarFile_ExtractToDirectory_Tests
     {
         [Fact]
         public async Task ExtractToDirectoryAsync_Cancel()
@@ -328,6 +328,171 @@ namespace System.Formats.Tar.Tests
                 }
             }
             while ((entry = await reader.GetNextEntryAsync()) != null);
+        }
+
+        [Theory]
+        [MemberData(nameof(GetExactRootDirMatchCases))]
+        public async Task ExtractToDirectory_ExactRootDirMatch_RegularFile_And_Directory_Throws_Async(TarEntryFormat format, TarEntryType entryType, string fileName)
+        {
+            await ExtractToDirectory_ExactRootDirMatch_RegularFile_And_Directory_Throws_Internal_Async(format, entryType, fileName, inverted: false);
+            await ExtractToDirectory_ExactRootDirMatch_RegularFile_And_Directory_Throws_Internal_Async(format, entryType, fileName, inverted: true);
+        }
+
+        [Fact]
+        public async Task ExtractToDirectory_ExactRootDirMatch_Directory_Relative_Throws_Async()
+        {
+            string entryFolderName = "folder";
+            string destinationFolderName = "folderSibling";
+
+            using TempDirectory root = new TempDirectory();
+
+            string entryFolderPath = Path.Join(root.Path, entryFolderName);
+            string destinationFolderPath = Path.Join(root.Path, destinationFolderName);
+
+            Directory.CreateDirectory(entryFolderPath);
+            Directory.CreateDirectory(destinationFolderPath);
+
+            // Relative segments should not change the final destination folder
+            string dirPath1 = Path.Join(entryFolderPath, "..", "folder");
+            string dirPath2 = Path.Join(entryFolderPath, "..", "folder" + Path.DirectorySeparatorChar);
+
+            await ExtractRootDirMatch_Verify_Throws_Async(TarEntryFormat.Ustar, TarEntryType.Directory, destinationFolderPath, dirPath1, linkTargetPath: null);
+            await ExtractRootDirMatch_Verify_Throws_Async(TarEntryFormat.Ustar, TarEntryType.Directory, destinationFolderPath, dirPath2, linkTargetPath: null);
+        }
+
+        [ConditionalTheory(typeof(PlatformDetection), nameof(PlatformDetection.SupportsHardLinkCreation))]
+        [InlineData(TarEntryFormat.V7)]
+        [InlineData(TarEntryFormat.Ustar)]
+        [InlineData(TarEntryFormat.Pax)]
+        [InlineData(TarEntryFormat.Gnu)]
+        public async Task ExtractToDirectory_ExactRootDirMatch_HardLinks_Throws_Async(TarEntryFormat format)
+        {
+            await ExtractToDirectory_ExactRootDirMatch_Links_Throws_Async(format, TarEntryType.HardLink, inverted: false);
+            await ExtractToDirectory_ExactRootDirMatch_Links_Throws_Async(format, TarEntryType.HardLink, inverted: true);
+        }
+
+        [ConditionalTheory(typeof(MountHelper), nameof(MountHelper.CanCreateSymbolicLinks))]
+        [InlineData(TarEntryFormat.V7)]
+        [InlineData(TarEntryFormat.Ustar)]
+        [InlineData(TarEntryFormat.Pax)]
+        [InlineData(TarEntryFormat.Gnu)]
+        public async Task ExtractToDirectory_ExactRootDirMatch_SymLinks_Throws_Async(TarEntryFormat format)
+        {
+            await ExtractToDirectory_ExactRootDirMatch_Links_Throws_Async(format, TarEntryType.SymbolicLink, inverted: false);
+            await ExtractToDirectory_ExactRootDirMatch_Links_Throws_Async(format, TarEntryType.SymbolicLink, inverted: true);
+        }
+
+        [ConditionalFact(typeof(MountHelper), nameof(MountHelper.CanCreateSymbolicLinks))]
+        public async Task ExtractToDirectory_ExactRootDirMatch_SymLinks_TargetOutside_Throws_Async()
+        {
+            string entryFolderName = "folder";
+            string destinationFolderName = "folderSibling";
+
+            using TempDirectory root = new TempDirectory();
+
+            string entryFolderPath = Path.Join(root.Path, entryFolderName);
+            string destinationFolderPath = Path.Join(root.Path, destinationFolderName);
+
+            Directory.CreateDirectory(entryFolderPath);
+            Directory.CreateDirectory(destinationFolderPath);
+
+            string linkPath = Path.Join(entryFolderPath, "link");
+
+            // Links target outside the destination path should not be allowed
+            // Ensure relative segments do not go around this restriction
+            string linkTargetPath1 = Path.Join(entryFolderPath, "..", entryFolderName);
+            string linkTargetPath2 = Path.Join(entryFolderPath, "..", entryFolderName + Path.DirectorySeparatorChar);
+
+            await ExtractRootDirMatch_Verify_Throws_Async(TarEntryFormat.Ustar, TarEntryType.Directory, destinationFolderPath, linkPath, linkTargetPath1);
+            await ExtractRootDirMatch_Verify_Throws_Async(TarEntryFormat.Ustar, TarEntryType.Directory, destinationFolderPath, linkPath, linkTargetPath2);
+        }
+
+        private async Task ExtractToDirectory_ExactRootDirMatch_RegularFile_And_Directory_Throws_Internal_Async(TarEntryFormat format, TarEntryType entryType, string fileName, bool inverted)
+        {
+            // inverted == false:
+            //   destination: folderSibling/
+            //   entry folder: folder/ (does not match destination)
+
+            // inverted == true:
+            //   destination: folder/
+            //   entry folder: folderSibling/ (does not match destination)
+
+            string entryFolderName = inverted ? "folderSibling" : "folder";
+            string destinationFolderName = inverted ? "folder" : "folderSibling";
+
+            using TempDirectory root = new TempDirectory();
+
+            string entryFolderPath = Path.Join(root.Path, entryFolderName);
+            string destinationFolderPath = Path.Join(root.Path, destinationFolderName);
+
+            Directory.CreateDirectory(entryFolderPath);
+            Directory.CreateDirectory(destinationFolderPath);
+
+            string filePath = Path.Join(entryFolderPath, fileName);
+
+            await ExtractRootDirMatch_Verify_Throws_Async(format, entryType, destinationFolderPath, filePath, linkTargetPath: null);
+        }
+
+        private Task ExtractToDirectory_ExactRootDirMatch_Links_Throws_Async(TarEntryFormat format, TarEntryType entryType, bool inverted)
+        {
+            // inverted == false:
+            //   destination: folderSibling/
+            //   entry folder: folder/ (does not match destination)
+            //   link entry file path: folder/link (does not match destination, should not be extracted)
+
+            // inverted == true:
+            //   destination: folder/
+            //   entry folder: folderSibling/ (does not match destination)
+            //   link entry file path: folderSibling/link (does not match destination, should not be extracted)
+
+            string entryFolderName = inverted ? "folderSibling" : "folder";
+            string destinationFolderName = inverted ? "folder" : "folderSibling";
+
+            string linkTargetFileName = "file.txt";
+            string linkFileName = "link";
+
+            using TempDirectory root = new TempDirectory();
+
+            string entryFolderPath = Path.Join(root.Path, entryFolderName);
+            string destinationFolderPath = Path.Join(root.Path, destinationFolderName);
+
+            string linkPath = Path.Join(entryFolderPath, linkFileName);
+            string linkTargetPath = Path.Join(destinationFolderPath, linkTargetFileName);
+
+            Directory.CreateDirectory(entryFolderPath);
+            Directory.CreateDirectory(destinationFolderPath);
+            File.Create(linkTargetPath).Dispose();
+
+            return ExtractRootDirMatch_Verify_Throws_Async(format, entryType, destinationFolderPath, linkPath, linkTargetPath);
+        }
+
+        private async Task ExtractRootDirMatch_Verify_Throws_Async(TarEntryFormat format, TarEntryType entryType, string destinationFolderPath, string entryFilePath, string linkTargetPath)
+        {
+            await using MemoryStream archive = new();
+            await using (TarWriter writer = new TarWriter(archive, format, leaveOpen: true))
+            {
+                TarEntry entry = InvokeTarEntryCreationConstructor(format, entryType, entryFilePath);
+                MemoryStream dataStream = null;
+                if (entryType is TarEntryType.RegularFile or TarEntryType.V7RegularFile)
+                {
+                    dataStream = new MemoryStream();
+                    await dataStream.WriteAsync(new byte[] { 0x1 });
+                    entry.DataStream = dataStream;
+                }
+                if (entryType is TarEntryType.SymbolicLink or TarEntryType.HardLink)
+                {
+                    entry.LinkName = linkTargetPath;
+                }
+                await writer.WriteEntryAsync(entry);
+                if (dataStream != null)
+                {
+                    await dataStream.DisposeAsync();
+                }
+            }
+            archive.Position = 0;
+
+            await Assert.ThrowsAsync<IOException>(() => TarFile.ExtractToDirectoryAsync(archive, destinationFolderPath, overwriteFiles: false));
+            Assert.False(File.Exists(entryFilePath), $"File should not exist: {entryFilePath}");
         }
     }
 }

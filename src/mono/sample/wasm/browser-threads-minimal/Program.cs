@@ -8,6 +8,8 @@ using System.Threading;
 using System.Reflection;
 using System.Threading.Tasks;
 using System.Collections.Generic;
+using System.Net.Http;
+using System.Net.WebSockets;
 
 namespace Sample
 {
@@ -18,6 +20,75 @@ namespace Sample
             Console.WriteLine("Hello, World!");
             return 0;
         }
+
+        [JSExport]
+        public static async Task LockTest()
+        {
+            var lck=new Object();
+            Console.WriteLine("LockTest A ManagedThreadId: "+Thread.CurrentThread.ManagedThreadId);
+            Monitor.Enter(lck);
+            Console.WriteLine("LockTest B ManagedThreadId: "+Thread.CurrentThread.ManagedThreadId);
+            Monitor.Exit(lck);
+            Console.WriteLine("LockTest C ManagedThreadId: "+Thread.CurrentThread.ManagedThreadId);
+
+            await Task.Run(() =>
+            {
+                Console.WriteLine("LockTest D ManagedThreadId: "+Thread.CurrentThread.ManagedThreadId);
+                Monitor.Enter(lck);
+                Console.WriteLine("LockTest E ManagedThreadId: "+Thread.CurrentThread.ManagedThreadId);
+                Monitor.Exit(lck);
+                Console.WriteLine("LockTest F ManagedThreadId: "+Thread.CurrentThread.ManagedThreadId);
+            });
+
+            /* deadlock
+            Monitor.Enter(lck);
+            await Task.Run(() =>
+            {
+                Console.WriteLine("LockTest G ManagedThreadId: "+Thread.CurrentThread.ManagedThreadId);
+                Monitor.Enter(lck);
+                Console.WriteLine("LockTest H ManagedThreadId: "+Thread.CurrentThread.ManagedThreadId);
+                Monitor.Exit(lck);
+                Console.WriteLine("LockTest I ManagedThreadId: "+Thread.CurrentThread.ManagedThreadId);
+            });
+            Monitor.Exit(lck);
+            Console.WriteLine("LockTest J ManagedThreadId: "+Thread.CurrentThread.ManagedThreadId);
+            */
+
+            /* deadlock
+            await Task.Run(() =>
+            {
+                Console.WriteLine("LockTest K ManagedThreadId: "+Thread.CurrentThread.ManagedThreadId);
+                Monitor.Enter(lck);
+            });
+            Console.WriteLine("LockTest L ManagedThreadId: "+Thread.CurrentThread.ManagedThreadId);
+            Monitor.Enter(lck);
+            Console.WriteLine("LockTest M ManagedThreadId: "+Thread.CurrentThread.ManagedThreadId);
+            */
+        }
+
+
+        [JSExport]
+        public static async Task DisposeTest()
+        {
+            Console.WriteLine("DisposeTest A ManagedThreadId: "+Thread.CurrentThread.ManagedThreadId);
+            var test1 = JSHost.GlobalThis.GetPropertyAsJSObject("test1");
+            var test2 = JSHost.GlobalThis.GetPropertyAsJSObject("test2");
+            Console.WriteLine("DisposeTest 0 ManagedThreadId: "+Thread.CurrentThread.ManagedThreadId);
+            await Task.Delay(10).ConfigureAwait(false);
+            Console.WriteLine("DisposeTest 1 ManagedThreadId: "+Thread.CurrentThread.ManagedThreadId);
+            test1.Dispose();
+
+            Console.WriteLine("DisposeTest 2 ManagedThreadId: "+Thread.CurrentThread.ManagedThreadId);
+            Console.WriteLine("DisposeTest 3 ManagedThreadId: "+Thread.CurrentThread.ManagedThreadId);
+
+            await Task.Run(() =>
+            {
+                Console.WriteLine("DisposeTest 4 ManagedThreadId: "+Thread.CurrentThread.ManagedThreadId);
+                test2.Dispose();
+                Console.WriteLine("DisposeTest 5 ManagedThreadId: "+Thread.CurrentThread.ManagedThreadId);
+            });
+        }
+
 
         [JSImport("globalThis.setTimeout")]
         static partial void GlobalThisSetTimeout([JSMarshalAs<JSType.Function>] Action cb, int timeoutMs);
@@ -128,16 +199,84 @@ namespace Sample
             Console.WriteLine ($"XYZ: Main Thread caught task tid:{Thread.CurrentThread.ManagedThreadId}");
         }
 
+        private static async Task<string> HttpClientGet(string name, string url)
+        {
+            Console.WriteLine($"smoke: {name} 1 ManagedThreadId:{Thread.CurrentThread.ManagedThreadId}, SynchronizationContext: {SynchronizationContext.Current?.GetType().FullName ?? "null"}");
+            using var client = new HttpClient();
+            using var response = await client.GetAsync(url);
+            response.EnsureSuccessStatusCode();
+            var text = await response.Content.ReadAsStringAsync();
+            Console.WriteLine($"smoke: {name} 2 ManagedThreadId:{Thread.CurrentThread.ManagedThreadId}, SynchronizationContext: {SynchronizationContext.Current?.GetType().FullName ?? "null"}");
+            return text;
+        }
+
+        [JSExport]
+        public static Task<string> HttpClientMain(string url)
+        {
+            return HttpClientGet("HttpClientMain", url);
+        }
+
+        [JSExport]
+        public static Task<string> HttpClientWorker(string url)
+        {
+            return WebWorker.RunAsync(() =>
+            {
+                return HttpClientGet("HttpClientWorker", url);
+            });
+        }
+
+        [JSExport]
+        public static Task<string> HttpClientPool(string url)
+        {
+            return Task.Run(() =>
+            {
+                return HttpClientGet("HttpClientPool", url);
+            });
+        }
+
+        [JSExport]
+        public static Task<string> HttpClientThread(string url)
+        {
+            var tcs = new TaskCompletionSource<string>();
+            var t = new Thread(() => {
+                var t = HttpClientGet("HttpClientThread", url);
+                // this is blocking!
+                tcs.SetResult(t.Result);
+            });
+            t.Start();
+            return tcs.Task;
+        }
+
+        private static async Task<string> WsClientHello(string name, string url)
+        {
+            Console.WriteLine($"smoke: {name} 1 ManagedThreadId:{Thread.CurrentThread.ManagedThreadId}, SynchronizationContext: {SynchronizationContext.Current?.GetType().FullName ?? "null"}");
+            using var client = new ClientWebSocket ();
+            await client.ConnectAsync(new Uri(url), CancellationToken.None);
+            var message=new byte[]{0x68,0x65,0x6C,0x6C,0x6F};// hello
+            var body = new ReadOnlyMemory<byte>(message);
+            await client.SendAsync(body, WebSocketMessageType.Text, true, CancellationToken.None);
+            Console.WriteLine($"smoke: {name} 2 ManagedThreadId:{Thread.CurrentThread.ManagedThreadId}, SynchronizationContext: {SynchronizationContext.Current?.GetType().FullName ?? "null"}");
+            return "ok";
+        }
+
+        [JSExport]
+        public static Task<string> WsClientMain(string url)
+        {
+            return WsClientHello("WsClientHello", url);
+        }
+
         [JSExport]
         public static async Task<string> FetchBackground(string url)
         {
             Console.WriteLine($"smoke: FetchBackground 1 ManagedThreadId:{Thread.CurrentThread.ManagedThreadId}, SynchronizationContext: {SynchronizationContext.Current?.GetType().FullName ?? "null"}");
             var t = WebWorker.RunAsync(async () =>
             {
+                var ctx = SynchronizationContext.Current;
+
                 Console.WriteLine($"smoke: FetchBackground 2 ManagedThreadId:{Thread.CurrentThread.ManagedThreadId}, SynchronizationContext: {SynchronizationContext.Current?.GetType().FullName ?? "null"}");
                 var x=JSHost.ImportAsync(fetchhelper, "./fetchhelper.js");
                 Console.WriteLine($"smoke: FetchBackground 3A ManagedThreadId:{Thread.CurrentThread.ManagedThreadId}, SynchronizationContext: {SynchronizationContext.Current?.GetType().FullName ?? "null"}");
-                using var import = await x;
+                // using var import = await x.ConfigureAwait(false);
                 Console.WriteLine($"smoke: FetchBackground 3B ManagedThreadId:{Thread.CurrentThread.ManagedThreadId}, SynchronizationContext: {SynchronizationContext.Current?.GetType().FullName ?? "null"}");
                 var r = await GlobalThisFetch(url);
                 Console.WriteLine($"smoke: FetchBackground 4 ManagedThreadId:{Thread.CurrentThread.ManagedThreadId}, SynchronizationContext: {SynchronizationContext.Current?.GetType().FullName ?? "null"}");
