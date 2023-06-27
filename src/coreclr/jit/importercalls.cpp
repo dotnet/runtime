@@ -3849,8 +3849,8 @@ GenTree* Compiler::impIntrinsic(GenTree*                newobjThis,
             {
                 assert((sig->sigInst.methInstCount == 0) || (sig->sigInst.methInstCount == 1));
                 var_types retType = sig->sigInst.methInstCount == 0 ? JITtype2varType(sig->retType) : TYP_REF;
-#if !TARGET_64BIT
-                if ((retType == TYP_LONG) || (retType == TYP_ULONG) || (retType == TYP_DOUBLE))
+#ifndef TARGET_64BIT
+                if ((retType == TYP_LONG) || (retType == TYP_DOUBLE))
                 {
                     break;
                 }
@@ -3866,17 +3866,18 @@ GenTree* Compiler::impIntrinsic(GenTree*                newobjThis,
                 if (sig->sigInst.methInstCount == 0)
                 {
                     CORINFO_CLASS_HANDLE typeHnd = nullptr;
-                    CorInfoType jitType = strip(info.compCompHnd->getArgType(sig, info.compCompHnd->getArgNext(sig->args), &typeHnd));
+                    CorInfoType          jitType =
+                        strip(info.compCompHnd->getArgType(sig, info.compCompHnd->getArgNext(sig->args), &typeHnd));
                     assert(impIsPrimitive(jitType));
                     type = JITtype2varType(jitType);
-#if !TARGET_64BIT
-                    if ((type == TYP_LONG) || (type == TYP_ULONG) || (type == TYP_DOUBLE))
+#ifndef TARGET_64BIT
+                    if ((type == TYP_LONG) || (type == TYP_DOUBLE))
                     {
                         break;
                     }
 #endif // !TARGET_64BIT
                 }
-                else 
+                else
                 {
                     assert(sig->sigInst.methInstCount == 1);
                     assert(!eeIsValueClass(sig->sigInst.methInst[0]));
