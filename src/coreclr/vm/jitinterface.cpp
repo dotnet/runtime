@@ -1684,8 +1684,11 @@ void* getThreadStaticsBaseOffset()
 #else
 void* getThreadStaticDescriptor(uint8_t* p)
 {
-    _ASSERTE_MSG((p[0] == 0x66 && p[1] == 0x48 && p[2] == 0x8d && p[3] == 0x3d),
-        "Unexpected instruction - this can happen when this is not compiled in .so (e.g. for single file)");
+    if (!(p[0] == 0x66 && p[1] == 0x48 && p[2] == 0x8d && p[3] == 0x3d))
+    {
+        // The optimization is disabled if coreclr is not compiled in .so format.
+        return 0;
+    }
 
     // At this point, `p` contains the instruction pointer and is pointing to the above opcodes.
     // These opcodes are patched by the dynamic linker.

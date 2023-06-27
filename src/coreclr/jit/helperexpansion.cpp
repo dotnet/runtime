@@ -509,6 +509,19 @@ bool Compiler::fgExpandThreadLocalAccessForCall(BasicBlock** pBlock, Statement* 
     CORINFO_THREAD_STATIC_BLOCKS_INFO threadStaticBlocksInfo;
     info.compCompHnd->getThreadLocalStaticBlocksInfo(&threadStaticBlocksInfo, isGCThreadStatic);
 
+#ifdef TARGET_AMD64
+    if (TargetOS::IsUnix || TargetOS::IsMacOS)
+    {
+        if (threadStaticBlocksInfo.descrAddrOfMaxThreadStaticBlock == 0)
+        {
+            // We possibly compiled coreclr as single file and not .so file.
+            // Do not perform this optimization for it.
+            return false;
+        }
+    }
+#endif // TARGET_AMD64
+    
+
     size_t offsetOfThreadStaticBlocksVal    = threadStaticBlocksInfo.offsetOfThreadStaticBlocks;
     size_t offsetOfMaxThreadStaticBlocksVal = threadStaticBlocksInfo.offsetOfMaxThreadStaticBlocks;
 
