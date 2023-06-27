@@ -308,8 +308,13 @@
   <ItemGroup Condition="'$(IsNativeAOTHostBuildEnabled)' == 'true'">
     <ProjectToBuild
       Include="$(CoreClrProjectRoot)runtime.proj"
-      AdditionalProperties="$(NativeAOTAdditionalProperties);
-                            ClrAllJitsSubset=true"
+      AdditionalProperties="%(AdditionalProperties);
+                            $(NativeAOTAdditionalProperties);
+                            ClrAllJitsSubset=true;
+                            ClrCrossComponentsSubset=true;
+                            PgoInstrument=false;
+                            NoPgoOptimize=true;
+                            CMakeArgs=$(CMakeArgs) -DCLR_CROSS_COMPONENTS_BUILD=1"
       Category="clr" />
     <ProjectToBuild Include="$(CoreClrProjectRoot)tools\aot\ILCompiler\ILCompiler.csproj" Category="clr" AdditionalProperties="$(NativeAOTAdditionalProperties)" />
     <ProjectToBuild Include="$(CoreClrProjectRoot)nativeaot\BuildIntegration\BuildIntegration.proj" Category="clr" AdditionalProperties="$(NativeAOTAdditionalProperties)" />
