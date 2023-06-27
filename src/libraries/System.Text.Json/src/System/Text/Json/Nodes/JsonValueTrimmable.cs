@@ -99,7 +99,7 @@ namespace System.Text.Json.Nodes
                             return jsonElementCurrent.ValueEquals(jsonElementNodeOther._value.GetString());
                         case JsonValueKind.True:
                         case JsonValueKind.False:
-                            return jsonElementCurrent.GetBoolean() == jsonElementNodeOther._value.GetBoolean();
+                            return jsonElementCurrent.ValueKind == jsonElementNodeOther._value.ValueKind;
                         case JsonValueKind.Number:
                             return jsonElementCurrent.GetRawValue().Span.SequenceEqual(jsonElementNodeOther._value.GetRawValue().Span);
                         default:
