@@ -9508,6 +9508,16 @@ public:
             return jitFlags->IsSet(JitFlags::JIT_FLAG_REVERSE_PINVOKE);
         }
 
+        // true if JitFlags::JIT_FLAG_VECTOR512_THROTTLING is set to true
+        bool Vector512Throttling()
+        {
+#if defined(TARGET_XARCH)
+            return jitFlags->IsSet(JitFlags::JIT_FLAG_VECTOR512_THROTTLING);
+#else
+            return false;
+#endif
+        }
+
         bool compScopeInfo; // Generate the LocalVar info ?
         bool compDbgCode;   // Generate debugger-friendly code?
         bool compDbgInfo;   // Gather debugging info?
