@@ -55,9 +55,12 @@ namespace System.Text.Json.Nodes
                 return new JsonArray(_jsonElement.Value.Clone(), Options);
             }
 
-            var jsonArray = new JsonArray(Options);
-
             List<JsonNode?> list = List;
+
+            var jsonArray = new JsonArray(Options)
+            {
+                _list = new List<JsonNode?>(list.Count)
+            };
 
             for (int i = 0; i < list.Count; i++)
             {

@@ -77,10 +77,14 @@ namespace System.Text.Json.Nodes
                 return new JsonObject(_jsonElement!.Value.Clone(), Options);
             }
 
-            var jObject = new JsonObject(Options);
-
             if (_dictionary is not null)
             {
+                bool caseInsensitive = Options.HasValue ? Options.Value.PropertyNameCaseInsensitive : false;
+                var jObject = new JsonObject(Options)
+                {
+                    _dictionary = new JsonPropertyDictionary<JsonNode?>(caseInsensitive, _dictionary.Count)
+                };
+
                 foreach (KeyValuePair<string, JsonNode?> item in _dictionary)
                 {
                     if (item.Value is not null)
@@ -92,9 +96,10 @@ namespace System.Text.Json.Nodes
                         jObject.Add(item.Key, null);
                     }
                 }
+                return jObject;
             }
 
-            return jObject;
+            return new JsonObject(Options);
         }
 
         internal string GetPropertyName(JsonNode? node)

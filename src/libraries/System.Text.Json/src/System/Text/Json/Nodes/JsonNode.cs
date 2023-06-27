@@ -325,23 +325,18 @@ namespace System.Text.Json.Nodes
         [RequiresDynamicCode(JsonValue.CreateDynamicCodeMessage)]
         public void ReplaceWith<T>(T value)
         {
-            if (_parent is null)
+            switch (_parent)
             {
-                return;
-            }
-
-            JsonValue? jsonValue = JsonValue.Create(value);
-
-            if (_parent is JsonObject jsonObject)
-            {
-                jsonObject.SetItem(GetPropertyName(), jsonValue);
-                return;
-            }
-
-            if (_parent is JsonArray jsonArray)
-            {
-                jsonArray.SetItem(GetElementIndex(), jsonValue);
-                return;
+                case null:
+                    return;
+                case JsonObject jsonObject:
+                    JsonValue? jsonValue = JsonValue.Create(value);
+                    jsonObject.SetItem(GetPropertyName(), jsonValue);
+                    return;
+                case JsonArray jsonArray:
+                    JsonValue? jValue = JsonValue.Create(value);
+                    jsonArray.SetItem(GetElementIndex(), jValue);
+                    return;
             }
         }
 
