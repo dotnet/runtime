@@ -284,7 +284,7 @@ namespace System
             // since Local is a real time zone that exists in the dictionary cache
             if (string.Equals(id, UtcId, StringComparison.OrdinalIgnoreCase))
             {
-                timeZone  = Utc;
+                timeZone = Utc;
                 e = default;
                 return TimeZoneInfoResult.Success;
             }
