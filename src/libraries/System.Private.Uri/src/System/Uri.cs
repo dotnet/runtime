@@ -17,7 +17,7 @@ namespace System
 {
     [Serializable]
     [System.Runtime.CompilerServices.TypeForwardedFrom("System, Version=4.0.0.0, Culture=neutral, PublicKeyToken=b77a5c561934e089")]
-    public partial class Uri : ISerializable
+    public partial class Uri : ISpanFormattable, ISerializable
     {
         public static readonly string UriSchemeFile = UriParser.FileUri.SchemeName;
         public static readonly string UriSchemeFtp = UriParser.FtpUri.SchemeName;
@@ -46,7 +46,7 @@ namespace System
         // or idn is on and we have unicode host or idn host
         // In that case, this string is normalized, stripped of bidi chars, and validated
         // with char limits
-        private string _string = null!; // initialized early in ctor via a helper
+        private string _string;
 
         // untouched user string if string has unicode with iri on or unicode/idn host with idn on
         private string _originalUnicodeString = null!; // initialized in ctor via helper
@@ -319,6 +319,7 @@ namespace System
             return (allFlags & checkFlags) != 0;
         }
 
+        [MemberNotNull(nameof(_info))]
         private UriInfo EnsureUriInfo()
         {
             Flags cF = _flags;
@@ -338,6 +339,7 @@ namespace System
             }
         }
 
+        [MemberNotNull(nameof(_info))]
         private void EnsureHostString(bool allowDnsOptimization)
         {
             UriInfo info = EnsureUriInfo();
@@ -497,6 +499,7 @@ namespace System
             }
         }
 
+        [MemberNotNull(nameof(_string))]
         private void CreateUri(Uri baseUri, string? relativeUri, bool dontEscape)
         {
             DebugAssertInCtor();
@@ -1173,7 +1176,7 @@ namespace System
                 {
                     EnsureHostString(false);
 
-                    string host = _info!.Host!;
+                    string host = _info.Host!;
 
                     Flags hostType = HostType;
                     if (hostType == Flags.DnsHostType)
@@ -1538,8 +1541,6 @@ namespace System
         //
         // ToString
         //
-        // The better implementation would be just
-        //
         private const UriFormat V1ToStringUnescape = (UriFormat)0x7FFF;
 
         public override string ToString()
@@ -1550,15 +1551,92 @@ namespace System
             }
 
             EnsureUriInfo();
-            if (_info.String is null)
-            {
-                if (_syntax.IsSimple)
-                    _info.String = GetComponentsHelper(UriComponents.AbsoluteUri, V1ToStringUnescape);
-                else
-                    _info.String = GetParts(UriComponents.AbsoluteUri, UriFormat.SafeUnescaped);
-            }
-            return _info.String;
+            return _info.String ??=
+                _syntax.IsSimple ?
+                    GetComponentsHelper(UriComponents.AbsoluteUri, V1ToStringUnescape) :
+                    GetParts(UriComponents.AbsoluteUri, UriFormat.SafeUnescaped);
         }
+
+        /// <summary>
+        /// Attempts to format a canonical string representation for the <see cref="Uri"/> instance into the specified span.
+        /// </summary>
+        /// <param name="destination">The span into which to write this instance's value formatted as a span of characters.</param>
+        /// <param name="charsWritten">When this method returns, contains the number of characters that were written in <paramref name="destination"/>.</param>
+        /// <returns><see langword="true"/> if the formatting was successful; otherwise, <see langword="false"/>.</returns>
+        public bool TryFormat(Span<char> destination, out int charsWritten)
+        {
+            ReadOnlySpan<char> result;
+
+            if (_syntax is null)
+            {
+                result = _string;
+            }
+            else
+            {
+                EnsureUriInfo();
+                if (_info.String is not null)
+                {
+                    result = _info.String;
+                }
+                else
+                {
+                    UriFormat uriFormat = V1ToStringUnescape;
+                    if (!_syntax.IsSimple)
+                    {
+                        if (IsNotAbsoluteUri)
+                        {
+                            throw new InvalidOperationException(SR.net_uri_NotAbsolute);
+                        }
+
+                        if (UserDrivenParsing)
+                        {
+                            throw new InvalidOperationException(SR.Format(SR.net_uri_UserDrivenParsing, GetType()));
+                        }
+
+                        if (DisablePathAndQueryCanonicalization)
+                        {
+                            throw new InvalidOperationException(SR.net_uri_GetComponentsCalledWhenCanonicalizationDisabled);
+                        }
+
+                        uriFormat = UriFormat.SafeUnescaped;
+                    }
+
+                    EnsureParseRemaining();
+                    EnsureHostString(allowDnsOptimization: true);
+
+                    ushort nonCanonical = (ushort)((ushort)_flags & (ushort)Flags.CannotDisplayCanonical);
+                    if (((_flags & (Flags.ShouldBeCompressed | Flags.FirstSlashAbsent | Flags.BackslashInPath)) != 0) ||
+                        (IsDosPath && _string[_info.Offset.Path + SecuredPathIndex - 1] == '|')) // A rare case of c|\
+                    {
+                        nonCanonical |= (ushort)Flags.PathNotCanonical;
+                    }
+
+                    if (((ushort)UriComponents.AbsoluteUri & nonCanonical) != 0)
+                    {
+                        return TryRecreateParts(destination, out charsWritten, UriComponents.AbsoluteUri, nonCanonical, uriFormat);
+                    }
+
+                    result = _string.AsSpan(_info.Offset.Scheme, _info.Offset.End - _info.Offset.Scheme);
+                }
+            }
+
+            if (result.TryCopyTo(destination))
+            {
+                charsWritten = result.Length;
+                return true;
+            }
+
+            charsWritten = 0;
+            return false;
+        }
+
+        /// <inheritdoc/>
+        bool ISpanFormattable.TryFormat(Span<char> destination, out int charsWritten, ReadOnlySpan<char> format, IFormatProvider? provider) =>
+            TryFormat(destination, out charsWritten);
+
+        /// <inheritdoc/>
+        string IFormattable.ToString(string? format, IFormatProvider? formatProvider) =>
+            ToString();
 
         public static bool operator ==(Uri? uri1, Uri? uri2)
         {
@@ -1664,7 +1742,7 @@ namespace System
             EnsureUriInfo();
             obj.EnsureUriInfo();
 
-            if (!UserDrivenParsing && !obj.UserDrivenParsing && Syntax!.IsSimple && obj.Syntax!.IsSimple)
+            if (!UserDrivenParsing && !obj.UserDrivenParsing && Syntax!.IsSimple && obj.Syntax.IsSimple)
             {
                 // Optimization of canonical DNS names by avoiding host string creation.
                 // Note there could be explicit ports specified that would invalidate path offsets
@@ -2580,7 +2658,7 @@ namespace System
                 }
             }
 
-            return ReCreateParts(uriParts, nonCanonical, UriFormat.UriEscaped);
+            return RecreateParts(uriParts, nonCanonical, UriFormat.UriEscaped);
         }
 
         private string GetUnescapedParts(UriComponents uriParts, UriFormat formatAs)
@@ -2615,12 +2693,12 @@ namespace System
                 }
             }
 
-            return ReCreateParts(uriParts, nonCanonical, formatAs);
+            return RecreateParts(uriParts, nonCanonical, formatAs);
         }
 
-        private string ReCreateParts(UriComponents parts, ushort nonCanonical, UriFormat formatAs)
+        private string RecreateParts(UriComponents parts, ushort nonCanonical, UriFormat formatAs)
         {
-            EnsureHostString(false);
+            EnsureHostString(allowDnsOptimization: false);
 
             string str = _string;
 
@@ -2628,6 +2706,33 @@ namespace System
                 ? new ValueStringBuilder(stackalloc char[StackallocThreshold])
                 : new ValueStringBuilder(str.Length);
 
+            scoped ReadOnlySpan<char> result = RecreateParts(ref dest, str, parts, nonCanonical, formatAs);
+
+            string s = result.ToString();
+            dest.Dispose();
+            return s;
+        }
+
+        private bool TryRecreateParts(scoped Span<char> span, out int charsWritten, UriComponents parts, ushort nonCanonical, UriFormat formatAs)
+        {
+            EnsureHostString(allowDnsOptimization: false);
+
+            string str = _string;
+
+            var dest = str.Length <= StackallocThreshold
+                ? new ValueStringBuilder(stackalloc char[StackallocThreshold])
+                : new ValueStringBuilder(str.Length);
+
+            scoped ReadOnlySpan<char> result = RecreateParts(ref dest, str, parts, nonCanonical, formatAs);
+
+            bool copied = result.TryCopyTo(span);
+            charsWritten = copied ? result.Length : 0;
+            dest.Dispose();
+            return copied;
+        }
+
+        private ReadOnlySpan<char> RecreateParts(scoped ref ValueStringBuilder dest, string str, UriComponents parts, ushort nonCanonical, UriFormat formatAs)
+        {
             //Scheme and slashes
             if ((parts & UriComponents.Scheme) != 0)
             {
@@ -2778,9 +2883,7 @@ namespace System
                         offset = 0;
                     }
 
-                    string result = dest.AsSpan(offset).ToString();
-                    dest.Dispose();
-                    return result;
+                    return dest.AsSpan(offset);
                 }
             }
 
@@ -2860,9 +2963,9 @@ namespace System
                     ref dest, '#', c_DummyChar, c_DummyChar,
                     mode, _syntax, isQuery: false);
             }
-        AfterFragment:
 
-            return dest.ToString();
+        AfterFragment:
+            return dest.AsSpan();
         }
 
         //

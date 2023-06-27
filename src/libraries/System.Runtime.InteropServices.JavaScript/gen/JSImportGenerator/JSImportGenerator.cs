@@ -177,7 +177,8 @@ namespace Microsoft.Interop.JavaScript
 
             Debug.Assert(jsImportAttr is not null);
 
-            var generatorDiagnostics = new GeneratorDiagnostics();
+            var locations = new MethodSignatureDiagnosticLocations(originalSyntax);
+            var generatorDiagnostics = new GeneratorDiagnosticsBag(new DescriptorProvider(), locations, SR.ResourceManager, typeof(FxResources.Microsoft.Interop.JavaScript.JSImportGenerator.SR));
 
             // Process the JSImport attribute
             JSImportData? jsImportData = ProcessJSImportAttribute(jsImportAttr!);
@@ -198,7 +199,7 @@ namespace Microsoft.Interop.JavaScript
                 signatureContext,
                 containingTypeContext,
                 methodSyntaxTemplate,
-                new MethodSignatureDiagnosticLocations(originalSyntax),
+                locations,
                 jsImportData,
                 CreateGeneratorFactory(environment, options),
                 new SequenceEqualImmutableArray<DiagnosticInfo>(generatorDiagnostics.Diagnostics.ToImmutableArray()));
@@ -214,20 +215,17 @@ namespace Microsoft.Interop.JavaScript
         private static (MemberDeclarationSyntax, ImmutableArray<DiagnosticInfo>) GenerateSource(
             IncrementalStubGenerationContext incrementalContext)
         {
-            var diagnostics = new GeneratorDiagnostics();
+            var diagnostics = new GeneratorDiagnosticsBag(new DescriptorProvider(), incrementalContext.DiagnosticLocation, SR.ResourceManager, typeof(FxResources.Microsoft.Interop.JavaScript.JSImportGenerator.SR));
 
             // Generate stub code
             var stubGenerator = new JSImportCodeGenerator(
-            incrementalContext.GeneratorFactoryKey.Key.TargetFramework,
-            incrementalContext.GeneratorFactoryKey.Key.TargetFrameworkVersion,
-            incrementalContext.SignatureContext.SignatureContext.ElementTypeInformation,
-            incrementalContext.JSImportData,
-            incrementalContext.SignatureContext,
-            (elementInfo, ex) =>
-            {
-                diagnostics.ReportMarshallingNotSupported(incrementalContext.DiagnosticLocation, elementInfo, ex.NotSupportedDetails, ex.DiagnosticProperties ?? ImmutableDictionary<string, string>.Empty);
-            },
-            incrementalContext.GeneratorFactoryKey.GeneratorFactory);
+                incrementalContext.GeneratorFactoryKey.Key.TargetFramework,
+                incrementalContext.GeneratorFactoryKey.Key.TargetFrameworkVersion,
+                incrementalContext.SignatureContext.SignatureContext.ElementTypeInformation,
+                incrementalContext.JSImportData,
+                incrementalContext.SignatureContext,
+                diagnostics,
+                incrementalContext.GeneratorFactoryKey.GeneratorFactory);
 
             BlockSyntax code = stubGenerator.GenerateJSImportBody();
 

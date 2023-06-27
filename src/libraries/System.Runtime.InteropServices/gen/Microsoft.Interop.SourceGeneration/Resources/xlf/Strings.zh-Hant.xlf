@@ -67,6 +67,11 @@
         <target state="translated">此參數不支援在此參數上提供的 '[In]' 和 '[Out]' 屬性。</target>
         <note />
       </trans-unit>
+      <trans-unit id="InOutAttributes">
+        <source>[In] and [Out] attributes</source>
+        <target state="new">[In] and [Out] attributes</target>
+        <note />
+      </trans-unit>
       <trans-unit id="ManagedToUnmanagedMissingRequiredMarshaller">
         <source>The specified parameter needs to be marshalled from managed to unmanaged, but the marshaller type '{0}' does not support it.</source>
         <target state="translated">指定的參數必須從受控封送處理到非受控，但封送處理程式類型 '{0}' 不支援。</target>

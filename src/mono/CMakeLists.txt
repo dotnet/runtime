@@ -218,36 +218,6 @@ elseif(CLR_CMAKE_HOST_OS STREQUAL "linux")
   # Enable the "full RELRO" options (RELRO & BIND_NOW) at link time
   add_link_options(-Wl,-z,relro)
   add_link_options(-Wl,-z,now)
-
-  # Detect Linux ID
-  # TODO: Eventually merge with eng/native/configureplatform.cmake
-  set(LINUX_ID_FILE "/etc/os-release")
-  if(CMAKE_CROSSCOMPILING)
-      set(LINUX_ID_FILE "${CMAKE_SYSROOT}${LINUX_ID_FILE}")
-  endif()
-
-  if(EXISTS ${LINUX_ID_FILE})
-      execute_process(
-          COMMAND bash -c "source ${LINUX_ID_FILE} && echo \$ID"
-          OUTPUT_VARIABLE CLR_CMAKE_LINUX_ID
-          OUTPUT_STRIP_TRAILING_WHITESPACE)
-
-      execute_process(
-          COMMAND bash -c "if strings \"${CMAKE_SYSROOT}/usr/bin/ldd\" 2>&1 | grep -q musl; then echo musl; fi"
-          OUTPUT_VARIABLE CLR_CMAKE_LINUX_MUSL
-          OUTPUT_STRIP_TRAILING_WHITESPACE)
-  endif()
-
-  if(DEFINED CLR_CMAKE_LINUX_ID)
-      if(CLR_CMAKE_LINUX_ID STREQUAL alpine)
-          set(CLR_CMAKE_HOST_ALPINE_LINUX 1)
-          set(CLR_CMAKE_HOST_OS ${CLR_CMAKE_LINUX_ID})
-      endif()
-
-      if(CLR_CMAKE_LINUX_MUSL STREQUAL musl)
-          set(CLR_CMAKE_HOST_LINUX_MUSL 1)
-      endif()
-  endif(DEFINED CLR_CMAKE_LINUX_ID)
 elseif(CLR_CMAKE_HOST_OS STREQUAL "android")
   set(HOST_LINUX 1)
   add_definitions(-D_GNU_SOURCE -D_REENTRANT)

@@ -764,7 +764,7 @@ namespace System.Text.RegularExpressions.Generator
             }
 
             // We're done.  Patch up any additional declarations.
-            ReplaceAdditionalDeclarations(writer, additionalDeclarations, additionalDeclarationsPosition, additionalDeclarationsIndent);
+            InsertAdditionalDeclarations(writer, additionalDeclarations, additionalDeclarationsPosition, additionalDeclarationsIndent);
             return;
 
             // Emit a goto for the specified label.
@@ -1379,7 +1379,7 @@ namespace System.Text.RegularExpressions.Generator
             // We're done with the match.
 
             // Patch up any additional declarations.
-            ReplaceAdditionalDeclarations(writer, additionalDeclarations, additionalDeclarationsPosition, additionalDeclarationsIndent);
+            InsertAdditionalDeclarations(writer, additionalDeclarations, additionalDeclarationsPosition, additionalDeclarationsIndent);
 
             // And emit any required helpers.
             if (additionalLocalFunctions.Count != 0)
@@ -5054,14 +5054,14 @@ namespace System.Text.RegularExpressions.Generator
         }
 
         /// <summary>
-        /// Replaces <see cref="AdditionalDeclarationsPlaceholder"/> in <paramref name="writer"/> with
-        /// all of the variable declarations in <paramref name="declarations"/>.
+        /// Inserts all of the variable declarations in <paramref name="declarations"/> into the
+        /// <paramref name="writer"/> at <paramref name="position"/> with <paramref name="indent"/>.
         /// </summary>
         /// <param name="writer">The writer around a StringWriter to have additional declarations inserted into.</param>
         /// <param name="declarations">The additional declarations to insert.</param>
         /// <param name="position">The position into the writer at which to insert the additional declarations.</param>
         /// <param name="indent">The indentation to use for the additional declarations.</param>
-        private static void ReplaceAdditionalDeclarations(IndentedTextWriter writer, HashSet<string> declarations, int position, int indent)
+        private static void InsertAdditionalDeclarations(IndentedTextWriter writer, HashSet<string> declarations, int position, int indent)
         {
             if (declarations.Count != 0)
             {

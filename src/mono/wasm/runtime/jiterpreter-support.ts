@@ -386,13 +386,22 @@ export class WasmBuilder {
                 this.i52_const(0);
                 this.appendSimd(WasmSimdOpcode.i64x2_splat);
             */
-            this.appendSimd(WasmSimdOpcode.v128_const);
-            for (let i = 0; i < 16; i++)
-                this.appendU8(0);
+            this.local("v128_zero");
         } else if (typeof (value) === "object") {
             mono_assert(value.byteLength === 16, "Expected v128_const arg to be 16 bytes in size");
-            this.appendSimd(WasmSimdOpcode.v128_const);
-            this.appendBytes(value);
+            let isZero = true;
+            for (let i = 0; i < 16; i++) {
+                if (value[i] !== 0)
+                    isZero = false;
+            }
+
+            if (isZero) {
+                // mono_log_info("Detected that literal v128_const was zero");
+                this.local("v128_zero");
+            } else {
+                this.appendSimd(WasmSimdOpcode.v128_const);
+                this.appendBytes(value);
+            }
         } else {
             throw new Error("Expected v128_const arg to be 0 or a Uint8Array");
         }
@@ -723,6 +732,7 @@ export class WasmBuilder {
         counts[WasmValtype.i64] = 0;
         counts[WasmValtype.f32] = 0;
         counts[WasmValtype.f64] = 0;
+        counts[WasmValtype.v128] = 0;
 
         for (const k in locals) {
             const ty = locals[k];
@@ -734,34 +744,39 @@ export class WasmBuilder {
         const offi32 = 0,
             offi64 = counts[WasmValtype.i32],
             offf32 = offi64 + counts[WasmValtype.i64],
-            offf64 = offf32 + counts[WasmValtype.f32];
+            offf64 = offf32 + counts[WasmValtype.f32],
+            offv128 = offf64 + counts[WasmValtype.f64];
 
         counts[WasmValtype.i32] = 0;
         counts[WasmValtype.i64] = 0;
         counts[WasmValtype.f32] = 0;
         counts[WasmValtype.f64] = 0;
+        counts[WasmValtype.v128] = 0;
 
         for (const k in locals) {
             const ty = locals[k];
-            let idx = 0;
+            let idx = 0, offset;
             switch (ty) {
                 case WasmValtype.i32:
-                    idx = (counts[ty]++) + offi32 + base;
-                    this.locals.set(k, idx);
+                    offset = offi32;
                     break;
                 case WasmValtype.i64:
-                    idx = (counts[ty]++) + offi64 + base;
-                    this.locals.set(k, idx);
+                    offset = offi64;
                     break;
                 case WasmValtype.f32:
-                    idx = (counts[ty]++) + offf32 + base;
-                    this.locals.set(k, idx);
+                    offset = offf32;
                     break;
                 case WasmValtype.f64:
-                    idx = (counts[ty]++) + offf64 + base;
-                    this.locals.set(k, idx);
+                    offset = offf64;
                     break;
+                case WasmValtype.v128:
+                    offset = offv128;
+                    break;
+                default:
+                    throw new Error(`Unimplemented valtype: ${ty}`);
             }
+            idx = (counts[ty]++) + offset + base;
+            this.locals.set(k, idx);
             // mono_log_info(`local ${k} ${locals[k]} -> ${idx}`);
         }
 
@@ -780,7 +795,7 @@ export class WasmBuilder {
         this.locals.clear();
         this.branchTargets.clear();
         let counts: any = {};
-        const tk = [WasmValtype.i32, WasmValtype.i64, WasmValtype.f32, WasmValtype.f64];
+        const tk = [WasmValtype.i32, WasmValtype.i64, WasmValtype.f32, WasmValtype.f64, WasmValtype.v128];
 
         // We first assign the parameters local indices and then
         //  we assign the named locals indices, because parameters
@@ -1412,6 +1427,7 @@ export const enum WasmValtype {
     i64 = 0x7E,
     f32 = 0x7D,
     f64 = 0x7C,
+    v128 = 0x7B,
 }
 
 let wasmTable: WebAssembly.Table | undefined;

@@ -46,6 +46,7 @@ if(NOT WIN32 AND NOT CLR_CMAKE_TARGET_BROWSER AND NOT CLR_CMAKE_TARGET_WASI)
   locate_toolchain_exec(ar CMAKE_AR YES)
   locate_toolchain_exec(nm CMAKE_NM YES)
   locate_toolchain_exec(ranlib CMAKE_RANLIB YES)
+  locate_toolchain_exec(strings CMAKE_STRINGS YES)
 
   if(CMAKE_C_COMPILER_ID MATCHES "Clang")
     locate_toolchain_exec(link CMAKE_LINKER YES)
@@ -89,5 +90,20 @@ if (NOT CLR_CMAKE_HOST_WIN32)
     set(LD_SOLARIS 1)
   else(CLR_CMAKE_HOST_OSX OR CLR_CMAKE_HOST_MACCATALYST)
     set(LD_OSX 1)
+  endif()
+endif()
+
+# This introspection depends on CMAKE_STRINGS, which is why it's in this file instead of configureplatform
+if (CLR_CMAKE_HOST_LINUX)
+  execute_process(
+    COMMAND bash -c "if ${CMAKE_STRINGS} \"${CMAKE_SYSROOT}/usr/bin/ldd\" 2>&1 | grep -q musl; then echo musl; fi"
+    OUTPUT_VARIABLE CLR_CMAKE_LINUX_MUSL
+    OUTPUT_STRIP_TRAILING_WHITESPACE)
+
+  if(CLR_CMAKE_LINUX_MUSL STREQUAL musl)
+    set(CLR_CMAKE_HOST_LINUX_MUSL 1)
+    set(CLR_CMAKE_TARGET_UNIX 1)
+    set(CLR_CMAKE_TARGET_LINUX 1)
+    set(CLR_CMAKE_TARGET_LINUX_MUSL 1)
   endif()
 endif()
