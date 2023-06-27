@@ -139,7 +139,7 @@ public class Program
     {
         ulong l = 0;
         Unsafe.As<ulong, T>(ref l) = value;
-        return l.ToString();
+        return $"({typeof(T).FullName}){l}";
     }
 
     private static void Compare_Double_Enum(DoubleEnum a, DoubleEnum b) =>
