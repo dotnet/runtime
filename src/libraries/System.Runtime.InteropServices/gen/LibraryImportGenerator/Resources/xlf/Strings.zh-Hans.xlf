@@ -629,6 +629,26 @@
         <target state="translated">源生成的 P/Invoke 不支持指定的类型</target>
         <note />
       </trans-unit>
+      <trans-unit id="UnnecessaryMarshallingInfoDescription">
+        <source>Unnecesssary marshalling info was provided. This marshalling information can be removed without any change in behavior to the application.</source>
+        <target state="new">Unnecesssary marshalling info was provided. This marshalling information can be removed without any change in behavior to the application.</target>
+        <note />
+      </trans-unit>
+      <trans-unit id="UnnecessaryMarshallingInfoTitle">
+        <source>Unnecessary marshalling info was provided and can be removed.</source>
+        <target state="new">Unnecessary marshalling info was provided and can be removed.</target>
+        <note />
+      </trans-unit>
+      <trans-unit id="UnnecessaryParameterMarshallingInfoMessage">
+        <source>Unnecessary marshalling info '{0}' was provided for parameter '{1}'</source>
+        <target state="new">Unnecessary marshalling info '{0}' was provided for parameter '{1}'</target>
+        <note />
+      </trans-unit>
+      <trans-unit id="UnnecessaryReturnMarshallingInfoMessage">
+        <source>Unnecessary marshalling info '{0}' was provided for the return type of method '{1}'</source>
+        <target state="new">Unnecessary marshalling info '{0}' was provided for the return type of method '{1}'</target>
+        <note />
+      </trans-unit>
       <trans-unit id="ValueInCallerAllocatedBufferRequiresSpanConstructorDescription">
         <source>A 'Value'-kind native type that supports the 'CallerAllocatedBuffer' feature must provide a two-parameter constructor taking the managed type and a 'Span' of an 'unmanaged' type as parameters</source>
         <target state="translated">支持 \"CallerAllocatedBuffer\" 功能的 \"Value\" 种类本机类型必须提供以托管类型和“非管理”类型的 \"Span\" 作为参数的双参数构造函数</target>

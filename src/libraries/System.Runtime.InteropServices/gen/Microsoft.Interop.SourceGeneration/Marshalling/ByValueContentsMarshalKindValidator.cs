@@ -2,8 +2,8 @@
 // The .NET Foundation licenses this file to you under the MIT license.
 
 using System;
-using System.Collections.Generic;
-using System.Text;
+using System.Collections.Immutable;
+using Microsoft.CodeAnalysis;
 
 namespace Microsoft.Interop
 {
@@ -49,13 +49,36 @@ namespace Microsoft.Interop
                     NotSupportedDetails = SR.InAttributeNotSupportedWithoutOut
                 }));
             }
-            else if (info.ByValueContentsMarshalKind != ByValueContentsMarshalKind.Default
-                && !generator.Generator.SupportsByValueMarshalKind(info.ByValueContentsMarshalKind, context))
+            else if (info.ByValueContentsMarshalKind != ByValueContentsMarshalKind.Default)
             {
-                return ResolvedGenerator.ResolvedWithDiagnostics(s_forwarder, generator.Diagnostics.Add(new GeneratorDiagnostic.NotSupported(info, context)
+                ByValueMarshalKindSupport support = generator.Generator.SupportsByValueMarshalKind(info.ByValueContentsMarshalKind, context);
+                if (support == ByValueMarshalKindSupport.NotSupported)
                 {
-                    NotSupportedDetails = SR.InOutAttributeMarshalerNotSupported
-                }));
+                    return ResolvedGenerator.ResolvedWithDiagnostics(s_forwarder, generator.Diagnostics.Add(new GeneratorDiagnostic.NotSupported(info, context)
+                    {
+                        NotSupportedDetails = SR.InOutAttributeMarshalerNotSupported
+                    }));
+                }
+                else if (support == ByValueMarshalKindSupport.Unnecessary)
+                {
+                    var locations = ImmutableArray<Location>.Empty;
+                    if (info.ByValueMarshalAttributeLocations.InLocation is not null)
+                    {
+                        locations = locations.Add(info.ByValueMarshalAttributeLocations.InLocation);
+                    }
+                    if (info.ByValueMarshalAttributeLocations.OutLocation is not null)
+                    {
+                        locations = locations.Add(info.ByValueMarshalAttributeLocations.OutLocation);
+                    }
+
+                    return generator with
+                    {
+                        Diagnostics = generator.Diagnostics.Add(new GeneratorDiagnostic.UnnecessaryData(info, context, locations)
+                        {
+                            UnnecessaryDataDetails = SR.InOutAttributes
+                        })
+                    };
+                }
             }
             return generator;
         }

@@ -69,6 +69,25 @@ namespace Microsoft.Interop
     }
 
     /// <summary>
+    /// An enumeration describing if the provided <see cref="ByValueContentsMarshalKind" /> is supported and changes behavior from the default behavior.
+    /// </summary>
+    public enum ByValueMarshalKindSupport
+    {
+        /// <summary>
+        /// The provided <see cref="ByValueContentsMarshalKind" /> is supported and changes behavior from the default behavior.
+        /// </summary>
+        Supported,
+        /// <summary>
+        /// The provided <see cref="ByValueContentsMarshalKind" /> is not supported.
+        /// </summary>
+        NotSupported,
+        /// <summary>
+        /// The provided <see cref="ByValueContentsMarshalKind" /> is supported but does not change behavior from the default in this scenario.
+        /// </summary>
+        Unnecessary,
+    }
+
+    /// <summary>
     /// Interface for generation of marshalling code for P/Invoke stubs
     /// </summary>
     public interface IMarshallingGenerator
@@ -135,7 +154,7 @@ namespace Microsoft.Interop
         /// </summary>
         /// <param name="marshalKind">The marshal kind.</param>
         /// <param name="context">The marshalling context.</param>
-        /// <returns></returns>
-        bool SupportsByValueMarshalKind(ByValueContentsMarshalKind marshalKind, StubCodeContext context);
+        /// <returns>If the provided <paramref name="marshalKind"/> is supported and if it is required to specify the requested behavior.</returns>
+        ByValueMarshalKindSupport SupportsByValueMarshalKind(ByValueContentsMarshalKind marshalKind, StubCodeContext context);
     }
 }
