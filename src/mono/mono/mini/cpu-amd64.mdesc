@@ -831,6 +831,16 @@ sse41_dpps_imm: dest:x src1:x src2:x len:7 clob:1
 sse41_dppd_imm: dest:x src1:x src2:x len:7 clob:1
 vector_andnot: dest:x src1:x src2:x len:7 clob:1
 
+sse_cmpss: dest:x src1:x src2:x len:21 clob:1
+sse_comiss: dest:i src1:x src2:x len:7 clob:1
+sse_ucomiss: dest:i src1:x src2:x len:7 clob:1
+sse_addss: dest:x src1:x src2:x len:7 clob:1
+sse_subss: dest:x src1:x src2:x len:7 clob:1
+sse_mulss: dest:x src1:x src2:x len:7 clob:1
+sse_divss: dest:x src1:x src2:x len:7 clob:1
+sse_cvtsi2ss: dest:x src1:x src2:i len:7 clob:1
+sse_movss: dest:x src1:b len:16
+
 roundp: dest:x src1:x len:10
 
 liverange_start: len:0

@@ -6936,6 +6936,25 @@ mono_arch_output_basic_block (MonoCompile *cfg, MonoBasicBlock *bb)
 			amd64_sse_movddup_reg_reg (code, ins->dreg, ins->sreg1);
 			break;
 
+		case OP_SSE_ADDSS:
+			amd64_sse_addss_reg_reg (code, ins->dreg, ins->sreg2);
+			break;
+		case OP_SSE_SUBSS:
+			amd64_sse_subss_reg_reg (code, ins->dreg, ins->sreg2);
+			break;
+		case OP_SSE_MULSS:
+			amd64_sse_mulss_reg_reg (code, ins->dreg, ins->sreg2);
+			break;
+		case OP_SSE_DIVSS:
+			amd64_sse_divss_reg_reg (code, ins->dreg, ins->sreg2);
+			break;
+		case OP_SSE_CVTSI2SS:
+			amd64_sse_cvtsi2ss_reg_reg_size (code, ins->dreg, ins->sreg1, 8);
+			break;
+		case OP_SSE_MOVSS:
+			amd64_sse_movss_reg_reg (code, ins->dreg, ins->sreg1);
+			break;
+
 		case OP_EXTRACT_MASK:
 			amd64_sse_pmovmskb_reg_reg (code, ins->dreg, ins->sreg1);
 			break;

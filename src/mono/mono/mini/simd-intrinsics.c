@@ -986,6 +986,94 @@ emit_hardware_intrinsics (
 			goto support_probe_complete;
 		id = info->id;
 
+#ifdef TARGET_AMD64
+		if (intrin_group->feature == MONO_CPU_X86_SSE && !COMPILE_LLVM (cfg)) {
+			switch (id) {
+			case SN_And:
+			case SN_AndNot:
+			case SN_CompareEqual:
+			case SN_CompareGreaterThan:
+			case SN_CompareGreaterThanOrEqual:
+			case SN_CompareLessThan:
+			case SN_CompareLessThanOrEqual:
+			case SN_CompareNotEqual:
+			case SN_CompareNotGreaterThan:
+			case SN_CompareNotGreaterThanOrEqual:
+			case SN_CompareNotLessThan:
+			case SN_CompareNotLessThanOrEqual:
+			case SN_CompareOrdered:
+			case SN_CompareScalarEqual:
+			case SN_CompareScalarGreaterThan:
+			case SN_CompareScalarGreaterThanOrEqual:
+			case SN_CompareScalarLessThan:
+			case SN_CompareScalarLessThanOrEqual:
+			case SN_CompareScalarNotEqual:
+			case SN_CompareScalarNotGreaterThan:
+			case SN_CompareScalarNotGreaterThanOrEqual:
+			case SN_CompareScalarNotLessThan:
+			case SN_CompareScalarNotLessThanOrEqual:
+			case SN_CompareScalarOrdered:
+			case SN_CompareScalarOrderedEqual:
+			case SN_CompareScalarOrderedGreaterThan:
+			case SN_CompareScalarOrderedGreaterThanOrEqual:
+			case SN_CompareScalarOrderedLessThan:
+			case SN_CompareScalarOrderedLessThanOrEqual:
+			case SN_CompareScalarOrderedNotEqual:
+			case SN_CompareScalarUnordered:
+			case SN_CompareScalarUnorderedEqual:
+			case SN_CompareScalarUnorderedGreaterThan:
+			case SN_CompareScalarUnorderedGreaterThanOrEqual:
+			case SN_CompareScalarUnorderedLessThan:
+			case SN_CompareScalarUnorderedLessThanOrEqual:
+			case SN_CompareScalarUnorderedNotEqual:
+			case SN_CompareUnordered:
+			case SN_ConvertScalarToVector128Single:
+			case SN_ConvertToInt32:
+			case SN_ConvertToInt32WithTruncation:
+			case SN_ConvertToInt64:
+			case SN_ConvertToInt64WithTruncation:
+			case SN_LoadAlignedVector128:
+			case SN_LoadHigh:
+			case SN_LoadLow:
+			case SN_LoadScalarVector128:
+			case SN_LoadVector128:
+			case SN_Max:
+			case SN_MaxScalar:
+			case SN_Min:
+			case SN_MinScalar:
+			case SN_MoveHighToLow:
+			case SN_MoveLowToHigh:
+			case SN_MoveMask:
+			case SN_MoveScalar:
+			case SN_Or:
+			case SN_Prefetch0:
+			case SN_Prefetch1:
+			case SN_Prefetch2:
+			case SN_PrefetchNonTemporal:
+			case SN_Reciprocal:
+			case SN_ReciprocalScalar:
+			case SN_ReciprocalSqrt:
+			case SN_ReciprocalSqrtScalar:
+			case SN_Shuffle:
+			case SN_Sqrt:
+			case SN_SqrtScalar:
+			case SN_Store:
+			case SN_StoreAligned:
+			case SN_StoreAlignedNonTemporal:
+			case SN_StoreFence:
+			case SN_StoreHigh:
+			case SN_StoreLow:
+			case SN_StoreScalar:
+			case SN_UnpackHigh:
+			case SN_UnpackLow:
+			case SN_Xor:
+				return NULL;
+			default:
+				break;
+			}
+		}
+#endif
+
 #ifdef TARGET_ARM64
 		if (!(cfg->compile_aot && cfg->full_aot && !cfg->interp) && !intrin_group->jit_supported) {
 			goto support_probe_complete;
@@ -4526,7 +4614,7 @@ static const IntrinGroup supported_x86_intrinsics [] = {
 	{ "Lzcnt", MONO_CPU_X86_LZCNT, lzcnt_methods, sizeof (lzcnt_methods), TRUE },
 	{ "Pclmulqdq", MONO_CPU_X86_PCLMUL, pclmulqdq_methods, sizeof (pclmulqdq_methods) },
 	{ "Popcnt", MONO_CPU_X86_POPCNT, popcnt_methods, sizeof (popcnt_methods), TRUE },
-	{ "Sse", MONO_CPU_X86_SSE, sse_methods, sizeof (sse_methods) },
+	{ "Sse", MONO_CPU_X86_SSE, sse_methods, sizeof (sse_methods), TRUE },
 	{ "Sse2", MONO_CPU_X86_SSE2, sse2_methods, sizeof (sse2_methods) },
 	{ "Sse3", MONO_CPU_X86_SSE3, sse3_methods, sizeof (sse3_methods) },
 	{ "Sse41", MONO_CPU_X86_SSE41, sse41_methods, sizeof (sse41_methods) },
