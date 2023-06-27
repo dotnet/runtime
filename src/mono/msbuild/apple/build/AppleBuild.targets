@@ -263,6 +263,10 @@
             ItemName="_AssembliesToBundleInternalDedup"/>
     </RemoveDuplicates>
 
+    <PropertyGroup>
+      <MainLibraryFileName></MainLibraryFileName>
+    </PropertyGroup>
+
     <AppleAppBuilderTask
       AppDir="$(AppleBuildDir)"
       Arch="$(TargetArchitecture)"
