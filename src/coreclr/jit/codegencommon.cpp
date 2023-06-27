@@ -2317,7 +2317,7 @@ void CodeGen::genReportEH()
 
         if (XTnum > 0)
         {
-            // For NativeAOT, CORINFO_EH_CLAUSE_SAMETRY flag means that the current clause covers same
+            // CORINFO_EH_CLAUSE_SAMETRY flag means that the current clause covers same
             // try block as the previous one. The runtime cannot reliably infer this information from
             // native code offsets because of different try blocks can have same offsets. Alternative
             // solution to this problem would be inserting extra nops to ensure that different try
