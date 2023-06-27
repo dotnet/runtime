@@ -99,7 +99,7 @@ int32_t GlobalizationNative_ChangeCaseInvariantNative(const uint16_t* lpSrc, int
 
     int32_t srcIdx = 0, dstIdx = 0, isError = 0;
     uint16_t dstCodepoint;
-    while (srcIdx < cwSrcLength)
+    while (srcIdx < result.length)
     {
         dstCodepoint = [result characterAtIndex:srcIdx++];
         Append(lpDst, dstIdx, cwDstLength, dstCodepoint, isError);
