@@ -5395,6 +5395,7 @@ unsigned Compiler::gtSetEvalOrder(GenTree* tree)
             }
             break;
 
+#if defined(FEATURE_SIMD)
             case GT_CNS_VEC:
             {
                 level = 0;
@@ -5476,6 +5477,7 @@ unsigned Compiler::gtSetEvalOrder(GenTree* tree)
 #endif
                 break;
             }
+#endif // FEATURE_SIMD
 
             case GT_LCL_VAR:
                 level = 1;
