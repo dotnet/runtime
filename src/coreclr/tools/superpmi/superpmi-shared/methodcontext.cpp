@@ -4846,7 +4846,7 @@ GetTypeLayoutResult MethodContext::repGetTypeLayout(CORINFO_CLASS_HANDLE typeHnd
     }
 
     *numNodes = nodesToWrite;
-    return value.numNodes > *numNodes ? GetTypeLayoutResult::Partial : GetTypeLayoutResult::Success;
+    return (result == GetTypeLayoutResult::Partial) || (value.numNodes > *numNodes) ? GetTypeLayoutResult::Partial : GetTypeLayoutResult::Success;
 }
 
 void MethodContext::recGetFieldType(CORINFO_FIELD_HANDLE  field,
