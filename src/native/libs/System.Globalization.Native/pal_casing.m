@@ -47,12 +47,12 @@ typedef enum
  * @param isError output bool set to true if an error occurs, otherwise not modified
  */
 #define Append(buffer, offset, capacity, codePoint, isError) { \
-    if ((uint32_t)(codePoint) <= 0xffff) { \
-        (buffer)[(offset)++] = (uint16_t)(codePoint); \
+    if ((offset) >= (capacity)) /* insufficiently sized destination buffer */ { \
+        (isError) = ERROR_INSUFFICIENT_BUFFER; \
     } else if ((uint32_t)(codePoint) > 0x10ffff) /* invalid code point */  { \
         (isError) = ERROR_INVALID_CODE_POINT; \
-    } else if ((offset) + 1 >= (capacity)) /* insufficiently sized destination buffer */ { \
-        (isError) = ERROR_INSUFFICIENT_BUFFER; \
+    } else if ((uint32_t)(codePoint) <= 0xffff) { \
+        (buffer)[(offset)++] = (uint16_t)(codePoint); \
     } else { \
         (buffer)[(offset)++] = (uint16_t)(((codePoint) >> 10) + 0xd7c0); \
         (buffer)[(offset)++] = (uint16_t)(((codePoint)&0x3ff) | 0xdc00); \
