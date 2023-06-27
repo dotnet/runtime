@@ -6228,32 +6228,19 @@ void MethodContext::dmpGetClassNameFromMetadata(DLD key, DD value)
 const char* MethodContext::repGetClassNameFromMetadata(CORINFO_CLASS_HANDLE cls, const char** namespaceName)
 {
     const char* result = nullptr;
-    DD          value;
     DLD         key;
+    ZeroMemory(&key, sizeof(key));
     key.A = CastHandle(cls);
     key.B = (namespaceName != nullptr);
 
-    int itemIndex = -1;
-    if (GetClassNameFromMetadata != nullptr)
-        itemIndex = GetClassNameFromMetadata->GetIndex(key);
-    if (itemIndex < 0)
-    {
-        if (namespaceName != nullptr)
-        {
-            *namespaceName = nullptr;
-        }
-    }
-    else
-    {
-        value = GetClassNameFromMetadata->Get(key);
-        DEBUG_REP(dmpGetClassNameFromMetadata(key, value));
+    DD value = LookupByKeyOrMiss(GetClassNameFromMetadata, key, " : key cls-%016" PRIX64 " hasNs-%u", key.A, key.B);
+    DEBUG_REP(dmpGetClassNameFromMetadata(key, value));
 
-        result = (const char*)GetClassNameFromMetadata->GetBuffer(value.A);
+    result = (const char*)GetClassNameFromMetadata->GetBuffer(value.A);
 
-        if (namespaceName != nullptr)
-        {
-            *namespaceName = (const char*)GetClassNameFromMetadata->GetBuffer(value.B);
-        }
+    if (namespaceName != nullptr)
+    {
+        *namespaceName = (const char*)GetClassNameFromMetadata->GetBuffer(value.B);
     }
     return result;
 }
@@ -6738,7 +6725,7 @@ int MethodContext::repGetArrayOrStringLength(CORINFO_OBJECT_HANDLE objHandle)
     DWORDLONG key = CastHandle(objHandle);
     DWORD value = LookupByKeyOrMiss(GetArrayOrStringLength, key, ": key %016" PRIX64 "", key);
     DEBUG_REP(dmpGetArrayOrStringLength(key, value));
-    return value != 0;
+    return (int)value;
 }
 
 void MethodContext::recGetIntConfigValue(const WCHAR* name, int defaultValue, int result)
