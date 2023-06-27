@@ -315,14 +315,18 @@ namespace System
         /// <summary>
         /// Helper function for retrieving a TimeZoneInfo object by time_zone_name.
         /// This function wraps the logic necessary to keep the private
-        /// SystemTimeZones cache in working order
+        /// SystemTimeZones cache in working order.
         ///
-        /// This function will either return a valid TimeZoneInfo instance or
-        /// it will throw 'InvalidTimeZoneException' / 'TimeZoneNotFoundException'.
+        /// This function will either return:
+        /// <c>TimeZoneInfoResult.Success</c> and a valid <see cref="TimeZoneInfo"/>instance and <c>null</c> Exception or
+        /// <c>TimeZoneInfoResult.TimeZoneNotFoundException</c> and <c>null</c> <see cref="TimeZoneInfo"/> and Exception (can be null) or
+        /// other <c>TimeZoneInfoResult</c> and <c>null</c> <see cref="TimeZoneInfo"/> and valid Exception.
         /// </summary>
         private static TimeZoneInfoResult TryFindSystemTimeZoneById(string id, out TimeZoneInfo? timeZone, out Exception? e)
         {
-            // Special case for Utc to avoid having TryGetTimeZone creating a new Utc object
+            // Special case for Utc as it will not exist in the dictionary with the rest
+            // of the system time zones.  There is no need to do this check for Local.Id
+            // since Local is a real time zone that exists in the dictionary cache
             if (string.Equals(id, UtcId, StringComparison.OrdinalIgnoreCase))
             {
                 timeZone = Utc;

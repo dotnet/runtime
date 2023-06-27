@@ -272,10 +272,12 @@ namespace System
         /// <summary>
         /// Helper function for retrieving a TimeZoneInfo object by time_zone_name.
         /// This function wraps the logic necessary to keep the private
-        /// SystemTimeZones cache in working order
+        /// SystemTimeZones cache in working order.
         ///
-        /// This function will either return a valid TimeZoneInfo instance
-        /// when result equal TimeZoneInfoResult.Success
+        /// This function will either return:
+        /// <c>TimeZoneInfoResult.Success</c> and a valid <see cref="TimeZoneInfo"/>instance and <c>null</c> Exception or
+        /// <c>TimeZoneInfoResult.TimeZoneNotFoundException</c> and <c>null</c> <see cref="TimeZoneInfo"/> and Exception (can be null) or
+        /// other <c>TimeZoneInfoResult</c> and <c>null</c> <see cref="TimeZoneInfo"/> and valid Exception.
         /// </summary>
         private static TimeZoneInfoResult TryFindSystemTimeZoneById(string id, out TimeZoneInfo? timeZone, out Exception? e)
         {

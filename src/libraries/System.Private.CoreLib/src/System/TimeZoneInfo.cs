@@ -558,13 +558,16 @@ namespace System
             ConvertTime(dateTime, FindSystemTimeZoneById(destinationTimeZoneId));
 
         /// <summary>
-        /// Helper function for retrieving a TimeZoneInfo object by time_zone_name.
+        /// Helper function for retrieving a <see cref="TimeZoneInfo"/> object by time zone name.
         /// This function wraps the logic necessary to keep the private
-        /// SystemTimeZones cache in working order
+        /// SystemTimeZones cache in working order.
         ///
-        /// This function will either return a valid TimeZoneInfo instance or
-        /// it will throw 'InvalidTimeZoneException' / 'TimeZoneNotFoundException'.
+        /// This function will either return a valid <see cref="TimeZoneInfo"/> instance or
+        /// it will throw <see cref="InvalidTimeZoneException"/> / <see cref="TimeZoneNotFoundException"/> /
+        /// <see cref="SecurityException"/>
         /// </summary>
+        /// <param name="id">Time zone name.</param>
+        /// <returns>Valid <see cref="TimeZoneInfo"/> instance.</returns>
         public static TimeZoneInfo FindSystemTimeZoneById(string id)
         {
             TimeZoneInfo? value;
@@ -592,6 +595,17 @@ namespace System
             }
         }
 
+        /// <summary>
+        /// Helper function for retrieving a <see cref="TimeZoneInfo"/> object by time zone name.
+        /// This function wraps the logic necessary to keep the private
+        /// SystemTimeZones cache in working order.
+        ///
+        /// This function will either return <c>true</c> and a valid <see cref="TimeZoneInfo"/>
+        /// instance or return <c>false</c> and <c>null</c>.
+        /// </summary>
+        /// <param name="id">Time zone name.</param>
+        /// <param name="timeZoneInfo">A valid retrieved <see cref="TimeZoneInfo"/> or <c>null</c>.</param>
+        /// <returns><c>true</c> if the <see cref="TimeZoneInfo"/> object was successfully retrieved, <c>false</c> otherwise.</returns>
         public static bool TryFindSystemTimeZoneById(string id, [NotNullWhenAttribute(true)] out TimeZoneInfo? timeZoneInfo)
             => TryFindSystemTimeZoneById(id, out timeZoneInfo, out _) == TimeZoneInfoResult.Success;
 
