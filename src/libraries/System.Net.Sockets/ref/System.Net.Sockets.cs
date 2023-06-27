@@ -720,13 +720,13 @@ namespace System.Net.Sockets
         public System.IAsyncResult BeginAcceptSocket(System.AsyncCallback? callback, object? state) { throw null; }
         public System.IAsyncResult BeginAcceptTcpClient(System.AsyncCallback? callback, object? state) { throw null; }
         public static System.Net.Sockets.TcpListener Create(int port) { throw null; }
+        public void Dispose() { }
         public System.Net.Sockets.Socket EndAcceptSocket(System.IAsyncResult asyncResult) { throw null; }
         public System.Net.Sockets.TcpClient EndAcceptTcpClient(System.IAsyncResult asyncResult) { throw null; }
         public bool Pending() { throw null; }
         public void Start() { }
         public void Start(int backlog) { }
         public void Stop() { }
-        public void Dispose() { }
     }
     [System.FlagsAttribute]
     public enum TransmitFileOptions

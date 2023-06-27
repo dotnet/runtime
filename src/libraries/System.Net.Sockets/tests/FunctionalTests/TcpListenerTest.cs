@@ -54,6 +54,8 @@ namespace System.Net.Sockets.Tests
                 Assert.True(listener.Active);
             }
             Assert.False(listener.Active);
+            listener.Dispose();
+            Assert.False(listener.Active);
         }
 
         [Fact]
