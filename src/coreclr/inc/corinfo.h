@@ -2462,8 +2462,10 @@ public:
     //
     //   SIMD and HW SIMD types are returned as a single entry without any
     //   children. For those, CORINFO_TYPE_LAYOUT_NODE::simdTypeHnd is set, but
-    //   can only be used in a very restricted capacity; see
-    //   CORINFO_TYPE_LAYOUT_NODE.
+    //   can only be used in a very restricted capacity, see
+    //   CORINFO_TYPE_LAYOUT_NODE. Note that this special treatment is only for
+    //   fields; if typeHnd itself is a SIMD type this function will treat it
+    //   like a normal struct type and expand its fields.
     //
     //   IMPORTANT: except for GC pointers the fields returned to the JIT by
     //   this function should be considered as a hint only. The JIT CANNOT make
