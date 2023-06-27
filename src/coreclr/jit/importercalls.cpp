@@ -3847,6 +3847,7 @@ GenTree* Compiler::impIntrinsic(GenTree*                newobjThis,
 
             case NI_System_Threading_Volatile_Read:
             {
+                var_types retType = sig->sigInst.methInstCount == 1 ? TYP_REF : JITtype2varType(sig->retType);
 #if !TARGET_64BIT
                 if ((retType == TYP_LONG) || (retType == TYP_ULONG) || (retType == TYP_DOUBLE))
                 {
@@ -3854,26 +3855,30 @@ GenTree* Compiler::impIntrinsic(GenTree*                newobjThis,
                 }
 #endif // !TARGET_64BIT
                 assert(retType != TYP_STRUCT);
-                retNode = gtNewIndir(JITtype2varType(retType), impPopStack().val, GTF_IND_VOLATILE);
+                retNode = gtNewIndir(retType, impPopStack().val, GTF_IND_VOLATILE);
                 break;
             }
 
             case NI_System_Threading_Volatile_Write:
             {
-#if !TARGET_64BIT
-                if ((retType == TYP_LONG) || (retType == TYP_ULONG) || (retType == TYP_DOUBLE))
+                var_types type = TYP_REF;
+                if (sig->sigInst.methInstCount != 1)
                 {
-                    break;
-                }
+                    CORINFO_CLASS_HANDLE typeHnd = nullptr;
+                    type = JITtype2varType(strip(info.compCompHnd->getArgType(sig, info.compCompHnd->getArgNext(sig->args), &typeHnd)));
+#if !TARGET_64BIT
+                    if ((type == TYP_LONG) || (type == TYP_ULONG) || (type == TYP_DOUBLE))
+                    {
+                        break;
+                    }
 #endif // !TARGET_64BIT
-                CORINFO_CLASS_HANDLE typeHnd     = nullptr;
-                CorInfoType          baseJitType = strip(info.compCompHnd->getArgType(sig, info.compCompHnd->getArgNext(sig->args), &typeHnd));
-                assert(baseJitType != TYP_STRUCT);
+                    assert(type != TYP_STRUCT);
+                }
 
                 GenTree* value = impPopStack().val;
                 GenTree* addr  = impPopStack().val;
 
-                retNode = gtNewStoreIndNode(JITtype2varType(baseJitType), addr, value, GTF_IND_VOLATILE);
+                retNode = gtNewStoreIndNode(type, addr, value, GTF_IND_VOLATILE);
                 break;
             }
 
