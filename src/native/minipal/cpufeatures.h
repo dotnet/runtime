@@ -61,7 +61,7 @@ enum ARM64IntrinsicConstants
 };
 
 // Bit position for the ARM64IntrinsicConstants_Atomics flags, to be used with tbz / tbnz instructions
-static const int ARM64_ATOMICS_FEATURE_FLAG_BIT = 7;
+#define ARM64_ATOMICS_FEATURE_FLAG_BIT 7
 static_assert((1 << ARM64_ATOMICS_FEATURE_FLAG_BIT) == ARM64IntrinsicConstants_Atomics, "ARM64_ATOMICS_FEATURE_FLAG_BIT must match with ARM64IntrinsicConstants_Atomics");
 
 #endif // TARGET_ARM64

@@ -38,6 +38,8 @@ static void __cpuid(int cpuInfo[4], int function_id)
         : "0"(function_id)
         );
 }
+#else
+void __cpuid(int cpuInfo[4], int function_id);
 #endif
 
 #if !__has_builtin(__cpuidex)
@@ -51,6 +53,8 @@ static void __cpuidex(int cpuInfo[4], int function_id, int subFunction_id)
         : "0"(function_id), "2"(subFunction_id)
         );
 }
+#else
+void __cpuidex(int cpuInfo[4], int function_id, int subFunction_id);
 #endif
 
 static uint32_t xmmYmmStateSupport()
