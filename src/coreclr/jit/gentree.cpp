@@ -18211,8 +18211,11 @@ CORINFO_CLASS_HANDLE Compiler::gtGetClassHandle(GenTree* tree, bool* pIsExact, b
             assert((objClass == NO_CLASS_HANDLE) ||
                    ((info.compCompHnd->getClassAttribs(objClass) & CORINFO_FLG_GENERIC_TYPE_VARIABLE) == 0));
         }
+        else
+        {
+            *pIsExact = (info.compCompHnd->getClassAttribs(objClass) & CORINFO_FLG_FINAL) != 0;
+        }
     }
-
     assert((objClass == NO_CLASS_HANDLE) ||
            ((info.compCompHnd->getClassAttribs(objClass) & CORINFO_FLG_GENERIC_TYPE_VARIABLE) == 0));
 
