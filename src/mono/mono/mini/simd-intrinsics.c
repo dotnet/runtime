@@ -989,8 +989,6 @@ emit_hardware_intrinsics (
 #ifdef TARGET_AMD64
 		if (intrin_group->feature == MONO_CPU_X86_SSE && !COMPILE_LLVM (cfg)) {
 			switch (id) {
-			case SN_And:
-			case SN_AndNot:
 			case SN_CompareEqual:
 			case SN_CompareGreaterThan:
 			case SN_CompareGreaterThanOrEqual:
@@ -1045,7 +1043,6 @@ emit_hardware_intrinsics (
 			case SN_MoveLowToHigh:
 			case SN_MoveMask:
 			case SN_MoveScalar:
-			case SN_Or:
 			case SN_Prefetch0:
 			case SN_Prefetch1:
 			case SN_Prefetch2:
@@ -1066,7 +1063,6 @@ emit_hardware_intrinsics (
 			case SN_StoreScalar:
 			case SN_UnpackHigh:
 			case SN_UnpackLow:
-			case SN_Xor:
 				return NULL;
 			default:
 				break;
@@ -4284,7 +4280,7 @@ emit_arm64_intrinsics (
 static SimdIntrinsic sse_methods [] = {
 	{SN_Add, OP_XBINOP, OP_FADD},
 	{SN_AddScalar, OP_SSE_ADDSS},
-	{SN_And, OP_SSE_AND},
+	{SN_And, OP_ANDPS},
 	{SN_AndNot, OP_VECTOR_ANDN},
 	{SN_CompareEqual, OP_XCOMPARE_FP, CMP_EQ},
 	{SN_CompareGreaterThan, OP_XCOMPARE_FP,CMP_GT},
@@ -4344,7 +4340,7 @@ static SimdIntrinsic sse_methods [] = {
 	{SN_MoveScalar, OP_SSE_MOVS2},
 	{SN_Multiply, OP_XBINOP, OP_FMUL},
 	{SN_MultiplyScalar, OP_SSE_MULSS},
-	{SN_Or, OP_SSE_OR},
+	{SN_Or, OP_ORPS},
 	{SN_Prefetch0, OP_SSE_PREFETCHT0},
 	{SN_Prefetch1, OP_SSE_PREFETCHT1},
 	{SN_Prefetch2, OP_SSE_PREFETCHT2},
@@ -4367,7 +4363,7 @@ static SimdIntrinsic sse_methods [] = {
 	{SN_SubtractScalar, OP_SSE_SUBSS},
 	{SN_UnpackHigh, OP_SSE_UNPACKHI},
 	{SN_UnpackLow, OP_SSE_UNPACKLO},
-	{SN_Xor, OP_SSE_XOR},
+	{SN_Xor, OP_XORPS},
 	{SN_get_IsSupported}
 };
 
