@@ -1413,8 +1413,8 @@ void CEEInfo::getFieldInfo (CORINFO_RESOLVED_TOKEN * pResolvedToken,
                 // Optimization is disabled for linux/windows arm
 #elif !defined(TARGET_WINDOWS) && defined(TARGET_X86)
                 // Optimization is disabled for linux/x86
-#elif defined(TARGET_ALPINE_LINUX)
-                // Optimization is disabled for linux/alpine
+#elif defined(TARGET_LINUX_MUSL) && defined(TARGET_ARM64)
+                // Optimization is disabled for linux musl arm64
 #else
                 // For windows x64/x86/arm64, linux x64/arm64:
                 // We convert the TLS access to the optimized helper where we will store
