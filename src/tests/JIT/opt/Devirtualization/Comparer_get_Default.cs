@@ -21,19 +21,19 @@ public class Program
         }
     }
 
-    private static void AssertThrows<TException>(Action action, [CallerLineNumber] int line = 0) where TException : Exception
+    private static void AssertThrows<TException>(Action action, string values = "", [CallerLineNumber] int line = 0) where TException : Exception
     {
         try
         {
             action();
-            Console.WriteLine($"no {typeof(TException).FullName}, L{line}");
+            Console.WriteLine($"{values}no {typeof(TException).FullName}, L{line}");
             s_ReturnCode++;
         }
         catch (Exception ex)
         {
             if (ex.GetType() == typeof(TException))
                 return;
-            Console.WriteLine($"{ex.GetType().FullName} != {typeof(TException).FullName}, L{line}");
+            Console.WriteLine($"{values}{ex.GetType().FullName} != {typeof(TException).FullName}, L{line}");
             s_ReturnCode++;
         }
     }
