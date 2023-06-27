@@ -601,6 +601,11 @@ public:
     void dmpGetFieldInClass(DLD key, DWORDLONG value);
     CORINFO_FIELD_HANDLE repGetFieldInClass(CORINFO_CLASS_HANDLE clsHnd, INT num);
 
+    void recGetTypeLayout(GetTypeLayoutResult result, CORINFO_CLASS_HANDLE typeHnd, CORINFO_TYPE_LAYOUT_NODE* nodes, size_t numNodes);
+    void dmpGetTypeLayout(DWORDLONG key, const Agnostic_GetTypeLayoutResult& value);
+    void dmpTypeLayoutTree(const Agnostic_CORINFO_TYPE_LAYOUT_NODE* nodes, size_t maxNodes, size_t* index, size_t indent);
+    GetTypeLayoutResult repGetTypeLayout(CORINFO_CLASS_HANDLE typeHnd, CORINFO_TYPE_LAYOUT_NODE* nodes, size_t* numNodes);
+
     void recGetFieldType(CORINFO_FIELD_HANDLE  field,
                          CORINFO_CLASS_HANDLE* structType,
                          CORINFO_CLASS_HANDLE  memberParent,
@@ -1127,6 +1132,7 @@ enum mcPackets
     Packet_GetThreadLocalStaticBlocksInfo = 208,
     Packet_GetRISCV64PassStructInRegisterFlags = 209,
     Packet_GetObjectContent = 210,
+    Packet_GetTypeLayout = 211,
 };
 
 void SetDebugDumpVariables();

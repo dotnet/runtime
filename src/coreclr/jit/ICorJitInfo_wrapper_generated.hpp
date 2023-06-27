@@ -548,6 +548,17 @@ CORINFO_FIELD_HANDLE WrapICorJitInfo::getFieldInClass(
     return temp;
 }
 
+GetTypeLayoutResult WrapICorJitInfo::getTypeLayout(
+          CORINFO_CLASS_HANDLE typeHnd,
+          CORINFO_TYPE_LAYOUT_NODE* treeNodes,
+          size_t* numTreeNodes)
+{
+    API_ENTER(getTypeLayout);
+    GetTypeLayoutResult temp = wrapHnd->getTypeLayout(typeHnd, treeNodes, numTreeNodes);
+    API_LEAVE(getTypeLayout);
+    return temp;
+}
+
 bool WrapICorJitInfo::checkMethodModifier(
           CORINFO_METHOD_HANDLE hMethod,
           const char* modifier,

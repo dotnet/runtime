@@ -1,20 +1,6 @@
-v1.6.2
-https://github.com/libunwind/libunwind/commit/b3ca1b59a795a617877c01fe5d299ab7a07ff29d
+v1.7.0
+https://github.com/libunwind/libunwind/commit/688caaf6ef9853cc26ad8bd1706804d48a0df0bc
 
-Apply https://github.com/libunwind/libunwind/pull/317
-Apply https://github.com/libunwind/libunwind/pull/330
-Apply https://github.com/libunwind/libunwind/pull/333
-Apply https://github.com/libunwind/libunwind/pull/342
-Apply https://github.com/libunwind/libunwind/pull/353
-Apply https://github.com/libunwind/libunwind/pull/358
-Apply https://github.com/libunwind/libunwind/commit/7cf6e84bb86ff5840896b4910ccc3865d4f00ffb
-Apply https://github.com/libunwind/libunwind/pull/365
-Apply https://github.com/libunwind/libunwind/pull/377
-Apply https://github.com/libunwind/libunwind/pull/382
-Apply https://github.com/libunwind/libunwind/pull/398
-Apply https://github.com/libunwind/libunwind/pull/400
-Apply https://github.com/libunwind/libunwind/pull/414
-Apply https://github.com/libunwind/libunwind/pull/416
-
-For LoongArch64:
-Apply https://github.com/libunwind/libunwind/pull/316 and https://github.com/libunwind/libunwind/pull/322
+Apply https://github.com/libunwind/libunwind/pull/457
+Apply https://github.com/libunwind/libunwind/pull/455
+Apply https://github.com/libunwind/libunwind/pull/460

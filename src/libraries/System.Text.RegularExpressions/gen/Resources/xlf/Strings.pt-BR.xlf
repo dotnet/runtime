@@ -167,11 +167,6 @@
         <target state="translated">Não é possível chamar resultado quando há falha na correspondência.</target>
         <note />
       </trans-unit>
-      <trans-unit id="NotSupported_NonBacktrackingAndReplacementsWithSubstitutionsOfGroups">
-        <source>Regex replacements with substitutions of groups are not supported with RegexOptions.NonBacktracking.</source>
-        <target state="translated">Substituições de regex com substituições de grupos não são suportadas com RegexOptions.NonBacktracking.</target>
-        <note>{Locked="RegexOptions.NonBacktracking"}</note>
-      </trans-unit>
       <trans-unit id="NotSupported_ReadOnlyCollection">
         <source>Collection is read-only.</source>
         <target state="translated">A coleção é somente leitura.</target>

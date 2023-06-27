@@ -19,17 +19,25 @@ namespace ComWrappersTests.Common
 
     class Test : ITest, ICustomQueryInterface
     {
+        public static Test Resurrected;
         public static int InstanceCount = 0;
 
         private int id;
         private int value = -1;
         public Test() { id = Interlocked.Increment(ref InstanceCount); }
-        ~Test() { Interlocked.Decrement(ref InstanceCount); id = -1; }
+        ~Test()
+        {
+            Interlocked.Decrement(ref InstanceCount);
+            id = -1;
+            if (EnableResurrection)
+                Resurrected = this;
+        }
 
         public void SetValue(int i) => this.value = i;
         public int GetValue() => this.value;
 
         public bool EnableICustomQueryInterface { get; set; } = false;
+        public bool EnableResurrection { get; set; } = false;
         public Guid ICustomQueryInterface_GetInterfaceIID { get; set; }
         public IntPtr ICustomQueryInterface_GetInterfaceResult { get; set; }
 

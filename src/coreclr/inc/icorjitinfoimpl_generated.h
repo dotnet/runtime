@@ -242,6 +242,11 @@ CORINFO_FIELD_HANDLE getFieldInClass(
           CORINFO_CLASS_HANDLE clsHnd,
           int32_t num) override;
 
+GetTypeLayoutResult getTypeLayout(
+          CORINFO_CLASS_HANDLE typeHnd,
+          CORINFO_TYPE_LAYOUT_NODE* treeNodes,
+          size_t* numTreeNodes) override;
+
 bool checkMethodModifier(
           CORINFO_METHOD_HANDLE hMethod,
           const char* modifier,

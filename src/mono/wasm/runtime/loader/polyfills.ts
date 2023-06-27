@@ -79,7 +79,8 @@ export async function fetch_like(url: string, init?: RequestInit): Promise<Respo
                 },
                 url,
                 arrayBuffer: () => arrayBuffer,
-                json: () => JSON.parse(arrayBuffer)
+                json: () => JSON.parse(arrayBuffer),
+                text: () => { throw new Error("NotImplementedException"); }
             };
         }
         else if (hasFetch) {
@@ -100,7 +101,8 @@ export async function fetch_like(url: string, init?: RequestInit): Promise<Respo
                 },
                 json: () => {
                     return JSON.parse(read(url, "utf8"));
-                }
+                },
+                text: () => read(url, "utf8")
             };
         }
     }
@@ -115,7 +117,8 @@ export async function fetch_like(url: string, init?: RequestInit): Promise<Respo
             },
             statusText: "ERR28: " + e,
             arrayBuffer: () => { throw e; },
-            json: () => { throw e; }
+            json: () => { throw e; },
+            text: () => { throw e; }
         };
     }
     throw new Error("No fetch implementation available");
