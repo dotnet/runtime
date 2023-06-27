@@ -93,8 +93,6 @@ namespace System.Text.Json.Nodes
                         return false;
                     }
 
-                    Debug.Assert(jsonElementCurrent.ValueKind != JsonValueKind.Object && jsonElementCurrent.ValueKind != JsonValueKind.Array);
-
                     switch (jsonElementCurrent.ValueKind)
                     {
                         case JsonValueKind.String:
@@ -105,6 +103,7 @@ namespace System.Text.Json.Nodes
                         case JsonValueKind.Number:
                             return jsonElementCurrent.GetRawValue().Span.SequenceEqual(jsonElementNodeOther._value.GetRawValue().Span);
                         default:
+                            Debug.Fail("Impossible case");
                             return false;
                     }
                 }
