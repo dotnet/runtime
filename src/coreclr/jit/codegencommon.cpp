@@ -1713,7 +1713,7 @@ void CodeGen::genGenerateMachineCode()
         const char* fullName = compiler->eeGetMethodFullName(compiler->info.compMethodHnd);
 #endif
 
-        printf("; Assembly listing for method %s\n", fullName);
+        printf("; Assembly listing for method %s (%s)\n", fullName, compiler->compGetTieringName(true));
 
         printf("; Emitting ");
 
@@ -1785,13 +1785,11 @@ void CodeGen::genGenerateMachineCode()
 
         printf("\n");
 
-        if (compiler->opts.jitFlags->IsSet(JitFlags::JIT_FLAG_TIER0))
+        printf("; %s code\n", compiler->compGetTieringName(false));
+
+        if (compiler->IsTargetAbi(CORINFO_NATIVEAOT_ABI))
         {
-            printf("; Tier-0 compilation\n");
-        }
-        else if (compiler->opts.jitFlags->IsSet(JitFlags::JIT_FLAG_TIER1))
-        {
-            printf("; Tier-1 compilation\n");
+            printf("; NativeAOT compilation\n");
         }
         else if (compiler->opts.jitFlags->IsSet(JitFlags::JIT_FLAG_READYTORUN))
         {
@@ -1815,20 +1813,8 @@ void CodeGen::genGenerateMachineCode()
         {
             printf("; debuggable code\n");
         }
-        else if (compiler->opts.MinOpts())
-        {
-            printf("; MinOpts code\n");
-        }
-        else
-        {
-            printf("; unknown optimization flags\n");
-        }
 
-        if (compiler->opts.jitFlags->IsSet(JitFlags::JIT_FLAG_BBINSTR))
-        {
-            printf("; instrumented for collecting profile data\n");
-        }
-        else if (compiler->opts.jitFlags->IsSet(JitFlags::JIT_FLAG_BBOPT) && compiler->fgHaveProfileWeights())
+        if (compiler->opts.jitFlags->IsSet(JitFlags::JIT_FLAG_BBOPT) && compiler->fgHaveProfileWeights())
         {
             printf("; optimized using %s\n", compiler->compGetPgoSourceName());
         }
@@ -2014,7 +2000,8 @@ void CodeGen::genEmitMachineCode()
         }
 #endif // TRACK_LSRA_STATS
 
-        printf(" (MethodHash=%08x) for method %s\n", compiler->info.compMethodHash(), compiler->info.compFullName);
+        printf(" (MethodHash=%08x) for method %s (%s)\n", compiler->info.compMethodHash(), compiler->info.compFullName,
+               compiler->compGetTieringName(true));
 
         printf("; ============================================================\n\n");
         printf(""); // in our logic this causes a flush
