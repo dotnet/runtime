@@ -78,5 +78,13 @@ namespace System.Collections.Frozen
             typeof(T) == typeof(UInt128) ||
 #endif
             typeof(T).IsEnum;
+
+        // for these types GetHashCode returns their value casted to int, so when we receive a Dictionary/HashSet where there are key
+        // we know that all hash codes are unique and we can avoid some work later
+        internal static bool KeysAreHashCodes<T>()
+            => typeof(T) == typeof(int) || typeof(T) == typeof(uint)
+            || typeof(T) == typeof(short) || typeof(T) == typeof(ushort)
+            || typeof(T) == typeof(byte) || typeof(T) == typeof(sbyte)
+            || ((typeof(T) == typeof(IntPtr) || typeof(T) == typeof(UIntPtr)) && IntPtr.Size == 4);
     }
 }
