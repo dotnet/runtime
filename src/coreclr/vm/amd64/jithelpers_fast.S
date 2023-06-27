@@ -539,14 +539,14 @@ LEAF_END JIT_DispatchIndirectCall, _TEST
 // We never have to call this method directly, and hence there is a `int 3` at the end.
 LEAF_ENTRY JIT_GetThreadStaticsBaseOffset, _TEXT
 #ifdef TARGET_OSX
-        movq  _t_ThreadStatics@TLVP(%%rip), %%rdi
+        mov     rdi,    _t_ThreadStatics@TLVP[rip]
 #else
-#endif
         data16
-        lea rdi, t_ThreadStatics@TLSGD[rip]   // instruction where offset is embedded by the linker during compilation
+        lea     rdi,    t_ThreadStatics@TLSGD[rip]   // instruction where offset is embedded by the linker during compilation
         data16
         data16
         rex64
-        call __tls_get_addr                   // dummy call to have linker see the code pattern to replace the offset
+        call    __tls_get_addr                      // dummy call to have linker see the code pattern to replace the offset
+#endif
         int 3
 LEAF_END JIT_GetThreadStaticsBaseOffset, _TEXT
