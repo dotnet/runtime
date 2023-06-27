@@ -224,7 +224,6 @@ namespace Wasm.Build.Tests
             args.Append($" --app=.");
             args.Append($" --output-directory={testLogPath}");
             args.Append($" --expected-exit-code={expectedAppExitCode}");
-            args.Append(" --module"); // for ES6 modules
             args.Append($" {extraXHarnessArgs ?? string.Empty}");
 
             if (File.Exists("/.dockerenv"))
