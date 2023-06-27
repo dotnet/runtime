@@ -192,7 +192,7 @@ void DacEnumerableHashTable<DAC_ENUM_HASH_ARGS>::GrowTable()
     // or the bucket age has already reached its maximum value,
     // just don't expand the table
     if ((cNewBuckets == cBuckets) || 
-        (cBuckets > DWORD_MAX - SKIP_SPECIAL_SLOTS) ||
+        (cBuckets > UINT32_MAX - SKIP_SPECIAL_SLOTS) ||
         (SKIP_SPECIAL_SLOTS + cBuckets > MaxBucketCountRepresentableWithEndSentinel()) ||
         (BucketsAgeFromEndSentinel(BaseEndSentinel(curBuckets)) == MaxBucketAge()))
         return;
