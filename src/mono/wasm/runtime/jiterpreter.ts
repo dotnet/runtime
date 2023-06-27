@@ -774,6 +774,26 @@ function generate_wasm(
 
         builder.generateTypeSection();
 
+        const traceLocals : any = {
+            "disp": WasmValtype.i32,
+            "cknull_ptr": WasmValtype.i32,
+            "dest_ptr": WasmValtype.i32,
+            "src_ptr": WasmValtype.i32,
+            "memop_dest": WasmValtype.i32,
+            "memop_src": WasmValtype.i32,
+            "index": WasmValtype.i32,
+            "count": WasmValtype.i32,
+            "math_lhs32": WasmValtype.i32,
+            "math_rhs32": WasmValtype.i32,
+            "math_lhs64": WasmValtype.i64,
+            "math_rhs64": WasmValtype.i64,
+            "temp_f32": WasmValtype.f32,
+            "temp_f64": WasmValtype.f64,
+            "backbranched": WasmValtype.i32,
+        };
+        if (builder.options.enableSimd)
+            traceLocals["v128_zero"] = WasmValtype.v128;
+
         let keep = true,
             traceValue = 0;
         builder.defineFunction(
@@ -781,23 +801,7 @@ function generate_wasm(
                 type: "trace",
                 name: traceName,
                 export: true,
-                locals: {
-                    "disp": WasmValtype.i32,
-                    "cknull_ptr": WasmValtype.i32,
-                    "dest_ptr": WasmValtype.i32,
-                    "src_ptr": WasmValtype.i32,
-                    "memop_dest": WasmValtype.i32,
-                    "memop_src": WasmValtype.i32,
-                    "index": WasmValtype.i32,
-                    "count": WasmValtype.i32,
-                    "math_lhs32": WasmValtype.i32,
-                    "math_rhs32": WasmValtype.i32,
-                    "math_lhs64": WasmValtype.i64,
-                    "math_rhs64": WasmValtype.i64,
-                    "temp_f32": WasmValtype.f32,
-                    "temp_f64": WasmValtype.f64,
-                    "backbranched": WasmValtype.i32,
-                }
+                locals: traceLocals
             }, () => {
                 if (emitPadding) {
                     builder.appendU8(WasmOpcode.nop);
