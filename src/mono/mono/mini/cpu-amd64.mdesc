@@ -825,8 +825,11 @@ expand_i4: dest:x src1:i len:11
 expand_i8: dest:x src1:i len:11
 expand_r4: dest:x src1:f len:16
 expand_r8: dest:x src1:f len:13
+xop: len:16
 xop_x_x_x: dest:x src1:x src2:x len:16 clob:1
 xop_x_x: dest:x src1:x len:16 clob:1
+xop_i4_x: dest:i src1:x len:16
+xop_i8_x: dest:i src1:x len:16
 sse41_dpps_imm: dest:x src1:x src2:x len:7 clob:1
 sse41_dppd_imm: dest:x src1:x src2:x len:7 clob:1
 vector_andnot: dest:x src1:x src2:x len:7 clob:1
@@ -839,7 +842,13 @@ sse_subss: dest:x src1:x src2:x len:7 clob:1
 sse_mulss: dest:x src1:x src2:x len:7 clob:1
 sse_divss: dest:x src1:x src2:x len:7 clob:1
 sse_cvtsi2ss: dest:x src1:x src2:i len:7 clob:1
+sse_cvtsi2ss64: dest:x src1:x src2:i len:7 clob:1
 sse_movss: dest:x src1:b len:16
+sse_movlps_load: dest:x src1:x src2:b len:16 clob:1
+sse_movhps_load: dest:x src1:x src2:b len:16 clob:1
+sse_movlps_store: src1:i src2:x len:16
+sse_movhps_store: src1:i src2:x len:16
+sse_movss_store: src1:i src2:x len:16
 
 roundp: dest:x src1:x len:10
 

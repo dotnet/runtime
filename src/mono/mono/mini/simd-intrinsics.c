@@ -1025,16 +1025,6 @@ emit_hardware_intrinsics (
 			case SN_CompareScalarUnorderedLessThanOrEqual:
 			case SN_CompareScalarUnorderedNotEqual:
 			case SN_CompareUnordered:
-			case SN_ConvertScalarToVector128Single:
-			case SN_ConvertToInt32:
-			case SN_ConvertToInt32WithTruncation:
-			case SN_ConvertToInt64:
-			case SN_ConvertToInt64WithTruncation:
-			case SN_LoadAlignedVector128:
-			case SN_LoadHigh:
-			case SN_LoadLow:
-			case SN_LoadScalarVector128:
-			case SN_LoadVector128:
 			case SN_Max:
 			case SN_MaxScalar:
 			case SN_Min:
@@ -1054,13 +1044,6 @@ emit_hardware_intrinsics (
 			case SN_Shuffle:
 			case SN_Sqrt:
 			case SN_SqrtScalar:
-			case SN_Store:
-			case SN_StoreAligned:
-			case SN_StoreAlignedNonTemporal:
-			case SN_StoreFence:
-			case SN_StoreHigh:
-			case SN_StoreLow:
-			case SN_StoreScalar:
 			case SN_UnpackHigh:
 			case SN_UnpackLow:
 				return NULL;
@@ -4325,11 +4308,11 @@ static SimdIntrinsic sse_methods [] = {
 	{SN_ConvertToInt64WithTruncation, OP_XOP_I8_X, INTRINS_SSE_CVTTSS2SI64},
 	{SN_Divide, OP_XBINOP, OP_FDIV},
 	{SN_DivideScalar, OP_SSE_DIVSS},
-	{SN_LoadAlignedVector128, OP_SSE_LOADU, 16 /* alignment */},
+	{SN_LoadAlignedVector128, OP_LOADX_ALIGNED_MEMBASE},
 	{SN_LoadHigh, OP_SSE_MOVHPS_LOAD},
 	{SN_LoadLow, OP_SSE_MOVLPS_LOAD},
 	{SN_LoadScalarVector128, OP_SSE_MOVSS},
-	{SN_LoadVector128, OP_SSE_LOADU, 1 /* alignment */},
+	{SN_LoadVector128, OP_LOADX_MEMBASE},
 	{SN_Max, OP_XOP_X_X_X, INTRINS_SSE_MAXPS},
 	{SN_MaxScalar, OP_XOP_X_X_X, INTRINS_SSE_MAXSS},
 	{SN_Min, OP_XOP_X_X_X, INTRINS_SSE_MINPS},
@@ -4352,9 +4335,9 @@ static SimdIntrinsic sse_methods [] = {
 	{SN_Shuffle},
 	{SN_Sqrt, OP_XOP_X_X, INTRINS_SIMD_SQRT_R4},
 	{SN_SqrtScalar},
-	{SN_Store, OP_SIMD_STORE, 1 /* alignment */},
-	{SN_StoreAligned, OP_SIMD_STORE, 16 /* alignment */},
-	{SN_StoreAlignedNonTemporal, OP_SSE_MOVNTPS, 16 /* alignment */},
+	{SN_Store},
+	{SN_StoreAligned},
+	{SN_StoreAlignedNonTemporal},
 	{SN_StoreFence, OP_XOP, INTRINS_SSE_SFENCE},
 	{SN_StoreHigh, OP_SSE_MOVHPS_STORE},
 	{SN_StoreLow, OP_SSE_MOVLPS_STORE},
@@ -4659,6 +4642,36 @@ emit_x86_intrinsics (
 			else
 				g_assert_not_reached ();
 			break;
+		}
+		case SN_Store: {
+			if (!COMPILE_LLVM (cfg)) {
+				MonoInst *ins;
+				EMIT_NEW_STORE_MEMBASE (cfg, ins, OP_STOREX_MEMBASE, args [0]->dreg, 0, args [1]->dreg);
+				ins->klass = klass;
+				return ins;
+			} else {
+				return emit_simd_ins_for_sig (cfg, klass, OP_SIMD_STORE, 1, arg0_type, fsig, args);
+			}
+		}
+		case SN_StoreAligned: {
+			if (!COMPILE_LLVM (cfg)) {
+				MonoInst *ins;
+				EMIT_NEW_STORE_MEMBASE (cfg, ins, OP_STOREX_ALIGNED_MEMBASE_REG, args [0]->dreg, 0, args [1]->dreg);
+				ins->klass = klass;
+				return ins;
+			} else {
+				return emit_simd_ins_for_sig (cfg, klass, OP_SIMD_STORE, 16, arg0_type, fsig, args);
+			}
+		}
+		case SN_StoreAlignedNonTemporal: {
+			if (!COMPILE_LLVM (cfg)) {
+				MonoInst *ins;
+				EMIT_NEW_STORE_MEMBASE (cfg, ins, OP_STOREX_NTA_MEMBASE_REG, args [0]->dreg, 0, args [1]->dreg);
+				ins->klass = klass;
+				return ins;
+			} else {
+				return emit_simd_ins_for_sig (cfg, klass, OP_SSE_MOVNTPS, 16, arg0_type, fsig, args);
+			}
 		}
 		case SN_LoadScalarVector128:
 			return NULL;

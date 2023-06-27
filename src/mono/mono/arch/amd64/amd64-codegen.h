@@ -801,6 +801,11 @@ typedef union {
 #define amd64_sse_movss_membase_reg(inst,basereg,disp,reg) emit_sse_membase_reg ((inst), (basereg), (disp), (reg), 0xf3, 0x0f, 0x11)
 
 #define amd64_sse_movss_reg_membase(inst,dreg,basereg,disp) emit_sse_reg_membase ((inst), (dreg), (basereg), (disp), 0xf3, 0x0f, 0x10)
+#define amd64_sse_movlps_reg_membase(inst,dreg,basereg,disp) emit_sse_reg_membase_op2 ((inst), (dreg), (basereg), (disp), 0x0f, 0x12)
+#define amd64_sse_movhps_reg_membase(inst,dreg,basereg,disp) emit_sse_reg_membase_op2 ((inst), (dreg), (basereg), (disp), 0x0f, 0x16)
+
+#define amd64_sse_movlps_membase_reg(inst,basereg,disp,reg) emit_sse_membase_reg_op2 ((inst), (basereg), (disp), (reg), 0x0f, 0x13)
+#define amd64_sse_movhps_membase_reg(inst,basereg,disp,reg) emit_sse_membase_reg_op2 ((inst), (basereg), (disp), (reg), 0x0f, 0x17)
 
 #define amd64_sse_comisd_reg_reg(inst,dreg,reg) emit_sse_reg_reg ((inst),(dreg),(reg),0x66,0x0f,0x2f)
 #define amd64_sse_comiss_reg_reg(inst,dreg,reg) emit_sse_reg_reg ((inst),(dreg),(reg),0x67,0x0f,0x2f)
@@ -813,9 +818,11 @@ typedef union {
 #define amd64_sse_cvtss2si_reg_reg(inst,dreg,reg) emit_sse_reg_reg_size ((inst), (dreg), (reg), 0xf3, 0x0f, 0x2d, 8)
 
 #define amd64_sse_cvttsd2si_reg_reg_size(inst,dreg,reg,size) emit_sse_reg_reg_size ((inst), (dreg), (reg), 0xf2, 0x0f, 0x2c, (size))
-#define amd64_sse_cvtss2si_reg_reg_size(inst,dreg,reg,size) emit_sse_reg_reg_size ((inst), (dreg), (reg), 0xf3, 0x0f, 0x2c, (size))
+#define amd64_sse_cvtss2si_reg_reg_size(inst,dreg,reg,size) emit_sse_reg_reg_size ((inst), (dreg), (reg), 0xf3, 0x0f, 0x2d, (size))
+#define amd64_sse_cvttss2si_reg_reg_size(inst,dreg,reg,size) emit_sse_reg_reg_size ((inst), (dreg), (reg), 0xf3, 0x0f, 0x2c, (size))
 
 #define amd64_sse_cvttsd2si_reg_reg(inst,dreg,reg) amd64_sse_cvttsd2si_reg_reg_size ((inst), (dreg), (reg), 8)
+#define amd64_sse_cvttss2si_reg_reg(inst,dreg,reg) amd64_sse_cvttsd2si_reg_reg_size ((inst), (dreg), (reg), 8)
 
 #define amd64_sse_cvtsi2sd_reg_reg_size(inst,dreg,reg,size) emit_sse_reg_reg_size ((inst), (dreg), (reg), 0xf2, 0x0f, 0x2a, (size))
 
@@ -1178,6 +1185,8 @@ typedef union {
 
 #define amd64_sse_movntps_reg_membase(inst, dreg, basereg, disp) emit_sse_reg_membase_op2((inst), (dreg), (basereg), (disp), 0x0f, 0x2b)
 
+#define amd64_sse_movntps_membase_reg(inst, basereg, disp, reg) emit_sse_membase_reg_op2((inst), (basereg), (disp), (reg), 0x0f, 0x2b)
+
 #define amd64_sse_prefetch_reg_membase(inst, arg, basereg, disp) emit_sse_reg_membase_op2((inst), (arg), (basereg), (disp), 0x0f, 0x18)
 
 #define amd64_sse_lzcnt_reg_reg_size(inst, dreg, reg, size) emit_sse_reg_reg_size((inst), (dreg), (reg), 0xf3, 0x0f, 0xbd, (size))
@@ -1190,6 +1199,8 @@ typedef union {
 #define amd64_sse_phaddd_reg_reg(inst, dreg, sreg) emit_sse_reg_reg_op4((inst), (dreg), (sreg), 0x66, 0x0f, 0x38, 0x02)
 #define amd64_sse_blendpd_reg_reg(inst,dreg,sreg,imm) emit_sse_reg_reg_op4_imm((inst), (dreg), (sreg), 0x66, 0x0f, 0x3a, 0x0d, (imm))
 #define amd64_movq_reg_reg(inst,dreg,sreg) emit_sse_reg_reg ((inst), (dreg), (sreg), 0xf3, 0x0f, 0x7e)
+
+#define amd64_sse_sfence(inst) emit_opcode3 ((inst), 0x0f, 0xae, 0xf8)
 
 /* Generated from x86-codegen.h */
 
