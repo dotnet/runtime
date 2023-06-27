@@ -12,7 +12,7 @@ using Xunit.Abstractions;
 
 namespace System.Net.Http.Functional.Tests
 {
-    public class NtAuthTestsFakeServer
+    public partial class NtAuthTests : IClassFixture<NtAuthServers>
     {
         public static bool IsNtlmAvailable =>
             Capability.IsNtlmInstalled() || OperatingSystem.IsAndroid() || OperatingSystem.IsTvOS();
