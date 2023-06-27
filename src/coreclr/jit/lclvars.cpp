@@ -3008,8 +3008,6 @@ void Compiler::lvaSetStruct(unsigned varNum, ClassLayout* layout, bool unsafeVal
 //
 void Compiler::lvaSetStruct(unsigned varNum, CORINFO_CLASS_HANDLE typeHnd, bool unsafeValueClsCheck)
 {
-    assert((typeHnd == NO_CLASS_HANDLE) ||
-           ((info.compCompHnd->getClassAttribs(typeHnd) & CORINFO_FLG_GENERIC_TYPE_VARIABLE) == 0));
     lvaSetStruct(varNum, typGetObjLayout(typeHnd), unsafeValueClsCheck);
 }
 
@@ -3108,8 +3106,6 @@ void Compiler::lvaSetStructUsedAsVarArg(unsigned varNum)
 
 void Compiler::lvaSetClass(unsigned varNum, CORINFO_CLASS_HANDLE clsHnd, bool isExact)
 {
-    assert((clsHnd == NO_CLASS_HANDLE) ||
-           ((info.compCompHnd->getClassAttribs(clsHnd) & CORINFO_FLG_GENERIC_TYPE_VARIABLE) == 0));
     noway_assert(varNum < lvaCount);
 
     if (clsHnd != NO_CLASS_HANDLE && !isExact && JitConfig.JitEnableExactDevirtualization())
@@ -3119,6 +3115,10 @@ void Compiler::lvaSetClass(unsigned varNum, CORINFO_CLASS_HANDLE clsHnd, bool is
         {
             isExact = true;
             clsHnd  = exactClass;
+        }
+        else
+        {
+            isExact = impIsClassExact(clsHnd);
         }
     }
 
@@ -3154,13 +3154,9 @@ void Compiler::lvaSetClass(unsigned varNum, CORINFO_CLASS_HANDLE clsHnd, bool is
 
 void Compiler::lvaSetClass(unsigned varNum, GenTree* tree, CORINFO_CLASS_HANDLE stackHnd)
 {
-    assert((stackHnd == NO_CLASS_HANDLE) ||
-           ((info.compCompHnd->getClassAttribs(stackHnd) & CORINFO_FLG_GENERIC_TYPE_VARIABLE) == 0));
     bool                 isExact   = false;
     bool                 isNonNull = false;
     CORINFO_CLASS_HANDLE clsHnd    = gtGetClassHandle(tree, &isExact, &isNonNull);
-    assert((clsHnd == NO_CLASS_HANDLE) ||
-           ((info.compCompHnd->getClassAttribs(clsHnd) & CORINFO_FLG_GENERIC_TYPE_VARIABLE) == 0));
 
     if (clsHnd != nullptr)
     {
@@ -3202,8 +3198,6 @@ void Compiler::lvaSetClass(unsigned varNum, GenTree* tree, CORINFO_CLASS_HANDLE 
 
 void Compiler::lvaUpdateClass(unsigned varNum, CORINFO_CLASS_HANDLE clsHnd, bool isExact)
 {
-    assert((clsHnd == NO_CLASS_HANDLE) ||
-           ((info.compCompHnd->getClassAttribs(clsHnd) & CORINFO_FLG_GENERIC_TYPE_VARIABLE) == 0));
     assert(varNum < lvaCount);
 
     // Else we should have a class handle to consider
@@ -3225,17 +3219,31 @@ void Compiler::lvaUpdateClass(unsigned varNum, CORINFO_CLASS_HANDLE clsHnd, bool
     const bool isNewClass   = (clsHnd != varDsc->lvClassHnd);
     bool       shouldUpdate = false;
 
-    // Are we attempting to update the class? Only check this when we have
-    // an new type and the existing class is inexact... we should not be
-    // updating exact classes.
-    if (!varDsc->lvClassIsExact && isNewClass)
+    if (!isExact && JitConfig.JitEnableExactDevirtualization())
     {
-        shouldUpdate = !!info.compCompHnd->isMoreSpecificType(varDsc->lvClassHnd, clsHnd);
+        CORINFO_CLASS_HANDLE exactClass;
+        if (info.compCompHnd->getExactClasses(clsHnd, 1, &exactClass) == 1)
+        {
+            isExact = true;
+            clsHnd  = exactClass;
+        }
+        else
+        {
+            isExact = impIsClassExact(clsHnd);
+        }
     }
-    // Else are we attempting to update exactness?
-    else if (isExact && !varDsc->lvClassIsExact && !isNewClass)
+    
+    // Are we attempting to update exactness?
+    if (isExact && !varDsc->lvClassIsExact)
     {
         shouldUpdate = true;
+    }
+    // Are we attempting to update the class? Only check this when we have
+    // an new type and the existing class is inexact... we should not be
+    // updating exact classes
+    else if (isNewClass && !varDsc->lvClassIsExact)
+    {
+        shouldUpdate = !!info.compCompHnd->isMoreSpecificType(varDsc->lvClassHnd, clsHnd);
     }
 
 #if DEBUG
@@ -3278,13 +3286,9 @@ void Compiler::lvaUpdateClass(unsigned varNum, CORINFO_CLASS_HANDLE clsHnd, bool
 
 void Compiler::lvaUpdateClass(unsigned varNum, GenTree* tree, CORINFO_CLASS_HANDLE stackHnd)
 {
-    assert((stackHnd == NO_CLASS_HANDLE) ||
-           ((info.compCompHnd->getClassAttribs(stackHnd) & CORINFO_FLG_GENERIC_TYPE_VARIABLE) == 0));
     bool                 isExact   = false;
     bool                 isNonNull = false;
     CORINFO_CLASS_HANDLE clsHnd    = gtGetClassHandle(tree, &isExact, &isNonNull);
-    assert((clsHnd == NO_CLASS_HANDLE) ||
-           ((info.compCompHnd->getClassAttribs(clsHnd) & CORINFO_FLG_GENERIC_TYPE_VARIABLE) == 0));
 
     if (clsHnd != nullptr)
     {
