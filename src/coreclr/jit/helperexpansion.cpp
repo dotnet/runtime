@@ -520,7 +520,6 @@ bool Compiler::fgExpandThreadLocalAccessForCall(BasicBlock** pBlock, Statement* 
         }
     }
 #endif // TARGET_AMD64
-    
 
     size_t offsetOfThreadStaticBlocksVal    = threadStaticBlocksInfo.offsetOfThreadStaticBlocks;
     size_t offsetOfMaxThreadStaticBlocksVal = threadStaticBlocksInfo.offsetOfMaxThreadStaticBlocks;
