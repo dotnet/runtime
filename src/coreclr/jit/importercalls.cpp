@@ -3855,7 +3855,7 @@ GenTree* Compiler::impIntrinsic(GenTree*                newobjThis,
                     break;
                 }
 #endif // !TARGET_64BIT
-                assert(retType != TYP_STRUCT);
+                assert(retType == TYP_REF || impIsPrimitive(sig->retType));
                 retNode = gtNewIndir(retType, impPopStack().val, GTF_IND_VOLATILE);
                 break;
             }
@@ -3867,15 +3867,19 @@ GenTree* Compiler::impIntrinsic(GenTree*                newobjThis,
                 {
                     assert(sig->sigInst.methInstCount == 0);
                     CORINFO_CLASS_HANDLE typeHnd = nullptr;
-                    type                         = JITtype2varType(
-                        strip(info.compCompHnd->getArgType(sig, info.compCompHnd->getArgNext(sig->args), &typeHnd)));
+                    CorInfoType jitType = strip(info.compCompHnd->getArgType(sig, info.compCompHnd->getArgNext(sig->args), &typeHnd))
+                    assert(impIsPrimitive(jitType));
+                    type = JITtype2varType(jitType);
 #if !TARGET_64BIT
                     if ((type == TYP_LONG) || (type == TYP_ULONG) || (type == TYP_DOUBLE))
                     {
                         break;
                     }
 #endif // !TARGET_64BIT
-                    assert(type != TYP_STRUCT);
+                }
+                else 
+                {
+                    assert(!eeIsValueClass(sig->sigInst.methInst[0]));
                 }
 
                 GenTree* value = impPopStack().val;
