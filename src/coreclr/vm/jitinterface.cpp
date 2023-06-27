@@ -1647,8 +1647,9 @@ uint32_t CEEInfo::getThreadLocalFieldInfo (CORINFO_FIELD_HANDLE  field, bool isG
 
 #ifndef _MSC_VER
 
-#ifdef HOST_AMD64
+extern "C" void* JIT_GetThreadStaticsBaseOffset();
 
+#ifdef HOST_AMD64
 
 void* getThreadStaticDescriptor(uint8_t* p)
 {
@@ -1684,69 +1685,56 @@ void* getThreadStaticDescriptor(uint8_t* p)
     return *(uint32_t*)p + (p + 4);
 }
 
-//// Generates sequence for accessing offset in TLS for osx/x64
-//void* getThreadStaticsBaseOffset()
-//{
-//    uint8_t* p;
-//    __asm__ (
-//        "leaq  0(%%rip), %%rdx\n"
-//        "movq  _t_ThreadStatics@TLVP(%%rip), %%rdi\n"
-//        : "=d"(p)
-//        );
-//
-//    return getThreadStaticDescriptor(p);
-//}
-
-
-extern "C" void* JIT_GetThreadStaticsBaseOffset();
-
 void* getThreadStaticsBaseOffset()
 {
     uint8_t* p = reinterpret_cast<uint8_t*>(&JIT_GetThreadStaticsBaseOffset);
     return getThreadStaticDescriptor(p);
 }
 
-#endif // HOST_AMD64
+#elif HOST_ARM64
 
-#ifdef HOST_ARM64
-
-#ifdef TARGET_OSX
-
-// Generates sequence for accessing offset in TLS for osx/arm64
 uint64_t getThreadStaticsBaseOffset()
 {
-    uint64_t tlvGetAddr;
-    __asm__ (
-    "adrp x0, _t_ThreadStatics@TLVPPAGE\n"
-    "ldr x0, [x0, _t_ThreadStatics@TLVPPAGEOFF]\n"
-    "mov %[result], x0\n"
-    : [result] "=r" (tlvGetAddr)
-    :
-    : "x0", "x1"
-    );
-    return tlvGetAddr;
+    return reinterpret_cast<uint64_t>(JIT_GetThreadStaticsBaseOffset());
 }
-#else
 
-// Generates sequence for accessing offset in TLS for linux/arm64
-uint64_t getThreadStaticsBaseOffset()
-{
-    uint64_t offset;
-    __asm__ (
-        "adrp x0,  :tlsdesc:t_ThreadStatics\n"
-        "ldr  x1,  [x0, #:tlsdesc_lo12:t_ThreadStatics]\n"
-        "add  x0,  x0, :tlsdesc_lo12:t_ThreadStatics\n"
-        ".tlsdesccall t_ThreadStatics\n"
-        "blr  x1\n"
-        "mov %[result], x0\n"
-        : [result] "=r" (offset)
-        :
-        : "x0", "x1"
-    );
-
-    return offset;
-}
-#endif // TARGET_OSX
+//#ifdef TARGET_OSX
+//
+//// Generates sequence for accessing offset in TLS for osx/arm64
+//uint64_t getThreadStaticsBaseOffset()
+//{
+//    uint64_t tlvGetAddr;
+//    __asm__ (
+//    "adrp x0, _t_ThreadStatics@TLVPPAGE\n"
+//    "ldr x0, [x0, _t_ThreadStatics@TLVPPAGEOFF]\n"
+//    "mov %[result], x0\n"
+//    : [result] "=r" (tlvGetAddr)
+//    :
+//    : "x0", "x1"
+//    );
+//    return tlvGetAddr;
+//}
+//#else
+//
+//// Generates sequence for accessing offset in TLS for linux/arm64
+//uint64_t getThreadStaticsBaseOffset()
+//{
+//    uint64_t offset;
+//    __asm__ (
+//        "adrp x0,  :tlsdesc:t_ThreadStatics\n"
+//        "ldr  x1,  [x0, #:tlsdesc_lo12:t_ThreadStatics]\n"
+//        "add  x0,  x0, :tlsdesc_lo12:t_ThreadStatics\n"
+//        ".tlsdesccall t_ThreadStatics\n"
+//        "blr  x1\n"
+//        "mov %[result], x0\n"
+//        : [result] "=r" (offset)
+//        :
+//        : "x0", "x1"
+//    );
+//
+//    return offset;
+//}
+//#endif // TARGET_OSX
 #endif  // HOST_ARM64
 #else
 /*********************************************************************/
