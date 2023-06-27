@@ -3847,6 +3847,7 @@ GenTree* Compiler::impIntrinsic(GenTree*                newobjThis,
 
             case NI_System_Threading_Volatile_Read:
             {
+                assert((sig->sigInst.methInstCount == 0) || (sig->sigInst.methInstCount == 1));
                 var_types retType = sig->sigInst.methInstCount == 1 ? TYP_REF : JITtype2varType(sig->retType);
 #if !TARGET_64BIT
                 if ((retType == TYP_LONG) || (retType == TYP_ULONG) || (retType == TYP_DOUBLE))
@@ -3864,6 +3865,7 @@ GenTree* Compiler::impIntrinsic(GenTree*                newobjThis,
                 var_types type = TYP_REF;
                 if (sig->sigInst.methInstCount != 1)
                 {
+                    assert(sig->sigInst.methInstCount == 0);
                     CORINFO_CLASS_HANDLE typeHnd = nullptr;
                     type                         = JITtype2varType(
                         strip(info.compCompHnd->getArgType(sig, info.compCompHnd->getArgNext(sig->args), &typeHnd)));
