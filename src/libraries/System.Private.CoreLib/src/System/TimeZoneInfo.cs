@@ -41,6 +41,8 @@ namespace System
             SecurityException = 3
         }
 
+        private const int MaxKeyLength = 255;
+
         private readonly string _id;
         private readonly string? _displayName;
         private readonly string? _standardDisplayName;

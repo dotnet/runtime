@@ -32,7 +32,6 @@ namespace System
         private const string FirstEntryValue = "FirstEntry";
         private const string LastEntryValue = "LastEntry";
 
-        private const int MaxKeyLength = 255;
         private const string InvariantUtcStandardDisplayName = "Coordinated Universal Time";
 
         private sealed partial class CachedData
