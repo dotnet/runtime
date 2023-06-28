@@ -1366,6 +1366,94 @@ namespace Microsoft.Extensions.DependencyInjection
             }
         }
 
+        [ConditionalFact(typeof(PlatformDetection), nameof(PlatformDetection.IsThreadingSupported))]
+        public void AddHttpClient_ConfigurePrimaryHttpMessageHandler_ApplyChangesPrimaryHandler()
+        {
+            // Arrange
+            var testCredentials = new TestCredentials();
+            var testBuilder = new TestHttpMessageHandlerBuilder();
+
+            var serviceCollection = new ServiceCollection();
+            serviceCollection.AddSingleton<HttpMessageHandlerBuilder>(testBuilder);
+            serviceCollection
+                .AddHttpClient<TestTypedClient>("test")
+                .ConfigurePrimaryHttpMessageHandler((primaryHandler, _) =>
+                {
+                    ((HttpClientHandler)primaryHandler).Credentials = testCredentials;
+                });
+
+            var services = serviceCollection.BuildServiceProvider();
+
+            // Act & Assert
+            _ = services.GetRequiredService<TestTypedClient>();
+
+            Assert.Same(testCredentials, ((HttpClientHandler)testBuilder.PrimaryHandler).Credentials);
+        }
+
+        [ConditionalFact(typeof(PlatformDetection), nameof(PlatformDetection.IsThreadingSupported))]
+        public void AddHttpClient_ConfigureAdditionalHttpMessageHandlers_ModifyAdditionalHandlers()
+        {
+            // Arrange
+            var testCredentials = new TestCredentials();
+            var testBuilder = new TestHttpMessageHandlerBuilder();
+
+            var serviceCollection = new ServiceCollection();
+            serviceCollection.AddSingleton<HttpMessageHandlerBuilder>(testBuilder);
+            serviceCollection
+                .AddHttpClient<TestTypedClient>("test")
+                .AddHttpMessageHandler(() => Mock.Of<DelegatingHandler>())
+                .ConfigureAdditionalHttpMessageHandlers((additionalHandlers, _) =>
+                {
+                    additionalHandlers.Clear();
+                });
+
+            var services = serviceCollection.BuildServiceProvider();
+
+            // Act & Assert
+            _ = services.GetRequiredService<TestTypedClient>();
+
+            // Contains two logging handlers added by the filter.
+            Assert.Equal(2, testBuilder.AdditionalHandlers.Count);
+        }
+
+        private sealed class TestHttpMessageHandlerBuilder : HttpMessageHandlerBuilder
+        {
+            public override string? Name { get; set; }
+            public override HttpMessageHandler PrimaryHandler { get; set; } = new HttpClientHandler();
+            public override IList<DelegatingHandler> AdditionalHandlers { get; } = new List<DelegatingHandler>();
+
+            public override HttpMessageHandler Build() => PrimaryHandler;
+        }
+
+        private sealed class TestCredentials : ICredentials
+        {
+            public NetworkCredential GetCredential(Uri uri, string authType) => throw new NotImplementedException();
+        }
+
+        [ConditionalFact(typeof(PlatformDetection), nameof(PlatformDetection.IsThreadingSupported))]
+        public void AddHttpClientDefaults_MultipleConfigInOneDefault_LastWins()
+        {
+            // Arrange
+            var serviceCollection = new ServiceCollection();
+
+            // Act1
+            serviceCollection.ConfigureHttpClientDefaults(builder =>
+            {
+                builder.ConfigureHttpClient(c => c.BaseAddress = new Uri("http://default1.com/"));
+                builder.ConfigureHttpClient(c => c.BaseAddress = new Uri("http://default2.com/"));
+            });
+
+            var services = serviceCollection.BuildServiceProvider();
+            var factory = services.GetRequiredService<IHttpClientFactory>();
+
+            // Act2
+            var client = factory.CreateClient();
+
+            // Assert
+            Assert.NotNull(client);
+            Assert.Equal("http://default2.com/", client.BaseAddress.AbsoluteUri);
+        }
+
         private class TestGenericTypedClient<T> : TestTypedClient
         {
             public TestGenericTypedClient(HttpClient httpClient)
