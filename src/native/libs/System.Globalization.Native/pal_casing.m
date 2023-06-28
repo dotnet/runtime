@@ -1,19 +1,14 @@
 // Licensed to the .NET Foundation under one or more agreements.
 // The .NET Foundation licenses this file to you under the MIT license.
 
-#include "pal_locale_internal.h"
+#include "pal_icushim_internal.h"
 #include "pal_casing.h"
+#include "pal_errors.h"
 
 #import <Foundation/Foundation.h>
 
 #if defined(TARGET_OSX) || defined(TARGET_MACCATALYST) || defined(TARGET_IOS) || defined(TARGET_TVOS)
 
-typedef enum
-{
-    ERROR_SUCCESS = 0,
-    ERROR_INVALID_CODE_POINT = 1,
-    ERROR_INSUFFICIENT_BUFFER = 2
-} ErrorCodes;
 
 /**
  * Append a code point to a string, overwriting 1 or 2 code units.
@@ -35,9 +30,9 @@ typedef enum
  */
 #define Append(buffer, offset, capacity, codePoint, isError) { \
     if ((offset) >= (capacity)) /* insufficiently sized destination buffer */ { \
-        (isError) = ERROR_INSUFFICIENT_BUFFER; \
+        (isError) = InsufficientBuffer; \
     } else if ((uint32_t)(codePoint) > 0x10ffff) /* invalid code point */  { \
-        (isError) = ERROR_INVALID_CODE_POINT; \
+        (isError) = InvalidCodePoint; \
     } else if ((uint32_t)(codePoint) <= 0xffff) { \
         (buffer)[(offset)++] = (uint16_t)(codePoint); \
     } else { \
@@ -78,7 +73,7 @@ int32_t GlobalizationNative_ChangeCaseNative(const uint16_t* localeName, int32_t
         if (isError)
             return isError;
     }
-    return ERROR_SUCCESS;
+    return Success;
 }
 
 /*
@@ -102,7 +97,7 @@ int32_t GlobalizationNative_ChangeCaseInvariantNative(const uint16_t* lpSrc, int
         if (isError)
             return isError;
     }
-    return ERROR_SUCCESS;
+    return Success;
 }
 
 #endif

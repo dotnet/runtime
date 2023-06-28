@@ -7,13 +7,6 @@ namespace System.Globalization
 {
     public partial class TextInfo
     {
-        private enum ErrorCodes
-        {
-            ERROR_SUCCESS = 0,
-            ERROR_INVALID_CODE_POINT = 1,
-            ERROR_INSUFFICIENT_BUFFER = 2
-        }
-
         internal unsafe void ChangeCaseNative(char* src, int srcLen, char* dstBuffer, int dstBufferCapacity, bool toUpper)
         {
             Debug.Assert(!GlobalizationMode.Invariant);
@@ -26,9 +19,9 @@ namespace System.Globalization
             else
                 result = Interop.Globalization.ChangeCaseNative(_cultureName, _cultureName.Length, src, srcLen, dstBuffer, dstBufferCapacity, toUpper);
 
-            if (result != (int)ErrorCodes.ERROR_SUCCESS)
-                throw new Exception(result == (int)ErrorCodes.ERROR_INVALID_CODE_POINT ? "Invalid code point while case changing"  :
-                                    result == (int)ErrorCodes.ERROR_INSUFFICIENT_BUFFER ? "Insufficiently sized destination buffer" : "Exception occurred while case changing");
+            if (result != (int)Interop.Globalization.ResultCode.Success)
+                throw new Exception(result == (int)Interop.Globalization.ResultCode.InvalidCodePoint ? "Invalid code point while case changing"  :
+                                    result == (int)Interop.Globalization.ResultCode.InsufficientBuffer ? "Insufficiently sized destination buffer" : "Exception occurred while case changing");
         }
     }
 }
