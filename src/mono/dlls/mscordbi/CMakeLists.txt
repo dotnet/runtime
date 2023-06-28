@@ -124,7 +124,6 @@ include_directories(${CLR_DIR}/minipal)
 
 add_subdirectory(${CLR_DIR}/md/enc md/enc)
 add_subdirectory(${CLR_DIR}/utilcode utilcode)
-#add_subdirectory(${CLR_DIR}/debug/dbgutil /debug/dbgutil)
 if (CLR_CMAKE_HOST_UNIX)
     add_subdirectory(${CLR_DIR}/palrt palrt)
     append("-Wno-strict-prototypes -Wno-deprecated -Wno-pointer-arith" CMAKE_C_FLAGS CMAKE_CXX_FLAGS)
