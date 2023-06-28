@@ -14,6 +14,8 @@
   <UsingTask Condition="'$(RunAOTCompilation)' == 'true'"
              TaskName="ILStrip"
              AssemblyFile="$(MonoTargetsTasksAssemblyPath)" />
+  <UsingTask TaskName="MonoTargetsTasks.MarshalingPInvokeScanner" 
+             AssemblyFile="$(MonoTargetsTasksAssemblyPath)" />
 
   <Target Name="_CleanPublish" 
           BeforeTargets="Build">
@@ -55,10 +57,6 @@
     <ItemGroup>
       <_CommonLinkerArgs Condition="'$(_IsLibraryMode)' == 'true' and '$(TargetOS)' != 'tvos' and '$(TargetOS)' != 'tvossimulator'" Include="-framework GSS" />
     </ItemGroup>
-
-    <PropertyGroup>
-      <RuntimeComponents Condition="'$(RuntimeComponents)' == ''">marshal-ilgen</RuntimeComponents>
-    </PropertyGroup>
 
     <ItemGroup Condition="'$(_IsLibraryMode)' == 'true'">
       <!-- add all non stub libs first -->
@@ -107,6 +105,23 @@
         <_InternalForceInterpret>%(AppleAssembliesToBundle._InternalForceInterpret)</_InternalForceInterpret>
         <_IsNative>%(AppleAssembliesToBundle._IsNative)</_IsNative>
       </_AssembliesToBundleInternal>
+    </ItemGroup>
+  </Target>
+
+  <Target Name="_ScanAssembliesDecideLightweightMarshaler" Condition="'$(AppleGenerateAppBundle)' == 'true'">
+    <ItemGroup>
+      <AssembliesToScan Include="@(_AssembliesToBundleInternal)" />
+    </ItemGroup>
+
+    <MarshalingPInvokeScanner Assemblies ="@(AssembliesToScan)">
+      <Output TaskParameter="IncompatibleAssemblies" ItemName="MonoLightweightMarshallerIncompatibleAssemblies" />
+    </MarshalingPInvokeScanner>
+    
+    <ItemGroup Condition="'@(MonoLightweightMarshallerIncompatibleAssemblies->Count())' > 0">
+      <RuntimeComponents Include="marshal-ilgen" />
+    </ItemGroup>
+    <ItemGroup Condition="'@(MonoLightweightMarshallerIncompatibleAssemblies->Count())' == 0">
+      <RuntimeComponents Remove="marshal-ilgen" />
     </ItemGroup>
   </Target>
 
