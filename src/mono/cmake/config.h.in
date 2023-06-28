@@ -51,6 +51,9 @@
 /* pthread is a pointer */
 #cmakedefine PTHREAD_POINTER_ID 1
 
+/* Targeting a Unix-like platform */
+#cmakedefine TARGET_UNIX 1
+
 /* Targeting the Android platform */
 #cmakedefine HOST_ANDROID 1
 
@@ -72,11 +75,17 @@
 /* Target Platform is Win32 */
 #cmakedefine TARGET_WIN32 1
 
+/* ... */
+#cmakedefine TARGET_WINDOWS 1
+
 /* Host Platform is Darwin */
 #cmakedefine HOST_DARWIN 1
 
 /* Host Platform is OSX or Mac Catalyst */
 #cmakedefine HOST_OSX 1
+
+/* ... */
+#cmakedefine TARGET_OSX 1
 
 /* Host Platform is iOS */
 #cmakedefine HOST_IOS 1
@@ -86,6 +95,15 @@
 
 /* Host Platform is Mac Catalyst */
 #cmakedefine HOST_MACCAT 1
+
+/* Target Platform is Linux */
+#cmakedefine TARGET_LINUX 1
+
+/* Target Platform is Linux (bionic libc)*/
+#cmakedefine TARGET_LINUX_BIONIC 1
+
+/* Target Platform is Linux (musl libc)*/
+#cmakedefine TARGET_LINUX_MUSL 1
 
 /* Use classic Windows API support */
 #cmakedefine HAVE_CLASSIC_WINAPI_SUPPORT 1
@@ -659,6 +677,9 @@
 
 /* The runtime is compiled for cross-compiling mode */
 #cmakedefine MONO_CROSS_COMPILE 1
+
+/* ... */
+#cmakedefine TARGET_BROWSER 1
 
 /* ... */
 #cmakedefine TARGET_WASM 1
