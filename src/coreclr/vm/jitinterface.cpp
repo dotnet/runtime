@@ -1751,13 +1751,13 @@ void CEEInfo::getThreadLocalStaticBlocksInfo (CORINFO_THREAD_STATIC_BLOCKS_INFO*
 
 #elif defined(TARGET_OSX)
 
-    pInfo->threadVarsSection = (size_t)GetThreadVarsSectionAddr();
+    pInfo->threadVarsSection = getThreadVarsSectionOffset();
 
 #elif defined(TARGET_AMD64)
 
     // For Linux/x64, get the address of tls_get_addr system method and the base address
     // of struct that we will pass to it.
-    pInfo->tlsGetAddrFtnPtr = &__tls_get_addr;
+    pInfo->tlsGetAddrFtnPtr = reinterpret_cast<void*>(&__tls_get_addr);
     pInfo->tlsIndexObject = getTlsIndexObjectAddress();
 
 #elif defined(TARGET_ARM64)
