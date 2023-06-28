@@ -974,3 +974,27 @@ LEAF_END JIT_ValidateIndirectCall, _TEXT
 LEAF_ENTRY JIT_DispatchIndirectCall, _TEXT
     br x9
 LEAF_END JIT_DispatchIndirectCall, _TEXT
+
+
+// ------------------------------------------------------------------
+// void* GetThreadStaticsBaseOffset()
+
+// Helper to calculate the offset of native thread local variable `t_ThreadStatics`. The offset has to be found at runtime
+// once linker does its relocation and fixup of thread locals. The offset, after calculation is returned in `x0` register.
+
+LEAF_ENTRY GetThreadStaticsBaseOffset, _TEXT
+        PROLOG_SAVE_REG_PAIR_INDEXED   fp, lr, -32
+#ifdef TARGET_OSX
+        adrp    x0,     _t_ThreadStatics@TLVPPAGE
+        ldr     x0,     [x0, _t_ThreadStatics@TLVPPAGEOFF]
+#else
+        adrp    x0,     :tlsdesc:t_ThreadStatics
+        ldr     x1,     [x0, #:tlsdesc_lo12:t_ThreadStatics]
+        add     x0,     x0, :tlsdesc_lo12:t_ThreadStatics
+        .tlsdesccall    t_ThreadStatics
+        blr     x1
+#endif
+        EPILOG_RESTORE_REG_PAIR_INDEXED fp, lr, 32
+        EPILOG_RETURN
+LEAF_END GetThreadStaticsBaseOffset, _TEXT
+// ------------------------------------------------------------------

@@ -1656,7 +1656,7 @@ static uint32_t ThreadLocalOffset(void* p)
 }
 #else
 
-extern "C" void* JIT_GetThreadStaticsBaseOffset();
+extern "C" void* GetThreadStaticsBaseOffset();
 
 #ifdef HOST_AMD64
 
@@ -1696,7 +1696,7 @@ void* getThreadStaticDescriptor(uint8_t* p)
 
 void* getTlsIndexObjectAddress()
 {
-    uint8_t* p = reinterpret_cast<uint8_t*>(&JIT_GetThreadStaticsBaseOffset);
+    uint8_t* p = reinterpret_cast<uint8_t*>(&GetThreadStaticsBaseOffset);
     return getThreadStaticDescriptor(p);
 }
 
@@ -1704,7 +1704,7 @@ void* getTlsIndexObjectAddress()
 
 void* getTlsIndexObjectAddress()
 {
-    return reinterpret_cast<void*>(JIT_GetThreadStaticsBaseOffset());
+    return reinterpret_cast<void*>(GetThreadStaticsBaseOffset());
 }
 #endif  // HOST_ARM64
 #endif // TARGET_WINDOWS
