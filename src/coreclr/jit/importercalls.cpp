@@ -8109,7 +8109,7 @@ GenTree* Compiler::impMinMaxIntrinsic(CORINFO_METHOD_HANDLE method,
                 {
                     // Given the checks, op1 can safely be the cns and op2 the other node
 
-                    intrinsicName = (callType == TYP_DOUBLE) ? NI_SSE2_Max : NI_SSE_Max;
+                    intrinsicName = (callType == TYP_DOUBLE) ? NI_SSE2_MaxScalar : NI_SSE_MaxScalar;
 
                     // one is constant and we know its something we can handle, so pop both peeked values
 
@@ -8139,18 +8139,18 @@ GenTree* Compiler::impMinMaxIntrinsic(CORINFO_METHOD_HANDLE method,
 
                 if (isNumber)
                 {
-                    needsFixup = cnsNode->IsFloatNegativeZero();
+                    needsFixup = cnsNode->IsFloatPositiveZero();
                 }
                 else
                 {
-                    needsFixup = cnsNode->IsFloatPositiveZero();
+                    needsFixup = cnsNode->IsFloatNegativeZero();
                 }
 
                 if (!needsFixup || compOpportunisticallyDependsOn(InstructionSet_AVX512F))
                 {
                     // Given the checks, op1 can safely be the cns and op2 the other node
 
-                    intrinsicName = (callType == TYP_DOUBLE) ? NI_SSE2_Min : NI_SSE_Min;
+                    intrinsicName = (callType == TYP_DOUBLE) ? NI_SSE2_MinScalar : NI_SSE_MinScalar;
 
                     // one is constant and we know its something we can handle, so pop both peeked values
 
@@ -8411,7 +8411,10 @@ GenTree* Compiler::impMinMaxIntrinsic(CORINFO_METHOD_HANDLE method,
     }
 #endif // FEATURE_HW_INTRINSICS && TARGET_XARCH
 
-    return impMathIntrinsic(method, sig, callType, intrinsicName, tailCall);
+    // TODO-CQ: Returning this as an intrinsic blocks inlining and is undesirable
+    // return impMathIntrinsic(method, sig, callType, intrinsicName, tailCall);
+
+    return nullptr;
 }
 
 //------------------------------------------------------------------------

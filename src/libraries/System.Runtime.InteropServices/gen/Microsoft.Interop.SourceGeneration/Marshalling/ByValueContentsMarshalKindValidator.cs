@@ -2,8 +2,8 @@
 // The .NET Foundation licenses this file to you under the MIT license.
 
 using System;
-using System.Collections.Generic;
-using System.Text;
+using System.Collections.Immutable;
+using Microsoft.CodeAnalysis;
 
 namespace Microsoft.Interop
 {
@@ -12,6 +12,8 @@ namespace Microsoft.Interop
     /// </summary>
     public class ByValueContentsMarshalKindValidator : IMarshallingGeneratorFactory
     {
+        private static readonly Forwarder s_forwarder = new();
+
         private readonly IMarshallingGeneratorFactory _inner;
 
         public ByValueContentsMarshalKindValidator(IMarshallingGeneratorFactory inner)
@@ -35,34 +37,48 @@ namespace Microsoft.Interop
 
             if (info.IsByRef && info.ByValueContentsMarshalKind != ByValueContentsMarshalKind.Default)
             {
-                return generator with
+                return ResolvedGenerator.ResolvedWithDiagnostics(s_forwarder, generator.Diagnostics.Add(new GeneratorDiagnostic.NotSupported(info, context)
                 {
-                    Diagnostics = generator.Diagnostics.Add(new GeneratorDiagnostic.NotSupported(info, context)
-                    {
-                        NotSupportedDetails = SR.InOutAttributeByRefNotSupported
-                    })
-                };
+                    NotSupportedDetails = SR.InOutAttributeByRefNotSupported
+                }));
             }
             else if (info.ByValueContentsMarshalKind == ByValueContentsMarshalKind.In)
             {
-                return generator with
+                return ResolvedGenerator.ResolvedWithDiagnostics(s_forwarder, generator.Diagnostics.Add(new GeneratorDiagnostic.NotSupported(info, context)
                 {
-                    Diagnostics = generator.Diagnostics.Add(new GeneratorDiagnostic.NotSupported(info, context)
-                    {
-                        NotSupportedDetails = SR.InAttributeNotSupportedWithoutOut
-                    })
-                };
+                    NotSupportedDetails = SR.InAttributeNotSupportedWithoutOut
+                }));
             }
-            else if (info.ByValueContentsMarshalKind != ByValueContentsMarshalKind.Default
-                && !generator.Generator.SupportsByValueMarshalKind(info.ByValueContentsMarshalKind, context))
+            else if (info.ByValueContentsMarshalKind != ByValueContentsMarshalKind.Default)
             {
-                return generator with
+                ByValueMarshalKindSupport support = generator.Generator.SupportsByValueMarshalKind(info.ByValueContentsMarshalKind, context);
+                if (support == ByValueMarshalKindSupport.NotSupported)
                 {
-                    Diagnostics = generator.Diagnostics.Add(new GeneratorDiagnostic.NotSupported(info, context)
+                    return ResolvedGenerator.ResolvedWithDiagnostics(s_forwarder, generator.Diagnostics.Add(new GeneratorDiagnostic.NotSupported(info, context)
                     {
                         NotSupportedDetails = SR.InOutAttributeMarshalerNotSupported
-                    })
-                };
+                    }));
+                }
+                else if (support == ByValueMarshalKindSupport.Unnecessary)
+                {
+                    var locations = ImmutableArray<Location>.Empty;
+                    if (info.ByValueMarshalAttributeLocations.InLocation is not null)
+                    {
+                        locations = locations.Add(info.ByValueMarshalAttributeLocations.InLocation);
+                    }
+                    if (info.ByValueMarshalAttributeLocations.OutLocation is not null)
+                    {
+                        locations = locations.Add(info.ByValueMarshalAttributeLocations.OutLocation);
+                    }
+
+                    return generator with
+                    {
+                        Diagnostics = generator.Diagnostics.Add(new GeneratorDiagnostic.UnnecessaryData(info, context, locations)
+                        {
+                            UnnecessaryDataDetails = SR.InOutAttributes
+                        })
+                    };
+                }
             }
             return generator;
         }
