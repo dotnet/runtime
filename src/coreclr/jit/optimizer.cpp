@@ -7030,6 +7030,18 @@ bool Compiler::optIsProfitableToHoistTree(GenTree* tree, unsigned lnum)
         {
             availRegCount += CNT_CALLEE_TRASH_FLOAT - 1;
         }
+#if defined(TARGET_XARCH) && defined(FEATURE_SIMD)
+        else if ((varTypeIsSIMD(tree) && tree->TypeIs(TYP_SIMD32, TYP_SIMD64)) ||
+                 (tree->OperIsHWIntrinsic() && (tree->AsHWIntrinsic()->GetSimdSize() >= 32)))
+        {
+            // SIMD32/64 always spill due to the upper bits being volatile (callee trash)
+            // For now, avoid hoisting such constants when a call is present
+
+            // TODO-XArch-CQ: We should account for the spill cost as part of hoist determination
+            return false;
+        }
+#endif // TARGET_XARCH && FEATURE_SIMD
+
 #ifdef TARGET_ARM
         // For ARM each double takes two FP registers
         // For now on ARM we won't track singles/doubles
