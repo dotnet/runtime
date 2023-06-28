@@ -55,29 +55,9 @@ namespace ILCompiler.DependencyAnalysis
                 dependencies.Add(factory.MethodEntrypoint(invokeStub), "Reflection invoke");
 
                 var signature = method.Signature;
-                AddSignatureDependency(ref dependencies, factory, signature.ReturnType);
+                AddSignatureDependency(ref dependencies, factory, signature.ReturnType, "Reflection invoke");
                 foreach (var parameterType in signature)
-                    AddSignatureDependency(ref dependencies, factory, parameterType);
-
-                static void AddSignatureDependency(ref DependencyList dependencies, NodeFactory factory, TypeDesc type)
-                {
-                    if (type.IsByRef)
-                        type = ((ParameterizedType)type).ParameterType;
-
-                    // Pointer runtime type handles can be created at runtime if necessary
-                    while (type.IsPointer)
-                        type = ((ParameterizedType)type).ParameterType;
-
-                    // Skip tracking dependencies for primitive types. Assume that they are always present.
-                    if (type.IsPrimitive || type.IsVoid)
-                        return;
-
-                    TypeDesc canonType = type.ConvertToCanonForm(CanonicalFormKind.Specific);
-                    if (canonType.IsCanonicalSubtype(CanonicalFormKind.Any))
-                        GenericTypesTemplateMap.GetTemplateTypeDependencies(ref dependencies, factory, type.ConvertToCanonForm(CanonicalFormKind.Specific));
-                    else
-                        dependencies.Add(factory.MaximallyConstructableType(canonType), "Reflection invoke");
-                }
+                    AddSignatureDependency(ref dependencies, factory, parameterType, "Reflection invoke");
             }
 
             if (method.OwningType.IsValueType && !method.Signature.IsStatic)
@@ -109,6 +89,26 @@ namespace ILCompiler.DependencyAnalysis
             }
 
             ReflectionVirtualInvokeMapNode.GetVirtualInvokeMapDependencies(ref dependencies, factory, method);
+        }
+
+        internal static void AddSignatureDependency(ref DependencyList dependencies, NodeFactory factory, TypeDesc type, string reason)
+        {
+            if (type.IsByRef)
+                type = ((ParameterizedType)type).ParameterType;
+
+            // Pointer runtime type handles can be created at runtime if necessary
+            while (type.IsPointer)
+                type = ((ParameterizedType)type).ParameterType;
+
+            // Skip tracking dependencies for primitive types. Assume that they are always present.
+            if (type.IsPrimitive || type.IsVoid)
+                return;
+
+            TypeDesc canonType = type.ConvertToCanonForm(CanonicalFormKind.Specific);
+            if (canonType.IsCanonicalSubtype(CanonicalFormKind.Any))
+                GenericTypesTemplateMap.GetTemplateTypeDependencies(ref dependencies, factory, type.ConvertToCanonForm(CanonicalFormKind.Specific));
+            else
+                dependencies.Add(factory.MaximallyConstructableType(canonType), reason);
         }
 
         public override ObjectData GetData(NodeFactory factory, bool relocsOnly = false)

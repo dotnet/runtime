@@ -49,25 +49,6 @@
 #include "holder.h"
 #include "volatile.h"
 
-#ifdef FEATURE_ETW
-    #ifndef _INC_WINDOWS
-        typedef void* LPVOID;
-        typedef uint32_t UINT;
-        typedef void* PVOID;
-        typedef uint64_t ULONGLONG;
-        typedef uint32_t ULONG;
-        typedef int64_t LONGLONG;
-        typedef uint8_t BYTE;
-        typedef uint16_t UINT16;
-    #endif // _INC_WINDOWS
-
-    #include "etwevents.h"
-    #include "eventtrace.h"
-#else // FEATURE_ETW
-    #include "etmdummy.h"
-    #define ETW_EVENT_ENABLED(e,f) false
-#endif // FEATURE_ETW
-
 GPTR_IMPL(MethodTable, g_pFreeObjectEEType);
 
 #include "gctoclreventsink.h"

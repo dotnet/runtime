@@ -96,6 +96,10 @@
     <_AppArgs Condition="'$(WasmTestAppArgs)' != ''">$(_AppArgs) $(WasmTestAppArgs)</_AppArgs>
 
     <WasmXHarnessMonoArgs Condition="'$(XunitShowProgress)' == 'true'">$(WasmXHarnessMonoArgs) --setenv=XHARNESS_LOG_TEST_START=1</WasmXHarnessMonoArgs>
+    <!-- snapshots are not yet supported with threads -->
+    <WasmXHarnessMonoArgs Condition="'$(MonoWasmBuildVariant)' == 'multithread'">$(WasmXHarnessMonoArgs) --no-memory-snapshot</WasmXHarnessMonoArgs>
+    <!-- help unit test with PlatformDetection.IsThreadingSupported via IsBrowserThreadingSupported env variable -->
+    <WasmXHarnessMonoArgs Condition="'$(MonoWasmBuildVariant)' == 'multithread'">$(WasmXHarnessMonoArgs) --setenv=IsBrowserThreadingSupported=true</WasmXHarnessMonoArgs>
   </PropertyGroup>
 
   <PropertyGroup Condition="'$(RunScriptCommand)' == ''">
@@ -104,7 +108,7 @@
 
     <_XHarnessArgs Condition="'$(IsFunctionalTest)' == 'true'"     >$(_XHarnessArgs) --expected-exit-code=$(ExpectedExitCode)</_XHarnessArgs>
     <_XHarnessArgs Condition="'$(WasmXHarnessArgs)' != ''"         >$(_XHarnessArgs) $(WasmXHarnessArgs)</_XHarnessArgs>
-    <_XHarnessArgs Condition="('$(WasmEnableThreads)' == 'true' or '$(WasmEnablePerfTracing)' == 'true') and '$(_XHarnessArs.Contains(&quot;--web-server-use-cop&quot;)' != 'true'">$(_XHarnessArgs) --web-server-use-cop</_XHarnessArgs>
+    <_XHarnessArgs Condition="'$(MonoWasmBuildVariant)' == 'multithread' and '$(_XHarnessArs.Contains(&quot;--web-server-use-cop&quot;)' != 'true'">$(_XHarnessArgs) --web-server-use-cop</_XHarnessArgs>
     <_XHarnessArgs                                                 >$(_XHarnessArgs) -s dotnet.native.js.symbols</_XHarnessArgs>
     <_XHarnessArgs Condition="'$(_UseWasmSymbolicator)' == 'true'" >$(_XHarnessArgs) --symbol-patterns wasm-symbol-patterns.txt</_XHarnessArgs>
     <_XHarnessArgs Condition="'$(_UseWasmSymbolicator)' == 'true'" >$(_XHarnessArgs) --symbolicator WasmSymbolicator.dll,Microsoft.WebAssembly.Internal.SymbolicatorWrapperForXHarness</_XHarnessArgs>
@@ -213,7 +217,7 @@
     </PropertyGroup>
 
     <PropertyGroup>
-      <EmccLinkOptimizationFlag Condition="'$(EmccLinkOptimizationFlag)' == ''">-Oz -Wl,-O0 -Wl,--lto-O0</EmccLinkOptimizationFlag>
+      <EmccLinkOptimizationFlag Condition="'$(EmccLinkOptimizationFlag)' == ''">-O2 -Wl,-O0 -Wl,--lto-O0</EmccLinkOptimizationFlag>
     </PropertyGroup>
 
     <ItemGroup>
@@ -288,7 +292,6 @@
   <Target Name="_GetRuntimePackNuGetsToBuild" Condition="'$(WasmSkipMissingRuntimePackBuild)' != 'true'" Returns="@(_NuGetsToBuild)">
     <PropertyGroup>
       <_DefaultBuildVariant Condition="'$(MonoWasmBuildVariant)' == 'multithread'">.multithread.</_DefaultBuildVariant>
-      <_DefaultBuildVariant Condition="'$(MonoWasmBuildVariant)' == 'perftrace'">.perftrace.</_DefaultBuildVariant>
       <_DefaultBuildVariant Condition="'$(_DefaultBuildVariant)' == ''">.</_DefaultBuildVariant>
 
       <_DefaultRuntimePackNuGetPath>$(LibrariesShippingPackagesDir)Microsoft.NETCore.App.Runtime.Mono$(_DefaultBuildVariant)$(RuntimeIdentifier).$(PackageVersionForWorkloadManifests).nupkg</_DefaultRuntimePackNuGetPath>
@@ -300,18 +303,18 @@
       <_RuntimePackNugetAvailable Remove="@(_RuntimePackNugetAvailable)" Condition="$([System.String]::new('%(_RuntimePackNugetAvailable.FileName)').EndsWith('.symbols'))" />
     </ItemGroup>
 
-    <Error Condition="@(_RuntimePackNugetAvailable -> Count()) != 3 and @(_RuntimePackNugetAvailable -> Count()) != 1"
-           Text="Expected to find either one or three in $(LibrariesShippingPackagesDir): @(_RuntimePackNugetAvailable->'%(FileName)%(Extension)')" />
+    <Error Condition="@(_RuntimePackNugetAvailable -> Count()) != 2 and @(_RuntimePackNugetAvailable -> Count()) != 1"
+           Text="Expected to find either one or two in $(LibrariesShippingPackagesDir): @(_RuntimePackNugetAvailable->'%(FileName)%(Extension)')" />
 
     <ItemGroup>
       <_BuildVariants Include="multithread" Condition="'$(_DefaultBuildVariant)' != '.multithread.'" />
-      <_BuildVariants Include="perftrace"   Condition="'$(_DefaultBuildVariant)' != '.perftrace.'" />
 
       <_NuGetsToBuild Include="$(LibrariesShippingPackagesDir)Microsoft.NETCore.App.Runtime.Mono.%(_BuildVariants.Identity).$(RuntimeIdentifier).$(PackageVersionForWorkloadManifests).nupkg"
                       Project="$(InstallerProjectRoot)pkg/sfx/Microsoft.NETCore.App/Microsoft.NETCore.App.Runtime.sfxproj"
                       Dependencies="$(_DefaultRuntimePackNuGetPath)"
                       Properties="@(_DefaultPropsForNuGetBuild, ';');MonoWasmBuildVariant=%(_BuildVariants.Identity)"
-                      Descriptor="runtime pack for %(_BuildVariants.Identity)" />
+                      Descriptor="runtime pack for %(_BuildVariants.Identity)"
+                      Condition="'%(_BuildVariants.Identity)' != ''"/>
 
       <!-- add for non-threaded runtime also -->
       <_NuGetsToBuild Include="$(LibrariesShippingPackagesDir)Microsoft.NETCore.App.Runtime.Mono.$(RuntimeIdentifier).$(PackageVersionForWorkloadManifests).nupkg"
@@ -328,7 +331,7 @@
         Text="
       ********************
 
-      Note: Could not find the expected three runtime packs in $(LibrariesShippingPackagesDir). Found @(_RuntimePackNugetAvailable->'%(FileName)%(Extension)', ', ') .
+      Note: Could not find the expected two runtime packs in $(LibrariesShippingPackagesDir). Found @(_RuntimePackNugetAvailable->'%(FileName)%(Extension)', ', ') .
             To support local builds, the same runtime pack will be built with the other variant names.
             To disable this behavior, pass `-p:WasmSkipMissingRuntimePackBuild=true` .
 

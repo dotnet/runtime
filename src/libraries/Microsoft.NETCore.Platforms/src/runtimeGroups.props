@@ -74,7 +74,7 @@
     <RuntimeGroup Include="debian">
       <Parent>linux</Parent>
       <Architectures>x64;x86;arm;armel;arm64</Architectures>
-      <Versions>8;9;10;11</Versions>
+      <Versions>8;9;10;11;12</Versions>
       <TreatVersionsAsCompatible>false</TreatVersionsAsCompatible>
     </RuntimeGroup>
 

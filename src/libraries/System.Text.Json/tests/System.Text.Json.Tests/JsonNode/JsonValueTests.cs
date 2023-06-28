@@ -3,6 +3,7 @@
 
 using System.IO;
 using System.Text.Json.Serialization;
+using System.Xml.Linq;
 using Xunit;
 
 namespace System.Text.Json.Nodes.Tests
@@ -304,6 +305,130 @@ namespace System.Text.Json.Nodes.Tests
 
             string json = Encoding.UTF8.GetString(stream.ToArray());
             Assert.Equal(Json, json);
+        }
+
+        [Fact]
+        public static void DeepCloneNotTrimmable()
+        {
+            var student = new Student()
+            {
+                Id = 1,
+                Name = "test"
+            };
+            JsonValue jValue = JsonValue.Create(student);
+
+            JsonNode clone = jValue.DeepClone();
+
+            Assert.True(JsonNode.DeepEquals(jValue, clone));
+
+            string originalJson = jValue.ToJsonString();
+            string clonedJson = clone.ToJsonString();
+
+            Assert.Equal(originalJson, clonedJson);
+        }
+
+        [Theory]
+        [InlineData("42")]
+        [InlineData("\"AB\"")]
+        [InlineData("\"\"")]
+        public static void DeepCloneTrimmable(string json)
+        {
+            using (JsonDocument document = JsonDocument.Parse(json))
+            {
+                JsonValue jsonValue = JsonValue.Create(document.RootElement);
+                JsonNode clone = jsonValue.DeepClone();
+
+                Assert.True(JsonNode.DeepEquals(jsonValue, clone));
+                string originalJson = jsonValue.ToJsonString();
+                string clonedJson = clone.ToJsonString();
+
+                Assert.Equal(originalJson, clonedJson);
+            }
+        }
+
+        [Fact]
+        public static void DeepEqualsComplexType()
+        {
+            var student = new Student()
+            {
+                Id = 10,
+                Name = "test"
+            };
+            JsonValue jValue = JsonValue.Create(student);
+
+            var jObject = new JsonObject();
+            jObject.Add("Id", 10);
+            jObject.Add("Name", "test");
+
+            Assert.True(JsonNode.DeepEquals(jValue, jObject));
+            Assert.True(JsonNode.DeepEquals(jObject, jValue));
+        }
+
+        [Fact]
+        public static void DeepEqualsPrimitiveType()
+        {
+            Assert.True(JsonNode.DeepEquals(JsonValue.Create(10), JsonValue.Create((uint)10)));
+            Assert.True(JsonNode.DeepEquals(JsonValue.Create(10), JsonValue.Create((ulong)10)));
+            Assert.True(JsonNode.DeepEquals(JsonValue.Create(10), JsonValue.Create((float)10)));
+            Assert.True(JsonNode.DeepEquals(JsonValue.Create(10), JsonValue.Create((decimal)10)));
+            Assert.True(JsonNode.DeepEquals(JsonValue.Create(10), JsonValue.Create((short)10)));
+            Assert.True(JsonNode.DeepEquals(JsonValue.Create(10), JsonValue.Create((ushort)10)));
+            Guid guid = Guid.NewGuid();
+            Assert.True(JsonNode.DeepEquals(JsonValue.Create(guid), JsonValue.Create(guid.ToString())));
+            Assert.False(JsonNode.DeepEquals(JsonValue.Create(10), JsonValue.Create("10")));
+        }
+
+        [Fact]
+        public static void DeepEqualsJsonElement()
+        {
+            JsonDocument document1 = JsonDocument.Parse("10");
+
+            JsonValue jsonValue1 = JsonValue.Create(document1.RootElement);
+
+            Assert.True(JsonNode.DeepEquals(jsonValue1, JsonValue.Create(10)));
+
+            JsonDocument document2 = JsonDocument.Parse("\"10\"");
+
+            JsonValue jsonValue2 = JsonValue.Create(document2.RootElement);
+            Assert.False(JsonNode.DeepEquals(jsonValue1, jsonValue2));
+            Assert.True(JsonNode.DeepEquals(jsonValue2, JsonValue.Create("10")));
+        }
+
+        [Fact]
+        public static void DeepEqualsJsonElement_Boolean()
+        {
+            JsonValue trueValue = JsonValue.Create(JsonDocument.Parse("true").RootElement);
+            JsonValue falseValue = JsonValue.Create(JsonDocument.Parse("false").RootElement);
+
+            Assert.False(JsonNode.DeepEquals(trueValue, falseValue));
+            Assert.True(JsonNode.DeepEquals(trueValue, trueValue.DeepClone()));
+        }
+
+        [Fact]
+        public static void GetValueKind()
+        {
+            Assert.Equal(JsonValueKind.Object, JsonValue.Create(new Student()).GetValueKind());
+            Assert.Equal(JsonValueKind.Array, JsonValue.Create(new Student[] { }).GetValueKind());
+
+            using (JsonDocument document = JsonDocument.Parse("10"))
+            {
+                JsonValue jsonValue = JsonValue.Create(document.RootElement);
+                Assert.Equal(JsonValueKind.Number, jsonValue.GetValueKind());
+            }
+        }
+
+        [Fact]
+        public static void DeepEquals_EscapedString()
+        {
+            JsonValue jsonValue = JsonValue.Create(JsonDocument.Parse("\"It\'s alright\"").RootElement);
+            JsonValue escapedJsonValue = JsonValue.Create(JsonDocument.Parse("\"It\u0027s alright\"").RootElement);
+            Assert.True(JsonNode.DeepEquals(escapedJsonValue, jsonValue));
+        }
+
+        private class Student
+        {
+            public int Id { get; set; }
+            public string Name { get; set; }
         }
     }
 }

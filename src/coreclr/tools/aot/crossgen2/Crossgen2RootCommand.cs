@@ -8,7 +8,7 @@ using System.CommandLine.Help;
 using System.CommandLine.Parsing;
 using System.IO;
 using System.Runtime.InteropServices;
-
+using ILCompiler.DependencyAnalysis;
 using Internal.TypeSystem;
 
 namespace ILCompiler
@@ -39,6 +39,8 @@ namespace ILCompiler
             new("--optimize-space", "--Os") { Description = SR.OptimizeSpaceOption };
         public CliOption<bool> OptimizeTime { get; } =
             new("--optimize-time", "--Ot") { Description = SR.OptimizeSpeedOption };
+        public CliOption<TypeValidationRule> TypeValidation { get; } =
+            new("--type-validation") { DefaultValueFactory = _ => TypeValidationRule.Automatic, Description = SR.TypeValidation };
         public CliOption<bool> InputBubble { get; } =
             new("--inputbubble") { Description = SR.InputBubbleOption };
         public CliOption<Dictionary<string, string>> InputBubbleReferenceFilePaths { get; } =
@@ -79,6 +81,12 @@ namespace ILCompiler
             new("--imagebase") { Description = SR.ImageBase };
         public CliOption<TargetArchitecture> TargetArchitecture { get; } =
             new("--targetarch") { CustomParser = MakeTargetArchitecture, DefaultValueFactory = MakeTargetArchitecture, Description = SR.TargetArchOption, Arity = ArgumentArity.OneOrMore };
+        public CliOption<bool> EnableGenericCycleDetection { get; } =
+            new("--enable-generic-cycle-detection") { Description = SR.EnableGenericCycleDetection };
+        public CliOption<int> GenericCycleDepthCutoff { get; } =
+            new("--maxgenericcycle") { DefaultValueFactory = _ => ReadyToRunCompilerContext.DefaultGenericCycleDepthCutoff, Description = SR.GenericCycleDepthCutoff };
+        public CliOption<int> GenericCycleBreadthCutoff { get; } =
+            new("--maxgenericcyclebreadth") { DefaultValueFactory = _ => ReadyToRunCompilerContext.DefaultGenericCycleBreadthCutoff, Description = SR.GenericCycleBreadthCutoff };
         public CliOption<TargetOS> TargetOS { get; } =
             new("--targetos") { CustomParser = result => Helpers.GetTargetOS(result.Tokens.Count > 0 ? result.Tokens[0].Value : null), DefaultValueFactory = result => Helpers.GetTargetOS(result.Tokens.Count > 0 ? result.Tokens[0].Value : null), Description = SR.TargetOSOption };
         public CliOption<string> JitPath { get; } =
@@ -155,6 +163,7 @@ namespace ILCompiler
             Options.Add(OptimizeDisabled);
             Options.Add(OptimizeSpace);
             Options.Add(OptimizeTime);
+            Options.Add(TypeValidation);
             Options.Add(InputBubble);
             Options.Add(InputBubbleReferenceFilePaths);
             Options.Add(Composite);
@@ -174,6 +183,9 @@ namespace ILCompiler
             Options.Add(SupportIbc);
             Options.Add(Resilient);
             Options.Add(ImageBase);
+            Options.Add(EnableGenericCycleDetection);
+            Options.Add(GenericCycleDepthCutoff);
+            Options.Add(GenericCycleBreadthCutoff);
             Options.Add(TargetArchitecture);
             Options.Add(TargetOS);
             Options.Add(JitPath);

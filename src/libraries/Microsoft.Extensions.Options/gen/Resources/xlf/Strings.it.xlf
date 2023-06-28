@@ -1,0 +1,137 @@
+﻿<?xml version="1.0" encoding="utf-8"?>
+<xliff xmlns="urn:oasis:names:tc:xliff:document:1.2" xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance" version="1.2" xsi:schemaLocation="urn:oasis:names:tc:xliff:document:1.2 xliff-core-1.2-transitional.xsd">
+  <file datatype="xml" source-language="en" target-language="it" original="../Strings.resx">
+    <body>
+      <trans-unit id="AlreadyImplementsValidateMethodMessage">
+        <source>Type {0} already implements the Validate method.</source>
+        <target state="translated">Il tipo {0} implementa già il metodo Validate.</target>
+        <note />
+      </trans-unit>
+      <trans-unit id="AlreadyImplementsValidateMethodTitle">
+        <source>A type already includes an implementation of the 'Validate' method.</source>
+        <target state="translated">Un tipo include già un'implementazione del metodo 'Validate'.</target>
+        <note />
+      </trans-unit>
+      <trans-unit id="CantBeStaticClassMessage">
+        <source>[OptionsValidator] cannot be applied to static class {0}.</source>
+        <target state="translated">impossibile applicare [OptionsValidator] alla classe statica {0}.</target>
+        <note />
+      </trans-unit>
+      <trans-unit id="CantBeStaticClassTitle">
+        <source>'OptionsValidatorAttribute' can't be applied to a static class.</source>
+        <target state="translated">'OptionsValidatorAttribute' non può essere applicato a una classe statica.</target>
+        <note />
+      </trans-unit>
+      <trans-unit id="CantUseWithGenericTypesMessage">
+        <source>Can't use [ValidateObjectMembers] or [ValidateEnumeratedItems] on fields or properties with open generic type {0}.</source>
+        <target state="translated">Non è possibile usare [ValidateObjectMembers] o [ValidateEnumeratedItems] in campi o proprietà con tipo generico aperto {0}.</target>
+        <note />
+      </trans-unit>
+      <trans-unit id="CantUseWithGenericTypesTitle">
+        <source>Can't use 'ValidateObjectMembersAttribute' or 'ValidateEnumeratedItemsAttribute' on fields or properties with open generic types.</source>
+        <target state="translated">Non è possibile usare 'ValidateObjectMembersAttribute' o 'ValidateEnumeratedItemsAttribute' nei campi o nelle proprietà con tipi generici aperti.</target>
+        <note />
+      </trans-unit>
+      <trans-unit id="CircularTypeReferencesMessage">
+        <source>There is a circular type reference involving type {0} preventing it from being used for static validation.</source>
+        <target state="translated">Esiste un riferimento di tipo circolare che interessa il tipo {0} e ne impedisce l'utilizzo per la convalida statica.</target>
+        <note />
+      </trans-unit>
+      <trans-unit id="CircularTypeReferencesTitle">
+        <source>Unsupported circular references in model types.</source>
+        <target state="translated">Riferimenti circolari non supportati nei tipi di modello.</target>
+        <note />
+      </trans-unit>
+      <trans-unit id="DoesntImplementIValidateOptionsMessage">
+        <source>Type {0} does not implement the required IValidateOptions&lt;{1}&gt; interface.</source>
+        <target state="translated">Il tipo {0} non implementa l'interfaccia IValidateOptions&lt;{1}&gt; richiesta.</target>
+        <note />
+      </trans-unit>
+      <trans-unit id="DoesntImplementIValidateOptionsTitle">
+        <source>A type annotated with 'OptionsValidatorAttribute' doesn't implement the necessary interface.</source>
+        <target state="translated">Un tipo annotato con 'OptionsValidatorAttribute' non implementa l'interfaccia necessaria.</target>
+        <note />
+      </trans-unit>
+      <trans-unit id="MemberIsInaccessibleMessage">
+        <source>Can't apply validation attributes to private field or property {0}.</source>
+        <target state="translated">Non è possibile applicare gli attributi di convalida al campo privato o alla proprietà {0}.</target>
+        <note />
+      </trans-unit>
+      <trans-unit id="MemberIsInaccessibleTitle">
+        <source>Can't validate private fields or properties.</source>
+        <target state="translated">Non è possibile convalidare proprietà o campi privati.</target>
+        <note />
+      </trans-unit>
+      <trans-unit id="NoEligibleMemberMessage">
+        <source>Type {0} has no fields or properties to validate, referenced from member {1}.</source>
+        <target state="translated">Il tipo {0} non contiene campi o proprietà da convalidare, riferiti dal membro {1}.</target>
+        <note />
+      </trans-unit>
+      <trans-unit id="NoEligibleMemberTitle">
+        <source>A member type has no fields or properties to validate.</source>
+        <target state="translated">Un tipo di membro non contiene campi o proprietà da convalidare.</target>
+        <note />
+      </trans-unit>
+      <trans-unit id="NoEligibleMembersFromValidatorMessage">
+        <source>Type {0} has no fields or properties to validate, referenced by type {1}.</source>
+        <target state="translated">Il tipo {0} non contiene campi o proprietà da convalidare, riferiti per tipo {1}.</target>
+        <note />
+      </trans-unit>
+      <trans-unit id="NoEligibleMembersFromValidatorTitle">
+        <source>A type has no fields or properties to validate.</source>
+        <target state="translated">Un tipo non contiene campi o proprietà da convalidare.</target>
+        <note />
+      </trans-unit>
+      <trans-unit id="NotEnumerableTypeMessage">
+        <source>[ValidateEnumeratedItems] cannot be used on members of type {0} as it doesn't implement IEnumerable&lt;T&gt;.</source>
+        <target state="translated">[ValidateEnumeratedItems] non può essere usato nei membri di tipo {0} perché non implementa IEnumerable&lt;T&gt;.</target>
+        <note />
+      </trans-unit>
+      <trans-unit id="NotEnumerableTypeTitle">
+        <source>Member type is not enumerable.</source>
+        <target state="translated">Il tipo di membro non è enumerabile.</target>
+        <note />
+      </trans-unit>
+      <trans-unit id="NullValidatorTypeMessage">
+        <source>Null validator type specified in [ValidateObjectMembers] or [ValidateEnumeratedItems] attributes.</source>
+        <target state="translated">Tipo di validator Null specificato negli attributi [ValidateObjectMembers] o [ValidateEnumeratedItems].</target>
+        <note />
+      </trans-unit>
+      <trans-unit id="NullValidatorTypeTitle">
+        <source>Null validator type specified for the 'ValidateObjectMembersAttribute' or 'ValidateEnumeratedItemsAttribute' attributes.</source>
+        <target state="translated">Tipo di validator Null specificato per gli attributi 'ValidateObjectMembersAttribute' o 'ValidateEnumeratedItemsAttribute'.</target>
+        <note />
+      </trans-unit>
+      <trans-unit id="PotentiallyMissingEnumerableValidationMessage">
+        <source>Type {0} has validation annotations, but member {1} doesn't specify [ValidateEnumeratedItems] which could be an oversight.</source>
+        <target state="translated">Il tipo {0} include annotazioni di convalida, ma il membro {1} non specifica [ValidateEnumeratedItems] che potrebbe essere una supervisione.</target>
+        <note />
+      </trans-unit>
+      <trans-unit id="PotentiallyMissingEnumerableValidationTitle">
+        <source>Member potentially missing enumerable validation.</source>
+        <target state="translated">Convalida enumerabile potenzialmente mancante nel membro.</target>
+        <note />
+      </trans-unit>
+      <trans-unit id="PotentiallyMissingTransitiveValidationMessage">
+        <source>Type {0} has validation annotations, but member {1} doesn't specify [ValidateObjectMembers] which could be an oversight.</source>
+        <target state="translated">Il tipo {0} include annotazioni di convalida, ma il membro {1} non specifica [ValidateObjectMembers] che potrebbe essere una supervisione.</target>
+        <note />
+      </trans-unit>
+      <trans-unit id="PotentiallyMissingTransitiveValidationTitle">
+        <source>Member potentially missing transitive validation.</source>
+        <target state="translated">Il membro potrebbe non avere una convalida transitiva.</target>
+        <note />
+      </trans-unit>
+      <trans-unit id="ValidatorsNeedSimpleConstructorMessage">
+        <source>Validator type {0} doesn't have a parameterless constructor.</source>
+        <target state="translated">Il tipo di convalida {0} non dispone di un costruttore senza parametri.</target>
+        <note />
+      </trans-unit>
+      <trans-unit id="ValidatorsNeedSimpleConstructorTitle">
+        <source>Validators used for transitive or enumerable validation must have a constructor with no parameters.</source>
+        <target state="translated">I convalidatori usati per la convalida transitiva o enumerabile devono avere un costruttore senza parametri.</target>
+        <note />
+      </trans-unit>
+    </body>
+  </file>
+</xliff>

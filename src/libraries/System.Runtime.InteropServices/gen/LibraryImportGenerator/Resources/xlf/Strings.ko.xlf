@@ -217,6 +217,11 @@
         <target state="translated">지정된 관리 유형이 잘못되었습니다.</target>
         <note />
       </trans-unit>
+      <trans-unit id="InvalidMarshalModeTitle">
+        <source>Invalid 'MarshalMode' value.</source>
+        <target state="translated">'MarshalMode' 값이 잘못되었습니다.</target>
+        <note />
+      </trans-unit>
       <trans-unit id="InvalidMarshallerTypeTitle">
         <source>Specified marshaller type is invalid</source>
         <target state="translated">지정된 마샬러 유형이 잘못되었습니다.</target>
@@ -310,6 +315,21 @@
       <trans-unit id="ManagedTypeMustBeNonNullMessage">
         <source>The managed type for the entry-point marshaller type '{0}' must not be 'null'</source>
         <target state="translated">진입점 마샬러 유형 '{0}'의 관리 유형은 'null'이 아니어야 합니다.</target>
+        <note />
+      </trans-unit>
+      <trans-unit id="MarshalAsConfigurationNotSupportedMessageParameter">
+        <source>The specified 'MarshalAsAttribute' configuration for parameter '{1}' is not supported by source-generated P/Invokes. If the specified configuration is required, use a regular 'DllImport' instead.</source>
+        <target state="translated">매개 변수 '{1}'에 대해 지정된 'MarshalAsAttribute' 구성은 소스 생성 P/Invokes에서 지원되지 않습니다. 지정된 구성이 필요한 경우 대신 일반 'DllImport'를 사용합니다.</target>
+        <note />
+      </trans-unit>
+      <trans-unit id="MarshalAsConfigurationNotSupportedMessageReturn">
+        <source>The specified 'MarshalAsAttribute' configuration for the return value of method '{1}' is not supported by source-generated P/Invokes. If the specified configuration is required, use a regular 'DllImport' instead.</source>
+        <target state="translated">메서드 '{1}'의 반환 값에 대해 지정된 'MarshalAsAttribute' 구성은 소스에서 생성된 P/Invokes에서 지원되지 않습니다. 지정된 구성이 필요한 경우 대신 일반 'DllImport'를 사용합니다.</target>
+        <note />
+      </trans-unit>
+      <trans-unit id="MarshalModeMustBeValidEnumValue">
+        <source>The 'marshalMode' argument of 'CustomMarshallerAttribute' must be a valid enum value of 'MarshalMode'.</source>
+        <target state="translated">'CustomMarshallerAttribute'의 'marshalMode' 인수는 'MarshalMode'의 유효한 열거형 값이어야 합니다.</target>
         <note />
       </trans-unit>
       <trans-unit id="MarshallerTypeMustBeClosedOrMatchArityDescription">
@@ -607,6 +627,26 @@
       <trans-unit id="TypeNotSupportedTitle">
         <source>Specified type is not supported by source-generated P/Invokes</source>
         <target state="translated">지정된 형식은 소스 생성 P/Invoke에서 지원되지 않습니다.</target>
+        <note />
+      </trans-unit>
+      <trans-unit id="UnnecessaryMarshallingInfoDescription">
+        <source>Unnecesssary marshalling info was provided. This marshalling information can be removed without any change in behavior to the application.</source>
+        <target state="new">Unnecesssary marshalling info was provided. This marshalling information can be removed without any change in behavior to the application.</target>
+        <note />
+      </trans-unit>
+      <trans-unit id="UnnecessaryMarshallingInfoTitle">
+        <source>Unnecessary marshalling info was provided and can be removed.</source>
+        <target state="new">Unnecessary marshalling info was provided and can be removed.</target>
+        <note />
+      </trans-unit>
+      <trans-unit id="UnnecessaryParameterMarshallingInfoMessage">
+        <source>Unnecessary marshalling info '{0}' was provided for parameter '{1}'</source>
+        <target state="new">Unnecessary marshalling info '{0}' was provided for parameter '{1}'</target>
+        <note />
+      </trans-unit>
+      <trans-unit id="UnnecessaryReturnMarshallingInfoMessage">
+        <source>Unnecessary marshalling info '{0}' was provided for the return type of method '{1}'</source>
+        <target state="new">Unnecessary marshalling info '{0}' was provided for the return type of method '{1}'</target>
         <note />
       </trans-unit>
       <trans-unit id="ValueInCallerAllocatedBufferRequiresSpanConstructorDescription">

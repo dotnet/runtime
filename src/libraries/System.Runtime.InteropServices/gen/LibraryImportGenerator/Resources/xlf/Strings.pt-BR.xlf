@@ -217,6 +217,11 @@
         <target state="translated">O tipo gerenciado especificado é inválido</target>
         <note />
       </trans-unit>
+      <trans-unit id="InvalidMarshalModeTitle">
+        <source>Invalid 'MarshalMode' value.</source>
+        <target state="translated">Valor 'MarshalMode' inválido.</target>
+        <note />
+      </trans-unit>
       <trans-unit id="InvalidMarshallerTypeTitle">
         <source>Specified marshaller type is invalid</source>
         <target state="translated">O tipo de empacotador especificado é inválido</target>
@@ -310,6 +315,21 @@
       <trans-unit id="ManagedTypeMustBeNonNullMessage">
         <source>The managed type for the entry-point marshaller type '{0}' must not be 'null'</source>
         <target state="translated">O tipo gerenciado para o tipo de empacotador de ponto de entrada '{0}' não deve ser 'nulo'</target>
+        <note />
+      </trans-unit>
+      <trans-unit id="MarshalAsConfigurationNotSupportedMessageParameter">
+        <source>The specified 'MarshalAsAttribute' configuration for parameter '{1}' is not supported by source-generated P/Invokes. If the specified configuration is required, use a regular 'DllImport' instead.</source>
+        <target state="translated">A configuração especificada "MarshalAsAttribute" para o parâmetro "{1}" não tem suporte do P/Invokes gerado pela origem. Se a configuração especificada for necessária, use "DllImport" no lugar.</target>
+        <note />
+      </trans-unit>
+      <trans-unit id="MarshalAsConfigurationNotSupportedMessageReturn">
+        <source>The specified 'MarshalAsAttribute' configuration for the return value of method '{1}' is not supported by source-generated P/Invokes. If the specified configuration is required, use a regular 'DllImport' instead.</source>
+        <target state="translated">A configuração especificada "MarshalAsAttribute" para o valor retornado do método "{1}" não tem suporte do P/Invokes gerado pela origem. Se a configuração especificada for necessária, use "DllImport" no lugar.</target>
+        <note />
+      </trans-unit>
+      <trans-unit id="MarshalModeMustBeValidEnumValue">
+        <source>The 'marshalMode' argument of 'CustomMarshallerAttribute' must be a valid enum value of 'MarshalMode'.</source>
+        <target state="translated">O argumento 'marshalMode' de 'CustomMarshallerAttribute' deve ser um valor de enumeração válido de 'MarshalMode'.</target>
         <note />
       </trans-unit>
       <trans-unit id="MarshallerTypeMustBeClosedOrMatchArityDescription">
@@ -607,6 +627,26 @@
       <trans-unit id="TypeNotSupportedTitle">
         <source>Specified type is not supported by source-generated P/Invokes</source>
         <target state="translated">O tipo especificado não tem suporte de P/Invokes gerados pela origem.</target>
+        <note />
+      </trans-unit>
+      <trans-unit id="UnnecessaryMarshallingInfoDescription">
+        <source>Unnecesssary marshalling info was provided. This marshalling information can be removed without any change in behavior to the application.</source>
+        <target state="new">Unnecesssary marshalling info was provided. This marshalling information can be removed without any change in behavior to the application.</target>
+        <note />
+      </trans-unit>
+      <trans-unit id="UnnecessaryMarshallingInfoTitle">
+        <source>Unnecessary marshalling info was provided and can be removed.</source>
+        <target state="new">Unnecessary marshalling info was provided and can be removed.</target>
+        <note />
+      </trans-unit>
+      <trans-unit id="UnnecessaryParameterMarshallingInfoMessage">
+        <source>Unnecessary marshalling info '{0}' was provided for parameter '{1}'</source>
+        <target state="new">Unnecessary marshalling info '{0}' was provided for parameter '{1}'</target>
+        <note />
+      </trans-unit>
+      <trans-unit id="UnnecessaryReturnMarshallingInfoMessage">
+        <source>Unnecessary marshalling info '{0}' was provided for the return type of method '{1}'</source>
+        <target state="new">Unnecessary marshalling info '{0}' was provided for the return type of method '{1}'</target>
         <note />
       </trans-unit>
       <trans-unit id="ValueInCallerAllocatedBufferRequiresSpanConstructorDescription">

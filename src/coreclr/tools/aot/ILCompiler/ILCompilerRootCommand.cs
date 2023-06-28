@@ -6,7 +6,6 @@ using System.Collections.Generic;
 using System.CommandLine;
 using System.CommandLine.Help;
 using System.CommandLine.Parsing;
-using System.IO;
 
 using Internal.TypeSystem;
 
@@ -82,6 +81,8 @@ namespace ILCompiler
             new("--noscan") { Description = "Do not use IL scanner to generate optimized code" };
         public CliOption<string> IlDump { get; } =
             new("--ildump") { Description = "Dump IL assembly listing for compiler-generated IL" };
+        public CliOption<bool> NoInlineTls { get; } =
+            new("--noinlinetls") { Description = "Do not generate inline thread local statics" };
         public CliOption<bool> EmitStackTraceData { get; } =
             new("--stacktracedata") { Description = "Emit data to support generating stack trace strings at runtime" };
         public CliOption<bool> MethodBodyFolding { get; } =
@@ -124,14 +125,12 @@ namespace ILCompiler
             new("--directpinvoke") { DefaultValueFactory = _ => Array.Empty<string>(), Description = "PInvoke to call directly" };
         public CliOption<string[]> DirectPInvokeLists { get; } =
             new("--directpinvokelist") { DefaultValueFactory = _ => Array.Empty<string>(), Description = "File with list of PInvokes to call directly" };
-        public CliOption<int> MaxGenericCycle { get; } =
-            new("--maxgenericcycle") { DefaultValueFactory = _ => CompilerTypeSystemContext.DefaultGenericCycleCutoffPoint, Description = "Max depth of generic cycle" };
         public CliOption<string[]> RootedAssemblies { get; } =
             new("--root") { DefaultValueFactory = _ => Array.Empty<string>(), Description = "Fully generate given assembly" };
-        public CliOption<IEnumerable<string>> ConditionallyRootedAssemblies { get; } =
-            new("--conditionalroot") { CustomParser = result => ILLinkify(result.Tokens), DefaultValueFactory = result => ILLinkify(result.Tokens), Description = "Fully generate given assembly if it's used" };
-        public CliOption<IEnumerable<string>> TrimmedAssemblies { get; } =
-            new("--trim") { CustomParser = result => ILLinkify(result.Tokens), DefaultValueFactory = result => ILLinkify(result.Tokens), Description = "Trim the specified assembly" };
+        public CliOption<string[]> ConditionallyRootedAssemblies { get; } =
+            new("--conditionalroot") { DefaultValueFactory = _ => Array.Empty<string>(), Description = "Fully generate given assembly if it's used" };
+        public CliOption<string[]> TrimmedAssemblies { get; } =
+            new("--trim") { DefaultValueFactory = _ => Array.Empty<string>(), Description = "Trim the specified assembly" };
         public CliOption<bool> RootDefaultAssemblies { get; } =
             new("--defaultrooting") { Description = "Root assemblies that are not marked [IsTrimmable]" };
         public CliOption<TargetArchitecture> TargetArchitecture { get; } =
@@ -144,6 +143,10 @@ namespace ILCompiler
             new("--singlemethodtypename") { Description = "Single method compilation: assembly-qualified name of the owning type" };
         public CliOption<string> SingleMethodName { get; } =
             new("--singlemethodname") { Description = "Single method compilation: name of the method" };
+        public CliOption<int> MaxGenericCycleDepth { get; } =
+            new("--maxgenericcycle") { DefaultValueFactory = _ => CompilerTypeSystemContext.DefaultGenericCycleDepthCutoff, Description = "Max depth of generic cycle" };
+        public CliOption<int> MaxGenericCycleBreadth { get; } =
+            new("--maxgenericcyclebreadth") { DefaultValueFactory = _ => CompilerTypeSystemContext.DefaultGenericCycleBreadthCutoff, Description = "Max breadth of generic cycle expansion" };
         public CliOption<string[]> SingleMethodGenericArgs { get; } =
             new("--singlemethodgenericarg") { Description = "Single method compilation: generic arguments to the method" };
         public CliOption<string> MakeReproPath { get; } =
@@ -189,6 +192,7 @@ namespace ILCompiler
             Options.Add(ScanReflection);
             Options.Add(UseScanner);
             Options.Add(NoScanner);
+            Options.Add(NoInlineTls);
             Options.Add(IlDump);
             Options.Add(EmitStackTraceData);
             Options.Add(MethodBodyFolding);
@@ -211,7 +215,8 @@ namespace ILCompiler
             Options.Add(SingleWarnDisabledAssemblies);
             Options.Add(DirectPInvokes);
             Options.Add(DirectPInvokeLists);
-            Options.Add(MaxGenericCycle);
+            Options.Add(MaxGenericCycleDepth);
+            Options.Add(MaxGenericCycleBreadth);
             Options.Add(RootedAssemblies);
             Options.Add(ConditionallyRootedAssemblies);
             Options.Add(TrimmedAssemblies);
@@ -343,29 +348,6 @@ namespace ILCompiler
                 Console.WriteLine("The following CPU names are predefined groups of instruction sets and can be used in --instruction-set too:");
                 Console.WriteLine(string.Join(", ", Internal.JitInterface.InstructionSetFlags.AllCpuNames));
             };
-        }
-
-        private static IEnumerable<string> ILLinkify(IReadOnlyList<CliToken> tokens)
-        {
-            if (tokens.Count == 0)
-            {
-                yield return string.Empty;
-                yield break;
-            }
-
-            foreach(CliToken token in tokens)
-            {
-                string rootedAssembly = token.Value;
-
-                // For compatibility with IL Linker, the parameter could be a file name or an assembly name.
-                // This is the logic IL Linker uses to decide how to interpret the string. Really.
-                string simpleName;
-                if (File.Exists(rootedAssembly))
-                    simpleName = Path.GetFileNameWithoutExtension(rootedAssembly);
-                else
-                    simpleName = rootedAssembly;
-                yield return simpleName;
-            }
         }
 
         private static int MakeParallelism(ArgumentResult result)

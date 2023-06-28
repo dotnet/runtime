@@ -325,16 +325,7 @@ namespace ILCompiler
                 bool fullyRoot;
                 string reason;
 
-                // https://github.com/dotnet/runtime/issues/78752
-                // Compat with https://github.com/dotnet/linker/issues/1541 IL Linker bug:
-                // Asking to root an assembly with entrypoint will not actually root things in the assembly.
-                // We need to emulate this because the SDK injects a root for the entrypoint assembly right now
-                // because of IL Linker's implementation details (IL Linker won't root Main() by itself).
-                // TODO: We should technically reflection-root Main() here but hopefully the above issue
-                // will be fixed before it comes to that being necessary.
-                bool isEntrypointAssembly = module is EcmaModule ecmaModule && ecmaModule.PEReader.PEHeaders.IsExe;
-
-                if (!isEntrypointAssembly && _rootEntireAssembliesModules.Contains(assemblyName))
+                if (_rootEntireAssembliesModules.Contains(assemblyName))
                 {
                     // If the assembly was specified as a root on the command line, root it
                     fullyRoot = true;
@@ -351,7 +342,7 @@ namespace ILCompiler
                 {
                     // If rooting default assemblies was requested, root
                     fullyRoot = (_generationOptions & UsageBasedMetadataGenerationOptions.RootDefaultAssemblies) != 0;
-                    reason = "Assemblies rooted from command line";
+                    reason = "Partial trimming and assembly not trimmable";
                 }
 
                 if (fullyRoot)
@@ -541,6 +532,9 @@ namespace ILCompiler
             {
                 dependencies ??= new DependencyList();
                 dependencies.Add(factory.ReflectedMethod(target), "Target of a delegate");
+
+                if (target.IsVirtual)
+                    dependencies.Add(factory.DelegateTargetVirtualMethod(target.GetCanonMethodTarget(CanonicalFormKind.Specific)), "Target of a delegate");
             }
         }
 
@@ -548,29 +542,14 @@ namespace ILCompiler
         {
             Debug.Assert(decl.IsVirtual && MetadataVirtualMethodAlgorithm.FindSlotDefiningMethodForVirtualMethod(decl) == decl);
 
-            // If a virtual method slot is reflection visible, all implementations become reflection visible.
-            //
-            // We could technically come up with a weaker position on this because the code below just needs to
-            // to ensure that delegates to virtual methods can have their GetMethodInfo() called.
-            // Delegate construction introduces a ReflectableMethod for the slot defining method; it doesn't need to.
-            // We could have a specialized node type to track that specific thing and introduce a conditional dependency
-            // on that.
-            //
-            // class Base { abstract Boo(); }
-            // class Derived1 : Base { override Boo() { } }
-            // class Derived2 : Base { override Boo() { } }
-            //
-            // typeof(Derived2).GetMethods(...)
-            //
-            // In the above case, we don't really need Derived1.Boo to become reflection visible
-            // but the below code will do that because ReflectedMethodNode tracks all reflectable methods,
-            // without keeping information about subtleities like "reflectable delegate".
+            // If a virtual method slot is a target of a delegate, all implementations become reflection visible
+            // to support Delegate.GetMethodInfo().
             if (!IsReflectionBlocked(decl) && !IsReflectionBlocked(impl))
             {
                 dependencies ??= new CombinedDependencyList();
                 dependencies.Add(new DependencyNodeCore<NodeFactory>.CombinedDependencyListEntry(
                     factory.ReflectedMethod(impl.GetCanonMethodTarget(CanonicalFormKind.Specific)),
-                    factory.ReflectedMethod(decl.GetCanonMethodTarget(CanonicalFormKind.Specific)),
+                    factory.DelegateTargetVirtualMethod(decl.GetCanonMethodTarget(CanonicalFormKind.Specific)),
                     "Virtual method declaration is reflectable"));
             }
         }

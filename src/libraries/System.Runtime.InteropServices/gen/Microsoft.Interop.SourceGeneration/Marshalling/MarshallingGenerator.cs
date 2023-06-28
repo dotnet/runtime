@@ -69,6 +69,25 @@ namespace Microsoft.Interop
     }
 
     /// <summary>
+    /// An enumeration describing if the provided <see cref="ByValueContentsMarshalKind" /> is supported and changes behavior from the default behavior.
+    /// </summary>
+    public enum ByValueMarshalKindSupport
+    {
+        /// <summary>
+        /// The provided <see cref="ByValueContentsMarshalKind" /> is supported and changes behavior from the default behavior.
+        /// </summary>
+        Supported,
+        /// <summary>
+        /// The provided <see cref="ByValueContentsMarshalKind" /> is not supported.
+        /// </summary>
+        NotSupported,
+        /// <summary>
+        /// The provided <see cref="ByValueContentsMarshalKind" /> is supported but does not change behavior from the default in this scenario.
+        /// </summary>
+        Unnecessary,
+    }
+
+    /// <summary>
     /// Interface for generation of marshalling code for P/Invoke stubs
     /// </summary>
     public interface IMarshallingGenerator
@@ -135,45 +154,7 @@ namespace Microsoft.Interop
         /// </summary>
         /// <param name="marshalKind">The marshal kind.</param>
         /// <param name="context">The marshalling context.</param>
-        /// <returns></returns>
-        bool SupportsByValueMarshalKind(ByValueContentsMarshalKind marshalKind, StubCodeContext context);
-    }
-
-
-    /// <summary>
-    /// Exception used to indicate marshalling isn't supported.
-    /// </summary>
-    public sealed class MarshallingNotSupportedException : Exception
-    {
-        /// <summary>
-        /// Construct a new <see cref="MarshallingNotSupportedException"/> instance.
-        /// </summary>
-        /// <param name="info"><see cref="Microsoft.Interop.TypePositionInfo"/> instance</param>
-        /// <param name="context"><see cref="Microsoft.Interop.StubCodeContext"/> instance</param>
-        public MarshallingNotSupportedException(TypePositionInfo info, StubCodeContext context)
-        {
-            TypePositionInfo = info;
-            StubCodeContext = context;
-        }
-
-        /// <summary>
-        /// Type that is being marshalled.
-        /// </summary>
-        public TypePositionInfo TypePositionInfo { get; private init; }
-
-        /// <summary>
-        /// Context in which the marshalling is taking place.
-        /// </summary>
-        public StubCodeContext StubCodeContext { get; private init; }
-
-        /// <summary>
-        /// [Optional] Specific reason marshalling of the supplied type isn't supported.
-        /// </summary>
-        public string? NotSupportedDetails { get; init; }
-
-        /// <summary>
-        /// [Optional] Properties to attach to any diagnostic emitted due to this exception.
-        /// </summary>
-        public ImmutableDictionary<string, string>? DiagnosticProperties { get; init; }
+        /// <returns>If the provided <paramref name="marshalKind"/> is supported and if it is required to specify the requested behavior.</returns>
+        ByValueMarshalKindSupport SupportsByValueMarshalKind(ByValueContentsMarshalKind marshalKind, StubCodeContext context);
     }
 }

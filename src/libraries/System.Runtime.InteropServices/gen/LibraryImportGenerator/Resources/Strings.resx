@@ -497,4 +497,28 @@
   <data name="ConvertToLibraryImportWithSuffixAddUnsafe" xml:space="preserve">
     <value>Convert to 'LibraryImport' with '{0}' suffix and enable unsafe code</value>
   </data>
+  <data name="InvalidMarshalModeTitle" xml:space="preserve">
+    <value>Invalid 'MarshalMode' value.</value>
+  </data>
+  <data name="MarshalModeMustBeValidEnumValue" xml:space="preserve">
+    <value>The 'marshalMode' argument of 'CustomMarshallerAttribute' must be a valid enum value of 'MarshalMode'.</value>
+  </data>
+  <data name="MarshalAsConfigurationNotSupportedMessageParameter" xml:space="preserve">
+    <value>The specified 'MarshalAsAttribute' configuration for parameter '{1}' is not supported by source-generated P/Invokes. If the specified configuration is required, use a regular 'DllImport' instead.</value>
+  </data>
+  <data name="MarshalAsConfigurationNotSupportedMessageReturn" xml:space="preserve">
+    <value>The specified 'MarshalAsAttribute' configuration for the return value of method '{1}' is not supported by source-generated P/Invokes. If the specified configuration is required, use a regular 'DllImport' instead.</value>
+  </data>
+  <data name="UnnecessaryMarshallingInfoDescription" xml:space="preserve">
+    <value>Unnecesssary marshalling info was provided. This marshalling information can be removed without any change in behavior to the application.</value>
+  </data>
+  <data name="UnnecessaryMarshallingInfoTitle" xml:space="preserve">
+    <value>Unnecessary marshalling info was provided and can be removed.</value>
+  </data>
+  <data name="UnnecessaryParameterMarshallingInfoMessage" xml:space="preserve">
+    <value>Unnecessary marshalling info '{0}' was provided for parameter '{1}'</value>
+  </data>
+  <data name="UnnecessaryReturnMarshallingInfoMessage" xml:space="preserve">
+    <value>Unnecessary marshalling info '{0}' was provided for the return type of method '{1}'</value>
+  </data>
 </root>
