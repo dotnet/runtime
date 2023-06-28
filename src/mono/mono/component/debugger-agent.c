@@ -7464,7 +7464,8 @@ vm_commands (int command, int id, guint8 *p, guint8 *end, Buffer *buf)
 		}
 		break;
 	}
-	case MDBGPROT_CMD_GET_ASSEMBLY_BYTES: {
+	case MDBGPROT_CMD_GET_ASSEMBLY_BYTES: { //only used by wasm
+#ifdef HOST_WASM
 		char* assembly_name = m_dbgprot_decode_string (p, &p, end);
 		if (assembly_name == NULL)
 		{
@@ -7505,6 +7506,11 @@ vm_commands (int command, int id, guint8 *p, guint8 *end, Buffer *buf)
 			if (assembly)
 				send_debug_information (assembly, buf);
 		}
+#else
+		m_dbgprot_buffer_add_int (buf, 0);
+		m_dbgprot_buffer_add_int (buf, 0);
+		m_dbgprot_buffer_add_int (buf, 0);		
+#endif
 		break;
 	}
 	default:
