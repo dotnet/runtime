@@ -6,31 +6,32 @@ using Microsoft.CodeAnalysis.CSharp;
 
 namespace Microsoft.Extensions.Configuration.Binder.SourceGeneration
 {
-    internal sealed record ParameterSpec
+    internal sealed record ParameterSpec : MemberSpec
     {
-        public ParameterSpec(IParameterSymbol parameter)
+        public ParameterSpec(IParameterSymbol parameter) : base(parameter)
         {
-            Name = parameter.Name;
             RefKind = parameter.RefKind;
 
-            HasExplicitDefaultValue = parameter.HasExplicitDefaultValue;
-            if (HasExplicitDefaultValue)
+            if (parameter.HasExplicitDefaultValue)
             {
                 string formatted = SymbolDisplay.FormatPrimitive(parameter.ExplicitDefaultValue, quoteStrings: true, useHexadecimalNumbers: false);
-                DefaultValue = formatted is "null" ? "default!" : formatted;
+                DefaultValueExpr = formatted is "null" ? "default!" : formatted;
+            }
+            else
+            {
+                DefaultValueExpr = "default!";
+                ErrorOnFailedBinding = true;
             }
         }
 
-        public required TypeSpec Type { get; init; }
-
-        public string Name { get; }
-
-        public required string ConfigurationKeyName { get; init; }
-
         public RefKind RefKind { get; }
 
-        public bool HasExplicitDefaultValue { get; init; }
+        public override string DefaultValueExpr { get; }
 
-        public string DefaultValue { get; } = "default!";
+        public override bool CanGet => false;
+
+        public override bool CanSet => true;
+
+        public override bool ErrorOnFailedBinding { get; }
     }
 }
