@@ -11,9 +11,10 @@ import { WasmOpcode } from "./jiterpreter-opcodes";
 import cwraps from "./cwraps";
 import {
     WasmValtype, WasmBuilder, addWasmFunctionPointer,
-    _now, elapsedTimes, counters, getRawCwrap, importDef,
+    _now, getRawCwrap, importDef,
     getWasmFunctionTable, recordFailure, getOptions,
-    JiterpreterOptions, getMemberOffset, JiterpMember
+    JiterpreterOptions, getMemberOffset, JiterpMember,
+    JiterpreterTable, getCounter, modifyCounter, JiterpCounter,
 } from "./jiterpreter-support";
 import { mono_log_error, mono_log_info } from "./logging";
 import { utf8ToString } from "./strings";
@@ -130,6 +131,7 @@ class TrampolineInfo {
 
 let mostRecentOptions: JiterpreterOptions | undefined = undefined;
 
+// FIXME: move this counter into C and make it thread safe
 export function mono_interp_record_interp_entry(imethod: number) {
     // clear the unbox bit
     imethod = imethod & ~0x1;
@@ -179,7 +181,18 @@ export function mono_interp_jit_wasm_entry_trampoline(
     // Some entry wrappers are also only called a few dozen times, so it's valuable to wait
     //  until a wrapper is called a lot before wasting time/memory jitting it.
     const defaultImplementationFn = fnTable.get(defaultImplementation);
-    info.result = addWasmFunctionPointer(defaultImplementationFn);
+    const tableId = (hasThisReference
+        ? (
+            hasReturnValue
+                ? JiterpreterTable.InterpEntryInstanceRet0
+                : JiterpreterTable.InterpEntryInstance0
+        )
+        : (
+            hasReturnValue
+                ? JiterpreterTable.InterpEntryStaticRet0
+                : JiterpreterTable.InterpEntryStatic0
+        )) + argumentCount;
+    info.result = addWasmFunctionPointer(tableId, defaultImplementationFn);
 
     infoTable[imethod] = info;
     return info.result;
@@ -250,7 +263,7 @@ function flush_wasm_entry_trampoline_jit_queue() {
     } else
         builder.clear(constantSlots);
 
-    if (builder.options.wasmBytesLimit <= counters.bytesGenerated) {
+    if (builder.options.wasmBytesLimit <= getCounter(JiterpCounter.BytesGenerated)) {
         jitQueue.length = 0;
         return;
     }
@@ -347,7 +360,7 @@ function flush_wasm_entry_trampoline_jit_queue() {
         const buffer = builder.getArrayView();
         if (trace > 0)
             mono_log_info(`jit queue generated ${buffer.length} byte(s) of wasm`);
-        counters.bytesGenerated += buffer.length;
+        modifyCounter(JiterpCounter.BytesGenerated, buffer.length);
         const traceModule = new WebAssembly.Module(buffer);
         const wasmImports = builder.getWasmImports();
 
@@ -364,8 +377,8 @@ function flush_wasm_entry_trampoline_jit_queue() {
             fnTable.set(info.result, fn);
 
             rejected = false;
-            counters.entryWrappersCompiled++;
         }
+        modifyCounter(JiterpCounter.EntryWrappersCompiled, jitQueue.length);
     } catch (exc: any) {
         threw = true;
         rejected = false;
@@ -376,10 +389,10 @@ function flush_wasm_entry_trampoline_jit_queue() {
     } finally {
         const finished = _now();
         if (compileStarted) {
-            elapsedTimes.generation += compileStarted - started;
-            elapsedTimes.compilation += finished - compileStarted;
+            modifyCounter(JiterpCounter.ElapsedGenerationMs, compileStarted - started);
+            modifyCounter(JiterpCounter.ElapsedCompilationMs, finished - compileStarted);
         } else {
-            elapsedTimes.generation += finished - started;
+            modifyCounter(JiterpCounter.ElapsedGenerationMs, finished - started);
         }
 
         if (threw || (!rejected && ((trace >= 2) || dumpWrappers))) {

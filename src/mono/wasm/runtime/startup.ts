@@ -26,6 +26,7 @@ import { endMeasure, MeasuredBlock, startMeasure } from "./profiler";
 import { getMemorySnapshot, storeMemorySnapshot, getMemorySnapshotSize } from "./snapshot";
 import { mono_log_debug, mono_log_error, mono_log_warn, mono_set_thread_id } from "./logging";
 import { getBrowserThreadID } from "./pthreads/shared";
+import { jiterpreter_allocate_tables } from "./jiterpreter-support";
 
 // legacy
 import { init_legacy_exports } from "./net6-legacy/corebindings";
@@ -260,6 +261,7 @@ async function onRuntimeInitializedAsync(userOnRuntimeInitialized: () => void) {
         }
 
         bindings_init();
+        jiterpreter_allocate_tables(Module);
         runtimeHelpers.runtimeReady = true;
 
         if (MonoWasmThreads) {
@@ -501,7 +503,7 @@ async function instantiate_wasm_module(
 
         if (runtimeHelpers.loadedMemorySnapshot) {
             try {
-                const wasmMemory = (Module.asm?.memory || Module.wasmMemory)!;
+                const wasmMemory = Module.getMemory();
 
                 // .grow() takes a delta compared to the previous size
                 wasmMemory.grow((memorySize! - wasmMemory.buffer.byteLength + 65535) >>> 16);
