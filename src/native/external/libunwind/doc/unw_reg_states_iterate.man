@@ -1,5 +1,5 @@
 '\" t
-.\" Manual page created with latex2man on Wed Aug 16 11:09:44 PDT 2017
+.\" Manual page created with latex2man on Sun Aug 29 23:45:06 CEST 2021
 .\" NOTE: This file is generated, DO NOT EDIT.
 .de Vb
 .ft CW
@@ -10,7 +10,7 @@
 
 .fi
 ..
-.TH "UNW\\_REG\\_STATES\\_ITERATE" "3" "16 August 2017" "Programming Library " "Programming Library "
+.TH "UNW\\_REG\\_STATES\\_ITERATE" "3" "29 August 2021" "Programming Library " "Programming Library "
 .SH NAME
 unw_reg_states_iterate
 \-\- get register state info on current procedure 
@@ -53,7 +53,7 @@ unw_word_t
 end_ip);
 .PP
 The callback function may be invoked several times for each call of unw_reg_states_iterate\&.
-Each call is associcated with a instruction address range and a set of instructions on how to update register values when returning from the procedure in that address range. For each invocation, the arguments to the callback function are: 
+Each call is associated with an instruction address range and a set of instructions on how to update register values when returning from the procedure in that address range. For each invocation, the arguments to the callback function are: 
 .TP
 void * token
  The token value passed to unw_reg_states_callback\&.

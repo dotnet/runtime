@@ -67,6 +67,11 @@
         <target state="translated">Os atributos '[In]' e '[Out]' neste parâmetro não têm suporte neste parâmetro.</target>
         <note />
       </trans-unit>
+      <trans-unit id="InOutAttributes">
+        <source>[In] and [Out] attributes</source>
+        <target state="new">[In] and [Out] attributes</target>
+        <note />
+      </trans-unit>
       <trans-unit id="ManagedToUnmanagedMissingRequiredMarshaller">
         <source>The specified parameter needs to be marshalled from managed to unmanaged, but the marshaller type '{0}' does not support it.</source>
         <target state="translated">O parâmetro especificado precisa ser marshalled de gerenciado para não gerenciado, mas o tipo de marshaller '{0}' não dá suporte a ele.</target>

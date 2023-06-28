@@ -6,6 +6,8 @@ namespace ComInterfaceGenerator.Unit.Tests
     public enum GeneratorKind
     {
         ComInterfaceGenerator,
+        ComInterfaceGeneratorManagedObjectWrapper,
+        ComInterfaceGeneratorComObjectWrapper,
         VTableIndexStubGenerator
     }
 }

@@ -552,7 +552,7 @@ namespace System.Transactions.Oletx
                 // for COM+ interop purposes, but we can't get the guid or the status of the transaction.
                 if (TxGuid.Equals(Guid.Empty))
                 {
-                    throw TransactionException.Create(SR.GetResourceString(SR.CannotGetTransactionIdentifier), null);
+                    throw TransactionException.Create(SR.CannotGetTransactionIdentifier, null);
                 }
 
                 return TxGuid;

@@ -19,6 +19,13 @@ typedef enum
     StringSort = 536870912,
 } CompareOptions;
 
+typedef enum
+{
+    ERROR_INDEX_NOT_FOUND = -1,
+    ERROR_COMPARISON_OPTIONS_NOT_FOUND = -2,
+    ERROR_MIXED_COMPOSITION_NOT_FOUND = -3,
+} ErrorCodes;
+
 static NSLocale* GetCurrentLocale(const uint16_t* localeName, int32_t lNameLength)
 {
     NSLocale *currentLocale;
@@ -74,7 +81,7 @@ int32_t GlobalizationNative_CompareStringNative(const uint16_t* localeName, int3
     
     // in case mapping is not found
     if (options == 0)
-        return -2;
+        return ERROR_COMPARISON_OPTIONS_NOT_FOUND;
 
     return [sourceStrPrecomposed compare:targetStrPrecomposed
                               options:options
@@ -114,12 +121,15 @@ Range GlobalizationNative_IndexOfNative(const uint16_t* localeName, int32_t lNam
                                         const uint16_t* lpSource, int32_t cwSourceLength, int32_t comparisonOptions, int32_t fromBeginning)
 {
     assert(cwTargetLength >= 0);
-    Range result = {-2, 0};
+    Range result = {ERROR_INDEX_NOT_FOUND, 0};
     NSStringCompareOptions options = ConvertFromCompareOptionsToNSStringCompareOptions(comparisonOptions);
     
     // in case mapping is not found
     if (options == 0)
+    {
+        result.location = ERROR_COMPARISON_OPTIONS_NOT_FOUND;
         return result;
+    }
     
     NSString *searchString = [NSString stringWithCharacters: lpTarget length: cwTargetLength];
     NSString *searchStrCleaned = RemoveWeightlessCharacters(searchString);
@@ -152,7 +162,7 @@ Range GlobalizationNative_IndexOfNative(const uint16_t* localeName, int32_t lNam
         return result;
 
     // in case search string is inside source string but we can't find the index return -3
-    result.location = -3;
+    result.location = ERROR_MIXED_COMPOSITION_NOT_FOUND;
     // sourceString and searchString possibly have the same composition of characters
     rangeOfReceiverToSearch = NSMakeRange(0, sourceStrCleaned.length);
     NSRange nsRange = [sourceStrCleaned rangeOfString:searchStrCleaned
@@ -225,7 +235,7 @@ int32_t GlobalizationNative_StartsWithNative(const uint16_t* localeName, int32_t
     
     // in case mapping is not found
     if (options == 0)
-        return -2;
+        return ERROR_COMPARISON_OPTIONS_NOT_FOUND;
 
     NSLocale *currentLocale = GetCurrentLocale(localeName, lNameLength);
     NSString *prefixString = [NSString stringWithCharacters: lpPrefix length: cwPrefixLength];
@@ -252,7 +262,7 @@ int32_t GlobalizationNative_EndsWithNative(const uint16_t* localeName, int32_t l
     
     // in case mapping is not found
     if (options == 0)
-        return -2;
+        return ERROR_COMPARISON_OPTIONS_NOT_FOUND;
 
     NSLocale *currentLocale = GetCurrentLocale(localeName, lNameLength);
     NSString *suffixString = [NSString stringWithCharacters: lpSuffix length: cwSuffixLength];

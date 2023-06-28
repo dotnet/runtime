@@ -1925,6 +1925,130 @@ namespace System.Runtime.Intrinsics.Wasm
         [Intrinsic]
         public static unsafe Vector128<nuint>  LoadScalarAndInsert(nuint*  address, Vector128<nuint>  vector, [ConstantExpected(Max = (byte)(3))] byte index) => LoadScalarAndInsert(address, vector, index); // takes ImmLaneIdx4
 
+        // Store
+
+        /// <summary>
+        ///   v128.store
+        /// </summary>
+        [Intrinsic]
+        public static unsafe void Store(sbyte*  address, Vector128<sbyte>  source) => Store(address, source);
+        /// <summary>
+        ///   v128.store
+        /// </summary>
+        [Intrinsic]
+        public static unsafe void Store(byte*   address, Vector128<byte>   source) => Store(address, source);
+        /// <summary>
+        ///   v128.store
+        /// </summary>
+        [Intrinsic]
+        public static unsafe void Store(short*  address, Vector128<short>  source) => Store(address, source);
+        /// <summary>
+        ///   v128.store
+        /// </summary>
+        [Intrinsic]
+        public static unsafe void Store(ushort* address, Vector128<ushort> source) => Store(address, source);
+        /// <summary>
+        ///   v128.store
+        /// </summary>
+        [Intrinsic]
+        public static unsafe void Store(int*    address, Vector128<int>    source) => Store(address, source);
+        /// <summary>
+        ///   v128.store
+        /// </summary>
+        [Intrinsic]
+        public static unsafe void Store(uint*   address, Vector128<uint>   source) => Store(address, source);
+        /// <summary>
+        ///   v128.store
+        /// </summary>
+        [Intrinsic]
+        public static unsafe void Store(long*   address, Vector128<long>   source) => Store(address, source);
+        /// <summary>
+        ///   v128.store
+        /// </summary>
+        [Intrinsic]
+        public static unsafe void Store(ulong*  address, Vector128<ulong>  source) => Store(address, source);
+        /// <summary>
+        ///   v128.store
+        /// </summary>
+        [Intrinsic]
+        public static unsafe void Store(float*  address, Vector128<float>  source) => Store(address, source);
+        /// <summary>
+        ///   v128.store
+        /// </summary>
+        [Intrinsic]
+        public static unsafe void Store(double* address, Vector128<double> source) => Store(address, source);
+        /// <summary>
+        ///   v128.store
+        /// </summary>
+        [Intrinsic]
+        public static unsafe void Store(nint*   address, Vector128<nint>   source) => Store(address, source);
+        /// <summary>
+        ///   v128.store
+        /// </summary>
+        [Intrinsic]
+        public static unsafe void Store(nuint*  address, Vector128<nuint>  source) => Store(address, source);
+
+        /// <summary>
+        ///   v128.store8_lane
+        /// </summary>
+        [Intrinsic]
+        public static unsafe void StoreSelectedScalar(sbyte*  address, Vector128<sbyte>  source, [ConstantExpected(Max = (byte)(15))] byte index) => StoreSelectedScalar(address, source, index); // takes ImmLaneIdx16
+        /// <summary>
+        ///   v128.store8_lane
+        /// </summary>
+        [Intrinsic]
+        public static unsafe void StoreSelectedScalar(byte*   address, Vector128<byte>   source, [ConstantExpected(Max = (byte)(15))] byte index) => StoreSelectedScalar(address, source, index); // takes ImmLaneIdx16
+        /// <summary>
+        ///   v128.store16_lane
+        /// </summary>
+        [Intrinsic]
+        public static unsafe void StoreSelectedScalar(short*  address, Vector128<short>  source, [ConstantExpected(Max = (byte)(7))] byte index) => StoreSelectedScalar(address, source, index); // takes ImmLaneIdx8
+        /// <summary>
+        ///   v128.store16_lane
+        /// </summary>
+        [Intrinsic]
+        public static unsafe void StoreSelectedScalar(ushort* address, Vector128<ushort> source, [ConstantExpected(Max = (byte)(7))] byte index) => StoreSelectedScalar(address, source, index); // takes ImmLaneIdx8
+        /// <summary>
+        ///   v128.store32_lane
+        /// </summary>
+        [Intrinsic]
+        public static unsafe void StoreSelectedScalar(int*    address, Vector128<int>    source, [ConstantExpected(Max = (byte)(3))] byte index) => StoreSelectedScalar(address, source, index); // takes ImmLaneIdx4
+        /// <summary>
+        ///   v128.store32_lane
+        /// </summary>
+        [Intrinsic]
+        public static unsafe void StoreSelectedScalar(uint*   address, Vector128<uint>   source, [ConstantExpected(Max = (byte)(3))] byte index) => StoreSelectedScalar(address, source, index); // takes ImmLaneIdx4
+        /// <summary>
+        ///   v128.store64_lane
+        /// </summary>
+        [Intrinsic]
+        public static unsafe void StoreSelectedScalar(long*   address, Vector128<long>   source, [ConstantExpected(Max = (byte)(1))] byte index) => StoreSelectedScalar(address, source, index); // takes ImmLaneIdx2
+        /// <summary>
+        ///   v128.store64_lane
+        /// </summary>
+        [Intrinsic]
+        public static unsafe void StoreSelectedScalar(ulong*  address, Vector128<ulong>  source, [ConstantExpected(Max = (byte)(1))] byte index) => StoreSelectedScalar(address, source, index); // takes ImmLaneIdx2
+        /// <summary>
+        ///   v128.store32_lane
+        /// </summary>
+        [Intrinsic]
+        public static unsafe void StoreSelectedScalar(float*  address, Vector128<float>  source, [ConstantExpected(Max = (byte)(3))] byte index) => StoreSelectedScalar(address, source, index); // takes ImmLaneIdx4
+        /// <summary>
+        ///   v128.store64_lane
+        /// </summary>
+        [Intrinsic]
+        public static unsafe void StoreSelectedScalar(double* address, Vector128<double> source, [ConstantExpected(Max = (byte)(1))] byte index) => StoreSelectedScalar(address, source, index); // takes ImmLaneIdx2
+        /// <summary>
+        ///   v128.store32_lane
+        /// </summary>
+        [Intrinsic]
+        public static unsafe void StoreSelectedScalar(nint*   address, Vector128<nint>   source, [ConstantExpected(Max = (byte)(3))] byte index) => StoreSelectedScalar(address, source, index);
+        /// <summary>
+        ///   v128.store32_lane
+        /// </summary>
+        [Intrinsic]
+        public static unsafe void StoreSelectedScalar(nuint*  address, Vector128<nuint>  source, [ConstantExpected(Max = (byte)(3))] byte index) => StoreSelectedScalar(address, source, index);
+
         /// <summary>
         ///   v128.load8x8_s
         /// </summary>

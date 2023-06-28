@@ -17,7 +17,7 @@ jobs:
 #
 # ************ Rolling builds: *************
 # - only run eat, and aot tests
-# - rest are covered by runtime, and runtime-staging
+# - rest are covered by runtime
 #
 - ${{ if eq(parameters.isRollingBuild, true) }}:
   # AOT Library tests

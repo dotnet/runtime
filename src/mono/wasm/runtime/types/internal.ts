@@ -77,6 +77,7 @@ export type MonoConfigInternal = MonoConfig & {
     forwardConsoleLogsToWS?: boolean,
     asyncFlushOnExit?: boolean
     exitAfterSnapshot?: number
+    loadAllSatelliteResources?: boolean
 };
 
 export type RunArguments = {

@@ -2081,6 +2081,175 @@ CEEInfo::getFieldInClass(CORINFO_CLASS_HANDLE clsHnd, INT num)
     return result;
 }
 
+static GetTypeLayoutResult GetTypeLayoutHelper(
+    MethodTable* pMT,
+    unsigned parentIndex,
+    unsigned baseOffs,
+    FieldDesc* pFD,
+    CORINFO_TYPE_LAYOUT_NODE* treeNodes,
+    size_t maxTreeNodes,
+    size_t* numTreeNodes)
+{
+    STANDARD_VM_CONTRACT;
+
+    if (*numTreeNodes >= maxTreeNodes)
+    {
+        return GetTypeLayoutResult::Partial;
+    }
+
+    unsigned structNodeIndex = (unsigned)(*numTreeNodes)++;
+    CORINFO_TYPE_LAYOUT_NODE& parNode = treeNodes[structNodeIndex];
+    parNode.simdTypeHnd = NULL;
+    parNode.diagFieldHnd = CORINFO_FIELD_HANDLE(pFD);
+    parNode.parent = parentIndex;
+    parNode.offset = baseOffs;
+    parNode.size = pMT->GetNumInstanceFieldBytes();
+    parNode.numFields = 0;
+    parNode.type = CorInfoType::CORINFO_TYPE_VALUECLASS;
+    parNode.hasSignificantPadding = false;
+
+    EEClass* pClass = pMT->GetClass();
+    if (pClass->IsNotTightlyPacked() && (!pClass->IsManagedSequential() || pClass->HasExplicitSize() || pClass->IsInlineArray()))
+    {
+        // Historically on the JIT side we did not consider types with GC
+        // pointers to have significant padding, even when they have explicit
+        // layout attributes. This retains the more liberal treatment and
+        // lets the JIT still optimize these cases.
+        if (!pMT->ContainsPointers() && pMT != g_TypedReferenceMT)
+        {
+            parNode.hasSignificantPadding = true;
+        }
+    }
+
+    // The intrinsic SIMD/HW SIMD types have a lot of fields that the JIT does
+    // not care about since they are considered primitives by the JIT.
+    if (pMT->IsIntrinsicType())
+    {
+        const char* nsName;
+        pMT->GetFullyQualifiedNameInfo(&nsName);
+
+        if ((strcmp(nsName, "System.Runtime.Intrinsics") == 0) ||
+            (strcmp(nsName, "System.Numerics") == 0))
+        {
+            parNode.simdTypeHnd = CORINFO_CLASS_HANDLE(pMT);
+            if (parentIndex != UINT32_MAX)
+            {
+                return GetTypeLayoutResult::Success;
+            }
+        }
+    }
+
+    ApproxFieldDescIterator fieldIterator(pMT, ApproxFieldDescIterator::INSTANCE_FIELDS);
+    for (FieldDesc* pFD = fieldIterator.Next(); pFD != NULL; pFD = fieldIterator.Next())
+    {
+        CorElementType fieldType = pFD->GetFieldType();
+        parNode.numFields++;
+
+        if (fieldType == ELEMENT_TYPE_VALUETYPE)
+        {
+            MethodTable* pFieldMT = pFD->GetApproxFieldTypeHandleThrowing().AsMethodTable();
+            GetTypeLayoutResult result = GetTypeLayoutHelper(pFieldMT, structNodeIndex, baseOffs + pFD->GetOffset(), pFD, treeNodes, maxTreeNodes, numTreeNodes);
+            if (result != GetTypeLayoutResult::Success)
+            {
+                return result;
+            }
+        }
+        else
+        {
+            if (*numTreeNodes >= maxTreeNodes)
+            {
+                return GetTypeLayoutResult::Partial;
+            }
+
+            CorInfoType corInfoType = CEEInfo::asCorInfoType(fieldType);
+            _ASSERTE(corInfoType != CORINFO_TYPE_UNDEF);
+
+            CORINFO_TYPE_LAYOUT_NODE& treeNode = treeNodes[(*numTreeNodes)++];
+            treeNode.simdTypeHnd = NULL;
+            treeNode.diagFieldHnd = CORINFO_FIELD_HANDLE(pFD);
+            treeNode.parent = structNodeIndex;
+            treeNode.offset = baseOffs + pFD->GetOffset();
+            treeNode.size = GetSizeForCorElementType(fieldType);
+            treeNode.numFields = 0;
+            treeNode.type = corInfoType;
+            treeNode.hasSignificantPadding = false;
+        }
+
+        if (pMT->GetClass()->IsInlineArray())
+        {
+            size_t treeNodeEnd = *numTreeNodes;
+            uint32_t elemSize = pFD->GetSize();
+            uint32_t arrSize = pMT->GetNumInstanceFieldBytes();
+
+            for (uint32_t elemOffset = elemSize; elemOffset < arrSize; elemOffset += elemSize)
+            {
+                for (size_t templateTreeNodeIndex = structNodeIndex + 1; templateTreeNodeIndex < treeNodeEnd; templateTreeNodeIndex++)
+                {
+                    if (*numTreeNodes >= maxTreeNodes)
+                    {
+                        return GetTypeLayoutResult::Partial;
+                    }
+
+                    CORINFO_TYPE_LAYOUT_NODE& treeNode = treeNodes[(*numTreeNodes)++];
+                    treeNode = treeNodes[templateTreeNodeIndex];
+                    treeNode.offset += elemOffset;
+
+                    parNode.numFields++;
+                }
+            }
+        }
+    }
+
+    return GetTypeLayoutResult::Success;
+}
+
+GetTypeLayoutResult CEEInfo::getTypeLayout(
+    CORINFO_CLASS_HANDLE clsHnd,
+    CORINFO_TYPE_LAYOUT_NODE* treeNodes,
+    size_t* numTreeNodes)
+{
+    STANDARD_VM_CONTRACT;
+
+    GetTypeLayoutResult result = GetTypeLayoutResult::Failure;
+
+    JIT_TO_EE_TRANSITION_LEAF();
+
+    TypeHandle typeHnd(clsHnd);
+
+    if (typeHnd.IsNativeValueType())
+    {
+        if (*numTreeNodes > 0)
+        {
+            *numTreeNodes = 1;
+            treeNodes[0].simdTypeHnd = NULL;
+            treeNodes[0].diagFieldHnd = NULL;
+            treeNodes[0].parent = UINT32_MAX;
+            treeNodes[0].offset = 0;
+            treeNodes[0].size = typeHnd.GetSize();
+            treeNodes[0].numFields = 0;
+            treeNodes[0].type = CORINFO_TYPE_VALUECLASS;
+            treeNodes[0].hasSignificantPadding = true;
+            result = GetTypeLayoutResult::Success;
+        }
+        else
+        {
+            result = GetTypeLayoutResult::Partial;
+        }
+    }
+    else if (typeHnd.IsValueType())
+    {
+        MethodTable* pMT = typeHnd.AsMethodTable();
+
+        size_t maxTreeNodes = *numTreeNodes;
+        *numTreeNodes = 0;
+        result = GetTypeLayoutHelper(pMT, UINT32_MAX, 0, NULL, treeNodes, maxTreeNodes, numTreeNodes);
+    }
+
+    EE_TO_JIT_TRANSITION_LEAF();
+
+    return result;
+}
+
 mdMethodDef
 CEEInfo::getMethodDefFromMethod(CORINFO_METHOD_HANDLE hMethod)
 {
@@ -3220,6 +3389,23 @@ void CEEInfo::AddTransientMethodDetails(TransientMethodDetails details)
     m_transientDetails->Append(std::move(details));
 }
 
+TransientMethodDetails CEEInfo::RemoveTransientMethodDetails(MethodDesc* pMD)
+{
+    STANDARD_VM_CONTRACT;
+    _ASSERTE(pMD != NULL);
+
+    TransientMethodDetails local{};
+    TransientMethodDetails* details;
+    if (FindTransientMethodDetails(pMD, &details))
+    {
+        // Details found, move contents to return
+        // and default initialize the found instance.
+        local = std::move(*details);
+        *details = {};
+    }
+    return local;
+}
+
 bool CEEInfo::FindTransientMethodDetails(MethodDesc* pMD, TransientMethodDetails** details)
 {
     STANDARD_VM_CONTRACT;
@@ -3640,13 +3826,6 @@ uint32_t CEEInfo::getClassAttribsInternal (CORINFO_CLASS_HANDLE clsHnd)
             if (pMT->IsByRefLike())
                 ret |= CORINFO_FLG_BYREF_LIKE;
 
-            if ((pClass->IsNotTightlyPacked() && (!pClass->IsManagedSequential() || pClass->HasExplicitSize())) ||
-                pMT == g_TypedReferenceMT ||
-                VMClsHnd.IsNativeValueType())
-            {
-                ret |= CORINFO_FLG_CUSTOMLAYOUT;
-            }
-
             if (pClass->IsUnsafeValueClass())
                 ret |= CORINFO_FLG_UNSAFE_VALUECLASS;
         }
@@ -3669,9 +3848,7 @@ uint32_t CEEInfo::getClassAttribsInternal (CORINFO_CLASS_HANDLE clsHnd)
             ret |= CORINFO_FLG_DELEGATE;
 
         if (pClass->IsBeforeFieldInit())
-        {
             ret |= CORINFO_FLG_BEFOREFIELDINIT;
-        }
 
         if (pClass->IsAbstract())
             ret |= CORINFO_FLG_ABSTRACT;
@@ -7349,39 +7526,58 @@ public:
         _ASSERTE(pMD != NULL);
     }
 
-    MethodInfoHelperContext(const TransientMethodDetails* details)
-        : Method{ details->Method }
-        , Header{ details->Header }
-        , TransientResolver{ NULL }
-    {
-        LIMITED_METHOD_CONTRACT;
-        if (IsDynamicScope(details->Scope))
-            TransientResolver = GetDynamicResolver(details->Scope);
-    }
-
     MethodInfoHelperContext(const MethodInfoHelperContext&) = delete;
     MethodInfoHelperContext(MethodInfoHelperContext&& other) = delete;
 
-    ~MethodInfoHelperContext() = default;
+    ~MethodInfoHelperContext()
+    {
+        STANDARD_VM_CONTRACT;
+        delete TransientResolver;
+    }
 
     MethodInfoHelperContext& operator=(const MethodInfoHelperContext&) = delete;
     MethodInfoHelperContext& operator=(MethodInfoHelperContext&& other) = delete;
 
     bool HasTransientMethodDetails() const
     {
+        LIMITED_METHOD_CONTRACT;
         return TransientResolver != NULL;
     }
 
     CORINFO_MODULE_HANDLE CreateScopeHandle() const
     {
+        LIMITED_METHOD_CONTRACT;
         _ASSERTE(HasTransientMethodDetails());
         return MakeDynamicScope(TransientResolver);
     }
 
-    TransientMethodDetails CreateTransientMethodDetails() const
+    // This operation transfers any ownership to a
+    // TransientMethodDetails instance.
+    TransientMethodDetails CreateTransientMethodDetails()
     {
+        STANDARD_VM_CONTRACT;
         _ASSERTE(HasTransientMethodDetails());
-        return TransientMethodDetails{Method, Header, CreateScopeHandle() };
+
+        CORINFO_MODULE_HANDLE handle = CreateScopeHandle();
+        TransientResolver = NULL;
+        return TransientMethodDetails{ Method, Header, handle };
+    }
+
+    void UpdateWith(const TransientMethodDetails& details)
+    {
+        LIMITED_METHOD_CONTRACT;
+        Header = details.Header;
+        TransientResolver = details.Scope != NULL ? GetDynamicResolver(details.Scope) : NULL;
+    }
+
+    void TakeOwnership(TransientMethodDetails details)
+    {
+        LIMITED_METHOD_CONTRACT;
+        UpdateWith(details);
+
+        // Default initialize local instance since we are
+        // taking ownership of the transient method details.
+        details = {};
     }
 };
 
@@ -7580,16 +7776,31 @@ CEEInfo::getMethodInfo(
     }
     else if (ftn->IsIL() && ftn->GetRVA() == 0)
     {
+        // We will either find or create transient method details.
+        _ASSERTE(!cxt.HasTransientMethodDetails());
+
         // IL methods with no RVA indicate there is no implementation defined in metadata.
         // Check if we previously generated details/implementation for this method.
         TransientMethodDetails* detailsMaybe = NULL;
         if (FindTransientMethodDetails(ftn, &detailsMaybe))
-        {
-            cxt.Header = detailsMaybe->Header;
-            cxt.TransientResolver = GetDynamicResolver(detailsMaybe->Scope);
-        }
+            cxt.UpdateWith(*detailsMaybe);
 
         getMethodInfoHelper(cxt, methInfo);
+
+        // If we have transient method details we need to handle
+        // the lifetime of the details.
+        if (cxt.HasTransientMethodDetails())
+        {
+            // If we didn't find transient details, but we have them
+            // after getting method info, store them for cleanup.
+            if (detailsMaybe == NULL)
+                AddTransientMethodDetails(cxt.CreateTransientMethodDetails());
+
+            // Reset the context because ownership has either been
+            // transferred or was found in this instance.
+            cxt.UpdateWith({});
+        }
+
         result = true;
     }
 
@@ -12615,7 +12826,7 @@ PCODE UnsafeJitFunction(PrepareCodeConfig* config,
 #endif
 
 #if defined(TARGET_AMD64)
-    BOOL fAllowRel32 = (g_fAllowRel32 | fForceJumpStubOverflow);
+    BOOL fAllowRel32 = (g_fAllowRel32 | fForceJumpStubOverflow) && g_pConfig->JitAllowOptionalRelocs();
 #endif
 
     size_t reserveForJumpStubs = 0;
@@ -12795,6 +13006,12 @@ PCODE UnsafeJitFunction(PrepareCodeConfig* config,
 #endif // TARGET_ARM64
 
             reserveForJumpStubs = jitInfo.GetReserveForJumpStubs();
+
+            // Get any transient method details and take ownership
+            // from the JITInfo instance. We are going to be recreating
+            // a new JITInfo and will reuse these details there.
+            TransientMethodDetails details = jitInfo.RemoveTransientMethodDetails(ftn);
+            cxt.TakeOwnership(std::move(details));
             continue;
         }
 #endif // (TARGET_AMD64 || TARGET_ARM64)

@@ -302,6 +302,11 @@ interface BootJsonData {
     readonly icuDataMode: ICUDataMode;
     readonly startupMemoryCache: boolean | undefined;
     readonly runtimeOptions: string[] | undefined;
+    readonly environmentVariables?: {
+        [name: string]: string;
+    };
+    readonly diagnosticTracing?: boolean;
+    readonly pthreadPoolSize: number;
     modifiableAssemblies: string | null;
     aspnetCoreBrowserTools: string | null;
 }
@@ -309,6 +314,7 @@ type BootJsonDataExtension = {
     [extensionName: string]: ResourceList;
 };
 interface ResourceGroups {
+    readonly hash?: string;
     readonly assembly: ResourceList;
     readonly lazyAssembly: ResourceList;
     readonly pdb?: ResourceList;
@@ -319,6 +325,9 @@ interface ResourceGroups {
     readonly libraryInitializers?: ResourceList;
     readonly extensions?: BootJsonDataExtension;
     readonly runtimeAssets: ExtendedResourceList;
+    readonly vfs?: {
+        [virtualPath: string]: ResourceList;
+    };
 }
 type ResourceList = {
     [name: string]: string;

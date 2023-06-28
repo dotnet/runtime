@@ -958,6 +958,9 @@ namespace System.Text.RegularExpressions.Tests
                 yield return ("z(a{0,5}|a{0,10}?)", "xyzaaaaaaaaaxyz", options, 0, 15, true, "zaaaaa");
             }
 
+            yield return (@"a{2}|a{3}", "aaa", RegexOptions.None, 0, 3, true, "aa");
+            yield return (@"a{3}|a{2}", "aaa", RegexOptions.None, 0, 3, true, "aaa");
+
             // Test for a bug in NonBacktracking's subsumption rule for XY subsuming X??Y, which didn't check that X is nullable
             yield return (@"XY|X??Y", "Y", RegexOptions.None, 0, 1, true, "Y");
 

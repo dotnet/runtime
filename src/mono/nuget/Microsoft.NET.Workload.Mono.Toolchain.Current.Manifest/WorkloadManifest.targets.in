@@ -141,6 +141,15 @@
     <_KnownWebAssemblySdkPackVersion>$(_RuntimePackInWorkloadVersionCurrent)</_KnownWebAssemblySdkPackVersion>
   </PropertyGroup>
 
+  <!-- Support for "browser" target platform identifier -->
+  <PropertyGroup Condition="'$(TargetPlatformIdentifier)' == 'browser' and $([MSBuild]::VersionGreaterThanOrEquals('$(TargetFrameworkVersion)', '8.0'))">
+    <TargetPlatformSupported>true</TargetPlatformSupported>
+    <TargetPlatformVersion Condition="'$(TargetPlatformVersion)' == ''">1.0</TargetPlatformVersion>
+  </PropertyGroup>
+  <ItemGroup Condition="'$(TargetPlatformIdentifier)' == 'browser' and $([MSBuild]::VersionGreaterThanOrEquals('$(TargetFrameworkVersion)', '8.0'))">
+    <SdkSupportedTargetPlatformVersion Include="1.0" />
+  </ItemGroup>
+
   <ItemGroup Condition="'$(TargetsCurrent)' == 'true' and '$(_MonoWorkloadTargetsMobile)' == 'true'">
     <KnownRuntimePack Update="@(KnownRuntimePack)">
       <!-- FIXMEWASI: workaround for now -->

@@ -7,6 +7,7 @@ using System.Reflection;
 using System.Runtime.CompilerServices;
 using System.Threading.Tasks;
 using System.Diagnostics.CodeAnalysis;
+using System.Threading;
 
 namespace System.Runtime.InteropServices.JavaScript
 {
@@ -163,8 +164,12 @@ namespace System.Runtime.InteropServices.JavaScript
             try
             {
                 JSHostImplementation.TaskCallback holder = new JSHostImplementation.TaskCallback();
+#if FEATURE_WASM_THREADS
+                holder.OwnerThreadId = Thread.CurrentThread.ManagedThreadId;
+                holder.SynchronizationContext = SynchronizationContext.Current ?? new SynchronizationContext();
+#endif
                 arg_return.slot.Type = MarshalerType.Object;
-                arg_return.slot.GCHandle = JSHostImplementation.GetJSOwnedObjectGCHandle(holder);
+                arg_return.slot.GCHandle = holder.GCHandle = JSHostImplementation.GetJSOwnedObjectGCHandle(holder);
             }
             catch (Exception ex)
             {
@@ -262,7 +267,7 @@ namespace System.Runtime.InteropServices.JavaScript
             ref JSMarshalerArgument arg_exc = ref arguments_buffer[0]; // initialized by caller in alloc_stack_frame()
             try
             {
-                JSHostImplementation.InstallWebWorkerInterop(true);
+                JSHostImplementation.InstallWebWorkerInterop(true, true);
             }
             catch (Exception ex)
             {

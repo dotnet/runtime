@@ -47,13 +47,15 @@ namespace System.Collections.Frozen
                 hashCodes[i] = GetHashCode(keys[i]);
             }
 
-            _hashTable = FrozenHashTable.Create(
-                hashCodes,
-                (destIndex, srcIndex) =>
-                {
-                    _keys[destIndex] = keys[srcIndex];
-                    _values[destIndex] = values[srcIndex];
-                });
+            _hashTable = FrozenHashTable.Create(hashCodes);
+
+            for (int srcIndex = 0; srcIndex < hashCodes.Length; srcIndex++)
+            {
+                int destIndex = hashCodes[srcIndex];
+
+                _keys[destIndex] = keys[srcIndex];
+                _values[destIndex] = values[srcIndex];
+            }
 
             ArrayPool<int>.Shared.Return(arrayPoolHashCodes);
         }

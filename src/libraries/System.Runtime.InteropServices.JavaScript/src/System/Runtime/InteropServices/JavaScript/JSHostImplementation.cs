@@ -216,7 +216,7 @@ namespace System.Runtime.InteropServices.JavaScript
         }
 
 #if FEATURE_WASM_THREADS
-        public static void InstallWebWorkerInterop(bool installJSSynchronizationContext)
+        public static void InstallWebWorkerInterop(bool installJSSynchronizationContext, bool isMainThread)
         {
             Interop.Runtime.InstallWebWorkerInterop(installJSSynchronizationContext);
             if (installJSSynchronizationContext)
@@ -229,6 +229,10 @@ namespace System.Runtime.InteropServices.JavaScript
                     ctx.previousSynchronizationContext = SynchronizationContext.Current;
                     JSSynchronizationContext.CurrentJSSynchronizationContext = ctx;
                     SynchronizationContext.SetSynchronizationContext(ctx);
+                    if (isMainThread)
+                    {
+                        JSSynchronizationContext.MainJSSynchronizationContext = ctx;
+                    }
                 }
                 else if (ctx.TargetThreadId != currentThreadId)
                 {

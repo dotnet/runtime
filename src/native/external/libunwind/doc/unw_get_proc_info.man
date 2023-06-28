@@ -1,5 +1,5 @@
 '\" t
-.\" Manual page created with latex2man on Thu Aug 16 09:44:44 MDT 2007
+.\" Manual page created with latex2man on Sun Aug 29 23:45:06 CEST 2021
 .\" NOTE: This file is generated, DO NOT EDIT.
 .de Vb
 .ft CW
@@ -10,7 +10,7 @@
 
 .fi
 ..
-.TH "UNW\\_GET\\_PROC\\_INFO" "3" "16 August 2007" "Programming Library " "Programming Library "
+.TH "UNW\\_GET\\_PROC\\_INFO" "3" "29 August 2021" "Programming Library " "Programming Library "
 .SH NAME
 unw_get_proc_info
 \-\- get info on current procedure 
@@ -96,7 +96,7 @@ format
 is equal to UNW_INFO_FORMAT_DYNAMIC\&.
 If the 
 unwind\-info consists of a (target\-specific) unwind table, it is 
-equal to to UNW_INFO_FORMAT_TABLE\&.
+equal to UNW_INFO_FORMAT_TABLE\&.
 All other values are 
 reserved for future use by libunwind\&.
 This member exists 
@@ -138,7 +138,7 @@ may return an undefined value in this member.
 Note that for the purposes of libunwind,
 the code of a 
 procedure is assumed to occupy a single, contiguous range of 
-addresses. For this reason, it is alwas possible to describe the 
+addresses. For this reason, it is always possible to describe the 
 extent of a procedure with the start_ip
 and end_ip
 members. If a single function/routine is split into multiple, 

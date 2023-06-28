@@ -1721,6 +1721,67 @@ function append_branch_target_block(builder: WasmBuilder, ip: MintOpcodePtr, isB
     builder.cfg.startBranchBlock(ip, isBackBranchTarget);
 }
 
+function computeMemoryAlignment(offset: number, opcodeOrPrefix: WasmOpcode, simdOpcode?: WasmSimdOpcode) {
+    // First, compute the best possible alignment
+    let alignment = 0;
+    if (offset % 16 === 0)
+        alignment = 4;
+    else if (offset % 8 === 0)
+        alignment = 3;
+    else if (offset % 4 === 0)
+        alignment = 2;
+    else if (offset % 2 === 0)
+        alignment = 1;
+
+    // stackval is 8 bytes. interp aligns the stack to 16 bytes for v128.
+    // wasm spec prohibits alignment higher than natural alignment, just to be annoying
+    switch (opcodeOrPrefix) {
+        case WasmOpcode.PREFIX_simd:
+            // For loads that aren't a regular v128 load, assume weird things might be happening with alignment
+            alignment = (
+                (simdOpcode === WasmSimdOpcode.v128_load) ||
+                (simdOpcode === WasmSimdOpcode.v128_store)
+            ) ? Math.min(alignment, 4) : 0;
+            break;
+        case WasmOpcode.i64_load:
+        case WasmOpcode.f64_load:
+        case WasmOpcode.i64_store:
+        case WasmOpcode.f64_store:
+            alignment = Math.min(alignment, 3);
+            break;
+        case WasmOpcode.i64_load32_s:
+        case WasmOpcode.i64_load32_u:
+        case WasmOpcode.i64_store32:
+        case WasmOpcode.i32_load:
+        case WasmOpcode.f32_load:
+        case WasmOpcode.i32_store:
+        case WasmOpcode.f32_store:
+            alignment = Math.min(alignment, 2);
+            break;
+        case WasmOpcode.i64_load16_s:
+        case WasmOpcode.i64_load16_u:
+        case WasmOpcode.i32_load16_s:
+        case WasmOpcode.i32_load16_u:
+        case WasmOpcode.i64_store16:
+        case WasmOpcode.i32_store16:
+            alignment = Math.min(alignment, 1);
+            break;
+        case WasmOpcode.i64_load8_s:
+        case WasmOpcode.i64_load8_u:
+        case WasmOpcode.i32_load8_s:
+        case WasmOpcode.i32_load8_u:
+        case WasmOpcode.i64_store8:
+        case WasmOpcode.i32_store8:
+            alignment = 0;
+            break;
+        default:
+            alignment = 0;
+            break;
+    }
+
+    return alignment;
+}
+
 function append_ldloc(builder: WasmBuilder, offset: number, opcodeOrPrefix: WasmOpcode, simdOpcode?: WasmSimdOpcode) {
     builder.local("pLocals");
     mono_assert(opcodeOrPrefix >= WasmOpcode.i32_load, () => `Expected load opcode but got ${opcodeOrPrefix}`);
@@ -1729,9 +1790,7 @@ function append_ldloc(builder: WasmBuilder, offset: number, opcodeOrPrefix: Wasm
         // This looks wrong but I assure you it's correct.
         builder.appendULeb(simdOpcode);
     }
-    // stackval is 8 bytes, but pLocals might not be 8 byte aligned so we use 4
-    // wasm spec prohibits alignment higher than natural alignment, just to be annoying
-    const alignment = (simdOpcode !== undefined) || (opcodeOrPrefix > WasmOpcode.f64_load) ? 0 : 2;
+    const alignment = computeMemoryAlignment(offset, opcodeOrPrefix, simdOpcode);
     builder.appendMemarg(offset, alignment);
 }
 
@@ -1747,9 +1806,7 @@ function append_stloc_tail(builder: WasmBuilder, offset: number, opcodeOrPrefix:
         // This looks wrong but I assure you it's correct.
         builder.appendULeb(simdOpcode);
     }
-    // stackval is 8 bytes, but pLocals might not be 8 byte aligned so we use 4
-    // wasm spec prohibits alignment higher than natural alignment, just to be annoying
-    const alignment = (simdOpcode !== undefined) || (opcodeOrPrefix > WasmOpcode.f64_store) ? 0 : 2;
+    const alignment = computeMemoryAlignment(offset, opcodeOrPrefix, simdOpcode);
     builder.appendMemarg(offset, alignment);
     invalidate_local(offset);
     // HACK: Invalidate the second stack slot used by a simd vector
