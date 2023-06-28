@@ -4,6 +4,8 @@
 // Changes to this file must follow the https://aka.ms/api-review process.
 // ------------------------------------------------------------------------------
 
+using System;
+
 namespace Microsoft.Extensions.DependencyInjection
 {
     public static partial class ActivatorUtilities
@@ -59,7 +61,7 @@ namespace Microsoft.Extensions.DependencyInjection
     {
         Microsoft.Extensions.DependencyInjection.IServiceScope CreateScope();
     }
-    public partial interface ISupportKeyedService
+    public partial interface IKeyedServiceProvider : IServiceProvider
     {
         object? GetKeyedService(System.Type serviceType, object serviceKey);
         object GetRequiredKeyedService(System.Type serviceType, object serviceKey);

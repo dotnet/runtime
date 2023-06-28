@@ -5,7 +5,7 @@ using System;
 
 namespace Microsoft.Extensions.DependencyInjection
 {
-    public interface ISupportKeyedService
+    public interface IKeyedServiceProvider : IServiceProvider
     {
         /// <summary>
         /// Gets the service object of the specified type.

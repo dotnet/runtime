@@ -23,7 +23,7 @@ namespace Microsoft.Extensions.DependencyInjection
         {
             ThrowHelper.ThrowIfNull(provider);
 
-            if (provider is ISupportKeyedService keyedServiceProvider)
+            if (provider is IKeyedServiceProvider keyedServiceProvider)
             {
                 return (T?)keyedServiceProvider.GetKeyedService(typeof(T), serviceKey);
             }
@@ -44,7 +44,7 @@ namespace Microsoft.Extensions.DependencyInjection
             ThrowHelper.ThrowIfNull(provider);
             ThrowHelper.ThrowIfNull(serviceType);
 
-            if (provider is ISupportKeyedService requiredServiceSupportingProvider)
+            if (provider is IKeyedServiceProvider requiredServiceSupportingProvider)
             {
                 return requiredServiceSupportingProvider.GetRequiredKeyedService(serviceType, serviceKey);
             }

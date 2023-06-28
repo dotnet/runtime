@@ -17,7 +17,7 @@ namespace Microsoft.Extensions.DependencyInjection
     /// </summary>
     [DebuggerDisplay("{DebuggerToString(),nq}")]
     [DebuggerTypeProxy(typeof(ServiceProviderDebugView))]
-    public sealed class ServiceProvider : IServiceProvider, ISupportKeyedService, IDisposable, IAsyncDisposable
+    public sealed class ServiceProvider : IServiceProvider, IKeyedServiceProvider, IDisposable, IAsyncDisposable
     {
         private readonly CallSiteValidator? _callSiteValidator;
 
