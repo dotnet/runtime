@@ -168,6 +168,17 @@ bool IntegralRange::Contains(int64_t value) const
             }
             break;
 
+        case GT_IND:
+        {
+            if (node->gtGetOp1()->OperGet() == GT_ADD
+                && node->gtGetOp1()->gtGetOp1()->OperGet() == GT_LCL_VAR
+                && node->gtGetOp1()->gtGetOp1()->AsLclVar()->IsNeverNegative(compiler))
+            {
+                return {SymbolicIntegerValue::Zero, UpperBoundForType(rangeType)};
+            }
+            break;
+        }
+
         case GT_LCL_VAR:
         {
             LclVarDsc* const varDsc = compiler->lvaGetDesc(node->AsLclVar());
