@@ -226,6 +226,9 @@ Compiler::fgWalkResult Rationalizer::RewriteNode(GenTree** useEdge, Compiler::Ge
     switch (node->OperGet())
     {
         case GT_CALL:
+        {
+            comp->compHasCallInLir = true;
+
             // In linear order we no longer need to retain the stores in early
             // args as these have now been sequenced.
             for (CallArg& arg : node->AsCall()->gtArgs.EarlyArgs())
@@ -248,6 +251,7 @@ Compiler::fgWalkResult Rationalizer::RewriteNode(GenTree** useEdge, Compiler::Ge
             }
 #endif
             break;
+        }
 
         case GT_NOP:
         case GT_BOX:

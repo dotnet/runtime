@@ -1913,12 +1913,22 @@ void LinearScan::buildRefPositionsForNode(GenTree* tree, LsraLocation currentLoc
 
 static const regNumber lsraRegOrder[]   = {REG_VAR_ORDER};
 const unsigned         lsraRegOrderSize = ArrLen(lsraRegOrder);
-// TODO-XARCH-AVX512 we might want to move this to be configured with the rbm variables too
+
 static const regNumber lsraRegOrderFlt[]   = {REG_VAR_ORDER_FLT};
 const unsigned         lsraRegOrderFltSize = ArrLen(lsraRegOrderFlt);
 #if defined(TARGET_AMD64)
 static const regNumber lsraRegOrderFltEvex[]   = {REG_VAR_ORDER_FLT_EVEX};
 const unsigned         lsraRegOrderFltEvexSize = ArrLen(lsraRegOrderFltEvex);
+
+static const regNumber lsraRegOrderLeaf[]   = {REG_VAR_ORDER_LEAF};
+const unsigned         lsraRegOrderLeafSize = ArrLen(lsraRegOrderLeaf);
+
+static const regNumber lsraRegOrderFltLeaf[]   = {REG_VAR_ORDER_FLT_LEAF};
+const unsigned         lsraRegOrderFltLeafSize = ArrLen(lsraRegOrderFltLeaf);
+
+static const regNumber lsraRegOrderFltEvexLeaf[]   = {REG_VAR_ORDER_FLT_EVEX_LEAF};
+const unsigned         lsraRegOrderFltEvexLeafSize = ArrLen(lsraRegOrderFltEvexLeaf);
+
 #endif //  TARGET_AMD64
 
 //------------------------------------------------------------------------
@@ -1926,44 +1936,85 @@ const unsigned         lsraRegOrderFltEvexSize = ArrLen(lsraRegOrderFltEvex);
 //
 void LinearScan::buildPhysRegRecords()
 {
+    // TODO-CQ: We build physRegRecords before building intervals
+    // and refpositions. During building intervals/refposition, we
+    // would know if there are floating points used. If we can know
+    // that information before we build intervals, we can skip
+    // initializing the floating registers.
+    // For that `compFloatingPointUsed` should be set accurately
+    // before invoking allocator.
+
     for (regNumber reg = REG_FIRST; reg < AVAILABLE_REG_COUNT; reg = REG_NEXT(reg))
     {
         RegRecord* curr = &physRegs[reg];
         curr->init(reg);
     }
 
-    for (unsigned int i = 0; i < lsraRegOrderSize; i++)
+    const regNumber* regOrder;
+    unsigned         regOrderSize;
+
+    const regNumber* regOrderFlt;
+    unsigned         regOrderFltSize;
+
+#if defined(TARGET_AMD64)
+    // We differentiate between methods that have calls and those that don't since
+    // different registers can have different costs. In particular, when we have a
+    // call, we want to avoid spilling and so want to preference callee trashed.
+    //
+    // However, when we are a leaf method (don't contain any calls) it's better to
+    // instead use a different order based on the encoding size required to use the
+    // register.
+
+    if (compiler->compHasCallInLir)
     {
-        regNumber  reg  = lsraRegOrder[i];
+        regOrder     = &lsraRegOrder[0];
+        regOrderSize = lsraRegOrderSize;
+
+        if (compiler->canUseEvexEncoding())
+        {
+            regOrderFlt     = &lsraRegOrderFltEvex[0];
+            regOrderFltSize = lsraRegOrderFltEvexSize;
+        }
+        else
+        {
+            regOrderFlt     = &lsraRegOrderFlt[0];
+            regOrderFltSize = lsraRegOrderFltSize;
+        }
+    }
+    else
+    {
+        regOrder     = &lsraRegOrderLeaf[0];
+        regOrderSize = lsraRegOrderLeafSize;
+
+        if (compiler->canUseEvexEncoding())
+        {
+            regOrderFlt     = &lsraRegOrderFltEvexLeaf[0];
+            regOrderFltSize = lsraRegOrderFltEvexLeafSize;
+        }
+        else
+        {
+            regOrderFlt     = &lsraRegOrderFltLeaf[0];
+            regOrderFltSize = lsraRegOrderFltLeafSize;
+        }
+    }
+#else
+    regOrder     = &lsraRegOrder[0];
+    regOrderSize = lsraRegOrderSize;
+
+    regOrderFlt     = &lsraRegOrderFlt[0];
+    regOrderFltSize = lsraRegOrderFltSize;
+#endif
+
+    for (unsigned int i = 0; i < regOrderSize; i++)
+    {
+        regNumber  reg  = regOrder[i];
         RegRecord* curr = &physRegs[reg];
         curr->regOrder  = (unsigned char)i;
     }
 
-// TODO-CQ: We build physRegRecords before building intervals
-// and refpositions. During building intervals/refposition, we
-// would know if there are floating points used. If we can know
-// that information before we build intervals, we can skip
-// initializing the floating registers.
-// For that `compFloatingPointUsed` should be set accurately
-// before invoking allocator.
-
-#if defined(TARGET_AMD64)
-    if (compiler->canUseEvexEncoding())
+    for (unsigned int i = 0; i < regOrderFltSize; i++)
     {
-        for (unsigned int i = 0; i < lsraRegOrderFltEvexSize; i++)
-        {
-            regNumber  reg  = lsraRegOrderFltEvex[i];
-            RegRecord* curr = &physRegs[reg];
-            curr->regOrder  = (unsigned char)i;
-        }
-
-        return;
-    }
-#endif // TARGET_AMD64
-
-    for (unsigned int i = 0; i < lsraRegOrderFltSize; i++)
-    {
-        regNumber  reg  = lsraRegOrderFlt[i];
+        regNumber  reg  = regOrderFlt[i];
         RegRecord* curr = &physRegs[reg];
         curr->regOrder  = (unsigned char)i;
     }
