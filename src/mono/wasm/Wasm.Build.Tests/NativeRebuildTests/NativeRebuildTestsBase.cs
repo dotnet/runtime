@@ -164,8 +164,8 @@ namespace Wasm.Build.NativeRebuild.Tests
                 Path.Combine(paths.ObjWasmDir, "pinvoke-table.h"),
                 Path.Combine(paths.ObjWasmDir, "driver-gen.c"),
 
-                Path.Combine(paths.BundleDir, "dotnet.native.wasm"),
-                Path.Combine(paths.BundleDir, "dotnet.native.js"),
+                Path.Combine(paths.BundleDir, "_framework", "dotnet.native.wasm"),
+                Path.Combine(paths.BundleDir, "_framework", "dotnet.native.js"),
             };
 
             if (buildArgs.AOT)
@@ -185,8 +185,8 @@ namespace Wasm.Build.NativeRebuild.Tests
                 dict[Path.GetFileName(file)] = (file, unchanged);
 
             // those files do not change on re-link
-            dict["dotnet.js"]=(Path.Combine(paths.BundleDir, "dotnet.js"), true);
-            dict["dotnet.runtime.js"]=(Path.Combine(paths.BundleDir, "dotnet.runtime.js"), true);
+            dict["dotnet.js"]=(Path.Combine(paths.BundleDir, "_framework", "dotnet.js"), true);
+            dict["dotnet.runtime.js"]=(Path.Combine(paths.BundleDir, "_framework", "dotnet.runtime.js"), true);
 
             return dict;
         }
