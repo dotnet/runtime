@@ -1230,7 +1230,7 @@ void CodeGen::inst_RV_RV_TT(
     if (IsEmbBroadcast)
     {
         instOptions = INS_OPTS_EVEX_b;
-        if (HWIntrinsicInfo::IsBitwiseOperation(ins) && op2->AsHWIntrinsic()->Op(1)->TypeIs(TYP_LONG))
+        if (HWIntrinsicInfo::IsBitwiseOperation(ins) && (op2->AsHWIntrinsic()->Op(1)->TypeIs(TYP_LONG) || op2->AsHWIntrinsic()->Op(1)->TypeIs(TYP_ULONG)))
         {
             switch (ins)
             {
