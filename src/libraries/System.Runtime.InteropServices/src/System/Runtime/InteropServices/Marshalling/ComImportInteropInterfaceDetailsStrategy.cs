@@ -1,7 +1,6 @@
 ﻿// Licensed to the .NET Foundation under one or more agreements.
 // The .NET Foundation licenses this file to you under the MIT license.
 
-using System.Collections.Generic;
 using System.Diagnostics.CodeAnalysis;
 using System.Reflection;
 using System.Reflection.Emit;
@@ -9,6 +8,44 @@ using System.Runtime.CompilerServices;
 
 namespace System.Runtime.InteropServices.Marshalling
 {
+    /// <summary>
+    /// An interface details strategy that enables discovering both interfaces defined with source-generated COM (i.e. <see cref="GeneratedComInterfaceAttribute"/> and <see cref="IUnknownDerivedAttribute{T, TImpl}"/>) and runtime-implemented COM (i.e. <see cref="ComImportAttribute"/>).
+    /// </summary>
+    /// <remarks>
+    /// This strategy is meant for intermediary adoption scenarios and is not compatible with trimming or NativeAOT by design. Since runtime-implemented COM is not trim friendly or AOT-compatible, these restrictions are okay.
+    /// This strategy only supports "COM Object Wrapper" scenarios, so casting a COM object wrapper to a <see cref="ComImportAttribute"/>-attributed type. It does not support exposing a <see cref="ComImportAttribute"/>-attributed type as an additional interface on a managed object wrapper.
+    /// The strategy provides <see cref="DynamicInterfaceCastableImplementationAttribute"/>-based implementations of <see cref="ComImportAttribute"/>-attributed interfaces by dynamically generating an interface using <see cref="System.Reflection.Emit"/> that has the following shape:
+    /// <code>
+    /// [assembly:IgnoresAccessChecksTo("AssemblyContainingIComInterface")]
+    /// [assembly:IgnoresAccessChecksTo("AssemblyContainingRetType")]
+    /// [assembly:IgnoresAccessChecksTo("AssemblyContainingArgType1")]
+    /// [assembly:IgnoresAccessChecksTo("AssemblyContainingArgType2")]
+    /// // One attribute per containing assembly of each type used in each method signature of the interface.
+    ///
+    /// namespace System.Runtime.CompilerServices
+    /// {
+    ///     [AssemblyUsage(AttributeTargets.Assembly, AllowMultiple = true)]
+    ///     internal class IgnoresAccessChecksToAttribute : Attribute
+    ///     {
+    ///         public IgnoresAccessChecksToAttribute(string assemblyName) { }
+    ///     }
+    /// }
+    ///
+    /// [DynamicInterfaceCastableImplementation]
+    /// interface InterfaceForwarder : IComInterface
+    /// {
+    ///     RetType IComInterface.Method1(ArgType1 arg1, ArgType2 arg2, ...)
+    ///     {
+    ///         return ((IComInterface)((IComImportAdapter)this).GetRuntimeCallableWrapper())(arg1, arg2, ...);
+    ///     }
+    /// }
+    /// </code>
+    ///
+    /// This mechanism allows source-generated COM interop to allow using runtime-implemented COM interfaces with runtime-defined marshalling behavior with minimal work on the source-generated COM interop side.
+    /// Additionally, by scoping the majority of the logic to this class, we make this logic more easily trimmable.
+    ///
+    /// We emit the <c>IgnoresAccessChecksToAttribute</c> to enable casting to internal <see cref="ComImportAttribute"/> types, which is a very common scenario (most <see cref="ComImportAttribute"/> types are internal).
+    /// </remarks>
     [RequiresDynamicCode("Enabling interop between source-generated and runtime-generated COM requires dynamic code generation.")]
     internal sealed class ComImportInteropInterfaceDetailsStrategy : IIUnknownInterfaceDetailsStrategy
     {
@@ -95,7 +132,7 @@ namespace System.Runtime.InteropServices.Marshalling
                 s_attributeUsageCtor,
                 new object[] { AttributeTargets.Assembly },
                 new PropertyInfo[] { s_attributeUsageAllowMultipleProperty },
-                new object[] { false });
+                new object[] { true });
             tb.SetCustomAttribute(attributeUsage);
 
             var cb = tb.DefineConstructor(
@@ -139,10 +176,19 @@ namespace System.Runtime.InteropServices.Marshalling
             public unsafe void** ManagedVirtualMethodTable => null;
         }
 
+        /// <summary>
+        /// This interface enables a COM Object Wrapper (such as <see cref="ComObject"/>) to provide a runtime-implemented COM object to enable integration between runtime-implemented COM objects and
+        /// other COM interop systems like source-generated COM.
+        /// </summary>
         internal interface IComImportAdapter
         {
             internal static readonly MethodInfo GetRuntimeCallableWrapperMethod = typeof(IComImportAdapter).GetMethod(nameof(GetRuntimeCallableWrapper))!;
 
+            /// <summary>
+            /// Gets the runtime-implemented COM object that corresponds to the same underlying COM object as this wrapper.
+            /// </summary>
+            /// <returns>The runtime-implemented RCW</returns>
+            /// <remarks>The returned object must be an object such that a call to <see cref="Marshal.IsComObject(object)"/> would return true.</remarks>
             object GetRuntimeCallableWrapper();
         }
     }

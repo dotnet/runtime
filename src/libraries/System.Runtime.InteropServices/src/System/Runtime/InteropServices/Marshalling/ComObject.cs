@@ -15,6 +15,7 @@ namespace System.Runtime.InteropServices.Marshalling
     /// </summary>
     public sealed unsafe class ComObject : IDynamicInterfaceCastable, IUnmanagedVirtualMethodTableProvider, ComImportInteropInterfaceDetailsStrategy.IComImportAdapter
     {
+        internal static bool BuiltInComSupported { get; } = AppContext.TryGetSwitch("System.Runtime.InteropServices.BuiltInComInterop.IsSupported", out bool supported) ? supported : false;
         internal static bool ComImportInteropEnabled { get; } = AppContext.TryGetSwitch("System.Runtime.InteropServices.Marshalling.EnableGeneratedComInterfaceComImportInterop", out bool enabled) ? enabled : false;
 
         private readonly void* _instancePointer;
@@ -34,9 +35,10 @@ namespace System.Runtime.InteropServices.Marshalling
             IUnknownStrategy = iunknownStrategy;
             CacheStrategy = cacheStrategy;
             _instancePointer = IUnknownStrategy.CreateInstancePointer(thisPointer);
-            if (OperatingSystem.IsWindows() && ComImportInteropEnabled)
+            if (OperatingSystem.IsWindows() && BuiltInComSupported && ComImportInteropEnabled)
             {
                 _runtimeCallableWrapper = Marshal.GetObjectForIUnknown((nint)thisPointer);
+                Debug.Assert(Marshal.IsComObject(_runtimeCallableWrapper));
             }
         }
 
