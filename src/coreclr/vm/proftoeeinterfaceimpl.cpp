@@ -10754,9 +10754,16 @@ void __stdcall ProfilerUnmanagedToManagedTransitionMD(MethodDesc *pMD,
 // These do a lot of work for us, setting up Frames, gathering arg info and resolving generics.
   //*******************************************************************************************
 
-HCIMPL2(EXTERN_C void, ProfileEnter, UINT_PTR clientData, void * platformSpecificHandle)
+HCIMPL2_RAW(EXTERN_C void, ProfileEnter, UINT_PTR clientData, void * platformSpecificHandle)
+GCX_COOP_THREAD_EXISTS(GET_THREAD());
+HCIMPL_PROLOG(ProfileEnter)
 {
     FCALL_CONTRACT;
+
+    if (GET_THREAD() == NULL)
+    {
+        return;
+    }
 
 #ifdef PROFILING_SUPPORTED
 
@@ -10924,9 +10931,16 @@ LExit:
 }
 HCIMPLEND
 
-HCIMPL2(EXTERN_C void, ProfileLeave, UINT_PTR clientData, void * platformSpecificHandle)
+HCIMPL2_RAW(EXTERN_C void, ProfileLeave, UINT_PTR clientData, void * platformSpecificHandle)
+GCX_COOP_THREAD_EXISTS(GET_THREAD());
+HCIMPL_PROLOG(ProfileLeave)
 {
     FCALL_CONTRACT;
+
+    if (GET_THREAD() == NULL)
+    {
+        return;
+    }
 
     FC_GC_POLL_NOT_NEEDED();            // we pulse GC mode, so we are doing a poll
 
