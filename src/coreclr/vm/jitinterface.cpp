@@ -1645,7 +1645,16 @@ uint32_t CEEInfo::getThreadLocalFieldInfo (CORINFO_FIELD_HANDLE  field, bool isG
     return typeIndex;
 }
 
-#ifndef _MSC_VER
+#if defined(TARGET_WINDOWS)
+/*********************************************************************/
+static uint32_t ThreadLocalOffset(void* p)
+{
+    PTEB Teb = NtCurrentTeb();
+    uint8_t** pTls = (uint8_t**)Teb->ThreadLocalStoragePointer;
+    uint8_t* pOurTls = pTls[_tls_index];
+    return (uint32_t)((uint8_t*)p - pOurTls);
+}
+#else
 
 extern "C" void* JIT_GetThreadStaticsBaseOffset();
 
@@ -1698,17 +1707,7 @@ void* getTlsIndexObjectAddress()
     return reinterpret_cast<void*>(JIT_GetThreadStaticsBaseOffset());
 }
 #endif  // HOST_ARM64
-#else
-/*********************************************************************/
-static uint32_t ThreadLocalOffset(void* p)
-{
-    PTEB Teb = NtCurrentTeb();
-    uint8_t** pTls = (uint8_t**)Teb->ThreadLocalStoragePointer;
-    uint8_t* pOurTls = pTls[_tls_index];
-    return (uint32_t)((uint8_t*)p - pOurTls);
-}
-
-#endif // !_MSC_VER
+#endif // TARGET_WINDOWS
 
 
 void CEEInfo::getThreadLocalStaticBlocksInfo (CORINFO_THREAD_STATIC_BLOCKS_INFO* pInfo, bool isGCType)
