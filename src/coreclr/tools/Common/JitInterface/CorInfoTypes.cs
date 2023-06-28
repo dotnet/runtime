@@ -1151,8 +1151,8 @@ namespace Internal.JitInterface
         public nuint tlsGetAddrFtnPtr;
         public nuint tlsIndexObject;
         public uint offsetOfThreadLocalStoragePointer;
-        public nuint offsetOfMaxThreadStaticBlocks;
-        public nuint offsetOfThreadStaticBlocks;
+        public uint offsetOfMaxThreadStaticBlocks;
+        public uint offsetOfThreadStaticBlocks;
         public uint offsetOfGCDataPointer;
     };
 

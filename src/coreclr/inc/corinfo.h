@@ -1730,8 +1730,8 @@ struct CORINFO_THREAD_STATIC_BLOCKS_INFO
     size_t tlsGetAddrFtnPtr;                    // linux/x64 specific - address of __tls_get_addr() function
     size_t tlsIndexObject;                      // linux/x64 specific - address of tls_index object
     uint32_t offsetOfThreadLocalStoragePointer; // windows specific
-    size_t offsetOfMaxThreadStaticBlocks;
-    size_t offsetOfThreadStaticBlocks;
+    uint32_t offsetOfMaxThreadStaticBlocks;
+    uint32_t offsetOfThreadStaticBlocks;
     uint32_t offsetOfGCDataPointer;
 };
 

@@ -3591,8 +3591,8 @@ void MethodContext::recGetThreadLocalStaticBlocksInfo(CORINFO_THREAD_STATIC_BLOC
 void MethodContext::dmpGetThreadLocalStaticBlocksInfo(DWORD key, const Agnostic_GetThreadLocalStaticBlocksInfo& value)
 {
     printf("GetThreadLocalStaticBlocksInfo key %u, value tlsIndex-%016" PRIX64
-           ", offsetOfThreadLocalStoragePointer-%u, offsetOfMaxThreadStaticBlocks-%016" PRIX64
-           ", offsetOfThreadStaticBlocks-%016" PRIX64 " offsetOfGCDataPointer-%u"
+           ", offsetOfThreadLocalStoragePointer-%u, offsetOfMaxThreadStaticBlocks-%u"
+           ", offsetOfThreadStaticBlocks-%u, offsetOfGCDataPointer-%u"
            ", value tlsGetAddrFtnPtr-%016" PRIX64 ", tlsIndexObject--%016" PRIX64 ,
            key, value.tlsIndex.handle, value.offsetOfThreadLocalStoragePointer,
            value.offsetOfMaxThreadStaticBlocks, value.offsetOfThreadStaticBlocks, value.offsetOfGCDataPointer, value.tlsGetAddrFtnPtr, value.tlsIndexObject);
