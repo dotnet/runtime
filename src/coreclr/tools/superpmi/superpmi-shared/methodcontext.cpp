@@ -3577,6 +3577,7 @@ void MethodContext::recGetThreadLocalStaticBlocksInfo(CORINFO_THREAD_STATIC_BLOC
     value.tlsIndex.accessType                   = pInfo->tlsIndex.accessType;
     value.tlsGetAddrFtnPtr                      = CastHandle(pInfo->tlsGetAddrFtnPtr);
     value.tlsIndexObject                        = CastHandle(pInfo->tlsIndexObject);
+    value.threadVarsSection                     = CastHandle(pInfo->threadVarsSection);
     value.offsetOfMaxThreadStaticBlocks         = pInfo->offsetOfMaxThreadStaticBlocks;
     value.offsetOfThreadLocalStoragePointer     = pInfo->offsetOfThreadLocalStoragePointer;
     value.offsetOfThreadStaticBlocks            = pInfo->offsetOfThreadStaticBlocks;
@@ -3593,9 +3594,12 @@ void MethodContext::dmpGetThreadLocalStaticBlocksInfo(DWORD key, const Agnostic_
     printf("GetThreadLocalStaticBlocksInfo key %u, value tlsIndex-%016" PRIX64
            ", offsetOfThreadLocalStoragePointer-%u, offsetOfMaxThreadStaticBlocks-%u"
            ", offsetOfThreadStaticBlocks-%u, offsetOfGCDataPointer-%u"
-           ", value tlsGetAddrFtnPtr-%016" PRIX64 ", tlsIndexObject--%016" PRIX64 ,
+           ", value tlsGetAddrFtnPtr-%016" PRIX64 ", tlsIndexObject-%016" PRIX64
+           ", threadVarsSection-%016" PRIX64 ,
            key, value.tlsIndex.handle, value.offsetOfThreadLocalStoragePointer,
-           value.offsetOfMaxThreadStaticBlocks, value.offsetOfThreadStaticBlocks, value.offsetOfGCDataPointer, value.tlsGetAddrFtnPtr, value.tlsIndexObject);
+           value.offsetOfMaxThreadStaticBlocks, value.offsetOfThreadStaticBlocks,
+           value.offsetOfGCDataPointer, value.tlsGetAddrFtnPtr, value.tlsIndexObject,
+           value.threadVarsSection);
 }
 
 void MethodContext::repGetThreadLocalStaticBlocksInfo(CORINFO_THREAD_STATIC_BLOCKS_INFO* pInfo, bool isGCType)
@@ -3609,6 +3613,7 @@ void MethodContext::repGetThreadLocalStaticBlocksInfo(CORINFO_THREAD_STATIC_BLOC
     pInfo->tlsIndex.addr                        = (void*)value.tlsIndex.handle;
     pInfo->tlsGetAddrFtnPtr                     = (void*)value.tlsGetAddrFtnPtr;
     pInfo->tlsIndexObject                       = (void*)value.tlsIndexObject;
+    pInfo->threadVarsSection                    = (void*)value.threadVarsSection;
     pInfo->offsetOfMaxThreadStaticBlocks        = (DWORD)value.offsetOfMaxThreadStaticBlocks;
     pInfo->offsetOfThreadLocalStoragePointer    = value.offsetOfThreadLocalStoragePointer;
     pInfo->offsetOfThreadStaticBlocks           = (DWORD)value.offsetOfThreadStaticBlocks;

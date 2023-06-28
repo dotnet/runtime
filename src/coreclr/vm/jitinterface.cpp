@@ -1654,15 +1654,11 @@ static uint32_t ThreadLocalOffset(void* p)
     uint8_t* pOurTls = pTls[_tls_index];
     return (uint32_t)((uint8_t*)p - pOurTls);
 }
-#else
+#elif TARGET_OSX
+extern "C" void* GetThreadVarsSectionOffset();
 
-extern "C" void* GetThreadStaticsBaseOffset();
-
-#ifdef HOST_AMD64
-
-void* getThreadStaticDescriptor(uint8_t* p)
+void* getThreadVarsSectionAddress(uint8_t* p)
 {
-#ifdef TARGET_OSX
     if (!(p[0] == 0x48 && p[1] == 0x8d && p[2] == 0x3d))
     {
         // The optimization is disabled if coreclr is not compiled in .so format.
@@ -1673,7 +1669,34 @@ void* getThreadStaticDescriptor(uint8_t* p)
     // These opcodes are patched by the dynamic linker.
     // Move beyond the opcodes that we have already checked above.
     p += 3;
+
+    // The descriptor address is located at *p at this point.
+    // (p + 4) below skips the descriptor address bytes embedded in the instruction and
+    // add it to the `instruction pointer` to find out the address.
+    return *(uint32_t*)p + (p + 4);
+}
+
+void* getThreadVarsSectionOffset()
+{
+#ifdef TARGET_ARM64
+    return reinterpret_cast<void*>(GetThreadVarsSectionOffset());
 #else
+    // On x64, the address is related to rip, so, disassemble the function,
+    // read the offset, and then relative to the IP, find the final address of
+    // __thread_vars section.
+    uint8_t* p = reinterpret_cast<uint8_t*>(&GetThreadVarsSectionOffset);
+    return getThreadVarsSectionAddress(p);
+#endif // TARGET_ARM64
+}
+
+#else
+
+extern "C" void* GetTlsIndexObjectOffset();
+
+#ifdef HOST_AMD64
+
+void* getThreadStaticDescriptor(uint8_t* p)
+{
     if (!(p[0] == 0x66 && p[1] == 0x48 && p[2] == 0x8d && p[3] == 0x3d))
     {
         // The optimization is disabled if coreclr is not compiled in .so format.
@@ -1684,7 +1707,6 @@ void* getThreadStaticDescriptor(uint8_t* p)
     // These opcodes are patched by the dynamic linker.
     // Move beyond the opcodes that we have already checked above.
     p += 4;
-#endif
 
     // The descriptor address is located at *p at this point. Read that and add
     // it to the instruction pointer to locate the address of `ti` that will be used
@@ -1696,16 +1718,14 @@ void* getThreadStaticDescriptor(uint8_t* p)
 
 void* getTlsIndexObjectAddress()
 {
-    uint8_t* p = reinterpret_cast<uint8_t*>(&GetThreadStaticsBaseOffset);
+    uint8_t* p = reinterpret_cast<uint8_t*>(&GetTlsIndexObjectOffset);
     return getThreadStaticDescriptor(p);
 }
 
 #elif HOST_ARM64
 
-void* getTlsIndexObjectAddress()
-{
-    return reinterpret_cast<void*>(GetThreadStaticsBaseOffset());
-}
+extern "C" void* GetThreadStaticsVariableOffset();
+
 #endif  // HOST_ARM64
 #endif // TARGET_WINDOWS
 
@@ -1731,10 +1751,7 @@ void CEEInfo::getThreadLocalStaticBlocksInfo (CORINFO_THREAD_STATIC_BLOCKS_INFO*
 
 #elif defined(TARGET_OSX)
 
-    // For OSX x64/arm64, need to get the address of relevant tlv_get_addr of thread static
-    // variable that will be invoked during runtime to get the right address of corresponding
-    // thread.
-    pInfo->tlsIndexObject = (size_t)getTlsIndexObjectAddress();
+    pInfo->threadVarsSection = (size_t)GetThreadVarsSectionAddr();
 
 #elif defined(TARGET_AMD64)
 
@@ -1747,7 +1764,7 @@ void CEEInfo::getThreadLocalStaticBlocksInfo (CORINFO_THREAD_STATIC_BLOCKS_INFO*
 
     // For Linux/arm64, just get the offset of thread static variable, and during execution,
     // this offset, taken from trpid_elp0 system register gives back the thread variable address.
-    threadStaticBaseOffset = (size_t)getTlsIndexObjectAddress();
+    threadStaticBaseOffset = reinterpret_cast<size_t>(GetThreadStaticsVariableOffset());
 
 #else
     _ASSERTE_MSG(false, "Unsupported scenario of optimizing TLS access on Linux Arm32/x86");

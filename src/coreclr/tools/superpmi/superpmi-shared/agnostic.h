@@ -532,6 +532,7 @@ struct Agnostic_GetThreadLocalStaticBlocksInfo
     Agnostic_CORINFO_CONST_LOOKUP tlsIndex;
     DWORDLONG                     tlsGetAddrFtnPtr;
     DWORDLONG                     tlsIndexObject;
+    DWORDLONG                     threadVarsSection;
     UINT                          offsetOfThreadLocalStoragePointer;
     UINT                          offsetOfMaxThreadStaticBlocks;
     UINT                          offsetOfThreadStaticBlocks;

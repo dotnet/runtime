@@ -308,8 +308,22 @@ NESTED_ENTRY ProfileTailcallNaked, _TEXT, NoHandler
   ret
 NESTED_END ProfileTailcallNaked, _TEXT
 
+#ifdef TARGET_OSX
+# EXTERN_C void* GetThreadVarsSectionOffset()
+# <NOTE>
+# Helper to calculate the address of relevant __thread_vars section that holds the address of symbol tlv_get_address for thread
+# local `t_ThreadStatics`. The address is updated by the linker, which we retrieve here. In JIT code, this address is called
+# to retrieve the address of the thread local.
+# </NOTE>
+LEAF_ENTRY GetThreadVarsSectionOffset, _TEXT
+        mov     rdi,    _t_ThreadStatics@TLVP[rip]
+        ret
+LEAF_END GetThreadVarsSectionAddr, _TEXT
+// ------------------------------------------------------------------
+#endif // TARGET_OSX
 
-# EXTERN_C void* GetThreadStaticsBaseOffset();
+#ifndef TARGET_OSX
+# EXTERN_C void* GetTlsIndexObjectOffset();
 
 # <NOTE>
 # Helper to calculate the offset of native thread local variable `t_ThreadStatics`. The offset has to be found at runtime
@@ -321,16 +335,16 @@ NESTED_END ProfileTailcallNaked, _TEXT
 # We never have to call this method directly, and hence there is a `int 3` at the end.
 # </NOTE>
 
-LEAF_ENTRY GetThreadStaticsBaseOffset, _TEXT
-#ifdef TARGET_OSX
-        mov     rdi,    _t_ThreadStatics@TLVP[rip]
-#else
+LEAF_ENTRY GetTlsIndexObjectOffset, _TEXT
+# On The `lea` instruction has a data16 prefix and the call instruction has two data16 (0x66) prefixes and one rex64 prefix.
+# This is so the total size of lea+call to be 16, suitable for link-time optimization.
+
         data16
-        lea     rdi,    t_ThreadStatics@TLSGD[rip]   // instruction where offset is embedded by the linker during compilation
+        lea     rdi,    t_ThreadStatics@TLSGD[rip]   # instruction where offset is embedded by the linker during compilation
         data16
         data16
         rex64
-        call    __tls_get_addr                      // dummy call to have linker see the code pattern to replace the offset
-#endif
+        call    __tls_get_addr                      # dummy call to have linker see the code pattern to replace the offset
         int 3
 LEAF_END JIT_GetThreadStaticsBaseOffset, _TEXT
+#endif
