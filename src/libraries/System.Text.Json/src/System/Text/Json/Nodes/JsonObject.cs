@@ -70,43 +70,39 @@ namespace System.Text.Json.Nodes
             _jsonElement = element;
         }
 
+        /// <summary>
+        /// Gets or creates the underlying dictionary containing the properties of the object.
+        /// </summary>
+        internal JsonPropertyDictionary<JsonNode?> Dictionary => _dictionary is { } dictionary ? dictionary : InitializeDictionary();
+
         internal override JsonNode InternalDeepClone()
         {
-            if (_jsonElement.HasValue)
+            GetUnderlyingRepresentation(out JsonPropertyDictionary<JsonNode?>? dictionary, out JsonElement? jsonElement);
+
+            if (dictionary is null)
             {
-                return new JsonObject(_jsonElement!.Value.Clone(), Options);
+                return jsonElement.HasValue
+                    ? new JsonObject(jsonElement.Value.Clone(), Options)
+                    : new JsonObject(Options);
             }
 
-            if (_dictionary is not null)
+            bool caseInsensitive = Options.HasValue ? Options.Value.PropertyNameCaseInsensitive : false;
+            var jObject = new JsonObject(Options)
             {
-                bool caseInsensitive = Options.HasValue ? Options.Value.PropertyNameCaseInsensitive : false;
-                var jObject = new JsonObject(Options)
-                {
-                    _dictionary = new JsonPropertyDictionary<JsonNode?>(caseInsensitive, _dictionary.Count)
-                };
+                _dictionary = new JsonPropertyDictionary<JsonNode?>(caseInsensitive, dictionary.Count)
+            };
 
-                foreach (KeyValuePair<string, JsonNode?> item in _dictionary)
-                {
-                    if (item.Value is not null)
-                    {
-                        jObject.Add(item.Key, item.Value.DeepClone());
-                    }
-                    else
-                    {
-                        jObject.Add(item.Key, null);
-                    }
-                }
-                return jObject;
+            foreach (KeyValuePair<string, JsonNode?> item in dictionary)
+            {
+                jObject.Add(item.Key, item.Value?.InternalDeepClone());
             }
 
-            return new JsonObject(Options);
+            return jObject;
         }
 
         internal string GetPropertyName(JsonNode? node)
         {
-            InitializeIfRequired();
-            Debug.Assert(_dictionary != null);
-            KeyValuePair<string, JsonNode?>? item = _dictionary.FindValue(node);
+            KeyValuePair<string, JsonNode?>? item = Dictionary.FindValue(node);
             return item.HasValue ? item.Value.Key : string.Empty;
         }
 
@@ -129,10 +125,12 @@ namespace System.Text.Json.Nodes
                 ThrowHelper.ThrowArgumentNullException(nameof(writer));
             }
 
-            if (_jsonElement.HasValue)
+            GetUnderlyingRepresentation(out JsonPropertyDictionary<JsonNode?>? dictionary, out JsonElement? jsonElement);
+
+            if (dictionary is null && jsonElement.HasValue)
             {
                 // Write the element without converting to nodes.
-                _jsonElement.Value.WriteTo(writer);
+                jsonElement.Value.WriteTo(writer);
             }
             else
             {
@@ -160,19 +158,17 @@ namespace System.Text.Json.Nodes
                     // JsonValueTrimmable/NonTrimmable can hold the object type so calling this method to continue the deep comparision.
                     return value.DeepEquals(this);
                 case JsonObject jsonObject:
-                    InitializeIfRequired();
-                    jsonObject.InitializeIfRequired();
-                    Debug.Assert(_dictionary is not null);
-                    Debug.Assert(jsonObject._dictionary is not null);
+                    JsonPropertyDictionary<JsonNode?> currentDict = Dictionary;
+                    JsonPropertyDictionary<JsonNode?> otherDict = jsonObject.Dictionary;
 
-                    if (_dictionary.Count != jsonObject._dictionary.Count)
+                    if (currentDict.Count != otherDict.Count)
                     {
                         return false;
                     }
 
-                    foreach (KeyValuePair<string, JsonNode?> item in this)
+                    foreach (KeyValuePair<string, JsonNode?> item in currentDict)
                     {
-                        JsonNode? jsonNode = jsonObject._dictionary[item.Key];
+                        JsonNode? jsonNode = otherDict[item.Key];
 
                         if (!DeepEquals(item.Value, jsonNode))
                         {
@@ -202,9 +198,7 @@ namespace System.Text.Json.Nodes
         {
             if (child != null)
             {
-                InitializeIfRequired();
-                Debug.Assert(_dictionary != null);
-                string propertyName = _dictionary.FindValue(child)!.Value.Key;
+                string propertyName = Dictionary.FindValue(child)!.Value.Key;
                 if (propertyName.AsSpan().ContainsSpecialCharacters())
                 {
                     path.Add($"['{propertyName}']");
@@ -220,15 +214,13 @@ namespace System.Text.Json.Nodes
 
         internal void SetItem(string propertyName, JsonNode? value)
         {
-            InitializeIfRequired();
-            Debug.Assert(_dictionary != null);
-            JsonNode? existing = _dictionary.SetValue(propertyName, value, () => value?.AssignParent(this));
+            JsonNode? existing = Dictionary.SetValue(propertyName, value, () => value?.AssignParent(this));
             DetachParent(existing);
         }
 
         private void DetachParent(JsonNode? item)
         {
-            InitializeIfRequired();
+            InitializeDictionary();
             Debug.Assert(_dictionary != null);
 
             if (item != null)
