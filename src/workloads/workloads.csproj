@@ -49,10 +49,6 @@
                           Description=".NET WebAssembly experimental tooling"/>
       <_ComponentResources Include="wasi-experimental" Title=".NET Wasi Experimental"
                           Description=".NET Experimental SDK and tooling for WASI"/>
-      <_ComponentResources Include="microsoft-net-runtime-android" Title=".NET Android Build Tools"
-                          Description="Build tools for Android compilation and native linking."/>
-      <_ComponentResources Include="microsoft-net-runtime-android-aot" Title=".NET Android Build Tools (AoT)"
-                          Description="Build tools for Android ahead-of-time (AoT) compilation and native linking."/>
       <_ComponentResources Include="microsoft-net-runtime-ios" Title=".NET iOS Build Tools"
                           Description="Build tools for iOS compilation and native linking."/>
       <_ComponentResources Include="microsoft-net-runtime-tvos" Title=".NET tvOS Build Tools"
@@ -72,10 +68,6 @@
                           Description="Shared build tasks for mobile platform development."/>
       <_ComponentResources Include="wasm-tools-net7" Title=".NET 7.0 WebAssembly Build Tools"
                           Description="Build tools for net6.0 WebAssembly ahead-of-time (AoT) compilation and native linking."/>
-      <_ComponentResources Include="microsoft-net-runtime-android-net7" Title=".NET 7.0 Android Build Tools"
-                          Description="Build tools for net6.0 Android compilation and native linking."/>
-      <_ComponentResources Include="microsoft-net-runtime-android-aot-net7" Title=".NET 7.0 Android Build Tools (AoT)"
-                          Description="Build tools for net6.0 Android ahead-of-time (AoT) compilation and native linking."/>
       <_ComponentResources Include="microsoft-net-runtime-ios-net7" Title=".NET 7.0 iOS Build Tools"
                           Description="Build tools for net7.0 iOS compilation and native linking."/>
       <_ComponentResources Include="microsoft-net-runtime-tvos-net7" Title=".NET 7.0 tvOS Build Tools"
@@ -95,10 +87,6 @@
                           Description="Shared build tasks for mobile platform development."/>
       <_ComponentResources Include="wasm-tools-net6" Title=".NET 6.0 WebAssembly Build Tools"
                           Description="Build tools for net6.0 WebAssembly ahead-of-time (AoT) compilation and native linking."/>
-      <_ComponentResources Include="microsoft-net-runtime-android-net6" Title=".NET 6.0 Android Build Tools"
-                          Description="Build tools for net6.0 Android compilation and native linking."/>
-      <_ComponentResources Include="microsoft-net-runtime-android-aot-net6" Title=".NET 6.0 Android Build Tools (AoT)"
-                          Description="Build tools for net6.0 Android ahead-of-time (AoT) compilation and native linking."/>
       <_ComponentResources Include="microsoft-net-runtime-ios-net6" Title=".NET 6.0 iOS Build Tools"
                           Description="Build tools for net6.0 iOS compilation and native linking."/>
       <_ComponentResources Include="microsoft-net-runtime-tvos-net" Title=".NET 6.0 tvOS Build Tools"

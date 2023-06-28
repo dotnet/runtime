@@ -131,10 +131,6 @@ extends:
           buildConfig: release
           runtimeFlavor: mono
           platforms:
-          - android_x64
-          - android_x86
-          - android_arm
-          - android_arm64
           - maccatalyst_x64
           - maccatalyst_arm64
           - tvossimulator_x64
@@ -507,10 +503,6 @@ extends:
             isOfficialBuild: ${{ variables.isOfficialBuild }}
             timeoutInMinutes: 120
             dependsOn:
-            - Build_android_arm_release_AllSubsets_Mono
-            - Build_android_arm64_release_AllSubsets_Mono
-            - Build_android_x86_release_AllSubsets_Mono
-            - Build_android_x64_release_AllSubsets_Mono
             - Build_browser_wasm_Linux_release_AllSubsets_Mono
             - Build_wasi_wasm_linux_release_AllSubsets_Mono
             - Build_ios_arm64_release_AllSubsets_Mono
