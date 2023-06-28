@@ -49,9 +49,9 @@ namespace Microsoft.Extensions.DependencyInjection
     {
         bool IsService(System.Type serviceType);
     }
-    public partial interface IServiceProviderIsServiceKeyed
+    public partial interface IKeyedServiceProviderIsService
     {
-        bool IsService(System.Type serviceType, object serviceKey);
+        bool IsKeyedService(System.Type serviceType, object serviceKey);
     }
     public partial interface IServiceScope : System.IDisposable
     {

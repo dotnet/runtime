@@ -18,7 +18,7 @@ namespace Microsoft.Extensions.DependencyInjection
         bool IsService(Type serviceType);
     }
 
-    public interface IServiceProviderIsServiceKeyed
+    public interface IKeyedServiceProviderIsService
     {
         /// <summary>
         /// Determines if the specified service type is available from the <see cref="IServiceProvider"/>.
@@ -26,6 +26,6 @@ namespace Microsoft.Extensions.DependencyInjection
         /// <param name="serviceType">An object that specifies the type of service object to test.</param>
         /// <param name="serviceKey">The <see cref="ServiceDescriptor.ServiceKey"/> of the service.</param>
         /// <returns>true if the specified service is a available, false if it is not.</returns>
-        bool IsService(Type serviceType, object serviceKey);
+        bool IsKeyedService(Type serviceType, object serviceKey);
     }
 }
