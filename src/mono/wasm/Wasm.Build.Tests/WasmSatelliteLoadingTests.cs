@@ -1,35 +1,36 @@
-// Licensed to the .NET Foundation under one or more agreements.
+﻿// Licensed to the .NET Foundation under one or more agreements.
 // The .NET Foundation licenses this file to you under the MIT license.
 
 using System;
+using System.Collections.Generic;
 using System.IO;
+using System.Linq;
+using System.Text;
 using System.Text.RegularExpressions;
-using System.Threading;
 using System.Threading.Tasks;
 using Microsoft.Playwright;
-using Xunit;
 using Xunit.Abstractions;
-using Xunit.Sdk;
+using Xunit;
 
 #nullable enable
 
 namespace Wasm.Build.Tests;
 
-public class WasmLazyLoadingTests : BuildTestBase
+public class WasmSatelliteLoadingTests : BuildTestBase
 {
-    public WasmLazyLoadingTests(ITestOutputHelper output, SharedBuildPerTestClassFixture buildContext)
+    public WasmSatelliteLoadingTests(ITestOutputHelper output, SharedBuildPerTestClassFixture buildContext)
         : base(output, buildContext)
     {
     }
 
     [Fact]
-    public async Task LazyLoadAssembly()
+    public async Task LoadSatelliteAssembly()
     {
-        string id = $"WasmLazyLoading_{Path.GetRandomFileName()}";
+        string id = $"WasmSatelliteLoading_{Path.GetRandomFileName()}";
         InitBlazorWasmProjectDir(id);
 
         string logPath = Path.Combine(s_buildEnv.LogRootPath, id);
-        Utils.DirectoryCopy(Path.Combine(BuildEnvironment.TestAssetsPath, "WasmLazyLoading"), Path.Combine(_projectDir!));
+        Utils.DirectoryCopy(Path.Combine(BuildEnvironment.TestAssetsPath, "WasmSatelliteLoading"), Path.Combine(_projectDir!));
 
         string publishLogPath = Path.Combine(logPath, $"{id}.binlog");
         CommandResult result = new DotNetCommand(s_buildEnv, _testOutput)
@@ -47,8 +48,8 @@ public class WasmLazyLoadingTests : BuildTestBase
 
         var tcs = new TaskCompletionSource<bool>();
 
-        bool hasExpectedMessage = false;
-        Regex exitRegex = new Regex("WASM EXIT (?<exitCode>[0-9]+)$");
+        List<string> testOutput = new();
+        Regex exitRegex = new("WASM EXIT (?<exitCode>[0-9]+)$");
 
         await using var runner = new BrowserRunner(_testOutput);
         var page = await runner.RunAsync(runCommand, runArgs, onConsoleMessage: OnConsoleMessage);
@@ -60,8 +61,9 @@ public class WasmLazyLoadingTests : BuildTestBase
 
             _testOutput.WriteLine($"[{msg.Type}] {msg.Text}");
 
-            if (msg.Text.Contains("FirstName"))
-                hasExpectedMessage = true;
+            const string testOutputPrefix = "TestOutput -> ";
+            if (msg.Text.StartsWith(testOutputPrefix))
+                testOutput.Add(msg.Text.Substring(testOutputPrefix.Length));
 
             if (exitRegex.Match(msg.Text).Success)
                 tcs.SetResult(true);
@@ -72,6 +74,12 @@ public class WasmLazyLoadingTests : BuildTestBase
         if (!tcs.Task.IsCompleted || !tcs.Task.Result)
             throw new Exception($"Timed out after {timeout.TotalSeconds}s waiting for process to exit");
 
-        Assert.True(hasExpectedMessage, "The lazy loading application didn't emitted expected message");
+        Assert.Collection(
+            testOutput,
+            m => Assert.Equal("default: hello", m),
+            m => Assert.Equal("es-ES without satellite: hello", m),
+            m => Assert.Equal("default: hello", m),
+            m => Assert.Equal("es-ES with satellite: hola", m)
+        );
     }
 }
