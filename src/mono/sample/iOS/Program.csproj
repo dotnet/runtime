@@ -8,7 +8,7 @@
     <DefineConstants Condition="'$(ArchiveTests)' == 'true'">$(DefineConstants);CI_TEST</DefineConstants>
     <AppName>HelloiOS</AppName>
     <MainLibraryFileName>$(AssemblyName).dll</MainLibraryFileName>
-    <SelfContained Condition="'$(ArchiveTests)' == 'true'">true</SelfContained>
+    <SelfContained>true</SelfContained>
 
     <RunAOTCompilation Condition="'$(RunAOTCompilation)' == ''">true</RunAOTCompilation>
     <PublishTrimmed>true</PublishTrimmed>
