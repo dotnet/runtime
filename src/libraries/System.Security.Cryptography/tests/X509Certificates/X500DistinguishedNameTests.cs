@@ -468,7 +468,7 @@ namespace System.Security.Cryptography.X509Certificates.Tests
         [InlineData(new [] { "2.5.4.8" }, new [] { "0500" }, "S=#0500")]
         [InlineData(new [] { "2.5.4.8" }, new [] { "0101FF" }, "S=#0101FF")]
         [InlineData(new [] { "2.5.4.3", "2.5.4.8" }, new [] { "0101FF", "3000" }, "CN=#0101FF, S=#3000")]
-        [InlineData(new [] { "2.5.4.3", "2.5.4.8" }, new [] { "0C02504A", "3000" }, "CN=PJ, S=#3000")]
+        [InlineData(new [] { "2.5.4.3", "2.5.4.8", "0.0" }, new [] { "0C02504A", "3000", "0C024141" }, "CN=PJ, S=#3000, OID.0.0=AA")]
         [InlineData(new [] { "2.5.4.3", "2.5.4.8" }, new [] { "0C03233030", "3000" }, "CN=\"#00\", S=#3000")]
         [SkipOnPlatform(TestPlatforms.Browser, "Browser doesn't support an X.509 PAL")]
         public static void Format_ComponentWithNonStringContent(string[] oids, string[] attributeValues, string expected)
@@ -503,28 +503,37 @@ namespace System.Security.Cryptography.X509Certificates.Tests
             AsnWriter writer = new AsnWriter(AsnEncodingRules.DER);
 
             using (writer.PushSequence())
-            using (writer.PushSetOf())
             {
-                using (writer.PushSequence())
+                using (writer.PushSetOf())
                 {
-                    writer.WriteObjectIdentifier("2.5.4.3");
-                    writer.WriteEncodedValue(new byte[] { 0x30, 0x00 });
+                    WriteRDNComponent(writer, "2.5.4.3", "3000");
+                    WriteRDNComponent(writer, "2.5.4.8", "3100");
                 }
 
-                using (writer.PushSequence())
+                using (writer.PushSetOf())
                 {
-                    writer.WriteObjectIdentifier("2.5.4.8");
-                    writer.WriteEncodedValue(new byte[] { 0x31, 0x00 });
+                    WriteRDNComponent(writer, "2.5.4.5", "0C0430313233");
+                    WriteRDNComponent(writer, "2.5.4.10", "31055050505050");
+                    WriteRDNComponent(writer, "2.5.4.9", "0C075441434F434154");
                 }
             }
 
-            const string Expected = "CN=#3000 + S=#3100";
+            const string Expected = "CN=#3000 + S=#3100, SERIALNUMBER=0123 + O=#31055050505050 + STREET=TACOCAT";
             X500DistinguishedName distinguishedName = new X500DistinguishedName(writer.Encode());
             string dnString = distinguishedName.Format(false);
             Assert.Equal(Expected, dnString);
 
             string decode = distinguishedName.Decode(X500DistinguishedNameFlags.None);
             Assert.Equal(Expected, decode);
+
+            static void WriteRDNComponent(AsnWriter writer, string oid, string value)
+            {
+                using (writer.PushSequence())
+                {
+                    writer.WriteObjectIdentifier(oid);
+                    writer.WriteEncodedValue(Convert.FromHexString(value));
+                }
+            }
         }
 
         public static readonly object[][] WhitespaceBeforeCases =
