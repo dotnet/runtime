@@ -38,6 +38,9 @@ namespace System.Buffers
         internal virtual int LastIndexOfAny(ReadOnlySpan<T> span) => throw new UnreachableException();
         internal virtual int LastIndexOfAnyExcept(ReadOnlySpan<T> span) => throw new UnreachableException();
 
+        // This is only implemented and used by SearchValues<string>.
+        internal virtual int IndexOfAnyMultiString(ReadOnlySpan<char> span) => throw new UnreachableException();
+
         [MethodImpl(MethodImplOptions.AggressiveInlining)]
         internal static int IndexOfAny(ReadOnlySpan<T> span, SearchValues<T> values)
         {

@@ -9,8 +9,6 @@ using System.Runtime.Intrinsics;
 using System.Runtime.Intrinsics.Wasm;
 using System.Runtime.Intrinsics.X86;
 
-#pragma warning disable 8500 // address of managed types
-
 namespace System.Buffers
 {
     /// <summary>
@@ -143,6 +141,22 @@ namespace System.Buffers
             return new ProbabilisticCharSearchValues(values);
         }
 
+        /// <summary>
+        /// Creates an optimized representation of <paramref name="values"/> used for efficient searching.
+        /// <para>Only <see cref="StringComparison.Ordinal"/> or <see cref="StringComparison.OrdinalIgnoreCase"/> may be used.</para>
+        /// </summary>
+        /// <param name="values">The set of values.</param>
+        /// <param name="comparisonType">Specifies whether to use <see cref="StringComparison.Ordinal"/> or <see cref="StringComparison.OrdinalIgnoreCase"/> search semantics.</param>
+        public static SearchValues<string> Create(ReadOnlySpan<string> values, StringComparison comparisonType)
+        {
+            if (comparisonType is not (StringComparison.Ordinal or StringComparison.OrdinalIgnoreCase))
+            {
+                throw new ArgumentException(SR.Argument_SearchValues_UnsupportedStringComparison, nameof(comparisonType));
+            }
+
+            return StringSearchValues.Create(values, ignoreCase: comparisonType == StringComparison.OrdinalIgnoreCase);
+        }
+
         private static bool TryGetSingleRange<T>(ReadOnlySpan<T> values, out T minInclusive, out T maxInclusive)
             where T : struct, INumber<T>, IMinMaxValue<T>
         {
@@ -187,12 +201,12 @@ namespace System.Buffers
             static abstract bool Value { get; }
         }
 
-        private readonly struct TrueConst : IRuntimeConst
+        internal readonly struct TrueConst : IRuntimeConst
         {
             public static bool Value => true;
         }
 
-        private readonly struct FalseConst : IRuntimeConst
+        internal readonly struct FalseConst : IRuntimeConst
         {
             public static bool Value => false;
         }
