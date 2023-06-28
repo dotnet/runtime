@@ -66,23 +66,21 @@ namespace Microsoft.Extensions.DependencyInjection
         }
 
         /// <summary>
-        /// Adds the <see cref="IHttpClientFactory"/> and related services to the <see cref="IServiceCollection"/> and configures
-        /// defaults for all <see cref="HttpClient"/>s.
+        /// Adds a delegate that will be used to configure all <see cref="HttpClient"/> instances.
         /// </summary>
         /// <param name="services">The <see cref="IServiceCollection"/>.</param>
-        /// <returns>An <see cref="IHttpClientBuilder"/> that can be used to configure the client defaults.</returns>
-        /// <remarks>
-        /// <para>
-        /// The defaults will be applied to all <see cref="HttpClient"/> instances for all configurations, before name-specific congfiguration is applied.
-        /// </para>
-        /// </remarks>
-        public static IHttpClientBuilder AddHttpClientDefaults(this IServiceCollection services)
+        /// <param name="configure">A delegate that is used to configure an <see cref="IHttpClientBuilder"/>.</param>
+        /// <returns>The <see cref="IServiceCollection"/>.</returns>
+        public static IServiceCollection ConfigureHttpClientDefaults(this IServiceCollection services, Action<IHttpClientBuilder> configure)
         {
             ThrowHelper.ThrowIfNull(services);
+            ThrowHelper.ThrowIfNull(configure);
 
             AddHttpClient(services);
 
-            return new DefaultHttpClientBuilder(services, name: null!);
+            configure(new DefaultHttpClientBuilder(services, name: null!));
+
+            return services;
         }
 
         /// <summary>

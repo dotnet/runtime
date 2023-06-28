@@ -151,7 +151,10 @@ namespace Microsoft.Extensions.DependencyInjection
 
             // Act1
             serviceCollection.AddHttpClient("example.com", c => c.BaseAddress = new Uri("http://example.com/"));
-            serviceCollection.AddHttpClientDefaults().ConfigureHttpClient(c => c.BaseAddress = new Uri("http://default.com/"));
+            serviceCollection.ConfigureHttpClientDefaults(builder =>
+            {
+                builder.ConfigureHttpClient(c => c.BaseAddress = new Uri("http://default.com/"));
+            });
 
             var services = serviceCollection.BuildServiceProvider();
             var factory = services.GetRequiredService<IHttpClientFactory>();
