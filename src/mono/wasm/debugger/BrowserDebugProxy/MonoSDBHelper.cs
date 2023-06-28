@@ -807,23 +807,19 @@ namespace Microsoft.WebAssembly.Diagnostics
 
         internal readonly ILogger logger;
 
-        [GeneratedRegex(@"\<(?<varName>[^)]*)\>(?<varId>[^)]*)(__)(?<scopeId>\d+)", RegexOptions.Singleline)]
-        private static partial Regex RegexForAsyncLocals(); //<testCSharpScope>5__1 // works
+#pragma warning disable SYSLIB1045
+        private static Regex regexForAsyncLocals = new (@"\<(?<varName>[^)]*)\>(?<varId>[^)]*)(__)(?<scopeId>\d+)", RegexOptions.Singleline);
 
-        [GeneratedRegex(@"\$VB\$ResumableLocal_(?<varName>[^\$]*)\$(?<scopeId>\d+)", RegexOptions.Singleline)]
-        private static partial Regex RegexForVBAsyncLocals(); //$VB$ResumableLocal_testVbScope$2
+        private static Regex regexForVBAsyncLocals = new (@"\$VB\$ResumableLocal_(?<varName>[^\$]*)\$(?<scopeId>\d+)", RegexOptions.Singleline); //$VB$ResumableLocal_testVbScope$2
 
-        [GeneratedRegex(@"VB\$StateMachine_(\d+)_(?<methodName>.*)", RegexOptions.Singleline)]
-        private static partial Regex RegexForVBAsyncMethodName(); //VB$StateMachine_2_RunVBScope
+        private static Regex regexForVBAsyncMethodName = new (@"VB\$StateMachine_(\d+)_(?<methodName>.*)", RegexOptions.Singleline); //VB$StateMachine_2_RunVBScope
 
-        [GeneratedRegex(@"\<([^>]*)\>([d][_][_])([0-9]*)")]
-        private static partial Regex RegexForAsyncMethodName();
+        private static Regex regexForAsyncMethodName = new (@"\<([^>]*)\>([d][_][_])([0-9]*)");
 
-        [GeneratedRegex(@"[`][0-9]+")]
-        private static partial Regex RegexForGenericArgs();
+        private static Regex regexForGenericArgs = new (@"[`][0-9]+");
 
-        [GeneratedRegex("^(((?'Open'<)[^<>]*)+((?'Close-Open'>)[^<>]*)+)*(?(Open)(?!))[^<>]*")]
-        private static partial Regex RegexForNestedLeftRightAngleBrackets(); // <ContinueWithStaticAsync>b__3_0
+        private static Regex regexForNestedLeftRightAngleBrackets = new ("^(((?'Open'<)[^<>]*)+((?'Close-Open'>)[^<>]*)+)*(?(Open)(?!))[^<>]*"); // <ContinueWithStaticAsync>b__3_0
+#pragma warning restore SYSLIB1045
 
         public JObjectValueCreator ValueCreator { get; init; }
 
@@ -890,7 +886,7 @@ namespace Microsoft.WebAssembly.Diagnostics
         {
             methodName = methodName.Replace(':', '.');
             methodName = methodName.Replace('/', '.');
-            methodName = RegexForGenericArgs().Replace(methodName, "");
+            methodName = regexForGenericArgs.Replace(methodName, "");
             return methodName;
         }
 
@@ -1272,7 +1268,7 @@ namespace Microsoft.WebAssembly.Diagnostics
                     var ret = retDebuggerCmdReader.ReadString();
                     if (ret.IndexOf(':') is int index && index > 0)
                         ret = ret.Substring(0, index);
-                    ret = RegexForAsyncMethodName().Replace(ret, "$1");
+                    ret = regexForAsyncMethodName.Replace(ret, "$1");
                     var numGenericTypeArgs = retDebuggerCmdReader.ReadInt32();
                     var numGenericMethodArgs = retDebuggerCmdReader.ReadInt32();
                     int numTotalGenericArgs = numGenericTypeArgs + numGenericMethodArgs;
@@ -1280,17 +1276,17 @@ namespace Microsoft.WebAssembly.Diagnostics
                     for (int i = 0; i < numTotalGenericArgs; i++)
                     {
                         var typeArgC = retDebuggerCmdReader.ReadString();
-                        typeArgC = RegexForGenericArgs().Replace(typeArgC, "");
+                        typeArgC = regexForGenericArgs.Replace(typeArgC, "");
                         genericArgs.Add(typeArgC);
                     }
-                    var match = RegexForGenericArgs().Match(ret);
+                    var match = regexForGenericArgs.Match(ret);
                     while (match.Success)
                     {
                         var countArgs = Convert.ToInt32(match.Value.Remove(0, 1));
                         ret = ret.Remove(match.Index, match.Value.Length);
                         ret = ret.Insert(match.Index, $"<{string.Join(", ", genericArgs.Take(countArgs))}>");
                         genericArgs.RemoveRange(0, countArgs);
-                        match = RegexForGenericArgs().Match(ret);
+                        match = regexForGenericArgs.Match(ret);
                     }
                     ret = ret.Replace('/', '.');
                     return ret;
@@ -1310,7 +1306,7 @@ namespace Microsoft.WebAssembly.Diagnostics
                         }
                         else if (klassName.StartsWith("VB$"))
                         {
-                            var match = RegexForVBAsyncMethodName().Match(klassName);
+                            var match = regexForVBAsyncMethodName.Match(klassName);
                             if (match.Success)
                                 ret = ret.Insert(0, match.Groups["methodName"].Value);
                             else
@@ -1318,7 +1314,7 @@ namespace Microsoft.WebAssembly.Diagnostics
                         }
                         else
                         {
-                            var matchOnClassName = RegexForNestedLeftRightAngleBrackets().Match(klassName);
+                            var matchOnClassName = regexForNestedLeftRightAngleBrackets.Match(klassName);
                             if (matchOnClassName.Success && matchOnClassName.Groups["Close"].Captures.Count > 0)
                                 klassName = matchOnClassName.Groups["Close"].Captures[0].Value;
                             if (ret.Length > 0)
@@ -1327,7 +1323,7 @@ namespace Microsoft.WebAssembly.Diagnostics
                         }
                     }
                     var methodName = retDebuggerCmdReader.ReadString();
-                    var matchOnMethodName = RegexForNestedLeftRightAngleBrackets().Match(methodName);
+                    var matchOnMethodName = regexForNestedLeftRightAngleBrackets.Match(methodName);
                     if (matchOnMethodName.Success && matchOnMethodName.Groups["Close"].Captures.Count > 0)
                     {
                         if (isAnonymous && anonymousMethodId.Length == 0 && methodName.Contains("__"))
@@ -1616,7 +1612,7 @@ namespace Microsoft.WebAssembly.Diagnostics
 
         public JToken GetEvaluationResultProperties(string id)
         {
-            ExecutionContext context = proxy.GetContext(sessionId);
+            ExecutionContext context = proxy.Contexts.GetCurrentContext(sessionId);
             var resolver = new MemberReferenceResolver(proxy, context, sessionId, context.CallStack.First().Id, logger);
             var evaluationResult = resolver.TryGetEvaluationResult(id);
             return evaluationResult["value"];
@@ -1637,7 +1633,7 @@ namespace Microsoft.WebAssembly.Diagnostics
 
                 var stringId = getCAttrsRetReader.ReadInt32();
                 var dispAttrStr = await GetStringValue(stringId, token);
-                ExecutionContext context = proxy.GetContext(sessionId);
+                ExecutionContext context = proxy.Contexts.GetCurrentContext(sessionId);
                 GetMembersResult members = await GetTypeMemberValues(
                     dotnetObjectId,
                     GetObjectCommandOptions.WithProperties | GetObjectCommandOptions.ForDebuggerDisplayAttribute,
@@ -1680,19 +1676,17 @@ namespace Microsoft.WebAssembly.Diagnostics
             }
             return null;
         }
-
-        [GeneratedRegex(@"`\d+")]
-        private static partial Regex RegexForGenericArity();
-
-        [GeneratedRegex(@"[[, ]+]")]
-        private static partial Regex RegexForSquareBrackets();
+#pragma warning disable SYSLIB1045
+        private static Regex regexForGenericArity = new (@"`\d+");
+        private static Regex regexForSquareBrackets = new (@"[[, ]+]");
+#pragma warning restore SYSLIB1045
 
         public async Task<string> GetTypeName(int typeId, CancellationToken token)
         {
             string className = await GetTypeNameOriginal(typeId, token);
             className = className.Replace("+", ".");
-            className = RegexForGenericArity().Replace(className, "");
-            className = RegexForSquareBrackets().Replace(className, "__SQUARED_BRACKETS__");
+            className = regexForGenericArity.Replace(className, "");
+            className = regexForSquareBrackets.Replace(className, "__SQUARED_BRACKETS__");
             //className = className.Replace("[]", "__SQUARED_BRACKETS__");
             className = className.Replace("[", "<");
             className = className.Replace("]", ">");
@@ -2035,7 +2029,7 @@ namespace Microsoft.WebAssembly.Diagnostics
                 }
                 else if (fieldName.StartsWith('<')) //examples: <code>5__2
                 {
-                    var match = RegexForAsyncLocals().Match(fieldName);
+                    var match = regexForAsyncLocals.Match(fieldName);
                     if (match.Success)
                     {
                         if (!method.Info.ContainsAsyncScope(Convert.ToInt32(match.Groups["scopeId"].Value), offset))
@@ -2050,7 +2044,7 @@ namespace Microsoft.WebAssembly.Diagnostics
                 }
                 else if (fieldName.StartsWith("$VB$ResumableLocal_", StringComparison.Ordinal))
                 {
-                    var match = RegexForVBAsyncLocals().Match(fieldName);
+                    var match = regexForVBAsyncLocals.Match(fieldName);
                     if (match.Success)
                     {
                         if (!method.Info.ContainsAsyncScope(Convert.ToInt32(match.Groups["scopeId"].Value) + 1, offset))

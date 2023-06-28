@@ -25,6 +25,11 @@
   </ItemGroup>
 
   <ItemGroup>
+    <EmbeddedResource Include="Templates\*.*" />
+  </ItemGroup>
+
+  <ItemGroup>
+    <Compile Include="EmitBundleTask\*.cs" />
     <Compile Include="ILStrip\ILStrip.cs" />
     <Compile Include="..\Common\Utils.cs" />
     <Compile Include="RuntimeConfigParser\RuntimeConfigParser.cs" />

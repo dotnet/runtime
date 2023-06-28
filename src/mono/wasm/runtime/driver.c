@@ -54,9 +54,13 @@ int monoeg_g_setenv(const char *variable, const char *value, int overwrite);
 int32_t mini_parse_debug_option (const char *option);
 char *mono_method_get_full_name (MonoMethod *method);
 
-extern void mono_wasm_register_timezones_bundle();
+extern void mono_register_timezones_bundle (void);
 extern void mono_wasm_set_entrypoint_breakpoint (const char* assembly_name, int method_token);
 static void mono_wasm_init_finalizer_thread (void);
+
+extern void mono_bundled_resources_add_assembly_resource (const char *id, const char *name, const uint8_t *data, uint32_t size, void (*free_func)(void *, void*), void *free_data);
+extern void mono_bundled_resources_add_assembly_symbol_resource (const char *id, const uint8_t *data, uint32_t size, void (*free_func)(void *, void *), void *free_data);
+extern void mono_bundled_resources_add_satellite_assembly_resource (const char *id, const char *name, const char *culture, const uint8_t *data, uint32_t size, void (*free_func)(void *, void*), void *free_data);
 
 #ifndef DISABLE_LEGACY_JS_INTEROP
 
@@ -181,15 +185,11 @@ mono_wasm_deregister_root (char *addr)
 #include "driver-gen.c"
 #endif
 
-typedef struct WasmAssembly_ WasmAssembly;
-
-struct WasmAssembly_ {
-	MonoBundledAssembly assembly;
-	WasmAssembly *next;
-};
-
-static WasmAssembly *assemblies;
-static int assembly_count;
+static void
+bundled_resources_free_func (void *resource, void *free_data)
+{
+	free (free_data);
+}
 
 EMSCRIPTEN_KEEPALIVE int
 mono_wasm_add_assembly (const char *name, const unsigned char *data, unsigned int size)
@@ -199,72 +199,49 @@ mono_wasm_add_assembly (const char *name, const unsigned char *data, unsigned in
 		char *new_name = strdup (name);
 		//FIXME handle debugging assemblies with .exe extension
 		strcpy (&new_name [len - 3], "dll");
-		mono_register_symfile_for_assembly (new_name, data, size);
+		mono_bundled_resources_add_assembly_symbol_resource (new_name, data, size, bundled_resources_free_func, new_name);
 		return 1;
 	}
-	WasmAssembly *entry = g_new0 (WasmAssembly, 1);
-	entry->assembly.name = strdup (name);
-	entry->assembly.data = data;
-	entry->assembly.size = size;
-	entry->next = assemblies;
-	assemblies = entry;
-	++assembly_count;
+	char *assembly_name = strdup (name);
+	assert (assembly_name);
+	mono_bundled_resources_add_assembly_resource (assembly_name, assembly_name, data, size, bundled_resources_free_func, assembly_name);
 	return mono_has_pdb_checksum ((char*)data, size);
 }
 
-int
-mono_wasm_assembly_already_added (const char *assembly_name)
+static void
+bundled_resources_free_slots_func (void *resource, void *free_data)
 {
-	if (assembly_count == 0)
-		return 0;
-
-	WasmAssembly *entry = assemblies;
-	while (entry != NULL) {
-		int entry_name_minus_extn_len = strrchr (entry->assembly.name, '.') - entry->assembly.name;
-		if (entry_name_minus_extn_len == strlen(assembly_name) && strncmp (entry->assembly.name, assembly_name, entry_name_minus_extn_len) == 0)
-			return 1;
-		entry = entry->next;
+	if (free_data) {
+		void **slots = (void **)free_data;
+		for (int i = 0; slots [i]; i++)
+			free (slots [i]);
 	}
-
-	return 0;
 }
-
-const unsigned char *
-mono_wasm_get_assembly_bytes (const char *assembly_name, unsigned int *size)
-{
-	if (assembly_count == 0)
-		return 0;
-
-	WasmAssembly *entry = assemblies;
-	while (entry != NULL) {
-		if (strcmp (entry->assembly.name, assembly_name) == 0)
-		{
-			*size = entry->assembly.size;
-			return entry->assembly.data;
-		}
-		entry = entry->next;
-	}
-	return NULL;
-}
-
-typedef struct WasmSatelliteAssembly_ WasmSatelliteAssembly;
-
-struct WasmSatelliteAssembly_ {
-	MonoBundledSatelliteAssembly *assembly;
-	WasmSatelliteAssembly *next;
-};
-
-static WasmSatelliteAssembly *satellite_assemblies;
-static int satellite_assembly_count;
 
 EMSCRIPTEN_KEEPALIVE void
 mono_wasm_add_satellite_assembly (const char *name, const char *culture, const unsigned char *data, unsigned int size)
 {
-	WasmSatelliteAssembly *entry = g_new0 (WasmSatelliteAssembly, 1);
-	entry->assembly = mono_create_new_bundled_satellite_assembly (name, culture, data, size);
-	entry->next = satellite_assemblies;
-	satellite_assemblies = entry;
-	++satellite_assembly_count;
+	int id_len = strlen (culture) + 1 + strlen (name); // +1 is for the "/"
+	char *id = (char *)malloc (sizeof (char) * (id_len + 1)); // +1 is for the terminating null character
+	assert (id);
+
+	int num_char = snprintf (id, (id_len + 1), "%s/%s", culture, name);
+	assert (num_char > 0 && num_char == id_len);
+
+	char *satellite_assembly_name = strdup (name);
+	assert (satellite_assembly_name);
+
+	char *satellite_assembly_culture = strdup (culture);
+	assert (satellite_assembly_culture);
+
+	void **slots = malloc (sizeof (void *) * 4);
+	assert (slots);
+	slots [0] = id;
+	slots [1] = satellite_assembly_name;
+	slots [2] = satellite_assembly_culture;
+	slots [3] = NULL;
+
+	mono_bundled_resources_add_satellite_assembly_resource (id, satellite_assembly_name, satellite_assembly_culture, data, size, bundled_resources_free_slots_func, slots);
 }
 
 EMSCRIPTEN_KEEPALIVE void
@@ -432,23 +409,6 @@ get_native_to_interp (MonoMethod *method, void *extra_arg)
 	return addr;
 }
 
-void
-mono_wasm_register_bundled_satellite_assemblies (void)
-{
-	/* In legacy satellite_assembly_count is always false */
-	if (satellite_assembly_count) {
-		MonoBundledSatelliteAssembly **satellite_bundle_array =  g_new0 (MonoBundledSatelliteAssembly *, satellite_assembly_count + 1);
-		WasmSatelliteAssembly *cur = satellite_assemblies;
-		int i = 0;
-		while (cur) {
-			satellite_bundle_array [i] = cur->assembly;
-			cur = cur->next;
-			++i;
-		}
-		mono_register_bundled_satellite_assemblies ((const MonoBundledSatelliteAssembly **)satellite_bundle_array);
-	}
-}
-
 void mono_wasm_link_icu_shim (void);
 
 void
@@ -513,7 +473,7 @@ mono_wasm_load_runtime (const char *unused, int debug_level)
 
 	mini_parse_debug_option ("top-runtime-invoke-unhandled");
 
-	mono_wasm_register_timezones_bundle();
+	mono_register_timezones_bundle ();
 	mono_dl_fallback_register (wasm_dl_load, wasm_dl_symbol, NULL, NULL);
 	mono_wasm_install_get_native_to_interp_tramp (get_native_to_interp);
 
@@ -570,19 +530,6 @@ mono_wasm_load_runtime (const char *unused, int debug_level)
 	mono_sgen_mono_ilgen_init ();
 #endif
 
-	if (assembly_count) {
-		MonoBundledAssembly **bundle_array = g_new0 (MonoBundledAssembly*, assembly_count + 1);
-		WasmAssembly *cur = assemblies;
-		int i = 0;
-		while (cur) {
-			bundle_array [i] = &cur->assembly;
-			cur = cur->next;
-			++i;
-		}
-		mono_register_bundled_assemblies ((const MonoBundledAssembly **)bundle_array);
-	}
-
-	mono_wasm_register_bundled_satellite_assemblies ();
 	mono_trace_init ();
 	mono_trace_set_log_handler (wasm_trace_logger, NULL);
 	root_domain = mono_jit_init_version ("mono", NULL);

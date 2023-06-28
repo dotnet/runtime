@@ -1,0 +1,137 @@
+﻿<?xml version="1.0" encoding="utf-8"?>
+<xliff xmlns="urn:oasis:names:tc:xliff:document:1.2" xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance" version="1.2" xsi:schemaLocation="urn:oasis:names:tc:xliff:document:1.2 xliff-core-1.2-transitional.xsd">
+  <file datatype="xml" source-language="en" target-language="cs" original="../Strings.resx">
+    <body>
+      <trans-unit id="AlreadyImplementsValidateMethodMessage">
+        <source>Type {0} already implements the Validate method.</source>
+        <target state="translated">Typ {0} již implementuje metodu Validate.</target>
+        <note />
+      </trans-unit>
+      <trans-unit id="AlreadyImplementsValidateMethodTitle">
+        <source>A type already includes an implementation of the 'Validate' method.</source>
+        <target state="translated">Typ už obsahuje implementaci metody Validate.</target>
+        <note />
+      </trans-unit>
+      <trans-unit id="CantBeStaticClassMessage">
+        <source>[OptionsValidator] cannot be applied to static class {0}.</source>
+        <target state="translated">[OptionsValidator] nelze použít pro statickou třídu {0}.</target>
+        <note />
+      </trans-unit>
+      <trans-unit id="CantBeStaticClassTitle">
+        <source>'OptionsValidatorAttribute' can't be applied to a static class.</source>
+        <target state="translated">OptionsValidatorAttribute nelze použít pro statickou třídu.</target>
+        <note />
+      </trans-unit>
+      <trans-unit id="CantUseWithGenericTypesMessage">
+        <source>Can't use [ValidateObjectMembers] or [ValidateEnumeratedItems] on fields or properties with open generic type {0}.</source>
+        <target state="translated">U polí nebo vlastností s otevřeným obecným typem {0} nelze použít [ValidateObjectMembers] nebo [ValidateEnumeratedItems].</target>
+        <note />
+      </trans-unit>
+      <trans-unit id="CantUseWithGenericTypesTitle">
+        <source>Can't use 'ValidateObjectMembersAttribute' or 'ValidateEnumeratedItemsAttribute' on fields or properties with open generic types.</source>
+        <target state="translated">U polí nebo vlastností s otevřenými obecnými typy nelze použít ValidateObjectMembersAttribute nebo ValidateEnumeratedItemsAttribute.</target>
+        <note />
+      </trans-unit>
+      <trans-unit id="CircularTypeReferencesMessage">
+        <source>There is a circular type reference involving type {0} preventing it from being used for static validation.</source>
+        <target state="translated">Existuje cyklický odkaz obsahující typ {0}, který brání jeho použití pro statické ověření.</target>
+        <note />
+      </trans-unit>
+      <trans-unit id="CircularTypeReferencesTitle">
+        <source>Unsupported circular references in model types.</source>
+        <target state="translated">Nepodporované cyklické odkazy v typech modelů.</target>
+        <note />
+      </trans-unit>
+      <trans-unit id="DoesntImplementIValidateOptionsMessage">
+        <source>Type {0} does not implement the required IValidateOptions&lt;{1}&gt; interface.</source>
+        <target state="translated">Typ {0} neimplementuje požadované rozhraní IValidateOptions&lt;{1}&gt; .</target>
+        <note />
+      </trans-unit>
+      <trans-unit id="DoesntImplementIValidateOptionsTitle">
+        <source>A type annotated with 'OptionsValidatorAttribute' doesn't implement the necessary interface.</source>
+        <target state="translated">Typ anotovaný třídou OptionsValidatorAttribute neimplementuje nezbytné rozhraní.</target>
+        <note />
+      </trans-unit>
+      <trans-unit id="MemberIsInaccessibleMessage">
+        <source>Can't apply validation attributes to private field or property {0}.</source>
+        <target state="translated">Ověřovací atributy nelze použít u privátního pole nebo vlastnosti {0}.</target>
+        <note />
+      </trans-unit>
+      <trans-unit id="MemberIsInaccessibleTitle">
+        <source>Can't validate private fields or properties.</source>
+        <target state="translated">Nelze ověřit privátní pole nebo vlastnosti.</target>
+        <note />
+      </trans-unit>
+      <trans-unit id="NoEligibleMemberMessage">
+        <source>Type {0} has no fields or properties to validate, referenced from member {1}.</source>
+        <target state="translated">Typ {0} nemá žádná pole ani vlastnosti k ověření, na které odkazuje člen {1}.</target>
+        <note />
+      </trans-unit>
+      <trans-unit id="NoEligibleMemberTitle">
+        <source>A member type has no fields or properties to validate.</source>
+        <target state="translated">Typ člena nemá žádná pole ani vlastnosti k ověření.</target>
+        <note />
+      </trans-unit>
+      <trans-unit id="NoEligibleMembersFromValidatorMessage">
+        <source>Type {0} has no fields or properties to validate, referenced by type {1}.</source>
+        <target state="translated">Typ {0} nemá žádná pole ani vlastnosti k ověření, na které odkazuje typ {1}.</target>
+        <note />
+      </trans-unit>
+      <trans-unit id="NoEligibleMembersFromValidatorTitle">
+        <source>A type has no fields or properties to validate.</source>
+        <target state="translated">Typ nemá žádná pole ani vlastnosti k ověření.</target>
+        <note />
+      </trans-unit>
+      <trans-unit id="NotEnumerableTypeMessage">
+        <source>[ValidateEnumeratedItems] cannot be used on members of type {0} as it doesn't implement IEnumerable&lt;T&gt;.</source>
+        <target state="translated">[ValidateEnumeratedItems] nelze použít u členů typu {0}, protože neimplementuje rozhraní IEnumerable&lt;T&gt;.</target>
+        <note />
+      </trans-unit>
+      <trans-unit id="NotEnumerableTypeTitle">
+        <source>Member type is not enumerable.</source>
+        <target state="translated">Typ členu není výčtový.</target>
+        <note />
+      </trans-unit>
+      <trans-unit id="NullValidatorTypeMessage">
+        <source>Null validator type specified in [ValidateObjectMembers] or [ValidateEnumeratedItems] attributes.</source>
+        <target state="translated">Typ validátoru s hodnotou null zadaný v atributech [ValidateObjectMembers] nebo [ValidateEnumeratedItems].</target>
+        <note />
+      </trans-unit>
+      <trans-unit id="NullValidatorTypeTitle">
+        <source>Null validator type specified for the 'ValidateObjectMembersAttribute' or 'ValidateEnumeratedItemsAttribute' attributes.</source>
+        <target state="translated">Pro atributy ValidateObjectMembersAttribute nebo ValidateEnumeratedItemsAttribute byl specifikovaný typ validátoru s hodnotou null.</target>
+        <note />
+      </trans-unit>
+      <trans-unit id="PotentiallyMissingEnumerableValidationMessage">
+        <source>Type {0} has validation annotations, but member {1} doesn't specify [ValidateEnumeratedItems] which could be an oversight.</source>
+        <target state="translated">Typ {0} obsahuje validační anotace, ale člen {1} neurčuje [ValidateEnumeratedItems], což může být přehlédnutí.</target>
+        <note />
+      </trans-unit>
+      <trans-unit id="PotentiallyMissingEnumerableValidationTitle">
+        <source>Member potentially missing enumerable validation.</source>
+        <target state="translated">U člena potenciálně chybí ověření výčtu.</target>
+        <note />
+      </trans-unit>
+      <trans-unit id="PotentiallyMissingTransitiveValidationMessage">
+        <source>Type {0} has validation annotations, but member {1} doesn't specify [ValidateObjectMembers] which could be an oversight.</source>
+        <target state="translated">Typ {0} obsahuje validační anotace, ale člen {1} neurčuje [ValidateObjectMembers], což může být přehlédnutí.</target>
+        <note />
+      </trans-unit>
+      <trans-unit id="PotentiallyMissingTransitiveValidationTitle">
+        <source>Member potentially missing transitive validation.</source>
+        <target state="translated">U člena potenciálně chybí přenositelné ověření.</target>
+        <note />
+      </trans-unit>
+      <trans-unit id="ValidatorsNeedSimpleConstructorMessage">
+        <source>Validator type {0} doesn't have a parameterless constructor.</source>
+        <target state="translated">Typ validátoru {0} nemá konstruktor bez parametrů.</target>
+        <note />
+      </trans-unit>
+      <trans-unit id="ValidatorsNeedSimpleConstructorTitle">
+        <source>Validators used for transitive or enumerable validation must have a constructor with no parameters.</source>
+        <target state="translated">Validátory používané pro přenositelné nebo výčtové ověřování musí mít konstruktor bez parametrů.</target>
+        <note />
+      </trans-unit>
+    </body>
+  </file>
+</xliff>

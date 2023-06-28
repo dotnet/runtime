@@ -1,6 +1,8 @@
 AM_CPPFLAGS = -I$(top_srcdir)/include
 AM_CFLAGS = -fno-optimize-sibling-calls
 
+LOG_DRIVER = $(SHELL) $(UNW_TESTDRIVER)
+
 EXTRA_DIST =	run-ia64-test-dyn1 run-ptrace-mapper run-ptrace-misc	\
 		run-check-namespace run-coredump-unwind \
 		run-coredump-unwind-mdi check-namespace.sh.in \
@@ -44,19 +46,28 @@ if ARCH_X86_64
 endif #ARCH X86_64
 endif #!ARCH_PPC64
 endif #!ARCH_IA64
+
+if ARCH_AARCH64
+  check_PROGRAMS_arch += Garm64-test-sve-signal Larm64-test-sve-signal
+endif
+
  check_PROGRAMS_cdep +=	Gtest-bt Ltest-bt Gtest-exc Ltest-exc		 \
 			Gtest-init Ltest-init				 \
 			Gtest-concurrent Ltest-concurrent		 \
 			Gtest-resume-sig Ltest-resume-sig		 \
 			Gtest-resume-sig-rt Ltest-resume-sig-rt		 \
 			Gtest-trace Ltest-trace				 \
-			Ltest-init-local-signal				 \
 			Ltest-mem-validate				 \
 			test-async-sig test-flush-cache test-init-remote \
 			test-mem test-reg-state Ltest-varargs		 \
 			Ltest-nomalloc Ltest-nocalloc Lrs-race
  noinst_PROGRAMS_cdep += forker Gperf-simple Lperf-simple \
 			Gperf-trace Lperf-trace
+
+# unw_init_local2() is not implemented on ia64
+if !ARCH_IA64
+ check_PROGRAMS_cdep += Ltest-init-local-signal
+endif
 
 if BUILD_PTRACE
  check_SCRIPTS_cdep += run-ptrace-mapper run-ptrace-misc
@@ -125,6 +136,10 @@ if ARCH_ARM
 XFAIL_TESTS += $(XFAIL_TESTS_PTRACE_SINGLESTEP)
 endif
 
+if ARCH_LOONGARCH64
+XFAIL_TESTS += $(XFAIL_TESTS_PTRACE_SINGLESTEP)
+endif
+
 # This is meant for multilib binaries, -m32.
 # ptrace gives EBADREG when testing,
 # but generally everything else works.
@@ -155,6 +170,10 @@ Gx64_test_dwarf_expressions_SOURCES =  Gx64-test-dwarf-expressions.c \
 Lx64_test_dwarf_expressions_SOURCES =  Lx64-test-dwarf-expressions.c \
 																			 x64-test-dwarf-expressions.S
 
+Garm64_test_sve_signal_SOURCES = Garm64-test-sve-signal.c
+Larm64_test_sve_signal_SOURCES = Larm64-test-sve-signal.c
+Garm64_test_sve_signal_CFLAGS = -fno-inline -march=native
+Larm64_test_sve_signal_CFLAGS = -fno-inline -march=native
 
 Gtest_init_SOURCES = Gtest-init.cxx
 Ltest_init_SOURCES = Ltest-init.cxx
@@ -255,3 +274,6 @@ ppc64_test_altivec_LDADD = $(LIBUNWIND)
 
 Gx64_test_dwarf_expressions_LDADD = $(LIBUNWIND) $(LIBUNWIND_local)
 Lx64_test_dwarf_expressions_LDADD = $(LIBUNWIND_local)
+
+Garm64_test_sve_signal_LDADD = $(LIBUNWIND) $(LIBUNWIND_local)
+Larm64_test_sve_signal_LDADD = $(LIBUNWIND_local)

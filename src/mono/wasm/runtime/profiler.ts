@@ -1,9 +1,9 @@
 // Licensed to the .NET Foundation under one or more agreements.
 // The .NET Foundation licenses this file to you under the MIT license.
 
-import { ENVIRONMENT_IS_WEB, runtimeHelpers } from "./globals";
+import { ENVIRONMENT_IS_WEB, linkerEnableAotProfiler, linkerEnableBrowserProfiler, runtimeHelpers } from "./globals";
 import { MonoMethod, AOTProfilerOptions, BrowserProfilerOptions } from "./types/internal";
-import cwraps from "./cwraps";
+import { profiler_c_functions as cwraps } from "./cwraps";
 import { utf8ToString } from "./strings";
 
 // Initialize the AOT profiler with OPTIONS.
@@ -15,6 +15,7 @@ import { utf8ToString } from "./strings";
 // DumpAotProfileData stores the data into INTERNAL.aotProfileData.
 //
 export function mono_wasm_init_aot_profiler(options: AOTProfilerOptions): void {
+    mono_assert(linkerEnableAotProfiler, "AOT profiler is not enabled, please use <WasmProfilers>aot;</WasmProfilers> in your project file.");
     if (options == null)
         options = {};
     if (!("writeAt" in options))
@@ -26,6 +27,7 @@ export function mono_wasm_init_aot_profiler(options: AOTProfilerOptions): void {
 }
 
 export function mono_wasm_init_browser_profiler(options: BrowserProfilerOptions): void {
+    mono_assert(linkerEnableBrowserProfiler, "Browser profiler is not enabled, please use <WasmProfilers>browser;</WasmProfilers> in your project file.");
     if (options == null)
         options = {};
     const arg = "browser:";
@@ -55,8 +57,6 @@ export const enum MeasuredBlock {
 export type TimeStamp = {
     __brand: "TimeStamp"
 }
-
-
 
 export function startMeasure(): TimeStamp {
     if (runtimeHelpers.enablePerfMeasure) {
