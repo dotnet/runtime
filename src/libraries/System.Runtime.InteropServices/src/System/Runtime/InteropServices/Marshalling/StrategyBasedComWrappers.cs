@@ -20,7 +20,6 @@ namespace System.Runtime.InteropServices.Marshalling
 
         protected static IIUnknownCacheStrategy CreateDefaultCacheStrategy() => new DefaultCaching();
 
-        [UnconditionalSuppressMessage("AOT", "IL3050:Calling members annotated with 'RequiresDynamicCodeAttribute' may break functionality when AOT compiling.", Justification = "The member with the attribute is in a IsDynamicCodeSupported block.")]
         protected virtual IIUnknownInterfaceDetailsStrategy GetOrCreateInterfaceDetailsStrategy()
         {
             if (RuntimeFeature.IsDynamicCodeSupported && OperatingSystem.IsWindows() && ComObject.BuiltInComSupported && ComObject.ComImportInteropEnabled)
