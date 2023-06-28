@@ -207,32 +207,56 @@
   // Registers no longer containing GC pointers after CORINFO_HELP_ASSIGN_BYREF.
   #define RBM_CALLEE_GCTRASH_WRITEBARRIER_BYREF (RBM_CALLEE_TRASH_NOGC & ~(RBM_RDI | RBM_RSI))
 
-#if 0
-#define REG_VAR_ORDER            REG_EAX,REG_EDX,REG_ECX,REG_ESI,REG_EDI,REG_EBX,REG_ETW_FRAMED_EBP_LIST \
-                                 REG_R8,REG_R9,REG_R10,REG_R11,REG_R14,REG_R15,REG_R12,REG_R13
-#else
-  // TEMPORARY ORDER TO AVOID CALLEE-SAVES
-  // TODO-CQ: Review this and set appropriately
-#ifdef UNIX_AMD64_ABI
-  #define REG_VAR_ORDER          REG_EAX,REG_EDI,REG_ESI, \
-                                 REG_EDX,REG_ECX,REG_R8,REG_R9, \
-                                 REG_R10,REG_R11,REG_EBX,REG_ETW_FRAMED_EBP_LIST \
-                                 REG_R14,REG_R15,REG_R12,REG_R13
-#else // !UNIX_AMD64_ABI
-  #define REG_VAR_ORDER          REG_EAX,REG_EDX,REG_ECX, \
-                                 REG_R8,REG_R9,REG_R10,REG_R11, \
-                                 REG_ESI,REG_EDI,REG_EBX,REG_ETW_FRAMED_EBP_LIST \
-                                 REG_R14,REG_R15,REG_R12,REG_R13
-#endif // !UNIX_AMD64_ABI
-#endif
+  // Registers are ordered here to prefer callee trash first, then callee save
+  // as this helps avoid unnecessary spills.
+  //
+  // Within those groups they simply preferenced in numerical order based on the
+  // encoding, which helps avoid using larger encodings unneccesarily
+  //
+  // For integer registers, the numerical order is eax, ecx, edx, ebx, esp, ebp,
+  // esi, edi. You then also have r8-r15 which take an additional byte to encode
+  //
+  // Noting that there is an exception for ebp which is special and not always
+  // available, so it is last of the initial 8 registers
+  //
+  // For simd registers, the numerical order is xmm0-xmm7. You then have xmm8-xmm15
+  // which take an additional byte to encode and can also have xmm16-xmm31 for EVEX
 
-  #define REG_VAR_ORDER_FLT      REG_XMM0,REG_XMM1,REG_XMM2,REG_XMM3,REG_XMM4,REG_XMM5,REG_XMM6,REG_XMM7,          \
-                                 REG_XMM8,REG_XMM9,REG_XMM10,REG_XMM11,REG_XMM12,REG_XMM13,REG_XMM14,REG_XMM15
-#if defined(TARGET_AMD64)
-    #define REG_VAR_ORDER_FLT_UPPER REG_XMM16,REG_XMM17,REG_XMM18,REG_XMM19,REG_XMM20,REG_XMM21,REG_XMM22,REG_XMM23,  \
-                                    REG_XMM24,REG_XMM25,REG_XMM26,REG_XMM27,REG_XMM28,REG_XMM29,REG_XMM30,REG_XMM31   
-#endif  //  TARGET_AMD64
-                                 
+#ifdef UNIX_AMD64_ABI
+  // Callee Trash: eax, ecx, edx, esi, edi, r8-r11
+  // Callee Saved: ebx, ebp, r12-r15
+  #define REG_VAR_ORDER          REG_EAX,REG_ECX,REG_EDX,REG_ESI,REG_EDI,REG_R8,REG_R9,REG_R10,REG_R11,REG_EBX,        \
+                                 REG_ETW_FRAMED_EBP_LIST REG_R12,REG_R13,REG_R14,REG_R15
+
+  // Callee Trash: xmm0-xmm15
+  // Callee Saved: none
+  #define REG_VAR_ORDER_FLT      REG_XMM0,REG_XMM1,REG_XMM2,REG_XMM3,REG_XMM4,REG_XMM5,REG_XMM6,REG_XMM7,REG_XMM8,     \
+                                 REG_XMM9,REG_XMM10,REG_XMM11,REG_XMM12,REG_XMM13,REG_XMM14,REG_XMM15
+
+  // Callee Trash: xmm0-xmm31
+  // Callee Saved: none
+  #define REG_VAR_ORDER_FLT_EVEX REG_XMM0,REG_XMM1,REG_XMM2,REG_XMM3,REG_XMM4,REG_XMM5,REG_XMM6,REG_XMM7,REG_XMM8,     \
+                                 REG_XMM9,REG_XMM10,REG_XMM11,REG_XMM12,REG_XMM13,REG_XMM14,REG_XMM15,REG_XMM16,       \
+                                 REG_XMM17,REG_XMM18,REG_XMM19,REG_XMM20,REG_XMM21,REG_XMM22,REG_XMM23,REG_XMM24,      \
+                                 REG_XMM25,REG_XMM26,REG_XMM27,REG_XMM28,REG_XMM29,REG_XMM30,REG_XMM31
+#else // !UNIX_AMD64_ABI
+  // Callee Trash: eax, ecx, edx, r8-r11
+  // Callee Saved: ebx, ebp, esi, edi, r12-r15
+  #define REG_VAR_ORDER          REG_EAX,REG_ECX,REG_EDX,REG_R8,REG_R9,REG_R10,REG_R11,REG_EBX,REG_ESI,REG_EDI,        \
+                                 REG_ETW_FRAMED_EBP_LIST REG_R12,REG_R13,REG_R14,REG_R15
+
+  // Callee Trash: xmm0-xmm5
+  // Callee Saved: xmm6-xmm15
+  #define REG_VAR_ORDER_FLT      REG_XMM0,REG_XMM1,REG_XMM2,REG_XMM3,REG_XMM4,REG_XMM5,REG_XMM6,REG_XMM7,REG_XMM8,     \
+                                 REG_XMM9,REG_XMM10,REG_XMM11,REG_XMM12,REG_XMM13,REG_XMM14,REG_XMM15
+
+  // Callee Trash: xmm0-xmm5, xmm16-xmm31
+  // Callee Saved: xmm6-xmm15
+  #define REG_VAR_ORDER_FLT_EVEX REG_XMM0,REG_XMM1,REG_XMM2,REG_XMM3,REG_XMM4,REG_XMM5,REG_XMM16,REG_XMM17,REG_XMM18,  \
+                                 REG_XMM19,REG_XMM20,REG_XMM21,REG_XMM22,REG_XMM23,REG_XMM24,REG_XMM25,REG_XMM26,      \
+                                 REG_XMM27,REG_XMM28,REG_XMM29,REG_XMM30,REG_XMM31,REG_XMM6,REG_XMM7,REG_XMM8,REG_XMM9,\
+                                 REG_XMM10,REG_XMM11,REG_XMM12,REG_XMM13,REG_XMM14,REG_XMM15
+#endif // !UNIX_AMD64_ABI
 
 #ifdef UNIX_AMD64_ABI
   #define CNT_CALLEE_SAVED         (5 + REG_ETW_FRAMED_EBP_COUNT)
@@ -243,7 +267,6 @@
   #define CNT_CALLEE_TRASH_FLOAT_INIT (16)
   #define CNT_CALLEE_TRASH_HIGHFLOAT    (16)
   /* NOTE: Sync with variable name defined in compiler.h */
-
   #define REG_CALLEE_SAVED_ORDER   REG_EBX,REG_ETW_FRAMED_EBP_LIST REG_R12,REG_R13,REG_R14,REG_R15
   #define RBM_CALLEE_SAVED_ORDER   RBM_EBX,RBM_ETW_FRAMED_EBP_LIST RBM_R12,RBM_R13,RBM_R14,RBM_R15
 #else // !UNIX_AMD64_ABI

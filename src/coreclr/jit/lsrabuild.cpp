@@ -1917,8 +1917,8 @@ const unsigned         lsraRegOrderSize = ArrLen(lsraRegOrder);
 static const regNumber lsraRegOrderFlt[]   = {REG_VAR_ORDER_FLT};
 const unsigned         lsraRegOrderFltSize = ArrLen(lsraRegOrderFlt);
 #if defined(TARGET_AMD64)
-static const regNumber lsraRegOrderFltUpper[]   = {REG_VAR_ORDER_FLT_UPPER};
-const unsigned         lsraRegOrderUpperFltSize = ArrLen(lsraRegOrderFltUpper);
+static const regNumber lsraRegOrderFltEvex[]   = {REG_VAR_ORDER_FLT_EVEX};
+const unsigned         lsraRegOrderFltEvexSize = ArrLen(lsraRegOrderFltEvex);
 #endif //  TARGET_AMD64
 
 //------------------------------------------------------------------------
@@ -1931,6 +1931,7 @@ void LinearScan::buildPhysRegRecords()
         RegRecord* curr = &physRegs[reg];
         curr->init(reg);
     }
+
     for (unsigned int i = 0; i < lsraRegOrderSize; i++)
     {
         regNumber  reg  = lsraRegOrder[i];
@@ -1938,30 +1939,34 @@ void LinearScan::buildPhysRegRecords()
         curr->regOrder  = (unsigned char)i;
     }
 
-    // TODO-CQ: We build physRegRecords before building intervals
-    // and refpositions. During building intervals/refposition, we
-    // would know if there are floating points used. If we can know
-    // that information before we build intervals, we can skip
-    // initializing the floating registers.
-    // For that `compFloatingPointUsed` should be set accurately
-    // before invoking allocator.
+// TODO-CQ: We build physRegRecords before building intervals
+// and refpositions. During building intervals/refposition, we
+// would know if there are floating points used. If we can know
+// that information before we build intervals, we can skip
+// initializing the floating registers.
+// For that `compFloatingPointUsed` should be set accurately
+// before invoking allocator.
+
+#if defined(TARGET_AMD64)
+    if (compiler->canUseEvexEncoding())
+    {
+        for (unsigned int i = 0; i < lsraRegOrderFltEvexSize; i++)
+        {
+            regNumber  reg  = lsraRegOrderFltEvex[i];
+            RegRecord* curr = &physRegs[reg];
+            curr->regOrder  = (unsigned char)i;
+        }
+
+        return;
+    }
+#endif // TARGET_AMD64
+
     for (unsigned int i = 0; i < lsraRegOrderFltSize; i++)
     {
         regNumber  reg  = lsraRegOrderFlt[i];
         RegRecord* curr = &physRegs[reg];
         curr->regOrder  = (unsigned char)i;
     }
-#if defined(TARGET_AMD64)
-    if (compiler->canUseEvexEncoding())
-    {
-        for (unsigned int i = 0; i < lsraRegOrderUpperFltSize; i++)
-        {
-            regNumber  reg  = lsraRegOrderFltUpper[i];
-            RegRecord* curr = &physRegs[reg];
-            curr->regOrder  = (unsigned char)(i + lsraRegOrderFltSize);
-        }
-    }
-#endif //  TARGET_AMD64
 }
 
 //------------------------------------------------------------------------

@@ -104,7 +104,7 @@
   // This should be reconsidered.
   #define RBM_FLT_CALLEE_SAVED     RBM_NONE
   #define RBM_FLT_CALLEE_TRASH     RBM_ALLFLOAT
-  #define REG_VAR_ORDER_FLT        REG_XMM0, REG_XMM1, REG_XMM2, REG_XMM3, REG_XMM4, REG_XMM5, REG_XMM6, REG_XMM7
+  #define REG_VAR_ORDER_FLT        REG_XMM0,REG_XMM1,REG_XMM2,REG_XMM3,REG_XMM4,REG_XMM5,REG_XMM6,REG_XMM7
 
   #define REG_FLT_CALLEE_SAVED_FIRST   REG_XMM6
   #define REG_FLT_CALLEE_SAVED_LAST    REG_XMM7
@@ -139,7 +139,7 @@
 
   #define RBM_ALLINT              (RBM_INT_CALLEE_SAVED | RBM_INT_CALLEE_TRASH)
 
-  #define REG_VAR_ORDER            REG_EAX,REG_EDX,REG_ECX,REG_ESI,REG_EDI,REG_EBX
+  #define REG_VAR_ORDER            REG_EAX,REG_ECX,REG_EDX,REG_EDI,REG_ESI,REG_EBX
   #define MAX_VAR_ORDER_SIZE       6
 
   // The order here is fixed: it must agree with an order assumed in eetwain...
