@@ -211,6 +211,65 @@ bool AggregateInfo::OverlappingReplacements(unsigned      offset,
     return true;
 }
 
+//------------------------------------------------------------------------
+// AggregateInfoMap::AggregateInfoMap:
+//   Construct a map that maps locals to AggregateInfo.
+//
+// Parameters:
+//   allocator - The allocator
+//   numLocals - Number of locals to support in the map
+//
+AggregateInfoMap::AggregateInfoMap(CompAllocator allocator, unsigned numLocals)
+    : m_aggregates(allocator), m_numLocals(numLocals)
+{
+    m_lclNumToAggregateIndex = new (allocator) unsigned[numLocals];
+    for (unsigned i = 0; i < numLocals; i++)
+    {
+        m_lclNumToAggregateIndex[i] = UINT_MAX;
+    }
+}
+
+//------------------------------------------------------------------------
+// AggregateInfoMap::Add:
+//   Add information about a physically promoted aggregate to the map.
+//
+// Parameters:
+//   agg - The entry to add
+//
+void AggregateInfoMap::Add(AggregateInfo* agg)
+{
+    assert(agg->LclNum < m_numLocals);
+    assert(m_lclNumToAggregateIndex[agg->LclNum] == UINT_MAX);
+
+    m_lclNumToAggregateIndex[agg->LclNum] = static_cast<unsigned>(m_aggregates.size());
+    m_aggregates.push_back(agg);
+}
+
+//------------------------------------------------------------------------
+// AggregateInfoMap::Lookup:
+//   Lookup the promotion information for a local.
+//
+// Parameters:
+//   lclNum - The local number
+//
+// Returns:
+//   Pointer to the aggregate information, or nullptr if the local is not
+//   physically promoted.
+//
+AggregateInfo* AggregateInfoMap::Lookup(unsigned lclNum)
+{
+    assert(lclNum < m_numLocals);
+    unsigned index = m_lclNumToAggregateIndex[lclNum];
+
+    if (index == UINT_MAX)
+    {
+        return nullptr;
+    }
+
+    assert(m_aggregates.size() > index);
+    return m_aggregates[index];
+}
+
 struct PrimitiveAccess
 {
     unsigned  Count    = 0;
@@ -368,8 +427,8 @@ public:
             access = &*m_inducedAccesses.insert(m_inducedAccesses.begin() + index, PrimitiveAccess(offs, accessType));
         }
 
+        access->Count++;
         access->CountWtd += weight;
-        INDEBUG(access->Count++);
     }
 
     //------------------------------------------------------------------------
@@ -380,24 +439,22 @@ public:
     // Parameters:
     //   comp   - Compiler instance
     //   lclNum - Local num for this struct local
-    //   aggregateInfo - [out] Pointer to aggregate info to create and insert replacements into.
+    //   aggregates - Map to add aggregate information into if promotion was done
     //
     // Returns:
-    //   Number of promotions picked.
+    //   Number of promotions picked. If above 0, an entry was added to aggregates.
     //
-    int PickPromotions(Compiler* comp, unsigned lclNum, AggregateInfo** aggregateInfo)
+    int PickPromotions(Compiler* comp, unsigned lclNum, AggregateInfoMap& aggregates)
     {
         if (m_accesses.size() <= 0)
         {
             return 0;
         }
 
-        AggregateInfo*& agg = *aggregateInfo;
-
         JITDUMP("Picking promotions for V%02u\n", lclNum);
 
-        assert(agg == nullptr);
-        int numReps = 0;
+        AggregateInfo* agg     = nullptr;
+        int            numReps = 0;
         for (size_t i = 0; i < m_accesses.size(); i++)
         {
             const Access& access = m_accesses[i];
@@ -415,6 +472,7 @@ public:
             if (agg == nullptr)
             {
                 agg = new (comp, CMK_Promotion) AggregateInfo(comp->getAllocator(CMK_Promotion), lclNum);
+                aggregates.Add(agg);
             }
 
             agg->Replacements.push_back(Replacement(access.Offset, access.AccessType));
@@ -440,19 +498,19 @@ public:
     // Parameters:
     //   comp   - Compiler instance
     //   lclNum - Local num for this struct local
-    //   aggregateInfo - [out] Pointer to aggregate info to create and insert replacements into.
+    //   aggregates - Map for aggregate information
     //
     // Returns:
     //   Number of new promotions.
     //
-    int PickInducedPromotions(Compiler* comp, unsigned lclNum, AggregateInfo** aggregateInfo)
+    int PickInducedPromotions(Compiler* comp, unsigned lclNum, AggregateInfoMap& aggregates)
     {
         if (m_inducedAccesses.size() <= 0)
         {
             return 0;
         }
 
-        AggregateInfo*& agg = *aggregateInfo;
+        AggregateInfo* agg = aggregates.Lookup(lclNum);
 
         if ((agg != nullptr) && (agg->Replacements.size() >= PHYSICAL_PROMOTION_MAX_PROMOTIONS_PER_STRUCT))
         {
@@ -511,6 +569,7 @@ public:
             if (agg == nullptr)
             {
                 agg = new (comp, CMK_Promotion) AggregateInfo(comp->getAllocator(CMK_Promotion), lclNum);
+                aggregates.Add(agg);
             }
 
             size_t insertionIndex;
@@ -958,15 +1017,14 @@ public:
     //   struct with promotions.
     //
     // Parameters:
-    //   aggregates - Appropriately sized vector to create aggregate information in.
+    //   aggregates - Map for aggregates
     //
     // Returns:
     //   True if any struct was physically promoted with at least one replacement;
     //   otherwise false.
     //
-    bool PickPromotions(jitstd::vector<AggregateInfo*>& aggregates)
+    bool PickPromotions(AggregateInfoMap& aggregates)
     {
-        unsigned numLocals = (unsigned)aggregates.size();
         JITDUMP("Picking promotions\n");
 
         int totalNumPromotions = 0;
@@ -985,7 +1043,7 @@ public:
         // fine to avoid the pathological cases.
         const int maxTotalNumPromotions = JitConfig.JitMaxLocalsToTrack();
 
-        for (unsigned lclNum = 0; lclNum < numLocals; lclNum++)
+        for (unsigned lclNum = 0; lclNum < m_compiler->lvaCount; lclNum++)
         {
             LocalUses* uses = m_uses[lclNum];
             if (uses == nullptr)
@@ -1000,7 +1058,7 @@ public:
             }
 #endif
 
-            totalNumPromotions += uses->PickPromotions(m_compiler, lclNum, &aggregates[lclNum]);
+            totalNumPromotions += uses->PickPromotions(m_compiler, lclNum, aggregates);
 
             if (totalNumPromotions >= maxTotalNumPromotions)
             {
@@ -1061,7 +1119,7 @@ public:
                 }
 
                 bool again = false;
-                for (unsigned lclNum = 0; lclNum < numLocals; lclNum++)
+                for (unsigned lclNum = 0; lclNum < m_compiler->lvaCount; lclNum++)
                 {
                     LocalUses* uses = m_uses[lclNum];
                     if (uses == nullptr)
@@ -1075,7 +1133,7 @@ public:
                     }
 #endif
 
-                    int numInducedProms = uses->PickInducedPromotions(m_compiler, lclNum, &aggregates[lclNum]);
+                    int numInducedProms = uses->PickInducedPromotions(m_compiler, lclNum, aggregates);
                     again |= numInducedProms > 0;
 
                     totalNumPromotions += numInducedProms;
@@ -1093,7 +1151,7 @@ public:
                     break;
                 }
 
-                for (unsigned lclNum = 0; lclNum < numLocals; lclNum++)
+                for (unsigned lclNum = 0; lclNum < m_compiler->lvaCount; lclNum++)
                 {
                     if (m_uses[lclNum] != nullptr)
                     {
@@ -1110,11 +1168,6 @@ public:
 
         for (AggregateInfo* agg : aggregates)
         {
-            if (agg == nullptr)
-            {
-                continue;
-            }
-
             jitstd::vector<Replacement>& reps = agg->Replacements;
 
             assert(reps.size() > 0);
@@ -1207,10 +1260,10 @@ private:
     //                  may induce new LCL_FLD nodes in the candidate.
     //   block        - The block that the assignment appears in.
     //
-    void InduceAccessesFromRegularlyPromotedStruct(jitstd::vector<AggregateInfo*>& aggregates,
-                                                   GenTreeLclVarCommon*            candidateLcl,
-                                                   GenTreeLclVarCommon*            regPromLcl,
-                                                   BasicBlock*                     block)
+    void InduceAccessesFromRegularlyPromotedStruct(AggregateInfoMap&    aggregates,
+                                                   GenTreeLclVarCommon* candidateLcl,
+                                                   GenTreeLclVarCommon* regPromLcl,
+                                                   BasicBlock*          block)
     {
         unsigned regPromOffs   = regPromLcl->GetLclOffs();
         unsigned candidateOffs = candidateLcl->GetLclOffs();
@@ -1242,16 +1295,16 @@ private:
     //   inducer    - The local node that may induce new LCL_FLD nodes in the candidate.
     //   block      - The block that the assignment appears in.
     //
-    void InduceAccessesInCandidate(jitstd::vector<AggregateInfo*>& aggregates,
-                                   GenTreeLclVarCommon*            candidate,
-                                   GenTreeLclVarCommon*            inducer,
-                                   BasicBlock*                     block)
+    void InduceAccessesInCandidate(AggregateInfoMap&    aggregates,
+                                   GenTreeLclVarCommon* candidate,
+                                   GenTreeLclVarCommon* inducer,
+                                   BasicBlock*          block)
     {
         unsigned candOffs    = candidate->GetLclOffs();
         unsigned inducerOffs = inducer->GetLclOffs();
         unsigned size        = candidate->GetLayout(m_compiler)->GetSize();
 
-        AggregateInfo* inducerAgg = aggregates[inducer->GetLclNum()];
+        AggregateInfo* inducerAgg = aggregates.Lookup(inducer->GetLclNum());
         if (inducerAgg != nullptr)
         {
             Replacement* firstRep;
@@ -1283,10 +1336,9 @@ private:
     //   type       - Type of the induced access.
     //   block      - The block with the induced access.
     //
-    void InduceAccess(
-        jitstd::vector<AggregateInfo*>& aggregates, unsigned lclNum, unsigned offset, var_types type, BasicBlock* block)
+    void InduceAccess(AggregateInfoMap& aggregates, unsigned lclNum, unsigned offset, var_types type, BasicBlock* block)
     {
-        AggregateInfo* agg = aggregates[lclNum];
+        AggregateInfo* agg = aggregates.Lookup(lclNum);
         if (agg != nullptr)
         {
             Replacement* overlapRep;
@@ -1808,11 +1860,6 @@ void ReplaceVisitor::StartBlock(BasicBlock* block)
     // local home.
     for (AggregateInfo* agg : m_aggregates)
     {
-        if (agg == nullptr)
-        {
-            continue;
-        }
-
         for (Replacement& rep : agg->Replacements)
         {
             assert(!rep.NeedsReadBack);
@@ -1832,11 +1879,6 @@ void ReplaceVisitor::StartBlock(BasicBlock* block)
 
     for (AggregateInfo* agg : m_aggregates)
     {
-        if (agg == nullptr)
-        {
-            continue;
-        }
-
         LclVarDsc* dsc = m_compiler->lvaGetDesc(agg->LclNum);
         if (!dsc->lvIsParam && !dsc->lvIsOSRLocal)
         {
@@ -1880,11 +1922,6 @@ void ReplaceVisitor::EndBlock()
 {
     for (AggregateInfo* agg : m_aggregates)
     {
-        if (agg == nullptr)
-        {
-            continue;
-        }
-
         for (size_t i = 0; i < agg->Replacements.size(); i++)
         {
             Replacement& rep = agg->Replacements[i];
@@ -2090,7 +2127,7 @@ void ReplaceVisitor::InsertPreStatementReadBacks()
             continue;
         }
 
-        AggregateInfo* agg = m_aggregates[lcl->GetLclNum()];
+        AggregateInfo* agg = m_aggregates.Lookup(lcl->GetLclNum());
         if (agg == nullptr)
         {
             continue;
@@ -2131,12 +2168,13 @@ void ReplaceVisitor::InsertPreStatementReadBacks()
 template <typename Func>
 void ReplaceVisitor::VisitOverlappingReplacements(unsigned lcl, unsigned offs, unsigned size, Func func)
 {
-    if (m_aggregates[lcl] == nullptr)
+    AggregateInfo* agg = m_aggregates.Lookup(lcl);
+    if (agg == nullptr)
     {
         return;
     }
 
-    jitstd::vector<Replacement>& replacements = m_aggregates[lcl]->Replacements;
+    jitstd::vector<Replacement>& replacements = agg->Replacements;
     size_t                       index = Promotion::BinarySearch<Replacement, &Replacement::Offset>(replacements, offs);
 
     if ((ssize_t)index < 0)
@@ -2262,11 +2300,6 @@ GenTree** ReplaceVisitor::InsertMidTreeReadBacks(GenTree** use)
 
     for (AggregateInfo* agg : m_aggregates)
     {
-        if (agg == nullptr)
-        {
-            continue;
-        }
-
         for (Replacement& rep : agg->Replacements)
         {
             if (!rep.NeedsReadBack)
@@ -2341,7 +2374,9 @@ bool ReplaceVisitor::IsPromotedStructLocalDying(GenTreeLclVarCommon* lcl)
         return false;
     }
 
-    AggregateInfo* agg = m_aggregates[lcl->GetLclNum()];
+    AggregateInfo* agg = m_aggregates.Lookup(lcl->GetLclNum());
+    assert(agg != nullptr);
+
     for (Replacement& rep : agg->Replacements)
     {
         if (rep.NeedsReadBack)
@@ -2376,12 +2411,13 @@ void ReplaceVisitor::ReplaceLocal(GenTree** use, GenTree* user)
 {
     GenTreeLclVarCommon* lcl    = (*use)->AsLclVarCommon();
     unsigned             lclNum = lcl->GetLclNum();
-    if (m_aggregates[lclNum] == nullptr)
+    AggregateInfo*       agg    = m_aggregates.Lookup(lclNum);
+    if (agg == nullptr)
     {
         return;
     }
 
-    jitstd::vector<Replacement>& replacements = m_aggregates[lclNum]->Replacements;
+    jitstd::vector<Replacement>& replacements = agg->Replacements;
 
     unsigned  offs       = lcl->GetLclOffs();
     var_types accessType = lcl->TypeGet();
@@ -2609,13 +2645,14 @@ void ReplaceVisitor::MarkForReadBack(GenTreeLclVarCommon* lcl, unsigned size DEB
     // in the (relative) near future.
     assert(m_compiler->fgGetTopLevelQmark(m_currentStmt->GetRootNode()) == nullptr);
 
-    if (m_aggregates[lcl->GetLclNum()] == nullptr)
+    AggregateInfo* agg = m_aggregates.Lookup(lcl->GetLclNum());
+    if (agg == nullptr)
     {
         return;
     }
 
     unsigned                     offs         = lcl->GetLclOffs();
-    jitstd::vector<Replacement>& replacements = m_aggregates[lcl->GetLclNum()]->Replacements;
+    jitstd::vector<Replacement>& replacements = agg->Replacements;
     size_t                       index = Promotion::BinarySearch<Replacement, &Replacement::Offset>(replacements, offs);
 
     if ((ssize_t)index < 0)
@@ -2693,7 +2730,7 @@ PhaseStatus Promotion::Run()
     }
 
     // Pick promotions based on the use information we just collected.
-    jitstd::vector<AggregateInfo*> aggregates(m_compiler->lvaCount, nullptr, m_compiler->getAllocator(CMK_Promotion));
+    AggregateInfoMap aggregates(m_compiler->getAllocator(CMK_Promotion), m_compiler->lvaCount);
     if (!localsUse.PickPromotions(aggregates))
     {
         // No promotions picked.
@@ -2704,11 +2741,6 @@ PhaseStatus Promotion::Run()
     // to the function.
     for (AggregateInfo* agg : aggregates)
     {
-        if (agg == nullptr)
-        {
-            continue;
-        }
-
         LclVarDsc* dsc = m_compiler->lvaGetDesc(agg->LclNum);
         if (dsc->lvIsParam || dsc->lvIsOSRLocal)
         {
@@ -2770,11 +2802,6 @@ PhaseStatus Promotion::Run()
     Statement* prevStmt = nullptr;
     for (AggregateInfo* agg : aggregates)
     {
-        if (agg == nullptr)
-        {
-            continue;
-        }
-
         LclVarDsc* dsc = m_compiler->lvaGetDesc(agg->LclNum);
         if (dsc->lvSuppressedZeroInit)
         {
