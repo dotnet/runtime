@@ -1693,9 +1693,9 @@ void* getTlsIndexObjectAddress()
 
 #elif HOST_ARM64
 
-uint64_t getTlsIndexObjectAddress()
+void* getTlsIndexObjectAddress()
 {
-    return reinterpret_cast<uint64_t>(JIT_GetThreadStaticsBaseOffset());
+    return reinterpret_cast<void*>(JIT_GetThreadStaticsBaseOffset());
 }
 #endif  // HOST_ARM64
 #else
@@ -1741,14 +1741,14 @@ void CEEInfo::getThreadLocalStaticBlocksInfo (CORINFO_THREAD_STATIC_BLOCKS_INFO*
 
     // For Linux/x64, get the address of tls_get_addr system method and the base address
     // of struct that we will pass to it.
-    pInfo->tlsGetAddrFtnPtr = (size_t)&__tls_get_addr;
-    pInfo->tlsIndexObject = (size_t)getTlsIndexObjectAddress();
+    pInfo->tlsGetAddrFtnPtr = &__tls_get_addr;
+    pInfo->tlsIndexObject = getTlsIndexObjectAddress();
 
 #elif defined(TARGET_ARM64)
 
     // For Linux/arm64, just get the offset of thread static variable, and during execution,
     // this offset, taken from trpid_elp0 system register gives back the thread variable address.
-    threadStaticBaseOffset = getTlsIndexObjectAddress();
+    threadStaticBaseOffset = (size_t)getTlsIndexObjectAddress();
 
 #else
     _ASSERTE_MSG(false, "Unsupported scenario of optimizing TLS access on Linux Arm32/x86");

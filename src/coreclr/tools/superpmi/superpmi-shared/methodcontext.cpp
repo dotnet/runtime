@@ -3575,11 +3575,11 @@ void MethodContext::recGetThreadLocalStaticBlocksInfo(CORINFO_THREAD_STATIC_BLOC
 
     value.tlsIndex.handle                       = CastHandle(pInfo->tlsIndex.addr);
     value.tlsIndex.accessType                   = pInfo->tlsIndex.accessType;
+    value.tlsGetAddrFtnPtr                      = CastHandle(pInfo->tlsGetAddrFtnPtr);
+    value.tlsIndexObject                        = CastHandle(pInfo->tlsIndexObject);
     value.offsetOfMaxThreadStaticBlocks         = pInfo->offsetOfMaxThreadStaticBlocks;
     value.offsetOfThreadLocalStoragePointer     = pInfo->offsetOfThreadLocalStoragePointer;
     value.offsetOfThreadStaticBlocks            = pInfo->offsetOfThreadStaticBlocks;
-    value.tlsGetAddrFtnPtr                      = pInfo->tlsGetAddrFtnPtr;
-    value.tlsIndexObject                        = pInfo->tlsIndexObject;
     value.offsetOfGCDataPointer                 = pInfo->offsetOfGCDataPointer;
 
     // This data is same for entire process, so just add it against key '0'.
@@ -3607,11 +3607,11 @@ void MethodContext::repGetThreadLocalStaticBlocksInfo(CORINFO_THREAD_STATIC_BLOC
 
     pInfo->tlsIndex.accessType                  = (InfoAccessType)value.tlsIndex.accessType;
     pInfo->tlsIndex.addr                        = (void*)value.tlsIndex.handle;
+    pInfo->tlsGetAddrFtnPtr                     = (void*)value.tlsGetAddrFtnPtr;
+    pInfo->tlsIndexObject                       = (void*)value.tlsIndexObject;
     pInfo->offsetOfMaxThreadStaticBlocks        = (DWORD)value.offsetOfMaxThreadStaticBlocks;
     pInfo->offsetOfThreadLocalStoragePointer    = value.offsetOfThreadLocalStoragePointer;
     pInfo->offsetOfThreadStaticBlocks           = (DWORD)value.offsetOfThreadStaticBlocks;
-    pInfo->tlsGetAddrFtnPtr                     = (DWORD)value.tlsGetAddrFtnPtr;
-    pInfo->tlsIndexObject                       = (DWORD)value.tlsIndexObject;
     pInfo->offsetOfGCDataPointer                = value.offsetOfGCDataPointer;
 }
 
