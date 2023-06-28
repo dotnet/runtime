@@ -339,12 +339,12 @@ LEAF_ENTRY GetTlsIndexObjectOffset, _TEXT
 # On The `lea` instruction has a data16 prefix and the call instruction has two data16 (0x66) prefixes and one rex64 prefix.
 # This is so the total size of lea+call to be 16, suitable for link-time optimization.
 
-        data16
+        .byte 0x66
         lea     rdi,    t_ThreadStatics@TLSGD[rip]   # instruction where offset is embedded by the linker during compilation
-        data16
-        data16
-        rex64
+        .byte 0x66
+        .byte 0x66
+        .byte 0x48 # rex.W prefix for padding
         call    __tls_get_addr                      # dummy call to have linker see the code pattern to replace the offset
         int 3
-LEAF_END JIT_GetThreadStaticsBaseOffset, _TEXT
+LEAF_END GetTlsIndexObjectOffset, _TEXT
 #endif
