@@ -147,12 +147,12 @@ public class WasiTemplateTests : BuildTestBase
 
         try
         {
-            TimeZoneInfo tst = TimeZoneInfo.FindSystemTimeZoneById(""Asia/Tokyo"");
-            Console.WriteLine($""{tst.DisplayName} BaseUtcOffset is {tst.BaseUtcOffset}"");
+            TimeZoneInfo tst = TimeZoneInfo.FindSystemTimeZoneById("Asia/Tokyo");
+            Console.WriteLine($"{tst.DisplayName} BaseUtcOffset is {tst.BaseUtcOffset}");
         }
         catch (TimeZoneNotFoundException tznfe)
         {
-            Console.WriteLine($""Could not find Asia/Tokyo: {tznfe.Message}"");
+            Console.WriteLine($"Could not find Asia/Tokyo: {tznfe.Message}");
         }
 
         return 42;
