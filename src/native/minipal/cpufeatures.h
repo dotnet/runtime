@@ -4,8 +4,6 @@
 #ifndef HAVE_MINIPAL_CPUFEATURES_H
 #define HAVE_MINIPAL_CPUFEATURES_H
 
-#include "utils.h"
-
 //
 // Should match the constants defined in the compiler in HardwareIntrinsicHelpers.Aot.cs
 //
@@ -66,10 +64,19 @@ static_assert((1 << ARM64_ATOMICS_FEATURE_FLAG_BIT) == ARM64IntrinsicConstants_A
 
 #endif // TARGET_ARM64
 
-EXTERN_C int minipal_getcpufeatures(void);
+#ifdef __cplusplus
+extern "C"
+{
+#endif // __cplusplus
+
+int minipal_getcpufeatures(void);
 
 #if defined(TARGET_X86) || defined(TARGET_AMD64)
-EXTERN_C void minipal_cpuidex(int cpuInfo[4], int function_id, int subFunction_id);
+void minipal_cpuidex(int cpuInfo[4], int function_id, int subFunction_id);
 #endif
+
+#ifdef __cplusplus
+}
+#endif // __cplusplus
 
 #endif

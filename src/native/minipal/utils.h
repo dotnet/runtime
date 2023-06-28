@@ -9,12 +9,4 @@
 // Number of characters in a string literal. Excludes terminating NULL.
 #define STRING_LENGTH(str) (ARRAY_SIZE(str) - 1)
 
-#ifndef EXTERN_C
-#ifdef __cplusplus
-#define EXTERN_C extern "C"
-#else
-#define EXTERN_C extern
-#endif // __cplusplus
-#endif // EXTERN_C
-
 #endif // HAVE_MINIPAL_UTILS_H
