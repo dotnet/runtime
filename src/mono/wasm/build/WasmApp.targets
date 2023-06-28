@@ -348,7 +348,9 @@
     <ItemGroup>
       <!-- If dotnet.{wasm,js} weren't added already (eg. AOT can add them), then add the default ones -->
       <WasmNativeAsset Include="$(MicrosoftNetCoreAppRuntimePackRidNativeDir)dotnet.js" />
+      <WasmNativeAsset Include="$(MicrosoftNetCoreAppRuntimePackRidNativeDir)dotnet.js.map" />
       <WasmNativeAsset Include="$(MicrosoftNetCoreAppRuntimePackRidNativeDir)dotnet.runtime.js" />
+      <WasmNativeAsset Include="$(MicrosoftNetCoreAppRuntimePackRidNativeDir)dotnet.runtime.js.map" />
       <WasmNativeAsset Include="$(MicrosoftNetCoreAppRuntimePackRidNativeDir)dotnet.native.wasm" Condition="'$(_HasDotnetWasm)' != 'true'" />
       <WasmNativeAsset Include="$(MicrosoftNetCoreAppRuntimePackRidNativeDir)dotnet.native.js" Condition="'$(_HasDotnetNativeJs)' != 'true'" />
       <WasmNativeAsset Include="$(MicrosoftNetCoreAppRuntimePackRidNativeDir)dotnet.native.worker.js" Condition="'$(_HasDotnetJsWorker)' != 'true' and Exists('$(MicrosoftNetCoreAppRuntimePackRidNativeDir)dotnet.native.worker.js')" />

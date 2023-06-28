@@ -186,7 +186,9 @@ namespace Wasm.Build.NativeRebuild.Tests
 
             // those files do not change on re-link
             dict["dotnet.js"]=(Path.Combine(paths.BundleDir, "_framework", "dotnet.js"), true);
+            dict["dotnet.js.map"]=(Path.Combine(paths.BundleDir, "_framework", "dotnet.js.map"), true);
             dict["dotnet.runtime.js"]=(Path.Combine(paths.BundleDir, "_framework", "dotnet.runtime.js"), true);
+            dict["dotnet.runtime.js.map"]=(Path.Combine(paths.BundleDir, "_framework", "dotnet.runtime.js.map"), true);
 
             return dict;
         }
