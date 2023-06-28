@@ -26,6 +26,8 @@ using Microsoft.SymbolStore.SymbolStores;
 using Microsoft.FileFormats.PE;
 using Microsoft.Extensions.Primitives;
 using Microsoft.NET.WebAssembly.Webcil;
+using System.Net.Security;
+using Microsoft.FileFormats.PDB;
 
 namespace Microsoft.WebAssembly.Diagnostics
 {
@@ -857,32 +859,37 @@ namespace Microsoft.WebAssembly.Diagnostics
         private readonly Dictionary<int, SourceFile> _documentIdToSourceFileTable = new Dictionary<int, SourceFile>();
         public PdbChecksum[] PdbChecksums { get; set; }
 
-        public void LoadInfoFromBytes(MonoProxy monoProxy, SessionId sessionId, byte[] assembly, byte[] pdb, CancellationToken token)
+        public void LoadInfoFromBytes(MonoProxy monoProxy, SessionId sessionId, AssemblyAndPdbData assemblyAndPdbData, CancellationToken token)
         {
-            // First try to read it as a PE file, otherwise try it as a WebCIL file
-            using var asmStream = new MemoryStream(assembly);
+            using var asmStream = new MemoryStream(assemblyAndPdbData.AsmBytes);
             try
             {
-                var peReader = new PEReader(asmStream);
-                if (!peReader.HasMetadata)
-                    throw new BadImageFormatException();
-                FromPEReader(monoProxy, sessionId, peReader, pdb, logger, token);
+                if (assemblyAndPdbData.IsAsmMetadataOnly)
+                {
+                    FromAssemblyAndPdbData(asmStream, assemblyAndPdbData);
+                }
+                else
+                {
+                    // First try to read it as a PE file, otherwise try it as a WebCIL file
+                    var peReader = new PEReader(asmStream);
+                    if (!peReader.HasMetadata)
+                        throw new BadImageFormatException();
+                    FromPEReader(monoProxy, sessionId, peReader, assemblyAndPdbData.PdbBytes, logger, token);
+                }
             }
             catch (BadImageFormatException)
             {
                 // This is a WebAssembly file
                 asmStream.Seek(0, SeekOrigin.Begin);
                 var webcilReader = new WebcilReader(asmStream);
-                FromWebcilReader(monoProxy, sessionId, webcilReader, pdb, logger, token);
+                FromWebcilReader(monoProxy, sessionId, webcilReader, assemblyAndPdbData.PdbBytes, logger, token);
             }
         }
 
-        public static AssemblyInfo FromBytes(MonoProxy monoProxy, SessionId sessionId, byte[] assembly, byte[] pdb, ILogger logger, CancellationToken token)
+        public static AssemblyInfo FromBytes(MonoProxy monoProxy, SessionId sessionId, AssemblyAndPdbData assemblyAndPdbData, ILogger logger, CancellationToken token)
         {
-            // First try to read it as a PE file, otherwise try it as a WebCIL file
-            using var asmStream = new MemoryStream(assembly);
             var assemblyInfo = new AssemblyInfo(logger);
-            assemblyInfo.LoadInfoFromBytes(monoProxy, sessionId, assembly, pdb, token);
+            assemblyInfo.LoadInfoFromBytes(monoProxy, sessionId, assemblyAndPdbData, token);
             return assemblyInfo;
         }
 
@@ -904,6 +911,43 @@ namespace Microsoft.WebAssembly.Diagnostics
             this.id = Interlocked.Increment(ref next_id);
             this.logger = logger;
         }
+        private void FromAssemblyAndPdbData(Stream _stream, AssemblyAndPdbData assemblyAndPdbData)
+        {
+            var asmMetadataReader = MetadataReaderProvider.FromMetadataStream(_stream, MetadataStreamOptions.LeaveOpen).GetMetadataReader();
+            Name = ReadAssemblyName(asmMetadataReader);
+            if (assemblyAndPdbData.PdbBytes != null)
+            {
+                if (assemblyAndPdbData.PdbUncompressedSize > 0)
+                {
+                    byte[] decompressedBuffer;
+                    using (var compressedStream = new MemoryStream(assemblyAndPdbData.PdbBytes, writable: false))
+                    using (var deflateStream = new System.IO.Compression.DeflateStream(compressedStream, System.IO.Compression.CompressionMode.Decompress, leaveOpen: true))
+                    {
+#if NETCOREAPP1_1_OR_GREATER
+                        decompressedBuffer = GC.AllocateUninitializedArray<byte>(assemblyAndPdbData.PdbUncompressedSize);
+#else
+                        decompressedBuffer = new byte[assemblyAndPdbData.PdbUncompressedSize];
+#endif
+                        using (var decompressedStream = new MemoryStream(decompressedBuffer, writable: true))
+                        {
+                            deflateStream.CopyTo(decompressedStream);
+                        }
+                    }
+                    this.pdbMetadataReader = MetadataReaderProvider.FromPortablePdbStream(new MemoryStream(decompressedBuffer, writable: false)).GetMetadataReader();
+                }
+                else
+                    this.pdbMetadataReader = MetadataReaderProvider.FromPortablePdbStream(new MemoryStream(assemblyAndPdbData.PdbBytes)).GetMetadataReader();
+            }
+            this.asmMetadataReader = asmMetadataReader;
+            PdbAge = assemblyAndPdbData.PdbAge;
+            PdbGuid = assemblyAndPdbData.PdbGuid;
+            PdbName = assemblyAndPdbData.PdbPath;
+            CodeViewInformationAvailable = true;
+            IsPortableCodeView = assemblyAndPdbData.IsPortableCodeView;
+            PdbChecksums = assemblyAndPdbData.PdbChecksums.ToArray();
+            Populate();
+        }
+
         private void FromPEReader(MonoProxy monoProxy, SessionId sessionId, PEReader peReader, byte[] pdb, ILogger logger, CancellationToken token)
         {
             var debugProvider = new PortableExecutableDebugMetadataProvider(peReader);
@@ -1120,11 +1164,6 @@ namespace Microsoft.WebAssembly.Diagnostics
 
         private void Populate()
         {
-            foreach (DocumentHandle dh in asmMetadataReader.Documents)
-            {
-                asmMetadataReader.GetDocument(dh);
-            }
-
             if (pdbMetadataReader != null)
                 ProcessSourceLink();
 
@@ -1135,7 +1174,6 @@ namespace Microsoft.WebAssembly.Diagnostics
 
                 foreach (MethodDefinitionHandle method in typeDefinition.GetMethods())
                 {
-                    var methodDefinition = asmMetadataReader.GetMethodDefinition(method);
                     SourceFile source = null;
                     if (pdbMetadataReader != null)
                     {
@@ -1230,8 +1268,8 @@ namespace Microsoft.WebAssembly.Diagnostics
                     return;
                 if (asmMetadataReader is null) //it means that the assembly was not loaded before because JMC was enabled
                 {
-                    var ret = await sdbHelper.GetBytesFromAssemblyAndPdb(Name, false, token);
-                    LoadInfoFromBytes(proxy, id, ret[0], ret[1], token);
+                    var ret = await sdbHelper.GetDataFromAssemblyAndPdb(Name, false, token);
+                    LoadInfoFromBytes(proxy, id, ret, token);
                 }
                 var pdbName = Path.GetFileName(PdbName);
                 var pdbGuid = PdbGuid.ToString("N").ToUpperInvariant() + (IsPortableCodeView ? "FFFFFFFF" : PdbAge);
@@ -1521,8 +1559,10 @@ namespace Microsoft.WebAssembly.Diagnostics
         private sealed class DebugItem
         {
             public string Url { get; set; }
-            public Task<byte[][]> Data { get; set; }
+            public Task<AssemblyAndPdbData> Data { get; set; }
+            public Task<byte[][]> ByteArray { get; set; }
         }
+
         public static IEnumerable<MethodInfo> EnC(MonoSDBHelper sdbAgent, AssemblyInfo asm, byte[] meta_data, byte[] pdb_data)
         {
             asm.EnC(sdbAgent, meta_data, pdb_data);
@@ -1538,12 +1578,12 @@ namespace Microsoft.WebAssembly.Diagnostics
             }
         }
 
-        public IEnumerable<SourceFile> Add(SessionId id, byte[] assembly_data, byte[] pdb_data, CancellationToken token)
+        public IEnumerable<SourceFile> Add(SessionId id, AssemblyAndPdbData assemblyAndPdbData, CancellationToken token)
         {
             AssemblyInfo assembly;
             try
             {
-                assembly = AssemblyInfo.FromBytes(monoProxy, id, assembly_data, pdb_data, logger, token);
+                assembly = AssemblyInfo.FromBytes(monoProxy, id, assemblyAndPdbData, logger, token);
             }
             catch (Exception e)
             {
@@ -1594,7 +1634,7 @@ namespace Microsoft.WebAssembly.Diagnostics
                             new DebugItem
                             {
                                 Url = url,
-                                Data = Task.WhenAll(MonoProxy.HttpClient.GetByteArrayAsync(url, token), pdb != null ? MonoProxy.HttpClient.GetByteArrayAsync(pdb, token) : Task.FromResult<byte[]>(null))
+                                ByteArray = Task.WhenAll(MonoProxy.HttpClient.GetByteArrayAsync(url, token), pdb != null ? MonoProxy.HttpClient.GetByteArrayAsync(pdb, token) : Task.FromResult<byte[]>(null)),
                             });
                     }
                     catch (Exception e)
@@ -1616,7 +1656,7 @@ namespace Microsoft.WebAssembly.Diagnostics
                             new DebugItem
                             {
                                 Url = file_name,
-                                Data = context.SdbAgent.GetBytesFromAssemblyAndPdb(Path.GetFileName(unescapedFileName), false, token)
+                                Data = context.SdbAgent.GetDataFromAssemblyAndPdb(Path.GetFileName(unescapedFileName), false, token)
                             });
                     }
                     catch (Exception e)
@@ -1631,15 +1671,22 @@ namespace Microsoft.WebAssembly.Diagnostics
                 AssemblyInfo assembly = null;
                 try
                 {
-                    byte[][] bytes = await step.Data.ConfigureAwait(false);
-                    if (bytes[0] == null)
+                    AssemblyAndPdbData assemblyAndPdbData = null;
+                    if (step.ByteArray != null)
+                    {
+                        byte[][] byteArray = await step.ByteArray.ConfigureAwait(false);
+                        assemblyAndPdbData = new AssemblyAndPdbData(byteArray[0], byteArray[1]);
+                    }
+                    else
+                        assemblyAndPdbData = await step.Data.ConfigureAwait(false);
+                    if (assemblyAndPdbData == null || assemblyAndPdbData.AsmBytes == null)
                     {
                         var unescapedFileName = Uri.UnescapeDataString(step.Url);
                         assemblies.Add(AssemblyInfo.WithoutDebugInfo(Path.GetFileName(unescapedFileName), logger));
                         logger.LogDebug($"Bytes from assembly {step.Url} is NULL");
                         continue;
                     }
-                    assembly = AssemblyInfo.FromBytes(monoProxy, id, bytes[0], bytes[1], logger, token);
+                    assembly = AssemblyInfo.FromBytes(monoProxy, id, assemblyAndPdbData, logger, token);
                 }
                 catch (Exception e)
                 {
