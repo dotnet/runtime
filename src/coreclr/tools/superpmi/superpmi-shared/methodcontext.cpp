@@ -3579,7 +3579,7 @@ void MethodContext::recGetThreadLocalStaticBlocksInfo(CORINFO_THREAD_STATIC_BLOC
     value.offsetOfThreadLocalStoragePointer     = pInfo->offsetOfThreadLocalStoragePointer;
     value.offsetOfThreadStaticBlocks            = pInfo->offsetOfThreadStaticBlocks;
     value.tlsGetAddrFtnPtr                      = pInfo->tlsGetAddrFtnPtr;
-    value.threadStaticsBaseOffset               = pInfo->threadStaticsBaseOffset;
+    value.tlsIndexObject                        = pInfo->tlsIndexObject;
     value.offsetOfGCDataPointer                 = pInfo->offsetOfGCDataPointer;
 
     // This data is same for entire process, so just add it against key '0'.
@@ -3593,10 +3593,9 @@ void MethodContext::dmpGetThreadLocalStaticBlocksInfo(DWORD key, const Agnostic_
     printf("GetThreadLocalStaticBlocksInfo key %u, value tlsIndex-%016" PRIX64
            ", offsetOfThreadLocalStoragePointer-%u, offsetOfMaxThreadStaticBlocks-%016" PRIX64
            ", offsetOfThreadStaticBlocks-%016" PRIX64 " offsetOfGCDataPointer-%u"
-           ", value tlsGetAddrFtnPtr-%016" PRIX64 ", threadStaticsBaseOffset--%016" PRIX64 ,
+           ", value tlsGetAddrFtnPtr-%016" PRIX64 ", tlsIndexObject--%016" PRIX64 ,
            key, value.tlsIndex.handle, value.offsetOfThreadLocalStoragePointer,
-           value.offsetOfMaxThreadStaticBlocks, value.offsetOfThreadStaticBlocks, value.offsetOfGCDataPointer, value.tlsGetAddrFtnPtr,
-           value.threadStaticsBaseOffset);
+           value.offsetOfMaxThreadStaticBlocks, value.offsetOfThreadStaticBlocks, value.offsetOfGCDataPointer, value.tlsGetAddrFtnPtr, value.tlsIndexObject);
 }
 
 void MethodContext::repGetThreadLocalStaticBlocksInfo(CORINFO_THREAD_STATIC_BLOCKS_INFO* pInfo, bool isGCType)
@@ -3612,7 +3611,7 @@ void MethodContext::repGetThreadLocalStaticBlocksInfo(CORINFO_THREAD_STATIC_BLOC
     pInfo->offsetOfThreadLocalStoragePointer    = value.offsetOfThreadLocalStoragePointer;
     pInfo->offsetOfThreadStaticBlocks           = (DWORD)value.offsetOfThreadStaticBlocks;
     pInfo->tlsGetAddrFtnPtr                     = (DWORD)value.tlsGetAddrFtnPtr;
-    pInfo->threadStaticsBaseOffset              = (DWORD)value.threadStaticsBaseOffset;
+    pInfo->tlsIndexObject                       = (DWORD)value.tlsIndexObject;
     pInfo->offsetOfGCDataPointer                = value.offsetOfGCDataPointer;
 }
 

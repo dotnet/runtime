@@ -1148,9 +1148,9 @@ namespace Internal.JitInterface
     public unsafe struct CORINFO_THREAD_STATIC_BLOCKS_INFO
     {
         public CORINFO_CONST_LOOKUP tlsIndex;
-        public uint offsetOfThreadLocalStoragePointer;
         public nuint tlsGetAddrFtnPtr;
-        public nuint threadStaticsBaseOffset;
+        public nuint tlsIndexObject;
+        public uint offsetOfThreadLocalStoragePointer;
         public nuint offsetOfMaxThreadStaticBlocks;
         public nuint offsetOfThreadStaticBlocks;
         public uint offsetOfGCDataPointer;

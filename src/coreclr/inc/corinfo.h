@@ -1727,11 +1727,11 @@ struct CORINFO_FIELD_INFO
 struct CORINFO_THREAD_STATIC_BLOCKS_INFO
 {
     CORINFO_CONST_LOOKUP tlsIndex;              // windows specific
+    size_t tlsGetAddrFtnPtr;                    // linux/x64 specific - address of __tls_get_addr() function
+    size_t tlsIndexObject;                      // linux/x64 specific - address of tls_index object
     uint32_t offsetOfThreadLocalStoragePointer; // windows specific
     size_t offsetOfMaxThreadStaticBlocks;
     size_t offsetOfThreadStaticBlocks;
-    size_t tlsGetAddrFtnPtr;                    // linux/x64 specific
-    size_t threadStaticsBaseOffset;             // linux/x64 specific
     uint32_t offsetOfGCDataPointer;
 };
 
