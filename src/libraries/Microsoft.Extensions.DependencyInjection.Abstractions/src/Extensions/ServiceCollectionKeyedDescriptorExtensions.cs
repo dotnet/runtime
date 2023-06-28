@@ -10,7 +10,7 @@ namespace Microsoft.Extensions.DependencyInjection.Extensions
     /// <summary>
     /// Extension methods for adding and removing services to an <see cref="IServiceCollection" />.
     /// </summary>
-    public static class ServiceCollectionKeyedDescriptorExtensions
+    public static partial class ServiceCollectionDescriptorExtensions
     {
         /// <summary>
         /// Adds the specified <paramref name="service"/> as a <see cref="ServiceLifetime.Transient"/> service

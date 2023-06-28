@@ -271,10 +271,6 @@ namespace Microsoft.Extensions.DependencyInjection.Extensions
         public static void TryAddTransient<[System.Diagnostics.CodeAnalysis.DynamicallyAccessedMembersAttribute(System.Diagnostics.CodeAnalysis.DynamicallyAccessedMemberTypes.PublicConstructors)] TService>(this Microsoft.Extensions.DependencyInjection.IServiceCollection collection) where TService : class { }
         public static void TryAddTransient<TService>(this Microsoft.Extensions.DependencyInjection.IServiceCollection services, System.Func<System.IServiceProvider, TService> implementationFactory) where TService : class { }
         public static void TryAddTransient<TService, [System.Diagnostics.CodeAnalysis.DynamicallyAccessedMembersAttribute(System.Diagnostics.CodeAnalysis.DynamicallyAccessedMemberTypes.PublicConstructors)] TImplementation>(this Microsoft.Extensions.DependencyInjection.IServiceCollection collection) where TService : class where TImplementation : class, TService { }
-    }
-
-    public static partial class ServiceCollectionKeyedDescriptorExtensions
-    {
         public static Microsoft.Extensions.DependencyInjection.IServiceCollection RemoveAllKeyed(this Microsoft.Extensions.DependencyInjection.IServiceCollection collection, System.Type serviceType, object serviceKey) { throw null; }
         public static Microsoft.Extensions.DependencyInjection.IServiceCollection RemoveAllKeyed<T>(this Microsoft.Extensions.DependencyInjection.IServiceCollection collection, object serviceKey) { throw null; }
         public static void TryAddKeyedScoped(this Microsoft.Extensions.DependencyInjection.IServiceCollection collection, [System.Diagnostics.CodeAnalysis.DynamicallyAccessedMembersAttribute(System.Diagnostics.CodeAnalysis.DynamicallyAccessedMemberTypes.PublicConstructors)] System.Type service, object serviceKey) { }
