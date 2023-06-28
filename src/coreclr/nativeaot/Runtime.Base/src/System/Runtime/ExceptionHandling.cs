@@ -604,7 +604,7 @@ namespace System.Runtime
             byte* pCatchHandler = null;
             uint catchingTryRegionIdx = MaxTryRegionIdx;
 
-            bool isFirstRethrowFrame = (startIdx != MaxTryRegionIdx);
+            bool isFirstRethrowFrame = (exInfo._kind & ExKind.RethrowFlag) != 0;
             bool isFirstFrame = true;
 
             byte* prevControlPC = null;
