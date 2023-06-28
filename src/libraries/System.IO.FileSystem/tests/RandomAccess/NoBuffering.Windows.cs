@@ -242,6 +242,80 @@ namespace System.IO.Tests
             Assert.Equal(fileSize, total);
         }
 
+        [Fact]
+        public void ReadFromDiskAfterFlushToDisk()
+        {
+            // Save test file path so we can refer to the same file throughout the test.
+            string testFilePath = GetTestFilePath();
+
+            // Generate random bytes to write to file. NOTE: since we use unbuffered I/O,
+            // the byte count must be a multiple of the storage device's sector size. We
+            // could P/Invoke the DeviceIoControl() function to get the sector size by
+            // passing IOCTL_DISK_GET_DRIVE_GEOMETRY as a parameter, but for the sake of
+            // simplicity we will just use the system page size as a proxy. This works because
+            // both the system page size and the storage device's sector size are typically
+            // powers of 2 meaning the system page size (which is typically 4,096 bytes) will
+            // be a multiple of the sector size (which is typically 512 bytes) hence meeting
+            // the requirements for unbuffered I/O.
+            int byteCount = Random.Shared.Next(1, 10) * Environment.SystemPageSize;
+            byte[] randomBytes = RandomNumberGenerator.GetBytes(byteCount);
+
+            // Create a new file and open it for writing.
+            using (SafeFileHandle handle = File.OpenHandle(testFilePath, FileMode.CreateNew, FileAccess.Write))
+            {
+                // Write random bytes to file. NOTE: this write does NOT use unbuffered I/O, i.e. the written bytes
+                // should end up in the file system cache so we can then flush them to disk below.
+                RandomAccess.Write(handle, randomBytes, fileOffset: 0);
+
+                // Flush the file to disk. Later on below we will use unbuffered I/O to read the file directly from disk.
+                RandomAccess.FlushToDisk(handle);
+            }
+
+            // At this point, FlushToDisk() should have ensured the file's contents are on disk. To confirm this, we will
+            // now read the file using unbuffered I/O which reads directly from disk, bypassing the file system cache. If
+            // FlushToDisk() worked correctly, the bytes we read should match the bytes we wrote above. NOTE: unbuffered
+            // I/O requires the buffer we read into to be aligned to the storage device's sector size which is why we use
+            // the SectorAlignedMemory<T> type here.
+            using (SafeFileHandle handle = File.OpenHandle(testFilePath, FileMode.Open, FileAccess.Read, options: NoBuffering))
+            using (SectorAlignedMemory<byte> buffer = SectorAlignedMemory<byte>.Allocate(randomBytes.Length))
+            {
+                // Since the Read() function may return fewer bytes than we requested, we need to keep track of
+                // how far into the file we are and how many bytes we read each time so we can continue reading
+                // until we have read the entire file.
+                int currentBytesRead = 0;
+                int nextFileReadOffset = 0;
+
+                // Keep reading until we reach the end of the file. When we reach the end of the file, the Read()
+                // function will return a count of 0 bytes which will cause the loop to terminate.
+                do
+                {
+                    // Read bytes from disk. NOTE: this read uses unbuffered I/O, i.e. the bytes are read directly from
+                    // disk and into the buffer we provide. This is important for this test because we want to confirm
+                    // that the call to FlushToDisk() above worked correctly and the bytes we wrote to the file are now
+                    // on disk. If we used buffered I/O here, the bytes would be read from the file system cache instead
+                    // of from disk, which would defeat the purpose of this test.
+                    currentBytesRead = RandomAccess.Read(handle, buffer.GetSpan(), fileOffset: nextFileReadOffset);
+
+                    // Extract the actual and expected bytes as we go along. We are basically reading chunks of bytes from
+                    // the file and comparing them to the corresponding chunks of bytes we wrote to the file earlier. NOTE:
+                    // when we reach the end of the file, the Read() function will return a count of 0 bytes which will cause
+                    // the spans created below to be zero length - this is NOT an error and does not need special handling.
+                    Span<byte> expectedBytes = randomBytes.AsSpan(nextFileReadOffset, currentBytesRead);
+                    Span<byte> actualBytes = buffer.GetSpan().Slice(0, currentBytesRead);
+
+                    // Confirm the chunk of bytes we read match the corresponding chunk of bytes we wrote earlier.
+                    Assert.True(expectedBytes.SequenceEqual(actualBytes));
+
+                    // Update the offset into the file so we can read the next chunk of bytes.
+                    nextFileReadOffset += currentBytesRead;
+                }
+                while (currentBytesRead != 0);
+
+                // At this point, we should have read the entire file.
+                Assert.Equal(randomBytes.Length, nextFileReadOffset);
+            }
+        }
+
         // when using FileOptions.Asynchronous we are testing Scatter&Gather APIs on Windows (FILE_FLAG_OVERLAPPED requirement)
         private static FileOptions GetFileOptions(bool asyncHandle) => (asyncHandle ? FileOptions.Asynchronous : FileOptions.None) | NoBuffering; 
     }

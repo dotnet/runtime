@@ -2,6 +2,7 @@
 // The .NET Foundation licenses this file to you under the MIT license.
 
 using System.Collections.Generic;
+using System.IO.Strategies;
 using System.Threading;
 using System.Threading.Tasks;
 using Microsoft.Win32.SafeHandles;
@@ -250,7 +251,46 @@ namespace System.IO
             return WriteGatherAtOffsetAsync(handle, buffers, fileOffset, cancellationToken);
         }
 
-        private static void ValidateInput(SafeFileHandle handle, long fileOffset)
+        /// <summary>
+        /// Flushes the operating system buffers for the given file to disk.
+        /// </summary>
+        /// <param name="handle">The file handle.</param>
+        /// <exception cref="T:System.ArgumentNullException"><paramref name="handle" /> is <see langword="null" />.</exception>
+        /// <exception cref="T:System.ArgumentException"><paramref name="handle" /> is invalid.</exception>
+        /// <exception cref="T:System.ObjectDisposedException">The file is closed.</exception>
+        /// <exception cref="T:System.UnauthorizedAccessException">
+        /// <paramref name="handle" /> was not opened for writing (on Windows).
+        /// </exception>
+        /// <exception cref="T:System.IO.IOException">An I/O error occurred.</exception>
+        /// <remarks>
+        /// <para>
+        /// This method calls platform-depedent APIs such as <c>FlushFileBuffers()</c> on Windows and <c>fsync()</c> on Unix.
+        /// </para>
+        /// <para>
+        /// Flushing the buffers causes data to be written to disk which is a relatively expensive operation. It is recommended
+        /// that you perform multiple writes to the file and then call this method either when you are done writing to the file
+        /// or periodically if you expect to continue writing to the file over a long period of time.
+        /// </para>
+        /// <para>
+        /// This method flushes all modified buffers for the file. If you want more granular control over which buffers are flushed,
+        /// you need to open the file using the <see cref="FileOptions.WriteThrough"/> option which causes all writes to the file to
+        /// be flushed to disk immediately such that you no longer need to call this method. In that scenario, you would allocate and
+        /// manage your own buffers then call <see cref="WriteAsync(SafeFileHandle, ReadOnlyMemory{byte}, long, CancellationToken)"/>
+        /// to flush a specific buffer to disk.
+        /// </para>
+        /// </remarks>
+        public static void FlushToDisk(SafeFileHandle handle)
+        {
+            // Check for null handle, invalid handle, etc.
+            ValidateInput(handle, fileOffset: 0, flushingToDisk: true);
+
+            // Call the same helper function that is used when users call FileStream.Flush(flushToDisk: true).
+            // While this was done to save time, it has the added bonus of providing consistent behavior which is
+            // beneficial for users who are migrating from using the FileStream class to using the RandomAccess class.
+            FileStreamHelpers.FlushToDisk(handle);
+        }
+
+        private static void ValidateInput(SafeFileHandle handle, long fileOffset, bool flushingToDisk = false)
         {
             if (handle is null)
             {
@@ -268,7 +308,17 @@ namespace System.IO
                     ThrowHelper.ThrowObjectDisposedException_FileClosed();
                 }
 
-                ThrowHelper.ThrowNotSupportedException_UnseekableStream();
+                // NOTE: this function was unconditionally throwing an exception for all non-seekable handles but
+                // this is problematic when using the FlushToDisk() function on Windows. That function calls the
+                // FlushFileBuffers() function which DOES support non-seekable handles, so technically we should
+                // only throw when this validation function is called in other scenarios that do NOT involve flushing
+                // to disk. Incidentally, the fsync() function on Unix does NOT support non-seekable handles however
+                // the code that ultimately runs on Unix when we call FileStreamHelpers.FlushToDisk() will silently
+                // ignore those errors, effectively making FlushToDisk() a no-op that shouldn't throw on Unix either.
+                if (!flushingToDisk)
+                {
+                    ThrowHelper.ThrowNotSupportedException_UnseekableStream();
+                }
             }
             else if (fileOffset < 0)
             {
