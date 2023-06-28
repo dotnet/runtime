@@ -530,7 +530,7 @@ namespace Microsoft.WebAssembly.Diagnostics
             if (!validContexts.Any())
                 return false;
             int maxId = validContexts.Max(context => context.Id);
-            executionContext = contextBag.Where(context => context.Id == maxId).FirstOrDefault();
+            executionContext = contextBag.SingleOrDefault(context => context.Id == maxId);
             return executionContext != null;
         }
 
@@ -548,7 +548,7 @@ namespace Microsoft.WebAssembly.Diagnostics
 
         public bool TryGetAndAddContext(SessionId sessionId, ExecutionContext newExecutionContext, out ExecutionContext previousExecutionContext)
         {
-            bool hasExisting = TryGetCurrentExecutionContextValue(sessionId, out previousExecutionContext, false);
+            bool hasExisting = TryGetCurrentExecutionContextValue(sessionId, out previousExecutionContext, ignoreDestroyedContext: false);
             ConcurrentBag<ExecutionContext> bag = contexts.GetOrAdd(sessionId, _ => new ConcurrentBag<ExecutionContext>());
             bag.Add(newExecutionContext);
             return hasExisting;
