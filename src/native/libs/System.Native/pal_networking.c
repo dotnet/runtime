@@ -3049,21 +3049,20 @@ static char* GetNameFromUid(uid_t uid)
         struct passwd* result;
         if (getpwuid_r(uid, &pw, buffer, bufferLength, &result) == 0)
         {
-            if (result == NULL)
-            {
-                errno = ENOENT;
-                free(buffer);
-                return NULL;
-            }
-            else
-            {
-                char* name = strdup(pw.pw_name);
-                free(buffer);
-                return name;
-            }
+            // When the user is not found, return an empty string (like Environment.UserName).
+            char* name = result != NULL ? strdup(pw.pw_name)
+                                        : strdup("");
+            free(buffer);
+            return name;
         }
 
         free(buffer);
+
+        if (errno == EINTR)
+        {
+            continue;
+        }
+
         size_t tmpBufferLength;
         if (errno != ERANGE || !multiply_s(bufferLength, (size_t)2, &tmpBufferLength))
         {
