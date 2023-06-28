@@ -4,6 +4,7 @@
 using System.Collections.Generic;
 using System.Diagnostics;
 using System.Diagnostics.CodeAnalysis;
+using System.Text.Json.Serialization;
 using System.Text.Json.Serialization.Metadata;
 
 namespace System.Text.Json.Nodes
@@ -95,6 +96,8 @@ namespace System.Text.Json.Nodes
             Parent?.GetPath(path, this);
         }
 
+        internal abstract JsonValueKind GetInternalValueKind();
+
         /// <summary>
         ///   Tries to obtain the current JSON value and returns a value that indicates whether the operation succeeded.
         /// </summary>
@@ -117,7 +120,7 @@ namespace System.Text.Json.Nodes
             // Force usage of JsonArray and JsonObject instead of supporting those in an JsonValue.
             if (element.ValueKind == JsonValueKind.Object || element.ValueKind == JsonValueKind.Array)
             {
-                throw new InvalidOperationException(SR.NodeElementCannotBeObjectOrArray);
+                ThrowHelper.ThrowInvalidOperationException_NodeElementCannotBeObjectOrArray();
             }
         }
     }

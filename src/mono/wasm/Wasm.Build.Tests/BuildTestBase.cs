@@ -386,9 +386,15 @@ namespace Wasm.Build.Tests
                 options.InitProject?.Invoke();
 
                 File.WriteAllText(Path.Combine(_projectDir, $"{buildArgs.ProjectName}.csproj"), buildArgs.ProjectFileContents);
-                File.Copy(Path.Combine(AppContext.BaseDirectory,
-                                        options.TargetFramework == "net8.0" ? "test-main.js" : "data/test-main-7.0.js"),
-                            Path.Combine(_projectDir, "test-main.js"));
+                File.Copy(
+                    Path.Combine(
+                        AppContext.BaseDirectory,
+                        string.IsNullOrEmpty(options.TargetFramework) || options.TargetFramework == "net8.0"
+                            ? "test-main.js"
+                            : "data/test-main-7.0.js"
+                    ),
+                    Path.Combine(_projectDir, "test-main.js")
+                );
 
                 File.WriteAllText(Path.Combine(_projectDir!, "index.html"), @"<html><body><script type=""module"" src=""test-main.js""></script></body></html>");
             }
@@ -676,11 +682,11 @@ namespace Wasm.Build.Tests
             var filesToExist = new List<string>()
             {
                 mainJS,
-                "dotnet.native.wasm",
+                "_framework/dotnet.native.wasm",
                 "_framework/blazor.boot.json",
-                "dotnet.js",
-                "dotnet.native.js",
-                "dotnet.runtime.js"
+                "_framework/dotnet.js",
+                "_framework/dotnet.native.js",
+                "_framework/dotnet.runtime.js"
             };
 
             if (isBrowserProject)
@@ -691,7 +697,7 @@ namespace Wasm.Build.Tests
             AssertFilesExist(bundleDir, new[] { "run-v8.sh" }, expectToExist: hasV8Script);
             AssertIcuAssets();
 
-            string managedDir = Path.Combine(bundleDir, "managed");
+            string managedDir = Path.Combine(bundleDir, "_framework");
             string bundledMainAppAssembly =
                 useWebcil ? $"{projectName}{WebcilInWasmExtension}" : $"{projectName}.dll";
             AssertFilesExist(managedDir, new[] { bundledMainAppAssembly });
@@ -732,7 +738,7 @@ namespace Wasm.Build.Tests
                     case GlobalizationMode.PredefinedIcu:
                         if (string.IsNullOrEmpty(predefinedIcudt))
                             throw new ArgumentException("WasmBuildTest is invalid, value for predefinedIcudt is required when GlobalizationMode=PredefinedIcu.");
-                        AssertFilesExist(bundleDir, new[] { predefinedIcudt }, expectToExist: true);
+                        AssertFilesExist(bundleDir, new[] { Path.Combine("_framework", predefinedIcudt) }, expectToExist: true);
                         // predefined ICU name can be identical with the icu files from runtime pack
                         switch (predefinedIcudt)
                         {
@@ -757,30 +763,32 @@ namespace Wasm.Build.Tests
                         expectNOCJK = true;
                         break;
                 }
-                AssertFilesExist(bundleDir, new[] { "icudt.dat" }, expectToExist: expectFULL);
-                AssertFilesExist(bundleDir, new[] { "icudt_EFIGS.dat" }, expectToExist: expectEFIGS);
-                AssertFilesExist(bundleDir, new[] { "icudt_CJK.dat" }, expectToExist: expectCJK);
-                AssertFilesExist(bundleDir, new[] { "icudt_no_CJK.dat" }, expectToExist: expectNOCJK);
-                AssertFilesExist(bundleDir, new[] { "icudt_hybrid.dat" }, expectToExist: expectHYBRID);
+
+                var frameworkDir = Path.Combine(bundleDir, "_framework");
+                AssertFilesExist(frameworkDir, new[] { "icudt.dat" }, expectToExist: expectFULL);
+                AssertFilesExist(frameworkDir, new[] { "icudt_EFIGS.dat" }, expectToExist: expectEFIGS);
+                AssertFilesExist(frameworkDir, new[] { "icudt_CJK.dat" }, expectToExist: expectCJK);
+                AssertFilesExist(frameworkDir, new[] { "icudt_no_CJK.dat" }, expectToExist: expectNOCJK);
+                AssertFilesExist(frameworkDir, new[] { "icudt_hybrid.dat" }, expectToExist: expectHYBRID);
             }
         }
 
         protected static void AssertDotNetWasmJs(string bundleDir, bool fromRuntimePack, string targetFramework)
         {
             AssertFile(Path.Combine(s_buildEnv.GetRuntimeNativeDir(targetFramework), "dotnet.native.wasm"),
-                       Path.Combine(bundleDir, "dotnet.native.wasm"),
+                       Path.Combine(bundleDir, "_framework/dotnet.native.wasm"),
                        "Expected dotnet.native.wasm to be same as the runtime pack",
                        same: fromRuntimePack);
 
             AssertFile(Path.Combine(s_buildEnv.GetRuntimeNativeDir(targetFramework), "dotnet.native.js"),
-                       Path.Combine(bundleDir, "dotnet.native.js"),
+                       Path.Combine(bundleDir, "_framework/dotnet.native.js"),
                        "Expected dotnet.native.js to be same as the runtime pack",
                        same: fromRuntimePack);
         }
 
         protected static void AssertDotNetJsSymbols(string bundleDir, bool fromRuntimePack, string targetFramework)
             => AssertFile(Path.Combine(s_buildEnv.GetRuntimeNativeDir(targetFramework), "dotnet.native.js.symbols"),
-                            Path.Combine(bundleDir, "dotnet.native.js.symbols"),
+                            Path.Combine(bundleDir, "_framework/dotnet.native.js.symbols"),
                             same: fromRuntimePack);
 
         protected static void AssertFilesDontExist(string dir, string[] filenames, string? label = null)

@@ -22,8 +22,8 @@ namespace System.Runtime.InteropServices.JavaScript.Tests
         [Fact]
         public async Task MultipleImportAsync()
         {
-            var first = await JSHost.ImportAsync("JavaScriptTestHelper", "./JavaScriptTestHelper.mjs");
-            var second = await JSHost.ImportAsync("JavaScriptTestHelper", "./JavaScriptTestHelper.mjs");
+            var first = await JSHost.ImportAsync("JavaScriptTestHelper", "../JavaScriptTestHelper.mjs");
+            var second = await JSHost.ImportAsync("JavaScriptTestHelper", "../JavaScriptTestHelper.mjs");
             Assert.NotNull(first);
             Assert.NotNull(second);
             Assert.Equal("object", first.GetTypeOfProperty("instance"));
@@ -36,12 +36,12 @@ namespace System.Runtime.InteropServices.JavaScript.Tests
         public async Task CancelableImportAsync()
         {
             var cts = new CancellationTokenSource();
-            var exTask = Assert.ThrowsAsync<JSException>(async () => await JSHost.ImportAsync("JavaScriptTestHelper", "./JavaScriptTestHelper.mjs", cts.Token));
+            var exTask = Assert.ThrowsAsync<JSException>(async () => await JSHost.ImportAsync("JavaScriptTestHelper", "../JavaScriptTestHelper.mjs", cts.Token));
             cts.Cancel();
             var actualEx2 = await exTask;
             Assert.Equal("OperationCanceledException", actualEx2.Message);
 
-            var actualEx = await Assert.ThrowsAsync<JSException>(async () => await JSHost.ImportAsync("JavaScriptTestHelper", "./JavaScriptTestHelper.mjs", new CancellationToken(true)));
+            var actualEx = await Assert.ThrowsAsync<JSException>(async () => await JSHost.ImportAsync("JavaScriptTestHelper", "../JavaScriptTestHelper.mjs", new CancellationToken(true)));
             Assert.Equal("OperationCanceledException", actualEx.Message);
         }
 
@@ -300,7 +300,7 @@ namespace System.Runtime.InteropServices.JavaScript.Tests
             yield return new object[] { new object[] { "JSData" } }; // special cased, so we call createData in the test itself
             yield return new object[] { new object[] { new byte[] { }, new int[] { }, new double[] { }, new string[] { }, new object[] { } } };
             yield return new object[] { new object[] { new byte[] { 1, 2, 3 }, new int[] { 1, 2, 3 }, new double[] { 1, 2, 3 }, new string[] { "a", "b", "c" }, new object[] { } } };
-            yield return new object[] { new object[] { new object[] { new byte[] { 1, 2, 3 }, new int[] { 1, 2, 3 }, new double[] { 1, 2, 3 }, new string[] { "a", "b", "c" } , new object(), new SomethingRef(), new SomethingStruct(), new Exception("test") } } };
+            yield return new object[] { new object[] { new object[] { new byte[] { 1, 2, 3 }, new int[] { 1, 2, 3 }, new double[] { 1, 2, 3 }, new string[] { "a", "b", "c" }, new object(), new SomethingRef(), new SomethingStruct(), new Exception("test") } } };
             yield return new object[] { new object[] { } };
             yield return new object[] { null };
         }
@@ -317,10 +317,10 @@ namespace System.Runtime.InteropServices.JavaScript.Tests
             Assert.Equal(expected, actual);
 
             if (expected != null) for (int i = 0; i < expected.Length; i++)
-            {
-                var actualI = JavaScriptTestHelper.store_ObjectArray(expected, i);
-                Assert.Equal(expected[i], actualI);
-            }
+                {
+                    var actualI = JavaScriptTestHelper.store_ObjectArray(expected, i);
+                    Assert.Equal(expected[i], actualI);
+                }
         }
 
         public static IEnumerable<object[]> MarshalObjectArrayCasesToDouble()
@@ -362,7 +362,7 @@ namespace System.Runtime.InteropServices.JavaScript.Tests
             yield return new object[] { new object[] { (ushort)0 } };
             yield return new object[] { new object[] { new SomethingStruct[] { } } };
             yield return new object[] { new object[] { new SomethingRef[] { }, } };
-            yield return new object[] { new object[] { new ArraySegment<byte>(new byte[] { 11 }) , } };
+            yield return new object[] { new object[] { new ArraySegment<byte>(new byte[] { 11 }), } };
         }
         delegate void dummyDelegate();
         static void dummyDelegateA()
