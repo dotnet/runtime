@@ -470,6 +470,7 @@ namespace System.Security.Cryptography.X509Certificates.Tests
         [InlineData(new [] { "2.5.4.3", "2.5.4.8" }, new [] { "0101FF", "3000" }, "CN=#0101FF, S=#3000")]
         [InlineData(new [] { "2.5.4.3", "2.5.4.8" }, new [] { "0C02504A", "3000" }, "CN=PJ, S=#3000")]
         [InlineData(new [] { "2.5.4.3", "2.5.4.8" }, new [] { "0C03233030", "3000" }, "CN=\"#00\", S=#3000")]
+        [SkipOnPlatform(TestPlatforms.Browser, "Browser doesn't support an X.509 PAL")]
         public static void Format_ComponentWithNonStringContent(string[] oids, string[] attributeValues, string expected)
         {
             AsnWriter writer = new AsnWriter(AsnEncodingRules.DER);
@@ -496,6 +497,7 @@ namespace System.Security.Cryptography.X509Certificates.Tests
         }
 
         [Fact]
+        [SkipOnPlatform(TestPlatforms.Browser, "Browser doesn't support an X.509 PAL")]
         public static void Format_MultiValueComponentWithNonStringContent()
         {
             AsnWriter writer = new AsnWriter(AsnEncodingRules.DER);
