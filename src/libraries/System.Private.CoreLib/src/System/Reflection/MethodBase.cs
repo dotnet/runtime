@@ -274,11 +274,11 @@ namespace System.Reflection
 
         internal const int MaxStackAllocArgCount = 4;
 
-
         [InlineArray(MaxStackAllocArgCount)]
         private protected struct ArgumentData<T>
         {
             private T _arg0;
+
             [UnscopedRef]
             public Span<T> AsSpan(int length)
             {
