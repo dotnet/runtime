@@ -2,6 +2,7 @@
 // The .NET Foundation licenses this file to you under the MIT license.
 
 using System.Collections.Generic;
+using System.Diagnostics;
 using System.Formats.Asn1;
 using System.Text;
 
@@ -147,6 +148,8 @@ namespace System.Security.Cryptography.X509Certificates
 
         private static string ReadAttributeValue(AsnReader tavReader, out bool binaryFallback)
         {
+            Debug.Assert(tavReader.RuleSet == AsnEncodingRules.DER);
+
             Asn1Tag tag = tavReader.PeekTag();
 
             if (tag.TagClass == TagClass.Universal)
@@ -166,14 +169,14 @@ namespace System.Security.Cryptography.X509Certificates
                         return tavReader.ReadCharacterString((UniversalTagNumber)tag.TagValue).TrimEnd('\0');
                     case UniversalTagNumber.OctetString:
                         // Windows will implicitly unwrap one OCTET STRING and display only the contents.
-                        binaryFallback = true;
-
                         if (tavReader.TryReadPrimitiveOctetString(out ReadOnlyMemory<byte> contents))
                         {
+                            binaryFallback = true;
                             return BinaryEncode(contents);
                         }
 
-                        return BinaryEncode(tavReader.ReadOctetString());
+                        Debug.Fail("TryReadPrimitiveOctetString should either succeed or throw with DER.");
+                        throw new CryptographicException(SR.Cryptography_Der_Invalid_Encoding);
                 }
             }
 

@@ -459,23 +459,32 @@ namespace System.Security.Cryptography.X509Certificates.Tests
         }
 
         [Theory]
-        [InlineData("2.5.4.3", "3000", "CN=#3000")]
-        [InlineData("2.5.4.5", "0603550406", "SERIALNUMBER=#0603550406")]
-        [InlineData("0.0", "31020500", "OID.0.0=#31020500")]
-        [InlineData("2.5.4.3", "04023000", "CN=#3000")] // OCTET STRING is implicitly peeled off
-        [InlineData("2.5.4.3", "040404023000", "CN=#04023000")] // Only one OCTET STRING is peeled off
-        [InlineData("2.5.4.3", "0303003000", "CN=#0303003000")] // BIT STRING is not implicitly removed
-        [InlineData("2.5.4.8", "0500", "S=#0500")]
-        [InlineData("2.5.4.8", "0101FF", "S=#0101FF")]
-        public static void Format_ComponentWithNonStringContent(string oid, string attributeValue, string expected)
+        [InlineData(new [] { "2.5.4.3" }, new [] { "3000" }, "CN=#3000")]
+        [InlineData(new [] { "2.5.4.5" }, new[] { "0603550406" }, "SERIALNUMBER=#0603550406")]
+        [InlineData(new [] { "0.0" }, new[] { "31020500" }, "OID.0.0=#31020500")]
+        [InlineData(new [] { "2.5.4.3" }, new [] { "04023000" }, "CN=#3000")] // OCTET STRING is implicitly stripped
+        [InlineData(new [] { "2.5.4.3" }, new [] { "040404023000" }, "CN=#04023000")] // Only one OCTET STRING is stripped
+        [InlineData(new [] { "2.5.4.3" }, new [] { "0303003000" }, "CN=#0303003000")] // BIT STRING is not implicitly stripped
+        [InlineData(new [] { "2.5.4.8" }, new [] { "0500" }, "S=#0500")]
+        [InlineData(new [] { "2.5.4.8" }, new [] { "0101FF" }, "S=#0101FF")]
+        [InlineData(new [] { "2.5.4.3", "2.5.4.8" }, new [] { "0101FF", "3000" }, "CN=#0101FF, S=#3000")]
+        [InlineData(new [] { "2.5.4.3", "2.5.4.8" }, new [] { "0C02504A", "3000" }, "CN=PJ, S=#3000")]
+        [InlineData(new [] { "2.5.4.3", "2.5.4.8" }, new [] { "0C03233030", "3000" }, "CN=\"#00\", S=#3000")]
+        public static void Format_ComponentWithNonStringContent(string[] oids, string[] attributeValues, string expected)
         {
             AsnWriter writer = new AsnWriter(AsnEncodingRules.DER);
-            using (writer.PushSequence())
-            using (writer.PushSetOf())
+
             using (writer.PushSequence())
             {
-                writer.WriteObjectIdentifier(oid);
-                writer.WriteEncodedValue(Convert.FromHexString(attributeValue));
+                for (int i = 0; i < oids.Length; i++)
+                {
+                    using (writer.PushSetOf())
+                    using (writer.PushSequence())
+                    {
+                        writer.WriteObjectIdentifier(oids[i]);
+                        writer.WriteEncodedValue(Convert.FromHexString(attributeValues[i]));
+                    }
+                }
             }
 
             X500DistinguishedName distinguishedName = new X500DistinguishedName(writer.Encode());
