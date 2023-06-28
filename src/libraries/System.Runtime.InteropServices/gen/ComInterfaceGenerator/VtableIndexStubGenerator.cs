@@ -2,15 +2,14 @@
 // The .NET Foundation licenses this file to you under the MIT license.
 
 using System;
-using System.Collections.Generic;
 using System.Collections.Immutable;
 using System.Diagnostics;
 using System.Linq;
 using System.Threading;
-using System.Xml.Linq;
 using Microsoft.CodeAnalysis;
 using Microsoft.CodeAnalysis.CSharp;
 using Microsoft.CodeAnalysis.CSharp.Syntax;
+using Microsoft.Interop.Analyzers;
 using static Microsoft.CodeAnalysis.CSharp.SyntaxFactory;
 
 [assembly: System.Resources.NeutralResourcesLanguage("en-US")]
@@ -77,7 +76,7 @@ namespace Microsoft.Interop
                 .WithTrackingName(StepNames.CalculateStubInformation);
 
             // Generate the code for the managed-to-unmangaed stubs and the diagnostics from code-generation.
-            IncrementalValuesProvider<(MemberDeclarationSyntax, ImmutableArray<Diagnostic>)> generateManagedToNativeStub = generateStubInformation
+            IncrementalValuesProvider<(MemberDeclarationSyntax, ImmutableArray<DiagnosticInfo>)> generateManagedToNativeStub = generateStubInformation
                 .Where(data => data.VtableIndexData.Direction is MarshalDirection.ManagedToUnmanaged or MarshalDirection.Bidirectional)
                 .Select(
                     static (data, ct) => GenerateManagedToNativeStub(data)
@@ -95,7 +94,7 @@ namespace Microsoft.Interop
                 .Where(data => data.VtableIndexData.Direction is MarshalDirection.UnmanagedToManaged or MarshalDirection.Bidirectional);
 
             // Generate the code for the unmanaged-to-managed stubs and the diagnostics from code-generation.
-            IncrementalValuesProvider<(MemberDeclarationSyntax, ImmutableArray<Diagnostic>)> generateNativeToManagedStub = nativeToManagedStubContexts
+            IncrementalValuesProvider<(MemberDeclarationSyntax, ImmutableArray<DiagnosticInfo>)> generateNativeToManagedStub = nativeToManagedStubContexts
                 .Select(
                     static (data, ct) => GenerateNativeToManagedStub(data)
                 )
@@ -125,58 +124,6 @@ namespace Microsoft.Interop
                 .Select(static (vtable, ct) => GeneratePopulateVTableMethod(vtable));
 
             context.RegisterConcatenatedSyntaxOutputs(populateVTable, "PopulateVTable.g.cs");
-        }
-
-        internal static ImmutableArray<FunctionPointerUnmanagedCallingConventionSyntax> GenerateCallConvSyntaxFromAttributes(AttributeData? suppressGCTransitionAttribute, AttributeData? unmanagedCallConvAttribute)
-        {
-            const string CallConvsField = "CallConvs";
-            ImmutableArray<FunctionPointerUnmanagedCallingConventionSyntax>.Builder callingConventions = ImmutableArray.CreateBuilder<FunctionPointerUnmanagedCallingConventionSyntax>();
-
-            if (suppressGCTransitionAttribute is not null)
-            {
-                callingConventions.Add(FunctionPointerUnmanagedCallingConvention(Identifier("SuppressGCTransition")));
-            }
-            if (unmanagedCallConvAttribute is not null)
-            {
-                foreach (KeyValuePair<string, TypedConstant> arg in unmanagedCallConvAttribute.NamedArguments)
-                {
-                    if (arg.Key == CallConvsField)
-                    {
-                        foreach (TypedConstant callConv in arg.Value.Values)
-                        {
-                            ITypeSymbol callConvSymbol = (ITypeSymbol)callConv.Value!;
-                            if (callConvSymbol.Name.StartsWith("CallConv", StringComparison.Ordinal))
-                            {
-                                callingConventions.Add(FunctionPointerUnmanagedCallingConvention(Identifier(callConvSymbol.Name.Substring("CallConv".Length))));
-                            }
-                        }
-                    }
-                }
-            }
-            return callingConventions.ToImmutable();
-        }
-
-        private static SyntaxTokenList StripTriviaFromModifiers(SyntaxTokenList tokenList)
-        {
-            SyntaxToken[] strippedTokens = new SyntaxToken[tokenList.Count];
-            for (int i = 0; i < tokenList.Count; i++)
-            {
-                strippedTokens[i] = tokenList[i].WithoutTrivia();
-            }
-            return new SyntaxTokenList(strippedTokens);
-        }
-
-        private static MethodDeclarationSyntax PrintGeneratedSource(
-            ContainingSyntax stubMethodSyntax,
-            SignatureContext stub,
-            BlockSyntax stubCode)
-        {
-            // Create stub function
-            return MethodDeclaration(stub.StubReturnType, stubMethodSyntax.Identifier)
-                .AddAttributeLists(stub.AdditionalAttributes.ToArray())
-                .WithModifiers(StripTriviaFromModifiers(stubMethodSyntax.Modifiers))
-                .WithParameterList(ParameterList(SeparatedList(stub.StubParameters)))
-                .WithBody(stubCode);
         }
 
         private static VirtualMethodIndexCompilationData? ProcessVirtualMethodIndexAttribute(AttributeData attrData)
@@ -283,7 +230,8 @@ namespace Microsoft.Interop
 
             Debug.Assert(virtualMethodIndexAttr is not null);
 
-            var generatorDiagnostics = new GeneratorDiagnostics();
+            var locations = new MethodSignatureDiagnosticLocations(syntax);
+            var generatorDiagnostics = new GeneratorDiagnosticsBag(new DiagnosticDescriptorProvider(), locations, SR.ResourceManager, typeof(FxResources.Microsoft.Interop.ComInterfaceGenerator.SR));
 
             // Process the LibraryImport attribute
             VirtualMethodIndexCompilationData? virtualMethodIndexData = ProcessVirtualMethodIndexAttribute(virtualMethodIndexAttr!);
@@ -330,9 +278,9 @@ namespace Microsoft.Interop
 
             var containingSyntaxContext = new ContainingSyntaxContext(syntax);
 
-            var methodSyntaxTemplate = new ContainingSyntax(syntax.Modifiers.StripTriviaFromTokens(), SyntaxKind.MethodDeclaration, syntax.Identifier, syntax.TypeParameterList);
+            var methodSyntaxTemplate = new ContainingSyntax(syntax.Modifiers.StripAccessibilityModifiers().StripTriviaFromTokens(), SyntaxKind.MethodDeclaration, syntax.Identifier, syntax.TypeParameterList);
 
-            ImmutableArray<FunctionPointerUnmanagedCallingConventionSyntax> callConv = GenerateCallConvSyntaxFromAttributes(suppressGCTransitionAttribute, unmanagedCallConvAttribute);
+            ImmutableArray<FunctionPointerUnmanagedCallingConventionSyntax> callConv = VirtualMethodPointerStubGenerator.GenerateCallConvSyntaxFromAttributes(suppressGCTransitionAttribute, unmanagedCallConvAttribute, defaultCallingConventions: ImmutableArray<FunctionPointerUnmanagedCallingConventionSyntax>.Empty);
 
             var interfaceType = ManagedTypeInfo.CreateTypeInfoForTypeSymbol(symbol.ContainingType);
 
@@ -357,18 +305,19 @@ namespace Microsoft.Interop
                 signatureContext,
                 containingSyntaxContext,
                 methodSyntaxTemplate,
-                new MethodSignatureDiagnosticLocations(syntax),
+                locations,
                 new SequenceEqualImmutableArray<FunctionPointerUnmanagedCallingConventionSyntax>(callConv, SyntaxEquivalentComparer.Instance),
                 VirtualMethodIndexData.From(virtualMethodIndexData),
                 exceptionMarshallingInfo,
-                ComInterfaceGeneratorHelpers.CreateGeneratorFactory(environment, MarshalDirection.ManagedToUnmanaged),
-                ComInterfaceGeneratorHelpers.CreateGeneratorFactory(environment, MarshalDirection.UnmanagedToManaged),
+                VtableIndexStubGeneratorHelpers.CreateGeneratorFactory(environment, MarshalDirection.ManagedToUnmanaged),
+                VtableIndexStubGeneratorHelpers.CreateGeneratorFactory(environment, MarshalDirection.UnmanagedToManaged),
                 interfaceType,
-                new SequenceEqualImmutableArray<Diagnostic>(generatorDiagnostics.Diagnostics.ToImmutableArray()),
-                unwrapperSyntax);
+                interfaceType,
+                new SequenceEqualImmutableArray<DiagnosticInfo>(generatorDiagnostics.Diagnostics.ToImmutableArray()),
+                new ObjectUnwrapperInfo(unwrapperSyntax));
         }
 
-        private static MarshallingInfo CreateExceptionMarshallingInfo(AttributeData virtualMethodIndexAttr, ISymbol symbol, Compilation compilation, GeneratorDiagnostics diagnostics, VirtualMethodIndexCompilationData virtualMethodIndexData)
+        private static MarshallingInfo CreateExceptionMarshallingInfo(AttributeData virtualMethodIndexAttr, ISymbol symbol, Compilation compilation, GeneratorDiagnosticsBag diagnostics, VirtualMethodIndexCompilationData virtualMethodIndexData)
         {
             if (virtualMethodIndexData.ExceptionMarshallingDefined)
             {
@@ -409,129 +358,30 @@ namespace Microsoft.Interop
             return NoMarshallingInfo.Instance;
         }
 
-        internal static (MemberDeclarationSyntax, ImmutableArray<Diagnostic>) GenerateManagedToNativeStub(
+        private static (MemberDeclarationSyntax, ImmutableArray<DiagnosticInfo>) GenerateManagedToNativeStub(
             IncrementalMethodStubGenerationContext methodStub)
         {
-            var diagnostics = new GeneratorDiagnostics();
-
-            // Generate stub code
-            var stubGenerator = new ManagedToNativeVTableMethodGenerator(
-                methodStub.ManagedToUnmanagedGeneratorFactory.Key.TargetFramework,
-                methodStub.ManagedToUnmanagedGeneratorFactory.Key.TargetFrameworkVersion,
-                methodStub.SignatureContext.ElementTypeInformation,
-                methodStub.VtableIndexData.SetLastError,
-                methodStub.VtableIndexData.ImplicitThisParameter,
-                (elementInfo, ex) =>
-                {
-                    diagnostics.ReportMarshallingNotSupported(methodStub.DiagnosticLocation, elementInfo, ex.NotSupportedDetails);
-                },
-                methodStub.ManagedToUnmanagedGeneratorFactory.GeneratorFactory);
-
-            BlockSyntax code = stubGenerator.GenerateStubBody(
-                methodStub.VtableIndexData.Index,
-                methodStub.CallingConvention.Array,
-                methodStub.TypeKeyOwner.Syntax);
+            var (stub, diagnostics) = VirtualMethodPointerStubGenerator.GenerateManagedToNativeStub(methodStub);
 
             return (
                 methodStub.ContainingSyntaxContext.AddContainingSyntax(
                     NativeTypeContainingSyntax)
                 .WrapMemberInContainingSyntaxWithUnsafeModifier(
-                    PrintGeneratedSource(
-                        methodStub.StubMethodSyntaxTemplate,
-                        methodStub.SignatureContext,
-                        code)
-                    .WithExplicitInterfaceSpecifier(ExplicitInterfaceSpecifier(IdentifierName(methodStub.ContainingSyntaxContext.ContainingSyntax[0].Identifier)))),
-                methodStub.Diagnostics.Array.AddRange(diagnostics.Diagnostics));
+                    stub),
+                methodStub.Diagnostics.Array.AddRange(diagnostics));
         }
 
-        private const string ThisParameterIdentifier = "@this";
-
-        internal static (MemberDeclarationSyntax, ImmutableArray<Diagnostic>) GenerateNativeToManagedStub(
+        private static (MemberDeclarationSyntax, ImmutableArray<DiagnosticInfo>) GenerateNativeToManagedStub(
             IncrementalMethodStubGenerationContext methodStub)
         {
-            var diagnostics = new GeneratorDiagnostics();
-            ImmutableArray<TypePositionInfo> elements = AddImplicitElementInfos(methodStub);
-
-            // Generate stub code
-            var stubGenerator = new UnmanagedToManagedStubGenerator(
-                methodStub.UnmanagedToManagedGeneratorFactory.Key.TargetFramework,
-                methodStub.UnmanagedToManagedGeneratorFactory.Key.TargetFrameworkVersion,
-                elements,
-                (elementInfo, ex) =>
-                {
-                    diagnostics.ReportMarshallingNotSupported(methodStub.DiagnosticLocation, elementInfo, ex.NotSupportedDetails);
-                },
-                methodStub.UnmanagedToManagedGeneratorFactory.GeneratorFactory);
-
-            BlockSyntax code = stubGenerator.GenerateStubBody(
-                MemberAccessExpression(SyntaxKind.SimpleMemberAccessExpression,
-                    IdentifierName(ThisParameterIdentifier),
-                    IdentifierName(methodStub.StubMethodSyntaxTemplate.Identifier)));
-
-            (ParameterListSyntax unmanagedParameterList, TypeSyntax returnType, _) = stubGenerator.GenerateAbiMethodSignatureData();
-
-            AttributeSyntax unmanagedCallersOnlyAttribute = Attribute(
-                ParseName(TypeNames.UnmanagedCallersOnlyAttribute));
-
-            if (methodStub.CallingConvention.Array.Length != 0)
-            {
-                unmanagedCallersOnlyAttribute = unmanagedCallersOnlyAttribute.AddArgumentListArguments(
-                    AttributeArgument(
-                        ImplicitArrayCreationExpression(
-                            InitializerExpression(SyntaxKind.CollectionInitializerExpression,
-                                SeparatedList<ExpressionSyntax>(
-                                    methodStub.CallingConvention.Array.Select(callConv => TypeOfExpression(ParseName($"System.Runtime.CompilerServices.CallConv{callConv.Name.ValueText}")))))))
-                    .WithNameEquals(NameEquals(IdentifierName("CallConvs"))));
-            }
-
-            MethodDeclarationSyntax unmanagedToManagedStub =
-                MethodDeclaration(returnType, $"ABI_{methodStub.StubMethodSyntaxTemplate.Identifier.Text}")
-                .WithModifiers(TokenList(Token(SyntaxKind.InternalKeyword), Token(SyntaxKind.StaticKeyword)))
-                .WithParameterList(unmanagedParameterList)
-                .AddAttributeLists(AttributeList(SingletonSeparatedList(unmanagedCallersOnlyAttribute)))
-                .WithBody(code);
+            var (stub, diagnostics) = VirtualMethodPointerStubGenerator.GenerateNativeToManagedStub(methodStub);
 
             return (
                 methodStub.ContainingSyntaxContext.AddContainingSyntax(
                     NativeTypeContainingSyntax)
                 .WrapMemberInContainingSyntaxWithUnsafeModifier(
-                    unmanagedToManagedStub),
-                methodStub.Diagnostics.Array.AddRange(diagnostics.Diagnostics));
-        }
-
-        private static ImmutableArray<TypePositionInfo> AddImplicitElementInfos(IncrementalMethodStubGenerationContext methodStub)
-        {
-            ImmutableArray<TypePositionInfo> originalElements = methodStub.SignatureContext.ElementTypeInformation;
-
-            var elements = ImmutableArray.CreateBuilder<TypePositionInfo>(originalElements.Length + 2);
-
-            elements.Add(new TypePositionInfo(methodStub.TypeKeyOwner, new NativeThisInfo(methodStub.UnwrapperSyntax))
-            {
-                InstanceIdentifier = ThisParameterIdentifier,
-                NativeIndex = 0,
-            });
-            foreach (TypePositionInfo element in originalElements)
-            {
-                elements.Add(element with
-                {
-                    NativeIndex = TypePositionInfo.IncrementIndex(element.NativeIndex)
-                });
-            }
-
-            if (methodStub.ExceptionMarshallingInfo != NoMarshallingInfo.Instance)
-            {
-                elements.Add(
-                    new TypePositionInfo(
-                        new ReferenceTypeInfo($"global::{TypeNames.System_Exception}", TypeNames.System_Exception),
-                        methodStub.ExceptionMarshallingInfo)
-                    {
-                        InstanceIdentifier = "__exception",
-                        ManagedIndex = TypePositionInfo.ExceptionIndex,
-                        NativeIndex = TypePositionInfo.ReturnIndex
-                    });
-            }
-
-            return elements.ToImmutable();
+                    stub),
+                methodStub.Diagnostics.Array.AddRange(diagnostics));
         }
 
         private static Diagnostic? GetDiagnosticIfInvalidMethodForGeneration(MethodDeclarationSyntax methodSyntax, IMethodSymbol method)
@@ -584,57 +434,18 @@ namespace Microsoft.Interop
 
         private static MemberDeclarationSyntax GeneratePopulateVTableMethod(IGrouping<ContainingSyntaxContext, IncrementalMethodStubGenerationContext> vtableMethods)
         {
-            const string vtableParameter = "vtable";
             ContainingSyntaxContext containingSyntax = vtableMethods.Key.AddContainingSyntax(NativeTypeContainingSyntax);
+
+            const string vtableParameter = "vtable";
             MethodDeclarationSyntax populateVtableMethod = MethodDeclaration(PredefinedType(Token(SyntaxKind.VoidKeyword)),
                 "PopulateUnmanagedVirtualMethodTable")
-                .WithModifiers(TokenList(Token(SyntaxKind.InternalKeyword), Token(SyntaxKind.StaticKeyword)))
+                .WithModifiers(TokenList(Token(SyntaxKind.InternalKeyword), Token(SyntaxKind.StaticKeyword), Token(SyntaxKind.UnsafeKeyword)))
                 .AddParameterListParameters(
                     Parameter(Identifier(vtableParameter))
                     .WithType(PointerType(PointerType(PredefinedType(Token(SyntaxKind.VoidKeyword))))));
 
-            foreach (var method in vtableMethods)
-            {
-                FunctionPointerTypeSyntax functionPointerType = GenerateUnmanagedFunctionPointerTypeForMethod(method);
-
-                // <vtableParameter>[<index>] = (void*)(<functionPointerType>)&ABI_<methodIdentifier>;
-                populateVtableMethod = populateVtableMethod.AddBodyStatements(
-                    ExpressionStatement(
-                        AssignmentExpression(SyntaxKind.SimpleAssignmentExpression,
-                            ElementAccessExpression(
-                                IdentifierName(vtableParameter))
-                            .AddArgumentListArguments(Argument(LiteralExpression(SyntaxKind.NumericLiteralExpression, Literal(method.VtableIndexData.Index)))),
-                            CastExpression(PointerType(PredefinedType(Token(SyntaxKind.VoidKeyword))),
-                                CastExpression(functionPointerType,
-                                    PrefixUnaryExpression(SyntaxKind.AddressOfExpression,
-                                        IdentifierName($"ABI_{method.StubMethodSyntaxTemplate.Identifier}")))))));
-            }
-
-            return containingSyntax.WrapMemberInContainingSyntaxWithUnsafeModifier(populateVtableMethod);
-        }
-
-        internal static FunctionPointerTypeSyntax GenerateUnmanagedFunctionPointerTypeForMethod(IncrementalMethodStubGenerationContext method)
-        {
-            var stubGenerator = new UnmanagedToManagedStubGenerator(
-                method.UnmanagedToManagedGeneratorFactory.Key.TargetFramework,
-                method.UnmanagedToManagedGeneratorFactory.Key.TargetFrameworkVersion,
-                AddImplicitElementInfos(method),
-                // Swallow diagnostics here since the diagnostics will be reported by the unmanaged->managed stub generation
-                (elementInfo, ex) => { },
-                method.UnmanagedToManagedGeneratorFactory.GeneratorFactory);
-
-            List<FunctionPointerParameterSyntax> functionPointerParameters = new();
-            var (paramList, retType, _) = stubGenerator.GenerateAbiMethodSignatureData();
-            functionPointerParameters.AddRange(paramList.Parameters.Select(p => FunctionPointerParameter(p.Type)));
-            // We add the return type as the last "parameter" here as that's what the function pointer syntax requires.
-            functionPointerParameters.Add(FunctionPointerParameter(retType));
-
-            // delegate* unmanaged<...>
-            ImmutableArray<FunctionPointerUnmanagedCallingConventionSyntax> callConv = method.CallingConvention.Array;
-            FunctionPointerTypeSyntax functionPointerType = FunctionPointerType(
-                    FunctionPointerCallingConvention(Token(SyntaxKind.UnmanagedKeyword), callConv.IsEmpty ? null : FunctionPointerUnmanagedCallingConventionList(SeparatedList(callConv))),
-                    FunctionPointerParameterList(SeparatedList(functionPointerParameters)));
-            return functionPointerType;
+            return containingSyntax.WrapMembersInContainingSyntaxWithUnsafeModifier(
+                populateVtableMethod.WithBody(VirtualMethodPointerStubGenerator.GenerateVirtualMethodTableSlotAssignments(vtableMethods, vtableParameter)));
         }
     }
 }

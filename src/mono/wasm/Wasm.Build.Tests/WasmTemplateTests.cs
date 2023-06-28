@@ -36,7 +36,9 @@ namespace Wasm.Build.Tests
             File.WriteAllText(path, text);
         }
 
-        private void UpdateBrowserMainJs(string targetFramework)
+        private const string DefaultRuntimeAssetsRelativePath = "./_framework/";
+
+        private void UpdateBrowserMainJs(string targetFramework, string runtimeAssetsRelativePath = DefaultRuntimeAssetsRelativePath)
         {
             string mainJsPath = Path.Combine(_projectDir!, "main.js");
             string mainJsContent = File.ReadAllText(mainJsPath);
@@ -46,6 +48,9 @@ namespace Wasm.Build.Tests
                     targetFramework == "net8.0"
                         ? ".withConsoleForwarding().withElementOnExit().withExitCodeLogging().withExitOnUnhandledError().create()"
                         : ".withConsoleForwarding().withElementOnExit().withExitCodeLogging().create()");
+
+            mainJsContent = mainJsContent.Replace("from './_framework/dotnet.js'", $"from '{runtimeAssetsRelativePath}dotnet.js'");
+
             File.WriteAllText(mainJsPath, mainJsContent);
         }
 
@@ -148,14 +153,17 @@ namespace Wasm.Build.Tests
                         HasV8Script: false,
                         MainJS: "main.mjs",
                         Publish: false,
-                        TargetFramework: BuildTestBase.DefaultTargetFramework
+                        TargetFramework: BuildTestBase.DefaultTargetFramework,
+                        IsBrowserProject: false
                         ));
 
             AssertDotNetJsSymbols(Path.Combine(GetBinDir(config), "AppBundle"), fromRuntimePack: true, targetFramework: DefaultTargetFramework);
 
-            (int exitCode, string output) = RunProcess(s_buildEnv.DotNet, _testOutput, args: $"run --no-build -c {config}", workingDir: _projectDir);
-            Assert.Equal(0, exitCode);
-            Assert.Contains("Hello, Console!", output);
+            CommandResult res = new RunCommand(s_buildEnv, _testOutput)
+                                        .WithWorkingDirectory(_projectDir!)
+                                        .ExecuteWithCapturedOutput($"run --no-silent --no-build -c {config}")
+                                        .EnsureSuccessful();
+            Assert.Contains("Hello, Console!", res.Output);
 
             if (!_buildContext.TryGetBuildFor(buildArgs, out BuildProduct? product))
                 throw new XunitException($"Test bug: could not get the build product in the cache");
@@ -174,7 +182,8 @@ namespace Wasm.Build.Tests
                             MainJS: "main.mjs",
                             Publish: true,
                             TargetFramework: BuildTestBase.DefaultTargetFramework,
-                            UseCache: false));
+                            UseCache: false,
+                            IsBrowserProject: false));
 
             AssertDotNetJsSymbols(Path.Combine(GetBinDir(config), "AppBundle"), fromRuntimePack: !expectRelinking, targetFramework: DefaultTargetFramework);
         }
@@ -216,17 +225,20 @@ namespace Wasm.Build.Tests
                             HasV8Script: false,
                             MainJS: "main.mjs",
                             Publish: false,
-                            TargetFramework: expectedTFM
+                            TargetFramework: expectedTFM,
+                            IsBrowserProject: false
                             ));
 
             AssertDotNetJsSymbols(Path.Combine(GetBinDir(config, expectedTFM), "AppBundle"), fromRuntimePack: !relinking, targetFramework: expectedTFM);
 
-            (int exitCode, string output) = RunProcess(s_buildEnv.DotNet, _testOutput, args: $"run --no-build -c {config} x y z", workingDir: _projectDir);
-            Assert.Equal(42, exitCode);
+            CommandResult res = new RunCommand(s_buildEnv, _testOutput)
+                                        .WithWorkingDirectory(_projectDir!)
+                                        .ExecuteWithCapturedOutput($"run --no-silent --no-build -c {config} x y z")
+                                        .EnsureExitCode(42);
 
-            Assert.Contains("args[0] = x", output);
-            Assert.Contains("args[1] = y", output);
-            Assert.Contains("args[2] = z", output);
+            Assert.Contains("args[0] = x", res.Output);
+            Assert.Contains("args[1] = y", res.Output);
+            Assert.Contains("args[2] = z", res.Output);
         }
 
         public static TheoryData<bool, bool, string> TestDataForAppBundleDir()
@@ -276,7 +288,7 @@ namespace Wasm.Build.Tests
                                             .WithWorkingDirectory(workingDir);
 
                 await using var runner = new BrowserRunner(_testOutput);
-                var page = await runner.RunAsync(runCommand, $"run -c {config} --project {projectFile} --forward-console");
+                var page = await runner.RunAsync(runCommand, $"run --no-silent -c {config} --project {projectFile} --forward-console");
                 await runner.WaitForExitMessageAsync(TimeSpan.FromMinutes(2));
                 Assert.Contains("Hello, Browser!", string.Join(Environment.NewLine, runner.OutputLines));
             }
@@ -286,7 +298,7 @@ namespace Wasm.Build.Tests
                                             .WithWorkingDirectory(workingDir);
 
                 await using var runner = new BrowserRunner(_testOutput);
-                var page = await runner.RunAsync(runCommand, $"run -c {config} --no-build --project {projectFile} --forward-console");
+                var page = await runner.RunAsync(runCommand, $"run --no-silent -c {config} --no-build --project {projectFile} --forward-console");
                 await runner.WaitForExitMessageAsync(TimeSpan.FromMinutes(2));
                 Assert.Contains("Hello, Browser!", string.Join(Environment.NewLine, runner.OutputLines));
             }
@@ -306,7 +318,7 @@ namespace Wasm.Build.Tests
             string workingDir = runOutsideProjectDirectory ? BuildEnvironment.TmpPath : _projectDir!;
 
             {
-                string runArgs = $"run -c {config} --project {projectFile}";
+                string runArgs = $"run --no-silent -c {config} --project {projectFile}";
                 runArgs += " x y z";
                 using var cmd = new RunCommand(s_buildEnv, _testOutput, label: id)
                                     .WithWorkingDirectory(workingDir)
@@ -322,7 +334,7 @@ namespace Wasm.Build.Tests
 
             {
                 // Run with --no-build
-                string runArgs = $"run -c {config} --project {projectFile} --no-build";
+                string runArgs = $"run --no-silent -c {config} --project {projectFile} --no-build";
                 runArgs += " x y z";
                 using var cmd = new RunCommand(s_buildEnv, _testOutput, label: id)
                                 .WithWorkingDirectory(workingDir);
@@ -388,7 +400,8 @@ namespace Wasm.Build.Tests
                             MainJS: "main.mjs",
                             Publish: true,
                             TargetFramework: BuildTestBase.DefaultTargetFramework,
-                            UseCache: false));
+                            UseCache: false,
+                            IsBrowserProject: false));
 
             if (!aot)
             {
@@ -397,10 +410,10 @@ namespace Wasm.Build.Tests
             }
             else
             {
-                AssertFilesDontExist(Path.Combine(GetBinDir(config), "AppBundle"), new[] { "dotnet.js.symbols" });
+                AssertFilesDontExist(Path.Combine(GetBinDir(config), "AppBundle"), new[] { "dotnet.native.js.symbols" });
             }
 
-            string runArgs = $"run --no-build -c {config}";
+            string runArgs = $"run --no-silent --no-build -c {config}";
             runArgs += " x y z";
             var res = new RunCommand(s_buildEnv, _testOutput, label: id)
                                 .WithWorkingDirectory(_projectDir!)
@@ -414,44 +427,31 @@ namespace Wasm.Build.Tests
             Assert.Contains("args[2] = z", res.Output);
         }
 
-        [ConditionalFact(typeof(BuildTestBase), nameof(IsUsingWorkloads))]
-        public async Task BlazorRunTest()
-        {
-            string config = "Debug";
-            string id = $"blazor_{config}_{Path.GetRandomFileName()}";
-            string projectFile = CreateWasmTemplateProject(id, "blazorwasm");
-
-            new DotNetCommand(s_buildEnv, _testOutput)
-                    .WithWorkingDirectory(_projectDir!)
-                    .Execute($"build -c {config} -bl:{Path.Combine(s_buildEnv.LogRootPath, $"{id}.binlog")}")
-                    .EnsureSuccessful();
-
-            await BlazorRun(config);
-        }
-
         [ConditionalTheory(typeof(BuildTestBase), nameof(IsUsingWorkloads))]
-        [InlineData("", BuildTestBase.DefaultTargetFramework)]
+        [InlineData("", BuildTestBase.DefaultTargetFramework, DefaultRuntimeAssetsRelativePath)]
+        [InlineData("", BuildTestBase.DefaultTargetFramework, "./")]
         // [ActiveIssue("https://github.com/dotnet/runtime/issues/79313")]
         // [InlineData("-f net7.0", "net7.0")]
-        [InlineData("-f net8.0", "net8.0")]
-        public async Task BrowserBuildAndRun(string extraNewArgs, string targetFramework)
+        [InlineData("-f net8.0", "net8.0", DefaultRuntimeAssetsRelativePath)]
+        [InlineData("-f net8.0", "net8.0", "./")]
+        public async Task BrowserBuildAndRun(string extraNewArgs, string targetFramework, string runtimeAssetsRelativePath)
         {
             string config = "Debug";
             string id = $"browser_{config}_{Path.GetRandomFileName()}";
             CreateWasmTemplateProject(id, "wasmbrowser", extraNewArgs);
 
-            UpdateBrowserMainJs(targetFramework);
+            UpdateBrowserMainJs(targetFramework, runtimeAssetsRelativePath);
 
             new DotNetCommand(s_buildEnv, _testOutput)
                     .WithWorkingDirectory(_projectDir!)
-                    .Execute($"build -c {config} -bl:{Path.Combine(s_buildEnv.LogRootPath, $"{id}.binlog")}")
+                    .Execute($"build -c {config} -bl:{Path.Combine(s_buildEnv.LogRootPath, $"{id}.binlog")} {(runtimeAssetsRelativePath != DefaultRuntimeAssetsRelativePath ? "-p:WasmRuntimeAssetsLocation=" + runtimeAssetsRelativePath : "")}")
                     .EnsureSuccessful();
 
             using var runCommand = new RunCommand(s_buildEnv, _testOutput)
                                         .WithWorkingDirectory(_projectDir!);
 
             await using var runner = new BrowserRunner(_testOutput);
-            var page = await runner.RunAsync(runCommand, $"run -c {config} --no-build -r browser-wasm --forward-console");
+            var page = await runner.RunAsync(runCommand, $"run --no-silent -c {config} --no-build -r browser-wasm --forward-console");
             await runner.WaitForExitMessageAsync(TimeSpan.FromMinutes(2));
             Assert.Contains("Hello, Browser!", string.Join(Environment.NewLine, runner.OutputLines));
         }

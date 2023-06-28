@@ -15,8 +15,6 @@ namespace HostActivation.Tests
 {
     public class StandaloneAppActivation : IClassFixture<StandaloneAppActivation.SharedTestState>
     {
-        private readonly string AppHostExeName = RuntimeInformationExtensions.GetExeFileNameForCurrentPlatform("apphost");
-
         private SharedTestState sharedTestState;
 
         public StandaloneAppActivation(StandaloneAppActivation.SharedTestState fixture)
@@ -85,7 +83,7 @@ namespace HostActivation.Tests
                 .Should().Pass()
                 .And.HaveStdOut($"Hello World!{Environment.NewLine}{Environment.NewLine}.NET {sharedTestState.RepoDirectories.MicrosoftNETCoreAppVersion}{Environment.NewLine}")
                 .And.HaveStdErrContaining($"Runtime config does not exist at [{fixture.TestProject.RuntimeConfigJson}]")
-                .And.HaveStdErrContaining($"Could not locate the dependencies manifest file [{fixture.TestProject.DepsJson}]");
+                .And.HaveStdErrContaining($"Dependencies manifest does not exist at [{fixture.TestProject.DepsJson}]");
         }
 
         [Fact]
@@ -95,9 +93,7 @@ namespace HostActivation.Tests
                 .Copy();
 
             var appExe = fixture.TestProject.AppExe;
-
-            string builtAppHost = Path.Combine(sharedTestState.RepoDirectories.HostArtifacts, AppHostExeName);
-            File.Copy(builtAppHost, appExe, true);
+            UseBuiltAppHost(appExe);
 
             int exitCode = Command.Create(appExe)
                 .CaptureStdErr()
@@ -123,10 +119,7 @@ namespace HostActivation.Tests
                 .Copy();
 
             var appExe = fixture.TestProject.AppExe;
-
-            string hostExeName = RuntimeInformationExtensions.GetExeFileNameForCurrentPlatform("dotnet");
-            string builtHost = Path.Combine(sharedTestState.RepoDirectories.HostArtifacts, hostExeName);
-            File.Copy(builtHost, appExe, true);
+            File.Copy(Binaries.DotNet.FilePath, appExe, true);
 
             int exitCode = Command.Create(appExe)
                 .CaptureStdErr()
@@ -152,7 +145,7 @@ namespace HostActivation.Tests
                 .Copy();
 
             var appExe = fixture.TestProject.AppExe;
-            var renamedAppExe = fixture.TestProject.AppExe + RuntimeInformationExtensions.GetExeFileNameForCurrentPlatform("renamed");
+            var renamedAppExe = fixture.TestProject.AppExe + Binaries.GetExeFileNameForCurrentPlatform("renamed");
 
             File.Copy(appExe, renamedAppExe, true);
 
@@ -235,7 +228,7 @@ namespace HostActivation.Tests
                 .Execute(expectedToFail: true)
                 .Should().Fail()
                 .And.HaveUsedDotNetRootInstallLocation(Path.GetFullPath(newOutDir), fixture.CurrentRid)
-                .And.HaveStdErrContaining($"The required library {RuntimeInformationExtensions.GetSharedLibraryFileNameForCurrentPlatform("hostfxr")} could not be found.");
+                .And.HaveStdErrContaining($"The required library {Binaries.HostFxr.FileName} could not be found.");
         }
 
         [Fact]
@@ -307,7 +300,7 @@ namespace HostActivation.Tests
 
         private void UseBuiltAppHost(string appExe)
         {
-            File.Copy(Path.Combine(sharedTestState.RepoDirectories.HostArtifacts, AppHostExeName), appExe, true);
+            File.Copy(Binaries.AppHost.FilePath, appExe, true);
         }
 
         public class SharedTestState : IDisposable
@@ -328,7 +321,7 @@ namespace HostActivation.Tests
                 var publishFixture = new TestProjectFixture("StandaloneApp", RepoDirectories);
                 publishFixture
                     .EnsureRestoredForRid(publishFixture.CurrentRid)
-                    .PublishProject(runtime: publishFixture.CurrentRid);
+                    .PublishProject(runtime: publishFixture.CurrentRid, selfContained: true);
 
                 ReplaceTestProjectOutputHostInTestProjectFixture(buildFixture);
 
@@ -359,14 +352,12 @@ namespace HostActivation.Tests
                     throw new Exception("host or hostpolicy does not exist in test project output. Is this a standalone app?");
                 }
 
-                var dotnetHostPolicy = Path.Combine(dotnet.GreatestVersionSharedFxPath, RuntimeInformationExtensions.GetSharedLibraryFileNameForCurrentPlatform("hostpolicy"));
-                var dotnetHostFxr = Path.Combine(dotnet.GreatestVersionHostFxrPath, RuntimeInformationExtensions.GetSharedLibraryFileNameForCurrentPlatform("hostfxr"));
-
+                var dotnetHostPolicy = Path.Combine(dotnet.GreatestVersionSharedFxPath, Binaries.HostPolicy.FileName);
                 File.Copy(dotnetHostPolicy, testProjectHostPolicy, true);
 
                 if (File.Exists(testProjectHostFxr))
                 {
-                    File.Copy(dotnetHostFxr, testProjectHostFxr, true);
+                    File.Copy(dotnet.GreatestVersionHostFxrFilePath, testProjectHostFxr, true);
                 }
             }
         }

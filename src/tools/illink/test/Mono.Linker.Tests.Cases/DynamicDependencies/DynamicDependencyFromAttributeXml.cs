@@ -31,7 +31,7 @@ namespace Mono.Linker.Tests.Cases.DynamicDependencies
 		}
 
 		// https://github.com/dotnet/runtime/issues/79393
-		[Kept (By = ProducedBy.Trimmer)]
+		[Kept (By = Tool.Trimmer)]
 		static void UnusedMethod ()
 		{
 		}
@@ -44,13 +44,13 @@ namespace Mono.Linker.Tests.Cases.DynamicDependencies
 		class NonUsedType
 		{
 			// https://github.com/dotnet/runtime/issues/79393
-			[Kept (By = ProducedBy.Trimmer)]
+			[Kept (By = Tool.Trimmer)]
 			public NonUsedType ()
 			{
 			}
 
 			// https://github.com/dotnet/runtime/issues/79393
-			[Kept (By = ProducedBy.Trimmer)]
+			[Kept (By = Tool.Trimmer)]
 			public static void PleasePreserveThisMethod ()
 			{
 			}

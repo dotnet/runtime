@@ -128,8 +128,8 @@ frame as the only argument.
 
 Normally, \Prog{libunwind} supports both local and remote unwinding
 (the latter will be explained in the next section).  However, if you
-tell libunwind that your program only needs local unwinding, then a
-special implementation can be selected which may run much faster than
+tell \Prog{libunwind} that your program only needs local unwinding, then
+a special implementation can be selected which may run much faster than
 the generic implementation which supports both kinds of unwinding.  To
 select this optimized version, simply define the macro
 \Const{UNW\_LOCAL\_ONLY} before including the headerfile
@@ -238,7 +238,7 @@ targeting a cross-platform will result in a link-time error
 
 
 All \Prog{libunwind} routines are thread-safe.  What this means is
-that multiple threads may use \Prog{libunwind} simulatenously.
+that multiple threads may use \Prog{libunwind} simultaneously.
 However, any given cursor may be accessed by only one thread at
 any given time.
 
@@ -293,10 +293,10 @@ entire address space, if desired).  This functionality is provided by
 select the exact caching policy in use for a given address-space
 object.  In particular, by selecting the policy
 \Const{UNW\_CACHE\_NONE}, it is possible to turn off caching
-completely, therefore eliminating the risk of stale data alltogether
+completely, therefore eliminating the risk of stale data altogether
 (at the cost of slower execution).  By default, caching is enabled for
 local unwinding only.  The cache size can be dynamically changed with
-\Func{unw\_set\_cache\_size}(), which also fluches the current cache.
+\Func{unw\_set\_cache\_size}(), which also flushes the current cache.
 
 
 \section{Files}

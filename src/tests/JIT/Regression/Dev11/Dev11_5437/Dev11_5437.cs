@@ -3,6 +3,7 @@
 //
 
 using System;
+using Xunit;
 
 public class Program
 {
@@ -15,7 +16,8 @@ public class Program
             throw new Exception("FAILED");
         }
     }
-    public static int Main()
+    [Fact]
+    public static int TestEntryPoint()
     {
         int d = 0;
         int i = 3;

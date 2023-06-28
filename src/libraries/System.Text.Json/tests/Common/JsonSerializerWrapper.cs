@@ -1,6 +1,7 @@
 // Licensed to the .NET Foundation under one or more agreements.
 // The .NET Foundation licenses this file to you under the MIT license.
 
+using System.Collections.Generic;
 using System.Text.Json.Serialization.Metadata;
 using System.Threading.Tasks;
 
@@ -60,6 +61,43 @@ namespace System.Text.Json.Serialization.Tests
             {
                 TypeInfoResolver = defaultOptions.TypeInfoResolver.WithModifier(modifier)
             };
+        }
+
+        public JsonSerializerOptions CreateOptions(
+            Action<JsonSerializerOptions> configure = null,
+            bool? includeFields = false,
+            List<JsonConverter>? customConverters = null,
+            Action<JsonTypeInfo>? modifier = null,
+            bool makeReadOnly = true)
+        {
+            var options = new JsonSerializerOptions(DefaultOptions);
+
+            if (includeFields != null)
+            {
+                options.IncludeFields = includeFields.Value;
+            }
+
+            if (modifier != null && options.TypeInfoResolver != null)
+            {
+                options.TypeInfoResolver = DefaultOptions.TypeInfoResolver.WithModifier(modifier);
+            }
+
+            if (customConverters != null)
+            {
+                foreach (JsonConverter converter in customConverters)
+                {
+                    options.Converters.Add(converter);
+                }
+            }
+
+            configure?.Invoke(options);
+
+            if (makeReadOnly)
+            {
+                options.MakeReadOnly();
+            }
+
+            return options;
         }
     }
 

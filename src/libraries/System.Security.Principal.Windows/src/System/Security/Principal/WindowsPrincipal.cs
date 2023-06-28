@@ -49,7 +49,7 @@ namespace System.Security.Principal
 
         public override bool IsInRole(string role)
         {
-            if (role == null || role.Length == 0)
+            if (string.IsNullOrEmpty(role))
                 return false;
 
             NTAccount ntAccount = new NTAccount(role);

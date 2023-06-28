@@ -96,6 +96,8 @@ namespace System.Collections.Specialized
         protected NameObjectCollectionBase(int capacity, System.Collections.IEqualityComparer? equalityComparer) { }
         [System.ObsoleteAttribute("This constructor has been deprecated. Use NameObjectCollectionBase(Int32, IEqualityComparer) instead.")]
         protected NameObjectCollectionBase(int capacity, System.Collections.IHashCodeProvider? hashProvider, System.Collections.IComparer? comparer) { }
+        [System.ObsoleteAttribute("This API supports obsolete formatter-based serialization. It should not be called or extended by application code.", DiagnosticId = "SYSLIB0051", UrlFormat = "https://aka.ms/dotnet-warnings/{0}")]
+        [System.ComponentModel.EditorBrowsableAttribute(System.ComponentModel.EditorBrowsableState.Never)]
         protected NameObjectCollectionBase(System.Runtime.Serialization.SerializationInfo info, System.Runtime.Serialization.StreamingContext context) { }
         public virtual int Count { get { throw null; } }
         protected bool IsReadOnly { get { throw null; } set { } }
@@ -116,6 +118,8 @@ namespace System.Collections.Specialized
         protected void BaseSet(int index, object? value) { }
         protected void BaseSet(string? name, object? value) { }
         public virtual System.Collections.IEnumerator GetEnumerator() { throw null; }
+        [System.ObsoleteAttribute("This API supports obsolete formatter-based serialization. It should not be called or extended by application code.", DiagnosticId = "SYSLIB0051", UrlFormat = "https://aka.ms/dotnet-warnings/{0}")]
+        [System.ComponentModel.EditorBrowsableAttribute(System.ComponentModel.EditorBrowsableState.Never)]
         public virtual void GetObjectData(System.Runtime.Serialization.SerializationInfo info, System.Runtime.Serialization.StreamingContext context) { }
         public virtual void OnDeserialization(object? sender) { }
         void System.Collections.ICollection.CopyTo(System.Array array, int index) { }
@@ -143,6 +147,8 @@ namespace System.Collections.Specialized
         [System.ObsoleteAttribute("This constructor has been deprecated. Use NameValueCollection(Int32, IEqualityComparer) instead.")]
         public NameValueCollection(int capacity, System.Collections.IHashCodeProvider? hashProvider, System.Collections.IComparer? comparer) { }
         public NameValueCollection(int capacity, System.Collections.Specialized.NameValueCollection col) { }
+        [System.ObsoleteAttribute("This API supports obsolete formatter-based serialization. It should not be called or extended by application code.", DiagnosticId = "SYSLIB0051", UrlFormat = "https://aka.ms/dotnet-warnings/{0}")]
+        [System.ComponentModel.EditorBrowsableAttribute(System.ComponentModel.EditorBrowsableState.Never)]
         protected NameValueCollection(System.Runtime.Serialization.SerializationInfo info, System.Runtime.Serialization.StreamingContext context) { }
         public virtual string?[] AllKeys { get { throw null; } }
         public string? this[int index] { get { throw null; } }
@@ -167,6 +173,8 @@ namespace System.Collections.Specialized
         public OrderedDictionary(System.Collections.IEqualityComparer? comparer) { }
         public OrderedDictionary(int capacity) { }
         public OrderedDictionary(int capacity, System.Collections.IEqualityComparer? comparer) { }
+        [System.ObsoleteAttribute("This API supports obsolete formatter-based serialization. It should not be called or extended by application code.", DiagnosticId = "SYSLIB0051", UrlFormat = "https://aka.ms/dotnet-warnings/{0}")]
+        [System.ComponentModel.EditorBrowsableAttribute(System.ComponentModel.EditorBrowsableState.Never)]
         protected OrderedDictionary(System.Runtime.Serialization.SerializationInfo info, System.Runtime.Serialization.StreamingContext context) { }
         public int Count { get { throw null; } }
         public bool IsReadOnly { get { throw null; } }
@@ -183,6 +191,8 @@ namespace System.Collections.Specialized
         public bool Contains(object key) { throw null; }
         public void CopyTo(System.Array array, int index) { }
         public virtual System.Collections.IDictionaryEnumerator GetEnumerator() { throw null; }
+        [System.ObsoleteAttribute("This API supports obsolete formatter-based serialization. It should not be called or extended by application code.", DiagnosticId = "SYSLIB0051", UrlFormat = "https://aka.ms/dotnet-warnings/{0}")]
+        [System.ComponentModel.EditorBrowsableAttribute(System.ComponentModel.EditorBrowsableState.Never)]
         public virtual void GetObjectData(System.Runtime.Serialization.SerializationInfo info, System.Runtime.Serialization.StreamingContext context) { }
         public void Insert(int index, object key, object? value) { }
         protected virtual void OnDeserialization(object? sender) { }

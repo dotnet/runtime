@@ -122,7 +122,7 @@ struct _DiagnosticsEnvironmentInfoPayload_Internal {
 	// the Diagnostics IPC Spec: https://github.com/dotnet/diagnostics/blob/main/documentation/design-docs/ipc-protocol.md
 	uint32_t incoming_bytes;
 	uint16_t future;
-	ep_rt_env_array_utf16_t env_array;
+	dn_vector_ptr_t *env_array;
 };
 
 #if !defined(DS_INLINE_GETTER_SETTER) && !defined(DS_IMPL_PROCESS_PROTOCOL_GETTER_SETTER)
@@ -163,6 +163,58 @@ ds_set_environment_variable_payload_alloc (void);
 
 void
 ds_set_environment_variable_payload_free (DiagnosticsSetEnvironmentVariablePayload *payload);
+
+/*
+* DiagnosticsEnablePerfmapPayload
+*/
+
+#if defined(DS_INLINE_GETTER_SETTER) || defined(DS_IMPL_PROCESS_PROTOCOL_GETTER_SETTER)
+struct _DiagnosticsEnablePerfmapPayload {
+#else
+struct _DiagnosticsEnablePerfmapPayload_Internal {
+#endif
+	uint8_t * incoming_buffer;
+
+	uint32_t perfMapType;
+};
+
+#if !defined(DS_INLINE_GETTER_SETTER) && !defined(DS_IMPL_PROCESS_PROTOCOL_GETTER_SETTER)
+struct _DiagnosticsEnablePerfmapPayload {
+	uint8_t _internal [sizeof (struct _DiagnosticsEnablePerfmapPayload_Internal)];
+};
+#endif
+
+DiagnosticsEnablePerfmapPayload *
+ds_enable_perfmap_payload_alloc (void);
+
+void
+ds_enable_perfmap_payload_free (DiagnosticsEnablePerfmapPayload *payload);
+
+/*
+* DiagnosticsApplyStartupHookPayload
+*/
+
+#if defined(DS_INLINE_GETTER_SETTER) || defined(DS_IMPL_PROCESS_PROTOCOL_GETTER_SETTER)
+struct _DiagnosticsApplyStartupHookPayload {
+#else
+struct _DiagnosticsApplyStartupHookPayload_Internal {
+#endif
+	uint8_t * incoming_buffer;
+
+	const ep_char16_t *startup_hook_path;
+};
+
+#if !defined(DS_INLINE_GETTER_SETTER) && !defined(DS_IMPL_PROCESS_PROTOCOL_GETTER_SETTER)
+struct _DiagnosticsApplyStartupHookPayload {
+	uint8_t _internal [sizeof (struct _DiagnosticsApplyStartupHookPayload_Internal)];
+};
+#endif
+
+DiagnosticsApplyStartupHookPayload *
+ds_apply_startup_hook_payload_alloc (void);
+
+void
+ds_apply_startup_hook_payload_free (DiagnosticsApplyStartupHookPayload *payload);
 
 /*
  * DiagnosticsProcessProtocolHelper.

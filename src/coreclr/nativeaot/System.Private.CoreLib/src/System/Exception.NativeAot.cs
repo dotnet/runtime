@@ -7,6 +7,7 @@ using System.Diagnostics.CodeAnalysis;
 using System.Runtime;
 using System.Runtime.CompilerServices;
 using System.Runtime.InteropServices;
+using System.Threading;
 
 using MethodBase = System.Reflection.MethodBase;
 
@@ -95,6 +96,10 @@ namespace System
             RH_EH_FIRST_RETHROW_FRAME = 2,
         }
 
+        // Performance metric to count the number of exceptions thrown
+        private static uint s_exceptionCount;
+        internal static uint GetExceptionCount() => s_exceptionCount;
+
         [RuntimeExport("AppendExceptionStackFrame")]
         private static void AppendExceptionStackFrame(object exceptionObj, IntPtr IP, int flags)
         {
@@ -111,6 +116,10 @@ namespace System
 
                 bool isFirstFrame = (flags & (int)RhEHFrameType.RH_EH_FIRST_FRAME) != 0;
                 bool isFirstRethrowFrame = (flags & (int)RhEHFrameType.RH_EH_FIRST_RETHROW_FRAME) != 0;
+
+                // track count for metrics
+                if (isFirstFrame && !isFirstRethrowFrame)
+                    Interlocked.Increment(ref s_exceptionCount);
 
                 // When we're throwing an exception object, we first need to clear its stacktrace with two exceptions:
                 // 1. Don't clear if we're rethrowing with `throw;`.

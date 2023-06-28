@@ -561,6 +561,108 @@ namespace System.Threading.Tasks.Tests
             yield return new object[] { LineNumber(), atmb.Task, oce };
         }
 
+        [Theory]
+        [InlineData((ConfigureAwaitOptions)0x8)]
+        public void ConfigureAwaitOptions_Invalid(ConfigureAwaitOptions options)
+        {
+            AssertExtensions.Throws<ArgumentOutOfRangeException>("options", () => Task.CompletedTask.ConfigureAwait(options));
+            AssertExtensions.Throws<ArgumentOutOfRangeException>("options", () => Task.FromResult(true).ConfigureAwait(options));
+        }
+
+        [Fact]
+        public void ConfigureAwaitOptions_SuppressThrowingUnsupportedOnGenericTask()
+        {
+            AssertExtensions.Throws<ArgumentOutOfRangeException>("options", () => Task.FromResult(true).ConfigureAwait(ConfigureAwaitOptions.SuppressThrowing));
+            AssertExtensions.Throws<ArgumentOutOfRangeException>("options", () => Task.FromResult(true).ConfigureAwait(ConfigureAwaitOptions.SuppressThrowing | ConfigureAwaitOptions.ForceYielding));
+        }
+
+        [Theory]
+        [InlineData(ConfigureAwaitOptions.ForceYielding)]
+        [InlineData(ConfigureAwaitOptions.ForceYielding | ConfigureAwaitOptions.ContinueOnCapturedContext)]
+        [InlineData(ConfigureAwaitOptions.ForceYielding | ConfigureAwaitOptions.SuppressThrowing)]
+        [InlineData(ConfigureAwaitOptions.ForceYielding | ConfigureAwaitOptions.ContinueOnCapturedContext | ConfigureAwaitOptions.SuppressThrowing)]
+        public void ConfigureAwaitOptions_ForceYielding_IsCompletedAlwaysFalse(ConfigureAwaitOptions options)
+        {
+            Assert.False(new TaskCompletionSource().Task.ConfigureAwait(options).GetAwaiter().IsCompleted);
+            Assert.False(Task.CompletedTask.ConfigureAwait(options).GetAwaiter().IsCompleted);
+
+            if ((options & ConfigureAwaitOptions.SuppressThrowing) == 0)
+            {
+                Assert.False(new TaskCompletionSource<string>().Task.ConfigureAwait(options).GetAwaiter().IsCompleted);
+                Assert.False(Task.FromResult(42).ConfigureAwait(options).GetAwaiter().IsCompleted);
+            }
+        }
+
+        [ConditionalFact(typeof(PlatformDetection), nameof(PlatformDetection.IsThreadingSupported))]
+        public void ConfigureAwaitOptions_SuppressThrowing_NoExceptionsAreThrown()
+        {
+            Task t;
+
+            t = Task.FromCanceled(new CancellationToken(true));
+            t.ConfigureAwait(ConfigureAwaitOptions.SuppressThrowing).GetAwaiter().GetResult();
+            t.ConfigureAwait(ConfigureAwaitOptions.SuppressThrowing | ConfigureAwaitOptions.ForceYielding | ConfigureAwaitOptions.ContinueOnCapturedContext).GetAwaiter().GetResult();
+            Assert.ThrowsAny<OperationCanceledException>(() => t.ConfigureAwait(ConfigureAwaitOptions.ContinueOnCapturedContext).GetAwaiter().GetResult());
+            Assert.ThrowsAny<OperationCanceledException>(() => t.ConfigureAwait(ConfigureAwaitOptions.ContinueOnCapturedContext | ConfigureAwaitOptions.ForceYielding).GetAwaiter().GetResult());
+
+            t = Task.FromException(new FormatException());
+            t.ConfigureAwait(ConfigureAwaitOptions.SuppressThrowing).GetAwaiter().GetResult();
+            t.ConfigureAwait(ConfigureAwaitOptions.SuppressThrowing | ConfigureAwaitOptions.ForceYielding | ConfigureAwaitOptions.ContinueOnCapturedContext).GetAwaiter().GetResult();
+            Assert.Throws<FormatException>(() => t.ConfigureAwait(ConfigureAwaitOptions.ContinueOnCapturedContext).GetAwaiter().GetResult());
+            Assert.Throws<FormatException>(() => t.ConfigureAwait(ConfigureAwaitOptions.ContinueOnCapturedContext | ConfigureAwaitOptions.ForceYielding).GetAwaiter().GetResult());
+        }
+
+        [ConditionalTheory(typeof(PlatformDetection), nameof(PlatformDetection.IsThreadingSupported))]
+        [InlineData(false, ConfigureAwaitOptions.None)]
+        [InlineData(false, ConfigureAwaitOptions.ContinueOnCapturedContext)]
+        [InlineData(true, ConfigureAwaitOptions.None)]
+        [InlineData(true, ConfigureAwaitOptions.ContinueOnCapturedContext)]
+        public static void ConfigureAwaitOptions_ContinueOnCapturedContext_QueuesAccordingly(bool generic, ConfigureAwaitOptions options)
+        {
+            SynchronizationContext origCtx = SynchronizationContext.Current;
+            try
+            {
+                // Create a context that tracks operations, and set it as current
+                var validateCtx = new ValidateCorrectContextSynchronizationContext();
+                Assert.Equal(0, validateCtx.PostCount);
+                SynchronizationContext.SetSynchronizationContext(validateCtx);
+
+                // Create a not-completed task and get an awaiter for it
+                var mres = new ManualResetEventSlim();
+                var tcs = new TaskCompletionSource<object>();
+
+                // Hook up a callback
+                bool postedInContext = false;
+                Action callback = () =>
+                {
+                    postedInContext = ValidateCorrectContextSynchronizationContext.t_isPostedInContext;
+                    mres.Set();
+                };
+                if (generic)
+                {
+                    tcs.Task.ConfigureAwait(options).GetAwaiter().OnCompleted(callback);
+                }
+                else
+                {
+                    ((Task)tcs.Task).ConfigureAwait(options).GetAwaiter().OnCompleted(callback);
+                }
+                Assert.False(mres.IsSet, "Callback should not yet have run.");
+
+                // Complete the task in another context and wait for the callback to run
+                Task.Run(() => tcs.SetResult(null));
+                mres.Wait();
+
+                // Validate the callback ran and in the correct context
+                bool shouldHavePosted = options == ConfigureAwaitOptions.ContinueOnCapturedContext;
+                Assert.Equal(shouldHavePosted ? 1 : 0, validateCtx.PostCount);
+                Assert.Equal(shouldHavePosted, postedInContext);
+            }
+            finally
+            {
+                // Reset back to the original context
+                SynchronizationContext.SetSynchronizationContext(origCtx);
+            }
+        }
+
         private static int LineNumber([CallerLineNumber]int lineNumber = 0) => lineNumber;
 
         private class ValidateCorrectContextSynchronizationContext : SynchronizationContext

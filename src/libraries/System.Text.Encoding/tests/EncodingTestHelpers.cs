@@ -268,6 +268,12 @@ namespace System.Text.Tests
             Assert.Equal(expected.Length, encoding.GetBytes(chars.AsSpan(index, count), (Span<byte>)stringResultAdvanced));
             VerifyGetBytes(stringResultAdvanced, 0, stringResultAdvanced.Length, new byte[expected.Length], expected);
 
+            // Use TryGetBytes(ReadOnlySpan<char>, Span<byte>, out int bytesWritten)
+            Array.Clear(stringResultAdvanced);
+            Assert.True(encoding.TryGetBytes(chars.AsSpan(index, count), (Span<byte>)stringResultAdvanced, out int bytesWritten));
+            Assert.Equal(expected.Length, bytesWritten);
+            VerifyGetBytes(stringResultAdvanced, 0, stringResultAdvanced.Length, new byte[expected.Length], expected);
+
             if (count == 0)
                 Assert.Equal(expected.Length, encoding.GetBytes(ReadOnlySpan<char>.Empty, (Span<byte>)stringResultAdvanced));
         }
@@ -286,6 +292,12 @@ namespace System.Text.Tests
             // Use GetChars(ReadOnlySpan<byte>, Span<char>)
             char[] byteChars = (char[])chars.Clone();
             int charCount = encoding.GetChars(new ReadOnlySpan<byte>(bytes, byteIndex, byteCount), new Span<char>(byteChars).Slice(charIndex));
+            VerifyGetChars(byteChars, charIndex, charCount, (char[])chars.Clone(), expectedChars);
+            Assert.Equal(expectedChars.Length, charCount);
+
+            // Use TryGetChars(ReadOnlySpan<byte>, Span<char>, out int charsWritten)
+            byteChars = (char[])chars.Clone();
+            Assert.True(encoding.TryGetChars(new ReadOnlySpan<byte>(bytes, byteIndex, byteCount), new Span<char>(byteChars).Slice(charIndex), out charCount));
             VerifyGetChars(byteChars, charIndex, charCount, (char[])chars.Clone(), expectedChars);
             Assert.Equal(expectedChars.Length, charCount);
 

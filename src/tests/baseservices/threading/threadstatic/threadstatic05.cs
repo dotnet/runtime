@@ -5,6 +5,7 @@
 
 using System;
 using System.Threading;
+using Xunit;
 
 public class MyData
 {
@@ -41,7 +42,8 @@ public class Test_threadstatic05
 
     private int retVal = 0;
 
-    public static int Main()
+    [Fact]
+    public static int TestEntryPoint()
     {
         Test_threadstatic05 staticsTest = new Test_threadstatic05();        
         staticsTest.RunTest();        

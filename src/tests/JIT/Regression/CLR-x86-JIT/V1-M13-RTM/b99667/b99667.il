@@ -2,6 +2,7 @@
 // The .NET Foundation licenses this file to you under the MIT license.
 
 .assembly 'b99667' {}
+.assembly extern xunit.core {}
 .assembly extern mscorlib { }
 .assembly extern System.Console
 {
@@ -12,6 +13,9 @@
 .class public auto ansi Test_b99667 extends [mscorlib] System.Object {
 .method public static int32 main()
 {
+    .custom instance void [xunit.core]Xunit.FactAttribute::.ctor() = (
+        01 00 00 00
+    )
     .entrypoint
     ldc.i4.s 100
     ret

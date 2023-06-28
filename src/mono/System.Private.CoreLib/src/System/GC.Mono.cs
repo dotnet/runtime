@@ -116,8 +116,7 @@ namespace System
         public static int GetGeneration(WeakReference wo)
         {
             object? obj = wo.Target;
-            if (obj == null)
-                throw new ArgumentException(null, nameof(wo));
+            ArgumentNullException.ThrowIfNull(obj, nameof(wo));
             return GetGeneration(obj);
         }
 
@@ -321,6 +320,17 @@ namespace System
         public static System.Collections.Generic.IReadOnlyDictionary<string, object> GetConfigurationVariables()
         {
             return new System.Collections.Generic.Dictionary<string, object>();
+        }
+
+        [System.Runtime.Versioning.RequiresPreviewFeaturesAttribute("RefreshMemoryLimit is in preview.")]
+        public static void RefreshMemoryLimit()
+        {
+            throw new PlatformNotSupportedException();
+        }
+
+        public static void RegisterNoGCRegionCallback(long totalSize, Action callback)
+        {
+            throw new PlatformNotSupportedException();
         }
     }
 }

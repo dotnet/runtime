@@ -1,5 +1,8 @@
 #!/usr/bin/env bash
 
+# create dummy console app to workaround https://github.com/dotnet/runtime/issues/80619
+(CONSOLE_TEMP_DIR="$(mktemp -d)"; "$DOTNET_ROOT/dotnet" new console -o "$CONSOLE_TEMP_DIR"; rm -rf "$CONSOLE_TEMP_DIR") || true
+
 set
 echo "------------------------ start -------------------"
 
@@ -30,10 +33,10 @@ function set_env_vars()
         export SDK_HAS_WORKLOAD_INSTALLED=false
     fi
 
-    if [ "x$TEST_USING_WEBCIL" = "xtrue" ]; then
-        export USE_WEBCIL_FOR_TESTS=true
-    else
+    if [ "x$TEST_USING_WEBCIL" = "xfalse" ]; then
         export USE_WEBCIL_FOR_TESTS=false
+    else
+        export USE_WEBCIL_FOR_TESTS=true
     fi
 
     local _SDK_DIR=

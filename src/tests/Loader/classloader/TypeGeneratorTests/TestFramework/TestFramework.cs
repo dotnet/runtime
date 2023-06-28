@@ -7,6 +7,9 @@ using System.Reflection;
 using System.Collections.Generic;
 using System.IO;
 
+// There are 100000s of uses of TestFramework in the IL files.
+#pragma warning disable CA1050 // Declare types in namespaces
+
 public class TestFramework
 {
     public static void MethodCallTest(string actualResult, string expectedResults, string invocationString)
@@ -57,3 +60,4 @@ public class TestFramework
         if (!success) throw new Exception("Wrong method called");
     }
 }
+#pragma warning restore CA1050

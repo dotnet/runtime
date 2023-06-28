@@ -31,6 +31,12 @@ namespace Wasm.Build.Tests
         public static readonly string           TestDataPath = Path.Combine(AppContext.BaseDirectory, "data");
         public static readonly string           TmpPath = Path.Combine(AppContext.BaseDirectory, "wbt");
 
+        public static readonly string           DefaultRuntimeIdentifier =
+#if TARGET_WASI
+                                                    "wasi-wasm";
+#else
+                                                    "browser-wasm";
+#endif
 
         private static readonly Dictionary<string, string> s_runtimePackVersions = new();
 
@@ -51,11 +57,12 @@ namespace Wasm.Build.Tests
             if (string.IsNullOrEmpty(sdkForWorkloadPath))
             {
                 // Is this a "local run?
+                string sdkDirName = string.IsNullOrEmpty(EnvironmentVariables.SdkDirName) ? "dotnet-latest" : EnvironmentVariables.SdkDirName;
                 string probePath = Path.Combine(Path.GetDirectoryName(typeof(BuildEnvironment).Assembly.Location)!,
                                                 "..",
                                                 "..",
                                                 "..",
-                                                "dotnet-net7+latest");
+                                                sdkDirName);
                 if (Directory.Exists(probePath))
                     sdkForWorkloadPath = Path.GetFullPath(probePath);
                 else
@@ -133,9 +140,9 @@ namespace Wasm.Build.Tests
         // FIXME: error checks
         public string GetRuntimePackVersion(string tfm = BuildTestBase.DefaultTargetFramework) => s_runtimePackVersions[tfm];
         public string GetRuntimePackDir(string tfm = BuildTestBase.DefaultTargetFramework)
-            => Path.Combine(WorkloadPacksDir, "Microsoft.NETCore.App.Runtime.Mono.browser-wasm", GetRuntimePackVersion(tfm));
+            => Path.Combine(WorkloadPacksDir, $"Microsoft.NETCore.App.Runtime.Mono.{DefaultRuntimeIdentifier}", GetRuntimePackVersion(tfm));
         public string GetRuntimeNativeDir(string tfm = BuildTestBase.DefaultTargetFramework)
-            => Path.Combine(GetRuntimePackDir(tfm), "runtimes", "browser-wasm", "native");
+            => Path.Combine(GetRuntimePackDir(tfm), "runtimes", DefaultRuntimeIdentifier, "native");
 
         protected static string s_directoryBuildPropsForWorkloads = File.ReadAllText(Path.Combine(TestDataPath, "Workloads.Directory.Build.props"));
         protected static string s_directoryBuildTargetsForWorkloads = File.ReadAllText(Path.Combine(TestDataPath, "Workloads.Directory.Build.targets"));

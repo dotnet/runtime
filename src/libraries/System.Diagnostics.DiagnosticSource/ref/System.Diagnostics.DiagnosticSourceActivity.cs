@@ -370,15 +370,18 @@ namespace System.Diagnostics.Metrics
         public string? Description { get {throw null;} }
         public bool Enabled { get  {throw null; } }
         protected Instrument(Meter meter, string name, string? unit, string? description) {throw null;}
+        protected Instrument(Meter meter, string name, string? unit, string? description, System.Collections.Generic.IEnumerable<System.Collections.Generic.KeyValuePair<string, object?>>? tags) {throw null;}
         public virtual bool IsObservable { get  {throw null; } }
         public Meter Meter { get {throw null;} }
         public string Name { get {throw null;} }
         protected void Publish() {throw null;}
         public string? Unit { get {throw null; } }
+        public System.Collections.Generic.IEnumerable<System.Collections.Generic.KeyValuePair<string, object?>>? Tags { get; }
     }
     public abstract class Instrument<T> : Instrument where T : struct
     {
         protected Instrument(Meter meter, string name, string? unit, string? description) : base(meter, name, unit, description) { throw null; }
+        protected Instrument(Meter meter, string name, string? unit, string? description, System.Collections.Generic.IEnumerable<System.Collections.Generic.KeyValuePair<string, object?>>? tags) : base(meter, name, unit, description, tags)  {throw null;}
         protected void RecordMeasurement(T measurement)  { throw null; }
         protected void RecordMeasurement(T measurement, System.Collections.Generic.KeyValuePair<string, object?> tag) { throw null; }
         protected void RecordMeasurement(T measurement, System.Collections.Generic.KeyValuePair<string, object?> tag1, System.Collections.Generic.KeyValuePair<string, object?> tag2)  { throw null; }
@@ -399,8 +402,11 @@ namespace System.Diagnostics.Metrics
     public class Meter : IDisposable
     {
         public Counter<T> CreateCounter<T>(string name, string? unit = null, string? description = null) where T : struct  { throw null; }
+        public Counter<T> CreateCounter<T>(string name, string? unit, string? description, System.Collections.Generic.IEnumerable<System.Collections.Generic.KeyValuePair<string, object?>> tags) where T : struct  { throw null; }
         public UpDownCounter<T> CreateUpDownCounter<T>(string name, string? unit = null, string? description = null) where T : struct  { throw null; }
+        public UpDownCounter<T> CreateUpDownCounter<T>(string name, string? unit, string? description, System.Collections.Generic.IEnumerable<System.Collections.Generic.KeyValuePair<string, object?>> tags) where T : struct  { throw null; }
         public Histogram<T> CreateHistogram<T>(string name, string? unit = null, string? description = null) where T : struct { throw null; }
+        public Histogram<T> CreateHistogram<T>(string name, string? unit, string? description, System.Collections.Generic.IEnumerable<System.Collections.Generic.KeyValuePair<string, object?>> tags) where T : struct { throw null; }
         public ObservableCounter<T> CreateObservableCounter<T>(
                             string name,
                             Func<T> observeValue,
@@ -408,14 +414,32 @@ namespace System.Diagnostics.Metrics
                             string? description = null) where T : struct { throw null; }
         public ObservableCounter<T> CreateObservableCounter<T>(
                             string name,
+                            Func<T> observeValue,
+                            string? unit,
+                            string? description,
+                            System.Collections.Generic.IEnumerable<System.Collections.Generic.KeyValuePair<string, object?>> tags) where T : struct { throw null; }
+        public ObservableCounter<T> CreateObservableCounter<T>(
+                            string name,
                             Func<Measurement<T>> observeValue,
                             string? unit = null,
                             string? description = null) where T : struct { throw null; }
         public ObservableCounter<T> CreateObservableCounter<T>(
                             string name,
+                            Func<Measurement<T>> observeValue,
+                            string? unit,
+                            string? description,
+                            System.Collections.Generic.IEnumerable<System.Collections.Generic.KeyValuePair<string, object?>> tags) where T : struct { throw null; }
+        public ObservableCounter<T> CreateObservableCounter<T>(
+                            string name,
                             Func<System.Collections.Generic.IEnumerable<Measurement<T>>> observeValues,
                             string? unit = null,
                             string? description = null) where T : struct { throw null; }
+        public ObservableCounter<T> CreateObservableCounter<T>(
+                            string name,
+                            Func<System.Collections.Generic.IEnumerable<Measurement<T>>> observeValues,
+                            string? unit,
+                            string? description,
+                            System.Collections.Generic.IEnumerable<System.Collections.Generic.KeyValuePair<string, object?>> tags) where T : struct { throw null; }
         public ObservableUpDownCounter<T> CreateObservableUpDownCounter<T>(
                             string name,
                             Func<T> observeValue,
@@ -423,14 +447,32 @@ namespace System.Diagnostics.Metrics
                             string? description = null) where T : struct { throw null; }
         public ObservableUpDownCounter<T> CreateObservableUpDownCounter<T>(
                             string name,
+                            Func<T> observeValue,
+                            string? unit,
+                            string? description,
+                            System.Collections.Generic.IEnumerable<System.Collections.Generic.KeyValuePair<string, object?>> tags) where T : struct { throw null; }
+        public ObservableUpDownCounter<T> CreateObservableUpDownCounter<T>(
+                            string name,
                             Func<Measurement<T>> observeValue,
                             string? unit = null,
                             string? description = null) where T : struct { throw null; }
         public ObservableUpDownCounter<T> CreateObservableUpDownCounter<T>(
                             string name,
+                            Func<Measurement<T>> observeValue,
+                            string? unit,
+                            string? description,
+                            System.Collections.Generic.IEnumerable<System.Collections.Generic.KeyValuePair<string, object?>> tags) where T : struct { throw null; }
+        public ObservableUpDownCounter<T> CreateObservableUpDownCounter<T>(
+                            string name,
                             Func<System.Collections.Generic.IEnumerable<Measurement<T>>> observeValues,
                             string? unit = null,
                             string? description = null) where T : struct { throw null; }
+        public ObservableUpDownCounter<T> CreateObservableUpDownCounter<T>(
+                            string name,
+                            Func<System.Collections.Generic.IEnumerable<Measurement<T>>> observeValues,
+                            string? unit,
+                            string? description,
+                            System.Collections.Generic.IEnumerable<System.Collections.Generic.KeyValuePair<string, object?>> tags) where T : struct { throw null; }
         public ObservableGauge<T> CreateObservableGauge<T>(
                             string name,
                             Func<T> observeValue,
@@ -438,19 +480,42 @@ namespace System.Diagnostics.Metrics
                             string? description = null) where T : struct { throw null; }
         public ObservableGauge<T> CreateObservableGauge<T>(
                             string name,
+                            Func<T> observeValue,
+                            string? unit,
+                            string? description,
+                            System.Collections.Generic.IEnumerable<System.Collections.Generic.KeyValuePair<string, object?>> tags) where T : struct { throw null; }
+        public ObservableGauge<T> CreateObservableGauge<T>(
+                            string name,
                             Func<Measurement<T>> observeValue,
                             string? unit = null,
                             string? description = null) where T : struct { throw null; }
         public ObservableGauge<T> CreateObservableGauge<T>(
                             string name,
+                            Func<Measurement<T>> observeValue,
+                            string? unit,
+                            string? description,
+                            System.Collections.Generic.IEnumerable<System.Collections.Generic.KeyValuePair<string, object?>> tags) where T : struct { throw null; }
+        public ObservableGauge<T> CreateObservableGauge<T>(
+                            string name,
                             Func<System.Collections.Generic.IEnumerable<Measurement<T>>> observeValues,
                             string? unit = null,
                             string? description = null) where T : struct { throw null; }
-        public void Dispose()  { throw null; }
+        public ObservableGauge<T> CreateObservableGauge<T>(
+                            string name,
+                            Func<System.Collections.Generic.IEnumerable<Measurement<T>>> observeValues,
+                            string? unit,
+                            string? description,
+                            System.Collections.Generic.IEnumerable<System.Collections.Generic.KeyValuePair<string, object?>> tags) where T : struct { throw null; }
+        protected virtual void Dispose(bool disposing) { throw null; }
+        public void Dispose() { throw null; }
+        public Meter(MeterOptions options) { throw null; }
         public Meter(string name) { throw null; }
         public Meter(string name, string? version)  { throw null; }
+        public Meter(string name, string? version, System.Collections.Generic.IEnumerable<System.Collections.Generic.KeyValuePair<string, object?>>? tags, object? scope = null) { throw null; }
         public string Name { get { throw null; }  }
         public string? Version { get { throw null; } }
+        public System.Collections.Generic.IEnumerable<System.Collections.Generic.KeyValuePair<string, object?>>? Tags { get { throw null; }  }
+        public object? Scope { get { throw null; }  }
     }
     public sealed class MeterListener : IDisposable
     {
@@ -463,6 +528,14 @@ namespace System.Diagnostics.Metrics
         public void RecordObservableInstruments() { throw null; }
         public void SetMeasurementEventCallback<T>(MeasurementCallback<T>? measurementCallback) where T : struct { throw null; }
         public void Start() { throw null; }
+    }
+    public class MeterOptions
+    {
+        public string Name { get { throw null;} set { throw null;} }
+        public string? Version { get { throw null;} set { throw null;} }
+        public System.Collections.Generic.IEnumerable<System.Collections.Generic.KeyValuePair<string,object?>>? Tags { get { throw null;} set { throw null;} }
+        public object? Scope { get { throw null;} set { throw null;} }
+        public MeterOptions(string name) { throw null;}
     }
     public sealed class ObservableCounter<T> : ObservableInstrument<T> where T : struct
     {
@@ -482,7 +555,8 @@ namespace System.Diagnostics.Metrics
     public abstract class ObservableInstrument<T> : Instrument where T : struct
     {
         public override bool IsObservable { get { throw null; } }
-        protected ObservableInstrument(Meter meter, string name, string? unit, string? description) : base(meter, name, unit, description) { throw null; }
+        protected ObservableInstrument(Meter meter, string name, string? unit, string? description) : this(meter, name, unit, description, tags: null) { throw null; }
+        protected ObservableInstrument(Meter meter, string name, string? unit, string? description, System.Collections.Generic.IEnumerable<System.Collections.Generic.KeyValuePair<string, object?>> tags) : base(meter, name, unit, description) { throw null; }
         protected abstract System.Collections.Generic.IEnumerable<Measurement<T>> Observe();
     }
 }

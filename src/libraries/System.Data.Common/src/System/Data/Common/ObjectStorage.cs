@@ -359,7 +359,7 @@ namespace System.Data.Common
             { // this means type implements IXmlSerializable
                 Type? type = null;
                 string? typeName = xmlReader.GetAttribute(Keywords.MSD_INSTANCETYPE, Keywords.MSDNS);
-                if (typeName == null || typeName.Length == 0)
+                if (string.IsNullOrEmpty(typeName))
                 { // No CDT polumorphism
                     string? xsdTypeName = xmlReader.GetAttribute(Keywords.TYPE, Keywords.XSINS); // this xsd type: Base type polymorphism
                     if (null != xsdTypeName && xsdTypeName.Length > 0)

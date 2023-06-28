@@ -29,4 +29,12 @@ set(ZLIB_SOURCES_BASE
     zutil.h
 )
 
+# enable custom zlib allocator
+add_definitions(-DMY_ZCALLOC)
+if(CLR_CMAKE_HOST_WIN32)
+    set(ZLIB_SOURCES_BASE ${ZLIB_SOURCES_BASE} ../../libs/System.IO.Compression.Native/zlib_allocator_win.c)
+else()
+    set(ZLIB_SOURCES_BASE ${ZLIB_SOURCES_BASE} ../../libs/System.IO.Compression.Native/zlib_allocator_unix.c)
+endif()
+
 addprefix(ZLIB_SOURCES "${CMAKE_CURRENT_LIST_DIR}/zlib"  "${ZLIB_SOURCES_BASE}")

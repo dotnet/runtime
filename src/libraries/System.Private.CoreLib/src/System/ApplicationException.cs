@@ -11,6 +11,8 @@
 **
 =============================================================================*/
 
+using System.ComponentModel;
+using System.Runtime.CompilerServices;
 using System.Runtime.Serialization;
 
 namespace System
@@ -22,7 +24,7 @@ namespace System
     // ApplicationException extends but adds no new functionality to
     // RecoverableException.
     [Serializable]
-    [System.Runtime.CompilerServices.TypeForwardedFrom("mscorlib, Version=4.0.0.0, Culture=neutral, PublicKeyToken=b77a5c561934e089")]
+    [TypeForwardedFrom("mscorlib, Version=4.0.0.0, Culture=neutral, PublicKeyToken=b77a5c561934e089")]
     public class ApplicationException : Exception
     {
         // Creates a new ApplicationException with its message string set to
@@ -50,6 +52,8 @@ namespace System
             HResult = HResults.COR_E_APPLICATION;
         }
 
+        [Obsolete(Obsoletions.LegacyFormatterImplMessage, DiagnosticId = Obsoletions.LegacyFormatterImplDiagId, UrlFormat = Obsoletions.SharedUrlFormat)]
+        [EditorBrowsable(EditorBrowsableState.Never)]
         protected ApplicationException(SerializationInfo info, StreamingContext context) : base(info, context)
         {
         }

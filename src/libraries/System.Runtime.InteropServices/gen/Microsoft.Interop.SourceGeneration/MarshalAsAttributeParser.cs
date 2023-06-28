@@ -4,7 +4,6 @@
 using System;
 using System.Collections.Generic;
 using System.Collections.Immutable;
-using System.Diagnostics;
 using System.Runtime.InteropServices;
 using Microsoft.CodeAnalysis;
 
@@ -28,10 +27,10 @@ namespace Microsoft.Interop
     public sealed class MarshalAsAttributeParser : IMarshallingInfoAttributeParser, IUseSiteAttributeParser
     {
         private readonly Compilation _compilation;
-        private readonly IGeneratorDiagnostics _diagnostics;
+        private readonly GeneratorDiagnosticsBag _diagnostics;
         private readonly DefaultMarshallingInfo _defaultInfo;
 
-        public MarshalAsAttributeParser(Compilation compilation, IGeneratorDiagnostics diagnostics, DefaultMarshallingInfo defaultInfo)
+        public MarshalAsAttributeParser(Compilation compilation, GeneratorDiagnosticsBag diagnostics, DefaultMarshallingInfo defaultInfo)
         {
             _compilation = compilation;
             _diagnostics = diagnostics;
@@ -98,6 +97,18 @@ namespace Microsoft.Interop
                 }
             }
 
+            // We'll support the UnmanagedType.Interface option, but we'll explicitly
+            // exclude ComImport types as they will not work as expected
+            // unless they are migrated to [GeneratedComInterface].
+            if (unmanagedType == UnmanagedType.Interface)
+            {
+                if (type is INamedTypeSymbol { IsComImport: true })
+                {
+                    return new MarshalAsInfo(unmanagedType, _defaultInfo.CharEncoding);
+                }
+                return ComInterfaceMarshallingInfoProvider.CreateComInterfaceMarshallingInfo(_compilation, type);
+            }
+
             if (isArrayType)
             {
                 if (type is not IArrayTypeSymbol { ElementType: ITypeSymbol elementType })
@@ -150,7 +161,9 @@ namespace Microsoft.Interop
             };
 
             if (marshallerName is null)
+            {
                 return new MarshalAsInfo(unmanagedType, _defaultInfo.CharEncoding);
+            }
 
             return StringMarshallingInfoProvider.CreateStringMarshallingInfo(_compilation, type, marshallerName);
         }

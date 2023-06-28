@@ -23,7 +23,6 @@ RUN apt-get update && export DEBIAN_FRONTEND=noninteractive \
         libicu-dev \
         liblttng-ust-dev \
         libssl-dev \
-        libnuma-dev \
         libkrb5-dev \
         zlib1g-dev \
         ninja-build

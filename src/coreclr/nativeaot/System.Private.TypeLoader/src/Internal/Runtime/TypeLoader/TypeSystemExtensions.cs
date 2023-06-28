@@ -50,20 +50,12 @@ namespace Internal.TypeSystem
     internal static class RuntimeHandleExtensions
     {
         public static bool IsNull(this RuntimeTypeHandle rtth)
-        {
-            return RuntimeAugments.GetRuntimeTypeHandleRawValue(rtth) == IntPtr.Zero;
-        }
+            => RuntimeTypeHandle.ToIntPtr(rtth) == 0;
 
         public static unsafe bool IsDynamic(this RuntimeFieldHandle rtfh)
-        {
-            IntPtr rtfhValue = *(IntPtr*)&rtfh;
-            return (rtfhValue.ToInt64() & 0x1) == 0x1;
-        }
+            => (RuntimeFieldHandle.ToIntPtr(rtfh) & 1) != 0;
 
-        public static unsafe bool IsDynamic(this RuntimeMethodHandle rtfh)
-        {
-            IntPtr rtfhValue = *(IntPtr*)&rtfh;
-            return (rtfhValue.ToInt64() & 0x1) == 0x1;
-        }
+        public static unsafe bool IsDynamic(this RuntimeMethodHandle rtmh)
+            => (RuntimeMethodHandle.ToIntPtr(rtmh) & 1) != 0;
     }
 }

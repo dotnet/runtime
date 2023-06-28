@@ -1260,7 +1260,7 @@ namespace System
             }
         }
 
-        private struct TZifType
+        private readonly struct TZifType
         {
             public const int Length = 6;
 
@@ -1280,7 +1280,7 @@ namespace System
             }
         }
 
-        private struct TZifHead
+        private readonly struct TZifHead
         {
             public const int Length = 44;
 

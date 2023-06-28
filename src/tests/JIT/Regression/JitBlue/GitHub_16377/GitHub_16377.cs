@@ -2,6 +2,7 @@
 // The .NET Foundation licenses this file to you under the MIT license.
 
 using System;
+using Xunit;
 
 public class GitHub_16377
 {
@@ -15,7 +16,7 @@ public class GitHub_16377
         return new Tuple<T1, T2, T3, T4, T5, T6, T7, TRest>(item1, item2, item3, item4, item5, item6, item7, rest);
     }
 
-    public static void AssertEqual(string s1, string s2)
+    internal static void AssertEqual(string s1, string s2)
     {
         if (!s1.Equals(s2))
         {
@@ -23,7 +24,7 @@ public class GitHub_16377
         }
     }
 
-    static void Test()
+    internal static void Test()
     {
         {
             var vtWithNull = CreateLong(1, 2, 3, 4, 5, 6, 7, new ValueTuple<string>(null));
@@ -82,7 +83,8 @@ public class GitHub_16377
         }
     }
     
-    public static int Main()
+    [Fact]
+    public static int TestEntryPoint()
     {
         int result = 0;
         try

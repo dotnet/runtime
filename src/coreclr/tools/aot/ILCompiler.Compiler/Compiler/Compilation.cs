@@ -295,9 +295,9 @@ namespace ILCompiler
             switch (lookupKind)
             {
                 case ReadyToRunHelperId.TypeHandle:
-                    return NodeFactory.ConstructedTypeSymbol(WithoutFunctionPointerType((TypeDesc)targetOfLookup));
+                    return NodeFactory.ConstructedTypeSymbol((TypeDesc)targetOfLookup);
                 case ReadyToRunHelperId.NecessaryTypeHandle:
-                    return NecessaryTypeSymbolIfPossible(WithoutFunctionPointerType((TypeDesc)targetOfLookup));
+                    return NecessaryTypeSymbolIfPossible((TypeDesc)targetOfLookup);
                 case ReadyToRunHelperId.TypeHandleForCasting:
                     {
                         var type = (TypeDesc)targetOfLookup;
@@ -396,8 +396,7 @@ namespace ILCompiler
                     int pointerSize = _nodeFactory.Target.PointerSize;
 
                     GenericLookupResult lookup = ReadyToRunGenericHelperNode.GetLookupSignature(_nodeFactory, lookupKind, targetOfLookup);
-                    int dictionarySlot = dictionaryLayout.GetSlotForFixedEntry(lookup);
-                    if (dictionarySlot != -1)
+                    if (dictionaryLayout.TryGetSlotForEntry(lookup, out int dictionarySlot))
                     {
                         int dictionaryOffset = dictionarySlot * pointerSize;
 
@@ -414,60 +413,15 @@ namespace ILCompiler
                             return GenericDictionaryLookup.CreateFixedLookup(contextSource, vtableOffset, dictionaryOffset, indirectLastOffset: indirectLastOffset);
                         }
                     }
+                    else
+                    {
+                        return GenericDictionaryLookup.CreateNullLookup(contextSource);
+                    }
                 }
             }
 
             // Fixed lookup not possible - use helper.
             return GenericDictionaryLookup.CreateHelperLookup(contextSource, lookupKind, targetOfLookup);
-        }
-
-        // CoreCLR compat - referring to function pointer types handled as IntPtr. No MethodTable for function pointers for now.
-        private static TypeDesc WithoutFunctionPointerType(TypeDesc type)
-        {
-            TypeDesc newParamType = null;
-            if (type.IsParameterizedType)
-            {
-                TypeDesc paramType = ((ParameterizedType)type).ParameterType;
-                newParamType = WithoutFunctionPointerType(paramType);
-                if (newParamType == paramType)
-                    return type;
-            }
-
-            switch (type.Category)
-            {
-                case TypeFlags.Array:
-                    return newParamType.MakeArrayType(((ArrayType)type).Rank);
-                case TypeFlags.SzArray:
-                    return newParamType.MakeArrayType();
-                case TypeFlags.Pointer:
-                    return newParamType.MakePointerType();
-                case TypeFlags.FunctionPointer:
-                    return type.Context.GetWellKnownType(WellKnownType.IntPtr);
-                default:
-                    TypeDesc typeDef = type.GetTypeDefinition();
-                    if (type != typeDef)
-                    {
-                        TypeDesc[] newInst = null;
-                        for (int i = 0; i < type.Instantiation.Length; i++)
-                        {
-                            TypeDesc arg = type.Instantiation[i];
-                            TypeDesc newArg = WithoutFunctionPointerType(arg);
-                            if (arg != newArg || newInst != null)
-                            {
-                                if (newInst == null)
-                                {
-                                    newInst = new TypeDesc[type.Instantiation.Length];
-                                    for (int j = 0; j < i; i++)
-                                        newInst[j] = type.Instantiation[j];
-                                }
-                                newInst[i] = newArg;
-                            }
-                        }
-                        if (newInst != null)
-                            return ((MetadataType)typeDef).MakeInstantiatedType(newInst);
-                    }
-                    return type;
-            }
         }
 
         public bool IsFatPointerCandidate(MethodDesc containingMethod, MethodSignature signature)
@@ -672,8 +626,8 @@ namespace ILCompiler
             {
                 foreach (var node in MarkedNodes)
                 {
-                    if (node is IMethodBodyNode)
-                        yield return ((IMethodBodyNode)node).Method;
+                    if (node is IMethodBodyNode methodBodyNode)
+                        yield return methodBodyNode.Method;
                 }
             }
         }
@@ -685,9 +639,7 @@ namespace ILCompiler
                 foreach (var node in MarkedNodes)
                 {
                     if (node is ConstructedEETypeNode || node is CanonicalEETypeNode)
-                    {
                         yield return ((IEETypeNode)node).Type;
-                    }
                 }
             }
         }
@@ -698,10 +650,20 @@ namespace ILCompiler
             {
                 foreach (var node in MarkedNodes)
                 {
-                    if (node is IEETypeNode)
-                    {
-                        yield return ((IEETypeNode)node).Type;
-                    }
+                    if (node is IEETypeNode typeNode)
+                        yield return typeNode.Type;
+                }
+            }
+        }
+
+        public IEnumerable<MethodDesc> ReflectedMethods
+        {
+            get
+            {
+                foreach (var node in MarkedNodes)
+                {
+                    if (node is ReflectedMethodNode reflectedMethod)
+                        yield return reflectedMethod.Method;
                 }
             }
         }

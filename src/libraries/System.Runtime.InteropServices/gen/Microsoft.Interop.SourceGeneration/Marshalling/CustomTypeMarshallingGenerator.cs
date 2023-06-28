@@ -15,12 +15,12 @@ namespace Microsoft.Interop
     internal sealed class CustomTypeMarshallingGenerator : IMarshallingGenerator
     {
         private readonly ICustomTypeMarshallingStrategy _nativeTypeMarshaller;
-        private readonly bool _enableByValueContentsMarshalling;
+        private readonly ByValueMarshalKindSupport _byValueContentsMarshallingSupport;
 
-        public CustomTypeMarshallingGenerator(ICustomTypeMarshallingStrategy nativeTypeMarshaller, bool enableByValueContentsMarshalling)
+        public CustomTypeMarshallingGenerator(ICustomTypeMarshallingStrategy nativeTypeMarshaller, ByValueMarshalKindSupport byValueContentsMarshallingSupport)
         {
             _nativeTypeMarshaller = nativeTypeMarshaller;
-            _enableByValueContentsMarshalling = enableByValueContentsMarshalling;
+            _byValueContentsMarshallingSupport = byValueContentsMarshallingSupport;
         }
 
         public bool IsSupported(TargetFramework target, Version version)
@@ -53,7 +53,8 @@ namespace Microsoft.Interop
                 case StubCodeContext.Stage.Setup:
                     return _nativeTypeMarshaller.GenerateSetupStatements(info, context);
                 case StubCodeContext.Stage.Marshal:
-                    if (elementMarshalDirection is MarshalDirection.ManagedToUnmanaged or MarshalDirection.Bidirectional)
+                    if (elementMarshalDirection is MarshalDirection.ManagedToUnmanaged or MarshalDirection.Bidirectional
+                        || (context.Direction == MarshalDirection.UnmanagedToManaged && ShouldGenerateByValueOutMarshalling(info)))
                     {
                         return _nativeTypeMarshaller.GenerateMarshalStatements(info, context);
                     }
@@ -84,14 +85,14 @@ namespace Microsoft.Interop
                     break;
                 case StubCodeContext.Stage.Unmarshal:
                     if (elementMarshalDirection is MarshalDirection.UnmanagedToManaged or MarshalDirection.Bidirectional
-                        || (_enableByValueContentsMarshalling && !info.IsByRef && info.ByValueContentsMarshalKind.HasFlag(ByValueContentsMarshalKind.Out)))
+                        || (context.Direction == MarshalDirection.ManagedToUnmanaged && ShouldGenerateByValueOutMarshalling(info)))
                     {
                         return _nativeTypeMarshaller.GenerateUnmarshalStatements(info, context);
                     }
                     break;
                 case StubCodeContext.Stage.GuaranteedUnmarshal:
                     if (elementMarshalDirection is MarshalDirection.UnmanagedToManaged or MarshalDirection.Bidirectional
-                        || (_enableByValueContentsMarshalling && !info.IsByRef && info.ByValueContentsMarshalKind.HasFlag(ByValueContentsMarshalKind.Out)))
+                        || (context.Direction == MarshalDirection.ManagedToUnmanaged && ShouldGenerateByValueOutMarshalling(info)))
                     {
                         return _nativeTypeMarshaller.GenerateGuaranteedUnmarshalStatements(info, context);
                     }
@@ -105,9 +106,14 @@ namespace Microsoft.Interop
             return Array.Empty<StatementSyntax>();
         }
 
-        public bool SupportsByValueMarshalKind(ByValueContentsMarshalKind marshalKind, StubCodeContext context)
+        private bool ShouldGenerateByValueOutMarshalling(TypePositionInfo info)
         {
-            return _enableByValueContentsMarshalling;
+            return _byValueContentsMarshallingSupport == ByValueMarshalKindSupport.Supported && !info.IsByRef && info.ByValueContentsMarshalKind.HasFlag(ByValueContentsMarshalKind.Out);
+        }
+
+        public ByValueMarshalKindSupport SupportsByValueMarshalKind(ByValueContentsMarshalKind marshalKind, StubCodeContext context)
+        {
+            return _byValueContentsMarshallingSupport;
         }
 
         public bool UsesNativeIdentifier(TypePositionInfo info, StubCodeContext context)

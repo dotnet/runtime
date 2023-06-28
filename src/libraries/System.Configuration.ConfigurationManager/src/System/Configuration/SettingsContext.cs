@@ -11,7 +11,6 @@ namespace System.Configuration
         public SettingsContext() : base() { }
 
         protected SettingsContext(SerializationInfo serializationInfo, StreamingContext streamingContext)
-            : base(serializationInfo, streamingContext)
         {
             throw new PlatformNotSupportedException();
         }

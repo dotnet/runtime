@@ -4,6 +4,7 @@
 
 using System;
 using System.Runtime.CompilerServices;
+using Xunit;
 
 class Exception1 : Exception { }
 
@@ -70,7 +71,8 @@ public class SmallRepro
         }
     }
 
-    public static int Main()
+    [Fact]
+    public static int TestEntryPoint()
     {
         bool bPassed = true;
         // Works

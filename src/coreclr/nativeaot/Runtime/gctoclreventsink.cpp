@@ -27,14 +27,14 @@ void GCToCLREventSink::FireGCStart_V2(uint32_t count, uint32_t depth, uint32_t r
 {
     LIMITED_METHOD_CONTRACT;
 
-#ifdef FEATURE_ETW
+#ifdef FEATURE_EVENT_TRACE
     ETW::GCLog::ETW_GC_INFO gcStartInfo;
     gcStartInfo.GCStart.Count = count;
     gcStartInfo.GCStart.Depth = depth;
     gcStartInfo.GCStart.Reason = static_cast<ETW::GCLog::ETW_GC_INFO::GC_REASON>(reason);
     gcStartInfo.GCStart.Type = static_cast<ETW::GCLog::ETW_GC_INFO::GC_TYPE>(type);
     ETW::GCLog::FireGcStart(&gcStartInfo);
-#endif // FEATURE_ETW
+#endif // FEATURE_EVENT_TRACE
 }
 
 void GCToCLREventSink::FireGCGenerationRange(uint8_t generation, void* rangeStart, uint64_t rangeUsedLength, uint64_t rangeReservedLength)
@@ -163,7 +163,7 @@ void GCToCLREventSink::FireGCAllocationTick_V4(uint64_t allocationAmount,
     LIMITED_METHOD_CONTRACT;
 
     void * typeId = RedhawkGCInterface::GetLastAllocEEType();
-    const WCHAR * name = nullptr;
+    WCHAR * name = nullptr;
 
     if (typeId != nullptr)
     {

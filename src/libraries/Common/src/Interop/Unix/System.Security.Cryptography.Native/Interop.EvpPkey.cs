@@ -22,8 +22,6 @@ internal static partial class Interop
             SafeEvpPKeyHandle currentKey,
             EvpAlgorithmId algorithmId)
         {
-            Debug.Assert(!currentKey.IsInvalid);
-
             SafeEvpPKeyHandle pkey = CryptoNative_EvpPKeyDuplicate(
                 currentKey,
                 algorithmId);

@@ -1,8 +1,8 @@
 // Licensed to the .NET Foundation under one or more agreements.
 // The .NET Foundation licenses this file to you under the MIT license.
 
-import { MemOffset, MonoArray, MonoObject, MonoObjectRef, MonoString, NumberOrPointer, WasmRoot, WasmRootBuffer } from "../types";
-import { VoidPtr } from "../types/emscripten";
+import type { MemOffset, MonoArray, MonoObject, MonoObjectRef, MonoString, NumberOrPointer, WasmRoot, WasmRootBuffer } from "../types/internal";
+import type { VoidPtr } from "../types/emscripten";
 
 /**
  * @deprecated Please use methods in top level API object instead
@@ -102,18 +102,6 @@ export type MONOType = {
      * @deprecated Please use config.assets instead
      */
     mono_wasm_runtime_ready: () => void;
-    /**
-     * @deprecated Please use config.assets instead
-     */
-    mono_wasm_load_data_archive: (data: Uint8Array, prefix: string) => boolean;
-    /**
-     * @deprecated Please use configSrc instead
-     */
-    mono_wasm_load_config: (configFilePath: string) => Promise<void>;
-    /**
-     * @deprecated Please use runMain instead
-     */
-    mono_load_runtime_and_bcl_args: Function;
     /**
      * @deprecated Please use [JSImportAttribute] or [JSExportAttribute] for interop instead.
      */

@@ -21,7 +21,6 @@ StringAttr("hello", name = "StringAttrSimple"),
 EnumAttr(PublicEnum.Case1, name = "EnumAttrSimple"),
 TypeAttr(typeof(object), name = "TypeAttrSimple")]
 [assembly: CompilationRelaxations(8)]
-[assembly: Debuggable((DebuggableAttribute.DebuggingModes)263)]
 [assembly: CLSCompliant(false)]
 [assembly: TypeForwardedTo(typeof(string))]
 [assembly: TypeForwardedTo(typeof(TypeInForwardedAssembly))]
@@ -60,7 +59,6 @@ namespace System.Reflection.Tests
         [InlineData(typeof(AssemblyDescriptionAttribute))]
         [InlineData(typeof(AssemblyCompanyAttribute))]
         [InlineData(typeof(CLSCompliantAttribute))]
-        [InlineData(typeof(DebuggableAttribute))]
         [InlineData(typeof(Attr))]
         public void CustomAttributes(Type type)
         {
@@ -404,7 +402,7 @@ namespace System.Reflection.Tests
         [PlatformSpecific(TestPlatforms.Windows)]
         public void LoadFile_ValidPEBadIL_ThrowsBadImageFormatExceptionWithPath()
         {
-            string path = Path.Combine(Environment.GetFolderPath(Environment.SpecialFolder.System), "kernelbase.dll");
+            string path = Path.Combine(Environment.SystemDirectory, "kernelbase.dll");
             if (!File.Exists(path))
                 return;
 
@@ -698,7 +696,7 @@ namespace System.Reflection.Tests
         }
 
         [Fact]
-        [ActiveIssue("https://github.com/dotnet/runtime/issues/67569", typeof(PlatformDetection), nameof(PlatformDetection.IsNativeAot))]
+        [ActiveIssue("https://github.com/dotnet/runtime/issues/69919", typeof(PlatformDetection), nameof(PlatformDetection.IsNativeAot))]
         public void GetSatelliteAssemblyNeg()
         {
             Assert.Throws<ArgumentNullException>(() => (typeof(AssemblyTests).Assembly.GetSatelliteAssembly(null)));
@@ -857,7 +855,6 @@ namespace System.Reflection.Tests
         [InlineData(typeof(AssemblyDescriptionAttribute))]
         [InlineData(typeof(AssemblyCompanyAttribute))]
         [InlineData(typeof(CLSCompliantAttribute))]
-        [InlineData(typeof(DebuggableAttribute))]
         [InlineData(typeof(Attr))]
         public void GetCustomAttributesData(Type attrType)
         {

@@ -13,8 +13,6 @@ using Mono.Linker.Tests.Cases.Expectations.Metadata;
 
 namespace Mono.Linker.Tests.Cases.DataFlow
 {
-	[IgnoreTestCase ("Ignore in NativeAOT, see https://github.com/dotnet/runtime/issues/82447", IgnoredBy = ProducedBy.NativeAot)]
-	[KeptAttributeAttribute (typeof (IgnoreTestCaseAttribute), By = ProducedBy.Trimmer)]
 	[ExpectedNoWarnings]
 
 	[SetupCompileBefore ("base.dll", new[] { "Dependencies/MemberTypesAllBaseTypeAssembly.cs" })]

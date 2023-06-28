@@ -62,6 +62,36 @@
         <target state="translated">A desserialização de propriedades apenas de inicialização não é atualmente suportada no modo de geração de origem.</target>
         <note />
       </trans-unit>
+      <trans-unit id="JsonConverterAttributeInvalidTypeMessageFormat">
+        <source>The 'JsonConverterAttribute' type '{0}' specified on member '{1}' is not a converter type or does not contain an accessible parameterless constructor.</source>
+        <target state="translated">O tipo "JsonConverterAttribute" "{0}" especificado no membro "{1}" não é um tipo de conversor ou não contém um construtor sem parâmetros acessível.</target>
+        <note />
+      </trans-unit>
+      <trans-unit id="JsonConverterAttributeInvalidTypeTitle">
+        <source>The 'JsonConverterAttribute.Type' contains an invalid or inaccessible argument.</source>
+        <target state="translated">O "JsonConverterAttribute.Type" contém um argumento inválido ou inacessível.</target>
+        <note />
+      </trans-unit>
+      <trans-unit id="JsonStringEnumConverterNotSupportedMessageFormat">
+        <source>The member '{0}' has been annotated with 'JsonStringEnumConverter' which is not supported in native AOT. Consider using the generic 'JsonStringEnumConverter&lt;TEnum&gt;' instead.</source>
+        <target state="translated">O membro "{0}" foi anotado com "JsonStringEnumConverter" que não tem suporte na AOT nativa. Considere usar o genérico "JsonStringEnumConverter&lt;TEnum&gt;".</target>
+        <note />
+      </trans-unit>
+      <trans-unit id="JsonStringEnumConverterNotSupportedTitle">
+        <source>The non-generic 'JsonStringEnumConverter' requires dynamic code.</source>
+        <target state="translated">O "JsonStringEnumConverter" não genérico requer código dinâmico.</target>
+        <note />
+      </trans-unit>
+      <trans-unit id="JsonUnsupportedLanguageVersionMessageFormat">
+        <source>The System.Text.Json source generator is not available in C# '{0}'. Please use language version {1} or greater.</source>
+        <target state="translated">O gerador de fonte System.Text.Json não está disponível em C# '{0}'. Use a versão do idioma {1} ou superior.</target>
+        <note />
+      </trans-unit>
+      <trans-unit id="JsonUnsupportedLanguageVersionTitle">
+        <source>C# language version not supported by the source generator.</source>
+        <target state="translated">Versão da linguagem C# não suportada pelo gerador de origem.</target>
+        <note />
+      </trans-unit>
       <trans-unit id="MultipleJsonConstructorAttributeFormat">
         <source>Type '{0}' has multiple constructors annotated with 'JsonConstructorAttribute'.</source>
         <target state="translated">O tipo '{0}' tem vários construtores anotados com 'JsonConstructorAttribute'.</target>

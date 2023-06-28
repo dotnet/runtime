@@ -139,10 +139,13 @@ namespace System.IO.Pipelines.Tests
         }
 
         [Fact]
-        public Task ReadAtLeastAsyncThrowsIfPassedCanceledCancellationToken()
+        public async Task ReadAtLeastAsyncThrowsIfPassedCanceledCancellationToken()
         {
-            ValueTask<ReadResult> task = PipeReader.ReadAtLeastAsync(0, new CancellationToken(canceled: true));
-            return Assert.ThrowsAsync<TaskCanceledException>(async () => await task);
+            CancellationToken token = new CancellationToken(canceled: true);
+            ValueTask<ReadResult> task = PipeReader.ReadAtLeastAsync(0, token);
+            TaskCanceledException tce = await Assert.ThrowsAsync<TaskCanceledException>(async () => await task);
+            Assert.Equal(token, tce.CancellationToken);
+            Assert.Null(tce.InnerException);
         }
 
         [Fact]
@@ -164,12 +167,13 @@ namespace System.IO.Pipelines.Tests
         }
 
         [Fact]
-        public Task ReadAtLeastAsyncCancelableWhenWaitingForMoreData()
+        public async Task ReadAtLeastAsyncCancelableWhenWaitingForMoreData()
         {
             CancellationTokenSource cts = new CancellationTokenSource();
             ValueTask<ReadResult> task = PipeReader.ReadAtLeastAsync(1, cts.Token);
             cts.Cancel();
-            return Assert.ThrowsAsync<OperationCanceledException>(async () => await task);
+            var oce = await Assert.ThrowsAsync<OperationCanceledException>(async () => await task);
+            Assert.Equal(cts.Token, oce.CancellationToken);
         }
 
         [Fact]
@@ -179,7 +183,8 @@ namespace System.IO.Pipelines.Tests
             await Pipe.WriteAsync(new byte[10], default);
             ValueTask<ReadResult> task = PipeReader.ReadAtLeastAsync(11, cts.Token);
             cts.Cancel();
-            await Assert.ThrowsAsync<OperationCanceledException>(async () => await task);
+            var oce = await Assert.ThrowsAsync<OperationCanceledException>(async () => await task);
+            Assert.Equal(cts.Token, oce.CancellationToken);
         }
 
         [Fact]
@@ -191,7 +196,8 @@ namespace System.IO.Pipelines.Tests
             // Write, but not enough to unblock ReadAtLeastAsync
             await Pipe.WriteAsync(new byte[1], default);
             cts.Cancel();
-            await Assert.ThrowsAnyAsync<OperationCanceledException>(async () => await task);
+            var oce = await Assert.ThrowsAsync<OperationCanceledException>(async () => await task);
+            Assert.Equal(cts.Token, oce.CancellationToken);
         }
     }
 }

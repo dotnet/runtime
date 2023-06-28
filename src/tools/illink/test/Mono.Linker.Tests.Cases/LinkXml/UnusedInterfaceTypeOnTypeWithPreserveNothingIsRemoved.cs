@@ -10,7 +10,7 @@ namespace Mono.Linker.Tests.Cases.LinkXml
 		{
 		}
 
-		[Kept (By = ProducedBy.NativeAot)]
+		[Kept (By = Tool.NativeAot)]
 		interface IFoo
 		{
 		}

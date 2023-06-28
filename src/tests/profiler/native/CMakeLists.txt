@@ -8,6 +8,7 @@ set(SOURCES
     eventpipeprofiler/eventpipewritingprofiler.cpp
     eventpipeprofiler/eventpipemetadatareader.cpp
     gcallocateprofiler/gcallocateprofiler.cpp
+    nongcheap/nongcheap.cpp
     gcbasicprofiler/gcbasicprofiler.cpp
     gcprofiler/gcprofiler.cpp
     getappdomainstaticaddress/getappdomainstaticaddress.cpp

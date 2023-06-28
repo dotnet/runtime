@@ -1,16 +1,11 @@
 <Project Sdk="Microsoft.NET.Sdk">
   <PropertyGroup>
-    <BuildAsStandalone>false</BuildAsStandalone>
     <AllowUnsafeBlocks>true</AllowUnsafeBlocks>
+    <HWITestsXarchOnly>true</HWITestsXarchOnly>
   </PropertyGroup>
   <PropertyGroup>
     <DebugType>Embedded</DebugType>
     <Optimize />
-  </PropertyGroup>
-  <PropertyGroup>
-    <!-- We have a lot of tests here so run them in outerloop on platforms where they aren't accelerated -->
-    <!-- Unlock other types, Vector512 is only accelerated on a single small pool of machines, so it is always outerloop -->
-    <CLRTestPriority>1</CLRTestPriority>
   </PropertyGroup>
   <ItemGroup>
     <Compile Include="Program.Vector512_1.cs" />

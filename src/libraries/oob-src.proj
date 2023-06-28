@@ -15,20 +15,26 @@
                                @(NetCoreAppLibrary->'%(Identity)\src\%(Identity).csproj');
                                Microsoft.VisualBasic.Core\src\Microsoft.VisualBasic.Core.vbproj" />
 
-    <!-- During an official Build, build the rid specific package matching the OutputRid only outside of an allconfigurations build and only when targeting the CoreCLR runtime.
+    <!-- During an official Build, build the rid specific package matching the OutputRID only outside of an allconfigurations build and only when targeting the CoreCLR runtime.
          The limitation on the CoreCLR runtime is entirely artificial but avoids duplicate assets being publish. -->
-    <ProjectReference Include="$(MSBuildThisFileDirectory)*\pkg\runtime.$(OutputRid).*.proj" Condition="'$(BuildingAnOfficialBuildLeg)' != 'true' or
-                                                                                                        ('$(BuildAllConfigurations)' != 'true' and '$(RuntimeFlavor)' == '$(PrimaryRuntimeFlavor)')" />
+    <ProjectReference Include="$(MSBuildThisFileDirectory)*\pkg\runtime.$(OutputRID).*.proj"
+                      Condition="'$(SkipLibrariesNativeRuntimePackages)' != 'true' and
+                                 (
+                                  '$(BuildingAnOfficialBuildLeg)' != 'true' or
+                                  (
+                                   '$(BuildAllConfigurations)' != 'true' and
+                                   '$(RuntimeFlavor)' == '$(PrimaryRuntimeFlavor)'
+                                  )
+                                 )" />
 
     <!-- Don't build task and tools project in the NetCoreAppCurrent vertical. -->
     <ProjectReference Remove="Microsoft.XmlSerializer.Generator\src\Microsoft.XmlSerializer.Generator.csproj" />
 
     <!-- Don't build meta-projects in the NetCoreAppCurrent vertical. -->
     <ProjectReference Remove="Microsoft.Internal.Runtime.AspNetCore.Transport\src\Microsoft.Internal.Runtime.AspNetCore.Transport.proj;
-                              Microsoft.Internal.Runtime.WindowsDesktop.Transport\src\Microsoft.Internal.Runtime.WindowsDesktop.Transport.proj;
-                              Microsoft.Windows.Compatibility\src\Microsoft.Windows.Compatibility.csproj" />
+                              Microsoft.Internal.Runtime.WindowsDesktop.Transport\src\Microsoft.Internal.Runtime.WindowsDesktop.Transport.proj" />
 
-    <!-- Filter out projects which aren't source-buildable. -->
+    <!-- Skip these projects during source-build as they rely on external prebuilts. -->
     <ProjectReference Remove="Microsoft.Extensions.DependencyInjection.Specification.Tests\src\Microsoft.Extensions.DependencyInjection.Specification.Tests.csproj"
                       Condition="'$(DotNetBuildFromSource)' == 'true'" />
   </ItemGroup>

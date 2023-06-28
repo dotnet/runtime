@@ -10,6 +10,7 @@
     <Compile Include="System\Security\Claims\ClaimValueTypes.cs" />
     <Compile Include="System\Security\Claims\GenericIdentity.cs" />
     <Compile Include="System\Security\Claims\GenericPrincipal.cs" />
+    <Compile Include="$(CommonPath)System\Obsoletions.cs" Link="Common\System\Obsoletions.cs" />
   </ItemGroup>
   <ItemGroup>
     <Reference Include="System.Collections" />

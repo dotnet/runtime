@@ -5,6 +5,7 @@
 using System;
 using System.Collections.Generic;
 using System.Runtime.CompilerServices;
+using Xunit;
 public class SwitchWithSideEffects
 {
     public struct S1
@@ -75,7 +76,7 @@ public class SwitchWithSideEffects
             return 15|4;
         }
     }
-    public void Method0()
+    internal void Method0()
     {
         unchecked
         {
@@ -87,7 +88,8 @@ public class SwitchWithSideEffects
             return;
         }
     }
-    public static int Main()
+    [Fact]
+    public static int TestEntryPoint()
     {
         new SwitchWithSideEffects().Method0();
         return 100;

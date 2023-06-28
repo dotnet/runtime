@@ -45,310 +45,6 @@
 #undef EP_ALIGN_UP
 #define EP_ALIGN_UP(val,align) ALIGN_TO(val,align)
 
-#ifndef EP_RT_BUILD_TYPE_FUNC_NAME
-#define EP_RT_BUILD_TYPE_FUNC_NAME(prefix_name, type_name, func_name) \
-prefix_name ## _rt_ ## type_name ## _ ## func_name
-#endif
-
-#define EP_RT_DEFINE_LIST_PREFIX(prefix_name, list_name, list_type, item_type) \
-	static inline void EP_RT_BUILD_TYPE_FUNC_NAME(prefix_name, list_name, alloc) (list_type *list) { ; } \
-	static inline void EP_RT_BUILD_TYPE_FUNC_NAME(prefix_name, list_name, free) (list_type *list, void (*callback)(void *)) { \
-		if (list && list->list) { \
-			if (callback) { \
-				for (GSList *l = list->list; l; l = l->next) { \
-					callback (l->data); \
-				} \
-			} \
-			g_slist_free (list->list); \
-			list->list = NULL; \
-		} \
-	} \
-	static inline void EP_RT_BUILD_TYPE_FUNC_NAME(prefix_name, list_name, clear) (list_type *list, void (*callback)(void *)) { \
-		EP_ASSERT (list != NULL); \
-		ep_rt_ ## list_name ## _free (list, callback); \
-	} \
-	static inline bool EP_RT_BUILD_TYPE_FUNC_NAME(prefix_name, list_name, append) (list_type *list, item_type item) { \
-		EP_ASSERT (list != NULL); \
-		list->list = g_slist_append (list->list, ((gpointer)(gsize)item)); \
-		return list->list != NULL; \
-	} \
-	static inline void EP_RT_BUILD_TYPE_FUNC_NAME(prefix_name, list_name, remove) (list_type *list, const item_type item) { \
-		EP_ASSERT (list != NULL); \
-		list->list = g_slist_remove (list->list, ((gconstpointer)(const gsize)item)); \
-	} \
-	static inline bool EP_RT_BUILD_TYPE_FUNC_NAME(prefix_name, list_name, find) (const list_type *list, const item_type item_to_find, item_type *found_item) { \
-		EP_ASSERT (list != NULL && found_item != NULL); \
-		GSList *found_glist_item = g_slist_find (list->list, ((gconstpointer)(const gsize)item_to_find)); \
-		*found_item = (found_glist_item != NULL) ? ((item_type)(gsize)(found_glist_item->data)) : ((item_type)(gsize)NULL); \
-		return *found_item != NULL; \
-	} \
-	static inline bool EP_RT_BUILD_TYPE_FUNC_NAME(prefix_name, list_name, is_empty) (const list_type *list) { \
-		EP_ASSERT (list != NULL); \
-		return list->list == NULL; \
-	} \
-	static inline bool EP_RT_BUILD_TYPE_FUNC_NAME(prefix_name, list_name, is_valid) (const list_type *list) { return (list != NULL && list->list == NULL); }
-
-#undef EP_RT_DEFINE_LIST
-#define EP_RT_DEFINE_LIST(list_name, list_type, item_type) \
-	EP_RT_DEFINE_LIST_PREFIX(ep, list_name, list_type, item_type)
-
-#define EP_RT_DEFINE_LIST_ITERATOR_PREFIX(prefix_name, list_name, list_type, iterator_type, item_type) \
-	static inline iterator_type EP_RT_BUILD_TYPE_FUNC_NAME(prefix_name, list_name, iterator_begin) (const list_type *list) { \
-		EP_ASSERT (list != NULL); \
-		iterator_type temp; \
-		temp.iterator = list->list; \
-		return temp;\
-	} \
-	static inline bool EP_RT_BUILD_TYPE_FUNC_NAME(prefix_name, list_name, iterator_end) (const list_type *list, const iterator_type *iterator) { \
-		EP_ASSERT (list != NULL && iterator != NULL); \
-		return iterator->iterator == NULL; \
-	} \
-	static inline void EP_RT_BUILD_TYPE_FUNC_NAME(prefix_name, list_name, iterator_next) (iterator_type *iterator) { \
-		EP_ASSERT (iterator != NULL); \
-		iterator->iterator = iterator->iterator->next; \
-	} \
-	static inline item_type EP_RT_BUILD_TYPE_FUNC_NAME(prefix_name, list_name, iterator_value) (const iterator_type *iterator) { \
-		EP_ASSERT (iterator != NULL); \
-		return ((item_type)(gsize)(iterator->iterator->data)); \
-	}
-
-#undef EP_RT_DEFINE_LIST_ITERATOR
-#define EP_RT_DEFINE_LIST_ITERATOR(list_name, list_type, iterator_type, item_type) \
-	EP_RT_DEFINE_LIST_ITERATOR_PREFIX(ep, list_name, list_type, iterator_type, item_type)
-
-#define EP_RT_DEFINE_QUEUE_PREFIX(prefix_name, queue_name, queue_type, item_type) \
-	static inline void EP_RT_BUILD_TYPE_FUNC_NAME(prefix_name, queue_name, alloc) (queue_type *queue) { queue->queue = g_queue_new (); } \
-	static inline void EP_RT_BUILD_TYPE_FUNC_NAME(prefix_name, queue_name, free) (queue_type *queue) { \
-		EP_ASSERT (queue != NULL); \
-		g_queue_free (queue->queue); \
-		queue->queue = NULL; \
-	} \
-	static inline bool EP_RT_BUILD_TYPE_FUNC_NAME(prefix_name, queue_name, pop_head) (queue_type *queue, item_type *item) { \
-		EP_ASSERT (queue != NULL && item != NULL); \
-		*item = ((item_type)(gsize)g_queue_pop_head (queue->queue)); \
-		return true; \
-	} \
-	static inline bool EP_RT_BUILD_TYPE_FUNC_NAME(prefix_name, queue_name, push_head) (queue_type *queue, item_type item) { \
-		EP_ASSERT (queue != NULL); \
-		g_queue_push_head (queue->queue, ((gpointer)(gsize)item)); \
-		return true; \
-	} \
-	static inline bool EP_RT_BUILD_TYPE_FUNC_NAME(prefix_name, queue_name, push_tail) (queue_type *queue, item_type item) { \
-		EP_ASSERT (queue != NULL); \
-		g_queue_push_tail (queue->queue, ((gpointer)(gsize)item)); \
-		return true; \
-	} \
-	static inline bool EP_RT_BUILD_TYPE_FUNC_NAME(prefix_name, queue_name, is_empty) (const queue_type *queue) { \
-		EP_ASSERT (queue != NULL); \
-		return (g_queue_is_empty (queue->queue) == TRUE) ? true : false; \
-	} \
-	static inline bool EP_RT_BUILD_TYPE_FUNC_NAME(prefix_name, queue_name, is_valid) (const queue_type *queue) { return (queue != NULL && queue->queue != NULL); }
-
-#undef EP_RT_DEFINE_QUEUE
-#define EP_RT_DEFINE_QUEUE(queue_name, queue_type, item_type) \
-	EP_RT_DEFINE_QUEUE_PREFIX(ep, queue_name, queue_type, item_type)
-
-#define EP_RT_DEFINE_ARRAY_PREFIX(prefix_name, array_name, array_type, iterator_type, item_type) \
-	static inline void EP_RT_BUILD_TYPE_FUNC_NAME(prefix_name, array_name, alloc) (array_type *ep_array) { \
-		EP_ASSERT (ep_array != NULL); \
-		ep_array->array = g_array_new (FALSE, FALSE, (guint)sizeof (item_type)); \
-	} \
-	static inline void EP_RT_BUILD_TYPE_FUNC_NAME(prefix_name, array_name, alloc_capacity) (array_type *ep_array, size_t capacity) { \
-		EP_ASSERT (ep_array != NULL); \
-		ep_array->array = g_array_sized_new (FALSE, FALSE, (guint)sizeof (item_type), (guint)capacity); \
-	} \
-	static inline void EP_RT_BUILD_TYPE_FUNC_NAME(prefix_name, array_name, free) (array_type *ep_array) { \
-		EP_ASSERT (ep_array != NULL); \
-		g_array_free (ep_array->array, TRUE); \
-	} \
-	static inline bool EP_RT_BUILD_TYPE_FUNC_NAME(prefix_name, array_name, append) (array_type *ep_array, item_type item) { \
-		EP_ASSERT (ep_array != NULL); \
-		return g_array_append_val (ep_array->array, item) != NULL; \
-	} \
-	static inline void EP_RT_BUILD_TYPE_FUNC_NAME(prefix_name, array_name, clear) (array_type *ep_array) { \
-		EP_ASSERT (ep_array != NULL); \
-		g_array_set_size (ep_array->array, 0); \
-	} \
-	static inline void EP_RT_BUILD_TYPE_FUNC_NAME(prefix_name, array_name, remove) (array_type *ep_array, iterator_type *pos) { \
-		EP_ASSERT (ep_array != NULL && pos != NULL); \
-		EP_ASSERT (pos->index < ep_array->array->len); \
-		ep_array->array = g_array_remove_index_fast (ep_array->array, pos->index); \
-	} \
-	static inline size_t EP_RT_BUILD_TYPE_FUNC_NAME(prefix_name, array_name, size) (const array_type *ep_array) { \
-		EP_ASSERT (ep_array != NULL); \
-		return ep_array->array->len; \
-	} \
-	static inline item_type * EP_RT_BUILD_TYPE_FUNC_NAME(prefix_name, array_name, data) (const array_type *ep_array) { \
-		EP_ASSERT (ep_array != NULL); \
-		return (item_type *)ep_array->array->data; \
-	} \
-	static inline bool EP_RT_BUILD_TYPE_FUNC_NAME(prefix_name, array_name, is_valid) (const array_type *ep_array) { return (ep_array != NULL && ep_array->array != NULL); }
-
-#define EP_RT_DEFINE_LOCAL_ARRAY_PREFIX(prefix_name, array_name, array_type, iterator_type, item_type) \
-	static inline void EP_RT_BUILD_TYPE_FUNC_NAME(prefix_name, array_name, init) (array_type *ep_array) { \
-		EP_ASSERT (ep_array != NULL); \
-		ep_array->array = g_array_new (FALSE, FALSE, (guint)sizeof (item_type)); \
-	} \
-	static inline void EP_RT_BUILD_TYPE_FUNC_NAME(prefix_name, array_name, init_capacity) (array_type *ep_array, size_t capacity) { \
-		EP_ASSERT (ep_array != NULL); \
-		ep_array->array = g_array_sized_new (FALSE, FALSE, (guint)sizeof (item_type), (guint)capacity); \
-	} \
-	static inline void EP_RT_BUILD_TYPE_FUNC_NAME(prefix_name, array_name, fini) (array_type *ep_array) { \
-		EP_ASSERT (ep_array != NULL); \
-		g_array_free (ep_array->array, TRUE); \
-	}
-
-#undef EP_RT_DEFINE_ARRAY
-#define EP_RT_DEFINE_ARRAY(array_name, array_type, iterator_type, item_type) \
-	EP_RT_DEFINE_ARRAY_PREFIX(ep, array_name, array_type, iterator_type, item_type)
-
-#undef EP_RT_DEFINE_LOCAL_ARRAY
-#define EP_RT_DEFINE_LOCAL_ARRAY(array_name, array_type, iterator_type, item_type) \
-	EP_RT_DEFINE_LOCAL_ARRAY_PREFIX(ep, array_name, array_type, iterator_type, item_type)
-
-#define EP_RT_DEFINE_ARRAY_ITERATOR_PREFIX(prefix_name, array_name, array_type, iterator_type, item_type) \
-	static inline iterator_type EP_RT_BUILD_TYPE_FUNC_NAME(prefix_name, array_name, iterator_begin) (const array_type *ep_array) { \
-		EP_ASSERT (ep_array != NULL); \
-		iterator_type temp; \
-		temp.array = ep_array->array; \
-		temp.index = 0; \
-		return temp; \
-	} \
-	static inline bool EP_RT_BUILD_TYPE_FUNC_NAME(prefix_name, array_name, iterator_end) (const array_type *ep_array, const iterator_type *iterator) { \
-		EP_ASSERT (ep_array != NULL && iterator != NULL && iterator->array == ep_array->array); \
-		return iterator->index >= iterator->array->len; \
-	} \
-	static void EP_RT_BUILD_TYPE_FUNC_NAME(prefix_name, array_name, iterator_next) (iterator_type *iterator) { \
-		EP_ASSERT (iterator != NULL); \
-		iterator->index++; \
-	} \
-	static item_type EP_RT_BUILD_TYPE_FUNC_NAME(prefix_name, array_name, iterator_value) (const iterator_type *iterator) { \
-		EP_ASSERT (iterator != NULL); \
-		return g_array_index(iterator->array, item_type, iterator->index); \
-	}
-
-#define EP_RT_DEFINE_ARRAY_REVERSE_ITERATOR_PREFIX(prefix_name, array_name, array_type, iterator_type, item_type) \
-	static inline iterator_type EP_RT_BUILD_TYPE_FUNC_NAME(prefix_name, array_name, reverse_iterator_begin) (const array_type *ep_array) { \
-		EP_ASSERT (ep_array != NULL); \
-		iterator_type temp; \
-		temp.array = ep_array->array; \
-		temp.index = ep_array->array->len - 1; \
-		return temp; \
-	} \
-	static inline bool EP_RT_BUILD_TYPE_FUNC_NAME(prefix_name, array_name, reverse_iterator_end) (const array_type *ep_array, const iterator_type *iterator) { \
-		EP_ASSERT (ep_array != NULL && iterator != NULL && iterator->array == ep_array->array); \
-		return iterator->index < 0; \
-	} \
-	static void EP_RT_BUILD_TYPE_FUNC_NAME(prefix_name, array_name, reverse_iterator_next) (iterator_type *iterator) { \
-		EP_ASSERT (iterator != NULL && iterator->array != NULL); \
-		iterator->index--; \
-	} \
-	static item_type EP_RT_BUILD_TYPE_FUNC_NAME(prefix_name, array_name, reverse_iterator_value) (const iterator_type *iterator) { \
-		EP_ASSERT (iterator != NULL && iterator->array != NULL); \
-		EP_ASSERT (iterator->index >= 0); \
-		return g_array_index(iterator->array, item_type, iterator->index); \
-	}
-
-#undef EP_RT_DEFINE_ARRAY_ITERATOR
-#define EP_RT_DEFINE_ARRAY_ITERATOR(array_name, array_type, iterator_type, item_type) \
-	EP_RT_DEFINE_ARRAY_ITERATOR_PREFIX(ep, array_name, array_type, iterator_type, item_type)
-
-#undef EP_RT_DEFINE_ARRAY_REVERSE_ITERATOR
-#define EP_RT_DEFINE_ARRAY_REVERSE_ITERATOR(array_name, array_type, iterator_type, item_type) \
-	EP_RT_DEFINE_ARRAY_REVERSE_ITERATOR_PREFIX(ep, array_name, array_type, iterator_type, item_type)
-
-#define EP_RT_DEFINE_HASH_MAP_BASE_PREFIX(prefix_name, hash_map_name, hash_map_type, key_type, value_type) \
-	static inline void EP_RT_BUILD_TYPE_FUNC_NAME(prefix_name, hash_map_name, alloc) (hash_map_type *hash_map, ep_rt_hash_map_hash_callback_t hash_callback, ep_rt_hash_map_equal_callback_t eq_callback, void (*key_free_callback)(void *), void (*value_free_callback)(void *)) { \
-		EP_ASSERT (hash_map != NULL); \
-		EP_ASSERT (key_free_callback == NULL); \
-		hash_map->table = g_hash_table_new_full ((GHashFunc)hash_callback, (GEqualFunc)eq_callback, (GDestroyNotify)key_free_callback, (GDestroyNotify)value_free_callback); \
-	} \
-	static inline void EP_RT_BUILD_TYPE_FUNC_NAME(prefix_name, hash_map_name, free) (hash_map_type *hash_map) { \
-		EP_ASSERT (hash_map != NULL); \
-		g_hash_table_destroy (hash_map->table); \
-		hash_map->table = NULL; \
-	} \
-	static inline bool EP_RT_BUILD_TYPE_FUNC_NAME(prefix_name, hash_map_name, add) (hash_map_type *hash_map, key_type key, value_type value) { \
-		EP_ASSERT (hash_map != NULL); \
-		EP_ASSERT (!g_hash_table_lookup_extended (hash_map->table, (gconstpointer)key, NULL, NULL)); \
-		g_hash_table_insert (hash_map->table, (gpointer)key, ((gpointer)(gsize)value)); \
-		return true; \
-	} \
-	static inline void EP_RT_BUILD_TYPE_FUNC_NAME(prefix_name, hash_map_name, remove_all) (hash_map_type *hash_map) { \
-		EP_ASSERT (hash_map != NULL); \
-		g_hash_table_remove_all (hash_map->table); \
-	} \
-	static inline bool EP_RT_BUILD_TYPE_FUNC_NAME(prefix_name, hash_map_name, lookup) (const hash_map_type *hash_map, const key_type key, value_type *value) { \
-		EP_ASSERT (hash_map != NULL && value != NULL); \
-		gpointer _value = NULL; \
-		bool result = (g_hash_table_lookup_extended (hash_map->table, (gconstpointer)key, NULL, &_value) == TRUE) ? true : false; \
-		*value = ((value_type)(gsize)_value); \
-		return result; \
-	} \
-	static inline uint32_t EP_RT_BUILD_TYPE_FUNC_NAME(prefix_name, hash_map_name, count) (const hash_map_type *hash_map) { \
-		EP_ASSERT (hash_map != NULL); \
-		return (hash_map->table != NULL) ? g_hash_table_size (hash_map->table) : 0; \
-	} \
-	static inline bool EP_RT_BUILD_TYPE_FUNC_NAME(prefix_name, hash_map_name, is_valid) (const hash_map_type *hash_map) { \
-		EP_ASSERT (hash_map != NULL); \
-		return (hash_map != NULL && hash_map->table != NULL); \
-	}
-
-#define EP_RT_DEFINE_HASH_MAP_PREFIX(prefix_name, hash_map_name, hash_map_type, key_type, value_type) \
-	EP_RT_DEFINE_HASH_MAP_BASE_PREFIX(prefix_name, hash_map_name, hash_map_type, key_type, value_type) \
-	static inline bool EP_RT_BUILD_TYPE_FUNC_NAME(prefix_name, hash_map_name, add_or_replace) (hash_map_type *hash_map, key_type key, value_type value) { \
-		EP_ASSERT (hash_map != NULL); \
-		g_hash_table_replace (hash_map->table, (gpointer)key, ((gpointer)(gsize)value)); \
-		return true; \
-	}
-
-#define EP_RT_DEFINE_HASH_MAP_REMOVE_PREFIX(prefix_name, hash_map_name, hash_map_type, key_type, value_type) \
-	EP_RT_DEFINE_HASH_MAP_BASE_PREFIX(prefix_name, hash_map_name, hash_map_type, key_type, value_type) \
-	static inline void EP_RT_BUILD_TYPE_FUNC_NAME(prefix_name, hash_map_name, remove) (hash_map_type *hash_map, const key_type key) { \
-		EP_ASSERT (hash_map != NULL); \
-		g_hash_table_remove (hash_map->table, (gconstpointer)key); \
-	}
-
-#undef EP_RT_DEFINE_HASH_MAP
-#define EP_RT_DEFINE_HASH_MAP(hash_map_name, hash_map_type, key_type, value_type) \
-	EP_RT_DEFINE_HASH_MAP_PREFIX(ep, hash_map_name, hash_map_type, key_type, value_type)
-
-#undef EP_RT_DEFINE_HASH_MAP_REMOVE
-#define EP_RT_DEFINE_HASH_MAP_REMOVE(hash_map_name, hash_map_type, key_type, value_type) \
-	EP_RT_DEFINE_HASH_MAP_REMOVE_PREFIX(ep, hash_map_name, hash_map_type, key_type, value_type)
-
-#define EP_RT_DEFINE_HASH_MAP_ITERATOR_PREFIX(prefix_name, hash_map_name, hash_map_type, iterator_type, key_type, value_type) \
-	static inline iterator_type EP_RT_BUILD_TYPE_FUNC_NAME(prefix_name, hash_map_name, iterator_begin) (const hash_map_type *hash_map) { \
-		EP_ASSERT (hash_map != NULL); \
-		iterator_type temp; \
-		g_hash_table_iter_init (&temp.iterator, hash_map->table); \
-		if (hash_map->table && g_hash_table_size (hash_map->table) > 0) \
-			temp.end = !g_hash_table_iter_next (&temp.iterator, &temp.key, &temp.value); \
-		else \
-			temp.end = true; \
-		return temp; \
-	} \
-	static inline bool EP_RT_BUILD_TYPE_FUNC_NAME(prefix_name, hash_map_name, iterator_end) (const hash_map_type *hash_map, const iterator_type *iterator) { \
-		EP_ASSERT (hash_map != NULL && iterator != NULL); \
-		return iterator->end; \
-	} \
-	static inline void EP_RT_BUILD_TYPE_FUNC_NAME(prefix_name, hash_map_name, iterator_next) (iterator_type *iterator) { \
-		EP_ASSERT (iterator != NULL); \
-		iterator->end = !g_hash_table_iter_next (&iterator->iterator, &iterator->key, &iterator->value); \
-	} \
-	static inline key_type EP_RT_BUILD_TYPE_FUNC_NAME(prefix_name, hash_map_name, iterator_key) (const iterator_type *iterator) { \
-		EP_ASSERT (iterator != NULL); \
-		return ((key_type)(gsize)iterator->key); \
-	} \
-	static inline value_type EP_RT_BUILD_TYPE_FUNC_NAME(prefix_name, hash_map_name, iterator_value) (const iterator_type *iterator) { \
-		EP_ASSERT (iterator != NULL); \
-		return ((value_type)(gsize)iterator->value); \
-	}
-
-#undef EP_RT_DEFINE_HASH_MAP_ITERATOR
-#define EP_RT_DEFINE_HASH_MAP_ITERATOR(hash_map_name, hash_map_type, iterator_type, key_type, value_type) \
-	EP_RT_DEFINE_HASH_MAP_ITERATOR_PREFIX(ep, hash_map_name, hash_map_type, iterator_type, key_type, value_type)
-
 extern char *_ep_rt_mono_os_cmd_line;
 extern mono_lazy_init_t _ep_rt_mono_os_cmd_line_init;
 extern char *_ep_rt_mono_managed_cmd_line;
@@ -373,16 +69,14 @@ extern void ep_rt_mono_init_providers_and_events (void);
 extern bool ep_rt_mono_providers_validate_all_disabled (void);
 extern bool ep_rt_mono_sample_profiler_write_sampling_event_for_threads (ep_rt_thread_handle_t sampling_thread, EventPipeEvent *sampling_event);
 extern bool ep_rt_mono_rand_try_get_bytes (uint8_t *buffer,size_t buffer_size);
-extern void ep_rt_mono_execute_rundown (ep_rt_execution_checkpoint_array_t *execution_checkpoints);
+extern void ep_rt_mono_execute_rundown (dn_vector_ptr_t *execution_checkpoints);
 extern int64_t ep_rt_mono_perf_counter_query (void);
 extern int64_t ep_rt_mono_perf_frequency_query (void);
 extern void ep_rt_mono_system_time_get (EventPipeSystemTime *system_time);
 extern int64_t ep_rt_mono_system_timestamp_get (void);
-extern void ep_rt_mono_os_environment_get_utf16 (ep_rt_env_array_utf16_t *env_array);
+extern void ep_rt_mono_os_environment_get_utf16 (dn_vector_ptr_t *os_env);
 extern MonoNativeTlsKey _ep_rt_mono_thread_holder_tls_id;
 extern EventPipeThread * ep_rt_mono_thread_get_or_create (void);
-extern uint32_t ep_stack_hash_key_hash (const void *key);
-extern bool ep_stack_hash_key_equal (const void *key1, const void *key2);
 
 static
 inline
@@ -682,12 +376,6 @@ ep_rt_atomic_compare_exchange_utf8_string (ep_char8_t *volatile *target, ep_char
  * EventPipe.
  */
 
-EP_RT_DEFINE_ARRAY (session_id_array, ep_rt_session_id_array_t, ep_rt_session_id_array_iterator_t, EventPipeSessionID)
-EP_RT_DEFINE_ARRAY_ITERATOR (session_id_array, ep_rt_session_id_array_t, ep_rt_session_id_array_iterator_t, EventPipeSessionID)
-
-EP_RT_DEFINE_ARRAY (execution_checkpoint_array, ep_rt_execution_checkpoint_array_t, ep_rt_execution_checkpoint_array_iterator_t, EventPipeExecutionCheckpoint *)
-EP_RT_DEFINE_ARRAY_ITERATOR (execution_checkpoint_array, ep_rt_execution_checkpoint_array_t, ep_rt_execution_checkpoint_array_iterator_t, EventPipeExecutionCheckpoint *)
-
 static
 inline
 void
@@ -842,98 +530,8 @@ ep_rt_provider_invoke_callback (
 }
 
 /*
- * EventPipeBuffer.
- */
-
-EP_RT_DEFINE_ARRAY (buffer_array, ep_rt_buffer_array_t, ep_rt_buffer_array_iterator_t, EventPipeBuffer *)
-EP_RT_DEFINE_LOCAL_ARRAY (buffer_array, ep_rt_buffer_array_t, ep_rt_buffer_array_iterator_t, EventPipeBuffer *)
-EP_RT_DEFINE_ARRAY_ITERATOR (buffer_array, ep_rt_buffer_array_t, ep_rt_buffer_array_iterator_t, EventPipeBuffer *)
-
-#undef EP_RT_DECLARE_LOCAL_BUFFER_ARRAY
-#define EP_RT_DECLARE_LOCAL_BUFFER_ARRAY(var_name) \
-	ep_rt_buffer_array_t var_name
-
-/*
- * EventPipeBufferList.
- */
-
-EP_RT_DEFINE_ARRAY (buffer_list_array, ep_rt_buffer_list_array_t, ep_rt_buffer_list_array_iterator_t, EventPipeBufferList *)
-EP_RT_DEFINE_LOCAL_ARRAY (buffer_list_array, ep_rt_buffer_list_array_t, ep_rt_buffer_list_array_iterator_t, EventPipeBufferList *)
-EP_RT_DEFINE_ARRAY_ITERATOR (buffer_list_array, ep_rt_buffer_list_array_t, ep_rt_buffer_list_array_iterator_t, EventPipeBufferList *)
-
-#undef EP_RT_DECLARE_LOCAL_BUFFER_LIST_ARRAY
-#define EP_RT_DECLARE_LOCAL_BUFFER_LIST_ARRAY(var_name) \
-	ep_rt_buffer_list_array_t var_name
-
-/*
- * EventPipeEvent.
- */
-
-EP_RT_DEFINE_LIST (event_list, ep_rt_event_list_t, EventPipeEvent *)
-EP_RT_DEFINE_LIST_ITERATOR (event_list, ep_rt_event_list_t, ep_rt_event_list_iterator_t, EventPipeEvent *)
-
-/*
- * EventPipeFile.
- */
-
-EP_RT_DEFINE_HASH_MAP_REMOVE(metadata_labels_hash, ep_rt_metadata_labels_hash_map_t, EventPipeEvent *, uint32_t)
-EP_RT_DEFINE_HASH_MAP(stack_hash, ep_rt_stack_hash_map_t, StackHashKey *, StackHashEntry *)
-EP_RT_DEFINE_HASH_MAP_ITERATOR(stack_hash, ep_rt_stack_hash_map_t, ep_rt_stack_hash_map_iterator_t, StackHashKey *, StackHashEntry *)
-
-#ifdef EP_RT_USE_CUSTOM_HASH_MAP_CALLBACKS
-static
-inline
-guint
-ep_rt_stack_hash_key_hash (gconstpointer key)
-{
-	return (guint)ep_stack_hash_key_hash (key);
-}
-
-static
-inline
-gboolean
-ep_rt_stack_hash_key_equal (gconstpointer key1, gconstpointer key2)
-{
-	return !!ep_stack_hash_key_equal (key1, key2);
-}
-#endif
-
-/*
- * EventPipeProvider.
- */
-
-EP_RT_DEFINE_LIST (provider_list, ep_rt_provider_list_t, EventPipeProvider *)
-EP_RT_DEFINE_LIST_ITERATOR (provider_list, ep_rt_provider_list_t, ep_rt_provider_list_iterator_t, EventPipeProvider *)
-
-EP_RT_DEFINE_QUEUE (provider_callback_data_queue, ep_rt_provider_callback_data_queue_t, EventPipeProviderCallbackData *)
-
-static
-inline
-int
-compare_provider_name (
-	gconstpointer a,
-	gconstpointer b)
-{
-	return (a) ? ep_rt_utf8_string_compare (ep_provider_get_provider_name ((EventPipeProvider *)a), (const ep_char8_t *)b) : 1;
-}
-
-static
-inline
-EventPipeProvider *
-ep_rt_provider_list_find_by_name (
-	const ep_rt_provider_list_t *list,
-	const ep_char8_t *name)
-{
-	GSList *item = g_slist_find_custom (list->list, name, compare_provider_name);
-	return (item != NULL) ? (EventPipeProvider *)item->data : NULL;
-}
-
-/*
  * EventPipeProviderConfiguration.
  */
-
-EP_RT_DEFINE_ARRAY (provider_config_array, ep_rt_provider_config_array_t, ep_rt_provider_config_array_iterator_t, EventPipeProviderConfiguration)
-EP_RT_DEFINE_ARRAY_ITERATOR (provider_config_array, ep_rt_provider_config_array_t, ep_rt_provider_config_array_iterator_t, EventPipeProviderConfiguration)
 
 static
 inline
@@ -1017,6 +615,21 @@ ep_rt_config_value_get_rundown (void)
 	return value_uint32_t;
 }
 
+static
+inline
+bool
+ep_rt_config_value_get_enable_stackwalk (void)
+{
+	uint32_t value_uint32_t = 1;
+	gchar *value = g_getenv ("DOTNET_EventPipeEnableStackwalk");
+	if (!value)
+		value = g_getenv ("COMPlus_EventPipeEnableStackwalk");
+	if (value)
+		value_uint32_t = (uint32_t)atoi (value);
+	g_free (value);
+	return value_uint32_t != 0;
+}
+
 /*
  * EventPipeSampleProfiler.
  */
@@ -1034,71 +647,6 @@ ep_rt_notify_profiler_provider_created (EventPipeProvider *provider)
 {
 	;
 }
-
-/*
- * EventPipeSessionProvider.
- */
-
-EP_RT_DEFINE_LIST (session_provider_list, ep_rt_session_provider_list_t, EventPipeSessionProvider *)
-EP_RT_DEFINE_LIST_ITERATOR (session_provider_list, ep_rt_session_provider_list_t, ep_rt_session_provider_list_iterator_t, EventPipeSessionProvider *)
-
-static
-inline
-int
-compare_session_provider_name (
-	gconstpointer a,
-	gconstpointer b)
-{
-	return (a) ? ep_rt_utf8_string_compare (ep_session_provider_get_provider_name ((EventPipeSessionProvider *)a), (const ep_char8_t *)b) : 1;
-}
-
-static
-inline
-EventPipeSessionProvider *
-ep_rt_session_provider_list_find_by_name (
-	const ep_rt_session_provider_list_t *list,
-	const ep_char8_t *name)
-{
-	GSList *item = g_slist_find_custom (list->list, name, compare_session_provider_name);
-	return (item != NULL) ? (EventPipeSessionProvider *)item->data : NULL;
-}
-
-/*
- * EventPipeSequencePoint.
- */
-
-EP_RT_DEFINE_LIST (sequence_point_list, ep_rt_sequence_point_list_t, EventPipeSequencePoint *)
-EP_RT_DEFINE_LIST_ITERATOR (sequence_point_list, ep_rt_sequence_point_list_t, ep_rt_sequence_point_list_iterator_t, EventPipeSequencePoint *)
-
-/*
- * EventPipeThread.
- */
-
-EP_RT_DEFINE_LIST (thread_list, ep_rt_thread_list_t, EventPipeThread *)
-EP_RT_DEFINE_LIST_ITERATOR (thread_list, ep_rt_thread_list_t, ep_rt_thread_list_iterator_t, EventPipeThread *)
-
-EP_RT_DEFINE_ARRAY (thread_array, ep_rt_thread_array_t, ep_rt_thread_array_iterator_t, EventPipeThread *)
-EP_RT_DEFINE_LOCAL_ARRAY (thread_array, ep_rt_thread_array_t, ep_rt_thread_array_iterator_t, EventPipeThread *)
-EP_RT_DEFINE_ARRAY_ITERATOR (thread_array, ep_rt_thread_array_t, ep_rt_thread_array_iterator_t, EventPipeThread *)
-
-#undef EP_RT_DECLARE_LOCAL_THREAD_ARRAY
-#define EP_RT_DECLARE_LOCAL_THREAD_ARRAY(var_name) \
-	ep_rt_thread_array_t var_name
-
-/*
- * EventPipeThreadSessionState.
- */
-
-EP_RT_DEFINE_LIST (thread_session_state_list, ep_rt_thread_session_state_list_t, EventPipeThreadSessionState *)
-EP_RT_DEFINE_LIST_ITERATOR (thread_session_state_list, ep_rt_thread_session_state_list_t, ep_rt_thread_session_state_list_iterator_t, EventPipeThreadSessionState *)
-
-EP_RT_DEFINE_ARRAY (thread_session_state_array, ep_rt_thread_session_state_array_t, ep_rt_thread_session_state_array_iterator_t, EventPipeThreadSessionState *)
-EP_RT_DEFINE_LOCAL_ARRAY (thread_session_state_array, ep_rt_thread_session_state_array_t, ep_rt_thread_session_state_array_iterator_t, EventPipeThreadSessionState *)
-EP_RT_DEFINE_ARRAY_ITERATOR (thread_session_state_array, ep_rt_thread_session_state_array_t, ep_rt_thread_session_state_array_iterator_t, EventPipeThreadSessionState *)
-
-#undef EP_RT_DECLARE_LOCAL_THREAD_SESSION_STATE_ARRAY
-#define EP_RT_DECLARE_LOCAL_THREAD_SESSION_STATE_ARRAY(var_name) \
-	ep_rt_thread_session_state_array_t var_name
 
 /*
  * Arrays.
@@ -1274,7 +822,7 @@ ep_rt_is_running (void)
 static
 inline
 void
-ep_rt_execute_rundown (ep_rt_execution_checkpoint_array_t *execution_checkpoints)
+ep_rt_execute_rundown (dn_vector_ptr_t *execution_checkpoints)
 {
 	if (ep_rt_config_value_get_rundown () > 0) {
 		// Ask the runtime to emit rundown events.
@@ -1515,9 +1063,10 @@ uint8_t *
 ep_rt_valloc0 (size_t buffer_size)
 {
 	uint8_t *buffer = (uint8_t *)mono_valloc (NULL, buffer_size, MONO_MMAP_READ | MONO_MMAP_WRITE, MONO_MEM_ACCOUNT_PROFILER);
-
-	if (buffer)
-		memset (buffer, 0, buffer_size);
+#ifdef EP_CHECKED_BUILD
+	for (size_t i = 0; i < buffer_size; i++)
+		EP_ASSERT (buffer [i] == 0);
+#endif
 	return buffer;
 }
 
@@ -1560,15 +1109,12 @@ ep_on_error:
 	ep_exit_error_handler ();
 }
 
-EP_RT_DEFINE_ARRAY (env_array_utf16, ep_rt_env_array_utf16_t, ep_rt_env_array_utf16_iterator_t, ep_char16_t *)
-EP_RT_DEFINE_ARRAY_ITERATOR (env_array_utf16, ep_rt_env_array_utf16_t, ep_rt_env_array_utf16_iterator_t, ep_char16_t *)
-
 static
 inline
 void
-ep_rt_os_environment_get_utf16 (ep_rt_env_array_utf16_t *env_array)
+ep_rt_os_environment_get_utf16 (dn_vector_ptr_t *os_env)
 {
-	ep_rt_mono_os_environment_get_utf16 (env_array);
+	ep_rt_mono_os_environment_get_utf16 (os_env);
 }
 
 /*
@@ -2117,13 +1663,6 @@ ep_rt_mono_thread_yield (void)
 }
 
 /*
- * ThreadSequenceNumberMap.
- */
-
-EP_RT_DEFINE_HASH_MAP_REMOVE(thread_sequence_number_map, ep_rt_thread_sequence_number_hash_map_t, EventPipeThreadSessionState *, uint32_t)
-EP_RT_DEFINE_HASH_MAP_ITERATOR(thread_sequence_number_map, ep_rt_thread_sequence_number_hash_map_t, ep_rt_thread_sequence_number_hash_map_iterator_t, EventPipeThreadSessionState *, uint32_t)
-
-/*
  * Volatile.
  */
 
@@ -2439,6 +1978,26 @@ ep_rt_write_event_threadpool_io_pack (
 	intptr_t native_overlapped,
 	intptr_t overlapped,
 	uint16_t clr_instance_id);
+
+bool
+ep_rt_write_event_contention_lock_created (
+	intptr_t lock_id,
+	intptr_t associated_object_id,
+	uint16_t clr_instance_id);
+
+bool
+ep_rt_write_event_contention_start (
+	uint8_t contention_flags,
+	uint16_t clr_instance_id,
+	intptr_t lock_id,
+	intptr_t associated_object_id,
+	uint64_t lock_owner_thread_id);
+
+bool
+ep_rt_write_event_contention_stop (
+	uint8_t contention_flags,
+	uint16_t clr_instance_id,
+	double duration_ns);
 
 /*
 * EventPipe provider callbacks.

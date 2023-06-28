@@ -20,6 +20,7 @@ public class NativeRefTests : BuildTestBase
     [Theory]
     [InlineData("Debug")]
     [InlineData("Release")]
+    [ActiveIssue("https://github.com/dotnet/runtime/issues/82725")]
     public void WithNativeReference_AOTInProjectFile(string config)
     {
         string id = $"blz_nativeref_aot_{config}_{Path.GetRandomFileName()}";
@@ -32,7 +33,7 @@ public class NativeRefTests : BuildTestBase
 
         BlazorBuild(new BlazorBuildOptions(id, config, NativeFilesType.Relinked));
 
-        BlazorPublish(new BlazorBuildOptions(id, config, NativeFilesType.AOT));
+        BlazorPublish(new BlazorBuildOptions(id, config, NativeFilesType.AOT, ExpectRelinkDirWhenPublishing: true));
 
         // will relink
         BlazorBuild(new BlazorBuildOptions(id, config, NativeFilesType.Relinked));
@@ -41,6 +42,7 @@ public class NativeRefTests : BuildTestBase
     [Theory]
     [InlineData("Debug")]
     [InlineData("Release")]
+    [ActiveIssue("https://github.com/dotnet/runtime/issues/82725")]
     public void WithNativeReference_AOTOnCommandLine(string config)
     {
         string id = $"blz_nativeref_aot_{config}_{Path.GetRandomFileName()}";
@@ -53,10 +55,10 @@ public class NativeRefTests : BuildTestBase
 
         BlazorBuild(new BlazorBuildOptions(id, config, NativeFilesType.Relinked));
 
-        BlazorPublish(new BlazorBuildOptions(id, config, NativeFilesType.AOT), "-p:RunAOTCompilation=true");
+        BlazorPublish(new BlazorBuildOptions(id, config, NativeFilesType.AOT, ExpectRelinkDirWhenPublishing: true), "-p:RunAOTCompilation=true");
 
         // no aot!
-        BlazorPublish(new BlazorBuildOptions(id, config, NativeFilesType.Relinked));
+        BlazorPublish(new BlazorBuildOptions(id, config, NativeFilesType.Relinked, ExpectRelinkDirWhenPublishing: true));
     }
 }
 

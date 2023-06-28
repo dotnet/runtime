@@ -132,7 +132,7 @@ namespace System.Formats.Tar
 
         // Returns true if all the bytes in the specified array are nulls, false otherwise.
         internal static bool IsAllNullBytes(Span<byte> buffer) =>
-            buffer.IndexOfAnyExcept((byte)0) < 0;
+            !buffer.ContainsAnyExcept((byte)0);
 
         // Converts the specified number of seconds that have passed since the Unix Epoch to a DateTimeOffset.
         internal static DateTimeOffset GetDateTimeOffsetFromSecondsSinceEpoch(long secondsSinceUnixEpoch) =>
@@ -307,7 +307,7 @@ namespace System.Formats.Tar
         }
 
         // Throws if the specified entry type is not supported for the specified format.
-        internal static void ThrowIfEntryTypeNotSupported(TarEntryType entryType, TarEntryFormat archiveFormat, [CallerArgumentExpression("entryType")] string? paramName = null)
+        internal static void ThrowIfEntryTypeNotSupported(TarEntryType entryType, TarEntryFormat archiveFormat, [CallerArgumentExpression(nameof(entryType))] string? paramName = null)
         {
             switch (archiveFormat)
             {

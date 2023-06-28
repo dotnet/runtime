@@ -62,6 +62,36 @@
         <target state="translated">現在、ソース生成モードでは init-only プロパティの逆シリアル化はサポートされていません。</target>
         <note />
       </trans-unit>
+      <trans-unit id="JsonConverterAttributeInvalidTypeMessageFormat">
+        <source>The 'JsonConverterAttribute' type '{0}' specified on member '{1}' is not a converter type or does not contain an accessible parameterless constructor.</source>
+        <target state="translated">メンバー '{1}' で指定されている 'JsonConverterAttribute' 型 '{0}' はコンバーター型ではないか、アクセス可能なパラメーターなしのコンストラクターを含んでいません。</target>
+        <note />
+      </trans-unit>
+      <trans-unit id="JsonConverterAttributeInvalidTypeTitle">
+        <source>The 'JsonConverterAttribute.Type' contains an invalid or inaccessible argument.</source>
+        <target state="translated">'JsonConverterAttribute.Type' に無効な、またはアクセスできない引数が含まれています。</target>
+        <note />
+      </trans-unit>
+      <trans-unit id="JsonStringEnumConverterNotSupportedMessageFormat">
+        <source>The member '{0}' has been annotated with 'JsonStringEnumConverter' which is not supported in native AOT. Consider using the generic 'JsonStringEnumConverter&lt;TEnum&gt;' instead.</source>
+        <target state="translated">メンバー '{0}' には、ネイティブ AOT ではサポートされていない 'JsonStringEnumConverter' の注釈が付けられています。 代わりに汎用の 'JsonStringEnumConverter&lt;TEnum&gt;' を使用することを検討してください。</target>
+        <note />
+      </trans-unit>
+      <trans-unit id="JsonStringEnumConverterNotSupportedTitle">
+        <source>The non-generic 'JsonStringEnumConverter' requires dynamic code.</source>
+        <target state="translated">非ジェネリック 'JsonStringEnumConverter' には動的コードが必要です。</target>
+        <note />
+      </trans-unit>
+      <trans-unit id="JsonUnsupportedLanguageVersionMessageFormat">
+        <source>The System.Text.Json source generator is not available in C# '{0}'. Please use language version {1} or greater.</source>
+        <target state="translated">System.Text.Json ソース ジェネレーターは C# '{0}' では使用できません。言語バージョン {1} 以上を使用してください。</target>
+        <note />
+      </trans-unit>
+      <trans-unit id="JsonUnsupportedLanguageVersionTitle">
+        <source>C# language version not supported by the source generator.</source>
+        <target state="translated">ソース ジェネレーターでサポートされていない C# 言語バージョン。</target>
+        <note />
+      </trans-unit>
       <trans-unit id="MultipleJsonConstructorAttributeFormat">
         <source>Type '{0}' has multiple constructors annotated with 'JsonConstructorAttribute'.</source>
         <target state="translated">型 '{0}' には、'JsonConstructorAttribute' で注釈が付けられた複数のコンストラクターがあります。</target>

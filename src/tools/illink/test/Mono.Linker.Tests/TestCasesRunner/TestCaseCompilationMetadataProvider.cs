@@ -28,7 +28,7 @@ namespace Mono.Linker.Tests.TestCasesRunner
 		private static bool IsIgnoredByTrimmer (CustomAttribute attr)
 		{
 			var ignoredBy = attr.GetPropertyValue ("IgnoredBy");
-			return ignoredBy is null ? true : ((ProducedBy) ignoredBy).HasFlag (ProducedBy.Trimmer);
+			return ignoredBy is null ? true : ((Tool) ignoredBy).HasFlag (Tool.Trimmer);
 		}
 
 		public virtual bool IsIgnored (out string reason)
@@ -227,7 +227,7 @@ namespace Mono.Linker.Tests.TestCasesRunner
 				References = ((CustomAttributeArgument[]) ctorArguments[2].Value)?.Select (arg => arg.Value.ToString ()).ToArray (),
 				Defines = ((CustomAttributeArgument[]) ctorArguments[3].Value)?.Select (arg => arg.Value.ToString ()).ToArray (),
 				Resources = ResourcesForAttributeArgument (ctorArguments[4]),
-				AdditionalArguments = (string) ctorArguments[5].Value,
+				AdditionalArguments = ((CustomAttributeArgument[]) ctorArguments[5].Value)?.Select (arg => arg.Value.ToString ()).ToArray (),
 				CompilerToUse = (string) ctorArguments[6].Value,
 				AddAsReference = ctorArguments.Count >= 8 ? (bool) ctorArguments[7].Value : true,
 				RemoveFromLinkerInput = ctorArguments.Count >= 9 ? (bool) ctorArguments[8].Value : false,

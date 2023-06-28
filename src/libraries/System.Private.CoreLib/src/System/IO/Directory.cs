@@ -68,9 +68,9 @@ namespace System.IO
             return new DirectoryInfo(path, isNormalized: true);
         }
 
-        private static void EnsureNoDirectorySeparators(string? value, [CallerArgumentExpression("value")] string? paramName = null)
+        private static void EnsureNoDirectorySeparators(string? value, [CallerArgumentExpression(nameof(value))] string? paramName = null)
         {
-            if (value is not null && value.AsSpan().IndexOfAny(PathInternal.DirectorySeparators) >= 0)
+            if (value is not null && value.AsSpan().ContainsAny(PathInternal.DirectorySeparators))
             {
                 throw new ArgumentException(SR.Argument_DirectorySeparatorInvalid, paramName);
             }

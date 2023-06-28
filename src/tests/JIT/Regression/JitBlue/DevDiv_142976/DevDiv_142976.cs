@@ -4,6 +4,7 @@
 
 using System;
 using System.Runtime.CompilerServices;
+using Xunit;
 
 // This test case is meant to test an optimization in morph that
 // transforms helper call JIT_Stelem_Ref(a, null, i) to a[i] = null,
@@ -16,13 +17,13 @@ using System.Runtime.CompilerServices;
 public class DevDiv_142976
 {
     [MethodImpl(MethodImplOptions.NoInlining)]
-    public static String Foo()
+    internal static String Foo()
     {
         return null;
     }
 
     [MethodImpl(MethodImplOptions.NoInlining)]
-    public static void Bar()
+    internal static void Bar()
     {
         String[] args = new String[10];
         if (args != null) 
@@ -39,7 +40,8 @@ public class DevDiv_142976
         }
     }
 
-    public static int Main()
+    [Fact]
+    public static int TestEntryPoint()
     {
         try
         {

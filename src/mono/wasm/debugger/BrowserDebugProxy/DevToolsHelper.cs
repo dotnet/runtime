@@ -2,6 +2,7 @@
 // The .NET Foundation licenses this file to you under the MIT license.
 
 using System;
+using System.Collections.Concurrent;
 using System.Collections.Generic;
 using System.IO;
 using System.Linq;
@@ -404,6 +405,7 @@ namespace Microsoft.WebAssembly.Diagnostics
             AuxData = auxData;
             SdbAgent = sdbAgent;
             PauseOnExceptions = pauseOnExceptions;
+            Destroyed = false;
         }
         public ExecutionContext CreateChildAsyncExecutionContext(SessionId sessionId)
             => new ExecutionContext(null, Id, AuxData, PauseOnExceptions)
@@ -456,6 +458,8 @@ namespace Microsoft.WebAssembly.Diagnostics
         internal int TempBreakpointForSetNextIP { get; set; }
         internal bool FirstBreakpoint { get; set; }
 
+        internal bool Destroyed { get; set; }
+
         public DebugStore Store
         {
             get
@@ -501,5 +505,70 @@ namespace Microsoft.WebAssembly.Diagnostics
         public PerScopeCache()
         {
         }
+    }
+
+    internal sealed class ConcurrentExecutionContextDictionary
+    {
+        private ConcurrentDictionary<SessionId, ConcurrentBag<ExecutionContext>> contexts = new ();
+        public ExecutionContext GetCurrentContext(SessionId sessionId)
+            => TryGetCurrentExecutionContextValue(sessionId, out ExecutionContext context)
+                ? context
+                : throw new KeyNotFoundException($"No execution context found for session {sessionId}");
+
+        public bool TryGetCurrentExecutionContextValue(SessionId id, out ExecutionContext executionContext)
+        {
+            executionContext = null;
+            if (!contexts.TryGetValue(id, out ConcurrentBag<ExecutionContext> contextBag))
+                return false;
+            if (contextBag.IsEmpty)
+                return false;
+            executionContext = contextBag.Where(context => context.Id == contextBag.Where(context => context.Destroyed == false).Max(context => context.Id)).FirstOrDefault();
+            return executionContext != null;
+        }
+
+        public void OnDefaultContextUpdate(SessionId sessionId, ExecutionContext newContext)
+        {
+            if (TryGetAndAddContext(sessionId, newContext, out ExecutionContext previousContext))
+            {
+                foreach (KeyValuePair<string, BreakpointRequest> kvp in previousContext.BreakpointRequests)
+                {
+                    newContext.BreakpointRequests[kvp.Key] = kvp.Value.Clone();
+                }
+                newContext.PauseOnExceptions = previousContext.PauseOnExceptions;
+            }
+        }
+
+        public bool TryGetAndAddContext(SessionId sessionId, ExecutionContext newExecutionContext, out ExecutionContext previousExecutionContext)
+        {
+            bool hasExisting = TryGetCurrentExecutionContextValue(sessionId, out previousExecutionContext);
+            ConcurrentBag<ExecutionContext> bag = contexts.GetOrAdd(sessionId, _ => new ConcurrentBag<ExecutionContext>());
+            bag.Add(newExecutionContext);
+            return hasExisting;
+        }
+
+        public void CreateWorkerExecutionContext(SessionId workerSessionId, SessionId originSessionId, ILogger logger)
+        {
+            if (!TryGetCurrentExecutionContextValue(originSessionId, out ExecutionContext context))
+            {
+                logger.LogDebug($"Origin sessionId does not exist - {originSessionId}");
+                return;
+            }
+            if (contexts.ContainsKey(workerSessionId))
+            {
+                logger.LogDebug($"Worker sessionId already exists - {originSessionId}");
+                return;
+            }
+            contexts[workerSessionId] = new();
+            contexts[workerSessionId].Add(context.CreateChildAsyncExecutionContext(workerSessionId));
+        }
+
+        public void DestroyContext(SessionId sessionId, int id)
+        {
+            if (!contexts.TryGetValue(sessionId, out ConcurrentBag<ExecutionContext> contextBag))
+                return;
+            foreach (ExecutionContext context in contextBag.Where(x => x.Id == id).ToList())
+                context.Destroyed = true;
+        }
+        public bool ContainsKey(SessionId sessionId) => contexts.ContainsKey(sessionId);
     }
 }

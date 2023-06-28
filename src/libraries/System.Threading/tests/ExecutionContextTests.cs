@@ -96,9 +96,18 @@ namespace System.Threading.Tests
                     () => ExecutionContext.SuppressFlow(),
                     () => ExecutionContext.RestoreFlow());
 
+                Assert.False(ExecutionContext.IsFlowSuppressed());
                 Assert.Throws<InvalidOperationException>(() => ExecutionContext.RestoreFlow());
+
+                Assert.False(ExecutionContext.IsFlowSuppressed());
                 asyncFlowControl = ExecutionContext.SuppressFlow();
-                Assert.Throws<InvalidOperationException>(() => ExecutionContext.SuppressFlow());
+                Assert.True(ExecutionContext.IsFlowSuppressed());
+
+                Assert.Equal(default, ExecutionContext.SuppressFlow());
+                Assert.True(ExecutionContext.IsFlowSuppressed());
+
+                ExecutionContext.SuppressFlow().Dispose();
+                Assert.True(ExecutionContext.IsFlowSuppressed());
 
                 ThreadTestHelpers.RunTestInBackgroundThread(() =>
                 {
@@ -109,8 +118,9 @@ namespace System.Threading.Tests
                 });
 
                 asyncFlowControl.Undo();
-                Assert.Throws<InvalidOperationException>(() => asyncFlowControl.Undo());
-                Assert.Throws<InvalidOperationException>(() => asyncFlowControl.Dispose());
+
+                asyncFlowControl.Undo();
+                asyncFlowControl.Dispose();
 
                 // Changing an async local value does not prevent undoing a flow-suppressed execution context. In .NET Core, the
                 // execution context is immutable, so changing an async local value changes the execution context instance,

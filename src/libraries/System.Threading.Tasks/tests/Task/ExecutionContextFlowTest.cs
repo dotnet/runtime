@@ -16,16 +16,11 @@ namespace System.Threading.Tasks.Tests
         public void SuppressFlow_TaskCapturesContextAccordingly(bool suppressFlow)
         {
             Assert.False(ExecutionContext.IsFlowSuppressed());
-            if (suppressFlow) ExecutionContext.SuppressFlow();
-            try
+            using (suppressFlow ? ExecutionContext.SuppressFlow() : default)
             {
                 var asyncLocal = new AsyncLocal<int>();
                 Task.Factory.StartNew(() => asyncLocal.Value = 42, CancellationToken.None, TaskCreationOptions.None, new InlineTaskScheduler()).Wait();
                 Assert.Equal(suppressFlow ? 42 : 0, asyncLocal.Value);
-            }
-            finally
-            {
-                if (suppressFlow) ExecutionContext.RestoreFlow();
             }
         }
 

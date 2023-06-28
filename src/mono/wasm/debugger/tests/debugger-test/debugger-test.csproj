@@ -8,7 +8,7 @@
     <WasmGenerateAppBundle>true</WasmGenerateAppBundle>
     <OutputType>library</OutputType>
     <WasmEmitSymbolMap>true</WasmEmitSymbolMap>
-    <_WasmPThreadPoolSize Condition="'$(WasmEnableThreads)'=='true'">10</_WasmPThreadPoolSize>
+    <_WasmPThreadPoolSize Condition="'$(MonoWasmBuildVariant)' == 'multithread'">10</_WasmPThreadPoolSize>
     <CopyLocalLockFileAssemblies>true</CopyLocalLockFileAssemblies>
   </PropertyGroup>
   <ItemGroup>
@@ -19,7 +19,6 @@
   <ItemGroup>
     <WasmExtraFilesToDeploy Include="debugger-driver.html" />
     <WasmExtraFilesToDeploy Include="non-wasm-page.html" />
-    <WasmExtraFilesToDeploy Include="non-wasm-page-forcing-runtime-ready.html" />
     <WasmExtraFilesToDeploy Include="wasm-page-without-assets.html" />
     <WasmExtraFilesToDeploy Include="other.js" />
     <WasmExtraFilesToDeploy Include="weather.json" />
@@ -57,7 +56,6 @@
     <PropertyGroup>
       <EnableDefaultWasmAssembliesToBundle>false</EnableDefaultWasmAssembliesToBundle>
       <WasmAppDir>$(AppDir)</WasmAppDir>
-      <WasmMainJSPath>debugger-main.js</WasmMainJSPath>
       <!-- -1 enabled debugging and disables debug logging. -->
       <WasmDebugLevel Condition="'$(WasmDebugLevel)'==''">-1</WasmDebugLevel>
       <WasmResolveAssembliesBeforeBuild>true</WasmResolveAssembliesBeforeBuild>
@@ -78,6 +76,7 @@
       <!-- Assemblies only dynamically loaded -->
       <WasmFilesToIncludeInFileSystem Include="$(OutDir)\%(_AssemblyForDynamicLoading.Identity).dll" />
 
+      <WasmExtraFilesToDeploy Include="debugger-main.js" />
       <WasmExtraFilesToDeploy Include="$(OutDir)\%(_AssemblyForDynamicLoading.Identity).*" />
       <WasmExtraFilesToDeploy Include="$(OutDir)\lazy-debugger-test-embedded.*" />
       <WasmExtraFilesToDeploy Include="@(ReferenceCopyLocalPaths)" />
@@ -116,8 +115,6 @@
   </Target>
 
   <ItemGroup>
-    <ProjectReference Include="$(LibrariesProjectRoot)System.Runtime.InteropServices\gen\Microsoft.Interop.SourceGeneration\Microsoft.Interop.SourceGeneration.csproj" OutputItemType="Analyzer" ReferenceOutputAssembly="false" />
-    <ProjectReference Include="$(LibrariesProjectRoot)System.Runtime.InteropServices.JavaScript\gen\JSImportGenerator\JSImportGenerator.csproj" OutputItemType="Analyzer" ReferenceOutputAssembly="false" />
     <ProjectReference Include="$(LibrariesProjectRoot)System.Runtime.InteropServices.JavaScript\src\System.Runtime.InteropServices.JavaScript.csproj" SkipUseReferenceAssembly="true"/>
   </ItemGroup>
 

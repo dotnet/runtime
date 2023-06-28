@@ -4,6 +4,7 @@
 using System;
 using System.Runtime.CompilerServices;
 using System.Threading;
+using Xunit;
 
 public static class ConstStringConstIndexOptimizations
 {
@@ -101,7 +102,8 @@ public static class ConstStringConstIndexOptimizations
             throw new InvalidOperationException();
     }
 
-    static int Main()
+    [Fact]
+    public static int TestEntryPoint()
     {
         for (int i = 0; i < 100; i++)
         {

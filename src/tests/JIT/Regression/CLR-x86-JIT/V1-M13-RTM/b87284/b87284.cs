@@ -3,6 +3,7 @@
 //
 
 using System;
+using Xunit;
 public class test1
 {
     public struct VT
@@ -17,7 +18,8 @@ public class test1
         double retval = Convert.ToDouble(Convert.ToInt16(Convert.ToInt16(a4 / Convert.ToSingle(-1.582702F)) % Convert.ToInt16(vt.a1 * Convert.ToSingle(Convert.ToInt64(16L / 4L) * 0.12312290072441101))) / ((Convert.ToInt32(arr3d[4, 0, 3] + Convert.ToSingle(4UL * vt.a5)) / (vt.a5 + Convert.ToDouble(Convert.ToUInt64(4UL - 0UL) * -62.99951171875))) + (a6 - (a6 + arr3d[4, 0, 3] / -2.68274906263726E-07))));
         return retval;
     }
-    public static int Main()
+    [Fact]
+    public static int TestEntryPoint()
     {
         VT vt = new VT();
         vt.a1 = 23840;

@@ -224,13 +224,13 @@ namespace System.Net.Mime
                 int offset = 0;
 
                 _mediaType = MailBnfHelper.ReadToken(_type, ref offset);
-                if (_mediaType == null || _mediaType.Length == 0 || offset >= _type.Length || _type[offset++] != '/')
+                if (string.IsNullOrEmpty(_mediaType) || offset >= _type.Length || _type[offset++] != '/')
                 {
                     throw new FormatException(SR.ContentTypeInvalid);
                 }
 
                 _subType = MailBnfHelper.ReadToken(_type, ref offset);
-                if (_subType == null || _subType.Length == 0)
+                if (string.IsNullOrEmpty(_subType))
                 {
                     throw new FormatException(SR.ContentTypeInvalid);
                 }
@@ -249,7 +249,7 @@ namespace System.Net.Mime
 
                     string? paramAttribute = MailBnfHelper.ReadParameterAttribute(_type, ref offset);
 
-                    if (paramAttribute == null || paramAttribute.Length == 0)
+                    if (string.IsNullOrEmpty(paramAttribute))
                     {
                         throw new FormatException(SR.ContentTypeInvalid);
                     }

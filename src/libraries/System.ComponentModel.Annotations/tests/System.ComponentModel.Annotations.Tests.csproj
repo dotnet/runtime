@@ -1,12 +1,15 @@
 <Project Sdk="Microsoft.NET.Sdk">
   <PropertyGroup>
     <IncludeRemoteExecutor>true</IncludeRemoteExecutor>
-    <TargetFrameworks>$(NetCoreAppCurrent);net48</TargetFrameworks>
+    <TargetFramework>$(NetCoreAppCurrent)</TargetFramework>
     <Nullable>disable</Nullable> <!-- Disable nullable attributes as some tests depend on them not being present. -->
     <NoWarn>$(NoWarn);nullable</NoWarn>
   </PropertyGroup>
   <ItemGroup>
+    <Compile Include="System\ComponentModel\DataAnnotations\AllowedValuesAttributeTests.cs" />
     <Compile Include="System\ComponentModel\DataAnnotations\AssociatedMetadataTypeTypeDescriptionProviderTests.cs" />
+    <Compile Include="System\ComponentModel\DataAnnotations\Base64StringAttributeTests.cs" />
+    <Compile Include="System\ComponentModel\DataAnnotations\LengthAttributeTests.cs" />
     <Compile Include="System\ComponentModel\DataAnnotations\UIHintAttributeTests.cs" />
     <Compile Include="System\ComponentModel\DataAnnotations\FilterUIHintAttributeTests.cs" />
     <Compile Include="System\ComponentModel\DataAnnotations\DisplayAttributeTests.cs" />
@@ -44,8 +47,6 @@
     <Compile Include="System\ComponentModel\DataAnnotations\ValidationExceptionTests.cs" />
     <Compile Include="System\ComponentModel\DataAnnotations\ValidationResultTests.cs" />
     <Compile Include="System\ComponentModel\DataAnnotations\ValidatorTests.cs" />
-  </ItemGroup>
-  <ItemGroup Condition="'$(TargetFramework)' == 'net48'">
-    <Reference Include="System.ComponentModel.DataAnnotations" />
+    <Compile Include="System\ComponentModel\DataAnnotations\DeniedValuesAttributeTests.cs" />
   </ItemGroup>
 </Project>

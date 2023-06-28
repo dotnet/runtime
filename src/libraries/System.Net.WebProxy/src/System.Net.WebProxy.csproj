@@ -6,6 +6,7 @@
   <ItemGroup>
     <Compile Include="System\Net\IWebProxyScript.cs" />
     <Compile Include="System\Net\WebProxy.cs" />
+    <Compile Include="$(CommonPath)System\Obsoletions.cs" Link="Common\System\Obsoletions.cs" />
     <Compile Condition="'$(TargetPlatformIdentifier)' == 'browser'" Include="System\Net\WebProxy.Browser.cs" />
     <Compile Condition="'$(TargetPlatformIdentifier)' != 'browser'" Include="System\Net\WebProxy.NonBrowser.cs" />
   </ItemGroup>

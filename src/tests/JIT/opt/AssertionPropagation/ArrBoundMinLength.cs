@@ -3,14 +3,16 @@
 
 using System;
 using System.Runtime.CompilerServices;
+using Xunit;
 
-class Program
+public class Program
 {
     private static int returnCode = 100;
 
     private static int[] arr = new int[6];
 
-    public static int Main()
+    [Fact]
+    public static int TestEntryPoint()
     {
         RunTestThrows(Tests.GreaterOutOfBound);
         RunTestThrows(Tests.GreaterEqualOutOfBound);

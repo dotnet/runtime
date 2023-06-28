@@ -28,10 +28,7 @@ namespace System.Linq
             public List<TResult> ToList()
             {
                 List<TResult> list = new List<TResult>(_count);
-                for (int i = 0; i != _count; ++i)
-                {
-                    list.Add(_current);
-                }
+                SetCountAndGetSpan(list, _count).Fill(_current);
 
                 return list;
             }

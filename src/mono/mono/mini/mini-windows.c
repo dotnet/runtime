@@ -283,7 +283,9 @@ thread_timer_expired (HANDLE thread)
 	if (GetThreadContext (thread, &context)) {
 		guchar *ip;
 
-#ifdef _WIN64
+#ifdef _ARM64_
+		ip = (guchar *) context.Pc;
+#elif _WIN64
 		ip = (guchar *) context.Rip;
 #else
 		ip = (guchar *) context.Eip;

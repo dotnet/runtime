@@ -7,7 +7,7 @@ using Microsoft.Interop;
 using Microsoft.Interop.Analyzers;
 using Xunit;
 
-using VerifyCS = LibraryImportGenerator.UnitTests.Verifiers.CSharpAnalyzerVerifier<Microsoft.Interop.Analyzers.GeneratedComInterfaceAttributeAnalyzer>;
+using VerifyCS = Microsoft.Interop.UnitTests.Verifiers.CSharpAnalyzerVerifier<Microsoft.Interop.Analyzers.GeneratedComInterfaceAttributeAnalyzer>;
 
 namespace ComInterfaceGenerator.Unit.Tests
 {
@@ -34,12 +34,6 @@ namespace ComInterfaceGenerator.Unit.Tests
                     {
                         void Bar() {}
                     }
-
-                    public unsafe partial class MyComWrappers : GeneratedComWrappersBase
-                    {
-                        protected override ComInterfaceEntry* ComputeVtables(object obj, CreateComInterfaceFlags flags, out int count) {count = 0; return null;}
-                    }
-
                     """;
                 await VerifyCS.VerifyAnalyzerAsync(_usings + snippet);
             }
@@ -54,12 +48,6 @@ namespace ComInterfaceGenerator.Unit.Tests
                     {
                         void Bar() {}
                     }
-
-                    public unsafe partial class MyComWrappers : GeneratedComWrappersBase
-                    {
-                        protected override ComInterfaceEntry* ComputeVtables(object obj, CreateComInterfaceFlags flags, out int count) {count = 0; return null;}
-                    }
-
                     """;
                 await VerifyCS.VerifyAnalyzerAsync(_usings + snippet);
             }
@@ -75,13 +63,6 @@ namespace ComInterfaceGenerator.Unit.Tests
                 {
                     void Bar() {}
                 }
-
-                
-                public unsafe partial class MyComWrappers : GeneratedComWrappersBase
-                {
-                    protected override ComInterfaceEntry* ComputeVtables(object obj, CreateComInterfaceFlags flags, out int count) {count = 0; return null;}
-                }
-
                 """;
                 await VerifyCS.VerifyAnalyzerAsync(_usings + snippet);
             }
@@ -97,12 +78,6 @@ namespace ComInterfaceGenerator.Unit.Tests
                 {
                     void Bar() {}
                 }
-
-                public unsafe partial class MyComWrappers : GeneratedComWrappersBase
-                {
-                    protected override ComInterfaceEntry* ComputeVtables(object obj, CreateComInterfaceFlags flags, out int count) {count = 0; return null;}
-                }
-
                 """;
                 await VerifyCS.VerifyAnalyzerAsync(_usings + snippet);
             }
@@ -118,12 +93,6 @@ namespace ComInterfaceGenerator.Unit.Tests
                 {
                     void Bar() {}
                 }
-
-                public unsafe partial class MyComWrappers : GeneratedComWrappersBase
-                {
-                    protected override ComInterfaceEntry* ComputeVtables(object obj, CreateComInterfaceFlags flags, out int count) {count = 0; return null;}
-                }
-
                 """;
                 await VerifyCS.VerifyAnalyzerAsync(_usings + snippet);
             }
@@ -139,12 +108,6 @@ namespace ComInterfaceGenerator.Unit.Tests
                 {
                     void Bar() {}
                 }
-
-                public unsafe partial class MyComWrappers : GeneratedComWrappersBase
-                {
-                    protected override ComInterfaceEntry* ComputeVtables(object obj, CreateComInterfaceFlags flags, out int count) {count = 0; return null;}
-                }
-
                 """;
                 await VerifyCS.VerifyAnalyzerAsync(_usings + snippet);
             }
@@ -160,12 +123,6 @@ namespace ComInterfaceGenerator.Unit.Tests
                 {
                     void Bar() {}
                 }
-
-                public unsafe partial class MyComWrappers : GeneratedComWrappersBase
-                {
-                    protected override ComInterfaceEntry* ComputeVtables(object obj, CreateComInterfaceFlags flags, out int count) {count = 0; return null;}
-                }
-
                 """;
                 await VerifyCS.VerifyAnalyzerAsync(_usings + snippet);
             }
@@ -181,12 +138,6 @@ namespace ComInterfaceGenerator.Unit.Tests
                 {
                     void Bar() {}
                 }
-
-                public unsafe partial class MyComWrappers : GeneratedComWrappersBase
-                {
-                    protected override ComInterfaceEntry* ComputeVtables(object obj, CreateComInterfaceFlags flags, out int count) {count = 0; return null;}
-                }
-
                 """;
                 await VerifyCS.VerifyAnalyzerAsync(_usings + snippet);
             }
@@ -201,17 +152,11 @@ namespace ComInterfaceGenerator.Unit.Tests
                 string snippet =
                     $$$"""
 
-                [GeneratedComInterface(typeof(MyComWrappers))]
+                [GeneratedComInterface]
                 interface IFoo
                 {
                     void Bar() {}
                 }
-
-                public unsafe partial class MyComWrappers : GeneratedComWrappersBase
-                {
-                    protected override ComInterfaceEntry* ComputeVtables(object obj, CreateComInterfaceFlags flags, out int count) {count = 0; return null;}
-                }
-
                 """;
                 await VerifyCS.VerifyAnalyzerAsync(_usings + snippet);
             }
@@ -227,17 +172,11 @@ namespace ComInterfaceGenerator.Unit.Tests
                     $$$"""
 
                 [InterfaceTypeAttribute(ComInterfaceType.InterfaceIsIUnknown)]
-                [GeneratedComInterface(typeof(MyComWrappers))]
+                [GeneratedComInterface]
                 interface IFoo
                 {
                     void Bar() {}
                 }
-
-                public unsafe partial class MyComWrappers : GeneratedComWrappersBase
-                {
-                    protected override ComInterfaceEntry* ComputeVtables(object obj, CreateComInterfaceFlags flags, out int count) {count = 0; return null;}
-                }
-
                 """;
                 await VerifyCS.VerifyAnalyzerAsync(_usings + snippet);
             }
@@ -249,17 +188,11 @@ namespace ComInterfaceGenerator.Unit.Tests
                     $$$"""
 
                 [InterfaceTypeAttribute((short)1)]
-                [GeneratedComInterface(typeof(MyComWrappers))]
+                [GeneratedComInterface]
                 interface IFoo
                 {
                     void Bar() {}
                 }
-
-                public unsafe partial class MyComWrappers : GeneratedComWrappersBase
-                {
-                    protected override ComInterfaceEntry* ComputeVtables(object obj, CreateComInterfaceFlags flags, out int count) {count = 0; return null;}
-                }
-
                 """;
                 await VerifyCS.VerifyAnalyzerAsync(_usings + snippet);
             }
@@ -271,23 +204,17 @@ namespace ComInterfaceGenerator.Unit.Tests
                     $$$"""
 
                 [{|#0:InterfaceTypeAttribute(ComInterfaceType.InterfaceIsIDispatch)|}]
-                [GeneratedComInterface(typeof(MyComWrappers))]
+                [GeneratedComInterface]
                 interface IFoo
                 {
                     void Bar() {}
                 }
-
-                public unsafe partial class MyComWrappers : GeneratedComWrappersBase
-                {
-                    protected override ComInterfaceEntry* ComputeVtables(object obj, CreateComInterfaceFlags flags, out int count) {count = 0; return null;}
-                }
-
                 """;
                 await VerifyCS.VerifyAnalyzerAsync(
                     _usings + snippet,
-                    VerifyCS.Diagnostic(AnalyzerDiagnostics.InterfaceTypeNotSupported)
+                    VerifyCS.Diagnostic(GeneratorDiagnostics.InterfaceTypeNotSupported)
                         .WithLocation(0)
-                        .WithArguments(TypeNames.ComInterfaceTypeAttribute + "." + nameof(ComInterfaceType.InterfaceIsIDispatch)));
+                        .WithArguments(TypeNames.ComInterfaceType + "." + nameof(ComInterfaceType.InterfaceIsIDispatch)));
             }
 
             [Fact]
@@ -297,21 +224,15 @@ namespace ComInterfaceGenerator.Unit.Tests
                     $$$"""
 
                 [{|#0:InterfaceTypeAttribute((short)2)|}]
-                [GeneratedComInterface(typeof(MyComWrappers))]
+                [GeneratedComInterface]
                 interface IFoo
                 {
                     void Bar() {}
                 }
-
-                public unsafe partial class MyComWrappers : GeneratedComWrappersBase
-                {
-                    protected override ComInterfaceEntry* ComputeVtables(object obj, CreateComInterfaceFlags flags, out int count) {count = 0; return null;}
-                }
-
                 """;
                 await VerifyCS.VerifyAnalyzerAsync(
                     _usings + snippet,
-                    VerifyCS.Diagnostic(AnalyzerDiagnostics.InterfaceTypeNotSupported)
+                    VerifyCS.Diagnostic(GeneratorDiagnostics.InterfaceTypeNotSupported)
                         .WithLocation(0)
                         .WithArguments("2"));
             }
@@ -323,23 +244,17 @@ namespace ComInterfaceGenerator.Unit.Tests
                     $$$"""
 
                 [{|#0:InterfaceTypeAttribute(ComInterfaceType.InterfaceIsIInspectable)|}]
-                [GeneratedComInterface(typeof(MyComWrappers))]
+                [GeneratedComInterface]
                 interface IFoo
                 {
                     void Bar() {}
                 }
-
-                public unsafe partial class MyComWrappers : GeneratedComWrappersBase
-                {
-                    protected override ComInterfaceEntry* ComputeVtables(object obj, CreateComInterfaceFlags flags, out int count) {count = 0; return null;}
-                }
-
                 """;
                 await VerifyCS.VerifyAnalyzerAsync(
                     _usings + snippet,
-                    VerifyCS.Diagnostic(AnalyzerDiagnostics.InterfaceTypeNotSupported)
+                    VerifyCS.Diagnostic(GeneratorDiagnostics.InterfaceTypeNotSupported)
                         .WithLocation(0)
-                        .WithArguments(TypeNames.ComInterfaceTypeAttribute + "." + nameof(ComInterfaceType.InterfaceIsIInspectable)));
+                        .WithArguments(TypeNames.ComInterfaceType + "." + nameof(ComInterfaceType.InterfaceIsIInspectable)));
             }
 
             [Fact]
@@ -349,21 +264,15 @@ namespace ComInterfaceGenerator.Unit.Tests
                     $$$"""
 
                 [{|#0:InterfaceTypeAttribute((short)3)|}]
-                [GeneratedComInterface(typeof(MyComWrappers))]
+                [GeneratedComInterface]
                 interface IFoo
                 {
                     void Bar() {}
                 }
-
-                public unsafe partial class MyComWrappers : GeneratedComWrappersBase
-                {
-                    protected override ComInterfaceEntry* ComputeVtables(object obj, CreateComInterfaceFlags flags, out int count) {count = 0; return null;}
-                }
-
                 """;
                 await VerifyCS.VerifyAnalyzerAsync(
                     _usings + snippet,
-                    VerifyCS.Diagnostic(AnalyzerDiagnostics.InterfaceTypeNotSupported)
+                    VerifyCS.Diagnostic(GeneratorDiagnostics.InterfaceTypeNotSupported)
                         .WithLocation(0)
                         .WithArguments("3"));
             }
@@ -375,23 +284,17 @@ namespace ComInterfaceGenerator.Unit.Tests
                     $$$"""
 
                 [{|#0:InterfaceTypeAttribute(ComInterfaceType.InterfaceIsDual)|}]
-                [GeneratedComInterface(typeof(MyComWrappers))]
+                [GeneratedComInterface]
                 interface IFoo
                 {
                     void Bar() {}
                 }
-
-                public unsafe partial class MyComWrappers : GeneratedComWrappersBase
-                {
-                    protected override ComInterfaceEntry* ComputeVtables(object obj, CreateComInterfaceFlags flags, out int count) {count = 0; return null;}
-                }
-
                 """;
                 await VerifyCS.VerifyAnalyzerAsync(
                     _usings + snippet,
-                    VerifyCS.Diagnostic(AnalyzerDiagnostics.InterfaceTypeNotSupported)
+                    VerifyCS.Diagnostic(GeneratorDiagnostics.InterfaceTypeNotSupported)
                         .WithLocation(0)
-                        .WithArguments(TypeNames.ComInterfaceTypeAttribute + "." + nameof(ComInterfaceType.InterfaceIsDual)));
+                        .WithArguments(TypeNames.ComInterfaceType + "." + nameof(ComInterfaceType.InterfaceIsDual)));
             }
 
             [Fact]
@@ -401,21 +304,15 @@ namespace ComInterfaceGenerator.Unit.Tests
                     $$$"""
 
                 [{|#0:InterfaceTypeAttribute((short)0)|}]
-                [GeneratedComInterface(typeof(MyComWrappers))]
+                [GeneratedComInterface]
                 interface IFoo
                 {
                     void Bar() {}
                 }
-
-                public unsafe partial class MyComWrappers : GeneratedComWrappersBase
-                {
-                    protected override ComInterfaceEntry* ComputeVtables(object obj, CreateComInterfaceFlags flags, out int count) {count = 0; return null;}
-                }
-
                 """;
                 await VerifyCS.VerifyAnalyzerAsync(
                     _usings + snippet,
-                    VerifyCS.Diagnostic(AnalyzerDiagnostics.InterfaceTypeNotSupported)
+                    VerifyCS.Diagnostic(GeneratorDiagnostics.InterfaceTypeNotSupported)
                         .WithLocation(0)
                         .WithArguments("0"));
             }
@@ -436,14 +333,8 @@ namespace ComInterfaceGenerator.Unit.Tests
                     void Bar() {}
                 }
 
-                [GeneratedComInterface(typeof(MyComWrappers))]
+                [GeneratedComInterface]
                 partial interface IFoo { }
-
-                public unsafe partial class MyComWrappers : GeneratedComWrappersBase
-                {
-                    protected override ComInterfaceEntry* ComputeVtables(object obj, CreateComInterfaceFlags flags, out int count) {count = 0; return null;}
-                }
-
                 """;
                 await VerifyCS.VerifyAnalyzerAsync(_usings + snippet);
             }
@@ -460,14 +351,8 @@ namespace ComInterfaceGenerator.Unit.Tests
                     void Bar() {}
                 }
 
-                [GeneratedComInterface(typeof(MyComWrappers))]
+                [GeneratedComInterface]
                 partial interface IFoo { }
-
-                public unsafe partial class MyComWrappers : GeneratedComWrappersBase
-                {
-                    protected override ComInterfaceEntry* ComputeVtables(object obj, CreateComInterfaceFlags flags, out int count) {count = 0; return null;}
-                }
-
                 """;
                 await VerifyCS.VerifyAnalyzerAsync(_usings + snippet);
             }
@@ -484,20 +369,14 @@ namespace ComInterfaceGenerator.Unit.Tests
                     void Bar() {}
                 }
 
-                [GeneratedComInterface(typeof(MyComWrappers))]
+                [GeneratedComInterface]
                 partial interface IFoo { }
-
-                public unsafe partial class MyComWrappers : GeneratedComWrappersBase
-                {
-                    protected override ComInterfaceEntry* ComputeVtables(object obj, CreateComInterfaceFlags flags, out int count) {count = 0; return null;}
-                }
-
                 """;
                 await VerifyCS.VerifyAnalyzerAsync(
                     _usings + snippet,
-                    VerifyCS.Diagnostic(AnalyzerDiagnostics.InterfaceTypeNotSupported)
+                    VerifyCS.Diagnostic(GeneratorDiagnostics.InterfaceTypeNotSupported)
                         .WithLocation(0)
-                        .WithArguments(TypeNames.ComInterfaceTypeAttribute + "." + nameof(ComInterfaceType.InterfaceIsIDispatch)));
+                        .WithArguments(TypeNames.ComInterfaceType + "." + nameof(ComInterfaceType.InterfaceIsIDispatch)));
             }
 
             [Fact]
@@ -512,18 +391,12 @@ namespace ComInterfaceGenerator.Unit.Tests
                     void Bar() {}
                 }
 
-                [GeneratedComInterface(typeof(MyComWrappers))]
+                [GeneratedComInterface]
                 partial interface IFoo { }
-
-                public unsafe partial class MyComWrappers : GeneratedComWrappersBase
-                {
-                    protected override ComInterfaceEntry* ComputeVtables(object obj, CreateComInterfaceFlags flags, out int count) {count = 0; return null;}
-                }
-
                 """;
                 await VerifyCS.VerifyAnalyzerAsync(
                     _usings + snippet,
-                    VerifyCS.Diagnostic(AnalyzerDiagnostics.InterfaceTypeNotSupported)
+                    VerifyCS.Diagnostic(GeneratorDiagnostics.InterfaceTypeNotSupported)
                         .WithLocation(0)
                         .WithArguments("2"));
             }
@@ -540,20 +413,14 @@ namespace ComInterfaceGenerator.Unit.Tests
                     void Bar() {}
                 }
 
-                [GeneratedComInterface(typeof(MyComWrappers))]
+                [GeneratedComInterface]
                 partial interface IFoo { }
-
-                public unsafe partial class MyComWrappers : GeneratedComWrappersBase
-                {
-                    protected override ComInterfaceEntry* ComputeVtables(object obj, CreateComInterfaceFlags flags, out int count) {count = 0; return null;}
-                }
-
                 """;
                 await VerifyCS.VerifyAnalyzerAsync(
                     _usings + snippet,
-                    VerifyCS.Diagnostic(AnalyzerDiagnostics.InterfaceTypeNotSupported)
+                    VerifyCS.Diagnostic(GeneratorDiagnostics.InterfaceTypeNotSupported)
                         .WithLocation(0)
-                        .WithArguments(TypeNames.ComInterfaceTypeAttribute + "." + nameof(ComInterfaceType.InterfaceIsIInspectable)));
+                        .WithArguments(TypeNames.ComInterfaceType + "." + nameof(ComInterfaceType.InterfaceIsIInspectable)));
             }
 
             [Fact]
@@ -568,18 +435,12 @@ namespace ComInterfaceGenerator.Unit.Tests
                     void Bar() {}
                 }
 
-                [GeneratedComInterface(typeof(MyComWrappers))]
+                [GeneratedComInterface]
                 partial interface IFoo { }
-
-                public unsafe partial class MyComWrappers : GeneratedComWrappersBase
-                {
-                    protected override ComInterfaceEntry* ComputeVtables(object obj, CreateComInterfaceFlags flags, out int count) {count = 0; return null;}
-                }
-
                 """;
                 await VerifyCS.VerifyAnalyzerAsync(
                     _usings + snippet,
-                    VerifyCS.Diagnostic(AnalyzerDiagnostics.InterfaceTypeNotSupported)
+                    VerifyCS.Diagnostic(GeneratorDiagnostics.InterfaceTypeNotSupported)
                         .WithLocation(0)
                         .WithArguments("3"));
             }
@@ -596,20 +457,14 @@ namespace ComInterfaceGenerator.Unit.Tests
                     void Bar() {}
                 }
 
-                [GeneratedComInterface(typeof(MyComWrappers))]
+                [GeneratedComInterface]
                 partial interface IFoo { }
-
-                public unsafe partial class MyComWrappers : GeneratedComWrappersBase
-                {
-                    protected override ComInterfaceEntry* ComputeVtables(object obj, CreateComInterfaceFlags flags, out int count) {count = 0; return null;}
-                }
-
                 """;
                 await VerifyCS.VerifyAnalyzerAsync(
                     _usings + snippet,
-                    VerifyCS.Diagnostic(AnalyzerDiagnostics.InterfaceTypeNotSupported)
+                    VerifyCS.Diagnostic(GeneratorDiagnostics.InterfaceTypeNotSupported)
                         .WithLocation(0)
-                        .WithArguments(TypeNames.ComInterfaceTypeAttribute + "." + nameof(ComInterfaceType.InterfaceIsDual)));
+                        .WithArguments(TypeNames.ComInterfaceType + "." + nameof(ComInterfaceType.InterfaceIsDual)));
             }
 
             [Fact]
@@ -624,18 +479,12 @@ namespace ComInterfaceGenerator.Unit.Tests
                     void Bar() {}
                 }
 
-                [GeneratedComInterface(typeof(MyComWrappers))]
+                [GeneratedComInterface]
                 partial interface IFoo { }
-
-                public unsafe partial class MyComWrappers : GeneratedComWrappersBase
-                {
-                    protected override ComInterfaceEntry* ComputeVtables(object obj, CreateComInterfaceFlags flags, out int count) {count = 0; return null;}
-                }
-
                 """;
                 await VerifyCS.VerifyAnalyzerAsync(
                     _usings + snippet,
-                    VerifyCS.Diagnostic(AnalyzerDiagnostics.InterfaceTypeNotSupported)
+                    VerifyCS.Diagnostic(GeneratorDiagnostics.InterfaceTypeNotSupported)
                         .WithLocation(0)
                         .WithArguments("0"));
             }

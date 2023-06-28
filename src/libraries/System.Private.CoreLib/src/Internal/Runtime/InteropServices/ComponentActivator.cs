@@ -23,6 +23,7 @@ namespace Internal.Runtime.InteropServices
         [UnsupportedOSPlatform("tvos")]
         private static readonly Dictionary<string, IsolatedComponentLoadContext> s_assemblyLoadContexts = new Dictionary<string, IsolatedComponentLoadContext>(StringComparer.InvariantCulture);
         private static readonly Dictionary<IntPtr, Delegate> s_delegates = new Dictionary<IntPtr, Delegate>();
+        private static readonly HashSet<string> s_loadedInDefaultContext = new HashSet<string>(StringComparer.InvariantCulture);
 
         // Use a value defined in https://github.com/dotnet/runtime/blob/main/docs/design/features/host-error-codes.md
         // To indicate the specific error when IsSupported is false
@@ -75,11 +76,7 @@ namespace Internal.Runtime.InteropServices
                 string typeName = MarshalToString(typeNameNative, nameof(typeNameNative));
                 string methodName = MarshalToString(methodNameNative, nameof(methodNameNative));
 
-                if (reserved != IntPtr.Zero)
-                {
-                    throw new ArgumentOutOfRangeException(nameof(reserved));
-                }
-
+                ArgumentOutOfRangeException.ThrowIfNotEqual(reserved, IntPtr.Zero);
                 ArgumentNullException.ThrowIfNull(functionHandle);
 
                 // Set up the AssemblyLoadContext for this delegate.
@@ -94,6 +91,123 @@ namespace Internal.Runtime.InteropServices
             }
 
             return 0;
+        }
+
+        /// <summary>
+        /// Native hosting entry point for loading an assembly from a path
+        /// </summary>
+        /// <param name="assemblyPathNative">Fully qualified path to assembly</param>
+        /// <param name="loadContext">Extensibility parameter (currently unused)</param>
+        /// <param name="reserved">Extensibility parameter (currently unused)</param>
+        [RequiresDynamicCode(NativeAOTIncompatibleWarningMessage)]
+        [UnsupportedOSPlatform("android")]
+        [UnsupportedOSPlatform("browser")]
+        [UnsupportedOSPlatform("ios")]
+        [UnsupportedOSPlatform("maccatalyst")]
+        [UnsupportedOSPlatform("tvos")]
+        [UnmanagedCallersOnly]
+        public static unsafe int LoadAssembly(IntPtr assemblyPathNative, IntPtr loadContext, IntPtr reserved)
+        {
+            if (!IsSupported)
+                return HostFeatureDisabled;
+
+            try
+            {
+                string assemblyPath = MarshalToString(assemblyPathNative, nameof(assemblyPathNative));
+
+                ArgumentOutOfRangeException.ThrowIfNotEqual(loadContext, IntPtr.Zero);
+                ArgumentOutOfRangeException.ThrowIfNotEqual(reserved, IntPtr.Zero);
+
+                LoadAssemblyLocal(assemblyPath);
+            }
+            catch (Exception e)
+            {
+                return e.HResult;
+            }
+
+            return 0;
+
+            [UnconditionalSuppressMessage("ReflectionAnalysis", "IL2026:RequiresUnreferencedCode",
+                Justification = "The same feature switch applies to GetFunctionPointer and this function. We rely on the warning from GetFunctionPointer.")]
+            static void LoadAssemblyLocal(string assemblyPath) => LoadAssemblyImpl(assemblyPath);
+        }
+
+        [RequiresUnreferencedCode(TrimIncompatibleWarningMessage, Url = "https://aka.ms/dotnet-illink/nativehost")]
+        [UnsupportedOSPlatform("android")]
+        [UnsupportedOSPlatform("browser")]
+        [UnsupportedOSPlatform("ios")]
+        [UnsupportedOSPlatform("maccatalyst")]
+        [UnsupportedOSPlatform("tvos")]
+        private static void LoadAssemblyImpl(string assemblyPath)
+        {
+            lock(s_loadedInDefaultContext)
+            {
+                if (s_loadedInDefaultContext.Contains(assemblyPath))
+                    return;
+
+                var resolver = new AssemblyDependencyResolver(assemblyPath);
+                AssemblyLoadContext.Default.Resolving +=
+                    (context, assemblyName) =>
+                    {
+                        string? assemblyPath = resolver.ResolveAssemblyToPath(assemblyName);
+                        return assemblyPath != null
+                            ? context.LoadFromAssemblyPath(assemblyPath)
+                            : null;
+                    };
+
+                AssemblyLoadContext.Default.LoadFromAssemblyPath(assemblyPath);
+                s_loadedInDefaultContext.Add(assemblyPath);
+            }
+        }
+
+        /// <summary>
+        /// Native hosting entry point for loading an assembly from a byte array
+        /// </summary>
+        /// <param name="assembly">Bytes of the assembly to load</param>
+        /// <param name="assemblyByteLength">Byte length of the assembly to load</param>
+        /// <param name="symbols">Optional. Bytes of the symbols for the assembly</param>
+        /// <param name="symbolsByteLength">Optional. Byte length of the symbols for the assembly</param>
+        /// <param name="loadContext">Extensibility parameter (currently unused)</param>
+        /// <param name="reserved">Extensibility parameter (currently unused)</param>
+        [RequiresDynamicCode(NativeAOTIncompatibleWarningMessage)]
+        [UnsupportedOSPlatform("android")]
+        [UnsupportedOSPlatform("browser")]
+        [UnsupportedOSPlatform("ios")]
+        [UnsupportedOSPlatform("maccatalyst")]
+        [UnsupportedOSPlatform("tvos")]
+        [UnmanagedCallersOnly]
+        public static unsafe int LoadAssemblyBytes(byte* assembly, nint assemblyByteLength, byte* symbols, nint symbolsByteLength, IntPtr loadContext, IntPtr reserved)
+        {
+            if (!IsSupported)
+                return HostFeatureDisabled;
+
+            try
+            {
+                ArgumentNullException.ThrowIfNull(assembly);
+                ArgumentOutOfRangeException.ThrowIfNegativeOrZero(assemblyByteLength);
+                ArgumentOutOfRangeException.ThrowIfGreaterThan(assemblyByteLength, int.MaxValue);
+                ArgumentOutOfRangeException.ThrowIfNotEqual(loadContext, IntPtr.Zero);
+                ArgumentOutOfRangeException.ThrowIfNotEqual(reserved, IntPtr.Zero);
+
+                ReadOnlySpan<byte> assemblySpan = new ReadOnlySpan<byte>(assembly, (int)assemblyByteLength);
+                ReadOnlySpan<byte> symbolsSpan = default;
+                if (symbols != null && symbolsByteLength > 0)
+                {
+                    symbolsSpan = new ReadOnlySpan<byte>(symbols, (int)symbolsByteLength);
+                }
+
+                LoadAssemblyBytesLocal(assemblySpan, symbolsSpan);
+            }
+            catch (Exception e)
+            {
+                return e.HResult;
+            }
+
+            return 0;
+
+            [UnconditionalSuppressMessage("ReflectionAnalysis", "IL2026:RequiresUnreferencedCode",
+                Justification = "The same feature switch applies to GetFunctionPointer and this function. We rely on the warning from GetFunctionPointer.")]
+            static void LoadAssemblyBytesLocal(ReadOnlySpan<byte> assemblyBytes, ReadOnlySpan<byte> symbolsBytes) => AssemblyLoadContext.Default.InternalLoad(assemblyBytes, symbolsBytes);
         }
 
         /// <summary>
@@ -140,16 +254,8 @@ namespace Internal.Runtime.InteropServices
                 string typeName = MarshalToString(typeNameNative, nameof(typeNameNative));
                 string methodName = MarshalToString(methodNameNative, nameof(methodNameNative));
 
-                if (loadContext != IntPtr.Zero)
-                {
-                    throw new ArgumentOutOfRangeException(nameof(loadContext));
-                }
-
-                if (reserved != IntPtr.Zero)
-                {
-                    throw new ArgumentOutOfRangeException(nameof(reserved));
-                }
-
+                ArgumentOutOfRangeException.ThrowIfNotEqual(loadContext, IntPtr.Zero);
+                ArgumentOutOfRangeException.ThrowIfNotEqual(reserved, IntPtr.Zero);
                 ArgumentNullException.ThrowIfNull(functionHandle);
 
 #pragma warning disable IL2026 // suppressed in ILLink.Suppressions.LibraryBuild.xml

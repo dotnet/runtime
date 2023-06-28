@@ -11,7 +11,8 @@
 **
 =============================================================================*/
 
-using System.Globalization;
+using System.ComponentModel;
+using System.Runtime.CompilerServices;
 using System.Runtime.Serialization;
 
 namespace System.Runtime.InteropServices
@@ -19,7 +20,7 @@ namespace System.Runtime.InteropServices
     // Base exception for COM Interop errors &; Structured Exception Handler
     // exceptions.
     [Serializable]
-    [System.Runtime.CompilerServices.TypeForwardedFrom("mscorlib, Version=4.0.0.0, Culture=neutral, PublicKeyToken=b77a5c561934e089")]
+    [TypeForwardedFrom("mscorlib, Version=4.0.0.0, Culture=neutral, PublicKeyToken=b77a5c561934e089")]
     public class ExternalException : SystemException
     {
         public ExternalException()
@@ -46,6 +47,8 @@ namespace System.Runtime.InteropServices
             HResult = errorCode;
         }
 
+        [Obsolete(Obsoletions.LegacyFormatterImplMessage, DiagnosticId = Obsoletions.LegacyFormatterImplDiagId, UrlFormat = Obsoletions.SharedUrlFormat)]
+        [EditorBrowsable(EditorBrowsableState.Never)]
         protected ExternalException(SerializationInfo info, StreamingContext context)
             : base(info, context)
         {

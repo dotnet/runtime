@@ -101,7 +101,6 @@ namespace System.Net.Security.Tests
                     Assert.Same(clientLocalCallback, clientOptions.LocalCertificateSelectionCallback);
                     Assert.Same(clientRemoteCallback, clientOptions.RemoteCertificateValidationCallback);
                     Assert.Same(clientHost, clientOptions.TargetHost);
-                    Assert.Same(clientHost, clientOptions.TargetHost);
                     Assert.Same(policy, clientOptions.CertificateChainPolicy);
 
                     // Validate that server options are unchanged

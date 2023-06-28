@@ -1078,6 +1078,32 @@ namespace System.Threading.Tasks.Tests
         }
 
         [Fact]
+        public static void CancellationTokenSourceWithTimer_SupportsInfinite()
+        {
+            var cts = new CancellationTokenSource(TimeSpan.FromDays(1));
+            Assert.False(cts.IsCancellationRequested);
+
+            cts.CancelAfter(Timeout.InfiniteTimeSpan);
+            Assert.False(cts.IsCancellationRequested);
+
+            Assert.True(cts.TryReset());
+
+            cts.CancelAfter(TimeSpan.FromDays(1));
+            Assert.False(cts.IsCancellationRequested);
+
+            cts.CancelAfter(Timeout.Infinite);
+            Assert.False(cts.IsCancellationRequested);
+
+            Assert.True(cts.TryReset());
+
+            cts = new CancellationTokenSource(Timeout.InfiniteTimeSpan);
+            Assert.False(cts.IsCancellationRequested);
+
+            cts = new CancellationTokenSource(Timeout.Infinite);
+            Assert.False(cts.IsCancellationRequested);
+        }
+
+        [Fact]
         public static void CancellationTokenSource_TryReset_ReturnsFalseIfAlreadyCanceled()
         {
             var cts = new CancellationTokenSource();
@@ -1749,7 +1775,7 @@ namespace System.Threading.Tasks.Tests
         }
 
         [ConditionalFact(typeof(PlatformDetection), nameof(PlatformDetection.IsThreadingSupported))]
-        public static async void CancellationTokenSource_CancelAsync_CallbacksInvokedAsynchronously()
+        public static async Task CancellationTokenSource_CancelAsync_CallbacksInvokedAsynchronously()
         {
             var cts = new CancellationTokenSource();
 

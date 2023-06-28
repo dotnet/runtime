@@ -13,7 +13,5 @@
       win-x86 tests that assumed a win-x64 app host RID based on the runner SDK.
     -->
     <AppHostRuntimeIdentifier>$(TestTargetRid)</AppHostRuntimeIdentifier>
-
-    <NewtonsoftJsonVersion>13.0.1</NewtonsoftJsonVersion>
   </PropertyGroup>
 </Project>

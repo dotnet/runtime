@@ -4,6 +4,7 @@
 using System;
 using System.Numerics;
 using System.Runtime.CompilerServices;
+using Xunit;
 
 // Tests for the contiguous assignments from SIMD to memory
 // optimization in morph
@@ -313,7 +314,8 @@ public class Runtime_31615
         Check(v4h, g4X, g4Y, g4Z, g4W);
     }
 
-    public static int Main()
+    [Fact]
+    public static int TestEntryPoint()
     {
         Vector2 g2 = G2();
         Vector3 g3 = G3();

@@ -4,6 +4,7 @@
 using System.Collections.Generic;
 using System.Globalization;
 using System.Linq;
+using System.Text;
 using Xunit;
 
 namespace System.Tests
@@ -847,6 +848,12 @@ namespace System.Tests
         {
             Assert.Throws<FormatException>(() => s_testGuid.TryFormat(new Span<char>(), out int charsWritten, format));
             Assert.Throws<FormatException>(() => s_testGuid.TryFormat(new Span<char>(), out int charsWritten, format.ToUpperInvariant()));
+
+            Assert.Throws<FormatException>(() => ((ISpanFormattable)s_testGuid).TryFormat(new Span<char>(), out int charsWritten, format, null));
+            Assert.Throws<FormatException>(() => ((ISpanFormattable)s_testGuid).TryFormat(new Span<char>(), out int charsWritten, format.ToUpperInvariant(), null));
+
+            Assert.Throws<FormatException>(() => s_testGuid.TryFormat(new Span<byte>(), out int bytesWritten, format));
+            Assert.Throws<FormatException>(() => s_testGuid.TryFormat(new Span<byte>(), out int bytesWritten, format.ToUpperInvariant()));
         }
 
         [Theory]
@@ -854,8 +861,18 @@ namespace System.Tests
         public static void TryFormat_LengthTooSmall_ReturnsFalse(Guid guid, string format, string expected)
         {
             _ = expected;
+
             Assert.False(guid.TryFormat(new Span<char>(new char[guid.ToString(format).Length - 1]), out int charsWritten, format));
             Assert.Equal(0, charsWritten);
+
+            Assert.False(((ISpanFormattable)guid).TryFormat(new Span<char>(new char[guid.ToString(format).Length - 1]), out charsWritten, format, null));
+            Assert.Equal(0, charsWritten);
+
+            Assert.False(guid.TryFormat(new Span<byte>(new byte[guid.ToString(format).Length - 1]), out int bytesWritten, format));
+            Assert.Equal(0, bytesWritten);
+
+            Assert.False(((IUtf8SpanFormattable)guid).TryFormat(new Span<byte>(new byte[guid.ToString(format).Length - 1]), out bytesWritten, format, null));
+            Assert.Equal(0, bytesWritten);
         }
 
         [Theory]
@@ -863,17 +880,45 @@ namespace System.Tests
         public static void TryFormat_CharsWritten_EqualsZero_WhenSpanTooSmall(Guid guid, string format, string expected)
         {
             _ = expected;
+
             Assert.False(guid.TryFormat(new Span<char>(new char[guid.ToString(format).Length - 1]), out int charsWritten, format));
             Assert.Equal(0, charsWritten);
+
+            Assert.False(((ISpanFormattable)guid).TryFormat(new Span<char>(new char[guid.ToString(format).Length - 1]), out charsWritten, format, null));
+            Assert.Equal(0, charsWritten);
+
+            Assert.False(guid.TryFormat(new Span<byte>(new byte[guid.ToString(format).Length - 1]), out int bytesWritten, format));
+            Assert.Equal(0, bytesWritten);
+
+            Assert.False(((IUtf8SpanFormattable)guid).TryFormat(new Span<byte>(new byte[guid.ToString(format).Length - 1]), out bytesWritten, format, null));
+            Assert.Equal(0, bytesWritten);
         }
 
         [Theory]
         [MemberData(nameof(ToString_TestData))]
         public static void TryFormat_ValidLength_ReturnsTrue(Guid guid, string format, string expected)
         {
-            char[] chars = new char[guid.ToString(format).Length];
-            Assert.True(guid.TryFormat(new Span<char>(chars), out int charsWritten, format));
-            Assert.Equal(chars, expected.ToCharArray());
+            for (int additionalSpace = 0; additionalSpace < 2; additionalSpace++)
+            {
+                char[] chars = new char[expected.Length + additionalSpace];
+                byte[] bytes = new byte[expected.Length + additionalSpace];
+
+                Assert.True(guid.TryFormat(new Span<char>(chars), out int charsWritten, format));
+                Assert.Equal(expected.Length, charsWritten);
+                Assert.Equal(expected, chars.AsSpan(0, charsWritten).ToString());
+
+                Assert.True(((ISpanFormattable)guid).TryFormat(new Span<char>(chars), out charsWritten, format, null));
+                Assert.Equal(expected.Length, charsWritten);
+                Assert.Equal(expected, chars.AsSpan(0, charsWritten).ToString());
+
+                Assert.True(guid.TryFormat(new Span<byte>(bytes), out int bytesWritten, format));
+                Assert.Equal(expected.Length, bytesWritten);
+                Assert.Equal(expected, Encoding.UTF8.GetString(bytes.AsSpan(0, bytesWritten)));
+
+                Assert.True(((IUtf8SpanFormattable)guid).TryFormat(new Span<byte>(bytes), out bytesWritten, format, null));
+                Assert.Equal(expected.Length, bytesWritten);
+                Assert.Equal(expected, Encoding.UTF8.GetString(bytes.AsSpan(0, bytesWritten)));
+            }
         }
     }
 }

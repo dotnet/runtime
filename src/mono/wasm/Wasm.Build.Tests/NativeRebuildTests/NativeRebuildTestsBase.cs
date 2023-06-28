@@ -52,7 +52,7 @@ namespace Wasm.Build.NativeRebuild.Tests
                             new BuildProjectOptions(
                                 InitProject: () => File.WriteAllText(Path.Combine(_projectDir!, "Program.cs"), programText),
                                 DotnetWasmFromRuntimePack: false,
-                                HasIcudt: !invariant,
+                                GlobalizationMode: invariant ? GlobalizationMode.Invariant : null,
                                 CreateProject: true));
 
             RunAndTestWasmApp(buildArgs, buildDir: _projectDir, expectedExitCode: 42, host: RunHost.Chrome, id: id);
@@ -82,7 +82,7 @@ namespace Wasm.Build.NativeRebuild.Tests
                                             id: id,
                                             new BuildProjectOptions(
                                                 DotnetWasmFromRuntimePack: false,
-                                                HasIcudt: !invariant,
+                                                GlobalizationMode: invariant ? GlobalizationMode.Invariant : null,
                                                 CreateProject: false,
                                                 UseCache: false,
                                                 Verbosity: verbosity));
@@ -164,8 +164,8 @@ namespace Wasm.Build.NativeRebuild.Tests
                 Path.Combine(paths.ObjWasmDir, "pinvoke-table.h"),
                 Path.Combine(paths.ObjWasmDir, "driver-gen.c"),
 
-                Path.Combine(paths.BundleDir, "dotnet.wasm"),
-                Path.Combine(paths.BundleDir, "dotnet.js")
+                Path.Combine(paths.BundleDir, "_framework", "dotnet.native.wasm"),
+                Path.Combine(paths.BundleDir, "_framework", "dotnet.native.js"),
             };
 
             if (buildArgs.AOT)
@@ -184,15 +184,11 @@ namespace Wasm.Build.NativeRebuild.Tests
             foreach (var file in files)
                 dict[Path.GetFileName(file)] = (file, unchanged);
 
-            return dict;
-        }
+            // those files do not change on re-link
+            dict["dotnet.js"]=(Path.Combine(paths.BundleDir, "_framework", "dotnet.js"), true);
+            dict["dotnet.runtime.js"]=(Path.Combine(paths.BundleDir, "_framework", "dotnet.runtime.js"), true);
 
-        protected void AssertSubstring(string substring, string full, bool contains)
-        {
-            if (contains)
-                Assert.Contains(substring, full);
-            else
-                Assert.DoesNotContain(substring, full);
+            return dict;
         }
     }
 }

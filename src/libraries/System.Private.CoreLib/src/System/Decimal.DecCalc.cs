@@ -160,7 +160,7 @@ namespace System
                 //    ULONG sign:1;
                 // } SNGSTRUCT;
 
-                return (byte)(*(uint*)&f >> 23);
+                return (byte)(BitConverter.SingleToUInt32Bits(f) >> 23);
             }
 
             private static unsafe uint GetExponent(double d)
@@ -171,7 +171,7 @@ namespace System
                 //   DWORDLONG signexp:12;
                 // } DBLSTRUCT;
 
-                return (uint)(*(ulong*)&d >> 52) & 0x7FFu;
+                return (uint)(BitConverter.DoubleToUInt64Bits(d) >> 52) & 0x7FFu;
             }
 
             private static ulong UInt32x32To64(uint a, uint b)
@@ -2497,7 +2497,7 @@ done:
                 return (uint)num - div * TenToPowerNine;
             }
 
-            private struct PowerOvfl
+            private readonly struct PowerOvfl
             {
                 public readonly uint Hi;
                 public readonly ulong MidLo;

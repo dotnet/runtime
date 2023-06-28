@@ -136,10 +136,6 @@ SIZE_T GetStringizedItfDef(TypeHandle InterfaceType, CQuickArray<BYTE> &rDef);
 HRESULT GetStringizedTypeLibGuidForAssembly(Assembly *pAssembly, CQuickArray<BYTE> &rDef, ULONG cbCur, ULONG *pcbFetched);
 
 //--------------------------------------------------------------------------------
-// GetErrorInfo helper, enables and disables GC during call-outs
-HRESULT SafeGetErrorInfo(_Outptr_ IErrorInfo **ppIErrInfo);
-
-//--------------------------------------------------------------------------------
 // QI helper, enables and disables GC during call-outs
 HRESULT SafeQueryInterface(IUnknown* pUnk, REFIID riid, IUnknown** pResUnk);
 
@@ -150,6 +146,10 @@ HRESULT SafeQueryInterface(IUnknown* pUnk, REFIID riid, IUnknown** pResUnk);
 HRESULT SafeQueryInterfacePreemp(IUnknown* pUnk, REFIID riid, IUnknown** pResUnk);
 
 #ifdef FEATURE_COMINTEROP
+
+//--------------------------------------------------------------------------------
+// GetErrorInfo helper, enables and disables GC during call-outs
+HRESULT SafeGetErrorInfo(_Outptr_ IErrorInfo **ppIErrInfo);
 
 // Convert an IUnknown to CCW, does not handle aggregation and ICustomQI.
 ComCallWrapper* MapIUnknownToWrapper(IUnknown* pUnk);

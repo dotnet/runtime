@@ -24,6 +24,7 @@ parameters:
   container: ''
   condition: true
   dependOnEvaluatePaths: false
+  disableComponentGovernance: false
   shouldContinueOnError: false
   variables: {}
   pool: ''
@@ -52,6 +53,7 @@ jobs:
       container: ${{ parameters.container }}
       condition: ${{ parameters.condition }}
       dependOnEvaluatePaths: ${{ parameters.dependOnEvaluatePaths }}
+      disableComponentGovernance: ${{ parameters.disableComponentGovernance }}
       pool: ${{ parameters.pool }}
       runtimeVariant: ${{ parameters.runtimeVariant }}
       testScope: ${{ parameters.testScope }}

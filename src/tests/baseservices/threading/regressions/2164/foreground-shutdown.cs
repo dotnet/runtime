@@ -5,6 +5,7 @@ using System;
 using System.Runtime.InteropServices;
 using System.Reflection;
 using System.Threading;
+using Xunit;
 
 /*
  * Issue description:
@@ -14,7 +15,8 @@ using System.Threading;
 
 public class Test_foreground_shutdown
 {
-    public static int Main()
+    [Fact]
+    public static int TestEntryPoint()
     {
         new Thread(() =>
         {

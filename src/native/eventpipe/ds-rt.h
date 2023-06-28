@@ -25,26 +25,6 @@
 #define DS_ENTER_BLOCKING_PAL_SECTION ds_rt_redefine
 #define DS_EXIT_BLOCKING_PAL_SECTION ds_rt_redefine
 
-#define DS_RT_DECLARE_ARRAY(array_name, array_type, iterator_type, item_type) \
-	EP_RT_DECLARE_ARRAY_PREFIX(ds, array_name, array_type, iterator_type, item_type)
-
-#define DS_RT_DEFINE_ARRAY ds_rt_redefine
-
-#define DS_RT_DECLARE_LOCAL_ARRAY(array_name, array_type, iterator_type, item_type) \
-	EP_RT_DECLARE_LOCAL_ARRAY_PREFIX(ds, array_name, array_type, iterator_type, item_type)
-
-#define DS_RT_DEFINE_LOCAL_ARRAY ds_rt_redefine
-
-#define DS_RT_DECLARE_ARRAY_ITERATOR(array_name, array_type, iterator_type, item_type) \
-	EP_RT_DECLARE_ARRAY_ITERATOR_PREFIX(ds, array_name, array_type, iterator_type, item_type)
-
-#define DS_RT_DEFINE_ARRAY_ITERATOR ds_rt_redefine
-
-#define DS_RT_DECLARE_ARRAY_REVERSE_ITERATOR(array_name, array_type, iterator_type, item_type) \
-	EP_RT_DECLARE_ARRAY_REVERSE_ITERATOR_PREFIX(ds, array_name, array_type, iterator_type, item_type)
-
-#define DS_RT_DEFINE_ARRAY_REVERSE_ITERATOR ds_rt_redefine
-
 /*
 * AutoTrace.
 */
@@ -104,30 +84,6 @@ ds_rt_transport_get_default_name (
 	const ep_char8_t *suffix);
 
 /*
- * DiagnosticsIpcPollHandle.
- */
-
-DS_RT_DECLARE_ARRAY (ipc_poll_handle_array, ds_rt_ipc_poll_handle_array_t, ds_rt_ipc_poll_handle_array_iterator_t, DiagnosticsIpcPollHandle)
-DS_RT_DECLARE_LOCAL_ARRAY (ipc_poll_handle_array, ds_rt_ipc_poll_handle_array_t, ds_rt_ipc_poll_handle_array_iterator_t, DiagnosticsIpcPollHandle)
-DS_RT_DECLARE_ARRAY_ITERATOR (ipc_poll_handle_array, ds_rt_ipc_poll_handle_array_t, ds_rt_ipc_poll_handle_array_iterator_t, DiagnosticsIpcPollHandle)
-
-#define DS_RT_DECLARE_LOCAL_IPC_POLL_HANDLE_ARRAY(var_name) ds_rt_redefine
-
-/*
- * DiagnosticsPort.
- */
-
-DS_RT_DECLARE_ARRAY (port_array, ds_rt_port_array_t, ds_rt_port_array_iterator_t, DiagnosticsPort *)
-DS_RT_DECLARE_ARRAY_ITERATOR (port_array, ds_rt_port_array_t, ds_rt_port_array_iterator_t, DiagnosticsPort *)
-
-DS_RT_DECLARE_ARRAY (port_config_array, ds_rt_port_config_array_t, ds_rt_port_config_array_iterator_t, ep_char8_t *)
-DS_RT_DECLARE_LOCAL_ARRAY (port_config_array, ds_rt_port_config_array_t, ds_rt_port_config_array_iterator_t, ep_char8_t *)
-DS_RT_DECLARE_ARRAY_ITERATOR (port_config_array, ds_rt_port_config_array_t, ds_rt_port_config_array_iterator_t, ep_char8_t *)
-DS_RT_DECLARE_ARRAY_REVERSE_ITERATOR (port_config_array, ds_rt_port_config_array_t, ds_rt_port_config_array_reverse_iterator_t, ep_char8_t *)
-
-#define DS_RT_DECLARE_LOCAL_PORT_CONFIG_ARRAY(var_name) ds_rt_redefine
-
-/*
 * DiagnosticsProfiler.
 */
 
@@ -153,6 +109,18 @@ ds_rt_get_environment_variable (const ep_char16_t *name,
 								uint32_t valueBufferLength,
 								uint32_t *valueLengthOut,
 								ep_char16_t *valueBuffer);
+
+static
+uint32_t
+ds_rt_enable_perfmap (uint32_t type);
+
+static
+uint32_t
+ds_rt_disable_perfmap (void);
+
+static
+uint32_t
+ds_rt_apply_startup_hook (const ep_char16_t *startup_hook_path);
 
 /*
 * DiagnosticServer.

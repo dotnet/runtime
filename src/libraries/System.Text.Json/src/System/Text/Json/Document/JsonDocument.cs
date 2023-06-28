@@ -287,8 +287,6 @@ namespace System.Text.Json
         {
             CheckNotDisposed();
 
-            int matchIndex = isPropertyName ? index - DbRow.Size : index;
-
             byte[]? otherUtf8TextArray = null;
 
             int length = checked(otherText.Length * JsonConstants.MaxExpansionFactorWhileTranscoding);

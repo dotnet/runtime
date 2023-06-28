@@ -12,6 +12,88 @@ namespace System.Globalization
         // ICU constants
         private const int ICU_ULOC_KEYWORD_AND_VALUES_CAPACITY = 100; // max size of keyword or value
         private const int ICU_ULOC_FULLNAME_CAPACITY = 157;           // max size of locale name
+        private const int WINDOWS_MAX_COLLATION_NAME_LENGTH = 8;      // max collation name length in the culture name
+
+        /// <summary>
+        /// Process the locale name that ICU returns and convert it to the format that .NET expects.
+        /// </summary>
+        /// <param name="name">The locale name that ICU returns.</param>
+        /// <param name="extension">The extension part in the original culture name.</param>
+        /// <param name="collationStart">The index of the collation in the name.</param>
+        /// <remarks>
+        /// BCP 47 specifications allow for extensions in the locale name, following the format language-script-region-extensions-collation. However,
+        /// not all extensions supported by ICU are supported in .NET. In the locale name, extensions are separated from the rest of the name using '-u-' or '-t-'.
+        /// In .NET, only the collation extension is supported. If the name includes a collation extension, it will be prefixed with '-u-co-'.
+        /// For example, en-US-u-co-search would be converted to the ICU name en_US@collation=search, which would then be translated to the .NET name en-US_search.
+        /// All extensions in the ICU names start with @. When normalizing the name to the .NET format, we retain the extensions in the name to ensure differentiation
+        /// between names with extensions and those without. For example, we may have a name like en-US and en-US-u-xx. Although .NET doesn't support the extension xx,
+        /// we still include it in the name to distinguish it from the name without the extension.
+        /// </remarks>
+        private static string NormalizeCultureName(string name, ReadOnlySpan<char> extension, out int collationStart)
+        {
+            Debug.Assert(name is not null);
+            Debug.Assert(name.Length <= ICU_ULOC_FULLNAME_CAPACITY);
+
+            collationStart = -1;
+            bool changed = false;
+            Span<char> buffer = stackalloc char[ICU_ULOC_FULLNAME_CAPACITY];
+            int bufferIndex = 0;
+
+            for (int i = 0; i < name.Length && bufferIndex < ICU_ULOC_FULLNAME_CAPACITY; i++)
+            {
+                char c = name[i];
+                if (c == '-' && i < name.Length - 1 && name[i + 1] == '-')
+                {
+                    // ICU changes names like `qps_plocm` (one underscore) to `qps__plocm` (two underscores)
+                    // The reason this occurs is because, while ICU canonicalizing, ulocimp_getCountry returns an empty string since the country code value is > 3 (rightly so).
+                    // But append an extra '_' thinking that country code was in-fact appended (for the empty string value as well).
+                    // Before processing, the name qps__plocm will be converted to its .NET name equivalent, which is qps--plocm.
+                    changed = true;
+                    buffer[bufferIndex++] = '-';
+                    i++;
+                }
+                else if (c == '@')
+                {
+                    changed = true;
+
+                    if (!extension.IsEmpty && extension.TryCopyTo(buffer.Slice(bufferIndex)))
+                    {
+                        bufferIndex += extension.Length;
+                    }
+
+                    int collationIndex = name.IndexOf("collation=", i + 1, StringComparison.Ordinal);
+                    if (collationIndex > 0)
+                    {
+                        collationIndex += "collation=".Length;
+
+                        // format of the locale properties is @key=value;collation=collationName;key=value;key=value
+                        int endOfCollation = name.IndexOf(';', collationIndex);
+                        if (endOfCollation < 0)
+                        {
+                            endOfCollation = name.Length;
+                        }
+
+                        int length = Math.Min(WINDOWS_MAX_COLLATION_NAME_LENGTH, endOfCollation - collationIndex);  // Windows doesn't allow collation names longer than 8 characters
+                        if (buffer.Length - bufferIndex >= length + 1)
+                        {
+                            collationStart = bufferIndex;
+                            buffer[bufferIndex++] = '_';
+                            name.AsSpan(collationIndex, length).CopyTo(buffer.Slice(bufferIndex));
+                            bufferIndex += length;
+                        }
+                    }
+
+                    // done getting all parts can be supported in the .NET culture names.
+                    break;
+                }
+                else
+                {
+                    buffer[bufferIndex++] = name[i];
+                }
+            }
+
+            return changed ? new string(buffer.Slice(0, bufferIndex)) : name;
+        }
 
         /// <summary>
         /// This method uses the sRealName field (which is initialized by the constructor before this is called) to
@@ -26,16 +108,15 @@ namespace System.Globalization
             string realNameBuffer = _sRealName;
 
             // Basic validation
-            if (!IsValidCultureName(realNameBuffer, out var index))
+            if (!IsValidCultureName(realNameBuffer, out var index, out int indexOfExtensions))
             {
                 return false;
             }
 
             // Replace _ (alternate sort) with @collation= for ICU
-            ReadOnlySpan<char> alternateSortName = default;
             if (index > 0)
             {
-                alternateSortName = realNameBuffer.AsSpan(index + 1);
+                ReadOnlySpan<char> alternateSortName = realNameBuffer.AsSpan(index + 1);
                 realNameBuffer = string.Concat(realNameBuffer.AsSpan(0, index), ICU_COLLATION_KEYWORD, alternateSortName);
             }
 
@@ -45,22 +126,9 @@ namespace System.Globalization
                 return false; // fail
             }
 
-            // Replace the ICU collation keyword with an _
             Debug.Assert(_sWindowsName != null);
-            index = _sWindowsName.IndexOf(ICU_COLLATION_KEYWORD, StringComparison.Ordinal);
-            if (index >= 0)
-            {
-                // Use original culture name if alternateSortName is not set, which is possible even if the normalized
-                // culture name has "@collation=".
-                // "zh-TW-u-co-zhuyin" is a good example. The term "u-co-" means the following part will be the sort name
-                // and it will be treated in ICU as "zh-TW@collation=zhuyin".
-                _sName = alternateSortName.Length == 0 ? realNameBuffer : string.Concat(_sWindowsName.AsSpan(0, index), "_", alternateSortName);
-            }
-            else
-            {
-                _sName = _sWindowsName;
-            }
-            _sRealName = _sName;
+
+            _sRealName = NormalizeCultureName(_sWindowsName, indexOfExtensions > 0 ? _sRealName.AsSpan(indexOfExtensions) : ReadOnlySpan<char>.Empty, out int collationStart);
 
             _iLanguage = LCID;
             if (_iLanguage == 0)
@@ -69,11 +137,11 @@ namespace System.Globalization
             }
             _bNeutral = TwoLetterISOCountryName.Length == 0;
             _sSpecificCulture = _bNeutral ? IcuLocaleData.GetSpecificCultureName(_sRealName) : _sRealName;
+
             // Remove the sort from sName unless custom culture
-            if (index > 0 && !_bNeutral && !IsCustomCultureId(_iLanguage))
-            {
-                _sName = _sWindowsName.Substring(0, index);
-            }
+            // To ensure compatibility, it is necessary to allow the creation of cultures like zh_CN (using ICU notation) in the case of _bNeutral.
+            _sName = collationStart < 0 || _bNeutral ? _sRealName : _sRealName.Substring(0, collationStart);
+
             return true;
         }
 
@@ -232,13 +300,14 @@ namespace System.Globalization
 
             for (int i = 0; i < icuFormatString.Length; i++)
             {
-                switch (icuFormatString[i])
+                char current = icuFormatString[i];
+                switch (current)
                 {
                     case '\'':
                         result[resultPos++] = icuFormatString[i++];
                         while (i < icuFormatString.Length)
                         {
-                            char current = icuFormatString[i];
+                            current = icuFormatString[i];
                             result[resultPos++] = current;
                             if (current == '\'')
                             {
@@ -254,13 +323,10 @@ namespace System.Globalization
                     case 'h':
                     case 'm':
                     case 's':
-                        result[resultPos++] = icuFormatString[i];
-                        break;
-
                     case ' ':
-                    case '\u00A0':
-                        // Convert nonbreaking spaces into regular spaces
-                        result[resultPos++] = ' ';
+                    case '\u00A0': // no-break space
+                    case '\u202F': // narrow no-break space
+                        result[resultPos++] = current;
                         break;
 
                     case 'a': // AM/PM
@@ -291,7 +357,7 @@ namespace System.Globalization
         {
             Debug.Assert(!GlobalizationMode.UseNls);
             int geoId = IcuLocaleData.GetLocaleDataNumericPart(cultureName, IcuLocaleDataParts.GeoId);
-            return geoId == -1 ? CultureData.Invariant.GeoId : geoId;
+            return geoId == -1 ? Invariant.GeoId : geoId;
         }
 
         private const uint DigitSubstitutionMask = 0x0000FFFF;
@@ -369,7 +435,7 @@ namespace System.Globalization
             }
 
             bool enumNeutrals   = (types & CultureTypes.NeutralCultures) != 0;
-            bool enumSpecificss = (types & CultureTypes.SpecificCultures) != 0;
+            bool enumSpecifics = (types & CultureTypes.SpecificCultures) != 0;
 
             List<CultureInfo> list = new List<CultureInfo>();
             if (enumNeutrals)
@@ -384,7 +450,7 @@ namespace System.Globalization
                 if (index + length <= bufferLength)
                 {
                     CultureInfo ci = CultureInfo.GetCultureInfo(new string(chars, index, length));
-                    if ((enumNeutrals && ci.IsNeutralCulture) || (enumSpecificss && !ci.IsNeutralCulture))
+                    if ((enumNeutrals && ci.IsNeutralCulture) || (enumSpecifics && !ci.IsNeutralCulture))
                     {
                         list.Add(ci);
                     }
@@ -418,10 +484,14 @@ namespace System.Globalization
         /// * Disallow input that starts or ends with '-' or '_'.
         /// * Disallow input that has any combination of consecutive '-' or '_'.
         /// * Disallow input that has multiple '_'.
+        ///
+        /// The IsValidCultureName method also identifies the presence of any extensions in the name (such as -u- or -t-) and returns the index of the extension.
+        /// This is necessary because we need to append the extensions to the name when normalizing it to the .NET format.
         /// </remarks>
-        private static bool IsValidCultureName(string subject, out int indexOfUnderscore)
+        private static bool IsValidCultureName(string subject, out int indexOfUnderscore, out int indexOfExtensions)
         {
             indexOfUnderscore = -1;
+            indexOfExtensions = -1;
 
             if (subject.Length == 0) return true; // Invariant Culture
             if (subject.Length == 1 || subject.Length > LocaleNameMaxLength) return false;
@@ -445,6 +515,16 @@ namespace System.Globalization
                         if (seenUnderscore) return false; // only one _ is allowed
                         seenUnderscore = true;
                         indexOfUnderscore = i;
+                    }
+                    else
+                    {
+                        if (indexOfExtensions < 0 && i < subject.Length - 2 && (subject[i + 1] is 'u' or 't') && subject[i + 2] == '-') // we have -u- or -t- which is an extension
+                        {
+                            if (subject[i + 1] == 't' || i >= subject.Length - 6 || subject[i + 3] != 'c' || subject[i + 4] != 'o' || subject[i + 5] != '-' ) // not -u-co- collation extension
+                            {
+                                indexOfExtensions = i;
+                            }
+                        }
                     }
                 }
                 else

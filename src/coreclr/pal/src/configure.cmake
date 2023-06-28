@@ -46,7 +46,6 @@ check_include_files(lwp.h HAVE_LWP_H)
 check_include_files(runetype.h HAVE_RUNETYPE_H)
 check_include_files(semaphore.h HAVE_SEMAPHORE_H)
 check_include_files(sys/prctl.h HAVE_PRCTL_H)
-check_include_files(numa.h HAVE_NUMA_H)
 check_include_files("sys/auxv.h;asm/hwcap.h" HAVE_AUXV_HWCAP_H)
 check_include_files("sys/ptrace.h" HAVE_SYS_PTRACE_H)
 check_symbol_exists(getauxval sys/auxv.h HAVE_GETAUXVAL)
@@ -210,21 +209,6 @@ int main(void)
   sscanf(\"5000000000\", \"%qu\", &n);
   exit (n != 5000000000);
   }" SSCANF_SUPPORT_ll)
-check_cxx_source_runs("
-#include <stdio.h>
-#include <stdlib.h>
-
-int main()
-{
-  int ret;
-  float f = 0;
-  char * strin = \"12.34e\";
-
-  ret = sscanf (strin, \"%e\", &f);
-  if (ret <= 0)
-    exit (0);
-  exit(1);
-}" SSCANF_CANNOT_HANDLE_MISSING_EXPONENT)
 check_cxx_source_runs("
 #include <stdio.h>
 #include <stdlib.h>
@@ -644,30 +628,6 @@ int main(void) {
   char path[1024];
 #endif
 
-  sprintf(path, \"/proc/%u/maps\", getpid());
-  fd = open(path, O_RDONLY);
-  if (fd == -1) {
-    exit(1);
-  }
-  exit(0);
-}" HAVE_PROCFS_MAPS)
-set(CMAKE_REQUIRED_LIBRARIES)
-check_cxx_source_runs("
-#include <fcntl.h>
-#include <stdlib.h>
-#include <stdio.h>
-#include <unistd.h>
-
-int main(void) {
-  int fd;
-#ifdef PATH_MAX
-  char path[PATH_MAX];
-#elif defined(MAXPATHLEN)
-  char path[MAXPATHLEN];
-#else
-  char path[1024];
-#endif
-
   sprintf(path, \"/proc/%u/stat\", getpid());
   fd = open(path, O_RDONLY);
   if (fd == -1) {
@@ -676,29 +636,6 @@ int main(void) {
   exit(0);
 }" HAVE_PROCFS_STAT)
 set(CMAKE_REQUIRED_LIBRARIES)
-check_cxx_source_runs("
-#include <fcntl.h>
-#include <stdlib.h>
-#include <stdio.h>
-#include <unistd.h>
-
-int main(void) {
-  int fd;
-#ifdef PATH_MAX
-  char path[PATH_MAX];
-#elif defined(MAXPATHLEN)
-  char path[MAXPATHLEN];
-#else
-  char path[1024];
-#endif
-
-  sprintf(path, \"/proc/%u/status\", getpid());
-  fd = open(path, O_RDONLY);
-  if (fd == -1) {
-    exit(1);
-  }
-  exit(0);
-}" HAVE_PROCFS_STATUS)
 set(CMAKE_REQUIRED_LIBRARIES m)
 check_cxx_source_runs("
 #include <math.h>
@@ -949,34 +886,6 @@ int main() {
 }" HAS_POSIX_SEMAPHORES)
 set(CMAKE_REQUIRED_LIBRARIES)
 check_cxx_source_runs("
-#include <sys/types.h>
-#include <pwd.h>
-#include <errno.h>
-#include <unistd.h>
-#include <stdlib.h>
-
-int main(void)
-{
-  struct passwd sPasswd;
-  struct passwd *pPasswd;
-  char buf[1];
-  int bufLen = sizeof(buf)/sizeof(buf[0]);
-  int euid = geteuid();
-  int ret = 0;
-
-  errno = 0; // clear errno
-  ret = getpwuid_r(euid, &sPasswd, buf, bufLen, &pPasswd);
-  if (0 != ret)
-  {
-    if (ERANGE == errno)
-    {
-      return 0;
-    }
-  }
-
-  return 1; // assume errno is NOT set for all other cases
-}" GETPWUID_R_SETS_ERRNO)
-check_cxx_source_runs("
 #include <stdio.h>
 #include <stdlib.h>
 
@@ -1032,6 +941,15 @@ int main(int argc, char **argv)
 
 check_symbol_exists(unw_get_save_loc libunwind.h HAVE_UNW_GET_SAVE_LOC)
 check_symbol_exists(unw_get_accessors libunwind.h HAVE_UNW_GET_ACCESSORS)
+
+check_cxx_source_compiles("
+#include <libunwind.h>
+
+int main(int argc, char **argv)
+{
+    int flag = (int)UNW_AARCH64_X19;
+    return 0;
+}" HAVE_UNW_AARCH64_X19)
 
 if(NOT CLR_CMAKE_USE_SYSTEM_LIBUNWIND)
   list(REMOVE_AT CMAKE_REQUIRED_INCLUDES 0 1)

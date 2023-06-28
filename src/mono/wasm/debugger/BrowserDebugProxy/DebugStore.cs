@@ -389,31 +389,28 @@ namespace Microsoft.WebAssembly.Diagnostics
             this.IsEnCMethod = false;
             this.TypeInfo = type;
             DebuggerAttrInfo = new DebuggerAttributesInfo();
-            foreach (var cattr in methodDef.GetCustomAttributes())
+            foreach (CustomAttributeHandle cattr in methodDef.GetCustomAttributes())
             {
-                var ctorHandle = asmMetadataReader.GetCustomAttribute(cattr).Constructor;
-                if (ctorHandle.Kind == HandleKind.MemberReference)
+                if (!assembly.TryGetCustomAttributeName(cattr, asmMetadataReader, out string name))
+                    continue;
+
+                switch (name)
                 {
-                    var container = asmMetadataReader.GetMemberReference((MemberReferenceHandle)ctorHandle).Parent;
-                    var name = assembly.EnCGetString(asmMetadataReader.GetTypeReference((TypeReferenceHandle)container).Name);
-                    switch (name)
-                    {
-                        case "DebuggerHiddenAttribute":
-                            DebuggerAttrInfo.HasDebuggerHidden = true;
-                            break;
-                        case "DebuggerStepThroughAttribute":
-                            DebuggerAttrInfo.HasStepThrough = true;
-                            break;
-                        case "DebuggerNonUserCodeAttribute":
-                            DebuggerAttrInfo.HasNonUserCode = true;
-                            break;
-                        case "DebuggerStepperBoundaryAttribute":
-                            DebuggerAttrInfo.HasStepperBoundary = true;
-                            break;
-                        case nameof(CompilerGeneratedAttribute):
-                            IsCompilerGenerated = true;
-                            break;
-                    }
+                    case "DebuggerHiddenAttribute":
+                        DebuggerAttrInfo.HasDebuggerHidden = true;
+                        break;
+                    case "DebuggerStepThroughAttribute":
+                        DebuggerAttrInfo.HasStepThrough = true;
+                        break;
+                    case "DebuggerNonUserCodeAttribute":
+                        DebuggerAttrInfo.HasNonUserCode = true;
+                        break;
+                    case "DebuggerStepperBoundaryAttribute":
+                        DebuggerAttrInfo.HasStepperBoundary = true;
+                        break;
+                    case nameof(CompilerGeneratedAttribute):
+                        IsCompilerGenerated = true;
+                        break;
                 }
             }
             if (!hasDebugInformation)
@@ -788,13 +785,10 @@ namespace Microsoft.WebAssembly.Diagnostics
                 }
             }
 
-            foreach (var cattr in type.GetCustomAttributes())
+            foreach (CustomAttributeHandle cattr in type.GetCustomAttributes())
             {
-                var ctorHandle = metadataReader.GetCustomAttribute(cattr).Constructor;
-                if (ctorHandle.Kind != HandleKind.MemberReference)
+                if (!assembly.TryGetCustomAttributeName(cattr, metadataReader, out string attributeName))
                     continue;
-                var container = metadataReader.GetMemberReference((MemberReferenceHandle)ctorHandle).Parent;
-                var attributeName = assembly.EnCGetString(metadataReader.GetTypeReference((TypeReferenceHandle)container).Name);
                 switch (attributeName)
                 {
                     case nameof(CompilerGeneratedAttribute):
@@ -943,6 +937,33 @@ namespace Microsoft.WebAssembly.Diagnostics
             logger.LogTrace($"Info: loading AssemblyInfo with name {Name}");
             this.pdbMetadataReader = summary.PdbMetadataReader;
             Populate();
+        }
+
+        public bool TryGetCustomAttributeName(CustomAttributeHandle customAttribute, MetadataReader metadataReader, out string name)
+        {
+            name = "";
+            EntityHandle ctorHandle = metadataReader.GetCustomAttribute(customAttribute).Constructor;
+            if (ctorHandle.Kind != HandleKind.MemberReference)
+                return false;
+            EntityHandle? container = ctorHandle.Kind switch
+            {
+                HandleKind.MethodDefinition => metadataReader.GetMethodDefinition((MethodDefinitionHandle)ctorHandle).GetDeclaringType(),
+                HandleKind.MemberReference => metadataReader.GetMemberReference((MemberReferenceHandle)ctorHandle).Parent,
+                _ => null,
+            };
+            if (container == null)
+                return false;
+            StringHandle? attributeTypeNameHandle = container.Value.Kind switch
+            {
+                HandleKind.TypeDefinition => metadataReader.GetTypeDefinition((TypeDefinitionHandle)container.Value).Name,
+                HandleKind.TypeReference => metadataReader.GetTypeReference((TypeReferenceHandle)container.Value).Name,
+                HandleKind.TypeSpecification => null, // custom generic attributes, TypeSpecification does not keep the attribute name for them
+                _ => null,
+            };
+            if (attributeTypeNameHandle == null)
+                return false;
+            name = EnCGetString(attributeTypeNameHandle.Value);
+            return true;
         }
 
         public async Task<int> GetDebugId(MonoSDBHelper sdbAgent, CancellationToken token)
@@ -1225,8 +1246,9 @@ namespace Microsoft.WebAssembly.Diagnostics
 
     internal sealed partial class SourceFile
     {
-        [GeneratedRegex(@"([:/])")]
-        private static partial Regex RegexForEscapeFileName();
+#pragma warning disable SYSLIB1045
+        private static readonly Regex regexForEscapeFileName = new (@"([:/])");
+#pragma warning restore SYSLIB1045
 
         private readonly Dictionary<int, MethodInfo> methods;
         private readonly AssemblyInfo assembly;
@@ -1328,7 +1350,7 @@ namespace Microsoft.WebAssembly.Diagnostics
         private static string EscapePathForUri(string path)
         {
             var builder = new StringBuilder();
-            foreach (var part in RegexForEscapeFileName().Split(path))
+            foreach (var part in regexForEscapeFileName.Split(path))
             {
                 if (part == ":" || part == "/")
                     builder.Append(part);
@@ -1602,7 +1624,7 @@ namespace Microsoft.WebAssembly.Diagnostics
                 }
                 catch (Exception e)
                 {
-                    logger.LogError($"Failed to load {step.Url} ({e.Message})");
+                    logger.LogError($"Failed to load {step.Url} ({e.Message}) (stack={e.StackTrace})");
                 }
                 if (assembly == null)
                     continue;

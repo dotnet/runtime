@@ -14,6 +14,6 @@
 
 #ifdef TARGET_RISCV64
 
-#error "TODO-RISCV64: missing implementation"
+// #error "TODO-RISCV64: missing implementation"
 
 #endif

@@ -41,7 +41,7 @@ namespace Mono.Linker.Tests.Cases.DataFlow
 				}
 
 				// https://github.com/dotnet/linker/issues/2937
-				[ExpectedWarning ("IL2091", ProducedBy = ProducedBy.Trimmer)]
+				[ExpectedWarning ("IL2091", ProducedBy = Tool.Trimmer)]
 				void LocalWithWarning<T> ()
 				{
 					// Warning!
@@ -58,7 +58,7 @@ namespace Mono.Linker.Tests.Cases.DataFlow
 			}
 
 			// https://github.com/dotnet/linker/issues/2937
-			[ExpectedWarning ("IL2091", ProducedBy = ProducedBy.Trimmer)]
+			[ExpectedWarning ("IL2091", ProducedBy = Tool.Trimmer)]
 			void LocalWithWarning<T> ()
 			{
 				// No warning

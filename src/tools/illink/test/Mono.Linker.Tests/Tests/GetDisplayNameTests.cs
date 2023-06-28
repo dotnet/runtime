@@ -191,18 +191,18 @@ namespace Mono.Linker.Tests
 		}
 
 		[DisplayName ("Mono.Linker.Tests.GetDisplayNameTests.MethodWithGenericTypeArgument(IList<GetDisplayNameTests.GenericClassOneParameter<Byte*[]>>)")]
-		public static void MethodWithGenericTypeArgument (IList<GenericClassOneParameter<byte*[]>> p)
+		public static unsafe void MethodWithGenericTypeArgument (IList<GenericClassOneParameter<byte*[]>> p)
 		{
 		}
 
 		[DisplayName ("Mono.Linker.Tests.GetDisplayNameTests.MethodWithGenericTypeArguments(GetDisplayNameTests.GenericClassMultipleParameters<Char*[],Int32[,][]>)")]
-		public static void MethodWithGenericTypeArguments (GenericClassMultipleParameters<char*[], int[,][]> p)
+		public static unsafe void MethodWithGenericTypeArguments (GenericClassMultipleParameters<char*[], int[,][]> p)
 		{
 		}
 
 		[DisplayName ("Mono.Linker.Tests.GetDisplayNameTests.MethodWithNestedGenericTypeArguments" +
 			"(GetDisplayNameTests.GenericClassMultipleParameters<Char*[],Int32[,][]>.NestedGenericClassMultipleParameters<Char*[],Int32[,][]>)")]
-		public static void MethodWithNestedGenericTypeArguments (GenericClassMultipleParameters<char*[], int[,][]>.NestedGenericClassMultipleParameters<char*[], int[,][]> p)
+		public static unsafe void MethodWithNestedGenericTypeArguments (GenericClassMultipleParameters<char*[], int[,][]>.NestedGenericClassMultipleParameters<char*[], int[,][]> p)
 		{
 		}
 

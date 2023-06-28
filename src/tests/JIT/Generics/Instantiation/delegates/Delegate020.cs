@@ -3,6 +3,7 @@
 
 using System;
 using System.Threading;
+using Xunit;
 
 internal delegate T GenDelegate<T>(T p1, out T p2);
 
@@ -20,9 +21,10 @@ internal class Foo<T> : IFoo<T>
     }
 }
 
-internal class Test_Delegate020
+public class Test_Delegate020
 {
-    public static int Main()
+    [Fact]
+    public static int TestEntryPoint()
     {
         int i, j;
         IFoo<int> inst = new Foo<int>();
