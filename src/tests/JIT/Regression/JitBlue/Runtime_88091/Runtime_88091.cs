@@ -4,6 +4,7 @@
 using System;
 using System.Collections.Generic;
 using System.Runtime.CompilerServices;
+using Xunit;
 
 public sealed class NamedSet
 {
@@ -16,23 +17,9 @@ public sealed class NamedSet
     public string Value;
 }
 
-class Program
+public class Runtime_88091
 {
-    static int Main()
-    {
-        int result = 0;
-        try 
-        {
-            Problem(data);
-            result = 100;
-        }
-        catch (Exception e)
-        {
-            Console.WriteLine($"Failed: {e.Message}");
-            result = -1;
-        }
-        return result;
-    }
+    [Fact] static void Test() => Problem(data);
 
     // We may mistakenly CSE item.Count here
     //

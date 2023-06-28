@@ -838,8 +838,6 @@ bool Compiler::optJumpThreadCheck(BasicBlock* const block, BasicBlock* const dom
     // any PHI is locally consumed, so that if we bypass the block we
     // don't need to make SSA updates.
     //
-    // Also for PHI-based RBO: skip if the block has a memory SSA PHI....
-    //
     // TODO: handle blocks with side effects. For those predecessors that are
     // favorable (ones that don't reach block via a critical edge), consider
     // duplicating block's IR into the predecessor. This is the jump threading
@@ -1596,8 +1594,8 @@ bool Compiler::optJumpThreadCore(JumpThreadInfo& jti)
     }
 
     // If this is a phi-based threading, and the block we're bypassing has
-    // a memory phi, and the new successors do not, mark the block with BBF_ALTERED_MEMORY_PHI
-    // so we can block CSE propagation into the block.
+    // a memory phi, mark the block with BBF_NO_CSE_IN so we can block CSE propagation
+    // into the block.
     //
     if (jti.m_isPhiBased)
     {
