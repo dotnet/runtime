@@ -120,9 +120,9 @@ namespace Microsoft.Extensions.DependencyInjection
             _callSiteValidator?.ValidateCallSite(callSite);
         }
 
-        private void OnResolve(Type serviceType, IServiceScope scope)
+        private void OnResolve(ServiceCallSite callSite, IServiceScope scope)
         {
-            _callSiteValidator?.ValidateResolution(serviceType, scope, Root);
+            _callSiteValidator?.ValidateResolution(callSite, scope, Root);
         }
 
         internal object? GetService(Type serviceType, ServiceProviderEngineScope serviceProviderEngineScope)
@@ -133,8 +133,6 @@ namespace Microsoft.Extensions.DependencyInjection
             }
 
             Func<ServiceProviderEngineScope, object?> realizedService = _realizedServices.GetOrAdd(serviceType, _createServiceAccessor);
-            OnResolve(serviceType, serviceProviderEngineScope);
-            DependencyInjectionEventSource.Log.ServiceResolved(this, serviceType);
             var result = realizedService.Invoke(serviceProviderEngineScope);
             System.Diagnostics.Debug.Assert(result is null || CallSiteFactory.IsService(serviceType));
             return result;
@@ -173,10 +171,20 @@ namespace Microsoft.Extensions.DependencyInjection
                 if (callSite.Cache.Location == CallSiteResultCacheLocation.Root)
                 {
                     object? value = CallSiteRuntimeResolver.Instance.Resolve(callSite, Root);
-                    return scope => value;
+                    return scope =>
+                    {
+                        DependencyInjectionEventSource.Log.ServiceResolved(this, serviceType);
+                        return value;
+                    };
                 }
 
-                return _engine.RealizeService(callSite);
+                Func<ServiceProviderEngineScope, object?> realizedService = _engine.RealizeService(callSite);
+                return scope =>
+                {
+                    OnResolve(callSite, scope);
+                    DependencyInjectionEventSource.Log.ServiceResolved(this, serviceType);
+                    return realizedService(scope);
+                };
             }
 
             return _ => null;
