@@ -146,10 +146,6 @@ The System.Collections.Immutable library is built-in as part of the shared frame
     <None Include="Interfaces.cd" />
   </ItemGroup>
 
-  <ItemGroup Condition="$([MSBuild]::IsTargetFrameworkCompatible('$(TargetFramework)', 'net6.0'))">
-    <Compile Include="System\Collections\Frozen\WrappedDictionaryFrozenDictionary.cs" />
-  </ItemGroup>
-
   <ItemGroup Condition="'$(TargetFramework)' == '$(NetCoreAppCurrent)'">
     <Reference Include="System.Collections" />
     <Reference Include="System.Linq" />

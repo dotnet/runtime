@@ -9,7 +9,7 @@ const assemblyName = "Wasm.Browser.Threads.Minimal.Sample.dll";
 try {
     const { setModuleImports, getAssemblyExports, runMain } = await dotnet
         //.withEnvironmentVariable("MONO_LOG_LEVEL", "debug")
-        .withDiagnosticTracing(true)
+        //.withDiagnosticTracing(true)
         .withConfig({
             pthreadPoolSize: 6,
         })
@@ -17,7 +17,19 @@ try {
         .withExitCodeLogging()
         .create();
 
+    globalThis.test1 = { a: 1 };
+    globalThis.test2 = { a: 2 };
+
     const exports = await getAssemblyExports(assemblyName);
+
+    console.log("smoke: running LockTest");
+    await exports.Sample.Test.LockTest();
+    console.log("smoke: LockTest done ");
+
+
+    console.log("smoke: running DisposeTest");
+    await exports.Sample.Test.DisposeTest();
+    console.log("smoke: DisposeTest done ");
 
     console.log("smoke: running TestHelloWebWorker");
     await exports.Sample.Test.TestHelloWebWorker();
@@ -45,6 +57,27 @@ try {
     await exports.Sample.Test.TestCallSetTimeoutOnWorker();
     console.log("smoke: TestCallSetTimeoutOnWorker done");
 
+    console.log("smoke: running HttpClientMain(blurst.txt)");
+    let t = await exports.Sample.Test.HttpClientMain(globalThis.document.baseURI + "blurst.txt");
+    console.log("smoke: HttpClientMain(blurst.txt) done " + t);
+
+    console.log("smoke: running HttpClientWorker(blurst.txt)");
+    let t2 = await exports.Sample.Test.HttpClientWorker(globalThis.document.baseURI + "blurst.txt");
+    console.log("smoke: HttpClientWorker(blurst.txt) done " + t2);
+
+    console.log("smoke: running HttpClientPool(blurst.txt)");
+    let t3 = await exports.Sample.Test.HttpClientPool(globalThis.document.baseURI + "blurst.txt");
+    console.log("smoke: HttpClientPool(blurst.txt) done " + t3);
+
+    console.log("smoke: running HttpClientThread(blurst.txt)");
+    let t4 = await exports.Sample.Test.HttpClientThread(globalThis.document.baseURI + "blurst.txt");
+    console.log("smoke: HttpClientThread(blurst.txt) done " + t4);
+
+    console.log("smoke: running WsClientMain");
+    let w0 = await exports.Sample.Test.WsClientMain("wss://socketsbay.com/wss/v2/1/demo/");
+    console.log("smoke: WsClientMain done " + w0);
+
+    /* ActiveIssue https://github.com/dotnet/runtime/issues/88057
     console.log("smoke: running FetchBackground(blurst.txt)");
     let s = await exports.Sample.Test.FetchBackground("./blurst.txt");
     console.log("smoke: FetchBackground(blurst.txt) done");
@@ -61,7 +94,7 @@ try {
         const msg = `Unexpected FetchBackground(missing) result ${s}`;
         document.getElementById("out").innerHTML = msg;
         throw new Error(msg);
-    }
+    }*/
 
     console.log("smoke: running TaskRunCompute");
     const r1 = await exports.Sample.Test.RunBackgroundTaskRunCompute();

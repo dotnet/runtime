@@ -66,6 +66,7 @@ struct JitInterfaceCallbacks
     unsigned (* getClassGClayout)(void * thisHandle, CorInfoExceptionClass** ppException, CORINFO_CLASS_HANDLE cls, uint8_t* gcPtrs);
     unsigned (* getClassNumInstanceFields)(void * thisHandle, CorInfoExceptionClass** ppException, CORINFO_CLASS_HANDLE cls);
     CORINFO_FIELD_HANDLE (* getFieldInClass)(void * thisHandle, CorInfoExceptionClass** ppException, CORINFO_CLASS_HANDLE clsHnd, int32_t num);
+    GetTypeLayoutResult (* getTypeLayout)(void * thisHandle, CorInfoExceptionClass** ppException, CORINFO_CLASS_HANDLE typeHnd, CORINFO_TYPE_LAYOUT_NODE* treeNodes, size_t* numTreeNodes);
     bool (* checkMethodModifier)(void * thisHandle, CorInfoExceptionClass** ppException, CORINFO_METHOD_HANDLE hMethod, const char* modifier, bool fOptional);
     CorInfoHelpFunc (* getNewHelper)(void * thisHandle, CorInfoExceptionClass** ppException, CORINFO_RESOLVED_TOKEN* pResolvedToken, CORINFO_METHOD_HANDLE callerHandle, bool* pHasSideEffects);
     CorInfoHelpFunc (* getNewArrHelper)(void * thisHandle, CorInfoExceptionClass** ppException, CORINFO_CLASS_HANDLE arrayCls);
@@ -726,6 +727,17 @@ public:
 {
     CorInfoExceptionClass* pException = nullptr;
     CORINFO_FIELD_HANDLE temp = _callbacks->getFieldInClass(_thisHandle, &pException, clsHnd, num);
+    if (pException != nullptr) throw pException;
+    return temp;
+}
+
+    virtual GetTypeLayoutResult getTypeLayout(
+          CORINFO_CLASS_HANDLE typeHnd,
+          CORINFO_TYPE_LAYOUT_NODE* treeNodes,
+          size_t* numTreeNodes)
+{
+    CorInfoExceptionClass* pException = nullptr;
+    GetTypeLayoutResult temp = _callbacks->getTypeLayout(_thisHandle, &pException, typeHnd, treeNodes, numTreeNodes);
     if (pException != nullptr) throw pException;
     return temp;
 }

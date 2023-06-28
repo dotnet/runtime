@@ -111,6 +111,7 @@ HRESULT EEConfig::Init()
     iJitOptimizeType = OPT_DEFAULT;
     fJitFramed = false;
     fJitMinOpts = false;
+    fJitAllowOptionalRelocs = false;
     fPInvokeRestoreEsp = (DWORD)-1;
 
     fNgenBindOptimizeNonGac = false;
@@ -543,6 +544,7 @@ HRESULT EEConfig::sync()
 
     fJitFramed = (CLRConfig::GetConfigValue(CLRConfig::UNSUPPORTED_JitFramed) != 0);
     fJitMinOpts = (CLRConfig::GetConfigValue(CLRConfig::UNSUPPORTED_JITMinOpts) == 1);
+    fJitAllowOptionalRelocs = (CLRConfig::GetConfigValue(CLRConfig::UNSUPPORTED_JITAllowOptionalRelocs) == 1);
     iJitOptimizeType      =  CLRConfig::GetConfigValue(CLRConfig::EXTERNAL_JitOptimizeType);
     if (iJitOptimizeType > OPT_RANDOM)     iJitOptimizeType = OPT_DEFAULT;
 

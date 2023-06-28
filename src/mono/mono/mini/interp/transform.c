@@ -11090,6 +11090,8 @@ retry:
 
 	g_assert (td->inline_depth == 0);
 
+	td->rtm->is_verbose = td->verbose_level > 0;
+
 	if (td->has_localloc)
 		interp_fix_localloc_ret (td);
 

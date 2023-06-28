@@ -108,7 +108,7 @@ export function ws_wasm_receive(ws: WebSocketExtension, buffer_ptr: VoidPtr, buf
 
     const readyState = ws.readyState;
     if (readyState != WebSocket.OPEN && readyState != WebSocket.CLOSING) {
-        throw new Error("InvalidState: The WebSocket is not connected.");
+        throw new Error(`InvalidState: ${readyState} The WebSocket is not connected.`);
     }
 
     if (receive_event_queue.getLength()) {
@@ -130,7 +130,6 @@ export function ws_wasm_receive(ws: WebSocketExtension, buffer_ptr: VoidPtr, buf
 
 export function ws_wasm_close(ws: WebSocketExtension, code: number, reason: string | null, wait_for_close_received: boolean): Promise<void> | null {
     mono_assert(!!ws, "ERR19: expected ws instance");
-
 
     if (ws.readyState == WebSocket.CLOSED) {
         return null;
@@ -207,16 +206,19 @@ function _mono_wasm_web_socket_send_and_wait(ws: WebSocketExtension, buffer_view
         if (ws.bufferedAmount === 0) {
             promise_control.resolve();
         }
-        else if (ws.readyState != WebSocket.OPEN) {
-            // only reject if the data were not sent
-            // bufferedAmount does not reset to zero once the connection closes
-            promise_control.reject("InvalidState: The WebSocket is not connected.");
-        }
-        else if (!promise_control.isDone) {
-            globalThis.setTimeout(polling_check, nextDelay);
-            // exponentially longer delays, up to 1000ms
-            nextDelay = Math.min(nextDelay * 1.5, 1000);
-            return;
+        else {
+            const readyState = ws.readyState;
+            if (readyState != WebSocket.OPEN && readyState != WebSocket.CLOSING) {
+                // only reject if the data were not sent
+                // bufferedAmount does not reset to zero once the connection closes
+                promise_control.reject(`InvalidState: ${readyState} The WebSocket is not connected.`);
+            }
+            else if (!promise_control.isDone) {
+                globalThis.setTimeout(polling_check, nextDelay);
+                // exponentially longer delays, up to 1000ms
+                nextDelay = Math.min(nextDelay * 1.5, 1000);
+                return;
+            }
         }
         // remove from pending
         const index = pending.indexOf(promise_control);
