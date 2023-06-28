@@ -67,6 +67,11 @@
         <target state="translated">이 매개 변수에 제공된 '[In]' 및 '[Out]' 특성은 이 매개 변수에서 지원되지 않습니다.</target>
         <note />
       </trans-unit>
+      <trans-unit id="InOutAttributes">
+        <source>[In] and [Out] attributes</source>
+        <target state="new">[In] and [Out] attributes</target>
+        <note />
+      </trans-unit>
       <trans-unit id="ManagedToUnmanagedMissingRequiredMarshaller">
         <source>The specified parameter needs to be marshalled from managed to unmanaged, but the marshaller type '{0}' does not support it.</source>
         <target state="translated">지정된 매개 변수를 관리형에서 비관리형으로 마샬링해야 하지만 마샬러 유형 '{0}'은(는) 지원하지 않습니다.</target>

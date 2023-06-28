@@ -41,6 +41,7 @@ namespace System.Net.Security
 
             // Common options.
             AllowRenegotiation = sslClientAuthenticationOptions.AllowRenegotiation;
+            AllowTlsResume = sslClientAuthenticationOptions.AllowTlsResume;
             ApplicationProtocols = sslClientAuthenticationOptions.ApplicationProtocols;
             CheckCertName = !(sslClientAuthenticationOptions.CertificateChainPolicy?.VerificationFlags.HasFlag(X509VerificationFlags.IgnoreInvalidName) == true);
             EnabledSslProtocols = FilterOutIncompatibleSslProtocols(sslClientAuthenticationOptions.EnabledSslProtocols);
@@ -105,6 +106,7 @@ namespace System.Net.Security
 
             IsServer = true;
             AllowRenegotiation = sslServerAuthenticationOptions.AllowRenegotiation;
+            AllowTlsResume = sslServerAuthenticationOptions.AllowTlsResume;
             ApplicationProtocols = sslServerAuthenticationOptions.ApplicationProtocols;
             EnabledSslProtocols = FilterOutIncompatibleSslProtocols(sslServerAuthenticationOptions.EnabledSslProtocols);
             EncryptionPolicy = sslServerAuthenticationOptions.EncryptionPolicy;
@@ -183,6 +185,7 @@ namespace System.Net.Security
         internal object? UserState { get; set; }
         internal ServerOptionsSelectionCallback? ServerOptionDelegate { get; set; }
         internal X509ChainPolicy? CertificateChainPolicy { get; set; }
+        internal bool AllowTlsResume { get; set; }
 
 #if TARGET_ANDROID
         internal SslStream.JavaProxy? SslStreamProxy { get; set; }

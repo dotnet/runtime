@@ -9390,6 +9390,7 @@ add_referenced_patch (MonoAotCompile *acfg, MonoJumpInfo *patch_info, int depth)
 			case MONO_PATCH_INFO_VIRT_METHOD:
 			case MONO_PATCH_INFO_GSHAREDVT_METHOD:
 			case MONO_PATCH_INFO_GSHAREDVT_CALL:
+			case MONO_PATCH_INFO_SIGNATURE:
 				tmp.type = patch_type;
 				tmp.data.target = data;
 				break;
@@ -14435,6 +14436,8 @@ static void aot_dump (MonoAotCompile *acfg)
 static const MonoJitICallId preinited_jit_icalls [] = {
 	MONO_JIT_ICALL_mini_llvm_init_method,
 	MONO_JIT_ICALL_mini_llvmonly_throw_nullref_exception,
+	MONO_JIT_ICALL_mini_llvmonly_throw_index_out_of_range_exception,
+	MONO_JIT_ICALL_mini_llvmonly_throw_invalid_cast_exception,
 	MONO_JIT_ICALL_mini_llvmonly_throw_corlib_exception,
 	MONO_JIT_ICALL_mono_threads_state_poll,
 	MONO_JIT_ICALL_mini_llvmonly_init_vtable_slot,

@@ -13,7 +13,7 @@
     <EnabledGenerators Include="LibraryImportGenerator" Condition="'$(EnableLibraryImportGenerator)' == 'true'" />
     <!-- If the current project is not System.Private.CoreLib, we enable the LibraryImportGenerator source generator
          when the project is a C# source project that:
-         - doesn't target the latest TFM or
+         - doesn't target the a TFM that includes LibraryImportGenerator or
          - doesn't reference the live targeting pack (i.e. when inbox) and
            - references System.Private.CoreLib, or
            - references System.Runtime.InteropServices -->
@@ -22,7 +22,7 @@
                                   '$(IsSourceProject)' == 'true' and
                                   '$(MSBuildProjectExtension)' == '.csproj' and
                                   (
-                                    '$(TargetFrameworkMoniker)' != '$(NetCoreAppCurrentTargetFrameworkMoniker)' or
+                                    !$([MSBuild]::IsTargetFrameworkCompatible('$(TargetFramework)', 'net7.0')) or
                                     (
                                       '$(DisableImplicitFrameworkReferences)' == 'true' and
                                       (
@@ -33,17 +33,13 @@
                                   )" />
     <!-- We enable the ComInterfaceGenerator source generator
          when the project is a C# source project that:
-         - doesn't target the latest TFM or
          - references System.Runtime.InteropServices directly and not through the live targeting pack (i.e. when inbox) -->
     <EnabledGenerators Include="ComInterfaceGenerator"
                        Condition="'$(IsSourceProject)' == 'true' and
                                   '$(MSBuildProjectExtension)' == '.csproj' and
                                   (
-                                    '$(TargetFrameworkMoniker)' != '$(NetCoreAppCurrentTargetFrameworkMoniker)' or
-                                    (
                                       '$(DisableImplicitFrameworkReferences)' == 'true' and
                                       '@(Reference->AnyHaveMetadataValue('Identity', 'System.Runtime.InteropServices'))' == 'true'
-                                    )
                                   )" />
   </ItemGroup>
 

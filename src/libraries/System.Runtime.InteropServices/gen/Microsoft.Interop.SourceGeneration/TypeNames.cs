@@ -154,5 +154,7 @@ namespace Microsoft.Interop
         public const string System_Runtime_InteropServices_Marshalling_ComInterfaceMarshaller_Metadata = "System.Runtime.InteropServices.Marshalling.ComInterfaceMarshaller`1";
 
         public const string System_Runtime_InteropServices_Marshalling_ComObject = "System.Runtime.InteropServices.Marshalling.ComObject";
+
+        public const string System_Runtime_InteropServices_BestFitMappingAttribute = "System.Runtime.InteropServices.BestFitMappingAttribute";
     }
 }

@@ -111,7 +111,7 @@ public class BuildPublishTests : BuildTestBase
     [InlineData("Release", /*build*/true, /*publish*/false)]
     [InlineData("Release", /*build*/false, /*publish*/true)]
     [InlineData("Release", /*build*/true, /*publish*/true)]
-    [ActiveIssue("https://github.com/dotnet/runtime/issues/82725")]
+    [ActiveIssue("https://github.com/dotnet/runtime/issues/87877", TestPlatforms.Windows)]
     public async Task WithDllImportInMainAssembly(string config, bool build, bool publish)
     {
         // Based on https://github.com/dotnet/runtime/issues/59255
@@ -154,16 +154,10 @@ public class BuildPublishTests : BuildTestBase
         """);
 
         if (build)
-        {
             BlazorBuild(new BlazorBuildOptions(id, config, NativeFilesType.Relinked));
-            CheckNativeFileLinked(forPublish: false);
-        }
 
         if (publish)
-        {
             BlazorPublish(new BlazorBuildOptions(id, config, NativeFilesType.Relinked, ExpectRelinkDirWhenPublishing: build));
-            CheckNativeFileLinked(forPublish: true);
-        }
 
         if (publish)
             await BlazorRunForPublishWithWebServer(config, TestDllImport);
@@ -175,20 +169,6 @@ public class BuildPublishTests : BuildTestBase
             await page.Locator("text=\"cpp_add\"").ClickAsync();
             var txt = await page.Locator("p[role='test']").InnerHTMLAsync();
             Assert.Equal("Output: 22", txt);
-        }
-
-        void CheckNativeFileLinked(bool forPublish)
-        {
-            // very crude way to check that the native file was linked in
-            // needed because we don't run the blazor app yet
-            string objBuildDir = Path.Combine(_projectDir!, "obj", config, DefaultTargetFrameworkForBlazor, "wasm", forPublish ? "for-publish" : "for-build");
-            string pinvokeTableHPath = Path.Combine(objBuildDir, "pinvoke-table.h");
-            Assert.True(File.Exists(pinvokeTableHPath), $"Could not find {pinvokeTableHPath}");
-
-            string pinvokeTableHContents = File.ReadAllText(pinvokeTableHPath);
-            string pattern = $"\"cpp_add\".*{id}";
-            Assert.True(Regex.IsMatch(pinvokeTableHContents, pattern),
-                            $"Could not find {pattern} in {pinvokeTableHPath}");
         }
     }
 
@@ -257,7 +237,6 @@ public class BuildPublishTests : BuildTestBase
         await BlazorRunForBuildWithDotnetRun(config);
     }
 
-    [ActiveIssue("https://github.com/dotnet/runtime/issues/82481")]
     [ConditionalTheory(typeof(BuildTestBase), nameof(IsUsingWorkloads))]
     [InlineData("Debug", false)]
     [InlineData("Debug", true)]
@@ -270,7 +249,11 @@ public class BuildPublishTests : BuildTestBase
         if (aot)
             AddItemsPropertiesToProject(projectFile, "<RunAOTCompilation>true</RunAOTCompilation>");
 
-        BlazorPublish(new BlazorBuildOptions(id, config, aot ? NativeFilesType.AOT : NativeFilesType.Relinked));
+        BlazorPublish(new BlazorBuildOptions(
+            id,
+            config,
+            aot ? NativeFilesType.AOT
+                : (config == "Release" ? NativeFilesType.Relinked : NativeFilesType.FromRuntimePack)));
         await BlazorRunForPublishWithWebServer(config);
     }
 

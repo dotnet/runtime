@@ -14,6 +14,7 @@ namespace Microsoft.Interop
     /// </summary>
     internal sealed record GeneratedComInterfaceData : InteropAttributeData
     {
+        public ComInterfaceOptions Options { get; init; }
         public static GeneratedComInterfaceData From(GeneratedComInterfaceCompilationData generatedComInterfaceAttr)
             => new GeneratedComInterfaceData() with
             {
@@ -22,7 +23,8 @@ namespace Microsoft.Interop
                 StringMarshalling = generatedComInterfaceAttr.StringMarshalling,
                 StringMarshallingCustomType = generatedComInterfaceAttr.StringMarshallingCustomType is not null
                     ? ManagedTypeInfo.CreateTypeInfoForTypeSymbol(generatedComInterfaceAttr.StringMarshallingCustomType)
-                    : null
+                    : null,
+                Options = generatedComInterfaceAttr.Options
             };
     }
 
@@ -32,6 +34,8 @@ namespace Microsoft.Interop
     /// </summary>
     internal sealed record GeneratedComInterfaceCompilationData : InteropAttributeCompilationData
     {
+        public ComInterfaceOptions Options { get; init; } = ComInterfaceOptions.ManagedObjectWrapper | ComInterfaceOptions.ComObjectWrapper;
+
         public static bool TryGetGeneratedComInterfaceAttributeFromInterface(INamedTypeSymbol interfaceSymbol, [NotNullWhen(true)] out AttributeData? generatedComInterfaceAttribute)
         {
             generatedComInterfaceAttribute = null;
@@ -59,6 +63,13 @@ namespace Microsoft.Interop
             var generatedComInterfaceAttributeData = new GeneratedComInterfaceCompilationData();
             var args = attr.NamedArguments.ToImmutableDictionary();
             generatedComInterfaceAttributeData = generatedComInterfaceAttributeData.WithValuesFromNamedArguments(args);
+            if (args.TryGetValue(nameof(Options), out var options))
+            {
+                generatedComInterfaceAttributeData = generatedComInterfaceAttributeData with
+                {
+                    Options = (ComInterfaceOptions)options.Value
+                };
+            }
             return generatedComInterfaceAttributeData;
         }
     }

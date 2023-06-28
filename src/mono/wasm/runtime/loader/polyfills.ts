@@ -73,10 +73,14 @@ export async function fetch_like(url: string, init?: RequestInit): Promise<Respo
             const arrayBuffer = await node_fs.promises.readFile(url);
             return <Response><any>{
                 ok: true,
-                headers: [],
+                headers: {
+                    length: 0,
+                    get: () => null
+                },
                 url,
                 arrayBuffer: () => arrayBuffer,
-                json: () => JSON.parse(arrayBuffer)
+                json: () => JSON.parse(arrayBuffer),
+                text: () => { throw new Error("NotImplementedException"); }
             };
         }
         else if (hasFetch) {
@@ -88,12 +92,17 @@ export async function fetch_like(url: string, init?: RequestInit): Promise<Respo
             return <Response><any>{
                 ok: true,
                 url,
+                headers: {
+                    length: 0,
+                    get: () => null
+                },
                 arrayBuffer: () => {
                     return new Uint8Array(read(url, "binary"));
                 },
                 json: () => {
                     return JSON.parse(read(url, "utf8"));
-                }
+                },
+                text: () => read(url, "utf8")
             };
         }
     }
@@ -102,9 +111,14 @@ export async function fetch_like(url: string, init?: RequestInit): Promise<Respo
             ok: false,
             url,
             status: 500,
+            headers: {
+                length: 0,
+                get: () => null
+            },
             statusText: "ERR28: " + e,
             arrayBuffer: () => { throw e; },
-            json: () => { throw e; }
+            json: () => { throw e; },
+            text: () => { throw e; }
         };
     }
     throw new Error("No fetch implementation available");

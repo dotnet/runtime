@@ -57,6 +57,11 @@
         <target state="translated">A interface COM base falhou ao gerar a fonte. O código não será gerado para esta interface.</target>
         <note />
       </trans-unit>
+      <trans-unit id="BaseInterfaceMustGenerateAtLeastSameWrappers">
+        <source>A 'GeneratedComInterface' cannot specify 'ComInterfaceOptions.ManagedObjectWrapper' or 'ComInterfaceOptions.ComObjectWrapper' unless the base interface type did not specify options or specified at least the same options.</source>
+        <target state="translated">Um 'GeneratedComInterface' não pode especificar 'ComInterfaceOptions.ManagedObjectWrapper' ou 'ComInterfaceOptions.ComObjectWrapper' a menos que o tipo de interface base não especifique opções ou especifique pelo menos as mesmas opções.</target>
+        <note />
+      </trans-unit>
       <trans-unit id="CastsBetweenRuntimeComAndSourceGeneratedComNotSupportedDescription">
         <source>Casting between a 'ComImport' type and a source-generated COM type is not supported and will fail at runtime</source>
         <target state="translated">A conversão entre um tipo 'ComImport' e um tipo COM gerado pela fonte não é suportada e falhará no tempo de execução</target>
@@ -297,6 +302,16 @@
         <target state="translated">A interface '{0}' ou um de seus tipos contém a palavra-chave 'parcial' ausente. O código não será gerado para '{0}'.</target>
         <note />
       </trans-unit>
+      <trans-unit id="InvalidOptionsOnInterfaceDescription">
+        <source>The specified 'ComInterfaceOptions' are invalid.</source>
+        <target state="translated">As 'ComInterfaceOptions' especificadas são inválidas.</target>
+        <note />
+      </trans-unit>
+      <trans-unit id="InvalidOptionsOnInterfaceMessage">
+        <source>The specified 'ComInterfaceOptions' on '{0}' are invalid. {1}</source>
+        <target state="translated">As 'ComInterfaceOptions' especificadas em '{0}' são inválidas. {1}</target>
+        <note />
+      </trans-unit>
       <trans-unit id="InvalidStringMarshallingConfigurationDescription">
         <source>The configuration of 'StringMarshalling' and 'StringMarshallingCustomType' is invalid.</source>
         <target state="translated">A configuração de 'StringMarshalling' e 'StringMarshallingCustomType' é inválida.</target>
@@ -327,6 +342,16 @@
         <target state="translated">Uso inválido de 'VirtualMethodIndexAttribute'</target>
         <note />
       </trans-unit>
+      <trans-unit id="MarshalAsConfigurationNotSupportedMessageParameter">
+        <source>The specified 'MarshalAsAttribute' configuration for parameter '{1}' is not supported by source-generated COM. If the specified configuration is required, use `ComImport` instead.</source>
+        <target state="translated">A configuração especificada "MarshalAsAttribute" para o parâmetro "{1}" não tem suporte do COM gerado pela origem. Se a configuração especificada for necessária, use "ComImport" no lugar.</target>
+        <note />
+      </trans-unit>
+      <trans-unit id="MarshalAsConfigurationNotSupportedMessageReturn">
+        <source>The specified 'MarshalAsAttribute' configuration for the return value of method '{1}' is not supported by source-generated COM. If the specified configuration is required, use `ComImport` instead.</source>
+        <target state="translated">A configuração especificada "MarshalAsAttribute" para o valor retornado do método "{1}" não tem suporte do COM gerado pela origem. Se a configuração especificada for necessária, use "ComImport" no lugar.</target>
+        <note />
+      </trans-unit>
       <trans-unit id="MethodNotDeclaredInAttributedInterfaceDescription">
         <source>All methods must be declared in the same partial definition of a 'GeneratedComInterface'-attributed interface type to ensure reliable calculation for virtual method table offsets.</source>
         <target state="translated">Todos os métodos devem ser declarados na mesma definição parcial de um tipo de interface atribuído a "GeneratedComInterface" para garantir um cálculo confiável para deslocamentos de tabela de métodos virtuais.</target>
@@ -355,6 +380,11 @@
       <trans-unit id="MultipleComInterfaceBaseTypesTitle">
         <source>Specified interface derives from two or more 'GeneratedComInterfaceAttribute'-attributed interfaces.</source>
         <target state="translated">A interface especificada deriva de duas ou mais interfaces atribuídas a 'GeneratedComInterfaceAttribute'.</target>
+        <note />
+      </trans-unit>
+      <trans-unit id="OneWrapperMustBeGenerated">
+        <source>Either 'ComInterfaceOptions.ManagedObjectWrapper' or 'ComInterfaceOptions.ComObjectWrapper' must be specified.</source>
+        <target state="translated">'ComInterfaceOptions.ManagedObjectWrapper' ou 'ComInterfaceOptions.ComObjectWrapper' deve ser especificado.</target>
         <note />
       </trans-unit>
       <trans-unit id="RequiresAllowUnsafeBlocksDescription">
@@ -422,6 +452,26 @@
       <trans-unit id="TypeNotSupportedTitle">
         <source>Specified type is not supported by source-generated COM</source>
         <target state="translated">Um COM gerado pela origem não dá suporte ao tipo especificado.</target>
+        <note />
+      </trans-unit>
+      <trans-unit id="UnnecessaryMarshallingInfoDescription">
+        <source>Unnecesssary marshalling info was provided. This marshalling information can be removed without any change in behavior to the application.</source>
+        <target state="new">Unnecesssary marshalling info was provided. This marshalling information can be removed without any change in behavior to the application.</target>
+        <note />
+      </trans-unit>
+      <trans-unit id="UnnecessaryMarshallingInfoTitle">
+        <source>Unnecessary marshalling info was provided and can be removed.</source>
+        <target state="new">Unnecessary marshalling info was provided and can be removed.</target>
+        <note />
+      </trans-unit>
+      <trans-unit id="UnnecessaryParameterMarshallingInfoMessage">
+        <source>Unnecessary marshalling info '{0}' was provided for parameter '{1}'</source>
+        <target state="new">Unnecessary marshalling info '{0}' was provided for parameter '{1}'</target>
+        <note />
+      </trans-unit>
+      <trans-unit id="UnnecessaryReturnMarshallingInfoMessage">
+        <source>Unnecessary marshalling info '{0}' was provided for the return type of method '{1}'</source>
+        <target state="new">Unnecessary marshalling info '{0}' was provided for the return type of method '{1}'</target>
         <note />
       </trans-unit>
     </body>
