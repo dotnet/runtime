@@ -5,7 +5,6 @@ using System;
 using System.Collections.Generic;
 using System.Diagnostics;
 using System.Diagnostics.CodeAnalysis;
-using System.Linq;
 using System.Threading.Tasks;
 using Microsoft.Extensions.Internal;
 
@@ -234,7 +233,7 @@ namespace Microsoft.Extensions.DependencyInjection.ServiceLookup
             }
 
             public List<ServiceDescriptor> ServiceDescriptors => new List<ServiceDescriptor>(_serviceProvider.RootProvider.CallSiteFactory.Descriptors);
-            public List<object> Disposables => new List<object>(_serviceProvider._disposables ?? Enumerable.Empty<object>());
+            public List<object> Disposables => new List<object>(_serviceProvider._disposables ?? (IEnumerable<object>)Array.Empty<object>());
             public bool Disposed => _serviceProvider._disposed;
             public bool IsScope => !_serviceProvider.IsRootScope;
         }
