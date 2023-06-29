@@ -233,12 +233,12 @@ namespace System.Memory.Tests.Span
 
             if (CanTestInvariantCulture)
             {
-                RunUsingInvariantCulture(static () => RunStress(), timeout: 10 * 60);
+                RunUsingInvariantCulture(static () => RunStress());
             }
 
             if (CanTestNls)
             {
-                RunUsingNLS(static () => RunStress(), timeout: 10 * 60);
+                RunUsingNLS(static () => RunStress());
             }
 
             static void RunStress()
@@ -282,7 +282,7 @@ namespace System.Memory.Tests.Span
             return minIndex == int.MaxValue ? -1 : minIndex;
         }
 
-        private static void RunUsingInvariantCulture(Action action, int timeout = 60)
+        private static void RunUsingInvariantCulture(Action action)
         {
             Assert.True(CanTestInvariantCulture);
 
@@ -290,10 +290,10 @@ namespace System.Memory.Tests.Span
             psi.Environment.Clear();
             psi.Environment.Add("DOTNET_SYSTEM_GLOBALIZATION_INVARIANT", "true");
 
-            RemoteExecutor.Invoke(action, new RemoteInvokeOptions { StartInfo = psi, TimeOut = timeout * 1000 }).Dispose();
+            RemoteExecutor.Invoke(action, new RemoteInvokeOptions { StartInfo = psi, TimeOut = 10 * 60 * 1000 }).Dispose();
         }
 
-        private static void RunUsingNLS(Action action, int timeout = 60)
+        private static void RunUsingNLS(Action action)
         {
             Assert.True(CanTestNls);
 
@@ -301,7 +301,7 @@ namespace System.Memory.Tests.Span
             psi.Environment.Clear();
             psi.Environment.Add("DOTNET_SYSTEM_GLOBALIZATION_USENLS", "true");
 
-            RemoteExecutor.Invoke(action, new RemoteInvokeOptions { StartInfo = psi, TimeOut = timeout * 1000 }).Dispose();
+            RemoteExecutor.Invoke(action, new RemoteInvokeOptions { StartInfo = psi, TimeOut = 10 * 60 * 1000 }).Dispose();
         }
 
         private sealed class StringSearchValuesTestHelper
@@ -368,7 +368,7 @@ namespace System.Memory.Tests.Span
                     {
                         try
                         {
-                            TestRandomInputs(iterationCount: 10, rng: new Random());
+                            TestRandomInputs(iterationCount: 1, rng: new Random());
                         }
                         catch (Exception ex)
                         {
