@@ -66,12 +66,28 @@ int32_t GlobalizationNative_ChangeCaseNative(const uint16_t* localeName, int32_t
 
     int32_t srcIdx = 0, dstIdx = 0, isError = 0;
     uint16_t dstCodepoint;
-    while (srcIdx < result.length)
+    if (result.length <= cwDstLength)
     {
-        dstCodepoint = [result characterAtIndex:srcIdx++];
-        Append(lpDst, dstIdx, cwDstLength, dstCodepoint, isError);
-        if (isError)
-            return isError;
+        while (srcIdx < result.length)
+        {
+            dstCodepoint = [result characterAtIndex:srcIdx++];
+            Append(lpDst, dstIdx, cwDstLength, dstCodepoint, isError);
+            if (isError)
+                return isError;
+        }
+    }
+    else
+    {
+        while (srcIdx < cwSrcLength)
+        {           
+            NSString *src = [NSString stringWithCharacters: lpSrc + srcIdx length: 1];
+            srcIdx++;
+            NSString *dst = bToUpper ? [src uppercaseStringWithLocale:currentLocale] : [src lowercaseStringWithLocale:currentLocale];
+            dstCodepoint = dst.length > 1 ? [src characterAtIndex: 0] : [dst characterAtIndex: 0];
+            Append(lpDst, dstIdx, cwDstLength, dstCodepoint, isError);
+            if (isError)
+                return isError;
+        }
     }
     return Success;
 }
@@ -90,12 +106,28 @@ int32_t GlobalizationNative_ChangeCaseInvariantNative(const uint16_t* lpSrc, int
 
     int32_t srcIdx = 0, dstIdx = 0, isError = 0;
     uint16_t dstCodepoint;
-    while (srcIdx < result.length)
+    if (result.length <= cwDstLength)
     {
-        dstCodepoint = [result characterAtIndex:srcIdx++];
-        Append(lpDst, dstIdx, cwDstLength, dstCodepoint, isError);
-        if (isError)
-            return isError;
+        while (srcIdx < result.length)
+        {
+            dstCodepoint = [result characterAtIndex:srcIdx++];
+            Append(lpDst, dstIdx, cwDstLength, dstCodepoint, isError);
+            if (isError)
+                return isError;
+        }
+    }
+    else
+    {
+        while (srcIdx < cwSrcLength)
+        {           
+            NSString *src = [NSString stringWithCharacters: lpSrc + srcIdx length: 1];
+            srcIdx++;
+            NSString *dst = bToUpper ? src.uppercaseString : src.lowercaseString;
+            dstCodepoint = dst.length > 1 ? [src characterAtIndex: 0] : [dst characterAtIndex: 0];
+            Append(lpDst, dstIdx, cwDstLength, dstCodepoint, isError);
+            if (isError)
+                return isError;
+        }
     }
     return Success;
 }
