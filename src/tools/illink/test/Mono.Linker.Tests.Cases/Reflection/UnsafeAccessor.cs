@@ -3,6 +3,7 @@
 
 using System;
 using System.Runtime.CompilerServices;
+using System.Runtime.InteropServices;
 using Mono.Linker.Tests.Cases.Expectations.Assertions;
 using Mono.Linker.Tests.Cases.Expectations.Metadata;
 
@@ -666,6 +667,46 @@ namespace Mono.Linker.Tests.Cases.Reflection
 			extern static ref string FieldWithRef (StaticFieldTarget target);
 
 			[Kept]
+			class FieldOnValueType
+			{
+				[Kept (By = Tool.Trimmer)]
+				struct Target
+				{
+					[Kept (By = Tool.Trimmer)]
+					private static int Field;
+
+					[Kept (By = Tool.Trimmer)]
+					private static int FieldWithoutRefOnThis;
+
+					private static int FieldWithoutRefOnReturn;
+				}
+
+				[Kept]
+				[KeptAttributeAttribute (typeof (UnsafeAccessorAttribute))]
+				[UnsafeAccessor (UnsafeAccessorKind.StaticField)]
+				extern static ref int Field (ref Target target);
+
+				[Kept]
+				[KeptAttributeAttribute (typeof (UnsafeAccessorAttribute))]
+				[UnsafeAccessor (UnsafeAccessorKind.StaticField)]
+				extern static ref int FieldWithoutRefOnThis (Target target);
+
+				[Kept]
+				[KeptAttributeAttribute (typeof (UnsafeAccessorAttribute))]
+				[UnsafeAccessor (UnsafeAccessorKind.StaticField)]
+				extern static int FieldWithoutRefOnReturn (ref Target target);
+
+				[Kept]
+				public static void Test ()
+				{
+					Target target = new Target ();
+					Field (ref target);
+					FieldWithoutRefOnThis (target);
+					FieldWithoutRefOnReturn (ref target);
+				}
+			}
+
+			[Kept]
 			public static void Test ()
 			{
 				Field (null);
@@ -679,6 +720,8 @@ namespace Mono.Linker.Tests.Cases.Reflection
 
 				StaticFieldTarget target = new StaticFieldTarget ();
 				InstanceFieldAsStaticField (target);
+
+				FieldOnValueType.Test ();
 			}
 		}
 
@@ -706,11 +749,52 @@ namespace Mono.Linker.Tests.Cases.Reflection
 			extern static ref int StaticFieldAsInstanceField (InstanceFieldTarget target);
 
 			[Kept]
+			class FieldOnValueType
+			{
+				[Kept (By = Tool.Trimmer)]
+				[StructLayout(LayoutKind.Auto)] // Otherwise trimmer will keep all the fields
+				struct Target
+				{
+					[Kept (By = Tool.Trimmer)]
+					private int Field;
+
+					private int FieldWithoutRefOnThis;
+
+					private int FieldWithoutRefOnReturn;
+				}
+
+				[Kept]
+				[KeptAttributeAttribute (typeof (UnsafeAccessorAttribute))]
+				[UnsafeAccessor (UnsafeAccessorKind.Field)]
+				extern static ref int Field (ref Target target);
+
+				[Kept]
+				[KeptAttributeAttribute (typeof (UnsafeAccessorAttribute))]
+				[UnsafeAccessor (UnsafeAccessorKind.Field)]
+				extern static ref int FieldWithoutRefOnThis (Target target);
+
+				[Kept]
+				[KeptAttributeAttribute (typeof (UnsafeAccessorAttribute))]
+				[UnsafeAccessor (UnsafeAccessorKind.Field)]
+				extern static int FieldWithoutRefOnReturn (ref Target target);
+
+				[Kept]
+				public static void Test ()
+				{
+					Target target = new Target ();
+					Field (ref target);
+					FieldWithoutRefOnThis (target);
+					FieldWithoutRefOnReturn (ref target);
+				}
+			}
+
+			[Kept]
 			public static void Test ()
 			{
 				InstanceFieldTarget target = new InstanceFieldTarget ();
 				Field (target);
 				StaticFieldAsInstanceField (target);
+				FieldOnValueType.Test ();
 			}
 		}
 
