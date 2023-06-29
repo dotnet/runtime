@@ -3057,6 +3057,7 @@ namespace System.Diagnostics.Tracing
                 {
                     // Don't emit nor generate the manifest for NativeRuntimeEventSource i.e., Microsoft-Windows-DotNETRuntime.
                     manifest = new ManifestBuilder(resources, flags);
+                    bNeedsManifest = false;
                 }
                 else
                 {
@@ -3066,9 +3067,6 @@ namespace System.Diagnostics.Tracing
 
                     manifest = new ManifestBuilder(providerName, providerGuid, eventSourceDllName, resources, flags);
                 }
-
-                // We shouldn't need the manifest if it's not going to be built anyway.
-                bNeedsManifest &= manifest.WillBuild;
 
                 // Add an entry unconditionally for event ID 0 which will be for a string message.
                 manifest.StartEvent("EventSourceMessage", new EventAttribute(0) { Level = EventLevel.LogAlways, Task = (EventTask)0xFFFE });
@@ -5230,7 +5228,6 @@ namespace System.Diagnostics.Tracing
             errors = new List<string>();
             perEventByteArrayArgIndices = new Dictionary<string, List<int>>();
         }
-        internal bool WillBuild => sb is not null;
 
         public void AddOpcode(string name, int value)
         {
@@ -5542,51 +5539,44 @@ namespace System.Diagnostics.Tracing
             // Write out the channels
             if (channelTab != null)
             {
-                IEnumerable<KeyValuePair<int, ChannelInfo>> channels = channelTab;
                 sb?.AppendLine(" <channels>");
-                if (WillBuild)
-                {
-                    var sortedChannels = new List<KeyValuePair<int, ChannelInfo>>();
-                    foreach (KeyValuePair<int, ChannelInfo> p in channelTab) { sortedChannels.Add(p); }
-                    sortedChannels.Sort((p1, p2) => -Comparer<ulong>.Default.Compare(p1.Value.Keywords, p2.Value.Keywords));
-                    channels = sortedChannels;
-                }
-                foreach (KeyValuePair<int, ChannelInfo> kvpair in channels)
+                var sortedChannels = new List<KeyValuePair<int, ChannelInfo>>();
+                foreach (KeyValuePair<int, ChannelInfo> p in channelTab) { sortedChannels.Add(p); }
+                sortedChannels.Sort((p1, p2) => -Comparer<ulong>.Default.Compare(p1.Value.Keywords, p2.Value.Keywords));
+
+                foreach (KeyValuePair<int, ChannelInfo> kvpair in sortedChannels)
                 {
                     int channel = kvpair.Key;
                     ChannelInfo channelInfo = kvpair.Value;
 
                     string? channelType = null;
                     bool enabled = false;
-                    if (WillBuild)
+                    string? fullName = null;
+#if FEATURE_ADVANCED_MANAGED_ETW_CHANNELS
+                    string? isolation = null;
+                    string? access = null;
+#endif
+                    if (channelInfo.Attribs != null)
                     {
-                        string? fullName = null;
+                        EventChannelAttribute attribs = channelInfo.Attribs;
+                        if (Enum.IsDefined(typeof(EventChannelType), attribs.EventChannelType))
+                            channelType = attribs.EventChannelType.ToString();
+                        enabled = attribs.Enabled;
 #if FEATURE_ADVANCED_MANAGED_ETW_CHANNELS
-                        string? isolation = null;
-                        string? access = null;
-#endif
-                        if (channelInfo.Attribs != null)
+                        if (attribs.ImportChannel != null)
                         {
-                            EventChannelAttribute attribs = channelInfo.Attribs;
-                            if (Enum.IsDefined(typeof(EventChannelType), attribs.EventChannelType))
-                                channelType = attribs.EventChannelType.ToString();
-                            enabled = attribs.Enabled;
-#if FEATURE_ADVANCED_MANAGED_ETW_CHANNELS
-                            if (attribs.ImportChannel != null)
-                            {
-                                fullName = attribs.ImportChannel;
-                                elementName = "importChannel";
-                            }
-                            if (Enum.IsDefined(typeof(EventChannelIsolation), attribs.Isolation))
-                                isolation = attribs.Isolation.ToString();
-                            access = attribs.Access;
-#endif
+                            fullName = attribs.ImportChannel;
+                            elementName = "importChannel";
                         }
-
-                        fullName ??= providerName + "/" + channelInfo.Name;
-
-                        sb?.Append("  <channel chid=\"").Append(channelInfo.Name).Append("\" name=\"").Append(fullName).Append('"');
+                        if (Enum.IsDefined(typeof(EventChannelIsolation), attribs.Isolation))
+                            isolation = attribs.Isolation.ToString();
+                        access = attribs.Access;
+#endif
                     }
+
+                    fullName ??= providerName + "/" + channelInfo.Name;
+
+                    sb?.Append("  <channel chid=\"").Append(channelInfo.Name).Append("\" name=\"").Append(fullName).Append('"');
                     Debug.Assert(channelInfo.Name != null);
                     WriteMessageAttrib(sb, "channel", channelInfo.Name, null);
                     sb?.Append(" value=\"").Append(channel).Append('"');
@@ -5608,15 +5598,11 @@ namespace System.Diagnostics.Tracing
             // Write out the tasks
             if (taskTab != null)
             {
-                IEnumerable<int> tasks = taskTab.Keys;
                 sb?.AppendLine(" <tasks>");
-                if (WillBuild)
-                {
-                    var sortedTasks = new List<int>(taskTab.Keys);
-                    sortedTasks.Sort();
-                    tasks = sortedTasks;
-                }
-                foreach (int task in tasks)
+                var sortedTasks = new List<int>(taskTab.Keys);
+                sortedTasks.Sort();
+
+                foreach (int task in sortedTasks)
                 {
                     sb?.Append("  <task");
                     WriteNameAndMessageAttribs(sb, "task", taskTab[task]);
@@ -5665,12 +5651,10 @@ namespace System.Diagnostics.Tracing
                             if (isbitmap && !BitOperations.IsPow2(hexValue))
                                 continue;
 
-                            if (WillBuild)
-                            {
-                                hexValue.TryFormat(ulongHexScratch, out int charsWritten, "x");
-                                Span<char> hexValueFormatted = ulongHexScratch.Slice(0, charsWritten);
-                                sb?.Append("   <map value=\"0x").Append(hexValueFormatted).Append('"');
-                            }
+                            hexValue.TryFormat(ulongHexScratch, out int charsWritten, "x");
+                            Span<char> hexValueFormatted = ulongHexScratch.Slice(0, charsWritten);
+
+                            sb?.Append("   <map value=\"0x").Append(hexValueFormatted).Append('"');
                             WriteMessageAttrib(sb, "map", enumType.Name + "." + staticField.Name, staticField.Name);
                             sb?.AppendLine("/>");
                             anyValuesWritten = true;
@@ -5691,15 +5675,11 @@ namespace System.Diagnostics.Tracing
             }
 
             // Write out the opcodes
-            IEnumerable<int> opcodes = opcodeTab.Keys;
             sb?.AppendLine(" <opcodes>");
-            if (WillBuild)
-            {
-                var sortedOpcodes = new List<int>(opcodeTab.Keys);
-                sortedOpcodes.Sort();
-                opcodes = sortedOpcodes;
-            }
-            foreach (int opcode in opcodes)
+            var sortedOpcodes = new List<int>(opcodeTab.Keys);
+            sortedOpcodes.Sort();
+
+            foreach (int opcode in sortedOpcodes)
             {
                 sb?.Append("  <opcode");
                 WriteNameAndMessageAttribs(sb, "opcode", opcodeTab[opcode]);
@@ -5710,23 +5690,17 @@ namespace System.Diagnostics.Tracing
             // Write out the keywords
             if (keywordTab != null)
             {
-                IEnumerable<ulong> keywords = keywordTab.Keys;
                 sb?.AppendLine(" <keywords>");
-                if (WillBuild)
-                {
-                    var sortedKeywords = new List<ulong>(keywordTab.Keys);
-                    sortedKeywords.Sort();
-                }
-                foreach (ulong keyword in keywords)
+                var sortedKeywords = new List<ulong>(keywordTab.Keys);
+                sortedKeywords.Sort();
+
+                foreach (ulong keyword in sortedKeywords)
                 {
                     sb?.Append("  <keyword");
                     WriteNameAndMessageAttribs(sb, "keyword", keywordTab[keyword]);
-                    if (WillBuild)
-                    {
-                        keyword.TryFormat(ulongHexScratch, out int charsWritten, "x");
-                        Span<char> keywordFormatted = ulongHexScratch.Slice(0, charsWritten);
-                        sb?.Append(" mask=\"0x").Append(keywordFormatted).AppendLine("\"/>");
-                    }
+                    keyword.TryFormat(ulongHexScratch, out int charsWritten, "x");
+                    Span<char> keywordFormatted = ulongHexScratch.Slice(0, charsWritten);
+                    sb?.Append(" mask=\"0x").Append(keywordFormatted).AppendLine("\"/>");
                 }
                 sb?.AppendLine(" </keywords>");
             }
