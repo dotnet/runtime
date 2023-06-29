@@ -195,4 +195,7 @@
   <data name="InOutAttributes" xml:space="preserve">
     <value>[In] and [Out] attributes</value>
   </data>
+  <data name="InAttributeNotSupportedWithoutOutBlittableArray" xml:space="preserve">
+    <value>The '[In]' attribute is not supported unless the '[Out]' attribute is also used. Blittable arrays cannot be marshalled as '[In]' only.</value>
+  </data>
 </root>

@@ -57,6 +57,11 @@
         <target state="translated">不支持 “[In]” 属性，除非同时使用 “[Out]” 属性。没有 “[Out]” 属性的情况下，“[In]” 属性的行为与默认行为相同。</target>
         <note />
       </trans-unit>
+      <trans-unit id="InAttributeNotSupportedWithoutOutBlittableArray">
+        <source>The '[In]' attribute is not supported unless the '[Out]' attribute is also used. Blittable arrays cannot be marshalled as '[In]' only.</source>
+        <target state="new">The '[In]' attribute is not supported unless the '[Out]' attribute is also used. Blittable arrays cannot be marshalled as '[In]' only.</target>
+        <note />
+      </trans-unit>
       <trans-unit id="InOutAttributeByRefNotSupported">
         <source>The '[In]' and '[Out]' attributes are unsupported on parameters passed by reference. Use the 'in', 'ref', or 'out' keywords instead.</source>
         <target state="translated">引用传递的参数不支持 “[In]” 和 “[Out]” 属性。请改用 “in”、“ref” 或 “out” 关键字。</target>

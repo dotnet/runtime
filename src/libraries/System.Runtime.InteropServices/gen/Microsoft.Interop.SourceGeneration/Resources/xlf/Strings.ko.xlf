@@ -57,6 +57,11 @@
         <target state="translated">'[In]' 특성은 '[Out]' 특성도 함께 사용되지 않는 한 지원되지 않습니다. '[Out]' 특성이 없는 '[In]' 특성의 동작은 기본 동작과 동일합니다.</target>
         <note />
       </trans-unit>
+      <trans-unit id="InAttributeNotSupportedWithoutOutBlittableArray">
+        <source>The '[In]' attribute is not supported unless the '[Out]' attribute is also used. Blittable arrays cannot be marshalled as '[In]' only.</source>
+        <target state="new">The '[In]' attribute is not supported unless the '[Out]' attribute is also used. Blittable arrays cannot be marshalled as '[In]' only.</target>
+        <note />
+      </trans-unit>
       <trans-unit id="InOutAttributeByRefNotSupported">
         <source>The '[In]' and '[Out]' attributes are unsupported on parameters passed by reference. Use the 'in', 'ref', or 'out' keywords instead.</source>
         <target state="translated">'[In]' 및 '[Out]' 특성은 참조로 전달된 매개 변수에서 지원되지 않습니다. 대신 'in', 'ref' 또는 'out' 키워드를 사용하세요.</target>

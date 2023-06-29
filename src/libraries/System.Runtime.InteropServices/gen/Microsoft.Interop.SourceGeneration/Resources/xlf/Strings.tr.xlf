@@ -57,6 +57,11 @@
         <target state="translated">'[Out]' özniteliği de kullanılmadığı sürece '[In]' özniteliği desteklenmiyor. '[Out]' özniteliği kullanılmadığında '[In]' özniteliğinin davranışı varsayılan davranışla aynı olacaktır.</target>
         <note />
       </trans-unit>
+      <trans-unit id="InAttributeNotSupportedWithoutOutBlittableArray">
+        <source>The '[In]' attribute is not supported unless the '[Out]' attribute is also used. Blittable arrays cannot be marshalled as '[In]' only.</source>
+        <target state="new">The '[In]' attribute is not supported unless the '[Out]' attribute is also used. Blittable arrays cannot be marshalled as '[In]' only.</target>
+        <note />
+      </trans-unit>
       <trans-unit id="InOutAttributeByRefNotSupported">
         <source>The '[In]' and '[Out]' attributes are unsupported on parameters passed by reference. Use the 'in', 'ref', or 'out' keywords instead.</source>
         <target state="translated">'[In]' ve '[Out]' öznitelikleri başvuruya göre aktarılan parametrelerde desteklenmiyor. Bunun yerine 'in', 'ref' veya 'out' anahtar sözcüklerini kullanın.</target>

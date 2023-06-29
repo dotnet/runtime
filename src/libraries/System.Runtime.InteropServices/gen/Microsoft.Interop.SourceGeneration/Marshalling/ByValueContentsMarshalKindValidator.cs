@@ -44,6 +44,13 @@ namespace Microsoft.Interop
             }
             else if (info.ByValueContentsMarshalKind == ByValueContentsMarshalKind.In)
             {
+                if (info.ManagedType is SzArrayType && generator.Generator is StaticPinnableManagedValueMarshaller)
+                {
+                    return ResolvedGenerator.ResolvedWithDiagnostics(s_forwarder, generator.Diagnostics.Add(new GeneratorDiagnostic.NotSupported(info, context)
+                    {
+                        NotSupportedDetails = SR.InAttributeNotSupportedWithoutOutBlittableArray
+                    }));
+                }
                 return ResolvedGenerator.ResolvedWithDiagnostics(s_forwarder, generator.Diagnostics.Add(new GeneratorDiagnostic.NotSupported(info, context)
                 {
                     NotSupportedDetails = SR.InAttributeNotSupportedWithoutOut

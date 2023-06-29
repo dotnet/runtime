@@ -3,9 +3,6 @@
 
 using System;
 using System.Collections.Generic;
-using System.Collections.Immutable;
-using System.IO;
-using System.Linq;
 using System.Runtime.CompilerServices;
 using System.Runtime.InteropServices;
 using System.Threading.Tasks;
@@ -834,6 +831,21 @@ namespace LibraryImportGenerator.UnitTests
                     .WithLocation(1)
                     .WithArguments("ref return", "Basic.RefReadonlyReturn()"),
             } };
+            yield return new object[] { ID(), CodeSnippets.ByValueParameterWithModifier<int[]>("In"), new[]
+            {
+                VerifyCS.Diagnostic(GeneratorDiagnostics.ParameterTypeNotSupportedWithDetails)
+                    .WithLocation(0)
+                    .WithArguments("The '[In]' attribute is not supported unless the '[Out]' attribute is also used. Blittable arrays cannot be marshalled as '[In]' only.", "p")
+            } };
+        }
+        public static IEnumerable<object[]> MyCodeSnippetsToCompile()
+        {
+            yield return new object[] { ID(), CodeSnippets.ByValueParameterWithModifier<int[]>("In"), new[]
+            {
+                VerifyCS.Diagnostic(GeneratorDiagnostics.ParameterTypeNotSupportedWithDetails)
+                    .WithLocation(0)
+                    .WithArguments("The '[In]' attribute is not supported unless the '[Out]' attribute is also used. Blittable arrays cannot be marshalled as '[In]' only.", "p")
+            } };
         }
 
         [Theory]
@@ -945,7 +957,7 @@ namespace LibraryImportGenerator.UnitTests
         class AllowUnsafeBlocksTest : VerifyCS.Test
         {
             public AllowUnsafeBlocksTest()
-                    :base(referenceAncillaryInterop: false)
+                    : base(referenceAncillaryInterop: false)
             {
             }
 

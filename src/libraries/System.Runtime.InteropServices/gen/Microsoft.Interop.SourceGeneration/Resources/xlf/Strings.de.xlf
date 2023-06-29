@@ -57,6 +57,11 @@
         <target state="translated">Das [In]-Attribut wird nur unterstützt, wenn auch das [Out]-Attribut verwendet wird. Das Verhalten des [In]-Attributs ohne das [Out]-Attribut entspricht dem Standardverhalten.</target>
         <note />
       </trans-unit>
+      <trans-unit id="InAttributeNotSupportedWithoutOutBlittableArray">
+        <source>The '[In]' attribute is not supported unless the '[Out]' attribute is also used. Blittable arrays cannot be marshalled as '[In]' only.</source>
+        <target state="new">The '[In]' attribute is not supported unless the '[Out]' attribute is also used. Blittable arrays cannot be marshalled as '[In]' only.</target>
+        <note />
+      </trans-unit>
       <trans-unit id="InOutAttributeByRefNotSupported">
         <source>The '[In]' and '[Out]' attributes are unsupported on parameters passed by reference. Use the 'in', 'ref', or 'out' keywords instead.</source>
         <target state="translated">Die Attribute \"[In]\" und \"[Out]\" werden für Parameter, die als Verweis übergeben werden, nicht unterstützt. Verwenden Sie stattdessen die Schlüsselwörter \"in\", \"ref\" oder \"out\".</target>

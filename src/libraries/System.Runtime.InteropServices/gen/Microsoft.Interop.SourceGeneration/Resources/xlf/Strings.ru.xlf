@@ -57,6 +57,11 @@
         <target state="translated">Атрибут \"[In]\" не поддерживается, если атрибут \"[Out]' не используется. Поведение атрибута \"[In]\" без \"[Out]\" совпадает с поведением по умолчанию.</target>
         <note />
       </trans-unit>
+      <trans-unit id="InAttributeNotSupportedWithoutOutBlittableArray">
+        <source>The '[In]' attribute is not supported unless the '[Out]' attribute is also used. Blittable arrays cannot be marshalled as '[In]' only.</source>
+        <target state="new">The '[In]' attribute is not supported unless the '[Out]' attribute is also used. Blittable arrays cannot be marshalled as '[In]' only.</target>
+        <note />
+      </trans-unit>
       <trans-unit id="InOutAttributeByRefNotSupported">
         <source>The '[In]' and '[Out]' attributes are unsupported on parameters passed by reference. Use the 'in', 'ref', or 'out' keywords instead.</source>
         <target state="translated">Атрибуты \"[In]\" и \"[Out]\" не поддерживаются для параметров, передаваемых по ссылке. Используйте вместо них ключевые слова \"in\", \"ref\" или \"out\".</target>

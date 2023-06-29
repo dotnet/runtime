@@ -51,6 +51,17 @@ namespace ComInterfaceGenerator.Unit.Tests
 
         public static readonly string DisableRuntimeMarshalling = "[assembly:System.Runtime.CompilerServices.DisableRuntimeMarshalling]";
         public static readonly string UsingSystemRuntimeInteropServicesMarshalling = "using System.Runtime.InteropServices.Marshalling;";
+        public string InAttributedBlittableArray => $$"""
+            using System.Runtime.InteropServices;
+            using System.Runtime.InteropServices.Marshalling;
+
+            {{GeneratedComInterface()}}
+            partial interface INativeAPI
+            {
+                {{VirtualMethodIndex(0)}}
+                void Method([InAttribute] int[] parameter);
+            }
+            """;
 
         public string SpecifiedMethodIndexNoExplicitParameters => $$"""
             using System.Runtime.InteropServices;
