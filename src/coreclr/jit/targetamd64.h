@@ -225,7 +225,7 @@
   // higher baseline cost. This cost can be offset by re-using the register across
   // call boundaries to reduce the overall amount of spilling required.
   //
-  // Given this, we order the registers here to prefer callee trash firs and then
+  // Given this, we order the registers here to prefer callee trash first and then
   // callee save. This allows us to use the registers we've already been assumed
   // to overwrite first and then to use those with a higher consumption cost. It
   // is up to the register allocator to preference using any callee saved registers
