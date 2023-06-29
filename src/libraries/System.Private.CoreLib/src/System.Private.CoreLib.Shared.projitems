@@ -389,6 +389,7 @@
     <Compile Include="$(MSBuildThisFileDirectory)System\Globalization\TextInfo.cs" />
     <Compile Include="$(MSBuildThisFileDirectory)System\Globalization\TextInfo.Icu.cs" />
     <Compile Include="$(MSBuildThisFileDirectory)System\Globalization\TextInfo.Nls.cs" />
+    <Compile Include="$(MSBuildThisFileDirectory)System\Globalization\TextInfo.OSX.cs" Condition="'$(IsOSXLike)' == 'true'" />
     <Compile Include="$(MSBuildThisFileDirectory)System\Globalization\TextInfo.WebAssembly.cs" Condition="'$(TargetsBrowser)' == 'true'" />
     <Compile Include="$(MSBuildThisFileDirectory)System\Globalization\ThaiBuddhistCalendar.cs" />
     <Compile Include="$(MSBuildThisFileDirectory)System\Globalization\TimeSpanFormat.cs" />
@@ -1272,6 +1273,9 @@
     </Compile>
     <Compile Include="$(CommonPath)Interop\Interop.Casing.cs">
       <Link>Common\Interop\Interop.Casing.cs</Link>
+    </Compile>
+    <Compile Include="$(CommonPath)Interop\Interop.Casing.OSX.cs" Condition="'$(IsOSXLike)' == 'true'">
+      <Link>Common\Interop\Interop.Casing.OSX.cs</Link>
     </Compile>
     <Compile Include="$(CommonPath)Interop\Interop.Collation.cs">
       <Link>Common\Interop\Interop.Collation.cs</Link>
