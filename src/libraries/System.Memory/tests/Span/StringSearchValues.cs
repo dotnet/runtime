@@ -204,7 +204,7 @@ namespace System.Memory.Tests.Span
         }
 
         [Fact]
-        [ActiveIssue("Manual execution only. Worth running any time SearchValues<string> logic is modified.")]
+        //[ActiveIssue("Manual execution only. Worth running any time SearchValues<string> logic is modified.")]
         public static void TestIndexOfAny_RandomInputs_Stress()
         {
             RunStress();
