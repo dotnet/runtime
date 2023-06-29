@@ -4294,7 +4294,8 @@ namespace System.Net.Http.Functional.Tests
         [Theory]
         [InlineData(true)]
         [InlineData(false)]
-        public async Task Https_MultipleRequests_Resume(bool useSocketHandler)
+        [PlatformSpecific(TestPlatforms.Windows | TestPlatforms.Linux)]
+        public async Task Https_MultipleRequests_TlsResumed(bool useSocketHandler)
         {
             await LoopbackServer.CreateClientAndServerAsync(async uri =>
             {

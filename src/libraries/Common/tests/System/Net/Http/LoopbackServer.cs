@@ -477,7 +477,7 @@ namespace System.Net.Test.Common
                     SslServerAuthenticationOptions sslOptions = new SslServerAuthenticationOptions()
                     {
                         EnabledSslProtocols = httpOptions.SslProtocols,
-                        ServerCertificateContext = httpOptions.CertificateContext,
+                        ServerCertificateContext = httpOptions.CertificateContext ?? SslStreamCertificateContext.Create(Configuration.Certificates.GetServerCertificate(), null),
                         ClientCertificateRequired = true,
                     };
 
