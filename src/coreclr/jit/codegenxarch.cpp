@@ -628,8 +628,17 @@ void CodeGen::genSetRegToConst(regNumber targetReg, var_types targetType, GenTre
             }
             else if (tree->IsFloatAllBitsSet())
             {
-                // A faster/smaller way to generate AllBitsSet
-                emit->emitIns_SIMD_R_R_R(INS_pcmpeqd, EA_16BYTE, targetReg, targetReg, targetReg);
+                if (emitter::isHighSimdReg(targetReg))
+                {
+                    assert(compiler->compIsaSupportedDebugOnly(InstructionSet_AVX512F));
+                    emit->emitIns_SIMD_R_R_R_I(INS_vpternlogd, EA_16BYTE, targetReg, targetReg, targetReg,
+                                               static_cast<int8_t>(0xFF));
+                }
+                else
+                {
+                    // A faster/smaller way to generate AllBitsSet
+                    emit->emitIns_SIMD_R_R_R(INS_pcmpeqd, EA_16BYTE, targetReg, targetReg, targetReg);
+                }
             }
             else
             {
