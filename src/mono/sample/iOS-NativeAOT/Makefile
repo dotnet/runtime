@@ -56,7 +56,7 @@ endif
 
 hello-app: clean
 	$(DOTNET) \
-	publish -c $(BUILD_CONFIG) \
+	build -c $(BUILD_CONFIG) \
 	-p:TargetOS=$(TARGET_OS) \
 	-p:TargetArchitecture=$(TARGET_ARCH) \
 	-p:DeployAndRun=$(DEPLOY_AND_RUN) \

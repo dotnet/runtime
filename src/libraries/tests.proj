@@ -621,7 +621,6 @@
 
 
   <ItemGroup Condition="'$(ArchiveTests)' == 'true' and '$(TargetOS)' == 'ios' and '$(UseNativeAOTRuntime)' == 'true'">
-    <!-- Only System.Runtime tests on iOS for now -->
     <ProjectReference Include="$(MonoProjectRoot)sample\iOS-NativeAOT\Program.csproj"
                       BuildInParallel="false" />
   </ItemGroup>

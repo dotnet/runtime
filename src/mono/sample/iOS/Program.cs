@@ -45,7 +45,7 @@ public static class Program
 
         Console.WriteLine("Done!");
 #if CI_TEST
-        await Task.Delay(5000);
+        await Task.Delay(10000);
 #if CI_TEST_IOS
         return 0;
 #else

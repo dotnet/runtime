@@ -2,10 +2,8 @@ parameters:
   buildConfig: ''
   nameSuffix: ''
   buildArgs: ''
-  runtimeBuildArgs: ''
   archType: ''
   hostedOs: ''
-  hostedArch: ''
   osGroup: ''
   osSubgroup: ''
   container: ''
@@ -74,11 +72,6 @@ jobs:
         value: -os ${{ parameters.osGroup }}
       - name: _archParameter
         value: -arch ${{ parameters.archType }}
-      - ${{ if and(eq(parameters.runtimeFlavor, 'coreclr'), in(parameters.osGroup, 'ios', 'iossimulator', 'tvos', 'tvossimulator', 'maccatalyst')) }}:
-        - name: _osParameter
-          value: -os ${{ parameters.hostedOs }}
-        - name: _archParameter
-          value: -arch ${{ parameters.hostedArch }}
 
       - ${{ if and(eq(parameters.osGroup, 'linux'), eq(parameters.osSubGroup, '_bionic')) }}:
         - name: _osParameter
@@ -208,16 +201,6 @@ jobs:
         - task: CodeQL3000Finalize@0
           displayName: Finalize CodeQL (manually-injected)
     #endif isSourceBuild
-
-    # Build Native AOT runtime packs
-    - ${{ if and(eq(parameters.runtimeFlavor, 'coreclr'), in(parameters.osGroup, 'ios', 'iossimulator', 'tvos', 'tvossimulator', 'maccatalyst')) }}:
-      - script: $(Build.SourcesDirectory)$(dir)build$(scriptExt)
-                clr.nativeaotruntime+clr.nativeaotlibs+libs+libs.tests
-                -os ${{ parameters.osGroup }}
-                -arch ${{ parameters.archType }}
-                -c ${{ parameters.buildConfig }}
-                ${{ parameters.runtimeBuildArgs }}
-        displayName: "Build Native AOT runtime packs"
 
     - ${{ if in(parameters.osGroup, 'osx', 'ios', 'tvos', 'android') }}:
       - script: |

@@ -769,9 +769,6 @@ jobs:
       platform: ios_arm64
       shouldContinueOnError: ${{ parameters.shouldContinueOnError }}
       jobParameters:
-        ${{ if eq(parameters.runtimeFlavor, 'coreclr') }}:
-          hostedOs: osx
-          hostedArch: x64
         ${{ if eq(parameters.runtimeFlavor, '') }}:
           runtimeFlavor: mono
         ${{ else }}:
