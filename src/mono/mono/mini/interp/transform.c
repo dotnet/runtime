@@ -1418,6 +1418,11 @@ dump_interp_ins_data (InterpInst *ins, gint32 ins_offset, const guint16 *data, i
 		g_string_append_printf (str, " %s.%s", m_class_get_name_space (klass), m_class_get_name (klass));
 		break;
 	}
+	case MintOpVTableToken: {
+		MonoVTable *vtable = (MonoVTable*)data_items [*(guint16*)data];
+		g_string_append_printf (str, " %s.%s", m_class_get_name_space (vtable->klass), m_class_get_name (vtable->klass));
+		break;
+	}
 	case MintOpMethodToken: {
 		InterpMethod *imethod = (InterpMethod*)data_items [*(guint16*)data];
 		char *name = mono_method_full_name (imethod->method, TRUE);
