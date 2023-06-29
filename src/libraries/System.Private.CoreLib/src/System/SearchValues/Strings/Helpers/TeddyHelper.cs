@@ -295,7 +295,7 @@ namespace System.Buffers
         [CompExactlyDependsOn(typeof(Avx2))]
         private static Vector256<byte> RightShift1(Vector256<byte> left, Vector256<byte> right)
         {
-            Vector256<byte> leftShifted = Avx2.Permute2x128(left, right, 33);
+            Vector256<byte> leftShifted = Avx2.Permute2x128(left, right, (1 << 0) + (2 << 4));
             return Avx2.AlignRight(right, leftShifted, 15);
         }
 
@@ -303,7 +303,7 @@ namespace System.Buffers
         [CompExactlyDependsOn(typeof(Avx2))]
         private static Vector256<byte> RightShift2(Vector256<byte> left, Vector256<byte> right)
         {
-            Vector256<byte> leftShifted = Avx2.Permute2x128(left, right, 33);
+            Vector256<byte> leftShifted = Avx2.Permute2x128(left, right, (1 << 0) + (2 << 4));
             return Avx2.AlignRight(right, leftShifted, 14);
         }
 
@@ -311,7 +311,7 @@ namespace System.Buffers
         [CompExactlyDependsOn(typeof(Avx512BW))]
         private static Vector512<byte> RightShift1(Vector512<byte> left, Vector512<byte> right)
         {
-            Vector512<byte> leftShifted = Avx512F.PermuteVar8x64(left.AsInt64(), Vector512.Create(0, 7, 0, 0, 0, 0, 0, 0)).AsByte();
+            Vector512<byte> leftShifted = Avx512F.PermuteVar8x64x2(left.AsInt64(), Vector512.Create(0, 7, 0, 9, 0, 11, 0, 13), right.AsInt64()).AsByte();
             return Avx512BW.AlignRight(right, leftShifted, 15);
         }
 
@@ -319,7 +319,7 @@ namespace System.Buffers
         [CompExactlyDependsOn(typeof(Avx512BW))]
         private static Vector512<byte> RightShift2(Vector512<byte> left, Vector512<byte> right)
         {
-            Vector512<byte> leftShifted = Avx512F.PermuteVar8x64(left.AsInt64(), Vector512.Create(0, 7, 0, 0, 0, 0, 0, 0)).AsByte();
+            Vector512<byte> leftShifted = Avx512F.PermuteVar8x64x2(left.AsInt64(), Vector512.Create(0, 7, 0, 9, 0, 11, 0, 13), right.AsInt64()).AsByte();
             return Avx512BW.AlignRight(right, leftShifted, 14);
         }
     }
