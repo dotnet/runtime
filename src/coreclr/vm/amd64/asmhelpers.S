@@ -309,21 +309,21 @@ NESTED_ENTRY ProfileTailcallNaked, _TEXT, NoHandler
 NESTED_END ProfileTailcallNaked, _TEXT
 
 #ifdef TARGET_OSX
-# EXTERN_C void* GetThreadVarsSectionOffset()
+# EXTERN_C void* GetThreadVarsAddress()
 # <NOTE>
 # Helper to calculate the address of relevant __thread_vars section that holds the address of symbol tlv_get_address for thread
 # local `t_ThreadStatics`. The address is updated by the linker, which we retrieve here. In JIT code, this address is called
 # to retrieve the address of the thread local.
 # </NOTE>
-LEAF_ENTRY GetThreadVarsSectionOffset, _TEXT
+LEAF_ENTRY GetThreadVarsAddress, _TEXT
         mov     rdi,    _t_ThreadStatics@TLVP[rip]
         ret
-LEAF_END GetThreadVarsSectionOffset, _TEXT
+LEAF_END GetThreadVarsAddress, _TEXT
 // ------------------------------------------------------------------
 #endif // TARGET_OSX
 
 #ifndef TARGET_OSX
-# EXTERN_C void* GetTlsIndexObjectOffset();
+# EXTERN_C void* GetTlsIndexObjectDescOffset();
 
 # <NOTE>
 # Helper to calculate the offset of native thread local variable `t_ThreadStatics`. The offset has to be found at runtime
@@ -335,7 +335,7 @@ LEAF_END GetThreadVarsSectionOffset, _TEXT
 # We never have to call this method directly, and hence there is a `int 3` at the end.
 # </NOTE>
 
-LEAF_ENTRY GetTlsIndexObjectOffset, _TEXT
+LEAF_ENTRY GetTlsIndexObjectDescOffset, _TEXT
 # On The `lea` instruction has a data16 prefix and the call instruction has two data16 (0x66) prefixes and one rex64 prefix.
 # This is so the total size of lea+call to be 16, suitable for link-time optimization.
 
@@ -346,5 +346,5 @@ LEAF_ENTRY GetTlsIndexObjectOffset, _TEXT
         .byte 0x48 # rex.W prefix for padding
         call    __tls_get_addr                      # dummy call to have linker see the code pattern to replace the offset
         int 3
-LEAF_END GetTlsIndexObjectOffset, _TEXT
+LEAF_END GetTlsIndexObjectDescOffset, _TEXT
 #endif

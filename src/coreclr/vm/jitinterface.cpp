@@ -1655,9 +1655,9 @@ static uint32_t ThreadLocalOffset(void* p)
     return (uint32_t)((uint8_t*)p - pOurTls);
 }
 #elif TARGET_OSX
-extern "C" void* GetThreadVarsSectionOffset();
+extern "C" void* GetThreadVarsAddress();
 
-void* getThreadVarsSectionAddress(uint8_t* p)
+void* getThreadVarsSectionAddressFromDesc(uint8_t* p)
 {
     if (!(p[0] == 0x48 && p[1] == 0x8d && p[2] == 0x3d))
     {
@@ -1676,24 +1676,24 @@ void* getThreadVarsSectionAddress(uint8_t* p)
     return *(uint32_t*)p + (p + 4);
 }
 
-void* getThreadVarsSectionOffset()
+void* getThreadVarsSectionAddress()
 {
 #ifdef TARGET_ARM64
-    return reinterpret_cast<void*>(GetThreadVarsSectionOffset());
+    return reinterpret_cast<void*>(GetThreadVarsAddress());
 #else
     // On x64, the address is related to rip, so, disassemble the function,
     // read the offset, and then relative to the IP, find the final address of
     // __thread_vars section.
-    uint8_t* p = reinterpret_cast<uint8_t*>(&GetThreadVarsSectionOffset);
-    return getThreadVarsSectionAddress(p);
+    uint8_t* p = reinterpret_cast<uint8_t*>(&GetThreadVarsAddress);
+    return getThreadVarsSectionAddressFromDesc(p);
 #endif // TARGET_ARM64
 }
 
 #else
 
-extern "C" void* GetTlsIndexObjectOffset();
-
 #ifdef HOST_AMD64
+
+extern "C" void* GetTlsIndexObjectDescOffset();
 
 void* getThreadStaticDescriptor(uint8_t* p)
 {
@@ -1718,7 +1718,7 @@ void* getThreadStaticDescriptor(uint8_t* p)
 
 void* getTlsIndexObjectAddress()
 {
-    uint8_t* p = reinterpret_cast<uint8_t*>(&GetTlsIndexObjectOffset);
+    uint8_t* p = reinterpret_cast<uint8_t*>(&GetTlsIndexObjectDescOffset);
     return getThreadStaticDescriptor(p);
 }
 
@@ -1751,7 +1751,7 @@ void CEEInfo::getThreadLocalStaticBlocksInfo (CORINFO_THREAD_STATIC_BLOCKS_INFO*
 
 #elif defined(TARGET_OSX)
 
-    pInfo->threadVarsSection = getThreadVarsSectionOffset();
+    pInfo->threadVarsSection = getThreadVarsSectionAddress();
 
 #elif defined(TARGET_AMD64)
 
