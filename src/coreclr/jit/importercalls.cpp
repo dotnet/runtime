@@ -7749,16 +7749,17 @@ void Compiler::impCheckCanInline(GenTreeCall*           call,
                                                    (size_t)pParam->exactContextHnd & ~CORINFO_CONTEXTFLAGS_MASK)));
             }
 
+            const bool isGdv = pParam->call->IsGuardedDevirtualizationCandidate();
+
             // Fetch method info. This may fail, if the method doesn't have IL.
+            // NOTE: For GDV we're expected to use a different context (per candidate)
             //
             CORINFO_METHOD_INFO methInfo;
-            if (!compCompHnd->getMethodInfo(ftn, &methInfo, pParam->exactContextHnd))
+            if (!compCompHnd->getMethodInfo(ftn, &methInfo, isGdv ? nullptr : pParam->exactContextHnd))
             {
                 inlineResult->NoteFatal(InlineObservation::CALLEE_NO_METHOD_INFO);
                 return;
             }
-
-            compCompHnd->getMethodSig(ftn, &methInfo.args);
 
             // Profile data allows us to avoid early "too many IL bytes" outs.
             //
@@ -7823,11 +7824,11 @@ void Compiler::impCheckCanInline(GenTreeCall*           call,
 #ifdef DEBUG
             var_types fncRealRetType = JITtype2varType(methInfo.args.retType);
 
-            //assert((genActualType(fncRealRetType) == genActualType(fncRetType)) ||
-            //       // <BUGNUM> VSW 288602 </BUGNUM>
-            //       // In case of IJW, we allow to assign a native pointer to a BYREF.
-            //       (fncRetType == TYP_BYREF && methInfo.args.retType == CORINFO_TYPE_PTR) ||
-            //       (varTypeIsStruct(fncRetType) && (fncRealRetType == TYP_STRUCT)));
+            assert((genActualType(fncRealRetType) == genActualType(fncRetType)) ||
+                   // <BUGNUM> VSW 288602 </BUGNUM>
+                   // In case of IJW, we allow to assign a native pointer to a BYREF.
+                   (fncRetType == TYP_BYREF && methInfo.args.retType == CORINFO_TYPE_PTR) ||
+                   (varTypeIsStruct(fncRetType) && (fncRealRetType == TYP_STRUCT)));
 #endif
 
             // Allocate an InlineCandidateInfo structure,
