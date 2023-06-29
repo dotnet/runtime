@@ -7,9 +7,13 @@
 #include "cpufeatures.h"
 
 #if TARGET_WINDOWS
+
 #include <intrin.h>
 #include <Windows.h>
-#endif
+
+#else // TARGET_WINDOWS
+
+#include "minipalconfig.h"
 
 #if HAVE_AUXV_HWCAP_H
 #include <sys/auxv.h>
@@ -19,6 +23,8 @@
 #if HAVE_SYSCTLBYNAME
 #include <sys/sysctl.h>
 #endif
+
+#endif // !TARGET_WINDOWS
 
 #if defined(TARGET_UNIX)
 #if defined(TARGET_X86) || defined(TARGET_AMD64)

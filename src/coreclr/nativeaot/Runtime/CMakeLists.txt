@@ -249,6 +249,7 @@ else()
   endif()
   add_definitions(-DNO_UI_ASSERT)
   include(unix/configure.cmake)
+  include(${CLR_SRC_NATIVE_DIR}/minipal/configure.cmake)
   include_directories(${CMAKE_CURRENT_BINARY_DIR})
 endif()
 
