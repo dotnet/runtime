@@ -247,13 +247,16 @@
   // of the upper 8 registers. This helps reduce the total number of emitted bytes
   // quite significantly across typical usages.
   //
+  // There are some other minor deviations based on special uses for particular registers
+  // on a given platform which give additional size savings for the typical case.
+  //
   // For simd registers, the numerical order is xmm0-xmm7. You then have xmm8-xmm15
   // which take an additional byte to encode and can also have xmm16-xmm31 for EVEX
   // when the hardware supports it. There are no additional hidden costs for these.
 
 #ifdef UNIX_AMD64_ABI
-  #define REG_VAR_ORDER_CALLEE_TRASH    REG_EAX,REG_ECX,REG_EDX,REG_ESI,REG_EDI,REG_R8,REG_R9,REG_R10,REG_R11
-  #define REG_VAR_ORDER_CALLEE_SAVED    REG_EBX,REG_ETW_FRAMED_EBP_LIST REG_R14,REG_R15,REG_R13,REG_R12
+  #define REG_VAR_ORDER_CALLEE_TRASH    REG_EAX,REG_ECX,REG_EDX,REG_EDI,REG_ESI,REG_R8,REG_R9,REG_R10,REG_R11
+  #define REG_VAR_ORDER_CALLEE_SAVED    REG_EBX,REG_ETW_FRAMED_EBP_LIST REG_R15,REG_R14,REG_R13,REG_R12
 
   #define REG_VAR_ORDER_FLT_CALLEE_TRASH    REG_XMM0,REG_XMM1,REG_XMM2,REG_XMM3,REG_XMM4,REG_XMM5,REG_XMM6,REG_XMM7,   \
                                             REG_XMM8,REG_XMM9,REG_XMM10,REG_XMM11,REG_XMM12,REG_XMM13,REG_XMM14,       \
@@ -266,7 +269,7 @@
                                                 REG_XMM27,REG_XMM28,REG_XMM29,REG_XMM30,REG_XMM31
   #define REG_VAR_ORDER_FLT_EVEX_CALLEE_SAVED   REG_VAR_ORDER_FLT_CALLEE_SAVED
 #else // !UNIX_AMD64_ABI
-  #define REG_VAR_ORDER_CALLEE_TRASH    REG_EAX,REG_ECX,REG_EDX,REG_R8,REG_R9,REG_R10,REG_R11
+  #define REG_VAR_ORDER_CALLEE_TRASH    REG_EAX,REG_ECX,REG_EDX,REG_R8,REG_R10,REG_R9,REG_R11
   #define REG_VAR_ORDER_CALLEE_SAVED    REG_EBX,REG_ESI,REG_EDI,REG_ETW_FRAMED_EBP_LIST REG_R14,REG_R15,REG_R13,REG_R12
 
   #define REG_VAR_ORDER_FLT_CALLEE_TRASH    REG_XMM0,REG_XMM1,REG_XMM2,REG_XMM3,REG_XMM4,REG_XMM5
