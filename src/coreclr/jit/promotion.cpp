@@ -1198,7 +1198,6 @@ public:
             }
 #endif
 
-            JITDUMP("Computing unpromoted remainder for V%02u\n", agg->LclNum);
             StructSegments unpromotedParts =
                 m_prom->SignificantSegments(m_compiler->lvaGetDesc(agg->LclNum)->GetLayout());
             for (Replacement& rep : reps)
@@ -1206,7 +1205,7 @@ public:
                 unpromotedParts.Subtract(StructSegments::Segment(rep.Offset, rep.Offset + genTypeSize(rep.AccessType)));
             }
 
-            JITDUMP("  Remainder: ");
+            JITDUMP("  Unpromoted remainder: ");
             DBEXEC(m_compiler->verbose, unpromotedParts.Dump());
             JITDUMP("\n\n");
 
@@ -1715,65 +1714,33 @@ StructSegments Promotion::SignificantSegments(ClassLayout* layout)
 
     COMP_HANDLE compHnd = m_compiler->info.compCompHnd;
 
-    bool significantPadding;
-    if (layout->IsBlockLayout())
-    {
-        significantPadding = true;
-        JITDUMP("  Block op has significant padding due to block layout\n");
-    }
-    else
-    {
-        uint32_t attribs = compHnd->getClassAttribs(layout->GetClassHandle());
-        if ((attribs & CORINFO_FLG_INDEXABLE_FIELDS) != 0)
-        {
-            significantPadding = true;
-            JITDUMP("  Block op has significant padding due to indexable fields\n");
-        }
-        else if ((attribs & CORINFO_FLG_DONT_DIG_FIELDS) != 0)
-        {
-            significantPadding = true;
-            JITDUMP("  Block op has significant padding due to CORINFO_FLG_DONT_DIG_FIELDS\n");
-        }
-        else if (((attribs & CORINFO_FLG_CUSTOMLAYOUT) != 0) && ((attribs & CORINFO_FLG_CONTAINS_GC_PTR) == 0))
-        {
-            significantPadding = true;
-            JITDUMP("  Block op has significant padding due to CUSTOMLAYOUT without GC pointers\n");
-        }
-        else
-        {
-            significantPadding = false;
-        }
-    }
-
     StructSegments segments(m_compiler->getAllocator(CMK_Promotion));
 
-    if (significantPadding)
+    if (layout->IsBlockLayout())
     {
         segments.Add(StructSegments::Segment(0, layout->GetSize()));
     }
     else
     {
-        unsigned numFields = compHnd->getClassNumInstanceFields(layout->GetClassHandle());
-        for (unsigned i = 0; i < numFields; i++)
-        {
-            CORINFO_FIELD_HANDLE fieldHnd  = compHnd->getFieldInClass(layout->GetClassHandle(), (int)i);
-            unsigned             fldOffset = compHnd->getFieldOffset(fieldHnd);
-            CORINFO_CLASS_HANDLE fieldClassHandle;
-            CorInfoType          corType = compHnd->getFieldType(fieldHnd, &fieldClassHandle);
-            var_types            varType = JITtype2varType(corType);
-            unsigned             size    = genTypeSize(varType);
-            if (size == 0)
-            {
-                // TODO-CQ: Recursively handle padding in sub structures
-                // here. Might be better to introduce a single JIT-EE call
-                // to query the significant segments -- that would also be
-                // usable by R2R even outside the version bubble in many
-                // cases.
-                size = compHnd->getClassSize(fieldClassHandle);
-                assert(size != 0);
-            }
+        CORINFO_TYPE_LAYOUT_NODE nodes[256];
+        size_t                   numNodes = ArrLen(nodes);
+        GetTypeLayoutResult      result   = compHnd->getTypeLayout(layout->GetClassHandle(), nodes, &numNodes);
 
-            segments.Add(StructSegments::Segment(fldOffset, fldOffset + size));
+        if (result != GetTypeLayoutResult::Success)
+        {
+            segments.Add(StructSegments::Segment(0, layout->GetSize()));
+        }
+        else
+        {
+            for (size_t i = 0; i < numNodes; i++)
+            {
+                const CORINFO_TYPE_LAYOUT_NODE& node = nodes[i];
+                if ((node.type != CORINFO_TYPE_VALUECLASS) || (node.simdTypeHnd != NO_CLASS_HANDLE) ||
+                    node.hasSignificantPadding)
+                {
+                    segments.Add(StructSegments::Segment(node.offset, node.offset + node.size));
+                }
+            }
         }
     }
 

@@ -624,7 +624,7 @@ CONFIG_INTEGER(JitCFGUseDispatcher, W("JitCFGUseDispatcher"), 2)
 CONFIG_INTEGER(JitEnableTailMerge, W("JitEnableTailMerge"), 1)
 
 // Enable physical promotion
-CONFIG_INTEGER(JitEnablePhysicalPromotion, W("JitEnablePhysicalPromotion"), 0)
+CONFIG_INTEGER(JitEnablePhysicalPromotion, W("JitEnablePhysicalPromotion"), 1)
 
 #if defined(DEBUG)
 // JitFunctionFile: Name of a file that contains a list of functions. If the currently compiled function is in the
