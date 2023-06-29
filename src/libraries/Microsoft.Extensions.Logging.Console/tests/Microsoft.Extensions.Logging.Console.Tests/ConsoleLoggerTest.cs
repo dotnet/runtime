@@ -1221,7 +1221,7 @@ namespace Microsoft.Extensions.Logging.Console.Test
         [ConditionalFact(typeof(PlatformDetection), nameof(PlatformDetection.IsThreadingSupported))]
         public void ConsoleLoggerOptions_TimeStampFormat_IsReadFromLoggingConfiguration()
         {
-            var configuration = new ConfigurationBuilder().AddInMemoryCollection(new[] { new KeyValuePair<string, string>("Console:TimeStampFormat", "yyyyMMddHHmmss") }).Build();
+            var configuration = new ConfigurationBuilder().AddInMemoryCollection(new[] { new KeyValuePair<string, string>("Console:TimestampFormat", "yyyyMMddHHmmss") }).Build();
 
             var loggerProvider = new ServiceCollection()
                 .AddLogging(builder => builder
