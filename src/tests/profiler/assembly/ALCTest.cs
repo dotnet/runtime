@@ -11,20 +11,25 @@ namespace Profiler.Tests
     {
         static readonly Guid AssemblyProfilerGuid = new Guid("19A49007-9E58-4E31-B655-83EC3B924E7B");
 
-        public static int RunTest(String[] args) 
+        public static int RunTest(String[] args)
         {
             string currentAssemblyDirectory = Path.GetDirectoryName(Assembly.GetExecutingAssembly().Location);
-            string testAssemblyFullPath1 = Path.Combine(currentAssemblyDirectory, "..", "..", "Interop", "MarshalAPI", "IUnknown", "IUnknownTest.dll");
-            string testAssemblyFullPath2 = Path.Combine(currentAssemblyDirectory, "TestFile.dll");
-
+            string testAssemblyFullPath1 = Path.Combine(currentAssemblyDirectory, "..", "..", "..", "Interop", "MarshalAPI", "IUnknown", "IUnknownTest", "IUnknownTest.dll");
+            string testAssemblyFullPath2 = Path.Combine(currentAssemblyDirectory, "..", "TestFile", "TestFile.dll");
+            
             int exitCode = TestLibrary.Utilities.ExecuteAndUnload(testAssemblyFullPath1, args);
+            Console.WriteLine("exitCode = " + exitCode);
             if (exitCode != 100)
             {
                 return exitCode;
             }
 
             exitCode = TestLibrary.Utilities.ExecuteAndUnload(testAssemblyFullPath2, args);
-            return exitCode;
+            if (exitCode != 0)
+            {
+                return exitCode;
+            }
+            return 100;
         }
 
         public static int Main(string[] args)
