@@ -199,11 +199,11 @@ namespace System.Text.Json
 
             set
             {
-                SetValue(propertyName, value);
+                SetValue(propertyName, value, out bool _);
             }
         }
 
-        public T? SetValue(string propertyName, T value, Action? assignParent = null)
+        public T? SetValue(string propertyName, T value, out bool valueAlreadyInDictionary)
         {
             if (IsReadOnly)
             {
@@ -217,6 +217,7 @@ namespace System.Text.Json
 
             CreateDictionaryIfThresholdMet();
 
+            valueAlreadyInDictionary = false;
             T? existing = null;
 
             if (_propertyDictionary != null)
@@ -224,7 +225,6 @@ namespace System.Text.Json
                 // Fast path if item doesn't exist in dictionary.
                 if (_propertyDictionary.TryAdd(propertyName, value))
                 {
-                    assignParent?.Invoke();
                     _propertyList.Add(new KeyValuePair<string, T>(propertyName, value));
                     return null;
                 }
@@ -233,6 +233,7 @@ namespace System.Text.Json
                 if (ReferenceEquals(existing, value))
                 {
                     // Ignore if the same value.
+                    valueAlreadyInDictionary = true;
                     return null;
                 }
             }
@@ -250,18 +251,17 @@ namespace System.Text.Json
                     if (ReferenceEquals(current.Value, value))
                     {
                         // Ignore if the same value.
+                        valueAlreadyInDictionary = true;
                         return null;
                     }
 
                     existing = current.Value;
                 }
 
-                assignParent?.Invoke();
                 _propertyList[i] = new KeyValuePair<string, T>(propertyName, value);
             }
             else
             {
-                assignParent?.Invoke();
                 _propertyDictionary?.Add(propertyName, value);
                 _propertyList.Add(new KeyValuePair<string, T>(propertyName, value));
                 Debug.Assert(existing == null);

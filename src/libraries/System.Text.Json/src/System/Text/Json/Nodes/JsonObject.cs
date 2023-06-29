@@ -216,14 +216,19 @@ namespace System.Text.Json.Nodes
 
         internal void SetItem(string propertyName, JsonNode? value)
         {
-            JsonNode? existing = Dictionary.SetValue(propertyName, value, () => value?.AssignParent(this));
-            DetachParent(existing);
+            JsonNode? replacedValue = Dictionary.SetValue(propertyName, value, out bool valueAlreadyInDictionary);
+
+            if (!valueAlreadyInDictionary)
+            {
+                value?.AssignParent(this);
+            }
+
+            DetachParent(replacedValue);
         }
 
         private void DetachParent(JsonNode? item)
         {
-            InitializeDictionary();
-            Debug.Assert(_dictionary != null);
+            Debug.Assert(_dictionary != null, "Cannot have detachable nodes without a materialized dictionary.");
 
             if (item != null)
             {
