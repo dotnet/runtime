@@ -19,7 +19,8 @@ public sealed class NamedSet
 
 public class Runtime_88091
 {
-    [Fact] static void Test() => Problem(data);
+    [Fact]
+    public static void Test() => Problem(data);
 
     // We may mistakenly CSE item.Count here
     //
