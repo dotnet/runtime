@@ -76,7 +76,8 @@ export type MonoConfigInternal = MonoConfig & {
     forwardConsoleLogsToWS?: boolean,
     asyncFlushOnExit?: boolean
     exitAfterSnapshot?: number,
-    startupOptions?: Partial<WebAssemblyStartOptions>
+    startupOptions?: Partial<WebAssemblyStartOptions>,
+    loadAllSatelliteResources?: boolean
 };
 
 export type RunArguments = {

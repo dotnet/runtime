@@ -116,10 +116,12 @@ export class TraceInfo {
     fnPtr: number | undefined;
     bailoutCounts: { [code: number]: number } | undefined;
     bailoutCount: number | undefined;
+    isVerbose: boolean;
 
-    constructor(ip: MintOpcodePtr, index: number) {
+    constructor(ip: MintOpcodePtr, index: number, isVerbose: number) {
         this.ip = ip;
         this.index = index;
+        this.isVerbose = !!isVerbose;
     }
 
     get hitCount() {
@@ -755,15 +757,17 @@ function generate_wasm(
     let compileStarted = 0;
     let rejected = true, threw = false;
 
-    const instrument = methodFullName && (
+    const ti = traceInfo[<any>ip];
+    const instrument = ti.isVerbose || (methodFullName && (
         instrumentedMethodNames.findIndex(
             (filter) => methodFullName.indexOf(filter) >= 0
         ) >= 0
-    );
+    ));
+    mono_assert(!instrument || methodFullName, "Expected methodFullName if trace is instrumented");
     const instrumentedTraceId = instrument ? nextInstrumentedTraceId++ : 0;
     if (instrument) {
         mono_log_info(`instrumenting: ${methodFullName}`);
-        instrumentedTraces[instrumentedTraceId] = new InstrumentedTraceState(methodFullName);
+        instrumentedTraces[instrumentedTraceId] = new InstrumentedTraceState(methodFullName!);
     }
     builder.compressImportNames = compressImportNames && !instrument;
 
@@ -833,7 +837,6 @@ function generate_wasm(
         builder.emitImportsAndFunctions();
 
         if (!keep) {
-            const ti = traceInfo[<any>ip];
             if (ti && (ti.abortReason === "end-of-body"))
                 ti.abortReason = "trace-too-small";
 
@@ -984,7 +987,7 @@ const JITERPRETER_NOT_JITTED = 1;
 
 export function mono_interp_tier_prepare_jiterpreter(
     frame: NativePointer, method: MonoMethod, ip: MintOpcodePtr, index: number,
-    startOfBody: MintOpcodePtr, sizeOfBody: MintOpcodePtr
+    startOfBody: MintOpcodePtr, sizeOfBody: MintOpcodePtr, isVerbose: number
 ): number {
     mono_assert(ip, "expected instruction pointer");
     if (!mostRecentOptions)
@@ -999,11 +1002,15 @@ export function mono_interp_tier_prepare_jiterpreter(
     let info = traceInfo[<any>ip];
 
     if (!info)
-        traceInfo[<any>ip] = info = new TraceInfo(ip, index);
+        traceInfo[<any>ip] = info = new TraceInfo(ip, index, isVerbose);
 
     counters.traceCandidates++;
     let methodFullName: string | undefined;
-    if (mostRecentOptions.estimateHeat || (instrumentedMethodNames.length > 0) || useFullNames) {
+    if (
+        mostRecentOptions.estimateHeat ||
+        (instrumentedMethodNames.length > 0) || useFullNames ||
+        info.isVerbose
+    ) {
         const pMethodName = cwraps.mono_wasm_method_get_full_name(method);
         methodFullName = utf8ToString(pMethodName);
         Module._free(<any>pMethodName);
@@ -1037,7 +1044,8 @@ export function mono_interp_tier_prepare_jiterpreter(
     }
 
     const fnPtr = generate_wasm(
-        frame, methodName, ip, startOfBody, sizeOfBody, methodFullName, backwardBranchTable
+        frame, methodName, ip, startOfBody,
+        sizeOfBody, methodFullName, backwardBranchTable
     );
 
     if (fnPtr) {
