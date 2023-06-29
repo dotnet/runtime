@@ -516,8 +516,6 @@ bool Compiler::fgExpandThreadLocalAccessForCall(BasicBlock** pBlock, Statement* 
     {
         if (threadStaticBlocksInfo.threadVarsSection == 0)
         {
-            // We possibly compiled coreclr as single file and not .dylib file in which case __thread_vars
-            // we found was not accurate. Do not perform this optimization in such case.
             JITDUMP("__thread_vars address not available. Exiting the optimization.\n");
             return false;
         }
