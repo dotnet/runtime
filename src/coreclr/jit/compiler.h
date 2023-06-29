@@ -653,6 +653,8 @@ public:
 private:
     unsigned char lvIsNeverNegative : 1; // The local is known to be never negative
 
+    unsigned char lvIsSpan : 1; // The local is a Span<T>
+
 public:
     union {
         unsigned lvFieldLclStart; // The index of the local var representing the first field in the promoted struct
@@ -954,6 +956,18 @@ public:
     void SetIsNeverNegative(bool value)
     {
         lvIsNeverNegative = value;
+    }
+
+    // Is this is local a Span<T>?
+    bool IsSpan() const
+    {
+        return lvIsSpan;
+    }
+
+    // Is this is local a Span<T>?
+    void SetIsSpan(bool value)
+    {
+        lvIsSpan = value;
     }
 
     /////////////////////

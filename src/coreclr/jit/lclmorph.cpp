@@ -1244,10 +1244,10 @@ private:
         {
             LclVarDsc* varDsc = m_compiler->lvaGetDesc(addr->AsLclVarCommon());
 
-            // Span's Length is never negative unconditionally
-            if (isSpanLength && (accessSize == genTypeSize(TYP_INT)))
+            // addr is a span field so this lclVar must be a span
+            if (isSpanLength)
             {
-                varDsc->SetIsNeverNegative(true);
+                varDsc->SetIsSpan(true);
             }
 
             if (varDsc->lvPromoted)

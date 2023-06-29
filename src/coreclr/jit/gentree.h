@@ -3648,6 +3648,8 @@ public:
 
     bool IsNeverNegative(Compiler* comp) const;
 
+    bool IsSpan(Compiler* comp) const;
+
     //-------------------------------------------------------------------
     // clearOtherRegFlags: clear GTF_* flags associated with gtOtherRegs
     //

@@ -170,12 +170,20 @@ bool IntegralRange::Contains(int64_t value) const
 
         case GT_IND:
         {
+#if defined(_WIN64)
             if (node->gtGetOp1()->OperGet() == GT_ADD
                 && node->gtGetOp1()->gtGetOp1()->OperGet() == GT_LCL_VAR
-                && node->gtGetOp1()->gtGetOp1()->AsLclVar()->IsNeverNegative(compiler))
+                && node->gtGetOp1()->gtGetOp2()->IsIntegralConst(OFFSETOF__CORINFO_Span__length))
             {
-                return {SymbolicIntegerValue::Zero, UpperBoundForType(rangeType)};
+                GenTreeLclVar* const lclVar = node->gtGetOp1()->gtGetOp1()->AsLclVar();
+                if (lclVar->IsSpan(compiler))
+                {
+                    // TODO: this check can be moved inside isSpan?
+                    assert(compiler->lvaIsImplicitByRefLocal(lclVar->GetLclNum()));
+                    return {SymbolicIntegerValue::Zero, UpperBoundForType(rangeType)};
+                }
             }
+#endif // _WIN64
             break;
         }
 
