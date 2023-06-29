@@ -18,7 +18,6 @@ namespace Profiler.Tests
             string testAssemblyFullPath2 = Path.Combine(currentAssemblyDirectory, "..", "TestFile", "TestFile.dll");
             
             int exitCode = TestLibrary.Utilities.ExecuteAndUnload(testAssemblyFullPath1, args);
-            Console.WriteLine("exitCode = " + exitCode);
             if (exitCode != 100)
             {
                 return exitCode;
