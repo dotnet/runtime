@@ -547,7 +547,7 @@ namespace System.Runtime
             }
 
             exInfo.Init(exceptionToThrow!, instructionFault);
-            DispatchEx(ref exInfo._frameIter, ref exInfo, MaxTryRegionIdx);
+            DispatchEx(ref exInfo._frameIter, ref exInfo);
             FallbackFailFast(RhFailFastReason.InternalError, null);
         }
 
@@ -569,7 +569,7 @@ namespace System.Runtime
             }
 
             exInfo.Init(exceptionObj);
-            DispatchEx(ref exInfo._frameIter, ref exInfo, MaxTryRegionIdx);
+            DispatchEx(ref exInfo._frameIter, ref exInfo);
             FallbackFailFast(RhFailFastReason.InternalError, null);
         }
 
@@ -586,11 +586,11 @@ namespace System.Runtime
             object rethrownException = activeExInfo.ThrownException;
 
             exInfo.Init(rethrownException, ref activeExInfo);
-            DispatchEx(ref exInfo._frameIter, ref exInfo, activeExInfo._idxCurClause);
+            DispatchEx(ref exInfo._frameIter, ref exInfo);
             FallbackFailFast(RhFailFastReason.InternalError, null);
         }
 
-        private static void DispatchEx(scoped ref StackFrameIterator frameIter, ref ExInfo exInfo, uint startIdx)
+        private static void DispatchEx(scoped ref StackFrameIterator frameIter, ref ExInfo exInfo)
         {
             Debug.Assert(exInfo._passNumber == 1, "expected asm throw routine to set the pass");
             object exceptionObj = exInfo.ThrownException;
@@ -604,7 +604,7 @@ namespace System.Runtime
             byte* pCatchHandler = null;
             uint catchingTryRegionIdx = MaxTryRegionIdx;
 
-            bool isFirstRethrowFrame = (startIdx != MaxTryRegionIdx);
+            bool isFirstRethrowFrame = (exInfo._kind & ExKind.RethrowFlag) != 0;
             bool isFirstFrame = true;
 
             byte* prevControlPC = null;
@@ -619,6 +619,7 @@ namespace System.Runtime
 
             OnFirstChanceExceptionViaClassLib(exceptionObj);
 
+            uint startIdx = MaxTryRegionIdx;
             for (; isValid; isValid = frameIter.Next(&startIdx, &unwoundReversePInvoke))
             {
                 // For GC stackwalking, we'll happily walk across native code blocks, but for EH dispatch, we

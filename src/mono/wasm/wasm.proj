@@ -451,7 +451,9 @@
     </ItemGroup>
 
     <Copy SourceFiles="$(NativeBinDir)dotnet.js;
+                       $(NativeBinDir)dotnet.js.map;
                        $(NativeBinDir)dotnet.runtime.js;
+                       $(NativeBinDir)dotnet.runtime.js.map;
                        $(NativeBinDir)dotnet.native.js;
                        $(NativeBinDir)dotnet.d.ts;
                        $(NativeBinDir)dotnet-legacy.d.ts;
@@ -514,7 +516,7 @@
 
   <Target Name="SetMonoRollupEnvironment" DependsOnTargets="GetProductVersions">
     <PropertyGroup>
-      <MonoRollupEnvironment>Configuration:$(Configuration),NativeBinDir:$(NativeBinDir),ProductVersion:$(ProductVersion),MonoWasmThreads:$(MonoWasmThreads),DISABLE_LEGACY_JS_INTEROP:$(_DisableLegacyJsInterop),MonoDiagnosticsMock:$(MonoDiagnosticsMock)</MonoRollupEnvironment>
+      <MonoRollupEnvironment>Configuration:$(Configuration),NativeBinDir:$(NativeBinDir),ProductVersion:$(ProductVersion),MonoWasmThreads:$(MonoWasmThreads),DISABLE_LEGACY_JS_INTEROP:$(_DisableLegacyJsInterop),MonoDiagnosticsMock:$(MonoDiagnosticsMock),ContinuousIntegrationBuild:$(ContinuousIntegrationBuild)</MonoRollupEnvironment>
     </PropertyGroup>
 
     <PropertyGroup>

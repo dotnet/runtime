@@ -631,22 +631,22 @@
       </trans-unit>
       <trans-unit id="UnnecessaryMarshallingInfoDescription">
         <source>Unnecesssary marshalling info was provided. This marshalling information can be removed without any change in behavior to the application.</source>
-        <target state="new">Unnecesssary marshalling info was provided. This marshalling information can be removed without any change in behavior to the application.</target>
+        <target state="translated">Sono state specificate informazioni di marshalling non necessarie. Queste informazioni di marshalling possono essere rimosse senza alcuna modifica nel comportamento dell'applicazione.</target>
         <note />
       </trans-unit>
       <trans-unit id="UnnecessaryMarshallingInfoTitle">
         <source>Unnecessary marshalling info was provided and can be removed.</source>
-        <target state="new">Unnecessary marshalling info was provided and can be removed.</target>
+        <target state="translated">Sono state fornite informazioni di marshalling non necessarie e possono essere rimosse.</target>
         <note />
       </trans-unit>
       <trans-unit id="UnnecessaryParameterMarshallingInfoMessage">
         <source>Unnecessary marshalling info '{0}' was provided for parameter '{1}'</source>
-        <target state="new">Unnecessary marshalling info '{0}' was provided for parameter '{1}'</target>
+        <target state="translated">Informazioni di mashalling '{0}' non necessarie fornite per il parametro '{1}'</target>
         <note />
       </trans-unit>
       <trans-unit id="UnnecessaryReturnMarshallingInfoMessage">
         <source>Unnecessary marshalling info '{0}' was provided for the return type of method '{1}'</source>
-        <target state="new">Unnecessary marshalling info '{0}' was provided for the return type of method '{1}'</target>
+        <target state="translated">Sono state fornite informazioni di mashalling '{0}' non necessarie per il tipo restituito del metodo '{1}'</target>
         <note />
       </trans-unit>
       <trans-unit id="ValueInCallerAllocatedBufferRequiresSpanConstructorDescription">

@@ -7104,100 +7104,6 @@ bool getILIntrinsicImplementationForUnsafe(MethodDesc * ftn,
     return false;
 }
 
-bool getILIntrinsicImplementationForVolatile(MethodDesc * ftn,
-                                             CORINFO_METHOD_INFO * methInfo)
-{
-    STANDARD_VM_CONTRACT;
-
-    //
-    // This replaces the implementations of Volatile.* in CoreLib with more efficient ones.
-    // We do this because we cannot otherwise express these in C#.  What we *want* to do is
-    // to treat the byref args to these methods as "volatile."  In pseudo-C#, this would look
-    // like:
-    //
-    //   int Read(ref volatile int location)
-    //   {
-    //       return location;
-    //   }
-    //
-    // However, C# does not yet provide a way to declare a byref as "volatile."  So instead,
-    // we substitute raw IL bodies for these methods that use the correct volatile instructions.
-    //
-
-    _ASSERTE(CoreLibBinder::IsClass(ftn->GetMethodTable(), CLASS__VOLATILE));
-
-    const size_t VolatileMethodBodySize = 6;
-
-    struct VolatileMethodImpl
-    {
-        BinderMethodID methodId;
-        BYTE body[VolatileMethodBodySize];
-    };
-
-#define VOLATILE_IMPL(type, loadinst, storeinst) \
-    { \
-        METHOD__VOLATILE__READ_##type, \
-        { \
-            CEE_LDARG_0, \
-            CEE_PREFIX1, (CEE_VOLATILE & 0xFF), \
-            loadinst, \
-            CEE_NOP, /*pad to VolatileMethodBodySize bytes*/ \
-            CEE_RET \
-        } \
-    }, \
-    { \
-        METHOD__VOLATILE__WRITE_##type, \
-        { \
-            CEE_LDARG_0, \
-            CEE_LDARG_1, \
-            CEE_PREFIX1, (CEE_VOLATILE & 0xFF), \
-            storeinst, \
-            CEE_RET \
-        } \
-    },
-
-    static const VolatileMethodImpl volatileImpls[] =
-    {
-        VOLATILE_IMPL(T,       CEE_LDIND_REF, CEE_STIND_REF)
-        VOLATILE_IMPL(Bool,    CEE_LDIND_I1,  CEE_STIND_I1)
-        VOLATILE_IMPL(Int,     CEE_LDIND_I4,  CEE_STIND_I4)
-        VOLATILE_IMPL(IntPtr,  CEE_LDIND_I,   CEE_STIND_I)
-        VOLATILE_IMPL(UInt,    CEE_LDIND_U4,  CEE_STIND_I4)
-        VOLATILE_IMPL(UIntPtr, CEE_LDIND_I,   CEE_STIND_I)
-        VOLATILE_IMPL(SByt,    CEE_LDIND_I1,  CEE_STIND_I1)
-        VOLATILE_IMPL(Byte,    CEE_LDIND_U1,  CEE_STIND_I1)
-        VOLATILE_IMPL(Shrt,    CEE_LDIND_I2,  CEE_STIND_I2)
-        VOLATILE_IMPL(UShrt,   CEE_LDIND_U2,  CEE_STIND_I2)
-        VOLATILE_IMPL(Flt,     CEE_LDIND_R4,  CEE_STIND_R4)
-
-        //
-        // Ordinary volatile loads and stores only guarantee atomicity for pointer-sized (or smaller) data.
-        // So, on 32-bit platforms we must use Interlocked operations instead for the 64-bit types.
-        // The implementation in CoreLib already does this, so we will only substitute a new
-        // IL body if we're running on a 64-bit platform.
-        //
-        IN_TARGET_64BIT(VOLATILE_IMPL(Long,  CEE_LDIND_I8, CEE_STIND_I8))
-        IN_TARGET_64BIT(VOLATILE_IMPL(ULong, CEE_LDIND_I8, CEE_STIND_I8))
-        IN_TARGET_64BIT(VOLATILE_IMPL(Dbl,   CEE_LDIND_R8, CEE_STIND_R8))
-    };
-
-    mdMethodDef md = ftn->GetMemberDef();
-    for (unsigned i = 0; i < ARRAY_SIZE(volatileImpls); i++)
-    {
-        if (md == CoreLibBinder::GetMethod(volatileImpls[i].methodId)->GetMemberDef())
-        {
-            methInfo->ILCode = const_cast<BYTE*>(volatileImpls[i].body);
-            methInfo->ILCodeSize = VolatileMethodBodySize;
-            methInfo->maxStack = 2;
-            methInfo->EHcount = 0;
-            methInfo->options = (CorInfoOptions)0;
-            return true;
-        }
-    }
-
-    return false;
-}
-
 bool getILIntrinsicImplementationForInterlocked(MethodDesc * ftn,
                                                 CORINFO_METHOD_INFO * methInfo)
 {
@@ -7617,10 +7523,6 @@ static void getMethodInfoHelper(
             else if (CoreLibBinder::IsClass(pMT, CLASS__INTERLOCKED))
             {
                 fILIntrinsic = getILIntrinsicImplementationForInterlocked(ftn, methInfo);
-            }
-            else if (CoreLibBinder::IsClass(pMT, CLASS__VOLATILE))
-            {
-                fILIntrinsic = getILIntrinsicImplementationForVolatile(ftn, methInfo);
             }
             else if (CoreLibBinder::IsClass(pMT, CLASS__RUNTIME_HELPERS))
             {
