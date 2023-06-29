@@ -352,24 +352,24 @@ mono_determine_physical_ram_available_size (void)
 	return (guint64)memstat.ullAvailPhys;
 
 #elif defined (__NetBSD__) || defined (__FreeBSD__)
-        struct vmtotal vm_total;
-        guint64 page_size;
-        int mib[2];
-        size_t len;
+	struct vmtotal vm_total;
+	guint64 page_size;
+	int mib[2];
+	size_t len;
 
-        mib[0] = CTL_VM;
-        mib[1] = VM_METER;
-                
-        len = sizeof (vm_total);
-        sysctl (mib, 2, &vm_total, &len, NULL, 0);
-                
-        mib[0] = CTL_HW;
-        mib[1] = HW_PAGESIZE;
-                        
-        len = sizeof (page_size);
-        sysctl (mib, 2, &page_size, &len, NULL, 0);
+	mib[0] = CTL_VM;
+	mib[1] = VM_METER;
 
-        return ((guint64) vm_total.t_free * page_size) / 1024;
+	len = sizeof (vm_total);
+	sysctl (mib, 2, &vm_total, &len, NULL, 0);
+
+	mib[0] = CTL_HW;
+	mib[1] = HW_PAGESIZE;
+
+	len = sizeof (page_size);
+	sysctl (mib, 2, &page_size, &len, NULL, 0);
+
+	return ((guint64) vm_total.t_free * page_size) / 1024;
 #elif defined (__APPLE__)
 	mach_msg_type_number_t count = HOST_VM_INFO_COUNT;
 	mach_port_t host = mach_host_self ();
