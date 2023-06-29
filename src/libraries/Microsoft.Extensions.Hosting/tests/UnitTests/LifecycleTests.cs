@@ -61,6 +61,7 @@ namespace Microsoft.Extensions.Hosting.Tests
                 services
                     .AddHostedService<CallbackOrder_Impl>()
                     .AddSingleton((sp) => sp.GetServices<IHostedService>().OfType<CallbackOrder_Impl>().First())
+                    .AddSingleton<IHostLifetime>((sp) => sp.GetServices<IHostedService>().OfType<CallbackOrder_Impl>().First())
                     .Configure<HostOptions>(opts => opts.ServicesStartConcurrently = concurrently)
                     .Configure<HostOptions>(opts => opts.ServicesStopConcurrently = concurrently);
             });
@@ -71,20 +72,23 @@ namespace Microsoft.Extensions.Hosting.Tests
                 await host.StartAsync();
                 await host.StopAsync();
 
-                Assert.Equal(1, impl._startingOrder);
-                Assert.Equal(2, impl._startOrder);
-                Assert.Equal(3, impl._startedOrder);
-                Assert.Equal(4, impl._applicationStartedOrder);
-                Assert.Equal(5, impl._stoppingOrder);
-                Assert.Equal(6, impl._applicationStoppingOrder);
-                Assert.Equal(7, impl._stopOrder);
-                Assert.Equal(8, impl._stoppedOrder);
-                Assert.Equal(9, impl._applicationStoppedOrder);
+                Assert.Equal(1, impl._hostWaitForStartAsyncOrder);
+                Assert.Equal(2, impl._startingOrder);
+                Assert.Equal(3, impl._startOrder);
+                Assert.Equal(4, impl._startedOrder);
+                Assert.Equal(5, impl._applicationStartedOrder);
+                Assert.Equal(6, impl._stoppingOrder);
+                Assert.Equal(7, impl._applicationStoppingOrder);
+                Assert.Equal(8, impl._stopOrder);
+                Assert.Equal(9, impl._stoppedOrder);
+                Assert.Equal(10, impl._applicationStoppedOrder);
+                Assert.Equal(11, impl._hostStoppedOrder);
             }
         }
 
-        private class CallbackOrder_Impl : IHostedLifecycleService
+        private class CallbackOrder_Impl : IHostedLifecycleService, IHostLifetime
         {
+            public int _hostWaitForStartAsyncOrder;
             public int _startingOrder;
             public int _startOrder;
             public int _startedOrder;
@@ -94,6 +98,7 @@ namespace Microsoft.Extensions.Hosting.Tests
             public int _stopOrder;
             public int _stoppedOrder;
             public int _applicationStoppedOrder;
+            public int _hostStoppedOrder;
 
             private int _callCount;
 
@@ -115,6 +120,12 @@ namespace Microsoft.Extensions.Hosting.Tests
                 {
                     _applicationStoppedOrder = ++_callCount;
                 });
+            }
+
+            Task IHostLifetime.WaitForStartAsync(CancellationToken cancellationToken)
+            {
+                _hostWaitForStartAsyncOrder = ++_callCount;
+                return Task.CompletedTask;
             }
 
             public Task StartingAsync(CancellationToken cancellationToken)
@@ -149,6 +160,12 @@ namespace Microsoft.Extensions.Hosting.Tests
             public Task StoppedAsync(CancellationToken cancellationToken)
             {
                 _stoppedOrder = ++_callCount;
+                return Task.CompletedTask;
+            }
+
+            Task IHostLifetime.StopAsync(System.Threading.CancellationToken cancellationToken)
+            {
+                _hostStoppedOrder = ++_callCount;
                 return Task.CompletedTask;
             }
         }

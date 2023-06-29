@@ -57,6 +57,7 @@ namespace Microsoft.Extensions.Hosting.Internal
 
         /// <summary>
         /// Order:
+        ///  IHostLifetime.WaitForStartAsync
         ///  IHostedLifecycleService.StartingAsync
         ///  IHostedService.Start
         ///  IHostedLifecycleService.StartedAsync
@@ -82,12 +83,14 @@ namespace Microsoft.Extensions.Hosting.Internal
             using (linkedCts)
             {
                 CancellationToken token = linkedCts.Token;
+
+                // This may not catch exceptions.
+                await _hostLifetime.WaitForStartAsync(token).ConfigureAwait(false);
+                token.ThrowIfCancellationRequested();
+
                 List<Exception> exceptions = new();
                 _hostedServices = Services.GetRequiredService<IEnumerable<IHostedService>>();
                 _hostedLifecycleServices = GetHostLifecycles(_hostedServices);
-
-                await _hostLifetime.WaitForStartAsync(token).ConfigureAwait(false);
-                token.ThrowIfCancellationRequested();
 
                 // Run IHostedService.Start either concurrently or serially.
                 if (_options.ServicesStartConcurrently)
@@ -170,6 +173,7 @@ namespace Microsoft.Extensions.Hosting.Internal
                 }
 
                 // Fire IHostApplicationLifetime.Started
+                // This catches all exceptions and does not re-throw.
                 _applicationLifetime.NotifyStarted();
             }
 
@@ -212,6 +216,8 @@ namespace Microsoft.Extensions.Hosting.Internal
                 if (_options.BackgroundServiceExceptionBehavior == BackgroundServiceExceptionBehavior.StopHost)
                 {
                     _logger.BackgroundServiceStoppingHost(ex);
+
+                    // This catches all exceptions and does not re-throw.
                     _applicationLifetime.StopApplication();
                 }
             }
@@ -224,6 +230,7 @@ namespace Microsoft.Extensions.Hosting.Internal
         ///  IHostedService.Stop
         ///  IHostedLifecycleService.StoppedAsync
         ///  IHostApplicationLifetime.ApplicationStopped
+        ///  IHostLifetime.StopAsync
         /// </summary>
         public async Task StopAsync(CancellationToken cancellationToken = default)
         {
@@ -266,16 +273,9 @@ namespace Microsoft.Extensions.Hosting.Internal
                             await CallLifeCycle_Stopping(reversedLifetimeServices, token, exceptions).ConfigureAwait(false);
                         }
 
-                        try
-                        {
-                            // Trigger IHostApplicationLifetime.ApplicationStopping.
-                            _applicationLifetime.StopApplication();
-                        }
-                        catch (Exception ex)
-                        {
-                            LogExceptions(); // Exceptions thrown from StoppingAsync().
-                            throw ex;
-                        }
+                        // Trigger IHostApplicationLifetime.ApplicationStopping.
+                        // This catches all exceptions and does not re-throw.
+                        _applicationLifetime.StopApplication();
 
                         await CallLifeCycle_Stop(reversedServices, token, exceptions).ConfigureAwait(false);
 
@@ -301,16 +301,9 @@ namespace Microsoft.Extensions.Hosting.Internal
                             }
                         }
 
-                        try
-                        {
-                            // Trigger IHostApplicationLifetime.ApplicationStopping.
-                            _applicationLifetime.StopApplication();
-                        }
-                        catch (Exception ex)
-                        {
-                            LogExceptions(); // Exceptions thrown from StoppingAsync().
-                            throw ex;
-                        }
+                        // Trigger IHostApplicationLifetime.ApplicationStopping.
+                        // This catches all exceptions and does not re-throw.
+                        _applicationLifetime.StopApplication();
 
                         foreach (IHostedService hostedService in reversedServices)
                         {
@@ -341,28 +334,34 @@ namespace Microsoft.Extensions.Hosting.Internal
                     }
                 }
 
-                LogExceptions();
-
                 // Fire IHostApplicationLifetime.Stopped
+                // This catches all exceptions and does not re-throw.
                 _applicationLifetime.NotifyStopped();
 
-                void LogExceptions()
+                // This may not catch exceptions, so we do it here.
+                try
                 {
-                    if (exceptions.Count > 0)
+                    await _hostLifetime.StopAsync(token).ConfigureAwait(false);
+                }
+                catch (Exception ex)
+                {
+                    exceptions.Add(ex);
+                }
+
+                if (exceptions.Count > 0)
+                {
+                    if (exceptions.Count == 1)
                     {
-                        if (exceptions.Count == 1)
-                        {
-                            // Rethrow if it's a single error
-                            Exception singleException = exceptions[0];
-                            _logger.StoppedWithException(singleException);
-                            ExceptionDispatchInfo.Capture(singleException).Throw();
-                        }
-                        else
-                        {
-                            var ex = new AggregateException("One or more hosted services failed to stop.", exceptions);
-                            _logger.StoppedWithException(ex);
-                            throw ex;
-                        }
+                        // Rethrow if it's a single error
+                        Exception singleException = exceptions[0];
+                        _logger.StoppedWithException(singleException);
+                        ExceptionDispatchInfo.Capture(singleException).Throw();
+                    }
+                    else
+                    {
+                        var ex = new AggregateException("One or more hosted services failed to stop.", exceptions);
+                        _logger.StoppedWithException(ex);
+                        throw ex;
                     }
                 }
             }
