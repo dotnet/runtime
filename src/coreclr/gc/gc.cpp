@@ -469,6 +469,22 @@ static CLRCriticalSection gc_log_lock;
 uint8_t* gc_log_buffer = 0;
 size_t gc_log_buffer_offset = 0;
 
+void flush_gc_log (bool close)
+{
+    if (gc_log_on && (gc_log != NULL))
+    {
+        fwrite(gc_log_buffer, gc_log_buffer_offset, 1, gc_log);
+        fflush(gc_log);
+        if (close)
+        {
+            fclose(gc_log);
+            gc_log_on = false;
+            gc_log = NULL;
+        }
+        gc_log_buffer_offset = 0;
+    }
+}
+
 void log_va_msg(const char *fmt, va_list args)
 {
     gc_log_lock.Enter();
@@ -578,13 +594,7 @@ void GCLogConfig (const char *fmt, ... )
 void GCHeap::Shutdown()
 {
 #if defined(TRACE_GC) && !defined(BUILD_AS_STANDALONE)
-    if (gc_log_on && (gc_log != NULL))
-    {
-        fwrite(gc_log_buffer, gc_log_buffer_offset, 1, gc_log);
-        fflush(gc_log);
-        fclose(gc_log);
-        gc_log_buffer_offset = 0;
-    }
+    flush_gc_log (true);
 #endif //TRACE_GC && !BUILD_AS_STANDALONE
 }
 
@@ -49802,6 +49812,10 @@ void gc_heap::do_post_gc()
         (settings.promotion ? "P" : "S"),
         settings.entry_memory_load,
         current_memory_load));
+
+#if defined(SIMPLE_DPRINTF) && defined(TRACE_GC)
+    flush_gc_log (false);
+#endif //SIMPLE_DPRINTF && TRACE_GC
 
     // Now record the gc info.
     last_recorded_gc_info* last_gc_info = 0;

@@ -108,8 +108,18 @@
 #pragma warning(disable:4477)
 #endif //_MSC_VER
 
+//#define TRACE_GC
+//#define SIMPLE_DPRINTF
+
+#if defined(TRACE_GC)
+void flush_gc_log (bool);
+#endif
+
 inline void FATAL_GC_ERROR()
 {
+#if defined(TRACE_GC)
+    flush_gc_log (true);
+#endif
     GCToOSInterface::DebugBreak();
     _ASSERTE(!"Fatal Error in GC.");
     GCToEEInterface::HandleFatalError((unsigned int)COR_E_EXECUTIONENGINE);
@@ -233,9 +243,6 @@ inline void FATAL_GC_ERROR()
 #ifndef MAX_LONGPATH
 #define MAX_LONGPATH 1024
 #endif // MAX_LONGPATH
-
-//#define TRACE_GC
-//#define SIMPLE_DPRINTF
 
 //#define JOIN_STATS         //amount of time spent in the join
 
