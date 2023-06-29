@@ -612,8 +612,8 @@ private:
             }
         }
 
-        LocationAccess* indirAccess = nullptr;
         // Create helper types to create accesses.
+        LocationAccess* indirAccess = nullptr;
         LocationAccess storeAccess;
 
         if (m_store->OperIs(GT_STORE_BLK))
@@ -899,10 +899,8 @@ private:
     }
 
 private:
-    // Helper class to provide common operations when the source or destination
-    // involves an indirection, in which case decomposition usually needs to
-    // access its address multiple times and propagate flags from/to the
-    // indirection.
+    // Helper class to create derived accesses off of a location: either a
+    // local, or as indirections off of an address.
     class LocationAccess
     {
         GenTreeLclVarCommon* m_local              = nullptr;
@@ -954,9 +952,9 @@ private:
         //   Create a read from this location.
         //
         // Parameters:
-        //   offs                     - Offset
-        //   type                     - Type of store
-        //   comp                     - Compiler instance
+        //   offs - Offset
+        //   type - Type of store
+        //   comp - Compiler instance
         //
         // Returns:
         //   IR node to perform the read.
@@ -986,10 +984,10 @@ private:
         //   Create a store to this location.
         //
         // Parameters:
-        //   offs                     - Offset
-        //   type                     - Type of store
-        //   src                      - Source value
-        //   comp                     - Compiler instance
+        //   offs - Offset
+        //   type - Type of store
+        //   src  - Source value
+        //   comp - Compiler instance
         //
         // Returns:
         //   IR node to perform the store.
@@ -1046,7 +1044,9 @@ private:
 
         //------------------------------------------------------------------------
         // GrabAddress:
-        //   Create an address node.
+        //   Create a derived access of the address at a specified offset. Only
+        //   valid if this represents an indirection. This will decrement the
+        //   number of expected derived accesses that can be created.
         //
         // Parameters:
         //   offs - offset
