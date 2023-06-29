@@ -395,13 +395,7 @@ async function createEmscriptenMain(): Promise<RuntimeAPI> {
 
     if (!module.configSrc && (!module.config || Object.keys(module.config).length === 0 || !module.config.assets)) {
         // if config file location nor assets are provided
-        if (loaderHelpers.scriptDirectory.indexOf("/_framework") == -1) {
-            // we are not inside _framework (= wasm template)
-            module.configSrc = "./_framework/blazor.boot.json";
-        } else {
-            // blazor app
-            module.configSrc = "./blazor.boot.json";
-        }
+        module.configSrc = "./blazor.boot.json";
     }
 
     // download config

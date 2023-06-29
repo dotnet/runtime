@@ -150,8 +150,8 @@ namespace System.Collections.Frozen
                 {
                     for (; bucketIndex < bucketEndIndex; bucketIndex++)
                     {
-                        uint index = (uint)lengthBuckets[bucketIndex];
-                        if (index < keys.Length)
+                        int index = lengthBuckets[bucketIndex];
+                        if ((uint)index < (uint)keys.Length)
                         {
                             if (key == keys[index])
                             {
@@ -169,8 +169,8 @@ namespace System.Collections.Frozen
                 {
                     for (; bucketIndex < bucketEndIndex; bucketIndex++)
                     {
-                        uint index = (uint)lengthBuckets[bucketIndex];
-                        if (index < keys.Length)
+                        int index = lengthBuckets[bucketIndex];
+                        if ((uint)index < (uint)keys.Length)
                         {
                             if (StringComparer.OrdinalIgnoreCase.Equals(key, keys[index]))
                             {

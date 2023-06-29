@@ -130,30 +130,6 @@ namespace ILCompiler
         }
 
         /// <summary>
-        /// What is the maximum number of steps that need to be taken from this type to its most contained generic type.
-        /// i.e.
-        /// System.Int32 => 0
-        /// List&lt;System.Int32&gt; => 1
-        /// Dictionary&lt;System.Int32,System.Int32&gt; => 1
-        /// Dictionary&lt;List&lt;System.Int32&gt;,&lt;System.Int32&gt; => 2
-        /// </summary>
-        public static int GetGenericDepth(this TypeDesc type)
-        {
-            if (type.HasInstantiation)
-            {
-                int maxGenericDepthInInstantiation = 0;
-                foreach (TypeDesc instantiationType in type.Instantiation)
-                {
-                    maxGenericDepthInInstantiation = Math.Max(instantiationType.GetGenericDepth(), maxGenericDepthInInstantiation);
-                }
-
-                return maxGenericDepthInInstantiation + 1;
-            }
-
-            return 0;
-        }
-
-        /// <summary>
         /// Determine if a type has a generic depth greater than a given value
         /// </summary>
         public static bool IsGenericDepthGreaterThan(this TypeDesc type, int depth)
@@ -168,23 +144,6 @@ namespace ILCompiler
             }
 
             return false;
-        }
-
-        /// <summary>
-        /// What is the maximum number of steps that need to be taken from this type to its most contained generic type.
-        /// i.e.
-        /// SomeGenericType&lt;System.Int32&gt;.Method&lt;System.Int32&gt; => 1
-        /// SomeType.Method&lt;System.Int32&gt; => 0
-        /// SomeType.Method&lt;List&lt;System.Int32&gt;&gt; => 1
-        /// </summary>
-        public static int GetGenericDepth(this MethodDesc method)
-        {
-            int genericDepth = method.OwningType.GetGenericDepth();
-            foreach (TypeDesc type in method.Instantiation)
-            {
-                genericDepth = Math.Max(genericDepth, type.GetGenericDepth());
-            }
-            return genericDepth;
         }
 
         /// <summary>
