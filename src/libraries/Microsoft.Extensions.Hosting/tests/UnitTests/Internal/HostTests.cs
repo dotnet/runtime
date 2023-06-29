@@ -237,7 +237,7 @@ namespace Microsoft.Extensions.Hosting.Internal
                 })
                 .Build())
             {
-                if (concurrentStartup && eventCount > 1)
+                if (concurrentStartup)
                 {
                     await Assert.ThrowsAsync<AggregateException>(() => host.StartAsync());
                 }
@@ -1159,7 +1159,7 @@ namespace Microsoft.Extensions.Hosting.Internal
                 var started = RegisterCallbacksThatThrow(applicationLifetime.ApplicationStarted);
                 var stopping = RegisterCallbacksThatThrow(applicationLifetime.ApplicationStopping);
 
-                if (concurrentStartup && eventCount > 1)
+                if (concurrentStartup)
                 {
                     await Assert.ThrowsAsync<AggregateException>(() => host.StartAsync());
                 }
