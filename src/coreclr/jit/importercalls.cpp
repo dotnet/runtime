@@ -7758,6 +7758,8 @@ void Compiler::impCheckCanInline(GenTreeCall*           call,
                 return;
             }
 
+            compCompHnd->getMethodSig(ftn, &methInfo.args);
+
             // Profile data allows us to avoid early "too many IL bytes" outs.
             //
             inlineResult->NoteBool(InlineObservation::CALLSITE_HAS_PROFILE_WEIGHTS,
