@@ -88,12 +88,12 @@ namespace ILCompiler.DependencyAnalysis.ReadyToRun
                 }
                 else
                 {
-                    bool isUnboxingStub = false;
-                    if (methodNode is DelayLoadHelperImport methodImport)
+                    bool isStub = false;
+                    if (methodNode is Import methodImport && methodImport.Signature is MethodFixupSignature methodSignature)
                     {
-                        isUnboxingStub = ((MethodFixupSignature)methodImport.ImportSignature.Target).IsUnboxingStub;
+                        isStub = methodSignature.IsUnboxingStub || methodSignature.IsInstantiatingStub;
                     }
-                    builder.GetCallRefMap(methodNode.Method, isUnboxingStub);
+                    builder.GetCallRefMap(methodNode.Method, isStub);
                 }
                 if (methodIndex >= nextMethodIndex)
                 {

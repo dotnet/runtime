@@ -940,7 +940,23 @@ namespace Internal.JitInterface
             TypeDesc delegateTypeDesc = HandleToObject(delegateType);
             MethodDesc targetMethodDesc = HandleToObject(pTargetMethod.hMethod);
             Debug.Assert(!targetMethodDesc.IsUnboxingThunk());
-            MethodWithToken targetMethod = new MethodWithToken(targetMethodDesc, HandleToModuleToken(ref pTargetMethod), constrainedType: null, unboxing: false, context: entityFromContext(pTargetMethod.tokenContext));
+
+            var typeOrMethodContext = (pTargetMethod.tokenContext == contextFromMethodBeingCompiled()) ?
+                MethodBeingCompiled : HandleToObject((void*)pTargetMethod.tokenContext);
+
+            TypeDesc constrainedType = null;
+            if (targetConstraint != 0)
+            {
+                MethodIL methodIL = _compilation.GetMethodIL(MethodBeingCompiled);
+                constrainedType = (TypeDesc)ResolveTokenInScope(methodIL, typeOrMethodContext, targetConstraint);
+            }
+
+            MethodWithToken targetMethod = new MethodWithToken(
+                targetMethodDesc,
+                HandleToModuleToken(ref pTargetMethod),
+                constrainedType: constrainedType,
+                unboxing: false,
+                context: typeOrMethodContext);
 
             pLookup.lookupKind.needsRuntimeLookup = false;
             pLookup.constLookup = CreateConstLookupToSymbol(_compilation.SymbolNodeFactory.DelegateCtor(delegateTypeDesc, targetMethod));
@@ -2179,7 +2195,9 @@ namespace Internal.JitInterface
                 // class and not requesting the instantiating stub makes the runtime transform the
                 // owning type to its canonical equivalent that would need different codegen
                 // (supplying the instantiation argument).
-                if (!resolvedConstraint && !originalMethod.IsSharedByGenericInstantiations)
+                if (!resolvedConstraint &&
+                    !originalMethod.IsSharedByGenericInstantiations &&
+                    targetMethod.IsSharedByGenericInstantiations)
                 {
                     useInstantiatingStub = true;
                 }
