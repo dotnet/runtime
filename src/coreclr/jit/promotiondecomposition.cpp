@@ -614,7 +614,7 @@ private:
 
         // Create helper types to create accesses.
         LocationAccess* indirAccess = nullptr;
-        LocationAccess storeAccess;
+        LocationAccess  storeAccess;
 
         if (m_store->OperIs(GT_STORE_BLK))
         {
@@ -757,7 +757,7 @@ private:
                 }
             }
 
-            GenTree* src = srcAccess.CreateRead(remainderStrategy.PrimitiveOffset, primitiveType, m_compiler);
+            GenTree* src   = srcAccess.CreateRead(remainderStrategy.PrimitiveOffset, primitiveType, m_compiler);
             GenTree* store = storeAccess.CreateStore(remainderStrategy.PrimitiveOffset, primitiveType, src, m_compiler);
             statements->AddStatement(store);
         }
