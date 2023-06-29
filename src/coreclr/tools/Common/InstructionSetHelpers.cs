@@ -16,7 +16,7 @@ namespace System.CommandLine
     internal static partial class Helpers
     {
         public static InstructionSetSupport ConfigureInstructionSetSupport(string instructionSet, int maxVectorTBitWidth, bool isVectorTOptimistic, TargetArchitecture targetArchitecture, TargetOS targetOS,
-            string mustNotBeMessage, string invalidImplicationMessage)
+            string mustNotBeMessage, string invalidImplicationMessage, Logger logger)
         {
             InstructionSetSupportBuilder instructionSetSupportBuilder = new(targetArchitecture);
 
@@ -54,6 +54,9 @@ namespace System.CommandLine
                     cpuFeatures = getCpuFeatures();
                 }
                 HardwareIntrinsicHelpers.AddRuntimeRequiredIsaFlagsToBuilder(instructionSetSupportBuilder, cpuFeatures);
+
+                if (logger.IsVerbose)
+                    logger.LogMessage($"The 'native' instruction set expanded to {instructionSetSupportBuilder}");
             }
             else if (instructionSet != null)
             {

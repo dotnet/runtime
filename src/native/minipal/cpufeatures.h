@@ -5,7 +5,7 @@
 #define HAVE_MINIPAL_CPUFEATURES_H
 
 //
-// Should match the constants defined in the compiler in HardwareIntrinsicHelpers.Aot.cs
+// Should match the constants defined in the compiler in HardwareIntrinsicHelpers.cs
 //
 
 #if defined(TARGET_X86) || defined(TARGET_AMD64)

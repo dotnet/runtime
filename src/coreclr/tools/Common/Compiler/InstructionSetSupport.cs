@@ -227,6 +227,13 @@ namespace ILCompiler
             _architecture = other._architecture;
         }
 
+        public override string ToString()
+            => (_supportedInstructionSets.Count > 0 ? "+" : "")
+               + string.Join(",+", _supportedInstructionSets)
+               + (_supportedInstructionSets.Count > 0 && _unsupportedInstructionSets.Count > 0 ? "," : "")
+               + (_unsupportedInstructionSets.Count > 0 ? "-" : "")
+               + string.Join(",-", _unsupportedInstructionSets);
+
         /// <summary>
         /// Add a supported instruction set to the specified list.
         /// </summary>
