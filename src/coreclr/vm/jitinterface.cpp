@@ -1657,11 +1657,12 @@ static uint32_t ThreadLocalOffset(void* p)
 #elif defined(TARGET_OSX)
 extern "C" void* GetThreadVarsAddress();
 
-void* getThreadVarsSectionAddressFromDesc(uint8_t* p)
+static void* getThreadVarsSectionAddressFromDesc(uint8_t* p)
 {
     if (!(p[0] == 0x48 && p[1] == 0x8d && p[2] == 0x3d))
     {
-        // The optimization is disabled if coreclr is not compiled in .so format.
+        // The optimization is disabled if coreclr is not compiled in .dylib format.
+        _ASSERTE(false && "Unexpected code sequence");
         return 0;
     }
 
@@ -1676,7 +1677,7 @@ void* getThreadVarsSectionAddressFromDesc(uint8_t* p)
     return *(uint32_t*)p + (p + 4);
 }
 
-void* getThreadVarsSectionAddress()
+static void* getThreadVarsSectionAddress()
 {
 #ifdef TARGET_AMD64
     // On x64, the address is related to rip, so, disassemble the function,
@@ -1697,11 +1698,12 @@ void* getThreadVarsSectionAddress()
 
 extern "C" void* GetTlsIndexObjectDescOffset();
 
-void* getThreadStaticDescriptor(uint8_t* p)
+static void* getThreadStaticDescriptor(uint8_t* p)
 {
     if (!(p[0] == 0x66 && p[1] == 0x48 && p[2] == 0x8d && p[3] == 0x3d))
     {
         // The optimization is disabled if coreclr is not compiled in .so format.
+        _ASSERTE(false && "Unexpected code sequence");
         return 0;
     }
 
@@ -1718,7 +1720,7 @@ void* getThreadStaticDescriptor(uint8_t* p)
     return *(uint32_t*)p + (p + 4);
 }
 
-void* getTlsIndexObjectAddress()
+static void* getTlsIndexObjectAddress()
 {
     uint8_t* p = reinterpret_cast<uint8_t*>(&GetTlsIndexObjectDescOffset);
     return getThreadStaticDescriptor(p);
