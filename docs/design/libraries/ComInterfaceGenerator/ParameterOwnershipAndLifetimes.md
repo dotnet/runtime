@@ -24,7 +24,12 @@ Elements of the arrays will have ownership rules are as if they are Indirected. 
 
 ## Default Ownership semantics
 
-All unmodified parameters have 'in' ownership semantics by default.
+All unmodified non-array parameters have 'in' ownership semantics by default.
+Array types by default have 'ref' ownership semantics by default.
+
+## Note on Arrays
+
+Arrays have both the memory allocated for the array and (for arrays of non-blittable types) memory allocated for each element. These memory blocks may follow different ownership rules.
 
 ## In parameters
 
