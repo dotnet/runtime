@@ -296,5 +296,34 @@ namespace System.Formats.Tar.Tests
             Assert.True(File.Exists(filePath), $"{filePath}' does not exist.");
             AssertFileModeEquals(filePath, TestPermission1);
         }
+
+        [Fact]
+        public void LinkBeforeTarget()
+        {
+            using TempDirectory source = new TempDirectory();
+            using TempDirectory destination = new TempDirectory();
+
+            string archivePath = Path.Join(source.Path, "archive.tar");
+            using FileStream archiveStream = File.Create(archivePath);
+            using (TarWriter writer = new TarWriter(archiveStream))
+            {
+                PaxTarEntry link = new PaxTarEntry(TarEntryType.SymbolicLink, "link");
+                link.LinkName = "dir/file";
+                writer.WriteEntry(link);
+
+                PaxTarEntry file = new PaxTarEntry(TarEntryType.RegularFile, "dir/file");
+                writer.WriteEntry(file);
+            }
+
+            string filePath = Path.Join(destination.Path, "dir", "file");
+            string linkPath = Path.Join(destination.Path, "link");
+
+            File.WriteAllText(linkPath, "");
+
+            TarFile.ExtractToDirectory(archivePath, destination.Path, overwriteFiles: true);
+
+            Assert.True(File.Exists(filePath), $"{filePath}' does not exist.");
+            Assert.True(File.Exists(linkPath), $"{linkPath}' does not exist.");
+        }
     }
 }

@@ -70,6 +70,46 @@ namespace System.Text.Json.Nodes
             _jsonElement = element;
         }
 
+        internal override JsonNode InternalDeepClone()
+        {
+            if (_jsonElement.HasValue)
+            {
+                return new JsonObject(_jsonElement!.Value.Clone(), Options);
+            }
+
+            if (_dictionary is not null)
+            {
+                bool caseInsensitive = Options.HasValue ? Options.Value.PropertyNameCaseInsensitive : false;
+                var jObject = new JsonObject(Options)
+                {
+                    _dictionary = new JsonPropertyDictionary<JsonNode?>(caseInsensitive, _dictionary.Count)
+                };
+
+                foreach (KeyValuePair<string, JsonNode?> item in _dictionary)
+                {
+                    if (item.Value is not null)
+                    {
+                        jObject.Add(item.Key, item.Value.DeepClone());
+                    }
+                    else
+                    {
+                        jObject.Add(item.Key, null);
+                    }
+                }
+                return jObject;
+            }
+
+            return new JsonObject(Options);
+        }
+
+        internal string GetPropertyName(JsonNode? node)
+        {
+            InitializeIfRequired();
+            Debug.Assert(_dictionary != null);
+            KeyValuePair<string, JsonNode?>? item = _dictionary.FindValue(node);
+            return item.HasValue ? item.Value.Key : string.Empty;
+        }
+
         /// <summary>
         ///   Returns the value of a property with the specified name.
         /// </summary>
@@ -107,6 +147,43 @@ namespace System.Text.Json.Nodes
                 }
 
                 writer.WriteEndObject();
+            }
+        }
+
+        internal override bool DeepEquals(JsonNode? node)
+        {
+            switch (node)
+            {
+                case null or JsonArray:
+                    return false;
+                case JsonValue value:
+                    // JsonValueTrimmable/NonTrimmable can hold the object type so calling this method to continue the deep comparision.
+                    return value.DeepEquals(this);
+                case JsonObject jsonObject:
+                    InitializeIfRequired();
+                    jsonObject.InitializeIfRequired();
+                    Debug.Assert(_dictionary is not null);
+                    Debug.Assert(jsonObject._dictionary is not null);
+
+                    if (_dictionary.Count != jsonObject._dictionary.Count)
+                    {
+                        return false;
+                    }
+
+                    foreach (KeyValuePair<string, JsonNode?> item in this)
+                    {
+                        JsonNode? jsonNode = jsonObject._dictionary[item.Key];
+
+                        if (!DeepEquals(item.Value, jsonNode))
+                        {
+                            return false;
+                        }
+                    }
+
+                    return true;
+                default:
+                    Debug.Fail("Impossible case");
+                    return false;
             }
         }
 

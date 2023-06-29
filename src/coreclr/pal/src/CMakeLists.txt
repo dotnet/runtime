@@ -152,7 +152,7 @@ set(SOURCES
   loader/module.cpp
   locale/unicode.cpp
   locale/unicodedata.cpp
-  locale/utf8.cpp
+  ${CLR_SRC_NATIVE_DIR}/minipal/utf8.c
   map/common.cpp
   map/map.cpp
   map/virtual.cpp

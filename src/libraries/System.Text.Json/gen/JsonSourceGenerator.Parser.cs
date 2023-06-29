@@ -6,7 +6,6 @@ using System.Collections.Immutable;
 using System.Diagnostics;
 using System.Diagnostics.CodeAnalysis;
 using System.Linq;
-using System.Reflection;
 using System.Text.Json.Serialization;
 using System.Threading;
 using Microsoft.CodeAnalysis;
@@ -17,6 +16,9 @@ namespace System.Text.Json.SourceGeneration
 {
     public sealed partial class JsonSourceGenerator
     {
+        // The source generator requires NRT and init-only property support.
+        private const LanguageVersion MinimumSupportedLanguageVersion = LanguageVersion.CSharp9;
+
         private sealed class Parser
         {
             private const string SystemTextJsonNamespace = "System.Text.Json";
@@ -101,6 +103,14 @@ namespace System.Text.Json.SourceGeneration
                 if (rootSerializableTypes is null)
                 {
                     // No types were indicated with [JsonSerializable]
+                    return null;
+                }
+
+                LanguageVersion? langVersion = _knownSymbols.Compilation.GetLanguageVersion();
+                if (langVersion is null or < MinimumSupportedLanguageVersion)
+                {
+                    // Unsupported lang version should be the first (and only) diagnostic emitted by the generator.
+                    ReportDiagnostic(DiagnosticDescriptors.JsonUnsupportedLanguageVersion, contextTypeSymbol.GetDiagnosticLocation(), langVersion?.ToDisplayString(), MinimumSupportedLanguageVersion.ToDisplayString());
                     return null;
                 }
 

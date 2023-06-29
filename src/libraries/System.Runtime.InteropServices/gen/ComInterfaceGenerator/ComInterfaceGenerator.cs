@@ -235,7 +235,8 @@ namespace Microsoft.Interop
                 }
             }
 
-            var generatorDiagnostics = new GeneratorDiagnostics();
+            var locations = new MethodSignatureDiagnosticLocations(syntax);
+            var generatorDiagnostics = new GeneratorDiagnosticsBag(new DiagnosticDescriptorProvider(), locations, SR.ResourceManager, typeof(FxResources.Microsoft.Interop.ComInterfaceGenerator.SR));
 
             if (lcidConversionAttr is not null)
             {
@@ -246,6 +247,7 @@ namespace Microsoft.Interop
             GeneratedComInterfaceCompilationData.TryGetGeneratedComInterfaceAttributeFromInterface(symbol.ContainingType, out var generatedComAttribute);
             var generatedComInterfaceAttributeData = GeneratedComInterfaceCompilationData.GetDataFromAttribute(generatedComAttribute);
             // Create the stub.
+
             var signatureContext = SignatureContext.Create(
                 symbol,
                 DefaultMarshallingInfoParser.Create(
@@ -318,7 +320,7 @@ namespace Microsoft.Interop
                 signatureContext,
                 containingSyntaxContext,
                 methodSyntaxTemplate,
-                new MethodSignatureDiagnosticLocations(syntax),
+                locations,
                 callConv.ToSequenceEqualImmutableArray(SyntaxEquivalentComparer.Instance),
                 virtualMethodIndexData,
                 new ComExceptionMarshalling(),

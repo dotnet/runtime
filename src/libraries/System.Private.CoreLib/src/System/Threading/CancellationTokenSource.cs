@@ -161,7 +161,7 @@ namespace System.Threading
                 ThrowHelper.ThrowArgumentOutOfRangeException(ExceptionArgument.delay);
             }
 
-            InitializeWithTimer((uint)totalMilliseconds, timeProvider);
+            InitializeWithTimer(delay, timeProvider);
         }
 
         /// <summary>
@@ -190,16 +190,16 @@ namespace System.Threading
                 ThrowHelper.ThrowArgumentOutOfRangeException(ExceptionArgument.millisecondsDelay);
             }
 
-            InitializeWithTimer((uint)millisecondsDelay, TimeProvider.System);
+            InitializeWithTimer(TimeSpan.FromMilliseconds(millisecondsDelay), TimeProvider.System);
         }
 
         /// <summary>
         /// Common initialization logic when constructing a CTS with a delay parameter.
         /// A zero delay will result in immediate cancellation.
         /// </summary>
-        private void InitializeWithTimer(uint millisecondsDelay, TimeProvider timeProvider)
+        private void InitializeWithTimer(TimeSpan millisecondsDelay, TimeProvider timeProvider)
         {
-            if (millisecondsDelay == 0)
+            if (millisecondsDelay == TimeSpan.Zero)
             {
                 _state = NotifyingCompleteState;
             }
@@ -207,13 +207,13 @@ namespace System.Threading
             {
                 if (timeProvider == TimeProvider.System)
                 {
-                    _timer = new TimerQueueTimer(s_timerCallback, this, millisecondsDelay, Timeout.UnsignedInfinite, flowExecutionContext: false);
+                    _timer = new TimerQueueTimer(s_timerCallback, this, millisecondsDelay, Timeout.InfiniteTimeSpan, flowExecutionContext: false);
                 }
                 else
                 {
                     using (ExecutionContext.SuppressFlow())
                     {
-                        _timer = timeProvider.CreateTimer(s_timerCallback, this, TimeSpan.FromMilliseconds(millisecondsDelay), Timeout.InfiniteTimeSpan);
+                        _timer = timeProvider.CreateTimer(s_timerCallback, this, millisecondsDelay, Timeout.InfiniteTimeSpan);
                     }
                 }
                 // The timer roots this CTS instance while it's scheduled.  That is by design, so
