@@ -18,7 +18,8 @@ namespace Microsoft.Extensions.Hosting.Tests
             {
                 services
                     .AddHostedService<StartingTestClass<Impl1>>()
-                    .AddHostedService<StartingTestClass<Impl2>>();
+                    .AddHostedService<StartingTestClass<Impl2>>()
+                    .Configure<HostOptions>(opts => opts.ServicesStartConcurrently = true);
             });
 
             using (IHost host = hostBuilder.Build())
@@ -235,7 +236,8 @@ namespace Microsoft.Extensions.Hosting.Tests
             {
                 services
                     .AddHostedService<StartedTestClass<Impl1>>()
-                    .AddHostedService<StartedTestClass<Impl2>>();
+                    .AddHostedService<StartedTestClass<Impl2>>()
+                    .Configure<HostOptions>(opts => opts.ServicesStartConcurrently = true);
             });
 
             using (IHost host = hostBuilder.Build())
@@ -313,7 +315,7 @@ namespace Microsoft.Extensions.Hosting.Tests
         [InlineData(false)]
         public async Task StartPhasesException(bool throwAfterAsyncCall)
         {
-            ExceptionImpl impl = new(throwAfterAsyncCall: throwAfterAsyncCall, true, true, true, false, false, false);
+            ExceptionImpl impl = new(throwAfterAsyncCall: throwAfterAsyncCall, throwOnStartup: true, throwOnShutdown: false);
             var hostBuilder = CreateHostBuilder(services =>
             {
                 services.AddHostedService((token) => impl);

@@ -18,7 +18,8 @@ namespace Microsoft.Extensions.Hosting.Tests
             {
                 services
                     .AddHostedService<StoppingTestClass<Impl1>>()
-                    .AddHostedService<StoppingTestClass<Impl2>>();
+                    .AddHostedService<StoppingTestClass<Impl2>>()
+                    .Configure<HostOptions>(opts => opts.ServicesStopConcurrently = true);
             });
 
             using (IHost host = hostBuilder.Build())
@@ -239,7 +240,8 @@ namespace Microsoft.Extensions.Hosting.Tests
             {
                 services
                     .AddHostedService<StoppedTestClass<Impl1>>()
-                    .AddHostedService<StoppedTestClass<Impl2>>();
+                    .AddHostedService<StoppedTestClass<Impl2>>()
+                    .Configure<HostOptions>(opts => opts.ServicesStopConcurrently = true);
             });
 
             using (IHost host = hostBuilder.Build())
@@ -318,7 +320,7 @@ namespace Microsoft.Extensions.Hosting.Tests
         [InlineData(false)]
         public async Task StopPhasesException(bool throwAfterAsyncCall)
         {
-            ExceptionImpl impl = new(throwAfterAsyncCall: throwAfterAsyncCall, false, false, false, true, true, true);
+            ExceptionImpl impl = new(throwAfterAsyncCall: throwAfterAsyncCall, throwOnStartup: false, throwOnShutdown: true);
             var hostBuilder = CreateHostBuilder(services =>
             {
                 services.AddHostedService((token) => impl);

@@ -55,6 +55,13 @@ namespace Microsoft.Extensions.Hosting.Internal
 
         public IServiceProvider Services { get; }
 
+        /// <summary>
+        /// Order:
+        ///  IHostedLifecycleService.StartingAsync
+        ///  IHostedService.Start
+        ///  IHostedLifecycleService.StartedAsync
+        ///  IHostApplicationLifetime.ApplicationStarted
+        /// </summary>
         public async Task StartAsync(CancellationToken cancellationToken = default)
         {
             _logger.Starting();
@@ -82,18 +89,39 @@ namespace Microsoft.Extensions.Hosting.Internal
                 await _hostLifetime.WaitForStartAsync(token).ConfigureAwait(false);
                 token.ThrowIfCancellationRequested();
 
-                if (_hostedLifecycleServices is not null)
-                {
-                    await CallLifeCycle_Starting(_hostedLifecycleServices, token, exceptions).ConfigureAwait(false);
-                }
-
                 // Run IHostedService.Start either concurrently or serially.
                 if (_options.ServicesStartConcurrently)
                 {
+                    if (_hostedLifecycleServices is not null)
+                    {
+                        await CallLifeCycle_Starting(_hostedLifecycleServices, token, exceptions).ConfigureAwait(false);
+                    }
+
                     await CallLifeCycle_Start(_hostedServices, token, exceptions).ConfigureAwait(false);
+
+                    if (_hostedLifecycleServices is not null)
+                    {
+                        await CallLifeCycle_Started(_hostedLifecycleServices, token, exceptions).ConfigureAwait(false);
+                    }
                 }
                 else
                 {
+                    if (_hostedLifecycleServices is not null)
+                    {
+                        foreach (IHostedLifecycleService hostedService in _hostedLifecycleServices)
+                        {
+                            try
+                            {
+                                await hostedService.StartingAsync(token).ConfigureAwait(false);
+                            }
+                            catch (Exception ex)
+                            {
+                                exceptions.Add(ex);
+                                break;
+                            }
+                        }
+                    }
+
                     foreach (IHostedService hostedService in _hostedServices)
                     {
                         try
@@ -106,11 +134,22 @@ namespace Microsoft.Extensions.Hosting.Internal
                             break;
                         }
                     }
-                }
 
-                if (_hostedLifecycleServices is not null)
-                {
-                    await CallLifeCycle_Started(_hostedLifecycleServices, token, exceptions).ConfigureAwait(false);
+                    if (_hostedLifecycleServices is not null)
+                    {
+                        foreach (IHostedLifecycleService hostedService in _hostedLifecycleServices)
+                        {
+                            try
+                            {
+                                await hostedService.StartedAsync(token).ConfigureAwait(false);
+                            }
+                            catch (Exception ex)
+                            {
+                                exceptions.Add(ex);
+                                break;
+                            }
+                        }
+                    }
                 }
 
                 if (exceptions.Count > 0)
@@ -151,7 +190,7 @@ namespace Microsoft.Extensions.Hosting.Internal
         {
             // backgroundService.ExecuteTask may not be set (e.g. if the derived class doesn't call base.StartAsync)
             Task? backgroundTask = backgroundService.ExecuteTask;
-            if (backgroundTask == null)
+            if (backgroundTask is null)
             {
                 return;
             }
@@ -178,6 +217,14 @@ namespace Microsoft.Extensions.Hosting.Internal
             }
         }
 
+        /// <summary>
+        /// Order:
+        ///  IHostedLifecycleService.StoppingAsync
+        ///  IHostApplicationLifetime.ApplicationStopping
+        ///  IHostedService.Stop
+        ///  IHostedLifecycleService.StoppedAsync
+        ///  IHostApplicationLifetime.ApplicationStopped
+        /// </summary>
         public async Task StopAsync(CancellationToken cancellationToken = default)
         {
             _stopCalled = true;
@@ -201,27 +248,70 @@ namespace Microsoft.Extensions.Hosting.Internal
                 CancellationToken token = linkedCts.Token;
                 List<Exception> exceptions = new();
 
-                // Trigger IHostApplicationLifetime.ApplicationStopping
-                _applicationLifetime.StopApplication();
-
-                if (_hostedServices != null) // Started?
+                if (_hostedServices is null)
+                {
+                    // Trigger IHostApplicationLifetime.ApplicationStopping even if StartAsync wasn't called.
+                    _applicationLifetime.StopApplication();
+                }
+                else
                 {
                     // Ensure hosted services are stopped in LIFO order
                     IEnumerable<IHostedService> reversedServices = _hostedServices.Reverse();
                     IEnumerable<IHostedLifecycleService>? reversedLifetimeServices = _hostedLifecycleServices?.Reverse();
 
-                    if (reversedLifetimeServices is not null)
-                    {
-                        await CallLifeCycle_Stopping(reversedLifetimeServices, token, exceptions).ConfigureAwait(false);
-                    }
-
-                    // Run IHostedService.Stop either concurrently or serially.
                     if (_options.ServicesStopConcurrently)
                     {
+                        if (reversedLifetimeServices is not null)
+                        {
+                            await CallLifeCycle_Stopping(reversedLifetimeServices, token, exceptions).ConfigureAwait(false);
+                        }
+
+                        try
+                        {
+                            // Trigger IHostApplicationLifetime.ApplicationStopping.
+                            _applicationLifetime.StopApplication();
+                        }
+                        catch (Exception ex)
+                        {
+                            LogExceptions(); // Exceptions thrown from StoppingAsync().
+                            throw ex;
+                        }
+
                         await CallLifeCycle_Stop(reversedServices, token, exceptions).ConfigureAwait(false);
+
+                        if (reversedLifetimeServices is not null)
+                        {
+                            await CallLifeCycle_Stopped(reversedLifetimeServices, token, exceptions).ConfigureAwait(false);
+                        }
                     }
                     else
                     {
+                        if (reversedLifetimeServices is not null)
+                        {
+                            foreach (IHostedLifecycleService hostedService in reversedLifetimeServices)
+                            {
+                                try
+                                {
+                                    await hostedService.StoppingAsync(token).ConfigureAwait(false);
+                                }
+                                catch (Exception ex)
+                                {
+                                    exceptions.Add(ex);
+                                }
+                            }
+                        }
+
+                        try
+                        {
+                            // Trigger IHostApplicationLifetime.ApplicationStopping.
+                            _applicationLifetime.StopApplication();
+                        }
+                        catch (Exception ex)
+                        {
+                            LogExceptions(); // Exceptions thrown from StoppingAsync().
+                            throw ex;
+                        }
+
                         foreach (IHostedService hostedService in reversedServices)
                         {
                             try
@@ -233,40 +323,46 @@ namespace Microsoft.Extensions.Hosting.Internal
                                 exceptions.Add(ex);
                             }
                         }
-                    }
 
-                    if (reversedLifetimeServices is not null)
-                    {
-                        await CallLifeCycle_Stopped(reversedLifetimeServices, token, exceptions).ConfigureAwait(false);
+                        if (reversedLifetimeServices is not null)
+                        {
+                            foreach (IHostedLifecycleService hostedService in reversedLifetimeServices)
+                            {
+                                try
+                                {
+                                    await hostedService.StoppedAsync(token).ConfigureAwait(false);
+                                }
+                                catch (Exception ex)
+                                {
+                                    exceptions.Add(ex);
+                                }
+                            }
+                        }
                     }
                 }
+
+                LogExceptions();
 
                 // Fire IHostApplicationLifetime.Stopped
                 _applicationLifetime.NotifyStopped();
 
-                try
+                void LogExceptions()
                 {
-                    await _hostLifetime.StopAsync(token).ConfigureAwait(false);
-                }
-                catch (Exception ex)
-                {
-                    exceptions.Add(ex);
-                }
-
-                if (exceptions.Count > 0)
-                {
-                    if (exceptions.Count == 1)
+                    if (exceptions.Count > 0)
                     {
-                        // Rethrow if it's a single error
-                        Exception singleException = exceptions[0];
-                        _logger.StoppedWithException(singleException);
-                        ExceptionDispatchInfo.Capture(singleException).Throw();
-                    }
-                    else
-                    {
-                        var ex = new AggregateException("One or more hosted services failed to stop.", exceptions);
-                        _logger.StoppedWithException(ex);
-                        throw ex;
+                        if (exceptions.Count == 1)
+                        {
+                            // Rethrow if it's a single error
+                            Exception singleException = exceptions[0];
+                            _logger.StoppedWithException(singleException);
+                            ExceptionDispatchInfo.Capture(singleException).Throw();
+                        }
+                        else
+                        {
+                            var ex = new AggregateException("One or more hosted services failed to stop.", exceptions);
+                            _logger.StoppedWithException(ex);
+                            throw ex;
+                        }
                     }
                 }
             }
@@ -286,12 +382,22 @@ namespace Microsoft.Extensions.Hosting.Internal
 
             foreach (IHostedLifecycleService service in services)
             {
-                Task? task =  task = service.StartingAsync(token);
+                Task task;
+                try
+                {
+                    task = service.StartingAsync(token);
+                }
+                catch (Exception ex)
+                {
+                    exceptions.Add(ex); // Log exception from sync method.
+                    continue;
+                }
+
                 if (task.IsCompleted)
                 {
                     if (task.Exception is not null)
                     {
-                        exceptions.Add(task.Exception);
+                        exceptions.Add(task.Exception); // Log exception from async method.
                     }
                 }
                 else
@@ -328,12 +434,22 @@ namespace Microsoft.Extensions.Hosting.Internal
 
             foreach (IHostedService service in services)
             {
-                Task? task = service.StartAsync(token);
+                Task task;
+                try
+                {
+                    task = service.StartAsync(token);
+                }
+                catch (Exception ex)
+                {
+                    exceptions.Add(ex); // Log exception from sync method.
+                    continue;
+                }
+
                 if (task.IsCompleted)
                 {
                     if (task.Exception is not null)
                     {
-                        exceptions.Add(task.Exception);
+                        exceptions.Add(task.Exception); // Log exception from async method.
                     }
                 }
                 else
@@ -370,12 +486,22 @@ namespace Microsoft.Extensions.Hosting.Internal
 
             foreach (IHostedLifecycleService service in services)
             {
-                Task? task = task = service.StartedAsync(token);
+                Task task;
+                try
+                {
+                    task = service.StartedAsync(token);
+                }
+                catch (Exception ex)
+                {
+                    exceptions.Add(ex); // Log exception from sync method.
+                    continue;
+                }
+
                 if (task.IsCompleted)
                 {
                     if (task.Exception is not null)
                     {
-                        exceptions.Add(task.Exception);
+                        exceptions.Add(task.Exception); // Log exception from async method.
                     }
                 }
                 else
@@ -413,12 +539,22 @@ namespace Microsoft.Extensions.Hosting.Internal
 
             foreach (IHostedLifecycleService service in services)
             {
-                Task? task = task = service.StoppingAsync(token);
+                Task task;
+                try
+                {
+                    task = service.StoppingAsync(token);
+                }
+                catch (Exception ex)
+                {
+                    exceptions.Add(ex); // Log exception from sync method.
+                    continue;
+                }
+
                 if (task.IsCompleted)
                 {
                     if (task.Exception is not null)
                     {
-                        exceptions.Add(task.Exception);
+                        exceptions.Add(task.Exception); // Log exception from async method.
                     }
                 }
                 else
@@ -455,12 +591,22 @@ namespace Microsoft.Extensions.Hosting.Internal
 
             foreach (IHostedService service in services)
             {
-                Task? task = task = service.StopAsync(token);
+                Task task;
+                try
+                {
+                    task = service.StopAsync(token);
+                }
+                catch (Exception ex)
+                {
+                    exceptions.Add(ex); // Log exception from sync method.
+                    continue;
+                }
+
                 if (task.IsCompleted)
                 {
                     if (task.Exception is not null)
                     {
-                        exceptions.Add(task.Exception);
+                        exceptions.Add(task.Exception); // Log exception from async method.
                     }
                 }
                 else
@@ -497,12 +643,22 @@ namespace Microsoft.Extensions.Hosting.Internal
 
             foreach (IHostedLifecycleService service in services)
             {
-                Task? task = task = service.StoppedAsync(token);
+                Task task;
+                try
+                {
+                    task = service.StoppedAsync(token);
+                }
+                catch (Exception ex)
+                {
+                    exceptions.Add(ex); // Log exception from sync method.
+                    continue;
+                }
+
                 if (task.IsCompleted)
                 {
                     if (task.Exception is not null)
                     {
-                        exceptions.Add(task.Exception);
+                        exceptions.Add(task.Exception); // Log exception from async method.
                     }
                 }
                 else
