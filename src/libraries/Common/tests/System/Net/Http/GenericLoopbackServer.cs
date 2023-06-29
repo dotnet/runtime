@@ -8,6 +8,7 @@ using System.Threading.Tasks;
 using System.Security.Authentication;
 using System.Security.Cryptography.X509Certificates;
 using System.IO;
+using System.Net.Security;
 using System.Net.Sockets;
 using System.Net.WebSockets;
 using System.Threading;
@@ -174,6 +175,7 @@ namespace System.Net.Test.Common
                 SslProtocols.Tls12;
 
         public int ListenBacklog { get; set; } = 1;
+        public SslStreamCertificateContext? CertificateContext { get; set; }
     }
 
     public struct HttpHeaderData

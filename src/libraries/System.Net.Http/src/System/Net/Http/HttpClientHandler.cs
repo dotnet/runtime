@@ -205,6 +205,13 @@ namespace System.Net.Http
             set => _underlyingHandler.MaxResponseHeadersLength = value;
         }
 
+#if TARGET_BROWSER
+#else
+        private X509Certificate2 GetEligibleClientCertificate(object _, string _2, X509CertificateCollection _3, X509Certificate? _4, string[] _5)
+        {
+            return CertificateHelper.GetEligibleClientCertificate(_underlyingHandler.SslOptions.ClientCertificates)!;
+        }
+#endif
         public ClientCertificateOption ClientCertificateOptions
         {
             get => _clientCertificateOptions;
@@ -218,7 +225,7 @@ namespace System.Net.Http
 #else
                         ThrowForModifiedManagedSslOptionsIfStarted();
                         _clientCertificateOptions = value;
-                        _underlyingHandler.SslOptions.LocalCertificateSelectionCallback = (sender, targetHost, localCertificates, remoteCertificate, acceptableIssuers) => CertificateHelper.GetEligibleClientCertificate(_underlyingHandler.SslOptions.ClientCertificates)!;
+                        _underlyingHandler.SslOptions.LocalCertificateSelectionCallback = GetEligibleClientCertificate;
 #endif
                         break;
 

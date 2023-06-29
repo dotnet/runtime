@@ -33,6 +33,10 @@ namespace System.Net.Test.Common
         public LoopbackServer(Options options = null)
         {
             _options = options ??= new Options();
+            if (_options.UseSsl && _options.CertificateContext == null)
+            {
+                _options.CertificateContext = SslStreamCertificateContext.Create(_options.Certificate ?? Configuration.Certificates.GetServerCertificate(), null);
+            }
         }
 
 #pragma warning disable CS1998 // Async method lacks 'await' operators and will run synchronously
@@ -470,15 +474,15 @@ namespace System.Net.Test.Common
             {
                 if (httpOptions.UseSsl)
                 {
-                    var sslStream = new SslStream(stream, false, delegate { return true; });
-                    using (X509Certificate2 cert = httpOptions.Certificate ?? Configuration.Certificates.GetServerCertificate())
+                    SslServerAuthenticationOptions sslOptions = new SslServerAuthenticationOptions()
                     {
-                        await sslStream.AuthenticateAsServerAsync(
-                            cert,
-                            clientCertificateRequired: true, // allowed but not required
-                            enabledSslProtocols: httpOptions.SslProtocols,
-                            checkCertificateRevocation: false).ConfigureAwait(false);
-                    }
+                        EnabledSslProtocols = httpOptions.SslProtocols,
+                        ServerCertificateContext = httpOptions.CertificateContext,
+                        ClientCertificateRequired = true,
+                    };
+
+                    var sslStream = new SslStream(stream, false, delegate { return true; });
+                    await sslStream.AuthenticateAsServerAsync(sslOptions, default).ConfigureAwait(false);
                     stream = sslStream;
                 }
 

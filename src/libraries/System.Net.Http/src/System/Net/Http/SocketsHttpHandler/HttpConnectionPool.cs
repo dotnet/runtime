@@ -12,6 +12,7 @@ using System.Net.Http.QPack;
 using System.Net.Quic;
 using System.Net.Security;
 using System.Net.Sockets;
+using System.Reflection;
 using System.Runtime.CompilerServices;
 using System.Runtime.ExceptionServices;
 using System.Runtime.Versioning;
@@ -25,6 +26,8 @@ namespace System.Net.Http
     /// <summary>Provides a pool of connections to the same endpoint.</summary>
     internal sealed class HttpConnectionPool : IDisposable
     {
+        private static readonly MethodInfo? internalCertificateSelectionCallback = typeof(HttpClientHandler).GetMethod("GetEligibleClientCertificate", System.Reflection.BindingFlags.Instance | System.Reflection.BindingFlags.NonPublic);
+
         private static readonly bool s_isWindows7Or2008R2 = GetIsWindows7Or2008R2();
 
         private readonly HttpConnectionPoolManager _poolManager;
@@ -326,6 +329,20 @@ namespace System.Net.Http
             Debug.Assert(sslHostName != null);
 
             SslClientAuthenticationOptions sslOptions = poolManager.Settings._sslOptions?.ShallowClone() ?? new SslClientAuthenticationOptions();
+
+            if (sslOptions.LocalCertificateSelectionCallback != null && (sslOptions.ClientCertificates == null || sslOptions.ClientCertificates.Count == 0))
+            {
+                // If we have no client certificates do not set callback when internal selection is used.
+                // It breaks TLS resume on Linux
+                if (sslOptions.LocalCertificateSelectionCallback.Method.Equals(internalCertificateSelectionCallback))
+                {
+                    sslOptions.LocalCertificateSelectionCallback = null;
+                    if (poolManager.Settings._sslOptions != null)
+                    {
+                        poolManager.Settings._sslOptions.LocalCertificateSelectionCallback = null;
+                    }
+                }
+            }
 
             // Set TargetHost for SNI
             sslOptions.TargetHost = sslHostName;
