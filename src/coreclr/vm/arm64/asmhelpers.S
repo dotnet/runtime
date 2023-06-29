@@ -993,7 +993,7 @@ LEAF_END GetThreadVarsAddress, _TEXT
 
 #ifndef TARGET_OSX
 // ------------------------------------------------------------------
-// void* GetThreadStaticsVariableOffset()
+// size_t GetThreadStaticsVariableOffset()
 
 // Helper to calculate the offset of native thread local variable `t_ThreadStatics` in TCB. The offset has to be found at runtime
 // once linker does its relocation and fixup of thread locals. The offset, after calculation is returned in `x0` register.

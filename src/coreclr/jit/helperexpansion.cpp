@@ -516,8 +516,8 @@ bool Compiler::fgExpandThreadLocalAccessForCall(BasicBlock** pBlock, Statement* 
     {
         if (threadStaticBlocksInfo.threadVarsSection == 0)
         {
-            // We possibly compiled coreclr as single file and not .dylib file.
-            // Do not perform this optimization for it.
+            // We possibly compiled coreclr as single file and not .dylib file in which case __thread_vars
+            // we found was not accurate. Do not perform this optimization in such case.
             JITDUMP("__thread_vars address not available. Exiting the optimization.\n");
             return false;
         }
@@ -528,8 +528,8 @@ bool Compiler::fgExpandThreadLocalAccessForCall(BasicBlock** pBlock, Statement* 
 
         if (threadStaticBlocksInfo.tlsIndexObject == 0)
         {
-            // We possibly compiled coreclr as single file and not .so file.
-            // Do not perform this optimization for it.
+            // We possibly compiled coreclr as single file and not .dylib file in which case tls_index
+            // we found was not accurate. Do not perform this optimization in such case.
             JITDUMP("tls_index object address not available. Exiting the optimization.\n");
             return false;
         }

@@ -1726,7 +1726,7 @@ void* getTlsIndexObjectAddress()
 
 #elif TARGET_ARM64
 
-extern "C" void* GetThreadStaticsVariableOffset();
+extern "C" size_t GetThreadStaticsVariableOffset();
 
 #endif  // TARGET_ARM64
 #endif // TARGET_WINDOWS
@@ -1766,7 +1766,7 @@ void CEEInfo::getThreadLocalStaticBlocksInfo (CORINFO_THREAD_STATIC_BLOCKS_INFO*
 
     // For Linux/arm64, just get the offset of thread static variable, and during execution,
     // this offset, taken from trpid_elp0 system register gives back the thread variable address.
-    threadStaticBaseOffset = reinterpret_cast<size_t>(GetThreadStaticsVariableOffset());
+    threadStaticBaseOffset = GetThreadStaticsVariableOffset();
 
 #else
     _ASSERTE_MSG(false, "Unsupported scenario of optimizing TLS access on Linux Arm32/x86");
