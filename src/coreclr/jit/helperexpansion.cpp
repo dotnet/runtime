@@ -511,18 +511,18 @@ bool Compiler::fgExpandThreadLocalAccessForCall(BasicBlock** pBlock, Statement* 
 
     info.compCompHnd->getThreadLocalStaticBlocksInfo(&threadStaticBlocksInfo, isGCThreadStatic);
 
+#ifdef TARGET_AMD64
     if (TargetOS::IsMacOS)
     {
         if (threadStaticBlocksInfo.threadVarsSection == 0)
         {
-            // We possibly compiled coreclr as single file and not .so file.
+            // We possibly compiled coreclr as single file and not .dylib file.
             // Do not perform this optimization for it.
-            JITDUMP("There appears some problem finding the address of __thread_vars because threadVarsSection=0. "
-                    "Exiting the optimization.\n");
+            JITDUMP("__thread_vars address not available. Exiting the optimization.\n");
             return false;
         }
     }
-#ifdef TARGET_AMD64
+
     else if (TargetOS::IsUnix)
     {
 
@@ -530,12 +530,11 @@ bool Compiler::fgExpandThreadLocalAccessForCall(BasicBlock** pBlock, Statement* 
         {
             // We possibly compiled coreclr as single file and not .so file.
             // Do not perform this optimization for it.
-            JITDUMP("There appears some problem finding the address of tls_index object because tlsIndexObject=0. "
-                    "Exiting the optimization.\n");
+            JITDUMP("tls_index object address not available. Exiting the optimization.\n");
             return false;
         }
     }
-#endif //TARGET_AMD64
+#endif // TARGET_AMD64
 
     JITDUMP("getThreadLocalStaticBlocksInfo (%s)\n:", isGCThreadStatic ? "GC" : "Non-GC");
     JITDUMP("offsetOfThreadLocalStoragePointer= %u\n", threadStaticBlocksInfo.offsetOfThreadLocalStoragePointer);
@@ -641,8 +640,8 @@ bool Compiler::fgExpandThreadLocalAccessForCall(BasicBlock** pBlock, Statement* 
         tlsValue                = gtNewIndCallNode(tls_get_addr_val, TYP_I_IMPL);
         GenTreeCall* tlsRefCall = tlsValue->AsCall();
 
-        // This is a syscall indirect call which takes an argument.
-        // Populate and set the ABI apporpriately.
+        // This is a call which takes an argument.
+        // Populate and set the ABI appropriately.
         GenTree* tlsArg = gtNewIconNode(threadVarsSectionVal, TYP_I_IMPL);
         tlsRefCall->gtArgs.InsertAfterThisOrFirst(this, NewCallArg::Primitive(tlsArg));
 
@@ -666,7 +665,7 @@ bool Compiler::fgExpandThreadLocalAccessForCall(BasicBlock** pBlock, Statement* 
         tlsValue                = gtNewIndCallNode(tls_get_addr_val, TYP_I_IMPL);
         GenTreeCall* tlsRefCall = tlsValue->AsCall();
 
-        // This is a syscall indirect call which takes an argument.
+        // This is an indirect call which takes an argument.
         // Populate and set the ABI appropriately.
         GenTree* tlsArg = gtNewIconNode((size_t)threadStaticBlocksInfo.tlsIndexObject, TYP_I_IMPL);
         tlsRefCall->gtArgs.InsertAfterThisOrFirst(this, NewCallArg::Primitive(tlsArg));

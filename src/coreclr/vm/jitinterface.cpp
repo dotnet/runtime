@@ -65,7 +65,7 @@
 
 #include "tailcallhelp.h"
 
-#ifdef HOST_WINDOWS
+#ifdef TARGET_WINDOWS
 EXTERN_C uint32_t _tls_index;
 #endif
 
@@ -1654,7 +1654,7 @@ static uint32_t ThreadLocalOffset(void* p)
     uint8_t* pOurTls = pTls[_tls_index];
     return (uint32_t)((uint8_t*)p - pOurTls);
 }
-#elif TARGET_OSX
+#elif defined(TARGET_OSX)
 extern "C" void* GetThreadVarsAddress();
 
 void* getThreadVarsSectionAddressFromDesc(uint8_t* p)
@@ -1678,20 +1678,22 @@ void* getThreadVarsSectionAddressFromDesc(uint8_t* p)
 
 void* getThreadVarsSectionAddress()
 {
-#ifdef TARGET_ARM64
-    return reinterpret_cast<void*>(GetThreadVarsAddress());
-#else
+#ifdef TARGET_AMD64
     // On x64, the address is related to rip, so, disassemble the function,
     // read the offset, and then relative to the IP, find the final address of
     // __thread_vars section.
     uint8_t* p = reinterpret_cast<uint8_t*>(&GetThreadVarsAddress);
     return getThreadVarsSectionAddressFromDesc(p);
-#endif // TARGET_ARM64
+#else
+    return GetThreadVarsAddress();
+#endif // TARGET_AMD64
 }
 
 #else
 
-#ifdef HOST_AMD64
+// Linux
+
+#ifdef TARGET_AMD64
 
 extern "C" void* GetTlsIndexObjectDescOffset();
 
@@ -1722,11 +1724,11 @@ void* getTlsIndexObjectAddress()
     return getThreadStaticDescriptor(p);
 }
 
-#elif HOST_ARM64
+#elif TARGET_ARM64
 
 extern "C" void* GetThreadStaticsVariableOffset();
 
-#endif  // HOST_ARM64
+#endif  // TARGET_ARM64
 #endif // TARGET_WINDOWS
 
 
@@ -1742,7 +1744,7 @@ void CEEInfo::getThreadLocalStaticBlocksInfo (CORINFO_THREAD_STATIC_BLOCKS_INFO*
 
     size_t threadStaticBaseOffset = 0;
 
-#ifdef _MSC_VER
+#if defined(TARGET_WINDOWS)
     pInfo->tlsIndex.addr = (void*)static_cast<uintptr_t>(_tls_index);
     pInfo->tlsIndex.accessType = IAT_VALUE;
 
@@ -1768,7 +1770,7 @@ void CEEInfo::getThreadLocalStaticBlocksInfo (CORINFO_THREAD_STATIC_BLOCKS_INFO*
 
 #else
     _ASSERTE_MSG(false, "Unsupported scenario of optimizing TLS access on Linux Arm32/x86");
-#endif // _MSC_VER
+#endif // TARGET_WINDOWS
 
     if (isGCType)
     {
