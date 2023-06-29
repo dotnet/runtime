@@ -7451,8 +7451,8 @@
                              message="$(string.MonoProfilerPublisher.GCAllocationKeywordMessage)" symbol="CLR_MONO_PROFILER_GC_ALLOCATION_KEYWORD" />
                     <keyword name="GCMovesKeyword" mask="0x400000"
                              message="$(string.MonoProfilerPublisher.GCMovesKeywordMessage)" symbol="CLR_MONO_PROFILER_GC_MOVES_KEYWORD" />
-                    <keyword name="ManagedHeapCollectKeyword" mask="0x800000"
-                             message="$(string.MonoProfilerPublisher.ManagedHeapCollectKeywordMessage)" symbol="CLR_MONO_PROFILER_GC_HEAPCOLLECT_KEYWORD" />
+                    <keyword name="GCHeapCollectKeyword" mask="0x800000"
+                             message="$(string.MonoProfilerPublisher.GCHeapCollectKeywordMessage)" symbol="CLR_MONO_PROFILER_GC_HEAPCOLLECT_KEYWORD" />
                     <keyword name="GCFinalizationKeyword" mask="0x1000000"
                              message="$(string.MonoProfilerPublisher.GCFinalizationKeywordMessage)" symbol="CLR_MONO_PROFILER_GC_FINALIZATION_KEYWORD" />
                     <keyword name="GCResizeKeyword" mask="0x2000000"
@@ -9414,7 +9414,7 @@
                 <string id="MonoProfilerPublisher.GCHeapDumpKeywordMessage" value="GCHeapDump" />
                 <string id="MonoProfilerPublisher.GCAllocationKeywordMessage" value="GCAllocation" />
                 <string id="MonoProfilerPublisher.GCMovesKeywordMessage" value="GCMoves" />
-                <string id="MonoProfilerPublisher.ManagedHeapCollectKeywordMessage" value="ManagedHeapCollect" />
+                <string id="MonoProfilerPublisher.GCHeapCollectKeywordMessage" value="GCHeapCollect" />
                 <string id="MonoProfilerPublisher.GCResizeKeywordMessage" value="GCResize" />
                 <string id="MonoProfilerPublisher.GCRootKeywordMessage" value="GCRoot" />
                 <string id="MonoProfilerPublisher.GCHeapDumpVTableClassReferenceKeywordMessage" value="GCHeapDumpVTableClassReference" />
