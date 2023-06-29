@@ -123,7 +123,11 @@ namespace Mono.Linker.Steps
 			if (!method.ReturnType.IsByReference)
 				return;
 
-			if (_context.TryResolve (method.Parameters[0].ParameterType) is not TypeDefinition targetType)
+			TypeReference targetTypeReference = method.Parameters[0].ParameterType;
+			if (_context.TryResolve (targetTypeReference) is not TypeDefinition targetType)
+				return;
+
+			if (!isStatic && targetType.IsValueType && !targetTypeReference.IsByReference)
 				return;
 
 			foreach (FieldDefinition targetField in targetType.Fields) {
