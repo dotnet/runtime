@@ -58,8 +58,8 @@ enum ARM64IntrinsicConstants
     ARM64IntrinsicConstants_VectorT128 = 0x0200,
 };
 
-#if !defined(__cplusplus) && !defined(static_assert)
-#define static_assert _Static_assert
+#if !defined(__cplusplus)
+#include <assert.h>
 #endif
 
 // Bit position for the ARM64IntrinsicConstants_Atomics flags, to be used with tbz / tbnz instructions
