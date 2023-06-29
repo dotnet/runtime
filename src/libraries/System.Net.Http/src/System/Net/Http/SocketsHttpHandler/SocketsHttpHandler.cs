@@ -450,17 +450,15 @@ namespace System.Net.Http
             }
         }
 
-        /// <summary>
-        ///  Indicates that we are wrapped by HttpClientHandler and we want compatible behavior
-        /// </summary>
-        internal bool HttpClientHandlerCompat
+        internal ClientCertificateOption ClientCertificateOptions
         {
+            get => _settings._clientCertificateOptions;
             set
             {
-                _settings._httpClientHandlerCompat = value;
+                CheckDisposedOrStarted();
+                _settings._clientCertificateOptions = value;
             }
         }
-
         protected override void Dispose(bool disposing)
         {
             if (disposing && !_disposed)
