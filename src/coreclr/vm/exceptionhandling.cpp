@@ -5763,12 +5763,6 @@ HijackHandler(IN     PEXCEPTION_RECORD   pExceptionRecord,
 // If the managed method will *NOT* be unwound by the current exception
 // pass we have an error: with no Frame on the stack to report it, the
 // managed method will not be included in the next stack walk.
-// An example of running into this issue was DDBug 1133, where
-// TransparentProxyStubIA64 had a personality routine that removed a
-// transition frame.  As a consequence the managed method did not
-// participate in the stack walk until the exception handler was called.  At
-// that time the stack walking code was able to see the managed method again
-// but by this time all references from this managed method were stale.
 BOOL IsSafeToUnwindFrameChain(Thread* pThread, LPVOID MemoryStackFpForFrameChain)
 {
     // Look for the last Frame to be removed that marks a managed-to-unmanaged transition
