@@ -35,6 +35,8 @@ if (CLR_CMAKE_HOST_WIN32)
     # When we're building with MSBuild, we need to set some project properties
     # in case CMake has decided to use the SDK support.
     # We're dogfooding things, so we need to set settings in ways that the product doesn't quite support.
+    # We don't actually need an installed/available target framework version here
+    # since we are disabling implicit framework references. We just need a valid value, and net8.0 is valid.
     set_target_properties(${targetName} PROPERTIES
       DOTNET_TARGET_FRAMEWORK net8.0
       VS_GLOBAL_DisableImplicitFrameworkReferences true
