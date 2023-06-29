@@ -450,6 +450,17 @@ namespace System.Net.Http
             }
         }
 
+        /// <summary>
+        ///  Indicates that we are wrapped by HttpClientHandler and we want compatible behavior
+        /// </summary>
+        internal bool HttpClientHandlerCompat
+        {
+            set
+            {
+                _settings._httpClientHandlerCompat = value;
+            }
+        }
+
         protected override void Dispose(bool disposing)
         {
             if (disposing && !_disposed)

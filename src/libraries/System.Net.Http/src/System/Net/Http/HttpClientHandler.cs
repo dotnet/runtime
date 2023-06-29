@@ -42,6 +42,8 @@ namespace System.Net.Http
             {
                 Handler = new DiagnosticsHandler(Handler, DistributedContextPropagator.Current);
             }
+#else
+            _underlyingHandler.HttpClientHandlerCompat = true;
 #endif
 
             ClientCertificateOptions = ClientCertificateOption.Manual;
