@@ -530,7 +530,7 @@ namespace Microsoft.WebAssembly.Diagnostics
             if (!validContexts.Any())
                 return false;
             int maxId = validContexts.Max(context => context.Id);
-            executionContext = contextBag.SingleOrDefault(context => context.Id == maxId);
+            executionContext = contextBag.FirstOrDefault(context => context.Id == maxId);
             return executionContext != null;
         }
 
