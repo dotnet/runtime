@@ -13,6 +13,7 @@ if(CLR_CMAKE_TARGET_WIN32)
   set(JITINTERFACE_RESOURCES Native.rc)
 else()
   include(${CLR_SRC_NATIVE_DIR}/minipal/configure.cmake)
+  include_directories(${CMAKE_CURRENT_BINARY_DIR})
 endif()
 
 add_library_clr(jitinterface_${ARCH_HOST_NAME}
