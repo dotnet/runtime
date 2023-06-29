@@ -1920,7 +1920,6 @@ void Compiler::compInit(ArenaAllocator*       pAlloc,
     compQmarkRationalized        = false;
     compQmarkUsed                = false;
     compFloatingPointUsed        = false;
-    compHasCallInLir             = false;
 
     compSuppressedZeroInit = false;
 

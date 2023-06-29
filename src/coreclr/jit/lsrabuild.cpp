@@ -1916,19 +1916,10 @@ const unsigned         lsraRegOrderSize = ArrLen(lsraRegOrder);
 
 static const regNumber lsraRegOrderFlt[]   = {REG_VAR_ORDER_FLT};
 const unsigned         lsraRegOrderFltSize = ArrLen(lsraRegOrderFlt);
+
 #if defined(TARGET_AMD64)
 static const regNumber lsraRegOrderFltEvex[]   = {REG_VAR_ORDER_FLT_EVEX};
 const unsigned         lsraRegOrderFltEvexSize = ArrLen(lsraRegOrderFltEvex);
-
-static const regNumber lsraRegOrderLeaf[]   = {REG_VAR_ORDER_LEAF};
-const unsigned         lsraRegOrderLeafSize = ArrLen(lsraRegOrderLeaf);
-
-static const regNumber lsraRegOrderFltLeaf[]   = {REG_VAR_ORDER_FLT_LEAF};
-const unsigned         lsraRegOrderFltLeafSize = ArrLen(lsraRegOrderFltLeaf);
-
-static const regNumber lsraRegOrderFltEvexLeaf[]   = {REG_VAR_ORDER_FLT_EVEX_LEAF};
-const unsigned         lsraRegOrderFltEvexLeafSize = ArrLen(lsraRegOrderFltEvexLeaf);
-
 #endif //  TARGET_AMD64
 
 //------------------------------------------------------------------------
@@ -1957,45 +1948,23 @@ void LinearScan::buildPhysRegRecords()
     unsigned         regOrderFltSize;
 
 #if defined(TARGET_AMD64)
-    // We differentiate between methods that have calls and those that don't since
-    // different registers can have different costs. In particular, when we have a
-    // call, we want to avoid spilling and so want to preference callee trashed.
-    //
-    // However, when we are a leaf method (don't contain any calls) it's better to
-    // instead use a different order based on the encoding size required to use the
-    // register.
+    // x64 has additional registers available when EVEX is supported
+    // and that causes a different ordering to be used since they are
+    // callee trash and should appear at the end up the existing callee
+    // trash set
 
-    if (compiler->compHasCallInLir)
+    regOrder     = &lsraRegOrder[0];
+    regOrderSize = lsraRegOrderSize;
+
+    if (compiler->canUseEvexEncoding())
     {
-        regOrder     = &lsraRegOrder[0];
-        regOrderSize = lsraRegOrderSize;
-
-        if (compiler->canUseEvexEncoding())
-        {
-            regOrderFlt     = &lsraRegOrderFltEvex[0];
-            regOrderFltSize = lsraRegOrderFltEvexSize;
-        }
-        else
-        {
-            regOrderFlt     = &lsraRegOrderFlt[0];
-            regOrderFltSize = lsraRegOrderFltSize;
-        }
+        regOrderFlt     = &lsraRegOrderFltEvex[0];
+        regOrderFltSize = lsraRegOrderFltEvexSize;
     }
     else
     {
-        regOrder     = &lsraRegOrderLeaf[0];
-        regOrderSize = lsraRegOrderLeafSize;
-
-        if (compiler->canUseEvexEncoding())
-        {
-            regOrderFlt     = &lsraRegOrderFltEvexLeaf[0];
-            regOrderFltSize = lsraRegOrderFltEvexLeafSize;
-        }
-        else
-        {
-            regOrderFlt     = &lsraRegOrderFltLeaf[0];
-            regOrderFltSize = lsraRegOrderFltLeafSize;
-        }
+        regOrderFlt     = &lsraRegOrderFlt[0];
+        regOrderFltSize = lsraRegOrderFltSize;
     }
 #else
     regOrder     = &lsraRegOrder[0];

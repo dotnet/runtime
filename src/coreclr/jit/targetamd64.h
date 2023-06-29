@@ -207,26 +207,49 @@
   // Registers no longer containing GC pointers after CORINFO_HELP_ASSIGN_BYREF.
   #define RBM_CALLEE_GCTRASH_WRITEBARRIER_BYREF (RBM_CALLEE_TRASH_NOGC & ~(RBM_RDI | RBM_RSI))
 
-  // Registers are ordered here to prefer callee trash first, then callee save
-  // as this helps avoid unnecessary spills.
+  // We have two register classifications
+  // * callee trash: aka     volatile or caller saved
+  // * callee saved: aka non-volatile
   //
-  // Within those groups they str simply preferenced in numerical order based on
-  // the encoding, which helps avoid using larger encodings unneccesarily
+  // Callee trash are used for passing arguments, returning results, and are freely
+  // mutable by the method. Because of this, the caller is responsible for saving
+  // them if they are in use prior to making a call. This saving doesn't need to
+  // happen for leaf methods (that is methods which don't themselves make any calls)
+  // and can be done by spilling to the stack or to a callee saved register. This
+  // means they are cheaper to use but can have higher overall cost if there are
+  // many calls to be made with values in callee trash registers needing to live
+  // across the call boundary.
+  //
+  // Callee saved don't have any special uses but have to be spilled prior to usage
+  // and restored prior to returning back to the caller, so they have an inherently
+  // higher baseline cost. This cost can be offset by re-using the register across
+  // call boundaries to reduce the overall amount of spilling required.
+  //
+  // Given this, we order the registers here to prefer callee trash firs and then
+  // callee save. This allows us to use the registers we've already been assumed
+  // to overwrite first and then to use those with a higher consumption cost. It
+  // is up to the register allocator to preference using any callee saved registers
+  // for values that are frequently live across call boundaries.
+  //
+  // Within those two groups registers are generally preferenced in numerical order
+  // based on the encoding. This helps avoid using larger encodings unneccesarily since
+  // higher numbered registers typically take more bytes to encode.
   //
   // For integer registers, the numerical order is eax, ecx, edx, ebx, esp, ebp,
-  // esi, edi. You then also have r8-r15 which take an additional byte to encode
-  //
-  // Noting that there is an exception for esp, ebp, r12, and r13 which are special
-  // and which may require unique encoding requirements or be generally unavailable
-  // so these end up as the last of their sequences. In particular, esp is used for
-  // stack indexing and is never an option for general LSRA. Both esp and r12 require
-  // an extra byte to encode when used for addressing. ebp is not always available
-  // since its sometimes used for special frame requirements. Both ebp and r13 require
-  // explicit displacement to be encoded when used for certain addressing modes, which
-  // adds 4 bytes to most usages.
+  // esi, edi. You then also have r8-r15 which take an additional byte to encode. We
+  // deviate from the numerical order slightly because esp, ebp, r12, and r13 have
+  // special encoding requirements. In particular, esp is used by the stack and isn't
+  // generally usable, instead it can only be used to access locals occupying stack
+  // space. Both esp and r12 take an additional byte to encode the addressing form of
+  // the instruction. ebp and r13 likewise can take additional bytes to encode certain
+  // addressing modes, in particular those with displacements. Because of this ebp is
+  // always ordered last of the base 8 registers. r13 and then r12 are likewise last
+  // of the upper 8 registers. This helps reduce the total number of emitted bytes
+  // quite significantly across typical usages.
   //
   // For simd registers, the numerical order is xmm0-xmm7. You then have xmm8-xmm15
   // which take an additional byte to encode and can also have xmm16-xmm31 for EVEX
+  // when the hardware supports it. There are no additional hidden costs for these.
 
 #ifdef UNIX_AMD64_ABI
   #define REG_VAR_ORDER_CALLEE_TRASH    REG_EAX,REG_ECX,REG_EDX,REG_ESI,REG_EDI,REG_R8,REG_R9,REG_R10,REG_R11
@@ -258,18 +281,9 @@
                                                 REG_XMM13,REG_XMM14,REG_XMM15
 #endif // !UNIX_AMD64_ABI
 
-#define REG_VAR_ORDER       REG_VAR_ORDER_CALLEE_TRASH,REG_VAR_ORDER_CALLEE_SAVED
-#define REG_VAR_ORDER_LEAF  REG_EAX,REG_ECX,REG_EDX,REG_EBX,REG_ESI,REG_EDI,REG_ETW_FRAMED_EBP_LIST REG_R8,REG_R9,     \
-                            REG_R10,REG_R11,REG_R14,REG_R15,REG_R13,REG_R12
-
+#define REG_VAR_ORDER           REG_VAR_ORDER_CALLEE_TRASH,REG_VAR_ORDER_CALLEE_SAVED
 #define REG_VAR_ORDER_FLT       REG_VAR_ORDER_FLT_CALLEE_TRASH,REG_VAR_ORDER_FLT_CALLEE_SAVED
-#define REG_VAR_ORDER_FLT_LEAF  REG_XMM0,REG_XMM1,REG_XMM2,REG_XMM3,REG_XMM4,REG_XMM5,REG_XMM6,REG_XMM7,REG_XMM8,      \
-                                REG_XMM9,REG_XMM10,REG_XMM11,REG_XMM12,REG_XMM13,REG_XMM14,REG_XMM15
-
-#define REG_VAR_ORDER_FLT_EVEX      REG_VAR_ORDER_FLT_EVEX_CALLEE_TRASH,REG_VAR_ORDER_FLT_EVEX_CALLEE_SAVED
-#define REG_VAR_ORDER_FLT_EVEX_LEAF REG_VAR_ORDER_FLT_LEAF,REG_XMM16,REG_XMM17,REG_XMM18,REG_XMM19,REG_XMM20,REG_XMM21,\
-                                    REG_XMM22,REG_XMM23,REG_XMM24,REG_XMM25,REG_XMM26,REG_XMM27,REG_XMM28,REG_XMM29,   \
-                                    REG_XMM30,REG_XMM31
+#define REG_VAR_ORDER_FLT_EVEX  REG_VAR_ORDER_FLT_EVEX_CALLEE_TRASH,REG_VAR_ORDER_FLT_EVEX_CALLEE_SAVED
 
 #ifdef UNIX_AMD64_ABI
   #define CNT_CALLEE_SAVED         (5 + REG_ETW_FRAMED_EBP_COUNT)
