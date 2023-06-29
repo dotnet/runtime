@@ -539,6 +539,12 @@ static unsafe class UnsafeAccessorsTests
         Assert.Throws<BadImageFormatException>(() => new Invalid().NonStatic(string.Empty));
         Assert.Throws<BadImageFormatException>(() => Invalid.CallToString<string>(string.Empty));
         Assert.Throws<BadImageFormatException>(() => Invalid<string>.CallToString(string.Empty));
+        Assert.Throws<BadImageFormatException>(() =>
+        {
+            string str = string.Empty;
+            UserDataValue local = new();
+            InvokeMethodOnValueWithoutRef(local, null, ref str, str);
+        });
 
         [UnsafeAccessor(UnsafeAccessorKind.Field, Name=UserDataValue.FieldName)]
         extern static string FieldReturnMustBeByRefClass(UserDataClass d);
@@ -575,5 +581,8 @@ static unsafe class UnsafeAccessorsTests
 
         [UnsafeAccessor(UnsafeAccessorKind.Method, Name=nameof(ToString))]
         extern static string LookUpFailsOnFunctionPointers(delegate* <void> fptr);
+
+        [UnsafeAccessor(UnsafeAccessorKind.Method, Name = UserDataValue.MethodName)]
+        extern static string InvokeMethodOnValueWithoutRef(UserDataValue target, string s, ref string sr, in string si);
     }
 }

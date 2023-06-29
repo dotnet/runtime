@@ -156,10 +156,59 @@ namespace Mono.Linker.Tests.Cases.Reflection
 			}
 
 			[Kept]
+			class ConstructorOnValueType
+			{
+				[Kept]
+				struct ConstructorOnValueTypeTarget
+				{
+					[Kept]
+					public ConstructorOnValueTypeTarget () { }
+
+					[Kept]
+					public ConstructorOnValueTypeTarget (int i) { }
+				}
+
+				[Kept]
+				[KeptAttributeAttribute (typeof (UnsafeAccessorAttribute))]
+				[UnsafeAccessor (UnsafeAccessorKind.Constructor)]
+				extern static ConstructorOnValueTypeTarget InvokeDefaultConstructor ();
+
+				[Kept]
+				[KeptAttributeAttribute (typeof (UnsafeAccessorAttribute))]
+				[UnsafeAccessor (UnsafeAccessorKind.Method)]
+				extern static void InvokeConstructorAsMethod (ref ConstructorOnValueTypeTarget target, int i);
+
+				[Kept]
+				struct ConstructorAsMethodOnValueWithoutRefTarget
+				{
+					[Kept] // This is actually always kept by RuntimeHelpers.GetUninitializedObject - annotation
+					public ConstructorAsMethodOnValueWithoutRefTarget (int i) { }
+				}
+
+				[Kept]
+				[KeptAttributeAttribute (typeof (UnsafeAccessorAttribute))]
+				[UnsafeAccessor (UnsafeAccessorKind.Method)]
+				extern static void InvokeConstructorAsMethodWithoutRef (ConstructorAsMethodOnValueWithoutRefTarget target, int i);
+
+				[Kept]
+				public static void Test ()
+				{
+					InvokeDefaultConstructor ();
+
+					var instance = (ConstructorOnValueTypeTarget) RuntimeHelpers.GetUninitializedObject (typeof (ConstructorOnValueTypeTarget));
+					InvokeConstructorAsMethod (ref instance, 0);
+
+					var instanceWithoutRef = (ConstructorAsMethodOnValueWithoutRefTarget) RuntimeHelpers.GetUninitializedObject (typeof (ConstructorAsMethodOnValueWithoutRefTarget));
+					InvokeConstructorAsMethodWithoutRef (instanceWithoutRef, 0);
+				}
+			}
+
+			[Kept]
 			public static void Test ()
 			{
 				DefaultConstructor.Test ();
 				ConstructorWithParameter.Test ();
+				ConstructorOnValueType.Test ();
 			}
 		}
 
@@ -295,10 +344,43 @@ namespace Mono.Linker.Tests.Cases.Reflection
 			}
 
 			[Kept]
+			class MethodOnValueType
+			{
+				[Kept]
+				struct MethodOnValueTypeTarget
+				{
+					[Kept]
+					private static void Method () { }
+
+					[Kept]
+					private static void MethodCalledWithoutRef () { }
+				}
+
+				[Kept]
+				[KeptAttributeAttribute (typeof (UnsafeAccessorAttribute))]
+				[UnsafeAccessor (UnsafeAccessorKind.StaticMethod, Name = "Method")]
+				extern static void InvokeMethod (ref MethodOnValueTypeTarget target);
+
+				[Kept]
+				[KeptAttributeAttribute (typeof (UnsafeAccessorAttribute))]
+				[UnsafeAccessor (UnsafeAccessorKind.StaticMethod, Name = "MethodCalledWithoutRef")]
+				extern static void InvokeMethodWithoutRef (MethodOnValueTypeTarget target);
+
+				[Kept]
+				public static void Test ()
+				{
+					MethodOnValueTypeTarget instance = new MethodOnValueTypeTarget ();
+					InvokeMethod (ref instance);
+					InvokeMethodWithoutRef (instance);
+				}
+			}
+
+			[Kept]
 			public static void Test ()
 			{
 				MethodWithoutParameters.Test ();
 				MethodWithParameter.Test ();
+				MethodOnValueType.Test ();
 			}
 		}
 
@@ -464,11 +546,43 @@ namespace Mono.Linker.Tests.Cases.Reflection
 			}
 
 			[Kept]
+			class MethodOnValueType
+			{
+				[Kept]
+				struct MethodOnValueTypeTarget
+				{
+					[Kept]
+					private void Method () { }
+
+					private void MethodCalledWithoutRef () { }
+				}
+
+				[Kept]
+				[KeptAttributeAttribute (typeof (UnsafeAccessorAttribute))]
+				[UnsafeAccessor (UnsafeAccessorKind.Method, Name = "Method")]
+				extern static void InvokeMethod (ref MethodOnValueTypeTarget target);
+
+				[Kept]
+				[KeptAttributeAttribute (typeof (UnsafeAccessorAttribute))]
+				[UnsafeAccessor (UnsafeAccessorKind.Method, Name = "MethodCalledWithoutRef")]
+				extern static void InvokeMethodWithoutRef (MethodOnValueTypeTarget target);
+
+				[Kept]
+				public static void Test ()
+				{
+					MethodOnValueTypeTarget instance = new MethodOnValueTypeTarget ();
+					InvokeMethod (ref instance);
+					InvokeMethodWithoutRef (instance);
+				}
+			}
+
+			[Kept]
 			public static void Test ()
 			{
 				MethodWithoutParameters.Test ();
 				MethodWithParameter.Test ();
 				CustomModifiersTest.Test ();
+				MethodOnValueType.Test ();
 			}
 		}
 
@@ -506,7 +620,7 @@ namespace Mono.Linker.Tests.Cases.Reflection
 			[Kept]
 			[KeptAttributeAttribute (typeof (UnsafeAccessorAttribute))]
 			[UnsafeAccessor (UnsafeAccessorKind.StaticField)]
-			extern static ref int Field(StaticFieldTarget target);
+			extern static ref int Field (StaticFieldTarget target);
 
 			[Kept]
 			[KeptAttributeAttribute (typeof (UnsafeAccessorAttribute))]
@@ -552,7 +666,7 @@ namespace Mono.Linker.Tests.Cases.Reflection
 			extern static ref string FieldWithRef (StaticFieldTarget target);
 
 			[Kept]
-			public static void Test()
+			public static void Test ()
 			{
 				Field (null);
 				FieldWithParameters (null, 0);

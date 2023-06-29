@@ -96,8 +96,11 @@ namespace Mono.Linker.Steps
 			if (string.IsNullOrEmpty (name))
 				name = method.Name;
 
-			// TODO - struct values should be by-ref, we probably need to unwrap/resolve it here
-			if (_context.TryResolve (method.Parameters[0].ParameterType) is not TypeDefinition targetType)
+			TypeReference targetTypeReference = method.Parameters[0].ParameterType;
+			if (_context.TryResolve (targetTypeReference) is not TypeDefinition targetType)
+				return;
+
+			if (!isStatic && targetType.IsValueType && !targetTypeReference.IsByReference)
 				return;
 
 			foreach (MethodDefinition targetMethod in targetType.Methods) {
