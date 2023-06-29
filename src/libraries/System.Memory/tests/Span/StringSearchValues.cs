@@ -5,8 +5,11 @@ using System.Buffers;
 using System.Diagnostics;
 using System.Globalization;
 using System.Linq;
+using System.Runtime.CompilerServices;
 using System.Runtime.ExceptionServices;
 using System.Runtime.InteropServices;
+using System.Runtime.Intrinsics;
+using System.Runtime.Intrinsics.X86;
 using System.Threading;
 using System.Threading.Tasks;
 using Microsoft.DotNet.RemoteExecutor;
@@ -18,6 +21,25 @@ namespace System.Memory.Tests.Span
     {
         public static bool CanTestInvariantCulture => RemoteExecutor.IsSupported;
         public static bool CanTestNls => RemoteExecutor.IsSupported && OperatingSystem.IsWindows();
+
+        [Fact]
+        public static void SanityCheck()
+        {
+            if (Vector512.IsHardwareAccelerated && Avx512BW.IsSupported)
+            {
+                throw new Exception("Yay?");
+            }
+        }
+
+        [Fact]
+        [MethodImpl(MethodImplOptions.AggressiveOptimization)]
+        public static void SanityCheckAO()
+        {
+            if (Vector512.IsHardwareAccelerated && Avx512BW.IsSupported)
+            {
+                throw new Exception("Yay?");
+            }
+        }
 
         [Theory]
         [InlineData(StringComparison.Ordinal, "a", "ab", "abc", "bc")]
