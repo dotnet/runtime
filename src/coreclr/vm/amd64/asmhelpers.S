@@ -318,7 +318,7 @@ NESTED_END ProfileTailcallNaked, _TEXT
 LEAF_ENTRY GetThreadVarsSectionOffset, _TEXT
         mov     rdi,    _t_ThreadStatics@TLVP[rip]
         ret
-LEAF_END GetThreadVarsSectionAddr, _TEXT
+LEAF_END GetThreadVarsSectionOffset, _TEXT
 // ------------------------------------------------------------------
 #endif // TARGET_OSX
 

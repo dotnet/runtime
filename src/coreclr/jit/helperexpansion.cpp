@@ -507,20 +507,35 @@ bool Compiler::fgExpandThreadLocalAccessForCall(BasicBlock** pBlock, Statement* 
         eeGetHelperNum(call->gtCallMethHnd) == CORINFO_HELP_GETSHARED_GCTHREADSTATIC_BASE_NOCTOR_OPTIMIZED;
 
     CORINFO_THREAD_STATIC_BLOCKS_INFO threadStaticBlocksInfo;
+    memset(&threadStaticBlocksInfo, 0, sizeof(CORINFO_THREAD_STATIC_BLOCKS_INFO));
+
     info.compCompHnd->getThreadLocalStaticBlocksInfo(&threadStaticBlocksInfo, isGCThreadStatic);
 
-#ifdef TARGET_AMD64
-    if (TargetOS::IsUnix || TargetOS::IsMacOS)
+    if (TargetOS::IsMacOS)
     {
+        if (threadStaticBlocksInfo.threadVarsSection == 0)
+        {
+            // We possibly compiled coreclr as single file and not .so file.
+            // Do not perform this optimization for it.
+            JITDUMP("There appears some problem finding the address of __thread_vars because threadVarsSection=0. "
+                    "Exiting the optimization.\n");
+            return false;
+        }
+    }
+#ifdef TARGET_AMD64
+    else if (TargetOS::IsUnix)
+    {
+
         if (threadStaticBlocksInfo.tlsIndexObject == 0)
         {
             // We possibly compiled coreclr as single file and not .so file.
             // Do not perform this optimization for it.
-            JITDUMP("There appears some problem finding the address of tls_index object. Exiting the optimization.\n");
+            JITDUMP("There appears some problem finding the address of tls_index object because tlsIndexObject=0. "
+                    "Exiting the optimization.\n");
             return false;
         }
     }
-#endif // TARGET_AMD64
+#endif //TARGET_AMD64
 
     JITDUMP("getThreadLocalStaticBlocksInfo (%s)\n:", isGCThreadStatic ? "GC" : "Non-GC");
     JITDUMP("offsetOfThreadLocalStoragePointer= %u\n", threadStaticBlocksInfo.offsetOfThreadLocalStoragePointer);
