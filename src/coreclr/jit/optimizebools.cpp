@@ -1583,7 +1583,7 @@ private:
     Compiler*     m_comp = nullptr; // The pointer to the Compiler instance
     CompAllocator m_allocator;      // The memory allocator
     typedef JitHashTable<ssize_t, JitLargePrimitiveKeyFuncs<ssize_t>, BasicBlock*> PatternToBlockMap;
-    PatternToBlockMap                                                              m_patternToBlockMap;
+    PatternToBlockMap m_patternToBlockMap;
 
     BasicBlock* switchBBdesc = nullptr; // The switch basic block descriptor
     BBswtDesc*  swtDsc       = nullptr; // The switch descriptor
@@ -1599,17 +1599,17 @@ private:
     unsigned m_bbCodeOffs    = 0; // IL code offset of the switch basic block
     unsigned m_bbCodeOffsEnd = 0; // IL code offset end of the switch basic block
 
-    bool        optIsInIntegralRange(ssize_t val, GenTree* node); // Checks if the value is in INT32 or INT64 range
+    bool optIsInIntegralRange(ssize_t val, GenTree* node); // Checks if the value is in INT32 or INT64 range
     BasicBlock* optGetDefaultJmpBB();
-    void        optSetDefaultJmpBB(BasicBlock* defaultJmpBB);
-    void        optSetMinOp(GenTree* minOpNode);
-    void        optSetMinPattern(ssize_t patternVal, GenTree* node);
-    void        optSetMaxPattern(ssize_t patternVal);
-    void        optSetBbCodeOffs(IL_OFFSET bbCodeOffs);
-    void        optSetBbCodeOffsEnd(IL_OFFSET bbCodeOffsEnd);
-    bool        optBlockIsPred(BasicBlock* block, BasicBlock* blockPred);
+    void optSetDefaultJmpBB(BasicBlock* defaultJmpBB);
+    void optSetMinOp(GenTree* minOpNode);
+    void optSetMinPattern(ssize_t patternVal, GenTree* node);
+    void optSetMaxPattern(ssize_t patternVal);
+    void optSetBbCodeOffs(IL_OFFSET bbCodeOffs);
+    void optSetBbCodeOffsEnd(IL_OFFSET bbCodeOffsEnd);
+    bool optBlockIsPred(BasicBlock* block, BasicBlock* blockPred);
     BasicBlock* optGetJumpTargetBB(BasicBlock* block);
-    bool        optMakeSwitchDesc();
+    bool optMakeSwitchDesc();
 
 public:
     OptRangePatternDsc(Compiler* comp)
@@ -1617,15 +1617,15 @@ public:
     {
     }
 
-    bool    optInitializeRngPattern(BasicBlock* firstBB, ssize_t patternVal);
-    bool    optSetPattern(int idxPattern, ssize_t patternVal, BasicBlock* block);
+    bool optInitializeRngPattern(BasicBlock* firstBB, ssize_t patternVal);
+    bool optSetPattern(int idxPattern, ssize_t patternVal, BasicBlock* block);
     int     optGetPatternCount();
     void    optPrintPatterns();
     bool    optJumpsToPatternBlock();
     ssize_t optGetMinPattern();
     ssize_t optGetMaxPattern();
-    void    optSetRangePattern(int rangeVal);
-    bool    optChangeToSwitch();
+    void optSetRangePattern(int rangeVal);
+    bool optChangeToSwitch();
 };
 
 //-----------------------------------------------------------------------------
@@ -1764,7 +1764,7 @@ BasicBlock* OptRangePatternDsc::optGetJumpTargetBB(BasicBlock* block)
 //
 void OptRangePatternDsc::optSetDefaultJmpBB(BasicBlock* block)
 {
-    assert(block != nullptr && block->bbJumpKind == BBJ_SWITCH || block->bbJumpKind == BBJ_COND);
+    assert(block != nullptr && block->bbJumpKind == BBJ_COND);
     assert(block->lastStmt()->GetRootNode()->gtGetOp1() != nullptr);
 
     auto oper = block->lastStmt()->GetRootNode()->gtGetOp1()->OperGet();
@@ -2168,6 +2168,8 @@ bool OptRangePatternDsc::optChangeToSwitch()
     BasicBlock* currBb = switchBBdesc->bbNext;
     for (int idxPattern = 1; idxPattern < patternCount && currBb != nullptr; idxPattern++)
     {
+        assert(!(currBb->bbFlags & BBF_DONT_REMOVE));
+
         BasicBlock* prevBlock = currBb->bbPrev;
         BasicBlock* nextBlock = currBb->bbNext;
         BasicBlock* jumpBlock = optGetJumpTargetBB(currBb);
@@ -2213,7 +2215,7 @@ bool OptRangePatternDsc::optChangeToSwitch()
     assert(tree->gtGetOp1() != nullptr && tree->gtGetOp1()->OperIs(GT_LCL_VAR));
 
     // Change constant node if siwtch tree does not have the mininum pattern
-    if (tree->gtGetOp2() != nullptr && tree->gtGetOp2()->AsIntCon()->IconValue() != optGetMinPattern())
+    if (tree->gtGetOp2() != nullptr && tree->gtGetOp2()->AsIntConCommon()->IntegralValue() != optGetMinPattern())
     {
         GenTree* op2        = tree->gtGetOp2(); // GT_CNS_INT or GT_CNS_LNG node
         tree->AsOp()->gtOp2 = m_minOp;
@@ -2281,7 +2283,7 @@ PhaseStatus Compiler::optFindSpecificPattern()
             // Check if prevBb is the predecessor of currBb and currBb has only one predecessor
             FlowEdge** ptrToPred;
             FlowEdge*  pred = fgGetPredForBlock(currBb, prevBb, &ptrToPred);
-            if (pred == nullptr || currBb->bbRefs != 1)
+            if (pred == nullptr || currBb->bbRefs != 1 || currBb->bbFlags & BBF_DONT_REMOVE)
             {
                 if (foundPattern)
                     break; // Stop searching if patterns are not from consecutive basic blocks
@@ -2328,7 +2330,6 @@ PhaseStatus Compiler::optFindSpecificPattern()
                             prevCmpOp->gtGetOp1()->AsLclVar()->GetLclNum() ==
                                 currCmpOp->gtGetOp1()->AsLclVar()->GetLclNum())
                         {
-                            // Found pattern
 #ifdef DEBUG
                             if (this->verbose)
                             {
@@ -2339,7 +2340,8 @@ PhaseStatus Compiler::optFindSpecificPattern()
                                 printf("\n\n");
                             }
 #endif // DEBUG
-       // No optimization if the number of patterns is greater than 64.
+
+                            // No optimization if the number of patterns is greater than 64.
                             if (patternIndex >= optRngPattern.m_sizePatterns)
                             {
 #ifdef DEBUG
@@ -2355,7 +2357,7 @@ PhaseStatus Compiler::optFindSpecificPattern()
                             if (!foundPattern)
                             {
                                 assert(patternIndex == 0 && prevCmpOp->OperIs(GT_EQ));
-                                ssize_t firstPatternVal = prevCmpOp->gtGetOp2()->AsIntCon()->IconValue();
+                                ssize_t firstPatternVal = prevCmpOp->gtGetOp2()->AsIntConCommon()->IntegralValue();
 
                                 // Initialize the pattern range
                                 if (!optRngPattern.optInitializeRngPattern(prevBb, firstPatternVal))
@@ -2376,7 +2378,7 @@ PhaseStatus Compiler::optFindSpecificPattern()
                             // Current pattern
 
                             // Save the pattern and Switch default jump target for the pattern (false case)
-                            ssize_t currentPatternVal = currCmpOp->gtGetOp2()->AsIntCon()->IconValue();
+                            ssize_t currentPatternVal = currCmpOp->gtGetOp2()->AsIntConCommon()->IntegralValue();
                             if (!optRngPattern.optSetPattern(patternIndex, currentPatternVal, currBb))
                             {
                                 break;
