@@ -45,7 +45,7 @@ namespace System.Text.Json.Nodes
 
         internal override JsonNode DeepCloneCore()
         {
-            // Primitive JsonValue's are generally speaking immutable so we don't to do much here.
+            // Primitive JsonValue's are generally speaking immutable so we don't need to do much here.
             // For the case of JsonElement clone the instance since it could be backed by pooled buffers.
             return Value is JsonElement element
                 ? new JsonValuePrimitive<JsonElement>(element.Clone(), JsonMetadataServices.JsonElementConverter, Options)
