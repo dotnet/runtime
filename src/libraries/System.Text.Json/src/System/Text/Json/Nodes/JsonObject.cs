@@ -4,7 +4,6 @@
 using System.Collections.Generic;
 using System.Diagnostics;
 using System.Diagnostics.CodeAnalysis;
-using System.Text.Json.Serialization.Converters;
 
 namespace System.Text.Json.Nodes
 {
@@ -51,17 +50,12 @@ namespace System.Text.Json.Nodes
         /// <returns>A <see cref="JsonObject"/>.</returns>
         public static JsonObject? Create(JsonElement element, JsonNodeOptions? options = null)
         {
-            if (element.ValueKind == JsonValueKind.Null)
+            return element.ValueKind switch
             {
-                return null;
-            }
-
-            if (element.ValueKind == JsonValueKind.Object)
-            {
-                return new JsonObject(element, options);
-            }
-
-            throw new InvalidOperationException(SR.Format(SR.NodeElementWrongType, nameof(JsonValueKind.Object)));
+                JsonValueKind.Null => null,
+                JsonValueKind.Object => new JsonObject(element, options),
+                _ => throw new InvalidOperationException(SR.Format(SR.NodeElementWrongType, nameof(JsonValueKind.Object)))
+            };
         }
 
         internal JsonObject(JsonElement element, JsonNodeOptions? options = null) : this(options)
@@ -75,7 +69,7 @@ namespace System.Text.Json.Nodes
         /// </summary>
         internal JsonPropertyDictionary<JsonNode?> Dictionary => _dictionary is { } dictionary ? dictionary : InitializeDictionary();
 
-        internal override JsonNode InternalDeepClone()
+        internal override JsonNode DeepCloneCore()
         {
             GetUnderlyingRepresentation(out JsonPropertyDictionary<JsonNode?>? dictionary, out JsonElement? jsonElement);
 
@@ -94,7 +88,7 @@ namespace System.Text.Json.Nodes
 
             foreach (KeyValuePair<string, JsonNode?> item in dictionary)
             {
-                jObject.Add(item.Key, item.Value?.InternalDeepClone());
+                jObject.Add(item.Key, item.Value?.DeepCloneCore());
             }
 
             return jObject;
@@ -134,29 +128,37 @@ namespace System.Text.Json.Nodes
             }
             else
             {
-                options ??= s_defaultOptions;
-
                 writer.WriteStartObject();
 
-                foreach (KeyValuePair<string, JsonNode?> item in this)
+                foreach (KeyValuePair<string, JsonNode?> entry in Dictionary)
                 {
-                    writer.WritePropertyName(item.Key);
-                    JsonNodeConverter.Instance.Write(writer, item.Value, options);
+                    writer.WritePropertyName(entry.Key);
+
+                    if (entry.Value is null)
+                    {
+                        writer.WriteNullValue();
+                    }
+                    else
+                    {
+                        entry.Value.WriteTo(writer, options);
+                    }
                 }
 
                 writer.WriteEndObject();
             }
         }
 
-        internal override bool DeepEquals(JsonNode? node)
+        internal override JsonValueKind GetValueKindCore() => JsonValueKind.Object;
+
+        internal override bool DeepEqualsCore(JsonNode? node)
         {
             switch (node)
             {
                 case null or JsonArray:
                     return false;
                 case JsonValue value:
-                    // JsonValueTrimmable/NonTrimmable can hold the object type so calling this method to continue the deep comparision.
-                    return value.DeepEquals(this);
+                    // JsonValue instances have special comparison semantics, dispatch to their implementation.
+                    return value.DeepEqualsCore(this);
                 case JsonObject jsonObject:
                     JsonPropertyDictionary<JsonNode?> currentDict = Dictionary;
                     JsonPropertyDictionary<JsonNode?> otherDict = jsonObject.Dictionary;

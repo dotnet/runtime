@@ -48,7 +48,9 @@ namespace System.Text.Json.Nodes
             InitializeFromArray(items);
         }
 
-        internal override JsonNode InternalDeepClone()
+        internal override JsonValueKind GetValueKindCore() => JsonValueKind.Array;
+
+        internal override JsonNode DeepCloneCore()
         {
             GetUnderlyingRepresentation(out List<JsonNode?>? list, out JsonElement? jsonElement);
 
@@ -66,21 +68,21 @@ namespace System.Text.Json.Nodes
 
             for (int i = 0; i < list.Count; i++)
             {
-                jsonArray.Add(list[i]?.InternalDeepClone());
+                jsonArray.Add(list[i]?.DeepCloneCore());
             }
 
             return jsonArray;
         }
 
-        internal override bool DeepEquals(JsonNode? node)
+        internal override bool DeepEqualsCore(JsonNode? node)
         {
             switch (node)
             {
                 case null or JsonObject:
                     return false;
                 case JsonValue value:
-                    // JsonValueTrimmable/NonTrimmable can hold the array type so calling this method to continue the deep comparison.
-                    return value.DeepEquals(this);
+                    // JsonValue instances have special comparison semantics, dispatch to their implementation.
+                    return value.DeepEqualsCore(this);
                 case JsonArray array:
                     List<JsonNode?> currentList = List;
                     List<JsonNode?> otherList = array.List;
@@ -147,17 +149,12 @@ namespace System.Text.Json.Nodes
         /// </exception>
         public static JsonArray? Create(JsonElement element, JsonNodeOptions? options = null)
         {
-            if (element.ValueKind == JsonValueKind.Null)
+            return element.ValueKind switch
             {
-                return null;
-            }
-
-            if (element.ValueKind == JsonValueKind.Array)
-            {
-                return new JsonArray(element, options);
-            }
-
-            throw new InvalidOperationException(SR.Format(SR.NodeElementWrongType, nameof(JsonValueKind.Array)));
+                JsonValueKind.Null => null,
+                JsonValueKind.Array => new JsonArray(element, options),
+                _ => throw new InvalidOperationException(SR.Format(SR.NodeElementWrongType, nameof(JsonValueKind.Array))),
+            };
         }
 
         internal JsonArray(JsonElement element, JsonNodeOptions? options = null) : base(options)
@@ -177,17 +174,14 @@ namespace System.Text.Json.Nodes
         [RequiresDynamicCode(JsonValue.CreateDynamicCodeMessage)]
         public void Add<T>(T? value)
         {
-            if (value == null)
+            JsonNode? nodeToAdd = value switch
             {
-                Add(null);
-            }
-            else
-            {
-                JsonNode jNode = value as JsonNode ?? new JsonValueNotTrimmable<T>(value);
+                null => null,
+                JsonNode node => node,
+                _ => JsonValue.Create(value, Options)
+            };
 
-                // Call the IList.Add() implementation.
-                Add(jNode);
-            }
+            Add(nodeToAdd);
         }
 
         /// <summary>
@@ -234,14 +228,18 @@ namespace System.Text.Json.Nodes
             }
             else
             {
-                list ??= List;
-                options ??= s_defaultOptions;
-
                 writer.WriteStartArray();
 
-                for (int i = 0; i < list.Count; i++)
+                foreach (JsonNode? element in List)
                 {
-                    JsonNodeConverter.Instance.Write(writer, list[i], options);
+                    if (element is null)
+                    {
+                        writer.WriteNullValue();
+                    }
+                    else
+                    {
+                        element.WriteTo(writer, options);
+                    }
                 }
 
                 writer.WriteEndArray();

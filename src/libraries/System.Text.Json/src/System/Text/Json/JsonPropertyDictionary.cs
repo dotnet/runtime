@@ -148,13 +148,7 @@ namespace System.Text.Json
             }
         }
 
-        public IEnumerator<KeyValuePair<string, T>> GetEnumerator()
-        {
-            foreach (KeyValuePair<string, T> item in _propertyList)
-            {
-                yield return item;
-            }
-        }
+        public List<KeyValuePair<string, T>>.Enumerator GetEnumerator() => _propertyList.GetEnumerator();
 
         public IList<string> Keys => GetKeyCollection();
 
