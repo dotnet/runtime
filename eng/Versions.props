@@ -149,8 +149,8 @@
     <DNNEVersion>1.0.27</DNNEVersion>
     <MicrosoftBuildVersion>17.3.2</MicrosoftBuildVersion>
     <MicrosoftBuildTasksCoreVersion>$(MicrosoftBuildVersion)</MicrosoftBuildTasksCoreVersion>
-    <NugetProjectModelVersion>6.2.2</NugetProjectModelVersion>
-    <NugetPackagingVersion>6.2.2</NugetPackagingVersion>
+    <NugetProjectModelVersion>6.2.4</NugetProjectModelVersion>
+    <NugetPackagingVersion>6.2.4</NugetPackagingVersion>
     <!-- Testing -->
     <MicrosoftNETCoreCoreDisToolsVersion>1.1.0</MicrosoftNETCoreCoreDisToolsVersion>
     <MicrosoftNETTestSdkVersion>17.4.0-preview-20220707-01</MicrosoftNETTestSdkVersion>
