@@ -270,6 +270,15 @@ internal static class Utils
     }
 #endif
 
+    public static bool IsWindows()
+    {
+#if NETCOREAPP
+        return OperatingSystem.IsWindows();
+#else
+        return true;
+#endif
+    }
+
     public static bool IsManagedAssembly(string filePath)
     {
         if (!File.Exists(filePath))
