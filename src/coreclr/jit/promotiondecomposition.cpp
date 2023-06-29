@@ -41,9 +41,7 @@ class DecompositionPlan
 {
     struct Entry
     {
-        unsigned     ToLclNum;
         Replacement* ToReplacement;
-        unsigned     FromLclNum;
         Replacement* FromReplacement;
         unsigned     Offset;
         var_types    Type;
@@ -95,43 +93,7 @@ public:
     //
     void CopyBetweenReplacements(Replacement* dstRep, Replacement* srcRep, unsigned offset)
     {
-        m_entries.Push(Entry{dstRep->LclNum, dstRep, srcRep->LclNum, srcRep, offset, dstRep->AccessType});
-    }
-
-    //------------------------------------------------------------------------
-    // CopyBetweenReplacements:
-    //   Add an entry specifying to copy from a promoted field into a replacement.
-    //
-    // Parameters:
-    //   dstRep - The destination replacement.
-    //   srcLcl - Local number of regularly promoted source field.
-    //   offset - The offset this covers in the struct copy.
-    //   type   - The type of copy.
-    //
-    // Remarks:
-    //   Used when the source local is a regular promoted field.
-    //
-    void CopyBetweenReplacements(Replacement* dstRep, unsigned srcLcl, unsigned offset)
-    {
-        m_entries.Push(Entry{dstRep->LclNum, dstRep, srcLcl, nullptr, offset, dstRep->AccessType});
-    }
-
-    //------------------------------------------------------------------------
-    // CopyBetweenReplacements:
-    //   Add an entry specifying to copy from a replacement into a promoted field.
-    //
-    // Parameters:
-    //   dstRep - The destination replacement.
-    //   srcLcl - Local number of regularly promoted source field.
-    //   offset - The offset this covers in the struct copy.
-    //   type   - The type of copy.
-    //
-    // Remarks:
-    //   Used when the destination local is a regular promoted field.
-    //
-    void CopyBetweenReplacements(unsigned dstLcl, Replacement* srcRep, unsigned offset)
-    {
-        m_entries.Push(Entry{dstLcl, nullptr, srcRep->LclNum, srcRep, offset, srcRep->AccessType});
+        m_entries.Push(Entry{dstRep, srcRep, offset, dstRep->AccessType});
     }
 
     //------------------------------------------------------------------------
@@ -145,7 +107,7 @@ public:
     //
     void CopyToReplacement(Replacement* dstRep, unsigned offset)
     {
-        m_entries.Push(Entry{dstRep->LclNum, dstRep, BAD_VAR_NUM, nullptr, offset, dstRep->AccessType});
+        m_entries.Push(Entry{dstRep, nullptr, offset, dstRep->AccessType});
     }
 
     //------------------------------------------------------------------------
@@ -159,7 +121,7 @@ public:
     //
     void CopyFromReplacement(Replacement* srcRep, unsigned offset)
     {
-        m_entries.Push(Entry{BAD_VAR_NUM, nullptr, srcRep->LclNum, srcRep, offset, srcRep->AccessType});
+        m_entries.Push(Entry{nullptr, srcRep, offset, srcRep->AccessType});
     }
 
     //------------------------------------------------------------------------
@@ -174,7 +136,7 @@ public:
     //
     void InitReplacement(Replacement* dstRep, unsigned offset)
     {
-        m_entries.Push(Entry{dstRep->LclNum, dstRep, BAD_VAR_NUM, nullptr, offset, dstRep->AccessType});
+        m_entries.Push(Entry{dstRep, nullptr, offset, dstRep->AccessType});
     }
 
     //------------------------------------------------------------------------
@@ -416,14 +378,14 @@ private:
         {
             const Entry& entry = m_entries.BottomRef(i);
 
-            assert((entry.ToLclNum != BAD_VAR_NUM) && (entry.ToReplacement != nullptr));
+            assert(entry.ToReplacement != nullptr);
             assert((entry.ToReplacement >= firstRep) && (entry.ToReplacement < firstRep + agg->Replacements.size()));
             size_t replacementIndex = entry.ToReplacement - firstRep;
 
             if (!deaths.IsReplacementDying((unsigned)replacementIndex))
             {
                 GenTree* value = m_compiler->gtNewConWithPattern(entry.Type, initPattern);
-                GenTree* store = m_compiler->gtNewStoreLclVarNode(entry.ToLclNum, value);
+                GenTree* store = m_compiler->gtNewStoreLclVarNode(entry.ToReplacement->LclNum, value);
                 statements->AddStatement(store);
             }
 
@@ -438,12 +400,11 @@ private:
         }
         else if (remainderStrategy.Type == RemainderStrategy::Primitive)
         {
-            GenTree*             value  = m_compiler->gtNewConWithPattern(remainderStrategy.PrimitiveType, initPattern);
-            GenTreeLclVarCommon* dstLcl = m_store->AsLclVarCommon();
-            GenTree*             store =
-                m_compiler->gtNewStoreLclFldNode(dstLcl->GetLclNum(), remainderStrategy.PrimitiveType,
-                                                 dstLcl->GetLclOffs() + remainderStrategy.PrimitiveOffset, value);
-            m_compiler->lvaSetVarDoNotEnregister(dstLcl->GetLclNum() DEBUGARG(DoNotEnregisterReason::LocalField));
+            GenTree*       value = m_compiler->gtNewConWithPattern(remainderStrategy.PrimitiveType, initPattern);
+            LocationAccess storeAccess;
+            storeAccess.InitializeLocal(m_store->AsLclVarCommon());
+            GenTree* store = storeAccess.CreateStore(remainderStrategy.PrimitiveOffset, remainderStrategy.PrimitiveType,
+                                                     value, m_compiler);
             statements->AddStatement(store);
         }
     }
@@ -577,7 +538,7 @@ private:
                                 continue;
                             }
                             const Entry& entry = m_entries.BottomRef(i);
-                            assert((entry.FromLclNum == BAD_VAR_NUM) || (entry.ToLclNum == BAD_VAR_NUM));
+                            assert((entry.FromReplacement == nullptr) || (entry.ToReplacement == nullptr));
                             needsNullCheck = m_compiler->fgIsBigOffset(entry.Offset);
                             break;
                         }
@@ -696,9 +657,9 @@ private:
             }
 
             GenTree* src;
-            if (entry.FromLclNum != BAD_VAR_NUM)
+            if (entry.FromReplacement != nullptr)
             {
-                src = m_compiler->gtNewLclvNode(entry.FromLclNum, entry.Type);
+                src = m_compiler->gtNewLclvNode(entry.FromReplacement->LclNum, entry.Type);
 
                 if (entry.FromReplacement != nullptr)
                 {
@@ -710,7 +671,7 @@ private:
                     if (srcDeaths.IsReplacementDying((unsigned)replacementIndex))
                     {
                         src->gtFlags |= GTF_VAR_DEATH;
-                        m_replacer->CheckForwardSubForLastUse(entry.FromLclNum);
+                        m_replacer->CheckForwardSubForLastUse(entry.FromReplacement->LclNum);
                     }
                 }
             }
@@ -720,9 +681,9 @@ private:
             }
 
             GenTree* store;
-            if (entry.ToLclNum != BAD_VAR_NUM)
+            if (entry.ToReplacement != nullptr)
             {
-                store = m_compiler->gtNewStoreLclVarNode(entry.ToLclNum, src);
+                store = m_compiler->gtNewStoreLclVarNode(entry.ToReplacement->LclNum, src);
             }
             else
             {
@@ -828,7 +789,7 @@ private:
         {
             // Check if the remainder is going to handle it.
             if ((remainderStrategy.Type == RemainderStrategy::FullBlock) && !entry.FromReplacement->NeedsWriteBack &&
-                (entry.ToLclNum == BAD_VAR_NUM))
+                (entry.ToReplacement == nullptr))
             {
 #ifdef DEBUG
                 if (dump)
@@ -862,7 +823,8 @@ private:
         {
             GenTreeLclVarCommon* lcl    = addrNode->AsLclVarCommon();
             unsigned             lclNum = lcl->GetLclNum();
-            if (m_compiler->lvaGetDesc(lclNum)->IsAddressExposed())
+            LclVarDsc*           dsc    = m_compiler->lvaGetDesc(lclNum);
+            if (dsc->IsAddressExposed())
             {
                 // Address could be pointing to itself
                 return false;
@@ -878,7 +840,7 @@ private:
             // Otherwise it could still be possible that the address is part of
             // the struct we're writing.
             unsigned dstLclNum = m_store->AsLclVarCommon()->GetLclNum();
-            if (lclNum == dstLclNum)
+            if ((lclNum == dstLclNum) || (dsc->lvIsStructField && (dsc->lvParentLcl == dstLclNum)))
             {
                 return false;
             }
@@ -886,7 +848,8 @@ private:
             // It could also be one of the replacement locals we're going to write.
             for (int i = 0; i < m_entries.Height(); i++)
             {
-                if (m_entries.BottomRef(i).ToLclNum == lclNum)
+                const Entry& entry = m_entries.BottomRef(i);
+                if ((entry.ToReplacement != nullptr) && (entry.ToReplacement->LclNum == lclNum))
                 {
                     return false;
                 }
