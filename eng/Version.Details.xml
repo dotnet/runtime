@@ -379,9 +379,9 @@
     </Dependency>
     <!-- Necessary for source-build. This allows the package to be retrieved from previously-source-built artifacts
          and flow in as dependencies of the packages produced by runtime. -->
-    <Dependency Name="Nuget.ProjectModel" Version="6.2.2">
+    <Dependency Name="Nuget.ProjectModel" Version="6.2.4">
       <Uri>https://github.com/NuGet/NuGet.Client</Uri>
-      <Sha>027ca8b8ef4b4dc94995f87b9c441d2bcf742c1d</Sha>
+      <Sha>8fef55f5a55a3b4f2c96cd1a9b5ddc51d4b927f8</Sha>
     </Dependency>
   </ToolsetDependencies>
 </Dependencies>

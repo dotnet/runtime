@@ -171,8 +171,8 @@
     <MicrosoftBuildTasksCoreVersion>$(MicrosoftBuildVersion)</MicrosoftBuildTasksCoreVersion>
     <MicrosoftBuildFrameworkVersion>$(MicrosoftBuildVersion)</MicrosoftBuildFrameworkVersion>
     <MicrosoftBuildUtilitiesCoreVersion>$(MicrosoftBuildVersion)</MicrosoftBuildUtilitiesCoreVersion>
-    <NugetProjectModelVersion>6.2.2</NugetProjectModelVersion>
-    <NugetPackagingVersion>6.2.2</NugetPackagingVersion>
+    <NugetProjectModelVersion>6.2.4</NugetProjectModelVersion>
+    <NugetPackagingVersion>6.2.4</NugetPackagingVersion>
     <DotnetSosVersion>7.0.412701</DotnetSosVersion>
     <DotnetSosTargetFrameworkVersion>6.0</DotnetSosTargetFrameworkVersion>
     <!-- Testing -->
