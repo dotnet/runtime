@@ -444,7 +444,7 @@ namespace System.Formats.Tar
 
             // We don't need to check for AltDirectorySeparatorChar, full paths are normalized to DirectorySeparatorChar.
             static bool IsDirectorySeparatorChar(char c)
-                => c ==  Path.DirectorySeparatorChar;
+                => c == Path.DirectorySeparatorChar;
         }
     }
 }

@@ -89,7 +89,7 @@ namespace System.Formats.Tar.Tests
             using TempDirectory root = new TempDirectory();
 
             DirectoryInfo fromDir = Directory.CreateDirectory(Path.Combine(root.Path, "fromdir"));
-            // Create a hierarcy of directories.
+            // Create a hierarchy of directories.
             var directories = new DirectoryInfo[]
             {
                 Directory.CreateDirectory(Path.Combine(fromDir.FullName, "dir")),                      // 'fromdir/dir'
