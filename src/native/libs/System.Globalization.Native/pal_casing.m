@@ -9,6 +9,47 @@
 
 #if defined(TARGET_OSX) || defined(TARGET_MACCATALYST) || defined(TARGET_IOS) || defined(TARGET_TVOS)
 
+/**
+ * Is this code unit a lead surrogate (U+d800..U+dbff)?
+ * @param c 16-bit code unit
+ * @return true or false
+ */
+#define IS_LEAD(c) (((c)&0xfffffc00) == 0xd800)
+
+/**
+ * Is this code unit a trail surrogate (U+dc00..U+dfff)?
+ * @param c 16-bit code unit
+ * @return true or false
+ */
+#define IS_TRAIL(c) (((c)&0xfffffc00) == 0xdc00)
+
+/**
+ * Get a code point index from a string at a code point boundary offset,
+ * and advance the offset to the next code point boundary.
+ * (Post-incrementing forward iteration.)
+ * "Safe" macro, handles unpaired surrogates and checks for string boundaries.
+ *
+ * The length can be negative for a NUL-terminated string.
+ *
+ * The offset may point to the lead surrogate unit
+ * for a supplementary code point, in which case for casing will be read
+ * the following trail surrogate as well.
+ * If the offset points to a trail surrogate or
+ * to a single, unpaired lead surrogate, then for casing will be read that unpaired surrogate.
+ *
+ * @param s const uint16_t* string
+ * @param i output string offset, must be i<length
+ * @param length string length
+ */
+#define NEXTOFFSET(s, i, length) { \
+    uint16_t c = (s)[(i)++]; \
+    if (IS_LEAD(c)) { \
+        uint16_t __c2; \
+        if ((i) != (length) && IS_TRAIL(__c2 = (s)[(i)])) { \
+            ++(i); \
+        } \
+    } \
+}
 
 /**
  * Append a code point to a string, overwriting 1 or 2 code units.
@@ -61,33 +102,25 @@ int32_t GlobalizationNative_ChangeCaseNative(const uint16_t* localeName, int32_t
         NSString *locName = [NSString stringWithCharacters: localeName length: lNameLength];
         currentLocale = [NSLocale localeWithLocaleIdentifier:locName];
     }
-    NSString *source = [NSString stringWithCharacters: lpSrc length: cwSrcLength];
-    NSString *result = bToUpper ? [source uppercaseStringWithLocale:currentLocale] : [source lowercaseStringWithLocale:currentLocale];
 
     int32_t srcIdx = 0, dstIdx = 0, isError = 0;
     uint16_t dstCodepoint;
-    if (result.length <= cwDstLength)
+    while (srcIdx < cwSrcLength)
     {
-        while (srcIdx < result.length)
+        int32_t startIndex = srcIdx;
+        NEXTOFFSET(lpSrc, srcIdx, cwSrcLength);
+        int32_t srcLength = srcIdx - startIndex;
+        NSString *src = [NSString stringWithCharacters: lpSrc + startIndex length: srcLength];
+        NSString *dst = bToUpper ? [src uppercaseStringWithLocale:currentLocale] : [src lowercaseStringWithLocale:currentLocale];
+        int32_t index = 0;
+        while (index < srcLength)
         {
-            dstCodepoint = [result characterAtIndex:srcIdx++];
+            dstCodepoint = dst.length > srcLength ? [src characterAtIndex: index] : [dst characterAtIndex: index];
             Append(lpDst, dstIdx, cwDstLength, dstCodepoint, isError);
-            if (isError)
-                return isError;
+            index++;
         }
-    }
-    else
-    {
-        while (srcIdx < cwSrcLength)
-        {           
-            NSString *src = [NSString stringWithCharacters: lpSrc + srcIdx length: 1];
-            srcIdx++;
-            NSString *dst = bToUpper ? [src uppercaseStringWithLocale:currentLocale] : [src lowercaseStringWithLocale:currentLocale];
-            dstCodepoint = dst.length > 1 ? [src characterAtIndex: 0] : [dst characterAtIndex: 0];
-            Append(lpDst, dstIdx, cwDstLength, dstCodepoint, isError);
-            if (isError)
-                return isError;
-        }
+        if (isError)
+            return isError;
     }
     return Success;
 }
@@ -101,33 +134,24 @@ Returns 0 for success, non-zero on failure see ErrorCodes.
 */
 int32_t GlobalizationNative_ChangeCaseInvariantNative(const uint16_t* lpSrc, int32_t cwSrcLength, uint16_t* lpDst, int32_t cwDstLength, int32_t bToUpper)
 {
-    NSString *source = [NSString stringWithCharacters: lpSrc length: cwSrcLength];
-    NSString *result = bToUpper ? source.uppercaseString : source.lowercaseString;
-
     int32_t srcIdx = 0, dstIdx = 0, isError = 0;
     uint16_t dstCodepoint;
-    if (result.length <= cwDstLength)
+    while (srcIdx < cwSrcLength)
     {
-        while (srcIdx < result.length)
+        int32_t startIndex = srcIdx;
+        NEXTOFFSET(lpSrc, srcIdx, cwSrcLength);
+        int32_t srcLength = srcIdx - startIndex;
+        NSString *src = [NSString stringWithCharacters: lpSrc + startIndex length: srcLength];
+        NSString *dst = bToUpper ? src.uppercaseString : src.lowercaseString;
+        int32_t index = 0;
+        while (index < srcLength)
         {
-            dstCodepoint = [result characterAtIndex:srcIdx++];
+            dstCodepoint = dst.length > srcLength ? [src characterAtIndex: index] : [dst characterAtIndex: index];
             Append(lpDst, dstIdx, cwDstLength, dstCodepoint, isError);
-            if (isError)
-                return isError;
+            index++;
         }
-    }
-    else
-    {
-        while (srcIdx < cwSrcLength)
-        {           
-            NSString *src = [NSString stringWithCharacters: lpSrc + srcIdx length: 1];
-            srcIdx++;
-            NSString *dst = bToUpper ? src.uppercaseString : src.lowercaseString;
-            dstCodepoint = dst.length > 1 ? [src characterAtIndex: 0] : [dst characterAtIndex: 0];
-            Append(lpDst, dstIdx, cwDstLength, dstCodepoint, isError);
-            if (isError)
-                return isError;
-        }
+        if (isError)
+            return isError;
     }
     return Success;
 }

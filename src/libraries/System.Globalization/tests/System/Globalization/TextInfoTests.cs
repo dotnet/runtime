@@ -274,9 +274,9 @@ namespace System.Globalization.Tests
                 // we also don't preform.
                 // Greek Capital Letter Sigma (does not case to U+03C2 with "final sigma" rule).
                 yield return new object[] { cultureName, "\u03A3", "\u03C3" };
-                if (PlatformDetection.IsHybridGlobalizationOnBrowser || PlatformDetection.IsHybridGlobalizationOnOSX)
+                if (PlatformDetection.IsHybridGlobalizationOnBrowser)
                 {
-                    // JS and Apple platforms are using "final sigma" rule correctly - it's costly to unify it with ICU's behavior
+                    // JS is using "final sigma" rule correctly - it's costly to unify it with ICU's behavior
                     yield return new object[] { cultureName, "O\u03A3", "o\u03C2" };
                 }
                 else
@@ -405,7 +405,7 @@ namespace System.Globalization.Tests
                 // es-zed does not case to SS when uppercased.
                 yield return new object[] { cultureName, "\u00DF", "\u00DF" };
                 yield return new object[] { cultureName, "stra\u00DFe", "STRA\u00DFE" };
-                if (!PlatformDetection.IsNlsGlobalization && !PlatformDetection.IsHybridGlobalizationOnOSX)
+                if (!PlatformDetection.IsNlsGlobalization)
                     yield return new object[] { cultureName, "st\uD801\uDC37ra\u00DFe", "ST\uD801\uDC0FRA\u00DFE" };
 
                 // Ligatures do not expand when cased.

@@ -423,8 +423,3 @@ Below function are used from apple native functions:
 - [uppercaseStringWithLocale](https://developer.apple.com/documentation/foundation/nsstring/1413316-uppercasestringwithlocale?language=objc)
 - [lowercaseStringWithLocale](https://developer.apple.com/documentation/foundation/nsstring/1417298-lowercasestringwithlocale?language=objc)
 
-Behavioural changes compared to ICU
-
-   - Final sigma behavior correction:
-
-     ICU-based case change does not respect final-sigma rule, but hybrid does, so "ΒΌΛΟΣ" -> "βόλος", not "βόλοσ".
