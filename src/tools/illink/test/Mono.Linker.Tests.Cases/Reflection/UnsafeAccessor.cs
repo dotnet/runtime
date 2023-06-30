@@ -752,7 +752,7 @@ namespace Mono.Linker.Tests.Cases.Reflection
 			class FieldOnValueType
 			{
 				[Kept (By = Tool.Trimmer)]
-				[StructLayout(LayoutKind.Auto)] // Otherwise trimmer will keep all the fields
+				[StructLayout (LayoutKind.Auto)] // Otherwise trimmer will keep all the fields
 				struct Target
 				{
 					[Kept (By = Tool.Trimmer)]
