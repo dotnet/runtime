@@ -61,7 +61,9 @@ namespace ILCompiler
         public Option<string[]> RdXmlFilePaths { get; } =
             new(new[] { "--rdxml" }, Array.Empty<string>, "RD.XML file(s) for compilation");
         public Option<string[]> LinkTrimFilePaths { get; } =
-            new(new[] { "--descriptor" }, Array.Empty<string>, "ILLinkTrim.Descriptor file(s) for compilation");
+            new(new[] { "--descriptor" }, Array.Empty<string>, "ILLink.Descriptor file(s) for compilation");
+        public Option<string[]> SubstitutionFilePaths { get; } =
+            new(new[] { "--substitution" }, Array.Empty<string>, "ILLink.Substitutions file(s) for compilation");
         public Option<string> MapFileName { get; } =
             new(new[] { "--map" }, "Generate a map file");
         public Option<string> MstatFileName { get; } =
@@ -197,6 +199,7 @@ namespace ILCompiler
             AddOption(CodegenOptions);
             AddOption(RdXmlFilePaths);
             AddOption(LinkTrimFilePaths);
+            AddOption(SubstitutionFilePaths);
             AddOption(MapFileName);
             AddOption(MstatFileName);
             AddOption(MetadataLogFileName);
