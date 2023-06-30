@@ -175,7 +175,9 @@ namespace System.Net.Test.Common
                 SslProtocols.Tls12;
 
         public int ListenBacklog { get; set; } = 1;
+#if !NETSTANDARD2_0 && !NETFRAMEWORK
         public SslStreamCertificateContext? CertificateContext { get; set; }
+#endif
     }
 
     public struct HttpHeaderData
