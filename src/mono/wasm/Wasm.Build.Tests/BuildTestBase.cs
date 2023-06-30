@@ -101,7 +101,7 @@ namespace Wasm.Build.Tests
         {
             _testIdx = Interlocked.Increment(ref s_testCounter);
             _buildContext = buildContext;
-            _testOutput = output;
+            _testOutput = new TestOutputWrapper(output);
             _logPath = s_buildEnv.LogRootPath; // FIXME:
         }
 
@@ -1032,8 +1032,6 @@ namespace Wasm.Build.Tests
 
             void OnConsoleMessage(IConsoleMessage msg)
             {
-                if (EnvironmentVariables.ShowBuildOutput)
-                    Console.WriteLine($"[{msg.Type}] {msg.Text}");
                 _testOutput.WriteLine($"[{msg.Type}] {msg.Text}");
 
                 onConsoleMessage?.Invoke(msg);
@@ -1173,8 +1171,6 @@ namespace Wasm.Build.Tests
                     }
                     outputBuilder.AppendLine($"{label} {message}");
                 }
-                if (EnvironmentVariables.ShowBuildOutput)
-                    Console.WriteLine($"{label} {message}");
             }
         }
 
