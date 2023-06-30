@@ -7558,7 +7558,8 @@ CORINFO_CLASS_HANDLE Compiler::impGetSpecialIntrinsicExactReturnType(GenTreeCall
 
             // Lookup can incorrect when we have __Canon as it won't appear
             // to implement any interface types.
-            bool isCanon = ((info.compCompHnd->getClassAttribs(typeHnd) & (CORINFO_FLG_SHAREDINST | CORINFO_FLG_FINAL)) == CORINFO_FLG_SHAREDINST);
+            bool isCanon = ((info.compCompHnd->getClassAttribs(typeHnd) &
+                             (CORINFO_FLG_SHAREDINST | CORINFO_FLG_FINAL)) == CORINFO_FLG_SHAREDINST);
 
             if (isCanon)
             {
@@ -7569,11 +7570,12 @@ CORINFO_CLASS_HANDLE Compiler::impGetSpecialIntrinsicExactReturnType(GenTreeCall
                     CORINFO_CLASS_HANDLE hClass = gtGetHelperArgClassHandle(instParam->GetNode());
                     if (hClass != NO_CLASS_HANDLE)
                     {
-                        hClass = getTypeInstantiationArgument(hClass, 0);
-                        isCanon = ((info.compCompHnd->getClassAttribs(hClass) & (CORINFO_FLG_SHAREDINST | CORINFO_FLG_FINAL)) == CORINFO_FLG_SHAREDINST);
+                        hClass  = getTypeInstantiationArgument(hClass, 0);
+                        isCanon = ((info.compCompHnd->getClassAttribs(hClass) &
+                                    (CORINFO_FLG_SHAREDINST | CORINFO_FLG_FINAL)) == CORINFO_FLG_SHAREDINST);
                         if (!isCanon)
                         {
-                            typeHnd  = hClass;
+                            typeHnd = hClass;
                         }
                     }
                 }
