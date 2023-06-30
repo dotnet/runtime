@@ -41,6 +41,38 @@ namespace System.Memory.Tests.Span
             }
         }
 
+        [Fact]
+        [MethodImpl(MethodImplOptions.AggressiveOptimization)]
+        public static void SanityCheck2AO()
+        {
+            if (Avx512BW.IsSupported)
+            {
+                (int eax, int ebx, int ecx, int edx) = X86Base.CpuId(0x00000000, 0x00000000);
+                uint maxFunctionId = (uint)eax;
+
+                bool isAuthenticAmd = (ebx == 0x68747541) && (ecx == 0x444D4163) && (edx == 0x69746E65);
+                bool isGenuineIntel = (ebx == 0x756E6547) && (ecx == 0x6C65746E) && (edx == 0x49656E69);
+                bool isVirtualCPU = (ebx == 0x74726956) && (ecx == 0x20555043) && (edx == 0x206C6175);
+
+                string message = $"CpuId0 eax={eax} ebx={ebx} ecx={ecx} edx={edx} isAuthenticAmd={isAuthenticAmd} isGenuineIntel={isGenuineIntel} isVirtualCPU={isVirtualCPU}";
+
+                if (maxFunctionId >= 0x00000001)
+                {
+                    (eax, ebx, ecx, edx) = X86Base.CpuId(0x00000001, 0x00000000);
+                    int xarchCpuInfo = eax;
+
+                    int steppingId = xarchCpuInfo & 0xF;
+                    int model = (xarchCpuInfo >> 4) & 0xF;
+                    int familyID = (xarchCpuInfo >> 8) & 0xF;
+                    int extendedModelID = (xarchCpuInfo >> 16) & 0xF;
+
+                    message += $"\nCpuId1 eax={eax} ebx={ebx} ecx={ecx} edx={edx} steppingId={steppingId} model={model} familyID={familyID} extendedModelID={extendedModelID}";
+                }
+
+                throw new Exception(message);
+            }
+        }
+
         [Theory]
         [InlineData(StringComparison.Ordinal, "a", "ab", "abc", "bc")]
         [InlineData(StringComparison.Ordinal, "A", "ab", "aBc", "Bc")]
