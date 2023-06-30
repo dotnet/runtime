@@ -2864,10 +2864,7 @@ namespace System.Diagnostics.Tracing
         // Today, we only send the manifest to ETW, custom listeners don't get it.
         private unsafe void SendManifest(byte[]? rawManifest)
         {
-            if (rawManifest == null
-                // Don't send the manifest for NativeRuntimeEventSource, it is conceptually
-                // an extension of the native coreclr provider
-                || m_name.Equals("Microsoft-Windows-DotNETRuntime"))
+            if (rawManifest == null)
             {
                 return;
             }
@@ -3129,15 +3126,19 @@ namespace System.Diagnostics.Tracing
                 if (eventSourceAttrib != null && eventSourceAttrib.LocalizationResources != null)
                     resources = new ResourceManager(eventSourceAttrib.LocalizationResources, eventSourceType.Assembly);
 
-                if (source is not null)
+                if (source?.GetType() == typeof(NativeRuntimeEventSource))
                 {
-                    // We have the source so don't need to use reflection to get the Name and Guid
-                    manifest = new ManifestBuilder(source.Name, source.Guid, eventSourceDllName, resources, flags);
+                    // Don't emit nor generate the manifest for NativeRuntimeEventSource i.e., Microsoft-Windows-DotNETRuntime.
+                    manifest = new ManifestBuilder(resources, flags);
+                    bNeedsManifest = false;
                 }
                 else
                 {
-                    manifest = new ManifestBuilder(GetName(eventSourceType, flags), GetGuid(eventSourceType), eventSourceDllName,
-                                               resources, flags);
+                    // Try to get name and GUID directly from the source. Otherwise get it from the Type's attribute.
+                    string providerName = source?.Name ?? GetName(eventSourceType, flags);
+                    Guid providerGuid = source?.Guid ?? GetGuid(eventSourceType);
+
+                    manifest = new ManifestBuilder(providerName, providerGuid, eventSourceDllName, resources, flags);
                 }
 
                 // Add an entry unconditionally for event ID 0 which will be for a string message.
@@ -3381,6 +3382,7 @@ namespace System.Diagnostics.Tracing
                         return null;
 
                     res = manifest.CreateManifest();
+                    res = (res.Length > 0) ? res : null;
                 }
             }
             catch (Exception e)
@@ -5258,22 +5260,15 @@ namespace System.Diagnostics.Tracing
         /// 'resources, is a resource manager.  If specified all messages are localized using that manager.
         /// </summary>
         public ManifestBuilder(string providerName, Guid providerGuid, string? dllName, ResourceManager? resources,
-                               EventManifestOptions flags)
+                               EventManifestOptions flags) : this(resources, flags)
         {
 #if FEATURE_MANAGED_ETW_CHANNELS
             this.providerName = providerName;
 #endif
-            this.flags = flags;
 
-            this.resources = resources;
             sb = new StringBuilder();
             events = new StringBuilder();
             templates = new StringBuilder();
-            opcodeTab = new Dictionary<int, string>();
-            stringTab = new Dictionary<string, string>();
-            errors = new List<string>();
-            perEventByteArrayArgIndices = new Dictionary<string, List<int>>();
-
             sb.AppendLine("<instrumentationManifest xmlns=\"http://schemas.microsoft.com/win/2004/08/events\">");
             sb.AppendLine(" <instrumentation xmlns:xs=\"http://www.w3.org/2001/XMLSchema\" xmlns:xsi=\"http://www.w3.org/2001/XMLSchema-instance\" xmlns:win=\"http://manifests.microsoft.com/win/2004/08/windows/events\">");
             sb.AppendLine("  <events xmlns=\"http://schemas.microsoft.com/win/2004/08/events\">");
@@ -5283,6 +5278,26 @@ namespace System.Diagnostics.Tracing
 
             string symbolsName = providerName.Replace("-", "").Replace('.', '_');  // Period and - are illegal replace them.
             sb.AppendLine($" symbol=\"{symbolsName}\">");
+        }
+
+        /// <summary>
+        /// <term>Will NOT build a manifest!</term> If the intention is to build a manifest don’t use this constructor.
+        ///'resources, is a resource manager.  If specified all messages are localized using that manager.
+        /// </summary>
+        internal ManifestBuilder(ResourceManager? resources, EventManifestOptions flags)
+        {
+            providerName = "";
+
+            this.flags = flags;
+
+            this.resources = resources;
+            sb = null;
+            events = null;
+            templates = null;
+            opcodeTab = new Dictionary<int, string>();
+            stringTab = new Dictionary<string, string>();
+            errors = new List<string>();
+            perEventByteArrayArgIndices = new Dictionary<string, List<int>>();
         }
 
         public void AddOpcode(string name, int value)
@@ -5422,11 +5437,11 @@ namespace System.Diagnostics.Tracing
             numParams = 0;
             byteArrArgIndices = null;
 
-            events.Append("  <event value=\"").Append(eventAttribute.EventId).
-                 Append("\" version=\"").Append(eventAttribute.Version).
-                 Append("\" level=\"");
+            events?.Append("  <event value=\"").Append(eventAttribute.EventId).
+                Append("\" version=\"").Append(eventAttribute.Version).
+                Append("\" level=\"");
             AppendLevelName(events, eventAttribute.Level);
-            events.Append("\" symbol=\"").Append(eventName).Append('"');
+            events?.Append("\" symbol=\"").Append(eventName).Append('"');
 
             // at this point we add to the manifest's stringTab a message that is as-of-yet
             // "untranslated to manifest convention", b/c we don't have the number or position
@@ -5435,25 +5450,28 @@ namespace System.Diagnostics.Tracing
 
             if (eventAttribute.Keywords != 0)
             {
-                events.Append(" keywords=\"");
+                events?.Append(" keywords=\"");
                 AppendKeywords(events, (ulong)eventAttribute.Keywords, eventName);
-                events.Append('"');
+                events?.Append('"');
             }
 
             if (eventAttribute.Opcode != 0)
             {
-                events.Append(" opcode=\"").Append(GetOpcodeName(eventAttribute.Opcode, eventName)).Append('"');
+                string? str = GetOpcodeName(eventAttribute.Opcode, eventName);
+                events?.Append(" opcode=\"").Append(str).Append('"');
             }
 
             if (eventAttribute.Task != 0)
             {
-                events.Append(" task=\"").Append(GetTaskName(eventAttribute.Task, eventName)).Append('"');
+                string? str = GetTaskName(eventAttribute.Task, eventName);
+                events?.Append(" task=\"").Append(str).Append('"');
             }
 
 #if FEATURE_MANAGED_ETW_CHANNELS
             if (eventAttribute.Channel != 0)
             {
-                events.Append(" channel=\"").Append(GetChannelName(eventAttribute.Channel, eventName, eventAttribute.Message)).Append('"');
+                string? str = GetChannelName(eventAttribute.Channel, eventName, eventAttribute.Message);
+                events?.Append(" channel=\"").Append(str).Append('"');
             }
 #endif
         }
@@ -5461,7 +5479,7 @@ namespace System.Diagnostics.Tracing
         public void AddEventParameter(Type type, string name)
         {
             if (numParams == 0)
-                templates.Append("  <template tid=\"").Append(eventName).AppendLine("Args\">");
+                templates?.Append("  <template tid=\"").Append(eventName).AppendLine("Args\">");
             if (type == typeof(byte[]))
             {
                 // mark this index as "extraneous" (it has no parallel in the managed signature)
@@ -5471,27 +5489,27 @@ namespace System.Diagnostics.Tracing
 
                 // add an extra field to the template representing the length of the binary blob
                 numParams++;
-                templates.Append("   <data name=\"").Append(name).AppendLine("Size\" inType=\"win:UInt32\"/>");
+                templates?.Append("   <data name=\"").Append(name).AppendLine("Size\" inType=\"win:UInt32\"/>");
             }
             numParams++;
-            templates.Append("   <data name=\"").Append(name).Append("\" inType=\"").Append(GetTypeName(type)).Append('"');
+            templates?.Append("   <data name=\"").Append(name).Append("\" inType=\"").Append(GetTypeName(type)).Append('"');
             // TODO: for 'byte*' types it assumes the user provided length is named using the same naming convention
             //       as for 'byte[]' args (blob_arg_name + "Size")
             if ((type.IsArray || type.IsPointer) && type.GetElementType() == typeof(byte))
             {
                 // add "length" attribute to the "blob" field in the template (referencing the field added above)
-                templates.Append(" length=\"").Append(name).Append("Size\"");
+                templates?.Append(" length=\"").Append(name).Append("Size\"");
             }
             // ETW does not support 64-bit value maps, so we don't specify these as ETW maps
             if (type.IsEnum && Enum.GetUnderlyingType(type) != typeof(ulong) && Enum.GetUnderlyingType(type) != typeof(long))
             {
-                templates.Append(" map=\"").Append(type.Name).Append('"');
+                templates?.Append(" map=\"").Append(type.Name).Append('"');
                 mapsTab ??= new Dictionary<string, Type>();
                 if (!mapsTab.ContainsKey(type.Name))
                     mapsTab.Add(type.Name, type);        // Remember that we need to dump the type enumeration
             }
 
-            templates.AppendLine("/>");
+            templates?.AppendLine("/>");
         }
         public void EndEvent()
         {
@@ -5499,10 +5517,10 @@ namespace System.Diagnostics.Tracing
 
             if (numParams > 0)
             {
-                templates.AppendLine("  </template>");
-                events.Append(" template=\"").Append(eventName).Append("Args\"");
+                templates?.AppendLine("  </template>");
+                events?.Append(" template=\"").Append(eventName).Append("Args\"");
             }
-            events.AppendLine("/>");
+            events?.AppendLine("/>");
 
             if (byteArrArgIndices != null)
                 perEventByteArrayArgIndices[eventName] = byteArrArgIndices;
@@ -5562,7 +5580,7 @@ namespace System.Diagnostics.Tracing
         public byte[] CreateManifest()
         {
             string str = CreateManifestString();
-            return Encoding.UTF8.GetBytes(str);
+            return (str != "") ? Encoding.UTF8.GetBytes(str) : Array.Empty<byte>();
         }
 
         public IList<string> Errors => errors;
@@ -5592,10 +5610,11 @@ namespace System.Diagnostics.Tracing
             // Write out the channels
             if (channelTab != null)
             {
-                sb.AppendLine(" <channels>");
+                sb?.AppendLine(" <channels>");
                 var sortedChannels = new List<KeyValuePair<int, ChannelInfo>>();
                 foreach (KeyValuePair<int, ChannelInfo> p in channelTab) { sortedChannels.Add(p); }
                 sortedChannels.Sort((p1, p2) => -Comparer<ulong>.Default.Compare(p1.Value.Keywords, p2.Value.Keywords));
+
                 foreach (KeyValuePair<int, ChannelInfo> kvpair in sortedChannels)
                 {
                     int channel = kvpair.Key;
@@ -5628,39 +5647,39 @@ namespace System.Diagnostics.Tracing
 
                     fullName ??= providerName + "/" + channelInfo.Name;
 
-                    sb.Append("  <channel chid=\"").Append(channelInfo.Name).Append("\" name=\"").Append(fullName).Append('"');
-
+                    sb?.Append("  <channel chid=\"").Append(channelInfo.Name).Append("\" name=\"").Append(fullName).Append('"');
                     Debug.Assert(channelInfo.Name != null);
                     WriteMessageAttrib(sb, "channel", channelInfo.Name, null);
-                    sb.Append(" value=\"").Append(channel).Append('"');
+                    sb?.Append(" value=\"").Append(channel).Append('"');
                     if (channelType != null)
-                        sb.Append(" type=\"").Append(channelType).Append('"');
-                    sb.Append(" enabled=\"").Append(enabled ? "true" : "false").Append('"');
+                        sb?.Append(" type=\"").Append(channelType).Append('"');
+                    sb?.Append(" enabled=\"").Append(enabled ? "true" : "false").Append('"');
 #if FEATURE_ADVANCED_MANAGED_ETW_CHANNELS
                     if (access != null)
-                        sb.Append(" access=\"").Append(access).Append("\"");
+                        sb?.Append(" access=\"").Append(access).Append("\"");
                     if (isolation != null)
-                        sb.Append(" isolation=\"").Append(isolation).Append("\"");
+                        sb?.Append(" isolation=\"").Append(isolation).Append("\"");
 #endif
-                    sb.AppendLine("/>");
+                    sb?.AppendLine("/>");
                 }
-                sb.AppendLine(" </channels>");
+                sb?.AppendLine(" </channels>");
             }
 #endif
 
             // Write out the tasks
             if (taskTab != null)
             {
-                sb.AppendLine(" <tasks>");
+                sb?.AppendLine(" <tasks>");
                 var sortedTasks = new List<int>(taskTab.Keys);
                 sortedTasks.Sort();
+
                 foreach (int task in sortedTasks)
                 {
-                    sb.Append("  <task");
+                    sb?.Append("  <task");
                     WriteNameAndMessageAttribs(sb, "task", taskTab[task]);
-                    sb.Append(" value=\"").Append(task).AppendLine("\"/>");
+                    sb?.Append(" value=\"").Append(task).AppendLine("\"/>");
                 }
-                sb.AppendLine(" </tasks>");
+                sb?.AppendLine(" </tasks>");
             }
 
             // Write out the maps
@@ -5676,12 +5695,12 @@ namespace System.Diagnostics.Tracing
 
             if (mapsTab != null)
             {
-                sb.AppendLine(" <maps>");
+                sb?.AppendLine(" <maps>");
                 foreach (Type enumType in mapsTab.Values)
                 {
                     bool isbitmap = EventSource.IsCustomAttributeDefinedHelper(enumType, typeof(FlagsAttribute), flags);
                     string mapKind = isbitmap ? "bitMap" : "valueMap";
-                    sb.Append("  <").Append(mapKind).Append(" name=\"").Append(enumType.Name).AppendLine("\">");
+                    sb?.Append("  <").Append(mapKind).Append(" name=\"").Append(enumType.Name).AppendLine("\">");
 
                     // write out each enum value
                     FieldInfo[] staticFields = GetEnumFields(enumType);
@@ -5705,9 +5724,10 @@ namespace System.Diagnostics.Tracing
 
                             hexValue.TryFormat(ulongHexScratch, out int charsWritten, "x");
                             Span<char> hexValueFormatted = ulongHexScratch.Slice(0, charsWritten);
-                            sb.Append("   <map value=\"0x").Append(hexValueFormatted).Append('"');
+
+                            sb?.Append("   <map value=\"0x").Append(hexValueFormatted).Append('"');
                             WriteMessageAttrib(sb, "map", enumType.Name + "." + staticField.Name, staticField.Name);
-                            sb.AppendLine("/>");
+                            sb?.AppendLine("/>");
                             anyValuesWritten = true;
                         }
                     }
@@ -5716,95 +5736,97 @@ namespace System.Diagnostics.Tracing
                     // To avoid that put a 'None' entry if there are no other values.
                     if (!anyValuesWritten)
                     {
-                        sb.Append("   <map value=\"0x0\"");
+                        sb?.Append("   <map value=\"0x0\"");
                         WriteMessageAttrib(sb, "map", enumType.Name + ".None", "None");
-                        sb.AppendLine("/>");
+                        sb?.AppendLine("/>");
                     }
-                    sb.Append("  </").Append(mapKind).AppendLine(">");
+                    sb?.Append("  </").Append(mapKind).AppendLine(">");
                 }
-                sb.AppendLine(" </maps>");
+                sb?.AppendLine(" </maps>");
             }
 
             // Write out the opcodes
-            sb.AppendLine(" <opcodes>");
+            sb?.AppendLine(" <opcodes>");
             var sortedOpcodes = new List<int>(opcodeTab.Keys);
             sortedOpcodes.Sort();
+
             foreach (int opcode in sortedOpcodes)
             {
-                sb.Append("  <opcode");
+                sb?.Append("  <opcode");
                 WriteNameAndMessageAttribs(sb, "opcode", opcodeTab[opcode]);
-                sb.Append(" value=\"").Append(opcode).AppendLine("\"/>");
+                sb?.Append(" value=\"").Append(opcode).AppendLine("\"/>");
             }
-            sb.AppendLine(" </opcodes>");
+            sb?.AppendLine(" </opcodes>");
 
             // Write out the keywords
             if (keywordTab != null)
             {
-                sb.AppendLine(" <keywords>");
+                sb?.AppendLine(" <keywords>");
                 var sortedKeywords = new List<ulong>(keywordTab.Keys);
                 sortedKeywords.Sort();
+
                 foreach (ulong keyword in sortedKeywords)
                 {
-                    sb.Append("  <keyword");
+                    sb?.Append("  <keyword");
                     WriteNameAndMessageAttribs(sb, "keyword", keywordTab[keyword]);
                     keyword.TryFormat(ulongHexScratch, out int charsWritten, "x");
                     Span<char> keywordFormatted = ulongHexScratch.Slice(0, charsWritten);
-                    sb.Append(" mask=\"0x").Append(keywordFormatted).AppendLine("\"/>");
+                    sb?.Append(" mask=\"0x").Append(keywordFormatted).AppendLine("\"/>");
                 }
-                sb.AppendLine(" </keywords>");
+                sb?.AppendLine(" </keywords>");
             }
 
-            sb.AppendLine(" <events>");
-            sb.Append(events);
-            sb.AppendLine(" </events>");
+            sb?.AppendLine(" <events>");
+            sb?.Append(events);
+            sb?.AppendLine(" </events>");
 
-            sb.AppendLine(" <templates>");
-            if (templates.Length > 0)
+            sb?.AppendLine(" <templates>");
+            if (templates?.Length > 0)
             {
-                sb.Append(templates);
+                sb?.Append(templates);
             }
             else
             {
                 // Work around a corner-case ETW issue where a manifest with no templates causes
                 // ETW events to not get sent to their associated channel.
-                sb.AppendLine("    <template tid=\"_empty\"></template>");
+                sb?.AppendLine("    <template tid=\"_empty\"></template>");
             }
-            sb.AppendLine(" </templates>");
+            sb?.AppendLine(" </templates>");
 
-            sb.AppendLine("</provider>");
-            sb.AppendLine("</events>");
-            sb.AppendLine("</instrumentation>");
+            sb?.AppendLine("</provider>");
+            sb?.AppendLine("</events>");
+            sb?.AppendLine("</instrumentation>");
 
             // Output the localization information.
-            sb.AppendLine("<localization>");
+            sb?.AppendLine("<localization>");
 
             var sortedStrings = new string[stringTab.Keys.Count];
             stringTab.Keys.CopyTo(sortedStrings, 0);
             Array.Sort(sortedStrings, StringComparer.Ordinal);
 
             CultureInfo ci = CultureInfo.CurrentUICulture;
-            sb.Append(" <resources culture=\"").Append(ci.Name).AppendLine("\">");
-            sb.AppendLine("  <stringTable>");
+            sb?.Append(" <resources culture=\"").Append(ci.Name).AppendLine("\">");
+            sb?.AppendLine("  <stringTable>");
             foreach (string stringKey in sortedStrings)
             {
                 string? val = GetLocalizedMessage(stringKey, ci, etwFormat: true);
-                sb.Append("   <string id=\"").Append(stringKey).Append("\" value=\"").Append(val).AppendLine("\"/>");
+                sb?.Append("   <string id=\"").Append(stringKey).Append("\" value=\"").Append(val).AppendLine("\"/>");
             }
-            sb.AppendLine("  </stringTable>");
-            sb.AppendLine(" </resources>");
+            sb?.AppendLine("  </stringTable>");
+            sb?.AppendLine(" </resources>");
 
-            sb.AppendLine("</localization>");
-            sb.AppendLine("</instrumentationManifest>");
-            return sb.ToString();
+            sb?.AppendLine("</localization>");
+            sb?.AppendLine("</instrumentationManifest>");
+            return sb?.ToString() ?? "";
         }
 
 #region private
-        private void WriteNameAndMessageAttribs(StringBuilder stringBuilder, string elementName, string name)
+        private void WriteNameAndMessageAttribs(StringBuilder? stringBuilder, string elementName, string name)
         {
-            stringBuilder.Append(" name=\"").Append(name).Append('"');
+            stringBuilder?.Append(" name=\"").Append(name).Append('"');
             WriteMessageAttrib(sb, elementName, name, name);
         }
-        private void WriteMessageAttrib(StringBuilder stringBuilder, string elementName, string name, string? value)
+        private void WriteMessageAttrib(StringBuilder? stringBuilder, string elementName, string name, string? value)
         {
             string? key = null;
 
@@ -5821,7 +5843,7 @@ namespace System.Diagnostics.Tracing
                 return;
 
             key ??= elementName + "_" + name;
-            stringBuilder.Append(" message=\"$(string.").Append(key).Append(")\"");
+            stringBuilder?.Append(" message=\"$(string.").Append(key).Append(")\"");
 
             if (stringTab.TryGetValue(key, out string? prevValue) && !prevValue.Equals(value))
             {
@@ -5853,14 +5875,14 @@ namespace System.Diagnostics.Tracing
             return value;
         }
 
-        private static void AppendLevelName(StringBuilder sb, EventLevel level)
+        private static void AppendLevelName(StringBuilder? sb, EventLevel level)
         {
             if ((int)level < 16)
             {
-                sb.Append("win:");
+                sb?.Append("win:");
             }
 
-            sb.Append(level switch // avoid boxing that comes from level.ToString()
+            sb?.Append(level switch // avoid boxing that comes from level.ToString()
             {
                 EventLevel.LogAlways => nameof(EventLevel.LogAlways),
                 EventLevel.Critical => nameof(EventLevel.Critical),
@@ -5950,7 +5972,7 @@ namespace System.Diagnostics.Tracing
             return ret;
         }
 
-        private void AppendKeywords(StringBuilder sb, ulong keywords, string eventName)
+        private void AppendKeywords(StringBuilder? sb, ulong keywords, string eventName)
         {
 #if FEATURE_MANAGED_ETW_CHANNELS
             // ignore keywords associate with channels
@@ -5981,10 +6003,10 @@ namespace System.Diagnostics.Tracing
                     {
                         if (appended)
                         {
-                            sb.Append(' ');
+                            sb?.Append(' ');
                         }
 
-                        sb.Append(keyword);
+                        sb?.Append(keyword);
                         appended = true;
                     }
                 }
@@ -6176,9 +6198,9 @@ namespace System.Diagnostics.Tracing
         private const int MaxCountChannels = 8; // a manifest can defined at most 8 ETW channels
 #endif
 
-        private readonly StringBuilder sb;               // Holds the provider information.
-        private readonly StringBuilder events;           // Holds the events.
-        private readonly StringBuilder templates;
+        private readonly StringBuilder? sb;               // Holds the provider information.
+        private readonly StringBuilder? events;           // Holds the events.
+        private readonly StringBuilder? templates;
 
 #if FEATURE_MANAGED_ETW_CHANNELS
         private readonly string providerName;
