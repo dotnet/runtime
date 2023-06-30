@@ -7585,7 +7585,8 @@ CORINFO_CLASS_HANDLE Compiler::impGetSpecialIntrinsicExactReturnType(GenTreeCall
             }
             else
             {
-                JITDUMP("Special intrinsic for type %s: type undetermined, so deferring opt\n", eeGetClassName(typeHnd));
+                JITDUMP("Special intrinsic for type %s: type undetermined, so deferring opt\n",
+                        eeGetClassName(typeHnd));
             }
             break;
         }
