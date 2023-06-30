@@ -209,8 +209,6 @@ void DacEnumerableHashTable<DAC_ENUM_HASH_ARGS>::GrowTable()
     ((size_t*)pNewBuckets)[SLOT_LENGTH] = cNewBuckets;
     ((size_t*)pNewBuckets)[SLOT_ENDSENTINEL] = IncrementBaseEndSentinel(BaseEndSentinel(curBuckets));
     // element 1 stores the next version of the table (after length is written)
-    // NOTE: DAC does not call add/grow, so this cast is ok.
-    VolatileStore(&((PTR_VolatileEntry**)curBuckets)[SLOT_NEXT], pNewBuckets);
 
     TADDR newEndSentinel = BaseEndSentinel(pNewBuckets);
 
@@ -227,6 +225,9 @@ void DacEnumerableHashTable<DAC_ENUM_HASH_ARGS>::GrowTable()
         DWORD dwCurBucket = i + SKIP_SPECIAL_SLOTS;
         pNewBuckets[dwCurBucket] = dac_cast<PTR_VolatileEntry>(ComputeEndSentinel(newEndSentinel, dwCurBucket));
     }
+
+    // NOTE: DAC does not call add/grow, so this cast is ok.
+    VolatileStore(&((PTR_VolatileEntry**)curBuckets)[SLOT_NEXT], pNewBuckets);
 
     // Run through the old table and transfer all the entries. Be sure not to mess with the integrity of the
     // old table while we are doing this, as there can be concurrent readers!
