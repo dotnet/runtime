@@ -1,7 +1,6 @@
 /* eslint-disable no-prototype-builtins */
 
-import { mono_wasm_get_loaded_files } from "./assets";
-import { INTERNAL, runtimeHelpers } from "./globals";
+import { INTERNAL, loaderHelpers, runtimeHelpers } from "./globals";
 import type { WebAssemblyResourceLoader } from "./loader/blazor/WebAssemblyResourceLoader";
 
 export async function loadLazyAssembly(assemblyNameToLoad: string): Promise<boolean> {
@@ -17,8 +16,7 @@ export async function loadLazyAssembly(assemblyNameToLoad: string): Promise<bool
         throw new Error(`${assemblyNameToLoad} must be marked with 'BlazorWebAssemblyLazyLoad' item group in your project file to allow lazy-loading.`);
     }
 
-    const loadedFiles = mono_wasm_get_loaded_files();
-    if (loadedFiles.some(f => f.includes(assemblyNameToLoad))) {
+    if (loaderHelpers.loadedAssemblies.some(f => f.includes(assemblyNameToLoad))) {
         return false;
     }
 
@@ -41,8 +39,6 @@ export async function loadLazyAssembly(assemblyNameToLoad: string): Promise<bool
         dll = new Uint8Array(dllBytes);
         pdb = null;
     }
-
-    // TODO MF: Push to loaderHelpers.loadedFiles
 
     runtimeHelpers.javaScriptExports.load_lazy_assembly(dll, pdb);
     return true;

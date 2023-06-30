@@ -3,6 +3,7 @@
 
 import type { LoadBootResourceCallback, WebAssemblyBootResourceType } from "../../types";
 import type { BootJsonData, ResourceList } from "../../types/blazor";
+import { loaderHelpers } from "../globals";
 import { toAbsoluteUri } from "./_Polyfill";
 const networkFetchCacheMode = "no-cache";
 
@@ -33,7 +34,12 @@ export class WebAssemblyResourceLoader {
             ? this.loadResourceWithCaching(this.cacheIfUsed, name, url, contentHash, resourceType)
             : this.loadResourceWithoutCaching(name, url, contentHash, resourceType);
 
-        return { name, url: toAbsoluteUri(url), response };
+        const absoluteUrl = toAbsoluteUri(url);
+
+        if (resourceType == "assembly") {
+            loaderHelpers.loadedAssemblies.push(absoluteUrl);
+        }
+        return { name, url: absoluteUrl, response };
     }
 
     logToConsole(): void {

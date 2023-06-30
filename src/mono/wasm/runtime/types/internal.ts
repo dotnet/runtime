@@ -102,6 +102,7 @@ export type LoaderHelpers = {
 
     loadedFiles: string[],
     _loaded_files: { url: string, file: string }[];
+    loadedAssemblies: string[],
     scriptDirectory: string
     scriptUrl: string
     assetUniqueQuery?: string
