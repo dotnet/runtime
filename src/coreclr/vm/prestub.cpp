@@ -1511,6 +1511,7 @@ bool MethodDesc::TryGenerateUnsafeAccessor(DynamicResolver** resolver, COR_ILMET
         {
             ThrowHR(COR_E_BADIMAGEFORMAT, BFA_INVALID_UNSAFEACCESSOR);
         }
+
         context.TargetType = ValidateTargetType(firstArgType);
         context.IsTargetStatic = kind == UnsafeAccessorKind::StaticMethod;
         if (!TrySetTargetMethod(context, name.GetUTF8()))
