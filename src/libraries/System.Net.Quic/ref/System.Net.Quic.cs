@@ -55,7 +55,6 @@ namespace System.Net.Quic
         ConnectionRefused = 8,
         VersionNegotiationError = 9,
         ConnectionIdle = 10,
-        ProtocolError = 11,
         OperationAborted = 12,
         AlpnInUse = 13,
         TransportError = 14,

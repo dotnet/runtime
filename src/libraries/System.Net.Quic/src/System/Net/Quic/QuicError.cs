@@ -49,14 +49,9 @@ namespace System.Net.Quic
         ConnectionIdle,
 
         /// <summary>
-        /// A QUIC protocol error was encountered.
-        /// </summary>
-        ProtocolError,
-
-        /// <summary>
         /// The operation has been aborted.
         /// </summary>
-        OperationAborted,
+        OperationAborted = 12,
 
         /// <summary>
         /// Another QUIC listener is already listening on one of the requested application protocols on the same port.
