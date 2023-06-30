@@ -514,14 +514,7 @@ bool Compiler::fgExpandThreadLocalAccessForCall(BasicBlock** pBlock, Statement* 
 #ifdef TARGET_AMD64
     if (!TargetOS::IsMacOS && TargetOS::IsUnix)
     {
-        if (threadStaticBlocksInfo.tlsIndexObject == 0)
-        {
-            // For linux/x64, we possibly compiled coreclr as single file and not .so file in
-            // which case, the `tls_index` that we found was not accurate.
-            // Do not perform this optimization in such case.
-            JITDUMP("tls_index object address not available. Exiting the optimization.\n");
-            return false;
-        }
+        assert(threadStaticBlocksInfo.tlsIndexObject != 0);
     }
 #endif // TARGET_AMD64
 
