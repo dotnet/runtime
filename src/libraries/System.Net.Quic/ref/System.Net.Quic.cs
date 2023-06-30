@@ -59,7 +59,7 @@ namespace System.Net.Quic
         OperationAborted = 12,
         AlpnInUse = 13,
         TransportError = 14,
-        UserCallbackError = 15,
+        CallbackError = 15,
     }
     public sealed partial class QuicException : System.IO.IOException
     {

@@ -71,6 +71,6 @@ namespace System.Net.Quic
         /// <summary>
         /// An error occurred in user provided callback.
         /// </summary>
-       UserCallbackError,
+        CallbackError,
     }
 }
