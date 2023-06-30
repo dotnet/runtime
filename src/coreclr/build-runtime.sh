@@ -109,6 +109,9 @@ __ConfigTriplet="$__TargetOS.$__TargetArch.$__BuildType"
 if [[ "$__TargetOS" == "linux-bionic" ]]; then
     __ConfigTriplet="linux.$__TargetArch.$__BuildType"
 fi
+if [[ ! -z "$__OutputRIDOS" ]]; then
+    __ConfigTriplet="$__OutputRIDOS.$__TargetArch.$__BuildType"
+fi
 __BinDir="$__RootBinDir/bin/coreclr/$__ConfigTriplet"
 __ArtifactsObjDir="$__RepoRootDir/artifacts/obj"
 __ArtifactsIntermediatesDir="$__ArtifactsObjDir/coreclr"
@@ -117,8 +120,8 @@ __IntermediatesDir="$__ArtifactsIntermediatesDir/$__ConfigTriplet"
 export __IntermediatesDir __ArtifactsIntermediatesDir
 
 if [[ "$__ExplicitHostArch" == 1 ]]; then
-    __IntermediatesDir="$__IntermediatesDir/$__HostArch"
-    __BinDir="$__BinDir/$__HostArch"
+    __IntermediatesDir="$__IntermediatesDir/host"
+    __BinDir="$__BinDir/host"
 fi
 
 # CI_SPECIFIC - On CI machines, $HOME may not be set. In such a case, create a subfolder and set the variable to set.

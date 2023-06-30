@@ -287,6 +287,7 @@ __TargetArch=$arch
 __TargetOS=$os
 __HostOS=$os
 __OutputRid=''
+__OutputRIDOS=''
 
 # Get the number of processors available to the scheduler
 platform="$(uname -s | tr '[:upper:]' '[:lower:]')"
@@ -478,6 +479,16 @@ while :; do
                 shift
             else
                 echo "ERROR: 'hostarch' requires a non-empty option argument"
+                exit 1
+            fi
+            ;;
+
+        outputridos|-outputridos)
+            if [[ -n "$2" ]]; then
+                __OutputRIDOS="$2"
+                shift
+            else
+                echo "ERROR: 'outputridos' requires a non-empty option argument"
                 exit 1
             fi
             ;;

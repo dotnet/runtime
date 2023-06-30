@@ -51,7 +51,7 @@
     <ObjWriterVersion Condition="'$(ObjWriterVersion)' == '' and '$(ObjWriterRid)' == 'freebsd-arm64'">$(runtimefreebsdarm64MicrosoftNETCoreRuntimeObjWriterVersion)</ObjWriterVersion>
 
     <!-- CoreDisTools are used in debugging visualizers. -->
-    <IncludeCoreDisTools Condition="'$(Configuration)' != 'Release' and '$(CrossHostArch)' == ''">true</IncludeCoreDisTools>
+    <IncludeCoreDisTools Condition="'$(Configuration)' != 'Release' and '$(CrossHostBuild)' != 'true'">true</IncludeCoreDisTools>
     <!-- source-build doesn't use ObjWriter for the ILCompiler.  the end-user will end up pulling Microsoft-built bits for NativeAOT anyway.  -->
     <IncludeObjWriter Condition="'$(DotNetBuildFromSource)' != 'true'">true</IncludeObjWriter>
   </PropertyGroup>
@@ -102,13 +102,13 @@
   </ItemGroup>
 
   <PropertyGroup>
-    <TargetArchitectureForSharedLibraries Condition="'$(CrossHostArch)' == ''">$(TargetArchitecture)</TargetArchitectureForSharedLibraries>
-    <TargetArchitectureForSharedLibraries Condition="'$(CrossHostArch)' != ''">$(CrossHostArch)</TargetArchitectureForSharedLibraries>
+    <TargetArchitectureForSharedLibraries Condition="'$(CrossHostPath)' == ''">$(TargetArchitecture)</TargetArchitectureForSharedLibraries>
+    <TargetArchitectureForSharedLibraries Condition="'$(CrossHostPath)' != ''">$(BuildArchitecture)</TargetArchitectureForSharedLibraries>
     <TargetArchitectureForSharedLibraries Condition="'$(TargetArchitectureForSharedLibraries)'=='armel'">arm</TargetArchitectureForSharedLibraries>
 
     <JitInterfaceLibraryName>$(LibPrefix)jitinterface_$(TargetArchitectureForSharedLibraries)$(LibSuffix)</JitInterfaceLibraryName>
     <!-- This will be provided when using the liveBuild, and unset otherwise. -->
-    <CoreCLRArtifactsPath Condition="'$(CoreCLRArtifactsPath)' == ''">$(RuntimeBinDir)$(CrossHostArch)</CoreCLRArtifactsPath>
+    <CoreCLRArtifactsPath Condition="'$(CoreCLRArtifactsPath)' == ''">$(RuntimeBinDir)$(CrossHostPath)</CoreCLRArtifactsPath>
   </PropertyGroup>
 
   <ItemGroup>

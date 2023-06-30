@@ -1,7 +1,8 @@
 <Project Sdk="Microsoft.NET.Sdk">
   <PropertyGroup>
-    <CrossHostArch>$(BuildArchitecture)</CrossHostArch>
-    <OutputPath>$(RuntimeBinDir)/$(CrossHostArch)/ilc/</OutputPath>
+    <CrossHostPath />
+    <CrossHostPath Condition="'$(BuildArchitecture)' != ''">host</CrossHostPath>
+    <OutputPath>$(RuntimeBinDir)/$(CrossHostPath)/ilc/</OutputPath>
     <RuntimeIdentifier>$(ToolsRID)</RuntimeIdentifier>
   </PropertyGroup>
   <Import Project="ILCompiler.props" />
