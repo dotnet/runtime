@@ -33,13 +33,13 @@
         <note />
       </trans-unit>
       <trans-unit id="CantValidateStaticOrConstMemberMessage">
-        <source>Can't validate constants, static fields or properties.</source>
-        <target state="new">Can't validate constants, static fields or properties.</target>
+        <source>Can't apply validation attributes to constant or static member {0}.</source>
+        <target state="new">Can't apply validation attributes to constant or static member {0}.</target>
         <note />
       </trans-unit>
       <trans-unit id="CantValidateStaticOrConstMemberTitle">
-        <source>Can't apply validation attributes to constant or static member {0}.</source>
-        <target state="new">Can't apply validation attributes to constant or static member {0}.</target>
+        <source>Can't validate constants, static fields or properties.</source>
+        <target state="new">Can't validate constants, static fields or properties.</target>
         <note />
       </trans-unit>
       <trans-unit id="CircularTypeReferencesMessage">
