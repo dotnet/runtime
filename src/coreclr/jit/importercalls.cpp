@@ -7553,45 +7553,33 @@ CORINFO_CLASS_HANDLE Compiler::impGetSpecialIntrinsicExactReturnType(GenTreeCall
             CORINFO_SIG_INFO sig;
             info.compCompHnd->getMethodSig(methodHnd, &sig);
             assert(sig.sigInst.classInstCount == 1);
+
             CORINFO_CLASS_HANDLE typeHnd = sig.sigInst.classInst[0];
             assert(typeHnd != nullptr);
 
-            // Lookup can incorrect when we have __Canon as it won't appear
-            // to implement any interface types.
-            bool isCanon = ((info.compCompHnd->getClassAttribs(typeHnd) &
-                             (CORINFO_FLG_SHAREDINST | CORINFO_FLG_FINAL)) == CORINFO_FLG_SHAREDINST);
-
-            if (isCanon)
+            CallArg* instParam = call->gtArgs.FindWellKnownArg(WellKnownArg::InstParam);
+            if (instParam != nullptr)
             {
-                CallArg* instParam = call->gtArgs.FindWellKnownArg(WellKnownArg::InstParam);
-                if (instParam != nullptr)
+                assert(instParam->GetNext() == nullptr);
+                CORINFO_CLASS_HANDLE hClass = gtGetHelperArgClassHandle(instParam->GetNode());
+                if (hClass != NO_CLASS_HANDLE)
                 {
-                    assert(instParam->GetNext() == nullptr);
-                    CORINFO_CLASS_HANDLE hClass = gtGetHelperArgClassHandle(instParam->GetNode());
-                    if (hClass != NO_CLASS_HANDLE)
-                    {
-                        hClass  = getTypeInstantiationArgument(hClass, 0);
-                        isCanon = ((info.compCompHnd->getClassAttribs(hClass) &
-                                    (CORINFO_FLG_SHAREDINST | CORINFO_FLG_FINAL)) == CORINFO_FLG_SHAREDINST);
-                        if (!isCanon)
-                        {
-                            typeHnd = hClass;
-                        }
-                    }
+                    typeHnd = getTypeInstantiationArgument(hClass, 0);
                 }
             }
 
-            if (!isCanon)
+            if (ni == NI_System_Collections_Generic_EqualityComparer_get_Default)
             {
-                if (ni == NI_System_Collections_Generic_EqualityComparer_get_Default)
-                {
-                    result = info.compCompHnd->getDefaultEqualityComparerClass(typeHnd);
-                }
-                else
-                {
-                    assert(ni == NI_System_Collections_Generic_Comparer_get_Default);
-                    result = info.compCompHnd->getDefaultComparerClass(typeHnd);
-                }
+                result = info.compCompHnd->getDefaultEqualityComparerClass(typeHnd);
+            }
+            else
+            {
+                assert(ni == NI_System_Collections_Generic_Comparer_get_Default);
+                result = info.compCompHnd->getDefaultComparerClass(typeHnd);
+            }
+
+            if (result != NO_CLASS_HANDLE)
+            {
                 JITDUMP("Special intrinsic for type %s: return type is %s\n", eeGetClassName(typeHnd),
                         result != nullptr ? eeGetClassName(result) : "unknown");
             }
@@ -7599,7 +7587,6 @@ CORINFO_CLASS_HANDLE Compiler::impGetSpecialIntrinsicExactReturnType(GenTreeCall
             {
                 JITDUMP("Special intrinsic for type %s: type shared, so deferring opt\n", eeGetClassName(typeHnd));
             }
-
             break;
         }
 
