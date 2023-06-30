@@ -29,7 +29,7 @@ namespace System.ComponentModel
         // class load anyway.
         private static readonly WeakHashtable s_providerTable = new WeakHashtable();     // mapping of type or object hash to a provider list
         private static readonly Hashtable s_providerTypeTable = new Hashtable();         // A direct mapping from type to provider.
-        private static readonly HashSet<Type> s_processedTypes = new HashSet<Type>();
+        private static readonly Dictionary<Type, ResetEventContext> s_processedTypes = new Dictionary<Type, ResetEventContext>();
         private static WeakHashtable? s_associationTable;
         private static int s_metadataVersion;                          // a version stamp for our metadata. Used by property descriptors to know when to rebuild attributes.
 
@@ -76,7 +76,7 @@ namespace System.ComponentModel
             Guid.NewGuid()  // events
         };
 
-        private static readonly ReaderWriterLockSlim s_processedTypesLock = new ReaderWriterLockSlim(LockRecursionPolicy.SupportsRecursion);
+        private static readonly object s_processedTypesLock = new object();
         private static readonly ReaderWriterLockSlim s_providerTableLock = new ReaderWriterLockSlim(LockRecursionPolicy.SupportsRecursion);
 
         private TypeDescriptor()
@@ -280,15 +280,17 @@ namespace System.ComponentModel
         /// </summary>
         private static void CheckDefaultProvider(Type type)
         {
-            s_processedTypesLock.EnterUpgradeableReadLock();
-            try
+            if (!s_processedTypes.TryGetValue(type, out ResetEventContext? context))
             {
-                if (!s_processedTypes.Contains(type))
+                lock (s_processedTypesLock)
                 {
-                    s_processedTypesLock.EnterWriteLock();
-                    try
+                    if (!s_processedTypes.ContainsKey(type))
                     {
-                        s_processedTypes.Add(type);
+                        ResetEventContext contextForAdd;
+                        ManualResetEvent resetEventForAdd;
+                        resetEventForAdd = new ManualResetEvent(false);
+                        contextForAdd = new ResetEventContext(resetEventForAdd, Environment.CurrentManagedThreadId);
+                        s_processedTypes.Add(type, contextForAdd);
 
                         // Always use core reflection when checking for
                         // the default provider attribute. If there is a
@@ -298,7 +300,7 @@ namespace System.ComponentModel
                         // reverse order so that the most derived takes precidence.
                         var attrs = type.GetCustomAttributes<TypeDescriptionProviderAttribute>(false);
                         bool providerAdded = false;
-                        foreach(var currentAttr in attrs)
+                        foreach (var currentAttr in attrs)
                         {
                             Type? providerType = Type.GetType(currentAttr.TypeName);
                             if (providerType != null && typeof(TypeDescriptionProvider).IsAssignableFrom(providerType))
@@ -318,16 +320,17 @@ namespace System.ComponentModel
                                 CheckDefaultProvider(baseType);
                             }
                         }
-                    }
-                    finally
-                    {
-                        s_processedTypesLock.ExitWriteLock();
+
+                        resetEventForAdd.Set();
                     }
                 }
             }
-            finally
+            else
             {
-                s_processedTypesLock.ExitUpgradeableReadLock();
+                if (context.OwnerId != Environment.CurrentManagedThreadId)
+                {
+                    context.ResetEvent.WaitOne();
+                }
             }
         }
 
@@ -3068,6 +3071,19 @@ namespace System.ComponentModel
             {
                 return _primary.GetPropertyOwner(pd) ?? _secondary.GetPropertyOwner(pd);
             }
+        }
+
+        private sealed class ResetEventContext
+        {
+            public ResetEventContext(ManualResetEvent resetEvent, int ownerId)
+            {
+                ResetEvent = resetEvent;
+                OwnerId = ownerId;
+            }
+
+            public ManualResetEvent ResetEvent { get; }
+
+            public int OwnerId { get; }
         }
 
         /// <summary>
