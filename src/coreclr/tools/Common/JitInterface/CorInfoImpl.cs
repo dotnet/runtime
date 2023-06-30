@@ -2393,10 +2393,7 @@ namespace Internal.JitInterface
 
             if (type.IsExplicitLayout || (type.IsSequentialLayout && type.GetClassLayout().Size != 0))
             {
-                if (!type.ContainsGCPointers)
-                {
-                    parNode->hasSignificantPadding = true;
-                }
+                parNode->hasSignificantPadding = true;
             }
 
             // The intrinsic SIMD/HW SIMD types have a lot of fields that the JIT does

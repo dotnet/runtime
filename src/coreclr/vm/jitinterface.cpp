@@ -2113,14 +2113,7 @@ static GetTypeLayoutResult GetTypeLayoutHelper(
     {
         if (pClass->HasExplicitFieldOffsetLayout() || (pClass->IsManagedSequential() && pClass->HasExplicitSize()))
         {
-            // Historically on the JIT side we did not consider types with GC
-            // pointers to have significant padding, even when they have explicit
-            // layout attributes. This retains the more liberal treatment and
-            // lets the JIT still optimize these cases.
-            if (!pMT->ContainsPointers())
-            {
-                parNode.hasSignificantPadding = true;
-            }
+            parNode.hasSignificantPadding = true;
         }
     }
 
