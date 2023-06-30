@@ -213,7 +213,7 @@ namespace FPBehaviorApp
                         x -= two63;
                         x = Math.Truncate(x);
                         return (ulong)((Double.IsNaN(x) || (x >= llong_max_plus_1)) ? long.MinValue : (long)x) + (0x8000000000000000);
-                    }                
+                    }
             }
 
             return 0;
