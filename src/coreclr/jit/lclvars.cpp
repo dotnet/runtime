@@ -3177,37 +3177,35 @@ void Compiler::lvaUpdateClass(unsigned varNum, CORINFO_CLASS_HANDLE clsHnd, bool
     assert(varDsc->lvSingleDef);
 
     // Now see if we should update.
-    //
+
     // New information may not always be "better" so do some
     // simple analysis to decide if the update is worthwhile.
     const bool isNewClass   = (clsHnd != varDsc->lvClassHnd);
     bool       shouldUpdate = false;
 
-    // Are we attempting to update the class? Only check this when we have
-    // an new type and the existing class is inexact... we should not be
-    // updating exact classes.
-    if (!varDsc->lvClassIsExact && isNewClass)
-    {
-        shouldUpdate = !!info.compCompHnd->isMoreSpecificType(varDsc->lvClassHnd, clsHnd);
-    }
-    // Else are we attempting to update exactness?
-    else if (isExact && !varDsc->lvClassIsExact && !isNewClass)
+    // Are we attempting to update exactness?
+    if (isExact && !varDsc->lvClassIsExact)
     {
         shouldUpdate = true;
     }
-
-#if DEBUG
-    if (isNewClass || (isExact != varDsc->lvClassIsExact))
+    // Are we attempting to update the class?
+    else if (isNewClass)
     {
+        shouldUpdate = !!info.compCompHnd->isMoreSpecificType(varDsc->lvClassHnd, clsHnd);
+    }
+
+    if (shouldUpdate)
+    {
+#if DEBUG
         JITDUMP("\nlvaUpdateClass:%s Updating class for V%02u", shouldUpdate ? "" : " NOT", varNum);
         JITDUMP(" from (%p) %s%s", dspPtr(varDsc->lvClassHnd), eeGetClassName(varDsc->lvClassHnd),
                 varDsc->lvClassIsExact ? " [exact]" : "");
         JITDUMP(" to (%p) %s%s\n", dspPtr(clsHnd), eeGetClassName(clsHnd), isExact ? " [exact]" : "");
-    }
 #endif // DEBUG
 
-    if (shouldUpdate)
-    {
+        assert(!varDsc->lvClassIsExact ||
+               ((info.compCompHnd->getClassAttribs(varDsc->lvClassHnd) & CORINFO_FLG_SHAREDINST) != 0));
+
         varDsc->lvClassHnd     = clsHnd;
         varDsc->lvClassIsExact = isExact;
 

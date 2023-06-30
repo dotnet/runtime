@@ -4458,8 +4458,9 @@ static BOOL isMoreSpecificTypeHelper(
     if (isHnd1CanonSubtype != isHnd2CanonSubtype)
     {
         // Only one of hnd1 and hnd2 is shared.
-        // hdn2 is more specific if hnd1 is the shared type.
-        return isHnd1CanonSubtype;
+        // hdn2 is more specific if hnd1 can't be assigned there.
+        return (isHnd1CanonSubtype && !hnd1.CanCastTo(hnd2)) ||
+                (isHnd2CanonSubtype && hnd2.CanCastTo(hnd1));
     }
 
     // Otherwise both types are either shared or not shared.

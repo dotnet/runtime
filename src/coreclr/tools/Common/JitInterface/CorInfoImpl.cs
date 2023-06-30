@@ -2818,8 +2818,9 @@ namespace Internal.JitInterface
             if (isType1CanonSubtype != isType2CanonSubtype)
             {
                 // Only one of type1 and type2 is shared.
-                // type2 is more specific if type1 is the shared type.
-                return isType1CanonSubtype;
+                // type2 is more specific if type1 can't be assigned there.
+                return isType1CanonSubtype && !type1.CanCastTo(type2) ||
+                        isType2CanonSubtype && type2.CanCastTo(type1);
             }
 
             // Otherwise both types are either shared or not shared.
