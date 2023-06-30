@@ -511,6 +511,8 @@ namespace System.Diagnostics.Metrics
                     }
                     else if (maxValue != defaultValue)
                     {
+                        // This is only relevant for shared sessions, where the "default" (provided) value is what is being
+                        // used by the existing session.
                         return false;
                     }
                 }

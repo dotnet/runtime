@@ -16,7 +16,7 @@ namespace System.Diagnostics.Metrics.Tests
     public class MetricEventSourceTests
     {
         ITestOutputHelper _output;
-        const double IntervalSecs = 4;
+        const double IntervalSecs = 10;
         static readonly TimeSpan s_waitForEventTimeout = TimeSpan.FromSeconds(60);
 
         public MetricEventSourceTests(ITestOutputHelper output)
@@ -279,7 +279,7 @@ namespace System.Diagnostics.Metrics.Tests
                 h.Record(26);
                 udc.Add(40);
 
-                using MetricsEventListener listener2 = new MetricsEventListener(_output, MetricsEventListener.TimeSeriesValues, IntervalSecs, "ADifferentMeter");
+                using MetricsEventListener listener2 = new MetricsEventListener(_output, MetricsEventListener.TimeSeriesValues, IntervalSecs, "TestMeter7");
                 listener2.WaitForMultipleSessionsNotSupportedError(s_waitForEventTimeout);
 
 
@@ -324,7 +324,7 @@ namespace System.Diagnostics.Metrics.Tests
                 h.Record(26);
                 udc.Add(40);
 
-                using (MetricsEventListener listener2 = new MetricsEventListener(_output, MetricsEventListener.TimeSeriesValues, isShared: true, IntervalSecs, "ADifferentMeter"))
+                using (MetricsEventListener listener2 = new MetricsEventListener(_output, MetricsEventListener.TimeSeriesValues, isShared: true, IntervalSecs, "TestMeter7"))
                 {
                     listener2.WaitForMultipleSessionsNotSupportedError(s_waitForEventTimeout);
                 }
@@ -370,7 +370,7 @@ namespace System.Diagnostics.Metrics.Tests
                 h.Record(26);
                 udc.Add(40);
 
-                using (MetricsEventListener listener2 = new MetricsEventListener(_output, MetricsEventListener.TimeSeriesValues, IntervalSecs, "ADifferentMeter"))
+                using (MetricsEventListener listener2 = new MetricsEventListener(_output, MetricsEventListener.TimeSeriesValues, IntervalSecs, "TestMeter7"))
                 {
                     listener2.WaitForMultipleSessionsNotSupportedError(s_waitForEventTimeout);
                 }
@@ -404,7 +404,7 @@ namespace System.Diagnostics.Metrics.Tests
                 listener.WaitForCollectionStop(s_waitForEventTimeout, 2);
                 c.Add(12);
 
-                using (MetricsEventListener listener2 = new MetricsEventListener(_output, MetricsEventListener.TimeSeriesValues, isShared: true, IntervalSecs, 11, 13, "ADifferentMeter"))
+                using (MetricsEventListener listener2 = new MetricsEventListener(_output, MetricsEventListener.TimeSeriesValues, isShared: true, IntervalSecs, 11, 13, "TestMeter7"))
                 {
                     listener2.WaitForMultipleSessionsConfiguredIncorrectlyError(s_waitForEventTimeout);
                     events2 = listener2.Events.ToArray();
@@ -482,7 +482,7 @@ namespace System.Diagnostics.Metrics.Tests
                 h.Record(26);
                 udc.Add(40);
 
-                using (MetricsEventListener listener2 = new MetricsEventListener(_output, MetricsEventListener.TimeSeriesValues, isShared: true, IntervalSecs + 1, "ADifferentMeter"))
+                using (MetricsEventListener listener2 = new MetricsEventListener(_output, MetricsEventListener.TimeSeriesValues, isShared: true, IntervalSecs + 1, "TestMeter7"))
                 {
                     listener2.WaitForMultipleSessionsConfiguredIncorrectlyError(s_waitForEventTimeout);
                     events2 = listener2.Events.ToArray();
@@ -1711,6 +1711,7 @@ namespace System.Diagnostics.Metrics.Tests
         public const EventKeywords InstrumentPublishing = (EventKeywords)0x4;
         public const int TimeSeriesLimit = 50;
         public const int HistogramLimit = 50;
+        public const string SharedSessionId = "SHARED";
 
         public MetricsEventListener(ITestOutputHelper output, EventKeywords keywords, double? refreshInterval, params string[]? instruments) :
             this(output, keywords, refreshInterval, TimeSeriesLimit, HistogramLimit, instruments)
@@ -1756,7 +1757,7 @@ namespace System.Diagnostics.Metrics.Tests
             {
                 if (shared)
                 {
-                    d.Add("SessionId", "SHARED");
+                    d.Add("SessionId", SharedSessionId);
                     d.Add("ClientId", sessionId);
                 }
                 else
@@ -1780,7 +1781,7 @@ namespace System.Diagnostics.Metrics.Tests
         {
             _output = output;
             _keywords = keywords;
-            _sessionId = shared ? "SHARED" : sessionId;
+            _sessionId = shared ? SharedSessionId : sessionId;
             _arguments = arguments;
             if (_source != null)
             {
