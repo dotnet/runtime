@@ -6043,6 +6043,13 @@ void Compiler::considerGuardedDevirtualization(GenTreeCall*            call,
                 // Continue checking other candidates, maybe some of them will succeed.
                 break;
             }
+
+            if (*pContextHandle != dvInfo.exactContext)
+            {
+                JITDUMP("Exact context has changed - we don't yet support that, sorry\n");
+                break;
+            }
+
             likelyContext = dvInfo.exactContext;
             likelyMethod  = dvInfo.devirtualizedMethod;
         }
@@ -7806,21 +7813,10 @@ void Compiler::impCheckCanInline(GenTreeCall*           call,
                 return;
             }
 
-            CORINFO_CONTEXT_HANDLE exactContext = pParam->exactContextHnd;
-            if (pParam->call->IsGuardedDevirtualizationCandidate())
-            {
-                InlineCandidateInfo*   candidate        = pParam->call->GetGDVCandidateInfo(pParam->candidateIndex);
-                CORINFO_CONTEXT_HANDLE moreExactContext = candidate->exactContextHnd;
-                if (moreExactContext != NULL)
-                {
-                    exactContext = moreExactContext;
-                }
-            }
-
             // Speculatively check if initClass() can be done.
             // If it can be done, we will try to inline the method.
             CorInfoInitClassResult const initClassResult =
-                compCompHnd->initClass(nullptr /* field */, ftn /* method */, exactContext /* context */);
+                compCompHnd->initClass(nullptr /* field */, ftn /* method */, pParam->exactContextHnd /* context */);
 
             if (initClassResult & CORINFO_INITCLASS_DONT_INLINE)
             {
