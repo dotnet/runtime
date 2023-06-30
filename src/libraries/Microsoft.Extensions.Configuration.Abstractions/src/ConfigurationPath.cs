@@ -55,7 +55,7 @@ namespace Microsoft.Extensions.Configuration
             }
 
             int lastDelimiterIndex = path.LastIndexOf(':');
-            return lastDelimiterIndex == -1 ? path : path.Substring(lastDelimiterIndex + 1);
+            return lastDelimiterIndex < 0 ? path : path.Substring(lastDelimiterIndex + 1);
         }
 
         /// <summary>
