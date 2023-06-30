@@ -72,6 +72,20 @@ namespace Microsoft.Interop
                     if (t.ContainingAssembly is not ISourceAssemblySymbol sourceAssembly
                         || sourceAssembly.Compilation != compilation)
                     {
+                        // We have a few exceptions to this rule. We allow a select number of types that we know are unmanaged and will always be unmanaged.
+                        if (t.ToDisplayString() is TypeNames.System_Runtime_InteropServices_CLong // CLong is an interop intrinsic type for the C long type
+                                or TypeNames.System_Runtime_InteropServices_CULong)// CULong is an interop intrinsic type for the C ulong type
+                        {
+                            return true;
+                        }
+
+                        if (t.ContainingAssembly.Equals(compilation.GetSpecialType(SpecialType.System_Object).ContainingAssembly, SymbolEqualityComparer.Default))
+                        {
+                            if (t.ToDisplayString() == TypeNames.System_Guid) // .NET has established that Guid is blittable and matches the shape of the Win32 GUID type exactly and always will.
+                            {
+                                return true;
+                            }
+                        }
                         return false;
                     }
 
