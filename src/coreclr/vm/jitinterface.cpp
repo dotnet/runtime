@@ -8857,6 +8857,11 @@ CORINFO_CLASS_HANDLE CEEInfo::getDefaultEqualityComparerClassHelper(CORINFO_CLAS
     // And in compile.cpp's SpecializeEqualityComparer
     TypeHandle elemTypeHnd(elemType);
 
+    if (elemTypeHnd == TypeHandle(g_pCanonMethodTableClass))
+    {
+        return NULL;
+    }
+
     // Mirrors the logic in BCL's CompareHelpers.CreateDefaultComparer
     // And in compile.cpp's SpecializeComparer
     //
