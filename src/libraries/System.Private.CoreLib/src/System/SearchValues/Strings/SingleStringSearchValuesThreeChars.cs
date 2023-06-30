@@ -7,6 +7,7 @@ using System.Numerics;
 using System.Runtime.CompilerServices;
 using System.Runtime.InteropServices;
 using System.Runtime.Intrinsics;
+using System.Runtime.Intrinsics.X86;
 using static System.Buffers.StringSearchValuesHelper;
 
 namespace System.Buffers
@@ -73,7 +74,7 @@ namespace System.Buffers
             nuint ch2ByteOffset = _ch2ByteOffset;
             nuint ch3ByteOffset = _ch3ByteOffset;
 
-            if (Vector512.IsHardwareAccelerated && searchSpaceMinusValueTailLength - Vector512<ushort>.Count >= 0)
+            if (Avx512BW.IsSupported && searchSpaceMinusValueTailLength - Vector512<ushort>.Count >= 0)
             {
                 Vector512<ushort> ch1 = Vector512.Create(_ch1);
                 Vector512<ushort> ch2 = Vector512.Create(_ch2);

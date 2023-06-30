@@ -77,7 +77,7 @@ namespace System.Buffers
         {
             // The behavior of the rest of the function remains the same if Avx2 or Avx512BW aren't supported
 #pragma warning disable IntrinsicsInSystemPrivateCoreLibAttributeNotSpecificEnough
-            if (Vector512.IsHardwareAccelerated && Avx512BW.IsSupported && span.Length >= CharsPerIterationAvx512 + MatchStartOffsetN2)
+            if (Avx512BW.IsSupported && span.Length >= CharsPerIterationAvx512 + MatchStartOffsetN2)
             {
                 return IndexOfAnyN2Avx512(span);
             }
@@ -98,7 +98,7 @@ namespace System.Buffers
         {
             // The behavior of the rest of the function remains the same if Avx2 or Avx512BW aren't supported
 #pragma warning disable IntrinsicsInSystemPrivateCoreLibAttributeNotSpecificEnough
-            if (Vector512.IsHardwareAccelerated && Avx512BW.IsSupported && span.Length >= CharsPerIterationAvx512 + MatchStartOffsetN3)
+            if (Avx512BW.IsSupported && span.Length >= CharsPerIterationAvx512 + MatchStartOffsetN3)
             {
                 return IndexOfAnyN3Avx512(span);
             }
