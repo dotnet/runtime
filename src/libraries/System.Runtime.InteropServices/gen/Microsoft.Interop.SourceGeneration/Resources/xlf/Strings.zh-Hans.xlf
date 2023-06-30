@@ -69,7 +69,7 @@
       </trans-unit>
       <trans-unit id="InOutAttributes">
         <source>[In] and [Out] attributes</source>
-        <target state="new">[In] and [Out] attributes</target>
+        <target state="translated">[In] 和 [Out] 属性</target>
         <note />
       </trans-unit>
       <trans-unit id="ManagedToUnmanagedMissingRequiredMarshaller">

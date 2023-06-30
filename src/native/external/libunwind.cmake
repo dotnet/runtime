@@ -373,7 +373,6 @@ set(libunwind_la_SOURCES_ppc64le_common
 set(libunwind_la_SOURCES_ppc64le
     ${libunwind_la_SOURCES_ppc64le_common}
     ${libunwind_la_SOURCES_local}
-    ppc64/setcontext.S
     ppc64/Lapply_reg_state.c ppc64/Lreg_states_iterate.c
     ppc64/Lcreate_addr_space.c ppc/Lget_save_loc.c ppc64/Lglobal.c
     ppc64/Linit.c ppc/Linit_local.c

@@ -185,6 +185,7 @@ namespace System.Formats.Tar
 
             // Rely on Path.GetFullPath for validation of paths
             destinationDirectoryName = Path.GetFullPath(destinationDirectoryName);
+            destinationDirectoryName = PathInternal.EnsureTrailingSeparator(destinationDirectoryName);
 
             ExtractToDirectoryInternal(source, destinationDirectoryName, overwriteFiles, leaveOpen: true);
         }
@@ -229,6 +230,7 @@ namespace System.Formats.Tar
 
             // Rely on Path.GetFullPath for validation of paths
             destinationDirectoryName = Path.GetFullPath(destinationDirectoryName);
+            destinationDirectoryName = PathInternal.EnsureTrailingSeparator(destinationDirectoryName);
 
             return ExtractToDirectoryInternalAsync(source, destinationDirectoryName, overwriteFiles, leaveOpen: true, cancellationToken);
         }
@@ -257,6 +259,7 @@ namespace System.Formats.Tar
             // Rely on Path.GetFullPath for validation of paths
             sourceFileName = Path.GetFullPath(sourceFileName);
             destinationDirectoryName = Path.GetFullPath(destinationDirectoryName);
+            destinationDirectoryName = PathInternal.EnsureTrailingSeparator(destinationDirectoryName);
 
             if (!File.Exists(sourceFileName))
             {
@@ -303,6 +306,7 @@ namespace System.Formats.Tar
             // Rely on Path.GetFullPath for validation of paths
             sourceFileName = Path.GetFullPath(sourceFileName);
             destinationDirectoryName = Path.GetFullPath(destinationDirectoryName);
+            destinationDirectoryName = PathInternal.EnsureTrailingSeparator(destinationDirectoryName);
 
             if (!File.Exists(sourceFileName))
             {
