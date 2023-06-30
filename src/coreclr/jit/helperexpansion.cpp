@@ -511,13 +511,6 @@ bool Compiler::fgExpandThreadLocalAccessForCall(BasicBlock** pBlock, Statement* 
 
     info.compCompHnd->getThreadLocalStaticBlocksInfo(&threadStaticBlocksInfo, isGCThreadStatic);
 
-#ifdef TARGET_AMD64
-    if (!TargetOS::IsMacOS && TargetOS::IsUnix)
-    {
-        assert(threadStaticBlocksInfo.tlsIndexObject != 0);
-    }
-#endif // TARGET_AMD64
-
     JITDUMP("getThreadLocalStaticBlocksInfo (%s)\n:", isGCThreadStatic ? "GC" : "Non-GC");
     JITDUMP("offsetOfThreadLocalStoragePointer= %u\n", threadStaticBlocksInfo.offsetOfThreadLocalStoragePointer);
     JITDUMP("tlsIndex= %u\n", (ssize_t)threadStaticBlocksInfo.tlsIndex.addr);
@@ -624,6 +617,7 @@ bool Compiler::fgExpandThreadLocalAccessForCall(BasicBlock** pBlock, Statement* 
 
         // This is a call which takes an argument.
         // Populate and set the ABI appropriately.
+        assert(threadVarsSectionVal != 0);
         GenTree* tlsArg = gtNewIconNode(threadVarsSectionVal, TYP_I_IMPL);
         tlsRefCall->gtArgs.InsertAfterThisOrFirst(this, NewCallArg::Primitive(tlsArg));
 
@@ -649,6 +643,7 @@ bool Compiler::fgExpandThreadLocalAccessForCall(BasicBlock** pBlock, Statement* 
 
         // This is an indirect call which takes an argument.
         // Populate and set the ABI appropriately.
+        assert(threadStaticBlocksInfo.tlsIndexObject != 0);
         GenTree* tlsArg = gtNewIconNode((size_t)threadStaticBlocksInfo.tlsIndexObject, TYP_I_IMPL);
         tlsRefCall->gtArgs.InsertAfterThisOrFirst(this, NewCallArg::Primitive(tlsArg));
 
