@@ -727,9 +727,14 @@ namespace System
         }
 
         [MethodImpl(MethodImplOptions.AggressiveInlining)]
-        private static byte DecodeByte(nuint ch1, nuint ch2, ref int invalidIfNegative)
+        private static byte DecodeByte(char ch1, char ch2, ref int invalidIfNegative)
         {
-            int result = (CharToHexLookup[(byte)ch1] << 4) | CharToHexLookup[(byte)ch1];
+            ReadOnlySpan<byte> lookup = HexConverter.CharToHexLookup;
+            Debug.Assert(lookup.Length == 256);
+
+            int upper = (sbyte)lookup[(byte)ch1];
+            int lower = (sbyte)lookup[(byte)ch2];
+            int result = (upper << 4) | lower;
 
             // Result will be negative if ch1 or/and ch2 are greater than 0xFF
             result = (ch1 | ch2) >> 8 == 0 ? result : -1;
