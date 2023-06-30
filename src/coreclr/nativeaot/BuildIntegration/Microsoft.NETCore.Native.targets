@@ -382,7 +382,7 @@ The .NET Foundation licenses this file to you under the MIT license.
     <Exec Command="&quot;$(CppLibCreator)&quot; @&quot;$(NativeIntermediateOutputPath)lib.rsp&quot;" Condition="'$(_targetOS)' == 'win' and '$(NativeLib)' == 'Static'" />
 
     <!-- remove executable flag -->
-    <Exec Command="chmod 644 &quot;$(NativeBinary)&quot;" Condition="'$(_targetOS)' != 'win' and '$(NativeLib)' == 'Shared'" />
+    <Exec Command="chmod 644 &quot;$(NativeBinary)&quot;" Condition="'$(NativeLib)' == 'Shared' and !$([MSBuild]::IsOSPlatform('Windows'))" />
 
     <!-- strip symbols, see https://github.com/dotnet/runtime/blob/5d3288d/eng/native/functions.cmake#L374 -->
     <Exec Condition="'$(StripSymbols)' == 'true' and '$(_targetOS)' != 'win' and '$(_IsApplePlatform)' != 'true'"

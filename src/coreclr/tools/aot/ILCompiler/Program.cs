@@ -698,15 +698,15 @@ namespace ILCompiler
             }
         }
 
-        private T Get<T>(Option<T> option) => _command.Result.GetValue(option);
+        private T Get<T>(CliOption<T> option) => _command.Result.GetValue(option);
 
         private static int Main(string[] args) =>
-            new CommandLineBuilder(new ILCompilerRootCommand(args))
-                .UseTokenReplacer(Helpers.TryReadResponseFile)
-                .UseVersionOption("--version", "-v")
-                .UseHelp(context => context.HelpBuilder.CustomizeLayout(ILCompilerRootCommand.GetExtendedHelp))
-                .UseParseErrorReporting()
-                .Build()
-                .Invoke(args);
+            new CliConfiguration(new ILCompilerRootCommand(args)
+                .UseVersion()
+                .UseExtendedHelp(ILCompilerRootCommand.GetExtendedHelp))
+            {
+                ResponseFileTokenReplacer = Helpers.TryReadResponseFile,
+                EnableParseErrorReporting = true
+            }.Invoke(args);
     }
 }

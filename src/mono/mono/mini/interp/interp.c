@@ -869,15 +869,11 @@ stackval_to_data (MonoType *type, stackval *val, void *data, gboolean pinvoke)
 	}
 	/* printf ("TODAT0 %p\n", data); */
 	switch (type->type) {
+	case MONO_TYPE_BOOLEAN:
 	case MONO_TYPE_I1:
 	case MONO_TYPE_U1: {
 		guint8 *p = (guint8*)data;
 		*p = GINT32_TO_UINT8 (val->data.i);
-		return MINT_STACK_SLOT_SIZE;
-	}
-	case MONO_TYPE_BOOLEAN: {
-		guint8 *p = (guint8*)data;
-		*p = (val->data.i != 0);
 		return MINT_STACK_SLOT_SIZE;
 	}
 	case MONO_TYPE_I2:

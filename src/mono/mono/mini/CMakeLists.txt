@@ -71,7 +71,8 @@ if(HAVE_SYS_ICU)
     set(icu_shim_sources_base
         ${icu_shim_sources_base}
         pal_locale.m
-        pal_collation.m)
+        pal_collation.m
+        pal_casing.m)
   endif()
 
   addprefix(icu_shim_sources "${ICU_SHIM_PATH}" "${icu_shim_sources_base}")
