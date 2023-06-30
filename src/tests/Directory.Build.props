@@ -94,11 +94,6 @@
     <MonoBinDir>$(__MonoBinDir)</MonoBinDir>
   </PropertyGroup>
 
-  <!-- Language settings -->
-  <PropertyGroup>
-    <RunAnalyzers>false</RunAnalyzers>
-  </PropertyGroup>
-
   <!-- Setup Default symbol and optimization for Configuration -->
   <PropertyGroup Condition="'$(Configuration)' == 'Debug'">
     <Optimize Condition="'$(Optimize)' == ''">false</Optimize>
@@ -129,6 +124,8 @@
     <!-- Disable some C# warnings for the tests. -->
     <NoWarn>78,162,164,168,169,219,251,252,414,429,618,642,649,652,659,675,1691,1717,1718,3001,3002,3003,3005,3008,8981</NoWarn>
     <RunAnalyzers>false</RunAnalyzers>
+    <EnableTrimAnalyzer>false</EnableTrimAnalyzer>
+    <EnableAotAnalyzer>false</EnableAotAnalyzer>
     <GenerateAssemblyInfo>false</GenerateAssemblyInfo>
     <SkipSigning Condition="'$(CrossGen)' == 'true'">true</SkipSigning>
     <AssemblyKey>Test</AssemblyKey>

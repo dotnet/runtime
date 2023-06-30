@@ -156,5 +156,9 @@ namespace Microsoft.Interop
         public const string System_Runtime_InteropServices_Marshalling_ComObject = "System.Runtime.InteropServices.Marshalling.ComObject";
 
         public const string System_Runtime_InteropServices_BestFitMappingAttribute = "System.Runtime.InteropServices.BestFitMappingAttribute";
+
+        public const string System_Runtime_InteropServices_CLong = "System.Runtime.InteropServices.CLong";
+
+        public const string System_Runtime_InteropServices_CULong = "System.Runtime.InteropServices.CULong";
     }
 }
