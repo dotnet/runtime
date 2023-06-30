@@ -443,29 +443,31 @@ namespace System.Formats.Tar
 
         // Extracts an archive into the specified directory.
         // It assumes the destinationDirectoryName is a fully qualified path, and allows choosing if the archive stream should be left open or not.
-        private static void ExtractToDirectoryInternal(Stream source, string destinationDirectoryPath, bool overwriteFiles, bool leaveOpen)
+        private static void ExtractToDirectoryInternal(Stream source, string destinationDirectoryFullPath, bool overwriteFiles, bool leaveOpen)
         {
-            VerifyExtractToDirectoryArguments(source, destinationDirectoryPath);
+            VerifyExtractToDirectoryArguments(source, destinationDirectoryFullPath);
 
             using TarReader reader = new TarReader(source, leaveOpen);
 
             SortedDictionary<string, UnixFileMode>? pendingModes = TarHelpers.CreatePendingModesDictionary();
+            var directoryModificationTimes = new Stack<(string, DateTimeOffset)>();
             TarEntry? entry;
             while ((entry = reader.GetNextEntry()) != null)
             {
                 if (entry.EntryType is not TarEntryType.GlobalExtendedAttributes)
                 {
-                    entry.ExtractRelativeToDirectory(destinationDirectoryPath, overwriteFiles, pendingModes);
+                    entry.ExtractRelativeToDirectory(destinationDirectoryFullPath, overwriteFiles, pendingModes, directoryModificationTimes);
                 }
             }
             TarHelpers.SetPendingModes(pendingModes);
+            TarHelpers.SetPendingModificationTimes(directoryModificationTimes);
         }
 
         // Asynchronously extracts the contents of a tar file into the specified directory.
-        private static async Task ExtractToDirectoryInternalAsync(string sourceFileName, string destinationDirectoryName, bool overwriteFiles, CancellationToken cancellationToken)
+        private static async Task ExtractToDirectoryInternalAsync(string sourceFileName, string destinationDirectoryFullPath, bool overwriteFiles, CancellationToken cancellationToken)
         {
             Debug.Assert(!string.IsNullOrEmpty(sourceFileName));
-            Debug.Assert(!string.IsNullOrEmpty(destinationDirectoryName));
+            Debug.Assert(!string.IsNullOrEmpty(destinationDirectoryFullPath));
 
             cancellationToken.ThrowIfCancellationRequested();
 
@@ -478,18 +480,19 @@ namespace System.Formats.Tar
             FileStream archive = new(sourceFileName, options);
             await using (archive.ConfigureAwait(false))
             {
-                await ExtractToDirectoryInternalAsync(archive, destinationDirectoryName, overwriteFiles, leaveOpen: false, cancellationToken).ConfigureAwait(false);
+                await ExtractToDirectoryInternalAsync(archive, destinationDirectoryFullPath, overwriteFiles, leaveOpen: false, cancellationToken).ConfigureAwait(false);
             }
         }
 
         // Asynchronously extracts an archive into the specified directory.
         // It assumes the destinationDirectoryName is a fully qualified path, and allows choosing if the archive stream should be left open or not.
-        private static async Task ExtractToDirectoryInternalAsync(Stream source, string destinationDirectoryPath, bool overwriteFiles, bool leaveOpen, CancellationToken cancellationToken)
+        private static async Task ExtractToDirectoryInternalAsync(Stream source, string destinationDirectoryFullPath, bool overwriteFiles, bool leaveOpen, CancellationToken cancellationToken)
         {
-            VerifyExtractToDirectoryArguments(source, destinationDirectoryPath);
+            VerifyExtractToDirectoryArguments(source, destinationDirectoryFullPath);
             cancellationToken.ThrowIfCancellationRequested();
 
             SortedDictionary<string, UnixFileMode>? pendingModes = TarHelpers.CreatePendingModesDictionary();
+            var directoryModificationTimes = new Stack<(string, DateTimeOffset)>();
             TarReader reader = new TarReader(source, leaveOpen);
             await using (reader.ConfigureAwait(false))
             {
@@ -498,11 +501,12 @@ namespace System.Formats.Tar
                 {
                     if (entry.EntryType is not TarEntryType.GlobalExtendedAttributes)
                     {
-                        await entry.ExtractRelativeToDirectoryAsync(destinationDirectoryPath, overwriteFiles, pendingModes, cancellationToken).ConfigureAwait(false);
+                        await entry.ExtractRelativeToDirectoryAsync(destinationDirectoryFullPath, overwriteFiles, pendingModes, directoryModificationTimes, cancellationToken).ConfigureAwait(false);
                     }
                 }
             }
             TarHelpers.SetPendingModes(pendingModes);
+            TarHelpers.SetPendingModificationTimes(directoryModificationTimes);
         }
 
         [Conditional("DEBUG")]
