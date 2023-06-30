@@ -2109,15 +2109,19 @@ static GetTypeLayoutResult GetTypeLayoutHelper(
     parNode.hasSignificantPadding = false;
 
     EEClass* pClass = pMT->GetClass();
-    if (pClass->IsNotTightlyPacked() && (!pClass->IsManagedSequential() || pClass->HasExplicitSize() || pClass->IsInlineArray()))
+    if (pClass->IsNotTightlyPacked())
     {
-        // Historically on the JIT side we did not consider types with GC
-        // pointers to have significant padding, even when they have explicit
-        // layout attributes. This retains the more liberal treatment and
-        // lets the JIT still optimize these cases.
-        if (!pMT->ContainsPointers() && pMT != g_TypedReferenceMT)
+        if (pClass->HasExplicitFieldOffsetLayout() || (pClass->IsManagedSequential() && pClass->HasExplicitSize()) ||
+            pClass->IsInlineArray())
         {
-            parNode.hasSignificantPadding = true;
+            // Historically on the JIT side we did not consider types with GC
+            // pointers to have significant padding, even when they have explicit
+            // layout attributes. This retains the more liberal treatment and
+            // lets the JIT still optimize these cases.
+            if (!pMT->ContainsPointers())
+            {
+                parNode.hasSignificantPadding = true;
+            }
         }
     }
 
