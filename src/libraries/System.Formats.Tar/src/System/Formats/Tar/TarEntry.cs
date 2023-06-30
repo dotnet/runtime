@@ -333,7 +333,7 @@ namespace System.Formats.Tar
             string name = ArchivingUtils.SanitizeEntryFilePath(Name, preserveDriveRoot: true);
             string? fileDestinationPath = GetFullDestinationPath(
                                                 destinationDirectoryPath,
-                                                Path.IsPathFullyQualified(name) ? name : Path.Join(Path.GetDirectoryName(destinationDirectoryPath), name));
+                                                Path.IsPathFullyQualified(name) ? name : Path.Join(destinationDirectoryPath, name));
             if (fileDestinationPath == null)
             {
                 throw new IOException(SR.Format(SR.TarExtractingResultsFileOutside, name, destinationDirectoryPath));
