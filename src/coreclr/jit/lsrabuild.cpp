@@ -1927,6 +1927,18 @@ const unsigned         lsraRegOrderFltEvexSize = ArrLen(lsraRegOrderFltEvex);
 //
 void LinearScan::buildPhysRegRecords()
 {
+    for (regNumber reg = REG_FIRST; reg < AVAILABLE_REG_COUNT; reg = REG_NEXT(reg))
+    {
+        RegRecord* curr = &physRegs[reg];
+        curr->init(reg);
+    }
+    for (unsigned int i = 0; i < lsraRegOrderSize; i++)
+    {
+        regNumber  reg  = lsraRegOrder[i];
+        RegRecord* curr = &physRegs[reg];
+        curr->regOrder  = (unsigned char)i;
+    }
+
     // TODO-CQ: We build physRegRecords before building intervals
     // and refpositions. During building intervals/refposition, we
     // would know if there are floating points used. If we can know
@@ -1934,15 +1946,6 @@ void LinearScan::buildPhysRegRecords()
     // initializing the floating registers.
     // For that `compFloatingPointUsed` should be set accurately
     // before invoking allocator.
-
-    for (regNumber reg = REG_FIRST; reg < AVAILABLE_REG_COUNT; reg = REG_NEXT(reg))
-    {
-        RegRecord* curr = &physRegs[reg];
-        curr->init(reg);
-    }
-
-    const regNumber* regOrder;
-    unsigned         regOrderSize;
 
     const regNumber* regOrderFlt;
     unsigned         regOrderFltSize;
@@ -1952,9 +1955,6 @@ void LinearScan::buildPhysRegRecords()
     // and that causes a different ordering to be used since they are
     // callee trash and should appear at the end up the existing callee
     // trash set
-
-    regOrder     = &lsraRegOrder[0];
-    regOrderSize = lsraRegOrderSize;
 
     if (compiler->canUseEvexEncoding())
     {
@@ -1967,19 +1967,9 @@ void LinearScan::buildPhysRegRecords()
         regOrderFltSize = lsraRegOrderFltSize;
     }
 #else
-    regOrder     = &lsraRegOrder[0];
-    regOrderSize = lsraRegOrderSize;
-
     regOrderFlt     = &lsraRegOrderFlt[0];
     regOrderFltSize = lsraRegOrderFltSize;
 #endif
-
-    for (unsigned int i = 0; i < regOrderSize; i++)
-    {
-        regNumber  reg  = regOrder[i];
-        RegRecord* curr = &physRegs[reg];
-        curr->regOrder  = (unsigned char)i;
-    }
 
     for (unsigned int i = 0; i < regOrderFltSize; i++)
     {
