@@ -2393,7 +2393,7 @@ namespace Internal.JitInterface
 
             if (type.IsExplicitLayout || (type.IsSequentialLayout && type.GetClassLayout().Size != 0) || type.IsInlineArray)
             {
-                if (!type.ContainsGCPointers && !type.IsByRefLike)
+                if (!type.ContainsGCPointers)
                 {
                     parNode->hasSignificantPadding = true;
                 }
