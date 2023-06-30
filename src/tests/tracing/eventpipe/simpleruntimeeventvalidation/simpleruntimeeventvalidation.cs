@@ -12,16 +12,13 @@ using Microsoft.Diagnostics.Tracing;
 using Tracing.Tests.Common;
 using Microsoft.Diagnostics.NETCore.Client;
 
-namespace Tracing.Tests.SimpleProviderValidation
+namespace Tracing.Tests.SimpleRuntimeEventValidation
 {
-    public class ProviderValidation
+    public class RuntimeEventValidation
     {
         public static int Main()
         {
-            // This test is meant to validate NativeAOT EventPipe implementation and is meant to run in regular CI
-            // Its currently not enabled in NativeAOT runs and the below issue tracks the work
-            // https://github.com/dotnet/runtime/issues/84701
-
+            // This test validates GC and Exception events in the runtime
             var ret = IpcTraceTest.RunAndValidateEventCounts(
                 // Validation is done with _DoesTraceContainEvents
                 new Dictionary<string, ExpectedEventCount>(){{ "Microsoft-Windows-DotNETRuntime", -1 }},
@@ -59,8 +56,8 @@ namespace Tracing.Tests.SimpleProviderValidation
             {
                 if (i % 10 == 0)
                     Logger.logger.Log($"Called GC.Collect() {i} times...");
-                ProviderValidation providerValidation = new ProviderValidation();
-                providerValidation = null;
+                RuntimeEventValidation eventValidation = new RuntimeEventValidation();
+                eventValidation = null;
                 GC.Collect();
             }
         };
