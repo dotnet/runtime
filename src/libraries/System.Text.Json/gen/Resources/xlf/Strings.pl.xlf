@@ -64,12 +64,12 @@
       </trans-unit>
       <trans-unit id="JsonConverterAttributeInvalidTypeMessageFormat">
         <source>The 'JsonConverterAttribute' type '{0}' specified on member '{1}' is not a converter type or does not contain an accessible parameterless constructor.</source>
-        <target state="new">The 'JsonConverterAttribute' type '{0}' specified on member '{1}' is not a converter type or does not contain an accessible parameterless constructor.</target>
+        <target state="translated">Typ „{0}” „JsonConverterAttribute” określony w przypadku składowej „{1}” nie jest typem konwertera lub nie zawiera dostępnego konstruktora bez parametrów.</target>
         <note />
       </trans-unit>
       <trans-unit id="JsonConverterAttributeInvalidTypeTitle">
         <source>The 'JsonConverterAttribute.Type' contains an invalid or inaccessible argument.</source>
-        <target state="new">The 'JsonConverterAttribute.Type' contains an invalid or inaccessible argument.</target>
+        <target state="translated">Typ „JsonConverterAttribute.Type” zawiera nieprawidłowy lub niedostępny argument.</target>
         <note />
       </trans-unit>
       <trans-unit id="JsonStringEnumConverterNotSupportedMessageFormat">
@@ -84,12 +84,12 @@
       </trans-unit>
       <trans-unit id="JsonUnsupportedLanguageVersionMessageFormat">
         <source>The System.Text.Json source generator is not available in C# '{0}'. Please use language version {1} or greater.</source>
-        <target state="new">The System.Text.Json source generator is not available in C# '{0}'. Please use language version {1} or greater.</target>
+        <target state="translated">Generator źródła System.Text.Json nie jest dostępny w języku C# „{0}”. Użyj wersji językowej lub nowszej {1} .</target>
         <note />
       </trans-unit>
       <trans-unit id="JsonUnsupportedLanguageVersionTitle">
         <source>C# language version not supported by the source generator.</source>
-        <target state="new">C# language version not supported by the source generator.</target>
+        <target state="translated">Wersja języka C# nie jest obsługiwana przez generator źródła.</target>
         <note />
       </trans-unit>
       <trans-unit id="MultipleJsonConstructorAttributeFormat">

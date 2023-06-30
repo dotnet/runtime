@@ -2077,7 +2077,7 @@ namespace System.Diagnostics.Tracing
             object?[] args;
             if (eventDataCount == 0)
             {
-                eventCallbackArgs.Payload = EventWrittenEventArgs.EmptyPayload;
+                eventCallbackArgs.Payload = ReadOnlyCollection<object?>.Empty;
             }
             else
             {
@@ -4675,8 +4675,6 @@ namespace System.Diagnostics.Tracing
     /// </summary>
     public class EventWrittenEventArgs : EventArgs
     {
-        internal static readonly ReadOnlyCollection<object?> EmptyPayload = new(Array.Empty<object>());
-
         private ref EventSource.EventMetadata Metadata => ref EventSource.m_eventData![EventId];
 
         /// <summary>

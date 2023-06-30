@@ -61,7 +61,7 @@ namespace Microsoft.Interop
             public ValueBoundaryBehavior GetValueBoundaryBehavior(TypePositionInfo info, StubCodeContext context) => ValueBoundaryBehavior.NativeIdentifier;
             public bool IsSupported(TargetFramework target, Version version)
                 => target == TargetFramework.Net && version >= new Version(5, 0);
-            public bool SupportsByValueMarshalKind(ByValueContentsMarshalKind marshalKind, StubCodeContext context) => false;
+            public ByValueMarshalKindSupport SupportsByValueMarshalKind(ByValueContentsMarshalKind marshalKind, StubCodeContext context) => ByValueMarshalKindSupport.NotSupported;
             public bool UsesNativeIdentifier(TypePositionInfo info, StubCodeContext context) => true;
         }
     }

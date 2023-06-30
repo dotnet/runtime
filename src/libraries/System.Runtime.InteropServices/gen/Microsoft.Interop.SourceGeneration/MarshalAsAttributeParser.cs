@@ -161,7 +161,9 @@ namespace Microsoft.Interop
             };
 
             if (marshallerName is null)
+            {
                 return new MarshalAsInfo(unmanagedType, _defaultInfo.CharEncoding);
+            }
 
             return StringMarshallingInfoProvider.CreateStringMarshallingInfo(_compilation, type, marshallerName);
         }

@@ -1201,6 +1201,13 @@ public:
     //
     bool EndMerge(BasicBlock* block)
     {
+        // If this block is marked BBF_NO_CSE_IN (because of RBO), kill all CSEs.
+        //
+        if ((block->bbFlags & BBF_NO_CSE_IN) != 0)
+        {
+            BitVecOps::ClearD(m_comp->cseLivenessTraits, block->bbCseIn);
+        }
+
         // We can skip the calls kill step when our block doesn't have a callsite
         // or we don't have any available CSEs in our bbCseIn
         //

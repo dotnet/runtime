@@ -529,6 +529,15 @@ CORINFO_FIELD_HANDLE MyICJI::getFieldInClass(CORINFO_CLASS_HANDLE clsHnd, INT nu
     return jitInstance->mc->repGetFieldInClass(clsHnd, num);
 }
 
+GetTypeLayoutResult MyICJI::getTypeLayout(
+    CORINFO_CLASS_HANDLE typeHnd,
+    CORINFO_TYPE_LAYOUT_NODE* nodes,
+    size_t* numNodes)
+{
+    jitInstance->mc->cr->AddCall("getTypeLayout");
+    return jitInstance->mc->repGetTypeLayout(typeHnd, nodes, numNodes);
+}
+
 bool MyICJI::checkMethodModifier(CORINFO_METHOD_HANDLE hMethod, LPCSTR modifier, bool fOptional)
 {
     jitInstance->mc->cr->AddCall("checkMethodModifier");
