@@ -450,7 +450,6 @@ namespace System
         /// <param name="frame">the stack frame instance to write</param>
         /// <param name="maxNameSize">limits the size of the frame type name</param>
         /// <returns>true - success, false - out of triage buffer space</returns>
-        [UnconditionalSuppressMessage("ReflectionAnalysis", "IL2026:RequiresUnreferencedCode", Justification = "Crash reporting can handle missing or incomplete metadata.")]
         private static bool WriteStackFrame(StackFrame frame, int maxNameSize)
         {
             return WriteBlock(null, '{', '}', () =>
