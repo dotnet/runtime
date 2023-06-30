@@ -12,8 +12,6 @@ using System.Runtime.CompilerServices;
 
 namespace System
 {
-#if CORECLR || NATIVEAOT
-
     [InlineArray(Length)]
     internal struct TwoObjects
     {
@@ -46,33 +44,4 @@ namespace System
             this[2] = arg2;
         }
     }
-
-#else
-
-    internal struct TwoObjects
-    {
-        internal object? Arg0;
-        private object? _arg1;
-
-        public TwoObjects(object? arg0, object? arg1)
-        {
-            Arg0 = arg0;
-            _arg1 = arg1;
-        }
-    }
-
-    internal struct ThreeObjects
-    {
-        internal object? Arg0;
-        private object? _arg1;
-        private object? _arg2;
-
-        public ThreeObjects(object? arg0, object? arg1, object? arg2)
-        {
-            Arg0 = arg0;
-            _arg1 = arg1;
-            _arg2 = arg2;
-        }
-    }
-#endif
 }

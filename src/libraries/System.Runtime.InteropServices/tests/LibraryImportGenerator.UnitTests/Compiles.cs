@@ -58,6 +58,12 @@ namespace LibraryImportGenerator.UnitTests
             yield return new[] { ID(), CodeSnippets.BasicParametersAndModifiers<IntPtr>() };
             yield return new[] { ID(), CodeSnippets.BasicParametersAndModifiers<UIntPtr>() };
 
+            // Parameter / return types for specially considered "strictly blittable" types.
+            yield return new[] { ID(), CodeSnippets.BasicParametersAndModifiers<CLong>() };
+            yield return new[] { ID(), CodeSnippets.BasicParametersAndModifiers<CULong>() };
+            yield return new[] { ID(), CodeSnippets.BasicParametersAndModifiers<NFloat>() };
+            yield return new[] { ID(), CodeSnippets.BasicParametersAndModifiers<Guid>() };
+
             // Arrays
             yield return new[] { ID(), CodeSnippets.MarshalAsArrayParametersAndModifiers<byte>() };
             yield return new[] { ID(), CodeSnippets.MarshalAsArrayParametersAndModifiers<sbyte>() };

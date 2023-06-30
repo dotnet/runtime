@@ -494,15 +494,13 @@ namespace R2RDump
             return 0;
         }
 
-        private T Get<T>(Option<T> option) => _command.Result.GetValue(option);
+        private T Get<T>(CliOption<T> option) => _command.Result.GetValue(option);
 
         public static int Main(string[] args) =>
-            new CommandLineBuilder(new R2RDumpRootCommand())
-                .UseTokenReplacer(Helpers.TryReadResponseFile)
-                .UseVersionOption("--version", "-v")
-                .UseHelp()
-                .UseParseErrorReporting()
-                .Build()
-                .Invoke(args);
+            new CliConfiguration(new R2RDumpRootCommand().UseVersion())
+            {
+                ResponseFileTokenReplacer = Helpers.TryReadResponseFile,
+                EnableParseErrorReporting = true
+            }.Invoke(args);
     }
 }

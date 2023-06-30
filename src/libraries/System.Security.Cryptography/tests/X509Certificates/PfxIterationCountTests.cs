@@ -130,6 +130,7 @@ namespace System.Security.Cryptography.X509Certificates.Tests
         }
 
         [Fact]
+        [ActiveIssue("https://github.com/dotnet/runtime/issues/88050", TestPlatforms.iOS | TestPlatforms.tvOS | TestPlatforms.MacCatalyst)]
         public void Import_BlobHasMoreThanOnePfx_LoadsOnlyOne()
         {
             // These certs don't use PBES2 so they should be supported everywhere.

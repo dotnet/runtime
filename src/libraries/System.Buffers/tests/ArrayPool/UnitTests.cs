@@ -18,6 +18,7 @@ namespace System.Buffers.ArrayPool.Tests
     public partial class ArrayPoolUnitTests : ArrayPoolTest
     {
         private const int MaxEventWaitTimeoutInMs = 200;
+        private const string MaxArraysPerPartitionDefault = "32";
 
         private struct TestStruct
         {
@@ -602,14 +603,14 @@ namespace System.Buffers.ArrayPool.Tests
         public static IEnumerable<object[]> BytePoolInstances()
         {
             yield return new object[] { ArrayPool<byte>.Create() };
-            yield return new object[] { ArrayPool<byte>.Create(1024*1024, 50) };
-            yield return new object[] { ArrayPool<byte>.Create(1024*1024, 1) };
+            yield return new object[] { ArrayPool<byte>.Create(1024 * 1024, 50) };
+            yield return new object[] { ArrayPool<byte>.Create(1024 * 1024, 1) };
             yield return new object[] { ArrayPool<byte>.Shared };
         }
 
         [ConditionalTheory(typeof(RemoteExecutor), nameof(RemoteExecutor.IsSupported))]
-        [InlineData("", "", "2147483647", "8")]
-        [InlineData("0", "0", "2147483647", "8")]
+        [InlineData("", "", "2147483647", MaxArraysPerPartitionDefault)]
+        [InlineData("0", "0", "2147483647", MaxArraysPerPartitionDefault)]
         [InlineData("1", "2", "1", "2")]
         [InlineData("2", "1", "2", "1")]
         [InlineData("4", "123", "4", "123")]
@@ -623,7 +624,7 @@ namespace System.Buffers.ArrayPool.Tests
             "                                                                                                                     " +
             "                                                                                                                     " +
             "                                                                                                                     " +
-            "2" + 
+            "2" +
             "                                                                                                                     " +
             "                                                                                                                     " +
             "                                                                                                                     " +
@@ -638,7 +639,7 @@ namespace System.Buffers.ArrayPool.Tests
             "                                                                                                                     " +
             "                                                                                                                     " +
             "                                                                                                                     ",
-            "2147483647", "8")]
+            "2147483647", MaxArraysPerPartitionDefault)]
         public void SharedPool_SetEnvironmentVariables_ValuesRespected(
             string partitionCount, string maxArraysPerPartition, string expectedPartitionCount, string expectedMaxArraysPerPartition)
         {
@@ -669,14 +670,7 @@ namespace System.Buffers.ArrayPool.Tests
                 FieldInfo maxArraysPerPartitionField = staticsType.GetField("s_maxArraysPerPartition", BindingFlags.NonPublic | BindingFlags.Static);
                 Assert.NotNull(maxArraysPerPartitionField);
                 int maxArraysPerPartitionValue = (int)maxArraysPerPartitionField.GetValue(null);
-                if (int.Parse(expectedMaxArraysPerPartition) > 0)
-                {
-                    Assert.Equal(int.Parse(expectedMaxArraysPerPartition), maxArraysPerPartitionValue);
-                }
-                else
-                {
-                    Assert.Equal(8, maxArraysPerPartitionValue);
-                }
+                Assert.Equal(int.Parse(int.Parse(expectedMaxArraysPerPartition) > 0 ? expectedMaxArraysPerPartition : MaxArraysPerPartitionDefault), maxArraysPerPartitionValue);
 
                 // Make sure the pool is still usable
                 for (int i = 0; i < 2; i++)

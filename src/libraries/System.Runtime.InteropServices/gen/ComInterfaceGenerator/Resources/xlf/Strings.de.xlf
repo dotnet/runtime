@@ -456,22 +456,22 @@
       </trans-unit>
       <trans-unit id="UnnecessaryMarshallingInfoDescription">
         <source>Unnecesssary marshalling info was provided. This marshalling information can be removed without any change in behavior to the application.</source>
-        <target state="new">Unnecesssary marshalling info was provided. This marshalling information can be removed without any change in behavior to the application.</target>
+        <target state="translated">Es wurden nicht benötigte Marshallinginformationen angegeben. Diese Marshallinginformationen können entfernt werden, ohne dass sich das Verhalten der Anwendung ändert.</target>
         <note />
       </trans-unit>
       <trans-unit id="UnnecessaryMarshallingInfoTitle">
         <source>Unnecessary marshalling info was provided and can be removed.</source>
-        <target state="new">Unnecessary marshalling info was provided and can be removed.</target>
+        <target state="translated">Es wurden nicht benötigte Marshallinginformationen angegeben, die entfernt werden können.</target>
         <note />
       </trans-unit>
       <trans-unit id="UnnecessaryParameterMarshallingInfoMessage">
         <source>Unnecessary marshalling info '{0}' was provided for parameter '{1}'</source>
-        <target state="new">Unnecessary marshalling info '{0}' was provided for parameter '{1}'</target>
+        <target state="translated">Für den Parameter "{0}" wurden nicht benötigte Marshallinginformationen "{1}" angegeben.</target>
         <note />
       </trans-unit>
       <trans-unit id="UnnecessaryReturnMarshallingInfoMessage">
         <source>Unnecessary marshalling info '{0}' was provided for the return type of method '{1}'</source>
-        <target state="new">Unnecessary marshalling info '{0}' was provided for the return type of method '{1}'</target>
+        <target state="translated">Für den Rückgabetyp der Methode "{0}" wurden nicht benötigte Marshallinginformationen "{1}" angegeben</target>
         <note />
       </trans-unit>
     </body>

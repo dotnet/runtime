@@ -156,7 +156,7 @@ export function mapBootConfigToMonoConfig(moduleConfig: MonoConfigInternal, appl
             assets.push(asset);
         }
     }
-    const applicationCulture = resourceLoader.startOptions.applicationCulture || ENVIRONMENT_IS_WEB ? (navigator.languages && navigator.languages[0]) : Intl.DateTimeFormat().resolvedOptions().locale;
+    const applicationCulture = resourceLoader.startOptions.applicationCulture || (ENVIRONMENT_IS_WEB ? (navigator.languages && navigator.languages[0]) : Intl.DateTimeFormat().resolvedOptions().locale);
     const icuDataResourceName = getICUResourceName(resourceLoader.bootConfig, moduleConfig, applicationCulture);
     let hasIcuData = false;
     for (const name in resources.runtime) {
