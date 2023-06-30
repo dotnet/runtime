@@ -122,7 +122,7 @@ namespace System.Formats.Tar.Tests
             for (int i = 0; i < extractedDirectories.Length; i++)
             {
                 Assert.Equal(Path.GetFileName(directories[i].FullName), Path.GetFileName(extractedDirectories[i]));
-                Assert.Equal(Directory.GetLastWriteTime(extractedDirectories[i]).Year, dt[i].Year);
+                Assert.InRange(Directory.GetLastWriteTime(extractedDirectories[i]).Ticks, dt[i].AddSeconds(-3).Ticks, dt[i].AddSeconds(3).Ticks); // include some slop for filesystem granularity
             }
         }
 
