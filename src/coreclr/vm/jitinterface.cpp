@@ -2111,8 +2111,7 @@ static GetTypeLayoutResult GetTypeLayoutHelper(
     EEClass* pClass = pMT->GetClass();
     if (pClass->IsNotTightlyPacked())
     {
-        if (pClass->HasExplicitFieldOffsetLayout() || (pClass->IsManagedSequential() && pClass->HasExplicitSize()) ||
-            pClass->IsInlineArray())
+        if (pClass->HasExplicitFieldOffsetLayout() || (pClass->IsManagedSequential() && pClass->HasExplicitSize()))
         {
             // Historically on the JIT side we did not consider types with GC
             // pointers to have significant padding, even when they have explicit

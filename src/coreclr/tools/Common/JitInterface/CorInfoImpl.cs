@@ -2391,7 +2391,7 @@ namespace Internal.JitInterface
             }
 #endif
 
-            if (type.IsExplicitLayout || (type.IsSequentialLayout && type.GetClassLayout().Size != 0) || type.IsInlineArray)
+            if (type.IsExplicitLayout || (type.IsSequentialLayout && type.GetClassLayout().Size != 0))
             {
                 if (!type.ContainsGCPointers)
                 {
