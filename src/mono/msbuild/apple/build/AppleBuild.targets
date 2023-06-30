@@ -264,9 +264,7 @@
     </RemoveDuplicates>
 
     <PropertyGroup>
-      <MainLibraryFileName></MainLibraryFileName>
       <RuntimeComponents>diagnostics_tracing;marshal-ilgen</RuntimeComponents>
-      <DiagnosticPorts>127.0.0.1:9000,nosuspend,listen</DiagnosticPorts>
     </PropertyGroup>
 
     <AppleAppBuilderTask

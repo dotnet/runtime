@@ -1,5 +1,13 @@
 <?xml version="1.0" encoding="utf-8"?>
 <Project>
+  <PropertyGroup>
+    <MainLibraryFileName></MainLibraryFileName>
+    <RuntimeComponents>diagnostics_tracing;marshal-ilgen</RuntimeComponents>
+    <DiagnosticPorts>127.0.0.1:9000,nosuspend,listen</DiagnosticPorts>
+    <MonoForceInterpreter>true</MonoForceInterpreter>
+    <UseMonoJustInterp>true</UseMonoJustInterp>
+    <DevTeamProvisioning>-</DevTeamProvisioning>
+  </PropertyGroup>
 
   <Import Project="$([MSBuild]::GetPathOfFileAbove(Directory.Build.targets, $(MSBuildThisFileDirectory)..))" />
 

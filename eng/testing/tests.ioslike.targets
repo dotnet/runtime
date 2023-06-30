@@ -109,6 +109,7 @@
       <_ApplePropertyNames Include="MonoForceInterpreter" />
       <_ApplePropertyNames Include="UseMonoJustInterp" />
       <_ApplePropertyNames Include="MainLibraryFileName" />
+      <_ApplePropertyNames Include="DiagnosticPorts" />
 
       <_ApplePropertiesToPass
         Include="$(%(_ApplePropertyNames.Identity))"
@@ -143,7 +144,7 @@
 
     <PropertyGroup>
       <Optimized Condition="'$(Configuration)' == 'Release'">true</Optimized>
-      <MainLibraryFileName Condition="'$(MainLibraryFileName)' == ''">AppleTestRunner.dll</MainLibraryFileName>
+      <MainLibraryFileName Condition="'$(MainLibraryFileName)' == '' and '$(RuntimeTests)' != 'true'">AppleTestRunner.dll</MainLibraryFileName>
     
       <AppleBuildDir>$(PublishDir)</AppleBuildDir>
       <AppleBundleDir>$(BundleDir)</AppleBundleDir>
