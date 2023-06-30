@@ -6045,6 +6045,7 @@ void Compiler::considerGuardedDevirtualization(GenTreeCall*            call,
             }
 
             if ((dvInfo.exactContext != NULL) && (*pContextHandle != dvInfo.exactContext) &&
+                (METHOD_BEING_COMPILED_CONTEXT() != dvInfo.exactContext) &&
                 (dvInfo.exactContext != MAKE_METHODCONTEXT(dvInfo.devirtualizedMethod)))
             {
                 JITDUMP("Exact context has changed - we don't yet support that, sorry\n");
