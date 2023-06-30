@@ -18,46 +18,8 @@ FORCEINLINE int64_t FastDbl2Lng(double val)
 #endif
 }
 
-//------------------------------------------------------------------------
-// TruncateDouble: helper function to truncate double 
-//                 numbers to nearest integer (round towards zero).
-//
-// Arguments:
-//    val  - double number to be truncated.
-//
-// Return Value:
-//    double: truncated number (rounded towards zero)
-// 
-double TruncateDouble(double val)
-{
-    int64_t *dintVal = (int64_t *)&val;
-
-    uint64_t uintVal = (uint64_t)*dintVal;
-    int exponent = (int)((uintVal >> 52) & 0x7FF);
-    if (exponent < 1023)
-    {
-        uintVal = uintVal & 0x8000000000000000ull;
-    }
-    else if (exponent < 1075)
-    {
-        uintVal = uintVal &  (unsigned long long)(~(0xFFFFFFFFFFFFF >> (exponent - 1023)));
-    }
-    int64_t intVal = (int64_t)uintVal;
-    double *doubleVal = (double *)&intVal;
-    double retVal = *doubleVal;
-
-    return retVal;
-}
-
 EXTERN_C NATIVEAOT_API uint64_t REDHAWK_CALLCONV RhpDbl2ULng(double val)
 {
-#if defined(TARGET_X86) || defined(TARGET_AMD64)
-
-    const double uint64_max_plus_1 = -2.0 * (double)0xFFFFFFFF;
-    val = TruncateDouble(val);
-    return ((val != val) || (val < 0) || (val >= uint64_max_plus_1)) ? 0xFFFFFFFF : (uint64_t)val;
-
-#else
     const double two63  = 2147483648.0 * 4294967296.0;
     uint64_t ret;
     if (val < two63)
@@ -70,7 +32,6 @@ EXTERN_C NATIVEAOT_API uint64_t REDHAWK_CALLCONV RhpDbl2ULng(double val)
         ret = FastDbl2Lng(val - two63) + I64(0x8000000000000000);
     }
     return ret;
-#endif // TARGET_X86 || TARGET_AMD64
 }
 
 #undef min
