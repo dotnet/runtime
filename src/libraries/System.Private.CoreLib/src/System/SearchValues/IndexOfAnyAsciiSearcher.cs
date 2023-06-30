@@ -937,7 +937,7 @@ namespace System.Buffers
             if (AdvSimd.Arm64.IsSupported)
 #pragma warning restore IntrinsicsInSystemPrivateCoreLibAttributeNotSpecificEnough
             {
-                    Vector128<byte> index = highNibbles & Vector128.Create(0x08080808).AsByte() | lowNibbles;
+                    Vector128<byte> index = Vector128.ShiftLeft((highNibbles.AsInt32() & Vector128.Create(0x08080808)), 1).AsByte() | lowNibbles;
                     bitsets = AdvSimd.Arm64.VectorTableLookup((bitmapLookup0, bitmapLookup1), index);
             }
             else
