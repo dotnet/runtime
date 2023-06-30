@@ -1657,14 +1657,9 @@ static uint32_t ThreadLocalOffset(void* p)
 #elif defined(TARGET_OSX)
 extern "C" void* GetThreadVarsAddress();
 
-static void* getThreadVarsSectionAddressFromDesc(uint8_t* p)
+static void* GetThreadVarsSectionAddressFromDesc(uint8_t* p)
 {
-    if (!(p[0] == 0x48 && p[1] == 0x8d && p[2] == 0x3d))
-    {
-        // The optimization is disabled if coreclr is not compiled in .dylib format.
-        _ASSERTE(false && "Unexpected code sequence");
-        return 0;
-    }
+    _ASSERT(p[0] == 0x48 && p[1] == 0x8d && p[2] == 0x3d);
 
     // At this point, `p` contains the instruction pointer and is pointing to the above opcodes.
     // These opcodes are patched by the dynamic linker.
@@ -1677,14 +1672,14 @@ static void* getThreadVarsSectionAddressFromDesc(uint8_t* p)
     return *(uint32_t*)p + (p + 4);
 }
 
-static void* getThreadVarsSectionAddress()
+static void* GetThreadVarsSectionAddress()
 {
 #ifdef TARGET_AMD64
     // On x64, the address is related to rip, so, disassemble the function,
     // read the offset, and then relative to the IP, find the final address of
     // __thread_vars section.
     uint8_t* p = reinterpret_cast<uint8_t*>(&GetThreadVarsAddress);
-    return getThreadVarsSectionAddressFromDesc(p);
+    return GetThreadVarsSectionAddressFromDesc(p);
 #else
     return GetThreadVarsAddress();
 #endif // TARGET_AMD64
@@ -1698,7 +1693,7 @@ static void* getThreadVarsSectionAddress()
 
 extern "C" void* GetTlsIndexObjectDescOffset();
 
-static void* getThreadStaticDescriptor(uint8_t* p)
+static void* GetThreadStaticDescriptor(uint8_t* p)
 {
     if (!(p[0] == 0x66 && p[1] == 0x48 && p[2] == 0x8d && p[3] == 0x3d))
     {
@@ -1720,10 +1715,10 @@ static void* getThreadStaticDescriptor(uint8_t* p)
     return *(uint32_t*)p + (p + 4);
 }
 
-static void* getTlsIndexObjectAddress()
+static void* GetTlsIndexObjectAddress()
 {
     uint8_t* p = reinterpret_cast<uint8_t*>(&GetTlsIndexObjectDescOffset);
-    return getThreadStaticDescriptor(p);
+    return GetThreadStaticDescriptor(p);
 }
 
 #elif TARGET_ARM64
@@ -1755,14 +1750,14 @@ void CEEInfo::getThreadLocalStaticBlocksInfo (CORINFO_THREAD_STATIC_BLOCKS_INFO*
 
 #elif defined(TARGET_OSX)
 
-    pInfo->threadVarsSection = getThreadVarsSectionAddress();
+    pInfo->threadVarsSection = GetThreadVarsSectionAddress();
 
 #elif defined(TARGET_AMD64)
 
     // For Linux/x64, get the address of tls_get_addr system method and the base address
     // of struct that we will pass to it.
     pInfo->tlsGetAddrFtnPtr = reinterpret_cast<void*>(&__tls_get_addr);
-    pInfo->tlsIndexObject = getTlsIndexObjectAddress();
+    pInfo->tlsIndexObject = GetTlsIndexObjectAddress();
 
 #elif defined(TARGET_ARM64)
 

@@ -512,16 +512,7 @@ bool Compiler::fgExpandThreadLocalAccessForCall(BasicBlock** pBlock, Statement* 
     info.compCompHnd->getThreadLocalStaticBlocksInfo(&threadStaticBlocksInfo, isGCThreadStatic);
 
 #ifdef TARGET_AMD64
-    if (TargetOS::IsMacOS)
-    {
-        if (threadStaticBlocksInfo.threadVarsSection == 0)
-        {
-            JITDUMP("__thread_vars address not available. Exiting the optimization.\n");
-            return false;
-        }
-    }
-
-    else if (TargetOS::IsUnix)
+    if (TargetOS::IsUnix)
     {
 
         if (threadStaticBlocksInfo.tlsIndexObject == 0)
