@@ -2111,7 +2111,7 @@ static GetTypeLayoutResult GetTypeLayoutHelper(
     EEClass* pClass = pMT->GetClass();
     if (pClass->IsNotTightlyPacked())
     {
-        if (pClass->HasExplicitFieldOffsetLayout() || (pClass->IsManagedSequential() && pClass->HasExplicitSize()))
+        if (pClass->HasExplicitFieldOffsetLayout() || pClass->HasExplicitSize())
         {
             parNode.hasSignificantPadding = true;
         }
