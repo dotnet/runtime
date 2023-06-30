@@ -160,7 +160,11 @@ namespace SourceGenerators.Tests
             proj = proj.WithDocuments(sources);
             Assert.True(proj.Solution.Workspace.TryApplyChanges(proj.Solution));
             Compilation? comp = await proj!.GetCompilationAsync(CancellationToken.None).ConfigureAwait(false);
-            return RunGenerator(comp!, generator, cancellationToken);
+            (ImmutableArray<Diagnostic>, ImmutableArray<GeneratedSourceResult>) ret = RunGenerator(comp!, generator, cancellationToken);
+
+            proj.Solution.Workspace.Dispose();
+
+            return ret;
         }
 
         /// <summary>
