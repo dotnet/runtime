@@ -309,6 +309,7 @@ interface BootJsonData {
     readonly resources: ResourceGroups;
     /** Gets a value that determines if this boot config was produced from a non-published build (i.e. dotnet build or dotnet run) */
     readonly debugBuild: boolean;
+    readonly debugLevel: number;
     readonly linkerEnabled: boolean;
     readonly cacheBootResources: boolean;
     readonly config: string[];
