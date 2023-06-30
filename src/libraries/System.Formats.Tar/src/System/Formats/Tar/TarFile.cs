@@ -330,7 +330,6 @@ namespace System.Formats.Tar
             using (TarWriter writer = new TarWriter(destination, TarEntryFormat.Pax, leaveOpen))
             {
                 DirectoryInfo di = new(sourceDirectoryName);
-                string basePath = GetBasePathForCreateFromDirectory(di, includeBaseDirectory);
 
                 bool skipBaseDirRecursion = false;
                 if (includeBaseDirectory)
@@ -345,9 +344,10 @@ namespace System.Formats.Tar
                     return;
                 }
 
-                foreach (FileSystemInfo file in GetFileSystemEnumerationForCreation(sourceDirectoryName))
+                string basePath = GetBasePathForCreateFromDirectory(di, includeBaseDirectory);
+                foreach ((string fullpath, string entryname) in GetFilesForCreation(sourceDirectoryName, basePath.Length))
                 {
-                    writer.WriteEntry(file.FullName, GetEntryNameForFileSystemInfo(file, basePath.Length));
+                    writer.WriteEntry(fullpath, entryname);
                 }
             }
         }
@@ -385,7 +385,6 @@ namespace System.Formats.Tar
             await using (writer.ConfigureAwait(false))
             {
                 DirectoryInfo di = new(sourceDirectoryName);
-                string basePath = GetBasePathForCreateFromDirectory(di, includeBaseDirectory);
 
                 bool skipBaseDirRecursion = false;
                 if (includeBaseDirectory)
@@ -400,33 +399,39 @@ namespace System.Formats.Tar
                     return;
                 }
 
-                foreach (FileSystemInfo file in GetFileSystemEnumerationForCreation(sourceDirectoryName))
+                string basePath = GetBasePathForCreateFromDirectory(di, includeBaseDirectory);
+                foreach ((string fullpath, string entryname) in GetFilesForCreation(sourceDirectoryName, basePath.Length))
                 {
-                    await writer.WriteEntryAsync(file.FullName, GetEntryNameForFileSystemInfo(file, basePath.Length), cancellationToken).ConfigureAwait(false);
+                    await writer.WriteEntryAsync(fullpath, entryname, cancellationToken).ConfigureAwait(false);
                 }
             }
         }
 
         // Generates a recursive enumeration of the filesystem entries inside the specified source directory, while
         // making sure that directory symlinks do not get recursed.
-        private static IEnumerable<FileSystemInfo> GetFileSystemEnumerationForCreation(string sourceDirectoryName)
+        private static IEnumerable<(string fullpath, string entryname)> GetFilesForCreation(string sourceDirectoryName, int basePathLength)
         {
             // The default order to write a tar archive is to recurse into subdirectories first.
             // FileSystemEnumerable RecurseSubdirectories will first write further entries before recursing, so we don't use it here.
 
-            var fse = new FileSystemEnumerable<(FileSystemInfo, bool)>(
+            var fse = new FileSystemEnumerable<(string fullpath, string entryname, bool recurse)>(
                 directory: sourceDirectoryName,
-                transform: (ref FileSystemEntry entry) => (entry.ToFileSystemInfo(),
-                                                           entry.IsDirectory && (entry.Attributes & FileAttributes.ReparsePoint) == 0)); // Don't follow symlinks.
+                transform: (ref FileSystemEntry entry) =>
+                {
+                    string fullPath = entry.ToFullPath();
+                    bool isRealDirectory = entry.IsDirectory && (entry.Attributes & FileAttributes.ReparsePoint) == 0; // not a symlink.
+                    string entryName = ArchivingUtils.EntryFromPath(fullPath.AsSpan(basePathLength), appendPathSeparator: isRealDirectory);
+                    return (fullPath, entryName, isRealDirectory);
+                });
 
-            foreach ((FileSystemInfo fsi, bool recurse) in fse)
+            foreach ((string fullpath, string entryname, bool recurse) in fse)
             {
-                yield return fsi;
+                yield return (fullpath, entryname);
 
                 // Return entries for the subdirectory.
                 if (recurse)
                 {
-                    foreach (var inner in GetFileSystemEnumerationForCreation(fsi.FullName))
+                    foreach (var inner in GetFilesForCreation(fullpath, basePathLength))
                     {
                         yield return inner;
                     }
@@ -437,13 +442,6 @@ namespace System.Formats.Tar
         // Determines what should be the base path for all the entries when creating an archive.
         private static string GetBasePathForCreateFromDirectory(DirectoryInfo di, bool includeBaseDirectory) =>
             includeBaseDirectory && di.Parent != null ? di.Parent.FullName : di.FullName;
-
-        // Constructs the entry name used for a filesystem entry when creating an archive.
-        private static string GetEntryNameForFileSystemInfo(FileSystemInfo file, int basePathLength)
-        {
-            bool isDirectory = (file.Attributes & FileAttributes.Directory) != 0;
-            return ArchivingUtils.EntryFromPath(file.FullName.AsSpan(basePathLength), appendPathSeparator: isDirectory);
-        }
 
         private static string GetEntryNameForBaseDirectory(string name)
         {
