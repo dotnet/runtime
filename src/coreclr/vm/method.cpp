@@ -3021,7 +3021,7 @@ bool MethodDesc::DetermineAndSetIsEligibleForTieredCompilation()
         !IsWrapperStub() &&
 
         // Policy - Generating optimized code is not disabled
-        !IsJitOptimizationDisabled())
+        !IsJitOptimizationDisabledForSpecificMethod())
     {
         m_wFlags3AndTokenRemainder |= enum_flag3_IsEligibleForTieredCompilation;
         _ASSERTE(IsVersionable());
