@@ -343,12 +343,12 @@ public class Program
         AssertEquals("System.Collections.Generic.ObjectComparer`1[Struct2]", Comparer<Struct2>.Default.GetType().ToString());
         AssertEquals("System.Collections.Generic.GenericComparer`1[StructGeneric`1[System.Int32]]", Comparer<StructGeneric<int>>.Default.GetType().ToString());
         AssertEquals("System.Collections.Generic.GenericComparer`1[StructGeneric`1[System.String]]", Comparer<StructGeneric<string>>.Default.GetType().ToString());
-        AssertEquals("System.Collections.Generic.ObjectComparer`1[StructGenericString`1[System.String]]", Comparer<StructGeneric<string>>.Default.GetType().ToString());
-        AssertEquals("System.Collections.Generic.ObjectComparer`1[StructGenericString`1[System.Object]]", Comparer<StructGeneric<object>>.Default.GetType().ToString());
+        AssertEquals("System.Collections.Generic.ObjectComparer`1[StructGenericString`1[System.String]]", Comparer<StructGenericString<string>>.Default.GetType().ToString());
+        AssertEquals("System.Collections.Generic.ObjectComparer`1[StructGenericString`1[System.Object]]", Comparer<StructGenericString<object>>.Default.GetType().ToString());
         AssertEquals("System.Collections.Generic.GenericComparer`1[StructGeneric`1[StructGeneric`1[System.Int32]]]", Comparer<StructGeneric<StructGeneric<int>>>.Default.GetType().ToString());
         AssertEquals("System.Collections.Generic.GenericComparer`1[StructGeneric`1[StructGeneric`1[System.String]]]", Comparer<StructGeneric<StructGeneric<string>>>.Default.GetType().ToString());
-        AssertEquals("System.Collections.Generic.ObjectComparer`1[StructGenericString`1[StructGeneric`1[System.String]]]", Comparer<StructGeneric<StructGeneric<string>>>.Default.GetType().ToString());
-        AssertEquals("System.Collections.Generic.ObjectComparer`1[StructGenericString`1[StructGeneric`1[System.Object]]]", Comparer<StructGeneric<StructGeneric<object>>>.Default.GetType().ToString());
+        AssertEquals("System.Collections.Generic.ObjectComparer`1[StructGenericString`1[StructGeneric`1[System.String]]]", Comparer<StructGenericString<StructGeneric<string>>>.Default.GetType().ToString());
+        AssertEquals("System.Collections.Generic.ObjectComparer`1[StructGenericString`1[StructGeneric`1[System.Object]]]", Comparer<StructGenericString<StructGeneric<object>>>.Default.GetType().ToString());
         
         AssertEquals("System.Collections.Generic.NullableComparer`1[System.Byte]", Comparer<byte?>.Default.GetType().ToString());
         AssertEquals("System.Collections.Generic.NullableComparer`1[System.Int32]", Comparer<int?>.Default.GetType().ToString());
@@ -363,12 +363,12 @@ public class Program
         AssertEquals("System.Collections.Generic.NullableComparer`1[Struct2]", Comparer<Struct2?>.Default.GetType().ToString());
         AssertEquals("System.Collections.Generic.NullableComparer`1[StructGeneric`1[System.Int32]]", Comparer<StructGeneric<int>?>.Default.GetType().ToString());
         AssertEquals("System.Collections.Generic.NullableComparer`1[StructGeneric`1[System.String]]", Comparer<StructGeneric<string>?>.Default.GetType().ToString());
-        AssertEquals("System.Collections.Generic.NullableComparer`1[StructGenericString`1[System.String]]", Comparer<StructGeneric<string>?>.Default.GetType().ToString());
-        AssertEquals("System.Collections.Generic.NullableComparer`1[StructGenericString`1[System.Object]]", Comparer<StructGeneric<object>?>.Default.GetType().ToString());
+        AssertEquals("System.Collections.Generic.NullableComparer`1[StructGenericString`1[System.String]]", Comparer<StructGenericString<string>?>.Default.GetType().ToString());
+        AssertEquals("System.Collections.Generic.NullableComparer`1[StructGenericString`1[System.Object]]", Comparer<StructGenericString<object>?>.Default.GetType().ToString());
         AssertEquals("System.Collections.Generic.NullableComparer`1[StructGeneric`1[StructGeneric`1[System.Int32]]]", Comparer<StructGeneric<StructGeneric<int>>?>.Default.GetType().ToString());
         AssertEquals("System.Collections.Generic.NullableComparer`1[StructGeneric`1[StructGeneric`1[System.String]]]", Comparer<StructGeneric<StructGeneric<string>>?>.Default.GetType().ToString());
-        AssertEquals("System.Collections.Generic.NullableComparer`1[StructGenericString`1[StructGeneric`1[System.String]]]", Comparer<StructGeneric<StructGeneric<string>>?>.Default.GetType().ToString());
-        AssertEquals("System.Collections.Generic.NullableComparer`1[StructGenericString`1[StructGeneric`1[System.Object]]]", Comparer<StructGeneric<StructGeneric<object>>?>.Default.GetType().ToString());
+        AssertEquals("System.Collections.Generic.NullableComparer`1[StructGenericString`1[StructGeneric`1[System.String]]]", Comparer<StructGenericString<StructGeneric<string>>?>.Default.GetType().ToString());
+        AssertEquals("System.Collections.Generic.NullableComparer`1[StructGenericString`1[StructGeneric`1[System.Object]]]", Comparer<StructGenericString<StructGeneric<object>>?>.Default.GetType().ToString());
 
         AssertEquals("System.Collections.Generic.GenericEqualityComparer`1[System.Byte]", EqualityComparer<byte>.Default.GetType().ToString());
         AssertEquals("System.Collections.Generic.GenericEqualityComparer`1[System.Int32]", EqualityComparer<int>.Default.GetType().ToString());
