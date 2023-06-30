@@ -7531,18 +7531,16 @@ Compiler::GDVProbeType Compiler::compClassifyGDVProbeType(GenTreeCall* call)
 //
 // Arguments:
 //     methodHnd -- handle for the special intrinsic method
-//     pIsExact  -- returns whether the type is exact
 //
 // Returns:
 //     Exact class handle returned by the intrinsic call, if known.
 //     Nullptr if not known, or not likely to lead to beneficial optimization.
-CORINFO_CLASS_HANDLE Compiler::impGetSpecialIntrinsicExactReturnType(GenTreeCall* call, bool* pIsExact)
+CORINFO_CLASS_HANDLE Compiler::impGetSpecialIntrinsicExactReturnType(GenTreeCall* call)
 {
     CORINFO_METHOD_HANDLE methodHnd = call->gtCallMethHnd;
     JITDUMP("Special intrinsic: looking for exact type returned by %s\n", eeGetMethodFullName(methodHnd));
 
     CORINFO_CLASS_HANDLE result = nullptr;
-    *pIsExact                   = false;
 
     // See what intrinsic we have...
     const NamedIntrinsic ni = lookupNamedIntrinsic(methodHnd);
@@ -7593,7 +7591,6 @@ CORINFO_CLASS_HANDLE Compiler::impGetSpecialIntrinsicExactReturnType(GenTreeCall
                     assert(ni == NI_System_Collections_Generic_Comparer_get_Default);
                     result = info.compCompHnd->getDefaultComparerClass(typeHnd);
                 }
-                *pIsExact = result != nullptr;
                 JITDUMP("Special intrinsic for type %s: return type is %s\n", eeGetClassName(typeHnd),
                         result != nullptr ? eeGetClassName(result) : "unknown");
             }
