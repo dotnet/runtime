@@ -7,8 +7,22 @@ namespace System.Globalization
 {
     internal sealed partial class CalendarData
     {
-        private bool LoadCalendarDataFromSystemCore(string localeName, CalendarId calendarId) =>
-            IcuLoadCalendarDataFromSystem(localeName, calendarId);
+        private bool LoadCalendarDataFromSystemCore(string localeName, CalendarId calendarId)
+        {
+#if TARGET_BROWSER
+            if (GlobalizationMode.Hybrid)
+            {
+                // calling this makes sure that we will have all the necessary fields populated (no exceptions thrown):
+                IcuLoadCalendarDataFromSystem(localeName, calendarId);
+                // this overrides the values that were already implemented for Hybrid:
+                return JSLoadCalendarDataFromBrowser(localeName);
+            }
+            return IcuLoadCalendarDataFromSystem(localeName, calendarId);
+#else
+            return IcuLoadCalendarDataFromSystem(localeName, calendarId);
+#endif
+        }
+
 
 #pragma warning disable IDE0060
         internal static int GetCalendarsCore(string localeName, bool useUserOverride, CalendarId[] calendars) =>

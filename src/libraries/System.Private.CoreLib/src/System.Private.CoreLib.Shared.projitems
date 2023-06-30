@@ -319,6 +319,7 @@
     <Compile Include="$(MSBuildThisFileDirectory)System\Globalization\Calendar.cs" />
     <Compile Include="$(MSBuildThisFileDirectory)System\Globalization\CalendarAlgorithmType.cs" />
     <Compile Include="$(MSBuildThisFileDirectory)System\Globalization\CalendarData.cs" />
+    <Compile Include="$(MSBuildThisFileDirectory)System\Globalization\CalendarData.Browser.cs" Condition="'$(TargetsBrowser)' == 'true'" />
     <Compile Include="$(MSBuildThisFileDirectory)System\Globalization\CalendarData.Icu.cs" />
     <Compile Include="$(MSBuildThisFileDirectory)System\Globalization\CalendarData.Nls.cs" />
     <Compile Include="$(MSBuildThisFileDirectory)System\Globalization\CalendarWeekRule.cs" />
@@ -1264,6 +1265,9 @@
     <Compile Include="$(MSBuildThisFileDirectory)System\ComAwareWeakReference.cs" />
     <Compile Include="$(CommonPath)Interop\Browser\Interop.CompareInfo.cs" Condition="'$(TargetsBrowser)' == 'true'">
       <Link>Common\Interop\Interop.CompareInfo.cs</Link>
+    </Compile>
+     <Compile Include="$(CommonPath)Interop\Browser\Interop.Calendar.cs" Condition="'$(TargetsBrowser)' == 'true'">
+      <Link>Common\Interop\Interop.Calendar.cs</Link>
     </Compile>
     <Compile Include="$(CommonPath)Interop\Browser\Interop.TextInfo.cs" Condition="'$(TargetsBrowser)' == 'true'">
       <Link>Common\Interop\Interop.TextInfo.cs</Link>

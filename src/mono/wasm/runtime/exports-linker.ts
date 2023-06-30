@@ -23,6 +23,7 @@ import { mono_wasm_trace_logger } from "./logging";
 import { mono_wasm_profiler_leave, mono_wasm_profiler_enter } from "./profiler";
 import { mono_wasm_change_case, mono_wasm_change_case_invariant } from "./hybrid-globalization/change-case";
 import { mono_wasm_compare_string, mono_wasm_ends_with, mono_wasm_starts_with, mono_wasm_index_of } from "./hybrid-globalization/collations";
+import { mono_wasm_get_calendar_info } from "./hybrid-globalization/calendar";
 import { mono_wasm_install_js_worker_interop, mono_wasm_uninstall_js_worker_interop } from "./pthreads/shared";
 
 import {
@@ -112,6 +113,7 @@ export function export_linker(): any {
         mono_wasm_starts_with,
         mono_wasm_ends_with,
         mono_wasm_index_of,
+        mono_wasm_get_calendar_info,
 
         // threading exports, if threading is enabled
         ...mono_wasm_threads_exports,

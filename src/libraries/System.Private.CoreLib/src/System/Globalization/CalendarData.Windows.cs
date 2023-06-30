@@ -44,7 +44,14 @@ namespace System.Globalization
             }
 
             // If running using ICU on Windows we should honor user overrides using NLS and the rest from ICU
-            bool result = IcuLoadCalendarDataFromSystem(localeName, calendarId);
+            bool result =
+#if TARGET_BROWSER
+                GlobalizationMode.Hybrid ?
+                    JSLoadCalendarDataFromBrowser(localeName) :
+                    IcuLoadCalendarDataFromSystem(localeName, calendarId);
+#else
+                IcuLoadCalendarDataFromSystem(localeName, calendarId);
+#endif
 
             if (result && bUseUserOverrides)
             {
