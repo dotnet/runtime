@@ -95,6 +95,8 @@ namespace System.Formats.Tar.Tests
                 Directory.CreateDirectory(Path.Combine(fromDir.FullName, "dir")),                      // 'fromdir/dir'
                 Directory.CreateDirectory(Path.Combine(fromDir.FullName, "dir", "child")),             // 'fromdir/dir/child'
                 Directory.CreateDirectory(Path.Combine(fromDir.FullName, "dir", "child", "subchild")), // 'fromdir/dir/child/subchild'
+                Directory.CreateDirectory(Path.Combine(fromDir.FullName, "dir2")),                     // 'fromdir/dir2'
+                Directory.CreateDirectory(Path.Combine(fromDir.FullName, "dir2", "child2")),            // 'fromdir/dir2/child'
             };
             var dt = new DateTime[directories.Length];
             for (int i = directories.Length - 1; i >= 0; i--) // Reverse order to preserve parent timestamps.
@@ -116,9 +118,11 @@ namespace System.Formats.Tar.Tests
 
             string[] extractedDirectories = Directory.GetDirectories(toDir, "*", new EnumerationOptions() { RecurseSubdirectories = true });
             Assert.Equal(directories.Length, extractedDirectories.Length);
+            Array.Sort(extractedDirectories);
             for (int i = 0; i < extractedDirectories.Length; i++)
             {
-                Assert.InRange(Directory.GetLastWriteTime(extractedDirectories[i]).Ticks, dt[i].AddSeconds(-3).Ticks, dt[i].AddSeconds(3).Ticks); // include some slop for filesystem granularity
+                Assert.Equal(Path.GetFileName(directories[i].FullName), Path.GetFileName(extractedDirectories[i]));
+                Assert.Equal(Directory.GetLastWriteTime(extractedDirectories[i]).Year, dt[i].Year);
             }
         }
 

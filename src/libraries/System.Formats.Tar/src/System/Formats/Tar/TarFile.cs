@@ -409,20 +409,29 @@ namespace System.Formats.Tar
 
         // Generates a recursive enumeration of the filesystem entries inside the specified source directory, while
         // making sure that directory symlinks do not get recursed.
-        private static FileSystemEnumerable<FileSystemInfo> GetFileSystemEnumerationForCreation(string sourceDirectoryName)
+        private static IEnumerable<FileSystemInfo> GetFileSystemEnumerationForCreation(string sourceDirectoryName)
         {
-            return new FileSystemEnumerable<FileSystemInfo>(
-                directory: sourceDirectoryName,
-                transform: (ref FileSystemEntry entry) => entry.ToFileSystemInfo(),
-                options: new EnumerationOptions()
-                {
-                    RecurseSubdirectories = true
-                })
-            {
-                ShouldRecursePredicate = IsNotADirectorySymlink
-            };
+            // The default order to write a tar archive is to recurse into subdirectories first.
+            // FileSystemEnumerable RecurseSubdirectories will first write further entries before recursing, so we don't use it here.
 
-            static bool IsNotADirectorySymlink(ref FileSystemEntry entry) => entry.IsDirectory && (entry.Attributes & FileAttributes.ReparsePoint) == 0;
+            var fse = new FileSystemEnumerable<(FileSystemInfo, bool)>(
+                directory: sourceDirectoryName,
+                transform: (ref FileSystemEntry entry) => (entry.ToFileSystemInfo(),
+                                                           entry.IsDirectory && (entry.Attributes & FileAttributes.ReparsePoint) == 0)); // Don't follow symlinks.
+
+            foreach ((FileSystemInfo fsi, bool recurse) in fse)
+            {
+                yield return fsi;
+
+                // Return entries for the subdirectory.
+                if (recurse)
+                {
+                    foreach (var inner in GetFileSystemEnumerationForCreation(fsi.FullName))
+                    {
+                        yield return inner;
+                    }
+                }
+            }
         }
 
         // Determines what should be the base path for all the entries when creating an archive.
