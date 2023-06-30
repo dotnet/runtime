@@ -30,7 +30,7 @@
     "magic-string": "0.30.0",
     "eslint": "8.39.0",
     "fast-glob": "3.2.12",
-    "git-commit-info": "2.0.1",
+    "git-commit-info": "2.0.2",
     "rollup": "3.21.1",
     "rollup-plugin-dts": "5.3.0",
     "terser": "5.17.1",
