@@ -55,8 +55,8 @@ namespace Mono.Linker.Tests.Cases.DataFlow
 		}
 
 		[ExpectedWarning ("IL2111", ProducedBy = Tool.Trimmer)]
-		[UnsafeAccessor(UnsafeAccessorKind.StaticMethod)]
-		extern static void MethodWithAnnotatedParameter (Target target, [DynamicallyAccessedMembers(DynamicallyAccessedMemberTypes.PublicMethods)] Type type);
+		[UnsafeAccessor (UnsafeAccessorKind.StaticMethod)]
+		extern static void MethodWithAnnotatedParameter (Target target, [DynamicallyAccessedMembers (DynamicallyAccessedMemberTypes.PublicMethods)] Type type);
 
 		// No warning - reflection access to a static method with annotated return value is not a problem
 		[UnsafeAccessor (UnsafeAccessorKind.StaticMethod)]
