@@ -10,7 +10,7 @@ namespace Profiler.Tests
 
         public static int Main(string[] args)
         {
-            return 0;
+            return 100;
         }
     }
 }

@@ -24,7 +24,7 @@ namespace Profiler.Tests
             }
 
             exitCode = TestLibrary.Utilities.ExecuteAndUnload(testAssemblyFullPath2, args);
-            if (exitCode != 0)
+            if (exitCode != 100)
             {
                 return exitCode;
             }
