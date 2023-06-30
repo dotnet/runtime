@@ -120,8 +120,8 @@ __IntermediatesDir="$__ArtifactsIntermediatesDir/$__ConfigTriplet"
 export __IntermediatesDir __ArtifactsIntermediatesDir
 
 if [[ "$__ExplicitHostArch" == 1 ]]; then
-    __IntermediatesDir="$__IntermediatesDir/host"
-    __BinDir="$__BinDir/host"
+    __IntermediatesDir="$__IntermediatesDir/$__HostArch"
+    __BinDir="$__BinDir/$__HostArch"
 fi
 
 # CI_SPECIFIC - On CI machines, $HOME may not be set. In such a case, create a subfolder and set the variable to set.
