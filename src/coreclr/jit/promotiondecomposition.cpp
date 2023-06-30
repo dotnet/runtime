@@ -1110,6 +1110,16 @@ private:
         }
     };
 
+    //------------------------------------------------------------------------
+    // CopyRemainder:
+    //   Create IR to copy the remainder.
+    //
+    // Parameters:
+    //   storeAccess       - Helper class to create derived stores
+    //   srcAccess         - Helper class to create derived source accesses
+    //   remainderStrategy - The strategy to generate IR for
+    //   statements        - List to add IR to.
+    //
     void CopyRemainder(LocationAccess&             storeAccess,
                        LocationAccess&             srcAccess,
                        const RemainderStrategy&    remainderStrategy,
