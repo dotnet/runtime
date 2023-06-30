@@ -105,6 +105,7 @@
     <Compile Include="SslAuthenticationOptionsTest.cs" />
     <Compile Include="SslStreamAlertsTest.cs" />
     <Compile Include="SslStreamAllowRenegotiationTests.cs" />
+    <Compile Include="SslStreamAllowTlsResumeTests.cs" />
     <Compile Include="SslStreamAlpnTests.cs" />
     <Compile Include="SslStreamCertificateTrustTests.cs" />
     <Compile Include="SslStreamDisposeTest.cs" />

@@ -4,7 +4,7 @@
 //
 // Run runtime tests under a JS shell or a browser
 //
-import { dotnet, exit } from './dotnet.js';
+import { dotnet, exit } from './_framework/dotnet.js';
 
 
 /*****************************************************************************
@@ -258,7 +258,10 @@ function configureRuntime(dotnet, runArgs) {
         .withDiagnosticTracing(runArgs.diagnosticTracing)
         .withExitOnUnhandledError()
         .withExitCodeLogging()
-        .withElementOnExit();
+        .withElementOnExit()
+        .withConfig({
+            loadAllSatelliteResources: true
+        });
 
     if (is_node) {
         dotnet
@@ -296,7 +299,7 @@ async function dry_run(runArgs) {
     try {
         console.log("Silently starting separate runtime instance as another ES6 module to populate caches...");
         // this separate instance of the ES6 module, in which we just populate the caches
-        const { dotnet } = await import('./dotnet.js?dry_run=true');
+        const { dotnet } = await import('./_framework/dotnet.js?dry_run=true');
         configureRuntime(dotnet, runArgs);
         // silent minimal startup
         await dotnet.withConfig({

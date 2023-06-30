@@ -55,12 +55,19 @@ namespace System.Text.RegularExpressions.Generator
             }
 
             // Emit the partial method definition.
-            writer.WriteLine("/// <remarks>");
-            writer.WriteLine("/// Pattern explanation:<br/>");
-            writer.WriteLine("/// <code>");
+            writer.WriteLine($"/// <remarks>");
+            writer.WriteLine($"/// Pattern:<br/>");
+            writer.WriteLine($"/// <code>{EscapeXmlComment(Literal(regexMethod.Pattern, quote: false))}</code><br/>");
+            if (regexMethod.Options != RegexOptions.None)
+            {
+                writer.WriteLine($"/// Options:<br/>");
+                writer.WriteLine($"/// <code>{Literal(regexMethod.Options)}</code><br/>");
+            }
+            writer.WriteLine($"/// Explanation:<br/>");
+            writer.WriteLine($"/// <code>");
             DescribeExpressionAsXmlComment(writer, regexMethod.Tree.Root.Child(0), regexMethod); // skip implicit root capture
-            writer.WriteLine("/// </code>");
-            writer.WriteLine("/// </remarks>");
+            writer.WriteLine($"/// </code>");
+            writer.WriteLine($"/// </remarks>");
             writer.WriteLine($"[global::System.CodeDom.Compiler.{s_generatedCodeAttribute}]");
             writer.WriteLine($"{regexMethod.Modifiers} global::System.Text.RegularExpressions.Regex {regexMethod.MethodName}() => global::{GeneratedNamespace}.{regexMethod.GeneratedName}.Instance;");
 
@@ -5084,7 +5091,7 @@ namespace System.Text.RegularExpressions.Generator
         private static string Literal(char c) => SymbolDisplay.FormatLiteral(c, quote: true);
 
         /// <summary>Formats the string as valid C#.</summary>
-        private static string Literal(string s) => SymbolDisplay.FormatLiteral(s, quote: true);
+        private static string Literal(string s, bool quote = true) => SymbolDisplay.FormatLiteral(s, quote);
 
         private static string Literal(RegexOptions options)
         {
@@ -5183,11 +5190,9 @@ namespace System.Text.RegularExpressions.Generator
             {
                 RegexCharClass.AnyClass => "any character",
                 RegexCharClass.DigitClass => "a Unicode digit",
-                RegexCharClass.ECMADigitClass => "'0' through '9'",
                 RegexCharClass.ECMASpaceClass => "a whitespace character (ECMA)",
                 RegexCharClass.ECMAWordClass => "a word character (ECMA)",
                 RegexCharClass.NotDigitClass => "any character other than a Unicode digit",
-                RegexCharClass.NotECMADigitClass => "any character other than '0' through '9'",
                 RegexCharClass.NotECMASpaceClass => "any character other than a whitespace character (ECMA)",
                 RegexCharClass.NotECMAWordClass => "any character other than a word character (ECMA)",
                 RegexCharClass.NotSpaceClass => "any character other than a whitespace character",

@@ -48,6 +48,86 @@ namespace System.Text.Json.Nodes
             InitializeFromArray(items);
         }
 
+        internal override JsonNode InternalDeepClone()
+        {
+            if (_jsonElement.HasValue)
+            {
+                return new JsonArray(_jsonElement.Value.Clone(), Options);
+            }
+
+            List<JsonNode?> list = List;
+
+            var jsonArray = new JsonArray(Options)
+            {
+                _list = new List<JsonNode?>(list.Count)
+            };
+
+            for (int i = 0; i < list.Count; i++)
+            {
+                JsonNode? item = list[i];
+                if (item is null)
+                {
+                    jsonArray.Add(null);
+                }
+                else
+                {
+                    jsonArray.Add(item.DeepClone());
+                }
+            }
+
+            return jsonArray;
+        }
+
+        internal override bool DeepEquals(JsonNode? node)
+        {
+            switch (node)
+            {
+                case null or JsonObject:
+                    return false;
+                case JsonValue value:
+                    // JsonValueTrimmable/NonTrimmable can hold the array type so calling this method to continue the deep comparision.
+                    return value.DeepEquals(this);
+                case JsonArray array:
+                    List<JsonNode?> currentList = List;
+                    List<JsonNode?> otherList = array.List;
+
+                    if (currentList.Count != otherList.Count)
+                    {
+                        return false;
+                    }
+
+                    for (int i = 0; i < currentList.Count; i++)
+                    {
+                        if (!DeepEquals(currentList[i], otherList[i]))
+                        {
+                            return false;
+                        }
+                    }
+
+                    return true;
+                default:
+                    Debug.Fail("Impossible case");
+                    return false;
+            }
+        }
+
+        internal int GetElementIndex(JsonNode? node)
+        {
+            return List.IndexOf(node);
+        }
+
+        /// <summary>
+        /// Returns enumerator that wraps calls to <see cref="JsonNode.GetValue{T}"/>.
+        /// </summary>
+        /// <typeparam name="T">The type of the value to obtain from the <see cref="JsonValue"/>.</typeparam>
+        public IEnumerable<T> GetValues<T>()
+        {
+            foreach (JsonNode? item in List)
+            {
+                yield return item is null ? (T)(object?)null! : item.GetValue<T>();
+            }
+        }
+
         private void InitializeFromArray(JsonNode?[] items)
         {
             var list = new List<JsonNode?>(items);

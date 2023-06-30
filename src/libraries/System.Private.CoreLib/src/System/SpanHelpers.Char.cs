@@ -546,13 +546,6 @@ namespace System
                 // Needs to be double length to allow us to align the data first.
                 lengthToExamine = UnalignedCountVector128(searchSpace);
             }
-#if MONO
-            else if (Vector.IsHardwareAccelerated)
-            {
-                // Needs to be double length to allow us to align the data first.
-                lengthToExamine = UnalignedCountVector(searchSpace);
-            }
-#endif
 
         SequentialScan:
             // In the non-vector case lengthToExamine is the total length.
@@ -850,42 +843,6 @@ namespace System
                     }
                 }
             }
-#if MONO
-            else if (Vector.IsHardwareAccelerated)
-            {
-                if (offset < length)
-                {
-                    Debug.Assert(length - offset >= Vector<ushort>.Count);
-
-                    lengthToExamine = GetCharVectorSpanLength(offset, length);
-
-                    if (lengthToExamine > 0)
-                    {
-                        do
-                        {
-                            Debug.Assert(lengthToExamine >= Vector<ushort>.Count);
-
-                            var matches = Vector.Equals(Vector<ushort>.Zero, *(Vector<ushort>*)(searchSpace + (nuint)offset));
-                            if (Vector<ushort>.Zero.Equals(matches))
-                            {
-                                offset += Vector<ushort>.Count;
-                                lengthToExamine -= Vector<ushort>.Count;
-                                continue;
-                            }
-
-                            // Find offset of first match
-                            return (int)(offset + LocateFirstFoundChar(matches));
-                        } while (lengthToExamine > 0);
-                    }
-
-                    if (offset < length)
-                    {
-                        lengthToExamine = length - offset;
-                        goto SequentialScan;
-                    }
-                }
-            }
-#endif
 
             ThrowMustBeNullTerminatedString();
         Found3:
@@ -897,48 +854,6 @@ namespace System
         Found:
             return (int)(offset);
         }
-
-#if MONO
-        // Vector sub-search adapted from https://github.com/aspnet/KestrelHttpServer/pull/1138
-        [MethodImpl(MethodImplOptions.AggressiveInlining)]
-        private static int LocateFirstFoundChar(Vector<ushort> match)
-        {
-            var vector64 = Vector.AsVectorUInt64(match);
-            ulong candidate = 0;
-            int i = 0;
-            // Pattern unrolled by jit https://github.com/dotnet/coreclr/pull/8001
-            for (; i < Vector<ulong>.Count; i++)
-            {
-                candidate = vector64[i];
-                if (candidate != 0)
-                {
-                    break;
-                }
-            }
-
-            // Single LEA instruction with jitted const (using function result)
-            return i * 4 + LocateFirstFoundChar(candidate);
-        }
-
-        [MethodImpl(MethodImplOptions.AggressiveInlining)]
-        private static Vector<ushort> LoadVector(ref char start, nint offset)
-            => Unsafe.ReadUnaligned<Vector<ushort>>(ref Unsafe.As<char, byte>(ref Unsafe.Add(ref start, offset)));
-
-        [MethodImpl(MethodImplOptions.AggressiveInlining)]
-        private static Vector<ushort> LoadVector(ref char start, nuint offset)
-            => Unsafe.ReadUnaligned<Vector<ushort>>(ref Unsafe.As<char, byte>(ref Unsafe.Add(ref start, (nint)offset)));
-
-        [MethodImpl(MethodImplOptions.AggressiveInlining)]
-        private static nint GetCharVectorSpanLength(nint offset, nint length)
-            => (length - offset) & ~(Vector<ushort>.Count - 1);
-
-        [MethodImpl(MethodImplOptions.AggressiveInlining)]
-        private static unsafe nint UnalignedCountVector(char* searchSpace)
-        {
-            const int ElementsPerByte = sizeof(ushort) / sizeof(byte);
-            return (nint)(uint)(-(int)searchSpace / ElementsPerByte) & (Vector<ushort>.Count - 1);
-        }
-#endif
 
         [MethodImpl(MethodImplOptions.AggressiveInlining)]
         private static int LocateFirstFoundChar(ulong match)

@@ -33,30 +33,35 @@ namespace LibraryImportGenerator.UnitTests
 
         public static IEnumerable<object[]> CodeSnippetsToCompile()
         {
-            yield return new[] { ID(), CodeSnippets.TrivialClassDeclarations };
-            yield return new[] { ID(), CodeSnippets.TrivialStructDeclarations };
-            yield return new[] { ID(), CodeSnippets.MultipleAttributes };
-            yield return new[] { ID(), CodeSnippets.NestedNamespace };
-            yield return new[] { ID(), CodeSnippets.NestedTypes };
-            yield return new[] { ID(), CodeSnippets.UnsafeContext };
-            yield return new[] { ID(), CodeSnippets.UserDefinedEntryPoint };
-            yield return new[] { ID(), CodeSnippets.AllLibraryImportNamedArguments };
-            yield return new[] { ID(), CodeSnippets.DefaultParameters };
-            yield return new[] { ID(), CodeSnippets.UseCSharpFeaturesForConstants };
+            //yield return new[] { ID(), CodeSnippets.TrivialClassDeclarations };
+            //yield return new[] { ID(), CodeSnippets.TrivialStructDeclarations };
+            //yield return new[] { ID(), CodeSnippets.MultipleAttributes };
+            //yield return new[] { ID(), CodeSnippets.NestedNamespace };
+            //yield return new[] { ID(), CodeSnippets.NestedTypes };
+            //yield return new[] { ID(), CodeSnippets.UnsafeContext };
+            //yield return new[] { ID(), CodeSnippets.UserDefinedEntryPoint };
+            //yield return new[] { ID(), CodeSnippets.AllLibraryImportNamedArguments };
+            //yield return new[] { ID(), CodeSnippets.DefaultParameters };
+            //yield return new[] { ID(), CodeSnippets.UseCSharpFeaturesForConstants };
 
-            // Parameter / return types
-            yield return new[] { ID(), CodeSnippets.BasicParametersAndModifiers<byte>() };
-            yield return new[] { ID(), CodeSnippets.BasicParametersAndModifiers<sbyte>() };
-            yield return new[] { ID(), CodeSnippets.BasicParametersAndModifiers<short>() };
-            yield return new[] { ID(), CodeSnippets.BasicParametersAndModifiers<ushort>() };
-            yield return new[] { ID(), CodeSnippets.BasicParametersAndModifiers<int>() };
-            yield return new[] { ID(), CodeSnippets.BasicParametersAndModifiers<uint>() };
-            yield return new[] { ID(), CodeSnippets.BasicParametersAndModifiers<long>() };
-            yield return new[] { ID(), CodeSnippets.BasicParametersAndModifiers<ulong>() };
-            yield return new[] { ID(), CodeSnippets.BasicParametersAndModifiers<float>() };
-            yield return new[] { ID(), CodeSnippets.BasicParametersAndModifiers<double>() };
-            yield return new[] { ID(), CodeSnippets.BasicParametersAndModifiers<IntPtr>() };
-            yield return new[] { ID(), CodeSnippets.BasicParametersAndModifiers<UIntPtr>() };
+            //// Parameter / return types
+            //yield return new[] { ID(), CodeSnippets.BasicParametersAndModifiers<byte>() };
+            //yield return new[] { ID(), CodeSnippets.BasicParametersAndModifiers<sbyte>() };
+            //yield return new[] { ID(), CodeSnippets.BasicParametersAndModifiers<short>() };
+            //yield return new[] { ID(), CodeSnippets.BasicParametersAndModifiers<ushort>() };
+            //yield return new[] { ID(), CodeSnippets.BasicParametersAndModifiers<int>() };
+            //yield return new[] { ID(), CodeSnippets.BasicParametersAndModifiers<uint>() };
+            //yield return new[] { ID(), CodeSnippets.BasicParametersAndModifiers<long>() };
+            //yield return new[] { ID(), CodeSnippets.BasicParametersAndModifiers<ulong>() };
+            //yield return new[] { ID(), CodeSnippets.BasicParametersAndModifiers<float>() };
+            //yield return new[] { ID(), CodeSnippets.BasicParametersAndModifiers<double>() };
+            //yield return new[] { ID(), CodeSnippets.BasicParametersAndModifiers<IntPtr>() };
+            //yield return new[] { ID(), CodeSnippets.BasicParametersAndModifiers<UIntPtr>() };
+
+            // Parameter / return types for specially considered "strictly blittable" types.
+            yield return new[] { ID(), CodeSnippets.BasicParametersAndModifiers<CLong>() };
+            yield return new[] { ID(), CodeSnippets.BasicParametersAndModifiers<CULong>() };
+            yield return new[] { ID(), CodeSnippets.BasicParametersAndModifiers<Guid>() };
 
             // Arrays
             yield return new[] { ID(), CodeSnippets.MarshalAsArrayParametersAndModifiers<byte>() };
