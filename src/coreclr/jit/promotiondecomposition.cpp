@@ -308,7 +308,7 @@ private:
 
         StructSegments::Segment segment;
         // See if we can "plug the hole" with a single primitive.
-        if (remainder.CoveringSegment(&segment))
+        if (remainder.IsSingleSegment(&segment))
         {
             var_types primitiveType = TYP_UNDEF;
             unsigned  size          = segment.End - segment.Start;
@@ -606,15 +606,26 @@ private:
             statements->AddStatement(nullCheck);
         }
 
-        bool handledRemainder = false;
-        // We prefer to do the remainder at the end, if possible, since CQ
-        // analysis shows that this is best. However, handling the remainder
-        // may overwrite the destination with stale bits if the source has
-        // replacements (since handling the remainder copies from the struct,
-        // and the fresh values are usually in the replacement locals).
-        if (RemainderOverwritesDestinationWithStaleBits(remainderStrategy, dstDeaths))
+        if (remainderStrategy.Type == RemainderStrategy::FullBlock)
         {
-            CopyRemainder(storeAccess, srcAccess, remainderStrategy, statements);
+            // We will reuse the existing block op. Rebase the address off of the new local we created.
+            if (m_src->OperIs(GT_BLK))
+            {
+                m_src->AsIndir()->Addr() = indirAccess->GrabAddress(0, m_compiler);
+            }
+            else if (m_store->OperIs(GT_STORE_BLK))
+            {
+                m_store->AsIndir()->Addr() = indirAccess->GrabAddress(0, m_compiler);
+            }
+        }
+
+        // If the source involves replacements then do the struct op first --
+        // we would overwrite the destination with stale bits if we did it last.
+        // If the source does not involve replacements then CQ analysis shows
+        // that it's best to do it last.
+        if ((remainderStrategy.Type == RemainderStrategy::FullBlock) && m_srcInvolvesReplacements)
+        {
+            statements->AddStatement(m_store);
 
             if (m_src->OperIs(GT_LCL_VAR, GT_LCL_FLD))
             {
@@ -622,7 +633,6 @@ private:
                 // copy is no longer the last use if it was before.
                 m_src->gtFlags &= ~GTF_VAR_DEATH;
             }
-            handledRemainder = true;
         }
 
         StructDeaths srcDeaths;
@@ -683,9 +693,34 @@ private:
             statements->AddStatement(store);
         }
 
-        if (!handledRemainder)
+        if ((remainderStrategy.Type == RemainderStrategy::FullBlock) && !m_srcInvolvesReplacements)
         {
-            CopyRemainder(storeAccess, srcAccess, remainderStrategy, statements);
+            statements->AddStatement(m_store);
+        }
+
+        if (remainderStrategy.Type == RemainderStrategy::Primitive)
+        {
+            var_types primitiveType = remainderStrategy.PrimitiveType;
+            // The remainder might match a regularly promoted field exactly. If
+            // it does then use the promoted field's type so we can create a
+            // direct access.
+            unsigned srcPromField = srcAccess.FindRegularlyPromotedField(remainderStrategy.PrimitiveOffset, m_compiler);
+            unsigned storePromField =
+                storeAccess.FindRegularlyPromotedField(remainderStrategy.PrimitiveOffset, m_compiler);
+
+            if ((srcPromField != BAD_VAR_NUM) || (storePromField != BAD_VAR_NUM))
+            {
+                var_types regPromFieldType =
+                    m_compiler->lvaGetDesc(srcPromField != BAD_VAR_NUM ? srcPromField : storePromField)->TypeGet();
+                if (genTypeSize(regPromFieldType) == genTypeSize(primitiveType))
+                {
+                    primitiveType = regPromFieldType;
+                }
+            }
+
+            GenTree* src   = srcAccess.CreateRead(remainderStrategy.PrimitiveOffset, primitiveType, m_compiler);
+            GenTree* store = storeAccess.CreateStore(remainderStrategy.PrimitiveOffset, primitiveType, src, m_compiler);
+            statements->AddStatement(store);
         }
 
         INDEBUG(storeAccess.CheckFullyUsed());
@@ -695,7 +730,7 @@ private:
     //------------------------------------------------------------------------
     // CanSkipEntry:
     //   Check if the specified entry can be skipped because it is writing to a
-    //   dead replacement or because the remainder would handle it anyway.
+    //   death replacement or because the remainder would handle it anyway.
     //
     // Parameters:
     //   entry             - The init/copy entry
@@ -826,71 +861,7 @@ private:
         return addrNode->IsInvariant();
     }
 
-    //------------------------------------------------------------------------
-    // RemainderOverwritesDestinationWithStaleBits:
-    //   Check if handling the remainder is going to write stale bits to the
-    //   destination.
-    //
-    // Parameters:
-    //   remainderStrategy - The remainder strategy
-    //   dstDeaths         - Destination liveness
-    //
-    // Returns:
-    //   True if so.
-    //
-    // Remarks:
-    //   We usually prefer to write the remainder last as CQ analysis shows
-    //   that to be most beneficial. However, if we do that we may overwrite
-    //   the destination with stale bits. This occurs if the source has
-    //   replacements. Handling the remainder copies from the source struct
-    //   local, but the up-to-date values may be in its replacement locals. So
-    //   we must take care to write the replacement locals _after_ the
-    //   remainder has been written.
-    //
-    bool RemainderOverwritesDestinationWithStaleBits(const RemainderStrategy& remainderStrategy,
-                                                     const StructDeaths&      dstDeaths)
-    {
-        if (!m_srcInvolvesReplacements)
-        {
-            return false;
-        }
-
-        switch (remainderStrategy.Type)
-        {
-            case RemainderStrategy::FullBlock:
-                return true;
-            case RemainderStrategy::Primitive:
-                for (int i = 0; i < m_entries.Height(); i++)
-                {
-                    const Entry& entry = m_entries.BottomRef(i);
-                    if (entry.Offset + genTypeSize(entry.Type) <= remainderStrategy.PrimitiveOffset)
-                    {
-                        // Entry ends before remainder starts
-                        continue;
-                    }
-
-                    // Remainder ends before entry starts
-                    if (remainderStrategy.PrimitiveOffset + genTypeSize(remainderStrategy.PrimitiveType) <=
-                        entry.Offset)
-                    {
-                        continue;
-                    }
-
-                    // Are we even going to write the entry?
-                    if (!CanSkipEntry(entry, dstDeaths, remainderStrategy))
-                    {
-                        // Yep, so we need to be careful.
-                        return true;
-                    }
-                }
-
-                // No entry overlaps.
-                return false;
-            default:
-                return false;
-        }
-    }
-
+private:
     // Helper class to create derived accesses off of a location: either a
     // local, or as indirections off of an address.
     class LocationAccess
@@ -1109,51 +1080,6 @@ private:
             return m_indirFlags;
         }
     };
-
-    void CopyRemainder(LocationAccess&             storeAccess,
-                       LocationAccess&             srcAccess,
-                       const RemainderStrategy&    remainderStrategy,
-                       DecompositionStatementList* statements)
-    {
-        if (remainderStrategy.Type == RemainderStrategy::FullBlock)
-        {
-            // We will reuse the existing block op. Rebase the address off of the new local we created.
-            if (m_src->OperIs(GT_BLK))
-            {
-                m_src->AsIndir()->Addr() = srcAccess.GrabAddress(0, m_compiler);
-            }
-            else if (m_store->OperIs(GT_STORE_BLK))
-            {
-                m_store->AsIndir()->Addr() = storeAccess.GrabAddress(0, m_compiler);
-            }
-
-            statements->AddStatement(m_store);
-        }
-        else if (remainderStrategy.Type == RemainderStrategy::Primitive)
-        {
-            var_types primitiveType = remainderStrategy.PrimitiveType;
-            // The remainder might match a regularly promoted field exactly. If
-            // it does then use the promoted field's type so we can create a
-            // direct access.
-            unsigned srcPromField = srcAccess.FindRegularlyPromotedField(remainderStrategy.PrimitiveOffset, m_compiler);
-            unsigned storePromField =
-                storeAccess.FindRegularlyPromotedField(remainderStrategy.PrimitiveOffset, m_compiler);
-
-            if ((srcPromField != BAD_VAR_NUM) || (storePromField != BAD_VAR_NUM))
-            {
-                var_types regPromFieldType =
-                    m_compiler->lvaGetDesc(srcPromField != BAD_VAR_NUM ? srcPromField : storePromField)->TypeGet();
-                if (genTypeSize(regPromFieldType) == genTypeSize(primitiveType))
-                {
-                    primitiveType = regPromFieldType;
-                }
-            }
-
-            GenTree* src   = srcAccess.CreateRead(remainderStrategy.PrimitiveOffset, primitiveType, m_compiler);
-            GenTree* store = storeAccess.CreateStore(remainderStrategy.PrimitiveOffset, primitiveType, src, m_compiler);
-            statements->AddStatement(store);
-        }
-    }
 };
 
 //------------------------------------------------------------------------
