@@ -4,8 +4,8 @@
 // Work In Progress to add native events to EventPipe
 // shipping criteria: no EVENTPIPE-NATIVEAOT-TODO left in the codebase
 // @TODO: Audit native events in NativeAOT Runtime
-#ifndef __CLR_ETW_ALL_MAIN_H__
-#define __CLR_ETW_ALL_MAIN_H__
+#ifndef CLR_ETW_ALL_MAIN_H
+#define CLR_ETW_ALL_MAIN_H
 
 #include "clreventpipewriteevents.h"
 #include "EtwEvents.h"
