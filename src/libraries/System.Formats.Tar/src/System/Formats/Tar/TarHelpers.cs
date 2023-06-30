@@ -442,9 +442,8 @@ namespace System.Formats.Tar
 
             return childFullPath.StartsWith(parentFullPath, PathInternal.StringComparison);
 
-            // We don't need to check for AltDirectorySeparatorChar, full paths are normalized to DirectorySeparatorChar.
             static bool IsDirectorySeparatorChar(char c)
-                => c == Path.DirectorySeparatorChar;
+                => c == Path.DirectorySeparatorChar || c == Path.AltDirectorySeparatorChar;
         }
     }
 }
