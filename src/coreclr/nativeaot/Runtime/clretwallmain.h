@@ -46,66 +46,6 @@ inline ULONG FireEtwExceptionThrown_V1(
     return status;
 }
 
-inline BOOL EventEnabledGCAllocationTick_V1(void) {return EventPipeEventEnabledGCAllocationTick_V1();}
-
-inline ULONG FireEtwGCAllocationTick_V1(
-    const unsigned int  AllocationAmount,
-    const unsigned int  AllocationKind,
-    const unsigned short  ClrInstanceID,
-    const GUID * ActivityId = nullptr,
-    const GUID * RelatedActivityId = nullptr
-)
-{
-    ULONG status = EventPipeWriteEventGCAllocationTick_V1(AllocationAmount,AllocationKind,ClrInstanceID,ActivityId,RelatedActivityId);
-#ifndef TARGET_UNIX
-    status &= FireEtXplatGCAllocationTick_V1(AllocationAmount,AllocationKind,ClrInstanceID);
-#endif
-    return status;
-}
-
-inline BOOL EventEnabledGCAllocationTick_V2(void) {return EventPipeEventEnabledGCAllocationTick_V2();}
-
-inline ULONG FireEtwGCAllocationTick_V2(
-    const unsigned int  AllocationAmount,
-    const unsigned int  AllocationKind,
-    const unsigned short  ClrInstanceID,
-    const unsigned __int64  AllocationAmount64,
-    void*  TypeID,
-    const WCHAR*  TypeName,
-    const unsigned int  HeapIndex,
-    const GUID * ActivityId = nullptr,
-    const GUID * RelatedActivityId = nullptr
-)
-{
-    ULONG status = EventPipeWriteEventGCAllocationTick_V2(AllocationAmount,AllocationKind,ClrInstanceID,AllocationAmount64,TypeID,TypeName,HeapIndex,ActivityId,RelatedActivityId);
-#ifndef TARGET_UNIX
-    status &= FireEtXplatGCAllocationTick_V2(AllocationAmount,AllocationKind,ClrInstanceID,AllocationAmount64,TypeID,TypeName,HeapIndex);
-#endif
-    return status;
-}
-
-inline BOOL EventEnabledGCAllocationTick_V3(void) {return EventPipeEventEnabledGCAllocationTick_V3();}
-
-inline ULONG FireEtwGCAllocationTick_V3(
-    const unsigned int  AllocationAmount,
-    const unsigned int  AllocationKind,
-    const unsigned short  ClrInstanceID,
-    const unsigned __int64  AllocationAmount64,
-    void*  TypeID,
-    const WCHAR*  TypeName,
-    const unsigned int  HeapIndex,
-    void*  Address,
-    const GUID * ActivityId = nullptr,
-    const GUID * RelatedActivityId = nullptr
-)
-{
-    ULONG status = EventPipeWriteEventGCAllocationTick_V3(AllocationAmount,AllocationKind,ClrInstanceID,AllocationAmount64,TypeID,TypeName,HeapIndex,Address,ActivityId,RelatedActivityId);
-#ifndef TARGET_UNIX
-    status &= FireEtXplatGCAllocationTick_V3(AllocationAmount,AllocationKind,ClrInstanceID,AllocationAmount64,TypeID,TypeName,HeapIndex,Address);
-#endif
-    return status;
-}
-
 inline BOOL EventEnabledGCBulkEdge(void) {return EventPipeEventEnabledGCBulkEdge();}
 
 inline ULONG FireEtwGCBulkEdge(
@@ -337,29 +277,6 @@ inline ULONG FireEtwGCGenerationRange(
     ULONG status = EventPipeWriteEventGCGenerationRange(Generation,RangeStart,RangeUsedLength,RangeReservedLength,ClrInstanceID,ActivityId,RelatedActivityId);
 #ifndef TARGET_UNIX
     status &= FireEtXplatGCGenerationRange(Generation,RangeStart,RangeUsedLength,RangeReservedLength,ClrInstanceID);
-#endif
-    return status;
-}
-
-inline BOOL EventEnabledGCGlobalHeapHistory_V2(void) {return EventPipeEventEnabledGCGlobalHeapHistory_V2();}
-
-inline ULONG FireEtwGCGlobalHeapHistory_V2(
-    const unsigned __int64  FinalYoungestDesired,
-    const signed int  NumHeaps,
-    const unsigned int  CondemnedGeneration,
-    const unsigned int  Gen0ReductionCount,
-    const unsigned int  Reason,
-    const unsigned int  GlobalMechanisms,
-    const unsigned short  ClrInstanceID,
-    const unsigned int  PauseMode,
-    const unsigned int  MemoryPressure,
-    const GUID * ActivityId = nullptr,
-    const GUID * RelatedActivityId = nullptr
-)
-{
-    ULONG status = EventPipeWriteEventGCGlobalHeapHistory_V2(FinalYoungestDesired,NumHeaps,CondemnedGeneration,Gen0ReductionCount,Reason,GlobalMechanisms,ClrInstanceID,PauseMode,MemoryPressure,ActivityId,RelatedActivityId);
-#ifndef TARGET_UNIX
-    status &= FireEtXplatGCGlobalHeapHistory_V2(FinalYoungestDesired,NumHeaps,CondemnedGeneration,Gen0ReductionCount,Reason,GlobalMechanisms,ClrInstanceID,PauseMode,MemoryPressure);
 #endif
     return status;
 }
@@ -598,25 +515,6 @@ inline ULONG FireEtwSetGCHandle(
     ULONG status = EventPipeWriteEventSetGCHandle(HandleID,ObjectID,Kind,Generation,AppDomainID,ClrInstanceID,ActivityId,RelatedActivityId);
 #ifndef TARGET_UNIX
     status &= FireEtXplatSetGCHandle(HandleID,ObjectID,Kind,Generation,AppDomainID,ClrInstanceID);
-#endif
-    return status;
-}
-
-inline BOOL EventEnabledGCStart_V1(void) {return EventPipeEventEnabledGCStart_V1();}
-
-inline ULONG FireEtwGCStart_V1(
-    const unsigned int  Count,
-    const unsigned int  Depth,
-    const unsigned int  Reason,
-    const unsigned int  Type,
-    const unsigned short  ClrInstanceID,
-    const GUID * ActivityId = nullptr,
-    const GUID * RelatedActivityId = nullptr
-)
-{
-    ULONG status = EventPipeWriteEventGCStart_V1(Count,Depth,Reason,Type,ClrInstanceID,ActivityId,RelatedActivityId);
-#ifndef TARGET_UNIX
-    status &= FireEtXplatGCStart_V1(Count,Depth,Reason,Type,ClrInstanceID);
 #endif
     return status;
 }

@@ -26,9 +26,9 @@ struct EventPipeEventInstanceData
 
 struct EventPipeSessionInfo
 {
-    FILETIME StartTimeAsUTCFileTime;
-    LARGE_INTEGER StartTimeStamp;
-    LARGE_INTEGER TimeStampFrequency;
+    int64_t StartTimeAsUTCFileTime;
+    int64_t StartTimeStamp;
+    uint64_t TimeStampFrequency;
 };
 
 EXTERN_C NATIVEAOT_API uint64_t __cdecl RhEventPipeInternal_Enable(
@@ -136,13 +136,12 @@ EXTERN_C NATIVEAOT_API UInt32_BOOL __cdecl RhEventPipeInternal_GetSessionInfo(ui
     bool retVal = false;
     if (pSessionInfo != NULL)
     {
-        EventPipeSession *pSession = EventPipeAdapter::GetSession(sessionID);
+        EventPipeSession *pSession = ep_get_session(sessionID);
         if (pSession != NULL)
         {
-            pSessionInfo->StartTimeAsUTCFileTime = EventPipeAdapter::GetSessionStartTime(pSession);
-            pSessionInfo->StartTimeStamp.QuadPart = EventPipeAdapter::GetSessionStartTimestamp(pSession);
-            // @TODO
-            //pSessionInfo->TimeStampFrequency = reinterpret_cast<LARGE_INTEGER>(PalQueryPerformanceFrequency());
+            pSessionInfo->StartTimeAsUTCFileTime = ep_session_get_session_start_time (pSession);
+            pSessionInfo->StartTimeStamp = ep_session_get_session_start_timestamp(pSession);
+            pSessionInfo->TimeStampFrequency = PalQueryPerformanceFrequency();
             retVal = true;
         }
     }
@@ -178,101 +177,6 @@ EXTERN_C NATIVEAOT_API UInt32_BOOL __cdecl RhEventPipeInternal_SignalSession(uin
 EXTERN_C NATIVEAOT_API UInt32_BOOL __cdecl RhEventPipeInternal_WaitForSessionSignal(uint64_t sessionID, int32_t timeoutMs)
 {
     return EventPipeAdapter::WaitForSessionSignal(sessionID, timeoutMs);
-}
-
-EXTERN_C NATIVEAOT_API void __cdecl RhEventPipeInternal_LogContentionLockCreated(intptr_t LockID, intptr_t AssociatedObjectID, uint16_t ClrInstanceID)
-{
-    FireEtwContentionLockCreated(reinterpret_cast<const void*>(LockID), reinterpret_cast<const void*>(AssociatedObjectID), ClrInstanceID);
-}
-
-EXTERN_C NATIVEAOT_API void __cdecl RhEventPipeInternal_LogContentionStart(uint16_t ContentionFlags, uint16_t ClrInstanceID, intptr_t LockID, intptr_t AssociatedObjectID, uint64_t LockOwnerThreadID)
-{
-    FireEtwContentionStart_V2((const unsigned char)(ContentionFlags), ClrInstanceID, reinterpret_cast<const void*>(LockID), reinterpret_cast<const void*>(AssociatedObjectID), LockOwnerThreadID);
-}
-
-EXTERN_C NATIVEAOT_API void __cdecl RhEventPipeInternal_LogContentionStop(uint16_t ContentionFlags, uint16_t ClrInstanceID, double DurationNs)
-{
-    FireEtwContentionStop_V1((const unsigned char)(ContentionFlags), ClrInstanceID, DurationNs);
-}
-
-EXTERN_C NATIVEAOT_API void __cdecl RhEventPipeInternal_LogThreadPoolWorkerThreadStart(uint32_t activeWorkerThreadCount, uint32_t retiredWorkerThreadCount, uint16_t clrInstanceID)
-{
-    FireEtwThreadPoolWorkerThreadStart(activeWorkerThreadCount, retiredWorkerThreadCount, clrInstanceID);
-}
-
-EXTERN_C NATIVEAOT_API void __cdecl RhEventPipeInternal_LogThreadPoolWorkerThreadStop(uint32_t ActiveWorkerThreadCount, uint32_t RetiredWorkerThreadCount, uint16_t ClrInstanceID)
-{
-    FireEtwThreadPoolWorkerThreadStop(ActiveWorkerThreadCount, RetiredWorkerThreadCount, ClrInstanceID);
-}
-
-EXTERN_C NATIVEAOT_API void __cdecl RhEventPipeInternal_LogThreadPoolWorkerThreadWait(uint32_t ActiveWorkerThreadCount, uint32_t RetiredWorkerThreadCount, uint16_t ClrInstanceID)
-{
-    FireEtwThreadPoolWorkerThreadWait(ActiveWorkerThreadCount, RetiredWorkerThreadCount, ClrInstanceID);
-}
-
-EXTERN_C NATIVEAOT_API void __cdecl RhEventPipeInternal_LogThreadPoolMinMaxThreads(uint16_t MinWorkerThreads, uint16_t MaxWorkerThreads, uint16_t MinIOCompletionThreads, uint16_t MaxIOCompletionThreads, uint16_t ClrInstanceID)
-{
-    FireEtwThreadPoolMinMaxThreads(MinWorkerThreads, MaxWorkerThreads, MinIOCompletionThreads, MaxIOCompletionThreads, ClrInstanceID);
-}
-
-EXTERN_C NATIVEAOT_API void __cdecl RhEventPipeInternal_LogThreadPoolWorkerThreadAdjustmentSample(double Throughput, uint16_t ClrInstanceID)
-{
-    FireEtwThreadPoolWorkerThreadAdjustmentSample(Throughput, ClrInstanceID);
-}
-
-EXTERN_C NATIVEAOT_API void __cdecl RhEventPipeInternal_LogThreadPoolWorkerThreadAdjustmentAdjustment(double AverageThroughput, uint32_t NewWorkerThreadCount, uint32_t Reason, uint16_t ClrInstanceID)
-{
-    FireEtwThreadPoolWorkerThreadAdjustmentAdjustment(AverageThroughput, NewWorkerThreadCount, Reason, ClrInstanceID);
-}
-
-EXTERN_C NATIVEAOT_API void __cdecl RhEventPipeInternal_LogThreadPoolWorkerThreadAdjustmentStats(
-    double Duration,
-    double Throughput,
-    double ThreadPoolWorkerThreadWait,
-    double ThroughputWave,
-    double ThroughputErrorEstimate,
-    double AverageThroughputErrorEstimate,
-    double ThroughputRatio,
-    double Confidence,
-    double NewControlSetting,
-    uint16_t NewThreadWaveMagnitude,
-    uint16_t ClrInstanceID)
-{
-    FireEtwThreadPoolWorkerThreadAdjustmentStats(Duration, Throughput, ThreadPoolWorkerThreadWait, ThroughputWave, ThroughputErrorEstimate, AverageThroughputErrorEstimate, ThroughputRatio, Confidence, NewControlSetting, NewThreadWaveMagnitude, ClrInstanceID);
-}
-
-EXTERN_C NATIVEAOT_API void __cdecl RhEventPipeInternal_LogThreadPoolIOEnqueue(
-    uint32_t * NativeOverlapped,
-    uint32_t * Overlapped,
-    bool MultiDequeues,
-    uint16_t ClrInstanceID)
-{
-    FireEtwThreadPoolIOEnqueue(NativeOverlapped, Overlapped, MultiDequeues, ClrInstanceID);
-}
-
-EXTERN_C NATIVEAOT_API void __cdecl RhEventPipeInternal_LogThreadPoolIODequeue(uint32_t * NativeOverlapped, uint32_t * Overlapped, uint16_t ClrInstanceID)
-{
-    FireEtwThreadPoolIODequeue(NativeOverlapped, Overlapped, ClrInstanceID);
-}
-
-EXTERN_C NATIVEAOT_API void __cdecl RhEventPipeInternal_LogThreadPoolWorkingThreadCount(uint32_t Count, uint16_t ClrInstanceID)
-{
-    FireEtwThreadPoolWorkingThreadCount(Count, ClrInstanceID);
-}
-
-EXTERN_C NATIVEAOT_API void __cdecl RhEventPipeInternal_LogThreadPoolIOPack(uint32_t * NativeOverlapped, uint32_t * Overlapped, uint16_t ClrInstanceID)
-{
-    FireEtwThreadPoolIOPack(NativeOverlapped, Overlapped, ClrInstanceID);
-}
-
-EXTERN_C NATIVEAOT_API void __cdecl RhpEtwExceptionThrown(LPCWSTR exceptionTypeName, LPCWSTR exceptionMessage, void* faultingIP, HRESULT hresult)
-{
-    FireEtwExceptionThrown_V1(exceptionTypeName,
-        exceptionMessage,
-        faultingIP,
-        hresult,
-        0,
-        GetClrInstanceId());
 }
 
 #endif // FEATURE_PERFTRACING

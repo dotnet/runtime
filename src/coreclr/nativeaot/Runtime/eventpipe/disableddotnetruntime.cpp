@@ -39,49 +39,6 @@ ULONG EventPipeWriteEventExceptionThrown_V1(
     return 0;
 }
 
-ULONG EventPipeWriteEventGCAllocationTick_V1(
-    const unsigned int  AllocationAmount,
-    const unsigned int  AllocationKind,
-    const unsigned short  ClrInstanceID,
-    const GUID * ActivityId,
-    const GUID * RelatedActivityId
-)
-{
-    return 0;
-}
-
-
-ULONG EventPipeWriteEventGCAllocationTick_V2(
-    const unsigned int  AllocationAmount,
-    const unsigned int  AllocationKind,
-    const unsigned short  ClrInstanceID,
-    const unsigned __int64  AllocationAmount64,
-    const void*  TypeID,
-    const WCHAR*  TypeName,
-    const unsigned int  HeapIndex,
-    const GUID * ActivityId,
-    const GUID * RelatedActivityId
-)
-{
-    return 0;
-}
-
-ULONG EventPipeWriteEventGCAllocationTick_V3(
-    const unsigned int  AllocationAmount,
-    const unsigned int  AllocationKind,
-    const unsigned short  ClrInstanceID,
-    const unsigned __int64  AllocationAmount64,
-    const void*  TypeID,
-    const WCHAR*  TypeName,
-    const unsigned int  HeapIndex,
-    const void*  Address,
-    const GUID * ActivityId,
-    const GUID * RelatedActivityId
-)
-{
-    return 0;
-}
-
 ULONG EventPipeWriteEventGCBulkEdge(
     const unsigned int  Index,
     const unsigned int  Count,
@@ -232,23 +189,6 @@ ULONG EventPipeWriteEventGCGenerationRange(
     const unsigned __int64  RangeUsedLength,
     const unsigned __int64  RangeReservedLength,
     const unsigned short  ClrInstanceID,
-    const GUID * ActivityId,
-    const GUID * RelatedActivityId
-)
-{
-    return 0;
-}
-
-ULONG EventPipeWriteEventGCGlobalHeapHistory_V2(
-    const unsigned __int64  FinalYoungestDesired,
-    const signed int  NumHeaps,
-    const unsigned int  CondemnedGeneration,
-    const unsigned int  Gen0ReductionCount,
-    const unsigned int  Reason,
-    const unsigned int  GlobalMechanisms,
-    const unsigned short  ClrInstanceID,
-    const unsigned int  PauseMode,
-    const unsigned int  MemoryPressure,
     const GUID * ActivityId,
     const GUID * RelatedActivityId
 )
@@ -414,19 +354,6 @@ ULONG EventPipeWriteEventSetGCHandle(
     const unsigned int  Kind,
     const unsigned int  Generation,
     const unsigned __int64  AppDomainID,
-    const unsigned short  ClrInstanceID,
-    const GUID * ActivityId,
-    const GUID * RelatedActivityId
-)
-{
-    return 0;
-}
-
-ULONG EventPipeWriteEventGCStart_V1(
-    const unsigned int  Count,
-    const unsigned int  Depth,
-    const unsigned int  Reason,
-    const unsigned int  Type,
     const unsigned short  ClrInstanceID,
     const GUID * ActivityId,
     const GUID * RelatedActivityId

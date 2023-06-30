@@ -147,11 +147,9 @@ void GCToCLREventSink::FireGCGlobalHeapHistory_V4(uint64_t finalYoungestDesired,
         count, valuesLen, values);
 }
 
-void GCToCLREventSink::FireGCAllocationTick_V1(uint32_t allocationAmount, uint32_t allocationKind)
+void GCToCLREventSink::FireGCAllocationTick_V1(uint32_t allocationAmount,
+        uint32_t allocationKind)
 {
-    LIMITED_METHOD_CONTRACT;
-
-    FireEtwGCAllocationTick_V1(allocationAmount, allocationKind, GetClrInstanceId());
 }
 
 void GCToCLREventSink::FireGCAllocationTick_V4(uint64_t allocationAmount,
@@ -163,11 +161,10 @@ void GCToCLREventSink::FireGCAllocationTick_V4(uint64_t allocationAmount,
     LIMITED_METHOD_CONTRACT;
 
     void * typeId = RedhawkGCInterface::GetLastAllocEEType();
-    WCHAR * name = nullptr;
+    wchar_t * name = nullptr;
 
     if (typeId != nullptr)
     {
-#ifdef TARGET_WINDOWS
         FireEtwGCAllocationTick_V4(static_cast<uint32_t>(allocationAmount),
             allocationKind,
             GetClrInstanceId(),
@@ -177,16 +174,6 @@ void GCToCLREventSink::FireGCAllocationTick_V4(uint64_t allocationAmount,
             heapIndex,
             objectAddress,
             objectSize);
-#else
-        FireEtwGCAllocationTick_V3(static_cast<uint32_t>(allocationAmount),
-            allocationKind,
-            GetClrInstanceId(),
-            allocationAmount,
-            typeId,
-            name,
-            heapIndex,
-            objectAddress);
-#endif
     }
 }
 

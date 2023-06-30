@@ -145,7 +145,7 @@ namespace System
                     unsafe
                     {
                         fixed (char* exceptionTypeName = typeName, exceptionMessage = message)
-                            RuntimeImports.RhpEtwExceptionThrown(exceptionTypeName, exceptionMessage, IP, ex.HResult);
+                            RuntimeImports.NativeRuntimeEventSource_LogExceptionThrown(exceptionTypeName, exceptionMessage, IP, ex.HResult);
                     }
                 }
 #endif

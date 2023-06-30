@@ -24,39 +24,6 @@ ULONG EventPipeWriteEventExceptionThrown_V1(
     const GUID * ActivityId = nullptr,
     const GUID * RelatedActivityId = nullptr
 );
-BOOL EventPipeEventEnabledGCAllocationTick_V1(void);
-ULONG EventPipeWriteEventGCAllocationTick_V1(
-    const unsigned int  AllocationAmount,
-    const unsigned int  AllocationKind,
-    const unsigned short  ClrInstanceID,
-    const GUID * ActivityId = nullptr,
-    const GUID * RelatedActivityId = nullptr
-);
-BOOL EventPipeEventEnabledGCAllocationTick_V2(void);
-ULONG EventPipeWriteEventGCAllocationTick_V2(
-    const unsigned int  AllocationAmount,
-    const unsigned int  AllocationKind,
-    const unsigned short  ClrInstanceID,
-    const unsigned __int64  AllocationAmount64,
-    const void*  TypeID,
-    const WCHAR*  TypeName,
-    const unsigned int  HeapIndex,
-    const GUID * ActivityId = nullptr,
-    const GUID * RelatedActivityId = nullptr
-);
-BOOL EventPipeEventEnabledGCAllocationTick_V3(void);
-ULONG EventPipeWriteEventGCAllocationTick_V3(
-    const unsigned int  AllocationAmount,
-    const unsigned int  AllocationKind,
-    const unsigned short  ClrInstanceID,
-    const unsigned __int64  AllocationAmount64,
-    const void*  TypeID,
-    const WCHAR*  TypeName,
-    const unsigned int  HeapIndex,
-    const void*  Address,
-    const GUID * ActivityId = nullptr,
-    const GUID * RelatedActivityId = nullptr
-);
 BOOL EventPipeEventEnabledGCBulkEdge(void);
 ULONG EventPipeWriteEventGCBulkEdge(
     const unsigned int  Index,
@@ -172,20 +139,6 @@ ULONG EventPipeWriteEventGCGenerationRange(
     const unsigned __int64  RangeUsedLength,
     const unsigned __int64  RangeReservedLength,
     const unsigned short  ClrInstanceID,
-    const GUID * ActivityId = nullptr,
-    const GUID * RelatedActivityId = nullptr
-);
-BOOL EventPipeEventEnabledGCGlobalHeapHistory_V2(void);
-ULONG EventPipeWriteEventGCGlobalHeapHistory_V2(
-    const unsigned __int64  FinalYoungestDesired,
-    const signed int  NumHeaps,
-    const unsigned int  CondemnedGeneration,
-    const unsigned int  Gen0ReductionCount,
-    const unsigned int  Reason,
-    const unsigned int  GlobalMechanisms,
-    const unsigned short  ClrInstanceID,
-    const unsigned int  PauseMode,
-    const unsigned int  MemoryPressure,
     const GUID * ActivityId = nullptr,
     const GUID * RelatedActivityId = nullptr
 );
@@ -315,16 +268,6 @@ ULONG EventPipeWriteEventSetGCHandle(
     const unsigned int  Kind,
     const unsigned int  Generation,
     const unsigned __int64  AppDomainID,
-    const unsigned short  ClrInstanceID,
-    const GUID * ActivityId = nullptr,
-    const GUID * RelatedActivityId = nullptr
-);
-BOOL EventPipeEventEnabledGCStart_V1(void);
-ULONG EventPipeWriteEventGCStart_V1(
-    const unsigned int  Count,
-    const unsigned int  Depth,
-    const unsigned int  Reason,
-    const unsigned int  Type,
     const unsigned short  ClrInstanceID,
     const GUID * ActivityId = nullptr,
     const GUID * RelatedActivityId = nullptr
