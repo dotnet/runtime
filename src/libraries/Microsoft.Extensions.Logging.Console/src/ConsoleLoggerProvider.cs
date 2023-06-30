@@ -75,7 +75,6 @@ namespace Microsoft.Extensions.Logging.Console
                 // found in System.ConsoleUtils.EmitAnsiColorCodes.
                 return true;
             }
-        
             if (
 #if NETFRAMEWORK
                 Environment.OSVersion.Platform != PlatformID.Win32NT
