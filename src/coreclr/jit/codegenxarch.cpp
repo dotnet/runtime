@@ -438,7 +438,16 @@ void CodeGen::genSetRegToConst(regNumber targetReg, var_types targetType, simd_t
             simd8_t val8 = *(simd8_t*)val;
             if (val8.IsAllBitsSet())
             {
-                emit->emitIns_SIMD_R_R_R(INS_pcmpeqd, EA_16BYTE, targetReg, targetReg, targetReg);
+                if (emitter::isHighSimdReg(targetReg))
+                {
+                    assert(compiler->compIsaSupportedDebugOnly(InstructionSet_AVX512F));
+                    emit->emitIns_SIMD_R_R_R_I(INS_vpternlogd, attr, targetReg, targetReg, targetReg,
+                                               static_cast<int8_t>(0xFF));
+                }
+                else
+                {
+                    emit->emitIns_SIMD_R_R_R(INS_pcmpeqd, EA_16BYTE, targetReg, targetReg, targetReg);
+                }
             }
             else if (val8.IsZero())
             {
@@ -456,7 +465,16 @@ void CodeGen::genSetRegToConst(regNumber targetReg, var_types targetType, simd_t
             simd12_t val12 = *(simd12_t*)val;
             if (val12.IsAllBitsSet())
             {
-                emit->emitIns_SIMD_R_R_R(INS_pcmpeqd, EA_16BYTE, targetReg, targetReg, targetReg);
+                if (emitter::isHighSimdReg(targetReg))
+                {
+                    assert(compiler->compIsaSupportedDebugOnly(InstructionSet_AVX512F));
+                    emit->emitIns_SIMD_R_R_R_I(INS_vpternlogd, attr, targetReg, targetReg, targetReg,
+                                               static_cast<int8_t>(0xFF));
+                }
+                else
+                {
+                    emit->emitIns_SIMD_R_R_R(INS_pcmpeqd, EA_16BYTE, targetReg, targetReg, targetReg);
+                }
             }
             else if (val12.IsZero())
             {
@@ -476,7 +494,16 @@ void CodeGen::genSetRegToConst(regNumber targetReg, var_types targetType, simd_t
             simd16_t val16 = *(simd16_t*)val;
             if (val16.IsAllBitsSet())
             {
-                emit->emitIns_SIMD_R_R_R(INS_pcmpeqd, attr, targetReg, targetReg, targetReg);
+                if (emitter::isHighSimdReg(targetReg))
+                {
+                    assert(compiler->compIsaSupportedDebugOnly(InstructionSet_AVX512F));
+                    emit->emitIns_SIMD_R_R_R_I(INS_vpternlogd, attr, targetReg, targetReg, targetReg,
+                                               static_cast<int8_t>(0xFF));
+                }
+                else
+                {
+                    emit->emitIns_SIMD_R_R_R(INS_pcmpeqd, attr, targetReg, targetReg, targetReg);
+                }
             }
             else if (val16.IsZero())
             {
@@ -494,7 +521,16 @@ void CodeGen::genSetRegToConst(regNumber targetReg, var_types targetType, simd_t
             simd32_t val32 = *(simd32_t*)val;
             if (val32.IsAllBitsSet() && compiler->compOpportunisticallyDependsOn(InstructionSet_AVX2))
             {
-                emit->emitIns_SIMD_R_R_R(INS_pcmpeqd, attr, targetReg, targetReg, targetReg);
+                if (emitter::isHighSimdReg(targetReg))
+                {
+                    assert(compiler->compIsaSupportedDebugOnly(InstructionSet_AVX512F));
+                    emit->emitIns_SIMD_R_R_R_I(INS_vpternlogd, attr, targetReg, targetReg, targetReg,
+                                               static_cast<int8_t>(0xFF));
+                }
+                else
+                {
+                    emit->emitIns_SIMD_R_R_R(INS_pcmpeqd, attr, targetReg, targetReg, targetReg);
+                }
             }
             else if (val32.IsZero())
             {
@@ -592,8 +628,17 @@ void CodeGen::genSetRegToConst(regNumber targetReg, var_types targetType, GenTre
             }
             else if (tree->IsFloatAllBitsSet())
             {
-                // A faster/smaller way to generate AllBitsSet
-                emit->emitIns_SIMD_R_R_R(INS_pcmpeqd, EA_16BYTE, targetReg, targetReg, targetReg);
+                if (emitter::isHighSimdReg(targetReg))
+                {
+                    assert(compiler->compIsaSupportedDebugOnly(InstructionSet_AVX512F));
+                    emit->emitIns_SIMD_R_R_R_I(INS_vpternlogd, EA_16BYTE, targetReg, targetReg, targetReg,
+                                               static_cast<int8_t>(0xFF));
+                }
+                else
+                {
+                    // A faster/smaller way to generate AllBitsSet
+                    emit->emitIns_SIMD_R_R_R(INS_pcmpeqd, EA_16BYTE, targetReg, targetReg, targetReg);
+                }
             }
             else
             {
