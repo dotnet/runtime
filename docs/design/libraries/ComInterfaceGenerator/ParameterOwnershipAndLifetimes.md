@@ -1,6 +1,7 @@
 # Ownership and Lifetimes of parameters
 
 ## Motivation
+
 The ComInterfaceGenerator generates both CCW and RCW, and the generated methods on each could fail at many points in the generated stubs. It is important to make sure these failures do not leak memory or lead to double frees.
 This document outlines the lifetimes and ownerships of the parameters as they are passed from managed stubs to COM and vice versa.
 
@@ -9,18 +10,18 @@ This document outlines the lifetimes and ownerships of the parameters as they ar
 The transfer of ownership depends on the following characteristics of the parameter types
 
 Indirection level
-- ByValue: A value that is not indirected (e.g. `int`, `float`, blittable types in C#)
-- Single Indirection: A reference to a value (e.g. pointers / `int*`, reference types in C#)
-- Double Indirection: A reference to a reference to a value (e.g. pointers to pointers / `int**`, `ref` parameters in C#)
+- ByValue: A value that is not indirected (for example `int`, `float`, blittable types in C#)
+- Single Indirection: A reference to a value (for example pointers / `int*`, reference types in C#, references to value types in C#)
+- Double Indirection: A reference to a reference to a value (for example pointers to pointers / `int**`, `ref` parameters in C#)
 
 Mutability (Only relevant for indirect values)
-- Immutable - The caller is not allowed to modify the value pointed at (e.g. `in` in C#, `const` in C++)
-- Mutable - The callee may modify the value pointed at (e.g. ref value types and reference types in C#)
-- Requires Mutation - The callee must modify the value pointed at (e.g. `out` in C#)
+- Immutable - The caller is not allowed to modify the value pointed at (for example `in` in C#, `const` in C++)
+- Mutable - The callee may modify the value pointed at (for example ref value types and reference types in C#)
+- Requires Mutation - The callee must modify the value pointed at (for example `out` in C#)
 
 ## Defaults
 
-The following are the default characteristics of C# parameter types:
+The following are the default characteristics of C# parameter types.
 
 #### Indirection
 
@@ -66,7 +67,7 @@ For example, the array container for `ref ClassX[] arrayParamName` follows the s
 
 When ownership of an array container is transfered, the elements of the array are all transfered as well.
 For jagged arrays of multiple dimensions, this works transitively
-(e.g. when the container for `ClassX[][][][]` is transferred, all the elements of type `ClassX[][][]` are transfered, and the elements of each of those are transfered and so on).
+(for example when the container for `ClassX[][][][]` is transferred, all the elements of type `ClassX[][][]` are transfered, and the elements of each of those are transfered and so on).
 
 #### Elements
 
@@ -95,7 +96,7 @@ An array of blittable elements follows the same rules as Single Indirection (own
 
 ## Double Indirection
 
-Double Indirection (e.g. `ClassX** paramName` in C) may transfer ownership of heap memory.
+Double Indirection (for example `ClassX** paramName` in C) may transfer ownership of heap memory.
 For clarity, the parameter value (a reference to a reference to memory on the heap) will be refered to as "the double reference".
 The reference to the memory on the heap will be called "the single reference".
 The memory on the heap that the single reference points to will be called "the heap memory".
