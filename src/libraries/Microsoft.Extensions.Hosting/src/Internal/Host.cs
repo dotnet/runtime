@@ -97,7 +97,8 @@ namespace Microsoft.Extensions.Hosting.Internal
                 if (_hostedLifecycleServices is not null)
                 {
                     // Call StartingAsync().
-                    await ForeachService(_hostedLifecycleServices, token, concurrent, abortOnFirstException, exceptions, (service, token) => service.StartingAsync(token)).ConfigureAwait(false);
+                    await ForeachService(_hostedLifecycleServices, token, concurrent, abortOnFirstException, exceptions,
+                        (service, token) => service.StartingAsync(token)).ConfigureAwait(false);
                 }
 
                 // Call StartAsync().
@@ -115,7 +116,8 @@ namespace Microsoft.Extensions.Hosting.Internal
                 if (_hostedLifecycleServices is not null)
                 {
                     // Call StartedAsync().
-                    await ForeachService(_hostedLifecycleServices, token, concurrent, abortOnFirstException, exceptions, (service, token) => service.StartedAsync(token)).ConfigureAwait(false);
+                    await ForeachService(_hostedLifecycleServices, token, concurrent, abortOnFirstException, exceptions,
+                        (service, token) => service.StartedAsync(token)).ConfigureAwait(false);
                 }
 
                 if (exceptions.Count > 0)
@@ -225,7 +227,8 @@ namespace Microsoft.Extensions.Hosting.Internal
                     // Call StoppingAsync().
                     if (reversedLifetimeServices is not null)
                     {
-                        await ForeachService(reversedLifetimeServices, token, concurrent, abortOnFirstException: false, exceptions, (service, token) => service.StoppingAsync(token)).ConfigureAwait(false);
+                        await ForeachService(reversedLifetimeServices, token, concurrent, abortOnFirstException: false, exceptions,
+                            (service, token) => service.StoppingAsync(token)).ConfigureAwait(false);
                     }
 
                     // Call IHostApplicationLifetime.ApplicationStopping.
@@ -233,12 +236,14 @@ namespace Microsoft.Extensions.Hosting.Internal
                     _applicationLifetime.StopApplication();
 
                     // Call StopAsync().
-                    await ForeachService(reversedServices, token, concurrent, abortOnFirstException: false, exceptions, (service, token) => service.StopAsync(token)).ConfigureAwait(false);
+                    await ForeachService(reversedServices, token, concurrent, abortOnFirstException: false, exceptions, (service, token) =>
+                        service.StopAsync(token)).ConfigureAwait(false);
 
                     if (reversedLifetimeServices is not null)
                     {
                         // Call StoppedAsync().
-                        await ForeachService(reversedLifetimeServices, token, concurrent, abortOnFirstException: false, exceptions, (service, token) => service.StoppedAsync(token)).ConfigureAwait(false);
+                        await ForeachService(reversedLifetimeServices, token, concurrent, abortOnFirstException: false, exceptions, (service, token) =>
+                            service.StoppedAsync(token)).ConfigureAwait(false);
                     }
                 }
 
@@ -309,13 +314,13 @@ namespace Microsoft.Extensions.Hosting.Internal
                     {
                         if (task.Exception is not null)
                         {
-                            exceptions.Add(task.Exception); // Log exception from async method.
+                            exceptions.AddRange(task.Exception.InnerExceptions); // Log exception from async method.
                         }
                     }
                     else
                     {
                         tasks ??= new();
-                        tasks.Add(Task.Run(async () => await task.ConfigureAwait(false), token));
+                        tasks.Add(Task.Run(() => task, token));
                     }
                 }
 

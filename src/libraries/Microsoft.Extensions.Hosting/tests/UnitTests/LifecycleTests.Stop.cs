@@ -340,10 +340,6 @@ namespace Microsoft.Extensions.Hosting.Tests
                 Assert.True(impl.StopCalled);
                 Assert.True(impl.StoppedCalled);
 
-                Assert.Contains("(ThrowOnStopping)", ex.Message);
-                Assert.Contains("(ThrowOnStop)", ex.Message);
-                Assert.Contains("(ThrowOnStopped)", ex.Message);
-
                 Assert.Equal(3, ex.InnerExceptions.Count);
                 Assert.Contains("(ThrowOnStopping)", ex.InnerExceptions[0].Message);
                 Assert.Contains("(ThrowOnStop)", ex.InnerExceptions[1].Message);

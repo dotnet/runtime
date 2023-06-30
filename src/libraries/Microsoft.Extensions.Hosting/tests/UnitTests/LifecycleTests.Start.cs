@@ -117,7 +117,6 @@ namespace Microsoft.Extensions.Hosting.Tests
                 // Both run serially until the await.
                 Task start = host.StartAsync();
                 Verify(1, 1, 0, 0, 0, 0);
-                await Task.Delay(s_superShortDelay);
                 Verify(1, 1, 0, 0, 0, 0);
 
                 // Resume and check that both are not finished.
@@ -328,10 +327,6 @@ namespace Microsoft.Extensions.Hosting.Tests
                 Assert.True(impl.StartingCalled);
                 Assert.True(impl.StartCalled);
                 Assert.True(impl.StartedCalled);
-
-                Assert.Contains("(ThrowOnStarting)", ex.Message);
-                Assert.Contains("(ThrowOnStart)", ex.Message);
-                Assert.Contains("(ThrowOnStarted)", ex.Message);
 
                 Assert.Equal(3, ex.InnerExceptions.Count);
                 Assert.Contains("(ThrowOnStarting)", ex.InnerExceptions[0].Message);
