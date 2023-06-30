@@ -412,6 +412,7 @@ namespace System.Formats.Tar
         private static IEnumerable<(string fullpath, string entryname)> GetFilesForCreation(string sourceDirectoryName, int basePathLength)
         {
             // The default order to write a tar archive is to recurse into subdirectories first.
+            // This order is expected by 'tar' to restore directory timestamps properly without the user explicitly specifying `--delay-directory-restore`.
             // FileSystemEnumerable RecurseSubdirectories will first write further entries before recursing, so we don't use it here.
 
             var fse = new FileSystemEnumerable<(string fullpath, string entryname, bool recurse)>(
