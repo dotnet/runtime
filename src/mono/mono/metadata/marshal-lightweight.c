@@ -3123,6 +3123,22 @@ emit_return_ilgen (MonoMethodBuilder *mb)
 	mono_mb_emit_byte (mb, CEE_RET);
 }
 
+static void
+emit_method_init_ilgen (MonoMethodBuilder *mb, MonoAotModule *aot_module, MonoMethod *method, MonoBitSet *bitset, guint32 index, MonoBitSet* mono_inited)
+{	
+	// load aot_module
+	mono_mb_emit_ptr (mb, aot_module);
+	// load method
+	mono_mb_emit_ptr (mb, method);
+	// load method_index
+	mono_mb_emit_i4 (mb, index);
+	/// load bitset
+	mono_mb_emit_ptr (mb, bitset);
+	mono_mb_emit_icall_id (mb, MONO_JIT_ICALL_mini_nollvm_init_method);
+
+	mono_mb_emit_byte (mb, CEE_RET);
+}
+
 void
 mono_marshal_lightweight_init (void)
 {
@@ -3152,6 +3168,7 @@ mono_marshal_lightweight_init (void)
 	cb.emit_native_icall_wrapper = emit_native_icall_wrapper_ilgen;
 	cb.emit_icall_wrapper = emit_icall_wrapper_ilgen;
 	cb.emit_return = emit_return_ilgen;
+	cb.emit_method_init = emit_method_init_ilgen;
 	cb.emit_vtfixup_ftnptr = emit_vtfixup_ftnptr_ilgen;
 	cb.mb_skip_visibility = mb_skip_visibility_ilgen;
 	cb.mb_set_dynamic = mb_set_dynamic_ilgen;

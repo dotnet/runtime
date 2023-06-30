@@ -152,6 +152,7 @@ struct MonoAotModule {
 	guint8 *unwind_info;
 	/* Maps method index -> unbox tramp */
 	gpointer *unbox_tramp_per_method;
+	MonoBitSet *mono_inited;
 
 	/* Points to the mono EH data created by LLVM */
 	guint8 *mono_eh_frame;
@@ -1093,7 +1094,7 @@ decode_method_ref_with_target (MonoAotModule *module, MethodRef *ref, MonoMethod
 				g_free (sig);
 			} else if (subtype == WRAPPER_SUBTYPE_AOT_INIT) {
 				guint32 init_type = decode_value (p, &p);
-				ref->method = mono_marshal_get_aot_init_wrapper ((MonoAotInitSubtype) init_type);
+				ref->method = mono_marshal_get_aot_init_wrapper ((MonoAotInitSubtype) init_type, NULL, 0, NULL, NULL);
 			} else if (subtype == WRAPPER_SUBTYPE_LLVM_FUNC) {
 				guint32 init_type = decode_value (p, &p);
 				ref->method = mono_marshal_get_llvm_func_wrapper ((MonoLLVMFuncWrapperSubtype) init_type);
@@ -2217,6 +2218,11 @@ load_aot_module (MonoAssemblyLoadContext *alc, MonoAssembly *assembly, gpointer 
 		g_assert (!mscorlib_aot_module);
 		mscorlib_aot_module = amodule;
 	}
+
+	/*
+	 * Methods init bitset used for initialization during the runtime
+	 */
+	amodule->mono_inited = mono_bitset_new (amodule->info.nmethods, 0);
 
 	/* Compute method addresses */
 	amodule->methods = (void **)g_malloc0 (amodule->info.nmethods * sizeof (gpointer));
@@ -3528,6 +3534,12 @@ sort_methods (MonoAotModule *amodule)
 		g_free (method_indexes);
 }
 
+MonoBitSet*
+mono_aot_get_mono_inited (MonoAotModule *amodule)
+{
+	return amodule->mono_inited;
+}
+
 /*
  * mono_aot_find_jit_info:
  *
@@ -3995,6 +4007,10 @@ decode_patch (MonoAotModule *aot_module, MonoMemPool *mp, MonoJumpInfo *ji, guin
 	case MONO_PATCH_INFO_AOT_MODULE:
 	case MONO_PATCH_INFO_MSCORLIB_GOT_ADDR:
 		break;
+	case MONO_PATCH_INFO_INIT_BITSET: {
+		ji->data.target = aot_module->mono_inited;
+		break;
+	}
 	case MONO_PATCH_INFO_SIGNATURE:
 	case MONO_PATCH_INFO_GSHAREDVT_IN_WRAPPER:
 		ji->data.target = decode_signature (aot_module, p, &p);
@@ -5911,6 +5927,26 @@ static void
 no_specific_trampoline (void)
 {
 	g_assert_not_reached ();
+}
+
+void
+mini_nollvm_init_method (MonoAotModule* amodule, MonoMethod* method, guint32 method_index, MonoBitSet* mono_inited)
+{
+	ERROR_DECL (error);
+	if (init_method (amodule, NULL, method_index, method, NULL, error)) {
+		mono_bitset_set(mono_inited, method_index);
+	}
+	mono_error_assert_ok (error);
+}
+
+void
+mini_nollvm_init_method1 (MonoMethod* method, guint32 method_index, MonoBitSet* mono_inited)
+{
+	ERROR_DECL (error);
+	if (init_method (m_class_get_image (method->klass)->aot_module, NULL, method_index, method, NULL, error)) {
+		mono_bitset_set(mono_inited, method_index);
+	}
+	mono_error_assert_ok (error);
 }
 
 /*

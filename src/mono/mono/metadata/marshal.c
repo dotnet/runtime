@@ -2954,15 +2954,15 @@ mono_marshal_get_aot_init_wrapper_name (MonoAotInitSubtype subtype)
 }
 
 MonoMethod *
-mono_marshal_get_aot_init_wrapper (MonoAotInitSubtype subtype)
+mono_marshal_get_aot_init_wrapper (MonoAotInitSubtype subtype, MonoBitSet *bitset, guint32 token, MonoAotModule *aot_module, MonoMethod *method)
 {
 	MonoMethodBuilder *mb;
+	const char *name = mono_marshal_get_aot_init_wrapper_name (subtype);
 	MonoMethod *res;
 	WrapperInfo *info;
 	MonoMethodSignature *csig = NULL;
 	MonoType *void_type = mono_get_void_type ();
 	MonoType *int_type = mono_get_int_type ();
-	const char *name = mono_marshal_get_aot_init_wrapper_name (subtype);
 
 	switch (subtype) {
 		case AOT_INIT_METHOD:
@@ -2986,9 +2986,15 @@ mono_marshal_get_aot_init_wrapper (MonoAotInitSubtype subtype)
 
 	mb = mono_mb_new (mono_defaults.object_class, name, MONO_WRAPPER_OTHER);
 
+#if ENABLE_LLVM
 	// Just stub out the method with a "CEE_RET"
 	// Our codegen backend generates other code here
 	get_marshal_cb ()->emit_return (mb);
+#else
+	if (!mono_bitset_test(bitset, token)) {
+		get_marshal_cb ()->emit_method_init(mb, aot_module, method, bitset, token, bitset);
+	}
+#endif
 
 	info = mono_wrapper_info_create (mb, WRAPPER_SUBTYPE_AOT_INIT);
 	info->d.aot_init.subtype = subtype;

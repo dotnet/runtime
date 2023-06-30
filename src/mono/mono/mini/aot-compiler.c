@@ -4455,7 +4455,7 @@ static void
 add_lazy_init_wrappers (MonoAotCompile *acfg)
 {
 	for (int i = 0; i < AOT_INIT_METHOD_NUM; ++i)
-		add_method (acfg, mono_marshal_get_aot_init_wrapper ((MonoAotInitSubtype)i));
+		add_method (acfg, mono_marshal_get_aot_init_wrapper ((MonoAotInitSubtype)i, NULL, 0, NULL, NULL));
 }
 
 #endif
@@ -7213,7 +7213,13 @@ encode_patch (MonoAotCompile *acfg, MonoJumpInfo *patch_info, guint8 *buf, guint
 	}
 	case MONO_PATCH_INFO_SEQ_POINT_INFO:
 	case MONO_PATCH_INFO_AOT_MODULE:
+	case MONO_PATCH_INFO_INIT_BITSET:
 		break;
+		// encode_value (mono_bitset_size (acfg->mono_inited) , p, &p);
+		// for (guint32 i = 0 ; i < mono_bitset_size (acfg->mono_inited); i++) {
+		// 	encode_value (i , p, &p);
+		// }
+		// break;
 	case MONO_PATCH_INFO_SIGNATURE:
 	case MONO_PATCH_INFO_GSHAREDVT_IN_WRAPPER:
 		encode_signature (acfg, (MonoMethodSignature*)patch_info->data.target, p, &p);
@@ -7374,7 +7380,8 @@ emit_method_info (MonoAotCompile *acfg, MonoCompile *cfg)
 		if (patch_info->type == MONO_PATCH_INFO_GC_CARD_TABLE_ADDR ||
 			patch_info->type == MONO_PATCH_INFO_GC_NURSERY_START ||
 			patch_info->type == MONO_PATCH_INFO_GC_NURSERY_BITS ||
-			patch_info->type == MONO_PATCH_INFO_AOT_MODULE) {
+			patch_info->type == MONO_PATCH_INFO_AOT_MODULE ||
+			patch_info->type == MONO_PATCH_INFO_INIT_BITSET) {
 			/* Stored in a GOT slot initialized at module load time */
 			patch_info->type = MONO_PATCH_INFO_NONE;
 			continue;
@@ -10805,6 +10812,13 @@ emit_code (MonoAotCompile *acfg)
 	 * same address as 'methods'.
 	 */
 	emit_padding (acfg, 16);
+
+	// /*
+	//  * Methods init bitset used for initialization during the runtime
+	//  */
+	// acfg->mono_inited = mono_bitset_mem_new (
+    // mono_mempool_alloc0 (acfg->mempool, mono_bitset_alloc_size (acfg->method_order->len, 0)),
+    // acfg->method_order->len, 0);
 
 	for (guint oindex = 0; oindex < acfg->method_order->len; ++oindex) {
 		MonoCompile *cfg;
@@ -14415,6 +14429,10 @@ add_preinit_got_slots (MonoAotCompile *acfg)
 
 	ji = (MonoJumpInfo *)mono_mempool_alloc0 (acfg->mempool, sizeof (MonoJumpInfo));
 	ji->type = MONO_PATCH_INFO_AOT_MODULE;
+	add_preinit_slot (acfg, ji);
+
+	ji = (MonoJumpInfo *)mono_mempool_alloc0 (acfg->mempool, sizeof (MonoJumpInfo));
+	ji->type = MONO_PATCH_INFO_INIT_BITSET;
 	add_preinit_slot (acfg, ji);
 
 	ji = (MonoJumpInfo *)mono_mempool_alloc0 (acfg->mempool, sizeof (MonoJumpInfo));

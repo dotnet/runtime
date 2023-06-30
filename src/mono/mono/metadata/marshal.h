@@ -338,6 +338,7 @@ typedef struct {
 	void (*emit_native_icall_wrapper) (MonoMethodBuilder *mb, MonoMethod *method, MonoMethodSignature *csig, gboolean check_exceptions, gboolean aot, MonoMethodPInvoke *pinfo);
 	void (*emit_icall_wrapper) (MonoMethodBuilder *mb, MonoJitICallInfo *callinfo, MonoMethodSignature *csig2, gboolean check_exceptions);
 	void (*emit_return) (MonoMethodBuilder *mb);
+	void (*emit_method_init) (MonoMethodBuilder *mb, MonoAotModule *aot_module, MonoMethod *method, MonoBitSet *bitset, guint32 index, MonoBitSet* mono_inited);
 	void (*emit_vtfixup_ftnptr) (MonoMethodBuilder *mb, MonoMethod *method, int param_count, guint16 type);
 	void (*mb_skip_visibility) (MonoMethodBuilder *mb);
 	void (*mb_set_dynamic) (MonoMethodBuilder *mb);
@@ -516,7 +517,7 @@ MonoMethod *
 mono_marshal_get_icall_wrapper (MonoJitICallInfo *callinfo, gboolean check_exceptions);
 
 MonoMethod *
-mono_marshal_get_aot_init_wrapper (MonoAotInitSubtype subtype);
+mono_marshal_get_aot_init_wrapper (MonoAotInitSubtype subtype, MonoBitSet *bitset, guint32 token, MonoAotModule *aot_module, MonoMethod *method);
 
 const char *
 mono_marshal_get_aot_init_wrapper_name (MonoAotInitSubtype subtype);

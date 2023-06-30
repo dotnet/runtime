@@ -257,6 +257,7 @@ guint32   mono_aot_get_plt_info_offset      (gpointer aot_module, guint8 *plt_en
 gboolean  mono_aot_get_cached_class_info    (MonoClass *klass, MonoCachedClassInfo *res);
 gboolean  mono_aot_get_class_from_name      (MonoImage *image, const char *name_space, const char *name, MonoClass **klass);
 MonoJitInfo* mono_aot_find_jit_info         (MonoImage *image, gpointer addr);
+MonoBitSet* mono_aot_get_mono_inited        (MonoAotModule *amodule);
 gpointer mono_aot_plt_resolve               (gpointer aot_module, host_mgreg_t *regs, guint8 *code, MonoError *error);
 void     mono_aot_patch_plt_entry           (gpointer aot_module, guint8 *code, guint8 *plt_entry, gpointer *got, host_mgreg_t *regs, guint8 *addr);
 gpointer mono_aot_get_method_from_vt_slot   (MonoVTable *vtable, int slot, MonoError *error);
@@ -277,6 +278,9 @@ MonoMethod* mono_aot_get_array_helper_from_wrapper (MonoMethod *method);
 void     mono_aot_set_make_unreadable       (gboolean unreadable);
 gboolean mono_aot_is_pagefault              (void *ptr);
 void     mono_aot_handle_pagefault          (void *ptr);
+
+void mini_nollvm_init_method                (MonoAotModule* amodule, MonoMethod* method, guint32 method_index, MonoBitSet* mono_inited);
+void mini_nollvm_init_method1               (MonoMethod* method, guint32 method_index, MonoBitSet* mono_inited);
 
 guint32  mono_aot_find_method_index         (MonoMethod *method);
 gboolean mono_aot_init_llvm_method          (gpointer aot_module, gpointer method_info, MonoClass *init_class, MonoError *error);

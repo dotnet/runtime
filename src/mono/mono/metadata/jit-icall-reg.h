@@ -130,6 +130,8 @@ MONO_JIT_ICALL (cominterop_type_from_handle) \
 MONO_JIT_ICALL (g_free) \
 MONO_JIT_ICALL (interp_to_native_trampoline)	\
 MONO_JIT_ICALL (mini_llvm_init_method) \
+MONO_JIT_ICALL (mini_nollvm_init_method) \
+MONO_JIT_ICALL (mini_nollvm_init_method1) \
 MONO_JIT_ICALL (mini_llvmonly_init_delegate) \
 MONO_JIT_ICALL (mini_llvmonly_init_delegate_virtual) \
 MONO_JIT_ICALL (mini_llvmonly_init_vtable_slot) \
