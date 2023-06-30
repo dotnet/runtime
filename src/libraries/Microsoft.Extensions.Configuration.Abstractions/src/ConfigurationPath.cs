@@ -71,7 +71,7 @@ namespace Microsoft.Extensions.Configuration
             }
 
             int lastDelimiterIndex = path.LastIndexOf(':');
-            return lastDelimiterIndex == -1 ? null : path.Substring(0, lastDelimiterIndex);
+            return lastDelimiterIndex < 0 ? null : path.Substring(0, lastDelimiterIndex);
         }
     }
 }
