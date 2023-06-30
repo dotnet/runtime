@@ -1,91 +1,155 @@
 # Ownership and Lifetimes of parameters
 
-The ComInterfaceGenerator generates both CCW and RCW methods, each of which could fail at many points in the generated stubs. It is important to make sure these failures do not leak memory or lead to double frees.
+## Motivation
+The ComInterfaceGenerator generates both CCW and RCW, and the generated methods on each could fail at many points in the generated stubs. It is important to make sure these failures do not leak memory or lead to double frees.
 This document outlines the lifetimes and ownerships of the parameters as they are passed from managed stubs to COM and vice versa.
 
-## Categories
+## Characteristics
 
-The transfer of ownership depends on the following
-- Indirection level and (native) parameter type [Blittable / ByValue, Single Pointer / NonBlittable, Double Pointer / Array of Blittable Elements, Array of Pointers (including arrays of arrays), Pointer to Array of Pointers]
-- Ownership Semantics ['in', 'out', 'ref']
+The transfer of ownership depends on the following characteristics of the parameter types
 
-## Modifying parameters
+Indirection level
+- ByValue: A value that is not indirected (e.g. `int`, `float`, blittable types in C#)
+- Single Indirection: A reference to a value (e.g. pointers / `int*`, reference types in C#)
+- Double Indirection: A reference to a reference to a value (e.g. pointers to pointers / `int**`, `ref` parameters in C#)
 
-The `in` RefKind adds an indirection level to the managed parameter type and means the parameter has 'in' ownership semantics
-The `out` RefKind adds an indirection level to the managed parameter type and means the parameter has 'out' ownership semantics
-The `ref` RefKind adds an indirection level to the managed parameter type and means the parameter has 'ref' ownership semantics
-Having only `[InAttribute]` means the parameter has 'in' ownership semantics
-Having only `[OutAttribute]` means the parameter has 'out' ownership semantics
-Having both `[InAttribute]` and `[OutAttribute]` means the parameter has 'ref' ownership semantics
+Mutability (Only relevant for indirect values)
+- Immutable - The caller is not allowed to modify the value pointed at (e.g. `in` in C#, `const` in C++)
+- Mutable - The callee may modify the value pointed at (e.g. ref value types and reference types in C#)
+- Requires Mutation - The callee must modify the value pointed at (e.g. `out` in C#)
 
-This means `[OutAttribute] ClassType paramName` has equivalent ownership rules to `out StructType paramName`.
+## Defaults
 
-Elements of the arrays will have ownership rules are as if they are Indirected. For example, elements of `[OutAttribute] ClassX[] arrayParamName` will have the same ownership rules as `out ClassX paramName`.
+The following are the default characteristics of C# parameter types:
 
-## Default Ownership semantics
+#### Indirection
 
-All unmodified non-array parameters have 'in' ownership semantics by default.
-Array types by default have 'ref' ownership semantics by default.
+Blittable types and value types are ByValue.
 
-## Note on Arrays
+Classes are SingleIndirection.
 
-Arrays have both the memory allocated for the array and (for arrays of non-blittable types) memory allocated for each element. These memory blocks may follow different ownership rules.
+No type is Double Indirection by default, but a SingleIndirection type can become multiple indirection with the RefKind parameter modifiers.
 
-## In parameters
+#### Mutability
 
-All parameters with 'in' ownership semantics are owned by the caller.
+All unmodified non-array parameters have Immutable mutability by default.
 
-## Blittable
+Array types by default have Mutable mutability by default.
 
-All blittable parameters do not have allocated memory associated with them and do not need to worry about ownership.
+## Parameter modifiers / attributes
 
-## Pointer / NonBlittable
+In the C# interface definitions, the RefKind parameter modifiers and [InAttribute] and [OutAttribute] modify the default characteristics.
+
+The `in` RefKind adds an indirection level to the managed parameter type and means the parameter has Immutable mutability
+The `out` RefKind adds an indirection level to the managed parameter type and means the parameter has Requires Mutation mutability
+The `ref` RefKind adds an indirection level to the managed parameter type and means the parameter has Mutable mutability
+Having only `[InAttribute]` means the parameter has Immutable mutability
+Having only `[OutAttribute]` means the parameter has Requires Mutation mutability
+Having both `[InAttribute]` and `[OutAttribute]` means the parameter has Mutable mutability
+
+This means `[OutAttribute] ClassType param` has equivalent ownership rules to `out StructType param`.
+
+## Arrays
+
+Arrays of Single Indirection types have both the memory allocated for the container of the array as any memory allocated for each element.
+These types of memory follow different ownership rules, so it is necessary to consider the array container memory and element memory separately.
+
+Since an array of ByValue elements do not have memory allocated for the elements, it can be treated as a normal reference type.
+
+#### Container
+
+The array container follows rules like any normal reference type, and by default has Single Indirection.
+For example the container of `[OutAttribute] ClassX[] arrayParamName` will have the same ownership rules as `[OutAttribute] ClassX paramName` and `out StructX paramName`.
+
+`out`, `ref` and `in` add an indirection level to the array container.
+For example, the array container for `ref ClassX[] arrayParamName` follows the same rules as `ref ClassX paramName`.
+
+When ownership of an array container is transfered, the elements of the array are all transfered as well.
+For jagged arrays of multiple dimensions, this works transitively
+(e.g. when the container for `ClassX[][][][]` is transferred, all the elements of type `ClassX[][][]` are transfered, and the elements of each of those are transfered and so on).
+
+#### Elements
+
+Elements of the arrays will have ownership rules are as if they have an additional indirection.
+For example, elements of `[OutAttribute] ClassX[] arrayParamName` will have the same ownership rules as `out ClassX paramName`.
+As a result of the above note that an array container that transfers ownership will always transfer the ownership of its elements, any array that has Double Indirection will follow the ownership of the array container.
+For example, elements of `ref ClassX[] arrayParam` will follow the same ownership rules as the container.
+
+# Ownership transfer rules
+
+## Immutable parameters
+
+All parameters with Immutable mutability are owned by the caller.
+
+## By Value
+
+All By Value parameters do not have allocated memory associated with them and do not need to worry about ownership.
+
+## Single Indirection
 
 All parameters with Pointer indirection level are owned by the caller.
 
 ### Array of blittable elements
 
-An array of blittable elements is analogous to a pointer to a class and follows the same rules (owned by the caller).
+An array of blittable elements follows the same rules as Single Indirection (owned by the caller).
 
-## Double Pointer
+## Double Indirection
 
-Double pointers (e.g. `**StructType paramName`) may transfer ownership. As above, 'in' ownership is owned by the caller.
+Double Indirection (e.g. `ClassX** paramName` in C) may transfer ownership of heap memory.
+For clarity, the parameter value (a reference to a reference to memory on the heap) will be refered to as "the double reference".
+The reference to the memory on the heap will be called "the single reference".
+The memory on the heap that the single reference points to will be called "the heap memory".
+The double reference points to the single reference, which points to the heap memory.
 
-### Out
-'Out' ownership semantics means the callee is expected to allocate a value and modify the singly indirected pointer (`*paramName`) to point to the new value. The owner of this new memory is the callee up until the callee returns a non-failing HResult. At this point the ownership transfers to the caller. If the callee returns a failure HResult, it should clean up the allocated memory. The value originally pointed to by `*paramName` is always owned by the caller.
+### Immutable
 
-### Ref
+As mentioned above, Immutable parameters are owned by the caller and will never transfer ownership.
 
-'Ref' ownerhsip semantics means the callee is expected to allocate a value and modify the singly indirected pointer (`*paramName`) to point to the new value. The owner of this new memory is the callee up until the callee returns a non-failing HResult. At this point the ownership transfers to the caller. If the callee returns a failure HResult, it should clean up the allocated memory. The ownership of the value originally pointed to by `*paramName` is owned by the caller until the callee returns a non-failing HResult. If the callee returns a failure HResult, the caller maintains ownership of the memory.
+### Requires Mutation
 
-### Pointer to Arrays of blittable elements
+Requires Mutation mutability means the caller passes a double reference to a single reference that may be invalid.
+This means the callee is not expected to use the value in the single reference.
+If the single reference is a valid reference to heap memory, the caller is responsible for deallocating the memory.
+When called, the callee is expected to allocate new heap memory and change the value of the single reference to point to the newly allocated heap memory.
+The callee is the owner of this new memory until the callee returns a sucessful return value, at which point the ownership transfers to the caller.
+If the callee returns a failure return value, the callee is expected to have cleaned up any memory allocated, even if it has set the single reference to point to the newly allocated heap memory.
 
-A pointer to an array of blittable elements is analogous to a double pointer and follows the same rules.
+// Should the single reference be restored to the original value if the callee fails?
 
-## Array of Pointers
+For example, a caller may pass `ClassX** param` in C.
+`param` must point to a valid pointer, but `*param` is not required to be a valid pointer to a `ClassX` on the heap.
+The callee is expected to change the value of `*param` to point to a newly allocated `ClassX` on the heap.
+Once the callee has returned a successful return value, ownership is transfered to the caller,
+and the caller will be responsible for freeing the memory containing the new `ClassX`
+If the callee returns a failure return value, it is expected to have deallocated the memory allocated for the new `ClassX` instance,
+and upon receiving a failing return value, the `*param` is not expected to not point to a valid `ClassX`.
 
-### Array
+// Is *param supposed to be restored to the original?
 
-The memory of the array is always owned by the caller.
 
-### Elements
+### Mutable
 
-The elements of the array follow the rules for Double Pointers outlined above.
+Mutable mutability means the caller passes a double reference to a single reference to valid heap memory.
+The callee may choose to modify the single reference, or the the heap memory values.
+When the callee returns a successful return value, the memory pointed to by the original value of the single reference is transfered to the callee,
+and the memory pointed to by the single reference at the end of the call is transferred to the caller.
+If after a successful return, the single reference does not change where it points to, the caller keeps ownership of the memory pointed to.
+If after a successful return, the single reference changes where it points to, the callee is expected to have deallocated the memory that the original single reference pointed to (the original heap memory).
+If the callee returns a failure return value, the callee is expected to deallocate any memory it allocated and restore the single pointer to the original value.
 
-## Pointer to Array of Pointers
+// Should the single reference be restored to the original value if the callee fails?
 
-### Array
-
-The memory of the array follows the same rules as Double pointers.
-
-### Elements
-
-The elements of the array follow the same rules as Double pointers
+For example, a caller may pass `ClassX** param` in C.
+`param` must point to a valid pointer, and `*param` is required to be a valid pointer to a `ClassX` on the heap.
+The callee may or may not change the value at `*param` to point to a newly allocated `ClassX` on the heap.
+Once the callee has returned a successful return value, it has taken ownership of the heap memory pointed to by the original value of `*param`,
+and the caller is expected to take ownership of the heap memory that `*param` points after the call.
+If the callee returns a failure return value, it is expected to deallocate any memory allocated.
+Upon receiving a failing return value, the caller is expected to take ownership of the location that `param*` originally pointed to.
 
 # Examples
-
+// TODO:
 
 # Implementation
 
-In implementation, this means that for all double pointers, the generated stubs need to clean up differently depending on if the call succeeded or not. One way is to set a flag `__invokeSuceeded` to `false` during the setup stage, and setting it to true at the end of the `try` block (after the marshal stage) for the ABI method / unmanaged to managed direction, and after the call to `ThrowForHR` in the InterfaceImplementation method / managed to unmanaged direction.
-
+In implementation, this means that for all double indirection parameters, the generated stubs need to clean up differently depending on if the call succeeded or not. One way is to set a flag `__invokeSuceeded` to `false` during the setup stage, and setting it to true at the end of the `try` block (after the marshal stage) for the ABI method / unmanaged to managed direction, and after the call to `ThrowForHR` in the InterfaceImplementation method / managed to unmanaged direction.
