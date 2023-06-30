@@ -45,6 +45,30 @@ jobs:
         extraHelixArguments: /p:NeedsToBuildAppsOnHelix=true
 
 #
+# iOS/tvOS devices
+# Build the whole product using Native AOT and run libraries tests
+#
+- template: /eng/pipelines/common/platform-matrix.yml
+  parameters:
+    jobTemplate: /eng/pipelines/common/global-build-job.yml
+    helixQueuesTemplate: /eng/pipelines/libraries/helix-queues-setup.yml
+    buildConfig: Release
+    runtimeFlavor: coreclr
+    platforms:
+      - ios_arm64
+    jobParameters:
+      testGroup: innerloop
+      nameSuffix: AllSubsets_NativeAOT
+      buildArgs: -s clr.nativeaotruntime+clr.nativeaotlibs+libs+libs.tests -c $(_BuildConfig) -rc $(_BuildConfig) /p:ArchiveTests=true /p:DevTeamProvisioning=- $(_runSmokeTestsOnlyArg) /p:BuildTestsOnHelix=true /p:UseNativeAOTRuntime=true /p:ContinuousIntegrationBuild=true
+      timeoutInMinutes: 180
+      # extra steps, run tests
+      extraStepsTemplate: /eng/pipelines/libraries/helix.yml
+      extraStepsParameters:
+        creator: dotnet-bot
+        testRunNamePrefixSuffix: NativeAOT_$(_BuildConfig)
+        extraHelixArguments: /p:NeedsToBuildAppsOnHelix=true
+
+#
 # Build the whole product using Mono for iOS/tvOS and run runtime tests with iOS/tvOS devices
 #
 - template: /eng/pipelines/common/platform-matrix.yml
