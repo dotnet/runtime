@@ -854,33 +854,10 @@ namespace System.Reflection.Emit
             return base.IsDefined(attributeType, inherit);
         }
 
-        public override object[] GetCustomAttributes(bool inherit)
-        {
-            return GetCustomAttributes(null!, inherit); // FIXME: coreclr doesn't allow null attributeType
-        }
+        public override object[] GetCustomAttributes(bool inherit) => CustomAttribute.GetCustomAttributes(this, inherit);
 
-        public override object[] GetCustomAttributes(Type attributeType, bool inherit)
-        {
-            if (cattrs == null || cattrs.Length == 0)
-                return Array.Empty<object>();
-
-            if (attributeType is TypeBuilder)
-                throw new InvalidOperationException(SR.InvalidOperation_CannotHaveFirstArgumentAsTypeBuilder);
-
-            List<object> results = new List<object>();
-            for (int i = 0; i < cattrs.Length; i++)
-            {
-                Type t = cattrs[i].Ctor.GetType();
-
-                if (t is TypeBuilder)
-                    throw new InvalidOperationException(SR.InvalidOperation_CannotConstructCustomAttributeForTypeBuilderType);
-
-                if (attributeType == null || attributeType.IsAssignableFrom(t))
-                    results.Add(cattrs[i].Invoke());
-            }
-
-            return results.ToArray();
-        }
+        public override object[] GetCustomAttributes(Type attributeType, bool inherit) =>
+            CustomAttribute.GetCustomAttributes(this, attributeType, inherit);
 
         public override IList<CustomAttributeData> GetCustomAttributesData()
         {

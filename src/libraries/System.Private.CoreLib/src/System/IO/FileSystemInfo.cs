@@ -136,7 +136,7 @@ namespace System.IO
         /// <remarks>
         /// The value may be cached when either the value itself or other <see cref="T:System.IO.FileSystemInfo" /> properties are accessed. To get the latest value, call the <see cref="M:System.IO.FileSystemInfo.Refresh" /> method.
         ///
-        /// If the path doesn't exist as of the last cached state, the return value is `(UnixFileMode)(-1)`. <see cref="System.IO.FileNotFoundException"/> or <see cref="System.IO.DirectoryNotFoundException"/> can only be thrown when setting the value.
+        /// If the path doesn't exist as of the last cached state, the return value is `(UnixFileMode)(-1)`. <see cref="FileNotFoundException"/> or <see cref="DirectoryNotFoundException"/> can only be thrown when setting the value.
         /// </remarks>
         public UnixFileMode UnixFileMode
         {

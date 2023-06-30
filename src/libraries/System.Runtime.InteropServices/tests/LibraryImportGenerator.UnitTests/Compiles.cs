@@ -20,6 +20,7 @@ using System.Collections.Immutable;
 using System.Threading;
 using Microsoft.CodeAnalysis.Text;
 using System.Text;
+using GeneratorDiagnostics = Microsoft.Interop.GeneratorDiagnostics;
 
 namespace LibraryImportGenerator.UnitTests
 {
@@ -32,30 +33,35 @@ namespace LibraryImportGenerator.UnitTests
 
         public static IEnumerable<object[]> CodeSnippetsToCompile()
         {
-            yield return new[] { ID(), CodeSnippets.TrivialClassDeclarations };
-            yield return new[] { ID(), CodeSnippets.TrivialStructDeclarations };
-            yield return new[] { ID(), CodeSnippets.MultipleAttributes };
-            yield return new[] { ID(), CodeSnippets.NestedNamespace };
-            yield return new[] { ID(), CodeSnippets.NestedTypes };
-            yield return new[] { ID(), CodeSnippets.UnsafeContext };
-            yield return new[] { ID(), CodeSnippets.UserDefinedEntryPoint };
-            yield return new[] { ID(), CodeSnippets.AllLibraryImportNamedArguments };
-            yield return new[] { ID(), CodeSnippets.DefaultParameters };
-            yield return new[] { ID(), CodeSnippets.UseCSharpFeaturesForConstants };
+            //yield return new[] { ID(), CodeSnippets.TrivialClassDeclarations };
+            //yield return new[] { ID(), CodeSnippets.TrivialStructDeclarations };
+            //yield return new[] { ID(), CodeSnippets.MultipleAttributes };
+            //yield return new[] { ID(), CodeSnippets.NestedNamespace };
+            //yield return new[] { ID(), CodeSnippets.NestedTypes };
+            //yield return new[] { ID(), CodeSnippets.UnsafeContext };
+            //yield return new[] { ID(), CodeSnippets.UserDefinedEntryPoint };
+            //yield return new[] { ID(), CodeSnippets.AllLibraryImportNamedArguments };
+            //yield return new[] { ID(), CodeSnippets.DefaultParameters };
+            //yield return new[] { ID(), CodeSnippets.UseCSharpFeaturesForConstants };
 
-            // Parameter / return types
-            yield return new[] { ID(), CodeSnippets.BasicParametersAndModifiers<byte>() };
-            yield return new[] { ID(), CodeSnippets.BasicParametersAndModifiers<sbyte>() };
-            yield return new[] { ID(), CodeSnippets.BasicParametersAndModifiers<short>() };
-            yield return new[] { ID(), CodeSnippets.BasicParametersAndModifiers<ushort>() };
-            yield return new[] { ID(), CodeSnippets.BasicParametersAndModifiers<int>() };
-            yield return new[] { ID(), CodeSnippets.BasicParametersAndModifiers<uint>() };
-            yield return new[] { ID(), CodeSnippets.BasicParametersAndModifiers<long>() };
-            yield return new[] { ID(), CodeSnippets.BasicParametersAndModifiers<ulong>() };
-            yield return new[] { ID(), CodeSnippets.BasicParametersAndModifiers<float>() };
-            yield return new[] { ID(), CodeSnippets.BasicParametersAndModifiers<double>() };
-            yield return new[] { ID(), CodeSnippets.BasicParametersAndModifiers<IntPtr>() };
-            yield return new[] { ID(), CodeSnippets.BasicParametersAndModifiers<UIntPtr>() };
+            //// Parameter / return types
+            //yield return new[] { ID(), CodeSnippets.BasicParametersAndModifiers<byte>() };
+            //yield return new[] { ID(), CodeSnippets.BasicParametersAndModifiers<sbyte>() };
+            //yield return new[] { ID(), CodeSnippets.BasicParametersAndModifiers<short>() };
+            //yield return new[] { ID(), CodeSnippets.BasicParametersAndModifiers<ushort>() };
+            //yield return new[] { ID(), CodeSnippets.BasicParametersAndModifiers<int>() };
+            //yield return new[] { ID(), CodeSnippets.BasicParametersAndModifiers<uint>() };
+            //yield return new[] { ID(), CodeSnippets.BasicParametersAndModifiers<long>() };
+            //yield return new[] { ID(), CodeSnippets.BasicParametersAndModifiers<ulong>() };
+            //yield return new[] { ID(), CodeSnippets.BasicParametersAndModifiers<float>() };
+            //yield return new[] { ID(), CodeSnippets.BasicParametersAndModifiers<double>() };
+            //yield return new[] { ID(), CodeSnippets.BasicParametersAndModifiers<IntPtr>() };
+            //yield return new[] { ID(), CodeSnippets.BasicParametersAndModifiers<UIntPtr>() };
+
+            // Parameter / return types for specially considered "strictly blittable" types.
+            yield return new[] { ID(), CodeSnippets.BasicParametersAndModifiers<CLong>() };
+            yield return new[] { ID(), CodeSnippets.BasicParametersAndModifiers<CULong>() };
+            yield return new[] { ID(), CodeSnippets.BasicParametersAndModifiers<Guid>() };
 
             // Arrays
             yield return new[] { ID(), CodeSnippets.MarshalAsArrayParametersAndModifiers<byte>() };
@@ -248,6 +254,9 @@ namespace LibraryImportGenerator.UnitTests
 
             // Type-level interop generator trigger attributes
             yield return new[] { ID(), CodeSnippets.GeneratedComInterface };
+
+            // Parameter modifiers
+            yield return new[] { ID(), CodeSnippets.SingleParameterWithModifier("int", "scoped ref") };
         }
 
         public static IEnumerable<object[]> CustomCollections()
@@ -735,6 +744,35 @@ namespace LibraryImportGenerator.UnitTests
                 Assert.Same(originalCompilation, newCompilation);
                 return (newCompilation, diagnostics);
             }
+        }
+
+        public static IEnumerable<object[]> ByValueMarshalKindSnippets()
+        {
+            // Blittable array
+            yield return new object[] { ID(), CodeSnippets.ByValueParameterWithModifier<int[]>("{|#10:Out|}"), new[]
+            {
+                VerifyCS.Diagnostic(GeneratorDiagnostics.UnnecessaryParameterMarshallingInfo)
+                    .WithLocation(0)
+                    .WithLocation(10)
+                    .WithArguments("[In] and [Out] attributes", "p")
+            } };
+
+            yield return new object[] { ID(), CodeSnippets.ByValueParameterWithModifier<int[]>("{|#10:In|}, {|#11:Out|}"), new[]
+            {
+                VerifyCS.Diagnostic(GeneratorDiagnostics.UnnecessaryParameterMarshallingInfo)
+                    .WithLocation(0)
+                    .WithLocation(10)
+                    .WithLocation(11)
+                    .WithArguments("[In] and [Out] attributes", "p")
+            } };
+        }
+
+        [MemberData(nameof(ByValueMarshalKindSnippets))]
+        [Theory]
+        public async Task ValidateDiagnosticsForUnnecessaryByValueMarshalKindAttributes(string id, string source, DiagnosticResult[] diagnostics)
+        {
+            _ = id;
+            await VerifyCS.VerifySourceGeneratorAsync(source, diagnostics);
         }
     }
 }

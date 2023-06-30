@@ -30,6 +30,7 @@ void jiterp_preserve_module (void);
 #include <mono/metadata/mono-config.h>
 #include <mono/utils/mono-threads.h>
 #include <mono/metadata/gc-internals.h>
+#include <mono/metadata/class-abi-details.h>
 
 #include "interp.h"
 #include "interp-internals.h"
@@ -882,11 +883,15 @@ mono_jiterp_get_trace_hit_count (gint32 trace_index) {
 
 JiterpreterThunk
 mono_interp_tier_prepare_jiterpreter_fast (
-	void *frame, MonoMethod *method, const guint16 *ip,
-	const guint16 *start_of_body, int size_of_body
+	void *_frame, const guint16 *ip
 ) {
 	if (!mono_opt_jiterpreter_traces_enabled)
 		return (JiterpreterThunk)(void*)JITERPRETER_NOT_JITTED;
+
+	InterpFrame *frame = _frame;
+	MonoMethod *method = frame->imethod->method;
+	const guint16 *start_of_body = frame->imethod->jinfo->code_start;
+	int size_of_body = frame->imethod->jinfo->code_size;
 
 	guint32 trace_index = READ32 (ip + 1);
 	TraceInfo *trace_info = trace_info_get (trace_index);
@@ -904,7 +909,7 @@ mono_interp_tier_prepare_jiterpreter_fast (
 	if (count == mono_opt_jiterpreter_minimum_trace_hit_count) {
 		JiterpreterThunk result = mono_interp_tier_prepare_jiterpreter(
 			frame, method, ip, (gint32)trace_index,
-			start_of_body, size_of_body
+			start_of_body, size_of_body, frame->imethod->is_verbose
 		);
 		trace_info->thunk = result;
 		return result;
@@ -1171,9 +1176,9 @@ mono_jiterp_get_member_offset (int member) {
 		case JITERP_MEMBER_VTABLE_KLASS:
 			return offsetof (MonoVTable, klass);
 		case JITERP_MEMBER_CLASS_RANK:
-			return offsetof (MonoClass, rank);
+			return m_class_offsetof_rank();
 		case JITERP_MEMBER_CLASS_ELEMENT_CLASS:
-			return offsetof (MonoClass, element_class);
+			return m_class_offsetof_element_class();
 		// see mono_object_get_data
 		case JITERP_MEMBER_BOXED_VALUE_DATA:
 			return MONO_ABI_SIZEOF (MonoObject);
@@ -1319,5 +1324,5 @@ mono_jiterp_is_imethod_var_address_taken (InterpMethod *imethod, int offset) {
 EMSCRIPTEN_KEEPALIVE
 #endif // HOST_BROWSER
 
-void jiterp_preserve_module () {
+void jiterp_preserve_module (void) {
 }

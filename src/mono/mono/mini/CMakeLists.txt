@@ -71,7 +71,8 @@ if(HAVE_SYS_ICU)
     set(icu_shim_sources_base
         ${icu_shim_sources_base}
         pal_locale.m
-        pal_collation.m)
+        pal_collation.m
+        pal_casing.m)
   endif()
 
   addprefix(icu_shim_sources "${ICU_SHIM_PATH}" "${icu_shim_sources_base}")
@@ -551,7 +552,7 @@ if(NOT DISABLE_EXECUTABLES)
   target_link_libraries(mono-sgen PRIVATE monoapi eglib_api monosgen-static)
   if(HAVE_ICU_SHIM)
     target_link_libraries(mono-sgen PRIVATE icu_shim_objects)
-  endif() 
+  endif()
   target_link_libraries(mono-sgen PRIVATE ${OS_LIBS} ${LLVM_LIBS} ${ICU_LIBS} ${Z_LIBS})
   # Alpine Linux implements ucontext in a different library
   if(CLR_CMAKE_HOST_ALPINE_LINUX AND TARGET_S390X)

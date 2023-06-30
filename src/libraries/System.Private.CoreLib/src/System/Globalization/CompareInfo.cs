@@ -170,13 +170,6 @@ namespace System.Globalization
         {
             _sortName = culture.SortName;
 
-#if TARGET_BROWSER
-            if (GlobalizationMode.Hybrid)
-            {
-                JsInit(culture.InteropName!);
-                return;
-            }
-#endif
             if (GlobalizationMode.UseNls)
             {
                 NlsInitSortHandle();
@@ -622,7 +615,7 @@ namespace System.Globalization
             else
             {
                 // Linguistic comparison requested and we don't need to special-case any args.
-#if TARGET_BROWSER
+#if TARGET_BROWSER || TARGET_OSX || TARGET_MACCATALYST || TARGET_IOS || TARGET_TVOS
                 if (GlobalizationMode.Hybrid)
                 {
                     throw new PlatformNotSupportedException(SR.PlatformNotSupported_HybridGlobalizationWithMatchLength);
@@ -769,7 +762,7 @@ namespace System.Globalization
             else
             {
                 // Linguistic comparison requested and we don't need to special-case any args.
-#if TARGET_BROWSER
+#if TARGET_BROWSER || TARGET_OSX || TARGET_MACCATALYST || TARGET_IOS || TARGET_TVOS
                 if (GlobalizationMode.Hybrid)
                 {
                     throw new PlatformNotSupportedException(SR.PlatformNotSupported_HybridGlobalizationWithMatchLength);
@@ -1457,7 +1450,7 @@ namespace System.Globalization
         private SortKey CreateSortKeyCore(string source, CompareOptions options) =>
             GlobalizationMode.UseNls ?
                 NlsCreateSortKey(source, options) :
-#if TARGET_BROWSER
+#if TARGET_BROWSER || TARGET_OSX || TARGET_MACCATALYST || TARGET_IOS || TARGET_TVOS
             GlobalizationMode.Hybrid ?
                 throw new PlatformNotSupportedException(GetPNSEText("SortKey")) :
 #endif
@@ -1500,7 +1493,7 @@ namespace System.Globalization
         private int GetSortKeyCore(ReadOnlySpan<char> source, Span<byte> destination, CompareOptions options) =>
             GlobalizationMode.UseNls ?
                 NlsGetSortKey(source, destination, options) :
-#if TARGET_BROWSER
+#if TARGET_BROWSER || TARGET_OSX || TARGET_MACCATALYST || TARGET_IOS || TARGET_TVOS
             GlobalizationMode.Hybrid ?
                 throw new PlatformNotSupportedException(GetPNSEText("SortKey")) :
 #endif
@@ -1537,7 +1530,7 @@ namespace System.Globalization
         private int GetSortKeyLengthCore(ReadOnlySpan<char> source, CompareOptions options) =>
             GlobalizationMode.UseNls ?
               NlsGetSortKeyLength(source, options) :
-#if TARGET_BROWSER
+#if TARGET_BROWSER || TARGET_OSX || TARGET_MACCATALYST || TARGET_IOS || TARGET_TVOS
             GlobalizationMode.Hybrid ?
                 throw new PlatformNotSupportedException(GetPNSEText("SortKey")) :
 #endif
@@ -1614,7 +1607,7 @@ namespace System.Globalization
         private unsafe int GetHashCodeOfStringCore(ReadOnlySpan<char> source, CompareOptions options) =>
             GlobalizationMode.UseNls ?
                 NlsGetHashCodeOfString(source, options) :
-#if TARGET_BROWSER
+#if TARGET_BROWSER || TARGET_OSX || TARGET_MACCATALYST || TARGET_IOS || TARGET_TVOS
             GlobalizationMode.Hybrid ?
                 throw new PlatformNotSupportedException(GetPNSEText("HashCode")) :
 #endif
@@ -1638,7 +1631,7 @@ namespace System.Globalization
                     }
                     else
                     {
-#if TARGET_BROWSER
+#if TARGET_BROWSER || TARGET_OSX || TARGET_MACCATALYST || TARGET_IOS || TARGET_TVOS
                 if (GlobalizationMode.Hybrid)
                 {
                     throw new PlatformNotSupportedException(GetPNSEText("SortVersion"));
@@ -1654,7 +1647,7 @@ namespace System.Globalization
 
         public int LCID => CultureInfo.GetCultureInfo(Name).LCID;
 
-#if TARGET_BROWSER
+#if TARGET_BROWSER  || TARGET_OSX || TARGET_MACCATALYST || TARGET_IOS || TARGET_TVOS
         private static string GetPNSEText(string funcName) => SR.Format(SR.PlatformNotSupported_HybridGlobalization, funcName);
 #endif
     }

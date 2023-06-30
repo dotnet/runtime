@@ -535,24 +535,18 @@ namespace Mono.Linker.Tests.Cases.RequiresCapability
 			[ExpectedWarning ("IL3050", "BaseWithoutRequiresOnType.Method()", ProducedBy = Tool.NativeAot)]
 			[ExpectedWarning ("IL2026", "BaseWithoutRequiresOnType.Method()")]
 			[ExpectedWarning ("IL3050", "BaseWithoutRequiresOnType.Method()", ProducedBy = Tool.NativeAot)]
-			// https://github.com/dotnet/linker/issues/2533
-			[ExpectedWarning ("IL2026", "DerivedWithRequiresOnType.Method()", ProducedBy = Tool.Analyzer)]
+			[ExpectedWarning ("IL2026", "DerivedWithRequiresOnType.Method()")]
+			[ExpectedWarning ("IL3050", "DerivedWithRequiresOnType.Method()", ProducedBy = Tool.NativeAot)]
 			[ExpectedWarning ("IL2026", "InterfaceWithoutRequires.Method(Int32)")]
 			[ExpectedWarning ("IL3050", "InterfaceWithoutRequires.Method(Int32)", ProducedBy = Tool.NativeAot)]
 			[ExpectedWarning ("IL2026", "InterfaceWithoutRequires.Method()")]
 			[ExpectedWarning ("IL3050", "InterfaceWithoutRequires.Method()", ProducedBy = Tool.NativeAot)]
 			[ExpectedWarning ("IL2026", "ImplementationWithRequiresOnType.Method()")]
 			[ExpectedWarning ("IL3050", "ImplementationWithRequiresOnType.Method()", ProducedBy = Tool.NativeAot)]
-			// https://github.com/dotnet/linker/issues/2533
-			// NativeAOT has a correct override resolution and in this case the method is not an override - so it should warn
-			[ExpectedWarning ("IL2026", "ImplementationWithRequiresOnType.Method(Int32)", ProducedBy = Tool.Analyzer | Tool.NativeAot)]
+			[ExpectedWarning ("IL2026", "ImplementationWithRequiresOnType.Method(Int32)")]
 			[ExpectedWarning ("IL3050", "ImplementationWithRequiresOnType.Method(Int32)", ProducedBy = Tool.NativeAot)]
-			// ILLink incorrectly skips warnings for derived method, under the assumption that
-			// it will be covered by the base method. But in this case the base method
-			// is unannotated (and the mismatch produces no warning because the derived
-			// type has RUC).
-			// https://github.com/dotnet/linker/issues/2533
-			[ExpectedWarning ("IL2026", "DerivedWithRequiresOnTypeOverBaseWithNoRequires.Method()", ProducedBy = Tool.Analyzer)]
+			[ExpectedWarning ("IL2026", "DerivedWithRequiresOnTypeOverBaseWithNoRequires.Method()")]
+			[ExpectedWarning ("IL3050", "DerivedWithRequiresOnTypeOverBaseWithNoRequires.Method()", ProducedBy = Tool.NativeAot)]
 			static void TestDAMAccess ()
 			{
 				// Warns because BaseWithoutRequiresOnType.Method has Requires on the method
@@ -814,6 +808,28 @@ namespace Mono.Linker.Tests.Cases.RequiresCapability
 				instance.GetType ().GetMethod ("RUCMethod");
 			}
 
+			[RequiresUnreferencedCode ("--GenericTypeWithRequires--")]
+			[RequiresDynamicCode ("--GenericTypeWithRequires--")]
+			class GenericTypeWithRequires<T>
+			{
+				public static int NonGenericField;
+			}
+
+			// https://github.com/dotnet/runtime/issues/86633 - analyzer doesn't report this warning
+			[ExpectedWarning ("IL2026", "NonGenericField", "--GenericTypeWithRequires--", ProducedBy = Tool.Trimmer | Tool.NativeAot)]
+			[ExpectedWarning ("IL3050", "NonGenericField", "--GenericTypeWithRequires--", ProducedBy = Tool.NativeAot)]
+			static void TestDAMAccessOnOpenGeneric ()
+			{
+				typeof (GenericTypeWithRequires<>).RequiresPublicFields ();
+			}
+
+			[ExpectedWarning ("IL2026", "NonGenericField", "--GenericTypeWithRequires--")]
+			[ExpectedWarning ("IL3050", "NonGenericField", "--GenericTypeWithRequires--", ProducedBy = Tool.NativeAot)]
+			static void TestDAMAccessOnInstantiatedGeneric ()
+			{
+				typeof (GenericTypeWithRequires<int>).RequiresPublicFields ();
+			}
+
 			[ExpectedWarning ("IL2026", "--TestDAMOnTypeAccessInRUCScope--")]
 			public static void Test ()
 			{
@@ -822,6 +838,8 @@ namespace Mono.Linker.Tests.Cases.RequiresCapability
 				TestDynamicDependencyAccess ();
 				TestDAMOnTypeAccess (null);
 				TestDAMOnTypeAccessInRUCScope ();
+				TestDAMAccessOnOpenGeneric ();
+				TestDAMAccessOnInstantiatedGeneric ();
 			}
 		}
 

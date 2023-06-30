@@ -162,7 +162,7 @@ namespace System.Resources
                 // fires, please fix the build process for the BCL directory.
                 if (a == typeof(object).Assembly)
                 {
-                    Debug.Fail(System.CoreLib.Name + "'s NeutralResourcesLanguageAttribute is a malformed culture name! name: \"" + attr.CultureName + "\"  Exception: " + e);
+                    Debug.Fail(CoreLib.Name + "'s NeutralResourcesLanguageAttribute is a malformed culture name! name: \"" + attr.CultureName + "\"  Exception: " + e);
                     return CultureInfo.InvariantCulture;
                 }
 
@@ -472,10 +472,10 @@ namespace System.Resources
         {
             Debug.Assert(_mediator.BaseName != null);
             // Keep people from bothering me about resources problems
-            if (_mediator.MainAssembly == typeof(object).Assembly && _mediator.BaseName.Equals(System.CoreLib.Name))
+            if (_mediator.MainAssembly == typeof(object).Assembly && _mediator.BaseName.Equals(CoreLib.Name))
             {
                 // This would break CultureInfo & all our exceptions.
-                Debug.Fail("Couldn't get " + System.CoreLib.Name + ResourceManager.ResFileExtension + " from " + System.CoreLib.Name + "'s assembly" + Environment.NewLineConst + Environment.NewLineConst + "Are you building the runtime on your machine?  Chances are the BCL directory didn't build correctly.  Type 'build -c' in the BCL directory.  If you get build errors, look at buildd.log.  If you then can't figure out what's wrong (and you aren't changing the assembly-related metadata code), ask a BCL dev.\n\nIf you did NOT build the runtime, you shouldn't be seeing this and you've found a bug.");
+                Debug.Fail("Couldn't get " + CoreLib.Name + ResourceManager.ResFileExtension + " from " + CoreLib.Name + "'s assembly" + Environment.NewLineConst + Environment.NewLineConst + "Are you building the runtime on your machine?  Chances are the BCL directory didn't build correctly.  Type 'build -c' in the BCL directory.  If you get build errors, look at buildd.log.  If you then can't figure out what's wrong (and you aren't changing the assembly-related metadata code), ask a BCL dev.\n\nIf you did NOT build the runtime, you shouldn't be seeing this and you've found a bug.");
 
                 // We cannot continue further - simply FailFast.
                 const string MesgFailFast = System.CoreLib.Name + ResourceManager.ResFileExtension + " couldn't be found!  Large parts of the BCL won't work!";

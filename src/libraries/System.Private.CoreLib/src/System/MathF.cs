@@ -47,6 +47,7 @@ namespace System
 
         private const int ILogB_Zero = (-1 - 0x7fffffff);
 
+        [Intrinsic]
         [MethodImpl(MethodImplOptions.AggressiveInlining)]
         public static float Abs(float x)
         {
@@ -241,12 +242,14 @@ namespace System
             return Log(x) / Log(y);
         }
 
+        [Intrinsic]
         [MethodImpl(MethodImplOptions.AggressiveInlining)]
         public static float Max(float x, float y)
         {
             return Math.Max(x, y);
         }
 
+        [Intrinsic]
         public static float MaxMagnitude(float x, float y)
         {
             // This matches the IEEE 754:2019 `maximumMagnitude` function
@@ -271,12 +274,14 @@ namespace System
             return y;
         }
 
+        [Intrinsic]
         [MethodImpl(MethodImplOptions.AggressiveInlining)]
         public static float Min(float x, float y)
         {
             return Math.Min(x, y);
         }
 
+        [Intrinsic]
         public static float MinMagnitude(float x, float y)
         {
             // This matches the IEEE 754:2019 `minimumMagnitude` function

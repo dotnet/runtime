@@ -120,7 +120,7 @@ namespace Internal.Runtime.TypeLoader
             MetadataReader reader;
 
             // Try to get the name from metadata
-            if (TypeLoaderEnvironment.Instance.TryGetMetadataForNamedType(rtth, out qTypeDefinition))
+            if (TypeLoaderEnvironment.TryGetMetadataForNamedType(rtth, out qTypeDefinition))
             {
                 reader = qTypeDefinition.NativeFormatReader;
                 TypeDefinitionHandle typeDefHandle = qTypeDefinition.NativeFormatHandle;

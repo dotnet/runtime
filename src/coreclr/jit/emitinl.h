@@ -127,7 +127,7 @@ inline int emitter::emitGetInsCDinfo(instrDesc* id)
     }
 }
 
-inline void emitter::emitGetInsCns(instrDesc* id, CnsVal* cv)
+inline void emitter::emitGetInsCns(const instrDesc* id, CnsVal* cv) const
 {
     cv->cnsReloc = id->idIsCnsReloc();
     if (id->idIsLargeCns())
@@ -140,7 +140,7 @@ inline void emitter::emitGetInsCns(instrDesc* id, CnsVal* cv)
     }
 }
 
-inline ssize_t emitter::emitGetInsAmdCns(instrDesc* id, CnsVal* cv)
+inline ssize_t emitter::emitGetInsAmdCns(const instrDesc* id, CnsVal* cv) const
 {
     cv->cnsReloc = id->idIsCnsReloc();
     if (id->idIsLargeDsp())
@@ -171,7 +171,7 @@ inline ssize_t emitter::emitGetInsAmdCns(instrDesc* id, CnsVal* cv)
     }
 }
 
-inline void emitter::emitGetInsDcmCns(instrDesc* id, CnsVal* cv)
+inline void emitter::emitGetInsDcmCns(const instrDesc* id, CnsVal* cv) const
 {
     cv->cnsReloc = id->idIsCnsReloc();
     if (id->idIsLargeCns())
@@ -191,7 +191,7 @@ inline void emitter::emitGetInsDcmCns(instrDesc* id, CnsVal* cv)
     }
 }
 
-inline ssize_t emitter::emitGetInsAmdAny(instrDesc* id)
+inline ssize_t emitter::emitGetInsAmdAny(const instrDesc* id) const
 {
     if (id->idIsLargeDsp())
     {
@@ -376,23 +376,23 @@ inline ssize_t emitter::emitGetInsAmdAny(instrDesc* id)
         encodeMask |= 0x08;
     if ((regmask & RBM_S5) != RBM_NONE)
         encodeMask |= 0x10;
+    if ((regmask & RBM_S6) != RBM_NONE)
+        encodeMask |= 0x20;
 
     id->idReg1((regNumber)encodeMask); // Save in idReg1
 
     encodeMask = 0;
 
-    if ((regmask & RBM_S6) != RBM_NONE)
-        encodeMask |= 0x01;
     if ((regmask & RBM_S7) != RBM_NONE)
-        encodeMask |= 0x02;
+        encodeMask |= 0x01;
     if ((regmask & RBM_S8) != RBM_NONE)
-        encodeMask |= 0x04;
+        encodeMask |= 0x02;
     if ((regmask & RBM_S9) != RBM_NONE)
-        encodeMask |= 0x08;
+        encodeMask |= 0x04;
     if ((regmask & RBM_S10) != RBM_NONE)
-        encodeMask |= 0x10;
+        encodeMask |= 0x08;
     if ((regmask & RBM_S11) != RBM_NONE)
-        encodeMask |= 0x20;
+        encodeMask |= 0x10;
 
     id->idReg2((regNumber)encodeMask); // Save in idReg2
 

@@ -25,7 +25,7 @@ namespace Microsoft.Interop.JavaScript
             MethodSignatureDiagnosticLocations DiagnosticLocation,
             JSExportData JSExportData,
             MarshallingGeneratorFactoryKey<(TargetFramework TargetFramework, Version TargetFrameworkVersion, JSGeneratorOptions)> GeneratorFactoryKey,
-            SequenceEqualImmutableArray<Diagnostic> Diagnostics);
+            SequenceEqualImmutableArray<DiagnosticInfo> Diagnostics);
 
         public static class StepNames
         {
@@ -69,13 +69,13 @@ namespace Microsoft.Interop.JavaScript
                 if (data.Right.IsEmpty // no attributed methods
                     || data.Left.Compilation.Options is CSharpCompilationOptions { AllowUnsafe: true }) // Unsafe code enabled
                 {
-                    return ImmutableArray<Diagnostic>.Empty;
+                    return ImmutableArray<DiagnosticInfo>.Empty;
                 }
 
-                return ImmutableArray.Create(Diagnostic.Create(GeneratorDiagnostics.JSExportRequiresAllowUnsafeBlocks, null));
+                return ImmutableArray.Create(DiagnosticInfo.Create(GeneratorDiagnostics.JSExportRequiresAllowUnsafeBlocks, null));
             }));
 
-            IncrementalValuesProvider<(MemberDeclarationSyntax, StatementSyntax, AttributeListSyntax, ImmutableArray<Diagnostic>)> generateSingleStub = methodsToGenerate
+            IncrementalValuesProvider<(MemberDeclarationSyntax, StatementSyntax, AttributeListSyntax, ImmutableArray<DiagnosticInfo>)> generateSingleStub = methodsToGenerate
                 .Combine(stubEnvironment)
                 .Combine(stubOptions)
                 .Select(static (data, ct) => new
@@ -189,7 +189,8 @@ namespace Microsoft.Interop.JavaScript
 
             Debug.Assert(jsExportAttr is not null);
 
-            var generatorDiagnostics = new GeneratorDiagnostics();
+            var locations = new MethodSignatureDiagnosticLocations(originalSyntax);
+            var generatorDiagnostics = new GeneratorDiagnosticsBag(new DescriptorProvider(), locations, SR.ResourceManager, typeof(FxResources.Microsoft.Interop.JavaScript.JSImportGenerator.SR));
 
             // Process the JSExport attribute
             JSExportData? jsExportData = ProcessJSExportAttribute(jsExportAttr!);
@@ -211,10 +212,10 @@ namespace Microsoft.Interop.JavaScript
                 signatureContext,
                 containingTypeContext,
                 methodSyntaxTemplate,
-                new MethodSignatureDiagnosticLocations(originalSyntax),
+                locations,
                 jsExportData,
                 CreateGeneratorFactory(environment, options),
-                new SequenceEqualImmutableArray<Diagnostic>(generatorDiagnostics.Diagnostics.ToImmutableArray()));
+                new SequenceEqualImmutableArray<DiagnosticInfo>(generatorDiagnostics.Diagnostics.ToImmutableArray()));
         }
 
         private static MarshallingGeneratorFactoryKey<(TargetFramework, Version, JSGeneratorOptions)> CreateGeneratorFactory(StubEnvironment env, JSGeneratorOptions options)
@@ -286,23 +287,20 @@ namespace Microsoft.Interop.JavaScript
             return ns;
         }
 
-        private static (MemberDeclarationSyntax, StatementSyntax, AttributeListSyntax, ImmutableArray<Diagnostic>) GenerateSource(
+        private static (MemberDeclarationSyntax, StatementSyntax, AttributeListSyntax, ImmutableArray<DiagnosticInfo>) GenerateSource(
             IncrementalStubGenerationContext incrementalContext)
         {
-            var diagnostics = new GeneratorDiagnostics();
+            var diagnostics = new GeneratorDiagnosticsBag(new DescriptorProvider(), incrementalContext.DiagnosticLocation, SR.ResourceManager, typeof(FxResources.Microsoft.Interop.JavaScript.JSImportGenerator.SR));
 
             // Generate stub code
             var stubGenerator = new JSExportCodeGenerator(
-            incrementalContext.GeneratorFactoryKey.Key.TargetFramework,
-            incrementalContext.GeneratorFactoryKey.Key.TargetFrameworkVersion,
-            incrementalContext.SignatureContext.SignatureContext.ElementTypeInformation,
-            incrementalContext.JSExportData,
-            incrementalContext.SignatureContext,
-            (elementInfo, ex) =>
-            {
-                diagnostics.ReportMarshallingNotSupported(incrementalContext.DiagnosticLocation, elementInfo, ex.NotSupportedDetails, ex.DiagnosticProperties ?? ImmutableDictionary<string, string>.Empty);
-            },
-            incrementalContext.GeneratorFactoryKey.GeneratorFactory);
+                incrementalContext.GeneratorFactoryKey.Key.TargetFramework,
+                incrementalContext.GeneratorFactoryKey.Key.TargetFrameworkVersion,
+                incrementalContext.SignatureContext.SignatureContext.ElementTypeInformation,
+                incrementalContext.JSExportData,
+                incrementalContext.SignatureContext,
+                diagnostics,
+                incrementalContext.GeneratorFactoryKey.GeneratorFactory);
 
             var wrapperName = "__Wrapper_" + incrementalContext.StubMethodSyntaxTemplate.Identifier + "_" + incrementalContext.SignatureContext.TypesHash;
 

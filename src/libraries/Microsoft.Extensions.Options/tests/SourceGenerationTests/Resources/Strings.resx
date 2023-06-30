@@ -1,0 +1,201 @@
+﻿<?xml version="1.0" encoding="utf-8"?>
+<root>
+  <!--
+    Microsoft ResX Schema
+
+    Version 2.0
+
+    The primary goals of this format is to allow a simple XML format
+    that is mostly human readable. The generation and parsing of the
+    various data types are done through the TypeConverter classes
+    associated with the data types.
+
+    Example:
+
+    ... ado.net/XML headers & schema ...
+    <resheader name="resmimetype">text/microsoft-resx</resheader>
+    <resheader name="version">2.0</resheader>
+    <resheader name="reader">System.Resources.ResXResourceReader, System.Windows.Forms, ...</resheader>
+    <resheader name="writer">System.Resources.ResXResourceWriter, System.Windows.Forms, ...</resheader>
+    <data name="Name1"><value>this is my long string</value><comment>this is a comment</comment></data>
+    <data name="Color1" type="System.Drawing.Color, System.Drawing">Blue</data>
+    <data name="Bitmap1" mimetype="application/x-microsoft.net.object.binary.base64">
+        <value>[base64 mime encoded serialized .NET Framework object]</value>
+    </data>
+    <data name="Icon1" type="System.Drawing.Icon, System.Drawing" mimetype="application/x-microsoft.net.object.bytearray.base64">
+        <value>[base64 mime encoded string representing a byte array form of the .NET Framework object]</value>
+        <comment>This is a comment</comment>
+    </data>
+
+    There are any number of "resheader" rows that contain simple
+    name/value pairs.
+
+    Each data row contains a name, and value. The row also contains a
+    type or mimetype. Type corresponds to a .NET class that support
+    text/value conversion through the TypeConverter architecture.
+    Classes that don't support this are serialized and stored with the
+    mimetype set.
+
+    The mimetype is used for serialized objects, and tells the
+    ResXResourceReader how to depersist the object. This is currently not
+    extensible. For a given mimetype the value must be set accordingly:
+
+    Note - application/x-microsoft.net.object.binary.base64 is the format
+    that the ResXResourceWriter will generate, however the reader can
+    read any of the formats listed below.
+
+    mimetype: application/x-microsoft.net.object.binary.base64
+    value   : The object must be serialized with
+            : System.Runtime.Serialization.Formatters.Binary.BinaryFormatter
+            : and then encoded with base64 encoding.
+
+    mimetype: application/x-microsoft.net.object.soap.base64
+    value   : The object must be serialized with
+            : System.Runtime.Serialization.Formatters.Soap.SoapFormatter
+            : and then encoded with base64 encoding.
+
+    mimetype: application/x-microsoft.net.object.bytearray.base64
+    value   : The object must be serialized into a byte array
+            : using a System.ComponentModel.TypeConverter
+            : and then encoded with base64 encoding.
+    -->
+  <xsd:schema id="root" xmlns="" xmlns:xsd="http://www.w3.org/2001/XMLSchema" xmlns:msdata="urn:schemas-microsoft-com:xml-msdata">
+    <xsd:import namespace="http://www.w3.org/XML/1998/namespace" />
+    <xsd:element name="root" msdata:IsDataSet="true">
+      <xsd:complexType>
+        <xsd:choice maxOccurs="unbounded">
+          <xsd:element name="metadata">
+            <xsd:complexType>
+              <xsd:sequence>
+                <xsd:element name="value" type="xsd:string" minOccurs="0" />
+              </xsd:sequence>
+              <xsd:attribute name="name" use="required" type="xsd:string" />
+              <xsd:attribute name="type" type="xsd:string" />
+              <xsd:attribute name="mimetype" type="xsd:string" />
+              <xsd:attribute ref="xml:space" />
+            </xsd:complexType>
+          </xsd:element>
+          <xsd:element name="assembly">
+            <xsd:complexType>
+              <xsd:attribute name="alias" type="xsd:string" />
+              <xsd:attribute name="name" type="xsd:string" />
+            </xsd:complexType>
+          </xsd:element>
+          <xsd:element name="data">
+            <xsd:complexType>
+              <xsd:sequence>
+                <xsd:element name="value" type="xsd:string" minOccurs="0" msdata:Ordinal="1" />
+                <xsd:element name="comment" type="xsd:string" minOccurs="0" msdata:Ordinal="2" />
+              </xsd:sequence>
+              <xsd:attribute name="name" type="xsd:string" use="required" msdata:Ordinal="1" />
+              <xsd:attribute name="type" type="xsd:string" msdata:Ordinal="3" />
+              <xsd:attribute name="mimetype" type="xsd:string" msdata:Ordinal="4" />
+              <xsd:attribute ref="xml:space" />
+            </xsd:complexType>
+          </xsd:element>
+          <xsd:element name="resheader">
+            <xsd:complexType>
+              <xsd:sequence>
+                <xsd:element name="value" type="xsd:string" minOccurs="0" msdata:Ordinal="1" />
+              </xsd:sequence>
+              <xsd:attribute name="name" type="xsd:string" use="required" />
+            </xsd:complexType>
+          </xsd:element>
+        </xsd:choice>
+      </xsd:complexType>
+    </xsd:element>
+  </xsd:schema>
+  <resheader name="resmimetype">
+    <value>text/microsoft-resx</value>
+  </resheader>
+  <resheader name="version">
+    <value>2.0</value>
+  </resheader>
+  <resheader name="reader">
+    <value>System.Resources.ResXResourceReader, System.Windows.Forms, Version=4.0.0.0, Culture=neutral, PublicKeyToken=b77a5c561934e089</value>
+  </resheader>
+  <resheader name="writer">
+    <value>System.Resources.ResXResourceWriter, System.Windows.Forms, Version=4.0.0.0, Culture=neutral, PublicKeyToken=b77a5c561934e089</value>
+  </resheader>
+  <data name="ErrorMessageResourceName" xml:space="preserve">
+    <value>ErrorMessageResourceName</value>
+  </data>
+  <data name="CantUseWithGenericTypesTitle" xml:space="preserve">
+    <value>Can't use 'ValidateObjectMembersAttribute' or 'ValidateEnumeratedItemsAttribute' on fields or properties with open generic types.</value>
+  </data>
+  <data name="PotentiallyMissingEnumerableValidationMessage" xml:space="preserve">
+    <value>Type {0} has validation annotations, but member {1} doesn't specify [ValidateEnumeratedItems] which could be an oversight.</value>
+  </data>
+  <data name="PotentiallyMissingEnumerableValidationTitle" xml:space="preserve">
+    <value>Member potentially missing enumerable validation.</value>
+  </data>
+  <data name="PotentiallyMissingTransitiveValidationMessage" xml:space="preserve">
+    <value>Type {0} has validation annotations, but member {1} doesn't specify [ValidateObjectMembers] which could be an oversight.</value>
+  </data>
+  <data name="CircularTypeReferencesMessage" xml:space="preserve">
+    <value>There is a circular type reference involving type {0} preventing it from being used for static validation.</value>
+  </data>
+  <data name="CircularTypeReferencesTitle" xml:space="preserve">
+    <value>Unsupported circular references in model types.</value>
+  </data>
+  <data name="MemberIsInaccessibleMessage" xml:space="preserve">
+    <value>Can't apply validation attributes to private field or property {0}.</value>
+  </data>
+  <data name="NotEnumerableTypeMessage" xml:space="preserve">
+    <value>[ValidateEnumeratedItems] cannot be used on members of type {0} as it doesn't implement IEnumerable&lt;T&gt;.</value>
+  </data>
+  <data name="NullValidatorTypeTitle" xml:space="preserve">
+    <value>Null validator type specified for the 'ValidateObjectMembersAttribute' or 'ValidateEnumeratedItemsAttribute' attributes.</value>
+  </data>
+  <data name="CantUseWithGenericTypesMessage" xml:space="preserve">
+    <value>Can't use [ValidateObjectMembers] or [ValidateEnumeratedItems] on fields or properties with open generic type {0}.</value>
+  </data>
+  <data name="NoEligibleMemberTitle" xml:space="preserve">
+    <value>A member type has no fields or properties to validate.</value>
+  </data>
+  <data name="NoEligibleMembersFromValidatorTitle" xml:space="preserve">
+    <value>A type has no fields or properties to validate.</value>
+  </data>
+  <data name="NotEnumerableTypeTitle" xml:space="preserve">
+    <value>Member type is not enumerable.</value>
+  </data>
+  <data name="ValidatorsNeedSimpleConstructorMessage" xml:space="preserve">
+    <value>Validator type {0} doesn't have a parameterless constructor.</value>
+  </data>
+  <data name="DoesntImplementIValidateOptionsMessage" xml:space="preserve">
+    <value>Type {0} does not implement the required IValidateOptions&lt;{1}&gt; interface.</value>
+  </data>
+  <data name="ValidatorsNeedSimpleConstructorTitle" xml:space="preserve">
+    <value>Validators used for transitive or enumerable validation must have a constructor with no parameters.</value>
+  </data>
+  <data name="NoEligibleMembersFromValidatorMessage" xml:space="preserve">
+    <value>Type {0} has no fields or properties to validate, referenced by type {1}.</value>
+  </data>
+  <data name="NoEligibleMemberMessage" xml:space="preserve">
+    <value>Type {0} has no fields or properties to validate, referenced from member {1}.</value>
+  </data>
+  <data name="DoesntImplementIValidateOptionsTitle" xml:space="preserve">
+    <value>A type annotated with 'OptionsValidatorAttribute' doesn't implement the necessary interface.</value>
+  </data>
+  <data name="MemberIsInaccessibleTitle" xml:space="preserve">
+    <value>Can't validate private fields or properties.</value>
+  </data>
+  <data name="CantBeStaticClassMessage" xml:space="preserve">
+    <value>[OptionsValidator] cannot be applied to static class {0}.</value>
+  </data>
+  <data name="AlreadyImplementsValidateMethodTitle" xml:space="preserve">
+    <value>A type already includes an implementation of the 'Validate' method.</value>
+  </data>
+  <data name="AlreadyImplementsValidateMethodMessage" xml:space="preserve">
+    <value>Type {0} already implements the Validate method.</value>
+  </data>
+  <data name="CantBeStaticClassTitle" xml:space="preserve">
+    <value>'OptionsValidatorAttribute' can't be applied to a static class.</value>
+  </data>
+  <data name="NullValidatorTypeMessage" xml:space="preserve">
+    <value>Null validator type specified in [ValidateObjectMembers] or [ValidateEnumeratedItems] attributes.</value>
+  </data>
+  <data name="PotentiallyMissingTransitiveValidationTitle" xml:space="preserve">
+    <value>Member potentially missing transitive validation.</value>
+  </data>
+</root>

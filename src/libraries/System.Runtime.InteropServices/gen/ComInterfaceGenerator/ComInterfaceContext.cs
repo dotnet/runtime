@@ -1,17 +1,15 @@
 ﻿// Licensed to the .NET Foundation under one or more agreements.
 // The .NET Foundation licenses this file to you under the MIT license.
 
-using System;
 using System.Collections.Generic;
 using System.Collections.Immutable;
 using System.Diagnostics;
 using System.Threading;
 using Microsoft.CodeAnalysis;
-using Microsoft.CodeAnalysis.CSharp.Syntax;
 
 namespace Microsoft.Interop
 {
-    internal sealed record ComInterfaceContext(ComInterfaceInfo Info, ComInterfaceContext? Base)
+    internal sealed record ComInterfaceContext(ComInterfaceInfo Info, ComInterfaceContext? Base, ComInterfaceOptions Options)
     {
         /// <summary>
         /// Takes a list of ComInterfaceInfo, and creates a list of ComInterfaceContext.
@@ -41,7 +39,7 @@ namespace Microsoft.Interop
 
                 if (iface.BaseInterfaceKey is null)
                 {
-                    var baselessCtx = DiagnosticOr<ComInterfaceContext>.From(new ComInterfaceContext(iface, null));
+                    var baselessCtx = DiagnosticOr<ComInterfaceContext>.From(new ComInterfaceContext(iface, null, iface.Options));
                     nameToContextCache[iface.ThisInterfaceKey] = baselessCtx;
                     return baselessCtx;
                 }
@@ -49,23 +47,23 @@ namespace Microsoft.Interop
                 DiagnosticOr<ComInterfaceContext> baseReturnedValue;
                 if (
                     // Cached base info is a diagnostic - failure
-                    (nameToContextCache.TryGetValue(iface.BaseInterfaceKey, out var baseCachedValue) && baseCachedValue.IsDiagnostic)
+                    (nameToContextCache.TryGetValue(iface.BaseInterfaceKey, out var baseCachedValue) && baseCachedValue.HasDiagnostic)
                     // Cannot find base ComInterfaceInfo - failure (failed ComInterfaceInfo creation)
                     || !nameToInterfaceInfoMap.TryGetValue(iface.BaseInterfaceKey, out var baseInfo)
                     // Newly calculated base context pair is a diagnostic - failure
-                    || (baseReturnedValue = AddContext(baseInfo)).IsDiagnostic)
+                    || (baseReturnedValue = AddContext(baseInfo)).HasDiagnostic)
                 {
                     // The base has failed generation at some point, so this interface cannot be generated
                     var diagnostic = DiagnosticOr<ComInterfaceContext>.From(
-                        Diagnostic.Create(
+                        DiagnosticInfo.Create(
                             GeneratorDiagnostics.BaseInterfaceIsNotGenerated,
-                            iface.DiagnosticLocation.AsLocation(), iface.ThisInterfaceKey, iface.BaseInterfaceKey));
+                            iface.DiagnosticLocation, iface.ThisInterfaceKey, iface.BaseInterfaceKey));
                     nameToContextCache[iface.ThisInterfaceKey] = diagnostic;
                     return diagnostic;
                 }
                 DiagnosticOr<ComInterfaceContext> baseContext = baseCachedValue ?? baseReturnedValue;
-                Debug.Assert(baseContext.IsValue);
-                var ctx = DiagnosticOr<ComInterfaceContext>.From(new ComInterfaceContext(iface, baseContext.Value));
+                Debug.Assert(baseContext.HasValue);
+                var ctx = DiagnosticOr<ComInterfaceContext>.From(new ComInterfaceContext(iface, baseContext.Value, iface.Options));
                 nameToContextCache[iface.ThisInterfaceKey] = ctx;
                 return ctx;
             }

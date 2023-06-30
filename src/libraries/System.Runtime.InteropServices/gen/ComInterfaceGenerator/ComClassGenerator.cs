@@ -6,9 +6,9 @@ using System.Collections.Immutable;
 using System.IO;
 using System.Linq;
 using Microsoft.CodeAnalysis;
+using Microsoft.CodeAnalysis.CSharp;
 using Microsoft.CodeAnalysis.CSharp.Syntax;
 using static Microsoft.CodeAnalysis.CSharp.SyntaxFactory;
-using Microsoft.CodeAnalysis.CSharp;
 
 namespace Microsoft.Interop
 {
@@ -18,29 +18,65 @@ namespace Microsoft.Interop
         private sealed record ComClassInfo(string ClassName, ContainingSyntaxContext ContainingSyntaxContext, ContainingSyntax ClassSyntax, SequenceEqualImmutableArray<string> ImplementedInterfacesNames);
         public void Initialize(IncrementalGeneratorInitializationContext context)
         {
+            var unsafeCodeIsEnabled = context.CompilationProvider.Select((comp, ct) => comp.Options is CSharpCompilationOptions { AllowUnsafe: true }); // Unsafe code enabled
             // Get all types with the [GeneratedComClassAttribute] attribute.
-            var attributedClasses = context.SyntaxProvider
+            var attributedClassesOrDiagnostics = context.SyntaxProvider
                 .ForAttributeWithMetadataName(
                     TypeNames.GeneratedComClassAttribute,
                     static (node, ct) => node is ClassDeclarationSyntax,
-                    static (context, ct) =>
+                    static (context, ct) => context)
+                .Combine(unsafeCodeIsEnabled)
+                .Select((data, ct) =>
                     {
+                        var context = data.Left;
+                        var unsafeCodeIsEnabled = data.Right;
                         var type = (INamedTypeSymbol)context.TargetSymbol;
                         var syntax = (ClassDeclarationSyntax)context.TargetNode;
+                        if (!unsafeCodeIsEnabled)
+                        {
+                            return DiagnosticOr<ComClassInfo>.From(DiagnosticInfo.Create(GeneratorDiagnostics.RequiresAllowUnsafeBlocks, syntax.Identifier.GetLocation()));
+                        }
+
+                        if (!syntax.IsInPartialContext(out _))
+                        {
+                            return DiagnosticOr<ComClassInfo>.From(
+                                DiagnosticInfo.Create(
+                                    GeneratorDiagnostics.InvalidAttributedClassMissingPartialModifier,
+                                    syntax.Identifier.GetLocation(),
+                                    type.ToDisplayString()));
+                        }
+
                         ImmutableArray<string>.Builder names = ImmutableArray.CreateBuilder<string>();
                         foreach (INamedTypeSymbol iface in type.AllInterfaces)
                         {
-                            if (iface.GetAttributes().Any(attr => attr.AttributeClass?.ToDisplayString() == TypeNames.GeneratedComInterfaceAttribute))
+                            AttributeData? generatedComInterfaceAttribute = iface.GetAttributes().FirstOrDefault(attr => attr.AttributeClass?.ToDisplayString() == TypeNames.GeneratedComInterfaceAttribute);
+                            if (generatedComInterfaceAttribute is not null)
                             {
-                                names.Add(iface.ToDisplayString());
+                                var attributeData = GeneratedComInterfaceCompilationData.GetDataFromAttribute(generatedComInterfaceAttribute);
+                                if (attributeData.Options.HasFlag(ComInterfaceOptions.ManagedObjectWrapper))
+                                {
+                                    names.Add(iface.ToDisplayString());
+                                }
                             }
                         }
-                        return new ComClassInfo(
-                            type.ToDisplayString(),
-                            new ContainingSyntaxContext(syntax),
-                            new ContainingSyntax(syntax.Modifiers, syntax.Kind(), syntax.Identifier, syntax.TypeParameterList),
-                            new(names.ToImmutable()));
+
+                        if (names.Count == 0)
+                        {
+                            return DiagnosticOr<ComClassInfo>.From(DiagnosticInfo.Create(GeneratorDiagnostics.ClassDoesNotImplementAnyGeneratedComInterface,
+                                syntax.Identifier.GetLocation(),
+                                type.ToDisplayString()));
+                        }
+
+
+                        return DiagnosticOr<ComClassInfo>.From(
+                            new ComClassInfo(
+                                type.ToDisplayString(),
+                                new ContainingSyntaxContext(syntax),
+                                new ContainingSyntax(syntax.Modifiers, syntax.Kind(), syntax.Identifier, syntax.TypeParameterList),
+                                new(names.ToImmutable())));
                     });
+
+            var attributedClasses = context.FilterAndReportDiagnostics(attributedClassesOrDiagnostics);
 
             var className = attributedClasses.Select(static (info, ct) => info.ClassName);
 
@@ -56,6 +92,7 @@ namespace Microsoft.Interop
             {
                 var ((className, classInfoType), attribute) = classInfo;
                 StringWriter writer = new();
+                writer.WriteLine("// <auto-generated />");
                 writer.WriteLine(classInfoType.ToFullString());
                 writer.WriteLine();
                 writer.WriteLine(attribute);

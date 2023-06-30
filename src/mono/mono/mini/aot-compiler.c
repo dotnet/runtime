@@ -4334,9 +4334,6 @@ collect_dedup_method (MonoAotCompile *acfg, MonoMethod *method)
 static int
 add_method_full (MonoAotCompile *acfg, MonoMethod *method, gboolean extra, int depth)
 {
-	if (collect_dedup_method (acfg, method))
-		return -1;
-
 	int index;
 
 	index = GPOINTER_TO_UINT (g_hash_table_lookup (acfg->method_indexes, method));
@@ -4422,6 +4419,9 @@ add_extra_method_full (MonoAotCompile *acfg, MonoMethod *method, gboolean prefer
 		method = mini_get_shared_method_full (method, SHARE_MODE_GSHAREDVT, error);
 		mono_error_assert_ok (error);
 	}
+
+	if (collect_dedup_method (acfg, method))
+		return;
 
 	if (acfg->aot_opts.log_generics)
 		aot_printf (acfg, "%*sAdding method %s.\n", depth, "", mono_method_get_full_name (method));
@@ -9390,6 +9390,7 @@ add_referenced_patch (MonoAotCompile *acfg, MonoJumpInfo *patch_info, int depth)
 			case MONO_PATCH_INFO_VIRT_METHOD:
 			case MONO_PATCH_INFO_GSHAREDVT_METHOD:
 			case MONO_PATCH_INFO_GSHAREDVT_CALL:
+			case MONO_PATCH_INFO_SIGNATURE:
 				tmp.type = patch_type;
 				tmp.data.target = data;
 				break;
@@ -9828,8 +9829,9 @@ compile_method (MonoAotCompile *acfg, MonoMethod *method)
 	mono_atomic_inc_i32 (&acfg->stats.ccount);
 
 	if (acfg->aot_opts.compiled_methods_outfile && acfg->compiled_methods_outfile != NULL) {
-		if (!mono_method_is_generic_impl (method) && method->token != 0)
+		if (!mono_method_is_generic_impl (method) && method->token != 0) {
 			fprintf (acfg->compiled_methods_outfile, "%x\n", method->token);
+		}
 	}
 }
 
@@ -14434,6 +14436,8 @@ static void aot_dump (MonoAotCompile *acfg)
 static const MonoJitICallId preinited_jit_icalls [] = {
 	MONO_JIT_ICALL_mini_llvm_init_method,
 	MONO_JIT_ICALL_mini_llvmonly_throw_nullref_exception,
+	MONO_JIT_ICALL_mini_llvmonly_throw_index_out_of_range_exception,
+	MONO_JIT_ICALL_mini_llvmonly_throw_invalid_cast_exception,
 	MONO_JIT_ICALL_mini_llvmonly_throw_corlib_exception,
 	MONO_JIT_ICALL_mono_threads_state_poll,
 	MONO_JIT_ICALL_mini_llvmonly_init_vtable_slot,
@@ -14832,6 +14836,10 @@ aot_assembly (MonoAssembly *ass, guint32 jit_opts, MonoAotOptions *aot_options)
 		acfg->compiled_methods_outfile = fopen (acfg->aot_opts.compiled_methods_outfile, "w+");
 		if (!acfg->compiled_methods_outfile)
 			aot_printerrf (acfg, "Unable to open compiled-methods-outfile specified file %s\n", acfg->aot_opts.compiled_methods_outfile);
+		else {
+			fprintf(acfg->compiled_methods_outfile, "%s\n", ass->image->filename);
+			fprintf(acfg->compiled_methods_outfile, "%s\n", ass->image->guid);
+		}
 	}
 
 	if (acfg->aot_opts.data_outfile) {

@@ -1,0 +1,137 @@
+﻿<?xml version="1.0" encoding="utf-8"?>
+<xliff xmlns="urn:oasis:names:tc:xliff:document:1.2" xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance" version="1.2" xsi:schemaLocation="urn:oasis:names:tc:xliff:document:1.2 xliff-core-1.2-transitional.xsd">
+  <file datatype="xml" source-language="en" target-language="ja" original="../Strings.resx">
+    <body>
+      <trans-unit id="AlreadyImplementsValidateMethodMessage">
+        <source>Type {0} already implements the Validate method.</source>
+        <target state="translated">型 {0} に Validate メソッドが既に実装されています。</target>
+        <note />
+      </trans-unit>
+      <trans-unit id="AlreadyImplementsValidateMethodTitle">
+        <source>A type already includes an implementation of the 'Validate' method.</source>
+        <target state="translated">型には 'Validate' メソッドの実装が既に含まれています。</target>
+        <note />
+      </trans-unit>
+      <trans-unit id="CantBeStaticClassMessage">
+        <source>[OptionsValidator] cannot be applied to static class {0}.</source>
+        <target state="translated">静的クラス {0} には [OptionsValidator] を適用できません。</target>
+        <note />
+      </trans-unit>
+      <trans-unit id="CantBeStaticClassTitle">
+        <source>'OptionsValidatorAttribute' can't be applied to a static class.</source>
+        <target state="translated">'OptionsValidatorAttribute' は静的クラスに適用できません。</target>
+        <note />
+      </trans-unit>
+      <trans-unit id="CantUseWithGenericTypesMessage">
+        <source>Can't use [ValidateObjectMembers] or [ValidateEnumeratedItems] on fields or properties with open generic type {0}.</source>
+        <target state="translated">[ValidateObjectMembers] または [ValidateEnumeratedItems] は、オープンジェネリック型 {0} を持つフィールドまたはプロパティでは使用できません。</target>
+        <note />
+      </trans-unit>
+      <trans-unit id="CantUseWithGenericTypesTitle">
+        <source>Can't use 'ValidateObjectMembersAttribute' or 'ValidateEnumeratedItemsAttribute' on fields or properties with open generic types.</source>
+        <target state="translated">'ValidateObjectMembersAttribute' または 'ValidateEnumeratedItemsAttribute' は、オープンジェネリック型を持つフィールドまたはプロパティでは使用できません。</target>
+        <note />
+      </trans-unit>
+      <trans-unit id="CircularTypeReferencesMessage">
+        <source>There is a circular type reference involving type {0} preventing it from being used for static validation.</source>
+        <target state="translated">型{0}を含む循環型参照があるため、静的検証に使用できません。</target>
+        <note />
+      </trans-unit>
+      <trans-unit id="CircularTypeReferencesTitle">
+        <source>Unsupported circular references in model types.</source>
+        <target state="translated">モデル型でサポートされていない循環参照です。</target>
+        <note />
+      </trans-unit>
+      <trans-unit id="DoesntImplementIValidateOptionsMessage">
+        <source>Type {0} does not implement the required IValidateOptions&lt;{1}&gt; interface.</source>
+        <target state="translated">必要な IValidateOptions&lt;{1}&gt; インターフェイスが型 {0} に実装されていません。</target>
+        <note />
+      </trans-unit>
+      <trans-unit id="DoesntImplementIValidateOptionsTitle">
+        <source>A type annotated with 'OptionsValidatorAttribute' doesn't implement the necessary interface.</source>
+        <target state="translated">'OptionsValidatorAttribute' の注釈が付けられた型が、必要とされるインターフェイスを実装していません。</target>
+        <note />
+      </trans-unit>
+      <trans-unit id="MemberIsInaccessibleMessage">
+        <source>Can't apply validation attributes to private field or property {0}.</source>
+        <target state="translated">プライベート フィールドまたはプロパティ {0} には検証属性を適用できません。</target>
+        <note />
+      </trans-unit>
+      <trans-unit id="MemberIsInaccessibleTitle">
+        <source>Can't validate private fields or properties.</source>
+        <target state="translated">プライベート フィールドまたはプロパティを検証できません。</target>
+        <note />
+      </trans-unit>
+      <trans-unit id="NoEligibleMemberMessage">
+        <source>Type {0} has no fields or properties to validate, referenced from member {1}.</source>
+        <target state="translated">型 {0} にメンバー {1} から参照されている検証対象のフィールドまたはプロパティがありません。</target>
+        <note />
+      </trans-unit>
+      <trans-unit id="NoEligibleMemberTitle">
+        <source>A member type has no fields or properties to validate.</source>
+        <target state="translated">メンバー型に検証対象のフィールドまたはプロパティがありません。</target>
+        <note />
+      </trans-unit>
+      <trans-unit id="NoEligibleMembersFromValidatorMessage">
+        <source>Type {0} has no fields or properties to validate, referenced by type {1}.</source>
+        <target state="translated">型 {0} に型 {1} で参照されている検証対象のフィールドまたはプロパティがありません。</target>
+        <note />
+      </trans-unit>
+      <trans-unit id="NoEligibleMembersFromValidatorTitle">
+        <source>A type has no fields or properties to validate.</source>
+        <target state="translated">型に検証対象のフィールドまたはプロパティがありません。</target>
+        <note />
+      </trans-unit>
+      <trans-unit id="NotEnumerableTypeMessage">
+        <source>[ValidateEnumeratedItems] cannot be used on members of type {0} as it doesn't implement IEnumerable&lt;T&gt;.</source>
+        <target state="translated">[ValidateEnumeratedItems] は IEnumerable&lt;T&gt; を実装していないため、型 {0} のメンバーでは使用できません。</target>
+        <note />
+      </trans-unit>
+      <trans-unit id="NotEnumerableTypeTitle">
+        <source>Member type is not enumerable.</source>
+        <target state="translated">メンバー型は列挙型ではありません。</target>
+        <note />
+      </trans-unit>
+      <trans-unit id="NullValidatorTypeMessage">
+        <source>Null validator type specified in [ValidateObjectMembers] or [ValidateEnumeratedItems] attributes.</source>
+        <target state="translated">[ValidateObjectMembers] 属性または [ValidateEnumeratedItems] 属性で null のバリデーター型が指定されています。</target>
+        <note />
+      </trans-unit>
+      <trans-unit id="NullValidatorTypeTitle">
+        <source>Null validator type specified for the 'ValidateObjectMembersAttribute' or 'ValidateEnumeratedItemsAttribute' attributes.</source>
+        <target state="translated">'ValidateObjectMembersAttribute' 属性または 'ValidateEnumeratedItemsAttribute' 属性に対して NULL のバリデーター型が指定されています。</target>
+        <note />
+      </trans-unit>
+      <trans-unit id="PotentiallyMissingEnumerableValidationMessage">
+        <source>Type {0} has validation annotations, but member {1} doesn't specify [ValidateEnumeratedItems] which could be an oversight.</source>
+        <target state="translated">型 {0} には検証の注釈がありますが、メンバー {1} では [ValidateEnumeratedItem] が指定されていません。これは誤りである可能性があります。</target>
+        <note />
+      </trans-unit>
+      <trans-unit id="PotentiallyMissingEnumerableValidationTitle">
+        <source>Member potentially missing enumerable validation.</source>
+        <target state="translated">列挙型の検証がメンバーに存在しない可能性があります。</target>
+        <note />
+      </trans-unit>
+      <trans-unit id="PotentiallyMissingTransitiveValidationMessage">
+        <source>Type {0} has validation annotations, but member {1} doesn't specify [ValidateObjectMembers] which could be an oversight.</source>
+        <target state="translated">型 {0} には検証の注釈がありますが、メンバー {1} では [ValidateObjectMembers] が指定されていません。これは誤りである可能性があります。</target>
+        <note />
+      </trans-unit>
+      <trans-unit id="PotentiallyMissingTransitiveValidationTitle">
+        <source>Member potentially missing transitive validation.</source>
+        <target state="translated">メンバーに推移性の検証がない可能性があります。</target>
+        <note />
+      </trans-unit>
+      <trans-unit id="ValidatorsNeedSimpleConstructorMessage">
+        <source>Validator type {0} doesn't have a parameterless constructor.</source>
+        <target state="translated">バリデーター型 {0} にパラメーターなしのコンストラクターがありません。</target>
+        <note />
+      </trans-unit>
+      <trans-unit id="ValidatorsNeedSimpleConstructorTitle">
+        <source>Validators used for transitive or enumerable validation must have a constructor with no parameters.</source>
+        <target state="translated">推移性または列挙型の検証に使用されるバリデーターには、パラメーターのないコンストラクターが必要です。</target>
+        <note />
+      </trans-unit>
+    </body>
+  </file>
+</xliff>

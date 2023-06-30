@@ -34,30 +34,16 @@ namespace System.Buffers
         internal override bool ContainsCore(char value) =>
             ProbabilisticMap.Contains(ref Unsafe.As<ProbabilisticMap, uint>(ref _map), _values, value);
 
-        [MethodImpl(MethodImplOptions.AggressiveInlining)]
         internal override int IndexOfAny(ReadOnlySpan<char> span) =>
-            IndexOfAny<IndexOfAnyAsciiSearcher.DontNegate>(ref MemoryMarshal.GetReference(span), span.Length);
+            ProbabilisticMap.IndexOfAny(ref Unsafe.As<ProbabilisticMap, uint>(ref _map), ref MemoryMarshal.GetReference(span), span.Length, _values);
 
-        [MethodImpl(MethodImplOptions.AggressiveInlining)]
         internal override int IndexOfAnyExcept(ReadOnlySpan<char> span) =>
-            IndexOfAny<IndexOfAnyAsciiSearcher.Negate>(ref MemoryMarshal.GetReference(span), span.Length);
+            ProbabilisticMap.IndexOfAnySimpleLoop<IndexOfAnyAsciiSearcher.Negate>(ref MemoryMarshal.GetReference(span), span.Length, _values);
 
-        [MethodImpl(MethodImplOptions.AggressiveInlining)]
         internal override int LastIndexOfAny(ReadOnlySpan<char> span) =>
-            LastIndexOfAny<IndexOfAnyAsciiSearcher.DontNegate>(ref MemoryMarshal.GetReference(span), span.Length);
+            ProbabilisticMap.LastIndexOfAny(ref Unsafe.As<ProbabilisticMap, uint>(ref _map), ref MemoryMarshal.GetReference(span), span.Length, _values);
 
-        [MethodImpl(MethodImplOptions.AggressiveInlining)]
         internal override int LastIndexOfAnyExcept(ReadOnlySpan<char> span) =>
-            LastIndexOfAny<IndexOfAnyAsciiSearcher.Negate>(ref MemoryMarshal.GetReference(span), span.Length);
-
-        [MethodImpl(MethodImplOptions.NoInlining)]
-        private int IndexOfAny<TNegator>(ref char searchSpace, int searchSpaceLength)
-            where TNegator : struct, IndexOfAnyAsciiSearcher.INegator =>
-            ProbabilisticMap.IndexOfAny<TNegator>(ref Unsafe.As<ProbabilisticMap, uint>(ref _map), ref searchSpace, searchSpaceLength, _values);
-
-        [MethodImpl(MethodImplOptions.NoInlining)]
-        private int LastIndexOfAny<TNegator>(ref char searchSpace, int searchSpaceLength)
-            where TNegator : struct, IndexOfAnyAsciiSearcher.INegator =>
-            ProbabilisticMap.LastIndexOfAny<TNegator>(ref Unsafe.As<ProbabilisticMap, uint>(ref _map), ref searchSpace, searchSpaceLength, _values);
+            ProbabilisticMap.LastIndexOfAnySimpleLoop<IndexOfAnyAsciiSearcher.Negate>(ref MemoryMarshal.GetReference(span), span.Length, _values);
     }
 }

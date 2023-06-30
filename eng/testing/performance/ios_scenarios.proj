@@ -30,19 +30,19 @@
   </PropertyGroup>
 
   <ItemGroup>
-    <HelixWorkItem Include="SOD - iOS HelloWorld Mono .app Size $(LlvmPath) $(SymbolsPath)">
+    <HelixWorkItem Include="SOD - iOS HelloWorld $(RuntimeType) .app Size $(LlvmPath) $(SymbolsPath)">
       <PayloadDirectory>$(WorkItemDirectory)</PayloadDirectory>
-      <PreCommands>cd $(ScenarioDirectory)helloios;cp -rf $HELIX_CORRELATION_PAYLOAD/iosHelloWorld/$(LlvmPath)$(SymbolsPath) ./app;$(Python) pre.py --name app</PreCommands>
+      <PreCommands>cd $(ScenarioDirectory)helloios;cp -rf $HELIX_CORRELATION_PAYLOAD/iosHelloWorld ./app;$(Python) pre.py --name app</PreCommands>
       <Command>$(Python) test.py sod --scenario-name &quot;%(Identity)&quot;</Command>
       <PostCommands>$(Python) post.py</PostCommands>
     </HelixWorkItem>
-    <HelixWorkItem Include="SOD - iOS HelloWorld Mono Zip Size $(LlvmPath) $(SymbolsPath)">
+    <HelixWorkItem Include="SOD - iOS HelloWorld $(RuntimeType) Zip Size $(LlvmPath) $(SymbolsPath)">
       <PayloadDirectory>$(WorkItemDirectory)</PayloadDirectory>
-      <PreCommands>cd $(ScenarioDirectory)helloios;cp -v $HELIX_CORRELATION_PAYLOAD/iosHelloWorldZip/$(LlvmPath)$(SymbolsPath)zip/iOSSampleApp$(LlvmPath)$(SymbolsPath)/iOSSampleApp$(LlvmPath)$(SymbolsPath).zip .;$(Python) pre.py --name iOSSampleApp$(LlvmPath)$(SymbolsPath).zip</PreCommands>
+      <PreCommands>cd $(ScenarioDirectory)helloios;cp -v $HELIX_CORRELATION_PAYLOAD/iosHelloWorldZip/iOSSampleApp.zip .;$(Python) pre.py --name iOSSampleApp.zip</PreCommands>
       <Command>$(Python) test.py sod --scenario-name &quot;%(Identity)&quot;</Command>
       <PostCommands>$(Python) post.py</PostCommands>
     </HelixWorkItem>
-    <XHarnessAppBundleToTest Include="Device Startup - iOS Mono HelloWorld $(LlvmPath) $(SymbolsPath)">
+    <XHarnessAppBundleToTest Include="Device Startup - iOS $(RuntimeType) HelloWorld $(LlvmPath) $(SymbolsPath)">
       <AppBundlePath>$(WorkItemDirectory).zip</AppBundlePath>
       <WorkItemTimeout>00:15:00</WorkItemTimeout>
       <TestTarget>ios-device</TestTarget>
@@ -51,7 +51,7 @@
           # PreCommands
           export XHARNESSPATH=$XHARNESS_CLI_PATH
 
-          cp -r $HELIX_CORRELATION_PAYLOAD/iosHelloWorld/$(LlvmPath)$(SymbolsPath)/HelloiOS.app $(ScenarioDirectory)helloios/HelloiOS.app
+          cp -r $HELIX_CORRELATION_PAYLOAD/iosHelloWorld/iosHelloWorld/HelloiOS.app $(ScenarioDirectory)helloios/HelloiOS.app
           cp -f embedded.mobileprovision $(ScenarioDirectory)helloios/HelloiOS.app
           cd $(ScenarioDirectory)helloios
           sign HelloiOS.app
