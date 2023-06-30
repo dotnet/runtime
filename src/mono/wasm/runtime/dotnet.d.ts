@@ -120,7 +120,7 @@ type MonoConfig = {
     /**
      * debugLevel > 0 enables debugging and sets the debug log level to debugLevel
      * debugLevel == 0 disables debugging and enables interpreter optimizations
-     * debugLevel < 0 enabled debugging and disables debug logging.
+     * debugLevel < 0 enables debugging and disables debug logging.
      */
     debugLevel?: number;
     /**
@@ -210,9 +210,9 @@ interface AssetEntry extends ResourceRequest {
 }
 type AssetBehaviours = "resource" | "assembly" | "pdb" | "heap" | "icu" | "vfs" | "dotnetwasm" | "js-module-threads" | "js-module-runtime" | "js-module-dotnet" | "js-module-native" | "symbols";
 type GlobalizationMode = "icu" | // load ICU globalization data from any runtime assets with behavior "icu".
-"invariant" | //  operate in invariant globalization mode.
-"hybrid" | // operate in hybrid globalization mode with small ICU files, using native platform functions
-"auto";
+    "invariant" | //  operate in invariant globalization mode.
+    "hybrid" | // operate in hybrid globalization mode with small ICU files, using native platform functions
+    "auto";
 type DotnetModuleConfig = {
     disableDotnet6Compatibility?: boolean;
     config?: MonoConfig;

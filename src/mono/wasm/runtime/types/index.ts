@@ -54,7 +54,7 @@ export type MonoConfig = {
     /**
      * debugLevel > 0 enables debugging and sets the debug log level to debugLevel
      * debugLevel == 0 disables debugging and enables interpreter optimizations
-     * debugLevel < 0 enabled debugging and disables debug logging.
+     * debugLevel < 0 enables debugging and disables debug logging.
      */
     debugLevel?: number,
     /**

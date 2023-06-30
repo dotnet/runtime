@@ -30,6 +30,8 @@ public class GenerateWasmBootJson : Task
     [Required]
     public bool DebugBuild { get; set; }
 
+    public string DebugLevel { get; set; }
+
     [Required]
     public bool LinkerEnabled { get; set; }
 
@@ -103,7 +105,7 @@ public class GenerateWasmBootJson : Task
             entryAssembly = entryAssemblyName,
             cacheBootResources = CacheBootResources,
             debugBuild = DebugBuild,
-            debugLevel = DebugBuild ? 1 : 0,
+            debugLevel = ParseOptionalInt(DebugLevel) ?? (DebugBuild ? 1 : 0),
             linkerEnabled = LinkerEnabled,
             resources = new ResourcesData(),
             config = new List<string>(),
@@ -326,6 +328,14 @@ public class GenerateWasmBootJson : Task
             return null;
 
         return boolValue;
+    }
+
+    private static int? ParseOptionalInt(string value)
+    {
+        if (string.IsNullOrEmpty(value) || !int.TryParse(value, out var intValue))
+            return null;
+
+        return intValue;
     }
 
     private void AddToAdditionalResources(ITaskItem resource, Dictionary<string, AdditionalAsset> additionalResources, string resourceName, string behavior)
