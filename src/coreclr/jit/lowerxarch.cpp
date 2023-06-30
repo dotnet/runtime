@@ -795,15 +795,15 @@ void Lowering::LowerCast(GenTree* tree)
     //   srcType = float/double                    castToType = * and overflow detecting cast
     //       Reason: must be converted to a helper call
     //   srcType = float/double,                   castToType = ulong
-    //       Reason: must be converted to a helper call unless we have AVX512F
+    //       Reason: must be converted to a helper call
     //   srcType = uint                            castToType = float/double
     //       Reason: uint -> float/double = uint -> long -> float/double
     //   srcType = ulong                           castToType = float
     //       Reason: ulong -> float = ulong -> double -> float
     if (varTypeIsFloating(srcType))
     {
-        assert(!tree->gtOverflow() || comp->compIsaSupportedDebugOnly(InstructionSet_AVX512F));
-        assert(castToType != TYP_ULONG || comp->compIsaSupportedDebugOnly(InstructionSet_AVX512F));
+        assert(!tree->gtOverflow());
+        assert(castToType != TYP_ULONG);
     }
     else if (srcType == TYP_UINT)
     {

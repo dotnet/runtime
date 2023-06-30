@@ -137,7 +137,6 @@ extern "C" DLLEXPORT  uint64_t ConvertDoubleToUInt64(double x, FPtoIntegerConver
         return ((x != x) || (x < INT64_MIN) || (x >= uint64_max_plus_1)) ? (uint64_t)INT64_MIN : (x < 0) ? (uint64_t)(int64_t)x : (uint64_t)x;
 
     case CONVERT_SENTINEL:
-    case CONVERT_MANAGED_BACKWARD_COMPATIBLE_X86_X64:
         return ((x != x) || (x < 0) || (x >= uint64_max_plus_1)) ? UINT64_MAX : (uint64_t)x;
 
     case CONVERT_SATURATING:
@@ -154,7 +153,18 @@ extern "C" DLLEXPORT  uint64_t ConvertDoubleToUInt64(double x, FPtoIntegerConver
                 return (uint64_t)ConvertDoubleToInt64(x - int64_max_plus_1, CONVERT_MANAGED_BACKWARD_COMPATIBLE_ARM32) + (0x8000000000000000);
             }
         }
-    
+
+    case CONVERT_MANAGED_BACKWARD_COMPATIBLE_X86_X64:
+        if (x < int64_max_plus_1)
+        {
+            return (x < INT64_MIN) ? (uint64_t)INT64_MIN : (uint64_t)(int64_t)x;
+        }
+        else
+        {
+            x -= int64_max_plus_1;
+            x = trunc(x);
+            return (uint64_t)(((x != x) || (x >= int64_max_plus_1)) ? INT64_MIN : (int64_t)x) + (0x8000000000000000);
+        }    
     
     case CONVERT_NATIVECOMPILERBEHAVIOR: // handled above, but add case to silence warning
         return 0;
