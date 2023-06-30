@@ -2368,7 +2368,7 @@ namespace Internal.JitInterface
             parNode->size = (uint)type.GetElementSize().AsInt;
             parNode->numFields = 0;
             parNode->type = CorInfoType.CORINFO_TYPE_VALUECLASS;
-            parNode->hasSignificantPadding = false;
+            parNode->hasSignificantPadding = type.IsExplicitLayout || (type.IsSequentialLayout && type.GetClassLayout().Size != 0);
 
 #if READYTORUN
             // The contract of getTypeLayout is carefully crafted to still
@@ -2381,7 +2381,7 @@ namespace Internal.JitInterface
             // amenable to the optimizations that this unlocks if they already
             // went through EncodeFieldBaseOffset.
             //
-            if (!_compilation.IsLayoutFixedInCurrentVersionBubble(type))
+            if (!parNode->hasSignificantPadding && !_compilation.IsLayoutFixedInCurrentVersionBubble(type))
             {
                 // For types without fixed layout the JIT is not allowed to
                 // rely on padding bits being insignificant, since fields could
@@ -2390,11 +2390,6 @@ namespace Internal.JitInterface
                 parNode->hasSignificantPadding = true;
             }
 #endif
-
-            if (type.IsExplicitLayout || (type.IsSequentialLayout && type.GetClassLayout().Size != 0))
-            {
-                parNode->hasSignificantPadding = true;
-            }
 
             // The intrinsic SIMD/HW SIMD types have a lot of fields that the JIT does
             // not care about since they are considered primitives by the JIT.
