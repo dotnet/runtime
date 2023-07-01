@@ -551,7 +551,7 @@ namespace System.Formats.Tar
             AttemptSetLastWriteTime(destinationFileName, ModificationTime);
         }
 
-        internal static void AttemptSetLastWriteTime(string destinationFileName, DateTimeOffset lastWriteTime)
+        private static void AttemptSetLastWriteTime(string destinationFileName, DateTimeOffset lastWriteTime)
         {
             try
             {

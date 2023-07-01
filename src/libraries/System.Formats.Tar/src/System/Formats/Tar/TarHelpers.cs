@@ -392,7 +392,7 @@ namespace System.Formats.Tar
             // note: these are ordered child to parent.
             while (directoryModificationTimes.TryPop(out (string Path, DateTimeOffset Modified) item))
             {
-                TarEntry.AttemptSetLastWriteTime(item.Path, item.Modified);
+                AttemptDirectorySetLastWriteTime(item.Path, item.Modified);
             }
         }
 
@@ -409,7 +409,7 @@ namespace System.Formats.Tar
                    !IsChildPath(previous.Path, fullPath))
             {
                 directoryModificationTimes.TryPop(out previous);
-                TarEntry.AttemptSetLastWriteTime(previous.Path, previous.Modified);
+                AttemptDirectorySetLastWriteTime(previous.Path, previous.Modified);
             }
 
             directoryModificationTimes.Push((fullPath, modified));
@@ -445,6 +445,18 @@ namespace System.Formats.Tar
             // We don't need to check for AltDirectorySeparatorChar, full paths are normalized to DirectorySeparatorChar.
             static bool IsDirectorySeparatorChar(char c)
                 => c == Path.DirectorySeparatorChar;
+        }
+
+        private static void AttemptDirectorySetLastWriteTime(string fullPath, DateTimeOffset lastWriteTime)
+        {
+            // try
+            // {
+                Directory.SetLastWriteTime(fullPath, lastWriteTime.LocalDateTime); // SetLastWriteTime expects local time
+            // }
+            // catch
+            // {
+            //     // Some OSes like Android might not support setting the last write time, the extraction should not fail because of that
+            // }
         }
     }
 }
