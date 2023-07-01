@@ -361,6 +361,54 @@ namespace Wasm.Build.Tests
             return buildArgs with { ProjectFileContents = projectContents };
         }
 
+        public (string projectDir, string buildOutput) BuildTemplateProject(BuildArgs buildArgs,
+                                  string id,
+                                  BuildProjectOptions buildProjectOptions,
+                                  AssertTestMainJsAppBundleOptions? assertAppBundleOptions = null)
+        {
+            StringBuilder buildCmdLine = new();
+            buildCmdLine.Append(buildProjectOptions.Publish ? "publish" : "build");
+
+            string logFilePath = Path.Combine(s_buildEnv.LogRootPath, $"{id}.binlog");
+            _testOutput.WriteLine($"-------- Building ---------");
+            _testOutput.WriteLine($"Binlog path: {logFilePath}");
+            buildCmdLine.Append($" -c {buildArgs.Config} -bl:{logFilePath} {buildArgs.ExtraBuildArgs}");
+
+            if (buildProjectOptions.Publish && buildProjectOptions.BuildOnlyAfterPublish)
+                buildCmdLine.Append(" -p:WasmBuildOnlyAfterPublish=true");
+
+            CommandResult res = new DotNetCommand(s_buildEnv, _testOutput)
+                                    .WithWorkingDirectory(_projectDir!)
+                                    .WithEnvironmentVariables(buildProjectOptions.ExtraBuildEnvironmentVariables)
+                                    .ExecuteWithCapturedOutput(buildCmdLine.ToString());
+            if (buildProjectOptions.ExpectSuccess)
+                res.EnsureSuccessful();
+            else
+                Assert.NotEqual(0, res.ExitCode);
+
+            if (buildProjectOptions.UseCache)
+                _buildContext.CacheBuild(buildArgs, new BuildProduct(_projectDir!, logFilePath, true, res.Output));
+
+            AssertRuntimePackPath(res.Output, buildProjectOptions.TargetFramework ?? DefaultTargetFramework);
+            string bundleDir = Path.Combine(GetBinDir(config: buildArgs.Config, targetFramework: buildProjectOptions.TargetFramework ?? DefaultTargetFramework), "AppBundle");
+
+            assertAppBundleOptions ??= new AssertTestMainJsAppBundleOptions(
+                                            BundleDir: bundleDir,
+                                            ProjectName: buildArgs.ProjectName,
+                                            Config: buildArgs.Config,
+                                            MainJS: buildProjectOptions.MainJS ?? "test-main.js",
+                                            HasV8Script: buildProjectOptions.HasV8Script,
+                                            TargetFramework: buildProjectOptions.TargetFramework ?? DefaultTargetFramework,
+                                            GlobalizationMode: buildProjectOptions.GlobalizationMode,
+                                            PredefinedIcudt: buildProjectOptions.PredefinedIcudt ?? "",
+                                            UseWebcil: UseWebcil,
+                                            IsBrowserProject: buildProjectOptions.IsBrowserProject,
+                                            IsPublish: buildProjectOptions.Publish);
+            AssertBasicAppBundle(assertAppBundleOptions);
+
+            return (_projectDir!, res.Output);
+        }
+
         public (string projectDir, string buildOutput) BuildProject(BuildArgs buildArgs,
                                   string id,
                                   BuildProjectOptions options)
