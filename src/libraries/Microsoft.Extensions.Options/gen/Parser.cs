@@ -452,7 +452,7 @@ namespace Microsoft.Extensions.Options.Generators
 
             if (member.IsStatic)
             {
-                // generate an error if the member is static and has a validation attribute applied
+                // generate a warning if the member is const/static and has a validation attribute applied
                 if (validationAttributeIsApplied)
                 {
                     Diag(DiagDescriptors.CantValidateStaticOrConstMember, member.GetLocation(), member.Name);

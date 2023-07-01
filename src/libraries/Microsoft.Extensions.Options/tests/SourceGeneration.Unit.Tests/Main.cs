@@ -234,6 +234,7 @@ namespace __OptionValidationStaticInstances
 
         Assert.Equal(4, d.Count);
         Assert.All(d, x => Assert.Equal(DiagDescriptors.CantValidateStaticOrConstMember.Id, x.Id));
+        Assert.All(d, x => Assert.Equal(DiagnosticSeverity.Warning, x.DefaultSeverity));
     }
 
     [ConditionalFact(typeof(PlatformDetection), nameof(PlatformDetection.IsNotBrowser))]
