@@ -222,5 +222,48 @@ namespace System.Linq.Tests
         {
             Assert.Equal(int.MaxValue - 101, Enumerable.Range(-100, int.MaxValue).LastOrDefault());
         }
+
+        [ConditionalFact(typeof(PlatformDetection), nameof(PlatformDetection.IsSpeedOptimized))]
+        public void IListImplementationIsValid()
+        {
+            Validate(Enumerable.Range(42, 10), new[] { 42, 43, 44, 45, 46, 47, 48, 49, 50, 51 });
+            Validate(Enumerable.Range(42, 10).Skip(3).Take(4), new[] { 45, 46, 47, 48 });
+
+            static void Validate(IEnumerable<int> e, int[] expected)
+            {
+                IList<int> list = Assert.IsAssignableFrom<IList<int>>(e);
+                IReadOnlyList<int> roList = Assert.IsAssignableFrom<IReadOnlyList<int>>(e);
+
+                Assert.Throws<NotSupportedException>(() => list.Add(42));
+                Assert.Throws<NotSupportedException>(() => list.Insert(0, 42));
+                Assert.Throws<NotSupportedException>(() => list.Clear());
+                Assert.Throws<NotSupportedException>(() => list.Remove(42));
+                Assert.Throws<NotSupportedException>(() => list[0] = 42);
+                AssertExtensions.Throws<ArgumentOutOfRangeException>("index", () => list[-1]);
+                AssertExtensions.Throws<ArgumentOutOfRangeException>("index", () => list[expected.Length]);
+                AssertExtensions.Throws<ArgumentOutOfRangeException>("index", () => roList[-1]);
+                AssertExtensions.Throws<ArgumentOutOfRangeException>("index", () => roList[expected.Length]);
+
+                Assert.True(list.IsReadOnly);
+                Assert.Equal(expected.Length, list.Count);
+                Assert.Equal(expected.Length, roList.Count);
+
+                Assert.False(list.Contains(expected[0] - 1));
+                Assert.False(list.Contains(expected[^1] + 1));
+                Assert.All(expected, i => Assert.True(list.Contains(i)));
+                Assert.All(expected, i => Assert.Equal(Array.IndexOf(expected, i), list.IndexOf(i)));
+                for (int i = 0; i < expected.Length; i++)
+                {
+                    Assert.Equal(expected[i], list[i]);
+                    Assert.Equal(expected[i], roList[i]);
+                }
+
+                int[] actual = new int[expected.Length + 2];
+                list.CopyTo(actual, 1);
+                Assert.Equal(0, actual[0]);
+                Assert.Equal(0, actual[^1]);
+                AssertExtensions.SequenceEqual(expected, actual.AsSpan(1, expected.Length));
+            }
+        }
     }
 }
