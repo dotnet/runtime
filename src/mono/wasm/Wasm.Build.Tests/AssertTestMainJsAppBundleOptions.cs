@@ -12,11 +12,9 @@ public record AssertTestMainJsAppBundleOptions
    string Config,
    string MainJS,
    bool HasV8Script,
-   string TargetFramework,
    GlobalizationMode? GlobalizationMode,
    string PredefinedIcudt = "",
    bool UseWebcil = true,
-   bool DotnetWasmFromRuntimePack = true,
    bool IsBrowserProject = true,
    bool IsPublish = false
 );
