@@ -403,6 +403,15 @@ create_interp_local_explicit (TransformData *td, MonoType *type, int size)
 
 }
 
+static void
+create_interp_dummy_var (TransformData *td)
+{
+	g_assert (td->dummy_var < 0);
+	td->dummy_var = create_interp_local_explicit (td, m_class_get_byval_arg (mono_defaults.void_class), 8);
+	td->locals [td->dummy_var].offset = 0;
+	td->locals [td->dummy_var].flags = INTERP_LOCAL_FLAG_GLOBAL;
+}
+
 static int
 get_tos_offset (TransformData *td)
 {
@@ -1281,11 +1290,6 @@ interp_get_icall_sig (MonoMethodSignature *sig);
 static void
 interp_generate_icall_throw (TransformData *td, MonoJitICallInfo *icall_info, gpointer arg1, gpointer arg2)
 {
-	// Allocate dreg for call, only void calls are supported
-	push_simple_type (td, STACK_TYPE_I4);
-	td->sp--;
-	int dummy_dreg = td->sp [0].local;
-
 	int num_args = icall_info->sig->param_count;
 	if (num_args > 0)
 		emit_ldptr (td, arg1);
@@ -1295,7 +1299,7 @@ interp_generate_icall_throw (TransformData *td, MonoJitICallInfo *icall_info, gp
 	td->sp -= num_args;
 
 	interp_add_ins (td, MINT_ICALL);
-	interp_ins_set_dreg (td->last_ins, dummy_dreg);
+	interp_ins_set_dummy_dreg (td->last_ins, td);
 	interp_ins_set_sreg (td->last_ins, MINT_CALL_ARGS_SREG);
 	td->last_ins->data [0] = interp_get_icall_sig (icall_info->sig);
 	td->last_ins->data [1] = get_data_item_index (td, (gpointer)icall_info->func);
@@ -11046,6 +11050,7 @@ retry:
 	td->mem_manager = m_method_get_mem_manager (method);
 	td->n_data_items = 0;
 	td->max_data_items = 0;
+	td->dummy_var = -1;
 	td->data_items = NULL;
 	td->data_hash = g_hash_table_new (NULL, NULL);
 #ifdef ENABLE_EXPERIMENT_TIERED
