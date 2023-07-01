@@ -96,7 +96,7 @@ namespace System.Formats.Tar.Tests
                 Directory.CreateDirectory(Path.Combine(fromDir.FullName, "dir", "child")),             // 'fromdir/dir/child'
                 Directory.CreateDirectory(Path.Combine(fromDir.FullName, "dir", "child", "subchild")), // 'fromdir/dir/child/subchild'
                 Directory.CreateDirectory(Path.Combine(fromDir.FullName, "dir2")),                     // 'fromdir/dir2'
-                Directory.CreateDirectory(Path.Combine(fromDir.FullName, "dir2", "child2")),            // 'fromdir/dir2/child'
+                Directory.CreateDirectory(Path.Combine(fromDir.FullName, "dir2", "child2")),           // 'fromdir/dir2/child'
             };
             var dt = new DateTime[directories.Length];
             for (int i = directories.Length - 1; i >= 0; i--) // Reverse order to preserve parent timestamps.
@@ -105,7 +105,7 @@ namespace System.Formats.Tar.Tests
                 File.Create(Path.Combine(directories[i].FullName, "file")).Dispose();
 
                 // Set the directory timestamp.
-                dt[i] = new DateTime(2000 + i, 1, 2, 3, 4, 5, DateTimeKind.Local);
+                dt[i] = new DateTime(2000 + i, 1 + i, 2 + i, 3 + i, 4 + i, 5 + i, DateTimeKind.Local);
                 directories[i].LastWriteTime = dt[i];
             }
 

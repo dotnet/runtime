@@ -449,14 +449,14 @@ namespace System.Formats.Tar
 
         private static void AttemptDirectorySetLastWriteTime(string fullPath, DateTimeOffset lastWriteTime)
         {
-            // try
-            // {
+            try
+            {
                 Directory.SetLastWriteTime(fullPath, lastWriteTime.LocalDateTime); // SetLastWriteTime expects local time
-            // }
-            // catch
-            // {
-            //     // Some OSes like Android might not support setting the last write time, the extraction should not fail because of that
-            // }
+            }
+            catch
+            {
+                // Some OSes like Android might not support setting the last write time, the extraction should not fail because of that
+            }
         }
     }
 }
