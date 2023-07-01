@@ -139,10 +139,14 @@ namespace Wasm.Build.Tests
 
         // FIXME: error checks
         public string GetRuntimePackVersion(string tfm = BuildTestBase.DefaultTargetFramework) => s_runtimePackVersions[tfm];
-        public string GetRuntimePackDir(string tfm = BuildTestBase.DefaultTargetFramework)
-            => Path.Combine(WorkloadPacksDir, $"Microsoft.NETCore.App.Runtime.Mono.{DefaultRuntimeIdentifier}", GetRuntimePackVersion(tfm));
-        public string GetRuntimeNativeDir(string tfm = BuildTestBase.DefaultTargetFramework)
-            => Path.Combine(GetRuntimePackDir(tfm), "runtimes", DefaultRuntimeIdentifier, "native");
+        public string GetRuntimePackDir(string tfm = BuildTestBase.DefaultTargetFramework, RuntimeVariant runtimeType = RuntimeVariant.SingleThreaded)
+            => Path.Combine(WorkloadPacksDir,
+                    runtimeType is RuntimeVariant.SingleThreaded
+                        ? $"Microsoft.NETCore.App.Runtime.Mono.{DefaultRuntimeIdentifier}"
+                        : $"Microsoft.NETCore.App.Runtime.Mono.multithread.{DefaultRuntimeIdentifier}",
+                    GetRuntimePackVersion(tfm));
+        public string GetRuntimeNativeDir(string tfm = BuildTestBase.DefaultTargetFramework, RuntimeVariant runtimeType = RuntimeVariant.SingleThreaded)
+            => Path.Combine(GetRuntimePackDir(tfm, runtimeType), "runtimes", DefaultRuntimeIdentifier, "native");
 
         protected static string s_directoryBuildPropsForWorkloads = File.ReadAllText(Path.Combine(TestDataPath, "Workloads.Directory.Build.props"));
         protected static string s_directoryBuildTargetsForWorkloads = File.ReadAllText(Path.Combine(TestDataPath, "Workloads.Directory.Build.targets"));

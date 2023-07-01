@@ -105,17 +105,6 @@ namespace Wasm.Build.Tests
             _logPath = s_buildEnv.LogRootPath; // FIXME:
         }
 
-        /*
-         * TODO:
-            - AOT modes
-                - llvmonly
-                - aotinterp
-                    - skipped assemblies should get have their pinvoke/icall stuff scanned
-
-            - only buildNative
-            - aot but no wrapper - check that AppBundle wasn't generated
-        */
-
         public static IEnumerable<IEnumerable<object?>> ConfigWithAOTData(bool aot, string? config = null, string? extraArgs = null)
         {
             if (extraArgs == null)
@@ -141,7 +130,6 @@ namespace Wasm.Build.Tests
                 };
             }
         }
-
 
         protected string RunAndTestWasmApp(BuildArgs buildArgs,
                                            RunHost host,
@@ -398,7 +386,6 @@ namespace Wasm.Build.Tests
                                             Config: buildArgs.Config,
                                             MainJS: buildProjectOptions.MainJS ?? "test-main.js",
                                             HasV8Script: buildProjectOptions.HasV8Script,
-                                            TargetFramework: buildProjectOptions.TargetFramework ?? DefaultTargetFramework,
                                             GlobalizationMode: buildProjectOptions.GlobalizationMode,
                                             PredefinedIcudt: buildProjectOptions.PredefinedIcudt ?? "",
                                             UseWebcil: UseWebcil,
@@ -490,19 +477,17 @@ namespace Wasm.Build.Tests
                     AssertRuntimePackPath(result.buildOutput, options.TargetFramework ?? DefaultTargetFramework);
 
                     string bundleDir = Path.Combine(GetBinDir(config: buildArgs.Config, targetFramework: options.TargetFramework ?? DefaultTargetFramework), "AppBundle");
-                    AssertBasicAppBundle(
-                        new AssertTestMainJsAppBundleOptions(
-                            BundleDir: bundleDir,
-                            ProjectName: buildArgs.ProjectName,
-                            Config: buildArgs.Config,
-                            MainJS: options.MainJS ?? "test-main.js",
-                            HasV8Script: options.HasV8Script,
-                            TargetFramework: options.TargetFramework ?? DefaultTargetFramework,
-                            GlobalizationMode: options.GlobalizationMode,
-                            PredefinedIcudt: options.PredefinedIcudt ?? "",
-                            DotnetWasmFromRuntimePack: options.DotnetWasmFromRuntimePack ?? !buildArgs.AOT,
-                            UseWebcil: UseWebcil,
-                            IsBrowserProject: options.IsBrowserProject));
+                    AssertBasicAppBundle(new AssertTestMainJsAppBundleOptions(
+                                            BundleDir: bundleDir,
+                                            ProjectName: buildArgs.ProjectName,
+                                            Config: buildArgs.Config,
+                                            MainJS: options.MainJS ?? "test-main.js",
+                                            HasV8Script: options.HasV8Script,
+                                            GlobalizationMode: options.GlobalizationMode,
+                                            PredefinedIcudt: options.PredefinedIcudt ?? "",
+                                            UseWebcil: UseWebcil,
+                                            IsBrowserProject: options.IsBrowserProject,
+                                            IsPublish: options.Publish));
                 }
 
                 if (options.UseCache)
@@ -1054,10 +1039,9 @@ namespace Wasm.Build.Tests
                                          IDictionary<string, string>? envVars = null,
                                          string? workingDir = null,
                                          string? label = null,
-                                         bool logToXUnit = true,
                                          int? timeoutMs = null)
         {
-            var t = RunProcessAsync(path, _testOutput, args, envVars, workingDir, label, logToXUnit, timeoutMs);
+            var t = RunProcessAsync(path, _testOutput, args, envVars, workingDir, label, timeoutMs);
             t.Wait();
             return t.Result;
         }
@@ -1068,7 +1052,6 @@ namespace Wasm.Build.Tests
                                          IDictionary<string, string>? envVars = null,
                                          string? workingDir = null,
                                          string? label = null,
-                                         bool logToXUnit = true,
                                          int? timeoutMs = null)
         {
             _testOutput.WriteLine($"Running {path} {args}");
@@ -1169,7 +1152,7 @@ namespace Wasm.Build.Tests
             {
                 lock (syncObj)
                 {
-                    if (logToXUnit && message != null)
+                    if (message != null)
                     {
                         _testOutput.WriteLine($"{label} {message}");
                     }
@@ -1288,27 +1271,6 @@ namespace Wasm.Build.Tests
     internal record FileStat(bool Exists, DateTime LastWriteTimeUtc, long Length, string FullPath);
     internal record BuildPaths(string ObjWasmDir, string ObjDir, string BinDir, string BundleDir);
 
-    public record BuildProjectOptions
-    (
-        Action? InitProject = null,
-        bool? DotnetWasmFromRuntimePack = null,
-        GlobalizationMode? GlobalizationMode = null,
-        string? PredefinedIcudt = null,
-        bool UseCache = true,
-        bool ExpectSuccess = true,
-        bool AssertAppBundle = true,
-        bool CreateProject = true,
-        bool Publish = true,
-        bool BuildOnlyAfterPublish = true,
-        bool HasV8Script = true,
-        string? Verbosity = null,
-        string? Label = null,
-        string? TargetFramework = null,
-        string? MainJS = null,
-        bool IsBrowserProject = true,
-        IDictionary<string, string>? ExtraBuildEnvironmentVariables = null
-    );
-
     public record BlazorBuildOptions
     (
         string Id,
@@ -1317,7 +1279,8 @@ namespace Wasm.Build.Tests
         string TargetFramework = BuildTestBase.DefaultTargetFrameworkForBlazor,
         bool WarnAsError = true,
         bool ExpectRelinkDirWhenPublishing = false,
-        bool ExpectFingerprintOnDotnetJs = false
+        bool ExpectFingerprintOnDotnetJs = false,
+        RuntimeVariant RuntimeType = RuntimeVariant.SingleThreaded
     );
 
     public enum GlobalizationMode
