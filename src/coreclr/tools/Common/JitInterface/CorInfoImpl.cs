@@ -1188,6 +1188,7 @@ namespace Internal.JitInterface
                 TypeSystemEntity ctx = entityFromContext(context);
                 if (ctx is MethodDesc methodFromCtx)
                 {
+                    Debug.Assert(method.GetTypicalMethodDefinition() == methodFromCtx.GetTypicalMethodDefinition());
                     method = methodFromCtx;
                 }
                 else if (ctx is InstantiatedType instantiatedCtxType)
