@@ -885,7 +885,12 @@ namespace Wasm.Build.Tests
         {
             binFrameworkDir ??= FindBlazorBinFrameworkDir(config, isPublish, targetFramework);
 
-            AssertBlazorBootJson(config, isPublish, targetFramework != DefaultTargetFrameworkForBlazor, targetFramework, binFrameworkDir: binFrameworkDir);
+            new BlazorWasmProjectProvider(_projectDir!, _testOutput)
+                    .AssertBlazorBootJson(config,
+                                          isPublish,
+                                          targetFramework != DefaultTargetFrameworkForBlazor,
+                                          targetFramework,
+                                          binFrameworkDir: binFrameworkDir);
             AssertFile(Path.Combine(s_buildEnv.GetRuntimeNativeDir(targetFramework), "dotnet.native.wasm"),
                        Path.Combine(binFrameworkDir, "dotnet.native.wasm"),
                        "Expected dotnet.native.wasm to be same as the runtime pack",
@@ -904,7 +909,7 @@ namespace Wasm.Build.Tests
 
             using (var bootConfigContent = File.OpenRead(bootConfigPath))
             {
-                var bootConfig = ParseBootData(bootConfigContent);
+                var bootConfig = BlazorWasmProjectProvider.ParseBootData(bootConfigContent);
                 var dotnetJsEntries = bootConfig.resources.runtime.Keys.Where(k => k.StartsWith("dotnet.") && k.EndsWith(".js")).ToArray();
 
                 void AssertFileExists(string fileName)
@@ -932,58 +937,17 @@ namespace Wasm.Build.Tests
             }
         }
 
-        private static BootJsonData ParseBootData(Stream stream)
-        {
-            stream.Position = 0;
-            var serializer = new DataContractJsonSerializer(
-                typeof(BootJsonData),
-                new DataContractJsonSerializerSettings { UseSimpleDictionaryFormat = true });
-
-            var config = (BootJsonData?)serializer.ReadObject(stream);
-            Assert.NotNull(config);
-            return config;
-        }
-
         protected void AssertBlazorBootJson(string config, bool isPublish, bool isNet7AndBelow, string targetFramework = DefaultTargetFrameworkForBlazor, string? binFrameworkDir = null)
-        {
-            binFrameworkDir ??= FindBlazorBinFrameworkDir(config, isPublish, targetFramework);
-
-            string bootJsonPath = Path.Combine(binFrameworkDir, "blazor.boot.json");
-            Assert.True(File.Exists(bootJsonPath), $"Expected to find {bootJsonPath}");
-
-            string bootJson = File.ReadAllText(bootJsonPath);
-            var bootJsonNode = JsonNode.Parse(bootJson);
-            var runtimeObj = bootJsonNode?["resources"]?["runtime"]?.AsObject();
-            Assert.NotNull(runtimeObj);
-
-            string msgPrefix = $"[{(isPublish ? "publish" : "build")}]";
-            Assert.True(runtimeObj!.Where(kvp => kvp.Key == (isNet7AndBelow ? "dotnet.wasm" : "dotnet.native.wasm")).Any(), $"{msgPrefix} Could not find dotnet.native.wasm entry in blazor.boot.json");
-            Assert.True(runtimeObj!.Where(kvp => kvp.Key.StartsWith("dotnet.", StringComparison.OrdinalIgnoreCase) &&
-                                                    kvp.Key.EndsWith(".js", StringComparison.OrdinalIgnoreCase)).Any(),
-                                            $"{msgPrefix} Could not find dotnet.*js in {bootJson}");
-        }
+            => new BlazorWasmProjectProvider(_projectDir!, _testOutput)
+                    .AssertBlazorBootJson(config: config,
+                                          isPublish: isPublish,
+                                          isNet7AndBelow: isNet7AndBelow,
+                                          targetFramework: targetFramework,
+                                          binFrameworkDir: binFrameworkDir);
 
         protected string FindBlazorBinFrameworkDir(string config, bool forPublish, string framework = DefaultTargetFrameworkForBlazor)
-        {
-            string basePath = Path.Combine(_projectDir!, "bin", config, framework);
-            if (forPublish)
-                basePath = FindSubDirIgnoringCase(basePath, "publish");
-
-            return Path.Combine(basePath, "wwwroot", "_framework");
-        }
-
-        private string FindSubDirIgnoringCase(string parentDir, string dirName)
-        {
-            IEnumerable<string> matchingDirs = Directory.EnumerateDirectories(parentDir,
-                                                            dirName,
-                                                            new EnumerationOptions { MatchCasing = MatchCasing.CaseInsensitive });
-
-            string? first = matchingDirs.FirstOrDefault();
-            if (matchingDirs.Count() > 1)
-                throw new Exception($"Found multiple directories with names that differ only in case. {string.Join(", ", matchingDirs.ToArray())}");
-
-            return first ?? Path.Combine(parentDir, dirName);
-        }
+            => new BlazorWasmProjectProvider(_projectDir!, _testOutput)
+                    .FindBlazorBinFrameworkDir(config, forPublish, framework);
 
         protected string GetBinDir(string config, string targetFramework = DefaultTargetFramework, string? baseDir = null)
         {
