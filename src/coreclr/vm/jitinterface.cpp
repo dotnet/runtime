@@ -2108,8 +2108,7 @@ static GetTypeLayoutResult GetTypeLayoutHelper(
     parNode.type = CorInfoType::CORINFO_TYPE_VALUECLASS;
 
     EEClass* pClass = pMT->GetClass();
-    parNode.hasSignificantPadding = pClass->IsNotTightlyPacked() && (pClass->HasExplicitFieldOffsetLayout() || pClass->HasExplicitSize());
-
+    parNode.hasSignificantPadding = pClass->HasExplicitFieldOffsetLayout() || pClass->HasExplicitSize();
 
     // The intrinsic SIMD/HW SIMD types have a lot of fields that the JIT does
     // not care about since they are considered primitives by the JIT.
