@@ -1182,6 +1182,20 @@ namespace Internal.JitInterface
         private bool getMethodInfo(CORINFO_METHOD_STRUCT_* ftn, CORINFO_METHOD_INFO* info, CORINFO_CONTEXT_STRUCT* context)
         {
             MethodDesc method = HandleToObject(ftn);
+
+            if (context != null)
+            {
+                if (method.RequiresInstMethodTableArg())
+                {
+                    method = _compilation.TypeSystemContext.GetMethodForInstantiatedType(
+                        method.GetTypicalMethodDefinition(), (InstantiatedType)typeFromContext(context));
+                }
+                else if (method.RequiresInstMethodDescArg())
+                {
+                    method = methodFromContext(context);
+                }
+            }
+
 #if READYTORUN
             // Add an early CanInline check to see if referring to the IL of the target methods is
             // permitted from within this MethodBeingCompiled, the full CanInline check will be performed
