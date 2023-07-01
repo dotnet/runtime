@@ -442,17 +442,19 @@ namespace Wasm.Build.Tests
                     AssertRuntimePackPath(result.buildOutput, options.TargetFramework ?? DefaultTargetFramework);
 
                     string bundleDir = Path.Combine(GetBinDir(config: buildArgs.Config, targetFramework: options.TargetFramework ?? DefaultTargetFramework), "AppBundle");
-                    AssertBasicAppBundle(bundleDir,
-                                         buildArgs.ProjectName,
-                                         buildArgs.Config,
-                                         options.MainJS ?? "test-main.js",
-                                         options.HasV8Script,
-                                         options.TargetFramework ?? DefaultTargetFramework,
-                                         options.GlobalizationMode,
-                                         options.PredefinedIcudt ?? "",
-                                         options.DotnetWasmFromRuntimePack ?? !buildArgs.AOT,
-                                         UseWebcil,
-                                         options.IsBrowserProject);
+                    AssertBasicAppBundle(
+                        new AssertTestMainJsAppBundleOptions(
+                            BundleDir: bundleDir,
+                            ProjectName: buildArgs.ProjectName,
+                            Config: buildArgs.Config,
+                            MainJS: options.MainJS ?? "test-main.js",
+                            HasV8Script: options.HasV8Script,
+                            TargetFramework: options.TargetFramework ?? DefaultTargetFramework,
+                            GlobalizationMode: options.GlobalizationMode,
+                            PredefinedIcudt: options.PredefinedIcudt ?? "",
+                            DotnetWasmFromRuntimePack: options.DotnetWasmFromRuntimePack ?? !buildArgs.AOT,
+                            UseWebcil: UseWebcil,
+                            IsBrowserProject: options.IsBrowserProject));
                 }
 
                 if (options.UseCache)
@@ -667,21 +669,11 @@ namespace Wasm.Build.Tests
                 throw new XunitException($"Runtime pack path doesn't match.{Environment.NewLine}Expected: '{expectedRuntimePackDir}'{Environment.NewLine}Actual:   '{actualPath}'");
         }
 
-        protected static void AssertBasicAppBundle(string bundleDir,
-                                                   string projectName,
-                                                   string config,
-                                                   string mainJS,
-                                                   bool hasV8Script,
-                                                   string targetFramework,
-                                                   GlobalizationMode? globalizationMode,
-                                                   string predefinedIcudt = "",
-                                                   bool dotnetWasmFromRuntimePack = true,
-                                                   bool useWebcil = true,
-                                                   bool isBrowserProject = true)
+        protected static void AssertBasicAppBundle(AssertTestMainJsAppBundleOptions options)
         {
             var filesToExist = new List<string>()
             {
-                mainJS,
+                options.MainJS,
                 "_framework/dotnet.native.wasm",
                 "_framework/blazor.boot.json",
                 "_framework/dotnet.js",
@@ -691,20 +683,20 @@ namespace Wasm.Build.Tests
                 "_framework/dotnet.runtime.js.map",
             };
 
-            if (isBrowserProject)
+            if (options.IsBrowserProject)
                 filesToExist.Add("index.html");
 
-            AssertFilesExist(bundleDir, filesToExist);
+            AssertFilesExist(options.BundleDir, filesToExist);
 
-            AssertFilesExist(bundleDir, new[] { "run-v8.sh" }, expectToExist: hasV8Script);
+            AssertFilesExist(options.BundleDir, new[] { "run-v8.sh" }, expectToExist: options.HasV8Script);
             AssertIcuAssets();
 
-            string managedDir = Path.Combine(bundleDir, "_framework");
+            string managedDir = Path.Combine(options.BundleDir, "_framework");
             string bundledMainAppAssembly =
-                useWebcil ? $"{projectName}{WebcilInWasmExtension}" : $"{projectName}.dll";
+                options.UseWebcil ? $"{options.ProjectName}{WebcilInWasmExtension}" : $"{options.ProjectName}.dll";
             AssertFilesExist(managedDir, new[] { bundledMainAppAssembly });
 
-            bool is_debug = config == "Debug";
+            bool is_debug = options.Config == "Debug";
             if (is_debug)
             {
                 // Use cecil to check embedded pdb?
@@ -718,7 +710,7 @@ namespace Wasm.Build.Tests
                 //}
             }
 
-            AssertDotNetWasmJs(bundleDir, fromRuntimePack: dotnetWasmFromRuntimePack, targetFramework);
+            AssertDotNetWasmJs(options.BundleDir, fromRuntimePack: options.DotnetWasmFromRuntimePack, options.TargetFramework);
 
             void AssertIcuAssets()
             {
@@ -727,7 +719,7 @@ namespace Wasm.Build.Tests
                 bool expectNOCJK = false;
                 bool expectFULL = false;
                 bool expectHYBRID = false;
-                switch (globalizationMode)
+                switch (options.GlobalizationMode)
                 {
                     case GlobalizationMode.Invariant:
                         break;
@@ -738,11 +730,11 @@ namespace Wasm.Build.Tests
                         expectHYBRID = true;
                         break;
                     case GlobalizationMode.PredefinedIcu:
-                        if (string.IsNullOrEmpty(predefinedIcudt))
+                        if (string.IsNullOrEmpty(options.PredefinedIcudt))
                             throw new ArgumentException("WasmBuildTest is invalid, value for predefinedIcudt is required when GlobalizationMode=PredefinedIcu.");
-                        AssertFilesExist(bundleDir, new[] { Path.Combine("_framework", predefinedIcudt) }, expectToExist: true);
+                        AssertFilesExist(options.BundleDir, new[] { Path.Combine("_framework", options.PredefinedIcudt) }, expectToExist: true);
                         // predefined ICU name can be identical with the icu files from runtime pack
-                        switch (predefinedIcudt)
+                        switch (options.PredefinedIcudt)
                         {
                             case "icudt.dat":
                                 expectFULL = true;
@@ -766,7 +758,7 @@ namespace Wasm.Build.Tests
                         break;
                 }
 
-                var frameworkDir = Path.Combine(bundleDir, "_framework");
+                var frameworkDir = Path.Combine(options.BundleDir, "_framework");
                 AssertFilesExist(frameworkDir, new[] { "icudt.dat" }, expectToExist: expectFULL);
                 AssertFilesExist(frameworkDir, new[] { "icudt_EFIGS.dat" }, expectToExist: expectEFIGS);
                 AssertFilesExist(frameworkDir, new[] { "icudt_CJK.dat" }, expectToExist: expectCJK);
