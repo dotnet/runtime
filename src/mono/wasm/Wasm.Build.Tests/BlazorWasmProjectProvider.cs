@@ -10,36 +10,63 @@ using Xunit;
 using Xunit.Abstractions;
 using System.Runtime.Serialization.Json;
 using Microsoft.NET.Sdk.WebAssembly;
-using System.Text.Json.Nodes;
 
 #nullable enable
 
 namespace Wasm.Build.Tests;
 
-public class BlazorWasmProjectProvider(string projectDir, ITestOutputHelper _testOutput)
-                : ProjectProviderBase(projectDir, _testOutput)
+public class BlazorWasmProjectProvider(string projectDir, ITestOutputHelper testOutput)
+                : WasmSdkBasedProjectProvider(projectDir, testOutput)
 {
-    public void AssertBlazorBootJson(string config, bool isPublish, bool isNet7AndBelow, string targetFramework, string? binFrameworkDir)
+    public void AssertBlazorBootJson(
+        string binFrameworkDir,
+        bool expectFingerprintOnDotnetJs = false,
+        bool isPublish = false,
+        RuntimeVariant runtimeType = RuntimeVariant.SingleThreaded)
     {
-        binFrameworkDir ??= FindBlazorBinFrameworkDir(config, isPublish, targetFramework);
-
         string bootJsonPath = Path.Combine(binFrameworkDir, "blazor.boot.json");
         Assert.True(File.Exists(bootJsonPath), $"Expected to find {bootJsonPath}");
 
-        string bootJson = File.ReadAllText(bootJsonPath);
-        var bootJsonNode = JsonNode.Parse(bootJson);
-        var runtimeObj = bootJsonNode?["resources"]?["runtime"]?.AsObject();
-        Assert.NotNull(runtimeObj);
+        BootJsonData bootJson = ParseBootData(bootJsonPath);
+        var bootJsonEntries = bootJson.resources.runtime.Keys.Where(k => k.StartsWith("dotnet.", StringComparison.Ordinal)).ToArray();
 
-        string msgPrefix = $"[{(isPublish ? "publish" : "build")}]";
-        Assert.True(runtimeObj!.Where(kvp => kvp.Key == (isNet7AndBelow ? "dotnet.wasm" : "dotnet.native.wasm")).Any(), $"{msgPrefix} Could not find dotnet.native.wasm entry in blazor.boot.json");
-        Assert.True(runtimeObj!.Where(kvp => kvp.Key.StartsWith("dotnet.", StringComparison.OrdinalIgnoreCase) &&
-                                                kvp.Key.EndsWith(".js", StringComparison.OrdinalIgnoreCase)).Any(),
-                                        $"{msgPrefix} Could not find dotnet.*js in {bootJson}");
+        var expectedEntries = new SortedDictionary<string, Action<string>>();
+        IReadOnlySet<string> expected = GetDotNetFilesExpectedSet(runtimeType, isPublish);
+
+        var knownSet = GetDotnetFilesKnownSet(runtimeType);
+        foreach (string expectedFilename in expected)
+        {
+            if (Path.GetExtension(expectedFilename) == ".map")
+                continue;
+
+            bool expectFingerprint = knownSet[expectedFilename];
+            expectedEntries[expectedFilename] = item =>
+            {
+                string prefix = Path.GetFileNameWithoutExtension(expectedFilename);
+                string extension = Path.GetExtension(expectedFilename).Substring(1);
+
+                if (ShouldCheckFingerprint(expectedFilename: expectedFilename,
+                                           expectFingerprintOnDotnetJs: expectFingerprintOnDotnetJs,
+                                           expectFingerprintForThisFile: expectFingerprint))
+                {
+                    Assert.Matches($"{prefix}{s_dotnetVersionHashRegex}{extension}", item);
+                }
+                else
+                {
+                    Assert.Equal(expectedFilename, item);
+                }
+
+                string absolutePath = Path.Combine(binFrameworkDir, item);
+                Assert.True(File.Exists(absolutePath), $"Expected to find '{absolutePath}'");
+            };
+        }
+        // FIXME: maybe use custom code so the details can show up in the log
+        Assert.Collection(bootJsonEntries.Order(), expectedEntries.Values.ToArray());
     }
 
-    public static BootJsonData ParseBootData(Stream stream)
+    public static BootJsonData ParseBootData(string bootJsonPath)
     {
+        using FileStream stream = File.OpenRead(bootJsonPath);
         stream.Position = 0;
         var serializer = new DataContractJsonSerializer(
             typeof(BootJsonData),
