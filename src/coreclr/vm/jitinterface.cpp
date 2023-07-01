@@ -2106,20 +2106,9 @@ static GetTypeLayoutResult GetTypeLayoutHelper(
     parNode.size = pMT->GetNumInstanceFieldBytes();
     parNode.numFields = 0;
     parNode.type = CorInfoType::CORINFO_TYPE_VALUECLASS;
-    parNode.hasSignificantPadding = false;
 
     EEClass* pClass = pMT->GetClass();
-    if (pClass->IsNotTightlyPacked() && (!pClass->IsManagedSequential() || pClass->HasExplicitSize() || pClass->IsInlineArray()))
-    {
-        // Historically on the JIT side we did not consider types with GC
-        // pointers to have significant padding, even when they have explicit
-        // layout attributes. This retains the more liberal treatment and
-        // lets the JIT still optimize these cases.
-        if (!pMT->ContainsPointers() && pMT != g_TypedReferenceMT)
-        {
-            parNode.hasSignificantPadding = true;
-        }
-    }
+    parNode.hasSignificantPadding = pClass->HasExplicitFieldOffsetLayout() || pClass->HasExplicitSize();
 
     // The intrinsic SIMD/HW SIMD types have a lot of fields that the JIT does
     // not care about since they are considered primitives by the JIT.
@@ -2181,9 +2170,31 @@ static GetTypeLayoutResult GetTypeLayoutHelper(
             uint32_t elemSize = pFD->GetSize();
             uint32_t arrSize = pMT->GetNumInstanceFieldBytes();
 
+            // Number of fields added for each element, including all
+            // subfields. For example, for ValueTuple<int, int>[4]:
+            // [ 0]: InlineArray
+            // [ 1]:   ValueTuple<int, int>  parent = 0          -
+            // [ 2]:     int                 parent = 1          |
+            // [ 3]:     int                 parent = 1          |
+            // [ 4]:   ValueTuple<int, int>  parent = 0          - stride = 3
+            // [ 5]:     int                 parent = 4
+            // [ 6]:     int                 parent = 4
+            // [ 7]:   ValueTuple<int, int>  parent = 0
+            // [ 8]:     int                 parent = 7
+            // [ 9]:     int                 parent = 7
+            // [10]:   ValueTuple<int, int>  parent = 0
+            // [11]:     int                 parent = 10
+            // [12]:     int                 parent = 10
+
+            unsigned elemFieldsStride = (unsigned)*numTreeNodes - (structNodeIndex + 1);
+
+            // Now duplicate the fields of the previous entry for each
+            // additional element. For each entry we have to update the offset
+            // and the parent index.
             for (uint32_t elemOffset = elemSize; elemOffset < arrSize; elemOffset += elemSize)
             {
-                for (size_t templateTreeNodeIndex = structNodeIndex + 1; templateTreeNodeIndex < treeNodeEnd; templateTreeNodeIndex++)
+                size_t prevElemStart = *numTreeNodes - elemFieldsStride;
+                for (size_t i = 0; i < elemFieldsStride; i++)
                 {
                     if (*numTreeNodes >= maxTreeNodes)
                     {
@@ -2191,11 +2202,14 @@ static GetTypeLayoutResult GetTypeLayoutHelper(
                     }
 
                     CORINFO_TYPE_LAYOUT_NODE& treeNode = treeNodes[(*numTreeNodes)++];
-                    treeNode = treeNodes[templateTreeNodeIndex];
-                    treeNode.offset += elemOffset;
-
-                    parNode.numFields++;
+                    treeNode = treeNodes[prevElemStart + i];
+                    treeNode.offset += elemSize;
+                    // The first field points back to the inline array and has
+                    // no bias; the rest of them do.
+                    treeNode.parent += (i == 0) ? 0 : elemFieldsStride;
                 }
+
+                parNode.numFields++;
             }
         }
     }
