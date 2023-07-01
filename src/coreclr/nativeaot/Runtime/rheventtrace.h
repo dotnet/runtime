@@ -5,9 +5,8 @@
 // This header provides Redhawk-specific ETW code and macros, to allow sharing of common
 // ETW code between Redhawk and desktop CLR.
 //
-#ifndef __RHEVENTTRACE_INCLUDED
-#define __RHEVENTTRACE_INCLUDED
-
+#ifndef RHEVENTTRACE_H
+#define RHEVENTTRACE_H
 
 #ifdef FEATURE_EVENT_TRACE
 
@@ -69,28 +68,6 @@
     )   \
     )
 
-class MethodTable;
-class BulkTypeEventLogger;
-
-namespace ETW
-{
-    // Class to wrap all type system logic for ETW
-    class TypeSystemLog
-    {
-    public:
-        // This enum is unused on Redhawk, but remains here to keep Redhawk / desktop CLR
-        // code shareable.
-        enum TypeLogBehavior
-        {
-            kTypeLogBehaviorTakeLockAndLogIfFirstTime,
-            kTypeLogBehaviorAssumeLockAndLogIfFirstTime,
-            kTypeLogBehaviorAlwaysLog,
-        };
-
-        static void LogTypeAndParametersIfNecessary(BulkTypeEventLogger * pLogger, uint64_t thAsAddr, TypeLogBehavior typeLogBehavior);
-    };
-};
-
 #endif // FEATURE_ETW
 
-#endif //__RHEVENTTRACE_INCLUDED
+#endif // RHEVENTTRACE_H
