@@ -39,7 +39,7 @@ namespace Internal.DeveloperExperience
             {
                 if (ip != methodStart)
                 {
-                    methodName += " + 0x" + (ip.ToInt64() - methodStart.ToInt64()).ToString("x");
+                    methodName = $"{methodName} + 0x{(ip - methodStart):x}";
                 }
                 return methodName;
             }

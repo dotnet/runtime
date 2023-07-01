@@ -3,6 +3,7 @@
 
 using System;
 using System.Diagnostics.CodeAnalysis;
+using System.Runtime.CompilerServices;
 using System.Runtime.InteropServices;
 
 internal partial class Interop
@@ -38,9 +39,10 @@ internal partial class Interop
         //
 
         [DoesNotReturn]
-        internal static unsafe void RaiseFailFastException(uint errorCode, IntPtr pExAddress, IntPtr pExContext, void* pTriageBlock, int cbTriageBlock)
+        internal static unsafe void RaiseFailFastException(uint errorCode, IntPtr pExAddress, IntPtr pExContext, IntPtr pTriageBuffer, int cbTriageBuffer)
         {
             EXCEPTION_RECORD exceptionRecord;
+            // STATUS_STACK_BUFFER_OVERRUN is a "transport" exception code required by Watson to trigger the proper analyzer/provider for bucketing
             exceptionRecord.ExceptionCode = STATUS_STACK_BUFFER_OVERRUN;
             exceptionRecord.ExceptionFlags = EXCEPTION_NONCONTINUABLE;
             exceptionRecord.ExceptionRecord = IntPtr.Zero;
@@ -49,11 +51,11 @@ internal partial class Interop
             exceptionRecord.ExceptionInformation[0] = FAST_FAIL_EXCEPTION_DOTNET_AOT;
             exceptionRecord.ExceptionInformation[1] = errorCode;
 #if TARGET_64BIT
-            exceptionRecord.ExceptionInformation[2] = (ulong)pTriageBlock;
+            exceptionRecord.ExceptionInformation[2] = (ulong)pTriageBuffer;
 #else
-            exceptionRecord.ExceptionInformation[2] = (uint)pTriageBlock;
+            exceptionRecord.ExceptionInformation[2] = (uint)pTriageBuffer;
 #endif
-            exceptionRecord.ExceptionInformation[3] = (uint)cbTriageBlock;
+            exceptionRecord.ExceptionInformation[3] = (uint)cbTriageBuffer;
 
             RaiseFailFastException(
                 &exceptionRecord,

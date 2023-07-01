@@ -22,6 +22,7 @@ namespace System.Runtime
         ClassLibDidNotTranslateExceptionID = 4,              // "Unable to translate failure into a classlib-specific exception object."
         UnhandledException = 5,                              // "unhandled exception"
         UnhandledExceptionFromPInvoke = 6,                   // "Unhandled exception: an unmanaged exception was thrown out of a managed-to-native transition."
+        EnvironmentFailFast = 7,
     }
 
     internal static unsafe partial class EH

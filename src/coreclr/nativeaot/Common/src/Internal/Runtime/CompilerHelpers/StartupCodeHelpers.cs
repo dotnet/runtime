@@ -156,7 +156,7 @@ namespace Internal.Runtime.CompilerHelpers
             if (RuntimeImports.RhpRegisterFrozenSegment(segmentStart, (IntPtr)length) == IntPtr.Zero)
             {
                 // This should only happen if we ran out of memory.
-                RuntimeExceptionHelpers.FailFastInternal("Failed to register frozen object segment for the module.");
+                RuntimeExceptionHelpers.FailFast("Failed to register frozen object segment for the module.");
             }
         }
 
@@ -213,7 +213,7 @@ namespace Internal.Runtime.CompilerHelpers
                         Unsafe.AsPointer(ref obj));
                     if (obj == null)
                     {
-                        RuntimeExceptionHelpers.FailFastInternal("Failed allocating GC static bases");
+                        RuntimeExceptionHelpers.FailFast("Failed allocating GC static bases");
                     }
 
 
