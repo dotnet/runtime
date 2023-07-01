@@ -1183,16 +1183,17 @@ namespace Internal.JitInterface
         {
             MethodDesc method = HandleToObject(ftn);
 
-            if (context != null)
+            if (context != null && method.IsSharedByGenericInstantiations)
             {
-                if (method.RequiresInstMethodTableArg())
+                TypeSystemEntity ctx = entityFromContext(context);
+                if (ctx is MethodDesc methodFromCtx)
+                {
+                    method = methodFromCtx;
+                }
+                else if (ctx is InstantiatedType instantiatedCtxType)
                 {
                     method = _compilation.TypeSystemContext.GetMethodForInstantiatedType(
-                        method.GetTypicalMethodDefinition(), (InstantiatedType)typeFromContext(context));
-                }
-                else if (method.RequiresInstMethodDescArg())
-                {
-                    method = methodFromContext(context);
+                        method.GetTypicalMethodDefinition(), instantiatedCtxType);
                 }
             }
 
