@@ -348,18 +348,18 @@ namespace System.Net.Http
                     {
                         Debug.Assert(_firstByteStatus == FirstByteStatus.None);
 
-                        var buffer = new byte[1];
+                        Span<byte> spanBuffer = stackalloc byte[1];
 
-                        int bytesRead = await _stream.ReadAsync(buffer, cancellationToken).ConfigureAwait(false);
+                        int bytesRead = await _stream.ReadAsync(spanBuffer, cancellationToken).ConfigureAwait(false);
                         if (bytesRead == 0)
                         {
                             _firstByteStatus = FirstByteStatus.Consumed;
                             return -1;
                         }
 
-                        _firstByte = buffer[0];
+                        _firstByte = spanBuffer[0];
                         _firstByteStatus = FirstByteStatus.Available;
-                        return buffer[0];
+                        return spanBuffer[0];
                     }
 
                     public override int Read(Span<byte> buffer)
@@ -405,7 +405,7 @@ namespace System.Net.Http
                         ValidateCopyToArguments(destination, bufferSize);
                         if (_firstByteStatus == FirstByteStatus.Available)
                         {
-                            await destination.WriteAsync(new byte[] { _firstByte }, cancellationToken).ConfigureAwait(false);
+                            await destination.WriteAsync(stackalloc byte[1] {_firstByte }, cancellationToken).ConfigureAwait(false);
                             _firstByteStatus = FirstByteStatus.Consumed;
                         }
 
