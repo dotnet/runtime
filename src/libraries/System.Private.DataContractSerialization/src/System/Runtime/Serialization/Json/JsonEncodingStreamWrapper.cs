@@ -16,7 +16,6 @@ namespace System.Runtime.Serialization.Json
     {
         private const int BufferLength = 128;
 
-        private readonly byte[] _byteBuffer = new byte[1];
         private int _byteCount;
         private int _byteOffset;
         private byte[]? _bytes;
@@ -227,11 +226,12 @@ namespace System.Runtime.Serialization.Json
             {
                 return _stream.ReadByte();
             }
-            if (Read(_byteBuffer, 0, 1) == 0)
+             Span<byte> oneByteSpan = stackalloc byte[1];
+            if (Read(oneByteSpan) == 0)
             {
                 return -1;
             }
-            return _byteBuffer[0];
+            return oneByteSpan[0];
         }
 
         public override long Seek(long offset, SeekOrigin origin)
@@ -274,8 +274,7 @@ namespace System.Runtime.Serialization.Json
                 _stream.WriteByte(b);
                 return;
             }
-            _byteBuffer[0] = b;
-            Write(_byteBuffer, 0, 1);
+            Write(stackalloc byte[1] {b});
         }
 
         private static Encoding GetEncoding(SupportedEncoding e) =>
