@@ -228,32 +228,6 @@ namespace System.Linq
         public static System.Collections.Generic.IEnumerable<(TFirst First, TSecond Second)> Zip<TFirst, TSecond>(this System.Collections.Generic.IEnumerable<TFirst> first, System.Collections.Generic.IEnumerable<TSecond> second) { throw null; }
         public static System.Collections.Generic.IEnumerable<(TFirst First, TSecond Second, TThird Third)> Zip<TFirst, TSecond, TThird>(this System.Collections.Generic.IEnumerable<TFirst> first, System.Collections.Generic.IEnumerable<TSecond> second, System.Collections.Generic.IEnumerable<TThird> third) { throw null; }
         public static System.Collections.Generic.IEnumerable<TResult> Zip<TFirst, TSecond, TResult>(this System.Collections.Generic.IEnumerable<TFirst> first, System.Collections.Generic.IEnumerable<TSecond> second, System.Func<TFirst, TSecond, TResult> resultSelector) { throw null; }
-
-        public static byte Xor(this System.Collections.Generic.IEnumerable<byte> source) { throw null; }
-        public static char Xor(this System.Collections.Generic.IEnumerable<char> source) { throw null; }
-        public static short Xor(this System.Collections.Generic.IEnumerable<short> source) { throw null; }
-        public static int Xor(this System.Collections.Generic.IEnumerable<int> source) { throw null; }
-        public static long Xor(this System.Collections.Generic.IEnumerable<long> source) { throw null; }
-        public static byte? Xor(this System.Collections.Generic.IEnumerable<byte?> source) { throw null; }
-        public static char? Xor(this System.Collections.Generic.IEnumerable<char?> source) { throw null; }
-        public static short? Xor(this System.Collections.Generic.IEnumerable<short?> source) { throw null; }
-        public static int? Xor(this System.Collections.Generic.IEnumerable<int?> source) { throw null; }
-        public static long? Xor(this System.Collections.Generic.IEnumerable<long?> source) { throw null; }
-        public static float? Xor(this System.Collections.Generic.IEnumerable<float?> source) { throw null; }
-        public static float Xor(this System.Collections.Generic.IEnumerable<float> source) { throw null; }
-        public static byte Xor<TSource>(this System.Collections.Generic.IEnumerable<TSource> source, System.Func<TSource, byte> selector) { throw null; }
-        public static char Xor<TSource>(this System.Collections.Generic.IEnumerable<TSource> source, System.Func<TSource, char> selector) { throw null; }
-        public static short Xor<TSource>(this System.Collections.Generic.IEnumerable<TSource> source, System.Func<TSource, short> selector) { throw null; }
-        public static int Xor<TSource>(this System.Collections.Generic.IEnumerable<TSource> source, System.Func<TSource, int> selector) { throw null; }
-        public static long Xor<TSource>(this System.Collections.Generic.IEnumerable<TSource> source, System.Func<TSource, long> selector) { throw null; }
-        public static byte? Xor<TSource>(this System.Collections.Generic.IEnumerable<TSource> source, System.Func<TSource, byte?> selector) { throw null; }
-        public static char? Xor<TSource>(this System.Collections.Generic.IEnumerable<TSource> source, System.Func<TSource, char?> selector) { throw null; }
-        public static short? Xor<TSource>(this System.Collections.Generic.IEnumerable<TSource> source, System.Func<TSource, short?> selector) { throw null; }
-        public static int? Xor<TSource>(this System.Collections.Generic.IEnumerable<TSource> source, System.Func<TSource, int?> selector) { throw null; }
-        public static long? Xor<TSource>(this System.Collections.Generic.IEnumerable<TSource> source, System.Func<TSource, long?> selector) { throw null; }
-        public static float? Xor<TSource>(this System.Collections.Generic.IEnumerable<TSource> source, System.Func<TSource, float?> selector) { throw null; }
-        public static float Xor<TSource>(this System.Collections.Generic.IEnumerable<TSource> source, System.Func<TSource, float> selector) { throw null; }
-
     }
     public partial interface IGrouping<out TKey, out TElement> : System.Collections.Generic.IEnumerable<TElement>, System.Collections.IEnumerable
     {
