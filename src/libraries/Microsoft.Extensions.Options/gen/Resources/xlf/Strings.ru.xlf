@@ -34,12 +34,12 @@
       </trans-unit>
       <trans-unit id="CantValidateStaticOrConstMemberMessage">
         <source>Can't apply validation attributes to constant or static member {0}.</source>
-        <target state="needs-review-translation">Не удается применить атрибуты проверки к константе, статическому полю или свойству {0}.</target>
+        <target state="new">Can't apply validation attributes to constant or static member {0}.</target>
         <note />
       </trans-unit>
       <trans-unit id="CantValidateStaticOrConstMemberTitle">
         <source>Can't validate constants, static fields or properties.</source>
-        <target state="needs-review-translation">Не удается проверить статические поля или свойства, в т.ч. константы.</target>
+        <target state="new">Can't validate constants, static fields or properties.</target>
         <note />
       </trans-unit>
       <trans-unit id="CircularTypeReferencesMessage">
@@ -69,7 +69,7 @@
       </trans-unit>
       <trans-unit id="MemberIsInaccessibleTitle">
         <source>Can't validate private fields or properties.</source>
-        <target state="translated">Не удается проверить приватные поля или свойства.</target>
+        <target state="translated">Не удается проверить частные поля или свойства.</target>
         <note />
       </trans-unit>
       <trans-unit id="NoEligibleMemberMessage">
