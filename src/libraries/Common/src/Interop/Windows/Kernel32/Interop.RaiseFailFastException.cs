@@ -27,11 +27,8 @@ internal partial class Interop
     internal partial class Kernel32
     {
         private const uint EXCEPTION_NONCONTINUABLE = 0x1;
-
         private const uint FAIL_FAST_GENERATE_EXCEPTION_ADDRESS = 0x1;
-
         private const uint STATUS_STACK_BUFFER_OVERRUN = 0xC0000409;
-
         private const uint FAST_FAIL_EXCEPTION_DOTNET_AOT = 72;
 
         //
@@ -39,7 +36,7 @@ internal partial class Interop
         //
 
         [DoesNotReturn]
-        internal static unsafe void RaiseFailFastException(uint errorCode, IntPtr pExAddress, IntPtr pExContext, IntPtr pTriageBuffer, int cbTriageBuffer)
+        internal static unsafe void RaiseFailFastException(int errorCode, IntPtr pExAddress, IntPtr pExContext, IntPtr pTriageBuffer, int cbTriageBuffer)
         {
             EXCEPTION_RECORD exceptionRecord;
             // STATUS_STACK_BUFFER_OVERRUN is a "transport" exception code required by Watson to trigger the proper analyzer/provider for bucketing
@@ -49,7 +46,7 @@ internal partial class Interop
             exceptionRecord.ExceptionAddress = pExAddress;
             exceptionRecord.NumberParameters = 4;
             exceptionRecord.ExceptionInformation[0] = FAST_FAIL_EXCEPTION_DOTNET_AOT;
-            exceptionRecord.ExceptionInformation[1] = errorCode;
+            exceptionRecord.ExceptionInformation[1] = (uint)errorCode;
 #if TARGET_64BIT
             exceptionRecord.ExceptionInformation[2] = (ulong)pTriageBuffer;
 #else

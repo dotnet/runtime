@@ -240,16 +240,16 @@ namespace System
             _crashInfo.Close();
 
             // Try to map the failure into a HRESULT that makes sense
-            uint errorCode = exception != null ? (uint)exception.HResult : reason switch
+            int errorCode = exception != null ? exception.HResult : reason switch
             {
-                RhFailFastReason.EnvironmentFailFast => COR_E_APPLICATION,
+                RhFailFastReason.EnvironmentFailFast => HResults.COR_E_APPLICATION,
                 RhFailFastReason.InternalError or
-                RhFailFastReason.ClassLibDidNotTranslateExceptionID => COR_E_EXECUTIONENGINE,
+                RhFailFastReason.ClassLibDidNotTranslateExceptionID => HResults.COR_E_EXECUTIONENGINE,
                 RhFailFastReason.UnhandledException or
                 RhFailFastReason.UnhandledExceptionFromPInvoke or
                 RhFailFastReason.UnhandledException_ExceptionDispatchNotAllowed or
-                RhFailFastReason.UnhandledException_CallerDidNotHandle => E_ACCESSDENIED,
-                _ => E_FAIL
+                RhFailFastReason.UnhandledException_CallerDidNotHandle => HResults.E_ACCESSDENIED,
+                _ => HResults.E_FAIL
             };
 
 #if TARGET_WINDOWS
@@ -258,11 +258,6 @@ namespace System
             Interop.Sys.Abort();
 #endif
         }
-
-        private const uint E_FAIL = 0x80004005;
-        private const uint E_ACCESSDENIED = 0x80070005;
-        private const uint COR_E_APPLICATION = 0x80131600;
-        private const uint COR_E_EXECUTIONENGINE = 0x80131506;
 
         private static CrashInfo _crashInfo = new();
 

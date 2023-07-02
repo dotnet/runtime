@@ -178,9 +178,8 @@ namespace System
                     if (++count > maxNumberStackFrames)
                         break;
 
-                    // Write as many stack frames that will fit
                     if (!WriteStackFrame(frame, maxMethodNameSize))
-                        break;
+                        return false;
                 }
                 return true;
             });
@@ -193,18 +192,18 @@ namespace System
             {
                 success = WriteBlock("inner", '[', ']', () =>
                 {
-                    // Write as many inner exceptions that will fit
                     if (aggregate is not null)
                     {
                         foreach (Exception ex in aggregate.InnerExceptions)
                         {
                             if (!WriteBlock(null, '{', '}', () => WriteException(ex, maxMessageSize, maxNumberStackFrames, maxMethodNameSize)))
-                                break;
+                                return false;
                         }
                     }
                     else
                     {
-                        WriteBlock(null, '{', '}', () => WriteException(exception.InnerException, maxMessageSize, maxNumberStackFrames, maxMethodNameSize));
+                        if (!WriteBlock(null, '{', '}', () => WriteException(exception.InnerException, maxMessageSize, maxNumberStackFrames, maxMethodNameSize)))
+                            return false;
                     }
                     return true;
                 });
@@ -248,7 +247,25 @@ namespace System
 
         private bool WriteValue(ReadOnlySpan<char> key, int value) => WriteValue(key, value.ToString());
 
-        private bool WriteValue(ReadOnlySpan<char> key, string value, int max = int.MaxValue) => WriteBlock(key, '"', '"', () => WriteChars(value, max));
+        private bool WriteValue(ReadOnlySpan<char> key, string value, int max = int.MaxValue)
+        {
+            // Escape the special JSON characters. It is done here and not at any lower level
+            // because this function is the only one that could be passed a string that needs
+            // escape and the lower level functions actually need to write double quotes.
+            StringBuilder sb = new StringBuilder();
+            foreach (char c in value)
+            {
+                if (char.IsControl(c) || c == '"' || c == '\\')
+                {
+                    sb.Append($"\\u{c:X4}");
+                }
+                else
+                {
+                    sb.Append(c);
+                }
+            }
+            return WriteBlock(key, '"', '"', () => WriteChars(sb.ToString(), max));
+        }
 
         /// <summary>
         /// Opens and closes an object or array. If the block can not fit in the triage buffer
@@ -357,13 +374,13 @@ namespace System
         {
             Debug.Assert(size > 0);
 
+            // Check if there is any space left in the triage buffer
+            if ((_currentBufferIndex + size) >= (TriageBlockBuffer.BufferSize - _reservedBuffer))
+            {
+                return default;
+            }
             fixed (byte* ptr = &_triageBuffer.Buffer[_currentBufferIndex])
             {
-                // Check if there is any space left in the triage buffer
-                if ((_currentBufferIndex + size) >= (TriageBlockBuffer.BufferSize - _reservedBuffer))
-                {
-                    return default;
-                }
                 _currentBufferIndex += size;
                 return new Span<byte>(ptr, size);
             }
