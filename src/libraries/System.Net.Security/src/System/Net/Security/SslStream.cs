@@ -741,6 +741,7 @@ namespace System.Net.Security
 
             // Otherwise, fall back to reading a byte via Read, the same way Stream.ReadByte does.
             // This allocation is unfortunate but should be relatively rare, as it'll only occur once
+            // per buffer fill internally by Read.
             byte[] oneByte = new byte[1];
             int bytesRead = Read(oneByte, 0, 1);
             Debug.Assert(bytesRead == 0 || bytesRead == 1);
