@@ -809,9 +809,9 @@ namespace System.IO
 
         public virtual int ReadByte()
         {
-            Span<byte> oneByteSpan = stackalloc byte[1];
-            int r = Read(oneByteSpan);
-            return r == 0 ? -1 : oneByteSpan[0];
+            var oneByteArray = new byte[1];
+            int r = Read(oneByteArray, 0, 1);
+            return r == 0 ? -1 : oneByteArray[0];
         }
 
         /// <summary>
@@ -933,7 +933,7 @@ namespace System.IO
             }
         }
 
-        public virtual void WriteByte(byte value) => Write(stackalloc byte[1] { value });
+        public virtual void WriteByte(byte value) => Write(new byte[1] { value });
 
         public static Stream Synchronized(Stream stream)
         {
