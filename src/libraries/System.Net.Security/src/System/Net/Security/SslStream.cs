@@ -744,7 +744,7 @@ namespace System.Net.Security
             byte[] oneByte = new byte[1];
             int bytesRead = Read(oneByte, 0, 1);
             Debug.Assert(bytesRead == 0 || bytesRead == 1);
-            return bytesRead == 1 ? oneByteSpan[0] : -1;
+            return bytesRead == 1 ? oneByte[0] : -1;
         }
 
         public override int Read(byte[] buffer, int offset, int count)
