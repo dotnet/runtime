@@ -1,30 +1,31 @@
 // Licensed to the .NET Foundation under one or more agreements.
 // The .NET Foundation licenses this file to you under the MIT license.
-//
-// File: eventtrace_gcheap.cpp
-// Event Tracing support for GC heap dump and movement tracking
-//
 
 #include "common.h"
 
-#include "gcenv.h"
-#include "gcheaputilities.h"
-
-#include "daccess.h"
-
-#include "slist.h"
-#include "varint.h"
-#include "regdisplay.h"
-#include "StackFrameIterator.h"
-#include "thread.h"
-#include "threadstore.h"
-#include "threadstore.inl"
+#include "eventtrace.h"
+#include "winbase.h"
+#include "contract.h"
+#include "ex.h"
+#include "dbginterface.h"
+#include "finalizerthread.h"
+#include "clrversion.h"
+#include "typestring.h"
 
 #include "eventtracepriv.h"
 
-/****************************************************************************/
-/* Methods that are called from the runtime */
-/****************************************************************************/
+//---------------------------------------------------------------------------------------
+// Code for sending GC heap object events is generally the same for both FEATURE_NATIVEAOT
+// and !FEATURE_NATIVEAOT builds
+//---------------------------------------------------------------------------------------
+
+bool s_forcedGCInProgress = false;
+class ForcedGCHolder
+{
+public:
+    ForcedGCHolder() { LIMITED_METHOD_CONTRACT; s_forcedGCInProgress = true; }
+    ~ForcedGCHolder() { LIMITED_METHOD_CONTRACT; s_forcedGCInProgress = false; }
+};
 
 
 // Simple helpers called by the GC to decide whether it needs to do a walk of heap
@@ -33,36 +34,38 @@
 BOOL ETW::GCLog::ShouldWalkHeapObjectsForEtw()
 {
     LIMITED_METHOD_CONTRACT;
-    return RUNTIME_PROVIDER_CATEGORY_ENABLED(
-        TRACE_LEVEL_INFORMATION,
-        CLR_GCHEAPDUMP_KEYWORD);
+    return s_forcedGCInProgress &&
+        ETW_TRACING_CATEGORY_ENABLED(MICROSOFT_WINDOWS_DOTNETRUNTIME_PROVIDER_DOTNET_Context,
+                                     TRACE_LEVEL_INFORMATION,
+                                     CLR_GCHEAPDUMP_KEYWORD);
 }
 
 BOOL ETW::GCLog::ShouldWalkHeapRootsForEtw()
 {
     LIMITED_METHOD_CONTRACT;
-    return RUNTIME_PROVIDER_CATEGORY_ENABLED(
-        TRACE_LEVEL_INFORMATION,
-        CLR_GCHEAPDUMP_KEYWORD);
+    return s_forcedGCInProgress &&
+        ETW_TRACING_CATEGORY_ENABLED(MICROSOFT_WINDOWS_DOTNETRUNTIME_PROVIDER_DOTNET_Context,
+                                     TRACE_LEVEL_INFORMATION,
+                                     CLR_GCHEAPDUMP_KEYWORD);
 }
 
 BOOL ETW::GCLog::ShouldTrackMovementForEtw()
 {
     LIMITED_METHOD_CONTRACT;
-    return RUNTIME_PROVIDER_CATEGORY_ENABLED(
+    return ETW_TRACING_CATEGORY_ENABLED(
+        MICROSOFT_WINDOWS_DOTNETRUNTIME_PROVIDER_DOTNET_Context,
         TRACE_LEVEL_INFORMATION,
         CLR_GCHEAPSURVIVALANDMOVEMENT_KEYWORD);
 }
 
 BOOL ETW::GCLog::ShouldWalkStaticsAndCOMForEtw()
 {
-    // @TODO:
-    return FALSE;
-}
+    LIMITED_METHOD_CONTRACT;
 
-void ETW::GCLog::WalkStaticsAndCOMForETW()
-{
-    // @TODO:
+    return s_forcedGCInProgress &&
+        ETW_TRACING_CATEGORY_ENABLED(MICROSOFT_WINDOWS_DOTNETRUNTIME_PROVIDER_DOTNET_Context,
+                                     TRACE_LEVEL_INFORMATION,
+                                     CLR_GCHEAPDUMP_KEYWORD);
 }
 
 // Batches the list of moved/surviving references for the GCBulkMovedObjectRanges /
@@ -214,7 +217,7 @@ void ETW::GCLog::MovedReference(
     ptrdiff_t cbRelocDistance,
     size_t profilingContext,
     BOOL fCompacting,
-    BOOL /*fAllowProfApiNotification*/) // @TODO: unused param from newer implementation
+    BOOL fAllowProfApiNotification /* = TRUE */)
 {
     CONTRACTL
     {
@@ -226,7 +229,7 @@ void ETW::GCLog::MovedReference(
     CONTRACTL_END;
 
     MovedReferenceContextForEtwAndProfapi* pCtxForEtwAndProfapi =
-        (MovedReferenceContextForEtwAndProfapi*)profilingContext;
+        (MovedReferenceContextForEtwAndProfapi*) profilingContext;
     if (pCtxForEtwAndProfapi == NULL)
     {
         _ASSERTE(!"MovedReference() encountered a NULL profilingContext");
@@ -235,14 +238,15 @@ void ETW::GCLog::MovedReference(
 
 #ifdef PROFILING_SUPPORTED
     // ProfAPI
+    if (fAllowProfApiNotification)
     {
-        BEGIN_PIN_PROFILER(CORProfilerTrackGC());
-        g_profControlBlock.pProfInterface->MovedReference(pbMemBlockStart,
-            pbMemBlockEnd,
-            cbRelocDistance,
-            &(pCtxForEtwAndProfapi->pctxProfAPI),
-            fCompacting);
-        END_PIN_PROFILER();
+        BEGIN_PROFILER_CALLBACK(CORProfilerTrackGC() || CORProfilerTrackGCMovedObjects());
+        (&g_profControlBlock)->MovedReference(pbMemBlockStart,
+                                                          pbMemBlockEnd,
+                                                          cbRelocDistance,
+                                                          &(pCtxForEtwAndProfapi->pctxProfAPI),
+                                                          fCompacting);
+        END_PROFILER_CALLBACK();
     }
 #endif // PROFILING_SUPPORTED
 
@@ -260,7 +264,7 @@ void ETW::GCLog::MovedReference(
     {
         // Moved references
 
-        _ASSERTE(pContext->cBulkMovedObjectRanges < _countof(pContext->rgGCBulkMovedObjectRanges));
+        _ASSERTE(pContext->cBulkMovedObjectRanges < ARRAY_SIZE(pContext->rgGCBulkMovedObjectRanges));
         EventStructGCBulkMovedObjectRangesValue* pValue =
             &pContext->rgGCBulkMovedObjectRanges[pContext->cBulkMovedObjectRanges];
         pValue->OldRangeBase = pbMemBlockStart;
@@ -269,7 +273,7 @@ void ETW::GCLog::MovedReference(
         pContext->cBulkMovedObjectRanges++;
 
         // If buffer is now full, empty it into ETW
-        if (pContext->cBulkMovedObjectRanges == _countof(pContext->rgGCBulkMovedObjectRanges))
+        if (pContext->cBulkMovedObjectRanges == ARRAY_SIZE(pContext->rgGCBulkMovedObjectRanges))
         {
             FireEtwGCBulkMovedObjectRanges(
                 pContext->iCurBulkMovedObjectRanges,
@@ -286,7 +290,7 @@ void ETW::GCLog::MovedReference(
     {
         // Surviving references
 
-        _ASSERTE(pContext->cBulkSurvivingObjectRanges < _countof(pContext->rgGCBulkSurvivingObjectRanges));
+        _ASSERTE(pContext->cBulkSurvivingObjectRanges < ARRAY_SIZE(pContext->rgGCBulkSurvivingObjectRanges));
         EventStructGCBulkSurvivingObjectRangesValue* pValue =
             &pContext->rgGCBulkSurvivingObjectRanges[pContext->cBulkSurvivingObjectRanges];
         pValue->RangeBase = pbMemBlockStart;
@@ -294,7 +298,7 @@ void ETW::GCLog::MovedReference(
         pContext->cBulkSurvivingObjectRanges++;
 
         // If buffer is now full, empty it into ETW
-        if (pContext->cBulkSurvivingObjectRanges == _countof(pContext->rgGCBulkSurvivingObjectRanges))
+        if (pContext->cBulkSurvivingObjectRanges == ARRAY_SIZE(pContext->rgGCBulkSurvivingObjectRanges))
         {
             FireEtwGCBulkSurvivingObjectRanges(
                 pContext->iCurBulkSurvivingObjectRanges,
@@ -322,7 +326,7 @@ void ETW::GCLog::MovedReference(
 //
 
 // static
-void ETW::GCLog::BeginMovedReferences(size_t* pProfilingContext)
+VOID ETW::GCLog::BeginMovedReferences(size_t* pProfilingContext)
 {
     LIMITED_METHOD_CONTRACT;
 
@@ -340,8 +344,7 @@ void ETW::GCLog::BeginMovedReferences(size_t* pProfilingContext)
 //
 
 // static
-void ETW::GCLog::EndMovedReferences(size_t profilingContext,
-    BOOL /*fAllowProfApiNotification*/) // @TODO: unused param from newer implementation
+VOID ETW::GCLog::EndMovedReferences(size_t profilingContext, BOOL fAllowProfApiNotification /* = TRUE */)
 {
     CONTRACTL
     {
@@ -352,7 +355,7 @@ void ETW::GCLog::EndMovedReferences(size_t profilingContext,
     }
     CONTRACTL_END;
 
-    MovedReferenceContextForEtwAndProfapi* pCtxForEtwAndProfapi = (MovedReferenceContextForEtwAndProfapi*)profilingContext;
+    MovedReferenceContextForEtwAndProfapi* pCtxForEtwAndProfapi = (MovedReferenceContextForEtwAndProfapi*) profilingContext;
     if (pCtxForEtwAndProfapi == NULL)
     {
         _ASSERTE(!"EndMovedReferences() encountered a NULL profilingContext");
@@ -361,10 +364,11 @@ void ETW::GCLog::EndMovedReferences(size_t profilingContext,
 
 #ifdef PROFILING_SUPPORTED
     // ProfAPI
+    if (fAllowProfApiNotification)
     {
-        BEGIN_PIN_PROFILER(CORProfilerTrackGC());
-        g_profControlBlock.pProfInterface->EndMovedReferences(&(pCtxForEtwAndProfapi->pctxProfAPI));
-        END_PIN_PROFILER();
+        BEGIN_PROFILER_CALLBACK(CORProfilerTrackGC() || CORProfilerTrackGCMovedObjects());
+        (&g_profControlBlock)->EndMovedReferences(&(pCtxForEtwAndProfapi->pctxProfAPI));
+        END_PROFILER_CALLBACK();
     }
 #endif //PROFILING_SUPPORTED
 
@@ -407,7 +411,7 @@ void ETW::GCLog::EndMovedReferences(size_t profilingContext,
 
 // This implements the public runtime provider's GCHeapCollectKeyword.  It
 // performs a full, gen-2, blocking GC.
-void ETW::GCLog::ForceGC(LONGLONG l64ClientSequenceNumber)
+VOID ETW::GCLog::ForceGC(LONGLONG l64ClientSequenceNumber)
 {
     CONTRACTL
     {
@@ -417,16 +421,12 @@ void ETW::GCLog::ForceGC(LONGLONG l64ClientSequenceNumber)
     }
     CONTRACTL_END;
 
-    if (!GCHeapUtilities::IsGCHeapInitialized())
+#ifndef FEATURE_NATIVEAOT
+    if (!IsGarbageCollectorFullyInitialized())
         return;
+#endif // FEATURE_NATIVEAOT
 
-    // No InterlockedExchange64 on Redhawk, even though there is one for
-    // InterlockedCompareExchange64. Technically, there's a race here by using
-    // InterlockedCompareExchange64, but it's not worth addressing. The race would be
-    // between two ETW controllers trying to trigger GCs simultaneously, in which case
-    // one will win and get its sequence number to appear in the GCStart event, while the
-    // other will lose. Rare, uninteresting, and low-impact.
-    PalInterlockedCompareExchange64(&s_l64LastClientSequenceNumber, l64ClientSequenceNumber, s_l64LastClientSequenceNumber);
+    InterlockedExchange64(&s_l64LastClientSequenceNumber, l64ClientSequenceNumber);
 
     ForceGCForDiagnostics();
 }
@@ -460,26 +460,86 @@ HRESULT ETW::GCLog::ForceGCForDiagnostics()
 
     HRESULT hr = E_FAIL;
 
-    _ASSERTE(GCHeapUtilities::IsGCHeapInitialized());
+#ifndef FEATURE_NATIVEAOT
+    // Caller should ensure we're past startup.
+    _ASSERTE(IsGarbageCollectorFullyInitialized());
 
-    ThreadStore::AttachCurrentThread();
-    Thread* pThread = ThreadStore::GetCurrentThread();
+    // In immersive apps the GarbageCollect() call below will call into the WinUI reference tracker,
+    // which will call back into the runtime to track references. This call
+    // chain would cause a Thread object to be created for this thread while code
+    // higher on the stack owns the ThreadStoreLock. This will lead to asserts
+    // since the ThreadStoreLock is non-reentrant. To avoid this we'll create
+    // the Thread object here instead.
+    if (GetThreadNULLOk() == NULL)
+    {
+        HRESULT hr = E_FAIL;
+        SetupThreadNoThrow(&hr);
+        if (FAILED(hr))
+            return hr;
+    }
 
-    // While doing the GC, much code assumes & asserts the thread doing the GC is in
-    // cooperative mode.
-    pThread->DisablePreemptiveMode();
+    ASSERT_NO_EE_LOCKS_HELD();
 
-    hr = GCHeapUtilities::GetGCHeap()->GarbageCollect(
-        -1,     // all generations should be collected
-        FALSE,  // low_memory_p
-        collection_blocking);
+    EX_TRY
+    {
+        // Need to switch to cooperative mode as the thread will access managed
+        // references (through reference tracker callbacks).
+        GCX_COOP();
+#endif // FEATURE_NATIVEAOT
 
-    // In case this thread (generated by the ETW OS APIs) hangs around a while,
-    // better stick it back into preemptive mode, so it doesn't block any other GCs
-    pThread->EnablePreemptiveMode();
+        ForcedGCHolder forcedGCHolder;
+
+        hr = GCHeapUtilities::GetGCHeap()->GarbageCollect(
+            -1,     // all generations should be collected
+            false,  // low_memory_p
+            collection_blocking);
+
+#ifndef FEATURE_NATIVEAOT
+    }
+    EX_CATCH { }
+    EX_END_CATCH(RethrowTerminalExceptions);
+#endif // FEATURE_NATIVEAOT
 
     return hr;
 }
+
+//---------------------------------------------------------------------------------------
+// WalkStaticsAndCOMForETW walks both CCW/RCW objects and static variables.
+//---------------------------------------------------------------------------------------
+
+VOID ETW::GCLog::WalkStaticsAndCOMForETW()
+{
+    CONTRACTL
+    {
+        NOTHROW;
+        GC_TRIGGERS;
+    }
+    CONTRACTL_END;
+
+    EX_TRY
+    {
+        BulkTypeEventLogger typeLogger;
+
+        // Walk RCWs/CCWs
+        BulkComLogger comLogger(&typeLogger);
+        comLogger.LogAllComObjects();
+
+        // Walk static variables
+        BulkStaticsLogger staticLogger(&typeLogger);
+        staticLogger.LogAllStatics();
+
+        // Ensure all loggers have written all events, fire type logger last to batch events
+        // (FireBulkComEvent or FireBulkStaticsEvent may queue up additional types).
+        comLogger.FireBulkComEvent();
+        staticLogger.FireBulkStaticsEvent();
+        typeLogger.FireBulkTypeEvent();
+    }
+    EX_CATCH
+    {
+    }
+    EX_END_CATCH(SwallowAllExceptions);
+}
+
 
 // Holds state that batches of roots, nodes, edges, and types as the GC walks the heap
 // at the end of a collection.
@@ -672,7 +732,7 @@ public:
 //
 
 // static
-void ETW::GCLog::RootReference(
+VOID ETW::GCLog::RootReference(
     LPVOID pvHandle,
     Object* pRootedNode,
     Object* pSecondaryNodeForDependentHandle,
@@ -682,9 +742,6 @@ void ETW::GCLog::RootReference(
     DWORD rootFlags)
 {
     LIMITED_METHOD_CONTRACT;
-
-    if (pRootedNode == NULL)
-        return;
 
     EtwGcHeapDumpContext* pContext =
         EtwGcHeapDumpContext::GetOrCreateInGCContext(&profilingScanContext->pvEtwContext);
@@ -697,6 +754,9 @@ void ETW::GCLog::RootReference(
     switch (nRootKind)
     {
     case kEtwGCRootKindStack:
+#if !defined (FEATURE_NATIVEAOT) && (defined(GC_PROFILING) || defined (DACCESS_COMPILE))
+        pvRootID = profilingScanContext->pMD;
+#endif // !defined (FEATURE_NATIVEAOT) && (defined(GC_PROFILING) || defined (DACCESS_COMPILE))
         break;
 
     case kEtwGCRootKindHandle:
@@ -724,7 +784,7 @@ void ETW::GCLog::RootReference(
     if (fDependentHandle)
     {
         _ASSERTE(pContext->cGCBulkRootConditionalWeakTableElementEdges <
-            _countof(pContext->rgGCBulkRootConditionalWeakTableElementEdges));
+            ARRAY_SIZE(pContext->rgGCBulkRootConditionalWeakTableElementEdges));
         EventStructGCBulkRootConditionalWeakTableElementEdgeValue* pRCWTEEdgeValue =
             &pContext->rgGCBulkRootConditionalWeakTableElementEdges[pContext->cGCBulkRootConditionalWeakTableElementEdges];
         pRCWTEEdgeValue->GCKeyNodeID = pRootedNode;
@@ -734,7 +794,7 @@ void ETW::GCLog::RootReference(
 
         // If RCWTE edge buffer is now full, empty it into ETW
         if (pContext->cGCBulkRootConditionalWeakTableElementEdges ==
-            _countof(pContext->rgGCBulkRootConditionalWeakTableElementEdges))
+            ARRAY_SIZE(pContext->rgGCBulkRootConditionalWeakTableElementEdges))
         {
             FireEtwGCBulkRootConditionalWeakTableElementEdge(
                 pContext->iCurBulkRootConditionalWeakTableElementEdge,
@@ -749,7 +809,7 @@ void ETW::GCLog::RootReference(
     }
     else
     {
-        _ASSERTE(pContext->cGcBulkRootEdges < _countof(pContext->rgGcBulkRootEdges));
+        _ASSERTE(pContext->cGcBulkRootEdges < ARRAY_SIZE(pContext->rgGcBulkRootEdges));
         EventStructGCBulkRootEdgeValue* pBulkRootEdgeValue = &pContext->rgGcBulkRootEdges[pContext->cGcBulkRootEdges];
         pBulkRootEdgeValue->RootedNodeAddress = pRootedNode;
         pBulkRootEdgeValue->GCRootKind = nRootKind;
@@ -758,7 +818,7 @@ void ETW::GCLog::RootReference(
         pContext->cGcBulkRootEdges++;
 
         // If root edge buffer is now full, empty it into ETW
-        if (pContext->cGcBulkRootEdges == _countof(pContext->rgGcBulkRootEdges))
+        if (pContext->cGcBulkRootEdges == ARRAY_SIZE(pContext->rgGcBulkRootEdges))
         {
             FireEtwGCBulkRootEdge(
                 pContext->iCurBulkRootEdge,
@@ -788,7 +848,7 @@ void ETW::GCLog::RootReference(
 //
 
 // static
-void ETW::GCLog::ObjectReference(
+VOID ETW::GCLog::ObjectReference(
     ProfilerWalkHeapContext* profilerWalkHeapContext,
     Object* pObjReferenceSource,
     ULONGLONG typeID,
@@ -816,7 +876,7 @@ void ETW::GCLog::ObjectReference(
     //---------------------------------------------------------------------------------------
 
     // Add Node (pObjReferenceSource) to buffer
-    _ASSERTE(pContext->cGcBulkNodeValues < _countof(pContext->rgGcBulkNodeValues));
+    _ASSERTE(pContext->cGcBulkNodeValues < ARRAY_SIZE(pContext->rgGcBulkNodeValues));
     EventStructGCBulkNodeValue* pBulkNodeValue = &pContext->rgGcBulkNodeValues[pContext->cGcBulkNodeValues];
     pBulkNodeValue->Address = pObjReferenceSource;
     pBulkNodeValue->Size = pObjReferenceSource->GetSize();
@@ -825,7 +885,7 @@ void ETW::GCLog::ObjectReference(
     pContext->cGcBulkNodeValues++;
 
     // If Node buffer is now full, empty it into ETW
-    if (pContext->cGcBulkNodeValues == _countof(pContext->rgGcBulkNodeValues))
+    if (pContext->cGcBulkNodeValues == ARRAY_SIZE(pContext->rgGcBulkNodeValues))
     {
         FireEtwGCBulkNode(
             pContext->iCurBulkNodeEvent,
@@ -846,8 +906,14 @@ void ETW::GCLog::ObjectReference(
     // haven't already sent type info for
     if (typeID != 0)
     {
-        // Batch up this type with others to minimize events
-        pContext->bulkTypeEventLogger.LogTypeAndParameters(typeID);
+        ETW::TypeSystemLog::LogTypeAndParametersIfNecessary(
+            &pContext->bulkTypeEventLogger,     // Batch up this type with others to minimize events
+            typeID,
+
+            // During heap walk, GC holds the lock for us, so we can directly enter the
+            // hash to see if the type has already been logged
+            ETW::TypeSystemLog::kTypeLogBehaviorTakeLockAndLogIfFirstTime
+            );
     }
 
     //---------------------------------------------------------------------------------------
@@ -861,7 +927,7 @@ void ETW::GCLog::ObjectReference(
 
     for (ULONGLONG i = 0; i < cRefs; i++)
     {
-        _ASSERTE(pContext->cGcBulkEdgeValues < _countof(pContext->rgGcBulkEdgeValues));
+        _ASSERTE(pContext->cGcBulkEdgeValues < ARRAY_SIZE(pContext->rgGcBulkEdgeValues));
         EventStructGCBulkEdgeValue* pBulkEdgeValue = &pContext->rgGcBulkEdgeValues[pContext->cGcBulkEdgeValues];
         pBulkEdgeValue->Value = rgObjReferenceTargets[i];
         // FUTURE: ReferencingFieldID
@@ -869,7 +935,7 @@ void ETW::GCLog::ObjectReference(
         pContext->cGcBulkEdgeValues++;
 
         // If Edge buffer is now full, empty it into ETW
-        if (pContext->cGcBulkEdgeValues == _countof(pContext->rgGcBulkEdgeValues))
+        if (pContext->cGcBulkEdgeValues == ARRAY_SIZE(pContext->rgGcBulkEdgeValues))
         {
             FireEtwGCBulkEdge(
                 pContext->iCurBulkEdgeEvent,
@@ -894,7 +960,7 @@ void ETW::GCLog::ObjectReference(
 //
 
 // static
-void ETW::GCLog::EndHeapDump(ProfilerWalkHeapContext* profilerWalkHeapContext)
+VOID ETW::GCLog::EndHeapDump(ProfilerWalkHeapContext* profilerWalkHeapContext)
 {
     LIMITED_METHOD_CONTRACT;
 
@@ -905,9 +971,10 @@ void ETW::GCLog::EndHeapDump(ProfilerWalkHeapContext* profilerWalkHeapContext)
         return;
 
     // If the GC events are enabled, flush any remaining root, node, and / or edge data
-    if (RUNTIME_PROVIDER_CATEGORY_ENABLED(
-        TRACE_LEVEL_INFORMATION,
-        CLR_GCHEAPDUMP_KEYWORD))
+    if (s_forcedGCInProgress &&
+        ETW_TRACING_CATEGORY_ENABLED(MICROSOFT_WINDOWS_DOTNETRUNTIME_PROVIDER_DOTNET_Context,
+                                     TRACE_LEVEL_INFORMATION,
+                                     CLR_GCHEAPDUMP_KEYWORD))
     {
         if (pContext->cGcBulkRootEdges > 0)
         {
@@ -951,12 +1018,12 @@ void ETW::GCLog::EndHeapDump(ProfilerWalkHeapContext* profilerWalkHeapContext)
     }
 
     // Ditto for type events
-    if (RUNTIME_PROVIDER_CATEGORY_ENABLED(
+    if (ETW_TRACING_CATEGORY_ENABLED(
+        MICROSOFT_WINDOWS_DOTNETRUNTIME_PROVIDER_DOTNET_Context,
         TRACE_LEVEL_INFORMATION,
         CLR_TYPE_KEYWORD))
     {
         pContext->bulkTypeEventLogger.FireBulkTypeEvent();
-        pContext->bulkTypeEventLogger.Cleanup();
     }
 
     // Delete any GC state built up in the context

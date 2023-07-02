@@ -134,65 +134,6 @@ void BulkTypeEventLogger::FireBulkTypeEvent()
     m_nBulkTypeValueByteCount = 0;
 }
 
-//---------------------------------------------------------------------------------------
-//
-// Batches up ETW information for a type and pops out to recursively call
-// ETW::TypeSystemLog::LogTypeAndParametersIfNecessary for any
-// "type parameters".  Generics info is not reliably available, so "type parameter"
-// really just refers to the type of array elements if thAsAddr is an array.
-//
-// Arguments:
-//      * thAsAddr - MethodTable to log
-//      * typeLogBehavior - Ignored in Redhawk builds
-//
-
-void BulkTypeEventLogger::LogTypeAndParameters(uint64_t thAsAddr)
-{
-    if (!RUNTIME_PROVIDER_CATEGORY_ENABLED(TRACE_LEVEL_INFORMATION, CLR_TYPE_KEYWORD))
-    {
-        return;
-    }
-
-    MethodTable * pEEType = (MethodTable *) thAsAddr;
-
-    // Batch up this type.  This grabs useful info about the type, including any
-    // type parameters it may have, and sticks it in m_rgBulkTypeValues
-    int iBulkTypeEventData = LogSingleType(pEEType);
-    if (iBulkTypeEventData == -1)
-    {
-        // There was a failure trying to log the type, so don't bother with its type
-        // parameters
-        return;
-    }
-
-    // Look at the type info we just batched, so we can get the type parameters
-    BulkTypeValue * pVal = &m_rgBulkTypeValues[iBulkTypeEventData];
-
-    // We're about to recursively call ourselves for the type parameters, so make a
-    // local copy of their type handles first (else, as we log them we could flush
-    // and clear out m_rgBulkTypeValues, thus trashing pVal)
-    NewArrayHolder<ULONGLONG> rgTypeParameters;
-    DWORD cTypeParams = pVal->cTypeParameters;
-    if (cTypeParams == 1)
-    {
-        LogTypeAndParameters(pVal->ullSingleTypeParameter);
-    }
-    else if (cTypeParams > 1)
-    {
-        rgTypeParameters = new (nothrow) ULONGLONG[cTypeParams];
-        for (DWORD i=0; i < cTypeParams; i++)
-        {
-            rgTypeParameters[i] = pVal->rgTypeParameters[i];
-        }
-
-        // Recursively log any referenced parameter types
-        for (DWORD i=0; i < cTypeParams; i++)
-        {
-            LogTypeAndParameters(rgTypeParameters[i]);
-        }
-    }
-}
-
 // We keep a hash of these to keep track of:
 //     * Which types have been logged through ETW (so we can avoid logging dupe Type
 //         events), and
@@ -417,6 +358,64 @@ int BulkTypeEventLogger::LogSingleType(MethodTable * pEEType)
     return m_nBulkTypeValueCount - 1;       // Index of type we just added
 }
 
+//---------------------------------------------------------------------------------------
+//
+// Batches up ETW information for a type and pops out to recursively call
+// ETW::TypeSystemLog::LogTypeAndParametersIfNecessary for any
+// "type parameters".  Generics info is not reliably available, so "type parameter"
+// really just refers to the type of array elements if thAsAddr is an array.
+//
+// Arguments:
+//      * thAsAddr - MethodTable to log
+//      * typeLogBehavior - Ignored in Redhawk builds
+//
+
+void BulkTypeEventLogger::LogTypeAndParameters(uint64_t thAsAddr)
+{
+    if (!RUNTIME_PROVIDER_CATEGORY_ENABLED(TRACE_LEVEL_INFORMATION, CLR_TYPE_KEYWORD))
+    {
+        return;
+    }
+
+    MethodTable * pEEType = (MethodTable *) thAsAddr;
+
+    // Batch up this type.  This grabs useful info about the type, including any
+    // type parameters it may have, and sticks it in m_rgBulkTypeValues
+    int iBulkTypeEventData = LogSingleType(pEEType);
+    if (iBulkTypeEventData == -1)
+    {
+        // There was a failure trying to log the type, so don't bother with its type
+        // parameters
+        return;
+    }
+
+    // Look at the type info we just batched, so we can get the type parameters
+    BulkTypeValue * pVal = &m_rgBulkTypeValues[iBulkTypeEventData];
+
+    // We're about to recursively call ourselves for the type parameters, so make a
+    // local copy of their type handles first (else, as we log them we could flush
+    // and clear out m_rgBulkTypeValues, thus trashing pVal)
+    NewArrayHolder<ULONGLONG> rgTypeParameters;
+    DWORD cTypeParams = pVal->cTypeParameters;
+    if (cTypeParams == 1)
+    {
+        LogTypeAndParameters(pVal->ullSingleTypeParameter);
+    }
+    else if (cTypeParams > 1)
+    {
+        rgTypeParameters = new (nothrow) ULONGLONG[cTypeParams];
+        for (DWORD i=0; i < cTypeParams; i++)
+        {
+            rgTypeParameters[i] = pVal->rgTypeParameters[i];
+        }
+
+        // Recursively log any referenced parameter types
+        for (DWORD i=0; i < cTypeParams; i++)
+        {
+            LogTypeAndParameters(rgTypeParameters[i]);
+        }
+    }
+}
 
 void BulkTypeEventLogger::Cleanup()
 {
