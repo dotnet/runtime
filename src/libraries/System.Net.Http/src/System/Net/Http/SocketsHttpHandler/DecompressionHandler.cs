@@ -395,7 +395,7 @@ namespace System.Net.Http
                         }
 
                         Debug.Assert(_firstByteStatus == FirstByteStatus.Consumed);
-                        return _stream.ReadAsync(buffer, cancellationToken);
+                        return _stream.ReadAsync(buffer, cancellationToken).ConfigureAwait(false);
                     }
 
                     public override async Task CopyToAsync(Stream destination, int bufferSize, CancellationToken cancellationToken)
