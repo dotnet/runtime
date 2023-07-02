@@ -405,7 +405,7 @@ namespace System.Net.Http
                         ValidateCopyToArguments(destination, bufferSize);
                         if (_firstByteStatus == FirstByteStatus.Available)
                         {
-                            await destination.WriteAsync(ew byte[] { _firstByte }, cancellationToken).ConfigureAwait(false);
+                            await destination.WriteAsync(new byte[] { _firstByte }, cancellationToken).ConfigureAwait(false);
                             _firstByteStatus = FirstByteStatus.Consumed;
                         }
 
