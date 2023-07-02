@@ -536,12 +536,12 @@ namespace System.Buffers
         }
 
         /// <summary>Gets the maximum number of arrays of a given size allowed to be cached per partition.</summary>
-        /// <returns>Defaults to 8. This does not factor in or impact the number of arrays cached per thread in TLS (currently only 1).</returns>
+        /// <returns>Defaults to 32. This does not factor in or impact the number of arrays cached per thread in TLS (currently only 1).</returns>
         private static int GetMaxArraysPerPartition()
         {
             return TryGetInt32EnvironmentVariable("DOTNET_SYSTEM_BUFFERS_SHAREDARRAYPOOL_MAXARRAYSPERPARTITION", out int result) && result > 0 ?
                 result :
-                8; // arbitrary limit
+                32; // arbitrary limit
         }
 
         /// <summary>Look up an environment variable and try to parse it as an Int32.</summary>

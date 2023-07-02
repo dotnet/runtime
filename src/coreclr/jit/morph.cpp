@@ -14719,12 +14719,12 @@ PhaseStatus Compiler::fgRetypeImplicitByRefArgs()
                 }
 
                 // Copy the struct promotion annotations to the new temp.
-                LclVarDsc* newVarDsc       = lvaGetDesc(newLclNum);
-                newVarDsc->lvPromoted      = true;
-                newVarDsc->lvFieldLclStart = varDsc->lvFieldLclStart;
-                newVarDsc->lvFieldCnt      = varDsc->lvFieldCnt;
-                newVarDsc->lvContainsHoles = varDsc->lvContainsHoles;
-                newVarDsc->lvCustomLayout  = varDsc->lvCustomLayout;
+                LclVarDsc* newVarDsc               = lvaGetDesc(newLclNum);
+                newVarDsc->lvPromoted              = true;
+                newVarDsc->lvFieldLclStart         = varDsc->lvFieldLclStart;
+                newVarDsc->lvFieldCnt              = varDsc->lvFieldCnt;
+                newVarDsc->lvContainsHoles         = varDsc->lvContainsHoles;
+                newVarDsc->lvAnySignificantPadding = varDsc->lvAnySignificantPadding;
 #ifdef DEBUG
                 newVarDsc->lvKeepType = true;
 #endif // DEBUG

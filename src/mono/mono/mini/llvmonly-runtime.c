@@ -953,6 +953,8 @@ mini_llvm_init_method (MonoAotFileInfo *info, gpointer aot_module, gpointer meth
 }
 
 static GENERATE_GET_CLASS_WITH_CACHE (nullref, "System", "NullReferenceException")
+static GENERATE_GET_CLASS_WITH_CACHE (index_out_of_range, "System", "IndexOutOfRangeException")
+static GENERATE_GET_CLASS_WITH_CACHE (invalid_cast, "System", "InvalidCastException")
 
 void
 mini_llvmonly_throw_nullref_exception (void)
@@ -971,6 +973,26 @@ mini_llvmonly_throw_aot_failed_exception (const char *name)
 	MonoException *ex = mono_get_exception_execution_engine (msg);
 	g_free (msg);
 	mini_llvmonly_throw_exception ((MonoObject*)ex);
+}
+
+void
+mini_llvmonly_throw_index_out_of_range_exception (void)
+{
+	MonoClass *klass = mono_class_get_index_out_of_range_class ();
+
+	guint32 ex_token_index = m_class_get_type_token (klass) - MONO_TOKEN_TYPE_DEF;
+
+	mini_llvmonly_throw_corlib_exception (ex_token_index);
+}
+
+void
+mini_llvmonly_throw_invalid_cast_exception (void)
+{
+	MonoClass *klass = mono_class_get_invalid_cast_class ();
+
+	guint32 ex_token_index = m_class_get_type_token (klass) - MONO_TOKEN_TYPE_DEF;
+
+	mini_llvmonly_throw_corlib_exception (ex_token_index);
 }
 
 void

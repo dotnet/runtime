@@ -5,7 +5,7 @@ using System.Formats.Asn1;
 
 namespace System.Security.Cryptography.X509Certificates
 {
-    internal static class X500DictionaryStringHelper
+    internal static class X500DirectoryStringHelper
     {
         internal static string ReadAnyAsnString(this AsnReader tavReader)
         {

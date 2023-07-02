@@ -72,7 +72,6 @@ namespace System.Globalization.Tests
             Assert.Equal(expected, new IdnMapping().GetAscii(unicode, index, count));
         }
 
-        [SkipOnTargetFramework(~TargetFrameworkMonikers.Netcoreapp, "Optimization in .NET Core")]
         [Theory]
         [InlineData("www.microsoft.com")]
         [InlineData("bing.com")]
