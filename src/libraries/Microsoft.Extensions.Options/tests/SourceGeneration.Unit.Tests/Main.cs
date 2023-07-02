@@ -164,6 +164,80 @@ namespace __OptionValidationStaticInstances
     }
 
     [ConditionalFact(typeof(PlatformDetection), nameof(PlatformDetection.IsNotBrowser))]
+    public async Task IgnoredStaticMembers()
+    {
+        var (d, _) = await RunGenerator(@"
+            public class FirstModel
+            {
+                // Since we ignore static members, we shouldn't check SecondModel,
+                // and shouldn't emit the 'SYSLIB1212' warning about potentially missing transitive validation
+                public static SecondModel? P1 { get; set; }
+
+                public static SecondModel P2 = new();
+
+                public static System.Collections.Generic.IList<SecondModel>? P3 { get; set; }
+
+                public const SecondModel P4 = null;
+
+                [Required]
+                public string Name { get; set; } = nameof(FirstModel);
+            }
+
+            public class SecondModel
+            {
+                [Required]
+                public string? P3;
+            }
+
+            [OptionsValidator]
+            public partial class FirstModelValidator : IValidateOptions<FirstModel>
+            {
+            }
+        ");
+
+        Assert.Empty(d);
+    }
+
+    [ConditionalFact(typeof(PlatformDetection), nameof(PlatformDetection.IsNotBrowser))]
+    public async Task ValidationAttributeOnStaticMember()
+    {
+        var (d, _) = await RunGenerator(@"
+            public class FirstModel
+            {
+                [Required]
+                public static string? P1 { get; set; }
+
+                [Required]
+                public const string? P1;
+
+                [ValidateObjectMembers]
+                public static SecondModel P2 = new();
+
+                [ValidateEnumeratedItems]
+                public static System.Collections.Generic.IList<SecondModel>? P3 { get; set; }
+
+                [Required]
+                public string Name { get; set; } = nameof(FirstModel);
+            }
+
+            public class SecondModel
+            {
+                [Required]
+                public string? P3;
+            }
+
+            [OptionsValidator]
+            public partial class FirstModelValidator : IValidateOptions<FirstModel>
+            {
+            }
+        ");
+
+        Assert.Equal(4, d.Count);
+        Assert.All(d, x => Assert.Equal(DiagDescriptors.CantValidateStaticOrConstMember.Id, x.Id));
+        Assert.All(d, x => Assert.Equal(DiagnosticSeverity.Warning, x.DefaultSeverity));
+    }
+
+    [ConditionalFact(typeof(PlatformDetection), nameof(PlatformDetection.IsNotBrowser))]
     public async Task CircularTypeReferences()
     {
         var (diagnostics, _) = await RunGenerator(@"

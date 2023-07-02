@@ -248,7 +248,7 @@ The diagnostic id values reserved for .NET Libraries analyzer warnings are `SYSL
 |  __`SYSLIB1211`__ | Options validation generator: Unsupported circular references in model types. |
 |  __`SYSLIB1212`__ | Options validation generator: Member potentially missing transitive validation. |
 |  __`SYSLIB1213`__ | Options validation generator: Member potentially missing enumerable validation. |
-|  __`SYSLIB1214`__ | *_`SYSLIB1214`-`SYSLIB1219` reserved for Microsoft.Extensions.Options.SourceGeneration.* |
+|  __`SYSLIB1214`__ | Options validation generator: Can't validate constants, static fields or properties. |
 |  __`SYSLIB1215`__ | *_`SYSLIB1214`-`SYSLIB1219` reserved for Microsoft.Extensions.Options.SourceGeneration.* |
 |  __`SYSLIB1216`__ | *_`SYSLIB1214`-`SYSLIB1219` reserved for Microsoft.Extensions.Options.SourceGeneration.* |
 |  __`SYSLIB1217`__ | *_`SYSLIB1214`-`SYSLIB1219` reserved for Microsoft.Extensions.Options.SourceGeneration.* |
