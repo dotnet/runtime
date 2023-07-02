@@ -25,7 +25,12 @@ namespace ILCompiler
 
         public ManifestResourceBlockingPolicy(Logger logger, IEnumerable<KeyValuePair<string, bool>> switchValues)
         {
-            _hashtable = new FeatureSwitchHashtable(logger, new Dictionary<string, bool>(switchValues));
+            // Last setting wins
+            var dictionary = new Dictionary<string, bool>();
+            foreach ((string name, bool value) in switchValues)
+                dictionary[name] = value;
+
+            _hashtable = new FeatureSwitchHashtable(logger, dictionary);
         }
 
         /// <summary>
