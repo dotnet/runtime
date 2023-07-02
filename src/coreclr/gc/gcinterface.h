@@ -277,7 +277,7 @@ enum GCEventKeyword
     GCEventKeyword_GCHeapDump                    =  0x100000,
     GCEventKeyword_GCSampledObjectAllocationHigh =  0x200000,
     GCEventKeyword_GCHeapSurvivalAndMovement     =  0x400000,
-    GCEventKeyword_GCHeapCollect                 =  0x800000,
+    GCEventKeyword_ManagedHeapCollect            =  0x800000,
     GCEventKeyword_GCHeapAndTypeNames            = 0x1000000,
     GCEventKeyword_GCSampledObjectAllocationLow  = 0x2000000,
     GCEventKeyword_All = GCEventKeyword_GC
@@ -287,7 +287,7 @@ enum GCEventKeyword
       | GCEventKeyword_GCHeapDump
       | GCEventKeyword_GCSampledObjectAllocationHigh
       | GCEventKeyword_GCHeapSurvivalAndMovement
-      | GCEventKeyword_GCHeapCollect
+      | GCEventKeyword_ManagedHeapCollect
       | GCEventKeyword_GCHeapAndTypeNames
       | GCEventKeyword_GCSampledObjectAllocationLow
 };
