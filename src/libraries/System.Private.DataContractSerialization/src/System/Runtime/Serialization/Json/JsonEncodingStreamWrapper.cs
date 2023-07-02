@@ -226,7 +226,7 @@ namespace System.Runtime.Serialization.Json
             {
                 return _stream.ReadByte();
             }
-             Span<byte> oneByteSpan = stackalloc byte[1];
+            Span<byte> oneByteSpan = stackalloc byte[1];
             if (Read(oneByteSpan) == 0)
             {
                 return -1;
