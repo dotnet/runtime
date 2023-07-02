@@ -1186,8 +1186,9 @@ namespace Internal.JitInterface
             if (context != null && method.IsSharedByGenericInstantiations)
             {
                 TypeSystemEntity ctx = entityFromContext(context);
-                if (ctx is MethodDesc methodFromCtx)
+                if (ctx is MethodDesc methodFromCtx && context != contextFromMethodBeingCompiled())
                 {
+                    Debug.Assert(method.GetTypicalMethodDefinition() == methodFromCtx.GetTypicalMethodDefinition());
                     method = methodFromCtx;
                 }
                 else if (ctx is InstantiatedType instantiatedCtxType)
