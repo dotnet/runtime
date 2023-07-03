@@ -11,6 +11,9 @@ import { wrap_error_root, wrap_no_error_root } from "../invoke-js";
 
 const OUTER_SEPARATOR = "|||";
 const INNER_SEPARATOR = "||";
+const MONTH_CODE = "MMMM";
+const YEAR_CODE = "yyyy";
+const DAY_CODE = "d";
 
 // this function joing all calendar info with OUTER_SEPARATOR into one string and returns back to managed code
 export function mono_wasm_get_calendar_info(culture: MonoStringRef, dst: number, dstLength: number, isException: Int32Ptr, exAddress: MonoObjectRef): number
@@ -29,6 +32,8 @@ export function mono_wasm_get_calendar_info(culture: MonoStringRef, dst: number,
             ShortestDayNames: "",
             MonthNames: "",
             AbbreviatedMonthNames: "",
+            MonthGenitiveNames: "",
+            AbbrevMonthGenitiveNames: "",
         };
         const year = 999;
         const month = 11;
@@ -41,6 +46,8 @@ export function mono_wasm_get_calendar_info(culture: MonoStringRef, dst: number,
         const monthNames = getMonthNames(locale);
         calendarInfo.MonthNames = monthNames.long.join(INNER_SEPARATOR);
         calendarInfo.AbbreviatedMonthNames = monthNames.abbreviated.join(INNER_SEPARATOR);
+        calendarInfo.MonthGenitiveNames = monthNames.longGenitive.join(INNER_SEPARATOR);
+        calendarInfo.AbbrevMonthGenitiveNames = monthNames.abbreviatedGenitive.join(INNER_SEPARATOR);
         calendarInfo.YearMonth = getMonthYearPattern(locale, date);
         calendarInfo.MonthDay = getMonthDayPattern(locale, date);
         calendarInfo.LongDates = getLongDatePattern(locale, date);
@@ -74,11 +81,11 @@ function getMonthYearPattern(locale: string | undefined, date: Date): string
         // Chineese-like patterns:
         return "yyyy\u5e74M\u6708";
     }
-    pattern = pattern.replace(monthName, "MMMM");
-    pattern = pattern.replace("999", "yyyy");
+    pattern = pattern.replace(monthName, MONTH_CODE);
+    pattern = pattern.replace("999", YEAR_CODE);
     // sometimes the number is localized and the above does not have an effect
     const yearStr = date.toLocaleDateString(locale, { year: "numeric" });
-    return pattern.replace(yearStr, "yyyy");
+    return pattern.replace(yearStr, YEAR_CODE);
 }
 
 function getMonthDayPattern(locale: string | undefined, date: Date): string
@@ -93,10 +100,10 @@ function getMonthDayPattern(locale: string | undefined, date: Date): string
     }
     const formatWithoutMonthName = new Intl.DateTimeFormat(locale, { day: "numeric" });
     const replacedMonthName = getGenitiveForName(date, pattern, monthName, formatWithoutMonthName);
-    pattern = pattern.replace(replacedMonthName, "MMMM");
-    pattern = pattern.replace("22", "d");
+    pattern = pattern.replace(replacedMonthName, MONTH_CODE);
+    pattern = pattern.replace("22", DAY_CODE);
     const dayStr = formatWithoutMonthName.format(date);
-    return pattern.replace(dayStr, "d");
+    return pattern.replace(dayStr, DAY_CODE);
 }
 
 function getLongDatePattern(locale: string | undefined, date: Date): string
@@ -120,24 +127,24 @@ function getLongDatePattern(locale: string | undefined, date: Date): string
     else
     {
         const replacedMonthName = getGenitiveForName(date, pattern, monthName, new Intl.DateTimeFormat(locale, { weekday: "long", year: "numeric", day: "numeric"}));
-        pattern = pattern.replace(replacedMonthName, "MMMM");            
+        pattern = pattern.replace(replacedMonthName, MONTH_CODE);            
     }
-    pattern = pattern.replace("999", "yyyy");
+    pattern = pattern.replace("999", YEAR_CODE);
     // sometimes the number is localized and the above does not have an effect,
     // so additionally, we need to do:
     const yearStr = date.toLocaleDateString(locale, { year: "numeric" });
-    pattern = pattern.replace(yearStr, "yyyy");
+    pattern = pattern.replace(yearStr, YEAR_CODE);
     const weekday = date.toLocaleDateString(locale, { weekday: "long" }).toLowerCase();
     const replacedWeekday = getGenitiveForName(date, pattern, weekday, new Intl.DateTimeFormat(locale, { year: "numeric", month: "long", day: "numeric"}));
     pattern = pattern.replace(replacedWeekday, "dddd");
-    pattern = pattern.replace("22", "d");
+    pattern = pattern.replace("22", DAY_CODE);
     const dayStr = date.toLocaleDateString(locale, { day: "numeric" }); // should we replace it for localized digits?
-    return pattern.replace(dayStr, "d");
+    return pattern.replace(dayStr, DAY_CODE);
 }
 
 function getGenitiveForName(date: Date, pattern: string, name: string, formatWithoutName: Intl.DateTimeFormat)
 {
-    let replacedName = name;
+    let genitiveName = name;
     const nameStart = pattern.indexOf(name);
     if (nameStart == -1 ||
         // genitive month name can include monthName and monthName can include spaces, e.g. "tháng 11":, so we cannot use pattern.includes() or pattern.split(" ").includes()
@@ -148,11 +155,11 @@ function getGenitiveForName(date: Date, pattern: string, name: string, formatWit
         // pattern = '999 m. lapkričio 22 d., šeštadienis',
         // patternWithoutName = '999 2, šeštadienis',
         // name = 'lapkritis'
-        // replacedName = 'lapkričio'
+        // genitiveName = 'lapkričio'
         const patternWithoutName = formatWithoutName.format(date).toLowerCase();
-        replacedName = pattern.split(/,| /).filter(x => !patternWithoutName.split(/,| /).includes(x) && x[0] == name[0])[0];
+        genitiveName = pattern.split(/,| /).filter(x => !patternWithoutName.split(/,| /).includes(x) && x[0] == name[0])[0];
     }
-    return replacedName;
+    return genitiveName;
 }
 
 function getDayNames(locale: string | undefined) : { long: string[], abbreviated: string[], shortest: string[] }
@@ -171,26 +178,51 @@ function getDayNames(locale: string | undefined) : { long: string[], abbreviated
     return {long: dayNames, abbreviated: dayNamesAbb, shortest: dayNamesSS };
 }
 
-function getMonthNames(locale: string | undefined) : { long: string[], abbreviated: string[] }
+function getMonthNames(locale: string | undefined) : { long: string[], abbreviated: string[], longGenitive: string[], abbreviatedGenitive: string[] }
 {
+    // some calendars have the first month on non-0 index in JS
+    // first month: Muharram ("ar") or Farwardin ("fa") or January
     const localeLang = locale?.split("-")[0];
-    const firstMonthShift = localeLang == "ar" ? 8 : localeLang == "fa" ? 3 : 0; //first month: Muharram or Farwardin or January
-    const month = new Date(2021, firstMonthShift, 1);
-    const months = [ month.toLocaleDateString(locale, { month: "long" }) ];
-    const monthsAbb = [ month.toLocaleDateString(locale, { month: "short" }) ];
-    for(let i = 1 + firstMonthShift; i < 13 + firstMonthShift; i++)
+    const firstMonthShift = localeLang == "ar" ? 8 : localeLang == "fa" ? 3 : 0;
+    const date = new Date(2021, firstMonthShift, 1);
+    const months: string[] = [];
+    const monthsAbb: string[] = [];
+    const monthsGen: string[] = [];
+    const monthsAbbGen: string[] = [];
+    let isChineeseStyle, isShortFormBroken;
+    for(let i = firstMonthShift; i < 12 + firstMonthShift; i++)
     {
         const monthCnt = i % 12;
-        month.setMonth(monthCnt);
-        const shortMonth = month.toLocaleDateString(locale, { month: "short" });
-        if (shortMonth == monthsAbb[0])
+        date.setMonth(monthCnt);
+
+        const monthNameLong = date.toLocaleDateString(locale, { month: "long" });
+        const monthNameShort = date.toLocaleDateString(locale, { month: "short" });
+        months[i - firstMonthShift] = monthNameLong;
+        monthsAbb[i - firstMonthShift] = monthNameShort;
+        // for Genitive forms:
+        isChineeseStyle = isChineeseStyle ?? monthNameLong.charAt(monthNameLong.length - 1) == "\u6708";
+        if (isChineeseStyle)
         {
-            break;
+            // for Chinese-like calendar's Genitive = Nominative
+            monthsGen[i - firstMonthShift] = monthNameLong;
+            monthsAbbGen[i - firstMonthShift] = monthNameShort;
+            continue;
         }
-        monthsAbb[i - firstMonthShift] = shortMonth;
-        months[i - firstMonthShift] = month.toLocaleDateString(locale, { month: "long" });
+        const formatWithoutMonthName = new Intl.DateTimeFormat(locale, { day: "numeric" });
+        const monthWithDayLong = date.toLocaleDateString(locale, { month: "long", day: "numeric"});
+        monthsGen[i - firstMonthShift] = getGenitiveForName(date, monthWithDayLong, monthNameLong, formatWithoutMonthName);
+        isShortFormBroken = isShortFormBroken ?? /^\d+$/.test(monthNameShort);
+        if (isShortFormBroken)
+        {
+            // for buggy locales e.g. lt-LT, short month contains only number instead of string
+            // we leave Genitive = Nominative
+            monthsAbbGen[i - firstMonthShift] = monthNameShort;
+            continue;
+        }
+        const monthWithDayShort = date.toLocaleDateString(locale, { month: "short", day: "numeric"});
+        monthsAbbGen[i - firstMonthShift] = getGenitiveForName(date, monthWithDayShort, monthNameShort, formatWithoutMonthName);
     }
-    return {long: months, abbreviated: monthsAbb };
+    return {long: months, abbreviated: monthsAbb, longGenitive: monthsGen, abbreviatedGenitive: monthsAbbGen };
 }
 
 // const date = new Date(year, month - 1, 22, 2, 3, 4)

@@ -14,8 +14,6 @@ namespace System.Globalization
     // CalendarData_Uninitialized = 0,
     // CalendarData_NativeName = 1, // is it still present? there are some chances ICU has it; public: NativeCalendarName
     // CalendarData_ShortDates = 3, // event.toLocaleDateString("bg-BG", {dateStyle: "short"}); public: ShortDatePattern
-    // CalendarData_MonthGenitiveNames = 11, // data.toLocaleDateString("pl-PL", {dateStyle: "long"}) with the month day pattern
-    // CalendarData_AbbrevMonthGenitiveNames = 12,  // data.toLocaleDateString("pl-PL", {dateStyle: "medium"}) with the month day pattern
     // CalendarData_EraNames = 13, // ?? DateTimeFormatInfo.GetEraName  ?? date.toLocaleDateString("pl-PL", { era: "long"})
     // CalendarData_AbbrevEraNames = 14, // ?? DateTimeFormatInfo.GetAbbreviatedEraName ?? date.toLocaleDateString("pl-PL", { era: "short"})
 //==================================================================
@@ -56,6 +54,8 @@ namespace System.Globalization
             this.saSuperShortDayNames = subresults[5].Split("||");
             this.saMonthNames = ResizeMonthsArray(subresults[6].Split("||"));
             this.saAbbrevMonthNames = ResizeMonthsArray(subresults[7].Split("||"));
+            this.saMonthGenitiveNames = ResizeMonthsArray(subresults[8].Split("||"));
+            this.saAbbrevMonthGenitiveNames = ResizeMonthsArray(subresults[9].Split("||"));
             return true;
 
             static string[] ResizeMonthsArray(string[] months)
