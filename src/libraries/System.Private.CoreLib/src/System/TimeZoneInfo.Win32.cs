@@ -88,6 +88,24 @@ namespace System
             return (AdjustmentRule[])_adjustmentRules.Clone();
         }
 
+        private string? PopulateDisplayName()
+        {
+            // Keep window's implementation to populate via constructor
+            return null;
+        }
+
+        private string? PopulateStandardDisplayName()
+        {
+            // Keep window's implementation to populate via constructor
+            return null;
+        }
+
+        private string? PopulateDaylightDisplayName()
+        {
+            // Keep window's implementation to populate via constructor
+            return null;
+        }
+
         private static void PopulateAllSystemTimeZones(CachedData cachedData)
         {
             Debug.Assert(Monitor.IsEntered(cachedData));

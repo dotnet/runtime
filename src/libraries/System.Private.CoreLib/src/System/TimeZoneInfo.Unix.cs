@@ -32,6 +32,11 @@ namespace System
             "Zulu"
         };
 
+        // Set fallback values using abbreviations, base offset, and id
+        // These are expected in environments without time zone globalization data
+        private string? s_standardAbbrevName;
+        private string? s_daylightAbbrevName;
+
         private TimeZoneInfo(byte[] data, string id, bool dstDisabled)
         {
             _id = id;
@@ -54,8 +59,6 @@ namespace System
             TZifType[] transitionType;
             string zoneAbbreviations;
             string? futureTransitionsPosixFormat;
-            string? standardAbbrevName = null;
-            string? daylightAbbrevName = null;
 
             // parse the raw TZif bytes; this method can throw ArgumentException when the data is malformed.
             TZif_ParseRaw(data, out dts, out typeOfLocalTime, out transitionType, out zoneAbbreviations, out futureTransitionsPosixFormat);
@@ -70,11 +73,11 @@ namespace System
                 if (!transitionType[type].IsDst)
                 {
                     _baseUtcOffset = transitionType[type].UtcOffset;
-                    standardAbbrevName = TZif_GetZoneAbbreviation(zoneAbbreviations, transitionType[type].AbbreviationIndex);
+                    s_standardAbbrevName = TZif_GetZoneAbbreviation(zoneAbbreviations, transitionType[type].AbbreviationIndex);
                 }
                 else
                 {
-                    daylightAbbrevName = TZif_GetZoneAbbreviation(zoneAbbreviations, transitionType[type].AbbreviationIndex);
+                    s_daylightAbbrevName = TZif_GetZoneAbbreviation(zoneAbbreviations, transitionType[type].AbbreviationIndex);
                 }
             }
 
@@ -87,23 +90,14 @@ namespace System
                     if (!transitionType[i].IsDst)
                     {
                         _baseUtcOffset = transitionType[i].UtcOffset;
-                        standardAbbrevName = TZif_GetZoneAbbreviation(zoneAbbreviations, transitionType[i].AbbreviationIndex);
+                        s_standardAbbrevName = TZif_GetZoneAbbreviation(zoneAbbreviations, transitionType[i].AbbreviationIndex);
                     }
                     else
                     {
-                        daylightAbbrevName = TZif_GetZoneAbbreviation(zoneAbbreviations, transitionType[i].AbbreviationIndex);
+                        s_daylightAbbrevName = TZif_GetZoneAbbreviation(zoneAbbreviations, transitionType[i].AbbreviationIndex);
                     }
                 }
             }
-
-            // Set fallback values using abbreviations, base offset, and id
-            // These are expected in environments without time zone globalization data
-            _standardDisplayName = standardAbbrevName;
-            _daylightDisplayName = daylightAbbrevName ?? standardAbbrevName;
-            _displayName = string.Create(null, stackalloc char[256], $"(UTC{(_baseUtcOffset >= TimeSpan.Zero ? '+' : '-')}{_baseUtcOffset:hh\\:mm}) {_id}");
-
-            // Try to populate the display names from the globalization data
-            TryPopulateTimeZoneDisplayNamesFromGlobalizationData(_id, _baseUtcOffset, ref _standardDisplayName, ref _daylightDisplayName, ref _displayName);
 
             // TZif supports seconds-level granularity with offsets but TimeZoneInfo only supports minutes since it aligns
             // with DateTimeOffset, SQL Server, and the W3C XML Specification
@@ -216,6 +210,55 @@ namespace System
             }
 
             return rulesList.ToArray();
+        }
+
+        private string? PopulateDisplayName()
+        {
+            // Set fallback value using abbreviations, base offset, and id
+            // These are expected in environments without time zone globalization data
+            string? displayName = string.Create(null, stackalloc char[256], $"(UTC{(_baseUtcOffset >= TimeSpan.Zero ? '+' : '-')}{_baseUtcOffset:hh\\:mm}) {_id}");
+            if (GlobalizationMode.Invariant)
+                return displayName;
+
+            // Determine the culture to use
+            CultureInfo uiCulture = CultureInfo.CurrentUICulture;
+            if (uiCulture.Name.Length == 0)
+                uiCulture = CultureInfo.GetCultureInfo(FallbackCultureName); // ICU doesn't work nicely with InvariantCulture
+
+            GetFullValueForDisplayNameField(Id, BaseUtcOffset, uiCulture, ref displayName);
+
+            return displayName;
+        }
+
+        private string? PopulateStandardDisplayName()
+        {
+            string? standardDisplayName = s_standardAbbrevName;
+            if (GlobalizationMode.Invariant)
+                return standardDisplayName;
+
+            CultureInfo uiCulture = CultureInfo.CurrentUICulture;
+            if (uiCulture.Name.Length == 0)
+                uiCulture = CultureInfo.GetCultureInfo(FallbackCultureName); // ICU doesn't work nicely with InvariantCulture
+
+            GetDisplayName(Id, Interop.Globalization.TimeZoneDisplayNameType.Standard, uiCulture.Name, ref standardDisplayName);
+
+            return standardDisplayName;
+        }
+
+        private string? PopulateDaylightDisplayName()
+        {
+            string? daylightDisplayName = s_daylightAbbrevName ?? s_standardAbbrevName;
+            if (GlobalizationMode.Invariant)
+                return daylightDisplayName;
+
+            // Determine the culture to use
+            CultureInfo uiCulture = CultureInfo.CurrentUICulture;
+            if (uiCulture.Name.Length == 0)
+                uiCulture = CultureInfo.GetCultureInfo(FallbackCultureName); // ICU doesn't work nicely with InvariantCulture
+
+            GetDisplayName(Id, Interop.Globalization.TimeZoneDisplayNameType.DaylightSavings, uiCulture.Name, ref daylightDisplayName);
+
+            return daylightDisplayName;
         }
 
         private static void PopulateAllSystemTimeZones(CachedData cachedData)
