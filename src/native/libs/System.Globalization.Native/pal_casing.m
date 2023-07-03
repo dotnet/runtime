@@ -87,6 +87,11 @@ Function:
 ChangeCaseNative
 
 Performs upper or lower casing of a string into a new buffer, taking into account the specified locale.
+Two things we are considering here:
+1. Prohibiting code point expansions. Some characters code points expand when uppercased or lowercased, which may lead to an insufficient destination buffer.
+   Instead, we prohibit these expansions and iterate through the string character by character opting for the original character if it would have been expanded.
+2. Properly handling surrogate pairs. Characters can be comprised of more than one code point
+   (i.e. surrogate pairs like \uD801\uDC37). All code points for a character are needed to properly change case
 Returns 0 for success, non-zero on failure see ErrorCodes.
 */
 int32_t GlobalizationNative_ChangeCaseNative(const uint16_t* localeName, int32_t lNameLength,
@@ -113,8 +118,10 @@ int32_t GlobalizationNative_ChangeCaseNative(const uint16_t* localeName, int32_t
         NSString *src = [NSString stringWithCharacters: lpSrc + startIndex length: srcLength];
         NSString *dst = bToUpper ? [src uppercaseStringWithLocale:currentLocale] : [src lowercaseStringWithLocale:currentLocale];
         int32_t index = 0;
+        // iterate over all code points of a surrogate pair character
         while (index < srcLength)
         {
+            // the dst.length > srcLength is to prevent code point expansions
             dstCodepoint = dst.length > srcLength ? [src characterAtIndex: index] : [dst characterAtIndex: index];
             Append(lpDst, dstIdx, cwDstLength, dstCodepoint, isError);
             index++;
@@ -130,6 +137,11 @@ Function:
 ChangeCaseInvariantNative
 
 Performs upper or lower casing of a string into a new buffer.
+Two things we are considering here:
+1. Prohibiting code point expansions. Some characters code points expand when uppercased or lowercased, which may lead to an insufficient destination buffer.
+   Instead, we prohibit these expansions and iterate through the string character by character opting for the original character if it would have been expanded.
+2. Properly handling surrogate pairs. Characters can be comprised of more than one code point
+   (i.e. surrogate pairs like \uD801\uDC37). All code points for a character are needed to properly change case
 Returns 0 for success, non-zero on failure see ErrorCodes.
 */
 int32_t GlobalizationNative_ChangeCaseInvariantNative(const uint16_t* lpSrc, int32_t cwSrcLength, uint16_t* lpDst, int32_t cwDstLength, int32_t bToUpper)
@@ -144,8 +156,10 @@ int32_t GlobalizationNative_ChangeCaseInvariantNative(const uint16_t* lpSrc, int
         NSString *src = [NSString stringWithCharacters: lpSrc + startIndex length: srcLength];
         NSString *dst = bToUpper ? src.uppercaseString : src.lowercaseString;
         int32_t index = 0;
+        // iterate over all code points of a surrogate pair character
         while (index < srcLength)
         {
+            // the dst.length > srcLength is to prevent code point expansions
             dstCodepoint = dst.length > srcLength ? [src characterAtIndex: index] : [dst characterAtIndex: index];
             Append(lpDst, dstIdx, cwDstLength, dstCodepoint, isError);
             index++;
