@@ -13,7 +13,7 @@ public class TestMainJsProjectProvider(string projectDir, ITestOutputHelper test
                 : ProjectProviderBase(projectDir, testOutput)
 {
     // no fingerprinting
-    protected override IReadOnlyDictionary<string, bool> GetDotnetFilesKnownSet(RuntimeVariant runtimeType)
+    protected override IReadOnlyDictionary<string, bool> GetAllKnownDotnetFilesToFingerprintMap(RuntimeVariant runtimeType)
         => new SortedDictionary<string, bool>()
             {
                { "dotnet.js", false },

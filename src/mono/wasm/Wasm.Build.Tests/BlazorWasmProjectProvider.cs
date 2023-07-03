@@ -33,7 +33,7 @@ public class BlazorWasmProjectProvider(string projectDir, ITestOutputHelper test
         var expectedEntries = new SortedDictionary<string, Action<string>>();
         IReadOnlySet<string> expected = GetDotNetFilesExpectedSet(runtimeType, isPublish);
 
-        var knownSet = GetDotnetFilesKnownSet(runtimeType);
+        var knownSet = GetAllKnownDotnetFilesToFingerprintMap(runtimeType);
         foreach (string expectedFilename in expected)
         {
             if (Path.GetExtension(expectedFilename) == ".map")

@@ -35,11 +35,11 @@ public abstract class ProjectProviderBase(string projectDir, ITestOutputHelper _
     {
         return FindAndAssertDotnetFiles(dir: dir,
                                         expectFingerprintOnDotnetJs: expectFingerprintOnDotnetJs,
-                                        superSet: GetDotnetFilesKnownSet(runtimeType),
+                                        superSet: GetAllKnownDotnetFilesToFingerprintMap(runtimeType),
                                         expected: GetDotNetFilesExpectedSet(runtimeType, isPublish));
     }
 
-    protected abstract IReadOnlyDictionary<string, bool> GetDotnetFilesKnownSet(RuntimeVariant runtimeType);
+    protected abstract IReadOnlyDictionary<string, bool> GetAllKnownDotnetFilesToFingerprintMap(RuntimeVariant runtimeType);
     protected abstract IReadOnlySet<string> GetDotNetFilesExpectedSet(RuntimeVariant runtimeType, bool isPublish);
 
     public IReadOnlyDictionary<string, DotNetFileName> FindAndAssertDotnetFiles(

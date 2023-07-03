@@ -11,7 +11,7 @@ namespace Wasm.Build.Tests;
 public class WasmSdkBasedProjectProvider(string projectDir, ITestOutputHelper _testOutput)
                 : ProjectProviderBase(projectDir, _testOutput)
 {
-    protected override IReadOnlyDictionary<string, bool> GetDotnetFilesKnownSet(RuntimeVariant runtimeType)
+    protected override IReadOnlyDictionary<string, bool> GetAllKnownDotnetFilesToFingerprintMap(RuntimeVariant runtimeType)
         => new SortedDictionary<string, bool>()
             {
                { "dotnet.js", false },
