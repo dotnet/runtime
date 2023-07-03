@@ -1585,6 +1585,10 @@ private:
     typedef JitHashTable<ssize_t, JitLargePrimitiveKeyFuncs<ssize_t>, BasicBlock*> PatternToBlockMap;
     PatternToBlockMap m_patternToBlockMap;
 
+    CompAllocator m_allocatorTarget; // The memory allocator
+    typedef JitHashTable<BasicBlock*, JitPtrKeyFuncs<BasicBlock>, int> BlockToIntMap;
+    BlockToIntMap m_blockToIntMap;
+
     BasicBlock* switchBBdesc = nullptr; // The switch basic block descriptor
     BBswtDesc*  swtDsc       = nullptr; // The switch descriptor
 
@@ -1608,11 +1612,16 @@ private:
     void optSetBbCodeOffsEnd(IL_OFFSET bbCodeOffsEnd);
     bool optBlockIsPred(BasicBlock* block, BasicBlock* blockPred);
     BasicBlock* optGetJumpTargetBB(BasicBlock* block);
+    void optSetBlockToIntMap(BasicBlock* targetBb);
     bool optMakeSwitchDesc();
 
 public:
     OptRangePatternDsc(Compiler* comp)
-        : m_comp(comp), m_allocator(comp->getAllocator(CMK_Generic)), m_patternToBlockMap(m_allocator)
+        : m_comp(comp)
+        , m_allocator(comp->getAllocator(CMK_Generic))
+        , m_patternToBlockMap(m_allocator)
+        , m_allocatorTarget(comp->getAllocator(CMK_Generic))
+        , m_blockToIntMap(m_allocatorTarget)
     {
     }
 
@@ -1826,8 +1835,7 @@ bool OptRangePatternDsc::optSetPattern(int idxPattern, ssize_t patternVal, Basic
     }
 
     // Set the pattern value if it does not already exists in the map
-    BasicBlock* mappedBlock = nullptr;
-    if (m_patternToBlockMap.Lookup(patternVal, &mappedBlock)) // Pattern already exists
+    if (m_patternToBlockMap.Lookup(patternVal, nullptr)) // Pattern already exists
     {
         return false;
     }
@@ -1932,6 +1940,20 @@ void OptRangePatternDsc::optSetRangePattern(int rangeVal)
 }
 
 //-----------------------------------------------------------------------------
+// optSetBlockToIntMap: Set the map for unique target blocks
+//
+// Arguments:
+//    targetBb - the target basic block
+//
+void OptRangePatternDsc::optSetBlockToIntMap(BasicBlock* targetBb)
+{
+    if (!m_blockToIntMap.Lookup(targetBb, nullptr))
+    {
+        m_blockToIntMap.Set(targetBb, 1);
+    }
+}
+
+//-----------------------------------------------------------------------------
 // optMakeSwitchDesc: Make a Switch descriptor with a switch jump table
 //
 // Returns:
@@ -1966,16 +1988,17 @@ bool OptRangePatternDsc::optMakeSwitchDesc()
     BasicBlockFlags bbFlags   = BBF_EMPTY;
     unsigned        curBBoffs = 0;
     unsigned        nxtBBoffs = 0;
-    unsigned        jmpCnt    = 0; // # of switch cases (excluding default)
+    unsigned        jmpCnt    = 0; // # of switch cases (including default case)
 
-    BasicBlock** jmpTab   = nullptr;
-    BasicBlock** jmpPtr   = nullptr;
-    bool         tailCall = false;
-    ssize_t      minVal   = optGetMinPattern();
+    BasicBlock** jmpTab          = nullptr;
+    BasicBlock** jmpPtr          = nullptr;
+    unsigned     uniqueTargetCnt = 0; // # of unique jump targets
+    bool         tailCall        = false;
+    ssize_t      minVal          = optGetMinPattern();
 
     // Allocate the jump table
-    jmpCnt = m_rangePattern;
-    jmpPtr = jmpTab = new (m_comp, CMK_BasicBlock) BasicBlock*[jmpCnt + 1];
+    jmpCnt = m_rangePattern + 1;
+    jmpPtr = jmpTab = new (m_comp, CMK_BasicBlock) BasicBlock*[jmpCnt];
 
     // Make a jump table for the range of patterns
     // If reserved pattern, jump to jump target of source block. If not, jump to default target.
@@ -1988,28 +2011,105 @@ bool OptRangePatternDsc::optMakeSwitchDesc()
         {
             BasicBlock* jumpTargetBb = optGetJumpTargetBB(mappedBlock);
             *jmpPtr                  = (BasicBlock*)(size_t)(jumpTargetBb->bbCodeOffs);
-            *(jmpPtr++)              = jumpTargetBb;
+            *(jmpPtr)                = jumpTargetBb;
+            // Update the target basic block to count map
+            optSetBlockToIntMap(jumpTargetBb);
         }
         else
         {
             BasicBlock* defaultJmpBb = optGetDefaultJmpBB();
             *jmpPtr                  = (BasicBlock*)(size_t)(defaultJmpBb->bbCodeOffs);
-            *(jmpPtr++)              = defaultJmpBb;
+            *(jmpPtr)                = defaultJmpBb;
+            // Update the target basic block to count map
+            optSetBlockToIntMap(defaultJmpBb);
         }
+        jmpPtr++;
     }
 
     // Append the default label to the jump table
-    *jmpPtr     = (BasicBlock*)(size_t)(optGetDefaultJmpBB()->bbCodeOffs);
-    *(jmpPtr++) = optGetDefaultJmpBB();
+    *jmpPtr   = (BasicBlock*)(size_t)(optGetDefaultJmpBB()->bbCodeOffs);
+    *(jmpPtr) = optGetDefaultJmpBB();
+    optSetBlockToIntMap(optGetDefaultJmpBB());
+    jmpPtr++;
 
     // Make sure we found the right number of labels
-    noway_assert(jmpPtr == jmpTab + jmpCnt + 1);
+    noway_assert(jmpPtr == jmpTab + jmpCnt);
+
+    //
+    // Check if it is profitable to use a switch instead of a series of conditional branches
+    //
+
+    // If the number of unique target counts is 1, it has only default case. Not profitable.
+    // If it is > 3, it it not converted to a bit test in Lowering. So, skip it.
+    uniqueTargetCnt = m_blockToIntMap.GetCount();
+    if (uniqueTargetCnt == 1 || uniqueTargetCnt > 3)
+    {
+        return false;
+    }
+
+    noway_assert(jmpCnt >= 2);
+
+    // If all jumps to the same target block, BBJ_NONE or BBJ_ALWAYS is better.
+    BasicBlock* uniqueSucc = nullptr;
+    if (uniqueTargetCnt == 2)
+    {
+        uniqueSucc = jmpTab[0];
+        noway_assert(jmpCnt >= 2);
+        for (unsigned i = 1; i < jmpCnt - 1; i++)
+        {
+            if (jmpTab[i] != uniqueSucc)
+            {
+                uniqueSucc = nullptr;
+                break;
+            }
+        }
+    }
+    if (uniqueSucc != nullptr)
+    {
+        return false;
+    }
+
+    // Check if it is better to use Jmp instead of Switch
+    BasicBlock* defaultBB   = jmpTab[jmpCnt - 1];
+    BasicBlock* followingBB = m_optFirstBB->bbNext;
+
+    // Is the number of cases right for a jump switch?
+    const bool firstCaseFollows = (followingBB == jmpTab[0]);
+    const bool defaultFollows   = (followingBB == defaultBB);
+
+    unsigned minSwitchTabJumpCnt = 2; // table is better than just 2 cmp/jcc
+
+    // This means really just a single cmp/jcc (aka a simple if/else)
+    if (firstCaseFollows || defaultFollows)
+    {
+        minSwitchTabJumpCnt++;
+    }
+
+#if defined(TARGET_ARM)
+    // On ARM for small switch tables we will
+    // generate a sequence of compare and branch instructions
+    // because the code to load the base of the switch
+    // table is huge and hideous due to the relocation... :(
+    minSwitchTabJumpCnt += 2;
+#endif // TARGET_ARM
+
+    bool useJumpSequence = jmpCnt < minSwitchTabJumpCnt;
+
+    if (TargetOS::IsUnix && TargetArchitecture::IsArm32)
+    {
+        useJumpSequence = useJumpSequence || m_comp->IsTargetAbi(CORINFO_NATIVEAOT_ABI);
+    }
+
+    if (useJumpSequence) // It is better to use a series of compare and branch IR trees.
+    {
+        return false;
+    }
 
     // Allocate the switch descriptor
     swtDsc = new (m_comp, CMK_BasicBlock) BBswtDesc;
 
     // Fill in the remaining fields of the switch descriptor
-    swtDsc->bbsCount  = jmpCnt + 1;
+    swtDsc->bbsCount  = jmpCnt;
     swtDsc->bbsDstTab = jmpTab;
 
     m_comp->fgHasSwitch = true;
