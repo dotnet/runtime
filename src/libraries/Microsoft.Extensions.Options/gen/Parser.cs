@@ -448,6 +448,20 @@ namespace Microsoft.Extensions.Options.Generators
                 }
             }
 
+            bool validationAttributeIsApplied = validationAttrs.Count > 0 || transValidatorTypeName is not null || enumerationValidatorTypeName is not null;
+
+            if (member.IsStatic)
+            {
+                // generate a warning if the member is const/static and has a validation attribute applied
+                if (validationAttributeIsApplied)
+                {
+                    Diag(DiagDescriptors.CantValidateStaticOrConstMember, member.GetLocation(), member.Name);
+                }
+
+                // don't validate the member in any case
+                return null;
+            }
+
             // generate a warning if the field/property seems like it should be transitively validated
             if (transValidatorTypeName == null && speculate && memberType.SpecialType == SpecialType.None)
             {
@@ -462,7 +476,7 @@ namespace Microsoft.Extensions.Options.Generators
             }
 
             // generate a warning if the field/property seems like it should be enumerated
-            if (enumerationValidatorTypeName == null && speculate)
+            if (enumerationValidatorTypeName == null && speculate && memberType.SpecialType != SpecialType.System_String)
             {
                 var enumeratedType = GetEnumeratedType(memberType);
                 if (enumeratedType is not null)
@@ -478,7 +492,7 @@ namespace Microsoft.Extensions.Options.Generators
                 }
             }
 
-            if (validationAttrs.Count > 0 || transValidatorTypeName is not null || enumerationValidatorTypeName is not null)
+            if (validationAttributeIsApplied)
             {
                 return new(
                     member.Name,

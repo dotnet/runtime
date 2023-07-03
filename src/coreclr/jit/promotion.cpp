@@ -51,32 +51,32 @@ struct Access
 
     // Number of times we saw the access.
     unsigned Count = 0;
-    // Number of times this is assigned from the result of a call. This
-    // includes being passed as the retbuf. These assignments cannot be
-    // decomposed and are handled via readback.
-    unsigned CountAssignedFromCall = 0;
+    // Number of times this is stored from the result of a call. This includes
+    // being passed as the retbuf. These stores cannot be decomposed and are
+    // handled via readback.
+    unsigned CountStoredFromCall = 0;
     // Number of times this is passed as a call arg. We insert writebacks
     // before these.
     unsigned CountCallArgs = 0;
 
-    weight_t CountWtd                 = 0;
-    weight_t CountAssignedFromCallWtd = 0;
-    weight_t CountCallArgsWtd         = 0;
+    weight_t CountWtd               = 0;
+    weight_t CountStoredFromCallWtd = 0;
+    weight_t CountCallArgsWtd       = 0;
 
 #ifdef DEBUG
-    // Number of times this access is on the RHS of an assignment.
-    unsigned CountAssignmentSource = 0;
-    // Number of times this access is on the LHS of an assignment.
-    unsigned CountAssignmentDestination = 0;
-    unsigned CountReturns               = 0;
-    // Number of times this is assigned by being passed as the retbuf.
-    // These assignments need a reabdack
+    // Number of times this access is the source of a store.
+    unsigned CountStoreSource = 0;
+    // Number of times this access is the destination of a store.
+    unsigned CountStoreDestination = 0;
+    unsigned CountReturns          = 0;
+    // Number of times this is stored by being passed as the retbuf.
+    // These stores need a readback
     unsigned CountPassedAsRetbuf = 0;
 
-    weight_t CountAssignmentSourceWtd      = 0;
-    weight_t CountAssignmentDestinationWtd = 0;
-    weight_t CountReturnsWtd               = 0;
-    weight_t CountPassedAsRetbufWtd        = 0;
+    weight_t CountStoreSourceWtd      = 0;
+    weight_t CountStoreDestinationWtd = 0;
+    weight_t CountReturnsWtd          = 0;
+    weight_t CountPassedAsRetbufWtd   = 0;
 #endif
 
     Access(unsigned offset, var_types accessType, ClassLayout* layout)
@@ -109,14 +109,14 @@ struct Access
 
 enum class AccessKindFlags : uint32_t
 {
-    None               = 0,
-    IsCallArg          = 1,
-    IsAssignedFromCall = 2,
-    IsCallRetBuf       = 4,
+    None             = 0,
+    IsCallArg        = 1,
+    IsStoredFromCall = 2,
+    IsCallRetBuf     = 4,
 #ifdef DEBUG
-    IsAssignmentSource      = 8,
-    IsAssignmentDestination = 16,
-    IsReturned              = 32,
+    IsStoreSource      = 8,
+    IsStoreDestination = 16,
+    IsReturned         = 32,
 #endif
 };
 
@@ -348,10 +348,10 @@ public:
             access->CountCallArgsWtd += weight;
         }
 
-        if ((flags & (AccessKindFlags::IsAssignedFromCall | AccessKindFlags::IsCallRetBuf)) != AccessKindFlags::None)
+        if ((flags & (AccessKindFlags::IsStoredFromCall | AccessKindFlags::IsCallRetBuf)) != AccessKindFlags::None)
         {
-            access->CountAssignedFromCall++;
-            access->CountAssignedFromCallWtd += weight;
+            access->CountStoredFromCall++;
+            access->CountStoredFromCallWtd += weight;
         }
 
 #ifdef DEBUG
@@ -361,16 +361,16 @@ public:
             access->CountPassedAsRetbufWtd += weight;
         }
 
-        if ((flags & AccessKindFlags::IsAssignmentSource) != AccessKindFlags::None)
+        if ((flags & AccessKindFlags::IsStoreSource) != AccessKindFlags::None)
         {
-            access->CountAssignmentSource++;
-            access->CountAssignmentSourceWtd += weight;
+            access->CountStoreSource++;
+            access->CountStoreSourceWtd += weight;
         }
 
-        if ((flags & AccessKindFlags::IsAssignmentDestination) != AccessKindFlags::None)
+        if ((flags & AccessKindFlags::IsStoreDestination) != AccessKindFlags::None)
         {
-            access->CountAssignmentDestination++;
-            access->CountAssignmentDestinationWtd += weight;
+            access->CountStoreDestination++;
+            access->CountStoreDestinationWtd += weight;
         }
 
         if ((flags & AccessKindFlags::IsReturned) != AccessKindFlags::None)
@@ -392,7 +392,7 @@ public:
     //
     // Remarks:
     //   Induced accesses are accesses that are induced by physical promotion
-    //   due to assignment decompositon. They are always of primitive type.
+    //   due to store decompositon. They are always of primitive type.
     //
     void RecordInducedAccess(unsigned offs, var_types accessType, weight_t weight)
     {
@@ -493,7 +493,7 @@ public:
     //------------------------------------------------------------------------
     // PickInducedPromotions:
     //   Pick additional promotions to make based on the fact that some
-    //   accesses will be induced by assignment decomposition.
+    //   accesses will be induced by store decomposition.
     //
     // Parameters:
     //   comp   - Compiler instance
@@ -621,11 +621,11 @@ public:
     bool EvaluateReplacement(
         Compiler* comp, unsigned lclNum, const Access& access, unsigned inducedCount, weight_t inducedCountWtd)
     {
-        unsigned countOverlappedCallArg          = 0;
-        unsigned countOverlappedAssignedFromCall = 0;
+        unsigned countOverlappedCallArg        = 0;
+        unsigned countOverlappedStoredFromCall = 0;
 
-        weight_t countOverlappedCallArgWtd          = 0;
-        weight_t countOverlappedAssignedFromCallWtd = 0;
+        weight_t countOverlappedCallArgWtd        = 0;
+        weight_t countOverlappedStoredFromCallWtd = 0;
 
         bool overlap = false;
         for (const Access& otherAccess : m_accesses)
@@ -646,10 +646,10 @@ public:
             }
 
             countOverlappedCallArg += otherAccess.CountCallArgs;
-            countOverlappedAssignedFromCall += otherAccess.CountAssignedFromCall;
+            countOverlappedStoredFromCall += otherAccess.CountStoredFromCall;
 
             countOverlappedCallArgWtd += otherAccess.CountCallArgsWtd;
-            countOverlappedAssignedFromCallWtd += otherAccess.CountAssignedFromCallWtd;
+            countOverlappedStoredFromCallWtd += otherAccess.CountStoredFromCallWtd;
         }
 
         // We cost any normal access (which is a struct load or store) without promotion at 3 cycles.
@@ -688,14 +688,14 @@ public:
             countReadBacksWtd += comp->fgFirstBB->getBBWeight(comp);
         }
 
-        // If the struct is assigned from a call (either due to a multireg
+        // If the struct is stored from a call (either due to a multireg
         // return or by being passed as the retbuffer) then we need a readback
         // after.
         //
         // In the future we could allow multireg returns without a readback by
         // a sort of forward substitution optimization in the backend.
-        countReadBacksWtd += countOverlappedAssignedFromCallWtd;
-        countReadBacks += countOverlappedAssignedFromCall;
+        countReadBacksWtd += countOverlappedStoredFromCallWtd;
+        countReadBacks += countOverlappedStoredFromCall;
 
         // A readback turns into a stack load.
         costWith += countReadBacksWtd * COST_STRUCT_ACCESS_CYCLES;
@@ -733,12 +733,12 @@ public:
         costWith += countWriteBacksWtd * writeBackCost;
         sizeWith += countWriteBacks * writeBackSize;
 
-        // Overlapping assignments are decomposable so we don't cost them as
+        // Overlapping stores are decomposable so we don't cost them as
         // being more expensive than their unpromoted counterparts (i.e. we
         // don't consider them at all). However, we should do something more
         // clever here, since:
         // * We may still end up writing the full remainder as part of the
-        //   decomposed assignment, in which case all the field writes are just
+        //   decomposed store, in which case all the field writes are just
         //   added code size/perf cost.
         // * Even if we don't, decomposing a single struct write into many
         //   field writes is not necessarily profitable (e.g. 16 byte field
@@ -749,7 +749,7 @@ public:
         // fields we are promoting together, evaluating all of them at once in
         // comparison with the covering struct uses. This will also allow us to
         // give a bonus to promoting remainders that may not have scalar uses
-        // but will allow fully decomposing assignments away.
+        // but will allow fully decomposing stores away.
 
         weight_t cycleImprovementPerInvoc = (costWithout - costWith) / comp->fgFirstBB->getBBWeight(comp);
         weight_t sizeImprovement          = sizeWithout - sizeWith;
@@ -825,10 +825,10 @@ public:
             }
 
             printf("    #:                             (%u, " FMT_WT ")\n", access.Count, access.CountWtd);
-            printf("    # assigned from:               (%u, " FMT_WT ")\n", access.CountAssignmentSource,
-                   access.CountAssignmentSourceWtd);
-            printf("    # assigned to:                 (%u, " FMT_WT ")\n", access.CountAssignmentDestination,
-                   access.CountAssignmentDestinationWtd);
+            printf("    # store source:                (%u, " FMT_WT ")\n", access.CountStoreSource,
+                   access.CountStoreSourceWtd);
+            printf("    # store destination:           (%u, " FMT_WT ")\n", access.CountStoreDestination,
+                   access.CountStoreDestinationWtd);
             printf("    # as call arg:                 (%u, " FMT_WT ")\n", access.CountCallArgs,
                    access.CountCallArgsWtd);
             printf("    # as retbuf:                   (%u, " FMT_WT ")\n", access.CountPassedAsRetbuf,
@@ -902,7 +902,7 @@ private:
 };
 
 // Struct used to save all struct stores involving physical promotion candidates.
-// These stores can induce new field accesses as part of assignment decomposition.
+// These stores can induce new field accesses as part of store decomposition.
 struct CandidateStore
 {
     GenTreeLclVarCommon* Store;
@@ -1070,7 +1070,7 @@ public:
 
         if ((m_candidateStores.Height() > 0) && (totalNumPromotions < maxTotalNumPromotions))
         {
-            // Now look for induced accesses due to assignment decomposition.
+            // Now look for induced accesses due to store decomposition.
 
             JITDUMP("Looking for induced accesses with %d stores between candidates\n", m_candidateStores.Height());
             // Expand the set of fields iteratively based on the current picked
@@ -1248,7 +1248,7 @@ private:
 
     //------------------------------------------------------------------------
     // InduceAccessesFromRegularlyPromotedStruct:
-    //   Create induced accesses based on the fact that there is an assignment
+    //   Create induced accesses based on the fact that there is a store
     //   between a physical promotion candidate and regularly promoted struct.
     //
     // Parameters:
@@ -1257,7 +1257,7 @@ private:
     //   candidateLcl - The local node for a physical promotion candidate.
     //   regPromLcl   - The local node for the regularly promoted struct that
     //                  may induce new LCL_FLD nodes in the candidate.
-    //   block        - The block that the assignment appears in.
+    //   block        - The block that the store appears in.
     //
     void InduceAccessesFromRegularlyPromotedStruct(AggregateInfoMap&    aggregates,
                                                    GenTreeLclVarCommon* candidateLcl,
@@ -1284,15 +1284,15 @@ private:
 
     //------------------------------------------------------------------------
     // InduceAccessesInCandidate:
-    //   Create induced accesses based on the fact that a specified candidate
-    //   is being assigned from another struct local (the inducer).
+    //   Create induced accesses based on the fact that there is a store
+    //   between a candidate and another struct local (the inducer).
     //
     // Parameters:
     //   aggregates - Aggregate information with current set of replacements
     //                for each struct local.
     //   candidate  - The local node for the physical promotion candidate.
     //   inducer    - The local node that may induce new LCL_FLD nodes in the candidate.
-    //   block      - The block that the assignment appears in.
+    //   block      - The block that the store appears in.
     //
     void InduceAccessesInCandidate(AggregateInfoMap&    aggregates,
                                    GenTreeLclVarCommon* candidate,
@@ -1324,7 +1324,7 @@ private:
     }
 
     //------------------------------------------------------------------------
-    // InduceAccessesInCandidate:
+    // InduceAccess:
     //   Record an induced access in a candidate for physical promotion.
     //
     // Parameters:
@@ -1369,11 +1369,11 @@ private:
         AccessKindFlags flags = AccessKindFlags::None;
         if (lcl->OperIsLocalStore())
         {
-            INDEBUG(flags |= AccessKindFlags::IsAssignmentDestination);
+            INDEBUG(flags |= AccessKindFlags::IsStoreDestination);
 
             if (lcl->AsLclVarCommon()->Data()->gtEffectiveVal()->IsCall())
             {
-                flags |= AccessKindFlags::IsAssignedFromCall;
+                flags |= AccessKindFlags::IsStoredFromCall;
             }
         }
 
@@ -1397,7 +1397,7 @@ private:
 #ifdef DEBUG
         if (user->OperIsStore() && (user->Data()->gtEffectiveVal() == lcl))
         {
-            flags |= AccessKindFlags::IsAssignmentSource;
+            flags |= AccessKindFlags::IsStoreSource;
         }
 
         if (user->OperIs(GT_RETURN))
@@ -1920,7 +1920,7 @@ void ReplaceVisitor::EndBlock()
                     //   CALL(struct V03)    // V03.[000.008) marked as live here
                     //
                     // While V03.[000.008) gets marked for readback at the
-                    // assignment, no readback is necessary at the location of
+                    // store, no readback is necessary at the location of
                     // the call argument, and it may die after that.
 
                     JITDUMP("Skipping reading back dead replacement V%02u.[%03u..%03u) -> V%02u near the end of " FMT_BB
@@ -2035,8 +2035,8 @@ void ReplaceVisitor::ClearNeedsWriteBack(Replacement& rep)
 //   field local.
 //
 // Remarks:
-//   This occurs after the struct local is assigned in a way that cannot be
-//   decomposed directly into assignments to field locals; for example because
+//   This occurs after the struct local is stored in a way that cannot be
+//   decomposed directly into stores to field locals; for example because
 //   it is passed as a retbuf.
 //
 void ReplaceVisitor::SetNeedsReadBack(Replacement& rep)
@@ -2371,7 +2371,7 @@ bool ReplaceVisitor::IsPromotedStructLocalDying(GenTreeLclVarCommon* lcl)
 //  In some cases we may have a pending read back, meaning that the
 //  replacement local is out-of-date compared to the struct local.
 //  In that case we also need to insert IR to read it back.
-//  This happens for example if the struct local was just assigned from a
+//  This happens for example if the struct local was just stored from a
 //  call or via a block copy.
 //
 void ReplaceVisitor::ReplaceLocal(GenTree** use, GenTree* user)
@@ -2502,7 +2502,7 @@ void ReplaceVisitor::ReplaceLocal(GenTree** use, GenTree* user)
         // 2. Teach LSRA to allow the above cases, simplifying IR concepts (e.g.
         //    introduce something like GT_COPY on top of LCL_VAR when they
         //    need to be "defs")
-        // 3. Change the pass here to avoid creating any embedded assignments by making use
+        // 3. Change the pass here to avoid creating any embedded stores by making use
         //    of gtSplitTree. We will only need to split in very edge cases since the point
         //    at which the replacement was marked as needing read back is practically always
         //    going to be in a previous statement, so this shouldn't be too bad for CQ.
@@ -2572,7 +2572,7 @@ void ReplaceVisitor::WriteBackBeforeCurrentStatement(unsigned lcl, unsigned offs
 //   replacements into a struct local.
 //
 // Parameters:
-//   use  - The use, which will be updated with a cascading comma trees of assignments
+//   use  - The use, which will be updated with a cascading comma trees of stores
 //   lcl  - The struct local
 //   offs - The starting offset into the struct local of the overlapping range to write back to
 //   size - The size of the overlapping range

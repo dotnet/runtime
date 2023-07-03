@@ -1861,6 +1861,7 @@ void CodeGen::genAvxFamilyIntrinsic(GenTreeHWIntrinsic* node)
                 lastOp       = op3;
 
                 // generate all-one mask vector
+                assert(!emitter::isHighSimdReg(targetReg));
                 emit->emitIns_SIMD_R_R_R(INS_pcmpeqd, attr, maskReg, maskReg, maskReg);
             }
 

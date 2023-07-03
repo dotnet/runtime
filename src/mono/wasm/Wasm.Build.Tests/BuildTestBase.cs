@@ -685,8 +685,10 @@ namespace Wasm.Build.Tests
                 "_framework/dotnet.native.wasm",
                 "_framework/blazor.boot.json",
                 "_framework/dotnet.js",
+                "_framework/dotnet.js.map",
                 "_framework/dotnet.native.js",
-                "_framework/dotnet.runtime.js"
+                "_framework/dotnet.runtime.js",
+                "_framework/dotnet.runtime.js.map",
             };
 
             if (isBrowserProject)

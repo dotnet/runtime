@@ -2,7 +2,7 @@ import {
     WasmOpcode, WasmSimdOpcode, JiterpSpecialOpcode
 } from "./jiterpreter-opcodes";
 import {
-    MintOpcode, SimdIntrinsic2, SimdIntrinsic3
+    MintOpcode, SimdIntrinsic2, SimdIntrinsic3, SimdIntrinsic4
 } from "./mintops";
 
 export const ldcTable: { [opcode: number]: [WasmOpcode, number] } = {
@@ -357,14 +357,57 @@ export const simdShiftTable = new Set<SimdIntrinsic3>([
     SimdIntrinsic3.V128_I8_URIGHT_SHIFT,
 ]);
 
-export const bitmaskTable : { [intrinsic: number]: WasmSimdOpcode } = {
+export const simdExtractTable: { [intrinsic: number]: [laneCount: number, laneStoreOpcode: WasmOpcode] } = {
+    [SimdIntrinsic3.ExtractLaneI1]: [16, WasmOpcode.i32_store],
+    [SimdIntrinsic3.ExtractLaneU1]: [16, WasmOpcode.i32_store],
+    [SimdIntrinsic3.ExtractLaneI2]: [8, WasmOpcode.i32_store],
+    [SimdIntrinsic3.ExtractLaneU2]: [8, WasmOpcode.i32_store],
+    [SimdIntrinsic3.ExtractLaneD4]: [4, WasmOpcode.i32_store],
+    [SimdIntrinsic3.ExtractLaneR4]: [4, WasmOpcode.f32_store],
+    [SimdIntrinsic3.ExtractLaneD8]: [2, WasmOpcode.i64_store],
+    [SimdIntrinsic3.ExtractLaneR8]: [2, WasmOpcode.f64_store],
+};
+
+export const simdReplaceTable: { [intrinsic: number]: [laneCount: number, laneLoadOpcode: WasmOpcode] } = {
+    [SimdIntrinsic4.ReplaceLaneD1]: [16, WasmOpcode.i32_load],
+    [SimdIntrinsic4.ReplaceLaneD2]: [8, WasmOpcode.i32_load],
+    [SimdIntrinsic4.ReplaceLaneD4]: [4, WasmOpcode.i32_load],
+    [SimdIntrinsic4.ReplaceLaneR4]: [4, WasmOpcode.f32_load],
+    [SimdIntrinsic4.ReplaceLaneD8]: [2, WasmOpcode.i64_load],
+    [SimdIntrinsic4.ReplaceLaneR8]: [2, WasmOpcode.f64_load],
+};
+
+export const simdLoadTable = new Set<SimdIntrinsic2>([
+    SimdIntrinsic2.LoadVector128ANY,
+    SimdIntrinsic2.LoadScalarAndSplatVector128X1,
+    SimdIntrinsic2.LoadScalarAndSplatVector128X2,
+    SimdIntrinsic2.LoadScalarAndSplatVector128X4,
+    SimdIntrinsic2.LoadScalarAndSplatVector128X8,
+    SimdIntrinsic2.LoadScalarVector128X4,
+    SimdIntrinsic2.LoadScalarVector128X8,
+    SimdIntrinsic2.LoadWideningVector128I1,
+    SimdIntrinsic2.LoadWideningVector128U1,
+    SimdIntrinsic2.LoadWideningVector128I2,
+    SimdIntrinsic2.LoadWideningVector128U2,
+    SimdIntrinsic2.LoadWideningVector128I4,
+    SimdIntrinsic2.LoadWideningVector128U4,
+]);
+
+export const simdStoreTable: { [intrinsic: number]: [laneCount: number] } = {
+    [SimdIntrinsic4.StoreSelectedScalarX1]: [16],
+    [SimdIntrinsic4.StoreSelectedScalarX2]: [8],
+    [SimdIntrinsic4.StoreSelectedScalarX4]: [4],
+    [SimdIntrinsic4.StoreSelectedScalarX8]: [2],
+};
+
+export const bitmaskTable: { [intrinsic: number]: WasmSimdOpcode } = {
     [SimdIntrinsic2.V128_I1_EXTRACT_MSB]: WasmSimdOpcode.i8x16_bitmask,
     [SimdIntrinsic2.V128_I2_EXTRACT_MSB]: WasmSimdOpcode.i16x8_bitmask,
     [SimdIntrinsic2.V128_I4_EXTRACT_MSB]: WasmSimdOpcode.i32x4_bitmask,
     [SimdIntrinsic2.V128_I8_EXTRACT_MSB]: WasmSimdOpcode.i64x2_bitmask,
 };
 
-export const createScalarTable : { [intrinsic: number]: [WasmOpcode, WasmSimdOpcode] } = {
+export const createScalarTable: { [intrinsic: number]: [WasmOpcode, WasmSimdOpcode] } = {
     [SimdIntrinsic2.V128_I1_CREATE_SCALAR]: [WasmOpcode.i32_load8_s, WasmSimdOpcode.i8x16_replace_lane],
     [SimdIntrinsic2.V128_I2_CREATE_SCALAR]: [WasmOpcode.i32_load16_s, WasmSimdOpcode.i16x8_replace_lane],
     [SimdIntrinsic2.V128_I4_CREATE_SCALAR]: [WasmOpcode.i32_load, WasmSimdOpcode.i32x4_replace_lane],

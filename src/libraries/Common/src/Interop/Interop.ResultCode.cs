@@ -11,7 +11,8 @@ internal static partial class Interop
             Success = 0,
             UnknownError = 1,
             InsufficientBuffer = 2,
-            OutOfMemory = 3
+            OutOfMemory = 3,
+            InvalidCodePoint = 4,
         }
     }
 }

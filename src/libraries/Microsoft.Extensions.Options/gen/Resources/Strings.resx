@@ -135,6 +135,12 @@
   <data name="CantUseWithGenericTypesTitle" xml:space="preserve">
     <value>Can't use 'ValidateObjectMembersAttribute' or 'ValidateEnumeratedItemsAttribute' on fields or properties with open generic types.</value>
   </data>
+  <data name="CantValidateStaticOrConstMemberMessage" xml:space="preserve">
+    <value>Can't apply validation attributes to constant or static member {0}.</value>
+  </data>
+  <data name="CantValidateStaticOrConstMemberTitle" xml:space="preserve">
+    <value>Can't validate constants, static fields or properties.</value>
+  </data>
   <data name="CircularTypeReferencesMessage" xml:space="preserve">
     <value>There is a circular type reference involving type {0} preventing it from being used for static validation.</value>
   </data>
