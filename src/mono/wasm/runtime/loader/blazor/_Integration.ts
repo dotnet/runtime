@@ -240,6 +240,11 @@ export function mapBootConfigToMonoConfig(moduleConfig: MonoConfigInternal, appl
         environmentVariables["DOTNET_MODIFIABLE_ASSEMBLIES"] = resourceLoader.bootConfig.modifiableAssemblies;
     }
 
+    if (resourceLoader.bootConfig.aspnetCoreBrowserTools) {
+        // See https://github.com/dotnet/aspnetcore/issues/37357#issuecomment-941237000
+        environmentVariables["__ASPNETCORE_BROWSER_TOOLS"] = resourceLoader.bootConfig.aspnetCoreBrowserTools;
+    }
+
     if (moduleConfig.applicationCulture) {
         // If a culture is specified via start options use that to initialize the Emscripten \  .NET culture.
         environmentVariables["LANG"] = `${moduleConfig.applicationCulture}.UTF-8`;
