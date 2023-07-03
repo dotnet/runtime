@@ -35,7 +35,7 @@ namespace Microsoft.Extensions.Configuration
         [RequiresDynamicCode(DynamicCodeWarningMessage)]
         [RequiresUnreferencedCode(TrimmingWarningMessage)]
         public static T? Get<[DynamicallyAccessedMembers(DynamicallyAccessedMemberTypes.All)] T>(this IConfiguration configuration)
-            => configuration.Get<T>(_ => { });
+            => configuration.Get<T>(null);
 
         /// <summary>
         /// Attempts to bind the configuration instance to a new instance of type T.
@@ -71,7 +71,7 @@ namespace Microsoft.Extensions.Configuration
         [RequiresDynamicCode(DynamicCodeWarningMessage)]
         [RequiresUnreferencedCode(TrimmingWarningMessage)]
         public static object? Get(this IConfiguration configuration, Type type)
-            => configuration.Get(type, _ => { });
+            => configuration.Get(type, null);
 
         /// <summary>
         /// Attempts to bind the configuration instance to a new instance of type T.
@@ -118,7 +118,7 @@ namespace Microsoft.Extensions.Configuration
         [RequiresDynamicCode(DynamicCodeWarningMessage)]
         [RequiresUnreferencedCode(InstanceGetTypeTrimmingWarningMessage)]
         public static void Bind(this IConfiguration configuration, object? instance)
-            => configuration.Bind(instance, _ => { });
+            => configuration.Bind(instance, null);
 
         /// <summary>
         /// Attempts to bind the given object instance to configuration values by matching property names against configuration keys recursively.
@@ -220,13 +220,16 @@ namespace Microsoft.Extensions.Configuration
                 HashSet<string> propertyNames = new(modelProperties.Select(mp => mp.Name),
                     StringComparer.OrdinalIgnoreCase);
 
-                IEnumerable<IConfigurationSection> configurationSections = configuration.GetChildren();
-                List<string> missingPropertyNames = configurationSections
-                    .Where(cs => !propertyNames.Contains(cs.Key))
-                    .Select(mp => $"'{mp.Key}'")
-                    .ToList();
+                List<string>? missingPropertyNames = null;
+                foreach (IConfigurationSection cs in configuration.GetChildren())
+                {
+                    if (!propertyNames.Contains(cs.Key))
+                    {
+                        (missingPropertyNames ??= new()).Add($"'{cs.Key}'");
+                    }
+                }
 
-                if (missingPropertyNames.Count > 0)
+                if (missingPropertyNames != null)
                 {
                     throw new InvalidOperationException(SR.Format(SR.Error_MissingConfig,
                         nameof(options.ErrorOnUnknownConfiguration), nameof(BinderOptions), instance.GetType(),
@@ -381,7 +384,7 @@ namespace Microsoft.Extensions.Configuration
                             (interfaceGenericType == typeof(ICollection<>) || interfaceGenericType == typeof(IList<>)))
                         {
                             // For ICollection<T> and IList<T> we bind them to mutable List<T> type.
-                            Type genericType = typeof(List<>).MakeGenericType(type.GenericTypeArguments[0]);
+                            Type genericType = typeof(List<>).MakeGenericType(type.GenericTypeArguments);
                             bindingPoint.SetValue(Activator.CreateInstance(genericType));
                         }
                         else

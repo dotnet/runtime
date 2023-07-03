@@ -45,10 +45,11 @@ void interceptor_ICJI::getMethodSig(
 
 bool interceptor_ICJI::getMethodInfo(
           CORINFO_METHOD_HANDLE ftn,
-          CORINFO_METHOD_INFO* info)
+          CORINFO_METHOD_INFO* info,
+          CORINFO_CONTEXT_HANDLE context)
 {
     mcs->AddCall("getMethodInfo");
-    return original_ICorJitInfo->getMethodInfo(ftn, info);
+    return original_ICorJitInfo->getMethodInfo(ftn, info, context);
 }
 
 CorInfoInline interceptor_ICJI::canInline(

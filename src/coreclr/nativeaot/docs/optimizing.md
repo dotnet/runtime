@@ -32,10 +32,6 @@ Native AOT supports enabling and disabling all [documented framework library fea
 
 Since `PublishTrimmed` is implied to be true with Native AOT, some framework features such as binary serialization are disabled by default.
 
-## Options related to metadata generation
-
-* `<IlcGenerateStackTraceData>false</IlcGenerateStackTraceData>`: this disables generation of stack trace metadata that provides textual names in stack traces. This is for example the text string one gets by calling `Exception.ToString()` on a caught exception. With this option disabled, stack traces will still be generated, but will be based on reflection metadata alone (they might be less complete).
-
 ## Options related to code generation
 * `<OptimizationPreference>Speed</OptimizationPreference>`: when generating optimized code, favor code execution speed.
 * `<OptimizationPreference>Size</OptimizationPreference>`: when generating optimized code, favor smaller code size.

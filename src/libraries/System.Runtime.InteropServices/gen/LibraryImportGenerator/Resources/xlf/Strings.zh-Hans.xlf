@@ -631,22 +631,22 @@
       </trans-unit>
       <trans-unit id="UnnecessaryMarshallingInfoDescription">
         <source>Unnecesssary marshalling info was provided. This marshalling information can be removed without any change in behavior to the application.</source>
-        <target state="new">Unnecesssary marshalling info was provided. This marshalling information can be removed without any change in behavior to the application.</target>
+        <target state="translated">提供了不必要的封送信息。可移除此封装信息，而不对应用程序的行为进行任何更改。</target>
         <note />
       </trans-unit>
       <trans-unit id="UnnecessaryMarshallingInfoTitle">
         <source>Unnecessary marshalling info was provided and can be removed.</source>
-        <target state="new">Unnecessary marshalling info was provided and can be removed.</target>
+        <target state="translated">提供了不必要的封送信息，可将此信息移除。</target>
         <note />
       </trans-unit>
       <trans-unit id="UnnecessaryParameterMarshallingInfoMessage">
         <source>Unnecessary marshalling info '{0}' was provided for parameter '{1}'</source>
-        <target state="new">Unnecessary marshalling info '{0}' was provided for parameter '{1}'</target>
+        <target state="translated">为参数“{1}”提供了不必要的封送信息“{0}”</target>
         <note />
       </trans-unit>
       <trans-unit id="UnnecessaryReturnMarshallingInfoMessage">
         <source>Unnecessary marshalling info '{0}' was provided for the return type of method '{1}'</source>
-        <target state="new">Unnecessary marshalling info '{0}' was provided for the return type of method '{1}'</target>
+        <target state="translated">为方法“{1}”的返回类型提供了不必要的封送信息“{0}”</target>
         <note />
       </trans-unit>
       <trans-unit id="ValueInCallerAllocatedBufferRequiresSpanConstructorDescription">

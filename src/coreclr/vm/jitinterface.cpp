@@ -2194,20 +2194,9 @@ static GetTypeLayoutResult GetTypeLayoutHelper(
     parNode.size = pMT->GetNumInstanceFieldBytes();
     parNode.numFields = 0;
     parNode.type = CorInfoType::CORINFO_TYPE_VALUECLASS;
-    parNode.hasSignificantPadding = false;
 
     EEClass* pClass = pMT->GetClass();
-    if (pClass->IsNotTightlyPacked() && (!pClass->IsManagedSequential() || pClass->HasExplicitSize() || pClass->IsInlineArray()))
-    {
-        // Historically on the JIT side we did not consider types with GC
-        // pointers to have significant padding, even when they have explicit
-        // layout attributes. This retains the more liberal treatment and
-        // lets the JIT still optimize these cases.
-        if (!pMT->ContainsPointers() && pMT != g_TypedReferenceMT)
-        {
-            parNode.hasSignificantPadding = true;
-        }
-    }
+    parNode.hasSignificantPadding = pClass->HasExplicitFieldOffsetLayout() || pClass->HasExplicitSize();
 
     // The intrinsic SIMD/HW SIMD types have a lot of fields that the JIT does
     // not care about since they are considered primitives by the JIT.
@@ -2269,9 +2258,31 @@ static GetTypeLayoutResult GetTypeLayoutHelper(
             uint32_t elemSize = pFD->GetSize();
             uint32_t arrSize = pMT->GetNumInstanceFieldBytes();
 
+            // Number of fields added for each element, including all
+            // subfields. For example, for ValueTuple<int, int>[4]:
+            // [ 0]: InlineArray
+            // [ 1]:   ValueTuple<int, int>  parent = 0          -
+            // [ 2]:     int                 parent = 1          |
+            // [ 3]:     int                 parent = 1          |
+            // [ 4]:   ValueTuple<int, int>  parent = 0          - stride = 3
+            // [ 5]:     int                 parent = 4
+            // [ 6]:     int                 parent = 4
+            // [ 7]:   ValueTuple<int, int>  parent = 0
+            // [ 8]:     int                 parent = 7
+            // [ 9]:     int                 parent = 7
+            // [10]:   ValueTuple<int, int>  parent = 0
+            // [11]:     int                 parent = 10
+            // [12]:     int                 parent = 10
+
+            unsigned elemFieldsStride = (unsigned)*numTreeNodes - (structNodeIndex + 1);
+
+            // Now duplicate the fields of the previous entry for each
+            // additional element. For each entry we have to update the offset
+            // and the parent index.
             for (uint32_t elemOffset = elemSize; elemOffset < arrSize; elemOffset += elemSize)
             {
-                for (size_t templateTreeNodeIndex = structNodeIndex + 1; templateTreeNodeIndex < treeNodeEnd; templateTreeNodeIndex++)
+                size_t prevElemStart = *numTreeNodes - elemFieldsStride;
+                for (size_t i = 0; i < elemFieldsStride; i++)
                 {
                     if (*numTreeNodes >= maxTreeNodes)
                     {
@@ -2279,11 +2290,14 @@ static GetTypeLayoutResult GetTypeLayoutHelper(
                     }
 
                     CORINFO_TYPE_LAYOUT_NODE& treeNode = treeNodes[(*numTreeNodes)++];
-                    treeNode = treeNodes[templateTreeNodeIndex];
-                    treeNode.offset += elemOffset;
-
-                    parNode.numFields++;
+                    treeNode = treeNodes[prevElemStart + i];
+                    treeNode.offset += elemSize;
+                    // The first field points back to the inline array and has
+                    // no bias; the rest of them do.
+                    treeNode.parent += (i == 0) ? 0 : elemFieldsStride;
                 }
+
+                parNode.numFields++;
             }
         }
     }
@@ -7192,100 +7206,6 @@ bool getILIntrinsicImplementationForUnsafe(MethodDesc * ftn,
     return false;
 }
 
-bool getILIntrinsicImplementationForVolatile(MethodDesc * ftn,
-                                             CORINFO_METHOD_INFO * methInfo)
-{
-    STANDARD_VM_CONTRACT;
-
-    //
-    // This replaces the implementations of Volatile.* in CoreLib with more efficient ones.
-    // We do this because we cannot otherwise express these in C#.  What we *want* to do is
-    // to treat the byref args to these methods as "volatile."  In pseudo-C#, this would look
-    // like:
-    //
-    //   int Read(ref volatile int location)
-    //   {
-    //       return location;
-    //   }
-    //
-    // However, C# does not yet provide a way to declare a byref as "volatile."  So instead,
-    // we substitute raw IL bodies for these methods that use the correct volatile instructions.
-    //
-
-    _ASSERTE(CoreLibBinder::IsClass(ftn->GetMethodTable(), CLASS__VOLATILE));
-
-    const size_t VolatileMethodBodySize = 6;
-
-    struct VolatileMethodImpl
-    {
-        BinderMethodID methodId;
-        BYTE body[VolatileMethodBodySize];
-    };
-
-#define VOLATILE_IMPL(type, loadinst, storeinst) \
-    { \
-        METHOD__VOLATILE__READ_##type, \
-        { \
-            CEE_LDARG_0, \
-            CEE_PREFIX1, (CEE_VOLATILE & 0xFF), \
-            loadinst, \
-            CEE_NOP, /*pad to VolatileMethodBodySize bytes*/ \
-            CEE_RET \
-        } \
-    }, \
-    { \
-        METHOD__VOLATILE__WRITE_##type, \
-        { \
-            CEE_LDARG_0, \
-            CEE_LDARG_1, \
-            CEE_PREFIX1, (CEE_VOLATILE & 0xFF), \
-            storeinst, \
-            CEE_RET \
-        } \
-    },
-
-    static const VolatileMethodImpl volatileImpls[] =
-    {
-        VOLATILE_IMPL(T,       CEE_LDIND_REF, CEE_STIND_REF)
-        VOLATILE_IMPL(Bool,    CEE_LDIND_I1,  CEE_STIND_I1)
-        VOLATILE_IMPL(Int,     CEE_LDIND_I4,  CEE_STIND_I4)
-        VOLATILE_IMPL(IntPtr,  CEE_LDIND_I,   CEE_STIND_I)
-        VOLATILE_IMPL(UInt,    CEE_LDIND_U4,  CEE_STIND_I4)
-        VOLATILE_IMPL(UIntPtr, CEE_LDIND_I,   CEE_STIND_I)
-        VOLATILE_IMPL(SByt,    CEE_LDIND_I1,  CEE_STIND_I1)
-        VOLATILE_IMPL(Byte,    CEE_LDIND_U1,  CEE_STIND_I1)
-        VOLATILE_IMPL(Shrt,    CEE_LDIND_I2,  CEE_STIND_I2)
-        VOLATILE_IMPL(UShrt,   CEE_LDIND_U2,  CEE_STIND_I2)
-        VOLATILE_IMPL(Flt,     CEE_LDIND_R4,  CEE_STIND_R4)
-
-        //
-        // Ordinary volatile loads and stores only guarantee atomicity for pointer-sized (or smaller) data.
-        // So, on 32-bit platforms we must use Interlocked operations instead for the 64-bit types.
-        // The implementation in CoreLib already does this, so we will only substitute a new
-        // IL body if we're running on a 64-bit platform.
-        //
-        IN_TARGET_64BIT(VOLATILE_IMPL(Long,  CEE_LDIND_I8, CEE_STIND_I8))
-        IN_TARGET_64BIT(VOLATILE_IMPL(ULong, CEE_LDIND_I8, CEE_STIND_I8))
-        IN_TARGET_64BIT(VOLATILE_IMPL(Dbl,   CEE_LDIND_R8, CEE_STIND_R8))
-    };
-
-    mdMethodDef md = ftn->GetMemberDef();
-    for (unsigned i = 0; i < ARRAY_SIZE(volatileImpls); i++)
-    {
-        if (md == CoreLibBinder::GetMethod(volatileImpls[i].methodId)->GetMemberDef())
-        {
-            methInfo->ILCode = const_cast<BYTE*>(volatileImpls[i].body);
-            methInfo->ILCodeSize = VolatileMethodBodySize;
-            methInfo->maxStack = 2;
-            methInfo->EHcount = 0;
-            methInfo->options = (CorInfoOptions)0;
-            return true;
-        }
-    }
-
-    return false;
-}
-
 bool getILIntrinsicImplementationForInterlocked(MethodDesc * ftn,
                                                 CORINFO_METHOD_INFO * methInfo)
 {
@@ -7671,7 +7591,8 @@ public:
 
 static void getMethodInfoHelper(
     MethodInfoHelperContext& cxt,
-    CORINFO_METHOD_INFO* methInfo)
+    CORINFO_METHOD_INFO* methInfo,
+    CORINFO_CONTEXT_HANDLE exactContext = NULL)
 {
     STANDARD_VM_CONTRACT;
     _ASSERTE(methInfo != NULL);
@@ -7705,10 +7626,6 @@ static void getMethodInfoHelper(
             else if (CoreLibBinder::IsClass(pMT, CLASS__INTERLOCKED))
             {
                 fILIntrinsic = getILIntrinsicImplementationForInterlocked(ftn, methInfo);
-            }
-            else if (CoreLibBinder::IsClass(pMT, CLASS__VOLATILE))
-            {
-                fILIntrinsic = getILIntrinsicImplementationForVolatile(ftn, methInfo);
             }
             else if (CoreLibBinder::IsClass(pMT, CLASS__RUNTIME_HELPERS))
             {
@@ -7795,7 +7712,23 @@ static void getMethodInfoHelper(
     DWORD           cbSig = 0;
     ftn->GetSig(&pSig, &cbSig);
 
-    SigTypeContext context(ftn);
+    SigTypeContext context;
+
+    if (exactContext == NULL || exactContext == METHOD_BEING_COMPILED_CONTEXT())
+    {
+        SigTypeContext::InitTypeContext(ftn, &context);
+    }
+    else if (((size_t)exactContext & CORINFO_CONTEXTFLAGS_MASK) == CORINFO_CONTEXTFLAGS_METHOD)
+    {
+        MethodDesc* contextMD = (MethodDesc*)((size_t)exactContext & ~CORINFO_CONTEXTFLAGS_MASK);
+        SigTypeContext::InitTypeContext(contextMD, &context);
+    }
+    else
+    {
+        _ASSERT(((size_t)exactContext & CORINFO_CONTEXTFLAGS_MASK) == CORINFO_CONTEXTFLAGS_CLASS);
+        TypeHandle th = TypeHandle((CORINFO_CLASS_HANDLE)((size_t)exactContext & ~CORINFO_CONTEXTFLAGS_MASK));
+        SigTypeContext::InitTypeContext(th, &context);
+    }
 
     /* Fetch the method signature */
     // Type parameters in the signature should be instantiated according to the
@@ -7834,7 +7767,8 @@ static void getMethodInfoHelper(
 bool
 CEEInfo::getMethodInfo(
     CORINFO_METHOD_HANDLE ftnHnd,
-    CORINFO_METHOD_INFO * methInfo)
+    CORINFO_METHOD_INFO * methInfo,
+    CORINFO_CONTEXT_HANDLE context)
 {
     CONTRACTL {
         THROWS;
@@ -7852,14 +7786,14 @@ CEEInfo::getMethodInfo(
     MethodInfoHelperContext cxt{ ftn };
     if (ftn->IsDynamicMethod())
     {
-        getMethodInfoHelper(cxt, methInfo);
+        getMethodInfoHelper(cxt, methInfo, context);
         result = true;
     }
     else if (!ftn->IsWrapperStub() && ftn->HasILHeader())
     {
         COR_ILMETHOD_DECODER header(ftn->GetILHeader(TRUE), ftn->GetMDImport(), NULL);
         cxt.Header = &header;
-        getMethodInfoHelper(cxt, methInfo);
+        getMethodInfoHelper(cxt, methInfo, context);
         result = true;
     }
     else if (ftn->IsIL() && ftn->GetRVA() == 0)
@@ -12914,7 +12848,7 @@ PCODE UnsafeJitFunction(PrepareCodeConfig* config,
 #endif
 
 #if defined(TARGET_AMD64)
-    BOOL fAllowRel32 = (g_fAllowRel32 | fForceJumpStubOverflow) && g_pConfig->JitAllowOptionalRelocs();
+    BOOL fAllowRel32 = (g_fAllowRel32 | fForceJumpStubOverflow) && g_pConfig->JitEnableOptionalRelocs();
 #endif
 
     size_t reserveForJumpStubs = 0;
