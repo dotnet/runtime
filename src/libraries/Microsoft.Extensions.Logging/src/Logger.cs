@@ -186,9 +186,22 @@ namespace Microsoft.Extensions.Logging
                     return providers;
                 }
             }
+            public List<object?>? Scopes
+            {
+                get
+                {
+                    var scopeProvider = logger.ScopeLoggers?.FirstOrDefault().ExternalScopeProvider;
+                    if (scopeProvider == null)
+                    {
+                        return null;
+                    }
 
+                    List<object?> scopes = new List<object?>();
+                    scopeProvider.ForEachScope((scope, scopes) => scopes!.Add(scope), scopes);
+                    return scopes;
+                }
+            }
             public LogLevel? MinLevel => DebuggerDisplayFormatting.CalculateEnabledLogLevel(logger);
-
             public bool Enabled => DebuggerDisplayFormatting.CalculateEnabledLogLevel(logger) != null;
         }
 
@@ -196,8 +209,7 @@ namespace Microsoft.Extensions.Logging
         private sealed class LoggerProviderDebugView(string providerName, MessageLogger? messageLogger)
         {
             public string Name => providerName;
-            public LogLevel? LogLevel => CalculateEnabledLogLevel(messageLogger);
-            public bool Enabled => CalculateEnabledLogLevel(messageLogger) != null;
+            public LogLevel LogLevel => CalculateEnabledLogLevel(messageLogger) ?? LogLevel.None;
 
             private static LogLevel? CalculateEnabledLogLevel(MessageLogger? logger)
             {
@@ -208,12 +220,12 @@ namespace Microsoft.Extensions.Logging
 
                 ReadOnlySpan<LogLevel> logLevels = stackalloc LogLevel[]
                 {
-                    Logging.LogLevel.Critical,
-                    Logging.LogLevel.Error,
-                    Logging.LogLevel.Warning,
-                    Logging.LogLevel.Information,
-                    Logging.LogLevel.Debug,
-                    Logging.LogLevel.Trace,
+                    LogLevel.Critical,
+                    LogLevel.Error,
+                    LogLevel.Warning,
+                    LogLevel.Information,
+                    LogLevel.Debug,
+                    LogLevel.Trace,
                 };
 
                 LogLevel? minimumLevel = null;
@@ -234,21 +246,7 @@ namespace Microsoft.Extensions.Logging
 
             private string DebuggerToString()
             {
-                var debugText = $@"Name = ""{providerName}""";
-                if (LogLevel != null)
-                {
-                    debugText += $", LogLevel = {LogLevel}";
-                }
-                else
-                {
-                    // Display "Enabled = false". This makes it clear that the entire ILogger
-                    // is disabled and nothing is written.
-                    //
-                    // If "MinLevel = None" was displayed then someone could think that the
-                    // min level is disabled and everything is written.
-                    debugText += $", Enabled = false";
-                }
-                return debugText;
+                return $@"Name = ""{providerName}"", LogLevel = {LogLevel}";
             }
         }
 

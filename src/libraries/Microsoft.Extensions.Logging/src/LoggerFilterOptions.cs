@@ -37,10 +37,10 @@ namespace Microsoft.Extensions.Logging
 
         internal string DebuggerToString()
         {
-            string debugText = $"Rules = {Rules.Count}";
+            string debugText;
             if (MinLevel != LogLevel.None)
             {
-                debugText += $", MinLevel = {MinLevel}";
+                debugText = $"MinLevel = {MinLevel}";
             }
             else
             {
@@ -49,7 +49,12 @@ namespace Microsoft.Extensions.Logging
                 //
                 // If "MinLevel = None" was displayed then someone could think that the
                 // min level is disabled and everything is written.
-                debugText += $", Enabled = false";
+                debugText = $"Enabled = false";
+            }
+
+            if (Rules.Count > 0)
+            {
+                debugText += $", Rules = {Rules.Count}";
             }
 
             return debugText;
