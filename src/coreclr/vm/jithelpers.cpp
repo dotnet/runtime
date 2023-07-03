@@ -1865,7 +1865,7 @@ HCIMPL1(void*, JIT_GetSharedNonGCThreadStaticBaseOptimized, UINT32 staticBlockIn
         if (t_NonGCThreadStaticBlocksSize > 0)
         {
             memcpy(newThreadStaticBlocks, t_ThreadStatics.NonGCThreadStaticBlocks, t_NonGCThreadStaticBlocksSize * sizeof(PTR_BYTE));
-            delete t_ThreadStatics.NonGCThreadStaticBlocks;
+            delete[] t_ThreadStatics.NonGCThreadStaticBlocks;
         }
 
         t_NonGCThreadStaticBlocksSize = newThreadStaticBlocksSize;
@@ -1959,7 +1959,7 @@ HCIMPL1(void*, JIT_GetSharedGCThreadStaticBaseOptimized, UINT32 staticBlockIndex
         if (t_GCThreadStaticBlocksSize > 0)
         {
             memcpy(newThreadStaticBlocks, t_ThreadStatics.GCThreadStaticBlocks, t_GCThreadStaticBlocksSize * sizeof(PTR_BYTE));
-            delete t_ThreadStatics.GCThreadStaticBlocks;
+            delete[] t_ThreadStatics.GCThreadStaticBlocks;
         }
 
         t_GCThreadStaticBlocksSize = newThreadStaticBlocksSize;

@@ -421,7 +421,7 @@ PhaseStatus Compiler::fgExpandThreadLocalAccess()
 {
     PhaseStatus result = PhaseStatus::MODIFIED_NOTHING;
 
-    if (!doesMethodHasTlsFieldAccess())
+    if (!methodHasTlsFieldAccess())
     {
         // TP: nothing to expand in the current method
         JITDUMP("Nothing to expand.\n")
@@ -486,7 +486,7 @@ bool Compiler::fgExpandThreadLocalAccessForCall(BasicBlock** pBlock, Statement* 
         // On Arm, Thread execution blocks are accessed using co-processor registers and instructions such
         // as MRC and MCR are used to access them. We do not support them and so should never optimize the
         // field access using TLS.
-        assert(!"Unsupported scenario of optimizing TLS access on Linux Arm32/x86");
+        noway_assert(!"Unsupported scenario of optimizing TLS access on Linux Arm32/x86");
 #endif
     }
     else
@@ -495,7 +495,7 @@ bool Compiler::fgExpandThreadLocalAccessForCall(BasicBlock** pBlock, Statement* 
         // On Arm, Thread execution blocks are accessed using co-processor registers and instructions such
         // as MRC and MCR are used to access them. We do not support them and so should never optimize the
         // field access using TLS.
-        assert(!"Unsupported scenario of optimizing TLS access on Windows Arm32");
+        noway_assert(!"Unsupported scenario of optimizing TLS access on Windows Arm32");
 #endif
     }
 
@@ -512,14 +512,15 @@ bool Compiler::fgExpandThreadLocalAccessForCall(BasicBlock** pBlock, Statement* 
     info.compCompHnd->getThreadLocalStaticBlocksInfo(&threadStaticBlocksInfo, isGCThreadStatic);
 
     JITDUMP("getThreadLocalStaticBlocksInfo (%s)\n:", isGCThreadStatic ? "GC" : "Non-GC");
-    JITDUMP("offsetOfThreadLocalStoragePointer= %u\n", threadStaticBlocksInfo.offsetOfThreadLocalStoragePointer);
-    JITDUMP("tlsIndex= %u\n", (ssize_t)threadStaticBlocksInfo.tlsIndex.addr);
-    JITDUMP("tlsGetAddrFtnPtr= %u\n", threadStaticBlocksInfo.tlsGetAddrFtnPtr);
-    JITDUMP("tlsIndexObject= %u\n", (size_t)threadStaticBlocksInfo.tlsIndexObject);
-    JITDUMP("threadVarsSection= %u\n", (size_t)threadStaticBlocksInfo.threadVarsSection);
-    JITDUMP("offsetOfMaxThreadStaticBlocks= %u\n", threadStaticBlocksInfo.offsetOfMaxThreadStaticBlocks);
-    JITDUMP("offsetOfThreadStaticBlocks= %u\n", threadStaticBlocksInfo.offsetOfThreadStaticBlocks);
-    JITDUMP("offsetOfGCDataPointer= %u\n", threadStaticBlocksInfo.offsetOfGCDataPointer);
+    JITDUMP("tlsIndex= %p\n", dspOffset(dspPtr(threadStaticBlocksInfo.tlsIndex.addr)));
+    JITDUMP("tlsGetAddrFtnPtr= %p\n", dspOffset(dspPtr(threadStaticBlocksInfo.tlsGetAddrFtnPtr)));
+    JITDUMP("tlsIndexObject= %p\n", dspOffset(dspPtr(threadStaticBlocksInfo.tlsIndexObject)));
+    JITDUMP("threadVarsSection= %p\n", dspOffset(dspPtr(threadStaticBlocksInfo.threadVarsSection)));
+    JITDUMP("offsetOfThreadLocalStoragePointer= %u\n",
+            dspOffset(threadStaticBlocksInfo.offsetOfThreadLocalStoragePointer));
+    JITDUMP("offsetOfMaxThreadStaticBlocks= %u\n", dspOffset(threadStaticBlocksInfo.offsetOfMaxThreadStaticBlocks));
+    JITDUMP("offsetOfThreadStaticBlocks= %u\n", dspOffset(threadStaticBlocksInfo.offsetOfThreadStaticBlocks));
+    JITDUMP("offsetOfGCDataPointer= %u\n", dspOffset(threadStaticBlocksInfo.offsetOfGCDataPointer));
 
     assert((eeGetHelperNum(call->gtCallMethHnd) == CORINFO_HELP_GETSHARED_NONGCTHREADSTATIC_BASE_NOCTOR_OPTIMIZED) ||
            (eeGetHelperNum(call->gtCallMethHnd) == CORINFO_HELP_GETSHARED_GCTHREADSTATIC_BASE_NOCTOR_OPTIMIZED));
@@ -617,7 +618,7 @@ bool Compiler::fgExpandThreadLocalAccessForCall(BasicBlock** pBlock, Statement* 
 
         // This is a call which takes an argument.
         // Populate and set the ABI appropriately.
-        assert(threadVarsSectionVal != 0);
+        assert(opts.altJit || threadVarsSectionVal != 0);
         GenTree* tlsArg = gtNewIconNode(threadVarsSectionVal, TYP_I_IMPL);
         tlsRefCall->gtArgs.InsertAfterThisOrFirst(this, NewCallArg::Primitive(tlsArg));
 
@@ -643,7 +644,7 @@ bool Compiler::fgExpandThreadLocalAccessForCall(BasicBlock** pBlock, Statement* 
 
         // This is an indirect call which takes an argument.
         // Populate and set the ABI appropriately.
-        assert(threadStaticBlocksInfo.tlsIndexObject != 0);
+        assert(opts.altJit || threadStaticBlocksInfo.tlsIndexObject != 0);
         GenTree* tlsArg = gtNewIconNode((size_t)threadStaticBlocksInfo.tlsIndexObject, TYP_I_IMPL);
         tlsRefCall->gtArgs.InsertAfterThisOrFirst(this, NewCallArg::Primitive(tlsArg));
 

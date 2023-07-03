@@ -533,10 +533,10 @@ struct Agnostic_GetThreadLocalStaticBlocksInfo
     DWORDLONG                     tlsGetAddrFtnPtr;
     DWORDLONG                     tlsIndexObject;
     DWORDLONG                     threadVarsSection;
-    UINT                          offsetOfThreadLocalStoragePointer;
-    UINT                          offsetOfMaxThreadStaticBlocks;
-    UINT                          offsetOfThreadStaticBlocks;
-    UINT                          offsetOfGCDataPointer;
+    DWORD                         offsetOfThreadLocalStoragePointer;
+    DWORD                         offsetOfMaxThreadStaticBlocks;
+    DWORD                         offsetOfThreadStaticBlocks;
+    DWORD                         offsetOfGCDataPointer;
 };
 
 struct Agnostic_GetThreadLocalFieldInfo

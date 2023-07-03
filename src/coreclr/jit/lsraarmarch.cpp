@@ -333,6 +333,10 @@ int LinearScan::BuildCall(GenTreeCall* call)
 
     if (call->gtCallType == CT_INDIRECT)
     {
+        // For TLS accesses, we need to find the address of the thread local by doing
+        // an indirect call to the relevant address corresponding to that variable.
+        // As an (early) argument, it takes the address of tlv_get_address
+        // symbol (osx) or the offset of the varible in TCB (linux).
         for (CallArg& arg : call->gtArgs.EarlyArgs())
         {
             CallArgABIInformation& abiInfo = arg.AbiInfo;

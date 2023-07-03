@@ -10205,6 +10205,8 @@ void emitter::emitRecordCallSite(ULONG                 instrOffset,  /* IN */
 
     if (callSig == nullptr)
     {
+        // For certain calls whose target is non-containable (e.g. tls access targets), `methodHandle`
+        // will be nullptr, because the target is present in a register.
         if ((methodHandle != nullptr) && (Compiler::eeGetHelperNum(methodHandle) == CORINFO_HELP_UNDEF))
         {
             emitComp->eeGetMethodSig(methodHandle, &sigInfo);

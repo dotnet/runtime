@@ -3740,11 +3740,13 @@ void emitter::emitIns_R(instruction ins, emitAttr attr, regNumber reg)
             id->idReg1(reg);
             fmt = IF_SR_1A;
             break;
+
         case INS_mrs_tpid0:
             id = emitNewInstrSmall(attr);
             id->idReg1(reg);
             fmt = IF_SR_1A;
             break;
+
         default:
             unreached();
     }

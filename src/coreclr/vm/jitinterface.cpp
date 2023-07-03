@@ -1392,7 +1392,7 @@ static void* GetThreadStaticDescriptor(uint8_t* p)
     {
         // The optimization is disabled if coreclr is not compiled in .so format.
         _ASSERTE(false && "Unexpected code sequence");
-        return 0;
+        return nullptr;
     }
 
     // At this point, `p` contains the instruction pointer and is pointing to the above opcodes.
@@ -1593,7 +1593,7 @@ void CEEInfo::getFieldInfo (CORINFO_RESOLVED_TOKEN * pResolvedToken,
                 // For linux/x64, check if compiled coreclr as .so file and not single file.
                 // For single file, the `tls_index` might not be accurate.
                 // Do not perform this optimization in such case.
-                optimizeThreadStaticAccess = GetTlsIndexObjectAddress() != 0;
+                optimizeThreadStaticAccess = GetTlsIndexObjectAddress() != nullptr;
 #endif // TARGET_UNIX && TARGET_AMD64
 
                 if (optimizeThreadStaticAccess)
