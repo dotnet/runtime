@@ -538,22 +538,6 @@ namespace Microsoft.WebAssembly.Diagnostics
             return hasExisting;
         }
 
-        public void CreateWorkerExecutionContext(SessionId workerSessionId, SessionId originSessionId, ILogger logger)
-        {
-            if (!TryGetCurrentExecutionContextValue(originSessionId, out ExecutionContext context))
-            {
-                logger.LogDebug($"Origin sessionId does not exist - {originSessionId}");
-                return;
-            }
-            if (contexts.ContainsKey(workerSessionId))
-            {
-                logger.LogDebug($"Worker sessionId already exists - {originSessionId}");
-                return;
-            }
-            contexts[workerSessionId] = new();
-            contexts[workerSessionId].Add(context.CreateChildAsyncExecutionContext(workerSessionId));
-             }
-
         public void DestroyContext(SessionId sessionId, int id)
         {
             if (!contexts.TryGetValue(sessionId, out ConcurrentBag<ExecutionContext> contextBag))
