@@ -186,6 +186,7 @@ namespace Microsoft.Extensions.Logging
                     return providers;
                 }
             }
+
             public List<object?>? Scopes
             {
                 get
