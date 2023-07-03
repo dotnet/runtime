@@ -29,29 +29,14 @@ namespace System.Net.Quic
         StreamAborted,
 
         /// <summary>
-        /// The local address is already in use.
-        /// </summary>
-        AddressInUse,
-
-        /// <summary>
-        /// Binding to socket failed, likely caused by a family mismatch between local and remote address.
-        /// </summary>
-        InvalidAddress,
-
-        /// <summary>
         /// The connection timed out waiting for a response from the peer.
         /// </summary>
-        ConnectionTimeout,
-
-        /// <summary>
-        /// The server is currently unreachable.
-        /// </summary>
-        HostUnreachable,
+        ConnectionTimeout = 6,
 
         /// <summary>
         /// The server refused the connection.
         /// </summary>
-        ConnectionRefused,
+        ConnectionRefused = 8,
 
         /// <summary>
         /// A version negotiation error was encountered.
@@ -64,18 +49,23 @@ namespace System.Net.Quic
         ConnectionIdle,
 
         /// <summary>
-        /// A QUIC protocol error was encountered.
-        /// </summary>
-        ProtocolError,
-
-        /// <summary>
         /// The operation has been aborted.
         /// </summary>
-        OperationAborted,
+        OperationAborted = 12,
 
         /// <summary>
         /// Another QUIC listener is already listening on one of the requested application protocols on the same port.
         /// </summary>
         AlpnInUse,
+
+        /// <summary>
+        /// Operation failed because peer transport error occurred.
+        /// </summary>
+        TransportError,
+
+        /// <summary>
+        /// An error occurred in user provided callback.
+        /// </summary>
+        CallbackError,
     }
 }

@@ -402,9 +402,9 @@ public:
     void dmpGetHFAType(DWORDLONG key, DWORD value);
     CorInfoHFAElemType repGetHFAType(CORINFO_CLASS_HANDLE clsHnd);
 
-    void recGetMethodInfo(CORINFO_METHOD_HANDLE ftn, CORINFO_METHOD_INFO* info, bool result, DWORD exceptionCode);
-    void dmpGetMethodInfo(DWORDLONG key, const Agnostic_GetMethodInfo& value);
-    bool repGetMethodInfo(CORINFO_METHOD_HANDLE ftn, CORINFO_METHOD_INFO* info, DWORD* exceptionCode);
+    void recGetMethodInfo(CORINFO_METHOD_HANDLE ftn, CORINFO_METHOD_INFO* info, CORINFO_CONTEXT_HANDLE context, bool result, DWORD exceptionCode);
+    void dmpGetMethodInfo(DLDL key, const Agnostic_GetMethodInfo& value);
+    bool repGetMethodInfo(CORINFO_METHOD_HANDLE ftn, CORINFO_METHOD_INFO* info, CORINFO_CONTEXT_HANDLE context, DWORD* exceptionCode);
 
     void recGetNewHelper(CORINFO_RESOLVED_TOKEN* pResolvedToken,
                          CORINFO_METHOD_HANDLE   callerHandle,
@@ -600,6 +600,11 @@ public:
     void recGetFieldInClass(CORINFO_CLASS_HANDLE clsHnd, INT num, CORINFO_FIELD_HANDLE result);
     void dmpGetFieldInClass(DLD key, DWORDLONG value);
     CORINFO_FIELD_HANDLE repGetFieldInClass(CORINFO_CLASS_HANDLE clsHnd, INT num);
+
+    void recGetTypeLayout(GetTypeLayoutResult result, CORINFO_CLASS_HANDLE typeHnd, CORINFO_TYPE_LAYOUT_NODE* nodes, size_t numNodes);
+    void dmpGetTypeLayout(DWORDLONG key, const Agnostic_GetTypeLayoutResult& value);
+    void dmpTypeLayoutTree(const Agnostic_CORINFO_TYPE_LAYOUT_NODE* nodes, size_t maxNodes, size_t* index, size_t indent);
+    GetTypeLayoutResult repGetTypeLayout(CORINFO_CLASS_HANDLE typeHnd, CORINFO_TYPE_LAYOUT_NODE* nodes, size_t* numNodes);
 
     void recGetFieldType(CORINFO_FIELD_HANDLE  field,
                          CORINFO_CLASS_HANDLE* structType,
@@ -1127,6 +1132,7 @@ enum mcPackets
     Packet_GetThreadLocalStaticBlocksInfo = 208,
     Packet_GetRISCV64PassStructInRegisterFlags = 209,
     Packet_GetObjectContent = 210,
+    Packet_GetTypeLayout = 211,
 };
 
 void SetDebugDumpVariables();

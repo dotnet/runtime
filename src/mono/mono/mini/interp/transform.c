@@ -403,6 +403,15 @@ create_interp_local_explicit (TransformData *td, MonoType *type, int size)
 
 }
 
+static void
+create_interp_dummy_var (TransformData *td)
+{
+	g_assert (td->dummy_var < 0);
+	td->dummy_var = create_interp_local_explicit (td, m_class_get_byval_arg (mono_defaults.void_class), 8);
+	td->locals [td->dummy_var].offset = 0;
+	td->locals [td->dummy_var].flags = INTERP_LOCAL_FLAG_GLOBAL;
+}
+
 static int
 get_tos_offset (TransformData *td)
 {
@@ -1281,11 +1290,6 @@ interp_get_icall_sig (MonoMethodSignature *sig);
 static void
 interp_generate_icall_throw (TransformData *td, MonoJitICallInfo *icall_info, gpointer arg1, gpointer arg2)
 {
-	// Allocate dreg for call, only void calls are supported
-	push_simple_type (td, STACK_TYPE_I4);
-	td->sp--;
-	int dummy_dreg = td->sp [0].local;
-
 	int num_args = icall_info->sig->param_count;
 	if (num_args > 0)
 		emit_ldptr (td, arg1);
@@ -1295,7 +1299,7 @@ interp_generate_icall_throw (TransformData *td, MonoJitICallInfo *icall_info, gp
 	td->sp -= num_args;
 
 	interp_add_ins (td, MINT_ICALL);
-	interp_ins_set_dreg (td->last_ins, dummy_dreg);
+	interp_ins_set_dummy_dreg (td->last_ins, td);
 	interp_ins_set_sreg (td->last_ins, MINT_CALL_ARGS_SREG);
 	td->last_ins->data [0] = interp_get_icall_sig (icall_info->sig);
 	td->last_ins->data [1] = get_data_item_index (td, (gpointer)icall_info->func);
@@ -1390,10 +1394,9 @@ alloc_global_var_offset (TransformData *td, int var)
  * ip is the address where the arguments of the instruction are located
  */
 static char*
-dump_interp_ins_data (InterpInst *ins, gint32 ins_offset, const guint16 *data, int opcode)
+dump_interp_ins_data (InterpInst *ins, gint32 ins_offset, const guint16 *data, int opcode, gpointer *data_items)
 {
 	GString *str = g_string_new ("");
-	guint32 token;
 	int target;
 
 	switch (mono_interp_opargtype [opcode]) {
@@ -1414,12 +1417,23 @@ dump_interp_ins_data (InterpInst *ins, gint32 ins_offset, const guint16 *data, i
 	case MintOpShortInt:
 		g_string_append_printf (str, " %d", *(gint16*)data);
 		break;
-	case MintOpClassToken:
-	case MintOpMethodToken:
-	case MintOpFieldToken:
-		token = * (guint16 *) data;
-		g_string_append_printf (str, " %u", token);
+	case MintOpClassToken: {
+		MonoClass *klass = (MonoClass*)data_items [*(guint16*)data];
+		g_string_append_printf (str, " %s.%s", m_class_get_name_space (klass), m_class_get_name (klass));
 		break;
+	}
+	case MintOpVTableToken: {
+		MonoVTable *vtable = (MonoVTable*)data_items [*(guint16*)data];
+		g_string_append_printf (str, " %s.%s", m_class_get_name_space (vtable->klass), m_class_get_name (vtable->klass));
+		break;
+	}
+	case MintOpMethodToken: {
+		InterpMethod *imethod = (InterpMethod*)data_items [*(guint16*)data];
+		char *name = mono_method_full_name (imethod->method, TRUE);
+		g_string_append_printf (str, " %s", name);
+		g_free (name);
+		break;
+	}
 	case MintOpInt:
 		g_string_append_printf (str, " %d", (gint32)READ32 (data));
 		break;
@@ -1497,7 +1511,7 @@ dump_interp_ins_data (InterpInst *ins, gint32 ins_offset, const guint16 *data, i
 }
 
 static void
-dump_interp_compacted_ins (const guint16 *ip, const guint16 *start)
+dump_interp_compacted_ins (const guint16 *ip, const guint16 *start, gpointer *data_items)
 {
 	int opcode = *ip;
 	int ins_offset = GPTRDIFF_TO_INT (ip - start);
@@ -1518,24 +1532,24 @@ dump_interp_compacted_ins (const guint16 *ip, const guint16 *start)
         } else {
                 g_string_append_printf (str, " nil],");
         }
-	char *ins_data = dump_interp_ins_data (NULL, ins_offset, ip, opcode);
+	char *ins_data = dump_interp_ins_data (NULL, ins_offset, ip, opcode, data_items);
 	g_print ("%s%s\n", str->str, ins_data);
 	g_string_free (str, TRUE);
 	g_free (ins_data);
 }
 
 static void
-dump_interp_code (const guint16 *start, const guint16* end)
+dump_interp_code (const guint16 *start, const guint16* end, gpointer *data_items)
 {
 	const guint16 *p = start;
 	while (p < end) {
-		dump_interp_compacted_ins (p, start);
+		dump_interp_compacted_ins (p, start, data_items);
 		p = mono_interp_dis_mintop_len (p);
 	}
 }
 
 static void
-dump_interp_inst (InterpInst *ins)
+dump_interp_inst (InterpInst *ins, gpointer *data_items)
 {
 	int opcode = ins->opcode;
 	GString *str = g_string_new ("");
@@ -1570,7 +1584,7 @@ dump_interp_inst (InterpInst *ins)
 		// LDLOCA has special semantics, it has data in sregs [0], but it doesn't have any sregs
 		g_string_append_printf (str, " %d", ins->sregs [0]);
 	} else {
-		char *descr = dump_interp_ins_data (ins, ins->il_offset, &ins->data [0], ins->opcode);
+		char *descr = dump_interp_ins_data (ins, ins->il_offset, &ins->data [0], ins->opcode, data_items);
 		g_string_append_printf (str, "%s", descr);
 		g_free (descr);
 	}
@@ -1605,13 +1619,13 @@ get_interp_bb_links (InterpBasicBlock *bb)
 }
 
 static void
-dump_interp_bb (InterpBasicBlock *bb)
+dump_interp_bb (InterpBasicBlock *bb, gpointer *data_items)
 {
 	g_print ("BB%d:\n", bb->index);
 	for (InterpInst *ins = bb->first_ins; ins != NULL; ins = ins->next) {
 		// Avoid some noise
 		if (ins->opcode != MINT_NOP && ins->opcode != MINT_IL_SEQ_POINT)
-			dump_interp_inst (ins);
+			dump_interp_inst (ins, data_items);
 	}
 }
 
@@ -1631,7 +1645,7 @@ mono_interp_print_code (InterpMethod *imethod)
 	g_free (name);
 
 	start = (guint8*) jinfo->code_start;
-	dump_interp_code ((const guint16*)start, (const guint16*)(start + jinfo->code_size));
+	dump_interp_code ((const guint16*)start, (const guint16*)(start + jinfo->code_size), imethod->data_items);
 }
 
 /* For debug use */
@@ -1640,7 +1654,7 @@ mono_interp_print_td_code (TransformData *td)
 {
 	g_print ("Unoptimized IR:\n");
 	for (InterpBasicBlock *bb = td->entry_bb; bb != NULL; bb = bb->next_bb)
-		dump_interp_bb (bb);
+		dump_interp_bb (bb, td->data_items);
 }
 
 
@@ -8948,7 +8962,7 @@ interp_local_deadce (TransformData *td)
 				if (td->locals [dreg].flags & INTERP_LOCAL_FLAG_DEAD) {
 					if (td->verbose_level) {
 						g_print ("kill dead ins:\n\t");
-						dump_interp_inst (ins);
+						dump_interp_inst (ins, td->data_items);
 					}
 
 					if (ins->opcode == MINT_LDLOCA_S) {
@@ -9069,7 +9083,7 @@ interp_fold_unop (TransformData *td, LocalValue *local_defs, InterpInst *ins)
 
 	if (td->verbose_level) {
 		g_print ("Fold unop :\n\t");
-		dump_interp_inst (ins);
+		dump_interp_inst (ins, td->data_items);
 	}
 
 	local_ref_count [sreg]--;
@@ -9130,7 +9144,7 @@ interp_fold_unop_cond_br (TransformData *td, InterpBasicBlock *cbb, LocalValue *
 
 	if (td->verbose_level) {
 		g_print ("Fold unop cond br :\n\t");
-		dump_interp_inst (ins);
+		dump_interp_inst (ins, td->data_items);
 	}
 
 	mono_interp_stats.constant_folds++;
@@ -9259,7 +9273,7 @@ interp_fold_binop (TransformData *td, LocalValue *local_defs, InterpInst *ins, g
 
 	if (td->verbose_level) {
 		g_print ("Fold binop :\n\t");
-		dump_interp_inst (ins);
+		dump_interp_inst (ins, td->data_items);
 	}
 
 	local_ref_count [sreg1]--;
@@ -9331,7 +9345,7 @@ interp_fold_binop_cond_br (TransformData *td, InterpBasicBlock *cbb, LocalValue 
 	}
 	if (td->verbose_level) {
 		g_print ("Fold binop cond br :\n\t");
-		dump_interp_inst (ins);
+		dump_interp_inst (ins, td->data_items);
 	}
 
 	mono_interp_stats.constant_folds++;
@@ -9395,7 +9409,7 @@ interp_fold_simd_create (TransformData *td, InterpBasicBlock *cbb, LocalValue *l
 
 	if (td->verbose_level) {
 		g_print ("Fold simd create:\n\t");
-		dump_interp_inst (ins);
+		dump_interp_inst (ins, td->data_items);
 	}
 
 	local_defs [dreg].ins = ins;
@@ -9426,7 +9440,7 @@ cprop_sreg (TransformData *td, InterpInst *ins, int *psreg, LocalValue *local_de
 		*psreg = cprop_local;
 		local_ref_count [cprop_local]++;
 		if (td->verbose_level)
-			dump_interp_inst (ins);
+			dump_interp_inst (ins, td->data_items);
 	} else if (!local_defs [sreg].ins) {
 		td->locals [sreg].flags |= INTERP_LOCAL_FLAG_UNKNOWN_USE;
 	}
@@ -9463,7 +9477,7 @@ clear_unused_defs (TransformData *td, int var, void *data)
 			td->local_ref_count [def_ins->sregs [i]]--;
 		if (td->verbose_level) {
 			g_print ("kill unused local def:\n\t");
-			dump_interp_inst (def_ins);
+			dump_interp_inst (def_ins, td->data_items);
 		}
 		interp_clear_ins (def_ins);
 	}
@@ -9515,7 +9529,7 @@ retry:
 			gint32 dreg = ins->dreg;
 
 			if (td->verbose_level && ins->opcode != MINT_NOP && ins->opcode != MINT_IL_SEQ_POINT)
-				dump_interp_inst (ins);
+				dump_interp_inst (ins, td->data_items);
 
 			for (int i = 0; i < num_sregs; i++) {
 				if (sregs [i] == MINT_CALL_ARGS_SREG) {
@@ -9587,7 +9601,7 @@ retry:
 					mono_interp_stats.copy_propagations++;
 					if (td->verbose_level) {
 						g_print ("cprop loc %d -> ct :\n\t", sreg);
-						dump_interp_inst (ins);
+						dump_interp_inst (ins, td->data_items);
 					}
 				} else if (local_defs [sreg].ins != NULL &&
 						(td->locals [sreg].flags & INTERP_LOCAL_FLAG_EXECUTION_STACK) &&
@@ -9621,9 +9635,9 @@ retry:
 
 					if (td->verbose_level) {
 						g_print ("cprop dreg:\n\t");
-						dump_interp_inst (def);
+						dump_interp_inst (def, td->data_items);
 						g_print ("\t");
-						dump_interp_inst (ins);
+						dump_interp_inst (ins, td->data_items);
 					}
 				} else {
 					if (td->verbose_level)
@@ -9686,7 +9700,7 @@ retry:
 						ins->sregs [0] = sreg;
 						if (td->verbose_level) {
 							g_print ("Replace idempotent binop :\n\t");
-							dump_interp_inst (ins);
+							dump_interp_inst (ins, td->data_items);
 						}
 						needs_retry = TRUE;
 					}
@@ -9717,7 +9731,7 @@ retry:
 
 						if (td->verbose_level) {
 							g_print ("Replace ldloca/ldind pair :\n\t");
-							dump_interp_inst (ins);
+							dump_interp_inst (ins, td->data_items);
 						}
 						needs_retry = TRUE;
 					}
@@ -9757,7 +9771,7 @@ retry:
 
 					if (td->verbose_level) {
 						g_print ("Replace ldloca/ldfld pair :\n\t");
-						dump_interp_inst (ins);
+						dump_interp_inst (ins, td->data_items);
 					}
 					needs_retry = TRUE;
 				}
@@ -9778,7 +9792,7 @@ retry:
 
 					if (td->verbose_level) {
 						g_print ("Replace ldloca/initobj pair :\n\t");
-						dump_interp_inst (ins);
+						dump_interp_inst (ins, td->data_items);
 					}
 					needs_retry = TRUE;
 				}
@@ -9807,7 +9821,7 @@ retry:
 					}
 					if (td->verbose_level) {
 						g_print ("Replace ldloca/ldobj_vt pair :\n\t");
-						dump_interp_inst (ins);
+						dump_interp_inst (ins, td->data_items);
 					}
 				}
 			} else if (MINT_IS_STIND (opcode)) {
@@ -9825,7 +9839,7 @@ retry:
 
 						if (td->verbose_level) {
 							g_print ("Replace ldloca/stind pair :\n\t");
-							dump_interp_inst (ins);
+							dump_interp_inst (ins, td->data_items);
 						}
 						needs_retry = TRUE;
 					}
@@ -9869,7 +9883,7 @@ retry:
 					}
 					if (td->verbose_level) {
 						g_print ("Replace ldloca/stfld pair (off %p) :\n\t", (void *)(uintptr_t) ldloca->il_offset);
-						dump_interp_inst (ins);
+						dump_interp_inst (ins, td->data_items);
 					}
 					needs_retry = TRUE;
 				}
@@ -10070,7 +10084,7 @@ interp_super_instructions (TransformData *td)
 
 					if (td->verbose_level) {
 						g_print ("superins: ");
-						dump_interp_inst (new_inst);
+						dump_interp_inst (new_inst, td->data_items);
 					}
 				}
 			} else if (opcode == MINT_ADD_I4 || opcode == MINT_ADD_I8 ||
@@ -10103,7 +10117,7 @@ interp_super_instructions (TransformData *td)
 					local_ref_count [sreg_imm]--;
 					if (td->verbose_level) {
 						g_print ("superins: ");
-						dump_interp_inst (new_inst);
+						dump_interp_inst (new_inst, td->data_items);
 					}
 				}
 			} else if (opcode == MINT_SUB_I4 || opcode == MINT_SUB_I8) {
@@ -10121,7 +10135,7 @@ interp_super_instructions (TransformData *td)
 					local_ref_count [sreg_imm]--;
 					if (td->verbose_level) {
 						g_print ("superins: ");
-						dump_interp_inst (new_inst);
+						dump_interp_inst (new_inst, td->data_items);
 					}
 				}
 			} else if (opcode == MINT_MUL_I4_IMM || opcode == MINT_MUL_I8_IMM) {
@@ -10141,7 +10155,7 @@ interp_super_instructions (TransformData *td)
 						local_ref_count [sreg]--;
 						if (td->verbose_level) {
 							g_print ("superins: ");
-							dump_interp_inst (new_inst);
+							dump_interp_inst (new_inst, td->data_items);
 						}
 					}
 				}
@@ -10160,7 +10174,7 @@ interp_super_instructions (TransformData *td)
 					local_ref_count [sreg_imm]--;
 					if (td->verbose_level) {
 						g_print ("superins: ");
-						dump_interp_inst (new_inst);
+						dump_interp_inst (new_inst, td->data_items);
 					}
 				} else if (opcode == MINT_SHL_I4 || opcode == MINT_SHL_I8) {
 					int amount_var = ins->sregs [1];
@@ -10189,7 +10203,7 @@ interp_super_instructions (TransformData *td)
 								interp_clear_ins (ins);
 								if (td->verbose_level) {
 									g_print ("superins: ");
-									dump_interp_inst (new_inst);
+									dump_interp_inst (new_inst, td->data_items);
 								}
 							}
 						}
@@ -10224,7 +10238,7 @@ interp_super_instructions (TransformData *td)
 						local_ref_count [sreg_imm]--;
 						if (td->verbose_level) {
 							g_print ("lower div.un: ");
-							dump_interp_inst (new_inst);
+							dump_interp_inst (new_inst, td->data_items);
 						}
 					}
 				}
@@ -10253,7 +10267,7 @@ interp_super_instructions (TransformData *td)
 						mono_interp_stats.super_instructions++;
 						if (td->verbose_level) {
 							g_print ("superins: ");
-							dump_interp_inst (new_inst);
+							dump_interp_inst (new_inst, td->data_items);
 						}
 					}
 				}
@@ -10290,7 +10304,7 @@ interp_super_instructions (TransformData *td)
 						mono_interp_stats.super_instructions++;
 						if (td->verbose_level) {
 							g_print ("method %s:%s, superins: ", m_class_get_name (td->method->klass), td->method->name);
-							dump_interp_inst (new_inst);
+							dump_interp_inst (new_inst, td->data_items);
 						}
 					}
 				}
@@ -10319,7 +10333,7 @@ interp_super_instructions (TransformData *td)
 						mono_interp_stats.super_instructions++;
 						if (td->verbose_level) {
 							g_print ("superins: ");
-							dump_interp_inst (new_inst);
+							dump_interp_inst (new_inst, td->data_items);
 						}
 					}
 				}
@@ -10334,7 +10348,7 @@ interp_super_instructions (TransformData *td)
 						def->dreg == obj_sreg && local_ref_count [obj_sreg] == 1) {
 					if (td->verbose_level) {
 						g_print ("remove redundant cknull (%s): ", td->method->name);
-						dump_interp_inst (def);
+						dump_interp_inst (def, td->data_items);
 					}
 					ins->sregs [0] = def->sregs [0];
 					interp_clear_ins (def);
@@ -10360,7 +10374,7 @@ interp_super_instructions (TransformData *td)
 						local_ref_count [sreg_imm]--;
 						if (td->verbose_level) {
 							g_print ("superins: ");
-							dump_interp_inst (new_ins);
+							dump_interp_inst (new_ins, td->data_items);
 						}
 					}
 				} else {
@@ -10372,7 +10386,7 @@ interp_super_instructions (TransformData *td)
 							ins->opcode = GINT_TO_OPCODE (condbr_op);
 							if (td->verbose_level) {
 								g_print ("superins: ");
-								dump_interp_inst (ins);
+								dump_interp_inst (ins, td->data_items);
 							}
 						}
 					}
@@ -10420,7 +10434,7 @@ interp_super_instructions (TransformData *td)
 							mono_interp_stats.super_instructions++;
 							if (td->verbose_level) {
 								g_print ("superins: ");
-								dump_interp_inst (ins);
+								dump_interp_inst (ins, td->data_items);
 							}
 							// The newly added opcode could be part of further superinstructions. Retry
 							ins = ins->prev;
@@ -10436,7 +10450,7 @@ interp_super_instructions (TransformData *td)
 						ins->opcode = GINT_TO_OPCODE (condbr_op);
 						if (td->verbose_level) {
 							g_print ("superins: ");
-							dump_interp_inst (ins);
+							dump_interp_inst (ins, td->data_items);
 						}
 					}
 				}
@@ -10455,7 +10469,7 @@ interp_super_instructions (TransformData *td)
 					mono_interp_stats.super_instructions++;
 					if (td->verbose_level) {
 						g_print ("superins: ");
-						dump_interp_inst (new_inst);
+						dump_interp_inst (new_inst, td->data_items);
 					}
 				}
 			}
@@ -10878,7 +10892,7 @@ interp_alloc_offsets (TransformData *td)
 
 			if (td->verbose_level) {
 				g_print ("\tins_index %d\t", ins_index);
-                                dump_interp_inst (ins);
+                                dump_interp_inst (ins, td->data_items);
 			}
 
 			// Expire source vars. We first mark them as not alive and then compact the array
@@ -11036,6 +11050,7 @@ retry:
 	td->mem_manager = m_method_get_mem_manager (method);
 	td->n_data_items = 0;
 	td->max_data_items = 0;
+	td->dummy_var = -1;
 	td->data_items = NULL;
 	td->data_hash = g_hash_table_new (NULL, NULL);
 #ifdef ENABLE_EXPERIMENT_TIERED
@@ -11090,6 +11105,8 @@ retry:
 
 	g_assert (td->inline_depth == 0);
 
+	td->rtm->is_verbose = td->verbose_level > 0;
+
 	if (td->has_localloc)
 		interp_fix_localloc_ret (td);
 
@@ -11129,7 +11146,7 @@ retry:
 		g_print ("Runtime method: %s %p\n", mono_method_full_name (method, TRUE), rtm);
 		g_print ("Locals size %d\n", td->total_locals_size);
 		g_print ("Calculated stack height: %d, stated height: %d\n", td->max_stack_height, header->max_stack);
-		dump_interp_code (td->new_code, td->new_code_end);
+		dump_interp_code (td->new_code, td->new_code_end, td->data_items);
 	}
 
 	/* Check if we use excessive stack space */

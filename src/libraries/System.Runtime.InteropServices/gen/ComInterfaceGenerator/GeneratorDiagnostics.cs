@@ -11,7 +11,7 @@ namespace Microsoft.Interop
     /// <summary>
     /// Class for reporting diagnostics in the library import generator
     /// </summary>
-    public class GeneratorDiagnostics : IGeneratorDiagnostics
+    public static class GeneratorDiagnostics
     {
         public class Ids
         {
@@ -21,6 +21,7 @@ namespace Microsoft.Interop
             public const string TypeNotSupported = Prefix + "1051";
             public const string ConfigurationNotSupported = Prefix + "1052";
             public const string RequiresAllowUnsafeBlocks = Prefix + "1062";
+            public const string UnnecessaryMarshallingInfo = Prefix + "1063";
             public const string InvalidGeneratedComInterfaceAttributeUsage = Prefix + "1090";
             public const string MemberWillNotBeSourceGenerated = Prefix + "1091";
             public const string MultipleComInterfaceBaseTypes = Prefix + "1092";
@@ -217,6 +218,28 @@ namespace Microsoft.Interop
                 isEnabledByDefault: true,
                 description: GetResourceString(nameof(SR.ConfigurationNotSupportedDescription)));
 
+        /// <inheritdoc cref="SR.MarshalAsConfigurationNotSupportedMessageParameter"/>
+        public static readonly DiagnosticDescriptor MarshalAsParameterConfigurationNotSupported =
+            new DiagnosticDescriptor(
+                GeneratorDiagnostics.Ids.ConfigurationNotSupported,
+                GetResourceString(nameof(SR.ConfigurationNotSupportedTitle)),
+                GetResourceString(nameof(SR.MarshalAsConfigurationNotSupportedMessageParameter)),
+                Category,
+                DiagnosticSeverity.Error,
+                isEnabledByDefault: true,
+                description: GetResourceString(nameof(SR.ConfigurationNotSupportedDescription)));
+
+        /// <inheritdoc cref="SR.MarshalAsConfigurationNotSupportedMessageReturn"/>
+        public static readonly DiagnosticDescriptor MarshalAsReturnConfigurationNotSupported =
+            new DiagnosticDescriptor(
+                GeneratorDiagnostics.Ids.ConfigurationNotSupported,
+                GetResourceString(nameof(SR.ConfigurationNotSupportedTitle)),
+                GetResourceString(nameof(SR.MarshalAsConfigurationNotSupportedMessageReturn)),
+                Category,
+                DiagnosticSeverity.Error,
+                isEnabledByDefault: true,
+                description: GetResourceString(nameof(SR.ConfigurationNotSupportedDescription)));
+
         /// <inheritdoc cref="SR.ConfigurationNotSupportedMessage"/>
         public static readonly DiagnosticDescriptor ConfigurationNotSupported =
             new DiagnosticDescriptor(
@@ -393,11 +416,33 @@ namespace Microsoft.Interop
                 isEnabledByDefault: true,
                 description: GetResourceString(nameof(SR.ClassDoesNotImplementAnyGeneratedComInterfacesDescription)));
 
+        public static readonly DiagnosticDescriptor UnnecessaryParameterMarshallingInfo =
+            new DiagnosticDescriptor(
+                Ids.UnnecessaryMarshallingInfo,
+                GetResourceString(nameof(SR.UnnecessaryMarshallingInfoTitle)),
+                GetResourceString(nameof(SR.UnnecessaryParameterMarshallingInfoMessage)),
+                Category,
+                DiagnosticSeverity.Info,
+                isEnabledByDefault: true,
+                description: GetResourceString(nameof(SR.UnnecessaryMarshallingInfoDescription)),
+                customTags: new[]
+                {
+                    WellKnownDiagnosticTags.Unnecessary
+                });
 
-        private readonly List<DiagnosticInfo> _diagnostics = new List<DiagnosticInfo>();
-
-        public IEnumerable<DiagnosticInfo> Diagnostics => _diagnostics;
-
+        public static readonly DiagnosticDescriptor UnnecessaryReturnMarshallingInfo =
+            new DiagnosticDescriptor(
+                Ids.UnnecessaryMarshallingInfo,
+                GetResourceString(nameof(SR.UnnecessaryMarshallingInfoTitle)),
+                GetResourceString(nameof(SR.UnnecessaryReturnMarshallingInfoMessage)),
+                Category,
+                DiagnosticSeverity.Info,
+                isEnabledByDefault: true,
+                description: GetResourceString(nameof(SR.UnnecessaryMarshallingInfoDescription)),
+                customTags: new[]
+                {
+                    WellKnownDiagnosticTags.Unnecessary
+                });
 
         /// <summary>
         /// Report diagnostic for invalid configuration for string marshalling.
@@ -405,163 +450,35 @@ namespace Microsoft.Interop
         /// <param name="attributeData">Attribute specifying the invalid configuration</param>
         /// <param name="methodName">Name of the method</param>
         /// <param name="detailsMessage">Specific reason the configuration is invalid</param>
-        public void ReportInvalidStringMarshallingConfiguration(
+        public static void ReportInvalidStringMarshallingConfiguration(
+            this GeneratorDiagnosticsBag diagnostics,
             AttributeData attributeData,
             string methodName,
             string detailsMessage)
         {
-            _diagnostics.Add(
+            diagnostics.ReportDiagnostic(
                 attributeData.CreateDiagnosticInfo(
                     GeneratorDiagnostics.InvalidStringMarshallingConfigurationOnMethod,
                     methodName,
                     detailsMessage));
         }
-
         /// <summary>
         /// Report diagnostic for invalid configuration for string marshalling.
         /// </summary>
         /// <param name="attributeData">Attribute specifying the invalid configuration</param>
         /// <param name="methodName">Name of the method</param>
         /// <param name="detailsMessage">Specific reason the configuration is invalid</param>
-        public void ReportInvalidExceptionMarshallingConfiguration(
+        public static void ReportInvalidExceptionMarshallingConfiguration(
+            this GeneratorDiagnosticsBag diagnostics,
             AttributeData attributeData,
             string methodName,
             string detailsMessage)
         {
-            _diagnostics.Add(
+            diagnostics.ReportDiagnostic(
                 attributeData.CreateDiagnosticInfo(
                     GeneratorDiagnostics.InvalidExceptionMarshallingConfiguration,
                     methodName,
                     detailsMessage));
-        }
-
-        /// <summary>
-        /// Report diagnostic for configuration that is not supported by the DLL import source generator
-        /// </summary>
-        /// <param name="attributeData">Attribute specifying the unsupported configuration</param>
-        /// <param name="configurationName">Name of the configuration</param>
-        /// <param name="unsupportedValue">[Optiona] Unsupported configuration value</param>
-        public void ReportConfigurationNotSupported(
-            AttributeData attributeData,
-            string configurationName,
-            string? unsupportedValue = null)
-        {
-            if (unsupportedValue == null)
-            {
-                _diagnostics.Add(
-                    attributeData.CreateDiagnosticInfo(
-                        GeneratorDiagnostics.ConfigurationNotSupported,
-                        configurationName));
-            }
-            else
-            {
-                _diagnostics.Add(
-                    attributeData.CreateDiagnosticInfo(
-                        GeneratorDiagnostics.ConfigurationValueNotSupported,
-                        unsupportedValue,
-                        configurationName));
-            }
-        }
-
-        /// <summary>
-        /// Report diagnostic for marshalling of a parameter/return that is not supported
-        /// </summary>
-        /// <param name="method">Method with the parameter/return</param>
-        /// <param name="info">Type info for the parameter/return</param>
-        /// <param name="notSupportedDetails">[Optional] Specific reason for lack of support</param>
-        public void ReportMarshallingNotSupported(
-            MethodSignatureDiagnosticLocations method,
-            TypePositionInfo info,
-            string? notSupportedDetails)
-        {
-            Location diagnosticLocation = CodeAnalysis.Location.None;
-            string elementName = string.Empty;
-
-            if (info.IsManagedReturnPosition)
-            {
-                diagnosticLocation = method.FallbackLocation;
-                elementName = method.MethodIdentifier;
-            }
-            else
-            {
-                Debug.Assert(info.ManagedIndex <= method.ManagedParameterLocations.Length);
-                diagnosticLocation = method.ManagedParameterLocations[info.ManagedIndex];
-                elementName = info.InstanceIdentifier;
-            }
-
-            if (!string.IsNullOrEmpty(notSupportedDetails))
-            {
-                // Report the specific not-supported reason.
-                if (info.IsManagedReturnPosition)
-                {
-                    _diagnostics.Add(
-                        diagnosticLocation.CreateDiagnosticInfo(
-                            GeneratorDiagnostics.ReturnTypeNotSupportedWithDetails,
-                            notSupportedDetails!,
-                            elementName));
-                }
-                else
-                {
-                    _diagnostics.Add(
-                        diagnosticLocation.CreateDiagnosticInfo(
-                            GeneratorDiagnostics.ParameterTypeNotSupportedWithDetails,
-                            notSupportedDetails!,
-                            elementName));
-                }
-            }
-            else if (info.MarshallingAttributeInfo is MarshalAsInfo)
-            {
-                // Report that the specified marshalling configuration is not supported.
-                // We don't forward marshalling attributes, so this is reported differently
-                // than when there is no attribute and the type itself is not supported.
-                if (info.IsManagedReturnPosition)
-                {
-                    _diagnostics.Add(
-                        diagnosticLocation.CreateDiagnosticInfo(
-                            GeneratorDiagnostics.ReturnConfigurationNotSupported,
-                            nameof(System.Runtime.InteropServices.MarshalAsAttribute),
-                            elementName));
-                }
-                else
-                {
-                    _diagnostics.Add(
-                        diagnosticLocation.CreateDiagnosticInfo(
-                            GeneratorDiagnostics.ParameterConfigurationNotSupported,
-                            nameof(System.Runtime.InteropServices.MarshalAsAttribute),
-                            elementName));
-                }
-            }
-            else
-            {
-                // Report that the type is not supported
-                if (info.IsManagedReturnPosition)
-                {
-                    _diagnostics.Add(
-                        diagnosticLocation.CreateDiagnosticInfo(
-                            GeneratorDiagnostics.ReturnTypeNotSupported,
-                            info.ManagedType.DiagnosticFormattedName,
-                            elementName));
-                }
-                else
-                {
-                    _diagnostics.Add(
-                        diagnosticLocation.CreateDiagnosticInfo(
-                            GeneratorDiagnostics.ParameterTypeNotSupported,
-                            info.ManagedType.DiagnosticFormattedName,
-                            elementName));
-                }
-            }
-        }
-
-        public void ReportInvalidMarshallingAttributeInfo(
-            AttributeData attributeData,
-            string reasonResourceName,
-            params string[] reasonArgs)
-        {
-            _diagnostics.Add(
-                attributeData.CreateDiagnosticInfo(
-                    GeneratorDiagnostics.MarshallingAttributeConfigurationNotSupported,
-                    new LocalizableResourceString(reasonResourceName, SR.ResourceManager, typeof(FxResources.Microsoft.Interop.ComInterfaceGenerator.SR), reasonArgs)));
         }
         private static LocalizableResourceString GetResourceString(string resourceName)
         {
