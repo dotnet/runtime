@@ -321,10 +321,10 @@ namespace Microsoft.Extensions.Logging
 
         private string DebuggerToString()
         {
-            return $"Providers = {_providerRegistrations.Count}";
+            return $"Providers = {_providerRegistrations.Count}, {_filterOptions.DebuggerToString()}";
         }
 
-        internal sealed class LoggerFactoryDebugView(LoggerFactory loggerFactory)
+        private sealed class LoggerFactoryDebugView(LoggerFactory loggerFactory)
         {
             public List<ILoggerProvider> Providers => loggerFactory._providerRegistrations.Select(r => r.Provider).ToList();
             public bool Disposed => loggerFactory._disposed;

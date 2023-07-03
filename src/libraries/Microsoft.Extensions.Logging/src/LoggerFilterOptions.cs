@@ -35,7 +35,7 @@ namespace Microsoft.Extensions.Logging
         // Concrete representation of the rule list
         internal List<LoggerFilterRule> RulesInternal { get; } = new List<LoggerFilterRule>();
 
-        private string DebuggerToString()
+        internal string DebuggerToString()
         {
             string debugText = $"Rules = {Rules.Count}";
             if (MinLevel != LogLevel.None)
