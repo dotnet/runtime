@@ -104,7 +104,7 @@ export type LoaderHelpers = {
     _loaded_files: { url: string, file: string }[];
     scriptDirectory: string
     scriptUrl: string
-    assetUniqueQuery?: string
+    modulesUniqueQuery?: string
     preferredIcuAsset: string | null,
     invariantMode: boolean,
 

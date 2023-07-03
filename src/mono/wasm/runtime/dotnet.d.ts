@@ -149,10 +149,6 @@ type MonoConfig = {
      * application environment
      */
     applicationEnvironment?: string;
-    /**
-     * query string to be used for asset loading
-     */
-    assetUniqueQuery?: string;
 };
 interface ResourceRequest {
     name: string;
@@ -195,9 +191,9 @@ interface AssetEntry extends ResourceRequest {
 }
 type AssetBehaviours = "resource" | "assembly" | "pdb" | "heap" | "icu" | "vfs" | "dotnetwasm" | "js-module-threads" | "js-module-runtime" | "js-module-dotnet" | "js-module-native" | "symbols";
 type GlobalizationMode = "icu" | // load ICU globalization data from any runtime assets with behavior "icu".
-"invariant" | //  operate in invariant globalization mode.
-"hybrid" | // operate in hybrid globalization mode with small ICU files, using native platform functions
-"auto";
+    "invariant" | //  operate in invariant globalization mode.
+    "hybrid" | // operate in hybrid globalization mode with small ICU files, using native platform functions
+    "auto";
 type DotnetModuleConfig = {
     disableDotnet6Compatibility?: boolean;
     config?: MonoConfig;

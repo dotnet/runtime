@@ -176,7 +176,7 @@ async function getCacheKey(): Promise<string | null> {
     delete inputs.maxParallelDownloads;
     delete inputs.enableDownloadRetry;
     delete inputs.exitAfterSnapshot;
-    delete inputs.assetUniqueQuery;
+    delete inputs.modulesUniqueQuery;
 
     inputs.GitHash = GitHash;
     inputs.ProductVersion = ProductVersion;
