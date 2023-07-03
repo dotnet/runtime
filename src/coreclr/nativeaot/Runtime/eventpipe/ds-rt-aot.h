@@ -2,8 +2,8 @@
 // The .NET Foundation licenses this file to you under the MIT license.
 
 // Implementation of ds-rt.h targeting NativeAOT runtime.
-#ifndef __DIAGNOSTICS_RT_AOT_H__
-#define __DIAGNOSTICS_RT_AOT_H__
+#ifndef DIAGNOSTICS_RT_AOT_H
+#define DIAGNOSTICS_RT_AOT_H
 
 #include <eventpipe/ds-rt-config.h>
 
@@ -314,4 +314,4 @@ ds_rt_server_log_pause_message (void)
 }
 
 #endif /* ENABLE_PERFTRACING */
-#endif /* __DIAGNOSTICS_RT_AOT_H__ */
+#endif /* DIAGNOSTICS_RT_AOT_H */

@@ -158,7 +158,7 @@ EventPipeEvent *EventPipeEventGCFitBucketInfo = nullptr;
 
 BOOL EventPipeEventEnabledDestroyGCHandle(void)
 {
-    return EventPipeAdapter::EventIsEnabled(EventPipeEventDestroyGCHandle);
+    return ep_event_is_enabled(EventPipeEventDestroyGCHandle);
 }
 
 ULONG EventPipeWriteEventDestroyGCHandle(
@@ -198,7 +198,7 @@ ULONG EventPipeWriteEventDestroyGCHandle(
 
 BOOL EventPipeEventEnabledExceptionThrown_V1(void)
 {
-    return EventPipeAdapter::EventIsEnabled(EventPipeEventExceptionThrown_V1);
+    return ep_event_is_enabled(EventPipeEventExceptionThrown_V1);
 }
 
 ULONG EventPipeWriteEventExceptionThrown_V1(
@@ -248,7 +248,7 @@ ULONG EventPipeWriteEventExceptionThrown_V1(
 
 BOOL EventPipeEventEnabledGCBulkEdge(void)
 {
-    return EventPipeAdapter::EventIsEnabled(EventPipeEventGCBulkEdge);
+    return ep_event_is_enabled(EventPipeEventGCBulkEdge);
 }
 
 ULONG EventPipeWriteEventGCBulkEdge(
@@ -293,7 +293,7 @@ ULONG EventPipeWriteEventGCBulkEdge(
 
 BOOL EventPipeEventEnabledGCBulkMovedObjectRanges(void)
 {
-    return EventPipeAdapter::EventIsEnabled(EventPipeEventGCBulkMovedObjectRanges);
+    return ep_event_is_enabled(EventPipeEventGCBulkMovedObjectRanges);
 }
 
 ULONG EventPipeWriteEventGCBulkMovedObjectRanges(
@@ -338,7 +338,7 @@ ULONG EventPipeWriteEventGCBulkMovedObjectRanges(
 
 BOOL EventPipeEventEnabledGCBulkNode(void)
 {
-    return EventPipeAdapter::EventIsEnabled(EventPipeEventGCBulkNode);
+    return ep_event_is_enabled(EventPipeEventGCBulkNode);
 }
 
 ULONG EventPipeWriteEventGCBulkNode(
@@ -383,7 +383,7 @@ ULONG EventPipeWriteEventGCBulkNode(
 
 BOOL EventPipeEventEnabledGCBulkRCW(void)
 {
-    return EventPipeAdapter::EventIsEnabled(EventPipeEventGCBulkRCW);
+    return ep_event_is_enabled(EventPipeEventGCBulkRCW);
 }
 
 ULONG EventPipeWriteEventGCBulkRCW(
@@ -426,7 +426,7 @@ ULONG EventPipeWriteEventGCBulkRCW(
 
 BOOL EventPipeEventEnabledGCBulkRootCCW(void)
 {
-    return EventPipeAdapter::EventIsEnabled(EventPipeEventGCBulkRootCCW);
+    return ep_event_is_enabled(EventPipeEventGCBulkRootCCW);
 }
 
 ULONG EventPipeWriteEventGCBulkRootCCW(
@@ -469,7 +469,7 @@ ULONG EventPipeWriteEventGCBulkRootCCW(
 
 BOOL EventPipeEventEnabledGCBulkRootConditionalWeakTableElementEdge(void)
 {
-    return EventPipeAdapter::EventIsEnabled(EventPipeEventGCBulkRootConditionalWeakTableElementEdge);
+    return ep_event_is_enabled(EventPipeEventGCBulkRootConditionalWeakTableElementEdge);
 }
 
 ULONG EventPipeWriteEventGCBulkRootConditionalWeakTableElementEdge(
@@ -514,7 +514,7 @@ ULONG EventPipeWriteEventGCBulkRootConditionalWeakTableElementEdge(
 
 BOOL EventPipeEventEnabledGCBulkRootEdge(void)
 {
-    return EventPipeAdapter::EventIsEnabled(EventPipeEventGCBulkRootEdge);
+    return ep_event_is_enabled(EventPipeEventGCBulkRootEdge);
 }
 
 ULONG EventPipeWriteEventGCBulkRootEdge(
@@ -559,7 +559,7 @@ ULONG EventPipeWriteEventGCBulkRootEdge(
 
 BOOL EventPipeEventEnabledGCBulkSurvivingObjectRanges(void)
 {
-    return EventPipeAdapter::EventIsEnabled(EventPipeEventGCBulkSurvivingObjectRanges);
+    return ep_event_is_enabled(EventPipeEventGCBulkSurvivingObjectRanges);
 }
 
 ULONG EventPipeWriteEventGCBulkSurvivingObjectRanges(
@@ -604,7 +604,7 @@ ULONG EventPipeWriteEventGCBulkSurvivingObjectRanges(
 
 BOOL EventPipeEventEnabledGCCreateConcurrentThread_V1(void)
 {
-    return EventPipeAdapter::EventIsEnabled(EventPipeEventGCCreateConcurrentThread_V1);
+    return ep_event_is_enabled(EventPipeEventGCCreateConcurrentThread_V1);
 }
 
 ULONG EventPipeWriteEventGCCreateConcurrentThread_V1(
@@ -642,7 +642,7 @@ ULONG EventPipeWriteEventGCCreateConcurrentThread_V1(
 
 BOOL EventPipeEventEnabledGCCreateSegment_V1(void)
 {
-    return EventPipeAdapter::EventIsEnabled(EventPipeEventGCCreateSegment_V1);
+    return ep_event_is_enabled(EventPipeEventGCCreateSegment_V1);
 }
 
 ULONG EventPipeWriteEventGCCreateSegment_V1(
@@ -686,7 +686,7 @@ ULONG EventPipeWriteEventGCCreateSegment_V1(
 
 BOOL EventPipeEventEnabledGCEnd_V1(void)
 {
-    return EventPipeAdapter::EventIsEnabled(EventPipeEventGCEnd_V1);
+    return ep_event_is_enabled(EventPipeEventGCEnd_V1);
 }
 
 ULONG EventPipeWriteEventGCEnd_V1(
@@ -728,7 +728,7 @@ ULONG EventPipeWriteEventGCEnd_V1(
 
 BOOL EventPipeEventEnabledGCFreeSegment_V1(void)
 {
-    return EventPipeAdapter::EventIsEnabled(EventPipeEventGCFreeSegment_V1);
+    return ep_event_is_enabled(EventPipeEventGCFreeSegment_V1);
 }
 
 ULONG EventPipeWriteEventGCFreeSegment_V1(
@@ -768,7 +768,7 @@ ULONG EventPipeWriteEventGCFreeSegment_V1(
 
 BOOL EventPipeEventEnabledGCGenerationRange(void)
 {
-    return EventPipeAdapter::EventIsEnabled(EventPipeEventGCGenerationRange);
+    return ep_event_is_enabled(EventPipeEventGCGenerationRange);
 }
 
 ULONG EventPipeWriteEventGCGenerationRange(
@@ -814,7 +814,7 @@ ULONG EventPipeWriteEventGCGenerationRange(
 
 BOOL EventPipeEventEnabledGCHeapStats_V1(void)
 {
-    return EventPipeAdapter::EventIsEnabled(EventPipeEventGCHeapStats_V1);
+    return ep_event_is_enabled(EventPipeEventGCHeapStats_V1);
 }
 
 ULONG EventPipeWriteEventGCHeapStats_V1(
@@ -878,7 +878,7 @@ ULONG EventPipeWriteEventGCHeapStats_V1(
 
 BOOL EventPipeEventEnabledGCJoin_V2(void)
 {
-    return EventPipeAdapter::EventIsEnabled(EventPipeEventGCJoin_V2);
+    return ep_event_is_enabled(EventPipeEventGCJoin_V2);
 }
 
 ULONG EventPipeWriteEventGCJoin_V2(
@@ -924,7 +924,7 @@ ULONG EventPipeWriteEventGCJoin_V2(
 
 BOOL EventPipeEventEnabledGCMarkFinalizeQueueRoots(void)
 {
-    return EventPipeAdapter::EventIsEnabled(EventPipeEventGCMarkFinalizeQueueRoots);
+    return ep_event_is_enabled(EventPipeEventGCMarkFinalizeQueueRoots);
 }
 
 ULONG EventPipeWriteEventGCMarkFinalizeQueueRoots(
@@ -964,7 +964,7 @@ ULONG EventPipeWriteEventGCMarkFinalizeQueueRoots(
 
 BOOL EventPipeEventEnabledGCMarkHandles(void)
 {
-    return EventPipeAdapter::EventIsEnabled(EventPipeEventGCMarkHandles);
+    return ep_event_is_enabled(EventPipeEventGCMarkHandles);
 }
 
 ULONG EventPipeWriteEventGCMarkHandles(
@@ -1004,7 +1004,7 @@ ULONG EventPipeWriteEventGCMarkHandles(
 
 BOOL EventPipeEventEnabledGCMarkOlderGenerationRoots(void)
 {
-    return EventPipeAdapter::EventIsEnabled(EventPipeEventGCMarkOlderGenerationRoots);
+    return ep_event_is_enabled(EventPipeEventGCMarkOlderGenerationRoots);
 }
 
 ULONG EventPipeWriteEventGCMarkOlderGenerationRoots(
@@ -1044,7 +1044,7 @@ ULONG EventPipeWriteEventGCMarkOlderGenerationRoots(
 
 BOOL EventPipeEventEnabledGCMarkStackRoots(void)
 {
-    return EventPipeAdapter::EventIsEnabled(EventPipeEventGCMarkStackRoots);
+    return ep_event_is_enabled(EventPipeEventGCMarkStackRoots);
 }
 
 ULONG EventPipeWriteEventGCMarkStackRoots(
@@ -1084,7 +1084,7 @@ ULONG EventPipeWriteEventGCMarkStackRoots(
 
 BOOL EventPipeEventEnabledGCMarkWithType(void)
 {
-    return EventPipeAdapter::EventIsEnabled(EventPipeEventGCMarkWithType);
+    return ep_event_is_enabled(EventPipeEventGCMarkWithType);
 }
 
 ULONG EventPipeWriteEventGCMarkWithType(
@@ -1128,7 +1128,7 @@ ULONG EventPipeWriteEventGCMarkWithType(
 
 BOOL EventPipeEventEnabledGCPerHeapHistory_V3(void)
 {
-    return EventPipeAdapter::EventIsEnabled(EventPipeEventGCPerHeapHistory_V3);
+    return ep_event_is_enabled(EventPipeEventGCPerHeapHistory_V3);
 }
 
 ULONG EventPipeWriteEventGCPerHeapHistory_V3(
@@ -1197,7 +1197,7 @@ ULONG EventPipeWriteEventGCPerHeapHistory_V3(
 
 BOOL EventPipeEventEnabledGCTerminateConcurrentThread_V1(void)
 {
-    return EventPipeAdapter::EventIsEnabled(EventPipeEventGCTerminateConcurrentThread_V1);
+    return ep_event_is_enabled(EventPipeEventGCTerminateConcurrentThread_V1);
 }
 
 ULONG EventPipeWriteEventGCTerminateConcurrentThread_V1(
@@ -1235,7 +1235,7 @@ ULONG EventPipeWriteEventGCTerminateConcurrentThread_V1(
 
 BOOL EventPipeEventEnabledGCTriggered(void)
 {
-    return EventPipeAdapter::EventIsEnabled(EventPipeEventGCTriggered);
+    return ep_event_is_enabled(EventPipeEventGCTriggered);
 }
 
 ULONG EventPipeWriteEventGCTriggered(
@@ -1275,7 +1275,7 @@ ULONG EventPipeWriteEventGCTriggered(
 
 BOOL EventPipeEventEnabledModuleLoad_V2(void)
 {
-    return EventPipeAdapter::EventIsEnabled(EventPipeEventModuleLoad_V2);
+    return ep_event_is_enabled(EventPipeEventModuleLoad_V2);
 }
 
 ULONG EventPipeWriteEventModuleLoad_V2(
@@ -1341,7 +1341,7 @@ ULONG EventPipeWriteEventModuleLoad_V2(
 
 BOOL EventPipeEventEnabledSetGCHandle(void)
 {
-    return EventPipeAdapter::EventIsEnabled(EventPipeEventSetGCHandle);
+    return ep_event_is_enabled(EventPipeEventSetGCHandle);
 }
 
 ULONG EventPipeWriteEventSetGCHandle(
@@ -1389,7 +1389,7 @@ ULONG EventPipeWriteEventSetGCHandle(
 
 BOOL EventPipeEventEnabledGCStart_V2(void)
 {
-    return EventPipeAdapter::EventIsEnabled(EventPipeEventGCStart_V2);
+    return ep_event_is_enabled(EventPipeEventGCStart_V2);
 }
 
 ULONG EventPipeWriteEventGCStart_V2(
@@ -1437,7 +1437,7 @@ ULONG EventPipeWriteEventGCStart_V2(
 
 BOOL EventPipeEventEnabledGCRestartEEEnd_V1(void)
 {
-    return EventPipeAdapter::EventIsEnabled(EventPipeEventGCRestartEEEnd_V1);
+    return ep_event_is_enabled(EventPipeEventGCRestartEEEnd_V1);
 }
 
 ULONG EventPipeWriteEventGCRestartEEEnd_V1(
@@ -1475,7 +1475,7 @@ ULONG EventPipeWriteEventGCRestartEEEnd_V1(
 
 BOOL EventPipeEventEnabledGCRestartEEBegin_V1(void)
 {
-    return EventPipeAdapter::EventIsEnabled(EventPipeEventGCRestartEEBegin_V1);
+    return ep_event_is_enabled(EventPipeEventGCRestartEEBegin_V1);
 }
 
 ULONG EventPipeWriteEventGCRestartEEBegin_V1(
@@ -1513,7 +1513,7 @@ ULONG EventPipeWriteEventGCRestartEEBegin_V1(
 
 BOOL EventPipeEventEnabledGCSuspendEEEnd_V1(void)
 {
-    return EventPipeAdapter::EventIsEnabled(EventPipeEventGCSuspendEEEnd_V1);
+    return ep_event_is_enabled(EventPipeEventGCSuspendEEEnd_V1);
 }
 
 ULONG EventPipeWriteEventGCSuspendEEEnd_V1(
@@ -1551,7 +1551,7 @@ ULONG EventPipeWriteEventGCSuspendEEEnd_V1(
 
 BOOL EventPipeEventEnabledGCSuspendEEBegin_V1(void)
 {
-    return EventPipeAdapter::EventIsEnabled(EventPipeEventGCSuspendEEBegin_V1);
+    return ep_event_is_enabled(EventPipeEventGCSuspendEEBegin_V1);
 }
 
 ULONG EventPipeWriteEventGCSuspendEEBegin_V1(
@@ -1593,7 +1593,7 @@ ULONG EventPipeWriteEventGCSuspendEEBegin_V1(
 
 BOOL EventPipeEventEnabledDecreaseMemoryPressure(void)
 {
-    return EventPipeAdapter::EventIsEnabled(EventPipeEventDecreaseMemoryPressure);
+    return ep_event_is_enabled(EventPipeEventDecreaseMemoryPressure);
 }
 
 ULONG EventPipeWriteEventDecreaseMemoryPressure(
@@ -1632,7 +1632,7 @@ ULONG EventPipeWriteEventDecreaseMemoryPressure(
 
 BOOL EventPipeEventEnabledFinalizeObject(void)
 {
-    return EventPipeAdapter::EventIsEnabled(EventPipeEventFinalizeObject);
+    return ep_event_is_enabled(EventPipeEventFinalizeObject);
 }
 
 ULONG EventPipeWriteEventFinalizeObject(
@@ -1673,7 +1673,7 @@ ULONG EventPipeWriteEventFinalizeObject(
 
 BOOL EventPipeEventEnabledGCFinalizersBegin_V1(void)
 {
-    return EventPipeAdapter::EventIsEnabled(EventPipeEventGCFinalizersBegin_V1);
+    return ep_event_is_enabled(EventPipeEventGCFinalizersBegin_V1);
 }
 
 ULONG EventPipeWriteEventGCFinalizersBegin_V1(
@@ -1710,7 +1710,7 @@ ULONG EventPipeWriteEventGCFinalizersBegin_V1(
 
 BOOL EventPipeEventEnabledGCFinalizersEnd_V1(void)
 {
-    return EventPipeAdapter::EventIsEnabled(EventPipeEventGCFinalizersEnd_V1);
+    return ep_event_is_enabled(EventPipeEventGCFinalizersEnd_V1);
 }
 
 ULONG EventPipeWriteEventGCFinalizersEnd_V1(
@@ -1749,7 +1749,7 @@ ULONG EventPipeWriteEventGCFinalizersEnd_V1(
 
 BOOL EventPipeEventEnabledContentionStart_V2(void)
 {
-    return EventPipeAdapter::EventIsEnabled(EventPipeEventContentionStart_V2);
+    return ep_event_is_enabled(EventPipeEventContentionStart_V2);
 }
 
 ULONG EventPipeWriteEventContentionStart_V2(
@@ -1795,7 +1795,7 @@ ULONG EventPipeWriteEventContentionStart_V2(
 
 BOOL EventPipeEventEnabledContentionStop_V1(void)
 {
-    return EventPipeAdapter::EventIsEnabled(EventPipeEventContentionStop_V1);
+    return ep_event_is_enabled(EventPipeEventContentionStop_V1);
 }
 
 ULONG EventPipeWriteEventContentionStop_V1(
@@ -1837,7 +1837,7 @@ ULONG EventPipeWriteEventContentionStop_V1(
 
 BOOL EventPipeEventEnabledContentionLockCreated(void)
 {
-    return EventPipeAdapter::EventIsEnabled(EventPipeEventContentionLockCreated);
+    return ep_event_is_enabled(EventPipeEventContentionLockCreated);
 }
 
 ULONG EventPipeWriteEventContentionLockCreated(
@@ -1879,7 +1879,7 @@ ULONG EventPipeWriteEventContentionLockCreated(
 
 BOOL EventPipeEventEnabledThreadPoolWorkerThreadStart(void)
 {
-    return EventPipeAdapter::EventIsEnabled(EventPipeEventThreadPoolWorkerThreadStart);
+    return ep_event_is_enabled(EventPipeEventThreadPoolWorkerThreadStart);
 }
 
 ULONG EventPipeWriteEventThreadPoolWorkerThreadStart(
@@ -1921,7 +1921,7 @@ ULONG EventPipeWriteEventThreadPoolWorkerThreadStart(
 
 BOOL EventPipeEventEnabledThreadPoolWorkerThreadStop(void)
 {
-    return EventPipeAdapter::EventIsEnabled(EventPipeEventThreadPoolWorkerThreadStop);
+    return ep_event_is_enabled(EventPipeEventThreadPoolWorkerThreadStop);
 }
 
 ULONG EventPipeWriteEventThreadPoolWorkerThreadStop(
@@ -1962,7 +1962,7 @@ ULONG EventPipeWriteEventThreadPoolWorkerThreadStop(
 
 BOOL EventPipeEventEnabledThreadPoolWorkerThreadWait(void)
 {
-    return EventPipeAdapter::EventIsEnabled(EventPipeEventThreadPoolWorkerThreadWait);
+    return ep_event_is_enabled(EventPipeEventThreadPoolWorkerThreadWait);
 }
 
 ULONG EventPipeWriteEventThreadPoolWorkerThreadWait(
@@ -2003,7 +2003,7 @@ ULONG EventPipeWriteEventThreadPoolWorkerThreadWait(
 
 BOOL EventPipeEventEnabledThreadPoolMinMaxThreads(void)
 {
-    return EventPipeAdapter::EventIsEnabled(EventPipeEventThreadPoolMinMaxThreads);
+    return ep_event_is_enabled(EventPipeEventThreadPoolMinMaxThreads);
 }
 
 ULONG EventPipeWriteEventThreadPoolMinMaxThreads(
@@ -2048,7 +2048,7 @@ ULONG EventPipeWriteEventThreadPoolMinMaxThreads(
 
 BOOL EventPipeEventEnabledThreadPoolWorkerThreadAdjustmentSample(void)
 {
-    return EventPipeAdapter::EventIsEnabled(EventPipeEventThreadPoolWorkerThreadAdjustmentSample);
+    return ep_event_is_enabled(EventPipeEventThreadPoolWorkerThreadAdjustmentSample);
 }
 
 ULONG EventPipeWriteEventThreadPoolWorkerThreadAdjustmentSample(
@@ -2087,7 +2087,7 @@ ULONG EventPipeWriteEventThreadPoolWorkerThreadAdjustmentSample(
 
 BOOL EventPipeEventEnabledThreadPoolWorkerThreadAdjustmentAdjustment(void)
 {
-    return EventPipeAdapter::EventIsEnabled(EventPipeEventThreadPoolWorkerThreadAdjustmentAdjustment);
+    return ep_event_is_enabled(EventPipeEventThreadPoolWorkerThreadAdjustmentAdjustment);
 }
 
 ULONG EventPipeWriteEventThreadPoolWorkerThreadAdjustmentAdjustment(
@@ -2130,7 +2130,7 @@ ULONG EventPipeWriteEventThreadPoolWorkerThreadAdjustmentAdjustment(
 
 BOOL EventPipeEventEnabledThreadPoolWorkerThreadAdjustmentStats(void)
 {
-    return EventPipeAdapter::EventIsEnabled(EventPipeEventThreadPoolWorkerThreadAdjustmentStats);
+    return ep_event_is_enabled(EventPipeEventThreadPoolWorkerThreadAdjustmentStats);
 }
 
 ULONG EventPipeWriteEventThreadPoolWorkerThreadAdjustmentStats(
@@ -2187,7 +2187,7 @@ ULONG EventPipeWriteEventThreadPoolWorkerThreadAdjustmentStats(
 
 BOOL EventPipeEventEnabledThreadPoolIOEnqueue(void)
 {
-    return EventPipeAdapter::EventIsEnabled(EventPipeEventThreadPoolIOEnqueue);
+    return ep_event_is_enabled(EventPipeEventThreadPoolIOEnqueue);
 }
 
 ULONG EventPipeWriteEventThreadPoolIOEnqueue(
@@ -2230,7 +2230,7 @@ ULONG EventPipeWriteEventThreadPoolIOEnqueue(
 
 BOOL EventPipeEventEnabledThreadPoolIODequeue(void)
 {
-    return EventPipeAdapter::EventIsEnabled(EventPipeEventThreadPoolIODequeue);
+    return ep_event_is_enabled(EventPipeEventThreadPoolIODequeue);
 }
 
 ULONG EventPipeWriteEventThreadPoolIODequeue(
@@ -2271,7 +2271,7 @@ ULONG EventPipeWriteEventThreadPoolIODequeue(
 
 BOOL EventPipeEventEnabledThreadPoolWorkingThreadCount(void)
 {
-    return EventPipeAdapter::EventIsEnabled(EventPipeEventThreadPoolWorkingThreadCount);
+    return ep_event_is_enabled(EventPipeEventThreadPoolWorkingThreadCount);
 }
 
 ULONG EventPipeWriteEventThreadPoolWorkingThreadCount(
@@ -2310,7 +2310,7 @@ ULONG EventPipeWriteEventThreadPoolWorkingThreadCount(
 
 BOOL EventPipeEventEnabledThreadPoolIOPack(void)
 {
-    return EventPipeAdapter::EventIsEnabled(EventPipeEventThreadPoolIOPack);
+    return ep_event_is_enabled(EventPipeEventThreadPoolIOPack);
 }
 
 ULONG EventPipeWriteEventThreadPoolIOPack(
@@ -2351,7 +2351,7 @@ ULONG EventPipeWriteEventThreadPoolIOPack(
 
 BOOL EventPipeEventEnabledGCAllocationTick_V4(void)
 {
-    return EventPipeAdapter::EventIsEnabled(EventPipeEventGCAllocationTick_V4);
+    return ep_event_is_enabled(EventPipeEventGCAllocationTick_V4);
 }
 
 ULONG EventPipeWriteEventGCAllocationTick_V4(
@@ -2406,7 +2406,7 @@ ULONG EventPipeWriteEventGCAllocationTick_V4(
 
 BOOL EventPipeEventEnabledGCHeapStats_V2(void)
 {
-    return EventPipeAdapter::EventIsEnabled(EventPipeEventGCHeapStats_V2);
+    return ep_event_is_enabled(EventPipeEventGCHeapStats_V2);
 }
 
 ULONG EventPipeWriteEventGCHeapStats_V2(
@@ -2474,7 +2474,7 @@ ULONG EventPipeWriteEventGCHeapStats_V2(
 
 BOOL EventPipeEventEnabledGCSampledObjectAllocationHigh(void)
 {
-    return EventPipeAdapter::EventIsEnabled(EventPipeEventGCSampledObjectAllocationHigh);
+    return ep_event_is_enabled(EventPipeEventGCSampledObjectAllocationHigh);
 }
 
 ULONG EventPipeWriteEventGCSampledObjectAllocationHigh(
@@ -2520,7 +2520,7 @@ ULONG EventPipeWriteEventGCSampledObjectAllocationHigh(
 
 BOOL EventPipeEventEnabledGCSampledObjectAllocationLow(void)
 {
-    return EventPipeAdapter::EventIsEnabled(EventPipeEventGCSampledObjectAllocationLow);
+    return ep_event_is_enabled(EventPipeEventGCSampledObjectAllocationLow);
 }
 
 ULONG EventPipeWriteEventGCSampledObjectAllocationLow(
@@ -2566,7 +2566,7 @@ ULONG EventPipeWriteEventGCSampledObjectAllocationLow(
 
 BOOL EventPipeEventEnabledPinObjectAtGCTime(void)
 {
-    return EventPipeAdapter::EventIsEnabled(EventPipeEventPinObjectAtGCTime);
+    return ep_event_is_enabled(EventPipeEventPinObjectAtGCTime);
 }
 
 ULONG EventPipeWriteEventPinObjectAtGCTime(
@@ -2613,7 +2613,7 @@ ULONG EventPipeWriteEventPinObjectAtGCTime(
 
 BOOL EventPipeEventEnabledGCBulkRootStaticVar(void)
 {
-    return EventPipeAdapter::EventIsEnabled(EventPipeEventGCBulkRootStaticVar);
+    return ep_event_is_enabled(EventPipeEventGCBulkRootStaticVar);
 }
 
 ULONG EventPipeWriteEventGCBulkRootStaticVar(
@@ -2658,7 +2658,7 @@ ULONG EventPipeWriteEventGCBulkRootStaticVar(
 
 BOOL EventPipeEventEnabledIncreaseMemoryPressure(void)
 {
-    return EventPipeAdapter::EventIsEnabled(EventPipeEventIncreaseMemoryPressure);
+    return ep_event_is_enabled(EventPipeEventIncreaseMemoryPressure);
 }
 
 ULONG EventPipeWriteEventIncreaseMemoryPressure(
@@ -2698,7 +2698,7 @@ ULONG EventPipeWriteEventIncreaseMemoryPressure(
 
 BOOL EventPipeEventEnabledGCGlobalHeapHistory_V4(void)
 {
-    return EventPipeAdapter::EventIsEnabled(EventPipeEventGCGlobalHeapHistory_V4);
+    return ep_event_is_enabled(EventPipeEventGCGlobalHeapHistory_V4);
 }
 
 ULONG EventPipeWriteEventGCGlobalHeapHistory_V4(
@@ -2761,7 +2761,7 @@ ULONG EventPipeWriteEventGCGlobalHeapHistory_V4(
 
 BOOL EventPipeEventEnabledGenAwareBegin(void)
 {
-    return EventPipeAdapter::EventIsEnabled(EventPipeEventGenAwareBegin);
+    return ep_event_is_enabled(EventPipeEventGenAwareBegin);
 }
 
 ULONG EventPipeWriteEventGenAwareBegin(
@@ -2801,7 +2801,7 @@ ULONG EventPipeWriteEventGenAwareBegin(
 
 BOOL EventPipeEventEnabledGenAwareEnd(void)
 {
-    return EventPipeAdapter::EventIsEnabled(EventPipeEventGenAwareEnd);
+    return ep_event_is_enabled(EventPipeEventGenAwareEnd);
 }
 
 ULONG EventPipeWriteEventGenAwareEnd(
@@ -2841,7 +2841,7 @@ ULONG EventPipeWriteEventGenAwareEnd(
 
 BOOL EventPipeEventEnabledGCLOHCompact(void)
 {
-    return EventPipeAdapter::EventIsEnabled(EventPipeEventGCLOHCompact);
+    return ep_event_is_enabled(EventPipeEventGCLOHCompact);
 }
 
 ULONG EventPipeWriteEventGCLOHCompact(
@@ -2884,7 +2884,7 @@ ULONG EventPipeWriteEventGCLOHCompact(
 
 BOOL EventPipeEventEnabledGCFitBucketInfo(void)
 {
-    return EventPipeAdapter::EventIsEnabled(EventPipeEventGCFitBucketInfo);
+    return ep_event_is_enabled(EventPipeEventGCFitBucketInfo);
 }
 
 ULONG EventPipeWriteEventGCFitBucketInfo(

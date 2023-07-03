@@ -2,8 +2,8 @@
 // The .NET Foundation licenses this file to you under the MIT license.
 
 // Implementation of ep-rt.h targeting NativeAOT runtime.
-#ifndef __EVENTPIPE_RT_AOT_H__
-#define __EVENTPIPE_RT_AOT_H__
+#ifndef EVENTPIPE_RT_AOT_H
+#define EVENTPIPE_RT_AOT_H
 
 #include <ctype.h>  // For isspace
 #ifdef TARGET_UNIX
@@ -2009,4 +2009,4 @@ ep_rt_volatile_store_ptr_without_barrier (
 }
 
 #endif /* ENABLE_PERFTRACING */
-#endif /* __EVENTPIPE_RT_AOT_H__ */
+#endif /* EVENTPIPE_RT_AOT_H */
