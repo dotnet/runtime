@@ -6044,14 +6044,6 @@ void Compiler::considerGuardedDevirtualization(GenTreeCall*            call,
                 break;
             }
 
-            if ((dvInfo.exactContext != NULL) && (*pContextHandle != dvInfo.exactContext) &&
-                (METHOD_BEING_COMPILED_CONTEXT() != dvInfo.exactContext) &&
-                (dvInfo.exactContext != MAKE_METHODCONTEXT(dvInfo.devirtualizedMethod)))
-            {
-                JITDUMP("Exact context has changed - we don't yet support that, sorry\n");
-                break;
-            }
-
             likelyContext = dvInfo.exactContext;
             likelyMethod  = dvInfo.devirtualizedMethod;
         }
@@ -7815,10 +7807,26 @@ void Compiler::impCheckCanInline(GenTreeCall*           call,
                 return;
             }
 
+            CORINFO_CONTEXT_HANDLE exactContextHnd = pParam->exactContextHnd;
+            if (pParam->call->IsGuardedDevirtualizationCandidate())
+            {
+                InlineCandidateInfo* candidateInfo = pParam->call->GetGDVCandidateInfo(pParam->candidateIndex);
+                if (candidateInfo->exactContextHnd != nullptr)
+                {
+                    // exactContextHnd represents the exact class the method is defined in.
+                    exactContextHnd = candidateInfo->exactContextHnd;
+                }
+                else
+                {
+                    // exactContextHnd can't be null for normal GDV class guesses
+                    assert(candidateInfo->guardedClassHandle == nullptr);
+                }
+            }
+
             // Speculatively check if initClass() can be done.
             // If it can be done, we will try to inline the method.
             CorInfoInitClassResult const initClassResult =
-                compCompHnd->initClass(nullptr /* field */, ftn /* method */, pParam->exactContextHnd /* context */);
+                compCompHnd->initClass(nullptr /* field */, ftn /* method */, exactContextHnd /* context */);
 
             if (initClassResult & CORINFO_INITCLASS_DONT_INLINE)
             {
