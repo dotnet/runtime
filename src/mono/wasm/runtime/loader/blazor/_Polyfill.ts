@@ -17,6 +17,6 @@ export function hasDebuggingEnabled(bootConfig: BootJsonData): boolean {
         return false;
     }
 
-    const hasReferencedPdbs = !!bootConfig.resources.pdb;
-    return (hasReferencedPdbs || bootConfig.debugBuild || bootConfig.debugLevel != 0) && (loaderHelpers.isChromium || loaderHelpers.isFirefox);
+    const hasReferencedPdbs = !!bootConfig["resources"]["pdb"];
+    return (hasReferencedPdbs || bootConfig["debugBuild"] || bootConfig["debugLevel"] != 0) && (loaderHelpers.isChromium || loaderHelpers.isFirefox);
 }

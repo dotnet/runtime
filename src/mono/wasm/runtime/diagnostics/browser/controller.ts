@@ -70,7 +70,7 @@ export async function startDiagnosticServer(websocket_url: string): Promise<Serv
     // have to wait until the message port is created
     const thread = await waitForThread(result);
     if (monoDiagnosticsMock) {
-        INTERNAL.diagnosticServerThread = thread;
+        INTERNAL["diagnosticServerThread"] = thread;
     }
     if (thread === undefined) {
         throw new Error("unexpected diagnostic server thread not found");

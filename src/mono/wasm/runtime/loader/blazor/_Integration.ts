@@ -6,21 +6,21 @@ import type { AssetBehaviours, AssetEntry, LoadingResource, WebAssemblyBootResou
 import type { BootJsonData } from "../../types/blazor";
 
 import { ENVIRONMENT_IS_WEB, INTERNAL, loaderHelpers } from "../globals";
-import { BootConfigResult } from "./BootConfig";
-import { WebAssemblyResourceLoader } from "./WebAssemblyResourceLoader";
+import { BootConfigResult, BootConfigResultinitAsync } from "./BootConfig";
+import { WebAssemblyResourceLoader, WebAssemblyResourceLoaderinitAsync } from "./WebAssemblyResourceLoader";
 import { hasDebuggingEnabled } from "./_Polyfill";
 import { ICUDataMode } from "../../types/blazor";
 
 let resourceLoader: WebAssemblyResourceLoader;
 
 export async function loadBootConfig(config: MonoConfigInternal, module: DotnetModuleInternal) {
-    const bootConfigPromise = BootConfigResult.initAsync(config.startupOptions?.loadBootResource, config.applicationEnvironment);
-    const bootConfigResult: BootConfigResult = await bootConfigPromise;
-    await initializeBootConfig(bootConfigResult, module, config.startupOptions);
+    const bootConfigPromise = BootConfigResultinitAsync(config["startupOptions"] ? config["startupOptions"]["loadBootResource"] : undefined, config["applicationEnvironment"]);
+    const bootConfigResult = await bootConfigPromise;
+    await initializeBootConfig(bootConfigResult, module, config["startupOptions"]);
 }
 
 export async function initializeBootConfig(bootConfigResult: BootConfigResult, module: DotnetModuleInternal, startupOptions?: Partial<WebAssemblyStartOptions>) {
-    INTERNAL.resourceLoader = resourceLoader = await WebAssemblyResourceLoader.initAsync(bootConfigResult.bootConfig, startupOptions ?? {});
+    INTERNAL["resourceLoader"] = resourceLoader = await WebAssemblyResourceLoaderinitAsync(bootConfigResult.bootConfig, startupOptions ?? {});
     mapBootConfigToMonoConfig(loaderHelpers.config, bootConfigResult.applicationEnvironment);
 
     if (ENVIRONMENT_IS_WEB) {
@@ -57,10 +57,10 @@ export function setupModuleForBlazor(module: DotnetModuleInternal) {
         // A) we may need to add such asset types to the mapping and to WebAssemblyBootResourceType
         // B) or we could add generic "runtime" type to WebAssemblyBootResourceType as fallback
         // C) or we could return `undefined` and let the runtime to load the asset. In which case the progress will not be reported on it and blazor will not be able to cache it.
-        const type = monoToBlazorAssetTypeMap[asset.behavior];
+        const type = monoToBlazorAssetTypeMap[asset["behavior"]];
         if (type !== undefined) {
-            const res = resourceLoader.loadResource(asset.name, asset.resolvedUrl!, asset.hash!, type);
-            asset.pendingDownload = res;
+            const res = resourceLoader.loadResource(asset["name"], asset["resolvedUrl"]!, asset["hash"]!, type);
+            asset["pendingDownload"] = res;
 
             totalResources++;
             res.response.then(() => {
@@ -86,24 +86,24 @@ function appendUniqueQuery(attemptUrl: string): string {
 }
 
 export function mapBootConfigToMonoConfig(moduleConfig: MonoConfigInternal, applicationEnvironment: string) {
-    const resources = resourceLoader.bootConfig.resources;
+    const resources = resourceLoader.bootConfig["resources"];
 
     const assets: AssetEntry[] = [];
     const environmentVariables: any = {
         // From boot config
-        ...(resourceLoader.bootConfig.environmentVariables || {}),
+        ...(resourceLoader.bootConfig["environmentVariables"] || {}),
         // From JavaScript
-        ...(moduleConfig.environmentVariables || {})
+        ...(moduleConfig["environmentVariables"] || {})
     };
 
-    moduleConfig.applicationEnvironment = applicationEnvironment;
+    moduleConfig["applicationEnvironment"] = applicationEnvironment;
 
-    moduleConfig.remoteSources = (resourceLoader.bootConfig.resources as any).remoteSources;
-    moduleConfig.assetsHash = resourceLoader.bootConfig.resources.hash;
-    moduleConfig.assets = assets;
-    moduleConfig.globalizationMode = "icu";
-    moduleConfig.debugLevel = hasDebuggingEnabled(resourceLoader.bootConfig) ? resourceLoader.bootConfig.debugLevel : 0;
-    moduleConfig.mainAssemblyName = resourceLoader.bootConfig.entryAssembly;
+    moduleConfig["remoteSources"] = (resourceLoader.bootConfig["resources"] as any)["remoteSources"];
+    moduleConfig["assetsHash"] = resourceLoader.bootConfig["resources"]["hash"];
+    moduleConfig["assets"] = assets;
+    moduleConfig["globalizationMode"] = "icu";
+    moduleConfig["debugLevel"] = hasDebuggingEnabled(resourceLoader.bootConfig) ? resourceLoader.bootConfig["debugLevel"] : 0;
+    moduleConfig["mainAssemblyName"] = resourceLoader.bootConfig["entryAssembly"];
 
     const anyBootConfig = (resourceLoader.bootConfig as any);
     for (const key in resourceLoader.bootConfig) {
@@ -119,39 +119,39 @@ export function mapBootConfigToMonoConfig(moduleConfig: MonoConfigInternal, appl
         ...resourceLoader.bootConfig,
     });
 
-    moduleConfig.environmentVariables = environmentVariables;
+    moduleConfig["environmentVariables"] = environmentVariables;
 
-    if (resourceLoader.bootConfig.startupMemoryCache !== undefined) {
-        moduleConfig.startupMemoryCache = resourceLoader.bootConfig.startupMemoryCache;
+    if (resourceLoader.bootConfig["startupMemoryCache"] !== undefined) {
+        moduleConfig["startupMemoryCache"] = resourceLoader.bootConfig["startupMemoryCache"];
     }
 
-    if (resourceLoader.bootConfig.runtimeOptions) {
-        moduleConfig.runtimeOptions = [...(moduleConfig.runtimeOptions || []), ...resourceLoader.bootConfig.runtimeOptions];
+    if (resourceLoader.bootConfig["runtimeOptions"]) {
+        moduleConfig["runtimeOptions"] = [...(moduleConfig["runtimeOptions"] || []), ...resourceLoader.bootConfig["runtimeOptions"]];
     }
 
     // any runtime owned assets, with proper behavior already set
-    for (const name in resources.runtimeAssets) {
-        const asset = resources.runtimeAssets[name] as AssetEntry;
-        asset.name = name;
-        asset.resolvedUrl = appendUniqueQuery(loaderHelpers.locateFile(name));
+    for (const name in resources["runtimeAssets"]) {
+        const asset = resources["runtimeAssets"][name] as AssetEntry;
+        asset["name"] = name;
+        asset["resolvedUrl"] = appendUniqueQuery(loaderHelpers.locateFile(name));
         assets.push(asset);
     }
-    for (const name in resources.assembly) {
+    for (const name in resources["assembly"]) {
         const asset: AssetEntry = {
-            name,
-            resolvedUrl: appendUniqueQuery(loaderHelpers.locateFile(name)),
-            hash: resources.assembly[name],
-            behavior: "assembly",
+            "name": name,
+            "resolvedUrl": appendUniqueQuery(loaderHelpers.locateFile(name)),
+            "hash": resources["assembly"][name],
+            "behavior": "assembly",
         };
         assets.push(asset);
     }
-    if (hasDebuggingEnabled(resourceLoader.bootConfig) && resources.pdb) {
-        for (const name in resources.pdb) {
+    if (hasDebuggingEnabled(resourceLoader.bootConfig) && resources["pdb"]) {
+        for (const name in resources["pdb"]) {
             const asset: AssetEntry = {
-                name,
-                resolvedUrl: appendUniqueQuery(loaderHelpers.locateFile(name)),
-                hash: resources.pdb[name],
-                behavior: "pdb",
+                "name": name,
+                "resolvedUrl": appendUniqueQuery(loaderHelpers.locateFile(name)),
+                "hash": resources["pdb"][name],
+                "behavior": "pdb",
             };
             assets.push(asset);
         }
@@ -159,11 +159,11 @@ export function mapBootConfigToMonoConfig(moduleConfig: MonoConfigInternal, appl
     const applicationCulture = resourceLoader.startOptions.applicationCulture || (ENVIRONMENT_IS_WEB ? (navigator.languages && navigator.languages[0]) : Intl.DateTimeFormat().resolvedOptions().locale);
     const icuDataResourceName = getICUResourceName(resourceLoader.bootConfig, moduleConfig, applicationCulture);
     let hasIcuData = false;
-    for (const name in resources.runtime) {
+    for (const name in resources["runtime"]) {
         const behavior = behaviorByName(name) as any;
         let loadRemote = false;
         if (behavior === "icu") {
-            if (resourceLoader.bootConfig.icuDataMode === ICUDataMode.Invariant) {
+            if (resourceLoader.bootConfig["icuDataMode"] === ICUDataMode.Invariant) {
                 continue;
             }
             if (name !== icuDataResourceName) {
@@ -179,95 +179,95 @@ export function mapBootConfigToMonoConfig(moduleConfig: MonoConfigInternal, appl
 
         const resolvedUrl = appendUniqueQuery(loaderHelpers.locateFile(name));
         const asset: AssetEntry = {
-            name,
-            resolvedUrl,
-            hash: resources.runtime[name],
-            behavior,
-            loadRemote
+            "name": name,
+            "resolvedUrl": resolvedUrl,
+            "hash": resources["runtime"][name],
+            "behavior": behavior,
+            "loadRemote": loadRemote,
         };
         assets.push(asset);
     }
 
-    if (moduleConfig.loadAllSatelliteResources && resources.satelliteResources) {
-        for (const culture in resources.satelliteResources) {
-            for (const name in resources.satelliteResources[culture]) {
+    if (moduleConfig["loadAllSatelliteResources"] && resources["satelliteResources"]) {
+        for (const culture in resources["satelliteResources"]) {
+            for (const name in resources["satelliteResources"][culture]) {
                 assets.push({
-                    name,
-                    culture,
-                    behavior: "resource",
-                    hash: resources.satelliteResources[culture][name],
+                    "name": name,
+                    "culture": culture,
+                    "behavior": "resource",
+                    "hash": resources["satelliteResources"][culture][name],
                 });
             }
         }
     }
 
-    for (let i = 0; i < resourceLoader.bootConfig.config.length; i++) {
-        const config = resourceLoader.bootConfig.config[i];
-        if (config === "appsettings.json" || config === `appsettings.${applicationEnvironment}.json`) {
+    for (let i = 0; i < resourceLoader.bootConfig["config"].length; i++) {
+        const name = resourceLoader.bootConfig["config"][i];
+        if (name === "appsettings.json" || name === `appsettings.${applicationEnvironment}.json`) {
             assets.push({
-                name: config,
-                resolvedUrl: appendUniqueQuery((document ? document.baseURI : "/") + config),
-                behavior: "vfs",
+                "name": name,
+                "resolvedUrl": appendUniqueQuery((document ? document.baseURI : "/") + name),
+                "behavior": "vfs",
             });
         }
     }
 
-    for (const virtualPath in resources.vfs) {
-        for (const name in resources.vfs[virtualPath]) {
+    for (const virtualPath in resources["vfs"]) {
+        for (const name in resources["vfs"][virtualPath]) {
             const asset: AssetEntry = {
-                name,
-                resolvedUrl: appendUniqueQuery(loaderHelpers.locateFile(name)),
-                hash: resources.vfs[virtualPath][name],
-                behavior: "vfs",
-                virtualPath
+                "name": name,
+                "resolvedUrl": appendUniqueQuery(loaderHelpers.locateFile(name)),
+                "hash": resources["vfs"][virtualPath][name],
+                "behavior": "vfs",
+                "virtualPath": virtualPath,
             };
             assets.push(asset);
         }
     }
 
     if (!hasIcuData) {
-        moduleConfig.globalizationMode = "invariant";
+        moduleConfig["globalizationMode"] = "invariant";
     }
 
-    if (resourceLoader.bootConfig.modifiableAssemblies) {
+    if (resourceLoader.bootConfig["modifiableAssemblies"]) {
         // Configure the app to enable hot reload in Development.
-        environmentVariables["DOTNET_MODIFIABLE_ASSEMBLIES"] = resourceLoader.bootConfig.modifiableAssemblies;
+        environmentVariables["DOTNET_MODIFIABLE_ASSEMBLIES"] = resourceLoader.bootConfig["modifiableAssemblies"];
     }
 
     if (resourceLoader.startOptions.applicationCulture) {
         // If a culture is specified via start options use that to initialize the Emscripten \  .NET culture.
-        environmentVariables["LANG"] = `${resourceLoader.startOptions.applicationCulture}.UTF-8`;
+        environmentVariables["LANG"] = `${resourceLoader["startOptions"]["applicationCulture"]}.UTF-8`;
     }
 
-    if (resourceLoader.bootConfig.startupMemoryCache !== undefined) {
-        moduleConfig.startupMemoryCache = resourceLoader.bootConfig.startupMemoryCache;
+    if (resourceLoader.bootConfig["startupMemoryCache"] !== undefined) {
+        moduleConfig["startupMemoryCache"] = resourceLoader.bootConfig["startupMemoryCache"];
     }
 
-    if (resourceLoader.bootConfig.runtimeOptions) {
-        moduleConfig.runtimeOptions = [...(moduleConfig.runtimeOptions || []), ...(resourceLoader.bootConfig.runtimeOptions || [])];
+    if (resourceLoader.bootConfig["runtimeOptions"]) {
+        moduleConfig["runtimeOptions"] = [...(moduleConfig["runtimeOptions"] || []), ...(resourceLoader.bootConfig["runtimeOptions"] || [])];
     }
 }
 
 function getICUResourceName(bootConfig: BootJsonData, moduleConfig: MonoConfigInternal, culture: string | undefined): string {
-    if (bootConfig.icuDataMode === ICUDataMode.Custom) {
+    if (bootConfig["icuDataMode"] === ICUDataMode.Custom) {
         const icuFiles = Object
-            .keys(bootConfig.resources.runtime)
+            .keys(bootConfig["resources"]["runtime"])
             .filter(n => n.startsWith("icudt") && n.endsWith(".dat"));
         if (icuFiles.length === 1) {
-            moduleConfig.globalizationMode = "icu";
+            moduleConfig["globalizationMode"] = "icu";
             const customIcuFile = icuFiles[0];
             return customIcuFile;
         }
     }
 
-    if (bootConfig.icuDataMode === ICUDataMode.Hybrid) {
-        moduleConfig.globalizationMode = "hybrid";
+    if (bootConfig["icuDataMode"] === ICUDataMode.Hybrid) {
+        moduleConfig["globalizationMode"] = "hybrid";
         const reducedICUResourceName = "icudt_hybrid.dat";
         return reducedICUResourceName;
     }
 
-    if (!culture || bootConfig.icuDataMode === ICUDataMode.All) {
-        moduleConfig.globalizationMode = "icu";
+    if (!culture || bootConfig["icuDataMode"] === ICUDataMode.All) {
+        moduleConfig["globalizationMode"] = "icu";
         const combinedICUResourceName = "icudt.dat";
         return combinedICUResourceName;
     }

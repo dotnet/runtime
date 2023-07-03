@@ -36,9 +36,9 @@ export async function detect_features_and_polyfill(module: DotnetModuleInternal)
     if (ENVIRONMENT_IS_NODE) {
         // eslint-disable-next-line @typescript-eslint/ban-ts-comment
         // @ts-ignore:
-        INTERNAL.require = await import(/* webpackIgnore: true */"module").then(mod => mod.createRequire(/* webpackIgnore: true */import.meta.url));
+        INTERNAL["require"] = await import(/* webpackIgnore: true */"module").then(mod => mod.createRequire(/* webpackIgnore: true */import.meta.url));
     } else {
-        INTERNAL.require = Promise.resolve(() => { throw new Error("require not supported"); });
+        INTERNAL["require"] = Promise.resolve(() => { throw new Error("require not supported"); });
     }
 
     if (typeof globalThis.URL === "undefined") {
@@ -63,8 +63,8 @@ export async function fetch_like(url: string, init?: RequestInit): Promise<Respo
                 return globalThis.fetch(url, init || { credentials: "same-origin" });
             }
             if (!node_fs) {
-                node_url = INTERNAL.require("url");
-                node_fs = INTERNAL.require("fs");
+                node_url = INTERNAL["require"]("url");
+                node_fs = INTERNAL["require"]("fs");
             }
             if (isFileUrl) {
                 url = node_url.fileURLToPath(url);

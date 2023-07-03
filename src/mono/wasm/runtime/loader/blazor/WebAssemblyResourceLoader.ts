@@ -8,6 +8,11 @@ const networkFetchCacheMode = "no-cache";
 
 const cacheSkipResourceTypes = ["configuration"];
 
+export async function WebAssemblyResourceLoaderinitAsync(bootConfig: BootJsonData, startOptions: Partial<WebAssemblyStartOptions>): Promise<WebAssemblyResourceLoader> {
+    const cache = await getCacheToUseIfEnabled(bootConfig);
+    return new WebAssemblyResourceLoader(bootConfig, cache, startOptions);
+}
+
 export class WebAssemblyResourceLoader {
     private usedCacheKeys: { [key: string]: boolean } = {};
 
@@ -15,20 +20,22 @@ export class WebAssemblyResourceLoader {
 
     private cacheLoads: { [name: string]: LoadLogEntry } = {};
 
-    static async initAsync(bootConfig: BootJsonData, startOptions: Partial<WebAssemblyStartOptions>): Promise<WebAssemblyResourceLoader> {
-        const cache = await getCacheToUseIfEnabled(bootConfig);
-        return new WebAssemblyResourceLoader(bootConfig, cache, startOptions);
+    readonly "bootConfig": BootJsonData;
+    readonly "cacheIfUsed": Cache | null;
+    readonly "startOptions": Partial<WebAssemblyStartOptions>;
+
+    constructor(bootConfig: BootJsonData, cacheIfUsed: Cache | null, startOptions: Partial<WebAssemblyStartOptions>) {
+        this.bootConfig = bootConfig;
+        this.cacheIfUsed = cacheIfUsed;
+        this.startOptions = startOptions;
     }
 
-    constructor(readonly bootConfig: BootJsonData, readonly cacheIfUsed: Cache | null, readonly startOptions: Partial<WebAssemblyStartOptions>) {
-    }
-
-    loadResources(resources: ResourceList, url: (name: string) => string, resourceType: WebAssemblyBootResourceType): LoadingResource[] {
+    "loadResources"(resources: ResourceList, url: (name: string) => string, resourceType: WebAssemblyBootResourceType): LoadingResource[] {
         return Object.keys(resources)
             .map(name => this.loadResource(name, url(name), resources[name], resourceType));
     }
 
-    loadResource(name: string, url: string, contentHash: string, resourceType: WebAssemblyBootResourceType): LoadingResource {
+    "loadResource"(name: string, url: string, contentHash: string, resourceType: WebAssemblyBootResourceType): LoadingResource {
         const response = this.cacheIfUsed && !cacheSkipResourceTypes.includes(resourceType)
             ? this.loadResourceWithCaching(this.cacheIfUsed, name, url, contentHash, resourceType)
             : this.loadResourceWithoutCaching(name, url, contentHash, resourceType);
@@ -36,7 +43,7 @@ export class WebAssemblyResourceLoader {
         return { name, url: toAbsoluteUri(url), response };
     }
 
-    logToConsole(): void {
+    "logToConsole"(): void {
         const cacheLoadsEntries = Object.values(this.cacheLoads);
         const networkLoadsEntries = Object.values(this.networkLoads);
         const cacheResponseBytes = countTotalBytes(cacheLoadsEntries);
@@ -47,7 +54,7 @@ export class WebAssemblyResourceLoader {
             return;
         }
 
-        const linkerDisabledWarning = this.bootConfig.linkerEnabled ? "%c" : "\n%cThis application was built with linking (tree shaking) disabled. Published applications will be significantly smaller.";
+        const linkerDisabledWarning = this.bootConfig["linkerEnabled"] ? "%c" : "\n%cThis application was built with linking (tree shaking) disabled. Published applications will be significantly smaller.";
         // eslint-disable-next-line no-console
         console.groupCollapsed(`%cdotnet%c Loaded ${toDataSizeString(totalResponseBytes)} resources${linkerDisabledWarning}`, "background: purple; color: white; padding: 1px 3px; border-radius: 3px;", "font-weight: bold;", "font-weight: normal;");
 
@@ -73,7 +80,7 @@ export class WebAssemblyResourceLoader {
         console.groupEnd();
     }
 
-    async purgeUnusedCacheEntriesAsync(): Promise<void> {
+    async "purgeUnusedCacheEntriesAsync"(): Promise<void> {
         // We want to keep the cache small because, even though the browser will evict entries if it
         // gets too big, we don't want to be considered problematic by the end user viewing storage stats
         const cache = this.cacheIfUsed;
@@ -123,8 +130,8 @@ export class WebAssemblyResourceLoader {
 
     private loadResourceWithoutCaching(name: string, url: string, contentHash: string, resourceType: WebAssemblyBootResourceType): Promise<Response> {
         // Allow developers to override how the resource is loaded
-        if (this.startOptions.loadBootResource) {
-            const customLoadResult = this.startOptions.loadBootResource(resourceType, name, url, contentHash);
+        if (this.startOptions["loadBootResource"]) {
+            const customLoadResult = this.startOptions["loadBootResource"](resourceType, name, url, contentHash);
             if (customLoadResult instanceof Promise) {
                 // They are supplying an entire custom response, so just use that
                 return customLoadResult;
@@ -146,7 +153,7 @@ export class WebAssemblyResourceLoader {
             fetchOptions.credentials = "include";
         } else {
             // Any other resource than configuration should provide integrity check
-            fetchOptions.integrity = this.bootConfig.cacheBootResources ? contentHash : undefined;
+            fetchOptions.integrity = this.bootConfig["cacheBootResources"] ? contentHash : undefined;
         }
 
         return fetch(url, fetchOptions);
@@ -185,7 +192,7 @@ export class WebAssemblyResourceLoader {
 
 async function getCacheToUseIfEnabled(bootConfig: BootJsonData): Promise<Cache | null> {
     // caches will be undefined if we're running on an insecure origin (secure means https or localhost)
-    if (!bootConfig.cacheBootResources || typeof caches === "undefined") {
+    if (!bootConfig["cacheBootResources"] || typeof caches === "undefined") {
         return null;
     }
 

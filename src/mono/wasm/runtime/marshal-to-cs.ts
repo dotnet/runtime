@@ -287,11 +287,11 @@ export class TaskCallbackHolder implements IDisposable {
         this.promise = promise;
     }
 
-    dispose(): void {
+    "dispose"(): void {
         teardown_managed_proxy(this, GCHandleNull);
     }
 
-    get isDisposed(): boolean {
+    get "isDisposed"(): boolean {
         return (<any>this)[js_owned_gc_handle_symbol] === GCHandleNull;
     }
 }

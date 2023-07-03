@@ -30,7 +30,7 @@ export function abort_startup(reason: any, should_exit: boolean): void {
 }
 
 export function mono_exit(exit_code: number, reason?: any): void {
-    if (loaderHelpers.config && loaderHelpers.config.asyncFlushOnExit && exit_code === 0) {
+    if (loaderHelpers.config && loaderHelpers.config["asyncFlushOnExit"] && exit_code === 0) {
         // this would NOT call Node's exit() immediately, it's a hanging promise
         (async () => {
             try {
@@ -74,7 +74,7 @@ async function flush_node_streams() {
 function set_exit_code_and_quit_now(exit_code: number, reason?: any): void {
     if (runtimeHelpers.ExitStatus) {
         if (reason && !(reason instanceof runtimeHelpers.ExitStatus)) {
-            if (!loaderHelpers.config.logExitCode) {
+            if (!loaderHelpers.config["logExitCode"]) {
                 if (reason instanceof Error && runtimeHelpers.stringify_as_error_with_stack)
                     loaderHelpers.err(runtimeHelpers.stringify_as_error_with_stack(reason));
                 else if (typeof reason == "string")
@@ -99,8 +99,8 @@ function set_exit_code_and_quit_now(exit_code: number, reason?: any): void {
 
     appendElementOnExit(exit_code);
     if (exit_code !== 0 || !ENVIRONMENT_IS_WEB) {
-        if (ENVIRONMENT_IS_NODE && INTERNAL.process) {
-            INTERNAL.process.exit(exit_code);
+        if (ENVIRONMENT_IS_NODE && INTERNAL["process"]) {
+            INTERNAL["process"].exit(exit_code);
             throw reason;
         }
         else if (runtimeHelpers.quit) {
@@ -112,7 +112,7 @@ function set_exit_code_and_quit_now(exit_code: number, reason?: any): void {
 }
 
 function appendElementOnExit(exit_code: number) {
-    if (ENVIRONMENT_IS_WEB && loaderHelpers.config && loaderHelpers.config.appendElementOnExit) {
+    if (ENVIRONMENT_IS_WEB && loaderHelpers.config && loaderHelpers.config["appendElementOnExit"]) {
         //Tell xharness WasmBrowserTestRunner what was the exit code
         const tests_done_elem = document.createElement("label");
         tests_done_elem.id = "tests_done";
@@ -123,7 +123,7 @@ function appendElementOnExit(exit_code: number) {
 }
 
 function logErrorOnExit(exit_code: number, reason?: any) {
-    if (loaderHelpers.config && loaderHelpers.config.logExitCode) {
+    if (loaderHelpers.config && loaderHelpers.config["logExitCode"]) {
         if (exit_code != 0 && reason) {
             if (reason instanceof Error && runtimeHelpers.stringify_as_error_with_stack)
                 mono_log_error(runtimeHelpers.stringify_as_error_with_stack(reason));

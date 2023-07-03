@@ -20,7 +20,7 @@ export function initializeReplacements(replacements: EmscriptenReplacements): vo
     if (typeof globalThis.performance === "undefined") {
         globalThis.performance = dummyPerformance as any;
     }
-    replacements.require = INTERNAL.require;
+    replacements.require = INTERNAL["require"];
 
     // script location
     replacements.scriptDirectory = loaderHelpers.scriptDirectory;
@@ -148,12 +148,12 @@ export async function init_polyfills_async(): Promise<void> {
     if (ENVIRONMENT_IS_NODE) {
         // wait for locateFile setup on NodeJs
         if (globalThis.performance === dummyPerformance) {
-            const { performance } = INTERNAL.require("perf_hooks");
+            const { performance } = INTERNAL["require"]("perf_hooks");
             globalThis.performance = performance;
         }
         // eslint-disable-next-line @typescript-eslint/ban-ts-comment
         // @ts-ignore:
-        INTERNAL.process = await import(/* webpackIgnore: true */"process");
+        INTERNAL["process"] = await import(/* webpackIgnore: true */"process");
 
         if (!globalThis.crypto) {
             globalThis.crypto = <any>{};
@@ -161,7 +161,7 @@ export async function init_polyfills_async(): Promise<void> {
         if (!globalThis.crypto.getRandomValues) {
             let nodeCrypto: any = undefined;
             try {
-                nodeCrypto = INTERNAL.require("node:crypto");
+                nodeCrypto = INTERNAL["require"]("node:crypto");
             } catch (err: any) {
                 // Noop, error throwing polyfill provided bellow
             }

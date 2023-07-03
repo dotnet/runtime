@@ -59,35 +59,35 @@ const skipInstantiateByAssetTypes: {
 };
 
 export function shouldLoadIcuAsset(asset: AssetEntryInternal): boolean {
-    return !(asset.behavior == "icu" && asset.name != loaderHelpers.preferredIcuAsset);
+    return !(asset["behavior"] == "icu" && asset["name"] != loaderHelpers.preferredIcuAsset);
 }
 
 export function resolve_asset_path(behavior: AssetBehaviours): AssetEntryInternal {
-    const asset: AssetEntryInternal | undefined = loaderHelpers.config.assets?.find(a => a.behavior == behavior);
+    const asset: AssetEntryInternal | undefined = loaderHelpers.config["assets"]?.find(a => a["behavior"] == behavior);
     mono_assert(asset, () => `Can't find asset for ${behavior}`);
-    if (!asset.resolvedUrl) {
-        asset.resolvedUrl = resolve_path(asset, "");
+    if (!asset["resolvedUrl"]) {
+        asset["resolvedUrl"] = resolve_path(asset, "");
     }
     return asset;
 }
 export async function mono_download_assets(): Promise<void> {
     mono_log_debug("mono_download_assets");
-    loaderHelpers.maxParallelDownloads = loaderHelpers.config.maxParallelDownloads || loaderHelpers.maxParallelDownloads;
-    loaderHelpers.enableDownloadRetry = loaderHelpers.config.enableDownloadRetry || loaderHelpers.enableDownloadRetry;
+    loaderHelpers.maxParallelDownloads = loaderHelpers.config["maxParallelDownloads"] || loaderHelpers.maxParallelDownloads;
+    loaderHelpers.enableDownloadRetry = loaderHelpers.config["enableDownloadRetry"] || loaderHelpers.enableDownloadRetry;
     try {
         const alwaysLoadedAssets: AssetEntryInternal[] = [];
         const containedInSnapshotAssets: AssetEntryInternal[] = [];
         const promises_of_assets: Promise<AssetEntryInternal>[] = [];
 
-        for (const a of loaderHelpers.config.assets!) {
+        for (const a of loaderHelpers.config["assets"]!) {
             const asset: AssetEntryInternal = a;
             mono_assert(typeof asset === "object", "asset must be object");
-            mono_assert(typeof asset.behavior === "string", "asset behavior must be known string");
-            mono_assert(typeof asset.name === "string", "asset name must be string");
-            mono_assert(!asset.resolvedUrl || typeof asset.resolvedUrl === "string", "asset resolvedUrl could be string");
-            mono_assert(!asset.hash || typeof asset.hash === "string", "asset resolvedUrl could be string");
-            mono_assert(!asset.pendingDownload || typeof asset.pendingDownload === "object", "asset pendingDownload could be object");
-            if (containedInSnapshotByAssetTypes[asset.behavior]) {
+            mono_assert(typeof asset["behavior"] === "string", "asset behavior must be known string");
+            mono_assert(typeof asset["name"] === "string", "asset name must be string");
+            mono_assert(!asset["resolvedUrl"] || typeof asset["resolvedUrl"] === "string", "asset resolvedUrl could be string");
+            mono_assert(!asset["hash"] || typeof asset["hash"] === "string", "asset resolvedUrl could be string");
+            mono_assert(!asset["pendingDownload"] || typeof asset["pendingDownload"] === "object", "asset pendingDownload could be object");
+            if (containedInSnapshotByAssetTypes[asset["behavior"]]) {
                 containedInSnapshotAssets.push(asset);
             } else {
                 alwaysLoadedAssets.push(asset);
@@ -95,10 +95,10 @@ export async function mono_download_assets(): Promise<void> {
         }
 
         const countAndStartDownload = (asset: AssetEntryInternal) => {
-            if (!skipInstantiateByAssetTypes[asset.behavior] && shouldLoadIcuAsset(asset)) {
+            if (!skipInstantiateByAssetTypes[asset["behavior"]] && shouldLoadIcuAsset(asset)) {
                 loaderHelpers.expected_instantiated_assets_count++;
             }
-            if (!skipDownloadsByAssetTypes[asset.behavior] && shouldLoadIcuAsset(asset)) {
+            if (!skipDownloadsByAssetTypes[asset["behavior"]] && shouldLoadIcuAsset(asset)) {
                 loaderHelpers.expected_downloaded_assets_count++;
                 promises_of_assets.push(start_asset_download(asset));
             }
@@ -123,11 +123,11 @@ export async function mono_download_assets(): Promise<void> {
                 // Otherwise cleanup in case we were given pending download. It would be even better if we could abort the download.
                 cleanupAsset(asset);
                 // tell the debugger it is loaded
-                if (asset.behavior == "resource" || asset.behavior == "assembly" || asset.behavior == "pdb") {
+                if (asset["behavior"] == "resource" || asset["behavior"] == "assembly" || asset["behavior"] == "pdb") {
                     const url = resolve_path(asset, "");
-                    const virtualName: string = typeof (asset.virtualPath) === "string"
-                        ? asset.virtualPath
-                        : asset.name;
+                    const virtualName: string = typeof (asset["virtualPath"]) === "string"
+                        ? asset["virtualPath"]
+                        : asset["name"];
                     loaderHelpers._loaded_files.push({ url: url, file: virtualName });
                 }
             }
@@ -140,11 +140,11 @@ export async function mono_download_assets(): Promise<void> {
         for (const downloadPromise of promises_of_assets) {
             promises_of_asset_instantiation.push((async () => {
                 const asset = await downloadPromise;
-                if (asset.buffer) {
-                    if (!skipInstantiateByAssetTypes[asset.behavior]) {
-                        const url = asset.pendingDownloadInternal!.url;
-                        mono_assert(asset.buffer && typeof asset.buffer === "object", "asset buffer must be array or buffer like");
-                        const data = new Uint8Array(asset.buffer!);
+                if (asset["buffer"]) {
+                    if (!skipInstantiateByAssetTypes[asset["behavior"]]) {
+                        const url = asset.pendingDownloadInternal!["url"];
+                        mono_assert(asset["buffer"] && typeof asset["buffer"] === "object", "asset buffer must be array or buffer like");
+                        const data = new Uint8Array(asset["buffer"]!);
                         cleanupAsset(asset);
 
                         // wait till after onRuntimeInitialized and after memory snapshot is loaded or skipped
@@ -154,22 +154,22 @@ export async function mono_download_assets(): Promise<void> {
                         runtimeHelpers.instantiate_asset(asset, url, data);
                     }
                 } else {
-                    const headersOnly = skipBufferByAssetTypes[asset.behavior];
+                    const headersOnly = skipBufferByAssetTypes[asset["behavior"]];
                     if (!headersOnly) {
-                        mono_assert(asset.isOptional, "Expected asset to have the downloaded buffer");
-                        if (!skipDownloadsByAssetTypes[asset.behavior] && shouldLoadIcuAsset(asset)) {
+                        mono_assert(asset["isOptional"], "Expected asset to have the downloaded buffer");
+                        if (!skipDownloadsByAssetTypes[asset["behavior"]] && shouldLoadIcuAsset(asset)) {
                             loaderHelpers.expected_downloaded_assets_count--;
                         }
-                        if (!skipInstantiateByAssetTypes[asset.behavior] && shouldLoadIcuAsset(asset)) {
+                        if (!skipInstantiateByAssetTypes[asset["behavior"]] && shouldLoadIcuAsset(asset)) {
                             loaderHelpers.expected_instantiated_assets_count--;
                         }
                     } else {
-                        if (asset.behavior === "symbols") {
+                        if (asset["behavior"] === "symbols") {
                             await runtimeHelpers.instantiate_symbols_asset(asset);
                             cleanupAsset(asset);
                         }
 
-                        if (skipBufferByAssetTypes[asset.behavior]) {
+                        if (skipBufferByAssetTypes[asset["behavior"]]) {
                             ++loaderHelpers.actual_downloaded_assets_count;
                         }
                     }
@@ -212,11 +212,11 @@ export async function start_asset_download(asset: AssetEntryInternal): Promise<A
             // we will not re-try on shell
             throw err;
         }
-        if (asset.pendingDownload && asset.pendingDownloadInternal == asset.pendingDownload) {
+        if (asset["pendingDownload"] && asset.pendingDownloadInternal == asset["pendingDownload"]) {
             // we will not re-try with external source
             throw err;
         }
-        if (asset.resolvedUrl && asset.resolvedUrl.indexOf("file://") != -1) {
+        if (asset["resolvedUrl"] && asset["resolvedUrl"].indexOf("file://") != -1) {
             // we will not re-try with local file
             throw err;
         }
@@ -254,11 +254,11 @@ async function start_asset_download_with_throttle(asset: AssetEntryInternal): Pr
         if (!response) {
             return asset;
         }
-        const skipBuffer = skipBufferByAssetTypes[asset.behavior];
+        const skipBuffer = skipBufferByAssetTypes[asset["behavior"]];
         if (skipBuffer) {
             return asset;
         }
-        asset.buffer = await response.arrayBuffer();
+        asset["buffer"] = await response.arrayBuffer();
         ++loaderHelpers.actual_downloaded_assets_count;
         return asset;
     }
@@ -275,18 +275,18 @@ async function start_asset_download_with_throttle(asset: AssetEntryInternal): Pr
 
 async function start_asset_download_sources(asset: AssetEntryInternal): Promise<Response | undefined> {
     // we don't addRunDependency to allow download in parallel with onRuntimeInitialized event!
-    if (asset.pendingDownload) {
-        asset.pendingDownloadInternal = asset.pendingDownload;
+    if (asset["pendingDownload"]) {
+        asset.pendingDownloadInternal = asset["pendingDownload"];
     }
     if (asset.pendingDownloadInternal && asset.pendingDownloadInternal.response) {
         return asset.pendingDownloadInternal.response;
     }
-    if (asset.buffer) {
-        const buffer = asset.buffer;
-        asset.buffer = null as any; // GC
+    if (asset["buffer"]) {
+        const buffer = asset["buffer"];
+        asset["buffer"] = null as any; // GC
         asset.pendingDownloadInternal = {
-            url: "undefined://" + asset.name,
-            name: asset.name,
+            url: "undefined://" + asset["name"],
+            name: asset["name"],
             response: Promise.resolve({
                 arrayBuffer: () => buffer,
                 headers: {
@@ -297,7 +297,7 @@ async function start_asset_download_sources(asset: AssetEntryInternal): Promise<
         return asset.pendingDownloadInternal.response;
     }
 
-    const sourcesList = asset.loadRemote && loaderHelpers.config.remoteSources ? loaderHelpers.config.remoteSources : [""];
+    const sourcesList = asset["loadRemote"] && loaderHelpers.config["remoteSources"] ? loaderHelpers.config["remoteSources"] : [""];
     let response: Response | undefined = undefined;
     for (let sourcePrefix of sourcesList) {
         sourcePrefix = sourcePrefix.trim();
@@ -306,13 +306,13 @@ async function start_asset_download_sources(asset: AssetEntryInternal): Promise<
             sourcePrefix = "";
 
         const attemptUrl = resolve_path(asset, sourcePrefix);
-        if (asset.name === attemptUrl) {
+        if (asset["name"] === attemptUrl) {
             mono_log_debug(`Attempting to download '${attemptUrl}'`);
         } else {
-            mono_log_debug(`Attempting to download '${attemptUrl}' for ${asset.name}`);
+            mono_log_debug(`Attempting to download '${attemptUrl}' for ${asset["name"]}`);
         }
         try {
-            asset.resolvedUrl = attemptUrl;
+            asset["resolvedUrl"] = attemptUrl;
             const loadingResource = download_resource(asset);
             asset.pendingDownloadInternal = loadingResource;
             response = await loadingResource.response;
@@ -333,40 +333,40 @@ async function start_asset_download_sources(asset: AssetEntryInternal): Promise<
             continue; //next source
         }
     }
-    const isOkToFail = asset.isOptional || (asset.name.match(/\.pdb$/) && loaderHelpers.config.ignorePdbLoadErrors);
-    mono_assert(response, () => `Response undefined ${asset.name}`);
+    const isOkToFail = asset["isOptional"] || (asset["name"].match(/\.pdb$/) && loaderHelpers.config["ignorePdbLoadErrors"]);
+    mono_assert(response, () => `Response undefined ${asset["name"]}`);
     if (!isOkToFail) {
-        const err: any = new Error(`download '${response.url}' for ${asset.name} failed ${response.status} ${response.statusText}`);
+        const err: any = new Error(`download '${response["url"]}' for ${asset["name"]} failed ${response.status} ${response.statusText}`);
         err.status = response.status;
         throw err;
     } else {
-        loaderHelpers.out(`optional download '${response.url}' for ${asset.name} failed ${response.status} ${response.statusText}`);
+        loaderHelpers.out(`optional download '${response["url"]}' for ${asset["name"]} failed ${response.status} ${response.statusText}`);
         return undefined;
     }
 }
 
 function resolve_path(asset: AssetEntry, sourcePrefix: string): string {
-    mono_assert(sourcePrefix !== null && sourcePrefix !== undefined, () => `sourcePrefix must be provided for ${asset.name}`);
+    mono_assert(sourcePrefix !== null && sourcePrefix !== undefined, () => `sourcePrefix must be provided for ${asset["name"]}`);
     let attemptUrl;
-    const assemblyRootFolder = loaderHelpers.config.assemblyRootFolder;
-    if (!asset.resolvedUrl) {
+    const assemblyRootFolder = loaderHelpers.config["assemblyRootFolder"];
+    if (!asset["resolvedUrl"]) {
         if (sourcePrefix === "") {
-            if (asset.behavior === "assembly" || asset.behavior === "pdb") {
+            if (asset["behavior"] === "assembly" || asset["behavior"] === "pdb") {
                 attemptUrl = assemblyRootFolder
-                    ? (assemblyRootFolder + "/" + asset.name)
-                    : asset.name;
+                    ? (assemblyRootFolder + "/" + asset["name"])
+                    : asset["name"];
             }
-            else if (asset.behavior === "resource") {
-                const path = asset.culture && asset.culture !== "" ? `${asset.culture}/${asset.name}` : asset.name;
+            else if (asset["behavior"] === "resource") {
+                const path = asset["culture"] && asset["culture"] !== "" ? `${asset["culture"]}/${asset["name"]}` : asset["name"];
                 attemptUrl = assemblyRootFolder
                     ? (assemblyRootFolder + "/" + path)
                     : path;
             }
             else {
-                attemptUrl = asset.name;
+                attemptUrl = asset["name"];
             }
         } else {
-            attemptUrl = sourcePrefix + asset.name;
+            attemptUrl = sourcePrefix + asset["name"];
         }
         attemptUrl = loaderHelpers.locateFile(attemptUrl);
         if (loaderHelpers.assetUniqueQuery) {
@@ -374,7 +374,7 @@ function resolve_path(asset: AssetEntry, sourcePrefix: string): string {
         }
     }
     else {
-        attemptUrl = asset.resolvedUrl;
+        attemptUrl = asset["resolvedUrl"];
     }
     mono_assert(attemptUrl && typeof attemptUrl == "string", "attemptUrl need to be path or url string");
     return attemptUrl;
@@ -387,24 +387,24 @@ function download_resource(request: ResourceRequest): LoadingResource {
             if (loading) return loading;
         }
         const options: any = {};
-        if (request.hash) {
-            options.integrity = request.hash;
+        if (request["hash"]) {
+            options.integrity = request["hash"];
         }
-        const response = loaderHelpers.fetch_like(request.resolvedUrl!, options);
+        const response = loaderHelpers.fetch_like(request["resolvedUrl"]!, options);
         return {
-            name: request.name, url: request.resolvedUrl!, response
+            name: request["name"], url: request["resolvedUrl"]!, response
         };
     } catch (err) {
         const response = <Response><any>{
             ok: false,
-            url: request.resolvedUrl,
+            url: request["resolvedUrl"],
             status: 500,
             statusText: "ERR29: " + err,
             arrayBuffer: () => { throw err; },
             json: () => { throw err; }
         };
         return {
-            name: request.name, url: request.resolvedUrl!, response: Promise.resolve(response)
+            name: request["name"], url: request["resolvedUrl"]!, response: Promise.resolve(response)
         };
     }
 }
@@ -412,6 +412,6 @@ function download_resource(request: ResourceRequest): LoadingResource {
 export function cleanupAsset(asset: AssetEntryInternal) {
     // give GC chance to collect resources
     asset.pendingDownloadInternal = null as any; // GC
-    asset.pendingDownload = null as any; // GC
-    asset.buffer = null as any; // GC
+    asset["pendingDownload"] = null as any; // GC
+    asset["buffer"] = null as any; // GC
 }

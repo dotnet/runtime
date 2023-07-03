@@ -19,7 +19,7 @@ let _assembly_name_str: string; //keep this variable, it's used by BrowserDebugP
 let _entrypoint_method_token: number; //keep this variable, it's used by BrowserDebugProxy
 
 export function mono_wasm_runtime_ready(): void {
-    INTERNAL.mono_wasm_runtime_is_ready = runtimeHelpers.mono_wasm_runtime_is_ready = true;
+    INTERNAL["mono_wasm_runtime_is_ready"] = runtimeHelpers.mono_wasm_runtime_is_ready = true;
 
     // FIXME: where should this go?
     _next_call_function_res_id = 0;
@@ -346,8 +346,8 @@ export function mono_wasm_release_object(objectId: string): void {
 export function mono_wasm_debugger_log(level: number, message_ptr: CharPtr): void {
     const message = utf8ToString(message_ptr);
 
-    if (INTERNAL["logging"] && typeof INTERNAL.logging["debugger"] === "function") {
-        INTERNAL.logging.debugger(level, message);
+    if (INTERNAL["logging"] && typeof INTERNAL["logging"]["debugger"] === "function") {
+        INTERNAL["logging"]["debugger"](level, message);
         return;
     }
 

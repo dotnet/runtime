@@ -20,6 +20,7 @@ const nativeBinDir = process.env.NativeBinDir ? process.env.NativeBinDir.replace
 const monoWasmThreads = process.env.MonoWasmThreads === "true" ? true : false;
 const wasmEnableLegacyJsInterop = process.env.DISABLE_LEGACY_JS_INTEROP !== "1" ? true : false;
 const monoDiagnosticsMock = process.env.MonoDiagnosticsMock === "true" ? true : false;
+const nameCache = {};// for terser mangled names across files
 const terserConfig = {
     compress: {
         defaults: true,
@@ -32,7 +33,12 @@ const terserConfig = {
         // and unit test at src\libraries\System.Runtime.InteropServices.JavaScript\tests\System.Runtime.InteropServices.JavaScript.Legacy.UnitTests\timers.mjs
         keep_fnames: /(mono_wasm_runtime_ready|mono_wasm_fire_debugger_agent_message_with_data|mono_wasm_fire_debugger_agent_message_with_data_to_pause|mono_wasm_schedule_timer_tick)/,
         keep_classnames: /(ManagedObject|ManagedError|Span|ArraySegment|WasmRootBuffer|SessionOptionsBuilder)/,
+        toplevel: true,
+        properties: {
+            keep_quoted: "strict"
+        }
     },
+    nameCache,
 };
 const plugins = isDebug ? [writeOnChangePlugin()] : [terser(terserConfig), writeOnChangePlugin()];
 const banner = "//! Licensed to the .NET Foundation under one or more agreements.\n//! The .NET Foundation licenses this file to you under the MIT license.\n";
@@ -276,6 +282,7 @@ function alwaysLF() {
 }
 
 async function writeWhenChanged(options, bundle) {
+
     try {
         const name = Object.keys(bundle)[0];
         const asset = bundle[name];
@@ -332,6 +339,7 @@ function regexCheck(checks = []) {
 
     function executeCheck(self, code, id) {
         // self.warn("executeCheck" + id);
+        self.warn(JSON.stringify(nameCache));
         for (const rep of checks) {
             const { pattern, failure } = rep;
             const match = pattern.test(code);

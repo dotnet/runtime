@@ -35,7 +35,7 @@ function onMonoConfigReceived(config: MonoConfigInternal): void {
     workerMonoConfigReceived = true;
     loaderHelpers.afterConfigLoaded.promise_control.resolve(loaderHelpers.config);
 
-    if (ENVIRONMENT_IS_WEB && config.forwardConsoleLogsToWS && typeof globalThis.WebSocket != "undefined") {
+    if (ENVIRONMENT_IS_WEB && config["forwardConsoleLogsToWS"] && typeof globalThis.WebSocket != "undefined") {
         loaderHelpers.setup_proxy_console("pthread-worker", console, self.location.href);
     }
 }

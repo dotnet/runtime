@@ -37,32 +37,32 @@ import { mono_wasm_typed_array_from_ref } from "./net6-legacy/buffers";
 // --- keep in sync with dotnet.cjs.lib.js ---
 const mono_wasm_threads_exports = !MonoWasmThreads ? undefined : {
     // mono-threads-wasm.c
-    mono_wasm_pthread_on_pthread_attached,
-    mono_wasm_pthread_on_pthread_detached,
+    "mono_wasm_pthread_on_pthread_attached": mono_wasm_pthread_on_pthread_attached,
+    "mono_wasm_pthread_on_pthread_detached": mono_wasm_pthread_on_pthread_detached,
     // threads.c
-    mono_wasm_eventloop_has_unsettled_interop_promises,
+    "mono_wasm_eventloop_has_unsettled_interop_promises": mono_wasm_eventloop_has_unsettled_interop_promises,
     // diagnostics_server.c
-    mono_wasm_diagnostic_server_on_server_thread_created,
-    mono_wasm_diagnostic_server_on_runtime_server_init,
-    mono_wasm_diagnostic_server_stream_signal_work_available,
+    "mono_wasm_diagnostic_server_on_server_thread_created": mono_wasm_diagnostic_server_on_server_thread_created,
+    "mono_wasm_diagnostic_server_on_runtime_server_init": mono_wasm_diagnostic_server_on_runtime_server_init,
+    "mono_wasm_diagnostic_server_stream_signal_work_available": mono_wasm_diagnostic_server_stream_signal_work_available,
 
     // corebindings.c
-    mono_wasm_install_js_worker_interop,
-    mono_wasm_uninstall_js_worker_interop,
+    "mono_wasm_install_js_worker_interop": mono_wasm_install_js_worker_interop,
+    "mono_wasm_uninstall_js_worker_interop": mono_wasm_uninstall_js_worker_interop,
 };
 
 const mono_wasm_legacy_interop_exports = !WasmEnableLegacyJsInterop ? undefined : {
     // corebindings.c
-    mono_wasm_invoke_js_with_args_ref,
-    mono_wasm_get_object_property_ref,
-    mono_wasm_set_object_property_ref,
-    mono_wasm_get_by_index_ref,
-    mono_wasm_set_by_index_ref,
-    mono_wasm_get_global_object_ref,
-    mono_wasm_create_cs_owned_object_ref,
-    mono_wasm_typed_array_to_array_ref,
-    mono_wasm_typed_array_from_ref,
-    mono_wasm_invoke_js_blazor,
+    "mono_wasm_invoke_js_with_args_ref": mono_wasm_invoke_js_with_args_ref,
+    "mono_wasm_get_object_property_ref": mono_wasm_get_object_property_ref,
+    "mono_wasm_set_object_property_ref": mono_wasm_set_object_property_ref,
+    "mono_wasm_get_by_index_ref": mono_wasm_get_by_index_ref,
+    "mono_wasm_set_by_index_ref": mono_wasm_set_by_index_ref,
+    "mono_wasm_get_global_object_ref": mono_wasm_get_global_object_ref,
+    "mono_wasm_create_cs_owned_object_ref": mono_wasm_create_cs_owned_object_ref,
+    "mono_wasm_typed_array_to_array_ref": mono_wasm_typed_array_to_array_ref,
+    "mono_wasm_typed_array_from_ref": mono_wasm_typed_array_from_ref,
+    "mono_wasm_invoke_js_blazor": mono_wasm_invoke_js_blazor,
 };
 
 // the methods would be visible to EMCC linker
@@ -71,47 +71,47 @@ const mono_wasm_legacy_interop_exports = !WasmEnableLegacyJsInterop ? undefined 
 export function export_linker(): any {
     return {
         // mini-wasm.c
-        mono_wasm_schedule_timer,
+        "mono_wasm_schedule_timer": mono_wasm_schedule_timer,
 
         // mini-wasm-debugger.c
-        mono_wasm_asm_loaded,
-        mono_wasm_debugger_log,
-        mono_wasm_add_dbg_command_received,
-        mono_wasm_fire_debugger_agent_message_with_data,
-        mono_wasm_fire_debugger_agent_message_with_data_to_pause,
+        "mono_wasm_asm_loaded": mono_wasm_asm_loaded,
+        "mono_wasm_debugger_log": mono_wasm_debugger_log,
+        "mono_wasm_add_dbg_command_received": mono_wasm_add_dbg_command_received,
+        "mono_wasm_fire_debugger_agent_message_with_data": mono_wasm_fire_debugger_agent_message_with_data,
+        "mono_wasm_fire_debugger_agent_message_with_data_to_pause": mono_wasm_fire_debugger_agent_message_with_data_to_pause,
         // mono-threads-wasm.c
-        schedule_background_exec,
+        "schedule_background_exec": schedule_background_exec,
 
         // interp.c and jiterpreter.c
-        mono_interp_tier_prepare_jiterpreter,
-        mono_interp_record_interp_entry,
-        mono_interp_jit_wasm_entry_trampoline,
-        mono_interp_jit_wasm_jit_call_trampoline,
-        mono_interp_invoke_wasm_jit_call_trampoline,
-        mono_interp_flush_jitcall_queue,
-        mono_jiterp_do_jit_call_indirect,
+        "mono_interp_tier_prepare_jiterpreter": mono_interp_tier_prepare_jiterpreter,
+        "mono_interp_record_interp_entry": mono_interp_record_interp_entry,
+        "mono_interp_jit_wasm_entry_trampoline": mono_interp_jit_wasm_entry_trampoline,
+        "mono_interp_jit_wasm_jit_call_trampoline": mono_interp_jit_wasm_jit_call_trampoline,
+        "mono_interp_invoke_wasm_jit_call_trampoline": mono_interp_invoke_wasm_jit_call_trampoline,
+        "mono_interp_flush_jitcall_queue": mono_interp_flush_jitcall_queue,
+        "mono_jiterp_do_jit_call_indirect": mono_jiterp_do_jit_call_indirect,
 
-        mono_wasm_profiler_enter,
-        mono_wasm_profiler_leave,
+        "mono_wasm_profiler_enter": mono_wasm_profiler_enter,
+        "mono_wasm_profiler_leave": mono_wasm_profiler_leave,
 
         // driver.c
-        mono_wasm_trace_logger,
-        mono_wasm_set_entrypoint_breakpoint,
-        mono_wasm_event_pipe_early_startup_callback,
+        "mono_wasm_trace_logger": mono_wasm_trace_logger,
+        "mono_wasm_set_entrypoint_breakpoint": mono_wasm_set_entrypoint_breakpoint,
+        "mono_wasm_event_pipe_early_startup_callback": mono_wasm_event_pipe_early_startup_callback,
 
         // corebindings.c
-        mono_wasm_release_cs_owned_object,
-        mono_wasm_bind_js_function,
-        mono_wasm_invoke_bound_function,
-        mono_wasm_invoke_import,
-        mono_wasm_bind_cs_function,
-        mono_wasm_marshal_promise,
-        mono_wasm_change_case_invariant,
-        mono_wasm_change_case,
-        mono_wasm_compare_string,
-        mono_wasm_starts_with,
-        mono_wasm_ends_with,
-        mono_wasm_index_of,
+        "mono_wasm_release_cs_owned_object": mono_wasm_release_cs_owned_object,
+        "mono_wasm_bind_js_function": mono_wasm_bind_js_function,
+        "mono_wasm_invoke_bound_function": mono_wasm_invoke_bound_function,
+        "mono_wasm_invoke_import": mono_wasm_invoke_import,
+        "mono_wasm_bind_cs_function": mono_wasm_bind_cs_function,
+        "mono_wasm_marshal_promise": mono_wasm_marshal_promise,
+        "mono_wasm_change_case_invariant": mono_wasm_change_case_invariant,
+        "mono_wasm_change_case": mono_wasm_change_case,
+        "mono_wasm_compare_string": mono_wasm_compare_string,
+        "mono_wasm_starts_with": mono_wasm_starts_with,
+        "mono_wasm_ends_with": mono_wasm_ends_with,
+        "mono_wasm_index_of": mono_wasm_index_of,
 
         // threading exports, if threading is enabled
         ...mono_wasm_threads_exports,

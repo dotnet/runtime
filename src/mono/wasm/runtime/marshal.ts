@@ -302,15 +302,15 @@ export interface IDisposable {
 }
 
 export class ManagedObject implements IDisposable {
-    dispose(): void {
+    "dispose"(): void {
         teardown_managed_proxy(this, GCHandleNull);
     }
 
-    get isDisposed(): boolean {
+    get "isDisposed"(): boolean {
         return (<any>this)[js_owned_gc_handle_symbol] === GCHandleNull;
     }
 
-    toString(): string {
+    "toString"(): string {
         return `CsObject(gc_handle: ${(<any>this)[js_owned_gc_handle_symbol]})`;
     }
 }
@@ -321,11 +321,11 @@ export class ManagedError extends Error implements IDisposable {
         super(message);
         this.superStack = Object.getOwnPropertyDescriptor(this, "stack"); // this works on Chrome
         Object.defineProperty(this, "stack", {
-            get: this.getManageStack,
+            "get": this.getManageStack,
         });
     }
 
-    getSuperStack() {
+    "getSuperStack"() {
         if (this.superStack) {
             return this.superStack.value;
         }
@@ -343,11 +343,11 @@ export class ManagedError extends Error implements IDisposable {
         return this.getSuperStack();
     }
 
-    dispose(): void {
+    "dispose"(): void {
         teardown_managed_proxy(this, GCHandleNull);
     }
 
-    get isDisposed(): boolean {
+    get "isDisposed"(): boolean {
         return (<any>this)[js_owned_gc_handle_symbol] === GCHandleNull;
     }
 }
@@ -386,15 +386,15 @@ abstract class MemoryView implements IMemoryView {
     _unsafe_create_view(): TypedArray {
         // this view must be short lived so that it doesn't fail after wasm memory growth
         // for that reason we also don't give the view out to end user and provide set/slice/copyTo API instead
-        const view = this._viewType == MemoryViewType.Byte ? new Uint8Array(localHeapViewU8().buffer, <any>this._pointer, this._length)
-            : this._viewType == MemoryViewType.Int32 ? new Int32Array(localHeapViewI32().buffer, <any>this._pointer, this._length)
-                : this._viewType == MemoryViewType.Double ? new Float64Array(localHeapViewF64().buffer, <any>this._pointer, this._length)
+        const view = this._viewType == MemoryViewType.Byte ? new Uint8Array(localHeapViewU8()["buffer"], <any>this._pointer, this._length)
+            : this._viewType == MemoryViewType.Int32 ? new Int32Array(localHeapViewI32()["buffer"], <any>this._pointer, this._length)
+                : this._viewType == MemoryViewType.Double ? new Float64Array(localHeapViewF64()["buffer"], <any>this._pointer, this._length)
                     : null;
         if (!view) throw new Error("NotImplementedException");
         return view;
     }
 
-    set(source: TypedArray, targetOffset?: number): void {
+    "set"(source: TypedArray, targetOffset?: number): void {
         mono_assert(!this.isDisposed, "ObjectDisposedException");
         const targetView = this._unsafe_create_view();
         mono_assert(source && targetView && source.constructor === targetView.constructor, () => `Expected ${targetView.constructor}`);
@@ -402,7 +402,7 @@ abstract class MemoryView implements IMemoryView {
         // TODO consider memory write barrier
     }
 
-    copyTo(target: TypedArray, sourceOffset?: number): void {
+    "copyTo"(target: TypedArray, sourceOffset?: number): void {
         mono_assert(!this.isDisposed, "ObjectDisposedException");
         const sourceView = this._unsafe_create_view();
         mono_assert(target && sourceView && target.constructor === sourceView.constructor, () => `Expected ${sourceView.constructor}`);
@@ -411,19 +411,19 @@ abstract class MemoryView implements IMemoryView {
         target.set(trimmedSource);
     }
 
-    slice(start?: number, end?: number): TypedArray {
+    "slice"(start?: number, end?: number): TypedArray {
         mono_assert(!this.isDisposed, "ObjectDisposedException");
         const sourceView = this._unsafe_create_view();
         // TODO consider memory read barrier
         return sourceView.slice(start, end);
     }
 
-    get length(): number {
+    get "length"(): number {
         mono_assert(!this.isDisposed, "ObjectDisposedException");
         return this._length;
     }
 
-    get byteLength(): number {
+    get "byteLength"(): number {
         mono_assert(!this.isDisposed, "ObjectDisposedException");
         return this._viewType == MemoryViewType.Byte ? this._length
             : this._viewType == MemoryViewType.Int32 ? this._length << 2
@@ -458,10 +458,10 @@ export class Span extends MemoryView {
     public constructor(pointer: VoidPtr, length: number, viewType: MemoryViewType) {
         super(pointer, length, viewType);
     }
-    dispose(): void {
+    "dispose"(): void {
         this.is_disposed = true;
     }
-    get isDisposed(): boolean {
+    get "isDisposed"(): boolean {
         return this.is_disposed;
     }
 }
@@ -471,11 +471,11 @@ export class ArraySegment extends MemoryView {
         super(pointer, length, viewType);
     }
 
-    dispose(): void {
+    "dispose"(): void {
         teardown_managed_proxy(this, GCHandleNull);
     }
 
-    get isDisposed(): boolean {
+    get "isDisposed"(): boolean {
         return (<any>this)[js_owned_gc_handle_symbol] === GCHandleNull;
     }
 }

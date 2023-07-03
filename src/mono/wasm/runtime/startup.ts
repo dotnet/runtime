@@ -33,9 +33,6 @@ import { cwraps_binding_api, cwraps_mono_api } from "./net6-legacy/exports-legac
 import { BINDING, MONO } from "./net6-legacy/globals";
 import { localHeapViewU8 } from "./memory";
 
-// default size if MonoConfig.pthreadPoolSize is undefined
-const MONO_PTHREAD_POOL_SIZE = 4;
-
 // we are making emscripten startup async friendly
 // emscripten is executing the events without awaiting it and so we need to block progress via PromiseControllers above
 export function configureEmscriptenStartup(module: DotnetModuleInternal): void {
@@ -234,14 +231,14 @@ async function onRuntimeInitializedAsync(userOnRuntimeInitialized: () => void) {
 
         // Threads early are not supported with memory snapshot. See below how we enable them later.
         // Please disable startupMemoryCache in order to be able to diagnose or pause runtime startup.
-        if (MonoWasmThreads && !runtimeHelpers.config.startupMemoryCache) {
+        if (MonoWasmThreads && !runtimeHelpers.config["startupMemoryCache"]) {
             await mono_wasm_init_threads();
         }
 
         // load runtime and apply environment settings (if necessary)
         await mono_wasm_before_memory_snapshot();
 
-        if (runtimeHelpers.config.exitAfterSnapshot) {
+        if (runtimeHelpers.config["exitAfterSnapshot"]) {
             const reason = runtimeHelpers.ExitStatus
                 ? new runtimeHelpers.ExitStatus(0)
                 : new Error("Snapshot taken, exiting because exitAfterSnapshot was set.");
@@ -251,7 +248,7 @@ async function onRuntimeInitializedAsync(userOnRuntimeInitialized: () => void) {
             return;
         }
 
-        if (MonoWasmThreads && runtimeHelpers.config.startupMemoryCache) {
+        if (MonoWasmThreads && runtimeHelpers.config["startupMemoryCache"]) {
             await mono_wasm_init_threads();
         }
 
@@ -262,11 +259,11 @@ async function onRuntimeInitializedAsync(userOnRuntimeInitialized: () => void) {
 
         if (!runtimeHelpers.mono_wasm_runtime_is_ready) mono_wasm_runtime_ready();
 
-        if (runtimeHelpers.config.startupOptions && INTERNAL.resourceLoader) {
-            if (INTERNAL.resourceLoader.bootConfig.debugBuild && INTERNAL.resourceLoader.bootConfig.cacheBootResources) {
-                INTERNAL.resourceLoader.logToConsole();
+        if (runtimeHelpers.config["startupOptions"] && INTERNAL["resourceLoader"]) {
+            if (INTERNAL["resourceLoader"].bootConfig["debugBuild"] && INTERNAL["resourceLoader"].bootConfig["cacheBootResources"]) {
+                INTERNAL["resourceLoader"]["logToConsole"]();
             }
-            INTERNAL.resourceLoader.purgeUnusedCacheEntriesAsync(); // Don't await - it's fine to run in background
+            INTERNAL["resourceLoader"].purgeUnusedCacheEntriesAsync(); // Don't await - it's fine to run in background
         }
 
         // call user code
@@ -350,7 +347,7 @@ async function mono_wasm_pre_init_essential_async(): Promise<void> {
     await init_polyfills_async();
 
     if (MonoWasmThreads) {
-        preAllocatePThreadWorkerPool(MONO_PTHREAD_POOL_SIZE, runtimeHelpers.config);
+        preAllocatePThreadWorkerPool(runtimeHelpers.pthreadPoolSize);
     }
 
     Module.removeRunDependency("mono_wasm_pre_init_essential_async");
@@ -463,7 +460,7 @@ async function instantiate_wasm_module(
         await loaderHelpers.afterConfigLoaded;
         mono_log_debug("instantiate_wasm_module");
 
-        if (runtimeHelpers.config.startupMemoryCache) {
+        if (runtimeHelpers.config["startupMemoryCache"]) {
             memorySize = await getMemorySnapshotSize();
             runtimeHelpers.loadedMemorySnapshot = !!memorySize;
             runtimeHelpers.storeMemorySnapshotPending = !runtimeHelpers.loadedMemorySnapshot;
@@ -480,8 +477,8 @@ async function instantiate_wasm_module(
         const assetToLoad = await loaderHelpers.wasmDownloadPromise.promise;
         await instantiate_wasm_asset(assetToLoad, imports, successCallback);
         assetToLoad.pendingDownloadInternal = null as any; // GC
-        assetToLoad.pendingDownload = null as any; // GC
-        assetToLoad.buffer = null as any; // GC
+        assetToLoad["pendingDownload"] = null as any; // GC
+        assetToLoad["buffer"] = null as any; // GC
 
         mono_log_debug("instantiate_wasm_module done");
 
@@ -522,33 +519,33 @@ async function mono_wasm_before_memory_snapshot() {
         return;
     }
 
-    for (const k in runtimeHelpers.config.environmentVariables) {
-        const v = runtimeHelpers.config.environmentVariables![k];
+    for (const k in runtimeHelpers.config["environmentVariables"]) {
+        const v = runtimeHelpers.config["environmentVariables"]![k];
         if (typeof (v) === "string")
             mono_wasm_setenv(k, v);
         else
             throw new Error(`Expected environment variable '${k}' to be a string but it was ${typeof v}: '${v}'`);
     }
-    if (runtimeHelpers.config.startupMemoryCache) {
+    if (runtimeHelpers.config["startupMemoryCache"]) {
         // disable the trampoline for now, we will re-enable it after we stored the snapshot
         cwraps.mono_jiterp_update_jit_call_dispatcher(0);
     }
-    if (runtimeHelpers.config.runtimeOptions)
-        mono_wasm_set_runtime_options(runtimeHelpers.config.runtimeOptions);
+    if (runtimeHelpers.config["runtimeOptions"])
+        mono_wasm_set_runtime_options(runtimeHelpers.config["runtimeOptions"]);
 
-    if (runtimeHelpers.config.aotProfilerOptions)
-        mono_wasm_init_aot_profiler(runtimeHelpers.config.aotProfilerOptions);
+    if (runtimeHelpers.config["aotProfilerOptions"])
+        mono_wasm_init_aot_profiler(runtimeHelpers.config["aotProfilerOptions"]);
 
-    if (runtimeHelpers.config.browserProfilerOptions)
-        mono_wasm_init_browser_profiler(runtimeHelpers.config.browserProfilerOptions);
+    if (runtimeHelpers.config["browserProfilerOptions"])
+        mono_wasm_init_browser_profiler(runtimeHelpers.config["browserProfilerOptions"]);
 
-    mono_wasm_load_runtime("unused", runtimeHelpers.config.debugLevel);
+    mono_wasm_load_runtime("unused", runtimeHelpers.config["debugLevel"]);
 
     // we didn't have snapshot yet and the feature is enabled. Take snapshot now.
-    if (runtimeHelpers.config.startupMemoryCache) {
+    if (runtimeHelpers.config["startupMemoryCache"]) {
         // this would install the mono_jiterp_do_jit_call_indirect
         cwraps.mono_jiterp_update_jit_call_dispatcher(-1);
-        await storeMemorySnapshot(localHeapViewU8().buffer);
+        await storeMemorySnapshot(localHeapViewU8()["buffer"]);
         runtimeHelpers.storeMemorySnapshotPending = false;
     }
 
@@ -561,7 +558,7 @@ export function mono_wasm_load_runtime(unused?: string, debugLevel?: number): vo
         const mark = startMeasure();
         if (debugLevel == undefined) {
             debugLevel = 0;
-            if (runtimeHelpers.config.debugLevel) {
+            if (runtimeHelpers.config["debugLevel"]) {
                 debugLevel = 0 + debugLevel;
             }
         }

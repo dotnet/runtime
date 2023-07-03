@@ -36,7 +36,7 @@ export function replaceEmscriptenPThreadLibrary(replacements: PThreadReplacement
 function replacementAllocateUnusedWorker(): void {
     mono_log_debug("replacementAllocateUnusedWorker");
     const asset = loaderHelpers.resolve_asset_path("js-module-threads");
-    const uri = asset.resolvedUrl;
+    const uri = asset["resolvedUrl"];
     mono_assert(uri !== undefined, "could not resolve the uri for the js-module-threads asset");
     const worker = new Worker(uri);
     Internals.getUnusedWorkerPool().push(worker);

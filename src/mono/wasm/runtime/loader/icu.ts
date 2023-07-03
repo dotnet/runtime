@@ -5,13 +5,13 @@ import { ENVIRONMENT_IS_WEB, loaderHelpers } from "./globals";
 import { mono_log_info, mono_log_debug } from "./logging";
 
 export function init_globalization() {
-    loaderHelpers.invariantMode = loaderHelpers.config.globalizationMode === "invariant";
+    loaderHelpers.invariantMode = loaderHelpers.config["globalizationMode"] === "invariant";
     loaderHelpers.preferredIcuAsset = get_preferred_icu_asset();
 
     if (!loaderHelpers.invariantMode) {
         if (loaderHelpers.preferredIcuAsset) {
             mono_log_debug("ICU data archive(s) available, disabling invariant mode");
-        } else if (loaderHelpers.config.globalizationMode !== "icu") {
+        } else if (loaderHelpers.config["globalizationMode"] !== "icu") {
             mono_log_debug("ICU data archive(s) not available, using invariant globalization mode");
             loaderHelpers.invariantMode = true;
             loaderHelpers.preferredIcuAsset = null;
@@ -24,8 +24,8 @@ export function init_globalization() {
 
     const invariantEnv = "DOTNET_SYSTEM_GLOBALIZATION_INVARIANT";
     const hybridEnv = "DOTNET_SYSTEM_GLOBALIZATION_HYBRID";
-    const env_variables = loaderHelpers.config.environmentVariables!;
-    if (env_variables[hybridEnv] === undefined && loaderHelpers.config.globalizationMode === "hybrid") {
+    const env_variables = loaderHelpers.config["environmentVariables"]!;
+    if (env_variables[hybridEnv] === undefined && loaderHelpers.config["globalizationMode"] === "hybrid") {
         env_variables[hybridEnv] = "1";
     }
     else if (env_variables[invariantEnv] === undefined && loaderHelpers.invariantMode) {
@@ -45,16 +45,16 @@ export function init_globalization() {
 }
 
 export function get_preferred_icu_asset(): string | null {
-    if (!loaderHelpers.config.assets || loaderHelpers.invariantMode)
+    if (!loaderHelpers.config["assets"] || loaderHelpers.invariantMode)
         return null;
 
     // By setting <WasmIcuDataFileName> user can define what ICU source file they want to load.
     // There is no need to check application's culture when <WasmIcuDataFileName> is set.
     // If it was not set, then we have 3 "icu" assets in config and we should choose
     // only one for loading, the one that matches the application's locale.
-    const icuAssets = loaderHelpers.config.assets.filter(a => a["behavior"] == "icu");
+    const icuAssets = loaderHelpers.config["assets"].filter(a => a["behavior"] == "icu");
     if (icuAssets.length === 1)
-        return icuAssets[0].name;
+        return icuAssets[0]["name"];
 
     // reads the browsers locale / the OS's locale
     const preferredCulture = ENVIRONMENT_IS_WEB ? navigator.language : Intl.DateTimeFormat().resolvedOptions().locale;

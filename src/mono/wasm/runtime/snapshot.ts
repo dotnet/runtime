@@ -124,7 +124,7 @@ export async function cleanupMemorySnapshots(protectKey: string) {
         }
         const items = await cache.keys();
         for (const item of items) {
-            if (item.url && item.url !== protectKey && item.url.startsWith(memoryPrefix)) {
+            if (item["url"] && item["url"] !== protectKey && item["url"].startsWith(memoryPrefix)) {
                 await cache.delete(item);
             }
         }
@@ -144,42 +144,42 @@ async function getCacheKey(): Promise<string | null> {
     const inputs = Object.assign({}, runtimeHelpers.config) as any;
     // above already has env variables, runtime options, etc
 
-    if (!inputs.assetsHash) {
+    if (!inputs["assetsHash"]) {
         // this is fallback for blazor which does not have assetsHash yet
-        inputs.assetsHash = [];
-        for (const asset of inputs.assets) {
-            if (!asset.hash) {
+        inputs["assetsHash"] = [];
+        for (const asset of inputs["assets"]) {
+            if (!asset["hash"]) {
                 // if we don't have hash, we can't use the cache
                 return null;
             }
-            inputs.assetsHash.push(asset.hash);
+            inputs["assetsHash"].push(asset["hash"]);
         }
     }
-    // otherwise config.assetsHash already has hashes for all the assets (DLLs, ICU, .wasms, etc). 
+    // otherwise config["assetsHash"] already has hashes for all the assets (DLLs, ICU, .wasms, etc). 
 
     // Now we remove assets collection from the hash.
-    delete inputs.assets;
+    delete inputs["assets"];
     // some things are calculated at runtime, so we need to add them to the hash
-    inputs.preferredIcuAsset = loaderHelpers.preferredIcuAsset;
+    inputs["preferredIcuAsset"] = loaderHelpers.preferredIcuAsset;
     // timezone is part of env variables, so it is already in the hash
 
     // some things are not relevant for memory snapshot
-    delete inputs.forwardConsoleLogsToWS;
-    delete inputs.diagnosticTracing;
-    delete inputs.appendElementOnExit;
-    delete inputs.logExitCode;
-    delete inputs.pthreadPoolSize;
-    delete inputs.asyncFlushOnExit;
-    delete inputs.assemblyRootFolder;
-    delete inputs.remoteSources;
-    delete inputs.ignorePdbLoadErrors;
-    delete inputs.maxParallelDownloads;
-    delete inputs.enableDownloadRetry;
-    delete inputs.exitAfterSnapshot;
-    delete inputs.assetUniqueQuery;
+    delete inputs["forwardConsoleLogsToWS"];
+    delete inputs["diagnosticTracing"];
+    delete inputs["appendElementOnExit"];
+    delete inputs["logExitCode"];
+    delete inputs["pthreadPoolSize"];
+    delete inputs["asyncFlushOnExit"];
+    delete inputs["assemblyRootFolder"];
+    delete inputs["remoteSources"];
+    delete inputs["ignorePdbLoadErrors"];
+    delete inputs["maxParallelDownloads"];
+    delete inputs["enableDownloadRetry"];
+    delete inputs["exitAfterSnapshot"];
+    delete inputs["assetUniqueQuery"];
 
-    inputs.GitHash = GitHash;
-    inputs.ProductVersion = ProductVersion;
+    inputs["GitHash"] = GitHash;
+    inputs["ProductVersion"] = ProductVersion;
 
     const inputsJson = JSON.stringify(inputs);
     const sha256Buffer = await runtimeHelpers.subtle.digest("SHA-256", new TextEncoder().encode(inputsJson));

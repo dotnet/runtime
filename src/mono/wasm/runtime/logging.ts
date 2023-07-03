@@ -104,8 +104,8 @@ export function mono_wasm_trace_logger(log_domain_ptr: CharPtr, log_level_ptr: C
 
     const message = `[MONO] ${origMessage}`;
 
-    if (INTERNAL["logging"] && typeof INTERNAL.logging["trace"] === "function") {
-        INTERNAL.logging.trace(domain, log_level, message, isFatal, dataPtr);
+    if (INTERNAL["logging"] && typeof INTERNAL["logging"]["trace"] === "function") {
+        INTERNAL["logging"]["trace"](domain, log_level, message, isFatal, dataPtr);
         return;
     }
 

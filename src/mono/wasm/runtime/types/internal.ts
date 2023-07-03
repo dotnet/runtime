@@ -161,6 +161,7 @@ export type RuntimeHelpers = {
     updateMemoryViews: () => void
     runtimeReady: boolean,
     cspPolicy: boolean,
+    pthreadPoolSize: number,
 
     runtimeModuleUrl: string
     nativeModuleUrl: string

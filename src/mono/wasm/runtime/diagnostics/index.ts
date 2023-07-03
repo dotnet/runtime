@@ -81,7 +81,7 @@ function boolsyOption(x: string | boolean): boolean {
 ///  * DOTNET_DiagnosticPorts
 ///
 function diagnostic_options_from_environment(): DiagnosticOptions | null {
-    const val = runtimeHelpers.config.environmentVariables ? runtimeHelpers.config.environmentVariables["DOTNET_DiagnosticPorts"] : undefined;
+    const val = runtimeHelpers.config["environmentVariables"] ? runtimeHelpers.config["environmentVariables"]["DOTNET_DiagnosticPorts"] : undefined;
     if (is_nullish(val))
         return null;
     // TODO: consider also parsing the DOTNET_EnableEventPipe and DOTNET_EventPipeOutputPath, DOTNET_EvnetPipeConfig variables

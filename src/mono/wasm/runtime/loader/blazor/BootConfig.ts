@@ -7,45 +7,44 @@ import { loaderHelpers } from "../globals";
 
 export type LoadBootResourceCallback = (type: WebAssemblyBootResourceType, name: string, defaultUri: string, integrity: string) => string | Promise<Response> | null | undefined;
 
-export class BootConfigResult {
-    private constructor(public bootConfig: BootJsonData, public applicationEnvironment: string) {
+export async function BootConfigResultinitAsync(loadBootResource?: LoadBootResourceCallback, environment?: string) {
+    const defaultBootJsonLocation = "_framework/blazor.boot.json";
+
+    const loaderResponse = loadBootResource !== undefined ?
+        loadBootResource("manifest", "blazor.boot.json", defaultBootJsonLocation, "") :
+        defaultLoadBlazorBootJson(defaultBootJsonLocation);
+
+    let bootConfigResponse: Response;
+
+    if (!loaderResponse) {
+        bootConfigResponse = await defaultLoadBlazorBootJson(defaultBootJsonLocation);
+    } else if (typeof loaderResponse === "string") {
+        bootConfigResponse = await defaultLoadBlazorBootJson(loaderResponse);
+    } else {
+        bootConfigResponse = await loaderResponse;
     }
 
-    static fromFetchResponse(bootConfigResponse: Response, bootConfig: BootJsonData, environment: string | undefined): BootConfigResult {
-        const applicationEnvironment = environment || (loaderHelpers.getApplicationEnvironment && loaderHelpers.getApplicationEnvironment(bootConfigResponse)) || "Production";
-        bootConfig.modifiableAssemblies = bootConfigResponse.headers.get("DOTNET-MODIFIABLE-ASSEMBLIES");
-        bootConfig.aspnetCoreBrowserTools = bootConfigResponse.headers.get("ASPNETCORE-BROWSER-TOOLS");
+    const bootConfig: BootJsonData = await bootConfigResponse.json();
+    return BootConfigResultfromFetchResponse(bootConfigResponse, bootConfig, environment);
 
-        return new BootConfigResult(bootConfig, applicationEnvironment);
-    }
-
-    static async initAsync(loadBootResource?: LoadBootResourceCallback, environment?: string): Promise<BootConfigResult> {
-        const defaultBootJsonLocation = "_framework/blazor.boot.json";
-
-        const loaderResponse = loadBootResource !== undefined ?
-            loadBootResource("manifest", "blazor.boot.json", defaultBootJsonLocation, "") :
-            defaultLoadBlazorBootJson(defaultBootJsonLocation);
-
-        let bootConfigResponse: Response;
-
-        if (!loaderResponse) {
-            bootConfigResponse = await defaultLoadBlazorBootJson(defaultBootJsonLocation);
-        } else if (typeof loaderResponse === "string") {
-            bootConfigResponse = await defaultLoadBlazorBootJson(loaderResponse);
-        } else {
-            bootConfigResponse = await loaderResponse;
-        }
-
-        const bootConfig: BootJsonData = await bootConfigResponse.json();
-        return BootConfigResult.fromFetchResponse(bootConfigResponse, bootConfig, environment);
-
-        function defaultLoadBlazorBootJson(url: string): Promise<Response> {
-            return fetch(url, {
-                method: "GET",
-                credentials: "include",
-                cache: "no-cache",
-            });
-        }
+    function defaultLoadBlazorBootJson(url: string): Promise<Response> {
+        return fetch(url, {
+            method: "GET",
+            credentials: "include",
+            cache: "no-cache",
+        });
     }
 }
 
+export function BootConfigResultfromFetchResponse(bootConfigResponse: Response, bootConfig: BootJsonData, environment: string | undefined): BootConfigResult {
+    const applicationEnvironment = environment || (loaderHelpers.getApplicationEnvironment && loaderHelpers.getApplicationEnvironment(bootConfigResponse)) || "Production";
+    bootConfig["modifiableAssemblies"] = bootConfigResponse.headers.get("DOTNET-MODIFIABLE-ASSEMBLIES");
+    bootConfig["aspnetCoreBrowserTools"] = bootConfigResponse.headers.get("ASPNETCORE-BROWSER-TOOLS");
+
+    return { bootConfig, applicationEnvironment };
+}
+
+export type BootConfigResult = {
+    bootConfig: BootJsonData;
+    applicationEnvironment: string;
+}
