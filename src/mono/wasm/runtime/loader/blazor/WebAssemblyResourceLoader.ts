@@ -37,6 +37,9 @@ export class WebAssemblyResourceLoader {
         const absoluteUrl = toAbsoluteUri(url);
 
         if (resourceType == "assembly") {
+            if (!loaderHelpers.loadedAssemblies)
+                loaderHelpers.loadedAssemblies = [];
+
             loaderHelpers.loadedAssemblies.push(absoluteUrl);
         }
         return { name, url: absoluteUrl, response };
