@@ -8786,11 +8786,6 @@ CORINFO_CLASS_HANDLE CEEInfo::getDefaultComparerClassHelper(CORINFO_CLASS_HANDLE
 
     TypeHandle elemTypeHnd(elemType);
 
-    if (elemTypeHnd == TypeHandle(g_pCanonMethodTableClass))
-    {
-        return NULL;
-    }
-
     // Mirrors the logic in BCL's CompareHelpers.CreateDefaultComparer
     // And in compile.cpp's SpecializeComparer
     //
@@ -8817,6 +8812,11 @@ CORINFO_CLASS_HANDLE CEEInfo::getDefaultComparerClassHelper(CORINFO_CLASS_HANDLE
     {
         TypeHandle resultTh = ((TypeHandle)CoreLibBinder::GetClass(CLASS__ENUM_COMPARER)).Instantiate(inst);
         return CORINFO_CLASS_HANDLE(resultTh.GetMethodTable());
+    }
+
+    if (elemTypeHnd.IsCanonicalSubtype())
+    {
+        return NULL;
     }
 
     // Default case
@@ -8857,11 +8857,6 @@ CORINFO_CLASS_HANDLE CEEInfo::getDefaultEqualityComparerClassHelper(CORINFO_CLAS
     // And in compile.cpp's SpecializeEqualityComparer
     TypeHandle elemTypeHnd(elemType);
 
-    if (elemTypeHnd == TypeHandle(g_pCanonMethodTableClass))
-    {
-        return NULL;
-    }
-
     // Mirrors the logic in BCL's CompareHelpers.CreateDefaultComparer
     // And in compile.cpp's SpecializeComparer
     //
@@ -8891,6 +8886,11 @@ CORINFO_CLASS_HANDLE CEEInfo::getDefaultEqualityComparerClassHelper(CORINFO_CLAS
     {
         TypeHandle resultTh = ((TypeHandle)CoreLibBinder::GetClass(CLASS__ENUM_EQUALITYCOMPARER)).Instantiate(inst);
         return CORINFO_CLASS_HANDLE(resultTh.GetMethodTable());
+    }
+
+    if (elemTypeHnd.IsCanonicalSubtype())
+    {
+        return NULL;
     }
 
     // Default case
