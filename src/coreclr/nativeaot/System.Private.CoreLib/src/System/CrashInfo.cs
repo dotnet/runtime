@@ -84,15 +84,15 @@ namespace System
         /// Write the exception information with fallbacks if the info doesn't fit in the fixed size triage buffer.
         /// </summary>
         /// <param name="exception">exception object</param>
-        public void WriteExceptionInfo(Exception exception)
+        public void WriteException(Exception exception)
         {
-            if (!WriteBlock("exception", '{', '}', () => WriteException(exception, int.MaxValue, 500, int.MaxValue)))
+            if (!WriteException(exception, int.MaxValue, 500, int.MaxValue))
             {
                 // If the buffer isn't big enough to fit 500 stack frames, try limiting to 10
-                if (!WriteBlock("exception", '{', '}', () => WriteException(exception, int.MaxValue, 10, int.MaxValue)))
+                if (!WriteException(exception, int.MaxValue, 10, int.MaxValue))
                 {
                     // If that fails, try limiting the size of the stack frame method names to 100 bytes
-                    WriteBlock("exception", '{', '}', () => WriteException(exception, int.MaxValue, 10, 100));
+                    WriteException(exception, int.MaxValue, 10, 100);
                 }
             }
         }
@@ -146,7 +146,8 @@ namespace System
         }
 
         /// <summary>
-        /// Adds the exception info to the JSON buffer
+        /// Adds the exception info to the JSON buffer under the "exception" key. If the exception can not fit in
+        /// the triage buffer the allocations are backed out.
         /// </summary>
         /// <param name="exception">exception build triage block from</param>
         /// <param name="maxMessageSize">limits the size of the exception message strings</param>
@@ -155,6 +156,30 @@ namespace System
         /// <returns>true - success, false - out of triage buffer space</returns>
         private bool WriteException(Exception exception, int maxMessageSize, int maxNumberStackFrames, int maxMethodNameSize)
         {
+            int savedIndex = _currentBufferIndex;
+            if (!WriteException("exception", exception, maxMessageSize, maxNumberStackFrames, maxMethodNameSize))
+            {
+                _currentBufferIndex = savedIndex;
+                _comma = false;
+                return false;
+            }
+            return true;
+        }
+
+        /// <summary>
+        /// Adds the exception info to the JSON buffer
+        /// </summary>
+        /// <param name="key">the name of the block</param>
+        /// <param name="exception">exception build triage block from</param>
+        /// <param name="maxMessageSize">limits the size of the exception message strings</param>
+        /// <param name="maxNumberStackFrames">limits the number of stack frames written to the triage buffer</param>
+        /// <param name="maxMethodNameSize">limits the size of the stack frame method name strings</param>
+        /// <returns>true - success, false - out of triage buffer space</returns>
+        private bool WriteException(ReadOnlySpan<char> key, Exception exception, int maxMessageSize, int maxNumberStackFrames, int maxMethodNameSize)
+        {
+            if (!OpenValue(key, '{'))
+                return false;
+
             if (!WriteHexValue("address", (ulong)Unsafe.AsPointer(ref exception)))
                 return false;
 
@@ -168,50 +193,49 @@ namespace System
             if (!WriteValue("type", exception.GetType().ToString()))
                 return false;
 
-            bool success = WriteBlock("stack", '[', ']', () =>
+            if (!OpenValue("stack", '['))
+                return false;
+
+            StackTrace stackTrace = new(exception);
+            int count = 0;
+            foreach (StackFrame frame in stackTrace.GetFrames())
             {
-                StackTrace stackTrace = new(exception);
-                int count = 0;
-                foreach (StackFrame frame in stackTrace.GetFrames())
-                {
-                    // Check if the stack frame limit has been hit
-                    if (++count > maxNumberStackFrames)
-                        break;
+                // Check if the stack frame limit has been hit
+                if (++count > maxNumberStackFrames)
+                    break;
 
-                    if (!WriteStackFrame(frame, maxMethodNameSize))
-                        return false;
-                }
-                return true;
-            });
+                if (!WriteStackFrame(frame, maxMethodNameSize))
+                    return false;
+            }
 
-            if (!success)
+            if (!CloseValue(']'))
                 return false;
 
             AggregateException? aggregate = exception as AggregateException;
             if (aggregate is not null || exception.InnerException is not null)
             {
-                success = WriteBlock("inner", '[', ']', () =>
+
+                if (!OpenValue("inner", '['))
+                    return false;
+
+                if (aggregate is not null)
                 {
-                    if (aggregate is not null)
+                    foreach (Exception ex in aggregate.InnerExceptions)
                     {
-                        foreach (Exception ex in aggregate.InnerExceptions)
-                        {
-                            if (!WriteBlock(null, '{', '}', () => WriteException(ex, maxMessageSize, maxNumberStackFrames, maxMethodNameSize)))
-                                return false;
-                        }
-                    }
-                    else
-                    {
-                        if (!WriteBlock(null, '{', '}', () => WriteException(exception.InnerException, maxMessageSize, maxNumberStackFrames, maxMethodNameSize)))
+                        if (!WriteException(default, ex, maxMessageSize, maxNumberStackFrames, maxMethodNameSize))
                             return false;
                     }
-                    return true;
-                });
+                }
+                else
+                {
+                    if (!WriteException(default, exception.InnerException, maxMessageSize, maxNumberStackFrames, maxMethodNameSize))
+                        return false;
+                }
 
-                if (!success)
+                if (!CloseValue(']'))
                     return false;
             }
-            return true;
+            return CloseValue('}');
         }
 
         /// <summary>
@@ -222,23 +246,23 @@ namespace System
         /// <returns>true - success, false - out of triage buffer space</returns>
         private bool WriteStackFrame(StackFrame frame, int maxNameSize)
         {
-            return WriteBlock(null, '{', '}', () =>
+            if (!OpenValue(default, '{'))
+                return false;
+
+            nint ip = frame.GetNativeIPAddress();
+            if (!WriteHexValue("ip", (ulong)ip))
+                return false;
+
+            if (!WriteHexValue("offset", frame.GetNativeOffset()))
+                return false;
+
+            string method = DeveloperExperience.GetMethodName(ip, out IntPtr _);
+            if (method != null)
             {
-                nint ip = frame.GetNativeIPAddress();
-                if (!WriteHexValue("ip", (ulong)ip))
+                if (!WriteValue("name", method, maxNameSize))
                     return false;
-
-                if (!WriteHexValue("offset", frame.GetNativeOffset()))
-                    return false;
-
-                string method = DeveloperExperience.GetMethodName(ip, out IntPtr _);
-                if (method != null)
-                {
-                    if (!WriteValue("name", method, maxNameSize))
-                        return false;
-                }
-                return true;
-            });
+            }
+            return CloseValue('}');
         }
 
         private bool WriteHexValue(ReadOnlySpan<char> key, ulong value) => WriteValue(key, $"0x{value:X}");
@@ -264,53 +288,26 @@ namespace System
                     sb.Append(c);
                 }
             }
-            return WriteBlock(key, '"', '"', () => WriteChars(sb.ToString(), max));
+            if (!OpenValue(key, '"'))
+                return false;
+            if (!WriteChars(sb.ToString(), max))
+                return false;
+            return CloseValue('"');
         }
 
         /// <summary>
-        /// Opens and closes an object or array. If the block can not fit in the triage buffer
-        /// the allocations are backed out and the block is skipped.
-        /// </summary>
-        /// <param name="key">the name of the block</param>
-        /// <param name="opening">opening char of the block { or [</param>
-        /// <param name="closing">closing char of the block } or ]</param>
-        /// <param name="callback">called to fill in the object or array values</param>
-        /// <returns>true - success, false - out of triage buffer space</returns>
-        private bool WriteBlock(ReadOnlySpan<char> key, char opening, char closing, Func<bool> callback)
-        {
-            int savedIndex = _currentBufferIndex;
-            if (!OpenValue(key, opening))
-                goto error;
-            if (!callback())
-                goto error;
-            if (!CloseValue(closing))
-                goto error;
-            return true;
-        error:
-            _currentBufferIndex = savedIndex;
-            return false;
-        }
-
-        /// <summary>
-        /// Write raw bytes or already converted to UTF8 string to the triage buffer. If the block can not
-        /// fit in the triage buffer the allocations are backed out and the value is skipped.
+        /// Write raw bytes or already converted to UTF8 string to the triage buffer.
         /// </summary>
         /// <param name="key">the name of the value</param>
         /// <param name="bytes">value</param>
         /// <returns>true - success, false - out of triage buffer space</returns>
         private bool WriteValue(ReadOnlySpan<char> key, ReadOnlySpan<byte> bytes)
         {
-            int savedIndex = _currentBufferIndex;
             if (!OpenValue(key, '"'))
-                goto error;
+                return false;
             if (!WriteSpan(bytes))
-                goto error;
-            if (!CloseValue('"'))
-                goto error;
-            return true;
-        error:
-            _currentBufferIndex = savedIndex;
-            return false;
+                return false;
+            return CloseValue('"');
         }
 
         private bool OpenValue(ReadOnlySpan<char> key, char marker)

@@ -234,7 +234,7 @@ namespace System
 
                 if (exception != null)
                 {
-                    crashInfo.WriteExceptionInfo(exception);
+                    crashInfo.WriteException(exception);
                 }
             }
 
