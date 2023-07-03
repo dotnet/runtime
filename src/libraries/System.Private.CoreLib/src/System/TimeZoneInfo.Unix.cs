@@ -49,7 +49,6 @@ namespace System
                 return;
             }
 
-            TZifHead t;
             DateTime[] dts;
             byte[] typeOfLocalTime;
             TZifType[] transitionType;
@@ -59,7 +58,7 @@ namespace System
             string? daylightAbbrevName = null;
 
             // parse the raw TZif bytes; this method can throw ArgumentException when the data is malformed.
-            TZif_ParseRaw(data, out t, out dts, out typeOfLocalTime, out transitionType, out zoneAbbreviations, out futureTransitionsPosixFormat);
+            TZif_ParseRaw(data, out dts, out typeOfLocalTime, out transitionType, out zoneAbbreviations, out futureTransitionsPosixFormat);
 
             // find the best matching baseUtcOffset and display strings based on the current utcNow value.
             // NOTE: read the Standard and Daylight display strings from the tzfile now in case they can't be loaded later
@@ -1065,7 +1064,7 @@ namespace System
             unixTime > DateTimeOffset.UnixMaxSeconds ? DateTime.MaxValue :
             DateTimeOffset.FromUnixTimeSeconds(unixTime).UtcDateTime;
 
-        private static void TZif_ParseRaw(byte[] data, out TZifHead t, out DateTime[] dts, out byte[] typeOfLocalTime, out TZifType[] transitionType,
+        private static void TZif_ParseRaw(byte[] data, out DateTime[] dts, out byte[] typeOfLocalTime, out TZifType[] transitionType,
                                           out string zoneAbbreviations, out string? futureTransitionsPosixFormat)
         {
             futureTransitionsPosixFormat = null;
@@ -1073,7 +1072,7 @@ namespace System
             // read in the 44-byte TZ header containing the count/length fields
             //
             int index = 0;
-            t = new TZifHead(data, index);
+            TZifHead t = new TZifHead(data, index);
             index += TZifHead.Length;
 
             int timeValuesLength = 4; // the first version uses 4-bytes to specify times
