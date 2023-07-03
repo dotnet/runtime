@@ -320,13 +320,21 @@ static unsafe partial class CoreCLRHost
         Assembly assembly = image.AssemblyFromGCHandleIntPtr();
         // Cache module acquisition to avoid unnecessary allocation of Module[]
         var assemblyInfo = GetInfoForAssembly(assembly);
-        var typeHandle = assemblyInfo.module.ModuleHandle.GetRuntimeTypeHandleFromMetadataToken((int)token);
-        // TODO: Remove MethodBase.GetMethodFromHandle(methodHandle) part once we move method and type utilities to C#
-        // https://jira.unity3d.com/browse/VM-2081
-        // We have to load method and types currently as the native methods don't enforce loading
-        // (e.g. reinterpret_cast<MonoClass_clr*>(klass)->GetParentMethodTable() in mono_class_get_parent may crash if klass is not fully loaded)
-        // and adding loading boilerplate is roughly equivalent of moving implementation to C#
-        return Type.GetTypeFromHandle(typeHandle).TypeHandleIntPtr();
+        try
+        {
+            var typeHandle = assemblyInfo.module.ModuleHandle.GetRuntimeTypeHandleFromMetadataToken((int)token);
+            // TODO: Remove MethodBase.GetMethodFromHandle(methodHandle) part once we move method and type utilities to C#
+            // https://jira.unity3d.com/browse/VM-2081
+            // We have to load method and types currently as the native methods don't enforce loading
+            // (e.g. reinterpret_cast<MonoClass_clr*>(klass)->GetParentMethodTable() in mono_class_get_parent may crash if klass is not fully loaded)
+            // and adding loading boilerplate is roughly equivalent of moving implementation to C#
+            return Type.GetTypeFromHandle(typeHandle).TypeHandleIntPtr();
+        }
+        catch (FileNotFoundException e)
+        {
+            Log($"mono_unity_class_get: Unable to find {e.FileName} when resolving TypeDef {token} in {assembly.Location}");
+            return IntPtr.Zero;
+        }
     }
 
     [NativeFunction(NativeFunctionOptions.DoNotGenerate)]
@@ -339,13 +347,21 @@ static unsafe partial class CoreCLRHost
         Assembly assembly = image.AssemblyFromGCHandleIntPtr();
         // Cache module acquisition to avoid unnecessary allocation of Module[]
         var assemblyInfo = GetInfoForAssembly(assembly);
-        var methodHandle = assemblyInfo.module.ModuleHandle.GetRuntimeMethodHandleFromMetadataToken((int)token);
-        // TODO: Remove MethodBase.GetMethodFromHandle(methodHandle) part once we move method and type utilities to C#
-        // https://jira.unity3d.com/browse/VM-2081
-        // We have to load method and types currently as the native methods don't enforce loading
-        // (e.g. reinterpret_cast<MonoClass_clr*>(klass)->GetParentMethodTable() in mono_class_get_parent may crash if klass is not fully loaded)
-        // and adding loading boilerplate is roughly equivalent of moving implementation to C#
-        return MethodBase.GetMethodFromHandle(methodHandle).MethodHandle.MethodHandleIntPtr();
+        try
+        {
+            var methodHandle = assemblyInfo.module.ModuleHandle.GetRuntimeMethodHandleFromMetadataToken((int)token);
+            // TODO: Remove MethodBase.GetMethodFromHandle(methodHandle) part once we move method and type utilities to C#
+            // https://jira.unity3d.com/browse/VM-2081
+            // We have to load method and types currently as the native methods don't enforce loading
+            // (e.g. reinterpret_cast<MonoClass_clr*>(klass)->GetParentMethodTable() in mono_class_get_parent may crash if klass is not fully loaded)
+            // and adding loading boilerplate is roughly equivalent of moving implementation to C#
+            return MethodBase.GetMethodFromHandle(methodHandle).MethodHandle.MethodHandleIntPtr();
+        }
+        catch (FileNotFoundException e)
+        {
+            Log($"mono_get_method: Unable to find {e.FileName} when resolving MethodDef {token} in {assembly.Location}");
+            return IntPtr.Zero;
+        }
     }
 
     [NativeFunction(NativeFunctionOptions.DoNotGenerate)]
