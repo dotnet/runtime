@@ -51,10 +51,11 @@ void WrapICorJitInfo::getMethodSig(
 
 bool WrapICorJitInfo::getMethodInfo(
           CORINFO_METHOD_HANDLE ftn,
-          CORINFO_METHOD_INFO* info)
+          CORINFO_METHOD_INFO* info,
+          CORINFO_CONTEXT_HANDLE context)
 {
     API_ENTER(getMethodInfo);
-    bool temp = wrapHnd->getMethodInfo(ftn, info);
+    bool temp = wrapHnd->getMethodInfo(ftn, info, context);
     API_LEAVE(getMethodInfo);
     return temp;
 }
