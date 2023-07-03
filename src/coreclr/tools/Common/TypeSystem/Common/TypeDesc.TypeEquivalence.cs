@@ -47,6 +47,27 @@ namespace Internal.TypeSystem
 
         public bool IsTypeDefEquivalent => TypeIdentifierData != null;
 
+        public bool HasTypeEquivalence
+        {
+            get
+            {
+                if (!Context.SupportsTypeEquivalence)
+                    return false;
+                if (IsTypeDefEquivalent)
+                    return true;
+                if (HasInstantiation)
+                {
+                    foreach (var type in Instantiation)
+                    {
+                        if (type.HasTypeEquivalence)
+                            return true;
+                    }
+                }
+
+                return false;
+            }
+        }
+
         public virtual bool IsWindowsRuntime => false;
 
         public virtual bool IsComImport => false;
