@@ -63,7 +63,7 @@ namespace Internal.TypeSystem
                 var defType = (DefType)this;
 
                 // 1. Type is a COMImport/COMEvent interface, enum, struct, or delegate
-                if (!(IsInterface && (IsComImport || IsComEventInterface)) || !IsValueType || !IsDelegate)
+                if (!(IsInterface && (IsComImport || IsComEventInterface)) && !IsValueType && !IsDelegate)
                     return false;
 
                 // 2. Type is not generic

@@ -156,6 +156,7 @@ namespace Internal.TypeSystem
 
         public static EffectiveVisibility GetEffectiveVisibility(this EcmaField field)
         {
+            // Treat all non-Ecma fields as always having public visibility
             EffectiveVisibility visibility = field.Attributes.ToEffectiveVisibility();
 
             for (EcmaType type = (EcmaType)field.OwningType; type is not null; type = (EcmaType)type.ContainingType)
@@ -163,6 +164,20 @@ namespace Internal.TypeSystem
                 visibility = visibility.ConstrainToVisibility(type.Attributes.ToEffectiveVisibility());
             }
             return visibility;
+        }
+
+        // Get the visibility declared on the field itself
+        // Treat all non-Ecma fields as always having public visibility
+        public static EffectiveVisibility GetAttributeEffectiveVisibility(this FieldDesc field)
+        {
+            if (field is EcmaField ecmaField)
+            {
+                return ecmaField.Attributes.ToEffectiveVisibility();
+            }
+            else
+            {
+                return EffectiveVisibility.Public;
+            }
         }
 
         public static EffectiveVisibility GetEffectiveVisibility(this FieldDesc field)

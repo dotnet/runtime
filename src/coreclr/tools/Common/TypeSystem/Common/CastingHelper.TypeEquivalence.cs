@@ -20,9 +20,6 @@ namespace Internal.TypeSystem
             if (thisType == otherType)
                 return true;
 
-            if (!thisType.IsTypeDefEquivalent || !otherType.IsTypeDefEquivalent)
-                return false;
-
             if (thisType.Category != otherType.Category)
                 return false;
 
@@ -34,6 +31,12 @@ namespace Internal.TypeSystem
                     return false;
 
                 case TypeFlags.Array:
+                    var arrayType = (ArrayType)thisType;
+                    var otherArrayType = (ArrayType)otherType;
+                    if (arrayType.Rank != otherArrayType.Rank)
+                        return false;
+                    return arrayType.ParameterType.IsEquivalentTo(otherArrayType.ParameterType, visited);
+
                 case TypeFlags.SzArray:
                 case TypeFlags.ByRef:
                 case TypeFlags.Pointer:
@@ -44,7 +47,17 @@ namespace Internal.TypeSystem
 
                 default:
                     Debug.Assert(thisType.IsDefType);
-                    // Check if type is generic
+                    if (!thisType.IsTypeDefEquivalent || !otherType.IsTypeDefEquivalent)
+                    {
+                        if (thisType.HasInstantiation && otherType.HasInstantiation)
+                        {
+                            // We might be in the generic interface case
+                        }
+                        else
+                        {
+                            return false;
+                        }
+                    }
                     return ((DefType)thisType).IsEquivalentToDefType((DefType)otherType, visited);
             }
         }
@@ -64,6 +77,10 @@ namespace Internal.TypeSystem
                     return false;
                 }
 
+                // Generic equivalence only allows the instantiation to be non-equal
+                if (!thisType.HasSameTypeDefinition(otherType))
+                    return false;
+
                 for (int i = 0; i < thisType.Instantiation.Length; i++)
                 {
                     if (!thisType.Instantiation[i].IsEquivalentTo(otherType.Instantiation[i], visited))
@@ -72,8 +89,7 @@ namespace Internal.TypeSystem
                     }
                 }
 
-                // Generic equivalence only allows the instantiation to be non-equal
-                return thisType.HasSameTypeDefinition(otherType);
+                return true;
             }
 
             return IsEquivalentTo_TypeDefinition((MetadataType)thisType.GetTypeDefinition(), (MetadataType)otherType.GetTypeDefinition(), visited);
@@ -130,19 +146,19 @@ namespace Internal.TypeSystem
                 }
 
                 if (type1.IsInterface != type2.IsInterface)
+                {
                     return false;
+                }
                 if (type1.IsInterface)
                 {
-                    if (!type2.IsInterface)
-                        return false;
-
                     return true;
                 }
-                else if ((type1.IsEnum != type2.IsEnum) ||  (type1.IsValueType != type2.IsValueType))
+                if ((type1.IsEnum != type2.IsEnum) || (type1.IsValueType != type2.IsValueType))
                 {
                     return false;
                 }
-                else if (type1.IsEnum)
+
+                if (type1.IsEnum)
                 {
                     return CompareStructuresForEquivalence(type1, type2, visited, enumMode: true);
                 }
@@ -221,7 +237,15 @@ namespace Internal.TypeSystem
                     }
 
                     // Compare the field marshal details
-                    if (!field1.GetMarshalAsDescriptor().Equals(field2.GetMarshalAsDescriptor()))
+                    var marshalAsDescriptor1 = field1.GetMarshalAsDescriptor();
+                    var marshalAsDescriptor2 = field2.GetMarshalAsDescriptor();
+
+                    if (marshalAsDescriptor1 == null || marshalAsDescriptor2 == null)
+                    {
+                        if (marshalAsDescriptor1 != marshalAsDescriptor2)
+                            return false;
+                    }
+                    else if (!marshalAsDescriptor1.Equals(marshalAsDescriptor2))
                     {
                         return false;
                     }
@@ -294,11 +318,11 @@ namespace Internal.TypeSystem
                     {
                         var field = fieldEnum.Current;
 
-                        if (field.GetEffectiveVisibility() == EffectiveVisibility.Public && !field.IsStatic)
+                        if (field.GetAttributeEffectiveVisibility() == EffectiveVisibility.Public && !field.IsStatic)
                             return field;
 
                         // Only public instance fields, and literal fields on enums are permitted in type equivalent structures
-                        if (!enumMode || field.IsLiteral)
+                        if (!enumMode || !field.IsLiteral)
                         {
                             fieldNotValidInEquivalentTypeFound = true;
                             return null;
