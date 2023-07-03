@@ -902,7 +902,7 @@ namespace System
                         {
                             // sort by BaseUtcOffset first and by DisplayName second - this is similar to the Windows Date/Time control panel
                             int comparison = x.BaseUtcOffset.CompareTo(y.BaseUtcOffset);
-                            return comparison == 0 ? string.CompareOrdinal(x.DisplayName, y.DisplayName) : comparison;
+                            return comparison == 0 ? string.CompareOrdinal(x.Id, y.Id) : comparison;
                         });
 
                         cachedData._readOnlySystemTimeZones = new ReadOnlyCollection<TimeZoneInfo>(array);
