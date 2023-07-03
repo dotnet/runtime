@@ -772,11 +772,11 @@ TEST(can_get_type_of_generic_field)
     gpointer ptr = nullptr;
     GET_AND_CHECK(field, mono_class_get_fields(klass, &ptr));
     CHECK(strcmp("genericField", mono_field_get_name(field)) == 0);
-    CHECK(strcmp(g_Mode == CoreCLR ? "!0" : "T", mono_type_get_name(mono_field_get_type(field))) == 0);
+    CHECK(strcmp("T", mono_type_get_name(mono_field_get_type(field))) == 0);
     field = mono_class_get_fields(klass, &ptr);
     CHECK(field != NULL);
     CHECK(strcmp("genericArrayField", mono_field_get_name(field)) == 0);
-    CHECK(strcmp(g_Mode == CoreCLR ? "!0[]" : "T[]", mono_type_get_name(mono_field_get_type(field))) == 0);
+    CHECK(strcmp("T[]", mono_type_get_name(mono_field_get_type(field))) == 0);
     field = mono_class_get_fields(klass, &ptr);
     CHECK(field == NULL);
 }
