@@ -27,6 +27,7 @@ export function mono_wasm_get_calendar_info(culture: MonoStringRef, dst: number,
             YearMonth: "",
             MonthDay: "",
             LongDates: "",
+            ShortDates: "",
             DayNames: "",
             AbbreviatedDayNames: "",
             ShortestDayNames: "",
@@ -50,6 +51,7 @@ export function mono_wasm_get_calendar_info(culture: MonoStringRef, dst: number,
         calendarInfo.AbbrevMonthGenitiveNames = monthNames.abbreviatedGenitive.join(INNER_SEPARATOR);
         calendarInfo.YearMonth = getMonthYearPattern(locale, date);
         calendarInfo.MonthDay = getMonthDayPattern(locale, date);
+        calendarInfo.ShortDates = getShortDatePattern(locale);
         calendarInfo.LongDates = getLongDatePattern(locale, date);
        
         const result = Object.values(calendarInfo).join(OUTER_SEPARATOR);
@@ -104,6 +106,71 @@ function getMonthDayPattern(locale: string | undefined, date: Date): string
     pattern = pattern.replace("22", DAY_CODE);
     const dayStr = formatWithoutMonthName.format(date);
     return pattern.replace(dayStr, DAY_CODE);
+}
+
+function getShortDatePattern(locale: string | undefined): string
+{
+    if (locale?.substring(0, 2) == "fa")
+    {
+        // persian calendar is shifted and it has no lapping dates with
+        // arabic and gregorian calendars, so that both day and month would be < 10
+        return "yyyy/M/d";
+    }
+    const year = 2014;
+    const month = 1;
+    const day = 2;
+    const date = new Date(year, month - 1, day); // arabic: 1/3/1435
+    const longYearStr = "2014";
+    const shortYearStr = "14";
+    const longMonthStr = "01";
+    const shortMonthStr = "1";
+    const longDayStr = "02";
+    const shortDayStr = "2";
+    let pattern = date.toLocaleDateString(locale, {dateStyle: "short"});
+    // each date part might be in localized numbers or standard arabic numbers
+    // toLocaleDateString returns not compatible data, 
+    // e.g. { dateStyle: "short" } sometimes contains localized year number 
+    // while { year: "numeric" } contains non-localized year number and vice versa
+    if (pattern.includes(shortYearStr))
+    {
+        pattern = pattern.replace(longYearStr, YEAR_CODE);
+        pattern = pattern.replace(shortYearStr, YEAR_CODE);
+    }
+    else
+    {
+        const yearStr = date.toLocaleDateString(locale, { year: "numeric" });
+        const yearStrShort = yearStr.substring(yearStr.length - 2, yearStr.length);
+        pattern = pattern.replace(yearStr, YEAR_CODE);
+        if (yearStrShort)
+            pattern = pattern.replace(yearStrShort, YEAR_CODE);
+    }
+    
+    if (pattern.includes(shortMonthStr))
+    {
+        pattern = pattern.replace(longMonthStr, "MM");
+        pattern = pattern.replace(shortMonthStr, "M");
+    }
+    else
+    {
+        const monthStr = date.toLocaleDateString(locale, { month: "numeric" });
+        const localizedMonthCode = monthStr.length == 1 ? "M" : "MM";
+        pattern = pattern.replace(monthStr, localizedMonthCode);
+    }
+
+    if (pattern.includes(shortDayStr))
+    {
+        pattern = pattern.replace(longDayStr, "dd");
+        pattern = pattern.replace(shortDayStr, "d");
+    }
+    else
+    {
+        const dayStr = date.toLocaleDateString(locale, { day: "numeric" });
+        const localizedDayCode = dayStr.length == 1 ? "d" : "dd";
+        pattern = pattern.replace(dayStr, localizedDayCode);
+    }
+    
+    
+    return pattern;
 }
 
 function getLongDatePattern(locale: string | undefined, date: Date): string

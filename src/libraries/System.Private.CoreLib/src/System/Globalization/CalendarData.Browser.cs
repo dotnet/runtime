@@ -49,13 +49,14 @@ namespace System.Globalization
             this.saYearMonths = new string[] { subresults[0] };
             this.sMonthDay = subresults[1];
             this.saLongDates = new string[] { subresults[2] };
-            this.saDayNames = subresults[3].Split("||");
-            this.saAbbrevDayNames = subresults[4].Split("||");
-            this.saSuperShortDayNames = subresults[5].Split("||");
-            this.saMonthNames = ResizeMonthsArray(subresults[6].Split("||"));
-            this.saAbbrevMonthNames = ResizeMonthsArray(subresults[7].Split("||"));
-            this.saMonthGenitiveNames = ResizeMonthsArray(subresults[8].Split("||"));
-            this.saAbbrevMonthGenitiveNames = ResizeMonthsArray(subresults[9].Split("||"));
+            this.saShortDates = new string[] { subresults[3] };
+            this.saDayNames = subresults[4].Split("||");
+            this.saAbbrevDayNames = subresults[5].Split("||");
+            this.saSuperShortDayNames = subresults[6].Split("||");
+            this.saMonthNames = ResizeMonthsArray(subresults[7].Split("||"));
+            this.saAbbrevMonthNames = ResizeMonthsArray(subresults[8].Split("||"));
+            this.saMonthGenitiveNames = ResizeMonthsArray(subresults[9].Split("||"));
+            this.saAbbrevMonthGenitiveNames = ResizeMonthsArray(subresults[10].Split("||"));
             return true;
 
             static string[] ResizeMonthsArray(string[] months)
