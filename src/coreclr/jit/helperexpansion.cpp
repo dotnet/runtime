@@ -512,10 +512,10 @@ bool Compiler::fgExpandThreadLocalAccessForCall(BasicBlock** pBlock, Statement* 
     info.compCompHnd->getThreadLocalStaticBlocksInfo(&threadStaticBlocksInfo, isGCThreadStatic);
 
     JITDUMP("getThreadLocalStaticBlocksInfo (%s)\n:", isGCThreadStatic ? "GC" : "Non-GC");
-    JITDUMP("tlsIndex= %p\n", dspOffset(dspPtr(threadStaticBlocksInfo.tlsIndex.addr)));
-    JITDUMP("tlsGetAddrFtnPtr= %p\n", dspOffset(dspPtr(threadStaticBlocksInfo.tlsGetAddrFtnPtr)));
-    JITDUMP("tlsIndexObject= %p\n", dspOffset(dspPtr(threadStaticBlocksInfo.tlsIndexObject)));
-    JITDUMP("threadVarsSection= %p\n", dspOffset(dspPtr(threadStaticBlocksInfo.threadVarsSection)));
+    JITDUMP("tlsIndex= %p\n", dspPtr(threadStaticBlocksInfo.tlsIndex.addr));
+    JITDUMP("tlsGetAddrFtnPtr= %p\n", dspPtr(threadStaticBlocksInfo.tlsGetAddrFtnPtr));
+    JITDUMP("tlsIndexObject= %p\n", dspPtr(threadStaticBlocksInfo.tlsIndexObject));
+    JITDUMP("threadVarsSection= %p\n", dspPtr(threadStaticBlocksInfo.threadVarsSection));
     JITDUMP("offsetOfThreadLocalStoragePointer= %u\n",
             dspOffset(threadStaticBlocksInfo.offsetOfThreadLocalStoragePointer));
     JITDUMP("offsetOfMaxThreadStaticBlocks= %u\n", dspOffset(threadStaticBlocksInfo.offsetOfMaxThreadStaticBlocks));
