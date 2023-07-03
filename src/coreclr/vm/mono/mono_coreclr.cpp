@@ -2623,7 +2623,8 @@ extern "C" EXPORT_API char* EXPORT_CC mono_type_get_name_full(MonoType *type, Mo
     switch (monoFormat)
     {
         case MonoTypeNameFormat::MONO_TYPE_NAME_FORMAT_IL:
-            format = TypeString::FormatNamespace;
+            // The closest match is FormatNamespace | FormatFullInst
+            format = TypeString::FormatNamespace | TypeString::FormatFullInst;
             break;
         case MonoTypeNameFormat::MONO_TYPE_NAME_FORMAT_ASSEMBLY_QUALIFIED:
             format = TypeString::FormatNamespace | TypeString::FormatAssembly | TypeString::FormatFullInst;
