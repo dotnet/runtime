@@ -52,7 +52,7 @@ namespace System
         {
             _comma = false;
             _currentBufferIndex = 0;
-            _reservedBuffer = 1;            // Reserve 1 byte for closing }
+            _reservedBuffer = 0;
         }
 
         /// <summary>
@@ -63,7 +63,7 @@ namespace System
         public void Open(RhFailFastReason reason, string message)
         {
             // Write the opening bracket and basic header which should never fail
-            bool success = WriteChar('{');
+            bool success = OpenValue(default, '{');
             Debug.Assert(success);
             success = WriteHeader(reason, message);
             Debug.Assert(success);
@@ -72,13 +72,7 @@ namespace System
         /// <summary>
         /// Write the closing bracket. The triage buffer is ready.
         /// </summary>
-        public void Close()
-        {
-            // Write the closing bracket which should never fail since it was reserved
-            _reservedBuffer = 0;
-            bool success = WriteChar('}');
-            Debug.Assert(success);
-        }
+        public void Close() => CloseValue('}');
 
         /// <summary>
         /// Write the exception information with fallbacks if the info doesn't fit in the fixed size triage buffer.
@@ -86,13 +80,14 @@ namespace System
         /// <param name="exception">exception object</param>
         public void WriteException(Exception exception)
         {
-            if (!WriteException(exception, int.MaxValue, 500, int.MaxValue))
+            ReadOnlySpan<char> key = "exception";
+            if (!WriteExceptionWithFallback(key, exception, int.MaxValue, 500, int.MaxValue))
             {
                 // If the buffer isn't big enough to fit 500 stack frames, try limiting to 10
-                if (!WriteException(exception, int.MaxValue, 10, int.MaxValue))
+                if (!WriteExceptionWithFallback(key, exception, int.MaxValue, 10, int.MaxValue))
                 {
                     // If that fails, try limiting the size of the stack frame method names to 100 bytes
-                    WriteException(exception, int.MaxValue, 10, 100);
+                    WriteExceptionWithFallback(key, exception, int.MaxValue, 10, 100);
                 }
             }
         }
@@ -149,18 +144,18 @@ namespace System
         /// Adds the exception info to the JSON buffer under the "exception" key. If the exception can not fit in
         /// the triage buffer the allocations are backed out.
         /// </summary>
+        /// <param name="key">the name of the block</param>
         /// <param name="exception">exception build triage block from</param>
         /// <param name="maxMessageSize">limits the size of the exception message strings</param>
         /// <param name="maxNumberStackFrames">limits the number of stack frames written to the triage buffer</param>
         /// <param name="maxMethodNameSize">limits the size of the stack frame method name strings</param>
         /// <returns>true - success, false - out of triage buffer space</returns>
-        private bool WriteException(Exception exception, int maxMessageSize, int maxNumberStackFrames, int maxMethodNameSize)
+        private bool WriteExceptionWithFallback(ReadOnlySpan<char> key, Exception exception, int maxMessageSize, int maxNumberStackFrames, int maxMethodNameSize)
         {
             int savedIndex = _currentBufferIndex;
-            if (!WriteException("exception", exception, maxMessageSize, maxNumberStackFrames, maxMethodNameSize))
+            if (!WriteException(key, exception, maxMessageSize, maxNumberStackFrames, maxMethodNameSize))
             {
                 _currentBufferIndex = savedIndex;
-                _comma = false;
                 return false;
             }
             return true;
@@ -193,49 +188,50 @@ namespace System
             if (!WriteValue("type", exception.GetType().ToString()))
                 return false;
 
-            if (!OpenValue("stack", '['))
-                return false;
-
-            StackTrace stackTrace = new(exception);
-            int count = 0;
-            foreach (StackFrame frame in stackTrace.GetFrames())
+            StackFrame[] stackFrames = new StackTrace(exception).GetFrames();
+            if (stackFrames.Length > 0)
             {
-                // Check if the stack frame limit has been hit
-                if (++count > maxNumberStackFrames)
-                    break;
-
-                if (!WriteStackFrame(frame, maxMethodNameSize))
+                if (!OpenValue("stack", '['))
                     return false;
-            }
 
-            if (!CloseValue(']'))
-                return false;
+                int count = 0;
+                foreach (StackFrame frame in stackFrames)
+                {
+                    // Check if the stack frame limit has been hit
+                    if (++count > maxNumberStackFrames)
+                        break;
+
+                    if (!WriteStackFrame(frame, maxMethodNameSize))
+                        return false;
+                }
+
+                CloseValue(']');
+            }
 
             AggregateException? aggregate = exception as AggregateException;
             if (aggregate is not null || exception.InnerException is not null)
             {
-
                 if (!OpenValue("inner", '['))
                     return false;
 
+                // Write as many inner exceptions that will fit
                 if (aggregate is not null)
                 {
                     foreach (Exception ex in aggregate.InnerExceptions)
                     {
-                        if (!WriteException(default, ex, maxMessageSize, maxNumberStackFrames, maxMethodNameSize))
-                            return false;
+                        if (!WriteExceptionWithFallback(default, ex, maxMessageSize, maxNumberStackFrames, maxMethodNameSize))
+                            break;
                     }
                 }
                 else
                 {
-                    if (!WriteException(default, exception.InnerException, maxMessageSize, maxNumberStackFrames, maxMethodNameSize))
-                        return false;
+                    WriteExceptionWithFallback(default, exception.InnerException, maxMessageSize, maxNumberStackFrames, maxMethodNameSize);
                 }
 
-                if (!CloseValue(']'))
-                    return false;
+                CloseValue(']');
             }
-            return CloseValue('}');
+            CloseValue('}');
+            return true;
         }
 
         /// <summary>
@@ -262,7 +258,8 @@ namespace System
                 if (!WriteValue("name", method, maxNameSize))
                     return false;
             }
-            return CloseValue('}');
+            CloseValue('}');
+            return true;
         }
 
         private bool WriteHexValue(ReadOnlySpan<char> key, ulong value) => WriteValue(key, $"0x{value:X}");
@@ -292,7 +289,8 @@ namespace System
                 return false;
             if (!WriteChars(sb.ToString(), max))
                 return false;
-            return CloseValue('"');
+            CloseValue('"');
+            return true;
         }
 
         /// <summary>
@@ -307,7 +305,8 @@ namespace System
                 return false;
             if (!WriteSpan(bytes))
                 return false;
-            return CloseValue('"');
+            CloseValue('"');
+            return true;
         }
 
         private bool OpenValue(ReadOnlySpan<char> key, char marker)
@@ -325,18 +324,22 @@ namespace System
                 if (!WriteChar(':'))
                     return false;
             }
+            _reservedBuffer += 1;           // Reserve 1 byte for closing marker
             if (!WriteChar(marker))
+            {
+                _reservedBuffer -= 1;
                 return false;
+            }
             _comma = false;
             return true;
         }
 
-        private bool CloseValue(char marker)
+        private void CloseValue(char marker)
         {
-            if (!WriteChar(marker))
-                return false;
+            _reservedBuffer -= 1;           // Make the reserved byte available for the closing marker
+            bool success = WriteChar(marker);
+            Debug.Assert(success);          // Should never fail because of the reservation
             _comma = true;
-            return true;
         }
 
         private bool WriteSeparator() => _comma ? WriteChar(',') : true;
