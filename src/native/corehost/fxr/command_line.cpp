@@ -282,14 +282,17 @@ int command_line::parse_args_for_sdk_command(
 
 void command_line::print_muxer_info(const pal::string_t &dotnet_root, const pal::string_t &global_json_path)
 {
+    const pal::char_t* arch = get_current_arch_name();
     pal::string_t commit = _STRINGIFY(REPO_COMMIT_HASH);
     trace::println(_X("\n")
         _X("Host:\n")
         _X("  Version:      ") _STRINGIFY(HOST_FXR_PKG_VER) _X("\n")
         _X("  Architecture: %s\n")
-        _X("  Commit:       %s"),
-        get_current_arch_name(),
-        commit.substr(0, 10).c_str());
+        _X("  Commit:       %s\n")
+        _X("  RID:          ") _STRINGIFY(HOST_RID_PLATFORM) _X("-%s"),
+        arch,
+        commit.substr(0, 10).c_str(),
+        arch);
 
     trace::println(_X("\n")
         _X(".NET SDKs installed:"));

@@ -190,17 +190,17 @@ namespace
     const pal::char_t* s_host_rids[] =
     {
 #if defined(TARGET_WINDOWS)
-        RID_CURRENT_ARCH_LIST("win")
+        RID_CURRENT_ARCH_LIST(HOST_RID_PLATFORM)
 #elif defined(TARGET_OSX)
-        RID_CURRENT_ARCH_LIST("osx")
+        RID_CURRENT_ARCH_LIST(HOST_RID_PLATFORM)
         RID_CURRENT_ARCH_LIST("unix")
 #elif defined(TARGET_ANDROID)
-        RID_CURRENT_ARCH_LIST("linux-bionic")
+        RID_CURRENT_ARCH_LIST(HOST_RID_PLATFORM)
         RID_CURRENT_ARCH_LIST("linux")
         RID_CURRENT_ARCH_LIST("unix")
 #else
         // Covers non-portable RIDs
-        RID_CURRENT_ARCH_LIST(FALLBACK_HOST_OS)
+        RID_CURRENT_ARCH_LIST(HOST_RID_PLATFORM)
 #if defined(TARGET_LINUX_MUSL)
         RID_CURRENT_ARCH_LIST("linux-musl")
         RID_CURRENT_ARCH_LIST("linux")

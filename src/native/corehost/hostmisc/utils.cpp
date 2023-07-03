@@ -465,11 +465,18 @@ pal::string_t get_download_url(const pal::char_t* framework_name, const pal::cha
         url.append(_X("missing_runtime=true"));
     }
 
+    const pal::char_t* arch = get_current_arch_name();
     url.append(_X("&arch="));
-    url.append(get_current_arch_name());
-    pal::string_t rid = get_current_runtime_id(true /*use_fallback*/);
-    url.append(_X("&rid="));
-    url.append(rid);
+    url.append(arch);
+    url.append(_X("&rid=") _STRINGIFY(HOST_RID_PLATFORM) _X("-"));
+    url.append(arch);
+
+    pal::string_t os = pal::get_current_os_rid_platform();
+    if (os.empty())
+        os = pal::get_current_os_fallback_rid();
+
+    url.append(_X("&os="));
+    url.append(os);
 
     return url;
 }
