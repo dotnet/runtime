@@ -351,6 +351,38 @@ static unsafe partial class CoreCLRHost
         return MethodBase.GetMethodFromHandle(methodHandle).MethodHandle.MethodHandleIntPtr();
     }
 
+    // Keeping for reference for the move to C#
+    // Currently Type is not loaded
+    [NativeFunction(NativeFunctionOptions.DoNotGenerate)]
+    [return: NativeCallbackType("MonoClassField*")]
+    public static unsafe IntPtr unity_field_from_token_checked(
+        [NativeCallbackType("MonoImage*")] IntPtr image,
+        uint token,
+        [NativeCallbackType("MonoClass**")] IntPtr retklass)
+    {
+        Assembly assembly = image.AssemblyFromGCHandleIntPtr();
+        // Cache module acquisition to avoid unnecessary allocation of Module[]
+        var assemblyInfo = GetInfoForAssembly(assembly);
+        try
+        {
+            RuntimeFieldHandle fieldHandle = assemblyInfo.module.ModuleHandle.GetRuntimeFieldHandleFromMetadataToken((int)token);
+            FieldInfo fieldInfo = FieldInfo.GetFieldFromHandle(fieldHandle);
+            *(nint*)retklass = fieldInfo.FieldType.TypeHandleIntPtr();
+            return fieldHandle.FieldHandleIntPtr();
+        }
+        catch (ArgumentException e)
+        {
+            // ArgumentException is thrown when the field belongs to a generic type.
+            // Ignoring the error for now.
+            return IntPtr.Zero;
+        }
+        catch (FileNotFoundException e)
+        {
+            Log($"mono_unity_field_from_token_checked: Unable to find {e.FileName} when resolving Field {token} in {assembly.Location}");
+            return IntPtr.Zero;
+        }
+    }
+
     [return: NativeCallbackType("MonoObject*")]
     public static IntPtr unity_class_get_attribute(
         [NativeCallbackType("MonoClass*")] IntPtr klass,

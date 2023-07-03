@@ -265,6 +265,8 @@ namespace Unity.CoreCLRHelpers;
                 return ".TypeFromHandleIntPtr()";
             case "MonoMethod*":
                 return ".MethodHandleFromHandleIntPtr()";
+            case "MonoClassField*":
+                return ".FieldHandleFromHandleIntPtr()";
         }
 
         return string.Empty;
