@@ -431,7 +431,6 @@ namespace Microsoft.Extensions.Hosting.Internal
             public IHostApplicationLifetime Lifetime => _host._applicationLifetime;
             public HostOptions Options => _host._options;
             public List<IHostedService> HostedServices => new List<IHostedService>(_host._hostedServices ?? Enumerable.Empty<IHostedService>());
-            public ILogger Logger => _host._logger;
             public bool IsRunning => _host.IsRunning;
         }
     }
