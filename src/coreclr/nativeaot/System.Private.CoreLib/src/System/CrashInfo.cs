@@ -46,7 +46,7 @@ namespace System
         private bool _comma;
         private int _currentBufferIndex;
         private int _reservedBuffer;
-        private static TriageBlockBuffer _triageBuffer;
+        private static TriageBlockBuffer s_triageBuffer;
 
         public CrashInfo()
         {
@@ -103,7 +103,7 @@ namespace System
         public IntPtr GetTriageBuffer(out int size)
         {
             size = _currentBufferIndex;
-            return new IntPtr(Unsafe.AsPointer<TriageBlockBuffer>(ref _triageBuffer));
+            return new IntPtr(Unsafe.AsPointer<TriageBlockBuffer>(ref s_triageBuffer));
         }
 
         /// <summary>
@@ -379,7 +379,7 @@ namespace System
             {
                 return default;
             }
-            fixed (byte* ptr = &_triageBuffer.Buffer[_currentBufferIndex])
+            fixed (byte* ptr = &s_triageBuffer.Buffer[_currentBufferIndex])
             {
                 _currentBufferIndex += size;
                 return new Span<byte>(ptr, size);

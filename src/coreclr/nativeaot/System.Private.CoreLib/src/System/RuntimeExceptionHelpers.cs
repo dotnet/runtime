@@ -207,7 +207,8 @@ namespace System
             bool minimalFailFast = InFailFast.Value || (exception == PreallocatedOutOfMemoryException.Instance);
             InFailFast.Value = true;
 
-            _crashInfo.Open(reason, message);
+            CrashInfo crashInfo = new();
+            crashInfo.Open(reason, message);
 
             if (!minimalFailFast)
             {
@@ -233,11 +234,11 @@ namespace System
 
                 if (exception != null)
                 {
-                    _crashInfo.WriteExceptionInfo(exception);
+                    crashInfo.WriteExceptionInfo(exception);
                 }
             }
 
-            _crashInfo.Close();
+            crashInfo.Close();
 
             // Try to map the failure into a HRESULT that makes sense
             int errorCode = exception != null ? exception.HResult : reason switch
@@ -253,13 +254,11 @@ namespace System
             };
 
 #if TARGET_WINDOWS
-            Interop.Kernel32.RaiseFailFastException(errorCode, pExAddress, pExContext, _crashInfo.GetTriageBuffer(out int size), size);
+            Interop.Kernel32.RaiseFailFastException(errorCode, pExAddress, pExContext, crashInfo.GetTriageBuffer(out int size), size);
 #else
             Interop.Sys.Abort();
 #endif
         }
-
-        private static CrashInfo _crashInfo = new();
 
         // Use a nested class to avoid running the class constructor of the outer class when
         // accessing this flag.

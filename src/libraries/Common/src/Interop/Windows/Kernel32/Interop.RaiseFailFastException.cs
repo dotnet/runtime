@@ -29,7 +29,7 @@ internal partial class Interop
         private const uint EXCEPTION_NONCONTINUABLE = 0x1;
         private const uint FAIL_FAST_GENERATE_EXCEPTION_ADDRESS = 0x1;
         private const uint STATUS_STACK_BUFFER_OVERRUN = 0xC0000409;
-        private const uint FAST_FAIL_EXCEPTION_DOTNET_AOT = 72;
+        private const uint FAST_FAIL_EXCEPTION_DOTNET_AOT = 0x48;
 
         //
         // NativeAOT wrapper for calling RaiseFailFastException
