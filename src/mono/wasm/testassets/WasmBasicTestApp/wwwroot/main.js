@@ -29,6 +29,9 @@ try {
             exports.LazyLoadingTest.Run();
             exit(0);
             break;
+        case "LibraryInitializerTest":
+            exit(0);
+            break;
     }
 } catch (e) {
     exit(1, e);

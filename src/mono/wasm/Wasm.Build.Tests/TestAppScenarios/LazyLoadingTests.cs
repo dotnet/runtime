@@ -13,9 +13,9 @@ using Xunit.Abstractions;
 
 namespace Wasm.Build.Tests.TestAppScenarios;
 
-public class WasmLazyLoadingTests : AppTestBase
+public class LazyLoadingTests : AppTestBase
 {
-    public WasmLazyLoadingTests(ITestOutputHelper output, SharedBuildPerTestClassFixture buildContext)
+    public LazyLoadingTests(ITestOutputHelper output, SharedBuildPerTestClassFixture buildContext)
         : base(output, buildContext)
     {
     }
@@ -23,7 +23,7 @@ public class WasmLazyLoadingTests : AppTestBase
     [Fact]
     public async Task LazyLoadAssembly()
     {
-        CopyTestAsset("WasmBasicTestApp", "WasmLazyLoading");
+        CopyTestAsset("WasmBasicTestApp", "LazyLoadingTests");
         PublishProject("Debug");
 
         var testOutput = await RunSdkStyleApp(new(Configuration: "Debug", ForPublish: true, TestScenario: "LazyLoadingTest"));

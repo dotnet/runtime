@@ -16,9 +16,9 @@ using Xunit;
 
 namespace Wasm.Build.Tests.TestAppScenarios;
 
-public class WasmSatelliteLoadingTests : AppTestBase
+public class SatelliteLoadingTests : AppTestBase
 {
-    public WasmSatelliteLoadingTests(ITestOutputHelper output, SharedBuildPerTestClassFixture buildContext)
+    public SatelliteLoadingTests(ITestOutputHelper output, SharedBuildPerTestClassFixture buildContext)
         : base(output, buildContext)
     {
     }
@@ -26,7 +26,7 @@ public class WasmSatelliteLoadingTests : AppTestBase
     [Fact]
     public async Task LoadSatelliteAssembly()
     {
-        CopyTestAsset("WasmBasicTestApp", "WasmSatelliteLoading");
+        CopyTestAsset("WasmBasicTestApp", "SatelliteLoadingTests");
         PublishProject("Debug");
 
         var testOutput = await RunSdkStyleApp(new(Configuration: "Debug", ForPublish: true, TestScenario: "SatelliteAssembliesTest"));
