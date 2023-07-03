@@ -160,6 +160,12 @@ namespace Microsoft.WebAssembly.Diagnostics
                         return false;
                     }
 
+                case "Runtime.executionContextsCleared":
+                    {
+                        Contexts.ClearContexts(sessionId);
+                        return false;
+                    }
+
                 case "Debugger.paused":
                     {
                         // Don't process events from sessions we aren't tracking
@@ -1466,7 +1472,16 @@ namespace Microsoft.WebAssembly.Diagnostics
             {
                 if (req.TryResolve(source))
                 {
-                    await SetBreakpoint(sessionId, context.store, req, true, false, token);
+                    try
+                    {
+                        await SetBreakpoint(sessionId, context.store, req, true, false, token);
+                    }
+                    catch (DebuggerAgentException e)
+                    {
+                        //it's not a wasm page then the command throws an error
+                        if (!e.Message.Contains("getDotnetRuntime is not defined"))
+                            logger.LogDebug($"Unexpected error on OnSourceFileAdded {e}");
+                    }
                 }
             }
         }
