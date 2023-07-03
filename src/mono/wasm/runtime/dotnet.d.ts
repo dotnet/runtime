@@ -81,6 +81,9 @@ interface DotnetHostBuilder {
     withDebugging(level: number): DotnetHostBuilder;
     withMainAssembly(mainAssemblyName: string): DotnetHostBuilder;
     withApplicationArgumentsFromQuery(): DotnetHostBuilder;
+    withApplicationEnvironment(applicationEnvironment?: string): DotnetHostBuilder;
+    withApplicationCulture(applicationCulture?: string): DotnetHostBuilder;
+    withResourceLoader(loadBootResource?: LoadBootResourceCallback): DotnetHostBuilder;
     create(): Promise<RuntimeAPI>;
     run(): Promise<number>;
 }
@@ -168,6 +171,15 @@ type MonoConfig = {
      */
     loadBootResource?: LoadBootResourceCallback;
 };
+/**
+ * Overrides the built-in boot resource loading mechanism so that boot resources can be fetched
+ * from a custom source, such as an external CDN.
+ * @param type The type of the resource to be loaded.
+ * @param name The name of the resource to be loaded.
+ * @param defaultUri The URI from which the framework would fetch the resource by default. The URI may be relative or absolute.
+ * @param integrity The integrity string representing the expected content in the response.
+ * @returns A URI string or a Response promise to override the loading process, or null/undefined to allow the default loading behavior.
+ */
 type LoadBootResourceCallback = (type: WebAssemblyBootResourceType, name: string, defaultUri: string, integrity: string) => string | Promise<Response> | null | undefined;
 interface ResourceRequest {
     name: string;
@@ -210,9 +222,9 @@ interface AssetEntry extends ResourceRequest {
 }
 type AssetBehaviours = "resource" | "assembly" | "pdb" | "heap" | "icu" | "vfs" | "dotnetwasm" | "js-module-threads" | "js-module-runtime" | "js-module-dotnet" | "js-module-native" | "symbols";
 type GlobalizationMode = "icu" | // load ICU globalization data from any runtime assets with behavior "icu".
-    "invariant" | //  operate in invariant globalization mode.
-    "hybrid" | // operate in hybrid globalization mode with small ICU files, using native platform functions
-    "auto";
+"invariant" | //  operate in invariant globalization mode.
+"hybrid" | // operate in hybrid globalization mode with small ICU files, using native platform functions
+"auto";
 type DotnetModuleConfig = {
     disableDotnet6Compatibility?: boolean;
     config?: MonoConfig;

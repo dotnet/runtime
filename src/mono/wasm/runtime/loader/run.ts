@@ -1,7 +1,7 @@
 // Licensed to the .NET Foundation under one or more agreements.
 // The .NET Foundation licenses this file to you under the MIT license.
 
-import type { MonoConfig, DotnetHostBuilder, DotnetModuleConfig, RuntimeAPI, WebAssemblyStartOptions } from "../types";
+import type { MonoConfig, DotnetHostBuilder, DotnetModuleConfig, RuntimeAPI, WebAssemblyStartOptions, LoadBootResourceCallback } from "../types";
 import type { MonoConfigInternal, EmscriptenModuleInternal, RuntimeModuleExportsInternal, NativeModuleExportsInternal, } from "../types/internal";
 
 import { ENVIRONMENT_IS_NODE, ENVIRONMENT_IS_WEB, exportedRuntimeAPI, globalObjectsRoot } from "./globals";
@@ -276,12 +276,46 @@ export class HostBuilder implements DotnetHostBuilder {
     }
 
     withStartupOptions(startupOptions: Partial<WebAssemblyStartOptions>): DotnetHostBuilder {
-        deep_merge_config(monoConfig, {
-            applicationEnvironment: startupOptions.environment,
-            applicationCulture: startupOptions.applicationCulture,
-            loadBootResource: startupOptions.loadBootResource,
-        });
-        return this;
+        return this
+            .withApplicationEnvironment(startupOptions.environment)
+            .withApplicationCulture(startupOptions.applicationCulture)
+            .withResourceLoader(startupOptions.loadBootResource);
+    }
+
+    withApplicationEnvironment(applicationEnvironment?: string): DotnetHostBuilder {
+        try {
+            deep_merge_config(monoConfig, {
+                applicationEnvironment,
+            });
+            return this;
+        } catch (err) {
+            mono_exit(1, err);
+            throw err;
+        }
+    }
+
+    withApplicationCulture(applicationCulture?: string): DotnetHostBuilder {
+        try {
+            deep_merge_config(monoConfig, {
+                applicationCulture,
+            });
+            return this;
+        } catch (err) {
+            mono_exit(1, err);
+            throw err;
+        }
+    }
+
+    withResourceLoader(loadBootResource?: LoadBootResourceCallback): DotnetHostBuilder {
+        try {
+            deep_merge_config(monoConfig, {
+                loadBootResource
+            });
+            return this;
+        } catch (err) {
+            mono_exit(1, err);
+            throw err;
+        }
     }
 
     async create(): Promise<RuntimeAPI> {
