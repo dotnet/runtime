@@ -1612,7 +1612,7 @@ namespace Microsoft.WebAssembly.Diagnostics
 
         public JToken GetEvaluationResultProperties(string id)
         {
-            ExecutionContext context = proxy.GetContext(sessionId);
+            ExecutionContext context = proxy.Contexts.GetCurrentContext(sessionId);
             var resolver = new MemberReferenceResolver(proxy, context, sessionId, context.CallStack.First().Id, logger);
             var evaluationResult = resolver.TryGetEvaluationResult(id);
             return evaluationResult["value"];
@@ -1633,7 +1633,7 @@ namespace Microsoft.WebAssembly.Diagnostics
 
                 var stringId = getCAttrsRetReader.ReadInt32();
                 var dispAttrStr = await GetStringValue(stringId, token);
-                ExecutionContext context = proxy.GetContext(sessionId);
+                ExecutionContext context = proxy.Contexts.GetCurrentContext(sessionId);
                 GetMembersResult members = await GetTypeMemberValues(
                     dotnetObjectId,
                     GetObjectCommandOptions.WithProperties | GetObjectCommandOptions.ForDebuggerDisplayAttribute,

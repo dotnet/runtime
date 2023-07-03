@@ -3,7 +3,7 @@
 
 "use strict";
 
-import { dotnet, exit } from './dotnet.js'
+import { dotnet, exit } from './_framework/dotnet.js'
 
 try {
     const runtime = await dotnet

@@ -1,5 +1,5 @@
 '\" t
-.\" Manual page created with latex2man on Thu Aug 16 09:44:45 MDT 2007
+.\" Manual page created with latex2man on Sun Aug 29 23:45:06 CEST 2021
 .\" NOTE: This file is generated, DO NOT EDIT.
 .de Vb
 .ft CW
@@ -10,7 +10,7 @@
 
 .fi
 ..
-.TH "UNW\\_GET\\_PROC\\_NAME" "3" "16 August 2007" "Programming Library " "Programming Library "
+.TH "UNW\\_GET\\_PROC\\_NAME" "3" "29 August 2021" "Programming Library " "Programming Library "
 .SH NAME
 unw_get_proc_name
 \-\- get name of current procedure 
@@ -59,7 +59,7 @@ between procedure names and ordinary labels. Furthermore, if symbol
 information has been stripped from a program, procedure names may be 
 completely unavailable or may be limited to those exported via a 
 dynamic symbol table. In such cases, unw_get_proc_name()
-may return the name of a label or a preceeding (nearby) procedure. 
+may return the name of a label or a preceding (nearby) procedure. 
 However, the offset returned through offp
 is always relative to 
 the returned name, which ensures that the value (address) of the 

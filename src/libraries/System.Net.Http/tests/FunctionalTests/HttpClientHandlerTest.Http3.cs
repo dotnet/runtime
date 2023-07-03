@@ -1032,6 +1032,67 @@ namespace System.Net.Http.Functional.Tests
         }
 
         [Fact]
+        public async Task ConnectionAttemptCanceled_AuthorityNotBlocked()
+        {
+            using Http3LoopbackServer server = CreateHttp3LoopbackServer();
+
+            Task serverTask = Task.Run(async () =>
+            {
+                Http3LoopbackConnection connection;
+                while (true)
+                {
+                    try
+                    {
+                        connection = (Http3LoopbackConnection)await server.EstablishGenericConnectionAsync();
+                        break;
+                    }
+                    catch (Exception ex) // Ignore exception and continue until a viable connection is established.
+                    {
+                        _output.WriteLine(ex.ToString());
+                    }
+                }
+                await connection.HandleRequestAsync();
+                await connection.DisposeAsync();
+            });
+
+            Task clientTask = Task.Run(async () =>
+            {
+                using CancellationTokenSource cts = new CancellationTokenSource();
+                using HttpClient client = CreateHttpClient(new SocketsHttpHandler()
+                {
+                    SslOptions = new SslClientAuthenticationOptions()
+                    {
+                        RemoteCertificateValidationCallback = (_, _, _, _) =>
+                        {
+                            cts.Cancel();
+                            return true;
+                        }
+                    }
+                });
+                using HttpRequestMessage request = new()
+                {
+                    Method = HttpMethod.Get,
+                    RequestUri = server.Address,
+                    Version = HttpVersion30,
+                    VersionPolicy = HttpVersionPolicy.RequestVersionExact
+                };
+                await Assert.ThrowsAnyAsync<OperationCanceledException>(async () => await client.SendAsync(request, cts.Token));
+
+                // Next call must succeed
+                using HttpRequestMessage request2 = new()
+                {
+                    Method = HttpMethod.Get,
+                    RequestUri = server.Address,
+                    Version = HttpVersion30,
+                    VersionPolicy = HttpVersionPolicy.RequestVersionExact
+                };
+                await client.SendAsync(request2);
+            });
+
+            await new[] { clientTask, serverTask }.WhenAllOrAnyFailed(20_000);
+        }
+
+        [Fact]
         public async Task AltSvcNotUsed_AltUsedHeaderNotPresent()
         {
             using Http3LoopbackServer server = CreateHttp3LoopbackServer();

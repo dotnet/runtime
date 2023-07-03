@@ -10,7 +10,6 @@ namespace System.Runtime.InteropServices.Tests
     public partial class MarshalComDisabledTests
     {
         [Fact]
-        [ActiveIssue("https://github.com/dotnet/runtime/issues/72914", typeof(PlatformDetection), nameof(PlatformDetection.IsNativeAot))]
         public void GetTypeFromCLSID_ThrowsNotSupportedException()
         {
             Assert.Throws<NotSupportedException>(() => Marshal.GetTypeFromCLSID(Guid.Empty));

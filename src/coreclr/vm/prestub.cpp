@@ -1168,9 +1168,6 @@ namespace
         pSig1++;
         pSig2++;
 
-        // Generics are not supported
-        _ASSERTE((callConv & IMAGE_CEE_CS_CALLCONV_GENERIC) == 0);
-
         DWORD declArgCount;
         DWORD methodArgCount;
         IfFailThrow(CorSigUncompressData_EndPtr(pSig1, pEndSig1, &declArgCount));
@@ -1438,6 +1435,14 @@ bool MethodDesc::TryGenerateUnsafeAccessor(DynamicResolver** resolver, COR_ILMET
     HRESULT hr = GetCustomAttribute(WellKnownAttribute::UnsafeAccessorAttribute, &data, &dataLen);
     if (hr != S_OK)
         return false;
+
+    // UnsafeAccessor must be on a static method
+    if (!IsStatic())
+        ThrowHR(COR_E_BADIMAGEFORMAT, BFA_INVALID_UNSAFEACCESSOR);
+
+    // Block generic support early
+    if (HasClassOrMethodInstantiation())
+        ThrowHR(COR_E_BADIMAGEFORMAT, BFA_INVALID_UNSAFEACCESSOR);
 
     UnsafeAccessorKind kind;
     SString name;

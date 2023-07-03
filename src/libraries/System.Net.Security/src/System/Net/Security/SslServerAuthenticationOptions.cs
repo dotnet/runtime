@@ -13,11 +13,21 @@ namespace System.Net.Security
         private SslProtocols _enabledSslProtocols = SecurityProtocol.SystemDefaultSecurityProtocols;
         private EncryptionPolicy _encryptionPolicy = EncryptionPolicy.RequireEncryption;
         private bool _allowRenegotiation;
+        private bool _allowTlsResume = true;
 
         public bool AllowRenegotiation
         {
             get => _allowRenegotiation;
             set => _allowRenegotiation = value;
+        }
+
+        /// <summary>
+        ///  Gets or sets a value that indicates whether the SslStream should allow TLS resumption.
+        /// </summary>
+        public bool AllowTlsResume
+        {
+            get => _allowTlsResume;
+            set => _allowTlsResume = value;
         }
 
         public bool ClientCertificateRequired { get; set; }

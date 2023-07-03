@@ -5,7 +5,7 @@ using System.Buffers;
 using System.Buffers.Text;
 using System.Diagnostics;
 using System.Diagnostics.CodeAnalysis;
-using System.Runtime.CompilerServices;
+using System.Text.Unicode;
 
 namespace System.Text.Json
 {
@@ -277,6 +277,12 @@ namespace System.Text.Json
 
         public static void ValidateUtf8(ReadOnlySpan<byte> utf8Buffer)
         {
+#if NET8_0_OR_GREATER
+            if (!Utf8.IsValid(utf8Buffer))
+            {
+                throw ThrowHelper.GetInvalidOperationException_ReadInvalidUTF8();
+            }
+#else
             try
             {
 #if NETCOREAPP
@@ -304,6 +310,7 @@ namespace System.Text.Json
                 // Therefore, wrapping the DecoderFallbackException around an InvalidOperationException.
                 throw ThrowHelper.GetInvalidOperationException_ReadInvalidUTF8(ex);
             }
+#endif
         }
 
         internal static int GetUtf8ByteCount(ReadOnlySpan<char> text)

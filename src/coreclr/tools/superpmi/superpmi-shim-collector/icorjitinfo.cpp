@@ -624,6 +624,17 @@ CORINFO_FIELD_HANDLE interceptor_ICJI::getFieldInClass(CORINFO_CLASS_HANDLE clsH
     return temp;
 }
 
+GetTypeLayoutResult interceptor_ICJI::getTypeLayout(
+    CORINFO_CLASS_HANDLE typeHnd,
+    CORINFO_TYPE_LAYOUT_NODE* nodes,
+    size_t* numNodes)
+{
+    mc->cr->AddCall("getTypeLayout");
+    GetTypeLayoutResult result = original_ICorJitInfo->getTypeLayout(typeHnd, nodes, numNodes);
+    mc->recGetTypeLayout(result, typeHnd, nodes, *numNodes);
+    return result;
+}
+
 bool interceptor_ICJI::checkMethodModifier(CORINFO_METHOD_HANDLE hMethod, LPCSTR modifier, bool fOptional)
 {
     mc->cr->AddCall("checkMethodModifier");

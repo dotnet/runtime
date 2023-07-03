@@ -192,4 +192,7 @@
   <data name="TypeAccessibilityDetails" xml:space="preserve">
     <value>'{0}' has accessibility '{1}'.</value>
   </data>
+  <data name="InOutAttributes" xml:space="preserve">
+    <value>[In] and [Out] attributes</value>
+  </data>
 </root>

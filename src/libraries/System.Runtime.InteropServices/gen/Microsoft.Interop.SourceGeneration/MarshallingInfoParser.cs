@@ -174,7 +174,7 @@ namespace Microsoft.Interop
     /// </remarks>
     public sealed class MarshallingInfoParser
     {
-        private readonly IGeneratorDiagnostics _diagnostics;
+        private readonly GeneratorDiagnosticsBag _diagnostics;
         private readonly IElementInfoProvider _elementInfoProvider;
         private readonly ImmutableArray<IUseSiteAttributeParser> _useSiteMarshallingAttributeParsers;
         private readonly ImmutableArray<IMarshallingInfoAttributeParser> _marshallingAttributeParsers;
@@ -189,7 +189,7 @@ namespace Microsoft.Interop
         /// <param name="marshallingAttributeParsers">Parsers for retrieving marshalling information from attributes and the managed type.</param>
         /// <param name="typeBasedMarshallingInfoProviders">Parsers for retrieving marshalling information from the managed type only.</param>
         public MarshallingInfoParser(
-            IGeneratorDiagnostics diagnostics,
+            GeneratorDiagnosticsBag diagnostics,
             IElementInfoProvider elementInfoProvider,
             ImmutableArray<IUseSiteAttributeParser> useSiteMarshallingAttributeParsers,
             ImmutableArray<IMarshallingInfoAttributeParser> marshallingAttributeParsers,
@@ -286,9 +286,9 @@ namespace Microsoft.Interop
     {
         private ImmutableHashSet<string> _activeInspectingElements = ImmutableHashSet<string>.Empty;
         private readonly IElementInfoProvider _innerProvider;
-        private readonly IGeneratorDiagnostics _diagnostics;
+        private readonly GeneratorDiagnosticsBag _diagnostics;
 
-        public CycleDetectingElementInfoProvider(IElementInfoProvider innerProvider, IGeneratorDiagnostics diagnostics)
+        public CycleDetectingElementInfoProvider(IElementInfoProvider innerProvider, GeneratorDiagnosticsBag diagnostics)
         {
             _innerProvider = innerProvider;
             _diagnostics = diagnostics;
