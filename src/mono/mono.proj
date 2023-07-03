@@ -55,6 +55,8 @@
     <MonoWasmThreads Condition="'$(MonoWasmBuildVariant)' == 'singlethread'">false</MonoWasmThreads>
     <MonoWasmThreads Condition="'$(MonoWasmBuildVariant)' == 'multithread'">true</MonoWasmThreads>
     <MonoEnableAssertMessages Condition="'$(MonoEnableAssertMessages)' == '' and '$(TargetsWasi)' == 'true'">true</MonoEnableAssertMessages>
+    <MonoLLVMMajorVersion>$(runtimelinuxx64MicrosoftNETCoreRuntimeMonoLLVMSdkVersion.Substring(0, $(runtimelinuxx64MicrosoftNETCoreRuntimeMonoLLVMSdkVersion.IndexOf('.'))))</MonoLLVMMajorVersion>
+    <MonoUseLibCxx Condition="'$(MonoLLVMMajorVersion)' >= '16.0'">true</MonoUseLibCxx>
   </PropertyGroup>
 
   <!-- default thread suspend for specific platforms -->
@@ -253,8 +255,8 @@
   <!-- Mono runtime build -->
   <Target Name="BuildMonoRuntime">
     <PropertyGroup>
-      <_MonoLLVMTargetArchitecture Condition="'$(TargetArchitecture)' == 'wasm'">$(BuildArchitecture)</_MonoLLVMTargetArchitecture>
-      <_MonoLLVMTargetArchitecture Condition="'$(TargetArchitecture)' != 'wasm'">$(TargetArchitecture)</_MonoLLVMTargetArchitecture>
+      <_MonoLLVMTargetArchitecture Condition="'$(TargetArchitecture)' == 'wasm' and '$(MonoUseLLVMPackage)' == 'true'">$(BuildArchitecture)</_MonoLLVMTargetArchitecture>
+      <_MonoLLVMTargetArchitecture Condition="'$(TargetArchitecture)' != 'wasm' and '$(MonoUseLLVMPackage)' == 'true'">$(TargetArchitecture)</_MonoLLVMTargetArchitecture>
     </PropertyGroup>
     <ItemGroup>
       <_MonoCMakeArgs Condition="'$(_MonoUseNinja)' == 'true'" Include="-G Ninja"/>
@@ -270,20 +272,11 @@
       <_MonoCMakeArgs Include="-DMONO_SHARED_LIB_NAME=$(MonoSharedLibName)" />
     </ItemGroup>
 
-    <!-- We build LLVM bits for x64 Linux without C++11 ABI (CentOS 7 has libstdc++ < 5.1) -->
-    <ItemGroup Condition="'$(TargetsLinux)' == 'true' and '$(MonoEnableLLVM)' == 'true' and '$(MonoLLVMUseCxx11Abi)' != 'true'">
-      <_MonoCXXFLAGS Include="-D_GLIBCXX_USE_CXX11_ABI=0" />
-    </ItemGroup>
-    <ItemGroup Condition="'$(TargetsLinux)' == 'true' and '$(MonoAOTEnableLLVM)' == 'true' and '$(MonoAOTLLVMUseCxx11Abi)' != 'true'">
-      <_MonoAOTCXXFLAGS Include="-D_GLIBCXX_USE_CXX11_ABI=0" />
-    </ItemGroup>
-
-    <!-- We build LLVM bits for ARM64 Linux with C++11 ABI (Ubuntu 16.04 has libstdc++ > 5.1)-->
-    <ItemGroup Condition="'$(TargetsLinux)' == 'true' and '$(MonoEnableLLVM)' == 'true' and '$(MonoLLVMUseCxx11Abi)' == 'true'">
-      <_MonoCXXFLAGS Include="-D_GLIBCXX_USE_CXX11_ABI=1" />
-    </ItemGroup>
-    <ItemGroup Condition="'$(TargetsLinux)' == 'true' and '$(MonoAOTEnableLLVM)' == 'true' and '$(MonoAOTLLVMUseCxx11Abi)' == 'true'">
-      <_MonoAOTCXXFLAGS Include="-D_GLIBCXX_USE_CXX11_ABI=1" />
+    <ItemGroup Condition="'$(HostOS)' == 'Linux' and '$(MonoEnableLLVM)' == 'true' and '$(TargetArchitecture)' != 'wasm' and '$(MonoUseLibCxx)' == 'true'">
+      <_MonoCXXFLAGS Include="-I$(MonoLLVMDir)\$(_MonoLLVMTargetArchitecture)\include\c++\v1" />
+      <_MonoCXXFLAGS Include="-L$(MonoLLVMDir)\$(_MonoLLVMTargetArchitecture)\lib" />
+      <_MonoCXXFLAGS Include="-stdlib=libc++" />
+      <_MonoCMakeArgs Include="-DMONO_SET_RPATH_ORIGIN=true" />
     </ItemGroup>
 
     <!-- ARM Linux cross build options on CI -->
@@ -706,16 +699,23 @@
     </PropertyGroup>
 
     <PropertyGroup>
-      <_MonoLLVMTargetArchitecture>$(BuildArchitecture)</_MonoLLVMTargetArchitecture>
-      <_MonoLLVMTargetArchitecture Condition="'$(AotHostArchitecture)' != ''">$(AotHostArchitecture)</_MonoLLVMTargetArchitecture>
+      <_MonoLLVMTargetArchitecture Condition="'$(MonoUseLLVMPackage)' == 'true'">$(BuildArchitecture)</_MonoLLVMTargetArchitecture>
+      <_MonoLLVMTargetArchitecture Condition="'$(AotHostArchitecture)' != '' and '$(MonoUseLLVMPackage)' == 'true'">$(AotHostArchitecture)</_MonoLLVMTargetArchitecture>
     </PropertyGroup>
+
+    <ItemGroup Condition="'$(HostOS)' == 'Linux' and (('$(MonoAOTEnableLLVM)' == 'true' and '$(MonoUseLibCxx)' == 'true') or '$(TargetArchitecture)' == 'wasm')">
+      <_MonoAOTCXXFLAGS Include="-I$(MonoLLVMDir)\$(_MonoLLVMTargetArchitecture)\include\c++\v1" />
+      <_MonoAOTCXXFLAGS Include="-L$(MonoLLVMDir)\$(_MonoLLVMTargetArchitecture)\lib" />
+      <_MonoAOTCXXFLAGS Include="-stdlib=libc++" />
+      <MonoAOTCMakeArgs Include="-DMONO_SET_RPATH_ORIGIN=true" />
+    </ItemGroup>
 
     <!-- macOS host specific options -->
     <ItemGroup Condition="'$(AotHostOS)' == 'osx' or $([MSBuild]::IsOSPlatform('OSX'))">
-      <MonoAOTCMakeArgs Condition="'$(_MonoLLVMTargetArchitecture)' == 'x64'" Include="-DCMAKE_OSX_ARCHITECTURES=x86_64" />
-      <MonoAOTCMakeArgs Condition="'$(_MonoLLVMTargetArchitecture)' == 'x86'" Include="-DCMAKE_OSX_ARCHITECTURES=i386" />
-      <MonoAOTCMakeArgs Condition="'$(_MonoLLVMTargetArchitecture)' == 'arm64'" Include="-DCMAKE_OSX_ARCHITECTURES=arm64" />
-      <MonoAOTCMakeArgs Condition="'$(_MonoLLVMTargetArchitecture)' == 'arm'" Include="&quot;-DCMAKE_OSX_ARCHITECTURES=armv7%3Barmv7s&quot;" />
+      <MonoAOTCMakeArgs Condition="'$(AotHostArchitecture)' == 'x64' or ('$(AotHostArchitecture)' == '' and '$(BuildArchitecture)' == 'x64')" Include="-DCMAKE_OSX_ARCHITECTURES=x86_64" />
+      <MonoAOTCMakeArgs Condition="'$(AotHostArchitecture)' == 'x86' or ('$(AotHostArchitecture)' == '' and '$(BuildArchitecture)' == 'x86')" Include="-DCMAKE_OSX_ARCHITECTURES=i386" />
+      <MonoAOTCMakeArgs Condition="'$(AotHostArchitecture)' == 'arm64' or ('$(AotHostArchitecture)' == '' and '$(BuildArchitecture)' == 'arm64')" Include="-DCMAKE_OSX_ARCHITECTURES=arm64" />
+      <MonoAOTCMakeArgs Condition="'$(AotHostArchitecture)' == 'arm' or ('$(AotHostArchitecture)' == '' and '$(BuildArchitecture)' == 'arm')" Include="&quot;-DCMAKE_OSX_ARCHITECTURES=armv7%3Barmv7s&quot;" />
       <MonoAOTCMakeArgs Include="-DCMAKE_OSX_DEPLOYMENT_TARGET=$(macOSVersionMin)" />
       <MonoAOTCMakeArgs Include="-DENABLE_ICALL_EXPORT=1"/>
       <_MonoAOTCFLAGS Condition="'$(AotHostArchitecture)' == 'arm64'" Include="-arch arm64" />
@@ -950,6 +950,18 @@
       </_MonoRuntimeArtifacts>
       <_MonoRuntimeArtifacts Include="$(_MonoAotCrossFilePath)">
         <Destination>$(RuntimeBinDir)cross\$(OutputRID)\$(MonoAotCrossFileName)</Destination>
+      </_MonoRuntimeArtifacts>
+      <_MonoRuntimeArtifacts Condition="'$(HostOS)' == 'Linux' and '$(MonoEnableLLVM)' == 'true' and '$(TargetArchitecture)' != 'wasm' and '$(MonoUseLibCxx)' == 'true'" Include="$(MonoLLVMDir)\$(_MonoLLVMTargetArchitecture)\lib\libc++.so.1">
+        <Destination>$(RuntimeBinDir)libc++.so.1</Destination>
+      </_MonoRuntimeArtifacts>
+      <_MonoRuntimeArtifacts Condition="'$(HostOS)' == 'Linux' and '$(MonoEnableLLVM)' == 'true' and '$(TargetArchitecture)' != 'wasm' and '$(MonoUseLibCxx)' == 'true'" Include="$(MonoLLVMDir)\$(_MonoLLVMTargetArchitecture)\lib\libc++abi.so.1">
+        <Destination>$(RuntimeBinDir)libc++abi.so.1</Destination>
+      </_MonoRuntimeArtifacts>
+      <_MonoRuntimeArtifacts Condition="'$(HostOS)' == 'Linux' and (('$(MonoAOTEnableLLVM)' == 'true' and '$(MonoUseLibCxx)' == 'true') or '$(TargetArchitecture)' == 'wasm')" Include="$(MonoLLVMDir)\$(_MonoLLVMTargetArchitecture)\lib\libc++.so.1">
+        <Destination>$(RuntimeBinDir)cross\$(OutputRID)\libc++.so.1</Destination>
+      </_MonoRuntimeArtifacts>
+      <_MonoRuntimeArtifacts Condition="'$(HostOS)' == 'Linux' and (('$(MonoAOTEnableLLVM)' == 'true' and '$(MonoUseLibCxx)' == 'true') or '$(TargetArchitecture)' == 'wasm')" Include="$(MonoLLVMDir)\$(_MonoLLVMTargetArchitecture)\lib\libc++abi.so.1">
+        <Destination>$(RuntimeBinDir)cross\$(OutputRID)\libc++abi.so.1</Destination>
       </_MonoRuntimeArtifacts>
       <_MonoRuntimeArtifacts Include="$(_MonoAotCrossPdbFilePath)" Condition="Exists('$(_MonoAotCrossPdbFilePath)')">
         <Destination>$(RuntimeBinDir)cross\$(OutputRID)\$(MonoAotCrossPdbFileName)</Destination>

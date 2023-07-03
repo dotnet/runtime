@@ -10726,7 +10726,14 @@ emit_llvm_file (MonoAotCompile *acfg)
 		// FIXME: This doesn't work yet
 		opts = g_strdup ("");
 	} else {
-#if LLVM_API_VERSION >= 1300
+#if LLVM_API_VERSION >= 1600
+		/* The safepoints pass requires new pass manager syntax*/
+		opts = g_strdup ("-disable-tail-calls -passes='");
+		if (!acfg->aot_opts.llvm_only) {
+			opts = g_strdup_printf ("%sdefault<O2>,", opts);
+		}
+		opts = g_strdup_printf ("%splace-safepoints' -spp-all-backedges", opts);
+#elif LLVM_API_VERSION >= 1300
 		/* The safepoints pass requires the old pass manager */
 		opts = g_strdup ("-disable-tail-calls -place-safepoints -spp-all-backedges -enable-new-pm=0");
 #else
@@ -10736,8 +10743,10 @@ emit_llvm_file (MonoAotCompile *acfg)
 
 	if (acfg->aot_opts.llvm_opts) {
 		opts = g_strdup_printf ("%s %s", acfg->aot_opts.llvm_opts, opts);
+#if LLVM_API_VERSION < 1600
 	} else if (!acfg->aot_opts.llvm_only) {
 		opts = g_strdup_printf ("-O2 %s", opts);
+#endif
 	}
 
 	if (acfg->aot_opts.use_current_cpu) {
