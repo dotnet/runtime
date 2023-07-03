@@ -54,9 +54,6 @@ namespace System
 
             if (IsUtcAlias(id))
             {
-                _standardDisplayName = GetUtcStandardDisplayName();
-                _daylightDisplayName = _standardDisplayName;
-                _displayName = GetUtcFullDisplayName(_id, _standardDisplayName);
                 _baseUtcOffset = TimeSpan.Zero;
                 _adjustmentRules = Array.Empty<AdjustmentRule>();
                 return;
@@ -222,6 +219,9 @@ namespace System
 
         private string? PopulateDisplayName()
         {
+            if (IsUtcAlias(Id))
+                return GetUtcFullDisplayName(Id, StandardName);
+
             // Set fallback value using abbreviations, base offset, and id
             // These are expected in environments without time zone globalization data
             string? displayName = string.Create(null, stackalloc char[256], $"(UTC{(_baseUtcOffset >= TimeSpan.Zero ? '+' : '-')}{_baseUtcOffset:hh\\:mm}) {_id}");
@@ -240,6 +240,9 @@ namespace System
 
         private string? PopulateStandardDisplayName()
         {
+            if (IsUtcAlias(Id))
+                return GetUtcStandardDisplayName();
+
             string? standardDisplayName = s_standardAbbrevName;
             if (GlobalizationMode.Invariant)
                 return standardDisplayName;
@@ -255,6 +258,9 @@ namespace System
 
         private string? PopulateDaylightDisplayName()
         {
+            if (IsUtcAlias(Id))
+                return StandardName;
+
             string? daylightDisplayName = s_daylightAbbrevName ?? s_standardAbbrevName;
             if (GlobalizationMode.Invariant)
                 return daylightDisplayName;
