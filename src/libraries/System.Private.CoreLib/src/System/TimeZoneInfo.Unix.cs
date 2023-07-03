@@ -18,24 +18,33 @@ namespace System
     {
         private const string DefaultTimeZoneDirectory = "/usr/share/zoneinfo/";
 
-        // UTC aliases per https://github.com/unicode-org/cldr/blob/master/common/bcp47/timezone.xml
-        // Hard-coded because we need to treat all aliases of UTC the same even when globalization data is not available.
-        // (This list is not likely to change.)
-        private static readonly string[] s_UtcAliases = new[] {
-            "Etc/UTC",
-            "Etc/UCT",
-            "Etc/Universal",
-            "Etc/Zulu",
-            "UCT",
-            "UTC",
-            "Universal",
-            "Zulu"
-        };
-
         // Set fallback values using abbreviations, base offset, and id
         // These are expected in environments without time zone globalization data
         private string? s_standardAbbrevName;
         private string? s_daylightAbbrevName;
+
+        // Handle UTC and its aliases per https://github.com/unicode-org/cldr/blob/master/common/bcp47/timezone.xml
+        // Hard-coded because we need to treat all aliases of UTC the same even when globalization data is not available.
+        // (This list is not likely to change.)
+        private static bool IsUtcAlias (string id)
+        {
+            switch (char.ToLowerInvariant(id[0]))
+            {
+                case 'e':
+                    return string.Equals(id, "Etc/UTC", StringComparison.OrdinalIgnoreCase) ||
+                           string.Equals(id, "Etc/Universal", StringComparison.OrdinalIgnoreCase) ||
+                           string.Equals(id, "Etc/UTC", StringComparison.OrdinalIgnoreCase) ||
+                           string.Equals(id, "Etc/Zulu", StringComparison.OrdinalIgnoreCase);
+                case 'u':
+                    return string.Equals(id, "UCT", StringComparison.OrdinalIgnoreCase) ||
+                           string.Equals(id, "UTC", StringComparison.OrdinalIgnoreCase) ||
+                           string.Equals(id, "Universal", StringComparison.OrdinalIgnoreCase);
+                case 'z':
+                    return string.Equals(id, "Zulu", StringComparison.OrdinalIgnoreCase);
+            }
+
+            return false;
+        }
 
         private TimeZoneInfo(byte[] data, string id, bool dstDisabled)
         {
@@ -43,8 +52,7 @@ namespace System
 
             HasIanaId = true;
 
-            // Handle UTC and its aliases
-            if (StringArrayContains(_id, s_UtcAliases, StringComparison.OrdinalIgnoreCase))
+            if (IsUtcAlias(id))
             {
                 _standardDisplayName = GetUtcStandardDisplayName();
                 _daylightDisplayName = _standardDisplayName;
