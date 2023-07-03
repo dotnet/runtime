@@ -7775,11 +7775,35 @@ void Compiler::impCheckCanInline(GenTreeCall*           call,
                 return;
             }
 #endif
+            JITDUMP("\nCheckCanInline: fetching method info for inline candidate %s -- context %p\n",
+                    compiler->eeGetMethodName(ftn), pParam->exactContextHnd);
+
+            if (pParam->exactContextHnd == nullptr)
+            {
+                JITDUMP("NULL context\n");
+            }
+            else if (pParam->exactContextHnd == METHOD_BEING_COMPILED_CONTEXT())
+            {
+                JITDUMP("Current method context\n");
+            }
+            else if ((((size_t)pParam->exactContextHnd & CORINFO_CONTEXTFLAGS_MASK) == CORINFO_CONTEXTFLAGS_METHOD))
+            {
+                JITDUMP("Method context: %s\n",
+                        compiler->eeGetMethodName((CORINFO_METHOD_HANDLE)pParam->exactContextHnd));
+            }
+            else
+            {
+                JITDUMP("Class context: %s\n", compiler->eeGetClassName((CORINFO_CLASS_HANDLE)(
+                                                   (size_t)pParam->exactContextHnd & ~CORINFO_CONTEXTFLAGS_MASK)));
+            }
+
+            const bool isGdv = pParam->call->IsGuardedDevirtualizationCandidate();
 
             // Fetch method info. This may fail, if the method doesn't have IL.
+            // NOTE: For GDV we're expected to use a different context (per candidate)
             //
             CORINFO_METHOD_INFO methInfo;
-            if (!compCompHnd->getMethodInfo(ftn, &methInfo))
+            if (!compCompHnd->getMethodInfo(ftn, &methInfo, isGdv ? nullptr : pParam->exactContextHnd))
             {
                 inlineResult->NoteFatal(InlineObservation::CALLEE_NO_METHOD_INFO);
                 return;

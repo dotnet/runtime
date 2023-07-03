@@ -1179,9 +1179,29 @@ namespace Internal.JitInterface
             Get_CORINFO_SIG_INFO(method, sig: sig, scope: null);
         }
 
-        private bool getMethodInfo(CORINFO_METHOD_STRUCT_* ftn, CORINFO_METHOD_INFO* info)
+        private bool getMethodInfo(CORINFO_METHOD_STRUCT_* ftn, CORINFO_METHOD_INFO* info, CORINFO_CONTEXT_STRUCT* context)
         {
             MethodDesc method = HandleToObject(ftn);
+
+            if (context != null && method.IsSharedByGenericInstantiations)
+            {
+                TypeSystemEntity ctx = entityFromContext(context);
+                if (ctx is MethodDesc methodFromCtx && context != contextFromMethodBeingCompiled())
+                {
+                    Debug.Assert(method.GetTypicalMethodDefinition() == methodFromCtx.GetTypicalMethodDefinition());
+                    method = methodFromCtx;
+                }
+                else if (ctx is InstantiatedType instantiatedCtxType)
+                {
+                    MethodDesc instantiatedMethod = _compilation.TypeSystemContext.GetMethodForInstantiatedType(method.GetTypicalMethodDefinition(), instantiatedCtxType);
+                    if (method.HasInstantiation)
+                    {
+                        instantiatedMethod = _compilation.TypeSystemContext.GetInstantiatedMethod(instantiatedMethod, method.Instantiation);
+                    }
+                    method = instantiatedMethod;
+                }
+            }
+
 #if READYTORUN
             // Add an early CanInline check to see if referring to the IL of the target methods is
             // permitted from within this MethodBeingCompiled, the full CanInline check will be performed
