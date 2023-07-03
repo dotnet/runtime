@@ -5,7 +5,7 @@
 #include "promotion.h"
 #include "jitstd/algorithm.h"
 
-// Represents a list of statements; this is the result of assignment decomposition.
+// Represents a list of statements; this is the result of store decomposition.
 class DecompositionStatementList
 {
     GenTree* m_head = nullptr;
@@ -41,9 +41,7 @@ class DecompositionPlan
 {
     struct Entry
     {
-        unsigned     ToLclNum;
         Replacement* ToReplacement;
-        unsigned     FromLclNum;
         Replacement* FromReplacement;
         unsigned     Offset;
         var_types    Type;
@@ -95,43 +93,7 @@ public:
     //
     void CopyBetweenReplacements(Replacement* dstRep, Replacement* srcRep, unsigned offset)
     {
-        m_entries.Push(Entry{dstRep->LclNum, dstRep, srcRep->LclNum, srcRep, offset, dstRep->AccessType});
-    }
-
-    //------------------------------------------------------------------------
-    // CopyBetweenReplacements:
-    //   Add an entry specifying to copy from a promoted field into a replacement.
-    //
-    // Parameters:
-    //   dstRep - The destination replacement.
-    //   srcLcl - Local number of regularly promoted source field.
-    //   offset - The offset this covers in the struct copy.
-    //   type   - The type of copy.
-    //
-    // Remarks:
-    //   Used when the source local is a regular promoted field.
-    //
-    void CopyBetweenReplacements(Replacement* dstRep, unsigned srcLcl, unsigned offset)
-    {
-        m_entries.Push(Entry{dstRep->LclNum, dstRep, srcLcl, nullptr, offset, dstRep->AccessType});
-    }
-
-    //------------------------------------------------------------------------
-    // CopyBetweenReplacements:
-    //   Add an entry specifying to copy from a replacement into a promoted field.
-    //
-    // Parameters:
-    //   dstRep - The destination replacement.
-    //   srcLcl - Local number of regularly promoted source field.
-    //   offset - The offset this covers in the struct copy.
-    //   type   - The type of copy.
-    //
-    // Remarks:
-    //   Used when the destination local is a regular promoted field.
-    //
-    void CopyBetweenReplacements(unsigned dstLcl, Replacement* srcRep, unsigned offset)
-    {
-        m_entries.Push(Entry{dstLcl, nullptr, srcRep->LclNum, srcRep, offset, srcRep->AccessType});
+        m_entries.Push(Entry{dstRep, srcRep, offset, dstRep->AccessType});
     }
 
     //------------------------------------------------------------------------
@@ -145,7 +107,7 @@ public:
     //
     void CopyToReplacement(Replacement* dstRep, unsigned offset)
     {
-        m_entries.Push(Entry{dstRep->LclNum, dstRep, BAD_VAR_NUM, nullptr, offset, dstRep->AccessType});
+        m_entries.Push(Entry{dstRep, nullptr, offset, dstRep->AccessType});
     }
 
     //------------------------------------------------------------------------
@@ -159,7 +121,7 @@ public:
     //
     void CopyFromReplacement(Replacement* srcRep, unsigned offset)
     {
-        m_entries.Push(Entry{BAD_VAR_NUM, nullptr, srcRep->LclNum, srcRep, offset, srcRep->AccessType});
+        m_entries.Push(Entry{nullptr, srcRep, offset, srcRep->AccessType});
     }
 
     //------------------------------------------------------------------------
@@ -174,7 +136,7 @@ public:
     //
     void InitReplacement(Replacement* dstRep, unsigned offset)
     {
-        m_entries.Push(Entry{dstRep->LclNum, dstRep, BAD_VAR_NUM, nullptr, offset, dstRep->AccessType});
+        m_entries.Push(Entry{dstRep, nullptr, offset, dstRep->AccessType});
     }
 
     //------------------------------------------------------------------------
@@ -416,14 +378,14 @@ private:
         {
             const Entry& entry = m_entries.BottomRef(i);
 
-            assert((entry.ToLclNum != BAD_VAR_NUM) && (entry.ToReplacement != nullptr));
+            assert(entry.ToReplacement != nullptr);
             assert((entry.ToReplacement >= firstRep) && (entry.ToReplacement < firstRep + agg->Replacements.size()));
             size_t replacementIndex = entry.ToReplacement - firstRep;
 
             if (!deaths.IsReplacementDying((unsigned)replacementIndex))
             {
                 GenTree* value = m_compiler->gtNewConWithPattern(entry.Type, initPattern);
-                GenTree* store = m_compiler->gtNewStoreLclVarNode(entry.ToLclNum, value);
+                GenTree* store = m_compiler->gtNewStoreLclVarNode(entry.ToReplacement->LclNum, value);
                 statements->AddStatement(store);
             }
 
@@ -438,12 +400,11 @@ private:
         }
         else if (remainderStrategy.Type == RemainderStrategy::Primitive)
         {
-            GenTree*             value  = m_compiler->gtNewConWithPattern(remainderStrategy.PrimitiveType, initPattern);
-            GenTreeLclVarCommon* dstLcl = m_store->AsLclVarCommon();
-            GenTree*             store =
-                m_compiler->gtNewStoreLclFldNode(dstLcl->GetLclNum(), remainderStrategy.PrimitiveType,
-                                                 dstLcl->GetLclOffs() + remainderStrategy.PrimitiveOffset, value);
-            m_compiler->lvaSetVarDoNotEnregister(dstLcl->GetLclNum() DEBUGARG(DoNotEnregisterReason::LocalField));
+            GenTree*       value = m_compiler->gtNewConWithPattern(remainderStrategy.PrimitiveType, initPattern);
+            LocationAccess storeAccess;
+            storeAccess.InitializeLocal(m_store->AsLclVarCommon());
+            GenTree* store = storeAccess.CreateStore(remainderStrategy.PrimitiveOffset, remainderStrategy.PrimitiveType,
+                                                     value, m_compiler);
             statements->AddStatement(store);
         }
     }
@@ -546,6 +507,8 @@ private:
 
         int numAddrUses = 0;
 
+        bool needsNullCheck = false;
+
         if (addr != nullptr)
         {
             for (int i = 0; i < m_entries.Height(); i++)
@@ -555,103 +518,104 @@ private:
                     numAddrUses++;
                 }
             }
-
             if (remainderStrategy.Type != RemainderStrategy::NoRemainder)
             {
                 numAddrUses++;
             }
+
+            if (m_compiler->fgAddrCouldBeNull(addr))
+            {
+                switch (remainderStrategy.Type)
+                {
+                    case RemainderStrategy::NoRemainder:
+                    case RemainderStrategy::Primitive:
+                        needsNullCheck = true;
+                        // See if our first indirection will subsume the null check (usual case).
+                        for (int i = 0; i < m_entries.Height(); i++)
+                        {
+                            if (CanSkipEntry(m_entries.BottomRef(i), dstDeaths, remainderStrategy))
+                            {
+                                continue;
+                            }
+                            const Entry& entry = m_entries.BottomRef(i);
+                            assert((entry.FromReplacement == nullptr) || (entry.ToReplacement == nullptr));
+                            needsNullCheck = m_compiler->fgIsBigOffset(entry.Offset);
+                            break;
+                        }
+                        break;
+                }
+            }
+            if (needsNullCheck)
+            {
+                numAddrUses++;
+            }
+
+            if (numAddrUses > 1)
+            {
+                m_compiler->gtPeelOffsets(&addr, &addrBaseOffs, &addrBaseOffsFldSeq);
+
+                if (CanReuseAddressForDecomposedStore(addr))
+                {
+                    if (addr->OperIsLocalRead())
+                    {
+                        // We will introduce more uses of the address local, so it is
+                        // no longer dying here.
+                        addr->gtFlags &= ~GTF_VAR_DEATH;
+                    }
+                }
+                else
+                {
+                    unsigned addrLcl =
+                        m_compiler->lvaGrabTemp(true DEBUGARG("Spilling address for field-by-field copy"));
+                    statements->AddStatement(m_compiler->gtNewTempStore(addrLcl, addr));
+                    addr = m_compiler->gtNewLclvNode(addrLcl, addr->TypeGet());
+                }
+            }
         }
 
-        bool needsNullCheck = false;
-        if ((addr != nullptr) && m_compiler->fgAddrCouldBeNull(addr))
+        // Create helper types to create accesses.
+        LocationAccess* indirAccess = nullptr;
+        LocationAccess  storeAccess;
+
+        if (m_store->OperIs(GT_STORE_BLK))
         {
-            switch (remainderStrategy.Type)
-            {
-                case RemainderStrategy::NoRemainder:
-                case RemainderStrategy::Primitive:
-                    needsNullCheck = true;
-                    // See if our first indirection will subsume the null check (usual case).
-                    for (int i = 0; i < m_entries.Height(); i++)
-                    {
-                        if (CanSkipEntry(m_entries.BottomRef(i), dstDeaths, remainderStrategy))
-                        {
-                            continue;
-                        }
+            storeAccess.InitializeIndir(addr, addrBaseOffs, addrBaseOffsFldSeq, indirFlags, numAddrUses);
+            indirAccess = &storeAccess;
+        }
+        else
+        {
+            storeAccess.InitializeLocal(m_store->AsLclVarCommon());
+        }
 
-                        const Entry& entry = m_entries.BottomRef(i);
+        LocationAccess srcAccess;
 
-                        assert((entry.FromLclNum == BAD_VAR_NUM) || (entry.ToLclNum == BAD_VAR_NUM));
-                        needsNullCheck = m_compiler->fgIsBigOffset(entry.Offset);
-                        break;
-                    }
-                    break;
-            }
+        if (m_src->OperIs(GT_BLK))
+        {
+            srcAccess.InitializeIndir(addr, addrBaseOffs, addrBaseOffsFldSeq, indirFlags, numAddrUses);
+            indirAccess = &srcAccess;
+        }
+        else
+        {
+            srcAccess.InitializeLocal(m_src->AsLclVarCommon());
         }
 
         if (needsNullCheck)
         {
-            numAddrUses++;
+            assert(indirAccess != nullptr);
+            GenTree* nullCheck = indirAccess->CreateRead(0, TYP_BYTE, m_compiler);
+            statements->AddStatement(nullCheck);
         }
-
-        if ((addr != nullptr) && (numAddrUses > 1))
-        {
-            m_compiler->gtPeelOffsets(&addr, &addrBaseOffs, &addrBaseOffsFldSeq);
-
-            if (CanReuseAddressForDecomposedStore(addr))
-            {
-                if (addr->OperIsLocalRead())
-                {
-                    // We will introduce more uses of the address local, so it is
-                    // no longer dying here.
-                    addr->gtFlags &= ~GTF_VAR_DEATH;
-                }
-            }
-            else
-            {
-                unsigned addrLcl = m_compiler->lvaGrabTemp(true DEBUGARG("Spilling address for field-by-field copy"));
-                statements->AddStatement(m_compiler->gtNewTempStore(addrLcl, addr));
-                addr = m_compiler->gtNewLclvNode(addrLcl, addr->TypeGet());
-            }
-        }
-
-        auto grabAddr = [=, &numAddrUses](unsigned offs) {
-            assert(numAddrUses > 0);
-            numAddrUses--;
-
-            GenTree* addrUse;
-            if (numAddrUses == 0)
-            {
-                // Last use of the address, reuse the node.
-                addrUse = addr;
-            }
-            else
-            {
-                addrUse = m_compiler->gtCloneExpr(addr);
-            }
-
-            target_ssize_t fullOffs = addrBaseOffs + (target_ssize_t)offs;
-            if ((fullOffs != 0) || (addrBaseOffsFldSeq != nullptr))
-            {
-                GenTreeIntCon* offsetNode = m_compiler->gtNewIconNode(fullOffs, TYP_I_IMPL);
-                offsetNode->gtFieldSeq    = addrBaseOffsFldSeq;
-
-                var_types addrType = varTypeIsGC(addrUse) ? TYP_BYREF : TYP_I_IMPL;
-                addrUse            = m_compiler->gtNewOperNode(GT_ADD, addrType, addrUse, offsetNode);
-            }
-
-            return addrUse;
-        };
 
         if (remainderStrategy.Type == RemainderStrategy::FullBlock)
         {
             // We will reuse the existing block op. Rebase the address off of the new local we created.
             if (m_src->OperIs(GT_BLK))
             {
-                m_src->AsIndir()->Addr() = grabAddr(0);
+                m_src->AsIndir()->Addr() = indirAccess->GrabAddress(0, m_compiler);
             }
             else if (m_store->OperIs(GT_STORE_BLK))
             {
-                m_store->AsIndir()->Addr() = grabAddr(0);
+                m_store->AsIndir()->Addr() = indirAccess->GrabAddress(0, m_compiler);
             }
         }
 
@@ -669,13 +633,6 @@ private:
                 // copy is no longer the last use if it was before.
                 m_src->gtFlags &= ~GTF_VAR_DEATH;
             }
-        }
-
-        if (needsNullCheck)
-        {
-            GenTreeIndir* indir = m_compiler->gtNewIndir(TYP_BYTE, grabAddr(0));
-            PropagateIndirFlags(indir, indirFlags);
-            statements->AddStatement(indir);
         }
 
         StructDeaths srcDeaths;
@@ -700,9 +657,9 @@ private:
             }
 
             GenTree* src;
-            if (entry.FromLclNum != BAD_VAR_NUM)
+            if (entry.FromReplacement != nullptr)
             {
-                src = m_compiler->gtNewLclvNode(entry.FromLclNum, entry.Type);
+                src = m_compiler->gtNewLclvNode(entry.FromReplacement->LclNum, entry.Type);
 
                 if (entry.FromReplacement != nullptr)
                 {
@@ -714,45 +671,23 @@ private:
                     if (srcDeaths.IsReplacementDying((unsigned)replacementIndex))
                     {
                         src->gtFlags |= GTF_VAR_DEATH;
-                        m_replacer->CheckForwardSubForLastUse(entry.FromLclNum);
+                        m_replacer->CheckForwardSubForLastUse(entry.FromReplacement->LclNum);
                     }
                 }
             }
-            else if (m_src->OperIs(GT_LCL_VAR, GT_LCL_FLD))
-            {
-                unsigned offs = m_src->AsLclVarCommon()->GetLclOffs() + entry.Offset;
-                // Local morph ensures we do not see local indirs here that dereference beyond UINT16_MAX.
-                noway_assert(FitsIn<uint16_t>(offs));
-                src = m_compiler->gtNewLclFldNode(m_src->AsLclVarCommon()->GetLclNum(), entry.Type, offs);
-                m_compiler->lvaSetVarDoNotEnregister(m_src->AsLclVarCommon()->GetLclNum()
-                                                         DEBUGARG(DoNotEnregisterReason::LocalField));
-            }
             else
             {
-                GenTree* addr = grabAddr(entry.Offset);
-                src           = m_compiler->gtNewIndir(entry.Type, addr);
-                PropagateIndirFlags(src, indirFlags);
+                src = srcAccess.CreateRead(entry.Offset, entry.Type, m_compiler);
             }
 
             GenTree* store;
-            if (entry.ToLclNum != BAD_VAR_NUM)
+            if (entry.ToReplacement != nullptr)
             {
-                store = m_compiler->gtNewStoreLclVarNode(entry.ToLclNum, src);
-            }
-            else if (m_store->OperIsLocalStore())
-            {
-                unsigned offs = m_store->AsLclVarCommon()->GetLclOffs() + entry.Offset;
-                // Local morph ensures we do not see local indirs here that dereference beyond UINT16_MAX.
-                noway_assert(FitsIn<uint16_t>(offs));
-                store = m_compiler->gtNewStoreLclFldNode(m_store->AsLclVarCommon()->GetLclNum(), entry.Type, offs, src);
-                m_compiler->lvaSetVarDoNotEnregister(m_store->AsLclVarCommon()->GetLclNum()
-                                                         DEBUGARG(DoNotEnregisterReason::LocalField));
+                store = m_compiler->gtNewStoreLclVarNode(entry.ToReplacement->LclNum, src);
             }
             else
             {
-                GenTree* addr = grabAddr(entry.Offset);
-                store         = m_compiler->gtNewStoreIndNode(entry.Type, addr, src);
-                PropagateIndirFlags(store, indirFlags);
+                store = storeAccess.CreateStore(entry.Offset, entry.Type, src, m_compiler);
             }
 
             statements->AddStatement(store);
@@ -765,85 +700,31 @@ private:
 
         if (remainderStrategy.Type == RemainderStrategy::Primitive)
         {
-            GenTree* src = nullptr;
-            if (m_src->OperIs(GT_LCL_VAR, GT_LCL_FLD))
+            var_types primitiveType = remainderStrategy.PrimitiveType;
+            // The remainder might match a regularly promoted field exactly. If
+            // it does then use the promoted field's type so we can create a
+            // direct access.
+            unsigned srcPromField = srcAccess.FindRegularlyPromotedField(remainderStrategy.PrimitiveOffset, m_compiler);
+            unsigned storePromField =
+                storeAccess.FindRegularlyPromotedField(remainderStrategy.PrimitiveOffset, m_compiler);
+
+            if ((srcPromField != BAD_VAR_NUM) || (storePromField != BAD_VAR_NUM))
             {
-                GenTreeLclVarCommon* srcLcl = m_src->AsLclVarCommon();
-
-                // Check if the source has a regularly promoted field at this offset.
-                LclVarDsc* srcLclDsc  = m_compiler->lvaGetDesc(srcLcl);
-                unsigned   srcLclOffs = srcLcl->GetLclOffs() + remainderStrategy.PrimitiveOffset;
-
-                unsigned int fieldLcl =
-                    srcLclDsc->lvPromoted ? m_compiler->lvaGetFieldLocal(srcLclDsc, srcLclOffs) : BAD_VAR_NUM;
-                if (fieldLcl != BAD_VAR_NUM)
+                var_types regPromFieldType =
+                    m_compiler->lvaGetDesc(srcPromField != BAD_VAR_NUM ? srcPromField : storePromField)->TypeGet();
+                if (genTypeSize(regPromFieldType) == genTypeSize(primitiveType))
                 {
-                    LclVarDsc* dsc = m_compiler->lvaGetDesc(fieldLcl);
-                    if (genTypeSize(dsc->lvType) == genTypeSize(remainderStrategy.PrimitiveType))
-                    {
-                        src = m_compiler->gtNewLclvNode(fieldLcl, dsc->lvType);
-                    }
-                }
-
-                if (src == nullptr)
-                {
-                    src = m_compiler->gtNewLclFldNode(srcLcl->GetLclNum(), remainderStrategy.PrimitiveType, srcLclOffs);
-                    m_compiler->lvaSetVarDoNotEnregister(srcLcl->GetLclNum()
-                                                             DEBUGARG(DoNotEnregisterReason::LocalField));
+                    primitiveType = regPromFieldType;
                 }
             }
-            else
-            {
-                src = m_compiler->gtNewIndir(remainderStrategy.PrimitiveType,
-                                             grabAddr(remainderStrategy.PrimitiveOffset));
-                PropagateIndirFlags(src, indirFlags);
-            }
 
-            GenTree* store = nullptr;
-            if (m_store->OperIsLocalStore())
-            {
-                GenTreeLclVarCommon* dstLcl = m_store->AsLclVarCommon();
-
-                // Check if the destination has a regularly promoted field at this offset.
-                LclVarDsc* dstLclDsc  = m_compiler->lvaGetDesc(dstLcl);
-                unsigned   dstLclOffs = dstLcl->GetLclOffs() + remainderStrategy.PrimitiveOffset;
-
-                unsigned int fieldLcl =
-                    dstLclDsc->lvPromoted ? m_compiler->lvaGetFieldLocal(dstLclDsc, dstLclOffs) : BAD_VAR_NUM;
-                if (fieldLcl != BAD_VAR_NUM)
-                {
-                    LclVarDsc* dsc = m_compiler->lvaGetDesc(fieldLcl);
-                    if (genTypeSize(dsc->lvType) == genTypeSize(remainderStrategy.PrimitiveType))
-                    {
-                        // Since the destination is regularly promoted the
-                        // source must be physically promoted to get here. That
-                        // means we always expect to see a LCL_FLD for the
-                        // source here that we can retype to what matches the
-                        // promoted field.
-                        assert(src->OperIs(GT_LCL_FLD));
-                        src->gtType = dsc->lvType;
-
-                        store = m_compiler->gtNewStoreLclVarNode(fieldLcl, src);
-                    }
-                }
-
-                if (store == nullptr)
-                {
-                    store = m_compiler->gtNewStoreLclFldNode(dstLcl->GetLclNum(), src->TypeGet(), dstLclOffs, src);
-                    m_compiler->lvaSetVarDoNotEnregister(dstLcl->GetLclNum()
-                                                             DEBUGARG(DoNotEnregisterReason::LocalField));
-                }
-            }
-            else
-            {
-                store = m_compiler->gtNewStoreIndNode(src->TypeGet(), grabAddr(remainderStrategy.PrimitiveOffset), src);
-                PropagateIndirFlags(store, indirFlags);
-            }
-
+            GenTree* src   = srcAccess.CreateRead(remainderStrategy.PrimitiveOffset, primitiveType, m_compiler);
+            GenTree* store = storeAccess.CreateStore(remainderStrategy.PrimitiveOffset, primitiveType, src, m_compiler);
             statements->AddStatement(store);
         }
 
-        assert(numAddrUses == 0);
+        INDEBUG(storeAccess.CheckFullyUsed());
+        INDEBUG(srcAccess.CheckFullyUsed());
     }
 
     //------------------------------------------------------------------------
@@ -908,7 +789,7 @@ private:
         {
             // Check if the remainder is going to handle it.
             if ((remainderStrategy.Type == RemainderStrategy::FullBlock) && !entry.FromReplacement->NeedsWriteBack &&
-                (entry.ToLclNum == BAD_VAR_NUM))
+                (entry.ToReplacement == nullptr))
             {
 #ifdef DEBUG
                 if (dump)
@@ -942,7 +823,8 @@ private:
         {
             GenTreeLclVarCommon* lcl    = addrNode->AsLclVarCommon();
             unsigned             lclNum = lcl->GetLclNum();
-            if (m_compiler->lvaGetDesc(lclNum)->IsAddressExposed())
+            LclVarDsc*           dsc    = m_compiler->lvaGetDesc(lclNum);
+            if (dsc->IsAddressExposed())
             {
                 // Address could be pointing to itself
                 return false;
@@ -958,7 +840,7 @@ private:
             // Otherwise it could still be possible that the address is part of
             // the struct we're writing.
             unsigned dstLclNum = m_store->AsLclVarCommon()->GetLclNum();
-            if (lclNum == dstLclNum)
+            if ((lclNum == dstLclNum) || (dsc->lvIsStructField && (dsc->lvParentLcl == dstLclNum)))
             {
                 return false;
             }
@@ -966,7 +848,8 @@ private:
             // It could also be one of the replacement locals we're going to write.
             for (int i = 0; i < m_entries.Height(); i++)
             {
-                if (m_entries.BottomRef(i).ToLclNum == lclNum)
+                const Entry& entry = m_entries.BottomRef(i);
+                if ((entry.ToReplacement != nullptr) && (entry.ToReplacement->LclNum == lclNum))
                 {
                     return false;
                 }
@@ -978,23 +861,225 @@ private:
         return addrNode->IsInvariant();
     }
 
-    //------------------------------------------------------------------------
-    // PropagateIndirFlags:
-    //   Propagate the specified flags to a GT_IND node.
-    //
-    // Parameters:
-    //   indir - The indirection to apply flags to
-    //   flags - The specified indirection flags.
-    //
-    void PropagateIndirFlags(GenTree* indir, GenTreeFlags flags)
+private:
+    // Helper class to create derived accesses off of a location: either a
+    // local, or as indirections off of an address.
+    class LocationAccess
     {
-        if (genTypeSize(indir) == 1)
+        GenTreeLclVarCommon* m_local              = nullptr;
+        GenTree*             m_addr               = nullptr;
+        target_ssize_t       m_addrBaseOffs       = 0;
+        FieldSeq*            m_addrBaseOffsFldSeq = nullptr;
+        GenTreeFlags         m_indirFlags         = GTF_EMPTY;
+        int                  m_numUsesLeft        = -1;
+
+    public:
+        //------------------------------------------------------------------------
+        // InitializeIndir:
+        //   Initialize this to represent an indirection.
+        //
+        // Parameters:
+        //   addr               - The address of the indirection
+        //   addrBaseOffs       - Base offset to add on top of the address.
+        //   addrBaseOffsFldSeq - Field sequence for the base offset
+        //   indirFlags         - Indirection flags to add to created accesses
+        //   numExpectedUses    - Number of derived indirections that are expected to be created.
+        //
+        void InitializeIndir(GenTree*       addr,
+                             target_ssize_t addrBaseOffs,
+                             FieldSeq*      addrBaseOffsFldSeq,
+                             GenTreeFlags   indirFlags,
+                             int            numExpectedUses)
         {
-            flags &= ~GTF_IND_UNALIGNED;
+            m_addr               = addr;
+            m_addrBaseOffs       = addrBaseOffs;
+            m_addrBaseOffsFldSeq = addrBaseOffsFldSeq;
+            m_indirFlags         = indirFlags;
+            m_numUsesLeft        = numExpectedUses;
         }
 
-        indir->gtFlags |= flags;
-    }
+        //------------------------------------------------------------------------
+        // InitializeLocal:
+        //   Initialize this to represent a local.
+        //
+        // Parameters:
+        //   local - The local
+        //
+        void InitializeLocal(GenTreeLclVarCommon* local)
+        {
+            m_local = local;
+        }
+
+        //------------------------------------------------------------------------
+        // CreateRead:
+        //   Create a read from this location.
+        //
+        // Parameters:
+        //   offs - Offset
+        //   type - Type of store
+        //   comp - Compiler instance
+        //
+        // Returns:
+        //   IR node to perform the read.
+        //
+        GenTree* CreateRead(unsigned offs, var_types type, Compiler* comp)
+        {
+            if (m_addr != nullptr)
+            {
+                GenTreeIndir* indir = comp->gtNewIndir(type, GrabAddress(offs, comp), GetIndirFlags(type));
+                return indir;
+            }
+
+            // Check if the source has a regularly promoted field at this offset.
+            unsigned fieldLclNum = FindRegularlyPromotedField(offs, comp);
+            if ((fieldLclNum != BAD_VAR_NUM) && (comp->lvaGetDesc(fieldLclNum)->TypeGet() == type))
+            {
+                return comp->gtNewLclvNode(fieldLclNum, type);
+            }
+
+            GenTreeLclFld* fld = comp->gtNewLclFldNode(m_local->GetLclNum(), type, m_local->GetLclOffs() + offs);
+            comp->lvaSetVarDoNotEnregister(m_local->GetLclNum() DEBUGARG(DoNotEnregisterReason::LocalField));
+            return fld;
+        }
+
+        //------------------------------------------------------------------------
+        // CreateStore:
+        //   Create a store to this location.
+        //
+        // Parameters:
+        //   offs - Offset
+        //   type - Type of store
+        //   src  - Source value
+        //   comp - Compiler instance
+        //
+        // Returns:
+        //   IR node to perform the store.
+        //
+        GenTree* CreateStore(unsigned offs, var_types type, GenTree* src, Compiler* comp)
+        {
+            if (m_addr != nullptr)
+            {
+                GenTreeIndir* indir = comp->gtNewStoreIndNode(type, GrabAddress(offs, comp), src, GetIndirFlags(type));
+                return indir;
+            }
+
+            unsigned fieldLclNum = FindRegularlyPromotedField(offs, comp);
+            if ((fieldLclNum != BAD_VAR_NUM) && (comp->lvaGetDesc(fieldLclNum)->TypeGet() == type))
+            {
+                return comp->gtNewStoreLclVarNode(fieldLclNum, src);
+            }
+
+            GenTreeLclFld* fld =
+                comp->gtNewStoreLclFldNode(m_local->GetLclNum(), type, m_local->GetLclOffs() + offs, src);
+            comp->lvaSetVarDoNotEnregister(m_local->GetLclNum() DEBUGARG(DoNotEnregisterReason::LocalField));
+            return fld;
+        }
+
+        //------------------------------------------------------------------------
+        // FindRegularlyPromotedField:
+        //   Find the local number of a regularly promoted field at a specified offset.
+        //
+        // Parameters:
+        //   offs - offset
+        //   comp - Compiler instance
+        //
+        // Returns:
+        //   Local number, or BAD_VAR_NUM if this is not a local or it doesn't
+        //   have a regularly promoted field at the specified offset.
+        //
+        unsigned FindRegularlyPromotedField(unsigned offs, Compiler* comp)
+        {
+            if (m_local == nullptr)
+            {
+                return BAD_VAR_NUM;
+            }
+
+            LclVarDsc* lclDsc  = comp->lvaGetDesc(m_local);
+            unsigned   lclOffs = m_local->GetLclOffs() + offs;
+
+            if (!lclDsc->lvPromoted)
+            {
+                return BAD_VAR_NUM;
+            }
+
+            return comp->lvaGetFieldLocal(lclDsc, lclOffs);
+        }
+
+        //------------------------------------------------------------------------
+        // GrabAddress:
+        //   Create a derived access of the address at a specified offset. Only
+        //   valid if this represents an indirection. This will decrement the
+        //   number of expected derived accesses that can be created.
+        //
+        // Parameters:
+        //   offs - offset
+        //   comp - Compiler instance
+        //
+        // Returns:
+        //   Node computing the address.
+        //
+        GenTree* GrabAddress(unsigned offs, Compiler* comp)
+        {
+            assert((m_addr != nullptr) && (m_numUsesLeft > 0));
+            m_numUsesLeft--;
+
+            GenTree* addrUse;
+            if (m_numUsesLeft == 0)
+            {
+                // Last use of the address, reuse the node.
+                addrUse = m_addr;
+            }
+            else
+            {
+                addrUse = comp->gtCloneExpr(m_addr);
+            }
+
+            target_ssize_t fullOffs = m_addrBaseOffs + (target_ssize_t)offs;
+            if ((fullOffs != 0) || (m_addrBaseOffsFldSeq != nullptr))
+            {
+                GenTreeIntCon* offsetNode = comp->gtNewIconNode(fullOffs, TYP_I_IMPL);
+                offsetNode->gtFieldSeq    = m_addrBaseOffsFldSeq;
+
+                var_types addrType = varTypeIsGC(addrUse) ? TYP_BYREF : TYP_I_IMPL;
+                addrUse            = comp->gtNewOperNode(GT_ADD, addrType, addrUse, offsetNode);
+            }
+
+            return addrUse;
+        }
+
+#ifdef DEBUG
+        //------------------------------------------------------------------------
+        // CheckFullyUsed:
+        //   If this is an indirection, verify that it was accessed exactly the
+        //   expected number of times.
+        //
+        void CheckFullyUsed()
+        {
+            assert((m_addr == nullptr) || (m_numUsesLeft == 0));
+        }
+#endif
+
+    private:
+        //------------------------------------------------------------------------
+        // GetIndirFlags:
+        //   Get the flags to set on a new indir.
+        //
+        // Parameters:
+        //   type - Type of the indirection
+        //
+        // Returns:
+        //   Flags to set.
+        //
+        GenTreeFlags GetIndirFlags(var_types type)
+        {
+            if (genTypeSize(type) == 1)
+            {
+                return m_indirFlags & ~GTF_IND_UNALIGNED;
+            }
+
+            return m_indirFlags;
+        }
+    };
 };
 
 //------------------------------------------------------------------------
@@ -1314,7 +1399,7 @@ void ReplaceVisitor::InitFields(GenTreeLclVarCommon* dstStore,
             continue;
         }
 
-        JITDUMP("  Init V%02u (%s)\n", rep->LclNum, rep->Description);
+        JITDUMP("  Init V%02u (%s)%s\n", rep->LclNum, rep->Description, LastUseString(dstStore, rep));
         plan->InitReplacement(rep, rep->Offset - dstStore->GetLclOffs());
     }
 }
@@ -1454,30 +1539,6 @@ void ReplaceVisitor::CopyBetweenFields(GenTree*                    store,
         if (dstRep < dstEndRep)
         {
             unsigned offs = dstRep->Offset - dstBaseOffs;
-
-            if ((srcDsc != nullptr) && srcDsc->lvPromoted)
-            {
-                unsigned srcOffs  = srcLcl->GetLclOffs() + offs;
-                unsigned fieldLcl = m_compiler->lvaGetFieldLocal(srcDsc, srcOffs);
-
-                if (fieldLcl != BAD_VAR_NUM)
-                {
-                    LclVarDsc* dsc = m_compiler->lvaGetDesc(fieldLcl);
-                    if (dsc->lvType == dstRep->AccessType)
-                    {
-                        plan->CopyBetweenReplacements(dstRep, fieldLcl, offs);
-                        JITDUMP("  V%02u (%s)%s <- V%02u (%s)\n", dstRep->LclNum, dstRep->Description,
-                                LastUseString(dstLcl, dstRep), fieldLcl, dsc->lvReason);
-                        dstRep++;
-                        continue;
-                    }
-                }
-            }
-
-            // TODO-CQ: If the source is promoted then this will result in
-            // DNER'ing it. Alternatively we could copy the promoted field
-            // directly to the destination's struct local and mark the
-            // overlapping fields as needing read back to avoid this DNER.
             plan->CopyToReplacement(dstRep, offs);
             JITDUMP("  V%02u (%s)%s <- src+%03u\n", dstRep->LclNum, dstRep->Description, LastUseString(dstLcl, dstRep),
                     offs);
@@ -1485,27 +1546,7 @@ void ReplaceVisitor::CopyBetweenFields(GenTree*                    store,
         }
         else
         {
-            assert(srcRep < srcEndRep);
             unsigned offs = srcRep->Offset - srcBaseOffs;
-            if ((dstDsc != nullptr) && dstDsc->lvPromoted)
-            {
-                unsigned dstOffs  = dstLcl->GetLclOffs() + offs;
-                unsigned fieldLcl = m_compiler->lvaGetFieldLocal(dstDsc, dstOffs);
-
-                if (fieldLcl != BAD_VAR_NUM)
-                {
-                    LclVarDsc* dsc = m_compiler->lvaGetDesc(fieldLcl);
-                    if (dsc->lvType == srcRep->AccessType)
-                    {
-                        plan->CopyBetweenReplacements(fieldLcl, srcRep, offs);
-                        JITDUMP("  V%02u (%s) <- V%02u (%s)%s\n", fieldLcl, dsc->lvReason, srcRep->LclNum,
-                                srcRep->Description, LastUseString(srcLcl, srcRep));
-                        srcRep++;
-                        continue;
-                    }
-                }
-            }
-
             plan->CopyFromReplacement(srcRep, offs);
             JITDUMP("  dst+%03u <- V%02u (%s)%s\n", offs, srcRep->LclNum, srcRep->Description,
                     LastUseString(srcLcl, srcRep));

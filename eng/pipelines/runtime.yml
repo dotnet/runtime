@@ -1225,7 +1225,7 @@ extends:
             testGroup: innerloop
             nameSuffix: AllSubsets_Mono_LLVMAot_RuntimeTests
             runtimeVariant: llvmaot
-            buildArgs: -s mono+libs+clr.hosts+clr.iltools -c Release /p:MonoEnableLLVM=true /p:MonoBundleLLVMOptimizer=true /p:MonoLLVMUseCxx11Abi=true
+            buildArgs: -s mono+libs+clr.hosts+clr.iltools -c Release /p:MonoEnableLLVM=true /p:MonoBundleLLVMOptimizer=true
             timeoutInMinutes: 180
 
             condition: >-
