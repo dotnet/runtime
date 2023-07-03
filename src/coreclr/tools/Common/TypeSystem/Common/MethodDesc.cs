@@ -240,7 +240,7 @@ namespace Internal.TypeSystem
             if (this._genericParameterCount != otherSignature._genericParameterCount)
                 return false;
 
-            if (!CompareTypeHelper(this._returnType, otherSignature._returnType, allowEquivalence, visited))
+            if (!IsTypeEqualHelper(this._returnType, otherSignature._returnType, allowEquivalence, visited))
             {
                 if (!allowCovariantReturn)
                     return false;
@@ -254,7 +254,7 @@ namespace Internal.TypeSystem
 
             for (int i = 0; i < this._parameters.Length; i++)
             {
-                if (!CompareTypeHelper(this._parameters[i], otherSignature._parameters[i], allowEquivalence, visited))
+                if (!IsTypeEqualHelper(this._parameters[i], otherSignature._parameters[i], allowEquivalence, visited))
                     return false;
             }
 
@@ -284,7 +284,7 @@ namespace Internal.TypeSystem
 
                     if (thisData.index != otherData.index ||
                         thisData.kind != otherData.kind ||
-                        !CompareTypeHelper(thisData.type, otherData.type, allowEquivalence, visited))
+                        !IsTypeEqualHelper(thisData.type, otherData.type, allowEquivalence, visited))
                     {
                         return false;
                     }
@@ -295,7 +295,7 @@ namespace Internal.TypeSystem
 
             return false;
 
-            static bool CompareTypeHelper(TypeDesc type1, TypeDesc type2, bool allowEquivalence, StackOverflowProtect visited)
+            static bool IsTypeEqualHelper(TypeDesc type1, TypeDesc type2, bool allowEquivalence, StackOverflowProtect visited)
             {
                 if (type1 == type2)
                     return true;
