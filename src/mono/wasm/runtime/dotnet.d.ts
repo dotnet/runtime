@@ -170,6 +170,12 @@ type MonoConfig = {
      * @returns A URI string or a Response promise to override the loading process, or null/undefined to allow the default loading behavior.
      */
     loadBootResource?: LoadBootResourceCallback;
+    /**
+     * exports from registered javascript library modules
+     *
+     * TODO MF: Describe what could be here
+     */
+    libraryInitializers?: any[];
 };
 /**
  * Overrides the built-in boot resource loading mechanism so that boot resources can be fetched

@@ -95,6 +95,7 @@ export interface AssetEntryInternal extends AssetEntry {
 
 export type LoaderHelpers = {
     config: MonoConfigInternal;
+    bootConfig: BootJsonData;
     diagnosticTracing: boolean;
 
     maxParallelDownloads: number;
@@ -137,7 +138,7 @@ export type LoaderHelpers = {
     hasDebuggingEnabled(bootConfig: BootJsonData): boolean,
 
     isChromium: boolean,
-    isFirefox: boolean,
+    isFirefox: boolean
 }
 export type RuntimeHelpers = {
     config: MonoConfigInternal;

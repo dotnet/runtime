@@ -13,6 +13,7 @@ import { detect_features_and_polyfill } from "./polyfills";
 import { runtimeHelpers, loaderHelpers } from "./globals";
 import { init_globalization } from "./icu";
 import { setupPreloadChannelToMainThread } from "./worker";
+import { fetchInitializers, invokeOnRuntimeReady } from "./jsInitializers";
 
 
 const module = globalObjectsRoot.module;
@@ -445,11 +446,17 @@ async function createEmscriptenMain(): Promise<RuntimeAPI> {
     });
 
     init_globalization();
+
     // TODO call mono_download_assets(); here in parallel ?
     const es6Modules = await Promise.all(promises);
     initializeModules(es6Modules as any);
 
     await runtimeHelpers.dotnetReady.promise;
+
+    if (loaderHelpers.bootConfig) {
+        await fetchInitializers(module.config!, loaderHelpers.bootConfig);
+        await invokeOnRuntimeReady(module.config!);
+    }
 
     return exportedRuntimeAPI;
 }
