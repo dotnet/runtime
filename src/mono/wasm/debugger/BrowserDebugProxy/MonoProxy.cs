@@ -22,7 +22,7 @@ namespace Microsoft.WebAssembly.Diagnostics
         private IList<string> urlSymbolServerList;
         private static HttpClient client = new HttpClient();
         private HashSet<SessionId> sessions = new HashSet<SessionId>();
-        internal ConcurrentExecutionContextDictionary Contexts = new ();
+        internal ConcurrentExecutionContextDictionary Contexts = new ConcurrentExecutionContextDictionary();
         private const string sPauseOnUncaught = "pause_on_uncaught";
         private const string sPauseOnCaught = "pause_on_caught";
 
@@ -249,7 +249,7 @@ namespace Microsoft.WebAssembly.Diagnostics
             if (id == SessionId.Null)
                 await AttachToTarget(id, token);
 
-            if (!Contexts.TryGetVaTryGetCurrentExecutionContextValuelue(id, out ExecutionContext context))
+            if (!Contexts.TryGetCurrentExecutionContextValue(id, out ExecutionContext context))
             {
                 // for Dotnetdebugger.* messages, treat them as handled, thus not passing them on to the browser
                 return method.StartsWith("DotnetDebugger.", StringComparison.OrdinalIgnoreCase);
