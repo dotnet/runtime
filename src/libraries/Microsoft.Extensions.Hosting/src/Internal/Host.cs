@@ -3,10 +3,12 @@
 
 using System;
 using System.Collections.Generic;
+using System.Diagnostics;
 using System.Linq;
 using System.Runtime.ExceptionServices;
 using System.Threading;
 using System.Threading.Tasks;
+using Microsoft.Extensions.Configuration;
 using Microsoft.Extensions.DependencyInjection;
 using Microsoft.Extensions.FileProviders;
 using Microsoft.Extensions.Logging;
@@ -14,6 +16,8 @@ using Microsoft.Extensions.Options;
 
 namespace Microsoft.Extensions.Hosting.Internal
 {
+    [DebuggerDisplay("{DebuggerToString(),nq}")]
+    [DebuggerTypeProxy(typeof(HostDebugView))]
     internal sealed class Host : IHost, IAsyncDisposable
     {
         private readonly ILogger<Host> _logger;
@@ -407,6 +411,26 @@ namespace Microsoft.Extensions.Hosting.Internal
                         break;
                 }
             }
+        }
+
+        private string DebuggerToString()
+        {
+            return $@"ApplicationName = ""{_hostEnvironment.ApplicationName}"", IsRunning = {(IsRunning ? "true" : "false")}";
+        }
+
+        // Host is running if the app has been started and hasn't been stopped.
+        private bool IsRunning => _applicationLifetime.ApplicationStarted.IsCancellationRequested && !_applicationLifetime.ApplicationStopped.IsCancellationRequested;
+
+        internal sealed class HostDebugView(Host host)
+        {
+            private readonly Host _host = host;
+
+            public IServiceProvider Services => _host.Services;
+            public IConfiguration Configuration => _host.Services.GetRequiredService<IConfiguration>();
+            public IHostEnvironment Environment => _host._hostEnvironment;
+            public IHostApplicationLifetime Lifetime => _host._applicationLifetime;
+            public ILogger Logger => _host._logger;
+            public bool IsRunning => _host.IsRunning;
         }
     }
 }
