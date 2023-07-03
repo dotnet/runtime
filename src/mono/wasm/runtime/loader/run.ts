@@ -455,7 +455,7 @@ async function createEmscriptenMain(): Promise<RuntimeAPI> {
 
     if (loaderHelpers.bootConfig) {
         await fetchInitializers(module.config!, loaderHelpers.bootConfig);
-        await invokeOnRuntimeReady(module.config!);
+        await invokeOnRuntimeReady(globalObjectsRoot.api);
     }
 
     return exportedRuntimeAPI;

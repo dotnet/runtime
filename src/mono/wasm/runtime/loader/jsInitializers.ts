@@ -1,4 +1,4 @@
-import { MonoConfig } from "../types";
+import { MonoConfig, RuntimeAPI } from "../types";
 import { BootJsonData } from "../types/blazor";
 
 export async function fetchInitializers(moduleConfig: MonoConfig, bootConfig: BootJsonData): Promise<void> {
@@ -29,14 +29,15 @@ export async function fetchInitializers(moduleConfig: MonoConfig, bootConfig: Bo
     }
 }
 
-export async function invokeOnRuntimeReady(moduleConfig: MonoConfig) {
+export async function invokeOnRuntimeReady(api: RuntimeAPI) {
+    const moduleConfig = api.getConfig();
     const initializerPromises = [];
     if (moduleConfig.libraryInitializers) {
         for (let i = 0; i < moduleConfig.libraryInitializers.length; i++) {
             const initializer = moduleConfig.libraryInitializers[i];
-            initializer as { onRuntimeReady: () => Promise<void> };
+            initializer as { onRuntimeReady: (api: RuntimeAPI) => Promise<void> };
             if (initializer?.onRuntimeReady) {
-                initializerPromises.push(initializer?.onRuntimeReady());
+                initializerPromises.push(initializer?.onRuntimeReady(api));
             }
         }
 
