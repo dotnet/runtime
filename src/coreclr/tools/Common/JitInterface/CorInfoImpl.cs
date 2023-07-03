@@ -1193,16 +1193,12 @@ namespace Internal.JitInterface
                 }
                 else if (ctx is InstantiatedType instantiatedCtxType)
                 {
-                    MethodDesc methodTypicalDef = method.GetTypicalMethodDefinition();
-                    if (methodTypicalDef.RequiresInstMethodDescArg())
+                    MethodDesc instantiatedMethod = _compilation.TypeSystemContext.GetMethodForInstantiatedType(method.GetTypicalMethodDefinition(), instantiatedCtxType);
+                    if (method.HasInstantiation)
                     {
-                        // Presumably, a rare case: we had MyClass<T1>.Foo<int>() method and
-                        // GetTypicalMethodDefinition() converted it to MyClass<T1>.Foo<T2>
+                        instantiatedMethod = _compilation.TypeSystemContext.GetInstantiatedMethod(instantiatedMethod, method.Instantiation);
                     }
-                    else
-                    {
-                        method = _compilation.TypeSystemContext.GetMethodForInstantiatedType(methodTypicalDef, instantiatedCtxType);
-                    }
+                    method = instantiatedMethod;
                 }
             }
 
