@@ -7626,13 +7626,18 @@ static void getMethodInfoHelper(
 
     SigTypeContext context;
 
-    if ((exactContext == NULL) || (exactContext == METHOD_BEING_COMPILED_CONTEXT()) ||
-        (((size_t)exactContext & CORINFO_CONTEXTFLAGS_MASK) == CORINFO_CONTEXTFLAGS_METHOD))
+    if (exactContext == NULL || exactContext == METHOD_BEING_COMPILED_CONTEXT())
     {
         SigTypeContext::InitTypeContext(ftn, &context);
     }
+    else if (((size_t)exactContext & CORINFO_CONTEXTFLAGS_MASK) == CORINFO_CONTEXTFLAGS_METHOD)
+    {
+        MethodDesc* contextMD = (MethodDesc*)((size_t)exactContext & ~CORINFO_CONTEXTFLAGS_MASK);
+        SigTypeContext::InitTypeContext(contextMD, &context);
+    }
     else
     {
+        _ASSERT(((size_t)exactContext & CORINFO_CONTEXTFLAGS_MASK) == CORINFO_CONTEXTFLAGS_CLASS);
         TypeHandle th = TypeHandle((CORINFO_CLASS_HANDLE)((size_t)exactContext & ~CORINFO_CONTEXTFLAGS_MASK));
         SigTypeContext::InitTypeContext(th, &context);
     }
