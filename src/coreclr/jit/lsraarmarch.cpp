@@ -331,28 +331,6 @@ int LinearScan::BuildCall(GenTreeCall* call)
         }
     }
 
-    if (call->gtCallType == CT_INDIRECT)
-    {
-        // For TLS accesses, we need to find the address of the thread local by doing
-        // an indirect call to the relevant address corresponding to that variable.
-        // As an (early) argument, it takes the address of tlv_get_address
-        // symbol (osx) or the offset of the variable in TCB (linux).
-        for (CallArg& arg : call->gtArgs.EarlyArgs())
-        {
-            CallArgABIInformation& abiInfo = arg.AbiInfo;
-            GenTree*               argNode = arg.GetEarlyNode();
-
-            // Each register argument corresponds to one source.
-            if (argNode->OperIsPutArgReg())
-            {
-                srcCount++;
-                BuildUse(argNode, genRegMask(argNode->GetRegNum()));
-                const regNumber argReg = abiInfo.GetRegNum();
-                assert(argNode->GetRegNum() == argReg);
-            }
-        }
-    }
-
 #ifdef DEBUG
     // Now, count stack args
     // Note that these need to be computed into a register, but then
@@ -377,7 +355,7 @@ int LinearScan::BuildCall(GenTreeCall* call)
             }
             else
             {
-                assert(!argNode->IsValue() || argNode->IsUnusedValue() || (call->gtCallType == CT_INDIRECT));
+                assert(!argNode->IsValue() || argNode->IsUnusedValue() /* || (call->gtCallType == CT_INDIRECT)*/);
             }
         }
     }

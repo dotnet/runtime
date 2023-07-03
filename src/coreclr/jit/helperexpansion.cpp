@@ -620,11 +620,9 @@ bool Compiler::fgExpandThreadLocalAccessForCall(BasicBlock** pBlock, Statement* 
         // Populate and set the ABI appropriately.
         assert(opts.altJit || threadVarsSectionVal != 0);
         GenTree* tlsArg = gtNewIconNode(threadVarsSectionVal, TYP_I_IMPL);
-        tlsRefCall->gtArgs.InsertAfterThisOrFirst(this, NewCallArg::Primitive(tlsArg));
+        tlsRefCall->gtArgs.PushBack(this, NewCallArg::Primitive(tlsArg));
 
-        CallArg* arg0 = tlsRefCall->gtArgs.GetArgByIndex(0);
-        arg0->AbiInfo = CallArgABIInformation();
-        arg0->AbiInfo.SetRegNum(0, REG_ARG_0);
+        fgMorphArgs(tlsRefCall);
 
         tlsRefCall->gtFlags |= GTF_EXCEPT | (tls_get_addr_val->gtFlags & GTF_GLOB_EFFECT);
     }
@@ -646,11 +644,9 @@ bool Compiler::fgExpandThreadLocalAccessForCall(BasicBlock** pBlock, Statement* 
         // Populate and set the ABI appropriately.
         assert(opts.altJit || threadStaticBlocksInfo.tlsIndexObject != 0);
         GenTree* tlsArg = gtNewIconNode((size_t)threadStaticBlocksInfo.tlsIndexObject, TYP_I_IMPL);
-        tlsRefCall->gtArgs.InsertAfterThisOrFirst(this, NewCallArg::Primitive(tlsArg));
+        tlsRefCall->gtArgs.PushBack(this, NewCallArg::Primitive(tlsArg));
 
-        CallArg* arg0 = tlsRefCall->gtArgs.GetArgByIndex(0);
-        arg0->AbiInfo = CallArgABIInformation();
-        arg0->AbiInfo.SetRegNum(0, REG_ARG_0);
+        fgMorphArgs(tlsRefCall);
 
         tlsRefCall->gtFlags |= GTF_EXCEPT | (tls_get_addr_val->gtFlags & GTF_GLOB_EFFECT);
 #ifdef UNIX_X86_ABI
