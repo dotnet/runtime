@@ -134,9 +134,9 @@ namespace ILCompiler
         public CliOption<bool> RootDefaultAssemblies { get; } =
             new("--defaultrooting") { Description = "Root assemblies that are not marked [IsTrimmable]" };
         public CliOption<TargetArchitecture> TargetArchitecture { get; } =
-            new("--targetarch") { CustomParser = result => Helpers.GetTargetArchitecture(result.Tokens.Count > 0 ? result.Tokens[0].Value : null), DefaultValueFactory = result => Helpers.GetTargetArchitecture(result.Tokens.Count > 0 ? result.Tokens[0].Value : null), Description = "Target architecture for cross compilation" };
+            new("--targetarch") { CustomParser = result => Helpers.GetTargetArchitecture(result.Tokens.Count > 0 ? result.Tokens[0].Value : null), DefaultValueFactory = result => Helpers.GetTargetArchitecture(result.Tokens.Count > 0 ? result.Tokens[0].Value : null), Description = "Target architecture for cross compilation", HelpName = "arg" };
         public CliOption<TargetOS> TargetOS { get; } =
-            new("--targetos") { CustomParser = result => Helpers.GetTargetOS(result.Tokens.Count > 0 ? result.Tokens[0].Value : null), DefaultValueFactory = result => Helpers.GetTargetOS(result.Tokens.Count > 0 ? result.Tokens[0].Value : null), Description = "Target OS for cross compilation" };
+            new("--targetos") { CustomParser = result => Helpers.GetTargetOS(result.Tokens.Count > 0 ? result.Tokens[0].Value : null), DefaultValueFactory = result => Helpers.GetTargetOS(result.Tokens.Count > 0 ? result.Tokens[0].Value : null), Description = "Target OS for cross compilation", HelpName = "arg" };
         public CliOption<string> JitPath { get; } =
             new("--jitpath") { Description = "Path to JIT compiler library" };
         public CliOption<string> SingleMethodTypeName { get; } =
