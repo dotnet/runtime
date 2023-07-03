@@ -224,6 +224,7 @@ typedef struct
 	gint32 total_locals_size;
 	gint32 max_stack_size;
 	InterpLocal *locals;
+	int dummy_var;
 	int *local_ref_count;
 	unsigned int il_locals_offset;
 	unsigned int il_locals_size;
@@ -284,6 +285,11 @@ typedef struct
 #define STACK_TYPE_I STACK_TYPE_I4
 #endif
 
+#define interp_ins_set_dummy_dreg(ins,td) do { \
+	if (td->dummy_var < 0) \
+		create_interp_dummy_var (td); \
+	ins->dreg = td->dummy_var; \
+} while (0)
 
 #define interp_ins_set_dreg(ins,dr) do { \
         ins->dreg = dr; \

@@ -32,6 +32,16 @@
         <target state="translated">Нельзя использовать "ValidateObjectMembersAttribute" или "ValidateEnumeratedItemsAttribute" для полей или свойств с открытыми универсальными типами.</target>
         <note />
       </trans-unit>
+      <trans-unit id="CantValidateStaticOrConstMemberMessage">
+        <source>Can't apply validation attributes to constant or static member {0}.</source>
+        <target state="needs-review-translation">Не удается применить атрибуты проверки к константе, статическому полю или свойству {0}.</target>
+        <note />
+      </trans-unit>
+      <trans-unit id="CantValidateStaticOrConstMemberTitle">
+        <source>Can't validate constants, static fields or properties.</source>
+        <target state="needs-review-translation">Не удается проверить статические поля или свойства, в т.ч. константы.</target>
+        <note />
+      </trans-unit>
       <trans-unit id="CircularTypeReferencesMessage">
         <source>There is a circular type reference involving type {0} preventing it from being used for static validation.</source>
         <target state="translated">Существует циклическая ссылка на тип, включающая тип {0}, предотвращающий его использование для статической проверки.</target>
@@ -59,7 +69,7 @@
       </trans-unit>
       <trans-unit id="MemberIsInaccessibleTitle">
         <source>Can't validate private fields or properties.</source>
-        <target state="translated">Не удается проверить частные поля или свойства.</target>
+        <target state="translated">Не удается проверить приватные поля или свойства.</target>
         <note />
       </trans-unit>
       <trans-unit id="NoEligibleMemberMessage">

@@ -255,7 +255,7 @@ namespace ILCompiler
                         // + a rsp file that should work to directly run out of the zip file
 
                         Helpers.MakeReproPackage(makeReproPath, result.GetValue(OutputFilePath), args,
-                            result, new[] { "r", "reference", "u", "unrooted-input-file-paths", "m", "mibc", "inputbubbleref" });
+                            result, new[] { "-r", "--reference", "-u", "--unrooted-input-file-paths", "-m", "--mibc", "--inputbubbleref" });
                     }
 
                     return new Program(this).Run();
