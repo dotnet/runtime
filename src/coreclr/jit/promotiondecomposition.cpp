@@ -487,6 +487,13 @@ private:
             }
         }
 
+        // We prefer to do the remainder at the end, if possible, since CQ
+        // analysis shows that this is best. However, handling the remainder
+        // may overwrite the destination with stale bits if the source has
+        // replacements (since handling the remainder copies from the struct,
+        // and the fresh values are usually in the replacement locals).
+        bool handleRemainderFirst = RemainderOverwritesDestinationWithStaleBits(remainderStrategy, dstDeaths);
+
         GenTree*       addr               = nullptr;
         target_ssize_t addrBaseOffs       = 0;
         FieldSeq*      addrBaseOffsFldSeq = nullptr;
@@ -525,26 +532,29 @@ private:
 
             if (m_compiler->fgAddrCouldBeNull(addr))
             {
-                switch (remainderStrategy.Type)
+                if (handleRemainderFirst)
                 {
-                    case RemainderStrategy::NoRemainder:
-                    case RemainderStrategy::Primitive:
-                        needsNullCheck = true;
-                        // See if our first indirection will subsume the null check (usual case).
-                        for (int i = 0; i < m_entries.Height(); i++)
+                    needsNullCheck = (remainderStrategy.Type == RemainderStrategy::Primitive) &&
+                                     m_compiler->fgIsBigOffset(remainderStrategy.PrimitiveOffset);
+                }
+                else
+                {
+                    needsNullCheck = true;
+                    // See if our first indirection will subsume the null check (usual case).
+                    for (int i = 0; i < m_entries.Height(); i++)
+                    {
+                        if (CanSkipEntry(m_entries.BottomRef(i), dstDeaths, remainderStrategy))
                         {
-                            if (CanSkipEntry(m_entries.BottomRef(i), dstDeaths, remainderStrategy))
-                            {
-                                continue;
-                            }
-                            const Entry& entry = m_entries.BottomRef(i);
-                            assert((entry.FromReplacement == nullptr) || (entry.ToReplacement == nullptr));
-                            needsNullCheck = m_compiler->fgIsBigOffset(entry.Offset);
-                            break;
+                            continue;
                         }
+                        const Entry& entry = m_entries.BottomRef(i);
+                        assert((entry.FromReplacement == nullptr) || (entry.ToReplacement == nullptr));
+                        needsNullCheck = m_compiler->fgIsBigOffset(entry.Offset);
                         break;
+                    }
                 }
             }
+
             if (needsNullCheck)
             {
                 numAddrUses++;
@@ -606,13 +616,7 @@ private:
             statements->AddStatement(nullCheck);
         }
 
-        bool handledRemainder = false;
-        // We prefer to do the remainder at the end, if possible, since CQ
-        // analysis shows that this is best. However, handling the remainder
-        // may overwrite the destination with stale bits if the source has
-        // replacements (since handling the remainder copies from the struct,
-        // and the fresh values are usually in the replacement locals).
-        if (RemainderOverwritesDestinationWithStaleBits(remainderStrategy, dstDeaths))
+        if (handleRemainderFirst)
         {
             CopyRemainder(storeAccess, srcAccess, remainderStrategy, statements);
 
@@ -622,7 +626,6 @@ private:
                 // copy is no longer the last use if it was before.
                 m_src->gtFlags &= ~GTF_VAR_DEATH;
             }
-            handledRemainder = true;
         }
 
         StructDeaths srcDeaths;
@@ -683,7 +686,7 @@ private:
             statements->AddStatement(store);
         }
 
-        if (!handledRemainder)
+        if (!handleRemainderFirst)
         {
             CopyRemainder(storeAccess, srcAccess, remainderStrategy, statements);
         }
