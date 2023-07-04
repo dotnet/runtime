@@ -296,7 +296,7 @@ namespace System.Text.RegularExpressions
                 // or if IgnorePatternWhiteSpace is on, we'll stop when we see some whitespace.
                 if ((_options & RegexOptions.IgnorePatternWhitespace) != 0)
                 {
-                    while (_pat.Length - _pos > 0 && (!IsStopperX(ch = _pat[_pos]) || (ch == '{' && !IsTrueQuantifier())))
+                    while (_pat.Length - _pos > 0 && (!IsSpecialOrSpace(ch = _pat[_pos]) || (ch == '{' && !IsTrueQuantifier())))
                         _pos++;
                 }
                 else
@@ -2043,18 +2043,17 @@ namespace System.Text.RegularExpressions
         /// <summary>Looks up the slot number for a given name</summary>
         private bool IsCaptureName(string capname) => _capnames != null && _capnames.ContainsKey(capname);
 
-        private const byte Q = 5;    // quantifier
-        private const byte S = 4;    // ordinary stopper
-        private const byte Z = 3;    // ScanBlank stopper
-        private const byte X = 2;    // whitespace
-        private const byte E = 1;    // should be escaped
+        private const byte Q = 4;    // quantifier          * + ? {
+        private const byte S = 3;    // stopper             $ ( ) . [ \ ^ |
+        private const byte Z = 2;    // # stopper           #
+        private const byte W = 1;    // whitespace          \t \n \f \r ' '
 
         /// <summary>For categorizing ASCII characters.</summary>
         private static ReadOnlySpan<byte> Category => new byte[] {
             // 0  1  2  3  4  5  6  7  8  9  A  B  C  D  E  F  0  1  2  3  4  5  6  7  8  9  A  B  C  D  E  F
-               0, 0, 0, 0, 0, 0, 0, 0, 0, X, X, 0, X, X, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0,
+               0, 0, 0, 0, 0, 0, 0, 0, 0, W, W, 0, W, W, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0,
             //    !  "  #  $  %  &  '  (  )  *  +  ,  -  .  /  0  1  2  3  4  5  6  7  8  9  :  ;  <  =  >  ?
-               X, 0, 0, Z, S, 0, 0, 0, S, S, Q, Q, 0, 0, S, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, Q,
+               W, 0, 0, Z, S, 0, 0, 0, S, S, Q, Q, 0, 0, S, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, Q,
             // @  A  B  C  D  E  F  G  H  I  J  K  L  M  N  O  P  Q  R  S  T  U  V  W  X  Y  Z  [  \  ]  ^  _
                0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, S, S, 0, S, 0,
             // '  a  b  c  d  e  f  g  h  i  j  k  l  m  n  o  p  q  r  s  t  u  v  w  x  y  z  {  |  }  ~
@@ -2071,7 +2070,7 @@ namespace System.Text.RegularExpressions
         {
             for (int i = 0; i < input.Length; i++)
             {
-                if (IsMetachar(input[i]))
+                if (input[i] <= '|' && Category[input[i]] > 0)
                 {
                     return i;
                 }
@@ -2084,11 +2083,14 @@ namespace System.Text.RegularExpressions
         /// <summary>Returns true for those characters that terminate a string of ordinary chars.</summary>
         private static bool IsSpecial(char ch) => ch <= '|' && Category[ch] >= S;
 
-        /// <summary>Returns true for those characters that terminate a string of ordinary chars.</summary>
-        private static bool IsStopperX(char ch) => ch <= '|' && Category[ch] >= X;
+        /// <summary>Returns true for those characters including whitespace that terminate a string of ordinary chars.</summary>
+        private static bool IsSpecialOrSpace(char ch) => ch <= '|' && Category[ch] >= W;
 
         /// <summary>Returns true for those characters that begin a quantifier.</summary>
-        private static bool IsQuantifier(char ch) => ch <= '{' && Category[ch] >= Q;
+        private static bool IsQuantifier(char ch) => ch <= '{' && Category[ch] == Q;
+
+        /// <summary>Returns true for whitespace.</summary>
+        private static bool IsSpace(char ch) => ch <= ' ' && Category[ch] == W;
 
         private bool IsTrueQuantifier()
         {
@@ -2124,12 +2126,6 @@ namespace System.Text.RegularExpressions
 
             return nChars > 0 && ch == '}';
         }
-
-        /// <summary>Returns true for whitespace.</summary>
-        private static bool IsSpace(char ch) => ch <= ' ' && Category[ch] == X;
-
-        /// <summary>Returns true for chars that should be escaped.</summary>
-        private static bool IsMetachar(char ch) => ch <= '|' && Category[ch] >= E;
 
         /// <summary>Add a string to the last concatenate.</summary>
         private void AddConcatenate(int pos, int cch, bool isReplacement)
