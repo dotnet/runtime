@@ -1627,28 +1627,6 @@ bool StructSegments::IsEmpty()
 }
 
 //------------------------------------------------------------------------
-// IsSingleSegment:
-//   Check if the segment tree contains only a single segment, and return
-//   it if so.
-//
-// Parameters:
-//   result - [out] The single segment. Only valid if the method returns true.
-//
-// Returns:
-//   True if so.
-//
-bool StructSegments::IsSingleSegment(Segment* result)
-{
-    if (m_segments.size() == 1)
-    {
-        *result = m_segments[0];
-        return true;
-    }
-
-    return false;
-}
-
-//------------------------------------------------------------------------
 // CoveringSegment:
 //   Compute a segment that covers all contained segments in this segment tree.
 //

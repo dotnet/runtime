@@ -308,7 +308,7 @@ private:
 
         StructSegments::Segment segment;
         // See if we can "plug the hole" with a single primitive.
-        if (remainder.IsSingleSegment(&segment))
+        if (remainder.CoveringSegment(&segment))
         {
             var_types primitiveType = TYP_UNDEF;
             unsigned  size          = segment.End - segment.Start;
@@ -487,6 +487,13 @@ private:
             }
         }
 
+        // We prefer to do the remainder at the end, if possible, since CQ
+        // analysis shows that this is best. However, handling the remainder
+        // may overwrite the destination with stale bits if the source has
+        // replacements (since handling the remainder copies from the struct,
+        // and the fresh values are usually in the replacement locals).
+        bool handleRemainderFirst = RemainderOverwritesDestinationWithStaleBits(remainderStrategy, dstDeaths);
+
         GenTree*       addr               = nullptr;
         target_ssize_t addrBaseOffs       = 0;
         FieldSeq*      addrBaseOffsFldSeq = nullptr;
@@ -525,26 +532,29 @@ private:
 
             if (m_compiler->fgAddrCouldBeNull(addr))
             {
-                switch (remainderStrategy.Type)
+                if (handleRemainderFirst)
                 {
-                    case RemainderStrategy::NoRemainder:
-                    case RemainderStrategy::Primitive:
-                        needsNullCheck = true;
-                        // See if our first indirection will subsume the null check (usual case).
-                        for (int i = 0; i < m_entries.Height(); i++)
+                    needsNullCheck = (remainderStrategy.Type == RemainderStrategy::Primitive) &&
+                                     m_compiler->fgIsBigOffset(remainderStrategy.PrimitiveOffset);
+                }
+                else
+                {
+                    needsNullCheck = true;
+                    // See if our first indirection will subsume the null check (usual case).
+                    for (int i = 0; i < m_entries.Height(); i++)
+                    {
+                        if (CanSkipEntry(m_entries.BottomRef(i), dstDeaths, remainderStrategy))
                         {
-                            if (CanSkipEntry(m_entries.BottomRef(i), dstDeaths, remainderStrategy))
-                            {
-                                continue;
-                            }
-                            const Entry& entry = m_entries.BottomRef(i);
-                            assert((entry.FromReplacement == nullptr) || (entry.ToReplacement == nullptr));
-                            needsNullCheck = m_compiler->fgIsBigOffset(entry.Offset);
-                            break;
+                            continue;
                         }
+                        const Entry& entry = m_entries.BottomRef(i);
+                        assert((entry.FromReplacement == nullptr) || (entry.ToReplacement == nullptr));
+                        needsNullCheck = m_compiler->fgIsBigOffset(entry.Offset);
                         break;
+                    }
                 }
             }
+
             if (needsNullCheck)
             {
                 numAddrUses++;
@@ -606,26 +616,9 @@ private:
             statements->AddStatement(nullCheck);
         }
 
-        if (remainderStrategy.Type == RemainderStrategy::FullBlock)
+        if (handleRemainderFirst)
         {
-            // We will reuse the existing block op. Rebase the address off of the new local we created.
-            if (m_src->OperIs(GT_BLK))
-            {
-                m_src->AsIndir()->Addr() = indirAccess->GrabAddress(0, m_compiler);
-            }
-            else if (m_store->OperIs(GT_STORE_BLK))
-            {
-                m_store->AsIndir()->Addr() = indirAccess->GrabAddress(0, m_compiler);
-            }
-        }
-
-        // If the source involves replacements then do the struct op first --
-        // we would overwrite the destination with stale bits if we did it last.
-        // If the source does not involve replacements then CQ analysis shows
-        // that it's best to do it last.
-        if ((remainderStrategy.Type == RemainderStrategy::FullBlock) && m_srcInvolvesReplacements)
-        {
-            statements->AddStatement(m_store);
+            CopyRemainder(storeAccess, srcAccess, remainderStrategy, statements);
 
             if (m_src->OperIs(GT_LCL_VAR, GT_LCL_FLD))
             {
@@ -693,34 +686,9 @@ private:
             statements->AddStatement(store);
         }
 
-        if ((remainderStrategy.Type == RemainderStrategy::FullBlock) && !m_srcInvolvesReplacements)
+        if (!handleRemainderFirst)
         {
-            statements->AddStatement(m_store);
-        }
-
-        if (remainderStrategy.Type == RemainderStrategy::Primitive)
-        {
-            var_types primitiveType = remainderStrategy.PrimitiveType;
-            // The remainder might match a regularly promoted field exactly. If
-            // it does then use the promoted field's type so we can create a
-            // direct access.
-            unsigned srcPromField = srcAccess.FindRegularlyPromotedField(remainderStrategy.PrimitiveOffset, m_compiler);
-            unsigned storePromField =
-                storeAccess.FindRegularlyPromotedField(remainderStrategy.PrimitiveOffset, m_compiler);
-
-            if ((srcPromField != BAD_VAR_NUM) || (storePromField != BAD_VAR_NUM))
-            {
-                var_types regPromFieldType =
-                    m_compiler->lvaGetDesc(srcPromField != BAD_VAR_NUM ? srcPromField : storePromField)->TypeGet();
-                if (genTypeSize(regPromFieldType) == genTypeSize(primitiveType))
-                {
-                    primitiveType = regPromFieldType;
-                }
-            }
-
-            GenTree* src   = srcAccess.CreateRead(remainderStrategy.PrimitiveOffset, primitiveType, m_compiler);
-            GenTree* store = storeAccess.CreateStore(remainderStrategy.PrimitiveOffset, primitiveType, src, m_compiler);
-            statements->AddStatement(store);
+            CopyRemainder(storeAccess, srcAccess, remainderStrategy, statements);
         }
 
         INDEBUG(storeAccess.CheckFullyUsed());
@@ -730,7 +698,7 @@ private:
     //------------------------------------------------------------------------
     // CanSkipEntry:
     //   Check if the specified entry can be skipped because it is writing to a
-    //   death replacement or because the remainder would handle it anyway.
+    //   dead replacement or because the remainder would handle it anyway.
     //
     // Parameters:
     //   entry             - The init/copy entry
@@ -861,7 +829,71 @@ private:
         return addrNode->IsInvariant();
     }
 
-private:
+    //------------------------------------------------------------------------
+    // RemainderOverwritesDestinationWithStaleBits:
+    //   Check if handling the remainder is going to write stale bits to the
+    //   destination.
+    //
+    // Parameters:
+    //   remainderStrategy - The remainder strategy
+    //   dstDeaths         - Destination liveness
+    //
+    // Returns:
+    //   True if so.
+    //
+    // Remarks:
+    //   We usually prefer to write the remainder last as CQ analysis shows
+    //   that to be most beneficial. However, if we do that we may overwrite
+    //   the destination with stale bits. This occurs if the source has
+    //   replacements. Handling the remainder copies from the source struct
+    //   local, but the up-to-date values may be in its replacement locals. So
+    //   we must take care to write the replacement locals _after_ the
+    //   remainder has been written.
+    //
+    bool RemainderOverwritesDestinationWithStaleBits(const RemainderStrategy& remainderStrategy,
+                                                     const StructDeaths&      dstDeaths)
+    {
+        if (!m_srcInvolvesReplacements)
+        {
+            return false;
+        }
+
+        switch (remainderStrategy.Type)
+        {
+            case RemainderStrategy::FullBlock:
+                return true;
+            case RemainderStrategy::Primitive:
+                for (int i = 0; i < m_entries.Height(); i++)
+                {
+                    const Entry& entry = m_entries.BottomRef(i);
+                    if (entry.Offset + genTypeSize(entry.Type) <= remainderStrategy.PrimitiveOffset)
+                    {
+                        // Entry ends before remainder starts
+                        continue;
+                    }
+
+                    // Remainder ends before entry starts
+                    if (remainderStrategy.PrimitiveOffset + genTypeSize(remainderStrategy.PrimitiveType) <=
+                        entry.Offset)
+                    {
+                        continue;
+                    }
+
+                    // Are we even going to write the entry?
+                    if (!CanSkipEntry(entry, dstDeaths, remainderStrategy))
+                    {
+                        // Yep, so we need to be careful.
+                        return true;
+                    }
+                }
+
+                // No entry overlaps.
+                return false;
+            default:
+                return false;
+        }
+    }
+
     // Helper class to create derived accesses off of a location: either a
     // local, or as indirections off of an address.
     class LocationAccess
@@ -1080,6 +1112,61 @@ private:
             return m_indirFlags;
         }
     };
+
+    //------------------------------------------------------------------------
+    // CopyRemainder:
+    //   Create IR to copy the remainder.
+    //
+    // Parameters:
+    //   storeAccess       - Helper class to create derived stores
+    //   srcAccess         - Helper class to create derived source accesses
+    //   remainderStrategy - The strategy to generate IR for
+    //   statements        - List to add IR to.
+    //
+    void CopyRemainder(LocationAccess&             storeAccess,
+                       LocationAccess&             srcAccess,
+                       const RemainderStrategy&    remainderStrategy,
+                       DecompositionStatementList* statements)
+    {
+        if (remainderStrategy.Type == RemainderStrategy::FullBlock)
+        {
+            // We will reuse the existing block op. Rebase the address off of the new local we created.
+            if (m_src->OperIs(GT_BLK))
+            {
+                m_src->AsIndir()->Addr() = srcAccess.GrabAddress(0, m_compiler);
+            }
+            else if (m_store->OperIs(GT_STORE_BLK))
+            {
+                m_store->AsIndir()->Addr() = storeAccess.GrabAddress(0, m_compiler);
+            }
+
+            statements->AddStatement(m_store);
+        }
+        else if (remainderStrategy.Type == RemainderStrategy::Primitive)
+        {
+            var_types primitiveType = remainderStrategy.PrimitiveType;
+            // The remainder might match a regularly promoted field exactly. If
+            // it does then use the promoted field's type so we can create a
+            // direct access.
+            unsigned srcPromField = srcAccess.FindRegularlyPromotedField(remainderStrategy.PrimitiveOffset, m_compiler);
+            unsigned storePromField =
+                storeAccess.FindRegularlyPromotedField(remainderStrategy.PrimitiveOffset, m_compiler);
+
+            if ((srcPromField != BAD_VAR_NUM) || (storePromField != BAD_VAR_NUM))
+            {
+                var_types regPromFieldType =
+                    m_compiler->lvaGetDesc(srcPromField != BAD_VAR_NUM ? srcPromField : storePromField)->TypeGet();
+                if (genTypeSize(regPromFieldType) == genTypeSize(primitiveType))
+                {
+                    primitiveType = regPromFieldType;
+                }
+            }
+
+            GenTree* src   = srcAccess.CreateRead(remainderStrategy.PrimitiveOffset, primitiveType, m_compiler);
+            GenTree* store = storeAccess.CreateStore(remainderStrategy.PrimitiveOffset, primitiveType, src, m_compiler);
+            statements->AddStatement(store);
+        }
+    }
 };
 
 //------------------------------------------------------------------------
