@@ -164,7 +164,7 @@ namespace System.Text.RegularExpressions.Tests
             }
             Assert.Equal(expectedCount, count);
 
-            bool isDefaultStartAt = startat == ((options & RegexOptions.RightToLeft) != 0 ? input.Length : 0);
+            bool isDefaultStartAt = startat == (options.RightToLeft() ? input.Length : 0);
             if (!isDefaultStartAt)
             {
                 return;

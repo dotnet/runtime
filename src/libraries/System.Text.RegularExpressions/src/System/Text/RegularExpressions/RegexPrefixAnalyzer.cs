@@ -31,7 +31,7 @@ namespace System.Text.RegularExpressions
 
                 // We don't bother to handle reversed input, so process at most one node
                 // when handling RightToLeft.
-                bool rtl = (node.Options & RegexOptions.RightToLeft) != 0;
+                bool rtl = node.Options.RightToLeft();
 
                 switch (node.Kind)
                 {
@@ -266,7 +266,7 @@ namespace System.Text.RegularExpressions
                     return false;
                 }
 
-                if ((node.Options & RegexOptions.RightToLeft) != 0)
+                if (node.Options.RightToLeft())
                 {
                     return false;
                 }
@@ -657,7 +657,7 @@ namespace System.Text.RegularExpressions
                         if (cc is null || cc.CanMerge)
                         {
                             cc ??= new RegexCharClass();
-                            cc.AddChar(node.Str![(node.Options & RegexOptions.RightToLeft) != 0 ? node.Str.Length - 1 : 0]);
+                            cc.AddChar(node.Str![node.Options.RightToLeft() ? node.Str.Length - 1 : 0]);
                             return true;
                         }
                         return false;
@@ -767,7 +767,7 @@ namespace System.Text.RegularExpressions
         /// </summary>
         public static (RegexNode LoopNode, (char Char, string? String, char[]? Chars) Literal)? FindLiteralFollowingLeadingLoop(RegexNode node)
         {
-            if ((node.Options & RegexOptions.RightToLeft) != 0)
+            if (node.Options.RightToLeft())
             {
                 // As a simplification, ignore RightToLeft.
                 return null;

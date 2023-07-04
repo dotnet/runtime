@@ -879,7 +879,7 @@ namespace System.Text.RegularExpressions
                             }
                             else
                             {
-                                if ((runregex!.roptions & RegexOptions.ECMAScript) == 0)
+                                if (!runregex!.roptions.ECMAScript())
                                 {
                                     break;
                                 }

@@ -214,8 +214,8 @@ namespace System.Text.RegularExpressions.Generator
                         return false;
                     }
 
-                    RegexOptions value = (RegexOptions)(int)argument.Value.ConstantValue.Value!;
-                    if ((value & RegexOptions.NonBacktracking) > 0)
+                    RegexOptions options = (RegexOptions)(int)argument.Value.ConstantValue.Value!;
+                    if (options.NonBacktracking())
                     {
                         return false;
                     }

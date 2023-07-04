@@ -15,7 +15,7 @@ namespace System.Text.RegularExpressions.Symbolic
         /// <summary>Initializes the factory.</summary>
         public SymbolicRegexRunnerFactory(RegexTree regexTree, RegexOptions options, TimeSpan matchTimeout)
         {
-            Debug.Assert((options & (RegexOptions.RightToLeft | RegexOptions.ECMAScript)) == 0);
+            Debug.Assert(!options.RightToLeft() && !options.ECMAScript());
 
             var charSetSolver = new CharSetSolver();
             var bddBuilder = new SymbolicRegexBuilder<BDD>(charSetSolver, charSetSolver);

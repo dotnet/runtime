@@ -141,7 +141,7 @@ namespace System.Text.RegularExpressions
         {
             var sb = new StringBuilder();
 
-            sb.AppendLine($"Direction: {((Options & RegexOptions.RightToLeft) != 0 ? "right-to-left" : "left-to-right")}");
+            sb.AppendLine($"Direction: {(Options.RightToLeft() ? "right-to-left" : "left-to-right")}");
             sb.AppendLine();
             for (int i = 0; i < Codes.Length; i += OpcodeSize((RegexOpcode)Codes[i]))
             {

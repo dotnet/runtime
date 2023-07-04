@@ -586,7 +586,7 @@ namespace System.Text.RegularExpressions.Generator
         /// <summary>Emits the body of the Scan method override.</summary>
         private static (bool NeedsTryFind, bool NeedsTryMatch) EmitScan(IndentedTextWriter writer, RegexMethod rm)
         {
-            bool rtl = (rm.Options & RegexOptions.RightToLeft) != 0;
+            bool rtl = rm.Options.RightToLeft();
             bool needsTryFind = false, needsTryMatch = false;
             RegexNode root = rm.Tree.Root.Child(0);
 
@@ -674,7 +674,7 @@ namespace System.Text.RegularExpressions.Generator
         {
             RegexOptions options = rm.Options;
             RegexTree regexTree = rm.Tree;
-            bool rtl = (options & RegexOptions.RightToLeft) != 0;
+            bool rtl = options.RightToLeft();
 
             // In some cases, we need to emit declarations at the beginning of the method, but we only discover we need them later.
             // To handle that, we build up a collection of all the declarations to include, track where they should be inserted,
@@ -1522,7 +1522,7 @@ namespace System.Text.RegularExpressions.Generator
                 // we can't goto _into_ switch cases, which means we can't use this approach if there's any
                 // possibility of backtracking into the alternation.
                 bool useSwitchedBranches = false;
-                if ((node.Options & RegexOptions.RightToLeft) == 0)
+                if (!node.Options.RightToLeft())
                 {
                     useSwitchedBranches = isAtomic;
                     if (!useSwitchedBranches)
@@ -1930,7 +1930,7 @@ namespace System.Text.RegularExpressions.Generator
 
                 // If the specified capture hasn't yet captured anything, fail to match... except when using RegexOptions.ECMAScript,
                 // in which case per ECMA 262 section 21.2.2.9 the backreference should succeed.
-                if ((node.Options & RegexOptions.ECMAScript) != 0)
+                if (node.Options.ECMAScript())
                 {
                     writer.WriteLine($"// If the {DescribeCapture(node.M, rm)} hasn't matched, the backreference matches with RegexOptions.ECMAScript rules.");
                     using (EmitBlock(writer, $"if (base.IsMatched({capnum}))"))
@@ -1958,7 +1958,7 @@ namespace System.Text.RegularExpressions.Generator
 
                     // Validate that the remaining length of the slice is sufficient
                     // to possibly match, and then do a SequenceEqual against the matched text.
-                    if ((node.Options & RegexOptions.RightToLeft) == 0)
+                    if (!node.Options.RightToLeft())
                     {
                         writer.WriteLine($"if ({sliceSpan}.Length < matchLength || ");
                         using (EmitBlock(writer, $"    !inputSpan.Slice(base.MatchIndex({capnum}), matchLength).SequenceEqual({sliceSpan}.Slice(0, matchLength)))"))
@@ -2446,7 +2446,7 @@ namespace System.Text.RegularExpressions.Generator
                 }
 
                 // Save off pos.  We'll need to reset this upon successful completion of the lookaround.
-                string startingPos = ReserveName((node.Options & RegexOptions.RightToLeft) != 0 ? "positivelookbehind_starting_pos" : "positivelookahead_starting_pos");
+                string startingPos = ReserveName(node.Options.RightToLeft() ? "positivelookbehind_starting_pos" : "positivelookahead_starting_pos");
                 writer.WriteLine($"int {startingPos} = pos;");
                 writer.WriteLine();
                 int startingSliceStaticPos = sliceStaticPos;
@@ -2496,7 +2496,7 @@ namespace System.Text.RegularExpressions.Generator
                 string originalDoneLabel = doneLabel;
 
                 // Save off pos.  We'll need to reset this upon successful completion of the lookaround.
-                string startingPos = ReserveName((node.Options & RegexOptions.RightToLeft) != 0 ? "negativelookbehind_starting_pos" : "negativelookahead_starting_pos");
+                string startingPos = ReserveName(node.Options.RightToLeft() ? "negativelookbehind_starting_pos" : "negativelookahead_starting_pos");
                 writer.WriteLine($"int {startingPos} = pos;");
                 int startingSliceStaticPos = sliceStaticPos;
 
@@ -2556,7 +2556,7 @@ namespace System.Text.RegularExpressions.Generator
                     return;
                 }
 
-                if ((node.Options & RegexOptions.RightToLeft) != 0)
+                if (node.Options.RightToLeft())
                 {
                     // RightToLeft doesn't take advantage of static positions.  While RightToLeft won't update static
                     // positions, a previous operation may have left us with a non-zero one.  Make sure it's zero'd out
@@ -2620,7 +2620,7 @@ namespace System.Text.RegularExpressions.Generator
                         EmitSingleChar(node, emitLengthChecksIfRequired);
                         return;
 
-                    case RegexNodeKind.Multi when (node.Options & RegexOptions.RightToLeft) == 0:
+                    case RegexNodeKind.Multi when !node.Options.RightToLeft():
                         EmitMultiChar(node, emitLengthChecksIfRequired);
                         return;
 
@@ -2760,7 +2760,7 @@ namespace System.Text.RegularExpressions.Generator
                     // and then skip the individual length checks for each.  We can also discover case-insensitive sequences that
                     // can be checked efficiently with methods like StartsWith. We also want to minimize the repetition of if blocks,
                     // and so we try to emit a series of clauses all part of the same if block rather than one if block per child.
-                    if ((node.Options & RegexOptions.RightToLeft) == 0 &&
+                    if (!node.Options.RightToLeft() &&
                         emitLengthChecksIfRequired &&
                         node.TryGetJoinableLengthCheckChildRange(i, out int requiredLength, out int exclusiveEnd))
                     {
@@ -2880,7 +2880,7 @@ namespace System.Text.RegularExpressions.Generator
             {
                 Debug.Assert(node.IsOneFamily || node.IsNotoneFamily || node.IsSetFamily, $"Unexpected type: {node.Kind}");
 
-                bool rtl = (node.Options & RegexOptions.RightToLeft) != 0;
+                bool rtl = node.Options.RightToLeft();
                 Debug.Assert(!rtl || offset is null);
                 Debug.Assert(!rtl || !clauseOnly);
 
@@ -2955,7 +2955,7 @@ namespace System.Text.RegularExpressions.Generator
             void EmitAnchors(RegexNode node)
             {
                 Debug.Assert(node.Kind is RegexNodeKind.Beginning or RegexNodeKind.Start or RegexNodeKind.Bol or RegexNodeKind.End or RegexNodeKind.EndZ or RegexNodeKind.Eol, $"Unexpected type: {node.Kind}");
-                Debug.Assert((node.Options & RegexOptions.RightToLeft) == 0 || sliceStaticPos == 0);
+                Debug.Assert(!node.Options.RightToLeft() || sliceStaticPos == 0);
                 Debug.Assert(sliceStaticPos >= 0);
 
                 switch (node.Kind)
@@ -3022,7 +3022,7 @@ namespace System.Text.RegularExpressions.Generator
             {
                 Debug.Assert(node.Kind is RegexNodeKind.Multi, $"Unexpected type: {node.Kind}");
                 Debug.Assert(node.Str is not null);
-                EmitMultiCharString(node.Str, emitLengthCheck, clauseOnly: false, (node.Options & RegexOptions.RightToLeft) != 0);
+                EmitMultiCharString(node.Str, emitLengthCheck, clauseOnly: false, node.Options.RightToLeft());
             }
 
             void EmitMultiCharString(string str, bool emitLengthCheck, bool clauseOnly, bool rightToLeft)
@@ -3095,7 +3095,7 @@ namespace System.Text.RegularExpressions.Generator
                 string startingPos = ReserveName("charloop_starting_pos");
                 string endingPos = ReserveName("charloop_ending_pos");
                 additionalDeclarations.Add($"int {startingPos} = 0, {endingPos} = 0;");
-                bool rtl = (node.Options & RegexOptions.RightToLeft) != 0;
+                bool rtl = node.Options.RightToLeft();
                 bool isInLoop = rm.Analysis.IsInLoop(node);
 
                 // We're about to enter a loop, so ensure our text position is 0.
@@ -3303,7 +3303,7 @@ namespace System.Text.RegularExpressions.Generator
 
                 // Now that we've appropriately advanced by one character and are set for what comes after the loop,
                 // see if we can skip ahead more iterations by doing a search for a following literal.
-                if ((node.Options & RegexOptions.RightToLeft) == 0)
+                if (!node.Options.RightToLeft())
                 {
                     if (iterationCount is null &&
                         node.Kind is RegexNodeKind.Notonelazy &&
@@ -3759,7 +3759,7 @@ namespace System.Text.RegularExpressions.Generator
                 Debug.Assert(node.IsOneFamily || node.IsNotoneFamily || node.IsSetFamily, $"Unexpected type: {node.Kind}");
 
                 int iterations = node.M;
-                bool rtl = (node.Options & RegexOptions.RightToLeft) != 0;
+                bool rtl = node.Options.RightToLeft();
 
                 switch (iterations)
                 {
@@ -3887,7 +3887,7 @@ namespace System.Text.RegularExpressions.Generator
                 Debug.Assert(node.N > node.M);
                 int minIterations = node.M;
                 int maxIterations = node.N;
-                bool rtl = (node.Options & RegexOptions.RightToLeft) != 0;
+                bool rtl = node.Options.RightToLeft();
                 string iterationLocal = ReserveName("iteration");
 
                 if (rtl)
@@ -4008,7 +4008,7 @@ namespace System.Text.RegularExpressions.Generator
                 Debug.Assert(node.Kind is RegexNodeKind.Oneloop or RegexNodeKind.Oneloopatomic or RegexNodeKind.Notoneloop or RegexNodeKind.Notoneloopatomic or RegexNodeKind.Setloop or RegexNodeKind.Setloopatomic, $"Unexpected type: {node.Kind}");
                 Debug.Assert(node.M == 0 && node.N == 1);
 
-                bool rtl = (node.Options & RegexOptions.RightToLeft) != 0;
+                bool rtl = node.Options.RightToLeft();
                 if (rtl)
                 {
                     TransferSliceStaticPosToPos(); // we don't use static pos for rtl
@@ -5117,7 +5117,7 @@ namespace System.Text.RegularExpressions.Generator
         /// <summary>Gets a textual description of the node fit for rendering in a comment in source.</summary>
         private static string DescribeNode(RegexNode node, RegexMethod rm)
         {
-            bool rtl = (node.Options & RegexOptions.RightToLeft) != 0;
+            bool rtl = node.Options.RightToLeft();
             string direction = rtl ? " right-to-left" : "";
             return node.Kind switch
             {

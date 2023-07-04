@@ -96,14 +96,14 @@ namespace System.Text.RegularExpressions
             RegexTree tree = Init(pattern, options, matchTimeout, ref culture);
 
             // Create the appropriate factory.
-            if ((options & RegexOptions.NonBacktracking) != 0)
+            if (options.NonBacktracking())
             {
                 // If we're in non-backtracking mode, create the appropriate factory.
                 factory = new SymbolicRegexRunnerFactory(tree, options, matchTimeout);
             }
             else
             {
-                if (RuntimeFeature.IsDynamicCodeCompiled && (options & RegexOptions.Compiled) != 0)
+                if (RuntimeFeature.IsDynamicCodeCompiled && options.Compiled())
                 {
                     // If the compile option is set and compilation is supported, then compile the code.
                     // If the compiler can't compile this regex, it'll return null, and we'll fall back
@@ -148,8 +148,8 @@ namespace System.Text.RegularExpressions
         {
             const int MaxOptionShift = 11;
             if (((((uint)options) >> MaxOptionShift) != 0) ||
-                ((options & RegexOptions.ECMAScript) != 0 && (options & ~(RegexOptions.ECMAScript | RegexOptions.IgnoreCase | RegexOptions.Multiline | RegexOptions.Compiled | RegexOptions.CultureInvariant)) != 0) ||
-                ((options & RegexOptions.NonBacktracking) != 0 && (options & (RegexOptions.ECMAScript | RegexOptions.RightToLeft)) != 0))
+                (options.ECMAScript() && (options & ~(RegexOptions.ECMAScript | RegexOptions.IgnoreCase | RegexOptions.Multiline | RegexOptions.Compiled | RegexOptions.CultureInvariant)) != 0) ||
+                (options.NonBacktracking() && (options & (RegexOptions.ECMAScript | RegexOptions.RightToLeft)) != 0))
             {
                 ThrowHelper.ThrowArgumentOutOfRangeException(ExceptionArgument.options);
             }
@@ -270,7 +270,7 @@ namespace System.Text.RegularExpressions
         /// <summary>
         /// Indicates whether the regular expression matches from right to left.
         /// </summary>
-        public bool RightToLeft => (roptions & RegexOptions.RightToLeft) != 0;
+        public bool RightToLeft => roptions.RightToLeft();
 
         /// <summary>
         /// Returns the regular expression pattern passed into the constructor
@@ -619,7 +619,7 @@ namespace System.Text.RegularExpressions
         /// <summary>True if the <see cref="RegexOptions.Compiled"/> option was set.</summary>
         [Obsolete(Obsoletions.RegexExtensibilityImplMessage, DiagnosticId = Obsoletions.RegexExtensibilityDiagId, UrlFormat = Obsoletions.SharedUrlFormat)]
         [EditorBrowsable(EditorBrowsableState.Never)]
-        protected bool UseOptionC() => (roptions & RegexOptions.Compiled) != 0;
+        protected bool UseOptionC() => roptions.Compiled();
 
         /// <summary>True if the <see cref="RegexOptions.RightToLeft"/> option was set.</summary>
         [Obsolete(Obsoletions.RegexExtensibilityImplMessage, DiagnosticId = Obsoletions.RegexExtensibilityDiagId, UrlFormat = Obsoletions.SharedUrlFormat)]

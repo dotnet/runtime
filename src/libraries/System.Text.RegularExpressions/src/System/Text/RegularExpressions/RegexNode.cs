@@ -92,7 +92,7 @@ namespace System.Text.RegularExpressions
         public static RegexNode CreateOneWithCaseConversion(char ch, RegexOptions options, CultureInfo? culture, ref RegexCaseBehavior caseBehavior)
         {
             // If the options specify case-insensitivity, we try to create a node that fully encapsulates that.
-            if ((options & RegexOptions.IgnoreCase) != 0)
+            if (options.IgnoreCase())
             {
                 Debug.Assert(culture is not null);
 
@@ -116,7 +116,7 @@ namespace System.Text.RegularExpressions
         /// <summary>Reverses all children of a concatenation when in RightToLeft mode.</summary>
         public RegexNode ReverseConcatenationIfRightToLeft()
         {
-            if ((Options & RegexOptions.RightToLeft) != 0 &&
+            if (Options.RightToLeft() &&
                 Kind == RegexNodeKind.Concatenate &&
                 ChildCount() > 1)
             {
@@ -294,7 +294,7 @@ namespace System.Text.RegularExpressions
                         break;
 
                     default:
-                        Debug.Assert((node.Options & RegexOptions.IgnoreCase) == 0, $"{node.Kind} node should not have RegexOptions.IgnoreCase");
+                        Debug.Assert(!node.Options.IgnoreCase(), $"{node.Kind} node should not have RegexOptions.IgnoreCase");
                         break;
                 }
             }
@@ -318,7 +318,7 @@ namespace System.Text.RegularExpressions
             // Only apply optimization when LTR to avoid needing additional code for the much rarer RTL case.
             // Also only apply these optimizations when not using NonBacktracking, as these optimizations are
             // all about avoiding things that are impactful for the backtracking engines but nops for non-backtracking.
-            if ((Options & (RegexOptions.RightToLeft | RegexOptions.NonBacktracking)) == 0)
+            if (!Options.RightToLeft() && !Options.NonBacktracking())
             {
                 // Optimization: eliminate backtracking for loops.
                 // For any single-character loop (Oneloop, Notoneloop, Setloop), see if we can automatically convert
@@ -579,7 +579,7 @@ namespace System.Text.RegularExpressions
         {
             // RegexOptions.NonBacktracking doesn't support atomic groups, so when that option
             // is set we don't want to create atomic groups where they weren't explicitly authored.
-            if ((Options & RegexOptions.NonBacktracking) != 0)
+            if (Options.NonBacktracking())
             {
                 return this;
             }
@@ -623,7 +623,7 @@ namespace System.Text.RegularExpressions
                 // Alternations have a variety of possible optimizations that can be applied
                 // iff they're atomic.
                 case RegexNodeKind.Alternate:
-                    if ((Options & RegexOptions.RightToLeft) == 0)
+                    if (!Options.RightToLeft())
                     {
                         List<RegexNode>? branches = child.Children as List<RegexNode>;
                         Debug.Assert(branches is not null && branches.Count != 0);
@@ -1027,10 +1027,7 @@ namespace System.Text.RegularExpressions
 
                             prev.Kind = RegexNodeKind.Set;
                             prev.Str = prevCharClass.ToStringClass();
-                            if ((prev.Options & RegexOptions.IgnoreCase) != 0)
-                            {
-                                prev.Options &= ~RegexOptions.IgnoreCase;
-                            }
+                            prev.Options &= ~RegexOptions.IgnoreCase;
                         }
                         else if (at.Kind == RegexNodeKind.Nothing)
                         {
@@ -1061,7 +1058,7 @@ namespace System.Text.RegularExpressions
                 var children = (List<RegexNode>)alternation.Children;
 
                 // Only process left-to-right prefixes.
-                if ((alternation.Options & RegexOptions.RightToLeft) != 0)
+                if (alternation.Options.RightToLeft())
                 {
                     return alternation;
                 }
@@ -1204,7 +1201,7 @@ namespace System.Text.RegularExpressions
                 // - All branches having the same options.
 
                 // Only extract left-to-right prefixes.
-                if ((alternation.Options & RegexOptions.RightToLeft) != 0)
+                if (alternation.Options.RightToLeft())
                 {
                     return alternation;
                 }
@@ -1372,7 +1369,7 @@ namespace System.Text.RegularExpressions
         public char FirstCharOfOneOrMulti()
         {
             Debug.Assert(Kind is RegexNodeKind.One or RegexNodeKind.Multi);
-            Debug.Assert((Options & RegexOptions.RightToLeft) == 0);
+            Debug.Assert(!Options.RightToLeft());
             return Kind == RegexNodeKind.One ? Ch : Str![0];
         }
 
@@ -1386,7 +1383,7 @@ namespace System.Text.RegularExpressions
             RegexNode? node = this;
             while (true)
             {
-                if (node is not null && (node.Options & RegexOptions.RightToLeft) == 0)
+                if (node is not null && !node.Options.RightToLeft())
                 {
                     switch (node.Kind)
                     {
@@ -1565,7 +1562,7 @@ namespace System.Text.RegularExpressions
                 }
 
                 if (at.Kind == RegexNodeKind.Concatenate &&
-                    ((at.Options & RegexOptions.RightToLeft) == (Options & RegexOptions.RightToLeft)))
+                    at.Options.RightToLeft() == Options.RightToLeft())
                 {
                     if (at.Children is List<RegexNode> atChildren)
                     {
@@ -1603,7 +1600,7 @@ namespace System.Text.RegularExpressions
                         prev.Str = prev.Ch.ToString();
                     }
 
-                    if ((optionsAt & RegexOptions.RightToLeft) == 0)
+                    if (!optionsAt.RightToLeft())
                     {
                         prev.Str = (at.Kind == RegexNodeKind.One) ? $"{prev.Str}{at.Ch}" : prev.Str + at.Str;
                     }
@@ -1805,7 +1802,7 @@ namespace System.Text.RegularExpressions
         /// </summary>
         private void FindAndMakeLoopsAtomic()
         {
-            Debug.Assert((Options & RegexOptions.NonBacktracking) == 0, "Atomic groups aren't supported and don't help performance with NonBacktracking");
+            Debug.Assert(!Options.NonBacktracking(), "Atomic groups aren't supported and don't help performance with NonBacktracking");
 
             if (!StackHelper.TryEnsureSufficientExecutionStack())
             {
@@ -1813,7 +1810,7 @@ namespace System.Text.RegularExpressions
                 return;
             }
 
-            if ((Options & RegexOptions.RightToLeft) != 0)
+            if (Options.RightToLeft())
             {
                 // RTL is so rare, we don't need to spend additional time/code optimizing for it.
                 return;
@@ -2040,7 +2037,7 @@ namespace System.Text.RegularExpressions
             // there's no ambiguity, and we can remove an extra level of positive lookahead, as the
             // engines need to treat the condition as a zero-width positive, atomic assertion regardless.
             RegexNode condition = Child(0);
-            if (condition.Kind == RegexNodeKind.PositiveLookaround && (condition.Options & RegexOptions.RightToLeft) == 0)
+            if (condition.Kind == RegexNodeKind.PositiveLookaround && !condition.Options.RightToLeft())
             {
                 ReplaceChild(0, condition.Child(0));
             }
@@ -2082,7 +2079,7 @@ namespace System.Text.RegularExpressions
                         case RegexNodeKind.Concatenate:
                         case RegexNodeKind.Capture:
                         case RegexNodeKind.Atomic:
-                        case RegexNodeKind.PositiveLookaround when (subsequent.Options & RegexOptions.RightToLeft) == 0: // only lookaheads, not lookbehinds (represented as RTL PositiveLookaround nodes)
+                        case RegexNodeKind.PositiveLookaround when !subsequent.Options.RightToLeft(): // only lookaheads, not lookbehinds (represented as RTL PositiveLookaround nodes)
                         case RegexNodeKind.Loop or RegexNodeKind.Lazyloop when subsequent.M > 0:
                             subsequent = subsequent.Child(0);
                             continue;
@@ -2770,7 +2767,7 @@ namespace System.Text.RegularExpressions
         // there's no need to localize).
         internal bool SupportsCompilation([NotNullWhen(false)] out string? reason)
         {
-            if ((Options & RegexOptions.NonBacktracking) != 0)
+            if (Options.NonBacktracking())
             {
                 reason = "RegexOptions.NonBacktracking isn't supported";
                 return false;
@@ -2861,13 +2858,13 @@ namespace System.Text.RegularExpressions
         {
             var sb = new StringBuilder(Kind.ToString());
 
-            if ((Options & RegexOptions.ExplicitCapture) != 0) sb.Append("-C");
-            if ((Options & RegexOptions.IgnoreCase) != 0) sb.Append("-I");
-            if ((Options & RegexOptions.RightToLeft) != 0) sb.Append("-L");
-            if ((Options & RegexOptions.Multiline) != 0) sb.Append("-M");
-            if ((Options & RegexOptions.Singleline) != 0) sb.Append("-S");
-            if ((Options & RegexOptions.IgnorePatternWhitespace) != 0) sb.Append("-X");
-            if ((Options & RegexOptions.ECMAScript) != 0) sb.Append("-E");
+            if (Options.ExplicitCapture()) sb.Append("-C");
+            if (Options.IgnoreCase()) sb.Append("-I");
+            if (Options.RightToLeft()) sb.Append("-L");
+            if (Options.Multiline()) sb.Append("-M");
+            if (Options.Singleline()) sb.Append("-S");
+            if (Options.IgnorePatternWhitespace()) sb.Append("-X");
+            if (Options.ECMAScript()) sb.Append("-E");
 
             switch (Kind)
             {

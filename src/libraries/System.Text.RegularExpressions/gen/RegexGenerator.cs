@@ -337,7 +337,7 @@ namespace System.Text.RegularExpressions.Generator
 
             static bool HasCaseInsensitiveBackReferences(RegexNode node)
             {
-                if (node.Kind is RegexNodeKind.Backreference && (node.Options & RegexOptions.IgnoreCase) != 0)
+                if (node.Kind is RegexNodeKind.Backreference && node.Options.IgnoreCase())
                 {
                     return true;
                 }

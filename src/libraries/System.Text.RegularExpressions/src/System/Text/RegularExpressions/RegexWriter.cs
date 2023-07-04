@@ -202,11 +202,11 @@ namespace System.Text.RegularExpressions
         private void EmitFragment(RegexNodeKind nodeType, RegexNode node, int curIndex)
         {
             RegexOpcode bits = 0;
-            if ((node.Options & RegexOptions.RightToLeft) != 0)
+            if (node.Options.RightToLeft())
             {
                 bits |= RegexOpcode.RightToLeft;
             }
-            if ((node.Options & RegexOptions.IgnoreCase) != 0)
+            if (node.Options.IgnoreCase())
             {
                 bits |= RegexOpcode.CaseInsensitive;
             }

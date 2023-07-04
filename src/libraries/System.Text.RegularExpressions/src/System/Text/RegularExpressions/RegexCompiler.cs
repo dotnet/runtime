@@ -390,7 +390,7 @@ namespace System.Text.RegularExpressions
 
             LocalBuilder inputSpan = DeclareReadOnlySpanChar();
             LocalBuilder pos = DeclareInt32();
-            bool rtl = (_options & RegexOptions.RightToLeft) != 0;
+            bool rtl = _options.RightToLeft();
 
             // Load necessary locals
             // int pos = base.runtextpos;
@@ -1422,7 +1422,7 @@ namespace System.Text.RegularExpressions
                     // base.runtextpos = base.runtextpos + node.Str.Length;
                     // return true;
                     int length = node.Kind == RegexNodeKind.Multi ? node.Str!.Length : 1;
-                    if ((node.Options & RegexOptions.RightToLeft) != 0)
+                    if (node.Options.RightToLeft())
                     {
                         length = -length;
                     }
@@ -1829,7 +1829,7 @@ namespace System.Text.RegularExpressions
                 Debug.Assert(node.Kind is RegexNodeKind.Backreference, $"Unexpected type: {node.Kind}");
 
                 int capnum = RegexParser.MapCaptureNumber(node.M, _regexTree!.CaptureNumberSparseMapping);
-                bool rtl = (node.Options & RegexOptions.RightToLeft) != 0;
+                bool rtl = node.Options.RightToLeft();
 
                 TransferSliceStaticPosToPos();
 
@@ -1839,7 +1839,7 @@ namespace System.Text.RegularExpressions
                 Ldthis();
                 Ldc(capnum);
                 Call(s_isMatchedMethod);
-                BrfalseFar((node.Options & RegexOptions.ECMAScript) == 0 ? doneLabel : backreferenceEnd);
+                BrfalseFar(!node.Options.ECMAScript() ? doneLabel : backreferenceEnd);
 
                 using RentedLocalBuilder matchLength = RentInt32Local();
                 using RentedLocalBuilder matchIndex = RentInt32Local();
@@ -1912,7 +1912,7 @@ namespace System.Text.RegularExpressions
                 LdindU2();
                 Stloc(currentCharacter);
 
-                if ((node.Options & RegexOptions.IgnoreCase) != 0)
+                if (node.Options.IgnoreCase())
                 {
                     LocalBuilder caseEquivalences = DeclareReadOnlySpanChar();
 
@@ -2624,7 +2624,7 @@ namespace System.Text.RegularExpressions
                 // such that pos and slice are up-to-date.  Note that RightToLeft also shouldn't use the slice span,
                 // as it's not kept up-to-date; any RightToLeft implementation that wants to use it must first update
                 // it from pos.
-                if ((node.Options & RegexOptions.RightToLeft) != 0)
+                if (node.Options.RightToLeft())
                 {
                     TransferSliceStaticPosToPos();
                 }
@@ -2811,7 +2811,7 @@ namespace System.Text.RegularExpressions
                     // If we can find a subsequence of fixed-length children, we can emit a length check once for that sequence
                     // and then skip the individual length checks for each. We can also discover case-insensitive sequences that
                     // can be checked efficiently with methods like StartsWith.
-                    if ((node.Options & RegexOptions.RightToLeft) == 0 &&
+                    if (!node.Options.RightToLeft() &&
                         emitLengthChecksIfRequired &&
                         node.TryGetJoinableLengthCheckChildRange(i, out int requiredLength, out int exclusiveEnd))
                     {
@@ -2874,7 +2874,7 @@ namespace System.Text.RegularExpressions
             {
                 Debug.Assert(node.IsOneFamily || node.IsNotoneFamily || node.IsSetFamily, $"Unexpected type: {node.Kind}");
 
-                bool rtl = (node.Options & RegexOptions.RightToLeft) != 0;
+                bool rtl = node.Options.RightToLeft();
                 Debug.Assert(!rtl || offset is null);
 
                 if (emitLengthCheck)
@@ -2949,7 +2949,7 @@ namespace System.Text.RegularExpressions
             {
                 Debug.Assert(node.Kind is RegexNodeKind.Boundary or RegexNodeKind.NonBoundary or RegexNodeKind.ECMABoundary or RegexNodeKind.NonECMABoundary, $"Unexpected type: {node.Kind}");
 
-                if ((node.Options & RegexOptions.RightToLeft) != 0)
+                if (node.Options.RightToLeft())
                 {
                     // RightToLeft doesn't use static position.  This ensures it's 0.
                     TransferSliceStaticPosToPos();
@@ -2992,7 +2992,7 @@ namespace System.Text.RegularExpressions
             void EmitAnchors(RegexNode node)
             {
                 Debug.Assert(node.Kind is RegexNodeKind.Beginning or RegexNodeKind.Start or RegexNodeKind.Bol or RegexNodeKind.End or RegexNodeKind.EndZ or RegexNodeKind.Eol, $"Unexpected type: {node.Kind}");
-                Debug.Assert((node.Options & RegexOptions.RightToLeft) == 0 || sliceStaticPos == 0);
+                Debug.Assert(!node.Options.RightToLeft() || sliceStaticPos == 0);
                 Debug.Assert(sliceStaticPos >= 0);
 
                 Debug.Assert(sliceStaticPos >= 0);
@@ -3130,7 +3130,7 @@ namespace System.Text.RegularExpressions
             void EmitMultiChar(RegexNode node, bool emitLengthCheck)
             {
                 Debug.Assert(node.Kind is RegexNodeKind.Multi, $"Unexpected type: {node.Kind}");
-                EmitMultiCharString(node.Str!, emitLengthCheck, (node.Options & RegexOptions.RightToLeft) != 0);
+                EmitMultiCharString(node.Str!, emitLengthCheck, node.Options.RightToLeft());
             }
 
             void EmitMultiCharString(string str, bool emitLengthCheck, bool rightToLeft)
@@ -3207,7 +3207,7 @@ namespace System.Text.RegularExpressions
                 LocalBuilder startingPos = DeclareInt32();
                 LocalBuilder endingPos = DeclareInt32();
                 LocalBuilder? capturePos = expressionHasCaptures ? DeclareInt32() : null;
-                bool rtl = (node.Options & RegexOptions.RightToLeft) != 0;
+                bool rtl = node.Options.RightToLeft();
                 bool isInLoop = analysis.IsInLoop(node);
 
                 // We're about to enter a loop, so ensure our text position is 0.
@@ -3415,7 +3415,7 @@ namespace System.Text.RegularExpressions
                 }
 
                 Debug.Assert(node.M < node.N);
-                bool rtl = (node.Options & RegexOptions.RightToLeft) != 0;
+                bool rtl = node.Options.RightToLeft();
 
                 // We now need to match one character at a time, each time allowing the remainder of the expression
                 // to try to match, and only matching another character if the subsequent expression fails to match.
@@ -4116,7 +4116,7 @@ namespace System.Text.RegularExpressions
                 Debug.Assert(node.IsOneFamily || node.IsNotoneFamily || node.IsSetFamily, $"Unexpected type: {node.Kind}");
 
                 int iterations = node.M;
-                bool rtl = (node.Options & RegexOptions.RightToLeft) != 0;
+                bool rtl = node.Options.RightToLeft();
 
                 switch (iterations)
                 {
@@ -4281,7 +4281,7 @@ namespace System.Text.RegularExpressions
                 Debug.Assert(node.N > node.M);
                 int minIterations = node.M;
                 int maxIterations = node.N;
-                bool rtl = (node.Options & RegexOptions.RightToLeft) != 0;
+                bool rtl = node.Options.RightToLeft();
                 using RentedLocalBuilder iterationLocal = RentInt32Local();
                 Label atomicLoopDoneLabel = DefineLabel();
 
@@ -4512,7 +4512,7 @@ namespace System.Text.RegularExpressions
                 Debug.Assert(node.Kind is RegexNodeKind.Oneloop or RegexNodeKind.Oneloopatomic or RegexNodeKind.Notoneloop or RegexNodeKind.Notoneloopatomic or RegexNodeKind.Setloop or RegexNodeKind.Setloopatomic, $"Unexpected type: {node.Kind}");
                 Debug.Assert(node.M == 0 && node.N == 1);
 
-                bool rtl = (node.Options & RegexOptions.RightToLeft) != 0;
+                bool rtl = node.Options.RightToLeft();
                 if (rtl)
                 {
                     TransferSliceStaticPosToPos(); // we don't use static pos for rtl
@@ -5303,7 +5303,7 @@ namespace System.Text.RegularExpressions
             // here, so we don't handle all of the same cases, e.g. we don't special case Empty or Nothing, as they're
             // not worth spending any code on.
 
-            bool rtl = (options & RegexOptions.RightToLeft) != 0;
+            bool rtl = options.RightToLeft();
             RegexNode root = _regexTree!.Root.Child(0);
             Label returnLabel = DefineLabel();
 

@@ -10,28 +10,24 @@ namespace System.Text.RegularExpressions
     /// <summary>Contains state and provides operations related to finding the next location a match could possibly begin.</summary>
     internal sealed class RegexFindOptimizations
     {
-        /// <summary>True if the input should be processed right-to-left rather than left-to-right.</summary>
-        private readonly bool _rightToLeft;
         /// <summary>Lookup table used for optimizing ASCII when doing set queries.</summary>
         private readonly uint[]?[]? _asciiLookups;
 
         public RegexFindOptimizations(RegexNode root, RegexOptions options)
         {
-            _rightToLeft = (options & RegexOptions.RightToLeft) != 0;
-
             MinRequiredLength = root.ComputeMinLength();
 
             // Compute any anchor starting the expression.  If there is one, we won't need to search for anything,
             // as we can just match at that single location.
             LeadingAnchor = RegexPrefixAnalyzer.FindLeadingAnchor(root);
-            if (_rightToLeft && LeadingAnchor == RegexNodeKind.Bol)
+            if (options.RightToLeft() && LeadingAnchor == RegexNodeKind.Bol)
             {
                 // Filter out Bol for RightToLeft, as we don't currently optimize for it.
                 LeadingAnchor = RegexNodeKind.Unknown;
             }
             if (LeadingAnchor is RegexNodeKind.Beginning or RegexNodeKind.Start or RegexNodeKind.EndZ or RegexNodeKind.End)
             {
-                FindMode = (LeadingAnchor, _rightToLeft) switch
+                FindMode = (LeadingAnchor, options.RightToLeft()) switch
                 {
                     (RegexNodeKind.Beginning, false) => FindNextStartingPositionMode.LeadingAnchor_LeftToRight_Beginning,
                     (RegexNodeKind.Beginning, true) => FindNextStartingPositionMode.LeadingAnchor_RightToLeft_Beginning,
@@ -47,7 +43,7 @@ namespace System.Text.RegularExpressions
 
             // Compute any anchor trailing the expression.  If there is one, and we can also compute a fixed length
             // for the whole expression, we can use that to quickly jump to the right location in the input.
-            if (!_rightToLeft) // haven't added FindNextStartingPositionMode trailing anchor support for RTL
+            if (!options.RightToLeft()) // haven't added FindNextStartingPositionMode trailing anchor support for RTL
             {
                 TrailingAnchor = RegexPrefixAnalyzer.FindTrailingAnchor(root);
                 if (TrailingAnchor is RegexNodeKind.End or RegexNodeKind.EndZ &&
@@ -70,7 +66,7 @@ namespace System.Text.RegularExpressions
             if (prefix.Length > 1)
             {
                 LeadingPrefix = prefix;
-                FindMode = _rightToLeft ?
+                FindMode = options.RightToLeft() ?
                     FindNextStartingPositionMode.LeadingString_RightToLeft :
                     FindNextStartingPositionMode.LeadingString_LeftToRight;
                 return;
@@ -81,15 +77,15 @@ namespace System.Text.RegularExpressions
 
             // If we're compiling, then the compilation process already handles sets that reduce to a single literal,
             // so we can simplify and just always go for the sets.
-            bool dfa = (options & RegexOptions.NonBacktracking) != 0;
-            bool compiled = (options & RegexOptions.Compiled) != 0 && !dfa; // for now, we never generate code for NonBacktracking, so treat it as non-compiled
+            bool dfa = options.NonBacktracking();
+            bool compiled = options.Compiled() && !dfa; // for now, we never generate code for NonBacktracking, so treat it as non-compiled
             bool interpreter = !compiled && !dfa;
 
             // For interpreter, we want to employ optimizations, but we don't want to make construction significantly
             // more expensive; someone who wants to pay to do more work can specify Compiled.  So for the interpreter
             // we focus only on creating a set for the first character.  Same for right-to-left, which is used very
             // rarely and thus we don't need to invest in special-casing it.
-            if (_rightToLeft)
+            if (options.RightToLeft())
             {
                 // Determine a set for anything that can possibly start the expression.
                 if (RegexPrefixAnalyzer.FindFirstCharClass(root) is string charClass)

@@ -19,7 +19,7 @@ namespace System.Text.RegularExpressions.Tests
             Assert.Equal(expectedCount, r.Count(input.AsSpan(), startat));
             Assert.Equal(r.Count(input.AsSpan(), startat), r.Matches(input, startat).Count);
 
-            bool isDefaultStartAt = startat == ((options & RegexOptions.RightToLeft) != 0 ? input.Length : 0);
+            bool isDefaultStartAt = startat == (options.RightToLeft() ? input.Length : 0);
             if (!isDefaultStartAt)
             {
                 return;

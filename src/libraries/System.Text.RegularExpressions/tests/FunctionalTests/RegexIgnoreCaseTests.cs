@@ -161,7 +161,7 @@ namespace System.Text.RegularExpressions.Tests
 
             foreach ((string c, string lowerC) in testCases)
             {
-                using (ThreadCultureChange cultureChange = (options & RegexOptions.CultureInvariant) == 0 ?
+                using (ThreadCultureChange cultureChange = !options.CultureInvariant() ?
                     new ThreadCultureChange(culture) : null)
                 {
                     // We validate that there is no case where c.ToLower() == lowerC and c.ToLower() != lowerC.ToLower()
