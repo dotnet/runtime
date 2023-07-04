@@ -1598,6 +1598,7 @@ private:
 
     GenTree*    m_minOp        = nullptr; // The CNS_INT node with the minimum pattern
     BasicBlock* m_optFirstBB   = nullptr; // The first BB of the range pattern
+    BasicBlock* m_optLastBB    = nullptr; // The last BB of the range pattern
     BasicBlock* m_defaultJmpBB = nullptr; // The Switch default jump target
 
     unsigned m_bbCodeOffs    = 0; // IL code offset of the switch basic block
@@ -1800,6 +1801,7 @@ void OptRangePatternDsc::optInitializeRngPattern(BasicBlock* firstBB, ssize_t fi
            firstBB->lastStmt()->GetRootNode()->OperIs(GT_JTRUE));
 
     m_optFirstBB = firstBB;
+    m_optLastBB  = firstBB;
 
     // Initialize min pattern and max pattern to the first pattern value
     m_minPattern = firstVal;
@@ -1851,6 +1853,9 @@ bool OptRangePatternDsc::optSetPattern(int idxPattern, ssize_t patternVal, Basic
 
     // Update the code offset end range
     optSetBbCodeOffsEnd(block->bbCodeOffsEnd);
+
+    // Set the last basic block of the range pattern
+    m_optLastBB = block;
 
     return true;
 }
@@ -2040,9 +2045,9 @@ bool OptRangePatternDsc::optMakeSwitchDesc()
     //
 
     // If the number of unique target counts is 1, it has only default case. Not profitable.
-    // If it is > 3, it it not converted to a bit test in Lowering. So, skip it.
+    // If it is >= 3, it it not converted to a bit test in Lowering. So, skip it.
     uniqueTargetCnt = m_blockToIntMap.GetCount();
-    if (uniqueTargetCnt == 1 || uniqueTargetCnt > 3)
+    if (uniqueTargetCnt != 2)
     {
         return false;
     }
@@ -2071,7 +2076,7 @@ bool OptRangePatternDsc::optMakeSwitchDesc()
 
     // Check if it is better to use Jmp instead of Switch
     BasicBlock* defaultBB   = jmpTab[jmpCnt - 1];
-    BasicBlock* followingBB = m_optFirstBB->bbNext;
+    BasicBlock* followingBB = m_optLastBB->bbNext;
 
     // Is the number of cases right for a jump switch?
     const bool firstCaseFollows = (followingBB == jmpTab[0]);
@@ -2101,6 +2106,25 @@ bool OptRangePatternDsc::optMakeSwitchDesc()
     }
 
     if (useJumpSequence) // It is better to use a series of compare and branch IR trees.
+    {
+        return false;
+    }
+
+    // One of the case blocks has to follow the switch block. All the pattern blocks will be removed and the first
+    // pattern block will be converted to Switch, so it has to follow the last pattern block.
+    BasicBlock* bbCase0           = nullptr;
+    BasicBlock* bbCase1           = jmpTab[0];
+    BasicBlock* nextBbAfterSwitch = m_optLastBB->bbNext;
+
+    for (unsigned tabIdx = 1; tabIdx < (jmpCnt - 1); tabIdx++)
+    {
+        if (jmpTab[tabIdx] != bbCase1 && bbCase0 == nullptr)
+        {
+            bbCase0 = jmpTab[tabIdx];
+            break;
+        }
+    }
+    if ((nextBbAfterSwitch != bbCase0) && (nextBbAfterSwitch != bbCase1))
     {
         return false;
     }
