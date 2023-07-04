@@ -127,9 +127,9 @@ namespace System.Text.RegularExpressions.Generator
                 return new DiagnosticData(DiagnosticDescriptors.InvalidRegexArguments, GetComparableLocation(methodSyntax), e.Message);
             }
 
-            if (regexOptionsWithPatternOptions.IgnoreCase() && !string.IsNullOrEmpty(cultureName))
+            if ((regexOptionsWithPatternOptions & RegexOptions.IgnoreCase) != 0 && !string.IsNullOrEmpty(cultureName))
             {
-                if (regexOptions.CultureInvariant())
+                if ((regexOptions & RegexOptions.CultureInvariant) != 0)
                 {
                     // User passed in both a culture name and set RegexOptions.CultureInvariant which causes an explicit conflict.
                     return new DiagnosticData(DiagnosticDescriptors.InvalidRegexArguments, GetComparableLocation(methodSyntax), "cultureName");

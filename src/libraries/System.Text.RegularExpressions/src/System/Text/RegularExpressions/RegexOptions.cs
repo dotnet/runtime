@@ -3,7 +3,6 @@
 
 namespace System.Text.RegularExpressions
 {
-#if !SYSTEM_TEXT_REGULAREXPRESSIONS_TESTS
     [Flags]
 #if SYSTEM_TEXT_REGULAREXPRESSIONS
     public
@@ -61,22 +60,5 @@ namespace System.Text.RegularExpressions
         /// the top-level match.
         /// </remarks>
         NonBacktracking         = 0x0400,
-    }
-#endif // !SYSTEM_TEXT_REGULAREXPRESSIONS_TESTS
-
-    internal static class RegexOptionExtensions
-    {
-        internal static bool Compiled(this RegexOptions options) => (options & RegexOptions.Compiled) != 0;
-        internal static bool CultureInvariant(this RegexOptions options) => (options & RegexOptions.CultureInvariant) != 0;
-        internal static bool ECMAScript(this RegexOptions options) => (options & RegexOptions.ECMAScript) != 0;
-        internal static bool ExplicitCapture(this RegexOptions options) => (options & RegexOptions.ExplicitCapture) != 0;
-        internal static bool IgnoreCase(this RegexOptions options) => (options & RegexOptions.IgnoreCase) != 0;
-        internal static bool IgnorePatternWhitespace(this RegexOptions options) => (options & RegexOptions.IgnorePatternWhitespace) != 0;
-        internal static bool Multiline(this RegexOptions options) => (options & RegexOptions.Multiline) != 0;
-#if !NETFRAMEWORK
-        internal static bool NonBacktracking(this RegexOptions options) => (options & RegexOptions.NonBacktracking) != 0;
-#endif
-        internal static bool RightToLeft(this RegexOptions options) => (options & RegexOptions.RightToLeft) != 0;
-        internal static bool Singleline(this RegexOptions options) => (options & RegexOptions.Singleline) != 0;
     }
 }

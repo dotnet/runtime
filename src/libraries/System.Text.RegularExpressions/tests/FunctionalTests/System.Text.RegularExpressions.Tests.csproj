@@ -6,7 +6,6 @@
     <!-- SYSLIB1045 is for switching to GeneratedRegex -->
     <NoWarn>$(NoWarn);xUnit2008;SYSLIB0036;SYSLIB1045</NoWarn>
     <TargetFrameworks>$(NetCoreAppCurrent);$(NetFrameworkCurrent)</TargetFrameworks>
-    <DefineConstants>$(DefineConstants);SYSTEM_TEXT_REGULAREXPRESSIONS_TESTS</DefineConstants>
     <DebuggerSupport Condition="'$(DebuggerSupport)' == '' and '$(TargetOS)' == 'browser'">true</DebuggerSupport>
     <EmitCompilerGeneratedFiles>true</EmitCompilerGeneratedFiles>
     <IsHighAotMemoryUsageTest>true</IsHighAotMemoryUsageTest> <!-- to avoid OOMs with source generation in wasm: https://github.com/dotnet/runtime/pull/60701 -->
@@ -39,9 +38,6 @@
     <Compile Include="RegexParserTests.cs" />
     <Compile Include="RegexPcreTests.cs" />
     <Compile Include="RegexRustTests.cs" />
-
-    <!-- for the convenient Options extension methods -->
-    <Compile Include="..\..\src\System\Text\RegularExpressions\RegexOptions.cs" Link="Production\RegexOptions.cs" />
   </ItemGroup>
   <ItemGroup Condition="'$(TargetFrameworkIdentifier)' == '.NETFramework'">
     <Compile Include="..\..\src\System\Text\RegularExpressions\RegexParseError.cs" Link="System\Text\RegularExpressions\RegexParseError.cs" />

@@ -50,13 +50,13 @@ namespace System.Text.RegularExpressions.Tests
                 Regex regex2 = new Regex(pattern, options);
                 Assert.Equal(pattern, regex2.ToString());
                 Assert.Equal(options, regex2.Options);
-                Assert.Equal(options.RightToLeft(), regex2.RightToLeft);
+                Assert.Equal((options & RegexOptions.RightToLeft) != 0, regex2.RightToLeft);
                 Assert.Equal(matchTimeout, regex2.MatchTimeout);
             }
             Regex regex3 = new Regex(pattern, options, matchTimeout);
             Assert.Equal(pattern, regex3.ToString());
             Assert.Equal(options, regex3.Options);
-            Assert.Equal(options.RightToLeft(), regex3.RightToLeft);
+            Assert.Equal((options & RegexOptions.RightToLeft) != 0, regex3.RightToLeft);
             Assert.Equal(matchTimeout, regex3.MatchTimeout);
         }
 

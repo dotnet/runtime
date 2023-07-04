@@ -24,8 +24,8 @@ namespace System.Text.RegularExpressions
                 }
 
                 // Track whether we've seen any nodes with various options set.
-                results._hasIgnoreCase |= node.Options.IgnoreCase();
-                results._hasRightToLeft |= node.Options.RightToLeft();
+                results._hasIgnoreCase |= (node.Options & RegexOptions.IgnoreCase) != 0;
+                results._hasRightToLeft |= (node.Options & RegexOptions.RightToLeft) != 0;
 
                 // Track whether this node is inside of a loop.
                 if (isInLoop)

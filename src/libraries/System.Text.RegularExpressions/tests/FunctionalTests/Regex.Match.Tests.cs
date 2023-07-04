@@ -135,7 +135,7 @@ namespace System.Text.RegularExpressions.Tests
             // More nonbacktracking expressions
             foreach (RegexOptions options in new[] { RegexOptions.None, RegexOptions.IgnoreCase })
             {
-                string Case(string s) => options.IgnoreCase() ? s.ToUpper() : s;
+                string Case(string s) => (options & RegexOptions.IgnoreCase) != 0 ? s.ToUpper() : s;
 
                 yield return (Case("(?:hi|hello|hey)hi"), "hellohi", options, 0, 7, true, "hellohi"); // allow backtracking and it succeeds
                 yield return (Case(@"a[^wyz]*w"), "abczw", RegexOptions.IgnoreCase, 0, 0, false, string.Empty);
@@ -1035,7 +1035,7 @@ namespace System.Text.RegularExpressions.Tests
                 VerifyMatch(r.Match(input));
                 VerifyIsMatch(r, input, expectedSuccess, Regex.InfiniteMatchTimeout);
             }
-            if (beginning + length == input.Length && !options.RightToLeft())
+            if (beginning + length == input.Length && (options & RegexOptions.RightToLeft) == 0)
             {
                 VerifyMatch(r.Match(input, beginning));
             }
@@ -1091,7 +1091,7 @@ namespace System.Text.RegularExpressions.Tests
         [MemberData(nameof(Match_VaryingLengthStrings_MemberData))]
         public async Task Match_VaryingLengthStrings(RegexEngine engine, RegexOptions options, int length)
         {
-            bool caseInsensitive = options.IgnoreCase();
+            bool caseInsensitive = (options & RegexOptions.IgnoreCase) != 0;
             string pattern = "[123]" + string.Concat(Enumerable.Range(0, length).Select(i => (char)('A' + (i % 26))));
             string input = "2" + string.Concat(Enumerable.Range(0, length).Select(i => (char)((caseInsensitive ? 'a' : 'A') + (i % 26))));
             Regex r = await RegexHelpers.GetRegexAsync(engine, pattern, options);
@@ -1760,7 +1760,7 @@ namespace System.Text.RegularExpressions.Tests
                 VerifyMatch(r.Match(input, beginning));
             }
 
-            if (!options.RightToLeft())
+            if ((options & RegexOptions.RightToLeft) == 0)
             {
                 // Use Match(string, int, int)
                 VerifyMatch(r.Match(input, beginning, length));

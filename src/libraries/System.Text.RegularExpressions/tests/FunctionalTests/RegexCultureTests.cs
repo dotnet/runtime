@@ -236,7 +236,7 @@ namespace System.Text.RegularExpressions.Tests
             {
                 foreach (RegexOptions option in new[] { RegexOptions.None, RegexOptions.RightToLeft })
                 {
-                    if (RegexHelpers.IsNonBacktracking(engine) && option.RightToLeft())
+                    if (RegexHelpers.IsNonBacktracking(engine) && (option & RegexOptions.RightToLeft) != 0)
                     {
                         continue;
                     }

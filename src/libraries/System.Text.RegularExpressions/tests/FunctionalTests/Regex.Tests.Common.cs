@@ -35,7 +35,7 @@ namespace System.Text.RegularExpressions.Tests
 
         public static bool IsDefaultCount(string input, RegexOptions options, int count)
         {
-            if (options.RightToLeft())
+            if ((options & RegexOptions.RightToLeft) != 0)
             {
                 return count == input.Length || count == -1;
             }
@@ -44,7 +44,7 @@ namespace System.Text.RegularExpressions.Tests
 
         public static bool IsDefaultStart(string input, RegexOptions options, int start)
         {
-            if (options.RightToLeft())
+            if ((options & RegexOptions.RightToLeft) != 0)
             {
                 return start == input.Length;
             }

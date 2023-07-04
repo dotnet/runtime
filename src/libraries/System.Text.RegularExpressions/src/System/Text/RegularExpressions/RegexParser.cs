@@ -83,7 +83,7 @@ namespace System.Text.RegularExpressions
 
         /// <summary>Gets the culture to use based on the specified options.</summary>
         internal static CultureInfo GetTargetCulture(RegexOptions options) =>
-            options.CultureInvariant() ? CultureInfo.InvariantCulture : CultureInfo.CurrentCulture;
+            (options & RegexOptions.CultureInvariant) != 0 ? CultureInfo.InvariantCulture : CultureInfo.CurrentCulture;
 
         public static RegexOptions ParseOptionsInPattern(string pattern, RegexOptions options)
         {
@@ -136,7 +136,7 @@ namespace System.Text.RegularExpressions
         /// </summary>
         public static RegexReplacement ParseReplacement(string pattern, RegexOptions options, Hashtable caps, int capsize, Hashtable capnames)
         {
-            CultureInfo culture = options.CultureInvariant() ? CultureInfo.InvariantCulture : CultureInfo.CurrentCulture;
+            CultureInfo culture = (options & RegexOptions.CultureInvariant) != 0 ? CultureInfo.InvariantCulture : CultureInfo.CurrentCulture;
             using var parser = new RegexParser(pattern, options, culture, caps, capsize, capnames, stackalloc int[OptionStackDefaultSize]);
 
             RegexNode root = parser.ScanReplacement();
@@ -292,7 +292,7 @@ namespace System.Text.RegularExpressions
 
                 // move past all of the normal characters.  We'll stop when we hit some kind of control character,
                 // or if IgnorePatternWhiteSpace is on, we'll stop when we see some whitespace.
-                if (_options.IgnorePatternWhitespace())
+                if (UseOptionX())
                 {
                     while (CharsRight() > 0 && (!IsStopperX(ch = RightChar()) || (ch == '{' && !IsTrueQuantifier())))
                         MoveRight();
@@ -348,7 +348,7 @@ namespace System.Text.RegularExpressions
 
                     case '[':
                         {
-                            string setString = ScanCharClass(_options.IgnoreCase(), scanOnly: false)!.ToStringClass();
+                            string setString = ScanCharClass(UseOptionI(), scanOnly: false)!.ToStringClass();
                             _unit = new RegexNode(RegexNodeKind.Set, _options & ~RegexOptions.IgnoreCase, setString);
                         }
                         break;
@@ -396,15 +396,15 @@ namespace System.Text.RegularExpressions
                         break;
 
                     case '^':
-                        _unit = new RegexNode(_options.Multiline() ? RegexNodeKind.Bol : RegexNodeKind.Beginning, _options);
+                        _unit = new RegexNode(UseOptionM() ? RegexNodeKind.Bol : RegexNodeKind.Beginning, _options);
                         break;
 
                     case '$':
-                        _unit = new RegexNode(_options.Multiline() ? RegexNodeKind.Eol : RegexNodeKind.EndZ, _options);
+                        _unit = new RegexNode(UseOptionM() ? RegexNodeKind.Eol : RegexNodeKind.EndZ, _options);
                         break;
 
                     case '.':
-                        _unit = _options.Singleline() ?
+                        _unit = UseOptionS() ?
                             new RegexNode(RegexNodeKind.Set, _options & ~RegexOptions.IgnoreCase, RegexCharClass.AnyClass) :
                             new RegexNode(RegexNodeKind.Notone, _options & ~RegexOptions.IgnoreCase, '\n');
                         break;
@@ -578,7 +578,7 @@ namespace System.Text.RegularExpressions
                 {
                     charClass!.Negate = true;
                 }
-                if (_options.ECMAScript() && CharAt(_currentPos) == ']')
+                if ((_options & RegexOptions.ECMAScript) != 0 && CharAt(_currentPos) == ']')
                 {
                     firstChar = false;
                 }
@@ -608,7 +608,7 @@ namespace System.Text.RegularExpressions
                                 {
                                     throw MakeException(RegexParseError.ShorthandClassInCharacterRange, SR.Format(SR.ShorthandClassInCharacterRange, ch));
                                 }
-                                charClass!.AddDigit(_options.ECMAScript(), ch == 'D', _pattern, _currentPos);
+                                charClass!.AddDigit(UseOptionE(), ch == 'D', _pattern, _currentPos);
                             }
                             continue;
 
@@ -620,7 +620,7 @@ namespace System.Text.RegularExpressions
                                 {
                                     throw MakeException(RegexParseError.ShorthandClassInCharacterRange, SR.Format(SR.ShorthandClassInCharacterRange, ch));
                                 }
-                                charClass!.AddSpace(_options.ECMAScript(), ch == 'S');
+                                charClass!.AddSpace(UseOptionE(), ch == 'S');
                             }
                             continue;
 
@@ -633,7 +633,7 @@ namespace System.Text.RegularExpressions
                                     throw MakeException(RegexParseError.ShorthandClassInCharacterRange, SR.Format(SR.ShorthandClassInCharacterRange, ch));
                                 }
 
-                                charClass!.AddWord(_options.ECMAScript(), ch == 'W');
+                                charClass!.AddWord(UseOptionE(), ch == 'W');
                             }
                             continue;
 
@@ -785,7 +785,7 @@ namespace System.Text.RegularExpressions
             // 3. "(?)"
             if (CharsRight() == 0 || RightChar() != '?' || (RightChar() == '?' && CharsRight() > 1 && RightChar(1) == ')'))
             {
-                if (_options.ExplicitCapture() || _ignoreNextParen)
+                if (UseOptionN() || _ignoreNextParen)
                 {
                     _ignoreNextParen = false;
                     return new RegexNode(RegexNodeKind.Group, _options);
@@ -1083,7 +1083,7 @@ namespace System.Text.RegularExpressions
          */
         private void ScanBlank()
         {
-            if (_options.IgnorePatternWhitespace())
+            if (UseOptionX())
             {
                 while (true)
                 {
@@ -1173,32 +1173,32 @@ namespace System.Text.RegularExpressions
                 case 'w':
                     MoveRight();
                     return scanOnly ? null :
-                        new RegexNode(RegexNodeKind.Set, (_options & ~RegexOptions.IgnoreCase), _options.ECMAScript() ? RegexCharClass.ECMAWordClass : RegexCharClass.WordClass);
+                        new RegexNode(RegexNodeKind.Set, (_options & ~RegexOptions.IgnoreCase), UseOptionE() ? RegexCharClass.ECMAWordClass : RegexCharClass.WordClass);
 
                 case 'W':
                     MoveRight();
                     return scanOnly ? null :
-                        new RegexNode(RegexNodeKind.Set, (_options & ~RegexOptions.IgnoreCase), _options.ECMAScript() ? RegexCharClass.NotECMAWordClass : RegexCharClass.NotWordClass);
+                        new RegexNode(RegexNodeKind.Set, (_options & ~RegexOptions.IgnoreCase), UseOptionE() ? RegexCharClass.NotECMAWordClass : RegexCharClass.NotWordClass);
 
                 case 's':
                     MoveRight();
                     return scanOnly ? null :
-                        new RegexNode(RegexNodeKind.Set, (_options & ~RegexOptions.IgnoreCase), _options.ECMAScript() ? RegexCharClass.ECMASpaceClass : RegexCharClass.SpaceClass);
+                        new RegexNode(RegexNodeKind.Set, (_options & ~RegexOptions.IgnoreCase), UseOptionE() ? RegexCharClass.ECMASpaceClass : RegexCharClass.SpaceClass);
 
                 case 'S':
                     MoveRight();
                     return scanOnly ? null :
-                        new RegexNode(RegexNodeKind.Set, (_options & ~RegexOptions.IgnoreCase), _options.ECMAScript() ? RegexCharClass.NotECMASpaceClass : RegexCharClass.NotSpaceClass);
+                        new RegexNode(RegexNodeKind.Set, (_options & ~RegexOptions.IgnoreCase), UseOptionE() ? RegexCharClass.NotECMASpaceClass : RegexCharClass.NotSpaceClass);
 
                 case 'd':
                     MoveRight();
                     return scanOnly ? null :
-                        new RegexNode(RegexNodeKind.Set, (_options & ~RegexOptions.IgnoreCase), _options.ECMAScript() ? RegexCharClass.ECMADigitClass : RegexCharClass.DigitClass);
+                        new RegexNode(RegexNodeKind.Set, (_options & ~RegexOptions.IgnoreCase), UseOptionE() ? RegexCharClass.ECMADigitClass : RegexCharClass.DigitClass);
 
                 case 'D':
                     MoveRight();
                     return scanOnly ? null :
-                        new RegexNode(RegexNodeKind.Set, (_options & ~RegexOptions.IgnoreCase), _options.ECMAScript() ? RegexCharClass.NotECMADigitClass : RegexCharClass.NotDigitClass);
+                        new RegexNode(RegexNodeKind.Set, (_options & ~RegexOptions.IgnoreCase), UseOptionE() ? RegexCharClass.NotECMADigitClass : RegexCharClass.NotDigitClass);
 
                 case 'p':
                 case 'P':
@@ -1209,8 +1209,8 @@ namespace System.Text.RegularExpressions
                     }
 
                     var cc = new RegexCharClass();
-                    cc.AddCategoryFromName(ParseProperty(), ch != 'p', _options.IgnoreCase(), _pattern, _currentPos);
-                    if (_options.IgnoreCase())
+                    cc.AddCategoryFromName(ParseProperty(), ch != 'p', UseOptionI(), _pattern, _currentPos);
+                    if (UseOptionI())
                     {
                         cc.AddCaseEquivalences(_culture);
                     }
@@ -1219,7 +1219,7 @@ namespace System.Text.RegularExpressions
 
                 default:
                     RegexNode? result = ScanBasicBackslash(scanOnly);
-                    if (result != null && result.Kind == RegexNodeKind.Backreference && result.Options.IgnoreCase())
+                    if (result != null && result.Kind == RegexNodeKind.Backreference && (result.Options & RegexOptions.IgnoreCase) != 0)
                     {
                         _hasIgnoreCaseBackreferenceNodes = true;
                     }
@@ -1289,7 +1289,7 @@ namespace System.Text.RegularExpressions
 
             else if (!angled && ch >= '1' && ch <= '9')
             {
-                if (_options.ECMAScript())
+                if (UseOptionE())
                 {
                     int capnum = -1;
                     int newcapnum = ch - '0';
@@ -1393,7 +1393,7 @@ namespace System.Text.RegularExpressions
 
             if (ch >= '0' && ch <= '9')
             {
-                if (!angled && _options.ECMAScript())
+                if (!angled && UseOptionE())
                 {
                     int capnum = -1;
                     int newcapnum = ch - '0';
@@ -1532,7 +1532,7 @@ namespace System.Text.RegularExpressions
             {
                 MoveRight();
                 i = (i * 8) + d;
-                if (_options.ECMAScript() && i >= 0x20)
+                if (UseOptionE() && i >= 0x20)
                 {
                     break;
                 }
@@ -1709,7 +1709,7 @@ namespace System.Text.RegularExpressions
                 case 'c':
                     return ScanControl();
                 default:
-                    if (!_options.ECMAScript() && RegexCharClass.IsBoundaryWordChar(ch))
+                    if (!UseOptionE() && RegexCharClass.IsBoundaryWordChar(ch))
                     {
                         throw MakeException(RegexParseError.UnrecognizedEscape, SR.Format(SR.UnrecognizedEscape, ch));
                     }
@@ -1756,8 +1756,8 @@ namespace System.Text.RegularExpressions
         private RegexNodeKind TypeFromCode(char ch) =>
             ch switch
             {
-                'b' => _options.ECMAScript() ? RegexNodeKind.ECMABoundary : RegexNodeKind.Boundary,
-                'B' => _options.ECMAScript() ? RegexNodeKind.NonECMABoundary : RegexNodeKind.NonBoundary,
+                'b' => UseOptionE() ? RegexNodeKind.ECMABoundary : RegexNodeKind.Boundary,
+                'B' => UseOptionE() ? RegexNodeKind.NonECMABoundary : RegexNodeKind.NonBoundary,
                 'A' => RegexNodeKind.Beginning,
                 'G' => RegexNodeKind.Start,
                 'Z' => RegexNodeKind.EndZ,
@@ -1800,7 +1800,7 @@ namespace System.Text.RegularExpressions
                         break;
 
                     case '#':
-                        if (_options.IgnorePatternWhitespace())
+                        if (UseOptionX())
                         {
                             MoveLeft();
                             ScanBlank();
@@ -1885,7 +1885,7 @@ namespace System.Text.RegularExpressions
                                 // Simple (unnamed) capture group.
                                 // Add unnamed parentheses if ExplicitCapture is not set
                                 // and the next parentheses is not ignored.
-                                if (!_options.ExplicitCapture() && !_ignoreNextParen)
+                                if (!UseOptionN() && !_ignoreNextParen)
                                 {
                                     NoteCaptureSlot(_autocap++, pos);
                                 }
@@ -2041,6 +2041,24 @@ namespace System.Text.RegularExpressions
         /// <summary>Looks up the slot number for a given name</summary>
         private bool IsCaptureName(string capname) => _capnames != null && _capnames.ContainsKey(capname);
 
+        /// <summary>True if N option disabling '(' autocapture is on.</summary>
+        private bool UseOptionN() => (_options & RegexOptions.ExplicitCapture) != 0;
+
+        /// <summary>True if I option enabling case-insensitivity is on.</summary>
+        private bool UseOptionI() => (_options & RegexOptions.IgnoreCase) != 0;
+
+        /// <summary>True if M option altering meaning of $ and ^ is on.</summary>
+        private bool UseOptionM() => (_options & RegexOptions.Multiline) != 0;
+
+        /// <summary>True if S option altering meaning of . is on.</summary>
+        private bool UseOptionS() => (_options & RegexOptions.Singleline) != 0;
+
+        /// <summary> True if X option enabling whitespace/comment mode is on.</summary>
+        private bool UseOptionX() => (_options & RegexOptions.IgnorePatternWhitespace) != 0;
+
+        /// <summary>True if E option enabling ECMAScript behavior is on.</summary>
+        private bool UseOptionE() => (_options & RegexOptions.ECMAScript) != 0;
+
         private const byte Q = 5;    // quantifier
         private const byte S = 4;    // ordinary stopper
         private const byte Z = 3;    // ScanBlank stopper
@@ -2141,7 +2159,7 @@ namespace System.Text.RegularExpressions
                     _concatenation!.AddChild(RegexNode.CreateOneWithCaseConversion(_pattern[pos], isReplacement ? _options & ~RegexOptions.IgnoreCase : _options, _culture, ref _caseBehavior));
                     break;
 
-                case > 1 when !_options.IgnoreCase() || isReplacement || !RegexCharClass.ParticipatesInCaseConversion(_pattern.AsSpan(pos, cch)):
+                case > 1 when !UseOptionI() || isReplacement || !RegexCharClass.ParticipatesInCaseConversion(_pattern.AsSpan(pos, cch)):
                     _concatenation!.AddChild(new RegexNode(RegexNodeKind.Multi, _options & ~RegexOptions.IgnoreCase, _pattern.Substring(pos, cch)));
                     break;
 
