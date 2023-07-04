@@ -179,9 +179,7 @@ type MonoConfig = {
      */
     libraryInitializers?: any[];
     /**
-     * A definition of assets to load along with the runtime.
-     *
-     * WIP currently only extensions are defined!
+     * definition of assets to load along with the runtime.
      */
     resources?: ResourceGroups$1;
     /**
