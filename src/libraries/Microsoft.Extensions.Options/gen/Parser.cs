@@ -667,12 +667,20 @@ namespace Microsoft.Extensions.Options.Generators
 
         private void Diag(DiagnosticDescriptor desc, Location? location)
         {
-            _reportDiagnostic(Diagnostic.Create(desc, location, Array.Empty<object?>()));
+            // ignore the diagnostics outside the current compilation
+            if (location?.Kind == LocationKind.SourceFile)
+            {
+                _reportDiagnostic(Diagnostic.Create(desc, location, Array.Empty<object?>()));
+            }
         }
 
         private void Diag(DiagnosticDescriptor desc, Location? location, params object?[]? messageArgs)
         {
-            _reportDiagnostic(Diagnostic.Create(desc, location, messageArgs));
+            // ignore the diagnostics outside the current compilation
+            if (location?.Kind == LocationKind.SourceFile)
+            {
+                _reportDiagnostic(Diagnostic.Create(desc, location, messageArgs));
+            }
         }
     }
 }
