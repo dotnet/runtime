@@ -2914,17 +2914,15 @@ void Compiler::lvaSetStruct(unsigned varNum, ClassLayout* layout, bool unsafeVal
 
         if (layout->IsValueClass())
         {
-            varDsc->lvType                          = layout->GetType();
-            CORINFO_CLASS_HANDLE const classHandle  = layout->GetClassHandle();
-            unsigned const             corinfoFlags = this->info.compCompHnd->getClassAttribs(classHandle);
-            varDsc->SetIsSpan(corinfoFlags & CORINFO_FLG_SPAN);
+            varDsc->lvType = layout->GetType();
 
 #if FEATURE_IMPLICIT_BYREFS
             // Mark implicit byref struct parameters
             if (varDsc->lvIsParam && !varDsc->lvIsStructField)
             {
                 structPassingKind howToReturnStruct;
-                getArgTypeForStruct(classHandle, &howToReturnStruct, this->info.compIsVarArgs, varDsc->lvExactSize());
+                getArgTypeForStruct(layout->GetClassHandle(), &howToReturnStruct, this->info.compIsVarArgs,
+                                    varDsc->lvExactSize());
 
                 if (howToReturnStruct == SPK_ByReference)
                 {
@@ -2961,6 +2959,9 @@ void Compiler::lvaSetStruct(unsigned varNum, ClassLayout* layout, bool unsafeVal
         assert(layout->IsBlockLayout() || (layout->GetSize() != 0));
     }
 
+    unsigned classAttribs = info.compCompHnd->getClassAttribs(layout->GetClassHandle());
+    varDsc->SetIsSpan(classAttribs & CORINFO_FLG_SPAN);
+
     if (!layout->IsBlockLayout())
     {
 #ifndef TARGET_64BIT
@@ -2980,8 +2981,6 @@ void Compiler::lvaSetStruct(unsigned varNum, ClassLayout* layout, bool unsafeVal
             varDsc->lvStructDoubleAlign = 1;
         }
 #endif // not TARGET_64BIT
-
-        unsigned classAttribs = info.compCompHnd->getClassAttribs(layout->GetClassHandle());
 
         // Check whether this local is an unsafe value type and requires GS cookie protection.
         // GS checks require the stack to be re-ordered, which can't be done with EnC.
