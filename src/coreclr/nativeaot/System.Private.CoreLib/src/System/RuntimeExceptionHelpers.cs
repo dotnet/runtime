@@ -123,12 +123,6 @@ namespace System
             {
                 case RhFailFastReason.InternalError:
                     return "Runtime internal error";
-                case RhFailFastReason.UnhandledException_ExceptionDispatchNotAllowed:
-                    return "Unhandled exception: no handler found before escaping a finally clause or other fail-fast scope.";
-                case RhFailFastReason.UnhandledException_CallerDidNotHandle:
-                    return "Unhandled exception: no handler found in calling method.";
-                case RhFailFastReason.ClassLibDidNotTranslateExceptionID:
-                    return "Unable to translate failure into a classlib-specific exception object.";
                 case RhFailFastReason.UnhandledException:
                     return "Unhandled exception: a managed exception was not handled before reaching unmanaged code.";
                 case RhFailFastReason.UnhandledExceptionFromPInvoke:
@@ -243,13 +237,10 @@ namespace System
             // Try to map the failure into a HRESULT that makes sense
             int errorCode = exception != null ? exception.HResult : reason switch
             {
-                RhFailFastReason.EnvironmentFailFast => HResults.COR_E_APPLICATION,
-                RhFailFastReason.InternalError or
-                RhFailFastReason.ClassLibDidNotTranslateExceptionID => HResults.COR_E_EXECUTIONENGINE,
+                RhFailFastReason.EnvironmentFailFast => HResults.COR_E_FAILFAST,
+                RhFailFastReason.InternalError  => HResults.COR_E_EXECUTIONENGINE,
                 RhFailFastReason.UnhandledException or
-                RhFailFastReason.UnhandledExceptionFromPInvoke or
-                RhFailFastReason.UnhandledException_ExceptionDispatchNotAllowed or
-                RhFailFastReason.UnhandledException_CallerDidNotHandle => HResults.E_ACCESSDENIED,
+                RhFailFastReason.UnhandledExceptionFromPInvoke => HResults.E_ACCESSDENIED,
                 _ => HResults.E_FAIL
             };
 

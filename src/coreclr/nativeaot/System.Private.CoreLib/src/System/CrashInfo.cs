@@ -103,10 +103,10 @@ namespace System
         /// <returns>true - success, false - out of triage buffer space</returns>
         private bool WriteHeader(RhFailFastReason reason, string message)
         {
-            if (!WriteValue("version"u8, "1.0.0"))
+            if (!WriteValue("version"u8, "1.0.0"u8))
                 return false;
 
-            if (!WriteValue("runtime"u8, new ReadOnlySpan<byte>(RuntimeImports.RhGetRuntimeVersion(out int cb), cb)))
+            if (!WriteValue("runtime"u8, new ReadOnlySpan<byte>(RuntimeImports.RhGetRuntimeVersion(out int cbLength), cbLength)))
                 return false;
 
             if (!WriteValue("runtime_type"u8, (int)RuntimeType.NativeAOT))
@@ -115,12 +115,9 @@ namespace System
             CrashReason crashReason = reason switch
             {
                 RhFailFastReason.EnvironmentFailFast => CrashReason.EnvironmentFailFast,
-                RhFailFastReason.InternalError or
-                RhFailFastReason.ClassLibDidNotTranslateExceptionID => CrashReason.InternalFailFast,
+                RhFailFastReason.InternalError => CrashReason.InternalFailFast,
                 RhFailFastReason.UnhandledException or
-                RhFailFastReason.UnhandledExceptionFromPInvoke or
-                RhFailFastReason.UnhandledException_ExceptionDispatchNotAllowed or
-                RhFailFastReason.UnhandledException_CallerDidNotHandle => CrashReason.UnhandledException,
+                RhFailFastReason.UnhandledExceptionFromPInvoke => CrashReason.UnhandledException,
                 _ => CrashReason.Unknown,
             };
 
@@ -255,32 +252,46 @@ namespace System
             return true;
         }
 
-        private bool WriteHexValue(ReadOnlySpan<byte> key, ulong value) => WriteValue(key, $"0x{value:X}");
+        private bool WriteHexValue(ReadOnlySpan<byte> key, ulong value) => WriteValue(key, $"0x{value:X}".AsSpan());
 
-        private bool WriteHexValue(ReadOnlySpan<byte> key, int value) => WriteValue(key, $"0x{value:X}");
+        private bool WriteHexValue(ReadOnlySpan<byte> key, int value) => WriteValue(key, $"0x{value:X}".AsSpan());
 
-        private bool WriteValue(ReadOnlySpan<byte> key, int value) => WriteValue(key, value.ToString());
+        private bool WriteValue(ReadOnlySpan<byte> key, int value) => WriteValue(key, $"{value}".AsSpan());
 
         private bool WriteValue(ReadOnlySpan<byte> key, string value, int max = int.MaxValue)
         {
-            // Escape the special JSON characters. It is done here and not at any lower level
-            // because this function is the only one that could be passed a string that needs
-            // escape and the lower level functions actually need to write double quotes.
-            StringBuilder sb = new StringBuilder();
+            if (!OpenValue(key, '"'))
+                return false;
+
+            // Escape the special JSON characters.
+            int count = 0;
             foreach (char c in value)
             {
+                // Have we reached the max number of chars?
+                if (++count > max)
+                    break;
+
                 if (char.IsControl(c) || c == '"' || c == '\\')
                 {
-                    sb.Append($"\\u{c:X4}");
+                    if (!WriteChars($"\\u{((ushort)c):X4}".AsSpan()))
+                        return false;
                 }
                 else
                 {
-                    sb.Append(c);
+                    if (!WriteChar(c))
+                        return false;
                 }
             }
+
+            CloseValue('"');
+            return true;
+        }
+
+        private bool WriteValue(ReadOnlySpan<byte> key, ReadOnlySpan<char> value)
+        {
             if (!OpenValue(key, '"'))
                 return false;
-            if (!WriteChars(sb.ToString(), max))
+            if (!WriteChars(value))
                 return false;
             CloseValue('"');
             return true;
@@ -339,16 +350,15 @@ namespace System
 
         private bool WriteChar(char source) => WriteChars(new ReadOnlySpan<char>(source));
 
-        private bool WriteChars(ReadOnlySpan<char> chars, int max = int.MaxValue)
+        private bool WriteChars(ReadOnlySpan<char> chars)
         {
             int size = Encoding.UTF8.GetByteCount(chars);
-            size = Math.Min(size, max);
             Span<byte> destination = AllocBuffer(size);
             if (destination.IsEmpty)
             {
                 return false;
             }
-            Encoding.UTF8.GetBytes(chars.Slice(0, size), destination);
+            Encoding.UTF8.GetBytes(chars, destination);
             return true;
         }
 
