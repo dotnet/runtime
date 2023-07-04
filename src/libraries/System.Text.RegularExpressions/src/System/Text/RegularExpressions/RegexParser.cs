@@ -334,7 +334,7 @@ namespace System.Text.RegularExpressions
 
                     if (isQuantifier)
                     {
-                        _unit = RegexNode.CreateOneWithCaseConversion(CharAt(endpos - 1), _options, _culture, ref _caseBehavior);
+                        _unit = RegexNode.CreateOneWithCaseConversion(_pattern[endpos - 1], _options, _culture, ref _caseBehavior);
                     }
                 }
 
@@ -578,7 +578,7 @@ namespace System.Text.RegularExpressions
                 {
                     charClass!.Negate = true;
                 }
-                if ((_options & RegexOptions.ECMAScript) != 0 && CharAt(_currentPos) == ']')
+                if ((_options & RegexOptions.ECMAScript) != 0 && _pattern[_currentPos] == ']')
                 {
                     firstChar = false;
                 }
@@ -2093,7 +2093,7 @@ namespace System.Text.RegularExpressions
             Debug.Assert(CharsRight() > 0, "The current reading position must not be at the end of the pattern");
 
             int startpos = _currentPos;
-            char ch = CharAt(startpos);
+            char ch = _pattern[startpos];
             if (ch != '{')
             {
                 return ch <= '{' && Category[ch] >= Q;
@@ -2101,7 +2101,7 @@ namespace System.Text.RegularExpressions
 
             int pos = startpos;
             int nChars = CharsRight();
-            while (--nChars > 0 && (uint)((ch = CharAt(++pos)) - '0') <= 9) ;
+            while (--nChars > 0 && (uint)((ch = _pattern[++pos]) - '0') <= 9) ;
 
             if (nChars == 0 || pos - startpos == 1)
             {
@@ -2118,7 +2118,7 @@ namespace System.Text.RegularExpressions
                 return false;
             }
 
-            while (--nChars > 0 && (uint)((ch = CharAt(++pos)) - '0') <= 9) ;
+            while (--nChars > 0 && (uint)((ch = _pattern[++pos]) - '0') <= 9) ;
 
             return nChars > 0 && ch == '}';
         }
@@ -2267,9 +2267,6 @@ namespace System.Text.RegularExpressions
 
         /// <summary>Zaps to a specific parsing position.</summary>
         private void Textto(int pos) => _currentPos = pos;
-
-        /// <summary>Returns the char left of the current parsing position.</summary>
-        private char CharAt(int i) => _pattern[i];
 
         /// <summary>Returns the char right of the current parsing position.</summary>
         private char RightChar() => _pattern[_currentPos];
