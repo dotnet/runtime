@@ -1837,7 +1837,7 @@ arg_set_val (CallContext *ccontext, ArgInfo *ainfo, gpointer src)
 gpointer
 mono_arch_get_interp_native_call_info (MonoMemoryManager *mem_manager, MonoMethodSignature *sig)
 {
-    CallInfo *cinfo = get_call_info (NULL, sig);
+	CallInfo *cinfo = get_call_info (NULL, sig);
 	if (mem_manager) {
 		int size = call_info_size (sig);
 		gpointer res = mono_mem_manager_alloc0 (mem_manager, size);
