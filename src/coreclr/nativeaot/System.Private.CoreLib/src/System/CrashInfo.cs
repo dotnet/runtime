@@ -271,9 +271,19 @@ namespace System
                 if (++count > max)
                     break;
 
-                if (char.IsControl(c) || c == '"' || c == '\\')
+                if (c < 0x20)
                 {
                     if (!WriteChars($"\\u{((ushort)c):X4}".AsSpan()))
+                        return false;
+                }
+                else if (c == '"')
+                {
+                    if (!WriteBytes("\\\""u8))
+                        return false;
+                }
+                else if (c == '\\')
+                {
+                    if (!WriteBytes("\\\\"u8))
                         return false;
                 }
                 else
