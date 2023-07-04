@@ -8931,6 +8931,7 @@ private:
     }
 #endif // FEATURE_SIMD
 
+public:
     // Similiar to roundUpSIMDSize, but for General Purpose Registers (GPR)
     unsigned int roundUpGPRSize(unsigned size)
     {
@@ -8945,7 +8946,6 @@ private:
         return size; // 2, 1, 0
     }
 
-public:
     enum UnrollKind
     {
         Memset,

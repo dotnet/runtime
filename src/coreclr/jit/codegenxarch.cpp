@@ -3276,7 +3276,7 @@ void CodeGen::genCodeForInitBlkUnroll(GenTreeBlk* node)
 
         // Round up to the closest power of two, but make sure it's not larger
         // than the register we used for the main loop
-        regSize = min(regSize, roundUpGPRSize(size));
+        regSize = min(regSize, compiler->roundUpGPRSize(size));
 
         unsigned shiftBack = regSize - size;
         assert(shiftBack <= regSize);
@@ -3560,7 +3560,7 @@ void CodeGen::genCodeForCpBlkUnroll(GenTreeBlk* node)
 
             // Round up to the closest power of two, but make sure it's not larger
             // than the register we used for the main loop
-            regSize = min(regSize, roundUpGPRSize(size));
+            regSize = min(regSize, compiler->roundUpGPRSize(size));
 
             unsigned shiftBack = regSize - size;
             assert(shiftBack <= regSize);
