@@ -240,7 +240,7 @@ namespace System.Text.RegularExpressions
                     vsb.Append(parser.ScanCharEscape());
                 }
 
-                i = parser.Textpos();
+                i = parser._currentPos;
                 int lastpos = i;
                 while (i < input.Length && input[i] != '\\')
                 {
@@ -288,7 +288,7 @@ namespace System.Text.RegularExpressions
 
                 ScanBlank();
 
-                int startpos = Textpos();
+                int startpos = _currentPos;
 
                 // move past all of the normal characters.  We'll stop when we hit some kind of control character,
                 // or if IgnorePatternWhiteSpace is on, we'll stop when we see some whitespace.
@@ -303,7 +303,7 @@ namespace System.Text.RegularExpressions
                         MoveRight();
                 }
 
-                int endpos = Textpos();
+                int endpos = _currentPos;
 
                 ScanBlank();
 
@@ -458,9 +458,9 @@ namespace System.Text.RegularExpressions
                             break;
 
                         case '{':
-                            startpos = Textpos();
+                            startpos = _currentPos;
                             max = min = ScanDecimal();
-                            if (startpos < Textpos())
+                            if (startpos < _currentPos)
                             {
                                 if (CharsRight() > 0 && RightChar() == ',')
                                 {
@@ -469,7 +469,7 @@ namespace System.Text.RegularExpressions
                                 }
                             }
 
-                            if (startpos == Textpos() || CharsRight() == 0 || _pattern[_currentPos++] != '}')
+                            if (startpos == _currentPos || CharsRight() == 0 || _pattern[_currentPos++] != '}')
                             {
                                 AddConcatenate();
                                 Textto(startpos - 1);
@@ -532,7 +532,7 @@ namespace System.Text.RegularExpressions
                     break;
                 }
 
-                int startpos = Textpos();
+                int startpos = _currentPos;
 
                 while (c > 0 && RightChar() != '$')
                 {
@@ -540,7 +540,7 @@ namespace System.Text.RegularExpressions
                     c--;
                 }
 
-                AddConcatenate(startpos, Textpos() - startpos, true);
+                AddConcatenate(startpos, _currentPos - startpos, true);
 
                 if (c > 0)
                 {
@@ -688,7 +688,7 @@ namespace System.Text.RegularExpressions
                     // It currently doesn't do anything other than skip the whole thing!
                     if (CharsRight() > 0 && RightChar() == ':' && !inRange)
                     {
-                        int savePos = Textpos();
+                        int savePos = _currentPos;
 
                         MoveRight();
                         if (CharsRight() < 2 || _pattern[_currentPos++] != ':' || _pattern[_currentPos++] != ']')
@@ -980,7 +980,7 @@ namespace System.Text.RegularExpressions
                     case '(':
                         // conditional alternation construct (?(...) | )
 
-                        int parenPos = Textpos();
+                        int parenPos = _currentPos;
                         if (CharsRight() > 0)
                         {
                             ch = RightChar();
@@ -1232,7 +1232,7 @@ namespace System.Text.RegularExpressions
         {
             Debug.Assert(CharsRight() > 0, "The current reading position must not be at the end of the pattern");
 
-            int backpos = Textpos();
+            int backpos = _currentPos;
             char close = '\0';
             bool angled = false;
             char ch = RightChar();
@@ -1293,7 +1293,7 @@ namespace System.Text.RegularExpressions
                 {
                     int capnum = -1;
                     int newcapnum = ch - '0';
-                    int pos = Textpos() - 1;
+                    int pos = _currentPos - 1;
                     while (newcapnum <= _captop)
                     {
                         if (IsCaptureSlot(newcapnum) && (_caps == null || (int)_caps[newcapnum]! < pos))
@@ -1373,7 +1373,7 @@ namespace System.Text.RegularExpressions
 
             char ch = RightChar();
             bool angled;
-            int backpos = Textpos();
+            int backpos = _currentPos;
             int lastEndPos = backpos;
 
             // Note angle
@@ -1401,7 +1401,7 @@ namespace System.Text.RegularExpressions
                     if (IsCaptureSlot(newcapnum))
                     {
                         capnum = newcapnum;
-                        lastEndPos = Textpos();
+                        lastEndPos = _currentPos;
                     }
 
                     while (CharsRight() > 0 && (ch = RightChar()) >= '0' && ch <= '9')
@@ -1418,7 +1418,7 @@ namespace System.Text.RegularExpressions
                         if (IsCaptureSlot(newcapnum))
                         {
                             capnum = newcapnum;
-                            lastEndPos = Textpos();
+                            lastEndPos = _currentPos;
                         }
                     }
                     Textto(lastEndPos);
@@ -1499,7 +1499,7 @@ namespace System.Text.RegularExpressions
          */
         private string ScanCapname()
         {
-            int startpos = Textpos();
+            int startpos = _currentPos;
 
             while (CharsRight() > 0)
             {
@@ -1510,7 +1510,7 @@ namespace System.Text.RegularExpressions
                 }
             }
 
-            return _pattern.Substring(startpos, Textpos() - startpos);
+            return _pattern.Substring(startpos, _currentPos - startpos);
         }
 
 
@@ -1731,7 +1731,7 @@ namespace System.Text.RegularExpressions
                 throw MakeException(RegexParseError.MalformedUnicodePropertyEscape, SR.MalformedUnicodePropertyEscape);
             }
 
-            int startpos = Textpos();
+            int startpos = _currentPos;
             while (CharsRight() > 0)
             {
                 ch = _pattern[_currentPos++];
@@ -1742,7 +1742,7 @@ namespace System.Text.RegularExpressions
                 }
             }
 
-            string capname = _pattern.Substring(startpos, Textpos() - startpos);
+            string capname = _pattern.Substring(startpos, _currentPos - startpos);
 
             if (CharsRight() == 0 || _pattern[_currentPos++] != '}')
             {
@@ -1788,7 +1788,7 @@ namespace System.Text.RegularExpressions
 
             while (CharsRight() > 0)
             {
-                int pos = Textpos();
+                int pos = _currentPos;
                 char ch = _pattern[_currentPos++];
                 switch (ch)
                 {
@@ -2092,7 +2092,7 @@ namespace System.Text.RegularExpressions
         {
             Debug.Assert(CharsRight() > 0, "The current reading position must not be at the end of the pattern");
 
-            int startpos = Textpos();
+            int startpos = _currentPos;
             char ch = CharAt(startpos);
             if (ch != '{')
             {
@@ -2264,9 +2264,6 @@ namespace System.Text.RegularExpressions
         /// <summary>Fills in a RegexParseException</summary>
         private RegexParseException MakeException(RegexParseError error, string message) =>
             new RegexParseException(error, _currentPos, SR.Format(SR.MakeException, _pattern, _currentPos, message));
-
-        /// <summary>Returns the current parsing position.</summary>
-        private int Textpos() => _currentPos;
 
         /// <summary>Zaps to a specific parsing position.</summary>
         private void Textto(int pos) => _currentPos = pos;
