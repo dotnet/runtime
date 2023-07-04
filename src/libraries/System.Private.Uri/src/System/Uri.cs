@@ -1737,6 +1737,7 @@ namespace System
             MoreInfo selfInfo = _info.MoreInfo;
             MoreInfo otherInfo = obj._info.MoreInfo;
 
+            // Fragment AND UserInfo (for non-mailto URIs) are ignored
             UriComponents components = UriComponents.HttpRequestUrl;
 
             if (_syntax.InFact(UriSyntaxFlags.MailToLikeUri))
@@ -1747,7 +1748,6 @@ namespace System
                 components |= UriComponents.UserInfo;
             }
 
-            // Fragment AND UserInfo are ignored
             string selfUrl = selfInfo.RemoteUrl ??= GetParts(components, UriFormat.SafeUnescaped);
             string otherUrl = otherInfo.RemoteUrl ??= obj.GetParts(components, UriFormat.SafeUnescaped);
 
