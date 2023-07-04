@@ -95,6 +95,7 @@ export function mapBootConfigToMonoConfig(moduleConfig: MonoConfigInternal, appl
     moduleConfig.remoteSources = (resourceLoader.bootConfig.resources as any).remoteSources;
     moduleConfig.assetsHash = resourceLoader.bootConfig.resources.hash;
     moduleConfig.assets = assets;
+    moduleConfig.extensions = resourceLoader.bootConfig.extensions;
     moduleConfig.resources = {
         extensions: resources.extensions
     };

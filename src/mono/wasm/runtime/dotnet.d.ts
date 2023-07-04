@@ -184,6 +184,12 @@ type MonoConfig = {
      * WIP currently only extensions are defined!
      */
     resources?: ResourceGroups$1;
+    /**
+     * config extensions declared in MSBuild items @(WasmBootConfigExtension)
+     */
+    extensions?: {
+        [name: string]: any;
+    };
 };
 type ResourceExtensions = {
     [extensionName: string]: ResourceList$1;
@@ -360,6 +366,9 @@ interface BootJsonData {
     readonly pthreadPoolSize: number;
     modifiableAssemblies: string | null;
     aspnetCoreBrowserTools: string | null;
+    readonly extensions?: {
+        [name: string]: any;
+    };
 }
 type BootJsonDataExtension = {
     [extensionName: string]: ResourceList;

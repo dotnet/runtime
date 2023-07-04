@@ -21,6 +21,8 @@ export interface BootJsonData {
     // These properties are tacked on, and not found in the boot.json file
     modifiableAssemblies: string | null;
     aspnetCoreBrowserTools: string | null;
+
+    readonly extensions?: { [name: string]: any };
 }
 
 export type BootJsonDataExtension = { [extensionName: string]: ResourceList };

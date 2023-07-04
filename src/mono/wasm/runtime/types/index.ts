@@ -117,11 +117,14 @@ export type MonoConfig = {
     libraryInitializers?: any[];
 
     /**
-     * A definition of assets to load along with the runtime.
-     * 
-     * WIP currently only extensions are defined!
+     * definition of assets to load along with the runtime.
      */
     resources?: ResourceGroups;
+
+    /**
+     * config extensions declared in MSBuild items @(WasmBootConfigExtension)
+     */
+    extensions?: { [name: string]: any };
 };
 
 export type ResourceExtensions = { [extensionName: string]: ResourceList };
