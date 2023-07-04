@@ -2939,13 +2939,14 @@ CorInfoHFAElemType MethodContext::repGetHFAType(CORINFO_CLASS_HANDLE clsHnd)
     return (CorInfoHFAElemType)value;
 }
 
-void MethodContext::recGetMethodInfo(CORINFO_METHOD_HANDLE ftn,
-                                     CORINFO_METHOD_INFO*  info,
-                                     bool                  result,
-                                     DWORD                 exceptionCode)
+void MethodContext::recGetMethodInfo(CORINFO_METHOD_HANDLE  ftn,
+                                     CORINFO_METHOD_INFO*   info,
+                                     CORINFO_CONTEXT_HANDLE context,
+                                     bool                   result,
+                                     DWORD                  exceptionCode)
 {
     if (GetMethodInfo == nullptr)
-        GetMethodInfo = new LightWeightMap<DWORDLONG, Agnostic_GetMethodInfo>();
+        GetMethodInfo = new LightWeightMap<DLDL, Agnostic_GetMethodInfo>();
 
     Agnostic_GetMethodInfo value;
     ZeroMemory(&value, sizeof(value));
@@ -2967,16 +2968,18 @@ void MethodContext::recGetMethodInfo(CORINFO_METHOD_HANDLE ftn,
     value.result        = result;
     value.exceptionCode = (DWORD)exceptionCode;
 
-    DWORDLONG key = CastHandle(ftn);
+    DLDL key;
+    key.A = CastHandle(ftn);
+    key.B = CastHandle(context);
     GetMethodInfo->Add(key, value);
     DEBUG_REC(dmpGetMethodInfo(key, value));
 }
-void MethodContext::dmpGetMethodInfo(DWORDLONG key, const Agnostic_GetMethodInfo& value)
+void MethodContext::dmpGetMethodInfo(DLDL key, const Agnostic_GetMethodInfo& value)
 {
     if (value.result)
     {
-        printf("GetMethodInfo key ftn-%016" PRIX64 ", value res-%u ftn-%016" PRIX64 " scp-%016" PRIX64 " ilo-%u ils-%u ms-%u ehc-%u opt-%08X rk-%u args-%s locals-%s excp-%08X",
-            key, value.result, value.info.ftn, value.info.scope, value.info.ILCode_offset, value.info.ILCodeSize,
+        printf("GetMethodInfo key ftn-%016" PRIX64 " ctx-%016" PRIX64 ", value res-%u ftn-%016" PRIX64 " scp-%016" PRIX64 " ilo-%u ils-%u ms-%u ehc-%u opt-%08X rk-%u args-%s locals-%s excp-%08X",
+            key.A, key.B, value.result, value.info.ftn, value.info.scope, value.info.ILCode_offset, value.info.ILCodeSize,
             value.info.maxStack, value.info.EHcount, value.info.options, value.info.regionKind,
             SpmiDumpHelper::DumpAgnostic_CORINFO_SIG_INFO(value.info.args, GetMethodInfo, SigInstHandleMap).c_str(),
             SpmiDumpHelper::DumpAgnostic_CORINFO_SIG_INFO(value.info.locals, GetMethodInfo, SigInstHandleMap).c_str(),
@@ -2984,14 +2987,16 @@ void MethodContext::dmpGetMethodInfo(DWORDLONG key, const Agnostic_GetMethodInfo
     }
     else
     {
-        printf("GetMethodInfo key ftn-%016" PRIX64 ", value res-%u excp-%08X",
-            key, value.result, value.exceptionCode);
+        printf("GetMethodInfo key ftn-%016" PRIX64 " ctx-%016" PRIX64 ", value res-%u excp-%08X",
+            key.A, key.B, value.result, value.exceptionCode);
     }
 }
-bool MethodContext::repGetMethodInfo(CORINFO_METHOD_HANDLE ftn, CORINFO_METHOD_INFO* info, DWORD* exceptionCode)
+bool MethodContext::repGetMethodInfo(CORINFO_METHOD_HANDLE ftn, CORINFO_METHOD_INFO* info, CORINFO_CONTEXT_HANDLE context, DWORD* exceptionCode)
 {
-    DWORDLONG key = CastHandle(ftn);
-    Agnostic_GetMethodInfo value = LookupByKeyOrMiss(GetMethodInfo, key, ": key %016" PRIX64 "", key);
+    DLDL key;
+    key.A = CastHandle(ftn);
+    key.B = CastHandle(context);
+    Agnostic_GetMethodInfo value = LookupByKeyOrMiss(GetMethodInfo, key, ": key %016" PRIX64 "", key.A);
 
     DEBUG_REP(dmpGetMethodInfo(key, value));
 

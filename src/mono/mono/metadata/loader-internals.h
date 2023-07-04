@@ -309,9 +309,6 @@ mono_alc_get_all_loaded_assemblies (void);
 GPtrArray*
 mono_alc_get_all (void);
 
-MONO_API void
-mono_loader_save_bundled_library (int fd, uint64_t offset, uint64_t size, const char *destfname);
-
 MonoMemoryManager *
 mono_mem_manager_new (MonoAssemblyLoadContext **alcs, int nalcs, gboolean collectible);
 

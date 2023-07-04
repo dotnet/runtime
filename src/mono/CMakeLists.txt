@@ -1,8 +1,4 @@
-cmake_minimum_required(VERSION 3.14.5)
-
-if (CMAKE_VERSION VERSION_GREATER 3.15 OR CMAKE_VERSION VERSION_EQUAL 3.15)
-  cmake_policy(SET CMP0091 NEW)
-endif()
+cmake_minimum_required(VERSION 3.20)
 
 project(mono)
 
