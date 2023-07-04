@@ -28,18 +28,21 @@ namespace System
         // (This list is not likely to change.)
         private static bool IsUtcAlias (string id)
         {
-            switch (char.ToLowerInvariant(id[0]))
+            switch ((ushort)id[0])
             {
-                case 'e':
+                case 69: // e
+                case 101: // E
                     return string.Equals(id, "Etc/UTC", StringComparison.OrdinalIgnoreCase) ||
                            string.Equals(id, "Etc/Universal", StringComparison.OrdinalIgnoreCase) ||
                            string.Equals(id, "Etc/UTC", StringComparison.OrdinalIgnoreCase) ||
                            string.Equals(id, "Etc/Zulu", StringComparison.OrdinalIgnoreCase);
-                case 'u':
+                case 85: // u
+                case 117: // U
                     return string.Equals(id, "UCT", StringComparison.OrdinalIgnoreCase) ||
                            string.Equals(id, "UTC", StringComparison.OrdinalIgnoreCase) ||
                            string.Equals(id, "Universal", StringComparison.OrdinalIgnoreCase);
-                case 'z':
+                case 90: // z
+                case 122: // Z
                     return string.Equals(id, "Zulu", StringComparison.OrdinalIgnoreCase);
             }
 
