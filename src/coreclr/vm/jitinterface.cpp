@@ -8792,13 +8792,6 @@ CORINFO_CLASS_HANDLE CEEInfo::getDefaultComparerClassHelper(CORINFO_CLASS_HANDLE
     // We need to find the appropriate instantiation
     Instantiation inst(&elemTypeHnd, 1);
 
-    // If T implements IComparable<T>
-    if (elemTypeHnd.CanCastTo(TypeHandle(CoreLibBinder::GetClass(CLASS__ICOMPARABLEGENERIC)).Instantiate(inst)))
-    {
-        TypeHandle resultTh = ((TypeHandle)CoreLibBinder::GetClass(CLASS__GENERIC_COMPARER)).Instantiate(inst);
-        return CORINFO_CLASS_HANDLE(resultTh.GetMethodTable());
-    }
-
     // Nullable<T>
     if (Nullable::IsNullableType(elemTypeHnd))
     {
@@ -8817,6 +8810,13 @@ CORINFO_CLASS_HANDLE CEEInfo::getDefaultComparerClassHelper(CORINFO_CLASS_HANDLE
     if (elemTypeHnd.IsCanonicalSubtype())
     {
         return NULL;
+    }
+
+    // If T implements IComparable<T>
+    if (elemTypeHnd.CanCastTo(TypeHandle(CoreLibBinder::GetClass(CLASS__ICOMPARABLEGENERIC)).Instantiate(inst)))
+    {
+        TypeHandle resultTh = ((TypeHandle)CoreLibBinder::GetClass(CLASS__GENERIC_COMPARER)).Instantiate(inst);
+        return CORINFO_CLASS_HANDLE(resultTh.GetMethodTable());
     }
 
     // Default case
@@ -8863,13 +8863,6 @@ CORINFO_CLASS_HANDLE CEEInfo::getDefaultEqualityComparerClassHelper(CORINFO_CLAS
     // We need to find the appropriate instantiation
     Instantiation inst(&elemTypeHnd, 1);
 
-    // If T implements IEquatable<T>
-    if (elemTypeHnd.CanCastTo(TypeHandle(CoreLibBinder::GetClass(CLASS__IEQUATABLEGENERIC)).Instantiate(inst)))
-    {
-        TypeHandle resultTh = ((TypeHandle)CoreLibBinder::GetClass(CLASS__GENERIC_EQUALITYCOMPARER)).Instantiate(inst);
-        return CORINFO_CLASS_HANDLE(resultTh.GetMethodTable());
-    }
-
     // Nullable<T>
     if (Nullable::IsNullableType(elemTypeHnd))
     {
@@ -8891,6 +8884,13 @@ CORINFO_CLASS_HANDLE CEEInfo::getDefaultEqualityComparerClassHelper(CORINFO_CLAS
     if (elemTypeHnd.IsCanonicalSubtype())
     {
         return NULL;
+    }
+
+    // If T implements IEquatable<T>
+    if (elemTypeHnd.CanCastTo(TypeHandle(CoreLibBinder::GetClass(CLASS__IEQUATABLEGENERIC)).Instantiate(inst)))
+    {
+        TypeHandle resultTh = ((TypeHandle)CoreLibBinder::GetClass(CLASS__GENERIC_EQUALITYCOMPARER)).Instantiate(inst);
+        return CORINFO_CLASS_HANDLE(resultTh.GetMethodTable());
     }
 
     // Default case
