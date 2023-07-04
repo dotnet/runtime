@@ -419,7 +419,7 @@ namespace System.Text.RegularExpressions
                                 MakeException(RegexParseError.NestedQuantifiersNotParenthesized, SR.Format(SR.NestedQuantifiersNotParenthesized, ch)) :
                                 MakeException(RegexParseError.QuantifierAfterNothing, SR.Format(SR.QuantifierAfterNothing, ch));
                         }
-                        MoveLeft();
+                        --_currentPos;
                         break;
 
                     default:
@@ -676,7 +676,7 @@ namespace System.Text.RegularExpressions
                             continue;
 
                         default:
-                            MoveLeft();
+                            --_currentPos;
                             ch = ScanCharEscape(); // non-literal character
                             translatedChar = true;
                             break; // this break will only break out of the switch
@@ -867,7 +867,7 @@ namespace System.Text.RegularExpressions
                                 break;
 
                             default:
-                                MoveLeft();
+                                --_currentPos;
                                 int capnum = -1;
                                 int uncapnum = -1;
                                 bool proceed = false;
@@ -1042,7 +1042,7 @@ namespace System.Text.RegularExpressions
                         break;
 
                     default:
-                        MoveLeft();
+                        --_currentPos;
 
                         nodeType = RegexNodeKind.Group;
                         // Disallow options in the children of a testgroup node
@@ -1505,7 +1505,7 @@ namespace System.Text.RegularExpressions
             {
                 if (!RegexCharClass.IsBoundaryWordChar(_pattern[_currentPos++]))
                 {
-                    MoveLeft();
+                    --_currentPos;
                     break;
                 }
             }
@@ -1680,7 +1680,7 @@ namespace System.Text.RegularExpressions
 
             if (ch >= '0' && ch <= '7')
             {
-                MoveLeft();
+                --_currentPos;
                 return ScanOctal();
             }
 
@@ -1737,7 +1737,7 @@ namespace System.Text.RegularExpressions
                 ch = _pattern[_currentPos++];
                 if (!(RegexCharClass.IsBoundaryWordChar(ch) || ch == '-'))
                 {
-                    MoveLeft();
+                    --_currentPos;
                     break;
                 }
             }
@@ -1802,7 +1802,7 @@ namespace System.Text.RegularExpressions
                     case '#':
                         if ((_options & RegexOptions.IgnorePatternWhitespace) != 0)
                         {
-                            MoveLeft();
+                            --_currentPos;
                             ScanBlank();
                         }
                         break;
@@ -1822,7 +1822,7 @@ namespace System.Text.RegularExpressions
                         if (CharsRight() >= 2 && RightChar(1) == '#' && RightChar() == '?')
                         {
                             // we have a comment (?#
-                            MoveLeft();
+                            --_currentPos;
                             ScanBlank();
                         }
                         else
@@ -2270,9 +2270,6 @@ namespace System.Text.RegularExpressions
 
         /// <summary>Moves the current position to the right.</summary>
         private void MoveRight() => _currentPos++;
-
-        /// <summary>Moves the current parsing position one to the left.</summary>
-        private void MoveLeft() => --_currentPos;
 
         /// <summary>Returns the char left of the current parsing position.</summary>
         private char CharAt(int i) => _pattern[i];
