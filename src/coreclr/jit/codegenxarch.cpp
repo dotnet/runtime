@@ -3274,7 +3274,7 @@ void CodeGen::genCodeForInitBlkUnroll(GenTreeBlk* node)
     {
         assert(size <= REGSIZE_BYTES);
 
-        // Round down to the closest power of two (1, 2 or 4)
+        // Round down to the closest power of two
         regSize = 1 << BitOperations::Log2(size);
 
         unsigned shiftBack = regSize - size;
@@ -3557,7 +3557,7 @@ void CodeGen::genCodeForCpBlkUnroll(GenTreeBlk* node)
         {
             assert(size <= REGSIZE_BYTES);
 
-            // Round down to the closest power of two (1, 2 or 4)
+            // Round down to the closest power of two
             regSize = 1 << BitOperations::Log2(size);
 
             unsigned shiftBack = regSize - size;
