@@ -167,6 +167,35 @@ namespace System.Data.ProviderBase
             return destination;
         }
 
+        internal Span<byte> ReadBytes(int offset, Span<byte> destination)
+        {
+            offset += BaseOffset;
+            Validate(offset, destination.Length);
+            Debug.Assert(0 == offset % ADP.PtrSize, "invalid alignment");
+            Debug.Assert(null != destination, "null destination");
+
+            bool mustRelease = false;
+
+            try
+            {
+                DangerousAddRef(ref mustRelease);
+
+                IntPtr ptr = ADP.IntPtrOffset(DangerousGetHandle(), offset);
+                unsafe
+                {
+                    new ReadOnlySpan<byte>(ptr.ToPointer(), destination.Length).CopyTo(destination);
+                }
+            }
+            finally
+            {
+                if (mustRelease)
+                {
+                    DangerousRelease();
+                }
+            }
+            return destination;
+        }
+
         internal char ReadChar(int offset)
         {
             short value = ReadInt16(offset);
@@ -248,6 +277,33 @@ namespace System.Data.ProviderBase
 
                 IntPtr ptr = ADP.IntPtrOffset(DangerousGetHandle(), offset);
                 Marshal.Copy(ptr, destination, startIndex, length);
+            }
+            finally
+            {
+                if (mustRelease)
+                {
+                    DangerousRelease();
+                }
+            }
+        }
+        internal void ReadInt16Array(int offset, Span<short> destination)
+        {
+            offset += BaseOffset;
+            Validate(offset, 2 * destination.Length);
+            Debug.Assert(0 == offset % ADP.PtrSize, "invalid alignment");
+            Debug.Assert(null != destination, "null destination");
+
+            bool mustRelease = false;
+
+            try
+            {
+                DangerousAddRef(ref mustRelease);
+
+                IntPtr ptr = ADP.IntPtrOffset(DangerousGetHandle(), offset);
+                unsafe
+                {
+                    new ReadOnlySpan<short>(ptr.ToPointer(), destination.Length).CopyTo(destination);
+                }
             }
             finally
             {
@@ -455,6 +511,34 @@ namespace System.Data.ProviderBase
             }
         }
 
+        internal void WriteBytes(int offset, ReadOnlySpan<byte> source)
+        {
+            offset += BaseOffset;
+            Validate(offset, source.Length);
+            Debug.Assert(0 == offset % ADP.PtrSize, "invalid alignment");
+            Debug.Assert(null != source, "null source");
+
+            bool mustRelease = false;
+
+            try
+            {
+                DangerousAddRef(ref mustRelease);
+
+                IntPtr ptr = ADP.IntPtrOffset(DangerousGetHandle(), offset);
+                unsafe
+                {
+                    source.CopyTo(new Span<byte>(ptr.ToPointer(), source.Length));
+                }
+            }
+            finally
+            {
+                if (mustRelease)
+                {
+                    DangerousRelease();
+                }
+            }
+        }
+
         internal void WriteCharArray(int offset, char[] source, int startIndex, int length)
         {
             offset += BaseOffset;
@@ -526,6 +610,34 @@ namespace System.Data.ProviderBase
 
                 IntPtr ptr = ADP.IntPtrOffset(DangerousGetHandle(), offset);
                 Marshal.Copy(source, startIndex, ptr, length);
+            }
+            finally
+            {
+                if (mustRelease)
+                {
+                    DangerousRelease();
+                }
+            }
+        }
+
+        internal void WriteInt16Array(int offset, ReadOnlySpan<short> source)
+        {
+            offset += BaseOffset;
+            Validate(offset, 2 * source.Length);
+            Debug.Assert(0 == offset % ADP.PtrSize, "invalid alignment");
+            Debug.Assert(null != source, "null source");
+
+            bool mustRelease = false;
+
+            try
+            {
+                DangerousAddRef(ref mustRelease);
+
+                IntPtr ptr = ADP.IntPtrOffset(DangerousGetHandle(), offset);
+                unsafe
+                {
+                    source.CopyTo(new Span<short>(ptr.ToPointer(), source.Length));
+                }
             }
             finally
             {
@@ -662,9 +774,9 @@ namespace System.Data.ProviderBase
         internal Guid ReadGuid(int offset)
         {
             // faster than Marshal.PtrToStructure(offset, typeof(Guid))
-            byte[] buffer = new byte[16];
-            ReadBytes(offset, buffer, 0, 16);
-            return new Guid(buffer);
+            Span<byte> spanBuffer = stackalloc byte[16];
+            ReadBytes(offset, spanBuffer);
+            return new Guid(spanBuffer);
         }
         internal void WriteGuid(int offset, Guid value)
         {
@@ -674,60 +786,60 @@ namespace System.Data.ProviderBase
 
         internal DateTime ReadDate(int offset)
         {
-            short[] buffer = new short[3];
-            ReadInt16Array(offset, buffer, 0, 3);
+            Span<short> spanBuffer = stackalloc short[3];
+            ReadInt16Array(offset, spanBuffer.Slice(0, 3));
             return new DateTime(
-                unchecked((ushort)buffer[0]),   // Year
-                unchecked((ushort)buffer[1]),   // Month
-                unchecked((ushort)buffer[2]));  // Day
+                unchecked((ushort)spanBuffer[0]),   // Year
+                unchecked((ushort)spanBuffer[1]),   // Month
+                unchecked((ushort)spanBuffer[2]));  // Day
         }
         internal void WriteDate(int offset, DateTime value)
         {
-            short[] buffer = new short[3] {
+            Span<short> spanBuffer = stackalloc short[3] {
                 unchecked((short)value.Year),
                 unchecked((short)value.Month),
                 unchecked((short)value.Day),
             };
-            WriteInt16Array(offset, buffer, 0, 3);
+            WriteInt16Array(offset, spanBuffer.Slice(0, 3));
         }
 
         internal TimeSpan ReadTime(int offset)
         {
-            short[] buffer = new short[3];
-            ReadInt16Array(offset, buffer, 0, 3);
+            Span<short> spanBuffer = stackalloc short[3];
+            ReadInt16Array(offset, spanBuffer.Slice(0, 3));
             return new TimeSpan(
-                unchecked((ushort)buffer[0]),   // Hours
-                unchecked((ushort)buffer[1]),   // Minutes
-                unchecked((ushort)buffer[2]));  // Seconds
+                unchecked((ushort)spanBuffer[0]),   // Hours
+                unchecked((ushort)spanBuffer[1]),   // Minutes
+                unchecked((ushort)spanBuffer[2]));  // Seconds
         }
         internal void WriteTime(int offset, TimeSpan value)
         {
-            short[] buffer = new short[3] {
+            Span<short> spanBuffer = stackalloc short[3] {
                 unchecked((short)value.Hours),
                 unchecked((short)value.Minutes),
                 unchecked((short)value.Seconds),
             };
-            WriteInt16Array(offset, buffer, 0, 3);
+            WriteInt16Array(offset, spanBuffer.Slice(0, 3));
         }
 
         internal DateTime ReadDateTime(int offset)
         {
-            short[] buffer = new short[6];
-            ReadInt16Array(offset, buffer, 0, 6);
+            Span<short> spanBuffer = stackalloc short[6];
+            ReadInt16Array(offset, spanBuffer.Slice(0, 6));
             int ticks = ReadInt32(offset + 12);
             DateTime value = new DateTime(
-                unchecked((ushort)buffer[0]),  // Year
-                unchecked((ushort)buffer[1]),  // Month
-                unchecked((ushort)buffer[2]),  // Day
-                unchecked((ushort)buffer[3]),  // Hours
-                unchecked((ushort)buffer[4]),  // Minutes
-                unchecked((ushort)buffer[5])); // Seconds
+                unchecked((ushort)spanBuffer[0]),  // Year
+                unchecked((ushort)spanBuffer[1]),  // Month
+                unchecked((ushort)spanBuffer[2]),  // Day
+                unchecked((ushort)spanBuffer[3]),  // Hours
+                unchecked((ushort)spanBuffer[4]),  // Minutes
+                unchecked((ushort)spanBuffer[5])); // Seconds
             return value.AddTicks(ticks / 100);
         }
         internal void WriteDateTime(int offset, DateTime value)
         {
             int ticks = (int)(value.Ticks % 10000000L) * 100;
-            short[] buffer = new short[6] {
+            Span<short> spanBuffer = stackalloc short[6] {
                 unchecked((short)value.Year),
                 unchecked((short)value.Month),
                 unchecked((short)value.Day),
@@ -735,45 +847,52 @@ namespace System.Data.ProviderBase
                 unchecked((short)value.Minute),
                 unchecked((short)value.Second),
             };
-            WriteInt16Array(offset, buffer, 0, 6);
+            WriteInt16Array(offset, spanBuffer.Slice(0, 6));
             WriteInt32(offset + 12, ticks);
         }
 
         internal decimal ReadNumeric(int offset)
         {
-            byte[] bits = new byte[20];
-            ReadBytes(offset, bits, 1, 19);
+            Span<byte> spanBits = stackalloc byte[20];
+            ReadBytes(offset, spanBits.Slice(1, 19));
 
-            int[] buffer = new int[4];
-            buffer[3] = ((int)bits[2]) << 16; // scale
-            if (0 == bits[3])
+            Span<int> spanBuffer = stackalloc int[4];
+            spanBuffer[3] = ((int)spanBits[2]) << 16; // scale
+            if (0 == spanBits[3])
             {
-                buffer[3] |= unchecked((int)0x80000000); //sign
+                spanBuffer[3] |= unchecked((int)0x80000000); //sign
             }
-            buffer[0] = BitConverter.ToInt32(bits, 4);     // low
-            buffer[1] = BitConverter.ToInt32(bits, 8);     // mid
-            buffer[2] = BitConverter.ToInt32(bits, 12);     // high
-            if (0 != BitConverter.ToInt32(bits, 16))
+            spanBuffer[0] = BitConverter.ToInt32(spanBits.Slice(4));     // low
+            spanBuffer[1] = BitConverter.ToInt32(spanBits.Slice(8));     // mid
+            spanBuffer[2] = BitConverter.ToInt32(spanBits.Slice(12));     // high
+            if (0 != BitConverter.ToInt32(spanBits.Slice(16)))
             {
                 throw ADP.NumericToDecimalOverflow();
             }
-            return new decimal(buffer);
+            return new decimal(spanBuffer);
         }
 
         internal void WriteNumeric(int offset, decimal value, byte precision)
         {
             int[] tmp = decimal.GetBits(value);
-            byte[] buffer = new byte[20];
+            Span<byte> spanBuffer = stackalloc byte[20];
 
-            buffer[1] = precision;
-            Buffer.BlockCopy(tmp, 14, buffer, 2, 2); // copy sign and scale
-            buffer[3] = (byte)((0 == buffer[3]) ? 1 : 0); // flip sign for native
-            Buffer.BlockCopy(tmp, 0, buffer, 4, 12);
-            buffer[16] = 0;
-            buffer[17] = 0;
-            buffer[18] = 0;
-            buffer[19] = 0;
-            WriteBytes(offset, buffer, 1, 19);
+            Span<byte> spanByteTmp = MemoryMarshal.Cast<int, byte>(tmp.AsSpan());
+            Span<int> spanIntBuffer = MemoryMarshal.Cast<byte, int>(spanBuffer);
+
+            spanBuffer[1] = precision;
+            //Buffer.BlockCopy(tmp, 14, buffer, 2, 2); // copy sign and scale
+            spanByteTmp.Slice(14, 2).CopyTo(spanBuffer.Slice(2, 2));// copy sign and scale
+
+            spanBuffer[3] = (byte)((0 == spanBuffer[3]) ? 1 : 0); // flip sign for native
+            //Buffer.BlockCopy(tmp, 0, buffer, 4, 12);
+            spanByteTmp.Slice(0, 12).CopyTo(spanBuffer.Slice(4, 12));
+
+            spanBuffer[16] = 0;
+            spanBuffer[17] = 0;
+            spanBuffer[18] = 0;
+            spanBuffer[19] = 0;
+            WriteBytes(offset, spanBuffer.Slice(1, 19));
         }
 
         [ConditionalAttribute("DEBUG")]
