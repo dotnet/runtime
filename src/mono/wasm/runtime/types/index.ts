@@ -108,12 +108,37 @@ export type MonoConfig = {
     loadBootResource?: LoadBootResourceCallback;
 
     /**
-     * exports from registered javascript library modules
+     * exports from library es6 modules
      * 
-     * TODO MF: Describe what could be here
+     * nuget packages can contain wwwroot/*.lib.module.js which are treated as es6 modules
+     * runtime calls 'onRuntimeReady' and pass in runtime API
+     * blazor calls 'beforeStart' and 'afterStarted'
      */
     libraryInitializers?: any[];
+
+    /**
+     * A definition of assets to load along with the runtime.
+     * 
+     * WIP currently only extensions are defined!
+     */
+    resources?: ResourceGroups;
 };
+
+export type ResourceExtensions = { [extensionName: string]: ResourceList };
+
+export interface ResourceGroups {
+    readonly hash?: string;
+    readonly assembly?: ResourceList; // nullable only temporarily
+    readonly lazyAssembly?: ResourceList; // nullable only temporarily
+    readonly pdb?: ResourceList;
+    readonly runtime?: ResourceList; // nullable only temporarily
+    readonly satelliteResources?: { [cultureName: string]: ResourceList };
+    readonly libraryInitializers?: ResourceList,
+    readonly extensions?: ResourceExtensions
+    readonly vfs?: { [virtualPath: string]: ResourceList };
+}
+
+export type ResourceList = { [name: string]: string };
 
 /**
  * Overrides the built-in boot resource loading mechanism so that boot resources can be fetched

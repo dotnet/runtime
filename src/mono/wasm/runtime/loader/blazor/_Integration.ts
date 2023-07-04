@@ -96,6 +96,9 @@ export function mapBootConfigToMonoConfig(moduleConfig: MonoConfigInternal, appl
     moduleConfig.assetsHash = resourceLoader.bootConfig.resources.hash;
     moduleConfig.assets = assets;
     moduleConfig.globalizationMode = "icu";
+    moduleConfig.resources = {
+        extensions: resources.extensions
+    };
 
     // Default values (when WasmDebugLevel is not set)
     // - Build   (debug)    => debugBuild=true  & debugLevel=-1 => -1
