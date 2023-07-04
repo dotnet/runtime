@@ -12,7 +12,7 @@ let throttlingPromise: PromiseAndController<void> | undefined;
 // in order to prevent net::ERR_INSUFFICIENT_RESOURCES if we start downloading too many files at same time
 let parallel_count = 0;
 
-export const jsModulesAssetTypes: {
+const jsModulesAssetTypes: {
     [k: string]: boolean
 } = {
     "js-module-threads": true,

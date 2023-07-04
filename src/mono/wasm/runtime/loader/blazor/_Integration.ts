@@ -10,7 +10,7 @@ import { BootConfigResult } from "./BootConfig";
 import { WebAssemblyResourceLoader } from "./WebAssemblyResourceLoader";
 import { hasDebuggingEnabled } from "./_Polyfill";
 import { ICUDataMode } from "../../types/blazor";
-import { appendUniqueQuery, jsModulesAssetTypes } from "../assets";
+import { appendUniqueQuery } from "../assets";
 
 let resourceLoader: WebAssemblyResourceLoader;
 
@@ -164,7 +164,7 @@ export function mapBootConfigToMonoConfig(moduleConfig: MonoConfigInternal, appl
             }
             loadRemote = true;
             hasIcuData = true;
-        } else if (jsModulesAssetTypes[behavior]) {
+        } else if (behavior === "js-module-dotnet") {
             continue;
         } else if (behavior === "dotnetwasm") {
             continue;
