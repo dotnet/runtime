@@ -1085,57 +1085,24 @@ namespace System.Text.RegularExpressions
          */
         private void ScanBlank()
         {
-            if ((_options & RegexOptions.IgnorePatternWhitespace) != 0)
             {
-                while (true)
+                if ((_options & RegexOptions.IgnorePatternWhitespace) != 0)
                 {
                     while (_pat.Length - _pos > 0 && IsSpace(_pat[_pos]))
                     {
                         _pos++;
                     }
+                }
 
-                    if (_pat.Length - _pos == 0)
+                if ((_options & RegexOptions.IgnorePatternWhitespace) != 0 && _pat.Length - _pos >= 1 && _pat[_pos] == '#')
+                {
+                    while (_pat.Length - _pos > 0 && _pat[_pos] != '\n')
                     {
-                        break;
-                    }
-
-                    if (_pat[_pos] == '#')
-                    {
-                        while (_pat.Length - _pos > 0 && _pat[_pos] != '\n')
-                        {
-                            _pos++;
-                        }
-                    }
-                    else if (_pat.Length - _pos >= 3 && _pat[_pos + 2] == '#' && _pat[_pos + 1] == '?' && _pat[_pos] == '(')
-                    {
-                        while (_pat.Length - _pos > 0 && _pat[_pos] != ')')
-                        {
-                            _pos++;
-                        }
-
-                        if (_pat.Length - _pos == 0)
-                        {
-                            throw MakeException(RegexParseError.UnterminatedComment, SR.UnterminatedComment);
-                        }
-
                         _pos++;
                     }
-                    else
-                    {
-                        break;
-                    }
                 }
-            }
-            else
-            {
-                while (true)
+                else if (_pat.Length - _pos >= 3 && _pat[_pos + 2] == '#' && _pat[_pos + 1] == '?' && _pat[_pos] == '(')
                 {
-                    if (_pat.Length - _pos < 3 || _pat[_pos + 2] != '#' || _pat[_pos + 1] != '?' || _pat[_pos] != '(')
-                    {
-                        return;
-                    }
-
-                    // skip comment (?# ...)
                     while (_pat.Length - _pos > 0 && _pat[_pos] != ')')
                     {
                         _pos++;
@@ -1147,6 +1114,10 @@ namespace System.Text.RegularExpressions
                     }
 
                     _pos++;
+                }
+                else
+                {
+                    break;
                 }
             }
         }
