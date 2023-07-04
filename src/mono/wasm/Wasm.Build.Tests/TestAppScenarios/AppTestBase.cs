@@ -70,7 +70,12 @@ namespace Wasm.Build.Tests.TestAppScenarios
             await using var runner = new BrowserRunner(_testOutput);
 
             IPage page = null;
-            page = await runner.RunAsync(runCommand, runArgs, onConsoleMessage: OnConsoleMessage, modifyBrowserUrl: url => url + "?test=" + options.TestScenario);
+
+            string queryString = "?test=" + options.TestScenario;
+            if (options.BrowserQueryString != null)
+                queryString += "&" + string.Join("&", options.BrowserQueryString.Select(kvp => $"{kvp.Key}={kvp.Value}"));
+
+            page = await runner.RunAsync(runCommand, runArgs, onConsoleMessage: OnConsoleMessage, modifyBrowserUrl: url => url + queryString);
 
             void OnConsoleMessage(IConsoleMessage msg)
             {
@@ -104,6 +109,7 @@ namespace Wasm.Build.Tests.TestAppScenarios
         protected record RunOptions(
             string Configuration,
             string TestScenario,
+            Dictionary<string, string> BrowserQueryString = null,
             bool ForPublish = false,
             Action<IConsoleMessage, IPage> OnConsoleMessage = null
         );

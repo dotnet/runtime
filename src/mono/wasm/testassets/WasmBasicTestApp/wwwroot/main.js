@@ -3,22 +3,32 @@
 
 import { dotnet, exit } from './_framework/dotnet.js'
 
-const { getAssemblyExports, getConfig, INTERNAL } = await dotnet
+// Read test case from query string
+const params = new URLSearchParams(location.search);
+const testCase = params.get("test");
+if (testCase == null) {
+    exit(2, new Error("Missing test scenario. Supply query argument 'test'."));
+}
+
+// Prepare base runtime parameters
+dotnet
     .withElementOnExit()
     .withExitCodeLogging()
-    .withExitOnUnhandledError()
-    .create();
+    .withExitOnUnhandledError();
 
+// Modify runtime start based on test case
+switch (testCase) {
+    case "AppSettingsTest":
+        dotnet.withApplicationEnvironment(params.get("applicationEnvironment"));
+        break;
+}
+
+const { getAssemblyExports, getConfig, INTERNAL } = await dotnet.create();
 const config = getConfig();
 const exports = await getAssemblyExports(config.mainAssemblyName);
 
+// Run the test case
 try {
-    const params = new URLSearchParams(location.search);
-    const testCase = params.get("test");
-    if (testCase == null) {
-        exit(2, new Error("Missing test scenario. Supply query argument 'test'."));
-    }
-
     switch (testCase) {
         case "SatelliteAssembliesTest":
             await exports.SatelliteAssembliesTest.Run();
@@ -30,6 +40,10 @@ try {
             exit(0);
             break;
         case "LibraryInitializerTest":
+            exit(0);
+            break;
+        case "AppSettingsTest":
+            exports.AppSettingsTest.Run();
             exit(0);
             break;
     }

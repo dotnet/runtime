@@ -79,8 +79,6 @@ export async function mono_wasm_load_config(module: DotnetModuleInternal): Promi
     }
     mono_log_debug("mono_wasm_load_config");
     try {
-        loaderHelpers.config.applicationEnvironment = loaderHelpers.config.applicationEnvironment ?? "Production";
-
         if (loaderHelpers.config.loadBootResource) {
             // If we have custom loadBootResource
             await loadBootConfig(loaderHelpers.config, module);
