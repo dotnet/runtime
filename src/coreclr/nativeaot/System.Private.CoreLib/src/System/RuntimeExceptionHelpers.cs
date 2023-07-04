@@ -8,6 +8,7 @@ using System.Diagnostics.CodeAnalysis;
 using System.Runtime;
 using System.Runtime.CompilerServices;
 using System.Text;
+using System.Threading;
 
 namespace System
 {
@@ -165,100 +166,97 @@ namespace System
             // back into the dispatcher.
             try
             {
-                // Avoid complex processing and allocations if we are already in failfast or recursive out of memory.
-                // We do not set InFailFast.Value here, because we want rich diagnostics in the FailFast
-                // call below and reentrancy is not possible for this method (all exceptions are ignored).
-                bool minimalFailFast = InFailFast.Value || (exception == PreallocatedOutOfMemoryException.Instance);
-                string failFastMessage = "";
-
-                if (!minimalFailFast)
-                {
-                    if ((reason == RhFailFastReason.UnhandledException) && (exception != null))
-                    {
-                        Debug.WriteLine("Unhandled Exception: " + exception.ToString());
-                    }
-
-                    failFastMessage = string.Format("Runtime-generated FailFast: ({0}): {1}{2}",
-                        reason.ToString(),  // Explicit call to ToString() to avoid missing metadata exception inside String.Format()
-                        GetStringForFailFastReason(reason),
-                        exception != null ? " [exception object available]" : "");
-                }
-
-                FailFast(failFastMessage, exception, reason, pExAddress, pExContext);
+                FailFast(message: null, exception, reason, pExAddress, pExContext);
             }
             catch
             {
-                // Returning from this callback will cause the runtime to FailFast without involving the class
-                // library.
+                // Returning from this callback will cause the runtime to FailFast without involving the class library.
             }
         }
 
+        private static ulong s_crashingThreadId;
+
         [DoesNotReturn]
-        internal static unsafe void FailFast(string message, Exception? exception, RhFailFastReason reason, IntPtr pExAddress, IntPtr pExContext)
+        internal static unsafe void FailFast(string? message, Exception? exception, RhFailFastReason reason, IntPtr pExAddress, IntPtr pExContext)
         {
-            // If this a recursive call to FailFast, avoid all unnecessary and complex activity the second time around to avoid the recursion
-            // that got us here the first time (Some judgement is required as to what activity is "unnecessary and complex".)
-            bool minimalFailFast = InFailFast.Value || (exception == PreallocatedOutOfMemoryException.Instance);
-            InFailFast.Value = true;
+            IntPtr triageBufferAddress = IntPtr.Zero;
+            int triageBufferSize = 0;
+            int errorCode = 0;
 
-            CrashInfo crashInfo = new();
-            crashInfo.Open(reason, message);
-
-            if (!minimalFailFast)
+            ulong currentThreadId = Thread.CurrentOSThreadId;
+            ulong previousThreadId = Interlocked.CompareExchange(ref s_crashingThreadId, currentThreadId, 0);
+            if (previousThreadId == 0)
             {
-                string prefix;
-                string outputMessage;
-                if (exception != null)
+                CrashInfo crashInfo = new();
+                crashInfo.Open(reason, s_crashingThreadId, message);
+
+                bool minimalFailFast = (exception == PreallocatedOutOfMemoryException.Instance);
+                if (!minimalFailFast)
                 {
-                    prefix = "Unhandled Exception: ";
-                    outputMessage = exception.ToString();
+                    string prefix;
+                    string outputMessage;
+                    if (exception != null)
+                    {
+                        prefix = "Unhandled Exception: ";
+                        outputMessage = exception.ToString();
+                    }
+                    else
+                    {
+                        prefix = "Process terminated. ";
+                        message ??= string.Format("Runtime-generated FailFast: ({0}): {1}",
+                            reason.ToString(),  // Explicit call to ToString() to avoid missing metadata exception inside String.Format()
+                            GetStringForFailFastReason(reason));
+                        outputMessage = message;
+                    }
+
+                    Internal.Console.Error.Write(prefix);
+                    if (outputMessage != null)
+                    {
+                        Internal.Console.Error.Write(outputMessage);
+                    }
+                    Internal.Console.Error.Write(Environment.NewLine);
+
+                    if (exception != null)
+                    {
+                        crashInfo.WriteException(exception);
+                    }
+                }
+
+                crashInfo.Close();
+
+                triageBufferAddress = crashInfo.TriageBufferAddress;
+                triageBufferSize = crashInfo.TriageBufferSize;
+
+                // Try to map the failure into a HRESULT that makes sense
+                errorCode = exception != null ? exception.HResult : reason switch
+                {
+                    RhFailFastReason.EnvironmentFailFast => HResults.COR_E_FAILFAST,
+                    RhFailFastReason.InternalError  => HResults.COR_E_EXECUTIONENGINE,
+                    // Error code for unhandled exceptions is expected to come from the exception object above
+                    // RhFailFastReason.UnhandledException or
+                    // RhFailFastReason.UnhandledExceptionFromPInvoke
+                    _ => HResults.E_FAIL
+                };
+            }
+            else
+            {
+                if (previousThreadId == currentThreadId)
+                {
+                    // Fatal error while processing another FailFast (recursive call)
+                    errorCode = HResults.COR_E_EXECUTIONENGINE;
                 }
                 else
                 {
-                    prefix = "Process terminated. ";
-                    outputMessage = message;
-                }
-
-                Internal.Console.Error.Write(prefix);
-                if (outputMessage != null)
-                {
-                    Internal.Console.Error.Write(outputMessage);
-                }
-                Internal.Console.Error.Write(Environment.NewLine);
-
-                if (exception != null)
-                {
-                    crashInfo.WriteException(exception);
+                    // The first thread generates the crash info and any other threads are blocked
+                    Thread.Sleep(int.MaxValue);
                 }
             }
 
-            crashInfo.Close();
-
-            // Try to map the failure into a HRESULT that makes sense
-            int errorCode = exception != null ? exception.HResult : reason switch
-            {
-                RhFailFastReason.EnvironmentFailFast => HResults.COR_E_FAILFAST,
-                RhFailFastReason.InternalError  => HResults.COR_E_EXECUTIONENGINE,
-                RhFailFastReason.UnhandledException or
-                RhFailFastReason.UnhandledExceptionFromPInvoke => HResults.E_ACCESSDENIED,
-                _ => HResults.E_FAIL
-            };
-
 #if TARGET_WINDOWS
-            Interop.Kernel32.RaiseFailFastException(errorCode, pExAddress, pExContext, crashInfo.GetTriageBuffer(out int size), size);
+            Interop.Kernel32.RaiseFailFastException(errorCode, pExAddress, pExContext, triageBufferAddress, triageBufferSize);
 #else
             Interop.Sys.Abort();
 #endif
-        }
-
-        // Use a nested class to avoid running the class constructor of the outer class when
-        // accessing this flag.
-        private static class InFailFast
-        {
-            // This boolean is used to stop runaway FailFast recursions. Though this is technically a concurrently set field, it only gets set during
-            // fatal process shutdowns and it's only purpose is a reasonable-case effort to make a bad situation a little less bad.
-            // Trying to use locks or other concurrent access apis would actually defeat the purpose of making FailFast as robust as possible.
-            public static bool Value;
         }
 
         // This returns "true" once enough of the framework has been initialized to safely perform operations

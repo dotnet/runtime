@@ -37,28 +37,33 @@ namespace System
         private int _currentBufferIndex;
         private int _reservedBuffer;
         private bool _isCommaNeeded;
-        private int _triageBufferSize;
-        private byte* _triageBufferAddress;
+        private int _maxBufferSize;
+        private byte* _bufferAddress;
 
         public CrashInfo()
         {
             _currentBufferIndex = 0;
             _reservedBuffer = 0;
             _isCommaNeeded = false;
-            _triageBufferAddress = RuntimeImports.RhGetCrashInfoBuffer(out _triageBufferSize);
+            _bufferAddress = RuntimeImports.RhGetCrashInfoBuffer(out _maxBufferSize);
         }
+
+        public IntPtr TriageBufferAddress => new IntPtr(_bufferAddress);
+
+        public int TriageBufferSize => _currentBufferIndex;
 
         /// <summary>
         /// Writes the opening bracket and header to triage buffer
         /// </summary>
         /// <param name="reason"></param>
+        /// <param name="crashingThreadId">the thread id of this crashing thread</param>
         /// <param name="message"></param>
-        public void Open(RhFailFastReason reason, string message)
+        public void Open(RhFailFastReason reason, ulong crashingThreadId, string? message)
         {
             // Write the opening bracket and basic header which should never fail
             bool success = OpenValue(default, '{');
             Debug.Assert(success);
-            success = WriteHeader(reason, message);
+            success = WriteHeader(reason, crashingThreadId, message);
             Debug.Assert(success);
         }
 
@@ -86,22 +91,14 @@ namespace System
         }
 
         /// <summary>
-        /// Get the rendered crash triage buffer address and size
-        /// </summary>
-        public IntPtr GetTriageBuffer(out int size)
-        {
-            size = _currentBufferIndex;
-            return new IntPtr(_triageBufferAddress);
-        }
-
-        /// <summary>
         /// Writes the basic triage information header. Assumes there is always enough
         /// room in the buffer for this header.
         /// </summary>
         /// <param name="reason">kind of crash</param>
+        /// <param name="crashingThreadId">the thread id of this crashing thread</param>
         /// <param name="message">fail fast message, limited to 1024 chars</param>
         /// <returns>true - success, false - out of triage buffer space</returns>
-        private bool WriteHeader(RhFailFastReason reason, string message)
+        private bool WriteHeader(RhFailFastReason reason, ulong crashingThreadId, string? message)
         {
             if (!WriteValue("version"u8, "1.0.0"u8))
                 return false;
@@ -124,9 +121,14 @@ namespace System
             if (!WriteValue("reason"u8, (int)crashReason))
                 return false;
 
-            if (!WriteValue("message"u8, message, max: 1024))
+            if (!WriteHexValue("thread"u8, crashingThreadId))
                 return false;
 
+            if (message != null)
+            {
+                if (!WriteValue("message"u8, message, max: 1024))
+                    return false;
+            }
             return true;
         }
 
@@ -388,11 +390,11 @@ namespace System
             Debug.Assert(size > 0);
 
             // Check if there is any space left in the triage buffer
-            if ((_currentBufferIndex + size) >= (_triageBufferSize - _reservedBuffer))
+            if ((_currentBufferIndex + size) >= (_maxBufferSize - _reservedBuffer))
             {
                 return default;
             }
-            byte* ptr = _triageBufferAddress + _currentBufferIndex;
+            byte* ptr = _bufferAddress + _currentBufferIndex;
             _currentBufferIndex += size;
             return new Span<byte>(ptr, size);
         }

@@ -110,7 +110,6 @@ namespace System
         internal const int COR_E_WAITHANDLECANNOTBEOPENED = unchecked((int)0x8013152C);
         internal const int CO_E_NOTINITIALIZED = unchecked((int)0x800401F0);
         internal const int DISP_E_OVERFLOW = unchecked((int)0x8002000A);
-        internal const int E_ACCESSDENIED = unchecked((int)0x80070005);
         internal const int E_BOUNDS = unchecked((int)0x8000000B);
         internal const int E_CHANGED_STATE = unchecked((int)0x8000000C);
         internal const int E_FILENOTFOUND = unchecked((int)0x80070002);
