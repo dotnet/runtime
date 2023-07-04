@@ -1080,10 +1080,10 @@ GenTree* Compiler::impSimdAsHWIntrinsicSpecial(NamedIntrinsic       intrinsic,
                     op1 =
                         impCloneExpr(op1, &clonedOp1, CHECK_SPILL_ALL, nullptr DEBUGARG("Clone op1 for vector length"));
 
-                    op1 = gtNewSimdDotProdNode(retType, op1, clonedOp1, simdBaseJitType, simdSize);
+                    op1 = gtNewSimdDotProdNode(simdType, op1, clonedOp1, simdBaseJitType, simdSize);
+                    op1 = gtNewSimdSqrtNode(simdType, op1, simdBaseJitType, simdSize);
 
-                    return new (this, GT_INTRINSIC)
-                        GenTreeIntrinsic(simdBaseType, op1, NI_System_Math_Sqrt, NO_METHOD_HANDLE);
+                    return gtNewSimdGetElementNode(retType, op1, gtNewIconNode(0), simdBaseJitType, simdSize);
                 }
 
                 case NI_Quaternion_LengthSquared:
@@ -1095,7 +1095,8 @@ GenTree* Compiler::impSimdAsHWIntrinsicSpecial(NamedIntrinsic       intrinsic,
                     op1 = impCloneExpr(op1, &clonedOp1, CHECK_SPILL_ALL,
                                        nullptr DEBUGARG("Clone op1 for vector length squared"));
 
-                    return gtNewSimdDotProdNode(retType, op1, clonedOp1, simdBaseJitType, simdSize);
+                    op1 = gtNewSimdDotProdNode(simdType, op1, clonedOp1, simdBaseJitType, simdSize);
+                    return gtNewSimdGetElementNode(retType, op1, gtNewIconNode(0), simdBaseJitType, simdSize);
                 }
 
                 case NI_VectorT128_Load:
@@ -1174,9 +1175,7 @@ GenTree* Compiler::impSimdAsHWIntrinsicSpecial(NamedIntrinsic       intrinsic,
                                              nullptr DEBUGARG("Clone op1 for vector normalize (2)"));
 
                     op1 = gtNewSimdDotProdNode(retType, op1, clonedOp1, simdBaseJitType, simdSize);
-
                     op1 = gtNewSimdSqrtNode(retType, op1, simdBaseJitType, simdSize);
-
                     return gtNewSimdBinOpNode(GT_DIV, retType, clonedOp2, op1, simdBaseJitType, simdSize);
                 }
 
@@ -1446,10 +1445,10 @@ GenTree* Compiler::impSimdAsHWIntrinsicSpecial(NamedIntrinsic       intrinsic,
                     op1 = impCloneExpr(op1, &clonedOp1, CHECK_SPILL_ALL,
                                        nullptr DEBUGARG("Clone diff for vector distance"));
 
-                    op1 = gtNewSimdDotProdNode(retType, op1, clonedOp1, simdBaseJitType, simdSize);
+                    op1 = gtNewSimdDotProdNode(simdType, op1, clonedOp1, simdBaseJitType, simdSize);
+                    op1 = gtNewSimdSqrtNode(simdType, op1, simdBaseJitType, simdSize);
 
-                    return new (this, GT_INTRINSIC)
-                        GenTreeIntrinsic(retType, op1, NI_System_Math_Sqrt, NO_METHOD_HANDLE);
+                    return gtNewSimdGetElementNode(retType, op1, gtNewIconNode(0), simdBaseJitType, simdSize);
                 }
 
                 case NI_Vector2_DistanceSquared:
