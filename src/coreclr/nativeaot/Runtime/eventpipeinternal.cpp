@@ -33,10 +33,10 @@ struct EventPipeSessionInfo
 
 struct EventPipeProviderConfigurationNative
 {
-    wchar_t *pProviderName;
+    WCHAR *pProviderName;
     uint64_t keywords;
     uint32_t loggingLevel;
-    wchar_t *pFilterData;
+    WCHAR *pFilterData;
 };
 
 EXTERN_C NATIVEAOT_API uint64_t __cdecl RhEventPipeInternal_Enable(
@@ -71,23 +71,31 @@ EXTERN_C NATIVEAOT_API uint64_t __cdecl RhEventPipeInternal_Enable(
         }
     }
 
-        ep_char8_t *outputPathUTF8 = NULL;
-        if (outputFile)
-            outputPathUTF8 = ep_rt_utf16_to_utf8_string (reinterpret_cast<const ep_char16_t *>(outputFile), -1);
-        EventPipeSessionID result = ep_enable (
-            outputPathUTF8,
-            circularBufferSizeInMB,
-            configProviders,
-            numProviders,
-            outputFile != NULL ? EP_SESSION_TYPE_FILE : EP_SESSION_TYPE_LISTENER,
-            format,
-            false,
-            nullptr,
-            nullptr,
-            nullptr);
-        ep_rt_utf8_string_free (outputPathUTF8);
+    ep_char8_t *outputPathUTF8 = NULL;
+    if (outputFile)
+        outputPathUTF8 = ep_rt_utf16_to_utf8_string (reinterpret_cast<const ep_char16_t *>(outputFile), -1);
+    EventPipeSessionID result = ep_enable (
+        outputPathUTF8,
+        circularBufferSizeInMB,
+        configProviders,
+        numProviders,
+        outputFile != NULL ? EP_SESSION_TYPE_FILE : EP_SESSION_TYPE_LISTENER,
+        format,
+        false,
+        nullptr,
+        nullptr,
+        nullptr);
+    ep_rt_utf8_string_free (outputPathUTF8);
 
-        ep_start_streaming(result);
+    ep_start_streaming(result);
+
+    if (configProviders) {
+        for (uint32_t i = 0; i < numProviders; ++i) {
+            ep_rt_utf8_string_free ((ep_char8_t *)ep_provider_config_get_provider_name (&configProviders[i]));
+            ep_rt_utf8_string_free ((ep_char8_t *)ep_provider_config_get_filter_data (&configProviders[i]));
+        }
+        free(configProviders);
+    }
 
     return result;
 }
@@ -206,11 +214,11 @@ EXTERN_C NATIVEAOT_API UInt32_BOOL __cdecl RhEventPipeInternal_SignalSession(uin
 
 EXTERN_C NATIVEAOT_API UInt32_BOOL __cdecl RhEventPipeInternal_WaitForSessionSignal(uint64_t sessionID, int32_t timeoutMs)
 {
-        EventPipeSession *const session = ep_get_session (sessionID);
-        if (!session)
-            return false;
+    EventPipeSession *const session = ep_get_session (sessionID);
+    if (!session)
+        return false;
 
-        return !ep_rt_wait_event_wait (ep_session_get_wait_event (session), (uint32_t)timeoutMs, false) ? true : false;
+    return !ep_rt_wait_event_wait (ep_session_get_wait_event (session), (uint32_t)timeoutMs, false) ? true : false;
 }
 
 #endif // FEATURE_PERFTRACING

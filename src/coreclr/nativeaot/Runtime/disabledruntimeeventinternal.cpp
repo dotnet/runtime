@@ -11,11 +11,11 @@ EXTERN_C NATIVEAOT_API void __cdecl NativeRuntimeEventSource_LogContentionLockCr
 {
 }
 
-EXTERN_C NATIVEAOT_API void __cdecl NativeRuntimeEventSource_LogContentionStart(uint16_t ContentionFlags, uint16_t ClrInstanceID, intptr_t LockID, intptr_t AssociatedObjectID, uint64_t LockOwnerThreadID)
+EXTERN_C NATIVEAOT_API void __cdecl NativeRuntimeEventSource_LogContentionStart(uint8_t ContentionFlags, uint16_t ClrInstanceID, intptr_t LockID, intptr_t AssociatedObjectID, uint64_t LockOwnerThreadID)
 {
 }
 
-EXTERN_C NATIVEAOT_API void __cdecl NativeRuntimeEventSource_LogContentionStop(uint16_t ContentionFlags, uint16_t ClrInstanceID, double DurationNs)
+EXTERN_C NATIVEAOT_API void __cdecl NativeRuntimeEventSource_LogContentionStop(uint8_t ContentionFlags, uint16_t ClrInstanceID, double DurationNs)
 {
 }
 
@@ -59,14 +59,14 @@ EXTERN_C NATIVEAOT_API void __cdecl NativeRuntimeEventSource_LogThreadPoolWorker
 }
 
 EXTERN_C NATIVEAOT_API void __cdecl NativeRuntimeEventSource_LogThreadPoolIOEnqueue(
-    uint32_t * NativeOverlapped,
-    uint32_t * Overlapped,
+    void * NativeOverlapped,
+    void * Overlapped,
     bool MultiDequeues,
     uint16_t ClrInstanceID)
 {
 }
 
-EXTERN_C NATIVEAOT_API void __cdecl NativeRuntimeEventSource_LogThreadPoolIODequeue(uint32_t * NativeOverlapped, uint32_t * Overlapped, uint16_t ClrInstanceID)
+EXTERN_C NATIVEAOT_API void __cdecl NativeRuntimeEventSource_LogThreadPoolIODequeue(void * NativeOverlapped, void * Overlapped, uint16_t ClrInstanceID)
 {
 }
 
@@ -74,7 +74,7 @@ EXTERN_C NATIVEAOT_API void __cdecl NativeRuntimeEventSource_LogThreadPoolWorkin
 {
 }
 
-EXTERN_C NATIVEAOT_API void __cdecl NativeRuntimeEventSource_LogThreadPoolIOPack(uint32_t * NativeOverlapped, uint32_t * Overlapped, uint16_t ClrInstanceID)
+EXTERN_C NATIVEAOT_API void __cdecl NativeRuntimeEventSource_LogThreadPoolIOPack(void * NativeOverlapped, void * Overlapped, uint16_t ClrInstanceID)
 {
 }
 

@@ -2360,7 +2360,7 @@ ULONG EventPipeWriteEventGCAllocationTick_V4(
     const unsigned short ClrInstanceID,
     const unsigned __int64 AllocationAmount64,
     const void* TypeID,
-    const wchar_t* TypeName,
+    const WCHAR* TypeName,
     const unsigned int HeapIndex,
     const void* Address,
     const unsigned __int64 ObjectSize,
@@ -2377,7 +2377,7 @@ ULONG EventPipeWriteEventGCAllocationTick_V4(
     bool fixedBuffer = true;
     bool success = true;
 
-    if (!TypeName) { TypeName = L"NULL"; }
+    if (!TypeName) { TypeName = W("NULL"); }
     success &= WriteToBuffer(AllocationAmount, buffer, offset, size, fixedBuffer);
     success &= WriteToBuffer(AllocationKind, buffer, offset, size, fixedBuffer);
     success &= WriteToBuffer(ClrInstanceID, buffer, offset, size, fixedBuffer);
@@ -2573,7 +2573,7 @@ ULONG EventPipeWriteEventPinObjectAtGCTime(
     const void* HandleID,
     const void* ObjectID,
     const unsigned __int64 ObjectSize,
-    const wchar_t* TypeName,
+    const WCHAR* TypeName,
     const unsigned short ClrInstanceID,
     const GUID * ActivityId,
     const GUID * RelatedActivityId)
@@ -2588,7 +2588,7 @@ ULONG EventPipeWriteEventPinObjectAtGCTime(
     bool fixedBuffer = true;
     bool success = true;
 
-    if (!TypeName) { TypeName = L"NULL"; }
+    if (!TypeName) { TypeName = W("NULL"); }
     success &= WriteToBuffer(HandleID, buffer, offset, size, fixedBuffer);
     success &= WriteToBuffer(ObjectID, buffer, offset, size, fixedBuffer);
     success &= WriteToBuffer(ObjectSize, buffer, offset, size, fixedBuffer);

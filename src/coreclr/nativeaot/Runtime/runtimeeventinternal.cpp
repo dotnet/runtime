@@ -10,12 +10,12 @@ EXTERN_C NATIVEAOT_API void __cdecl NativeRuntimeEventSource_LogContentionLockCr
     FireEtwContentionLockCreated(reinterpret_cast<const void*>(LockID), reinterpret_cast<const void*>(AssociatedObjectID), ClrInstanceID);
 }
 
-EXTERN_C NATIVEAOT_API void __cdecl NativeRuntimeEventSource_LogContentionStart(uint16_t ContentionFlags, uint16_t ClrInstanceID, intptr_t LockID, intptr_t AssociatedObjectID, uint64_t LockOwnerThreadID)
+EXTERN_C NATIVEAOT_API void __cdecl NativeRuntimeEventSource_LogContentionStart(uint8_t ContentionFlags, uint16_t ClrInstanceID, intptr_t LockID, intptr_t AssociatedObjectID, uint64_t LockOwnerThreadID)
 {
     FireEtwContentionStart_V2((const unsigned char)(ContentionFlags), ClrInstanceID, reinterpret_cast<const void*>(LockID), reinterpret_cast<const void*>(AssociatedObjectID), LockOwnerThreadID);
 }
 
-EXTERN_C NATIVEAOT_API void __cdecl NativeRuntimeEventSource_LogContentionStop(uint16_t ContentionFlags, uint16_t ClrInstanceID, double DurationNs)
+EXTERN_C NATIVEAOT_API void __cdecl NativeRuntimeEventSource_LogContentionStop(uint8_t ContentionFlags, uint16_t ClrInstanceID, double DurationNs)
 {
     FireEtwContentionStop_V1((const unsigned char)(ContentionFlags), ClrInstanceID, DurationNs);
 }
@@ -67,15 +67,15 @@ EXTERN_C NATIVEAOT_API void __cdecl NativeRuntimeEventSource_LogThreadPoolWorker
 }
 
 EXTERN_C NATIVEAOT_API void __cdecl NativeRuntimeEventSource_LogThreadPoolIOEnqueue(
-    uint32_t * NativeOverlapped,
-    uint32_t * Overlapped,
-    bool MultiDequeues,
+    void * NativeOverlapped,
+    void * Overlapped,
+    BOOL MultiDequeues,
     uint16_t ClrInstanceID)
 {
     FireEtwThreadPoolIOEnqueue(NativeOverlapped, Overlapped, MultiDequeues, ClrInstanceID);
 }
 
-EXTERN_C NATIVEAOT_API void __cdecl NativeRuntimeEventSource_LogThreadPoolIODequeue(uint32_t * NativeOverlapped, uint32_t * Overlapped, uint16_t ClrInstanceID)
+EXTERN_C NATIVEAOT_API void __cdecl NativeRuntimeEventSource_LogThreadPoolIODequeue(void * NativeOverlapped, void * Overlapped, uint16_t ClrInstanceID)
 {
     FireEtwThreadPoolIODequeue(NativeOverlapped, Overlapped, ClrInstanceID);
 }
@@ -85,7 +85,7 @@ EXTERN_C NATIVEAOT_API void __cdecl NativeRuntimeEventSource_LogThreadPoolWorkin
     FireEtwThreadPoolWorkingThreadCount(Count, ClrInstanceID);
 }
 
-EXTERN_C NATIVEAOT_API void __cdecl NativeRuntimeEventSource_LogThreadPoolIOPack(uint32_t * NativeOverlapped, uint32_t * Overlapped, uint16_t ClrInstanceID)
+EXTERN_C NATIVEAOT_API void __cdecl NativeRuntimeEventSource_LogThreadPoolIOPack(void * NativeOverlapped, void * Overlapped, uint16_t ClrInstanceID)
 {
     FireEtwThreadPoolIOPack(NativeOverlapped, Overlapped, ClrInstanceID);
 }

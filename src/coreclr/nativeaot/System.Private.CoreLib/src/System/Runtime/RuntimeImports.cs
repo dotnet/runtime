@@ -667,14 +667,6 @@ namespace System.Runtime
 
 
 #if FEATURE_PERFTRACING
-
-        //
-        // ETW helpers.
-        //
-        [LibraryImport(RuntimeLibrary)]
-        [UnmanagedCallConv(CallConvs = new Type[] { typeof(CallConvCdecl) })]
-        internal static unsafe partial void NativeRuntimeEventSource_LogExceptionThrown(char* exceptionTypeName, char* exceptionMessage, IntPtr faultingIP, long hresult);
-
         //
         // EventPipeInternal helpers.
         //
@@ -822,6 +814,10 @@ namespace System.Runtime
             IntPtr NativeOverlapped,
             IntPtr Overlapped,
             ushort ClrInstanceID);
+
+        [LibraryImport(RuntimeLibrary)]
+        [UnmanagedCallConv(CallConvs = new Type[] { typeof(CallConvCdecl) })]
+        internal static unsafe partial void NativeRuntimeEventSource_LogExceptionThrown(char* exceptionTypeName, char* exceptionMessage, IntPtr faultingIP, long hresult);
 #endif // FEATURE_PERFTRACING
 
         //

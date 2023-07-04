@@ -457,7 +457,7 @@ ULONG EventPipeWriteEventGCAllocationTick_V4(
     const unsigned short  ClrInstanceID,
     const unsigned __int64  AllocationAmount64,
     const void*  TypeID,
-    const wchar_t*  TypeName,
+    const WCHAR*  TypeName,
     const unsigned int  HeapIndex,
     const void*  Address,
     const unsigned __int64  ObjectSize,
@@ -526,7 +526,7 @@ ULONG EventPipeWriteEventPinObjectAtGCTime(
     const void*  HandleID,
     const void*  ObjectID,
     const unsigned __int64  ObjectSize,
-    const wchar_t*  TypeName,
+    const WCHAR*  TypeName,
     const unsigned short  ClrInstanceID,
     const GUID * ActivityId,
     const GUID * RelatedActivityId
