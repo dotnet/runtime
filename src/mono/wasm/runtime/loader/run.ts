@@ -13,7 +13,7 @@ import { detect_features_and_polyfill } from "./polyfills";
 import { runtimeHelpers, loaderHelpers } from "./globals";
 import { init_globalization } from "./icu";
 import { setupPreloadChannelToMainThread } from "./worker";
-import { fetchInitializers, invokeOnRuntimeReady } from "./jsInitializers";
+import { fetchInitializers, invokeOnRuntimeReady } from "./libraryInitializers";
 
 
 const module = globalObjectsRoot.module;

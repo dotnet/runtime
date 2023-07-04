@@ -10,6 +10,7 @@ import { BootConfigResult } from "./BootConfig";
 import { WebAssemblyResourceLoader } from "./WebAssemblyResourceLoader";
 import { hasDebuggingEnabled } from "./_Polyfill";
 import { ICUDataMode } from "../../types/blazor";
+import { appendUniqueQuery, toAbsoluteBaseUri } from "../assets";
 
 let resourceLoader: WebAssemblyResourceLoader;
 
@@ -76,14 +77,6 @@ export function setupModuleForBlazor(module: DotnetModuleInternal) {
     };
 
     loaderHelpers.downloadResource = downloadResource; // polyfills were already assigned
-}
-
-function appendUniqueQuery(attemptUrl: string): string {
-    if (loaderHelpers.assetUniqueQuery) {
-        attemptUrl = attemptUrl + loaderHelpers.assetUniqueQuery;
-    }
-
-    return attemptUrl;
 }
 
 export function mapBootConfigToMonoConfig(moduleConfig: MonoConfigInternal, applicationEnvironment: string) {
@@ -213,7 +206,7 @@ export function mapBootConfigToMonoConfig(moduleConfig: MonoConfigInternal, appl
         if (config === "appsettings.json" || config === `appsettings.${applicationEnvironment}.json`) {
             assets.push({
                 name: config,
-                resolvedUrl: appendUniqueQuery((document ? document.baseURI : "/") + config),
+                resolvedUrl: appendUniqueQuery(toAbsoluteBaseUri(config)),
                 behavior: "vfs",
             });
         }
