@@ -593,8 +593,13 @@ public:
                                   // fgRetypeImplicitByRefArgs and fgMarkDemotedImplicitByRefArgs to indicate whether
                                   // references to the arg are being rewritten as references to a promoted shadow local.
     unsigned char lvIsStructField : 1; // Is this local var a field of a promoted struct local?
-    unsigned char lvContainsHoles : 1; // True when we have a promoted struct that contains holes
-    unsigned char lvCustomLayout : 1;  // True when this struct has "CustomLayout"
+    unsigned char lvContainsHoles : 1; // Is this a promoted struct whose fields do not cover the struct local?
+
+    // True for a promoted struct that has significant padding in it.
+    // Significant padding is any data in the struct that is not covered by a
+    // promoted field and that the EE told us we need to preserve on block
+    // copies/inits.
+    unsigned char lvAnySignificantPadding : 1;
 
     unsigned char lvIsMultiRegArg : 1; // true if this is a multireg LclVar struct used in an argument context
     unsigned char lvIsMultiRegRet : 1; // true if this is a multireg LclVar struct assigned from a multireg call
@@ -2069,7 +2074,6 @@ public:
     bool shouldUseVerboseSsa();
     bool treesBeforeAfterMorph; // If true, print trees before/after morphing (paired by an intra-compilation id:
     int  morphNum;              // This counts the trees that have been morphed, allowing us to label each uniquely.
-    bool doExtraSuperPmiQueries;
     void makeExtraStructQueries(CORINFO_CLASS_HANDLE structHandle, int level); // Make queries recursively 'level' deep.
 
     const char* VarNameToStr(VarName name)
@@ -2460,7 +2464,7 @@ public:
     GenTreeCC* gtNewCC(genTreeOps oper, var_types type, GenCondition cond);
     GenTreeOpCC* gtNewOperCC(genTreeOps oper, var_types type, GenCondition cond, GenTree* op1, GenTree* op2);
 
-    GenTreeColon* gtNewColonNode(var_types type, GenTree* elseNode, GenTree* thenNode);
+    GenTreeColon* gtNewColonNode(var_types type, GenTree* thenNode, GenTree* elseNode);
     GenTreeQmark* gtNewQmarkNode(var_types type, GenTree* cond, GenTreeColon* colon);
 
     GenTree* gtNewLargeOperNode(genTreeOps oper,
@@ -3582,17 +3586,18 @@ public:
     // Info about struct type fields.
     struct lvaStructFieldInfo
     {
-        CORINFO_FIELD_HANDLE fldHnd;
-        unsigned char        fldOffset;
-        unsigned char        fldOrdinal;
-        var_types            fldType;
-        unsigned             fldSize;
-        CORINFO_CLASS_HANDLE fldTypeHnd;
+        // Class handle for SIMD type recognition, see CORINFO_TYPE_LAYOUT_NODE
+        // for more details on the restrictions.
+        CORINFO_CLASS_HANDLE fldSIMDTypeHnd = NO_CLASS_HANDLE;
+        uint8_t              fldOffset = 0;
+        uint8_t              fldOrdinal = 0;
+        var_types            fldType = TYP_UNDEF;
+        unsigned             fldSize = 0;
 
-        lvaStructFieldInfo()
-            : fldHnd(nullptr), fldOffset(0), fldOrdinal(0), fldType(TYP_UNDEF), fldSize(0), fldTypeHnd(nullptr)
-        {
-        }
+#ifdef DEBUG
+        // Field handle for diagnostic purposes only. See CORINFO_TYPE_LAYOUT_NODE.
+        CORINFO_FIELD_HANDLE diagFldHnd = NO_FIELD_HANDLE;
+#endif
     };
 
     // Info about a struct type, instances of which may be candidates for promotion.
@@ -3601,7 +3606,7 @@ public:
         CORINFO_CLASS_HANDLE typeHnd;
         bool                 canPromote;
         bool                 containsHoles;
-        bool                 customLayout;
+        bool                 anySignificantPadding;
         bool                 fieldsSorted;
         unsigned char        fieldCnt;
         lvaStructFieldInfo   fields[MAX_NumOfFieldsInPromotableStruct];
@@ -3610,16 +3615,11 @@ public:
             : typeHnd(typeHnd)
             , canPromote(false)
             , containsHoles(false)
-            , customLayout(false)
+            , anySignificantPadding(false)
             , fieldsSorted(false)
             , fieldCnt(0)
         {
         }
-    };
-
-    struct lvaFieldOffsetCmp
-    {
-        bool operator()(const lvaStructFieldInfo& field1, const lvaStructFieldInfo& field2);
     };
 
     // This class is responsible for checking validity and profitability of struct promotion.
@@ -3643,10 +3643,8 @@ public:
         void PromoteStructVar(unsigned lclNum);
         void SortStructFields();
 
-        bool CanConstructAndPromoteField(lvaStructPromotionInfo* structPromotionInfo);
-
-        lvaStructFieldInfo GetFieldInfo(CORINFO_FIELD_HANDLE fieldHnd, BYTE ordinal);
-        bool TryPromoteStructField(lvaStructFieldInfo& outerFieldInfo);
+        var_types TryPromoteValueClassAsPrimitive(CORINFO_TYPE_LAYOUT_NODE* treeNodes, size_t maxTreeNodes, size_t index);
+        void AdvanceSubTree(CORINFO_TYPE_LAYOUT_NODE* treeNodes, size_t maxTreeNodes, size_t* index);
 
     private:
         Compiler*              compiler;
@@ -3971,8 +3969,17 @@ protected:
                               var_types             callType,
                               NamedIntrinsic        intrinsicName,
                               bool                  tailCall);
+    GenTree* impMinMaxIntrinsic(CORINFO_METHOD_HANDLE method,
+                                CORINFO_SIG_INFO*     sig,
+                                CorInfoType           callJitType,
+                                NamedIntrinsic        intrinsicName,
+                                bool                  tailCall,
+                                bool                  isMax,
+                                bool                  isMagnitude,
+                                bool                  isNumber);
     NamedIntrinsic lookupNamedIntrinsic(CORINFO_METHOD_HANDLE method);
-    NamedIntrinsic lookupPrimitiveNamedIntrinsic(CORINFO_METHOD_HANDLE method, const char* methodName);
+    NamedIntrinsic lookupPrimitiveFloatNamedIntrinsic(CORINFO_METHOD_HANDLE method, const char* methodName);
+    NamedIntrinsic lookupPrimitiveIntNamedIntrinsic(CORINFO_METHOD_HANDLE method, const char* methodName);
     GenTree* impUnsupportedNamedIntrinsic(unsigned              helper,
                                           CORINFO_METHOD_HANDLE method,
                                           CORINFO_SIG_INFO*     sig,
@@ -6151,6 +6158,7 @@ private:
     PhaseStatus fgForwardSub();
     bool fgForwardSubBlock(BasicBlock* block);
     bool fgForwardSubStatement(Statement* statement);
+    bool fgForwardSubHasStoreInterference(Statement* defStmt, Statement* nextStmt, GenTree* nextStmtUse);
     void fgForwardSubUpdateLiveness(GenTree* newSubListFirst, GenTree* newSubListLast);
 
     // The given local variable, required to be a struct variable, is being assigned via
@@ -7163,6 +7171,28 @@ public:
                                              unsigned              classAttr,
                                              unsigned              likelihood);
 
+    int getGDVMaxTypeChecks()
+    {
+        int typeChecks = JitConfig.JitGuardedDevirtualizationMaxTypeChecks();
+        if (typeChecks < 0)
+        {
+            // Negative value means "it's up to JIT to decide"
+            if (IsTargetAbi(CORINFO_NATIVEAOT_ABI) && !opts.jitFlags->IsSet(JitFlags::JIT_FLAG_SIZE_OPT))
+            {
+                return 3;
+            }
+
+            // We plan to use 3 for CoreCLR too, but we need to make sure it doesn't regress performance
+            // as CoreCLR heavily relies on Dynamic PGO while for NativeAOT we *usually* don't have it and
+            // can only perform the "exact" devirtualization.
+            return 1;
+        }
+
+        // MAX_GDV_TYPE_CHECKS is the upper limit. The constant can be changed, we just suspect that even
+        // 4 type checks is already too much.
+        return min(MAX_GDV_TYPE_CHECKS, typeChecks);
+    }
+
     bool doesMethodHaveExpRuntimeLookup()
     {
         return (optMethodFlags & OMF_HAS_EXPRUNTIMELOOKUP) != 0;
@@ -8086,9 +8116,7 @@ public:
 
     WORD eeGetRelocTypeHint(void* target);
 
-    // ICorStaticInfo wrapper functions
-
-    bool eeTryResolveToken(CORINFO_RESOLVED_TOKEN* resolvedToken);
+// ICorStaticInfo wrapper functions
 
 #if defined(UNIX_AMD64_ABI)
 #ifdef DEBUG
@@ -8493,6 +8521,16 @@ private:
         return info.compCompHnd->getTypeInstantiationArgument(cls, index);
     }
 
+    bool isNumericsNamespace(const char* ns)
+    {
+        return strcmp(ns, "System.Numerics") == 0;
+    }
+
+    bool isRuntimeIntrinsicsNamespace(const char* ns)
+    {
+        return strcmp(ns, "System.Runtime.Intrinsics") == 0;
+    }
+
 #ifdef FEATURE_SIMD
     // Have we identified any SIMD types?
     // This is currently used by struct promotion to avoid getting type information for a struct
@@ -8597,11 +8635,6 @@ private:
         return isOpaqueSIMDType(varDsc->GetLayout());
     }
 
-    bool isNumericsNamespace(const char* ns)
-    {
-        return strcmp(ns, "System.Numerics") == 0;
-    }
-
     bool isSIMDClass(CORINFO_CLASS_HANDLE clsHnd)
     {
         if (isIntrinsicType(clsHnd))
@@ -8620,7 +8653,7 @@ private:
         {
             const char* namespaceName = nullptr;
             (void)getClassNameFromMetadata(clsHnd, &namespaceName);
-            return strcmp(namespaceName, "System.Runtime.Intrinsics") == 0;
+            return isRuntimeIntrinsicsNamespace(namespaceName);
         }
 #endif // FEATURE_HW_INTRINSICS
         return false;
@@ -8733,8 +8766,10 @@ private:
         }
         else
         {
-            assert((JitConfig.EnableHWIntrinsic() == 0) || (JitConfig.EnableSSE() == 0));
-            return 0;
+            // TODO: We should be returning 0 here, but there are a number of
+            // places that don't quite get handled correctly in that scenario
+
+            return XMM_REGSIZE_BYTES;
         }
 #elif defined(TARGET_ARM64)
         if (compOpportunisticallyDependsOn(InstructionSet_AdvSimd))
@@ -8743,8 +8778,10 @@ private:
         }
         else
         {
-            assert((JitConfig.EnableHWIntrinsic() == 0) || (JitConfig.EnableArm64AdvSimd() == 0));
-            return 0;
+            // TODO: We should be returning 0 here, but there are a number of
+            // places that don't quite get handled correctly in that scenario
+
+            return FP_REGSIZE_BYTES;
         }
 #else
         assert(!"getMaxVectorByteLength() unimplemented on target arch");
@@ -9119,15 +9156,15 @@ private:
 
 #ifdef DEBUG
     //------------------------------------------------------------------------
-    // IsBaselineVector512IsaSupportedDebugOnly - Does the target have isa support required for Vector512.
+    // IsBaselineVector512IsaSupportedDebugOnly - Does isa support exist for Vector512.
     //
     // Returns:
-    //    `true` if AVX512F, AVX512BW and AVX512DQ are supported.
+    //    `true` if AVX512F, AVX512BW, AVX512CD, AVX512DQ, and AVX512VL are supported.
     //
     bool IsBaselineVector512IsaSupportedDebugOnly() const
     {
 #ifdef TARGET_XARCH
-        return (compIsaSupportedDebugOnly(InstructionSet_Vector512));
+        return compIsaSupportedDebugOnly(InstructionSet_AVX512F);
 #else
         return false;
 #endif
@@ -9135,15 +9172,15 @@ private:
 #endif // DEBUG
 
     //------------------------------------------------------------------------
-    // IsBaselineVector512IsaSupported - Does the target have isa support required for Vector512.
+    // IsBaselineVector512IsaSupportedOpportunistically - Does opportunistic isa support exist for Vector512.
     //
     // Returns:
-    //    `true` if AVX512F, AVX512BW and AVX512DQ are supported.
+    //    `true` if AVX512F, AVX512BW, AVX512CD, AVX512DQ, and AVX512VL are supported.
     //
-    bool IsBaselineVector512IsaSupported() const
+    bool IsBaselineVector512IsaSupportedOpportunistically() const
     {
 #ifdef TARGET_XARCH
-        return (compExactlyDependsOn(InstructionSet_Vector512));
+        return compOpportunisticallyDependsOn(InstructionSet_AVX512F);
 #else
         return false;
 #endif
@@ -9179,7 +9216,7 @@ private:
         // otherwise use VEX encoding but can be EVEX encoded to use EVEX encoding
         // This requires AVX512F, AVX512BW, AVX512CD, AVX512DQ, and AVX512VL support
 
-        if (JitConfig.JitStressEvexEncoding() && IsBaselineVector512IsaSupported())
+        if (JitConfig.JitStressEvexEncoding() && IsBaselineVector512IsaSupportedOpportunistically())
         {
             assert(compIsaSupportedDebugOnly(InstructionSet_AVX512F));
             assert(compIsaSupportedDebugOnly(InstructionSet_AVX512F_VL));
@@ -9488,6 +9525,16 @@ public:
             return jitFlags->IsSet(JitFlags::JIT_FLAG_REVERSE_PINVOKE);
         }
 
+        // true if JitFlags::JIT_FLAG_VECTOR512_THROTTLING is set to true
+        bool Vector512Throttling()
+        {
+#if defined(TARGET_XARCH)
+            return jitFlags->IsSet(JitFlags::JIT_FLAG_VECTOR512_THROTTLING);
+#else
+            return false;
+#endif
+        }
+
         bool compScopeInfo; // Generate the LocalVar info ?
         bool compDbgCode;   // Generate debugger-friendly code?
         bool compDbgInfo;   // Gather debugging info?
@@ -9547,6 +9594,7 @@ public:
         bool dspDiffable;  // Makes the Jit Dump 'diff-able' (currently uses same DOTNET_* flag as disDiffable)
         bool disDiffable;  // Makes the Disassembly code 'diff-able'
         bool disAlignment; // Display alignment boundaries in disassembly code
+        bool disCodeBytes; // Display instruction code bytes in disassembly code
 #ifdef DEBUG
         bool compProcedureSplittingEH; // Separate cold code from hot code for functions with EH
         bool dspCode;                  // Display native code generated
@@ -9767,7 +9815,6 @@ public:
         STRESS_MODE(CATCH_ARG)        /* Will spill catch arg */                                \
         STRESS_MODE(UNSAFE_BUFFER_CHECKS)                                                       \
         STRESS_MODE(NULL_OBJECT_CHECK)                                                          \
-        STRESS_MODE(PINVOKE_RESTORE_ESP)                                                        \
         STRESS_MODE(RANDOM_INLINE)                                                              \
         STRESS_MODE(SWITCH_CMP_BR_EXPANSION)                                                    \
         STRESS_MODE(GENERIC_VARN)                                                               \

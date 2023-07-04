@@ -1535,12 +1535,13 @@ add_valuetype (CallInfo *cinfo, ArgInfo *ainfo, MonoType *t, gboolean is_return)
 	int i, size, align_size, nregs, nfields, esize;
 	int field_offsets [16];
 	guint32 align;
-	MonoClass *klass;
 
-	klass = mono_class_from_mono_type_internal (t);
 	size = mini_type_stack_size_full (t, &align, cinfo->pinvoke);
 	align_size = ALIGN_TO (size, 8);
 
+	/* FIXME: gshared, gsharedvt, dyncalls */
+#if 0
+	MonoClass *klass = mono_class_from_mono_type_internal (t);
 	if (m_class_is_simd_type (klass) && size <= 16 && !cinfo->pinvoke && !is_return && cinfo->fr < FP_PARAM_REGS) {
 		ainfo->storage = ArgInSIMDReg;
 		ainfo->reg = cinfo->fr;
@@ -1549,6 +1550,7 @@ add_valuetype (CallInfo *cinfo, ArgInfo *ainfo, MonoType *t, gboolean is_return)
 		cinfo->fr ++;
 		return;
 	}
+#endif
 
 	nregs = align_size / 8;
 	if (is_hfa (t, &nfields, &esize, field_offsets)) {
@@ -4083,7 +4085,7 @@ mono_arch_output_basic_block (MonoCompile *cfg, MonoBasicBlock *bb)
 		}
 		case OP_CREATE_SCALAR_UNSAFE_INT: {
 			const int t = get_type_size_macro (ins->inst_c1);
-			arm_neon_ins_g(code, t, dreg, sreg1, 0);
+			arm_neon_ins_g (code, t, dreg, sreg1, 0);
 			break;
 		}
 		case OP_CREATE_SCALAR_UNSAFE_FLOAT: {
@@ -4097,14 +4099,17 @@ mono_arch_output_basic_block (MonoCompile *cfg, MonoBasicBlock *bb)
 					t = SIZE_8;
 					break;
 				}
-				arm_neon_ins_e(code, t, dreg, sreg1, 0, 0);
+				arm_neon_ins_e (code, t, dreg, sreg1, 0, 0);
 			}
 			break;
 		}
-		// This requires Vector64 SIMD support
-		// case OP_XCONCAT:
-		// 	arm_neon_ext_16b(code, dreg, sreg1, sreg2, 8);
-		// 	break;
+		case OP_XCONCAT: {
+			if (dreg != sreg1)
+				arm_neon_mov (code, dreg, sreg1);
+
+			arm_neon_ins_e (code, SIZE_8, dreg, sreg2, 1, 0); 
+		 	break;
+		}
 		case OP_ARM64_USHL: {
 			arm_neon_ushl (code, get_vector_size_macro (ins), get_type_size_macro (ins->inst_c1), dreg, sreg1, sreg2);
 			break;
@@ -4116,6 +4121,33 @@ mono_arch_output_basic_block (MonoCompile *cfg, MonoBasicBlock *bb)
 				arm_neon_ext_16b (code, dreg, sreg1, sreg2, ins->inst_c0);
 			break;
 		}
+		case OP_XLOWER: {
+			if (dreg == sreg1) {
+				// clean the upper half
+				arm_neon_eor (code, VREG_FULL, NEON_TMP_REG, NEON_TMP_REG, NEON_TMP_REG);
+				arm_neon_ins_e (code, SIZE_8, dreg, NEON_TMP_REG, 1, 0); 
+			} else {
+				arm_neon_eor (code, VREG_FULL, dreg, dreg, dreg);
+				arm_neon_mov_8b (code, dreg, sreg1);
+			}
+			break;
+		}
+		case OP_XUPPER:
+			// shift in 64 zeros from the left
+			arm_neon_eor (code, VREG_FULL, NEON_TMP_REG, NEON_TMP_REG, NEON_TMP_REG);
+			arm_neon_ext_16b (code, dreg, sreg1, NEON_TMP_REG, 8);
+			break;
+	
+		case OP_XINSERT_LOWER:
+		case OP_XINSERT_UPPER: {
+			if (dreg != sreg1)
+				arm_neon_mov (code, dreg, sreg1);
+
+			int insert_at = (ins->opcode == OP_XINSERT_LOWER) ? 0 : 1;
+			arm_neon_ins_e (code, SIZE_8, dreg, sreg2, insert_at, 0);
+			break;
+		}
+
 		/* BRANCH */
 		case OP_BR:
 			mono_add_patch_info_rel (cfg, offset, MONO_PATCH_INFO_BB, ins->inst_target_bb, MONO_R_ARM64_B);
@@ -4869,11 +4901,10 @@ mono_arch_output_basic_block (MonoCompile *cfg, MonoBasicBlock *bb)
 			arm_uxthw (code, dreg, dreg);
 			break;
 		case OP_FCONV_TO_I4:
-			arm_fcvtzs_dx (code, dreg, sreg1);
-			arm_sxtwx (code, dreg, dreg);
+			arm_fcvtzs_dw (code, dreg, sreg1);
 			break;
 		case OP_FCONV_TO_U4:
-			arm_fcvtzu_dx (code, dreg, sreg1);
+			arm_fcvtzu_dw (code, dreg, sreg1);
 			break;
 		case OP_FCONV_TO_I8:
 			arm_fcvtzs_dx (code, dreg, sreg1);
@@ -4970,11 +5001,10 @@ mono_arch_output_basic_block (MonoCompile *cfg, MonoBasicBlock *bb)
 			arm_uxthw (code, dreg, dreg);
 			break;
 		case OP_RCONV_TO_I4:
-			arm_fcvtzs_sx (code, dreg, sreg1);
-			arm_sxtwx (code, dreg, dreg);
+			arm_fcvtzs_sw (code, dreg, sreg1);
 			break;
 		case OP_RCONV_TO_U4:
-			arm_fcvtzu_sx (code, dreg, sreg1);
+			arm_fcvtzu_sw (code, dreg, sreg1);
 			break;
 		case OP_RCONV_TO_I8:
 			arm_fcvtzs_sx (code, dreg, sreg1);

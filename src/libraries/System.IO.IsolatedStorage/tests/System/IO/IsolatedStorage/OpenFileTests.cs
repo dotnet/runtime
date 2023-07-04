@@ -127,6 +127,7 @@ namespace System.IO.IsolatedStorage
         }
 
         [Theory, MemberData(nameof(ValidStores))]
+        [ActiveIssue("https://github.com/dotnet/runtime/issues/87485", TestPlatforms.MacCatalyst)]
         public void OpenFile_Existence(PresetScopes scope)
         {
             TestHelper.WipeStores();

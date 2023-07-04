@@ -327,7 +327,7 @@ get_type_init_exception_for_vtable (MonoVTable *vtable)
 
 	mono_mem_manager_init_reflection_hashes (mem_manager);
 
-	/* 
+	/*
 	 * If the initializing thread was rudely aborted, the exception is not stored
 	 * in the hash.
 	 */
@@ -6361,7 +6361,7 @@ mono_string_new_utf8_len (const char *text, guint length, MonoError *error)
 	gunichar2 *ut = NULL;
 	glong items_written;
 
-	ut = eg_utf8_to_utf16_with_nuls (text, length, NULL, &items_written, &eg_error);
+	ut = g_utf8_to_utf16 (text, length, NULL, &items_written, &eg_error);
 
 	if (eg_error) {
 		o = NULL_HANDLE_STRING;
@@ -8135,7 +8135,11 @@ mono_runtime_run_startup_hooks (void)
 	mono_error_cleanup (error);
 	if (!method)
 		return;
-	mono_runtime_invoke_checked (method, NULL, NULL, error);
+
+	gpointer args [1];
+	args[0] = mono_string_empty_internal (mono_domain_get ());
+
+	mono_runtime_invoke_checked (method, NULL, args, error);
 	// runtime hooks design doc says not to catch exceptions from the hooks
 	mono_error_raise_exception_deprecated (error);
 }

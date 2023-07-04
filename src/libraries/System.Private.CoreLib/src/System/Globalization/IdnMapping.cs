@@ -410,9 +410,7 @@ namespace System.Globalization
                 else
                 {
                     // If it has some non-basic code points the input cannot start with xn--
-                    if (unicode.Length - iAfterLastDot >= c_strAcePrefix.Length &&
-                        unicode.Substring(iAfterLastDot, c_strAcePrefix.Length).Equals(
-                            c_strAcePrefix, StringComparison.OrdinalIgnoreCase))
+                    if (unicode.AsSpan(iAfterLastDot).StartsWith(c_strAcePrefix, StringComparison.OrdinalIgnoreCase))
                         throw new ArgumentException(SR.Argument_IdnBadPunycode, nameof(unicode));
 
                     // Need to do ACE encoding

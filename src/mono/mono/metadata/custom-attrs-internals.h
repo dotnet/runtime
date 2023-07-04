@@ -33,7 +33,7 @@ typedef struct _MonoDecodeCustomAttr {
 } MonoDecodeCustomAttr;
 
 MonoCustomAttrInfo*
-mono_custom_attrs_from_builders (MonoImage *alloc_img, MonoImage *image, MonoArray *cattrs);
+mono_custom_attrs_from_builders (MonoImage *alloc_img, MonoImage *image, MonoArray *cattrs, gboolean respect_cattr_visibility);
 
 typedef gboolean (*MonoAssemblyMetadataCustomAttrIterFunc) (MonoImage *image, guint32 typeref_scope_token, const gchar* nspace, const gchar* name, guint32 method_token, guint32 *cols, gpointer user_data);
 

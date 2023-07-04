@@ -32,17 +32,12 @@ The .NET Foundation licenses this file to you under the MIT license.
     <_IsApplePlatform Condition="'$(_targetOS)' == 'osx' or '$(_IsiOSLikePlatform)' == 'true'">true</_IsApplePlatform>
   </PropertyGroup>
 
-  <!-- Set up the defaults for the compatibility mode -->
-  <PropertyGroup>
-    <IlcGenerateStackTraceData Condition="$(IlcGenerateStackTraceData) == ''">true</IlcGenerateStackTraceData>
-    <IlcScanReflection Condition="$(IlcScanReflection) == ''">true</IlcScanReflection>
-  </PropertyGroup>
-
   <!-- Set up default feature switches -->
   <PropertyGroup>
     <UseSystemResourceKeys Condition="$(IlcDisableReflection) == 'true'">true</UseSystemResourceKeys>
     <EventSourceSupport Condition="$(IlcDisableReflection) == 'true'">false</EventSourceSupport>
     <EventSourceSupport Condition="$(EventSourceSupport) == ''">false</EventSourceSupport>
+    <UseWindowsThreadPool Condition="'$(UseWindowsThreadPool)' == '' and '$(_targetOS)' == 'win'">true</UseWindowsThreadPool>
     <DynamicCodeSupport Condition="'$(DynamicCodeSupport)' == ''">false</DynamicCodeSupport>
   </PropertyGroup>
 
@@ -103,7 +98,7 @@ The .NET Foundation licenses this file to you under the MIT license.
   <ItemGroup Condition="$(IlcSystemModule) == ''">
     <UnmanagedEntryPointsAssembly Include="System.Private.CoreLib" />
     <AutoInitializedAssemblies Include="System.Private.CoreLib" />
-    <AutoInitializedAssemblies Include="System.Private.StackTraceMetadata" Condition="$(IlcDisableReflection) != 'true' or $(IlcGenerateStackTraceData) == 'true'" />
+    <AutoInitializedAssemblies Include="System.Private.StackTraceMetadata" Condition="$(StackTraceSupport) != 'false'" />
     <AutoInitializedAssemblies Include="System.Private.TypeLoader" />
     <AutoInitializedAssemblies Include="System.Private.Reflection.Execution" Condition="$(IlcDisableReflection) != 'true'" />
     <AutoInitializedAssemblies Include="System.Private.DisabledReflection" Condition="$(IlcDisableReflection) == 'true'" />
@@ -198,11 +193,23 @@ The .NET Foundation licenses this file to you under the MIT license.
       DependsOnTargets="$(IlcCompileDependsOn)">
 
     <ItemGroup>
-      <_IlcRootedAssemblies Include="@(TrimmerRootAssembly)" />
-      <_IlcRootedAssemblies Include="@(ManagedAssemblyToLink)" Condition="%(ManagedAssemblyToLink.TrimMode) == 'copy'" />
-      <_IlcConditionallyRootedAssemblies Include="@(ManagedAssemblyToLink)" Condition="%(ManagedAssemblyToLink.TrimMode) == 'copyused'" />
-      <_IlcTrimmedAssemblies Include="@(ManagedAssemblyToLink)" Condition="%(ManagedAssemblyToLink.TrimMode) == 'link'" />
-      <_IlcNoSingleWarnAssemblies Include="@(ManagedAssemblyToLink)" Condition="%(ManagedAssemblyToLink.TrimmerSingleWarn) == 'false'" />
+      <!-- Grab the raw ItemGroup that ILLinker accepts in two form: as file names, and as assembly names -->
+      <_IlcRootedAssembliesRaw Include="@(TrimmerRootAssembly)" Condition="%(TrimmerRootAssembly.RootMode) != 'EntryPoint'" />
+      <_IlcRootedAssembliesRaw Include="@(ManagedAssemblyToLink)" Condition="%(ManagedAssemblyToLink.TrimMode) == 'copy'" />
+      <_IlcConditionallyRootedAssembliesRaw Include="@(ManagedAssemblyToLink)" Condition="%(ManagedAssemblyToLink.TrimMode) == 'copyused'" />
+      <_IlcTrimmedAssembliesRaw Include="@(ManagedAssemblyToLink)" Condition="%(ManagedAssemblyToLink.TrimMode) == 'link'" />
+      <_IlcNoSingleWarnAssembliesRaw Include="@(ManagedAssemblyToLink)" Condition="%(ManagedAssemblyToLink.TrimmerSingleWarn) == 'false'" />
+
+      <!-- Now process the raw ItemGroup into the form that ILC accepts: assembly names only -->
+      <!-- Use the logic that ILLinker uses: if the file exists, this is a file name. Otherwise it's an assembly name -->
+      <_IlcRootedAssemblies Include="@(_IlcRootedAssembliesRaw->'%(Filename)')" Condition="Exists('%(Identity)')" />
+      <_IlcRootedAssemblies Include="@(_IlcRootedAssembliesRaw)" Condition="!Exists('%(Identity)')" />
+      <_IlcConditionallyRootedAssemblies Include="@(_IlcConditionallyRootedAssembliesRaw->'%(Filename)')" Condition="Exists('%(Identity)')" />
+      <_IlcConditionallyRootedAssemblies Include="@(_IlcConditionallyRootedAssembliesRaw)" Condition="!Exists('%(Identity)')" />
+      <_IlcTrimmedAssemblies Include="@(_IlcTrimmedAssembliesRaw->'%(Filename)')" Condition="Exists('%(Identity)')" />
+      <_IlcTrimmedAssemblies Include="@(_IlcTrimmedAssembliesRaw)" Condition="!Exists('%(Identity)')" />
+      <_IlcNoSingleWarnAssemblies Include="@(_IlcNoSingleWarnAssembliesRaw->'%(Filename)')" Condition="Exists('%(Identity)')" />
+      <_IlcNoSingleWarnAssemblies Include="@(_IlcNoSingleWarnAssembliesRaw)" Condition="!Exists('%(Identity)')" />
     </ItemGroup>
 
     <ItemGroup>
@@ -236,11 +243,12 @@ The .NET Foundation licenses this file to you under the MIT license.
       <IlcArg Include="--runtimeknob:RUNTIME_IDENTIFIER=$(RuntimeIdentifier)" />
       <IlcArg Condition="$(ServerGarbageCollection) == 'true'" Include="--runtimeopt:gcServer=1" />
       <IlcArg Condition="$(IlcGenerateCompleteTypeMetadata) == 'true' and $(IlcDisableReflection) != 'true'" Include="--completetypemetadata" />
-      <IlcArg Condition="$(IlcGenerateStackTraceData) == 'true'" Include="--stacktracedata" />
-      <IlcArg Condition="$(IlcScanReflection) == 'true' and $(IlcDisableReflection) != 'true'" Include="--scanreflection" />
+      <IlcArg Condition="$(StackTraceSupport) != 'false'" Include="--stacktracedata" />
+      <IlcArg Condition="$(IlcScanReflection) != 'false' and $(IlcDisableReflection) != 'true'" Include="--scanreflection" />
       <IlcArg Condition="$(IlcFoldIdenticalMethodBodies) == 'true'" Include="--methodbodyfolding" />
       <IlcArg Condition="$(Optimize) == 'true' and $(OptimizationPreference) == 'Size'" Include="--Os" />
       <IlcArg Condition="$(Optimize) == 'true' and $(OptimizationPreference) == 'Speed'" Include="--Ot" />
+      <IlcArg Condition="'$(_linuxLibcFlavor)' == 'bionic'" Include="--noinlinetls" />
       <IlcArg Condition="$(IlcInstructionSet) != ''" Include="--instruction-set:$(IlcInstructionSet)" />
       <IlcArg Condition="$(IlcDisableReflection) == 'true'" Include="--reflectiondata:none" />
       <IlcArg Condition="$(IlcDisableReflection) == 'true'" Include="--feature:System.Collections.Generic.DefaultComparers=false" />
@@ -272,6 +280,7 @@ The .NET Foundation licenses this file to you under the MIT license.
 
       <!-- The managed debugging support in libraries is unused - trim it -->
       <IlcArg Condition="'$(IlcKeepManagedDebuggerSupport)' != 'true'" Include="--feature:System.Diagnostics.Debugger.IsSupported=false" />
+      <IlcArg Condition="'$(UseWindowsThreadPool)' != '' and '$(_targetOS)' == 'win'" Include="--feature:System.Threading.ThreadPool.UseWindowsThreadPool=$(UseWindowsThreadPool)" />
     </ItemGroup>
 
     <MakeDir Directories="$(NativeIntermediateOutputPath)" />
@@ -367,14 +376,15 @@ The .NET Foundation licenses this file to you under the MIT license.
     <Exec Command="&quot;$(CppLibCreator)&quot; @&quot;$(NativeIntermediateOutputPath)lib.rsp&quot;" Condition="'$(_targetOS)' == 'win' and '$(NativeLib)' == 'Static'" />
 
     <!-- remove executable flag -->
-    <Exec Command="chmod 644 &quot;$(NativeBinary)&quot;" Condition="'$(_targetOS)' != 'win' and '$(NativeLib)' == 'Shared'" />
+    <Exec Command="chmod 644 &quot;$(NativeBinary)&quot;" Condition="'$(NativeLib)' == 'Shared' and !$([MSBuild]::IsOSPlatform('Windows'))" />
 
     <!-- strip symbols, see https://github.com/dotnet/runtime/blob/5d3288d/eng/native/functions.cmake#L374 -->
     <Exec Condition="'$(StripSymbols)' == 'true' and '$(_targetOS)' != 'win' and '$(_IsApplePlatform)' != 'true'"
-      Command="
-        &quot;$(ObjCopyName)&quot; --only-keep-debug &quot;$(NativeBinary)&quot; &quot;$(NativeBinary)$(NativeSymbolExt)&quot; &amp;&amp;
-        &quot;$(ObjCopyName)&quot; --strip-debug --strip-unneeded &quot;$(NativeBinary)&quot; &amp;&amp;
-        &quot;$(ObjCopyName)&quot; --add-gnu-debuglink=&quot;$(NativeBinary)$(NativeSymbolExt)&quot; &quot;$(NativeBinary)&quot;" />
+      Command="&quot;$(ObjCopyName)&quot; --only-keep-debug &quot;$(NativeBinary)&quot; &quot;$(NativeBinary)$(NativeSymbolExt)&quot;" />
+    <Exec Condition="'$(StripSymbols)' == 'true' and '$(_targetOS)' != 'win' and '$(_IsApplePlatform)' != 'true'"
+      Command="&quot;$(ObjCopyName)&quot; --strip-debug --strip-unneeded &quot;$(NativeBinary)&quot;" />
+    <Exec Condition="'$(StripSymbols)' == 'true' and '$(_targetOS)' != 'win' and '$(_IsApplePlatform)' != 'true'"
+      Command="&quot;$(ObjCopyName)&quot; --add-gnu-debuglink=&quot;$(NativeBinary)$(NativeSymbolExt)&quot; &quot;$(NativeBinary)&quot;" />
 
     <Exec Condition="'$(StripSymbols)' == 'true' and '$(_IsApplePlatform)' == 'true' and '$(NativeLib)' != 'Static'"
       Command="

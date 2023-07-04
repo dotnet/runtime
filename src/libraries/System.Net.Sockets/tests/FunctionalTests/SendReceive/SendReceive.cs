@@ -332,7 +332,7 @@ namespace System.Net.Sockets.Tests
                     Task clientConnect = ConnectAsync(client, clientEndpoint);
                     using (Socket remote = await AcceptAsync(server))
                     {
-                        await clientConnect;
+                        await clientConnect.WaitAsync(TestSettings.PassingTestTimeout);
 
                         if (useMultipleBuffers)
                         {
@@ -344,7 +344,8 @@ namespace System.Net.Sockets.Tests
 
                             await Task.WhenAll(
                                 SendAsync(remote, new ArraySegment<byte>(new byte[] { 1, 2, 3, 4, 5 })),
-                                receive1, receive2, receive3);
+                                receive1, receive2, receive3)
+                                .WaitAsync(TestSettings.PassingTestTimeout);
 
                             Assert.True(receive1.Result == 1 || receive1.Result == 2, $"Expected 1 or 2, got {receive1.Result}");
                             Assert.True(receive2.Result == 1 || receive2.Result == 2, $"Expected 1 or 2, got {receive2.Result}");
@@ -398,7 +399,8 @@ namespace System.Net.Sockets.Tests
 
                             await Task.WhenAll(
                                 SendAsync(remote, new ArraySegment<byte>(new byte[] { 1, 2, 3 })),
-                                receive1, receive2, receive3);
+                                receive1, receive2, receive3)
+                                .WaitAsync(TestSettings.PassingTestTimeout);
 
                             Assert.Equal(3, receive1.Result + receive2.Result + receive3.Result);
 

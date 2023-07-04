@@ -484,7 +484,8 @@ private:
             JITDUMP("Likelihood of correct guess is %u\n", likelihood);
 
             // TODO: implement chaining for multiple GDV candidates
-            const bool canChainGdv = GetChecksCount() == 1;
+            const bool canChainGdv =
+                (GetChecksCount() == 1) && ((origCall->gtCallMoreFlags & GTF_CALL_M_GUARDED_DEVIRT_EXACT) == 0);
             if (canChainGdv)
             {
                 const bool isChainedGdv = (origCall->gtCallMoreFlags & GTF_CALL_M_GUARDED_DEVIRT_CHAIN) != 0;
@@ -643,6 +644,17 @@ private:
             // because flow along the "cold path" is going to bypass the check block.
             //
             lastStmt = checkBlock->lastStmt();
+
+            // In case if GDV candidates are "exact" (e.g. we have the full list of classes implementing
+            // the given interface in the app - NativeAOT only at this moment) we assume the last
+            // check will always be true, so we just simplify the block to BBJ_NONE
+            const bool isLastCheck = (checkIdx == origCall->GetInlineCandidatesCount() - 1);
+            if (isLastCheck && ((origCall->gtCallMoreFlags & GTF_CALL_M_GUARDED_DEVIRT_EXACT) != 0))
+            {
+                checkBlock->bbJumpDest = nullptr;
+                checkBlock->bbJumpKind = BBJ_NONE;
+                return;
+            }
 
             InlineCandidateInfo* guardedInfo = origCall->GetGDVCandidateInfo(checkIdx);
 
@@ -986,10 +998,23 @@ private:
             elseBlock = CreateAndInsertBasicBlock(BBJ_NONE, thenBlock);
             elseBlock->bbFlags |= currBlock->bbFlags & BBF_SPLIT_GAINED;
 
+            // CheckBlock flows into elseBlock unless we deal with the case
+            // where we know the last check is always true (in case of "exact" GDV)
+            if (checkBlock->KindIs(BBJ_COND))
+            {
+                checkBlock->bbJumpDest = elseBlock;
+                compiler->fgAddRefPred(elseBlock, checkBlock);
+            }
+            else
+            {
+                // In theory, we could simplify the IR here, but since it's a rare case
+                // and is NativeAOT-only, we just assume the unreached block will be removed
+                // by other phases.
+                assert(origCall->gtCallMoreFlags & GTF_CALL_M_GUARDED_DEVIRT_EXACT);
+            }
+
             // elseBlock always flows into remainderBlock
-            checkBlock->bbJumpDest = elseBlock;
             compiler->fgAddRefPred(remainderBlock, elseBlock);
-            compiler->fgAddRefPred(elseBlock, checkBlock);
 
             // Calculate the likelihood of the else block as a remainder of the sum
             // of all the other likelihoods.

@@ -3036,51 +3036,6 @@ int32_t SystemNative_PlatformSupportsDualModeIPv4PacketInfo(void)
 #endif
 }
 
-static char* GetNameFromUid(uid_t uid)
-{
-    size_t bufferLength = 512;
-    while (1)
-    {
-        char *buffer = (char*)malloc(bufferLength);
-        if (buffer == NULL)
-            return NULL;
-
-        struct passwd pw;
-        struct passwd* result;
-        if (getpwuid_r(uid, &pw, buffer, bufferLength, &result) == 0)
-        {
-            if (result == NULL)
-            {
-                errno = ENOENT;
-                free(buffer);
-                return NULL;
-            }
-            else
-            {
-                char* name = strdup(pw.pw_name);
-                free(buffer);
-                return name;
-            }
-        }
-
-        free(buffer);
-        size_t tmpBufferLength;
-        if (errno != ERANGE || !multiply_s(bufferLength, (size_t)2, &tmpBufferLength))
-        {
-            return NULL;
-        }
-        bufferLength = tmpBufferLength;
-    }
-}
-
-char* SystemNative_GetPeerUserName(intptr_t socket)
-{
-    uid_t euid;
-    return SystemNative_GetPeerID(socket, &euid) == 0 ?
-        GetNameFromUid(euid) :
-        NULL;
-}
-
 void SystemNative_GetDomainSocketSizes(int32_t* pathOffset, int32_t* pathSize, int32_t* addressSize)
 {
     assert(pathOffset != NULL);
