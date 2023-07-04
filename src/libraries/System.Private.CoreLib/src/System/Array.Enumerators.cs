@@ -67,6 +67,8 @@ namespace System
         }
     }
 
+    // Native AOT doesn't use these for size on disk reasons
+#if !NATIVEAOT
     internal abstract class SZGenericArrayEnumeratorBase : IDisposable
     {
         protected readonly Array _array;
@@ -140,6 +142,7 @@ namespace System
 
         object? IEnumerator.Current => Current;
     }
+#endif
 
     internal abstract class GenericEmptyEnumeratorBase : IDisposable, IEnumerator
     {
