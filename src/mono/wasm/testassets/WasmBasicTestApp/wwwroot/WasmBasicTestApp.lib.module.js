@@ -1,5 +1,5 @@
 export function onRuntimeConfigLoaded(config) {
-    config.environmentVariables["LIBRARY_INITIALIZER_TEST"] = 1;
+    config.environmentVariables["LIBRARY_INITIALIZER_TEST"] = "1";
 }
 
 export async function onRuntimeReady({ getAssemblyExports, getConfig }) {
