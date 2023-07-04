@@ -2908,9 +2908,6 @@ void Compiler::lvaSetStruct(unsigned varNum, ClassLayout* layout, bool unsafeVal
         assert(layout->IsBlockLayout() || (layout->GetSize() != 0));
     }
 
-    unsigned classAttribs = info.compCompHnd->getClassAttribs(layout->GetClassHandle());
-    varDsc->SetIsSpan(classAttribs & CORINFO_FLG_SPAN);
-
     if (!layout->IsBlockLayout())
     {
 #ifndef TARGET_64BIT
@@ -2931,18 +2928,16 @@ void Compiler::lvaSetStruct(unsigned varNum, ClassLayout* layout, bool unsafeVal
         }
 #endif // not TARGET_64BIT
 
+        unsigned classAttribs = info.compCompHnd->getClassAttribs(layout->GetClassHandle());
+        varDsc->SetIsSpan(classAttribs & CORINFO_FLG_SPAN);
+
         // Check whether this local is an unsafe value type and requires GS cookie protection.
         // GS checks require the stack to be re-ordered, which can't be done with EnC.
-        if (unsafeValueClsCheck)
+        if (unsafeValueClsCheck && (classAttribs & CORINFO_FLG_UNSAFE_VALUECLASS) && !opts.compDbgEnC)
         {
-            unsigned classAttribs = info.compCompHnd->getClassAttribs(layout->GetClassHandle());
-
-            if ((classAttribs & CORINFO_FLG_UNSAFE_VALUECLASS) && !opts.compDbgEnC)
-            {
-                setNeedsGSSecurityCookie();
-                compGSReorderStackLayout = true;
-                varDsc->lvIsUnsafeBuffer = true;
-            }
+            setNeedsGSSecurityCookie();
+            compGSReorderStackLayout = true;
+            varDsc->lvIsUnsafeBuffer = true;
         }
 
 #ifdef DEBUG
