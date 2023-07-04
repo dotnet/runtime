@@ -22,7 +22,6 @@ export async function loadBootConfig(config: MonoConfigInternal, module: DotnetM
 
 export async function initializeBootConfig(bootConfigResult: BootConfigResult, module: DotnetModuleInternal, loadBootResource?: LoadBootResourceCallback) {
     INTERNAL.resourceLoader = resourceLoader = await WebAssemblyResourceLoader.initAsync(bootConfigResult.bootConfig, loadBootResource);
-    loaderHelpers.bootConfig = bootConfigResult.bootConfig;
     mapBootConfigToMonoConfig(loaderHelpers.config, bootConfigResult.applicationEnvironment);
 
     if (ENVIRONMENT_IS_WEB) {

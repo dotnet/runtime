@@ -1,15 +1,15 @@
 import { MonoConfig, RuntimeAPI } from "../types";
-import { BootJsonData } from "../types/blazor";
 import { appendUniqueQuery, toAbsoluteBaseUri } from "./assets";
+import { normalizeConfig } from "./config";
 
-export async function fetchInitializers(moduleConfig: MonoConfig, bootConfig: BootJsonData): Promise<void> {
-    const libraryInitializers = bootConfig.resources.libraryInitializers;
-    if (!libraryInitializers) {
-        return;
-    }
-
+export async function fetchInitializers(moduleConfig: MonoConfig): Promise<void> {
     if (!moduleConfig.libraryInitializers) {
         moduleConfig.libraryInitializers = [];
+    }
+
+    const libraryInitializers = moduleConfig.resources?.libraryInitializers;
+    if (!libraryInitializers) {
+        return;
     }
 
     const initializerFiles = Object.keys(libraryInitializers);
@@ -23,18 +23,33 @@ export async function fetchInitializers(moduleConfig: MonoConfig, bootConfig: Bo
     }
 }
 
-export async function invokeOnRuntimeReady(api: RuntimeAPI) {
-    const moduleConfig = api.getConfig();
-    const initializerPromises = [];
-    if (moduleConfig.libraryInitializers) {
-        for (let i = 0; i < moduleConfig.libraryInitializers.length; i++) {
-            const initializer = moduleConfig.libraryInitializers[i];
-            initializer as { onRuntimeReady: (api: RuntimeAPI) => Promise<void> };
-            if (initializer?.onRuntimeReady) {
-                initializerPromises.push(initializer?.onRuntimeReady(api));
-            }
-        }
+export async function invokeOnRuntimeConfigLoaded(config: MonoConfig) {
+    mono_assert(config.libraryInitializers, "Initialization hasn't been done yet");
 
-        await Promise.all(initializerPromises);
+    const promises = [];
+    for (let i = 0; i < config.libraryInitializers.length; i++) {
+        const initializer = config.libraryInitializers[i] as { onRuntimeConfigLoaded: (config: MonoConfig) => Promise<void> };
+        if (initializer?.onRuntimeConfigLoaded) {
+            promises.push(initializer?.onRuntimeConfigLoaded(config));
+        }
     }
+
+    await Promise.all(promises);
+    if (promises.length > 0)
+        normalizeConfig();
+}
+
+export async function invokeOnRuntimeReady(api: RuntimeAPI) {
+    const config = api.getConfig();
+    mono_assert(config.libraryInitializers, "Initialization hasn't been done yet");
+
+    const promises = [];
+    for (let i = 0; i < config.libraryInitializers.length; i++) {
+        const initializer = config.libraryInitializers[i] as { onRuntimeReady: (api: RuntimeAPI) => Promise<void> };
+        if (initializer?.onRuntimeReady) {
+            promises.push(initializer?.onRuntimeReady(api));
+        }
+    }
+
+    await Promise.all(promises);
 }

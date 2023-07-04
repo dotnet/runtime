@@ -13,7 +13,7 @@ import { detect_features_and_polyfill } from "./polyfills";
 import { runtimeHelpers, loaderHelpers } from "./globals";
 import { init_globalization } from "./icu";
 import { setupPreloadChannelToMainThread } from "./worker";
-import { fetchInitializers, invokeOnRuntimeReady } from "./libraryInitializers";
+import { invokeOnRuntimeReady } from "./libraryInitializers";
 
 
 const module = globalObjectsRoot.module;
@@ -452,11 +452,7 @@ async function createEmscriptenMain(): Promise<RuntimeAPI> {
     initializeModules(es6Modules as any);
 
     await runtimeHelpers.dotnetReady.promise;
-
-    if (loaderHelpers.bootConfig) {
-        await fetchInitializers(module.config!, loaderHelpers.bootConfig);
-        await invokeOnRuntimeReady(globalObjectsRoot.api);
-    }
+    await invokeOnRuntimeReady(globalObjectsRoot.api);
 
     return exportedRuntimeAPI;
 }

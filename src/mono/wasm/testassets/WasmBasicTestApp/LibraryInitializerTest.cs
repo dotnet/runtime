@@ -10,5 +10,6 @@ public partial class LibraryInitializerTest
     public static void Run()
     {
         TestOutput.WriteLine("Run from LibraryInitializer");
+        TestOutput.WriteLine($"LIBRARY_INITIALIZER_TEST = {Environment.GetEnvironmentVariable("LIBRARY_INITIALIZER_TEST")}");
     }
 }

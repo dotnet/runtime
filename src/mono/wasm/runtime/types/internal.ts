@@ -95,7 +95,6 @@ export interface AssetEntryInternal extends AssetEntry {
 
 export type LoaderHelpers = {
     config: MonoConfigInternal;
-    bootConfig: BootJsonData;
     diagnosticTracing: boolean;
 
     maxParallelDownloads: number;

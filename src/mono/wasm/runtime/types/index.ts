@@ -111,7 +111,7 @@ export type MonoConfig = {
      * exports from library es6 modules
      * 
      * nuget packages can contain wwwroot/*.lib.module.js which are treated as es6 modules
-     * runtime calls 'onRuntimeReady' and pass in runtime API
+     * runtime calls 'onRuntimeConfigLoaded(config: MonoConfig)' and 'onRuntimeReady(api: RuntimeAPI)'
      * blazor calls 'beforeStart' and 'afterStarted'
      */
     libraryInitializers?: any[];
