@@ -845,6 +845,7 @@
       <MonoAOTCMakeArgs Include="-DGC_SUSPEND=$(MonoThreadSuspend)" />
       <!-- rename exe -->
       <MonoAOTCMakeArgs Include="-DMONO_CROSS_COMPILE_EXECUTABLE_NAME=1" />
+      <MonoAOTCMakeArgs Include="-DCLR_CMAKE_KEEP_NATIVE_SYMBOLS=true" Condition="'$(KeepNativeSymbols)' == 'true'" />
     </ItemGroup>
 
     <PropertyGroup>
