@@ -208,11 +208,13 @@ export type AssetBehaviours =
     | "js-module-native" // the javascript module for threads
     | "symbols" // the javascript module for threads
 
-export type GlobalizationMode =
-    "icu" | // load ICU globalization data from any runtime assets with behavior "icu".
-    "invariant" | //  operate in invariant globalization mode.
-    "hybrid" | // operate in hybrid globalization mode with small ICU files, using native platform functions
-    "auto" // (default): if "icu" behavior assets are present, use ICU, otherwise invariant.
+export const enum GlobalizationMode {
+    Sharded = "sharded", // load sharded ICU data
+    All = "all", // load all ICU data
+    Invariant = "invariant", //  operate in invariant globalization mode.
+    Custom = "custom", // use user defined icu file
+    Hybrid = "hybrid" // operate in hybrid globalization mode with small ICU files, using native platform functions
+}
 
 export type DotnetModuleConfig = {
     disableDotnet6Compatibility?: boolean,

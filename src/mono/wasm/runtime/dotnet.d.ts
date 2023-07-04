@@ -256,10 +256,13 @@ interface AssetEntry extends ResourceRequest {
     pendingDownload?: LoadingResource;
 }
 type AssetBehaviours = "resource" | "assembly" | "pdb" | "heap" | "icu" | "vfs" | "dotnetwasm" | "js-module-threads" | "js-module-runtime" | "js-module-dotnet" | "js-module-native" | "symbols";
-type GlobalizationMode = "icu" | // load ICU globalization data from any runtime assets with behavior "icu".
-"invariant" | //  operate in invariant globalization mode.
-"hybrid" | // operate in hybrid globalization mode with small ICU files, using native platform functions
-"auto";
+declare const enum GlobalizationMode {
+    Sharded = "sharded",
+    All = "all",
+    Invariant = "invariant",
+    Custom = "custom",
+    Hybrid = "hybrid"
+}
 type DotnetModuleConfig = {
     disableDotnet6Compatibility?: boolean;
     config?: MonoConfig;

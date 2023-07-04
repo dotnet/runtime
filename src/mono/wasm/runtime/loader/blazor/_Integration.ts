@@ -2,7 +2,7 @@
 // The .NET Foundation licenses this file to you under the MIT license.
 
 import type { DotnetModuleInternal, MonoConfigInternal } from "../../types/internal";
-import type { AssetBehaviours, AssetEntry, LoadBootResourceCallback, LoadingResource, WebAssemblyBootResourceType } from "../../types";
+import { GlobalizationMode, type AssetBehaviours, type AssetEntry, type LoadBootResourceCallback, type LoadingResource, type WebAssemblyBootResourceType } from "../../types";
 import type { BootJsonData } from "../../types/blazor";
 
 import { ENVIRONMENT_IS_WEB, INTERNAL, loaderHelpers } from "../globals";
@@ -95,7 +95,6 @@ export function mapBootConfigToMonoConfig(moduleConfig: MonoConfigInternal, appl
     moduleConfig.remoteSources = (resourceLoader.bootConfig.resources as any).remoteSources;
     moduleConfig.assetsHash = resourceLoader.bootConfig.resources.hash;
     moduleConfig.assets = assets;
-    moduleConfig.globalizationMode = "icu";
     moduleConfig.resources = {
         extensions: resources.extensions
     };
@@ -229,7 +228,7 @@ export function mapBootConfigToMonoConfig(moduleConfig: MonoConfigInternal, appl
     }
 
     if (!hasIcuData) {
-        moduleConfig.globalizationMode = "invariant";
+        moduleConfig.globalizationMode = GlobalizationMode.Invariant;
     }
 
     if (resourceLoader.bootConfig.modifiableAssemblies) {
@@ -262,24 +261,25 @@ function getICUResourceName(bootConfig: BootJsonData, moduleConfig: MonoConfigIn
             .keys(bootConfig.resources.runtime)
             .filter(n => n.startsWith("icudt") && n.endsWith(".dat"));
         if (icuFiles.length === 1) {
-            moduleConfig.globalizationMode = "icu";
+            moduleConfig.globalizationMode = GlobalizationMode.Custom;
             const customIcuFile = icuFiles[0];
             return customIcuFile;
         }
     }
 
     if (bootConfig.icuDataMode === ICUDataMode.Hybrid) {
-        moduleConfig.globalizationMode = "hybrid";
+        moduleConfig.globalizationMode = GlobalizationMode.Hybrid;
         const reducedICUResourceName = "icudt_hybrid.dat";
         return reducedICUResourceName;
     }
 
     if (!culture || bootConfig.icuDataMode === ICUDataMode.All) {
-        moduleConfig.globalizationMode = "icu";
+        moduleConfig.globalizationMode = GlobalizationMode.All;
         const combinedICUResourceName = "icudt.dat";
         return combinedICUResourceName;
     }
 
+    moduleConfig.globalizationMode = GlobalizationMode.Sharded;
     const prefix = culture.split("-")[0];
     if (prefix === "en" ||
         [
