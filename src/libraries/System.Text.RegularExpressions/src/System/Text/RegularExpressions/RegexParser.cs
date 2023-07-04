@@ -727,7 +727,7 @@ namespace System.Text.RegularExpressions
                         }
                     }
                 }
-                else if (CharsRight() >= 2 && _pattern[_currentPos] == '-' && RightChar(1) != ']')
+                else if (CharsRight() >= 2 && _pattern[_currentPos] == '-' && _pattern[_currentPos + 1] != ']')
                 {
                     // this could be the start of a range
                     chPrev = ch;
@@ -783,7 +783,7 @@ namespace System.Text.RegularExpressions
             // 1. "(" followed by nothing
             // 2. "(x" where x != ?
             // 3. "(?)"
-            if (CharsRight() == 0 || _pattern[_currentPos] != '?' || (_pattern[_currentPos] == '?' && CharsRight() > 1 && RightChar(1) == ')'))
+            if (CharsRight() == 0 || _pattern[_currentPos] != '?' || (_pattern[_currentPos] == '?' && CharsRight() > 1 && _pattern[_currentPos + 1] == ')'))
             {
                 if ((_options & RegexOptions.ExplicitCapture) != 0 || _ignoreNextParen)
                 {
@@ -1017,9 +1017,9 @@ namespace System.Text.RegularExpressions
                         _ignoreNextParen = true;    // but make sure we don't try to capture the insides
 
                         int charsRight = CharsRight();
-                        if (charsRight >= 3 && RightChar(1) == '?')
+                        if (charsRight >= 3 && _pattern[_currentPos + 1] == '?')
                         {
-                            char rightchar2 = RightChar(2);
+                            char rightchar2 = _pattern[_currentPos + 2];
 
                             // disallow comments in the condition
                             if (rightchar2 == '#')
@@ -1033,7 +1033,7 @@ namespace System.Text.RegularExpressions
                                 throw MakeException(RegexParseError.AlternationHasNamedCapture, SR.AlternationHasNamedCapture);
                             }
 
-                            if (charsRight >= 4 && rightchar2 == '<' && RightChar(3) != '!' && RightChar(3) != '=')
+                            if (charsRight >= 4 && rightchar2 == '<' && _pattern[_currentPos + 3] != '!' && _pattern[_currentPos + 3] != '=')
                             {
                                 throw MakeException(RegexParseError.AlternationHasNamedCapture, SR.AlternationHasNamedCapture);
                             }
@@ -1104,7 +1104,7 @@ namespace System.Text.RegularExpressions
                             _currentPos++;
                         }
                     }
-                    else if (CharsRight() >= 3 && RightChar(2) == '#' && RightChar(1) == '?' && _pattern[_currentPos] == '(')
+                    else if (CharsRight() >= 3 && _pattern[_currentPos + 2] == '#' && _pattern[_currentPos + 1] == '?' && _pattern[_currentPos] == '(')
                     {
                         while (CharsRight() > 0 && _pattern[_currentPos] != ')')
                         {
@@ -1128,7 +1128,7 @@ namespace System.Text.RegularExpressions
             {
                 while (true)
                 {
-                    if (CharsRight() < 3 || RightChar(2) != '#' || RightChar(1) != '?' || _pattern[_currentPos] != '(')
+                    if (CharsRight() < 3 || _pattern[_currentPos + 2] != '#' || _pattern[_currentPos + 1] != '?' || _pattern[_currentPos] != '(')
                     {
                         return;
                     }
@@ -1819,7 +1819,7 @@ namespace System.Text.RegularExpressions
                         break;
 
                     case '(':
-                        if (CharsRight() >= 2 && RightChar(1) == '#' && _pattern[_currentPos] == '?')
+                        if (CharsRight() >= 2 && _pattern[_currentPos + 1] == '#' && _pattern[_currentPos] == '?')
                         {
                             // we have a comment (?#
                             --_currentPos;
@@ -2267,9 +2267,6 @@ namespace System.Text.RegularExpressions
 
         /// <summary>Zaps to a specific parsing position.</summary>
         private void Textto(int pos) => _currentPos = pos;
-
-        /// <summary>Returns the char i chars right of the current parsing position.</summary>
-        private char RightChar(int i) => _pattern[_currentPos + i];
 
         /// <summary>Number of characters to the right of the current parsing position.</summary>
         private int CharsRight() => _pattern.Length - _currentPos;
