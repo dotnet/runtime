@@ -421,6 +421,17 @@ namespace System.Collections.Frozen.Tests
         protected override T CreateTValue(int seed) => CreateTKey(seed);
 
         protected abstract T Next(Random random);
+
+        protected static long NextLong(Random random)
+        {
+#if NET6_0_OR_GREATER
+            return random.NextInt64(long.MinValue, long.MaxValue);
+#else
+            byte[] bytes = new byte[8];
+            random.NextBytes(bytes);
+            return BitConverter.ToInt64(bytes, 0);
+#endif
+        }
     }
 
 
@@ -432,6 +443,20 @@ namespace System.Collections.Frozen.Tests
     public class FrozenDictionary_Generic_Tests_uint_uint : FrozenDictionary_Generic_Tests_base_for_numbers<uint>
     {
         protected override uint Next(Random random) => (uint)random.Next(int.MinValue, int.MaxValue);
+    }
+
+    public class FrozenDictionary_Generic_Tests_nint_nint : FrozenDictionary_Generic_Tests_base_for_numbers<nint>
+    {
+        protected override nint Next(Random random) => IntPtr.Size == sizeof(int)
+            ? random.Next(int.MinValue, int.MaxValue)
+            : (nint)NextLong(random);
+    }
+
+    public class FrozenDictionary_Generic_Tests_nuint_nuint : FrozenDictionary_Generic_Tests_base_for_numbers<nuint>
+    {
+        protected override nuint Next(Random random) => IntPtr.Size == sizeof(int)
+            ? (nuint)random.Next(int.MinValue, int.MaxValue)
+            : (nuint)NextLong(random);
     }
 
     public class FrozenDictionary_Generic_Tests_short_short : FrozenDictionary_Generic_Tests_base_for_numbers<short>

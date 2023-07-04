@@ -53,8 +53,6 @@ namespace System.Collections.Frozen
             typeof(T) == typeof(uint) ||
             typeof(T) == typeof(long) ||
             typeof(T) == typeof(ulong) ||
-            typeof(T) == typeof(nint) ||
-            typeof(T) == typeof(nuint) ||
             typeof(T) == typeof(decimal) ||
             typeof(T) == typeof(float) ||
             typeof(T) == typeof(double) ||
@@ -68,6 +66,8 @@ namespace System.Collections.Frozen
 #endif
 #if NET5_0_OR_GREATER
             typeof(T) == typeof(Half) ||
+            typeof(T) == typeof(nint) ||
+            typeof(T) == typeof(nuint) ||
 #endif
 #if NET6_0_OR_GREATER
             typeof(T) == typeof(DateOnly) ||
