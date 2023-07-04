@@ -291,6 +291,7 @@ namespace System.Runtime.Serialization.Json
                 count -= size;
             }
         }
+        
         public override void WriteByte(byte b)
         {
             if (_encodingCode == SupportedEncoding.UTF8)
