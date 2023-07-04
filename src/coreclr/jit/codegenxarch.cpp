@@ -3269,8 +3269,14 @@ void CodeGen::genCodeForInitBlkUnroll(GenTreeBlk* node)
         }
     }
 
+    // Handle the non-SIMD remainder by overlapping with previously processed data if needed
     if (size > 0)
     {
+        assert(size < REGSIZE_BYTES);
+
+        // Round down to the closest power of two (1, 2 or 4)
+        regSize = 1 << BitOperations::Log2(size);
+
         unsigned shiftBack = regSize - size;
         assert(shiftBack <= regSize);
         dstOffset -= shiftBack;
@@ -3546,8 +3552,14 @@ void CodeGen::genCodeForCpBlkUnroll(GenTreeBlk* node)
             }
         }
 
+        // Handle the non-SIMD remainder by overlapping with previously processed data if needed
         if (size > 0)
         {
+            assert(size < REGSIZE_BYTES);
+
+            // Round down to the closest power of two (1, 2 or 4)
+            regSize = 1 << BitOperations::Log2(size);
+
             unsigned shiftBack = regSize - size;
             assert(shiftBack <= regSize);
 
