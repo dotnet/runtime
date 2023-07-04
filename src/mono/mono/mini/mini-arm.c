@@ -1275,11 +1275,10 @@ get_call_info (MonoMemPool *mp, MonoMethodSignature *sig)
 	gboolean is_pinvoke = sig->pinvoke;
 	gboolean vtype_retaddr = FALSE;
 
-	int size = call_info_size (sig);
 	if (mp)
-		cinfo = mono_mempool_alloc0 (mp, size);
+		cinfo = mono_mempool_alloc0 (mp, call_info_size (sig));
 	else
-		cinfo = g_malloc0 (size);
+		cinfo = g_malloc0 (call_info_size (sig));
 
 	cinfo->nargs = n;
 	gr = ARMREG_R0;
