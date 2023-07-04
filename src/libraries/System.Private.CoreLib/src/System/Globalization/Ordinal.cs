@@ -78,7 +78,7 @@ namespace System.Globalization
             return OrdinalCasing.CompareStringIgnoreCase(ref strA, lengthA, ref strB, lengthB);
         }
 
-        private static bool EqualsIgnoreCase_Vector128(ref char charA, ref char charB, int length)
+        internal static bool EqualsIgnoreCase_Vector128(ref char charA, ref char charB, int length)
         {
             Debug.Assert(length >= Vector128<ushort>.Count);
             Debug.Assert(Vector128.IsHardwareAccelerated);

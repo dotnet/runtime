@@ -8,7 +8,8 @@ namespace System.Buffers
 {
     /// <summary>
     /// Provides an immutable, read-only set of values optimized for efficient searching.
-    /// Instances are created by <see cref="SearchValues.Create(ReadOnlySpan{byte})"/> or <see cref="SearchValues.Create(ReadOnlySpan{char})"/>.
+    /// Instances are created by <see cref="SearchValues.Create(ReadOnlySpan{byte})"/>, <see cref="SearchValues.Create(ReadOnlySpan{char})"/>, or
+    /// <see cref="SearchValues.Create(ReadOnlySpan{string}, StringComparison)"/>.
     /// </summary>
     /// <typeparam name="T">The type of the values to search for.</typeparam>
     /// <remarks>
@@ -37,6 +38,9 @@ namespace System.Buffers
         internal virtual int IndexOfAnyExcept(ReadOnlySpan<T> span) => throw new UnreachableException();
         internal virtual int LastIndexOfAny(ReadOnlySpan<T> span) => throw new UnreachableException();
         internal virtual int LastIndexOfAnyExcept(ReadOnlySpan<T> span) => throw new UnreachableException();
+
+        // This is only implemented and used by SearchValues<string>.
+        internal virtual int IndexOfAnyMultiString(ReadOnlySpan<char> span) => throw new UnreachableException();
 
         [MethodImpl(MethodImplOptions.AggressiveInlining)]
         internal static int IndexOfAny(ReadOnlySpan<T> span, SearchValues<T> values)

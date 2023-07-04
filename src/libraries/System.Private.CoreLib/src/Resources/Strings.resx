@@ -4244,4 +4244,7 @@
   <data name="OutOfMemory_StringTooLong" xml:space="preserve">
     <value>String length exceeded supported range.</value>
   </data>
+  <data name="Argument_SearchValues_UnsupportedStringComparison" xml:space="preserve">
+    <value>SearchValues&lt;string&gt; supports only Ordinal and OrdinalIgnoreCase StringComparison semantics.</value>
+  </data>
 </root>
