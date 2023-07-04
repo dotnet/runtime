@@ -8932,7 +8932,7 @@ private:
 #endif // FEATURE_SIMD
 
 public:
-    // Similiar to roundUpSIMDSize, but for General Purpose Registers (GPR)
+    // Similar to roundUpSIMDSize, but for General Purpose Registers (GPR)
     unsigned int roundUpGPRSize(unsigned size)
     {
         if (size > 4 && (REGSIZE_BYTES == 8))
