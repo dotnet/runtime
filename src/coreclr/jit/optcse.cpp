@@ -1447,7 +1447,46 @@ void Compiler::optValnumCSE_Availability()
 
                     if (isDef)
                     {
-                        // This is a CSE def
+                        struct GenAssertions : GenTreeVisitor<GenAssertions>
+                        {
+                            enum
+                            {
+                                DoPreOrder = true,
+                                DoPostOrder = true,
+                            };
+
+                            ValueNum NewExcSet;
+
+                            GenAssertions(Compiler* comp, ValueNum excSet) : GenTreeVisitor(comp), NewExcSet(excSet)
+                            {
+                            }
+
+                            fgWalkResult PreOrderVisit(GenTree** use, GenTree* user)
+                            {
+                                GenTree* node = *use;
+                                if (node->OperIsIndir() && !node->IndirMayFault(m_compiler))
+                                {
+                                    ValueNum nullExc = m_compiler->vnStore->VNForFunc(TYP_REF, VNF_NullPtrExc, m_compiler->vnStore->VNNormalValue(node->AsIndir()->Addr()->gtVNPair.GetLiberal()));
+                                    NewExcSet = m_compiler->vnStore->VNExcSetUnion(NewExcSet, m_compiler->vnStore->VNExcSetSingleton(nullExc));
+                                }
+
+                                return WALK_CONTINUE;
+                            }
+                        };
+
+                        GenAssertions assertions(this, theLiberalExcSet);
+                        GenTree* thisTree = tree;
+                        assertions.WalkTree(&thisTree, nullptr);
+
+                        if (theLiberalExcSet != assertions.NewExcSet)
+                        {
+                            JITDUMP("Adding implicit null ref on top of [%06u]: ", tree->gtTreeID);
+                            JITDUMPEXEC(vnStore->vnDump(this, theLiberalExcSet));
+                            JITDUMP(" => ", tree->gtTreeID);
+                            JITDUMPEXEC(vnStore->vnDump(this, assertions.NewExcSet));
+                            JITDUMP("\n");
+                            theLiberalExcSet = assertions.NewExcSet;
+                        }
 
                         // Is defExcSetCurrent still set to the uninit marker value of VNForNull() ?
                         if (desc->defExcSetCurrent == vnStore->VNForNull())
@@ -1637,7 +1676,7 @@ void Compiler::optValnumCSE_Availability()
                 // kill all of the cseAvailCrossCallBit for each CSE whenever we see a GT_CALL (unless the call
                 // generates a CSE).
                 //
-                if (tree->OperGet() == GT_CALL)
+                if (tree->IsCall())
                 {
                     // Check for the common case of an already empty available_cses set
                     // and thus nothing needs to be killed
