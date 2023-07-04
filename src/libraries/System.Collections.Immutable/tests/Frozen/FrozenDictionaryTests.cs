@@ -424,13 +424,9 @@ namespace System.Collections.Frozen.Tests
 
         protected static long NextLong(Random random)
         {
-#if NET6_0_OR_GREATER
-            return random.NextInt64(long.MinValue, long.MaxValue);
-#else
             byte[] bytes = new byte[8];
             random.NextBytes(bytes);
             return BitConverter.ToInt64(bytes, 0);
-#endif
         }
     }
 
