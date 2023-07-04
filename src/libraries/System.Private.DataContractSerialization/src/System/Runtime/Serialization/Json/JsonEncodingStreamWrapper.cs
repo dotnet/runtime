@@ -267,6 +267,30 @@ namespace System.Runtime.Serialization.Json
             }
         }
 
+        public override void Write(ReadOnlySpan<byte> spanBuffer)
+        {
+            // Optimize UTF-8 case
+            if (_encodingCode == SupportedEncoding.UTF8)
+            {
+                _stream.Write(spanBuffer);
+                return;
+            }
+
+            Debug.Assert(_bytes != null);
+            Debug.Assert(_chars != null);
+
+            int offset = 0;
+            int count = spanBuffer.Length;
+            while (count > 0)
+            {
+                int size = _chars.Length < count ? _chars.Length : count;
+                int charCount = _dec!.GetChars(spanBuffer.Slice(offset, size), _chars, false);
+                _byteCount = _enc!.GetBytes(_chars, 0, charCount, _bytes, 0, false);
+                _stream.Write(_bytes, 0, _byteCount);
+                offset += size;
+                count -= size;
+            }
+        }
         public override void WriteByte(byte b)
         {
             if (_encodingCode == SupportedEncoding.UTF8)
