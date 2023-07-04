@@ -187,9 +187,10 @@ bool IntegralRange::Contains(int64_t value) const
 
         case GT_LCL_FLD:
         {
-            LclVarDsc* const varDsc = compiler->lvaGetDesc(node->AsLclFld());
+            GenTreeLclFld* const lclFld = node->AsLclFld();
+            LclVarDsc* const     varDsc = compiler->lvaGetDesc(lclFld);
 
-            if (varDsc->IsNeverNegative())
+            if (node->TypeIs(TYP_INT) && varDsc->IsSpan() && lclFld->GetLclOffs() == OFFSETOF__CORINFO_Span__length)
             {
                 return {SymbolicIntegerValue::Zero, UpperBoundForType(rangeType)};
             }

@@ -3767,7 +3767,14 @@ uint32_t CEEInfo::getClassAttribsInternal (CORINFO_CLASS_HANDLE clsHnd)
             ret |= CORINFO_FLG_VALUECLASS;
 
             if (pMT->IsByRefLike())
+            {
                 ret |= CORINFO_FLG_BYREF_LIKE;
+
+                if (pMT == CoreLibBinder::GetClass(CLASS__SPAN) || pMT == CoreLibBinder::GetClass(CLASS__READONLY_SPAN))
+                {
+                    ret |= CORINFO_FLG_SPAN;
+                }
+            }
 
             if ((pClass->IsNotTightlyPacked() && (!pClass->IsManagedSequential() || pClass->HasExplicitSize())) ||
                 pMT == g_TypedReferenceMT ||

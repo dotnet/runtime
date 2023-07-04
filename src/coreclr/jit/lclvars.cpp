@@ -2914,15 +2914,17 @@ void Compiler::lvaSetStruct(unsigned varNum, ClassLayout* layout, bool unsafeVal
 
         if (layout->IsValueClass())
         {
-            varDsc->lvType = layout->GetType();
+            varDsc->lvType                          = layout->GetType();
+            CORINFO_CLASS_HANDLE const classHandle  = layout->GetClassHandle();
+            unsigned const             corinfoFlags = this->info.compCompHnd->getClassAttribs(classHandle);
+            varDsc->SetIsSpan(corinfoFlags & CORINFO_FLG_SPAN);
 
 #if FEATURE_IMPLICIT_BYREFS
             // Mark implicit byref struct parameters
             if (varDsc->lvIsParam && !varDsc->lvIsStructField)
             {
                 structPassingKind howToReturnStruct;
-                getArgTypeForStruct(layout->GetClassHandle(), &howToReturnStruct, this->info.compIsVarArgs,
-                                    varDsc->lvExactSize());
+                getArgTypeForStruct(classHandle, &howToReturnStruct, this->info.compIsVarArgs, varDsc->lvExactSize());
 
                 if (howToReturnStruct == SPK_ByReference)
                 {

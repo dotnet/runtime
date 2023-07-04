@@ -191,6 +191,7 @@ std::string SpmiDumpHelper::DumpCorInfoFlag(CorInfoFlag flags)
     AddFlag(CORINFO_FLG_BEFOREFIELDINIT);
     AddFlag(CORINFO_FLG_GENERIC_TYPE_VARIABLE);
     AddFlag(CORINFO_FLG_UNSAFE_VALUECLASS);
+    AddFlag(CORINFO_FLG_SPAN);
 
 #undef AddFlag
 
