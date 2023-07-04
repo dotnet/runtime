@@ -281,7 +281,7 @@ namespace System.Text.RegularExpressions
             // of each node.
             StartGroup(new RegexNode(RegexNodeKind.Capture, (_options & ~RegexOptions.IgnoreCase), 0, -1));
 
-            while (CharsRight() > 0)
+            while (_pattern.Length - _currentPos > 0)
             {
                 bool wasPrevQuantifier = isQuantifier;
                 isQuantifier = false;
@@ -294,12 +294,12 @@ namespace System.Text.RegularExpressions
                 // or if IgnorePatternWhiteSpace is on, we'll stop when we see some whitespace.
                 if ((_options & RegexOptions.IgnorePatternWhitespace) != 0)
                 {
-                    while (CharsRight() > 0 && (!IsStopperX(ch = _pattern[_currentPos]) || (ch == '{' && !IsTrueQuantifier())))
+                    while (_pattern.Length - _currentPos > 0 && (!IsStopperX(ch = _pattern[_currentPos]) || (ch == '{' && !IsTrueQuantifier())))
                         _currentPos++;
                 }
                 else
                 {
-                    while (CharsRight() > 0 && (!IsSpecial(ch = _pattern[_currentPos]) || (ch == '{' && !IsTrueQuantifier())))
+                    while (_pattern.Length - _currentPos > 0 && (!IsSpecial(ch = _pattern[_currentPos]) || (ch == '{' && !IsTrueQuantifier())))
                         _currentPos++;
                 }
 
@@ -307,7 +307,7 @@ namespace System.Text.RegularExpressions
 
                 ScanBlank();
 
-                if (CharsRight() == 0)
+                if (_pattern.Length - _currentPos == 0)
                 {
                     ch = '!'; // nonspecial, means at end
                 }
@@ -387,7 +387,7 @@ namespace System.Text.RegularExpressions
                         break;
 
                     case '\\':
-                        if (CharsRight() == 0)
+                        if (_pattern.Length - _currentPos == 0)
                         {
                             throw MakeException(RegexParseError.UnescapedEndingBackslash, SR.UnescapedEndingBackslash);
                         }
@@ -429,7 +429,7 @@ namespace System.Text.RegularExpressions
 
                 ScanBlank();
 
-                if (CharsRight() == 0 || !(isQuantifier = IsTrueQuantifier()))
+                if (_pattern.Length - _currentPos == 0 || !(isQuantifier = IsTrueQuantifier()))
                 {
                     AddConcatenate();
                     goto ContinueOuterScan;
@@ -462,14 +462,14 @@ namespace System.Text.RegularExpressions
                             max = min = ScanDecimal();
                             if (startpos < _currentPos)
                             {
-                                if (CharsRight() > 0 && _pattern[_currentPos] == ',')
+                                if (_pattern.Length - _currentPos > 0 && _pattern[_currentPos] == ',')
                                 {
                                     _currentPos++;
-                                    max = CharsRight() == 0 || _pattern[_currentPos] == '}' ? int.MaxValue : ScanDecimal();
+                                    max = _pattern.Length - _currentPos == 0 || _pattern[_currentPos] == '}' ? int.MaxValue : ScanDecimal();
                                 }
                             }
 
-                            if (startpos == _currentPos || CharsRight() == 0 || _pattern[_currentPos++] != '}')
+                            if (startpos == _currentPos || _pattern.Length - _currentPos == 0 || _pattern[_currentPos++] != '}')
                             {
                                 AddConcatenate();
                                 Textto(startpos - 1);
@@ -486,7 +486,7 @@ namespace System.Text.RegularExpressions
                     ScanBlank();
 
                     bool lazy = false;
-                    if (CharsRight() != 0 && _pattern[_currentPos] == '?')
+                    if (_pattern.Length - _currentPos != 0 && _pattern[_currentPos] == '?')
                     {
                         _currentPos++;
                         lazy = true;
@@ -526,7 +526,7 @@ namespace System.Text.RegularExpressions
 
             while (true)
             {
-                int c = CharsRight();
+                int c = _pattern.Length - _currentPos;
                 if (c == 0)
                 {
                     break;
@@ -571,7 +571,7 @@ namespace System.Text.RegularExpressions
 
             RegexCharClass? charClass = scanOnly ? null : new RegexCharClass();
 
-            if (CharsRight() > 0 && _pattern[_currentPos] == '^')
+            if (_pattern.Length - _currentPos > 0 && _pattern[_currentPos] == '^')
             {
                 _currentPos++;
                 if (!scanOnly)
@@ -584,7 +584,7 @@ namespace System.Text.RegularExpressions
                 }
             }
 
-            for (; CharsRight() > 0; firstChar = false)
+            for (; _pattern.Length - _currentPos > 0; firstChar = false)
             {
                 bool translatedChar = false;
                 ch = _pattern[_currentPos++];
@@ -596,7 +596,7 @@ namespace System.Text.RegularExpressions
                         break;
                     }
                 }
-                else if (ch == '\\' && CharsRight() > 0)
+                else if (ch == '\\' && _pattern.Length - _currentPos > 0)
                 {
                     switch (ch = _pattern[_currentPos++])
                     {
@@ -686,12 +686,12 @@ namespace System.Text.RegularExpressions
                 {
                     // This is code for Posix style properties - [:Ll:] or [:IsTibetan:].
                     // It currently doesn't do anything other than skip the whole thing!
-                    if (CharsRight() > 0 && _pattern[_currentPos] == ':' && !inRange)
+                    if (_pattern.Length - _currentPos > 0 && _pattern[_currentPos] == ':' && !inRange)
                     {
                         int savePos = _currentPos;
 
                         _currentPos++;
-                        if (CharsRight() < 2 || _pattern[_currentPos++] != ':' || _pattern[_currentPos++] != ']')
+                        if (_pattern.Length - _currentPos < 2 || _pattern[_currentPos++] != ':' || _pattern[_currentPos++] != ']')
                         {
                             Textto(savePos);
                         }
@@ -711,7 +711,7 @@ namespace System.Text.RegularExpressions
                             charClass!.AddChar(chPrev);
                             charClass.AddSubtraction(ScanCharClass(caseInsensitive, scanOnly)!);
 
-                            if (CharsRight() > 0 && _pattern[_currentPos] != ']')
+                            if (_pattern.Length - _currentPos > 0 && _pattern[_currentPos] != ']')
                             {
                                 throw MakeException(RegexParseError.ExclusionGroupNotLast, SR.ExclusionGroupNotLast);
                             }
@@ -727,14 +727,14 @@ namespace System.Text.RegularExpressions
                         }
                     }
                 }
-                else if (CharsRight() >= 2 && _pattern[_currentPos] == '-' && _pattern[_currentPos + 1] != ']')
+                else if (_pattern.Length - _currentPos >= 2 && _pattern[_currentPos] == '-' && _pattern[_currentPos + 1] != ']')
                 {
                     // this could be the start of a range
                     chPrev = ch;
                     inRange = true;
                     _currentPos++;
                 }
-                else if (CharsRight() >= 1 && ch == '-' && !translatedChar && _pattern[_currentPos] == '[' && !firstChar)
+                else if (_pattern.Length - _currentPos >= 1 && ch == '-' && !translatedChar && _pattern[_currentPos] == '[' && !firstChar)
                 {
                     // we aren't in a range, and now there is a subtraction.  Usually this happens
                     // only when a subtraction follows a range, like [a-z-[b]]
@@ -744,7 +744,7 @@ namespace System.Text.RegularExpressions
                     {
                         charClass!.AddSubtraction(rcc!);
 
-                        if (CharsRight() > 0 && _pattern[_currentPos] != ']')
+                        if (_pattern.Length - _currentPos > 0 && _pattern[_currentPos] != ']')
                         {
                             throw MakeException(RegexParseError.ExclusionGroupNotLast, SR.ExclusionGroupNotLast);
                         }
@@ -783,7 +783,7 @@ namespace System.Text.RegularExpressions
             // 1. "(" followed by nothing
             // 2. "(x" where x != ?
             // 3. "(?)"
-            if (CharsRight() == 0 || _pattern[_currentPos] != '?' || (_pattern[_currentPos] == '?' && CharsRight() > 1 && _pattern[_currentPos + 1] == ')'))
+            if (_pattern.Length - _currentPos == 0 || _pattern[_currentPos] != '?' || (_pattern[_currentPos] == '?' && _pattern.Length - _currentPos > 1 && _pattern[_currentPos + 1] == ')'))
             {
                 if ((_options & RegexOptions.ExplicitCapture) != 0 || _ignoreNextParen)
                 {
@@ -800,7 +800,7 @@ namespace System.Text.RegularExpressions
 
             while (true)
             {
-                if (CharsRight() == 0)
+                if (_pattern.Length - _currentPos == 0)
                 {
                     break;
                 }
@@ -837,7 +837,7 @@ namespace System.Text.RegularExpressions
                         goto case '<'; // fallthrough
 
                     case '<':
-                        if (CharsRight() == 0)
+                        if (_pattern.Length - _currentPos == 0)
                         {
                             goto BreakRecognize;
                         }
@@ -884,7 +884,7 @@ namespace System.Text.RegularExpressions
                                     }
 
                                     // check if we have bogus characters after the number
-                                    if (CharsRight() > 0 && !(_pattern[_currentPos] == close || _pattern[_currentPos] == '-'))
+                                    if (_pattern.Length - _currentPos > 0 && !(_pattern[_currentPos] == close || _pattern[_currentPos] == '-'))
                                     {
                                         throw MakeException(RegexParseError.CaptureGroupNameInvalid, SR.CaptureGroupNameInvalid);
                                     }
@@ -904,7 +904,7 @@ namespace System.Text.RegularExpressions
                                     }
 
                                     // check if we have bogus character after the name
-                                    if (CharsRight() > 0 && !(_pattern[_currentPos] == close || _pattern[_currentPos] == '-'))
+                                    if (_pattern.Length - _currentPos > 0 && !(_pattern[_currentPos] == close || _pattern[_currentPos] == '-'))
                                     {
                                         throw MakeException(RegexParseError.CaptureGroupNameInvalid, SR.CaptureGroupNameInvalid);
                                     }
@@ -921,7 +921,7 @@ namespace System.Text.RegularExpressions
 
                                 // grab part after - if any
 
-                                if ((capnum != -1 || proceed) && CharsRight() > 1 && _pattern[_currentPos] == '-')
+                                if ((capnum != -1 || proceed) && _pattern.Length - _currentPos > 1 && _pattern[_currentPos] == '-')
                                 {
                                     _currentPos++;
                                     ch = _pattern[_currentPos];
@@ -936,7 +936,7 @@ namespace System.Text.RegularExpressions
                                         }
 
                                         // check if we have bogus characters after the number
-                                        if (CharsRight() > 0 && _pattern[_currentPos] != close)
+                                        if (_pattern.Length - _currentPos > 0 && _pattern[_currentPos] != close)
                                         {
                                             throw MakeException(RegexParseError.CaptureGroupNameInvalid, SR.CaptureGroupNameInvalid);
                                         }
@@ -955,7 +955,7 @@ namespace System.Text.RegularExpressions
                                         }
 
                                         // check if we have bogus character after the name
-                                        if (CharsRight() > 0 && _pattern[_currentPos] != close)
+                                        if (_pattern.Length - _currentPos > 0 && _pattern[_currentPos] != close)
                                         {
                                             throw MakeException(RegexParseError.CaptureGroupNameInvalid, SR.CaptureGroupNameInvalid);
                                         }
@@ -969,7 +969,7 @@ namespace System.Text.RegularExpressions
 
                                 // actually make the node
 
-                                if ((capnum != -1 || uncapnum != -1) && CharsRight() > 0 && _pattern[_currentPos++] == close)
+                                if ((capnum != -1 || uncapnum != -1) && _pattern.Length - _currentPos > 0 && _pattern[_currentPos++] == close)
                                 {
                                     return new RegexNode(RegexNodeKind.Capture, _options, capnum, uncapnum);
                                 }
@@ -981,7 +981,7 @@ namespace System.Text.RegularExpressions
                         // conditional alternation construct (?(...) | )
 
                         int parenPos = _currentPos;
-                        if (CharsRight() > 0)
+                        if (_pattern.Length - _currentPos > 0)
                         {
                             ch = _pattern[_currentPos];
 
@@ -989,7 +989,7 @@ namespace System.Text.RegularExpressions
                             if (ch >= '0' && ch <= '9')
                             {
                                 int capnum = ScanDecimal();
-                                if (CharsRight() > 0 && _pattern[_currentPos++] == ')')
+                                if (_pattern.Length - _currentPos > 0 && _pattern[_currentPos++] == ')')
                                 {
                                     if (IsCaptureSlot(capnum))
                                     {
@@ -1005,7 +1005,7 @@ namespace System.Text.RegularExpressions
                             {
                                 string capname = ScanCapname();
 
-                                if (IsCaptureName(capname) && CharsRight() > 0 && _pattern[_currentPos++] == ')')
+                                if (IsCaptureName(capname) && _pattern.Length - _currentPos > 0 && _pattern[_currentPos++] == ')')
                                 {
                                     return new RegexNode(RegexNodeKind.BackreferenceConditional, _options, CaptureSlotFromName(capname));
                                 }
@@ -1016,7 +1016,7 @@ namespace System.Text.RegularExpressions
                         Textto(parenPos - 1);       // jump to the start of the parentheses
                         _ignoreNextParen = true;    // but make sure we don't try to capture the insides
 
-                        int charsRight = CharsRight();
+                        int charsRight = _pattern.Length - _currentPos;
                         if (charsRight >= 3 && _pattern[_currentPos + 1] == '?')
                         {
                             char rightchar2 = _pattern[_currentPos + 2];
@@ -1051,7 +1051,7 @@ namespace System.Text.RegularExpressions
                             ScanOptions();
                         }
 
-                        if (CharsRight() == 0)
+                        if (_pattern.Length - _currentPos == 0)
                         {
                             goto BreakRecognize;
                         }
@@ -1087,31 +1087,31 @@ namespace System.Text.RegularExpressions
             {
                 while (true)
                 {
-                    while (CharsRight() > 0 && IsSpace(_pattern[_currentPos]))
+                    while (_pattern.Length - _currentPos > 0 && IsSpace(_pattern[_currentPos]))
                     {
                         _currentPos++;
                     }
 
-                    if (CharsRight() == 0)
+                    if (_pattern.Length - _currentPos == 0)
                     {
                         break;
                     }
 
                     if (_pattern[_currentPos] == '#')
                     {
-                        while (CharsRight() > 0 && _pattern[_currentPos] != '\n')
+                        while (_pattern.Length - _currentPos > 0 && _pattern[_currentPos] != '\n')
                         {
                             _currentPos++;
                         }
                     }
-                    else if (CharsRight() >= 3 && _pattern[_currentPos + 2] == '#' && _pattern[_currentPos + 1] == '?' && _pattern[_currentPos] == '(')
+                    else if (_pattern.Length - _currentPos >= 3 && _pattern[_currentPos + 2] == '#' && _pattern[_currentPos + 1] == '?' && _pattern[_currentPos] == '(')
                     {
-                        while (CharsRight() > 0 && _pattern[_currentPos] != ')')
+                        while (_pattern.Length - _currentPos > 0 && _pattern[_currentPos] != ')')
                         {
                             _currentPos++;
                         }
 
-                        if (CharsRight() == 0)
+                        if (_pattern.Length - _currentPos == 0)
                         {
                             throw MakeException(RegexParseError.UnterminatedComment, SR.UnterminatedComment);
                         }
@@ -1128,18 +1128,18 @@ namespace System.Text.RegularExpressions
             {
                 while (true)
                 {
-                    if (CharsRight() < 3 || _pattern[_currentPos + 2] != '#' || _pattern[_currentPos + 1] != '?' || _pattern[_currentPos] != '(')
+                    if (_pattern.Length - _currentPos < 3 || _pattern[_currentPos + 2] != '#' || _pattern[_currentPos + 1] != '?' || _pattern[_currentPos] != '(')
                     {
                         return;
                     }
 
                     // skip comment (?# ...)
-                    while (CharsRight() > 0 && _pattern[_currentPos] != ')')
+                    while (_pattern.Length - _currentPos > 0 && _pattern[_currentPos] != ')')
                     {
                         _currentPos++;
                     }
 
-                    if (CharsRight() == 0)
+                    if (_pattern.Length - _currentPos == 0)
                     {
                         throw MakeException(RegexParseError.UnterminatedComment, SR.UnterminatedComment);
                     }
@@ -1155,7 +1155,7 @@ namespace System.Text.RegularExpressions
         /// </summary>
         private RegexNode? ScanBackslash(bool scanOnly)
         {
-            Debug.Assert(CharsRight() > 0, "The current reading position must not be at the end of the pattern");
+            Debug.Assert(_pattern.Length - _currentPos > 0, "The current reading position must not be at the end of the pattern");
 
             char ch;
             switch (ch = _pattern[_currentPos])
@@ -1230,7 +1230,7 @@ namespace System.Text.RegularExpressions
         /// <summary>Scans \-style backreferences and character escapes</summary>
         private RegexNode? ScanBasicBackslash(bool scanOnly)
         {
-            Debug.Assert(CharsRight() > 0, "The current reading position must not be at the end of the pattern");
+            Debug.Assert(_pattern.Length - _currentPos > 0, "The current reading position must not be at the end of the pattern");
 
             int backpos = _currentPos;
             char close = '\0';
@@ -1241,7 +1241,7 @@ namespace System.Text.RegularExpressions
 
             if (ch == 'k')
             {
-                if (CharsRight() >= 2)
+                if (_pattern.Length - _currentPos >= 2)
                 {
                     _currentPos++;
                     ch = _pattern[_currentPos++];
@@ -1252,7 +1252,7 @@ namespace System.Text.RegularExpressions
                     }
                 }
 
-                if (!angled || CharsRight() <= 0)
+                if (!angled || _pattern.Length - _currentPos <= 0)
                 {
                     throw MakeException(RegexParseError.MalformedNamedReference, SR.MalformedNamedReference);
                 }
@@ -1262,7 +1262,7 @@ namespace System.Text.RegularExpressions
 
             // Note angle without \g
 
-            else if ((ch == '<' || ch == '\'') && CharsRight() > 1)
+            else if ((ch == '<' || ch == '\'') && _pattern.Length - _currentPos > 1)
             {
                 angled = true;
                 close = (ch == '\'') ? '\'' : '>';
@@ -1276,7 +1276,7 @@ namespace System.Text.RegularExpressions
             {
                 int capnum = ScanDecimal();
 
-                if (CharsRight() > 0 && _pattern[_currentPos++] == close)
+                if (_pattern.Length - _currentPos > 0 && _pattern[_currentPos++] == close)
                 {
                     return
                         scanOnly ? null :
@@ -1302,7 +1302,7 @@ namespace System.Text.RegularExpressions
                         }
 
                         _currentPos++;
-                        if (CharsRight() == 0 || (ch = _pattern[_currentPos]) < '0' || ch > '9')
+                        if (_pattern.Length - _currentPos == 0 || (ch = _pattern[_currentPos]) < '0' || ch > '9')
                         {
                             break;
                         }
@@ -1342,7 +1342,7 @@ namespace System.Text.RegularExpressions
             {
                 string capname = ScanCapname();
 
-                if (CharsRight() > 0 && _pattern[_currentPos++] == close)
+                if (_pattern.Length - _currentPos > 0 && _pattern[_currentPos++] == close)
                 {
                     return
                         scanOnly ? null :
@@ -1366,7 +1366,7 @@ namespace System.Text.RegularExpressions
          */
         private RegexNode ScanDollar()
         {
-            if (CharsRight() == 0)
+            if (_pattern.Length - _currentPos == 0)
             {
                 return RegexNode.CreateOneWithCaseConversion('$', _options, _culture, ref _caseBehavior);
             }
@@ -1378,7 +1378,7 @@ namespace System.Text.RegularExpressions
 
             // Note angle
 
-            if (ch == '{' && CharsRight() > 1)
+            if (ch == '{' && _pattern.Length - _currentPos > 1)
             {
                 angled = true;
                 _currentPos++;
@@ -1404,7 +1404,7 @@ namespace System.Text.RegularExpressions
                         lastEndPos = _currentPos;
                     }
 
-                    while (CharsRight() > 0 && (ch = _pattern[_currentPos]) >= '0' && ch <= '9')
+                    while (_pattern.Length - _currentPos > 0 && (ch = _pattern[_currentPos]) >= '0' && ch <= '9')
                     {
                         int digit = ch - '0';
                         if (newcapnum > MaxValueDiv10 || (newcapnum == MaxValueDiv10 && digit > MaxValueMod10))
@@ -1430,7 +1430,7 @@ namespace System.Text.RegularExpressions
                 else
                 {
                     int capnum = ScanDecimal();
-                    if (!angled || CharsRight() > 0 && _pattern[_currentPos++] == '}')
+                    if (!angled || _pattern.Length - _currentPos > 0 && _pattern[_currentPos++] == '}')
                     {
                         if (IsCaptureSlot(capnum))
                         {
@@ -1442,7 +1442,7 @@ namespace System.Text.RegularExpressions
             else if (angled && RegexCharClass.IsBoundaryWordChar(ch))
             {
                 string capname = ScanCapname();
-                if (CharsRight() > 0 && _pattern[_currentPos++] == '}')
+                if (_pattern.Length - _currentPos > 0 && _pattern[_currentPos++] == '}')
                 {
                     if (IsCaptureName(capname))
                     {
@@ -1501,7 +1501,7 @@ namespace System.Text.RegularExpressions
         {
             int startpos = _currentPos;
 
-            while (CharsRight() > 0)
+            while (_pattern.Length - _currentPos > 0)
             {
                 if (!RegexCharClass.IsBoundaryWordChar(_pattern[_currentPos++]))
                 {
@@ -1521,9 +1521,9 @@ namespace System.Text.RegularExpressions
         {
             // Consume octal chars only up to 3 digits and value 0377
             int c = 3;
-            if (c > CharsRight())
+            if (c > _pattern.Length - _currentPos)
             {
-                c = CharsRight();
+                c = _pattern.Length - _currentPos;
             }
 
             int d;
@@ -1553,7 +1553,7 @@ namespace System.Text.RegularExpressions
             int i = 0;
             int d;
 
-            while (CharsRight() > 0 && (uint)(d = (char)(_pattern[_currentPos] - '0')) <= 9)
+            while (_pattern.Length - _currentPos > 0 && (uint)(d = (char)(_pattern[_currentPos] - '0')) <= 9)
             {
                 _currentPos++;
 
@@ -1576,7 +1576,7 @@ namespace System.Text.RegularExpressions
             int i = 0;
             int d;
 
-            if (CharsRight() >= c)
+            if (_pattern.Length - _currentPos >= c)
             {
                 for (; c > 0 && ((d = HexDigit(_pattern[_currentPos++])) >= 0); c -= 1)
                 {
@@ -1616,7 +1616,7 @@ namespace System.Text.RegularExpressions
          */
         private char ScanControl()
         {
-            if (CharsRight() == 0)
+            if (_pattern.Length - _currentPos == 0)
             {
                 throw MakeException(RegexParseError.MissingControlCharacter, SR.MissingControlCharacter);
             }
@@ -1641,7 +1641,7 @@ namespace System.Text.RegularExpressions
         /// <summary>Scans cimsx-cimsx option string, stops at the first unrecognized char.</summary>
         private void ScanOptions()
         {
-            for (bool off = false; CharsRight() > 0; _currentPos++)
+            for (bool off = false; _pattern.Length - _currentPos > 0; _currentPos++)
             {
                 char ch = _pattern[_currentPos];
 
@@ -1720,7 +1720,7 @@ namespace System.Text.RegularExpressions
         /// <summary>Scans X for \p{X} or \P{X}</summary>
         private string ParseProperty()
         {
-            if (CharsRight() < 3)
+            if (_pattern.Length - _currentPos < 3)
             {
                 throw MakeException(RegexParseError.InvalidUnicodePropertyEscape, SR.InvalidUnicodePropertyEscape);
             }
@@ -1732,7 +1732,7 @@ namespace System.Text.RegularExpressions
             }
 
             int startpos = _currentPos;
-            while (CharsRight() > 0)
+            while (_pattern.Length - _currentPos > 0)
             {
                 ch = _pattern[_currentPos++];
                 if (!(RegexCharClass.IsBoundaryWordChar(ch) || ch == '-'))
@@ -1744,7 +1744,7 @@ namespace System.Text.RegularExpressions
 
             string capname = _pattern.Substring(startpos, _currentPos - startpos);
 
-            if (CharsRight() == 0 || _pattern[_currentPos++] != '}')
+            if (_pattern.Length - _currentPos == 0 || _pattern[_currentPos++] != '}')
             {
                 throw MakeException(RegexParseError.InvalidUnicodePropertyEscape, SR.InvalidUnicodePropertyEscape);
             }
@@ -1786,14 +1786,14 @@ namespace System.Text.RegularExpressions
             optionsFoundInPattern = RegexOptions.None;
             _autocap = 1;
 
-            while (CharsRight() > 0)
+            while (_pattern.Length - _currentPos > 0)
             {
                 int pos = _currentPos;
                 char ch = _pattern[_currentPos++];
                 switch (ch)
                 {
                     case '\\':
-                        if (CharsRight() > 0)
+                        if (_pattern.Length - _currentPos > 0)
                         {
                             ScanBackslash(scanOnly: true);
                         }
@@ -1819,7 +1819,7 @@ namespace System.Text.RegularExpressions
                         break;
 
                     case '(':
-                        if (CharsRight() >= 2 && _pattern[_currentPos + 1] == '#' && _pattern[_currentPos] == '?')
+                        if (_pattern.Length - _currentPos >= 2 && _pattern[_currentPos + 1] == '#' && _pattern[_currentPos] == '?')
                         {
                             // we have a comment (?#
                             --_currentPos;
@@ -1828,12 +1828,12 @@ namespace System.Text.RegularExpressions
                         else
                         {
                             PushOptions();
-                            if (CharsRight() > 0 && _pattern[_currentPos] == '?')
+                            if (_pattern.Length - _currentPos > 0 && _pattern[_currentPos] == '?')
                             {
                                 // we have (?...
                                 _currentPos++;
 
-                                if (CharsRight() > 1 && (_pattern[_currentPos] == '<' || _pattern[_currentPos] == '\''))
+                                if (_pattern.Length - _currentPos > 1 && (_pattern[_currentPos] == '<' || _pattern[_currentPos] == '\''))
                                 {
                                     // named group: (?<... or (?'...
 
@@ -1860,7 +1860,7 @@ namespace System.Text.RegularExpressions
                                     ScanOptions();
                                     optionsFoundInPattern |= _options;
 
-                                    if (CharsRight() > 0)
+                                    if (_pattern.Length - _currentPos > 0)
                                     {
                                         if (_pattern[_currentPos] == ')')
                                         {
@@ -2090,7 +2090,7 @@ namespace System.Text.RegularExpressions
 
         private bool IsTrueQuantifier()
         {
-            Debug.Assert(CharsRight() > 0, "The current reading position must not be at the end of the pattern");
+            Debug.Assert(_pattern.Length - _currentPos > 0, "The current reading position must not be at the end of the pattern");
 
             int startpos = _currentPos;
             char ch = _pattern[startpos];
@@ -2100,7 +2100,7 @@ namespace System.Text.RegularExpressions
             }
 
             int pos = startpos;
-            int nChars = CharsRight();
+            int nChars = _pattern.Length - _currentPos;
             while (--nChars > 0 && (uint)((ch = _pattern[++pos]) - '0') <= 9) ;
 
             if (nChars == 0 || pos - startpos == 1)
@@ -2267,9 +2267,6 @@ namespace System.Text.RegularExpressions
 
         /// <summary>Zaps to a specific parsing position.</summary>
         private void Textto(int pos) => _currentPos = pos;
-
-        /// <summary>Number of characters to the right of the current parsing position.</summary>
-        private int CharsRight() => _pattern.Length - _currentPos;
 
         /// <summary>Gets group name from its number.</summary>
         internal static string GroupNameFromNumber(Hashtable? caps, string[]? capslist, int capsize, int i)
