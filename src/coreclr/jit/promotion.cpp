@@ -2274,7 +2274,8 @@ GenTree** ReplaceVisitor::InsertMidTreeReadBacks(GenTree** use)
                 continue;
             }
 
-            JITDUMP("  V%02.[%03u..%03u) -> V%02u\n", agg->LclNum, rep.Offset, genTypeSize(rep.AccessType), rep.LclNum);
+            JITDUMP("  V%02u.[%03u..%03u) -> V%02u\n", agg->LclNum, rep.Offset,
+                    rep.Offset + genTypeSize(rep.AccessType), rep.LclNum);
 
             ClearNeedsReadBack(rep);
             GenTree* readBack = Promotion::CreateReadBack(m_compiler, agg->LclNum, rep);
