@@ -226,12 +226,12 @@ namespace System.Runtime.Serialization.Json
             {
                 return _stream.ReadByte();
             }
-            Span<byte> oneByteSpan = stackalloc byte[1];
-            if (Read(oneByteSpan) == 0)
+            byte b = 0;
+            if (Read(new Span<byte>(ref b)) == 0)
             {
                 return -1;
             }
-            return oneByteSpan[0];
+            return b;
         }
 
         public override long Seek(long offset, SeekOrigin origin)
@@ -298,7 +298,7 @@ namespace System.Runtime.Serialization.Json
                 _stream.WriteByte(b);
                 return;
             }
-            Write(stackalloc byte[1] {b});
+            Write(new ReadOnlySpan<byte>(in b));
         }
 
         private static Encoding GetEncoding(SupportedEncoding e) =>
