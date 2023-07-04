@@ -311,8 +311,6 @@ static unsafe partial class CoreCLRHost
         [NativeCallbackType("MonoType*")] IntPtr type)
         => type.TypeFromHandleIntPtr().ToNativeRepresentation();
 
-    // Keeping for reference for the move to C#
-    // Currently Type is not loaded
     [NativeFunction(NativeFunctionOptions.DoNotGenerate)]
     [return: NativeCallbackType("MonoClass*")]
     public static IntPtr unity_class_get(
@@ -331,7 +329,6 @@ static unsafe partial class CoreCLRHost
         return Type.GetTypeFromHandle(typeHandle).TypeHandleIntPtr();
     }
 
-    // Keeping for reference for the move to C#
     [NativeFunction(NativeFunctionOptions.DoNotGenerate)]
     [return: NativeCallbackType("MonoMethod*")]
     public static IntPtr get_method(
@@ -351,8 +348,6 @@ static unsafe partial class CoreCLRHost
         return MethodBase.GetMethodFromHandle(methodHandle).MethodHandle.MethodHandleIntPtr();
     }
 
-    // Keeping for reference for the move to C#
-    // Currently Type is not loaded
     [NativeFunction(NativeFunctionOptions.DoNotGenerate)]
     [return: NativeCallbackType("MonoClassField*")]
     public static unsafe IntPtr unity_field_from_token_checked(
