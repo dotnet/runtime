@@ -4862,9 +4862,7 @@ void CodeGen::genIntrinsic(GenTreeIntrinsic* treeNode)
 void CodeGen::genPutArgStk(GenTreePutArgStk* treeNode)
 {
     assert(treeNode->OperIs(GT_PUTARG_STK));
-    GenTree*  source     = treeNode->gtOp1;
-    var_types targetType = genActualType(source->TypeGet());
-    emitter*  emit       = GetEmitter();
+    emitter* emit = GetEmitter();
 
     // This is the varNum for our store operations,
     // typically this is the varNum for the Outgoing arg space
@@ -4891,7 +4889,7 @@ void CodeGen::genPutArgStk(GenTreePutArgStk* treeNode)
         // Since it is a fast tail call, the existence of first incoming arg is guaranteed
         // because fast tail call requires that in-coming arg area of caller is >= out-going
         // arg area required for tail call.
-        LclVarDsc* varDsc = &(compiler->lvaTable[varNumOut]);
+        LclVarDsc* varDsc = compiler->lvaGetDesc(varNumOut);
         assert(varDsc != nullptr);
 #endif // FEATURE_FASTTAILCALL
     }
@@ -4901,39 +4899,40 @@ void CodeGen::genPutArgStk(GenTreePutArgStk* treeNode)
         argOffsetMax = compiler->lvaOutgoingArgSpaceSize;
     }
 
-    bool isStruct = (targetType == TYP_STRUCT) || (source->OperGet() == GT_FIELD_LIST);
+    GenTree* source = treeNode->gtGetOp1();
 
-    if (!isStruct) // a normal non-Struct argument
+    if (!source->TypeIs(TYP_STRUCT)) // a normal non-Struct argument
     {
-        if (varTypeIsSIMD(targetType))
+        if (varTypeIsSIMD(source->TypeGet()))
         {
             NYI_RISCV64("SIMD in genPutArgStk-----unimplemented/unused on RISCV64 yet----");
         }
 
-        instruction storeIns  = ins_Store(targetType);
-        emitAttr    storeAttr = emitTypeSize(targetType);
+        var_types   slotType  = genActualType(source);
+        instruction storeIns  = ins_Store(slotType);
+        emitAttr    storeAttr = emitTypeSize(slotType);
 
         // If it is contained then source must be the integer constant zero
         if (source->isContained())
         {
             assert(source->OperGet() == GT_CNS_INT);
             assert(source->AsIntConCommon()->IconValue() == 0);
-
-            emit->emitIns_S_R(storeIns, storeAttr, REG_R0, varNumOut, argOffsetOut);
-        }
-        else
-        {
-            genConsumeReg(source);
             if (storeIns == INS_sw)
             {
                 emit->emitIns_R_R_R(INS_addw, EA_4BYTE, source->GetRegNum(), source->GetRegNum(), REG_R0);
                 storeIns  = INS_sd;
                 storeAttr = EA_8BYTE;
             }
+
+            emit->emitIns_S_R(storeIns, storeAttr, REG_R0, varNumOut, argOffsetOut);
+        }
+        else
+        {
+            genConsumeReg(source);
             emit->emitIns_S_R(storeIns, storeAttr, source->GetRegNum(), varNumOut, argOffsetOut);
         }
         argOffsetOut += EA_SIZE_IN_BYTES(storeAttr);
-        assert(argOffsetOut <= argOffsetMax); // We can't write beyond the outgoing area
+        assert(argOffsetOut <= argOffsetMax); // We can't write beyond the outgoing arg area
     }
     else // We have some kind of a struct argument
     {
@@ -4943,125 +4942,72 @@ void CodeGen::genPutArgStk(GenTreePutArgStk* treeNode)
         {
             genPutArgStkFieldList(treeNode, varNumOut);
         }
-        else // We must have a GT_BLK or a GT_LCL_VAR
+        else
         {
-            noway_assert((source->OperGet() == GT_LCL_VAR) || (source->OperGet() == GT_BLK));
+            noway_assert(source->OperIsLocalRead() || source->OperIs(GT_BLK));
 
             var_types targetType = source->TypeGet();
             noway_assert(varTypeIsStruct(targetType));
 
             // Setup loReg from the internal registers that we reserved in lower.
             //
-            regNumber loReg   = treeNode->ExtractTempReg();
-            regNumber addrReg = REG_NA;
+            regNumber loReg = treeNode->ExtractTempReg();
 
-            GenTreeLclVarCommon* varNode  = nullptr;
-            GenTree*             addrNode = nullptr;
+            GenTreeLclVarCommon* srcLclNode = nullptr;
+            regNumber            addrReg    = REG_NA;
+            ClassLayout*         layout     = nullptr;
 
-            if (source->OperGet() == GT_LCL_VAR)
+            // Setup "layout", "srcLclNode" and "addrReg".
+            if (source->OperIsLocalRead())
             {
-                varNode = source->AsLclVarCommon();
-            }
-            else // we must have a GT_BLK
-            {
-                assert(source->OperGet() == GT_BLK);
+                srcLclNode        = source->AsLclVarCommon();
+                layout            = srcLclNode->GetLayout(compiler);
+                LclVarDsc* varDsc = compiler->lvaGetDesc(srcLclNode);
 
-                addrNode = source->AsOp()->gtOp1;
-
-                // addrNode can either be a GT_LCL_ADDR<0> or an address expression
-                //
-                if (addrNode->IsLclVarAddr())
-                {
-                    // We have a GT_BLK(GT_LCL_ADDR<0>)
-                    //
-                    // We will treat this case the same as above
-                    // (i.e if we just had this GT_LCL_VAR directly as the source)
-                    // so update 'source' to point this GT_LCL_ADDR node
-                    // and continue to the codegen for the LCL_VAR node below
-                    //
-                    varNode  = addrNode->AsLclVarCommon();
-                    addrNode = nullptr;
-                }
-                else // addrNode is used
-                {
-                    // Generate code to load the address that we need into a register
-                    genConsumeAddress(addrNode);
-                    addrReg = addrNode->GetRegNum();
-                }
-            }
-
-            // Either varNode or addrNOde must have been setup above,
-            // the xor ensures that only one of the two is setup, not both
-            assert((varNode != nullptr) ^ (addrNode != nullptr));
-
-            ClassLayout* layout;
-
-            // unsigned gcPtrCount; // The count of GC pointers in the struct
-            unsigned srcSize;
-
-            // gcPtrCount = treeNode->gtNumSlots;
-            // Setup the srcSize and layout
-            if (source->OperGet() == GT_LCL_VAR)
-            {
-                assert(varNode != nullptr);
-                LclVarDsc* varDsc = compiler->lvaGetDesc(varNode);
-
-                // This struct also must live in the stack frame
-                // And it can't live in a register (SIMD)
-                assert(varDsc->lvType == TYP_STRUCT);
+                // This struct must live on the stack frame.
                 assert(varDsc->lvOnFrame && !varDsc->lvRegister);
-
-                srcSize = varDsc->lvSize(); // This yields the roundUp size, but that is fine
-                                            // as that is how much stack is allocated for this LclVar
-                layout = varDsc->GetLayout();
             }
             else // we must have a GT_BLK
             {
-                assert(source->OperGet() == GT_BLK);
-
-                // If the source is an BLK node then we need to use the type information
-                // it provides (size and GC layout) even if the node wraps a lclvar. Due
-                // to struct reinterpretation (e.g. Unsafe.As<X, Y>) it is possible that
-                // the BLK node has a different type than the lclvar.
                 layout  = source->AsBlk()->GetLayout();
-                srcSize = layout->GetSize();
+                addrReg = genConsumeReg(source->AsBlk()->Addr());
             }
 
-            unsigned structSize;
+            unsigned srcSize = layout->GetSize();
 
-            unsigned dstSize = treeNode->GetStackByteSize();
-            if (dstSize != srcSize)
+            // If we have an HFA we can't have any GC pointers,
+            // if not then the max size for the struct is 16 bytes
+            if (compiler->IsHfa(layout->GetClassHandle()))
             {
-                // We can generate a smaller code if store size is a multiple of TARGET_POINTER_SIZE.
-                // The dst size can be rounded up to PUTARG_STK size.
-                // The src size can be rounded up if it reads a local variable slot because the local
-                // variable stack allocation size is rounded up to be a multiple of the TARGET_POINTER_SIZE.
-                // The exception  is arm64 apple arguments because they can be passed without padding.
-                if (varNode != nullptr)
-                {
-                    // If we have a varNode, even if it was casted using `OBJ`, we can read its original memory size.
-                    const LclVarDsc* varDsc       = compiler->lvaGetDesc(varNode);
-                    const unsigned   varStackSize = varDsc->lvSize();
-                    if (varStackSize >= srcSize)
-                    {
-                        srcSize = varStackSize;
-                    }
-                }
-            }
-            if (dstSize == srcSize)
-            {
-                structSize = dstSize;
+                noway_assert(!layout->HasGCPtr());
             }
             else
             {
-                // With Unsafe object wwe can have different strange combinations:
-                // PutArgStk<8>(Obj<16>(LclVar<8>)) -> copy 8 bytes;
-                // PutArgStk<16>(Obj<16>(LclVar<8>)) -> copy 16 bytes, reading undefined memory after the local.
-                structSize = min(dstSize, srcSize);
+                noway_assert(srcSize <= 2 * TARGET_POINTER_SIZE);
             }
 
-            int      remainingSize = structSize;
+            noway_assert(srcSize <= MAX_PASS_MULTIREG_BYTES);
+
+            unsigned dstSize = treeNode->GetStackByteSize();
+
+            // We can generate smaller code if store size is a multiple of TARGET_POINTER_SIZE.
+            // The dst size can be rounded up to PUTARG_STK size. The src size can be rounded up
+            // if it reads a local variable because reading "too much" from a local cannot fault.
+            //
+            if ((dstSize != srcSize) && (srcLclNode != nullptr))
+            {
+                unsigned widenedSrcSize = roundUp(srcSize, TARGET_POINTER_SIZE);
+                if (widenedSrcSize <= dstSize)
+                {
+                    srcSize = widenedSrcSize;
+                }
+            }
+
+            assert(srcSize <= dstSize);
+
+            int      remainingSize = srcSize;
             unsigned structOffset  = 0;
+            unsigned lclOffset     = (srcLclNode != nullptr) ? srcLclNode->GetLclOffs() : 0;
             unsigned nextIndex     = 0;
 
             while (remainingSize > 0)
@@ -5093,17 +5039,16 @@ void CodeGen::genPutArgStk(GenTreePutArgStk* treeNode)
                     }
                 }
 
-                const emitAttr attr     = emitTypeSize(type);
+                const emitAttr attr     = emitActualTypeSize(type);
                 const unsigned moveSize = genTypeSize(type);
-                assert(EA_SIZE_IN_BYTES(attr) == moveSize);
 
                 remainingSize -= moveSize;
 
                 instruction loadIns = ins_Load(type);
-                if (varNode != nullptr)
+                if (srcLclNode != nullptr)
                 {
-                    // Load from our varNumImp source
-                    emit->emitIns_R_S(loadIns, attr, loReg, varNode->GetLclNum(), structOffset);
+                    // Load from our local source
+                    emit->emitIns_R_S(loadIns, attr, loReg, srcLclNode->GetLclNum(), lclOffset + structOffset);
                 }
                 else
                 {
