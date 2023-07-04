@@ -222,7 +222,7 @@ namespace System.Text.RegularExpressions
 
         private static string UnescapeImpl(string input, int i)
         {
-            using var parser = new RegexParser(input, RegexOptions.None, CultureInfo.InvariantCulture, new Hashtable(), 0, null, stackalloc int[OptionStackDefaultSize]);
+            var parser = new RegexParser(input, RegexOptions.None, CultureInfo.InvariantCulture, new Hashtable(), 0, null, stackalloc int[OptionStackDefaultSize]);
 
             // In the worst case the escaped string has the same length.
             // For small inputs we use stack allocation.
@@ -234,7 +234,7 @@ namespace System.Text.RegularExpressions
             do
             {
                 i++;
-                parser.Textto(i);
+                parser._currentPos = i;
                 if (i < input.Length)
                 {
                     vsb.Append(parser.ScanCharEscape());
@@ -249,6 +249,8 @@ namespace System.Text.RegularExpressions
 
                 vsb.Append(input.AsSpan(lastpos, i - lastpos));
             } while (i < input.Length);
+
+            parser.Dispose();
 
             return vsb.ToString();
         }
@@ -472,7 +474,7 @@ namespace System.Text.RegularExpressions
                             if (startpos == _currentPos || _pattern.Length - _currentPos == 0 || _pattern[_currentPos++] != '}')
                             {
                                 AddConcatenate();
-                                Textto(startpos - 1);
+                                _currentPos = startpos - 1;
                                 goto ContinueOuterScan;
                             }
 
@@ -693,7 +695,7 @@ namespace System.Text.RegularExpressions
                         _currentPos++;
                         if (_pattern.Length - _currentPos < 2 || _pattern[_currentPos++] != ':' || _pattern[_currentPos++] != ']')
                         {
-                            Textto(savePos);
+                            _currentPos = savePos;
                         }
                     }
                 }
@@ -1013,7 +1015,7 @@ namespace System.Text.RegularExpressions
                         }
                         // not a backref
                         nodeType = RegexNodeKind.ExpressionConditional;
-                        Textto(parenPos - 1);       // jump to the start of the parentheses
+                        _currentPos = parenPos - 1;       // jump to the start of the parentheses
                         _ignoreNextParen = true;    // but make sure we don't try to capture the insides
 
                         int charsRight = _pattern.Length - _currentPos;
@@ -1353,7 +1355,7 @@ namespace System.Text.RegularExpressions
 
             // Not backreference: must be char code
 
-            Textto(backpos);
+            _currentPos = backpos;
             ch = ScanCharEscape();
 
             return !scanOnly ?
@@ -1421,7 +1423,7 @@ namespace System.Text.RegularExpressions
                             lastEndPos = _currentPos;
                         }
                     }
-                    Textto(lastEndPos);
+                    _currentPos = lastEndPos;
                     if (capnum >= 0)
                     {
                         return new RegexNode(RegexNodeKind.Backreference, _options, capnum);
@@ -1490,7 +1492,7 @@ namespace System.Text.RegularExpressions
 
             // unrecognized $: literalize
 
-            Textto(backpos);
+            _currentPos = backpos;
             return RegexNode.CreateOneWithCaseConversion('$', _options, _culture, ref _caseBehavior);
         }
 
@@ -2264,9 +2266,6 @@ namespace System.Text.RegularExpressions
         /// <summary>Fills in a RegexParseException</summary>
         private RegexParseException MakeException(RegexParseError error, string message) =>
             new RegexParseException(error, _currentPos, SR.Format(SR.MakeException, _pattern, _currentPos, message));
-
-        /// <summary>Zaps to a specific parsing position.</summary>
-        private void Textto(int pos) => _currentPos = pos;
 
         /// <summary>Gets group name from its number.</summary>
         internal static string GroupNameFromNumber(Hashtable? caps, string[]? capslist, int capsize, int i)
