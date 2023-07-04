@@ -27,8 +27,12 @@ namespace System.Runtime
         private const string RuntimeLibrary = "*";
 
         [MethodImplAttribute(MethodImplOptions.InternalCall)]
+        [RuntimeImport(RuntimeLibrary, "RhGetCrashInfoBuffer")]
+        internal static extern unsafe byte* RhGetCrashInfoBuffer(out int cbMaxSize);
+
+        [MethodImplAttribute(MethodImplOptions.InternalCall)]
         [RuntimeImport(RuntimeLibrary, "RhGetRuntimeVersion")]
-        internal static extern unsafe byte* RhGetRuntimeVersion(out int cb);
+        internal static extern unsafe byte* RhGetRuntimeVersion(out int cbLength);
 
         [LibraryImport(RuntimeLibrary)]
         [SuppressGCTransition]

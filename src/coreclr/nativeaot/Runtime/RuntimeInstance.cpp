@@ -36,14 +36,23 @@ bool ShouldHijackForGcStress(uintptr_t CallsiteIP, HijackType ht);
 
 #include "shash.inl"
 
+#define MAX_CRASHINFOBUFFER_SIZE 8192
+uint8_t g_CrashInfoBuffer[MAX_CRASHINFOBUFFER_SIZE];
+
 ThreadStore *   RuntimeInstance::GetThreadStore()
 {
     return m_pThreadStore;
 }
 
-COOP_PINVOKE_HELPER(uint8_t *, RhGetRuntimeVersion, (int32_t* pcb))
+COOP_PINVOKE_HELPER(uint8_t *, RhGetCrashInfoBuffer, (int32_t* pcbMaxSize))
 {
-    *pcb = sizeof(CLR_PRODUCT_VERSION) - 1;             // don't include the terminating null
+    *pcbMaxSize = MAX_CRASHINFOBUFFER_SIZE;
+    return g_CrashInfoBuffer;
+}
+
+COOP_PINVOKE_HELPER(uint8_t *, RhGetRuntimeVersion, (int32_t* pcbLength))
+{
+    *pcbLength = sizeof(CLR_PRODUCT_VERSION) - 1;           // don't include the terminating null
     return (uint8_t*)&CLR_PRODUCT_VERSION;
 }
 
