@@ -1,9 +1,7 @@
 ﻿// Licensed to the .NET Foundation under one or more agreements.
 // The .NET Foundation licenses this file to you under the MIT license.
 
-using System.Collections.Generic;
 using System.Diagnostics;
-using System.Diagnostics.CodeAnalysis;
 using System.Globalization;
 using System.Runtime.CompilerServices;
 using System.Runtime.InteropServices;
@@ -18,11 +16,11 @@ namespace System.Buffers
     /// </summary>
     internal readonly struct AhoCorasick
     {
-        private readonly Node[] _nodes;
+        private readonly AhoCorasickNode[] _nodes;
         private readonly Vector256<byte> _startingCharsAsciiBitmap;
         private readonly int _maxValueLength; // Only used by the NLS fallback
 
-        public AhoCorasick(Node[] nodes, Vector256<byte> startingAsciiBitmap, int maxValueLength)
+        public AhoCorasick(AhoCorasickNode[] nodes, Vector256<byte> startingAsciiBitmap, int maxValueLength)
         {
             _nodes = nodes;
             _startingCharsAsciiBitmap = startingAsciiBitmap;
@@ -88,7 +86,7 @@ namespace System.Buffers
                 throw new UnreachableException();
             }
 
-            ref Node nodes = ref MemoryMarshal.GetArrayDataReference(_nodes);
+            ref AhoCorasickNode nodes = ref MemoryMarshal.GetArrayDataReference(_nodes);
             int nodeIndex = 0;
             int result = -1;
             int i = 0;
@@ -131,7 +129,7 @@ namespace System.Buffers
             while (true)
             {
                 Debug.Assert((uint)nodeIndex < (uint)_nodes.Length);
-                ref Node node = ref Unsafe.Add(ref nodes, (uint)nodeIndex);
+                ref AhoCorasickNode node = ref Unsafe.Add(ref nodes, (uint)nodeIndex);
 
                 if (node.TryGetChild(c, out int childIndex))
                 {
@@ -180,7 +178,7 @@ namespace System.Buffers
 
             const char LowSurrogateNotSet = '\0';
 
-            ref Node nodes = ref MemoryMarshal.GetArrayDataReference(_nodes);
+            ref AhoCorasickNode nodes = ref MemoryMarshal.GetArrayDataReference(_nodes);
             int nodeIndex = 0;
             int result = -1;
             int i = 0;
@@ -258,7 +256,7 @@ namespace System.Buffers
             while (true)
             {
                 Debug.Assert((uint)nodeIndex < (uint)_nodes.Length);
-                ref Node node = ref Unsafe.Add(ref nodes, (uint)nodeIndex);
+                ref AhoCorasickNode node = ref Unsafe.Add(ref nodes, (uint)nodeIndex);
 
                 if (node.TryGetChild(c, out int childIndex))
                 {
@@ -378,171 +376,5 @@ namespace System.Buffers
         public readonly struct IndexOfAnyAsciiFastScan : IFastScan { }
 
         public readonly struct NoFastScan : IFastScan { }
-
-        [DebuggerDisplay("MatchLength={MatchLength} SuffixLink={SuffixLink} ChildrenCount={(_children?.Count ?? 0) + (_firstChildChar < 0 ? 0 : 1)}")]
-        public struct Node
-        {
-            private static object EmptyChildrenSentinel => Array.Empty<int>();
-
-            public int SuffixLink;
-            public int MatchLength;
-
-            private int _firstChildChar;
-            private int _firstChildIndex;
-            private object _children; // Either Dictionary<char, int> or int[]
-
-            public Node()
-            {
-                _firstChildChar = -1;
-                _children = EmptyChildrenSentinel;
-            }
-
-            [MethodImpl(MethodImplOptions.AggressiveInlining)]
-            public readonly bool TryGetChild(char c, out int index)
-            {
-                if (_firstChildChar == c)
-                {
-                    index = _firstChildIndex;
-                    return true;
-                }
-
-                object children = _children;
-                Debug.Assert(children is int[] || children is Dictionary<char, int>);
-
-                if (children.GetType() == typeof(int[]))
-                {
-                    int[] table = Unsafe.As<int[]>(children);
-                    if (c < (uint)table.Length)
-                    {
-                        index = table[c];
-                        if (index >= 0)
-                        {
-                            return true;
-                        }
-                    }
-                }
-                else
-                {
-                    return Unsafe.As<Dictionary<char, int>>(children).TryGetValue(c, out index);
-                }
-
-                index = 0;
-                return false;
-            }
-
-            public void AddChild(char c, int index)
-            {
-                if (_firstChildChar < 0)
-                {
-                    _firstChildChar = c;
-                    _firstChildIndex = index;
-                }
-                else
-                {
-                    if (ReferenceEquals(_children, EmptyChildrenSentinel))
-                    {
-                        _children = new Dictionary<char, int>();
-                    }
-
-                    ((Dictionary<char, int>)_children).Add(c, index);
-                }
-            }
-
-            public readonly void AddChildrenToQueue(Queue<(char Char, int Index)> queue)
-            {
-                if (_firstChildChar >= 0)
-                {
-                    queue.Enqueue(((char)_firstChildChar, _firstChildIndex));
-
-                    if (_children is Dictionary<char, int> children)
-                    {
-                        foreach ((char childChar, int childIndex) in children)
-                        {
-                            queue.Enqueue((childChar, childIndex));
-                        }
-                    }
-                }
-            }
-
-            public void OptimizeChildren()
-            {
-                if (_children is Dictionary<char, int> children)
-                {
-                    children.Add((char)_firstChildChar, _firstChildIndex);
-
-                    float frequency = -2;
-
-                    foreach ((char childChar, int childIndex) in children)
-                    {
-                        float newFrequency = char.IsAscii(childChar) ? CharacterFrequencyHelper.AsciiFrequency[childChar] : -1;
-
-                        if (newFrequency > frequency)
-                        {
-                            frequency = newFrequency;
-                            _firstChildChar = childChar;
-                            _firstChildIndex = childIndex;
-                        }
-                    }
-
-                    children.Remove((char)_firstChildChar);
-
-                    if (TryCreateJumpTable(children, out int[]? table))
-                    {
-                        _children = table;
-                    }
-                }
-
-                static bool TryCreateJumpTable(Dictionary<char, int> children, [NotNullWhen(true)] out int[]? table)
-                {
-                    // Sacrifice some memory usage in exchange for faster lookup performance
-                    const int AcceptableSizeMultiplier = 2;
-
-                    Debug.Assert(children.Count > 0);
-
-                    int maxValue = -1;
-
-                    foreach ((char childChar, _) in children)
-                    {
-                        maxValue = Math.Max(maxValue, childChar);
-                    }
-
-                    int tableSize = TableSizeEstimate(maxValue);
-                    int dictionarySize = DictionarySizeEstimate(children.Count);
-
-                    if (tableSize > dictionarySize * AcceptableSizeMultiplier)
-                    {
-                        // We would have a lot of empty entries. Avoid wasting too much memory.
-                        table = null;
-                        return false;
-                    }
-
-                    table = new int[maxValue + 1];
-                    Array.Fill(table, -1);
-
-                    foreach ((char childChar, int childIndex) in children)
-                    {
-                        table[childChar] = childIndex;
-                    }
-
-                    return true;
-
-                    static int TableSizeEstimate(int maxValue)
-                    {
-                        return 32 + (maxValue * 4);
-                    }
-
-                    static int DictionarySizeEstimate(int childCount)
-                    {
-                        return childCount switch
-                        {
-                            < 4 => 192,
-                            < 8 => 272,
-                            < 12 => 352,
-                            _ => childCount * 25
-                        };
-                    }
-                }
-            }
-        }
     }
 }

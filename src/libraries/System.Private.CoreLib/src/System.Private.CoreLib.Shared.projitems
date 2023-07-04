@@ -439,6 +439,7 @@
     <Compile Include="$(MSBuildThisFileDirectory)System\SearchValues\ProbabilisticMap.cs" />
     <Compile Include="$(MSBuildThisFileDirectory)System\SearchValues\Strings\Helpers\AhoCorasick.cs" />
     <Compile Include="$(MSBuildThisFileDirectory)System\SearchValues\Strings\Helpers\AhoCorasickBuilder.cs" />
+    <Compile Include="$(MSBuildThisFileDirectory)System\SearchValues\Strings\Helpers\AhoCorasickNode.cs" />
     <Compile Include="$(MSBuildThisFileDirectory)System\SearchValues\Strings\Helpers\CharacterFrequencyHelper.cs" />
     <Compile Include="$(MSBuildThisFileDirectory)System\SearchValues\Strings\Helpers\EightPackedReferences.cs" />
     <Compile Include="$(MSBuildThisFileDirectory)System\SearchValues\Strings\Helpers\RabinKarp.cs" />

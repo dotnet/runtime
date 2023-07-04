@@ -15,7 +15,7 @@ namespace System.Buffers
     {
         private readonly ReadOnlySpan<string> _values;
         private readonly bool _ignoreCase;
-        private ValueListBuilder<AhoCorasick.Node> _nodes;
+        private ValueListBuilder<AhoCorasickNode> _nodes;
         private ValueListBuilder<int> _parents;
         private Vector256<byte> _startingCharsAsciiBitmap;
         private int _maxValueLength; // Only used by the NLS fallback
@@ -65,13 +65,13 @@ namespace System.Buffers
 
         private void BuildTrie(ref HashSet<string>? unreachableValues)
         {
-            _nodes.Append(new AhoCorasick.Node());
+            _nodes.Append(new AhoCorasickNode());
             _parents.Append(0);
 
             foreach (string value in _values)
             {
                 int nodeIndex = 0;
-                ref AhoCorasick.Node node = ref _nodes[nodeIndex];
+                ref AhoCorasickNode node = ref _nodes[nodeIndex];
 
                 for (int i = 0; i < value.Length; i++)
                 {
@@ -81,7 +81,7 @@ namespace System.Buffers
                     {
                         childIndex = _nodes.Length;
                         node.AddChild(c, childIndex);
-                        _nodes.Append(new AhoCorasick.Node());
+                        _nodes.Append(new AhoCorasickNode());
                         _parents.Append(nodeIndex);
                     }
 
@@ -115,7 +115,7 @@ namespace System.Buffers
 
             while (queue.TryDequeue(out (char Char, int Index) trieNode))
             {
-                ref AhoCorasick.Node node = ref _nodes[trieNode.Index];
+                ref AhoCorasickNode node = ref _nodes[trieNode.Index];
                 int parent = _parents[trieNode.Index];
                 int suffixLink = _nodes[parent].SuffixLink;
 
@@ -123,7 +123,7 @@ namespace System.Buffers
                 {
                     while (suffixLink >= 0)
                     {
-                        ref AhoCorasick.Node suffixNode = ref _nodes[suffixLink];
+                        ref AhoCorasickNode suffixNode = ref _nodes[suffixLink];
 
                         if (suffixNode.TryGetChild(trieNode.Char, out int childSuffixLink))
                         {
