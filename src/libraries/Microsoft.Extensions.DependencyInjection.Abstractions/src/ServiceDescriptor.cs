@@ -1012,17 +1012,36 @@ namespace Microsoft.Extensions.DependencyInjection
             string debugText = $@"Lifetime = {Lifetime}, ServiceType = ""{ServiceType.FullName}""";
 
             // Either implementation type, factory or instance is set.
-            if (ImplementationType != null)
+            if (IsKeyedService)
             {
-                debugText += $@", ImplementationType = ""{ImplementationType.FullName}""";
-            }
-            else if (ImplementationFactory != null)
-            {
-                debugText += $@", ImplementationFactory = {ImplementationFactory.Method}";
+                debugText += $@", ServiceKey = ""{ServiceKey}""";
+                if (KeyedImplementationType != null)
+                {
+                    debugText += $@", KeyedImplementationType = ""{KeyedImplementationType.FullName}""";
+                }
+                else if (KeyedImplementationFactory != null)
+                {
+                    debugText += $@", KeyedImplementationFactory = {KeyedImplementationFactory.Method}";
+                }
+                else
+                {
+                    debugText += $@", KeyedImplementationInstance = {KeyedImplementationInstance}";
+                }
             }
             else
             {
-                debugText += $@", ImplementationInstance = {ImplementationInstance}";
+                if (ImplementationType != null)
+                {
+                    debugText += $@", ImplementationType = ""{ImplementationType.FullName}""";
+                }
+                else if (ImplementationFactory != null)
+                {
+                    debugText += $@", ImplementationFactory = {ImplementationFactory.Method}";
+                }
+                else
+                {
+                    debugText += $@", ImplementationInstance = {ImplementationInstance}";
+                }
             }
 
             return debugText;
