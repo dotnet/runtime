@@ -31,10 +31,10 @@ namespace Microsoft.Android.Build.Ndk
 
         private static readonly Dictionary<string, AndroidArch> validArches = new Dictionary<string, AndroidArch>()
         {
-            { "arm", new AndroidArch("32-bit ARMv7", "arm", "armeabi-v7a", "arm-linux-androideabi") },
-            { "arm64", new AndroidArch("64-bit ARMv8", "aarch64", "aarch64-v8a", "aarch64-linux-android") },
-            { "x86", new AndroidArch("32-bit Intel", "x86", "x86", "i686-linux-android") },
-            { "x64", new AndroidArch("64-bit Intel", "x86_64", "x86_64", "x86_64-linux-android") }
+            { "arm", new AndroidArch("arm", "armeabi-v7a", "arm-linux-androideabi") },
+            { "arm64", new AndroidArch("aarch64", "aarch64-v8a", "aarch64-linux-android") },
+            { "x86", new AndroidArch("x86", "x86", "i686-linux-android") },
+            { "x64", new AndroidArch("x86_64", "x86_64", "x86_64-linux-android") }
         };
 
         public NdkTools(string netArch, string hostOS, string apiLevel)

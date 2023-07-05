@@ -46,11 +46,13 @@
     <PropertyGroup Condition="'$(ForceAOT)' == 'true' and '$(AOTWithLibraryFiles)' == 'true'">
       <_AotOutputType>Library</_AotOutputType>
       <_AotLibraryFormat>So</_AotLibraryFormat>
+      <_AotMode Condition="'$(AotMode)' == ''">Normal</_AotMode>
     </PropertyGroup>
 
     <PropertyGroup Condition="'$(ForceAOT)' == 'true' and '$(AOTWithLibraryFiles)' != 'true'">
       <_AotOutputType>AsmOnly</_AotOutputType>
       <_AotModulesTablePath>$(ApkDir)\modules.c</_AotModulesTablePath>
+      <_AotMode Condition="'$(AotMode)' == ''">Full</_AotMode>
     </PropertyGroup>
 
     <PropertyGroup>
@@ -83,10 +85,11 @@
         IntermediateOutputPath="$(IntermediateOutputPath)"
         LibraryFormat="$(_AotLibraryFormat)"
         LLVMPath="$(MonoAotCrossDir)"
-        Mode="Full"
+        Mode="$(_AotMode)"
         OutputDir="$(_MobileIntermediateOutputPath)"
         OutputType="$(_AotOutputType)"
-        ToolPrefix="$(_ToolPrefixPath)"        
+        ToolPrefix="$(_ToolPrefixPath)"
+        UseAotDataFile="false"
         UseLLVM="$(UseLLVM)">
         <Output TaskParameter="CompiledAssemblies" ItemName="BundleAssemblies" />
     </MonoAOTCompiler>

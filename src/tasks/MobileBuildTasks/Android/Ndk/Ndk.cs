@@ -13,7 +13,7 @@ namespace Microsoft.Android.Build.Ndk
 {
     public sealed class Ndk
     {
-        private static string? ndkPath = "";
+        private static string ndkPath = "";
         private static NdkVersion? ndkVersion;
 
         public static string NdkPath
@@ -44,13 +44,13 @@ namespace Microsoft.Android.Build.Ndk
             }
         }
 
-        private static string? GetNdkPath(IEnumerable<string?> probingPaths)
+        private static string GetNdkPath(IEnumerable<string> probingPaths)
         {
-            string? ret = "";
+            string ret = "";
 
-            foreach(string? path in probingPaths)
+            foreach(string path in probingPaths)
             {
-                if (!string.IsNullOrEmpty(path) && Directory.Exists(path))
+                if (Directory.Exists(path))
                 {
                     ret = path;
                     break;
@@ -60,9 +60,9 @@ namespace Microsoft.Android.Build.Ndk
             return ret;
         }
 
-        private static List<string?> GetProbingPaths()
+        private static List<string> GetProbingPaths()
         {
-            List<string?> paths = new List<string?>();
+            List<string> paths = new List<string>();
 
             string? ndkEnvPath = Environment.GetEnvironmentVariable("ANDROID_NDK_ROOT");
 
@@ -86,7 +86,7 @@ namespace Microsoft.Android.Build.Ndk
 
             if (!string.IsNullOrEmpty(ndkEnvPath))
             {
-                paths.Add(ndkEnvPath);
+                paths.Add(ndkEnvPath!);
             }
 
             paths.AddRange(fixedNdkPaths);

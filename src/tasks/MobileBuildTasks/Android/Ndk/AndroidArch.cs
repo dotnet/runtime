@@ -5,10 +5,8 @@ using System;
 
 namespace Microsoft.Android.Build.Ndk
 {
-    public sealed class AndroidArch(string name, string archName, string abi, string triple)
-    {
-        public string Name { get; set; } = name;
-
+    public sealed class AndroidArch(string archName, string abi, string triple)
+    {     
         public string ArchName { get; set; } = archName;
 
         public string Abi { get; set; } = abi;
