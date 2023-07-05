@@ -6021,7 +6021,7 @@ bool emitter::IsMovEquivalentTo(instruction mov, emitAttr movSize, instruction i
         }
     };
 
-    return movSize == size && (mov == ins || (isFullSimdMove(mov) && isFullSimdMove(ins)));
+    return movSize == size && (mov == ins || (mov == INS_mov && (ins == INS_movzx || INS_movsx)) || (isFullSimdMove(mov) && isFullSimdMove(ins)));
 }
 
 //------------------------------------------------------------------------
