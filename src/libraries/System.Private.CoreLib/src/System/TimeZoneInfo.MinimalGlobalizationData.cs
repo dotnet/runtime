@@ -6,6 +6,12 @@ namespace System
     public sealed partial class TimeZoneInfo
     {
 #pragma warning disable IDE0060
+        static partial void GetFullValueForDisplayNameField(string timeZoneId, TimeSpan baseUtcOffset, ref string? displayName);
+
+        static partial void GetStandardDisplayName(string timeZoneId, ref string? displayName);
+
+        static partial void GetDaylightDisplayName(string timeZoneId, ref string? displayName);
+
         private static string GetUtcStandardDisplayName()
         {
             // For this target, be consistent with other time zone display names that use an abbreviation.

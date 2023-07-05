@@ -48,6 +48,26 @@ namespace System
         }
 #pragma warning restore IDE0060
 
+        private static void GetStandardDisplayName(string timeZoneId, ref string? displayName)
+        {
+            // Determine the culture to use
+            CultureInfo uiCulture = CultureInfo.CurrentUICulture;
+            if (uiCulture.Name.Length == 0)
+                uiCulture = CultureInfo.GetCultureInfo(FallbackCultureName); // ICU doesn't work nicely with InvariantCulture
+
+            GetDisplayName(timeZoneId, Interop.Globalization.TimeZoneDisplayNameType.Standard, uiCulture.Name, ref displayName);
+        }
+
+        private static void GetDaylightDisplayName(string timeZoneId, ref string? displayName)
+        {
+            // Determine the culture to use
+            CultureInfo uiCulture = CultureInfo.CurrentUICulture;
+            if (uiCulture.Name.Length == 0)
+                uiCulture = CultureInfo.GetCultureInfo(FallbackCultureName); // ICU doesn't work nicely with InvariantCulture
+
+            GetDisplayName(timeZoneId, Interop.Globalization.TimeZoneDisplayNameType.DaylightSavings, uiCulture.Name, ref displayName);
+        }
+
         // Helper function that retrieves various forms of time zone display names from ICU
         private static unsafe void GetDisplayName(string timeZoneId, Interop.Globalization.TimeZoneDisplayNameType nameType, string uiCulture, ref string? displayName)
         {
@@ -96,8 +116,13 @@ namespace System
         }
 
         // Helper function that builds the value backing the DisplayName field from globalization data.
-        private static void GetFullValueForDisplayNameField(string timeZoneId, TimeSpan baseUtcOffset, CultureInfo uiCulture, ref string? displayName)
+        private static void GetFullValueForDisplayNameField(string timeZoneId, TimeSpan baseUtcOffset, ref string? displayName)
         {
+            // Determine the culture to use
+            CultureInfo uiCulture = CultureInfo.CurrentUICulture;
+            if (uiCulture.Name.Length == 0)
+                uiCulture = CultureInfo.GetCultureInfo(FallbackCultureName); // ICU doesn't work nicely with InvariantCulture
+
             // There are a few diffent ways we might show the display name depending on the data.
             // The algorithm used below should avoid duplicating the same words while still achieving the
             // goal of providing a unique, discoverable, and intuitive name.

@@ -231,12 +231,7 @@ namespace System
             if (GlobalizationMode.Invariant)
                 return displayName;
 
-            // Determine the culture to use
-            CultureInfo uiCulture = CultureInfo.CurrentUICulture;
-            if (uiCulture.Name.Length == 0)
-                uiCulture = CultureInfo.GetCultureInfo(FallbackCultureName); // ICU doesn't work nicely with InvariantCulture
-
-            GetFullValueForDisplayNameField(Id, BaseUtcOffset, uiCulture, ref displayName);
+            GetFullValueForDisplayNameField(Id, BaseUtcOffset, ref displayName);
 
             return displayName;
         }
@@ -250,11 +245,7 @@ namespace System
             if (GlobalizationMode.Invariant)
                 return standardDisplayName;
 
-            CultureInfo uiCulture = CultureInfo.CurrentUICulture;
-            if (uiCulture.Name.Length == 0)
-                uiCulture = CultureInfo.GetCultureInfo(FallbackCultureName); // ICU doesn't work nicely with InvariantCulture
-
-            GetDisplayName(Id, Interop.Globalization.TimeZoneDisplayNameType.Standard, uiCulture.Name, ref standardDisplayName);
+            GetStandardDisplayName(Id, ref standardDisplayName);
 
             return standardDisplayName;
         }
@@ -268,12 +259,7 @@ namespace System
             if (GlobalizationMode.Invariant)
                 return daylightDisplayName;
 
-            // Determine the culture to use
-            CultureInfo uiCulture = CultureInfo.CurrentUICulture;
-            if (uiCulture.Name.Length == 0)
-                uiCulture = CultureInfo.GetCultureInfo(FallbackCultureName); // ICU doesn't work nicely with InvariantCulture
-
-            GetDisplayName(Id, Interop.Globalization.TimeZoneDisplayNameType.DaylightSavings, uiCulture.Name, ref daylightDisplayName);
+            GetDaylightDisplayName(Id, ref daylightDisplayName);
 
             return daylightDisplayName;
         }
