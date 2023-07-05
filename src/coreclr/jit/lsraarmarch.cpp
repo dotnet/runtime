@@ -355,7 +355,7 @@ int LinearScan::BuildCall(GenTreeCall* call)
             }
             else
             {
-                assert(!argNode->IsValue() || argNode->IsUnusedValue() /* || (call->gtCallType == CT_INDIRECT)*/);
+                assert(!argNode->IsValue() || argNode->IsUnusedValue());
             }
         }
     }
