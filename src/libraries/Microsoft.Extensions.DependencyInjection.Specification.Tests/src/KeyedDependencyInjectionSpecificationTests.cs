@@ -206,6 +206,23 @@ namespace Microsoft.Extensions.DependencyInjection.Specification
         }
 
         [Fact]
+        public void CreateServiceWithKeyedParameter()
+        {
+            var serviceCollection = new ServiceCollection();
+            serviceCollection.AddSingleton<IService, Service>();
+            serviceCollection.AddKeyedSingleton<IService, Service>("service1");
+            serviceCollection.AddKeyedSingleton<IService, Service>("service2");
+
+            var provider = CreateServiceProvider(serviceCollection);
+
+            Assert.Null(provider.GetService<OtherService>());
+            var svc = ActivatorUtilities.CreateInstance<OtherService>(provider);
+            Assert.NotNull(svc);
+            Assert.Equal("service1", svc.Service1.ToString());
+            Assert.Equal("service2", svc.Service2.ToString());
+        }
+
+        [Fact]
         public void ResolveKeyedServiceSingletonFactory()
         {
             var service = new Service();
