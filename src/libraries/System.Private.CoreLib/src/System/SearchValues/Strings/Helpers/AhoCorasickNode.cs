@@ -134,8 +134,8 @@ namespace System.Buffers
                     maxValue = Math.Max(maxValue, childChar);
                 }
 
-                int tableSize = TableSizeEstimate(maxValue);
-                int dictionarySize = DictionarySizeEstimate(children.Count);
+                int tableSize = TableBytesEstimate(maxValue);
+                int dictionarySize = DictionaryBytesEstimate(children.Count);
 
                 if (tableSize > dictionarySize * AcceptableSizeMultiplier)
                 {
@@ -154,13 +154,19 @@ namespace System.Buffers
 
                 return true;
 
-                static int TableSizeEstimate(int maxValue)
+                static int TableBytesEstimate(int maxValue)
                 {
-                    return 32 + (maxValue * 4);
+                    // An approximate number of bytes consumed by an
+                    // int[] table with a known number of entries.
+                    // Only used as a heuristic, so numbers don't have to be exact.
+                    return 32 + (maxValue * sizeof(int));
                 }
 
-                static int DictionarySizeEstimate(int childCount)
+                static int DictionaryBytesEstimate(int childCount)
                 {
+                    // An approximate number of bytes consumed by a
+                    // Dictionary<char, int> with a known number of entries.
+                    // Only used as a heuristic, so numbers don't have to be exact.
                     return childCount switch
                     {
                         < 4 => 192,
