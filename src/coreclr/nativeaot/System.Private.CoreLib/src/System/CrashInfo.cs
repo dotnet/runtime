@@ -236,7 +236,7 @@ namespace System
                 return false;
 
             nint ip = frame.GetNativeIPAddress();
-            if (!WriteHexValue("ip"u8, (ulong)ip))
+            if (!WriteHexValue("ip"u8, (nuint)ip))
                 return false;
 
             if (!WriteHexValue("offset"u8, frame.GetNativeOffset()))
