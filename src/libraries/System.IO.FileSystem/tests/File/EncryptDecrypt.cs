@@ -25,14 +25,6 @@ namespace System.IO.Tests
             AssertExtensions.Throws<ArgumentNullException>("path", () => File.Decrypt(null));
         }
 
-        [SkipOnTargetFramework(TargetFrameworkMonikers.Netcoreapp)]
-        [Fact]
-        public void EncryptDecrypt_NotSupported()
-        {
-            Assert.Throws<PlatformNotSupportedException>(() => File.Encrypt("path"));
-            Assert.Throws<PlatformNotSupportedException>(() => File.Decrypt("path"));
-        }
-
         // On Windows Nano Server and Home Edition, file encryption with File.Encrypt(string path) throws an IOException
         // because EFS (Encrypted File System), its underlying technology, is not available on these operating systems.
         [ConditionalFact(typeof(PlatformDetection), nameof(PlatformDetection.IsNotWindowsNanoServer), nameof(PlatformDetection.IsNotWindowsHomeEdition))]

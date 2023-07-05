@@ -4,7 +4,6 @@
 using System.Collections.Generic;
 using System.Diagnostics;
 using System.Diagnostics.CodeAnalysis;
-using System.Text.Json.Serialization;
 using System.Text.Json.Serialization.Metadata;
 
 namespace System.Text.Json.Nodes
@@ -33,24 +32,25 @@ namespace System.Text.Json.Nodes
         [RequiresDynamicCode(CreateDynamicCodeMessage)]
         public static JsonValue? Create<T>(T? value, JsonNodeOptions? options = null)
         {
-            if (value == null)
+            if (value is null)
             {
                 return null;
             }
 
             if (value is JsonElement element)
             {
-                if (element.ValueKind == JsonValueKind.Null)
+                if (element.ValueKind is JsonValueKind.Null)
                 {
                     return null;
                 }
 
                 VerifyJsonElementIsNotArrayOrObject(ref element);
 
-                return new JsonValueTrimmable<JsonElement>(element, JsonMetadataServices.JsonElementConverter, options);
+                return new JsonValuePrimitive<JsonElement>(element, JsonMetadataServices.JsonElementConverter, options);
             }
 
-            return new JsonValueNotTrimmable<T>(value, options);
+            var jsonTypeInfo = (JsonTypeInfo<T>)JsonSerializerOptions.Default.GetTypeInfo(typeof(T));
+            return new JsonValueCustomized<T>(value, jsonTypeInfo, options);
         }
 
         /// <summary>
@@ -71,14 +71,14 @@ namespace System.Text.Json.Nodes
                 ThrowHelper.ThrowArgumentNullException(nameof(jsonTypeInfo));
             }
 
-            if (value == null)
+            if (value is null)
             {
                 return null;
             }
 
             if (value is JsonElement element)
             {
-                if (element.ValueKind == JsonValueKind.Null)
+                if (element.ValueKind is JsonValueKind.Null)
                 {
                     return null;
                 }
@@ -86,7 +86,8 @@ namespace System.Text.Json.Nodes
                 VerifyJsonElementIsNotArrayOrObject(ref element);
             }
 
-            return new JsonValueTrimmable<T>(value, jsonTypeInfo, options);
+            jsonTypeInfo.EnsureConfigured();
+            return new JsonValueCustomized<T>(value, jsonTypeInfo, options);
         }
 
         internal override void GetPath(List<string> path, JsonNode? child)
@@ -95,8 +96,6 @@ namespace System.Text.Json.Nodes
 
             Parent?.GetPath(path, this);
         }
-
-        internal abstract JsonValueKind GetInternalValueKind();
 
         /// <summary>
         ///   Tries to obtain the current JSON value and returns a value that indicates whether the operation succeeded.
@@ -118,7 +117,7 @@ namespace System.Text.Json.Nodes
         private static void VerifyJsonElementIsNotArrayOrObject(ref JsonElement element)
         {
             // Force usage of JsonArray and JsonObject instead of supporting those in an JsonValue.
-            if (element.ValueKind == JsonValueKind.Object || element.ValueKind == JsonValueKind.Array)
+            if (element.ValueKind is JsonValueKind.Object or JsonValueKind.Array)
             {
                 ThrowHelper.ThrowInvalidOperationException_NodeElementCannotBeObjectOrArray();
             }

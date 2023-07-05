@@ -4301,7 +4301,7 @@ mini_handle_call_res_devirt (MonoMethod *cmethod)
 
 		// EqualityComparer<T>.Default returns specific types depending on T
 		// FIXME: Special case more types: byte, string, nullable, enum ?
-		if (mono_class_is_assignable_from_internal (inst, mono_class_from_mono_type_internal (param_type)) && param_type->type != MONO_TYPE_U1 && param_type->type != MONO_TYPE_STRING) {
+		if (mono_class_is_assignable_from_internal (inst, mono_class_from_mono_type_internal (param_type)) && param_type->type != MONO_TYPE_STRING) {
 			MonoClass *gcomparer_inst;
 
 			memset (&ctx, 0, sizeof (ctx));

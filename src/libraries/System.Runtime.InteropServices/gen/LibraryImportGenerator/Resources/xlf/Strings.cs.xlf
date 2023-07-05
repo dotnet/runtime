@@ -631,22 +631,22 @@
       </trans-unit>
       <trans-unit id="UnnecessaryMarshallingInfoDescription">
         <source>Unnecesssary marshalling info was provided. This marshalling information can be removed without any change in behavior to the application.</source>
-        <target state="new">Unnecesssary marshalling info was provided. This marshalling information can be removed without any change in behavior to the application.</target>
+        <target state="translated">Poskytly se neúmyslné informace o zařazování. Tyto informace o zařazování lze odebrat bez jakékoli změny chování aplikace.</target>
         <note />
       </trans-unit>
       <trans-unit id="UnnecessaryMarshallingInfoTitle">
         <source>Unnecessary marshalling info was provided and can be removed.</source>
-        <target state="new">Unnecessary marshalling info was provided and can be removed.</target>
+        <target state="translated">Byly poskytnuté nepotřebné informace o zařazování a dají se odebrat.</target>
         <note />
       </trans-unit>
       <trans-unit id="UnnecessaryParameterMarshallingInfoMessage">
         <source>Unnecessary marshalling info '{0}' was provided for parameter '{1}'</source>
-        <target state="new">Unnecessary marshalling info '{0}' was provided for parameter '{1}'</target>
+        <target state="translated">Byly poskytnuty zbytečné informace o zařazování {0} pro parametr {1}.</target>
         <note />
       </trans-unit>
       <trans-unit id="UnnecessaryReturnMarshallingInfoMessage">
         <source>Unnecessary marshalling info '{0}' was provided for the return type of method '{1}'</source>
-        <target state="new">Unnecessary marshalling info '{0}' was provided for the return type of method '{1}'</target>
+        <target state="translated">Byly poskytnuty zbytečné informace o zařazování {0} pro návratový typ metody {1}.</target>
         <note />
       </trans-unit>
       <trans-unit id="ValueInCallerAllocatedBufferRequiresSpanConstructorDescription">

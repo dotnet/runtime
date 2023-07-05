@@ -313,7 +313,26 @@ namespace Microsoft.Interop
             _numElementsExpression = numElementsExpression;
         }
 
-        public IEnumerable<StatementSyntax> GenerateCleanupStatements(TypePositionInfo info, StubCodeContext context) => Array.Empty<StatementSyntax>();
+        public ManagedTypeInfo AsNativeType(TypePositionInfo info)
+        {
+            return _unmanagedType;
+        }
+
+        public IEnumerable<StatementSyntax> GenerateCleanupStatements(TypePositionInfo info, StubCodeContext context)
+        {
+            if (MarshallerHelpers.GetMarshalDirection(info, context) == MarshalDirection.ManagedToUnmanaged)
+            {
+                yield return EmptyStatement();
+                yield break;
+            }
+
+            string numElementsIdentifier = MarshallerHelpers.GetNumElementsIdentifier(info, context);
+            yield return ExpressionStatement(
+                AssignmentExpression(
+                    SyntaxKind.SimpleAssignmentExpression,
+                    IdentifierName(numElementsIdentifier),
+                    _numElementsExpression));
+        }
 
         public IEnumerable<StatementSyntax> GenerateGuaranteedUnmarshalStatements(TypePositionInfo info, StubCodeContext context)
         {
@@ -514,6 +533,7 @@ namespace Microsoft.Interop
         private readonly ElementsMarshalling _elementsMarshalling;
         private readonly ManagedTypeInfo _unmanagedType;
         private readonly MarshallerShape _shape;
+        private readonly ExpressionSyntax _numElementsExpression;
         private readonly bool _cleanupElementsAndSpace;
 
         public StatelessLinearCollectionMarshalling(
@@ -521,12 +541,14 @@ namespace Microsoft.Interop
             ElementsMarshalling elementsMarshalling,
             ManagedTypeInfo unmanagedType,
             MarshallerShape shape,
+            ExpressionSyntax numElementsExpression,
             bool cleanupElementsAndSpace)
         {
             _spaceMarshallingStrategy = spaceMarshallingStrategy;
             _elementsMarshalling = elementsMarshalling;
             _unmanagedType = unmanagedType;
             _shape = shape;
+            _numElementsExpression = numElementsExpression;
             _cleanupElementsAndSpace = cleanupElementsAndSpace;
         }
 
@@ -538,11 +560,20 @@ namespace Microsoft.Interop
             {
                 yield break;
             }
-
             StatementSyntax elementCleanup = _elementsMarshalling.GenerateElementCleanupStatement(info, context);
 
             if (!elementCleanup.IsKind(SyntaxKind.EmptyStatement))
             {
+                // If we don't have the numElements variable still available from unmarshal or marshal stage, we need to reassign that again
+                if (!context.AdditionalTemporaryStateLivesAcrossStages)
+                {
+                    string numElementsIdentifier = MarshallerHelpers.GetNumElementsIdentifier(info, context);
+                    yield return ExpressionStatement(
+                        AssignmentExpression(
+                            SyntaxKind.SimpleAssignmentExpression,
+                            IdentifierName(numElementsIdentifier),
+                            _numElementsExpression));
+                }
                 yield return elementCleanup;
             }
 
@@ -587,7 +618,16 @@ namespace Microsoft.Interop
         public IEnumerable<StatementSyntax> GeneratePinnedMarshalStatements(TypePositionInfo info, StubCodeContext context) => _spaceMarshallingStrategy.GeneratePinnedMarshalStatements(info, context);
         public IEnumerable<StatementSyntax> GeneratePinStatements(TypePositionInfo info, StubCodeContext context) => _spaceMarshallingStrategy.GeneratePinStatements(info, context);
 
-        public IEnumerable<StatementSyntax> GenerateSetupStatements(TypePositionInfo info, StubCodeContext context) => _spaceMarshallingStrategy.GenerateSetupStatements(info, context);
+        public IEnumerable<StatementSyntax> GenerateSetupStatements(TypePositionInfo info, StubCodeContext context)
+        {
+            foreach (var s in _spaceMarshallingStrategy.GenerateSetupStatements(info, context))
+                yield return s;
+            var elementsSetup = _elementsMarshalling.GenerateSetupStatement(info, context);
+            if (elementsSetup is not EmptyStatementSyntax)
+            {
+                yield return elementsSetup;
+            }
+        }
 
         public IEnumerable<StatementSyntax> GenerateUnmarshalCaptureStatements(TypePositionInfo info, StubCodeContext context) => Array.Empty<StatementSyntax>();
 
@@ -605,7 +645,7 @@ namespace Microsoft.Interop
             {
                 // If the parameter is marshalled by-value [Out], then we don't marshal the contents of the collection.
                 // We do clear the span, so that if the invoke target doesn't fill it, we aren't left with undefined content.
-                yield return _elementsMarshalling.GenerateClearUnmanagedValuesSource(info, context);
+                yield return _elementsMarshalling.GenerateClearManagedValuesDestination(info, context);
                 yield break;
             }
 

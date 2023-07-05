@@ -93,6 +93,7 @@ System.Security.Cryptography.X509Certificates.X509SelectionFlag</PackageDescript
   </ItemGroup>
 
   <ItemGroup>
-    <PackageReference Include="System.Drawing.Common" Version="$(SystemDrawingCommonVersion)" />
+    <!-- Avoid a PackageReference to System.Drawing.Common this reference is only needed for TypeForwards -->
+    <PackageReference Include="System.Drawing.Common" Version="$(SystemDrawingCommonVersion)" PrivateAssets="All" />
   </ItemGroup>
 </Project>

@@ -2078,7 +2078,8 @@ public:
     //      This method is used to fetch data needed to inline functions
     virtual bool getMethodInfo (
             CORINFO_METHOD_HANDLE   ftn,            /* IN  */
-            CORINFO_METHOD_INFO*    info            /* OUT */
+            CORINFO_METHOD_INFO*    info,           /* OUT */
+            CORINFO_CONTEXT_HANDLE  context = NULL  /* IN  */
             ) = 0;
 
     // Decides if you have any limitations for inlining. If everything's OK, it will return
