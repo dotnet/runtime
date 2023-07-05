@@ -270,7 +270,7 @@ namespace System.Runtime.Serialization.Json
                 buffer = buffer.Slice(size, buffer.Length - size);
             }
         }
-        
+
         public override void WriteByte(byte b)
         {
             if (_encodingCode == SupportedEncoding.UTF8)
