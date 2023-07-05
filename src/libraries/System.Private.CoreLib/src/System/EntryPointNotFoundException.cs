@@ -8,7 +8,7 @@ using System.Runtime.Serialization;
 namespace System
 {
     /// <summary>
-    /// The exception that is thrown when an object appears more than once in an array of synchronization objects.
+    /// The exception that is thrown when an attempt to load a class fails due to the absence of an entry method.
     /// </summary>
     [Serializable]
     [TypeForwardedFrom("mscorlib, Version=4.0.0.0, Culture=neutral, PublicKeyToken=b77a5c561934e089")]

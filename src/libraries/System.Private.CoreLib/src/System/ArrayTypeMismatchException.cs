@@ -8,7 +8,7 @@ using System.Runtime.Serialization;
 namespace System
 {
     /// <summary>
-    /// The exception that is thrown when there is an attempt to read or write protected memory.
+    /// The exception that is thrown when an attempt is made to store an element of the wrong type within an array.
     /// </summary>
     [Serializable]
     [TypeForwardedFrom("mscorlib, Version=4.0.0.0, Culture=neutral, PublicKeyToken=b77a5c561934e089")]

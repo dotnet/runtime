@@ -8,7 +8,7 @@ using System.Runtime.Serialization;
 namespace System
 {
     /// <summary>
-    /// Exception thrown on arithmetic overflow.
+    /// The exception that is thrown when an arithmetic, casting, or conversion operation in a checked context results in an overflow.
     /// </summary>
     [Serializable]
     [TypeForwardedFrom("mscorlib, Version=4.0.0.0, Culture=neutral, PublicKeyToken=b77a5c561934e089")]

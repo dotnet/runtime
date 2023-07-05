@@ -9,7 +9,7 @@ using System.Runtime.Serialization;
 namespace System
 {
     /// <summary>
-    /// The exception that is thrown when a null reference (Nothing in Visual Basic) is passed to a method that does not accept it as a valid argument.
+    /// The exception that is thrown when one of the arguments provided to a method is not valid.
     /// </summary>
     [Serializable]
     [TypeForwardedFrom("mscorlib, Version=4.0.0.0, Culture=neutral, PublicKeyToken=b77a5c561934e089")]
