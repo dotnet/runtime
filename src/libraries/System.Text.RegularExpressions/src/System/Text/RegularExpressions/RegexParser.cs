@@ -131,9 +131,7 @@ namespace System.Text.RegularExpressions
             return new RegexTree(root, captureCount, parser._capnamelist?.ToArray(), parser._capnames!, sparseMapping, options, parser._hasIgnoreCaseBackreferenceNodes ? culture : null);
         }
 
-        /// <summary>
-        /// This static call constructs a flat concatenation node given a replacement pattern.
-        /// </summary>
+        /// <summary>This static call constructs a flat concatenation node given a replacement pattern.</summary>
         public static RegexReplacement ParseReplacement(string pattern, RegexOptions options, Hashtable caps, int capsize, Hashtable capnames)
         {
             CultureInfo culture = (options & RegexOptions.CultureInvariant) != 0 ? CultureInfo.InvariantCulture : CultureInfo.CurrentCulture;
@@ -145,9 +143,7 @@ namespace System.Text.RegularExpressions
             return regexReplacement;
         }
 
-        /// <summary>
-        /// Escapes all metacharacters (including |,(,),[,{,|,^,$,*,+,?,\, spaces and #)
-        /// </summary>
+        /// <summary>Escapes all metacharacters (including |,(,),[,{,|,^,$,*,+,?,\, spaces and #)</summary>
         public static string Escape(string input)
         {
             int indexOfMetachar = IndexOfMetachar(input.AsSpan());
@@ -209,9 +205,7 @@ namespace System.Text.RegularExpressions
             return vsb.ToString();
         }
 
-        /// <summary>
-        /// Unescapes all metacharacters (including (,),[,],{,},|,^,$,*,+,?,\, spaces and #)
-        /// </summary>
+        /// <summary> Unescapes all metacharacters (including (,),[,],{,},|,^,$,*,+,?,\, spaces and #)</summary>
         public static string Unescape(string input)
         {
             int i = input.IndexOf('\\');
@@ -255,9 +249,7 @@ namespace System.Text.RegularExpressions
             return vsb.ToString();
         }
 
-        /// <summary>
-        /// Resets parsing to the beginning of the pattern.
-        /// </summary>
+        /// <summary>Resets parsing to the beginning of the pattern</summary>
         private void Reset(RegexOptions options)
         {
             _pos = 0;
@@ -270,10 +262,7 @@ namespace System.Text.RegularExpressions
 
         public void Dispose() => _optionsStack.Dispose();
 
-        /*
-         * The main parsing function.
-         */
-
+        /// <summary>The main parsing function</summary>
         private RegexNode ScanRegex()
         {
             char ch;
@@ -519,9 +508,7 @@ namespace System.Text.RegularExpressions
             return _unit!.FinalOptimize();
         }
 
-        /*
-         * Simple parsing for replacement patterns
-         */
+        /// <summary>Simple parsing for replacement patterns</summary>
         private RegexNode ScanReplacement()
         {
             _concatenation = new RegexNode(RegexNodeKind.Concatenate, _options);
@@ -559,10 +546,7 @@ namespace System.Text.RegularExpressions
             return _concatenation;
         }
 
-        /*
-         * Scans contents of [] (not including []'s), and converts to a
-         * RegexCharClass.
-         */
+        /// <summary>Scans contents of [] (not including []'s), and converts to a RegexCharClass</summary>
         private RegexCharClass? ScanCharClass(bool caseInsensitive, bool scanOnly)
         {
             char ch;
@@ -774,11 +758,11 @@ namespace System.Text.RegularExpressions
             return charClass;
         }
 
-        /*
-         * Scans chars following a '(' (not counting the '('), and returns
-         * a RegexNode for the type of group scanned, or null if the group
-         * simply changed options (?cimsx-cimsx) or was a comment (#...).
-         */
+        /// <summary>
+        /// Scans chars following a '(' (not counting the '('), and returns
+        /// a RegexNode for the type of group scanned, or null if the group
+        /// simply changed options (?cimsx-cimsx) or was a comment (#...).
+        /// </summary>
         private RegexNode? ScanGroupOpen()
         {
             // just return a RegexNode if we have:
@@ -1080,9 +1064,7 @@ namespace System.Text.RegularExpressions
             throw MakeException(RegexParseError.InvalidGroupingConstruct, SR.InvalidGroupingConstruct);
         }
 
-        /*
-         * Scans whitespace or x-mode comments.
-         */
+        /// <summary>Scans whitespace or x-mode comments</summary>
         private void ScanBlank()
         {
             while (true)
@@ -1123,10 +1105,7 @@ namespace System.Text.RegularExpressions
             }
         }
 
-        /// <summary>
-        /// Scans chars following a '\' (not counting the '\'), and returns
-        /// a RegexNode for the type of atom scanned.
-        /// </summary>
+        /// <summary>Scans chars following a '\' (not counting the '\'), and returns a RegexNode for the type of atom scanned</summary>
         private RegexNode? ScanBackslash(bool scanOnly)
         {
             Debug.Assert(_pos < _pattern.Length, "The current reading position must not be at the end of the pattern");
@@ -1335,9 +1314,7 @@ namespace System.Text.RegularExpressions
                 null;
         }
 
-        /*
-         * Scans $ patterns recognized within replacement patterns
-         */
+        /// <summary>Scans $ patterns recognized within replacement patterns</summary>
         private RegexNode ScanDollar()
         {
             if (_pos == _pattern.Length)
@@ -1468,9 +1445,7 @@ namespace System.Text.RegularExpressions
             return RegexNode.CreateOneWithCaseConversion('$', _options, _culture, ref _caseBehavior);
         }
 
-        /*
-         * Scans a capture name: consumes word chars
-         */
+        /// <summary>Scans a capture name: consumes word chars</summary>
         private string ScanCapname()
         {
             int startpos = _pos;
@@ -1487,10 +1462,7 @@ namespace System.Text.RegularExpressions
             return _pattern.Substring(startpos, _pos - startpos);
         }
 
-
-        /*
-         * Scans up to three octal digits (stops before exceeding 0377).
-         */
+        /// <summary>Scans up to three octal digits (stops before exceeding 0377)</summary>
         private char ScanOctal()
         {
             // Consume octal chars only up to 3 digits and value 0377
@@ -1514,9 +1486,7 @@ namespace System.Text.RegularExpressions
             return (char)i;
         }
 
-        /*
-         * Scans any number of decimal digits (pegs value at 2^31-1 if too large)
-         */
+        /// <summary>Scans any number of decimal digits (pegs value at 2^31-1 if too large)</summary>
         private int ScanDecimal()
         {
             int i = 0;
@@ -1537,9 +1507,7 @@ namespace System.Text.RegularExpressions
             return i;
         }
 
-        /*
-         * Scans exactly c hex digits (c=2 for \xFF, c=4 for \uFFFF)
-         */
+        /// <summary>Scans exactly c hex digits (c=2 for \xFF, c=4 for \uFFFF)</summary>
         private char ScanHex(int c)
         {
             int i = 0;
@@ -1561,9 +1529,7 @@ namespace System.Text.RegularExpressions
             return (char)i;
         }
 
-        /*
-         * Returns n <= 0xF for a hex digit.
-         */
+        /// <summary>Returns n &lt;= 0xF for a hex digit.</summary>
         private static int HexDigit(char ch)
         {
             int d;
@@ -1580,9 +1546,7 @@ namespace System.Text.RegularExpressions
             return -1;
         }
 
-        /*
-         * Grabs and converts an ASCII control character
-         */
+        /// <summary>Grabs and converts an ASCII control character</summary>
         private char ScanControl()
         {
             if (_pos == _pattern.Length)
