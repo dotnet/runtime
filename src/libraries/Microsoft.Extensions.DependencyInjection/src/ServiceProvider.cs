@@ -96,10 +96,10 @@ namespace Microsoft.Extensions.DependencyInjection
         /// <returns>The service that was produced.</returns>
         public object? GetService(Type serviceType) => GetService(ServiceIdentifier.FromServiceType(serviceType), Root);
 
-        public object? GetKeyedService(Type serviceType, object serviceKey)
+        public object? GetKeyedService(Type serviceType, object? serviceKey)
             => GetService(new ServiceIdentifier(serviceKey, serviceType), Root);
 
-        public object GetRequiredKeyedService(Type serviceType, object serviceKey)
+        public object GetRequiredKeyedService(Type serviceType, object? serviceKey)
         {
             object? service = GetKeyedService(serviceType, serviceKey);
             if (service == null)

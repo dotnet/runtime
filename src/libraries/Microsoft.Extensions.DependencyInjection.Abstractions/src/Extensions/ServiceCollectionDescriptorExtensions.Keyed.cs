@@ -22,7 +22,7 @@ namespace Microsoft.Extensions.DependencyInjection.Extensions
         public static void TryAddKeyedTransient(
             this IServiceCollection collection,
             [DynamicallyAccessedMembers(DynamicallyAccessedMemberTypes.PublicConstructors)] Type service,
-            object serviceKey)
+            object? serviceKey)
         {
             ThrowHelper.ThrowIfNull(collection);
             ThrowHelper.ThrowIfNull(service);
@@ -43,7 +43,7 @@ namespace Microsoft.Extensions.DependencyInjection.Extensions
         public static void TryAddKeyedTransient(
             this IServiceCollection collection,
             Type service,
-            object serviceKey,
+            object? serviceKey,
             [DynamicallyAccessedMembers(DynamicallyAccessedMemberTypes.PublicConstructors)] Type implementationType)
         {
             ThrowHelper.ThrowIfNull(collection);
@@ -84,7 +84,7 @@ namespace Microsoft.Extensions.DependencyInjection.Extensions
         /// <typeparam name="TService">The type of the service to add.</typeparam>
         /// <param name="collection">The <see cref="IServiceCollection"/>.</param>
         /// <param name="serviceKey">The service key.</param>
-        public static void TryAddKeyedTransient<[DynamicallyAccessedMembers(DynamicallyAccessedMemberTypes.PublicConstructors)] TService>(this IServiceCollection collection, object serviceKey)
+        public static void TryAddKeyedTransient<[DynamicallyAccessedMembers(DynamicallyAccessedMemberTypes.PublicConstructors)] TService>(this IServiceCollection collection, object? serviceKey)
             where TService : class
         {
             ThrowHelper.ThrowIfNull(collection);
@@ -101,7 +101,7 @@ namespace Microsoft.Extensions.DependencyInjection.Extensions
         /// <typeparam name="TImplementation">The type of the implementation to use.</typeparam>
         /// <param name="collection">The <see cref="IServiceCollection"/>.</param>
         /// <param name="serviceKey">The service key.</param>
-        public static void TryAddKeyedTransient<TService, [DynamicallyAccessedMembers(DynamicallyAccessedMemberTypes.PublicConstructors)] TImplementation>(this IServiceCollection collection, object serviceKey)
+        public static void TryAddKeyedTransient<TService, [DynamicallyAccessedMembers(DynamicallyAccessedMemberTypes.PublicConstructors)] TImplementation>(this IServiceCollection collection, object? serviceKey)
             where TService : class
             where TImplementation : class, TService
         {
@@ -138,7 +138,7 @@ namespace Microsoft.Extensions.DependencyInjection.Extensions
         public static void TryAddKeyedScoped(
             this IServiceCollection collection,
             [DynamicallyAccessedMembers(DynamicallyAccessedMemberTypes.PublicConstructors)] Type service,
-            object serviceKey)
+            object? serviceKey)
         {
             ThrowHelper.ThrowIfNull(collection);
             ThrowHelper.ThrowIfNull(service);
@@ -159,7 +159,7 @@ namespace Microsoft.Extensions.DependencyInjection.Extensions
         public static void TryAddKeyedScoped(
             this IServiceCollection collection,
             Type service,
-            object serviceKey,
+            object? serviceKey,
             [DynamicallyAccessedMembers(DynamicallyAccessedMemberTypes.PublicConstructors)] Type implementationType)
         {
             ThrowHelper.ThrowIfNull(collection);
@@ -200,7 +200,7 @@ namespace Microsoft.Extensions.DependencyInjection.Extensions
         /// <typeparam name="TService">The type of the service to add.</typeparam>
         /// <param name="collection">The <see cref="IServiceCollection"/>.</param>
         /// <param name="serviceKey">The service key.</param>
-        public static void TryAddKeyedScoped<[DynamicallyAccessedMembers(DynamicallyAccessedMemberTypes.PublicConstructors)] TService>(this IServiceCollection collection, object serviceKey)
+        public static void TryAddKeyedScoped<[DynamicallyAccessedMembers(DynamicallyAccessedMemberTypes.PublicConstructors)] TService>(this IServiceCollection collection, object? serviceKey)
             where TService : class
         {
             ThrowHelper.ThrowIfNull(collection);
@@ -217,7 +217,7 @@ namespace Microsoft.Extensions.DependencyInjection.Extensions
         /// <typeparam name="TImplementation">The type of the implementation to use.</typeparam>
         /// <param name="collection">The <see cref="IServiceCollection"/>.</param>
         /// <param name="serviceKey">The service key.</param>
-        public static void TryAddKeyedScoped<TService, [DynamicallyAccessedMembers(DynamicallyAccessedMemberTypes.PublicConstructors)] TImplementation>(this IServiceCollection collection, object serviceKey)
+        public static void TryAddKeyedScoped<TService, [DynamicallyAccessedMembers(DynamicallyAccessedMemberTypes.PublicConstructors)] TImplementation>(this IServiceCollection collection, object? serviceKey)
             where TService : class
             where TImplementation : class, TService
         {
@@ -254,7 +254,7 @@ namespace Microsoft.Extensions.DependencyInjection.Extensions
         public static void TryAddKeyedSingleton(
             this IServiceCollection collection,
             [DynamicallyAccessedMembers(DynamicallyAccessedMemberTypes.PublicConstructors)] Type service,
-            object serviceKey)
+            object? serviceKey)
         {
             ThrowHelper.ThrowIfNull(collection);
             ThrowHelper.ThrowIfNull(service);
@@ -275,7 +275,7 @@ namespace Microsoft.Extensions.DependencyInjection.Extensions
         public static void TryAddKeyedSingleton(
             this IServiceCollection collection,
             Type service,
-            object serviceKey,
+            object? serviceKey,
             [DynamicallyAccessedMembers(DynamicallyAccessedMemberTypes.PublicConstructors)] Type implementationType)
         {
             ThrowHelper.ThrowIfNull(collection);
@@ -316,7 +316,7 @@ namespace Microsoft.Extensions.DependencyInjection.Extensions
         /// <typeparam name="TService">The type of the service to add.</typeparam>
         /// <param name="collection">The <see cref="IServiceCollection"/>.</param>
         /// <param name="serviceKey">The service key.</param>
-        public static void TryAddKeyedSingleton<[DynamicallyAccessedMembers(DynamicallyAccessedMemberTypes.PublicConstructors)] TService>(this IServiceCollection collection, object serviceKey)
+        public static void TryAddKeyedSingleton<[DynamicallyAccessedMembers(DynamicallyAccessedMemberTypes.PublicConstructors)] TService>(this IServiceCollection collection, object? serviceKey)
             where TService : class
         {
             ThrowHelper.ThrowIfNull(collection);
@@ -333,7 +333,7 @@ namespace Microsoft.Extensions.DependencyInjection.Extensions
         /// <typeparam name="TImplementation">The type of the implementation to use.</typeparam>
         /// <param name="collection">The <see cref="IServiceCollection"/>.</param>
         /// <param name="serviceKey">The service key.</param>
-        public static void TryAddKeyedSingleton<TService, [DynamicallyAccessedMembers(DynamicallyAccessedMemberTypes.PublicConstructors)] TImplementation>(this IServiceCollection collection, object serviceKey)
+        public static void TryAddKeyedSingleton<TService, [DynamicallyAccessedMembers(DynamicallyAccessedMemberTypes.PublicConstructors)] TImplementation>(this IServiceCollection collection, object? serviceKey)
             where TService : class
             where TImplementation : class, TService
         {
@@ -351,7 +351,7 @@ namespace Microsoft.Extensions.DependencyInjection.Extensions
         /// <param name="collection">The <see cref="IServiceCollection"/>.</param>
         /// <param name="serviceKey">The service key.</param>
         /// <param name="instance">The instance of the service to add.</param>
-        public static void TryAddKeyedSingleton<TService>(this IServiceCollection collection, object serviceKey, TService instance)
+        public static void TryAddKeyedSingleton<TService>(this IServiceCollection collection, object? serviceKey, TService instance)
             where TService : class
         {
             ThrowHelper.ThrowIfNull(collection);
@@ -385,7 +385,7 @@ namespace Microsoft.Extensions.DependencyInjection.Extensions
         /// <param name="collection">The <see cref="IServiceCollection"/>.</param>
         /// <param name="serviceKey">The service key.</param>
         /// <returns>The <see cref="IServiceCollection"/> for chaining.</returns>
-        public static IServiceCollection RemoveAllKeyed<T>(this IServiceCollection collection, object serviceKey)
+        public static IServiceCollection RemoveAllKeyed<T>(this IServiceCollection collection, object? serviceKey)
         {
             return RemoveAllKeyed(collection, typeof(T), serviceKey);
         }
@@ -397,7 +397,7 @@ namespace Microsoft.Extensions.DependencyInjection.Extensions
         /// <param name="serviceType">The service type to remove.</param>
         /// <param name="serviceKey">The service key.</param>
         /// <returns>The <see cref="IServiceCollection"/> for chaining.</returns>
-        public static IServiceCollection RemoveAllKeyed(this IServiceCollection collection, Type serviceType, object serviceKey)
+        public static IServiceCollection RemoveAllKeyed(this IServiceCollection collection, Type serviceType, object? serviceKey)
         {
             ThrowHelper.ThrowIfNull(serviceType);
 

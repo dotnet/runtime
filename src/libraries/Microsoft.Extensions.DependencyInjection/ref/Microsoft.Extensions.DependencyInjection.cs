@@ -24,8 +24,8 @@ namespace Microsoft.Extensions.DependencyInjection
         internal ServiceProvider() { }
         public void Dispose() { }
         public System.Threading.Tasks.ValueTask DisposeAsync() { throw null; }
-        public object? GetKeyedService(System.Type serviceType, object serviceKey) { throw null; }
-        public object GetRequiredKeyedService(System.Type serviceType, object serviceKey) { throw null; }
+        public object? GetKeyedService(System.Type serviceType, object? serviceKey) { throw null; }
+        public object GetRequiredKeyedService(System.Type serviceType, object? serviceKey) { throw null; }
         public object? GetService(System.Type serviceType) { throw null; }
     }
     public partial class ServiceProviderOptions

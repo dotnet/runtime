@@ -647,7 +647,7 @@ namespace Microsoft.Extensions.DependencyInjection.ServiceLookup
 
         public bool IsService(Type serviceType) => IsService(new ServiceIdentifier(null, serviceType));
 
-        public bool IsKeyedService(Type serviceType, object key) => IsService(new ServiceIdentifier(key, serviceType));
+        public bool IsKeyedService(Type serviceType, object? key) => IsService(new ServiceIdentifier(key, serviceType));
 
         internal bool IsService(ServiceIdentifier serviceIdentifier)
         {

@@ -30,6 +30,38 @@ namespace Microsoft.Extensions.DependencyInjection.Specification
         }
 
         [Fact]
+        public void ResolveNullKeyedService()
+        {
+            var service1 = new Service();
+            var serviceCollection = new ServiceCollection();
+            serviceCollection.AddKeyedSingleton<IService>(null, service1);
+
+            var provider = CreateServiceProvider(serviceCollection);
+
+            var nonKeyed = provider.GetServices<IService>();
+            var nullKey = provider.GetKeyedService<IService>(null);
+
+            Assert.Same(service1, nonKeyed);
+            Assert.Same(service1, nullKey);
+        }
+
+        [Fact]
+        public void ResolveNonKeyedService()
+        {
+            var service1 = new Service();
+            var serviceCollection = new ServiceCollection();
+            serviceCollection.AddSingleton<IService>(service1);
+
+            var provider = CreateServiceProvider(serviceCollection);
+
+            var nonKeyed = provider.GetServices<IService>();
+            var nullKey = provider.GetKeyedService<IService>(null);
+
+            Assert.Same(service1, nonKeyed);
+            Assert.Same(service1, nullKey);
+        }
+
+        [Fact]
         public void ResolveKeyedOpenGenericService()
         {
             var collection = new ServiceCollection();

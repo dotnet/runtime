@@ -91,7 +91,7 @@ namespace Microsoft.Extensions.DependencyInjection
         public void AddWithFactoryAddsServiceWithRightLifecyle(
             Action<IServiceCollection> addAction,
             Type serviceType,
-            object serviceKey,
+            object? serviceKey,
             Type implementationType,
             ServiceLifetime lifeCycle)
         {
