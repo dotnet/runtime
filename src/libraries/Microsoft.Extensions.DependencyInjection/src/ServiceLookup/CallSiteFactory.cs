@@ -11,7 +11,7 @@ using Microsoft.Extensions.Internal;
 
 namespace Microsoft.Extensions.DependencyInjection.ServiceLookup
 {
-    internal sealed class CallSiteFactory : IServiceProviderIsService, IKeyedServiceProviderIsService
+    internal sealed class CallSiteFactory : IServiceProviderIsService, IServiceProviderIsKeyedService
     {
         private const int DefaultSlot = 0;
         private readonly ServiceDescriptor[] _descriptors;
@@ -685,7 +685,8 @@ namespace Microsoft.Extensions.DependencyInjection.ServiceLookup
             // If you update these make sure to also update the code in ServiceProvider.ctor
             return serviceType == typeof(IServiceProvider) ||
                    serviceType == typeof(IServiceScopeFactory) ||
-                   serviceType == typeof(IServiceProviderIsService);
+                   serviceType == typeof(IServiceProviderIsService) ||
+                   serviceType == typeof(IServiceProviderIsKeyedService);
         }
 
         /// <summary>

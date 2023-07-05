@@ -49,7 +49,7 @@ namespace Microsoft.Extensions.DependencyInjection
     {
         bool IsService(System.Type serviceType);
     }
-    public partial interface IKeyedServiceProviderIsService
+    public partial interface IServiceProviderIsKeyedService : IServiceProviderIsService
     {
         bool IsKeyedService(System.Type serviceType, object? serviceKey);
     }

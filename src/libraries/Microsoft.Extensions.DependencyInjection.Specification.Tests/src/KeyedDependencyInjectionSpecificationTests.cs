@@ -38,7 +38,7 @@ namespace Microsoft.Extensions.DependencyInjection.Specification
 
             var provider = CreateServiceProvider(serviceCollection);
 
-            var nonKeyed = provider.GetServices<IService>();
+            var nonKeyed = provider.GetService<IService>();
             var nullKey = provider.GetKeyedService<IService>(null);
 
             Assert.Same(service1, nonKeyed);
@@ -54,7 +54,7 @@ namespace Microsoft.Extensions.DependencyInjection.Specification
 
             var provider = CreateServiceProvider(serviceCollection);
 
-            var nonKeyed = provider.GetServices<IService>();
+            var nonKeyed = provider.GetService<IService>();
             var nullKey = provider.GetKeyedService<IService>(null);
 
             Assert.Same(service1, nonKeyed);
