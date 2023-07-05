@@ -4975,17 +4975,6 @@ void CodeGen::genPutArgStk(GenTreePutArgStk* treeNode)
 
             unsigned srcSize = layout->GetSize();
 
-            // If we have an HFA we can't have any GC pointers,
-            // if not then the max size for the struct is 16 bytes
-            if (compiler->IsHfa(layout->GetClassHandle()))
-            {
-                noway_assert(!layout->HasGCPtr());
-            }
-            else
-            {
-                noway_assert(srcSize <= 2 * TARGET_POINTER_SIZE);
-            }
-
             noway_assert(srcSize <= MAX_PASS_MULTIREG_BYTES);
 
             unsigned dstSize = treeNode->GetStackByteSize();
