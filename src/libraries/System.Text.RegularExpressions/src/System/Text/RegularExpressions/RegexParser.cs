@@ -488,7 +488,7 @@ namespace System.Text.RegularExpressions
                     ScanBlank();
 
                     bool lazy = false;
-                    if (_pattern.Length - _pos != 0 && _pattern[_pos] == '?')
+                    if (_pos < _pattern.Length && _pattern[_pos] == '?')
                     {
                         _pos++;
                         lazy = true;
@@ -693,7 +693,7 @@ namespace System.Text.RegularExpressions
                         int savePos = _pos;
 
                         _pos++;
-                        if (_pattern.Length - _pos < 2 || _pattern[_pos++] != ':' || _pattern[_pos++] != ']')
+                        if (_pos + 1 >= _pattern.Length || _pattern[_pos++] != ':' || _pattern[_pos++] != ']')
                         {
                             _pos = savePos;
                         }
@@ -729,14 +729,14 @@ namespace System.Text.RegularExpressions
                         }
                     }
                 }
-                else if (_pos + 2 <= _pattern.Length && _pattern[_pos] == '-' && _pattern[_pos + 1] != ']')
+                else if (_pos + 1 < _pattern.Length && _pattern[_pos] == '-' && _pattern[_pos + 1] != ']')
                 {
                     // this could be the start of a range
                     chPrev = ch;
                     inRange = true;
                     _pos++;
                 }
-                else if (_pos + 1 <= _pattern.Length && ch == '-' && !translatedChar && _pattern[_pos] == '[' && !firstChar)
+                else if (_pos < _pattern.Length && ch == '-' && !translatedChar && _pattern[_pos] == '[' && !firstChar)
                 {
                     // we aren't in a range, and now there is a subtraction.  Usually this happens
                     // only when a subtraction follows a range, like [a-z-[b]]
@@ -1095,14 +1095,14 @@ namespace System.Text.RegularExpressions
                     }
                 }
 
-                if (UseOptionX() && _pos + 1 <= _pattern.Length && _pattern[_pos] == '#')
+                if (UseOptionX() && _pos < _pattern.Length && _pattern[_pos] == '#')
                 {
                     while (_pos < _pattern.Length && _pattern[_pos] != '\n')
                     {
                         _pos++;
                     }
                 }
-                else if (_pos + 3 <= _pattern.Length && _pattern[_pos + 2] == '#' && _pattern[_pos + 1] == '?' && _pattern[_pos] == '(')
+                else if (_pos + 2 < _pattern.Length && _pattern[_pos + 2] == '#' && _pattern[_pos + 1] == '?' && _pattern[_pos] == '(')
                 {
                     while (_pos < _pattern.Length && _pattern[_pos] != ')')
                     {
@@ -1215,7 +1215,7 @@ namespace System.Text.RegularExpressions
 
             if (ch == 'k')
             {
-                if (_pos + 2 <= _pattern.Length)
+                if (_pos + 1 < _pattern.Length)
                 {
                     _pos++;
                     ch = _pattern[_pos++];
@@ -1226,7 +1226,7 @@ namespace System.Text.RegularExpressions
                     }
                 }
 
-                if (!angled || _pattern.Length - _pos <= 0)
+                if (!angled || _pos == _pattern.Length)
                 {
                     throw MakeException(RegexParseError.MalformedNamedReference, SR.MalformedNamedReference);
                 }
@@ -1545,7 +1545,7 @@ namespace System.Text.RegularExpressions
             int i = 0;
             int d;
 
-            if (_pattern.Length - _pos >= c)
+            if (_pos + c <= _pattern.Length)
             {
                 for (; c > 0 && ((d = HexDigit(_pattern[_pos++])) >= 0); c -= 1)
                 {
@@ -1689,7 +1689,7 @@ namespace System.Text.RegularExpressions
         /// <summary>Scans X for \p{X} or \P{X}</summary>
         private string ParseProperty()
         {
-            if (_pattern.Length - _pos < 3)
+            if (_pos + 2 >= _pattern.Length)
             {
                 throw MakeException(RegexParseError.InvalidUnicodePropertyEscape, SR.InvalidUnicodePropertyEscape);
             }
@@ -1788,7 +1788,7 @@ namespace System.Text.RegularExpressions
                         break;
 
                     case '(':
-                        if (_pos + 2 <= _pattern.Length && _pattern[_pos + 1] == '#' && _pattern[_pos] == '?')
+                        if (_pos + 1 < _pattern.Length && _pattern[_pos + 1] == '#' && _pattern[_pos] == '?')
                         {
                             // we have a comment (?#
                             --_pos;
