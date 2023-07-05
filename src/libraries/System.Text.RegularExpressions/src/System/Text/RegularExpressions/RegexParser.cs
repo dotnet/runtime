@@ -542,7 +542,7 @@ namespace System.Text.RegularExpressions
                     c--;
                 }
 
-                AddConcatenate(startpos, _pos - startpos, true);
+                AddConcatenate(startpos, _pos - startpos, isReplacement: true);
 
                 if (c > 0)
                 {
