@@ -62,6 +62,36 @@
         <target state="translated">Deserializace vlastností pouze pro inicializaci se v současnosti v režimu generování zdroje nepodporuje.</target>
         <note />
       </trans-unit>
+      <trans-unit id="JsonConverterAttributeInvalidTypeMessageFormat">
+        <source>The 'JsonConverterAttribute' type '{0}' specified on member '{1}' is not a converter type or does not contain an accessible parameterless constructor.</source>
+        <target state="translated">Typ JsonConverterAttribute {0} specifikovaný u členu {1} není typem konvertoru nebo neobsahuje přístupný konstruktor bez parametrů.</target>
+        <note />
+      </trans-unit>
+      <trans-unit id="JsonConverterAttributeInvalidTypeTitle">
+        <source>The 'JsonConverterAttribute.Type' contains an invalid or inaccessible argument.</source>
+        <target state="translated">JsonConverterAttribute.Type obsahuje neplatný nebo nepřístupný argument.</target>
+        <note />
+      </trans-unit>
+      <trans-unit id="JsonStringEnumConverterNotSupportedMessageFormat">
+        <source>The member '{0}' has been annotated with 'JsonStringEnumConverter' which is not supported in native AOT. Consider using the generic 'JsonStringEnumConverter&lt;TEnum&gt;' instead.</source>
+        <target state="translated">Člen {0} byl opatřen poznámkou jsonStringEnumConverter, což není v nativním AOT podporováno. Zvažte použití obecného objektu JsonStringEnumConverter&lt;TEnum&gt;.</target>
+        <note />
+      </trans-unit>
+      <trans-unit id="JsonStringEnumConverterNotSupportedTitle">
+        <source>The non-generic 'JsonStringEnumConverter' requires dynamic code.</source>
+        <target state="translated">Neobecný objekt JsonStringEnumConverter vyžaduje dynamický kód.</target>
+        <note />
+      </trans-unit>
+      <trans-unit id="JsonUnsupportedLanguageVersionMessageFormat">
+        <source>The System.Text.Json source generator is not available in C# '{0}'. Please use language version {1} or greater.</source>
+        <target state="translated">Zdrojový generátor System.Text.Json není k dispozici v jazyce C#{0}. Použijte prosím jazykovou verzi {1} nebo vyšší.</target>
+        <note />
+      </trans-unit>
+      <trans-unit id="JsonUnsupportedLanguageVersionTitle">
+        <source>C# language version not supported by the source generator.</source>
+        <target state="translated">Zdrojový generátor nepodporuje jazykovou verzi jazyka C#.</target>
+        <note />
+      </trans-unit>
       <trans-unit id="MultipleJsonConstructorAttributeFormat">
         <source>Type '{0}' has multiple constructors annotated with 'JsonConstructorAttribute'.</source>
         <target state="translated">Typ {0} má více konstruktorů anotovaných s JsonConstructorAttribute. </target>

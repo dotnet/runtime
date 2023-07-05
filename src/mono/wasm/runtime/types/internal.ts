@@ -76,7 +76,8 @@ export type MonoConfigInternal = MonoConfig & {
     forwardConsoleLogsToWS?: boolean,
     asyncFlushOnExit?: boolean
     exitAfterSnapshot?: number,
-    startupOptions?: Partial<WebAssemblyStartOptions>
+    startupOptions?: Partial<WebAssemblyStartOptions>,
+    loadAllSatelliteResources?: boolean
 };
 
 export type RunArguments = {
@@ -131,6 +132,9 @@ export type LoaderHelpers = {
     out(message: string): void;
     err(message: string): void;
     getApplicationEnvironment?: (bootConfigResponse: Response) => string | null;
+
+    isChromium: boolean,
+    isFirefox: boolean,
 }
 export type RuntimeHelpers = {
     config: MonoConfigInternal;
@@ -156,6 +160,7 @@ export type RuntimeHelpers = {
     subtle: SubtleCrypto | null,
     updateMemoryViews: () => void
     runtimeReady: boolean,
+    cspPolicy: boolean,
 
     runtimeModuleUrl: string
     nativeModuleUrl: string
@@ -241,7 +246,9 @@ export function is_nullish<T>(value: T | null | undefined): value is null | unde
 
 export type EmscriptenInternals = {
     isPThread: boolean,
-    disableLegacyJsInterop: boolean,
+    linkerDisableLegacyJsInterop: boolean,
+    linkerEnableAotProfiler: boolean,
+    linkerEnableBrowserProfiler: boolean,
     quit_: Function,
     ExitStatus: ExitStatusError,
 };
@@ -413,6 +420,10 @@ export declare interface EmscriptenModuleInternal {
     removeRunDependency(id: string): void;
     addRunDependency(id: string): void;
     onConfigLoaded?: (config: MonoConfig, api: RuntimeAPI) => void | Promise<void>;
+    safeSetTimeout(func: Function, timeout: number): number;
+    runtimeKeepalivePush(): void;
+    runtimeKeepalivePop(): void;
+    maybeExit(): void;
 }
 
 /// A PromiseController encapsulates a Promise together with easy access to its resolve and reject functions.

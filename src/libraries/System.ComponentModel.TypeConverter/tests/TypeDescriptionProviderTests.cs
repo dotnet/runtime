@@ -279,7 +279,6 @@ namespace System.ComponentModel.Tests
         // Moq heavily utilizes RefEmit, which does not work on most aot workloads
         [ConditionalTheory(typeof(PlatformDetection), nameof(PlatformDetection.IsReflectionEmitSupported))]
         [MemberData(nameof(GetFullComponentName_WithoutParent_TestData))]
-        [SkipOnTargetFramework(TargetFrameworkMonikers.NetFramework, ".NET Framework throws NullReferenceException")]
         public void GetFullComponentName_InvokeWithNullTypeDescriptor_ReturnsExpected(object component)
         {
             var mockProvider = new Mock<TypeDescriptionProvider>(MockBehavior.Strict);

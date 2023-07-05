@@ -171,4 +171,22 @@
   <data name="FastPathPolymorphismNotSupportedMessageFormat" xml:space="preserve">
     <value>Type '{0}' is annotated with 'JsonDerivedTypeAttribute' which is not supported in 'JsonSourceGenerationMode.Serialization'.</value>
   </data>
+  <data name="JsonStringEnumConverterNotSupportedTitle" xml:space="preserve">
+    <value>The non-generic 'JsonStringEnumConverter' requires dynamic code.</value>
+  </data>
+  <data name="JsonStringEnumConverterNotSupportedMessageFormat" xml:space="preserve">
+    <value>The member '{0}' has been annotated with 'JsonStringEnumConverter' which is not supported in native AOT. Consider using the generic 'JsonStringEnumConverter&lt;TEnum&gt;' instead.</value>
+  </data>
+  <data name="JsonConverterAttributeInvalidTypeTitle" xml:space="preserve">
+    <value>The 'JsonConverterAttribute.Type' contains an invalid or inaccessible argument.</value>
+  </data>
+  <data name="JsonConverterAttributeInvalidTypeMessageFormat" xml:space="preserve">
+    <value>The 'JsonConverterAttribute' type '{0}' specified on member '{1}' is not a converter type or does not contain an accessible parameterless constructor.</value>
+  </data>
+  <data name="JsonUnsupportedLanguageVersionTitle" xml:space="preserve">
+    <value>C# language version not supported by the source generator.</value>
+  </data>
+  <data name="JsonUnsupportedLanguageVersionMessageFormat" xml:space="preserve">
+    <value>The System.Text.Json source generator is not available in C# '{0}'. Please use language version {1} or greater.</value>
+  </data>
 </root>

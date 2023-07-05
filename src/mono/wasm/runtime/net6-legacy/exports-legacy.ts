@@ -14,7 +14,6 @@ import { js_typed_array_to_array, js_to_mono_obj, js_typed_array_to_array_root, 
 import { mono_bind_static_method, mono_call_assembly_entry_point } from "./method-calls";
 import { mono_wasm_load_runtime } from "../startup";
 import { BINDINGType, MONOType } from "./export-types";
-import { mono_wasm_load_data_archive } from "../assets";
 import { mono_method_resolve } from "./method-binding";
 import { runtimeHelpers } from "../globals";
 import { stringToMonoStringIntern, stringToMonoStringUnsafe } from "./strings";
@@ -26,7 +25,6 @@ export function export_mono_api(): MONOType {
         mono_wasm_load_bytes_into_heap,
         mono_wasm_load_icu_data,
         mono_wasm_runtime_ready,
-        mono_wasm_load_data_archive,
         mono_wasm_new_root_buffer,
         mono_wasm_new_root,
         mono_wasm_new_external_root,

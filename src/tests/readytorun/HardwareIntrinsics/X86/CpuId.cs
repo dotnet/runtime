@@ -10,7 +10,7 @@ using System.Runtime.Intrinsics.X86;
 using System.Runtime.Intrinsics;
 using System.Reflection;
 
-namespace IntelHardwareIntrinsicTest._CpuId
+namespace XarchHardwareIntrinsicTest._CpuId
 {
     public class Program
     {
@@ -60,6 +60,8 @@ namespace IntelHardwareIntrinsicTest._CpuId
 
             (eax, ebx, ecx, edx) = X86Base.CpuId(0x00000001, 0x00000000);
 
+            int xarchCpuInfo = eax;
+
             if (IsBitIncorrect(edx, 25, typeof(Sse), Sse.IsSupported, "SSE", ref isHierarchyDisabled))
             {
                 testResult = Fail;
@@ -84,7 +86,7 @@ namespace IntelHardwareIntrinsicTest._CpuId
                 testResult = Fail;
             }
 
-            isHierarchyDisabled = isSse2HierarchyDisabled;
+            isHierarchyDisabled = isSse2HierarchyDisabled | !GetDotnetEnable("SSE3_4");
 
             if (IsBitIncorrect(ecx, 0, typeof(Sse3), Sse3.IsSupported, "SSE3", ref isHierarchyDisabled))
             {
@@ -145,12 +147,14 @@ namespace IntelHardwareIntrinsicTest._CpuId
 
             bool isAvx2HierarchyDisabled = isHierarchyDisabled;
 
+            isHierarchyDisabled = isAvxHierarchyDisabled;
+
             if (IsBitIncorrect(ebx, 3, typeof(Bmi1), Bmi1.IsSupported, "BMI1", ref isHierarchyDisabled))
             {
                 testResult = Fail;
             }
 
-            isHierarchyDisabled = isAvx2HierarchyDisabled;
+            isHierarchyDisabled = isAvxHierarchyDisabled;
 
             if (IsBitIncorrect(ebx, 8, typeof(Bmi2), Bmi2.IsSupported, "BMI2", ref isHierarchyDisabled))
             {
@@ -207,6 +211,37 @@ namespace IntelHardwareIntrinsicTest._CpuId
             }
 
             bool isAvx512HierarchyDisabled = isHierarchyDisabled;
+            if (isGenuineIntel && !isAvx512HierarchyDisabled)
+            {
+                int steppingId = xarchCpuInfo & (int)0b1111;
+                int model = (xarchCpuInfo >> 4) & (int)0b1111;
+                int familyID = (xarchCpuInfo >> 8) & (int)0b1111;
+                int extendedModelID = (xarchCpuInfo >> 16) & (int)0b1111;
+                if (familyID == 0x06)
+                {
+                    if (extendedModelID == 0x05)
+                    {
+                        if (model == 0x05)
+                        {
+                            // * Skylake (Server)
+                            // * Cascade Lake
+                            // * Cooper Lake
+
+                            isAvx512HierarchyDisabled = true;
+                        }
+                    }
+                    else if (extendedModelID == 0x06)
+                    {
+                        if (model == 0x06)
+                        {
+                            // * Cannon Lake
+
+                            isAvx512HierarchyDisabled = true;
+                        }
+                    }
+                }
+
+            }
 
             if (IsBitIncorrect(ecx, 1, typeof(Avx512Vbmi), Avx512Vbmi.IsSupported, "AVX512VBMI", ref isHierarchyDisabled))
             {

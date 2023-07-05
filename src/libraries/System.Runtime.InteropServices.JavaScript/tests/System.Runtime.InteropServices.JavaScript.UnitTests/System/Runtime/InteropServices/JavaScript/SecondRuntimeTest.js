@@ -1,5 +1,5 @@
 export async function runSecondRuntimeAndTestStaticState() {
-    const { dotnet: dotnet2 } = await import('./dotnet.js?instance=2');
+    const { dotnet: dotnet2 } = await import('./_framework/dotnet.js?instance=2');
     const runtime2 = await dotnet2
         .withStartupMemoryCache(false)
         .withConfig({

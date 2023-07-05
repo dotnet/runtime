@@ -62,6 +62,36 @@
         <target state="translated">Yalnızca başlangıç özelliklerini seri durumdan çıkarma şu anda kaynak oluşturma modunda desteklenmiyor.</target>
         <note />
       </trans-unit>
+      <trans-unit id="JsonConverterAttributeInvalidTypeMessageFormat">
+        <source>The 'JsonConverterAttribute' type '{0}' specified on member '{1}' is not a converter type or does not contain an accessible parameterless constructor.</source>
+        <target state="translated">'{1}' üyesi üzerinde belirtilen 'JsonConverterAttribute' '{0}' türü dönüştürücü türü değil veya erişilebilir parametresiz bir oluşturucu içermiyor.</target>
+        <note />
+      </trans-unit>
+      <trans-unit id="JsonConverterAttributeInvalidTypeTitle">
+        <source>The 'JsonConverterAttribute.Type' contains an invalid or inaccessible argument.</source>
+        <target state="translated">'JsonConverterAttribute.Type' geçersiz veya erişilemeyen bir bağımsız değişken içeriyor.</target>
+        <note />
+      </trans-unit>
+      <trans-unit id="JsonStringEnumConverterNotSupportedMessageFormat">
+        <source>The member '{0}' has been annotated with 'JsonStringEnumConverter' which is not supported in native AOT. Consider using the generic 'JsonStringEnumConverter&lt;TEnum&gt;' instead.</source>
+        <target state="translated">'{0}' adlı üyeye yerel AOT’de desteklenmeyen 'JsonStringEnumConverter' parametresi eklendi. bunun yerine genel 'JsonStringEnumConverter&lt;TEnum&gt;' parametresini kullanmayı deneyin.</target>
+        <note />
+      </trans-unit>
+      <trans-unit id="JsonStringEnumConverterNotSupportedTitle">
+        <source>The non-generic 'JsonStringEnumConverter' requires dynamic code.</source>
+        <target state="translated">Genel olmayan 'JsonStringEnumConverter' parametresi dinamik kod gerektirir.</target>
+        <note />
+      </trans-unit>
+      <trans-unit id="JsonUnsupportedLanguageVersionMessageFormat">
+        <source>The System.Text.Json source generator is not available in C# '{0}'. Please use language version {1} or greater.</source>
+        <target state="translated">System.Text.Json kaynak oluşturucusu C# '{0}' içinde kullanılamıyor. Lütfen dil sürümü {1} veya üstü sürümü kullanın.</target>
+        <note />
+      </trans-unit>
+      <trans-unit id="JsonUnsupportedLanguageVersionTitle">
+        <source>C# language version not supported by the source generator.</source>
+        <target state="translated">C# dil sürümü kaynak oluşturucu tarafından desteklenmiyor.</target>
+        <note />
+      </trans-unit>
       <trans-unit id="MultipleJsonConstructorAttributeFormat">
         <source>Type '{0}' has multiple constructors annotated with 'JsonConstructorAttribute'.</source>
         <target state="translated">'{0}' türünün 'JsonConstructorAttribute' ile açıklanan birden çok oluşturucusu var.</target>

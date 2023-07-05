@@ -23,7 +23,7 @@ namespace System.Security.Cryptography.X509Certificates.Tests
         [Fact]
         public static void ImportEmpty_Pkcs12()
         {
-            using (ImportedCollection ic = Cert.Import(TestData.EmptyPfx))
+            using (ImportedCollection ic = Cert.Import(TestData.EmptyPfx, (string?)null, X509KeyStorageFlags.DefaultKeySet))
             {
                 X509Certificate2Collection collection = ic.Collection;
                 Assert.Equal(0, collection.Count);
