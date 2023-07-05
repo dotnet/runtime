@@ -22,20 +22,13 @@ namespace System.Xml
 
         internal abstract void WriteChars(char[] chars, int index, int count);
 
-        internal void Encode(byte[] buffer!!, int index, int count)
+        internal void Encode(byte[] buffer, int index, int count)
         {
-            if (index < 0)
-            {
-                throw new ArgumentOutOfRangeException(nameof(index));
-            }
-            if (count < 0)
-            {
-                throw new ArgumentOutOfRangeException(nameof(count));
-            }
-            if (count > buffer.Length - index)
-            {
-                throw new ArgumentOutOfRangeException(nameof(count));
-            }
+            ArgumentNullException.ThrowIfNull(buffer);
+
+            ArgumentOutOfRangeException.ThrowIfNegative(index);
+            ArgumentOutOfRangeException.ThrowIfNegative(count);
+            ArgumentOutOfRangeException.ThrowIfGreaterThan(count, buffer.Length - index);
 
             // encode left-over buffer
             if (_leftOverBytesCount > 0)
@@ -64,10 +57,7 @@ namespace System.Xml
             if (_leftOverBytesCount > 0)
             {
                 count -= _leftOverBytesCount;
-                if (_leftOverBytes == null)
-                {
-                    _leftOverBytes = new byte[3];
-                }
+                _leftOverBytes ??= new byte[3];
                 for (int i = 0; i < _leftOverBytesCount; i++)
                 {
                     _leftOverBytes[i] = buffer[index + count + i];

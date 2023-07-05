@@ -180,4 +180,10 @@
   <data name="TrimmingAnnotationsDoNotMatch_NewConstraint" xml:space="preserve">
     <value>Generic implementation type '{0}' has a DefaultConstructorConstraint ('new()' constraint), but the generic service type '{1}' doesn't.</value>
   </data>
+  <data name="AotCannotCreateEnumerableValueType" xml:space="preserve">
+    <value>Unable to create an Enumerable service of type '{0}' because it is a ValueType. Native code to support creating Enumerable services might not be available with native AOT.</value>
+  </data>
+  <data name="AotCannotCreateGenericValueType" xml:space="preserve">
+    <value>Unable to create a generic service for type '{0}' because '{1}' is a ValueType. Native code to support creating generic services might not be available with native AOT.</value>
+  </data>
 </root>

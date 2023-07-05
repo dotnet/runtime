@@ -1,12 +1,17 @@
 .assembly extern mscorlib {}
-.assembly ldvirtftnsideeffect { }
+.assembly extern xunit.core {}
+.assembly ASSEMBLY_NAME { }
 .method public static class MyTest f(class MyTest)
 {
 ldarg.0
 ret
 }
 
-.method public static int32 main(class System.String[]) {
+.class public auto ansi ldvirtftnsideeffect {
+.method public static int32 main() {
+.custom instance void [xunit.core]Xunit.FactAttribute::.ctor() = (
+    01 00 00 00
+)
 .locals	(int32, class MyTest)
 .entrypoint
 .maxstack	4
@@ -30,6 +35,7 @@ FAIL:
 	ldc.i4	0x0
 END:
 	ret
+}
 }
 
 .class public	MyTest {

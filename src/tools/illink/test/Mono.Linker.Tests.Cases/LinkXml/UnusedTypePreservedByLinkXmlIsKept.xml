@@ -1,0 +1,9 @@
+<linker>
+  <assembly fullname="test, Version=0.0.0.0, Culture=neutral, PublicKeyToken=null">
+    <type fullname="Mono.Linker.Tests.Cases.LinkXml.UnusedTypePreservedByLinkXmlIsKeptUnusedType" />
+    <type fullname="Mono.Linker.Tests.Cases.LinkXml.UnusedGenericTypePreservedByLinkXmlIsKept`1" preserve="none" />
+    <type fullname="Mono.Linker.Tests.Cases.LinkXml.UnusedGenericTypePreservedByLinkXmlIsKept`1/UnusedNestedTypePreservedByLinkXmlIsKept" preserve="none" />
+    <type fullname="Mono.Linker.Tests.Cases.LinkXml.UnusedGenericTypePreservedByLinkXmlIsKept`1/UnusedNestedGenericTypePreservedByLinkXmlIsKept`2" preserve="none" />
+    <type fullname="Mono.Linker.Tests.Cases.LinkXml.UnusedGenericTypePreservedByLinkXmlIsKept`1/UnusedNestedGenericTypePreservedByLinkXmlIsKept`2/UnusedNestedNestedGenericTypePreservedByLinkXmlIsKept`1" preserve="none" />
+  </assembly>
+</linker>

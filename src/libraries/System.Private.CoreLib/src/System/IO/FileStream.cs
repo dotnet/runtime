@@ -156,28 +156,28 @@ namespace System.IO
         }
 
         /// <summary>
-        /// Initializes a new instance of the <see cref="System.IO.FileStream" /> class with the specified path, creation mode, read/write and sharing permission, the access other FileStreams can have to the same file, the buffer size,  additional file options and the allocation size.
+        /// Initializes a new instance of the <see cref="FileStream" /> class with the specified path, creation mode, read/write and sharing permission, the access other FileStreams can have to the same file, the buffer size,  additional file options and the allocation size.
         /// </summary>
-        /// <param name="path">A relative or absolute path for the file that the current <see cref="System.IO.FileStream" /> instance will encapsulate.</param>
-        /// <param name="options">An object that describes optional <see cref="System.IO.FileStream" /> parameters to use.</param>
+        /// <param name="path">A relative or absolute path for the file that the current <see cref="FileStream" /> instance will encapsulate.</param>
+        /// <param name="options">An object that describes optional <see cref="FileStream" /> parameters to use.</param>
         /// <exception cref="T:System.ArgumentNullException"><paramref name="path" /> or <paramref name="options" /> is <see langword="null" />.</exception>
         /// <exception cref="T:System.ArgumentException"><paramref name="path" /> is an empty string (""), contains only white space, or contains one or more invalid characters.
         /// -or-
         /// <paramref name="path" /> refers to a non-file device, such as <c>CON:</c>, <c>COM1:</c>, <c>LPT1:</c>, etc. in an NTFS environment.</exception>
         /// <exception cref="T:System.NotSupportedException"><paramref name="path" /> refers to a non-file device, such as <c>CON:</c>, <c>COM1:</c>, <c>LPT1:</c>, etc. in a non-NTFS environment.</exception>
-        /// <exception cref="T:System.IO.FileNotFoundException">The file cannot be found, such as when <see cref="System.IO.FileStreamOptions.Mode" /> is <see langword="FileMode.Truncate" /> or <see langword="FileMode.Open" />, and the file specified by <paramref name="path" /> does not exist. The file must already exist in these modes.</exception>
+        /// <exception cref="T:System.IO.FileNotFoundException">The file cannot be found, such as when <see cref="FileStreamOptions.Mode" /> is <see langword="FileMode.Truncate" /> or <see langword="FileMode.Open" />, and the file specified by <paramref name="path" /> does not exist. The file must already exist in these modes.</exception>
         /// <exception cref="T:System.IO.IOException">An I/O error, such as specifying <see langword="FileMode.CreateNew" /> when the file specified by <paramref name="path" /> already exists, occurred.
         ///  -or-
         ///  The stream has been closed.
         ///  -or-
-        ///  The disk was full (when <see cref="System.IO.FileStreamOptions.PreallocationSize" /> was provided and <paramref name="path" /> was pointing to a regular file).
+        ///  The disk was full (when <see cref="FileStreamOptions.PreallocationSize" /> was provided and <paramref name="path" /> was pointing to a regular file).
         ///  -or-
-        ///  The file was too large (when <see cref="System.IO.FileStreamOptions.PreallocationSize" /> was provided and <paramref name="path" /> was pointing to a regular file).</exception>
+        ///  The file was too large (when <see cref="FileStreamOptions.PreallocationSize" /> was provided and <paramref name="path" /> was pointing to a regular file).</exception>
         /// <exception cref="T:System.Security.SecurityException">The caller does not have the required permission.</exception>
         /// <exception cref="T:System.IO.DirectoryNotFoundException">The specified path is invalid, such as being on an unmapped drive.</exception>
-        /// <exception cref="T:System.UnauthorizedAccessException">The <see cref="System.IO.FileStreamOptions.Access" /> requested is not permitted by the operating system for the specified <paramref name="path" />, such as when <see cref="System.IO.FileStreamOptions.Access" />  is <see cref="System.IO.FileAccess.Write" /> or <see cref="System.IO.FileAccess.ReadWrite" /> and the file or directory is set for read-only access.
+        /// <exception cref="T:System.UnauthorizedAccessException">The <see cref="FileStreamOptions.Access" /> requested is not permitted by the operating system for the specified <paramref name="path" />, such as when <see cref="FileStreamOptions.Access" />  is <see cref="FileAccess.Write" /> or <see cref="FileAccess.ReadWrite" /> and the file or directory is set for read-only access.
         ///  -or-
-        /// <see cref="F:System.IO.FileOptions.Encrypted" /> is specified for <see cref="System.IO.FileStreamOptions.Options" /> , but file encryption is not supported on the current platform.</exception>
+        /// <see cref="F:System.IO.FileOptions.Encrypted" /> is specified for <see cref="FileStreamOptions.Options" /> , but file encryption is not supported on the current platform.</exception>
         /// <exception cref="T:System.IO.PathTooLongException">The specified path, file name, or both exceed the system-defined maximum length. </exception>
         public FileStream(string path, FileStreamOptions options)
         {
@@ -200,17 +200,26 @@ namespace System.IO
                 FileStreamHelpers.ValidateArgumentsForPreallocation(options.Mode, options.Access);
             }
 
+            if (options.UnixCreateMode.HasValue)
+            {
+                // Only allow UnixCreateMode for file modes that can create a new file.
+                if (options.Mode == FileMode.Truncate || options.Mode == FileMode.Open)
+                {
+                    throw new ArgumentException(SR.Argument_InvalidUnixCreateMode, nameof(options));
+                }
+            }
+
             FileStreamHelpers.SerializationGuard(options.Access);
 
             _strategy = FileStreamHelpers.ChooseStrategy(
-                this, path, options.Mode, options.Access, options.Share, options.BufferSize, options.Options, options.PreallocationSize);
+                this, path, options.Mode, options.Access, options.Share, options.BufferSize, options.Options, options.PreallocationSize, options.UnixCreateMode);
         }
 
         private FileStream(string path, FileMode mode, FileAccess access, FileShare share, int bufferSize, FileOptions options, long preallocationSize)
         {
             FileStreamHelpers.ValidateArguments(path, mode, access, share, bufferSize, options, preallocationSize);
 
-            _strategy = FileStreamHelpers.ChooseStrategy(this, path, mode, access, share, bufferSize, options, preallocationSize);
+            _strategy = FileStreamHelpers.ChooseStrategy(this, path, mode, access, share, bufferSize, options, preallocationSize, unixCreateMode: null);
         }
 
         [Obsolete("FileStream.Handle has been deprecated. Use FileStream's SafeFileHandle property instead.")]
@@ -219,6 +228,7 @@ namespace System.IO
         [UnsupportedOSPlatform("ios")]
         [UnsupportedOSPlatform("macos")]
         [UnsupportedOSPlatform("tvos")]
+        [UnsupportedOSPlatform("freebsd")]
         public virtual void Lock(long position, long length)
         {
             if (position < 0 || length < 0)
@@ -236,6 +246,7 @@ namespace System.IO
         [UnsupportedOSPlatform("ios")]
         [UnsupportedOSPlatform("macos")]
         [UnsupportedOSPlatform("tvos")]
+        [UnsupportedOSPlatform("freebsd")]
         public virtual void Unlock(long position, long length)
         {
             if (position < 0 || length < 0)
@@ -476,8 +487,17 @@ namespace System.IO
                 {
                     ThrowHelper.ThrowArgumentOutOfRangeException(ExceptionArgument.value, ExceptionResource.ArgumentOutOfRange_NeedNonNegNum);
                 }
+                else if (!CanSeek)
+                {
+                    if(_strategy.IsClosed)
+                    {
+                        ThrowHelper.ThrowObjectDisposedException_FileClosed();
+                    }
 
-                _strategy.Seek(value, SeekOrigin.Begin);
+                    ThrowHelper.ThrowNotSupportedException_UnseekableStream();
+                }
+
+                _strategy.Position = value;
             }
         }
 
@@ -497,11 +517,17 @@ namespace System.IO
         // _strategy can be null only when ctor has thrown
         protected override void Dispose(bool disposing) => _strategy?.DisposeInternal(disposing);
 
-        public async override ValueTask DisposeAsync()
+        public override async ValueTask DisposeAsync()
         {
             await _strategy.DisposeAsync().ConfigureAwait(false);
-            Dispose(false);
-            GC.SuppressFinalize(this);
+
+            // For compatibility, derived classes must only call base.DisposeAsync(),
+            // otherwise we would end up calling Dispose twice (one from base.DisposeAsync() and one from here).
+            if (!_strategy.IsDerived)
+            {
+                Dispose(false);
+                GC.SuppressFinalize(this);
+            }
         }
 
         public override void CopyTo(Stream destination, int bufferSize)
@@ -532,8 +558,10 @@ namespace System.IO
             return _strategy.BeginRead(buffer, offset, count, callback, state);
         }
 
-        public override int EndRead(IAsyncResult asyncResult!!)
+        public override int EndRead(IAsyncResult asyncResult)
         {
+            ArgumentNullException.ThrowIfNull(asyncResult);
+
             return _strategy.EndRead(asyncResult);
         }
 
@@ -553,14 +581,33 @@ namespace System.IO
             return _strategy.BeginWrite(buffer, offset, count, callback, state);
         }
 
-        public override void EndWrite(IAsyncResult asyncResult!!)
+        public override void EndWrite(IAsyncResult asyncResult)
         {
+            ArgumentNullException.ThrowIfNull(asyncResult);
+
             _strategy.EndWrite(asyncResult);
         }
 
         public override bool CanSeek => _strategy.CanSeek;
 
-        public override long Seek(long offset, SeekOrigin origin) => _strategy.Seek(offset, origin);
+        public override long Seek(long offset, SeekOrigin origin)
+        {
+            if (origin < SeekOrigin.Begin || origin > SeekOrigin.End)
+            {
+                throw new ArgumentException(SR.Argument_InvalidSeekOrigin, nameof(origin));
+            }
+            else if (!CanSeek)
+            {
+                if (_strategy.IsClosed)
+                {
+                    ThrowHelper.ThrowObjectDisposedException_FileClosed();
+                }
+
+                ThrowHelper.ThrowNotSupportedException_UnseekableStream();
+            }
+
+            return _strategy.Seek(offset, origin);
+        }
 
         internal Task BaseFlushAsync(CancellationToken cancellationToken)
             => base.FlushAsync(cancellationToken);
@@ -580,6 +627,9 @@ namespace System.IO
 
         internal ValueTask BaseWriteAsync(ReadOnlyMemory<byte> buffer, CancellationToken cancellationToken = default)
             => base.WriteAsync(buffer, cancellationToken);
+
+        internal ValueTask BaseDisposeAsync()
+            => base.DisposeAsync();
 
         internal Task BaseCopyToAsync(Stream destination, int bufferSize, CancellationToken cancellationToken)
             => base.CopyToAsync(destination, bufferSize, cancellationToken);

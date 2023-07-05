@@ -26,15 +26,9 @@ extern "C" {
 class SString;
 bool GetStackTraceAtContext(SString & s, struct _CONTEXT * pContext);
 
-void _cdecl DbgWriteEx(LPCTSTR szFmt, ...);
 bool _DbgBreakCheck(LPCSTR szFile, int iLine, LPCSTR szExpr, BOOL fConstrained = FALSE);
 
 extern VOID ANALYZER_NORETURN DbgAssertDialog(const char *szFile, int iLine, const char *szExpr);
-
-#define TRACE_BUFF_SIZE (cchMaxAssertStackLevelStringLen * cfrMaxAssertStackLevels + cchMaxAssertExprLen + 1)
-extern char g_szExprWithStack[TRACE_BUFF_SIZE];
-
-extern int _DbgBreakCount;
 
 #define PRE_ASSERTE         /* if you need to change modes before doing asserts override */
 #define POST_ASSERTE        /* put it back */
@@ -57,22 +51,13 @@ extern int _DbgBreakCount;
 
 #define VERIFY(stmt) _ASSERTE((stmt))
 
-#define _ASSERTE_ALL_BUILDS(file, expr) _ASSERTE((expr))
-
-#define FreeBuildDebugBreak() DebugBreak()
+#define _ASSERTE_ALL_BUILDS(expr) _ASSERTE((expr))
 
 #else // !_DEBUG
-
-#define _DbgBreakCount  0
 
 #define _ASSERTE(expr) ((void)0)
 #define _ASSERTE_MSG(expr, msg) ((void)0)
 #define VERIFY(stmt) (void)(stmt)
-
-void __FreeBuildDebugBreak();
-void DECLSPEC_NORETURN __FreeBuildAssertFail(const char *szFile, int iLine, const char *szExpr);
-
-#define FreeBuildDebugBreak() __FreeBuildDebugBreak()
 
 // At this point, EEPOLICY_HANDLE_FATAL_ERROR may or may not be defined. It will be defined
 // if we are building the VM folder, but outside VM, its not necessarily defined.
@@ -81,11 +66,11 @@ void DECLSPEC_NORETURN __FreeBuildAssertFail(const char *szFile, int iLine, cons
 // but if it is defined, we will use it.
 //
 // Failing here implies an error in the runtime - hence we use COR_E_EXECUTIONENGINE.
-
 #ifdef EEPOLICY_HANDLE_FATAL_ERROR
-#define _ASSERTE_ALL_BUILDS(file, expr) if (!(expr)) EEPOLICY_HANDLE_FATAL_ERROR(COR_E_EXECUTIONENGINE);
+#define _ASSERTE_ALL_BUILDS(expr) if (!(expr)) EEPOLICY_HANDLE_FATAL_ERROR(COR_E_EXECUTIONENGINE);
 #else // !EEPOLICY_HANDLE_FATAL_ERROR
-#define _ASSERTE_ALL_BUILDS(file, expr) if (!(expr)) __FreeBuildAssertFail(file, __LINE__, #expr);
+void DECLSPEC_NORETURN __FreeBuildAssertFail(const char *szFile, int iLine, const char *szExpr);
+#define _ASSERTE_ALL_BUILDS(expr) if (!(expr)) __FreeBuildAssertFail(__FILE__, __LINE__, #expr);
 #endif // EEPOLICY_HANDLE_FATAL_ERROR
 
 #endif
@@ -103,9 +88,6 @@ void DECLSPEC_NORETURN __FreeBuildAssertFail(const char *szFile, int iLine, cons
 
 #ifdef _DEBUG_IMPL
 
-// A macro to execute a statement only in _DEBUG_IMPL.
-#define DEBUG_IMPL_STMT(stmt) stmt
-
 #define _ASSERTE_IMPL(expr) _ASSERTE((expr))
 
 #if     defined(_M_IX86)
@@ -120,7 +102,6 @@ void DECLSPEC_NORETURN __FreeBuildAssertFail(const char *szFile, int iLine, cons
 #define _DbgBreak() DebugBreak()
 #endif
 
-extern VOID DebBreak();
 extern VOID DebBreakHr(HRESULT hr);
 
 #ifndef IfFailGoto
@@ -154,8 +135,6 @@ do { hr = (EXPR); if(hr != ERROR_SUCCESS) { hr = HRESULT_FROM_WIN32(hr); DebBrea
 #else // _DEBUG_IMPL
 
 #define _DbgBreak() {}
-
-#define DEBUG_IMPL_STMT(stmt)
 
 #define _ASSERTE_IMPL(expr)
 
@@ -215,14 +194,12 @@ unsigned DbgGetEXETimeStamp();
     (((DbgGetEXETimeStamp() * __LINE__ * ((hash) ? (hash) : 1)) % 9973) < \
      unsigned((fractionOn) * 9973))
 #define DbgRandomOnExe(fractionOn) DbgRandomOnHashAndExe(0, fractionOn)
-#define DbgRandomOnStringAndExe(string, fractionOn) DbgRandomOnHashAndExe(HashStringA(string), fractionOn)
 
 #else
 
 #define DbgGetEXETimeStamp() 0
 #define DbgRandomOnHashAndExe(hash, fractionOn)  0
 #define DbgRandomOnExe(fractionOn)  0
-#define DbgRandomOnStringAndExe(fractionOn)  0
 
 #endif // _DEBUG && !FEATUREPAL
 

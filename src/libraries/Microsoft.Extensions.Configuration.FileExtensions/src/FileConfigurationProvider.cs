@@ -23,8 +23,10 @@ namespace Microsoft.Extensions.Configuration
         /// Initializes a new instance with the specified source.
         /// </summary>
         /// <param name="source">The source settings.</param>
-        public FileConfigurationProvider(FileConfigurationSource source!!)
+        public FileConfigurationProvider(FileConfigurationSource source)
         {
+            ThrowHelper.ThrowIfNull(source);
+
             Source = source;
 
             if (Source.ReloadOnChange && Source.FileProvider != null)
@@ -160,6 +162,11 @@ namespace Microsoft.Extensions.Configuration
         protected virtual void Dispose(bool disposing)
         {
             _changeTokenRegistration?.Dispose();
+
+            if (Source.OwnsFileProvider)
+            {
+                (Source.FileProvider as IDisposable)?.Dispose();
+            }
         }
     }
 }

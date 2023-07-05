@@ -12,9 +12,6 @@
 
 #include "mono-compiler.h"
 
-void *
-mono_malloc_shared_area (int pid);
-
 char*
 mono_aligned_address (char *mem, size_t size, size_t alignment);
 

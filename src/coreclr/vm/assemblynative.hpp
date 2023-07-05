@@ -25,7 +25,7 @@ class AssemblyNative
 
 public:
 
-    static Assembly* LoadFromPEImage(AssemblyBinder* pBinder, PEImage *pImage);
+    static Assembly* LoadFromPEImage(AssemblyBinder* pBinder, PEImage *pImage, bool excludeAppPaths = false);
 
     // static FCALLs
     static FCDECL0(FC_BOOL_RET, IsTracingEnabled);
@@ -38,7 +38,6 @@ public:
     FCDECL1(FC_BOOL_RET, IsDynamic, AssemblyBaseObject * pAssemblyUNSAFE);
     static FCDECL1(Object*, GetManifestResourceNames, AssemblyBaseObject * pAssemblyUNSAFE);
     static FCDECL1(Object*, GetReferencedAssemblies, AssemblyBaseObject * pAssemblyUNSAFE);
-    static FCDECL1(ReflectModuleBaseObject *, GetInMemoryAssemblyModule, AssemblyBaseObject * pAssemblyUNSAFE);
 };
 
 extern "C" uint32_t QCALLTYPE AssemblyNative_GetAssemblyCount();
@@ -81,7 +80,10 @@ extern "C" BYTE * QCALLTYPE AssemblyNative_GetResource(QCall::AssemblyHandle pAs
 extern "C" void QCALLTYPE AssemblyNative_GetVersion(QCall::AssemblyHandle pAssembly, INT32* pMajorVersion, INT32* pMinorVersion, INT32*pBuildNumber, INT32* pRevisionNumber);
 
 
-extern "C" void QCALLTYPE AssemblyNative_GetType(QCall::AssemblyHandle pAssembly, LPCWSTR wszName, BOOL bThrowOnError, BOOL bIgnoreCase, QCall::ObjectHandleOnStack retType, QCall::ObjectHandleOnStack keepAlive, QCall::ObjectHandleOnStack pAssemblyLoadContext);
+extern "C" void QCALLTYPE AssemblyNative_GetTypeCore(QCall::AssemblyHandle pAssembly, LPCSTR szTypeName, LPCSTR* rgszNestedTypeNames, int32_t cNestedTypeNamesLength, QCall::ObjectHandleOnStack retType);
+
+
+extern "C" void QCALLTYPE AssemblyNative_GetTypeCoreIgnoreCase(QCall::AssemblyHandle pAssembly, LPCWSTR wszTypeName, LPCWSTR* rgwszNestedTypeNames, int32_t cNestedTypeNamesLength, QCall::ObjectHandleOnStack retType);
 
 
 extern "C" void QCALLTYPE AssemblyNative_GetForwardedType(QCall::AssemblyHandle pAssembly, mdToken mdtExternalType, QCall::ObjectHandleOnStack retType);
@@ -115,7 +117,7 @@ extern "C" INT_PTR QCALLTYPE AssemblyNative_InitializeAssemblyLoadContext(INT_PT
 
 extern "C" void QCALLTYPE AssemblyNative_PrepareForAssemblyLoadContextRelease(INT_PTR ptrNativeAssemblyBinder, INT_PTR ptrManagedStrongAssemblyLoadContext);
 
-extern "C" void QCALLTYPE AssemblyNative_InternalLoad(QCall::ObjectHandleOnStack assemblyName, QCall::ObjectHandleOnStack requestingAssembly, QCall::StackCrawlMarkHandle stackMark,BOOL fThrowOnFileNotFound, QCall::ObjectHandleOnStack assemblyLoadContext, QCall::ObjectHandleOnStack retAssembly);
+extern "C" void QCALLTYPE AssemblyNative_InternalLoad(NativeAssemblyNameParts* pAssemblyName, QCall::ObjectHandleOnStack requestingAssembly, QCall::StackCrawlMarkHandle stackMark,BOOL fThrowOnFileNotFound, QCall::ObjectHandleOnStack assemblyLoadContext, QCall::ObjectHandleOnStack retAssembly);
 
 extern "C" void QCALLTYPE AssemblyNative_LoadFromPath(INT_PTR ptrNativeAssemblyBinder, LPCWSTR pwzILPath, LPCWSTR pwzNIPath, QCall::ObjectHandleOnStack retLoadedAssembly);
 
@@ -143,5 +145,6 @@ extern "C" void QCALLTYPE AssemblyNative_ApplyUpdate(QCall::AssemblyHandle assem
 
 extern "C" BOOL QCALLTYPE AssemblyNative_IsApplyUpdateSupported();
 
-#endif
+extern "C" void QCALLTYPE AssemblyName_InitializeAssemblySpec(NativeAssemblyNameParts* pAssemblyNameParts, BaseAssemblySpec* pAssemblySpec);
 
+#endif

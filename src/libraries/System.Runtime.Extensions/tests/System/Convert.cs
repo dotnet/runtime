@@ -29,7 +29,7 @@ namespace System.Tests
             int length = Convert.ToBase64CharArray(barray, 0, barray.Length, carray, 0, Base64FormattingOptions.InsertLineBreaks);
             int length2 = Convert.ToBase64CharArray(barray, 0, barray.Length, carray, 0, Base64FormattingOptions.None);
             Assert.Equal(352, length);
-            Assert.Equal(352, length);
+            Assert.Equal(344, length2);
         }
 
         [Fact]
@@ -44,6 +44,37 @@ namespace System.Tests
             Assert.True(!s2.Contains("\n"));
             Assert.Equal(barray, Convert.FromBase64String(s2));
             Assert.Equal(subset, Convert.FromBase64String(s3));
+        }
+
+        [Fact]
+        public static void Base64_AllMethodsRoundtripConsistently()
+        {
+            var r = new Random(42);
+            for (int length = 0; length < 128; length++)
+            {
+                var original = new byte[length];
+                r.NextBytes(original);
+
+                string encodedString = Convert.ToBase64String(original);
+
+                char[] encodedArray = new char[encodedString.Length];
+                int charsWritten = Convert.ToBase64CharArray(original, 0, original.Length, encodedArray, 0);
+                Assert.Equal(encodedArray.Length, charsWritten);
+                AssertExtensions.SequenceEqual<char>(encodedString, encodedArray);
+
+                char[] encodedSpan = new char[encodedString.Length];
+                Assert.True(Convert.TryToBase64Chars(original, encodedSpan, out charsWritten));
+                Assert.Equal(encodedSpan.Length, charsWritten);
+                AssertExtensions.SequenceEqual<char>(encodedString, encodedSpan);
+
+                AssertExtensions.SequenceEqual(original, Convert.FromBase64String(encodedString));
+                AssertExtensions.SequenceEqual(original, Convert.FromBase64CharArray(encodedArray, 0, encodedArray.Length));
+
+                byte[] actualBytes = new byte[original.Length];
+                Assert.True(Convert.TryFromBase64Chars(encodedSpan, actualBytes, out int bytesWritten));
+                Assert.Equal(original.Length, bytesWritten);
+                AssertExtensions.SequenceEqual(original, actualBytes);
+            }
         }
 
         [Fact]
@@ -492,11 +523,7 @@ namespace System.Tests
 
         private static bool IsValidBase64Char(char c)
         {
-            return c >= 'A' && c <= 'Z'
-                || c >= 'a' && c <= 'z'
-                || c >= '0' && c <= '9'
-                || c == '+'
-                || c == '/';
+            return char.IsAsciiLetterOrDigit(c) || c is '+' or '/';
         }
     }
 }

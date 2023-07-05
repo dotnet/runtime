@@ -4,6 +4,8 @@
     <OutputType>exe</OutputType>
     <AllowUnsafeBlocks>true</AllowUnsafeBlocks>
     <Optimize>true</Optimize>
+    <!-- This test is not compatible with JIT stress -->
+    <JitOptimizationSensitive>true</JitOptimizationSensitive>
     <!-- This test provides no interesting scenarios for GCStress -->
     <GCStressIncompatible>true</GCStressIncompatible>
     <!-- The test launches a secondary process and process launch creates

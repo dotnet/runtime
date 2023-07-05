@@ -15,7 +15,7 @@ class Program
     {
         return new decimal(constituent/prog.scale);
     }
-    static int Main(string[] args)
+    static int Main()
     {
         int result = -1;
         

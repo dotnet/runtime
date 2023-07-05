@@ -2,10 +2,13 @@
 // The .NET Foundation licenses this file to you under the MIT license.
 
 .assembly extern legacy library mscorlib {}
+.assembly extern xunit.core {}
 
 
 .assembly 'and'{}
 
+.namespace and_
+{
 .class public _and {
 
 .field public static   int32 even32
@@ -13,26 +16,29 @@
 .method public static void initialize() {
 .maxstack       2
         ldc.i4  0xAAAAAAAA
-        stsfld  int32 _and::even32
+        stsfld  int32 and_._and::even32
         ldc.i8  0xAAAAAAAAAAAAAAAA
-        stsfld  int64 _and::even64
+        stsfld  int64 and_._and::even64
         ret
 }
 
-.method public static int32 main(class [mscorlib]System.String[]) {
+.method public static int32 main() {
+.custom instance void [xunit.core]Xunit.FactAttribute::.ctor() = (
+    01 00 00 00
+)
 .entrypoint
 .maxstack	10
-	call	void _and::initialize()
-	ldsfld	int32 _and::even32
+	call	void and_._and::initialize()
+	ldsfld	int32 and_._and::even32
 	ldc.i4	0xFFFFFFFF
 	and
-	ldsfld	int32 _and::even32
+	ldsfld	int32 and_._and::even32
 	ceq
 	brfalse	FAIL
-        ldsfld  int64 _and::even64
+        ldsfld  int64 and_._and::even64
         ldc.i8  0xFFFFFFFFFFFFFFFF
         and
-        ldsfld  int64 _and::even64
+        ldsfld  int64 and_._and::even64
         ceq
         brfalse FAIL
 PASS:
@@ -41,5 +47,6 @@ PASS:
 FAIL:
 	ldc.i4	0x0
 	ret
+}
 }
 }

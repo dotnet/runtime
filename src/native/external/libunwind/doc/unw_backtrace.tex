@@ -1,0 +1,61 @@
+\documentclass{article}
+\usepackage[fancyhdr,pdf]{latex2man}
+
+\input{common.tex}
+
+\begin{document}
+
+\begin{Name}{3}{unw\_backtrace}{David Mosberger-Tang}{Programming Library}{unw\_backtrace}unw\_backtrace -- return backtrace for the calling program
+\end{Name}
+
+\section{Synopsis}
+
+\File{\#include $<$libunwind.h$>$}\\
+
+\Type{int} \Func{unw\_backtrace}(\Type{void~**}\Var{buffer}, \Type{int}~\Var{size});\\
+\Type{int} \Func{unw\_backtrace2}(\Type{void~**}\Var{buffer}, \Type{int}~\Var{size}, \Type{unw_context_t~*}\Var{ctxt}, \Type{int}~\Var{flag});\\
+
+\File{\#include $<$execinfo.h$>$}\\
+
+\Type{int} \Func{backtrace}(\Type{void~**}\Var{buffer}, \Type{int}~\Var{size});\\
+
+\section{Description}
+
+\Func{unw\_backtrace}() is a convenient routine for obtaining the backtrace for
+the calling program. The routine fills up to \Var{size} addresses in the array
+pointed by \Var{buffer}. The routine is only available for local unwinding.
+
+Note that many (but not all) systems provide a practically identical function
+called \Func{backtrace}(). The prototype for this function is usually obtained
+by including the \File{$<$execinfo.h$>$} header file -- a prototype for
+\Func{backtrace}() is not provided by \Prog{libunwind}. \Prog{libunwind} weakly
+aliases \Func{backtrace}() to \Func{unw\_backtrace}(), so when a program
+calling \Func{backtrace}() is linked against \Prog{libunwind}, it may end up
+calling \Func{unw\_backtrace}().
+
+In case you want to obtain the backtrace from a specific \Type{unw\_context\_t},
+you can call \Func{unw\_backtrace2} with that context passing \Const{0} for flag. 
+If the \Type{unw\_context_t} is known to be a signal frame (i.e., from the third argument
+in a sigaction handler on linux), \Func{unw\_backtrace2} can be used to collect
+only the frames before the signal frame passing the \Const{UNW\_INIT\_SIGNAL\_FRAME} flag.
+
+\section{Return Value}
+
+The routine returns the number of addresses stored in the array pointed by
+\Var{buffer}. The return value may be zero to indicate that no addresses were
+stored.
+
+\section{See Also}
+
+\SeeAlso{libunwind(3)},
+\SeeAlso{unw\_step(3)}
+
+\section{Author}
+
+\noindent
+David Mosberger-Tang\\
+Email: \Email{dmosberger@gmail.com}\\
+WWW: \URL{http://www.nongnu.org/libunwind/}.
+\LatexManEnd
+
+\end{document}

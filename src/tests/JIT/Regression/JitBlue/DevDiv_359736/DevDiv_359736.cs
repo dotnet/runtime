@@ -4,11 +4,12 @@
 
 using System;
 using System.Runtime.CompilerServices;
+using Xunit;
 
 // This testcase reproduces a bug where the tree re-sequencing was not correct for 
 // fgMorphModToSubMulDiv(), resulting in an assert in LSRA.
 
-static class Test_DevDiv_359736
+public static class Test_DevDiv_359736
 {
     static byte GetVal()
     {
@@ -22,7 +23,8 @@ static class Test_DevDiv_359736
         return arg % val;
     }
 
-    static int Main()
+    [Fact]
+    public static int TestEntryPoint()
     {
         int returnVal = -1;
         try

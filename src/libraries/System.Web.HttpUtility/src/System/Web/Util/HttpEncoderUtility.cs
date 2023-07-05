@@ -11,7 +11,7 @@ namespace System.Web.Util
         // Set of safe chars, from RFC 1738.4 minus '+'
         public static bool IsUrlSafeChar(char ch)
         {
-            if ((ch >= 'a' && ch <= 'z') || (ch >= 'A' && ch <= 'Z') || (ch >= '0' && ch <= '9'))
+            if (char.IsAsciiLetterOrDigit(ch))
             {
                 return true;
             }
@@ -32,7 +32,7 @@ namespace System.Web.Util
         }
 
         //  Helper to encode spaces only
-        [return: NotNullIfNotNull("str")]
+        [return: NotNullIfNotNull(nameof(str))]
         internal static string? UrlEncodeSpaces(string? str) => str != null && str.Contains(' ') ? str.Replace(" ", "%20") : str;
     }
 }

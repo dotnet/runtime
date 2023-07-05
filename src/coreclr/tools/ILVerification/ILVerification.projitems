@@ -6,7 +6,6 @@
     <Compile Include="$(MSBuildThisFileDirectory)ILVerifyTypeSystemContext.cs" />
     <Compile Include="$(MSBuildThisFileDirectory)InstantiatedGenericParameter.cs" />
     <Compile Include="$(MSBuildThisFileDirectory)IResolver.cs" />
-    <Compile Include="$(MSBuildThisFileDirectory)SimpleArrayOfTRuntimeInterfacesAlgorithm.cs" />
     <Compile Include="$(MSBuildThisFileDirectory)TypeSystemHelpers.cs" />
     <Compile Include="$(MSBuildThisFileDirectory)TypeVerifier.cs" />
     <Compile Include="$(MSBuildThisFileDirectory)VerificationResult.cs" />
@@ -52,6 +51,9 @@
     <Compile Include="$(ToolsCommonPath)TypeSystem\Common\ResolutionFailure.cs">
       <Link>TypeSystem\Common\ResolutionFailure.cs</Link>
     </Compile>
+    <Compile Include="$(ToolsCommonPath)TypeSystem\Common\SimpleArrayOfTRuntimeInterfacesAlgorithm.cs">
+      <Link>TypeSystem\Common\SimpleArrayOfTRuntimeInterfacesAlgorithm.cs</Link>
+    </Compile>
     <Compile Include="$(ToolsCommonPath)TypeSystem\Common\TypeSystemEntity.cs">
       <Link>TypeSystem\Common\TypeSystemEntity.cs</Link>
     </Compile>
@@ -63,6 +65,12 @@
     </Compile>
     <Compile Include="$(ToolsCommonPath)TypeSystem\Common\Utilities\CustomAttributeTypeNameParser.cs">
       <Link>Utilities\CustomAttributeTypeNameParser.cs</Link>
+    </Compile>
+    <Compile Include="$(LibrariesProjectRoot)\Common\src\System\Reflection\TypeNameParser.cs">
+      <Link>Utilities\TypeNameParser.cs</Link>
+    </Compile>
+    <Compile Include="$(LibrariesProjectRoot)\Common\src\System\Text\ValueStringBuilder.cs">
+      <Link>Utilities\ValueStringBuilder.cs</Link>
     </Compile>
     <Compile Include="$(ToolsCommonPath)TypeSystem\Common\Utilities\LockFreeReaderHashtable.cs">
       <Link>Utilities\LockFreeReaderHashtable.cs</Link>
@@ -111,6 +119,9 @@
     </Compile>
     <Compile Include="$(ToolsCommonPath)TypeSystem\Common\InstantiatedType.cs">
       <Link>TypeSystem\Common\InstantiatedType.cs</Link>
+    </Compile>
+    <Compile Include="$(ToolsCommonPath)TypeSystem\Common\InstantiatedType.Metadata.cs">
+      <Link>TypeSystem\Common\InstantiatedType.Metadata.cs</Link>
     </Compile>
     <Compile Include="$(ToolsCommonPath)TypeSystem\Common\InstantiatedType.Interfaces.cs">
       <Link>TypeSystem\Common\InstantiatedType.Interfaces.cs</Link>
@@ -174,6 +185,12 @@
     </Compile>
     <Compile Include="$(ToolsCommonPath)TypeSystem\Common\TypeSystemContext.cs">
       <Link>TypeSystem\Common\TypeSystemContext.cs</Link>
+    </Compile>
+    <Compile Include="$(ToolsCommonPath)TypeSystem\Common\TypeSystemContext.Resolution.cs">
+      <Link>TypeSystem\Common\TypeSystemContext.Resolution.cs</Link>
+    </Compile>
+    <Compile Include="$(ToolsCommonPath)TypeSystem\Common\TypeSystemContext.FieldLayout.cs">
+      <Link>TypeSystem\Common\TypeSystemContext.FieldLayout.cs</Link>
     </Compile>
     <Compile Include="$(ToolsCommonPath)TypeSystem\Common\TypeSystemHelpers.cs">
       <Link>TypeSystem\Common\TypeSystemHelpers.cs</Link>

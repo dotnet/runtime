@@ -5,7 +5,7 @@ using System.Runtime.Versioning;
 
 namespace System.Security.Cryptography
 {
-    public sealed partial class ECDsaCng : ECDsa
+    public sealed partial class ECDsaCng : ECDsa, IRuntimeAlgorithm
     {
         /// <summary>
         /// Create an ECDsaCng algorithm with a named curve.
@@ -16,8 +16,16 @@ namespace System.Security.Cryptography
         [SupportedOSPlatform("windows")]
         public ECDsaCng(ECCurve curve)
         {
-            // Specified curves generate the key immediately
-            GenerateKey(curve);
+            try
+            {
+                // Specified curves generate the key immediately
+                GenerateKey(curve);
+            }
+            catch
+            {
+                Dispose();
+                throw;
+            }
         }
 
         /// <summary>
@@ -75,16 +83,7 @@ namespace System.Security.Cryptography
             KeySizeValue = newKeySize;
         }
 
-        public override KeySizes[] LegalKeySizes
-        {
-            get
-            {
-                // Return the three sizes that can be explicitly set (for backwards compatibility)
-                return new[] {
-                    new KeySizes(minSize: 256, maxSize: 384, skipSize: 128),
-                    new KeySizes(minSize: 521, maxSize: 521, skipSize: 0),
-                };
-            }
-        }
+        // Return the three sizes that can be explicitly set (for backwards compatibility)
+        public override KeySizes[] LegalKeySizes => s_defaultKeySizes.CloneKeySizesArray();
     }
 }

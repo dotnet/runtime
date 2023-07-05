@@ -1,6 +1,7 @@
 // Licensed to the .NET Foundation under one or more agreements.
 // The .NET Foundation licenses this file to you under the MIT license.
 
+using System.ComponentModel;
 using System.Reflection;
 using System.Runtime.InteropServices;
 using System.Runtime.Serialization;
@@ -17,7 +18,12 @@ namespace System
     {
         private IntPtr _value;
 
-        public unsafe IntPtr Value => _value;
+        private RuntimeMethodHandle(IntPtr value)
+        {
+            _value = value;
+        }
+
+        public IntPtr Value => _value;
 
         public override bool Equals(object? obj)
         {
@@ -63,7 +69,7 @@ namespace System
         }
 
         [MethodImpl(MethodImplOptions.AggressiveInlining)]
-        private int _rotl(int value, int shift)
+        private static int _rotl(int value, int shift)
         {
             return (int)(((uint)value << shift) | ((uint)value >> (32 - shift)));
         }
@@ -92,6 +98,10 @@ namespace System
             return hashcode;
         }
 
+        public static RuntimeMethodHandle FromIntPtr(IntPtr value) => new RuntimeMethodHandle(value);
+
+        public static IntPtr ToIntPtr(RuntimeMethodHandle value) => value.Value;
+
         public static bool operator ==(RuntimeMethodHandle left, RuntimeMethodHandle right)
         {
             return left.Equals(right);
@@ -110,6 +120,8 @@ namespace System
             return ReflectionAugments.ReflectionCoreCallbacks.GetFunctionPointer(this, declaringType);
         }
 
+        [Obsolete(Obsoletions.LegacyFormatterImplMessage, DiagnosticId = Obsoletions.LegacyFormatterImplDiagId, UrlFormat = Obsoletions.SharedUrlFormat)]
+        [EditorBrowsable(EditorBrowsableState.Never)]
         public void GetObjectData(SerializationInfo info, StreamingContext context)
         {
             throw new PlatformNotSupportedException();

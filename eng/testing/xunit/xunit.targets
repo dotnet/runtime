@@ -6,12 +6,17 @@
                       Condition="'$(TargetFrameworkIdentifier)' == '.NETCoreApp'" />
   </ItemGroup>
 
-  <!-- Run target (F5) support. -->
-  <PropertyGroup>
-    <RunWorkingDirectory>$(OutDir)</RunWorkingDirectory>
+  <PropertyGroup Condition="'$(TargetFrameworkIdentifier)' == '.NETFramework'">
+    <AutoGenerateBindingRedirects Condition="'$(AutoGenerateBindingRedirects)' == ''">true</AutoGenerateBindingRedirects>
+    <GenerateBindingRedirectsOutputType Condition="'$(GenerateBindingRedirectsOutputType)' == ''">true</GenerateBindingRedirectsOutputType>
   </PropertyGroup>
 
-  <PropertyGroup Condition="'$(TargetFrameworkIdentifier)' == '.NETCoreApp'">
+  <!-- Run target (F5) support. -->
+  <PropertyGroup>
+    <RunWorkingDirectory Condition="'$(RunWorkingDirectory)' == ''">$(OutDir)</RunWorkingDirectory>
+  </PropertyGroup>
+
+  <PropertyGroup Condition="'$(TargetFrameworkIdentifier)' == '.NETCoreApp' and '$(RunCommand)' == ''">
     <RunCommand>$(DotNetTool)</RunCommand>
     <RunArguments>test $(TargetPath) --settings $(OutDir).runsettings</RunArguments>
   </PropertyGroup>

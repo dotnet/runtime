@@ -2,6 +2,7 @@
 // The .NET Foundation licenses this file to you under the MIT license.
 
 using System.Collections.Specialized;
+using System.ComponentModel;
 using System.Runtime.InteropServices;
 using System.Runtime.Serialization;
 using System.CodeDom;
@@ -266,7 +267,11 @@ namespace System.Management
         public ManagementClass(string scope, string path, ObjectGetOptions options)
             : base(new ManagementScope(scope), new ManagementPath(path), options) { }
 
-        protected ManagementClass(SerializationInfo info, StreamingContext context) : base(info, context)
+#if NET8_0_OR_GREATER
+        [Obsolete(Obsoletions.LegacyFormatterImplMessage, DiagnosticId = Obsoletions.LegacyFormatterImplDiagId, UrlFormat = Obsoletions.SharedUrlFormat)]
+        [EditorBrowsable(EditorBrowsableState.Never)]
+#endif
+        protected ManagementClass(SerializationInfo info, StreamingContext context)
         {
             throw new PlatformNotSupportedException();
         }
@@ -383,10 +388,7 @@ namespace System.Management
             {
                 Initialize(true);
 
-                if (methods == null)
-                    methods = new MethodDataCollection(this);
-
-                return methods;
+                return methods ??= new MethodDataCollection(this);
             }
         }
 
@@ -476,8 +478,7 @@ namespace System.Management
             }
             finally
             {
-                if (securityHandler != null)
-                    securityHandler.Reset();
+                securityHandler?.Reset();
             }
 
             if (status < 0)
@@ -607,8 +608,7 @@ namespace System.Management
                 ClassName, o.Flags, o.GetContext(), sink.Stub);
 
 
-            if (securityHandler != null)
-                securityHandler.Reset();
+            securityHandler?.Reset();
 
             if (status < 0)
             {
@@ -694,8 +694,7 @@ namespace System.Management
             }
             finally
             {
-                if (securityHandler != null)
-                    securityHandler.Reset();
+                securityHandler?.Reset();
             }
 
             if (status < 0)
@@ -761,8 +760,7 @@ namespace System.Management
                 ClassName, o.Flags, o.GetContext(), sink.Stub);
 
 
-            if (securityHandler != null)
-                securityHandler.Reset();
+            securityHandler?.Reset();
 
             if (status < 0)
             {
@@ -1052,8 +1050,7 @@ namespace System.Management
             }
             finally
             {
-                if (securityHandler != null)
-                    securityHandler.Reset();
+                securityHandler?.Reset();
             }
 
             if (status < 0)
@@ -1156,8 +1153,7 @@ namespace System.Management
                     q.QueryLanguage, q.QueryString, o.Flags, o.GetContext(), sink.Stub);
 
 
-                if (securityHandler != null)
-                    securityHandler.Reset();
+                securityHandler?.Reset();
 
                 if (status < 0)
                 {
@@ -1230,7 +1226,7 @@ namespace System.Management
 
             IEnumWbemClassObject enumWbem = null;
 
-            EnumerationOptions o = (null != options) ? options : new EnumerationOptions();
+            EnumerationOptions o = options ?? new EnumerationOptions();
             //Ensure EnumerateDeep flag is turned off as it's invalid for queries
             o.EnumerateDeep = true;
 
@@ -1251,8 +1247,7 @@ namespace System.Management
             }
             finally
             {
-                if (securityHandler != null)
-                    securityHandler.Reset();
+                securityHandler?.Reset();
             }
 
             if (status < 0)
@@ -1344,8 +1339,7 @@ namespace System.Management
                     q.QueryLanguage, q.QueryString, o.Flags, o.GetContext(), sink.Stub);
 
 
-                if (securityHandler != null)
-                    securityHandler.Reset();
+                securityHandler?.Reset();
 
                 if (status < 0)
                 {

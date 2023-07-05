@@ -13,22 +13,42 @@ public class NativeLibraryToLoad
 
     public static string GetFileName()
     {
+        return GetLibraryFileName(Name);
+    }
+
+    public static string GetLibraryFileName(string name)
+    {
         if (OperatingSystem.IsWindows())
-            return $"{Name}.dll";
+            return $"{name}.dll";
 
         if (OperatingSystem.IsLinux())
-            return $"lib{Name}.so";
+            return $"lib{name}.so";
 
         if (OperatingSystem.IsMacOS())
-            return $"lib{Name}.dylib";
+            return $"lib{name}.dylib";
 
         throw new PlatformNotSupportedException();
     }
 
     public static string GetFullPath()
     {
-        Assembly assembly = Assembly.GetExecutingAssembly();
-        string directory = Path.GetDirectoryName(assembly.Location);
-        return Path.Combine(directory, GetFileName());
+        return Path.Combine(GetDirectory(), GetFileName());
+    }
+
+    public static string GetDirectory()
+    {
+        string directory;
+        if (TestLibrary.Utilities.IsNativeAot)
+        {
+            // NativeAOT test is put in a native/ subdirectory, so we want the parent
+            // directory that contains the native library to load
+            directory = new DirectoryInfo(AppContext.BaseDirectory).Parent.FullName;
+        }
+        else
+        {
+            directory = Path.GetDirectoryName(Assembly.GetExecutingAssembly().Location);
+        }
+
+        return directory;
     }
 }

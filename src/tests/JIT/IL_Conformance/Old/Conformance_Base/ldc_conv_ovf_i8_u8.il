@@ -3,6 +3,7 @@
 
 
 .assembly extern legacy library mscorlib {}
+.assembly extern xunit.core {}
 .assembly extern System.Console
 {
   .publickeytoken = (B0 3F 5F 7F 11 D5 0A 3A )
@@ -13,6 +14,8 @@
 //======================================
 
 //---- CLASS ----------------
+.namespace ldc_conv_ovf_i8_u8
+{
 .class public		conv_ovf_u8 {
 
 //---- GLOBAL DATA ----------
@@ -1008,42 +1011,45 @@ END2:
 }
 
 //---- MAIN -----------------
-.method public static	int32 main(class [mscorlib]System.String[]) {
+.method public static	int32 main() {
+.custom instance void [xunit.core]Xunit.FactAttribute::.ctor() = (
+    01 00 00 00
+)
 .entrypoint
 .maxstack		5
 //====== begin testing ======
 //-- min i8 --
 	ldc.i8			0x8000000000000000
 	ldc.i8			0x0000000000000000
-	call		int32 conv_ovf_u8::conv_0(int64,int64)
+	call		int32 ldc_conv_ovf_i8_u8.conv_ovf_u8::conv_0(int64,int64)
 	ldc.i4			0xEEEEEEEE
 	ceq
 	brfalse			FAIL
 //-- -1 i8 --
 	ldc.i8			0xFFFFFFFFFFFFFFFF
 	ldc.i8			0x0000000000000000
-	call		int32 conv_ovf_u8::conv_1(int64,int64)
+	call		int32 ldc_conv_ovf_i8_u8.conv_ovf_u8::conv_1(int64,int64)
 	ldc.i4			0xEEEEEEEE
 	ceq
 	brfalse			FAIL
 //-- 0 i8 --
 	ldc.i8			0x0000000000000000
 	ldc.i8			0x0000000000000000
-	call		int32 conv_ovf_u8::conv_2(int64,int64)
+	call		int32 ldc_conv_ovf_i8_u8.conv_ovf_u8::conv_2(int64,int64)
 	ldc.i4			0x11111111
 	ceq
 	brfalse			FAIL
 //-- +1 i8 --
 	ldc.i8			0x0000000000000001
 	ldc.i8			0x0000000000000001
-	call		int32 conv_ovf_u8::conv_3(int64,int64)
+	call		int32 ldc_conv_ovf_i8_u8.conv_ovf_u8::conv_3(int64,int64)
 	ldc.i4			0x11111111
 	ceq
 	brfalse			FAIL
 //-- max i8 --
 	ldc.i8			0x7FFFFFFFFFFFFFFF
 	ldc.i8			0x7FFFFFFFFFFFFFFF
-	call		int32 conv_ovf_u8::conv_4(int64,int64)
+	call		int32 ldc_conv_ovf_i8_u8.conv_ovf_u8::conv_4(int64,int64)
 	ldc.i4			0x11111111
 	ceq
 	brfalse			FAIL
@@ -1051,14 +1057,14 @@ END2:
 //-- Odd u8 --
 	ldc.i8			0x5555555555555555
 	ldc.i8			0x5555555555555555
-	call		int32 conv_ovf_u8::conv_5(int64,int64)
+	call		int32 ldc_conv_ovf_i8_u8.conv_ovf_u8::conv_5(int64,int64)
 	ldc.i4			0x11111111
 	ceq
 	brfalse			FAIL
 //-- Even u8 --
 	ldc.i8			0xAAAAAAAAAAAAAAAA
 	ldc.i8			0x0000000000000000
-	call		int32 conv_ovf_u8::conv_6(int64,int64)
+	call		int32 ldc_conv_ovf_i8_u8.conv_ovf_u8::conv_6(int64,int64)
 	ldc.i4			0xEEEEEEEE
 	ceq
 	brfalse			FAIL
@@ -1068,35 +1074,35 @@ END2:
 //-- min i8 --
 /*	ldc.i8			0x8000000000000000
 	ldc.i8			0x0000000000000000
-	call		int32 conv_ovf_u8::conv_un_7(int64,int64)
+	call		int32 ldc_conv_ovf_i8_u8.conv_ovf_u8::conv_un_7(int64,int64)
 	ldc.i4			0xEEEEEEEE
 	ceq
 	brfalse			FAIL
 //-- -1 i8 --
 	ldc.i8			0xFFFFFFFFFFFFFFFF
 	ldc.i8			0x0000000000000000
-	call		int32 conv_ovf_u8::conv_un_8(int64,int64)
+	call		int32 ldc_conv_ovf_i8_u8.conv_ovf_u8::conv_un_8(int64,int64)
 	ldc.i4			0xEEEEEEEE
 	ceq
 	brfalse			FAIL
 *///-- 0 i8 --
 	ldc.i8			0x0000000000000000
 	ldc.i8			0x0000000000000000
-	call		int32 conv_ovf_u8::conv_un_9(int64,int64)
+	call		int32 ldc_conv_ovf_i8_u8.conv_ovf_u8::conv_un_9(int64,int64)
 	ldc.i4			0x11111111
 	ceq
 	brfalse			FAIL
 //-- +1 i8 --
 	ldc.i8			0x0000000000000001
 	ldc.i8			0x0000000000000001
-	call		int32 conv_ovf_u8::conv_un_10(int64,int64)
+	call		int32 ldc_conv_ovf_i8_u8.conv_ovf_u8::conv_un_10(int64,int64)
 	ldc.i4			0x11111111
 	ceq
 	brfalse			FAIL
 //-- max i8 --
 	ldc.i8			0x7FFFFFFFFFFFFFFF
 	ldc.i8			0x7FFFFFFFFFFFFFFF
-	call		int32 conv_ovf_u8::conv_un_11(int64,int64)
+	call		int32 ldc_conv_ovf_i8_u8.conv_ovf_u8::conv_un_11(int64,int64)
 	ldc.i4			0x11111111
 	ceq
 	brfalse			FAIL
@@ -1104,14 +1110,14 @@ END2:
 //-- Odd u8 --
 	ldc.i8			0x5555555555555555
 	ldc.i8			0x5555555555555555
-	call		int32 conv_ovf_u8::conv_un_12(int64,int64)
+	call		int32 ldc_conv_ovf_i8_u8.conv_ovf_u8::conv_un_12(int64,int64)
 	ldc.i4			0x11111111
 	ceq
 	brfalse			FAIL
 //-- Even u8 --
 /*	ldc.i8			0xAAAAAAAAAAAAAAAA
 	ldc.i8			0x0000000000000000
-	call		int32 conv_ovf_u8::conv_un_13(int64,int64)
+	call		int32 ldc_conv_ovf_i8_u8.conv_ovf_u8::conv_un_13(int64,int64)
 	ldc.i4			0xEEEEEEEE
 	ceq
 	brfalse			FAIL
@@ -1137,3 +1143,4 @@ END:
 
 .assembly ldc_conv_ovf_i8_u8{}
 
+}

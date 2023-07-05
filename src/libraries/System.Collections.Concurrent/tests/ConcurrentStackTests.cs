@@ -181,6 +181,34 @@ namespace System.Collections.Concurrent.Tests
             AssertExtensions.Throws<ArgumentException>(null, () => stack.TryPopRange(new int[1], 0, 10));
         }
 
+        [ConditionalFact(typeof(PlatformDetection), nameof(PlatformDetection.IsThreadingSupported))]
+        public static void Concurrent_Push_TryPop_WithSuspensions()
+        {
+            int items = 10;
+            var q = new ConcurrentStack<int>();
+
+            // Consumer dequeues items until it sees last pushed item regardless of order
+            Task consumer = Task.Run(() =>
+            {
+                while (!q.TryPop(out var item) || item != items) ;
+            });
+
+            // Producer queues the expected number of items
+            Task producer = Task.Run(() =>
+            {
+                for (int i = 1; i <= items; i++)
+                {
+                    q.Push(i);
+
+                    // Triggers EE suspensions. We should still make quick progress.
+                    // See https://github.com/dotnet/runtime/issues/67559 for kinds of issues we look for.
+                    GC.GetTotalAllocatedBytes(precise: true);
+                }
+            });
+
+            Task.WaitAll(producer, consumer);
+        }
+
         protected sealed class StackOracle : IProducerConsumerCollection<int>
         {
             private readonly Stack<int> _stack;

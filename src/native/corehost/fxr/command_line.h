@@ -57,7 +57,7 @@ namespace command_line
         /*out*/ pal::string_t &app_candidate,
         /*out*/ opt_map_t &opts);
 
-    void print_muxer_info(const pal::string_t &dotnet_root);
+    void print_muxer_info(const pal::string_t &dotnet_root, const pal::string_t &global_json_path);
     void print_muxer_usage(bool is_sdk_present);
 };
 

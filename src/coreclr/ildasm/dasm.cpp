@@ -11,6 +11,7 @@
 #include "dynamicarray.h"
 #include <metamodelpub.h>
 #include "formattype.h"
+#include "readytorun.h"
 
 #define DECLARE_DATA
 #include "dasmenum.hpp"
@@ -94,6 +95,7 @@ BOOL                    g_fThisIsInstanceMethod;
 BOOL                    g_fTryInCode = TRUE;
 
 BOOL                    g_fLimitedVisibility = FALSE;
+BOOL                    g_fR2RNativeManifestMetadata = FALSE;
 BOOL                    g_fHidePub = TRUE;
 BOOL                    g_fHidePriv = TRUE;
 BOOL                    g_fHideFam = TRUE;
@@ -121,7 +123,6 @@ BOOL                    g_fCustomInstructionEncodingSystem = FALSE;
 COR_FIELD_OFFSET        *g_rFieldOffset = NULL;
 ULONG                   g_cFieldsMax, g_cFieldOffsets;
 
-char*                   g_pszExeFile;
 char                    g_szInputFile[MAX_FILENAME_LENGTH]; // in UTF-8
 WCHAR                   g_wszFullInputFile[MAX_PATH + 1]; // in UTF-16
 char                    g_szOutputFile[MAX_FILENAME_LENGTH]; // in UTF-8
@@ -1889,7 +1890,7 @@ BYTE* PrettyPrintCABlobValue(PCCOR_SIGNATURE &typePtr,
                 for(n=0; n < numElements; n++)
                 {
                     if(n) appendStr(out," ");
-                    sprintf_s(str,64,"%I64d",GET_UNALIGNED_VAL64(dataPtr));
+                    sprintf_s(str,64,"%lld",GET_UNALIGNED_VAL64(dataPtr));
                     appendStr(out,str);
                     dataPtr +=8;
                 }
@@ -1901,7 +1902,7 @@ BYTE* PrettyPrintCABlobValue(PCCOR_SIGNATURE &typePtr,
                 for(n=0; n < numElements; n++)
                 {
                     if(n) appendStr(out," ");
-                    sprintf_s(str,64,"%I64d",(ULONGLONG)GET_UNALIGNED_VAL64(dataPtr));
+                    sprintf_s(str,64,"%lld",(ULONGLONG)GET_UNALIGNED_VAL64(dataPtr));
                     appendStr(out,str);
                     dataPtr +=8;
                 }
@@ -1915,8 +1916,8 @@ BYTE* PrettyPrintCABlobValue(PCCOR_SIGNATURE &typePtr,
                     if(n) appendStr(out," ");
                     _gcvt_s(str,64,*((float*)dataPtr), 8);
                     float df = (float)atof(str);
-                    // Must compare as underlying bytes, not floating point otherwise optmizier will
-                    // try to enregister and comapre 80-bit precision number with 32-bit precision number!!!!
+                    // Must compare as underlying bytes, not floating point otherwise optimizer will
+                    // try to enregister and compare 80-bit precision number with 32-bit precision number!!!!
                     if((*(ULONG*)&df != (ULONG)GET_UNALIGNED_VAL32(dataPtr))||IsSpecialNumber(str))
                         sprintf_s(str, 64,"0x%08X",(ULONG)GET_UNALIGNED_VAL32(dataPtr));
                     appendStr(out,str);
@@ -1934,10 +1935,10 @@ BYTE* PrettyPrintCABlobValue(PCCOR_SIGNATURE &typePtr,
                     char *pch;
                     _gcvt_s(str,64,*((double*)dataPtr), 17);
                     double df = strtod(str, &pch);
-                    // Must compare as underlying bytes, not floating point otherwise optmizier will
-                    // try to enregister and comapre 80-bit precision number with 64-bit precision number!!!!
+                    // Must compare as underlying bytes, not floating point otherwise optimizer will
+                    // try to enregister and compare 80-bit precision number with 64-bit precision number!!!!
                     if((*(ULONGLONG*)&df != (ULONGLONG)GET_UNALIGNED_VAL64(dataPtr))||IsSpecialNumber(str))
-                        sprintf_s(str, 64, "0x%I64X",(ULONGLONG)GET_UNALIGNED_VAL64(dataPtr));
+                        sprintf_s(str, 64, "0x%llX",(ULONGLONG)GET_UNALIGNED_VAL64(dataPtr));
                     appendStr(out,str);
                     dataPtr +=8;
                 }
@@ -2216,7 +2217,7 @@ BOOL PrettyPrintCustomAttributeBlob(mdToken tkType, BYTE* pBlob, ULONG ulLen, vo
 {
     char* initszptr = szString + strlen(szString);
     PCCOR_SIGNATURE typePtr;            // type to convert,
-    ULONG typeLen;                  // the lenght of 'typePtr'
+    ULONG typeLen;                  // the length of 'typePtr'
     CHECK_LOCAL_STATIC_VAR(static CQuickBytes out); // where to put the pretty printed string
 
     IMDInternalImport *pIMDI = g_pImport; // ptr to IMDInternalImport class with ComSig
@@ -2596,18 +2597,18 @@ void DumpDefaultValue(mdToken tok, __inout __nullterminated char* szString, void
             szptr+=sprintf_s(szptr,SZSTRING_REMAINING_SIZE(szptr),"(%s)", KEYWORD((char *)(MDDV.m_byteValue ? "true" : "false")));
             break;
         case ELEMENT_TYPE_I8:
-            szptr+=sprintf_s(szptr,SZSTRING_REMAINING_SIZE(szptr)," = %s(0x%I64X)",KEYWORD("int64"),MDDV.m_ullValue);
+            szptr+=sprintf_s(szptr,SZSTRING_REMAINING_SIZE(szptr)," = %s(0x%llX)",KEYWORD("int64"),MDDV.m_ullValue);
             break;
         case ELEMENT_TYPE_U8:
-            szptr+=sprintf_s(szptr,SZSTRING_REMAINING_SIZE(szptr)," = %s(0x%I64X)",KEYWORD("uint64"),MDDV.m_ullValue);
+            szptr+=sprintf_s(szptr,SZSTRING_REMAINING_SIZE(szptr)," = %s(0x%llX)",KEYWORD("uint64"),MDDV.m_ullValue);
             break;
         case ELEMENT_TYPE_R4:
             {
                 char szf[32];
                 _gcvt_s(szf,32,MDDV.m_fltValue, 8);
                 float df = (float)atof(szf);
-                // Must compare as underlying bytes, not floating point otherwise optmizier will
-                // try to enregister and comapre 80-bit precision number with 32-bit precision number!!!!
+                // Must compare as underlying bytes, not floating point otherwise optimizer will
+                // try to enregister and compare 80-bit precision number with 32-bit precision number!!!!
                 if((*(ULONG*)&df == MDDV.m_ulValue)&&!IsSpecialNumber(szf))
                     szptr+=sprintf_s(szptr,SZSTRING_REMAINING_SIZE(szptr)," = %s(%s)",KEYWORD("float32"),szf);
                 else
@@ -2621,12 +2622,12 @@ void DumpDefaultValue(mdToken tok, __inout __nullterminated char* szString, void
                 _gcvt_s(szf,32,MDDV.m_dblValue, 17);
                 double df = strtod(szf, &pch); //atof(szf);
                 szf[31]=0;
-                // Must compare as underlying bytes, not floating point otherwise optmizier will
-                // try to enregister and comapre 80-bit precision number with 64-bit precision number!!!!
+                // Must compare as underlying bytes, not floating point otherwise optimizer will
+                // try to enregister and compare 80-bit precision number with 64-bit precision number!!!!
                 if((*(ULONGLONG*)&df == MDDV.m_ullValue)&&!IsSpecialNumber(szf))
                     szptr+=sprintf_s(szptr,SZSTRING_REMAINING_SIZE(szptr)," = %s(%s)",KEYWORD("float64"),szf);
                 else
-                    szptr+=sprintf_s(szptr,SZSTRING_REMAINING_SIZE(szptr), " = %s(0x%I64X) // %s",KEYWORD("float64"),MDDV.m_ullValue,szf);
+                    szptr+=sprintf_s(szptr,SZSTRING_REMAINING_SIZE(szptr), " = %s(0x%llX) // %s",KEYWORD("float64"),MDDV.m_ullValue,szf);
             }
             break;
 
@@ -3058,7 +3059,7 @@ char *DumpGenericPars(_Inout_updates_(SZSTRING_SIZE) char* szString, mdToken tok
       for (i = 1; NumTyPars != 0; i++)
       {
         g_pPubImport->GetGenericParamProps(tkTyPar, &ulSequence, &attr, &tkOwner, NULL, wzArgName, UNIBUF_SIZE/2, &chName);
-        //if(wcslen(wzArgName) >= MAX_CLASSNAME_LENGTH)
+        //if(u16_strlen(wzArgName) >= MAX_CLASSNAME_LENGTH)
         //    wzArgName[MAX_CLASSNAME_LENGTH-1] = 0;
         hEnumTyParConstr = NULL;
         if (FAILED(g_pPubImport->EnumGenericParamConstraints(&hEnumTyParConstr, tkTyPar, tkConstr, 2048, &NumConstrs)))
@@ -3080,8 +3081,15 @@ char *DumpGenericPars(_Inout_updates_(SZSTRING_SIZE) char* szString, mdToken tok
         if ((attr & gpNotNullableValueTypeConstraint) != 0)
             szptr += sprintf_s(szptr,SZSTRING_REMAINING_SIZE(szptr), "valuetype ");
         CHECK_REMAINING_SIZE;
+        if ((attr & gpAcceptByRefLike) != 0)
+            szptr += sprintf_s(szptr,SZSTRING_REMAINING_SIZE(szptr), "byreflike ");
+        CHECK_REMAINING_SIZE;
         if ((attr & gpDefaultConstructorConstraint) != 0)
             szptr += sprintf_s(szptr,SZSTRING_REMAINING_SIZE(szptr), ".ctor ");
+        CHECK_REMAINING_SIZE;
+        DWORD unknownAttr = attr & ~(gpSpecialConstraintMask | gpVarianceMask);
+        if (unknownAttr != 0)
+            szptr += sprintf_s(szptr,SZSTRING_REMAINING_SIZE(szptr), "flags(0x%x) ", unknownAttr);
         CHECK_REMAINING_SIZE;
         if (NumConstrs)
         {
@@ -3106,7 +3114,7 @@ char *DumpGenericPars(_Inout_updates_(SZSTRING_SIZE) char* szString, mdToken tok
         }
         // re-get name, wzUniBuf may not contain it any more
         g_pPubImport->GetGenericParamProps(tkTyPar, NULL, &attr, NULL, NULL, wzArgName, UNIBUF_SIZE/2, &chName);
-        //if(wcslen(wzArgName) >= MAX_CLASSNAME_LENGTH)
+        //if(u16_strlen(wzArgName) >= MAX_CLASSNAME_LENGTH)
         //    wzArgName[MAX_CLASSNAME_LENGTH-1] = 0;
         if (chName)
         {
@@ -3176,7 +3184,7 @@ void DumpGenericParsCA(mdToken tok, void* GUICookie/*=NULL*/)
                 if(SUCCEEDED(g_pPubImport->GetGenericParamProps(tkTyPar, NULL, &attr, NULL, NULL, wzArgName, UNIBUF_SIZE/2, &chName))
                         &&(chName > 0))
                 {
-                    //if(wcslen(wzArgName) >= MAX_CLASSNAME_LENGTH)
+                    //if(u16_strlen(wzArgName) >= MAX_CLASSNAME_LENGTH)
                     //    wzArgName[MAX_CLASSNAME_LENGTH-1] = 0;
                     char* sz = (char*)(&wzUniBuf[UNIBUF_SIZE/2]);
                     WszWideCharToMultiByte(CP_UTF8,0,wzArgName,-1,sz,UNIBUF_SIZE,NULL,NULL);
@@ -3735,7 +3743,7 @@ BOOL DumpMethod(mdToken FuncToken, const char *pszClassName, DWORD dwEntryPointT
                     sprintf_s(pszArgname[j].name,16,"A_%d",g_fThisIsInstanceMethod ? j+1 : j);
                 }
             }// end for( along the argnames)
-            sprintf_s(szArgPrefix,MAX_PREFIX_SIZE,"@%Id0",(size_t)pszArgname);
+            sprintf_s(szArgPrefix,MAX_PREFIX_SIZE,"@%zd0",(size_t)pszArgname);
         } //end if (ulArgs)
         g_pImport->EnumClose(&hArgEnum);
     }
@@ -5146,11 +5154,11 @@ void DumpCodeManager(IMAGE_COR20_HEADER *CORHeader, void* GUICookie)
     ULONG iCount = VAL32(CORHeader->CodeManagerTable.Size) / sizeof(GUID);
     for (ULONG i=0;  i<iCount;  i++)
     {
-        WCHAR        rcguid[128];
+        CHAR         rcguid[GUID_STR_BUFFER_LEN];
         GUID         Guid = *pcm;
         SwapGuid(&Guid);
-        StringFromGUID2(Guid, rcguid, ARRAY_SIZE(rcguid));
-        sprintf_s(szString,SZSTRING_SIZE,"//   [0x%08x]    %S", i, rcguid);
+        GuidToLPSTR(Guid, rcguid);
+        sprintf_s(szString,SZSTRING_SIZE,"//   [0x%08x]    %s", i, rcguid);
         printLine(GUICookie,szStr);
         pcm++;
     }
@@ -6957,29 +6965,29 @@ void DumpMI(_In_ __nullterminated const char *str)
 
 void DumpMetaInfo(_In_ __nullterminated const WCHAR* pwzFileName, _In_opt_z_ const char* pszObjFileName, void* GUICookie)
 {
-    const WCHAR* pch = wcsrchr(pwzFileName,L'.');
+    const WCHAR* pch = u16_strrchr(pwzFileName,L'.');
 
     DumpMI((char*)GUICookie); // initialize the print function for DumpMetaInfo
 
     if(pch && (!_wcsicmp(pch+1,W("lib")) || !_wcsicmp(pch+1,W("obj"))))
     {   // This works only when all the rest does not
         // Init and run.
-        if (MetaDataGetDispenser(CLSID_CorMetaDataDispenser,
-            IID_IMetaDataDispenserEx, (void **)&g_pDisp))
-                {
-                    WCHAR *pwzObjFileName=NULL;
-                    if (pszObjFileName)
-                    {
-                        int nLength = (int) strlen(pszObjFileName)+1;
-                        pwzObjFileName = new WCHAR[nLength];
-                        memset(pwzObjFileName,0,sizeof(WCHAR)*nLength);
-                        WszMultiByteToWideChar(CP_UTF8,0,pszObjFileName,-1,pwzObjFileName,nLength);
-                    }
-                    DisplayFile((WCHAR*)pwzFileName, true, g_ulMetaInfoFilter, pwzObjFileName, DumpMI);
-                    g_pDisp->Release();
-                    g_pDisp = NULL;
-                    if (pwzObjFileName) VDELETE(pwzObjFileName);
-                }
+        if (SUCCEEDED(MetaDataGetDispenser(CLSID_CorMetaDataDispenser,
+            IID_IMetaDataDispenserEx, (void **)&g_pDisp)))
+        {
+            WCHAR *pwzObjFileName=NULL;
+            if (pszObjFileName)
+            {
+                int nLength = (int) strlen(pszObjFileName)+1;
+                pwzObjFileName = new WCHAR[nLength];
+                memset(pwzObjFileName,0,sizeof(WCHAR)*nLength);
+                WszMultiByteToWideChar(CP_UTF8,0,pszObjFileName,-1,pwzObjFileName,nLength);
+            }
+            DisplayFile((WCHAR*)pwzFileName, true, g_ulMetaInfoFilter, pwzObjFileName, DumpMI);
+            g_pDisp->Release();
+            g_pDisp = NULL;
+            if (pwzObjFileName) VDELETE(pwzObjFileName);
+        }
     }
     else
     {
@@ -6995,8 +7003,16 @@ void DumpMetaInfo(_In_ __nullterminated const WCHAR* pwzFileName, _In_opt_z_ con
             if(g_pAssemblyImport==NULL) g_pAssemblyImport = GetAssemblyImport(NULL);
             printLine(GUICookie,RstrUTF(IDS_E_MISTART));
             //MDInfo metaDataInfo(g_pPubImport, g_pAssemblyImport, (LPCWSTR)pwzFileName, DumpMI, g_ulMetaInfoFilter);
-            MDInfo metaDataInfo(g_pDisp,(LPCWSTR)pwzFileName, DumpMI, g_ulMetaInfoFilter);
-            metaDataInfo.DisplayMD();
+            if (g_fR2RNativeManifestMetadata)
+            {
+                MDInfo metaDataInfo(g_pDisp, (PBYTE)g_pMetaData, g_cbMetaData, DumpMI, g_ulMetaInfoFilter);
+                metaDataInfo.DisplayMD();
+            }
+            else
+            {
+                MDInfo metaDataInfo(g_pDisp,(LPCWSTR)pwzFileName, DumpMI, g_ulMetaInfoFilter);
+                metaDataInfo.DisplayMD();
+            }
             printLine(GUICookie,RstrUTF(IDS_E_MIEND));
         }
     }
@@ -7013,7 +7029,7 @@ void DumpPreamble()
     else if(g_fDumpRTF)
     {
     }
-    sprintf_s(szString,SZSTRING_SIZE,"//  Microsoft (R) .NET IL Disassembler.  Version " CLR_PRODUCT_VERSION);
+    sprintf_s(szString,SZSTRING_SIZE,"//  .NET IL Disassembler.  Version " CLR_PRODUCT_VERSION);
     printLine(g_pFile,COMMENT(szString));
     if(g_fDumpHTML)
     {
@@ -7440,6 +7456,41 @@ BOOL DumpFile()
     g_tkEntryPoint = VAL32(IMAGE_COR20_HEADER_FIELD(*g_CORHeader, EntryPointToken)); // integration with MetaInfo
 
 
+    if (g_fR2RNativeManifestMetadata)
+    {
+        //if this is a r2r image, use the native metadata.
+        if( !(g_CORHeader->ManagedNativeHeader.Size >= sizeof(READYTORUN_HEADER) ) )
+        {
+            printError( g_pFile, "/r2rnativemetadata only works on non-composite R2R images." );
+            goto exit;
+        }
+        READYTORUN_HEADER * pR2RHeader = NULL;
+        g_pPELoader->getVAforRVA(VAL32(g_CORHeader->ManagedNativeHeader.VirtualAddress), (void**)&pR2RHeader);
+
+        if (pR2RHeader == NULL || pR2RHeader->Signature != READYTORUN_SIGNATURE)
+        {
+            printError( g_pFile, "/r2rnativemetadata only works on non-composite R2R images." );
+            goto exit;
+        }
+
+        g_cbMetaData = 0;
+        READYTORUN_SECTION *pSections = (READYTORUN_SECTION *)((&pR2RHeader->CoreHeader) + 1);
+        for (DWORD iSection = 0; iSection < pR2RHeader->CoreHeader.NumberOfSections; iSection++)
+        {
+            if (pSections[iSection].Type == ReadyToRunSectionType::ManifestMetadata)
+            {
+                g_pPELoader->getVAforRVA(VAL32(pSections[iSection].Section.VirtualAddress), &g_pMetaData);
+                g_cbMetaData = VAL32(pSections[iSection].Section.Size);
+                break;
+            }
+        }
+        if (g_cbMetaData == 0)
+        {
+            printError( g_pFile, "This R2R file does not have an R2R manifest metadata" );
+            goto exit;
+        }
+    }
+    else
     {
     if (g_pPELoader->getVAforRVA(VAL32(g_CORHeader->MetaData.VirtualAddress),&g_pMetaData) == FALSE)
     {
@@ -7724,17 +7775,17 @@ ReportAndExit:
             WCHAR wzResFileName[2048], *pwc;
             memset(wzResFileName,0,sizeof(wzResFileName));
             WszMultiByteToWideChar(CP_UTF8,0,g_szOutputFile,-1,wzResFileName,2048);
-            pwc = wcsrchr(wzResFileName,L'.');
-            if(pwc == NULL) pwc = &wzResFileName[wcslen(wzResFileName)];
+            pwc = (WCHAR*)u16_strrchr(wzResFileName,L'.');
+            if(pwc == NULL) pwc = &wzResFileName[u16_strlen(wzResFileName)];
             wcscpy_s(pwc, 2048 - (pwc - wzResFileName), L".res");
             DWORD ret = DumpResourceToFile(wzResFileName);
             switch(ret)
             {
                 case 0: szString[0] = 0; break;
-                case 1: sprintf_s(szString,SZSTRING_SIZE,RstrUTF(IDS_W_CREATEDW32RES)/*"// WARNING: Created Win32 resource file %ls"*/,
+                case 1: sprintf_s(szString,SZSTRING_SIZE,RstrUTF(IDS_W_CREATEDW32RES)/*"// WARNING: Created Win32 resource file %s"*/,
                                 UnicodeToUtf(wzResFileName)); break;
                 case 0xDFFFFFFF: sprintf_s(szString,SZSTRING_SIZE,RstrUTF(IDS_E_CORRUPTW32RES)/*"// ERROR: Corrupt Win32 resources"*/); break;
-                case 0xEFFFFFFF: sprintf_s(szString,SZSTRING_SIZE,RstrUTF(IDS_E_CANTOPENW32RES)/*"// ERROR: Unable to open file %ls"*/,
+                case 0xEFFFFFFF: sprintf_s(szString,SZSTRING_SIZE,RstrUTF(IDS_E_CANTOPENW32RES)/*"// ERROR: Unable to open file %s"*/,
                                          UnicodeToUtf(wzResFileName)); break;
                 case 0xFFFFFFFF: sprintf_s(szString,SZSTRING_SIZE,RstrUTF(IDS_E_CANTACCESSW32RES)/*"// ERROR: Unable to access Win32 resources"*/); break;
             }

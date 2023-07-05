@@ -42,6 +42,8 @@ namespace Microsoft.WebAssembly.Build.Tasks
         private string? _tempPath;
         private int _totalFiles;
         private int _numCompiled;
+        private static readonly char[] s_semicolon = new char[] { ';' };
+        private static readonly char[] s_equalTo = new char[] { '=' };
 
         public override bool Execute()
         {
@@ -78,7 +80,7 @@ namespace Microsoft.WebAssembly.Build.Tasks
             }
 
             _totalFiles = SourceFiles.Length;
-            IDictionary<string, string> envVarsDict = GetEnvironmentVariablesDict();
+            Dictionary<string, string> envVarsDict = GetEnvironmentVariablesDict();
             ConcurrentBag<ITaskItem> outputItems = new();
             try
             {
@@ -90,7 +92,7 @@ namespace Microsoft.WebAssembly.Build.Tasks
                     string depMetadata = srcItem.GetMetadata("Dependencies");
                     string[] depFiles = string.IsNullOrEmpty(depMetadata)
                                             ? Array.Empty<string>()
-                                            : depMetadata.Split(new char[] { ';' }, StringSplitOptions.RemoveEmptyEntries);
+                                            : depMetadata.Split(s_semicolon, StringSplitOptions.RemoveEmptyEntries);
 
                     if (!ShouldCompile(srcFile, objFile, depFiles, out string reason))
                     {
@@ -129,7 +131,34 @@ namespace Microsoft.WebAssembly.Build.Tasks
                 if (BuildEngine is IBuildEngine9 be9)
                     allowedParallelism = be9.RequestCores(allowedParallelism);
 
-                ParallelLoopResult result = Parallel.ForEach(filesToCompile,
+                /*
+                    From: https://github.com/dotnet/runtime/issues/46146#issuecomment-754021690
+
+                    Stephen Toub:
+                    "As such, by default ForEach works on a scheme whereby each
+                    thread takes one item each time it goes back to the enumerator,
+                    and then after a few times of this upgrades to taking two items
+                    each time it goes back to the enumerator, and then four, and
+                    then eight, and so on. This amortizes the cost of taking and
+                    releasing the lock across multiple items, while still enabling
+                    parallelization for enumerables containing just a few items. It
+                    does, however, mean that if you've got a case where the body
+                    takes a really long time and the work for every item is
+                    heterogeneous, you can end up with an imbalance."
+
+                    The time taken by individual compile jobs here can vary a
+                    lot, depending on various factors like file size. This can
+                    create an imbalance, like mentioned above, and we can end up
+                    in a situation where one of the partitions has a job that
+                    takes very long to execute, by which time other partitions
+                    have completed, so some cores are idle.  But the idle
+                    ones won't get any of the remaining jobs, because they are
+                    all assigned to that one partition.
+
+                    Instead, we want to use work-stealing so jobs can be run by any partition.
+                */
+                ParallelLoopResult result = Parallel.ForEach(
+                                                Partitioner.Create(filesToCompile, EnumerablePartitionerOptions.NoBuffering),
                                                 new ParallelOptions { MaxDegreeOfParallelism = allowedParallelism },
                                                 (toCompile, state) =>
                 {
@@ -138,7 +167,7 @@ namespace Microsoft.WebAssembly.Build.Tasks
                 });
 
                 if (!result.IsCompleted && !Log.HasLoggedErrors)
-                    Log.LogError("Unknown failure occured while compiling. Check logs to get more details.");
+                    Log.LogError("Unknown failure occurred while compiling. Check logs to get more details.");
 
                 if (!Log.HasLoggedErrors)
                 {
@@ -211,13 +240,13 @@ namespace Microsoft.WebAssembly.Build.Tasks
 
             ITaskItem CreateOutputItemFor(string srcFile, string objFile)
             {
-                ITaskItem newItem = new TaskItem(objFile);
+                TaskItem newItem = new TaskItem(objFile);
                 newItem.SetMetadata("SourceFile", srcFile);
                 return newItem;
             }
         }
 
-        private bool ShouldCompile(string srcFile, string objFile, string[] depFiles, out string reason)
+        private static bool ShouldCompile(string srcFile, string objFile, string[] depFiles, out string reason)
         {
             if (!File.Exists(srcFile))
                 throw new LogAsErrorException($"Could not find source file {srcFile}");
@@ -244,8 +273,7 @@ namespace Microsoft.WebAssembly.Build.Tasks
             {
                 if (!File.Exists(inFile))
                 {
-                    reason = $"Could not find dependency file {inFile} needed for compiling {srcFile} to {outFile}";
-                    Log.LogWarning(reason);
+                    reason = $"the dependency file {inFile} needed for compiling {srcFile} to {outFile} could not be found.";
                     return true;
                 }
 
@@ -265,7 +293,7 @@ namespace Microsoft.WebAssembly.Build.Tasks
             }
         }
 
-        private IDictionary<string, string> GetEnvironmentVariablesDict()
+        private Dictionary<string, string> GetEnvironmentVariablesDict()
         {
             Dictionary<string, string> envVarsDict = new();
             if (EnvironmentVariables == null)
@@ -273,7 +301,7 @@ namespace Microsoft.WebAssembly.Build.Tasks
 
             foreach (var item in EnvironmentVariables)
             {
-                var parts = item.ItemSpec.Split(new char[] {'='}, 2, StringSplitOptions.None);
+                var parts = item.ItemSpec.Split(s_equalTo, 2, StringSplitOptions.None);
                 if (parts.Length == 0)
                     continue;
 

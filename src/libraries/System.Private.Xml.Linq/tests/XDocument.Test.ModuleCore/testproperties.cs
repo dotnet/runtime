@@ -34,7 +34,7 @@ namespace Microsoft.Test.ModuleCore
                     //CommandLine Options
                     KeywordParser.Tokens tokens = new KeywordParser.Tokens();
                     tokens.Equal = " ";
-                    tokens.Seperator = "/";
+                    tokens.Separator = "/";
                     Dictionary<string, string> options = KeywordParser.ParseKeywords(commandline, tokens);
                     foreach (string key in options.Keys)
                         s_pproperties["CommandLine/" + key] = options[key];
@@ -66,7 +66,7 @@ namespace Microsoft.Test.ModuleCore
                         //CommandLine Options
                         KeywordParser.Tokens tokens = new KeywordParser.Tokens();
                         tokens.Equal = " ";
-                        tokens.Seperator = "/";
+                        tokens.Separator = "/";
                         Dictionary<string, string> options = KeywordParser.ParseKeywords(commandLine, tokens);
                         foreach (string key in options.Keys)
                             TestInput.Properties["CommandLine/" + key] = options[key];

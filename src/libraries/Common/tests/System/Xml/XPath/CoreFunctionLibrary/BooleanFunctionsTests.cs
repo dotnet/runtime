@@ -1,11 +1,9 @@
 // Licensed to the .NET Foundation under one or more agreements.
 // The .NET Foundation licenses this file to you under the MIT license.
 
-using Xunit;
-using System;
-using System.Xml;
 using System.Xml.XPath;
 using XPathTests.Common;
+using Xunit;
 
 namespace XPathTests.FunctionalTests.CoreFunctionLibrary
 {
@@ -18,296 +16,359 @@ namespace XPathTests.FunctionalTests.CoreFunctionLibrary
         /// Verify result.
         /// boolean(1) = true
         /// </summary>
-        [Fact]
-        public static void BooleanFunctionsTest251()
+        [Theory]
+        [InlineData(Utils.NavigatorKind.XmlDocument)]
+        [InlineData(Utils.NavigatorKind.XPathDocument)]
+        [InlineData(Utils.NavigatorKind.XDocument)]
+        public static void BooleanFunctionsTest251(Utils.NavigatorKind kind)
         {
             var xml = "dummy.xml";
             var testExpression = @"boolean(1)";
             var expected = true;
 
-            Utils.XPathBooleanTest(xml, testExpression, expected);
+            Utils.XPathBooleanTest(kind, xml, testExpression, expected);
         }
 
         /// <summary>
         /// Verify result.
         /// boolean(0) = false
         /// </summary>
-        [Fact]
-        public static void BooleanFunctionsTest252()
+        [Theory]
+        [InlineData(Utils.NavigatorKind.XmlDocument)]
+        [InlineData(Utils.NavigatorKind.XPathDocument)]
+        [InlineData(Utils.NavigatorKind.XDocument)]
+        public static void BooleanFunctionsTest252(Utils.NavigatorKind kind)
         {
             var xml = "dummy.xml";
             var testExpression = @"boolean(0)";
             var expected = false;
 
-            Utils.XPathBooleanTest(xml, testExpression, expected);
+            Utils.XPathBooleanTest(kind, xml, testExpression, expected);
         }
 
         /// <summary>
         /// boolean(infinity) = true
         /// boolean(1 div 0) = true
         /// </summary>
-        [Fact]
-        public static void BooleanFunctionsTest253()
+        [Theory]
+        [InlineData(Utils.NavigatorKind.XmlDocument)]
+        [InlineData(Utils.NavigatorKind.XPathDocument)]
+        [InlineData(Utils.NavigatorKind.XDocument)]
+        public static void BooleanFunctionsTest253(Utils.NavigatorKind kind)
         {
             var xml = "dummy.xml";
             var testExpression = @"boolean(1 div 0)";
             var expected = true;
 
-            Utils.XPathBooleanTest(xml, testExpression, expected);
+            Utils.XPathBooleanTest(kind, xml, testExpression, expected);
         }
 
         /// <summary>
         /// boolean(NaN) = false
         /// boolean(0 div 0) = false
         /// </summary>
-        [Fact]
-        public static void BooleanFunctionsTest254()
+        [Theory]
+        [InlineData(Utils.NavigatorKind.XmlDocument)]
+        [InlineData(Utils.NavigatorKind.XPathDocument)]
+        [InlineData(Utils.NavigatorKind.XDocument)]
+        public static void BooleanFunctionsTest254(Utils.NavigatorKind kind)
         {
             var xml = "dummy.xml";
             var testExpression = @"boolean(0 div 0)";
             var expected = false;
 
-            Utils.XPathBooleanTest(xml, testExpression, expected);
+            Utils.XPathBooleanTest(kind, xml, testExpression, expected);
         }
 
         /// <summary>
         /// Verify result.
         /// boolean(-0) = false
         /// </summary>
-        [Fact]
-        public static void BooleanFunctionsTest255()
+        [Theory]
+        [InlineData(Utils.NavigatorKind.XmlDocument)]
+        [InlineData(Utils.NavigatorKind.XPathDocument)]
+        [InlineData(Utils.NavigatorKind.XDocument)]
+        public static void BooleanFunctionsTest255(Utils.NavigatorKind kind)
         {
             var xml = "dummy.xml";
             var testExpression = @"boolean(-0)";
             var expected = false;
 
-            Utils.XPathBooleanTest(xml, testExpression, expected);
+            Utils.XPathBooleanTest(kind, xml, testExpression, expected);
         }
 
         /// <summary>
         /// Verify result.
         /// boolean(2.5) = true
         /// </summary>
-        [Fact]
-        public static void BooleanFunctionsTest256()
+        [Theory]
+        [InlineData(Utils.NavigatorKind.XmlDocument)]
+        [InlineData(Utils.NavigatorKind.XPathDocument)]
+        [InlineData(Utils.NavigatorKind.XDocument)]
+        public static void BooleanFunctionsTest256(Utils.NavigatorKind kind)
         {
             var xml = "dummy.xml";
             var testExpression = @"boolean(2.5)";
             var expected = true;
 
-            Utils.XPathBooleanTest(xml, testExpression, expected);
+            Utils.XPathBooleanTest(kind, xml, testExpression, expected);
         }
 
         /// <summary>
         /// Verify result.
         /// boolean("test") = true
         /// </summary>
-        [Fact]
-        public static void BooleanFunctionsTest257()
+        [Theory]
+        [InlineData(Utils.NavigatorKind.XmlDocument)]
+        [InlineData(Utils.NavigatorKind.XPathDocument)]
+        [InlineData(Utils.NavigatorKind.XDocument)]
+        public static void BooleanFunctionsTest257(Utils.NavigatorKind kind)
         {
             var xml = "dummy.xml";
             var testExpression = @"boolean(""Test"")";
             var expected = true;
 
-            Utils.XPathBooleanTest(xml, testExpression, expected);
+            Utils.XPathBooleanTest(kind, xml, testExpression, expected);
         }
 
         /// <summary>
         /// Verify result.
         /// boolean("") = false
         /// </summary>
-        [Fact]
-        public static void BooleanFunctionsTest258()
+        [Theory]
+        [InlineData(Utils.NavigatorKind.XmlDocument)]
+        [InlineData(Utils.NavigatorKind.XPathDocument)]
+        [InlineData(Utils.NavigatorKind.XDocument)]
+        public static void BooleanFunctionsTest258(Utils.NavigatorKind kind)
         {
             var xml = "dummy.xml";
             var testExpression = @"boolean("""")";
             var expected = false;
 
-            Utils.XPathBooleanTest(xml, testExpression, expected);
+            Utils.XPathBooleanTest(kind, xml, testExpression, expected);
         }
 
         /// <summary>
         /// Verify result.
         /// boolean(child::*) = true
         /// </summary>
-        [Fact]
-        public static void BooleanFunctionsTest259()
+        [Theory]
+        [InlineData(Utils.NavigatorKind.XmlDocument)]
+        [InlineData(Utils.NavigatorKind.XPathDocument)]
+        [InlineData(Utils.NavigatorKind.XDocument)]
+        public static void BooleanFunctionsTest259(Utils.NavigatorKind kind)
         {
             var xml = "xp004.xml";
             var startingNodePath = "/Doc/Test2";
             var testExpression = @"boolean(child::*)";
             var expected = true;
 
-            Utils.XPathBooleanTest(xml, testExpression, expected, startingNodePath: startingNodePath);
+            Utils.XPathBooleanTest(kind, xml, testExpression, expected, startingNodePath: startingNodePath);
         }
 
         /// <summary>
         /// Verify result.
         /// boolean(child::DoesNotExist) = false
         /// </summary>
-        [Fact]
-        public static void BooleanFunctionsTest2510()
+        [Theory]
+        [InlineData(Utils.NavigatorKind.XmlDocument)]
+        [InlineData(Utils.NavigatorKind.XPathDocument)]
+        [InlineData(Utils.NavigatorKind.XDocument)]
+        public static void BooleanFunctionsTest2510(Utils.NavigatorKind kind)
         {
             var xml = "xp004.xml";
             var startingNodePath = "/Doc/Test2";
             var testExpression = @"boolean(child::DoesNotExist)";
             var expected = false;
 
-            Utils.XPathBooleanTest(xml, testExpression, expected, startingNodePath: startingNodePath);
+            Utils.XPathBooleanTest(kind, xml, testExpression, expected, startingNodePath: startingNodePath);
         }
 
         /// <summary>
         /// Verify result.
         /// not(false()) = true
         /// </summary>
-        [Fact]
-        public static void BooleanFunctionsTest2511()
+        [Theory]
+        [InlineData(Utils.NavigatorKind.XmlDocument)]
+        [InlineData(Utils.NavigatorKind.XPathDocument)]
+        [InlineData(Utils.NavigatorKind.XDocument)]
+        public static void BooleanFunctionsTest2511(Utils.NavigatorKind kind)
         {
             var xml = "dummy.xml";
             var testExpression = @"not(false())";
             var expected = true;
 
-            Utils.XPathBooleanTest(xml, testExpression, expected);
+            Utils.XPathBooleanTest(kind, xml, testExpression, expected);
         }
 
         /// <summary>
         /// Verify result.
         /// not(true()) = false
         /// </summary>
-        [Fact]
-        public static void BooleanFunctionsTest2512()
+        [Theory]
+        [InlineData(Utils.NavigatorKind.XmlDocument)]
+        [InlineData(Utils.NavigatorKind.XPathDocument)]
+        [InlineData(Utils.NavigatorKind.XDocument)]
+        public static void BooleanFunctionsTest2512(Utils.NavigatorKind kind)
         {
             var xml = "dummy.xml";
             var testExpression = @"not(true())";
             var expected = false;
 
-            Utils.XPathBooleanTest(xml, testExpression, expected);
+            Utils.XPathBooleanTest(kind, xml, testExpression, expected);
         }
 
         /// <summary>
         /// Verify result.
         /// not(boolean(child::*)) = false
         /// </summary>
-        [Fact]
-        public static void BooleanFunctionsTest2513()
+        [Theory]
+        [InlineData(Utils.NavigatorKind.XmlDocument)]
+        [InlineData(Utils.NavigatorKind.XPathDocument)]
+        [InlineData(Utils.NavigatorKind.XDocument)]
+        public static void BooleanFunctionsTest2513(Utils.NavigatorKind kind)
         {
             var xml = "xp004.xml";
             var startingNodePath = "/Doc/Test2";
             var testExpression = @"not(boolean(child::*))";
             var expected = false;
 
-            Utils.XPathBooleanTest(xml, testExpression, expected, startingNodePath: startingNodePath);
+            Utils.XPathBooleanTest(kind, xml, testExpression, expected, startingNodePath: startingNodePath);
         }
 
         /// <summary>
         /// Verify result.
         /// true() = true
         /// </summary>
-        [Fact]
-        public static void BooleanFunctionsTest2514()
+        [Theory]
+        [InlineData(Utils.NavigatorKind.XmlDocument)]
+        [InlineData(Utils.NavigatorKind.XPathDocument)]
+        [InlineData(Utils.NavigatorKind.XDocument)]
+        public static void BooleanFunctionsTest2514(Utils.NavigatorKind kind)
         {
             var xml = "dummy.xml";
             var testExpression = @"true()";
             var expected = true;
 
-            Utils.XPathBooleanTest(xml, testExpression, expected);
+            Utils.XPathBooleanTest(kind, xml, testExpression, expected);
         }
 
         /// <summary>
         /// Verify result.
         /// false() = false
         /// </summary>
-        [Fact]
-        public static void BooleanFunctionsTest2515()
+        [Theory]
+        [InlineData(Utils.NavigatorKind.XmlDocument)]
+        [InlineData(Utils.NavigatorKind.XPathDocument)]
+        [InlineData(Utils.NavigatorKind.XDocument)]
+        public static void BooleanFunctionsTest2515(Utils.NavigatorKind kind)
         {
             var xml = "dummy.xml";
             var testExpression = @"false()";
             var expected = false;
 
-            Utils.XPathBooleanTest(xml, testExpression, expected);
+            Utils.XPathBooleanTest(kind, xml, testExpression, expected);
         }
 
         /// <summary>
         /// expected true
         /// lang("en") context node has xml:lang="en"
         /// </summary>
-        [Fact]
-        public static void BooleanFunctionsTest2516()
+        [Theory]
+        [InlineData(Utils.NavigatorKind.XmlDocument)]
+        [InlineData(Utils.NavigatorKind.XPathDocument)]
+        [InlineData(Utils.NavigatorKind.XDocument)]
+        public static void BooleanFunctionsTest2516(Utils.NavigatorKind kind)
         {
             var xml = "lang.xml";
             var startingNodePath = "/bookstore";
             var testExpression = @"lang(""en"")";
             var expected = true;
 
-            Utils.XPathBooleanTest(xml, testExpression, expected, startingNodePath: startingNodePath);
+            Utils.XPathBooleanTest(kind, xml, testExpression, expected, startingNodePath: startingNodePath);
         }
 
         /// <summary>
         /// expected true
         /// lang("en") ancestor has xml:lang = "en"
         /// </summary>
-        [Fact]
-        public static void BooleanFunctionsTest2517()
+        [Theory]
+        [InlineData(Utils.NavigatorKind.XmlDocument)]
+        [InlineData(Utils.NavigatorKind.XPathDocument)]
+        [InlineData(Utils.NavigatorKind.XDocument)]
+        public static void BooleanFunctionsTest2517(Utils.NavigatorKind kind)
         {
             var xml = "lang.xml";
             var startingNodePath = "/bookstore/book[2]";
             var testExpression = @"lang(""en"")";
             var expected = true;
 
-            Utils.XPathBooleanTest(xml, testExpression, expected, startingNodePath: startingNodePath);
+            Utils.XPathBooleanTest(kind, xml, testExpression, expected, startingNodePath: startingNodePath);
         }
 
         /// <summary>
         /// expected false
         /// lang("en-us")  is a sub-category of xml-lang="en"
         /// </summary>
-        [Fact]
-        public static void BooleanFunctionsTest2518()
+        [Theory]
+        [InlineData(Utils.NavigatorKind.XmlDocument)]
+        [InlineData(Utils.NavigatorKind.XPathDocument)]
+        [InlineData(Utils.NavigatorKind.XDocument)]
+        public static void BooleanFunctionsTest2518(Utils.NavigatorKind kind)
         {
             var xml = "lang.xml";
             var startingNodePath = "/bookstore";
             var testExpression = @"lang(""en-us"")";
             var expected = false;
 
-            Utils.XPathBooleanTest(xml, testExpression, expected, startingNodePath: startingNodePath);
+            Utils.XPathBooleanTest(kind, xml, testExpression, expected, startingNodePath: startingNodePath);
         }
 
         /// <summary>
         /// expected true
         /// lang("en") xml:lang = "en-us" is a sub category
         /// </summary>
-        [Fact]
-        public static void BooleanFunctionsTest2519()
+        [Theory]
+        [InlineData(Utils.NavigatorKind.XmlDocument)]
+        [InlineData(Utils.NavigatorKind.XPathDocument)]
+        [InlineData(Utils.NavigatorKind.XDocument)]
+        public static void BooleanFunctionsTest2519(Utils.NavigatorKind kind)
         {
             var xml = "lang.xml";
             var startingNodePath = "/bookstore/book[3]";
             var testExpression = @"lang(""en"")";
             var expected = true;
 
-            Utils.XPathBooleanTest(xml, testExpression, expected, startingNodePath: startingNodePath);
+            Utils.XPathBooleanTest(kind, xml, testExpression, expected, startingNodePath: startingNodePath);
         }
 
         /// <summary>
         /// lang() should match ignoring case, expected : true
         /// lang("EN") context node has xml:lang = "en"
         /// </summary>
-        [Fact]
-        public static void BooleanFunctionsTest2520()
+        [Theory]
+        [InlineData(Utils.NavigatorKind.XmlDocument)]
+        [InlineData(Utils.NavigatorKind.XPathDocument)]
+        [InlineData(Utils.NavigatorKind.XDocument)]
+        public static void BooleanFunctionsTest2520(Utils.NavigatorKind kind)
         {
             var xml = "lang.xml";
             var startingNodePath = "/bookstore";
             var testExpression = @"lang(""EN"")";
             var expected = true;
 
-            Utils.XPathBooleanTest(xml, testExpression, expected, startingNodePath: startingNodePath);
+            Utils.XPathBooleanTest(kind, xml, testExpression, expected, startingNodePath: startingNodePath);
         }
 
         /// <summary>
         /// Code Coverage: Covers the case where lang() is used in an expression
         /// child::*[lang("en")]
         /// </summary>
-        [Fact]
-        public static void BooleanFunctionsTest2521()
+        [Theory]
+        [InlineData(Utils.NavigatorKind.XmlDocument)]
+        [InlineData(Utils.NavigatorKind.XPathDocument)]
+        [InlineData(Utils.NavigatorKind.XDocument)]
+        public static void BooleanFunctionsTest2521(Utils.NavigatorKind kind)
         {
             var xml = "lang.xml";
             var testExpression = @"child::*[lang(""en"")]";
@@ -325,7 +386,7 @@ namespace XPathTests.FunctionalTests.CoreFunctionLibrary
                     XmlLang = "en"
                 });
 
-            Utils.XPathNodesetTest(xml, testExpression, expected);
+            Utils.XPathNodesetTest(kind, xml, testExpression, expected);
         }
     }
 }

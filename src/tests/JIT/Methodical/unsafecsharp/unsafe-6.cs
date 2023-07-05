@@ -3,8 +3,11 @@
 
 using System;
 using UnsafeCSharp;
+using Xunit;
 
-internal class TestApp
+namespace Test_unsafe_6
+{
+public class TestApp
 {
     private static unsafe long test_6(ref B b)
     {
@@ -273,7 +276,8 @@ internal class TestApp
         long[] e = { 100, 101 };
         return e[pb + 1 > pb ? 0 : 1];
     }
-    private static unsafe int Main()
+    [Fact]
+    public static unsafe int TestEntryPoint()
     {
         AA loc_x = new AA(0, 100);
         AA.init_all(0);
@@ -671,4 +675,5 @@ internal class TestApp
         Console.WriteLine("All tests passed.");
         return 100;
     }
+}
 }

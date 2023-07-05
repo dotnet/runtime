@@ -2,19 +2,22 @@
 // The .NET Foundation licenses this file to you under the MIT license.
 
 using System;
-using System.Net.WebSockets;
 using System.Threading.Tasks;
 using Microsoft.WebAssembly.Diagnostics;
 using Newtonsoft.Json.Linq;
 using Xunit;
+using Xunit.Abstractions;
 
 #nullable enable
 
 namespace DebuggerTests
 {
-    public class HarnessTests : DebuggerTestBase
+    public class HarnessTests : DebuggerTests
     {
-        [Fact]
+        public HarnessTests(ITestOutputHelper testOutput) : base(testOutput)
+        {}
+
+        [ConditionalFact(nameof(RunningOnChrome))]
         public async Task TimedOutWaitingForInvalidBreakpoint()
         {
             await SetBreakpoint("dotnet://debugger-test.dll/debugger-test.cs", 100, 0);
@@ -23,19 +26,35 @@ namespace DebuggerTests
             Assert.Contains("timed out", tce.Message);
         }
 
-        [Fact]
+        [ConditionalFact(nameof(RunningOnChrome))]
         public async Task ExceptionThrown()
         {
             var ae = await Assert.ThrowsAsync<ArgumentException>(
-                        async () => await EvaluateAndCheck("window.setTimeout(function() { non_existant_fn(); }, 3000);", null, -1, -1, null));
-            Assert.Contains("non_existant_fn is not defined", ae.Message);
+                        async () => await EvaluateAndCheck("window.setTimeout(function() { non_existent_fn(); }, 3000);", null, -1, -1, null));
+            Assert.Contains("non_existent_fn is not defined", ae.Message);
         }
 
-        [Fact]
-        public async Task BrowserCrash() => await Assert.ThrowsAsync<WebSocketException>(async () =>
-            await SendCommandAndCheck(null, "Browser.crash", null, -1, -1, null));
+        [ConditionalFact(nameof(RunningOnChrome))]
+        public async Task BrowserCrash()
+        {
+            TaskCompletionSource<RunLoopExitState> clientRunLoopStopped = new();
+            insp.Client.RunLoopStopped += (_, args) => clientRunLoopStopped.TrySetResult(args);
+            try
+            {
+                await SendCommandAndCheck(null, "Browser.crash", null, -1, -1, null);
+            }
+            catch (Exception ex)
+            {
+                Task t = await Task.WhenAny(clientRunLoopStopped.Task, Task.Delay(10000));
+                if (t != clientRunLoopStopped.Task)
+                    Assert.Fail($"Proxy did not stop, as expected");
+                RunLoopExitState? state = await clientRunLoopStopped.Task;
+                if (state.reason != RunLoopStopReason.ConnectionClosed)
+                    Assert.Fail($"Client runloop did not stop with ConnectionClosed. state: {state}.{Environment.NewLine}SendCommand had failed with {ex}");
+            }
+        }
 
-        [Fact]
+        [ConditionalFact(nameof(RunningOnChrome))]
         public async Task InspectorWaitForAfterMessageAlreadyReceived()
         {
             Result res = await SetBreakpoint("dotnet://debugger-test.dll/debugger-test.cs", 10, 8);
@@ -53,7 +72,7 @@ namespace DebuggerTests
             await insp.WaitFor(Inspector.PAUSE);
         }
 
-        [Fact]
+        [ConditionalFact(nameof(RunningOnChrome))]
         public async Task InspectorWaitForMessageThatNeverArrives()
         {
             var tce = await Assert.ThrowsAsync<TaskCanceledException>(async () => await insp.WaitFor("Message.that.never.arrives"));

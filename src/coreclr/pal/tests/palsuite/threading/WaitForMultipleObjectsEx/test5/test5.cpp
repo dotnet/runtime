@@ -8,7 +8,7 @@
 ** Purpose: Test the functionality of simultaneously waiting
 ** on multiple processes. Create the same number of helper
 ** processes and helper threads.
-** Helper threads wait on helper processes to finish. 
+** Helper threads wait on helper processes to finish.
 ** Helper processes wait on the event signal from test
 ** thread before exit.
 ** The test thread can wake up one helper
@@ -47,7 +47,7 @@ TestCaseType TestCase = WakeUpOneThread;
    should be waked up using hThreadFinishEvent instead of helper process. */
 DWORD ThreadIndexOfThreadFinishEvent = 0;
 
-struct helper_process_t 
+struct helper_process_t
 {
     PROCESS_INFORMATION pi;
     HANDLE hProcessReadyEvent;
@@ -56,7 +56,7 @@ struct helper_process_t
 
 HANDLE hProcessStartEvent_WFMO_test5;
 
-struct helper_thread_t 
+struct helper_thread_t
 {
     HANDLE hThread;
     DWORD dwThreadId;
@@ -64,7 +64,7 @@ struct helper_thread_t
     HANDLE hThreadFinishEvent;
 } helper_thread[MAX_HELPER_PROCESS];
 
-/* 
+/*
  * Entry Point for helper thread.
  */
 DWORD PALAPI WaitForProcess(LPVOID lpParameter)
@@ -92,7 +92,7 @@ DWORD PALAPI WaitForProcess(LPVOID lpParameter)
     if(!SetEvent(helper_thread[index].hThreadReadyEvent))
     {
         Fail("test5.WaitProcess: SetEvent of hThreadReadyEvent failed for thread %d. "
-            "GetLastError() returned %d.\n", index, 
+            "GetLastError() returned %d.\n", index,
             GetLastError());
     }
 
@@ -105,7 +105,7 @@ DWORD PALAPI WaitForProcess(LPVOID lpParameter)
         if (dwRet != (WAIT_OBJECT_0+0))
         {
             Fail("test5.WaitForProcess: invalid return value %d for WakupAllThread from WaitForMultipleObjectsEx for thread %d\n"
-                    "LastError:(%u)\n", 
+                    "LastError:(%u)\n",
                     dwRet, index,
                     GetLastError());
         }
@@ -116,11 +116,11 @@ DWORD PALAPI WaitForProcess(LPVOID lpParameter)
            the return value must be either (WAIT_OBJECT_0+index) if the helper thread
            wakes up because the corresponding help process exits,
            or (index+1) if the helper thread wakes up because of hThreadReadyEvent. */
-        if ((index != ThreadIndexOfThreadFinishEvent && dwRet != (WAIT_OBJECT_0+index)) || 
+        if ((index != ThreadIndexOfThreadFinishEvent && dwRet != (WAIT_OBJECT_0+index)) ||
             (index == ThreadIndexOfThreadFinishEvent && dwRet != (index+1)))
         {
             Fail("test5.WaitForProcess: invalid return value %d for WakupOneThread from WaitForMultipleObjectsEx for thread %d\n"
-                    "LastError:(%u)\n", 
+                    "LastError:(%u)\n",
                     dwRet, index,
                     GetLastError());
         }
@@ -132,7 +132,7 @@ DWORD PALAPI WaitForProcess(LPVOID lpParameter)
     return 0;
 }
 
-/* 
+/*
  * Setup the helper processes and helper threads.
  */
 void
@@ -142,7 +142,7 @@ Setup()
     STARTUPINFO si;
     DWORD dwRet;
     int i;
-    
+
     char szEventName[MAX_PATH];
     PWCHAR uniStringHelper;
     PWCHAR uniString;
@@ -151,10 +151,10 @@ Setup()
     uniString = convert(szcHelperProcessStartEvName);
     hProcessStartEvent_WFMO_test5 = CreateEvent(NULL, TRUE, FALSE, uniString);
     free(uniString);
-    if (!hProcessStartEvent_WFMO_test5) 
+    if (!hProcessStartEvent_WFMO_test5)
     {
         Fail("test5.Setup: CreateEvent of '%s' failed. "
-             "GetLastError() returned %d.\n", szcHelperProcessStartEvName, 
+             "GetLastError() returned %d.\n", szcHelperProcessStartEvName,
              GetLastError());
     }
 
@@ -165,9 +165,9 @@ Setup()
     for (i = 0; i < MaxNumHelperProcess; i++)
     {
         ZeroMemory( &helper_process[i].pi, sizeof(PROCESS_INFORMATION));
-        
-        if(!CreateProcess( NULL, uniStringHelper, NULL, NULL, 
-                            FALSE, 0, NULL, NULL, &si, &helper_process[i].pi)) 
+
+        if(!CreateProcess( NULL, uniStringHelper, NULL, NULL,
+                            FALSE, 0, NULL, NULL, &si, &helper_process[i].pi))
         {
             Fail("test5.Setup: CreateProcess failed to load executable for helper process %d.  "
                 "GetLastError() returned %u.\n",
@@ -185,10 +185,10 @@ Setup()
 
         helper_process[i].hProcessReadyEvent = CreateEvent(NULL, FALSE, FALSE, uniString);
         free(uniString);
-        if (!helper_process[i].hProcessReadyEvent) 
+        if (!helper_process[i].hProcessReadyEvent)
         {
             Fail("test5.Setup: CreateEvent of '%s' failed. "
-                "GetLastError() returned %d.\n", szEventName, 
+                "GetLastError() returned %d.\n", szEventName,
                 GetLastError());
         }
 
@@ -203,10 +203,10 @@ Setup()
 
         helper_process[i].hProcessFinishEvent = CreateEvent(NULL, TRUE, FALSE, uniString);
         free(uniString);
-        if (!helper_process[i].hProcessFinishEvent) 
+        if (!helper_process[i].hProcessFinishEvent)
         {
             Fail("test5.Setup: CreateEvent of '%s' failed. "
-                "GetLastError() returned %d.\n", szEventName, 
+                "GetLastError() returned %d.\n", szEventName,
                 GetLastError());
         }
 
@@ -223,12 +223,12 @@ Setup()
 
     /* Wait for ready signals from all helper processes. */
     for (i = 0; i < MaxNumHelperProcess; i++)
-    {  
+    {
         dwRet = WaitForSingleObject(helper_process[i].hProcessReadyEvent, TIMEOUT);
         if (dwRet != WAIT_OBJECT_0)
         {
             Fail("test5.Setup: WaitForSingleObject %s failed for helper process %d\n"
-                    "LastError:(%u)\n", 
+                    "LastError:(%u)\n",
                     szcHelperProcessReadyEvName, i, GetLastError());
         }
     }
@@ -238,7 +238,7 @@ Setup()
     {
         /* Create the event to let helper thread tell us it is ready. */
         helper_thread[i].hThreadReadyEvent = CreateEvent(NULL, FALSE, FALSE, NULL);
-        if (!helper_thread[i].hThreadReadyEvent) 
+        if (!helper_thread[i].hThreadReadyEvent)
         {
             Fail("test5.Setup: CreateEvent of hThreadReadyEvent failed for thread %d\n"
                 "LastError:(%u)\n", i, GetLastError());
@@ -246,15 +246,15 @@ Setup()
 
         /* Create the event to tell helper thread to exit without waiting for helper process. */
         helper_thread[i].hThreadFinishEvent = CreateEvent(NULL, FALSE, FALSE, NULL);
-        if (!helper_thread[i].hThreadFinishEvent) 
+        if (!helper_thread[i].hThreadFinishEvent)
         {
             Fail("test5.Setup: CreateEvent of hThreadFinishEvent failed for thread %d\n"
                 "LastError:(%u)\n", i, GetLastError());
         }
 
         /* Create the helper thread. */
-        helper_thread[i].hThread = CreateThread( NULL, 
-                                0, 
+        helper_thread[i].hThread = CreateThread( NULL,
+                                0,
                                 (LPTHREAD_START_ROUTINE)WaitForProcess,
                                 (LPVOID)i,
                                 0,
@@ -268,7 +268,7 @@ Setup()
 
     /* Wait for ready signals from all helper threads. */
     for (i = 0; i < MaxNumHelperProcess; i++)
-    {  
+    {
         dwRet = WaitForSingleObject(helper_thread[i].hThreadReadyEvent, TIMEOUT);
         if (dwRet != WAIT_OBJECT_0)
         {
@@ -278,7 +278,7 @@ Setup()
     }
 }
 
-/* 
+/*
  * Cleanup the helper processes and helper threads.
  */
 DWORD
@@ -301,16 +301,16 @@ Cleanup_WFMO_test5()
                     "LastError:(%u)\n", i, GetLastError());
         }
 
-        /* check the exit code from the process */       
+        /* check the exit code from the process */
         if (!GetExitCodeProcess(helper_process[i].pi.hProcess, &dwExitCode))
         {
-            Trace( "test5.Cleanup: GetExitCodeProcess %d call failed LastError:(%u)\n", 
-                i, GetLastError()); 
+            Trace( "test5.Cleanup: GetExitCodeProcess %d call failed LastError:(%u)\n",
+                i, GetLastError());
             dwExitCode = FAIL;
         }
         PEDANTIC(CloseHandle, (helper_process[i].pi.hThread));
         PEDANTIC(CloseHandle, (helper_process[i].pi.hProcess));
-        PEDANTIC(CloseHandle, (helper_process[i].hProcessReadyEvent)); 
+        PEDANTIC(CloseHandle, (helper_process[i].hProcessReadyEvent));
         PEDANTIC(CloseHandle, (helper_process[i].hProcessFinishEvent));
     }
 
@@ -328,7 +328,7 @@ Cleanup_WFMO_test5()
     return dwExitCode;
 }
 
-/* 
+/*
  * In this test case, the test thread will signal one helper
  * process to exit at a time starting from the last helper
  * process and then wait for the corresponding helper thread to exit.
@@ -348,7 +348,7 @@ TestWakeupOneThread()
         Fail("test5.TestWaitOnOneThread: Invalid ThreadIndexOfThreadFinishEvent %d\n", ThreadIndexOfThreadFinishEvent);
 
     /* Since helper thread 0 waits on helper process 0,
-       thread 1 waits on on process 0, and 1,
+       thread 1 waits on process 0, and 1,
        thread 2 waits on process 0, 1, and 2, and so on ...,
        and the last helper thread will wait on all helper processes,
        the helper thread can be waked up one at a time by
@@ -383,16 +383,16 @@ TestWakeupOneThread()
                     GetLastError());
             }
         }
-    
+
         dwRet = WaitForSingleObject(helper_thread[i].hThread, TIMEOUT);
         if (WAIT_OBJECT_0 != dwRet)
         {
             Fail("test5.TestWaitOnOneThread: WaitForSingleObject helper thread %d"
-                    "LastError:(%u)\n", 
+                    "LastError:(%u)\n",
                     i, GetLastError());
         }
     }
-    
+
     /* Finally, need to wake up the helper process which the test thread
        skips waking up in the last loop. */
     if (!SetEvent(helper_process[ThreadIndexOfThreadFinishEvent].hProcessFinishEvent))
@@ -404,7 +404,7 @@ TestWakeupOneThread()
     }
 }
 
-/* 
+/*
  * In this test case, the test thread will signal the helper
  * process 0 to exit. Since all helper threads wait on process 0,
  * all helper threads will wake up and exit, and the test thread
@@ -440,17 +440,17 @@ TestWakeupAllThread()
     /* Wait for all helper threads to exit. */
     for (i = 0; i < MaxNumHelperProcess; i++)
     {
-    
+
         dwRet = WaitForSingleObject(helper_thread[i].hThread, TIMEOUT);
         if (WAIT_OBJECT_0 != dwRet)
         {
             Fail("test5.TestWaitOnAllThread: WaitForSingleObject failed for helper thread %d\n"
-                    "LastError:(%u)\n", 
+                    "LastError:(%u)\n",
                     i, GetLastError());
         }
     }
 
-    /* Signal the rest of helper processes to exit. */    
+    /* Signal the rest of helper processes to exit. */
     for (i = 1; i < MaxNumHelperProcess; i++)
     {
         if (!SetEvent(helper_process[i].hProcessFinishEvent))

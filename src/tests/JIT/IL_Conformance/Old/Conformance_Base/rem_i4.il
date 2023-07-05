@@ -2,6 +2,7 @@
 // The .NET Foundation licenses this file to you under the MIT license.
 
 .assembly extern legacy library mscorlib {}
+.assembly extern xunit.core {}
 
 .class public rem_i4 {
 .method public static	int32 _rem(int32,int32) {
@@ -44,7 +45,10 @@ END:
 .try try_start to try_end catch [mscorlib]System.DivideByZeroException handler divbyzero to DBZEnd
 .try try_start to try_end catch [mscorlib]System.ArithmeticException handler arithmetic to AEEnd
 }
-.method public static	int32 main(class [mscorlib]System.String[]) {
+.method public static	int32 main() {
+.custom instance void [xunit.core]Xunit.FactAttribute::.ctor() = (
+    01 00 00 00
+)
 .entrypoint
 .maxstack		20
 	ldc.i4		0x80000000

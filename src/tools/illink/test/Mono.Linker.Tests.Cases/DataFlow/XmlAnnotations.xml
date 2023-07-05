@@ -1,0 +1,60 @@
+<?xml version="1.0" encoding="utf-8"?>
+<linker xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance" xsi:noNamespaceSchemaLocation="../../../src/ILLink.Shared/ILLink.LinkAttributes.xsd">
+	<assembly fullname="Test">
+		<type fullname="Mono.Linker.Tests.Cases.DataFlow.XmlAnnotations">
+			<field name="_typeWithPublicParameterlessConstructor">
+				<attribute fullname="System.DoesNotExistAttribute" assembly="Mono.Linker.Tests.Cases.Expectations">
+					<argument>0</argument>
+				</attribute>
+				<attribute fullname="System.Diagnostics.CodeAnalysis.DynamicallyAccessedMembersAttribute">
+					<argument type="System.Diagnostics.CodeAnalysis.DynamicallyAccessedMemberTypes">PublicParameterlessConstructor</argument>
+				</attribute>
+			</field>
+			<method signature="System.Void TwoAnnotatedParameters(System.Type,System.Type)">
+				<parameter name="type">
+					<attribute fullname="System.Diagnostics.CodeAnalysis.DynamicallyAccessedMembersAttribute">
+						<argument type="System.Diagnostics.CodeAnalysis.DynamicallyAccessedMemberTypes">PublicParameterlessConstructor</argument>
+					</attribute>
+				</parameter>
+				<parameter name="type2">
+					<attribute fullname="System.Diagnostics.CodeAnalysis.DynamicallyAccessedMembersAttribute">
+						<argument type="System.Diagnostics.CodeAnalysis.DynamicallyAccessedMemberTypes">PublicConstructors</argument>
+					</attribute>
+				</parameter>
+			</method>
+			<method signature="SpacesBetweenParametersWrongArgument (System.Type, System.Boolean)">
+				<parameter name="type">
+					<attribute fullname="System.Diagnostics.CodeAnalysis.DynamicallyAccessedMembersAttribute">
+						<argument type="System.Diagnostics.CodeAnalysis.DynamicallyAccessedMemberTypes">0</argument>
+					</attribute>
+				</parameter>
+			</method>
+			<method signature="GenericMethod&lt;T&gt;(T,System.Type)">
+				<parameter name="type">
+					<attribute fullname="System.Diagnostics.CodeAnalysis.DynamicallyAccessedMembersAttribute">
+						<argument type="System.Diagnostics.CodeAnalysis.DynamicallyAccessedMemberTypes">PublicParameterlessConstructor</argument>
+					</attribute>
+				</parameter>
+			</method>
+			<method name="ReturnConstructorsFailure">
+				<return>
+					<attribute fullname="System.Diagnostics.CodeAnalysis.DynamicallyAccessedMembersAttribute">
+						<argument type="System.Diagnostics.CodeAnalysis.DynamicallyAccessedMemberTypes">PublicParameterlessConstructor</argument>
+					</attribute>
+				</return>
+			</method>
+			<property name="PropertyWithPublicParameterlessConstructor">
+				<attribute fullname="System.Diagnostics.CodeAnalysis.DynamicallyAccessedMembersAttribute">
+					<argument type="System.Diagnostics.CodeAnalysis.DynamicallyAccessedMemberTypes">PublicParameterlessConstructor</argument>
+				</attribute>
+			</property>
+			<type name="NestedType">
+				<field name="_typeWithPublicParameterlessConstructor">
+					<attribute fullname="System.Diagnostics.CodeAnalysis.DynamicallyAccessedMembersAttribute">
+						<argument type="System.Diagnostics.CodeAnalysis.DynamicallyAccessedMemberTypes">PublicParameterlessConstructor</argument>
+					</attribute>
+				</field>
+			</type>
+		</type>
+	</assembly>
+</linker>

@@ -5,10 +5,6 @@ using System.Collections.Generic;
 
 using ILCompiler.DependencyAnalysisFramework;
 
-using Internal.TypeSystem;
-
-using Debug = System.Diagnostics.Debug;
-
 namespace ILCompiler.DependencyAnalysis
 {
     /// <summary>
@@ -17,7 +13,7 @@ namespace ILCompiler.DependencyAnalysis
     /// <remarks>
     /// Only expected to be used during ILScanning when scanning for reflection.
     /// </remarks>
-    internal class CustomAttributeMetadataNode : DependencyNodeCore<NodeFactory>
+    internal sealed class CustomAttributeMetadataNode : DependencyNodeCore<NodeFactory>
     {
         private readonly ReflectableCustomAttribute _customAttribute;
 
@@ -35,7 +31,7 @@ namespace ILCompiler.DependencyAnalysis
         // We need to walk the dependencies before placing the node into the graph to find out whether
         // the attribute even can be generated (does it refer to blocked types or something like that?).
         public override IEnumerable<DependencyListEntry> GetStaticDependencies(NodeFactory factory) => null;
-        
+
         protected override string GetName(NodeFactory factory)
         {
             return $"Reflectable custom attribute {_customAttribute.CustomAttributeHandle} in {_customAttribute.Module}";

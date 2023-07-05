@@ -13,8 +13,8 @@ using System.Threading;
 
 namespace System.IO.Enumeration
 {
-    /// <summary>Enumerates the file system elements of the provided type that are being searched and filtered by a <see cref="Enumeration.FileSystemEnumerable{T}" />.</summary>
-    public unsafe abstract partial class FileSystemEnumerator<TResult> : CriticalFinalizerObject, IEnumerator<TResult>
+    /// <summary>Enumerates the file system elements of the provided type that are being searched and filtered by a <see cref="FileSystemEnumerable{T}" />.</summary>
+    public abstract unsafe partial class FileSystemEnumerator<TResult> : CriticalFinalizerObject, IEnumerator<TResult>
     {
         private const int StandardBufferSize = 4096;
 
@@ -173,7 +173,7 @@ namespace System.IO.Enumeration
 
             if (handle == IntPtr.Zero || handle == (IntPtr)(-1))
             {
-                int error = Marshal.GetLastWin32Error();
+                int error = Marshal.GetLastPInvokeError();
 
                 if (ContinueOnDirectoryError(error, ignoreNotFound))
                 {
@@ -203,7 +203,7 @@ namespace System.IO.Enumeration
                 || ContinueOnError(error);
         }
 
-        /// <summary>Advances the enumerator to the next item of the <see cref="Enumeration.FileSystemEnumerator{T}" />.</summary>
+        /// <summary>Advances the enumerator to the next item of the <see cref="FileSystemEnumerator{T}" />.</summary>
         /// <returns><see langword="true" /> if the enumerator successfully advanced to the next item; <see langword="false" /> if the end of the enumerator has been passed.</returns>
         public bool MoveNext()
         {
@@ -248,8 +248,7 @@ namespace System.IO.Enumeration
                             {
                                 try
                                 {
-                                    if (_pending == null)
-                                        _pending = new Queue<(IntPtr, string, int)>();
+                                    _pending ??= new Queue<(IntPtr, string, int)>();
                                     _pending.Enqueue((subDirectoryHandle, subDirectory, _remainingRecursionDepth - 1));
                                 }
                                 catch

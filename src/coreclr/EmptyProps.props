@@ -1,8 +1,0 @@
-
-<Project>
-<!-- This file is intentionally empty. It is copied by build.cmd into the bin directory as both Directory.Build.props
-     and Directory.Build.targets to prevent CMake built projects from dependending on the Directory.Build infrastructure
-     in the root of the source tree. In particular this was necessary to compile DacTableGen, which is currently compiled
-     against .NET Framework.
-     -->
-</Project>

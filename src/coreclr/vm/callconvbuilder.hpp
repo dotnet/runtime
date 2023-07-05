@@ -78,7 +78,7 @@ namespace CallConv
         _In_ PCCOR_SIGNATURE pSig,
         _In_ ULONG cSig,
         _Inout_ CallConvBuilder *builder,
-        _Out_ UINT *errorResID);
+        _Out_ UINT* errorResID);
 
     //-------------------------------------------------------------------------
     // Gets the calling convention from the UnmanagedCallConv attribute

@@ -3,12 +3,17 @@
 
 
 .assembly extern System.Console { auto }
+.assembly extern xunit.core {}
 .assembly extern legacy library mscorlib { auto }
 
 
 .assembly tailcall{}
 
-.method public static int32 main(string[]) {
+.class public auto ansi tailcall {
+.method public static int32 main() {
+.custom instance void [xunit.core]Xunit.FactAttribute::.ctor() = (
+    01 00 00 00
+)
 .locals     (class [mscorlib]System.IO.TextWriter,class _tailcall)
 .entrypoint
 	call	    class [mscorlib]System.IO.TextWriter [System.Console]System.Console::get_Out()
@@ -42,6 +47,7 @@ fail:
     br          end
 end:
     ret
+}
 }
 
 

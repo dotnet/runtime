@@ -81,49 +81,6 @@ namespace BINDER_SPACE
         AssemblyContentType m_kContentType;
         DWORD               m_dwIdentityFlags;
     };
-
-    class AssemblyIdentityUTF8 final : public AssemblyIdentity
-    {
-    public:
-        AssemblyIdentityUTF8()
-        {
-            m_szSimpleNameUTF8 = NULL;
-            m_szCultureOrLanguageUTF8 = NULL;
-        }
-
-        void PopulateUTF8Fields()
-        {
-            m_szSimpleNameUTF8 = m_simpleName.GetUTF8(sSimpleNameBuffer);
-
-            if (Have(IDENTITY_FLAG_CULTURE) && !m_cultureOrLanguage.IsEmpty())
-            {
-                m_szCultureOrLanguageUTF8 = m_cultureOrLanguage.GetUTF8(sCultureBuffer);
-            }
-        }
-
-        inline LPCSTR GetSimpleNameUTF8()
-        {
-            return m_szSimpleNameUTF8;
-        }
-
-        inline LPCSTR GetCultureOrLanguageUTF8()
-        {
-            return m_szCultureOrLanguageUTF8;
-        }
-
-        inline const BYTE *GetPublicKeyOrTokenArray()
-        {
-            const BYTE *pPublicKeyOrToken = m_publicKeyOrTokenBLOB;
-
-            return pPublicKeyOrToken;
-        }
-
-    protected:
-        StackScratchBuffer sSimpleNameBuffer;
-        StackScratchBuffer sCultureBuffer;
-        LPCSTR m_szSimpleNameUTF8;
-        LPCSTR m_szCultureOrLanguageUTF8;
-    };
 };
 
 #endif

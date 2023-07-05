@@ -100,7 +100,7 @@ namespace System.Diagnostics.Eventing.Reader
                         // theKeywords = theKeywords - mask;
                     }
                     // Modify the mask to check next bit.
-                    mask = mask >> 1;
+                    mask >>= 1;
                 }
 
                 return list;

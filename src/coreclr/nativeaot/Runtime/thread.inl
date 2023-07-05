@@ -2,18 +2,19 @@
 // The .NET Foundation licenses this file to you under the MIT license.
 
 #ifndef DACCESS_COMPILE
-inline void Thread::SetCurrentThreadPInvokeTunnelForGcAlloc(void * pTransitionFrame)
+inline void Thread::SetDeferredTransitionFrame(PInvokeTransitionFrame* pTransitionFrame)
 {
     ASSERT(ThreadStore::GetCurrentThread() == this);
     ASSERT(Thread::IsCurrentThreadInCooperativeMode());
-    m_pHackPInvokeTunnel = pTransitionFrame;
+    ASSERT(!Thread::IsHijackTarget(pTransitionFrame->m_RIP));
+    m_pDeferredTransitionFrame = pTransitionFrame;
 }
 
-inline void Thread::SetupHackPInvokeTunnel()
+inline void Thread::DeferTransitionFrame()
 {
     ASSERT(ThreadStore::GetCurrentThread() == this);
     ASSERT(!Thread::IsCurrentThreadInCooperativeMode());
-    m_pHackPInvokeTunnel = m_pTransitionFrame;
+    m_pDeferredTransitionFrame = m_pTransitionFrame;
 }
 #endif // DACCESS_COMPILE
 
@@ -42,17 +43,14 @@ inline PTR_VOID Thread::GetThreadStressLog() const
     return m_pThreadStressLog;
 }
 
-inline void Thread::EnterCantAllocRegion()
+inline void Thread::PushGCFrameRegistration(GCFrameRegistration* pRegistration)
 {
-    m_cantAlloc++;
+    pRegistration->m_pNext = m_pGCFrameRegistrations;
+    m_pGCFrameRegistrations = pRegistration;
 }
 
-inline void Thread::LeaveCantAllocRegion()
+inline void Thread::PopGCFrameRegistration(GCFrameRegistration* pRegistration)
 {
-    m_cantAlloc--;
-}
-
-inline bool Thread::IsInCantAllocStressLogRegion()
-{
-    return m_cantAlloc != 0;
+    ASSERT(m_pGCFrameRegistrations == pRegistration);
+    m_pGCFrameRegistrations = pRegistration->m_pNext;
 }

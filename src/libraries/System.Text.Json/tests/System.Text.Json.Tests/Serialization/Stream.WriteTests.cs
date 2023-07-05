@@ -5,6 +5,7 @@ using System.Collections.Generic;
 using System.IO;
 using System.Text.Json.Serialization.Tests.Schemas.OrderPayload;
 using System.Threading.Tasks;
+using System.Text.Json.Serialization.Metadata;
 using Xunit;
 
 namespace System.Text.Json.Serialization.Tests
@@ -12,16 +13,16 @@ namespace System.Text.Json.Serialization.Tests
     public partial class StreamTests
     {
         [Fact]
-        public static async Task WriteNullArgumentFail()
+        public async Task WriteNullArgumentFail()
         {
             await Assert.ThrowsAsync<ArgumentNullException>(async () => await JsonSerializer.SerializeAsync((Stream)null, 1));
             await Assert.ThrowsAsync<ArgumentNullException>(async () => await JsonSerializer.SerializeAsync((Stream)null, 1, typeof(int)));
-            Assert.Throws<ArgumentNullException>(() => JsonSerializer.Serialize((Stream)null));
+            Assert.Throws<ArgumentNullException>(() => JsonSerializer.Serialize((Stream)null, 1));
             Assert.Throws<ArgumentNullException>(() => JsonSerializer.Serialize((Stream)null, 1, typeof(int)));
         }
 
         [Fact]
-        public static async Task VerifyValueFail()
+        public async Task VerifyValueFail()
         {
             MemoryStream stream = new MemoryStream();
             await Assert.ThrowsAsync<ArgumentNullException>(async () => await JsonSerializer.SerializeAsync(stream, "", (Type)null));
@@ -29,7 +30,7 @@ namespace System.Text.Json.Serialization.Tests
         }
 
         [Fact]
-        public static async Task VerifyTypeFail()
+        public async Task VerifyTypeFail()
         {
             MemoryStream stream = new MemoryStream();
             await Assert.ThrowsAsync<ArgumentException>(async () => await JsonSerializer.SerializeAsync(stream, 1, typeof(string)));
@@ -289,7 +290,7 @@ namespace System.Text.Json.Serialization.Tests
         [InlineData(1000, false, false)]
         public async Task VeryLargeJsonFileTest(int payloadSize, bool ignoreNull, bool writeIndented)
         {
-            List<Order> list = JsonTestHelper.PopulateLargeObject(payloadSize);
+            List<Order> list = Order.PopulateLargeObject(payloadSize);
 
             JsonSerializerOptions options = new JsonSerializerOptions
             {
@@ -337,10 +338,10 @@ namespace System.Text.Json.Serialization.Tests
 
             int length = ListLength * depthFactor;
             List<Order>[] orders = new List<Order>[length];
-            orders[0] = JsonTestHelper.PopulateLargeObject(1);
+            orders[0] = Order.PopulateLargeObject(1);
             for (int i = 1; i < length; i++ )
             {
-                orders[i] = JsonTestHelper.PopulateLargeObject(1);
+                orders[i] = Order.PopulateLargeObject(1);
                 orders[i - 1][0].RelatedOrder = orders[i];
             }
 
@@ -381,10 +382,10 @@ namespace System.Text.Json.Serialization.Tests
 
             int length = ListLength * depthFactor;
             List<Order>[] orders = new List<Order>[length];
-            orders[0] = JsonTestHelper.PopulateLargeObject(1000);
+            orders[0] = Order.PopulateLargeObject(1000);
             for (int i = 1; i < length; i++)
             {
-                orders[i] = JsonTestHelper.PopulateLargeObject(1);
+                orders[i] = Order.PopulateLargeObject(1);
                 orders[i - 1][0].RelatedOrder = orders[i];
             }
 
@@ -404,6 +405,130 @@ namespace System.Text.Json.Serialization.Tests
             using (var memoryStream = new MemoryStream())
             {
                 await Assert.ThrowsAsync<JsonException>(async () => await Serializer.SerializeWrapper(memoryStream, orders[0], options));
+            }
+        }
+
+        [Theory]
+        [InlineData(32)]
+        [InlineData(128)]
+        [InlineData(1024)]
+        [InlineData(1024 * 16)] // the default JsonSerializerOptions.DefaultBufferSize value
+        [InlineData(1024 * 1024)]
+        public async Task ShouldUseFastPathOnSmallPayloads(int defaultBufferSize)
+        {
+            if (Serializer.ForceSmallBufferInOptions)
+            {
+                return;
+            }
+
+            var instrumentedResolver = new PocoWithInstrumentedFastPath.Context(
+                new JsonSerializerOptions
+                {
+                    DefaultBufferSize = defaultBufferSize,
+                });
+
+            // The current implementation uses a heuristic
+            int smallValueThreshold = defaultBufferSize / 2;
+            PocoWithInstrumentedFastPath smallValue = CreateValueWithSerializationSize(smallValueThreshold);
+
+            var stream = new MemoryStream();
+
+            // The first 10 serializations should not call into the fast path
+            for (int i = 0; i < 10; i++)
+            {
+                await Serializer.SerializeWrapper(stream, smallValue, instrumentedResolver.Options);
+                stream.Position = 0;
+                Assert.Equal(0, instrumentedResolver.FastPathInvocationCount);
+            }
+
+            // Subsequent iterations do call into the fast path
+            for (int i = 0; i < 10; i++)
+            {
+                await Serializer.SerializeWrapper(stream, smallValue, instrumentedResolver.Options);
+                stream.Position = 0;
+                Assert.Equal(i + 1, instrumentedResolver.FastPathInvocationCount);
+            }
+
+            // Polymorphic serialization should use the fast path
+            await Serializer.SerializeWrapper(stream, (object)smallValue, instrumentedResolver.Options);
+            stream.Position = 0;
+            Assert.Equal(11, instrumentedResolver.FastPathInvocationCount);
+
+            // Attempt to serialize a value that is deemed large
+            var largeValue = CreateValueWithSerializationSize(smallValueThreshold + 1);
+            await Serializer.SerializeWrapper(stream, largeValue, instrumentedResolver.Options);
+            stream.Position = 0;
+            Assert.Equal(12, instrumentedResolver.FastPathInvocationCount);
+
+            // Any subsequent attempts no longer call into the fast path
+            for (int i = 0; i < 10; i++)
+            {
+                await Serializer.SerializeWrapper(stream, smallValue, instrumentedResolver.Options);
+                stream.Position = 0;
+                Assert.Equal(12, instrumentedResolver.FastPathInvocationCount);
+            }
+
+            static PocoWithInstrumentedFastPath CreateValueWithSerializationSize(int targetSerializationSize)
+            {
+                int objectSerializationPaddingSize = """{"Value":""}""".Length; // 12
+                return new PocoWithInstrumentedFastPath { Value = new string('a', targetSerializationSize - objectSerializationPaddingSize) };
+            }
+        }
+
+        public class PocoWithInstrumentedFastPath
+        {
+            public string? Value { get; set; }
+
+            public class Context : JsonSerializerContext, IJsonTypeInfoResolver
+            {
+                public int FastPathInvocationCount { get; private set; }
+
+                public Context(JsonSerializerOptions options) : base(options)
+                { }
+
+                protected override JsonSerializerOptions? GeneratedSerializerOptions => Options;
+                public override JsonTypeInfo? GetTypeInfo(Type type) => GetTypeInfo(type, Options);
+
+                public JsonTypeInfo? GetTypeInfo(Type type, JsonSerializerOptions options)
+                {
+                    if (type == typeof(string))
+                    {
+                        return JsonMetadataServices.CreateValueInfo<string>(options, JsonMetadataServices.StringConverter);
+                    }
+
+                    if (type == typeof(object))
+                    {
+                        return JsonMetadataServices.CreateValueInfo<object>(options, JsonMetadataServices.ObjectConverter);
+                    }
+
+                    if (type == typeof(PocoWithInstrumentedFastPath))
+                    {
+                        return JsonMetadataServices.CreateObjectInfo<PocoWithInstrumentedFastPath>(options,
+                            new JsonObjectInfoValues<PocoWithInstrumentedFastPath>
+                            {
+                                PropertyMetadataInitializer = _ => new JsonPropertyInfo[1]
+                                {
+                                    JsonMetadataServices.CreatePropertyInfo<string>(options,
+                                        new JsonPropertyInfoValues<string>
+                                        {
+                                            DeclaringType = typeof(PocoWithInstrumentedFastPath),
+                                            PropertyName = "Value",
+                                            Getter = obj => ((PocoWithInstrumentedFastPath)obj).Value,
+                                        })
+                                },
+
+                                SerializeHandler = (writer, value) =>
+                                {
+                                    writer.WriteStartObject();
+                                    writer.WriteString("Value", value.Value);
+                                    writer.WriteEndObject();
+                                    FastPathInvocationCount++;
+                                }
+                            });
+                    }
+
+                    return null;
+                }
             }
         }
 

@@ -2,8 +2,11 @@
 // The .NET Foundation licenses this file to you under the MIT license.
 
 .assembly extern legacy library mscorlib {}
+.assembly extern xunit.core {}
 
 
+.namespace blt_i8
+{
 .class public _blt {
 
 .field public static	int64 min
@@ -17,272 +20,275 @@
 .method public static	void initialize() {
 .maxstack	10
 	ldc.i8		0x8000000000000000
-	stsfld	int64 _blt::min
+	stsfld	int64 blt_i8._blt::min
 	ldc.i8		0xFFFFFFFFFFFFFFFF
-	stsfld	int64 _blt::_one
+	stsfld	int64 blt_i8._blt::_one
 	ldc.i8		0x0000000000000000
-	stsfld	int64 _blt::zero
+	stsfld	int64 blt_i8._blt::zero
 	ldc.i8		0x0000000000000001
-	stsfld	int64 _blt::one
+	stsfld	int64 blt_i8._blt::one
 	ldc.i8		0x7FFFFFFFFFFFFFFF
-	stsfld	int64 _blt::max
+	stsfld	int64 blt_i8._blt::max
 	ldc.i8		0x5555555555555555
-	stsfld	int64 _blt::odd
+	stsfld	int64 blt_i8._blt::odd
 	ldc.i8		0xAAAAAAAAAAAAAAAA
-	stsfld	int64 _blt::even
+	stsfld	int64 blt_i8._blt::even
 	ret
 }
 
-.method public static	int32 main(class [mscorlib]System.String[]) {
+.method public static	int32 main() {
+.custom instance void [xunit.core]Xunit.FactAttribute::.ctor() = (
+    01 00 00 00
+)
 .entrypoint
 .maxstack		10
-	call	void _blt::initialize()
+	call	void blt_i8._blt::initialize()
 
-	ldsfld	int64 _blt::min
-	ldsfld	int64 _blt::min
+	ldsfld	int64 blt_i8._blt::min
+	ldsfld	int64 blt_i8._blt::min
 	blt FAIL
 
 A:
-	ldsfld	int64 _blt::min
-	ldsfld	int64 _blt::_one
+	ldsfld	int64 blt_i8._blt::min
+	ldsfld	int64 blt_i8._blt::_one
 	blt B
 	br FAIL
 
 B:
-	ldsfld	int64 _blt::min
-	ldsfld	int64 _blt::zero
+	ldsfld	int64 blt_i8._blt::min
+	ldsfld	int64 blt_i8._blt::zero
 	blt C
 	br FAIL
 
 C:
-	ldsfld	int64 _blt::min
-	ldsfld	int64 _blt::one
+	ldsfld	int64 blt_i8._blt::min
+	ldsfld	int64 blt_i8._blt::one
 	blt D
 	br FAIL
 
 D:
-	ldsfld	int64 _blt::min
-	ldsfld	int64 _blt::max
+	ldsfld	int64 blt_i8._blt::min
+	ldsfld	int64 blt_i8._blt::max
 	blt E
 	br FAIL
 
 E:
-	ldsfld	int64 _blt::min
-	ldsfld	int64 _blt::odd
+	ldsfld	int64 blt_i8._blt::min
+	ldsfld	int64 blt_i8._blt::odd
 	blt F
 	br FAIL
 
 F:
-	ldsfld	int64 _blt::min
-	ldsfld	int64 _blt::even
+	ldsfld	int64 blt_i8._blt::min
+	ldsfld	int64 blt_i8._blt::even
 	blt G
 	br FAIL
 G:
-	ldsfld	int64 _blt::_one
-	ldsfld	int64 _blt::min
+	ldsfld	int64 blt_i8._blt::_one
+	ldsfld	int64 blt_i8._blt::min
 	blt FAIL
 
-	ldsfld	int64 _blt::_one
-	ldsfld	int64 _blt::_one
+	ldsfld	int64 blt_i8._blt::_one
+	ldsfld	int64 blt_i8._blt::_one
 	blt FAIL
 
 H:
-	ldsfld	int64 _blt::_one
-	ldsfld	int64 _blt::zero
+	ldsfld	int64 blt_i8._blt::_one
+	ldsfld	int64 blt_i8._blt::zero
 	blt I
 	br FAIL
 
 I:
-	ldsfld	int64 _blt::_one
-	ldsfld	int64 _blt::one
+	ldsfld	int64 blt_i8._blt::_one
+	ldsfld	int64 blt_i8._blt::one
 	blt J
 	br FAIL
 
 J:
-	ldsfld	int64 _blt::_one
-	ldsfld	int64 _blt::max
+	ldsfld	int64 blt_i8._blt::_one
+	ldsfld	int64 blt_i8._blt::max
 	blt K
 	br FAIL
 
 K:
-	ldsfld	int64 _blt::_one
-	ldsfld	int64 _blt::odd
+	ldsfld	int64 blt_i8._blt::_one
+	ldsfld	int64 blt_i8._blt::odd
 	blt L
 	br FAIL
 
 L:
-	ldsfld	int64 _blt::_one
-	ldsfld	int64 _blt::even
+	ldsfld	int64 blt_i8._blt::_one
+	ldsfld	int64 blt_i8._blt::even
 	blt FAIL
 
 
-	ldsfld	int64 _blt::zero
-	ldsfld	int64 _blt::min
+	ldsfld	int64 blt_i8._blt::zero
+	ldsfld	int64 blt_i8._blt::min
 	blt FAIL
 
-	ldsfld	int64 _blt::zero
-	ldsfld	int64 _blt::_one
+	ldsfld	int64 blt_i8._blt::zero
+	ldsfld	int64 blt_i8._blt::_one
 	blt FAIL
 
-	ldsfld	int64 _blt::zero
-	ldsfld	int64 _blt::zero
+	ldsfld	int64 blt_i8._blt::zero
+	ldsfld	int64 blt_i8._blt::zero
 	blt FAIL
 
 M:
-	ldsfld	int64 _blt::zero
-	ldsfld	int64 _blt::one
+	ldsfld	int64 blt_i8._blt::zero
+	ldsfld	int64 blt_i8._blt::one
 	blt N
 	br FAIL
 
 N:
-	ldsfld	int64 _blt::zero
-	ldsfld	int64 _blt::max
+	ldsfld	int64 blt_i8._blt::zero
+	ldsfld	int64 blt_i8._blt::max
 	blt O
 	br FAIL
 
 O:
-	ldsfld	int64 _blt::zero
-	ldsfld	int64 _blt::odd
+	ldsfld	int64 blt_i8._blt::zero
+	ldsfld	int64 blt_i8._blt::odd
 	blt P
 	br FAIL
 
 P:
-	ldsfld	int64 _blt::zero
-	ldsfld	int64 _blt::even
+	ldsfld	int64 blt_i8._blt::zero
+	ldsfld	int64 blt_i8._blt::even
 	blt FAIL
 
 
-	ldsfld	int64 _blt::one
-	ldsfld	int64 _blt::min
+	ldsfld	int64 blt_i8._blt::one
+	ldsfld	int64 blt_i8._blt::min
 	blt FAIL
 
-	ldsfld	int64 _blt::one
-	ldsfld	int64 _blt::_one
+	ldsfld	int64 blt_i8._blt::one
+	ldsfld	int64 blt_i8._blt::_one
 	blt FAIL
 
-	ldsfld	int64 _blt::one
-	ldsfld	int64 _blt::zero
+	ldsfld	int64 blt_i8._blt::one
+	ldsfld	int64 blt_i8._blt::zero
 	blt FAIL
 
-	ldsfld	int64 _blt::one
-	ldsfld	int64 _blt::one
+	ldsfld	int64 blt_i8._blt::one
+	ldsfld	int64 blt_i8._blt::one
 	blt FAIL
 
 Q:
-	ldsfld	int64 _blt::one
-	ldsfld	int64 _blt::max
+	ldsfld	int64 blt_i8._blt::one
+	ldsfld	int64 blt_i8._blt::max
 	blt R
 	br FAIL
 
 R:
-	ldsfld	int64 _blt::one
-	ldsfld	int64 _blt::odd
+	ldsfld	int64 blt_i8._blt::one
+	ldsfld	int64 blt_i8._blt::odd
 	blt S
 	br FAIL
 
 S:
-	ldsfld	int64 _blt::one
-	ldsfld	int64 _blt::even
+	ldsfld	int64 blt_i8._blt::one
+	ldsfld	int64 blt_i8._blt::even
 	blt FAIL
 
 
-	ldsfld	int64 _blt::max
-	ldsfld	int64 _blt::min
+	ldsfld	int64 blt_i8._blt::max
+	ldsfld	int64 blt_i8._blt::min
 	blt FAIL
 
-	ldsfld	int64 _blt::max
-	ldsfld	int64 _blt::_one
+	ldsfld	int64 blt_i8._blt::max
+	ldsfld	int64 blt_i8._blt::_one
 	blt FAIL
 
-	ldsfld	int64 _blt::max
-	ldsfld	int64 _blt::zero
+	ldsfld	int64 blt_i8._blt::max
+	ldsfld	int64 blt_i8._blt::zero
 	blt FAIL
 
-	ldsfld	int64 _blt::max
-	ldsfld	int64 _blt::one
+	ldsfld	int64 blt_i8._blt::max
+	ldsfld	int64 blt_i8._blt::one
 	blt FAIL
 
-	ldsfld	int64 _blt::max
-	ldsfld	int64 _blt::max
+	ldsfld	int64 blt_i8._blt::max
+	ldsfld	int64 blt_i8._blt::max
 	blt FAIL
 
 T:
-	ldsfld	int64 _blt::max
-	ldsfld	int64 _blt::odd
+	ldsfld	int64 blt_i8._blt::max
+	ldsfld	int64 blt_i8._blt::odd
 	blt FAIL
 
-	ldsfld	int64 _blt::max
-	ldsfld	int64 _blt::even
+	ldsfld	int64 blt_i8._blt::max
+	ldsfld	int64 blt_i8._blt::even
 	blt FAIL
 
-	ldsfld	int64 _blt::odd
-	ldsfld	int64 _blt::min
+	ldsfld	int64 blt_i8._blt::odd
+	ldsfld	int64 blt_i8._blt::min
 	blt FAIL
 
-	ldsfld	int64 _blt::odd
-	ldsfld	int64 _blt::_one
+	ldsfld	int64 blt_i8._blt::odd
+	ldsfld	int64 blt_i8._blt::_one
 	blt FAIL
 
-	ldsfld	int64 _blt::odd
-	ldsfld	int64 _blt::zero
+	ldsfld	int64 blt_i8._blt::odd
+	ldsfld	int64 blt_i8._blt::zero
 	blt FAIL
 
-	ldsfld	int64 _blt::odd
-	ldsfld	int64 _blt::one
+	ldsfld	int64 blt_i8._blt::odd
+	ldsfld	int64 blt_i8._blt::one
 	blt FAIL
 
-	ldsfld	int64 _blt::odd
-	ldsfld	int64 _blt::max
+	ldsfld	int64 blt_i8._blt::odd
+	ldsfld	int64 blt_i8._blt::max
 	blt U
 	br FAIL
 
 U:
-	ldsfld	int64 _blt::odd
-	ldsfld	int64 _blt::odd
+	ldsfld	int64 blt_i8._blt::odd
+	ldsfld	int64 blt_i8._blt::odd
 	blt FAIL
 
 V:
-	ldsfld	int64 _blt::odd
-	ldsfld	int64 _blt::even
+	ldsfld	int64 blt_i8._blt::odd
+	ldsfld	int64 blt_i8._blt::even
 	blt FAIL
 
 
-	ldsfld	int64 _blt::even
-	ldsfld	int64 _blt::min
+	ldsfld	int64 blt_i8._blt::even
+	ldsfld	int64 blt_i8._blt::min
 	blt FAIL
 
-	ldsfld	int64 _blt::even
-	ldsfld	int64 _blt::_one
+	ldsfld	int64 blt_i8._blt::even
+	ldsfld	int64 blt_i8._blt::_one
 	blt W
 	br FAIL
 
 W:
-	ldsfld	int64 _blt::even
-	ldsfld	int64 _blt::zero
+	ldsfld	int64 blt_i8._blt::even
+	ldsfld	int64 blt_i8._blt::zero
 	blt X
 	br FAIL
 
 X:
-	ldsfld	int64 _blt::even
-	ldsfld	int64 _blt::one
+	ldsfld	int64 blt_i8._blt::even
+	ldsfld	int64 blt_i8._blt::one
 	blt Y
 	br FAIL
 
 Y:
-	ldsfld	int64 _blt::even
-	ldsfld	int64 _blt::max
+	ldsfld	int64 blt_i8._blt::even
+	ldsfld	int64 blt_i8._blt::max
 	blt Z
 	br FAIL
 
 Z:
-	ldsfld	int64 _blt::even
-	ldsfld	int64 _blt::odd
+	ldsfld	int64 blt_i8._blt::even
+	ldsfld	int64 blt_i8._blt::odd
 	blt AA
 	br FAIL
 
 AA:
-	ldsfld	int64 _blt::even
-	ldsfld	int64 _blt::even
+	ldsfld	int64 blt_i8._blt::even
+	ldsfld	int64 blt_i8._blt::even
 	blt FAIL
 	br BACKCHECK
 
@@ -306,3 +312,4 @@ FAIL:
 }
 }
 .assembly blt_i8{}
+}

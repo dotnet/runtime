@@ -6,6 +6,7 @@ parameters:
   archiveExtension: ''
   artifactName: ''
   displayName: ''
+  condition: succeeded()
 
 steps:
   # Zip Artifact
@@ -17,9 +18,11 @@ steps:
       archiveType:       ${{ parameters.archiveType }}
       tarCompression:    ${{ parameters.tarCompression }}
       includeRootFolder: ${{ parameters.includeRootFolder }}
+    condition: ${{ parameters.condition }}
 
   - task: PublishBuildArtifacts@1
     displayName: 'Publish ${{ parameters.displayName }}'
     inputs:
       pathtoPublish: $(Build.StagingDirectory)/${{ parameters.artifactName }}${{ parameters.archiveExtension }}
       artifactName:  ${{ parameters.artifactName }}
+    condition: ${{ parameters.condition }}

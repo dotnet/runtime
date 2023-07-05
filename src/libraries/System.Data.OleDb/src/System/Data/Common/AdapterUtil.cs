@@ -776,9 +776,9 @@ namespace System.Data.Common
         // : DbMetaDataFactory
         //
 
-        internal static Exception AmbigousCollectionName(string collectionName)
+        internal static Exception AmbiguousCollectionName(string collectionName)
         {
-            return Argument(SR.GetString(SR.MDF_AmbigousCollectionName, collectionName));
+            return Argument(SR.GetString(SR.MDF_AmbiguousCollectionName, collectionName));
         }
 
         internal static Exception CollectionNameIsNotUnique(string collectionName)
@@ -899,8 +899,6 @@ namespace System.Data.Common
         internal const int DefaultCommandTimeout = 30;
         internal const int DefaultConnectionTimeout = DbConnectionStringDefaults.ConnectTimeout;
 
-        internal static readonly IntPtr PtrZero = new IntPtr(0); // IntPtr.Zero
-        internal static readonly int PtrSize = IntPtr.Size;
         internal static readonly IntPtr RecordsUnaffected = new IntPtr(-1);
 
         internal const int CharSize = System.Text.UnicodeEncoding.CharSize;
@@ -1099,7 +1097,7 @@ namespace System.Data.Common
             {
                 using (RegistryKey? key = Registry.ClassesRoot.OpenSubKey(subkey, false))
                 {
-                    return ((null != key) ? key.GetValue(queryvalue) : null);
+                    return key?.GetValue(queryvalue);
                 }
             }
             catch (SecurityException e)
@@ -1117,7 +1115,7 @@ namespace System.Data.Common
             {
                 using (RegistryKey? key = Registry.LocalMachine.OpenSubKey(subkey, false))
                 {
-                    return ((null != key) ? key.GetValue(queryvalue) : null);
+                    return key?.GetValue(queryvalue);
                 }
             }
             catch (SecurityException e)
@@ -1256,17 +1254,12 @@ namespace System.Data.Common
 
         internal static IntPtr IntPtrOffset(IntPtr pbase, int offset)
         {
-            if (4 == ADP.PtrSize)
-            {
-                return (IntPtr)checked(pbase.ToInt32() + offset);
-            }
-            Debug.Assert(8 == ADP.PtrSize, "8 != IntPtr.Size");
-            return (IntPtr)checked(pbase.ToInt64() + offset);
+            return (nint)pbase + offset;
         }
 
-        internal static int IntPtrToInt32(IntPtr value)
+        internal static int IntPtrToInt32(nint value)
         {
-            if (4 == ADP.PtrSize)
+            if (4 == IntPtr.Size)
             {
                 return (int)value;
             }

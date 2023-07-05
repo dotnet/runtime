@@ -37,7 +37,7 @@ namespace Microsoft.DotNet.CoreSetup.Test
 
             RepoDirProvider = repoDirectoriesProvider;
 
-            Framework = framework ?? RepoDirProvider.GetTestContextVariable("MNA_TFM");
+            Framework = framework ?? RepoDirProvider.Tfm;
 
             SdkDotnet = new DotNetCli(repoDirectoriesProvider.DotnetSDK);
             CurrentRid = repoDirectoriesProvider.TargetRID;
@@ -285,6 +285,13 @@ namespace Microsoft.DotNet.CoreSetup.Test
             {
                 publishArgs.Add("--runtime");
                 publishArgs.Add(runtime);
+
+                if (selfContained == null)
+                {
+                    // This is to prevent bugs caused by SDK defaulting self-contained differently for various configurations.
+                    // We still want to allow selfContained to remain unspecified for simple cases, for example for building libraries.
+                    throw new ArgumentException("If runtime is specified, then the caller also has to specify selfContained value.");
+                }
             }
 
             if (framework != null)
@@ -298,6 +305,17 @@ namespace Microsoft.DotNet.CoreSetup.Test
             {
                 publishArgs.Add("--self-contained");
                 publishArgs.Add(selfContained.Value ? "true" : "false");
+
+                // Workaround for https://github.com/dotnet/sdk/issues/25062
+                // If self-contained is specified via the command line, also specify the
+                // runtime identifier (if we didn't already). Otherwise, the SDK ends up
+                // passing the runtime identifier of the SDK such that the one specified
+                // in the project file is ignored.
+                if (selfContained.Value && runtime == null)
+                {
+                    publishArgs.Add("--runtime");
+                    publishArgs.Add(RepoDirProvider.TargetRID);
+                }
             }
 
             if (outputDirectory != null)

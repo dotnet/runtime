@@ -108,7 +108,7 @@ namespace Microsoft.Extensions.FileSystemGlobbing
             }
         }
 
-        private bool IsRootDirectory(string rootDir, string filePath)
+        private static bool IsRootDirectory(string rootDir, string filePath)
         {
             int rootDirLength = rootDir.Length;
 

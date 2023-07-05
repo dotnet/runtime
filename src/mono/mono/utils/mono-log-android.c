@@ -82,7 +82,7 @@ mono_log_write_logcat (const char *log_domain, GLogLevelFlags level, mono_bool h
  * 	Close access to Android logcat (no-op)
  */
 void
-mono_log_close_logcat ()
+mono_log_close_logcat (void)
 {
 	/* No-op on Android */
 }

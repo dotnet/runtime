@@ -63,12 +63,12 @@ namespace System.ComponentModel
         /// property the resource will be ignored.
         /// </summary>
         [RequiresUnreferencedCode("The Type of value cannot be statically discovered.")]
-        public virtual void ApplyResources(object value!!, string objectName!!, CultureInfo? culture)
+        public virtual void ApplyResources(object value, string objectName, CultureInfo? culture)
         {
-            if (culture == null)
-            {
-                culture = CultureInfo.CurrentUICulture;
-            }
+            ArgumentNullException.ThrowIfNull(value);
+            ArgumentNullException.ThrowIfNull(objectName);
+
+            culture ??= CultureInfo.CurrentUICulture;
 
             // The general case here will be to always use the same culture, so optimize for
             // that. The resourceSets hashtable uses culture as a key. It's value is

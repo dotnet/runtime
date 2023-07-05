@@ -5,7 +5,6 @@
 // Generic functions to compute the hashcode value of types
 // ---------------------------------------------------------------------------
 
-using System;
 using System.Diagnostics;
 using System.Runtime.CompilerServices;
 using System.Text;
@@ -125,7 +124,7 @@ namespace Internal.NativeFormat
             while (arg != 0)
             {
                 sb.Append((char)('0' + (arg % 10)));
-                arg = arg / 10;
+                arg /= 10;
             }
 
             // Reverse the string

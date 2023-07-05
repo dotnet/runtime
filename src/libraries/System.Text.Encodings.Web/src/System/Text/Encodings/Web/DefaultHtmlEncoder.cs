@@ -14,8 +14,13 @@ namespace System.Text.Encodings.Web
 
         private readonly OptimizedInboxTextEncoder _innerEncoder;
 
-        internal DefaultHtmlEncoder(TextEncoderSettings settings!!)
+        internal DefaultHtmlEncoder(TextEncoderSettings settings)
         {
+            if (settings is null)
+            {
+                ThrowHelper.ThrowArgumentNullException(ExceptionArgument.settings);
+            }
+
             _innerEncoder = new OptimizedInboxTextEncoder(EscaperImplementation.Singleton, settings.GetAllowedCodePointsBitmap());
         }
 

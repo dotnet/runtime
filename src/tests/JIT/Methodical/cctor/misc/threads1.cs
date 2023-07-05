@@ -5,16 +5,18 @@
 
 using System;
 using System.Threading;
+using Xunit;
 
 namespace Precise
 {
-    internal class Driver_threads1
+    public class Driver_threads1
     {
         public static void f()
         {
             test.b = 0xF;
         }
-        public static int Main()
+        [Fact]
+        public static int TestEntryPoint()
         {
             try
             {

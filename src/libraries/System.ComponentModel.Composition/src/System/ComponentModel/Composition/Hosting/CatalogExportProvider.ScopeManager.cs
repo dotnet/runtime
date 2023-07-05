@@ -13,8 +13,11 @@ namespace System.ComponentModel.Composition.Hosting
             private readonly CompositionScopeDefinition _scopeDefinition;
             private readonly CatalogExportProvider _catalogExportProvider;
 
-            public ScopeManager(CatalogExportProvider catalogExportProvider!!, CompositionScopeDefinition scopeDefinition!!)
+            public ScopeManager(CatalogExportProvider catalogExportProvider, CompositionScopeDefinition scopeDefinition)
             {
+                ArgumentNullException.ThrowIfNull(catalogExportProvider);
+                ArgumentNullException.ThrowIfNull(scopeDefinition);
+
                 _scopeDefinition = scopeDefinition;
                 _catalogExportProvider = catalogExportProvider;
             }
@@ -62,7 +65,7 @@ namespace System.ComponentModel.Composition.Hosting
                 return exports;
             }
 
-            private Export CreateScopeExport(CompositionScopeDefinition childCatalog, ComposablePartDefinition partDefinition, ExportDefinition exportDefinition)
+            private ScopeFactoryExport CreateScopeExport(CompositionScopeDefinition childCatalog, ComposablePartDefinition partDefinition, ExportDefinition exportDefinition)
             {
                 return new ScopeFactoryExport(this, childCatalog, partDefinition, exportDefinition);
             }

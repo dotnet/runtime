@@ -213,7 +213,7 @@ public class IUnknownMarshalingTest
         return true;
     }
 
-    public static int Main(String[] unusedArgs)
+    public static int Main()
     {
         IUnknownMarshalingTest testObj = new IUnknownMarshalingTest(); 
         testObj.Initialize();

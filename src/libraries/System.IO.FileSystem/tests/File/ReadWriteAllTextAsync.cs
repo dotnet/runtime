@@ -119,10 +119,9 @@ namespace System.IO.Tests
         /// <summary>
         /// On Unix, modifying a file that is ReadOnly will fail under normal permissions.
         /// If the test is being run under the superuser, however, modification of a ReadOnly
-        /// file is allowed.
+        /// file is allowed. On Windows, modifying a file that is ReadOnly will always fail.
         /// </summary>
         [Fact]
-        [ActiveIssue("https://github.com/dotnet/runtime/issues/53021", TestPlatforms.Browser)]
         public async Task WriteToReadOnlyFileAsync()
         {
             string path = GetTestFilePath();
@@ -130,8 +129,7 @@ namespace System.IO.Tests
             File.SetAttributes(path, FileAttributes.ReadOnly);
             try
             {
-                // Operation succeeds when being run by the Unix superuser
-                if (PlatformDetection.IsSuperUser)
+                if (PlatformDetection.IsNotWindows && PlatformDetection.IsPrivilegedProcess)
                 {
                     await WriteAsync(path, "text");
                     Assert.Equal("text", await ReadAsync(path));

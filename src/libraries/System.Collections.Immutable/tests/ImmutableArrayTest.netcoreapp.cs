@@ -29,8 +29,8 @@ namespace System.Collections.Immutable.Tests
         [MemberData(nameof(RangeIndexLengthData))]
         public void AsSpanStartLength_RangeInput(IEnumerable<int> source, int start, int length)
         {
-            var array = source.ToImmutableArray();
-            var expected = source.Skip(start).Take(length);
+            ImmutableArray<int> array = source.ToImmutableArray();
+            IEnumerable<int> expected = source.Skip(start).Take(length);
 
             Assert.Equal(expected, array.AsSpan(new Range(start, start + length)).ToArray());
         }
@@ -39,7 +39,7 @@ namespace System.Collections.Immutable.Tests
         [MemberData(nameof(Int32EnumerableData))]
         public void AsSpanStartLengthInvalid_RangeInput(IEnumerable<int> source)
         {
-            var array = source.ToImmutableArray();
+            ImmutableArray<int> array = source.ToImmutableArray();
 
             AssertExtensions.Throws<ArgumentOutOfRangeException>(() => array.AsSpan(new Range(-1, 0)));
             AssertExtensions.Throws<ArgumentOutOfRangeException>(() => array.AsSpan(new Range(array.Length + 1, array.Length + 2)));

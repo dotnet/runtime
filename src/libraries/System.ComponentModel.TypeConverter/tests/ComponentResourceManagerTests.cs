@@ -24,7 +24,7 @@ namespace System.ComponentModel.Tests
         public void Ctor_Type(Type type)
         {
             var resourceManager = new ComponentResourceManager(type);
-            Assert.Equal("Int32", resourceManager.BaseName);
+            Assert.Equal("System.Int32", resourceManager.BaseName);
             Assert.False(resourceManager.IgnoreCase);
             Assert.NotNull(resourceManager.ResourceSetType);
         }

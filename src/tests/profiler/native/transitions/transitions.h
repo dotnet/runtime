@@ -5,6 +5,8 @@
 
 #include "../profiler.h"
 
+#define NO_TRANSITION ((COR_PRF_TRANSITION_REASON)-1)
+
 class Transitions : public Profiler
 {
 public:
@@ -23,8 +25,8 @@ private:
     struct TransitionInstance
     {
         TransitionInstance()
-            : UnmanagedToManaged{ (COR_PRF_TRANSITION_REASON)-1 }
-            , ManagedToUnmanaged{ (COR_PRF_TRANSITION_REASON)-1 }
+            : UnmanagedToManaged{ NO_TRANSITION }
+            , ManagedToUnmanaged{ NO_TRANSITION }
         { }
 
         COR_PRF_TRANSITION_REASON UnmanagedToManaged;
@@ -33,6 +35,8 @@ private:
 
     TransitionInstance _pinvoke;
     TransitionInstance _reversePinvoke;
+    String expectedPinvokeName;
+    String expectedReversePInvokeName;
 
     bool FunctionIsTargetFunction(FunctionID functionID, TransitionInstance** inst);
 };

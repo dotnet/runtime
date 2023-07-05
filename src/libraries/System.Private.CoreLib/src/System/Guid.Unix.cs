@@ -11,11 +11,15 @@ namespace System
         public static unsafe Guid NewGuid()
         {
             Guid g;
-
+#if !TARGET_WASI
             // Guid.NewGuid is often used as a cheap source of random data that are sometimes used for security purposes.
             // Windows implementation uses secure RNG to implement it. We use secure RNG for Unix too to avoid subtle security
             // vulnerabilities in applications that depend on it. See https://github.com/dotnet/runtime/issues/42752 for details.
             Interop.GetCryptographicallySecureRandomBytes((byte*)&g, sizeof(Guid));
+#else
+            // TODOWASI: crypto secure random bytes
+            Interop.GetRandomBytes((byte*)&g, sizeof(Guid));
+#endif
 
             const ushort VersionMask = 0xF000;
             const ushort RandomGuidVersion = 0x4000;

@@ -6,7 +6,7 @@
 
 The basics of both tools are the same: they generate random programs using Roslyn and execute them with `corerun.exe` in a baseline and a test mode.
 Typically, baseline uses the JIT with minimum optimizations enabled while the test mode has optimizations enabled.
-Antigen also sets various `COMPlus_*` variables in its test mode to turn on different stress modes or turn on/off different optimizations.
+Antigen also sets various `DOTNET_*` variables in its test mode to turn on different stress modes or turn on/off different optimizations.
 
 The fuzzers detect issues by checking for assertion failures and by comparing results between the baseline and test modes.
 For more information, see the respectives repos.

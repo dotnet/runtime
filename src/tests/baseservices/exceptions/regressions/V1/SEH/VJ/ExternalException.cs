@@ -18,7 +18,7 @@ public class ExternalException : Exception {
 
         static int retVal = 100;
 
-	public static int Main(String [] args) {
+	public static int Main() {
 		Thread mv_Thread;
 		String str = "Done";
 		ExternalException ee = new ExternalException();

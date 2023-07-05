@@ -2,6 +2,7 @@
 // The .NET Foundation licenses this file to you under the MIT license.
 using System;
 using System.Runtime.CompilerServices;
+using Xunit;
 
 struct MyStruct
 {
@@ -66,7 +67,7 @@ struct MyStruct3
     public int f4;
 }
 
-class Program
+public class Program
 {
 
     static int Pass = 100;
@@ -90,7 +91,8 @@ class Program
         return (int)(s.f1 + s.f2 + (int)s.f3 + s.f4);
     }
 
-    static int Main(string[] args)
+    [Fact]
+    public static int TestEntryPoint()
     {
         int returnVal = Pass;
         MyStruct s = new MyStruct(1, 2, 3, 4);

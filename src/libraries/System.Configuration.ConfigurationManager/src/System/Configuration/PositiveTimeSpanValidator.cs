@@ -10,8 +10,13 @@ namespace System.Configuration
             return type == typeof(TimeSpan);
         }
 
-        public override void Validate(object value!!)
+        public override void Validate(object value)
         {
+            if (value is null)
+            {
+                throw new ArgumentNullException(nameof(value));
+            }
+
             if ((TimeSpan)value <= TimeSpan.Zero)
                 throw new ArgumentException(SR.Validator_timespan_value_must_be_positive);
         }

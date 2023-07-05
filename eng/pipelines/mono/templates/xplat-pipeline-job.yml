@@ -6,6 +6,7 @@ parameters:
   name: ''
   helixType: '(unspecified)'
   container: ''
+  crossBuild: false
   liveLibrariesBuildConfig: ''
   strategy: ''
   pool: ''
@@ -34,6 +35,7 @@ jobs:
     name: ${{ parameters.name }}
     helixType: ${{ parameters.helixType }}
     container: ${{ parameters.container }}
+    crossBuild: ${{ parameters.crossBuild }}
     strategy: ${{ parameters.strategy }}
     pool: ${{ parameters.pool }}
     runtimeVariant: ${{ parameters.runtimeVariant }}
@@ -58,7 +60,7 @@ jobs:
     - name: buildProductArtifactName
       value: 'MonoProduct__${{ parameters.runtimeVariant }}_$(osGroup)$(osSubgroup)_$(archType)_$(buildConfig)'
 
-    # minijit and monointerpreter do not use seperate product builds.
+    # minijit and monointerpreter do not use separate product builds.
     - ${{ if or(eq(parameters.runtimeVariant, 'minijit'), eq(parameters.runtimeVariant, 'monointerpreter')) }}:
       - name : buildProductArtifactName
         value : 'MonoProduct___$(osGroup)$(osSubgroup)_$(archType)_$(buildConfig)'
@@ -107,7 +109,7 @@ jobs:
         value: 'Checked'
       ${{ if eq(parameters.liveRuntimeBuildConfig, 'debug') }}:
         value: 'Debug'
-        
+
     - name: priorityArg
       value: ''
 

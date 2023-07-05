@@ -34,5 +34,8 @@ internal static partial class Interop
         [LibraryImport(Libraries.CryptoNative, EntryPoint = "CryptoNative_SslCtxSetEncryptionPolicy")]
         [return: MarshalAs(UnmanagedType.Bool)]
         internal static partial bool SetEncryptionPolicy(SafeSslContextHandle ctx, EncryptionPolicy policy);
+
+        [LibraryImport(Libraries.CryptoNative, EntryPoint = "CryptoNative_SslCtxSetDefaultOcspCallback")]
+        internal static partial void SslCtxSetDefaultOcspCallback(SafeSslContextHandle ctx);
     }
 }

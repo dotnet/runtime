@@ -11,7 +11,7 @@ namespace Microsoft.Win32.RegistryTests
     public class RegistryKey_GetSubKeyCount : RegistryTestsBase
     {
         [Fact]
-        public void ShoudThrowIfDisposed()
+        public void ShouldThrowIfDisposed()
         {
             Assert.Throws<ObjectDisposedException>(() =>
             {
@@ -33,7 +33,9 @@ namespace Microsoft.Win32.RegistryTests
             // [] Creating new SubKeys and get count
 
             Assert.Equal(expected: 0, actual: TestRegistryKey.SubKeyCount);
-            Assert.NotNull(TestRegistryKey.CreateSubKey(TestRegistryKeyName));
+
+            using RegistryKey subkey = TestRegistryKey.CreateSubKey(TestRegistryKeyName);
+            Assert.NotNull(subkey);
             Assert.Equal(expected: 1, actual: TestRegistryKey.SubKeyCount);
 
             TestRegistryKey.DeleteSubKey(TestRegistryKeyName);
@@ -47,7 +49,7 @@ namespace Microsoft.Win32.RegistryTests
             string[] testSubKeys = Enumerable.Range(1, 9).Select(x => "BLAH_" + x.ToString()).ToArray();
             foreach (var subKey in testSubKeys)
             {
-                TestRegistryKey.CreateSubKey(subKey);
+                TestRegistryKey.CreateSubKey(subKey).Dispose();
             }
 
             Assert.Equal(testSubKeys.Length, TestRegistryKey.SubKeyCount);

@@ -3,10 +3,12 @@
 //
 
 using System;
+using Xunit;
 
-class Repro
+public class Repro
 {
-    static int Main()
+    [Fact]
+    public static int TestEntryPoint()
     {
         //We used to incorrectly generate an infinite loop by
         //emitting a jump instruction to itself

@@ -323,12 +323,13 @@ public:
                                            // might accidentally be violated in the future.)
     };
 
-    WriteBarrierForm gcIsWriteBarrierCandidate(GenTree* tgt, GenTree* assignVal);
-    bool gcIsWriteBarrierStoreIndNode(GenTree* op);
-
-    // Returns a WriteBarrierForm decision based on the form of "tgtAddr", which is assumed to be the
-    // argument of a GT_IND LHS.
+    WriteBarrierForm gcIsWriteBarrierCandidate(GenTreeStoreInd* store);
     WriteBarrierForm gcWriteBarrierFormFromTargetAddress(GenTree* tgtAddr);
+
+    bool gcIsWriteBarrierStoreIndNode(GenTreeStoreInd* store)
+    {
+        return gcIsWriteBarrierCandidate(store) != WBF_NoBarrier;
+    }
 
     //-------------------------------------------------------------------------
     //

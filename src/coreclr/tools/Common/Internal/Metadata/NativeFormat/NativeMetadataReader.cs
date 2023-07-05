@@ -6,10 +6,12 @@
 #pragma warning disable CA1066 // IEquatable<T> implementations aren't used
 
 using System;
+#pragma warning disable IDE0005 // Using directive is unnecessary.
 using System.IO;
 using System.Collections.Generic;
 using System.Reflection;
 using System.Runtime.CompilerServices;
+#pragma warning restore IDE0005 // Using directive is unnecessary.
 using Internal.NativeFormat;
 
 namespace Internal.Metadata.NativeFormat
@@ -148,6 +150,9 @@ namespace Internal.Metadata.NativeFormat
 #endif
     }
 
+#if SYSTEM_PRIVATE_CORELIB
+    [CLSCompliant(false)]
+#endif
     public static class NativeFormatReaderExtensions
     {
         public static string GetString(this MetadataReader reader, ConstantStringValueHandle handle)
@@ -238,7 +243,7 @@ namespace Internal.Metadata.NativeFormat
         }
     }
 
-    internal partial class MetadataHeader
+    internal sealed partial class MetadataHeader
     {
         /// <todo>
         /// Signature should be updated every time the metadata schema changes.
@@ -253,7 +258,7 @@ namespace Internal.Metadata.NativeFormat
         public void Decode(NativeReader reader)
         {
             if (reader.ReadUInt32(0) != Signature)
-                reader.ThrowBadImageFormatException();
+                NativeReader.ThrowBadImageFormatException();
             reader.Read(4, out ScopeDefinitions);
         }
     }

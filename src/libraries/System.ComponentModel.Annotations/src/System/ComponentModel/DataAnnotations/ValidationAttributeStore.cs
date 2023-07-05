@@ -1,6 +1,7 @@
 // Licensed to the .NET Foundation under one or more agreements.
 // The .NET Foundation licenses this file to you under the MIT license.
 
+using System.Collections.Concurrent;
 using System.Collections.Generic;
 using System.Diagnostics;
 using System.Diagnostics.CodeAnalysis;
@@ -19,7 +20,7 @@ namespace System.ComponentModel.DataAnnotations
     /// </remarks>
     internal sealed class ValidationAttributeStore
     {
-        private readonly Dictionary<Type, TypeStoreItem> _typeStoreItems = new Dictionary<Type, TypeStoreItem>();
+        private readonly ConcurrentDictionary<Type, TypeStoreItem> _typeStoreItems = new();
 
         /// <summary>
         ///     Gets the singleton <see cref="ValidationAttributeStore" />
@@ -118,16 +119,14 @@ namespace System.ComponentModel.DataAnnotations
         {
             Debug.Assert(type != null);
 
-            lock (_typeStoreItems)
-            {
-                if (!_typeStoreItems.TryGetValue(type, out TypeStoreItem? item))
-                {
-                    AttributeCollection attributes = TypeDescriptor.GetAttributes(type);
-                    item = new TypeStoreItem(type, attributes);
-                    _typeStoreItems[type] = item;
-                }
+            return _typeStoreItems.GetOrAdd(type, AddTypeStoreItem);
 
-                return item;
+            [UnconditionalSuppressMessage("ReflectionAnalysis", "IL2067:UnrecognizedReflectionPattern",
+                Justification = "The parameter in the parent method has already been marked DynamicallyAccessedMemberTypes.All.")]
+            static TypeStoreItem AddTypeStoreItem(Type type)
+            {
+                AttributeCollection attributes = TypeDescriptor.GetAttributes(type);
+                return new TypeStoreItem(type, attributes);
             }
         }
 
@@ -135,8 +134,9 @@ namespace System.ComponentModel.DataAnnotations
         ///     Throws an ArgumentException of the validation context is null
         /// </summary>
         /// <param name="validationContext">The context to check</param>
-        private static void EnsureValidationContext(ValidationContext validationContext!!)
+        private static void EnsureValidationContext(ValidationContext validationContext)
         {
+            ArgumentNullException.ThrowIfNull(validationContext);
         }
 
         internal static bool IsPublic(PropertyInfo p) =>
@@ -200,10 +200,7 @@ namespace System.ComponentModel.DataAnnotations
                 {
                     lock (_syncRoot)
                     {
-                        if (_propertyStoreItems == null)
-                        {
-                            _propertyStoreItems = CreatePropertyStoreItems();
-                        }
+                        _propertyStoreItems ??= CreatePropertyStoreItems();
                     }
                 }
 
@@ -235,7 +232,7 @@ namespace System.ComponentModel.DataAnnotations
             /// <param name="propertyDescriptor">The property descriptor whose attributes are needed.</param>
             /// <returns>A new <see cref="AttributeCollection"/> stripped of any attributes from the property's type.</returns>
             [RequiresUnreferencedCode("The Type of propertyDescriptor.PropertyType cannot be statically discovered.")]
-            private AttributeCollection GetExplicitAttributes(PropertyDescriptor propertyDescriptor)
+            private static AttributeCollection GetExplicitAttributes(PropertyDescriptor propertyDescriptor)
             {
                 AttributeCollection propertyDescriptorAttributes = propertyDescriptor.Attributes;
                 List<Attribute> attributes = new List<Attribute>(propertyDescriptorAttributes.Count);

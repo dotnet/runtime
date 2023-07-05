@@ -4,15 +4,13 @@
     <OutputType>Exe</OutputType>
     <TargetFramework>$(NetCoreAppCurrent)</TargetFramework>
     <AllowUnsafeBlocks>true</AllowUnsafeBlocks>
-    <LangVersion>preview</LangVersion>
     <Nullable>enable</Nullable>
+    <TreatWarningsAsErrors>false</TreatWarningsAsErrors>
 
     <!-- Indicate to the compiler to output generated files to disk. Source addded
          by the LibraryImportGenerator can be found in the intermediate directory. -->
     <EmitCompilerGeneratedFiles>true</EmitCompilerGeneratedFiles>
     <EnableLibraryImportGenerator>true</EnableLibraryImportGenerator>
-    <IncludeLibraryImportGeneratorSources>false</IncludeLibraryImportGeneratorSources>
-    <IsPackable>false</IsPackable>
   </PropertyGroup>
 
   <ItemGroup>

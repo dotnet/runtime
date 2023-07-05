@@ -66,7 +66,8 @@ namespace Microsoft.Extensions.Http
     {
         protected HttpMessageHandlerBuilder() { }
         public abstract System.Collections.Generic.IList<System.Net.Http.DelegatingHandler> AdditionalHandlers { get; }
-        public abstract string Name { get; set; }
+        [System.Diagnostics.CodeAnalysis.DisallowNull]
+        public abstract string? Name { get; set; }
         public abstract System.Net.Http.HttpMessageHandler PrimaryHandler { get; set; }
         public virtual System.IServiceProvider Services { [System.Runtime.CompilerServices.CompilerGeneratedAttribute] get { throw null; } }
         public abstract System.Net.Http.HttpMessageHandler Build();

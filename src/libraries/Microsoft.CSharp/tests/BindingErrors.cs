@@ -248,7 +248,7 @@ namespace Microsoft.CSharp.RuntimeBinder.Tests
         }
 
         [Fact]
-        public void AmbigousUnaryOp()
+        public void AmbiguousUnaryOp()
         {
             dynamic d = new AmbiguousNumClass(7);
             Assert.Throws<RuntimeBinderException>(() => -d);

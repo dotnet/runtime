@@ -14,7 +14,7 @@
   .ver 4:0:0:0
 }
 .assembly extern System.Runtime { .publickeytoken = (B0 3F 5F 7F 11 D5 0A 3A ) }
-.assembly 'sizeof_Target_64BIT'// as "avg"
+.assembly ASSEMBLY_NAME// as "avg"
 {
 }
 .assembly extern xunit.core {}
@@ -23,10 +23,10 @@
 // MVID: {BCA6096F-DF11-4FA3-BF16-EEDA01729535}
 .namespace AvgTest_sizeof_Target_64BIT
 {
-  .class private auto ansi Test
+  .class public auto ansi Test
          extends [mscorlib]System.Object
   {
-    .method private hidebysig static int32 Main() il managed
+    .method public hidebysig static int32 Main() il managed
     {
         // [ConditionalFact(typeof(TestLibrary.PlatformDetection), nameof(TestLibrary.PlatformDetection.Is64BitProcess))]
         .custom instance void [Microsoft.DotNet.XUnitExtensions]Xunit.ConditionalFactAttribute::.ctor(class [System.Runtime]System.Type,

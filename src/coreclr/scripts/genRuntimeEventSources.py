@@ -85,11 +85,13 @@ def getManifestsToGenerate(runtimeFlavor):
 
 def generateEvent(eventNode, providerNode, outputFile, stringTable):
 
-    # ThreadPool events are defined manually in NativeRuntimeEventSource.PortableThreadPool.cs
+    # ThreadPool and Contention events are defined manually in NativeRuntimeEventSource.Threading.cs
     symbol = eventNode.getAttribute("symbol")
     if "ThreadPool" in symbol:
         return
-    
+    if "Contention" in symbol:
+        return
+
     evtLevel = eventNode.getAttribute("level")[4:]
     evtKeywords = ""
     # Write the event attribute.
@@ -107,7 +109,7 @@ def generateEvent(eventNode, providerNode, outputFile, stringTable):
             for keywordIndex in range(len(keywords)):
                 evtKeywords += "Keywords." + keywords[keywordIndex]
                 if keywordIndex < (len(keywords) - 1):
-                    evtKeywords += " | " 
+                    evtKeywords += " | "
             outputFile.write(evtKeywords)
     outputFile.write(")]\n")
 
@@ -410,7 +412,7 @@ def main(argv):
 
     required = parser.add_argument_group('required arguments')
     required.add_argument('--man', type=str, required=True,
-                          help='full path to manifest containig the description of events')
+                          help='full path to manifest containing the description of events')
     required.add_argument('--intermediate', type=str, required=True,
                           help='full path to eventprovider intermediate directory')
     required.add_argument('--runtimeflavor', type=str,default="CoreCLR",

@@ -13,7 +13,7 @@ namespace System.Net.Sockets
         {
         }
 
-        internal SocketException(SocketError errorCode, uint platformError)
+        internal SocketException(SocketError errorCode, uint _ /*platformError*/)
             : this(errorCode)
         {
             // platformError is unused on Windows. It's the same value as errorCode.

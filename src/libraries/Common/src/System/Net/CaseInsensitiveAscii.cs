@@ -2,6 +2,8 @@
 // The .NET Foundation licenses this file to you under the MIT license.
 
 using System.Collections;
+using System.Diagnostics;
+using System.Text;
 
 namespace System.Net
 {
@@ -85,7 +87,7 @@ namespace System.Net
         }
 
         // ASCII string case insensitive hash function
-        private int FastGetHashCode(string myString)
+        private static int FastGetHashCode(string myString)
         {
             int myHashCode = myString.Length;
             if (myHashCode != 0)
@@ -106,22 +108,9 @@ namespace System.Net
             }
             if (secondString != null)
             {
-                int index = firstString.Length;
-                if (index == secondString.Length)
-                {
-                    if (FastGetHashCode(firstString) == FastGetHashCode(secondString))
-                    {
-                        while (index > 0)
-                        {
-                            index--;
-                            if (AsciiToLower[firstString[index]] != AsciiToLower[secondString[index]])
-                            {
-                                return false;
-                            }
-                        }
-                        return true;
-                    }
-                }
+                Debug.Assert(Ascii.IsValid(firstString) || Ascii.IsValid(secondString), "Expected at least one of the inputs to be valid ASCII");
+
+                return Ascii.EqualsIgnoreCase(firstString, secondString);
             }
             return false;
         }

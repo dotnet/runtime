@@ -4,6 +4,7 @@
 using System.Buffers;
 using System.ComponentModel;
 using System.Diagnostics;
+using System.Diagnostics.CodeAnalysis;
 using System.Threading;
 using System.Threading.Tasks;
 
@@ -80,8 +81,13 @@ namespace System.IO.Hashing
         /// <exception cref="ArgumentNullException">
         ///   <paramref name="source"/> is <see langword="null"/>.
         /// </exception>
-        public void Append(byte[] source!!)
+        public void Append(byte[] source)
         {
+            if (source is null)
+            {
+                throw new ArgumentNullException(nameof(source));
+            }
+
             Append(new ReadOnlySpan<byte>(source));
         }
 
@@ -94,8 +100,13 @@ namespace System.IO.Hashing
         ///   <paramref name="stream"/> is <see langword="null"/>.
         /// </exception>
         /// <seealso cref="AppendAsync(Stream, CancellationToken)"/>
-        public void Append(Stream stream!!)
+        public void Append(Stream stream)
         {
+            if (stream is null)
+            {
+                throw new ArgumentNullException(nameof(stream));
+            }
+
             byte[] buffer = ArrayPool<byte>.Shared.Rent(4096);
 
             while (true)
@@ -123,11 +134,19 @@ namespace System.IO.Hashing
         ///   The token to monitor for cancellation requests.
         ///   The default value is <see cref="CancellationToken.None"/>.
         /// </param>
+        /// <returns>
+        ///   A task that represents the asynchronous append operation.
+        /// </returns>
         /// <exception cref="ArgumentNullException">
         ///   <paramref name="stream"/> is <see langword="null"/>.
         /// </exception>
-        public Task AppendAsync(Stream stream!!, CancellationToken cancellationToken = default)
+        public Task AppendAsync(Stream stream, CancellationToken cancellationToken = default)
         {
+            if (stream is null)
+            {
+                throw new ArgumentNullException(nameof(stream));
+            }
+
             return AppendAsyncCore(stream, cancellationToken);
         }
 
@@ -157,6 +176,9 @@ namespace System.IO.Hashing
         /// <summary>
         ///   Gets the current computed hash value without modifying accumulated state.
         /// </summary>
+        /// <returns>
+        ///   The hash value for the data already provided.
+        /// </returns>
         public byte[] GetCurrentHash()
         {
             byte[] ret = new byte[HashLengthInBytes];
@@ -205,7 +227,7 @@ namespace System.IO.Hashing
         {
             if (destination.Length < HashLengthInBytes)
             {
-                throw new ArgumentException(SR.Argument_DestinationTooShort, nameof(destination));
+                ThrowDestinationTooShort();
             }
 
             GetCurrentHashCore(destination.Slice(0, HashLengthInBytes));
@@ -215,6 +237,9 @@ namespace System.IO.Hashing
         /// <summary>
         ///   Gets the current computed hash value and clears the accumulated state.
         /// </summary>
+        /// <returns>
+        ///   The hash value for the data already provided.
+        /// </returns>
         public byte[] GetHashAndReset()
         {
             byte[] ret = new byte[HashLengthInBytes];
@@ -264,7 +289,7 @@ namespace System.IO.Hashing
         {
             if (destination.Length < HashLengthInBytes)
             {
-                throw new ArgumentException(SR.Argument_DestinationTooShort, nameof(destination));
+                ThrowDestinationTooShort();
             }
 
             GetHashAndResetCore(destination.Slice(0, HashLengthInBytes));
@@ -317,5 +342,9 @@ namespace System.IO.Hashing
         {
             throw new NotSupportedException(SR.NotSupported_GetHashCode);
         }
+
+        [DoesNotReturn]
+        private protected static void ThrowDestinationTooShort() =>
+            throw new ArgumentException(SR.Argument_DestinationTooShort, "destination");
     }
 }

@@ -17,6 +17,8 @@
 // COMException class.  Implements exception API for standard COM-based error info
 // ---------------------------------------------------------------------------
 
+#ifdef FEATURE_COMINTEROP
+
 COMException::~COMException()
 {
     WRAPPER_NO_CONTRACT;
@@ -48,3 +50,4 @@ void COMException::GetMessage(SString &string)
     }
 }
 
+#endif // FEATURE_COMINTEROP

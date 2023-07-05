@@ -40,10 +40,7 @@ namespace System.ComponentModel.Composition.Registration
 
         public ExportBuilder AddMetadata(string name, object value)
         {
-            if (_metadataItems == null)
-            {
-                _metadataItems = new List<Tuple<string, object>>();
-            }
+            _metadataItems ??= new List<Tuple<string, object>>();
             _metadataItems.Add(Tuple.Create(name, value));
 
             return this;
@@ -51,10 +48,7 @@ namespace System.ComponentModel.Composition.Registration
 
         public ExportBuilder AddMetadata(string name, Func<Type, object> itemFunc)
         {
-            if (_metadataItemFuncs == null)
-            {
-                _metadataItemFuncs = new List<Tuple<string, Func<Type, object>>>();
-            }
+            _metadataItemFuncs ??= new List<Tuple<string, Func<Type, object>>>();
             _metadataItemFuncs.Add(Tuple.Create(name, itemFunc));
 
             return this;
@@ -62,10 +56,7 @@ namespace System.ComponentModel.Composition.Registration
 
         internal void BuildAttributes(Type type, ref List<Attribute> attributes)
         {
-            if (attributes == null)
-            {
-                attributes = new List<Attribute>();
-            }
+            attributes ??= new List<Attribute>();
 
             if (_isInherited)
             {

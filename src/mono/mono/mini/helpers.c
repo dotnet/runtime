@@ -69,7 +69,11 @@ static const gint16 opidx [] = {
 
 #endif
 
+#ifdef TARGET_RISCV64
+#define ARCH_PREFIX "riscv64-linux-gnu-"
+#else
 #define ARCH_PREFIX ""
+#endif
 //#define ARCH_PREFIX "powerpc64-linux-gnu-"
 
 const char*
@@ -91,7 +95,7 @@ void
 mono_blockset_print (MonoCompile *cfg, MonoBitSet *set, const char *name, guint idom)
 {
 #ifndef DISABLE_LOGGING
-	int i;
+	guint i;
 
 	if (name)
 		g_print ("%s:", name);
@@ -149,6 +153,8 @@ mono_disassemble_code (MonoCompile *cfg, guint8 *code, int size, char *id)
 	}
 	fprintf (ofd, ":\n");
 
+MONO_DISABLE_WARNING(4127) /* conditional expression is constant */
+
 	if (emit_debug_info && cfg != NULL) {
 		MonoBasicBlock *bb;
 
@@ -183,6 +189,8 @@ mono_disassemble_code (MonoCompile *cfg, guint8 *code, int size, char *id)
 	fprintf (ofd, "\n");
 	fclose (ofd);
 
+MONO_RESTORE_WARNING
+
 #ifdef __APPLE__
 #ifdef __ppc64__
 #define DIS_CMD "otool64 -v -t"
@@ -190,9 +198,7 @@ mono_disassemble_code (MonoCompile *cfg, guint8 *code, int size, char *id)
 #define DIS_CMD "otool -v -t"
 #endif
 #else
-#if defined(sparc) && !defined(__GNUC__)
-#define DIS_CMD "dis"
-#elif defined(TARGET_X86)
+#if defined(TARGET_X86)
 #define DIS_CMD "objdump -l -d"
 #elif defined(TARGET_AMD64)
   #if defined(HOST_WIN32)
@@ -205,9 +211,7 @@ mono_disassemble_code (MonoCompile *cfg, guint8 *code, int size, char *id)
 #endif
 #endif
 
-#if defined(sparc)
-#define AS_CMD "as -xarch=v9"
-#elif defined (TARGET_X86)
+#if defined (TARGET_X86)
 #  if defined(__APPLE__)
 #    define AS_CMD "as -arch i386"
 #  else
@@ -231,8 +235,6 @@ mono_disassemble_code (MonoCompile *cfg, guint8 *code, int size, char *id)
 #  else
 #    define AS_CMD "as -gstabs"
 #  endif
-#elif defined(__mips__) && (_MIPS_SIM == _ABIO32)
-#define AS_CMD "as -mips32"
 #elif defined(__ppc64__)
 #define AS_CMD "as -arch ppc64"
 #elif defined(__powerpc64__)

@@ -71,7 +71,7 @@ typedef enum
  * Constants for passing to the first parameter of syslog.
  * These are a combination of flags where the lower bits are
  * the priority and the higher bits are the facility. The lower
- * bits cannot be OR'd together; they must be OR'd with the higer bits.
+ * bits cannot be OR'd together; they must be OR'd with the higher bits.
  *
  * These values keep their original definition and are taken from syslog.h
  */
@@ -240,7 +240,7 @@ PALEXPORT int32_t SystemNative_SchedSetAffinity(int32_t pid, intptr_t* mask);
 PALEXPORT int32_t SystemNative_SchedGetAffinity(int32_t pid, intptr_t* mask);
 
 /**
- * Returns the path of the executable that started the currently executing process, 
+ * Returns the path of the executable that started the currently executing process,
  * resolving symbolic links. The caller is responsible for releasing the buffer.
  */
 PALEXPORT char* SystemNative_GetProcessPath(void);

@@ -243,25 +243,16 @@ namespace System
             return sb;
         }
 
-        internal string DisplayFullName
-        {
-            get
-            {
-                if (display_fullname == null)
-                    display_fullname = GetDisplayFullName(DisplayNameFormat.Default);
-                return display_fullname;
-            }
-        }
+        internal string DisplayFullName => display_fullname ??= GetDisplayFullName(DisplayNameFormat.Default);
 
         internal static TypeSpec Parse(string typeName)
         {
             int pos = 0;
-            if (typeName == null)
-                throw new ArgumentNullException(nameof(typeName));
+            ArgumentNullException.ThrowIfNull(typeName);
 
             TypeSpec res = Parse(typeName, ref pos, false, true);
             if (pos < typeName.Length)
-                throw new ArgumentException("Count not parse the whole type name", nameof(typeName));
+                throw new ArgumentException(SR.Argument_TypeParseError, nameof(typeName));
             return res;
         }
 
@@ -313,16 +304,14 @@ namespace System
             }
             else
             {
-                if (nested == null)
-                    nested = new List<ITypeIdentifier>();
+                nested ??= new List<ITypeIdentifier>();
                 nested.Add(ParsedTypeIdentifier(type_name));
             }
         }
 
         private void AddModifier(IModifierSpec md)
         {
-            if (modifier_spec == null)
-                modifier_spec = new List<IModifierSpec>();
+            modifier_spec ??= new List<IModifierSpec>();
             modifier_spec.Add(md);
         }
 
@@ -337,7 +326,7 @@ namespace System
         private static void BoundCheck(int idx, string s)
         {
             if (idx >= s.Length)
-                throw new ArgumentException("Invalid generic arguments spec", "typeName");
+                throw new ArgumentException(SR.Argument_InvalidGenericArg, "typeName");
         }
 
         private static ITypeIdentifier ParsedTypeIdentifier(string displayName)
@@ -390,7 +379,7 @@ namespace System
                     case '*':
                     case '[':
                         if (name[pos] != '[' && is_recurse)
-                            throw new ArgumentException("Generic argument can't be byref or pointer type", "typeName");
+                            throw new ArgumentException(SR.Argument_GenericArgumentCannotBeByrefOrPointerType, "typeName");
                         data.AddName(name.Substring(name_start, pos - name_start));
                         name_start = pos + 1;
                         in_modifiers = true;
@@ -417,13 +406,13 @@ namespace System
                     {
                         case '&':
                             if (data.is_byref)
-                                throw new ArgumentException("Can't have a byref of a byref", "typeName");
+                                throw new ArgumentException(SR.Format(SR.CannotCreateByRefOfByRef, data.TypeName), "typeName");
 
                             data.is_byref = true;
                             break;
                         case '*':
                             if (data.is_byref)
-                                throw new ArgumentException("Can't have a pointer to a byref type", "typeName");
+                                throw new ArgumentException(SR.Format(SR.CannotCreatePointerOfByRef, data.TypeName), "typeName");
                             // take subsequent '*'s too
                             int pointer_level = 1;
                             while (pos + 1 < name.Length && name[pos + 1] == '*')
@@ -440,7 +429,7 @@ namespace System
                                 while (end < name.Length && name[end] != ']')
                                     ++end;
                                 if (end >= name.Length)
-                                    throw new ArgumentException("Unmatched ']' while parsing generic argument assembly name");
+                                    throw new ArgumentException(SR.Argument_UnmatchedSquareBracketWhileParsingGenericArgAssemblyName);
                                 data.assembly_name = name.Substring(pos + 1, end - pos - 1).Trim();
                                 p = end;
                                 return data;
@@ -458,17 +447,17 @@ namespace System
                             break;
                         case '[':
                             if (data.is_byref)
-                                throw new ArgumentException("Byref qualifier must be the last one of a type", "typeName");
+                                throw new ArgumentException(SR.Argument_ByrefQualifierMustBeLastOneOfAType, "typeName");
                             ++pos;
                             if (pos >= name.Length)
-                                throw new ArgumentException("Invalid array/generic spec", "typeName");
+                                throw new ArgumentException(SR.Argument_InvalidArrayType, "typeName");
                             SkipSpace(name, ref pos);
 
                             if (name[pos] != ',' && name[pos] != '*' && name[pos] != ']')
                             {//generic args
                                 List<TypeSpec> args = new List<TypeSpec>();
                                 if (data.HasModifiers)
-                                    throw new ArgumentException("generic args after array spec or pointer type", "typeName");
+                                    throw new ArgumentException(SR.Arg_GenericArgumentsAfterArrayOrPointerType, "typeName");
 
                                 while (pos < name.Length)
                                 {
@@ -483,7 +472,7 @@ namespace System
                                         if (name[pos] == ']')
                                             ++pos;
                                         else
-                                            throw new ArgumentException("Unclosed assembly-qualified type name at " + name[pos], "typeName");
+                                            throw new ArgumentException(SR.Format(SR.Argument_UnclosedAssemblyQualifiedTypeName, name[pos]), "typeName");
                                         BoundCheck(pos, name);
                                     }
 
@@ -492,11 +481,11 @@ namespace System
                                     if (name[pos] == ',')
                                         ++pos; // skip ',' to the start of the next arg
                                     else
-                                        throw new ArgumentException("Invalid generic arguments separator " + name[pos], "typeName");
+                                        throw new ArgumentException(SR.Format(SR.Argument_InvalidGenericArgumentsSeparator, name[pos]), "typeName");
 
                                 }
                                 if (pos >= name.Length || name[pos] != ']')
-                                    throw new ArgumentException("Error parsing generic params spec", "typeName");
+                                    throw new ArgumentException(SR.Argument_GenericParsingError, "typeName");
                                 data.generic_params = args;
                             }
                             else
@@ -508,11 +497,11 @@ namespace System
                                     if (name[pos] == '*')
                                     {
                                         if (bound)
-                                            throw new ArgumentException("Array spec cannot have 2 bound dimensions", "typeName");
+                                            throw new ArgumentException(SR.Argument_MultiDimensionalArrayCannotBeBound, "typeName");
                                         bound = true;
                                     }
                                     else if (name[pos] != ',')
-                                        throw new ArgumentException("Invalid character in array spec " + name[pos], "typeName");
+                                        throw new ArgumentException(SR.Format(SR.Argument_InvalidCharInArraySpecification, name[pos]), "typeName");
                                     else
                                         ++dimensions;
 
@@ -520,9 +509,9 @@ namespace System
                                     SkipSpace(name, ref pos);
                                 }
                                 if (pos >= name.Length || name[pos] != ']')
-                                    throw new ArgumentException("Error parsing array spec", "typeName");
+                                    throw new ArgumentException(SR.Argument_ArrayParsingError, "typeName");
                                 if (dimensions > 1 && bound)
-                                    throw new ArgumentException("Invalid array spec, multi-dimensional array cannot be bound", "typeName");
+                                    throw new ArgumentException(SR.Argument_MultiDimensionalArrayCannotBeBound, "typeName");
                                 data.AddModifier(new IArraySpec(dimensions, bound));
                             }
 
@@ -533,9 +522,9 @@ namespace System
                                 p = pos;
                                 return data;
                             }
-                            throw new ArgumentException("Unmatched ']'", "typeName");
+                            throw new ArgumentException(SR.Argument_UnmatchedSquareBracketWhileParsingGenericArgAssemblyName, "typeName");
                         default:
-                            throw new ArgumentException("Bad type def, can't handle '" + name[pos] + "'" + " at " + pos, "typeName");
+                            throw new ArgumentException(SR.Format(SR.Argument_BadTypeDef, name[pos], pos), "typeName");
                     }
                 }
             }

@@ -38,10 +38,3 @@ This will join all machines to a test Active Directory and enable Windows Remoti
 
 Running as the Active Directory Administrator, run .\setup.ps1 from any of the machines within the environment.
 The script will use WinRM to connect and update all other roles.
-
-## Deployment Instructions to update the Azure-based environment
-
-1. Create a _Classic_ Azure WebService role.
-2. Create a server certificate and add it to the subscription with the name: `CoreFxNetCertificate`
-3. Edit `Servers\CoreFxNetCloudService\CoreFxNetCloudService\ServiceConfiguration.Cloud.cscfg` and ensure that the `CoreFxNetCertificate` `thumbprint` and `thumbprintAlgorithm` are correct.
-4. Open the solution in Visual Studio and Run the Azure Publishing wizard to create and deploy the application.

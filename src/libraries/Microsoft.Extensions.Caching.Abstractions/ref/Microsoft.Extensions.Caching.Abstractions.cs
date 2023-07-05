@@ -55,7 +55,7 @@ namespace Microsoft.Extensions.Caching.Memory
         public static Microsoft.Extensions.Caching.Memory.ICacheEntry SetPriority(this Microsoft.Extensions.Caching.Memory.ICacheEntry entry, Microsoft.Extensions.Caching.Memory.CacheItemPriority priority) { throw null; }
         public static Microsoft.Extensions.Caching.Memory.ICacheEntry SetSize(this Microsoft.Extensions.Caching.Memory.ICacheEntry entry, long size) { throw null; }
         public static Microsoft.Extensions.Caching.Memory.ICacheEntry SetSlidingExpiration(this Microsoft.Extensions.Caching.Memory.ICacheEntry entry, System.TimeSpan offset) { throw null; }
-        public static Microsoft.Extensions.Caching.Memory.ICacheEntry SetValue(this Microsoft.Extensions.Caching.Memory.ICacheEntry entry, object value) { throw null; }
+        public static Microsoft.Extensions.Caching.Memory.ICacheEntry SetValue(this Microsoft.Extensions.Caching.Memory.ICacheEntry entry, object? value) { throw null; }
     }
     public static partial class CacheExtensions
     {
@@ -125,6 +125,14 @@ namespace Microsoft.Extensions.Caching.Memory
         public Microsoft.Extensions.Caching.Memory.CacheItemPriority Priority { get { throw null; } set { } }
         public long? Size { get { throw null; } set { } }
         public System.TimeSpan? SlidingExpiration { get { throw null; } set { } }
+    }
+    public partial class MemoryCacheStatistics
+    {
+        public MemoryCacheStatistics() { }
+        public long CurrentEntryCount { get { throw null; } init { } }
+        public long? CurrentEstimatedSize { get { throw null; } init { } }
+        public long TotalHits { get { throw null; } init { } }
+        public long TotalMisses { get { throw null; } init { } }
     }
     public partial class PostEvictionCallbackRegistration
     {

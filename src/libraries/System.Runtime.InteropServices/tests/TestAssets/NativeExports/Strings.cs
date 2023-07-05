@@ -26,6 +26,15 @@ namespace NativeExports
             return GetLength(input);
         }
 
+        [UnmanagedCallersOnly(EntryPoint = "return_length_bstr")]
+        public static int ReturnLengthBStr(byte* input)
+        {
+            if (input == null)
+                return -1;
+
+            return GetLengthBStr(input);
+        }
+
         [UnmanagedCallersOnly(EntryPoint = "reverse_return_ushort")]
         public static ushort* ReverseReturnUShort(ushort* input)
         {
@@ -38,6 +47,12 @@ namespace NativeExports
             return Reverse(input);
         }
 
+        [UnmanagedCallersOnly(EntryPoint = "reverse_return_bstr")]
+        public static byte* ReverseReturnBStr(byte* input)
+        {
+            return ReverseBStr(input);
+        }
+
         [UnmanagedCallersOnly(EntryPoint = "reverse_out_ushort")]
         public static void ReverseReturnAsOutUShort(ushort* input, ushort** ret)
         {
@@ -48,6 +63,12 @@ namespace NativeExports
         public static void ReverseReturnAsOutByte(byte* input, byte** ret)
         {
             *ret = Reverse(input);
+        }
+
+        [UnmanagedCallersOnly(EntryPoint = "reverse_out_bstr")]
+        public static void ReverseReturnAsOutBStr(byte* input, byte** ret)
+        {
+            *ret = ReverseBStr(input);
         }
 
         [UnmanagedCallersOnly(EntryPoint = "reverse_inplace_ref_ushort")]
@@ -66,6 +87,17 @@ namespace NativeExports
         {
             int len = GetLength(*refInput);
             var span = new Span<byte>(*refInput, len);
+            span.Reverse();
+        }
+
+        [UnmanagedCallersOnly(EntryPoint = "reverse_inplace_ref_bstr")]
+        public static void ReverseInPlaceBStr(byte** refInput)
+        {
+            int len = GetLengthBStr(*refInput);
+
+            // Testing of BSTRs is done under the assumption the
+            // test character input size is 16 bit.
+            var span = new Span<ushort>(*refInput, len);
             span.Reverse();
         }
 
@@ -88,6 +120,17 @@ namespace NativeExports
 
             byte* ret = Reverse(*s);
             Marshal.FreeCoTaskMem((IntPtr)(*s));
+            *s = ret;
+        }
+
+        [UnmanagedCallersOnly(EntryPoint = "reverse_replace_ref_bstr")]
+        public static void ReverseReplaceRefBStr(byte** s)
+        {
+            if (*s == null)
+                return;
+
+            byte* ret = ReverseBStr(*s);
+            Marshal.FreeBSTR((IntPtr)(*s));
             *s = ret;
         }
 
@@ -121,6 +164,17 @@ namespace NativeExports
             return ret;
         }
 
+        internal static byte* ReverseBStr(byte* s)
+        {
+            if (s == null)
+                return null;
+
+            var arr = Marshal.PtrToStringBSTR((IntPtr)s).ToCharArray();
+            Array.Reverse(arr);
+            var revStr = new string(arr);
+            return (byte*)Marshal.StringToBSTR(revStr);
+        }
+
         private static int GetLength(ushort* input)
         {
             if (input == null)
@@ -149,6 +203,14 @@ namespace NativeExports
             }
 
             return len;
+        }
+
+        private static int GetLengthBStr(byte* input)
+        {
+            if (input == null)
+                return 0;
+
+            return Marshal.PtrToStringBSTR((IntPtr)input).Length;
         }
     }
 }

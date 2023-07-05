@@ -1,0 +1,4 @@
+<Project>
+  <Import Project="$(MSBuildThisFileDirectory)..\..\..\Directory.Build.targets" />
+  <Import Project="$(RepositoryEngineeringDir)targetingpacks.targets" Condition="'$(TargetingpacksTargetsImported)' != 'true' and '$(ImportTargetingPacksTargetsInWasmAppTargets)' == 'true'"/>
+</Project>

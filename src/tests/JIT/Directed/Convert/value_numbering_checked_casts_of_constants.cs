@@ -3,13 +3,15 @@
 
 using System;
 using System.Runtime.CompilerServices;
+using Xunit;
 
 public partial class ValueNumberingCheckedCastsOfConstants
 {
     private static int _global = 0;
     private static int _counter = 100;
 
-    public static int Main()
+    [Fact]
+    public static int TestEntryPoint()
     {
         TestCastingSingleToSByte();
         TestCastingSingleToByte();

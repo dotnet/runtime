@@ -14,8 +14,8 @@ public class Helper
 {
 
     #region methods for InnerSequential struct
-    
-    // Return new InnerSequential instance 
+
+    // Return new InnerSequential instance
     public static InnerSequential NewInnerSequential(int f1, float f2, string f3)
     {
         InnerSequential inner_seq = new InnerSequential();
@@ -24,15 +24,15 @@ public class Helper
         inner_seq.f3 = f3;
         return inner_seq;
     }
-    
-    //	Prints InnerSequential  
+
+    //	Prints InnerSequential
     public static void PrintInnerSequential(InnerSequential inner_seq, string name)
     {
         Console.WriteLine("\t{0}.f1 = {1}", name, inner_seq.f1);
         Console.WriteLine("\t{0}.f2 = {1}", name, inner_seq.f2);
         Console.WriteLine("\t{0}.f3 = {1}", name, inner_seq.f3);
     }
-    
+
     public static bool ValidateInnerSequential(InnerSequential s1, InnerSequential s2, string methodName)
     {
         if (s1.f1 != s2.f1 || s1.f2 != s2.f2 || s1.f3 != s2.f3)
@@ -54,8 +54,8 @@ public class Helper
     #endregion
 
     #region methods for INNER2 struct
-    
-    // Return new INNER2 instance 
+
+    // Return new INNER2 instance
     public static INNER2 NewINNER2(int f1, float f2, string f3)
     {
         INNER2 inner = new INNER2();
@@ -64,15 +64,15 @@ public class Helper
         inner.f3 = f3;
         return inner;
     }
-    
-    //	Prints INNER2  
+
+    //	Prints INNER2
     public static void PrintINNER2(INNER2 inner, string name)
     {
         Console.WriteLine("\t{0}.f1 = {1}", name, inner.f1);
         Console.WriteLine("\t{0}.f2 = {1}", name, inner.f2);
         Console.WriteLine("\t{0}.f3 = {1}", name, inner.f3);
     }
-    
+
     public static bool ValidateINNER2(INNER2 inner1, INNER2 inner2, string methodName)
     {
         if (inner1.f1 != inner2.f1 || inner1.f2 != inner2.f2 || inner1.f3 != inner2.f3)
@@ -94,8 +94,8 @@ public class Helper
     #endregion
 
     #region methods for InnerExplicit struct
-   
-    // Return new InnerExplicit instance 
+
+    // Return new InnerExplicit instance
     public static InnerExplicit NewInnerExplicit(int f1, float f2, string f3)
     {
         InnerExplicit inner = new InnerExplicit();
@@ -104,15 +104,15 @@ public class Helper
         inner.f3 = f3;
         return inner;
     }
- 
-    //	Prints InnerExplicit  
+
+    //	Prints InnerExplicit
     public static void PrintInnerExplicit(InnerExplicit inner, string name)
     {
         Console.WriteLine("\t{0}.f1 = {1}", name, inner.f1);
         Console.WriteLine("\t{0}.f2 = {1}", name, inner.f2);
         Console.WriteLine("\t{0}.f3 = {1}", name, inner.f3);
     }
- 
+
     public static bool ValidateInnerExplicit(InnerExplicit inner1, InnerExplicit inner2, string methodName)
     {
         if (inner1.f1 != inner2.f1 || inner1.f2 != inner2.f2 || inner1.f3 != inner2.f3)
@@ -134,8 +134,8 @@ public class Helper
     #endregion
 
     #region methods for InnerArraySequential struct
-    
-    //	Returns new OUTER instance; the params are the fields of INNER; 
+
+    //	Returns new OUTER instance; the params are the fields of INNER;
     //	all the INNER elements have the same field values
     public static InnerArraySequential NewInnerArraySequential(int f1, float f2, string f3)
     {
@@ -149,7 +149,7 @@ public class Helper
         }
         return outer;
     }
-   
+
     //	Prints InnerArraySequential
     public static void PrintInnerArraySequential(InnerArraySequential outer, string name)
     {
@@ -160,7 +160,7 @@ public class Helper
             Console.WriteLine("\t{0}.arr[{1}].f3 = {2}", name, i, outer.arr[i].f3);
         }
     }
-   
+
     //	Returns true if the two params have the same fields
     public static bool ValidateInnerArraySequential(InnerArraySequential outer1, InnerArraySequential outer2, string methodName)
     {
@@ -189,8 +189,8 @@ public class Helper
     #endregion
 
     #region methods for InnerArrayExplicit struct
-   
-    //	Returns new InnerArrayExplicit instance; the params are the fields of INNER; 
+
+    //	Returns new InnerArrayExplicit instance; the params are the fields of INNER;
     //	all the INNER elements have the same field values
     public static InnerArrayExplicit NewInnerArrayExplicit(int f1, float f2, string f3, string f4)
     {
@@ -205,7 +205,7 @@ public class Helper
         outer.f4 = f4;
         return outer;
     }
- 
+
     //	Prints InnerArrayExplicit
     public static void PrintInnerArrayExplicit(InnerArrayExplicit outer, string name)
     {
@@ -217,7 +217,7 @@ public class Helper
         }
         Console.WriteLine("\t{0}.f4 = {1}", name, outer.f4);
     }
-   
+
     //	Returns true if the two params have the same fields
     public static bool ValidateInnerArrayExplicit(InnerArrayExplicit outer1, InnerArrayExplicit InnerArrayExplicit, string methodName)
     {
@@ -249,8 +249,8 @@ public class Helper
     #endregion
 
     #region methods for OUTER3 struct
-  
-    //	Returns new OUTER3 instance; the params are the fields of INNER; 
+
+    //	Returns new OUTER3 instance; the params are the fields of INNER;
     //	all the INNER elements have the same field values
     public static OUTER3 NewOUTER3(int f1, float f2, string f3, string f4)
     {
@@ -265,7 +265,7 @@ public class Helper
         outer.f4 = f4;
         return outer;
     }
-  
+
     //	Prints OUTER3
     public static void PrintOUTER3(OUTER3 outer, string name)
     {
@@ -277,7 +277,7 @@ public class Helper
         }
         Console.WriteLine("\t{0}.f4 = {1}", name, outer.f4);
     }
- 
+
     //	Returns true if the two params have the same fields
     public static bool ValidateOUTER3(OUTER3 outer1, OUTER3 InnerArrayExplicit, string methodName)
     {
@@ -315,7 +315,7 @@ public class Helper
     #endregion
 
     #region methods for CharSetAnsiSequential struct
-  
+
     //return CharSetAnsiSequential struct instance
     public static CharSetAnsiSequential NewCharSetAnsiSequential(string f1, char f2)
     {
@@ -324,14 +324,14 @@ public class Helper
         str1.f2 = f2;
         return str1;
     }
-   
+
     //print the struct CharSetAnsiSequential element
     public static void PrintCharSetAnsiSequential(CharSetAnsiSequential str1, string name)
     {
         Console.WriteLine("\t{0}.f1 = {1}", name, str1.f1);
         Console.WriteLine("\t{0}.f2 = {1}", name, str1.f2);
     }
-   
+
     //	Returns true if the two params have the same fields
     public static bool ValidateCharSetAnsiSequential(CharSetAnsiSequential str1, CharSetAnsiSequential str2, string methodName)
     {
@@ -354,7 +354,7 @@ public class Helper
     #endregion
 
     #region methods for CharSetUnicodeSequential struct
-  
+
     //return the struct CharSetUnicodeSequential instance
     public static CharSetUnicodeSequential NewCharSetUnicodeSequential(string f1, char f2)
     {
@@ -363,14 +363,14 @@ public class Helper
         str1.f2 = f2;
         return str1;
     }
- 
+
     //print the struct CharSetUnicodeSequential element
     public static void PrintCharSetUnicodeSequential(CharSetUnicodeSequential str1, string name)
     {
         Console.WriteLine("\t{0}.f1 = {1}", name, str1.f1);
         Console.WriteLine("\t{0}.f2 = {1}", name, str1.f2);
     }
-  
+
     //	Returns true if the two params have the same fields
     public static bool ValidateCharSetUnicodeSequential(CharSetUnicodeSequential str1, CharSetUnicodeSequential str2, string methodName)
     {
@@ -393,7 +393,7 @@ public class Helper
     #endregion
 
     #region methods for NumberSequential struct
-   
+
     public static NumberSequential NewNumberSequential(int i32, uint ui32, short s1, ushort us1, Byte b, SByte sb,
         Int16 i16, UInt16 ui16, Int64 i64, UInt64 ui64, Single sgl, Double d)
     {
@@ -412,7 +412,7 @@ public class Helper
         str1.d = d;
         return str1;
     }
-    
+
     public static void PrintNumberSequential(NumberSequential str1, string name)
     {
         Console.WriteLine("\t{0}.i32 = {1}", name, str1.i32);
@@ -428,7 +428,7 @@ public class Helper
         Console.WriteLine("\t{0}.sgl = {1}", name, str1.sgl);
         Console.WriteLine("\t{0}.d = {1}", name, str1.d);
     }
-   
+
     public static bool ValidateNumberSequential(NumberSequential str1, NumberSequential str2, string methodName)
     {
         if (str1.i32 != str2.i32 || str1.ui32 != str2.ui32 || str1.s1 != str2.s1 ||
@@ -453,7 +453,7 @@ public class Helper
     #endregion
 
     #region methods for S3 struct
-  
+
     public static void InitialArray(int[] iarr, int[] icarr)
     {
         for (int i = 0; i < iarr.Length; i++)
@@ -485,7 +485,7 @@ public class Helper
             Console.WriteLine("\t{0}.vals[{1}] = {2}", name, i, str1.vals[i]);
         }
     }
-  
+
     public static bool ValidateS3(S3 str1, S3 str2, string methodName)
     {
         int iflag = 0;
@@ -523,7 +523,7 @@ public class Helper
     #endregion
 
     #region methods for S5 struct
-  
+
     public static S5 NewS5(int age, string name, Enum1 ef)
     {
         S4 s4 = new S4();
@@ -536,14 +536,14 @@ public class Helper
 
         return s5;
     }
-   
+
     public static void PrintS5(S5 str1, string name)
     {
         Console.WriteLine("\t{0}.s4.age = {1}", str1.s4.age);
         Console.WriteLine("\t{0}.s4.name = {1}", str1.s4.name);
         Console.WriteLine("\t{0}.ef = {1}", str1.ef.ToString());
     }
-  
+
     public static bool ValidateS5(S5 str1, S5 str2, string methodName)
     {
         if (str1.s4.age != str2.s4.age || str1.s4.name != str2.s4.name)
@@ -573,7 +573,7 @@ public class Helper
     #endregion
 
     #region methods for StringStructSequentialAnsi struct
-  
+
     public static StringStructSequentialAnsi NewStringStructSequentialAnsi(string first, string last)
     {
         StringStructSequentialAnsi s6 = new StringStructSequentialAnsi();
@@ -582,13 +582,13 @@ public class Helper
 
         return s6;
     }
-  
+
     public static void PrintStringStructSequentialAnsi(StringStructSequentialAnsi str1, string name)
     {
         Console.WriteLine("\t{0}.first = {1}", name, str1.first);
         Console.WriteLine("\t{0}.last = {1}", name, str1.last);
     }
-  
+
     public static bool ValidateStringStructSequentialAnsi(StringStructSequentialAnsi str1, StringStructSequentialAnsi str2, string methodName)
     {
         if (str1.first != str2.first || str1.last != str2.last)
@@ -610,7 +610,7 @@ public class Helper
     #endregion
 
     #region methods for StringStructSequentialUnicode struct
-  
+
     public static StringStructSequentialUnicode NewStringStructSequentialUnicode(string first, string last)
     {
         StringStructSequentialUnicode s7 = new StringStructSequentialUnicode();
@@ -619,13 +619,13 @@ public class Helper
 
         return s7;
     }
-  
+
     public static void PrintStringStructSequentialUnicode(StringStructSequentialUnicode str1, string name)
     {
         Console.WriteLine("\t{0}.first = {1}", name, str1.first);
         Console.WriteLine("\t{0}.last = {1}", name, str1.last);
     }
-  
+
     public static bool ValidateStringStructSequentialUnicode(StringStructSequentialUnicode str1, StringStructSequentialUnicode str2, string methodName)
     {
         if (str1.first != str2.first || str1.last != str2.last)
@@ -647,7 +647,7 @@ public class Helper
     #endregion
 
     #region methods for S8 struct
-   
+
     public static S8 NewS8(string name, bool gender, UInt16 jobNum, int i32, uint ui32, sbyte mySByte)
     {
         S8 s8 = new S8();
@@ -659,7 +659,7 @@ public class Helper
         s8.mySByte = mySByte;
         return s8;
     }
-   
+
     public static void PrintS8(S8 str1, string name)
     {
         Console.WriteLine("\t{0}.name = {1}", name, str1.name);
@@ -669,7 +669,7 @@ public class Helper
         Console.WriteLine("\t{0}.ui32 = {1}", name, str1.ui32);
         Console.WriteLine("\t{0}.mySByte = {1}", name, str1.mySByte);
     }
-   
+
     public static bool ValidateS8(S8 str1, S8 str2, string methodName)
     {
         if (str1.name != str2.name || str1.gender != str2.gender ||
@@ -691,7 +691,7 @@ public class Helper
     #endregion
 
     #region methods for S9 struct
- 
+
     public static S9 NewS9(int i32, TestDelegate1 testDel1)
     {
         S9 s9 = new S9();
@@ -699,7 +699,7 @@ public class Helper
         s9.myDelegate1 = testDel1;
         return s9;
     }
- 
+
     public static bool ValidateS9(S9 str1, S9 str2, string methodName)
     {
         if (str1.i32 != str2.i32 || str1.myDelegate1 != str2.myDelegate1)
@@ -719,31 +719,31 @@ public class Helper
 
     #endregion
 
-    #region methods for IncludeOuterIntergerStructSequential struct
- 
-    public static IncludeOuterIntergerStructSequential NewIncludeOuterIntergerStructSequential(int i321, int i322)
+    #region methods for IncludeOuterIntegerStructSequential struct
+
+    public static IncludeOuterIntegerStructSequential NewIncludeOuterIntegerStructSequential(int i321, int i322)
     {
-        IncludeOuterIntergerStructSequential s10 = new IncludeOuterIntergerStructSequential();
+        IncludeOuterIntegerStructSequential s10 = new IncludeOuterIntegerStructSequential();
         s10.s.s_int.i = i321;
         s10.s.i = i322;
         return s10;
     }
-  
-    public static void PrintIncludeOuterIntergerStructSequential(IncludeOuterIntergerStructSequential str1, string name)
+
+    public static void PrintIncludeOuterIntegerStructSequential(IncludeOuterIntegerStructSequential str1, string name)
     {
         Console.WriteLine("\t{0}.s.s_int.i = {1}", name, str1.s.s_int.i);
         Console.WriteLine("\t{0}.s.i = {1}", name, str1.s.i);
     }
-  
-    public static bool ValidateIncludeOuterIntergerStructSequential(IncludeOuterIntergerStructSequential str1, IncludeOuterIntergerStructSequential str2, string methodName)
+
+    public static bool ValidateIncludeOuterIntegerStructSequential(IncludeOuterIntegerStructSequential str1, IncludeOuterIntegerStructSequential str2, string methodName)
     {
         if (str1.s.s_int.i != str2.s.s_int.i || str1.s.i != str2.s.i)
         {
             Console.WriteLine("\tFAILED! " + methodName + "did not receive result as expected.");
             Console.WriteLine("\tThe Actual is...");
-            PrintIncludeOuterIntergerStructSequential(str1, str1.ToString());
+            PrintIncludeOuterIntegerStructSequential(str1, str1.ToString());
             Console.WriteLine("\tThe Expected is...");
-            PrintIncludeOuterIntergerStructSequential(str2, str2.ToString());
+            PrintIncludeOuterIntegerStructSequential(str2, str2.ToString());
             return false;
         }
         else
@@ -756,13 +756,13 @@ public class Helper
     #endregion
 
     #region methods for S11 struct
-  
+
     unsafe public static void PrintS11(S11 str1, string name)
     {
         Console.WriteLine("\t{0}.i32 = {1}", name, (int)(str1.i32));
         Console.WriteLine("\t{0}.i = {1}", name, str1.i);
     }
-  
+
     unsafe public static S11 NewS11(int* i32, int i)
     {
         S11 s11 = new S11();
@@ -770,7 +770,7 @@ public class Helper
         s11.i = i;
         return s11;
     }
-  
+
     unsafe public static bool ValidateS11(S11 str1, S11 str2, string methodName)
     {
         if (str1.i32 != str2.i32 || str1.i != str2.i)
@@ -789,7 +789,7 @@ public class Helper
     #endregion
 
     #region methods for U struct
-  
+
     public static U NewU(int i32, uint ui32, IntPtr iPtr, UIntPtr uiPtr, short s, ushort us, byte b, sbyte sb, long l, ulong ul, float f, double d)
     {
         U u = new U();
@@ -808,7 +808,7 @@ public class Helper
 
         return u;
     }
-  
+
     public static void PrintU(U str1, string name)
     {
         Console.WriteLine("\t{0}.i32 = {1}", name, str1.i32);
@@ -824,7 +824,7 @@ public class Helper
         Console.WriteLine("\t{0}.f = {1}", name, str1.f);
         Console.WriteLine("\t{0}.d = {1}", name, str1.d);
     }
-   
+
     public static bool ValidateU(U str1, U str2, string methodName)
     {
         if (str1.i32 != str2.i32 || str1.ui32 != str2.ui32 || str1.iPtr != str2.iPtr ||
@@ -846,7 +846,7 @@ public class Helper
     #endregion
 
     #region methods for ByteStructPack2Explicit struct
-  
+
     public static ByteStructPack2Explicit NewByteStructPack2Explicit(byte b1, byte b2)
     {
         ByteStructPack2Explicit u1 = new ByteStructPack2Explicit();
@@ -855,13 +855,13 @@ public class Helper
 
         return u1;
     }
-  
+
     public static void PrintByteStructPack2Explicit(ByteStructPack2Explicit str1, string name)
     {
         Console.WriteLine("\t{0}.b1 = {1}", name, str1.b1);
         Console.WriteLine("\t{0}.b2 = {1}", name, str1.b2);
     }
-  
+
     public static bool ValidateByteStructPack2Explicit(ByteStructPack2Explicit str1, ByteStructPack2Explicit str2, string methodName)
     {
         if (str1.b1 != str2.b1 || str1.b2 != str2.b2)
@@ -883,7 +883,7 @@ public class Helper
     #endregion
 
     #region methods for ShortStructPack4Explicit struct
-   
+
     public static ShortStructPack4Explicit NewShortStructPack4Explicit(short s1, short s2)
     {
         ShortStructPack4Explicit u2 = new ShortStructPack4Explicit();
@@ -920,7 +920,7 @@ public class Helper
     #endregion
 
     #region methods for IntStructPack8Explicit struct
-    
+
     public static IntStructPack8Explicit NewIntStructPack8Explicit(int i1, int i2)
     {
         IntStructPack8Explicit u3 = new IntStructPack8Explicit();
@@ -957,7 +957,7 @@ public class Helper
     #endregion
 
     #region methods for LongStructPack16Explicit struct
-   
+
     public static LongStructPack16Explicit NewLongStructPack16Explicit(long l1, long l2)
     {
         LongStructPack16Explicit u4 = new LongStructPack16Explicit();
@@ -966,13 +966,13 @@ public class Helper
 
         return u4;
     }
-   
+
     public static void PrintLongStructPack16Explicit(LongStructPack16Explicit str1, string name)
     {
         Console.WriteLine("\t{0}.l1 = {1}", name, str1.l1);
         Console.WriteLine("\t{0}.l2 = {1}", name, str1.l2);
     }
-  
+
     public static bool ValidateLongStructPack16Explicit(LongStructPack16Explicit str1, LongStructPack16Explicit str2, string methodName)
     {
         if (str1.l1 != str2.l1 || str1.l2 != str2.l2)
@@ -1028,27 +1028,27 @@ public class Helper
     }
     #endregion
 
-    #region methods for IntergerStructSequential struct
-    public static IntergerStructSequential NewIntergerStructSequential(int i1)
+    #region methods for IntegerStructSequential struct
+    public static IntegerStructSequential NewIntegerStructSequential(int i1)
     {
-        IntergerStructSequential u1 = new IntergerStructSequential();
+        IntegerStructSequential u1 = new IntegerStructSequential();
         u1.i = i1;
 
         return u1;
     }
-    public static void PrintIntergerStructSequential(IntergerStructSequential str1, string name)
+    public static void PrintIntegerStructSequential(IntegerStructSequential str1, string name)
     {
         Console.WriteLine("\t{0}.i = {1}", name, str1.i);
     }
-    public static bool ValidateIntergerStructSequential(IntergerStructSequential str1, IntergerStructSequential str2, string methodName)
+    public static bool ValidateIntegerStructSequential(IntegerStructSequential str1, IntegerStructSequential str2, string methodName)
     {
         if (str1.i != str2.i)
         {
             Console.WriteLine("\tFAILED! " + methodName + "did not receive result as expected.");
             Console.WriteLine("\tThe Actual is...");
-            PrintIntergerStructSequential(str1, str1.ToString());
+            PrintIntegerStructSequential(str1, str1.ToString());
             Console.WriteLine("\tThe Expected is...");
-            PrintIntergerStructSequential(str2, str2.ToString());
+            PrintIntegerStructSequential(str2, str2.ToString());
             return false;
         }
         else
@@ -1083,11 +1083,11 @@ public static class Logging
 
 #if (!WIN_8_P)
     static TextWriter loggingFile = null;
-#endif    
+#endif
 
     public static void SetConsole(string fileName)
     {
-#if (!WIN_8_P)        
+#if (!WIN_8_P)
         FileStream fs = new FileStream(fileName, FileMode.Append, FileAccess.Write, FileShare.ReadWrite);
         loggingFile = new StreamWriter(fs, Encoding.Unicode);
         Console.SetOut(loggingFile);

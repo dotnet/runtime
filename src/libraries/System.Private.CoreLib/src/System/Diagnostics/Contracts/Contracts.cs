@@ -217,7 +217,7 @@ namespace System.Diagnostics.Contracts
         /// </summary>
         /// <param name="condition">Expression to assume will always be true.</param>
         /// <remarks>
-        /// At runtime this is equivalent to an <seealso cref="System.Diagnostics.Contracts.Contract.Assert(bool)"/>.
+        /// At runtime this is equivalent to an <see cref="Assert(bool)"/>.
         /// </remarks>
         [Pure]
         [Conditional("DEBUG")]
@@ -236,7 +236,7 @@ namespace System.Diagnostics.Contracts
         /// <param name="condition">Expression to assume will always be true.</param>
         /// <param name="userMessage">If it is not a constant string literal, then the contract may not be understood by tools.</param>
         /// <remarks>
-        /// At runtime this is equivalent to an <seealso cref="System.Diagnostics.Contracts.Contract.Assert(bool)"/>.
+        /// At runtime this is equivalent to an <see cref="Assert(bool)"/>.
         /// </remarks>
         [Pure]
         [Conditional("DEBUG")]
@@ -355,7 +355,7 @@ namespace System.Diagnostics.Contracts
         /// <summary>
         /// Specifies a public contract such that the expression <paramref name="condition"/> will be true when the enclosing method or property returns normally.
         /// </summary>
-        /// <param name="condition">Boolean expression representing the contract.  May include <seealso cref="OldValue"/> and <seealso cref="Result"/>.</param>
+        /// <param name="condition">Boolean expression representing the contract. May include <see cref="OldValue"/> and <see cref="Result"/>.</param>
         /// <remarks>
         /// This call must happen at the beginning of a method or property before any other code.
         /// This contract is exposed to clients so must only reference members at least as visible as the enclosing method.
@@ -371,7 +371,7 @@ namespace System.Diagnostics.Contracts
         /// <summary>
         /// Specifies a public contract such that the expression <paramref name="condition"/> will be true when the enclosing method or property returns normally.
         /// </summary>
-        /// <param name="condition">Boolean expression representing the contract.  May include <seealso cref="OldValue"/> and <seealso cref="Result"/>.</param>
+        /// <param name="condition">Boolean expression representing the contract. May include <see cref="OldValue"/> and <see cref="Result"/>.</param>
         /// <param name="userMessage">If it is not a constant string literal, then the contract may not be understood by tools.</param>
         /// <remarks>
         /// This call must happen at the beginning of a method or property before any other code.
@@ -389,7 +389,7 @@ namespace System.Diagnostics.Contracts
         /// Specifies a contract such that if an exception of type <typeparamref name="TException"/> is thrown then the expression <paramref name="condition"/> will be true when the enclosing method or property terminates abnormally.
         /// </summary>
         /// <typeparam name="TException">Type of exception related to this postcondition.</typeparam>
-        /// <param name="condition">Boolean expression representing the contract.  May include <seealso cref="OldValue"/> and <seealso cref="Result"/>.</param>
+        /// <param name="condition">Boolean expression representing the contract. May include <see cref="OldValue"/> and <see cref="Result"/>.</param>
         /// <remarks>
         /// This call must happen at the beginning of a method or property before any other code.
         /// This contract is exposed to clients so must only reference types and members at least as visible as the enclosing method.
@@ -406,7 +406,7 @@ namespace System.Diagnostics.Contracts
         /// Specifies a contract such that if an exception of type <typeparamref name="TException"/> is thrown then the expression <paramref name="condition"/> will be true when the enclosing method or property terminates abnormally.
         /// </summary>
         /// <typeparam name="TException">Type of exception related to this postcondition.</typeparam>
-        /// <param name="condition">Boolean expression representing the contract.  May include <seealso cref="OldValue"/> and <seealso cref="Result"/>.</param>
+        /// <param name="condition">Boolean expression representing the contract. May include <see cref="OldValue"/> and <see cref="Result"/>.</param>
         /// <param name="userMessage">If it is not a constant string literal, then the contract may not be understood by tools.</param>
         /// <remarks>
         /// This call must happen at the beginning of a method or property before any other code.
@@ -428,7 +428,7 @@ namespace System.Diagnostics.Contracts
         /// <typeparam name="T">Type of return value of the enclosing method or property.</typeparam>
         /// <returns>Return value of the enclosing method or property.</returns>
         /// <remarks>
-        /// This method can only be used within the argument to the <seealso cref="Ensures(bool)"/> contract.
+        /// This method can only be used within the argument to the <see cref="Ensures(bool)"/> contract.
         /// </remarks>
         [Pure]
         public static T Result<T>() { return default!; }
@@ -440,7 +440,7 @@ namespace System.Diagnostics.Contracts
         /// <param name="value">The out parameter.</param>
         /// <returns>The output value of the out parameter.</returns>
         /// <remarks>
-        /// This method can only be used within the argument to the <seealso cref="Ensures(bool)"/> contract.
+        /// This method can only be used within the argument to the <see cref="Ensures(bool)"/> contract.
         /// </remarks>
         [Pure]
         public static T ValueAtReturn<T>(out T value) { value = default!; return value; }
@@ -452,7 +452,7 @@ namespace System.Diagnostics.Contracts
         /// <param name="value">Value to represent.  This must be a field or parameter.</param>
         /// <returns>Value of <paramref name="value"/> at the start of the method or property.</returns>
         /// <remarks>
-        /// This method can only be used within the argument to the <seealso cref="Ensures(bool)"/> contract.
+        /// This method can only be used within the argument to the <see cref="Ensures(bool)"/> contract.
         /// </remarks>
         [Pure]
         public static T OldValue<T>(T value) { return default!; }
@@ -511,7 +511,7 @@ namespace System.Diagnostics.Contracts
         /// <param name="predicate">Function that is evaluated from <paramref name="fromInclusive"/> to <paramref name="toExclusive"/> - 1.</param>
         /// <returns><c>true</c> if <paramref name="predicate"/> returns <c>true</c> for all integers
         /// starting from <paramref name="fromInclusive"/> to <paramref name="toExclusive"/> - 1.</returns>
-        /// <seealso cref="System.Collections.Generic.List&lt;T&gt;.TrueForAll"/>
+        /// <seealso cref="List&lt;T&gt;.TrueForAll"/>
         [Pure]
         public static bool ForAll(int fromInclusive, int toExclusive, Predicate<int> predicate)
         {
@@ -533,10 +533,13 @@ namespace System.Diagnostics.Contracts
         /// <param name="predicate">Function that is evaluated on elements from <paramref name="collection"/>.</param>
         /// <returns><c>true</c> if and only if <paramref name="predicate"/> returns <c>true</c> for all elements in
         /// <paramref name="collection"/>.</returns>
-        /// <seealso cref="System.Collections.Generic.List&lt;T&gt;.TrueForAll"/>
+        /// <seealso cref="List&lt;T&gt;.TrueForAll"/>
         [Pure]
-        public static bool ForAll<T>(IEnumerable<T> collection!!, Predicate<T> predicate!!)
+        public static bool ForAll<T>(IEnumerable<T> collection, Predicate<T> predicate)
         {
+            ArgumentNullException.ThrowIfNull(collection);
+            ArgumentNullException.ThrowIfNull(predicate);
+
             foreach (T t in collection)
                 if (!predicate(t)) return false;
             return true;
@@ -555,7 +558,7 @@ namespace System.Diagnostics.Contracts
         /// <param name="predicate">Function that is evaluated from <paramref name="fromInclusive"/> to <paramref name="toExclusive"/> - 1.</param>
         /// <returns><c>true</c> if <paramref name="predicate"/> returns <c>true</c> for any integer
         /// starting from <paramref name="fromInclusive"/> to <paramref name="toExclusive"/> - 1.</returns>
-        /// <seealso cref="System.Collections.Generic.List&lt;T&gt;.Exists"/>
+        /// <seealso cref="List&lt;T&gt;.Exists"/>
         [Pure]
         public static bool Exists(int fromInclusive, int toExclusive, Predicate<int> predicate)
         {
@@ -576,10 +579,13 @@ namespace System.Diagnostics.Contracts
         /// <param name="predicate">Function that is evaluated on elements from <paramref name="collection"/>.</param>
         /// <returns><c>true</c> if and only if <paramref name="predicate"/> returns <c>true</c> for an element in
         /// <paramref name="collection"/>.</returns>
-        /// <seealso cref="System.Collections.Generic.List&lt;T&gt;.Exists"/>
+        /// <seealso cref="List&lt;T&gt;.Exists"/>
         [Pure]
-        public static bool Exists<T>(IEnumerable<T> collection!!, Predicate<T> predicate!!)
+        public static bool Exists<T>(IEnumerable<T> collection, Predicate<T> predicate)
         {
+            ArgumentNullException.ThrowIfNull(collection);
+            ArgumentNullException.ThrowIfNull(predicate);
+
             foreach (T t in collection)
                 if (predicate(t)) return true;
             return false;
@@ -641,7 +647,7 @@ namespace System.Diagnostics.Contracts
         /// Code going through the contract rewriter never calls this method. Instead, the rewriter produced failures call
         /// ContractHelper.RaiseContractFailedEvent, followed by ContractHelper.TriggerFailure.
         /// </summary>
-        [System.Diagnostics.DebuggerNonUserCode]
+        [DebuggerNonUserCode]
         private static void ReportFailure(ContractFailureKind failureKind, string? userMessage, string? conditionText, Exception? innerException)
         {
             if (failureKind < ContractFailureKind.Precondition || failureKind > ContractFailureKind.Assume)
@@ -679,7 +685,7 @@ namespace System.Diagnostics.Contracts
         #endregion Failure Behavior
     }
 
-    [System.Runtime.CompilerServices.TypeForwardedFrom("mscorlib, Version=4.0.0.0, Culture=neutral, PublicKeyToken=b77a5c561934e089")]
+    [TypeForwardedFrom("mscorlib, Version=4.0.0.0, Culture=neutral, PublicKeyToken=b77a5c561934e089")]
     public enum ContractFailureKind
     {
         Precondition,

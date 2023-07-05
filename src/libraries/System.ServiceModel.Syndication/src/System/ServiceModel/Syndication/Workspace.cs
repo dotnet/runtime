@@ -39,7 +39,7 @@ namespace System.ServiceModel.Syndication
 
         public Collection<ResourceCollectionInfo> Collections
         {
-            get => _collections ?? (_collections = new NullNotAllowedCollection<ResourceCollectionInfo>());
+            get => _collections ??= new NullNotAllowedCollection<ResourceCollectionInfo>();
         }
 
         public SyndicationElementExtensionCollection ElementExtensions => _extensions.ElementExtensions;

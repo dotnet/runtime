@@ -501,7 +501,7 @@ exit:
     }
 
     
-    public static int Main(string[] args)
+    public static int Main()
     {
         iPassed = iFailed = 0;
 

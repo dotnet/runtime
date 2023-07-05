@@ -3,7 +3,7 @@
 
 namespace System.Reflection
 {
-    // This Enum matchs the CorMethodImpl defined in CorHdr.h
+    // This Enum matches the CorMethodImpl defined in CorHdr.h
     public enum MethodImplAttributes
     {
         // code impl mask

@@ -23,8 +23,7 @@
 #include <mono/utils/atomic.h>
 #include <mono/utils/mono-compiler.h>
 #include <mono/utils/mono-logger-internals.h>
-#include <mono/utils/mono-membar.h>
-#include <mono/utils/mono-counters.h>
+#include <mono/utils/mono-memory-model.h>
 #include <mono/utils/hazard-pointer.h>
 #include <mono/utils/mono-tls.h>
 #include <mono/utils/mono-mmap.h>
@@ -46,7 +45,6 @@
 #include <mono/metadata/profiler-private.h>
 #include <mono/metadata/coree.h>
 
-static MonoJitInfoFindInAot jit_info_find_in_aot_func = NULL;
 static MonoJitInfoTable * volatile jit_info_table;
 static MonoJitInfoTable * volatile aot_modules;
 static GSList *jit_info_free_queue;
@@ -328,7 +326,7 @@ mono_jit_info_table_find_internal (gpointer addr, gboolean try_aot, gboolean all
 		table = (MonoJitInfoTable *)mono_get_hazardous_pointer ((gpointer volatile*)&aot_modules, hp, JIT_INFO_TABLE_HAZARD_INDEX);
 		module_ji = jit_info_table_find (table, hp, (gint8*)addr);
 		if (module_ji)
-			ji = jit_info_find_in_aot_func (module_ji->d.image, addr);
+			ji = mono_get_runtime_callbacks ()->find_jit_info_in_aot (module_ji->d.image, addr);
 		if (hp)
 			mono_hazard_pointer_clear (hp, JIT_INFO_TABLE_HAZARD_INDEX);
 	}
@@ -820,16 +818,10 @@ mono_jit_info_add_aot_module (MonoImage *image, gpointer start, gpointer end)
 	ji = g_new0 (MonoJitInfo, 1);
 	ji->d.image = image;
 	ji->code_start = start;
-	ji->code_size = (guint8*)end - (guint8*)start;
+	ji->code_size = GPTRDIFF_TO_INT ((guint8*)end - (guint8*)start);
 	jit_info_table_add (&aot_modules, ji);
 
 	jit_info_unlock ();
-}
-
-void
-mono_install_jit_info_find_in_aot (MonoJitInfoFindInAot func)
-{
-	jit_info_find_in_aot_func = func;
 }
 
 int

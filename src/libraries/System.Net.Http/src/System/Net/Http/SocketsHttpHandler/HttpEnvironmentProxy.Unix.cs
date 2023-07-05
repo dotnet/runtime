@@ -32,15 +32,8 @@ namespace System.Net.Http
                 Uri? allProxy = GetUriFromString(Environment.GetEnvironmentVariable(EnvAllProxyLC)) ??
                                 GetUriFromString(Environment.GetEnvironmentVariable(EnvAllProxyUC));
 
-                if (httpProxy == null)
-                {
-                    httpProxy = allProxy;
-                }
-
-                if (httpsProxy == null)
-                {
-                    httpsProxy = allProxy;
-                }
+                httpProxy ??= allProxy;
+                httpsProxy ??= allProxy;
             }
 
             // Do not instantiate if nothing is set.

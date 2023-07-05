@@ -3,6 +3,7 @@
 
 using System;
 using System.Threading;
+using Xunit;
 
 internal delegate T GenDelegate<T>(T p1, out T p2);
 
@@ -15,9 +16,10 @@ internal class Foo<T>
     }
 }
 
-internal class Test_Delegate028
+public class Test_Delegate028
 {
-    public static int Main()
+    [Fact]
+    public static int TestEntryPoint()
     {
         int i, j;
         GenDelegate<int> MyDelegate = new GenDelegate<int>(Foo<int>.Function<int>);
@@ -25,7 +27,7 @@ internal class Test_Delegate028
 
         if ((i != 10) || (j != 10))
         {
-            Console.WriteLine("Failed Sync Invokation");
+            Console.WriteLine("Failed Sync Invocation");
             return 1;
         }
 

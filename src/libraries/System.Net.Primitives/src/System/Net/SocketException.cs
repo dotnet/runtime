@@ -26,8 +26,13 @@ namespace System.Net.Sockets
             // Hence, no translation on the supplied code.  This does mean on Unix there's a difference between:
             //     new SocketException(); // will treat the last error as a native error code and translate it appropriately
             // and:
-            //     new SocketException(Marshal.GetLastWin32Error()); // will treat the last error as a SocketError, inappropriately
+            //     new SocketException(Marshal.GetLastPInvokeError()); // will treat the last error as a SocketError, inappropriately
             // but that's the least bad option right now.
+        }
+
+        /// <summary>Initializes a new instance of the <see cref='System.Net.Sockets.SocketException'/> class with the specified error code and optional message.</summary>
+        public SocketException(int errorCode, string? message) : this((SocketError)errorCode, message)
+        {
         }
 
         /// <summary>Creates a new instance of the <see cref='System.Net.Sockets.SocketException'/> class with the specified error code as SocketError.</summary>
@@ -36,10 +41,18 @@ namespace System.Net.Sockets
             _errorCode = socketError;
         }
 
+        /// <summary>Initializes a new instance of the <see cref='System.Net.Sockets.SocketException'/> class with the specified error code as SocketError and optional message.</summary>
+        internal SocketException(SocketError socketError, string? message) : base(GetNativeErrorForSocketError(socketError), message)
+        {
+            _errorCode = socketError;
+        }
+
         public override string Message => base.Message;
 
         public SocketError SocketErrorCode => _errorCode;
 
+        [Obsolete(Obsoletions.LegacyFormatterImplMessage, DiagnosticId = Obsoletions.LegacyFormatterImplDiagId, UrlFormat = Obsoletions.SharedUrlFormat)]
+        [EditorBrowsable(EditorBrowsableState.Never)]
         protected SocketException(SerializationInfo serializationInfo, StreamingContext streamingContext)
             : base(serializationInfo, streamingContext)
         {

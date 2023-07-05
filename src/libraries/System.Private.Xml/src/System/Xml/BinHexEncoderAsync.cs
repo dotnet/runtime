@@ -7,30 +7,27 @@ namespace System.Xml
 {
     internal static partial class BinHexEncoder
     {
-        internal static async Task EncodeAsync(byte[] buffer!!, int index, int count, XmlWriter writer)
+        internal static Task EncodeAsync(byte[] buffer, int index, int count, XmlWriter writer)
         {
-            if (index < 0)
+            ArgumentNullException.ThrowIfNull(buffer);
+            if (index < 0 || (uint)count > buffer.Length - index)
             {
-                throw new ArgumentOutOfRangeException(nameof(index));
+                throw new ArgumentOutOfRangeException(index < 0 ? nameof(index) : nameof(count));
             }
-            if (count < 0)
-            {
-                throw new ArgumentOutOfRangeException(nameof(count));
-            }
-            if (count > buffer.Length - index)
-            {
-                throw new ArgumentOutOfRangeException(nameof(count));
-            }
+            return Core(buffer, index, count, writer);
 
-            char[] chars = new char[(count * 2) < CharsChunkSize ? (count * 2) : CharsChunkSize];
-            int endIndex = index + count;
-            while (index < endIndex)
+            static async Task Core(byte[] buffer, int index, int count, XmlWriter writer)
             {
-                int cnt = (count < CharsChunkSize / 2) ? count : CharsChunkSize / 2;
-                HexConverter.EncodeToUtf16(buffer.AsSpan(index, cnt), chars);
-                await writer.WriteRawAsync(chars, 0, cnt * 2).ConfigureAwait(false);
-                index += cnt;
-                count -= cnt;
+                char[] chars = new char[(count * 2) < CharsChunkSize ? (count * 2) : CharsChunkSize];
+                int endIndex = index + count;
+                while (index < endIndex)
+                {
+                    int cnt = (count < CharsChunkSize / 2) ? count : CharsChunkSize / 2;
+                    HexConverter.EncodeToUtf16(buffer.AsSpan(index, cnt), chars);
+                    await writer.WriteRawAsync(chars, 0, cnt * 2).ConfigureAwait(false);
+                    index += cnt;
+                    count -= cnt;
+                }
             }
         }
     } // class

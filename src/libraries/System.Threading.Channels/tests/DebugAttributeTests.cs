@@ -28,7 +28,7 @@ namespace System.Threading.Channels.Tests
             yield return new object[] { c3.Writer };
         }
 
-        [Theory]
+        [ConditionalTheory(typeof(PlatformDetection), nameof(PlatformDetection.IsDebuggerTypeProxyAttributeSupported))]
         [MemberData(nameof(TestData))]
         public void TestDebuggerDisplaysAndTypeProxies(object obj)
         {
@@ -36,7 +36,7 @@ namespace System.Threading.Channels.Tests
             DebuggerAttributes.ValidateDebuggerTypeProxyProperties(obj);
         }
 
-        [Fact]
+        [ConditionalFact(typeof(PlatformDetection), nameof(PlatformDetection.IsDebuggerTypeProxyAttributeSupported))]
         public void TestDequeueClass()
         {
             var c = Channel.CreateBounded<int>(10);

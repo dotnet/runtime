@@ -18,7 +18,7 @@ namespace System.Security.Cryptography.X509Certificates
     /// create a certificate signing request blob to send to a Certificate Authority (CA).
     /// </summary>
     [UnsupportedOSPlatform("browser")]
-    public sealed class CertificateRequest
+    public sealed partial class CertificateRequest
     {
         private readonly AsymmetricAlgorithm? _key;
         private readonly X509SignatureGenerator? _generator;
@@ -33,6 +33,16 @@ namespace System.Security.Cryptography.X509Certificates
         /// The X.509 Certificate Extensions to include in the certificate or certificate request.
         /// </summary>
         public Collection<X509Extension> CertificateExtensions { get; } = new Collection<X509Extension>();
+
+        /// <summary>
+        ///   Gets a collection representing attributes, other than the extension request attribute, to include
+        ///   in a certificate request.
+        /// </summary>
+        /// <value>
+        ///   A collection representing attributes, other than the extension request attribute, to include
+        ///   in a certificate request
+        /// </value>
+        public Collection<AsnEncodedData> OtherRequestAttributes { get; } = new Collection<AsnEncodedData>();
 
         /// <summary>
         /// A <see cref="PublicKey" /> representation of the public key for the certificate or certificate request.
@@ -58,8 +68,10 @@ namespace System.Security.Cryptography.X509Certificates
         ///   The hash algorithm to use when signing the certificate or certificate request.
         /// </param>
         /// <seealso cref="X500DistinguishedName(string)"/>
-        public CertificateRequest(string subjectName!!, ECDsa key!!, HashAlgorithmName hashAlgorithm)
+        public CertificateRequest(string subjectName, ECDsa key, HashAlgorithmName hashAlgorithm)
         {
+            ArgumentNullException.ThrowIfNull(subjectName);
+            ArgumentNullException.ThrowIfNull(key);
             ArgumentException.ThrowIfNullOrEmpty(hashAlgorithm.Name, nameof(hashAlgorithm));
 
             SubjectName = new X500DistinguishedName(subjectName);
@@ -83,8 +95,10 @@ namespace System.Security.Cryptography.X509Certificates
         /// <param name="hashAlgorithm">
         ///   The hash algorithm to use when signing the certificate or certificate request.
         /// </param>
-        public CertificateRequest(X500DistinguishedName subjectName!!, ECDsa key!!, HashAlgorithmName hashAlgorithm)
+        public CertificateRequest(X500DistinguishedName subjectName, ECDsa key, HashAlgorithmName hashAlgorithm)
         {
+            ArgumentNullException.ThrowIfNull(subjectName);
+            ArgumentNullException.ThrowIfNull(key);
             ArgumentException.ThrowIfNullOrEmpty(hashAlgorithm.Name, nameof(hashAlgorithm));
 
             SubjectName = subjectName;
@@ -176,13 +190,47 @@ namespace System.Security.Cryptography.X509Certificates
         /// <param name="hashAlgorithm">
         ///   The hash algorithm to use when signing the certificate or certificate request.
         /// </param>
-        public CertificateRequest(X500DistinguishedName subjectName!!, PublicKey publicKey!!, HashAlgorithmName hashAlgorithm)
+        public CertificateRequest(X500DistinguishedName subjectName, PublicKey publicKey, HashAlgorithmName hashAlgorithm)
         {
+            ArgumentNullException.ThrowIfNull(subjectName);
+            ArgumentNullException.ThrowIfNull(publicKey);
             ArgumentException.ThrowIfNullOrEmpty(hashAlgorithm.Name, nameof(hashAlgorithm));
 
             SubjectName = subjectName;
             PublicKey = publicKey;
             HashAlgorithm = hashAlgorithm;
+        }
+
+        /// <summary>
+        ///   Create a CertificateRequest for the specified subject name, encoded public key, hash algorithm,
+        ///   and RSA signature padding.
+        /// </summary>
+        /// <param name="subjectName">
+        ///   The parsed representation of the subject name for the certificate or certificate request.
+        /// </param>
+        /// <param name="publicKey">
+        ///   The encoded representation of the public key to include in the certificate or certificate request.
+        /// </param>
+        /// <param name="hashAlgorithm">
+        ///   The hash algorithm to use when signing the certificate or certificate request.
+        /// </param>
+        /// <param name="rsaSignaturePadding">
+        ///   The RSA signature padding to use when signing this request with an RSA certificate.
+        /// </param>
+        public CertificateRequest(
+            X500DistinguishedName subjectName,
+            PublicKey publicKey,
+            HashAlgorithmName hashAlgorithm,
+            RSASignaturePadding? rsaSignaturePadding = null)
+        {
+            ArgumentNullException.ThrowIfNull(subjectName);
+            ArgumentNullException.ThrowIfNull(publicKey);
+            ArgumentException.ThrowIfNullOrEmpty(hashAlgorithm.Name, nameof(hashAlgorithm));
+
+            SubjectName = subjectName;
+            PublicKey = publicKey;
+            HashAlgorithm = hashAlgorithm;
+            _rsaPadding = rsaSignaturePadding;
         }
 
         /// <summary>
@@ -193,36 +241,40 @@ namespace System.Security.Cryptography.X509Certificates
         /// <remarks>
         ///   When submitting a certificate signing request via a web browser, or other graphical or textual
         ///   interface, the input is frequently expected to be in the PEM (Privacy Enhanced Mail) format,
-        ///   instead of the DER binary format. To convert the return value to PEM format, make a string
-        ///   consisting of <c>-----BEGIN CERTIFICATE REQUEST-----</c>, a newline, the Base-64-encoded
-        ///   representation of the request (by convention, linewrapped at 64 characters), a newline,
-        ///   and <c>-----END CERTIFICATE REQUEST-----</c>.
-        ///
-        ///   <code><![CDATA[
-        ///     public static string PemEncodeSigningRequest(CertificateRequest request, PkcsSignatureGenerator generator)
-        ///     {
-        ///         byte[] pkcs10 = request.CreateSigningRequest(generator);
-        ///         StringBuilder builder = new StringBuilder();
-        ///
-        ///         builder.AppendLine("-----BEGIN CERTIFICATE REQUEST-----");
-        ///
-        ///         string base64 = Convert.ToBase64String(pkcs10);
-        ///
-        ///         int offset = 0;
-        ///         const int LineLength = 64;
-        ///
-        ///         while (offset < base64.Length)
-        ///         {
-        ///             int lineEnd = Math.Min(offset + LineLength, base64.Length);
-        ///             builder.AppendLine(base64.Substring(offset, lineEnd - offset));
-        ///             offset = lineEnd;
-        ///         }
-        ///
-        ///         builder.AppendLine("-----END CERTIFICATE REQUEST-----");
-        ///         return builder.ToString();
-        ///     }
-        ///   ]]></code>
+        ///   instead of the DER binary format.
         /// </remarks>
+        /// <exception cref="InvalidOperationException">
+        ///   <para>
+        ///     <see cref="OtherRequestAttributes"/> contains a <see langword="null" /> value.
+        ///   </para>
+        ///   <para>- or -</para>
+        ///   <para>
+        ///     <see cref="OtherRequestAttributes"/> contains an entry with a <see langword="null" />
+        ///     <see cref="AsnEncodedData.Oid" /> value.
+        ///   </para>
+        ///   <para>- or -</para>
+        ///   <para>
+        ///     <see cref="OtherRequestAttributes"/> contains an entry representing the PKCS#9
+        ///     Extension Request Attribute (1.2.840.113549.1.9.14).
+        ///   </para>
+        ///   <para>- or -</para>
+        ///   <para>
+        ///     <see cref="CertificateExtensions"/> contains a <see langword="null" /> value.
+        ///   </para>
+        ///   <para>- or -</para>
+        ///   <para>
+        ///     <see cref="CertificateExtensions"/> contains an entry with a <see langword="null" />
+        ///     <see cref="AsnEncodedData.Oid" /> value.
+        ///   </para>
+        ///   <para>- or -</para>
+        ///   <para>
+        ///     This object was created with a constructor which did not accept a signing key.
+        ///   </para>
+        /// </exception>
+        /// <exception cref="CryptographicException">
+        ///   A cryptographic error occurs while creating the signing request.
+        /// </exception>
+        /// <seealso cref="CreateSigningRequestPem()" />
         public byte[] CreateSigningRequest()
         {
             if (_generator == null)
@@ -238,17 +290,183 @@ namespace System.Security.Cryptography.X509Certificates
         /// <param name="signatureGenerator">
         ///   A <see cref="X509SignatureGenerator"/> with which to sign the request.
         /// </param>
-        public byte[] CreateSigningRequest(X509SignatureGenerator signatureGenerator!!)
+        /// <exception cref="ArgumentNullException">
+        ///   <paramref name="signatureGenerator" /> is <see langword="null" />.
+        /// </exception>
+        /// <exception cref="InvalidOperationException">
+        ///   <para>
+        ///     <see cref="OtherRequestAttributes"/> contains a <see langword="null" /> value.
+        ///   </para>
+        ///   <para>- or -</para>
+        ///   <para>
+        ///     <see cref="OtherRequestAttributes"/> contains an entry with a <see langword="null" />
+        ///     <see cref="AsnEncodedData.Oid" /> value.
+        ///   </para>
+        ///   <para>- or -</para>
+        ///   <para>
+        ///     <see cref="OtherRequestAttributes"/> contains an entry representing the PKCS#9
+        ///     Extension Request Attribute (1.2.840.113549.1.9.14).
+        ///   </para>
+        ///   <para>- or -</para>
+        ///   <para>
+        ///     <see cref="CertificateExtensions"/> contains a <see langword="null" /> value.
+        ///   </para>
+        ///   <para>- or -</para>
+        ///   <para>
+        ///     <see cref="CertificateExtensions"/> contains an entry with a <see langword="null" />
+        ///     <see cref="AsnEncodedData.Oid" /> value.
+        ///   </para>
+        ///   <para>- or -</para>
+        ///   <para>
+        ///     This object was created with a constructor which did not accept a signing key.
+        ///   </para>
+        /// </exception>
+        /// <exception cref="CryptographicException">
+        ///   A cryptographic error occurs while creating the signing request.
+        /// </exception>
+        /// <remarks>
+        ///   When submitting a certificate signing request via a web browser, or other graphical or textual
+        ///   interface, the input is frequently expected to be in the PEM (Privacy Enhanced Mail) format,
+        ///   instead of the DER binary format.
+        /// </remarks>
+        /// <seealso cref="CreateSigningRequestPem(X509SignatureGenerator)"/>
+        public byte[] CreateSigningRequest(X509SignatureGenerator signatureGenerator)
         {
-            X501Attribute[] attributes = Array.Empty<X501Attribute>();
+            ArgumentNullException.ThrowIfNull(signatureGenerator);
 
-            if (CertificateExtensions.Count > 0)
+            X501Attribute[] attributes = Array.Empty<X501Attribute>();
+            bool hasExtensions = CertificateExtensions.Count > 0;
+
+            if (OtherRequestAttributes.Count > 0 || hasExtensions)
             {
-                attributes = new X501Attribute[] { new Pkcs9ExtensionRequest(CertificateExtensions) };
+                attributes = new X501Attribute[OtherRequestAttributes.Count + (hasExtensions ? 1 : 0)];
+            }
+
+            int attrCount = 0;
+
+            foreach (AsnEncodedData attr in OtherRequestAttributes)
+            {
+                if (attr is null)
+                {
+                    throw new InvalidOperationException(
+                        SR.Format(SR.Cryptography_CertReq_NullValueInCollection, nameof(OtherRequestAttributes)));
+                }
+
+                if (attr.Oid is null || attr.Oid.Value is null)
+                {
+                    throw new InvalidOperationException(
+                        SR.Format(SR.Cryptography_CertReq_MissingOidInCollection, nameof(OtherRequestAttributes)));
+                }
+
+                if (attr.Oid.Value == Oids.Pkcs9ExtensionRequest)
+                {
+                    throw new InvalidOperationException(SR.Cryptography_CertReq_ExtensionRequestInOtherAttributes);
+                }
+
+                Helpers.ValidateDer(attr.RawData);
+                attributes[attrCount] = new X501Attribute(attr.Oid.Value, attr.RawData);
+                attrCount++;
+            }
+
+            if (hasExtensions)
+            {
+                attributes[attrCount] = new Pkcs9ExtensionRequest(CertificateExtensions);
             }
 
             var requestInfo = new Pkcs10CertificationRequestInfo(SubjectName, PublicKey, attributes);
             return requestInfo.ToPkcs10Request(signatureGenerator, HashAlgorithm);
+        }
+
+        /// <summary>
+        ///   Create a PEM-encoded PKCS#10 CertificationRequest representing the current state
+        ///   of this object using the provided signature generator.
+        /// </summary>
+        /// <exception cref="InvalidOperationException">
+        ///   <para>
+        ///     <see cref="OtherRequestAttributes"/> contains a <see langword="null" /> value.
+        ///   </para>
+        ///   <para>- or -</para>
+        ///   <para>
+        ///     <see cref="OtherRequestAttributes"/> contains an entry with a <see langword="null" />
+        ///     <see cref="AsnEncodedData.Oid" /> value.
+        ///   </para>
+        ///   <para>- or -</para>
+        ///   <para>
+        ///     <see cref="OtherRequestAttributes"/> contains an entry representing the PKCS#9
+        ///     Extension Request Attribute (1.2.840.113549.1.9.14).
+        ///   </para>
+        ///   <para>- or -</para>
+        ///   <para>
+        ///     <see cref="CertificateExtensions"/> contains a <see langword="null" /> value.
+        ///   </para>
+        ///   <para>- or -</para>
+        ///   <para>
+        ///     <see cref="CertificateExtensions"/> contains an entry with a <see langword="null" />
+        ///     <see cref="AsnEncodedData.Oid" /> value.
+        ///   </para>
+        ///   <para>- or -</para>
+        ///   <para>
+        ///     This object was created with a constructor which did not accept a signing key.
+        ///   </para>
+        /// </exception>
+        /// <exception cref="CryptographicException">
+        ///   A cryptographic error occurs while creating the signing request.
+        /// </exception>
+        /// <seealso cref="CreateSigningRequest()"/>
+        public string CreateSigningRequestPem()
+        {
+            byte[] der = CreateSigningRequest();
+            return PemEncoding.WriteString(PemLabels.Pkcs10CertificateRequest, der);
+        }
+
+        /// <summary>
+        ///   Create a PEM-encoded PKCS#10 CertificationRequest representing the current state
+        ///   of this object using the provided signature generator.
+        /// </summary>
+        /// <param name="signatureGenerator">
+        ///   A <see cref="X509SignatureGenerator"/> with which to sign the request.
+        /// </param>
+        /// <exception cref="ArgumentNullException">
+        ///   <paramref name="signatureGenerator" /> is <see langword="null" />.
+        /// </exception>
+        /// <exception cref="InvalidOperationException">
+        ///   <para>
+        ///     <see cref="OtherRequestAttributes"/> contains a <see langword="null" /> value.
+        ///   </para>
+        ///   <para>- or -</para>
+        ///   <para>
+        ///     <see cref="OtherRequestAttributes"/> contains an entry with a <see langword="null" />
+        ///     <see cref="AsnEncodedData.Oid" /> value.
+        ///   </para>
+        ///   <para>- or -</para>
+        ///   <para>
+        ///     <see cref="OtherRequestAttributes"/> contains an entry representing the PKCS#9
+        ///     Extension Request Attribute (1.2.840.113549.1.9.14).
+        ///   </para>
+        ///   <para>- or -</para>
+        ///   <para>
+        ///     <see cref="CertificateExtensions"/> contains a <see langword="null" /> value.
+        ///   </para>
+        ///   <para>- or -</para>
+        ///   <para>
+        ///     <see cref="CertificateExtensions"/> contains an entry with a <see langword="null" />
+        ///     <see cref="AsnEncodedData.Oid" /> value.
+        ///   </para>
+        ///   <para>- or -</para>
+        ///   <para>
+        ///     This object was created with a constructor which did not accept a signing key.
+        ///   </para>
+        /// </exception>
+        /// <exception cref="CryptographicException">
+        ///   A cryptographic error occurs while creating the signing request.
+        /// </exception>
+        /// <seealso cref="CreateSigningRequest(X509SignatureGenerator)"/>
+        public string CreateSigningRequestPem(X509SignatureGenerator signatureGenerator)
+        {
+            ArgumentNullException.ThrowIfNull(signatureGenerator);
+
+            byte[] der = CreateSigningRequest(signatureGenerator);
+            return PemEncoding.WriteString(PemLabels.Pkcs10CertificateRequest, der);
         }
 
         /// <summary>
@@ -350,8 +568,8 @@ namespace System.Security.Cryptography.X509Certificates
         ///   <paramref name="issuerCertificate"/> has a different key algorithm than the requested certificate.
         /// </exception>
         /// <exception cref="InvalidOperationException">
-        ///   <paramref name="issuerCertificate"/> is an RSA certificate and this object was created via a constructor
-        ///   which does not accept a <see cref="RSASignaturePadding"/> value.
+        ///   <paramref name="issuerCertificate"/> is an RSA certificate and this object was created without
+        ///   specifying an <see cref="RSASignaturePadding"/> value in the constructor.
         /// </exception>
         public X509Certificate2 Create(
             X509Certificate2 issuerCertificate,
@@ -405,11 +623,13 @@ namespace System.Security.Cryptography.X509Certificates
         ///   which does not accept a <see cref="RSASignaturePadding"/> value.
         /// </exception>
         public X509Certificate2 Create(
-            X509Certificate2 issuerCertificate!!,
+            X509Certificate2 issuerCertificate,
             DateTimeOffset notBefore,
             DateTimeOffset notAfter,
             ReadOnlySpan<byte> serialNumber)
         {
+            ArgumentNullException.ThrowIfNull(issuerCertificate);
+
             if (!issuerCertificate.HasPrivateKey)
                 throw new ArgumentException(SR.Cryptography_CertReq_IssuerRequiresPrivateKey, nameof(issuerCertificate));
             if (notAfter < notBefore)
@@ -581,12 +801,15 @@ namespace System.Security.Cryptography.X509Certificates
         /// <exception cref="ArgumentException"><paramref name="serialNumber"/> has length 0.</exception>
         /// <exception cref="CryptographicException">Any error occurs during the signing operation.</exception>
         public X509Certificate2 Create(
-            X500DistinguishedName issuerName!!,
-            X509SignatureGenerator generator!!,
+            X500DistinguishedName issuerName,
+            X509SignatureGenerator generator,
             DateTimeOffset notBefore,
             DateTimeOffset notAfter,
             ReadOnlySpan<byte> serialNumber)
         {
+            ArgumentNullException.ThrowIfNull(issuerName);
+            ArgumentNullException.ThrowIfNull(generator);
+
             if (notAfter < notBefore)
                 throw new ArgumentException(SR.Cryptography_CertReq_DatesReversed);
             if (serialNumber == null || serialNumber.Length < 1)
@@ -672,7 +895,7 @@ namespace System.Security.Cryptography.X509Certificates
             return ret;
         }
 
-        private ArraySegment<byte> NormalizeSerialNumber(ReadOnlySpan<byte> serialNumber)
+        private static ArraySegment<byte> NormalizeSerialNumber(ReadOnlySpan<byte> serialNumber)
         {
             byte[] newSerialNumber;
 

@@ -10,6 +10,8 @@
 **
 ===========================================================*/
 
+using System.Diagnostics.CodeAnalysis;
+
 namespace System.Runtime.CompilerServices
 {
     /// <summary>
@@ -21,8 +23,13 @@ namespace System.Runtime.CompilerServices
         /// Create a <see cref="FormattableString"/> from a composite format string and object
         /// array containing zero or more objects to format.
         /// </summary>
-        public static FormattableString Create(string format!!, params object?[] arguments!!) =>
-            new ConcreteFormattableString(format, arguments);
+        public static FormattableString Create([StringSyntax(StringSyntaxAttribute.CompositeFormat)] string format, params object?[] arguments)
+        {
+            ArgumentNullException.ThrowIfNull(format);
+            ArgumentNullException.ThrowIfNull(arguments);
+
+            return new ConcreteFormattableString(format, arguments);
+        }
 
         private sealed class ConcreteFormattableString : FormattableString
         {

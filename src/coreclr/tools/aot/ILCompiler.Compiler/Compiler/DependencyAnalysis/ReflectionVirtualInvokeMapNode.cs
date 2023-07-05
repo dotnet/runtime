@@ -14,17 +14,16 @@ using VirtualInvokeTableEntry = Internal.Runtime.VirtualInvokeTableEntry;
 namespace ILCompiler.DependencyAnalysis
 {
     /// <summary>
-    /// Represents a map containing the necessary information needed to resolve 
+    /// Represents a map containing the necessary information needed to resolve
     /// a virtual method target called through reflection.
     /// </summary>
-    internal sealed class ReflectionVirtualInvokeMapNode : ObjectNode, ISymbolDefinitionNode
+    internal sealed class ReflectionVirtualInvokeMapNode : ObjectNode, ISymbolDefinitionNode, INodeWithSize
     {
-        private ObjectAndOffsetSymbolNode _endSymbol;
+        private int? _size;
         private ExternalReferencesTableNode _externalReferences;
 
         public ReflectionVirtualInvokeMapNode(ExternalReferencesTableNode externalReferences)
         {
-            _endSymbol = new ObjectAndOffsetSymbolNode(this, 0, "__VirtualInvokeMap_End", true);
             _externalReferences = externalReferences;
         }
 
@@ -33,10 +32,10 @@ namespace ILCompiler.DependencyAnalysis
             sb.Append(nameMangler.CompilationUnitPrefix).Append("__VirtualInvokeMap");
         }
 
-        public ISymbolNode EndSymbol => _endSymbol;
+        int INodeWithSize.Size => _size.Value;
         public int Offset => 0;
         public override bool IsShareable => false;
-        public override ObjectNodeSection Section => _externalReferences.Section;
+        public override ObjectNodeSection GetSection(NodeFactory factory) => _externalReferences.GetSection(factory);
         public override bool StaticDependenciesAreComputed => true;
         protected override string GetName(NodeFactory factory) => this.GetMangledName(factory.NameMangler);
 
@@ -73,7 +72,7 @@ namespace ILCompiler.DependencyAnalysis
             if (containingTypeOfDeclaringMethodForSlot.HasInstantiation)
             {
                 declaringMethodForSlot = method.Context.GetMethodForInstantiatedType(
-                    declaringMethodForSlot.GetTypicalMethodDefinition(), 
+                    declaringMethodForSlot.GetTypicalMethodDefinition(),
                     (InstantiatedType)containingTypeOfDeclaringMethodForSlot);
             }
 
@@ -86,7 +85,7 @@ namespace ILCompiler.DependencyAnalysis
         {
             if (NeedsVirtualInvokeInfo(method))
             {
-                dependencies = dependencies ?? new DependencyList();
+                dependencies ??= new DependencyList();
 
                 dependencies.Add(
                     factory.NecessaryTypeSymbol(method.OwningType.ConvertToCanonForm(CanonicalFormKind.Specific)),
@@ -143,12 +142,12 @@ namespace ILCompiler.DependencyAnalysis
 
                 //
                 // The vtable entries for each instantiated type might not necessarily exist.
-                // Example 1: 
+                // Example 1:
                 //      If there's a call to Foo<string>.Method1 and a call to Foo<int>.Method2, Foo<string> will
                 //      not have Method2 in its vtable and Foo<int> will not have Method1.
                 // Example 2:
                 //      If there's a call to Foo<string>.Method1 and a call to Foo<object>.Method2, given that both
-                //      of these instantiations share the same canonical form, Foo<__Canon> will have both method 
+                //      of these instantiations share the same canonical form, Foo<__Canon> will have both method
                 //      entries, and therefore Foo<string> and Foo<object> will have both entries too.
                 // For this reason, the entries that we write to the map in CoreRT will be based on the canonical form
                 // of the method's containing type instead of the open type definition.
@@ -165,21 +164,20 @@ namespace ILCompiler.DependencyAnalysis
                     continue;
 
                 // Grammar of an entry in the hash table:
-                // Virtual Method uses a normal slot 
+                // Virtual Method uses a normal slot
                 // TypeKey + NameAndSig metadata offset into the native layout metadata + (NumberOfStepsUpParentHierarchyToType << 1) + slot
                 // OR
-                // Generic Virtual Method 
+                // Generic Virtual Method
                 // TypeKey + NameAndSig metadata offset into the native layout metadata + (NumberOfStepsUpParentHierarchyToType << 1 + 1)
 
                 int parentHierarchyDistance;
                 MethodDesc declaringMethodForSlot = GetDeclaringVirtualMethodAndHierarchyDistance(method, out parentHierarchyDistance);
-
-                Vertex vertex = null;
-
                 ISymbolNode containingTypeKeyNode = factory.NecessaryTypeSymbol(containingTypeKey);
                 NativeLayoutMethodNameAndSignatureVertexNode nameAndSig = factory.NativeLayout.MethodNameAndSignatureVertex(method.GetTypicalMethodDefinition());
                 NativeLayoutPlacedSignatureVertexNode placedNameAndSig = factory.NativeLayout.PlacedSignatureVertex(nameAndSig);
 
+
+                Vertex vertex;
                 if (method.HasInstantiation)
                 {
                     vertex = writer.GetTuple(
@@ -208,9 +206,9 @@ namespace ILCompiler.DependencyAnalysis
 
             byte[] hashTableBytes = writer.Save();
 
-            _endSymbol.SetSymbolOffset(hashTableBytes.Length);
+            _size = hashTableBytes.Length;
 
-            return new ObjectData(hashTableBytes, Array.Empty<Relocation>(), 1, new ISymbolDefinitionNode[] { this, _endSymbol });
+            return new ObjectData(hashTableBytes, Array.Empty<Relocation>(), 1, new ISymbolDefinitionNode[] { this });
         }
 
         protected internal override int Phase => (int)ObjectNodePhase.Ordered;

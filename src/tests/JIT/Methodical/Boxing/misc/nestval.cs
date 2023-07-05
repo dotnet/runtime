@@ -2,8 +2,9 @@
 // The .NET Foundation licenses this file to you under the MIT license.
 
 using System;
+using Xunit;
 
-namespace BoxTest
+namespace BoxTest_nestval_cs
 {
     internal struct MyBool { public bool val; }
     internal struct MyInt { public int val; }
@@ -14,7 +15,7 @@ namespace BoxTest
         public MyInt m_num;
     }
 
-    internal class Test
+    public class Test
     {
         protected object Fibonacci(object args)
         {
@@ -48,7 +49,8 @@ namespace BoxTest
             return N;
         }
 
-        private static int Main()
+        [Fact]
+        public static int TestEntryPoint()
         {
             ArgInfo args = new ArgInfo();
             args.m_flag.val = true;

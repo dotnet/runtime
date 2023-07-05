@@ -2,11 +2,16 @@
 // The .NET Foundation licenses this file to you under the MIT license.
 
 .assembly extern legacy library mscorlib {}
+.assembly extern xunit.core {}
 
 .assembly unaligned{
 }
 
-.method public static int32 main(class [mscorlib]System.String[]) {
+.class public auto ansi unaligned {
+.method public static int32 main() {
+.custom instance void [xunit.core]Xunit.FactAttribute::.ctor() = (
+    01 00 00 00
+)
 .entrypoint
 .locals	(int32)
 .maxstack	2
@@ -28,4 +33,5 @@ PASS:
 FAIL:
 	ldc.i4	0x0
 	ret
+}
 }

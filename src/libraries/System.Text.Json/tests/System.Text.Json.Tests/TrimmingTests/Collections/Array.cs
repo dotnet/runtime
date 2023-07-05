@@ -6,7 +6,7 @@ using System.Text.Json;
 namespace SerializerTrimmingTest
 {
     /// <summary>
-    /// Tests that the serializer's warm up routine for (de)serializing Array is linker-safe.
+    /// Tests that the serializer's warm up routine for (de)serializing Array is trimming-safe.
     /// </summary>
     internal class Program
     {

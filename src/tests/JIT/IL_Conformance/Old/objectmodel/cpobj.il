@@ -7,33 +7,39 @@
   .publickeytoken = (B0 3F 5F 7F 11 D5 0A 3A )
   .ver 4:0:0:0
 }
+.assembly extern xunit.core {}
 
 .assembly extern legacy library mscorlib {}
 .assembly 'cpobj'{}
 
+.namespace cpobj_
+{
 .class public			_cpobj {
 
-.field public static	value class valClass Instance1
-.field public static	value class valClass Instance2
+.field public static	value class cpobj_.valClass Instance1
+.field public static	value class cpobj_.valClass Instance2
 
 .method public static	int32 main() {
+.custom instance void [xunit.core]Xunit.FactAttribute::.ctor() = (
+    01 00 00 00
+)
 .entrypoint
 .locals		(class [mscorlib]System.IO.TextWriter)
 .maxstack		2
 	call	    class [mscorlib]System.IO.TextWriter [System.Console]System.Console::get_Out()
 	stloc	0
 
-	ldsflda		value class valClass _cpobj::Instance1
+	ldsflda		value class cpobj_.valClass cpobj_._cpobj::Instance1
 	ldc.i4		0x89ABCDEF
-	stfld		int32 valClass::Field
+	stfld		int32 cpobj_.valClass::Field
 	ldc.i4		0x01234567
-	stsfld		int32 valClass::SField
-	ldsflda		value class valClass _cpobj::Instance1
-	ldfld		int32 valClass::Field
+	stsfld		int32 cpobj_.valClass::SField
+	ldsflda		value class cpobj_.valClass cpobj_._cpobj::Instance1
+	ldfld		int32 cpobj_.valClass::Field
 	ldc.i4		0x89ABCDEF
 	ceq
 	brfalse		Init1Failure
-	ldsfld		int32 valClass::SField
+	ldsfld		int32 cpobj_.valClass::SField
 	ldc.i4		0x01234567
 	ceq
 	brtrue		InitInstance2
@@ -46,15 +52,15 @@ Init1Failure:
 	br			fail
 	
 InitInstance2:
-	ldsflda		value class valClass _cpobj::Instance2
+	ldsflda		value class cpobj_.valClass cpobj_._cpobj::Instance2
 	ldc.i4		0xABABABAB
-	stfld		int32 valClass::Field
-	ldsflda		value class valClass _cpobj::Instance2
-	ldfld		int32 valClass::Field
+	stfld		int32 cpobj_.valClass::Field
+	ldsflda		value class cpobj_.valClass cpobj_._cpobj::Instance2
+	ldfld		int32 cpobj_.valClass::Field
 	ldc.i4		0xABABABAB
 	ceq
 	brfalse		Init2Failure
-	ldsfld		int32 valClass::SField
+	ldsfld		int32 cpobj_.valClass::SField
 	ldc.i4		0x01234567
 	ceq
 	brtrue		CheckInst1Field
@@ -67,8 +73,8 @@ Init2Failure:
 	br			fail
 
 CheckInst1Field:
-	ldsflda		value class valClass _cpobj::Instance1
-	ldfld		int32 valClass::Field
+	ldsflda		value class cpobj_.valClass cpobj_._cpobj::Instance1
+	ldfld		int32 cpobj_.valClass::Field
 	ldc.i4		0x89ABCDEF
 	ceq
 	brtrue		cpobjTests
@@ -80,20 +86,20 @@ CheckInst1Field:
 	br			fail
 
 cpobjTests:
-	ldsflda		value class valClass _cpobj::Instance2
-	ldsflda		value class valClass _cpobj::Instance1
-	cpobj		valClass
-	ldsflda		value class valClass _cpobj::Instance1
-	ldfld		int32 valClass::Field
+	ldsflda		value class cpobj_.valClass cpobj_._cpobj::Instance2
+	ldsflda		value class cpobj_.valClass cpobj_._cpobj::Instance1
+	cpobj		cpobj_.valClass
+	ldsflda		value class cpobj_.valClass cpobj_._cpobj::Instance1
+	ldfld		int32 cpobj_.valClass::Field
 	ldc.i4		0x89ABCDEF
 	ceq
 	brfalse		cpobjFailure
-	ldsflda		value class valClass _cpobj::Instance2
-	ldfld		int32 valClass::Field
+	ldsflda		value class cpobj_.valClass cpobj_._cpobj::Instance2
+	ldfld		int32 cpobj_.valClass::Field
 	ldc.i4		0x89ABCDEF
 	ceq
 	brfalse		cpobjFailure
-	ldsfld		int32 valClass::SField
+	ldsfld		int32 cpobj_.valClass::SField
 	ldc.i4		0x01234567
 	ceq
 	brtrue		pass
@@ -132,4 +138,5 @@ end:
 .class public value sealed valClass {
 .field public			int32 Field
 .field public static	int32 SField
+}
 }

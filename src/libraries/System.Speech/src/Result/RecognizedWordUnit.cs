@@ -16,14 +16,16 @@ namespace System.Speech.Recognition
 #pragma warning disable 6507
 
         // Constructor for recognized 'word'
-        public RecognizedWordUnit(string text, float confidence, string pronunciation, string lexicalForm!!, DisplayAttributes displayAttributes, TimeSpan audioPosition, TimeSpan audioDuration)
+        public RecognizedWordUnit(string text, float confidence, string pronunciation, string lexicalForm, DisplayAttributes displayAttributes, TimeSpan audioPosition, TimeSpan audioDuration)
         {
+            ArgumentNullException.ThrowIfNull(lexicalForm);
+
             if (confidence < 0.0f || confidence > 1.0f)
             {
                 throw new ArgumentOutOfRangeException(SR.Get(SRID.InvalidConfidence));
             }
 
-            _text = text == null || text.Length == 0 ? null : text;
+            _text = string.IsNullOrEmpty(text) ? null : text;
             _confidence = confidence;
             _pronunciation = pronunciation == null || pronunciation.Length == 0 ? null : pronunciation;
             _lexicalForm = lexicalForm;

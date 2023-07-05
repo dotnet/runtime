@@ -113,21 +113,10 @@ namespace System.ComponentModel.DataAnnotations
                 }
             }
 
-            [UnconditionalSuppressMessage("ReflectionAnalysis", "IL2063:UnrecognizedReflectionPattern",
-                Justification = "The cache is a dictionary which is hard to annotate. All values in the cache" +
-                                "have annotation All (since we only ever add attribute.MetadataClassType which has All)." +
-                                "But the call to TryGetValue doesn't carry the annotation so this warns when trying" +
-                                "to return value.")]
-            // Better "fix" for the missing annotation would be a local funcion
-            // `bool TryGetAssociatedMetadataTypeFromCache(Type type, [DynamicallyAccessedMembers(DynamicallyAccessedMemberTypes.All)] out Type? associatedMetadataType)`
-            // With the suppression on it - since that would be much more localized.
-            // Unfortunately this currently doesn't work due to an issue in the trimmer
-            // https://github.com/dotnet/linker/issues/2632
             [return: DynamicallyAccessedMembers(DynamicallyAccessedMemberTypes.All)]
             public static Type? GetAssociatedMetadataType(Type type)
             {
-                Type? associatedMetadataType;
-                if (s_metadataTypeCache.TryGetValue(type, out associatedMetadataType))
+                if (TryGetAssociatedMetadataTypeFromCache(type, out Type? associatedMetadataType))
                 {
                     return associatedMetadataType;
                 }
@@ -140,6 +129,16 @@ namespace System.ComponentModel.DataAnnotations
                 }
                 s_metadataTypeCache.TryAdd(type, associatedMetadataType);
                 return associatedMetadataType;
+
+                [UnconditionalSuppressMessage("ReflectionAnalysis", "IL2067:ParameterDoesntMeetParameterRequirements",
+                    Justification = "The cache is a dictionary which is hard to annotate. All values in the cache" +
+                                    "have annotation All (since we only ever add attribute.MetadataClassType which has All)." +
+                                    "But the call to TryGetValue doesn't carry the annotation so this warns when trying" +
+                                    "to assign to the out parameter.")]
+                static bool TryGetAssociatedMetadataTypeFromCache(Type type, [DynamicallyAccessedMembers(DynamicallyAccessedMemberTypes.All)] out Type? associatedMetadataType)
+                {
+                    return s_metadataTypeCache.TryGetValue(type, out associatedMetadataType);
+                }
             }
 
             private static void CheckAssociatedMetadataType(

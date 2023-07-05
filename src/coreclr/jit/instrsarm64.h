@@ -769,7 +769,7 @@ INST2(abs,         "abs",          0,      IF_EN2K,   0x0E20B800,  0x5E20B800)
 
 INST2(cmle,        "cmle",         0,      IF_EN2K,   0x2E209800,  0x7E209800)
                                    //  cmle    Vd,Vn,#0             DV_2M  0Q101110XX100000 100110nnnnnddddd   2E20 9800   Vd,Vn,#0 (vector - with zero)
-                                   //  cmle    Vd,Vn,#0             DV_2L  01111110XX100000 100110nnnnnddddd   7E20 9800   Vd,Vn,#0 (scalar - wtih zero)
+                                   //  cmle    Vd,Vn,#0             DV_2L  01111110XX100000 100110nnnnnddddd   7E20 9800   Vd,Vn,#0 (scalar - with zero)
 
 INST2(cmlt,        "cmlt",         0,      IF_EN2K,   0x0E20A800,  0x5E20A800)
                                    //  cmlt    Vd,Vn,#0             DV_2M  0Q101110XX100000 101010nnnnnddddd   0E20 A800   Vd,Vn,#0 (vector - with zero)
@@ -1053,6 +1053,17 @@ INST1(ldarb,       "ldarb",        LD,     IF_LS_2A,  0x08DFFC00)
 INST1(ldarh,       "ldarh",        LD,     IF_LS_2A,  0x48DFFC00)
                                    //  ldarh   Rt,[Xn]              LS_2A  0100100011011111 111111nnnnnttttt   48DF FC00
 
+
+INST1(ldapr,        "ldapr",       LD,     IF_LS_2A,  0xB8BFC000)
+                                   //  ldapr   Rt,[Xn]              LS_2A  1X11100010111111 110000nnnnnttttt   B8BF C000   Rm Rt Rn ARMv8.3 LRCPC
+
+INST1(ldaprb,       "ldaprb",      LD,     IF_LS_2A,  0x38BFC000)
+                                   //  ldaprb  Rt,[Xn]              LS_2A  0011100010111111 110000nnnnnttttt   38BF C000   Rm Rt Rn ARMv8.3 LRCPC
+
+INST1(ldaprh,       "ldaprh",      LD,     IF_LS_2A,  0x78BFC000)
+                                   //  ldaprh  Rt,[Xn]              LS_2A  0111100010111111 110000nnnnnttttt   78BF C000   Rm Rt Rn ARMv8.3 LRCPC
+
+
 INST1(ldxr,        "ldxr",         LD,     IF_LS_2A,  0x885F7C00)
                                    //  ldxr    Rt,[Xn]              LS_2A  1X00100001011111 011111nnnnnttttt   885F 7C00
 
@@ -1161,100 +1172,100 @@ INST1(casal,       "casal",        LD|ST,  IF_LS_3E,  0x88E0FC00)
 INST1(casl,        "casl",         LD|ST,  IF_LS_3E,  0x88A0FC00)
                                    //  casl    Rm, Rt, [Xn]         LS_3E  1X001000101mmmmm 111111nnnnnttttt   88A0 FC00   Rm Rt Rn ARMv8.1 LSE Atomics
 
-INST1(ldaddb,      "ldaddb",       LD|ST,  IF_LS_3E,  0x38200000)
+INST1(ldaddb,      "ldaddb",   WR2|LD|ST,  IF_LS_3E,  0x38200000)
                                    //  ldaddb   Wm, Wt, [Xn]        LS_3E  00111000001mmmmm 000000nnnnnttttt   3820 0000   Rm Rt Rn ARMv8.1 LSE Atomics
 
-INST1(ldaddab,     "ldaddab",      LD|ST,  IF_LS_3E,  0x38A00000)
+INST1(ldaddab,     "ldaddab",  WR2|LD|ST,  IF_LS_3E,  0x38A00000)
                                    //  ldaddab  Wm, Wt, [Xn]        LS_3E  00111000101mmmmm 000000nnnnnttttt   38A0 0000   Rm Rt Rn ARMv8.1 LSE Atomics
 
-INST1(ldaddalb,    "ldaddalb",     LD|ST,  IF_LS_3E,  0x38E00000)
+INST1(ldaddalb,    "ldaddalb", WR2|LD|ST,  IF_LS_3E,  0x38E00000)
                                    //  ldaddalb Wm, Wt, [Xn]        LS_3E  00111000111mmmmm 000000nnnnnttttt   38E0 0000   Rm Rt Rn ARMv8.1 LSE Atomics
 
-INST1(ldaddlb,     "ldaddlb",      LD|ST,  IF_LS_3E,  0x38600000)
+INST1(ldaddlb,     "ldaddlb",  WR2|LD|ST,  IF_LS_3E,  0x38600000)
                                    //  ldaddlb  Wm, Wt, [Xn]        LS_3E  00111000011mmmmm 000000nnnnnttttt   3860 0000   Rm Rt Rn ARMv8.1 LSE Atomics
 
-INST1(ldaddh,      "ldaddh",       LD|ST,  IF_LS_3E,  0x78200000)
+INST1(ldaddh,      "ldaddh",   WR2|LD|ST,  IF_LS_3E,  0x78200000)
                                    //  ldaddh   Wm, Wt, [Xn]        LS_3E  01111000001mmmmm 000000nnnnnttttt   7820 0000   Rm Rt Rn ARMv8.1 LSE Atomics
 
-INST1(ldaddah,     "ldaddah",      LD|ST,  IF_LS_3E,  0x78A00000)
+INST1(ldaddah,     "ldaddah",  WR2|LD|ST,  IF_LS_3E,  0x78A00000)
                                    //  ldaddah  Wm, Wt, [Xn]        LS_3E  01111000101mmmmm 000000nnnnnttttt   78A0 0000   Rm Rt Rn ARMv8.1 LSE Atomics
 
-INST1(ldaddalh,    "ldaddalh",     LD|ST,  IF_LS_3E,  0x78E00000)
+INST1(ldaddalh,    "ldaddalh", WR2|LD|ST,  IF_LS_3E,  0x78E00000)
                                    //  ldaddalh Wm, Wt, [Xn]        LS_3E  01111000111mmmmm 000000nnnnnttttt   78E0 0000   Rm Rt Rn ARMv8.1 LSE Atomics
 
-INST1(ldaddlh,     "ldaddlh",      LD|ST,  IF_LS_3E,  0x78600000)
+INST1(ldaddlh,     "ldaddlh",  WR2|LD|ST,  IF_LS_3E,  0x78600000)
                                    //  ldaddlh  Wm, Wt, [Xn]        LS_3E  01111000011mmmmm 000000nnnnnttttt   7860 0000   Rm Rt Rn ARMv8.1 LSE Atomics
 
-INST1(ldadd,       "ldadd",        LD|ST,  IF_LS_3E,  0xB8200000)
+INST1(ldadd,       "ldadd",    WR2|LD|ST,  IF_LS_3E,  0xB8200000)
                                    //  ldadd    Rm, Rt, [Xn]        LS_3E  1X111000001mmmmm 000000nnnnnttttt   B820 0000   Rm Rt Rn ARMv8.1 LSE Atomics
 
-INST1(ldadda,      "ldadda",       LD|ST,  IF_LS_3E,  0xB8A00000)
+INST1(ldadda,      "ldadda",   WR2|LD|ST,  IF_LS_3E,  0xB8A00000)
                                    //  ldadda   Rm, Rt, [Xn]        LS_3E  1X111000101mmmmm 000000nnnnnttttt   B8A0 0000   Rm Rt Rn ARMv8.1 LSE Atomics
 
-INST1(ldaddal,     "ldaddal",      LD|ST,  IF_LS_3E,  0xB8E00000)
+INST1(ldaddal,     "ldaddal",  WR2|LD|ST,  IF_LS_3E,  0xB8E00000)
                                    //  ldaddal  Rm, Rt, [Xn]        LS_3E  1X111000111mmmmm 000000nnnnnttttt   B8E0 0000   Rm Rt Rn ARMv8.1 LSE Atomics
 
-INST1(ldclral,     "ldclral",      LD|ST,  IF_LS_3E,  0xB8E01000)
+INST1(ldclral,     "ldclral",  WR2|LD|ST,  IF_LS_3E,  0xB8E01000)
                                    //  ldclral  Rm, Rt, [Xn]        LS_3E  1X111000111mmmmm 000100nnnnnttttt   B8E0 1000   Rm Rt Rn ARMv8.1 LSE Atomics
 
-INST1(ldsetal,     "ldsetal",      LD|ST,  IF_LS_3E,  0xB8E03000)
+INST1(ldsetal,     "ldsetal",  WR2|LD|ST,  IF_LS_3E,  0xB8E03000)
                                    //  ldsetal  Rm, Rt, [Xn]        LS_3E  1X111000111mmmmm 001100nnnnnttttt   B8E0 3000   Rm Rt Rn ARMv8.1 LSE Atomics
 
-INST1(ldaddl,      "ldaddl",       LD|ST,  IF_LS_3E,  0xB8600000)
+INST1(ldaddl,      "ldaddl",   WR2|LD|ST,  IF_LS_3E,  0xB8600000)
                                    //  ldaddl   Rm, Rt, [Xn]        LS_3E  1X111000011mmmmm 000000nnnnnttttt   B860 0000   Rm Rt Rn ARMv8.1 LSE Atomics
 
-INST1(staddb,      "staddb",       ST,     IF_LS_3E,  0x38200000)
+INST1(staddb,      "staddb",   WR2|ST,     IF_LS_3E,  0x38200000)
                                    //  staddb   Wm, [Xn]            LS_3E  00111000001mmmmm 000000nnnnnttttt   3820 0000   Rm Rt Rn ARMv8.1 LSE Atomics
 
-INST1(staddlb,     "staddlb",      ST,     IF_LS_3E,  0x38600000)
+INST1(staddlb,     "staddlb",  WR2|ST,     IF_LS_3E,  0x38600000)
                                    //  staddlb  Wm, [Xn]            LS_3E  00111000011mmmmm 000000nnnnnttttt   3860 0000   Rm Rt Rn ARMv8.1 LSE Atomics
 
-INST1(staddh,      "staddh",       ST,     IF_LS_3E,  0x78200000)
+INST1(staddh,      "staddh",   WR2|ST,     IF_LS_3E,  0x78200000)
                                    //  staddh   Wm, [Xn]            LS_3E  01111000001mmmmm 000000nnnnnttttt   7820 0000   Rm Rt Rn ARMv8.1 LSE Atomics
 
-INST1(staddlh,     "staddlh",      ST,     IF_LS_3E,  0x78600000)
+INST1(staddlh,     "staddlh",  WR2|ST,     IF_LS_3E,  0x78600000)
                                    //  staddlh  Wm, [Xn]            LS_3E  01111000011mmmmm 000000nnnnnttttt   7860 0000   Rm Rt Rn ARMv8.1 LSE Atomics
 
-INST1(stadd,       "stadd",        ST,     IF_LS_3E,  0xB8200000)
+INST1(stadd,       "stadd",    WR2|ST,     IF_LS_3E,  0xB8200000)
                                    //  stadd    Rm, [Xn]            LS_3E  1X111000001mmmmm 000000nnnnnttttt   B820 0000   Rm Rt Rn ARMv8.1 LSE Atomics
 
-INST1(staddl,      "staddl",       ST,     IF_LS_3E,  0xB8600000)
+INST1(staddl,      "staddl",   WR2|ST,     IF_LS_3E,  0xB8600000)
                                    //  staddl   Rm, [Xn]            LS_3E  1X111000011mmmmm 000000nnnnnttttt   B860 0000   Rm Rt Rn ARMv8.1 LSE Atomics
 
-INST1(swpb,        "swpb",         LD|ST,  IF_LS_3E,  0x38208000)
+INST1(swpb,        "swpb",     WR2|LD|ST,  IF_LS_3E,  0x38208000)
                                    //  swpb    Wm, Wt, [Xn]         LS_3E  00111000001mmmmm 100000nnnnnttttt   3820 8000   Rm Rt Rn ARMv8.1 LSE Atomics
 
-INST1(swpab,       "swpab",        LD|ST,  IF_LS_3E,  0x38A08000)
+INST1(swpab,       "swpab",    WR2|LD|ST,  IF_LS_3E,  0x38A08000)
                                    //  swpab   Wm, Wt, [Xn]         LS_3E  00111000101mmmmm 100000nnnnnttttt   38A0 8000   Rm Rt Rn ARMv8.1 LSE Atomics
 
-INST1(swpalb,      "swpalb",       LD|ST,  IF_LS_3E,  0x38E08000)
+INST1(swpalb,      "swpalb",   WR2|LD|ST,  IF_LS_3E,  0x38E08000)
                                    //  swpalb  Wm, Wt, [Xn]         LS_3E  00111000111mmmmm 100000nnnnnttttt   38E0 8000   Rm Rt Rn ARMv8.1 LSE Atomics
 
-INST1(swplb,       "swplb",        LD|ST,  IF_LS_3E,  0x38608000)
+INST1(swplb,       "swplb",    WR2|LD|ST,  IF_LS_3E,  0x38608000)
                                    //  swplb   Wm, Wt, [Xn]         LS_3E  00111000011mmmmm 100000nnnnnttttt   3860 8000   Rm Rt Rn ARMv8.1 LSE Atomics
 
-INST1(swph,        "swph",         LD|ST,  IF_LS_3E,  0x78208000)
+INST1(swph,        "swph",     WR2|LD|ST,  IF_LS_3E,  0x78208000)
                                    //  swph    Wm, Wt, [Xn]         LS_3E  01111000001mmmmm 100000nnnnnttttt   7820 8000   Rm Rt Rn ARMv8.1 LSE Atomics
 
-INST1(swpah,       "swpah",        LD|ST,  IF_LS_3E,  0x78A08000)
+INST1(swpah,       "swpah",    WR2|LD|ST,  IF_LS_3E,  0x78A08000)
                                    //  swpah   Wm, Wt, [Xn]         LS_3E  01111000101mmmmm 100000nnnnnttttt   78A0 8000   Rm Rt Rn ARMv8.1 LSE Atomics
 
-INST1(swpalh,      "swpalh",       LD|ST,  IF_LS_3E,  0x78E08000)
+INST1(swpalh,      "swpalh",   WR2|LD|ST,  IF_LS_3E,  0x78E08000)
                                    //  swpalh  Wm, Wt, [Xn]         LS_3E  01111000111mmmmm 100000nnnnnttttt   78E0 8000   Rm Rt Rn ARMv8.1 LSE Atomics
 
-INST1(swplh,       "swplh",        LD|ST,  IF_LS_3E,  0x78608000)
+INST1(swplh,       "swplh",    WR2|LD|ST,  IF_LS_3E,  0x78608000)
                                    //  swplh   Wm, Wt, [Xn]         LS_3E  01111000011mmmmm 100000nnnnnttttt   7860 8000   Rm Rt Rn ARMv8.1 LSE Atomics
 
-INST1(swp,         "swp",          LD|ST,  IF_LS_3E,  0xB8208000)
+INST1(swp,         "swp",      WR2|LD|ST,  IF_LS_3E,  0xB8208000)
                                    //  swp     Rm, Rt, [Xn]         LS_3E  1X111000001mmmmm 100000nnnnnttttt   B820 8000   Rm Rt Rn ARMv8.1 LSE Atomics
 
-INST1(swpa,        "swpa",         LD|ST,  IF_LS_3E,  0xB8A08000)
+INST1(swpa,        "swpa",     WR2|LD|ST,  IF_LS_3E,  0xB8A08000)
                                    //  swpa    Rm, Rt, [Xn]         LS_3E  1X111000101mmmmm 100000nnnnnttttt   B8A0 8000   Rm Rt Rn ARMv8.1 LSE Atomics
 
-INST1(swpal,       "swpal",        LD|ST,  IF_LS_3E,  0xB8E08000)
+INST1(swpal,       "swpal",    WR2|LD|ST,  IF_LS_3E,  0xB8E08000)
                                    //  swpal   Rm, Rt, [Xn]         LS_3E  1X111000111mmmmm 100000nnnnnttttt   B8E0 8000   Rm Rt Rn ARMv8.1 LSE Atomics
 
-INST1(swpl,        "swpl",         LD|ST,  IF_LS_3E,  0xB8608000)
+INST1(swpl,        "swpl",     WR2|LD|ST,  IF_LS_3E,  0xB8608000)
                                    //  swpl    Rm, Rt, [Xn]         LS_3E  1X111000011mmmmm 100000nnnnnttttt   B860 8000   Rm Rt Rn ARMv8.1 LSE Atomics
 
 INST1(adr,         "adr",          0,      IF_DI_1E,  0x10000000)

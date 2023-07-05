@@ -104,8 +104,7 @@ namespace System.Text
                 fallbackBuffer.MovePrevious();                      // don't use last fallback
             else
             {
-                Debug.Assert(_chars > _charStart ||
-                    ((bThrow == true) && (_bytes == _byteStart)),
+                Debug.Assert(_chars > _charStart || (bThrow && (_bytes == _byteStart)),
                     "[EncodingByteBuffer.MovePrevious]expected previous data or throw");
                 if (_chars > _charStart)
                     _chars--;                                        // don't use last char

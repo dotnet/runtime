@@ -243,7 +243,7 @@ After a thread or asynchronous task completes, the `AsyncLocal<AssemblyLoadConte
 ```C#
 /// <summary>Opaque disposable struct used to restore CurrentContextualReflectionContext</summary>
 /// <remarks>
-/// This is an implmentation detail of the AssemblyLoadContext.EnterContextualReflection APIs.
+/// This is an implementation detail of the AssemblyLoadContext.EnterContextualReflection APIs.
 /// It is a struct, to avoid heap allocation.
 /// It is required to be public to avoid boxing.
 /// <see cref="System.Runtime.Loader.AssemblyLoadContext.EnterContextualReflection"/>

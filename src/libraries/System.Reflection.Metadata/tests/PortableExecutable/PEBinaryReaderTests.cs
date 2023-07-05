@@ -31,7 +31,7 @@ namespace System.Reflection.PortableExecutable.Tests
         [Fact]
         public void ReadNullPaddedUTF8WorksWithNoNullPadding()
         {
-            var headerBytes = Encoding.UTF8.GetBytes(".abcdefg");
+            byte[] headerBytes = ".abcdefg"u8.ToArray();
             var stream = new MemoryStream(headerBytes);
             stream.Position = 0;
 

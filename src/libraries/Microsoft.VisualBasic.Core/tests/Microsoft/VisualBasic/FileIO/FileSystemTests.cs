@@ -285,25 +285,25 @@ namespace Microsoft.VisualBasic.FileIO.Tests
             }
         }
 
-        // Can't get current directory on OSX before setting it.
-        [ConditionalFact(typeof(PlatformDetection), nameof(PlatformDetection.IsNotOSX))]
+        [Fact]
         public void CurrentDirectoryGet()
         {
             var CurrentDirectory = System.IO.Directory.GetCurrentDirectory();
             Assert.Equal(FileIO.FileSystem.CurrentDirectory, CurrentDirectory);
         }
 
-        // On OSX, the temp directory /tmp/ is a symlink to /private/tmp, so setting the current
-        // directory to a symlinked path will result in GetCurrentDirectory returning the absolute
-        // path that followed the symlink.
-        [ConditionalFact(typeof(PlatformDetection), nameof(PlatformDetection.IsNotOSX))]
+        [Fact]
         [ActiveIssue("https://github.com/dotnet/runtime/issues/50572", TestPlatforms.Android)]
-        [ActiveIssue("https://github.com/dotnet/runtime/issues/52851", TestPlatforms.MacCatalyst)]
         public void CurrentDirectorySet()
         {
             var SavedCurrentDirectory = System.IO.Directory.GetCurrentDirectory();
             FileIO.FileSystem.CurrentDirectory = TestDirectory;
-            Assert.Equal(TestDirectory, FileIO.FileSystem.CurrentDirectory);
+
+            // If the test directory has symlinks, setting the current directory to a symlinked path will result
+            // in GetCurrentDirectory returning the absolute path that followed the symlink. We can only verify
+            // the test directory name in that case.
+            Assert.Equal(System.IO.Path.GetFileName(TestDirectory), System.IO.Path.GetFileName(FileIO.FileSystem.CurrentDirectory));
+
             FileIO.FileSystem.CurrentDirectory = SavedCurrentDirectory;
             Assert.Equal(FileIO.FileSystem.CurrentDirectory, SavedCurrentDirectory);
         }

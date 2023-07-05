@@ -61,17 +61,11 @@ ComPlusCallInfo *ComPlusCall::PopulateComPlusCallMethodDesc(MethodDesc* pMD, DWO
     MethodTable *pMT = pMD->GetMethodTable();
     MethodTable *pItfMT = NULL;
 
-    // We are going to use this MethodDesc for a CLR->COM call
-    g_IBCLogger.LogMethodCodeAccess(pMD);
-
     if (pMD->IsComPlusCall())
     {
         ComPlusCallMethodDesc *pCMD = (ComPlusCallMethodDesc *)pMD;
         if (pCMD->m_pComPlusCallInfo == NULL)
         {
-            // We are going to write the m_pComPlusCallInfo field of the MethodDesc
-            g_IBCLogger.LogMethodDescWriteAccess(pMD);
-
             LoaderHeap *pHeap = pMD->GetLoaderAllocator()->GetHighFrequencyHeap();
             ComPlusCallInfo *pTemp = (ComPlusCallInfo *)(void *)pHeap->AllocMem(S_SIZE_T(sizeof(ComPlusCallInfo)));
 
@@ -122,7 +116,7 @@ ComPlusCallInfo *ComPlusCall::PopulateComPlusCallMethodDesc(MethodDesc* pMD, DWO
     // Determine if this is a special COM event call.
     BOOL fComEventCall = pItfMT->IsComEventItfType();
 
-    // Determine if the call needs to do early bound to late bound convertion.
+    // Determine if the call needs to do early bound to late bound conversion.
     BOOL fLateBound = !fComEventCall && pItfMT->IsInterface() && pItfMT->GetComInterfaceType() == ifDispatch;
 
     if (fLateBound)
@@ -174,7 +168,7 @@ PCODE ComPlusCall::GetStubForILStub(MethodDesc* pMD, MethodDesc** ppStubMD)
 {
     STANDARD_VM_CONTRACT;
 
-    _ASSERTE(pMD->IsComPlusCall() || pMD->IsGenericComPlusCall());
+    _ASSERTE(pMD->IsComPlusCall());
     _ASSERTE(*ppStubMD == NULL);
 
     DWORD dwStubFlags;
@@ -306,13 +300,14 @@ UINT32 CLRToCOMEventCallWorker(ComPlusMethodFrame* pFrame, ComPlusCallMethodDesc
     }
     CONTRACTL_END;
 
-    struct _gc {
+    struct {
         OBJECTREF EventProviderTypeObj;
         OBJECTREF EventProviderObj;
         OBJECTREF ThisObj;
     } gc;
-    ZeroMemory(&gc, sizeof(gc));
-
+    gc.EventProviderTypeObj = NULL;
+    gc.EventProviderObj = NULL;
+    gc.ThisObj = NULL;
 
     LOG((LF_STUBS, LL_INFO1000, "Calling CLRToCOMEventCallWorker %s::%s \n", pMD->m_pszDebugClassName, pMD->m_pszDebugMethodName));
 
@@ -604,7 +599,14 @@ UINT32 CLRToCOMLateBoundWorker(
         OBJECTREF RetValType;
         OBJECTREF RetVal;
     } gc;
-    ZeroMemory(&gc, sizeof(gc));
+    gc.MemberName = NULL;
+    gc.ItfTypeObj = NULL;
+    gc.Args = NULL;
+    gc.ArgsIsByRef = NULL;
+    gc.ArgsTypes = NULL;
+    gc.ArgsWrapperTypes = NULL;
+    gc.RetValType = NULL;
+    gc.RetVal = NULL;
     GCPROTECT_BEGIN(gc);
     {
         // Retrieve the exposed type object for the interface.
@@ -616,7 +618,7 @@ UINT32 CLRToCOMLateBoundWorker(
         hr = pItfMD->GetMDImport()->GetDispIdOfMemberDef(tkMember, (ULONG*)&dispId);
         if (hr == S_OK)
         {
-            WCHAR strTmp[ARRAY_SIZE(DISPID_NAME_FORMAT_STRING W("4294967295"))];
+            WCHAR strTmp[ARRAY_SIZE(DISPID_NAME_FORMAT_STRING) + MaxUnsigned32BitDecString];
             _snwprintf_s(strTmp, ARRAY_SIZE(strTmp), _TRUNCATE, DISPID_NAME_FORMAT_STRING, dispId);
             gc.MemberName = StringObject::NewString(strTmp);
         }

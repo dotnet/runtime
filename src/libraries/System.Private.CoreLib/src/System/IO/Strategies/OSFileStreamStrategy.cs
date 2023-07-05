@@ -15,7 +15,7 @@ namespace System.IO.Strategies
         private readonly FileAccess _access; // What file was opened for.
 
         protected long _filePosition;
-        private long _appendStart; // When appending, prevent overwriting file.
+        private readonly long _appendStart; // When appending, prevent overwriting file.
 
         internal OSFileStreamStrategy(SafeFileHandle handle, FileAccess access)
         {
@@ -37,13 +37,13 @@ namespace System.IO.Strategies
             _fileHandle = handle;
         }
 
-        internal OSFileStreamStrategy(string path, FileMode mode, FileAccess access, FileShare share, FileOptions options, long preallocationSize)
+        internal OSFileStreamStrategy(string path, FileMode mode, FileAccess access, FileShare share, FileOptions options, long preallocationSize, UnixFileMode? unixCreateMode)
         {
             string fullPath = Path.GetFullPath(path);
 
             _access = access;
 
-            _fileHandle = SafeFileHandle.Open(fullPath, mode, access, share, options, preallocationSize);
+            _fileHandle = SafeFileHandle.Open(fullPath, mode, access, share, options, preallocationSize, unixCreateMode);
 
             try
             {
@@ -74,7 +74,7 @@ namespace System.IO.Strategies
 
         public sealed override bool CanWrite => !_fileHandle.IsClosed && (_access & FileAccess.Write) != 0;
 
-        public unsafe sealed override long Length => _fileHandle.GetFileLength();
+        public sealed override unsafe long Length => _fileHandle.GetFileLength();
 
         // in case of concurrent incomplete reads, there can be multiple threads trying to update the position
         // at the same time. That is why we are using Interlocked here.
@@ -85,7 +85,7 @@ namespace System.IO.Strategies
         public sealed override long Position
         {
             get => _filePosition;
-            set => _filePosition = value;
+            set => Seek(value, SeekOrigin.Begin);
         }
 
         internal sealed override string Name => _fileHandle.Path ?? SR.IO_UnknownFileName;
@@ -144,11 +144,6 @@ namespace System.IO.Strategies
 
         public sealed override long Seek(long offset, SeekOrigin origin)
         {
-            if (origin < SeekOrigin.Begin || origin > SeekOrigin.End)
-                throw new ArgumentException(SR.Argument_InvalidSeekOrigin, nameof(origin));
-            if (_fileHandle.IsClosed) ThrowHelper.ThrowObjectDisposedException_FileClosed();
-            if (!CanSeek) ThrowHelper.ThrowNotSupportedException_UnseekableStream();
-
             long oldPos = _filePosition;
             long pos = origin switch
             {
@@ -202,10 +197,10 @@ namespace System.IO.Strategies
             }
         }
 
-        public sealed override unsafe int ReadByte()
+        public sealed override int ReadByte()
         {
-            byte b;
-            return Read(new Span<byte>(&b, 1)) != 0 ? b : -1;
+            byte b = 0;
+            return Read(new Span<byte>(ref b)) != 0 ? b : -1;
         }
 
         public sealed override int Read(byte[] buffer, int offset, int count) =>
@@ -229,8 +224,8 @@ namespace System.IO.Strategies
             return r;
         }
 
-        public sealed override unsafe void WriteByte(byte value) =>
-            Write(new ReadOnlySpan<byte>(&value, 1));
+        public sealed override void WriteByte(byte value) =>
+            Write(new ReadOnlySpan<byte>(in value));
 
         public override void Write(byte[] buffer, int offset, int count) =>
             Write(new ReadOnlySpan<byte>(buffer, offset, count));
@@ -251,10 +246,10 @@ namespace System.IO.Strategies
         }
 
         public sealed override IAsyncResult BeginWrite(byte[] buffer, int offset, int count, AsyncCallback? callback, object? state) =>
-            TaskToApm.Begin(WriteAsync(buffer, offset, count), callback, state);
+            TaskToAsyncResult.Begin(WriteAsync(buffer, offset, count), callback, state);
 
         public sealed override void EndWrite(IAsyncResult asyncResult) =>
-            TaskToApm.End(asyncResult);
+            TaskToAsyncResult.End(asyncResult);
 
         public sealed override Task WriteAsync(byte[] buffer, int offset, int count, CancellationToken cancellationToken) =>
             WriteAsync(new ReadOnlyMemory<byte>(buffer, offset, count), cancellationToken).AsTask();
@@ -266,10 +261,10 @@ namespace System.IO.Strategies
         }
 
         public sealed override IAsyncResult BeginRead(byte[] buffer, int offset, int count, AsyncCallback? callback, object? state) =>
-            TaskToApm.Begin(ReadAsync(buffer, offset, count), callback, state);
+            TaskToAsyncResult.Begin(ReadAsync(buffer, offset, count), callback, state);
 
         public sealed override int EndRead(IAsyncResult asyncResult) =>
-            TaskToApm.End<int>(asyncResult);
+            TaskToAsyncResult.End<int>(asyncResult);
 
         public sealed override Task<int> ReadAsync(byte[] buffer, int offset, int count, CancellationToken cancellationToken) =>
             ReadAsync(new Memory<byte>(buffer, offset, count), cancellationToken).AsTask();

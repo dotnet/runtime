@@ -443,7 +443,7 @@ namespace System.Formats.Asn1
                 source,
                 ruleSet,
                 tmpDest,
-                (value, lastByte, dest) => CopyBitStringValue(value, lastByte, dest),
+                CopyBitStringValue,
                 isIndefinite,
                 out unusedBitCount,
                 out bytesRead);
@@ -541,10 +541,7 @@ namespace System.Formats.Asn1
                             throw new AsnContentException(SR.ContentException_InvalidUnderCerOrDer_TryBer);
                         }
 
-                        if (readerStack == null)
-                        {
-                            readerStack = new Stack<(int, int, bool, int)>();
-                        }
+                        readerStack ??= new Stack<(int, int, bool, int)>();
 
                         if (!source.Overlaps(cur, out int curOffset))
                         {

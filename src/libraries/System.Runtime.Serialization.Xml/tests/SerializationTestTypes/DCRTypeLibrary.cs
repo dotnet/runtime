@@ -304,7 +304,7 @@ namespace SerializationTestTypes
             {
                 if (_isReferenceTypeList.Count == 0)
                 {
-                    _isReferenceTypeList.Add(typeof(TestInheritence9));
+                    _isReferenceTypeList.Add(typeof(TestInheritance9));
                     _isReferenceTypeList.Add(typeof(SimpleDC));
                     _isReferenceTypeList.Add(typeof(SimpleDCWithSimpleDMRef));
                     _isReferenceTypeList.Add(typeof(SimpleDCWithRef));
@@ -354,20 +354,20 @@ namespace SerializationTestTypes
                     _isReferenceTypeList.Add(typeof(DerivedWithIsRefTrueExplicit2));
                     _isReferenceTypeList.Add(typeof(BaseNoIsRef));
                     _isReferenceTypeList.Add(typeof(DerivedWithIsRefFalseExplicit));
-                    _isReferenceTypeList.Add(typeof(TestInheritence));
-                    _isReferenceTypeList.Add(typeof(TestInheritence91));
-                    _isReferenceTypeList.Add(typeof(TestInheritence5));
-                    _isReferenceTypeList.Add(typeof(TestInheritence10));
-                    _isReferenceTypeList.Add(typeof(TestInheritence2));
-                    _isReferenceTypeList.Add(typeof(TestInheritence11));
-                    _isReferenceTypeList.Add(typeof(TestInheritence3));
-                    _isReferenceTypeList.Add(typeof(TestInheritence16));
-                    _isReferenceTypeList.Add(typeof(TestInheritence4));
-                    _isReferenceTypeList.Add(typeof(TestInheritence12));
-                    _isReferenceTypeList.Add(typeof(TestInheritence6));
-                    _isReferenceTypeList.Add(typeof(TestInheritence7));
-                    _isReferenceTypeList.Add(typeof(TestInheritence14));
-                    _isReferenceTypeList.Add(typeof(TestInheritence8));
+                    _isReferenceTypeList.Add(typeof(TestInheritance));
+                    _isReferenceTypeList.Add(typeof(TestInheritance91));
+                    _isReferenceTypeList.Add(typeof(TestInheritance5));
+                    _isReferenceTypeList.Add(typeof(TestInheritance10));
+                    _isReferenceTypeList.Add(typeof(TestInheritance2));
+                    _isReferenceTypeList.Add(typeof(TestInheritance11));
+                    _isReferenceTypeList.Add(typeof(TestInheritance3));
+                    _isReferenceTypeList.Add(typeof(TestInheritance16));
+                    _isReferenceTypeList.Add(typeof(TestInheritance4));
+                    _isReferenceTypeList.Add(typeof(TestInheritance12));
+                    _isReferenceTypeList.Add(typeof(TestInheritance6));
+                    _isReferenceTypeList.Add(typeof(TestInheritance7));
+                    _isReferenceTypeList.Add(typeof(TestInheritance14));
+                    _isReferenceTypeList.Add(typeof(TestInheritance8));
                 }
                 return _isReferenceTypeList;
             }
@@ -656,9 +656,9 @@ namespace SerializationTestTypes
                     _sampleTypeList.Add(typeof(CallBackSample_IDeserializationCallback_Explicit));
                     _sampleTypeList.Add(typeof(CallBackSample_OnDeserialized_Private_Base));
                     _sampleTypeList.Add(typeof(CallBackSample_OnDeserialized_Public_Derived));
-                    _sampleTypeList.Add(typeof(CDC_Possitive));
+                    _sampleTypeList.Add(typeof(CDC_Positive));
                     _sampleTypeList.Add(typeof(CDC_PrivateAdd));
-                    _sampleTypeList.Add(typeof(Base_Possitive_VirtualAdd));
+                    _sampleTypeList.Add(typeof(Base_Positive_VirtualAdd));
                     _sampleTypeList.Add(typeof(CDC_NewAddToPrivate));
                     _sampleTypeList.Add(typeof(CDC_PrivateDefaultCtor));
                     _sampleTypeList.Add(typeof(NonDCPerson));

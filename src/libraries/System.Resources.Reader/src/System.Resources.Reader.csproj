@@ -3,7 +3,6 @@
     <RootNamespace>System.Resources</RootNamespace>
     <IsPartialFacadeAssembly>true</IsPartialFacadeAssembly>
     <TargetFramework>$(NetCoreAppCurrent)</TargetFramework>
-    <Nullable>enable</Nullable>
   </PropertyGroup>
   <ItemGroup>
     <Reference Include="System.Runtime" />

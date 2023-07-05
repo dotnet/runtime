@@ -67,16 +67,12 @@ namespace System.IO
         // buffer character array starting at position
         // index. Returns the actual number of characters read.
         //
-        public virtual int Read(char[] buffer!!, int index, int count)
+        public virtual int Read(char[] buffer, int index, int count)
         {
-            if (index < 0)
-            {
-                throw new ArgumentOutOfRangeException(nameof(index), SR.ArgumentOutOfRange_NeedNonNegNum);
-            }
-            if (count < 0)
-            {
-                throw new ArgumentOutOfRangeException(nameof(count), SR.ArgumentOutOfRange_NeedNonNegNum);
-            }
+            ArgumentNullException.ThrowIfNull(buffer);
+
+            ArgumentOutOfRangeException.ThrowIfNegative(index);
+            ArgumentOutOfRangeException.ThrowIfNegative(count);
             if (buffer.Length - index < count)
             {
                 throw new ArgumentException(SR.Argument_InvalidOffLen);
@@ -261,12 +257,12 @@ namespace System.IO
             return sb.ToString();
         }
 
-        public virtual Task<int> ReadAsync(char[] buffer!!, int index, int count)
+        public virtual Task<int> ReadAsync(char[] buffer, int index, int count)
         {
-            if (index < 0 || count < 0)
-            {
-                throw new ArgumentOutOfRangeException(index < 0 ? nameof(index) : nameof(count), SR.ArgumentOutOfRange_NeedNonNegNum);
-            }
+            ArgumentNullException.ThrowIfNull(buffer);
+
+            ArgumentOutOfRangeException.ThrowIfNegative(index);
+            ArgumentOutOfRangeException.ThrowIfNegative(count);
             if (buffer.Length - index < count)
             {
                 throw new ArgumentException(SR.Argument_InvalidOffLen);
@@ -291,12 +287,12 @@ namespace System.IO
                 return t.Item1.Read(t.Item2.Span);
             }, new TupleSlim<TextReader, Memory<char>>(this, buffer), cancellationToken, TaskCreationOptions.DenyChildAttach, TaskScheduler.Default));
 
-        public virtual Task<int> ReadBlockAsync(char[] buffer!!, int index, int count)
+        public virtual Task<int> ReadBlockAsync(char[] buffer, int index, int count)
         {
-            if (index < 0 || count < 0)
-            {
-                throw new ArgumentOutOfRangeException(index < 0 ? nameof(index) : nameof(count), SR.ArgumentOutOfRange_NeedNonNegNum);
-            }
+            ArgumentNullException.ThrowIfNull(buffer);
+
+            ArgumentOutOfRangeException.ThrowIfNegative(index);
+            ArgumentOutOfRangeException.ThrowIfNegative(count);
             if (buffer.Length - index < count)
             {
                 throw new ArgumentException(SR.Argument_InvalidOffLen);
@@ -327,8 +323,10 @@ namespace System.IO
         }
         #endregion
 
-        public static TextReader Synchronized(TextReader reader!!)
+        public static TextReader Synchronized(TextReader reader)
         {
+            ArgumentNullException.ThrowIfNull(reader);
+
             return reader is SyncTextReader ? reader : new SyncTextReader(reader);
         }
 
@@ -389,10 +387,12 @@ namespace System.IO
                 => cancellationToken.IsCancellationRequested ? Task.FromCanceled<string>(cancellationToken) : Task.FromResult(ReadToEnd());
 
             [MethodImpl(MethodImplOptions.Synchronized)]
-            public override Task<int> ReadBlockAsync(char[] buffer!!, int index, int count)
+            public override Task<int> ReadBlockAsync(char[] buffer, int index, int count)
             {
-                if (index < 0 || count < 0)
-                    throw new ArgumentOutOfRangeException(index < 0 ? nameof(index) : nameof(count), SR.ArgumentOutOfRange_NeedNonNegNum);
+                ArgumentNullException.ThrowIfNull(buffer);
+
+                ArgumentOutOfRangeException.ThrowIfNegative(index);
+                ArgumentOutOfRangeException.ThrowIfNegative(count);
                 if (buffer.Length - index < count)
                     throw new ArgumentException(SR.Argument_InvalidOffLen);
 
@@ -400,10 +400,12 @@ namespace System.IO
             }
 
             [MethodImpl(MethodImplOptions.Synchronized)]
-            public override Task<int> ReadAsync(char[] buffer!!, int index, int count)
+            public override Task<int> ReadAsync(char[] buffer, int index, int count)
             {
-                if (index < 0 || count < 0)
-                    throw new ArgumentOutOfRangeException(index < 0 ? nameof(index) : nameof(count), SR.ArgumentOutOfRange_NeedNonNegNum);
+                ArgumentNullException.ThrowIfNull(buffer);
+
+                ArgumentOutOfRangeException.ThrowIfNegative(index);
+                ArgumentOutOfRangeException.ThrowIfNegative(count);
                 if (buffer.Length - index < count)
                     throw new ArgumentException(SR.Argument_InvalidOffLen);
 

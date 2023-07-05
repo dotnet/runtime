@@ -4,7 +4,6 @@
 // WARNING: This file is generated and should not be modified directly.
 // Instead, modify TextRawTextWriterGenerator.ttinclude
 
-#nullable disable
 using System;
 using System.IO;
 using System.Text;
@@ -43,20 +42,20 @@ namespace System.Xml
         }
 
         // Ignore DTD
-        public override void WriteDocType(string name, string pubid, string sysid, string subset)
+        public override void WriteDocType(string name, string? pubid, string? sysid, string? subset)
         {
         }
 
         // Ignore Elements
-        public override void WriteStartElement(string prefix, string localName, string ns)
+        public override void WriteStartElement(string? prefix, string localName, string? ns)
         {
         }
 
-        internal override void WriteEndElement(string prefix, string localName, string ns)
+        internal override void WriteEndElement(string? prefix, string localName, string? ns)
         {
         }
 
-        internal override void WriteFullEndElement(string prefix, string localName, string ns)
+        internal override void WriteFullEndElement(string prefix, string localName, string? ns)
         {
         }
 
@@ -65,7 +64,7 @@ namespace System.Xml
         }
 
         // Ignore attributes
-        public override void WriteStartAttribute(string prefix, string localName, string ns)
+        public override void WriteStartAttribute(string? prefix, string localName, string? ns)
         {
             base._inAttributeValue = true;
         }
@@ -89,18 +88,18 @@ namespace System.Xml
         }
 
         // Output content of CDATA sections as plain text without escaping
-        public override void WriteCData(string text)
+        public override void WriteCData(string? text)
         {
-            base.WriteRaw(text);
+            base.WriteRaw(text!);
         }
 
         // Ignore comments
-        public override void WriteComment(string text)
+        public override void WriteComment(string? text)
         {
         }
 
         // Ignore processing instructions
-        public override void WriteProcessingInstruction(string name, string text)
+        public override void WriteProcessingInstruction(string name, string? text)
         {
         }
 
@@ -116,20 +115,20 @@ namespace System.Xml
         }
 
         // Output text content without any escaping; ignore attribute values
-        public override void WriteWhitespace(string ws)
+        public override void WriteWhitespace(string? ws)
         {
             if (!base._inAttributeValue)
             {
-                base.WriteRaw(ws);
+                base.WriteRaw(ws!);
             }
         }
 
         // Output text content without any escaping; ignore attribute values
-        public override void WriteString(string textBlock)
+        public override void WriteString(string? textBlock)
         {
             if (!base._inAttributeValue)
             {
-                base.WriteRaw(textBlock);
+                base.WriteRaw(textBlock!);
             }
         }
 

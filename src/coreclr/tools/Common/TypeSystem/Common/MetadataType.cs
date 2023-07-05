@@ -2,6 +2,7 @@
 // The .NET Foundation licenses this file to you under the MIT license.
 
 using System.Collections.Generic;
+using System.Diagnostics;
 
 namespace Internal.TypeSystem
 {
@@ -90,6 +91,19 @@ namespace Internal.TypeSystem
         /// doesn't exist.
         /// </summary>
         public abstract MetadataType GetNestedType(string name);
+
+        /// <summary>
+        /// Gets a value indicating whether this is an inline array type
+        /// </summary>
+        public bool IsInlineArray
+        {
+            get
+            {
+                return (GetTypeFlags(TypeFlags.IsInlineArray | TypeFlags.AttributeCacheComputed) & TypeFlags.IsInlineArray) != 0;
+            }
+        }
+
+        public abstract int GetInlineArrayLength();
     }
 
     public struct ClassLayoutMetadata

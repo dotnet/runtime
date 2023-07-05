@@ -2,6 +2,7 @@
 // The .NET Foundation licenses this file to you under the MIT license.
 
 using System;
+using System.Diagnostics;
 using Microsoft.Extensions.Internal;
 
 namespace Microsoft.Extensions.Logging
@@ -11,6 +12,7 @@ namespace Microsoft.Extensions.Logging
     /// provided <see cref="ILoggerFactory"/>.
     /// </summary>
     /// <typeparam name="T">The type.</typeparam>
+    [DebuggerDisplay("{DebuggerToString(),nq}")]
     public class Logger<T> : ILogger<T>
     {
         private readonly ILogger _logger;
@@ -19,13 +21,15 @@ namespace Microsoft.Extensions.Logging
         /// Creates a new <see cref="Logger{T}"/>.
         /// </summary>
         /// <param name="factory">The factory.</param>
-        public Logger(ILoggerFactory factory!!)
+        public Logger(ILoggerFactory factory)
         {
-            _logger = factory.CreateLogger(TypeNameHelper.GetTypeDisplayName(typeof(T), includeGenericParameters: false, nestedTypeDelimiter: '.'));
+            ThrowHelper.ThrowIfNull(factory);
+
+            _logger = factory.CreateLogger(GetCategoryName());
         }
 
         /// <inheritdoc />
-        IDisposable ILogger.BeginScope<TState>(TState state)
+        IDisposable? ILogger.BeginScope<TState>(TState state)
         {
             return _logger.BeginScope(state);
         }
@@ -40,6 +44,13 @@ namespace Microsoft.Extensions.Logging
         void ILogger.Log<TState>(LogLevel logLevel, EventId eventId, TState state, Exception? exception, Func<TState, Exception?, string> formatter)
         {
             _logger.Log(logLevel, eventId, state, exception, formatter);
+        }
+
+        private static string GetCategoryName() => TypeNameHelper.GetTypeDisplayName(typeof(T), includeGenericParameters: false, nestedTypeDelimiter: '.');
+
+        internal string DebuggerToString()
+        {
+            return DebuggerDisplayFormatting.DebuggerToString(GetCategoryName(), this);
         }
     }
 }

@@ -89,6 +89,20 @@ namespace System.Threading.Tasks.Dataflow.Internal
             }
         }
 
+        /// <summary>Determines whether the specified id is next to be output.</summary>
+        /// <param name="id">The id of the item.</param>
+        /// <returns>true if the item is next in line; otherwise, false.</returns>
+        internal bool IsNext(long id)
+        {
+            Debug.Assert(id != Common.INVALID_REORDERING_ID, "This ID should never have been handed out.");
+            Common.ContractAssertMonitorStatus(ValueLock, held: false);
+
+            lock (ValueLock)
+            {
+                return _nextReorderedIdToOutput == id;
+            }
+        }
+
         /// <summary>
         /// Determines whether the specified id is next to be output, and if it is
         /// and if the item is "trusted" (meaning it may be output into the output

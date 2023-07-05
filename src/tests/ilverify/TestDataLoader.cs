@@ -60,13 +60,13 @@ namespace ILVerification.Tests
             {
                 if (mparams[1] == "InvalidType")
                 {
-                    var verificationErros = new List<VerifierError>();
+                    var verificationErrors = new List<VerifierError>();
                     foreach (var expectedError in mparams[2].Split('@'))
                     {
-                        verificationErros.Add((VerifierError)Enum.Parse(typeof(VerifierError), expectedError));
+                        verificationErrors.Add((VerifierError)Enum.Parse(typeof(VerifierError), expectedError));
                     }
                     var newItem = new InvalidTypeTestCase { MetadataToken = MetadataTokens.GetToken(typeDefinitionHandle) };
-                    newItem.ExpectedVerifierErrors = verificationErros;
+                    newItem.ExpectedVerifierErrors = verificationErrors;
                     return newItem;
                 }
                 return null;
@@ -139,13 +139,13 @@ namespace ILVerification.Tests
                 if (mparams.Length == 3 && mparams[1] == "Invalid")
                 {
                     var expectedErrors = mparams[2].Split('.');
-                    var verificationErros = new List<VerifierError>();
+                    var verificationErrors = new List<VerifierError>();
 
                     foreach (var item in expectedErrors)
                     {
                         if (Enum.TryParse(item, out VerifierError expectedError))
                         {
-                            verificationErros.Add(expectedError);
+                            verificationErrors.Add(expectedError);
                         }
                     }
 
@@ -153,7 +153,7 @@ namespace ILVerification.Tests
 
                     if (expectedErrors.Length > 0)
                     {
-                        newItem.ExpectedVerifierErrors = verificationErros;
+                        newItem.ExpectedVerifierErrors = verificationErrors;
                     }
 
                     return newItem;

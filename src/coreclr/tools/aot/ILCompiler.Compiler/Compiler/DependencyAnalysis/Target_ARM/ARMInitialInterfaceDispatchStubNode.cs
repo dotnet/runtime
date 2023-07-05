@@ -8,6 +8,7 @@ using ILCompiler.DependencyAnalysis.ARM;
 using ILCompiler.DependencyAnalysis.X64;
 using ILCompiler.DependencyAnalysis.X86;
 using ILCompiler.DependencyAnalysis.ARM64;
+using ILCompiler.DependencyAnalysis.LoongArch64;
 
 namespace ILCompiler.DependencyAnalysis
 {
@@ -18,7 +19,7 @@ namespace ILCompiler.DependencyAnalysis
     /// cell.
     /// </summary>
     public partial class InitialInterfaceDispatchStubNode : AssemblyStubNode
-    {      
+    {
         protected override string GetName(NodeFactory factory) => this.GetMangledName(factory.NameMangler);
 
         public override void AppendMangledName(NameMangler nameMangler, Utf8StringBuilder sb)
@@ -47,6 +48,11 @@ namespace ILCompiler.DependencyAnalysis
         }
 
         protected override void EmitCode(NodeFactory factory, ref ARM64Emitter instructionEncoder, bool relocsOnly)
+        {
+            throw new NotImplementedException();
+        }
+
+        protected override void EmitCode(NodeFactory factory, ref LoongArch64Emitter instructionEncoder, bool relocsOnly)
         {
             throw new NotImplementedException();
         }

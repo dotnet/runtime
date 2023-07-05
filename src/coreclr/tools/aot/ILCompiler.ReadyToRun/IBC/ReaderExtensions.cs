@@ -46,7 +46,7 @@ namespace ILCompiler.IBC
         {
             int result = 0;
             int shift = 0;
-            byte current = 0;
+            byte current;
             do
             {
                 current = reader.ReadByte();

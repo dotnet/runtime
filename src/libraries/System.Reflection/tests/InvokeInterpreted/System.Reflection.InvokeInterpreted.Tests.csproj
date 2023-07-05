@@ -1,0 +1,22 @@
+<Project Sdk="Microsoft.NET.Sdk">
+  <PropertyGroup>
+    <AllowUnsafeBlocks>true</AllowUnsafeBlocks>
+    <TestRuntime>true</TestRuntime>
+    <IncludeRemoteExecutor>true</IncludeRemoteExecutor>
+    <TargetFrameworks>$(NetCoreAppCurrent)</TargetFrameworks>
+  </PropertyGroup>
+  <ItemGroup>
+    <Compile Include="..\Common.cs" />
+    <Compile Include="..\ConstructorInfoTests.cs" />
+    <Compile Include="..\MethodInfoTests.cs" />
+    <Compile Include="..\PropertyInfoTests.cs" />
+    <Compile Include="$(CommonTestPath)\System\Reflection\InvokeInterpretedTests.cs" />
+  </ItemGroup>
+  <ItemGroup>
+    <ProjectReference Include="..\TestAssembly\TestAssembly.csproj" />
+  </ItemGroup>
+  <ItemGroup>
+    <!-- Assemblies that should be excluded from the bundle -->
+    <__ExcludeFromBundle Include="TestAssembly.dll" />
+  </ItemGroup>
+</Project>

@@ -2,8 +2,6 @@
 // The .NET Foundation licenses this file to you under the MIT license.
 
 using System.Collections.Generic;
-using System.Collections.Immutable;
-using System.Diagnostics.CodeAnalysis;
 
 namespace System.Reflection.Internal
 {
@@ -13,19 +11,6 @@ namespace System.Reflection.Internal
     /// </summary>
     internal static class EnumerableExtensions
     {
-        public static T? FirstOrDefault<T>(this ImmutableArray<T> collection, Func<T, bool> predicate)
-        {
-            foreach (var item in collection)
-            {
-                if (predicate(item))
-                {
-                    return item;
-                }
-            }
-
-            return default;
-        }
-
         // used only in debugger display so we needn't get fancy with optimizations.
         public static IEnumerable<TResult> Select<TSource, TResult>(this IEnumerable<TSource> source, Func<TSource, TResult> selector)
         {
@@ -33,11 +18,6 @@ namespace System.Reflection.Internal
             {
                 yield return selector(item);
             }
-        }
-
-        public static T Last<T>(this ImmutableArray<T>.Builder source)
-        {
-            return source[source.Count - 1];
         }
 
         public static IEnumerable<T> OrderBy<T>(this List<T> source, Comparison<T> comparison)

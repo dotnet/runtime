@@ -39,6 +39,7 @@ typedef struct _EventPipeSequencePoint EventPipeSequencePoint;
 typedef struct _EventPipeSequencePointBlock EventPipeSequencePointBlock;
 typedef struct _EventPipeStackBlock EventPipeStackBlock;
 typedef struct _EventPipeStackContents EventPipeStackContents;
+typedef struct _EventPipeStackContentsInstance EventPipeStackContentsInstance;
 typedef struct _EventPipeSystemTime EventPipeSystemTime;
 typedef struct _EventPipeThread EventPipeThread;
 typedef struct _EventPipeThreadHolder EventPipeThreadHolder;
@@ -185,10 +186,6 @@ typedef void (*EventPipeCallback)(
 	EventFilterDescriptor *filter_data,
 	void *callback_data);
 
-typedef void (*EventPipeCallbackDataFree)(
-	EventPipeCallback callback,
-	void *callback_data);
-
 typedef void (*EventPipeSessionSynchronousCallback)(
 	EventPipeProvider *provider,
 	uint32_t event_id,
@@ -202,7 +199,7 @@ typedef void (*EventPipeSessionSynchronousCallback)(
 	/*ep_rt_thread_handle_t*/ void *event_thread,
 	uint32_t stack_frames_len,
 	uintptr_t *stack_frames,
-    void *additional_data);
+	void *additional_data);
 
 typedef bool (*EventPipeIpcStreamFactorySuspendedPortsCallback)(void);
 

@@ -13,6 +13,9 @@ namespace System.Collections.Tests
     public abstract class SortedList_Generic_Tests<TKey, TValue> : IDictionary_Generic_Tests<TKey, TValue>
     {
         #region IDictionary<TKey, TValue> Helper Methods
+        protected override bool Enumerator_Empty_UsesSingletonInstance => true;
+        protected override bool Enumerator_Empty_Current_UndefinedOperation_Throws => true;
+        protected override bool Enumerator_Empty_ModifiedDuringEnumeration_ThrowsInvalidOperationException => false;
 
         protected override IDictionary<TKey, TValue> GenericIDictionaryFactory()
         {
@@ -274,7 +277,7 @@ namespace System.Collections.Tests
 
         [Theory]
         [MemberData(nameof(ValidCollectionSizes))]
-        public void SortedList_Generic_GetKeyAtIndex_OutOfRangeIndicies(int count)
+        public void SortedList_Generic_GetKeyAtIndex_OutOfRangeIndices(int count)
         {
             SortedList<TKey, TValue> dictionary = (SortedList<TKey, TValue>)GenericIDictionaryFactory(count);
             Assert.Throws<ArgumentOutOfRangeException>(() => dictionary.GetKeyAtIndex(-1));
@@ -301,7 +304,7 @@ namespace System.Collections.Tests
 
         [Theory]
         [MemberData(nameof(ValidCollectionSizes))]
-        public void SortedList_Generic_GetValueAtIndex_OutOfRangeIndicies(int count)
+        public void SortedList_Generic_GetValueAtIndex_OutOfRangeIndices(int count)
         {
             SortedList<TKey, TValue> dictionary = (SortedList<TKey, TValue>)GenericIDictionaryFactory(count);
             Assert.Throws<ArgumentOutOfRangeException>(() => dictionary.GetValueAtIndex(-1));
@@ -483,7 +486,7 @@ namespace System.Collections.Tests
 
         [Theory]
         [MemberData(nameof(ValidCollectionSizes))]
-        public void SortedList_Generic_SetValueAtIndex_OutOfRangeIndicies(int count)
+        public void SortedList_Generic_SetValueAtIndex_OutOfRangeIndices(int count)
         {
             if (!IsReadOnly)
             {

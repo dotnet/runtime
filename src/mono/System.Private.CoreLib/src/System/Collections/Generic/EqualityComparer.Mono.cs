@@ -32,12 +32,17 @@ namespace System.Collections.Generic
 
             /////////////////////////////////////////////////
             // KEEP THIS IN SYNC WITH THE DEVIRT CODE
-            // IN METHOD-TO-IR.C
+            // IN mini_handle_call_res_devirt
             /////////////////////////////////////////////////
 
             if (t == typeof(byte))
             {
                 return (EqualityComparer<T>)(object)(new ByteEqualityComparer());
+            }
+            else if (t == typeof(string))
+            {
+                // Specialize for string, as EqualityComparer<string>.Default is on the startup path
+                return (EqualityComparer<T>)(object)(new GenericEqualityComparer<string>());
             }
 
             if (typeof(IEquatable<T>).IsAssignableFrom(t))
@@ -48,10 +53,7 @@ namespace System.Collections.Generic
             if (t.IsGenericType && t.GetGenericTypeDefinition() == typeof(Nullable<>))
             {
                 RuntimeType u = (RuntimeType)t.GetGenericArguments()[0];
-                if (typeof(IEquatable<>).MakeGenericType(u).IsAssignableFrom(u))
-                {
-                    return (EqualityComparer<T>)RuntimeType.CreateInstanceForAnotherGenericParameter(typeof(NullableEqualityComparer<>), u);
-                }
+                return (EqualityComparer<T>)RuntimeType.CreateInstanceForAnotherGenericParameter(typeof(NullableEqualityComparer<>), u);
             }
 
             if (t.IsEnum)

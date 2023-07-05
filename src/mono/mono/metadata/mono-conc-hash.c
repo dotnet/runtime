@@ -364,8 +364,7 @@ mono_conc_g_hash_table_insert (MonoConcGHashTable *hash_table, gpointer key, gpo
 				return NULL;
 			}
 			if (key == cur_key) {
-				gpointer value = table->values [i];
-				return value;
+				return table->values [i];
 			}
 			i = (i + 1) & table_mask;
 		}
@@ -387,8 +386,7 @@ mono_conc_g_hash_table_insert (MonoConcGHashTable *hash_table, gpointer key, gpo
 				return NULL;
 			}
 			if (equal (key, cur_key)) {
-				gpointer value = table->values [i];
-				return value;
+				return table->values [i];
 			}
 			i = (i + 1) & table_mask;
 		}

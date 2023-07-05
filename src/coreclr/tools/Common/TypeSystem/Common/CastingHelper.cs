@@ -1,8 +1,6 @@
 // Licensed to the .NET Foundation under one or more agreements.
 // The .NET Foundation licenses this file to you under the MIT license.
 
-using System;
-
 using Debug = System.Diagnostics.Debug;
 
 namespace Internal.TypeSystem
@@ -197,9 +195,21 @@ namespace Internal.TypeSystem
                 return true;
             }
 
+            Instantiation typeInstantiation;
+            Instantiation methodInstantiation = default(Instantiation);
+            if (thisType.AssociatedTypeOrMethod is MethodDesc method)
+            {
+                typeInstantiation = method.OwningType.Instantiation;
+                methodInstantiation = method.Instantiation;
+            }
+            else
+            {
+                typeInstantiation = ((TypeDesc)thisType.AssociatedTypeOrMethod).Instantiation;
+            }
             foreach (var typeConstraint in thisType.TypeConstraints)
             {
-                if (typeConstraint.CanCastToInternal(otherType, protect))
+                TypeDesc instantiatedConstraint = typeConstraint.InstantiateSignature(typeInstantiation, methodInstantiation);
+                if (instantiatedConstraint.CanCastToInternal(otherType, protect))
                 {
                     return true;
                 }
@@ -310,9 +320,9 @@ namespace Internal.TypeSystem
             Debug.Assert(!type.IsEnum);
 
             // Primitive types such as E_T_I4 and E_T_U4 are interchangeable
-            // Enums with interchangeable underlying types are interchangable
+            // Enums with interchangeable underlying types are interchangeable
             // BOOL is NOT interchangeable with I1/U1, neither CHAR -- with I2/U2
-            // Float and double are not interchangable here.
+            // Float and double are not interchangeable here.
 
             TypeFlags elementType = type.Category;
             switch (elementType)
@@ -365,7 +375,7 @@ namespace Internal.TypeSystem
         {
             if (!otherType.HasVariance)
             {
-                return thisType.CanCastToNonVariantInterface(otherType, protect);
+                return thisType.CanCastToNonVariantInterface(otherType);
             }
             else
             {
@@ -386,7 +396,7 @@ namespace Internal.TypeSystem
             return false;
         }
 
-        private static bool CanCastToNonVariantInterface(this TypeDesc thisType, TypeDesc otherType, StackOverflowProtect protect)
+        private static bool CanCastToNonVariantInterface(this TypeDesc thisType, TypeDesc otherType)
         {
             if (otherType == thisType)
             {
@@ -535,7 +545,7 @@ namespace Internal.TypeSystem
             return false;
         }
 
-        private class StackOverflowProtect
+        private sealed class StackOverflowProtect
         {
             private CastingPair _value;
             private StackOverflowProtect _previous;

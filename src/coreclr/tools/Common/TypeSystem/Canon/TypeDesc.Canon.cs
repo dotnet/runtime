@@ -6,15 +6,16 @@ using Debug = System.Diagnostics.Debug;
 namespace Internal.TypeSystem
 {
     // Implements canonicalization for types
-    partial class TypeDesc
+    public partial class TypeDesc
     {
         /// <summary>
         /// Stores a cached version of the canonicalized form of this type since
         /// calculating it is a recursive operation
         /// </summary>
-        TypeDesc _specificCanonCache;
-        TypeDesc _universalCanonCache;
-        TypeDesc GetCachedCanonValue(CanonicalFormKind kind)
+        private TypeDesc _specificCanonCache;
+        private TypeDesc _universalCanonCache;
+
+        private TypeDesc GetCachedCanonValue(CanonicalFormKind kind)
         {
             switch (kind)
             {
@@ -30,7 +31,7 @@ namespace Internal.TypeSystem
             }
         }
 
-        void SetCachedCanonValue(CanonicalFormKind kind, TypeDesc value)
+        private void SetCachedCanonValue(CanonicalFormKind kind, TypeDesc value)
         {
             switch (kind)
             {

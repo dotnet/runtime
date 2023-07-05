@@ -187,9 +187,9 @@ namespace System
                     // AdjustmentRule cannot express such rule using the DaylightTransitionStart and DaylightTransitionEnd because
                     // the DaylightTransitionStart and DaylightTransitionEnd express the transition for every year.
                     // We split the rule into more rules. The first rule will start from the start year of the original rule and ends at the end of the same year.
-                    // The second splitted rule would cover the middle range of the original rule and ranging from the year start+1 to
+                    // The second split rule would cover the middle range of the original rule and ranging from the year start+1 to
                     // year end-1. The transition time in this rule would start from Jan 1st to end of December.
-                    // The last splitted rule would start from the Jan 1st of the end year of the original rule and ends at the end transition time of the original rule.
+                    // The last split rule would start from the Jan 1st of the end year of the original rule and ends at the end transition time of the original rule.
 
                     // Add the first rule.
                     DateTime endForFirstRule = new DateTime(start.Year + 1, 1, 1).AddMilliseconds(-1); // At the end of the first year
@@ -271,59 +271,13 @@ namespace System
 
         /// <summary>
         /// Helper function for retrieving a TimeZoneInfo object by time_zone_name.
-        /// This function wraps the logic necessary to keep the private
-        /// SystemTimeZones cache in working order
         ///
-        /// This function will either return a valid TimeZoneInfo instance or
-        /// it will throw 'InvalidTimeZoneException' / 'TimeZoneNotFoundException'.
+        /// This function may return null.
+        ///
+        /// assumes cachedData lock is taken
         /// </summary>
-        public static TimeZoneInfo FindSystemTimeZoneById(string id)
-        {
-            // Special case for Utc as it will not exist in the dictionary with the rest
-            // of the system time zones.  There is no need to do this check for Local.Id
-            // since Local is a real time zone that exists in the dictionary cache
-            if (string.Equals(id, UtcId, StringComparison.OrdinalIgnoreCase))
-            {
-                return Utc;
-            }
-
-            ArgumentNullException.ThrowIfNull(id);
-            if (id.Length == 0 || id.Contains('\0'))
-            {
-                throw new TimeZoneNotFoundException(SR.Format(SR.TimeZoneNotFound_MissingData, id));
-            }
-
-            TimeZoneInfo? value;
-            Exception? e;
-
-            TimeZoneInfoResult result;
-
-            CachedData cachedData = s_cachedData;
-
-            lock (cachedData)
-            {
-                result = TryGetTimeZone(id, false, out value, out e, cachedData, alwaysFallbackToLocalMachine: true);
-            }
-
-            if (result == TimeZoneInfoResult.Success)
-            {
-                return value!;
-            }
-            else if (result == TimeZoneInfoResult.InvalidTimeZoneException)
-            {
-                Debug.Assert(e is InvalidTimeZoneException,
-                    "TryGetTimeZone must create an InvalidTimeZoneException when it returns TimeZoneInfoResult.InvalidTimeZoneException");
-                throw e;
-            }
-            else if (result == TimeZoneInfoResult.SecurityException)
-            {
-                throw new SecurityException(SR.Format(SR.Security_CannotReadFileData, id), e);
-            }
-            else
-            {
-                throw new TimeZoneNotFoundException(SR.Format(SR.TimeZoneNotFound_MissingData, id), e);
-            }
-        }
+        private static TimeZoneInfoResult TryGetTimeZone(string id, out TimeZoneInfo? timeZone, out Exception? e, CachedData cachedData)
+            => TryGetTimeZone(id, false, out timeZone, out e, cachedData, alwaysFallbackToLocalMachine: true);
 
         // DateTime.Now fast path that avoids allocating an historically accurate TimeZoneInfo.Local and just creates a 1-year (current year) accurate time zone
         internal static TimeSpan GetDateTimeNowUtcOffsetFromUtc(DateTime time, out bool isAmbiguousLocalDst)
@@ -826,7 +780,7 @@ namespace System
                 DayOfWeek day;
                 if (!TZif_ParseMDateRule(date, out month, out week, out day))
                 {
-                    throw new InvalidTimeZoneException(SR.Format(SR.InvalidTimeZone_UnparseablePosixMDateString, date.ToString()));
+                    throw new InvalidTimeZoneException(SR.Format(SR.InvalidTimeZone_UnparsablePosixMDateString, date.ToString()));
                 }
 
                 return TransitionTime.CreateFloatingDateRule(ParseTimeOfDay(time), month, week, day);
@@ -899,7 +853,7 @@ namespace System
 
             int index = 1;
 
-            if (index >= date.Length || ((uint)(date[index] - '0') > '9'-'0'))
+            if ((uint)index >= (uint)date.Length || !char.IsAsciiDigit(date[index]))
             {
                 throw new InvalidTimeZoneException(SR.InvalidTimeZone_InvalidJulianDay);
             }
@@ -908,11 +862,11 @@ namespace System
 
             do
             {
-                julianDay = julianDay * 10 + (int) (date[index] - '0');
+                julianDay = julianDay * 10 + (int)(date[index] - '0');
                 index++;
-            } while (index < date.Length && ((uint)(date[index] - '0') <= '9'-'0'));
+            } while ((uint)index < (uint)date.Length && char.IsAsciiDigit(date[index]));
 
-            int[] days = GregorianCalendarHelper.DaysToMonth365;
+            ReadOnlySpan<int> days = GregorianCalendar.DaysToMonth365;
 
             if (julianDay == 0 || julianDay > days[days.Length - 1])
             {
@@ -1007,7 +961,7 @@ namespace System
             return !standardName.IsEmpty && !standardOffset.IsEmpty;
         }
 
-        private static ReadOnlySpan<char> TZif_ParsePosixName(ReadOnlySpan<char> posixFormat, ref int index)
+        private static ReadOnlySpan<char> TZif_ParsePosixName(ReadOnlySpan<char> posixFormat, scoped ref int index)
         {
             bool isBracketEnclosed = index < posixFormat.Length && posixFormat[index] == '<';
             if (isBracketEnclosed)
@@ -1034,10 +988,10 @@ namespace System
             }
         }
 
-        private static ReadOnlySpan<char> TZif_ParsePosixOffset(ReadOnlySpan<char> posixFormat, ref int index) =>
+        private static ReadOnlySpan<char> TZif_ParsePosixOffset(ReadOnlySpan<char> posixFormat, scoped ref int index) =>
             TZif_ParsePosixString(posixFormat, ref index, c => !char.IsDigit(c) && c != '+' && c != '-' && c != ':');
 
-        private static void TZif_ParsePosixDateTime(ReadOnlySpan<char> posixFormat, ref int index, out ReadOnlySpan<char> date, out ReadOnlySpan<char> time)
+        private static void TZif_ParsePosixDateTime(ReadOnlySpan<char> posixFormat, scoped ref int index, out ReadOnlySpan<char> date, out ReadOnlySpan<char> time)
         {
             time = null;
 
@@ -1049,13 +1003,13 @@ namespace System
             }
         }
 
-        private static ReadOnlySpan<char> TZif_ParsePosixDate(ReadOnlySpan<char> posixFormat, ref int index) =>
+        private static ReadOnlySpan<char> TZif_ParsePosixDate(ReadOnlySpan<char> posixFormat, scoped ref int index) =>
             TZif_ParsePosixString(posixFormat, ref index, c => c == '/' || c == ',');
 
-        private static ReadOnlySpan<char> TZif_ParsePosixTime(ReadOnlySpan<char> posixFormat, ref int index) =>
+        private static ReadOnlySpan<char> TZif_ParsePosixTime(ReadOnlySpan<char> posixFormat, scoped ref int index) =>
             TZif_ParsePosixString(posixFormat, ref index, c => c == ',');
 
-        private static ReadOnlySpan<char> TZif_ParsePosixString(ReadOnlySpan<char> posixFormat, ref int index, Func<char, bool> breakCondition)
+        private static ReadOnlySpan<char> TZif_ParsePosixString(ReadOnlySpan<char> posixFormat, scoped ref int index, Func<char, bool> breakCondition)
         {
             int startIndex = index;
             for (; index < posixFormat.Length; index++)
@@ -1260,7 +1214,7 @@ namespace System
             }
         }
 
-        private struct TZifType
+        private readonly struct TZifType
         {
             public const int Length = 6;
 
@@ -1280,7 +1234,7 @@ namespace System
             }
         }
 
-        private struct TZifHead
+        private readonly struct TZifHead
         {
             public const int Length = 44;
 
@@ -1318,7 +1272,7 @@ namespace System
                 // skip the 15 byte reserved field
 
                 // don't use the BitConverter class which parses data
-                // based on the Endianess of the machine architecture.
+                // based on the Endianness of the machine architecture.
                 // this data is expected to always be in "standard byte order",
                 // regardless of the machine it is being processed on.
 

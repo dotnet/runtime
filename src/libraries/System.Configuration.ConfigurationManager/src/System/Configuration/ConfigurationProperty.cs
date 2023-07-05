@@ -260,7 +260,7 @@ namespace System.Configuration
             }
         }
 
-        private void ValidatePropertyName(string name)
+        private static void ValidatePropertyName(string name)
         {
             if (string.IsNullOrEmpty(name))
                 throw new ArgumentException(SR.String_null_or_empty, nameof(name));

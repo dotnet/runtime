@@ -3,14 +3,15 @@
 
 using System;
 using System.Collections.Generic;
-using System.Globalization;
 using System.IO;
 using System.Reflection.Metadata;
+using System.Reflection.Metadata.Ecma335;
 using System.Reflection.PortableExecutable;
-using System.Xml;
+using System.Resources;
+
+using ILCompiler.DependencyAnalysis;
 
 using Internal.IL;
-using Internal.IL.Stubs;
 using Internal.TypeSystem;
 using Internal.TypeSystem.Ecma;
 
@@ -24,10 +25,16 @@ namespace ILCompiler
         private readonly FeatureSwitchHashtable _hashtable;
         private readonly ILProvider _nestedILProvider;
 
-        public FeatureSwitchManager(ILProvider nestedILProvider, IEnumerable<KeyValuePair<string, bool>> switchValues)
+        public FeatureSwitchManager(ILProvider nestedILProvider, Logger logger, IEnumerable<KeyValuePair<string, bool>> switchValues)
         {
             _nestedILProvider = nestedILProvider;
-            _hashtable = new FeatureSwitchHashtable(new Dictionary<string, bool>(switchValues));
+
+            // Last setting wins
+            var dictionary = new Dictionary<string, bool>();
+            foreach ((string name, bool value) in switchValues)
+                dictionary[name] = value;
+
+            _hashtable = new FeatureSwitchHashtable(logger, dictionary);
         }
 
         private BodySubstitution GetSubstitution(MethodDesc method)
@@ -85,10 +92,10 @@ namespace ILCompiler
                 var resultDef = result.GetMethodILDefinition();
                 if (resultDef != result)
                 {
-                    MethodIL newBodyDef = GetMethodILWithInlinedSubstitutions(resultDef);
+                    MethodIL newBodyDef = GetMethodILWithInlinedSubstitutions(result);
 
                     // If we didn't rewrite the body, we can keep the existing result.
-                    if (newBodyDef != resultDef)
+                    if (newBodyDef != result)
                         result = new InstantiatedMethodIL(method, newBodyDef);
                 }
                 else
@@ -102,7 +109,7 @@ namespace ILCompiler
 
         // Flags that we track for each byte of the IL instruction stream.
         [Flags]
-        enum OpcodeFlags : byte
+        private enum OpcodeFlags : byte
         {
             // This offset is an instruction boundary.
             InstructionStart = 0x1,
@@ -116,6 +123,9 @@ namespace ILCompiler
             // Beginning of a basic block in the rewritten stream
             // (Lets us avoid seeing lots of small basic blocks within eliminated chunks.)
             VisibleBasicBlockStart = 0x10,
+
+            // This is a potential SR.get_SomeResourceString call.
+            GetResourceStringCall = 0x20,
 
             // The instruction at this offset is reachable
             Mark = 0x80,
@@ -142,8 +152,14 @@ namespace ILCompiler
             // Last step is a sweep - we replace the tail of all unreachable blocks with "br $-2"
             // and nop out the rest. If the basic block is smaller than 2 bytes, we don't touch it.
             // We also eliminate any EH records that correspond to the stubbed out basic block.
+            //
+            // We also attempt to rewrite calls to SR.SomeResourceString accessors with string
+            // literals looked up from the managed resources.
 
-            Debug.Assert(method.GetMethodILDefinition() == method);
+            // Do not attempt to inline resource strings if we only want to use resource keys.
+            // The optimizations are not compatible.
+            bool shouldInlineResourceStrings =
+                !_hashtable._switchValues.TryGetValue("System.Resources.UseSystemResourceKeys", out bool useResourceKeys) || !useResourceKeys;
 
             ILExceptionRegion[] ehRegions = method.GetExceptionRegions();
             byte[] methodBytes = method.GetILBytes();
@@ -246,6 +262,8 @@ namespace ILCompiler
                 }
             }
 
+            bool hasGetResourceStringCall = false;
+
             // Mark all reachable basic blocks
             //
             // We also do another round of basic block marking to mark beginning of visible basic blocks
@@ -277,7 +295,21 @@ namespace ILCompiler
                         if (delta >= 0 && delta < ehRegion.TryLength)
                         {
                             if (ehRegion.Kind == ILExceptionRegionKind.Filter)
+                            {
                                 offsetsToVisit.Push(ehRegion.FilterOffset);
+
+                                // Filter must end with endfilter, so ensure we don't accidentally remove it.
+                                // ECMA-335 dictates that filter block starts at FilterOffset and ends at HandlerOffset.
+                                int expectedEndfilterLocation = ehRegion.HandlerOffset - 2;
+                                bool isValidFilter = expectedEndfilterLocation >= 0
+                                    && (flags[expectedEndfilterLocation] & OpcodeFlags.InstructionStart) != 0
+                                    && methodBytes[expectedEndfilterLocation] == (byte)ILOpcode.prefix1
+                                    && methodBytes[expectedEndfilterLocation + 1] == unchecked((byte)ILOpcode.endfilter);
+                                if (isValidFilter)
+                                {
+                                    flags[expectedEndfilterLocation] |= OpcodeFlags.VisibleBasicBlockStart | OpcodeFlags.Mark;
+                                }
+                            }
 
                             offsetsToVisit.Push(ehRegion.HandlerOffset);
 
@@ -387,6 +419,19 @@ namespace ILCompiler
                         if (reader.HasNext)
                             flags[reader.Offset] |= OpcodeFlags.VisibleBasicBlockStart;
                     }
+                    else if (shouldInlineResourceStrings && opcode == ILOpcode.call)
+                    {
+                        var callee = method.GetObject(reader.ReadILToken(), NotFoundBehavior.ReturnNull) as EcmaMethod;
+                        if (callee != null && callee.IsSpecialName && callee.OwningType is EcmaType calleeType
+                            && calleeType.Name == InlineableStringsResourceNode.ResourceAccessorTypeName
+                            && calleeType.Namespace == InlineableStringsResourceNode.ResourceAccessorTypeNamespace
+                            && callee.Signature is { Length: 0, IsStatic: true }
+                            && callee.Name.StartsWith("get_", StringComparison.Ordinal))
+                        {
+                            flags[offset] |= OpcodeFlags.GetResourceStringCall;
+                            hasGetResourceStringCall = true;
+                        }
+                    }
                     else
                     {
                         reader.Skip(opcode);
@@ -398,17 +443,17 @@ namespace ILCompiler
             }
 
             // Now sweep unreachable basic blocks by replacing them with nops
-            bool hasUnmarkedIntructions = false;
+            bool hasUnmarkedInstruction = false;
             foreach (var flag in flags)
             {
                 if ((flag & OpcodeFlags.InstructionStart) != 0 &&
                     (flag & OpcodeFlags.Mark) == 0)
                 {
-                    hasUnmarkedIntructions = true;
+                    hasUnmarkedInstruction = true;
                 }
             }
 
-            if (!hasUnmarkedIntructions)
+            if (!hasUnmarkedInstruction && !hasGetResourceStringCall)
                 return method;
 
             byte[] newBody = (byte[])methodBytes.Clone();
@@ -447,7 +492,7 @@ namespace ILCompiler
 
             // EH regions with unmarked handlers belong to unmarked basic blocks
             // Need to eliminate them because they're not usable.
-            ArrayBuilder<ILExceptionRegion> newEHRegions = new ArrayBuilder<ILExceptionRegion>();
+            ArrayBuilder<ILExceptionRegion> newEHRegions = default(ArrayBuilder<ILExceptionRegion>);
             foreach (ILExceptionRegion ehRegion in ehRegions)
             {
                 if ((flags[ehRegion.HandlerOffset] & OpcodeFlags.Mark) != 0)
@@ -463,7 +508,7 @@ namespace ILCompiler
             IEnumerable<ILSequencePoint> oldSequencePoints = debugInfo?.GetSequencePoints();
             if (oldSequencePoints != null)
             {
-                ArrayBuilder<ILSequencePoint> sequencePoints = new ArrayBuilder<ILSequencePoint>();
+                ArrayBuilder<ILSequencePoint> sequencePoints = default(ArrayBuilder<ILSequencePoint>);
                 foreach (var sequencePoint in oldSequencePoints)
                 {
                     if (sequencePoint.Offset < flags.Length && (flags[sequencePoint.Offset] & OpcodeFlags.Mark) != 0)
@@ -475,7 +520,47 @@ namespace ILCompiler
                 debugInfo = new SubstitutedDebugInformation(debugInfo, sequencePoints.ToArray());
             }
 
-            return new SubstitutedMethodIL(method, newBody, newEHRegions.ToArray(), debugInfo);
+            // We only optimize EcmaMethods because there we can find out the highest string token RID
+            // in use.
+            ArrayBuilder<string> newStrings = default;
+            if (hasGetResourceStringCall && method.GetMethodILDefinition() is EcmaMethodIL ecmaMethodIL)
+            {
+                // We're going to inject new string tokens. Start where the last token of the module left off.
+                // We don't need this token to be globally unique because all token resolution happens in the context
+                // of a MethodIL and we're making a new one here. It just has to be unique to the MethodIL.
+                int tokenRid = ecmaMethodIL.Module.MetadataReader.GetHeapSize(HeapIndex.UserString);
+
+                for (int offset = 0; offset < flags.Length; offset++)
+                {
+                    if ((flags[offset] & OpcodeFlags.GetResourceStringCall) == 0)
+                        continue;
+
+                    Debug.Assert(newBody[offset] == (byte)ILOpcode.call);
+                    var getter = (EcmaMethod)method.GetObject(new ILReader(newBody, offset + 1).ReadILToken());
+
+                    // If we can't get the string, this might be something else.
+                    string resourceString = GetResourceStringForAccessor(getter);
+                    if (resourceString == null)
+                        continue;
+
+                    // If we ran out of tokens, we can't optimize anymore.
+                    if (tokenRid > 0xFFFFFF)
+                        continue;
+
+                    newStrings.Add(resourceString);
+
+                    // call and ldstr are both 5-byte instructions: opcode followed by a token.
+                    newBody[offset] = (byte)ILOpcode.ldstr;
+                    newBody[offset + 1] = (byte)tokenRid;
+                    newBody[offset + 2] = (byte)(tokenRid >> 8);
+                    newBody[offset + 3] = (byte)(tokenRid >> 16);
+                    newBody[offset + 4] = TokenTypeString;
+
+                    tokenRid++;
+                }
+            }
+
+            return new SubstitutedMethodIL(method.GetMethodILDefinition(), newBody, newEHRegions.ToArray(), debugInfo, newStrings.ToArray());
         }
 
         private bool TryGetConstantArgument(MethodIL methodIL, byte[] body, OpcodeFlags[] flags, int offset, int argIndex, out int constant)
@@ -503,6 +588,13 @@ namespace ILCompiler
                             && (opcode != ILOpcode.callvirt || !method.IsVirtual))
                         {
                             constant = (int)substitution.Value;
+                            return true;
+                        }
+                        else if (method.IsIntrinsic && method.Name is "op_Inequality" or "op_Equality"
+                            && method.OwningType is MetadataType mdType
+                            && mdType.Name == "Type" && mdType.Namespace == "System" && mdType.Module == mdType.Context.SystemModule
+                            && TryExpandTypeEquality(methodIL, body, flags, currentOffset, method.Name, out constant))
+                        {
                             return true;
                         }
                         else
@@ -644,19 +736,117 @@ namespace ILCompiler
             return false;
         }
 
-        private class SubstitutedMethodIL : MethodIL
+        private string GetResourceStringForAccessor(EcmaMethod method)
+        {
+            Debug.Assert(method.Name.StartsWith("get_", StringComparison.Ordinal));
+            string resourceStringName = method.Name.Substring(4);
+
+            Dictionary<string, string> dict = _hashtable.GetOrCreateValue(method.Module).InlineableResourceStrings;
+            if (dict != null
+                && dict.TryGetValue(resourceStringName, out string result))
+            {
+                return result;
+            }
+
+            return null;
+        }
+
+        private static bool TryExpandTypeEquality(MethodIL methodIL, byte[] body, OpcodeFlags[] flags, int offset, string op, out int constant)
+        {
+            // We expect to see a sequence:
+            // ldtoken Foo
+            // call GetTypeFromHandle
+            // ldtoken Bar
+            // call GetTypeFromHandle
+            // -> offset points here
+            constant = 0;
+            const int SequenceLength = 20;
+            if (offset < SequenceLength)
+                return false;
+
+            if ((flags[offset - SequenceLength] & OpcodeFlags.InstructionStart) == 0)
+                return false;
+
+            ILReader reader = new ILReader(body, offset - SequenceLength);
+
+            TypeDesc type1 = ReadLdToken(ref reader, methodIL, flags);
+            if (type1 == null)
+                return false;
+
+            if (!ReadGetTypeFromHandle(ref reader, methodIL, flags))
+                return false;
+
+            TypeDesc type2 = ReadLdToken(ref reader, methodIL, flags);
+            if (type1 == null)
+                return false;
+
+            if (!ReadGetTypeFromHandle(ref reader, methodIL, flags))
+                return false;
+
+            // Dataflow runs on top of uninstantiated IL and we can't answer some questions there.
+            // Unfortunately this means dataflow will still see code that the rest of the system
+            // might have optimized away. It should not be a problem in practice.
+            if (type1.ContainsSignatureVariables() || type2.ContainsSignatureVariables())
+                return false;
+
+            bool? equality = TypeExtensions.CompareTypesForEquality(type1, type2);
+            if (!equality.HasValue)
+                return false;
+
+            constant = equality.Value ? 1 : 0;
+
+            if (op == "op_Inequality")
+                constant ^= 1;
+
+            return true;
+
+            static TypeDesc ReadLdToken(ref ILReader reader, MethodIL methodIL, OpcodeFlags[] flags)
+            {
+                ILOpcode opcode = reader.ReadILOpcode();
+                if (opcode != ILOpcode.ldtoken)
+                    return null;
+
+                TypeDesc t = (TypeDesc)methodIL.GetObject(reader.ReadILToken());
+
+                if ((flags[reader.Offset] & OpcodeFlags.BasicBlockStart) != 0)
+                    return null;
+
+                return t;
+            }
+
+            static bool ReadGetTypeFromHandle(ref ILReader reader, MethodIL methodIL, OpcodeFlags[] flags)
+            {
+                ILOpcode opcode = reader.ReadILOpcode();
+                if (opcode != ILOpcode.call)
+                    return false;
+
+                MethodDesc method = (MethodDesc)methodIL.GetObject(reader.ReadILToken());
+
+                if (!method.IsIntrinsic || method.Name != "GetTypeFromHandle")
+                    return false;
+
+                if ((flags[reader.Offset] & OpcodeFlags.BasicBlockStart) != 0)
+                    return false;
+
+                return true;
+            }
+        }
+
+        private sealed class SubstitutedMethodIL : MethodIL
         {
             private readonly byte[] _body;
             private readonly ILExceptionRegion[] _ehRegions;
             private readonly MethodIL _wrappedMethodIL;
             private readonly MethodDebugInformation _debugInfo;
+            private readonly string[] _newStrings;
 
-            public SubstitutedMethodIL(MethodIL wrapped, byte[] body, ILExceptionRegion[] ehRegions, MethodDebugInformation debugInfo)
+            public SubstitutedMethodIL(MethodIL wrapped, byte[] body, ILExceptionRegion[] ehRegions, MethodDebugInformation debugInfo, string[] newStrings)
             {
                 _wrappedMethodIL = wrapped;
                 _body = body;
                 _ehRegions = ehRegions;
                 _debugInfo = debugInfo;
+                _newStrings = newStrings;
             }
 
             public override MethodDesc OwningMethod => _wrappedMethodIL.OwningMethod;
@@ -665,11 +855,27 @@ namespace ILCompiler
             public override ILExceptionRegion[] GetExceptionRegions() => _ehRegions;
             public override byte[] GetILBytes() => _body;
             public override LocalVariableDefinition[] GetLocals() => _wrappedMethodIL.GetLocals();
-            public override object GetObject(int token, NotFoundBehavior notFoundBehavior) => _wrappedMethodIL.GetObject(token, notFoundBehavior);
+            public override object GetObject(int token, NotFoundBehavior notFoundBehavior)
+            {
+                // If this is a string token, it could be one of the new string tokens we injected.
+                if ((token >>> 24) == TokenTypeString
+                    && _wrappedMethodIL.GetMethodILDefinition() is EcmaMethodIL ecmaMethodIL)
+                {
+                    int rid = token & 0xFFFFFF;
+                    int maxRealTokenRid = ecmaMethodIL.Module.MetadataReader.GetHeapSize(HeapIndex.UserString);
+                    if (rid >= maxRealTokenRid)
+                    {
+                        // Yep, string injected by us.
+                        return _newStrings[rid - maxRealTokenRid];
+                    }
+                }
+
+                return _wrappedMethodIL.GetObject(token, notFoundBehavior);
+            }
             public override MethodDebugInformation GetDebugInfo() => _debugInfo;
         }
 
-        private class SubstitutedDebugInformation : MethodDebugInformation
+        private sealed class SubstitutedDebugInformation : MethodDebugInformation
         {
             private readonly MethodDebugInformation _originalDebugInformation;
             private readonly ILSequencePoint[] _sequencePoints;
@@ -685,12 +891,16 @@ namespace ILCompiler
             public override IEnumerable<ILSequencePoint> GetSequencePoints() => _sequencePoints;
         }
 
-        private class FeatureSwitchHashtable : LockFreeReaderHashtable<EcmaModule, AssemblyFeatureInfo>
-        {
-            private readonly Dictionary<string, bool> _switchValues;
+        private const int TokenTypeString = 0x70; // CorTokenType for strings
 
-            public FeatureSwitchHashtable(Dictionary<string, bool> switchValues)
+        private sealed class FeatureSwitchHashtable : LockFreeReaderHashtable<EcmaModule, AssemblyFeatureInfo>
+        {
+            internal readonly Dictionary<string, bool> _switchValues;
+            private readonly Logger _logger;
+
+            public FeatureSwitchHashtable(Logger logger, Dictionary<string, bool> switchValues)
             {
+                _logger = logger;
                 _switchValues = switchValues;
             }
 
@@ -701,18 +911,19 @@ namespace ILCompiler
 
             protected override AssemblyFeatureInfo CreateValueFromKey(EcmaModule key)
             {
-                return new AssemblyFeatureInfo(key, _switchValues);
+                return new AssemblyFeatureInfo(key, _logger, _switchValues);
             }
         }
 
-        private class AssemblyFeatureInfo
+        private sealed class AssemblyFeatureInfo
         {
             public EcmaModule Module { get; }
 
             public Dictionary<MethodDesc, BodySubstitution> BodySubstitutions { get; }
             public Dictionary<FieldDesc, object> FieldSubstitutions { get; }
+            public Dictionary<string, string> InlineableResourceStrings { get; }
 
-            public AssemblyFeatureInfo(EcmaModule module, IReadOnlyDictionary<string, bool> featureSwitchValues)
+            public AssemblyFeatureInfo(EcmaModule module, Logger logger, IReadOnlyDictionary<string, bool> featureSwitchValues)
             {
                 Module = module;
 
@@ -740,171 +951,30 @@ namespace ILCompiler
                             ms = new UnmanagedMemoryStream(reader.CurrentPointer, length);
                         }
 
-                        (BodySubstitutions, FieldSubstitutions) = SubstitutionsReader.GetSubstitutions(module.Context, XmlReader.Create(ms), module, featureSwitchValues);
+                        (BodySubstitutions, FieldSubstitutions) = BodySubstitutionsParser.GetSubstitutions(logger, module.Context, ms, resource, module, "name", featureSwitchValues);
                     }
-                }
-            }
-        }
-
-        private class BodySubstitution
-        {
-            private object _value;
-
-            private readonly static object Throw = new object();
-
-            public readonly static BodySubstitution ThrowingBody = new BodySubstitution(Throw);
-            public readonly static BodySubstitution EmptyBody = new BodySubstitution(null);
-
-            public object Value
-            {
-                get
-                {
-                    Debug.Assert(_value != Throw);
-                    return _value;
-                }
-            }
-
-            private BodySubstitution(object value) => _value = value;
-
-            public static BodySubstitution Create(object value) => new BodySubstitution(value);
-            public MethodIL EmitIL(MethodDesc method)
-            {
-                ILEmitter emit = new ILEmitter();
-                ILCodeStream codestream = emit.NewCodeStream();
-
-                if (_value == Throw)
-                {
-                    codestream.EmitCallThrowHelper(emit, method.Context.GetHelperEntryPoint("ThrowHelpers", "ThrowFeatureBodyRemoved"));
-                }
-                else if (_value == null)
-                {
-                    Debug.Assert(method.Signature.ReturnType.IsVoid);
-                    codestream.Emit(ILOpcode.ret);
-                }
-                else
-                {
-                    Debug.Assert(_value is int);
-                    codestream.EmitLdc((int)_value);
-                    codestream.Emit(ILOpcode.ret);
-                }
-
-                return emit.Link(method);
-            }
-        }
-
-        private class SubstitutionsReader : ProcessXmlBase
-        {
-            private readonly Dictionary<MethodDesc, BodySubstitution> _methodSubstitutions;
-            private readonly Dictionary<FieldDesc, object> _fieldSubstitutions;
-
-            private SubstitutionsReader(TypeSystemContext context, XmlReader reader, ModuleDesc module, IReadOnlyDictionary<string, bool> featureSwitchValues)
-                : base(context, reader, module, featureSwitchValues)
-            {
-                _methodSubstitutions = new Dictionary<MethodDesc, BodySubstitution>();
-                _fieldSubstitutions = new Dictionary<FieldDesc, object>();
-            }
-
-            protected override void ProcessMethod(MethodDesc method)
-            {
-                string action = GetAttribute("body");
-                if (!String.IsNullOrEmpty(action))
-                {
-                    switch (action)
+                    else if (InlineableStringsResourceNode.IsInlineableStringsResource(module, resourceName))
                     {
-                        case "remove":
-                            _methodSubstitutions.Add(method, BodySubstitution.ThrowingBody);
-                            break;
-                        case "stub":
-                            BodySubstitution stubBody;
-                            if (method.Signature.ReturnType.IsVoid)
-                                stubBody = BodySubstitution.EmptyBody;
-                            else
-                                stubBody = BodySubstitution.Create(TryCreateSubstitution(method.Signature.ReturnType, GetAttribute("value")));
+                        BlobReader reader = resourceDirectory.GetReader((int)resource.Offset, resourceDirectory.Length - (int)resource.Offset);
+                        int length = (int)reader.ReadUInt32();
 
-                            if (stubBody != null)
-                            {
-                                _methodSubstitutions[method] = stubBody;
-                            }
-                            else
-                            {
-                                // Context.LogWarning ($"Invalid value for '{method.GetDisplayName ()}' stub", 2010, _xmlDocumentLocation);
-                            }
+                        UnmanagedMemoryStream ms;
+                        unsafe
+                        {
+                            ms = new UnmanagedMemoryStream(reader.CurrentPointer, length);
+                        }
 
-                            break;
-                        default:
-                            //Context.LogWarning($"Unknown body modification '{action}' for '{method.GetDisplayName()}'", 2011, _xmlDocumentLocation);
-                            break;
+                        InlineableResourceStrings = new Dictionary<string, string>();
+
+                        using var resReader = new ResourceReader(ms);
+                        var enumerator = resReader.GetEnumerator();
+                        while (enumerator.MoveNext())
+                        {
+                            if (enumerator.Key is string key && enumerator.Value is string value)
+                                InlineableResourceStrings[key] = value;
+                        }
                     }
                 }
-            }
-
-            protected override void ProcessField(FieldDesc field)
-            {
-                if (!field.IsStatic || field.IsLiteral)
-                {
-                    // Context.LogWarning ($"Substituted field '{field.GetDisplayName ()}' needs to be static field.", 2013, _xmlDocumentLocation);
-                    return;
-                }
-
-                string value = GetAttribute("value");
-                if (string.IsNullOrEmpty(value))
-                {
-                    //Context.LogWarning($"Missing 'value' attribute for field '{field.GetDisplayName()}'.", 2014, _xmlDocumentLocation);
-                    return;
-                }
-
-                object substitution = TryCreateSubstitution(field.FieldType, value);
-                if (substitution == null)
-                {
-                    //Context.LogWarning($"Invalid value '{value}' for '{field.GetDisplayName()}'.", 2015, _xmlDocumentLocation);
-                    return;
-                }
-
-                if (String.Equals(GetAttribute("initialize"), "true", StringComparison.InvariantCultureIgnoreCase))
-                {
-                    // We would need to also mess with the cctor of the type to set the field to this value:
-                    //
-                    // * Linker will remove all stsfld instructions referencing this field from the cctor
-                    // * It will place an explicit stsfld in front of the last "ret" instruction in the cctor
-                    //
-                    // This approach... has issues.
-                    throw new NotSupportedException();
-                }
-
-                _fieldSubstitutions[field] = substitution;
-            }
-
-            private object TryCreateSubstitution(TypeDesc type, string value)
-            {
-                switch (type.UnderlyingType.Category)
-                {
-                    case TypeFlags.Int32:
-                        if (string.IsNullOrEmpty(value))
-                            return 0;
-                        else if (int.TryParse(value, NumberStyles.Integer, CultureInfo.InvariantCulture, out int iresult))
-                            return iresult;
-                        break;
-
-                    case TypeFlags.Boolean:
-                        if (String.IsNullOrEmpty(value))
-                            return 0;
-                        else if (bool.TryParse(value, out bool bvalue))
-                            return bvalue ? 1 : 0;
-                        else
-                            goto case TypeFlags.Int32;
-
-                    default:
-                        throw new NotSupportedException(type.ToString());
-                }
-
-                return null;
-            }
-
-            public static (Dictionary<MethodDesc, BodySubstitution>, Dictionary<FieldDesc, object>) GetSubstitutions(TypeSystemContext context, XmlReader reader, ModuleDesc module, IReadOnlyDictionary<string, bool> featureSwitchValues)
-            {
-                var rdr = new SubstitutionsReader(context, reader, module, featureSwitchValues);
-                rdr.ProcessXml();
-                return (rdr._methodSubstitutions, rdr._fieldSubstitutions);
             }
         }
     }

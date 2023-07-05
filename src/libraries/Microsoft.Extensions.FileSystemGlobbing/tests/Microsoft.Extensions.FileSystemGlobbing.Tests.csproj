@@ -6,6 +6,10 @@
   </PropertyGroup>
 
   <ItemGroup>
+    <RdXmlFile Include="default.rd.xml" />
+  </ItemGroup>
+
+  <ItemGroup>
     <ProjectReference Include="..\src\Microsoft.Extensions.FileSystemGlobbing.csproj" />
   </ItemGroup>
 

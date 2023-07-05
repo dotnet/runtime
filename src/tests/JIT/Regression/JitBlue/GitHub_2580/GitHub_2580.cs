@@ -1,6 +1,7 @@
 // Licensed to the .NET Foundation under one or more agreements.
 // The .NET Foundation licenses this file to you under the MIT license.
 
+using Xunit;
 // Issue https://github.com/dotnet/coreclr/issues/2580 fix description
 //
 // The changes fix a bug generating 16-bit signed comparison code to                                 
@@ -24,7 +25,7 @@
 // cmp      cx, ax                 ; compare only 16 bits                                            
 // seta     cl                     ; set if above (unsigned comparison)  <-- Fixed instruction       
 
-internal static class MicrsoftNETBug
+public static class MicrsoftNETBug
 {
     private struct S
     {
@@ -45,7 +46,8 @@ internal static class MicrsoftNETBug
 
 
 
-    private static int Main()
+    [Fact]
+    public static int TestEntryPoint()
     {
         System.Console.WriteLine(".NET 4.6.01055 bug repro: unshort comparison below incorrectly outputs False (only) when code is optimized");
 

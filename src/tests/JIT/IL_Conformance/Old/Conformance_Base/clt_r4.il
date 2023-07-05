@@ -2,7 +2,10 @@
 // The .NET Foundation licenses this file to you under the MIT license.
 
 .assembly extern legacy library mscorlib {}
+.assembly extern xunit.core {}
 
+.namespace clt_r4
+{
 .class public _clt {
 
 .field public static	float32 _inf
@@ -17,430 +20,433 @@
 .method public static void initialize() {
 .maxstack		10
 	ldc.r4		float32(0xFF800000)
-	stsfld	float32 _clt::_inf
+	stsfld	float32 clt_r4._clt::_inf
 	ldc.r4		float32(0xFF7FFFFF)
-	stsfld	float32 _clt::_min
+	stsfld	float32 clt_r4._clt::_min
 	ldc.r4		float32(0xBF800000)
-	stsfld	float32 _clt::_one
+	stsfld	float32 clt_r4._clt::_one
 	ldc.r4		float32(0x80000000)
-	stsfld	float32 _clt::_zero
+	stsfld	float32 clt_r4._clt::_zero
 	ldc.r4		float32(0x00000000)
-	stsfld	float32 _clt::zero
+	stsfld	float32 clt_r4._clt::zero
 	ldc.r4		float32(0x3F800000)
-	stsfld	float32 _clt::one
+	stsfld	float32 clt_r4._clt::one
 	ldc.r4		float32(0x7F7FFFFF)
-	stsfld	float32 _clt::max
+	stsfld	float32 clt_r4._clt::max
 	ldc.r4		float32(0x7F800000)
-	stsfld	float32 _clt::inf
+	stsfld	float32 clt_r4._clt::inf
 	ldc.r4		float32(0x7FC00000)
-	stsfld	float32 _clt::NaN
+	stsfld	float32 clt_r4._clt::NaN
 	ret
 }
 
-.method public static	int32 main(class [mscorlib]System.String[]) {
+.method public static	int32 main() {
+.custom instance void [xunit.core]Xunit.FactAttribute::.ctor() = (
+    01 00 00 00
+)
 .entrypoint
 .maxstack		10
 
-call	void _clt::initialize()
+call	void clt_r4._clt::initialize()
 
-	ldsfld	float32 _clt::_inf
-	ldsfld	float32 _clt::_inf
+	ldsfld	float32 clt_r4._clt::_inf
+	ldsfld	float32 clt_r4._clt::_inf
 	clt
 	brtrue		FAIL
 
-	ldsfld	float32 _clt::_inf
-	ldsfld	float32 _clt::_min
+	ldsfld	float32 clt_r4._clt::_inf
+	ldsfld	float32 clt_r4._clt::_min
 	clt
 	brfalse		FAIL
 
-	ldsfld	float32 _clt::_inf
-	ldsfld	float32 _clt::_one
+	ldsfld	float32 clt_r4._clt::_inf
+	ldsfld	float32 clt_r4._clt::_one
 	clt
 	brfalse		FAIL
 
-	ldsfld	float32 _clt::_inf
-	ldsfld	float32 _clt::_zero
+	ldsfld	float32 clt_r4._clt::_inf
+	ldsfld	float32 clt_r4._clt::_zero
 	clt
 	brfalse		FAIL
 
-	ldsfld	float32 _clt::_inf
-	ldsfld	float32 _clt::zero
+	ldsfld	float32 clt_r4._clt::_inf
+	ldsfld	float32 clt_r4._clt::zero
 	clt
 	brfalse		FAIL
 
-	ldsfld	float32 _clt::_inf
-	ldsfld	float32 _clt::one
+	ldsfld	float32 clt_r4._clt::_inf
+	ldsfld	float32 clt_r4._clt::one
 	clt
 	brfalse		FAIL
 
-	ldsfld	float32 _clt::_inf
-	ldsfld	float32 _clt::max
+	ldsfld	float32 clt_r4._clt::_inf
+	ldsfld	float32 clt_r4._clt::max
 	clt
 	brfalse		FAIL
 
-	ldsfld	float32 _clt::_inf
-	ldsfld	float32 _clt::inf
+	ldsfld	float32 clt_r4._clt::_inf
+	ldsfld	float32 clt_r4._clt::inf
 	clt
 	brfalse		FAIL
 
-	ldsfld	float32 _clt::_inf
-	ldsfld	float32 _clt::NaN
+	ldsfld	float32 clt_r4._clt::_inf
+	ldsfld	float32 clt_r4._clt::NaN
 	clt
 	brtrue		FAIL
-	ldsfld	float32 _clt::_min
-	ldsfld	float32 _clt::_inf
-	clt
-	brtrue		FAIL
-
-	ldsfld	float32 _clt::_min
-	ldsfld	float32 _clt::_min
+	ldsfld	float32 clt_r4._clt::_min
+	ldsfld	float32 clt_r4._clt::_inf
 	clt
 	brtrue		FAIL
 
-	ldsfld	float32 _clt::_min
-	ldsfld	float32 _clt::_one
+	ldsfld	float32 clt_r4._clt::_min
+	ldsfld	float32 clt_r4._clt::_min
+	clt
+	brtrue		FAIL
+
+	ldsfld	float32 clt_r4._clt::_min
+	ldsfld	float32 clt_r4._clt::_one
 	clt
 	brfalse		FAIL
 
-	ldsfld	float32 _clt::_min
-	ldsfld	float32 _clt::_zero
+	ldsfld	float32 clt_r4._clt::_min
+	ldsfld	float32 clt_r4._clt::_zero
 	clt
 	brfalse		FAIL
 
-	ldsfld	float32 _clt::_min
-	ldsfld	float32 _clt::zero
+	ldsfld	float32 clt_r4._clt::_min
+	ldsfld	float32 clt_r4._clt::zero
 	clt
 	brfalse		FAIL
 
-	ldsfld	float32 _clt::_min
-	ldsfld	float32 _clt::one
+	ldsfld	float32 clt_r4._clt::_min
+	ldsfld	float32 clt_r4._clt::one
 	clt
 	brfalse		FAIL
 
-	ldsfld	float32 _clt::_min
-	ldsfld	float32 _clt::max
+	ldsfld	float32 clt_r4._clt::_min
+	ldsfld	float32 clt_r4._clt::max
 	clt
 	brfalse		FAIL
 
-	ldsfld	float32 _clt::_min
-	ldsfld	float32 _clt::inf
+	ldsfld	float32 clt_r4._clt::_min
+	ldsfld	float32 clt_r4._clt::inf
 	clt
 	brfalse		FAIL
 
-	ldsfld	float32 _clt::_min
-	ldsfld	float32 _clt::NaN
+	ldsfld	float32 clt_r4._clt::_min
+	ldsfld	float32 clt_r4._clt::NaN
 	clt
 	brtrue		FAIL
-	ldsfld	float32 _clt::_one
-	ldsfld	float32 _clt::_inf
-	clt
-	brtrue		FAIL
-
-	ldsfld	float32 _clt::_one
-	ldsfld	float32 _clt::_min
+	ldsfld	float32 clt_r4._clt::_one
+	ldsfld	float32 clt_r4._clt::_inf
 	clt
 	brtrue		FAIL
 
-	ldsfld	float32 _clt::_one
-	ldsfld	float32 _clt::_one
+	ldsfld	float32 clt_r4._clt::_one
+	ldsfld	float32 clt_r4._clt::_min
 	clt
 	brtrue		FAIL
 
-	ldsfld	float32 _clt::_one
-	ldsfld	float32 _clt::_zero
+	ldsfld	float32 clt_r4._clt::_one
+	ldsfld	float32 clt_r4._clt::_one
+	clt
+	brtrue		FAIL
+
+	ldsfld	float32 clt_r4._clt::_one
+	ldsfld	float32 clt_r4._clt::_zero
 	clt
 	brfalse		FAIL
 
-	ldsfld	float32 _clt::_one
-	ldsfld	float32 _clt::zero
+	ldsfld	float32 clt_r4._clt::_one
+	ldsfld	float32 clt_r4._clt::zero
 	clt
 	brfalse		FAIL
 
-	ldsfld	float32 _clt::_one
-	ldsfld	float32 _clt::one
+	ldsfld	float32 clt_r4._clt::_one
+	ldsfld	float32 clt_r4._clt::one
 	clt
 	brfalse		FAIL
 
-	ldsfld	float32 _clt::_one
-	ldsfld	float32 _clt::max
+	ldsfld	float32 clt_r4._clt::_one
+	ldsfld	float32 clt_r4._clt::max
 	clt
 	brfalse		FAIL
 
-	ldsfld	float32 _clt::_one
-	ldsfld	float32 _clt::inf
+	ldsfld	float32 clt_r4._clt::_one
+	ldsfld	float32 clt_r4._clt::inf
 	clt
 	brfalse		FAIL
 
-	ldsfld	float32 _clt::_one
-	ldsfld	float32 _clt::NaN
+	ldsfld	float32 clt_r4._clt::_one
+	ldsfld	float32 clt_r4._clt::NaN
 	clt
 	brtrue		FAIL
-	ldsfld	float32 _clt::_zero
-	ldsfld	float32 _clt::_inf
-	clt
-	brtrue		FAIL
-
-	ldsfld	float32 _clt::_zero
-	ldsfld	float32 _clt::_min
+	ldsfld	float32 clt_r4._clt::_zero
+	ldsfld	float32 clt_r4._clt::_inf
 	clt
 	brtrue		FAIL
 
-	ldsfld	float32 _clt::_zero
-	ldsfld	float32 _clt::_one
+	ldsfld	float32 clt_r4._clt::_zero
+	ldsfld	float32 clt_r4._clt::_min
 	clt
 	brtrue		FAIL
 
-	ldsfld	float32 _clt::_zero
-	ldsfld	float32 _clt::_zero
+	ldsfld	float32 clt_r4._clt::_zero
+	ldsfld	float32 clt_r4._clt::_one
 	clt
 	brtrue		FAIL
 
-	ldsfld	float32 _clt::_zero
-	ldsfld	float32 _clt::zero
+	ldsfld	float32 clt_r4._clt::_zero
+	ldsfld	float32 clt_r4._clt::_zero
 	clt
 	brtrue		FAIL
 
-	ldsfld	float32 _clt::_zero
-	ldsfld	float32 _clt::one
+	ldsfld	float32 clt_r4._clt::_zero
+	ldsfld	float32 clt_r4._clt::zero
+	clt
+	brtrue		FAIL
+
+	ldsfld	float32 clt_r4._clt::_zero
+	ldsfld	float32 clt_r4._clt::one
 	clt
 	brfalse		FAIL
 
-	ldsfld	float32 _clt::_zero
-	ldsfld	float32 _clt::max
+	ldsfld	float32 clt_r4._clt::_zero
+	ldsfld	float32 clt_r4._clt::max
 	clt
 	brfalse		FAIL
 
-	ldsfld	float32 _clt::_zero
-	ldsfld	float32 _clt::inf
+	ldsfld	float32 clt_r4._clt::_zero
+	ldsfld	float32 clt_r4._clt::inf
 	clt
 	brfalse		FAIL
 
-	ldsfld	float32 _clt::_zero
-	ldsfld	float32 _clt::NaN
+	ldsfld	float32 clt_r4._clt::_zero
+	ldsfld	float32 clt_r4._clt::NaN
 	clt
 	brtrue		FAIL
-	ldsfld	float32 _clt::zero
-	ldsfld	float32 _clt::_inf
-	clt
-	brtrue		FAIL
-
-	ldsfld	float32 _clt::zero
-	ldsfld	float32 _clt::_min
+	ldsfld	float32 clt_r4._clt::zero
+	ldsfld	float32 clt_r4._clt::_inf
 	clt
 	brtrue		FAIL
 
-	ldsfld	float32 _clt::zero
-	ldsfld	float32 _clt::_one
+	ldsfld	float32 clt_r4._clt::zero
+	ldsfld	float32 clt_r4._clt::_min
 	clt
 	brtrue		FAIL
 
-	ldsfld	float32 _clt::zero
-	ldsfld	float32 _clt::_zero
+	ldsfld	float32 clt_r4._clt::zero
+	ldsfld	float32 clt_r4._clt::_one
 	clt
 	brtrue		FAIL
 
-	ldsfld	float32 _clt::zero
-	ldsfld	float32 _clt::zero
+	ldsfld	float32 clt_r4._clt::zero
+	ldsfld	float32 clt_r4._clt::_zero
 	clt
 	brtrue		FAIL
 
-	ldsfld	float32 _clt::zero
-	ldsfld	float32 _clt::one
+	ldsfld	float32 clt_r4._clt::zero
+	ldsfld	float32 clt_r4._clt::zero
+	clt
+	brtrue		FAIL
+
+	ldsfld	float32 clt_r4._clt::zero
+	ldsfld	float32 clt_r4._clt::one
 	clt
 	brfalse		FAIL
 
-	ldsfld	float32 _clt::zero
-	ldsfld	float32 _clt::max
+	ldsfld	float32 clt_r4._clt::zero
+	ldsfld	float32 clt_r4._clt::max
 	clt
 	brfalse		FAIL
 
-	ldsfld	float32 _clt::zero
-	ldsfld	float32 _clt::inf
+	ldsfld	float32 clt_r4._clt::zero
+	ldsfld	float32 clt_r4._clt::inf
 	clt
 	brfalse		FAIL
 
-	ldsfld	float32 _clt::zero
-	ldsfld	float32 _clt::NaN
+	ldsfld	float32 clt_r4._clt::zero
+	ldsfld	float32 clt_r4._clt::NaN
 	clt
 	brtrue		FAIL
 
-	ldsfld	float32 _clt::one
-	ldsfld	float32 _clt::_inf
+	ldsfld	float32 clt_r4._clt::one
+	ldsfld	float32 clt_r4._clt::_inf
 	clt
 	brtrue		FAIL
 
-	ldsfld	float32 _clt::one
-	ldsfld	float32 _clt::_min
+	ldsfld	float32 clt_r4._clt::one
+	ldsfld	float32 clt_r4._clt::_min
 	clt
 	brtrue		FAIL
 
-	ldsfld	float32 _clt::one
-	ldsfld	float32 _clt::_one
+	ldsfld	float32 clt_r4._clt::one
+	ldsfld	float32 clt_r4._clt::_one
 	clt
 	brtrue		FAIL
 
-	ldsfld	float32 _clt::one
-	ldsfld	float32 _clt::_zero
+	ldsfld	float32 clt_r4._clt::one
+	ldsfld	float32 clt_r4._clt::_zero
 	clt
 	brtrue		FAIL
 
-	ldsfld	float32 _clt::one
-	ldsfld	float32 _clt::zero
+	ldsfld	float32 clt_r4._clt::one
+	ldsfld	float32 clt_r4._clt::zero
 	clt
 	brtrue		FAIL
 
-	ldsfld	float32 _clt::one
-	ldsfld	float32 _clt::one
+	ldsfld	float32 clt_r4._clt::one
+	ldsfld	float32 clt_r4._clt::one
 	clt
 	brtrue		FAIL
 
-	ldsfld	float32 _clt::one
-	ldsfld	float32 _clt::max
+	ldsfld	float32 clt_r4._clt::one
+	ldsfld	float32 clt_r4._clt::max
 	clt
 	brfalse		FAIL
 
-	ldsfld	float32 _clt::one
-	ldsfld	float32 _clt::inf
+	ldsfld	float32 clt_r4._clt::one
+	ldsfld	float32 clt_r4._clt::inf
 	clt
 	brfalse		FAIL
 
-	ldsfld	float32 _clt::one
-	ldsfld	float32 _clt::NaN
+	ldsfld	float32 clt_r4._clt::one
+	ldsfld	float32 clt_r4._clt::NaN
 	clt
 	brtrue		FAIL
 
-	ldsfld	float32 _clt::max
-	ldsfld	float32 _clt::_inf
+	ldsfld	float32 clt_r4._clt::max
+	ldsfld	float32 clt_r4._clt::_inf
 	clt
 	brtrue		FAIL
 
-	ldsfld	float32 _clt::max
-	ldsfld	float32 _clt::_min
+	ldsfld	float32 clt_r4._clt::max
+	ldsfld	float32 clt_r4._clt::_min
 	clt
 	brtrue		FAIL
 
-	ldsfld	float32 _clt::max
-	ldsfld	float32 _clt::_one
+	ldsfld	float32 clt_r4._clt::max
+	ldsfld	float32 clt_r4._clt::_one
 	clt
 	brtrue		FAIL
 
-	ldsfld	float32 _clt::max
-	ldsfld	float32 _clt::_zero
+	ldsfld	float32 clt_r4._clt::max
+	ldsfld	float32 clt_r4._clt::_zero
 	clt
 	brtrue		FAIL
 
-	ldsfld	float32 _clt::max
-	ldsfld	float32 _clt::zero
+	ldsfld	float32 clt_r4._clt::max
+	ldsfld	float32 clt_r4._clt::zero
 	clt
 	brtrue		FAIL
 
-	ldsfld	float32 _clt::max
-	ldsfld	float32 _clt::one
+	ldsfld	float32 clt_r4._clt::max
+	ldsfld	float32 clt_r4._clt::one
 	clt
 	brtrue		FAIL
 
-	ldsfld	float32 _clt::max
-	ldsfld	float32 _clt::max
+	ldsfld	float32 clt_r4._clt::max
+	ldsfld	float32 clt_r4._clt::max
 	clt
 	brtrue		FAIL
 
-	ldsfld	float32 _clt::max
-	ldsfld	float32 _clt::inf
+	ldsfld	float32 clt_r4._clt::max
+	ldsfld	float32 clt_r4._clt::inf
 	clt
 	brfalse		FAIL
 
-	ldsfld	float32 _clt::max
-	ldsfld	float32 _clt::NaN
+	ldsfld	float32 clt_r4._clt::max
+	ldsfld	float32 clt_r4._clt::NaN
 	clt
 	brtrue		FAIL
 
-	ldsfld	float32 _clt::inf
-	ldsfld	float32 _clt::_inf
+	ldsfld	float32 clt_r4._clt::inf
+	ldsfld	float32 clt_r4._clt::_inf
 	clt
 	brtrue		FAIL
 
-	ldsfld	float32 _clt::inf
-	ldsfld	float32 _clt::_min
+	ldsfld	float32 clt_r4._clt::inf
+	ldsfld	float32 clt_r4._clt::_min
 	clt
 	brtrue		FAIL
 
-	ldsfld	float32 _clt::inf
-	ldsfld	float32 _clt::_one
+	ldsfld	float32 clt_r4._clt::inf
+	ldsfld	float32 clt_r4._clt::_one
 	clt
 	brtrue		FAIL
 
-	ldsfld	float32 _clt::inf
-	ldsfld	float32 _clt::_zero
+	ldsfld	float32 clt_r4._clt::inf
+	ldsfld	float32 clt_r4._clt::_zero
 	clt
 	brtrue		FAIL
 
-	ldsfld	float32 _clt::inf
-	ldsfld	float32 _clt::zero
+	ldsfld	float32 clt_r4._clt::inf
+	ldsfld	float32 clt_r4._clt::zero
 	clt
 	brtrue		FAIL
 
-	ldsfld	float32 _clt::inf
-	ldsfld	float32 _clt::one
+	ldsfld	float32 clt_r4._clt::inf
+	ldsfld	float32 clt_r4._clt::one
 	clt
 	brtrue		FAIL
 
-	ldsfld	float32 _clt::inf
-	ldsfld	float32 _clt::max
+	ldsfld	float32 clt_r4._clt::inf
+	ldsfld	float32 clt_r4._clt::max
 	clt
 	brtrue		FAIL
 
-	ldsfld	float32 _clt::inf
-	ldsfld	float32 _clt::inf
+	ldsfld	float32 clt_r4._clt::inf
+	ldsfld	float32 clt_r4._clt::inf
 	clt
 	brtrue		FAIL
 
-	ldsfld	float32 _clt::inf
-	ldsfld	float32 _clt::NaN
+	ldsfld	float32 clt_r4._clt::inf
+	ldsfld	float32 clt_r4._clt::NaN
 	clt
 	brtrue		FAIL
 
-	ldsfld	float32 _clt::NaN
-	ldsfld	float32 _clt::_inf
+	ldsfld	float32 clt_r4._clt::NaN
+	ldsfld	float32 clt_r4._clt::_inf
 	clt
 	brtrue		FAIL
 
-	ldsfld	float32 _clt::NaN
-	ldsfld	float32 _clt::_min
+	ldsfld	float32 clt_r4._clt::NaN
+	ldsfld	float32 clt_r4._clt::_min
 	clt
 	brtrue		FAIL
 
-	ldsfld	float32 _clt::NaN
-	ldsfld	float32 _clt::_one
+	ldsfld	float32 clt_r4._clt::NaN
+	ldsfld	float32 clt_r4._clt::_one
 	clt
 	brtrue		FAIL
 
-	ldsfld	float32 _clt::NaN
-	ldsfld	float32 _clt::_zero
+	ldsfld	float32 clt_r4._clt::NaN
+	ldsfld	float32 clt_r4._clt::_zero
 	clt
 	brtrue		FAIL
 
-	ldsfld	float32 _clt::NaN
-	ldsfld	float32 _clt::zero
+	ldsfld	float32 clt_r4._clt::NaN
+	ldsfld	float32 clt_r4._clt::zero
 	clt
 	brtrue		FAIL
 
-	ldsfld	float32 _clt::NaN
-	ldsfld	float32 _clt::one
+	ldsfld	float32 clt_r4._clt::NaN
+	ldsfld	float32 clt_r4._clt::one
 	clt
 	brtrue		FAIL
 
-	ldsfld	float32 _clt::NaN
-	ldsfld	float32 _clt::max
+	ldsfld	float32 clt_r4._clt::NaN
+	ldsfld	float32 clt_r4._clt::max
 	clt
 	brtrue		FAIL
 
-	ldsfld	float32 _clt::NaN
-	ldsfld	float32 _clt::inf
+	ldsfld	float32 clt_r4._clt::NaN
+	ldsfld	float32 clt_r4._clt::inf
 	clt
 	brtrue		FAIL
 
-	ldsfld	float32 _clt::NaN
-	ldsfld	float32 _clt::NaN
+	ldsfld	float32 clt_r4._clt::NaN
+	ldsfld	float32 clt_r4._clt::NaN
 	clt
 	brtrue		FAIL
 
@@ -452,3 +458,4 @@ FAIL:
 }
 }
 .assembly clt_r4{}
+}

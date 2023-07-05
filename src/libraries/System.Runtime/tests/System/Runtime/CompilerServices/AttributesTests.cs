@@ -192,6 +192,15 @@ namespace System.Runtime.CompilerServices.Tests
             Assert.Equal(MethodImplOptions.Unmanaged, attr3.Value);
         }
 
+        [Theory]
+        [InlineData(-1)]
+        [InlineData(42)]
+        public static void RefSafetyRulesAttributeTests(int version)
+        {
+            var attr = new RefSafetyRulesAttribute(version);
+            Assert.Equal(version, attr.Version);
+        }
+
         [Fact]
         public static void ReferenceAssemblyAttributeTests()
         {
@@ -249,7 +258,7 @@ namespace System.Runtime.CompilerServices.Tests
             Assert.Equal(assemblyFullName, attr.AssemblyFullName);
 
             AssertExtensions.Throws<ArgumentNullException>("assemblyFullName", () => new TypeForwardedFromAttribute(null));
-            AssertExtensions.Throws<ArgumentNullException>("assemblyFullName", () => new TypeForwardedFromAttribute(""));
+            AssertExtensions.Throws<ArgumentException>("assemblyFullName", () => new TypeForwardedFromAttribute(""));
         }
 
         [Fact]
@@ -325,6 +334,18 @@ namespace System.Runtime.CompilerServices.Tests
         public static void RequiredMemberAttributeTests()
         {
             new RequiredMemberAttribute();
+        }
+
+        [Fact]
+        public static void CompilerFeatureRequiredTests()
+        {
+            var attr1 = new CompilerFeatureRequiredAttribute("feature1");
+            Assert.Equal("feature1", attr1.FeatureName);
+            Assert.False(attr1.IsOptional);
+
+            var attr2 = new CompilerFeatureRequiredAttribute("feature2") { IsOptional = true };
+            Assert.Equal("feature2", attr2.FeatureName);
+            Assert.True(attr2.IsOptional);
         }
     }
 }

@@ -77,9 +77,13 @@ namespace System.IO.Compression
                                                           string sourceFileName, string entryName, CompressionLevel compressionLevel) =>
             DoCreateEntryFromFile(destination, sourceFileName, entryName, compressionLevel);
 
-        internal static ZipArchiveEntry DoCreateEntryFromFile(this ZipArchive destination!!,
-                                                              string sourceFileName!!, string entryName!!, CompressionLevel? compressionLevel)
+        internal static ZipArchiveEntry DoCreateEntryFromFile(this ZipArchive destination,
+                                                              string sourceFileName, string entryName, CompressionLevel? compressionLevel)
         {
+            ArgumentNullException.ThrowIfNull(destination);
+            ArgumentNullException.ThrowIfNull(sourceFileName);
+            ArgumentNullException.ThrowIfNull(entryName);
+
             // Checking of compressionLevel is passed down to DeflateStream and the IDeflater implementation
             // as it is a pluggable component that completely encapsulates the meaning of compressionLevel.
 

@@ -17,8 +17,11 @@ namespace System.ComponentModel.Design.Serialization
         /// <summary>
         /// Creates a new designer serialization attribute.
         /// </summary>
-        public RootDesignerSerializerAttribute(Type serializerType!!, Type baseSerializerType!!, bool reloadable)
+        public RootDesignerSerializerAttribute(Type serializerType, Type baseSerializerType, bool reloadable)
         {
+            ArgumentNullException.ThrowIfNull(serializerType);
+            ArgumentNullException.ThrowIfNull(baseSerializerType);
+
             SerializerTypeName = serializerType.AssemblyQualifiedName;
             SerializerBaseTypeName = baseSerializerType.AssemblyQualifiedName;
             Reloadable = reloadable;
@@ -27,8 +30,10 @@ namespace System.ComponentModel.Design.Serialization
         /// <summary>
         /// Creates a new designer serialization attribute.
         /// </summary>
-        public RootDesignerSerializerAttribute(string serializerTypeName, Type baseSerializerType!!, bool reloadable)
+        public RootDesignerSerializerAttribute(string serializerTypeName, Type baseSerializerType, bool reloadable)
         {
+            ArgumentNullException.ThrowIfNull(baseSerializerType);
+
             SerializerTypeName = serializerTypeName;
             SerializerBaseTypeName = baseSerializerType.AssemblyQualifiedName;
             Reloadable = reloadable;
@@ -74,13 +79,13 @@ namespace System.ComponentModel.Design.Serialization
             {
                 if (_typeId == null)
                 {
-                    string baseType = SerializerBaseTypeName ?? string.Empty;
+                    ReadOnlySpan<char> baseType = SerializerBaseTypeName;
                     int comma = baseType.IndexOf(',');
-                    if (comma != -1)
+                    if (comma >= 0)
                     {
-                        baseType = baseType.Substring(0, comma);
+                        baseType = baseType.Slice(0, comma);
                     }
-                    _typeId = GetType().FullName + baseType;
+                    _typeId = string.Concat(GetType().FullName, baseType);
                 }
                 return _typeId;
             }

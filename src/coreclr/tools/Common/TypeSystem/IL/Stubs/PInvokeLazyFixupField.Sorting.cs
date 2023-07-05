@@ -5,7 +5,7 @@ using Internal.TypeSystem;
 
 namespace Internal.IL.Stubs
 {
-    partial class PInvokeLazyFixupField
+    public partial class PInvokeLazyFixupField
     {
         protected override int ClassCode => -1784477702;
 

@@ -4,7 +4,7 @@
 namespace Internal.TypeSystem
 {
     // Implements canonicalization handling for TypeDefs
-    partial class DefType
+    public partial class DefType
     {
         protected override TypeDesc ConvertToCanonFormImpl(CanonicalFormKind kind)
         {

@@ -2,13 +2,14 @@
 // The .NET Foundation licenses this file to you under the MIT license.
 
 .assembly extern mscorlib {}
-.assembly a {}
+.assembly extern xunit.core {}
+.assembly 'GitHub_8133' {}
 
 // The original repro for this test was SBCG due to incorrect computation of value numbers for the ref-typed locals
 // in Test::Main(). Despite the fact that each local refers to a different array element, all of the locals were
 // assigned the same value number.
 
-.class Test extends [mscorlib]System.Object
+.class public Test extends [mscorlib]System.Object
 {
     .method static void Equal(int32 i, int32 j) cil noinlining
     {
@@ -35,6 +36,9 @@ fail:
 
     .method public hidebysig static int32 RefAdd() cil managed
     {
+        .custom instance void [xunit.core]Xunit.FactAttribute::.ctor() = (
+            01 00 00 00
+        )
         .entrypoint
 
         .locals init (

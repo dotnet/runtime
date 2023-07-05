@@ -233,7 +233,7 @@ namespace System.Linq.Parallel
     {
         public abstract HashJoinHashLookup<THashKey, TElement, TOrderKey> BuildHashLookup(CancellationToken cancellationToken);
 
-        protected void BuildBaseHashLookup<TBaseBuilder, TBaseElement, TBaseOrderKey>(
+        protected static void BuildBaseHashLookup<TBaseBuilder, TBaseElement, TBaseOrderKey>(
             QueryOperatorEnumerator<Pair<TBaseElement, THashKey>, TBaseOrderKey> dataSource,
             TBaseBuilder baseHashBuilder,
             CancellationToken cancellationToken) where TBaseBuilder : IBaseHashBuilder<TBaseElement, TBaseOrderKey>

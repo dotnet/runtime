@@ -61,19 +61,6 @@ void FILECanonicalizePath(LPSTR lpUnixPath);
 
 /*++
 Function:
-  FileDosToUnixPathA
-
-Abstract:
-  Change a DOS path to a Unix path. Replace '\' by '/'.
-
-Parameter:
-  IN/OUT lpPath: path to be modified
---*/
-void
-FILEDosToUnixPathA(LPSTR lpPath);
-
-/*++
-Function:
   FILEGetDirectoryFromFullPathA
 
 Parse the given path. If it contains a directory part and a file part,

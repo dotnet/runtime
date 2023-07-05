@@ -46,7 +46,7 @@ unsafe partial class GenericsNative
 
 unsafe partial class GenericsTest
 {
-    public static int Main(string[] args)
+    public static int Main()
     {
         try
         {

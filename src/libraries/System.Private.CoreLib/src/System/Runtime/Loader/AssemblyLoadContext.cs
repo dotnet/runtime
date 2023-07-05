@@ -8,6 +8,7 @@ using System.Diagnostics.CodeAnalysis;
 using System.IO;
 using System.Reflection;
 using System.Runtime.InteropServices;
+using System.Security;
 using System.Threading;
 
 namespace System.Runtime.Loader
@@ -293,8 +294,10 @@ namespace System.Runtime.Loader
         }
 
         // Helper to return AssemblyName corresponding to the path of an IL assembly
-        public static AssemblyName GetAssemblyName(string assemblyPath!!)
+        public static AssemblyName GetAssemblyName(string assemblyPath)
         {
+            ArgumentNullException.ThrowIfNull(assemblyPath);
+
             return AssemblyName.GetAssemblyName(assemblyPath);
         }
 
@@ -306,10 +309,12 @@ namespace System.Runtime.Loader
             return null;
         }
 
-#if !CORERT
-        [System.Security.DynamicSecurityMethod] // Methods containing StackCrawlMark local var has to be marked DynamicSecurityMethod
-        public Assembly LoadFromAssemblyName(AssemblyName assemblyName!!)
+#if !NATIVEAOT
+        [DynamicSecurityMethod] // Methods containing StackCrawlMark local var has to be marked DynamicSecurityMethod
+        public Assembly LoadFromAssemblyName(AssemblyName assemblyName)
         {
+            ArgumentNullException.ThrowIfNull(assemblyName);
+
             // Attempt to load the assembly, using the same ordering as static load, in the current load context.
             StackCrawlMark stackMark = StackCrawlMark.LookForMyCaller;
             return RuntimeAssembly.InternalLoad(assemblyName, ref stackMark, this);
@@ -319,8 +324,10 @@ namespace System.Runtime.Loader
         // These methods load assemblies into the current AssemblyLoadContext
         // They may be used in the implementation of an AssemblyLoadContext derivation
         [RequiresUnreferencedCode("Types and members the loaded assembly depends on might be removed")]
-        public Assembly LoadFromAssemblyPath(string assemblyPath!!)
+        public Assembly LoadFromAssemblyPath(string assemblyPath)
         {
+            ArgumentNullException.ThrowIfNull(assemblyPath);
+
             if (PathInternal.IsPartiallyQualified(assemblyPath))
             {
                 throw new ArgumentException(SR.Format(SR.Argument_AbsolutePathRequired, assemblyPath), nameof(assemblyPath));
@@ -335,8 +342,10 @@ namespace System.Runtime.Loader
         }
 
         [RequiresUnreferencedCode("Types and members the loaded assembly depends on might be removed")]
-        public Assembly LoadFromNativeImagePath(string nativeImagePath!!, string? assemblyPath)
+        public Assembly LoadFromNativeImagePath(string nativeImagePath, string? assemblyPath)
         {
+            ArgumentNullException.ThrowIfNull(nativeImagePath);
+
             if (PathInternal.IsPartiallyQualified(nativeImagePath))
             {
                 throw new ArgumentException(SR.Format(SR.Argument_AbsolutePathRequired, nativeImagePath), nameof(nativeImagePath));
@@ -362,36 +371,58 @@ namespace System.Runtime.Loader
         }
 
         [RequiresUnreferencedCode("Types and members the loaded assembly depends on might be removed")]
-        public Assembly LoadFromStream(Stream assembly!!, Stream? assemblySymbols)
+        public Assembly LoadFromStream(Stream assembly, Stream? assemblySymbols)
         {
-            int iAssemblyStreamLength = (int)assembly.Length;
+            ArgumentNullException.ThrowIfNull(assembly);
 
-            if (iAssemblyStreamLength <= 0)
+            ReadOnlySpan<byte> spanAssembly = ReadAllBytes(assembly);
+            if (spanAssembly.IsEmpty)
             {
                 throw new BadImageFormatException(SR.BadImageFormat_BadILFormat);
             }
 
-            // Allocate the byte[] to hold the assembly
-            byte[] arrAssembly = new byte[iAssemblyStreamLength];
-
-            // Copy the assembly to the byte array
-            assembly.Read(arrAssembly, 0, iAssemblyStreamLength);
-
-            // Get the symbol stream in byte[] if provided
-            byte[]? arrSymbols = null;
+            // Read the symbol stream if provided
+            ReadOnlySpan<byte> spanSymbols = default;
             if (assemblySymbols != null)
             {
-                int iSymbolLength = (int)assemblySymbols.Length;
-                arrSymbols = new byte[iSymbolLength];
-
-                assemblySymbols.Read(arrSymbols, 0, iSymbolLength);
+                spanSymbols = ReadAllBytes(assemblySymbols);
             }
 
             lock (_unloadLock)
             {
                 VerifyIsAlive();
 
-                return InternalLoad(arrAssembly, arrSymbols);
+                return InternalLoad(spanAssembly, spanSymbols);
+            }
+
+            static ReadOnlySpan<byte> ReadAllBytes(Stream stream)
+            {
+                if (stream.GetType() == typeof(MemoryStream) && ((MemoryStream)stream).TryGetBuffer(out ArraySegment<byte> memoryStreamBuffer))
+                {
+                    int position = (int)stream.Position;
+                    // Simulate that we read the stream to its end.
+                    stream.Seek(0, SeekOrigin.End);
+                    return memoryStreamBuffer.AsSpan(position);
+                }
+
+                long length = stream.Length - stream.Position;
+
+                if (length == 0)
+                {
+                    return ReadOnlySpan<byte>.Empty;
+                }
+
+                if (((ulong)length) > (ulong)Array.MaxLength)
+                {
+                    throw new BadImageFormatException(SR.BadImageFormat_BadILFormat);
+                }
+
+                byte[] bytes = GC.AllocateUninitializedArray<byte>((int)length);
+
+                // Copy the stream to the byte array
+                stream.ReadExactly(bytes);
+
+                return bytes;
             }
         }
 
@@ -465,10 +496,10 @@ namespace System.Runtime.Loader
         /// This is an advanced setting used in reflection assembly loading scenarios.
         ///
         /// There are a set of contextual reflection APIs which load managed assemblies through an inferred AssemblyLoadContext.
-        /// * <see cref="System.Activator.CreateInstance" />
-        /// * <see cref="System.Reflection.Assembly.Load" />
-        /// * <see cref="System.Reflection.Assembly.GetType" />
-        /// * <see cref="System.Type.GetType" />
+        /// * <see cref="Activator.CreateInstance" />
+        /// * <see cref="Assembly.Load" />
+        /// * <see cref="Assembly.GetType" />
+        /// * <see cref="Type.GetType" />
         ///
         /// When CurrentContextualReflectionContext is null, the AssemblyLoadContext is inferred.
         /// The inference logic is simple.
@@ -478,7 +509,7 @@ namespace System.Runtime.Loader
         /// When this property is set, the CurrentContextualReflectionContext value is used by these contextual reflection APIs for loading.
         ///
         /// This property is typically set in a using block by
-        /// <see cref="System.Runtime.Loader.AssemblyLoadContext.EnterContextualReflection"/>.
+        /// <see cref="AssemblyLoadContext.EnterContextualReflection"/>.
         ///
         /// The property is stored in an AsyncLocal&lt;AssemblyLoadContext&gt;. This means the setting can be unique for every async or thread in the process.
         ///
@@ -499,7 +530,7 @@ namespace System.Runtime.Loader
         /// <returns>A disposable ContextualReflectionScope for use in a using block</returns>
         /// <remarks>
         /// Sets CurrentContextualReflectionContext to this instance.
-        /// <see cref="System.Runtime.Loader.AssemblyLoadContext.CurrentContextualReflectionContext"/>
+        /// <see cref="CurrentContextualReflectionContext"/>
         ///
         /// Returns a disposable ContextualReflectionScope for use in a using block. When the using calls the
         /// Dispose() method, it restores the ContextualReflectionScope to its previous value.
@@ -513,8 +544,8 @@ namespace System.Runtime.Loader
         /// <param name="activating">Set CurrentContextualReflectionContext to the AssemblyLoadContext which loaded activating.</param>
         /// <returns>A disposable ContextualReflectionScope for use in a using block</returns>
         /// <remarks>
-        /// Sets CurrentContextualReflectionContext to to the AssemblyLoadContext which loaded activating.
-        /// <see cref="System.Runtime.Loader.AssemblyLoadContext.CurrentContextualReflectionContext"/>
+        /// Sets CurrentContextualReflectionContext to the AssemblyLoadContext which loaded activating.
+        /// <see cref="CurrentContextualReflectionContext"/>
         ///
         /// Returns a disposable ContextualReflectionScope for use in a using block. When the using calls the
         /// Dispose() method, it restores the ContextualReflectionScope to its previous value.
@@ -537,10 +568,10 @@ namespace System.Runtime.Loader
 
         /// <summary>Opaque disposable struct used to restore CurrentContextualReflectionContext</summary>
         /// <remarks>
-        /// This is an implmentation detail of the AssemblyLoadContext.EnterContextualReflection APIs.
+        /// This is an implementation detail of the AssemblyLoadContext.EnterContextualReflection APIs.
         /// It is a struct, to avoid heap allocation.
         /// It is required to be public to avoid boxing.
-        /// <see cref="System.Runtime.Loader.AssemblyLoadContext.EnterContextualReflection"/>
+        /// <see cref="AssemblyLoadContext.EnterContextualReflection"/>
         /// </remarks>
         [EditorBrowsable(EditorBrowsableState.Never)]
         public struct ContextualReflectionScope : IDisposable
@@ -551,8 +582,8 @@ namespace System.Runtime.Loader
 
             internal ContextualReflectionScope(AssemblyLoadContext? activating)
             {
-                _predecessor = AssemblyLoadContext.CurrentContextualReflectionContext;
-                AssemblyLoadContext.SetCurrentContextualReflectionContext(activating);
+                _predecessor = CurrentContextualReflectionContext;
+                SetCurrentContextualReflectionContext(activating);
                 _activated = activating;
                 _initialized = true;
             }
@@ -563,12 +594,12 @@ namespace System.Runtime.Loader
                 {
                     // Do not clear initialized. Always restore the _predecessor in Dispose()
                     // _initialized = false;
-                    AssemblyLoadContext.SetCurrentContextualReflectionContext(_predecessor);
+                    SetCurrentContextualReflectionContext(_predecessor);
                 }
             }
         }
 
-#if !CORERT
+#if !NATIVEAOT
         // This method is invoked by the VM when using the host-provided assembly load context
         // implementation.
         private static Assembly? Resolve(IntPtr gchManagedAssemblyLoadContext, AssemblyName assemblyName)
@@ -593,12 +624,12 @@ namespace System.Runtime.Loader
                 {
                     resolvedAssembly = handler(this, assemblyName);
 #if CORECLR
-                    if (AssemblyLoadContext.IsTracingEnabled())
+                    if (IsTracingEnabled())
                     {
-                        AssemblyLoadContext.TraceResolvingHandlerInvoked(
+                        TraceResolvingHandlerInvoked(
                             assemblyName.FullName,
                             handler.Method.Name,
-                            this != AssemblyLoadContext.Default ? ToString() : Name,
+                            this != Default ? ToString() : Name,
                             resolvedAssembly?.FullName,
                             resolvedAssembly != null && !resolvedAssembly.IsDynamic ? resolvedAssembly.Location : null);
                     }
@@ -615,10 +646,7 @@ namespace System.Runtime.Loader
 
         private static Assembly ValidateAssemblyNameWithSimpleName(Assembly assembly, string? requestedSimpleName)
         {
-            if (string.IsNullOrEmpty(requestedSimpleName))
-            {
-                throw new ArgumentException(SR.ArgumentNull_AssemblyNameName);
-            }
+            ArgumentException.ThrowIfNullOrEmpty(requestedSimpleName, "AssemblyName.Name");
 
             // Get the name of the loaded assembly
             string? loadedSimpleName = null;
@@ -681,20 +709,25 @@ namespace System.Runtime.Loader
         }
 
         // This method is called by the VM
-        private static RuntimeAssembly? OnTypeResolve(RuntimeAssembly assembly, string typeName)
+        internal static RuntimeAssembly? OnTypeResolve(RuntimeAssembly? assembly, string typeName)
         {
             return InvokeResolveEvent(TypeResolve, assembly, typeName);
         }
 
         // This method is called by the VM.
-        private static RuntimeAssembly? OnAssemblyResolve(RuntimeAssembly assembly, string assemblyFullName)
+        private static RuntimeAssembly? OnAssemblyResolve(RuntimeAssembly? assembly, string assemblyFullName)
         {
             return InvokeResolveEvent(AssemblyResolve, assembly, assemblyFullName);
         }
 
+        internal static void InvokeAssemblyLoadEvent(Assembly assembly)
+        {
+            AssemblyLoad?.Invoke(AppDomain.CurrentDomain, new AssemblyLoadEventArgs(assembly));
+        }
+
         [UnconditionalSuppressMessage("SingleFile", "IL3000: Avoid accessing Assembly file path when publishing as a single file",
             Justification = "The code handles the Assembly.Location equals null")]
-        private static RuntimeAssembly? InvokeResolveEvent(ResolveEventHandler? eventHandler, RuntimeAssembly assembly, string name)
+        private static RuntimeAssembly? InvokeResolveEvent(ResolveEventHandler? eventHandler, RuntimeAssembly? assembly, string name)
         {
             if (eventHandler == null)
                 return null;
@@ -705,9 +738,9 @@ namespace System.Runtime.Loader
             {
                 Assembly? asm = handler(AppDomain.CurrentDomain, args);
 #if CORECLR
-                if (eventHandler == AssemblyResolve && AssemblyLoadContext.IsTracingEnabled())
+                if (eventHandler == AssemblyResolve && IsTracingEnabled())
                 {
-                    AssemblyLoadContext.TraceAssemblyResolveHandlerInvoked(
+                    TraceAssemblyResolveHandlerInvoked(
                         name,
                         handler.Method.Name,
                         asm?.FullName,
@@ -721,7 +754,7 @@ namespace System.Runtime.Loader
 
             return null;
         }
-#endif // !CORERT
+#endif // !NATIVEAOT
 
         [UnconditionalSuppressMessage("ReflectionAnalysis", "IL2026:RequiresUnreferencedCode",
             Justification = "Satellite assemblies have no code in them and loading is not a problem")]
@@ -749,24 +782,24 @@ namespace System.Runtime.Loader
 
             string assemblyPath = Path.Combine(parentDirectory, assemblyName.CultureName!, $"{assemblyName.Name}.dll");
 
-            bool exists = System.IO.FileSystem.FileExists(assemblyPath);
+            bool exists = FileSystem.FileExists(assemblyPath);
             if (!exists && PathInternal.IsCaseSensitive)
             {
 #if CORECLR
-                if (AssemblyLoadContext.IsTracingEnabled())
+                if (IsTracingEnabled())
                 {
-                    AssemblyLoadContext.TraceSatelliteSubdirectoryPathProbed(assemblyPath, HResults.COR_E_FILENOTFOUND);
+                    TraceSatelliteSubdirectoryPathProbed(assemblyPath, HResults.COR_E_FILENOTFOUND);
                 }
 #endif // CORECLR
                 assemblyPath = Path.Combine(parentDirectory, assemblyName.CultureName!.ToLowerInvariant(), $"{assemblyName.Name}.dll");
-                exists = System.IO.FileSystem.FileExists(assemblyPath);
+                exists = FileSystem.FileExists(assemblyPath);
             }
 
             Assembly? asm = exists ? parentALC.LoadFromAssemblyPath(assemblyPath) : null;
 #if CORECLR
-            if (AssemblyLoadContext.IsTracingEnabled())
+            if (IsTracingEnabled())
             {
-                AssemblyLoadContext.TraceSatelliteSubdirectoryPathProbed(assemblyPath, exists ? HResults.S_OK : HResults.COR_E_FILENOTFOUND);
+                TraceSatelliteSubdirectoryPathProbed(assemblyPath, exists ? HResults.S_OK : HResults.COR_E_FILENOTFOUND);
             }
 #endif // CORECLR
 

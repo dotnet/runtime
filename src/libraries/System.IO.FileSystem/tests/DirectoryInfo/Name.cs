@@ -8,6 +8,12 @@ namespace System.IO.Tests
     public class DirectoryInfo_Name : FileSystemTest
     {
         [Fact]
+        public void Ctor_NullArgument_Throws()
+        {
+            AssertExtensions.Throws<ArgumentNullException>("path", () => new DirectoryInfo(null));
+        }
+
+        [Fact]
         public void CurrentDirectory()
         {
             var info = new DirectoryInfo(".");

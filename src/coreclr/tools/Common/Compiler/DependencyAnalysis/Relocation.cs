@@ -1,6 +1,7 @@
 // Licensed to the .NET Foundation under one or more agreements.
 // The .NET Foundation licenses this file to you under the MIT license.
 
+using System;
 using System.Diagnostics;
 
 namespace ILCompiler.DependencyAnalysis
@@ -16,15 +17,39 @@ namespace ILCompiler.DependencyAnalysis
         IMAGE_REL_BASED_THUMB_BRANCH24       = 0x13,   // Thumb2: based B, BL
         IMAGE_REL_BASED_THUMB_MOV32_PCREL    = 0x14,   // Thumb2: based MOVW/MOVT
         IMAGE_REL_BASED_ARM64_BRANCH26       = 0x15,   // Arm64: B, BL
+        IMAGE_REL_BASED_LOONGARCH64_PC       = 0x16,   // LoongArch64: pcaddu12i+imm12
+        IMAGE_REL_BASED_LOONGARCH64_JIR      = 0x17,   // LoongArch64: pcaddu18i+jirl
         IMAGE_REL_BASED_RELPTR32             = 0x7C,   // 32-bit relative address from byte starting reloc
                                                        // This is a special NGEN-specific relocation type
                                                        // for relative pointer (used to make NGen relocation
                                                        // section smaller)
-        IMAGE_REL_SECREL                     = 0x80,   // 32 bit offset from base of section containing target
 
         IMAGE_REL_BASED_ARM64_PAGEBASE_REL21 = 0x81,   // ADRP
         IMAGE_REL_BASED_ARM64_PAGEOFFSET_12A = 0x82,   // ADD/ADDS (immediate) with zero shift, for page offset
         IMAGE_REL_BASED_ARM64_PAGEOFFSET_12L = 0x83,   // LDR (indexed, unsigned immediate), for page offset
+
+        //
+        // Relocation operators related to TLS access
+        //
+
+        // Windows x64
+        IMAGE_REL_SECREL                     = 0x104,
+
+        // Linux x64
+        // GD model
+        IMAGE_REL_TLSGD                      = 0x105,
+        // LE model
+        IMAGE_REL_TPOFF                      = 0x106,
+
+        // Linux arm64
+        //    TLSDESC  (dynamic)
+        IMAGE_REL_AARCH64_TLSDESC_ADR_PAGE21 = 0x107,
+        IMAGE_REL_AARCH64_TLSDESC_LD64_LO12  = 0x108,
+        IMAGE_REL_AARCH64_TLSDESC_ADD_LO12   = 0x109,
+        IMAGE_REL_AARCH64_TLSDESC_CALL       = 0x10A,
+        //    LE model
+        IMAGE_REL_AARCH64_TLSLE_ADD_TPREL_HI12    = 0x10B,
+        IMAGE_REL_AARCH64_TLSLE_ADD_TPREL_LO12_NC = 0x10C,
 
         //
         // Relocations for R2R image production
@@ -294,7 +319,97 @@ namespace ILCompiler.DependencyAnalysis
             Debug.Assert(GetArm64Rel28(pCode) == imm28);
         }
 
+        private static unsafe int GetLoongArch64PC12(uint* pCode)
+        {
+            uint pcInstr = *pCode;
 
+            // first get the high 20 bits,
+            int imm = (int)(((pcInstr >> 5) & 0xFFFFF) << 12);
+
+            // then get the low 12 bits,
+            pcInstr = *(pCode + 1);
+            imm += ((int)(((pcInstr >> 10) & 0xFFF) << 20)) >> 20;
+
+            return imm;
+        }
+
+        //  case:EA_HANDLE_CNS_RELOC
+        //   pcaddu12i  reg, off-hi-20bits
+        //   addi_d  reg, reg, off-lo-12bits
+        //  case:EA_PTR_DSP_RELOC
+        //   pcaddu12i  reg, off-hi-20bits
+        //   ld_d  reg, reg, off-lo-12bits
+        private static unsafe void PutLoongArch64PC12(uint* pCode, long imm32)
+        {
+            // Verify that we got a valid offset
+            Debug.Assert((int)imm32 == imm32);
+
+            uint pcInstr = *pCode;
+
+            Debug.Assert((pcInstr & 0xFE000000) == 0x1c000000);  // Must be pcaddu12i
+
+            int relOff = (int)imm32 & 0x800;
+            int imm = (int)imm32 + relOff;
+            relOff = ((imm & 0x7ff) - relOff) & 0xfff;
+
+            // Assemble the pc-relative high 20 bits of 'imm32' into the pcaddu12i instruction
+            pcInstr |= (uint)(((imm >> 12) & 0xFFFFF) << 5);
+
+            *pCode = pcInstr;          // write the assembled instruction
+
+            pcInstr = *(pCode + 1);
+
+            // Assemble the pc-relative low 12 bits of 'imm32' into the addid or ld instruction
+            pcInstr |= (uint)(relOff << 10);
+
+            *(pCode + 1) = pcInstr;          // write the assembled instruction
+
+            Debug.Assert(GetLoongArch64PC12(pCode) == imm32);
+        }
+
+        private static unsafe long GetLoongArch64JIR(uint* pCode)
+        {
+            uint pcInstr = *pCode;
+
+            // first get the high 20 bits,
+            long imm = ((long)((pcInstr >> 5) & 0xFFFFF) << 18);
+
+            // then get the low 18 bits
+            pcInstr = *(pCode + 1);
+            imm += ((long)((short)((pcInstr >> 10) & 0xFFFF))) << 2;
+
+            return imm;
+        }
+
+        private static unsafe void PutLoongArch64JIR(uint* pCode, long imm38)
+        {
+            // Verify that we got a valid offset
+            Debug.Assert((imm38 >= -0x2000000000L) && (imm38 < 0x2000000000L));
+
+            Debug.Assert((imm38 & 0x3) == 0);    // the low two bits must be zero
+
+            uint pcInstr = *pCode;
+
+            Debug.Assert(pcInstr == 0x1e00000e);  // Must be pcaddu18i R14, 0
+
+            long relOff = imm38 & 0x20000;
+            long imm = imm38 + relOff;
+            relOff = (((imm & 0x1ffff) - relOff) >> 2) & 0xffff;
+
+            // Assemble the pc-relative high 20 bits of 'imm38' into the pcaddu12i instruction
+            pcInstr |= (uint)(((imm >> 18) & 0xFFFFF) << 5);
+
+            *pCode = pcInstr;          // write the assembled instruction
+
+            pcInstr = *(pCode + 1);
+
+            // Assemble the pc-relative low 18 bits of 'imm38' into the addid or ld instruction
+            pcInstr |= (uint)(relOff << 10);
+
+            *(pCode + 1) = pcInstr;          // write the assembled instruction
+
+            Debug.Assert(GetLoongArch64JIR(pCode) == imm38);
+        }
 
         public Relocation(RelocType relocType, int offset, ISymbolNode target)
         {
@@ -334,10 +449,26 @@ namespace ILCompiler.DependencyAnalysis
                 case RelocType.IMAGE_REL_BASED_ARM64_PAGEOFFSET_12A:
                     PutArm64Rel12((uint*)location, (int)value);
                     break;
+                case RelocType.IMAGE_REL_BASED_LOONGARCH64_PC:
+                    PutLoongArch64PC12((uint*)location, value);
+                    break;
+                case RelocType.IMAGE_REL_BASED_LOONGARCH64_JIR:
+                    PutLoongArch64JIR((uint*)location, value);
+                    break;
                 default:
                     Debug.Fail("Invalid RelocType: " + relocType);
                     break;
             }
+        }
+
+        public static int GetSize(RelocType relocType)
+        {
+            return relocType switch
+            {
+                RelocType.IMAGE_REL_BASED_DIR64 => 8,
+                RelocType.IMAGE_REL_BASED_RELPTR32 => 4,
+                _ => throw new NotSupportedException(),
+            };
         }
 
         public static unsafe long ReadValue(RelocType relocType, void* location)
@@ -350,6 +481,8 @@ namespace ILCompiler.DependencyAnalysis
                 case RelocType.IMAGE_REL_BASED_REL32:
                 case RelocType.IMAGE_REL_BASED_RELPTR32:
                 case RelocType.IMAGE_REL_SECREL:
+                case RelocType.IMAGE_REL_TLSGD:
+                case RelocType.IMAGE_REL_TPOFF:
                 case RelocType.IMAGE_REL_FILE_ABSOLUTE:
                 case RelocType.IMAGE_REL_SYMBOL_SIZE:
                     return *(int*)location;
@@ -366,6 +499,24 @@ namespace ILCompiler.DependencyAnalysis
                     return GetArm64Rel21((uint*)location);
                 case RelocType.IMAGE_REL_BASED_ARM64_PAGEOFFSET_12A:
                     return GetArm64Rel12((uint*)location);
+                case RelocType.IMAGE_REL_AARCH64_TLSDESC_LD64_LO12:
+                case RelocType.IMAGE_REL_AARCH64_TLSDESC_ADD_LO12:
+                case RelocType.IMAGE_REL_AARCH64_TLSLE_ADD_TPREL_HI12:
+                case RelocType.IMAGE_REL_AARCH64_TLSLE_ADD_TPREL_LO12_NC:
+                    // TLS relocs do not have offsets
+                    Debug.Assert((GetArm64Rel12((uint*)location) & 0xFF) == 0);
+                    return 0;
+                case RelocType.IMAGE_REL_AARCH64_TLSDESC_ADR_PAGE21:
+                    // TLS relocs do not have offsets
+                    Debug.Assert((GetArm64Rel21((uint*)location) & 0xFF) == 0);
+                    return 0;
+                case RelocType.IMAGE_REL_AARCH64_TLSDESC_CALL:
+                    // TLS relocs do not have offsets
+                    return 0;
+                case RelocType.IMAGE_REL_BASED_LOONGARCH64_PC:
+                    return (long)GetLoongArch64PC12((uint*)location);
+                case RelocType.IMAGE_REL_BASED_LOONGARCH64_JIR:
+                    return (long)GetLoongArch64JIR((uint*)location);
                 default:
                     Debug.Fail("Invalid RelocType: " + relocType);
                     return 0;

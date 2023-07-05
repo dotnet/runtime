@@ -95,11 +95,11 @@ namespace System.Net.Mime
                 ArgumentException.ThrowIfNullOrEmpty(value);
 
                 int offset = 0;
-                _mediaType = MailBnfHelper.ReadToken(value, ref offset, null);
+                _mediaType = MailBnfHelper.ReadToken(value, ref offset);
                 if (_mediaType.Length == 0 || offset >= value.Length || value[offset++] != '/')
                     throw new FormatException(SR.MediaTypeInvalid);
 
-                _subType = MailBnfHelper.ReadToken(value, ref offset, null);
+                _subType = MailBnfHelper.ReadToken(value, ref offset);
                 if (_subType.Length == 0 || offset < value.Length)
                 {
                     throw new FormatException(SR.MediaTypeInvalid);
@@ -212,7 +212,7 @@ namespace System.Net.Mime
         public override bool Equals([NotNullWhen(true)] object? rparam) =>
             rparam == null ? false : string.Equals(ToString(), rparam.ToString(), StringComparison.OrdinalIgnoreCase);
 
-        public override int GetHashCode() => ToString().ToLowerInvariant().GetHashCode();
+        public override int GetHashCode() => StringComparer.OrdinalIgnoreCase.GetHashCode(ToString());
 
         // Helper methods.
         [MemberNotNull(nameof(_mediaType))]
@@ -223,14 +223,14 @@ namespace System.Net.Mime
             {
                 int offset = 0;
 
-                _mediaType = MailBnfHelper.ReadToken(_type, ref offset, null);
-                if (_mediaType == null || _mediaType.Length == 0 || offset >= _type.Length || _type[offset++] != '/')
+                _mediaType = MailBnfHelper.ReadToken(_type, ref offset);
+                if (string.IsNullOrEmpty(_mediaType) || offset >= _type.Length || _type[offset++] != '/')
                 {
                     throw new FormatException(SR.ContentTypeInvalid);
                 }
 
-                _subType = MailBnfHelper.ReadToken(_type, ref offset, null);
-                if (_subType == null || _subType.Length == 0)
+                _subType = MailBnfHelper.ReadToken(_type, ref offset);
+                if (string.IsNullOrEmpty(_subType))
                 {
                     throw new FormatException(SR.ContentTypeInvalid);
                 }
@@ -247,9 +247,9 @@ namespace System.Net.Mime
                         break;
                     }
 
-                    string? paramAttribute = MailBnfHelper.ReadParameterAttribute(_type, ref offset, null);
+                    string? paramAttribute = MailBnfHelper.ReadParameterAttribute(_type, ref offset);
 
-                    if (paramAttribute == null || paramAttribute.Length == 0)
+                    if (string.IsNullOrEmpty(paramAttribute))
                     {
                         throw new FormatException(SR.ContentTypeInvalid);
                     }
@@ -267,7 +267,7 @@ namespace System.Net.Mime
 
                     paramValue = _type[offset] == '"' ?
                         MailBnfHelper.ReadQuotedString(_type, ref offset, null) :
-                        MailBnfHelper.ReadToken(_type, ref offset, null);
+                        MailBnfHelper.ReadToken(_type, ref offset);
 
                     if (paramValue == null)
                     {

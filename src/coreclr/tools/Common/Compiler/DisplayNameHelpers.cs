@@ -1,16 +1,15 @@
 ﻿// Licensed to the .NET Foundation under one or more agreements.
 // The .NET Foundation licenses this file to you under the MIT license.
 
-using System;
+using System.Diagnostics;
 using System.Text;
 
 using Internal.TypeSystem;
-
-using Debug = System.Diagnostics.Debug;
+using Internal.TypeSystem.Ecma;
 
 namespace ILCompiler
 {
-    internal static class DisplayNameHelpers
+    public static class DisplayNameHelpers
     {
         public static string GetDisplayName(this TypeSystemEntity entity)
         {
@@ -23,7 +22,7 @@ namespace ILCompiler
                 PropertyPseudoDesc property => property.GetDisplayName(),
                 EventPseudoDesc @event => @event.GetDisplayName(),
 #endif
-                _ => throw new InvalidOperationException(),
+                _ => null,
             };
         }
 
@@ -34,10 +33,41 @@ namespace ILCompiler
             sb.Append(method.OwningType.GetDisplayName());
             sb.Append('.');
 
-            if (method.IsConstructor)
+            if (method.IsConstructor && method.OwningType is DefType defType)
             {
-                sb.Append(method.OwningType.GetDisplayNameWithoutNamespace());
+                sb.Append(defType.Name);
             }
+#if !READYTORUN
+            else if (method.GetPropertyForAccessor() is PropertyPseudoDesc property)
+            {
+                MethodDesc typicalMethod = method.GetTypicalMethodDefinition();
+                sb.Append(property.Name);
+                sb.Append('.');
+                sb.Append(property.GetMethod == typicalMethod ? "get" : "set");
+                return sb.ToString();
+            }
+            else if (method.GetEventForAccessor() is EventPseudoDesc @event)
+            {
+                MethodDesc typicalMethod = method.GetTypicalMethodDefinition();
+                sb.Append(@event.Name);
+                sb.Append('.');
+                string accessor;
+                if (typicalMethod == @event.AddMethod)
+                {
+                    accessor = "add";
+                }
+                else if (typicalMethod == @event.RemoveMethod)
+                {
+                    accessor = "remove";
+                }
+                else
+                {
+                    Debug.Assert(typicalMethod == @event.RaiseMethod);
+                    accessor = "raise";
+                }
+                sb.Append(accessor);
+            }
+#endif
             else
             {
                 sb.Append(method.Name);
@@ -58,7 +88,10 @@ namespace ILCompiler
             if (method.Signature.Length > 0)
             {
                 for (int i = 0; i < method.Signature.Length - 1; i++)
-                    sb.Append(method.Signature[i].GetDisplayNameWithoutNamespace()).Append(',');
+                {
+                    TypeDesc instantiatedType = method.Signature[i].InstantiateSignature(method.OwningType.Instantiation, method.Instantiation);
+                    sb.Append(instantiatedType.GetDisplayNameWithoutNamespace()).Append(',');
+                }
 
                 sb.Append(method.Signature[method.Signature.Length - 1].GetDisplayNameWithoutNamespace());
             }
@@ -66,6 +99,20 @@ namespace ILCompiler
             sb.Append(')');
 
             return sb.ToString();
+        }
+
+        public static string GetParameterDisplayName(this EcmaMethod method, int parameterIndex)
+        {
+            var reader = method.MetadataReader;
+            var methodDefinition = reader.GetMethodDefinition(method.Handle);
+            foreach (var parameterHandle in methodDefinition.GetParameters())
+            {
+                var parameter = reader.GetParameter(parameterHandle);
+                if (parameter.SequenceNumber == parameterIndex + 1)
+                    return reader.GetString(parameter.Name);
+            }
+
+            return $"#{parameterIndex}";
         }
 
         public static string GetDisplayName(this FieldDesc field)
@@ -82,7 +129,7 @@ namespace ILCompiler
                 .Append('.')
                 .Append(property.Name).ToString();
         }
-        
+
         public static string GetDisplayName(this EventPseudoDesc @event)
         {
             return new StringBuilder(@event.OwningType.GetDisplayName())
@@ -101,9 +148,9 @@ namespace ILCompiler
             return Formatter.Instance.FormatName(type, FormatOptions.None);
         }
 
-        private class Formatter : TypeNameFormatter<Formatter.Unit, FormatOptions>
+        private sealed class Formatter : TypeNameFormatter<Formatter.Unit, FormatOptions>
         {
-            public readonly static Formatter Instance = new Formatter();
+            public static readonly Formatter Instance = new Formatter();
 
             public override Unit AppendName(StringBuilder sb, ArrayType type, FormatOptions options)
             {
@@ -193,18 +240,14 @@ namespace ILCompiler
 
             protected override Unit AppendNameForNestedType(StringBuilder sb, DefType nestedType, DefType containingType, FormatOptions options)
             {
-                if ((options & FormatOptions.NamespaceQualify) != 0)
-                {
-                    AppendName(sb, containingType, options);
-                    sb.Append('.');
-                }
-
+                AppendName(sb, containingType, options);
+                sb.Append('.');
                 sb.Append(nestedType.Name);
 
                 return default;
             }
 
-            private void NamespaceQualify(StringBuilder sb, DefType type, FormatOptions options)
+            private static void NamespaceQualify(StringBuilder sb, DefType type, FormatOptions options)
             {
                 if ((options & FormatOptions.NamespaceQualify) != 0)
                 {

@@ -246,10 +246,7 @@ namespace System.Linq.Parallel
             base.SpoolingFinally();
 
             // Signal that we are done, in the case of asynchronous consumption.
-            if (_destination != null)
-            {
-                _destination.SetDone();
-            }
+            _destination?.SetDone();
 
             // Dispose of the source enumerator *after* signaling that the task is done.
             // We call Dispose() last to ensure that if it throws an exception, we will not cause a deadlock.
@@ -338,10 +335,7 @@ namespace System.Linq.Parallel
             base.SpoolingFinally();
 
             // Signal that we are done, in the case of asynchronous consumption.
-            if (_destination != null)
-            {
-                _destination.SetDone();
-            }
+            _destination?.SetDone();
 
             // Dispose of the source enumerator *after* signaling that the task is done.
             // We call Dispose() last to ensure that if it throws an exception, we will not cause a deadlock.

@@ -27,6 +27,8 @@
 
 
 
+.namespace Test_loopIV_init_il
+{
 .class private sequential ansi sealed beforefieldinit V
        extends [mscorlib]System.ValueType
 {
@@ -40,7 +42,7 @@
     .field public int64 FixedElementField
   } // end of class '<x>e__FixedBuffer0'
 
-  .field public valuetype V/'<x>e__FixedBuffer0' x
+  .field public valuetype Test_loopIV_init_il.V/'<x>e__FixedBuffer0' x
   .custom instance void [mscorlib]System.Runtime.CompilerServices.FixedBufferAttribute::.ctor(class [mscorlib]System.Type,
                                                                                               int32) = ( 01 00 59 53 79 73 74 65 6D 2E 49 6E 74 36 34 2C   // ..YSystem.Int64,
                                                                                                          20 6D 73 63 6F 72 6C 69 62 2C 20 56 65 72 73 69   //  mscorlib, Versi
@@ -49,25 +51,25 @@
                                                                                                          6C 69 63 4B 65 79 54 6F 6B 65 6E 3D 62 37 37 61   // licKeyToken=b77a
                                                                                                          35 63 35 36 31 39 33 34 65 30 38 39 E8 03 00 00   // 5c561934e089....
                                                                                                          00 00 ) 
-} // end of class V
+} // end of class Test_loopIV_init_il.V
 
-.class private abstract auto ansi sealed beforefieldinit Repro
+.class public abstract auto ansi sealed beforefieldinit Repro
        extends [mscorlib]System.Object
 {
-  .method private hidebysig static int32 Main() cil managed
+  .method public hidebysig static int32 Main() cil managed
   {
     .custom instance void [xunit.core]Xunit.FactAttribute::.ctor() = (
         01 00 00 00
     )
     .entrypoint
     .maxstack  3
-    .locals init (valuetype V V_0,
-             valuetype V/'<x>e__FixedBuffer0'& V_1,
+    .locals init (valuetype Test_loopIV_init_il.V V_0,
+             valuetype Test_loopIV_init_il.V/'<x>e__FixedBuffer0'& V_1,
              int32 V_2)
     IL_0000:  ldloca.s   V_0
-    IL_0002:  initobj    V
+    IL_0002:  initobj    Test_loopIV_init_il.V
     IL_0008:  ldloca.s   V_0
-    IL_000a:  ldflda     valuetype V/'<x>e__FixedBuffer0' V::x
+    IL_000a:  ldflda     valuetype Test_loopIV_init_il.V/'<x>e__FixedBuffer0' Test_loopIV_init_il.V::x
     IL_0016:  stloc.1
     IL_0017:  ldc.i4.0
     IL_0018:  stloc.2
@@ -92,9 +94,10 @@
     IL_0030:  blt.s      IL_0019
     IL_0032:  ldc.i4 100
     IL_0034:  ret
-  } // end of method Repro::Main
+  } // end of method Test_loopIV_init_il.Repro::Main
 
-} // end of class Repro
+} // end of class Test_loopIV_init_il.Repro
 
 
 
+}

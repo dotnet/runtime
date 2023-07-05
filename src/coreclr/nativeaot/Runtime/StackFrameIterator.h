@@ -1,5 +1,9 @@
 // Licensed to the .NET Foundation under one or more agreements.
 // The .NET Foundation licenses this file to you under the MIT license.
+
+#ifndef __StackFrameIterator_h__
+#define __StackFrameIterator_h__
+
 #include "ICodeManager.h"
 
 struct ExInfo;
@@ -33,9 +37,9 @@ class StackFrameIterator
 
 public:
     StackFrameIterator() {}
-    StackFrameIterator(Thread * pThreadToWalk, PTR_VOID pInitialTransitionFrame);
+    StackFrameIterator(Thread * pThreadToWalk, PInvokeTransitionFrame* pInitialTransitionFrame);
+    StackFrameIterator(Thread* pThreadToWalk, NATIVE_CONTEXT* pCtx);
     StackFrameIterator(Thread * pThreadToWalk, PTR_PAL_LIMITED_CONTEXT pCtx);
-
 
     bool             IsValid();
     void             CalculateCurrentMethodState();
@@ -44,6 +48,7 @@ public:
     REGDISPLAY *     GetRegisterSet();
     PTR_ICodeManager GetCodeManager();
     MethodInfo *     GetMethodInfo();
+    bool             IsActiveStackFrame();
     bool             GetHijackedReturnValueLocation(PTR_RtuObjectRef * pLocation, GCRefKind * pKind);
     void             SetControlPC(PTR_VOID controlPC);
 
@@ -74,14 +79,12 @@ private:
     // NOTE: This function always publishes a non-NULL conservative stack range lower bound.
     void UnwindUniversalTransitionThunk();
 
-    // If our control PC indicates that we're in the call descr thunk that we use to call an arbitrary managed
-    // function with an arbitrary signature from a normal managed function handle the stack walk specially.
-    void UnwindCallDescrThunk();
-
     void EnterInitialInvalidState(Thread * pThreadToWalk);
 
     void InternalInit(Thread * pThreadToWalk, PTR_PInvokeTransitionFrame pFrame, uint32_t dwFlags); // GC stackwalk
     void InternalInit(Thread * pThreadToWalk, PTR_PAL_LIMITED_CONTEXT pCtx, uint32_t dwFlags);  // EH and hijack stackwalk, and collided unwind
+    void InternalInit(Thread * pThreadToWalk, NATIVE_CONTEXT* pCtx, uint32_t dwFlags);  // GC stackwalk of redirected thread
+
     void InternalInitForEH(Thread * pThreadToWalk, PAL_LIMITED_CONTEXT * pCtx, bool instructionFault); // EH stackwalk
     void InternalInitForStackTrace();  // Environment.StackTrace
 
@@ -107,7 +110,7 @@ private:
         InManagedCode,
         InThrowSiteThunk,
         InFuncletInvokeThunk,
-        InCallDescrThunk,
+        InFilterFuncletInvokeThunk,
         InUniversalTransitionThunk,
     };
 
@@ -137,7 +140,13 @@ private:
         // This is a state returned by Next() which indicates that we just unwound a reverse pinvoke method
         UnwoundReversePInvoke = 0x20,
 
-        GcStackWalkFlags = (CollapseFunclets | RemapHardwareFaultsToSafePoint),
+        // The thread was interrupted in the current frame at the current IP by a signal, SuspendThread or similar.
+        ActiveStackFrame = 0x40,
+
+        // When encountering a reverse P/Invoke, unwind directly to the P/Invoke frame using the saved transition frame.
+        SkipNativeFrames = 0x80,
+
+        GcStackWalkFlags = (CollapseFunclets | RemapHardwareFaultsToSafePoint | SkipNativeFrames),
         EHStackWalkFlags = ApplyReturnAddressAdjustment,
         StackTraceStackWalkFlags = GcStackWalkFlags
     };
@@ -199,7 +208,7 @@ protected:
     GCRefKind           m_HijackedReturnValueKind;
     PTR_UIntNative      m_pConservativeStackRangeLowerBound;
     PTR_UIntNative      m_pConservativeStackRangeUpperBound;
-    uint32_t              m_dwFlags;
+    uint32_t            m_dwFlags;
     PTR_ExInfo          m_pNextExInfo;
     PTR_VOID            m_pendingFuncletFramePointer;
     PreservedRegPtrs    m_funcletPtrs;  // @TODO: Placing the 'scratch space' in the StackFrameIterator is not
@@ -207,5 +216,7 @@ protected:
                                         // space.  However, the implementation simpler by doing it this way.
     bool                m_ShouldSkipRegularGcReporting;
     PTR_VOID            m_OriginalControlPC;
+    PTR_PInvokeTransitionFrame m_pPreviousTransitionFrame;
 };
 
+#endif // __StackFrameIterator_h__

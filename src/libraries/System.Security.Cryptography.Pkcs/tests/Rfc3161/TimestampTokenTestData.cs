@@ -100,7 +100,7 @@ namespace System.Security.Cryptography.Pkcs.Tests
                 "D50DF295F1DB078C84EECBCB30F1018E939B1FEA8615B31F39F87F02EF816EFF" +
                 "FE80A39C0857ECA510882DD2D66D49B743F0E7FF8DBEE4650449");
 
-            data.MessageContent = Encoding.ASCII.GetBytes("This is a test.\n");
+            data.MessageContent = "This is a test.\n"u8.ToArray();
 
             data.TokenInfoBytes = data.FullTokenBytes.Slice(64, 412);
             data.PolicyId = "1.2.3.4.1";
@@ -283,7 +283,7 @@ DgUIrLjqguolBSdvPJ2io9O0rTi7+IQr2jb8JEgpH1WNwC3R4A==");
                 "FD6B6AB4F89DC6750F14EC2E0134BA61B4D0B2C1FB2F60F622379249CE6381AF" +
                 "667900B17A7BB6AE");
 
-            data.MessageContent = Encoding.ASCII.GetBytes("Hello, world!");
+            data.MessageContent = "Hello, world!"u8.ToArray();
 
             data.EmbeddedSigningCertificate = data.FullTokenBytes.Slice(1659, 1359);
 
@@ -422,7 +422,7 @@ DgUIrLjqguolBSdvPJ2io9O0rTi7+IQr2jb8JEgpH1WNwC3R4A==");
                 "76252A2F4605B97BD3C299D1CD79929273BB86E7DF9E113C92802380ED6D4041" +
                 "9DA4C01214D4FA24");
 
-            data.MessageContent = Encoding.UTF8.GetBytes("My TST signer attributes are sorted incorrectly.");
+            data.MessageContent = "My TST signer attributes are sorted incorrectly."u8.ToArray();
 
             data.EmbeddedSigningCertificate = data.FullTokenBytes.Slice(188, 1670);
 

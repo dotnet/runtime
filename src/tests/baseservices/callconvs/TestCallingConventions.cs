@@ -30,9 +30,8 @@ unsafe class Program
 
         public static string GetFullPath()
         {
-            Assembly assembly = Assembly.GetExecutingAssembly();
-            string directory = Path.GetDirectoryName(assembly.Location);
-            return Path.Combine(directory, GetFileName());
+            string currentAssemblyPath = Path.GetDirectoryName(Assembly.GetExecutingAssembly().Location);
+            return Path.Combine(currentAssemblyPath, GetFileName());
         }
     }
 
@@ -190,7 +189,7 @@ unsafe class Program
         }
     }
 
-    static int Main(string[] doNotUse)
+    static int Main()
     {
         try
         {

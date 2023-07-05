@@ -1,16 +1,9 @@
+// Licensed to the .NET Foundation under one or more agreements.
+// The .NET Foundation licenses this file to you under the MIT license.
 
-//  Microsoft (R) .NET Framework IL Disassembler.  Version 4.8.3928.0
-//  Copyright (c) Microsoft Corporation.  All rights reserved.
-
-
-
-// Metadata version: v4.0.30319
-.assembly extern System.Runtime
-{
-  .publickeytoken = (B0 3F 5F 7F 11 D5 0A 3A )                         // .?_....:
-  .ver 6:0:0:0
-}
-.assembly store
+.assembly extern System.Runtime { .publickeytoken = (B0 3F 5F 7F 11 D5 0A 3A ) }
+.assembly extern xunit.core {}
+.assembly normalizeOnStore
 {
   .custom instance void [System.Runtime]System.Runtime.CompilerServices.CompilationRelaxationsAttribute::.ctor(int32) = ( 01 00 08 00 00 00 00 00 ) 
   .custom instance void [System.Runtime]System.Runtime.CompilerServices.RuntimeCompatibilityAttribute::.ctor() = ( 01 00 01 00 54 02 16 57 72 61 70 4E 6F 6E 45 78   // ....T..WrapNonEx
@@ -32,7 +25,6 @@
   .hash algorithm 0x00008004
   .ver 1:0:0:0
 }
-.module store.dll
 // MVID: {A3A2457C-4D44-404C-9480-A353C3DB86A4}
 .imagebase 0x00400000
 .file alignment 0x00000200
@@ -44,7 +36,7 @@
 
 // =============== CLASS MEMBERS DECLARATION ===================
 
-.class private auto ansi beforefieldinit ForwardSubNormalizeOnStore
+.class public auto ansi beforefieldinit ForwardSubNormalizeOnStore
        extends [System.Runtime]System.Object
 {
   .method private hidebysig static int32 
@@ -61,6 +53,9 @@
 
   .method public hidebysig static int32  Main() cil managed
   {
+    .custom instance void [xunit.core]Xunit.FactAttribute::.ctor() = (
+        01 00 00 00
+    )
     .entrypoint
     // Code size       11 (0xb)
     .maxstack  8

@@ -25,7 +25,7 @@ namespace ComWrappersTests.GlobalInstance
             Assert.False(objWrapper is FakeWrapper, $"ComWrappers instance should not have been called");
         }
 
-        static int Main(string[] doNotUse)
+        static int Main()
         {
             try
             {

@@ -5,7 +5,7 @@ using System;
 
 
 public class TryCatch{
-	public static int Main(String [] args) {
+	public static int Main() {
                         int retVal = 100;
 			int i = 0;
 			String m_str = "";

@@ -348,11 +348,11 @@ mini_emit_calli_full (MonoCompile *cfg, MonoMethodSignature *sig, MonoInst **arg
 	g_assert (!check_sp || !tailcall);
 
 	if (check_sp) {
-		if (!cfg->stack_inbalance_var)
-			cfg->stack_inbalance_var = mono_compile_create_var (cfg, mono_get_int_type (), OP_LOCAL);
+		if (!cfg->stack_imbalance_var)
+			cfg->stack_imbalance_var = mono_compile_create_var (cfg, mono_get_int_type (), OP_LOCAL);
 
 		MONO_INST_NEW (cfg, ins, OP_GET_SP);
-		ins->dreg = cfg->stack_inbalance_var->dreg;
+		ins->dreg = cfg->stack_imbalance_var->dreg;
 		MONO_ADD_INS (cfg->cbb, ins);
 	}
 
@@ -376,10 +376,10 @@ mini_emit_calli_full (MonoCompile *cfg, MonoMethodSignature *sig, MonoInst **arg
 
 		/* Restore the stack so we don't crash when throwing the exception */
 		MONO_INST_NEW (cfg, ins, OP_SET_SP);
-		ins->sreg1 = cfg->stack_inbalance_var->dreg;
+		ins->sreg1 = cfg->stack_imbalance_var->dreg;
 		MONO_ADD_INS (cfg->cbb, ins);
 
-		MONO_EMIT_NEW_BIALU (cfg, OP_COMPARE, -1, cfg->stack_inbalance_var->dreg, sp_reg);
+		MONO_EMIT_NEW_BIALU (cfg, OP_COMPARE, -1, cfg->stack_imbalance_var->dreg, sp_reg);
 		MONO_EMIT_NEW_COND_EXC (cfg, NE_UN, "ExecutionEngineException");
 	}
 
@@ -561,7 +561,7 @@ mini_emit_method_call_full (MonoCompile *cfg, MonoMethod *method, MonoMethodSign
 			/* This call might need to enter the interpreter so make it indirect */
 			return mini_emit_llvmonly_calli (cfg, sig, args, ftndesc);
 		} else if (!virtual_) {
-			call->inst.opcode = callvirt_to_call (call->inst.opcode);
+			call->inst.opcode = GINT_TO_OPCODE (callvirt_to_call (call->inst.opcode));
 		} else {
 			vtable_reg = alloc_preg (cfg);
 			MONO_EMIT_NEW_LOAD_MEMBASE_FAULT (cfg, vtable_reg, this_reg, MONO_STRUCT_OFFSET (MonoObject, vtable));
@@ -661,7 +661,7 @@ mini_emit_llvmonly_virtual_call (MonoCompile *cfg, MonoMethod *cmethod, MonoMeth
 	static MonoMethodSignature *helper_sig_llvmonly_imt_trampoline = NULL;
 	MonoInst *icall_args [16];
 	MonoInst *call_target, *ins, *vtable_ins;
-	int arg_reg, this_reg, vtable_reg;
+	int this_reg, vtable_reg;
 	gboolean is_iface = mono_class_is_interface (cmethod->klass);
 	gboolean is_gsharedvt = cfg->gsharedvt && mini_is_gsharedvt_variable_signature (fsig);
 	gboolean variant_iface = FALSE;
@@ -883,7 +883,7 @@ mini_emit_llvmonly_virtual_call (MonoCompile *cfg, MonoMethod *cmethod, MonoMeth
 	icall_args [2] = mini_emit_get_rgctx_method (cfg, context_used,
 												 cmethod, MONO_RGCTX_INFO_METHOD);
 
-	arg_reg = alloc_preg (cfg);
+	int arg_reg = alloc_preg (cfg);
 	MONO_EMIT_NEW_PCONST (cfg, arg_reg, NULL);
 	EMIT_NEW_VARLOADA_VREG (cfg, icall_args [3], arg_reg, mono_get_int_type ());
 

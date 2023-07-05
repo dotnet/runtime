@@ -5,10 +5,10 @@
 
 using System.Collections.Generic;
 using System.Diagnostics;
+using StringConcat = System.Xml.Xsl.Runtime.StringConcat;
 
 namespace System.Xml.Xsl.Xslt
 {
-    using StringConcat = System.Xml.Xsl.Runtime.StringConcat;
     //         a) Forward only, one pass.
     //         b) You should call MoveToFirstChildren on nonempty element node. (or may be skip)
 
@@ -607,7 +607,7 @@ namespace System.Xml.Xsl.Xslt
         //  ForwardCompatibility  -- this flag is set when compiler.version==2 && xsl:version>1 or compiler.version==1 && xsl:version!=1
         //  CanHaveApplyImports  -- we allow xsl:apply-templates instruction to apear in any template with match!=null, but not inside xsl:for-each
         //                          so it can't be inside global variable and has initial value = false
-        //  ExtentionNamespace   -- is defined by extension-element-prefixes attribute on LRE or xsl:stylesheet
+        //  ExtensionNamespace   -- is defined by extension-element-prefixes attribute on LRE or xsl:stylesheet
 
         public bool CanHaveApplyImports
         {
@@ -940,7 +940,7 @@ namespace System.Xml.Xsl.Xslt
             // List of Extension namespaces are maintaned by XsltInput's ScopeManager and is used by IsExtensionNamespace() in XsltLoader.LoadLiteralResultElement()
             // Both Extension and Exclusion namespaces will not be coppied by LiteralResultElement. Logic of copping namespaces are in QilGenerator.CompileLiteralElement().
             // At this time we will have different scope manager and need preserve all required information from load time to compile time.
-            // Each XslNode contains list of NsDecls (nsList) wich stores prefix+namespaces pairs for each namespace decls as well as exclusion namespaces.
+            // Each XslNode contains list of NsDecls (nsList) which stores prefix+namespaces pairs for each namespace decls as well as exclusion namespaces.
             // In addition it also contains Exclusion namespace. They are represented as (null+namespace). Special case is Exlusion "#all" represented as (null+null).
             //and Exclusion namespace
             if (MoveToLiteralAttribute(attExPrefixes))

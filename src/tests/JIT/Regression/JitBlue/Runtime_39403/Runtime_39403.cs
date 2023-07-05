@@ -3,10 +3,11 @@
 
 using System.Numerics;
 using System.Runtime.CompilerServices;
+using Xunit;
 
 // The test was showing silence bad codegen for a `LclFldAddr` node under HWINSTRINSIC(IND).
 
-class Runtime_39403
+public class Runtime_39403
 {
     struct Container
     {
@@ -33,7 +34,8 @@ class Runtime_39403
         return DoAThingByRef(ref Unsafe.As<Container, Vector<int>>(ref container));
     }
 
-    public static int Main()
+    [Fact]
+    public static int TestEntryPoint()
     {
         Vector<int> v1 = TestLclFldAddr();
         Vector<int> v2 = TestLclVarAddr();

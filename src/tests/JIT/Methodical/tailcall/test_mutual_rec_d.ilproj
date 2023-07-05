@@ -1,0 +1,9 @@
+<Project Sdk="Microsoft.NET.Sdk.IL">
+  <PropertyGroup>
+    <DebugType>Full</DebugType>
+  </PropertyGroup>
+  <ItemGroup>
+    <Compile Include="test_mutual_rec_d.il" />
+    <Compile Include="test_mutual_rec.il" />
+  </ItemGroup>
+</Project>

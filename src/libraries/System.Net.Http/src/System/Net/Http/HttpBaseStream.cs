@@ -13,16 +13,16 @@ namespace System.Net.Http
         public sealed override bool CanSeek => false;
 
         public sealed override IAsyncResult BeginRead(byte[] buffer, int offset, int count, AsyncCallback? callback, object? state) =>
-            TaskToApm.Begin(ReadAsync(buffer, offset, count, default), callback, state);
+            TaskToAsyncResult.Begin(ReadAsync(buffer, offset, count, default), callback, state);
 
         public sealed override int EndRead(IAsyncResult asyncResult) =>
-            TaskToApm.End<int>(asyncResult);
+            TaskToAsyncResult.End<int>(asyncResult);
 
         public sealed override IAsyncResult BeginWrite(byte[] buffer, int offset, int count, AsyncCallback? callback, object? state) =>
-            TaskToApm.Begin(WriteAsync(buffer, offset, count, default), callback, state);
+            TaskToAsyncResult.Begin(WriteAsync(buffer, offset, count, default), callback, state);
 
         public sealed override void EndWrite(IAsyncResult asyncResult) =>
-            TaskToApm.End(asyncResult);
+            TaskToAsyncResult.End(asyncResult);
 
         public sealed override long Seek(long offset, SeekOrigin origin) => throw new NotSupportedException();
 
@@ -39,7 +39,7 @@ namespace System.Net.Http
         public sealed override int ReadByte()
         {
             byte b = 0;
-            return Read(MemoryMarshal.CreateSpan(ref b, 1)) == 1 ? b : -1;
+            return Read(new Span<byte>(ref b)) == 1 ? b : -1;
         }
 
         public sealed override int Read(byte[] buffer, int offset, int count)
@@ -64,7 +64,7 @@ namespace System.Net.Http
         }
 
         public sealed override void WriteByte(byte value) =>
-            Write(MemoryMarshal.CreateReadOnlySpan(ref value, 1));
+            Write(new ReadOnlySpan<byte>(in value));
 
         public sealed override Task WriteAsync(byte[] buffer, int offset, int count, CancellationToken cancellationToken)
         {

@@ -4,8 +4,9 @@
 
 using System;
 using System.Runtime.CompilerServices;
+using Xunit;
 
-class GitHub_23739
+public class GitHub_23739
 {
     struct Struct1f
     {
@@ -186,7 +187,8 @@ class GitHub_23739
         Sink(ref l3);
     }
 
-    static int Main()
+    [Fact]
+    public static int TestEntryPoint()
     {
         Cls1f cls1f = new Cls1f();
         Test1f(cls1f);

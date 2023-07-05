@@ -3,6 +3,7 @@
 
 using System.Collections.Generic;
 using System.Linq;
+using Newtonsoft.Json.Linq;
 using Xunit;
 
 namespace System.ComponentModel.DataAnnotations.Tests
@@ -190,7 +191,6 @@ namespace System.ComponentModel.DataAnnotations.Tests
         }
 
         [Fact]
-        [SkipOnTargetFramework(TargetFrameworkMonikers.NetFramework, "Null check not present in .NET Framework. See https://github.com/dotnet/runtime/issues/24237")]
         public void TryValidateObject_IValidatableObject_Null()
         {
             var instance = new ValidatableNull();
@@ -333,6 +333,15 @@ namespace System.ComponentModel.DataAnnotations.Tests
             Assert.Contains(validationResults, x => x.ErrorMessage == "The SecondPropertyToBeTested field is not a valid phone number.");
         }
 
+        [Fact]
+        public static void TryValidateObject_for_JObject_does_not_throw()
+        {
+            var objectToBeValidated = JObject.Parse("{\"Enabled\":true}");
+            var results = new List<ValidationResult>();
+            Assert.True(Validator.TryValidateObject(objectToBeValidated, new ValidationContext(objectToBeValidated), results, true));
+            Assert.Empty(results);
+        }
+
         public class RequiredFailure
         {
             [Required]
@@ -459,7 +468,6 @@ namespace System.ComponentModel.DataAnnotations.Tests
         }
 
         [Fact]
-        [SkipOnTargetFramework(TargetFrameworkMonikers.NetFramework, "Null check not present in .NET Framework. See https://github.com/dotnet/runtime/issues/24237")]
         public void ValidateObject_IValidatableObject_Null()
         {
             var instance = new ValidatableNull();

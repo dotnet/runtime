@@ -20,9 +20,9 @@ namespace System.Collections.Generic
     [DebuggerTypeProxy(typeof(QueueDebugView<>))]
     [DebuggerDisplay("Count = {Count}")]
     [Serializable]
-    [System.Runtime.CompilerServices.TypeForwardedFrom("System, Version=4.0.0.0, Culture=neutral, PublicKeyToken=b77a5c561934e089")]
+    [TypeForwardedFrom("System, Version=4.0.0.0, Culture=neutral, PublicKeyToken=b77a5c561934e089")]
     public class Queue<T> : IEnumerable<T>,
-        System.Collections.ICollection,
+        ICollection,
         IReadOnlyCollection<T>
     {
         private T[] _array;
@@ -42,15 +42,16 @@ namespace System.Collections.Generic
         // is used.
         public Queue(int capacity)
         {
-            if (capacity < 0)
-                throw new ArgumentOutOfRangeException(nameof(capacity), capacity, SR.ArgumentOutOfRange_NeedNonNegNum);
+            ArgumentOutOfRangeException.ThrowIfNegative(capacity);
             _array = new T[capacity];
         }
 
         // Fills a Queue with the elements of an ICollection.  Uses the enumerator
         // to get each of the elements.
-        public Queue(IEnumerable<T> collection!!)
+        public Queue(IEnumerable<T> collection)
         {
+            ArgumentNullException.ThrowIfNull(collection);
+
             _array = EnumerableHelpers.ToArray(collection, out _size);
             if (_size != _array.Length) _tail = _size;
         }
@@ -95,11 +96,13 @@ namespace System.Collections.Generic
 
         // CopyTo copies a collection into an Array, starting at a particular
         // index into the array.
-        public void CopyTo(T[] array!!, int arrayIndex)
+        public void CopyTo(T[] array, int arrayIndex)
         {
+            ArgumentNullException.ThrowIfNull(array);
+
             if (arrayIndex < 0 || arrayIndex > array.Length)
             {
-                throw new ArgumentOutOfRangeException(nameof(arrayIndex), arrayIndex, SR.ArgumentOutOfRange_Index);
+                throw new ArgumentOutOfRangeException(nameof(arrayIndex), arrayIndex, SR.ArgumentOutOfRange_IndexMustBeLessOrEqual);
             }
 
             if (array.Length - arrayIndex < _size)
@@ -119,8 +122,10 @@ namespace System.Collections.Generic
             }
         }
 
-        void ICollection.CopyTo(Array array!!, int index)
+        void ICollection.CopyTo(Array array, int index)
         {
+            ArgumentNullException.ThrowIfNull(array);
+
             if (array.Rank != 1)
             {
                 throw new ArgumentException(SR.Arg_RankMultiDimNotSupported, nameof(array));
@@ -134,7 +139,7 @@ namespace System.Collections.Generic
             int arrayLen = array.Length;
             if (index < 0 || index > arrayLen)
             {
-                throw new ArgumentOutOfRangeException(nameof(index), index, SR.ArgumentOutOfRange_Index);
+                throw new ArgumentOutOfRangeException(nameof(index), index, SR.ArgumentOutOfRange_IndexMustBeLessOrEqual);
             }
 
             if (arrayLen - index < _size)
@@ -158,7 +163,7 @@ namespace System.Collections.Generic
             }
             catch (ArrayTypeMismatchException)
             {
-                throw new ArgumentException(SR.Argument_InvalidArrayType, nameof(array));
+                throw new ArgumentException(SR.Argument_IncompatibleArrayType, nameof(array));
             }
         }
 
@@ -178,21 +183,14 @@ namespace System.Collections.Generic
 
         // GetEnumerator returns an IEnumerator over this Queue.  This
         // Enumerator will support removing.
-        public Enumerator GetEnumerator()
-        {
-            return new Enumerator(this);
-        }
+        public Enumerator GetEnumerator() => new Enumerator(this);
 
         /// <internalonly/>
-        IEnumerator<T> IEnumerable<T>.GetEnumerator()
-        {
-            return new Enumerator(this);
-        }
+        IEnumerator<T> IEnumerable<T>.GetEnumerator() =>
+            Count == 0 ? SZGenericArrayEnumerator<T>.Empty :
+            GetEnumerator();
 
-        IEnumerator IEnumerable.GetEnumerator()
-        {
-            return new Enumerator(this);
-        }
+        IEnumerator IEnumerable.GetEnumerator() => ((IEnumerable<T>)this).GetEnumerator();
 
         // Removes the object at the head of the queue and returns it. If the queue
         // is empty, this method throws an
@@ -225,7 +223,7 @@ namespace System.Collections.Generic
 
             if (_size == 0)
             {
-                result = default!;
+                result = default;
                 return false;
             }
 
@@ -257,7 +255,7 @@ namespace System.Collections.Generic
         {
             if (_size == 0)
             {
-                result = default!;
+                result = default;
                 return false;
             }
 
@@ -371,10 +369,7 @@ namespace System.Collections.Generic
         /// <returns>The new capacity of this queue.</returns>
         public int EnsureCapacity(int capacity)
         {
-            if (capacity < 0)
-            {
-                throw new ArgumentOutOfRangeException(nameof(capacity), capacity, SR.ArgumentOutOfRange_NeedNonNegNum);
-            }
+            ArgumentOutOfRangeException.ThrowIfNegative(capacity);
 
             if (_array.Length < capacity)
             {
@@ -411,7 +406,7 @@ namespace System.Collections.Generic
         // internal version number of the list to ensure that no modifications are
         // made to the list while an enumeration is in progress.
         public struct Enumerator : IEnumerator<T>,
-            System.Collections.IEnumerator
+            IEnumerator
         {
             private readonly Queue<T> _q;
             private readonly int _version;
@@ -451,12 +446,12 @@ namespace System.Collections.Generic
 
                 // Cache some fields in locals to decrease code size
                 T[] array = _q._array;
-                int capacity = array.Length;
+                uint capacity = (uint)array.Length;
 
                 // _index represents the 0-based index into the queue, however the queue
                 // doesn't have to start from 0 and it may not even be stored contiguously in memory.
 
-                int arrayIndex = _q._head + _index; // this is the actual index into the queue's backing array
+                uint arrayIndex = (uint)(_q._head + _index); // this is the actual index into the queue's backing array
                 if (arrayIndex >= capacity)
                 {
                     // NOTE: Originally we were using the modulo operator here, however

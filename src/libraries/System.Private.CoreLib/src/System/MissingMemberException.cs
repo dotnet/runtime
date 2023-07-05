@@ -1,12 +1,14 @@
 // Licensed to the .NET Foundation under one or more agreements.
 // The .NET Foundation licenses this file to you under the MIT license.
 
+using System.ComponentModel;
+using System.Runtime.CompilerServices;
 using System.Runtime.Serialization;
 
 namespace System
 {
     [Serializable]
-    [System.Runtime.CompilerServices.TypeForwardedFrom("mscorlib, Version=4.0.0.0, Culture=neutral, PublicKeyToken=b77a5c561934e089")]
+    [TypeForwardedFrom("mscorlib, Version=4.0.0.0, Culture=neutral, PublicKeyToken=b77a5c561934e089")]
     public partial class MissingMemberException : MemberAccessException
     {
         public MissingMemberException()
@@ -31,8 +33,11 @@ namespace System
         {
             ClassName = className;
             MemberName = memberName;
+            HResult = HResults.COR_E_MISSINGMEMBER;
         }
 
+        [Obsolete(Obsoletions.LegacyFormatterImplMessage, DiagnosticId = Obsoletions.LegacyFormatterImplDiagId, UrlFormat = Obsoletions.SharedUrlFormat)]
+        [EditorBrowsable(EditorBrowsableState.Never)]
         protected MissingMemberException(SerializationInfo info, StreamingContext context)
             : base(info, context)
         {
@@ -41,6 +46,8 @@ namespace System
             Signature = (byte[]?)info.GetValue("MMSignature", typeof(byte[]));
         }
 
+        [Obsolete(Obsoletions.LegacyFormatterImplMessage, DiagnosticId = Obsoletions.LegacyFormatterImplDiagId, UrlFormat = Obsoletions.SharedUrlFormat)]
+        [EditorBrowsable(EditorBrowsableState.Never)]
         public override void GetObjectData(SerializationInfo info, StreamingContext context)
         {
             base.GetObjectData(info, context);
@@ -60,7 +67,7 @@ namespace System
                 else
                 {
                     // do any desired fixups to classname here.
-                    return SR.Format(SR.MissingMember_Name, ClassName + "." + MemberName + (Signature != null ? " " + FormatSignature(Signature) : string.Empty));
+                    return SR.Format(SR.MissingMember_Name, ClassName, MemberName);
                 }
             }
         }
@@ -70,6 +77,6 @@ namespace System
         // format depending on the language environment.
         protected string? ClassName;
         protected string? MemberName;
-        protected byte[]? Signature;
+        protected byte[]? Signature; // Unused
     }
 }

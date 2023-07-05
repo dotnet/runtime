@@ -5,12 +5,11 @@ using System.Collections.Generic;
 using System.Diagnostics;
 using ILCompiler;
 using Internal.TypeSystem;
+using static Internal.JitInterface.SYSTEMV_AMD64_CORINFO_STRUCT_REG_PASSING_DESCRIPTOR;
+using static Internal.JitInterface.SystemVClassificationType;
 
 namespace Internal.JitInterface
 {
-    using static SYSTEMV_AMD64_CORINFO_STRUCT_REG_PASSING_DESCRIPTOR;
-    using static SystemVClassificationType;
-
     internal static class SystemVStructClassificator
     {
         private struct SystemVStructRegisterPassingHelper
@@ -30,7 +29,7 @@ namespace Internal.JitInterface
                 FieldClassifications = new SystemVClassificationType[SYSTEMV_MAX_NUM_FIELDS_IN_REGISTER_PASSED_STRUCT];
                 FieldSizes = new int[SYSTEMV_MAX_NUM_FIELDS_IN_REGISTER_PASSED_STRUCT];
                 FieldOffsets = new int[SYSTEMV_MAX_NUM_FIELDS_IN_REGISTER_PASSED_STRUCT];
-                            
+
                 for (int i = 0; i < CLR_SYSTEMV_MAX_EIGHTBYTES_COUNT_TO_PASS_IN_REGISTERS; i++)
                 {
                     EightByteClassifications[i] = SystemVClassificationTypeNoClass;
@@ -65,7 +64,7 @@ namespace Internal.JitInterface
             public int[]                       FieldOffsets;
         };
 
-        private class FieldEnumerator
+        private static class FieldEnumerator
         {
             internal static IEnumerable<FieldDesc> GetInstanceFields(TypeDesc typeDesc, bool isFixedBuffer, int numIntroducedFields)
             {
@@ -94,7 +93,7 @@ namespace Internal.JitInterface
         {
             structPassInRegDescPtr = default;
             structPassInRegDescPtr.passedInRegisters = false;
-            
+
             int typeSize = typeDesc.GetElementSize().AsInt;
             if (typeDesc.IsValueType && (typeSize <= CLR_SYSTEMV_MAX_STRUCT_BYTES_TO_PASS_IN_REGISTERS))
             {
@@ -114,7 +113,7 @@ namespace Internal.JitInterface
                     structPassInRegDescPtr.eightByteClassifications0 = helper.EightByteClassifications[0];
                     structPassInRegDescPtr.eightByteSizes0 = (byte)helper.EightByteSizes[0];
                     structPassInRegDescPtr.eightByteOffsets0 = (byte)helper.EightByteOffsets[0];
-                        
+
                     structPassInRegDescPtr.eightByteClassifications1 = helper.EightByteClassifications[1];
                     structPassInRegDescPtr.eightByteSizes1 = (byte)helper.EightByteSizes[1];
                     structPassInRegDescPtr.eightByteOffsets1 = (byte)helper.EightByteOffsets[1];
@@ -167,7 +166,7 @@ namespace Internal.JitInterface
 
         // If we have a field classification already, but there is a union, we must merge the classification type of the field. Returns the
         // new, merged classification type.
-        static SystemVClassificationType ReClassifyField(SystemVClassificationType originalClassification, SystemVClassificationType newFieldClassification)
+        private static SystemVClassificationType ReClassifyField(SystemVClassificationType originalClassification, SystemVClassificationType newFieldClassification)
         {
             Debug.Assert((newFieldClassification == SystemVClassificationTypeInteger) ||
                             (newFieldClassification == SystemVClassificationTypeIntegerReference) ||
@@ -216,7 +215,7 @@ namespace Internal.JitInterface
         /// <summary>
         /// Returns 'true' if the struct is passed in registers, 'false' otherwise.
         /// </summary>
-        private static bool ClassifyEightBytes(TypeDesc typeDesc, 
+        private static bool ClassifyEightBytes(TypeDesc typeDesc,
                                                ref SystemVStructRegisterPassingHelper helper,
                                                int startOffsetOfStruct)
         {
@@ -226,10 +225,7 @@ namespace Internal.JitInterface
             {
                 if (!field.IsStatic)
                 {
-                    if (firstField == null)
-                    {
-                        firstField = field;
-                    }
+                    firstField ??= field;
                     numIntroducedFields++;
                 }
             }
@@ -239,14 +235,15 @@ namespace Internal.JitInterface
                 return false;
             }
 
-            // The SIMD Intrinsic types are meant to be handled specially and should not be passed as struct registers
+            // The SIMD and Int128 Intrinsic types are meant to be handled specially and should not be passed as struct registers
             if (typeDesc.IsIntrinsic)
             {
                 InstantiatedType instantiatedType = typeDesc as InstantiatedType;
                 if (instantiatedType != null)
                 {
                     if (VectorFieldLayoutAlgorithm.IsVectorType(instantiatedType) ||
-                        VectorOfTFieldLayoutAlgorithm.IsVectorOfTType(instantiatedType))
+                        VectorOfTFieldLayoutAlgorithm.IsVectorOfTType(instantiatedType) ||
+                        Int128FieldLayoutAlgorithm.IsIntegerType(instantiatedType))
                     {
                         return false;
                     }
@@ -294,21 +291,7 @@ namespace Internal.JitInterface
                     return false;
                 }
 
-                SystemVClassificationType fieldClassificationType;
-                if (typeDesc.IsByReferenceOfT)
-                {
-                    // ByReference<T> is a special type whose single IntPtr field holds a by-ref potentially interior pointer to GC
-                    // memory, so classify its field as such
-                    Debug.Assert(numIntroducedFields == 1);
-                    Debug.Assert(field.FieldType.IsWellKnownType(WellKnownType.IntPtr));
-
-                    fieldClassificationType = SystemVClassificationTypeIntegerByRef;
-                }
-                else
-                {
-                    fieldClassificationType = TypeDef2SystemVClassification(field.FieldType);
-                }
-
+                SystemVClassificationType fieldClassificationType = TypeDef2SystemVClassification(field.FieldType);
                 if (fieldClassificationType == SystemVClassificationTypeStruct)
                 {
                     bool inEmbeddedStructPrev = helper.InEmbeddedStruct;
@@ -316,7 +299,7 @@ namespace Internal.JitInterface
 
                     bool structRet = false;
                     structRet = ClassifyEightBytes(field.FieldType, ref helper, normalizedFieldOffset);
-                    
+
                     helper.InEmbeddedStruct = inEmbeddedStructPrev;
 
                     if (!structRet)
@@ -482,7 +465,7 @@ namespace Internal.JitInterface
                         else if ((helper.EightByteClassifications[currentFieldEightByte] == SystemVClassificationTypeInteger) ||
                             (fieldClassificationType == SystemVClassificationTypeInteger))
                         {
-                            Debug.Assert((fieldClassificationType != SystemVClassificationTypeIntegerReference) && 
+                            Debug.Assert((fieldClassificationType != SystemVClassificationTypeIntegerReference) &&
                                             (fieldClassificationType != SystemVClassificationTypeIntegerByRef));
 
                             helper.EightByteClassifications[currentFieldEightByte] = SystemVClassificationTypeInteger;

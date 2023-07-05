@@ -3660,7 +3660,6 @@ namespace System.IO.Packaging.Tests
         }
 
         [Fact]
-        [ActiveIssue("https://github.com/dotnet/runtime/issues/60582", TestPlatforms.iOS | TestPlatforms.tvOS)]
         [SkipOnTargetFramework(TargetFrameworkMonikers.NetFramework, "Desktop doesn't support Package.Open with FileAccess.Write")]
         public void CreateWithFileAccessWrite()
         {
@@ -3696,11 +3695,10 @@ namespace System.IO.Packaging.Tests
         }
 
         [Fact]
-        [ActiveIssue("https://github.com/dotnet/runtime/issues/60582", TestPlatforms.iOS | TestPlatforms.tvOS)]
         [SkipOnTargetFramework(TargetFrameworkMonikers.NetFramework, "Desktop doesn't support Package.Open with FileAccess.Write")]
         public void ZipPackage_CreateWithFileAccessWrite()
         {
-            string packageName = "test.zip";
+            string packageName = Path.Combine(TestDirectory, "test.zip");
 
             using (Package package = Package.Open(packageName, FileMode.Create, FileAccess.Write))
             {

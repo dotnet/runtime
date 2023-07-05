@@ -2,10 +2,11 @@
 // The .NET Foundation licenses this file to you under the MIT license.
 
 using System;
+using Xunit;
 
-namespace JitTest
+namespace JitTest_lcs_refany_cs
 {
-    internal class LCS
+    public class LCS
     {
         private const int RANK = 4;
 
@@ -97,7 +98,8 @@ namespace JitTest
             }
         }
 
-        private static int Main()
+        [Fact]
+        public static int TestEntryPoint()
         {
             String[] str = new String[RANK] {
                 "The Sun has left",

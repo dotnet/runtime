@@ -32,7 +32,7 @@ namespace Internal
             {
                 cbytes = Interop.Kernel32.WideCharToMultiByte(
                     Interop.Kernel32.GetConsoleOutputCP(),
-                    0, pChars, s.Length, pBytes, bytes.Length, IntPtr.Zero, IntPtr.Zero);
+                    0, pChars, s.Length, pBytes, bytes.Length, null, null);
             }
 
             fixed (byte* pBytes = bytes)

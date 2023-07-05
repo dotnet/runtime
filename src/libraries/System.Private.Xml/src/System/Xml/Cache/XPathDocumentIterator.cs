@@ -60,8 +60,10 @@ namespace MS.Internal.Xml.Cache
         /// <summary>
         /// Create an iterator that ranges over all element children of "parent" having the specified QName.
         /// </summary>
-        public XPathDocumentElementChildIterator(XPathDocumentNavigator parent, string name, string namespaceURI!!) : base(parent)
+        public XPathDocumentElementChildIterator(XPathDocumentNavigator parent, string name, string namespaceURI) : base(parent)
         {
+            ArgumentNullException.ThrowIfNull(namespaceURI);
+
             _localName = parent.NameTable.Get(name);
             _namespaceUri = namespaceURI;
         }
@@ -171,8 +173,10 @@ namespace MS.Internal.Xml.Cache
         /// <summary>
         /// Create an iterator that ranges over all element descendants of "root" having the specified QName.
         /// </summary>
-        public XPathDocumentElementDescendantIterator(XPathDocumentNavigator root, string name, string namespaceURI!!, bool matchSelf) : base(root)
+        public XPathDocumentElementDescendantIterator(XPathDocumentNavigator root, string name, string namespaceURI, bool matchSelf) : base(root)
         {
+            ArgumentNullException.ThrowIfNull(namespaceURI);
+
             _localName = root.NameTable.Get(name);
             _namespaceUri = namespaceURI;
             _matchSelf = matchSelf;

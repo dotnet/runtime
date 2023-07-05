@@ -1,8 +1,6 @@
 // Licensed to the .NET Foundation under one or more agreements.
 // The .NET Foundation licenses this file to you under the MIT license.
 
-#nullable enable
-
 using System;
 using System.Text;
 using System.Collections.Generic;
@@ -34,7 +32,7 @@ namespace Microsoft.Extensions.Internal
             { typeof(ushort), "ushort" }
         };
 
-        [return: NotNullIfNotNull("item")]
+        [return: NotNullIfNotNull(nameof(item))]
         public static string? GetTypeDisplayName(object? item, bool fullName = true)
         {
             return item == null ? null : GetTypeDisplayName(item.GetType(), fullName);
@@ -51,43 +49,61 @@ namespace Microsoft.Extensions.Internal
         /// <returns>The pretty printed type name.</returns>
         public static string GetTypeDisplayName(Type type, bool fullName = true, bool includeGenericParameterNames = false, bool includeGenericParameters = true, char nestedTypeDelimiter = DefaultNestedTypeDelimiter)
         {
-            var builder = new StringBuilder();
-            ProcessType(builder, type, new DisplayNameOptions(fullName, includeGenericParameterNames, includeGenericParameters, nestedTypeDelimiter));
-            return builder.ToString();
+            StringBuilder? builder = null;
+            string? name = ProcessType(ref builder, type, new DisplayNameOptions(fullName, includeGenericParameterNames, includeGenericParameters, nestedTypeDelimiter));
+            return name ?? builder?.ToString() ?? string.Empty;
         }
 
-        private static void ProcessType(StringBuilder builder, Type type, in DisplayNameOptions options)
+        private static string? ProcessType(ref StringBuilder? builder, Type type, in DisplayNameOptions options)
         {
             if (type.IsGenericType)
             {
                 Type[] genericArguments = type.GetGenericArguments();
+                builder ??= new StringBuilder();
                 ProcessGenericType(builder, type, genericArguments, genericArguments.Length, options);
             }
             else if (type.IsArray)
             {
+                builder ??= new StringBuilder();
                 ProcessArrayType(builder, type, options);
             }
             else if (_builtInTypeNames.TryGetValue(type, out string? builtInName))
             {
+                if (builder is null) return builtInName;
+
                 builder.Append(builtInName);
             }
             else if (type.IsGenericParameter)
             {
                 if (options.IncludeGenericParameterNames)
                 {
+                    if (builder is null) return type.Name;
+
                     builder.Append(type.Name);
                 }
             }
             else
             {
                 string name = options.FullName ? type.FullName! : type.Name;
-                builder.Append(name);
 
+                if (builder is null)
+                {
+                    if (options.NestedTypeDelimiter != DefaultNestedTypeDelimiter)
+                    {
+                        return name.Replace(DefaultNestedTypeDelimiter, options.NestedTypeDelimiter);
+                    }
+
+                    return name;
+                }
+
+                builder.Append(name);
                 if (options.NestedTypeDelimiter != DefaultNestedTypeDelimiter)
                 {
                     builder.Replace(DefaultNestedTypeDelimiter, options.NestedTypeDelimiter, builder.Length - name.Length, name.Length);
                 }
             }
+
+            return null;
         }
 
         private static void ProcessArrayType(StringBuilder builder, Type type, in DisplayNameOptions options)
@@ -98,7 +114,7 @@ namespace Microsoft.Extensions.Internal
                 innerType = innerType.GetElementType()!;
             }
 
-            ProcessType(builder, innerType, options);
+            ProcessType(ref builder!, innerType, options);
 
             while (type.IsArray)
             {
@@ -145,7 +161,7 @@ namespace Microsoft.Extensions.Internal
                 builder.Append('<');
                 for (int i = offset; i < length; i++)
                 {
-                    ProcessType(builder, genericArguments[i], options);
+                    ProcessType(ref builder!, genericArguments[i], options);
                     if (i + 1 == length)
                     {
                         continue;

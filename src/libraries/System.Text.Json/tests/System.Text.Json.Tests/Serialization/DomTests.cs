@@ -2,6 +2,7 @@
 // The .NET Foundation licenses this file to you under the MIT license.
 
 using System.Linq;
+using System.Runtime.InteropServices;
 using System.Text.Json.Nodes;
 using Xunit;
 
@@ -182,6 +183,28 @@ namespace System.Text.Json.Serialization.Tests
             Assert.IsType<JsonArray>(arrayProp);
             Assert.Equal(1, arrayProp[0].AsValue().GetValue<int>());
             Assert.Equal(2, arrayProp[1].AsValue().GetValue<int>());
+        }
+
+        [Theory]
+        [InlineData(5)]
+        [InlineData(32)]
+        [InlineData(70)] // default max depth is 64
+        public static void SerializeToNode_RespectsMaxDepth(int maxDepth)
+        {
+            var options = new JsonSerializerOptions { MaxDepth = maxDepth };
+
+            RecursiveClass value = RecursiveClass.FromInt(maxDepth);
+            JsonNode dom = JsonSerializer.SerializeToNode(value, options);
+
+            value = RecursiveClass.FromInt(maxDepth + 1);
+            Assert.Throws<JsonException>(() => JsonSerializer.SerializeToNode(value, options));
+        }
+
+        public class RecursiveClass
+        {
+            public RecursiveClass? Next { get; set; }
+            public static RecursiveClass FromInt(int depth) => depth == 0 ? null : new RecursiveClass { Next = FromInt(depth - 1) };
+            public static int ToInt(RecursiveClass value) => value is null ? 0 : 1 + ToInt(value.Next);
         }
 
         [Fact]

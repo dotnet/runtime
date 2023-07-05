@@ -18,11 +18,12 @@ namespace System.Text.Json.Serialization.Converters
             ((Dictionary<TKey, TValue>)state.Current.ReturnValue!)[key] = value;
         }
 
-        protected override void CreateCollection(ref Utf8JsonReader reader, ref ReadStack state)
+        internal override bool SupportsCreateObjectDelegate => false;
+        protected override void CreateCollection(ref Utf8JsonReader reader, scoped ref ReadStack state)
         {
             if (!_isDeserializable)
             {
-                ThrowHelper.ThrowNotSupportedException_CannotPopulateCollection(TypeToConvert, ref reader, ref state);
+                ThrowHelper.ThrowNotSupportedException_CannotPopulateCollection(Type, ref reader, ref state);
             }
 
             state.Current.ReturnValue = new Dictionary<TKey, TValue>();

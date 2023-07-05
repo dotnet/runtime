@@ -1,0 +1,6 @@
+v1.7.0
+https://github.com/libunwind/libunwind/commit/688caaf6ef9853cc26ad8bd1706804d48a0df0bc
+
+Apply https://github.com/libunwind/libunwind/pull/457
+Apply https://github.com/libunwind/libunwind/pull/455
+Apply https://github.com/libunwind/libunwind/pull/460

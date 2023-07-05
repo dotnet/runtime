@@ -350,7 +350,7 @@ int32_t AndroidCryptoNative_EcKeyCreateByKeyParameters(EC_KEY** key,
     JNIEnv* env = GetJNIEnv();
 
     // The easiest way to create explicit keys with a named curve is to generate
-    // new keys for the curve, pull out the explicit paramters, and then create the explicit keys.
+    // new keys for the curve, pull out the explicit parameters, and then create the explicit keys.
     *key = AndroidCryptoNative_EcKeyCreateByOid(oid);
     if (*key == NULL)
     {

@@ -158,7 +158,7 @@ namespace System.Runtime.InteropServices.Tests
             Assert.Equal(0, dict[1].Value);
             Assert.Equal(0, dict[1].Property);
 
-            var itemVal = dict[1];
+            Struct itemVal = dict[1];
             itemVal.Value = 1;
             itemVal.Property = 2;
 
@@ -172,7 +172,7 @@ namespace System.Runtime.InteropServices.Tests
             Assert.Equal(3, dict[1].Value);
             Assert.Equal(4, dict[1].Property);
 
-            ref var itemRef = ref CollectionsMarshal.GetValueRefOrNullRef(dict, 2);
+            ref Struct itemRef = ref CollectionsMarshal.GetValueRefOrNullRef(dict, 2);
 
             Assert.Equal(0, itemRef.Value);
             Assert.Equal(0, itemRef.Property);
@@ -185,7 +185,7 @@ namespace System.Runtime.InteropServices.Tests
             Assert.Equal(dict[2].Value, itemRef.Value);
             Assert.Equal(dict[2].Property, itemRef.Property);
 
-            itemRef = new() { Value = 7, Property = 8 };
+            itemRef = new Struct() { Value = 7, Property = 8 };
 
             Assert.Equal(7, itemRef.Value);
             Assert.Equal(8, itemRef.Property);
@@ -205,8 +205,8 @@ namespace System.Runtime.InteropServices.Tests
         {
             var dict = new Dictionary<int, IntAsObject>
             {
-                {  1, new() },
-                {  2, new() }
+                {  1, new IntAsObject() },
+                {  2, new IntAsObject() }
             };
 
             Assert.Equal(2, dict.Count);
@@ -214,7 +214,7 @@ namespace System.Runtime.InteropServices.Tests
             Assert.Equal(0, dict[1].Value);
             Assert.Equal(0, dict[1].Property);
 
-            var itemVal = dict[1];
+            IntAsObject itemVal = dict[1];
             itemVal.Value = 1;
             itemVal.Property = 2;
 
@@ -228,7 +228,7 @@ namespace System.Runtime.InteropServices.Tests
             Assert.Equal(3, dict[1].Value);
             Assert.Equal(4, dict[1].Property);
 
-            ref var itemRef = ref CollectionsMarshal.GetValueRefOrNullRef(dict, 2);
+            ref IntAsObject itemRef = ref CollectionsMarshal.GetValueRefOrNullRef(dict, 2);
 
             Assert.Equal(0, itemRef.Value);
             Assert.Equal(0, itemRef.Property);
@@ -241,7 +241,7 @@ namespace System.Runtime.InteropServices.Tests
             Assert.Equal(dict[2].Value, itemRef.Value);
             Assert.Equal(dict[2].Property, itemRef.Property);
 
-            itemRef = new() { Value = 7, Property = 8 };
+            itemRef = new IntAsObject() { Value = 7, Property = 8 };
 
             Assert.Equal(7, itemRef.Value);
             Assert.Equal(8, itemRef.Property);
@@ -261,12 +261,12 @@ namespace System.Runtime.InteropServices.Tests
         {
             var dict = new Dictionary<int, Struct>
             {
-                {  1, new() }
+                {  1, new Struct() }
             };
 
             Assert.Equal(1, dict.Count);
 
-            ref var itemRef = ref CollectionsMarshal.GetValueRefOrNullRef(dict, 1);
+            ref Struct itemRef = ref CollectionsMarshal.GetValueRefOrNullRef(dict, 1);
 
             Assert.Equal(0, itemRef.Value);
             Assert.Equal(0, itemRef.Property);
@@ -283,7 +283,7 @@ namespace System.Runtime.InteropServices.Tests
             dict.EnsureCapacity(100);
             for (int i = 2; i <= 50; i++)
             {
-                dict.Add(i, new());
+                dict.Add(i, new Struct());
             }
 
             itemRef.Value = 3;
@@ -316,7 +316,7 @@ namespace System.Runtime.InteropServices.Tests
             Assert.Equal(0, dict[1].Value);
             Assert.Equal(0, dict[1].Property);
 
-            var itemVal = dict[1];
+            Struct itemVal = dict[1];
             itemVal.Value = 1;
             itemVal.Property = 2;
 
@@ -336,7 +336,7 @@ namespace System.Runtime.InteropServices.Tests
             Assert.Equal(3, dict[1].Value);
             Assert.Equal(4, dict[1].Property);
 
-            ref var itemRef = ref CollectionsMarshal.GetValueRefOrAddDefault(dict, 2, out exists);
+            ref Struct itemRef = ref CollectionsMarshal.GetValueRefOrAddDefault(dict, 2, out exists);
 
             Assert.True(exists);
             Assert.Equal(2, dict.Count);
@@ -351,7 +351,7 @@ namespace System.Runtime.InteropServices.Tests
             Assert.Equal(dict[2].Value, itemRef.Value);
             Assert.Equal(dict[2].Property, itemRef.Property);
 
-            itemRef = new() { Value = 7, Property = 8 };
+            itemRef = new Struct() { Value = 7, Property = 8 };
 
             Assert.Equal(7, itemRef.Value);
             Assert.Equal(8, itemRef.Property);
@@ -360,7 +360,7 @@ namespace System.Runtime.InteropServices.Tests
 
             // Check for correct additions
 
-            ref var entry3Ref = ref CollectionsMarshal.GetValueRefOrAddDefault(dict, 3, out exists);
+            ref Struct entry3Ref = ref CollectionsMarshal.GetValueRefOrAddDefault(dict, 3, out exists);
 
             Assert.False(exists);
             Assert.Equal(3, dict.Count);
@@ -370,7 +370,7 @@ namespace System.Runtime.InteropServices.Tests
             entry3Ref.Property = 42;
             entry3Ref.Value = 12345;
 
-            var value3 = dict[3];
+            Struct value3 = dict[3];
 
             Assert.Equal(42, value3.Property);
             Assert.Equal(12345, value3.Value);
@@ -381,8 +381,8 @@ namespace System.Runtime.InteropServices.Tests
         {
             var dict = new Dictionary<int, IntAsObject>
             {
-                {  1, new() },
-                {  2, new() }
+                {  1, new IntAsObject() },
+                {  2, new IntAsObject() }
             };
 
             Assert.Equal(2, dict.Count);
@@ -390,7 +390,7 @@ namespace System.Runtime.InteropServices.Tests
             Assert.Equal(0, dict[1].Value);
             Assert.Equal(0, dict[1].Property);
 
-            var itemVal = dict[1];
+            IntAsObject itemVal = dict[1];
             itemVal.Value = 1;
             itemVal.Property = 2;
 
@@ -410,7 +410,7 @@ namespace System.Runtime.InteropServices.Tests
             Assert.Equal(3, dict[1].Value);
             Assert.Equal(4, dict[1].Property);
 
-            ref var itemRef = ref CollectionsMarshal.GetValueRefOrAddDefault(dict, 2, out exists);
+            ref IntAsObject itemRef = ref CollectionsMarshal.GetValueRefOrAddDefault(dict, 2, out exists);
 
             Assert.True(exists);
             Assert.Equal(2, dict.Count);
@@ -425,7 +425,7 @@ namespace System.Runtime.InteropServices.Tests
             Assert.Equal(dict[2].Value, itemRef.Value);
             Assert.Equal(dict[2].Property, itemRef.Property);
 
-            itemRef = new() { Value = 7, Property = 8 };
+            itemRef = new IntAsObject() { Value = 7, Property = 8 };
 
             Assert.Equal(7, itemRef.Value);
             Assert.Equal(8, itemRef.Property);
@@ -434,16 +434,16 @@ namespace System.Runtime.InteropServices.Tests
 
             // Check for correct additions
 
-            ref var entry3Ref = ref CollectionsMarshal.GetValueRefOrAddDefault(dict, 3, out exists);
+            ref IntAsObject entry3Ref = ref CollectionsMarshal.GetValueRefOrAddDefault(dict, 3, out exists);
 
             Assert.False(exists);
             Assert.Equal(3, dict.Count);
             Assert.False(Unsafe.IsNullRef(ref entry3Ref));
             Assert.Null(entry3Ref);
 
-            entry3Ref = new() { Value = 12345, Property = 42 };
+            entry3Ref = new IntAsObject() { Value = 12345, Property = 42 };
 
-            var value3 = dict[3];
+            IntAsObject value3 = dict[3];
 
             Assert.Equal(42, value3.Property);
             Assert.Equal(12345, value3.Value);
@@ -454,12 +454,12 @@ namespace System.Runtime.InteropServices.Tests
         {
             var dict = new Dictionary<int, Struct>
             {
-                {  1, new() }
+                {  1, new Struct() }
             };
 
             Assert.Equal(1, dict.Count);
 
-            ref var itemRef = ref CollectionsMarshal.GetValueRefOrAddDefault(dict, 1, out bool exists);
+            ref Struct itemRef = ref CollectionsMarshal.GetValueRefOrAddDefault(dict, 1, out bool exists);
 
             Assert.True(exists);
             Assert.Equal(1, dict.Count);
@@ -478,7 +478,7 @@ namespace System.Runtime.InteropServices.Tests
             dict.EnsureCapacity(100);
             for (int i = 2; i <= 50; i++)
             {
-                dict.Add(i, new());
+                dict.Add(i, new Struct());
             }
 
             itemRef.Value = 3;
@@ -504,6 +504,56 @@ namespace System.Runtime.InteropServices.Tests
         {
             public int Value;
             public int Property { get; set; }
+        }
+
+        [Fact]
+        public void ListSetCount()
+        {
+            List<int> list = null;
+            Assert.Throws<NullReferenceException>(() => CollectionsMarshal.SetCount(list, 3));
+
+            Assert.Throws<ArgumentOutOfRangeException>(() => CollectionsMarshal.SetCount(list, -1));
+
+            list = new();
+            Assert.Throws<ArgumentOutOfRangeException>(() => CollectionsMarshal.SetCount(list, -1));
+
+            CollectionsMarshal.SetCount(list, 5);
+            Assert.Equal(5, list.Count);
+
+            list = new() { 1, 2, 3, 4, 5 };
+            ref int intRef = ref MemoryMarshal.GetReference(CollectionsMarshal.AsSpan(list));
+
+            // make sure that size decrease preserves content
+            CollectionsMarshal.SetCount(list, 3);
+            Assert.Equal(3, list.Count);
+            Assert.Throws<ArgumentOutOfRangeException>(() => list[3]);
+            AssertExtensions.SequenceEqual(CollectionsMarshal.AsSpan(list), new int[] { 1, 2, 3 });
+            Assert.True(Unsafe.AreSame(ref intRef, ref MemoryMarshal.GetReference(CollectionsMarshal.AsSpan(list))));
+
+            // make sure that size increase preserves content and doesn't clear
+            CollectionsMarshal.SetCount(list, 5);
+            AssertExtensions.SequenceEqual(CollectionsMarshal.AsSpan(list), new int[] { 1, 2, 3, 4, 5 });
+            Assert.True(Unsafe.AreSame(ref intRef, ref MemoryMarshal.GetReference(CollectionsMarshal.AsSpan(list))));
+
+            // make sure that reallocations preserve content
+            int newCount = list.Capacity * 2;
+            CollectionsMarshal.SetCount(list, newCount);
+            Assert.Equal(newCount, list.Count);
+            AssertExtensions.SequenceEqual(CollectionsMarshal.AsSpan(list)[..3], new int[] { 1, 2, 3 });
+            Assert.True(!Unsafe.AreSame(ref intRef, ref MemoryMarshal.GetReference(CollectionsMarshal.AsSpan(list))));
+
+            List<string> listReference = new() { "a", "b", "c", "d", "e" };
+            ref string stringRef = ref MemoryMarshal.GetReference(CollectionsMarshal.AsSpan(listReference));
+            CollectionsMarshal.SetCount(listReference, 3);
+
+            // verify that reference types aren't cleared
+            AssertExtensions.SequenceEqual(CollectionsMarshal.AsSpan(listReference), new string[] { "a", "b", "c" });
+            Assert.True(Unsafe.AreSame(ref stringRef, ref MemoryMarshal.GetReference(CollectionsMarshal.AsSpan(listReference))));
+            CollectionsMarshal.SetCount(listReference, 5);
+
+            // verify that removed reference types are cleared
+            AssertExtensions.SequenceEqual(CollectionsMarshal.AsSpan(listReference), new string[] { "a", "b", "c", null, null });
+            Assert.True(Unsafe.AreSame(ref stringRef, ref MemoryMarshal.GetReference(CollectionsMarshal.AsSpan(listReference))));
         }
     }
 }

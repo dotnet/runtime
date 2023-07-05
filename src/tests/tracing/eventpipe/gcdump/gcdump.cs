@@ -28,7 +28,7 @@ namespace Tracing.Tests.EventSourceError
 
         private static readonly ulong GC_HeapDump_Keyword = 0x100000UL;
 
-        public static int Main(string[] args)
+        public static int Main()
         {
             // This test validates that if an EventSource generates an error
             // during construction it gets emitted over EventPipe

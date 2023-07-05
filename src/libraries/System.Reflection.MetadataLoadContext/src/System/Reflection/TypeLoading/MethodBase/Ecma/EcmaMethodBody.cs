@@ -3,6 +3,7 @@
 
 using System.Diagnostics;
 using System.Collections.Generic;
+using System.Collections.ObjectModel;
 using System.Collections.Immutable;
 using System.Reflection.Metadata;
 
@@ -37,7 +38,7 @@ namespace System.Reflection.TypeLoading.Ecma
 
                 ImmutableArray<RoType> sig = sigHandle.GetStandaloneSignature(reader).DecodeLocalSignature(typeProvider, TypeContext);
                 int count = sig.Length;
-                LocalVariableInfo[] lvis = new LocalVariableInfo[count];
+                LocalVariableInfo[] lvis = count != 0 ? new LocalVariableInfo[count] : Array.Empty<LocalVariableInfo>();
                 for (int i = 0; i < count; i++)
                 {
                     bool isPinned = false;
@@ -50,7 +51,7 @@ namespace System.Reflection.TypeLoading.Ecma
 
                     lvis[i] = new RoLocalVariableInfo(localIndex: i, isPinned: isPinned, localType: localType);
                 }
-                return lvis.ToReadOnlyCollection();
+                return Array.AsReadOnly(lvis);
             }
         }
 
@@ -60,7 +61,7 @@ namespace System.Reflection.TypeLoading.Ecma
             {
                 ImmutableArray<ExceptionRegion> regions = Block.ExceptionRegions;
                 int count = regions.Length;
-                ExceptionHandlingClause[] clauses = new ExceptionHandlingClause[count];
+                ExceptionHandlingClause[] clauses = count != 0 ? new ExceptionHandlingClause[count] : Array.Empty<ExceptionHandlingClause>();
                 for (int i = 0; i < count; i++)
                 {
                     EntityHandle catchTypeHandle = regions[i].CatchType;
@@ -75,7 +76,7 @@ namespace System.Reflection.TypeLoading.Ecma
                         handlerLength: regions[i].HandlerLength
                     );
                 }
-                return clauses.ToReadOnlyCollection();
+                return new ReadOnlyCollection<ExceptionHandlingClause>(clauses);
             }
         }
 

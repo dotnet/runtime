@@ -23,31 +23,31 @@ namespace Amd64InstructionTableGenerator
     }
 
     [Flags]
-    enum SuffixFlags : int
+    internal enum SuffixFlags : int
     {
-        None     =      0x0, // No flags set
-        MOp      =      0x1, // Instruction supports modrm RIP memory operations
-        M1st     =      0x3, // Memory op is first operand normally src/dst
-        MOnly    =      0x7, // Memory op is only operand.  May not be a write...
-        MUnknown =      0x8, // Memory op size is unknown.  Size not included in disassemby
-        MAddr    =     0x10, // Memory op is address load effective address
-        M1B      =     0x20, // Memory op is 1  byte
-        M2B      =     0x40, // Memory op is 2  bytes
-        M4B      =     0x80, // Memory op is 4  bytes
-        M8B      =    0x100, // Memory op is 8  bytes
-        M16B     =    0x200, // Memory op is 16 bytes
-        M32B     =    0x400, // Memory op is 32 bytes
-        M6B      =    0x800, // Memory op is 6  bytes
-        M10B     =   0x1000, // Memory op is 10 bytes
-        I1B      =   0x2000, // Instruction includes 1  byte  of immediates
-        I2B      =   0x4000, // Instruction includes 2  bytes of immediates
-        I3B      =   0x8000, // Instruction includes 3  bytes of immediates
-        I4B      =  0x10000, // Instruction includes 4  bytes of immediates
-        I8B      =  0x20000, // Instruction includes 8  bytes of immediates
-        Unknown  =  0x40000, // Instruction sample did not include a modrm configured to produce RIP addressing
+        None = 0x0, // No flags set
+        MOp = 0x1, // Instruction supports modrm RIP memory operations
+        M1st = 0x3, // Memory op is first operand normally src/dst
+        MOnly = 0x7, // Memory op is only operand.  May not be a write...
+        MUnknown = 0x8, // Memory op size is unknown.  Size not included in disassembly
+        MAddr = 0x10, // Memory op is address load effective address
+        M1B = 0x20, // Memory op is 1  byte
+        M2B = 0x40, // Memory op is 2  bytes
+        M4B = 0x80, // Memory op is 4  bytes
+        M8B = 0x100, // Memory op is 8  bytes
+        M16B = 0x200, // Memory op is 16 bytes
+        M32B = 0x400, // Memory op is 32 bytes
+        M6B = 0x800, // Memory op is 6  bytes
+        M10B = 0x1000, // Memory op is 10 bytes
+        I1B = 0x2000, // Instruction includes 1  byte  of immediates
+        I2B = 0x4000, // Instruction includes 2  bytes of immediates
+        I3B = 0x8000, // Instruction includes 3  bytes of immediates
+        I4B = 0x10000, // Instruction includes 4  bytes of immediates
+        I8B = 0x20000, // Instruction includes 8  bytes of immediates
+        Unknown = 0x40000, // Instruction sample did not include a modrm configured to produce RIP addressing
     }
 
-    enum Map
+    internal enum Map
     {
         // Map
         None,
@@ -64,25 +64,59 @@ namespace Amd64InstructionTableGenerator
         XOPA,
     }
 
-    class Amd64InstructionSample
+    internal sealed class Amd64InstructionSample
     {
-        static readonly Regex encDisassemblySplit;
-        static readonly Regex encOperandSplit;
-        static readonly Regex encOperandIsMemOp;
-        static readonly Regex encOperandIsMOp;
-        static readonly HashSet<string> allOperands;
-        static readonly Dictionary<string, SuffixFlags> memOpSize;
-        static readonly Dictionary<string, Func<EncodingFlags, SuffixFlags>> unknownMemOps;
+        private static readonly Regex encDisassemblySplit = new Regex(@"^\s*(?<address>0x[a-f0-9]+)\s[^:]*:\s*(?<encoding>[0-9a-f ]*)\t(?<prefixes>(((rex[.WRXB]*)|(rep[nez]*)|(data16)|(addr32)|(lock)|(bnd)|([cdefgs]s)) +)*)(?<mnemonic>\S+) *(?<operands>(\S[^#]*?)?)\s*(?<comment>#.*)?$",
+               RegexOptions.ExplicitCapture);
+        private static readonly Regex encOperandSplit = new Regex(@"^\s*,?\s*(?<op>[^\(,]*(\([^\)]*\))?)?(?<rest>.+$)?", RegexOptions.ExplicitCapture);
+        private static readonly Regex encOperandIsMemOp = new Regex(@"\[.*\]$");
+        private static readonly Regex encOperandIsMOp = new Regex(@"\[rip.*\]$");
+        private static readonly HashSet<string> allOperands = new HashSet<string>();
+        private static readonly Dictionary<string, SuffixFlags> memOpSize = new Dictionary<string, SuffixFlags>()
+        {
+            ["[rip+0x53525150]"] = SuffixFlags.MUnknown,
+            ["BYTE PTR [rip+0x53525150]"] = SuffixFlags.M1B,
+            ["WORD PTR [rip+0x53525150]"] = SuffixFlags.M2B,
+            ["DWORD PTR [rip+0x53525150]"] = SuffixFlags.M4B,
+            ["QWORD PTR [rip+0x53525150]"] = SuffixFlags.M8B,
+            ["OWORD PTR [rip+0x53525150]"] = SuffixFlags.M16B,
+            ["XMMWORD PTR [rip+0x53525150]"] = SuffixFlags.M16B,
+            ["YMMWORD PTR [rip+0x53525150]"] = SuffixFlags.M32B,
+            ["FWORD PTR [rip+0x53525150]"] = SuffixFlags.M6B,
+            ["TBYTE PTR [rip+0x53525150]"] = SuffixFlags.M10B,
+        };
+        private static readonly Dictionary<string, Func<EncodingFlags, SuffixFlags>> unknownMemOps = new Dictionary<string, Func<EncodingFlags, SuffixFlags>>()
+        {
+            ["lddqu"] = _ => SuffixFlags.M16B,
+            ["lea"] = _ => SuffixFlags.MAddr,
+            ["lgdt"] = _ => SuffixFlags.M10B,
+            ["lidt"] = _ => SuffixFlags.M10B,
+            ["sgdt"] = _ => SuffixFlags.M10B,
+            ["sidt"] = _ => SuffixFlags.M10B,
+            ["vlddqu"] = e => Amd64InstructionTableGenerator.Amd64L(SuffixFlags.M32B, SuffixFlags.M16B, e),
+            ["vprotb"] = _ => SuffixFlags.M16B,
+            ["vprotd"] = _ => SuffixFlags.M16B,
+            ["vprotq"] = _ => SuffixFlags.M16B,
+            ["vprotw"] = _ => SuffixFlags.M16B,
+            ["vpshab"] = _ => SuffixFlags.M16B,
+            ["vpshad"] = _ => SuffixFlags.M16B,
+            ["vpshaq"] = _ => SuffixFlags.M16B,
+            ["vpshaw"] = _ => SuffixFlags.M16B,
+            ["vpshlb"] = _ => SuffixFlags.M16B,
+            ["vpshld"] = _ => SuffixFlags.M16B,
+            ["vpshlq"] = _ => SuffixFlags.M16B,
+            ["vpshlw"] = _ => SuffixFlags.M16B,
+        };
 
         public readonly string disassembly;
-        readonly string address;
-        readonly List<byte> encoding;
+        private readonly string address;
+        private readonly List<byte> encoding;
         public readonly string mnemonic;
-        readonly List<string> operands;
+        private readonly List<string> operands;
 
         public readonly Map map;
         public readonly EncodingFlags encodingFlags;
-        readonly byte opIndex;
+        private readonly byte opIndex;
 
         public int opCodeExt
         {
@@ -115,70 +149,17 @@ namespace Amd64InstructionTableGenerator
             }
         }
 
-        int suffixBytes { get { return encoding.Count - opIndex - 1; } }
+        private int suffixBytes { get { return encoding.Count - opIndex - 1; } }
         public int modrm { get { return (suffixBytes > 0) ? encoding[opIndex + 1] : 0; } }
         public int modrm_reg { get { return (modrm >> 3) & 0x7; } }
 
         public static HashSet<string> AllOperands { get { return allOperands; } }
-
-        static Amd64InstructionSample()
-        {
-            encDisassemblySplit =
-                new Regex(@"^\s*(?<address>0x[a-f0-9]+)\s[^:]*:\s*(?<encoding>[0-9a-f ]*)\t(?<prefixes>(((rex[.WRXB]*)|(rep[nez]*)|(data16)|(addr32)|(lock)|(bnd)|([cdefgs]s)) +)*)(?<mnemonic>\S+) *(?<operands>(\S[^#]*?)?)\s*(?<comment>#.*)?$",
-                        RegexOptions.ExplicitCapture);
-            encOperandSplit = new Regex(@"^\s*,?\s*(?<op>[^\(,]*(\([^\)]*\))?)?(?<rest>.+$)?",
-                        RegexOptions.ExplicitCapture);
-            encOperandIsMemOp = new Regex(@"\[.*\]$");
-            encOperandIsMOp = new Regex(@"\[rip.*\]$");
-
-            allOperands = new HashSet<string>();
-
-            memOpSize = new Dictionary<string, SuffixFlags>()
-            {
-                { "[rip+0x53525150]", SuffixFlags.MUnknown },
-                { "BYTE PTR [rip+0x53525150]", SuffixFlags.M1B },
-                { "WORD PTR [rip+0x53525150]", SuffixFlags.M2B },
-                { "DWORD PTR [rip+0x53525150]", SuffixFlags.M4B },
-                { "QWORD PTR [rip+0x53525150]", SuffixFlags.M8B },
-                { "OWORD PTR [rip+0x53525150]", SuffixFlags.M16B },
-                { "XMMWORD PTR [rip+0x53525150]", SuffixFlags.M16B },
-                { "YMMWORD PTR [rip+0x53525150]", SuffixFlags.M32B },
-                { "FWORD PTR [rip+0x53525150]", SuffixFlags.M6B },
-                { "TBYTE PTR [rip+0x53525150]", SuffixFlags.M10B },
-            };
-
-            unknownMemOps = new Dictionary<string, Func<EncodingFlags, SuffixFlags>>()
-            {
-                {"lddqu",   (e) => { return SuffixFlags.M16B;}},
-                {"lea",     (e) => { return SuffixFlags.MAddr;}},
-                {"lgdt",    (e) => { return SuffixFlags.M10B;}},
-                {"lidt",    (e) => { return SuffixFlags.M10B;}},
-                {"sgdt",    (e) => { return SuffixFlags.M10B;}},
-                {"sidt",    (e) => { return SuffixFlags.M10B;}},
-                {"vlddqu",  (e) => { return Amd64InstructionTableGenerator.Amd64L(SuffixFlags.M32B, SuffixFlags.M16B, e);}},
-                {"vprotb",  (e) => { return SuffixFlags.M16B;}},
-                {"vprotd",  (e) => { return SuffixFlags.M16B;}},
-                {"vprotq",  (e) => { return SuffixFlags.M16B;}},
-                {"vprotw",  (e) => { return SuffixFlags.M16B;}},
-                {"vpshab",  (e) => { return SuffixFlags.M16B;}},
-                {"vpshad",  (e) => { return SuffixFlags.M16B;}},
-                {"vpshaq",  (e) => { return SuffixFlags.M16B;}},
-                {"vpshaw",  (e) => { return SuffixFlags.M16B;}},
-                {"vpshlb",  (e) => { return SuffixFlags.M16B;}},
-                {"vpshld",  (e) => { return SuffixFlags.M16B;}},
-                {"vpshlq",  (e) => { return SuffixFlags.M16B;}},
-                {"vpshlw",  (e) => { return SuffixFlags.M16B;}},
-            };
-        }
 
         public Amd64InstructionSample(string disassembly_)
         {
             disassembly = disassembly_;
 
             var match = encDisassemblySplit.Match(disassembly);
-
-            if (match == null)
-                throw new ArgumentException($"Unable to parse disassembly: {disassembly}");
 
             // foreach (Group g in match.Groups)
             // {
@@ -198,42 +179,35 @@ namespace Amd64InstructionTableGenerator
             (map, opIndex, encodingFlags) = parsePrefix(encoding);
         }
 
-        static List<byte> parseEncoding(string encodingDisassembly)
+        private static List<byte> parseEncoding(string encodingDisassembly)
         {
             var encoding = new List<byte>();
             foreach (var b in encodingDisassembly.Split(' '))
             {
                 // Console.WriteLine(b);
-                encoding.Add(Byte.Parse(b, NumberStyles.HexNumber));
+                encoding.Add(byte.Parse(b, NumberStyles.HexNumber));
             }
             return encoding;
         }
 
-        static List<string> parseOperands(string operandDisassemby)
+        private static List<string> parseOperands(string operandDisassembly)
         {
             var operands = new List<string>();
-            string rest = operandDisassemby;
+            string rest = operandDisassembly;
 
             while (rest?.Length != 0)
             {
                 var opMatch = encOperandSplit.Match(rest);
 
-                if (opMatch != null)
-                {
-                    string op = opMatch.Groups["op"].ToString();
-                    operands.Add(op);
-                    allOperands.Add(op);
-                    rest = opMatch.Groups["rest"].ToString();
-                }
-                else
-                {
-                    throw new Exception($"Op parsing failed {operandDisassemby}");
-                }
+                string op = opMatch.Groups["op"].ToString();
+                operands.Add(op);
+                allOperands.Add(op);
+                rest = opMatch.Groups["rest"].ToString();
             }
             return operands;
         }
 
-        enum Prefixes : byte
+        internal enum Prefixes : byte
         {
             Secondary = 0xf,
             ES = 0x26,
@@ -255,9 +229,9 @@ namespace Amd64InstructionTableGenerator
             Repne = 0xf3
         };
 
-        static (Map, byte, EncodingFlags) parsePrefix(List<byte> encoding)
+        private static (Map, byte, EncodingFlags) parsePrefix(List<byte> encoding)
         {
-            Map map = Map.Primary;
+            Map map;
             byte operandIndex = 0;
             EncodingFlags flags = 0;
             bool done = false;
@@ -336,7 +310,6 @@ namespace Amd64InstructionTableGenerator
                 case Prefixes.Vex:
                 case Prefixes.Xop:
                     {
-                        var byte1 = encoding[operandIndex + 1];
                         var byte2 = encoding[operandIndex + 2];
                         if ((Prefixes)encoding[operandIndex] == Prefixes.Vex)
                         {
@@ -502,22 +475,22 @@ namespace Amd64InstructionTableGenerator
     }
 
 
-    class Amd64InstructionTableGenerator
+    internal sealed class Amd64InstructionTableGenerator
     {
-        List<Amd64InstructionSample> samples = new List<Amd64InstructionSample>();
+        private List<Amd64InstructionSample> samples = new List<Amd64InstructionSample>();
 
-        static readonly string assemblyPrefix = "   0x000000000";
-        static readonly string preTerminator = "58\t";
-        static readonly string groupTerminator = "59\tpop";
-        static readonly Regex badDisassembly = new Regex(@"((\(bad\))|(\srex(\.[WRXB]*)?\s*(#.*)?$))");
-        List<(Map, int)> regExpandOpcodes;
+        private const string assemblyPrefix = "   0x000000000";
+        private const string preTerminator = "58\t";
+        private const string groupTerminator = "59\tpop";
+        private static readonly Regex badDisassembly = new Regex(@"((\(bad\))|(\srex(\.[WRXB]*)?\s*(#.*)?$))");
+        private List<(Map, int)> regExpandOpcodes;
 
         // C++ Code generation
-        HashSet<string> rules;
-        Dictionary<Map, Dictionary<int, string>> opcodes;
-        int currentExtension = -8;
+        private HashSet<string> rules;
+        private Dictionary<Map, Dictionary<int, string>> opcodes;
+        private int currentExtension = -8;
 
-        Amd64InstructionTableGenerator()
+        private Amd64InstructionTableGenerator()
         {
             regExpandOpcodes = new List<(Map, int)>()
             {
@@ -555,7 +528,7 @@ namespace Amd64InstructionTableGenerator
             WriteCode();
         }
 
-        void ParseSamples()
+        private void ParseSamples()
         {
             string line;
             string sample = null;
@@ -590,7 +563,7 @@ namespace Amd64InstructionTableGenerator
                     {
                         // We expect samples to be disassembled instruction in intel disassembly syntax
                         // Roughly like this:
-                        //    0x0000000000713cd0 <+1125488>:	c4 01 02 7f 05 50 51 52 53	vmovdqu XMMWORD PTR [rip+0x53525150],xmm8        # 0x53c38e29
+                        //    0x0000000000713cd0 <+1125488>:    c4 01 02 7f 05 50 51 52 53  vmovdqu XMMWORD PTR [rip+0x53525150],xmm8        # 0x53c38e29
                         var s = new Amd64InstructionSample(sample);
 
                         SuffixFlags suffix = s.parseSuffix();
@@ -609,7 +582,7 @@ namespace Amd64InstructionTableGenerator
             };
         }
 
-        void AddSample(Amd64InstructionSample sample)
+        private void AddSample(Amd64InstructionSample sample)
         {
             if (samples.Count > 0)
             {
@@ -629,7 +602,7 @@ namespace Amd64InstructionTableGenerator
             samples.Add(sample);
         }
 
-        void SummarizeSamples(bool reg)
+        private void SummarizeSamples(bool reg)
         {
             var sample = samples[0];
             SuffixFlags intersectionSuffix = (SuffixFlags)~0;
@@ -754,7 +727,7 @@ namespace Amd64InstructionTableGenerator
             // Console.WriteLine($"Amd64Op({sample.map}, {op}, {sample.mnemonic}, {rules})");
         }
 
-        bool TestHypothesis(Func<EncodingFlags, SuffixFlags> hypothesis, SuffixFlags sometimes, Dictionary<SuffixFlags, List<Amd64InstructionSample>> samples)
+        private static bool TestHypothesis(Func<EncodingFlags, SuffixFlags> hypothesis, SuffixFlags sometimes, Dictionary<SuffixFlags, List<Amd64InstructionSample>> samples)
         {
             foreach ((SuffixFlags e, List<Amd64InstructionSample> l) in samples)
             {
@@ -776,7 +749,7 @@ namespace Amd64InstructionTableGenerator
         public static SuffixFlags Amd64P(SuffixFlags t, SuffixFlags f, EncodingFlags g) => Test(EncodingFlags.P, f, t, g);
         public static SuffixFlags Amd64WP(SuffixFlags tx, SuffixFlags ft, SuffixFlags ff, EncodingFlags g) => Amd64W(tx, Amd64P(ft, ff, g), g);
 
-        void AddOpCode(Map map, int opCode, bool reg, int modrmReg, string rule, HashSet<string> mnemonics)
+        private void AddOpCode(Map map, int opCode, bool reg, int modrmReg, string rule, HashSet<string> mnemonics)
         {
             rules.Add(rule);
 
@@ -788,7 +761,7 @@ namespace Amd64InstructionTableGenerator
                     string ext = $"InstrForm(int(Extension)|0x{(currentExtension >> 3):x2})";
                     opcodes[map][opCode] = $"        {ext + ",",-40} // 0x{opCode:x3}";
                 }
-                opcodes[Map.None][currentExtension|modrmReg] = $"        {rule + ",",-40} // {map}:0x{opCode:x3}/{modrmReg} {string.Join(",", mnemonics.OrderBy(s => s))}";
+                opcodes[Map.None][currentExtension | modrmReg] = $"        {rule + ",",-40} // {map}:0x{opCode:x3}/{modrmReg} {string.Join(",", mnemonics.OrderBy(s => s))}";
             }
             else
             {
@@ -796,7 +769,7 @@ namespace Amd64InstructionTableGenerator
             }
         }
 
-        void WriteCode()
+        private void WriteCode()
         {
             string none = "None";
             string none3dnow = "MOp_M8B_I1B"; // All 3DNow instructions include a memOp.  All current 3DNow instructions encode the operand as I1B
@@ -817,7 +790,7 @@ namespace Amd64InstructionTableGenerator
             Console.WriteLine("    //      MOp      // Instruction supports modrm RIP memory operations");
             Console.WriteLine("    //      M1st     // Memory op is first operand normally src/dst");
             Console.WriteLine("    //      MOnly    // Memory op is only operand.  May not be a write...");
-            Console.WriteLine("    //      MUnknown // Memory op size is unknown.  Size not included in disassemby");
+            Console.WriteLine("    //      MUnknown // Memory op size is unknown.  Size not included in disassembly");
             Console.WriteLine("    //      MAddr    // Memory op is address load effective address");
             Console.WriteLine("    //      M1B      // Memory op is 1  byte");
             Console.WriteLine("    //      M2B      // Memory op is 2  bytes");
@@ -881,7 +854,7 @@ namespace Amd64InstructionTableGenerator
             Console.WriteLine();
             Console.WriteLine($"    static const InstrForm instrFormPrimary[256]");
             Console.WriteLine("    {");
-            for (int i = 0; i < 4096; i+= 16)
+            for (int i = 0; i < 4096; i += 16)
             {
                 if (opcodes[Map.Primary].ContainsKey(i))
                     Console.WriteLine(opcodes[Map.Primary][i]);
@@ -893,7 +866,7 @@ namespace Amd64InstructionTableGenerator
             Console.WriteLine();
             Console.WriteLine($"    static const InstrForm instrForm3DNow[256]");
             Console.WriteLine("    {");
-            for (int i = 0; i < 4096; i+= 16)
+            for (int i = 0; i < 4096; i += 16)
             {
                 if (opcodes[Map.NOW3D].ContainsKey(i))
                     Console.WriteLine(opcodes[Map.NOW3D][i]);
@@ -905,12 +878,12 @@ namespace Amd64InstructionTableGenerator
             var mapTuples = new List<(string, Map)>()
             {("Secondary", Map.Secondary), ("F38", Map.F38), ("F3A", Map.F3A), ("Vex1", Map.Vex1), ("Vex2", Map.Vex2), ("Vex3", Map.Vex3), ("XOP8", Map.XOP8), ("XOP9", Map.XOP9), ("XOPA", Map.XOPA)};
 
-            foreach((string name, Map map) in mapTuples)
+            foreach ((string name, Map map) in mapTuples)
             {
                 Console.WriteLine();
                 Console.WriteLine($"    static const InstrForm instrForm{name}[1024]");
                 Console.WriteLine("    {");
-                for (int i = 0; i < 4096; i+= 16)
+                for (int i = 0; i < 4096; i += 16)
                 {
                     for (int pp = 0; pp < 4; pp++)
                     {
@@ -926,7 +899,7 @@ namespace Amd64InstructionTableGenerator
             Console.WriteLine("}");
         }
 
-        static void Main(string[] args)
+        private static void Main(string[] args)
         {
             new Amd64InstructionTableGenerator();
         }

@@ -35,7 +35,7 @@ namespace System.Data
         UnsupportedAccessMethodInNonNillRootSubtree = 17,
         AttachedNodeWithZerorbTreeNodeId = 18, // DataRowCollection
         CompareNodeInDataRowTree = 19, // DataRowCollection
-        CompareSateliteTreeNodeInDataRowTree = 20, // DataRowCollection
+        CompareSatelliteTreeNodeInDataRowTree = 20, // DataRowCollection
         NestedSatelliteTreeEnumerator = 21,
     }
 
@@ -108,7 +108,7 @@ namespace System.Data
         private readonly TreeAccessMethod _accessMethod;
 
         protected abstract int CompareNode(K? record1, K? record2);
-        protected abstract int CompareSateliteTreeNode(K? record1, K? record2);
+        protected abstract int CompareSatelliteTreeNode(K? record1, K? record2);
 
         protected RBTree(TreeAccessMethod accessMethod)
         {
@@ -358,7 +358,7 @@ namespace System.Data
             else if (_inUsePageCount < (32 * 1024))
                 page = AllocPage(8192);              // approximately First 16 million slots (2^24)
             else
-                page = AllocPage(64 * 1024);          // Page size to accomodate more than 16 million slots (Max 2 Billion and 16 million slots)
+                page = AllocPage(64 * 1024);          // Page size to accommodate more than 16 million slots (Max 2 Billion and 16 million slots)
 
             // page contains atleast 1 free slot.
             int slotId = page!.AllocSlot(this);
@@ -549,7 +549,7 @@ namespace System.Data
         {
             Debug.Assert(NIL != x_id, "nil left");
             Debug.Assert(NIL != z_id, "nil right");
-            return (root_id == NIL) ? CompareNode(Key(x_id), Key(z_id)) : CompareSateliteTreeNode(Key(x_id), Key(z_id));
+            return (root_id == NIL) ? CompareNode(Key(x_id), Key(z_id)) : CompareSatelliteTreeNode(Key(x_id), Key(z_id));
         }
 #endif
 
@@ -560,9 +560,9 @@ namespace System.Data
          *
          * returns: The root of the tree to which the specified node was added. its NIL if the node was added to Main RBTree.
          *
-         * if root_id is NIL -> use CompareNode else use CompareSateliteTreeNode
+         * if root_id is NIL -> use CompareNode else use CompareSatelliteTreeNode
          *
-         * Satelite tree creation:
+         * Satellite tree creation:
          * First Duplicate value encountered. Create a *new* tree whose root will have the same key value as the current node.
          * The Duplicate tree nodes have same key when used with CompareRecords but distinct record ids.
          * The current record at all times will have the same *key* as the duplicate tree root.
@@ -583,7 +583,7 @@ namespace System.Data
                     IncreaseSize(z_id);
                     y_id = z_id;            // y_id set to the proposed parent of x_id
 
-                    int c = (root_id == NIL) ? CompareNode(Key(x_id), Key(z_id)) : CompareSateliteTreeNode(Key(x_id), Key(z_id));
+                    int c = (root_id == NIL) ? CompareNode(Key(x_id), Key(z_id)) : CompareSatelliteTreeNode(Key(x_id), Key(z_id));
 
                     if (c < 0)
                     {
@@ -722,7 +722,7 @@ namespace System.Data
             {
                 int c = 0;
                 if (_accessMethod == TreeAccessMethod.KEY_SEARCH_AND_INDEX)
-                    c = (root_id == NIL) ? CompareNode(Key(x_id), Key(y_id)) : CompareSateliteTreeNode(Key(x_id), Key(y_id));
+                    c = (root_id == NIL) ? CompareNode(Key(x_id), Key(y_id)) : CompareSatelliteTreeNode(Key(x_id), Key(y_id));
                 else if (_accessMethod == TreeAccessMethod.INDEX_ONLY)
                     c = (position <= 0) ? -1 : 1;
                 else
@@ -853,10 +853,10 @@ namespace System.Data
          * Case 1: Node is in main tree only        (decrease size in main tree)
          * Case 2: Node's key is shared with a main tree node whose next is non-NIL
          *                                       (decrease size in both trees)
-         * Case 3: special case of case 2: After deletion, node leaves satelite tree with only 1 node (only root),
-         *             it should collapse the satelite tree - go to case 4. (decrease size in both trees)
-         * Case 4: (1) Node is in Main tree and is a satelite tree root AND
-         *             (2) It is the only node in Satelite tree
+         * Case 3: special case of case 2: After deletion, node leaves satellite tree with only 1 node (only root),
+         *             it should collapse the satellite tree - go to case 4. (decrease size in both trees)
+         * Case 4: (1) Node is in Main tree and is a satellite tree root AND
+         *             (2) It is the only node in Satellite tree
          *                   (Do not decrease size in any tree, as its a collpase operation)
          *
          */
@@ -872,7 +872,7 @@ namespace System.Data
             (new NodePath(z_id, mainTreeNodeID)).VerifyPath(this);
 #endif
             if (Next(z_id) != NIL)
-                return RBDeleteX(Next(z_id), Next(z_id), z_id); // delete root of satelite tree.
+                return RBDeleteX(Next(z_id), Next(z_id), z_id); // delete root of satellite tree.
 
             // if we reach here, we are guaranteed z_id.next is NIL.
             bool isCase3 = false;
@@ -954,7 +954,7 @@ namespace System.Data
                 tmp_py_id = Parent(tmp_py_id);
             }
 
-            //if satelite tree node deleted, decrease size in main tree as well.
+            //if satellite tree node deleted, decrease size in main tree as well.
             if (root_id != NIL)
             {
                 // case 2, 3
@@ -971,7 +971,7 @@ namespace System.Data
 
             if (isCase3)
             {
-                // Collpase satelite tree, by swapping it with the main tree counterpart and freeing the main tree node
+                // Collpase satellite tree, by swapping it with the main tree counterpart and freeing the main tree node
                 if (mNode == NIL || SubTreeSize(Next(mNode)) != 1)
                 {
                     throw ExceptionBuilder.InternalRBTreeError(RBTreeError.InvalidNodeSizeinDelete);
@@ -1098,7 +1098,7 @@ namespace System.Data
 
             if (x_id == NIL && px_id == NIL)
             {
-                return NIL; //case of satelite tree root being deleted.
+                return NIL; //case of satellite tree root being deleted.
             }
 
             while (((root_id == NIL ? root : root_id) != x_id) && color(x_id) == NodeColor.black)
@@ -1218,7 +1218,7 @@ namespace System.Data
             int c;
             while (x_id != NIL)
             {
-                c = (root_id == NIL) ? CompareNode(key, Key(x_id)) : CompareSateliteTreeNode(key, Key(x_id));
+                c = (root_id == NIL) ? CompareNode(key, Key(x_id)) : CompareSatelliteTreeNode(key, Key(x_id));
                 if (c == 0)
                 {
                     break;
@@ -1241,7 +1241,7 @@ namespace System.Data
             return x_id;
         }
 
-        // only works on the main tree - does not work with satelite tree
+        // only works on the main tree - does not work with satellite tree
         public int Search(K key)
         {   // for performance reasons, written as a while loop instead of a recursive method
             int x_id = root;
@@ -1326,15 +1326,15 @@ namespace System.Data
          * If I am right child then size=my size + size of left child of my parent + 1
          * go up till root, if right child keep adding to the size.
          * (1) compute rank in main tree.
-         * (2) if node member of a satelite tree, add to rank its relative rank in that tree.
+         * (2) if node member of a satellite tree, add to rank its relative rank in that tree.
          *
          * Rank:
          * Case 1: Node is in Main RBTree only
          *         Its rank/index is its main tree index
-         * Case 2: Node is in a Satelite tree only
-         *         Its rank/index is its satelite tree index
-         * Case 3: Nodes is in both Main and Satelite RBTree (a main tree node can be a satelite tree root)
-         *         Its rank/index is its main tree index + its satelite tree index - 1
+         * Case 2: Node is in a Satellite tree only
+         *         Its rank/index is its satellite tree index
+         * Case 3: Nodes is in both Main and Satellite RBTree (a main tree node can be a satellite tree root)
+         *         Its rank/index is its main tree index + its satellite tree index - 1
          * Returns the index of the specified node.
          * returns -1, if the specified Node is tree.NIL.
          *
@@ -1446,7 +1446,7 @@ namespace System.Data
             int x_id, satelliteRootId;
             if (0 == _inUseSatelliteTreeCount)
             {
-                // if rows were only contigously append, then using (userIndex -= _pageTable[i].InUseCount) would
+                // if rows were only contiguously append, then using (userIndex -= _pageTable[i].InUseCount) would
                 // be faster for the first 12 pages (about 5248) nodes before (log2 of Count) becomes faster again.
                 // the additional complexity was deemed not worthy for the possible perf gain
 
@@ -1532,7 +1532,7 @@ namespace System.Data
         }
 
 #if DEBUG
-        // return true if all nodes are unique; i.e. no satelite trees.
+        // return true if all nodes are unique; i.e. no satellite trees.
         public bool CheckUnique(int curNodeId)
         {
             if (curNodeId != NIL)

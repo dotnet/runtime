@@ -32,10 +32,7 @@ namespace System.Data
             get { return _name; }
             set
             {
-                if (value == null)
-                {
-                    value = string.Empty;
-                }
+                value ??= string.Empty;
 
                 if (string.IsNullOrEmpty(value) && (Table != null) && InCollection)
                 {
@@ -91,7 +88,7 @@ namespace System.Data
         /// Gets the collection of customized user information.
         /// </summary>
         [Browsable(false)]
-        public PropertyCollection ExtendedProperties => _extendedProperties ?? (_extendedProperties = new PropertyCollection());
+        public PropertyCollection ExtendedProperties => _extendedProperties ??= new PropertyCollection();
 
         internal abstract bool ContainsColumn(DataColumn column);
         internal abstract bool CanEnableConstraint();

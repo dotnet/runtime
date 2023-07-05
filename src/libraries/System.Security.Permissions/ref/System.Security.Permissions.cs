@@ -307,6 +307,57 @@ namespace System.Diagnostics
         public void Remove(System.Diagnostics.PerformanceCounterPermissionEntry value) { }
     }
 }
+namespace System.DirectoryServices
+{
+    [System.ObsoleteAttribute("Code Access Security is not supported or honored by the runtime.", DiagnosticId = "SYSLIB0003", UrlFormat = "https://aka.ms/dotnet-warnings/{0}")]
+    public sealed partial class DirectoryServicesPermission : System.Security.Permissions.ResourcePermissionBase
+    {
+        public DirectoryServicesPermission() { }
+        public DirectoryServicesPermission(System.DirectoryServices.DirectoryServicesPermissionAccess permissionAccess, string path) { }
+        public DirectoryServicesPermission(System.DirectoryServices.DirectoryServicesPermissionEntry[] permissionAccessEntries) { }
+        public DirectoryServicesPermission(System.Security.Permissions.PermissionState state) { }
+        public System.DirectoryServices.DirectoryServicesPermissionEntryCollection PermissionEntries { get { throw null; } }
+    }
+    [System.FlagsAttribute]
+    public enum DirectoryServicesPermissionAccess
+    {
+        None = 0,
+        Browse = 2,
+        Write = 6,
+    }
+    [System.ObsoleteAttribute("Code Access Security is not supported or honored by the runtime.", DiagnosticId = "SYSLIB0003", UrlFormat = "https://aka.ms/dotnet-warnings/{0}")]
+    [System.AttributeUsageAttribute(System.AttributeTargets.Assembly | System.AttributeTargets.Class | System.AttributeTargets.Constructor | System.AttributeTargets.Event | System.AttributeTargets.Method | System.AttributeTargets.Struct, AllowMultiple=true, Inherited=false)]
+    public partial class DirectoryServicesPermissionAttribute : System.Security.Permissions.CodeAccessSecurityAttribute
+    {
+        public DirectoryServicesPermissionAttribute(System.Security.Permissions.SecurityAction action) : base(default(System.Security.Permissions.SecurityAction)) { }
+        public string Path { get { throw null; } set { } }
+        public System.DirectoryServices.DirectoryServicesPermissionAccess PermissionAccess { get { throw null; } set { } }
+        public override System.Security.IPermission CreatePermission() { throw null; }
+    }    
+    public partial class DirectoryServicesPermissionEntry
+    {
+        public DirectoryServicesPermissionEntry(System.DirectoryServices.DirectoryServicesPermissionAccess permissionAccess, string path) { }
+        public string Path { get { throw null; } }
+        public System.DirectoryServices.DirectoryServicesPermissionAccess PermissionAccess { get { throw null; } }
+    }
+    public partial class DirectoryServicesPermissionEntryCollection : System.Collections.CollectionBase
+    {
+        internal DirectoryServicesPermissionEntryCollection() { }
+        public System.DirectoryServices.DirectoryServicesPermissionEntry this[int index] { get { throw null; } set { } }
+        public int Add(System.DirectoryServices.DirectoryServicesPermissionEntry value) { throw null; }
+        public void AddRange(System.DirectoryServices.DirectoryServicesPermissionEntryCollection value) { }
+        public void AddRange(System.DirectoryServices.DirectoryServicesPermissionEntry[] value) { }
+        public bool Contains(System.DirectoryServices.DirectoryServicesPermissionEntry value) { throw null; }
+        public void CopyTo(System.DirectoryServices.DirectoryServicesPermissionEntry[] array, int index) { }
+        public int IndexOf(System.DirectoryServices.DirectoryServicesPermissionEntry value) { throw null; }
+        public void Insert(int index, System.DirectoryServices.DirectoryServicesPermissionEntry value) { }
+        protected override void OnClear() { }
+        protected override void OnInsert(int index, object value) { }
+        protected override void OnRemove(int index, object value) { }
+        protected override void OnSet(int index, object oldValue, object newValue) { }
+        public void Remove(System.DirectoryServices.DirectoryServicesPermissionEntry value) { }
+    }
+}
 namespace System.Drawing.Printing
 {
 #if NETCOREAPP
@@ -625,6 +676,10 @@ namespace System.Security
     public partial class HostProtectionException : System.SystemException
     {
         public HostProtectionException() { }
+#if NET8_0_OR_GREATER
+        [System.ObsoleteAttribute("This API supports obsolete formatter-based serialization. It should not be called or extended by application code.", DiagnosticId = "SYSLIB0051", UrlFormat = "https://aka.ms/dotnet-warnings/{0}")]
+        [System.ComponentModel.EditorBrowsableAttribute(System.ComponentModel.EditorBrowsableState.Never)]
+#endif
         protected HostProtectionException(System.Runtime.Serialization.SerializationInfo info, System.Runtime.Serialization.StreamingContext context) { }
         public HostProtectionException(string message) { }
         public HostProtectionException(string message, System.Exception e) { }
@@ -1407,10 +1462,10 @@ namespace System.Security.Permissions
         public ReflectionPermissionAttribute(System.Security.Permissions.SecurityAction action) : base (default(System.Security.Permissions.SecurityAction)) { }
         public System.Security.Permissions.ReflectionPermissionFlag Flags { get { throw null; } set { } }
         public bool MemberAccess { get { throw null; } set { } }
-        [System.ObsoleteAttribute]
+        [System.ObsoleteAttribute("ReflectionPermissionAttribute.ReflectionEmit has been deprecated and is not supported.")]
         public bool ReflectionEmit { get { throw null; } set { } }
         public bool RestrictedMemberAccess { get { throw null; } set { } }
-        [System.ObsoleteAttribute]
+        [System.ObsoleteAttribute("ReflectionPermissionAttribute.TypeInformation has been deprecated and is not supported.")]
         public bool TypeInformation { get { throw null; } set { } }
         public override System.Security.IPermission CreatePermission() { throw null; }
     }
@@ -1421,12 +1476,12 @@ namespace System.Security.Permissions
     public enum ReflectionPermissionFlag
     {
         NoFlags = 0,
-        [System.ObsoleteAttribute]
+        [System.ObsoleteAttribute("ReflectionPermissionFlag.TypeInformation has been deprecated and is not supported.")]
         TypeInformation = 1,
         MemberAccess = 2,
-        [System.ObsoleteAttribute]
+        [System.ObsoleteAttribute("ReflectionPermissionFlag.ReflectionEmit  has been deprecated and is not supported.")]
         ReflectionEmit = 4,
-        [System.ObsoleteAttribute]
+        [System.ObsoleteAttribute("ReflectionPermissionFlag.AllFlags has been deprecated. Use PermissionState.Unrestricted to get full access.")]
         AllFlags = 7,
         RestrictedMemberAccess = 8,
     }
@@ -1469,7 +1524,7 @@ namespace System.Security.Permissions
     public sealed partial class RegistryPermissionAttribute : System.Security.Permissions.CodeAccessSecurityAttribute
     {
         public RegistryPermissionAttribute(System.Security.Permissions.SecurityAction action) : base (default(System.Security.Permissions.SecurityAction)) { }
-        [System.ObsoleteAttribute]
+        [System.ObsoleteAttribute("RegistryPermissionAttribute.Add has been deprecated. Use ViewAndModify instead.")]
         public string All { get { throw null; } set { } }
         public string ChangeAccessControl { get { throw null; } set { } }
         public string Create { get { throw null; } set { } }
@@ -2006,6 +2061,10 @@ namespace System.Security.Policy
         public static System.Security.Policy.Hash CreateSHA1(byte[] sha1) { throw null; }
         public static System.Security.Policy.Hash CreateSHA256(byte[] sha256) { throw null; }
         public byte[] GenerateHash(System.Security.Cryptography.HashAlgorithm hashAlg) { throw null; }
+#if NET8_0_OR_GREATER
+        [System.ObsoleteAttribute("This API supports obsolete formatter-based serialization. It should not be called or extended by application code.", DiagnosticId = "SYSLIB0051", UrlFormat = "https://aka.ms/dotnet-warnings/{0}")]
+        [System.ComponentModel.EditorBrowsableAttribute(System.ComponentModel.EditorBrowsableState.Never)]
+#endif
         public void GetObjectData(System.Runtime.Serialization.SerializationInfo info, System.Runtime.Serialization.StreamingContext context) { }
         public override string ToString() { throw null; }
     }
@@ -2072,6 +2131,10 @@ namespace System.Security.Policy
     public partial class PolicyException : System.SystemException
     {
         public PolicyException() { }
+#if NET8_0_OR_GREATER
+        [System.ObsoleteAttribute("This API supports obsolete formatter-based serialization. It should not be called or extended by application code.", DiagnosticId = "SYSLIB0051", UrlFormat = "https://aka.ms/dotnet-warnings/{0}")]
+        [System.ComponentModel.EditorBrowsableAttribute(System.ComponentModel.EditorBrowsableState.Never)]
+#endif
         protected PolicyException(System.Runtime.Serialization.SerializationInfo info, System.Runtime.Serialization.StreamingContext context) { }
         public PolicyException(string message) { }
         public PolicyException(string message, System.Exception exception) { }

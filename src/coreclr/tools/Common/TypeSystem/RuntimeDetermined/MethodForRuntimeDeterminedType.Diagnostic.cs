@@ -3,7 +3,7 @@
 
 namespace Internal.TypeSystem
 {
-    partial class MethodForRuntimeDeterminedType
+    public partial class MethodForRuntimeDeterminedType
     {
         public override string DiagnosticName => _typicalMethodDef.DiagnosticName;
     }

@@ -4,6 +4,8 @@
 // Changes to this file must follow the https://aka.ms/api-review process.
 // ------------------------------------------------------------------------------
 
+using System.Diagnostics.CodeAnalysis;
+
 namespace System.Reflection.Metadata
 {
     public static partial class AssemblyExtensions
@@ -19,8 +21,8 @@ namespace System.Reflection.Metadata
     [System.AttributeUsage(System.AttributeTargets.Assembly, AllowMultiple = true)]
     public sealed class MetadataUpdateHandlerAttribute : System.Attribute
     {
-        public MetadataUpdateHandlerAttribute([System.Diagnostics.CodeAnalysis.DynamicallyAccessedMembersAttribute(System.Diagnostics.CodeAnalysis.DynamicallyAccessedMemberTypes.All)] System.Type handlerType) { }
-        [System.Diagnostics.CodeAnalysis.DynamicallyAccessedMembersAttribute(System.Diagnostics.CodeAnalysis.DynamicallyAccessedMemberTypes.All)]
+        public MetadataUpdateHandlerAttribute([System.Diagnostics.CodeAnalysis.DynamicallyAccessedMembersAttribute(System.Diagnostics.CodeAnalysis.DynamicallyAccessedMemberTypes.PublicMethods | System.Diagnostics.CodeAnalysis.DynamicallyAccessedMemberTypes.NonPublicMethods)] System.Type handlerType) { }
+        [System.Diagnostics.CodeAnalysis.DynamicallyAccessedMembersAttribute(System.Diagnostics.CodeAnalysis.DynamicallyAccessedMemberTypes.PublicMethods | System.Diagnostics.CodeAnalysis.DynamicallyAccessedMemberTypes.NonPublicMethods)]
         public System.Type HandlerType { get { throw null; } }
     }
 }
@@ -29,6 +31,13 @@ namespace System.Runtime.CompilerServices
     [System.AttributeUsage(System.AttributeTargets.Class | System.AttributeTargets.Struct, AllowMultiple = false)]
     public sealed class CreateNewOnMetadataUpdateAttribute : System.Attribute
     {
+    }
+    [AttributeUsage(System.AttributeTargets.Class | System.AttributeTargets.Struct,
+                    AllowMultiple=false, Inherited=false)]
+    public class MetadataUpdateOriginalTypeAttribute : Attribute
+    {
+	public MetadataUpdateOriginalTypeAttribute(Type originalType) { throw null; }
+	public Type OriginalType { get { throw null; } }
     }
 }
 namespace System.Runtime.Loader

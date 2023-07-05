@@ -37,7 +37,7 @@ namespace System.Reflection.Emit.Tests
                 ilGenerator.Emit(OpCodes.Call, typeof(object).GetConstructor(new Type[0]));
                 ilGenerator.Emit(OpCodes.Ret);
 
-                type.CreateTypeInfo().AsType();
+                type.CreateType();
 
                 ParameterInfo[] definedParams = constructor.GetParameters();
                 Assert.Equal(2, definedParams.Length);
@@ -61,7 +61,7 @@ namespace System.Reflection.Emit.Tests
                 ilGenerator.Emit(OpCodes.Call, typeof(object).GetConstructor(new Type[0]));
                 ilGenerator.Emit(OpCodes.Ret);
 
-                type.CreateTypeInfo().AsType();
+                type.CreateType();
 
                 ParameterInfo[] definedParams = constructor.GetParameters();
                 Assert.Equal(1, definedParams.Length);
@@ -85,7 +85,7 @@ namespace System.Reflection.Emit.Tests
                 ilGenerator.Emit(OpCodes.Call, typeof(object).GetConstructor(new Type[0]));
                 ilGenerator.Emit(OpCodes.Ret);
 
-                type.CreateTypeInfo().AsType();
+                type.CreateType();
 
                 ParameterInfo[] definedParams = constructor.GetParameters();
                 Assert.Equal(1, definedParams.Length);
@@ -110,7 +110,7 @@ namespace System.Reflection.Emit.Tests
                 ilGenerator.Emit(OpCodes.Call, typeof(object).GetConstructor(new Type[0]));
                 ilGenerator.Emit(OpCodes.Ret);
 
-                type.CreateTypeInfo().AsType();
+                type.CreateType();
 
                 ParameterInfo[] definedParams = constructor.GetParameters();
                 Assert.Equal(2, definedParams.Length);
@@ -159,7 +159,7 @@ namespace System.Reflection.Emit.Tests
             ConstructorBuilder constructor = type.DefineConstructor(MethodAttributes.Public, CallingConventions.Standard, new Type[] { typeof(int) });
 
             constructor.GetILGenerator().Emit(OpCodes.Ret);
-            type.CreateTypeInfo().AsType();
+            type.CreateType();
 
             Assert.Throws<InvalidOperationException>(() => constructor.DefineParameter(1, ParameterAttributes.None, "p"));
         }

@@ -14,7 +14,9 @@ namespace System.Security.Cryptography.X509Certificates
         internal static partial IStorePal FromHandle(IntPtr storeHandle)
         {
             if (storeHandle == IntPtr.Zero)
+            {
                 throw new ArgumentNullException(nameof(storeHandle));
+            }
 
             var keychainHandle = new SafeKeychainHandle(storeHandle);
             Interop.CoreFoundation.CFRetain(storeHandle);
@@ -23,6 +25,11 @@ namespace System.Security.Cryptography.X509Certificates
         }
 
         internal static partial ILoaderPal FromBlob(ReadOnlySpan<byte> rawData, SafePasswordHandle password, X509KeyStorageFlags keyStorageFlags)
+        {
+            return FromBlob(rawData, password, readingFromFile: false, keyStorageFlags);
+        }
+
+        private static ILoaderPal FromBlob(ReadOnlySpan<byte> rawData, SafePasswordHandle password, bool readingFromFile, X509KeyStorageFlags keyStorageFlags)
         {
             Debug.Assert(password != null);
 
@@ -35,6 +42,7 @@ namespace System.Security.Cryptography.X509Certificates
                     throw new PlatformNotSupportedException(SR.Cryptography_X509_NoEphemeralPfx);
                 }
 
+                X509Certificate.EnforceIterationCountLimit(ref rawData, readingFromFile, password.PasswordProvided);
                 bool exportable = (keyStorageFlags & X509KeyStorageFlags.Exportable) == X509KeyStorageFlags.Exportable;
 
                 bool persist =
@@ -57,7 +65,7 @@ namespace System.Security.Cryptography.X509Certificates
             return new AppleCertLoader(certs, null);
         }
 
-        private static ILoaderPal ImportPkcs12(
+        private static ApplePkcs12CertLoader ImportPkcs12(
             ReadOnlySpan<byte> rawData,
             SafePasswordHandle password,
             bool exportable,
@@ -84,7 +92,7 @@ namespace System.Security.Cryptography.X509Certificates
             Debug.Assert(password != null);
 
             byte[] fileBytes = File.ReadAllBytes(fileName);
-            return FromBlob(fileBytes, password, keyStorageFlags);
+            return FromBlob(fileBytes, password, readingFromFile: true, keyStorageFlags);
         }
 
         internal static partial IExportPal FromCertificate(ICertificatePalCore cert)
@@ -133,7 +141,7 @@ namespace System.Security.Cryptography.X509Certificates
             throw new CryptographicException(message, new PlatformNotSupportedException(message));
         }
 
-        private static IStorePal FromCustomKeychainStore(string storeName, OpenFlags openFlags)
+        private static AppleKeychainStore FromCustomKeychainStore(string storeName, OpenFlags openFlags)
         {
             string storePath;
 

@@ -10,6 +10,8 @@
 **
 ===========================================================*/
 
+using System.Diagnostics.CodeAnalysis;
+
 namespace System
 {
     /// <summary>
@@ -21,6 +23,7 @@ namespace System
         /// <summary>
         /// The composite format string.
         /// </summary>
+        [StringSyntax(StringSyntaxAttribute.CompositeFormat)]
         public abstract string Format { get; }
 
         /// <summary>
@@ -60,8 +63,11 @@ namespace System
         /// Invariant($"{{ lat = {latitude}; lon = {longitude} }}")
         /// </code>
         /// </summary>
-        public static string Invariant(FormattableString formattable!!) =>
-            formattable.ToString(Globalization.CultureInfo.InvariantCulture);
+        public static string Invariant(FormattableString formattable)
+        {
+            ArgumentNullException.ThrowIfNull(formattable);
+            return formattable.ToString(Globalization.CultureInfo.InvariantCulture);
+        }
 
         /// <summary>
         /// Format the given object in the current culture. This static method may be
@@ -76,8 +82,11 @@ namespace System
         /// CurrentCulture($"{{ lat = {latitude}; lon = {longitude} }}")
         /// </code>
         /// </summary>
-        public static string CurrentCulture(FormattableString formattable!!) =>
-            formattable.ToString(Globalization.CultureInfo.CurrentCulture);
+        public static string CurrentCulture(FormattableString formattable)
+        {
+            ArgumentNullException.ThrowIfNull(formattable);
+            return formattable.ToString(Globalization.CultureInfo.CurrentCulture);
+        }
 
         public override string ToString() =>
             ToString(Globalization.CultureInfo.CurrentCulture);

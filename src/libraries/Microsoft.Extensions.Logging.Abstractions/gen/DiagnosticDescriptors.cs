@@ -45,7 +45,7 @@ namespace Microsoft.Extensions.Logging.Generators
             title: new LocalizableResourceString(nameof(SR.ShouldntReuseEventIdsTitle), SR.ResourceManager, typeof(FxResources.Microsoft.Extensions.Logging.Generators.SR)),
             messageFormat: new LocalizableResourceString(nameof(SR.ShouldntReuseEventIdsMessage), SR.ResourceManager, typeof(FxResources.Microsoft.Extensions.Logging.Generators.SR)),
             category: "LoggingGenerator",
-            DiagnosticSeverity.Warning,
+            DiagnosticSeverity.Info,
             isEnabledByDefault: true);
 
         public static DiagnosticDescriptor LoggingMethodMustReturnVoid { get; } = new DiagnosticDescriptor(
@@ -170,7 +170,7 @@ namespace Microsoft.Extensions.Logging.Generators
 
         public static DiagnosticDescriptor MalformedFormatStrings { get; } = new DiagnosticDescriptor(
             id: "SYSLIB1022",
-            title: new LocalizableResourceString(nameof(SR.MalformedFormatStringsMessage), SR.ResourceManager, typeof(FxResources.Microsoft.Extensions.Logging.Generators.SR)),
+            title: new LocalizableResourceString(nameof(SR.MalformedFormatStringsTitle), SR.ResourceManager, typeof(FxResources.Microsoft.Extensions.Logging.Generators.SR)),
             messageFormat: new LocalizableResourceString(nameof(SR.MalformedFormatStringsMessage), SR.ResourceManager, typeof(FxResources.Microsoft.Extensions.Logging.Generators.SR)),
             category: "LoggingGenerator",
             DiagnosticSeverity.Error,
@@ -182,6 +182,22 @@ namespace Microsoft.Extensions.Logging.Generators
             messageFormat: new LocalizableResourceString(nameof(SR.GeneratingForMax6ArgumentsMessage), SR.ResourceManager, typeof(FxResources.Microsoft.Extensions.Logging.Generators.SR)),
             category: "LoggingGenerator",
             DiagnosticSeverity.Error,
+            isEnabledByDefault: true);
+
+        public static DiagnosticDescriptor InvalidLoggingMethodParameterOut { get; } = new DiagnosticDescriptor(
+            id: "SYSLIB1024",
+            title: new LocalizableResourceString(nameof(SR.InvalidLoggingMethodParameterOutTitle), SR.ResourceManager, typeof(FxResources.Microsoft.Extensions.Logging.Generators.SR)),
+            messageFormat: new LocalizableResourceString(nameof(SR.InvalidLoggingMethodParameterOutMessage), SR.ResourceManager, typeof(FxResources.Microsoft.Extensions.Logging.Generators.SR)),
+            category: "LoggingGenerator",
+            DiagnosticSeverity.Error,
+            isEnabledByDefault: true);
+
+        public static DiagnosticDescriptor ShouldntReuseEventNames { get; } = new DiagnosticDescriptor(
+            id: "SYSLIB1025",
+            title: new LocalizableResourceString(nameof(SR.ShouldntReuseEventNamesTitle), SR.ResourceManager, typeof(FxResources.Microsoft.Extensions.Logging.Generators.SR)),
+            messageFormat: new LocalizableResourceString(nameof(SR.ShouldntReuseEventNamesMessage), SR.ResourceManager, typeof(FxResources.Microsoft.Extensions.Logging.Generators.SR)),
+            category: "LoggingGenerator",
+            DiagnosticSeverity.Warning,
             isEnabledByDefault: true);
     }
 }

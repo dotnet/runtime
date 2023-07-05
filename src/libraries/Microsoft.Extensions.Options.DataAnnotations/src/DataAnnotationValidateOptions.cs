@@ -49,10 +49,7 @@ namespace Microsoft.Extensions.Options
             }
 
             // Ensure options are provided to validate against
-            if (options == null)
-            {
-                throw new ArgumentNullException(nameof(options));
-            }
+            ThrowHelper.ThrowIfNull(options);
 
             var validationResults = new List<ValidationResult>();
             if (Validator.TryValidateObject(options, new ValidationContext(options), validationResults, validateAllProperties: true))

@@ -17,10 +17,12 @@ namespace System.Text
             _codePage = codePage;
         }
 
-        public override unsafe int GetByteCount(char[] chars!!, int index, int count)
+        public override unsafe int GetByteCount(char[] chars, int index, int count)
         {
-            if (index < 0 || count < 0)
-                throw new ArgumentOutOfRangeException(index < 0 ? nameof(index) : nameof(count), SR.ArgumentOutOfRange_NeedNonNegNum);
+            ArgumentNullException.ThrowIfNull(chars);
+
+            ArgumentOutOfRangeException.ThrowIfNegative(index);
+            ArgumentOutOfRangeException.ThrowIfNegative(count);
 
             if (chars.Length - index < count)
                 throw new ArgumentOutOfRangeException(nameof(chars), SR.ArgumentOutOfRange_IndexCountBuffer);
@@ -34,8 +36,10 @@ namespace System.Text
             }
         }
 
-        public override unsafe int GetByteCount(string s!!)
+        public override unsafe int GetByteCount(string s)
         {
+            ArgumentNullException.ThrowIfNull(s);
+
             if (s.Length == 0)
                 return 0;
 
@@ -45,16 +49,19 @@ namespace System.Text
             }
         }
 
-        public override unsafe int GetBytes(string s!!, int charIndex, int charCount, byte[] bytes!!, int byteIndex)
+        public override unsafe int GetBytes(string s, int charIndex, int charCount, byte[] bytes, int byteIndex)
         {
-            if (charIndex < 0 || charCount < 0)
-                throw new ArgumentOutOfRangeException(charIndex < 0 ? nameof(charIndex) : nameof(charCount), SR.ArgumentOutOfRange_NeedNonNegNum);
+            ArgumentNullException.ThrowIfNull(s);
+            ArgumentNullException.ThrowIfNull(bytes);
+
+            ArgumentOutOfRangeException.ThrowIfNegative(charIndex);
+            ArgumentOutOfRangeException.ThrowIfNegative(charCount);
 
             if (s.Length - charIndex < charCount)
                 throw new ArgumentOutOfRangeException(nameof(s), SR.ArgumentOutOfRange_IndexCount);
 
             if (byteIndex < 0 || byteIndex > bytes.Length)
-                throw new ArgumentOutOfRangeException(nameof(byteIndex), SR.ArgumentOutOfRange_Index);
+                throw new ArgumentOutOfRangeException(nameof(byteIndex), SR.ArgumentOutOfRange_IndexMustBeLessOrEqual);
 
             if (charCount == 0)
                 return 0;
@@ -71,16 +78,19 @@ namespace System.Text
             }
         }
 
-        public override unsafe int GetBytes(char[] chars!!, int charIndex, int charCount, byte[] bytes!!, int byteIndex)
+        public override unsafe int GetBytes(char[] chars, int charIndex, int charCount, byte[] bytes, int byteIndex)
         {
-            if (charIndex < 0 || charCount < 0)
-                throw new ArgumentOutOfRangeException(charIndex < 0 ? nameof(charIndex) : nameof(charCount), SR.ArgumentOutOfRange_NeedNonNegNum);
+            ArgumentNullException.ThrowIfNull(chars);
+            ArgumentNullException.ThrowIfNull(bytes);
+
+            ArgumentOutOfRangeException.ThrowIfNegative(charIndex);
+            ArgumentOutOfRangeException.ThrowIfNegative(charCount);
 
             if (chars.Length - charIndex < charCount)
                 throw new ArgumentOutOfRangeException(nameof(chars), SR.ArgumentOutOfRange_IndexCountBuffer);
 
             if (byteIndex < 0 || byteIndex > bytes.Length)
-                throw new ArgumentOutOfRangeException(nameof(byteIndex), SR.ArgumentOutOfRange_Index);
+                throw new ArgumentOutOfRangeException(nameof(byteIndex), SR.ArgumentOutOfRange_IndexMustBeLessOrEqual);
 
             if (charCount == 0)
                 return 0;
@@ -97,10 +107,12 @@ namespace System.Text
             }
         }
 
-        public override unsafe int GetCharCount(byte[] bytes!!, int index, int count)
+        public override unsafe int GetCharCount(byte[] bytes, int index, int count)
         {
-            if (index < 0 || count < 0)
-                throw new ArgumentOutOfRangeException(index < 0 ? nameof(index) : nameof(count), SR.ArgumentOutOfRange_NeedNonNegNum);
+            ArgumentNullException.ThrowIfNull(bytes);
+
+            ArgumentOutOfRangeException.ThrowIfNegative(index);
+            ArgumentOutOfRangeException.ThrowIfNegative(count);
 
             if (bytes.Length - index < count)
                 throw new ArgumentOutOfRangeException(nameof(bytes), SR.ArgumentOutOfRange_IndexCountBuffer);
@@ -114,16 +126,19 @@ namespace System.Text
             }
         }
 
-        public override unsafe int GetChars(byte[] bytes!!, int byteIndex, int byteCount, char[] chars!!, int charIndex)
+        public override unsafe int GetChars(byte[] bytes, int byteIndex, int byteCount, char[] chars, int charIndex)
         {
-            if (byteIndex < 0 || byteCount < 0)
-                throw new ArgumentOutOfRangeException(byteIndex < 0 ? nameof(byteIndex) : nameof(byteCount), SR.ArgumentOutOfRange_NeedNonNegNum);
+            ArgumentNullException.ThrowIfNull(bytes);
+            ArgumentNullException.ThrowIfNull(chars);
+
+            ArgumentOutOfRangeException.ThrowIfNegative(byteIndex);
+            ArgumentOutOfRangeException.ThrowIfNegative(byteCount);
 
             if (bytes.Length - byteIndex < byteCount)
                 throw new ArgumentOutOfRangeException(nameof(bytes), SR.ArgumentOutOfRange_IndexCountBuffer);
 
             if (charIndex < 0 || charIndex > chars.Length)
-                throw new ArgumentOutOfRangeException(nameof(charIndex), SR.ArgumentOutOfRange_Index);
+                throw new ArgumentOutOfRangeException(nameof(charIndex), SR.ArgumentOutOfRange_IndexMustBeLessOrEqual);
 
             if (byteCount == 0)
                 return 0;
@@ -140,8 +155,7 @@ namespace System.Text
 
         public override int GetMaxByteCount(int charCount)
         {
-            if (charCount < 0)
-                throw new ArgumentOutOfRangeException(nameof(charCount), SR.ArgumentOutOfRange_NeedNonNegNum);
+            ArgumentOutOfRangeException.ThrowIfNegative(charCount);
 
             long byteCount = (long)charCount * 14; // Max possible value for all encodings
             if (byteCount > 0x7fffffff)
@@ -152,8 +166,7 @@ namespace System.Text
 
         public override int GetMaxCharCount(int byteCount)
         {
-            if (byteCount < 0)
-                throw new ArgumentOutOfRangeException(nameof(byteCount), SR.ArgumentOutOfRange_NeedNonNegNum);
+            ArgumentOutOfRangeException.ThrowIfNegative(byteCount);
 
             long charCount = byteCount * 4; // Max possible value for all encodings
 
@@ -163,17 +176,7 @@ namespace System.Text
             return (int)charCount;
         }
 
-        public override string EncodingName
-        {
-            get
-            {
-                if (_encodingName == null)
-                {
-                    _encodingName = "Codepage - " + _codePage.ToString();
-                }
-                return _encodingName;
-            }
-        }
+        public override string EncodingName => _encodingName ??= $"Codepage - {_codePage}";
 
         public override string WebName
         {
@@ -220,7 +223,7 @@ namespace System.Text
 
         internal static unsafe int WideCharToMultiByte(int codePage, char* pChars, int count, byte* pBytes, int byteCount)
         {
-            int result = Interop.Kernel32.WideCharToMultiByte((uint)codePage, 0, pChars, count, pBytes, byteCount, IntPtr.Zero, IntPtr.Zero);
+            int result = Interop.Kernel32.WideCharToMultiByte((uint)codePage, 0, pChars, count, pBytes, byteCount, null, null);
             if (result <= 0)
                 throw new ArgumentException(SR.Argument_InvalidCharSequenceNoIndex);
             return result;

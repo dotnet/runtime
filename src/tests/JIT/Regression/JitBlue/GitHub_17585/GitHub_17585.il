@@ -4,7 +4,7 @@
 
 // This test shows an issue  with tail call optimization of an interface call through Virtual Dispatch Stub.
 // The optimized VSD checks that `this` method table is equal to the cached method table.
-// If `this` is `null` then the stub throws `Acess Violation` exception that VM should
+// If `this` is `null` then the stub throws `Access Violation` exception that VM should
 // transform into the NullReference exception. VM is not able to do that when the first frame on the stack is
 // unmanaged, in this case it is JIT_TailCallHelperStub_ReturnAddress from tail call optimization.
 // To repro this issue on amd64/arm64 it also requires to reject fast tail call, for this puprose
@@ -13,9 +13,7 @@
 // The fix is to always generate explicit null check before calling VSD with tail call from tail call frame.
 
 
-.assembly extern System.Runtime
-{
-}
+.assembly extern System.Runtime { .publickeytoken = (B0 3F 5F 7F 11 D5 0A 3A ) }
 .assembly extern System.Runtime.Extensions
 {
 }
@@ -29,7 +27,7 @@
 
 .class interface private abstract auto ansi Interface
 {
-  .method public hidebysig newslot abstract virtual 
+  .method public hidebysig newslot abstract virtual
           instance int32  InterfaceMethodWithStackArgs(int32 a,
                                                        int32 b,
                                                        int32 c,
@@ -48,7 +46,7 @@
        extends [System.Runtime]System.Object
        implements Interface
 {
-  .method public hidebysig newslot virtual final 
+  .method public hidebysig newslot virtual final
           instance int32  InterfaceMethodWithStackArgs(int32 a,
                                                        int32 b,
                                                        int32 c,
@@ -65,7 +63,7 @@
     IL_0001:  ret
   } // end of method InterfaceImplementation::InterfaceMethodWithStackArgs
 
-  .method public hidebysig specialname rtspecialname 
+  .method public hidebysig specialname rtspecialname
           instance void  .ctor() cil managed
   {
     // Code size       7 (0x7)
@@ -77,7 +75,7 @@
 
 } // end of class InterfaceImplementation
 
-.class private auto ansi beforefieldinit Test_GitHub_17585
+.class public auto ansi beforefieldinit Test_GitHub_17585
        extends [System.Runtime]System.Object
 {
   .method public hidebysig static int32  CallInterfaceMethod(class Interface iface) cil managed noinlining
@@ -131,7 +129,7 @@
       IL_001b:  leave.s    IL_0020
 
     }  // end .try
-    catch [System.Runtime]System.NullReferenceException 
+    catch [System.Runtime]System.NullReferenceException
     {
       IL_001d:  pop
       IL_001e:  leave.s    IL_0020
@@ -141,7 +139,7 @@
     IL_0022:  ret
   } // end of method Test::Main
 
-  .method public hidebysig specialname rtspecialname 
+  .method public hidebysig specialname rtspecialname
           instance void  .ctor() cil managed
   {
     // Code size       7 (0x7)

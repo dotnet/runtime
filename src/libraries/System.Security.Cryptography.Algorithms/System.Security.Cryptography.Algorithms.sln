@@ -1,7 +1,25 @@
 ﻿Microsoft Visual Studio Solution File, Format Version 12.00
+Project("{9A19103F-16F7-4668-BE54-9A1E7A4F7556}") = "Microsoft.Win32.Primitives", "..\Microsoft.Win32.Primitives\ref\Microsoft.Win32.Primitives.csproj", "{D70E235E-65AC-4DD0-913E-74F351988EAF}"
+EndProject
+Project("{9A19103F-16F7-4668-BE54-9A1E7A4F7556}") = "System.Collections.NonGeneric", "..\System.Collections.NonGeneric\ref\System.Collections.NonGeneric.csproj", "{F345A66F-1968-4EE6-BF35-95F5B03220D1}"
+EndProject
+Project("{9A19103F-16F7-4668-BE54-9A1E7A4F7556}") = "System.Collections", "..\System.Collections\ref\System.Collections.csproj", "{B0C85A4A-BFC7-4A56-939A-8FB4F167460A}"
+EndProject
+Project("{9A19103F-16F7-4668-BE54-9A1E7A4F7556}") = "System.Formats.Asn1", "..\System.Formats.Asn1\ref\System.Formats.Asn1.csproj", "{400E185D-4B36-4CEA-9FC4-1D631D4042CF}"
+EndProject
+Project("{9A19103F-16F7-4668-BE54-9A1E7A4F7556}") = "System.Net.Primitives", "..\System.Net.Primitives\ref\System.Net.Primitives.csproj", "{CE243C8F-572D-43CC-867C-FD868DACEBF0}"
+EndProject
+Project("{9A19103F-16F7-4668-BE54-9A1E7A4F7556}") = "System.Runtime.InteropServices", "..\System.Runtime.InteropServices\ref\System.Runtime.InteropServices.csproj", "{28CF99B6-1E14-4BCB-979A-771590EBBA02}"
+EndProject
+Project("{9A19103F-16F7-4668-BE54-9A1E7A4F7556}") = "System.Runtime.Numerics", "..\System.Runtime.Numerics\ref\System.Runtime.Numerics.csproj", "{1D4D77DF-4445-4221-8E44-6139018FB6DC}"
+EndProject
+Project("{9A19103F-16F7-4668-BE54-9A1E7A4F7556}") = "System.Runtime", "..\System.Runtime\ref\System.Runtime.csproj", "{D0DC3683-10F9-4677-9A00-60AAFA23E9AE}"
+EndProject
 Project("{9A19103F-16F7-4668-BE54-9A1E7A4F7556}") = "System.Security.Cryptography.Algorithms", "ref\System.Security.Cryptography.Algorithms.csproj", "{64C0BC45-368B-44E6-9E04-2F7787CDF153}"
 EndProject
 Project("{9A19103F-16F7-4668-BE54-9A1E7A4F7556}") = "System.Security.Cryptography.Algorithms", "src\System.Security.Cryptography.Algorithms.csproj", "{4146BAB4-BA7C-405E-BEBC-9BE9826514BA}"
+EndProject
+Project("{9A19103F-16F7-4668-BE54-9A1E7A4F7556}") = "System.Security.Cryptography", "..\System.Security.Cryptography\ref\System.Security.Cryptography.csproj", "{38921E68-9747-41BC-8E3C-5FF0F6CE6BF3}"
 EndProject
 Project("{2150E333-8FDC-42A3-9474-1A3956D46DE8}") = "ref", "ref", "{FC920C3F-3A16-4258-9DF1-3B1BB3408C69}"
 EndProject
@@ -13,6 +31,38 @@ Global
 		Release|Any CPU = Release|Any CPU
 	EndGlobalSection
 	GlobalSection(ProjectConfigurationPlatforms) = postSolution
+		{D70E235E-65AC-4DD0-913E-74F351988EAF}.Debug|Any CPU.ActiveCfg = Debug|Any CPU
+		{D70E235E-65AC-4DD0-913E-74F351988EAF}.Debug|Any CPU.Build.0 = Debug|Any CPU
+		{D70E235E-65AC-4DD0-913E-74F351988EAF}.Release|Any CPU.ActiveCfg = Release|Any CPU
+		{D70E235E-65AC-4DD0-913E-74F351988EAF}.Release|Any CPU.Build.0 = Release|Any CPU
+		{F345A66F-1968-4EE6-BF35-95F5B03220D1}.Debug|Any CPU.ActiveCfg = Debug|Any CPU
+		{F345A66F-1968-4EE6-BF35-95F5B03220D1}.Debug|Any CPU.Build.0 = Debug|Any CPU
+		{F345A66F-1968-4EE6-BF35-95F5B03220D1}.Release|Any CPU.ActiveCfg = Release|Any CPU
+		{F345A66F-1968-4EE6-BF35-95F5B03220D1}.Release|Any CPU.Build.0 = Release|Any CPU
+		{B0C85A4A-BFC7-4A56-939A-8FB4F167460A}.Debug|Any CPU.ActiveCfg = Debug|Any CPU
+		{B0C85A4A-BFC7-4A56-939A-8FB4F167460A}.Debug|Any CPU.Build.0 = Debug|Any CPU
+		{B0C85A4A-BFC7-4A56-939A-8FB4F167460A}.Release|Any CPU.ActiveCfg = Release|Any CPU
+		{B0C85A4A-BFC7-4A56-939A-8FB4F167460A}.Release|Any CPU.Build.0 = Release|Any CPU
+		{400E185D-4B36-4CEA-9FC4-1D631D4042CF}.Debug|Any CPU.ActiveCfg = Debug|Any CPU
+		{400E185D-4B36-4CEA-9FC4-1D631D4042CF}.Debug|Any CPU.Build.0 = Debug|Any CPU
+		{400E185D-4B36-4CEA-9FC4-1D631D4042CF}.Release|Any CPU.ActiveCfg = Release|Any CPU
+		{400E185D-4B36-4CEA-9FC4-1D631D4042CF}.Release|Any CPU.Build.0 = Release|Any CPU
+		{CE243C8F-572D-43CC-867C-FD868DACEBF0}.Debug|Any CPU.ActiveCfg = Debug|Any CPU
+		{CE243C8F-572D-43CC-867C-FD868DACEBF0}.Debug|Any CPU.Build.0 = Debug|Any CPU
+		{CE243C8F-572D-43CC-867C-FD868DACEBF0}.Release|Any CPU.ActiveCfg = Release|Any CPU
+		{CE243C8F-572D-43CC-867C-FD868DACEBF0}.Release|Any CPU.Build.0 = Release|Any CPU
+		{28CF99B6-1E14-4BCB-979A-771590EBBA02}.Debug|Any CPU.ActiveCfg = Debug|Any CPU
+		{28CF99B6-1E14-4BCB-979A-771590EBBA02}.Debug|Any CPU.Build.0 = Debug|Any CPU
+		{28CF99B6-1E14-4BCB-979A-771590EBBA02}.Release|Any CPU.ActiveCfg = Release|Any CPU
+		{28CF99B6-1E14-4BCB-979A-771590EBBA02}.Release|Any CPU.Build.0 = Release|Any CPU
+		{1D4D77DF-4445-4221-8E44-6139018FB6DC}.Debug|Any CPU.ActiveCfg = Debug|Any CPU
+		{1D4D77DF-4445-4221-8E44-6139018FB6DC}.Debug|Any CPU.Build.0 = Debug|Any CPU
+		{1D4D77DF-4445-4221-8E44-6139018FB6DC}.Release|Any CPU.ActiveCfg = Release|Any CPU
+		{1D4D77DF-4445-4221-8E44-6139018FB6DC}.Release|Any CPU.Build.0 = Release|Any CPU
+		{D0DC3683-10F9-4677-9A00-60AAFA23E9AE}.Debug|Any CPU.ActiveCfg = Debug|Any CPU
+		{D0DC3683-10F9-4677-9A00-60AAFA23E9AE}.Debug|Any CPU.Build.0 = Debug|Any CPU
+		{D0DC3683-10F9-4677-9A00-60AAFA23E9AE}.Release|Any CPU.ActiveCfg = Release|Any CPU
+		{D0DC3683-10F9-4677-9A00-60AAFA23E9AE}.Release|Any CPU.Build.0 = Release|Any CPU
 		{64C0BC45-368B-44E6-9E04-2F7787CDF153}.Debug|Any CPU.ActiveCfg = Debug|Any CPU
 		{64C0BC45-368B-44E6-9E04-2F7787CDF153}.Debug|Any CPU.Build.0 = Debug|Any CPU
 		{64C0BC45-368B-44E6-9E04-2F7787CDF153}.Release|Any CPU.ActiveCfg = Release|Any CPU
@@ -21,12 +71,25 @@ Global
 		{4146BAB4-BA7C-405E-BEBC-9BE9826514BA}.Debug|Any CPU.Build.0 = Debug|Any CPU
 		{4146BAB4-BA7C-405E-BEBC-9BE9826514BA}.Release|Any CPU.ActiveCfg = Release|Any CPU
 		{4146BAB4-BA7C-405E-BEBC-9BE9826514BA}.Release|Any CPU.Build.0 = Release|Any CPU
+		{38921E68-9747-41BC-8E3C-5FF0F6CE6BF3}.Debug|Any CPU.ActiveCfg = Debug|Any CPU
+		{38921E68-9747-41BC-8E3C-5FF0F6CE6BF3}.Debug|Any CPU.Build.0 = Debug|Any CPU
+		{38921E68-9747-41BC-8E3C-5FF0F6CE6BF3}.Release|Any CPU.ActiveCfg = Release|Any CPU
+		{38921E68-9747-41BC-8E3C-5FF0F6CE6BF3}.Release|Any CPU.Build.0 = Release|Any CPU
 	EndGlobalSection
 	GlobalSection(SolutionProperties) = preSolution
 		HideSolutionNode = FALSE
 	EndGlobalSection
 	GlobalSection(NestedProjects) = preSolution
+		{D70E235E-65AC-4DD0-913E-74F351988EAF} = {FC920C3F-3A16-4258-9DF1-3B1BB3408C69}
+		{F345A66F-1968-4EE6-BF35-95F5B03220D1} = {FC920C3F-3A16-4258-9DF1-3B1BB3408C69}
+		{B0C85A4A-BFC7-4A56-939A-8FB4F167460A} = {FC920C3F-3A16-4258-9DF1-3B1BB3408C69}
+		{400E185D-4B36-4CEA-9FC4-1D631D4042CF} = {FC920C3F-3A16-4258-9DF1-3B1BB3408C69}
+		{CE243C8F-572D-43CC-867C-FD868DACEBF0} = {FC920C3F-3A16-4258-9DF1-3B1BB3408C69}
+		{28CF99B6-1E14-4BCB-979A-771590EBBA02} = {FC920C3F-3A16-4258-9DF1-3B1BB3408C69}
+		{1D4D77DF-4445-4221-8E44-6139018FB6DC} = {FC920C3F-3A16-4258-9DF1-3B1BB3408C69}
+		{D0DC3683-10F9-4677-9A00-60AAFA23E9AE} = {FC920C3F-3A16-4258-9DF1-3B1BB3408C69}
 		{64C0BC45-368B-44E6-9E04-2F7787CDF153} = {FC920C3F-3A16-4258-9DF1-3B1BB3408C69}
+		{38921E68-9747-41BC-8E3C-5FF0F6CE6BF3} = {FC920C3F-3A16-4258-9DF1-3B1BB3408C69}
 		{4146BAB4-BA7C-405E-BEBC-9BE9826514BA} = {5D6E7D5F-CA32-4F61-8664-ED39FEFB01D1}
 	EndGlobalSection
 	GlobalSection(ExtensibilityGlobals) = postSolution

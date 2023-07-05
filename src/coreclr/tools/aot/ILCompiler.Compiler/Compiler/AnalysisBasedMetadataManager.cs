@@ -23,6 +23,7 @@ namespace ILCompiler
     {
         private readonly List<ModuleDesc> _modulesWithMetadata;
         private readonly List<MetadataType> _typesWithRootedCctorContext;
+        private readonly List<TypeDesc> _forcedTypes;
 
         private readonly Dictionary<TypeDesc, MetadataCategory> _reflectableTypes = new Dictionary<TypeDesc, MetadataCategory>();
         private readonly Dictionary<MethodDesc, MetadataCategory> _reflectableMethods = new Dictionary<MethodDesc, MetadataCategory>();
@@ -32,10 +33,10 @@ namespace ILCompiler
         public AnalysisBasedMetadataManager(CompilerTypeSystemContext typeSystemContext)
             : this(typeSystemContext, new FullyBlockedMetadataBlockingPolicy(),
                 new FullyBlockedManifestResourceBlockingPolicy(), null, new NoStackTraceEmissionPolicy(),
-                new NoDynamicInvokeThunkGenerationPolicy(), Array.Empty<ModuleDesc>(),
+                new NoDynamicInvokeThunkGenerationPolicy(), Array.Empty<ModuleDesc>(), Array.Empty<TypeDesc>(),
                 Array.Empty<ReflectableEntity<TypeDesc>>(), Array.Empty<ReflectableEntity<MethodDesc>>(),
                 Array.Empty<ReflectableEntity<FieldDesc>>(), Array.Empty<ReflectableCustomAttribute>(),
-                Array.Empty<MetadataType>())
+                Array.Empty<MetadataType>(), default)
         {
         }
 
@@ -47,16 +48,19 @@ namespace ILCompiler
             StackTraceEmissionPolicy stackTracePolicy,
             DynamicInvokeThunkGenerationPolicy invokeThunkGenerationPolicy,
             IEnumerable<ModuleDesc> modulesWithMetadata,
+            IEnumerable<TypeDesc> forcedTypes,
             IEnumerable<ReflectableEntity<TypeDesc>> reflectableTypes,
             IEnumerable<ReflectableEntity<MethodDesc>> reflectableMethods,
             IEnumerable<ReflectableEntity<FieldDesc>> reflectableFields,
             IEnumerable<ReflectableCustomAttribute> reflectableAttributes,
-            IEnumerable<MetadataType> rootedCctorContexts)
-            : base(typeSystemContext, blockingPolicy, resourceBlockingPolicy, logFile, stackTracePolicy, invokeThunkGenerationPolicy)
+            IEnumerable<MetadataType> rootedCctorContexts,
+            MetadataManagerOptions options)
+            : base(typeSystemContext, blockingPolicy, resourceBlockingPolicy, logFile, stackTracePolicy, invokeThunkGenerationPolicy, options)
         {
             _modulesWithMetadata = new List<ModuleDesc>(modulesWithMetadata);
             _typesWithRootedCctorContext = new List<MetadataType>(rootedCctorContexts);
-            
+            _forcedTypes = new List<TypeDesc>(forcedTypes);
+
             foreach (var refType in reflectableTypes)
             {
                 _reflectableTypes.Add(refType.Entity, refType.Category);
@@ -179,10 +183,9 @@ namespace ILCompiler
 
             const string reason = "Reflection";
 
-            foreach (var pair in _reflectableTypes)
+            foreach (var type in _forcedTypes)
             {
-                if ((pair.Value & MetadataCategory.RuntimeMapping) != 0)
-                    rootProvider.AddCompilationRoot(pair.Key, reason);
+                rootProvider.AddReflectionRoot(type, reason);
             }
 
             foreach (var pair in _reflectableMethods)
@@ -199,18 +202,7 @@ namespace ILCompiler
                 if ((pair.Value & MetadataCategory.RuntimeMapping) != 0)
                 {
                     FieldDesc field = pair.Key;
-
-                    // We only care about static fields at this point. Instance fields don't need
-                    // runtime artifacts generated in the image.
-                    if (field.IsStatic && !field.IsLiteral)
-                    {
-                        if (field.IsThreadStatic)
-                            rootProvider.RootThreadStaticBaseForType(field.OwningType, reason);
-                        else if (field.HasGCStaticBase)
-                            rootProvider.RootGCStaticBaseForType(field.OwningType, reason);
-                        else
-                            rootProvider.RootNonGCStaticBaseForType(field.OwningType, reason);
-                    }
+                    rootProvider.AddReflectionRoot(field, reason);
                 }
             }
 
@@ -225,7 +217,7 @@ namespace ILCompiler
             private readonly MetadataBlockingPolicy _blockingPolicy;
             private readonly AnalysisBasedMetadataManager _parent;
 
-            public Policy(MetadataBlockingPolicy blockingPolicy, 
+            public Policy(MetadataBlockingPolicy blockingPolicy,
                 AnalysisBasedMetadataManager parent)
             {
                 _blockingPolicy = blockingPolicy;
@@ -254,21 +246,19 @@ namespace ILCompiler
 
             public bool GeneratesMetadata(EcmaModule module, ExportedTypeHandle exportedTypeHandle)
             {
-                try
-                {
-                    // We'll possibly need to do something else here if we ever use this MetadataManager
-                    // with compilation modes that generate multiple metadata blobs.
-                    // (Multi-module or .NET Native style shared library.)
-                    // We are currently missing type forwarders pointing to the other blobs.
-                    var targetType = (MetadataType)module.GetObject(exportedTypeHandle);
-                    return GeneratesMetadata(targetType);
-                }
-                catch (TypeSystemException)
+                // We'll possibly need to do something else here if we ever use this MetadataManager
+                // with compilation modes that generate multiple metadata blobs.
+                // (Multi-module or .NET Native style shared library.)
+                // We are currently missing type forwarders pointing to the other blobs.
+                var targetType = (MetadataType)module.GetObject(exportedTypeHandle, NotFoundBehavior.ReturnNull);
+                if (targetType == null)
                 {
                     // No harm in generating a forwarder that didn't resolve.
                     // We'll get matching behavior at runtime.
                     return true;
                 }
+
+                return GeneratesMetadata(targetType);
             }
 
             public bool IsBlocked(MetadataType typeDef)

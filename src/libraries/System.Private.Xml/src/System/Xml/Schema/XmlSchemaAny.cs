@@ -1,12 +1,12 @@
 // Licensed to the .NET Foundation under one or more agreements.
 // The .NET Foundation licenses this file to you under the MIT license.
 
+using System.ComponentModel;
+using System.Xml.Serialization;
+using System.Text;
+
 namespace System.Xml.Schema
 {
-    using System.ComponentModel;
-    using System.Xml.Serialization;
-    using System.Text;
-
     public class XmlSchemaAny : XmlSchemaParticle
     {
         private string? _ns;
@@ -38,7 +38,7 @@ namespace System.Xml.Schema
         {
             get
             {
-                if (_ns == null || _ns.Length == 0)
+                if (string.IsNullOrEmpty(_ns))
                 {
                     return "##any";
                 }

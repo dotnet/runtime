@@ -80,10 +80,7 @@ namespace System.Xml
         {
             int len;
 
-            if (_bitStack == null)
-            {
-                _bitStack = new uint[16];
-            }
+            _bitStack ??= new uint[16];
 
             // Push current unsigned int (which has been filled) onto a stack
             // and initialize this.curr to be used for future pushes.

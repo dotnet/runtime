@@ -18,19 +18,19 @@ namespace System.Net.Http.Tests
             var complexContent = new MultipartContent();
 
             var stringContent = new StringContent("bar1");
-            stringContent.Headers.Add("latin1", "\uD83D\uDE00");
+            stringContent.Headers.Add("latin1", "\U0001F600");
             complexContent.Add(stringContent);
 
-            var byteArrayContent = new ByteArrayContent(Encoding.ASCII.GetBytes("bar2"));
-            byteArrayContent.Headers.Add("utf8", "\uD83D\uDE00");
+            var byteArrayContent = new ByteArrayContent("bar2"u8.ToArray());
+            byteArrayContent.Headers.Add("utf8", "\U0001F600");
             complexContent.Add(byteArrayContent);
 
-            byteArrayContent = new ByteArrayContent(Encoding.ASCII.GetBytes("bar3"));
-            byteArrayContent.Headers.Add("ascii", "\uD83D\uDE00");
+            byteArrayContent = new ByteArrayContent("bar3"u8.ToArray());
+            byteArrayContent.Headers.Add("ascii", "\U0001F600");
             complexContent.Add(byteArrayContent);
 
-            byteArrayContent = new ByteArrayContent(Encoding.ASCII.GetBytes("bar4"));
-            byteArrayContent.Headers.Add("default", "\uD83D\uDE00");
+            byteArrayContent = new ByteArrayContent("bar4"u8.ToArray());
+            byteArrayContent.Headers.Add("default", "\U0001F600");
             complexContent.Add(byteArrayContent);
 
             stringContent = new StringContent("bar5");

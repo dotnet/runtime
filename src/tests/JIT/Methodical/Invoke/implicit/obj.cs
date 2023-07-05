@@ -2,15 +2,16 @@
 // The .NET Foundation licenses this file to you under the MIT license.
 
 using System;
+using Xunit;
 
-namespace JitTest
+namespace JitTest_obj_implicit_cs
 {
-    internal class Base
+    public class Base
     {
         public override String ToString() { return "Base class"; }
     }
 
-    internal class Test : Base
+    public class Test : Base
     {
         public override String ToString() { return "Test class"; }
 
@@ -19,7 +20,8 @@ namespace JitTest
             Console.WriteLine(obj.ToString());
         }
 
-        private static int Main()
+        [Fact]
+        public static int TestEntryPoint()
         {
             try
             {

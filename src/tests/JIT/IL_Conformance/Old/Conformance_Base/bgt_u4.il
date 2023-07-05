@@ -2,8 +2,11 @@
 // The .NET Foundation licenses this file to you under the MIT license.
 
 .assembly extern legacy library mscorlib {}
+.assembly extern xunit.core {}
 
 
+.namespace bgt_u4
+{
 .class public bgt_un {
 
 .field public static	int32 all
@@ -14,92 +17,95 @@
 .method public static	void initialize() {
 .maxstack	10
 	ldc.i4		0xFFFFFFFF
-	stsfld	int32 bgt_un::all
+	stsfld	int32 bgt_u4.bgt_un::all
 	ldc.i4		0x00000000
-	stsfld	int32 bgt_un::none
+	stsfld	int32 bgt_u4.bgt_un::none
 	ldc.i4		0x55555555
-	stsfld	int32 bgt_un::odd
+	stsfld	int32 bgt_u4.bgt_un::odd
 	ldc.i4		0xAAAAAAAA
-	stsfld	int32 bgt_un::even
+	stsfld	int32 bgt_u4.bgt_un::even
 	ret
 }
 
-.method public static	int32 main(class [mscorlib]System.String[]) {
+.method public static	int32 main() {
+.custom instance void [xunit.core]Xunit.FactAttribute::.ctor() = (
+    01 00 00 00
+)
 .entrypoint
 .maxstack		10
-	call	void bgt_un::initialize()
+	call	void bgt_u4.bgt_un::initialize()
 
 
-	ldsfld	int32 bgt_un::all
-	ldsfld	int32 bgt_un::all
+	ldsfld	int32 bgt_u4.bgt_un::all
+	ldsfld	int32 bgt_u4.bgt_un::all
 	bgt.un FAIL
 
-	ldsfld	int32 bgt_un::all
-	ldsfld	int32 bgt_un::none
+	ldsfld	int32 bgt_u4.bgt_un::all
+	ldsfld	int32 bgt_u4.bgt_un::none
 	bgt.un A
 	br FAIL
 
 A:
-	ldsfld	int32 bgt_un::all
-	ldsfld	int32 bgt_un::odd
+	ldsfld	int32 bgt_u4.bgt_un::all
+	ldsfld	int32 bgt_u4.bgt_un::odd
 	bgt.un B
 	br FAIL
 
 B:
-	ldsfld	int32 bgt_un::all
-	ldsfld	int32 bgt_un::even
+	ldsfld	int32 bgt_u4.bgt_un::all
+	ldsfld	int32 bgt_u4.bgt_un::even
 	bgt.un C
 	br FAIL
-	ldsfld	int32 bgt_un::none
-	ldsfld	int32 bgt_un::all
+	ldsfld	int32 bgt_u4.bgt_un::none
+	ldsfld	int32 bgt_u4.bgt_un::all
 	bgt.un FAIL
 
-	ldsfld	int32 bgt_un::none
-	ldsfld	int32 bgt_un::none
+	ldsfld	int32 bgt_u4.bgt_un::none
+	ldsfld	int32 bgt_u4.bgt_un::none
 	bgt.un FAIL
 
-	ldsfld	int32 bgt_un::none
-	ldsfld	int32 bgt_un::odd
+	ldsfld	int32 bgt_u4.bgt_un::none
+	ldsfld	int32 bgt_u4.bgt_un::odd
 	bgt.un FAIL
 
-	ldsfld	int32 bgt_un::none
-	ldsfld	int32 bgt_un::even
+	ldsfld	int32 bgt_u4.bgt_un::none
+	ldsfld	int32 bgt_u4.bgt_un::even
 	bgt.un FAIL
-	ldsfld	int32 bgt_un::odd
-	ldsfld	int32 bgt_un::all
+	ldsfld	int32 bgt_u4.bgt_un::odd
+	ldsfld	int32 bgt_u4.bgt_un::all
 	bgt.un FAIL
 
-	ldsfld	int32 bgt_un::odd
-	ldsfld	int32 bgt_un::none
+	ldsfld	int32 bgt_u4.bgt_un::odd
+	ldsfld	int32 bgt_u4.bgt_un::none
 	bgt.un C
 	br FAIL
 
 C:
-	ldsfld	int32 bgt_un::odd
-	ldsfld	int32 bgt_un::odd
+	ldsfld	int32 bgt_u4.bgt_un::odd
+	ldsfld	int32 bgt_u4.bgt_un::odd
 	bgt.un FAIL
 
-	ldsfld	int32 bgt_un::odd
-	ldsfld	int32 bgt_un::even
+	ldsfld	int32 bgt_u4.bgt_un::odd
+	ldsfld	int32 bgt_u4.bgt_un::even
 	bgt.un FAIL
-	ldsfld	int32 bgt_un::even
-	ldsfld	int32 bgt_un::all
+	ldsfld	int32 bgt_u4.bgt_un::even
+	ldsfld	int32 bgt_u4.bgt_un::all
 	bgt.un FAIL
 
-	ldsfld	int32 bgt_un::even
-	ldsfld	int32 bgt_un::none
+	ldsfld	int32 bgt_u4.bgt_un::even
+	ldsfld	int32 bgt_u4.bgt_un::none
 	bgt.un D
 	br FAIL
 
 D:
-	ldsfld	int32 bgt_un::even
-	ldsfld	int32 bgt_un::odd
+	ldsfld	int32 bgt_u4.bgt_un::even
+	ldsfld	int32 bgt_u4.bgt_un::odd
 	bgt.un E
 	br FAIL
 
 E:
-	ldsfld	int32 bgt_un::even
-	ldsfld	int32 bgt_un::even
+	ldsfld	int32 bgt_u4.bgt_un::even
+	ldsfld	int32 bgt_u4.bgt_un::even
 	bgt.un FAIL
 	br BACKCHECK
 TOPASS:
@@ -121,3 +127,4 @@ FAIL:
 }
 }
 .assembly bgt_u4{}
+}

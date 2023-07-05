@@ -1,6 +1,6 @@
 <Project Sdk="Microsoft.NET.Sdk">
   <PropertyGroup>
-    <OutputType>Exe</OutputType>
+    <AssemblyName>X86_Lzcnt_x64_r</AssemblyName>
   </PropertyGroup>
   <PropertyGroup>
     <DebugType>Embedded</DebugType>

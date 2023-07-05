@@ -1,12 +1,12 @@
 <Project Sdk="Microsoft.NET.Sdk.IL">
   <PropertyGroup>
-    <OutputType>Exe</OutputType>
   </PropertyGroup>
   <PropertyGroup>
     <DebugType>PdbOnly</DebugType>
     <Optimize>False</Optimize>
   </PropertyGroup>
   <ItemGroup>
+    <Compile Include="cascadedcatch_r.il" />
     <Compile Include="cascadedcatch.il" />
   </ItemGroup>
   <ItemGroup>

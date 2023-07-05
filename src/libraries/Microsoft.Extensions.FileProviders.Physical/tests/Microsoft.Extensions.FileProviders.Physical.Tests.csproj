@@ -5,6 +5,7 @@
     <TargetFrameworks>$(NetCoreAppCurrent);$(NetFrameworkMinimum)</TargetFrameworks>
     <EnableDefaultItems>true</EnableDefaultItems>
     <IncludePlatformAttributes>false</IncludePlatformAttributes>
+    <AllowUnsafeBlocks>true</AllowUnsafeBlocks>
   </PropertyGroup>
 
   <ItemGroup>
@@ -12,6 +13,8 @@
              Link="Common\System\IO\TempDirectory.cs" />
     <Compile Include="$(CommonTestPath)System\Threading\Tasks\TaskTimeoutExtensions.cs"
              Link="Common\System\Threading\Tasks\TaskTimeoutExtensions.cs" />
+    <Compile Include="$(CommonTestPath)System\IO\ReparsePointUtilities.cs" 
+             Link="Common\System\IO\ReparsePointUtilities.cs" />
     <TrimmerRootDescriptor Include="$(ILLinkDescriptorsPath)ILLink.Descriptors.Castle.xml" />
   </ItemGroup>
 

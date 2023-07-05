@@ -49,9 +49,5 @@ namespace System.Net
                 DateTimeOffset.TryParseExact(input, "r", DateTimeFormatInfo.InvariantInfo, DateTimeStyles.None, out result) ||
                 DateTimeOffset.TryParseExact(input, s_dateFormats, DateTimeFormatInfo.InvariantInfo, DateTimeStyles.AllowInnerWhite | DateTimeStyles.AssumeUniversal, out result);
         }
-
-        // Format according to RFC1123
-        internal static string DateToString(DateTimeOffset dateTime) =>
-            dateTime.ToUniversalTime().ToString("r");
     }
 }

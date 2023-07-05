@@ -106,11 +106,11 @@ namespace System.Linq.Expressions.Interpreter
             Debug.Assert(!type.IsEnum);
             return type.GetNonNullableType().GetTypeCode() switch
             {
-                TypeCode.Int16 => s_Int16 ?? (s_Int16 = new NegateInt16()),
-                TypeCode.Int32 => s_Int32 ?? (s_Int32 = new NegateInt32()),
-                TypeCode.Int64 => s_Int64 ?? (s_Int64 = new NegateInt64()),
-                TypeCode.Single => s_Single ?? (s_Single = new NegateSingle()),
-                TypeCode.Double => s_Double ?? (s_Double = new NegateDouble()),
+                TypeCode.Int16 => s_Int16 ??= new NegateInt16(),
+                TypeCode.Int32 => s_Int32 ??= new NegateInt32(),
+                TypeCode.Int64 => s_Int64 ??= new NegateInt64(),
+                TypeCode.Single => s_Single ??= new NegateSingle(),
+                TypeCode.Double => s_Double ??= new NegateDouble(),
                 _ => throw ContractUtils.Unreachable,
             };
         }
@@ -182,9 +182,9 @@ namespace System.Linq.Expressions.Interpreter
             Debug.Assert(!type.IsEnum);
             return type.GetNonNullableType().GetTypeCode() switch
             {
-                TypeCode.Int16 => s_Int16 ?? (s_Int16 = new NegateCheckedInt16()),
-                TypeCode.Int32 => s_Int32 ?? (s_Int32 = new NegateCheckedInt32()),
-                TypeCode.Int64 => s_Int64 ?? (s_Int64 = new NegateCheckedInt64()),
+                TypeCode.Int16 => s_Int16 ??= new NegateCheckedInt16(),
+                TypeCode.Int32 => s_Int32 ??= new NegateCheckedInt32(),
+                TypeCode.Int64 => s_Int64 ??= new NegateCheckedInt64(),
                 _ => NegateInstruction.Create(type),
             };
         }

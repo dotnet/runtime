@@ -4,6 +4,8 @@
 #include "createdump.h"
 #include "specialthreadinfo.h"
 
+extern int g_readProcessMemoryResult;
+
 //
 // Write the core dump file
 //
@@ -56,7 +58,7 @@ DumpWriter::WriteDump()
     if (alignment > 0)
     {
         if (alignment > sizeof(m_tempBuffer)) {
-            fprintf(stderr, "Segment alignment %llu > sizeof(m_tempBuffer)\n", alignment);
+            printf_error("Internal error: segment alignment %llu > sizeof(m_tempBuffer)\n", alignment);
             return false;
         }
         memset(m_tempBuffer, 0, alignment);
@@ -90,26 +92,23 @@ DumpWriter::BuildSegmentLoadCommands()
 {
     for (const MemoryRegion& memoryRegion : m_crashInfo.MemoryRegions())
     {
-        if (memoryRegion.IsBackedByMemory())
-        {
-            uint64_t size = memoryRegion.Size();
-            uint32_t prot = ConvertFlags(memoryRegion.Permissions());
+        uint64_t size = memoryRegion.Size();
+        uint32_t prot = ConvertFlags(memoryRegion.Permissions());
 
-            segment_command_64 segment = {
-                LC_SEGMENT_64,                  // uint32_t cmd;
-                sizeof(segment_command_64),     // uint32_t cmdsize;
-                {0},                            // char segname[16];
-                memoryRegion.StartAddress(),    // uint64_t vmaddr;   
-                size,                           // uint64_t vmsize;
-                0,                              // uint64_t fileoff;
-                size,                           // uint64_t filesize;
-                prot,                           // uint32_t maxprot;
-                prot,                           // uint32_t initprot;
-                0,                              // uint32_t nsects;
-                0                               // uint32_t flags;
-            };
-            m_segmentLoadCommands.push_back(segment);
-        }
+        segment_command_64 segment = {
+            LC_SEGMENT_64,                  // uint32_t cmd;
+            sizeof(segment_command_64),     // uint32_t cmdsize;
+            {0},                            // char segname[16];
+            memoryRegion.StartAddress(),    // uint64_t vmaddr;   
+            size,                           // uint64_t vmsize;
+            0,                              // uint64_t fileoff;
+            size,                           // uint64_t filesize;
+            prot,                           // uint32_t maxprot;
+            prot,                           // uint32_t initprot;
+            0,                              // uint32_t nsects;
+            0                               // uint32_t flags;
+        };
+        m_segmentLoadCommands.push_back(segment);
     }
 
     // Add special memory region containing the process and thread info
@@ -264,13 +263,13 @@ DumpWriter::WriteSegments()
                 size_t read = 0;
 
                 if (!m_crashInfo.ReadProcessMemory((void*)address, m_tempBuffer, bytesToRead, &read)) {
-                    fprintf(stderr, "ReadProcessMemory(%" PRIA PRIx64 ", %08zx) FAILED\n", address, bytesToRead);
+                    printf_error("Error reading memory at %" PRIA PRIx64 " size %08zx FAILED %s (%x)\n", address, bytesToRead, mach_error_string(g_readProcessMemoryResult), g_readProcessMemoryResult);
                     return false;
                 }
 
                 // This can happen if the target process dies before createdump is finished
                 if (read == 0) {
-                    fprintf(stderr, "ReadProcessMemory(%" PRIA PRIx64 ", %08zx) returned 0 bytes read\n", address, bytesToRead);
+                    printf_error("Error reading memory at %" PRIA PRIx64 " size %08zx returned 0 bytes read: %s (%x)\n", address, bytesToRead, mach_error_string(g_readProcessMemoryResult), g_readProcessMemoryResult);
                     return false;
                 }
 
@@ -284,6 +283,6 @@ DumpWriter::WriteSegments()
         }
     }
 
-    printf("Written %" PRId64 " bytes (%" PRId64 " pages) to core file\n", total, total / PAGE_SIZE);
+    printf_status("Written %" PRId64 " bytes (%" PRId64 " pages) to core file\n", total, total / PAGE_SIZE);
     return true;
 }

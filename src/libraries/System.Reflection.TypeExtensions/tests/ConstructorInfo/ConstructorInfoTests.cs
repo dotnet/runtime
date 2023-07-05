@@ -80,9 +80,12 @@ namespace System.Reflection.Tests
         [Theory]
         [InlineData(typeof(ConstructorInfoInvoke), new Type[] { typeof(int) })]
         [InlineData(typeof(string), new Type[] { typeof(char), typeof(int) })]
-        [ActiveIssue("https://github.com/dotnet/runtime/issues/51211", typeof(PlatformDetection), nameof(PlatformDetection.IsBuiltWithAggressiveTrimming), nameof(PlatformDetection.IsBrowser))]
         public void Properties(Type type, Type[] typeParameters)
         {
+            // Trick trimming into keeping the string ctor
+            if (string.Empty.Length > 0)
+                typeof(string).GetConstructors();
+
             ConstructorInfo constructor = TypeExtensions.GetConstructor(type, typeParameters);
 
             Assert.Equal(type, constructor.DeclaringType);

@@ -7,11 +7,11 @@
  * EventPipe.  The feature itself is enabled via the feature flag FEATURE_AUTO_TRACE.
  *
  * Two environment variables dictate behavior:
- * - COMPlus_AutoTrace_N_Tracers: a number in [0,64] where 0 will disable the feature
- * - COMPlus_AutoTrace_Command: The path to an executable to be invoked.  Typically this will be a "run.sh|cmd".
- *  > (NB: you should `cd` into the directory you intend to execute `COMPlus_AutoTrace_Command` from as the first line of the script.)
+ * - DOTNET_AutoTrace_N_Tracers: a number in [0,64] where 0 will disable the feature
+ * - DOTNET_AutoTrace_Command: The path to an executable to be invoked.  Typically this will be a "run.sh|cmd".
+ *  > (NB: you should `cd` into the directory you intend to execute `DOTNET_AutoTrace_Command` from as the first line of the script.)
  *
- * Once turned on, AutoTrace will run the specified command `COMPlus_AutoTrace_N_Tracers` times.  There is an event that will pause execution
+ * Once turned on, AutoTrace will run the specified command `DOTNET_AutoTrace_N_Tracers` times.  There is an event that will pause execution
  * of the runtime until all the tracers have attached.  Once all the tracers are attached, execution will continue normally.
  *
  * This logic is easily modified to accommodate testing other mechanisms related to the Diagnostic Server.
@@ -27,7 +27,6 @@
 
 HANDLE auto_trace_event;
 static size_t g_n_tracers = 1;
-static const WCHAR* command_format = W("%s -p %d");
 static WCHAR* command = nullptr;
 
 void auto_trace_init()
@@ -42,9 +41,23 @@ void auto_trace_init()
     LPWSTR commandTextValue = CLRConfig::GetConfigValue(CLRConfig::INTERNAL_AutoTrace_Command);
     if (commandTextValue != NULL)
     {
+        // Create a command line with the format: "%s -p %d"
+        const WCHAR flagFormat[] = W(" -p ");
         DWORD currentProcessId = GetCurrentProcessId();
-        command = new WCHAR[8192];
-        _snwprintf_s(command, 8192, _TRUNCATE, command_format, commandTextValue, currentProcessId);
+        size_t bufferLen = 8192;
+        size_t written = 0;
+        command = new WCHAR[bufferLen];
+
+        // Copy in the command - %s
+        wcscpy_s(command, bufferLen, commandTextValue);
+        written += u16_strlen(commandTextValue);
+
+        // Append " -p "
+        wcscat_s(command, bufferLen - written, flagFormat);
+        written += ARRAY_SIZE(flagFormat) - 1;
+
+        // Append the process ID
+        FormatInteger(command + written, bufferLen - written, "%d", currentProcessId);
     }
     else
     {
@@ -90,7 +103,7 @@ void auto_trace_launch_internal()
 
 void auto_trace_launch()
 {
-    for (int i = 0; i < g_n_tracers; ++i)
+    for (size_t i = 0; i < g_n_tracers; ++i)
     {
         auto_trace_launch_internal();
     }

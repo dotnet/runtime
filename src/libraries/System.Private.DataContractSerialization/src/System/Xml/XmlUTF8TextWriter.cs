@@ -2,6 +2,7 @@
 // The .NET Foundation licenses this file to you under the MIT license.
 
 using System.IO;
+using System.Runtime.Serialization;
 using System.Text;
 using System.Threading.Tasks;
 
@@ -14,21 +15,30 @@ namespace System.Xml
 
     internal sealed class XmlUTF8TextWriter : XmlBaseWriter, IXmlTextWriterInitializer
     {
-        private XmlUTF8NodeWriter? _writer;
+        private XmlUTF8NodeWriter _writer = null!;  // initialized in SetOutput
 
-        public void SetOutput(Stream stream!!, Encoding encoding!!, bool ownsStream)
+        public void SetOutput(Stream stream, Encoding encoding, bool ownsStream)
         {
+            ArgumentNullException.ThrowIfNull(stream);
+            ArgumentNullException.ThrowIfNull(encoding);
+
             if (encoding.WebName != Encoding.UTF8.WebName)
             {
                 stream = new EncodingStreamWrapper(stream, encoding, true);
             }
 
-            if (_writer == null)
-            {
-                _writer = new XmlUTF8NodeWriter();
-            }
+            _writer ??= new XmlUTF8NodeWriter();
             _writer.SetOutput(stream, ownsStream, encoding);
             SetOutput(_writer);
+        }
+
+        public override bool CanFragment
+        {
+            get
+            {
+                // Fragmenting only works for utf8
+                return _writer.Encoding == null;
+            }
         }
 
         protected override XmlSigningNodeWriter CreateSigningNodeWriter()
@@ -48,28 +58,8 @@ namespace System.Xml
         private Encoding? _encoding;
         private char[]? _chars;
 
-        private static readonly byte[] s_startDecl =
-        {
-            (byte)'<', (byte)'?', (byte)'x', (byte)'m', (byte)'l', (byte)' ',
-            (byte)'v', (byte)'e', (byte)'r', (byte)'s', (byte)'i', (byte)'o', (byte)'n', (byte)'=', (byte)'"', (byte)'1', (byte)'.', (byte)'0', (byte)'"', (byte)' ',
-            (byte)'e', (byte)'n', (byte)'c', (byte)'o', (byte)'d', (byte)'i', (byte)'n', (byte)'g', (byte)'=', (byte)'"',
-        };
-        private static readonly byte[] s_endDecl =
-        {
-            (byte)'"', (byte)'?', (byte)'>'
-        };
-        private static readonly byte[] s_utf8Decl =
-        {
-            (byte)'<', (byte)'?', (byte)'x', (byte)'m', (byte)'l', (byte)' ',
-            (byte)'v', (byte)'e', (byte)'r', (byte)'s', (byte)'i', (byte)'o', (byte)'n', (byte)'=', (byte)'"', (byte)'1', (byte)'.', (byte)'0', (byte)'"', (byte)' ',
-            (byte)'e', (byte)'n', (byte)'c', (byte)'o', (byte)'d', (byte)'i', (byte)'n', (byte)'g', (byte)'=', (byte)'"', (byte)'u', (byte)'t', (byte)'f', (byte)'-', (byte)'8', (byte)'"',
-            (byte)'?', (byte)'>'
-        };
-        private static ReadOnlySpan<byte> Digits => new byte[]
-        {
-            (byte) '0', (byte) '1', (byte) '2', (byte) '3', (byte) '4', (byte) '5', (byte) '6', (byte) '7',
-            (byte) '8', (byte) '9', (byte) 'A', (byte) 'B', (byte) 'C', (byte) 'D', (byte) 'E', (byte) 'F'
-        };
+        private static ReadOnlySpan<byte> Digits => "0123456789ABCDEF"u8;
+
         private static readonly bool[] s_defaultIsEscapedAttributeChar = new bool[]
         {
             true, true, true, true, true, true, true, true, true, true, true, true, true, true, true, true,
@@ -110,14 +100,15 @@ namespace System.Xml
             _inAttribute = false;
         }
 
-        private byte[] GetCharEntityBuffer()
+        public Encoding? Encoding
         {
-            if (_entityChars == null)
+            get
             {
-                _entityChars = new byte[maxEntityLength];
+                return _encoding;
             }
-            return _entityChars;
         }
+
+        private byte[] GetCharEntityBuffer() => _entityChars ??= new byte[maxEntityLength];
 
         private char[] GetCharBuffer(int charCount)
         {
@@ -132,64 +123,34 @@ namespace System.Xml
         {
             if (_encoding == null)
             {
-                WriteUTF8Chars(s_utf8Decl, 0, s_utf8Decl.Length);
+                WriteUTF8Bytes("<?xml version=\"1.0\" encoding=\"utf-8\"?>"u8);
             }
             else
             {
-                WriteUTF8Chars(s_startDecl, 0, s_startDecl.Length);
+                WriteUTF8Bytes("<?xml version=\"1.0\" encoding=\""u8);
                 if (_encoding.WebName == Encoding.BigEndianUnicode.WebName)
-                    WriteUTF8Chars("utf-16BE");
+                    WriteUTF8Bytes("utf-16BE"u8);
                 else
                     WriteUTF8Chars(_encoding.WebName);
-                WriteUTF8Chars(s_endDecl, 0, s_endDecl.Length);
+                WriteUTF8Bytes("\"?>"u8);
             }
         }
 
         public override void WriteCData(string text)
         {
-            byte[] buffer;
-            int offset;
-
-            buffer = GetBuffer(9, out offset);
-            buffer[offset + 0] = (byte)'<';
-            buffer[offset + 1] = (byte)'!';
-            buffer[offset + 2] = (byte)'[';
-            buffer[offset + 3] = (byte)'C';
-            buffer[offset + 4] = (byte)'D';
-            buffer[offset + 5] = (byte)'A';
-            buffer[offset + 6] = (byte)'T';
-            buffer[offset + 7] = (byte)'A';
-            buffer[offset + 8] = (byte)'[';
-            Advance(9);
-
+            WriteUTF8Bytes("<![CDATA["u8);
             WriteUTF8Chars(text);
-
-            buffer = GetBuffer(3, out offset);
-            buffer[offset + 0] = (byte)']';
-            buffer[offset + 1] = (byte)']';
-            buffer[offset + 2] = (byte)'>';
-            Advance(3);
+            WriteUTF8Bytes("]]>"u8);
         }
 
         private void WriteStartComment()
         {
-            int offset;
-            byte[] buffer = GetBuffer(4, out offset);
-            buffer[offset + 0] = (byte)'<';
-            buffer[offset + 1] = (byte)'!';
-            buffer[offset + 2] = (byte)'-';
-            buffer[offset + 3] = (byte)'-';
-            Advance(4);
+            WriteUTF8Bytes("<!--"u8);
         }
 
         private void WriteEndComment()
         {
-            int offset;
-            byte[] buffer = GetBuffer(3, out offset);
-            buffer[offset + 0] = (byte)'-';
-            buffer[offset + 1] = (byte)'-';
-            buffer[offset + 2] = (byte)'>';
-            Advance(3);
+            WriteUTF8Bytes("-->"u8);
         }
 
         public override void WriteComment(string text)
@@ -302,15 +263,7 @@ namespace System.Xml
 
         private void WriteStartXmlnsAttribute()
         {
-            int offset;
-            byte[] buffer = GetBuffer(6, out offset);
-            buffer[offset + 0] = (byte)' ';
-            buffer[offset + 1] = (byte)'x';
-            buffer[offset + 2] = (byte)'m';
-            buffer[offset + 3] = (byte)'l';
-            buffer[offset + 4] = (byte)'n';
-            buffer[offset + 5] = (byte)'s';
-            Advance(6);
+            WriteUTF8Bytes(" xmlns"u8);
             _inAttribute = true;
         }
 
@@ -408,7 +361,7 @@ namespace System.Xml
             }
             else
             {
-                WriteUTF8Chars(prefixBuffer, prefixOffset, prefixLength);
+                WriteUTF8Bytes(prefixBuffer.AsSpan(prefixOffset, prefixLength));
             }
         }
 
@@ -419,7 +372,7 @@ namespace System.Xml
 
         private void WriteLocalName(byte[] localNameBuffer, int localNameOffset, int localNameLength)
         {
-            WriteUTF8Chars(localNameBuffer, localNameOffset, localNameLength);
+            WriteUTF8Bytes(localNameBuffer.AsSpan(localNameOffset, localNameLength));
         }
 
         public override void WriteEscapedText(XmlDictionaryString s)
@@ -427,7 +380,7 @@ namespace System.Xml
             WriteEscapedText(s.Value);
         }
 
-        public unsafe override void WriteEscapedText(string s)
+        public override unsafe void WriteEscapedText(string s)
         {
             int count = s.Length;
             if (count > 0)
@@ -439,7 +392,7 @@ namespace System.Xml
             }
         }
 
-        public unsafe override void WriteEscapedText(char[] s, int offset, int count)
+        public override unsafe void WriteEscapedText(char[] s, int offset, int count)
         {
             if (count > 0)
             {
@@ -478,7 +431,7 @@ namespace System.Xml
                 byte ch = chars[offset + j];
                 if (ch < isEscapedCharLength && isEscapedChar[ch])
                 {
-                    WriteUTF8Chars(chars, offset + i, j - i);
+                    WriteUTF8Bytes(chars.AsSpan(offset + i, j - i));
                     WriteCharEntity(ch);
                     i = j + 1;
                 }
@@ -491,13 +444,13 @@ namespace System.Xml
                     byte ch3 = chars[offset + j + 2];
                     if (ch2 == 191 && (ch3 == 190 || ch3 == 191))
                     {
-                        WriteUTF8Chars(chars, offset + i, j - i);
+                        WriteUTF8Bytes(chars.AsSpan(offset + i, j - i));
                         WriteCharEntity(ch3 == 190 ? (char)0xFFFE : (char)0xFFFF);
                         i = j + 3;
                     }
                 }
             }
-            WriteUTF8Chars(chars, offset + i, count - i);
+            WriteUTF8Bytes(chars.AsSpan(offset + i, count - i));
         }
 
         public void WriteText(int ch)
@@ -507,10 +460,10 @@ namespace System.Xml
 
         public override void WriteText(byte[] chars, int offset, int count)
         {
-            WriteUTF8Chars(chars, offset, count);
+            WriteUTF8Bytes(chars.AsSpan(offset, count));
         }
 
-        public unsafe override void WriteText(char[] chars, int offset, int count)
+        public override unsafe void WriteText(char[] chars, int offset, int count)
         {
             if (count > 0)
             {
@@ -533,62 +486,27 @@ namespace System.Xml
 
         public void WriteLessThanCharEntity()
         {
-            int offset;
-            byte[] buffer = GetBuffer(4, out offset);
-            buffer[offset + 0] = (byte)'&';
-            buffer[offset + 1] = (byte)'l';
-            buffer[offset + 2] = (byte)'t';
-            buffer[offset + 3] = (byte)';';
-            Advance(4);
+            WriteUTF8Bytes("&lt;"u8);
         }
 
         public void WriteGreaterThanCharEntity()
         {
-            int offset;
-            byte[] buffer = GetBuffer(4, out offset);
-            buffer[offset + 0] = (byte)'&';
-            buffer[offset + 1] = (byte)'g';
-            buffer[offset + 2] = (byte)'t';
-            buffer[offset + 3] = (byte)';';
-            Advance(4);
+            WriteUTF8Bytes("&gt;"u8);
         }
 
         public void WriteAmpersandCharEntity()
         {
-            int offset;
-            byte[] buffer = GetBuffer(5, out offset);
-            buffer[offset + 0] = (byte)'&';
-            buffer[offset + 1] = (byte)'a';
-            buffer[offset + 2] = (byte)'m';
-            buffer[offset + 3] = (byte)'p';
-            buffer[offset + 4] = (byte)';';
-            Advance(5);
+            WriteUTF8Bytes("&amp;"u8);
         }
 
         public void WriteApostropheCharEntity()
         {
-            int offset;
-            byte[] buffer = GetBuffer(6, out offset);
-            buffer[offset + 0] = (byte)'&';
-            buffer[offset + 1] = (byte)'a';
-            buffer[offset + 2] = (byte)'p';
-            buffer[offset + 3] = (byte)'o';
-            buffer[offset + 4] = (byte)'s';
-            buffer[offset + 5] = (byte)';';
-            Advance(6);
+            WriteUTF8Bytes("&apos;"u8);
         }
 
         public void WriteQuoteCharEntity()
         {
-            int offset;
-            byte[] buffer = GetBuffer(6, out offset);
-            buffer[offset + 0] = (byte)'&';
-            buffer[offset + 1] = (byte)'q';
-            buffer[offset + 2] = (byte)'u';
-            buffer[offset + 3] = (byte)'o';
-            buffer[offset + 4] = (byte)'t';
-            buffer[offset + 5] = (byte)';';
-            Advance(6);
+            WriteUTF8Bytes("&quot;"u8);
         }
 
         private void WriteHexCharEntity(int ch)
@@ -600,7 +518,7 @@ namespace System.Xml
             chars[--offset] = (byte)'x';
             chars[--offset] = (byte)'#';
             chars[--offset] = (byte)'&';
-            WriteUTF8Chars(chars, offset, maxEntityLength - offset);
+            WriteUTF8Bytes(chars.AsSpan(offset, maxEntityLength - offset));
         }
 
         public override void WriteCharEntity(int ch)
@@ -628,7 +546,7 @@ namespace System.Xml
             }
         }
 
-        private int ToBase16(byte[] chars, int offset, uint value)
+        private static int ToBase16(byte[] chars, int offset, uint value)
         {
             int count = 0;
             do
@@ -643,36 +561,31 @@ namespace System.Xml
 
         public override void WriteBoolText(bool value)
         {
-            int offset;
-            byte[] buffer = GetBuffer(XmlConverter.MaxBoolChars, out offset);
+            byte[] buffer = GetBuffer(XmlConverter.MaxBoolChars, out int offset);
             Advance(XmlConverter.ToChars(value, buffer, offset));
         }
 
         public override void WriteDecimalText(decimal value)
         {
-            int offset;
-            byte[] buffer = GetBuffer(XmlConverter.MaxDecimalChars, out offset);
+            byte[] buffer = GetBuffer(XmlConverter.MaxDecimalChars, out int offset);
             Advance(XmlConverter.ToChars(value, buffer, offset));
         }
 
         public override void WriteDoubleText(double value)
         {
-            int offset;
-            byte[] buffer = GetBuffer(XmlConverter.MaxDoubleChars, out offset);
+            byte[] buffer = GetBuffer(XmlConverter.MaxDoubleChars, out int offset);
             Advance(XmlConverter.ToChars(value, buffer, offset));
         }
 
         public override void WriteFloatText(float value)
         {
-            int offset;
-            byte[] buffer = GetBuffer(XmlConverter.MaxFloatChars, out offset);
+            byte[] buffer = GetBuffer(XmlConverter.MaxFloatChars, out int offset);
             Advance(XmlConverter.ToChars(value, buffer, offset));
         }
 
         public override void WriteDateTimeText(DateTime value)
         {
-            int offset;
-            byte[] buffer = GetBuffer(XmlConverter.MaxDateTimeChars, out offset);
+            byte[] buffer = GetBuffer(XmlConverter.MaxDateTimeChars, out int offset);
             Advance(XmlConverter.ToChars(value, buffer, offset));
         }
 
@@ -693,23 +606,20 @@ namespace System.Xml
 
         public override void WriteInt32Text(int value)
         {
-            int offset;
-            byte[] buffer = GetBuffer(XmlConverter.MaxInt32Chars, out offset);
+            byte[] buffer = GetBuffer(XmlConverter.MaxInt32Chars, out int offset);
             Advance(XmlConverter.ToChars(value, buffer, offset));
         }
 
         public override void WriteInt64Text(long value)
         {
-            int offset;
-            byte[] buffer = GetBuffer(XmlConverter.MaxInt64Chars, out offset);
+            byte[] buffer = GetBuffer(XmlConverter.MaxInt64Chars, out int offset);
             Advance(XmlConverter.ToChars(value, buffer, offset));
         }
 
         public override void WriteUInt64Text(ulong value)
         {
-            int offset;
-            byte[] buffer = GetBuffer(XmlConverter.MaxUInt64Chars, out offset);
-            Advance(XmlConverter.ToChars((double)value, buffer, offset));
+            byte[] buffer = GetBuffer(XmlConverter.MaxUInt64Chars, out int offset);
+            Advance(XmlConverter.ToChars(value, buffer, offset));
         }
 
         public override void WriteGuidText(Guid value)
@@ -738,28 +648,26 @@ namespace System.Xml
 
         private void InternalWriteBase64Text(byte[] buffer, int offset, int count)
         {
-            Base64Encoding encoding = XmlConverter.Base64Encoding;
+            Base64Encoding encoding = DataContractSerializer.Base64Encoding;
             while (count >= 3)
             {
                 int byteCount = Math.Min(bufferLength / 4 * 3, count - count % 3);
                 int charCount = byteCount / 3 * 4;
-                int charOffset;
-                byte[] chars = GetBuffer(charCount, out charOffset);
+                byte[] chars = GetBuffer(charCount, out int charOffset);
                 Advance(encoding.GetChars(buffer, offset, byteCount, chars, charOffset));
                 offset += byteCount;
                 count -= byteCount;
             }
             if (count > 0)
             {
-                int charOffset;
-                byte[] chars = GetBuffer(4, out charOffset);
+                byte[] chars = GetBuffer(4, out int charOffset);
                 Advance(encoding.GetChars(buffer, offset, count, chars, charOffset));
             }
         }
 
         private async Task InternalWriteBase64TextAsync(byte[] buffer, int offset, int count)
         {
-            Base64Encoding encoding = XmlConverter.Base64Encoding;
+            Base64Encoding encoding = DataContractSerializer.Base64Encoding;
             while (count >= 3)
             {
                 int byteCount = Math.Min(bufferLength / 4 * 3, count - count % 3);

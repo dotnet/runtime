@@ -26,7 +26,6 @@ public:
 extern "C" mdTypeRef QCALLTYPE ModuleBuilder_GetTypeRef(QCall::ModuleHandle pModule,
                                 LPCWSTR wszFullName,
                                 QCall::ModuleHandle pRefedModule,
-                                LPCWSTR wszRefedModuleFileName,
                                 INT32 tkResolution);
 
 // SetFieldRVAContent
@@ -45,7 +44,7 @@ extern "C" INT32 QCALLTYPE ModuleBuilder_GetArrayMethodToken(QCall::ModuleHandle
 // This function will return the MemberRef token
 extern "C" INT32 QCALLTYPE ModuleBuilder_GetMemberRef(QCall::ModuleHandle pModule, QCall::ModuleHandle pRefedModule, INT32 tr, INT32 token);
 
-// This function return a MemberRef token given a MethodInfo describing a array method
+// This function return a MemberRef token given a MethodInfo describing an array method
 extern "C" INT32 QCALLTYPE ModuleBuilder_GetMemberRefOfMethodInfo(QCall::ModuleHandle pModule, INT32 tr, MethodDesc * method);
 
 
@@ -63,11 +62,6 @@ extern "C" INT32 QCALLTYPE ModuleBuilder_GetMemberRefFromSignature(QCall::Module
 
 // GetTokenFromTypeSpec
 extern "C" mdTypeSpec QCALLTYPE ModuleBuilder_GetTokenFromTypeSpec(QCall::ModuleHandle pModule, LPCBYTE pSignature, INT32 sigLength);
-
-// GetType
-// Given a class type, this method will look for that type
-//  with in the module.
-extern "C" void QCALLTYPE RuntimeModule_GetType(QCall::ModuleHandle pModule, LPCWSTR wszName, BOOL bThrowOnError, BOOL bIgnoreCase, QCall::ObjectHandleOnStack retType, QCall::ObjectHandleOnStack keepAlive);
 
 // GetStringConstant
 // If this is a dynamic module, this routine will define a new

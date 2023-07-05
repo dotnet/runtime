@@ -23,7 +23,8 @@ namespace Microsoft.Extensions.Logging.Configuration
     }
     public static partial class LoggerProviderOptions
     {
-        [System.Diagnostics.CodeAnalysis.RequiresUnreferencedCode("TOptions's dependent types may have their members trimmed. Ensure all required members are preserved.")]
+        [System.Diagnostics.CodeAnalysis.RequiresDynamicCodeAttribute("Binding TOptions to configuration values may require generating dynamic code at runtime.")]
+        [System.Diagnostics.CodeAnalysis.RequiresUnreferencedCodeAttribute("TOptions's dependent types may have their members trimmed. Ensure all required members are preserved.")]
         public static void RegisterProviderOptions<[System.Diagnostics.CodeAnalysis.DynamicallyAccessedMembers(System.Diagnostics.CodeAnalysis.DynamicallyAccessedMemberTypes.All)] TOptions, TProvider>(Microsoft.Extensions.DependencyInjection.IServiceCollection services) where TOptions : class { }
     }
     public partial class LoggerProviderOptionsChangeTokenSource<TOptions, TProvider> : Microsoft.Extensions.Options.ConfigurationChangeTokenSource<TOptions>

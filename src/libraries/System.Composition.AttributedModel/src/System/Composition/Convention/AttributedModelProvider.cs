@@ -20,10 +20,10 @@ namespace System.Composition.Convention
         public abstract IEnumerable<Attribute> GetCustomAttributes(System.Type reflectedType, MemberInfo member);
 
         /// <summary>
+        /// </summary>
         /// <param name="reflectedType">The reflectedType the type used to retrieve the parameterInfo.</param>
         /// <param name="parameter">The member to supply attributes for.</param>
         /// <returns>The list of applied attributes.</returns>
-        /// </summary>
         public abstract IEnumerable<Attribute> GetCustomAttributes(System.Type reflectedType, ParameterInfo parameter);
     }
 }

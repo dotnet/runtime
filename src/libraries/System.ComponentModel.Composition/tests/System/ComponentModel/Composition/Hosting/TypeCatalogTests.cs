@@ -288,7 +288,7 @@ namespace System.ComponentModel.Composition
             {
                 var catalog = (ICompositionElement)CreateTypeCatalog(e);
 
-                string expected = string.Format(SR.TypeCatalog_DisplayNameFormat, typeof(TypeCatalog).Name, AttributedModelServices.GetTypeIdentity(e));
+                string expected = SR.Format(SR.TypeCatalog_DisplayNameFormat, typeof(TypeCatalog).Name, AttributedModelServices.GetTypeIdentity(e));
 
                 Assert.Equal(expected, catalog.DisplayName);
             }
@@ -334,7 +334,7 @@ namespace System.ComponentModel.Composition
             {
                 var catalog = (ICompositionElement)new DerivedTypeCatalog(e);
 
-                string expected = string.Format(SR.TypeCatalog_DisplayNameFormat, typeof(DerivedTypeCatalog).Name, AttributedModelServices.GetTypeIdentity(e));
+                string expected = SR.Format(SR.TypeCatalog_DisplayNameFormat, typeof(DerivedTypeCatalog).Name, AttributedModelServices.GetTypeIdentity(e));
 
                 Assert.Equal(expected, catalog.DisplayName);
             }

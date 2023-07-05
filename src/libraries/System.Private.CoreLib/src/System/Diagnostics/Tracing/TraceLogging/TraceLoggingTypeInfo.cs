@@ -1,16 +1,10 @@
 // Licensed to the .NET Foundation under one or more agreements.
 // The .NET Foundation licenses this file to you under the MIT license.
 
-#if ES_BUILD_STANDALONE
-using System;
-#endif
 using System.Collections.Generic;
+using System.Diagnostics.CodeAnalysis;
 
-#if ES_BUILD_STANDALONE
-namespace Microsoft.Diagnostics.Tracing
-#else
 namespace System.Diagnostics.Tracing
-#endif
 {
     /// <summary>
     /// TraceLogging: used when implementing a custom TraceLoggingTypeInfo.
@@ -27,21 +21,26 @@ namespace System.Diagnostics.Tracing
         private readonly Type dataType;
         private readonly Func<object?, PropertyValue> propertyValueFactory;
 
-        internal TraceLoggingTypeInfo(Type dataType!!)
+        internal TraceLoggingTypeInfo(Type dataType)
         {
+            ArgumentNullException.ThrowIfNull(dataType);
+
             this.name = dataType.Name;
             this.dataType = dataType;
             this.propertyValueFactory = PropertyValue.GetFactory(dataType);
         }
 
         internal TraceLoggingTypeInfo(
-            Type dataType!!,
-            string name!!,
+            Type dataType,
+            string name,
             EventLevel level,
             EventOpcode opcode,
             EventKeywords keywords,
             EventTags tags)
         {
+            ArgumentNullException.ThrowIfNull(dataType);
+            ArgumentNullException.ThrowIfNull(name);
+
             Statics.CheckName(name);
 
             this.name = name;
@@ -138,9 +137,7 @@ namespace System.Diagnostics.Tracing
         [ThreadStatic] // per-thread cache to avoid synchronization
         private static Dictionary<Type, TraceLoggingTypeInfo>? threadCache;
 
-#if !ES_BUILD_STANDALONE
-        [System.Diagnostics.CodeAnalysis.RequiresUnreferencedCode("EventSource WriteEvent will serialize the whole object graph. Trimmer will not safely handle this case because properties may be trimmed. This can be suppressed if the object is a primitive type")]
-#endif
+        [RequiresUnreferencedCode("EventSource WriteEvent will serialize the whole object graph. Trimmer will not safely handle this case because properties may be trimmed. This can be suppressed if the object is a primitive type")]
         public static TraceLoggingTypeInfo GetInstance(Type type, List<Type>? recursionCheck)
         {
             Dictionary<Type, TraceLoggingTypeInfo> cache = threadCache ??= new Dictionary<Type, TraceLoggingTypeInfo>();

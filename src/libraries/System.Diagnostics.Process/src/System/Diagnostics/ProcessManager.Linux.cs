@@ -13,15 +13,18 @@ namespace System.Diagnostics
         public static int[] GetProcessIds() => new List<int>(EnumerateProcessIds()).ToArray();
 
         /// <summary>Gets process infos for each process on the specified machine.</summary>
+        /// <param name="processNameFilter">Optional process name to use as an inclusion filter.</param>
         /// <param name="machineName">The target machine.</param>
         /// <returns>An array of process infos, one per found process.</returns>
-        public static ProcessInfo[] GetProcessInfos(string machineName)
+        public static ProcessInfo[] GetProcessInfos(string? processNameFilter, string machineName)
         {
+            Debug.Assert(processNameFilter is null, "Not used on Linux");
             ThrowIfRemoteMachine(machineName);
 
             // Iterate through all process IDs to load information about each process
-            var processes = new List<ProcessInfo>();
-            foreach (int pid in EnumerateProcessIds())
+            IEnumerable<int> pids = EnumerateProcessIds();
+            ArrayBuilder<ProcessInfo> processes = default;
+            foreach (int pid in pids)
             {
                 ProcessInfo? pi = CreateProcessInfo(pid);
                 if (pi != null)
@@ -120,7 +123,7 @@ namespace System.Diagnostics
                             _threadId = (ulong)tid,
                             _basePriority = pi.BasePriority,
                             _currentPriority = (int)stat.nice,
-                            _startAddress = IntPtr.Zero,
+                            _startAddress = null,
                             _threadState = ProcFsStateToThreadState(stat.state),
                             _threadWaitReason = ThreadWaitReason.Unknown
                         });

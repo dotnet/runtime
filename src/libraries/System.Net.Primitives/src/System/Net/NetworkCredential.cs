@@ -151,7 +151,7 @@ namespace System.Net
             return this;
         }
 
-        private string MarshalToString(SecureString sstr)
+        private static string MarshalToString(SecureString sstr)
         {
             if (sstr == null || sstr.Length == 0)
             {

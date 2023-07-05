@@ -47,18 +47,18 @@ namespace System.Net.Http.Headers
 
         public ViaHeaderValue(string protocolVersion, string receivedBy, string? protocolName, string? comment)
         {
-            HeaderUtilities.CheckValidToken(protocolVersion, nameof(protocolVersion));
+            HeaderUtilities.CheckValidToken(protocolVersion);
             CheckReceivedBy(receivedBy);
 
             if (!string.IsNullOrEmpty(protocolName))
             {
-                HeaderUtilities.CheckValidToken(protocolName, nameof(protocolName));
+                HeaderUtilities.CheckValidToken(protocolName);
                 _protocolName = protocolName;
             }
 
             if (!string.IsNullOrEmpty(comment))
             {
-                HeaderUtilities.CheckValidComment(comment, nameof(comment));
+                HeaderUtilities.CheckValidComment(comment);
                 _comment = comment;
             }
 
@@ -78,7 +78,7 @@ namespace System.Net.Http.Headers
 
         public override string ToString()
         {
-            StringBuilder sb = StringBuilderCache.Acquire();
+            var sb = new ValueStringBuilder(stackalloc char[256]);
 
             if (!string.IsNullOrEmpty(_protocolName))
             {
@@ -96,7 +96,7 @@ namespace System.Net.Http.Headers
                 sb.Append(_comment);
             }
 
-            return StringBuilderCache.GetStringAndRelease(sb);
+            return sb.ToString();
         }
 
         public override bool Equals([NotNullWhen(true)] object? obj)
@@ -123,18 +123,18 @@ namespace System.Net.Http.Headers
 
             if (!string.IsNullOrEmpty(_protocolName))
             {
-                result = result ^ StringComparer.OrdinalIgnoreCase.GetHashCode(_protocolName);
+                result ^= StringComparer.OrdinalIgnoreCase.GetHashCode(_protocolName);
             }
 
             if (!string.IsNullOrEmpty(_comment))
             {
-                result = result ^ _comment.GetHashCode();
+                result ^= _comment.GetHashCode();
             }
 
             return result;
         }
 
-        public static ViaHeaderValue Parse(string? input)
+        public static ViaHeaderValue Parse(string input)
         {
             int index = 0;
             return (ViaHeaderValue)GenericHeaderParser.SingleValueViaParser.ParseValue(input, null, ref index);
@@ -169,7 +169,7 @@ namespace System.Net.Http.Headers
 
             // If we reached the end of the string after reading protocolName/Version we return (we expect at least
             // <receivedBy> to follow). If reading protocolName/Version read 0 bytes, we return.
-            if ((current == startIndex) || (current == input.Length))
+            if ((current == 0) || (current == input.Length))
             {
                 return 0;
             }
@@ -183,9 +183,9 @@ namespace System.Net.Http.Headers
             }
 
             string receivedBy = input.Substring(current, receivedByLength);
-            current = current + receivedByLength;
+            current += receivedByLength;
 
-            current = current + HttpRuleParser.GetWhitespaceLength(input, current);
+            current += HttpRuleParser.GetWhitespaceLength(input, current);
 
             string? comment = null;
             if ((current < input.Length) && (input[current] == '('))
@@ -199,8 +199,8 @@ namespace System.Net.Http.Headers
 
                 comment = input.Substring(current, commentLength);
 
-                current = current + commentLength;
-                current = current + HttpRuleParser.GetWhitespaceLength(input, current);
+                current += commentLength;
+                current += HttpRuleParser.GetWhitespaceLength(input, current);
             }
 
             parsedValue = new ViaHeaderValue(protocolVersion, receivedBy!, protocolName, comment);
@@ -227,7 +227,7 @@ namespace System.Net.Http.Headers
 
             current = startIndex + protocolVersionOrNameLength;
             int whitespaceLength = HttpRuleParser.GetWhitespaceLength(input, current);
-            current = current + whitespaceLength;
+            current += whitespaceLength;
 
             if (current == input.Length)
             {
@@ -240,7 +240,7 @@ namespace System.Net.Http.Headers
                 protocolName = input.Substring(startIndex, protocolVersionOrNameLength);
 
                 current++; // skip the '/' delimiter
-                current = current + HttpRuleParser.GetWhitespaceLength(input, current);
+                current += HttpRuleParser.GetWhitespaceLength(input, current);
 
                 protocolVersionOrNameLength = HttpRuleParser.GetTokenLength(input, current);
 
@@ -251,9 +251,9 @@ namespace System.Net.Http.Headers
 
                 protocolVersion = input.Substring(current, protocolVersionOrNameLength);
 
-                current = current + protocolVersionOrNameLength;
+                current += protocolVersionOrNameLength;
                 whitespaceLength = HttpRuleParser.GetWhitespaceLength(input, current);
-                current = current + whitespaceLength;
+                current += whitespaceLength;
             }
             else
             {
@@ -275,10 +275,7 @@ namespace System.Net.Http.Headers
 
         private static void CheckReceivedBy(string receivedBy)
         {
-            if (string.IsNullOrEmpty(receivedBy))
-            {
-                throw new ArgumentException(SR.net_http_argument_empty_string, nameof(receivedBy));
-            }
+            ArgumentException.ThrowIfNullOrWhiteSpace(receivedBy);
 
             // 'receivedBy' can either be a host or a token. Since a token is a valid host, we only verify if the value
             // is a valid host.;

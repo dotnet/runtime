@@ -17,7 +17,7 @@ namespace System.Globalization.Tests
         [InlineData("en", "fr", "English", "anglais")]
         [InlineData("aa", "aa", "Afar", "Afar")]
         [InlineData("en-US", "en-US", "English (United States)", "English (United States)")]
-        [InlineData("en-US", "fr-FR", "English (United States)", "anglais (États-Unis)")]
+        [InlineData("en-US", "fr-FR", "English (United States)", "anglais (\u00C9tats-Unis)")]
         [InlineData("en-US", "de-DE", "English (United States)", "Englisch (Vereinigte Staaten)")]
         [InlineData("aa-ER", "aa-ER", "Afar (Eritrea)", "Afar (Eritrea)")]
         [InlineData("", "en-US", "Invariant Language (Invariant Country)", "Invariant Language (Invariant Country)")]
@@ -41,7 +41,7 @@ namespace System.Globalization.Tests
                 CultureInfo ci = new CultureInfo("en-US");
                 Assert.Equal("English (United States)", ci.DisplayName);
                 CultureInfo.CurrentUICulture = CultureInfo.GetCultureInfo("fr-FR");
-                Assert.Equal("anglais (États-Unis)", ci.DisplayName);
+                Assert.Equal("anglais (\u00C9tats-Unis)", ci.DisplayName);
                 CultureInfo.CurrentUICulture = CultureInfo.GetCultureInfo("de-DE");
                 Assert.Equal("Englisch (Vereinigte Staaten)", ci.DisplayName);
             }

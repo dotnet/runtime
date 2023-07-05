@@ -3,6 +3,7 @@
 
 using System;
 using System.Diagnostics;
+using System.Diagnostics.CodeAnalysis;
 using System.Threading;
 
 namespace Microsoft.Extensions.DependencyInjection.ServiceLookup
@@ -11,7 +12,8 @@ namespace Microsoft.Extensions.DependencyInjection.ServiceLookup
     {
         private readonly ServiceProvider _serviceProvider;
 
-        public DynamicServiceProviderEngine(ServiceProvider serviceProvider): base(serviceProvider)
+        [RequiresDynamicCode("Creates DynamicMethods")]
+        public DynamicServiceProviderEngine(ServiceProvider serviceProvider) : base(serviceProvider)
         {
             _serviceProvider = serviceProvider;
         }

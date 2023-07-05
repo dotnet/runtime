@@ -90,7 +90,7 @@ namespace System.Reflection.Runtime.BindingFlagSupport
         }
 
         /// <summary>
-        /// Returns a single member, null or throws AmbigousMatchException, for the Type.Get*(string name,...) family of apis.
+        /// Returns a single member, null or throws AmbiguousMatchException, for the Type.Get*(string name,...) family of apis.
         /// </summary>
         public M? Disambiguate()
         {
@@ -112,11 +112,11 @@ namespace System.Reflection.Runtime.BindingFlagSupport
                         // declared by the most derived type. Since QueriedMemberLists are sorted in order of decreasing derivation,
                         // that means we let the first match win - unless, of course, they're both the "most derived member".
                         if (match.DeclaringType!.Equals(challenger.DeclaringType))
-                            throw new AmbiguousMatchException();
+                            throw ThrowHelper.GetAmbiguousMatchException(match);
 
                         MemberPolicies<M> policies = MemberPolicies<M>.Default;
                         if (!policies.OkToIgnoreAmbiguity(match, challenger))
-                            throw new AmbiguousMatchException();
+                            throw ThrowHelper.GetAmbiguousMatchException(match);
                     }
                     else
                     {

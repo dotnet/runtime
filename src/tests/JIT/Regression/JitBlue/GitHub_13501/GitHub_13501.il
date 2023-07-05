@@ -8,9 +8,9 @@
 .assembly GitHub_13501 { }
 .assembly extern xunit.core {}
 
-.class private Program extends [mscorlib]System.Object
+.class public Program extends [mscorlib]System.Object
 {
-    .method hidebysig static int32 Main() cil managed
+    .method public hidebysig static int32 Main() cil managed
     {
         .custom instance void [xunit.core]Xunit.FactAttribute::.ctor() = (
             01 00 00 00

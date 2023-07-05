@@ -258,7 +258,7 @@ void CodeGen::genSetRegToConst(regNumber targetReg, var_types targetType, GenTre
         case GT_CNS_DBL:
         {
             GenTreeDblCon* dblConst   = tree->AsDblCon();
-            double         constValue = dblConst->AsDblCon()->gtDconVal;
+            double         constValue = dblConst->AsDblCon()->DconValue();
             // TODO-ARM-CQ: Do we have a faster/smaller way to generate 0.0 in thumb2 ISA ?
             if (targetType == TYP_FLOAT)
             {
@@ -286,6 +286,11 @@ void CodeGen::genSetRegToConst(regNumber targetReg, var_types targetType, GenTre
             }
         }
         break;
+
+        case GT_CNS_VEC:
+        {
+            unreached();
+        }
 
         default:
             unreached();
@@ -773,7 +778,7 @@ void CodeGen::genCodeForNegNot(GenTree* tree)
     genProduceReg(tree);
 }
 
-// Generate code for CpObj nodes wich copy structs that have interleaved
+// Generate code for CpObj nodes which copy structs that have interleaved
 // GC pointers.
 // For this case we'll generate a sequence of loads/stores in the case of struct
 // slots that don't contain GC pointers.  The generated code will look like:
@@ -794,7 +799,7 @@ void CodeGen::genCodeForNegNot(GenTree* tree)
 // bl CORINFO_HELP_ASSIGN_BYREF
 // ldr tempReg, [R13, #8]
 // str tempReg, [R14, #8]
-void CodeGen::genCodeForCpObj(GenTreeObj* cpObjNode)
+void CodeGen::genCodeForCpObj(GenTreeBlk* cpObjNode)
 {
     GenTree*  dstAddr       = cpObjNode->Addr();
     GenTree*  source        = cpObjNode->Data();
@@ -816,7 +821,7 @@ void CodeGen::genCodeForCpObj(GenTreeObj* cpObjNode)
         sourceIsLocal = true;
     }
 
-    bool dstOnStack = dstAddr->gtSkipReloadOrCopy()->OperIsLocalAddr();
+    bool dstOnStack = dstAddr->gtSkipReloadOrCopy()->OperIs(GT_LCL_ADDR);
 
 #ifdef DEBUG
     assert(!dstAddr->isContained());
@@ -836,7 +841,7 @@ void CodeGen::genCodeForCpObj(GenTreeObj* cpObjNode)
     regNumber tmpReg = cpObjNode->ExtractTempReg();
     assert(genIsValidIntReg(tmpReg));
 
-    if (cpObjNode->gtFlags & GTF_BLK_VOLATILE)
+    if (cpObjNode->IsVolatile())
     {
         // issue a full memory barrier before & after a volatile CpObj operation
         instGen_MemoryBarrier();
@@ -883,7 +888,7 @@ void CodeGen::genCodeForCpObj(GenTreeObj* cpObjNode)
         assert(gcPtrCount == 0);
     }
 
-    if (cpObjNode->gtFlags & GTF_BLK_VOLATILE)
+    if (cpObjNode->IsVolatile())
     {
         // issue a full memory barrier before & after a volatile CpObj operation
         instGen_MemoryBarrier();
@@ -1004,12 +1009,9 @@ void CodeGen::genCodeForStoreLclFld(GenTreeLclFld* tree)
     unsigned   varNum = tree->GetLclNum();
     LclVarDsc* varDsc = compiler->lvaGetDesc(varNum);
 
-    // Ensure that lclVar nodes are typed correctly.
-    assert(!varDsc->lvNormalizeOnStore() || targetType == genActualType(varDsc->TypeGet()));
-
     GenTree*  data    = tree->gtOp1;
     regNumber dataReg = REG_NA;
-    genConsumeReg(data);
+    genConsumeRegs(data);
 
     if (data->isContained())
     {
@@ -1068,22 +1070,19 @@ void CodeGen::genCodeForStoreLclVar(GenTreeLclVar* tree)
 {
     GenTree* data       = tree->gtOp1;
     GenTree* actualData = data->gtSkipReloadOrCopy();
-    unsigned regCount   = 1;
-    // var = call, where call returns a multi-reg return value
-    // case is handled separately.
+
+    // Stores from a multi-reg source are handled separately.
     if (actualData->IsMultiRegNode())
     {
-        regCount = actualData->GetMultiRegCount(compiler);
-        if (regCount > 1)
-        {
-            genMultiRegStoreToLocal(tree);
-        }
+        genMultiRegStoreToLocal(tree);
     }
-    if (regCount == 1)
+    else
     {
         unsigned   varNum     = tree->GetLclNum();
         LclVarDsc* varDsc     = compiler->lvaGetDesc(varNum);
         var_types  targetType = varDsc->GetRegisterType(tree);
+
+        emitter* emit = GetEmitter();
 
         if (targetType == TYP_LONG)
         {
@@ -1117,21 +1116,26 @@ void CodeGen::genCodeForStoreLclVar(GenTreeLclVar* tree)
                 instruction ins  = ins_StoreFromSrc(dataReg, targetType);
                 emitAttr    attr = emitTypeSize(targetType);
 
-                emitter* emit = GetEmitter();
                 emit->emitIns_S_R(ins, attr, dataReg, varNum, /* offset */ 0);
-
-                // Updating variable liveness after instruction was emitted
-                genUpdateLife(tree);
-
-                varDsc->SetRegNum(REG_STK);
             }
             else // store into register (i.e move into register)
             {
                 // Assign into targetReg when dataReg (from op1) is not the same register
-                inst_Mov(targetType, targetReg, dataReg, /* canSkip */ true);
-
-                genProduceReg(tree);
+                // Only zero/sign extend if we are using general registers.
+                if (varTypeIsIntegral(targetType) && emit->isGeneralRegister(targetReg) &&
+                    emit->isGeneralRegister(dataReg))
+                {
+                    // We use 'emitActualTypeSize' as the instructions require 4BYTE.
+                    inst_Mov_Extend(targetType, /* srcInReg */ true, targetReg, dataReg, /* canSkip */ true,
+                                    emitActualTypeSize(targetType));
+                }
+                else
+                {
+                    inst_Mov(targetType, targetReg, dataReg, /* canSkip */ true);
+                }
             }
+
+            genUpdateLifeStore(tree, targetReg, varDsc);
         }
     }
 }
@@ -1260,13 +1264,9 @@ void CodeGen::genCodeForCompare(GenTreeOp* tree)
     regNumber targetReg = tree->GetRegNum();
     emitter*  emit      = GetEmitter();
 
-    genConsumeIfReg(op1);
-    genConsumeIfReg(op2);
-
     if (varTypeIsFloating(op1Type))
     {
         assert(op1Type == op2Type);
-        assert(!tree->OperIs(GT_CMP));
         emit->emitInsBinary(INS_vcmp, emitTypeSize(op1Type), op1, op2);
         // vmrs with register 0xf has special meaning of transferring flags
         emit->emitIns_R(INS_vmrs, EA_4BYTE, REG_R15);
@@ -1284,6 +1284,22 @@ void CodeGen::genCodeForCompare(GenTreeOp* tree)
         inst_SETCC(GenCondition::FromRelop(tree), tree->TypeGet(), targetReg);
         genProduceReg(tree);
     }
+}
+
+//------------------------------------------------------------------------
+// genCodeForJTrue: Produce code for a GT_JTRUE node.
+//
+// Arguments:
+//    jtrue - the node
+//
+void CodeGen::genCodeForJTrue(GenTreeOp* jtrue)
+{
+    assert(compiler->compCurBB->bbJumpKind == BBJ_COND);
+
+    GenTree*  op  = jtrue->gtGetOp1();
+    regNumber reg = genConsumeReg(op);
+    inst_RV_RV(INS_tst, reg, reg, genActualType(op));
+    inst_JMP(EJ_ne, compiler->compCurBB->bbJumpDest);
 }
 
 //------------------------------------------------------------------------
@@ -1329,7 +1345,7 @@ void CodeGen::genCodeForStoreInd(GenTreeStoreInd* tree)
 
     assert(!varTypeIsFloating(type) || (type == data->TypeGet()));
 
-    GCInfo::WriteBarrierForm writeBarrierForm = gcInfo.gcIsWriteBarrierCandidate(tree, data);
+    GCInfo::WriteBarrierForm writeBarrierForm = gcInfo.gcIsWriteBarrierCandidate(tree);
     if (writeBarrierForm != GCInfo::WBF_NoBarrier)
     {
         // data and addr must be in registers.
@@ -1901,12 +1917,6 @@ void CodeGen::genAllocLclFrame(unsigned frameSize, regNumber initReg, bool* pIni
     }
 
     compiler->unwindAllocStack(frameSize);
-#ifdef USING_SCOPE_INFO
-    if (!doubleAlignOrFramePointerUsed())
-    {
-        psiAdjustStackLevel(frameSize);
-    }
-#endif // USING_SCOPE_INFO
 }
 
 void CodeGen::genPushFltRegs(regMaskTP regMask)
@@ -2269,7 +2279,7 @@ void CodeGen::genPopCalleeSavedRegisters(bool jmpEpilog)
  *      |Pre-spill regs space   |   // This is only necessary to keep the PSP slot at the same offset
  *      |                       |   // in function and funclet
  *      |-----------------------|
- *      |        PSP slot       |   // Omitted in CoreRT ABI
+ *      |        PSP slot       |   // Omitted in NativeAOT ABI
  *      |-----------------------|
  *      ~  possible 4 byte pad  ~
  *      ~     for alignment     ~
@@ -2341,7 +2351,7 @@ void CodeGen::genFuncletProlog(BasicBlock* block)
     // This is the end of the OS-reported prolog for purposes of unwinding
     compiler->unwindEndProlog();
 
-    // If there is no PSPSym (CoreRT ABI), we are done.
+    // If there is no PSPSym (NativeAOT ABI), we are done.
     if (compiler->lvaPSPSym == BAD_VAR_NUM)
     {
         return;
@@ -2454,12 +2464,16 @@ void CodeGen::genCaptureFuncletPrologEpilogInfo()
         unsigned preSpillRegArgSize                = genCountBits(regSet.rsMaskPreSpillRegs(true)) * REGSIZE_BYTES;
         genFuncletInfo.fiFunctionCallerSPtoFPdelta = preSpillRegArgSize + 2 * REGSIZE_BYTES;
 
-        regMaskTP rsMaskSaveRegs = regSet.rsMaskCalleeSaved;
-        unsigned  saveRegsCount  = genCountBits(rsMaskSaveRegs);
-        unsigned  saveRegsSize   = saveRegsCount * REGSIZE_BYTES; // bytes of regs we're saving
+        regMaskTP rsMaskSaveRegs  = regSet.rsMaskCalleeSaved;
+        unsigned  saveRegsCount   = genCountBits(rsMaskSaveRegs);
+        unsigned  saveRegsSize    = saveRegsCount * REGSIZE_BYTES; // bytes of regs we're saving
+        unsigned  saveSizeWithPSP = saveRegsSize + REGSIZE_BYTES /* PSP sym */;
+        if (compiler->lvaMonAcquired != BAD_VAR_NUM)
+        {
+            saveSizeWithPSP += TARGET_POINTER_SIZE;
+        }
         assert(compiler->lvaOutgoingArgSpaceSize % REGSIZE_BYTES == 0);
-        unsigned funcletFrameSize =
-            preSpillRegArgSize + saveRegsSize + REGSIZE_BYTES /* PSP slot */ + compiler->lvaOutgoingArgSpaceSize;
+        unsigned funcletFrameSize = preSpillRegArgSize + saveSizeWithPSP + compiler->lvaOutgoingArgSpaceSize;
 
         unsigned funcletFrameSizeAligned  = roundUp(funcletFrameSize, STACK_ALIGN);
         unsigned funcletFrameAlignmentPad = funcletFrameSizeAligned - funcletFrameSize;

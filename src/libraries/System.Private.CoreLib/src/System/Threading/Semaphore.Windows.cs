@@ -23,7 +23,7 @@ namespace System.Threading
             Debug.Assert(maximumCount >= 1);
             Debug.Assert(initialCount <= maximumCount);
 
-#if TARGET_UNIX || TARGET_BROWSER
+#if TARGET_UNIX || TARGET_BROWSER || TARGET_WASI
             if (name != null)
                 throw new PlatformNotSupportedException(SR.PlatformNotSupported_NamedSynchronizationPrimitives);
 #endif
@@ -32,6 +32,8 @@ namespace System.Threading
             int errorCode = Marshal.GetLastPInvokeError();
             if (myHandle.IsInvalid)
             {
+                myHandle.Dispose();
+
                 if (!string.IsNullOrEmpty(name) && errorCode == Interop.Errors.ERROR_INVALID_HANDLE)
                     throw new WaitHandleCannotBeOpenedException(
                         SR.Format(SR.Threading_WaitHandleCannotBeOpenedException_InvalidHandle, name));
@@ -54,6 +56,8 @@ namespace System.Threading
             {
                 result = null;
                 int errorCode = Marshal.GetLastPInvokeError();
+
+                myHandle.Dispose();
 
                 if (errorCode == Interop.Errors.ERROR_FILE_NOT_FOUND || errorCode == Interop.Errors.ERROR_INVALID_NAME)
                     return OpenExistingResult.NameNotFound;

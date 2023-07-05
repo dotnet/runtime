@@ -55,6 +55,7 @@ namespace System.Security.Cryptography.Tests
         [InlineData(64, 64, false)]
         public static void Roundtrip(int inputBlockSize, int outputBlockSize, bool canTransformMultipleBlocks)
         {
+            const string ExpectedString = LoremText + LoremText + LoremText + LoremText + LoremText;
             ICryptoTransform encryptor = new IdentityTransform(inputBlockSize, outputBlockSize, canTransformMultipleBlocks);
             ICryptoTransform decryptor = new IdentityTransform(inputBlockSize, outputBlockSize, canTransformMultipleBlocks);
 
@@ -88,6 +89,10 @@ namespace System.Security.Cryptography.Tests
                 encryptStream.WriteAsync(toWrite, 0, toWrite.Length).GetAwaiter().GetResult();
                 Assert.False(encryptStream.HasFlushedFinalBlock);
 
+                // Write span
+                encryptStream.Write(toWrite.AsSpan());
+                Assert.False(encryptStream.HasFlushedFinalBlock);
+
                 // Flush (nops)
                 encryptStream.Flush();
                 encryptStream.FlushAsync().GetAwaiter().GetResult();
@@ -110,9 +115,7 @@ namespace System.Security.Cryptography.Tests
 
                 using (StreamReader reader = new StreamReader(decryptStream))
                 {
-                    Assert.Equal(
-                        LoremText + LoremText + LoremText + LoremText,
-                        reader.ReadToEnd());
+                    Assert.Equal(ExpectedString, reader.ReadToEnd());
                 }
             }
 
@@ -121,9 +124,7 @@ namespace System.Security.Cryptography.Tests
             using (CryptoStream decryptStream = new CryptoStream(stream, decryptor, CryptoStreamMode.Read))
             using (StreamReader reader = new StreamReader(decryptStream))
             {
-                Assert.Equal(
-                    LoremText + LoremText + LoremText + LoremText,
-                    reader.ReadToEndAsync().GetAwaiter().GetResult());
+                Assert.Equal(ExpectedString, reader.ReadToEndAsync().GetAwaiter().GetResult());
             }
 
             // Read/decrypt using a small buffer to force multiple calls to Read
@@ -131,17 +132,14 @@ namespace System.Security.Cryptography.Tests
             using (CryptoStream decryptStream = new CryptoStream(stream, decryptor, CryptoStreamMode.Read))
             using (StreamReader reader = new StreamReader(decryptStream, Encoding.UTF8, true, bufferSize: 10))
             {
-                Assert.Equal(
-                    LoremText + LoremText + LoremText + LoremText,
-                    reader.ReadToEndAsync().GetAwaiter().GetResult());
+                Assert.Equal(ExpectedString, reader.ReadToEndAsync().GetAwaiter().GetResult());
             }
 
             // Read/decrypt one byte at a time with ReadByte
             stream = new MemoryStream(stream.ToArray()); // CryptoStream.Dispose disposes the stream
             using (CryptoStream decryptStream = new CryptoStream(stream, decryptor, CryptoStreamMode.Read))
             {
-                string expectedStr = LoremText + LoremText + LoremText + LoremText;
-                foreach (char c in expectedStr)
+                foreach (char c in ExpectedString)
                 {
                     Assert.Equal(c, decryptStream.ReadByte()); // relies on LoremText being ASCII
                 }
@@ -302,14 +300,16 @@ namespace System.Security.Cryptography.Tests
                 aes.Key = aes.IV = new byte[] { 0x0, 0x1, 0x2, 0x3, 0x4, 0x5, 0x6, 0x7, 0x8, 0x9, 0xA, 0xB, 0xC, 0xD, 0xE, 0xF, };
 
                 var memoryStream = new MemoryStream();
-                using (var cryptoStream = new CryptoStream(memoryStream, aes.CreateEncryptor(), CryptoStreamMode.Write, leaveOpen: true))
+                using (ICryptoTransform encryptor = aes.CreateEncryptor())
+                using (var cryptoStream = new CryptoStream(memoryStream, encryptor, CryptoStreamMode.Write, leaveOpen: true))
                 {
-                    cryptoStream.Write(Encoding.ASCII.GetBytes("Sample string that's bigger than cryptoAlg.BlockSize"));
+                    cryptoStream.Write("Sample string that's bigger than cryptoAlg.BlockSize"u8);
                     cryptoStream.FlushFinalBlock();
                 }
 
                 memoryStream.Position = 0;
-                using (var cryptoStream = new CryptoStream(memoryStream, aes.CreateDecryptor(), CryptoStreamMode.Read))
+                using (ICryptoTransform decryptor = aes.CreateDecryptor())
+                using (var cryptoStream = new CryptoStream(memoryStream, decryptor, CryptoStreamMode.Read))
                 {
                     cryptoStream.ReadByte(); // Partially read the CryptoStream before disposing it.
                 }

@@ -15,6 +15,9 @@ namespace System.Data.Common
     [UnconditionalSuppressMessage("ReflectionAnalysis", "IL2113:ReflectionToRequiresUnreferencedCode",
         Justification = "The use of GetType preserves ICustomTypeDescriptor members with RequiresUnreferencedCode, but the GetType callsites either "
             + "occur in RequiresUnreferencedCode scopes, or have individually justified suppressions.")]
+    [UnconditionalSuppressMessage("ReflectionAnalysis", "IL2112:ReflectionToRequiresUnreferencedCode",
+        Justification = "The use of GetType preserves implementation of ICustomTypeDescriptor members with RequiresUnreferencedCode, but the GetType callsites either "
+            + "occur in RequiresUnreferencedCode scopes, or have individually justified suppressions.")]
     [DynamicallyAccessedMembers(DynamicallyAccessedMemberTypes.All)]
     public class DbConnectionStringBuilder : IDictionary, ICustomTypeDescriptor
     {
@@ -336,7 +339,7 @@ namespace System.Data.Common
             return Dictionary.GetEnumerator();
         }
 
-        private string ObjectToString(object keyword)
+        private static string ObjectToString(object keyword)
         {
             try
             {
@@ -384,7 +387,7 @@ namespace System.Data.Common
             return CurrentValues.TryGetValue(keyword, out value);
         }
 
-        internal Attribute[] GetAttributesFromCollection(AttributeCollection collection)
+        internal static Attribute[] GetAttributesFromCollection(AttributeCollection collection)
         {
             Attribute[] attributes = new Attribute[collection.Count];
             collection.CopyTo(attributes, 0);

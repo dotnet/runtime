@@ -15,7 +15,6 @@ namespace System.Security.Cryptography
     // preexisting contract from the .NET Framework locks all of these into deriving directly from HMAC, it can't be helped.
     //
 
-    [UnsupportedOSPlatform("browser")]
     public class HMACSHA256 : HMAC
     {
         /// <summary>
@@ -33,8 +32,10 @@ namespace System.Security.Cryptography
         {
         }
 
-        public HMACSHA256(byte[] key!!)
+        public HMACSHA256(byte[] key)
         {
+            ArgumentNullException.ThrowIfNull(key);
+
             this.HashName = HashAlgorithmNames.SHA256;
             _hMacCommon = new HMACCommon(HashAlgorithmNames.SHA256, key, BlockSize);
             base.Key = _hMacCommon.ActualKey!;
@@ -82,8 +83,11 @@ namespace System.Security.Cryptography
         /// <exception cref="ArgumentNullException">
         /// <paramref name="key" /> or <paramref name="source" /> is <see langword="null" />.
         /// </exception>
-        public static byte[] HashData(byte[] key!!, byte[] source!!)
+        public static byte[] HashData(byte[] key, byte[] source)
         {
+            ArgumentNullException.ThrowIfNull(key);
+            ArgumentNullException.ThrowIfNull(source);
+
             return HashData(new ReadOnlySpan<byte>(key), new ReadOnlySpan<byte>(source));
         }
 
@@ -171,15 +175,17 @@ namespace System.Security.Cryptography
         ///   <paramref name="source" /> does not support reading.
         ///   </p>
         /// </exception>
-        public static int HashData(ReadOnlySpan<byte> key, Stream source!!, Span<byte> destination)
+        public static int HashData(ReadOnlySpan<byte> key, Stream source, Span<byte> destination)
         {
+            ArgumentNullException.ThrowIfNull(source);
+
             if (destination.Length < HashSizeInBytes)
                 throw new ArgumentException(SR.Argument_DestinationTooShort, nameof(destination));
 
             if (!source.CanRead)
                 throw new ArgumentException(SR.Argument_StreamNotReadable, nameof(source));
 
-            return LiteHashProvider.HmacStream(HashAlgorithmNames.SHA256, HashSizeInBytes, key, source, destination);
+            return LiteHashProvider.HmacStream(HashAlgorithmNames.SHA256, key, source, destination);
         }
 
         /// <summary>
@@ -194,8 +200,10 @@ namespace System.Security.Cryptography
         /// <exception cref="ArgumentException">
         ///   <paramref name="source" /> does not support reading.
         /// </exception>
-        public static byte[] HashData(ReadOnlySpan<byte> key, Stream source!!)
+        public static byte[] HashData(ReadOnlySpan<byte> key, Stream source)
         {
+            ArgumentNullException.ThrowIfNull(source);
+
             if (!source.CanRead)
                 throw new ArgumentException(SR.Argument_StreamNotReadable, nameof(source));
 
@@ -214,8 +222,10 @@ namespace System.Security.Cryptography
         /// <exception cref="ArgumentException">
         ///   <paramref name="source" /> does not support reading.
         /// </exception>
-        public static byte[] HashData(byte[] key!!, Stream source)
+        public static byte[] HashData(byte[] key, Stream source)
         {
+            ArgumentNullException.ThrowIfNull(key);
+
             return HashData(new ReadOnlySpan<byte>(key), source);
         }
 
@@ -235,12 +245,14 @@ namespace System.Security.Cryptography
         /// <exception cref="ArgumentException">
         ///   <paramref name="source" /> does not support reading.
         /// </exception>
-        public static ValueTask<byte[]> HashDataAsync(ReadOnlyMemory<byte> key, Stream source!!, CancellationToken cancellationToken = default)
+        public static ValueTask<byte[]> HashDataAsync(ReadOnlyMemory<byte> key, Stream source, CancellationToken cancellationToken = default)
         {
+            ArgumentNullException.ThrowIfNull(source);
+
             if (!source.CanRead)
                 throw new ArgumentException(SR.Argument_StreamNotReadable, nameof(source));
 
-            return LiteHashProvider.HmacStreamAsync(HashAlgorithmNames.SHA256, HashSizeInBytes, key.Span, source, cancellationToken);
+            return LiteHashProvider.HmacStreamAsync(HashAlgorithmNames.SHA256, key.Span, source, cancellationToken);
         }
 
         /// <summary>
@@ -259,8 +271,10 @@ namespace System.Security.Cryptography
         /// <exception cref="ArgumentException">
         ///   <paramref name="source" /> does not support reading.
         /// </exception>
-        public static ValueTask<byte[]> HashDataAsync(byte[] key!!, Stream source, CancellationToken cancellationToken = default)
+        public static ValueTask<byte[]> HashDataAsync(byte[] key, Stream source, CancellationToken cancellationToken = default)
         {
+            ArgumentNullException.ThrowIfNull(key);
+
             return HashDataAsync(new ReadOnlyMemory<byte>(key), source, cancellationToken);
         }
 
@@ -290,10 +304,12 @@ namespace System.Security.Cryptography
         /// </exception>
         public static ValueTask<int> HashDataAsync(
             ReadOnlyMemory<byte> key,
-            Stream source!!,
+            Stream source,
             Memory<byte> destination,
             CancellationToken cancellationToken = default)
         {
+            ArgumentNullException.ThrowIfNull(source);
+
             if (destination.Length < HashSizeInBytes)
                 throw new ArgumentException(SR.Argument_DestinationTooShort, nameof(destination));
 
@@ -302,7 +318,6 @@ namespace System.Security.Cryptography
 
             return LiteHashProvider.HmacStreamAsync(
                 HashAlgorithmNames.SHA256,
-                HashSizeInBytes,
                 key.Span,
                 source,
                 destination,

@@ -59,14 +59,14 @@ OFFSETOF__Thread__m_alloc_context__alloc_limit      = OFFSETOF__Thread__m_rgbAll
 
 RhpNewFast_RarePath:
         mov         x1, #0
-        b           RhpNewObject
+        b           C_FUNC(RhpNewObject)
     LEAF_END RhpNewFast, _TEXT
 
 // Allocate non-array object with finalizer.
 //  x0 == MethodTable
     LEAF_ENTRY RhpNewFinalizable, _TEXT
         mov         x1, #GC_ALLOC_FINALIZE
-        b           RhpNewObject
+        b           C_FUNC(RhpNewObject)
     LEAF_END RhpNewFinalizable, _TEXT
 
 // Allocate non-array object.
@@ -85,7 +85,7 @@ RhpNewFast_RarePath:
 
         // Call the rest of the allocation helper.
         // void* RhpGcAlloc(MethodTable *pEEType, uint32_t uFlags, uintptr_t numElements, void * pTransitionFrame)
-        bl          RhpGcAlloc
+        bl          C_FUNC(RhpGcAlloc)
 
         // Set the new objects MethodTable pointer on success.
         cbz         x0, NewOutOfMemory
@@ -101,7 +101,7 @@ NewOutOfMemory:
         mov         x1, 0              // Indicate that we should throw OOM.
 
         POP_COOP_PINVOKE_FRAME
-        b RhExceptionHandling_FailedAllocation
+        b C_FUNC(RhExceptionHandling_FailedAllocation)
 
     NESTED_END RhpNewObject, _TEXT
 
@@ -139,7 +139,7 @@ NewOutOfMemory:
         add         x2, x2, x12
         ldr         x12, [x3, #OFFSETOF__Thread__m_alloc_context__alloc_limit]
         cmp         x2, x12
-        bhi         RhpNewArrayRare
+        bhi         C_FUNC(RhpNewArrayRare)
 
         // Reload new object address into r12.
         ldr         x12, [x3, #OFFSETOF__Thread__m_alloc_context__alloc_ptr]
@@ -163,7 +163,7 @@ StringSizeOverflow:
 
         // x0 holds MethodTable pointer already
         mov         x1, #1                  // Indicate that we should throw OverflowException
-        b           RhExceptionHandling_FailedAllocation
+        b           C_FUNC(RhExceptionHandling_FailedAllocation)
     LEAF_END    RhNewString, _Text
 
 // Allocate one dimensional, zero based array (SZARRAY).
@@ -204,7 +204,7 @@ StringSizeOverflow:
         add         x2, x2, x12
         ldr         x12, [x3, #OFFSETOF__Thread__m_alloc_context__alloc_limit]
         cmp         x2, x12
-        bhi         RhpNewArrayRare
+        bhi         C_FUNC(RhpNewArrayRare)
 
         // Reload new object address into x12.
         ldr         x12, [x3, #OFFSETOF__Thread__m_alloc_context__alloc_ptr]
@@ -228,7 +228,7 @@ ArraySizeOverflow:
 
         // x0 holds MethodTable pointer already
         mov         x1, #1                  // Indicate that we should throw OverflowException
-        b           RhExceptionHandling_FailedAllocation
+        b           C_FUNC(RhExceptionHandling_FailedAllocation)
     LEAF_END    RhpNewArray, _TEXT
 
 // Allocate one dimensional, zero based array (SZARRAY) using the slow path that calls a runtime helper.
@@ -251,7 +251,7 @@ ArraySizeOverflow:
         mov         x1, #0              // uFlags
 
         // void* RhpGcAlloc(MethodTable *pEEType, uint32_t uFlags, uintptr_t numElements, void * pTransitionFrame)
-        bl          RhpGcAlloc
+        bl          C_FUNC(RhpGcAlloc)
 
         // Set the new objects MethodTable pointer and length on success.
         cbz         x0, ArrayOutOfMemory
@@ -267,6 +267,6 @@ ArrayOutOfMemory:
         mov         x1, 0               // Indicate that we should throw OOM.
 
         POP_COOP_PINVOKE_FRAME
-        b RhExceptionHandling_FailedAllocation
+        b C_FUNC(RhExceptionHandling_FailedAllocation)
 
     NESTED_END RhpNewArrayRare, _TEXT

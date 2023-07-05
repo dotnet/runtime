@@ -82,7 +82,7 @@ namespace System.Reflection.Emit.Tests
             ConstructorBuilder constructor = type.DefineConstructor(MethodAttributes.Static, CallingConventions.Standard, new Type[0]);
             constructor.GetILGenerator().Emit(OpCodes.Ret);
 
-            Type createdType = type.CreateTypeInfo().AsType();
+            Type createdType = type.CreateType();
             Assert.Equal(1, createdType.GetConstructors(BindingFlags.Static | BindingFlags.NonPublic).Length);
         }
 
@@ -94,7 +94,7 @@ namespace System.Reflection.Emit.Tests
             type.DefineConstructor(MethodAttributes.Public, CallingConventions.Standard, new Type[0]).GetILGenerator().Emit(OpCodes.Ret);
             type.DefineConstructor(MethodAttributes.Public, CallingConventions.Standard, new Type[0]).GetILGenerator().Emit(OpCodes.Ret);
 
-            Type createdType = type.CreateTypeInfo().AsType();
+            Type createdType = type.CreateType();
             ConstructorInfo[] constructors = createdType.GetConstructors();
             Assert.Equal(2, constructors.Length);
             Assert.Equal(constructors[0].GetParameters(), constructors[1].GetParameters());
@@ -104,7 +104,7 @@ namespace System.Reflection.Emit.Tests
         public void DefineConstructor_TypeAlreadyCreated_ThrowsInvalidOperationException()
         {
             TypeBuilder type = Helpers.DynamicType(TypeAttributes.Public);
-            type.CreateTypeInfo().AsType();
+            type.CreateType();
             Assert.Throws<InvalidOperationException>(() => type.DefineConstructor(MethodAttributes.Public, CallingConventions.Standard, new Type[0]));
         }
 

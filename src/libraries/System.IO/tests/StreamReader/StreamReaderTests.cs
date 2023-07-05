@@ -15,6 +15,8 @@ namespace System.IO.Tests
 {
     public partial class StreamReaderTests
     {
+        private const string LowerAlpha = "abcdefghijklmnopqrstuvwxyz";
+
         protected virtual Stream CreateStream()
         {
             return new MemoryStream();
@@ -132,61 +134,6 @@ namespace System.IO.Tests
             Assert.Equal(token, ex.CancellationToken);
         }
 
-        [OuterLoop("It creates 1GB file")]
-        [Fact]
-        [SkipOnPlatform(TestPlatforms.Browser, "Not supported on Browser.")]
-        public async Task ReadToEndAsync_WithCancellation()
-        {
-            string path = GetTestFilePath();
-            CreateLargeFile(path);
-
-            using StreamReader reader = File.OpenText(path);
-            using CancellationTokenSource cts = new();
-            var token = cts.Token;
-
-            var ex = await Assert.ThrowsAnyAsync<OperationCanceledException>(async () =>
-            {
-                Task<string> readToEndTask = reader.ReadToEndAsync(token);
-
-                // This is a time-sensitive test where the cancellation needs to happen before the async read completes.
-                // A sleep may be too long a delay, so spin-wait for a very short duration before canceling.
-                SpinWait spinner = default;
-                while (!spinner.NextSpinWillYield)
-                {
-                    spinner.SpinOnce(sleep1Threshold: -1);
-                }
-
-                cts.Cancel();
-                await readToEndTask;
-            });
-            Assert.Equal(token, ex.CancellationToken);
-        }
-
-        private void CreateLargeFile(string path)
-        {
-            const string sentence = "A very large file used for testing StreamReader cancellation. 0123456789012345678901234567890123456789.";
-            const int repeatCount = 10_000_000;
-            Encoding encoding = Encoding.UTF8;
-
-            using FileStream fs = File.OpenWrite(path);
-            long fileSize = encoding.GetByteCount(sentence) * repeatCount;
-
-            try
-            {
-                fs.SetLength(fileSize);
-            }
-            catch (IOException)
-            {
-                throw new SkipTestException($"Unable to run {ReadToEndAsync_WithCancellation} due to lack of available disk space");
-            }
-
-            using StreamWriter streamWriter = new StreamWriter(fs, encoding);
-            for (int i = 0; i < repeatCount; i++)
-            {
-                streamWriter.WriteLine(sentence);
-            }
-        }
-
         [Fact]
         public void GetBaseStream()
         {
@@ -244,7 +191,7 @@ namespace System.IO.Tests
         }
 
         [Fact]
-        public void ArgumentOutOfRangeOnNegativCount()
+        public void ArgumentOutOfRangeOnNegativeCount()
         {
             var sr = GetCharArrayStream().Item2;
             AssertExtensions.Throws<ArgumentException>(null, () => sr.Read(new char[0], 0, 1));
@@ -455,12 +402,8 @@ namespace System.IO.Tests
         [InlineData(100, 50, 101)]
         public void Read_ReadsExpectedData(int readLength, int totalLength, int bufferSize)
         {
-            var data = new char[totalLength];
             var r = new Random(42);
-            for (int i = 0; i < data.Length; i++)
-            {
-                data[i] = (char)('a' + r.Next(0, 26));
-            }
+            char[] data = r.GetItems<char>(LowerAlpha, totalLength);
 
             var result = new char[data.Length];
             Span<char> dst = result;
@@ -486,12 +429,8 @@ namespace System.IO.Tests
         [InlineData(100, 50, 101)]
         public void ReadBlock_ReadsExpectedData(int readLength, int totalLength, int bufferSize)
         {
-            var data = new char[totalLength];
             var r = new Random(42);
-            for (int i = 0; i < data.Length; i++)
-            {
-                data[i] = (char)('a' + r.Next(0, 26));
-            }
+            char[] data = r.GetItems<char>(LowerAlpha, totalLength);
 
             var result = new char[data.Length];
             Span<char> dst = result;
@@ -517,12 +456,8 @@ namespace System.IO.Tests
         [InlineData(100, 50, 101)]
         public async Task ReadAsync_ReadsExpectedData(int readLength, int totalLength, int bufferSize)
         {
-            var data = new char[totalLength];
             var r = new Random(42);
-            for (int i = 0; i < data.Length; i++)
-            {
-                data[i] = (char)('a' + r.Next(0, 26));
-            }
+            char[] data = r.GetItems<char>(LowerAlpha, totalLength);
 
             var result = new char[data.Length];
             Memory<char> dst = result;
@@ -548,12 +483,9 @@ namespace System.IO.Tests
         [InlineData(100, 50, 101)]
         public async Task ReadBlockAsync_ReadsExpectedData(int readLength, int totalLength, int bufferSize)
         {
-            var data = new char[totalLength];
             var r = new Random(42);
-            for (int i = 0; i < data.Length; i++)
-            {
-                data[i] = (char)('a' + r.Next(0, 26));
-            }
+            char[] data = r.GetItems<char>(LowerAlpha, totalLength);
+
 
             var result = new char[data.Length];
             Memory<char> dst = result;
@@ -610,7 +542,8 @@ namespace System.IO.Tests
         [InlineData(1, false)]
         [InlineData(1, true)]
         [SkipOnPlatform(TestPlatforms.Browser, "Not supported on Browser.")]
-        [ActiveIssue("https://github.com/dotnet/runtime/issues/51390", TestPlatforms.iOS | TestPlatforms.tvOS | TestPlatforms.MacCatalyst)]
+        [SkipOnPlatform(TestPlatforms.LinuxBionic, "SElinux blocks UNIX sockets in our CI environment")]
+        [SkipOnPlatform(TestPlatforms.iOS | TestPlatforms.tvOS, "iOS/tvOS blocks binding to UNIX sockets")]
         public async Task ReadAsync_Canceled_ThrowsException(int method, bool precanceled)
         {
             Func<StreamReader, CancellationToken, Task<int>> func = method switch
@@ -711,7 +644,7 @@ namespace System.IO.Tests
                     Assert.Equal(Encoding.UTF8, sr.CurrentEncoding);
                 }
 
-                // check disabled BOM, default enconding and leaveOpen
+                // check disabled BOM, default encoding and leaveOpen
                 tempStream.Seek(0, SeekOrigin.Begin);
                 using (var sr = new StreamReader(tempStream, detectEncodingFromByteOrderMarks: false, leaveOpen: true))
                 {
@@ -729,6 +662,159 @@ namespace System.IO.Tests
                 }
                 Assert.False(tempStream.CanRead);
             }
+        }
+
+        [Fact]
+        public void Read_ShortStream_PerformsFinalFlushCorrectly()
+        {
+            MemoryStream memStream = new MemoryStream(new byte[] { 0x61 /* 'a' */, 0xF0 });
+
+            // First, use ReadToEnd API.
+
+            memStream.Position = 0;
+            StreamReader reader = new StreamReader(memStream, Encoding.UTF8);
+            Assert.Equal("a\uFFFD", reader.ReadToEnd());
+
+            // Next, use Read() API.
+
+            memStream.Position = 0;
+            reader = new StreamReader(memStream, Encoding.UTF8);
+            Assert.Equal('a', reader.Read());
+            Assert.Equal('\uFFFD', reader.Read());
+            Assert.Equal(-1, reader.Read());
+
+            // Next, use Read(Span<char>) API.
+
+            StringBuilder builder = new StringBuilder();
+            Span<char> destBuffer = new char[1024];
+            memStream.Position = 0;
+            reader = new StreamReader(memStream, Encoding.UTF8);
+            int charsRead;
+            while ((charsRead = reader.Read(destBuffer)) > 0)
+            {
+                builder.Append(destBuffer.Slice(0, charsRead));
+            }
+            Assert.Equal("a\uFFFD", builder.ToString());
+
+            // Finally, use ReadLine API.
+
+            memStream.Position = 0;
+            reader = new StreamReader(memStream, Encoding.UTF8);
+            Assert.Equal("a\uFFFD", reader.ReadLine());
+            Assert.Null(reader.ReadLine());
+        }
+
+        [Fact]
+        public void Read_LongStreamIntoShortBuffer_PerformsFinalFlushCorrectly()
+        {
+            MemoryStream memStream = new MemoryStream();
+            memStream.Write(Enumerable.Repeat((byte)'a', 32 * 1024).ToArray());
+            memStream.WriteByte(0xF0);
+            string expected = new string('a', 32 * 1024) + "\uFFFD";
+
+            // First, use ReadToEnd API.
+
+            memStream.Position = 0;
+            StreamReader reader = new StreamReader(memStream, encoding: Encoding.UTF8, bufferSize: 32);
+            Assert.Equal(expected, reader.ReadToEnd());
+
+            // Next, use Read() API.
+
+            memStream.Position = 0;
+            reader = new StreamReader(memStream, encoding: Encoding.UTF8, bufferSize: 32);
+            for (int i = 0; i < 32 * 1024; i++)
+            {
+                Assert.Equal('a', reader.Read());
+            }
+            Assert.Equal('\uFFFD', reader.Read());
+            Assert.Equal(-1, reader.Read());
+
+            // Next, use Read(Span<char>) API.
+
+            StringBuilder builder = new StringBuilder();
+            Span<char> destBuffer = new char[47]; // prime number, because why not
+            memStream.Position = 0;
+            reader = new StreamReader(memStream, encoding: Encoding.UTF8, bufferSize: 32);
+            int charsRead;
+            while ((charsRead = reader.Read(destBuffer)) > 0)
+            {
+                builder.Append(destBuffer.Slice(0, charsRead));
+            }
+            Assert.Equal(expected, builder.ToString());
+
+            // Finally, use ReadLine API.
+
+            memStream.Position = 0;
+            reader = new StreamReader(memStream, encoding: Encoding.UTF8, bufferSize: 32);
+            Assert.Equal(expected, reader.ReadLine());
+            Assert.Null(reader.ReadLine());
+        }
+
+        [Fact]
+        public async Task ReadAsync_ShortStream_PerformsFinalFlushCorrectly()
+        {
+            MemoryStream memStream = new MemoryStream(new byte[] { 0x61 /* 'a' */, 0xF0 });
+
+            // First, use ReadToEndAsync API.
+
+            memStream.Position = 0;
+            StreamReader reader = new StreamReader(memStream, Encoding.UTF8);
+            Assert.Equal("a\uFFFD", await reader.ReadToEndAsync());
+
+            // Next, use ReadAsync(Memory<char>) API.
+
+            StringBuilder builder = new StringBuilder();
+            Memory<char> destBuffer = new char[1024];
+            memStream.Position = 0;
+            reader = new StreamReader(memStream, Encoding.UTF8);
+            int charsRead;
+            while ((charsRead = await reader.ReadAsync(destBuffer)) > 0)
+            {
+                builder.Append(destBuffer.Slice(0, charsRead));
+            }
+            Assert.Equal("a\uFFFD", builder.ToString());
+
+            // Finally, use ReadLineAsync API.
+
+            memStream.Position = 0;
+            reader = new StreamReader(memStream, Encoding.UTF8);
+            Assert.Equal("a\uFFFD", await reader.ReadLineAsync());
+            Assert.Null(await reader.ReadLineAsync());
+        }
+
+        [Fact]
+        public async Task ReadAsync_LongStreamIntoShortBuffer_PerformsFinalFlushCorrectly()
+        {
+            MemoryStream memStream = new MemoryStream();
+            memStream.Write(Enumerable.Repeat((byte)'a', 32 * 1024).ToArray());
+            memStream.WriteByte(0xF0);
+            string expected = new string('a', 32 * 1024) + "\uFFFD";
+
+            // First, use ReadToEndAsync API.
+
+            memStream.Position = 0;
+            StreamReader reader = new StreamReader(memStream, encoding: Encoding.UTF8, bufferSize: 32);
+            Assert.Equal(expected, await reader.ReadToEndAsync());
+
+            // Next, use Read(Memory<char>) API.
+
+            StringBuilder builder = new StringBuilder();
+            Memory<char> destBuffer = new char[47]; // prime number, because why not
+            memStream.Position = 0;
+            reader = new StreamReader(memStream, encoding: Encoding.UTF8, bufferSize: 32);
+            int charsRead;
+            while ((charsRead = await reader.ReadAsync(destBuffer)) > 0)
+            {
+                builder.Append(destBuffer.Slice(0, charsRead));
+            }
+            Assert.Equal(expected, builder.ToString());
+
+            // Finally, use ReadLineAsync API.
+
+            memStream.Position = 0;
+            reader = new StreamReader(memStream, encoding: Encoding.UTF8, bufferSize: 32);
+            Assert.Equal(expected, await reader.ReadLineAsync());
+            Assert.Null(await reader.ReadLineAsync());
         }
     }
 }

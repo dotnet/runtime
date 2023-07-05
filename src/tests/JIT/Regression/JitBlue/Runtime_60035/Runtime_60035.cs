@@ -4,12 +4,14 @@
 using System;
 using System.Text;
 using System.Text.Encodings.Web;
+using Xunit;
 
 namespace Runtime_60035
 {
-    class Program
+    public class Program
     {
-        static int Main(string[] args)
+        [Fact]
+        public static int TestEntryPoint()
         {
             byte[] inputBytes = Encoding.UTF8.GetBytes("https://github.com/dotnet/runtime");
             Console.WriteLine(UrlEncoder.Default.FindFirstCharacterToEncodeUtf8(inputBytes));

@@ -100,9 +100,12 @@ namespace System.Text
             internal short unused1;             // Add an unused WORD so that CodePages is aligned with DWORD boundary.
         }
         private const int CODEPAGE_DATA_FILE_HEADER_SIZE = 44;
-        internal static unsafe void ReadCodePageDataFileHeader(Stream stream, byte[] codePageDataFileHeader)
+        private static unsafe void ReadCodePageDataFileHeader(Stream stream, byte[] codePageDataFileHeader)
         {
-            stream.Read(codePageDataFileHeader, 0, codePageDataFileHeader.Length);
+            Debug.Assert(stream is UnmanagedMemoryStream, "UnmanagedMemoryStream will read a full buffer on one call to Read.");
+            int bytesRead = stream.Read(codePageDataFileHeader, 0, codePageDataFileHeader.Length);
+            Debug.Assert(bytesRead == codePageDataFileHeader.Length);
+
             if (!BitConverter.IsLittleEndian)
             {
                 fixed (byte* pBytes = &codePageDataFileHeader[0])
@@ -135,9 +138,12 @@ namespace System.Text
             [FieldOffset(0x24)]
             internal int Offset;            // DWORD
         }
-        internal static unsafe void ReadCodePageIndex(Stream stream, byte[] codePageIndex)
+        private static unsafe void ReadCodePageIndex(Stream stream, byte[] codePageIndex)
         {
-            stream.Read(codePageIndex, 0, codePageIndex.Length);
+            Debug.Assert(stream is UnmanagedMemoryStream, "UnmanagedMemoryStream will read a full buffer on one call to Read.");
+            int bytesRead = stream.Read(codePageIndex, 0, codePageIndex.Length);
+            Debug.Assert(bytesRead == codePageIndex.Length);
+
             if (!BitConverter.IsLittleEndian)
             {
                 fixed (byte* pBytes = &codePageIndex[0])
@@ -146,7 +152,7 @@ namespace System.Text
                     char *pCodePageName = &p->CodePageName;
                     for (int i = 0; i < 16; i++)
                     {
-                            pCodePageName[i] = (char)BinaryPrimitives.ReverseEndianness((ushort)pCodePageName[i]);
+                        pCodePageName[i] = (char)BinaryPrimitives.ReverseEndianness((ushort)pCodePageName[i]);
                     }
                     p->CodePage = BinaryPrimitives.ReverseEndianness(p->CodePage);
                     p->ByteCount = BinaryPrimitives.ReverseEndianness(p->ByteCount);
@@ -178,9 +184,12 @@ namespace System.Text
             internal ushort ByteReplace;    // WORD     // default replacement bytes
         }
         private const int CODEPAGE_HEADER_SIZE = 48;
-        internal static unsafe void ReadCodePageHeader(Stream stream, byte[] codePageHeader)
+        private static unsafe void ReadCodePageHeader(Stream stream, byte[] codePageHeader)
         {
-            stream.Read(codePageHeader, 0, codePageHeader!.Length);
+            Debug.Assert(stream is UnmanagedMemoryStream, "UnmanagedMemoryStream will read a full buffer on one call to Read.");
+            int bytesRead = stream.Read(codePageHeader, 0, codePageHeader!.Length);
+            Debug.Assert(bytesRead == codePageHeader.Length);
+
             if (!BitConverter.IsLittleEndian)
             {
                 fixed (byte* pBytes = &codePageHeader[0])

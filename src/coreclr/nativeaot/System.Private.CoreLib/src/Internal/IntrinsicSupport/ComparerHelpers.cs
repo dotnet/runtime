@@ -59,11 +59,8 @@ namespace Internal.IntrinsicSupport
             if (RuntimeAugments.IsNullable(t))
             {
                 RuntimeTypeHandle nullableType = RuntimeAugments.GetNullableType(t);
-                if (ImplementsIComparable(nullableType))
-                {
-                    openComparerType = typeof(NullableComparer<>).TypeHandle;
-                    comparerTypeArgument = nullableType;
-                }
+                openComparerType = typeof(NullableComparer<>).TypeHandle;
+                comparerTypeArgument = nullableType;
             }
             if (EqualityComparerHelpers.IsEnum(t))
             {
@@ -91,10 +88,10 @@ namespace Internal.IntrinsicSupport
                 Environment.FailFast("Unable to create comparer");
             }
 
-            return RuntimeAugments.NewObject(comparerType);
+            return RuntimeAugments.RawNewObject(comparerType);
         }
 
-        // This one is an intrinsic that is used to make enum comparisions more efficient.
+        // This one is an intrinsic that is used to make enum comparisons more efficient.
         [Intrinsic]
         internal static int EnumOnlyCompare<T>(T x, T y) where T : struct, Enum
         {

@@ -7,7 +7,7 @@ using System.Reflection.Runtime.General;
 
 namespace System.Reflection.TypeLoading
 {
-    internal abstract partial class RoType
+    internal partial class RoType
     {
         public sealed override ConstructorInfo[] GetConstructors(BindingFlags bindingAttr) => Query<ConstructorInfo>(bindingAttr).ToArray();
 
@@ -36,10 +36,9 @@ namespace System.Reflection.TypeLoading
             }
 
             if ((bindingAttr & BindingFlags.ExactBinding) != 0)
-                return System.DefaultBinder.ExactBinding(candidates.ToArray(), types, modifiers) as ConstructorInfo;
+                return System.DefaultBinder.ExactBinding(candidates.ToArray(), types) as ConstructorInfo;
 
-            if (binder == null)
-                binder = Loader.GetDefaultBinder();
+            binder ??= Loader.GetDefaultBinder();
 
             return binder.SelectMethod(bindingAttr, candidates.ToArray(), types, modifiers) as ConstructorInfo;
         }
@@ -96,8 +95,7 @@ namespace System.Reflection.TypeLoading
                 if (types.Length == 0 && candidates.Count == 1)
                     return candidates[0];
 
-                if (binder == null)
-                    binder = Loader.GetDefaultBinder();
+                binder ??= Loader.GetDefaultBinder();
                 return binder.SelectMethod(bindingAttr, candidates.ToArray(), types, modifiers) as MethodInfo;
             }
         }
@@ -138,10 +136,11 @@ namespace System.Reflection.TypeLoading
                 // For perf and .NET Framework compat, fast-path these specific checks before calling on the binder to break ties.
                 if (types == null || types.Length == 0)
                 {
+                    PropertyInfo firstCandidate = candidates[0];
+
                     // no arguments
                     if (candidates.Count == 1)
                     {
-                        PropertyInfo firstCandidate = candidates[0];
                         if (!(returnType is null) && !returnType.IsEquivalentTo(firstCandidate.PropertyType))
                             return null;
                         return firstCandidate;
@@ -150,15 +149,14 @@ namespace System.Reflection.TypeLoading
                     {
                         if (returnType is null)
                             // if we are here we have no args or property type to select over and we have more than one property with that name
-                            throw new AmbiguousMatchException();
+                            throw ThrowHelper.GetAmbiguousMatchException(firstCandidate);
                     }
                 }
 
                 if ((bindingAttr & BindingFlags.ExactBinding) != 0)
-                    return System.DefaultBinder.ExactPropertyBinding(candidates.ToArray(), returnType, types, modifiers);
+                    return System.DefaultBinder.ExactPropertyBinding(candidates.ToArray(), returnType, types);
 
-                if (binder == null)
-                    binder = Loader.GetDefaultBinder();
+                binder ??= Loader.GetDefaultBinder();
 
                 return binder.SelectProperty(bindingAttr, candidates.ToArray(), returnType, types, modifiers);
             }
@@ -169,8 +167,13 @@ namespace System.Reflection.TypeLoading
             return Query<M>(null, bindingAttr, null);
         }
 
-        private QueryResult<M> Query<M>(string name!!, BindingFlags bindingAttr) where M : MemberInfo
+        private QueryResult<M> Query<M>(string name, BindingFlags bindingAttr) where M : MemberInfo
         {
+            if (name is null)
+            {
+                throw new ArgumentNullException(nameof(name));
+            }
+
             return Query<M>(name, bindingAttr, null);
         }
 
@@ -204,7 +207,7 @@ namespace System.Reflection.TypeLoading
             return true;
         }
 
-        private TypeComponentsCache Cache => _lazyCache ?? (_lazyCache = new TypeComponentsCache(this));
+        private TypeComponentsCache Cache => _lazyCache ??= new TypeComponentsCache(this);
 
         private volatile TypeComponentsCache? _lazyCache;
 

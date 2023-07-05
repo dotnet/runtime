@@ -28,6 +28,7 @@ namespace System.Security.Principal
                 {
                     openAsSelf = false;
                     hr = 0;
+                    phThreadToken.Dispose();
                     if (!Interop.Advapi32.OpenThreadToken((IntPtr)(-2), dwDesiredAccess, openAsSelf, out phThreadToken))
                         hr = Marshal.GetHRForLastWin32Error();
                 }
@@ -36,7 +37,12 @@ namespace System.Security.Principal
                     hr = Marshal.GetHRForLastWin32Error();
                 }
             }
-            if (hr != 0) phThreadToken = null;
+            if (hr != 0)
+            {
+                phThreadToken.Dispose();
+                phThreadToken = null;
+            }
+
             return hr;
         }
 

@@ -78,7 +78,7 @@ namespace Microsoft.DotNet.CoreSetup.Test.HostActivation.FrameworkResolution
                     $"'{Constants.RollForwardOnNoCandidateFxSetting.CommandLineArgument}' command line options.");
         }
 
-        // Verifies the precedence of rollFoward and rollForwardOnNoCandidateFx from various sources
+        // Verifies the precedence of rollForward and rollForwardOnNoCandidateFx from various sources
         // Only checks valid cases - the precedence order should be:
         //   1. Command line
         //   2. DOTNET_ROLL_FORWARD env. variable
@@ -101,10 +101,11 @@ namespace Microsoft.DotNet.CoreSetup.Test.HostActivation.FrameworkResolution
             SettingLocation rollForwardOnNoCandidateFxLocation,
             bool passes)
         {
+            string requestedVersion = "5.0.0";
             CommandResult result = RunTest(
                 new TestSettings()
                     .WithRuntimeConfigCustomizer(runtimeConfig => runtimeConfig
-                        .WithFramework(MicrosoftNETCoreApp, "5.0.0"))
+                        .WithFramework(MicrosoftNETCoreApp, requestedVersion))
                     .With(RollForwardSetting(rollForwardLocation, Constants.RollForwardSetting.Major))
                     .With(RollForwardOnNoCandidateFxSetting(rollForwardOnNoCandidateFxLocation, 0)));
 
@@ -114,7 +115,7 @@ namespace Microsoft.DotNet.CoreSetup.Test.HostActivation.FrameworkResolution
             }
             else
             {
-                result.Should().Fail().And.DidNotFindCompatibleFrameworkVersion();
+                result.ShouldFailToFindCompatibleFrameworkVersion(MicrosoftNETCoreApp, requestedVersion);
             }
         }
 

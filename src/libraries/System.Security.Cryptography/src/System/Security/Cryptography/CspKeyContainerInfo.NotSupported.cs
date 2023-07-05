@@ -22,7 +22,7 @@ namespace System.Security.Cryptography
         public bool Removable { get { throw GetPlatformNotSupported(); } }
         public string UniqueKeyContainerName { get { throw GetPlatformNotSupported(); } }
 
-        private static Exception GetPlatformNotSupported()
+        private static PlatformNotSupportedException GetPlatformNotSupported()
         {
             return new PlatformNotSupportedException(SR.Format(SR.Cryptography_CAPI_Required, nameof(CspKeyContainerInfo)));
         }

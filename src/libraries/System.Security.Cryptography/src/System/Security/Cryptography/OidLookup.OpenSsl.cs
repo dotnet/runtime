@@ -8,6 +8,8 @@ namespace System.Security.Cryptography
 {
     internal static partial class OidLookup
     {
+#pragma warning disable IDE0060
+
         private static bool ShouldUseCache(OidGroup oidGroup)
         {
             return true;
@@ -24,7 +26,7 @@ namespace System.Security.Cryptography
                     Debug.Assert(friendlyNamePtr != IntPtr.Zero, "friendlyNamePtr != IntPtr.Zero");
 
                     // The pointer is to a shared string, so marshalling it out is all that's required.
-                    return Marshal.PtrToStringAnsi(friendlyNamePtr);
+                    return Marshal.PtrToStringUTF8(friendlyNamePtr);
                 case -1: /* OpenSSL internal error */
                     throw Interop.Crypto.CreateOpenSslCryptographicException();
                 default:
@@ -47,5 +49,8 @@ namespace System.Security.Cryptography
 
             return Interop.Crypto.GetOidValue(sharedObject);
         }
+
+#pragma warning restore IDE0060
+
     }
 }

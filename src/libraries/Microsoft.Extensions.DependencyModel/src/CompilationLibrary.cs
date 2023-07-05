@@ -25,13 +25,15 @@ namespace Microsoft.Extensions.DependencyModel
             string name,
             string version,
             string? hash,
-            IEnumerable<string> assemblies!!,
+            IEnumerable<string> assemblies,
             IEnumerable<Dependency> dependencies,
             bool serviceable,
             string? path,
             string? hashPath)
             : base(type, name, version, hash, dependencies, serviceable, path, hashPath)
         {
+            ThrowHelper.ThrowIfNull(assemblies);
+
             Assemblies = assemblies.ToArray();
         }
 
@@ -69,7 +71,7 @@ namespace Microsoft.Extensions.DependencyModel
             return ResolveReferencePaths(DefaultResolver, assemblies);
         }
 
-        private IEnumerable<string> ResolveReferencePaths(ICompilationAssemblyResolver resolver, List<string> assemblies)
+        private List<string> ResolveReferencePaths(ICompilationAssemblyResolver resolver, List<string> assemblies)
         {
             if (!resolver.TryResolveAssemblyPaths(this, assemblies))
             {

@@ -2,9 +2,6 @@
 // The .NET Foundation licenses this file to you under the MIT license.
 //
 // sigparser.h
-//
-
-//
 
 #ifndef _H_SIGPARSER
 #define _H_SIGPARSER
@@ -488,7 +485,7 @@ class SigParser
         }
 
         //------------------------------------------------------------------------
-        // Is this at the Sentinal (the ... in a varargs signature) that marks
+        // Is this at the Sentinel (the ... in a varargs signature) that marks
         // the beginning of varguments that are not decared at the target
 
         bool AtSentinel() const
@@ -716,7 +713,7 @@ class SigParser
         // the arguments.
         //------------------------------------------------------------------------
         __checkReturn
-        HRESULT SkipMethodHeaderSignature(uint32_t *pcArgs);
+        HRESULT SkipMethodHeaderSignature(uint32_t *pcArgs, bool skipReturnType = true);
 
         //------------------------------------------------------------------------
         // Skip a sub signature (as immediately follows an ELEMENT_TYPE_FNPTR).
@@ -966,7 +963,7 @@ protected:
 
 
 // Returns the address of the payload inside the stackelem
-inline void* StackElemEndianessFixup(void* pStackElem, UINT cbSize) {
+inline void* StackElemEndiannessFixup(void* pStackElem, UINT cbSize) {
     LIMITED_METHOD_CONTRACT;
 
     BYTE *pRetVal = (BYTE*)pStackElem;

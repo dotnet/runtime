@@ -1,6 +1,5 @@
 <Project Sdk="Microsoft.NET.Sdk">
   <PropertyGroup>
-    <OutputType>Exe</OutputType>
     <AllowUnsafeBlocks>true</AllowUnsafeBlocks>
   </PropertyGroup>
   <PropertyGroup>
@@ -8,7 +7,7 @@
     <Optimize>True</Optimize>
   </PropertyGroup>
   <ItemGroup>
-    <Compile Include="*.cs" />
+    <Compile Include="Program.NotSupported.cs" />
     <Compile Include="..\Shared\Program.cs" />
   </ItemGroup>
 </Project>

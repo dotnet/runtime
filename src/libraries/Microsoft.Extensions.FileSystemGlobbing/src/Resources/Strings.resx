@@ -126,6 +126,9 @@
   <data name="CannotTestFile" xml:space="preserve">
     <value>Cannot test file before entering a directory.</value>
   </data>
+  <data name="StringComparisonTypeShouldBeOrdinal" xml:space="preserve">
+    <value>Unexpected StringComparison type: '{0}'. Only 'Ordinal' and 'OrdinalIgnoreCase' are supported.</value>
+  </data>
   <data name="UnexpectedStringComparisonType" xml:space="preserve">
     <value>Unexpected StringComparison type: {0}</value>
   </data>

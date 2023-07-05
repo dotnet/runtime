@@ -89,7 +89,7 @@ namespace System.Text.RegularExpressions
             Match match;
             do
             {
-                match = _regex.RunSingleMatch(false, _prevlen, _input, 0, _input.Length, _startat)!;
+                match = _regex.RunSingleMatch(RegexRunnerMode.FullMatchRequired, _prevlen, _input, 0, _input.Length, _startat)!;
                 if (!match.Success)
                 {
                     _done = true;

@@ -497,7 +497,7 @@ namespace System.Data.ProviderBase
             return datarowadded;
         }
 
-        private int[] CreateIndexMap(int count, int index)
+        private static int[] CreateIndexMap(int count, int index)
         {
             int[] values = new int[count];
             for (int i = 0; i < index; ++i)
@@ -518,7 +518,7 @@ namespace System.Data.ProviderBase
             return fieldNames;
         }
 
-        private DataColumn[] ResizeColumnArray(DataColumn[] rgcol, int len)
+        private static DataColumn[] ResizeColumnArray(DataColumn[] rgcol, int len)
         {
             Debug.Assert(rgcol != null, "invalid call to ResizeArray");
             Debug.Assert(len <= rgcol.Length, "invalid len passed to ResizeArray");
@@ -527,7 +527,7 @@ namespace System.Data.ProviderBase
             return tmp;
         }
 
-        private void AddItemToAllowRollback(ref List<object>? items, object value)
+        private static void AddItemToAllowRollback(ref List<object>? items, object value)
         {
             if (null == items)
             {
@@ -536,7 +536,7 @@ namespace System.Data.ProviderBase
             items.Add(value);
         }
 
-        private void RollbackAddedItems(List<object>? items)
+        private static void RollbackAddedItems(List<object>? items)
         {
             if (null != items)
             {
@@ -548,21 +548,12 @@ namespace System.Data.ProviderBase
                         DataColumn? column = (items[i] as DataColumn);
                         if (null != column)
                         {
-                            if (null != column.Table)
-                            {
-                                column.Table.Columns.Remove(column);
-                            }
+                            column.Table?.Columns.Remove(column);
                         }
                         else
                         {
                             DataTable? table = (items[i] as DataTable);
-                            if (null != table)
-                            {
-                                if (null != table.DataSet)
-                                {
-                                    table.DataSet.Tables.Remove(table);
-                                }
-                            }
+                            table?.DataSet?.Tables.Remove(table);
                         }
                     }
                 }
@@ -1028,10 +1019,7 @@ namespace System.Data.ProviderBase
                     //
                     if (addPrimaryKeys && schemaRow.IsKey)
                     {
-                        if (keys == null)
-                        {
-                            keys = new DataColumn[schemaRows.Length];
-                        }
+                        keys ??= new DataColumn[schemaRows.Length];
                         keys[keyCount++] = dataColumn;
 
                         // see case 3 above, we do want dataColumn.AllowDBNull not schemaRow.AllowDBNull
@@ -1147,7 +1135,7 @@ namespace System.Data.ProviderBase
         }
 
         [RequiresUnreferencedCode("Members from types used in the expression column may be trimmed if not referenced directly.")]
-        private void AddAdditionalProperties(DataColumn targetColumn, DataRow schemaRow)
+        private static void AddAdditionalProperties(DataColumn targetColumn, DataRow schemaRow)
         {
             DataColumnCollection columns = schemaRow.Table.Columns;
             DataColumn? column;

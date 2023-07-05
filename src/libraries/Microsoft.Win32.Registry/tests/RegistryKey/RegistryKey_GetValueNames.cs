@@ -11,7 +11,7 @@ namespace Microsoft.Win32.RegistryTests
     public class RegistryKey_GetValueNames : RegistryTestsBase
     {
         [Fact]
-        public void ShoudThrowIfDisposed()
+        public void ShouldThrowIfDisposed()
         {
             Assert.Throws<ObjectDisposedException>(() =>
             {

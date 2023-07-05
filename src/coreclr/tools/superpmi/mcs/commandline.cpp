@@ -121,6 +121,8 @@ void CommandLine::DumpHelp(const char* program)
     printf(" -strip range inputfile outputfile\n");
     printf("     Copy method contexts from one file to another, skipping ranged items.\n");
     printf("     inputfile is read and records not in range are written to outputfile.\n");
+    printf("     If range is empty (e.g., from an empty .mcl file due to a clean replay),\n");
+    printf("     the file is simply copied.\n");
     printf("     e.g. -strip 2 a.mc b.mc\n");
     printf("\n");
     printf(" -toc inputfile\n");
@@ -624,12 +626,6 @@ bool CommandLine::Parse(int argc, char* argv[], /* OUT */ Options* o)
         if ((!foundFile1) || (!foundFile2))
         {
             LogError("CommandLine::Parse() -strip needs one input file and one output file.");
-            DumpHelp(argv[0]);
-            return false;
-        }
-        if (o->indexCount == 0)
-        {
-            LogError("CommandLine::Parse() -strip requires a range.");
             DumpHelp(argv[0]);
             return false;
         }

@@ -7,21 +7,20 @@ using System.Runtime.CompilerServices;
 using System.Runtime.InteropServices;
 using System.Runtime.Intrinsics.X86;
 using System.Runtime.Intrinsics;
+using Xunit;
 
-namespace IntelHardwareIntrinsicTest
+namespace IntelHardwareIntrinsicTest.SSE2
 {
-    class Program
+    public partial class Program
     {
-        const int Pass = 100;
-        const int Fail = 0;
-
-        static unsafe int Main(string[] args)
+        [Fact]
+        public static unsafe void LoadAlignedVector128()
         {
             int testResult = Pass;
 
             if (Sse2.IsSupported)
             {
-                using (TestTable<double> doubleTable = new TestTable<double>(new double[2] { 1, -5 }, new double[2]))
+                using (AlignedTestTable<double> doubleTable = new AlignedTestTable<double>(new double[2] { 1, -5 }, new double[2]))
                 {
                     var vf = Sse2.LoadAlignedVector128((double*)(doubleTable.inArrayPtr));
                     Unsafe.Write(doubleTable.outArrayPtr, vf);
@@ -38,7 +37,7 @@ namespace IntelHardwareIntrinsicTest
                     }
                 }
 
-                using (TestTable<int> intTable = new TestTable<int>(new int[4] { 1, -5, 100, 0 }, new int[4]))
+                using (AlignedTestTable<int> intTable = new AlignedTestTable<int>(new int[4] { 1, -5, 100, 0 }, new int[4]))
                 {
                     var vf = Sse2.LoadAlignedVector128((int*)(intTable.inArrayPtr));
                     Unsafe.Write(intTable.outArrayPtr, vf);
@@ -55,7 +54,7 @@ namespace IntelHardwareIntrinsicTest
                     }
                 }
 
-                using (TestTable<long> longTable = new TestTable<long>(new long[2] { 1, -5 }, new long[2]))
+                using (AlignedTestTable<long> longTable = new AlignedTestTable<long>(new long[2] { 1, -5 }, new long[2]))
                 {
                     var vf = Sse2.LoadAlignedVector128((long*)(longTable.inArrayPtr));
                     Unsafe.Write(longTable.outArrayPtr, vf);
@@ -72,7 +71,7 @@ namespace IntelHardwareIntrinsicTest
                     }
                 }
 
-                using (TestTable<uint> uintTable = new TestTable<uint>(new uint[4] { 1, 5, 100, 0 }, new uint[4]))
+                using (AlignedTestTable<uint> uintTable = new AlignedTestTable<uint>(new uint[4] { 1, 5, 100, 0 }, new uint[4]))
                 {
                     var vf = Sse2.LoadAlignedVector128((uint*)(uintTable.inArrayPtr));
                     Unsafe.Write(uintTable.outArrayPtr, vf);
@@ -89,7 +88,7 @@ namespace IntelHardwareIntrinsicTest
                     }
                 }
 
-                using (TestTable<ulong> ulongTable = new TestTable<ulong>(new ulong[2] { 1, 5 }, new ulong[2]))
+                using (AlignedTestTable<ulong> ulongTable = new AlignedTestTable<ulong>(new ulong[2] { 1, 5 }, new ulong[2]))
                 {
                     var vf = Sse2.LoadAlignedVector128((ulong*)(ulongTable.inArrayPtr));
                     Unsafe.Write(ulongTable.outArrayPtr, vf);
@@ -106,7 +105,7 @@ namespace IntelHardwareIntrinsicTest
                     }
                 }
 
-                using (TestTable<short> shortTable = new TestTable<short>(new short[8] { 1, -5, 100, 0, 1, -5, 100, 0 }, new short[8]))
+                using (AlignedTestTable<short> shortTable = new AlignedTestTable<short>(new short[8] { 1, -5, 100, 0, 1, -5, 100, 0 }, new short[8]))
                 {
                     var vf = Sse2.LoadAlignedVector128((short*)(shortTable.inArrayPtr));
                     Unsafe.Write(shortTable.outArrayPtr, vf);
@@ -123,7 +122,7 @@ namespace IntelHardwareIntrinsicTest
                     }
                 }
 
-                using (TestTable<ushort> ushortTable = new TestTable<ushort>(new ushort[8] { 1, 5, 100, 0, 1, 5, 100, 0 }, new ushort[8]))
+                using (AlignedTestTable<ushort> ushortTable = new AlignedTestTable<ushort>(new ushort[8] { 1, 5, 100, 0, 1, 5, 100, 0 }, new ushort[8]))
                 {
                     var vf = Sse2.LoadAlignedVector128((ushort*)(ushortTable.inArrayPtr));
                     Unsafe.Write(ushortTable.outArrayPtr, vf);
@@ -140,7 +139,7 @@ namespace IntelHardwareIntrinsicTest
                     }
                 }
 
-                using (TestTable<sbyte> sbyteTable = new TestTable<sbyte>(new sbyte[16] { 1, -5, 100, 0, 1, -5, 100, 0, 1, -5, 100, 0, 1, -5, 100, 0 }, new sbyte[16]))
+                using (AlignedTestTable<sbyte> sbyteTable = new AlignedTestTable<sbyte>(new sbyte[16] { 1, -5, 100, 0, 1, -5, 100, 0, 1, -5, 100, 0, 1, -5, 100, 0 }, new sbyte[16]))
                 {
                     var vf = Sse2.LoadAlignedVector128((sbyte*)(sbyteTable.inArrayPtr));
                     Unsafe.Write(sbyteTable.outArrayPtr, vf);
@@ -157,7 +156,7 @@ namespace IntelHardwareIntrinsicTest
                     }
                 }
 
-                using (TestTable<byte> byteTable = new TestTable<byte>(new byte[16] { 1, 5, 100, 0, 1, 5, 100, 0, 1, 5, 100, 0, 1, 5, 100, 0 }, new byte[16]))
+                using (AlignedTestTable<byte> byteTable = new AlignedTestTable<byte>(new byte[16] { 1, 5, 100, 0, 1, 5, 100, 0, 1, 5, 100, 0, 1, 5, 100, 0 }, new byte[16]))
                 {
                     var vf = Sse2.LoadAlignedVector128((byte*)(byteTable.inArrayPtr));
                     Unsafe.Write(byteTable.outArrayPtr, vf);
@@ -175,62 +174,8 @@ namespace IntelHardwareIntrinsicTest
                 }
             }
 
-            return testResult;
-        }
-
-        public unsafe struct TestTable<T> : IDisposable where T : struct
-        {
-            private byte[] inArray;
-            public T[] outArray;
-
-            private GCHandle inHandle;
-            private GCHandle outHandle;
-
-            private byte simdSize;
-
-            public TestTable(T[] a, T[] b)
-            {
-                this.inArray = new byte[32];
-                this.outArray = b;
-
-                this.inHandle = GCHandle.Alloc(this.inArray, GCHandleType.Pinned);
-                this.outHandle = GCHandle.Alloc(this.outArray, GCHandleType.Pinned);
-
-                this.simdSize = 16;
-
-                Unsafe.CopyBlockUnaligned(ref Unsafe.AsRef<byte>(inArrayPtr), ref Unsafe.As<T, byte>(ref a[0]), this.simdSize);
-            }
-
-            public void* inArrayPtr => Align((byte*)(inHandle.AddrOfPinnedObject().ToPointer()), simdSize);
-            public void* outArrayPtr => outHandle.AddrOfPinnedObject().ToPointer();
-
-            public bool CheckResult(Func<T, T, bool> check)
-            {
-                for (int i = 0; i < outArray.Length; i++)
-                {
-                    if (!check(Unsafe.Add<T>(ref Unsafe.AsRef<T>(inArrayPtr), i), outArray[i]))
-                    {
-                        return false;
-                    }
-                }
-                return true;
-            }
-
-            public void Dispose()
-            {
-                inHandle.Free();
-                outHandle.Free();
-            }
-
-            private static unsafe void* Align(byte* buffer, byte expectedAlignment)
-            {
-                // Compute how bad the misalignment is, which is at most (expectedAlignment - 1).
-                // Then subtract that from the expectedAlignment and add it to the original address
-                // to compute the aligned address.
-
-                var misalignment = expectedAlignment - ((ulong)(buffer) % expectedAlignment);
-                return (void*)(buffer + misalignment);
-            }
+            if (testResult != Pass)
+                Assert.Fail("");
         }
     }
 }

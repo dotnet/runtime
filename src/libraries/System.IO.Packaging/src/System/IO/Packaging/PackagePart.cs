@@ -93,20 +93,33 @@ namespace System.IO.Packaging
         /// <exception cref="ArgumentNullException">If parameter "partUri" is null</exception>
         /// <exception cref="ArgumentOutOfRangeException">If CompressionOption enumeration [compressionOption] does not have one of the valid values</exception>
         /// <exception cref="ArgumentException">If parameter "partUri" does not conform to the valid partUri syntax</exception>
-        protected PackagePart(Package package!!,
-                                Uri partUri!!,
+        protected PackagePart(Package package,
+                                Uri partUri,
                                 string? contentType,
                                 CompressionOption compressionOption)
         {
+            if (package is null)
+            {
+                throw new ArgumentNullException(nameof(package));
+            }
+            if (partUri is null)
+            {
+                throw new ArgumentNullException(nameof(partUri));
+            }
+
             Package.ThrowIfCompressionOptionInvalid(compressionOption);
 
             _uri = PackUriHelper.ValidatePartUri(partUri);
             _container = package;
 
             if (contentType == null)
+            {
                 _contentType = null;
+            }
             else
+            {
                 _contentType = new ContentType(contentType);
+            }
 
             _requestedStreams = null;
             _compressionOption = compressionOption;
@@ -324,8 +337,7 @@ namespace System.IO.Packaging
             Debug.Assert(!IsStreamClosed(s));
 
             //Lazy init
-            if (_requestedStreams == null)
-                _requestedStreams = new List<Stream>(); //Default capacity is 4
+            _requestedStreams ??= new List<Stream>(); //Default capacity is 4
 
             //Delete all the closed streams from the _requestedStreams list.
             //Each time a new stream is handed out, we go through the list
@@ -566,8 +578,7 @@ namespace System.IO.Packaging
         //Delete all the relationships for this part
         internal void ClearRelationships()
         {
-            if (_relationships != null)
-                _relationships.Clear();
+            _relationships?.Clear();
         }
 
         //Flush all the streams that are currently opened for this part and the relationships for this part
@@ -713,7 +724,7 @@ namespace System.IO.Packaging
         //If the part has been deleted then we throw
         private void ThrowIfPackagePartDeleted()
         {
-            if (_deleted == true)
+            if (_deleted)
                 throw new InvalidOperationException(SR.PackagePartDeleted);
         }
 
@@ -776,7 +787,7 @@ namespace System.IO.Packaging
         //return false. These properties do not throw ObjectDisposedException.
         //So we rely on the values of these properties to determine if a stream
         //has been closed.
-        private bool IsStreamClosed(Stream s)
+        private static bool IsStreamClosed(Stream s)
         {
             return !s.CanRead && !s.CanSeek && !s.CanWrite;
         }

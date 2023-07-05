@@ -3,10 +3,11 @@
 
 using System;
 using System.Runtime.CompilerServices;
+using Xunit;
 
 namespace NormalizeTest
 {
-    class Program
+    public class Program
     {
         static int testResult = 100;
         static bool s_print = false;
@@ -277,7 +278,8 @@ namespace NormalizeTest
             }
         }
 
-        static int Main()
+        [Fact]
+        public static int TestEntryPoint()
         {
             {
                 int    result1a = ByteTest1(-1,1);

@@ -6,6 +6,7 @@ using System.Diagnostics;
 using System.Diagnostics.CodeAnalysis;
 using System.Reflection;
 using System.Runtime.InteropServices;
+using System.Runtime.CompilerServices;
 using System.Diagnostics.Tracing;
 
 namespace System
@@ -68,15 +69,24 @@ namespace System
 
             if (_traceIPs != null)
             {
-                stackFrames = Diagnostics.StackTrace.get_trace(this, 0, true);
+                Exception self = this;
+                MonoStackFrame[]? frames = null;
+                Diagnostics.StackTrace.GetTrace (ObjectHandleOnStack.Create (ref self), ObjectHandleOnStack.Create (ref frames), 0, true);
+                stackFrames = frames!;
                 if (stackFrames.Length > 0)
                     stackFrames[stackFrames.Length - 1].isLastFrameFromForeignException = true;
 
-                if (foreignExceptionsFrames != null)
+                // Make sure foreignExceptionsFrames does not change at this point.
+                // Otherwise, the Array.Copy into combinedStackFrames can fail due to size differences
+                //
+                // See https://github.com/dotnet/runtime/issues/70081
+                MonoStackFrame[]? feFrames = foreignExceptionsFrames;
+
+                if (feFrames != null)
                 {
-                    var combinedStackFrames = new MonoStackFrame[stackFrames.Length + foreignExceptionsFrames.Length];
-                    Array.Copy(foreignExceptionsFrames, 0, combinedStackFrames, 0, foreignExceptionsFrames.Length);
-                    Array.Copy(stackFrames, 0, combinedStackFrames, foreignExceptionsFrames.Length, stackFrames.Length);
+                    var combinedStackFrames = new MonoStackFrame[stackFrames.Length + feFrames.Length];
+                    Array.Copy(feFrames, 0, combinedStackFrames, 0, feFrames.Length);
+                    Array.Copy(stackFrames, 0, combinedStackFrames, feFrames.Length, stackFrames.Length);
 
                     stackFrames = combinedStackFrames;
                 }
@@ -92,7 +102,6 @@ namespace System
         internal void RestoreDispatchState(in DispatchState state)
         {
             foreignExceptionsFrames = state.StackFrames;
-
             _stackTraceString = null;
         }
 
@@ -109,37 +118,7 @@ namespace System
             return true; // mono runtime doesn't have immutable agile exceptions, always return true
         }
 
-        [UnconditionalSuppressMessage("ReflectionAnalysis", "IL2026:RequiresUnreferencedCode",
-            Justification = "The API will return null if the metadata for current method cannot be established.")]
-        private string? CreateSourceName()
-        {
-            var st = new StackTrace(this, fNeedFileInfo: false);
-            if (st.FrameCount > 0)
-            {
-                StackFrame sf = st.GetFrame(0)!;
-                MethodBase? method = sf.GetMethod();
-                if (method == null)
-                    return null;
-
-                Module module = method.Module;
-                RuntimeModule? rtModule = module as RuntimeModule;
-
-                if (rtModule == null)
-                {
-                    var moduleBuilder = module as System.Reflection.Emit.ModuleBuilder;
-                    if (moduleBuilder != null)
-                        throw new NotImplementedException(); // TODO: rtModule = moduleBuilder.InternalModule;
-                    else
-                        throw new ArgumentException(SR.Argument_MustBeRuntimeReflectionObject);
-                }
-
-                return rtModule.GetRuntimeAssembly().GetName().Name; // TODO: GetSimpleName ();
-            }
-
-            return null;
-        }
-
-        private static IDictionary CreateDataContainer() => new ListDictionaryInternal();
+        private static ListDictionaryInternal CreateDataContainer() => new ListDictionaryInternal();
 
         private static string? SerializationWatsonBuckets => null;
     }

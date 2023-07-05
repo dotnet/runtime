@@ -2,6 +2,7 @@
 // The .NET Foundation licenses this file to you under the MIT license.
 
 using System.Collections.Generic;
+using System.Reflection;
 using System.Threading;
 using Xunit;
 
@@ -28,6 +29,7 @@ namespace System.Diagnostics.Tests
             Stopwatch watch = new Stopwatch();
             Assert.False(watch.IsRunning);
             Assert.Equal(TimeSpan.Zero, watch.Elapsed);
+            Assert.Equal(TimeSpan.Zero.ToString(), watch.ToString());
             Assert.Equal(0, watch.ElapsedTicks);
             Assert.Equal(0, watch.ElapsedMilliseconds);
             watch.Start();
@@ -37,6 +39,7 @@ namespace System.Diagnostics.Tests
 
             watch.Stop();
             Assert.False(watch.IsRunning);
+            Assert.Equal(watch.Elapsed.ToString(), watch.ToString());
 
             var e1 = watch.Elapsed;
             Sleep(s_defaultSleepTimeMs);
@@ -63,6 +66,7 @@ namespace System.Diagnostics.Tests
             watch.Reset();
             Assert.False(watch.IsRunning);
             Assert.Equal(TimeSpan.Zero, watch.Elapsed);
+            Assert.Equal(TimeSpan.Zero.ToString(), watch.ToString());
             Assert.Equal(0, watch.ElapsedTicks);
             Assert.Equal(0, watch.ElapsedMilliseconds);
         }
@@ -93,6 +97,39 @@ namespace System.Diagnostics.Tests
                 }
                 break;
             }
+        }
+
+        [Fact]
+        public static void OverridesToString()
+        {
+            // In this test we use string interpolation with a Stopwatch instance to trigger
+            // a call to the overridden ToString() method which should return the elapsed time
+            // as a string.
+
+            Stopwatch watch = new Stopwatch();
+            Assert.Equal(TimeSpan.Zero, watch.Elapsed);
+            Assert.Equal($"Elapsed = {watch.Elapsed}", $"Elapsed = {watch}");
+
+            watch.Start();
+            Sleep(s_defaultSleepTimeMs);
+            watch.Stop();
+
+            Assert.True(watch.Elapsed > TimeSpan.Zero);
+            Assert.Equal($"Elapsed = {watch.Elapsed}", $"Elapsed = {watch}");
+        }
+
+        [ConditionalFact(typeof(PlatformDetection), nameof(PlatformDetection.IsDebuggerTypeProxyAttributeSupported))]
+        public static void DebuggerAttributesValid()
+        {
+            Stopwatch watch = new Stopwatch();
+            Assert.Equal("00:00:00 (IsRunning = False)", DebuggerAttributes.ValidateDebuggerDisplayReferences(watch));
+            watch.Start();
+            Thread.Sleep(10);
+            Assert.Contains("(IsRunning = True)", DebuggerAttributes.ValidateDebuggerDisplayReferences(watch));
+            Assert.DoesNotContain("00:00:00 ", DebuggerAttributes.ValidateDebuggerDisplayReferences(watch));
+            watch.Stop();
+            Assert.Contains("(IsRunning = False)", DebuggerAttributes.ValidateDebuggerDisplayReferences(watch));
+            Assert.DoesNotContain("00:00:00 ", DebuggerAttributes.ValidateDebuggerDisplayReferences(watch));
         }
 
         [OuterLoop("Sleeps for relatively long periods of time")]

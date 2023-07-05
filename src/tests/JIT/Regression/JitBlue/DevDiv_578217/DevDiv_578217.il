@@ -1,17 +1,16 @@
-
-//  Microsoft (R) .NET Framework IL Disassembler.  Version 4.7.3108.0
-//  Copyright (c) Microsoft Corporation.  All rights reserved.
+// Licensed to the .NET Foundation under one or more agreements.
+// The .NET Foundation licenses this file to you under the MIT license.
 
 // This test originally triggered incorrect assert that fgGetPtrArgCntMax calculated during morph was lower
 // than maxStackLevel calculated during StackLevelSetter. It happens because long decomposition 
 // is able to move PUTARG_STK.
 
 // Metadata version: v4.0.30319
-.assembly extern System.Runtime { auto }
+.assembly extern System.Runtime { .publickeytoken = (B0 3F 5F 7F 11 D5 0A 3A ) }
 .assembly 'DevDiv_578217' {}
 .assembly extern xunit.core {}
 
-.class private auto ansi beforefieldinit DevDiv_578217.Program
+.class public auto ansi beforefieldinit DevDiv_578217.Program
        extends [System.Runtime]System.Object
 {
 	.method static int16 ILGEN_METHOD(unsigned int16, float32, native unsigned int, unsigned int16, unsigned int8, int16, unsigned int32)
@@ -80,8 +79,8 @@
 		IL_008d: ret   
 	} // end of method Program::ILGEN_METHOD
 
-	.method private hidebysig static int32 
-	  Main(string[] args) cil managed
+	.method public hidebysig static int32 
+	  Main() cil managed
 	{
 		.custom instance void [xunit.core]Xunit.FactAttribute::.ctor() = (
 		    01 00 00 00

@@ -33,7 +33,7 @@ namespace System.Buffers
                 throw new ArgumentOutOfRangeException(nameof(placement));
             }
 
-            var retVal = AllocateWithoutDataPopulation<T>(elementCount, placement);
+            BoundedMemory<T> retVal = AllocateWithoutDataPopulation<T>(elementCount, placement);
             FillRandom(MemoryMarshal.AsBytes(retVal.Span));
             return retVal;
         }
@@ -49,7 +49,7 @@ namespace System.Buffers
                 throw new ArgumentOutOfRangeException(nameof(placement));
             }
 
-            var retVal = AllocateWithoutDataPopulation<T>(data.Length, placement);
+            BoundedMemory<T> retVal = AllocateWithoutDataPopulation<T>(data.Length, placement);
             data.CopyTo(retVal.Span);
             return retVal;
         }

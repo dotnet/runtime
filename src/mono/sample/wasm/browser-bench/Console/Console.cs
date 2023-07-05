@@ -11,6 +11,7 @@ namespace Sample
 {
     public partial class Test
     {
+        internal const string AssemblyName = "Wasm.Console.Bench.Sample";
         static string tasksArg;
 
         static List<string> ProcessArguments(string[] args)
@@ -25,6 +26,9 @@ namespace Sample
                 { "h|help|?",
                     "Show this message and exit",
                     v => help = v != null },
+                { "j|json-results",
+                    "Print full results in JSON format",
+                    v => JsonResults = v != null },
                 { "t|tasks=",
                     "Filter comma separated tasks and its measurements matching, TASK[:REGEX][,TASK[:REGEX],...]. Example: -t Json:non,Exceptions:Inline",
                     v => tasksArg = v },

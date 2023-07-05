@@ -24,38 +24,51 @@ namespace System.Security.Cryptography.Xml
             get { return _references.Count; }
         }
 
-        public int Add(object value!!)
+#pragma warning disable CS8995 // Nullable type 'object?' is null-checked and will throw if null.
+        public int Add(object? value)
         {
+            if (value is null)
+            {
+                throw new ArgumentNullException(nameof(value));
+            }
+
             if (!(value is DataReference) && !(value is KeyReference))
                 throw new ArgumentException(SR.Cryptography_Xml_IncorrectObjectType, nameof(value));
 
             return _references.Add(value);
         }
+#pragma warning restore
 
         public void Clear()
         {
             _references.Clear();
         }
 
-        public bool Contains(object value)
+        public bool Contains(object? value)
         {
             return _references.Contains(value);
         }
 
-        public int IndexOf(object value)
+        public int IndexOf(object? value)
         {
             return _references.IndexOf(value);
         }
 
-        public void Insert(int index, object value!!)
+        public void Insert(int index, object? value)
         {
+            if (value is null)
+            {
+                throw new ArgumentNullException(nameof(value));
+            }
+
             if (!(value is DataReference) && !(value is KeyReference))
                 throw new ArgumentException(SR.Cryptography_Xml_IncorrectObjectType, nameof(value));
 
             _references.Insert(index, value);
         }
+#pragma warning restore
 
-        public void Remove(object value)
+        public void Remove(object? value)
         {
             _references.Remove(value);
         }
@@ -65,9 +78,9 @@ namespace System.Security.Cryptography.Xml
             _references.RemoveAt(index);
         }
 
-        public EncryptedReference Item(int index)
+        public EncryptedReference? Item(int index)
         {
-            return (EncryptedReference)_references[index];
+            return (EncryptedReference?)_references[index];
         }
 
         [System.Runtime.CompilerServices.IndexerName("ItemOf")]
@@ -75,7 +88,7 @@ namespace System.Security.Cryptography.Xml
         {
             get
             {
-                return Item(index);
+                return Item(index)!;
             }
             set
             {
@@ -84,7 +97,7 @@ namespace System.Security.Cryptography.Xml
         }
 
         /// <internalonly/>
-        object IList.this[int index]
+        object? IList.this[int index]
         {
             get { return _references[index]; }
             set

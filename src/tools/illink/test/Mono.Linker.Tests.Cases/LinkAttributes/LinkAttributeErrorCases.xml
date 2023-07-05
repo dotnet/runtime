@@ -1,0 +1,68 @@
+<?xml version="1.0" encoding="utf-8" ?>
+<linker xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance" xsi:noNamespaceSchemaLocation="../../../src/ILLink.Shared/ILLink.LinkAttributes.xsd">
+  <assembly fullname="test, Version=0.0.0.0, Culture=neutral, PublicKeyToken=null">
+    <type fullname="Mono.Linker.Tests.Cases.LinkAttributes.LinkAttributeErrorCases">
+      <!-- IL2030 -->
+      <attribute fullname="AttributeTypeName" assembly="NonExistentAssembly1"/>
+      <attribute fullname="AttributeTypeName" assembly="MalformedAssemblyName, thisiswrong"/>
+      
+      <!-- IL2031 -->
+      <attribute fullname="NonExistentAttribute"/>
+
+      <!-- IL2022 -->
+      <attribute fullname="Mono.Linker.Tests.Cases.LinkAttributes.LinkAttributeErrorCases/AttributeWithNoParametersAttribute">
+        <argument>ExtraArgumentValue</argument>
+      </attribute>
+
+      <!-- IL2022 -->
+      <attribute fullname="Mono.Linker.Tests.Cases.LinkAttributes.LinkAttributeErrorCases/AttributeWithEnumParameterAttribute">
+        <argument>NonExistentEnumValue</argument>
+      </attribute>
+
+      <!-- IL2022 -->
+      <attribute fullname="Mono.Linker.Tests.Cases.LinkAttributes.LinkAttributeErrorCases/AttributeWithIntParameterAttribute">
+        <argument>NotANumber</argument>
+      </attribute>
+
+      <!-- IL2051 -->
+      <attribute fullname="Mono.Linker.Tests.Cases.LinkAttributes.LinkAttributeErrorCases/AttributeWithPropertyAttribute">
+        <property>StringValue</property>
+      </attribute>
+
+      <!-- IL2052 -->
+      <attribute fullname="Mono.Linker.Tests.Cases.LinkAttributes.LinkAttributeErrorCases/AttributeWithPropertyAttribute">
+        <property name="NonExistentPropertyName">StringValue</property>
+      </attribute>
+
+      <!-- IL2052 -->
+      <attribute fullname="Mono.Linker.Tests.Cases.LinkAttributes.LinkAttributeErrorCases/AttributeWithPropertyAttribute">
+        <property name="IntProperty">StringValue</property>
+      </attribute>
+
+      <!-- IL2023 -->
+      <method name="GetTypeMethod">
+        <return>
+          <attribute fullname="Mono.Linker.Tests.Cases.LinkAttributes.LinkAttributeErrorCases/FirstAttribute" />
+        </return>
+        <return>
+          <attribute fullname="Mono.Linker.Tests.Cases.LinkAttributes.LinkAttributeErrorCases/SecondAttribute" />
+        </return>
+      </method>
+
+      <!-- IL2024 -->
+      <method name="MethodWithParameter">
+        <parameter name="methodParameter">
+          <attribute fullname="Mono.Linker.Tests.Cases.LinkAttributes.LinkAttributeErrorCases/FirstAttribute" />
+        </parameter>
+        <parameter name="methodParameter">
+          <attribute fullname="Mono.Linker.Tests.Cases.LinkAttributes.LinkAttributeErrorCases/SecondAttribute" />
+        </parameter>
+      </method>
+    </type>
+
+    <!-- IL2029 -->
+    <attribute/>
+    <attribute fullname=""/>
+  </assembly>
+  <assembly fullname="NonExistentAssembly2" />
+</linker>

@@ -48,7 +48,7 @@ private:
 
     bool FunctionSeen(FunctionID func);
 
-    FunctionID GetFunctionIDFromToken(ModuleID module, mdMethodDef token);
+    FunctionID GetFunctionIDFromToken(ModuleID module, mdMethodDef token, bool invalidArgNotFailure);
     mdMethodDef GetMethodDefForFunction(FunctionID functionId);
     ModuleID GetModuleIDForFunction(FunctionID functionId);
 

@@ -34,10 +34,7 @@ namespace System.IO.Pipes
             {
                 throw new ArgumentOutOfRangeException(nameof(direction), SR.ArgumentOutOfRange_DirectionModeInOutOrInOut);
             }
-            if (bufferSize < 0)
-            {
-                throw new ArgumentOutOfRangeException(nameof(bufferSize), SR.ArgumentOutOfRange_NeedNonNegNum);
-            }
+            ArgumentOutOfRangeException.ThrowIfNegative(bufferSize);
 
             Init(direction, PipeTransmissionMode.Byte, (uint)bufferSize);
         }
@@ -52,10 +49,7 @@ namespace System.IO.Pipes
             {
                 throw new ArgumentOutOfRangeException(nameof(transmissionMode), SR.ArgumentOutOfRange_TransmissionModeByteOrMsg);
             }
-            if (outBufferSize < 0)
-            {
-                throw new ArgumentOutOfRangeException(nameof(outBufferSize), SR.ArgumentOutOfRange_NeedNonNegNum);
-            }
+            ArgumentOutOfRangeException.ThrowIfNegative(outBufferSize);
 
             Init(direction, transmissionMode, (uint)outBufferSize);
         }

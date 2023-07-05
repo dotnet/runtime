@@ -1,21 +1,20 @@
 <Project Sdk="Microsoft.NET.Sdk">
   <PropertyGroup>
     <TargetFramework>$(NetCoreAppCurrent)</TargetFramework>
-    <Nullable>enable</Nullable>
   </PropertyGroup>
+
   <ItemGroup>
     <Compile Include="System.ComponentModel.manual.cs" />
     <Compile Include="System.ComponentModel.TypeConverter.cs" />
     <Compile Include="System.ComponentModel.TypeConverter.Forwards.cs" />
   </ItemGroup>
+
   <ItemGroup>
     <ProjectReference Include="..\..\System.Collections.NonGeneric\ref\System.Collections.NonGeneric.csproj" />
     <ProjectReference Include="..\..\System.ComponentModel\ref\System.ComponentModel.csproj" />
-    <ProjectReference Include="..\..\System.Drawing.Primitives\ref\System.Drawing.Primitives.csproj" />
     <ProjectReference Include="..\..\System.ComponentModel.Primitives\ref\System.ComponentModel.Primitives.csproj" />
     <ProjectReference Include="..\..\System.ObjectModel\ref\System.ObjectModel.csproj" />
     <ProjectReference Include="..\..\System.Resources.Writer\ref\System.Resources.Writer.csproj" />
     <ProjectReference Include="..\..\System.Runtime\ref\System.Runtime.csproj" />
-    <ProjectReference Include="..\..\System.Runtime.Extensions\ref\System.Runtime.Extensions.csproj" />
   </ItemGroup>
 </Project>

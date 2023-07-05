@@ -1,27 +1,23 @@
 // Licensed to the .NET Foundation under one or more agreements.
 // The .NET Foundation licenses this file to you under the MIT license.
 
+using System.Diagnostics.CodeAnalysis;
 using System.Xml;
 
 namespace System.Security.Cryptography.Xml
 {
     public sealed class EncryptedKey : EncryptedType
     {
-        private string _recipient;
-        private string _carriedKeyName;
-        private ReferenceList _referenceList;
+        private string? _recipient;
+        private string? _carriedKeyName;
+        private ReferenceList? _referenceList;
 
         public EncryptedKey() { }
 
+        [AllowNull]
         public string Recipient
         {
-            get
-            {
-                // an unspecified value for an XmlAttribute is string.Empty
-                if (_recipient == null)
-                    _recipient = string.Empty;
-                return _recipient;
-            }
+            get => _recipient ??= string.Empty; // an unspecified value for an XmlAttribute is string.Empty
             set
             {
                 _recipient = value;
@@ -29,7 +25,7 @@ namespace System.Security.Cryptography.Xml
             }
         }
 
-        public string CarriedKeyName
+        public string? CarriedKeyName
         {
             get { return _carriedKeyName; }
             set
@@ -39,15 +35,7 @@ namespace System.Security.Cryptography.Xml
             }
         }
 
-        public ReferenceList ReferenceList
-        {
-            get
-            {
-                if (_referenceList == null)
-                    _referenceList = new ReferenceList();
-                return _referenceList;
-            }
-        }
+        public ReferenceList ReferenceList => _referenceList ??= new ReferenceList();
 
         public void AddReference(DataReference dataReference)
         {
@@ -59,8 +47,15 @@ namespace System.Security.Cryptography.Xml
             ReferenceList.Add(keyReference);
         }
 
-        public override void LoadXml(XmlElement value!!)
+        [RequiresDynamicCode(CryptoHelpers.XsltRequiresDynamicCodeMessage)]
+        [RequiresUnreferencedCode(CryptoHelpers.CreateFromNameUnreferencedCodeMessage)]
+        public override void LoadXml(XmlElement value)
         {
+            if (value is null)
+            {
+                throw new ArgumentNullException(nameof(value));
+            }
+
             XmlNamespaceManager nsm = new XmlNamespaceManager(value.OwnerDocument.NameTable);
             nsm.AddNamespace("enc", EncryptedXml.XmlEncNamespaceUrl);
             nsm.AddNamespace("ds", SignedXml.XmlDsigNamespaceUrl);
@@ -71,74 +66,74 @@ namespace System.Security.Cryptography.Xml
             Encoding = Utils.GetAttribute(value, "Encoding", EncryptedXml.XmlEncNamespaceUrl);
             Recipient = Utils.GetAttribute(value, "Recipient", EncryptedXml.XmlEncNamespaceUrl);
 
-            XmlNode encryptionMethodNode = value.SelectSingleNode("enc:EncryptionMethod", nsm);
+            XmlNode? encryptionMethodNode = value.SelectSingleNode("enc:EncryptionMethod", nsm);
 
             // EncryptionMethod
             EncryptionMethod = new EncryptionMethod();
             if (encryptionMethodNode != null)
-                EncryptionMethod.LoadXml(encryptionMethodNode as XmlElement);
+                EncryptionMethod.LoadXml((encryptionMethodNode as XmlElement)!);
 
             // Key Info
             KeyInfo = new KeyInfo();
-            XmlNode keyInfoNode = value.SelectSingleNode("ds:KeyInfo", nsm);
+            XmlNode? keyInfoNode = value.SelectSingleNode("ds:KeyInfo", nsm);
             if (keyInfoNode != null)
-                KeyInfo.LoadXml(keyInfoNode as XmlElement);
+                KeyInfo.LoadXml((keyInfoNode as XmlElement)!);
 
             // CipherData
-            XmlNode cipherDataNode = value.SelectSingleNode("enc:CipherData", nsm);
+            XmlNode? cipherDataNode = value.SelectSingleNode("enc:CipherData", nsm);
             if (cipherDataNode == null)
                 throw new CryptographicException(SR.Cryptography_Xml_MissingCipherData);
 
             CipherData = new CipherData();
-            CipherData.LoadXml(cipherDataNode as XmlElement);
+            CipherData.LoadXml((cipherDataNode as XmlElement)!);
 
             // EncryptionProperties
-            XmlNode encryptionPropertiesNode = value.SelectSingleNode("enc:EncryptionProperties", nsm);
+            XmlNode? encryptionPropertiesNode = value.SelectSingleNode("enc:EncryptionProperties", nsm);
             if (encryptionPropertiesNode != null)
             {
                 // Select the EncryptionProperty elements inside the EncryptionProperties element
-                XmlNodeList encryptionPropertyNodes = encryptionPropertiesNode.SelectNodes("enc:EncryptionProperty", nsm);
+                XmlNodeList? encryptionPropertyNodes = encryptionPropertiesNode.SelectNodes("enc:EncryptionProperty", nsm);
                 if (encryptionPropertyNodes != null)
                 {
                     foreach (XmlNode node in encryptionPropertyNodes)
                     {
                         EncryptionProperty ep = new EncryptionProperty();
-                        ep.LoadXml(node as XmlElement);
+                        ep.LoadXml((node as XmlElement)!);
                         EncryptionProperties.Add(ep);
                     }
                 }
             }
 
             // CarriedKeyName
-            XmlNode carriedKeyNameNode = value.SelectSingleNode("enc:CarriedKeyName", nsm);
+            XmlNode? carriedKeyNameNode = value.SelectSingleNode("enc:CarriedKeyName", nsm);
             if (carriedKeyNameNode != null)
             {
                 CarriedKeyName = carriedKeyNameNode.InnerText;
             }
 
             // ReferenceList
-            XmlNode referenceListNode = value.SelectSingleNode("enc:ReferenceList", nsm);
+            XmlNode? referenceListNode = value.SelectSingleNode("enc:ReferenceList", nsm);
             if (referenceListNode != null)
             {
                 // Select the DataReference elements inside the ReferenceList element
-                XmlNodeList dataReferenceNodes = referenceListNode.SelectNodes("enc:DataReference", nsm);
+                XmlNodeList? dataReferenceNodes = referenceListNode.SelectNodes("enc:DataReference", nsm);
                 if (dataReferenceNodes != null)
                 {
                     foreach (XmlNode node in dataReferenceNodes)
                     {
                         DataReference dr = new DataReference();
-                        dr.LoadXml(node as XmlElement);
+                        dr.LoadXml((node as XmlElement)!);
                         ReferenceList.Add(dr);
                     }
                 }
                 // Select the KeyReference elements inside the ReferenceList element
-                XmlNodeList keyReferenceNodes = referenceListNode.SelectNodes("enc:KeyReference", nsm);
+                XmlNodeList? keyReferenceNodes = referenceListNode.SelectNodes("enc:KeyReference", nsm);
                 if (keyReferenceNodes != null)
                 {
                     foreach (XmlNode node in keyReferenceNodes)
                     {
                         KeyReference kr = new KeyReference();
-                        kr.LoadXml(node as XmlElement);
+                        kr.LoadXml((node as XmlElement)!);
                         ReferenceList.Add(kr);
                     }
                 }

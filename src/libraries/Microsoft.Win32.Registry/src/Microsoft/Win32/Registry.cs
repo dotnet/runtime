@@ -33,8 +33,10 @@ namespace Microsoft.Win32
         /// If the keyName is not valid, we will throw ArgumentException.
         /// The return value shouldn't be null.
         /// </summary>
-        private static RegistryKey GetBaseKeyFromKeyName(string keyName!!, out string subKeyName)
+        private static RegistryKey GetBaseKeyFromKeyName(string keyName, out string subKeyName)
         {
+            ArgumentNullException.ThrowIfNull(keyName);
+
             int i = keyName.IndexOf('\\');
             int length = i != -1 ? i : keyName.Length;
 
@@ -54,7 +56,7 @@ namespace Microsoft.Win32
             {
                 subKeyName = (i == -1 || i == keyName.Length) ?
                     string.Empty :
-                    keyName.Substring(i + 1, keyName.Length - i - 1);
+                    keyName.Substring(i + 1);
 
                 return baseKey;
             }

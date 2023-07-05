@@ -6,6 +6,6 @@ namespace System.IO.Pipelines.Tests
     public class BasePipeReaderReadAtLeastAsyncTests : ReadAtLeastAsyncTests
     {
         private PipeReader? _pipeReader;
-        protected override PipeReader PipeReader => _pipeReader ?? (_pipeReader = new BasePipeReader(Pipe.Reader));
+        protected override PipeReader PipeReader => _pipeReader ??= new BasePipeReader(Pipe.Reader);
     }
 }

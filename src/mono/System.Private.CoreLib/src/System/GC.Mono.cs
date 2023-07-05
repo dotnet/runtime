@@ -11,7 +11,8 @@ namespace System
     {
         Default = 0,
         Forced = 1,
-        Optimized = 2
+        Optimized = 2,
+        Aggressive = 3,
     }
 
     public enum GCNotificationStatus
@@ -35,7 +36,10 @@ namespace System
         private static extern void InternalCollect(int generation);
 
         [MethodImplAttribute(MethodImplOptions.InternalCall)]
-        private static extern void RecordPressure(long bytesAllocated);
+        private static extern void AddPressure(ulong bytesAllocated);
+
+        [MethodImplAttribute(MethodImplOptions.InternalCall)]
+        private static extern void RemovePressure(ulong bytesRemoved);
 
         // TODO: Move following to ConditionalWeakTable
         [MethodImplAttribute(MethodImplOptions.InternalCall)]
@@ -54,20 +58,22 @@ namespace System
 
         public static void AddMemoryPressure(long bytesAllocated)
         {
-            if (bytesAllocated <= 0)
-                throw new ArgumentOutOfRangeException(nameof(bytesAllocated), SR.ArgumentOutOfRange_NeedPosNum);
-            if (IntPtr.Size == 4 && bytesAllocated > int.MaxValue)
-                throw new ArgumentOutOfRangeException(nameof(bytesAllocated), SR.ArgumentOutOfRange_MustBeNonNegInt32);
-            RecordPressure(bytesAllocated);
+            ArgumentOutOfRangeException.ThrowIfNegativeOrZero(bytesAllocated);
+            if (IntPtr.Size == 4)
+            {
+                ArgumentOutOfRangeException.ThrowIfGreaterThan(bytesAllocated, int.MaxValue);
+            }
+            AddPressure((ulong)bytesAllocated);
         }
 
         public static void RemoveMemoryPressure(long bytesAllocated)
         {
-            if (bytesAllocated <= 0)
-                throw new ArgumentOutOfRangeException(nameof(bytesAllocated), SR.ArgumentOutOfRange_NeedPosNum);
-            if (IntPtr.Size == 4 && bytesAllocated > int.MaxValue)
-                throw new ArgumentOutOfRangeException(nameof(bytesAllocated), SR.ArgumentOutOfRange_MustBeNonNegInt32);
-            RecordPressure(-bytesAllocated);
+            ArgumentOutOfRangeException.ThrowIfNegativeOrZero(bytesAllocated);
+            if (IntPtr.Size == 4)
+            {
+                ArgumentOutOfRangeException.ThrowIfGreaterThan(bytesAllocated, int.MaxValue);
+            }
+            RemovePressure((ulong)bytesAllocated);
         }
 
         [MethodImplAttribute(MethodImplOptions.InternalCall)]
@@ -89,9 +95,8 @@ namespace System
 
         public static void Collect(int generation, GCCollectionMode mode, bool blocking, bool compacting)
         {
-            if (generation < 0)
-                throw new ArgumentOutOfRangeException(nameof(generation), "generation", SR.ArgumentOutOfRange_GenericPositive);
-            if ((mode < GCCollectionMode.Default) || (mode > GCCollectionMode.Optimized))
+            ArgumentOutOfRangeException.ThrowIfNegative(generation);
+            if ((mode < GCCollectionMode.Default) || (mode > GCCollectionMode.Aggressive))
                 throw new ArgumentOutOfRangeException(nameof(mode), SR.ArgumentOutOfRange_Enum);
 
             InternalCollect(generation);
@@ -99,8 +104,7 @@ namespace System
 
         public static int CollectionCount(int generation)
         {
-            if (generation < 0)
-                throw new ArgumentOutOfRangeException(nameof(generation), SR.ArgumentOutOfRange_GenericPositive);
+            ArgumentOutOfRangeException.ThrowIfNegative(generation);
             return GetCollectionCount(generation);
         }
 
@@ -112,8 +116,7 @@ namespace System
         public static int GetGeneration(WeakReference wo)
         {
             object? obj = wo.Target;
-            if (obj == null)
-                throw new ArgumentException(null, nameof(wo));
+            ArgumentNullException.ThrowIfNull(obj, nameof(wo));
             return GetGeneration(obj);
         }
 
@@ -133,8 +136,7 @@ namespace System
 
         public static void SuppressFinalize(object obj)
         {
-            if (obj == null)
-                throw new ArgumentNullException(nameof(obj));
+            ArgumentNullException.ThrowIfNull(obj);
             _SuppressFinalize(obj);
         }
 
@@ -143,8 +145,7 @@ namespace System
 
         public static void ReRegisterForFinalize(object obj)
         {
-            if (obj == null)
-                throw new ArgumentNullException(nameof(obj));
+            ArgumentNullException.ThrowIfNull(obj);
             _ReRegisterForFinalize(obj);
         }
 
@@ -197,8 +198,7 @@ namespace System
 
         public static GCNotificationStatus WaitForFullGCApproach(int millisecondsTimeout)
         {
-            if (millisecondsTimeout < -1)
-                throw new ArgumentOutOfRangeException(nameof(millisecondsTimeout), SR.ArgumentOutOfRange_NeedNonNegOrNegative1);
+            ArgumentOutOfRangeException.ThrowIfLessThan(millisecondsTimeout, -1);
 
             return _WaitForFullGCApproach(millisecondsTimeout);
         }
@@ -210,8 +210,7 @@ namespace System
 
         public static GCNotificationStatus WaitForFullGCComplete(int millisecondsTimeout)
         {
-            if (millisecondsTimeout < -1)
-                throw new ArgumentOutOfRangeException(nameof(millisecondsTimeout), SR.ArgumentOutOfRange_NeedNonNegOrNegative1);
+            ArgumentOutOfRangeException.ThrowIfLessThan(millisecondsTimeout, -1);
             return _WaitForFullGCComplete(millisecondsTimeout);
         }
 
@@ -311,6 +310,27 @@ namespace System
         internal static int GetLastGCPercentTimeInGC()
         {
             return (int)EventPipeInternal.GetRuntimeCounterValue(EventPipeInternal.RuntimeCounters.GC_LAST_PERCENT_TIME_IN_GC);
+        }
+
+        public static TimeSpan GetTotalPauseDuration()
+        {
+            return TimeSpan.Zero;
+        }
+
+        public static System.Collections.Generic.IReadOnlyDictionary<string, object> GetConfigurationVariables()
+        {
+            return new System.Collections.Generic.Dictionary<string, object>();
+        }
+
+        [System.Runtime.Versioning.RequiresPreviewFeaturesAttribute("RefreshMemoryLimit is in preview.")]
+        public static void RefreshMemoryLimit()
+        {
+            throw new PlatformNotSupportedException();
+        }
+
+        public static void RegisterNoGCRegionCallback(long totalSize, Action callback)
+        {
+            throw new PlatformNotSupportedException();
         }
     }
 }

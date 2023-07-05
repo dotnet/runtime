@@ -1,7 +1,6 @@
 // Licensed to the .NET Foundation under one or more agreements.
 // The .NET Foundation licenses this file to you under the MIT license.
 
-using System;
 using Internal.IL.Stubs;
 using Internal.TypeSystem.Interop;
 using Debug = System.Diagnostics.Debug;
@@ -188,10 +187,14 @@ namespace Internal.TypeSystem
 
         public MethodDesc GetPInvokeCalliStub(MethodSignature signature, ModuleDesc moduleContext)
         {
-            return _pInvokeCalliHashtable.GetOrCreateValue(new CalliMarshallingMethodThunkKey(signature, MarshalHelpers.IsRuntimeMarshallingEnabled(moduleContext)));
+            // Normalize calling convention details on the signature
+            var normalizedSignatureBuilder = new MethodSignatureBuilder(signature);
+            normalizedSignatureBuilder.Flags = (signature.Flags & MethodSignatureFlags.Static) | MethodSignatureFlags.UnmanagedCallingConvention;
+            normalizedSignatureBuilder.SetEmbeddedSignatureData(signature.GetStandaloneMethodSignatureCallingConventions().EncodeAsEmbeddedSignatureData(moduleContext.Context));
+            return _pInvokeCalliHashtable.GetOrCreateValue(new CalliMarshallingMethodThunkKey(normalizedSignatureBuilder.ToSignature(), MarshalHelpers.IsRuntimeMarshallingEnabled(moduleContext)));
         }
 
-        private class NativeStructTypeHashtable : LockFreeReaderHashtable<MetadataType, NativeStructType>
+        private sealed class NativeStructTypeHashtable : LockFreeReaderHashtable<MetadataType, NativeStructType>
         {
             protected override int GetKeyHashCode(MetadataType key)
             {
@@ -205,12 +208,12 @@ namespace Internal.TypeSystem
 
             protected override bool CompareKeyToValue(MetadataType key, NativeStructType value)
             {
-                return Object.ReferenceEquals(key, value.ManagedStructType);
+                return ReferenceEquals(key, value.ManagedStructType);
             }
 
             protected override bool CompareValueToValue(NativeStructType value1, NativeStructType value2)
             {
-                return Object.ReferenceEquals(value1.ManagedStructType, value2.ManagedStructType);
+                return ReferenceEquals(value1.ManagedStructType, value2.ManagedStructType);
             }
 
             protected override NativeStructType CreateValueFromKey(MetadataType key)
@@ -240,7 +243,7 @@ namespace Internal.TypeSystem
             }
         }
 
-        private class StructMarshallingThunkHashTable : LockFreeReaderHashtable<StructMarshallingThunkKey, StructMarshallingThunk>
+        private sealed class StructMarshallingThunkHashTable : LockFreeReaderHashtable<StructMarshallingThunkKey, StructMarshallingThunk>
         {
             protected override int GetKeyHashCode(StructMarshallingThunkKey key)
             {
@@ -254,13 +257,13 @@ namespace Internal.TypeSystem
 
             protected override bool CompareKeyToValue(StructMarshallingThunkKey key, StructMarshallingThunk value)
             {
-                return Object.ReferenceEquals(key.ManagedType, value.ManagedType) &&
+                return ReferenceEquals(key.ManagedType, value.ManagedType) &&
                         key.ThunkType == value.ThunkType;
             }
 
             protected override bool CompareValueToValue(StructMarshallingThunk value1, StructMarshallingThunk value2)
             {
-                return Object.ReferenceEquals(value1.ManagedType, value2.ManagedType) &&
+                return ReferenceEquals(value1.ManagedType, value2.ManagedType) &&
                         value1.ThunkType == value2.ThunkType;
             }
 
@@ -279,7 +282,7 @@ namespace Internal.TypeSystem
             }
         }
 
-        private class InlineArrayHashTable : LockFreeReaderHashtable<InlineArrayCandidate, InlineArrayType>
+        private sealed class InlineArrayHashTable : LockFreeReaderHashtable<InlineArrayCandidate, InlineArrayType>
         {
             protected override int GetKeyHashCode(InlineArrayCandidate key)
             {
@@ -293,13 +296,13 @@ namespace Internal.TypeSystem
 
             protected override bool CompareKeyToValue(InlineArrayCandidate key, InlineArrayType value)
             {
-                return Object.ReferenceEquals(key.ElementType, value.ElementType) &&
+                return ReferenceEquals(key.ElementType, value.ElementType) &&
                         key.Length == value.Length;
             }
 
             protected override bool CompareValueToValue(InlineArrayType value1, InlineArrayType value2)
             {
-                return Object.ReferenceEquals(value1.ElementType, value2.ElementType) &&
+                return ReferenceEquals(value1.ElementType, value2.ElementType) &&
                         value1.Length == value2.Length;
             }
 
@@ -329,7 +332,7 @@ namespace Internal.TypeSystem
                 Kind = kind;
             }
         }
-        private class DelegateMarshallingStubHashtable : LockFreeReaderHashtable<DelegateMarshallingStubHashtableKey, DelegateMarshallingMethodThunk>
+        private sealed class DelegateMarshallingStubHashtable : LockFreeReaderHashtable<DelegateMarshallingStubHashtableKey, DelegateMarshallingMethodThunk>
         {
             protected override int GetKeyHashCode(DelegateMarshallingStubHashtableKey key)
             {
@@ -343,13 +346,13 @@ namespace Internal.TypeSystem
 
             protected override bool CompareKeyToValue(DelegateMarshallingStubHashtableKey key, DelegateMarshallingMethodThunk value)
             {
-                return Object.ReferenceEquals(key.DelegateType, value.DelegateType) &&
+                return ReferenceEquals(key.DelegateType, value.DelegateType) &&
                     key.Kind== value.Kind;
             }
 
             protected override bool CompareValueToValue(DelegateMarshallingMethodThunk value1, DelegateMarshallingMethodThunk value2)
             {
-                return Object.ReferenceEquals(value1.DelegateType, value2.DelegateType) &&
+                return ReferenceEquals(value1.DelegateType, value2.DelegateType) &&
                     value1.Kind== value2.Kind;
             }
 
@@ -369,7 +372,7 @@ namespace Internal.TypeSystem
             }
         }
 
-        private class ForwardDelegateCreationStubHashtable : LockFreeReaderHashtable<MetadataType, ForwardDelegateCreationThunk>
+        private sealed class ForwardDelegateCreationStubHashtable : LockFreeReaderHashtable<MetadataType, ForwardDelegateCreationThunk>
         {
             protected override int GetKeyHashCode(MetadataType key)
             {
@@ -383,12 +386,12 @@ namespace Internal.TypeSystem
 
             protected override bool CompareKeyToValue(MetadataType key, ForwardDelegateCreationThunk value)
             {
-                return Object.ReferenceEquals(key, value.DelegateType);
+                return ReferenceEquals(key, value.DelegateType);
             }
 
             protected override bool CompareValueToValue(ForwardDelegateCreationThunk value1, ForwardDelegateCreationThunk value2)
             {
-                return Object.ReferenceEquals(value1.DelegateType, value2.DelegateType);
+                return ReferenceEquals(value1.DelegateType, value2.DelegateType);
             }
 
             protected override ForwardDelegateCreationThunk CreateValueFromKey(MetadataType key)
@@ -406,7 +409,7 @@ namespace Internal.TypeSystem
             }
         }
 
-        private class PInvokeDelegateWrapperHashtable : LockFreeReaderHashtable<MetadataType, PInvokeDelegateWrapper>
+        private sealed class PInvokeDelegateWrapperHashtable : LockFreeReaderHashtable<MetadataType, PInvokeDelegateWrapper>
         {
             protected override int GetKeyHashCode(MetadataType key)
             {
@@ -420,12 +423,12 @@ namespace Internal.TypeSystem
 
             protected override bool CompareKeyToValue(MetadataType key, PInvokeDelegateWrapper value)
             {
-                return Object.ReferenceEquals(key, value.DelegateType);
+                return ReferenceEquals(key, value.DelegateType);
             }
 
             protected override bool CompareValueToValue(PInvokeDelegateWrapper value1, PInvokeDelegateWrapper value2)
             {
-                return Object.ReferenceEquals(value1.DelegateType, value2.DelegateType);
+                return ReferenceEquals(value1.DelegateType, value2.DelegateType);
             }
 
             protected override PInvokeDelegateWrapper CreateValueFromKey(MetadataType key)
@@ -443,7 +446,7 @@ namespace Internal.TypeSystem
             }
         }
 
-        private class PInvokeLazyFixupFieldHashtable : LockFreeReaderHashtable<MethodDesc, PInvokeLazyFixupField>
+        private sealed class PInvokeLazyFixupFieldHashtable : LockFreeReaderHashtable<MethodDesc, PInvokeLazyFixupField>
         {
             protected override int GetKeyHashCode(MethodDesc key)
             {
@@ -480,7 +483,7 @@ namespace Internal.TypeSystem
 
         private readonly record struct CalliMarshallingMethodThunkKey(MethodSignature Signature, bool RuntimeMarshallingEnabled);
 
-        private class PInvokeCalliHashtable : LockFreeReaderHashtable<CalliMarshallingMethodThunkKey, CalliMarshallingMethodThunk>
+        private sealed class PInvokeCalliHashtable : LockFreeReaderHashtable<CalliMarshallingMethodThunkKey, CalliMarshallingMethodThunk>
         {
             private readonly InteropStateManager _interopStateManager;
             private readonly TypeDesc _owningType;

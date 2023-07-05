@@ -3,7 +3,6 @@
 
 using System.Collections;
 using System.Collections.Specialized;
-using System.Runtime.Serialization;
 
 namespace System.Configuration
 {
@@ -24,12 +23,6 @@ namespace System.Configuration
                 FactoryId factoryId = (FactoryId)de.Value;
                 if (factoryId.Group == _configSectionGroup.SectionGroupName) BaseAdd(factoryId.Name, factoryId.Name);
             }
-        }
-
-        private ConfigurationSectionCollection(SerializationInfo serializationInfo, StreamingContext streamingContext)
-            : base(serializationInfo, streamingContext)
-        {
-            throw new PlatformNotSupportedException();
         }
 
         public ConfigurationSection this[string name] => Get(name);
@@ -68,8 +61,13 @@ namespace System.Configuration
             foreach (string key in allKeys) Remove(key);
         }
 
-        public void CopyTo(ConfigurationSection[] array!!, int index)
+        public void CopyTo(ConfigurationSection[] array, int index)
         {
+            if (array is null)
+            {
+                throw new ArgumentNullException(nameof(array));
+            }
+
             int c = Count;
             if (array.Length < c + index) throw new ArgumentOutOfRangeException(nameof(index));
 

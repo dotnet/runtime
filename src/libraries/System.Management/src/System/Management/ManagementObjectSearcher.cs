@@ -335,7 +335,7 @@ namespace System.Management
                 if ((query.GetType() == typeof(SelectQuery)) &&
                     (((SelectQuery)query).Condition == null) &&
                     (((SelectQuery)query).SelectedProperties == null) &&
-                    (options.EnumerateDeep == true))
+                    options.EnumerateDeep)
                 {
                     //Need to make sure that we're not passing invalid flags to enumeration APIs.
                     //The only flags not valid for enumerations are EnsureLocatable & PrototypeOnly.
@@ -428,7 +428,7 @@ namespace System.Management
                 if ((query.GetType() == typeof(SelectQuery)) &&
                     (((SelectQuery)query).Condition == null) &&
                     (((SelectQuery)query).SelectedProperties == null) &&
-                    (options.EnumerateDeep == true))
+                    options.EnumerateDeep)
                 {
                     //Need to make sure that we're not passing invalid flags to enumeration APIs.
                     //The only flags not valid for enumerations are EnsureLocatable & PrototypeOnly.
@@ -490,9 +490,7 @@ namespace System.Management
                 throw new InvalidOperationException();
 
             //If we're not connected yet, this is the time to do it...
-#pragma warning disable CA2002
             lock (this)
-#pragma warning restore CA2002
             {
                 if (null == scope)
                     scope = ManagementScope._Clone(null);

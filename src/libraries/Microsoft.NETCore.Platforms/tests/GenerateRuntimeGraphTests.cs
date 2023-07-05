@@ -14,6 +14,8 @@ using Xunit.Abstractions;
 
 namespace Microsoft.NETCore.Platforms.BuildTasks.Tests
 {
+    // MSBuild engine is not compatible with single file
+    [ConditionalClass(typeof(PlatformDetection), nameof(PlatformDetection.HasAssemblyFiles))]
     public class GenerateRuntimeGraphTests
     {
         private Log _log;
@@ -61,6 +63,7 @@ namespace Microsoft.NETCore.Platforms.BuildTasks.Tests
         }
 
         [Fact]
+        [ActiveIssue("https://github.com/dotnet/runtime/issues/77889", TestPlatforms.iOS | TestPlatforms.tvOS)]
         public void CanCreateRuntimeGraph()
         {
             // will generate and compare to existing file.
@@ -78,6 +81,7 @@ namespace Microsoft.NETCore.Platforms.BuildTasks.Tests
 
 
         [Fact]
+        [ActiveIssue("https://github.com/dotnet/runtime/issues/77889", TestPlatforms.iOS | TestPlatforms.tvOS)]
         public void CanIgnoreExistingInferRids()
         {
             // will generate and compare to existing file.
@@ -132,6 +136,7 @@ namespace Microsoft.NETCore.Platforms.BuildTasks.Tests
         }
 
         [Fact]
+        [ActiveIssue("https://github.com/dotnet/runtime/issues/77889", TestPlatforms.iOS | TestPlatforms.tvOS)]
         public void CanAddVersionsToExistingGroups()
         {
             var additionalRIDs = new[] { "ubuntu.22.04-arm64" };
@@ -148,6 +153,7 @@ namespace Microsoft.NETCore.Platforms.BuildTasks.Tests
         }
 
         [Fact]
+        [ActiveIssue("https://github.com/dotnet/runtime/issues/77889", TestPlatforms.iOS | TestPlatforms.tvOS)]
         public void CanAddParentVersionsToExistingGroups()
         {
             var additionalRIDs = new[] { "centos.9.2-arm64" };
@@ -167,6 +173,7 @@ namespace Microsoft.NETCore.Platforms.BuildTasks.Tests
         }
 
         [Fact]
+        [ActiveIssue("https://github.com/dotnet/runtime/issues/77889", TestPlatforms.iOS | TestPlatforms.tvOS)]
         public void CanAddMajorVersionsToExistingGroups()
         {
 
@@ -182,8 +189,9 @@ namespace Microsoft.NETCore.Platforms.BuildTasks.Tests
 
             AssertRuntimeGraphAdditions(additionalRIDs, expectedAdditions);
         }
-
+        
         [Fact]
+        [ActiveIssue("https://github.com/dotnet/runtime/issues/77889", TestPlatforms.iOS | TestPlatforms.tvOS)]
         public void CanAddArchitectureToExistingGroups()
         {
             var additionalRIDs = new[] { "win10-x128" };
@@ -206,16 +214,18 @@ namespace Microsoft.NETCore.Platforms.BuildTasks.Tests
 
 
         [Fact]
+        [ActiveIssue("https://github.com/dotnet/runtime/issues/77889", TestPlatforms.iOS | TestPlatforms.tvOS)]
         public void CanAddArchitectureAndVersionToExistingGroups()
         {
-            var additionalRIDs = new[] { "osx.12-powerpc" };
+            var additionalRIDs = new[] { "osx.13-powerpc" };
             var expectedAdditions = new[]
             {
-                new RuntimeDescription("osx.12-powerpc", new[] { "osx.12", "osx.11.0-powerpc" }),
-                new RuntimeDescription("osx.12-arm64", new[] { "osx.12", "osx.11.0-arm64" }),
-                new RuntimeDescription("osx.12-x64", new[] { "osx.12", "osx.11.0-x64" }),
-                new RuntimeDescription("osx.12", new[] { "osx.11.0" }),
+                new RuntimeDescription("osx.13-powerpc", new[] { "osx.13", "osx.12-powerpc" }),
+                new RuntimeDescription("osx.13-arm64", new[] { "osx.13", "osx.12-arm64" }),
+                new RuntimeDescription("osx.13-x64", new[] { "osx.13", "osx.12-x64" }),
+                new RuntimeDescription("osx.13", new[] { "osx.12" }),
                 // our RID model doesn't give priority to architecture, so the new architecture is applied to all past versions
+                new RuntimeDescription("osx.12-powerpc", new[] { "osx.12", "osx.11.0-powerpc" }),
                 new RuntimeDescription("osx.11.0-powerpc", new[] { "osx.11.0", "osx.10.16-powerpc" }),
                 new RuntimeDescription("osx.10.16-powerpc", new[] { "osx.10.16", "osx.10.15-powerpc" }),
                 new RuntimeDescription("osx.10.15-powerpc", new[] { "osx.10.15", "osx.10.14-powerpc" }),
@@ -232,6 +242,7 @@ namespace Microsoft.NETCore.Platforms.BuildTasks.Tests
         }
 
         [Fact]
+        [ActiveIssue("https://github.com/dotnet/runtime/issues/77889", TestPlatforms.iOS | TestPlatforms.tvOS)]
         public void CanAddNewGroups()
         {
             var additionalRIDs = new[] { "yolinux.42.0-quantum" };

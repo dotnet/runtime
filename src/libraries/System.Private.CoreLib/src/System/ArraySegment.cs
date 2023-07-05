@@ -16,6 +16,7 @@ using System.Collections;
 using System.Collections.Generic;
 using System.Diagnostics;
 using System.Diagnostics.CodeAnalysis;
+using System.Runtime.CompilerServices;
 
 namespace System
 {
@@ -25,7 +26,7 @@ namespace System
     // three fields from an ArraySegment may not see the same ArraySegment from one call to another
     // (ie, users could assign a new value to the old location).
     [Serializable]
-    [System.Runtime.CompilerServices.TypeForwardedFrom("mscorlib, Version=4.0.0.0, Culture=neutral, PublicKeyToken=b77a5c561934e089")]
+    [TypeForwardedFrom("mscorlib, Version=4.0.0.0, Culture=neutral, PublicKeyToken=b77a5c561934e089")]
 #pragma warning disable CA1066 // adding IEquatable<T> implementation could change semantics of code like that in xunit that queries for IEquatable vs enumerating contents
     public readonly struct ArraySegment<T> : IList<T>, IReadOnlyList<T>
 #pragma warning restore CA1066
@@ -81,7 +82,7 @@ namespace System
             {
                 if ((uint)index >= (uint)_count)
                 {
-                    ThrowHelper.ThrowArgumentOutOfRange_IndexException();
+                    ThrowHelper.ThrowArgumentOutOfRange_IndexMustBeLessException();
                 }
 
                 return _array![_offset + index];
@@ -90,7 +91,7 @@ namespace System
             {
                 if ((uint)index >= (uint)_count)
                 {
-                    ThrowHelper.ThrowArgumentOutOfRange_IndexException();
+                    ThrowHelper.ThrowArgumentOutOfRange_IndexMustBeLessException();
                 }
 
                 _array![_offset + index] = value;
@@ -139,7 +140,7 @@ namespace System
 
             if ((uint)index > (uint)_count)
             {
-                ThrowHelper.ThrowArgumentOutOfRange_IndexException();
+                ThrowHelper.ThrowArgumentOutOfRange_IndexMustBeLessOrEqualException();
             }
 
             return new ArraySegment<T>(_array!, _offset + index, _count - index);
@@ -151,7 +152,7 @@ namespace System
 
             if ((uint)index > (uint)_count || (uint)count > (uint)(_count - index))
             {
-                ThrowHelper.ThrowArgumentOutOfRange_IndexException();
+                ThrowHelper.ThrowArgumentOutOfRange_IndexMustBeLessOrEqualException();
             }
 
             return new ArraySegment<T>(_array!, _offset + index, count);
@@ -184,7 +185,7 @@ namespace System
             {
                 ThrowInvalidOperationIfDefault();
                 if (index < 0 || index >= _count)
-                    ThrowHelper.ThrowArgumentOutOfRange_IndexException();
+                    ThrowHelper.ThrowArgumentOutOfRange_IndexMustBeLessException();
 
                 return _array![_offset + index];
             }
@@ -193,7 +194,7 @@ namespace System
             {
                 ThrowInvalidOperationIfDefault();
                 if (index < 0 || index >= _count)
-                    ThrowHelper.ThrowArgumentOutOfRange_IndexException();
+                    ThrowHelper.ThrowArgumentOutOfRange_IndexMustBeLessException();
 
                 _array![_offset + index] = value;
             }
@@ -203,7 +204,7 @@ namespace System
         {
             ThrowInvalidOperationIfDefault();
 
-            int index = System.Array.IndexOf<T>(_array!, item, _offset, _count);
+            int index = System.Array.IndexOf(_array!, item, _offset, _count);
 
             Debug.Assert(index < 0 ||
                             (index >= _offset && index < _offset + _count));
@@ -223,7 +224,7 @@ namespace System
             {
                 ThrowInvalidOperationIfDefault();
                 if (index < 0 || index >= _count)
-                    ThrowHelper.ThrowArgumentOutOfRange_IndexException();
+                    ThrowHelper.ThrowArgumentOutOfRange_IndexMustBeLessException();
 
                 return _array![_offset + index];
             }
@@ -244,7 +245,7 @@ namespace System
         {
             ThrowInvalidOperationIfDefault();
 
-            int index = System.Array.IndexOf<T>(_array!, item, _offset, _count);
+            int index = System.Array.IndexOf(_array!, item, _offset, _count);
 
             Debug.Assert(index < 0 ||
                             (index >= _offset && index < _offset + _count));
@@ -261,12 +262,18 @@ namespace System
 
         #region IEnumerable<T>
 
-        IEnumerator<T> IEnumerable<T>.GetEnumerator() => GetEnumerator();
+        IEnumerator<T> IEnumerable<T>.GetEnumerator()
+        {
+            ThrowInvalidOperationIfDefault();
+            return
+                Count == 0 ? SZGenericArrayEnumerator<T>.Empty :
+                new Enumerator(this);
+        }
         #endregion
 
         #region IEnumerable
 
-        IEnumerator IEnumerable.GetEnumerator() => GetEnumerator();
+        IEnumerator IEnumerable.GetEnumerator() => ((IEnumerable<T>)this).GetEnumerator();
         #endregion
 
         private void ThrowInvalidOperationIfDefault()

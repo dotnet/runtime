@@ -11,7 +11,11 @@ namespace System.Resources.Extensions
     public partial class DeserializingResourceReader
     {
         private bool _assumeBinaryFormatter;
+
+// Issue https://github.com/dotnet/runtime/issues/39292 tracks finding an alternative to BinaryFormatter
+#pragma warning disable SYSLIB0011
         private BinaryFormatter? _formatter;
+#pragma warning restore SYSLIB0011
 
         private bool ValidateReaderType(string readerType)
         {
@@ -37,13 +41,10 @@ namespace System.Resources.Extensions
 #pragma warning disable SYSLIB0011
         private object ReadBinaryFormattedObject()
         {
-            if (_formatter == null)
+            _formatter ??= new BinaryFormatter()
             {
-                _formatter = new BinaryFormatter()
-                {
-                    Binder = new UndoTruncatedTypeNameSerializationBinder()
-                };
-            }
+                Binder = new UndoTruncatedTypeNameSerializationBinder()
+            };
 
             return _formatter.Deserialize(_store.BaseStream);
         }

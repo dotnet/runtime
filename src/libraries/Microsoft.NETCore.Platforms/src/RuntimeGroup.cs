@@ -78,7 +78,7 @@ namespace Microsoft.NETCore.Platforms.BuildTasks
             }
         }
 
-        internal class RIDMapping
+        internal sealed class RIDMapping
         {
             public RIDMapping(RID runtimeIdentifier)
             {
@@ -264,7 +264,7 @@ namespace Microsoft.NETCore.Platforms.BuildTasks
             }
         }
 
-        private bool IsNullOrRoot(string rid)
+        private static bool IsNullOrRoot(string rid)
         {
             return rid == null || rid == rootRID;
         }

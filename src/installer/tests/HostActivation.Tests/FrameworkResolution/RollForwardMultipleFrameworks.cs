@@ -128,9 +128,9 @@ namespace Microsoft.DotNet.CoreSetup.Test.HostActivation.FrameworkResolution
 
         // Verify that inner framework reference (<fxRefVersion>, <rollForward>)
         // is correctly reconciled with app's framework reference 5.1.1 (defaults = RollForward:Minor). App fx reference is lower.
-        // Also validates that since all relevant available versions are release, 
+        // Also validates that since all relevant available versions are release,
         // the DOTNET_ROLL_FORWARD_TO_PRERELEASE has no effect on the result.
-        [Theory] // fxRefVersion  rollForward                               rollForwadToPreRelease resolvedFramework
+        [Theory] // fxRefVersion  rollForward                               rollForwardToPreRelease resolvedFramework
         [InlineData("5.1.3",      Constants.RollForwardSetting.Disable,     false,                 "5.1.3")]
         [InlineData("5.4.0",      null,                                     false,                 "5.4.1")]
         [InlineData("5.4.0",      Constants.RollForwardSetting.Minor,       false,                 "5.4.1")]
@@ -209,7 +209,7 @@ namespace Microsoft.DotNet.CoreSetup.Test.HostActivation.FrameworkResolution
         // Verify that inner framework reference (<fxRefVersion>, <rollForward>)
         // is correctly reconciled with app's framework reference 6.1.1-preview.0 (defaults = RollForward:Minor).
         // Also validates the effect of DOTNET_ROLL_FORWARD_TO_PRERELEASE on the result.
-        [Theory] // fxRefVersion       rollForward                               rollForwadToPreRelease resolvedFramework
+        [Theory] // fxRefVersion       rollForward                               rollForwardToPreRelease resolvedFramework
         [InlineData("6.0.0-preview.1", null,                                     false,                 "6.1.1-preview.2")]
         [InlineData("6.0.0",           null,                                     false,                 "6.2.1")]
         [InlineData("6.0.0",           Constants.RollForwardSetting.LatestPatch, false,                 ResolvedFramework.FailedToReconcile)]
@@ -267,7 +267,7 @@ namespace Microsoft.DotNet.CoreSetup.Test.HostActivation.FrameworkResolution
         // Verify that inner framework reference (<fxRefVersion>, <rollForward>)
         // is correctly reconciled with app's framework reference 6.1.0 (defaults = RollForward:Minor).
         // Also validates the effect of DOTNET_ROLL_FORWARD_TO_PRERELEASE on the result.
-        [Theory] // fxRefVersion       rollForward                               rollForwadToPreRelease resolvedFramework
+        [Theory] // fxRefVersion       rollForward                               rollForwardToPreRelease resolvedFramework
         [InlineData("6.0.0",           null,                                     false,                 "6.1.0")]
         [InlineData("6.0.0",           null,                                     true,                  "6.1.1-preview.3")]
         [InlineData("6.0.0",           Constants.RollForwardSetting.LatestPatch, false,                 ResolvedFramework.FailedToReconcile)]
@@ -537,7 +537,7 @@ namespace Microsoft.DotNet.CoreSetup.Test.HostActivation.FrameworkResolution
 
         // This test:
         //  - Forces hard resolve of 5.1.1 -> 5.1.3 (direct reference from app)
-        //  - Loads HighWare which has 5.4.1 
+        //  - Loads HighWare which has 5.4.1
         //    - This forces a retry since 5.1.3 was hard resolved, so we have reload with 5.4.1 instead
         //  - Loads MiddleWare which has 5.6.0
         //    - This forces a retry since by this time 5.4.1 was hard resolved, so we have to reload with 5.6.0 instead
@@ -566,7 +566,7 @@ namespace Microsoft.DotNet.CoreSetup.Test.HostActivation.FrameworkResolution
 
         // This test:
         //  - Forces hard resolve of 5.1.1 -> 5.1.3 (direct reference from app)
-        //  - Loads MiddleWare which has 5.4.1 
+        //  - Loads MiddleWare which has 5.4.1
         //    - This forces a retry since 5.1.3 was hard resolved, so we have reload with 5.4.1 instead
         //  - Loads AnotherMiddleWare which has 5.6.0
         //    - This forces a retry since by this time 5.4.1 was hard resolved, so we have to reload with 5.6.0 instead

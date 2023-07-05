@@ -163,7 +163,7 @@ namespace System.Xml.Tests
 
             // for function TRReadOuterXml28
             {
-                this.AddChild(new CVariation(TRReadOuterXml28) { Attribute = new Variation("ReadOuterXml on attribute with entities, EntityHandling = ExpandCharEntites") });
+                this.AddChild(new CVariation(TRReadOuterXml28) { Attribute = new Variation("ReadOuterXml on attribute with entities, EntityHandling = ExpandCharEntities") });
             }
 
 

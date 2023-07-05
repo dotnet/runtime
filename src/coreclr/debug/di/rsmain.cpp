@@ -1,20 +1,18 @@
 // Licensed to the .NET Foundation under one or more agreements.
 // The .NET Foundation licenses this file to you under the MIT license.
+
 //*****************************************************************************
 // File: RsMain.cpp
 //
-
-// Random RS utility stuff, plus root ICorCordbug implementation
+// Random RS utility stuff, plus root ICorDebug implementation
 //
 //*****************************************************************************
+
 #include "stdafx.h"
 #include "primitives.h"
 #include "safewrap.h"
 
 #include "check.h"
-
-#include <tlhelp32.h>
-#include "wtsapi32.h"
 
 #ifndef SM_REMOTESESSION
 #define SM_REMOTESESSION 0x1000
@@ -956,17 +954,18 @@ namespace
  * Cordb class
  * ------------------------------------------------------------------------- */
 Cordb::Cordb(CorDebugInterfaceVersion iDebuggerVersion)
-  : Cordb(iDebuggerVersion, ProcessDescriptor::CreateUninitialized())
+  : Cordb(iDebuggerVersion, ProcessDescriptor::CreateUninitialized(), NULL)
 {
 }
 
-Cordb::Cordb(CorDebugInterfaceVersion iDebuggerVersion, const ProcessDescriptor& pd)
-  : CordbBase(NULL, 0, enumCordb)
-  , m_processes(11)
-  , m_initialized(false)
-  , m_debuggerSpecifiedVersion(iDebuggerVersion)
-  , m_pd(pd)
-  , m_targetCLR(0)
+Cordb::Cordb(CorDebugInterfaceVersion iDebuggerVersion, const ProcessDescriptor& pd, LPCWSTR dacModulePath)
+  : CordbBase(NULL, 0, enumCordb),
+    m_processes(11),
+    m_initialized(false),
+    m_debuggerSpecifiedVersion(iDebuggerVersion),
+    m_pd(pd),
+    m_dacModulePath(dacModulePath),
+    m_targetCLR(0)
 {
     g_pRSDebuggingInfo->m_Cordb = this;
 
@@ -2049,7 +2048,7 @@ void Cordb::EnsureCanLaunchOrAttach(BOOL fWin32DebuggingEnabled)
 
 HRESULT Cordb::CreateObjectV1(REFIID id, void **object)
 {
-    return CreateObject(CorDebugVersion_1_0, ProcessDescriptor::UNINITIALIZED_PID, NULL, id, object);
+    return CreateObject(CorDebugVersion_1_0, ProcessDescriptor::UNINITIALIZED_PID, NULL, NULL, id, object);
 }
 
 #if defined(FEATURE_DBGIPC_TRANSPORT_DI)
@@ -2057,13 +2056,13 @@ HRESULT Cordb::CreateObjectV1(REFIID id, void **object)
 // same debug engine version as V2, though this may change in the future.
 HRESULT Cordb::CreateObjectTelesto(REFIID id, void ** pObject)
 {
-    return CreateObject(CorDebugVersion_2_0, ProcessDescriptor::UNINITIALIZED_PID, NULL, id, pObject);
+    return CreateObject(CorDebugVersion_2_0, ProcessDescriptor::UNINITIALIZED_PID, NULL, NULL, id, pObject);
 }
 #endif // FEATURE_DBGIPC_TRANSPORT_DI
 
 // Static
 // Used to create an instance for a ClassFactory (thus an external ref).
-HRESULT Cordb::CreateObject(CorDebugInterfaceVersion iDebuggerVersion, DWORD pid, LPCWSTR lpApplicationGroupId, REFIID id, void **object)
+HRESULT Cordb::CreateObject(CorDebugInterfaceVersion iDebuggerVersion, DWORD pid, LPCWSTR lpApplicationGroupId, LPCWSTR dacModulePath, REFIID id, void **object)
 {
     if (id != IID_IUnknown && id != IID_ICorDebug)
         return (E_NOINTERFACE);
@@ -2095,7 +2094,7 @@ HRESULT Cordb::CreateObject(CorDebugInterfaceVersion iDebuggerVersion, DWORD pid
 
     ProcessDescriptor pd = ProcessDescriptor::Create(pid, applicationGroupId);
 
-    Cordb *db = new (nothrow) Cordb(iDebuggerVersion, pd);
+    Cordb *db = new (nothrow) Cordb(iDebuggerVersion, pd, dacModulePath);
 
     if (db == NULL)
     {

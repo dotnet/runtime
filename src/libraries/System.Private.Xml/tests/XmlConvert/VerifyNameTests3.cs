@@ -3,7 +3,7 @@
 
 using OLEDB.Test.ModuleCore;
 
-namespace System.Xml.Tests
+namespace System.Xml.XmlConvertTests
 {
     internal class VerifyNameTests3 : CTestCase
     {
@@ -42,8 +42,8 @@ namespace System.Xml.Tests
             AddChild(new CVariation(v17) { Attribute = new Variation("Test for VerifyNMTOKEN(null)") { Param = 1 } });
             AddChild(new CVariation(v18) { Attribute = new Variation("Test for VerifyPublicId(String.Empty)") { Params = new object[] { 6, null } } });
             AddChild(new CVariation(v18) { Attribute = new Variation("Test for VerifyWhitespace(String.Empty)") { Params = new object[] { 7, null } } });
-            AddChild(new CVariation(v18) { Attribute = new Variation("Test for VerifyName(String.Empty)") { Params = new object[] { 2, typeof(ArgumentNullException) } } });
-            AddChild(new CVariation(v18) { Attribute = new Variation("Test for VerifyNCName(String.Empty)") { Params = new object[] { 3, typeof(ArgumentNullException) } } });
+            AddChild(new CVariation(v18) { Attribute = new Variation("Test for VerifyName(String.Empty)") { Params = new object[] { 2, typeof(ArgumentException) } } });
+            AddChild(new CVariation(v18) { Attribute = new Variation("Test for VerifyNCName(String.Empty)") { Params = new object[] { 3, typeof(ArgumentException) } } });
             AddChild(new CVariation(v18) { Attribute = new Variation("Test for VerifyXmlChars(String.Empty)") { Params = new object[] { 5, null } } });
             AddChild(new CVariation(v18) { Attribute = new Variation("Test for VerifyNMTOKEN(String.Empty)") { Params = new object[] { 1, typeof(XmlException) } } });
         }

@@ -2,6 +2,7 @@
 // The .NET Foundation licenses this file to you under the MIT license.
 
 using System.ComponentModel;
+using System.Runtime.Versioning;
 using System.Text;
 
 namespace System.Diagnostics
@@ -32,6 +33,9 @@ namespace System.Diagnostics
         /// Returns the amount of time the thread has spent running code inside the operating
         /// system core.
         /// </summary>
+        [UnsupportedOSPlatform("ios")]
+        [UnsupportedOSPlatform("tvos")]
+        [SupportedOSPlatform("maccatalyst")]
         public TimeSpan PrivilegedProcessorTime
         {
             get
@@ -48,6 +52,9 @@ namespace System.Diagnostics
         /// It is the sum of the System.Diagnostics.ProcessThread.UserProcessorTime and
         /// System.Diagnostics.ProcessThread.PrivilegedProcessorTime.
         /// </summary>
+        [UnsupportedOSPlatform("ios")]
+        [UnsupportedOSPlatform("tvos")]
+        [SupportedOSPlatform("maccatalyst")]
         public TimeSpan TotalProcessorTime
         {
             get
@@ -61,6 +68,9 @@ namespace System.Diagnostics
         /// Returns the amount of time the associated thread has spent running code
         /// inside the application (not the operating system core).
         /// </summary>
+        [UnsupportedOSPlatform("ios")]
+        [UnsupportedOSPlatform("tvos")]
+        [SupportedOSPlatform("maccatalyst")]
         public TimeSpan UserProcessorTime
         {
             get

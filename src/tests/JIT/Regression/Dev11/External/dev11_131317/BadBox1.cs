@@ -3,6 +3,7 @@
 
 using System;
 using System.Runtime.CompilerServices;
+using Xunit;
 
 namespace BadBox1
 {
@@ -27,7 +28,7 @@ namespace BadBox1
     }
 
 
-    internal static class App
+    public static class App
     {
         [MethodImpl(MethodImplOptions.NoInlining)]
         private static void RunScenario()
@@ -43,7 +44,8 @@ namespace BadBox1
         }
 
 
-        private static int Main()
+        [Fact]
+        public static int TestEntryPoint()
         {
             try
             {

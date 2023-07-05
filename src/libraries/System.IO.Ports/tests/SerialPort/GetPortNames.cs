@@ -18,7 +18,7 @@ namespace System.IO.Ports.Tests
         /// <summary>
         /// Check that all ports either open correctly or fail with UnauthorizedAccessException (which implies they're already open)
         /// </summary>
-        [ConditionalFact(typeof(PlatformDetection), nameof(PlatformDetection.IsNotWindowsNanoServer))]
+        [ConditionalFact(typeof(PlatformDetection), nameof(PlatformDetection.IsNotWindowsNanoNorServerCore))]
         [ActiveIssue("https://github.com/dotnet/runtime/issues/34490", TestPlatforms.Windows, TargetFrameworkMonikers.Netcoreapp, TestRuntimes.Mono)]
         public void OpenEveryPortName()
         {
@@ -40,7 +40,7 @@ namespace System.IO.Ports.Tests
         /// Test that SerialPort.GetPortNames finds every port that the test helpers have found.
         /// (On Windows, the latter uses a different technique to SerialPort to find ports).
         /// </summary>
-        [ConditionalFact(typeof(PlatformDetection), nameof(PlatformDetection.IsNotWindowsNanoServer))]
+        [ConditionalFact(typeof(PlatformDetection), nameof(PlatformDetection.IsNotWindowsNanoNorServerCore))]
         public void AllHelperPortsAreInGetPortNames()
         {
             if (PlatformDetection.IsWindows && PlatformDetection.IsArmOrArm64Process)
@@ -62,7 +62,7 @@ namespace System.IO.Ports.Tests
         /// This catches regressions in the test helpers,
         /// eg https://github.com/dotnet/corefx/pull/18928 / https://github.com/dotnet/corefx/pull/20668
         /// </summary>
-        [ConditionalFact(typeof(PlatformDetection), nameof(PlatformDetection.IsNotWindowsNanoServer))]
+        [ConditionalFact(typeof(PlatformDetection), nameof(PlatformDetection.IsNotWindowsNanoNorServerCore))]
         public void AllGetPortNamesAreInHelperPorts()
         {
             string[] helperPortNames = PortHelper.GetPorts();

@@ -103,7 +103,7 @@ namespace System.Text.Json.Tests
         [Fact]
         public static void ZeroMaxDepthDefaultsTo64()
         {
-            byte[] dataUtf8 = Encoding.UTF8.GetBytes("{}");
+            byte[] dataUtf8 = "{}"u8.ToArray();
 
             ReadOnlyMemory<byte> dataMemory = dataUtf8;
             var firstSegment = new BufferSegment<byte>(dataMemory.Slice(0, 1));
@@ -134,7 +134,7 @@ namespace System.Text.Json.Tests
         [Fact]
         public static void MaxDepthIsHonored()
         {
-            byte[] dataUtf8 = Encoding.UTF8.GetBytes("{}");
+            byte[] dataUtf8 = "{}"u8.ToArray();
 
             ReadOnlyMemory<byte> dataMemory = dataUtf8;
             var firstSegment = new BufferSegment<byte>(dataMemory.Slice(0, 1));

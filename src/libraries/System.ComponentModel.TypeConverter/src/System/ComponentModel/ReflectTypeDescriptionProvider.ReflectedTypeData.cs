@@ -149,7 +149,7 @@ namespace System.ComponentModel
             /// <summary>
             /// Retrieves the class name for our type.
             /// </summary>
-            internal string? GetClassName(object? instance) => _type.FullName;
+            internal string? GetClassName() => _type.FullName;
 
             /// <summary>
             /// Retrieves the component name from the site.
@@ -199,10 +199,7 @@ namespace System.ComponentModel
                 // If we got here, we return our type-based converter.
                 if (_converter == null)
                 {
-                    if (typeAttr == null)
-                    {
-                        typeAttr = (TypeConverterAttribute?)TypeDescriptor.GetAttributes(_type)[typeof(TypeConverterAttribute)];
-                    }
+                    typeAttr ??= (TypeConverterAttribute?)TypeDescriptor.GetAttributes(_type)[typeof(TypeConverterAttribute)];
 
                     if (typeAttr != null)
                     {
@@ -509,10 +506,7 @@ namespace System.ComponentModel
                     t = _type.Assembly.GetType(typeName);
                 }
 
-                if (t == null)
-                {
-                    t = Type.GetType(typeName);
-                }
+                t ??= Type.GetType(typeName);
 
                 if (t == null && commaIndex != -1)
                 {

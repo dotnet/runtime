@@ -7,21 +7,18 @@ using System.Runtime.CompilerServices;
 using System.Runtime.InteropServices;
 using System.Runtime.Intrinsics.X86;
 using System.Runtime.Intrinsics;
+using Xunit;
 
-namespace IntelHardwareIntrinsicTest
+namespace IntelHardwareIntrinsicTest.SSE2
 {
-    class Program
+    public partial class Program
     {
-        const int Pass = 100;
-        const int Fail = 0;
-
-        static unsafe int Main(string[] args)
+        [Fact]
+        public static unsafe void LoadLow()
         {
-            int testResult = Pass;
-
             if (Sse2.IsSupported)
             {
-                using (TestTable<double> doubleTable = new TestTable<double>(new double[2] { 1, -5 }, new double[2] { 22, -1 }, new double[2]))
+                using (TestTable_2Input<double> doubleTable = new TestTable_2Input<double>(new double[2] { 1, -5 }, new double[2] { 22, -1 }, new double[2]))
                 {
                     var vf1 = Unsafe.Read<Vector128<double>>(doubleTable.inArray1Ptr);
                     var vf2 = Sse2.LoadLow(vf1, (double*)(doubleTable.inArray2Ptr));
@@ -35,49 +32,10 @@ namespace IntelHardwareIntrinsicTest
                             Console.Write(item + ", ");
                         }
                         Console.WriteLine();
-                        testResult = Fail;
+                        Assert.Fail("");
                     }
                 }
             }
-
-            return testResult;
         }
-
-        public unsafe struct TestTable<T> : IDisposable where T : struct
-        {
-            public T[] inArray1;
-            public T[] inArray2;
-            public T[] outArray;
-
-            public void* inArray1Ptr => inHandle1.AddrOfPinnedObject().ToPointer();
-            public void* inArray2Ptr => inHandle2.AddrOfPinnedObject().ToPointer();
-            public void* outArrayPtr => outHandle.AddrOfPinnedObject().ToPointer();
-
-            GCHandle inHandle1;
-            GCHandle inHandle2;
-            GCHandle outHandle;
-            public TestTable(T[] a, T[] b, T[] c)
-            {
-                this.inArray1 = a;
-                this.inArray2 = b;
-                this.outArray = c;
-
-                inHandle1 = GCHandle.Alloc(inArray1, GCHandleType.Pinned);
-                inHandle2 = GCHandle.Alloc(inArray2, GCHandleType.Pinned);
-                outHandle = GCHandle.Alloc(outArray, GCHandleType.Pinned);
-            }
-            public bool CheckResult(Func<T[], T[], T[], bool> check)
-            {
-                return check(inArray1, inArray2, outArray);
-            }
-
-            public void Dispose()
-            {
-                inHandle1.Free();
-                inHandle2.Free();
-                outHandle.Free();
-            }
-        }
-
     }
 }

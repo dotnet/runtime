@@ -9,6 +9,7 @@ namespace Microsoft.Extensions.DependencyInjection
     public static partial class ActivatorUtilities
     {
         public static Microsoft.Extensions.DependencyInjection.ObjectFactory CreateFactory([System.Diagnostics.CodeAnalysis.DynamicallyAccessedMembersAttribute(System.Diagnostics.CodeAnalysis.DynamicallyAccessedMemberTypes.PublicConstructors)] System.Type instanceType, System.Type[] argumentTypes) { throw null; }
+        public static Microsoft.Extensions.DependencyInjection.ObjectFactory<T> CreateFactory<[System.Diagnostics.CodeAnalysis.DynamicallyAccessedMembersAttribute(System.Diagnostics.CodeAnalysis.DynamicallyAccessedMemberTypes.PublicConstructors)] T>(System.Type[] argumentTypes) { throw null; }
         public static object CreateInstance(System.IServiceProvider provider, [System.Diagnostics.CodeAnalysis.DynamicallyAccessedMembersAttribute(System.Diagnostics.CodeAnalysis.DynamicallyAccessedMemberTypes.PublicConstructors)] System.Type instanceType, params object[] parameters) { throw null; }
         public static T CreateInstance<[System.Diagnostics.CodeAnalysis.DynamicallyAccessedMembersAttribute(System.Diagnostics.CodeAnalysis.DynamicallyAccessedMemberTypes.PublicConstructors)] T>(System.IServiceProvider provider, params object[] parameters) { throw null; }
         public static object GetServiceOrCreateInstance(System.IServiceProvider provider, [System.Diagnostics.CodeAnalysis.DynamicallyAccessedMembersAttribute(System.Diagnostics.CodeAnalysis.DynamicallyAccessedMemberTypes.PublicConstructors)] System.Type type) { throw null; }
@@ -53,6 +54,7 @@ namespace Microsoft.Extensions.DependencyInjection
         object GetRequiredService(System.Type serviceType);
     }
     public delegate object ObjectFactory(System.IServiceProvider serviceProvider, object?[]? arguments);
+    public delegate T ObjectFactory<T>(System.IServiceProvider serviceProvider, object?[]? arguments);
     public partial class ServiceCollection : Microsoft.Extensions.DependencyInjection.IServiceCollection, System.Collections.Generic.ICollection<Microsoft.Extensions.DependencyInjection.ServiceDescriptor>, System.Collections.Generic.IEnumerable<Microsoft.Extensions.DependencyInjection.ServiceDescriptor>, System.Collections.Generic.IList<Microsoft.Extensions.DependencyInjection.ServiceDescriptor>, System.Collections.IEnumerable
     {
         public ServiceCollection() { }
@@ -65,6 +67,7 @@ namespace Microsoft.Extensions.DependencyInjection
         public System.Collections.Generic.IEnumerator<Microsoft.Extensions.DependencyInjection.ServiceDescriptor> GetEnumerator() { throw null; }
         public int IndexOf(Microsoft.Extensions.DependencyInjection.ServiceDescriptor item) { throw null; }
         public void Insert(int index, Microsoft.Extensions.DependencyInjection.ServiceDescriptor item) { }
+        public void MakeReadOnly() { }
         public bool Remove(Microsoft.Extensions.DependencyInjection.ServiceDescriptor item) { throw null; }
         public void RemoveAt(int index) { }
         void System.Collections.Generic.ICollection<Microsoft.Extensions.DependencyInjection.ServiceDescriptor>.Add(Microsoft.Extensions.DependencyInjection.ServiceDescriptor item) { }
@@ -141,6 +144,7 @@ namespace Microsoft.Extensions.DependencyInjection
         public static Microsoft.Extensions.DependencyInjection.IServiceScope CreateScope(this System.IServiceProvider provider) { throw null; }
         public static object GetRequiredService(this System.IServiceProvider provider, System.Type serviceType) { throw null; }
         public static T GetRequiredService<T>(this System.IServiceProvider provider) where T : notnull { throw null; }
+        [System.Diagnostics.CodeAnalysis.RequiresDynamicCodeAttribute("The native code for an IEnumerable<serviceType> might not be available at runtime.")]
         public static System.Collections.Generic.IEnumerable<object?> GetServices(this System.IServiceProvider provider, System.Type serviceType) { throw null; }
         public static System.Collections.Generic.IEnumerable<T> GetServices<T>(this System.IServiceProvider provider) { throw null; }
         public static T? GetService<T>(this System.IServiceProvider provider) { throw null; }

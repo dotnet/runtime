@@ -47,7 +47,7 @@ namespace System.Text.Json
         {
             if (_currentDepth < AllocationFreeMaxDepth)
             {
-                _allocationFreeContainer = _allocationFreeContainer << 1;
+                _allocationFreeContainer <<= 1;
             }
             else
             {
@@ -60,10 +60,7 @@ namespace System.Text.Json
         [MethodImpl(MethodImplOptions.NoInlining)]
         private void PushToArray(bool value)
         {
-            if (_array == null)
-            {
-                _array = new int[DefaultInitialArraySize];
-            }
+            _array ??= new int[DefaultInitialArraySize];
 
             int index = _currentDepth - AllocationFreeMaxDepth;
 

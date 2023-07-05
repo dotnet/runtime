@@ -225,7 +225,7 @@ namespace System.ComponentModel
             // 2. Attributes from our base MemberDescriptor. While this seems opposite of what
             //     we want, MemberDescriptor only has attributes if someone passed in a new
             //     set in the constructor. Therefore, these attributes always
-            //     supercede existing values.
+            //     supersede existing values.
 
             FillMethods();
             Debug.Assert(_componentClass != null, "Must have a component class for FilterAttributes");

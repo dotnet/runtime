@@ -110,7 +110,7 @@ namespace System.Reflection.Tests
             Type t = typeof(TestClass1);
             const BindingFlags bf = BindingFlags.Public | BindingFlags.Static | BindingFlags.DeclaredOnly;
             Type[] args = { typeof(int) };
-            Assert.Throws<ArgumentException>(() => t.GetMethod("Moo", -1, bf, null, args, null));
+            AssertExtensions.Throws<ArgumentOutOfRangeException>("genericParameterCount", () => t.GetMethod("Moo", -1, bf, null, args, null));
         }
 
         [Theory]
@@ -220,7 +220,7 @@ namespace System.Reflection.Tests
         [InlineData(int.MinValue)]
         public static void MakeGenericMethodParameterNegative(int position)
         {
-            Assert.Throws<ArgumentException>(() => Type.MakeGenericMethodParameter(position));
+            AssertExtensions.Throws<ArgumentOutOfRangeException>("position", () => Type.MakeGenericMethodParameter(position));
         }
 
         [Fact]

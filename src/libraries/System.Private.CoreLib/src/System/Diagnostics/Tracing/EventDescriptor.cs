@@ -5,16 +5,9 @@ using System;
 using System.Diagnostics.CodeAnalysis;
 using System.Runtime.InteropServices;
 
-#if ES_BUILD_STANDALONE
-namespace Microsoft.Diagnostics.Tracing
-#else
 namespace System.Diagnostics.Tracing
-#endif
 {
     [StructLayout(LayoutKind.Explicit, Size = 16)]
-#if ES_BUILD_STANDALONE
-    [System.Security.Permissions.HostProtection(MayLeakOnAbort = true)]
-#endif
     internal readonly struct EventDescriptor : IEquatable<EventDescriptor>
     {
         #region private
@@ -63,10 +56,7 @@ namespace System.Diagnostics.Tracing
                 long keywords
                 )
         {
-            if (id < 0)
-            {
-                throw new ArgumentOutOfRangeException(nameof(id), SR.ArgumentOutOfRange_NeedNonNegNum);
-            }
+            ArgumentOutOfRangeException.ThrowIfNegative(id);
 
             if (id > ushort.MaxValue)
             {
@@ -81,10 +71,7 @@ namespace System.Diagnostics.Tracing
             m_opcode = opcode;
             m_keywords = keywords;
 
-            if (task < 0)
-            {
-                throw new ArgumentOutOfRangeException(nameof(task), SR.ArgumentOutOfRange_NeedNonNegNum);
-            }
+            ArgumentOutOfRangeException.ThrowIfNegative(task);
 
             if (task > ushort.MaxValue)
             {

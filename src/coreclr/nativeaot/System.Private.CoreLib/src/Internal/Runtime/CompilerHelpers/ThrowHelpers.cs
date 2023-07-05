@@ -9,7 +9,7 @@ namespace Internal.Runtime.CompilerHelpers
 {
     /// <summary>
     /// These methods are used to throw exceptions from generated code. The type and methods
-    /// need to be public as they constitute a public contract with the .NET Native toolchain.
+    /// need to be public as they constitute a public contract with the NativeAOT toolchain.
     /// </summary>
     public static class ThrowHelpers
     {
@@ -116,6 +116,11 @@ namespace Internal.Runtime.CompilerHelpers
         public static void ThrowMarshalDirectiveException(ExceptionStringID id)
         {
             throw TypeLoaderExceptionHelper.CreateMarshalDirectiveException(id);
+        }
+
+        public static void ThrowAmbiguousMatchException(ExceptionStringID id)
+        {
+            throw TypeLoaderExceptionHelper.CreateAmbiguousMatchException(id);
         }
 
         public static void ThrowArgumentException()

@@ -1,7 +1,6 @@
 // Licensed to the .NET Foundation under one or more agreements.
 // The .NET Foundation licenses this file to you under the MIT license.
 
-#nullable disable
 using System;
 using System.Collections.Generic;
 using System.Diagnostics;
@@ -37,7 +36,7 @@ namespace System.Xml.Xsl.Runtime
         /// <summary>
         /// Start construction of a new Xml tree (document or fragment).
         /// </summary>
-        public abstract XmlRawWriter StartTree(XPathNodeType rootType, IXmlNamespaceResolver nsResolver, XmlNameTable nameTable);
+        public abstract XmlRawWriter StartTree(XPathNodeType rootType, IXmlNamespaceResolver? nsResolver, XmlNameTable nameTable);
 
         /// <summary>
         /// End construction of a new Xml tree (document or fragment).
@@ -57,8 +56,8 @@ namespace System.Xml.Xsl.Runtime
     internal sealed class XmlCachedSequenceWriter : XmlSequenceWriter
     {
         private readonly XmlQueryItemSequence _seqTyped;
-        private XPathDocument _doc;
-        private XmlRawWriter _writer;
+        private XPathDocument? _doc;
+        private XmlRawWriter? _writer;
 
         /// <summary>
         /// Constructor.
@@ -79,7 +78,7 @@ namespace System.Xml.Xsl.Runtime
         /// <summary>
         /// Start construction of a new Xml tree (document or fragment).
         /// </summary>
-        public override XmlRawWriter StartTree(XPathNodeType rootType, IXmlNamespaceResolver nsResolver, XmlNameTable nameTable)
+        public override XmlRawWriter StartTree(XPathNodeType rootType, IXmlNamespaceResolver? nsResolver, XmlNameTable nameTable)
         {
             // Build XPathDocument
             // If rootType != XPathNodeType.Root, then build an XQuery fragment
@@ -95,8 +94,8 @@ namespace System.Xml.Xsl.Runtime
         public override void EndTree()
         {
             // Add newly constructed document to sequence
-            _writer.Close();
-            _seqTyped.Add(_doc.CreateNavigator());
+            _writer!.Close();
+            _seqTyped.Add(_doc!.CreateNavigator());
         }
 
         /// <summary>
@@ -136,7 +135,7 @@ namespace System.Xml.Xsl.Runtime
         /// <summary>
         /// Start construction of a new Xml tree (document or fragment).
         /// </summary>
-        public override XmlRawWriter StartTree(XPathNodeType rootType, IXmlNamespaceResolver nsResolver, XmlNameTable nameTable)
+        public override XmlRawWriter StartTree(XPathNodeType rootType, IXmlNamespaceResolver? nsResolver, XmlNameTable nameTable)
         {
             if (rootType == XPathNodeType.Attribute || rootType == XPathNodeType.Namespace)
                 throw new XslTransformException(SR.XmlIl_TopLevelAttrNmsp, string.Empty);
@@ -162,7 +161,7 @@ namespace System.Xml.Xsl.Runtime
         {
             if (item.IsNode)
             {
-                XPathNavigator nav = item as XPathNavigator;
+                XPathNavigator nav = (item as XPathNavigator)!;
 
                 if (nav.NodeType == XPathNodeType.Attribute || nav.NodeType == XPathNodeType.Namespace)
                     throw new XslTransformException(SR.XmlIl_TopLevelAttrNmsp, string.Empty);

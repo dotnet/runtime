@@ -436,89 +436,35 @@ mono_print_ins_index_strbuf (int i, MonoInst *ins)
 	GString *sbuf = g_string_new (NULL);
 	int num_sregs, j;
 	int sregs [MONO_MAX_SRC_REGS];
+	char spec_dest = (char)0, spec_src1 = (char)0, spec_src2 = (char)0, spec_src3 = (char)0;
 
 	if (i != -1)
 		g_string_append_printf (sbuf, "\t%-2d %s", i, mono_inst_name (ins->opcode));
 	else
 		g_string_append_printf (sbuf, " %s", mono_inst_name (ins->opcode));
-	if (spec == (gpointer)/*FIXME*/MONO_ARCH_CPU_SPEC) {
-		gboolean dest_base = FALSE;
-		switch (ins->opcode) {
-		case OP_STOREV_MEMBASE:
-			dest_base = TRUE;
-			break;
-		default:
-			break;
-		}
-
+	if (spec == (gpointer)MONO_ARCH_CPU_SPEC) {
 		/* This is a lowered opcode */
 		if (ins->dreg != -1) {
-			if (dest_base)
-				g_string_append_printf (sbuf, " [R%d + 0x%lx] <-", ins->dreg, (long)ins->inst_offset);
+			if (MONO_IS_STORE_MEMBASE (ins))
+				spec_dest = 'b';
 			else
-				g_string_append_printf (sbuf, " R%d <-", ins->dreg);
+				spec_dest = 'i';
 		}
 		if (ins->sreg1 != -1)
-			g_string_append_printf (sbuf, " R%d", ins->sreg1);
+			spec_src1 = 'i';
 		if (ins->sreg2 != -1)
-			g_string_append_printf (sbuf, " R%d", ins->sreg2);
+			spec_src2 = 'i';
 		if (ins->sreg3 != -1)
-			g_string_append_printf (sbuf, " R%d", ins->sreg3);
-
-		switch (ins->opcode) {
-		case OP_LBNE_UN:
-		case OP_LBEQ:
-		case OP_LBLT:
-		case OP_LBLT_UN:
-		case OP_LBGT:
-		case OP_LBGT_UN:
-		case OP_LBGE:
-		case OP_LBGE_UN:
-		case OP_LBLE:
-		case OP_LBLE_UN:
-			if (!ins->inst_false_bb)
-				g_string_append_printf (sbuf, " [B%d]", ins->inst_true_bb->block_num);
-			else
-				g_string_append_printf (sbuf, " [B%dB%d]", ins->inst_true_bb->block_num, ins->inst_false_bb->block_num);
-			break;
-		case OP_PHI:
-		case OP_VPHI:
-		case OP_XPHI:
-		case OP_FPHI: {
-			int i;
-			g_string_append_printf (sbuf, " [%d (", (int)ins->inst_c0);
-			for (i = 0; i < ins->inst_phi_args [0]; i++) {
-				if (i)
-					g_string_append_printf (sbuf, ", ");
-				g_string_append_printf (sbuf, "R%d", ins->inst_phi_args [i + 1]);
-			}
-			g_string_append_printf (sbuf, ")]");
-			break;
-		}
-		case OP_LDADDR:
-		case OP_OUTARG_VTRETADDR:
-			g_string_append_printf (sbuf, " R%d", ((MonoInst*)ins->inst_p0)->dreg);
-			break;
-		case OP_REGOFFSET:
-		case OP_GSHAREDVT_ARG_REGOFFSET:
-			g_string_append_printf (sbuf, " + 0x%lx", (long)ins->inst_offset);
-			break;
-		case OP_ISINST:
-		case OP_CASTCLASS:
-			g_string_append_printf (sbuf, " %s", m_class_get_name (ins->klass));
-			break;
-		default:
-			break;
-		}
-
-		//g_error ("Unknown opcode: %s\n", mono_inst_name (ins->opcode));
-		return sbuf;
+			spec_src3 = 'i';
+	} else {
+		spec_dest = spec [MONO_INST_DEST];
+		spec_src1 = spec [MONO_INST_SRC1];
 	}
 
-	if (spec [MONO_INST_DEST]) {
+	if (spec_dest) {
 		int bank = dreg_bank (spec);
 		if (is_soft_reg (ins->dreg, bank)) {
-			if (spec [MONO_INST_DEST] == 'b') {
+			if (spec_dest == 'b') {
 				if (ins->inst_offset == 0)
 					g_string_append_printf (sbuf, " [R%d] <-", ins->dreg);
 				else
@@ -526,7 +472,7 @@ mono_print_ins_index_strbuf (int i, MonoInst *ins)
 			}
 			else
 				g_string_append_printf (sbuf, " R%d <-", ins->dreg);
-		} else if (spec [MONO_INST_DEST] == 'b') {
+		} else if (spec_dest == 'b') {
 			if (ins->inst_offset == 0)
 				g_string_append_printf (sbuf, " [%s] <-", mono_arch_regname (ins->dreg));
 			else
@@ -534,25 +480,32 @@ mono_print_ins_index_strbuf (int i, MonoInst *ins)
 		} else
 			g_string_append_printf (sbuf, " %s <-", mono_regname_full (ins->dreg, bank));
 	}
-	if (spec [MONO_INST_SRC1]) {
+	if (spec_src1) {
 		int bank = sreg1_bank (spec);
 		if (is_soft_reg (ins->sreg1, bank)) {
-			if (spec [MONO_INST_SRC1] == 'b')
+			if (spec_src1 == 'b')
 				g_string_append_printf (sbuf, " [R%d + 0x%lx]", ins->sreg1, (long)ins->inst_offset);
 			else
 				g_string_append_printf (sbuf, " R%d", ins->sreg1);
-		} else if (spec [MONO_INST_SRC1] == 'b')
+		} else if (spec_src1 == 'b')
 			g_string_append_printf (sbuf, " [%s + 0x%lx]", mono_arch_regname (ins->sreg1), (long)ins->inst_offset);
 		else
 			g_string_append_printf (sbuf, " %s", mono_regname_full (ins->sreg1, bank));
 	}
-	num_sregs = mono_inst_get_src_registers (ins, sregs);
-	for (j = 1; j < num_sregs; ++j) {
-		int bank = sreg_bank (j, spec);
-		if (is_soft_reg (sregs [j], bank))
-			g_string_append_printf (sbuf, " R%d", sregs [j]);
-		else
-			g_string_append_printf (sbuf, " %s", mono_regname_full (sregs [j], bank));
+	if (spec != (gpointer)MONO_ARCH_CPU_SPEC) {
+		num_sregs = mono_inst_get_src_registers (ins, sregs);
+		for (j = 1; j < num_sregs; ++j) {
+			int bank = sreg_bank (j, spec);
+			if (is_soft_reg (sregs [j], bank))
+				g_string_append_printf (sbuf, " R%d", sregs [j]);
+			else
+				g_string_append_printf (sbuf, " %s", mono_regname_full (sregs [j], bank));
+		}
+	} else {
+		if (spec_src2)
+			g_string_append_printf (sbuf, " R%d", ins->sreg2);
+		if (spec_src3)
+			g_string_append_printf (sbuf, " R%d", ins->sreg3);
 	}
 
 	switch (ins->opcode) {
@@ -612,7 +565,7 @@ mono_print_ins_index_strbuf (int i, MonoInst *ins)
 
 		if (ins->opcode == OP_VCALL || ins->opcode == OP_VCALL_REG || ins->opcode == OP_VCALL_MEMBASE) {
 			/*
-			 * These are lowered opcodes, but they are in the .md files since the old
+			 * These are lowered opcodes, but they are in the .mdesc files since the old
 			 * JIT passes them to backends.
 			 */
 			if (ins->dreg != -1)
@@ -684,10 +637,16 @@ mono_print_ins_index_strbuf (int i, MonoInst *ins)
 	case OP_LBGE_UN:
 	case OP_LBLE:
 	case OP_LBLE_UN:
+#if defined(TARGET_RISCV64) || defined(TARGET_RISCV32)
+	case OP_RISCV_BNE:
+	case OP_RISCV_BEQ:
+	case OP_RISCV_BGE:
+#endif
 		if (!ins->inst_false_bb)
 			g_string_append_printf (sbuf, " [B%d]", ins->inst_true_bb->block_num);
 		else
-			g_string_append_printf (sbuf, " [B%dB%d]", ins->inst_true_bb->block_num, ins->inst_false_bb->block_num);
+			g_string_append_printf (sbuf, " [T:B%d F:B%d]", ins->inst_true_bb->block_num,
+			                        ins->inst_false_bb->block_num);
 		break;
 	case OP_LIVERANGE_START:
 	case OP_LIVERANGE_END:
@@ -729,6 +688,43 @@ mono_print_ins_index_strbuf (int i, MonoInst *ins)
 	case OP_COND_EXC_INC:
 		g_string_append_printf (sbuf, " %s", (const char*)ins->inst_p1);
 		break;
+	case OP_PHI:
+	case OP_VPHI:
+	case OP_XPHI:
+	case OP_FPHI: {
+		g_string_append_printf (sbuf, " [%d (", (int)ins->inst_c0);
+		for (j = 0; j < ins->inst_phi_args [0]; j++) {
+			if (j)
+				g_string_append_printf (sbuf, ", ");
+			g_string_append_printf (sbuf, "R%d", ins->inst_phi_args [j + 1]);
+		}
+		g_string_append_printf (sbuf, ")]");
+		break;
+	}
+	case OP_LDADDR:
+	case OP_OUTARG_VTRETADDR:
+		g_string_append_printf (sbuf, " R%d", ((MonoInst*)ins->inst_p0)->dreg);
+		break;
+	case OP_REGOFFSET:
+	case OP_GSHAREDVT_ARG_REGOFFSET:
+		g_string_append_printf (sbuf, " + 0x%lx", (long)ins->inst_offset);
+		break;
+	case OP_ISINST:
+	case OP_CASTCLASS:
+		g_string_append_printf (sbuf, " %s", m_class_get_name (ins->klass));
+		break;
+	case OP_XZERO:
+	case OP_XMOVE:
+	case OP_XBINOP:
+	case OP_LOADX_MEMBASE:
+	case OP_STOREX_MEMBASE: {
+		if (ins->klass) {
+			char *s = mono_class_full_name (ins->klass);
+			g_string_append_printf (sbuf, " [%s]", s);
+			g_free (s);
+		}
+		break;
+	}
 	default:
 		break;
 	}
@@ -1116,6 +1112,8 @@ get_callee_mask (const char spec)
 static gint8 desc_to_fixed_reg [256];
 static gboolean desc_to_fixed_reg_inited = FALSE;
 
+MONO_DISABLE_WARNING(4127) /* conditional expression is constant */
+
 /*
  * Local register allocation.
  * We first scan the list of instructions and we save the liveness info of
@@ -1134,11 +1132,6 @@ mono_local_regalloc (MonoCompile *cfg, MonoBasicBlock *bb)
 	const char *spec;
 	unsigned char spec_src1, spec_dest;
 	int bank = 0;
-#if MONO_ARCH_USE_FPSTACK
-	gboolean has_fp = FALSE;
-	int fpstack [8];
-	int sp = 0;
-#endif
 	int num_sregs = 0;
 	int sregs [MONO_MAX_SRC_REGS];
 
@@ -1256,17 +1249,6 @@ mono_local_regalloc (MonoCompile *cfg, MonoBasicBlock *bb)
 		DEBUG (mono_print_ins_index (i, ins));
 
 		num_sregs = mono_inst_get_src_registers (ins, sregs);
-
-#if MONO_ARCH_USE_FPSTACK
-		if (dreg_is_fp (spec)) {
-			has_fp = TRUE;
-		} else {
-			for (j = 0; j < num_sregs; ++j) {
-				if (sreg_is_fp (j, spec))
-					has_fp = TRUE;
-			}
-		}
-#endif
 
 		for (j = 0; j < num_sregs; ++j) {
 			int sreg = sregs [j];
@@ -1746,7 +1728,7 @@ mono_local_regalloc (MonoCompile *cfg, MonoBasicBlock *bb)
 		}
 
 		if (spec [MONO_INST_CLOB] == 'c') {
-			int j, dreg, dreg2, cur_bank;
+			int dreg, dreg2, cur_bank;
 			regmask_t s;
 			guint64 clob_mask;
 
@@ -1842,7 +1824,7 @@ mono_local_regalloc (MonoCompile *cfg, MonoBasicBlock *bb)
 
 					sreg_masks [0] &= ~(regmask (hreg));
 
-					DEBUG (printf ("\tassigned arg reg %s to R%d\n", mono_arch_regname (hreg), reg));
+					DEBUG (printf ("\tassigned arg ireg %s to R%d\n", mono_arch_regname (hreg), reg));
 
 					list = g_slist_next (list);
 				}
@@ -1860,7 +1842,7 @@ mono_local_regalloc (MonoCompile *cfg, MonoBasicBlock *bb)
 
 					assign_reg (cfg, rs, reg, hreg, 1);
 
-					DEBUG (printf ("\tassigned arg reg %s to R%d\n", mono_regname_full (hreg, 1), reg));
+					DEBUG (printf ("\tassigned arg freg %s to R%d\n", mono_regname_full (hreg, 1), reg));
 
 					list = g_slist_next (list);
 				}
@@ -2040,7 +2022,7 @@ mono_local_regalloc (MonoCompile *cfg, MonoBasicBlock *bb)
 		if (((dreg_is_fp (spec) && sreg1_is_fp (spec)) || spec [MONO_INST_CLOB] == '1') && ins->dreg != sregs [0]) {
 			MonoInst *sreg2_copy = NULL;
 			MonoInst *copy;
-			int bank = reg_bank (spec_src1);
+			bank = reg_bank (spec_src1);
 
 			if (ins->dreg == sregs [1]) {
 				/*
@@ -2179,159 +2161,9 @@ mono_local_regalloc (MonoCompile *cfg, MonoBasicBlock *bb)
 
 		DEBUG (mono_print_ins_index (i, ins));
 	}
-
-	// FIXME: Set MAX_FREGS to 8
-	// FIXME: Optimize generated code
-#if MONO_ARCH_USE_FPSTACK
-	/*
-	 * Make a forward pass over the code, simulating the fp stack, making sure the
-	 * arguments required by the fp opcodes are at the top of the stack.
-	 */
-	if (has_fp) {
-		MonoInst *prev = NULL;
-		MonoInst *fxch;
-		int tmp;
-
-		g_assert (num_sregs <= 2);
-
-		for (ins = bb->code; ins; ins = ins->next) {
-			spec = ins_get_spec (ins->opcode);
-
-			DEBUG (printf ("processing:"));
-			DEBUG (mono_print_ins_index (0, ins));
-
-			if (ins->opcode == OP_FMOVE) {
-				/* Do it by renaming the source to the destination on the stack */
-				// FIXME: Is this correct ?
-				for (i = 0; i < sp; ++i)
-					if (fpstack [i] == ins->sreg1)
-						fpstack [i] = ins->dreg;
-				prev = ins;
-				continue;
-			}
-
-			if (sreg1_is_fp (spec) && sreg2_is_fp (spec) && (fpstack [sp - 2] != ins->sreg1)) {
-				/* Arg1 must be in %st(1) */
-				g_assert (prev);
-
-				i = 0;
-				while ((i < sp) && (fpstack [i] != ins->sreg1))
-					i ++;
-				g_assert (i < sp);
-
-				if (sp - 1 - i > 0) {
-					/* First move it to %st(0) */
-					DEBUG (printf ("\tswap %%st(0) and %%st(%d)\n", sp - 1 - i));
-
-					MONO_INST_NEW (cfg, fxch, OP_X86_FXCH);
-					fxch->inst_imm = sp - 1 - i;
-
-					mono_bblock_insert_after_ins (bb, prev, fxch);
-					prev = fxch;
-
-					tmp = fpstack [sp - 1];
-					fpstack [sp - 1] = fpstack [i];
-					fpstack [i] = tmp;
-				}
-
-				/* Then move it to %st(1) */
-				DEBUG (printf ("\tswap %%st(0) and %%st(1)\n"));
-
-				MONO_INST_NEW (cfg, fxch, OP_X86_FXCH);
-				fxch->inst_imm = 1;
-
-				mono_bblock_insert_after_ins (bb, prev, fxch);
-				prev = fxch;
-
-				tmp = fpstack [sp - 1];
-				fpstack [sp - 1] = fpstack [sp - 2];
-				fpstack [sp - 2] = tmp;
-			}
-
-			if (sreg2_is_fp (spec)) {
-				g_assert (sp > 0);
-
-				if (fpstack [sp - 1] != ins->sreg2) {
-					g_assert (prev);
-
-					i = 0;
-					while ((i < sp) && (fpstack [i] != ins->sreg2))
-						i ++;
-					g_assert (i < sp);
-
-					DEBUG (printf ("\tswap %%st(0) and %%st(%d)\n", sp - 1 - i));
-
-					MONO_INST_NEW (cfg, fxch, OP_X86_FXCH);
-					fxch->inst_imm = sp - 1 - i;
-
-					mono_bblock_insert_after_ins (bb, prev, fxch);
-					prev = fxch;
-
-					tmp = fpstack [sp - 1];
-					fpstack [sp - 1] = fpstack [i];
-					fpstack [i] = tmp;
-				}
-
-				sp --;
-			}
-
-			if (sreg1_is_fp (spec)) {
-				g_assert (sp > 0);
-
-				if (fpstack [sp - 1] != ins->sreg1) {
-					g_assert (prev);
-
-					i = 0;
-					while ((i < sp) && (fpstack [i] != ins->sreg1))
-						i ++;
-					g_assert (i < sp);
-
-					DEBUG (printf ("\tswap %%st(0) and %%st(%d)\n", sp - 1 - i));
-
-					MONO_INST_NEW (cfg, fxch, OP_X86_FXCH);
-					fxch->inst_imm = sp - 1 - i;
-
-					mono_bblock_insert_after_ins (bb, prev, fxch);
-					prev = fxch;
-
-					tmp = fpstack [sp - 1];
-					fpstack [sp - 1] = fpstack [i];
-					fpstack [i] = tmp;
-				}
-
-				sp --;
-			}
-
-			if (dreg_is_fp (spec)) {
-				g_assert (sp < 8);
-				fpstack [sp ++] = ins->dreg;
-			}
-
-			if (G_UNLIKELY (cfg->verbose_level >= 2)) {
-				printf ("\t[");
-				for (i = 0; i < sp; ++i)
-					printf ("%s%%fr%d", (i > 0) ? ", " : "", fpstack [i]);
-				printf ("]\n");
-			}
-
-			prev = ins;
-		}
-
-		if (sp && bb != cfg->bb_exit && !(bb->out_count == 1 && bb->out_bb [0] == cfg->bb_exit)) {
-			/* Remove remaining items from the fp stack */
-			/*
-			 * These can remain for example as a result of a dead fmove like in
-			 * System.Collections.Generic.EqualityComparer<double>.Equals ().
-			 */
-			while (sp) {
-				MONO_INST_NEW (cfg, ins, OP_X86_FPOP);
-				mono_add_ins_to_end (bb, ins);
-				sp --;
-			}
-		}
-	}
-#endif
 }
+
+MONO_RESTORE_WARNING
 
 CompRelation
 mono_opcode_to_cond (int opcode)

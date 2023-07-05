@@ -4,7 +4,7 @@
 using System;
 public class CMain{
     public static int Count = 0;
-    public static int Main(String[] args){
+    public static int Main(){
         String s;
         s = Gen<String>.x;
         // we expect the Gen<T>.cctor to fire only once!

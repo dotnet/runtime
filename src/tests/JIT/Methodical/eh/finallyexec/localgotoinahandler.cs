@@ -4,8 +4,11 @@
 // local goto in a handler should not cause us to add the goto into the nonlocal handler map
 // 112209
 using System;
+using Xunit;
 
-class Class1
+namespace Test_localgotoinahandler_cs
+{
+public class Class1
 {
     private static TestUtil.TestLog testLog;
 
@@ -24,7 +27,8 @@ class Class1
         // Create and initialize test log object
         testLog = new TestUtil.TestLog(expectedOut);
     }
-    public static int Main()
+    [Fact]
+    public static int TestEntryPoint()
     {
         //Start recording
         testLog.StartRecording();
@@ -68,4 +72,5 @@ class Class1
 
         return testLog.VerifyOutput();
     }
+}
 }

@@ -4,32 +4,42 @@
 #ifndef _MetricsSummary
 #define _MetricsSummary
 
-class MetricsSummary
+struct MetricsSummary
+{
+    // Number of methods successfully jitted.
+    int SuccessfulCompiles = 0;
+    // Number of methods that failed jitting.
+    int FailingCompiles = 0;
+    // Number of methods that failed jitting due to missing SPMI data.
+    int MissingCompiles = 0;
+    // Number of contexts that had any diff.
+    int NumContextsWithDiffs = 0;
+    // Number of code bytes produced by the JIT for the successful compiles.
+    long long NumCodeBytes = 0;
+    // Number of code bytes that were diffed with the other compiler in diff mode.
+    long long NumDiffedCodeBytes = 0;
+    // Number of executed instructions in successful compiles.
+    // Requires a dynamic instrumentor to be enabled.
+    long long NumExecutedInstructions = 0;
+    // Number of executed instructions inside contexts that were successfully diffed.
+    long long NumDiffExecutedInstructions = 0;
+
+    void AggregateFrom(const MetricsSummary& other);
+};
+
+class MetricsSummaries
 {
 public:
-    // Number of methods successfully jitted.
-    int SuccessfulCompiles;
-    // Number of methods that failed jitting.
-    int FailingCompiles;
-    // Number of methods that failed jitting due to missing SPMI data.
-    int MissingCompiles;
-    // Number of code bytes produced by the JIT for the successful compiles.
-    long long NumCodeBytes;
-    // Number of code bytes that were diffed with the other compiler in diff mode.
-    long long NumDiffedCodeBytes;
+    MetricsSummary Overall;
+    MetricsSummary MinOpts;
+    MetricsSummary FullOpts;
 
-    MetricsSummary()
-        : SuccessfulCompiles(0)
-        , FailingCompiles(0)
-        , MissingCompiles(0)
-        , NumCodeBytes(0)
-        , NumDiffedCodeBytes(0)
-    {
-    }
+    void AggregateFrom(const MetricsSummaries& other);
 
     bool SaveToFile(const char* path);
-    static bool LoadFromFile(const char* path, MetricsSummary* metrics);
-    void AggregateFrom(const MetricsSummary& other);
+    static bool LoadFromFile(const char* path, MetricsSummaries* metrics);
+private:
+    static bool WriteRow(class FileWriter& fw, const char* name, const MetricsSummary& summary);
 };
 
 #endif

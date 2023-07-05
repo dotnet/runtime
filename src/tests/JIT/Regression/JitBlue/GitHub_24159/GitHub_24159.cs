@@ -3,6 +3,7 @@
 
 using System;
 using System.Runtime.CompilerServices;
+using Xunit;
 
 namespace GitHub_24159
 {
@@ -25,11 +26,12 @@ namespace GitHub_24159
         public int j5;
     }
 
-    class Test
+    public class Test
     {
         static int i;
 
-        public static int Main()
+        [Fact]
+        public static int TestEntryPoint()
         {
             i = 0;
 

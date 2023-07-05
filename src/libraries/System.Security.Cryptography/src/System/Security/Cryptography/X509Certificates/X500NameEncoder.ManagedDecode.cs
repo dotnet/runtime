@@ -2,6 +2,7 @@
 // The .NET Foundation licenses this file to you under the MIT license.
 
 using System.Collections.Generic;
+using System.Diagnostics;
 using System.Formats.Asn1;
 using System.Text;
 
@@ -33,7 +34,7 @@ namespace System.Security.Cryptography.X509Certificates
                     rdnReaders.Add(x500NameSequenceReader.ReadSetOf(skipSortOrderValidation: true));
                 }
 
-                // We need to allocate a StringBuilder to hold the data as we're building it, and there's the usual
+                // We need to use a ValueStringBuilder to hold the data as we're building it, and there's the usual
                 // arbitrary process of choosing a number that's "big enough" to minimize reallocations without wasting
                 // too much space in the average case.
                 //
@@ -57,7 +58,7 @@ namespace System.Security.Cryptography.X509Certificates
                 // Throw in some "maybe-I-need-to-quote-this" quotes, and a couple of extra/extra-long O/OU values
                 // and round that up to the next programmer number, and you get that 512 should avoid reallocations
                 // in all but the most dire of cases.
-                StringBuilder decodedName = new StringBuilder(512);
+                ValueStringBuilder decodedName = new ValueStringBuilder(stackalloc char[512]);
                 int entryCount = rdnReaders.Count;
                 bool printSpacing = false;
 
@@ -92,7 +93,7 @@ namespace System.Security.Cryptography.X509Certificates
                     {
                         AsnReader tavReader = rdnReader.ReadSequence();
                         string oid = tavReader.ReadObjectIdentifier();
-                        string attributeValue = tavReader.ReadAnyAsnString();
+                        string attributeValue = ReadAttributeValue(tavReader, out bool fallback);
 
                         tavReader.ThrowIfNotEmpty();
 
@@ -107,10 +108,10 @@ namespace System.Security.Cryptography.X509Certificates
 
                         if (printOid)
                         {
-                            AppendOid(decodedName, oid);
+                            AppendOid(ref decodedName, oid);
                         }
 
-                        bool quote = quoteIfNeeded && NeedsQuoting(attributeValue);
+                        bool quote = quoteIfNeeded && NeedsQuoting(attributeValue) && !fallback;
 
                         if (quote)
                         {
@@ -135,11 +136,60 @@ namespace System.Security.Cryptography.X509Certificates
                     decodedName.Append(dnSeparator);
                 }
 
-                return decodedName.ToString();
+                string name = decodedName.ToString();
+                decodedName.Dispose();
+                return name;
             }
             catch (AsnContentException e)
             {
                 throw new CryptographicException(SR.Cryptography_Der_Invalid_Encoding, e);
+            }
+        }
+
+        private static string ReadAttributeValue(AsnReader tavReader, out bool binaryFallback)
+        {
+            Debug.Assert(tavReader.RuleSet == AsnEncodingRules.DER);
+
+            Asn1Tag tag = tavReader.PeekTag();
+
+            if (tag.TagClass == TagClass.Universal)
+            {
+                switch ((UniversalTagNumber)tag.TagValue)
+                {
+                    case UniversalTagNumber.BMPString:
+                    case UniversalTagNumber.IA5String:
+                    case UniversalTagNumber.NumericString:
+                    case UniversalTagNumber.PrintableString:
+                    case UniversalTagNumber.UTF8String:
+                    case UniversalTagNumber.T61String:
+                        // .NET's string comparisons start by checking the length, so a trailing
+                        // NULL character which was literally embedded in the DER would cause a
+                        // failure in .NET whereas it wouldn't have with strcmp.
+                        binaryFallback = false;
+                        return tavReader.ReadCharacterString((UniversalTagNumber)tag.TagValue).TrimEnd('\0');
+                    case UniversalTagNumber.OctetString:
+                        // Windows will implicitly unwrap one OCTET STRING and display only the contents.
+                        if (tavReader.TryReadPrimitiveOctetString(out ReadOnlyMemory<byte> contents))
+                        {
+                            binaryFallback = true;
+                            return BinaryEncode(contents);
+                        }
+
+                        Debug.Fail("TryReadPrimitiveOctetString should either succeed or throw with DER.");
+                        throw new CryptographicException(SR.Cryptography_Der_Invalid_Encoding);
+                }
+            }
+
+            binaryFallback = true;
+            return BinaryEncode(tavReader.ReadEncodedValue());
+
+            static string BinaryEncode(ReadOnlyMemory<byte> data)
+            {
+                return string.Create(1 + data.Length * 2, data, static (buff, state) =>
+                {
+                    buff[0] = '#';
+                    HexConverter.EncodeToUtf16(state.Span, buff.Slice(1));
+                });
             }
         }
     }

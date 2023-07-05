@@ -11,7 +11,6 @@
 #include <string.h>
 
 #include <mono/utils/hazard-pointer.h>
-#include <mono/utils/mono-membar.h>
 #include <mono/utils/mono-memory-model.h>
 #include <mono/utils/monobitset.h>
 #include <mono/utils/lock-free-array-queue.h>
@@ -100,7 +99,7 @@ mono_thread_small_id_alloc (void)
 	mono_bitset_set_fast (small_id_table, id);
 
 	small_id_next++;
-	if (small_id_next >= small_id_table->size)
+	if (GINT_TO_UINT(small_id_next) >= small_id_table->size)
 		small_id_next = 0;
 
 	g_assert (id < HAZARD_TABLE_MAX_SIZE);
@@ -158,7 +157,7 @@ mono_thread_small_id_free (int id)
 	/* MonoBitSet operations are not atomic. */
 	mono_os_mutex_lock (&small_id_mutex);
 
-	g_assert (id >= 0 && id < small_id_table->size);
+	g_assert (id >= 0 && GINT_TO_UINT(id) < small_id_table->size);
 	g_assert (mono_bitset_test_fast (small_id_table, id));
 	mono_bitset_clear_fast (small_id_table, id);
 

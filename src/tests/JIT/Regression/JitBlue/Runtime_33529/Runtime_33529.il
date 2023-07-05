@@ -52,7 +52,7 @@
 
 } // end of class S
 
-.class private auto ansi beforefieldinit X
+.class public auto ansi beforefieldinit X
        extends [mscorlib]System.Object
 {
   .method public hidebysig static int32  F(int32 x,

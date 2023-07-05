@@ -56,7 +56,7 @@ create_socket (const char *hostname, const int port)
     }
 
     serv_addr.sin_family = AF_INET;
-    serv_addr.sin_port = htons (port);
+    serv_addr.sin_port = htons (GINT_TO_UINT16 (port));
     serv_addr.sin_addr.s_addr = inet_addr (hostname);
 
     if (connect (sockfd, (struct sockaddr *)&serv_addr, sizeof(serv_addr)) < 0) {
@@ -175,7 +175,7 @@ add_pool_entry (MonoCompile *cfg, ConstantPoolEntry *entry)
 			write_short (cfg, NUM_SUCCESSOR);
 			for (int i = 0; i < NUM_SUCCESSOR; i++) {
 				char *str = g_strdup ("successor1");
-				str[9] = '0' + i;
+				str[9] = '0' + GINT_TO_CHAR (i);
 				write_byte (cfg, 0);
 				write_pool (cfg, create_cp_entry (cfg, (void *) str, PT_STRING));
 			}

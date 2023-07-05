@@ -13,8 +13,9 @@
 using System;
 using System.Runtime.InteropServices;
 using System.Runtime.CompilerServices;
+using Xunit;
 
-namespace BigFrames
+namespace BigFrames_skippage
 {
 
     [StructLayout(LayoutKind.Explicit)]
@@ -57,7 +58,8 @@ namespace BigFrames
             }
         }
 
-        public static int Main()
+        [Fact]
+        public static int TestEntryPoint()
         {
             TestWrite2(); // Make sure this is JITted first, so the call from Test1() is not to the prestub.
 

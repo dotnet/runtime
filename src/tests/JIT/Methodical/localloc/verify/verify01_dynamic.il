@@ -12,7 +12,9 @@
 .assembly 'verify01_dynamic'{}
 .assembly extern xunit.core {}
 
-.class private auto ansi beforefieldinit LocallocTest
+.namespace Test_verify01_dynamic_il
+{
+.class public auto ansi beforefieldinit LocallocTest
        extends [mscorlib]System.Object
 {
   .field public static int32 stackAllocSize
@@ -26,10 +28,10 @@
     .maxstack  1
     .locals init(int32 V_0)
     ldc.i4	0x1000
-    stsfld	int32 LocallocTest::stackAllocSize
+    stsfld	int32 Test_verify01_dynamic_il.LocallocTest::stackAllocSize
     .try
     {
-      IL_0000:  call       void LocallocTest::func()
+      IL_0000:  call       void Test_verify01_dynamic_il.LocallocTest::func()
       IL_0005:  leave.s    IL_0027
 
     }  // end .try
@@ -61,7 +63,7 @@
 
     IL_0035:  ldloc.0
     IL_0036:  ret
-  } // end of method LocallocTest::Main
+  } // end of method Test_verify01_dynamic_il.LocallocTest::Main
 
   .method private hidebysig static void  func() cil managed
   {
@@ -70,17 +72,17 @@
     .locals init(int32* V_0,
              int32* V_1)
     IL_0000:  ldc.i4.4
-    IL_0001:  ldsfld     int32 LocallocTest::stackAllocSize
+    IL_0001:  ldsfld     int32 Test_verify01_dynamic_il.LocallocTest::stackAllocSize
     IL_0002:  mul
     IL_0006:  ldc.i4.4
-    IL_0007:  ldsfld     int32 LocallocTest::stackAllocSize
+    IL_0007:  ldsfld     int32 Test_verify01_dynamic_il.LocallocTest::stackAllocSize
     IL_0008:  mul
     IL_0009:  localloc
     IL_000b:  stloc.1
     IL_0003:  localloc
     IL_0005:  stloc.0
     IL_000c:  ret
-  } // end of method LocallocTest::func
+  } // end of method Test_verify01_dynamic_il.LocallocTest::func
 
   .method public hidebysig specialname rtspecialname 
           instance void  .ctor() cil managed
@@ -90,12 +92,13 @@
     IL_0000:  ldarg.0
     IL_0001:  call       instance void [mscorlib]System.Object::.ctor()
     IL_0006:  ret
-  } // end of method LocallocTest::.ctor
+  } // end of method Test_verify01_dynamic_il.LocallocTest::.ctor
 
-} // end of class LocallocTest
+} // end of class Test_verify01_dynamic_il.LocallocTest
 
 
 // =============================================================
 
 //*********** DISASSEMBLY COMPLETE ***********************
 // WARNING: Created Win32 resource file verify01_dynamic.res
+}

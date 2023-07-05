@@ -71,7 +71,7 @@ public class Test_GetGCMemoryInfo
         int byteArraySize = 1000;
         for (int i = 0; i < (totalTempAllocBytes / byteArraySize); i++)
         {
-            byte[] byteArray = new byte[byteArraySize];
+            GC.KeepAlive(new byte[byteArraySize]);
         }
     }
 
@@ -94,6 +94,10 @@ public class Test_GetGCMemoryInfo
     {
         // We will keep executing the test in case of a failure to see if we have multiple failures.
         bool isTestSucceeded = true;
+
+        // Before any GCs happen, this should not assert
+        GCMemoryInfo memoryInfoNoGC = GC.GetGCMemoryInfo(GCKind.Background);
+        Console.WriteLine("BGC index is {0}", memoryInfoNoGC.Index);
 
         try
         {

@@ -23,17 +23,17 @@ namespace Internal.Reflection
             _typeHandle = typeHandle;
         }
 
-        private bool DoNotThrowForNames => AppContext.TryGetSwitch("Switch.System.Reflection.Disabled.DoNotThrowForNames", out bool doNotThrow) && doNotThrow;
+        private static bool DoNotThrowForNames => AppContext.TryGetSwitch("Switch.System.Reflection.Disabled.DoNotThrowForNames", out bool doNotThrow) && doNotThrow;
 
-        private bool DoNotThrowForAssembly => AppContext.TryGetSwitch("Switch.System.Reflection.Disabled.DoNotThrowForAssembly", out bool doNotThrow) && doNotThrow;
+        private static bool DoNotThrowForAssembly => AppContext.TryGetSwitch("Switch.System.Reflection.Disabled.DoNotThrowForAssembly", out bool doNotThrow) && doNotThrow;
 
-        private bool DoNotThrowForAttributes => AppContext.TryGetSwitch("Switch.System.Reflection.Disabled.DoNotThrowForAttributes", out bool doNotThrow) && doNotThrow;
+        private static bool DoNotThrowForAttributes => AppContext.TryGetSwitch("Switch.System.Reflection.Disabled.DoNotThrowForAttributes", out bool doNotThrow) && doNotThrow;
 
         public override RuntimeTypeHandle TypeHandle => _typeHandle;
 
         public override bool IsGenericType => RuntimeAugments.IsGenericTypeDefinition(_typeHandle) || RuntimeAugments.IsGenericType(_typeHandle);
 
-        public override string Name => DoNotThrowForNames ? RuntimeAugments.GetLastResortString(_typeHandle) : throw new NotSupportedException(SR.Reflection_Disabled);
+        public override string Name => DoNotThrowForNames ? ToString() : throw new NotSupportedException(SR.Reflection_Disabled);
 
         public override string Namespace => DoNotThrowForNames ? "" : throw new NotSupportedException(SR.Reflection_Disabled);
 
@@ -53,7 +53,7 @@ namespace Internal.Reflection
         {
             get
             {
-                if (RuntimeAugments.TryGetBaseType(_typeHandle, out RuntimeTypeHandle baseTypeHandle))
+                if (RuntimeAugments.TryGetBaseType(_typeHandle, out RuntimeTypeHandle baseTypeHandle) && !baseTypeHandle.Equals(default))
                 {
                     return GetRuntimeTypeInfo(baseTypeHandle);
                 }
@@ -76,7 +76,7 @@ namespace Internal.Reflection
 
         public override string ToString()
         {
-            return RuntimeAugments.GetLastResortString(_typeHandle);
+            return "MT" + _typeHandle.Value.ToString();
         }
 
         public override int GetHashCode()
@@ -187,7 +187,10 @@ namespace Internal.Reflection
             return RuntimeAugments.IsByRefType(_typeHandle);
         }
 
-        protected override bool IsCOMObjectImpl() => throw new NotSupportedException(SR.Reflection_Disabled);
+        protected override bool IsCOMObjectImpl()
+        {
+            return false;
+        }
 
         protected override bool IsPointerImpl()
         {
@@ -197,6 +200,36 @@ namespace Internal.Reflection
         protected override bool IsPrimitiveImpl()
         {
             return RuntimeAugments.IsPrimitive(_typeHandle);
+        }
+
+        public override bool IsAssignableFrom([NotNullWhen(true)] Type c)
+        {
+            if (c == null)
+                return false;
+
+            if (object.ReferenceEquals(c, this))
+                return true;
+
+            c = c.UnderlyingSystemType;
+
+            Type typeInfo = c;
+            RuntimeTypeInfo toTypeInfo = this;
+
+            if (typeInfo is not RuntimeType)
+                return false;  // Desktop compat: If typeInfo is null, or implemented by a different Reflection implementation, return "false."
+
+            RuntimeTypeInfo fromTypeInfo = (RuntimeTypeInfo)typeInfo;
+
+            RuntimeTypeHandle toTypeHandle = toTypeInfo._typeHandle;
+            RuntimeTypeHandle fromTypeHandle = fromTypeInfo._typeHandle;
+
+            if (RuntimeAugments.IsGenericTypeDefinition(toTypeHandle) || RuntimeAugments.IsGenericTypeDefinition(fromTypeHandle))
+                throw new NotSupportedException(SR.Reflection_Disabled);
+
+            if (RuntimeAugments.IsAssignableFrom(toTypeHandle, fromTypeHandle))
+                return true;
+
+            return false;
         }
 
         internal static RuntimeTypeInfo GetRuntimeTypeInfo(RuntimeTypeHandle typeHandle)

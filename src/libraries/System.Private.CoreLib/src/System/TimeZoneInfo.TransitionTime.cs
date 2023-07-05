@@ -127,8 +127,10 @@ namespace System
                 }
             }
 
-            void ISerializable.GetObjectData(SerializationInfo info!!, StreamingContext context)
+            void ISerializable.GetObjectData(SerializationInfo info, StreamingContext context)
             {
+                ArgumentNullException.ThrowIfNull(info);
+
                 info.AddValue("TimeOfDay", _timeOfDay); // Do not rename (binary serialization)
                 info.AddValue("Month", _month); // Do not rename (binary serialization)
                 info.AddValue("Week", _week); // Do not rename (binary serialization)
@@ -137,8 +139,10 @@ namespace System
                 info.AddValue("IsFixedDateRule", _isFixedDateRule); // Do not rename (binary serialization)
             }
 
-            private TransitionTime(SerializationInfo info!!, StreamingContext context)
+            private TransitionTime(SerializationInfo info, StreamingContext context)
             {
+                ArgumentNullException.ThrowIfNull(info);
+
                 _timeOfDay = (DateTime)info.GetValue("TimeOfDay", typeof(DateTime))!; // Do not rename (binary serialization)
                 _month = (byte)info.GetValue("Month", typeof(byte))!; // Do not rename (binary serialization)
                 _week = (byte)info.GetValue("Week", typeof(byte))!; // Do not rename (binary serialization)

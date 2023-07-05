@@ -12,7 +12,7 @@ StackLevelSetter::StackLevelSetter(Compiler* compiler)
     : Phase(compiler, PHASE_STACK_LEVEL_SETTER)
     , currentStackLevel(0)
     , maxStackLevel(0)
-    , memAllocator(compiler->getAllocator(CMK_fgArgInfoPtrArr))
+    , memAllocator(compiler->getAllocator(CMK_CallArgs))
     , putArgNumSlots(memAllocator)
 #if !FEATURE_FIXED_OUT_ARGS
     , framePointerRequired(compiler->codeGen->isFramePointerRequired())
@@ -105,7 +105,7 @@ void StackLevelSetter::ProcessBlock(BasicBlock* block)
             GenTreeCall* call                = node->AsCall();
             unsigned     usedStackSlotsCount = PopArgumentsFromCall(call);
 #if defined(UNIX_X86_ABI)
-            call->fgArgInfo->SetStkSizeBytes(usedStackSlotsCount * TARGET_POINTER_SIZE);
+            call->gtArgs.SetStkSizeBytes(usedStackSlotsCount * TARGET_POINTER_SIZE);
 #endif // UNIX_X86_ABI
         }
     }
@@ -137,19 +137,16 @@ void StackLevelSetter::SetThrowHelperBlocks(GenTree* node, BasicBlock* block)
             SetThrowHelperBlock(bndsChk->gtThrowKind, block);
         }
         break;
+
         case GT_INDEX_ADDR:
         case GT_ARR_ELEM:
-        case GT_ARR_INDEX:
-        {
             SetThrowHelperBlock(SCK_RNGCHK_FAIL, block);
-        }
-        break;
+            break;
 
         case GT_CKFINITE:
-        {
             SetThrowHelperBlock(SCK_ARITH_EXCPN, block);
-        }
-        break;
+            break;
+
         default: // Other opers can target throw only due to overflow.
             break;
     }
@@ -237,23 +234,21 @@ void StackLevelSetter::SetThrowHelperBlock(SpecialCodeKind kind, BasicBlock* blo
 //   the number of stack slots in stack arguments for the call.
 unsigned StackLevelSetter::PopArgumentsFromCall(GenTreeCall* call)
 {
-    unsigned   usedStackSlotsCount = 0;
-    fgArgInfo* argInfo             = call->fgArgInfo;
-    if (argInfo->HasStackArgs())
+    unsigned usedStackSlotsCount = 0;
+    if (call->gtArgs.HasStackArgs())
     {
-        for (unsigned i = 0; i < argInfo->ArgCount(); ++i)
+        for (CallArg& arg : call->gtArgs.Args())
         {
-            const fgArgTabEntry* argTab    = argInfo->ArgTable()[i];
-            const unsigned       slotCount = argTab->GetStackSlotsNumber();
+            const unsigned slotCount = arg.AbiInfo.GetStackSlotsNumber();
             if (slotCount != 0)
             {
-                GenTree* node = argTab->GetNode();
+                GenTree* node = arg.GetNode();
                 assert(node->OperIsPutArgStkOrSplit());
 
                 GenTreePutArgStk* putArg = node->AsPutArgStk();
 
 #if !FEATURE_FIXED_OUT_ARGS
-                assert(slotCount == putArg->gtNumSlots);
+                assert((slotCount * TARGET_POINTER_SIZE) == putArg->GetStackByteSize());
 #endif // !FEATURE_FIXED_OUT_ARGS
 
                 putArgNumSlots.Set(putArg, slotCount);
@@ -300,7 +295,7 @@ void StackLevelSetter::SubStackLevel(unsigned value)
 // Notes:
 //    CheckArgCnt records the maximum number of pushed arguments.
 //    Depending upon this value of the maximum number of pushed arguments
-//    we may need to use an EBP frame or be partially interuptible.
+//    we may need to use an EBP frame or be partially interruptible.
 //    This functionality has to be called after maxStackLevel is set.
 //
 // Assumptions:

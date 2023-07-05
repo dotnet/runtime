@@ -78,7 +78,7 @@ PerfView /onlyProviders=*Samples.EventCounterDemos.Minimal:*:Critical:EventCount
 
 Notice the `Critical` keyword in the command line, that is used to filter out the other events with lower priorities.
 
-In the next relaese of PerfView (> 2.0.26), we can visualize the counters using PerfView. To do so, you can right click on the event like this and choose the show event counter graph item:
+In the next release of PerfView (> 2.0.26), we can visualize the counters using PerfView. To do so, you can right click on the event like this and choose the show event counter graph item:
 
 <img src="PerfViewCapture_Menu.png" alt="Show EventCounter graph menu item" title="Show EventCounter graph menu item" />
 

@@ -19,21 +19,15 @@ namespace System.Runtime.InteropServices
     ///     in order to be accessible from System.Private.Interop.dll.
     /// </summary>
     [CLSCompliant(false)]
-    [ReflectionBlocked]
     public static class InteropExtensions
     {
-        public static int GetElementSize(this Array array)
-        {
-            return array.EETypePtr.ComponentSize;
-        }
-
         internal static bool MightBeBlittable(this EETypePtr eeType)
         {
             //
             // This is used as the approximate implementation of MethodTable::IsBlittable(). It  will err in the direction of declaring
             // things blittable since it is used for argument validation only.
             //
-            return !eeType.HasPointers;
+            return !eeType.ContainsGCPointers;
         }
 
         public static bool IsBlittable(this RuntimeTypeHandle handle)
@@ -43,7 +37,7 @@ namespace System.Runtime.InteropServices
 
         public static bool IsBlittable(this object obj)
         {
-            return obj.EETypePtr.MightBeBlittable();
+            return obj.GetEETypePtr().MightBeBlittable();
         }
 
         public static bool IsGenericType(this RuntimeTypeHandle handle)
@@ -100,7 +94,7 @@ namespace System.Runtime.InteropServices
 
         public static RuntimeTypeHandle GetTypeHandle(this object target)
         {
-            return new RuntimeTypeHandle(target.EETypePtr);
+            return new RuntimeTypeHandle(target.GetEETypePtr());
         }
     }
 }

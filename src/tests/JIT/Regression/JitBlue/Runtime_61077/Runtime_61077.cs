@@ -8,10 +8,12 @@
 // Debug: Outputs 2
 // Release: Outputs 0
 using System.Runtime.CompilerServices;
+using Xunit;
 
 public class Runtime_61077
 {
-    public static int Main()
+    [Fact]
+    public static int TestEntryPoint()
     {
         return Go() == 2 ? 100 : -1;
     }

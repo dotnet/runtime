@@ -26,7 +26,7 @@
 #define COM_METHOD HRESULT STDMETHODCALLTYPE
 
 #ifdef _DEBUG
-// On DEBUG builds, setting the COMPlus_ProfAPIFault to a bitmask of the flags
+// On DEBUG builds, setting the DOTNET_ProfAPIFault to a bitmask of the flags
 // below forces the Profiling API to return failures at various points.
 // Useful for event log testing.  Also see code:ProfilingAPIUtility.ShouldInjectProfAPIFault
 enum ProfAPIFaultFlags
@@ -68,7 +68,7 @@ public:
     static void TerminateProfiling(ProfilerInfo *pProfilerInfo);
     static void LogProfError(int iStringResourceID, ...);
     static void LogProfInfo(int iStringResourceID, ...);
-    static void LogNoInterfaceError(REFIID iidRequested, LPCWSTR wszClsid);
+    static void LogNoInterfaceError(REFIID iidRequested, LPCSTR szClsid);
     INDEBUG(static BOOL ShouldInjectProfAPIFault(ProfAPIFaultFlags faultFlag);)
 
     // See code:ProfilingAPIUtility::InitializeProfiling#LoadUnloadCallbackSynchronization
@@ -94,14 +94,14 @@ private:
     static HRESULT DoPreInitialization(
         EEToProfInterfaceImpl *pEEProf,
         const CLSID *pClsid,
-        LPCWSTR wszClsid,
+        LPCSTR szClsid,
         LPCWSTR wszProfilerDLL,
         LoadType loadType,
         DWORD dwConcurrentGCWaitTimeoutInMs);
     static HRESULT LoadProfiler(
         LoadType loadType,
         const CLSID * pClsid,
-        LPCWSTR wszClsid,
+        LPCSTR szClsid,
         LPCWSTR wszProfilerDLL,
         LPVOID pvClientData,
         UINT cbClientData,

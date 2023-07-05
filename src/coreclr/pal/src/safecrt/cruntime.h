@@ -35,14 +35,14 @@
 #endif  /* defined (_SYSCRT) && defined (HOST_64BIT) */
 
 #if !defined (UNALIGNED)
-#if defined (_M_AMD64)
+#if defined (TARGET_AMD64)
 #define UNALIGNED __unaligned
-#else  /* defined (_M_AMD64) */
+#else  /* defined (TARGET_AMD64) */
 #define UNALIGNED
-#endif  /* defined (_M_AMD64) */
+#endif  /* defined (TARGET_AMD64) */
 #endif  /* !defined (UNALIGNED) */
 
-#ifdef _M_IX86
+#ifdef TARGET_X86
 /*
  * 386/486
  */
@@ -56,7 +56,7 @@
 #define REG8
 #define REG9
 
-#elif defined (_M_AMD64)
+#elif defined (TARGET_AMD64)
 /*
  * AMD64
  */
@@ -70,7 +70,7 @@
 #define REG8    register
 #define REG9    register
 
-#else  /* defined (_M_AMD64) */
+#else  /* defined (TARGET_AMD64) */
 
 #pragma message ("Machine register set not defined")
 
@@ -88,7 +88,7 @@
 #define REG8
 #define REG9
 
-#endif  /* defined (_M_AMD64) */
+#endif  /* defined (TARGET_AMD64) */
 
 /*
  * Are the macro definitions below still needed in this file?

@@ -7,11 +7,13 @@
  * */
 
 using System;
+using Xunit;
 
 public class Test_arrayDim
 
 {
-    private static int Main()
+    [Fact]
+    public static int TestEntryPoint()
 
     {
         int[] iAr1 = null;

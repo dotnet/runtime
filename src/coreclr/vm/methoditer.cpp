@@ -24,7 +24,7 @@ BOOL LoadedMethodDescIterator::Next(
     {
         NOTHROW;
         GC_NOTRIGGER;
-        MODE_PREEMPTIVE;
+        MODE_ANY;
     }
     CONTRACTL_END
 
@@ -93,8 +93,6 @@ ADVANCE_TYPE:
     {
         if (!GetCurrentModule()->GetAvailableParamTypes()->FindNext(&m_typeIterator, &m_typeIteratorEntry))
             goto ADVANCE_ASSEMBLY;
-        if (CORCOMPILE_IS_POINTER_TAGGED(m_typeIteratorEntry->GetTypeHandle().AsTAddr()))
-            goto ADVANCE_TYPE;
 
         //if (m_typeIteratorEntry->data != TypeHandle(m_mainMD->GetMethodTable()))
         //    goto ADVANCE_TYPE;
@@ -104,9 +102,6 @@ ADVANCE_TYPE:
         // Similar logic occurs in the Lookup function for that table.  We will clean this
         // up in Whidbey Beta2.
         TypeHandle th = m_typeIteratorEntry->GetTypeHandle();
-
-        if (th.IsEncodedFixup())
-            goto ADVANCE_TYPE;
 
         if (th.IsTypeDesc())
             goto ADVANCE_TYPE;
@@ -147,8 +142,6 @@ ADVANCE_METHOD:
     {
         if (!GetCurrentModule()->GetInstMethodHashTable()->FindNext(&m_methodIterator, &m_methodIteratorEntry))
             goto ADVANCE_TYPE;
-        if (CORCOMPILE_IS_POINTER_TAGGED(dac_cast<TADDR>(m_methodIteratorEntry->GetMethod())))
-            goto ADVANCE_METHOD;
         if (m_methodIteratorEntry->GetMethod()->GetModule() != m_module)
             goto ADVANCE_METHOD;
         if (m_methodIteratorEntry->GetMethod()->GetMemberDef() != m_md)
@@ -210,15 +203,11 @@ MethodDesc *LoadedMethodDescIterator::Current()
         return m_mainMD;
     }
 
-    MethodTable *pMT = m_typeIteratorEntry->GetTypeHandle().GetMethodTable();
+    MethodTable *pMT = m_typeIteratorEntry->GetTypeHandle().GetMethodTable()->GetCanonicalMethodTable();
     PREFIX_ASSUME(pMT != NULL);
-    _ASSERTE(pMT);
-
-    return pMT->GetMethodDescForSlot(m_mainMD->GetSlot());
+    return pMT->GetParallelMethodDesc(m_mainMD);
 }
 
-// Initialize the iterator. It will cover generics + prejitted;
-// but it is not EnC aware.
 void
 LoadedMethodDescIterator::Start(
     AppDomain * pAppDomain,

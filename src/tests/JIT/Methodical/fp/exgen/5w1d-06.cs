@@ -2,7 +2,10 @@
 // The .NET Foundation licenses this file to you under the MIT license.
 
 using System;
-internal class testout1
+using Xunit;
+namespace Test_5w1d_06
+{
+public class testout1
 {
     private static double[,,] s_arr3d_0 = new double[5, 6, 4];
     private static double[,] s_arr2d_0 = new double[3, 6];
@@ -18,7 +21,8 @@ internal class testout1
         return retval_0;
     }
 
-    public static int Main()
+    [Fact]
+    public static int TestEntryPoint()
     {
         int retval;
         retval = Convert.ToInt32(Func_0());
@@ -29,4 +33,5 @@ internal class testout1
         Console.WriteLine(retval);
         return retval;
     }
+}
 }

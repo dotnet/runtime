@@ -47,7 +47,7 @@ namespace Microsoft.DotNet.CoreSetup.Test
                 if (symlink(targetFileName, symbolicLinkName) == -1)
                 {
                     int errno = Marshal.GetLastWin32Error();
-                    errorMessage = Marshal.PtrToStringAnsi(strerror(errno))!;
+                    errorMessage = Marshal.PtrToStringUTF8(strerror(errno))!;
                     return false;
                 }
             }
@@ -64,6 +64,7 @@ namespace Microsoft.DotNet.CoreSetup.Test
         }
 
         [DllImport("kernel32.dll", SetLastError = true)]
+        [return: MarshalAs(UnmanagedType.U1)]
         private static extern bool CreateSymbolicLink(
             string symbolicLinkName,
             string targetFileName,

@@ -3,13 +3,13 @@
 
 using System.Collections;
 using System.Collections.Generic;
-using System.Diagnostics.CodeAnalysis;
+using System.Runtime.InteropServices;
 
 namespace System.Linq
 {
     internal abstract partial class OrderedEnumerable<TElement> : IPartition<TElement>
     {
-        public TElement[] ToArray()
+        public virtual TElement[] ToArray()
         {
             Buffer<TElement> buffer = new Buffer<TElement>(_source);
 
@@ -20,30 +20,30 @@ namespace System.Linq
             }
 
             TElement[] array = new TElement[count];
-            int[] map = SortedMap(buffer);
-            for (int i = 0; i != array.Length; i++)
-            {
-                array[i] = buffer._items[map[i]];
-            }
-
+            Fill(buffer, array);
             return array;
         }
 
-        public List<TElement> ToList()
+        public virtual List<TElement> ToList()
         {
             Buffer<TElement> buffer = new Buffer<TElement>(_source);
             int count = buffer._count;
             List<TElement> list = new List<TElement>(count);
             if (count > 0)
             {
-                int[] map = SortedMap(buffer);
-                for (int i = 0; i != count; i++)
-                {
-                    list.Add(buffer._items[map[i]]);
-                }
+                Fill(buffer, Enumerable.SetCountAndGetSpan(list, count));
             }
 
             return list;
+        }
+
+        private void Fill(Buffer<TElement> buffer, Span<TElement> destination)
+        {
+            int[] map = SortedMap(buffer);
+            for (int i = 0; i < destination.Length; i++)
+            {
+                destination[i] = buffer._items[map[i]];
+            }
         }
 
         public int GetCount(bool onlyIfCheap)
@@ -75,15 +75,9 @@ namespace System.Linq
                 return new TElement[] { GetEnumerableSorter().ElementAt(buffer._items, count, minIdx) };
             }
 
-            int[] map = SortedMap(buffer, minIdx, maxIdx);
             TElement[] array = new TElement[maxIdx - minIdx + 1];
-            int idx = 0;
-            while (minIdx <= maxIdx)
-            {
-                array[idx] = buffer._items[map[minIdx]];
-                ++idx;
-                ++minIdx;
-            }
+
+            Fill(minIdx, maxIdx, buffer, array);
 
             return array;
         }
@@ -107,15 +101,21 @@ namespace System.Linq
                 return new List<TElement>(1) { GetEnumerableSorter().ElementAt(buffer._items, count, minIdx) };
             }
 
-            int[] map = SortedMap(buffer, minIdx, maxIdx);
             List<TElement> list = new List<TElement>(maxIdx - minIdx + 1);
+            Fill(minIdx, maxIdx, buffer, Enumerable.SetCountAndGetSpan(list, maxIdx - minIdx + 1));
+            return list;
+        }
+
+        private void Fill(int minIdx, int maxIdx, Buffer<TElement> buffer, Span<TElement> destination)
+        {
+            int[] map = SortedMap(buffer, minIdx, maxIdx);
+            int idx = 0;
             while (minIdx <= maxIdx)
             {
-                list.Add(buffer._items[map[minIdx]]);
+                destination[idx] = buffer._items[map[minIdx]];
+                ++idx;
                 ++minIdx;
             }
-
-            return list;
         }
 
         internal int GetCount(int minIdx, int maxIdx, bool onlyIfCheap)
@@ -245,6 +245,23 @@ namespace System.Linq
             }
 
             return value;
+        }
+    }
+
+    internal sealed partial class OrderedImplicitlyStableEnumerable<TElement> : OrderedEnumerable<TElement>
+    {
+        public override TElement[] ToArray()
+        {
+            TElement[] array = _source.ToArray();
+            Sort(array, _descending);
+            return array;
+        }
+
+        public override List<TElement> ToList()
+        {
+            List<TElement> list = _source.ToList();
+            Sort(CollectionsMarshal.AsSpan(list), _descending);
+            return list;
         }
     }
 }

@@ -358,7 +358,7 @@ namespace System.Data.OleDb
             return ADP.InvalidOperation(SR.Format(SR.OleDb_IDBInfoNotSupported));
         }
 
-        // explictly used error codes
+        // explicitly used error codes
         internal const int ADODB_AlreadyClosedError = unchecked((int)0x800A0E78);
         internal const int ADODB_NextResultError = unchecked((int)0x800A0CB3);
 
@@ -553,9 +553,9 @@ namespace System.Data.OleDb
         internal const uint DB_ALL_EXCEPT_LIKE = 3;
         internal const uint DB_SEARCHABLE = 4;
 
-        internal static readonly IntPtr DB_INVALID_HACCESSOR = ADP.PtrZero;
-        internal static readonly IntPtr DB_NULL_HCHAPTER = ADP.PtrZero;
-        internal static readonly IntPtr DB_NULL_HROW = ADP.PtrZero;
+        internal static readonly IntPtr DB_INVALID_HACCESSOR = IntPtr.Zero;
+        internal static readonly IntPtr DB_NULL_HCHAPTER = IntPtr.Zero;
+        internal static readonly IntPtr DB_NULL_HROW = IntPtr.Zero;
 
         internal static readonly bool IsRunningOnX86 = RuntimeInformation.ProcessArchitecture == Architecture.X86;
 
@@ -569,7 +569,7 @@ namespace System.Data.OleDb
         internal static readonly int SizeOf_tagDBPROPINFO = IsRunningOnX86 ? Marshal.SizeOf(typeof(tagDBPROPINFO_x86)) : Marshal.SizeOf(typeof(tagDBPROPINFO));
         internal static readonly int SizeOf_tagDBPROPIDSET = Marshal.SizeOf(typeof(tagDBPROPIDSET));
         internal static readonly int SizeOf_Guid = Marshal.SizeOf(typeof(Guid));
-        internal static readonly int SizeOf_Variant = 8 + (2 * ADP.PtrSize); // 16 on 32bit, 24 on 64bit
+        internal static readonly int SizeOf_Variant = 8 + (2 * IntPtr.Size); // 16 on 32bit, 24 on 64bit
 
         internal static readonly int OffsetOf_tagDBPROP_Status = IsRunningOnX86 ? Marshal.OffsetOf(typeof(tagDBPROP_x86), "dwStatus").ToInt32() : Marshal.OffsetOf(typeof(tagDBPROP), "dwStatus").ToInt32();
         internal static readonly int OffsetOf_tagDBPROP_Value = IsRunningOnX86 ? Marshal.OffsetOf(typeof(tagDBPROP_x86), "vValue").ToInt32() : Marshal.OffsetOf(typeof(tagDBPROP), "vValue").ToInt32();
@@ -691,14 +691,13 @@ namespace System.Data.OleDb
         // Debug error string writeline
         internal static string ELookup(OleDbHResult hr)
         {
-            StringBuilder builder = new StringBuilder();
-            builder.Append(hr.ToString());
-            if ((0 < builder.Length) && char.IsDigit(builder[0]))
+            string result = hr.ToString();
+            if (char.IsDigit(result[0]))
             {
-                builder.Length = 0;
+                result = "";
             }
-            builder.Append($"(0x{(int)hr:X8})");
-            return builder.ToString();
+
+            return $"{result}(0x{(int)hr:X8})";
         }
 
 #if DEBUG

@@ -57,11 +57,11 @@ namespace System.IO.IsolatedStorage
         }
 
         [Theory, MemberData(nameof(ValidStores))]
-        public void CreateDirectory_Existance(PresetScopes scope)
+        public void CreateDirectory_Existence(PresetScopes scope)
         {
             using (var isf = GetPresetScope(scope))
             {
-                string directory = "CreateDirectory_Existance";
+                string directory = "CreateDirectory_Existence";
                 string subdirectory = Path.Combine(directory, "Subdirectory");
                 isf.CreateDirectory(directory);
                 Assert.True(isf.DirectoryExists(directory), "directory exists");

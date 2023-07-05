@@ -437,5 +437,28 @@ namespace System.IO.Tests
                 Assert.Throws<ObjectDisposedException>(() => binaryReader.Read(new Span<char>()));
             }
         }
+
+        private class DerivedBinaryReader : BinaryReader
+        {
+            public DerivedBinaryReader(Stream input) : base(input) { }
+
+            public void CallFillBuffer0()
+            {
+                FillBuffer(0);
+            }
+        }
+
+        [Fact]
+        public void FillBuffer_Zero_Throws()
+        {
+            using Stream stream = CreateStream();
+
+            string hello = "Hello";
+            stream.Write(Encoding.ASCII.GetBytes(hello));
+            stream.Position = 0;
+
+            using var derivedReader = new DerivedBinaryReader(stream);
+            Assert.Throws<EndOfStreamException>(derivedReader.CallFillBuffer0);
+        }
     }
 }

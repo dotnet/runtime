@@ -32,8 +32,11 @@ namespace System.Runtime.Serialization
         /// </summary>
         /// <param name="formatString">Specifies the formatString to be used.</param>
         /// <param name="formatProvider">Specifies the formatProvider to be used.</param>
-        public DateTimeFormat(string formatString!!, IFormatProvider formatProvider!!)
+        public DateTimeFormat(string formatString, IFormatProvider formatProvider)
         {
+            ArgumentNullException.ThrowIfNull(formatString);
+            ArgumentNullException.ThrowIfNull(formatProvider);
+
             _formatString = formatString;
             _formatProvider = formatProvider;
             _dateTimeStyles = DateTimeStyles.RoundtripKind;

@@ -1,5 +1,0 @@
-Microsoft (R) XSLT Compiler version 2.0.61009
-for Microsoft (R) Windows (R) 2005 Framework version 2.0.50727
-Copyright (C) Microsoft Corporation 2007. All rights reserved.
-
-fatal error : Error saving assembly 'D:\OASys\Working\dft4.dll'. ---> Access is denied. (Exception from HRESULT: 0x80070005 (E_ACCESSDENIED))

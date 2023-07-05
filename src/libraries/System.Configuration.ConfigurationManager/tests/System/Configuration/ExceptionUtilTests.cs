@@ -88,7 +88,7 @@ namespace System.ConfigurationTests
             ArgumentException e = ExceptionUtil.ParameterInvalid("foo");
             Assert.NotNull(e);
             Assert.Equal("foo", e.ParamName);
-            Assert.StartsWith(string.Format(SR.GetResourceString("Parameter_Invalid", null), "foo"), e.Message);
+            Assert.StartsWith(SR.Format(SR.GetResourceString("Parameter_Invalid", null), "foo"), e.Message);
         }
 
         [Fact]
@@ -97,7 +97,7 @@ namespace System.ConfigurationTests
             ArgumentException e = ExceptionUtil.ParameterNullOrEmpty("foo");
             Assert.NotNull(e);
             Assert.Equal("foo", e.ParamName);
-            Assert.StartsWith(string.Format(SR.GetResourceString("Parameter_NullOrEmpty", null), "foo"), e.Message);
+            Assert.StartsWith(SR.Format(SR.GetResourceString("Parameter_NullOrEmpty", null), "foo"), e.Message);
         }
 
         [Fact]
@@ -106,7 +106,7 @@ namespace System.ConfigurationTests
             ArgumentException e = ExceptionUtil.PropertyInvalid("foo");
             Assert.NotNull(e);
             Assert.Equal("foo", e.ParamName);
-            Assert.StartsWith(string.Format(SR.GetResourceString("Property_Invalid", null), "foo"), e.Message);
+            Assert.StartsWith(SR.Format(SR.GetResourceString("Property_Invalid", null), "foo"), e.Message);
         }
 
         [Fact]
@@ -115,7 +115,7 @@ namespace System.ConfigurationTests
             ArgumentException e = ExceptionUtil.PropertyNullOrEmpty("foo");
             Assert.NotNull(e);
             Assert.Equal("foo", e.ParamName);
-            Assert.StartsWith(string.Format(SR.GetResourceString("Property_NullOrEmpty", null), "foo"), e.Message);
+            Assert.StartsWith(SR.Format(SR.GetResourceString("Property_NullOrEmpty", null), "foo"), e.Message);
         }
 
         [Fact]
@@ -123,7 +123,7 @@ namespace System.ConfigurationTests
         {
             InvalidOperationException e = ExceptionUtil.UnexpectedError("foo");
             Assert.NotNull(e);
-            Assert.StartsWith(string.Format(SR.GetResourceString("Unexpected_Error", null), "foo"), e.Message);
+            Assert.StartsWith(SR.Format(SR.GetResourceString("Unexpected_Error", null), "foo"), e.Message);
         }
     }
 }

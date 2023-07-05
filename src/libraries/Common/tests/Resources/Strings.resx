@@ -120,6 +120,9 @@
   <data name="Argument_InvalidPathChars" xml:space="preserve">
     <value>Argument_InvalidPathChars {0}</value>
   </data>
+  <data name="ArgumentOutOfRange_FileLengthTooBig" xml:space="preserve">
+    <value>Specified file length was too large for the file system.</value>
+  </data>
   <data name="IO_FileNotFound" xml:space="preserve">
     <value>IO_FileNotFound</value>
   </data>

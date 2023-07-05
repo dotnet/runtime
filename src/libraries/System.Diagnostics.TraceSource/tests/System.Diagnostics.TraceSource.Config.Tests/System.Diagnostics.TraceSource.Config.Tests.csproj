@@ -1,0 +1,29 @@
+<Project Sdk="Microsoft.NET.Sdk">
+  <PropertyGroup>
+    <IncludeRemoteExecutor>true</IncludeRemoteExecutor>
+    <TargetFramework>$(NetCoreAppCurrent)</TargetFramework>
+  </PropertyGroup>
+  <ItemGroup>
+    <Compile Include="$(CommonTestPath)TestUtilities\System\DisableParallelization.cs" Link="Common\TestUtilities\System\DisableParallelization.cs" />
+  </ItemGroup>
+  <ItemGroup>
+    <Compile Include="AssemblyInfo.cs" />
+    <Compile Include="StringTraceListener.cs" />
+    <Compile Include="TraceSourceWithConfigurationTests.cs" />
+  </ItemGroup>
+  <ItemGroup>
+  <None Include="testhost_AllTypes.config;
+                 testhost_ChangeSwitch_after.config;
+                 testhost_ChangeSwitch_before.config;
+                 testhost_ConfigWithRuntime.config;
+                 testhost_RemoveSource_after.config;
+                 testhost_RemoveSource_before.config;
+                 testhost_RemoveSwitch_after.config;
+                 testhost_RemoveSwitch_before.config;
+                 testhost_Switch_MissingValue_Throws.config"
+          CopyToOutputDirectory="Always" />
+  </ItemGroup>
+  <ItemGroup>
+    <ProjectReference Include="$(LibrariesProjectRoot)System.Configuration.ConfigurationManager\src\System.Configuration.ConfigurationManager.csproj" />
+  </ItemGroup>
+</Project>

@@ -1,8 +1,7 @@
 <Project Sdk="Microsoft.NET.Sdk">
   <PropertyGroup>
+    <TargetFrameworks>$(NetCoreAppCurrent);$(NetCoreAppPrevious);$(NetCoreAppMinimum);netstandard2.0;$(NetFrameworkMinimum)</TargetFrameworks>
     <AllowUnsafeBlocks>true</AllowUnsafeBlocks>
-    <Nullable>enable</Nullable>
-    <TargetFrameworks>$(NetCoreAppCurrent);$(NetCoreAppMinimum);netstandard2.0;$(NetFrameworkMinimum)</TargetFrameworks>
     <IsPackable>true</IsPackable>
     <PackageDescription>Provides non-cryptographic hash algorithms, such as CRC-32.
 
@@ -10,24 +9,35 @@ Commonly Used Types:
 System.IO.Hashing.Crc32
 System.IO.Hashing.XxHash32</PackageDescription>
   </PropertyGroup>
+
   <ItemGroup>
+    <Compile Include="System\ThrowHelper.cs"
+             Condition="$([MSBuild]::IsTargetFrameworkCompatible('$(TargetFramework)', 'net7.0'))" />
     <Compile Include="System\IO\Hashing\Crc32.cs" />
+    <Compile Include="System\IO\Hashing\Crc32.Arm.cs"
+             Condition="$([MSBuild]::IsTargetFrameworkCompatible('$(TargetFramework)', 'net6.0'))" />
     <Compile Include="System\IO\Hashing\Crc32.Table.cs" />
+    <Compile Include="System\IO\Hashing\Crc32.Vectorized.cs"
+             Condition="$([MSBuild]::IsTargetFrameworkCompatible('$(TargetFramework)', 'net7.0'))" />
     <Compile Include="System\IO\Hashing\Crc64.cs" />
     <Compile Include="System\IO\Hashing\Crc64.Table.cs" />
+    <Compile Include="System\IO\Hashing\Crc64.Vectorized.cs"
+             Condition="$([MSBuild]::IsTargetFrameworkCompatible('$(TargetFramework)', 'net7.0'))" />
+    <Compile Include="System\IO\Hashing\XxHash128.cs" />
+    <Compile Include="System\IO\Hashing\XxHash3.cs" />
     <Compile Include="System\IO\Hashing\XxHash32.cs" />
     <Compile Include="System\IO\Hashing\XxHash32.State.cs" />
     <Compile Include="System\IO\Hashing\XxHash64.cs" />
     <Compile Include="System\IO\Hashing\XxHash64.State.cs" />
+    <Compile Include="System\IO\Hashing\XxHashShared.cs" />
     <Compile Include="System\IO\Hashing\NonCryptographicHashAlgorithm.cs" />
+    <Compile Include="System\IO\Hashing\BitOperations.cs"
+             Condition="'$(TargetFrameworkIdentifier)' != '.NETCoreApp'" />
+    <Compile Include="System\IO\Hashing\VectorHelper.cs"
+             Condition="$([MSBuild]::IsTargetFrameworkCompatible('$(TargetFramework)', 'net7.0'))" />
   </ItemGroup>
-  <ItemGroup Condition="'$(TargetFrameworkIdentifier)' == '.NETCoreApp'">
-    <Reference Include="System.Buffers" />
-    <Reference Include="System.Memory" />
-    <Reference Include="System.Runtime" />
-  </ItemGroup>
+
   <ItemGroup Condition="'$(TargetFrameworkIdentifier)' != '.NETCoreApp'">
-    <Compile Include="System\IO\Hashing\BitOperations.cs" />
     <PackageReference Include="System.Buffers" Version="$(SystemBuffersVersion)" />
     <PackageReference Include="System.Memory" Version="$(SystemMemoryVersion)" />
   </ItemGroup>

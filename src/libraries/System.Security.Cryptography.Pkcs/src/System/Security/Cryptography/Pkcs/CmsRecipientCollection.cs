@@ -39,7 +39,7 @@ namespace System.Security.Cryptography.Pkcs
             get
             {
                 if (index < 0 || index >= _recipients.Count)
-                    throw new ArgumentOutOfRangeException(nameof(index), SR.ArgumentOutOfRange_Index);
+                    throw new ArgumentOutOfRangeException(nameof(index), SR.ArgumentOutOfRange_IndexMustBeLess);
 
                 return _recipients[index];
             }
@@ -53,15 +53,25 @@ namespace System.Security.Cryptography.Pkcs
             }
         }
 
-        public int Add(CmsRecipient recipient!!)
+        public int Add(CmsRecipient recipient)
         {
+            if (recipient is null)
+            {
+                throw new ArgumentNullException(nameof(recipient));
+            }
+
             int indexOfNewItem = _recipients.Count;
             _recipients.Add(recipient);
             return indexOfNewItem;
         }
 
-        public void Remove(CmsRecipient recipient!!)
+        public void Remove(CmsRecipient recipient)
         {
+            if (recipient is null)
+            {
+                throw new ArgumentNullException(nameof(recipient));
+            }
+
             _recipients.Remove(recipient);
         }
 
@@ -75,12 +85,17 @@ namespace System.Security.Cryptography.Pkcs
             return new CmsRecipientEnumerator(this);
         }
 
-        public void CopyTo(Array array!!, int index)
+        public void CopyTo(Array array, int index)
         {
+            if (array is null)
+            {
+                throw new ArgumentNullException(nameof(array));
+            }
+
             if (array.Rank != 1)
                 throw new ArgumentException(SR.Arg_RankMultiDimNotSupported);
             if (index < 0 || index >= array.Length)
-                throw new ArgumentOutOfRangeException(nameof(index), SR.ArgumentOutOfRange_Index);
+                throw new ArgumentOutOfRangeException(nameof(index), SR.ArgumentOutOfRange_IndexMustBeLess);
             if (index > array.Length - Count)
                 throw new ArgumentException(SR.Argument_InvalidOffLen);
 
@@ -91,10 +106,15 @@ namespace System.Security.Cryptography.Pkcs
             }
         }
 
-        public void CopyTo(CmsRecipient[] array!!, int index)
+        public void CopyTo(CmsRecipient[] array, int index)
         {
+            if (array is null)
+            {
+                throw new ArgumentNullException(nameof(array));
+            }
+
             if (index < 0 || index >= array.Length)
-                throw new ArgumentOutOfRangeException(nameof(index), SR.ArgumentOutOfRange_Index);
+                throw new ArgumentOutOfRangeException(nameof(index), SR.ArgumentOutOfRange_IndexMustBeLess);
             if (index > array.Length - Count)
                 throw new ArgumentException(SR.Argument_InvalidOffLen);
 

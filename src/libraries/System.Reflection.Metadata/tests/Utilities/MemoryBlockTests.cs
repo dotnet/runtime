@@ -20,20 +20,20 @@ namespace System.Reflection.Metadata.Tests
                 Assert.True(new MemoryBlock(heapPtr, heap.Length).Utf8NullTerminatedStringStartsWithAsciiPrefix(0, ""));
             }
 
-            fixed (byte* heapPtr = (heap = Encoding.UTF8.GetBytes("Hello World!\0")))
+            fixed (byte* heapPtr = (heap = "Hello World!\0"u8.ToArray()))
             {
                 Assert.True(new MemoryBlock(heapPtr, heap.Length).Utf8NullTerminatedStringStartsWithAsciiPrefix("Hello ".Length, "World"));
                 Assert.False(new MemoryBlock(heapPtr, heap.Length).Utf8NullTerminatedStringStartsWithAsciiPrefix("Hello ".Length, "World?"));
             }
 
-            fixed (byte* heapPtr = (heap = Encoding.UTF8.GetBytes("x\0")))
+            fixed (byte* heapPtr = (heap = "x\0"u8.ToArray()))
             {
                 Assert.False(new MemoryBlock(heapPtr, heap.Length).Utf8NullTerminatedStringStartsWithAsciiPrefix(0, "xyz"));
                 Assert.True(new MemoryBlock(heapPtr, heap.Length).Utf8NullTerminatedStringStartsWithAsciiPrefix(0, "x"));
             }
 
             // bad metadata (#String heap is not nul-terminated):
-            fixed (byte* heapPtr = (heap = Encoding.UTF8.GetBytes("abcx")))
+            fixed (byte* heapPtr = (heap = "abcx"u8.ToArray()))
             {
                 Assert.True(new MemoryBlock(heapPtr, heap.Length).Utf8NullTerminatedStringStartsWithAsciiPrefix(3, "x"));
                 Assert.False(new MemoryBlock(heapPtr, heap.Length).Utf8NullTerminatedStringStartsWithAsciiPrefix(3, "xyz"));
@@ -56,7 +56,7 @@ namespace System.Reflection.Metadata.Tests
                 Assert.Equal(s, Encoding.UTF8.GetString(buffer));
                 Assert.Equal(buffer.Length, bytesRead);
 
-                s = new MemoryBlock(ptr, buffer.Length).PeekUtf8NullTerminated(0, Encoding.UTF8.GetBytes("Hello"), decoder, out bytesRead);
+                s = new MemoryBlock(ptr, buffer.Length).PeekUtf8NullTerminated(0, "Hello"u8.ToArray(), decoder, out bytesRead);
                 Assert.Equal("Hello\uFFFD", s);
                 Assert.Equal(s, "Hello" + Encoding.UTF8.GetString(buffer));
                 Assert.Equal(buffer.Length, bytesRead);
@@ -131,14 +131,14 @@ namespace System.Reflection.Metadata.Tests
                 }
              );
 
-            fixed (byte* fixedPtr = (buffer = Encoding.UTF8.GetBytes("Test")))
+            fixed (byte* fixedPtr = (buffer = "Test"u8.ToArray()))
             {
                 ptr = fixedPtr;
                 Assert.Equal("Intercepted", new MemoryBlock(ptr, buffer.Length).PeekUtf8NullTerminated(0, null, decoder, out bytesRead));
                 Assert.Equal(buffer.Length, bytesRead);
 
                 prefixed = true;
-                Assert.Equal("Intercepted", new MemoryBlock(ptr, buffer.Length).PeekUtf8NullTerminated(0, Encoding.UTF8.GetBytes("Prefix"), decoder, out bytesRead));
+                Assert.Equal("Intercepted", new MemoryBlock(ptr, buffer.Length).PeekUtf8NullTerminated(0, "Prefix"u8.ToArray(), decoder, out bytesRead));
                 Assert.Equal(buffer.Length, bytesRead);
             }
 

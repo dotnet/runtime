@@ -9,7 +9,7 @@
 .assembly extern System.Runtime { .publickeytoken = (B0 3F 5F 7F 11 D5 0A 3A ) }
 
 .assembly extern mscorlib { }
-.assembly 'sizeof_Target_64Bit_and_arm'
+.assembly ASSEMBLY_NAME
 {
 }
 .assembly extern xunit.core {}
@@ -73,12 +73,12 @@
     .field private class [mscorlib]System.AppDomain ad
     .field private valuetype JitTest_sizeof_Target_64Bit_and_arm_il.ComplexStruct2 ss2
   }
-  .class private sequential ansi sealed beforefieldinit Test
+  .class public sequential ansi sealed beforefieldinit Test
          extends [mscorlib]System.ValueType
   {
     .pack 1
     .size 1
-    .method private hidebysig static int32
+    .method public hidebysig static int32
             Main() cil managed
     {
       // [ConditionalFact(typeof(TestLibrary.PlatformDetection), nameof(TestLibrary.PlatformDetection.IsNotX86Process))]

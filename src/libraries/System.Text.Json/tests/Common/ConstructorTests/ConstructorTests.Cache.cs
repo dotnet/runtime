@@ -29,14 +29,14 @@ namespace System.Text.Json.Serialization.Tests
 
             async Task DeserializeObjectAsync(string json, Type type, JsonSerializerOptions options)
             {
-                var obj = await JsonSerializerWrapperForString.DeserializeWrapper(json, type, options);
+                var obj = await Serializer.DeserializeWrapper(json, type, options);
                 ((ITestClassWithParameterizedCtor)obj).Verify();
             }
 
             async Task DeserializeObjectMinimalAsync(Type type, JsonSerializerOptions options)
             {
                 string json = (string)type.GetProperty("s_json_minimal").GetValue(null);
-                var obj = await JsonSerializerWrapperForString.DeserializeWrapper(json, type, options);
+                var obj = await Serializer.DeserializeWrapper(json, type, options);
                 ((ITestClassWithParameterizedCtor)obj).VerifyMinimal();
             };
 
@@ -55,13 +55,13 @@ namespace System.Text.Json.Serialization.Tests
             async Task SerializeObject(Type type, JsonSerializerOptions options)
             {
                 var obj = ObjWCtorMixedParams.GetInstance();
-                await JsonSerializerWrapperForString.SerializeWrapper(obj, options);
+                await Serializer.SerializeWrapper(obj, options);
             };
 
             async Task RunTestAsync(Type type)
             {
                 // Use local options to avoid obtaining already cached metadata from the default options.
-                var options = new JsonSerializerOptions();
+                JsonSerializerOptions options = Serializer.CreateOptions();
 
                 const int ThreadCount = 8;
                 const int ConcurrentTestsCount = 4;
@@ -90,16 +90,16 @@ namespace System.Text.Json.Serialization.Tests
         public async Task PropertyCacheWithMinInputsFirst()
         {
             // Use local options to avoid obtaining already cached metadata from the default options.
-            var options = new JsonSerializerOptions();
+            JsonSerializerOptions options = Serializer.CreateOptions();
 
             string json = "{}";
-            await JsonSerializerWrapperForString.DeserializeWrapper<ObjWCtorMixedParams>(json, options);
+            await Serializer.DeserializeWrapper<ObjWCtorMixedParams>(json, options);
 
             ObjWCtorMixedParams testObj = ObjWCtorMixedParams.GetInstance();
             testObj.Verify();
 
-            json = await JsonSerializerWrapperForString.SerializeWrapper(testObj, options);
-            testObj = await JsonSerializerWrapperForString.DeserializeWrapper<ObjWCtorMixedParams>(json, options);
+            json = await Serializer.SerializeWrapper(testObj, options);
+            testObj = await Serializer.DeserializeWrapper<ObjWCtorMixedParams>(json, options);
             testObj.Verify();
         }
 
@@ -107,17 +107,17 @@ namespace System.Text.Json.Serialization.Tests
         public async Task PropertyCacheWithMinInputsLast()
         {
             // Use local options to avoid obtaining already cached metadata from the default options.
-            var options = new JsonSerializerOptions();
+            JsonSerializerOptions options = Serializer.CreateOptions();
 
             ObjWCtorMixedParams testObj = ObjWCtorMixedParams.GetInstance();
             testObj.Verify();
 
-            string json = await JsonSerializerWrapperForString.SerializeWrapper(testObj, options);
-            testObj = await JsonSerializerWrapperForString.DeserializeWrapper<ObjWCtorMixedParams>(json, options);
+            string json = await Serializer.SerializeWrapper(testObj, options);
+            testObj = await Serializer.DeserializeWrapper<ObjWCtorMixedParams>(json, options);
             testObj.Verify();
 
             json = "{}";
-            await JsonSerializerWrapperForString.DeserializeWrapper<ObjWCtorMixedParams>(json, options);
+            await Serializer.DeserializeWrapper<ObjWCtorMixedParams>(json, options);
         }
 
         // Use a common options instance to encourage additional metadata collisions across types. Also since
@@ -135,12 +135,12 @@ namespace System.Text.Json.Serialization.Tests
                 T localTestObj = (T)Activator.CreateInstance(type, args);
                 ((ITestClass)localTestObj).Initialize();
                 ((ITestClass)localTestObj).Verify();
-                string json = await JsonSerializerWrapperForString.SerializeWrapper(localTestObj, s_options);
+                string json = await Serializer.SerializeWrapper(localTestObj, s_options);
             };
 
             async Task DeserializeAsync<T>(string json)
             {
-                ITestClass obj = (ITestClass)await JsonSerializerWrapperForString.DeserializeWrapper<T>(json, s_options);
+                ITestClass obj = (ITestClass)await Serializer.DeserializeWrapper<T>(json, s_options);
                 obj.Verify();
             };
 
@@ -149,7 +149,7 @@ namespace System.Text.Json.Serialization.Tests
                 // Get the test json with the default options to avoid cache pollution of DeserializeAsync() below.
                 ((ITestClass)testObj).Initialize();
                 ((ITestClass)testObj).Verify();
-                string json = await JsonSerializerWrapperForString.SerializeWrapper(testObj);
+                string json = await Serializer.SerializeWrapper(testObj);
 
                 const int ThreadCount = 12;
                 const int ConcurrentTestsCount = 2;

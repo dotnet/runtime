@@ -3,6 +3,7 @@
 
 using System.Diagnostics;
 using System.IO;
+using System.Runtime.Serialization;
 using System.Text;
 
 namespace System.Xml
@@ -23,8 +24,7 @@ namespace System.Xml
         public void SetOutput(XmlNodeWriter writer, Stream stream, bool includeComments, string[]? inclusivePrefixes)
         {
             _writer = writer;
-            if (_signingWriter == null)
-                _signingWriter = new XmlCanonicalWriter();
+            _signingWriter ??= new XmlCanonicalWriter();
             _signingWriter.SetOutput(stream, includeComments, inclusivePrefixes);
             _chars = new byte[XmlConverter.MaxPrimitiveChars];
             _base64Chars = null;
@@ -353,9 +353,8 @@ namespace System.Xml
 
         private void WriteBase64Text(byte[] buffer, int offset, int count)
         {
-            if (_base64Chars == null)
-                _base64Chars = new byte[512];
-            Base64Encoding encoding = XmlConverter.Base64Encoding;
+            _base64Chars ??= new byte[512];
+            Base64Encoding encoding = DataContractSerializer.Base64Encoding;
             while (count >= 3)
             {
                 int byteCount = Math.Min(_base64Chars.Length / 4 * 3, count - count % 3);

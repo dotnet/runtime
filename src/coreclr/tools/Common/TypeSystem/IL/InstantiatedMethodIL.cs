@@ -1,8 +1,6 @@
 // Licensed to the .NET Foundation under one or more agreements.
 // The .NET Foundation licenses this file to you under the MIT license.
 
-using System;
-
 using Internal.TypeSystem;
 
 using Debug = System.Diagnostics.Debug;
@@ -21,7 +19,7 @@ namespace Internal.IL
             Debug.Assert(methodIL.GetMethodILDefinition() == methodIL);
             Debug.Assert(owningMethod.HasInstantiation || owningMethod.OwningType.HasInstantiation);
             Debug.Assert(owningMethod.GetTypicalMethodDefinition() == methodIL.OwningMethod);
-            
+
             _methodIL = methodIL;
             _method = owningMethod;
 
@@ -86,12 +84,12 @@ namespace Internal.IL
                 }
             }
 
-            return (clone == null) ? locals : clone;
+            return clone ?? locals;
         }
 
-        public override Object GetObject(int token, NotFoundBehavior notFoundBehavior)
+        public override object GetObject(int token, NotFoundBehavior notFoundBehavior)
         {
-            Object o = _methodIL.GetObject(token, notFoundBehavior);
+            object o = _methodIL.GetObject(token, notFoundBehavior);
 
             if (o is MethodDesc)
             {
@@ -105,9 +103,8 @@ namespace Internal.IL
             {
                 o = ((FieldDesc)o).InstantiateSignature(_typeInstantiation, _methodInstantiation);
             }
-            else if (o is MethodSignature)
+            else if (o is MethodSignature template)
             {
-                MethodSignature template = (MethodSignature)o;
                 MethodSignatureBuilder builder = new MethodSignatureBuilder(template);
 
                 builder.ReturnType = template.ReturnType.InstantiateSignature(_typeInstantiation, _methodInstantiation);

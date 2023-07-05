@@ -111,9 +111,9 @@ public class CriticalHandleTest
     [MethodImpl(MethodImplOptions.NoInlining)]
     private static void InWorker(IntPtr handleValue)
     {
-        MyCriticalHandle hande = new MyCriticalHandle() { Handle = handleValue };
+        MyCriticalHandle handle = new MyCriticalHandle() { Handle = handleValue };
         IntPtr value;
-        value = Native.In(hande, s_handleCallback);
+        value = Native.In(handle, s_handleCallback);
         Assert.Equal(handleValue.ToInt32(), value.ToInt32());
     }
 
@@ -129,8 +129,8 @@ public class CriticalHandleTest
     [MethodImpl(MethodImplOptions.NoInlining)]
     private static void RetWorker(IntPtr handleValue)
     {
-        MyCriticalHandle hande = Native.Ret(handleValue);
-        Assert.Equal(handleValue.ToInt32(), hande.Handle.ToInt32());
+        MyCriticalHandle handle = Native.Ret(handleValue);
+        Assert.Equal(handleValue.ToInt32(), handle.Handle.ToInt32());
     }
 
     public static void Out()
@@ -145,9 +145,9 @@ public class CriticalHandleTest
     [MethodImpl(MethodImplOptions.NoInlining)]
     private static void OutWorker(IntPtr handleValue)
     {
-        MyCriticalHandle hande;
-        Native.Out(handleValue, out hande);
-        Assert.Equal(handleValue.ToInt32(), hande.Handle.ToInt32());
+        MyCriticalHandle handle;
+        Native.Out(handleValue, out handle);
+        Assert.Equal(handleValue.ToInt32(), handle.Handle.ToInt32());
     }
 
     public static void InRef()
@@ -162,9 +162,9 @@ public class CriticalHandleTest
     [MethodImpl(MethodImplOptions.NoInlining)]
     private static void InRefWorker(IntPtr handleValue)
     {
-        MyCriticalHandle hande = new MyCriticalHandle() { Handle = handleValue };
-        Native.InRef(ref hande, s_handleCallback);
-        Assert.Equal(handleValue.ToInt32(), hande.Handle.ToInt32());
+        MyCriticalHandle handle = new MyCriticalHandle() { Handle = handleValue };
+        Native.InRef(ref handle, s_handleCallback);
+        Assert.Equal(handleValue.ToInt32(), handle.Handle.ToInt32());
     }
 
     public static void Ref()
@@ -179,9 +179,9 @@ public class CriticalHandleTest
     [MethodImpl(MethodImplOptions.NoInlining)]
     private static void RefWorker(IntPtr handleValue)
     {
-        MyCriticalHandle hande = new MyCriticalHandle() { Handle = handleValue };
-        Native.Ref(ref hande, s_handleCallback);
-        Assert.Equal(handleValue.ToInt32(), hande.Handle.ToInt32());
+        MyCriticalHandle handle = new MyCriticalHandle() { Handle = handleValue };
+        Native.Ref(ref handle, s_handleCallback);
+        Assert.Equal(handleValue.ToInt32(), handle.Handle.ToInt32());
     }
 
     public static void RefModify()
@@ -198,9 +198,9 @@ public class CriticalHandleTest
     [MethodImpl(MethodImplOptions.NoInlining)]
     private static void RefModifyWorker(IntPtr handleValue1, IntPtr handleValue2)
     {
-        MyCriticalHandle hande = new MyCriticalHandle() { Handle = handleValue1 };
-        Native.RefModify(handleValue2, ref hande, s_handleCallback);
-        Assert.Equal(handleValue2.ToInt32(), hande.Handle.ToInt32());
+        MyCriticalHandle handle = new MyCriticalHandle() { Handle = handleValue1 };
+        Native.RefModify(handleValue2, ref handle, s_handleCallback);
+        Assert.Equal(handleValue2.ToInt32(), handle.Handle.ToInt32());
     }
 
     internal class Native
@@ -358,7 +358,7 @@ public class NoDefaultCtorCriticalHandleTest
 
 public class Test
 {
-    public static int Main(string[] args)
+    public static int Main()
     {
         try
         {

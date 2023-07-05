@@ -123,8 +123,7 @@ namespace System.Text
         {
             // Need to figure out our best fit character, low is beginning of array, high is 1 AFTER end of array
             int lowBound = 0;
-            Debug.Assert(s_arrayCharBestFit != null);
-            int highBound = s_arrayCharBestFit.Length;
+            int highBound = ArrayCharBestFit.Length;
             int index;
 
             // Binary search the array
@@ -136,13 +135,13 @@ namespace System.Text
                 // Also note that index can never == highBound (because diff is rounded down)
                 index = ((iDiff / 2) + lowBound) & 0xFFFE;
 
-                char cTest = s_arrayCharBestFit[index];
+                char cTest = ArrayCharBestFit[index];
                 if (cTest == cUnknown)
                 {
                     // We found it
-                    Debug.Assert(index + 1 < s_arrayCharBestFit.Length,
+                    Debug.Assert(index + 1 < ArrayCharBestFit.Length,
                         "[EncoderLatin1BestFitFallbackBuffer.TryBestFit]Expected replacement character at end of array");
-                    return s_arrayCharBestFit[index + 1];
+                    return ArrayCharBestFit[index + 1];
                 }
                 else if (cTest < cUnknown)
                 {
@@ -158,12 +157,12 @@ namespace System.Text
 
             for (index = lowBound; index < highBound; index += 2)
             {
-                if (s_arrayCharBestFit[index] == cUnknown)
+                if (ArrayCharBestFit[index] == cUnknown)
                 {
                     // We found it
-                    Debug.Assert(index + 1 < s_arrayCharBestFit.Length,
+                    Debug.Assert(index + 1 < ArrayCharBestFit.Length,
                         "[EncoderLatin1BestFitFallbackBuffer.TryBestFit]Expected replacement character at end of array");
-                    return s_arrayCharBestFit[index + 1];
+                    return ArrayCharBestFit[index + 1];
                 }
             }
 

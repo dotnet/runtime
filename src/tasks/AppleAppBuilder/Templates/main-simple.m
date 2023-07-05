@@ -2,7 +2,13 @@
 // The .NET Foundation licenses this file to you under the MIT license.
 
 #import <UIKit/UIKit.h>
+#if !USE_NATIVE_AOT
 #import "runtime.h"
+#else
+#import <os/log.h>
+#import "util.h"
+extern int __managed__Main(int argc, char* argv[]);
+#endif
 
 @interface ViewController : UIViewController
 @end
@@ -46,7 +52,19 @@ void (*clickHandlerPtr)(void);
     [self.view addSubview:button];
 
     dispatch_async(dispatch_get_global_queue(DISPATCH_QUEUE_PRIORITY_DEFAULT, 0), ^{
+#if !USE_NATIVE_AOT
         mono_ios_runtime_init ();
+#else
+#if INVARIANT_GLOBALIZATION
+        setenv ("DOTNET_SYSTEM_GLOBALIZATION_INVARIANT", "1", TRUE);
+#endif
+        char **managed_argv;
+        int managed_argc = get_managed_args (&managed_argv);
+        int ret_val = __managed__Main (managed_argc, managed_argv);
+        free_managed_args (&managed_argv, managed_argc);
+        os_log_info (OS_LOG_DEFAULT, EXIT_CODE_TAG ": %d", ret_val);
+        exit (ret_val);
+#endif
     });
 }
 -(void) buttonClicked:(UIButton*)sender

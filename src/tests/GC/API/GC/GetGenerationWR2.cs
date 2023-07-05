@@ -15,7 +15,7 @@ namespace DefaultNamespace {
 
     internal class GetGeneration
     {
-        public static int Main( String [] str )
+        public static int Main()
         {
             Console.Out.WriteLine("Test should return with ExitCode 100 ...");
             Object o = new int[10];

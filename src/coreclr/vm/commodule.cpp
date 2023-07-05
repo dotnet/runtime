@@ -24,7 +24,6 @@
 extern "C" mdTypeRef QCALLTYPE ModuleBuilder_GetTypeRef(QCall::ModuleHandle pModule,
                                           LPCWSTR wszFullName,
                                           QCall::ModuleHandle pRefedModule,
-                                          LPCWSTR wszRefedModuleFileName,
                                           INT32 tkResolutionArg)
 {
     QCALL_CONTRACT;
@@ -85,35 +84,25 @@ extern "C" mdTypeRef QCALLTYPE ModuleBuilder_GetTypeRef(QCall::ModuleHandle pMod
         else
         {
             // reference to top level type
-            if ( pThisAssembly != pRefedAssembly )
+
+            SafeComHolderPreemp<IMetaDataAssemblyEmit> pAssemblyEmit;
+
+            // Generate AssemblyRef
+            IfFailThrow( pEmit->QueryInterface(IID_IMetaDataAssemblyEmit, (void **) &pAssemblyEmit) );
+            tkResolution = pThisAssembly->AddAssemblyRef(pRefedAssembly, pAssemblyEmit);
+
+            // Add the assembly ref token and the manifest module it is referring to this module's rid map.
+            // This is needed regardless of whether the dynamic assembly has run access. Even in Save-only
+            // or Refleciton-only mode, CreateType() of the referencing type may still need the referenced
+            // type to be resolved and loaded, e.g. if the referencing type is a subclass of the referenced type.
+            //
+            // Don't cache if there is assembly associated with the token already. The assembly ref resolution
+            // can be ambiguous because of reflection emit does not require unique assembly names.
+            // We always let the first association win. Ideally, we would disallow this situation by throwing
+            // exception, but that would be a breaking change.
+            if(pModule->LookupAssemblyRef(tkResolution) == NULL)
             {
-                SafeComHolderPreemp<IMetaDataAssemblyEmit> pAssemblyEmit;
-
-                // Generate AssemblyRef
-                IfFailThrow( pEmit->QueryInterface(IID_IMetaDataAssemblyEmit, (void **) &pAssemblyEmit) );
-                tkResolution = pThisAssembly->AddAssemblyRef(pRefedAssembly, pAssemblyEmit);
-
-                // Add the assembly ref token and the manifest module it is referring to this module's rid map.
-                // This is needed regardless of whether the dynamic assembly has run access. Even in Save-only
-                // or Refleciton-only mode, CreateType() of the referencing type may still need the referenced
-                // type to be resolved and loaded, e.g. if the referencing type is a subclass of the referenced type.
-                //
-                // Don't cache if there is assembly associated with the token already. The assembly ref resolution
-                // can be ambiguous because of reflection emit does not require unique assembly names.
-                // We always let the first association win. Ideally, we would disallow this situation by throwing
-                // exception, but that would be a breaking change.
-                if(pModule->LookupAssemblyRef(tkResolution) == NULL)
-                {
-                    pModule->ForceStoreAssemblyRef(tkResolution, pRefedAssembly);
-                }
-            }
-            else
-            {
-                _ASSERTE(pModule != pRefedModule);
-                _ASSERTE(wszRefedModuleFileName != NULL);
-
-                // Generate ModuleRef
-                IfFailThrow(pEmit->DefineModuleRef(wszRefedModuleFileName, &tkResolution));
+                pModule->ForceStoreAssemblyRef(tkResolution, pRefedAssembly);
             }
         }
 
@@ -603,52 +592,6 @@ extern "C" mdTypeSpec QCALLTYPE ModuleBuilder_GetTokenFromTypeSpec(QCall::Module
 }
 
 
-// GetType
-// Given a class name, this method will look for that class
-//  with in the module.
-extern "C" void QCALLTYPE RuntimeModule_GetType(QCall::ModuleHandle pModule, LPCWSTR wszName, BOOL bThrowOnError, BOOL bIgnoreCase, QCall::ObjectHandleOnStack retType, QCall::ObjectHandleOnStack keepAlive)
-{
-    CONTRACTL
-    {
-        QCALL_CHECK;
-        PRECONDITION(CheckPointer(wszName));
-    }
-    CONTRACTL_END;
-
-    TypeHandle retTypeHandle;
-
-    BEGIN_QCALL;
-
-    DomainAssembly *pAssembly = pModule->GetDomainAssembly();
-    _ASSERTE(pAssembly);
-
-    BOOL prohibitAsmQualifiedName = TRUE;
-
-    // Load the class from this assembly (fail if it is in a different one).
-    retTypeHandle = TypeName::GetTypeManaged(wszName, pAssembly, bThrowOnError, bIgnoreCase, prohibitAsmQualifiedName, NULL, (OBJECTREF*)keepAlive.m_ppObject);
-
-    // Verify that it's in 'this' module
-    // But, if it's in a different assembly than expected, that's okay, because
-    // it just means that it's been type forwarded.
-    if (!retTypeHandle.IsNull())
-    {
-        if ( (retTypeHandle.GetModule() != pModule) &&
-             (retTypeHandle.GetModule()->GetAssembly() == pModule->GetAssembly()) )
-            retTypeHandle = TypeHandle();
-    }
-
-    if (!retTypeHandle.IsNull())
-    {
-        GCX_COOP();
-        retType.Set(retTypeHandle.GetManagedClassObject());
-    }
-
-    END_QCALL;
-
-    return;
-}
-
-
 // GetName
 // This routine will return the name of the module as a String
 extern "C" void QCALLTYPE RuntimeModule_GetScopeName(QCall::ModuleHandle pModule, QCall::StringHandleOnStack retString)
@@ -675,7 +618,7 @@ static void ReplaceNiExtension(SString& fileName, PCWSTR pwzOldSuffix, PCWSTR pw
 
     if (fileName.EndsWithCaseInsensitive(pwzOldSuffix))
     {
-        COUNT_T oldSuffixLen = (COUNT_T)wcslen(pwzOldSuffix);
+        COUNT_T oldSuffixLen = (COUNT_T)u16_strlen(pwzOldSuffix);
         fileName.Replace(fileName.End() - oldSuffixLen, oldSuffixLen, pwzNewSuffix);
     }
 }

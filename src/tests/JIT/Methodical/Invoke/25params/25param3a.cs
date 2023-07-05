@@ -4,7 +4,10 @@
 // long chain of methods
 
 using System;
-internal class test
+using Xunit;
+namespace Test_25param3a_cs
+{
+public class test
 {
     private static int f1(int a1, int a2, int a3, int a4, int a5,
             int a6, int a7, int a8, int a9, int a10,
@@ -319,7 +322,8 @@ internal class test
         return sum;
     }
 
-    private static int Main()
+    [Fact]
+    public static int TestEntryPoint()
     {
         Console.WriteLine("Testing method of 25 parameters, all of int data type, long chain of method calls");
         int sum = f(1, 2, 3, 4, 5, 6, 7, 8, 9, 10, 11, 12, 13, 14, 15, 16, 17, 18, 19, 20, 21, 22, 23, 24, 25);
@@ -331,3 +335,4 @@ internal class test
     }
 }
 
+}

@@ -2,7 +2,6 @@
 // The .NET Foundation licenses this file to you under the MIT license.
 
 using System;
-using System.Diagnostics;
 using System.Threading;
 
 namespace Microsoft.Extensions.Primitives
@@ -18,8 +17,17 @@ namespace Microsoft.Extensions.Primitives
         /// <param name="changeTokenProducer">Produces the change token.</param>
         /// <param name="changeTokenConsumer">Action called when the token changes.</param>
         /// <returns></returns>
-        public static IDisposable OnChange(Func<IChangeToken?> changeTokenProducer!!, Action changeTokenConsumer!!)
+        public static IDisposable OnChange(Func<IChangeToken?> changeTokenProducer, Action changeTokenConsumer)
         {
+            if (changeTokenProducer is null)
+            {
+                ThrowHelper.ThrowArgumentNullException(ExceptionArgument.changeTokenProducer);
+            }
+            if (changeTokenConsumer is null)
+            {
+                ThrowHelper.ThrowArgumentNullException(ExceptionArgument.changeTokenConsumer);
+            }
+
             return new ChangeTokenRegistration<Action>(changeTokenProducer, callback => callback(), changeTokenConsumer);
         }
 
@@ -30,8 +38,17 @@ namespace Microsoft.Extensions.Primitives
         /// <param name="changeTokenConsumer">Action called when the token changes.</param>
         /// <param name="state">state for the consumer.</param>
         /// <returns></returns>
-        public static IDisposable OnChange<TState>(Func<IChangeToken?> changeTokenProducer!!, Action<TState> changeTokenConsumer!!, TState state)
+        public static IDisposable OnChange<TState>(Func<IChangeToken?> changeTokenProducer, Action<TState> changeTokenConsumer, TState state)
         {
+            if (changeTokenProducer is null)
+            {
+                ThrowHelper.ThrowArgumentNullException(ExceptionArgument.changeTokenProducer);
+            }
+            if (changeTokenConsumer is null)
+            {
+                ThrowHelper.ThrowArgumentNullException(ExceptionArgument.changeTokenConsumer);
+            }
+
             return new ChangeTokenRegistration<TState>(changeTokenProducer, changeTokenConsumer, state);
         }
 
@@ -81,9 +98,12 @@ namespace Microsoft.Extensions.Primitives
                 {
                     return;
                 }
-
                 IDisposable registraton = token.RegisterChangeCallback(s => ((ChangeTokenRegistration<TState>?)s)!.OnChangeTokenFired(), this);
-
+                if (token.HasChanged && token.ActiveChangeCallbacks)
+                {
+                    registraton?.Dispose();
+                    return;
+                }
                 SetDisposable(registraton);
             }
 

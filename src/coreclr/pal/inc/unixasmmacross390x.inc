@@ -34,4 +34,3 @@ C_FUNC(\Name\()_End):
         .global C_FUNC(\Name\()_End)
         LEAF_END \Name, \Section
 .endm
-

@@ -2,16 +2,17 @@
 // The .NET Foundation licenses this file to you under the MIT license.
 
 // The test came from https://github.com/dotnet/runtime/issues/21860.
-// It tests that we do access overlapping fields with the correct types. 
-// Espessialy if the stuct was casted by 'Unsafe.As` from a promoted type
+// It tests that we do access overlapping fields with the correct types.
+// Especially if the struct was casted by 'Unsafe.As` from a promoted type
 // and the promoted type had another field on the same offset but with a different type/size.
 
 using System.Runtime.CompilerServices;
 using System.Runtime.InteropServices;
 using System.Diagnostics;
 using System;
+using Xunit;
 
-class TestReadIntAsDouble
+public class TestReadIntAsDouble
 {
 	private struct Dec
 	{
@@ -44,13 +45,13 @@ class TestReadIntAsDouble
 
 
 	[MethodImpl(MethodImplOptions.NoInlining)]
-	public static void TestDoubleAssignment(Data d)
+	internal static void TestDoubleAssignment(Data d)
 	{
 		Dec p = default;
 		p.ulo = d.x;
 		p.umid = d.y;
         // The jit gets field's type based on offset, so it will return `ulo` as int.
-        d.m = Unsafe.As<Dec, DecCalc1>(ref p).ulomidLE; 
+        d.m = Unsafe.As<Dec, DecCalc1>(ref p).ulomidLE;
 	}
 
     [StructLayout(LayoutKind.Explicit)]
@@ -70,7 +71,7 @@ class TestReadIntAsDouble
     }
 
     [MethodImpl(MethodImplOptions.NoInlining)]
-    public static void TestIntAssignment(Data d)
+    internal static void TestIntAssignment(Data d)
     {
         Dec p = default;
         p.ulo = d.x;
@@ -79,7 +80,8 @@ class TestReadIntAsDouble
         d.x = Unsafe.As<Dec, DecCalc2>(ref p).ulo;
     }
 
-    static int Main()
+    [Fact]
+    public static int TestEntryPoint()
     {
         TestDoubleAssignment(default);
         TestIntAssignment(default);

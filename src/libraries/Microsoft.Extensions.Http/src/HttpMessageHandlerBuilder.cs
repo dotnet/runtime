@@ -3,6 +3,7 @@
 
 using System;
 using System.Collections.Generic;
+using System.Diagnostics.CodeAnalysis;
 using System.Linq;
 using System.Net.Http;
 
@@ -26,7 +27,8 @@ namespace Microsoft.Extensions.Http
         /// and is public for unit testing purposes only. Setting the <see cref="Name"/> outside of
         /// testing scenarios may have unpredictable results.
         /// </remarks>
-        public abstract string Name { get; set; }
+        [DisallowNull]
+        public abstract string? Name { get; set; }
 
         /// <summary>
         /// Gets or sets the primary <see cref="HttpMessageHandler"/>.
@@ -50,7 +52,7 @@ namespace Microsoft.Extensions.Http
         /// (default) this will be a reference to a scoped service provider that has the same
         /// lifetime as the handler being created.
         /// </remarks>
-        public virtual IServiceProvider Services { get; }
+        public virtual IServiceProvider Services { get; } = null!;
 
         /// <summary>
         /// Creates an <see cref="HttpMessageHandler"/>.
@@ -76,8 +78,11 @@ namespace Microsoft.Extensions.Http
         /// <exception cref="InvalidOperationException"><paramref name="additionalHandlers "/> contains a <see langword="null"/> entry.
         /// -or-
         /// The <c>DelegatingHandler.InnerHandler</c> property must be <see langword="null"/>. <c>DelegatingHandler</c> instances provided to <c>HttpMessageHandlerBuilder</c> must not be reused or cached.</exception>
-        protected internal static HttpMessageHandler CreateHandlerPipeline(HttpMessageHandler primaryHandler!!, IEnumerable<DelegatingHandler> additionalHandlers!!)
+        protected internal static HttpMessageHandler CreateHandlerPipeline(HttpMessageHandler primaryHandler, IEnumerable<DelegatingHandler> additionalHandlers)
         {
+            ThrowHelper.ThrowIfNull(primaryHandler);
+            ThrowHelper.ThrowIfNull(additionalHandlers);
+
             // This is similar to https://github.com/aspnet/AspNetWebStack/blob/master/src/System.Net.Http.Formatting/HttpClientFactory.cs#L58
             // but we don't want to take that package as a dependency.
 

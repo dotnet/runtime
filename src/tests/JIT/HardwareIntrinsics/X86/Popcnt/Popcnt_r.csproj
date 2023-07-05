@@ -1,6 +1,6 @@
 <Project Sdk="Microsoft.NET.Sdk">
   <PropertyGroup>
-    <OutputType>Exe</OutputType>
+    <AssemblyName>X86_Popcnt_r</AssemblyName>
   </PropertyGroup>
   <PropertyGroup>
     <DebugType>Embedded</DebugType>

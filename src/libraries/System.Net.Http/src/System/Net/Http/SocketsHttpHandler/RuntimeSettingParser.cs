@@ -52,6 +52,26 @@ namespace System.Net.Http
         }
 
         /// <summary>
+        /// Parse a <see cref="int"/> value from an AppContext data or an environment variable.
+        /// </summary>
+        public static int QueryRuntimeSettingInt32(string appCtxSettingName, string environmentVariableSettingName, int defaultValue)
+        {
+            // First check for the AppContext data, giving it priority over the environment variable.
+            switch (AppContext.GetData(appCtxSettingName))
+            {
+                case uint value:
+                    return (int)value;
+                case string str:
+                    return int.Parse(str, NumberStyles.Any, NumberFormatInfo.InvariantInfo);
+                case IConvertible convertible:
+                    return convertible.ToInt32(NumberFormatInfo.InvariantInfo);
+            }
+
+            // AppContext data wasn't used (or cannot coerce value). Check the environment variable.
+            return ParseInt32EnvironmentVariableValue(environmentVariableSettingName, defaultValue);
+        }
+
+        /// <summary>
         /// Parse an environment variable for an <see cref="int"/> value.
         /// </summary>
         public static int ParseInt32EnvironmentVariableValue(string environmentVariableSettingName, int defaultValue)

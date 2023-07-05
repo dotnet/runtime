@@ -6,14 +6,14 @@
 ** Source : test.c
 **
 ** Purpose: Test for GetEnvironmentVariable() function
-** Set an Environment Variable, then use GetEnvironmentVariable to 
+** Set an Environment Variable, then use GetEnvironmentVariable to
 ** retrieve it -- ensure that it retrieves properly.
 **
 **
 **=========================================================*/
 
-/* Depends on SetEnvironmentVariableW (because we're implmenting 
-   the wide version) and strcmp() 
+/* Depends on SetEnvironmentVariableW (because we're implementing
+   the wide version) and strcmp()
 */
 
 #include <palsuite.h>
@@ -35,38 +35,38 @@ PALTEST(miscellaneous_GetEnvironmentVariableA_test4_paltest_getenvironmentvariab
     {
         return FAIL;
     }
-  
+
     SetEnvironmentVariableW(SomeEnvironmentVariable,
                             TheEnvironmentValue);
 
- 
+
     /* Normal case, PATH should fit into this buffer */
     size = GetEnvironmentVariable("PALTEST",         // Variable Name
                                   pResultBuffer,     // Buffer for Value
                                   0);                // Buffer size
-  
+
     pResultBuffer = (char*)malloc(size);
     if ( pResultBuffer == NULL )
      {
 	Fail("ERROR: Failed to allocate memory for pResultBuffer pointer. "
 	       "Can't properly exec test case without this.\n");
      }
-  
-  
+
+
     GetEnvironmentVariable("PALTEST",
                            pResultBuffer,
                            size);
-  
-    if(strcmp(pResultBuffer,"TEST") != 0) 
+
+    if(strcmp(pResultBuffer,"TEST") != 0)
     {
-        free(pResultBuffer);    
+        free(pResultBuffer);
         Fail("ERROR: The value in the buffer should have been 'TEST' but "
              "was really '%s'.\n",pResultBuffer);
-            
+
     }
-    
+
     free(pResultBuffer);
-    
+
     PAL_Terminate();
     return PASS;
 }

@@ -8,18 +8,18 @@
     <Description>Templates to create WebAssembly projects.</Description>
     <PackageTags>dotnet-new;templates</PackageTags>
 
-    <TargetFramework>net6.0</TargetFramework>
+    <TargetFramework>$(NetCoreAppToolCurrent)</TargetFramework>
 
     <IncludeContentInPack>true</IncludeContentInPack>
     <IncludeBuildOutput>false</IncludeBuildOutput>
     <ContentTargetFolders>content</ContentTargetFolders>
     <NoWarn>$(NoWarn);NU5128</NoWarn>
     <IsPackable>true</IsPackable>
+    <EnableDefaultCompileItems>false</EnableDefaultCompileItems>
   </PropertyGroup>
 
   <ItemGroup>
     <Content Include="templates\**\*" Exclude="templates\**\bin\**;templates\**\obj\**" />
-    <Compile Remove="**\*" />
   </ItemGroup>
 
   <Target Name="CreateManifestResourceNames" />

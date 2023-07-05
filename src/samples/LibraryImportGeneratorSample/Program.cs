@@ -29,7 +29,6 @@ namespace Demo
             int c = NativeExportsNE.Sum(a, b);
             Console.WriteLine($"{a} + {b} = {c}");
 
-            c = 0;
             NativeExportsNE.Sum(a, b, out c);
             Console.WriteLine($"{a} + {b} = {c}");
 

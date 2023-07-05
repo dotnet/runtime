@@ -2,10 +2,11 @@
 // The .NET Foundation licenses this file to you under the MIT license.
 //
 
+using Xunit;
 namespace A
 {
     using System;
-    class B
+    public class B
     {
         public static int downBy1ge(int amount)
         {
@@ -161,7 +162,8 @@ namespace A
             return sum + i;
         }
 
-        public static int Main(String[] args)
+        [Fact]
+        public static int TestEntryPoint()
         {
             bool failed = false;
 

@@ -10,7 +10,7 @@
 #include <mono/metadata/metadata.h>
 #include <mono/metadata/class-internals.h>
 
-gboolean
+MONO_COMPONENT_API gboolean
 mono_class_init_internal (MonoClass *klass);
 
 void

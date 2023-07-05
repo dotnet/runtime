@@ -7,10 +7,12 @@ namespace Microsoft.Extensions.Hosting.Internal
 {
     internal sealed class ConfigureContainerAdapter<TContainerBuilder> : IConfigureContainerAdapter
     {
-        private Action<HostBuilderContext, TContainerBuilder> _action;
+        private readonly Action<HostBuilderContext, TContainerBuilder> _action;
 
-        public ConfigureContainerAdapter(Action<HostBuilderContext, TContainerBuilder> action!!)
+        public ConfigureContainerAdapter(Action<HostBuilderContext, TContainerBuilder> action)
         {
+            ThrowHelper.ThrowIfNull(action);
+
             _action = action;
         }
 

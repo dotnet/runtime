@@ -78,7 +78,7 @@ __SECTIONREL_tls_CurrentThread SETS "SECTIONREL_tls_CurrentThread"
 
         ;; INLINE_GETTHREAD_CONSTANT_POOL macro has to be used after the last function in the .asm file that used
         ;; INLINE_GETTHREAD. Optionally, it can be also used after any function that used INLINE_GETTHREAD
-        ;; to improve density, or to reduce distance betweeen the constant pool and its use.
+        ;; to improve density, or to reduce distance between the constant pool and its use.
     MACRO
         INLINE_GETTHREAD_CONSTANT_POOL
         EXTERN tls_CurrentThread
@@ -262,9 +262,7 @@ $Name
 ;;
         EXTERN RhpGcAlloc
         EXTERN RhDebugBreak
-        EXTERN RhpWaitForSuspend2
         EXTERN RhpWaitForGC2
-        EXTERN RhpReversePInvokeAttachOrTrapThread2
         EXTERN RhExceptionHandling_FailedAllocation
 
 

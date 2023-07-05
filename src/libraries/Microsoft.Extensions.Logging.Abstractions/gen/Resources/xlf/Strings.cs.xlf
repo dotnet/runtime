@@ -32,6 +32,16 @@
         <target state="translated">Názvy parametrů metody protokolování nemůžou začínat podtržítkem (_).</target>
         <note />
       </trans-unit>
+      <trans-unit id="InvalidLoggingMethodParameterOutMessage">
+        <source>Argument '{0}' is using the unsupported out parameter modifier</source>
+        <target state="translated">Argument {0} používá nepodporovaný modifikátor výstupních parametrů.</target>
+        <note />
+      </trans-unit>
+      <trans-unit id="InvalidLoggingMethodParameterOutTitle">
+        <source>Argument is using the unsupported out parameter modifier</source>
+        <target state="translated">Argument používá nepodporovaný modifikátor výstupních parametrů</target>
+        <note />
+      </trans-unit>
       <trans-unit id="LoggingMethodHasBodyMessage">
         <source>Logging methods cannot have a body</source>
         <target state="translated">Metody protokolování nemůžou obsahovat tělo.</target>
@@ -58,8 +68,13 @@
         <note />
       </trans-unit>
       <trans-unit id="MalformedFormatStringsMessage">
-        <source>Can't have malformed format strings (like dangling {, etc)</source>
-        <target state="translated">Nemůže mít chybně formátované řetězce (třeba neuzavřené závorky { atd.).</target>
+        <source>Logging method '{0}' contains malformed format strings</source>
+        <target state="translated">Metoda protokolování {0} obsahuje řetězce s poškozeným formátem.</target>
+        <note />
+      </trans-unit>
+      <trans-unit id="MalformedFormatStringsTitle">
+        <source>Logging method contains malformed format strings</source>
+        <target state="translated">Metoda protokolování obsahuje řetězce s poškozeným formátem</target>
         <note />
       </trans-unit>
       <trans-unit id="MissingLogLevelMessage">
@@ -145,6 +160,16 @@
       <trans-unit id="ShouldntReuseEventIdsTitle">
         <source>Multiple logging methods cannot use the same event id within a class</source>
         <target state="translated">Více než jedna metoda protokolování nemůže v rámci třídy používat stejné ID události.</target>
+        <note />
+      </trans-unit>
+      <trans-unit id="ShouldntReuseEventNamesMessage">
+        <source>Multiple logging methods are using event name {0} in class {1}</source>
+        <target state="translated">Více než jedna metoda protokolování používá název události {0} ve třídě {1}</target>
+        <note />
+      </trans-unit>
+      <trans-unit id="ShouldntReuseEventNamesTitle">
+        <source>Multiple logging methods should not use the same event name within a class</source>
+        <target state="translated">Více než jedna metoda protokolování by nemělo používat stejný název události v rámci třídy</target>
         <note />
       </trans-unit>
       <trans-unit id="TemplateHasNoCorrespondingArgumentMessage">

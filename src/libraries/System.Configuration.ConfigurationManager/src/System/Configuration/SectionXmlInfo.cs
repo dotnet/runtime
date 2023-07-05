@@ -12,7 +12,7 @@ namespace System.Configuration
         internal SectionXmlInfo(
             string configKey, string definitionConfigPath, string targetConfigPath, string subPath,
             string filename, int lineNumber, object streamVersion,
-            string rawXml, string configSource, string configSourceStreamName, object configSourceStreamVersion,
+            string rawXml, string configSource, string configSourceStreamName,
             string protectionProviderName, OverrideModeSetting overrideMode, bool skipInChildApps)
         {
             ConfigKey = configKey;
@@ -36,11 +36,6 @@ namespace System.Configuration
         internal string ConfigSource { get; set; }
 
         internal string ConfigSourceStreamName { get; set; }
-
-        internal object ConfigSourceStreamVersion
-        {
-            set { }
-        }
 
         internal string ConfigKey { get; }
 

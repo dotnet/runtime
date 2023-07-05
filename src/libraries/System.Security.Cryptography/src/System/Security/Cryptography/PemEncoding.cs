@@ -1,6 +1,7 @@
 // Licensed to the .NET Foundation under one or more agreements.
 // The .NET Foundation licenses this file to you under the MIT license.
 
+using System.Buffers.Text;
 using System.Diagnostics;
 using System.Runtime.CompilerServices;
 
@@ -212,7 +213,7 @@ namespace System.Security.Cryptography
                 // is invalid.
                 // If it is a space or hyphen, and the previous character was
                 // also not a labelchar (another hyphen or space), then we have
-                // two consecutive spaces or hyphens which is is invalid.
+                // two consecutive spaces or hyphens which is invalid.
                 if (!isSpaceOrHyphen || !previousIsLabelChar)
                 {
                     return false;
@@ -233,78 +234,36 @@ namespace System.Security.Cryptography
             out int base64End,
             out int base64DecodedSize)
         {
-            base64Start = 0;
-            base64End = str.Length;
+            // Trim starting and ending allowed white space characters
+            int start = 0;
+            int end = str.Length - 1;
+            for (; start < str.Length && IsWhiteSpaceCharacter(str[start]); start++);
+            for (; end > start && IsWhiteSpaceCharacter(str[end]); end--);
 
-            if (str.IsEmpty)
+            // Validate that the remaining characters are valid base-64 encoded data.
+            if (Base64.IsValid(str.Slice(start, end + 1 - start), out base64DecodedSize))
             {
-                base64DecodedSize = 0;
+                base64Start = start;
+                base64End = end + 1;
                 return true;
             }
 
-            int significantCharacters = 0;
-            int paddingCharacters = 0;
-
-            for (int i = 0; i < str.Length; i++)
-            {
-                char ch = str[i];
-
-                if (IsWhiteSpaceCharacter(ch))
-                {
-                    if (significantCharacters == 0)
-                    {
-                        base64Start++;
-                    }
-                    else
-                    {
-                        base64End--;
-                    }
-
-                    continue;
-                }
-
-                base64End = str.Length;
-
-                if (ch == '=')
-                {
-                    paddingCharacters++;
-                }
-                else if (paddingCharacters == 0 && IsBase64Character(ch))
-                {
-                    significantCharacters++;
-                }
-                else
-                {
-                    base64DecodedSize = 0;
-                    return false;
-                }
-            }
-
-            int totalChars = paddingCharacters + significantCharacters;
-
-            if (paddingCharacters > 2 || (totalChars & 0b11) != 0)
-            {
-                base64DecodedSize = 0;
-                return false;
-            }
-
-            base64DecodedSize = (totalChars >> 2) * 3 - paddingCharacters;
-            return true;
+            base64Start = 0;
+            base64End = 0;
+            return false;
         }
 
         [MethodImpl(MethodImplOptions.AggressiveInlining)]
         private static bool IsBase64Character(char ch)
         {
-            uint c = (uint)ch;
-            return c == '+' || c == '/' ||
-                   c - '0' < 10 || c - 'A' < 26 || c - 'a' < 26;
+            return char.IsAsciiLetterOrDigit(ch) || ch is '+' or '/';
         }
 
         [MethodImpl(MethodImplOptions.AggressiveInlining)]
         private static bool IsWhiteSpaceCharacter(char ch)
         {
             // Match white space characters from Convert.Base64
-            return ch == ' ' || ch == '\t' || ch == '\n' || ch == '\r';
+            return ch is ' ' or '\t' or '\n' or '\r';
         }
 
         /// <summary>
@@ -355,10 +314,8 @@ namespace System.Security.Cryptography
             // is accounted for assuming an empty label.
             const int MaxDataLength = 1_585_834_053;
 
-            if (labelLength < 0)
-                throw new ArgumentOutOfRangeException(nameof(labelLength), SR.ArgumentOutOfRange_NeedPosNum);
-            if (dataLength < 0)
-                throw new ArgumentOutOfRangeException(nameof(dataLength), SR.ArgumentOutOfRange_NeedPosNum);
+            ArgumentOutOfRangeException.ThrowIfNegative(labelLength);
+            ArgumentOutOfRangeException.ThrowIfNegative(dataLength);
             if (labelLength > MaxLabelSize)
                 throw new ArgumentOutOfRangeException(nameof(labelLength), SR.Argument_PemEncoding_EncodedSizeTooLarge);
             if (dataLength > MaxDataLength)
@@ -425,6 +382,24 @@ namespace System.Security.Cryptography
         /// </exception>
         public static bool TryWrite(ReadOnlySpan<char> label, ReadOnlySpan<byte> data, Span<char> destination, out int charsWritten)
         {
+            if (!IsValidLabel(label))
+                throw new ArgumentException(SR.Argument_PemEncoding_InvalidLabel, nameof(label));
+
+            int encodedSize = GetEncodedSize(label.Length, data.Length);
+
+            if (destination.Length < encodedSize)
+            {
+                charsWritten = 0;
+                return false;
+            }
+
+            charsWritten = WriteCore(label, data, destination);
+            Debug.Assert(encodedSize == charsWritten);
+            return true;
+        }
+
+        private static int WriteCore(ReadOnlySpan<char> label, ReadOnlySpan<byte> data, Span<char> destination)
+        {
             static int Write(ReadOnlySpan<char> str, Span<char> dest, int offset)
             {
                 str.CopyTo(dest.Slice(offset));
@@ -444,20 +419,10 @@ namespace System.Security.Cryptography
                 return base64Written;
             }
 
-            if (!IsValidLabel(label))
-                throw new ArgumentException(SR.Argument_PemEncoding_InvalidLabel, nameof(label));
-
             const string NewLine = "\n";
             const int BytesPerLine = 48;
-            int encodedSize = GetEncodedSize(label.Length, data.Length);
 
-            if (destination.Length < encodedSize)
-            {
-                charsWritten = 0;
-                return false;
-            }
-
-            charsWritten = 0;
+            int charsWritten = 0;
             charsWritten += Write(PreEBPrefix, destination, charsWritten);
             charsWritten += Write(label, destination, charsWritten);
             charsWritten += Write(Ending, destination, charsWritten);
@@ -483,7 +448,7 @@ namespace System.Security.Cryptography
             charsWritten += Write(label, destination, charsWritten);
             charsWritten += Write(Ending, destination, charsWritten);
 
-            return true;
+            return charsWritten;
         }
 
         /// <summary>
@@ -524,14 +489,66 @@ namespace System.Security.Cryptography
             int encodedSize = GetEncodedSize(label.Length, data.Length);
             char[] buffer = new char[encodedSize];
 
-            if (!TryWrite(label, data, buffer, out int charsWritten))
-            {
-                Debug.Fail("TryWrite failed with a pre-sized buffer");
-                throw new ArgumentException(null, nameof(data));
-            }
-
+            int charsWritten = WriteCore(label, data, buffer);
             Debug.Assert(charsWritten == encodedSize);
             return buffer;
+        }
+
+        /// <summary>
+        ///   Creates an encoded PEM with the given label and data.
+        /// </summary>
+        /// <param name="label">
+        ///   The label to encode.
+        /// </param>
+        /// <param name="data">
+        ///   The data to encode.
+        /// </param>
+        /// <returns>
+        ///   A string of the encoded PEM.
+        /// </returns>
+        /// <remarks>
+        ///   This method always wraps the base-64 encoded text to 64 characters, per the
+        ///   recommended wrapping of RFC-7468. Unix-style line endings are used for line breaks.
+        /// </remarks>
+        /// <exception cref="ArgumentOutOfRangeException">
+        ///   <paramref name="label"/> exceeds the maximum possible label length.
+        ///
+        ///   -or-
+        ///
+        ///   <paramref name="data"/> exceeds the maximum possible encoded data length.
+        /// </exception>
+        /// <exception cref="ArgumentException">
+        ///   The resulting PEM-encoded text is larger than <see cref="int.MaxValue"/>.
+        ///
+        ///   - or -
+        ///
+        ///   <paramref name="label"/> contains invalid characters.
+        /// </exception>
+        public static unsafe string WriteString(ReadOnlySpan<char> label, ReadOnlySpan<byte> data)
+        {
+            if (!IsValidLabel(label))
+                throw new ArgumentException(SR.Argument_PemEncoding_InvalidLabel, nameof(label));
+
+            int encodedSize = GetEncodedSize(label.Length, data.Length);
+
+#pragma warning disable CS8500 // takes address of managed type
+            return string.Create(
+                encodedSize,
+                (LabelPointer: (IntPtr)(&label), DataPointer: (IntPtr)(&data)),
+                static (destination, state) =>
+                {
+                    ReadOnlySpan<char> label = *(ReadOnlySpan<char>*)state.LabelPointer;
+                    ReadOnlySpan<byte> data = *(ReadOnlySpan<byte>*)state.DataPointer;
+
+                    int charsWritten = WriteCore(label, data, destination);
+
+                    if (charsWritten != destination.Length)
+                    {
+                        Debug.Fail("WriteCore wrote the wrong amount of data");
+                        throw new CryptographicException();
+                    }
+                });
+#pragma warning restore CS8500
         }
     }
 }

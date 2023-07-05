@@ -3,7 +3,7 @@
 
 using System;
 
-class enviroment_version
+class environment_version
 {
     static int Main()
     {

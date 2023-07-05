@@ -7,7 +7,7 @@ namespace System.Security.Cryptography.Xml
 {
     public class KeyInfoName : KeyInfoClause
     {
-        private string _keyName;
+        private string? _keyName;
 
         //
         // public constructors
@@ -15,7 +15,7 @@ namespace System.Security.Cryptography.Xml
 
         public KeyInfoName() : this(null) { }
 
-        public KeyInfoName(string keyName)
+        public KeyInfoName(string? keyName)
         {
             Value = keyName;
         }
@@ -24,7 +24,7 @@ namespace System.Security.Cryptography.Xml
         // public properties
         //
 
-        public string Value
+        public string? Value
         {
             get { return _keyName; }
             set { _keyName = value; }
@@ -48,8 +48,13 @@ namespace System.Security.Cryptography.Xml
             return nameElement;
         }
 
-        public override void LoadXml(XmlElement value!!)
+        public override void LoadXml(XmlElement value)
         {
+            if (value is null)
+            {
+                throw new ArgumentNullException(nameof(value));
+            }
+
             XmlElement nameElement = value;
             _keyName = nameElement.InnerText.Trim();
         }

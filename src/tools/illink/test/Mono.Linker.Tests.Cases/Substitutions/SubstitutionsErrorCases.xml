@@ -1,0 +1,16 @@
+<?xml version="1.0" encoding="utf-8" ?>
+<linker>
+  <assembly fullname="test, Version=0.0.0.0, Culture=neutral, PublicKeyToken=null">
+    <type fullname="Mono.Linker.Tests.Cases.Substitutions.SubstitutionsErrorCases">
+      <method signature="System.Int32 TestMethod_1()" body="stub" value="abcd" />
+      <method signature="System.Int32 TestMethod_2()" body="noaction" />
+
+      <field name="InstanceField" value="5" />
+      <field name="IntField" />
+      <field name="IntField" value="NonNumber" />
+    </type>
+  </assembly>
+  <assembly fullname="NonExistentAssembly" />
+  <!-- IL2100 -->
+  <assembly fullname="*" />
+</linker>

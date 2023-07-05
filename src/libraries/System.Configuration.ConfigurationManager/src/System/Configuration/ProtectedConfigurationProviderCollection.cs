@@ -9,8 +9,13 @@ namespace System.Configuration
     {
         public new ProtectedConfigurationProvider this[string name] => (ProtectedConfigurationProvider)base[name];
 
-        public override void Add(ProviderBase provider!!)
+        public override void Add(ProviderBase provider)
         {
+            if (provider is null)
+            {
+                throw new ArgumentNullException(nameof(provider));
+            }
+
             if (!(provider is ProtectedConfigurationProvider))
             {
                 throw new ArgumentException(

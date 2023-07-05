@@ -238,6 +238,7 @@ namespace Microsoft.CSharp.RuntimeBinder.Semantics
         }
 #endif // DEBUG
 
+#pragma warning disable CA1822
         [RequiresUnreferencedCode(Binder.TrimmerWarning)]
         private BetterType WhichSimpleConversionIsBetter(PredefinedType pt1, PredefinedType pt2)
         {
@@ -248,8 +249,7 @@ namespace Microsoft.CSharp.RuntimeBinder.Semantics
             Debug.Assert((int)pt2 < NUM_EXT_TYPES);
             return (BetterType)s_simpleTypeBetter[(int)pt1][(int)pt2];
         }
-
-
+#pragma warning restore CA1822
 
         /***************************************************************************************************
             Determined which conversion to a predefined type is better relative to a given type. It is

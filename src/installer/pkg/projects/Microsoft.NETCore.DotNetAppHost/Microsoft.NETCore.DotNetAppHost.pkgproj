@@ -23,16 +23,22 @@
         The symbols file is also shipped to enable users to fully debug
         binaries that link against the static version. -->
     <NativeBinary Include="$(DotNetHostBinDir)/libnethost.lib" />
-    <NativeBinary Include="$(DotNetHostBinDir)/PDB/libnethost.pdb" />
+    <_SymbolsToIncludeAlways Include="$(DotNetHostBinDir)PDB/libnethost.pdb" />
     <NativeBinary Include="$(DotNetHostBinDir)/libhostfxr.lib" />
-    <NativeBinary Include="$(DotNetHostBinDir)/PDB/libhostfxr.pdb" />
+    <_SymbolsToIncludeAlways Include="$(DotNetHostBinDir)PDB/libhostfxr.pdb" />
+
+    <!-- By default, the packaging infrastructure excludes all PDBs from implementation packages.
+        Explicitly set the excludes such that we exclude symbols corresponding to our native binaries
+        except for the ones we explicitly want to include. -->
+    <LibPackageExcludes Include="@(NativeBinary -> '%2A%2A\%(Filename).pdb')" />
+    <LibPackageExcludes Remove="@(_SymbolsToIncludeAlways -> '%2A%2A\%(Filename).pdb')" />
   </ItemGroup>
   <ItemGroup Condition="'$(TargetOS)' != 'windows'">
     <NativeBinary Include="$(DotNetHostBinDir)/$(LibPrefix)hostfxr$(StaticLibSuffix)" />
   </ItemGroup>
 
   <ItemGroup Condition="'$(PackageTargetRuntime)' != ''">
-    <File Include="@(NativeBinary)">
+    <File Include="@(NativeBinary);@(_SymbolsToIncludeAlways)">
       <TargetPath>runtimes/$(PackageTargetRuntime)/native</TargetPath>
       <IsNative>true</IsNative>
     </File>

@@ -20,7 +20,9 @@ namespace System.Net.NetworkInformation
             }
             else
             {
-                byte firstByte = address.GetAddressBytes()[0];
+#pragma warning disable CS0618 // using Obsolete Address API because it's the more efficient option in this case
+                byte firstByte = (byte)address.Address;
+#pragma warning restore CS0618
                 return firstByte >= 224 && firstByte <= 239;
             }
         }

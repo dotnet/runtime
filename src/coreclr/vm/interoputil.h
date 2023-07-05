@@ -55,11 +55,11 @@ struct IUnkEntry;
 interface IStream;
 class ComCallWrapper;
 class InteropSyncBlockInfo;
+struct ExceptionData;
 
 #endif //FEATURE_COMINTEROP
 
 class FieldDesc;
-struct ExceptionData;
 
 //------------------------------------------------------------------
  // setup error info for exception object
@@ -100,12 +100,14 @@ int  InternalWideToAnsi(_In_reads_(iNumWideChars) LPCWSTR szWideString, int iNum
 //---------------------------------------------------------
 CorClassIfaceAttr ReadClassInterfaceTypeCustomAttribute(TypeHandle type);
 
+#ifdef FEATURE_COMINTEROP
 //-------------------------------------------------------------------
  // Used to populate ExceptionData with COM data
 //-------------------------------------------------------------------
 void FillExceptionData(
     _Inout_ ExceptionData* pedata,
     _In_ IErrorInfo* pErrInfo);
+#endif // FEATURE_COMINTEROP
 
 //---------------------------------------------------------------------------
 // If pImport has the DefaultDllImportSearchPathsAttribute,
@@ -134,10 +136,6 @@ SIZE_T GetStringizedItfDef(TypeHandle InterfaceType, CQuickArray<BYTE> &rDef);
 HRESULT GetStringizedTypeLibGuidForAssembly(Assembly *pAssembly, CQuickArray<BYTE> &rDef, ULONG cbCur, ULONG *pcbFetched);
 
 //--------------------------------------------------------------------------------
-// GetErrorInfo helper, enables and disables GC during call-outs
-HRESULT SafeGetErrorInfo(_Outptr_ IErrorInfo **ppIErrInfo);
-
-//--------------------------------------------------------------------------------
 // QI helper, enables and disables GC during call-outs
 HRESULT SafeQueryInterface(IUnknown* pUnk, REFIID riid, IUnknown** pResUnk);
 
@@ -148,6 +146,10 @@ HRESULT SafeQueryInterface(IUnknown* pUnk, REFIID riid, IUnknown** pResUnk);
 HRESULT SafeQueryInterfacePreemp(IUnknown* pUnk, REFIID riid, IUnknown** pResUnk);
 
 #ifdef FEATURE_COMINTEROP
+
+//--------------------------------------------------------------------------------
+// GetErrorInfo helper, enables and disables GC during call-outs
+HRESULT SafeGetErrorInfo(_Outptr_ IErrorInfo **ppIErrInfo);
 
 // Convert an IUnknown to CCW, does not handle aggregation and ICustomQI.
 ComCallWrapper* MapIUnknownToWrapper(IUnknown* pUnk);
@@ -359,7 +361,6 @@ ClassFactoryBase *GetComClassFactory(MethodTable* pClassMT);
 #ifdef _DEBUG
 
 VOID LogInterop(_In_z_ LPCSTR szMsg);
-VOID LogInterop(_In_z_ LPCWSTR szMsg);
 
 VOID LogInteropLeak(IUnkEntry * pEntry);
 VOID LogInteropLeak(IUnknown* pItf);

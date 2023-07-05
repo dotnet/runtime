@@ -66,7 +66,7 @@ namespace System.Security.AccessControl.Tests
                 //verify the rawAcl.BinaryLength is updated correctly
                 Assert.False(rawAcl.BinaryLength != rawAclVerifier.BinaryLength - ace.BinaryLength);
 
-                //verify the removed ace is equal to the originial ace
+                //verify the removed ace is equal to the original ace
                 Assert.False(!Utils.IsAceEqual(ace, rawAclVerifier[index]));
 
                 //verify right side aces are equal
@@ -94,7 +94,7 @@ namespace System.Security.AccessControl.Tests
                 //verify the rawAcl.BinaryLength is updated correctly
                 Assert.False(rawAcl.BinaryLength != rawAclVerifier.BinaryLength - ace.BinaryLength);
 
-                //verify the removed ace is equal to the originial ace
+                //verify the removed ace is equal to the original ace
                 Assert.False(!Utils.IsAceEqual(ace, rawAclVerifier[index]));
                 //verify the left and right side aces are equal
                 Assert.False(!Utils.AclPartialEqual(rawAcl, rawAclVerifier, 0, index - 1, 0, index - 1) || !Utils.AclPartialEqual(rawAcl, rawAclVerifier, index, rawAcl.Count - 1, index + 1, count - 1));
@@ -116,7 +116,7 @@ namespace System.Security.AccessControl.Tests
                 //verify the rawAcl.BinaryLength is updated correctly
                 Assert.False(rawAcl.BinaryLength != rawAclVerifier.BinaryLength - ace.BinaryLength);
 
-                //verify the removed ace is equal to the originial ace
+                //verify the removed ace is equal to the original ace
                 Assert.False(!Utils.IsAceEqual(ace, rawAclVerifier[index]));
                 //verify the left and right side aces are equal
                 Assert.False(!Utils.AclPartialEqual(rawAcl, rawAclVerifier, 0, index - 1, 0, index - 1) || !Utils.AclPartialEqual(rawAcl, rawAclVerifier, index, rawAcl.Count - 1, index + 1, count - 1));

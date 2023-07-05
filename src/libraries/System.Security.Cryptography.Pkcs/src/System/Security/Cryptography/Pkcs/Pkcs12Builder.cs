@@ -30,10 +30,19 @@ namespace System.Security.Cryptography.Pkcs
         }
 
         public void AddSafeContentsEncrypted(
-            Pkcs12SafeContents safeContents!!,
+            Pkcs12SafeContents safeContents,
             ReadOnlySpan<byte> passwordBytes,
-            PbeParameters pbeParameters!!)
+            PbeParameters pbeParameters)
         {
+            if (safeContents is null)
+            {
+                throw new ArgumentNullException(nameof(safeContents));
+            }
+            if (pbeParameters is null)
+            {
+                throw new ArgumentNullException(nameof(pbeParameters));
+            }
+
             if (pbeParameters.IterationCount < 1)
                 throw new ArgumentOutOfRangeException(nameof(pbeParameters));
             if (safeContents.ConfidentialityMode != Pkcs12ConfidentialityMode.None)
@@ -48,10 +57,7 @@ namespace System.Security.Cryptography.Pkcs
 
             byte[] encrypted = safeContents.Encrypt(ReadOnlySpan<char>.Empty, passwordBytes, pbeParameters);
 
-            if (_contents == null)
-            {
-                _contents = new List<ContentInfoAsn>();
-            }
+            _contents ??= new List<ContentInfoAsn>();
 
             _contents.Add(
                 new ContentInfoAsn
@@ -74,10 +80,19 @@ namespace System.Security.Cryptography.Pkcs
         }
 
         public void AddSafeContentsEncrypted(
-            Pkcs12SafeContents safeContents!!,
+            Pkcs12SafeContents safeContents,
             ReadOnlySpan<char> password,
-            PbeParameters pbeParameters!!)
+            PbeParameters pbeParameters)
         {
+            if (safeContents is null)
+            {
+                throw new ArgumentNullException(nameof(safeContents));
+            }
+            if (pbeParameters is null)
+            {
+                throw new ArgumentNullException(nameof(pbeParameters));
+            }
+
             if (pbeParameters.IterationCount < 1)
                 throw new ArgumentOutOfRangeException(nameof(pbeParameters));
             if (safeContents.ConfidentialityMode != Pkcs12ConfidentialityMode.None)
@@ -92,10 +107,7 @@ namespace System.Security.Cryptography.Pkcs
 
             byte[] encrypted = safeContents.Encrypt(password, ReadOnlySpan<byte>.Empty, pbeParameters);
 
-            if (_contents == null)
-            {
-                _contents = new List<ContentInfoAsn>();
-            }
+            _contents ??= new List<ContentInfoAsn>();
 
             _contents.Add(
                 new ContentInfoAsn
@@ -105,15 +117,17 @@ namespace System.Security.Cryptography.Pkcs
                 });
         }
 
-        public void AddSafeContentsUnencrypted(Pkcs12SafeContents safeContents!!)
+        public void AddSafeContentsUnencrypted(Pkcs12SafeContents safeContents)
         {
+            if (safeContents is null)
+            {
+                throw new ArgumentNullException(nameof(safeContents));
+            }
+
             if (IsSealed)
                 throw new InvalidOperationException(SR.Cryptography_Pkcs12_PfxIsSealed);
 
-            if (_contents == null)
-            {
-                _contents = new List<ContentInfoAsn>();
-            }
+            _contents ??= new List<ContentInfoAsn>();
 
             _contents.Add(safeContents.EncodeToContentInfo());
         }
@@ -154,7 +168,7 @@ namespace System.Security.Cryptography.Pkcs
             Span<byte> authSafeSpan = default;
             byte[]? rentedMac = null;
             Span<byte> macSpan = default;
-            Span<byte> salt = stackalloc byte[0];
+            scoped Span<byte> salt = default;
 
             try
             {

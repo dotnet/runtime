@@ -146,9 +146,9 @@ namespace System.ComponentModel.Composition.Primitives
         }
 
         //
-        // If neither Parts nor GetEnumerator() is overriden then return an empty list
+        // If neither Parts nor GetEnumerator() is overridden then return an empty list
         // If GetEnumerator is overridden this code should not be invoked:  ReferenceAssemblies mark it as Abstract or Not present
-        // We verify whether Parts is overriden by seeing if the object returns matched the one cached for this instance
+        // We verify whether Parts is overridden by seeing if the object returns matched the one cached for this instance
         // Note: a query object is only cached if Parts is invoked on a catalog which did not implement it
         //      Because reference assemblies do not expose Parts and we no longer use it, it should not get invoked by 3rd parties
         //      Because the reference assemblies mark GetEnumerator as Abstract 3rd party code should not lack an implementation

@@ -3,6 +3,11 @@
 
 #pragma once
 
+// libunwind headers
+#include <libunwind.h>
+#include <external/llvm-libunwind/src/config.h>
+#include <external/llvm-libunwind/src/AddressSpace.hpp>
+
 class UnixNativeCodeManager : public ICodeManager
 {
     TADDR m_moduleBase;
@@ -12,6 +17,10 @@ class UnixNativeCodeManager : public ICodeManager
 
     PTR_PTR_VOID m_pClasslibFunctions;
     uint32_t m_nClasslibFunctions;
+
+    libunwind::UnwindInfoSections m_UnwindInfoSections;
+
+    bool VirtualUnwind(MethodInfo* pMethodInfo, REGDISPLAY* pRegisterSet);
 
 public:
     UnixNativeCodeManager(TADDR moduleBase,
@@ -34,24 +43,32 @@ public:
     PTR_VOID GetFramePointer(MethodInfo *   pMethodInfo,
                              REGDISPLAY *   pRegisterSet);
 
+    uint32_t GetCodeOffset(MethodInfo* pMethodInfo, PTR_VOID address, PTR_UInt8* gcInfo);
+
+    bool IsSafePoint(PTR_VOID pvAddress);
+
     void EnumGcRefs(MethodInfo *    pMethodInfo,
                     PTR_VOID        safePointAddress,
                     REGDISPLAY *    pRegisterSet,
-                    GCEnumContext * hCallback);
+                    GCEnumContext * hCallback,
+                    bool            isActiveStackFrame);
 
     bool UnwindStackFrame(MethodInfo *    pMethodInfo,
+                          uint32_t        flags,
                           REGDISPLAY *    pRegisterSet,                 // in/out
-                          PTR_VOID *      ppPreviousTransitionFrame);   // out
+                          PInvokeTransitionFrame**      ppPreviousTransitionFrame);   // out
 
     uintptr_t GetConservativeUpperBoundForOutgoingArgs(MethodInfo *   pMethodInfo,
-                                                        REGDISPLAY *   pRegisterSet);
+                                                       REGDISPLAY *   pRegisterSet);
+
+    bool IsUnwindable(PTR_VOID pvAddress);
+
+    int TrailingEpilogueInstructionsCount(MethodInfo * pMethodInfo, PTR_VOID pvAddress);
 
     bool GetReturnAddressHijackInfo(MethodInfo *    pMethodInfo,
                                     REGDISPLAY *    pRegisterSet,       // in
                                     PTR_PTR_VOID *  ppvRetAddrLocation, // out
                                     GCRefKind *     pRetValueKind);     // out
-
-    void UnsynchronizedHijackMethodLoops(MethodInfo * pMethodInfo);
 
     PTR_VOID RemapHardwareFaultToGCSafePoint(MethodInfo * pMethodInfo, PTR_VOID controlPC);
 

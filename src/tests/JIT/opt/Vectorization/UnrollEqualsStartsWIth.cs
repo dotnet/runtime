@@ -5,10 +5,12 @@ using System;
 using System.Linq;
 using System.Reflection;
 using System.Runtime.CompilerServices;
+using Xunit;
 
 public class UnrollEqualsStartsWIth
 {
-    public static int Main()
+    [Fact]
+    public static int TestEntryPoint()
     {
         var testTypes = typeof(UnrollEqualsStartsWIth).Assembly
             .GetTypes()
@@ -18,7 +20,7 @@ public class UnrollEqualsStartsWIth
         int testCount = 0;
         foreach (var testType in testTypes)
             testCount += RunTests(testType);
-        return testCount == 113652 ? 100 : 0;
+        return testCount == 127512 ? 100 : 0;
     }
 
     public static int RunTests(Type type)
@@ -37,6 +39,12 @@ public class UnrollEqualsStartsWIth
 
         string[] testData =
         {
+            "\u9244",
+            "\u9244\u9244",
+            "\u9244\u9244\u9244",
+            "\uFFFF",
+            "\uFFFF\uFFFF",
+            "\uFFFF\uFFFF\uFFFF",
             "",
             string.Empty,
             "a",
@@ -65,11 +73,11 @@ public class UnrollEqualsStartsWIth
             "aaaaaa-aaaaa",
             "aaaaaaaaaaaa",
             "aaaaaaaaaaaaa",
-            "aaaaaaaaaжжaaa",
+            "aaaaaaaaa\u0436\u0436aaa",
             "aaaaaaaaaaaaaaa",
             "aaaAAAaaaaaazzz",
             "aaaaaaaaaaaaaaaa",
-            "aaaaaaaaaaaaжaaaa",
+            "aaaaaaaaaaaa\u0436aaaa",
             "aaaaaaAAAAaaaaaaa",
             "aaaaaaaaaaaaaaaaaa",
             "aaaaaaaggggggggggaa",
@@ -77,7 +85,7 @@ public class UnrollEqualsStartsWIth
             "aaaaaaaaaaaaaaaaaaaaa",
             "aaaaaaAAAAaaaaaaaaaaaa",
             "aaaaaaaaaaaaaaaaaaaaaa\0",
-            "aaaччччччччччaaaaжжaaaaa",
+            "aaa\u0447\u0447\u0447\u0447\u0447\u0447\u0447\u0447\u0447\u0447aaaa\u0436\u0436aaaaa",
             "aaaaaaaaaaaaaaaaaaaaaaaaa",
             "gggggggggggaaaaaaaaaaaaaaa",
             "aaaaaaaaaaaaaaaaaaaaaaaaaaa",
@@ -94,7 +102,7 @@ public class UnrollEqualsStartsWIth
             // Add more test input - uppercase, lowercase, replace some chars
             testDataList.Add(td.ToUpper());
             testDataList.Add(td.Replace('a', 'b'));
-            testDataList.Add(td.Replace('a', 'Ф'));
+            testDataList.Add(td.Replace('a', '\u0424'));
             testDataList.Add(td.ToLower());
         }
 

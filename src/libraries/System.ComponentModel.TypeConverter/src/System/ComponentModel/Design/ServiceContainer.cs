@@ -50,7 +50,7 @@ namespace System.ComponentModel.Design
         /// Our collection of services. The service collection is demand
         /// created here.
         /// </summary>
-        private ServiceCollection<object?> Services => _services ?? (_services = new ServiceCollection<object?>());
+        private ServiceCollection<object?> Services => _services ??= new ServiceCollection<object?>();
 
         /// <summary>
         /// Adds the given service to the service container.
@@ -78,8 +78,8 @@ namespace System.ComponentModel.Design
             // We're going to add this locally. Ensure that the service instance
             // is correct.
             //
-            if (serviceType == null) throw new ArgumentNullException(nameof(serviceType));
-            if (serviceInstance == null) throw new ArgumentNullException(nameof(serviceInstance));
+            ArgumentNullException.ThrowIfNull(serviceType);
+            ArgumentNullException.ThrowIfNull(serviceInstance);
             if (!(serviceInstance is ServiceCreatorCallback) && !serviceInstance.GetType().IsCOMObject && !serviceType.IsInstanceOfType(serviceInstance))
             {
                 throw new ArgumentException(SR.Format(SR.ErrorInvalidServiceInstance, serviceType.FullName));
@@ -119,8 +119,8 @@ namespace System.ComponentModel.Design
             // We're going to add this locally. Ensure that the service instance
             // is correct.
             //
-            if (serviceType == null) throw new ArgumentNullException(nameof(serviceType));
-            if (callback == null) throw new ArgumentNullException(nameof(callback));
+            ArgumentNullException.ThrowIfNull(serviceType);
+            ArgumentNullException.ThrowIfNull(callback);
 
             if (Services.ContainsKey(serviceType))
             {
@@ -193,7 +193,7 @@ namespace System.ComponentModel.Design
                 if (service != null && !service.GetType().IsCOMObject && !serviceType!.IsInstanceOfType(service))
                 {
                     // Callback passed us a bad service. NULL it, rather than throwing an exception.
-                    // Callers here do not need to be prepared to handle bad callback implemetations.
+                    // Callers here do not need to be prepared to handle bad callback implementations.
                     service = null;
                 }
 

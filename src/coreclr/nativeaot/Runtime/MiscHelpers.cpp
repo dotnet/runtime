@@ -16,7 +16,6 @@
 #include "holder.h"
 #include "Crst.h"
 #include "rhbinder.h"
-#include "RWLock.h"
 #include "RuntimeInstance.h"
 #include "regdisplay.h"
 #include "gcrhinterface.h"
@@ -39,6 +38,7 @@
 #include "GCMemoryHelpers.h"
 #include "GCMemoryHelpers.inl"
 #include "yieldprocessornormalized.h"
+#include "RhConfig.h"
 
 COOP_PINVOKE_HELPER(void, RhDebugBreak, ())
 {
@@ -46,14 +46,20 @@ COOP_PINVOKE_HELPER(void, RhDebugBreak, ())
 }
 
 // Busy spin for the given number of iterations.
-EXTERN_C REDHAWK_API void __cdecl RhSpinWait(int32_t iterations)
+EXTERN_C NATIVEAOT_API void __cdecl RhSpinWait(int32_t iterations)
 {
+    ASSERT(iterations > 0);
+
+    // limit the spin count in coop mode.
+    ASSERT_MSG(iterations <= 1024 || !ThreadStore::GetCurrentThread()->IsCurrentThreadInCooperativeMode(),
+        "This is too long wait for coop mode. You must p/invoke with GC transition.");
+
     YieldProcessorNormalizationInfo normalizationInfo;
-    YieldProcessorNormalizedForPreSkylakeCount(normalizationInfo, iterations);
+    YieldProcessorNormalized(normalizationInfo, iterations);
 }
 
 // Yield the cpu to another thread ready to process, if one is available.
-EXTERN_C REDHAWK_API UInt32_BOOL __cdecl RhYield()
+EXTERN_C NATIVEAOT_API UInt32_BOOL __cdecl RhYield()
 {
     // This must be called via p/invoke -- it's a wait operation and we don't want to block thread suspension on this.
     ASSERT_MSG(!ThreadStore::GetCurrentThread()->IsCurrentThreadInCooperativeMode(),
@@ -62,7 +68,7 @@ EXTERN_C REDHAWK_API UInt32_BOOL __cdecl RhYield()
     return PalSwitchToThread();
 }
 
-EXTERN_C REDHAWK_API void __cdecl RhFlushProcessWriteBuffers()
+EXTERN_C NATIVEAOT_API void __cdecl RhFlushProcessWriteBuffers()
 {
     // This must be called via p/invoke -- it's a wait operation and we don't want to block thread suspension on this.
     ASSERT_MSG(!ThreadStore::GetCurrentThread()->IsCurrentThreadInCooperativeMode(),
@@ -86,14 +92,12 @@ COOP_PINVOKE_HELPER(uint32_t, RhGetLoadedOSModules, (Array * pResultArray))
     // GC-references.
     ASSERT(!pResultArray || pResultArray->get_EEType()->IsArray());
     ASSERT(!pResultArray || !pResultArray->get_EEType()->HasReferenceFields());
-    ASSERT(!pResultArray || pResultArray->get_EEType()->get_ComponentSize() == sizeof(void*));
+    ASSERT(!pResultArray || pResultArray->get_EEType()->RawGetComponentSize() == sizeof(void*));
 
     uint32_t cResultArrayElements = pResultArray ? pResultArray->GetArrayLength() : 0;
     HANDLE * pResultElements = pResultArray ? (HANDLE*)(pResultArray + 1) : NULL;
 
     uint32_t cModules = 0;
-
-    ReaderWriterLock::ReadHolder read(&GetRuntimeInstance()->GetTypeManagerLock());
 
     RuntimeInstance::OsModuleList *osModules = GetRuntimeInstance()->GetOsModuleList();
 
@@ -109,22 +113,12 @@ COOP_PINVOKE_HELPER(uint32_t, RhGetLoadedOSModules, (Array * pResultArray))
 
 COOP_PINVOKE_HELPER(HANDLE, RhGetOSModuleFromPointer, (PTR_VOID pPointerVal))
 {
-    ICodeManager * pCodeManager = GetRuntimeInstance()->FindCodeManagerByAddress(pPointerVal);
+    ICodeManager * pCodeManager = GetRuntimeInstance()->GetCodeManagerForAddress(pPointerVal);
 
     if (pCodeManager != NULL)
         return (HANDLE)pCodeManager->GetOsModuleHandle();
 
     return NULL;
-}
-
-COOP_PINVOKE_HELPER(HANDLE, RhGetOSModuleFromEEType, (MethodTable * pEEType))
-{
-    return pEEType->GetTypeManagerPtr()->AsTypeManager()->GetOsModuleHandle();
-}
-
-COOP_PINVOKE_HELPER(TypeManagerHandle, RhGetModuleFromEEType, (MethodTable * pEEType))
-{
-    return *pEEType->GetTypeManagerPtr();
 }
 
 COOP_PINVOKE_HELPER(FC_BOOL_RET, RhFindBlob, (TypeManagerHandle *pTypeManagerHandle, uint32_t blobId, uint8_t ** ppbBlob, uint32_t * pcbBlob))
@@ -346,54 +340,30 @@ COOP_PINVOKE_HELPER(uint8_t *, RhGetCodeTarget, (uint8_t * pCodeOrg))
     return pCodeOrg;
 }
 
-// Get the universal transition thunk. If the universal transition stub is called through
-// the normal PE static linkage model, a jump stub would be used which may interfere with
-// the custom calling convention of the universal transition thunk. So instead, a special
-// api just for getting the thunk address is needed.
-// TODO: On ARM this may still result in a jump stub that trashes R12. Determine if anything
-//       needs to be done about that when we implement the stub for ARM.
-extern "C" void RhpUniversalTransition();
-COOP_PINVOKE_HELPER(void*, RhGetUniversalTransitionThunk, ())
-{
-    return (void*)RhpUniversalTransition;
-}
-
-extern CrstStatic g_CastCacheLock;
-
-EXTERN_C REDHAWK_API void __cdecl RhpAcquireCastCacheLock()
-{
-    g_CastCacheLock.Enter();
-}
-
-EXTERN_C REDHAWK_API void __cdecl RhpReleaseCastCacheLock()
-{
-    g_CastCacheLock.Leave();
-}
-
 extern CrstStatic g_ThunkPoolLock;
 
-EXTERN_C REDHAWK_API void __cdecl RhpAcquireThunkPoolLock()
+EXTERN_C NATIVEAOT_API void __cdecl RhpAcquireThunkPoolLock()
 {
     g_ThunkPoolLock.Enter();
 }
 
-EXTERN_C REDHAWK_API void __cdecl RhpReleaseThunkPoolLock()
+EXTERN_C NATIVEAOT_API void __cdecl RhpReleaseThunkPoolLock()
 {
     g_ThunkPoolLock.Leave();
 }
 
-EXTERN_C REDHAWK_API void __cdecl RhpGetTickCount64()
+EXTERN_C NATIVEAOT_API uint64_t __cdecl RhpGetTickCount64()
 {
-    PalGetTickCount64();
+    return PalGetTickCount64();
 }
 
 EXTERN_C int32_t __cdecl RhpCalculateStackTraceWorker(void* pOutputBuffer, uint32_t outputBufferLength, void* pAddressInCurrentFrame);
 
-EXTERN_C REDHAWK_API int32_t __cdecl RhpGetCurrentThreadStackTrace(void* pOutputBuffer, uint32_t outputBufferLength, void* pAddressInCurrentFrame)
+EXTERN_C NATIVEAOT_API int32_t __cdecl RhpGetCurrentThreadStackTrace(void* pOutputBuffer, uint32_t outputBufferLength, void* pAddressInCurrentFrame)
 {
     // This must be called via p/invoke rather than RuntimeImport to make the stack crawlable.
 
-    ThreadStore::GetCurrentThread()->SetupHackPInvokeTunnel();
+    ThreadStore::GetCurrentThread()->DeferTransitionFrame();
 
     return RhpCalculateStackTraceWorker(pOutputBuffer, outputBufferLength, pAddressInCurrentFrame);
 }
@@ -431,8 +401,15 @@ COOP_PINVOKE_HELPER(int32_t, RhGetProcessCpuCount, ())
     return PalGetProcessCpuCount();
 }
 
+COOP_PINVOKE_HELPER(uint32_t, RhGetKnobValues, (char *** pResultKeys, char *** pResultValues))
+{
+    *pResultKeys = g_pRhConfig->GetKnobNames();
+    *pResultValues = g_pRhConfig->GetKnobValues();
+    return g_pRhConfig->GetKnobCount();
+}
+
 #if defined(TARGET_X86) || defined(TARGET_AMD64)
-EXTERN_C REDHAWK_API void __cdecl RhCpuIdEx(int* cpuInfo, int functionId, int subFunctionId)
+EXTERN_C NATIVEAOT_API void __cdecl RhCpuIdEx(int* cpuInfo, int functionId, int subFunctionId)
 {
     __cpuidex(cpuInfo, functionId, subFunctionId);
 }

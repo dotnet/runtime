@@ -18,6 +18,9 @@ using Microsoft.Extensions.Logging.EventLog;
 
 namespace Microsoft.Extensions.Hosting
 {
+    /// <summary>
+    /// Provides extension methods for the <see cref="IHostBuilder"/> from the hosting package.
+    /// </summary>
     public static class HostingHostBuilderExtensions
     {
         /// <summary>
@@ -31,10 +34,11 @@ namespace Microsoft.Extensions.Hosting
         {
             return hostBuilder.ConfigureHostConfiguration(configBuilder =>
             {
+                ThrowHelper.ThrowIfNull(environment);
+
                 configBuilder.AddInMemoryCollection(new[]
                 {
-                    new KeyValuePair<string, string>(HostDefaults.EnvironmentKey,
-                        environment ?? throw new ArgumentNullException(nameof(environment)))
+                    new KeyValuePair<string, string?>(HostDefaults.EnvironmentKey, environment)
                 });
             });
         }
@@ -50,10 +54,11 @@ namespace Microsoft.Extensions.Hosting
         {
             return hostBuilder.ConfigureHostConfiguration(configBuilder =>
             {
+                ThrowHelper.ThrowIfNull(contentRoot);
+
                 configBuilder.AddInMemoryCollection(new[]
                 {
-                    new KeyValuePair<string, string>(HostDefaults.ContentRootKey,
-                        contentRoot ?? throw new ArgumentNullException(nameof(contentRoot)))
+                    new KeyValuePair<string, string?>(HostDefaults.ContentRootKey, contentRoot)
                 });
             });
         }
@@ -62,7 +67,7 @@ namespace Microsoft.Extensions.Hosting
         /// Specify the <see cref="IServiceProvider"/> to be the default one.
         /// </summary>
         /// <param name="hostBuilder">The <see cref="IHostBuilder"/> to configure.</param>
-        /// <param name="configure"></param>
+        /// <param name="configure">The delegate that configures the <see cref="IServiceProvider"/>.</param>
         /// <returns>The <see cref="IHostBuilder"/>.</returns>
         public static IHostBuilder UseDefaultServiceProvider(this IHostBuilder hostBuilder, Action<ServiceProviderOptions> configure)
             => hostBuilder.UseDefaultServiceProvider((context, options) => configure(options));
@@ -157,7 +162,7 @@ namespace Microsoft.Extensions.Hosting
         /// Enables configuring the instantiated dependency container. This can be called multiple times and
         /// the results will be additive.
         /// </summary>
-        /// <typeparam name="TContainerBuilder"></typeparam>
+        /// <typeparam name="TContainerBuilder">The type of builder.</typeparam>
         /// <param name="hostBuilder">The <see cref="IHostBuilder" /> to configure.</param>
         /// <param name="configureDelegate">The delegate for configuring the <typeparamref name="TContainerBuilder"/>.</param>
         /// <returns>The same instance of the <see cref="IHostBuilder"/> for chaining.</returns>
@@ -185,7 +190,7 @@ namespace Microsoft.Extensions.Hosting
         /// <param name="builder">The existing builder to configure.</param>
         /// <param name="args">The command line args.</param>
         /// <returns>The same instance of the <see cref="IHostBuilder"/> for chaining.</returns>
-        public static IHostBuilder ConfigureDefaults(this IHostBuilder builder, string[] args)
+        public static IHostBuilder ConfigureDefaults(this IHostBuilder builder, string[]? args)
         {
             return builder.ConfigureHostConfiguration(config => ApplyDefaultHostConfiguration(config, args))
                           .ConfigureAppConfiguration((hostingContext, config) => ApplyDefaultAppConfiguration(hostingContext, config, args))
@@ -193,21 +198,41 @@ namespace Microsoft.Extensions.Hosting
                           .UseServiceProviderFactory(context => new DefaultServiceProviderFactory(CreateDefaultServiceProviderOptions(context)));
         }
 
-        internal static void ApplyDefaultHostConfiguration(IConfigurationBuilder hostConfigBuilder, string[] args)
+        private static void ApplyDefaultHostConfiguration(IConfigurationBuilder hostConfigBuilder, string[]? args)
         {
-            hostConfigBuilder.AddInMemoryCollection(new[]
-            {
-                new KeyValuePair<string, string>(HostDefaults.ContentRootKey, Directory.GetCurrentDirectory())
-            });
+            SetDefaultContentRoot(hostConfigBuilder);
 
             hostConfigBuilder.AddEnvironmentVariables(prefix: "DOTNET_");
-            if (args is { Length: > 0 })
+            AddCommandLineConfig(hostConfigBuilder, args);
+        }
+
+        internal static void SetDefaultContentRoot(IConfigurationBuilder hostConfigBuilder)
+        {
+            // If we're running anywhere other than C:\Windows\system32, we default to using the CWD for the ContentRoot.
+            // However, since many things like Windows services and MSIX installers have C:\Windows\system32 as there CWD which is not likely
+            // to really be the home for things like appsettings.json, we skip changing the ContentRoot in that case. The non-"default" initial
+            // value for ContentRoot is AppContext.BaseDirectory (e.g. the executable path) which probably makes more sense than the system32.
+
+            // In my testing, both Environment.CurrentDirectory and Environment.SystemDirectory return the path without
+            // any trailing directory separator characters. I'm not even sure the casing can ever be different from these APIs, but I think it makes sense to
+            // ignore case for Windows path comparisons given the file system is usually (always?) going to be case insensitive for the system path.
+            string cwd = Environment.CurrentDirectory;
+            if (
+#if NETFRAMEWORK
+                Environment.OSVersion.Platform != PlatformID.Win32NT ||
+#else
+                !RuntimeInformation.IsOSPlatform(OSPlatform.Windows) ||
+#endif
+                !string.Equals(cwd, Environment.SystemDirectory, StringComparison.OrdinalIgnoreCase))
             {
-                hostConfigBuilder.AddCommandLine(args);
+                hostConfigBuilder.AddInMemoryCollection(new[]
+                {
+                    new KeyValuePair<string, string?>(HostDefaults.ContentRootKey, cwd),
+                });
             }
         }
 
-        internal static void ApplyDefaultAppConfiguration(HostBuilderContext hostingContext, IConfigurationBuilder appConfigBuilder, string[] args)
+        internal static void ApplyDefaultAppConfiguration(HostBuilderContext hostingContext, IConfigurationBuilder appConfigBuilder, string[]? args)
         {
             IHostEnvironment env = hostingContext.HostingEnvironment;
             bool reloadOnChange = GetReloadConfigOnChangeValue(hostingContext);
@@ -217,22 +242,31 @@ namespace Microsoft.Extensions.Hosting
 
             if (env.IsDevelopment() && env.ApplicationName is { Length: > 0 })
             {
-                var appAssembly = Assembly.Load(new AssemblyName(env.ApplicationName));
-                if (appAssembly is not null)
+                try
                 {
+                    var appAssembly = Assembly.Load(new AssemblyName(env.ApplicationName));
                     appConfigBuilder.AddUserSecrets(appAssembly, optional: true, reloadOnChange: reloadOnChange);
+                }
+                catch (FileNotFoundException)
+                {
+                    // The assembly cannot be found, so just skip it.
                 }
             }
 
             appConfigBuilder.AddEnvironmentVariables();
 
-            if (args is { Length: > 0 })
-            {
-                appConfigBuilder.AddCommandLine(args);
-            }
+            AddCommandLineConfig(appConfigBuilder, args);
 
             [UnconditionalSuppressMessage("ReflectionAnalysis", "IL2026:RequiresUnreferencedCode", Justification = "Calling IConfiguration.GetValue is safe when the T is bool.")]
             static bool GetReloadConfigOnChangeValue(HostBuilderContext hostingContext) => hostingContext.Configuration.GetValue("hostBuilder:reloadConfigOnChange", defaultValue: true);
+        }
+
+        internal static void AddCommandLineConfig(IConfigurationBuilder configBuilder, string[]? args)
+        {
+            if (args is { Length: > 0 })
+            {
+                configBuilder.AddCommandLine(args);
+            }
         }
 
         internal static void AddDefaultServices(HostBuilderContext hostingContext, IServiceCollection services)
@@ -242,6 +276,8 @@ namespace Microsoft.Extensions.Hosting
                 bool isWindows =
 #if NETCOREAPP
                     OperatingSystem.IsWindows();
+#elif NETFRAMEWORK
+                    Environment.OSVersion.Platform == PlatformID.Win32NT;
 #else
                     RuntimeInformation.IsOSPlatform(OSPlatform.Windows);
 #endif

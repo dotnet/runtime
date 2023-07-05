@@ -3,6 +3,7 @@
 
 using System.Diagnostics;
 using System.Globalization;
+using System.Reflection.Metadata;
 using RuntimeTypeCache = System.RuntimeType.RuntimeTypeCache;
 
 namespace System.Reflection
@@ -10,10 +11,10 @@ namespace System.Reflection
     internal sealed unsafe class MdFieldInfo : RuntimeFieldInfo
     {
         #region Private Data Members
-        private int m_tkField;
+        private readonly int m_tkField;
         private string? m_name;
         private RuntimeType? m_fieldType;
-        private FieldAttributes m_fieldAttributes;
+        private readonly FieldAttributes m_fieldAttributes;
         #endregion
 
         #region Constructor
@@ -33,8 +34,7 @@ namespace System.Reflection
             return
                 o is MdFieldInfo m &&
                 m.m_tkField == m_tkField &&
-                m_declaringType.TypeHandle.GetModuleHandle().Equals(
-                    m.m_declaringType.TypeHandle.GetModuleHandle());
+                ReferenceEquals(m_declaringType, m.m_declaringType);
         }
         #endregion
 
@@ -43,6 +43,17 @@ namespace System.Reflection
 
         public override int MetadataToken => m_tkField;
         internal override RuntimeModule GetRuntimeModule() { return m_declaringType.GetRuntimeModule(); }
+
+        public override bool Equals(object? obj) =>
+            ReferenceEquals(this, obj) ||
+            (MetadataUpdater.IsSupported &&
+                obj is MdFieldInfo fi &&
+                fi.m_tkField == m_tkField &&
+                ReferenceEquals(fi.m_declaringType, m_declaringType) &&
+                ReferenceEquals(fi.m_reflectedTypeCache.GetRuntimeType(), m_reflectedTypeCache.GetRuntimeType()));
+
+        public override int GetHashCode() =>
+            HashCode.Combine(m_tkField.GetHashCode(), m_declaringType.GetUnderlyingNativeHandle().GetHashCode());
         #endregion
 
         #region FieldInfo Overrides
@@ -53,22 +64,22 @@ namespace System.Reflection
         public override bool IsSecuritySafeCritical => DeclaringType!.IsSecuritySafeCritical;
         public override bool IsSecurityTransparent => DeclaringType!.IsSecurityTransparent;
 
-        [DebuggerStepThroughAttribute]
-        [Diagnostics.DebuggerHidden]
+        [DebuggerStepThrough]
+        [DebuggerHidden]
         public override object? GetValueDirect(TypedReference obj)
         {
             return GetValue(null);
         }
 
-        [DebuggerStepThroughAttribute]
-        [Diagnostics.DebuggerHidden]
+        [DebuggerStepThrough]
+        [DebuggerHidden]
         public override void SetValueDirect(TypedReference obj, object value)
         {
             throw new FieldAccessException(SR.Acc_ReadOnly);
         }
 
-        [DebuggerStepThroughAttribute]
-        [Diagnostics.DebuggerHidden]
+        [DebuggerStepThrough]
+        [DebuggerHidden]
         public override object? GetValue(object? obj)
         {
             return GetValue(false);
@@ -88,8 +99,8 @@ namespace System.Reflection
             return value;
         }
 
-        [DebuggerStepThroughAttribute]
-        [Diagnostics.DebuggerHidden]
+        [DebuggerStepThrough]
+        [DebuggerHidden]
         public override void SetValue(object? obj, object? value, BindingFlags invokeAttr, Binder? binder, CultureInfo? culture)
         {
             throw new FieldAccessException(SR.Acc_ReadOnly);

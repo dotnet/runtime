@@ -42,6 +42,7 @@ namespace System.Security.Cryptography.Tests
             yield return new object[] { "fo", "\tZ\tm8=\n" };
             yield return new object[] { "fo", "\tZ\tm8=\r\n" };
             yield return new object[] { "foo", " Z m 9 v" };
+            yield return new object[] { "abcdef", "YWJj\nZGVm" };
         }
 
         public static IEnumerable<object[]> TestData_Oversize()
@@ -53,10 +54,15 @@ namespace System.Security.Cryptography.Tests
             yield return new object[] { "Zm9vYmFyYm", 0, 10, "foobar" };
         }
 
+        public static IEnumerable<object[]> TestData_All_Ascii()
+            => TestData_Ascii()
+            .Union(TestData_LongBlock_Ascii())
+            .Union(TestData_Ascii_Whitespace());
+
         [Fact]
         public void InvalidInput_ToBase64Transform()
         {
-            byte[] data_3bytes = Text.Encoding.ASCII.GetBytes("aaa");
+            byte[] data_3bytes = "aaa"u8.ToArray();
             ICryptoTransform transform = new ToBase64Transform();
 
             AssertExtensions.Throws<ArgumentNullException>("inputBuffer", () => transform.TransformBlock(null, 0, 0, null, 0));
@@ -77,7 +83,7 @@ namespace System.Security.Cryptography.Tests
         [Fact]
         public void InvalidInput_FromBase64Transform()
         {
-            byte[] data_4bytes = Text.Encoding.ASCII.GetBytes("aaaa");
+            byte[] data_4bytes = "aaaa"u8.ToArray();
             ICryptoTransform transform = new FromBase64Transform();
 
             AssertExtensions.Throws<ArgumentNullException>("inputBuffer", () => transform.TransformBlock(null, 0, 0, null, 0));
@@ -360,6 +366,28 @@ namespace System.Security.Cryptography.Tests
             }
 
             return totalRead;
+        }
+
+        [Theory, MemberData(nameof(TestData_All_Ascii))]
+        public void ReadOneByteAtTheTime(string expected, string data)
+        {
+            byte[] inputBytes = Text.Encoding.ASCII.GetBytes(data);
+            byte[] outputBytes = new byte[100];
+
+            int written = 0;
+            int remaining = inputBytes.Length;
+
+            using (ICryptoTransform transform = new FromBase64Transform())
+            {
+                while (remaining > 0)
+                {
+                    written += transform.TransformBlock(inputBytes, inputBytes.Length - remaining, 1, outputBytes, written);
+                    remaining--;
+                }
+            }
+
+            string outputString = Text.Encoding.ASCII.GetString(outputBytes, 0, written);
+            Assert.Equal(expected, outputString);
         }
     }
 }

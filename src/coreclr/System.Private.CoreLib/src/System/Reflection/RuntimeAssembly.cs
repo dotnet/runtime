@@ -1,6 +1,7 @@
 // Licensed to the .NET Foundation under one or more agreements.
 // The .NET Foundation licenses this file to you under the MIT license.
 
+using System.ComponentModel;
 using System.Collections.Generic;
 using System.Diagnostics;
 using System.Diagnostics.CodeAnalysis;
@@ -13,6 +14,7 @@ using System.Runtime.InteropServices;
 using System.Runtime.CompilerServices;
 using System.Runtime.Serialization;
 using System.Threading;
+using System.Security;
 
 namespace System.Reflection
 {
@@ -36,12 +38,18 @@ namespace System.Reflection
 
         private sealed class ManifestResourceStream : UnmanagedMemoryStream
         {
-            private RuntimeAssembly _manifestAssembly;
+            // ensures the RuntimeAssembly is kept alive for as long as the stream lives
+            private readonly RuntimeAssembly _manifestAssembly;
 
             internal unsafe ManifestResourceStream(RuntimeAssembly manifestAssembly, byte* pointer, long length, long capacity, FileAccess access) : base(pointer, length, capacity, access)
             {
                 _manifestAssembly = manifestAssembly;
             }
+
+            // override Read(Span<byte>) because the base UnmanagedMemoryStream doesn't optimize it for derived types
+            public override int Read(Span<byte> buffer) => ReadCore(buffer);
+
+            // NOTE: no reason to override Write(Span<byte>), since a ManifestResourceStream is read-only.
         }
 
         internal object SyncRoot
@@ -84,6 +92,7 @@ namespace System.Reflection
             return null;
         }
 
+        [Obsolete("Assembly.CodeBase and Assembly.EscapedCodeBase are only included for .NET Framework compatibility. Use Assembly.Location.", DiagnosticId = "SYSLIB0012", UrlFormat = "https://aka.ms/dotnet-warnings/{0}")]
         [RequiresAssemblyFiles(ThrowingMessageInRAF)]
         public override string? CodeBase
         {
@@ -103,7 +112,9 @@ namespace System.Reflection
                 if (codeBase.Length == 0)
                 {
                     // For backward compatibility, return CoreLib codebase for assemblies loaded from memory.
+#pragma warning disable SYSLIB0012
                     codeBase = typeof(object).Assembly.CodeBase;
+#pragma warning restore SYSLIB0012
                 }
                 return codeBase;
             }
@@ -116,17 +127,23 @@ namespace System.Reflection
         // is returned.
         public override AssemblyName GetName(bool copiedName)
         {
-            string? codeBase = GetCodeBase();
+            var an = new AssemblyName();
+            an.Name = GetSimpleName();
+            an.Version = GetVersion();
+            an.CultureInfo = GetLocale();
 
-            var an = new AssemblyName(GetSimpleName(),
-                    GetPublicKey(),
-                    null, // public key token
-                    GetVersion(),
-                    GetLocale(),
-                    GetHashAlgorithm(),
-                    AssemblyVersionCompatibility.SameMachine,
-                    codeBase,
-                    GetFlags() | AssemblyNameFlags.PublicKey);
+            an.SetPublicKey(GetPublicKey());
+
+            an.RawFlags = GetFlags() | AssemblyNameFlags.PublicKey;
+
+#pragma warning disable IL3000, SYSLIB0044 // System.Reflection.AssemblyName.CodeBase' always returns an empty string for assemblies embedded in a single-file app.
+                                           // AssemblyName.CodeBase and AssemblyName.EscapedCodeBase are obsolete. Using them for loading an assembly is not supported.
+            an.CodeBase = GetCodeBase();
+#pragma warning restore IL3000, SYSLIB0044
+
+#pragma warning disable SYSLIB0037 // AssemblyName.HashAlgorithm is obsolete
+            an.HashAlgorithm = GetHashAlgorithm();
+#pragma warning restore SYSLIB0037
 
             Module manifestModule = ManifestModule;
             if (manifestModule.MDStreamVersion > 0x10000)
@@ -175,35 +192,65 @@ namespace System.Reflection
             }
         }
 
-        [LibraryImport(RuntimeHelpers.QCall, EntryPoint = "AssemblyNative_GetType", StringMarshalling = StringMarshalling.Utf16)]
-        private static partial void GetType(QCallAssembly assembly,
-                                            string name,
-                                            [MarshalAs(UnmanagedType.Bool)] bool throwOnError,
-                                            [MarshalAs(UnmanagedType.Bool)] bool ignoreCase,
-                                            ObjectHandleOnStack type,
-                                            ObjectHandleOnStack keepAlive,
-                                            ObjectHandleOnStack assemblyLoadContext);
+        // For case-sensitive lookups, marshal the strings directly to Utf8 to avoid unnecessary string copies.
+        [LibraryImport(RuntimeHelpers.QCall, EntryPoint = "AssemblyNative_GetTypeCore", StringMarshalling = StringMarshalling.Utf8)]
+        private static partial void GetTypeCore(QCallAssembly assembly,
+                                            string typeName,
+                                            ReadOnlySpan<string> nestedTypeNames,
+                                            int nestedTypeNamesLength,
+                                            ObjectHandleOnStack retType);
+
+        [LibraryImport(RuntimeHelpers.QCall, EntryPoint = "AssemblyNative_GetTypeCoreIgnoreCase", StringMarshalling = StringMarshalling.Utf16)]
+        private static partial void GetTypeCoreIgnoreCase(QCallAssembly assembly,
+                                            string typeName,
+                                            ReadOnlySpan<string> nestedTypeNames,
+                                            int nestedTypeNamesLength,
+                                            ObjectHandleOnStack retType);
+
+        internal Type? GetTypeCore(string typeName, ReadOnlySpan<string> nestedTypeNames, bool throwOnError, bool ignoreCase)
+        {
+            RuntimeAssembly runtimeAssembly = this;
+            Type? type = null;
+
+            try
+            {
+                if (ignoreCase)
+                {
+                    GetTypeCoreIgnoreCase(new QCallAssembly(ref runtimeAssembly),
+                        typeName,
+                        nestedTypeNames,
+                        nestedTypeNames.Length,
+                        ObjectHandleOnStack.Create(ref type));
+                }
+                else
+                {
+                    GetTypeCore(new QCallAssembly(ref runtimeAssembly),
+                        typeName,
+                        nestedTypeNames,
+                        nestedTypeNames.Length,
+                        ObjectHandleOnStack.Create(ref type));
+                }
+            }
+            catch (FileNotFoundException) when (!throwOnError)
+            {
+                return null;
+            }
+
+            if (type == null && throwOnError)
+                throw new TypeLoadException(SR.Format(SR.ClassLoad_General /* TypeLoad_TypeNotFoundInAssembly */, typeName, FullName));
+
+            return type;
+        }
 
         [RequiresUnreferencedCode("Types might be removed")]
         public override Type? GetType(
-            string name!!, // throw on null strings regardless of the value of "throwOnError"
+            string name, // throw on null strings regardless of the value of "throwOnError"
             bool throwOnError, bool ignoreCase)
         {
-            RuntimeType? type = null;
-            object? keepAlive = null;
-            AssemblyLoadContext? assemblyLoadContextStack = AssemblyLoadContext.CurrentContextualReflectionContext;
+            ArgumentException.ThrowIfNullOrEmpty(name);
 
-            RuntimeAssembly runtimeAssembly = this;
-            GetType(new QCallAssembly(ref runtimeAssembly),
-                    name,
-                    throwOnError,
-                    ignoreCase,
-                    ObjectHandleOnStack.Create(ref type),
-                    ObjectHandleOnStack.Create(ref keepAlive),
-                    ObjectHandleOnStack.Create(ref assemblyLoadContextStack));
-            GC.KeepAlive(keepAlive);
-
-            return type;
+            return TypeNameParser.GetType(name, topLevelAssembly: this,
+                throwOnError: throwOnError, ignoreCase: ignoreCase);
         }
 
         [LibraryImport(RuntimeHelpers.QCall, EntryPoint = "AssemblyNative_GetExportedTypes")]
@@ -268,7 +315,7 @@ namespace System.Reflection
 
             char c = Type.Delimiter;
             string resourceName = nameSpace != null && name != null ?
-                string.Concat(nameSpace, new ReadOnlySpan<char>(ref c, 1), name) :
+                string.Concat(nameSpace, new ReadOnlySpan<char>(in c), name) :
                 string.Concat(nameSpace, name);
 
             return GetManifestResourceStream(resourceName);
@@ -288,6 +335,8 @@ namespace System.Reflection
         }
 
         // ISerializable implementation
+        [Obsolete(Obsoletions.LegacyFormatterImplMessage, DiagnosticId = Obsoletions.LegacyFormatterImplDiagId, UrlFormat = Obsoletions.SharedUrlFormat)]
+        [EditorBrowsable(EditorBrowsableState.Never)]
         public override void GetObjectData(SerializationInfo info, StreamingContext context)
         {
             throw new PlatformNotSupportedException();
@@ -296,23 +345,27 @@ namespace System.Reflection
         public override Module ManifestModule =>
             // We don't need to return the "external" ModuleBuilder because
             // it is meant to be read-only
-            RuntimeAssembly.GetManifestModule(GetNativeHandle());
+            GetManifestModule(GetNativeHandle());
 
         public override object[] GetCustomAttributes(bool inherit)
         {
             return CustomAttribute.GetCustomAttributes(this, (typeof(object) as RuntimeType)!);
         }
 
-        public override object[] GetCustomAttributes(Type attributeType!!, bool inherit)
+        public override object[] GetCustomAttributes(Type attributeType, bool inherit)
         {
+            ArgumentNullException.ThrowIfNull(attributeType);
+
             if (attributeType.UnderlyingSystemType is not RuntimeType attributeRuntimeType)
                 throw new ArgumentException(SR.Arg_MustBeType, nameof(attributeType));
 
             return CustomAttribute.GetCustomAttributes(this, attributeRuntimeType);
         }
 
-        public override bool IsDefined(Type attributeType!!, bool inherit)
+        public override bool IsDefined(Type attributeType, bool inherit)
         {
+            ArgumentNullException.ThrowIfNull(attributeType);
+
             if (attributeType.UnderlyingSystemType is not RuntimeType attributeRuntimeType)
                 throw new ArgumentException(SR.Arg_MustBeType, nameof(attributeType));
 
@@ -327,27 +380,56 @@ namespace System.Reflection
         internal static RuntimeAssembly InternalLoad(string assemblyName, ref StackCrawlMark stackMark, AssemblyLoadContext? assemblyLoadContext = null)
             => InternalLoad(new AssemblyName(assemblyName), ref stackMark, assemblyLoadContext);
 
-        internal static RuntimeAssembly InternalLoad(AssemblyName assemblyName, ref StackCrawlMark stackMark, AssemblyLoadContext? assemblyLoadContext = null)
-            => InternalLoad(assemblyName, requestingAssembly: null, ref stackMark, throwOnFileNotFound: true, assemblyLoadContext);
-
-        internal static RuntimeAssembly InternalLoad(AssemblyName assemblyName,
-                                                     RuntimeAssembly? requestingAssembly,
-                                                     ref StackCrawlMark stackMark,
-                                                     bool throwOnFileNotFound,
-                                                     AssemblyLoadContext? assemblyLoadContext = null)
+        internal static unsafe RuntimeAssembly InternalLoad(AssemblyName assemblyName,
+                                                            ref StackCrawlMark stackMark,
+                                                            AssemblyLoadContext? assemblyLoadContext = null,
+                                                            RuntimeAssembly? requestingAssembly = null,
+                                                            bool throwOnFileNotFound = true)
         {
             RuntimeAssembly? retAssembly = null;
-            InternalLoad(ObjectHandleOnStack.Create(ref assemblyName),
-                         ObjectHandleOnStack.Create(ref requestingAssembly),
-                         new StackCrawlMarkHandle(ref stackMark),
-                         throwOnFileNotFound,
-                         ObjectHandleOnStack.Create(ref assemblyLoadContext),
-                         ObjectHandleOnStack.Create(ref retAssembly));
+
+            AssemblyNameFlags flags = assemblyName.RawFlags;
+
+            // Note that we prefer to take a public key token if present,
+            // even if flags indicate a full public key
+            byte[]? publicKeyOrToken;
+            if ((publicKeyOrToken = assemblyName.RawPublicKeyToken) != null)
+            {
+                flags &= ~AssemblyNameFlags.PublicKey;
+            }
+            else if ((publicKeyOrToken = assemblyName.RawPublicKey) != null)
+            {
+                flags |= AssemblyNameFlags.PublicKey;
+            }
+
+            fixed (char* pName = assemblyName.Name)
+            fixed (char* pCultureName = assemblyName.CultureName)
+            fixed (byte* pPublicKeyOrToken = publicKeyOrToken)
+            {
+                NativeAssemblyNameParts nameParts = default;
+
+                nameParts._flags = flags;
+                nameParts._pName = pName;
+                nameParts._pCultureName = pCultureName;
+
+                nameParts._pPublicKeyOrToken = pPublicKeyOrToken;
+                nameParts._cbPublicKeyOrToken = (publicKeyOrToken != null) ? publicKeyOrToken.Length : 0;
+
+                nameParts.SetVersion(assemblyName.Version, defaultValue: ushort.MaxValue);
+
+                InternalLoad(&nameParts,
+                             ObjectHandleOnStack.Create(ref requestingAssembly),
+                             new StackCrawlMarkHandle(ref stackMark),
+                             throwOnFileNotFound,
+                             ObjectHandleOnStack.Create(ref assemblyLoadContext),
+                             ObjectHandleOnStack.Create(ref retAssembly));
+            }
+
             return retAssembly!;
         }
 
         [LibraryImport(RuntimeHelpers.QCall, EntryPoint = "AssemblyNative_InternalLoad")]
-        private static partial void InternalLoad(ObjectHandleOnStack assemblyName,
+        private static unsafe partial void InternalLoad(NativeAssemblyNameParts* pAssemblyNameParts,
                                                 ObjectHandleOnStack requestingAssembly,
                                                 StackCrawlMarkHandle stackMark,
                                                 [MarshalAs(UnmanagedType.Bool)] bool throwOnFileNotFound,
@@ -495,7 +577,7 @@ namespace System.Reflection
                                               out int buildNum,
                                               out int revNum);
 
-        internal Version GetVersion()
+        private Version GetVersion()
         {
             RuntimeAssembly runtimeAssembly = this;
             GetVersion(new QCallAssembly(ref runtimeAssembly), out int majorVer, out int minorVer, out int build, out int revision);
@@ -505,7 +587,7 @@ namespace System.Reflection
         [LibraryImport(RuntimeHelpers.QCall, EntryPoint = "AssemblyNative_GetLocale")]
         private static partial void GetLocale(QCallAssembly assembly, StringHandleOnStack retString);
 
-        internal CultureInfo GetLocale()
+        private CultureInfo GetLocale()
         {
             string? locale = null;
 
@@ -569,12 +651,14 @@ namespace System.Reflection
         }
 
         // Useful for binding to a very specific version of a satellite assembly
-        public override Assembly GetSatelliteAssembly(CultureInfo culture!!, Version? version)
+        public override Assembly GetSatelliteAssembly(CultureInfo culture, Version? version)
         {
+            ArgumentNullException.ThrowIfNull(culture);
+
             return InternalGetSatelliteAssembly(culture, version, throwOnFileNotFound: true)!;
         }
 
-        [System.Security.DynamicSecurityMethod] // Methods containing StackCrawlMark local var has to be marked DynamicSecurityMethod
+        [DynamicSecurityMethod] // Methods containing StackCrawlMark local var has to be marked DynamicSecurityMethod
         internal Assembly? InternalGetSatelliteAssembly(CultureInfo culture,
                                                        Version? version,
                                                        bool throwOnFileNotFound)
@@ -589,7 +673,7 @@ namespace System.Reflection
             // This stack crawl mark is never used because the requesting assembly is explicitly specified,
             // so the value could be anything.
             StackCrawlMark unused = default;
-            RuntimeAssembly? retAssembly = InternalLoad(an, this, ref unused, throwOnFileNotFound);
+            RuntimeAssembly? retAssembly = InternalLoad(an, ref unused, requestingAssembly: this, throwOnFileNotFound: throwOnFileNotFound);
 
             if (retAssembly == this)
             {

@@ -33,22 +33,22 @@ namespace System.IO.Tests
         [Fact]
         public static void UTF8Encoding()
         {
-            TestEnconding(System.Text.Encoding.UTF8, "This is UTF8\u00FF");
+            TestEncoding(System.Text.Encoding.UTF8, "This is UTF8\u00FF");
         }
 
         [Fact]
         public static void BigEndianUnicodeEncoding()
         {
-            TestEnconding(System.Text.Encoding.BigEndianUnicode, "This is BigEndianUnicode\u00FF");
+            TestEncoding(System.Text.Encoding.BigEndianUnicode, "This is BigEndianUnicode\u00FF");
         }
 
         [Fact]
         public static void UnicodeEncoding()
         {
-            TestEnconding(System.Text.Encoding.Unicode, "This is Unicode\u00FF");
+            TestEncoding(System.Text.Encoding.Unicode, "This is Unicode\u00FF");
         }
 
-        private static void TestEnconding(System.Text.Encoding encoding, string testString)
+        private static void TestEncoding(System.Text.Encoding encoding, string testString)
         {
             StreamWriter sw2;
             StreamReader sr2;

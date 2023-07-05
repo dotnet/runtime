@@ -10,11 +10,11 @@
 //
 // =-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-
 
+using System.Collections.Concurrent;
 using System.Collections.Generic;
 using System.Diagnostics;
 using System.Diagnostics.CodeAnalysis;
 using System.Linq;
-using System.Security;
 
 namespace System.Threading.Tasks.Dataflow.Internal
 {
@@ -33,7 +33,7 @@ namespace System.Threading.Tasks.Dataflow.Internal
         // *** These fields are readonly and are initialized to new instances at construction.
 
         /// <summary>A TaskCompletionSource that represents the completion of this block.</summary>
-        private readonly TaskCompletionSource<VoidResult> _completionTask = new TaskCompletionSource<VoidResult>();
+        private readonly TaskCompletionSource<VoidResult> _completionTask = new TaskCompletionSource<VoidResult>(TaskCreationOptions.RunContinuationsAsynchronously);
         /// <summary>A registry used to store all linked targets and information about them.</summary>
         private readonly TargetRegistry<TOutput> _targetRegistry;
         /// <summary>The output messages queued up to be received by consumers/targets.</summary>
@@ -121,8 +121,17 @@ namespace System.Threading.Tasks.Dataflow.Internal
         }
 
         /// <include file='XmlDocs/CommonXmlDocComments.xml' path='CommonXmlDocComments/Sources/Member[@name="LinkTo"]/*' />
-        internal IDisposable LinkTo(ITargetBlock<TOutput> target!!, DataflowLinkOptions linkOptions!!)
+        internal IDisposable LinkTo(ITargetBlock<TOutput> target, DataflowLinkOptions linkOptions)
         {
+            if (target is null)
+            {
+                throw new ArgumentNullException(nameof(target));
+            }
+            if (linkOptions is null)
+            {
+                throw new ArgumentNullException(nameof(linkOptions));
+            }
+
             // If the block is already completed, there is not much to do -
             // we have to propagate completion if that was requested, and
             // then bail without taking the lock.
@@ -358,11 +367,12 @@ namespace System.Threading.Tasks.Dataflow.Internal
                     int count = _itemCountingFunc != null ? _itemCountingFunc(_owningSource, default(TOutput)!, items) : countReceived;
                     _itemsRemovedAction(_owningSource, count);
                 }
-#pragma warning disable CS8762 // Parameter may not have a null value when exiting in some condition.
+
+                Debug.Assert(items != null);
                 return true;
-#pragma warning restore CS8762
             }
-            else return false;
+
+            return false;
         }
 
         /// <summary>Gets the number of items available to be received from this block.</summary>
@@ -506,7 +516,7 @@ namespace System.Threading.Tasks.Dataflow.Internal
                 // However, we know that _decliningPermanently has been set, and thus the timing of
                 // CompleteBlockIfPossible doesn't matter, so we schedule it to run asynchronously
                 // and take the necessary locks in a situation where we're sure it won't cause a problem.
-                Task.Factory.StartNew(state =>
+                Task.Factory.StartNew(static state =>
                 {
                     var thisSourceCore = (SourceCore<TOutput>)state!;
                     lock (thisSourceCore.OutgoingLock)
@@ -746,7 +756,7 @@ namespace System.Threading.Tasks.Dataflow.Internal
             {
                 // Create task and store into _taskForOutputProcessing prior to scheduling the task
                 // so that _taskForOutputProcessing will be visibly set in the task loop.
-                _taskForOutputProcessing = new Task(thisSourceCore => ((SourceCore<TOutput>)thisSourceCore!).OfferMessagesLoopCore(), this,
+                _taskForOutputProcessing = new Task(static thisSourceCore => ((SourceCore<TOutput>)thisSourceCore!).OfferMessagesLoopCore(), this,
                                                      Common.GetCreationOptionsForTask(isReplacementReplica));
 
                 DataflowEtwProvider etwLog = DataflowEtwProvider.Log;
@@ -769,7 +779,7 @@ namespace System.Threading.Tasks.Dataflow.Internal
 
                     // Get out from under currently held locks - ValueLock is taken, but OutgoingLock may not be.
                     // Re-take the locks on a separate thread.
-                    Task.Factory.StartNew(state =>
+                    Task.Factory.StartNew(static state =>
                     {
                         var thisSourceCore = (SourceCore<TOutput>)state!;
                         lock (thisSourceCore.OutgoingLock)
@@ -912,7 +922,7 @@ namespace System.Threading.Tasks.Dataflow.Internal
                 // Get out from under currently held locks.  This is to avoid
                 // invoking synchronous continuations off of _completionTask.Task
                 // while holding a lock.
-                Task.Factory.StartNew(state => ((SourceCore<TOutput>)state!).CompleteBlockOncePossible(),
+                Task.Factory.StartNew(static state => ((SourceCore<TOutput>)state!).CompleteBlockOncePossible(),
                     this, CancellationToken.None, Common.GetCreationOptionsForTask(), TaskScheduler.Default);
             }
         }
@@ -952,7 +962,7 @@ namespace System.Threading.Tasks.Dataflow.Internal
             // If it's due to cancellation, finish in a canceled state
             else if (_dataflowBlockOptions.CancellationToken.IsCancellationRequested)
             {
-                _completionTask.TrySetCanceled();
+                _completionTask.TrySetCanceled(_dataflowBlockOptions.CancellationToken);
             }
             // Otherwise, finish in a successful state.
             else

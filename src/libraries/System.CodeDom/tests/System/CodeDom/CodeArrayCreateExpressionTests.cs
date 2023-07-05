@@ -207,7 +207,7 @@ namespace System.CodeDom.Tests
         }
 
         [Fact]
-        public void Ctor_NullTypeInInitalizers_ThrowsArgumentNullException()
+        public void Ctor_NullTypeInInitializers_ThrowsArgumentNullException()
         {
             CodePrimitiveExpression[] initializers = new CodePrimitiveExpression[] { null };
             AssertExtensions.Throws<ArgumentNullException>("value", () => new CodeArrayCreateExpression("", initializers));

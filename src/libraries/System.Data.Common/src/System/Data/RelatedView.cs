@@ -118,7 +118,7 @@ namespace System.Data
             }
         }
 
-        private bool CompareArray(object?[]? value1, object?[]? value2)
+        private static bool CompareArray(object?[]? value1, object?[]? value2)
         {
             if (value1 == null || value2 == null)
             {

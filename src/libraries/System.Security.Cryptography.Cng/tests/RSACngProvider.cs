@@ -34,6 +34,10 @@ namespace System.Security.Cryptography.Rsa.Tests
         public bool SupportsSha2Oaep => true;
 
         public bool SupportsPss => true;
+
+        public bool SupportsSha1Signatures => true;
+
+        public bool SupportsSha3 { get; } = SHA3_256.IsSupported; // If SHA3_256 is supported, assume 384 and 512 are, too.
     }
 
     public partial class RSAFactory

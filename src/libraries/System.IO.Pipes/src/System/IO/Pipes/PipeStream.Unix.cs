@@ -103,10 +103,10 @@ namespace System.IO.Pipes
         }
 
         public override IAsyncResult BeginRead(byte[] buffer, int offset, int count, AsyncCallback? callback, object? state)
-            => TaskToApm.Begin(ReadAsync(buffer, offset, count, CancellationToken.None), callback, state);
+            => TaskToAsyncResult.Begin(ReadAsync(buffer, offset, count, CancellationToken.None), callback, state);
 
         public override int EndRead(IAsyncResult asyncResult)
-            => TaskToApm.End<int>(asyncResult);
+            => TaskToAsyncResult.End<int>(asyncResult);
 
         public override void Write(byte[] buffer, int offset, int count)
         {
@@ -177,10 +177,10 @@ namespace System.IO.Pipes
         }
 
         public override IAsyncResult BeginWrite(byte[] buffer, int offset, int count, AsyncCallback? callback, object? state)
-            => TaskToApm.Begin(WriteAsync(buffer, offset, count, CancellationToken.None), callback, state);
+            => TaskToAsyncResult.Begin(WriteAsync(buffer, offset, count, CancellationToken.None), callback, state);
 
         public override void EndWrite(IAsyncResult asyncResult)
-            => TaskToApm.End(asyncResult);
+            => TaskToAsyncResult.End(asyncResult);
 
         internal static string GetPipePath(string serverName, string pipeName)
         {
@@ -202,14 +202,14 @@ namespace System.IO.Pipes
             // cross-platform with Windows (which has only '\' as an invalid char).
             if (Path.IsPathRooted(pipeName))
             {
-                if (pipeName.IndexOfAny(s_invalidPathNameChars) >= 0 || pipeName[pipeName.Length - 1] == Path.DirectorySeparatorChar)
+                if (pipeName.AsSpan().ContainsAny(s_invalidPathNameChars) || pipeName.EndsWith(Path.DirectorySeparatorChar))
                     throw new PlatformNotSupportedException(SR.PlatformNotSupported_InvalidPipeNameChars);
 
                 // Caller is in full control of file location.
                 return pipeName;
             }
 
-            if (pipeName.IndexOfAny(s_invalidFileNameChars) >= 0)
+            if (pipeName.AsSpan().ContainsAny(s_invalidFileNameChars))
             {
                 throw new PlatformNotSupportedException(SR.PlatformNotSupported_InvalidPipeNameChars);
             }
@@ -226,6 +226,7 @@ namespace System.IO.Pipes
             return s_pipePrefix + pipeName;
         }
 
+#pragma warning disable CA1822
         /// <summary>Throws an exception if the supplied handle does not represent a valid pipe.</summary>
         /// <param name="safePipeHandle">The handle to validate.</param>
         internal void ValidateHandleIsPipe(SafePipeHandle safePipeHandle)
@@ -241,11 +242,11 @@ namespace System.IO.Pipes
                 }
             }
         }
+#pragma warning restore CA1822
 
         /// <summary>Initializes the handle to be used asynchronously.</summary>
         /// <param name="handle">The handle.</param>
-        private void InitializeAsyncHandle(SafePipeHandle handle)
-        { }
+        partial void InitializeAsyncHandle(SafePipeHandle handle);
 
         internal virtual void DisposeCore(bool disposing)
         {
@@ -455,7 +456,7 @@ namespace System.IO.Pipes
             writer.SetHandle(new IntPtr(fds[Interop.Sys.WriteEndOfPipe]));
         }
 
-        internal int CheckPipeCall(int result)
+        private int CheckPipeCall(int result)
         {
             if (result == -1)
             {
@@ -485,7 +486,7 @@ namespace System.IO.Pipes
         }
 
         internal static void ConfigureSocket(
-            Socket s, SafePipeHandle pipeHandle,
+            Socket s, SafePipeHandle _,
             PipeDirection direction, int inBufferSize, int outBufferSize, HandleInheritability inheritability)
         {
             if (inBufferSize > 0)

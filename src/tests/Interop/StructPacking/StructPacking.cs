@@ -104,7 +104,7 @@ unsafe class Program
     const int Pass = 100;
     const int Fail = 0;
 
-    static int Main(string[] args)
+    static int Main()
     {
         bool succeeded = true;
 

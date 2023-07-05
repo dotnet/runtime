@@ -1,5 +1,4 @@
 # Add targets to the crosscomponents subcomponent build
-
 if (CLR_CMAKE_HOST_OS STREQUAL CLR_CMAKE_TARGET_OS)
     install_clr (TARGETS
         jitinterface_${ARCH_HOST_NAME}
@@ -34,15 +33,11 @@ if (CLR_CMAKE_HOST_OS STREQUAL CLR_CMAKE_TARGET_OS)
     endif()
 endif()
 
-if(NOT CLR_CMAKE_HOST_LINUX AND NOT CLR_CMAKE_HOST_OSX AND NOT FEATURE_CROSSBITNESS)
+if(NOT CLR_CMAKE_HOST_LINUX AND NOT CLR_CMAKE_HOST_APPLE AND NOT FEATURE_CROSSBITNESS)
     install_clr (TARGETS
         mscordaccore
         mscordbi
         DESTINATIONS . sharedFramework
         COMPONENT crosscomponents
     )
-endif()
-
-if (CLR_CMAKE_TARGET_WIN32 AND NOT CLR_CMAKE_CROSS_ARCH)
-    add_dependencies(crosscomponents InjectResource GenClrDebugResource)
 endif()

@@ -31,6 +31,7 @@
 // WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE SOFTWARE.
 //
 
+using System.ComponentModel;
 using System.Diagnostics.CodeAnalysis;
 using System.Reflection;
 using System.Runtime.Serialization;
@@ -39,7 +40,6 @@ using System.Threading;
 
 namespace System
 {
-    [Serializable]
     public struct RuntimeTypeHandle : IEquatable<RuntimeTypeHandle>, ISerializable
     {
         private readonly IntPtr value;
@@ -54,11 +54,6 @@ namespace System
         {
         }
 
-        private RuntimeTypeHandle(SerializationInfo info, StreamingContext context)
-        {
-            throw new PlatformNotSupportedException();
-        }
-
         public IntPtr Value
         {
             get
@@ -67,6 +62,8 @@ namespace System
             }
         }
 
+        [Obsolete(Obsoletions.LegacyFormatterImplMessage, DiagnosticId = Obsoletions.LegacyFormatterImplDiagId, UrlFormat = Obsoletions.SharedUrlFormat)]
+        [EditorBrowsable(EditorBrowsableState.Never)]
         public void GetObjectData(SerializationInfo info, StreamingContext context)
         {
             throw new PlatformNotSupportedException();
@@ -89,6 +86,10 @@ namespace System
         {
             return value.GetHashCode();
         }
+
+        public static RuntimeTypeHandle FromIntPtr(IntPtr value) => new RuntimeTypeHandle(value);
+
+        public static IntPtr ToIntPtr(RuntimeTypeHandle value) => value.Value;
 
         public static bool operator ==(RuntimeTypeHandle left, object right)
         {
@@ -115,16 +116,15 @@ namespace System
 
         internal static TypeAttributes GetAttributes(RuntimeType type)
         {
-            return GetAttributes(new QCallTypeHandle(ref type));
+            return type.GetAttributes();
         }
 
         public ModuleHandle GetModuleHandle()
         {
-            // Although MS' runtime is crashing here, we prefer throwing an exception.
             // The check is needed because Type.GetTypeFromHandle returns null
             // for zero handles.
             if (value == IntPtr.Zero)
-                throw new InvalidOperationException("Object fields may not be properly initialized");
+                throw new ArgumentException(SR.Arg_InvalidHandle);
 
             return Type.GetTypeFromHandle(this)!.Module.ModuleHandle;
         }
@@ -182,6 +182,8 @@ namespace System
             return corElemType == CorElementType.ELEMENT_TYPE_SZARRAY;
         }
 
+        internal static bool IsValueType(RuntimeType type) => type.IsValueType;
+
         internal static bool HasElementType(RuntimeType type)
         {
             CorElementType corElemType = GetCorElementType(type);
@@ -218,7 +220,7 @@ namespace System
 
         internal static CorElementType GetCorElementType(RuntimeType type)
         {
-            return GetCorElementType (new QCallTypeHandle(ref type));
+            return type.GetCorElementType();
         }
 
         internal static bool HasInstantiation(RuntimeType type)
@@ -234,7 +236,7 @@ namespace System
 #pragma warning disable IDE0060
         internal static bool IsEquivalentTo(RuntimeType rtType1, RuntimeType rtType2)
         {
-            // refence check is done earlier and we don't recognize anything else
+            // reference check is done earlier and we don't recognize anything else
             return false;
         }
 #pragma warning restore IDE0060
@@ -363,12 +365,11 @@ namespace System
         [RequiresUnreferencedCode("Types might be removed")]
         internal static RuntimeType? GetTypeByName(string typeName, bool throwOnError, bool ignoreCase, ref StackCrawlMark stackMark)
         {
-            if (typeName == null)
-                throw new ArgumentNullException(nameof(typeName));
+            ArgumentNullException.ThrowIfNull(typeName);
 
             if (typeName.Length == 0)
                 if (throwOnError)
-                    throw new TypeLoadException("A null or zero length string does not represent a valid Type.");
+                    throw new TypeLoadException(SR.Arg_TypeLoadNullStr);
                 else
                     return null;
 
@@ -379,7 +380,7 @@ namespace System
                                    ref stackMark,
                                    ObjectHandleOnStack.Create (ref t), throwOnError, ignoreCase);
                 if (throwOnError && t == null)
-                    throw new TypeLoadException("Error loading '" + typeName + "'");
+                    throw new TypeLoadException(SR.Arg_TypeLoadException);
             }
             return t;
         }

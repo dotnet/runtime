@@ -1,17 +1,9 @@
 <Project>
-  <!-- Define before the import so that ResolvedMatchingContract is set before resolveContract.targets is imported. -->
-  <ItemGroup Condition="'$(MSBuildProjectName)' != 'netstandard'">
-    <PackageDownload Include="Microsoft.NETFramework.ReferenceAssemblies.net48"
-                     Version="[$(MicrosoftNETFrameworkReferenceAssembliesLatestPackageVersion)]" />
-    <ResolvedMatchingContract Include="$([MSBuild]::NormalizePath('$(NuGetPackageRoot)', 'microsoft.netframework.referenceassemblies.net48', '$(MicrosoftNETFrameworkReferenceAssembliesLatestPackageVersion)', 'build', '.NETFramework', 'v4.8', '$(MSBuildProjectName).dll'))" />
-  </ItemGroup>
 
   <Import Project="..\Directory.Build.targets" />
 
-  <!-- Tell GenFacades to use reference assemblies instead of the implementation assemblies (for most of the shims). -->
-  <PropertyGroup Condition="'$(CompileUsingReferenceAssemblies)' != 'false'">
+  <PropertyGroup Condition="'$(CompileUsingReferenceAssemblies)' == 'true'">
     <TrimOutPrivateAssembliesFromReferencePath>true</TrimOutPrivateAssembliesFromReferencePath>
-    <GeneratePartialFacadeSourceDependsOn>$(GeneratePartialFacadeSourceDependsOn);FindReferenceAssembliesForReferences</GeneratePartialFacadeSourceDependsOn>
-    <GenFacadesReferencePathItemName>ReferencePathWithRefAssemblies</GenFacadesReferencePathItemName>
   </PropertyGroup>
+
 </Project>

@@ -13,7 +13,7 @@
 {
 }
 .assembly extern eh_common{}
-.assembly 'forwardleaveincatch'
+.assembly ASSEMBLY_NAME
 {
   .hash algorithm 0x00008004
   .ver 0:0:0:0
@@ -32,9 +32,9 @@
 
 
 
-.namespace hello
+.namespace hello_forwardleaveincatch_leaves_il
 {
-  .class private auto ansi beforefieldinit Class1
+  .class public auto ansi beforefieldinit Class1
          extends [mscorlib]System.Object
   {
     .method public hidebysig static void 
@@ -123,10 +123,10 @@
 
       .try
       {
-        call       void hello.Class1::inTry()
+        call       void hello_forwardleaveincatch_leaves_il.Class1::inTry()
         .try
         {
-          call       void hello.Class1::inTry2()
+          call       void hello_forwardleaveincatch_leaves_il.Class1::inTry2()
           ldc.i4.1
           stloc.0
           newobj     instance void [mscorlib]System.Exception::.ctor()
@@ -136,14 +136,14 @@
         }  
         catch [mscorlib]System.Exception
         {
-          call       void hello.Class1::inCatch()
+          call       void hello_forwardleaveincatch_leaves_il.Class1::inCatch()
           leave.s after
         }  
 
       }  
       finally
       {
-        call       void hello.Class1::inFinally()
+        call       void hello_forwardleaveincatch_leaves_il.Class1::inFinally()
         endfinally
       }  
     done: 

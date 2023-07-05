@@ -14,6 +14,7 @@ namespace System.Text.Json.Serialization.Converters
     /// <summary>
     /// Converter factory for all IEnumerable types.
     /// </summary>
+    [RequiresDynamicCode(JsonSerializer.SerializationRequiresDynamicCodeMessage)]
     internal sealed class IEnumerableConverterFactory : JsonConverterFactory
     {
         private static readonly IDictionaryConverter<IDictionary> s_converterForIDictionary = new IDictionaryConverter<IDictionary>();
@@ -44,7 +45,7 @@ namespace System.Text.Json.Serialization.Converters
                 // Verify that we don't have a multidimensional array.
                 if (typeToConvert.GetArrayRank() > 1)
                 {
-                    ThrowHelper.ThrowNotSupportedException_SerializationNotSupported(typeToConvert);
+                    return UnsupportedTypeConverterFactory.CreateUnsupportedConverterForType(typeToConvert);
                 }
 
                 converterType = typeof(ArrayConverter<,>);

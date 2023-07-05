@@ -1,0 +1,105 @@
+.\" *********************************** start of \input{common.tex}
+.\" *********************************** end of \input{common.tex}
+'\" t
+.\" Manual page created with latex2man on Thu Jan  5 15:33:00 2023
+.\" NOTE: This file is generated, DO NOT EDIT.
+.de Vb
+.ft CW
+.nf
+..
+.de Ve
+.ft R
+
+.fi
+..
+.TH "UNW\\_BACKTRACE" "3" "05 January 2023" "Programming Library " "Programming Library "
+.SH NAME
+unw_backtrace
+\-\- return backtrace for the calling program 
+.PP
+.SH SYNOPSIS
+
+.PP
+#include <libunwind.h>
+.br
+.PP
+int
+unw_backtrace(void **buffer,
+int size);
+.br
+int
+unw_backtrace2(void **buffer,
+int size,
+unw_context_t *ctxt,
+int flag);
+.br
+.PP
+#include <execinfo.h>
+.br
+.PP
+int
+backtrace(void **buffer,
+int size);
+.br
+.PP
+.SH DESCRIPTION
+
+.PP
+unw_backtrace()
+is a convenient routine for obtaining the backtrace for 
+the calling program. The routine fills up to size
+addresses in the array 
+pointed by buffer\&.
+The routine is only available for local unwinding. 
+.PP
+Note that many (but not all) systems provide a practically identical function 
+called backtrace().
+The prototype for this function is usually obtained 
+by including the <execinfo.h>
+header file \-\- a prototype for 
+backtrace()
+is not provided by libunwind\&.
+libunwind
+weakly 
+aliases backtrace()
+to unw_backtrace(),
+so when a program 
+calling backtrace()
+is linked against libunwind,
+it may end up 
+calling unw_backtrace().
+.PP
+In case you want to obtain the backtrace from a specific unw_context_t,
+you can call unw_backtrace2
+with that context passing 0
+for flag. 
+If the unw_context_t
+is known to be a signal frame (i.e., from the third argument 
+in a sigaction handler on linux), unw_backtrace2
+can be used to collect 
+only the frames before the signal frame passing the UNW_INIT_SIGNAL_FRAME
+flag. 
+.PP
+.SH RETURN VALUE
+
+.PP
+The routine returns the number of addresses stored in the array pointed by 
+buffer\&.
+The return value may be zero to indicate that no addresses were 
+stored. 
+.PP
+.SH SEE ALSO
+
+.PP
+libunwind(3),
+unw_step(3)
+.PP
+.SH AUTHOR
+
+.PP
+David Mosberger\-Tang
+.br
+Email: \fBdmosberger@gmail.com\fP
+.br
+WWW: \fBhttp://www.nongnu.org/libunwind/\fP\&.
+.\" NOTE: This file is generated, DO NOT EDIT.

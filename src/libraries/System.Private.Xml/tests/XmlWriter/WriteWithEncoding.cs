@@ -5,10 +5,9 @@ using System.IO;
 using System.Linq;
 using System.Text;
 using System.Threading.Tasks;
-using System.Xml.Xsl;
 using Xunit;
 
-namespace System.Xml.Tests
+namespace System.Xml.XmlWriterTests
 {
     public class XmlWriterTests_Encoding
     {

@@ -4,6 +4,7 @@
 using System;
 using System.Net.WebSockets;
 using System.Runtime.InteropServices;
+using System.Runtime.InteropServices.Marshalling;
 
 internal static partial class Interop
 {
@@ -41,35 +42,40 @@ internal static partial class Interop
             internal ushort CloseStatus;
         }
 
-        [NativeMarshalling(typeof(Native))]
+        [NativeMarshalling(typeof(Marshaller))]
         internal struct HttpHeader
         {
             internal string Name;
-            internal uint NameLength;
             internal string Value;
-            internal uint ValueLength;
 
-            internal struct Native
+            [CustomMarshaller(typeof(HttpHeader), MarshalMode.ManagedToUnmanagedIn, typeof(Marshaller))]
+            [CustomMarshaller(typeof(HttpHeader), MarshalMode.ElementIn, typeof(Marshaller))]
+            public static class Marshaller
             {
-                private IntPtr Name;
-                private uint NameLength;
-                private IntPtr Value;
-                private uint ValueLength;
-
-                public Native(HttpHeader managed)
+                public static WEB_SOCKET_HTTP_HEADER ConvertToUnmanaged(HttpHeader managed)
                 {
-                    Name = Marshal.StringToCoTaskMemAnsi(managed.Name);
-                    NameLength = managed.NameLength;
-                    Value = Marshal.StringToCoTaskMemAnsi(managed.Value);
-                    ValueLength = managed.ValueLength;
+                    WEB_SOCKET_HTTP_HEADER n;
+                    n.Name = Marshal.StringToCoTaskMemAnsi(managed.Name);
+                    n.NameLength = (uint)managed.Name.Length;
+                    n.Value = Marshal.StringToCoTaskMemAnsi(managed.Value);
+                    n.ValueLength = (uint)managed.Value.Length;
+                    return n;
                 }
 
-                public void FreeNative()
+                public static void Free(WEB_SOCKET_HTTP_HEADER n)
                 {
-                    Marshal.FreeCoTaskMem(Name);
-                    Marshal.FreeCoTaskMem(Value);
+                    Marshal.FreeCoTaskMem(n.Name);
+                    Marshal.FreeCoTaskMem(n.Value);
                 }
             }
+        }
+
+        internal struct WEB_SOCKET_HTTP_HEADER
+        {
+            public IntPtr Name;
+            public uint NameLength;
+            public IntPtr Value;
+            public uint ValueLength;
         }
     }
 }

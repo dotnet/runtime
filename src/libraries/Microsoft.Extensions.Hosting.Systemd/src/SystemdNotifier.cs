@@ -7,19 +7,25 @@ using System.Runtime.Versioning;
 
 namespace Microsoft.Extensions.Hosting.Systemd
 {
+    /// <summary>
+    /// Provides support to notify systemd about the service status.
+    /// </summary>
     [UnsupportedOSPlatform("browser")]
     public class SystemdNotifier : ISystemdNotifier
     {
         private const string NOTIFY_SOCKET = "NOTIFY_SOCKET";
 
-        private readonly string _socketPath;
+        private readonly string? _socketPath;
 
+        /// <summary>
+        /// Instantiates a new <see cref="SystemdNotifier"/> and sets the notify socket path.
+        /// </summary>
         public SystemdNotifier() :
             this(GetNotifySocketPath())
         { }
 
         // For testing
-        internal SystemdNotifier(string socketPath)
+        internal SystemdNotifier(string? socketPath)
         {
             _socketPath = socketPath;
         }
@@ -37,7 +43,7 @@ namespace Microsoft.Extensions.Hosting.Systemd
 
             using (var socket = new Socket(AddressFamily.Unix, SocketType.Dgram, ProtocolType.Unspecified))
             {
-                var endPoint = new UnixDomainSocketEndPoint(_socketPath);
+                var endPoint = new UnixDomainSocketEndPoint(_socketPath!);
                 socket.Connect(endPoint);
 
                 // It's safe to do a non-blocking call here: messages sent here are much
@@ -46,9 +52,9 @@ namespace Microsoft.Extensions.Hosting.Systemd
             }
         }
 
-        private static string GetNotifySocketPath()
+        private static string? GetNotifySocketPath()
         {
-            string socketPath = Environment.GetEnvironmentVariable(NOTIFY_SOCKET);
+            string? socketPath = Environment.GetEnvironmentVariable(NOTIFY_SOCKET);
 
             if (string.IsNullOrEmpty(socketPath))
             {

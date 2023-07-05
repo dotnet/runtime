@@ -9,8 +9,6 @@ using System.Runtime.InteropServices;
 using System.Runtime.Versioning;
 using static System.Data.Common.UnsafeNativeMethods;
 
-#pragma warning disable CA1419 // TODO https://github.com/dotnet/roslyn-analyzers/issues/5232: not intended for use with P/Invoke
-
 namespace System.Data.OleDb
 {
     internal sealed class DualCoTaskMem : SafeHandle
@@ -81,13 +79,13 @@ namespace System.Data.OleDb
 
     internal sealed class RowHandleBuffer : DbBuffer
     {
-        internal RowHandleBuffer(IntPtr rowHandleFetchCount) : base((int)rowHandleFetchCount * ADP.PtrSize)
+        internal RowHandleBuffer(nint rowHandleFetchCount) : base(checked((int)rowHandleFetchCount * IntPtr.Size))
         {
         }
 
         internal IntPtr GetRowHandle(int index)
         {
-            IntPtr value = ReadIntPtr(index * ADP.PtrSize);
+            IntPtr value = ReadIntPtr(index * IntPtr.Size);
             Debug.Assert(ODB.DB_NULL_HROW != value, "bad rowHandle");
             return value;
         }

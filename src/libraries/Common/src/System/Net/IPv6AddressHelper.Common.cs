@@ -35,7 +35,7 @@ namespace System
 
             return longestSequenceLength > 1 ?
                 (longestSequenceStart, longestSequenceStart + longestSequenceLength) :
-                (-1, -1);
+                (-1, 0);
         }
 
         // Returns true if the IPv6 address should be formatted with an embedded IPv4 address:
@@ -123,7 +123,7 @@ namespace System
             int i;
             for (i = start; i < end; ++i)
             {
-                if (Uri.IsHexDigit(name[i]))
+                if (char.IsAsciiHexDigit(name[i]))
                 {
                     ++sequenceLength;
                     expectingNumber = false;
@@ -176,7 +176,7 @@ namespace System
                                 i += 4;
                                 for (; i < end; i++)
                                 {
-                                    if (!Uri.IsHexDigit(name[i]))
+                                    if (!char.IsAsciiHexDigit(name[i]))
                                     {
                                         return false;
                                     }
@@ -187,7 +187,7 @@ namespace System
                                 i += 2;
                                 for (; i < end; i++)
                                 {
-                                    if (name[i] < '0' || name[i] > '9')
+                                    if (!char.IsAsciiDigit(name[i]))
                                     {
                                         return false;
                                     }

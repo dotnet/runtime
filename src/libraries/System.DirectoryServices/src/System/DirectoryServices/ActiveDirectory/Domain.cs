@@ -243,10 +243,7 @@ namespace System.DirectoryServices.ActiveDirectory
             }
             finally
             {
-                if (domainEntry != null)
-                {
-                    domainEntry.Dispose();
-                }
+                domainEntry?.Dispose();
             }
 
             // at this point the raise domain function has succeeded
@@ -401,10 +398,7 @@ namespace System.DirectoryServices.ActiveDirectory
             }
             finally
             {
-                if (domainEntry != null)
-                {
-                    domainEntry.Dispose();
-                }
+                domainEntry?.Dispose();
             }
 
             // at this point the raise domain function has succeeded
@@ -858,11 +852,7 @@ namespace System.DirectoryServices.ActiveDirectory
             get
             {
                 CheckIfDisposed();
-                if (_cachedDomainControllers == null)
-                {
-                    _cachedDomainControllers = FindAllDomainControllers();
-                }
-                return _cachedDomainControllers;
+                return _cachedDomainControllers ??= FindAllDomainControllers();
             }
         }
 
@@ -871,11 +861,7 @@ namespace System.DirectoryServices.ActiveDirectory
             get
             {
                 CheckIfDisposed();
-                if (_cachedChildren == null)
-                {
-                    _cachedChildren = new DomainCollection(GetChildDomains());
-                }
-                return _cachedChildren;
+                return _cachedChildren ??= new DomainCollection(GetChildDomains());
             }
         }
 
@@ -924,10 +910,7 @@ namespace System.DirectoryServices.ActiveDirectory
             get
             {
                 CheckIfDisposed();
-                if (_cachedPdcRoleOwner == null)
-                {
-                    _cachedPdcRoleOwner = GetRoleOwner(ActiveDirectoryRole.PdcRole);
-                }
+                _cachedPdcRoleOwner ??= GetRoleOwner(ActiveDirectoryRole.PdcRole);
                 return _cachedPdcRoleOwner;
             }
         }
@@ -937,11 +920,7 @@ namespace System.DirectoryServices.ActiveDirectory
             get
             {
                 CheckIfDisposed();
-                if (_cachedRidRoleOwner == null)
-                {
-                    _cachedRidRoleOwner = GetRoleOwner(ActiveDirectoryRole.RidRole);
-                }
-                return _cachedRidRoleOwner;
+                return _cachedRidRoleOwner ??= GetRoleOwner(ActiveDirectoryRole.RidRole);
             }
         }
 
@@ -950,11 +929,7 @@ namespace System.DirectoryServices.ActiveDirectory
             get
             {
                 CheckIfDisposed();
-                if (_cachedInfrastructureRoleOwner == null)
-                {
-                    _cachedInfrastructureRoleOwner = GetRoleOwner(ActiveDirectoryRole.InfrastructureRole);
-                }
-                return _cachedInfrastructureRoleOwner;
+                return _cachedInfrastructureRoleOwner ??= GetRoleOwner(ActiveDirectoryRole.InfrastructureRole);
             }
         }
 
@@ -984,10 +959,7 @@ namespace System.DirectoryServices.ActiveDirectory
             finally
             {
                 rootDSE.Dispose();
-                if (domainEntry != null)
-                {
-                    domainEntry.Dispose();
-                }
+                domainEntry?.Dispose();
             }
             return domainFunctionality;
         }
@@ -1062,10 +1034,7 @@ namespace System.DirectoryServices.ActiveDirectory
             }
             finally
             {
-                if (domainEntry != null)
-                {
-                    domainEntry.Dispose();
-                }
+                domainEntry?.Dispose();
             }
             return domainMode;
         }
@@ -1109,10 +1078,7 @@ namespace System.DirectoryServices.ActiveDirectory
             }
             finally
             {
-                if (entry != null)
-                {
-                    entry.Dispose();
-                }
+                entry?.Dispose();
             }
 
             // create a new context object for the domain controller passing on  the
@@ -1174,10 +1140,7 @@ namespace System.DirectoryServices.ActiveDirectory
             }
             finally
             {
-                if (partitionsEntry != null)
-                {
-                    partitionsEntry.Dispose();
-                }
+                partitionsEntry?.Dispose();
             }
         }
 
@@ -1266,14 +1229,8 @@ namespace System.DirectoryServices.ActiveDirectory
             }
             finally
             {
-                if (resCol != null)
-                {
-                    resCol.Dispose();
-                }
-                if (partitionsEntry != null)
-                {
-                    partitionsEntry.Dispose();
-                }
+                resCol?.Dispose();
+                partitionsEntry?.Dispose();
             }
             return childDomains;
         }

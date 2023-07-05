@@ -43,8 +43,13 @@ namespace System.Threading.Tasks.Dataflow
         /// <summary>Initializes the <see cref="BufferBlock{T}"/> with the specified <see cref="DataflowBlockOptions"/>.</summary>
         /// <param name="dataflowBlockOptions">The options with which to configure this <see cref="BufferBlock{T}"/>.</param>
         /// <exception cref="System.ArgumentNullException">The <paramref name="dataflowBlockOptions"/> is null (Nothing in Visual Basic).</exception>
-        public BufferBlock(DataflowBlockOptions dataflowBlockOptions!!)
+        public BufferBlock(DataflowBlockOptions dataflowBlockOptions)
         {
+            if (dataflowBlockOptions is null)
+            {
+                throw new ArgumentNullException(nameof(dataflowBlockOptions));
+            }
+
             // Ensure we have options that can't be changed by the caller
             dataflowBlockOptions = dataflowBlockOptions.DefaultOrClone();
 
@@ -52,20 +57,20 @@ namespace System.Threading.Tasks.Dataflow
             Action<ISourceBlock<T>, int>? onItemsRemoved = null;
             if (dataflowBlockOptions.BoundedCapacity > 0)
             {
-                onItemsRemoved = (owningSource, count) => ((BufferBlock<T>)owningSource).OnItemsRemoved(count);
+                onItemsRemoved = static (owningSource, count) => ((BufferBlock<T>)owningSource).OnItemsRemoved(count);
                 _boundingState = new BoundingStateWithPostponedAndTask<T>(dataflowBlockOptions.BoundedCapacity);
             }
 
             // Initialize the source state
             _source = new SourceCore<T>(this, dataflowBlockOptions,
-                owningSource => ((BufferBlock<T>)owningSource).Complete(),
+                static owningSource => ((BufferBlock<T>)owningSource).Complete(),
                 onItemsRemoved);
 
             // It is possible that the source half may fault on its own, e.g. due to a task scheduler exception.
             // In those cases we need to fault the target half to drop its buffered messages and to release its
             // reservations. This should not create an infinite loop, because all our implementations are designed
             // to handle multiple completion requests and to carry over only one.
-            _source.Completion.ContinueWith((completed, state) =>
+            _source.Completion.ContinueWith(static (completed, state) =>
             {
                 var thisBlock = ((BufferBlock<T>)state!) as IDataflowBlock;
                 Debug.Assert(completed.IsFaulted, "The source must be faulted in order to trigger a target completion.");
@@ -74,7 +79,7 @@ namespace System.Threading.Tasks.Dataflow
 
             // Handle async cancellation requests by declining on the target
             Common.WireCancellationToComplete(
-                dataflowBlockOptions.CancellationToken, _source.Completion, owningSource => ((BufferBlock<T>)owningSource!).Complete(), this);
+                dataflowBlockOptions.CancellationToken, _source.Completion, static (owningSource, _) => ((BufferBlock<T>)owningSource!).Complete(), this);
             DataflowEtwProvider etwLog = DataflowEtwProvider.Log;
             if (etwLog.IsEnabled())
             {
@@ -142,8 +147,13 @@ namespace System.Threading.Tasks.Dataflow
         public void Complete() { CompleteCore(exception: null, storeExceptionEvenIfAlreadyCompleting: false); }
 
         /// <include file='XmlDocs/CommonXmlDocComments.xml' path='CommonXmlDocComments/Blocks/Member[@name="Fault"]/*' />
-        void IDataflowBlock.Fault(Exception exception!!)
+        void IDataflowBlock.Fault(Exception exception)
         {
+            if (exception is null)
+            {
+                throw new ArgumentNullException(nameof(exception));
+            }
+
             CompleteCore(exception, storeExceptionEvenIfAlreadyCompleting: false);
         }
 
@@ -248,7 +258,7 @@ namespace System.Threading.Tasks.Dataflow
                 // Create task and store into _taskForInputProcessing prior to scheduling the task
                 // so that _taskForInputProcessing will be visibly set in the task loop.
                 _boundingState.TaskForInputProcessing =
-                    new Task(state => ((BufferBlock<T>)state!).ConsumeMessagesLoopCore(), this,
+                    new Task(static state => ((BufferBlock<T>)state!).ConsumeMessagesLoopCore(), this,
                         Common.GetCreationOptionsForTask(isReplacementReplica));
 
                 DataflowEtwProvider etwLog = DataflowEtwProvider.Log;
@@ -378,7 +388,7 @@ namespace System.Threading.Tasks.Dataflow
                 // which means calling back to the source, which means we need to escape the incoming lock.
                 if (_boundingState != null && _boundingState.PostponedMessages.Count > 0)
                 {
-                    Task.Factory.StartNew(state =>
+                    Task.Factory.StartNew(static state =>
                     {
                         var thisBufferBlock = (BufferBlock<T>)state!;
 
@@ -443,13 +453,13 @@ namespace System.Threading.Tasks.Dataflow
             /// <summary>Gets the collection of postponed message headers.</summary>
             public QueuedMap<ISourceBlock<T>, DataflowMessageHeader>? PostponedMessages
             {
-                get { return _bufferBlock._boundingState != null ? _bufferBlock._boundingState.PostponedMessages : null; }
+                get { return _bufferBlock._boundingState?.PostponedMessages; }
             }
             /// <summary>Gets the messages in the buffer.</summary>
             public IEnumerable<T> Queue { get { return _sourceDebuggingInformation.OutputQueue; } }
 
             /// <summary>The task used to process messages.</summary>
-            public Task? TaskForInputProcessing { get { return _bufferBlock._boundingState != null ? _bufferBlock._boundingState.TaskForInputProcessing : null; } }
+            public Task? TaskForInputProcessing { get { return _bufferBlock._boundingState?.TaskForInputProcessing; } }
             /// <summary>Gets the task being used for output processing.</summary>
             public Task? TaskForOutputProcessing { get { return _sourceDebuggingInformation.TaskForOutputProcessing; } }
 

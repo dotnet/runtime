@@ -150,7 +150,7 @@ mono_constant_fold_ins (MonoCompile *cfg, MonoInst *ins, MonoInst *arg1, MonoIns
 			 */
 			if (mono_op_to_op_imm (ins->opcode) != -1) {
 				ALLOC_DEST (cfg, dest, ins);
-				dest->opcode = mono_op_to_op_imm (ins->opcode);
+				dest->opcode = GINT_TO_OPCODE (mono_op_to_op_imm (ins->opcode));
 				dest->sreg1 = ins->sreg2;
 				dest->sreg2 = -1;
 				dest->inst_imm = arg1->inst_c0;
@@ -300,10 +300,15 @@ mono_constant_fold_ins (MonoCompile *cfg, MonoInst *ins, MonoInst *arg1, MonoIns
 		}
 		break;
 	case OP_XMOVE:
-		if (arg1->opcode == OP_XZERO) {
+		if ((arg1->opcode == OP_XZERO) || (arg1->opcode == OP_XONES)) {
 			ALLOC_DEST (cfg, dest, ins);
-			dest->opcode = OP_XZERO;
+			dest->opcode = arg1->opcode;
 			dest->sreg1 = -1;
+		} else if (arg1->opcode == OP_XCONST) {
+			ALLOC_DEST (cfg, dest, ins);
+			dest->opcode = arg1->opcode;
+			dest->sreg1 = -1;
+			dest->inst_p0 = arg1->inst_p0;
 		}
 		break;
 	case OP_COMPARE:

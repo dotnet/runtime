@@ -2198,47 +2198,55 @@ void OleVariant::MarshalLPWSTRRArrayComToOle(BASEARRAYREF *pComArray, void *oleA
     }
     CONTRACTL_END;
 
-    ASSERT_PROTECTED(pComArray);
-
     LPWSTR *pOle = (LPWSTR *) oleArray;
     LPWSTR *pOleEnd = pOle + cElements;
 
-    STRINGREF *pCom = (STRINGREF *) (*pComArray)->GetDataPtr();
-
-    while (pOle < pOleEnd)
+    struct
     {
-        //
-        // We aren't calling anything which might cause a GC, so don't worry about
-        // the array moving here.
-        //
+        BASEARRAYREF pCom;
+        STRINGREF stringRef;
+    } gc;
+    gc.pCom = *pComArray;
+    gc.stringRef = NULL;
+    GCPROTECT_BEGIN(gc)
+    {
 
-        STRINGREF stringRef = *pCom++;
-
-        LPWSTR lpwstr;
-        if (stringRef == NULL)
+        int i = 0;
+        while (pOle < pOleEnd)
         {
-            lpwstr = NULL;
+            gc.stringRef = *((STRINGREF*)gc.pCom->GetDataPtr() + i);
+
+            LPWSTR lpwstr;
+            if (gc.stringRef == NULL)
+            {
+                lpwstr = NULL;
+            }
+            else
+            {
+                // Retrieve the length of the string.
+                int Length = gc.stringRef->GetStringLength();
+                int allocLength = (Length + 1) * sizeof(WCHAR);
+                if (allocLength < Length)
+                    ThrowOutOfMemory();
+
+                // Allocate the string using CoTaskMemAlloc.
+                {
+                    GCX_PREEMP();
+                    lpwstr = (LPWSTR)CoTaskMemAlloc(allocLength);
+                }
+                if (lpwstr == NULL)
+                    ThrowOutOfMemory();
+
+                // Copy the COM+ string into the newly allocated LPWSTR.
+                memcpyNoGCRefs(lpwstr, gc.stringRef->GetBuffer(), allocLength);
+                lpwstr[Length] = W('\0');
+            }
+
+            *pOle++ = lpwstr;
+            i++;
         }
-        else
-        {
-            // Retrieve the length of the string.
-            int Length = stringRef->GetStringLength();
-            int allocLength = (Length + 1) * sizeof(WCHAR);
-            if (allocLength < Length)
-                ThrowOutOfMemory();
-
-            // Allocate the string using CoTaskMemAlloc.
-            lpwstr = (LPWSTR)CoTaskMemAlloc(allocLength);
-            if (lpwstr == NULL)
-                ThrowOutOfMemory();
-
-            // Copy the COM+ string into the newly allocated LPWSTR.
-            memcpyNoGCRefs(lpwstr, stringRef->GetBuffer(), (Length + 1) * sizeof(WCHAR));
-            lpwstr[Length] = 0;
-        }
-
-        *pOle++ = lpwstr;
     }
+    GCPROTECT_END();
 }
 
 void OleVariant::ClearLPWSTRArray(void *oleArray, SIZE_T cElements, MethodTable *pInterfaceMT, PCODE pManagedMarshalerCode)
@@ -2246,12 +2254,13 @@ void OleVariant::ClearLPWSTRArray(void *oleArray, SIZE_T cElements, MethodTable 
     CONTRACTL
     {
         NOTHROW;
-        GC_NOTRIGGER;
+        GC_TRIGGERS;
         MODE_ANY;
         PRECONDITION(CheckPointer(oleArray));
     }
     CONTRACTL_END;
 
+    GCX_PREEMP();
     LPWSTR *pOle = (LPWSTR *) oleArray;
     LPWSTR *pOleEnd = pOle + cElements;
 
@@ -2334,48 +2343,56 @@ void OleVariant::MarshalLPSTRRArrayComToOle(BASEARRAYREF *pComArray, void *oleAr
     }
     CONTRACTL_END;
 
-    ASSERT_PROTECTED(pComArray);
-
     LPSTR *pOle = (LPSTR *) oleArray;
     LPSTR *pOleEnd = pOle + cElements;
 
-    STRINGREF *pCom = (STRINGREF *) (*pComArray)->GetDataPtr();
-
-    while (pOle < pOleEnd)
+    struct
     {
-        //
-        // We aren't calling anything which might cause a GC, so don't worry about
-        // the array moving here.
-        //
-        STRINGREF stringRef = *pCom++;
-
-        CoTaskMemHolder<CHAR> lpstr(NULL);
-        if (stringRef == NULL)
+        BASEARRAYREF pCom;
+        STRINGREF stringRef;
+    } gc;
+    gc.pCom = *pComArray;
+    gc.stringRef = NULL;
+    GCPROTECT_BEGIN(gc)
+    {
+        int i = 0;
+        while (pOle < pOleEnd)
         {
-            lpstr = NULL;
+            gc.stringRef = *((STRINGREF*)gc.pCom->GetDataPtr() + i);
+
+            CoTaskMemHolder<CHAR> lpstr(NULL);
+            if (gc.stringRef == NULL)
+            {
+                lpstr = NULL;
+            }
+            else
+            {
+                // Retrieve the length of the string.
+                int Length = gc.stringRef->GetStringLength();
+                int allocLength = Length * GetMaxDBCSCharByteSize() + 1;
+                if (allocLength < Length)
+                    ThrowOutOfMemory();
+
+                // Allocate the string using CoTaskMemAlloc.
+                {
+                    GCX_PREEMP();
+                    lpstr = (LPSTR)CoTaskMemAlloc(allocLength);
+                }
+                if (lpstr == NULL)
+                    ThrowOutOfMemory();
+
+                // Convert the unicode string to an ansi string.
+                int bytesWritten = InternalWideToAnsi(gc.stringRef->GetBuffer(), Length, lpstr, allocLength, fBestFitMapping, fThrowOnUnmappableChar);
+                _ASSERTE(bytesWritten >= 0 && bytesWritten < allocLength);
+                lpstr[bytesWritten] = '\0';
+            }
+
+            *pOle++ = lpstr;
+            i++;
+            lpstr.SuppressRelease();
         }
-        else
-        {
-            // Retrieve the length of the string.
-            int Length = stringRef->GetStringLength();
-            int allocLength = Length * GetMaxDBCSCharByteSize() + 1;
-            if (allocLength < Length)
-                ThrowOutOfMemory();
-
-            // Allocate the string using CoTaskMemAlloc.
-            lpstr = (LPSTR)CoTaskMemAlloc(allocLength);
-            if (lpstr == NULL)
-                ThrowOutOfMemory();
-
-            // Convert the unicode string to an ansi string.
-            int bytesWritten = InternalWideToAnsi(stringRef->GetBuffer(), Length, lpstr, allocLength, fBestFitMapping, fThrowOnUnmappableChar);
-            _ASSERTE(bytesWritten >= 0 && bytesWritten < allocLength);
-            lpstr[bytesWritten] = 0;
-        }
-
-        *pOle++ = lpstr;
-        lpstr.SuppressRelease();
     }
+    GCPROTECT_END();
 }
 
 void OleVariant::ClearLPSTRArray(void *oleArray, SIZE_T cElements, MethodTable *pInterfaceMT, PCODE pManagedMarshalerCode)
@@ -2383,12 +2400,13 @@ void OleVariant::ClearLPSTRArray(void *oleArray, SIZE_T cElements, MethodTable *
     CONTRACTL
     {
         NOTHROW;
-        GC_NOTRIGGER;
+        GC_TRIGGERS;
         MODE_ANY;
         PRECONDITION(CheckPointer(oleArray));
     }
     CONTRACTL_END;
 
+    GCX_PREEMP();
     LPSTR *pOle = (LPSTR *) oleArray;
     LPSTR *pOleEnd = pOle + cElements;
 
@@ -2812,7 +2830,7 @@ void OleVariant::MarshalOleVariantForObject(OBJECTREF * const & pObj, VARIANT *p
         }
         else if (pMT == CoreLibBinder::GetElementType(ELEMENT_TYPE_BOOLEAN))
         {
-            V_BOOL(pOle) = *(U1*)( (*pObj)->GetData() ) ? VARIANT_TRUE : VARIANT_FALSE;
+            V_BOOL(pOle) = *(CLR_BOOL*)( (*pObj)->GetData() ) ? VARIANT_TRUE : VARIANT_FALSE;
             V_VT(pOle) = VT_BOOL;
         }
         else if (pMT == CoreLibBinder::GetElementType(ELEMENT_TYPE_I))
@@ -2985,7 +3003,7 @@ HRESULT OleVariant::MarshalCommonOleRefVariantForObject(OBJECTREF *pObj, VARIANT
         // deallocation of old value optimized away since there's nothing to
         // deallocate for this vartype.
 
-        *(V_BOOLREF(pOle)) =  ( *(U1*)( (*pObj)->GetData() ) ) ? VARIANT_TRUE : VARIANT_FALSE;
+        *(V_BOOLREF(pOle)) =  ( *(CLR_BOOL*)( (*pObj)->GetData() ) ) ? VARIANT_TRUE : VARIANT_FALSE;
     }
     else if ( (V_VT(pOle) == (VT_BYREF | VT_INT) || V_VT(pOle) == (VT_BYREF | VT_UINT)) && (pMT == CoreLibBinder::GetElementType(ELEMENT_TYPE_I4) || pMT == CoreLibBinder::GetElementType(ELEMENT_TYPE_U4)) )
     {
@@ -4640,8 +4658,8 @@ void OleVariant::MarshalArrayRefForSafeArray(SAFEARRAY *pSafeArray,
 
             if (!CorTypeInfo::IsPrimitiveType(th.GetInternalCorElementType()))
             {
-                _ASSERTE(!strcmp(th.AsMethodTable()->GetDebugClassName(),
-                                 "System.Currency"));
+                _ASSERTE(!strcmp(th.AsMethodTable()->GetDebugClassName(), "System.Currency")
+                        || !strcmp(th.AsMethodTable()->GetDebugClassName(), "System.Decimal"));
             }
         }
 #endif
@@ -4796,7 +4814,7 @@ void OleVariant::TransposeArrayData(BYTE *pDestData, BYTE *pSrcData, SIZE_T dwNu
             aDestElemCount[iDims] = pSafeArray->rgsabound[iDims].cElements;
     }
 
-    // Initalize the indexes for each dimension to 0.
+    // Initialize the indexes for each dimension to 0.
     memset(aDestIndex, 0, pSafeArray->cDims * sizeof(int));
 
     // Set all the destination data positions to the start of the array.

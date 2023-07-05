@@ -457,9 +457,9 @@ namespace System.Data.Common
         // : DbMetaDataFactory
         //
 
-        internal static Exception AmbigousCollectionName(string collectionName)
+        internal static Exception AmbiguousCollectionName(string collectionName)
         {
-            return Argument(SR.GetString(SR.MDF_AmbigousCollectionName, collectionName));
+            return Argument(SR.GetString(SR.MDF_AmbiguousCollectionName, collectionName));
         }
 
         internal static Exception CollectionNameIsNotUnique(string collectionName)
@@ -658,12 +658,7 @@ namespace System.Data.Common
 
         internal static IntPtr IntPtrOffset(IntPtr pbase, int offset)
         {
-            if (4 == ADP.PtrSize)
-            {
-                return (IntPtr)checked(pbase.ToInt32() + offset);
-            }
-            Debug.Assert(8 == ADP.PtrSize, "8 != IntPtr.Size"); // MDAC 73747
-            return (IntPtr)checked(pbase.ToInt64() + offset);
+            return (nint)pbase + offset;
         }
     }
 }

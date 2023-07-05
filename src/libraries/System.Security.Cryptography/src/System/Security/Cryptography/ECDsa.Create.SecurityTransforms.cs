@@ -22,7 +22,16 @@ namespace System.Security.Cryptography
         public static partial ECDsa Create(ECCurve curve)
         {
             ECDsa ecdsa = Create();
-            ecdsa.GenerateKey(curve);
+            try
+            {
+                ecdsa.GenerateKey(curve);
+            }
+            catch
+            {
+                ecdsa.Dispose();
+                throw;
+            }
+
             return ecdsa;
         }
 
@@ -35,7 +44,16 @@ namespace System.Security.Cryptography
         public static partial ECDsa Create(ECParameters parameters)
         {
             ECDsa ecdsa = Create();
-            ecdsa.ImportParameters(parameters);
+            try
+            {
+                ecdsa.ImportParameters(parameters);
+            }
+            catch
+            {
+                ecdsa.Dispose();
+                throw;
+            }
+
             return ecdsa;
         }
     }

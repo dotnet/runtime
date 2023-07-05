@@ -16,9 +16,9 @@ namespace System.Net.Sockets.Tests
         private static readonly IList<ArraySegment<byte>> s_buffers = new List<ArraySegment<byte>> { new ArraySegment<byte>(s_buffer) };
         private static readonly SocketAsyncEventArgs s_eventArgs = new SocketAsyncEventArgs();
 
-        private static Socket GetDisposedSocket(AddressFamily addressFamily = AddressFamily.InterNetwork)
+        private static Socket GetDisposedSocket(AddressFamily addressFamily = AddressFamily.InterNetwork, SocketType socketType = SocketType.Stream, ProtocolType protocolType = ProtocolType.Tcp)
         {
-            using (var socket = new Socket(addressFamily, SocketType.Stream, ProtocolType.Tcp))
+            using (var socket = new Socket(addressFamily, socketType, protocolType))
             {
                 return socket;
             }
@@ -245,7 +245,7 @@ namespace System.Net.Sockets.Tests
         [Fact]
         public void EnableBroadcast_Throws_ObjectDisposed()
         {
-            Assert.Throws<ObjectDisposedException>(() => GetDisposedSocket().EnableBroadcast);
+            Assert.Throws<ObjectDisposedException>(() => GetDisposedSocket(socketType: SocketType.Dgram, protocolType: ProtocolType.Udp).EnableBroadcast);
         }
 
         [Fact]
@@ -253,7 +253,7 @@ namespace System.Net.Sockets.Tests
         {
             Assert.Throws<ObjectDisposedException>(() =>
             {
-                GetDisposedSocket().EnableBroadcast = true;
+                GetDisposedSocket(socketType: SocketType.Dgram, protocolType: ProtocolType.Udp).EnableBroadcast = true;
             });
         }
 
@@ -374,7 +374,7 @@ namespace System.Net.Sockets.Tests
         [Fact]
         public void SendTo_Buffer_Size_Throws_ObjectDisposed()
         {
-            Assert.Throws<ObjectDisposedException>(() => GetDisposedSocket().SendTo(s_buffer,  s_buffer.Length, SocketFlags.None, new IPEndPoint(IPAddress.Loopback, 1)));
+            Assert.Throws<ObjectDisposedException>(() => GetDisposedSocket().SendTo(s_buffer, s_buffer.Length, SocketFlags.None, new IPEndPoint(IPAddress.Loopback, 1)));
         }
 
         [Fact]
@@ -459,7 +459,7 @@ namespace System.Net.Sockets.Tests
         public void ReceiveFrom_Buffer_Size_Throws_ObjectDisposed()
         {
             EndPoint remote = new IPEndPoint(IPAddress.Loopback, 1);
-            Assert.Throws<ObjectDisposedException>(() => GetDisposedSocket().ReceiveFrom(s_buffer,  s_buffer.Length, SocketFlags.None, ref remote));
+            Assert.Throws<ObjectDisposedException>(() => GetDisposedSocket().ReceiveFrom(s_buffer, s_buffer.Length, SocketFlags.None, ref remote));
         }
 
         [Fact]
@@ -627,9 +627,16 @@ namespace System.Net.Sockets.Tests
         }
 
         [Fact]
-        public void EndConnect_Throws_ObjectDisposed()
+        public void EndConnect_Throws_SocketException()
         {
-            Assert.Throws<ObjectDisposedException>(() => GetDisposedSocket().EndConnect(null));
+            using Socket notListening = new Socket(AddressFamily.InterNetwork, SocketType.Stream, ProtocolType.Tcp);
+            notListening.BindToAnonymousPort(IPAddress.Loopback);
+
+            Socket socket = new Socket(AddressFamily.InterNetwork, SocketType.Stream, ProtocolType.Tcp);
+            var iar = socket.BeginConnect(notListening.LocalEndPoint, null, null);
+            socket.Dispose();
+
+            Assert.Throws<SocketException>(() => socket.EndConnect(iar));
         }
 
         [Fact]
@@ -657,22 +664,9 @@ namespace System.Net.Sockets.Tests
         }
 
         [Fact]
-        public void EndSend_Throws_ObjectDisposedException()
-        {
-            Assert.Throws<ObjectDisposedException>(() => GetDisposedSocket().EndSend(null));
-        }
-
-        [Fact]
         public void BeginSendTo_Throws_ObjectDisposedException()
         {
             Assert.Throws<ObjectDisposedException>(() => GetDisposedSocket().BeginSendTo(s_buffer, 0, s_buffer.Length, SocketFlags.None, new IPEndPoint(IPAddress.Loopback, 1), TheAsyncCallback, null));
-        }
-
-        [Fact]
-        public void EndSendTo_Throws_ObjectDisposedException()
-        {
-            // Behavior difference: EndSendTo_Throws_ObjectDisposed
-            Assert.Throws<ObjectDisposedException>(() => GetDisposedSocket().EndSendTo(null));
         }
 
         [Fact]
@@ -700,9 +694,17 @@ namespace System.Net.Sockets.Tests
         }
 
         [Fact]
-        public void EndReceive_Throws_ObjectDisposedException()
+        public void EndReceive_Throws_SocketException()
         {
-            Assert.Throws<ObjectDisposedException>(() => GetDisposedSocket().EndReceive(null));
+            (Socket a, Socket b) = SocketTestExtensions.CreateConnectedSocketPair();
+
+            using (b)
+            {
+                var iar = a.BeginReceive(new byte[1], 0, 1, SocketFlags.None, null, null);
+                a.Dispose();
+
+                Assert.Throws<SocketException>(() => a.EndReceive(iar));
+            }
         }
 
         [Fact]
@@ -713,10 +715,16 @@ namespace System.Net.Sockets.Tests
         }
 
         [Fact]
-        public void EndReceiveFrom_Throws_ObjectDisposedException()
+        public void EndReceiveFrom_Throws_SocketException()
         {
-            EndPoint remote = new IPEndPoint(IPAddress.Loopback, 1);
-            Assert.Throws<ObjectDisposedException>(() => GetDisposedSocket().EndReceiveFrom(null, ref remote));
+            (Socket sender, Socket receiver, EndPoint senderEp) = CreateUdpSocketPair();
+
+            using (sender)
+            {
+                var iar = receiver.BeginReceiveFrom(new byte[1], 0, 1, SocketFlags.None, ref senderEp, null, null);
+                receiver.Dispose();
+                Assert.Throws<SocketException>(() => receiver.EndReceiveFrom(iar, ref senderEp));
+            }
         }
 
         [Fact]
@@ -726,25 +734,49 @@ namespace System.Net.Sockets.Tests
             Assert.Throws<ObjectDisposedException>(() => GetDisposedSocket().BeginReceiveMessageFrom(s_buffer, 0, s_buffer.Length, SocketFlags.None, ref remote, TheAsyncCallback, null));
         }
 
-        [Fact]
-        public void EndReceiveMessageFrom_Throws_ObjectDisposedException()
+        private static (Socket a, Socket b, IPEndPoint aEndPoint) CreateUdpSocketPair()
         {
-            SocketFlags flags = SocketFlags.None;
-            EndPoint remote = new IPEndPoint(IPAddress.Loopback, 1);
-            IPPacketInformation packetInfo;
-            Assert.Throws<ObjectDisposedException>(() => GetDisposedSocket().EndReceiveMessageFrom(null, ref flags, ref remote, out packetInfo));
+            Socket a = new Socket(AddressFamily.InterNetwork, SocketType.Dgram, ProtocolType.Udp);
+            int port = a.BindToAnonymousPort(IPAddress.Loopback);
+            IPEndPoint aEndPoint = new IPEndPoint(IPAddress.Loopback, port);
+            Socket b = new Socket(AddressFamily.InterNetwork, SocketType.Dgram, ProtocolType.Udp);
+            b.BindToAnonymousPort(IPAddress.Loopback);
+            return (a, b, aEndPoint);
         }
 
         [Fact]
-        public void BeginAccept_Throws_ObjectDisposed()
+        public void EndReceiveMessageFrom_Throws_SocketException()
+        {
+            (Socket sender, Socket receiver, EndPoint senderEp) = CreateUdpSocketPair();
+
+            using (sender)
+            {
+                var iar = receiver.BeginReceiveMessageFrom(new byte[1], 0, 1, SocketFlags.None, ref senderEp, null, null);
+                receiver.Dispose();
+
+                SocketFlags flags = SocketFlags.None;
+                EndPoint remote = new IPEndPoint(IPAddress.Loopback, 1);
+                IPPacketInformation packetInfo;
+                Assert.Throws<SocketException>(() => receiver.EndReceiveMessageFrom(iar, ref flags, ref remote, out packetInfo));
+            }
+        }
+
+        [Fact]
+        public void BeginAccept_Throws_ObjectDisposedException()
         {
             Assert.Throws<ObjectDisposedException>(() => GetDisposedSocket().BeginAccept(TheAsyncCallback, null));
         }
 
         [Fact]
-        public void EndAccept_Throws_ObjectDisposed()
+        public void EndAccept_Throws_SocketException()
         {
-            Assert.Throws<ObjectDisposedException>(() => GetDisposedSocket().EndAccept(null));
+            Socket listener = new Socket(AddressFamily.InterNetwork, SocketType.Stream, ProtocolType.Tcp);
+            listener.BindToAnonymousPort(IPAddress.Loopback);
+            listener.Listen();
+            var iar = listener.BeginAccept(null, null);
+            listener.Dispose();
+
+            Assert.Throws<SocketException>(() => listener.EndAccept(iar));
         }
 
         [Fact]

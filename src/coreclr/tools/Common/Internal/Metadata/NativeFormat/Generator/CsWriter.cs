@@ -88,4 +88,13 @@ class CsWriter : IDisposable
     {
         WriteLine("/// " + s);
     }
+
+    public void WriteTypeAttributesForCoreLib()
+    {
+        WriteLineIfNeeded();
+
+        _writer.WriteLine("#if SYSTEM_PRIVATE_CORELIB");
+        WriteScopeAttribute("[CLSCompliant(false)]");
+        _writer.WriteLine("#endif");
+    }
 }

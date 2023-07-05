@@ -1,1 +1,0 @@
-fft10.xsl @infft10b.txt 

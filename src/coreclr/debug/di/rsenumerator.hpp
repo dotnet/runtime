@@ -13,13 +13,13 @@
 // This CordbEnumerator is a templated enumerator from which COM enumerators for RS types can quickly be fashioned.
 // It uses a private array to store the items it enumerates over so by default it does not reference any
 // other RS type except the process it is associated with. The internal storage type does not need to match the
-// the item type exposed publically so that you can easily create an enumeration that holds RsSmartPtr<CordbThread>
+// the item type exposed publicly so that you can easily create an enumeration that holds RsSmartPtr<CordbThread>
 // but enumerates ICorDebugThread objects as an example. The enumerator has 4 templated parameters which must be
 // defined:
 //   ElemType: this is the item type used for storage internal to the enumerator. For most Rs objects you will want
 //             to use an RsSmartPtr<T> type to ensure the enumerator holds references to the objects it is
 //             containing. The enumerator does not do any explicit Add/Release, it just copies items.
-//   ElemPublicType: this is the item type exposed publically via the Next enumeration method. Typically this is
+//   ElemPublicType: this is the item type exposed publicly via the Next enumeration method. Typically this is
 //             an ICorDebugX interface type but it can be anything.
 //   EnumInterfaceType: this is the COM interface that the instantiated template will implement. It is expected that
 //             this interface type follows the standard ICorDebug COM enumerator pattern, that the interface inherits
@@ -195,7 +195,7 @@ ULONG CordbEnumerator<ElemType,
 //    ppEnum - on output filled with a duplicate enumeration
 //
 //  Return:
-//    S_OK if the clone was created succesfully, otherwise some appropriate failing HRESULT
+//    S_OK if the clone was created successfully, otherwise some appropriate failing HRESULT
 template< typename ElemType,
           typename ElemPublicType,
           typename EnumInterfaceType, REFIID IID_EnumInterfaceType,
@@ -222,7 +222,7 @@ HRESULT CordbEnumerator<ElemType,
 }
 
 // ICorDebugEnum::GetCount
-// Gets the number of items in the the list that is being enumerated
+// Gets the number of items in the list that is being enumerated
 //
 //   Arguments:
 //     pcelt - on return the number of items being enumerated

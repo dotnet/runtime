@@ -46,7 +46,7 @@ namespace NStruct {
             return ( FinalizeCount.icFinal == FinalizeCount.icCreat );
         }
 
-        public static int Main(String [] args)
+        public static int Main()
         {
             CreateObj(100);
             if (RunTest())

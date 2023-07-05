@@ -19,20 +19,17 @@ namespace System.Xml
     {
         internal const int MaxInitialArrayLength = 65535;
 
-        public static XmlDictionaryReader CreateDictionaryReader(XmlReader reader!!)
+        public static XmlDictionaryReader CreateDictionaryReader(XmlReader reader)
         {
-            XmlDictionaryReader? dictionaryReader = reader as XmlDictionaryReader;
+            ArgumentNullException.ThrowIfNull(reader);
 
-            if (dictionaryReader == null)
-            {
-                dictionaryReader = new XmlWrappedReader(reader, null);
-            }
-
-            return dictionaryReader;
+            return reader as XmlDictionaryReader ?? new XmlWrappedReader(reader, null);
         }
 
-        public static XmlDictionaryReader CreateBinaryReader(byte[] buffer!!, XmlDictionaryReaderQuotas quotas)
+        public static XmlDictionaryReader CreateBinaryReader(byte[] buffer, XmlDictionaryReaderQuotas quotas)
         {
+            ArgumentNullException.ThrowIfNull(buffer);
+
             return CreateBinaryReader(buffer, 0, buffer.Length, quotas);
         }
 
@@ -88,8 +85,10 @@ namespace System.Xml
             return reader;
         }
 
-        public static XmlDictionaryReader CreateTextReader(byte[] buffer!!, XmlDictionaryReaderQuotas quotas)
+        public static XmlDictionaryReader CreateTextReader(byte[] buffer, XmlDictionaryReaderQuotas quotas)
         {
+            ArgumentNullException.ThrowIfNull(buffer);
+
             return CreateTextReader(buffer, 0, buffer.Length, quotas);
         }
 
@@ -122,8 +121,10 @@ namespace System.Xml
             return reader;
         }
 
-        public static XmlDictionaryReader CreateMtomReader(Stream stream, Encoding encoding!!, XmlDictionaryReaderQuotas quotas)
+        public static XmlDictionaryReader CreateMtomReader(Stream stream, Encoding encoding, XmlDictionaryReaderQuotas quotas)
         {
+            ArgumentNullException.ThrowIfNull(encoding);
+
             return CreateMtomReader(stream, new Encoding[1] { encoding }, quotas);
         }
 
@@ -143,8 +144,10 @@ namespace System.Xml
             throw new PlatformNotSupportedException(SR.PlatformNotSupported_MtomEncoding);
         }
 
-        public static XmlDictionaryReader CreateMtomReader(byte[] buffer, int offset, int count, Encoding encoding!!, XmlDictionaryReaderQuotas quotas)
+        public static XmlDictionaryReader CreateMtomReader(byte[] buffer, int offset, int count, Encoding encoding, XmlDictionaryReaderQuotas quotas)
         {
+            ArgumentNullException.ThrowIfNull(encoding);
+
             return CreateMtomReader(buffer, offset, count, new Encoding[1] { encoding }, quotas);
         }
 
@@ -182,12 +185,12 @@ namespace System.Xml
 
         public virtual void StartCanonicalization(Stream stream, bool includeComments, string[]? inclusivePrefixes)
         {
-            throw DiagnosticUtility.ExceptionUtility.ThrowHelperError(new NotSupportedException());
+            throw new NotSupportedException();
         }
 
         public virtual void EndCanonicalization()
         {
-            throw DiagnosticUtility.ExceptionUtility.ThrowHelperError(new NotSupportedException());
+            throw new NotSupportedException();
         }
 
         public virtual void MoveToStartElement()
@@ -219,18 +222,24 @@ namespace System.Xml
             return this.LocalName == localName;
         }
 
-        public virtual bool IsLocalName(XmlDictionaryString localName!!)
+        public virtual bool IsLocalName(XmlDictionaryString localName)
         {
+            ArgumentNullException.ThrowIfNull(localName);
+
             return IsLocalName(localName.Value);
         }
 
-        public virtual bool IsNamespaceUri(string namespaceUri!!)
+        public virtual bool IsNamespaceUri(string namespaceUri)
         {
+            ArgumentNullException.ThrowIfNull(namespaceUri);
+
             return this.NamespaceURI == namespaceUri;
         }
 
-        public virtual bool IsNamespaceUri(XmlDictionaryString namespaceUri!!)
+        public virtual bool IsNamespaceUri(XmlDictionaryString namespaceUri)
         {
+            ArgumentNullException.ThrowIfNull(namespaceUri);
+
             return IsNamespaceUri(namespaceUri.Value);
         }
 
@@ -277,8 +286,11 @@ namespace System.Xml
             return IsStartElement(XmlDictionaryString.GetString(localName), XmlDictionaryString.GetString(namespaceUri));
         }
 
-        public virtual int IndexOfLocalName(string[] localNames!!, string namespaceUri!!)
+        public virtual int IndexOfLocalName(string[] localNames, string namespaceUri)
         {
+            ArgumentNullException.ThrowIfNull(localNames);
+            ArgumentNullException.ThrowIfNull(namespaceUri);
+
             if (this.NamespaceURI == namespaceUri)
             {
                 string localName = this.LocalName;
@@ -286,7 +298,7 @@ namespace System.Xml
                 {
                     string value = localNames[i];
                     if (value == null)
-                        throw System.Runtime.Serialization.DiagnosticUtility.ExceptionUtility.ThrowHelperArgumentNull($"localNames[{i}]");
+                        throw new ArgumentNullException($"localNames[{i}]");
                     if (localName == value)
                     {
                         return i;
@@ -297,8 +309,11 @@ namespace System.Xml
             return -1;
         }
 
-        public virtual int IndexOfLocalName(XmlDictionaryString[] localNames!!, XmlDictionaryString namespaceUri!!)
+        public virtual int IndexOfLocalName(XmlDictionaryString[] localNames, XmlDictionaryString namespaceUri)
         {
+            ArgumentNullException.ThrowIfNull(localNames);
+            ArgumentNullException.ThrowIfNull(namespaceUri);
+
             if (this.NamespaceURI == namespaceUri.Value)
             {
                 string localName = this.LocalName;
@@ -306,7 +321,7 @@ namespace System.Xml
                 {
                     XmlDictionaryString value = localNames[i];
                     if (value == null)
-                        throw System.Runtime.Serialization.DiagnosticUtility.ExceptionUtility.ThrowHelperArgumentNull($"localNames[{i}]");
+                        throw new ArgumentNullException($"localNames[{i}]");
                     if (localName == value.Value)
                     {
                         return i;
@@ -330,7 +345,7 @@ namespace System.Xml
 
         public virtual int ReadValueAsBase64(byte[] buffer, int offset, int count)
         {
-            throw System.Runtime.Serialization.DiagnosticUtility.ExceptionUtility.ThrowHelperError(new NotSupportedException());
+            throw new NotSupportedException();
         }
 
         public virtual byte[] ReadContentAsBase64()
@@ -343,6 +358,9 @@ namespace System.Xml
             int length;
             if (TryGetBase64ContentLength(out length))
             {
+                if (length > maxByteArrayContentLength)
+                    XmlExceptionHelper.ThrowMaxArrayLengthExceeded(this, maxByteArrayContentLength);
+
                 if (length <= maxInitialCount)
                 {
                     byte[] buffer = new byte[length];
@@ -389,8 +407,7 @@ namespace System.Xml
                         }
                         else
                         {
-                            if (sb == null)
-                                sb = new StringBuilder(result);
+                            sb ??= new StringBuilder(result);
                             if (sb.Length > maxStringContentLength - value.Length)
                                 XmlExceptionHelper.ThrowMaxStringContentLengthExceeded(this, maxStringContentLength);
                             sb.Append(value);
@@ -444,7 +461,7 @@ namespace System.Xml
                 if (this.IsEmptyElement)
                     return string.Empty;
                 if (!Read())
-                    throw System.Runtime.Serialization.DiagnosticUtility.ExceptionUtility.ThrowHelperError(new InvalidOperationException(SR.XmlInvalidOperation));
+                    throw new InvalidOperationException(SR.XmlInvalidOperation);
                 if (this.NodeType == XmlNodeType.EndElement)
                     return string.Empty;
             }
@@ -459,14 +476,13 @@ namespace System.Xml
                 }
                 else
                 {
-                    if (sb == null)
-                        sb = new StringBuilder(result);
+                    sb ??= new StringBuilder(result);
                     if (sb.Length > maxStringContentLength - value.Length)
                         XmlExceptionHelper.ThrowMaxStringContentLengthExceeded(this, maxStringContentLength);
                     sb.Append(value);
                 }
                 if (!Read())
-                    throw System.Runtime.Serialization.DiagnosticUtility.ExceptionUtility.ThrowHelperError(new InvalidOperationException(SR.XmlInvalidOperation));
+                    throw new InvalidOperationException(SR.XmlInvalidOperation);
             }
             if (sb != null)
                 result = sb.ToString();
@@ -509,10 +525,12 @@ namespace System.Xml
                         break;
                     read += actual;
                 }
+                if (totalRead > maxByteArrayContentLength - read)
+                    XmlExceptionHelper.ThrowMaxArrayLengthExceeded(this, maxByteArrayContentLength);
                 totalRead += read;
                 if (read < buffer.Length)
                     break;
-                count = count * 2;
+                count *= 2;
             }
             buffer = new byte[totalRead];
             int offset = 0;
@@ -588,15 +606,17 @@ namespace System.Xml
             return base.ReadContentAs(type, namespaceResolver);
         }
 
-        public virtual string ReadContentAsString(string[] strings!!, out int index)
+        public virtual string ReadContentAsString(string[] strings, out int index)
         {
+            ArgumentNullException.ThrowIfNull(strings);
+
             string s = ReadContentAsString();
             index = -1;
             for (int i = 0; i < strings.Length; i++)
             {
                 string value = strings[i];
                 if (value == null)
-                    throw System.Runtime.Serialization.DiagnosticUtility.ExceptionUtility.ThrowHelperArgumentNull($"strings[{i}]");
+                    throw new ArgumentNullException($"strings[{i}]");
                 if (value == s)
                 {
                     index = i;
@@ -606,15 +626,17 @@ namespace System.Xml
             return s;
         }
 
-        public virtual string ReadContentAsString(XmlDictionaryString[] strings!!, out int index)
+        public virtual string ReadContentAsString(XmlDictionaryString[] strings, out int index)
         {
+            ArgumentNullException.ThrowIfNull(strings);
+
             string s = ReadContentAsString();
             index = -1;
             for (int i = 0; i < strings.Length; i++)
             {
                 XmlDictionaryString value = strings[i];
                 if (value == null)
-                    throw System.Runtime.Serialization.DiagnosticUtility.ExceptionUtility.ThrowHelperArgumentNull($"strings[{i}]");
+                    throw new ArgumentNullException($"strings[{i}]");
                 if (value.Value == s)
                 {
                     index = i;
@@ -813,11 +835,11 @@ namespace System.Xml
                 }
                 catch (ArgumentException exception)
                 {
-                    throw DiagnosticUtility.ExceptionUtility.ThrowHelperError(XmlExceptionHelper.CreateConversionException(string.Empty, "DateTime", exception));
+                    throw XmlExceptionHelper.CreateConversionException(string.Empty, "DateTime", exception);
                 }
                 catch (FormatException exception)
                 {
-                    throw DiagnosticUtility.ExceptionUtility.ThrowHelperError(XmlExceptionHelper.CreateConversionException(string.Empty, "DateTime", exception));
+                    throw XmlExceptionHelper.CreateConversionException(string.Empty, "DateTime", exception);
                 }
             }
             else
@@ -844,11 +866,11 @@ namespace System.Xml
                 }
                 catch (ArgumentException exception)
                 {
-                    throw DiagnosticUtility.ExceptionUtility.ThrowHelperError(XmlExceptionHelper.CreateConversionException(string.Empty, "UniqueId", exception));
+                    throw XmlExceptionHelper.CreateConversionException(string.Empty, "UniqueId", exception);
                 }
                 catch (FormatException exception)
                 {
-                    throw DiagnosticUtility.ExceptionUtility.ThrowHelperError(XmlExceptionHelper.CreateConversionException(string.Empty, "UniqueId", exception));
+                    throw XmlExceptionHelper.CreateConversionException(string.Empty, "UniqueId", exception);
                 }
             }
             else
@@ -875,15 +897,15 @@ namespace System.Xml
                 }
                 catch (ArgumentException exception)
                 {
-                    throw DiagnosticUtility.ExceptionUtility.ThrowHelperError(XmlExceptionHelper.CreateConversionException(string.Empty, "Guid", exception));
+                    throw XmlExceptionHelper.CreateConversionException(string.Empty, "Guid", exception);
                 }
                 catch (FormatException exception)
                 {
-                    throw DiagnosticUtility.ExceptionUtility.ThrowHelperError(XmlExceptionHelper.CreateConversionException(string.Empty, "Guid", exception));
+                    throw XmlExceptionHelper.CreateConversionException(string.Empty, "Guid", exception);
                 }
                 catch (OverflowException exception)
                 {
-                    throw DiagnosticUtility.ExceptionUtility.ThrowHelperError(XmlExceptionHelper.CreateConversionException(string.Empty, "Guid", exception));
+                    throw XmlExceptionHelper.CreateConversionException(string.Empty, "Guid", exception);
                 }
             }
             else
@@ -980,16 +1002,16 @@ namespace System.Xml
             return false;
         }
 
-        private void CheckArray(Array array!!, int offset, int count)
+        private static void CheckArray(Array array, int offset, int count)
         {
-            if (offset < 0)
-                throw System.Runtime.Serialization.DiagnosticUtility.ExceptionUtility.ThrowHelperError(new ArgumentOutOfRangeException(nameof(offset), SR.ValueMustBeNonNegative));
+            ArgumentNullException.ThrowIfNull(array);
+
+            ArgumentOutOfRangeException.ThrowIfNegative(offset);
             if (offset > array.Length)
-                throw System.Runtime.Serialization.DiagnosticUtility.ExceptionUtility.ThrowHelperError(new ArgumentOutOfRangeException(nameof(offset), SR.Format(SR.OffsetExceedsBufferSize, array.Length)));
-            if (count < 0)
-                throw System.Runtime.Serialization.DiagnosticUtility.ExceptionUtility.ThrowHelperError(new ArgumentOutOfRangeException(nameof(count), SR.ValueMustBeNonNegative));
+                throw new ArgumentOutOfRangeException(nameof(offset), SR.Format(SR.OffsetExceedsBufferSize, array.Length));
+            ArgumentOutOfRangeException.ThrowIfNegative(count);
             if (count > array.Length - offset)
-                throw System.Runtime.Serialization.DiagnosticUtility.ExceptionUtility.ThrowHelperError(new ArgumentOutOfRangeException(nameof(count), SR.Format(SR.SizeExceedsRemainingBufferSpace, array.Length - offset)));
+                throw new ArgumentOutOfRangeException(nameof(count), SR.Format(SR.SizeExceedsRemainingBufferSpace, array.Length - offset));
         }
 
         public virtual bool IsStartArray([NotNullWhen(true)] out Type? type)
@@ -1478,6 +1500,13 @@ namespace System.Xml
                 }
             }
 
+            public override char QuoteChar
+            {
+                get
+                {
+                    return _reader.QuoteChar;
+                }
+            }
 
             public override bool Read()
             {
@@ -1489,6 +1518,15 @@ namespace System.Xml
                 return _reader.ReadAttributeValue();
             }
 
+            public override string ReadElementString(string name)
+            {
+                return _reader.ReadElementString(name);
+            }
+
+            public override string ReadElementString(string localName, string namespaceUri)
+            {
+                return _reader.ReadElementString(localName, namespaceUri);
+            }
 
             public override string ReadInnerXml()
             {
@@ -1513,6 +1551,11 @@ namespace System.Xml
             public override void ReadEndElement()
             {
                 _reader.ReadEndElement();
+            }
+
+            public override string ReadString()
+            {
+                return _reader.ReadString();
             }
 
             public override ReadState ReadState
@@ -1617,11 +1660,11 @@ namespace System.Xml
                 }
                 catch (ArgumentException exception)
                 {
-                    throw DiagnosticUtility.ExceptionUtility.ThrowHelperError(XmlExceptionHelper.CreateConversionException(nameof(Boolean), exception));
+                    throw XmlExceptionHelper.CreateConversionException(nameof(Boolean), exception);
                 }
                 catch (FormatException exception)
                 {
-                    throw DiagnosticUtility.ExceptionUtility.ThrowHelperError(XmlExceptionHelper.CreateConversionException(nameof(Boolean), exception));
+                    throw XmlExceptionHelper.CreateConversionException(nameof(Boolean), exception);
                 }
             }
 
@@ -1638,15 +1681,15 @@ namespace System.Xml
                 }
                 catch (ArgumentException exception)
                 {
-                    throw DiagnosticUtility.ExceptionUtility.ThrowHelperError(XmlExceptionHelper.CreateConversionException(nameof(Decimal), exception));
+                    throw XmlExceptionHelper.CreateConversionException(nameof(Decimal), exception);
                 }
                 catch (FormatException exception)
                 {
-                    throw DiagnosticUtility.ExceptionUtility.ThrowHelperError(XmlExceptionHelper.CreateConversionException(nameof(Decimal), exception));
+                    throw XmlExceptionHelper.CreateConversionException(nameof(Decimal), exception);
                 }
                 catch (OverflowException exception)
                 {
-                    throw DiagnosticUtility.ExceptionUtility.ThrowHelperError(XmlExceptionHelper.CreateConversionException(nameof(Decimal), exception));
+                    throw XmlExceptionHelper.CreateConversionException(nameof(Decimal), exception);
                 }
             }
 
@@ -1658,15 +1701,15 @@ namespace System.Xml
                 }
                 catch (ArgumentException exception)
                 {
-                    throw DiagnosticUtility.ExceptionUtility.ThrowHelperError(XmlExceptionHelper.CreateConversionException(nameof(Double), exception));
+                    throw XmlExceptionHelper.CreateConversionException(nameof(Double), exception);
                 }
                 catch (FormatException exception)
                 {
-                    throw DiagnosticUtility.ExceptionUtility.ThrowHelperError(XmlExceptionHelper.CreateConversionException(nameof(Double), exception));
+                    throw XmlExceptionHelper.CreateConversionException(nameof(Double), exception);
                 }
                 catch (OverflowException exception)
                 {
-                    throw DiagnosticUtility.ExceptionUtility.ThrowHelperError(XmlExceptionHelper.CreateConversionException(nameof(Double), exception));
+                    throw XmlExceptionHelper.CreateConversionException(nameof(Double), exception);
                 }
             }
 
@@ -1678,15 +1721,15 @@ namespace System.Xml
                 }
                 catch (ArgumentException exception)
                 {
-                    throw DiagnosticUtility.ExceptionUtility.ThrowHelperError(XmlExceptionHelper.CreateConversionException(nameof(Int32), exception));
+                    throw XmlExceptionHelper.CreateConversionException(nameof(Int32), exception);
                 }
                 catch (FormatException exception)
                 {
-                    throw DiagnosticUtility.ExceptionUtility.ThrowHelperError(XmlExceptionHelper.CreateConversionException(nameof(Int32), exception));
+                    throw XmlExceptionHelper.CreateConversionException(nameof(Int32), exception);
                 }
                 catch (OverflowException exception)
                 {
-                    throw DiagnosticUtility.ExceptionUtility.ThrowHelperError(XmlExceptionHelper.CreateConversionException(nameof(Int32), exception));
+                    throw XmlExceptionHelper.CreateConversionException(nameof(Int32), exception);
                 }
             }
 
@@ -1698,15 +1741,15 @@ namespace System.Xml
                 }
                 catch (ArgumentException exception)
                 {
-                    throw DiagnosticUtility.ExceptionUtility.ThrowHelperError(XmlExceptionHelper.CreateConversionException(nameof(Int64), exception));
+                    throw XmlExceptionHelper.CreateConversionException(nameof(Int64), exception);
                 }
                 catch (FormatException exception)
                 {
-                    throw DiagnosticUtility.ExceptionUtility.ThrowHelperError(XmlExceptionHelper.CreateConversionException(nameof(Int64), exception));
+                    throw XmlExceptionHelper.CreateConversionException(nameof(Int64), exception);
                 }
                 catch (OverflowException exception)
                 {
-                    throw DiagnosticUtility.ExceptionUtility.ThrowHelperError(XmlExceptionHelper.CreateConversionException(nameof(Int64), exception));
+                    throw XmlExceptionHelper.CreateConversionException(nameof(Int64), exception);
                 }
             }
 
@@ -1718,15 +1761,15 @@ namespace System.Xml
                 }
                 catch (ArgumentException exception)
                 {
-                    throw DiagnosticUtility.ExceptionUtility.ThrowHelperError(XmlExceptionHelper.CreateConversionException(nameof(Single), exception));
+                    throw XmlExceptionHelper.CreateConversionException(nameof(Single), exception);
                 }
                 catch (FormatException exception)
                 {
-                    throw DiagnosticUtility.ExceptionUtility.ThrowHelperError(XmlExceptionHelper.CreateConversionException(nameof(Single), exception));
+                    throw XmlExceptionHelper.CreateConversionException(nameof(Single), exception);
                 }
                 catch (OverflowException exception)
                 {
-                    throw DiagnosticUtility.ExceptionUtility.ThrowHelperError(XmlExceptionHelper.CreateConversionException(nameof(Single), exception));
+                    throw XmlExceptionHelper.CreateConversionException(nameof(Single), exception);
                 }
             }
 
@@ -1738,11 +1781,11 @@ namespace System.Xml
                 }
                 catch (ArgumentException exception)
                 {
-                    throw DiagnosticUtility.ExceptionUtility.ThrowHelperError(XmlExceptionHelper.CreateConversionException(nameof(String), exception));
+                    throw XmlExceptionHelper.CreateConversionException(nameof(String), exception);
                 }
                 catch (FormatException exception)
                 {
-                    throw DiagnosticUtility.ExceptionUtility.ThrowHelperError(XmlExceptionHelper.CreateConversionException(nameof(String), exception));
+                    throw XmlExceptionHelper.CreateConversionException(nameof(String), exception);
                 }
             }
 
@@ -1753,9 +1796,7 @@ namespace System.Xml
 
             public bool HasLineInfo()
             {
-                IXmlLineInfo? lineInfo = _reader as IXmlLineInfo;
-
-                if (lineInfo == null)
+                if (_reader is not IXmlLineInfo lineInfo)
                     return false;
 
                 return lineInfo.HasLineInfo();
@@ -1765,9 +1806,7 @@ namespace System.Xml
             {
                 get
                 {
-                    IXmlLineInfo? lineInfo = _reader as IXmlLineInfo;
-
-                    if (lineInfo == null)
+                    if (_reader is not IXmlLineInfo lineInfo)
                         return 1;
 
                     return lineInfo.LineNumber;
@@ -1778,9 +1817,7 @@ namespace System.Xml
             {
                 get
                 {
-                    IXmlLineInfo? lineInfo = _reader as IXmlLineInfo;
-
-                    if (lineInfo == null)
+                    if (_reader is not IXmlLineInfo lineInfo)
                         return 1;
 
                     return lineInfo.LinePosition;

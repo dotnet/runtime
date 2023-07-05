@@ -1,10 +1,7 @@
 ﻿// Licensed to the .NET Foundation under one or more agreements.
 // The .NET Foundation licenses this file to you under the MIT license.
 
-#nullable enable
-
 using System;
-using System.Collections;
 using System.Collections.Generic;
 using System.Diagnostics;
 using System.IO;
@@ -17,12 +14,14 @@ using Microsoft.Extensions.Logging;
 namespace Microsoft.Extensions.Hosting
 {
     /// <summary>
-    /// A builder for hosted applications and services which helps manage configuration, logging, lifetime and more.
+    /// Represents a hosted applications and services builder which helps manage configuration, logging, lifetime, and more.
     /// </summary>
-    public sealed class HostApplicationBuilder
+    public sealed class HostApplicationBuilder : IHostApplicationBuilder
     {
         private readonly HostBuilderContext _hostBuilderContext;
-        private readonly CheckedServiceCollection _checkedServiceCollection = new();
+        private readonly ServiceCollection _serviceCollection = new();
+        private readonly IHostEnvironment _environment;
+        private readonly LoggingBuilder _logging;
 
         private Func<IServiceProvider> _createServiceProvider;
         private Action<object> _configureContainer = _ => { };
@@ -87,8 +86,56 @@ namespace Microsoft.Extensions.Hosting
 
             if (!settings.DisableDefaults)
             {
-                HostingHostBuilderExtensions.ApplyDefaultHostConfiguration(Configuration, settings.Args);
+                if (settings.ContentRootPath is null && Configuration[HostDefaults.ContentRootKey] is null)
+                {
+                    HostingHostBuilderExtensions.SetDefaultContentRoot(Configuration);
+                }
+
+                Configuration.AddEnvironmentVariables(prefix: "DOTNET_");
             }
+
+            Initialize(settings, out _hostBuilderContext, out _environment, out _logging);
+
+            ServiceProviderOptions? serviceProviderOptions = null;
+            if (!settings.DisableDefaults)
+            {
+                HostingHostBuilderExtensions.ApplyDefaultAppConfiguration(_hostBuilderContext, Configuration, settings.Args);
+                HostingHostBuilderExtensions.AddDefaultServices(_hostBuilderContext, Services);
+                serviceProviderOptions = HostingHostBuilderExtensions.CreateDefaultServiceProviderOptions(_hostBuilderContext);
+            }
+
+            _createServiceProvider = () =>
+            {
+                // Call _configureContainer in case anyone adds callbacks via HostBuilderAdapter.ConfigureContainer<IServiceCollection>() during build.
+                // Otherwise, this no-ops.
+                _configureContainer(Services);
+                return serviceProviderOptions is null ? Services.BuildServiceProvider() : Services.BuildServiceProvider(serviceProviderOptions);
+            };
+        }
+
+        internal HostApplicationBuilder(HostApplicationBuilderSettings? settings, bool empty)
+        {
+            Debug.Assert(empty, "should only be called with empty: true");
+
+            settings ??= new HostApplicationBuilderSettings();
+            Configuration = settings.Configuration ?? new ConfigurationManager();
+
+            Initialize(settings, out _hostBuilderContext, out _environment, out _logging);
+
+            _createServiceProvider = () =>
+            {
+                // Call _configureContainer in case anyone adds callbacks via HostBuilderAdapter.ConfigureContainer<IServiceCollection>() during build.
+                // Otherwise, this no-ops.
+                _configureContainer(Services);
+                return Services.BuildServiceProvider();
+            };
+        }
+
+        private void Initialize(HostApplicationBuilderSettings settings, out HostBuilderContext hostBuilderContext, out IHostEnvironment environment, out LoggingBuilder logging)
+        {
+            // Command line args are added even when settings.DisableDefaults == true. If the caller didn't want settings.Args applied,
+            // they wouldn't have set them on the settings.
+            HostingHostBuilderExtensions.AddCommandLineConfig(Configuration, settings.Args);
 
             // HostApplicationBuilderSettings override all other config sources.
             List<KeyValuePair<string, string?>>? optionList = null;
@@ -116,81 +163,47 @@ namespace Microsoft.Extensions.Hosting
 
             Configuration.SetFileProvider(physicalFileProvider);
 
-            _hostBuilderContext = new HostBuilderContext(new Dictionary<object, object>())
+            hostBuilderContext = new HostBuilderContext(new Dictionary<object, object>())
             {
                 HostingEnvironment = hostingEnvironment,
                 Configuration = Configuration,
             };
 
-            Environment = hostingEnvironment;
+            environment = hostingEnvironment;
 
             HostBuilder.PopulateServiceCollection(
                 Services,
-                _hostBuilderContext,
+                hostBuilderContext,
                 hostingEnvironment,
                 physicalFileProvider,
                 Configuration,
-                () => _appServices);
+                () => _appServices!);
 
-            Logging = new LoggingBuilder(Services);
-
-            ServiceProviderOptions? serviceProviderOptions = null;
-
-            if (!settings.DisableDefaults)
-            {
-                HostingHostBuilderExtensions.ApplyDefaultAppConfiguration(_hostBuilderContext, Configuration, settings.Args);
-                HostingHostBuilderExtensions.AddDefaultServices(_hostBuilderContext, Services);
-                serviceProviderOptions = HostingHostBuilderExtensions.CreateDefaultServiceProviderOptions(_hostBuilderContext);
-            }
-
-            _createServiceProvider = () =>
-            {
-                // Call _configureContainer in case anyone adds callbacks via HostBuilderAdapter.ConfigureContainer<IServiceCollection>() during build.
-                // Otherwise, this no-ops.
-                _configureContainer(Services);
-                return serviceProviderOptions is null ? Services.BuildServiceProvider() : Services.BuildServiceProvider(serviceProviderOptions);
-            };
+            logging = new LoggingBuilder(Services);
         }
 
-        /// <summary>
-        /// Provides information about the hosting environment an application is running in.
-        /// </summary>
-        public IHostEnvironment Environment { get; }
+        IDictionary<object, object> IHostApplicationBuilder.Properties => _hostBuilderContext.Properties;
+
+        /// <inheritdoc />
+        public IHostEnvironment Environment => _environment;
 
         /// <summary>
-        /// A collection of services for the application to compose. This is useful for adding user provided or framework provided services.
+        /// Gets the set of key/value configuration properties.
         /// </summary>
+        /// <remarks>
+        /// This can be mutated by adding more configuration sources, which will update its current view.
+        /// </remarks>
         public ConfigurationManager Configuration { get; }
 
-        /// <summary>
-        /// A collection of services for the application to compose. This is useful for adding user provided or framework provided services.
-        /// </summary>
-        public IServiceCollection Services => _checkedServiceCollection;
+        IConfigurationManager IHostApplicationBuilder.Configuration => Configuration;
 
-        /// <summary>
-        /// A collection of logging providers for the application to compose. This is useful for adding new logging providers.
-        /// </summary>
-        public ILoggingBuilder Logging { get; }
+        /// <inheritdoc />
+        public IServiceCollection Services => _serviceCollection;
 
-        /// <summary>
-        /// Registers a <see cref="IServiceProviderFactory{TContainerBuilder}" /> instance to be used to create the <see cref="IServiceProvider" />.
-        /// </summary>
-        /// <param name="factory">The <see cref="IServiceProviderFactory{TContainerBuilder}" />.</param>
-        /// <param name="configure">
-        /// A delegate used to configure the <typeparamref T="TContainerBuilder" />. This can be used to configure services using
-        /// APIS specific to the <see cref="IServiceProviderFactory{TContainerBuilder}" /> implementation.
-        /// </param>
-        /// <typeparam name="TContainerBuilder">The type of builder provided by the <see cref="IServiceProviderFactory{TContainerBuilder}" />.</typeparam>
-        /// <remarks>
-        /// <para>
-        /// <see cref="ConfigureContainer{TContainerBuilder}(IServiceProviderFactory{TContainerBuilder}, Action{TContainerBuilder})"/> is called by <see cref="Build"/>
-        /// and so the delegate provided by <paramref name="configure"/> will run after all other services have been registered.
-        /// </para>
-        /// <para>
-        /// Multiple calls to <see cref="ConfigureContainer{TContainerBuilder}(IServiceProviderFactory{TContainerBuilder}, Action{TContainerBuilder})"/> will replace
-        /// the previously stored <paramref name="factory"/> and <paramref name="configure"/> delegate.
-        /// </para>
-        /// </remarks>
+        /// <inheritdoc />
+        public ILoggingBuilder Logging => _logging;
+
+        /// <inheritdoc />
         public void ConfigureContainer<TContainerBuilder>(IServiceProviderFactory<TContainerBuilder> factory, Action<TContainerBuilder>? configure = null) where TContainerBuilder : notnull
         {
             _createServiceProvider = () =>
@@ -224,7 +237,7 @@ namespace Microsoft.Extensions.Hosting
             _appServices = _createServiceProvider();
 
             // Prevent further modification of the service collection now that the provider is built.
-            _checkedServiceCollection.IsReadOnly = true;
+            _serviceCollection.MakeReadOnly();
 
             return HostBuilder.ResolveHost(_appServices, diagnosticListener);
         }
@@ -324,104 +337,51 @@ namespace Microsoft.Extensions.Hosting
 
             public IHostBuilder ConfigureHostConfiguration(Action<IConfigurationBuilder> configureDelegate)
             {
-                _configureHostConfigActions.Add(configureDelegate ?? throw new ArgumentNullException(nameof(configureDelegate)));
+                ThrowHelper.ThrowIfNull(configureDelegate);
+
+                _configureHostConfigActions.Add(configureDelegate);
                 return this;
             }
 
             public IHostBuilder ConfigureAppConfiguration(Action<HostBuilderContext, IConfigurationBuilder> configureDelegate)
             {
-                _configureAppConfigActions.Add(configureDelegate ?? throw new ArgumentNullException(nameof(configureDelegate)));
+                ThrowHelper.ThrowIfNull(configureDelegate);
+
+                _configureAppConfigActions.Add(configureDelegate);
                 return this;
             }
 
             public IHostBuilder ConfigureServices(Action<HostBuilderContext, IServiceCollection> configureDelegate)
             {
-                _configureServicesActions.Add(configureDelegate ?? throw new ArgumentNullException(nameof(configureDelegate)));
+                ThrowHelper.ThrowIfNull(configureDelegate);
+
+                _configureServicesActions.Add(configureDelegate);
                 return this;
             }
 
             public IHostBuilder UseServiceProviderFactory<TContainerBuilder>(IServiceProviderFactory<TContainerBuilder> factory) where TContainerBuilder : notnull
             {
-                _serviceProviderFactory = new ServiceFactoryAdapter<TContainerBuilder>(factory ?? throw new ArgumentNullException(nameof(factory)));
+                ThrowHelper.ThrowIfNull(factory);
+
+                _serviceProviderFactory = new ServiceFactoryAdapter<TContainerBuilder>(factory);
                 return this;
 
             }
 
             public IHostBuilder UseServiceProviderFactory<TContainerBuilder>(Func<HostBuilderContext, IServiceProviderFactory<TContainerBuilder>> factory) where TContainerBuilder : notnull
             {
-                _serviceProviderFactory = new ServiceFactoryAdapter<TContainerBuilder>(() => _hostApplicationBuilder._hostBuilderContext, factory ?? throw new ArgumentNullException(nameof(factory)));
+                ThrowHelper.ThrowIfNull(factory);
+
+                _serviceProviderFactory = new ServiceFactoryAdapter<TContainerBuilder>(() => _hostApplicationBuilder._hostBuilderContext, factory);
                 return this;
             }
 
             public IHostBuilder ConfigureContainer<TContainerBuilder>(Action<HostBuilderContext, TContainerBuilder> configureDelegate)
             {
-                _configureContainerActions.Add(new ConfigureContainerAdapter<TContainerBuilder>(configureDelegate
-                    ?? throw new ArgumentNullException(nameof(configureDelegate))));
+                ThrowHelper.ThrowIfNull(configureDelegate);
 
+                _configureContainerActions.Add(new ConfigureContainerAdapter<TContainerBuilder>(configureDelegate));
                 return this;
-            }
-        }
-
-        private sealed class CheckedServiceCollection : IServiceCollection
-        {
-            private readonly IServiceCollection _services = new ServiceCollection();
-
-            public bool IsReadOnly { get; set; }
-            public int Count => _services.Count;
-
-            public ServiceDescriptor this[int index]
-            {
-                get => _services[index];
-                set
-                {
-                    CheckReadOnly();
-                    _services[index] = value;
-                }
-            }
-
-            public IEnumerator<ServiceDescriptor> GetEnumerator() => _services.GetEnumerator();
-            IEnumerator IEnumerable.GetEnumerator() => GetEnumerator();
-
-            public int IndexOf(ServiceDescriptor item) => _services.IndexOf(item);
-            public bool Contains(ServiceDescriptor item) => _services.Contains(item);
-            public void CopyTo(ServiceDescriptor[] array, int arrayIndex) => _services.CopyTo(array, arrayIndex);
-
-            public void Add(ServiceDescriptor item)
-            {
-                CheckReadOnly();
-                _services.Add(item);
-            }
-
-            public void Clear()
-            {
-                CheckReadOnly();
-                _services.Clear();
-            }
-
-            public void Insert(int index, ServiceDescriptor item)
-            {
-                CheckReadOnly();
-                _services.Insert(index, item);
-            }
-
-            public bool Remove(ServiceDescriptor item)
-            {
-                CheckReadOnly();
-                return _services.Remove(item);
-            }
-
-            public void RemoveAt(int index)
-            {
-                CheckReadOnly();
-                _services.RemoveAt(index);
-            }
-
-            private void CheckReadOnly()
-            {
-                if (IsReadOnly)
-                {
-                    throw new InvalidOperationException(SR.ServiceCollectionModificationInvalidAfterBuild);
-                }
             }
         }
 

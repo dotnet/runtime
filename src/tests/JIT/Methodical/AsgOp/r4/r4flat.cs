@@ -2,10 +2,14 @@
 // The .NET Foundation licenses this file to you under the MIT license.
 
 using System;
+using Xunit;
 
-internal class test
+namespace Test_r4flat_cs
 {
-    public static int Main()
+public class test
+{
+    [Fact]
+    public static int TestEntryPoint()
     {
         float x;
         float y;
@@ -270,4 +274,5 @@ internal class test
         else
             return 1;
     }
+}
 }

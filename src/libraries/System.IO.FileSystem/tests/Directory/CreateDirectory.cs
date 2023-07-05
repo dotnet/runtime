@@ -34,6 +34,7 @@ namespace System.IO.Tests
                 string subdir = Path.GetRandomFileName();
                 DirectoryInfo info = Create(subdir);
                 Assert.Equal(subdir, info.ToString());
+                Environment.CurrentDirectory = Path.GetTempPath();
             }).Dispose();
         }
 
@@ -85,7 +86,6 @@ namespace System.IO.Tests
         public void PathAlreadyExistsAsDirectory(FileAttributes attributes)
         {
             DirectoryInfo testDir = Create(GetTestFilePath());
-            FileAttributes original = testDir.Attributes;
 
             try
             {
@@ -94,7 +94,7 @@ namespace System.IO.Tests
             }
             finally
             {
-                testDir.Attributes = original;
+                testDir.Attributes = FileAttributes.Normal;
             }
         }
 
@@ -466,33 +466,37 @@ namespace System.IO.Tests
             Assert.Equal(current.FullName, driveLetter.FullName);
         }
 
-        [Fact]
+        [ConditionalFact(typeof(RemoteExecutor), nameof(RemoteExecutor.IsSupported))]
         [PlatformSpecific(TestPlatforms.AnyUnix)]  // drive letters casing
         public void DriveLetter_Unix()
         {
-            // On Unix, there's no special casing for drive letters.  These may or may not be valid names, depending
-            // on the file system underlying the current directory.  Unix file systems typically allow these, but,
-            // for example, these names are not allowed if running on a file system mounted from a Windows machine.
-            DirectoryInfo driveLetter;
-            try
+            RemoteExecutor.Invoke(() =>
             {
-                driveLetter = Create("C:");
-            }
-            catch (IOException)
-            {
-                return;
-            }
-            var current = Create(".");
-            Assert.Equal("C:", driveLetter.Name);
-            Assert.Equal(Path.Combine(current.FullName, "C:"), driveLetter.FullName);
-            try
-            {
-                // If this test is inherited then it's possible this call will fail due to the "C:" directory
-                // being deleted in that other test before this call. What we care about testing (proper path
-                // handling) is unaffected by this race condition.
-                Directory.Delete("C:");
-            }
-            catch (DirectoryNotFoundException) { }
+                Directory.SetCurrentDirectory(Path.GetTempPath());
+                // On Unix, there's no special casing for drive letters.  These may or may not be valid names, depending
+                // on the file system underlying the current directory.  Unix file systems typically allow these, but,
+                // for example, these names are not allowed if running on a file system mounted from a Windows machine.
+                DirectoryInfo driveLetter;
+                try
+                {
+                    driveLetter = Create("C:");
+                }
+                catch (IOException)
+                {
+                    return;
+                }
+                var current = Create(".");
+                Assert.Equal("C:", driveLetter.Name);
+                Assert.Equal(Path.Combine(current.FullName, "C:"), driveLetter.FullName);
+                try
+                {
+                    // If this test is inherited then it's possible this call will fail due to the "C:" directory
+                    // being deleted in that other test before this call. What we care about testing (proper path
+                    // handling) is unaffected by this race condition.
+                    Directory.Delete("C:");
+                }
+                catch (DirectoryNotFoundException) { }
+            }).Dispose();
         }
 
         [Fact]

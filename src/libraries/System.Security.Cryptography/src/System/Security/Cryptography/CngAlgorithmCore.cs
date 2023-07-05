@@ -12,24 +12,21 @@ namespace System.Security.Cryptography
     //
     internal struct CngAlgorithmCore
     {
-        private readonly string _disposedName;
+        private readonly Type _disposedType;
 #pragma warning disable CS0649
         public CngAlgorithm? DefaultKeyType;
 #pragma warning restore CS0649
         private CngKey? _lazyKey;
         private bool _disposed;
 
-        public CngAlgorithmCore(string disposedName) : this()
+        public CngAlgorithmCore(Type disposedType) : this()
         {
-            _disposedName = disposedName;
+            _disposedType = disposedType;
         }
 
         public static CngKey Duplicate(CngKey key)
         {
-            using (SafeNCryptKeyHandle keyHandle = key.Handle)
-            {
-                return CngKey.Open(keyHandle, key.IsEphemeral ? CngKeyHandleOpenOptions.EphemeralKey : CngKeyHandleOpenOptions.None);
-            }
+            return CngKey.Open(key.HandleNoDuplicate, key.IsEphemeral ? CngKeyHandleOpenOptions.EphemeralKey : CngKeyHandleOpenOptions.None);
         }
 
         public bool IsKeyGeneratedNamedCurve()
@@ -66,7 +63,11 @@ namespace System.Security.Cryptography
                     ExportPolicy = CngExportPolicies.AllowPlaintextExport,
                 };
 
-                CngProperty keySizeProperty = new CngProperty(KeyPropertyName.Length, BitConverter.GetBytes(keySize), CngPropertyOptions.None);
+                Span<byte> keySizeBuffer = stackalloc byte[sizeof(int)];
+                bool success = BitConverter.TryWriteBytes(keySizeBuffer, keySize);
+                Debug.Assert(success);
+
+                CngProperty keySizeProperty = new CngProperty(KeyPropertyName.Length, keySizeBuffer, CngPropertyOptions.None);
                 creationParameters.Parameters.Add(keySizeProperty);
 
                 _lazyKey = CngKey.Create(algorithm, null, creationParameters);
@@ -150,10 +151,7 @@ namespace System.Security.Cryptography
 
         internal void ThrowIfDisposed()
         {
-            if (_disposed)
-            {
-                throw new ObjectDisposedException(_disposedName);
-            }
+            ObjectDisposedException.ThrowIf(_disposed, _disposedType);
         }
     }
 }

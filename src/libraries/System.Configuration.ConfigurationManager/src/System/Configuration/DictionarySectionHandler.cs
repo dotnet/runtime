@@ -49,17 +49,12 @@ namespace System.Configuration
                 {
                     HandlerBase.CheckForChildNodes(child);
                     string key = HandlerBase.RemoveRequiredAttribute(child, KeyAttributeName);
-                    string value;
-                    if (ValueRequired)
-                        value = HandlerBase.RemoveRequiredAttribute(child, ValueAttributeName);
-                    else
-                        value = HandlerBase.RemoveAttribute(child, ValueAttributeName);
+                    string value = ValueRequired ?
+                        HandlerBase.RemoveRequiredAttribute(child, ValueAttributeName) :
+                        HandlerBase.RemoveAttribute(child, ValueAttributeName);
                     HandlerBase.CheckForUnrecognizedAttributes(child);
 
-                    if (value == null)
-                        value = "";
-
-                    res[key] = value;
+                    res[key] = value ?? "";
                 }
                 else if (child.Name == "remove")
                 {

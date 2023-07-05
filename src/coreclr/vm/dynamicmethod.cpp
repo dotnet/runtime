@@ -88,7 +88,7 @@ void DynamicMethodTable::CreateDynamicMethodTable(DynamicMethodTable **ppLocatio
 
     if (*ppLocation) RETURN;
 
-    if (FastInterlockCompareExchangePointer(ppLocation, pDynMT, NULL) != NULL)
+    if (InterlockedCompareExchangeT(ppLocation, pDynMT, NULL) != NULL)
     {
         LOG((LF_BCL, LL_INFO100, "Level2 - Another thread got here first - deleting DynamicMethodTable {0x%p}...\n", pDynMT));
         RETURN;
@@ -162,7 +162,7 @@ void DynamicMethodTable::AddMethodsToList()
     // allocate as many chunks as needed to hold the methods
     //
     MethodDescChunk* pChunk = MethodDescChunk::CreateChunk(pHeap, 0 /* one chunk of maximum size */,
-        mcDynamic, TRUE /* fNonVtableSlot */, TRUE /* fNativeCodeSlot */, FALSE /* fComPlusCallInfo */, m_pMethodTable, &amt);
+        mcDynamic, TRUE /* fNonVtableSlot */, TRUE /* fNativeCodeSlot */, m_pMethodTable, &amt);
     if (m_DynamicMethodList) RETURN;
 
     int methodCount = pChunk->GetCount();
@@ -437,7 +437,7 @@ HeapList* HostCodeHeap::InitializeHeapList(CodeHeapRequestInfo *pInfo)
 
     TrackAllocation *pTracker = NULL;
 
-#if defined(TARGET_AMD64) || defined(TARGET_ARM64)
+#if defined(TARGET_AMD64) || defined(TARGET_ARM64) || defined(TARGET_LOONGARCH64) || defined(TARGET_RISCV64)
 
     pTracker = AllocMemory_NoThrow(0, JUMP_ALLOCATE_SIZE, sizeof(void*), 0);
     if (pTracker == NULL)
@@ -457,7 +457,7 @@ HeapList* HostCodeHeap::InitializeHeapList(CodeHeapRequestInfo *pInfo)
     m_pHeapList = (PTR_HeapList)pHp;
 
     LOG((LF_BCL, LL_INFO100, "Level2 - CodeHeap creation {0x%p} - size available 0x%p, private data ptr [0x%p, 0x%p]\n",
-        (HostCodeHeap*)this, m_TotalBytesAvailable, pTracker, pTracker->size));
+        (HostCodeHeap*)this, m_TotalBytesAvailable, pTracker, (pTracker ? pTracker->size : 0)));
 
     // It is important to exclude the CLRPersonalityRoutine from the tracked range
     pHp->startAddress = dac_cast<TADDR>(m_pBaseAddr) + (pTracker ? pTracker->size : 0);
@@ -1001,7 +1001,7 @@ void LCGMethodResolver::Destroy()
         // we cannot use GetGlobalStringLiteralMap() here because it might throw
         CrstHolder gch(pStringLiteralMap->GetHashTableCrstGlobal());
 
-        // Access to m_DynamicStringLiterals doesn't need to be syncrhonized because
+        // Access to m_DynamicStringLiterals doesn't need to be synchronized because
         // this can be run in only one thread: the finalizer thread.
         while (m_DynamicStringLiterals != NULL)
         {
@@ -1009,13 +1009,6 @@ void LCGMethodResolver::Destroy()
             m_DynamicStringLiterals = m_DynamicStringLiterals->m_pNext;
         }
     }
-
-    // Note that we need to do this before m_jitTempData is deleted
-    RecycleIndCells();
-
-    m_jitMetaHeap.Delete();
-    m_jitTempData.Delete();
-
 
     if (m_recordCodePointer)
     {
@@ -1049,6 +1042,12 @@ void LCGMethodResolver::Destroy()
         delete m_pJumpStubCache;
         m_pJumpStubCache = NULL;
     }
+
+    // Note that we need to do this before m_jitTempData is deleted
+    RecycleIndCells();
+
+    m_jitMetaHeap.Delete();
+    m_jitTempData.Delete();
 
     if (m_managedResolver)
     {
@@ -1103,6 +1102,17 @@ ChunkAllocator* LCGMethodResolver::GetJitMetaHeap()
 {
     LIMITED_METHOD_CONTRACT;
     return &m_jitMetaHeap;
+}
+
+bool LCGMethodResolver::RequiresAccessCheck()
+{
+    LIMITED_METHOD_CONTRACT;
+    return true;
+}
+
+CORJIT_FLAGS LCGMethodResolver::GetJitFlags()
+{
+    return{};
 }
 
 BYTE* LCGMethodResolver::GetCodeInfo(unsigned *pCodeSize, unsigned *pStackSize, CorInfoOptions *pOptions, unsigned *pEHSize)
@@ -1230,26 +1240,11 @@ LCGMethodResolver::IsValidStringRef(mdToken metaTok)
     return GetStringLiteral(metaTok) != NULL;
 }
 
-int
-LCGMethodResolver::GetStringLiteralLength(mdToken metaTok)
-{
-    STANDARD_VM_CONTRACT;
-
-    GCX_COOP();
-
-    STRINGREF str = GetStringLiteral(metaTok);
-    if (str != NULL)
-    {
-        return str->GetStringLength();
-    }
-    return -1;
-}
-
 //---------------------------------------------------------------------------------------
 //
 STRINGREF
 LCGMethodResolver::GetStringLiteral(
-    mdToken token)
+    mdToken metaTok)
 {
     CONTRACTL {
         THROWS;
@@ -1264,7 +1259,7 @@ LCGMethodResolver::GetStringLiteral(
 
     ARG_SLOT args[] = {
         ObjToArgSlot(resolver),
-        token,
+        metaTok,
     };
     return getStringLiteral.Call_RetSTRINGREF(args);
 }

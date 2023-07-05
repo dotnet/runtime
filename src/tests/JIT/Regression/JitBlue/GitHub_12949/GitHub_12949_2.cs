@@ -3,6 +3,7 @@
 
 using System;
 using System.Runtime.CompilerServices;
+using Xunit;
 
 public class X<K> 
 {
@@ -30,9 +31,10 @@ public class X<K>
     int count;
 }
 
-class B
+public class B
 {
-    public static int Main()
+    [Fact]
+    public static int TestEntryPoint()
     {
         var a = new X<int>(11);
         bool result = a.Test();

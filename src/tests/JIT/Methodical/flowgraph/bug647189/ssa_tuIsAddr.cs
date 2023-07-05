@@ -8,8 +8,11 @@
  */
 
 using System;
+using Xunit;
 
-internal class Repro
+namespace Test_ssa_tuIsAddr_cs
+{
+public class Repro
 {
     private static int s_field0 = 0;
     private static int s_field1 = 1;
@@ -72,7 +75,8 @@ internal class Repro
     private static int s_field58 = 58;
     private static int s_field59 = 59;
 
-    private static int Main()
+    [Fact]
+    public static int TestEntryPoint()
     {
         s_field0 = 2;
         if (s_field0 == 2)
@@ -86,4 +90,5 @@ internal class Repro
             return 101;
         }
     }
+}
 }

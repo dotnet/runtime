@@ -437,27 +437,6 @@ CONTEXT * GetManagedStoppedCtx(Thread * pThread);
 // Never NULL.
 CONTEXT * GetManagedLiveCtx(Thread * pThread);
 
-
-#undef UtilMessageBoxCatastrophic
-#undef UtilMessageBoxCatastrophicNonLocalized
-#undef UtilMessageBoxCatastrophicVA
-#undef UtilMessageBoxCatastrophicNonLocalizedVA
-#undef UtilMessageBox
-#undef UtilMessageBoxNonLocalized
-#undef UtilMessageBoxVA
-#undef UtilMessageBoxNonLocalizedVA
-#undef WszMessageBox
-#define UtilMessageBoxCatastrophic __error("Use g_pDebugger->MessageBox from inside the left side of the debugger")
-#define UtilMessageBoxCatastrophicNonLocalized __error("Use g_pDebugger->MessageBox from inside the left side of the debugger")
-#define UtilMessageBoxCatastrophicVA __error("Use g_pDebugger->MessageBox from inside the left side of the debugger")
-#define UtilMessageBoxCatastrophicNonLocalizedVA __error("Use g_pDebugger->MessageBox from inside the left side of the debugger")
-#define UtilMessageBox __error("Use g_pDebugger->MessageBox from inside the left side of the debugger")
-#define UtilMessageBoxNonLocalized __error("Use g_pDebugger->MessageBox from inside the left side of the debugger")
-#define UtilMessageBoxVA __error("Use g_pDebugger->MessageBox from inside the left side of the debugger")
-#define UtilMessageBoxNonLocalizedVA __error("Use g_pDebugger->MessageBox from inside the left side of the debugger")
-#define WszMessageBox __error("Use g_pDebugger->MessageBox from inside the left side of the debugger")
-
-
 /* ------------------------------------------------------------------------ *
  * Module classes
  * ------------------------------------------------------------------------ */
@@ -650,7 +629,7 @@ protected:
     // The "debugger data lock" is a very small leaf lock used to protect debugger internal data structures (such
     // as DJIs, DMIs, module table). It is a GC-unsafe-anymode lock and so it can't trigger a GC while being held.
     // It also can't issue any callbacks into the EE or anycode that it does not directly control.
-    // This is a separate lock from the the larger Debugger-lock / Controller lock, which allows regions under those
+    // This is a separate lock from the larger Debugger-lock / Controller lock, which allows regions under those
     // locks to access debugger datastructures w/o blocking each other.
     Crst                  m_DebuggerDataLock;
     HANDLE                m_CtrlCMutex;
@@ -710,7 +689,7 @@ public:
         _ASSERTE(m_pDCB != NULL);
         // In case this turns into a continuation event
         GetRCThreadSendBuffer()->next = NULL;
-        LOG((LF_CORDB,LL_EVERYTHING, "GIPCESBuffer: got event 0x%x\n", GetRCThreadSendBuffer()));
+        LOG((LF_CORDB,LL_EVERYTHING, "GIPCESBuffer: got event %p\n", GetRCThreadSendBuffer()));
 
         return GetRCThreadSendBuffer();
     }
@@ -1177,7 +1156,7 @@ static_assert(sizeof(DebuggerHeapExecutableMemoryPage) == DEBUGGERHEAP_PAGESIZE,
 // Handles allocation and freeing (and all necessary bookkeeping) for
 // executable memory that the DebuggerHeap class needs. This is especially
 // useful on systems (like SELinux) where having executable code on the
-// heap is explicity disallowed for security reasons.
+// heap is explicitly disallowed for security reasons.
 // ------------------------------------------------------------------------ */
 
 class DebuggerHeapExecutableMemoryAllocator
@@ -1271,7 +1250,7 @@ public:
                                             MethodDesc           * md = NULL,
                                             PTR_CORDB_ADDRESS_TYPE addr = PTR_NULL);
 
-    // Fills in the CodeRegoinInfo fields from the start address.
+    // Fills in the CodeRegionInfo fields from the start address.
     void InitializeFromStartAddress(PCODE addr)
     {
         CONTRACTL
@@ -1397,7 +1376,7 @@ private:
 //
 // DebuggerILToNativeMap* m_sequenceMap:   This is the sequence map, which
 //      is actually a collection of IL-Native pairs, where each IL corresponds
-//      to a line of source code.  Each pair is refered to as a sequence map point.
+//      to a line of source code.  Each pair is referred to as a sequence map point.
 //
 // SIZE_T m_lastIL:   last nonEPILOG instruction
 //
@@ -1457,6 +1436,27 @@ protected:
 #endif
 
 public:
+    void LogInstance()
+    {
+#ifdef LOGGING
+        const char* encState = "not enabled";
+#ifdef EnC_SUPPORTED
+        encState = m_encBreakpointsApplied ? "true" : "false";
+#endif //EnC_SUPPORTED
+        LOG((LF_CORDB, LL_INFO10000, "  DJI: %p\n"
+            "                m_jitComplete: %s\n"
+            "      m_encBreakpointsApplied: %s\n"
+            "                 m_methodInfo: %p\n"
+            "                 m_addrOfCode: %p\n"
+            "                 m_sizeOfCode: 0x%zx\n"
+            "                     m_lastIL: 0x%x\n"
+            "           m_sequenceMapCount: %u\n"
+            "           m_callsiteMapCount: %u\n",
+            this, (m_jitComplete ? "true" : "false"), encState,
+            m_methodInfo, m_addrOfCode, m_sizeOfCode, m_lastIL, m_sequenceMapCount, m_callsiteMapCount));
+#endif //LOGGING
+    }
+
     unsigned int GetSequenceMapCount()
     {
         SUPPORTS_DAC;
@@ -1772,6 +1772,13 @@ extern "C" void __stdcall SignalHijackCompleteFlare(void);
 extern "C" void __stdcall ExceptionNotForRuntimeFlare(void);
 extern "C" void __stdcall NotifyRightSideOfSyncCompleteFlare(void);
 extern "C" void __stdcall NotifySecondChanceReadyForDataFlare(void);
+#ifdef OUT_OF_PROCESS_SETTHREADCONTEXT
+#if defined(TARGET_WINDOWS) && defined(TARGET_AMD64)
+extern "C" void __stdcall SetThreadContextNeededFlare(TADDR pContext, DWORD size, TADDR Rip, TADDR Rsp);
+#else
+#error Platform not supported
+#endif
+#endif // OUT_OF_PROCESS_SETTHREADCONTEXT
 
 /* ------------------------------------------------------------------------ *
  * Debugger class
@@ -1856,17 +1863,6 @@ public:
     // Send a raw managed debug event over the managed pipeline.
     void SendRawEvent(const DebuggerIPCEvent * pManagedEvent);
 
-    // Message box API for the left side of the debugger. This API handles calls from the
-    // debugger helper thread as well as from normal EE threads. It is the only one that
-    // should be used from inside the debugger left side.
-    int MessageBox(
-                UINT uText,       // Resource Identifier for Text message
-                UINT uCaption,    // Resource Identifier for Caption
-                UINT uType,       // Style of MessageBox
-                BOOL displayForNonInteractive,      // Display even if the process is running non interactive
-                BOOL showFileNameInTitle,           // Flag to show FileName in Caption
-                ...);             // Additional Arguments
-
     void SetEEInterface(EEDebugInterface* i);
     void StopDebugger(void);
     BOOL IsStopped(void)
@@ -1932,7 +1928,8 @@ public:
     bool FirstChanceNativeException(EXCEPTION_RECORD *exception,
                                T_CONTEXT *context,
                                DWORD code,
-                               Thread *thread);
+                               Thread *thread,
+                               BOOL fIsVEH = TRUE);
 
     bool IsJMCMethod(Module* pModule, mdMethodDef tkMethod);
 
@@ -2281,13 +2278,6 @@ private:
     // a buffer so that it can be read out-of-proc
     BYTE* SerializeModuleMetaData(Module * pModule, DWORD * countBytes);
 
-    /// Wrapps fusion Module FusionCopyPDBs.
-    HRESULT CopyModulePdb(Module* pRuntimeModule);
-
-    // When attaching to a process, this is called to enumerate all of the
-    // AppDomains currently in the process and allow modules pdbs to be copied over to the shadow dir maintaining out V2 in-proc behaviour.
-    HRESULT IterateAppDomainsForPdbs();
-
 #ifndef DACCESS_COMPILE
 public:
     // Helper function to initialize JDI structure
@@ -2378,7 +2368,8 @@ public:
 
     LONG FirstChanceSuspendHijackWorker(
                              T_CONTEXT *pContext,
-                             EXCEPTION_RECORD *pExceptionRecord);
+                             EXCEPTION_RECORD *pExceptionRecord,
+                             BOOL fIsVEH = TRUE);
     static void GenericHijackFunc(void);
     static void SecondChanceHijackFunc(void);
     static void SecondChanceHijackFuncWorker(void);
@@ -2949,6 +2940,11 @@ public:
 private:
     HANDLE GetGarbageCollectionBlockerEvent() { return  GetLazyData()->m_garbageCollectionBlockerEvent; }
 
+private:
+    BOOL m_fOutOfProcessSetContextEnabled;
+public:
+    void SendSetThreadContextNeeded(CONTEXT *context);
+    BOOL IsOutOfProcessSetContextEnabled();
 };
 
 
@@ -2970,7 +2966,7 @@ void RedirectedHandledJITCaseForDbgThreadControl_StubEnd();
 void RedirectedHandledJITCaseForUserSuspend_Stub();
 void RedirectedHandledJITCaseForUserSuspend_StubEnd();
 
-#if defined(HAVE_GCCOVER) && defined(TARGET_AMD64)
+#if defined(HAVE_GCCOVER) && defined(TARGET_AMD64) && defined(USE_REDIRECT_FOR_GCSTRESS)
 void RedirectedHandledJITCaseForGCStress_Stub();
 void RedirectedHandledJITCaseForGCStress_StubEnd();
 #endif // HAVE_GCCOVER && TARGET_AMD64
@@ -3272,7 +3268,7 @@ struct DebuggerMethodInfoEntry
 };
 
 // class DebuggerMethodInfoTable:   Hash table to hold all the non-JIT related
-// info for each method we see.  The JIT infos live in a seperate table
+// info for each method we see.  The JIT infos live in a separate table
 // keyed by MethodDescs - there may be multiple
 // JITted realizations of each MethodDef, e.g. under different generic
 // assumptions.  Hangs off of the Debugger object.
@@ -3700,9 +3696,6 @@ void DbgLogHelper(DebuggerIPCEventType event);
 // Helpers for cleanup
 // These are various utility functions, mainly where we factor out code.
 //-----------------------------------------------------------------------------
-void GetPidDecoratedName(_Out_writes_(cBufSizeInChars) WCHAR * pBuf,
-                         int cBufSizeInChars,
-                         const WCHAR * pPrefix);
 
 // Specify type of Win32 event
 enum EEventResetType {
@@ -3893,7 +3886,7 @@ HANDLE OpenWin32EventOrThrow(
 bool DbgIsSpecialILOffset(DWORD offset);
 
 #if !defined(TARGET_X86)
-void FixupDispatcherContext(T_DISPATCHER_CONTEXT* pDispatcherContext, T_CONTEXT* pContext, T_CONTEXT* pOriginalContext, PEXCEPTION_ROUTINE pUnwindPersonalityRoutine = NULL);
+void FixupDispatcherContext(T_DISPATCHER_CONTEXT* pDispatcherContext, T_CONTEXT* pContext, PEXCEPTION_ROUTINE pUnwindPersonalityRoutine = NULL);
 #endif
 
 #endif /* DEBUGGER_H_ */

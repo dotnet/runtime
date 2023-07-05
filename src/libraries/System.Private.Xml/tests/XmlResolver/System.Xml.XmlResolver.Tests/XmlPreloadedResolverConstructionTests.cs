@@ -5,7 +5,7 @@ using System.Linq;
 using System.Xml.Resolvers;
 using Xunit;
 
-namespace System.Xml.XmlResolver.Tests
+namespace System.Xml.XmlResolverTests
 {
     public class XmlPreloadedResolverConstructionTests
     {

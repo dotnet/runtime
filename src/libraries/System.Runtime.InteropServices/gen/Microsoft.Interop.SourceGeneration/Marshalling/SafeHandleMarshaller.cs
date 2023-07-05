@@ -18,9 +18,9 @@ namespace Microsoft.Interop
             return target is TargetFramework.Net && version.Major >= 6;
         }
 
-        public TypeSyntax AsNativeType(TypePositionInfo info)
+        public ManagedTypeInfo AsNativeType(TypePositionInfo info)
         {
-            return MarshallerHelpers.SystemIntPtrType;
+            return SpecialTypeInfo.IntPtr;
         }
 
         public SignatureBehavior GetNativeSignatureBehavior(TypePositionInfo info)
@@ -117,7 +117,7 @@ namespace Microsoft.Interop
                         {
                             yield return LocalDeclarationStatement(
                                 VariableDeclaration(
-                                    AsNativeType(info),
+                                    AsNativeType(info).Syntax,
                                     SingletonSeparatedList(
                                         VariableDeclarator(handleValueBackupIdentifier)
                                         .WithInitializer(EqualsValueClause(
@@ -130,7 +130,7 @@ namespace Microsoft.Interop
                     }
                     break;
                 case StubCodeContext.Stage.Marshal:
-                    if (info.RefKind != RefKind.Out)
+                    if (!info.IsManagedReturnPosition && info.RefKind != RefKind.Out)
                     {
                         // <managedIdentifier>.DangerousAddRef(ref <addRefdIdentifier>);
                         yield return ExpressionStatement(
@@ -234,6 +234,6 @@ namespace Microsoft.Interop
 
         public bool UsesNativeIdentifier(TypePositionInfo info, StubCodeContext context) => true;
 
-        public bool SupportsByValueMarshalKind(ByValueContentsMarshalKind marshalKind, StubCodeContext context) => false;
+        public ByValueMarshalKindSupport SupportsByValueMarshalKind(ByValueContentsMarshalKind marshalKind, StubCodeContext context) => ByValueMarshalKindSupport.NotSupported;
     }
 }

@@ -30,7 +30,7 @@ public class PInvokes
         short s = 42;
         // We use a the "green check mark" character so that we use both bytes and
         // have a value that can't be accidentally round-tripped.
-        char c = '✅';
+        char c = '\u2705';
         Assert.False(DisabledRuntimeMarshallingNative.CheckStructWithWCharAndShort(new StructWithWCharAndShort(s, c), s, c));
 
     }
@@ -51,7 +51,7 @@ public class PInvokes
         short s = 41;
         // We use a the "green check mark" character so that we use both bytes and
         // have a value that can't be accidentally round-tripped.
-        char c = '✅';
+        char c = '\u2705';
         Assert.False(DisabledRuntimeMarshallingNative.CheckStructWithWCharAndShort(new StructWithWCharAndShortWithMarshalAs(s, c), s, c));
     }
 
@@ -71,7 +71,7 @@ public class PInvokes
     public static void StructWithNonBlittableGenericInstantiation_Fails()
     {
         short s = 41;
-        char c = '✅';
+        char c = '\u2705';
         Assert.Throws<MarshalDirectiveException>(() => DisabledRuntimeMarshallingNative.CheckStructWithWCharAndShort(new StructWithShortAndGeneric<char>(s, c), s, c));
     }
 
@@ -81,7 +81,7 @@ public class PInvokes
         short s = 42;
         // We use a the "green check mark" character so that we use both bytes and
         // have a value that can't be accidentally round-tripped.
-        char c = '✅';
+        char c = '\u2705';
         Assert.True(DisabledRuntimeMarshallingNative.CheckStructWithWCharAndShort(new StructWithShortAndGeneric<short>(s, (short)c), s, (short)c));
     }
 

@@ -1090,7 +1090,7 @@ namespace System.Collections.Tests
                 }
                 else
                 {
-                    var current = enumerator.Current; // Enumerator.Current should not fail
+                    _ = enumerator.Current; // Enumerator.Current should not fail
                 }
 
                 // Test after add
@@ -1105,7 +1105,7 @@ namespace System.Collections.Tests
                     }
                     else
                     {
-                        var current = enumerator.Current; // Enumerator.Current should not fail
+                        _ = enumerator.Current; // Enumerator.Current should not fail
                     }
                 }
             }

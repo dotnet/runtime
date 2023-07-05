@@ -28,14 +28,14 @@ namespace ILCompiler
         {
             return new PInvokeILProvider(_pInvokeILEmitterConfiguration, _interopStateManager);
         }
-        
+
         public sealed override void AddToReadyToRunHeader(ReadyToRunHeaderNode header, NodeFactory nodeFactory, ExternalReferencesTableNode commonFixupsTableNode)
         {
             var delegateMapNode = new DelegateMarshallingStubMapNode(commonFixupsTableNode, _interopStateManager);
-            header.Add(MetadataManager.BlobIdToReadyToRunSection(ReflectionMapBlob.DelegateMarshallingStubMap), delegateMapNode, delegateMapNode, delegateMapNode.EndSymbol);
+            header.Add(MetadataManager.BlobIdToReadyToRunSection(ReflectionMapBlob.DelegateMarshallingStubMap), delegateMapNode);
 
             var structMapNode = new StructMarshallingStubMapNode(commonFixupsTableNode, _interopStateManager);
-            header.Add(MetadataManager.BlobIdToReadyToRunSection(ReflectionMapBlob.StructMarshallingStubMap), structMapNode, structMapNode, structMapNode.EndSymbol);
+            header.Add(MetadataManager.BlobIdToReadyToRunSection(ReflectionMapBlob.StructMarshallingStubMap), structMapNode);
         }
     }
 }

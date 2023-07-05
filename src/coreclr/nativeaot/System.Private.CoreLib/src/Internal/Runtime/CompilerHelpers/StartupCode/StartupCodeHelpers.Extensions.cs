@@ -13,6 +13,12 @@ namespace Internal.Runtime.CompilerHelpers
 {
     public partial class StartupCodeHelpers
     {
+        /// <summary>
+        /// Return the registered logical modules; optionally copy them into an array.
+        /// </summary>
+        internal static ReadOnlySpan<TypeManagerHandle> GetLoadedModules()
+            => s_modules.AsSpan(0, s_moduleCount);
+
         internal static unsafe void InitializeCommandLineArgsW(int argc, char** argv)
         {
             string[] args = new string[argc];
@@ -20,7 +26,7 @@ namespace Internal.Runtime.CompilerHelpers
             {
                 args[i] = new string(argv[i]);
             }
-            Environment.SetCommandLineArgs(args);
+            Environment.s_commandLineArgs = args;
         }
 
         internal static unsafe void InitializeCommandLineArgs(int argc, sbyte** argv)
@@ -30,14 +36,16 @@ namespace Internal.Runtime.CompilerHelpers
             {
                 args[i] = new string(argv[i]);
             }
-            Environment.SetCommandLineArgs(args);
+            Environment.s_commandLineArgs = args;
         }
 
         private static string[] GetMainMethodArguments()
         {
-            // GetCommandLineArgs includes the executable name, Main() arguments do not.
-            string[] args = Environment.GetCommandLineArgs();
+            // Environment.s_commandLineArgs includes the executable name, Main() arguments do not.
+            string[]? args = Environment.s_commandLineArgs;
 
+            // Environment.s_commandLineArgs is expected to initialized during startup.
+            Debug.Assert(args != null);
             Debug.Assert(args.Length > 0);
 
             string[] mainArgs = new string[args.Length - 1];

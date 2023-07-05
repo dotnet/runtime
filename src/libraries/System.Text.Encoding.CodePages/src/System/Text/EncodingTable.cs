@@ -1,7 +1,6 @@
 // Licensed to the .NET Foundation under one or more agreements.
 // The .NET Foundation licenses this file to you under the MIT license.
 
-using System;
 using System.Collections.Generic;
 using System.Diagnostics;
 using System.Threading;
@@ -62,13 +61,15 @@ namespace System.Text
 
         private static int InternalGetCodePageFromName(string name)
         {
+            ReadOnlySpan<int> encodingNameIndices = EncodingNameIndices;
+
             int left = 0;
-            int right = s_encodingNameIndices.Length - 2;
+            int right = encodingNameIndices.Length - 2;
             int index;
             int result;
 
-            Debug.Assert(s_encodingNameIndices.Length == s_codePagesByName.Length + 1);
-            Debug.Assert(s_encodingNameIndices[s_encodingNameIndices.Length - 1] == s_encodingNames.Length);
+            Debug.Assert(encodingNameIndices.Length == CodePagesByName.Length + 1);
+            Debug.Assert(encodingNameIndices[encodingNameIndices.Length - 1] == EncodingNames.Length);
 
             name = name.ToLowerInvariant();
 
@@ -78,12 +79,12 @@ namespace System.Text
             {
                 index = ((right - left) / 2) + left;
 
-                Debug.Assert(index < s_encodingNameIndices.Length - 1);
-                result = CompareOrdinal(name, s_encodingNames, s_encodingNameIndices[index], s_encodingNameIndices[index + 1] - s_encodingNameIndices[index]);
+                Debug.Assert(index < encodingNameIndices.Length - 1);
+                result = CompareOrdinal(name, EncodingNames, encodingNameIndices[index], encodingNameIndices[index + 1] - encodingNameIndices[index]);
                 if (result == 0)
                 {
                     //We found the item, return the associated codePage.
-                    return (s_codePagesByName[index]);
+                    return CodePagesByName[index];
                 }
                 else if (result < 0)
                 {
@@ -100,10 +101,10 @@ namespace System.Text
             //Walk the remaining elements (it'll be 3 or fewer).
             for (; left <= right; left++)
             {
-                Debug.Assert(left < s_encodingNameIndices.Length - 1);
-                if (CompareOrdinal(name, s_encodingNames, s_encodingNameIndices[left], s_encodingNameIndices[left + 1] - s_encodingNameIndices[left]) == 0)
+                Debug.Assert(left < encodingNameIndices.Length - 1);
+                if (CompareOrdinal(name, EncodingNames, encodingNameIndices[left], encodingNameIndices[left + 1] - encodingNameIndices[left]) == 0)
                 {
-                    return (s_codePagesByName[left]);
+                    return CodePagesByName[left];
                 }
             }
 
@@ -129,66 +130,67 @@ namespace System.Text
 
         internal static string? GetWebNameFromCodePage(int codePage)
         {
-            return GetNameFromCodePage(codePage, s_webNames, s_webNameIndices, s_codePageToWebNameCache);
+            return GetNameFromCodePage(codePage, WebNames, WebNameIndices, s_codePageToWebNameCache);
         }
 
         internal static string? GetEnglishNameFromCodePage(int codePage)
         {
-            return GetNameFromCodePage(codePage, s_englishNames, s_englishNameIndices, s_codePageToEnglishNameCache);
+            return GetNameFromCodePage(codePage, EnglishNames, EnglishNameIndices, s_codePageToEnglishNameCache);
         }
 
-        private static string? GetNameFromCodePage(int codePage, string names, int[] indices, Dictionary<int, string> cache)
+        private static string? GetNameFromCodePage(int codePage, string names, ReadOnlySpan<int> indices, Dictionary<int, string> cache)
         {
             string? name;
 
-            Debug.Assert(s_mappedCodePages.Length + 1 == indices.Length);
+            Debug.Assert(MappedCodePages.Length + 1 == indices.Length);
             Debug.Assert(indices[indices.Length - 1] == names.Length);
 
-            //This is a linear search, but we probably won't be doing it very often.
-            for (int i = 0; i < s_mappedCodePages.Length; i++)
+            if ((uint)codePage > ushort.MaxValue)
             {
-                if (s_mappedCodePages[i] == codePage)
-                {
-                    Debug.Assert(i < indices.Length - 1);
-
-                    s_cacheLock.EnterUpgradeableReadLock();
-                    try
-                    {
-                        if (cache.TryGetValue(codePage, out name))
-                        {
-                            return name;
-                        }
-                        else
-                        {
-                            name = names.Substring(indices[i], indices[i + 1] - indices[i]);
-
-                            s_cacheLock.EnterWriteLock();
-                            try
-                            {
-                                if (cache.TryGetValue(codePage, out string? cachedName))
-                                {
-                                    return cachedName;
-                                }
-
-                                cache.Add(codePage, name);
-                            }
-                            finally
-                            {
-                                s_cacheLock.ExitWriteLock();
-                            }
-                        }
-                    }
-                    finally
-                    {
-                        s_cacheLock.ExitUpgradeableReadLock();
-                    }
-
-                    return name;
-                }
+                return null;
             }
 
-            // Nope, we didn't find it.
-            return null;
+            //This is a linear search, but we probably won't be doing it very often.
+            int i = MappedCodePages.IndexOf((ushort)codePage);
+            if (i < 0)
+            {
+                // Didn't find it.
+                return null;
+            }
+
+            Debug.Assert(i < indices.Length - 1);
+
+            s_cacheLock.EnterUpgradeableReadLock();
+            try
+            {
+                if (cache.TryGetValue(codePage, out name))
+                {
+                    return name;
+                }
+
+                name = names.Substring(indices[i], indices[i + 1] - indices[i]);
+
+                s_cacheLock.EnterWriteLock();
+                try
+                {
+                    if (cache.TryGetValue(codePage, out string? cachedName))
+                    {
+                        return cachedName;
+                    }
+
+                    cache.Add(codePage, name);
+                }
+                finally
+                {
+                    s_cacheLock.ExitWriteLock();
+                }
+            }
+            finally
+            {
+                s_cacheLock.ExitUpgradeableReadLock();
+            }
+
+            return name;
         }
     }
 }

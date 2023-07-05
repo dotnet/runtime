@@ -18,9 +18,13 @@ namespace System.ComponentModel.Composition.AttributedModel
 
         private IDictionary<string, object?>? _metadata;
 
-        public AttributedExportDefinition(AttributedPartCreationInfo partCreationInfo!!, MemberInfo member!!, ExportAttribute exportAttribute!!, Type? typeIdentityType, string contractName)
+        public AttributedExportDefinition(AttributedPartCreationInfo partCreationInfo, MemberInfo member, ExportAttribute exportAttribute, Type? typeIdentityType, string contractName)
             : base(contractName, (IDictionary<string, object?>?)null)
         {
+            ArgumentNullException.ThrowIfNull(partCreationInfo);
+            ArgumentNullException.ThrowIfNull(member);
+            ArgumentNullException.ThrowIfNull(exportAttribute);
+
             _partCreationInfo = partCreationInfo;
             _member = member;
             _exportAttribute = exportAttribute;
@@ -42,9 +46,9 @@ namespace System.ComponentModel.Composition.AttributedModel
                     metadata.Add(CompositionConstants.ExportTypeIdentityMetadataName, typeIdentity);
 
                     var partMetadata = _partCreationInfo.GetMetadata();
-                    if (partMetadata != null && partMetadata.ContainsKey(CompositionConstants.PartCreationPolicyMetadataName))
+                    if (partMetadata != null && partMetadata.TryGetValue(CompositionConstants.PartCreationPolicyMetadataName, out object? value))
                     {
-                        metadata.Add(CompositionConstants.PartCreationPolicyMetadataName, partMetadata[CompositionConstants.PartCreationPolicyMetadataName]);
+                        metadata.Add(CompositionConstants.PartCreationPolicyMetadataName, value);
                     }
 
                     if ((_typeIdentityType != null) && (_member.MemberType != MemberTypes.Method) && _typeIdentityType.ContainsGenericParameters)

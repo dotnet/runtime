@@ -17,9 +17,8 @@
 #define INVALID_RESUME_ADDRESS 0x000000000000bad0
 
 EXTERN_C EXCEPTION_DISPOSITION
-ProcessCLRException(IN     PEXCEPTION_RECORD     pExceptionRecord
-          BIT64_ARG(IN     ULONG64               MemoryStackFp)
-      NOT_BIT64_ARG(IN     ULONG                 MemoryStackFp),
+ProcessCLRException(IN     PEXCEPTION_RECORD     pExceptionRecord,
+                    IN     PVOID                 pEstablisherFrame,
                     IN OUT PT_CONTEXT            pContextRecord,
                     IN OUT PT_DISPATCHER_CONTEXT pDispatcherContext);
 
@@ -329,8 +328,7 @@ public:
     // StackFrame.IsNull()   - no skipping is necessary
     // Anything else         - the StackFrame of the parent method frame
     static StackFrame FindParentStackFrameEx(CrawlFrame* pCF,
-                                             DWORD*      pParentOffset,
-                                             UINT_PTR*   pParentCallerSP);
+                                             DWORD*      pParentOffset);
 
     static void
         PopTrackers(StackFrame sfResumeFrame,
@@ -451,12 +449,10 @@ private:
     static StackFrame FindParentStackFrameHelper(CrawlFrame* pCF,
                                                  bool*       pfRealParent,
                                                  DWORD*      pParentOffset,
-                                                 UINT_PTR*   pParentCallerSP,
                                                  bool        fForGCReporting = false);
 
     static StackFrame RareFindParentStackFrame(CrawlFrame* pCF,
-                                               DWORD*      pParentOffset,
-                                               UINT_PTR*   pParentCallerSP);
+                                               DWORD*      pParentOffset);
 
     static StackWalkAction RareFindParentStackFrameCallback(CrawlFrame* pCF, LPVOID pData);
 

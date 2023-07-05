@@ -1,0 +1,22 @@
+<Project>
+  <PropertyGroup>
+    <MonoTargetsTasksAssemblyPath Condition="'$(MSBuildRuntimeType)' == 'Core'">$(MSBuildThisFileDirectory)..\tasks\${TargetFrameworkForNETCoreTasks}\MonoTargetsTasks.dll</MonoTargetsTasksAssemblyPath>
+    <MonoTargetsTasksAssemblyPath Condition="'$(MSBuildRuntimeType)' != 'Core'">$(MSBuildThisFileDirectory)..\tasks\${TargetFrameworkForNETFrameworkTasks}\MonoTargetsTasks.dll</MonoTargetsTasksAssemblyPath>
+  </PropertyGroup>
+  <!-- ILStrip -->
+  <UsingTask TaskName="ILStrip" AssemblyFile="$(MonoTargetsTasksAssemblyPath)" />
+  <!-- RuntimeConfigParser -->
+  <UsingTask TaskName="RuntimeConfigParserTask" AssemblyFile="$(MonoTargetsTasksAssemblyPath)" />
+  <!-- NetTraceToMibcConverter -->
+  <UsingTask TaskName="NetTraceToMibcConverter" AssemblyFile="$(MonoTargetsTasksAssemblyPath)" />
+  <!-- Specific instances of JsonToItemsTaskFactory -->
+  <!-- MonoRuntimeComponentManifestReadTask -->
+  <UsingTask TaskName="MonoRuntimeComponentManifestReadTask" TaskFactory="JsonToItemsTaskFactory.JsonToItemsTaskFactory" AssemblyFile="$(MonoTargetsTasksAssemblyPath)">
+    <ParameterGroup>
+      <_MonoRuntimeComponentSharedLibExt ParameterType="Microsoft.Build.Framework.ITaskItem[]" Required="false" Output="true" />
+      <_MonoRuntimeComponentStaticLibExt ParameterType="Microsoft.Build.Framework.ITaskItem[]" Required="false" Output="true" />
+      <_MonoRuntimeComponentLinking ParameterType="Microsoft.Build.Framework.ITaskItem[]" Required="false" Output="true" />
+      <_MonoRuntimeAvailableComponents ParameterType="Microsoft.Build.Framework.ITaskItem[]" Required="false" Output="true" />
+    </ParameterGroup>
+  </UsingTask>
+</Project>

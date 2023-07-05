@@ -43,8 +43,10 @@ namespace System.Text
 
         public virtual IEnumerable<EncodingInfo> GetEncodings() => Array.Empty<EncodingInfo>();
 
-        internal static void AddProvider(EncodingProvider provider!!)
+        internal static void AddProvider(EncodingProvider provider)
         {
+            ArgumentNullException.ThrowIfNull(provider);
+
             // Few providers are added in a typical app (typically just CodePagesEncodingProvider.Instance), and when they are,
             // they're generally not added concurrently.  So use an optimistic concurrency scheme rather than paying for a lock
             // object allocation on the startup path.

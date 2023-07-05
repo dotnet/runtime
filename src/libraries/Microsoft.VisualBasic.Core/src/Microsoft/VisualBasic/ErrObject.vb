@@ -100,7 +100,7 @@ Namespace Microsoft.VisualBasic
         Private Function FilterDefaultMessage(ByVal Msg As String) As String
             Dim NewMsg As String
 
-            'This is one of the default messages, 
+            'This is one of the default messages,
             If m_curException Is Nothing Then
                 'Leave message as is
                 Return Msg
@@ -242,7 +242,7 @@ Namespace Microsoft.VisualBasic
         End Function
 
         ''' <summary>
-        ''' VB calls clear whenever it executes any type of Resume statement, Exit Sub, Exit funcion, exit Property, or
+        ''' VB calls clear whenever it executes any type of Resume statement, Exit Sub, Exit function, exit Property, or
         ''' any On Error statement.
         ''' </summary>
         Public Sub Clear()

@@ -50,12 +50,8 @@ namespace System.Net.Mime.Tests
             var outputStream = new MemoryStream();
             var testStream = new QuotedPrintableStream(outputStream, false);
 
-            byte[] bytesToWrite1 = Encoding.ASCII.GetBytes("Hello \r");
-            testStream.Write(bytesToWrite1, 0, bytesToWrite1.Length);
-
-            byte[] bytesToWrite2 = Encoding.ASCII.GetBytes("\n World");
-            testStream.Write(bytesToWrite2, 0, bytesToWrite2.Length);
-
+            testStream.Write("Hello \r"u8);
+            testStream.Write("\n World"u8);
             testStream.Flush();
 
             // We told it not to encode them, but they got split across writes so it could not

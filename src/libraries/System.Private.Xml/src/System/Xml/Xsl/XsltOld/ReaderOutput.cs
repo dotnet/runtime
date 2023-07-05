@@ -157,7 +157,7 @@ namespace System.Xml.Xsl.XsltOld
 
         public override char QuoteChar
         {
-            get { return _encoder.QuoteChar; }
+            get { return XmlEncoder.QuoteChar; }
         }
 
         public override bool IsDefault
@@ -262,10 +262,8 @@ namespace System.Xml.Xsl.XsltOld
 
         public override void MoveToAttribute(int i)
         {
-            if (i < 0 || _attributeCount <= i)
-            {
-                throw new ArgumentOutOfRangeException(nameof(i));
-            }
+            ArgumentOutOfRangeException.ThrowIfNegative(i);
+            ArgumentOutOfRangeException.ThrowIfGreaterThanOrEqual(i, _attributeCount);
             SetAttribute(i);
         }
 
@@ -420,10 +418,7 @@ namespace System.Xml.Xsl.XsltOld
                         }
                         else
                         {
-                            if (sb == null)
-                            {
-                                sb = new StringBuilder(result);
-                            }
+                            sb ??= new StringBuilder(result);
                             sb.Append(this.Value);
                         }
                         if (!Read())
@@ -616,10 +611,8 @@ namespace System.Xml.Xsl.XsltOld
 
         private BuilderInfo GetBuilderInfo(int attrib)
         {
-            if (attrib < 0 || _attributeCount <= attrib)
-            {
-                throw new ArgumentOutOfRangeException(nameof(attrib));
-            }
+            ArgumentOutOfRangeException.ThrowIfNegative(attrib);
+            ArgumentOutOfRangeException.ThrowIfGreaterThanOrEqual(attrib, _attributeCount);
 
             Debug.Assert(_attributeList![attrib] is BuilderInfo);
 
@@ -628,14 +621,8 @@ namespace System.Xml.Xsl.XsltOld
 
         private bool FindAttribute(string? localName, string? namespaceURI, out int attrIndex)
         {
-            if (namespaceURI == null)
-            {
-                namespaceURI = string.Empty;
-            }
-            if (localName == null)
-            {
-                localName = string.Empty;
-            }
+            namespaceURI ??= string.Empty;
+            localName ??= string.Empty;
 
             for (int index = 0; index < _attributeCount; index++)
             {
@@ -655,10 +642,7 @@ namespace System.Xml.Xsl.XsltOld
 
         private bool FindAttribute(string? name, out int attrIndex)
         {
-            if (name == null)
-            {
-                name = string.Empty;
-            }
+            name ??= string.Empty;
 
             for (int index = 0; index < _attributeCount; index++)
             {
@@ -732,10 +716,7 @@ namespace System.Xml.Xsl.XsltOld
                 return _buffer.ToString();
             }
 
-            public char QuoteChar
-            {
-                get { return '"'; }
-            }
+            public const char QuoteChar = '"';
         }
     }
 }

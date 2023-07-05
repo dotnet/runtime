@@ -3,12 +3,7 @@
 
 namespace System
 {
-#if CORERT
-    public // Needs to be public so that Reflection.Core can see it.
-#else
-    internal
-#endif
-    sealed class Empty
+    internal sealed class Empty
     {
         private Empty()
         {

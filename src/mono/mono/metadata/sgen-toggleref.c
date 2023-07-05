@@ -38,7 +38,7 @@ sgen_process_togglerefs (void)
 	int i, w;
 	int toggle_ref_counts [3] = { 0, 0, 0 };
 
-	SGEN_LOG (4, "Proccessing ToggleRefs %d", toggleref_array_size);
+	SGEN_LOG (4, "Processing ToggleRefs %d", toggleref_array_size);
 
 	for (i = w = 0; i < toggleref_array_size; ++i) {
 		int res;
@@ -75,7 +75,7 @@ sgen_process_togglerefs (void)
 
 	toggleref_array_size = w;
 
-	SGEN_LOG (4, "Done Proccessing ToggleRefs dropped %d strong %d weak %d final size %d",
+	SGEN_LOG (4, "Done Processing ToggleRefs dropped %d strong %d weak %d final size %d",
 		toggle_ref_counts [MONO_TOGGLE_REF_DROP],
 		toggle_ref_counts [MONO_TOGGLE_REF_STRONG],
 		toggle_ref_counts [MONO_TOGGLE_REF_WEAK],
@@ -206,9 +206,9 @@ mono_gc_toggleref_add (MonoObject *object, mono_bool strong_ref)
  * gchandles, storing to reference fields or interacting with other threads that might perform such operations.
  */
 void
-mono_gc_toggleref_register_callback (MonoToggleRefStatus (*proccess_toggleref) (MonoObject *obj))
+mono_gc_toggleref_register_callback (MonoToggleRefStatus (*process_toggleref) (MonoObject *obj))
 {
-	toggleref_callback = proccess_toggleref;
+	toggleref_callback = process_toggleref;
 }
 
 static MonoToggleRefStatus
@@ -238,7 +238,7 @@ sgen_register_test_toggleref_callback (void)
 #else
 
 void
-mono_gc_toggleref_register_callback (MonoToggleRefStatus (*proccess_toggleref) (MonoObject *obj))
+mono_gc_toggleref_register_callback (MonoToggleRefStatus (*process_toggleref) (MonoObject *obj))
 {
 }
 

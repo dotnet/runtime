@@ -5,6 +5,7 @@
     <EnableDefaultItems>true</EnableDefaultItems>
     <EmitCompilerGeneratedFiles>true</EmitCompilerGeneratedFiles>
     <Nullable>enable</Nullable>
+    <IgnoreForCI Condition="'$(TargetsMobile)' == 'true' or '$(TargetsLinuxBionic)' == 'true' or '$(TargetArchitecture)' == 'ARMv6'">true</IgnoreForCI> 
   </PropertyGroup>
 
   <ItemGroup>

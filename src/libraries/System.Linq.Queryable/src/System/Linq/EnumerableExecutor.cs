@@ -10,10 +10,12 @@ namespace System.Linq
     public abstract class EnumerableExecutor
     {
         [RequiresUnreferencedCode(Queryable.InMemoryQueryableExtensionMethodsRequiresUnreferencedCode)]
+        [RequiresDynamicCode(Queryable.InMemoryQueryableExtensionMethodsRequiresDynamicCode)]
         internal abstract object? ExecuteBoxed();
 
         internal EnumerableExecutor() { }
 
+        [RequiresDynamicCode(Queryable.InMemoryQueryableExtensionMethodsRequiresDynamicCode)]
         internal static EnumerableExecutor Create(Expression expression)
         {
             Type execType = typeof(EnumerableExecutor<>).MakeGenericType(expression.Type);
@@ -31,9 +33,11 @@ namespace System.Linq
         }
 
         [RequiresUnreferencedCode(Queryable.InMemoryQueryableExtensionMethodsRequiresUnreferencedCode)]
+        [RequiresDynamicCode(Queryable.InMemoryQueryableExtensionMethodsRequiresDynamicCode)]
         internal override object? ExecuteBoxed() => Execute();
 
         [RequiresUnreferencedCode(Queryable.InMemoryQueryableExtensionMethodsRequiresUnreferencedCode)]
+        [RequiresDynamicCode(Queryable.InMemoryQueryableExtensionMethodsRequiresDynamicCode)]
         internal T Execute()
         {
             EnumerableRewriter rewriter = new EnumerableRewriter();

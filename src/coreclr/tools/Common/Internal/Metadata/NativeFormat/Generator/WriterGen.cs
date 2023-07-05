@@ -10,7 +10,7 @@ class WriterGen : CsWriter
 
     public void EmitSource()
     {
-        WriteLine("#pragma warning disable 649");
+        WriteLine("#pragma warning disable 649, SA1121, IDE0036, SA1129");
         WriteLine();
 
         WriteLine("using System;");
@@ -147,12 +147,9 @@ class WriterGen : CsWriter
             else
             if ((member.Flags & MemberDefFlags.Array) != 0)
             {
-                WriteLine($"if ({member.Name} != null)");
+                WriteLine($"for (int i = 0; i < {member.Name}.Length; i++)");
                 WriteLine("{");
-                WriteLine($"    for (int i = 0; i < {member.Name}.Length; i++)");
-                WriteLine("    {");
-                WriteLine($"        hash = ((hash << 13) - (hash >> 19)) ^ {member.Name}[i].GetHashCode();");
-                WriteLine("    }");
+                WriteLine($"    hash = ((hash << 13) - (hash >> 19)) ^ {member.Name}[i].GetHashCode();");
                 WriteLine("}");
             }
             else
@@ -161,12 +158,9 @@ class WriterGen : CsWriter
                 if ((member.Flags & MemberDefFlags.EnumerateForHashCode) == 0)
                     continue;
 
-                WriteLine($"if ({member.Name} != null)");
-                WriteLine("{");
                 WriteLine($"for (int i = 0; i < {member.Name}.Count; i++)");
-                WriteLine("    {");
-                WriteLine($"        hash = ((hash << 13) - (hash >> 19)) ^ ({member.Name}[i] == null ? 0 : {member.Name}[i].GetHashCode());");
-                WriteLine("    }");
+                WriteLine("{");
+                WriteLine($"    hash = ((hash << 13) - (hash >> 19)) ^ ({member.Name}[i] == null ? 0 : {member.Name}[i].GetHashCode());");
                 WriteLine("}");
             }
             else

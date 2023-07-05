@@ -49,8 +49,14 @@ namespace System.Text.Json
         /// Writes the <see cref="long"/> using the default <see cref="StandardFormat"/> (that is, 'G'), for example: 32767.
         /// The property name is escaped before writing.
         /// </remarks>
-        public void WriteNumber(string propertyName!!, long value)
-            => WriteNumber(propertyName.AsSpan(), value);
+        public void WriteNumber(string propertyName, long value)
+        {
+            if (propertyName is null)
+            {
+                ThrowHelper.ThrowArgumentNullException(nameof(propertyName));
+            }
+            WriteNumber(propertyName.AsSpan(), value);
+        }
 
         /// <summary>
         /// Writes the property name and <see cref="long"/> value (as a JSON number) as part of a name/value pair of a JSON object.
@@ -134,8 +140,14 @@ namespace System.Text.Json
         /// Writes the <see cref="int"/> using the default <see cref="StandardFormat"/> (that is, 'G'), for example: 32767.
         /// The property name is escaped before writing.
         /// </remarks>
-        public void WriteNumber(string propertyName!!, int value)
-            => WriteNumber(propertyName.AsSpan(), (long)value);
+        public void WriteNumber(string propertyName, int value)
+        {
+            if (propertyName is null)
+            {
+                ThrowHelper.ThrowArgumentNullException(nameof(propertyName));
+            }
+            WriteNumber(propertyName.AsSpan(), (long)value);
+        }
 
         /// <summary>
         /// Writes the property name and <see cref="int"/> value (as a JSON number) as part of a name/value pair of a JSON object.
@@ -300,7 +312,7 @@ namespace System.Text.Json
             TranscodeAndWrite(escapedPropertyName, output);
 
             output[BytesPending++] = JsonConstants.Quote;
-            output[BytesPending++] = JsonConstants.KeyValueSeperator;
+            output[BytesPending++] = JsonConstants.KeyValueSeparator;
 
             bool result = Utf8Formatter.TryFormat(value, output.Slice(BytesPending), out int bytesWritten);
             Debug.Assert(result);
@@ -331,7 +343,7 @@ namespace System.Text.Json
             BytesPending += escapedPropertyName.Length;
 
             output[BytesPending++] = JsonConstants.Quote;
-            output[BytesPending++] = JsonConstants.KeyValueSeperator;
+            output[BytesPending++] = JsonConstants.KeyValueSeparator;
 
             bool result = Utf8Formatter.TryFormat(value, output.Slice(BytesPending), out int bytesWritten);
             Debug.Assert(result);
@@ -376,7 +388,7 @@ namespace System.Text.Json
             TranscodeAndWrite(escapedPropertyName, output);
 
             output[BytesPending++] = JsonConstants.Quote;
-            output[BytesPending++] = JsonConstants.KeyValueSeperator;
+            output[BytesPending++] = JsonConstants.KeyValueSeparator;
             output[BytesPending++] = JsonConstants.Space;
 
             bool result = Utf8Formatter.TryFormat(value, output.Slice(BytesPending), out int bytesWritten);
@@ -422,7 +434,7 @@ namespace System.Text.Json
             BytesPending += escapedPropertyName.Length;
 
             output[BytesPending++] = JsonConstants.Quote;
-            output[BytesPending++] = JsonConstants.KeyValueSeperator;
+            output[BytesPending++] = JsonConstants.KeyValueSeparator;
             output[BytesPending++] = JsonConstants.Space;
 
             bool result = Utf8Formatter.TryFormat(value, output.Slice(BytesPending), out int bytesWritten);

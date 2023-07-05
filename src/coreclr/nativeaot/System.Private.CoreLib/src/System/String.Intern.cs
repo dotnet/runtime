@@ -10,16 +10,14 @@ namespace System
     {
         public static string Intern(string str)
         {
-            if (str == null)
-                throw new ArgumentNullException(nameof(str));
+            ArgumentNullException.ThrowIfNull(str);
 
             return InternTable.GetOrCreateValue(str);
         }
 
         public static string IsInterned(string str)
         {
-            if (str == null)
-                throw new ArgumentNullException(nameof(str));
+            ArgumentNullException.ThrowIfNull(str);
 
             string canonicalString;
             if (!InternTable.TryGetValue(str, out canonicalString))

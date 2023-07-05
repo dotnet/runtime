@@ -3,6 +3,7 @@
 //
 
 using System;
+using Xunit;
 
 struct S
 {
@@ -19,9 +20,10 @@ struct S
     public Object O11;
 }
 
-class Test_test3
+public class Test_test3
 {
-    public static int Main()
+    [Fact]
+    public static int TestEntryPoint()
     {
         S s = new S();
 
@@ -41,7 +43,7 @@ class Test_test3
         return (100);
     }
 
-    public static void test(S s)
+    private static void test(S s)
     {
         Console.WriteLine(s.O1);
         Console.WriteLine(s.O2);

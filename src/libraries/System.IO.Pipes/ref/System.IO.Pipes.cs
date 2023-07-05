@@ -54,9 +54,11 @@ namespace System.IO.Pipes
         protected internal override void CheckPipePropertyOperations() { }
         public void Connect() { }
         public void Connect(int timeout) { }
+        public void Connect(System.TimeSpan timeout) { }
         public System.Threading.Tasks.Task ConnectAsync() { throw null; }
         public System.Threading.Tasks.Task ConnectAsync(int timeout) { throw null; }
         public System.Threading.Tasks.Task ConnectAsync(int timeout, System.Threading.CancellationToken cancellationToken) { throw null; }
+        public System.Threading.Tasks.Task ConnectAsync(System.TimeSpan timeout, System.Threading.CancellationToken cancellationToken) { throw null; }
         public System.Threading.Tasks.Task ConnectAsync(System.Threading.CancellationToken cancellationToken) { throw null; }
         ~NamedPipeClientStream() { }
     }
@@ -93,6 +95,7 @@ namespace System.IO.Pipes
         None = 0,
         CurrentUserOnly = 536870912,
         Asynchronous = 1073741824,
+        FirstPipeInstance = 524288
     }
     public abstract partial class PipeStream : System.IO.Stream
     {

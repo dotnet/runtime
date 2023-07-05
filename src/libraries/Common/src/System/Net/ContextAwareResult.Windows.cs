@@ -10,7 +10,6 @@ namespace System.Net
     {
         private WindowsIdentity? _windowsIdentity;
 
-        // Security: We need an assert for a call into WindowsIdentity.GetCurrent.
         private void SafeCaptureIdentity()
         {
             Debug.Assert(OperatingSystem.IsWindows());

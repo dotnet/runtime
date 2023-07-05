@@ -4,7 +4,6 @@
     <CLRTestKind>BuildAndRun</CLRTestKind>
     <CLRTestPriority>0</CLRTestPriority>
     <AllowUnsafeBlocks>true</AllowUnsafeBlocks>
-    <DefineConstants>$(DefineConstants);REFLECTION_FROM_USAGE</DefineConstants>
 
     <!-- There's just too many of these warnings -->
     <SuppressTrimAnalysisWarnings>true</SuppressTrimAnalysisWarnings>

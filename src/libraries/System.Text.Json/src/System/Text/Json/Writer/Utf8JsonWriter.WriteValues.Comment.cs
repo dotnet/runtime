@@ -3,14 +3,13 @@
 
 using System.Buffers;
 using System.Diagnostics;
-using System.Runtime.InteropServices;
 
 namespace System.Text.Json
 {
     public sealed partial class Utf8JsonWriter
     {
         private static readonly char[] s_singleLineCommentDelimiter = new char[2] { '*', '/' };
-        private static ReadOnlySpan<byte> SingleLineCommentDelimiterUtf8 => new byte[2] { (byte)'*', (byte)'/' };
+        private static ReadOnlySpan<byte> SingleLineCommentDelimiterUtf8 => "*/"u8;
 
         /// <summary>
         /// Writes the string text value (as a JSON comment).
@@ -25,8 +24,14 @@ namespace System.Text.Json
         /// <remarks>
         /// The comment value is not escaped before writing.
         /// </remarks>
-        public void WriteCommentValue(string value!!)
-            => WriteCommentValue(value.AsSpan());
+        public void WriteCommentValue(string value)
+        {
+            if (value is null)
+            {
+                ThrowHelper.ThrowArgumentNullException(nameof(value));
+            }
+            WriteCommentValue(value.AsSpan());
+        }
 
         /// <summary>
         /// Writes the text value (as a JSON comment).
@@ -48,6 +53,10 @@ namespace System.Text.Json
             }
 
             WriteCommentByOptions(value);
+            if (_tokenType is JsonTokenType.PropertyName or JsonTokenType.None)
+            {
+                _commentAfterNoneOrPropertyName = true;
+            }
         }
 
         private void WriteCommentByOptions(ReadOnlySpan<char> value)
@@ -80,9 +89,13 @@ namespace System.Text.Json
             output[BytesPending++] = JsonConstants.Slash;
             output[BytesPending++] = JsonConstants.Asterisk;
 
-            ReadOnlySpan<byte> byteSpan = MemoryMarshal.AsBytes(value);
-            OperationStatus status = JsonWriterHelper.ToUtf8(byteSpan, output.Slice(BytesPending), out int _, out int written);
+            OperationStatus status = JsonWriterHelper.ToUtf8(value, output.Slice(BytesPending), out int written);
             Debug.Assert(status != OperationStatus.DestinationTooSmall);
+            if (status == OperationStatus.InvalidData)
+            {
+                ThrowHelper.ThrowArgumentException_InvalidUTF16(value[written]);
+            }
+
             BytesPending += written;
 
             output[BytesPending++] = JsonConstants.Asterisk;
@@ -107,20 +120,23 @@ namespace System.Text.Json
 
             Span<byte> output = _memory.Span;
 
-            if (_tokenType != JsonTokenType.None)
+            if (_tokenType != JsonTokenType.None || _commentAfterNoneOrPropertyName)
             {
                 WriteNewLine(output);
+                JsonWriterHelper.WriteIndentation(output.Slice(BytesPending), indent);
+                BytesPending += indent;
             }
-
-            JsonWriterHelper.WriteIndentation(output.Slice(BytesPending), indent);
-            BytesPending += indent;
 
             output[BytesPending++] = JsonConstants.Slash;
             output[BytesPending++] = JsonConstants.Asterisk;
 
-            ReadOnlySpan<byte> byteSpan = MemoryMarshal.AsBytes(value);
-            OperationStatus status = JsonWriterHelper.ToUtf8(byteSpan, output.Slice(BytesPending), out int _, out int written);
+            OperationStatus status = JsonWriterHelper.ToUtf8(value, output.Slice(BytesPending), out int written);
             Debug.Assert(status != OperationStatus.DestinationTooSmall);
+            if (status == OperationStatus.InvalidData)
+            {
+                ThrowHelper.ThrowArgumentException_InvalidUTF16(value[written]);
+            }
+
             BytesPending += written;
 
             output[BytesPending++] = JsonConstants.Asterisk;
@@ -146,7 +162,16 @@ namespace System.Text.Json
                 ThrowHelper.ThrowArgumentException_InvalidCommentValue();
             }
 
+            if (!JsonWriterHelper.IsValidUtf8String(utf8Value))
+            {
+                ThrowHelper.ThrowArgumentException_InvalidUTF8(utf8Value);
+            }
+
             WriteCommentByOptions(utf8Value);
+            if (_tokenType is JsonTokenType.PropertyName or JsonTokenType.None)
+            {
+                _commentAfterNoneOrPropertyName = true;
+            }
         }
 
         private void WriteCommentByOptions(ReadOnlySpan<byte> utf8Value)
@@ -201,12 +226,10 @@ namespace System.Text.Json
 
             Span<byte> output = _memory.Span;
 
-            if (_tokenType != JsonTokenType.PropertyName)
+            if (_tokenType != JsonTokenType.None || _commentAfterNoneOrPropertyName)
             {
-                if (_tokenType != JsonTokenType.None)
-                {
-                    WriteNewLine(output);
-                }
+                WriteNewLine(output);
+
                 JsonWriterHelper.WriteIndentation(output.Slice(BytesPending), indent);
                 BytesPending += indent;
             }

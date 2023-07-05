@@ -32,6 +32,16 @@
         <target state="translated">Doppelter Typname</target>
         <note />
       </trans-unit>
+      <trans-unit id="FastPathPolymorphismNotSupportedMessageFormat">
+        <source>Type '{0}' is annotated with 'JsonDerivedTypeAttribute' which is not supported in 'JsonSourceGenerationMode.Serialization'.</source>
+        <target state="translated">Der Typ „{0}“ ist mit „JsonDerivedTypeAttribute“ versehen, was in „JsonSourceGenerationMode.Serialization“ nicht unterstützt wird.</target>
+        <note />
+      </trans-unit>
+      <trans-unit id="FastPathPolymorphismNotSupportedTitle">
+        <source>'JsonDerivedTypeAttribute' is not supported in 'JsonSourceGenerationMode.Serialization'.</source>
+        <target state="translated">„JsonDerivedTypeAttribute“ wird in „JsonSourceGenerationMode.Serialization“ nicht unterstützt.</target>
+        <note />
+      </trans-unit>
       <trans-unit id="InaccessibleJsonIncludePropertiesNotSupportedFormat">
         <source>The member '{0}.{1}' has been annotated with the JsonIncludeAttribute but is not visible to the source generator.</source>
         <target state="translated">Der Member "{0}. {1}" wurde mit dem JsonIncludeAttribute versehen, ist jedoch für den Quellgenerator nicht sichtbar.</target>
@@ -50,6 +60,36 @@
       <trans-unit id="InitOnlyPropertyDeserializationNotSupportedTitle">
         <source>Deserialization of init-only properties is currently not supported in source generation mode.</source>
         <target state="translated">Die Deserialisierung von reinen init-Eigenschaften wird im Quellgenerierungsmodus derzeit nicht unterstützt.</target>
+        <note />
+      </trans-unit>
+      <trans-unit id="JsonConverterAttributeInvalidTypeMessageFormat">
+        <source>The 'JsonConverterAttribute' type '{0}' specified on member '{1}' is not a converter type or does not contain an accessible parameterless constructor.</source>
+        <target state="translated">Der für den Member "{1}" angegebene JsonConverterAttribute-Typ "{0}" ist kein Konvertertyp oder enthält keinen parameterlosen Konstruktor, auf den zugegriffen werden kann.</target>
+        <note />
+      </trans-unit>
+      <trans-unit id="JsonConverterAttributeInvalidTypeTitle">
+        <source>The 'JsonConverterAttribute.Type' contains an invalid or inaccessible argument.</source>
+        <target state="translated">"JsonConverterAttribute.Type" enthält ein ungültiges oder nicht zugängliches Argument.</target>
+        <note />
+      </trans-unit>
+      <trans-unit id="JsonStringEnumConverterNotSupportedMessageFormat">
+        <source>The member '{0}' has been annotated with 'JsonStringEnumConverter' which is not supported in native AOT. Consider using the generic 'JsonStringEnumConverter&lt;TEnum&gt;' instead.</source>
+        <target state="translated">Der Member "{0}" wurde mit "JsonStringEnumConverter" kommentiert, was in nativem AOT nicht unterstützt wird. Erwägen Sie stattdessen die Verwendung des generischen "JsonStringEnumConverter&lt;TEnum&gt;".</target>
+        <note />
+      </trans-unit>
+      <trans-unit id="JsonStringEnumConverterNotSupportedTitle">
+        <source>The non-generic 'JsonStringEnumConverter' requires dynamic code.</source>
+        <target state="translated">Der nicht generische "JsonStringEnumConverter" erfordert dynamischen Code.</target>
+        <note />
+      </trans-unit>
+      <trans-unit id="JsonUnsupportedLanguageVersionMessageFormat">
+        <source>The System.Text.Json source generator is not available in C# '{0}'. Please use language version {1} or greater.</source>
+        <target state="translated">Der System.Text.Json-Quellgenerator ist in C# „{0}“ nicht verfügbar. Verwenden Sie die Sprachversion {1} oder höher.</target>
+        <note />
+      </trans-unit>
+      <trans-unit id="JsonUnsupportedLanguageVersionTitle">
+        <source>C# language version not supported by the source generator.</source>
+        <target state="translated">Die C#-Sprachversion wird vom Quellgenerator nicht unterstützt.</target>
         <note />
       </trans-unit>
       <trans-unit id="MultipleJsonConstructorAttributeFormat">

@@ -38,8 +38,7 @@ namespace System.Diagnostics
             [MemberNotNull(nameof(_type))]
             set
             {
-                if (value == null)
-                    throw new ArgumentNullException(nameof(value));
+                ArgumentNullException.ThrowIfNull(value);
                 _type = value;
             }
         }
@@ -49,8 +48,7 @@ namespace System.Diagnostics
         [RequiresUnreferencedCode("Types may be trimmed from the assembly.")]
         public static SwitchAttribute[] GetAll(Assembly assembly)
         {
-            if (assembly == null)
-                throw new ArgumentNullException(nameof(assembly));
+            ArgumentNullException.ThrowIfNull(assembly);
 
             List<object> switchAttribs = new List<object>();
             object[] attribs = assembly.GetCustomAttributes(typeof(SwitchAttribute), false);

@@ -6,8 +6,9 @@ using System.Collections;
 using System.Collections.Generic;
 using System.Linq;
 using System.Runtime.CompilerServices;
+using Xunit;
 
-class Program
+public class Program
 {
     private static int s_ReturnCode = 100;
 
@@ -88,7 +89,8 @@ class Program
         AssertEquals(expected, actual);
     }
 
-    public static int Main(string[] args)
+    [Fact]
+    public static int TestEntryPoint()
     {
         long[] values = 
             {
@@ -189,7 +191,7 @@ class Program
             }
         }
 
-        string[] strings = { "", "0", "00", "1", "11", "111", "привет", "Hello" };
+        string[] strings = { "", "0", "00", "1", "11", "111", "\u043F\u0440\u0438\u0432\u0435\u0442", "Hello" };
         foreach (var str1 in strings)
         {
             foreach (var str2 in strings)
@@ -221,6 +223,11 @@ class Program
         AssertEquals("System.Collections.Generic.EnumComparer`1[System.Runtime.CompilerServices.MethodImplOptions]", Comparer<MethodImplOptions>.Default.GetType().ToString());
         AssertEquals("System.Collections.Generic.NullableComparer`1[System.Byte]", Comparer<byte?>.Default.GetType().ToString());
         AssertEquals("System.Collections.Generic.ObjectComparer`1[Struct1]", Comparer<Struct1>.Default.GetType().ToString());
+
+        AssertEquals("System.Collections.Generic.NullableComparer`1[System.Runtime.CompilerServices.MethodImplOptions]", Comparer<MethodImplOptions?>.Default.GetType().ToString());
+        AssertEquals("System.Collections.Generic.NullableEqualityComparer`1[System.Runtime.CompilerServices.MethodImplOptions]", EqualityComparer<MethodImplOptions?>.Default.GetType().ToString());
+        AssertEquals("System.Collections.Generic.NullableComparer`1[Struct1]", Comparer<Struct1?>.Default.GetType().ToString());
+        AssertEquals("System.Collections.Generic.NullableEqualityComparer`1[Struct1]", EqualityComparer<Struct1?>.Default.GetType().ToString());
     }
     private static int GetHashCodeTests()
     {

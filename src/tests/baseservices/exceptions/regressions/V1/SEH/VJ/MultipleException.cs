@@ -20,7 +20,7 @@ public class MultipleException {
 	}
 		
 	
-	public static int Main(String [] args) {
+	public static int Main() {
 		int retVal = 100;
 		String s = "Done";
 		Thread mv_Thread;

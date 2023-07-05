@@ -1,0 +1,14 @@
+<Project Sdk="Microsoft.NET.Sdk">
+  <PropertyGroup>
+  </PropertyGroup>
+  <PropertyGroup>
+    <!-- Set to 'Full' if the Debug? column is marked in the spreadsheet. Leave blank otherwise. -->
+    <DebugType />
+    <Optimize>True</Optimize>
+    <NoStandardLib>True</NoStandardLib>
+    <Noconfig>True</Noconfig>
+  </PropertyGroup>
+  <ItemGroup>
+    <Compile Include="throw.cs" />
+  </ItemGroup>
+</Project>

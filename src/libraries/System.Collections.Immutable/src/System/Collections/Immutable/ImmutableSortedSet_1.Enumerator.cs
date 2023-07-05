@@ -25,15 +25,6 @@ namespace System.Collections.Immutable
         public struct Enumerator : IEnumerator<T>, ISecurePooledObjectUser, IStrongEnumerator<T>
         {
             /// <summary>
-            /// The resource pool of reusable mutable stacks for purposes of enumeration.
-            /// </summary>
-            /// <remarks>
-            /// We utilize this resource pool to make "allocation free" enumeration achievable.
-            /// </remarks>
-            private static readonly SecureObjectPool<Stack<RefAsValueType<Node>>, Enumerator> s_enumeratingStacks =
-                new SecureObjectPool<Stack<RefAsValueType<Node>>, Enumerator>();
-
-            /// <summary>
             /// The builder being enumerated, if applicable.
             /// </summary>
             private readonly Builder? _builder;
@@ -94,9 +85,9 @@ namespace System.Collections.Immutable
                 _enumeratingBuilderVersion = builder != null ? builder.Version : -1;
                 _poolUserId = SecureObjectPool.NewId();
                 _stack = null;
-                if (!s_enumeratingStacks.TryTake(this, out _stack))
+                if (!SecureObjectPool<Stack<RefAsValueType<Node>>, Enumerator>.TryTake(this, out _stack))
                 {
-                    _stack = s_enumeratingStacks.PrepNew(this, new Stack<RefAsValueType<Node>>(root.Height));
+                    _stack = SecureObjectPool<Stack<RefAsValueType<Node>>, Enumerator>.PrepNew(this, new Stack<RefAsValueType<Node>>(root.Height));
                 }
 
                 this.PushNext(_root);
@@ -143,7 +134,7 @@ namespace System.Collections.Immutable
                 if (_stack != null && _stack.TryUse(ref this, out Stack<RefAsValueType<Node>>? stack))
                 {
                     stack.ClearFastWhenEmpty();
-                    s_enumeratingStacks.TryAdd(this, _stack!);
+                    SecureObjectPool<Stack<RefAsValueType<Node>>, Enumerator>.TryAdd(this, _stack!);
                     _stack = null;
                 }
             }
@@ -157,7 +148,7 @@ namespace System.Collections.Immutable
                 this.ThrowIfDisposed();
                 this.ThrowIfChanged();
 
-                var stack = _stack!.Use(ref this);
+                Stack<RefAsValueType<ImmutableSortedSet<T>.Node>> stack = _stack!.Use(ref this);
                 if (stack.Count > 0)
                 {
                     Node n = stack.Pop().Value;
@@ -181,7 +172,7 @@ namespace System.Collections.Immutable
 
                 _enumeratingBuilderVersion = _builder != null ? _builder.Version : -1;
                 _current = null;
-                var stack = _stack!.Use(ref this);
+                Stack<RefAsValueType<ImmutableSortedSet<T>.Node>> stack = _stack!.Use(ref this);
                 stack.ClearFastWhenEmpty();
                 this.PushNext(_root);
             }
@@ -222,7 +213,7 @@ namespace System.Collections.Immutable
             private void PushNext(Node node)
             {
                 Requires.NotNull(node, nameof(node));
-                var stack = _stack!.Use(ref this);
+                Stack<RefAsValueType<ImmutableSortedSet<T>.Node>> stack = _stack!.Use(ref this);
                 while (!node.IsEmpty)
                 {
                     stack.Push(new RefAsValueType<Node>(node));

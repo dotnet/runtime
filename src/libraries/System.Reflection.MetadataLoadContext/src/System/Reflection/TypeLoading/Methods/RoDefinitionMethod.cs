@@ -20,7 +20,6 @@ namespace System.Reflection.TypeLoading
         }
 
         internal abstract MethodSig<RoParameter> SpecializeMethodSig(IRoMethodBase member);
-        internal abstract MethodSig<RoType> SpecializeCustomModifiers(in TypeContext typeContext);
         internal abstract MethodSig<string> SpecializeMethodSigStrings(in TypeContext typeContext);
         internal abstract MethodBody? SpecializeMethodBody(IRoMethodBase owner);
     }
@@ -74,7 +73,6 @@ namespace System.Reflection.TypeLoading
         protected sealed override MethodSig<RoParameter> ComputeMethodSig() => _decoder.SpecializeMethodSig(this);
         public sealed override MethodBody? GetMethodBody() => _decoder.SpecializeMethodBody(this);
         protected sealed override MethodSig<string> ComputeMethodSigStrings() => _decoder.SpecializeMethodSigStrings(TypeContext);
-        protected sealed override MethodSig<RoType> ComputeCustomModifiers() => _decoder.SpecializeCustomModifiers(TypeContext);
 
         public sealed override bool Equals([NotNullWhen(true)] object? obj)
         {
@@ -100,8 +98,11 @@ namespace System.Reflection.TypeLoading
         public sealed override MethodInfo GetGenericMethodDefinition() => IsGenericMethodDefinition ? this : throw new InvalidOperationException(); // Very uninformative but compatible exception
 
         [RequiresUnreferencedCode("If some of the generic arguments are annotated (either with DynamicallyAccessedMembersAttribute, or generic constraints), trimming can't validate that the requirements of those annotations are met.")]
-        public sealed override MethodInfo MakeGenericMethod(params Type[] typeArguments!!)
+        public sealed override MethodInfo MakeGenericMethod(params Type[] typeArguments)
         {
+            if (typeArguments is null)
+                throw new ArgumentNullException(nameof(typeArguments));
+
             if (!IsGenericMethodDefinition)
                 throw new InvalidOperationException(SR.Format(SR.Arg_NotGenericMethodDefinition, this));
 
@@ -132,7 +133,6 @@ namespace System.Reflection.TypeLoading
 
         // Used by RoConstructedGenericMethod to construct instantiated versions of method properties.
         internal sealed override MethodSig<RoParameter> SpecializeMethodSig(IRoMethodBase member) => _decoder.SpecializeMethodSig(member);
-        internal sealed override MethodSig<RoType> SpecializeCustomModifiers(in TypeContext typeContext) => _decoder.SpecializeCustomModifiers(typeContext);
         internal sealed override MethodSig<string> SpecializeMethodSigStrings(in TypeContext typeContext) => _decoder.SpecializeMethodSigStrings(typeContext);
         internal sealed override MethodBody? SpecializeMethodBody(IRoMethodBase owner) => _decoder.SpecializeMethodBody(owner);
 

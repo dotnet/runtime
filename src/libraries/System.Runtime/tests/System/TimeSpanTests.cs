@@ -4,6 +4,7 @@
 using System;
 using System.Collections.Generic;
 using System.Globalization;
+using System.Text;
 using Xunit;
 
 namespace System.Tests
@@ -80,6 +81,45 @@ namespace System.Tests
             AssertExtensions.Throws<ArgumentOutOfRangeException>(null, () => new TimeSpan(max.Days, max.Hours, max.Minutes + 1, max.Seconds, max.Milliseconds));
             AssertExtensions.Throws<ArgumentOutOfRangeException>(null, () => new TimeSpan(max.Days, max.Hours, max.Minutes, max.Seconds + 1, max.Milliseconds));
             AssertExtensions.Throws<ArgumentOutOfRangeException>(null, () => new TimeSpan(max.Days, max.Hours, max.Minutes, max.Seconds, max.Milliseconds + 1));
+        }
+
+        [Fact]
+        public static void Ctor_Int_Int_Int_Int_Int_Int()
+        {
+            var timeSpan = new TimeSpan(10, 9, 8, 7, 6, 5);
+            VerifyTimeSpan(timeSpan, 10, 9, 8, 7, 6, 5);
+        }
+
+        [Fact]
+        public static void Ctor_Int_Int_Int_Int_Int_Int_Invalid()
+        {
+            // TimeSpan > TimeSpan.MinValue
+            TimeSpan min = TimeSpan.MinValue;
+            AssertExtensions.Throws<ArgumentOutOfRangeException>(null, () => new TimeSpan(min.Days - 1, min.Hours, min.Minutes, min.Seconds, min.Milliseconds, min.Microseconds));
+            AssertExtensions.Throws<ArgumentOutOfRangeException>(null, () => new TimeSpan(min.Days, min.Hours - 1, min.Minutes, min.Seconds, min.Milliseconds, min.Microseconds));
+            AssertExtensions.Throws<ArgumentOutOfRangeException>(null, () => new TimeSpan(min.Days, min.Hours, min.Minutes - 1, min.Seconds, min.Milliseconds, min.Microseconds));
+            AssertExtensions.Throws<ArgumentOutOfRangeException>(null, () => new TimeSpan(min.Days, min.Hours, min.Minutes, min.Seconds - 1, min.Milliseconds, min.Microseconds));
+            AssertExtensions.Throws<ArgumentOutOfRangeException>(null, () => new TimeSpan(min.Days, min.Hours, min.Minutes, min.Seconds, min.Milliseconds, min.Microseconds - 1));
+
+            // TimeSpan > TimeSpan.MaxValue
+            TimeSpan max = TimeSpan.MaxValue;
+            AssertExtensions.Throws<ArgumentOutOfRangeException>(null, () => new TimeSpan(max.Days + 1, max.Hours, max.Minutes, max.Seconds, max.Milliseconds, max.Microseconds));
+            AssertExtensions.Throws<ArgumentOutOfRangeException>(null, () => new TimeSpan(max.Days, max.Hours + 1, max.Minutes, max.Seconds, max.Milliseconds, max.Microseconds));
+            AssertExtensions.Throws<ArgumentOutOfRangeException>(null, () => new TimeSpan(max.Days, max.Hours, max.Minutes + 1, max.Seconds, max.Milliseconds, max.Microseconds));
+            AssertExtensions.Throws<ArgumentOutOfRangeException>(null, () => new TimeSpan(max.Days, max.Hours, max.Minutes, max.Seconds + 1, max.Milliseconds, max.Microseconds));
+            AssertExtensions.Throws<ArgumentOutOfRangeException>(null, () => new TimeSpan(max.Days, max.Hours, max.Minutes, max.Seconds, max.Milliseconds, max.Microseconds + 1));
+        }
+
+        [Theory]
+        [InlineData(100)]
+        [InlineData(300)]
+        [InlineData(900)]
+        public static void Ctor_Int_Int_Int_Int_Int_Int_WithNanosecond(int nanoseconds)
+        {
+            var timeSpan = new TimeSpan(10, 9, 8, 7, 6, 5);
+            timeSpan = new TimeSpan(timeSpan.Ticks + nanoseconds / 100);
+
+            VerifyTimeSpan(timeSpan, 10, 9, 8, 7, 6, 5, nanoseconds);
         }
 
         public static IEnumerable<object[]> Total_Days_Hours_Minutes_Seconds_Milliseconds_TestData()
@@ -1233,6 +1273,20 @@ namespace System.Tests
             Assert.Equal(timeSpan, +timeSpan);
         }
 
+        private static void VerifyTimeSpan(TimeSpan timeSpan, int days, int hours, int minutes, int seconds,
+            int milliseconds, int microseconds)
+        {
+            VerifyTimeSpan(timeSpan, days, hours, minutes, seconds, milliseconds);
+            Assert.Equal(microseconds, timeSpan.Microseconds);
+        }
+
+        private static void VerifyTimeSpan(TimeSpan timeSpan, int days, int hours, int minutes, int seconds,
+            int milliseconds, int microseconds, int nanoseconds)
+        {
+            VerifyTimeSpan(timeSpan, days, hours, minutes, seconds, milliseconds, microseconds);
+            Assert.Equal(nanoseconds, timeSpan.Nanoseconds);
+        }
+
         [Theory]
         [MemberData(nameof(CompareTo_TestData))]
         public static void CompareTo_Object(TimeSpan timeSpan1, object obj, int expected)
@@ -1369,31 +1423,55 @@ namespace System.Tests
         [MemberData(nameof(ToString_TestData))]
         public static void TryFormat_Valid(TimeSpan input, string format, CultureInfo info, string expected)
         {
-            int charsWritten;
-            Span<char> dst;
+            // UTF16
+            {
+                int charsWritten;
+                Span<char> dst;
 
-            dst = new char[expected.Length - 1];
-            Assert.False(input.TryFormat(dst, out charsWritten, format, info));
-            Assert.Equal(0, charsWritten);
+                dst = new char[expected.Length - 1];
+                Assert.False(input.TryFormat(dst, out charsWritten, format, info));
+                Assert.Equal(0, charsWritten);
 
-            dst = new char[expected.Length];
-            Assert.True(input.TryFormat(dst, out charsWritten, format, info));
-            Assert.Equal(expected.Length, charsWritten);
-            Assert.Equal(expected, new string(dst));
+                dst = new char[expected.Length];
+                Assert.True(input.TryFormat(dst, out charsWritten, format, info));
+                Assert.Equal(expected.Length, charsWritten);
+                Assert.Equal(expected, new string(dst));
 
-            dst = new char[expected.Length + 1];
-            Assert.True(input.TryFormat(dst, out charsWritten, format, info));
-            Assert.Equal(expected.Length, charsWritten);
-            Assert.Equal(expected, new string(dst.Slice(0, dst.Length - 1)));
-            Assert.Equal(0, dst[dst.Length - 1]);
+                dst = new char[expected.Length + 1];
+                Assert.True(input.TryFormat(dst, out charsWritten, format, info));
+                Assert.Equal(expected.Length, charsWritten);
+                Assert.Equal(expected, new string(dst.Slice(0, dst.Length - 1)));
+                Assert.Equal(0, dst[dst.Length - 1]);
+            }
+
+            // UTF8
+            {
+                int bytesWritten;
+                Span<byte> dst;
+
+                dst = new byte[expected.Length - 1];
+                Assert.False(input.TryFormat(dst, out bytesWritten, format, info));
+                Assert.Equal(0, bytesWritten);
+
+                dst = new byte[expected.Length];
+                Assert.True(input.TryFormat(dst, out bytesWritten, format, info));
+                Assert.Equal(expected.Length, bytesWritten);
+                Assert.Equal(expected, Encoding.UTF8.GetString(dst));
+
+                dst = new byte[expected.Length + 1];
+                Assert.True(input.TryFormat(dst, out bytesWritten, format, info));
+                Assert.Equal(expected.Length, bytesWritten);
+                Assert.Equal(expected, Encoding.UTF8.GetString(dst.Slice(0, dst.Length - 1)));
+                Assert.Equal(0, dst[dst.Length - 1]);
+            }
         }
 
         [Theory]
         [MemberData(nameof(ToString_InvalidFormat_TestData))]
         public void TryFormat_InvalidFormat_ThrowsFormatException(string invalidFormat)
         {
-            char[] dst = new char[1];
-            Assert.Throws<FormatException>(() => new TimeSpan().TryFormat(dst.AsSpan(), out int charsWritten, invalidFormat, null));
+            Assert.Throws<FormatException>(() => new TimeSpan().TryFormat(new char[1], out int charsWritten, invalidFormat, null));
+            Assert.Throws<FormatException>(() => ((IUtf8SpanFormattable)new TimeSpan()).TryFormat(new byte[1], out int bytesWritten, invalidFormat, null));
         }
 
         [Fact]
@@ -1405,6 +1483,26 @@ namespace System.Tests
             Assert.Equal(12345600, TimeSpan.FromSeconds(1.23456).Ticks);
 
             Assert.Equal(1.23456 * 60 * 10_000_000, TimeSpan.FromMinutes(1.23456).Ticks);
+        }
+
+        [Theory]
+        [InlineData(0, 0)]
+        [InlineData(100, 10)]
+        [InlineData(1_000, 100)]
+        public static void TestTotalMicroseconds(long ticks, double totalMicroseconds)
+        {
+            var timeSpan = new TimeSpan(ticks);
+            Assert.Equal(totalMicroseconds, timeSpan.TotalMicroseconds);
+        }
+
+        [Theory]
+        [InlineData(0, 0)]
+        [InlineData(100, 10_000)]
+        [InlineData(1_000, 100_000)]
+        public static void TestTotalNanoseconds(long ticks, double totalNanoseconds)
+        {
+            var timeSpan = new TimeSpan(ticks);
+            Assert.Equal(totalNanoseconds, timeSpan.TotalNanoseconds);
         }
     }
 }

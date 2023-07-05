@@ -51,3 +51,13 @@ Detect the default locale for the machine, defaulting to Invaraint if
 we can't compute one (different from uloc_getDefault()) would do.
 */
 const char* DetectDefaultLocaleName(void);
+
+#ifdef __APPLE__
+/*
+Function:
+DetectDefaultSystemLocaleName
+
+Detects the default locale string for Apple platforms
+*/
+char* DetectDefaultAppleLocaleName(void);
+#endif

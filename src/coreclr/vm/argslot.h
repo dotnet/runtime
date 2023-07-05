@@ -18,7 +18,7 @@ typedef unsigned __int64 ARG_SLOT;
 
 #if BIGENDIAN
 // Returns the address of the payload inside the argslot
-inline BYTE* ArgSlotEndianessFixup(ARG_SLOT* pArg, UINT cbSize) {
+inline BYTE* ArgSlotEndiannessFixup(ARG_SLOT* pArg, UINT cbSize) {
     LIMITED_METHOD_CONTRACT;
 
     BYTE* pBuf = (BYTE*)pArg;
@@ -36,7 +36,7 @@ inline BYTE* ArgSlotEndianessFixup(ARG_SLOT* pArg, UINT cbSize) {
     return pBuf;
 }
 #else
-#define ArgSlotEndianessFixup(pArg, cbSize) ((BYTE *)(pArg))
+#define ArgSlotEndiannessFixup(pArg, cbSize) ((BYTE *)(pArg))
 #endif
 
 #endif  // __ARG_SLOT_H__

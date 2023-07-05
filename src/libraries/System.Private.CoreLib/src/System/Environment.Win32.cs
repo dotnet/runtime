@@ -4,7 +4,6 @@
 using System.Collections;
 using System.Diagnostics;
 using System.IO;
-using System.Reflection;
 using System.Runtime.InteropServices;
 using System.Text;
 using Internal.Win32;
@@ -57,12 +56,14 @@ namespace System
                 {
                     IntPtr unused;
                     IntPtr r = Interop.User32.SendMessageTimeout(new IntPtr(Interop.User32.HWND_BROADCAST), Interop.User32.WM_SETTINGCHANGE, IntPtr.Zero, (IntPtr)lParam, 0, 1000, &unused);
-                    Debug.Assert(r != IntPtr.Zero, $"SetEnvironmentVariable failed: {Marshal.GetLastPInvokeError()}");
+
+                    // SendMessageTimeout message is a empty stub on Windows Nano Server that fails with both result and last error 0.
+                    Debug.Assert(r != IntPtr.Zero || Marshal.GetLastPInvokeError() == 0, $"SetEnvironmentVariable failed: {Marshal.GetLastPInvokeError()}");
                 }
             }
         }
 
-        private static IDictionary GetEnvironmentVariablesFromRegistry(bool fromMachine)
+        private static Hashtable GetEnvironmentVariablesFromRegistry(bool fromMachine)
         {
             var results = new Hashtable();
 
@@ -192,7 +193,7 @@ namespace System
                     // The docs don't call this out clearly, but experimenting shows that the error returned is the following.
                     if (error != Interop.Errors.ERROR_INSUFFICIENT_BUFFER)
                     {
-                        throw new InvalidOperationException(Win32Marshal.GetMessage(error));
+                        throw new InvalidOperationException(Marshal.GetPInvokeErrorMessage(error));
                     }
 
                     domainBuilder.EnsureCapacity((int)length);
@@ -219,6 +220,14 @@ namespace System
 
             switch (folder)
             {
+                // Special-cased values to not use SHGetFolderPath when we have a more direct option available.
+                case SpecialFolder.System:
+                    // This assumes the system directory always exists and thus we don't need to do anything special for any SpecialFolderOption.
+                    return SystemDirectory;
+                default:
+                    return string.Empty;
+
+                // Map the SpecialFolder to the appropriate Guid
                 case SpecialFolder.ApplicationData:
                     folderGuid = Interop.Shell32.KnownFolders.RoamingAppData;
                     break;
@@ -269,9 +278,6 @@ namespace System
                     break;
                 case SpecialFolder.Startup:
                     folderGuid = Interop.Shell32.KnownFolders.Startup;
-                    break;
-                case SpecialFolder.System:
-                    folderGuid = Interop.Shell32.KnownFolders.System;
                     break;
                 case SpecialFolder.Templates:
                     folderGuid = Interop.Shell32.KnownFolders.Templates;
@@ -359,15 +365,8 @@ namespace System
                 case SpecialFolder.Windows:
                     folderGuid = Interop.Shell32.KnownFolders.Windows;
                     break;
-                default:
-                    return string.Empty;
             }
 
-            return GetKnownFolderPath(folderGuid, option);
-        }
-
-        private static string GetKnownFolderPath(string folderGuid, SpecialFolderOption option)
-        {
             Guid folderId = new Guid(folderGuid);
 
             int hr = Interop.Shell32.SHGetKnownFolderPath(folderId, (uint)option, IntPtr.Zero, out string path);
@@ -379,34 +378,12 @@ namespace System
             return path;
         }
 
-        // Seperate type so a .cctor is not created for Enviroment which then would be triggered during startup
+        // Separate type so a .cctor is not created for Environment which then would be triggered during startup
         private static class WindowsVersion
         {
             // Cache the value in static readonly that can be optimized out by the JIT
-            internal static readonly bool IsWindows8OrAbove = GetIsWindows8OrAbove();
-
-            private static bool GetIsWindows8OrAbove()
-            {
-                ulong conditionMask = Interop.Kernel32.VerSetConditionMask(0, Interop.Kernel32.VER_MAJORVERSION, Interop.Kernel32.VER_GREATER_EQUAL);
-                conditionMask = Interop.Kernel32.VerSetConditionMask(conditionMask, Interop.Kernel32.VER_MINORVERSION, Interop.Kernel32.VER_GREATER_EQUAL);
-                conditionMask = Interop.Kernel32.VerSetConditionMask(conditionMask, Interop.Kernel32.VER_SERVICEPACKMAJOR, Interop.Kernel32.VER_GREATER_EQUAL);
-                conditionMask = Interop.Kernel32.VerSetConditionMask(conditionMask, Interop.Kernel32.VER_SERVICEPACKMINOR, Interop.Kernel32.VER_GREATER_EQUAL);
-
-                // Windows 8 version is 6.2
-                Interop.Kernel32.OSVERSIONINFOEX version = default;
-                unsafe
-                {
-                    version.dwOSVersionInfoSize = sizeof(Interop.Kernel32.OSVERSIONINFOEX);
-                }
-                version.dwMajorVersion = 6;
-                version.dwMinorVersion = 2;
-                version.wServicePackMajor = 0;
-                version.wServicePackMinor = 0;
-
-                return Interop.Kernel32.VerifyVersionInfoW(ref version,
-                    Interop.Kernel32.VER_MAJORVERSION | Interop.Kernel32.VER_MINORVERSION | Interop.Kernel32.VER_SERVICEPACKMAJOR | Interop.Kernel32.VER_SERVICEPACKMINOR,
-                    conditionMask);
-            }
+            // Windows 8 version is 6.2
+            internal static readonly bool IsWindows8OrAbove = OperatingSystem.IsWindowsVersionAtLeast(6, 2);
         }
     }
 }

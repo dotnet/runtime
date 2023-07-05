@@ -32,7 +32,11 @@ namespace System.Xml
                     return false;
 
                 case State.InReadBinary:
-                    await FinishReadBinaryAsync().ConfigureAwait(false);
+                    _state = State.Interactive;
+                    if (_readBinaryHelper != null)
+                    {
+                        await _readBinaryHelper.FinishAsync().ConfigureAwait(false);
+                    }
                     _state = State.Interactive;
                     goto case State.Interactive;
 
@@ -299,125 +303,111 @@ namespace System.Xml
             return readCount;
         }
 
-        public override async Task<int> ReadElementContentAsBase64Async(byte[] buffer!!, int index, int count)
+        public override Task<int> ReadElementContentAsBase64Async(byte[] buffer, int index, int count)
         {
-            // check arguments
-            if (count < 0)
+            ArgumentNullException.ThrowIfNull(buffer);
+            if (index < 0 || (uint)count > buffer.Length - index)
             {
-                throw new ArgumentOutOfRangeException(nameof(count));
-            }
-            if (index < 0)
-            {
-                throw new ArgumentOutOfRangeException(nameof(index));
-            }
-            if (buffer.Length - index < count)
-            {
-                throw new ArgumentOutOfRangeException(nameof(count));
+                throw new ArgumentOutOfRangeException(index < 0 ? nameof(index) : nameof(count));
             }
 
             if (ReadState != ReadState.Interactive)
             {
-                return 0;
+                return Task.FromResult(0);
             }
 
-            if (_state != State.InReadBinary)
+            return Core(buffer, index, count);
+
+            async Task<int> Core(byte[] buffer, int index, int count)
             {
-                // forward ReadBase64Chunk calls into the base (wrapped) reader if possible, i.e. if it can read binary and we
-                // should not check characters
-                if (base.CanReadBinaryContent && (!_checkCharacters))
+                if (_state != State.InReadBinary)
                 {
-                    _readBinaryHelper = null;
-                    _state = State.InReadBinary;
-                    return await base.ReadElementContentAsBase64Async(buffer, index, count).ConfigureAwait(false);
+                    // forward ReadBase64Chunk calls into the base (wrapped) reader if possible, i.e. if it can read binary and we
+                    // should not check characters
+                    if (base.CanReadBinaryContent && (!_checkCharacters))
+                    {
+                        _readBinaryHelper = null;
+                        _state = State.InReadBinary;
+                        return await base.ReadElementContentAsBase64Async(buffer, index, count).ConfigureAwait(false);
+                    }
+                    // the wrapped reader cannot read chunks or we are on an element where we should check characters or ignore whitespace
+                    else
+                    {
+                        _readBinaryHelper = ReadContentAsBinaryHelper.CreateOrReset(_readBinaryHelper, this);
+                    }
                 }
-                // the wrapped reader cannot read chunks or we are on an element where we should check characters or ignore whitespace
                 else
                 {
-                    _readBinaryHelper = ReadContentAsBinaryHelper.CreateOrReset(_readBinaryHelper, this);
+                    // forward calls into wrapped reader
+                    if (_readBinaryHelper == null)
+                    {
+                        return await base.ReadElementContentAsBase64Async(buffer, index, count).ConfigureAwait(false);
+                    }
                 }
+
+                // turn off InReadBinary state in order to have a normal Read() behavior when called from readBinaryHelper
+                _state = State.Interactive;
+
+                // call to the helper
+                int readCount = await _readBinaryHelper.ReadElementContentAsBase64Async(buffer, index, count).ConfigureAwait(false);
+
+                // turn on InReadBinary in again and return
+                _state = State.InReadBinary;
+                return readCount;
             }
-            else
-            {
-                // forward calls into wrapped reader
-                if (_readBinaryHelper == null)
-                {
-                    return await base.ReadElementContentAsBase64Async(buffer, index, count).ConfigureAwait(false);
-                }
-            }
-
-            // turn off InReadBinary state in order to have a normal Read() behavior when called from readBinaryHelper
-            _state = State.Interactive;
-
-            // call to the helper
-            int readCount = await _readBinaryHelper.ReadElementContentAsBase64Async(buffer, index, count).ConfigureAwait(false);
-
-            // turn on InReadBinary in again and return
-            _state = State.InReadBinary;
-            return readCount;
         }
 
-        public override async Task<int> ReadElementContentAsBinHexAsync(byte[] buffer!!, int index, int count)
+        public override Task<int> ReadElementContentAsBinHexAsync(byte[] buffer, int index, int count)
         {
-            // check arguments
-            if (count < 0)
+            ArgumentNullException.ThrowIfNull(buffer);
+            if (index < 0 || (uint)count > buffer.Length - index)
             {
-                throw new ArgumentOutOfRangeException(nameof(count));
+                throw new ArgumentOutOfRangeException(index < 0 ? nameof(index) : nameof(count));
             }
-            if (index < 0)
-            {
-                throw new ArgumentOutOfRangeException(nameof(index));
-            }
-            if (buffer.Length - index < count)
-            {
-                throw new ArgumentOutOfRangeException(nameof(count));
-            }
+
             if (ReadState != ReadState.Interactive)
             {
-                return 0;
+                return Task.FromResult(0);
             }
 
-            if (_state != State.InReadBinary)
+            return Core(buffer, index, count);
+
+            async Task<int> Core(byte[] buffer, int index, int count)
             {
-                // forward ReadBinHexChunk calls into the base (wrapped) reader if possible, i.e. if it can read chunks and we
-                // should not check characters
-                if (base.CanReadBinaryContent && (!_checkCharacters))
+                if (_state != State.InReadBinary)
                 {
-                    _readBinaryHelper = null;
-                    _state = State.InReadBinary;
-                    return await base.ReadElementContentAsBinHexAsync(buffer, index, count).ConfigureAwait(false);
+                    // forward ReadBinHexChunk calls into the base (wrapped) reader if possible, i.e. if it can read chunks and we
+                    // should not check characters
+                    if (base.CanReadBinaryContent && (!_checkCharacters))
+                    {
+                        _readBinaryHelper = null;
+                        _state = State.InReadBinary;
+                        return await base.ReadElementContentAsBinHexAsync(buffer, index, count).ConfigureAwait(false);
+                    }
+                    // the wrapped reader cannot read chunks or we are on an element where we should check characters or ignore whitespace
+                    else
+                    {
+                        _readBinaryHelper = ReadContentAsBinaryHelper.CreateOrReset(_readBinaryHelper, this);
+                    }
                 }
-                // the wrapped reader cannot read chunks or we are on an element where we should check characters or ignore whitespace
                 else
                 {
-                    _readBinaryHelper = ReadContentAsBinaryHelper.CreateOrReset(_readBinaryHelper, this);
+                    // forward calls into wrapped reader
+                    if (_readBinaryHelper == null)
+                    {
+                        return await base.ReadElementContentAsBinHexAsync(buffer, index, count).ConfigureAwait(false);
+                    }
                 }
-            }
-            else
-            {
-                // forward calls into wrapped reader
-                if (_readBinaryHelper == null)
-                {
-                    return await base.ReadElementContentAsBinHexAsync(buffer, index, count).ConfigureAwait(false);
-                }
-            }
 
-            // turn off InReadBinary state in order to have a normal Read() behavior when called from readBinaryHelper
-            _state = State.Interactive;
+                // turn off InReadBinary state in order to have a normal Read() behavior when called from readBinaryHelper
+                _state = State.Interactive;
 
-            // call to the helper
-            int readCount = await _readBinaryHelper.ReadElementContentAsBinHexAsync(buffer, index, count).ConfigureAwait(false);
+                // call to the helper
+                int readCount = await _readBinaryHelper.ReadElementContentAsBinHexAsync(buffer, index, count).ConfigureAwait(false);
 
-            // turn on InReadBinary in again and return
-            _state = State.InReadBinary;
-            return readCount;
-        }
-
-        private async Task FinishReadBinaryAsync()
-        {
-            _state = State.Interactive;
-            if (_readBinaryHelper != null)
-            {
-                await _readBinaryHelper.FinishAsync().ConfigureAwait(false);
+                // turn on InReadBinary in again and return
+                _state = State.InReadBinary;
+                return readCount;
             }
         }
     }

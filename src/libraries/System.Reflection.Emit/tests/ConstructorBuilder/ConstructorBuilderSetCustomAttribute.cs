@@ -18,7 +18,7 @@ namespace System.Reflection.Emit.Tests
             constructor.SetCustomAttribute(attributeConstructor, new byte[] { 1, 0, 5, 0, 0, 0 });
             constructor.GetILGenerator().Emit(OpCodes.Ret);
 
-            Type createdType = type.CreateTypeInfo().AsType();
+            Type createdType = type.CreateType();
             ConstructorInfo createdConstructor = createdType.GetConstructor(new Type[] { typeof(int) });
             Attribute[] attributes = createdConstructor.GetCustomAttributes().ToArray();
             IntAllAttribute attribute = Assert.IsType<IntAllAttribute>(attributes[0]);
@@ -45,7 +45,7 @@ namespace System.Reflection.Emit.Tests
             CustomAttributeBuilder attributeBuilder = new CustomAttributeBuilder(attributeConstructor, new object[] { 2 });
 
             constructor.SetCustomAttribute(attributeBuilder);
-            Type createdType = type.CreateTypeInfo().AsType();
+            Type createdType = type.CreateType();
 
             ConstructorInfo createdConstructor = createdType.GetConstructor(new Type[0]);
             Attribute[] customAttributes = (Attribute[])CustomAttributeExtensions.GetCustomAttributes(createdConstructor, true).ToArray();

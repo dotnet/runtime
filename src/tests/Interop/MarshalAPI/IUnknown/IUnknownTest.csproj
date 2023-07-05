@@ -3,6 +3,9 @@
     <OutputType>Exe</OutputType>
     <!-- Test unsupported outside of windows -->
     <CLRTestTargetUnsupported Condition="'$(TargetsWindows)' != 'true'">true</CLRTestTargetUnsupported>
+    <NativeAotIncompatible>true</NativeAotIncompatible>
+    <!-- Fails with HeapVerify=1. Tracking: https://github.com/dotnet/runtime/issues/85234 -->
+    <GCStressIncompatible>true</GCStressIncompatible>
   </PropertyGroup>
   <ItemGroup>
     <Compile Include="IUnknownTest.cs" />

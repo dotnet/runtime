@@ -33,6 +33,7 @@ namespace Microsoft.Extensions.Caching.Memory
         public void Dispose() { }
         protected virtual void Dispose(bool disposing) { }
         ~MemoryCache() { }
+        public Microsoft.Extensions.Caching.Memory.MemoryCacheStatistics? GetCurrentStatistics() { throw null; }
         public void Remove(object key) { }
         public bool TryGetValue(object key, out object? result) { throw null; }
     }
@@ -41,10 +42,14 @@ namespace Microsoft.Extensions.Caching.Memory
         public MemoryCacheOptions() { }
         public Microsoft.Extensions.Internal.ISystemClock? Clock { get { throw null; } set { } }
         public double CompactionPercentage { get { throw null; } set { } }
+        [System.ComponentModel.EditorBrowsableAttribute(System.ComponentModel.EditorBrowsableState.Never)]
+        [System.Obsolete("This property is retained only for compatibility.  Remove use and instead call MemoryCache.Compact as needed.", error: true)]
+        public bool CompactOnMemoryPressure { get; set; }
         public System.TimeSpan ExpirationScanFrequency { get { throw null; } set { } }
         Microsoft.Extensions.Caching.Memory.MemoryCacheOptions Microsoft.Extensions.Options.IOptions<Microsoft.Extensions.Caching.Memory.MemoryCacheOptions>.Value { get { throw null; } }
         public long? SizeLimit { get { throw null; } set { } }
         public bool TrackLinkedCacheEntries { get { throw null; } set { } }
+        public bool TrackStatistics { get { throw null; } set { } }
     }
     public partial class MemoryDistributedCacheOptions : Microsoft.Extensions.Caching.Memory.MemoryCacheOptions
     {

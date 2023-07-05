@@ -1,7 +1,6 @@
 // Licensed to the .NET Foundation under one or more agreements.
 // The .NET Foundation licenses this file to you under the MIT license.
 
-using System;
 using System.Collections.Generic;
 
 using Internal.TypeSystem;
@@ -87,12 +86,9 @@ namespace Internal.IL.Stubs.StartupCode
         {
             get
             {
-                if (_signature == null)
-                {
-                    _signature = new MethodSignature(MethodSignatureFlags.Static | MethodSignatureFlags.UnmanagedCallingConvention, 0,
+                _signature ??= new MethodSignature(MethodSignatureFlags.Static | MethodSignatureFlags.UnmanagedCallingConvention, 0,
                             Context.GetWellKnownType(WellKnownType.Void),
-                            new TypeDesc[0]);
-                }
+                            System.Array.Empty<TypeDesc>());
 
                 return _signature;
             }

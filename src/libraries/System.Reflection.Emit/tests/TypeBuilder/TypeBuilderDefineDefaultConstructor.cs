@@ -56,7 +56,7 @@ namespace System.Reflection.Emit.Tests
             type.SetParent(genericParent);
             type.DefineDefaultConstructor(MethodAttributes.Public);
 
-            Type createdType = type.CreateTypeInfo().AsType();
+            Type createdType = type.CreateType();
             ConstructorInfo defaultConstructor = createdType.GetConstructor(new Type[0]);
             defaultConstructor.Invoke(null);
             Assert.True(s_ranConstructor);
@@ -70,7 +70,7 @@ namespace System.Reflection.Emit.Tests
             type.DefineDefaultConstructor(MethodAttributes.Public);
             type.DefineDefaultConstructor(MethodAttributes.Public);
 
-            Type createdType = type.CreateTypeInfo().AsType();
+            Type createdType = type.CreateType();
             ConstructorInfo[] constructors = createdType.GetConstructors();
             Assert.Equal(2, constructors.Length);
             Assert.Equal(constructors[0].GetParameters(), constructors[1].GetParameters());
@@ -80,7 +80,7 @@ namespace System.Reflection.Emit.Tests
         public void DefineDefaultConstructor_TypeCreated_ThrowsInvalidOperationException()
         {
             TypeBuilder type = Helpers.DynamicType(TypeAttributes.Public);
-            type.CreateTypeInfo().AsType();
+            type.CreateType();
             Assert.Throws<InvalidOperationException>(() => type.DefineDefaultConstructor(MethodAttributes.Public));
         }
 
@@ -110,7 +110,7 @@ namespace System.Reflection.Emit.Tests
 
             constructorIlGenerator.Emit(OpCodes.Ret);
 
-            Type createdType = type.CreateTypeInfo().AsType();
+            Type createdType = type.CreateType();
             TypeBuilder nestedType = Helpers.DynamicType(TypeAttributes.Public | TypeAttributes.Class);
             nestedType.SetParent(createdType);
 
@@ -126,7 +126,7 @@ namespace System.Reflection.Emit.Tests
             ConstructorBuilder constructor = baseType.DefineConstructor(attributes, CallingConventions.HasThis, new Type[] { typeof(int) });
             constructor.GetILGenerator().Emit(OpCodes.Ret);
 
-            Type createdParentType = baseType.CreateTypeInfo().AsType();
+            Type createdParentType = baseType.CreateType();
 
             TypeBuilder type = Helpers.DynamicType(TypeAttributes.Public | TypeAttributes.Class);
             type.SetParent(createdParentType);

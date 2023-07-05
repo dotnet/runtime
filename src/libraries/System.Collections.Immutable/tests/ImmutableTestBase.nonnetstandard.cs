@@ -28,13 +28,11 @@ namespace System.Collections.Immutable.Tests
             Requires.NotNull(equalsStructurally, nameof(equalsStructurally));
 
             var structuralEquatableUnderTest = objectUnderTest as IStructuralEquatable;
-            var enumerableUnderTest = (IEnumerable<TElement>)objectUnderTest;
 
-            var equivalentSequence = objectUnderTest.ToList();
-            var shorterSequence = equivalentSequence.Take(equivalentSequence.Count() - 1);
-            var longerSequence = equivalentSequence.Concat(new[] { additionalItem });
-            var differentSequence = shorterSequence.Concat(new[] { additionalItem });
-            var nonUniqueSubsetSequenceOfSameLength = shorterSequence.Concat(shorterSequence.Take(1));
+            List<TElement> equivalentSequence = objectUnderTest.ToList();
+            IEnumerable<TElement> shorterSequence = equivalentSequence.Take(equivalentSequence.Count() - 1);
+            IEnumerable<TElement> longerSequence = equivalentSequence.Concat(new[] { additionalItem });
+            IEnumerable<TElement> nonUniqueSubsetSequenceOfSameLength = shorterSequence.Concat(shorterSequence.Take(1));
 
             var testValues = new IEnumerable<TElement>[] {
                 objectUnderTest,
@@ -46,7 +44,7 @@ namespace System.Collections.Immutable.Tests
                 nonUniqueSubsetSequenceOfSameLength,
             };
 
-            foreach (var value in testValues)
+            foreach (IEnumerable<TElement> value in testValues)
             {
                 bool expectedResult = value != null && Enumerable.SequenceEqual(objectUnderTest, value);
 

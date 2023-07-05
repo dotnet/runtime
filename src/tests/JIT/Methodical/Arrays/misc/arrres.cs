@@ -2,18 +2,19 @@
 // The .NET Foundation licenses this file to you under the MIT license.
 
 using System;
+using Xunit;
 
-namespace GCTest
+namespace GCTest_arrres_cs
 {
-    internal class Test
+    public class Test
     {
         private int _indx;
-        public bool m_die = false;
+        public bool m_die;
         private static Test[] s_arr = new Test[50];
 
         public Test(int indx) { _indx = indx; }
 
-        public virtual void CheckValid()
+        internal virtual void CheckValid()
         {
             if (s_arr[_indx] != this)
                 throw new Exception();
@@ -32,7 +33,8 @@ namespace GCTest
             }
         }
 
-        private static int Main()
+        [Fact]
+        public static int TestEntryPoint()
         {
             Test1();
             Test2();

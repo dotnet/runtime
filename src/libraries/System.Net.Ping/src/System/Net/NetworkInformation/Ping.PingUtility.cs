@@ -73,33 +73,35 @@ namespace System.Net.NetworkInformation
 
         private async Task<PingReply> SendWithPingUtilityAsync(IPAddress address, byte[] buffer, int timeout, PingOptions? options)
         {
-            using (Process p = GetPingProcess(address, buffer, timeout, options))
+            CancellationToken timeoutOrCancellationToken = _timeoutOrCancellationSource!.Token;
+
+            using Process pingProcess = GetPingProcess(address, buffer, timeout, options);
+            pingProcess.Start();
+
+            try
             {
-                var processCompletion = new TaskCompletionSource(TaskCreationOptions.RunContinuationsAsynchronously);
-                p.EnableRaisingEvents = true;
-                p.Exited += (s, e) => processCompletion.SetResult();
-                p.Start();
+                await pingProcess.WaitForExitAsync(timeoutOrCancellationToken).ConfigureAwait(false);
 
-                try
-                {
-                    await processCompletion.Task.WaitAsync(TimeSpan.FromMilliseconds(timeout)).ConfigureAwait(false);
-                }
-                catch (TimeoutException)
-                {
-                    p.Kill();
-                    return CreatePingReply(IPStatus.TimedOut);
-                }
+                string stdout = await pingProcess.StandardOutput.ReadToEndAsync(timeoutOrCancellationToken).ConfigureAwait(false);
 
-                try
+                return ParsePingUtilityOutput(address, pingProcess.ExitCode, stdout);
+            }
+            catch (OperationCanceledException) when (timeoutOrCancellationToken.IsCancellationRequested)
+            {
+                if (!pingProcess.HasExited)
                 {
-                    string stdout = await p.StandardOutput.ReadToEndAsync().ConfigureAwait(false);
-                    return ParsePingUtilityOutput(address, p.ExitCode, stdout);
+                    pingProcess.Kill();
                 }
-                catch (Exception)
+                if (_canceled)
                 {
-                    // If the standard output cannot be successfully parsed, throw a generic PingException.
-                    throw new PingException(SR.net_ping);
+                    throw;
                 }
+                return CreatePingReply(IPStatus.TimedOut);
+            }
+            catch (Exception e)
+            {
+                // If the standard output cannot be successfully read/parsed, throw a generic PingException.
+                throw new PingException(SR.net_ping, e);
             }
         }
 
@@ -108,7 +110,7 @@ namespace System.Net.NetworkInformation
             // Throw timeout for known failure return codes from ping functions.
             if (exitCode == 1 || exitCode == 2)
             {
-                // TTL exceeded may have occured
+                // TTL exceeded may have occurred
                 if (TryParseTtlExceeded(stdout, out PingReply? reply))
                 {
                     return reply!;
@@ -131,9 +133,11 @@ namespace System.Net.NetworkInformation
                 return false;
             }
 
-            // look for address in "From 172.21.64.1 icmp_seq=1 Time to live exceeded"
+            // look for address in:
+            // - "From 172.21.64.1 icmp_seq=1 Time to live exceeded"
+            // - "From 172.21.64.1: icmp_seq=1 Time to live exceeded"
             int addressStart = stdout.IndexOf("From ", StringComparison.Ordinal) + 5;
-            int addressLength = stdout.IndexOf(' ', Math.Max(addressStart, 0)) - addressStart;
+            int addressLength = stdout.AsSpan(Math.Max(addressStart, 0)).IndexOfAny(' ', ':');
             IPAddress? address;
             if (addressStart < 5 || addressLength <= 0 || !IPAddress.TryParse(stdout.AsSpan(addressStart, addressLength), out address))
             {

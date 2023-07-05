@@ -1,10 +1,11 @@
 // Licensed to the .NET Foundation under one or more agreements.
 // The .NET Foundation licenses this file to you under the MIT license.
 
-using OLEDB.Test.ModuleCore;
 using System.IO;
+using System.Xml.Tests;
+using OLEDB.Test.ModuleCore;
 
-namespace System.Xml.Tests
+namespace System.Xml.CustomReaderTests
 {
     [TestModule(Name = "CustomReader Test", Desc = "CustomReader Test")]
     public partial class CReaderTestModule : CGenericTestModule

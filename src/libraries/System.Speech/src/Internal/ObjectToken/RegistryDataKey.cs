@@ -64,7 +64,7 @@ namespace System.Speech.Internal.ObjectTokens
             }
 
             // If the last character is a '\', get rid of it
-            registryPath = registryPath.Trim(new char[] { '\\' });
+            registryPath = registryPath.Trim('\\');
 
             string rootPath = GetFirstKeyAndParseRemainder(ref registryPath);
 
@@ -74,6 +74,7 @@ namespace System.Speech.Internal.ObjectTokens
             // If there's no root, we can't do anything.
             if (regHandle == null || regHandle.IsInvalid)
             {
+                regHandle?.Dispose();
                 return null;
             }
 
@@ -470,7 +471,7 @@ namespace System.Speech.Internal.ObjectTokens
             if (index >= 0)
             {
                 firstKey = registryPath.Substring(0, index);
-                registryPath = registryPath.Substring(index + 1, registryPath.Length - index - 1);
+                registryPath = registryPath.Substring(index + 1);
             }
             else
             {

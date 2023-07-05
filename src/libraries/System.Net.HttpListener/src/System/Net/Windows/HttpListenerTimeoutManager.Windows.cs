@@ -50,10 +50,8 @@ namespace System.Net
             //
             timeoutValue = Convert.ToInt64(value.TotalSeconds);
 
-            if (timeoutValue < 0 || timeoutValue > ushort.MaxValue)
-            {
-                throw new ArgumentOutOfRangeException(nameof(value));
-            }
+            ArgumentOutOfRangeException.ThrowIfNegative(timeoutValue, nameof(value));
+            ArgumentOutOfRangeException.ThrowIfGreaterThan(timeoutValue, ushort.MaxValue, nameof(value));
 
             //
             // Use local state to get values for other timeouts. Call into the native layer and if that
@@ -76,7 +74,7 @@ namespace System.Net
         // initially set to the configured value. When the HTTP Server API receives additional data indications on the
         // request, it resets the timer to give the connection another interval.
         //
-        // Use TimeSpan.Zero to indiate that system defaults should be used.
+        // Use TimeSpan.Zero to indicate that system defaults should be used.
         public TimeSpan EntityBody
         {
             get
@@ -98,7 +96,7 @@ namespace System.Net
         // reach another potentially pipelined request from the client. If the time to drain the remaining entity body
         // exceeds the allowed period the connection is timed out.
         //
-        // Use TimeSpan.Zero to indiate that system defaults should be used.
+        // Use TimeSpan.Zero to indicate that system defaults should be used.
         public TimeSpan DrainEntityBody
         {
             get
@@ -114,7 +112,7 @@ namespace System.Net
         // The time, in seconds, allowed for the request to remain in the request queue before the application picks
         // it up.  The default timer is 2 minutes.
         //
-        // Use TimeSpan.Zero to indiate that system defaults should be used.
+        // Use TimeSpan.Zero to indicate that system defaults should be used.
         public TimeSpan RequestQueue
         {
             get
@@ -132,7 +130,7 @@ namespace System.Net
         //
         // This timeout is only enforced after the first request on the connection is routed to the application.
         //
-        // Use TimeSpan.Zero to indiate that system defaults should be used.
+        // Use TimeSpan.Zero to indicate that system defaults should be used.
         public TimeSpan IdleConnection
         {
             get
@@ -150,7 +148,7 @@ namespace System.Net
         //
         // This timeout is only enforced after the first request on the connection is routed to the application.
         //
-        // Use TimeSpan.Zero to indiate that system defaults should be used.
+        // Use TimeSpan.Zero to indicate that system defaults should be used.
         public TimeSpan HeaderWait
         {
             get
@@ -183,10 +181,8 @@ namespace System.Net
                 //
                 // MinSendRate value is ULONG in native layer.
                 //
-                if (value < 0 || value > uint.MaxValue)
-                {
-                    throw new ArgumentOutOfRangeException(nameof(value));
-                }
+                ArgumentOutOfRangeException.ThrowIfNegative(value);
+                ArgumentOutOfRangeException.ThrowIfGreaterThan(value, uint.MaxValue);
 
                 _listener.SetServerTimeout(_timeouts, (uint)value);
                 _minSendBytesPerSecond = (uint)value;

@@ -78,8 +78,10 @@ namespace System.Xml
                 return true;
             }
 
-            return other is XmlQualifiedName qName && Name == qName.Name && Namespace == qName.Namespace;
+            return other is XmlQualifiedName qName && Equals(qName.Name, qName.Namespace);
         }
+
+        internal bool Equals(string name, string ns) => Name == name && Namespace == ns;
 
         /// <devdoc>
         ///    <para>[To be supplied.]</para>
@@ -112,7 +114,7 @@ namespace System.Xml
         /// </devdoc>
         public static string ToString(string name, string? ns)
         {
-            return ns == null || ns.Length == 0 ? name : $"{ns}:{name}";
+            return string.IsNullOrEmpty(ns) ? name : $"{ns}:{name}";
         }
 
         // --------- Some useful internal stuff -----------------

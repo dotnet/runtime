@@ -50,7 +50,8 @@ when it comes to the handling of structs (aka value types).
 
 High-Level Proposed Design
 --------------------------
-This is a preliminary design, and is likely to change as the implementation proceeds:
+Note that much of the below work has already been carried out and further refactoring has replaced the side `fgArgInfo` table with `CallArgs`.
+The plan here is intended to provide some historical context and may not completely reflect JIT sources.
 
 First, the `fgArgInfo` is extended to contain all the information needed to determine
 how an argument is passed. Ideally, most of the `#ifdef`s relating to ABI differences

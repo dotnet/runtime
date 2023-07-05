@@ -7,18 +7,18 @@ namespace Internal.Runtime
     {
         TypeMap                                     = 1,
         ArrayMap                                    = 2,
-        GenericInstanceMap                          = 3, // unused
-        GenericParameterMap                         = 4, // unused
-        BlockReflectionTypeMap                      = 5,
+        PointerTypeMap                              = 3,
+        FunctionPointerTypeMap                      = 4,
+        // unused                                   = 5,
         InvokeMap                                   = 6,
         VirtualInvokeMap                            = 7,
         CommonFixupsTable                           = 8,
         FieldAccessMap                              = 9,
         CCtorContextMap                             = 10,
-        DiagGenericInstanceMap                      = 11, // unused
-        DiagGenericParameterMap                     = 12, // unused
+        ByRefTypeMap                                = 11,
+        // unused                                   = 12,
         EmbeddedMetadata                            = 13,
-        DefaultConstructorMap                       = 14,
+        // Unused                                   = 14,
         UnboxingAndInstantiatingStubMap             = 15,
         StructMarshallingStubMap                    = 16,
         DelegateMarshallingStubMap                  = 17,
@@ -28,7 +28,7 @@ namespace Internal.Runtime
         // Reflection template types/methods blobs:
         TypeTemplateMap                             = 21,
         GenericMethodsTemplateMap                   = 22,
-        DynamicInvokeTemplateData                   = 23,
+        // unused                                   = 23,
         BlobIdResourceIndex                         = 24,
         BlobIdResourceData                          = 25,
         BlobIdStackTraceEmbeddedMetadata            = 26,

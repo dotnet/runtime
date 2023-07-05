@@ -28,15 +28,15 @@ namespace System.Resources
         public int GetHashCode(object key)
         {
             string s = (string)key;
-            return FastResourceComparer.HashFunction(s);
+            return HashFunction(s);
         }
 
         public int GetHashCode([DisallowNull] string? key)
         {
-            return FastResourceComparer.HashFunction(key!);
+            return HashFunction(key!);
         }
 
-        // This hash function MUST be publically documented with the resource
+        // This hash function MUST be publicly documented with the resource
         // file format, AND we may NEVER change this hash function's return
         // value (without changing the file format).
         internal static int HashFunction(string key)

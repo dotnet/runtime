@@ -562,35 +562,6 @@ mono_monoctx_to_sigctx (MonoContext *mctx, void *sigctx)
 #endif
 }
 
-#elif (defined(__mips__) && !defined(MONO_CROSS_COMPILE)) || (defined(TARGET_MIPS))
-
-#include <mono/utils/mono-context.h>
-#include <mono/arch/mips/mips-codegen.h>
-
-void
-mono_sigctx_to_monoctx (void *sigctx, MonoContext *mctx)
-{
-	int i;
-
-	mctx->sc_pc = UCONTEXT_REG_PC (sigctx);
-	for (i = 0; i < 32; ++i) {
-		mctx->sc_regs[i] = UCONTEXT_GREGS (sigctx) [i];
-		mctx->sc_fpregs[i] = UCONTEXT_FPREGS (sigctx) [i];
-	}
-}
-
-void
-mono_monoctx_to_sigctx (MonoContext *mctx, void *sigctx)
-{
-	int i;
-
-	UCONTEXT_REG_PC (sigctx) = mctx->sc_pc;
-	for (i = 0; i < 32; ++i) {
-		UCONTEXT_GREGS (sigctx) [i] = mctx->sc_regs[i];
-		UCONTEXT_FPREGS (sigctx) [i] = mctx->sc_fpregs[i];
-	}
-}
-
 #elif (((defined(__ppc__) || defined(__powerpc__) || defined(__ppc64__)) && !defined(MONO_CROSS_COMPILE))) || (defined(TARGET_POWERPC))
 
 #include <mono/utils/mono-context.h>

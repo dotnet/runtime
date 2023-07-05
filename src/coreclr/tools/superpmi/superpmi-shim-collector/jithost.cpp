@@ -22,30 +22,80 @@
 
 JitHost* g_ourJitHost;
 
-// RecordVariable: return `true` if the given COMPlus variable `key` should be recorded
+// RecordVariable: return `true` if the given DOTNET variable `key` should be recorded
 // in the method context.
 bool RecordVariable(const WCHAR* key)
 {
-    // Special-case: we don't want to store some COMPlus variables during
-    // collections that we don't want to see on replay:
-    //   COMPlus_JitName -- used to get the VM to load the SuperPMI collection shim
-    //                      without requiring the shim to overwrite the original JIT.
-    //                      This JIT doesn't care about this on SuperPMI replay, but
-    //                      we don't need to waste the space in the MC file storing it.
-    //   COMPlus_AltJitName -- if collecting with an altjit, this is set. The JIT doesn't
-    //                      use this on replay, but it doesn't need to be stored.
-    //   COMPlus_EnableExtraSuperPmiQueries -- used to force the JIT to ask additional
-    //                      questions during SuperPMI collection. We don't want to store
-    //                      this variable because we don't want to replay using it.
+    // Special cases: we don't want to store some DOTNET variables during
+    // collections, typically when they refer to file paths or simply because
+    // it does not make sense to replay with it.
 
-    if ((_wcsicmp(key, W("JitName")) == 0) ||
-        (_wcsicmp(key, W("AltJitName")) == 0) ||
-        (_wcsicmp(key, W("EnableExtraSuperPmiQueries")) == 0))
+    static const WCHAR* s_ignoredVars[] = {
+        W("EnableExtraSuperPmiQueries"),
+        W("JitDisasm"),
+        W("JitDump"),
+        W("JitDasmWithAlignmentBoundaries"), // to be removed
+        W("JitDisasmWithAlignmentBoundaries"),
+        W("JitDumpASCII"),
+        W("JitHashBreak"),
+        W("JitHashDump"),
+        W("JitHashHalt"),
+        W("JitOrder"),
+        W("JitPrintInlinedMethods"),
+        W("JitPrintDevirtualizedMethods"),
+        W("JitBreak"),
+        W("JitDebugBreak"),
+        W("JitDisasmAssemblies"),
+        W("JitDisasmWithGC"),
+        W("JitDisasmWithDebugInfo"),
+        W("JitDisasmSpilled"),
+        W("JitDumpTier0"),
+        W("JitDumpAtOSROffset"),
+        W("JitDumpInlinePhases"),
+        W("JitEHDump"),
+        W("JitExclude"),
+        W("JitGCDump"),
+        W("JitDebugDump"),
+        W("JitHalt"),
+        W("JitImportBreak"),
+        W("JitInclude"),
+        W("JitLateDisasm"),
+        W("JitUnwindDump"),
+        W("JitDumpFg"),
+        W("JitDumpFgDir"),
+        W("JitDumpFgPhase"),
+        W("JitDumpFgPrePhase"),
+        W("JitDumpFgDot"),
+        W("JitDumpFgEH"),
+        W("JitDumpFgLoops"),
+        W("JitDumpFgConstrained"),
+        W("JitDumpFgBlockID"),
+        W("JitDumpFgBlockFlags"),
+        W("JitDumpFgLoopFlags"),
+        W("JitDumpFgBlockOrder"),
+        W("JITLateDisasmTo"),
+        W("JitDisasmSummary"),
+        W("JitStdOutFile"),
+        W("WriteRichDebugInfoFile"),
+        W("JitFuncInfoLogFile"),
+        W("JitTimeLogCsv"),
+        W("JitMeasureNowayAssertFile"),
+        W("JitInlineDumpData"),
+        W("JitInlineDumpXml"),
+        W("JitInlineDumpXmlFile"),
+        W("JitInlinePolicyDumpXml"),
+        W("JitInlineReplayFile"),
+        W("JitFunctionFile")
+    };
+
+    for (const WCHAR* ignoredVar : s_ignoredVars)
     {
-        return false;
+        if (_wcsicmp(key, ignoredVar) == 0)
+        {
+            return false;
+        }
     }
 
-    // By default, we record everything.
     return true;
 }
 
@@ -69,7 +119,7 @@ int JitHost::getIntConfigValue(const WCHAR* key, int defaultValue)
     // even record that it was called (since it would get recorded into the
     // global state). (See the superpmi.exe tool implementation of JitHost::getIntConfigValue()
     // for the special-case implementation of this.)
-    if (wcscmp(key, W("SuperPMIMethodContextNumber")) == 0)
+    if (u16_strcmp(key, W("SuperPMIMethodContextNumber")) == 0)
     {
         return defaultValue;
     }

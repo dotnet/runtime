@@ -36,7 +36,7 @@ namespace System.ComponentModel
             IServiceProvider? provider,
             [DynamicallyAccessedMembers(DynamicallyAccessedMemberTypes.PublicConstructors)] Type objectType,
             Type[]? argTypes,
-            object[]? args)
+            object?[]? args)
         {
             return Provider.CreateInstance(provider, objectType, argTypes, args);
         }

@@ -59,15 +59,26 @@ namespace System.Security.Cryptography
                         int printLen = Interop.Crypto.GetMemoryBioSize(bio);
 
                         // Account for the null terminator that it'll want to write.
-                        var buf = new byte[printLen + 1];
-                        int read = Interop.Crypto.BioGets(bio, buf, buf.Length);
+                        Span<byte> buffer = new byte[printLen + 1];
+                        Span<byte> current = buffer;
+                        int total = 0;
+                        int read;
 
-                        if (read < 0)
+                        do
                         {
-                            throw Interop.Crypto.CreateOpenSslCryptographicException();
-                        }
+                            read = Interop.Crypto.BioGets(bio, current);
 
-                        return Encoding.UTF8.GetString(buf, 0, read);
+                            if (read < 0)
+                            {
+                                throw Interop.Crypto.CreateOpenSslCryptographicException();
+                            }
+
+                            current = current.Slice(read);
+                            total += read;
+                        }
+                        while (read > 0);
+
+                        return Encoding.UTF8.GetString(buffer.Slice(0, total));
                     }
                 }
             }

@@ -11,13 +11,11 @@ internal static partial class Interop
 {
     internal static partial class BCrypt
     {
-        internal static NTSTATUS BCryptCreateHash(SafeBCryptAlgorithmHandle hAlgorithm, out SafeBCryptHashHandle phHash, IntPtr pbHashObject, int cbHashObject, ReadOnlySpan<byte> secret, int cbSecret, BCryptCreateHashFlags dwFlags)
-        {
-            return BCryptCreateHash(hAlgorithm, out phHash, pbHashObject, cbHashObject, ref MemoryMarshal.GetReference(secret), cbSecret, dwFlags);
-        }
+        [LibraryImport(Libraries.BCrypt, StringMarshalling = StringMarshalling.Utf16)]
+        internal static partial NTSTATUS BCryptCreateHash(SafeBCryptAlgorithmHandle hAlgorithm, out SafeBCryptHashHandle phHash, IntPtr pbHashObject, int cbHashObject, ReadOnlySpan<byte> secret, int cbSecret, BCryptCreateHashFlags dwFlags);
 
         [LibraryImport(Libraries.BCrypt, StringMarshalling = StringMarshalling.Utf16)]
-        private static partial NTSTATUS BCryptCreateHash(SafeBCryptAlgorithmHandle hAlgorithm, out SafeBCryptHashHandle phHash, IntPtr pbHashObject, int cbHashObject, ref byte pbSecret, int cbSecret, BCryptCreateHashFlags dwFlags);
+        internal static partial NTSTATUS BCryptCreateHash(nuint hAlgorithm, out SafeBCryptHashHandle phHash, IntPtr pbHashObject, int cbHashObject, ReadOnlySpan<byte> secret, int cbSecret, BCryptCreateHashFlags dwFlags);
 
         [Flags]
         internal enum BCryptCreateHashFlags : int

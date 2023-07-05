@@ -15,16 +15,15 @@ namespace ILCompiler.DependencyAnalysis
     /// <summary>
     /// Represents a map between reflection metadata and generated method bodies.
     /// </summary>
-    public sealed class InterfaceGenericVirtualMethodTableNode : ObjectNode, ISymbolDefinitionNode
+    public sealed class InterfaceGenericVirtualMethodTableNode : ObjectNode, ISymbolDefinitionNode, INodeWithSize
     {
-        private ObjectAndOffsetSymbolNode _endSymbol;
+        private int? _size;
         private ExternalReferencesTableNode _externalReferences;
         private Dictionary<MethodDesc, HashSet<object>> _interfaceGvmSlots;
         private Dictionary<object, Dictionary<TypeDesc, HashSet<int>>> _interfaceImpls;
 
         public InterfaceGenericVirtualMethodTableNode(ExternalReferencesTableNode externalReferences)
         {
-            _endSymbol = new ObjectAndOffsetSymbolNode(this, 0, "__interface_gvm_table_End", true);
             _externalReferences = externalReferences;
             _interfaceGvmSlots = new Dictionary<MethodDesc, HashSet<object>>();
             _interfaceImpls = new Dictionary<object, Dictionary<TypeDesc, HashSet<int>>>();
@@ -34,16 +33,16 @@ namespace ILCompiler.DependencyAnalysis
         {
             sb.Append(nameMangler.CompilationUnitPrefix).Append("__interface_gvm_table");
         }
-        public ISymbolNode EndSymbol => _endSymbol;
+        int INodeWithSize.Size => _size.Value;
         public int Offset => 0;
         public override bool IsShareable => false;
-        public override ObjectNodeSection Section => _externalReferences.Section;
+        public override ObjectNodeSection GetSection(NodeFactory factory) => _externalReferences.GetSection(factory);
         public override bool StaticDependenciesAreComputed => true;
         protected override string GetName(NodeFactory factory) => this.GetMangledName(factory.NameMangler);
 
         /// <summary>
         /// Helper method to compute the dependencies that would be needed by a hashtable entry for an interface GVM call.
-        /// This helper is used by the TypeGVMEntriesNode, which is used by the dependency analysis to compute the 
+        /// This helper is used by the TypeGVMEntriesNode, which is used by the dependency analysis to compute the
         /// GVM hashtable entries for the compiled types.
         /// The dependencies returned from this function will be reported as static dependencies of the TypeGVMEntriesNode,
         /// which we create for each type that has generic virtual methods.
@@ -58,7 +57,7 @@ namespace ILCompiler.DependencyAnalysis
 
             var openCallingMethodNameAndSig = factory.NativeLayout.MethodNameAndSignatureVertex(openCallingMethod);
             dependencies.Add(new DependencyListEntry(factory.NativeLayout.PlacedSignatureVertex(openCallingMethodNameAndSig), "interface gvm table calling method signature"));
-            
+
             // Implementation could be null if this is a default interface method reabstraction or diamond. We need to record those.
             if (implementationMethod != null)
             {
@@ -81,7 +80,7 @@ namespace ILCompiler.DependencyAnalysis
             }
         }
 
-        private void AddGenericVirtualMethodImplementation(NodeFactory factory, MethodDesc callingMethod, TypeDesc implementationType, MethodDesc implementationMethod, DefaultInterfaceMethodResolution resolution)
+        private void AddGenericVirtualMethodImplementation(MethodDesc callingMethod, TypeDesc implementationType, MethodDesc implementationMethod, DefaultInterfaceMethodResolution resolution)
         {
             Debug.Assert(callingMethod.OwningType.IsInterface);
 
@@ -97,7 +96,7 @@ namespace ILCompiler.DependencyAnalysis
 
             // If the implementation method is implementing some interface method, compute which
             // interface explicitly implemented on the type that the current method implements an interface method for.
-            // We need this because at runtime, the interfaces explicitly implemented on the type will have 
+            // We need this because at runtime, the interfaces explicitly implemented on the type will have
             // runtime-determined signatures that we can use to make generic substitutions and check for interface matching.
             if (!openImplementationType.IsInterface)
             {
@@ -105,7 +104,7 @@ namespace ILCompiler.DependencyAnalysis
                     _interfaceImpls[openImplementationMethod] = new Dictionary<TypeDesc, HashSet<int>>();
                 if (!_interfaceImpls[openImplementationMethod].ContainsKey(openImplementationType))
                     _interfaceImpls[openImplementationMethod][openImplementationType] = new HashSet<int>();
-                
+
                 int numIfacesAdded = 0;
                 for (int index = 0; index < openImplementationType.RuntimeInterfaces.Length; index++)
                 {
@@ -131,7 +130,7 @@ namespace ILCompiler.DependencyAnalysis
             {
                 foreach (var typeGVMEntryInfo in interestingEntry.ScanForInterfaceGenericVirtualMethodEntries())
                 {
-                    AddGenericVirtualMethodImplementation(factory, typeGVMEntryInfo.CallingMethod, typeGVMEntryInfo.ImplementationType, typeGVMEntryInfo.ImplementationMethod, typeGVMEntryInfo.DefaultResolution);
+                    AddGenericVirtualMethodImplementation(typeGVMEntryInfo.CallingMethod, typeGVMEntryInfo.ImplementationType, typeGVMEntryInfo.ImplementationMethod, typeGVMEntryInfo.DefaultResolution);
                 }
             }
 
@@ -190,10 +189,10 @@ namespace ILCompiler.DependencyAnalysis
                         Debug.Assert(_interfaceImpls.ContainsKey(impl));
 
                         var ifaceImpls = _interfaceImpls[impl];
-                    
+
                         // First, emit how many types have method implementations for this interface method entry
                         vertex = nativeFormatWriter.GetTuple(vertex, nativeFormatWriter.GetUnsignedConstant((uint)ifaceImpls.Count));
-                    
+
                         // Emit each type that implements the interface method, and the interface signatures for the interfaces implemented by the type
                         foreach (var currentImpl in ifaceImpls)
                         {
@@ -201,7 +200,7 @@ namespace ILCompiler.DependencyAnalysis
 
                             typeId = _externalReferences.GetIndex(factory.NecessaryTypeSymbol(implementationType));
                             vertex = nativeFormatWriter.GetTuple(vertex, nativeFormatWriter.GetUnsignedConstant(typeId));
-                    
+
                             // Emit information on which interfaces the current method entry provides implementations for
                             vertex = nativeFormatWriter.GetTuple(vertex, nativeFormatWriter.GetUnsignedConstant((uint)currentImpl.Value.Count));
                             foreach (var ifaceId in currentImpl.Value)
@@ -225,9 +224,9 @@ namespace ILCompiler.DependencyAnalysis
 
             byte[] streamBytes = nativeFormatWriter.Save();
 
-            _endSymbol.SetSymbolOffset(streamBytes.Length);
+            _size = streamBytes.Length;
 
-            return new ObjectData(streamBytes, Array.Empty<Relocation>(), 1, new ISymbolDefinitionNode[] { this, _endSymbol });
+            return new ObjectData(streamBytes, Array.Empty<Relocation>(), 1, new ISymbolDefinitionNode[] { this });
         }
 
         protected internal override int Phase => (int)ObjectNodePhase.Ordered;

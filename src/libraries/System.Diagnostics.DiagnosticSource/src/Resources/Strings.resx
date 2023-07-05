@@ -129,6 +129,9 @@
   <data name="ActivityStartAlreadyStarted" xml:space="preserve">
     <value>"Can not start an Activity that was already started"</value>
   </data>
+  <data name="ActivitySetParentAlreadyStarted" xml:space="preserve">
+    <value>"Can not set parent on already started Activity"</value>
+  </data>
   <data name="EndTimeNotUtc" xml:space="preserve">
     <value>"EndTime is not UTC"</value>
   </data>
@@ -167,5 +170,8 @@
   </data>
   <data name="Arg_BufferTooSmall" xml:space="preserve">
     <value>Destination buffer is not long enough to copy all the items in the list.</value>
+  </data>
+  <data name="InvalidInstrumentType" xml:space="preserve">
+    <value>The instrument is of different generic type.</value>
   </data>
 </root>

@@ -3,11 +3,6 @@
 
 using System;
 using System.Collections.Generic;
-using System.IO;
-using System.Linq;
-using System.Text;
-using System.Threading.Tasks;
-using System.Xml;
 using System.Diagnostics;
 
 namespace ILCompiler.DependencyAnalysisFramework
@@ -124,8 +119,7 @@ namespace ILCompiler.DependencyAnalysisFramework
             if ((reasonNode == null) && (reasonNode2 == null))
             {
                 Debug.Assert(reason != null);
-                if (_reasonStringOnlyNodes == null)
-                    _reasonStringOnlyNodes = new HashSet<string>();
+                _reasonStringOnlyNodes ??= new HashSet<string>();
 
                 _reasonStringOnlyNodes.Add(reason);
             }
@@ -157,7 +151,7 @@ namespace ILCompiler.DependencyAnalysisFramework
                         {
                             var combinedNode = new Tuple<DependencyNodeCore<DependencyContextType>, DependencyNodeCore<DependencyContextType>>(markData.Reason1, markData.Reason2);
 
-                            if (!combinedNodesReported.Contains(combinedNode))
+                            if (combinedNodesReported.Add(combinedNode))
                             {
                                 logNodeVisitor.VisitCombinedNode(combinedNode);
                             }

@@ -1,9 +1,6 @@
 // Licensed to the .NET Foundation under one or more agreements.
 // The .NET Foundation licenses this file to you under the MIT license.
 
-using System;
-using Debug = System.Diagnostics.Debug;
-
 namespace Internal.TypeSystem
 {
     // Implementation for Instantiated type specific interface logic
@@ -15,7 +12,7 @@ namespace Internal.TypeSystem
         private DefType[] InitializeImplementedInterfaces()
         {
             // TODO Add duplicate detection
-            return (_implementedInterfaces = InstantiateTypeArray(_typeDef.ExplicitlyImplementedInterfaces, _instantiation, new Instantiation()));
+            return (_implementedInterfaces = InstantiateTypeArray(_typeDef.ExplicitlyImplementedInterfaces, _instantiation, default(Instantiation)));
         }
 
         /// <summary>

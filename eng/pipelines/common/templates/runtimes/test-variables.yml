@@ -1,0 +1,100 @@
+parameters:
+  testGroup: 'innerloop'
+  readyToRun: false
+  runtimeFlavor: ''
+  runtimeVariant: ''
+
+variables:
+
+  # Set job timeouts
+  #
+  # "timeoutPerTestCollectionInMinutes" is the time needed for the "biggest" xUnit test collection to complete.
+  # In case xUnit test wrappers get refactored this number should also be adjusted.
+  #
+  # "timeoutPerTestInMinutes" corresponds to individual test running time. This is implemented by setting
+  # the __TestTimeout variable, which is later read by the coreclr xunit test wrapper code (the code in the
+  # xunit test dlls that invokes the actual tests).
+  #
+  # Note that "timeoutInMinutes" is an Azure DevOps Pipelines parameter for a "job" that specifies the
+  # total time allowed for a job, and is specified lower down. Make sure you set it properly for any new testGroup.
+  #
+  # Please note that for Crossgen2 R2R runs, the "test running time" also includes the
+  # time needed to compile the test into native code with the Crossgen2 compiler.
+
+  - name: timeoutPerTestInMinutes
+    value: 10
+  - name: timeoutPerTestCollectionInMinutes
+    value: 30
+  - ${{ if in(parameters.testGroup, 'outerloop') }}:
+    - name: timeoutPerTestCollectionInMinutes
+      value: 120
+  - ${{ if eq(parameters.readyToRun, true) }}:
+      - name: timeoutPerTestCollectionInMinutes
+        value: 90
+      - name: timeoutPerTestInMinutes
+        value: 30
+  - ${{ if in(parameters.testGroup, 'gc-longrunning', 'gc-simulator') }}:
+    - name: timeoutPerTestCollectionInMinutes
+      value: 360
+    # gc reliability may take up to 2 hours to shutdown. Some scenarios have very long iteration times.
+    - name: timeoutPerTestInMinutes
+      value: 240
+  - ${{ if in(parameters.testGroup, 'jitstress', 'jitstress-random', 'jitstress-isas-arm', 'jitstress-isas-x86', 'jitstress-isas-avx512', 'jitstressregs-x86', 'jitstressregs', 'jitstress2-jitstressregs', 'jitelthookenabled' ) }}:
+    - name: timeoutPerTestCollectionInMinutes
+      value: 120
+    - name: timeoutPerTestInMinutes
+      value: 30
+  - ${{ if in(parameters.testGroup, 'gcstress0x3-gcstress0xc') }}:
+    - name: timeoutPerTestCollectionInMinutes
+      value: 240
+    - name: timeoutPerTestInMinutes
+      value: 60
+  - ${{ if in(parameters.testGroup, 'gcstress-extra', 'r2r-extra') }}:
+    - name: timeoutPerTestCollectionInMinutes
+      value: 300
+    - name: timeoutPerTestInMinutes
+      value: 90
+  - ${{ if eq(parameters.testGroup, 'ilasm') }}:
+    # ilasm-ildasm round trip testing runs every test twice, plus runs ilasm and ildasm, so double the 'outerloop' timeout numbers.
+    - name: timeoutPerTestInMinutes
+      value: 20
+    - name: timeoutPerTestCollectionInMinutes
+      value: 240
+  - ${{ if in(parameters.testGroup, 'clrinterpreter') }}:
+    - name: timeoutPerTestCollectionInMinutes
+      value: 180
+    - name: timeoutPerTestInMinutes
+      value: 30
+  - ${{ if in(parameters.testGroup, 'pgo', 'pgostress') }}:
+    - name: timeoutPerTestCollectionInMinutes
+      value: 120
+  - ${{ if in(parameters.testGroup, 'jit-cfg') }}:
+    - name: timeoutPerTestCollectionInMinutes
+      value: 120
+
+  - name: runtimeFlavorArgs
+    value: ''
+
+  - ${{ if eq(parameters.runtimeFlavor, 'mono') }}:
+    - name: runtimeFlavorArgs
+      value: '-mono'
+
+  - name: runtimeVariantArg
+    value: ''
+
+  - ${{ if ne(parameters.runtimeVariant, '') }}:
+    - name: runtimeVariantArg
+      value: '/p:RuntimeVariant=${{ parameters.runtimeVariant }}'
+
+  - name: priorityArg
+    value: ''
+
+  # 'innerloop' and 'clrinterpreter' jobs run the Priority 0 tests; everything else runs the Priority 1 tests.
+  # 'gc-standalone' is forced to run pri0 as well to start with.
+  - ${{ if and(ne(parameters.testGroup, 'innerloop'), ne(parameters.testGroup, 'clrinterpreter'), ne(parameters.testGroup, 'gc-standalone'), ne(parameters.testGroup, 'gc-standalone-server') ) }}:
+    - ${{ if ne(parameters.osGroup, 'windows') }}:
+      - name: priorityArg
+        value: 'priority1'
+    - ${{ if eq(parameters.osGroup, 'windows') }}:
+      - name: priorityArg
+        value: '-priority=1'

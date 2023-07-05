@@ -76,10 +76,7 @@ namespace System.ComponentModel
 
                     if (type.Assembly.Location.Length != 0)
                     {
-                        if (modulePath == null)
-                        {
-                            modulePath = type.Module.FullyQualifiedName;
-                        }
+                        modulePath ??= type.Module.FullyQualifiedName;
 
                         string? moduleDir = Path.GetDirectoryName(modulePath);
                         string licenseFile = moduleDir + "\\" + type.FullName + ".lic";

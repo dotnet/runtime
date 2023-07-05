@@ -8,8 +8,8 @@ class Program
     {
         return ((Object) val).ToString();
     }
-    
-    static int Main(string[] args)
+
+    static int Main()
     {
         int exitStatus = -1;
 
@@ -23,7 +23,7 @@ class Program
         }
         else
         {
-            Console.WriteLine("result shoudl be 42, is= " + result);
+            Console.WriteLine("result should be 42, is= " + result);
             Console.WriteLine("+++ FAILED +++");
         }
         return exitStatus;

@@ -793,12 +793,12 @@ namespace Microsoft.CSharp.RuntimeBinder.Semantics
         // Report a bad operator types error to the user.
         private static RuntimeBinderException BadOperatorTypesError(Expr pOperand1, Expr pOperand2)
         {
+            Debug.Assert(pOperand1 != null);
+            Debug.Assert(pOperand1.Type != null);
+
             // This is a hack, but we need to store the operation somewhere... the first argument's as
             // good a place as any.
             string strOp = pOperand1.ErrorString;
-
-            Debug.Assert(pOperand1 != null);
-            Debug.Assert(pOperand1.Type != null);
 
             if (pOperand2 != null)
             {
@@ -1151,7 +1151,7 @@ namespace Microsoft.CSharp.RuntimeBinder.Semantics
                             CType arrayType = (ArrayType)TypeManager.SubstType(mp.Params[mp.Params.Count - 1], type, pTypeArgs);
 
                             // Use an EK_ARRINIT even in the empty case so empty param arrays in attributes work.
-                            ExprArrayInit arrayInit = ExprFactory.CreateArrayInit(arrayType, null, null, new[] { 0 });
+                            ExprArrayInit arrayInit = ExprFactory.CreateArrayInit(arrayType, null, null, s_zero);
                             arrayInit.GeneratedForParamArray = true;
                             arrayInit.OptionalArguments = named.Value;
 
@@ -1229,7 +1229,7 @@ namespace Microsoft.CSharp.RuntimeBinder.Semantics
             CType elementType = subArr.ElementType;
 
             // Use an EK_ARRINIT even in the empty case so empty param arrays in attributes work.
-            ExprArrayInit exprArrayInit = ExprFactory.CreateArrayInit(substitutedArrayType, null, null, new[] { 0 });
+            ExprArrayInit exprArrayInit = ExprFactory.CreateArrayInit(substitutedArrayType, null, null, s_zero);
             exprArrayInit.GeneratedForParamArray = true;
 
             if (it.AtEnd())
@@ -1617,6 +1617,8 @@ namespace Microsoft.CSharp.RuntimeBinder.Semantics
         }
 
         private AggregateSymbol ContextForMemberLookup => Context.ContextForMemberLookup;
+
+        private static readonly int[] s_zero = new[] { 0 };
 
         private static ExprWrap WrapShortLivedExpression(Expr expr) => ExprFactory.CreateWrap(expr);
 

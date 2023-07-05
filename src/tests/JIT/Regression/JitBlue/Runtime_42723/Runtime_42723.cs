@@ -3,10 +3,12 @@
 
 using System.Runtime.CompilerServices;
 using System.Runtime.InteropServices;
+using Xunit;
 
-class Runtime_42723
+public class Runtime_42723
 {
-    static int Main()
+    [Fact]
+    public static int TestEntryPoint()
     {
         return Test(new S { X = 17, Y = 83 });
     }

@@ -1,0 +1,20 @@
+<Project>
+  <PropertyGroup>
+    <!-- Don't use the prebuilt illink that is referenced by Arcade. -->
+    <UsingToolMicrosoftNetILLinkTasks>false</UsingToolMicrosoftNetILLinkTasks>
+  </PropertyGroup>
+
+  <Import Project="..\..\..\Directory.Build.props" />
+
+  <PropertyGroup>
+    <TargetFramework>$(NetCoreAppToolCurrent)</TargetFramework>
+    <DisableImplicitNamespaceImports_DotNet>true</DisableImplicitNamespaceImports_DotNet>
+    <!-- TODO: Fix the api differences between the ref and src illink. -->
+    <ApiCompatValidateAssemblies>false</ApiCompatValidateAssemblies>
+  </PropertyGroup>
+
+  <PropertyGroup Condition="'$(IsReferenceAssembly)' == 'true'">
+    <ProduceOnlyReferenceAssembly>true</ProduceOnlyReferenceAssembly>
+  </PropertyGroup>
+
+</Project>

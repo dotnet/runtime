@@ -1,8 +1,6 @@
 ﻿// Licensed to the .NET Foundation under one or more agreements.
 // The .NET Foundation licenses this file to you under the MIT license.
 
-#nullable enable
-
 using System.IO;
 using Microsoft.Extensions.Configuration;
 using Microsoft.Extensions.Logging;
@@ -39,7 +37,7 @@ namespace Microsoft.Extensions.Hosting
         public bool DisableDefaults { get; set; }
 
         /// <summary>
-        /// The command line arguments. This is unused if <see cref="DisableDefaults"/> is <see langword="true"/>.
+        /// The command line arguments to add to the <see cref="HostApplicationBuilder.Configuration"/>.
         /// </summary>
         public string[]? Args { get; set; }
 

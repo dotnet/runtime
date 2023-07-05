@@ -72,9 +72,11 @@ namespace Microsoft.Win32.SafeHandles
         }
 
         [SupportedOSPlatform("windows")]
-        protected SafeNCryptHandle(IntPtr handle, SafeHandle parentHandle!!)
+        protected SafeNCryptHandle(IntPtr handle, SafeHandle parentHandle)
             : base(true)
         {
+            ArgumentNullException.ThrowIfNull(parentHandle);
+
             if (parentHandle.IsClosed || parentHandle.IsInvalid)
                 throw new ArgumentException(SR.Argument_Invalid_SafeHandleInvalidOrClosed, nameof(parentHandle));
 
@@ -379,15 +381,6 @@ namespace Microsoft.Win32.SafeHandles
         internal SafeNCryptProviderHandle Duplicate()
         {
             return Duplicate<SafeNCryptProviderHandle>();
-        }
-
-        internal void SetHandleValue(IntPtr newHandleValue)
-        {
-            Debug.Assert(newHandleValue != IntPtr.Zero);
-            Debug.Assert(!IsClosed);
-            Debug.Assert(handle == IntPtr.Zero);
-
-            SetHandle(newHandleValue);
         }
 
         protected override bool ReleaseNativeHandle()

@@ -102,8 +102,6 @@ inline bool MethodDesc::IsLCGMethod()
 inline bool MethodDesc::IsILStub()
 {
     WRAPPER_NO_CONTRACT;
-
-    g_IBCLogger.LogMethodDescAccess(this);
     return ((mcDynamic == GetClassification()) && dac_cast<PTR_DynamicMethodDesc>(this)->IsILStub());
 }
 
@@ -112,23 +110,6 @@ inline BOOL MethodDesc::IsQCall()
     WRAPPER_NO_CONTRACT;
     return (IsNDirect() && dac_cast<PTR_NDirectMethodDesc>(this)->IsQCall());
 }
-
-#ifdef FEATURE_COMINTEROP
-FORCEINLINE DWORD MethodDesc::IsGenericComPlusCall()
-{
-    LIMITED_METHOD_CONTRACT;
-    return m_wFlags & mdcHasComPlusCallInfo;
-}
-
-inline void MethodDesc::SetupGenericComPlusCall()
-{
-    LIMITED_METHOD_CONTRACT;
-    m_wFlags |= mdcHasComPlusCallInfo;
-
-    AsInstantiatedMethodDesc()->IMD_SetupGenericComPlusCall();
-}
-#endif // FEATURE_COMINTEROP
-
 
 #ifdef FEATURE_COMINTEROP
 
@@ -140,14 +121,10 @@ inline ComPlusCallInfo *ComPlusCallInfo::FromMethodDesc(MethodDesc *pMD)
     {
         return ((ComPlusCallMethodDesc *)pMD)->m_pComPlusCallInfo;
     }
-    else if (pMD->IsEEImpl())
-    {
-        return ((DelegateEEClass *)pMD->GetClass())->m_pComPlusCallInfo;
-    }
     else
     {
-        _ASSERTE(pMD->IsGenericComPlusCall());
-        return pMD->AsInstantiatedMethodDesc()->IMD_GetComPlusCallInfo();
+        _ASSERTE(pMD->IsEEImpl());
+        return ((DelegateEEClass *)pMD->GetClass())->m_pComPlusCallInfo;
     }
 }
 

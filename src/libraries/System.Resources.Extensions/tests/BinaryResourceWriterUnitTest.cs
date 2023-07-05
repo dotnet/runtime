@@ -10,12 +10,16 @@ using System.IO;
 using System.Linq;
 using System.Reflection;
 using System.Runtime.Serialization.Formatters.Binary;
+using System.Threading;
+using System.Threading.Tasks;
 using Xunit;
 
 namespace System.Resources.Extensions.Tests
 {
     public class PreserializedResourceWriterTests
     {
+        public static bool AllowsCustomResourceTypes => AppContext.TryGetSwitch("System.Resources.ResourceManager.AllowCustomResourceTypes", out bool isEnabled) ? isEnabled : true;
+
         [Fact]
         public static void ExceptionforNullStream()
         {
@@ -148,7 +152,6 @@ namespace System.Resources.Extensions.Tests
 
             Assert.Equal(writerBuffer, binaryWriterBuffer);
         }
-
 
         [Fact]
         public static void PrimitiveResources()
@@ -339,7 +342,7 @@ namespace System.Resources.Extensions.Tests
                 }
             }
         }
-        [Fact]
+        [ConditionalFact(nameof(AllowsCustomResourceTypes))]
         [ActiveIssue("https://github.com/dotnet/runtime/issues/34495", TestPlatforms.Windows, TargetFrameworkMonikers.Netcoreapp, TestRuntimes.Mono)]
         public static void TypeConverterByteArrayResources()
         {
@@ -372,7 +375,7 @@ namespace System.Resources.Extensions.Tests
             }
         }
 
-        [Fact]
+        [ConditionalFact(nameof(AllowsCustomResourceTypes))]
         public static void TypeConverterStringResources()
         {
             var values = TestData.StringConverter;
@@ -402,7 +405,7 @@ namespace System.Resources.Extensions.Tests
             }
         }
 
-        [Fact]
+        [ConditionalFact(nameof(AllowsCustomResourceTypes))]
         [ActiveIssue("https://github.com/dotnet/runtime/issues/34495", TestPlatforms.Windows, TargetFrameworkMonikers.Netcoreapp, TestRuntimes.Mono)]
         [ActiveIssue("https://github.com/dotnet/runtime/issues/34008", TestPlatforms.Linux, TargetFrameworkMonikers.Netcoreapp, TestRuntimes.Mono)]
         public static void StreamResources()
@@ -468,7 +471,7 @@ namespace System.Resources.Extensions.Tests
             }
         }
 
-        [Fact]
+        [ConditionalFact(nameof(AllowsCustomResourceTypes))]
         public static void ResourceManagerLoadsCorrectReader()
         {
             ResourceManager resourceManager = new ResourceManager(typeof(TestData));
@@ -494,6 +497,56 @@ namespace System.Resources.Extensions.Tests
                     // Some types rely on SerializationInfo.SetType on .NETCore
                     // which result in a different binary format
                     Assert.Equal(expectedData.ToArray(), actualData.ToArray());
+                }
+            }
+        }
+
+        /// <summary>
+        /// This test has multiple threads simultaneously loop over the keys of a moderately-sized resx using
+        /// <see cref="ResourceManager"/> and call <see cref="ResourceManager.GetString(string)"/> for each key.
+        /// This has historically been prone to thread-safety bugs because of the shared cache state and internal
+        /// method calls between RuntimeResourceSet and <see cref="DeserializingResourceReader"/>.
+        ///
+        /// Running with <paramref name="useEnumeratorEntry"/> TRUE replicates https://github.com/dotnet/runtime/issues/74868,
+        /// while running with FALSE replicates the error from https://github.com/dotnet/runtime/issues/74052.
+        /// </summary>
+        /// <param name="useEnumeratorEntry">
+        /// Whether to use <see cref="IDictionaryEnumerator.Entry"/> vs. <see cref="IDictionaryEnumerator.Key"/> when enumerating;
+        /// these follow fairly different code paths.
+        /// </param>]
+        [ConditionalTheory(typeof(PlatformDetection), nameof(PlatformDetection.IsBinaryFormatterSupported))]
+        [InlineData(false)]
+        [InlineData(true)]
+        public static void TestResourceManagerIsSafeForConcurrentAccessAndEnumeration(bool useEnumeratorEntry)
+        {
+            ResourceManager manager = new(
+                typeof(TestData).FullName,
+                typeof(TestData).Assembly,
+                typeof(DeserializingResourceReader).Assembly.GetType("System.Resources.Extensions.RuntimeResourceSet", throwOnError: true));
+
+            const int Threads = 10;
+            using Barrier barrier = new(Threads);
+            Task[] tasks = Enumerable.Range(0, Threads)
+                .Select(_ => Task.Factory.StartNew(
+                    WaitForBarrierThenEnumerateResources,
+                    CancellationToken.None,
+                    TaskCreationOptions.LongRunning,
+                    TaskScheduler.Default))
+                .ToArray();
+
+            Assert.True(Task.WaitAll(tasks, TimeSpan.FromSeconds(30)));
+
+            void WaitForBarrierThenEnumerateResources()
+            {
+                barrier.SignalAndWait();
+
+                ResourceSet set = manager.GetResourceSet(CultureInfo.InvariantCulture, createIfNotExists: true, tryParents: true);
+                IDictionaryEnumerator enumerator = set.GetEnumerator();
+                while (enumerator.MoveNext())
+                {
+                    object key = useEnumeratorEntry ? enumerator.Entry.Key : enumerator.Key;
+                    manager.GetObject((string)key);
+                    Thread.Sleep(1);
                 }
             }
         }
@@ -535,5 +588,4 @@ namespace System.Resources.Extensions.Tests
             }
         }
     }
-
 }

@@ -36,7 +36,7 @@ namespace Microsoft.Win32.SafeHandles
 
         protected override bool ReleaseHandle()
         {
-            Interop.Crypto.ExtendedKeyUsageDestory(handle);
+            Interop.Crypto.ExtendedKeyUsageDestroy(handle);
             SetHandle(IntPtr.Zero);
             return true;
         }

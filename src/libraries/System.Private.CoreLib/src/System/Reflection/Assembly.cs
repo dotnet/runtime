@@ -4,12 +4,13 @@
 using System.IO;
 using System.Globalization;
 using System.Collections.Generic;
+using System.ComponentModel;
 using System.Configuration.Assemblies;
 using System.Diagnostics.CodeAnalysis;
 using System.Runtime.Serialization;
 using System.Security;
-using System.Runtime.CompilerServices;
 using System.Runtime.Loader;
+using System.Runtime.CompilerServices;
 
 namespace System.Reflection
 {
@@ -83,6 +84,7 @@ namespace System.Reflection
 
         internal const string ThrowingMessageInRAF = "This member throws an exception for assemblies embedded in a single-file app";
 
+        [Obsolete("Assembly.CodeBase and Assembly.EscapedCodeBase are only included for .NET Framework compatibility. Use Assembly.Location.", DiagnosticId = "SYSLIB0012", UrlFormat = "https://aka.ms/dotnet-warnings/{0}")]
         [RequiresAssemblyFiles(ThrowingMessageInRAF)]
         public virtual string? CodeBase => throw NotImplemented.ByDesign;
         public virtual MethodInfo? EntryPoint => throw NotImplemented.ByDesign;
@@ -118,6 +120,7 @@ namespace System.Reflection
         public virtual object[] GetCustomAttributes(bool inherit) { throw NotImplemented.ByDesign; }
         public virtual object[] GetCustomAttributes(Type attributeType, bool inherit) { throw NotImplemented.ByDesign; }
 
+        [Obsolete("Assembly.CodeBase and Assembly.EscapedCodeBase are only included for .NET Framework compatibility. Use Assembly.Location.", DiagnosticId = "SYSLIB0012", UrlFormat = "https://aka.ms/dotnet-warnings/{0}")]
         [RequiresAssemblyFiles(ThrowingMessageInRAF)]
         public virtual string EscapedCodeBase => AssemblyName.EscapeCodeBase(CodeBase);
 
@@ -162,6 +165,8 @@ namespace System.Reflection
         [RequiresAssemblyFiles(ThrowingMessageInRAF)]
         public virtual FileStream[] GetFiles(bool getResourceModules) { throw NotImplemented.ByDesign; }
 
+        [Obsolete(Obsoletions.LegacyFormatterImplMessage, DiagnosticId = Obsoletions.LegacyFormatterImplDiagId, UrlFormat = Obsoletions.SharedUrlFormat)]
+        [EditorBrowsable(EditorBrowsableState.Never)]
         public virtual void GetObjectData(SerializationInfo info, StreamingContext context) { throw NotImplemented.ByDesign; }
 
         public override string ToString()
@@ -186,12 +191,11 @@ namespace System.Reflection
             // so it can become a simple test
             if (right is null)
             {
-                // return true/false not the test result https://github.com/dotnet/runtime/issues/4207
-                return (left is null) ? true : false;
+                return left is null;
             }
 
             // Try fast reference equality and opposite null check prior to calling the slower virtual Equals
-            if ((object?)left == (object)right)
+            if (ReferenceEquals(left, right))
             {
                 return true;
             }
@@ -203,7 +207,15 @@ namespace System.Reflection
 
         public static string CreateQualifiedName(string? assemblyName, string? typeName) => typeName + ", " + assemblyName;
 
-        public static Assembly? GetAssembly(Type type!!) => type.Module?.Assembly;
+        public static Assembly? GetAssembly(Type type)
+        {
+            if (type is null)
+            {
+                ThrowHelper.ThrowArgumentNullException(ExceptionArgument.type);
+            }
+
+            return type.Module?.Assembly;
+        }
 
         // internal test hook
         private static bool s_forceNullEntryPoint;
@@ -223,8 +235,10 @@ namespace System.Reflection
         // an emitted assembly. The assembly is loaded into a fully isolated ALC with resolution fully deferred to the AssemblyLoadContext.Default.
         // The second parameter is the raw bytes representing the symbol store that matches the assembly.
         [RequiresUnreferencedCode("Types and members the loaded assembly depends on might be removed")]
-        public static Assembly Load(byte[] rawAssembly!!, byte[]? rawSymbolStore)
+        public static Assembly Load(byte[] rawAssembly, byte[]? rawSymbolStore)
         {
+            ArgumentNullException.ThrowIfNull(rawAssembly);
+
             if (rawAssembly.Length == 0)
                 throw new BadImageFormatException(SR.BadImageFormat_BadILFormat);
 
@@ -236,8 +250,10 @@ namespace System.Reflection
         }
 
         [RequiresUnreferencedCode("Types and members the loaded assembly depends on might be removed")]
-        public static Assembly LoadFile(string path!!)
+        public static Assembly LoadFile(string path)
         {
+            ArgumentNullException.ThrowIfNull(path);
+
             if (PathInternal.IsPartiallyQualified(path))
             {
                 throw new ArgumentException(SR.Format(SR.Argument_AbsolutePathRequired, path), nameof(path));
@@ -250,6 +266,12 @@ namespace System.Reflection
             {
                 if (s_loadfile.TryGetValue(normalizedPath, out result))
                     return result;
+
+                // we cannot check for file presence on BROWSER. The files could be embedded and not physically present.
+#if !TARGET_BROWSER && !TARGET_WASI
+                if (!File.Exists(normalizedPath))
+                    throw new FileNotFoundException(SR.Format(SR.FileNotFound_LoadFile, normalizedPath), normalizedPath);
+#endif // !TARGET_BROWSER && !TARGET_WASI
 
                 AssemblyLoadContext alc = new IndividualAssemblyLoadContext($"Assembly.LoadFile({normalizedPath})");
                 result = alc.LoadFromAssemblyPath(normalizedPath);
@@ -276,9 +298,11 @@ namespace System.Reflection
 
             // Get the path where requesting assembly lives and check if it is in the list
             // of assemblies for which LoadFrom was invoked.
-            string requestorPath = Path.GetFullPath(requestingAssembly.Location);
+            string requestorPath = requestingAssembly.Location;
             if (string.IsNullOrEmpty(requestorPath))
                 return null;
+
+            requestorPath = Path.GetFullPath(requestorPath);
 
             lock (s_loadFromAssemblyList)
             {
@@ -309,7 +333,7 @@ namespace System.Reflection
             try
             {
                 // Load the dependency via LoadFrom so that it goes through the same path of being in the LoadFrom list.
-                return Assembly.LoadFrom(requestedAssemblyPath);
+                return LoadFrom(requestedAssemblyPath);
             }
             catch (FileNotFoundException)
             {
@@ -319,8 +343,10 @@ namespace System.Reflection
         }
 
         [RequiresUnreferencedCode("Types and members the loaded assembly depends on might be removed")]
-        public static Assembly LoadFrom(string assemblyFile!!)
+        public static Assembly LoadFrom(string assemblyFile)
         {
+            ArgumentNullException.ThrowIfNull(assemblyFile);
+
             string fullPath = Path.GetFullPath(assemblyFile);
 
             if (!s_loadFromHandlerSet)

@@ -117,7 +117,7 @@ namespace System.ComponentModel.Composition
 
             string typeIdentity = AttributedModelServices.GetTypeIdentity(typeof(T));
 
-            IDictionary<string, object?> metadata = new Dictionary<string, object?>();
+            var metadata = new Dictionary<string, object?>();
             metadata.Add(CompositionConstants.ExportTypeIdentityMetadataName, typeIdentity);
 
             return batch.AddExport(new Export(contractName, metadata, () => exportedValue));
@@ -151,7 +151,7 @@ namespace System.ComponentModel.Composition
             Requires.NotNullOrNullElements(attributedParts, nameof(attributedParts));
 
             CompositionBatch batch = new CompositionBatch(
-                attributedParts.Select(attributedPart => AttributedModelServices.CreatePart(attributedPart)).ToArray(),
+                attributedParts.Select(AttributedModelServices.CreatePart).ToArray(),
                 Enumerable.Empty<ComposablePart>());
 
             container.Compose(batch);

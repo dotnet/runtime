@@ -4,6 +4,8 @@
 using System.Collections.Generic;
 using System.Diagnostics;
 
+#pragma warning disable SYSLIB0050 // The SerializationInfo type is part of the obsolete legacy serialization framework
+
 namespace System.Runtime.Serialization
 {
     /// <summary>The structure for holding all of the data needed for object serialization and deserialization.</summary>
@@ -24,8 +26,12 @@ namespace System.Runtime.Serialization
         private Type _rootType;
 
         [CLSCompliant(false)]
-        public SerializationInfo(Type type!!, IFormatterConverter converter!!)
+        [Obsolete(Obsoletions.LegacyFormatterMessage, DiagnosticId = Obsoletions.LegacyFormatterDiagId, UrlFormat = Obsoletions.SharedUrlFormat)]
+        public SerializationInfo(Type type, IFormatterConverter converter)
         {
+            ArgumentNullException.ThrowIfNull(type);
+            ArgumentNullException.ThrowIfNull(converter);
+
             _rootType = type;
             _rootTypeName = type.FullName!;
             _rootTypeAssemblyName = type.Module.Assembly.FullName!;
@@ -40,6 +46,7 @@ namespace System.Runtime.Serialization
         }
 
         [CLSCompliant(false)]
+        [Obsolete(Obsoletions.LegacyFormatterMessage, DiagnosticId = Obsoletions.LegacyFormatterDiagId, UrlFormat = Obsoletions.SharedUrlFormat)]
         public SerializationInfo(Type type, IFormatterConverter converter, bool requireSameTokenInPartialTrust)
             : this(type, converter)
         {
@@ -72,8 +79,10 @@ namespace System.Runtime.Serialization
 
         public bool IsAssemblyNameSetExplicit { get; private set; }
 
-        public void SetType(Type type!!)
+        public void SetType(Type type)
         {
+            ArgumentNullException.ThrowIfNull(type);
+
             if (!ReferenceEquals(_rootType, type))
             {
                 _rootType = type;
@@ -121,8 +130,11 @@ namespace System.Runtime.Serialization
             _types = newTypes;
         }
 
-        public void AddValue(string name!!, object? value, Type type!!)
+        public void AddValue(string name, object? value, Type type)
         {
+            ArgumentNullException.ThrowIfNull(name);
+            ArgumentNullException.ThrowIfNull(type);
+
             AddValueInternal(name, value, type);
         }
 
@@ -250,7 +262,7 @@ namespace System.Runtime.Serialization
         /// <param name="name"> The name of the data to be updated.</param>
         /// <param name="value"> The new value.</param>
         /// <param name="type"> The type of the data being added.</param>
-        public void UpdateValue(string name, object value, Type type)
+        internal void UpdateValue(string name, object value, Type type)
         {
             Debug.Assert(null != name, "[SerializationInfo.UpdateValue]name!=null");
             Debug.Assert(null != value, "[SerializationInfo.UpdateValue]value!=null");
@@ -268,8 +280,10 @@ namespace System.Runtime.Serialization
             }
         }
 
-        private int FindElement(string name!!)
+        private int FindElement(string name)
         {
+            ArgumentNullException.ThrowIfNull(name);
+
             if (_nameToIndex.TryGetValue(name, out int index))
             {
                 return index;
@@ -318,8 +332,10 @@ namespace System.Runtime.Serialization
             return _values[index];
         }
 
-        public object? GetValue(string name, Type type!!)
+        public object? GetValue(string name, Type type)
         {
+            ArgumentNullException.ThrowIfNull(type);
+
             if (type is not RuntimeType)
                 throw new ArgumentException(SR.Argument_MustBeRuntimeType);
 

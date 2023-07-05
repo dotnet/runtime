@@ -1,15 +1,17 @@
-﻿// Licensed to the .NET Foundation under one or more agreements.
+// Licensed to the .NET Foundation under one or more agreements.
 // The .NET Foundation licenses this file to you under the MIT license.
 
 using System;
 using System.Numerics;
 using System.Runtime.CompilerServices;
+using Xunit;
 
 namespace Runtime_54466
 {
     public class Test
     {
-        static int Main()
+        [Fact]
+        public static int TestEntryPoint()
         {
             return t(1, 1, 1, 1, Vector2.One, Vector2.One, Vector2.One, Vector2.One);
         }

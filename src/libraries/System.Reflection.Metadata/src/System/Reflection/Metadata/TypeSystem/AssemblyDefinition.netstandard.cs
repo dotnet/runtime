@@ -7,7 +7,15 @@ namespace System.Reflection.Metadata
     {
         public AssemblyName GetAssemblyName()
         {
-            return _reader.GetAssemblyName(Name, Version, Culture, PublicKey, HashAlgorithm, Flags);
+            AssemblyFlags flags = Flags;
+
+            // compat: assembly names from metadata definitions should set the bit for the full key.
+            if (!PublicKey.IsNil)
+            {
+                flags |= AssemblyFlags.PublicKey;
+            }
+
+            return _reader.GetAssemblyName(Name, Version, Culture, PublicKey, HashAlgorithm, flags);
         }
     }
 }

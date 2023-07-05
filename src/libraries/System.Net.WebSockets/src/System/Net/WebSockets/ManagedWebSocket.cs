@@ -423,7 +423,17 @@ namespace System.Net.WebSockets
                 // the task, and we're done.
                 if (writeTask.IsCompleted)
                 {
-                    return writeTask;
+                    writeTask.GetAwaiter().GetResult();
+                    ValueTask flushTask = new ValueTask(_stream.FlushAsync());
+                    if (flushTask.IsCompleted)
+                    {
+                        return flushTask;
+                    }
+                    else
+                    {
+                        releaseSendBufferAndSemaphore = false;
+                        return WaitForWriteTaskAsync(flushTask, shouldFlush: false);
+                    }
                 }
 
                 // Up until this point, if an exception occurred (such as when accessing _stream or when
@@ -447,14 +457,18 @@ namespace System.Net.WebSockets
                 }
             }
 
-            return WaitForWriteTaskAsync(writeTask);
+            return WaitForWriteTaskAsync(writeTask, shouldFlush: true);
         }
 
-        private async ValueTask WaitForWriteTaskAsync(ValueTask writeTask)
+        private async ValueTask WaitForWriteTaskAsync(ValueTask writeTask, bool shouldFlush)
         {
             try
             {
                 await writeTask.ConfigureAwait(false);
+                if (shouldFlush)
+                {
+                    await _stream.FlushAsync().ConfigureAwait(false);
+                }
             }
             catch (Exception exc) when (!(exc is OperationCanceledException))
             {
@@ -478,6 +492,7 @@ namespace System.Net.WebSockets
                 using (cancellationToken.Register(static s => ((ManagedWebSocket)s!).Abort(), this))
                 {
                     await _stream.WriteAsync(new ReadOnlyMemory<byte>(_sendBuffer, 0, sendBytes), cancellationToken).ConfigureAwait(false);
+                    await _stream.FlushAsync(cancellationToken).ConfigureAwait(false);
                 }
             }
             catch (Exception exc) when (!(exc is OperationCanceledException))
@@ -620,7 +635,7 @@ namespace System.Net.WebSockets
                 for (int i = 9; i >= 2; i--)
                 {
                     sendBuffer[i] = unchecked((byte)length);
-                    length = length / 256;
+                    length /= 256;
                 }
                 maskOffset = 2 + sizeof(ulong); // additional 8 bytes for 64-bit length
             }
@@ -682,7 +697,22 @@ namespace System.Net.WebSockets
                                 // Make sure we have the first two bytes, which includes the start of the payload length.
                                 if (_receiveBufferCount < 2)
                                 {
-                                    await EnsureBufferContainsAsync(2, cancellationToken, throwOnPrematureClosure: true).ConfigureAwait(false);
+                                    if (payloadBuffer.IsEmpty)
+                                    {
+                                        // The caller has issued a zero-byte read.  The only meaningful reason to do that is to
+                                        // wait for data to be available without actually consuming any of it. If we just pass down
+                                        // our internal buffer, the underlying stream might end up renting and/or pinning a buffer
+                                        // for the duration of the operation, which isn't necessary when we don't actually want to
+                                        // consume anything. Instead, we issue a zero-byte read against the underlying stream;
+                                        // given that the receive buffer currently stores fewer than the minimum number of bytes
+                                        // necessary for a header, it's safe to issue a read (if there were at least the minimum
+                                        // number of bytes available, we could end up issuing a read that would erroneously wait
+                                        // for data that would never arrive). Once that read completes, we can proceed with any
+                                        // other reads necessary, and they'll have a reduced chance of pinning the receive buffer.
+                                        await _stream.ReadAsync(Memory<byte>.Empty, cancellationToken).ConfigureAwait(false);
+                                    }
+
+                                    await EnsureBufferContainsAsync(2, cancellationToken).ConfigureAwait(false);
                                 }
 
                                 // Then make sure we have the full header based on the payload length.
@@ -779,16 +809,18 @@ namespace System.Net.WebSockets
                                 totalBytesReceived += receiveBufferBytesToCopy;
                             }
 
-                            while (totalBytesReceived < limit)
+                            if (totalBytesReceived < limit)
                             {
-                                int numBytesRead = await _stream.ReadAsync(header.Compressed ?
-                                        _inflater!.Memory.Slice(totalBytesReceived, limit - totalBytesReceived) :
-                                        payloadBuffer.Slice(totalBytesReceived, limit - totalBytesReceived),
-                                    cancellationToken).ConfigureAwait(false);
-                                if (numBytesRead <= 0)
+                                int bytesToRead = limit - totalBytesReceived;
+                                Memory<byte> readBuffer = header.Compressed ?
+                                    _inflater!.Memory.Slice(totalBytesReceived, bytesToRead) :
+                                    payloadBuffer.Slice(totalBytesReceived, bytesToRead);
+
+                                int numBytesRead = await _stream.ReadAtLeastAsync(
+                                    readBuffer, bytesToRead, throwOnEndOfStream: false, cancellationToken).ConfigureAwait(false);
+                                if (numBytesRead < bytesToRead)
                                 {
-                                    ThrowIfEOFUnexpected(throwOnPrematureClosure: true);
-                                    break;
+                                    ThrowEOFUnexpected();
                                 }
                                 totalBytesReceived += numBytesRead;
                             }
@@ -1042,6 +1074,9 @@ namespace System.Net.WebSockets
                 case WebSocketCloseStatus.NormalClosure:
                 case WebSocketCloseStatus.PolicyViolation:
                 case WebSocketCloseStatus.ProtocolError:
+                case (WebSocketCloseStatus)1012: // ServiceRestart
+                case (WebSocketCloseStatus)1013: // TryAgainLater
+                case (WebSocketCloseStatus)1014: // BadGateway
                     return true;
 
                 default:
@@ -1344,7 +1379,7 @@ namespace System.Net.WebSockets
         }
 
         [AsyncMethodBuilder(typeof(PoolingAsyncValueTaskMethodBuilder))]
-        private async ValueTask EnsureBufferContainsAsync(int minimumRequiredBytes, CancellationToken cancellationToken, bool throwOnPrematureClosure = true)
+        private async ValueTask EnsureBufferContainsAsync(int minimumRequiredBytes, CancellationToken cancellationToken)
         {
             Debug.Assert(minimumRequiredBytes <= _receiveBuffer.Length, $"Requested number of bytes {minimumRequiredBytes} must not exceed {_receiveBuffer.Length}");
 
@@ -1359,34 +1394,28 @@ namespace System.Net.WebSockets
                 _receiveBufferOffset = 0;
 
                 // While we don't have enough data, read more.
-                while (_receiveBufferCount < minimumRequiredBytes)
+                if (_receiveBufferCount < minimumRequiredBytes)
                 {
-                    int numRead = await _stream.ReadAsync(_receiveBuffer.Slice(_receiveBufferCount, _receiveBuffer.Length - _receiveBufferCount), cancellationToken).ConfigureAwait(false);
-                    Debug.Assert(numRead >= 0, $"Expected non-negative bytes read, got {numRead}");
-                    if (numRead <= 0)
-                    {
-                        ThrowIfEOFUnexpected(throwOnPrematureClosure);
-                        break;
-                    }
+                    int bytesToRead = minimumRequiredBytes - _receiveBufferCount;
+                    int numRead = await _stream.ReadAtLeastAsync(
+                        _receiveBuffer.Slice(_receiveBufferCount), bytesToRead, throwOnEndOfStream: false, cancellationToken).ConfigureAwait(false);
                     _receiveBufferCount += numRead;
+
+                    if (numRead < bytesToRead)
+                    {
+                        ThrowEOFUnexpected();
+                    }
                 }
             }
         }
 
-        private void ThrowIfEOFUnexpected(bool throwOnPrematureClosure)
+        private void ThrowEOFUnexpected()
         {
             // The connection closed before we were able to read everything we needed.
-            // If it was due to us being disposed, fail.  If it was due to the connection
-            // being closed and it wasn't expected, fail.  If it was due to the connection
-            // being closed and that was expected, exit gracefully.
-            if (_disposed)
-            {
-                throw new ObjectDisposedException(nameof(WebSocket));
-            }
-            if (throwOnPrematureClosure)
-            {
-                throw new WebSocketException(WebSocketError.ConnectionClosedPrematurely);
-            }
+            // If it was due to us being disposed, fail with the correct exception.
+            // Otherwise, it was due to the connection being closed and it wasn't expected.
+            ObjectDisposedException.ThrowIf(_disposed, typeof(WebSocket));
+            throw new WebSocketException(WebSocketError.ConnectionClosedPrematurely);
         }
 
         /// <summary>Gets a send buffer from the pool.</summary>
@@ -1437,61 +1466,26 @@ namespace System.Net.WebSockets
             {
                 byte* toMaskPtr = toMaskBeg;
                 byte* toMaskEnd = toMaskBeg + toMask.Length;
-                byte* maskPtr = (byte*)&mask;
 
                 if (toMaskEnd - toMaskPtr >= sizeof(int))
                 {
-                    // align our pointer to sizeof(int)
+                    int rolledMask = BitConverter.IsLittleEndian ?
+                        (int)BitOperations.RotateRight((uint)mask, maskIndex * 8) :
+                        (int)BitOperations.RotateLeft((uint)mask, maskIndex * 8);
 
-                    while ((ulong)toMaskPtr % sizeof(int) != 0)
+                    // Process Vector<byte>.Count bytes at a time.
+                    if (Vector.IsHardwareAccelerated && (toMaskEnd - toMaskPtr) >= Vector<byte>.Count)
                     {
-                        Debug.Assert(toMaskPtr < toMaskEnd);
-
-                        *toMaskPtr++ ^= maskPtr[maskIndex];
-                        maskIndex = (maskIndex + 1) & 3;
-                    }
-
-                    int rolledMask;
-                    if (BitConverter.IsLittleEndian)
-                    {
-                        rolledMask = (int)BitOperations.RotateRight((uint)mask, maskIndex * 8);
-                    }
-                    else
-                    {
-                        rolledMask = (int)BitOperations.RotateLeft((uint)mask, maskIndex * 8);
-                    }
-
-                    // use SIMD if possible.
-
-                    if (Vector.IsHardwareAccelerated && Vector<byte>.Count % sizeof(int) == 0 && (toMaskEnd - toMaskPtr) >= Vector<byte>.Count)
-                    {
-                        // align our pointer to Vector<byte>.Count
-
-                        while ((ulong)toMaskPtr % (uint)Vector<byte>.Count != 0)
+                        Vector<byte> maskVector = Vector.AsVectorByte(new Vector<int>(rolledMask));
+                        do
                         {
-                            Debug.Assert(toMaskPtr < toMaskEnd);
-
-                            *(int*)toMaskPtr ^= rolledMask;
-                            toMaskPtr += sizeof(int);
+                            *(Vector<byte>*)toMaskPtr ^= maskVector;
+                            toMaskPtr += Vector<byte>.Count;
                         }
-
-                        // use SIMD.
-
-                        if (toMaskEnd - toMaskPtr >= Vector<byte>.Count)
-                        {
-                            Vector<byte> maskVector = Vector.AsVectorByte(new Vector<int>(rolledMask));
-
-                            do
-                            {
-                                *(Vector<byte>*)toMaskPtr ^= maskVector;
-                                toMaskPtr += Vector<byte>.Count;
-                            }
-                            while (toMaskEnd - toMaskPtr >= Vector<byte>.Count);
-                        }
+                        while (toMaskEnd - toMaskPtr >= Vector<byte>.Count);
                     }
 
-                    // process remaining data (or all, if couldn't use SIMD) 4 bytes at a time.
-
+                    // Process 4 bytes at a time.
                     while (toMaskEnd - toMaskPtr >= sizeof(int))
                     {
                         *(int*)toMaskPtr ^= rolledMask;
@@ -1499,8 +1493,8 @@ namespace System.Net.WebSockets
                     }
                 }
 
-                // do any remaining data a byte at a time.
-
+                // Process 1 byte at a time.
+                byte* maskPtr = (byte*)&mask;
                 while (toMaskPtr != toMaskEnd)
                 {
                     *toMaskPtr++ ^= maskPtr[maskIndex];
@@ -1521,10 +1515,10 @@ namespace System.Net.WebSockets
             }
         }
 
-        private void ThrowOperationInProgress(string? methodName) => throw new InvalidOperationException(SR.Format(SR.net_Websockets_AlreadyOneOutstandingOperation, methodName));
+        private static void ThrowOperationInProgress(string? methodName) => throw new InvalidOperationException(SR.Format(SR.net_Websockets_AlreadyOneOutstandingOperation, methodName));
 
         /// <summary>Creates an OperationCanceledException instance, using a default message and the specified inner exception and token.</summary>
-        private static Exception CreateOperationCanceledException(Exception innerException, CancellationToken cancellationToken = default(CancellationToken))
+        private static OperationCanceledException CreateOperationCanceledException(Exception innerException, CancellationToken cancellationToken = default(CancellationToken))
         {
             return new OperationCanceledException(
                 new OperationCanceledException().Message,

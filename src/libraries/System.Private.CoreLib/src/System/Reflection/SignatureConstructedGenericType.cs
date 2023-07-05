@@ -9,8 +9,11 @@ namespace System.Reflection
     {
         // The exception-visible name "typeArguments" is chosen to match the parameter name to Type.MakeGenericType() since that's the
         // intended user of this constructor.
-        internal SignatureConstructedGenericType(Type genericTypeDefinition!!, Type[] typeArguments!!)
+        internal SignatureConstructedGenericType(Type genericTypeDefinition, Type[] typeArguments)
         {
+            ArgumentNullException.ThrowIfNull(genericTypeDefinition);
+            ArgumentNullException.ThrowIfNull(typeArguments);
+
             typeArguments = (Type[])(typeArguments.Clone());
             for (int i = 0; i < typeArguments.Length; i++)
             {

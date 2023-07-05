@@ -3,10 +3,12 @@
 
 
 using System;
+using Xunit;
 
-internal class BasicMath
+public class BasicMath
 {
-    public static int Main(String[] Args)
+    [Fact]
+    public static int TestEntryPoint()
     {
         int ec = 0;
         int x = 10;

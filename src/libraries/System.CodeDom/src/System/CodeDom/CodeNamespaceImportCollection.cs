@@ -36,8 +36,13 @@ namespace System.CodeDom
             }
         }
 
-        public void AddRange(CodeNamespaceImport[] value!!)
+        public void AddRange(CodeNamespaceImport[] value)
         {
+            if (value is null)
+            {
+                throw new ArgumentNullException(nameof(value));
+            }
+
             foreach (CodeNamespaceImport c in value)
             {
                 Add(c);

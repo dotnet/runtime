@@ -60,7 +60,7 @@ namespace System.Numerics.Tensors
         }
 
         /// <summary>
-        /// Constructs a new DenseTensor of the specifed dimensions, wrapping existing backing memory for the contents.
+        /// Constructs a new DenseTensor of the specified dimensions, wrapping existing backing memory for the contents.
         /// </summary>
         /// <param name="memory"></param>
         /// <param name="dimensions">An span of integers that represent the size of each dimension of the DenseTensor to create.</param>
@@ -81,7 +81,7 @@ namespace System.Numerics.Tensors
         public Memory<T> Buffer => memory;
 
         /// <summary>
-        /// Gets the value at the specied index, where index is a linearized version of n-dimension indices using strides.
+        /// Gets the value at the specified index, where index is a linearized version of n-dimension indices using strides.
         /// </summary>
         /// <param name="index">An integer index computed as a dot-product of indices.</param>
         /// <returns>The value at the specified position in this Tensor.</returns>
@@ -91,7 +91,7 @@ namespace System.Numerics.Tensors
         }
 
         /// <summary>
-        /// Sets the value at the specied index, where index is a linearized version of n-dimension indices using strides.
+        /// Sets the value at the specified index, where index is a linearized version of n-dimension indices using strides.
         /// </summary>
         /// <param name="index">An integer index computed as a dot-product of indices.</param>
         /// <param name="value">The new value to set at the specified position in this Tensor.</param>
@@ -100,8 +100,13 @@ namespace System.Numerics.Tensors
             Buffer.Span[index] = value;
         }
 
-        protected override void CopyTo(T[] array!!, int arrayIndex)
+        protected override void CopyTo(T[] array, int arrayIndex)
         {
+            if (array is null)
+            {
+                throw new ArgumentNullException(nameof(array));
+            }
+
             if (array.Length < arrayIndex + Length)
             {
                 throw new ArgumentException(SR.NumberGreaterThenAvailableSpace, nameof(array));

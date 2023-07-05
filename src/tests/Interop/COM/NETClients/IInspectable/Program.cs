@@ -21,7 +21,7 @@ namespace NetClient
             Assert.Throws<PlatformNotSupportedException>(() => _ = (IInspectableTesting2)server);
         }
 
-        static int Main(string[] doNotUse)
+        static int Main()
         {
             // RegFree COM is not supported on Windows Nano
             if (Utilities.IsWindowsNanoServer)

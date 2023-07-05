@@ -58,19 +58,19 @@ void DataFlow::ForwardAnalysis(TCallback& callback)
         }
         else
         {
-            flowList* preds = m_pCompiler->BlockPredsWithEH(block);
-            for (flowList* pred = preds; pred; pred = pred->flNext)
+            FlowEdge* preds = m_pCompiler->BlockPredsWithEH(block);
+            for (FlowEdge* pred = preds; pred; pred = pred->getNextPredEdge())
             {
-                callback.Merge(block, pred->getBlock(), pred->flDupCount);
+                callback.Merge(block, pred->getSourceBlock(), pred->getDupCount());
             }
         }
 
         if (callback.EndMerge(block))
         {
-            for (BasicBlock* succ : block->GetAllSuccs(m_pCompiler))
-            {
+            block->VisitAllSuccs(m_pCompiler, [&worklist](BasicBlock* succ) {
                 worklist.insert(worklist.end(), succ);
-            }
+                return BasicBlockVisit::Continue;
+            });
         }
     }
 }

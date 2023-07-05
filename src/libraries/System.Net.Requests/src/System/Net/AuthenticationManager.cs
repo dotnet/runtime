@@ -22,16 +22,19 @@ namespace System.Net
         public static Authorization? PreAuthenticate(WebRequest request, ICredentials credentials) =>
             throw new PlatformNotSupportedException();
 
-        public static void Register(IAuthenticationModule authenticationModule!!)
+        public static void Register(IAuthenticationModule authenticationModule)
         {
+            ArgumentNullException.ThrowIfNull(authenticationModule);
         }
 
-        public static void Unregister(IAuthenticationModule authenticationModule!!)
+        public static void Unregister(IAuthenticationModule authenticationModule)
         {
+            ArgumentNullException.ThrowIfNull(authenticationModule);
         }
 
-        public static void Unregister(string authenticationScheme!!)
+        public static void Unregister(string authenticationScheme)
         {
+            ArgumentNullException.ThrowIfNull(authenticationScheme);
         }
 
         public static IEnumerator RegisteredModules => Array.Empty<IAuthenticationModule>().GetEnumerator();

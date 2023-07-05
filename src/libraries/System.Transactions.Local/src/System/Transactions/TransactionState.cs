@@ -5,7 +5,7 @@ using System.Collections;
 using System.Diagnostics;
 using System.Runtime.Serialization;
 using System.Threading;
-using System.Transactions.Distributed;
+using System.Transactions.Oletx;
 
 namespace System.Transactions
 {
@@ -479,7 +479,7 @@ namespace System.Transactions
             return false;
         }
 
-        protected void AddVolatileEnlistment(ref VolatileEnlistmentSet enlistments, Enlistment enlistment)
+        protected static void AddVolatileEnlistment(ref VolatileEnlistmentSet enlistments, Enlistment enlistment)
         {
             // Grow the enlistment array if necessary.
             if (enlistments._volatileEnlistmentCount == enlistments._volatileEnlistmentSize)
@@ -697,10 +697,7 @@ namespace System.Transactions
             // Start the process for abort.  From the active state we can transition directly
             // to the aborted state.
 
-            if (tx._innerException == null)
-            {
-                tx._innerException = e;
-            }
+            tx._innerException ??= e;
 
             TransactionStateAborted.EnterState(tx);
         }
@@ -843,10 +840,7 @@ namespace System.Transactions
             // Start the process for abort.  From the active state we can transition directly
             // to the aborted state.
 
-            if (tx._innerException == null)
-            {
-                tx._innerException = e;
-            }
+            tx._innerException ??= e;
 
             Debug.Assert(tx._promoter != null);
             ((ISimpleTransactionSuperior)tx._promoter).Rollback();
@@ -1155,10 +1149,7 @@ namespace System.Transactions
 
         internal override void ChangeStateTransactionAborted(InternalTransaction tx, Exception? e)
         {
-            if (tx._innerException == null)
-            {
-                tx._innerException = e;
-            }
+            tx._innerException ??= e;
 
             TransactionStateAborted.EnterState(tx);
         }
@@ -1232,10 +1223,7 @@ namespace System.Transactions
 
         internal override void ChangeStateTransactionAborted(InternalTransaction tx, Exception? e)
         {
-            if (tx._innerException == null)
-            {
-                tx._innerException = e;
-            }
+            tx._innerException ??= e;
 
             TransactionStateAborted.EnterState(tx);
         }
@@ -1296,10 +1284,7 @@ namespace System.Transactions
 
         internal override void ChangeStateTransactionAborted(InternalTransaction tx, Exception? e)
         {
-            if (tx._innerException == null)
-            {
-                tx._innerException = e;
-            }
+            tx._innerException ??= e;
 
             // The durable enlistment must have aborted.  Go to the aborted state.
             TransactionStateAborted.EnterState(tx);
@@ -1343,10 +1328,7 @@ namespace System.Transactions
 
         internal override void ChangeStateTransactionAborted(InternalTransaction tx, Exception? e)
         {
-            if (tx._innerException == null)
-            {
-                tx._innerException = e;
-            }
+            tx._innerException ??= e;
 
             // The durable enlistment must have aborted.  Go to the aborted state.
             TransactionStateAborted.EnterState(tx);
@@ -1411,13 +1393,10 @@ namespace System.Transactions
             }
 
             // Notify the durable enlistment
-            if (tx._durableEnlistment != null)
-            {
-                tx._durableEnlistment.State.InternalAborted(tx._durableEnlistment);
-            }
+            tx._durableEnlistment?.State.InternalAborted(tx._durableEnlistment);
 
             // Remove this from the timeout list
-            TransactionManager.TransactionTable.Remove(tx);
+            TransactionTable.Remove(tx);
 
             TransactionsEtwProvider etwLog = TransactionsEtwProvider.Log;
             if (etwLog.IsEnabled())
@@ -1514,7 +1493,7 @@ namespace System.Transactions
             throw CreateTransactionAbortedException(tx);
         }
 
-        private TransactionException CreateTransactionAbortedException(InternalTransaction tx)
+        private static TransactionAbortedException CreateTransactionAbortedException(InternalTransaction tx)
         {
             return TransactionAbortedException.Create(SR.TransactionAborted, tx._innerException, tx.DistributedTxId);
         }
@@ -1548,12 +1527,12 @@ namespace System.Transactions
             }
 
             // Remove this from the timeout list
-            TransactionManager.TransactionTable.Remove(tx);
+            TransactionTable.Remove(tx);
 
             TransactionsEtwProvider etwLog = TransactionsEtwProvider.Log;
             if (etwLog.IsEnabled())
             {
-                etwLog.TransactionCommitted(tx.TransactionTraceId);
+                etwLog.TransactionCommitted(TraceSourceType.TraceSourceLtm, tx.TransactionTraceId);
             }
 
             // Fire Completion for anyone listening
@@ -1611,12 +1590,12 @@ namespace System.Transactions
             }
 
             // Remove this from the timeout list
-            TransactionManager.TransactionTable.Remove(tx);
+            TransactionTable.Remove(tx);
 
             TransactionsEtwProvider etwLog = TransactionsEtwProvider.Log;
             if (etwLog.IsEnabled())
             {
-                etwLog.TransactionInDoubt(tx.TransactionTraceId);
+                etwLog.TransactionInDoubt(TraceSourceType.TraceSourceLtm, tx.TransactionTraceId);
             }
 
             // Fire Completion for anyone listening
@@ -1824,10 +1803,7 @@ namespace System.Transactions
             Debug.Assert(tx.PromotedTransaction != null, "Promoted state not valid for transaction.");
             // Forward this on to the promoted transaction.
 
-            if (tx._innerException == null)
-            {
-                tx._innerException = e;
-            }
+            tx._innerException ??= e;
 
             // Don't hold locks while calling into the promoted tx
             Monitor.Exit(tx);
@@ -1891,7 +1867,6 @@ namespace System.Transactions
             return false;
         }
 
-
         internal override void CompleteBlockingClone(InternalTransaction tx)
         {
             // First try to complete one of the internal blocking clones
@@ -1918,7 +1893,7 @@ namespace System.Transactions
                 Debug.Assert(tx._phase0WaveDependentCloneCount >= 0);
                 if (tx._phase0WaveDependentCloneCount == 0)
                 {
-                    DistributedDependentTransaction dtx = tx._phase0WaveDependentClone!;
+                    OletxDependentTransaction dtx = tx._phase0WaveDependentClone!;
                     tx._phase0WaveDependentClone = null;
 
                     Monitor.Exit(tx);
@@ -1941,7 +1916,6 @@ namespace System.Transactions
             }
         }
 
-
         internal override void CompleteAbortingClone(InternalTransaction tx)
         {
             // If we have a phase1Volatile.VolatileDemux, we have a phase1 volatile enlistment
@@ -1962,7 +1936,7 @@ namespace System.Transactions
                 {
                     // We need to complete our dependent clone on the promoted transaction and null it out
                     // so if we get a new one, a new one will be created on the promoted transaction.
-                    DistributedDependentTransaction dtx = tx._abortingDependentClone!;
+                    OletxDependentTransaction dtx = tx._abortingDependentClone!;
                     tx._abortingDependentClone = null;
 
                     Monitor.Exit(tx);
@@ -1984,7 +1958,6 @@ namespace System.Transactions
                 }
             }
         }
-
 
         internal override void CreateBlockingClone(InternalTransaction tx)
         {
@@ -2037,7 +2010,7 @@ namespace System.Transactions
             tx.ThrowIfPromoterTypeIsNotMSDTC();
 
             // Simply get call get object data for the promoted transaction.
-            ISerializable serializableTx = tx.PromotedTransaction as ISerializable;
+            OletxTransaction serializableTx = tx.PromotedTransaction;
             if (serializableTx == null)
             {
                 // The LTM can only support this if the Distributed TM Supports it.
@@ -2047,7 +2020,7 @@ namespace System.Transactions
             // Before forwarding this call to the promoted tx make sure to change
             // the full type info so that only if the promoted tx does not set this
             // then it should be set correctly.
-            serializationInfo.FullTypeName = tx.PromotedTransaction.GetType().FullName!;
+            serializationInfo.FullTypeName = serializableTx.GetType().FullName!;
 
             // Now forward the call.
             serializableTx.GetObjectData(serializationInfo, context);
@@ -2088,10 +2061,7 @@ namespace System.Transactions
             // LTM gives up the ability to control Tx timeout when it promotes.
             try
             {
-                if (tx._innerException == null)
-                {
-                    tx._innerException = new TimeoutException(SR.TraceTransactionTimeout);
-                }
+                tx._innerException ??= new TimeoutException(SR.TraceTransactionTimeout);
                 Debug.Assert(tx.PromotedTransaction != null);
                 tx.PromotedTransaction.Rollback();
 
@@ -2186,7 +2156,7 @@ namespace System.Transactions
             CommonEnterState(tx);
 
             // Create a transaction with the distributed transaction manager
-            DistributedCommittableTransaction? distributedTx = null;
+            OletxCommittableTransaction? distributedTx = null;
             try
             {
                 TimeSpan newTimeout;
@@ -2264,7 +2234,7 @@ namespace System.Transactions
         }
 
 
-        protected bool PromotePhaseVolatiles(
+        protected static bool PromotePhaseVolatiles(
             InternalTransaction tx,
             ref VolatileEnlistmentSet volatiles,
             bool phase0)
@@ -2456,10 +2426,7 @@ namespace System.Transactions
                 // In this state we don't want a transaction exception from BeginCommit to randomly
                 // bubble up to the application or go unhandled.  So catch the exception and if the
                 // inner exception for the transaction has not already been set then set it.
-                if (tx._innerException == null)
-                {
-                    tx._innerException = e;
-                }
+                tx._innerException ??= e;
                 TransactionsEtwProvider etwLog = TransactionsEtwProvider.Log;
                 if (etwLog.IsEnabled())
                 {
@@ -2477,10 +2444,7 @@ namespace System.Transactions
 
         internal override void ChangeStateTransactionAborted(InternalTransaction tx, Exception? e)
         {
-            if (tx._innerException == null)
-            {
-                tx._innerException = e;
-            }
+            tx._innerException ??= e;
 
             // This change state event at this point would be caused by one of the enlistments
             // aborting.  Really change to P0Aborting
@@ -2499,7 +2463,7 @@ namespace System.Transactions
             CommonEnterState(tx);
 
             // Use the asynchronous commit provided by the promoted transaction
-            var ctx = (DistributedCommittableTransaction)tx.PromotedTransaction!;
+            OletxCommittableTransaction ctx = (OletxCommittableTransaction)tx.PromotedTransaction!;
             ctx.BeginCommit(tx);
         }
 
@@ -2593,10 +2557,7 @@ namespace System.Transactions
 
         internal override void ChangeStateTransactionAborted(InternalTransaction tx, Exception? e)
         {
-            if (tx._innerException == null)
-            {
-                tx._innerException = e;
-            }
+            tx._innerException ??= e;
 
             // This change state event at this point would be caused by one of the enlistments
             // aborting.  Really change to P0Aborting
@@ -2670,10 +2631,7 @@ namespace System.Transactions
 
         internal override void ChangeStateTransactionAborted(InternalTransaction tx, Exception? e)
         {
-            if (tx._innerException == null)
-            {
-                tx._innerException = e;
-            }
+            tx._innerException ??= e;
 
             // This change state event at this point would be caused by one of the enlistments
             // aborting.  Really change to P1Aborting
@@ -2954,7 +2912,7 @@ namespace System.Transactions
             lock (tx)
             {
                 tx.SignalAsyncCompletion();
-                TransactionManager.TransactionTable.Remove(tx);
+                TransactionTable.Remove(tx);
             }
         }
     }
@@ -2973,12 +2931,12 @@ namespace System.Transactions
             // Tell all the enlistments the outcome.
             if (tx._phase1Volatiles.VolatileDemux != null)
             {
-                tx._phase1Volatiles.VolatileDemux.BroadcastRollback(ref tx._phase1Volatiles);
+                VolatileDemultiplexer.BroadcastRollback(ref tx._phase1Volatiles);
             }
 
             if (tx._phase0Volatiles.VolatileDemux != null)
             {
-                tx._phase0Volatiles.VolatileDemux.BroadcastRollback(ref tx._phase0Volatiles);
+                VolatileDemultiplexer.BroadcastRollback(ref tx._phase0Volatiles);
             }
 
             // Fire Completion for anyone listening
@@ -2988,7 +2946,7 @@ namespace System.Transactions
             TransactionsEtwProvider etwLog = TransactionsEtwProvider.Log;
             if (etwLog.IsEnabled())
             {
-                etwLog.TransactionAborted(tx.TransactionTraceId);
+                etwLog.TransactionAborted(TraceSourceType.TraceSourceLtm, tx.TransactionTraceId);
             }
         }
 
@@ -3117,12 +3075,12 @@ namespace System.Transactions
             // Tell all the enlistments the outcome.
             if (tx._phase1Volatiles.VolatileDemux != null)
             {
-                tx._phase1Volatiles.VolatileDemux.BroadcastCommitted(ref tx._phase1Volatiles);
+                VolatileDemultiplexer.BroadcastCommitted(ref tx._phase1Volatiles);
             }
 
             if (tx._phase0Volatiles.VolatileDemux != null)
             {
-                tx._phase0Volatiles.VolatileDemux.BroadcastCommitted(ref tx._phase0Volatiles);
+                VolatileDemultiplexer.BroadcastCommitted(ref tx._phase0Volatiles);
             }
 
             // Fire Completion for anyone listening
@@ -3132,7 +3090,7 @@ namespace System.Transactions
             TransactionsEtwProvider etwLog = TransactionsEtwProvider.Log;
             if (etwLog.IsEnabled())
             {
-                etwLog.TransactionCommitted(tx.TransactionTraceId);
+                etwLog.TransactionCommitted(TraceSourceType.TraceSourceLtm, tx.TransactionTraceId);
             }
         }
 
@@ -3187,12 +3145,12 @@ namespace System.Transactions
             // Tell all the enlistments the outcome.
             if (tx._phase1Volatiles.VolatileDemux != null)
             {
-                tx._phase1Volatiles.VolatileDemux.BroadcastInDoubt(ref tx._phase1Volatiles);
+                VolatileDemultiplexer.BroadcastInDoubt(ref tx._phase1Volatiles);
             }
 
             if (tx._phase0Volatiles.VolatileDemux != null)
             {
-                tx._phase0Volatiles.VolatileDemux.BroadcastInDoubt(ref tx._phase0Volatiles);
+                VolatileDemultiplexer.BroadcastInDoubt(ref tx._phase0Volatiles);
             }
 
             // Fire Completion for anyone listening
@@ -3202,7 +3160,7 @@ namespace System.Transactions
             TransactionsEtwProvider etwLog = TransactionsEtwProvider.Log;
             if (etwLog.IsEnabled())
             {
-                etwLog.TransactionInDoubt(tx.TransactionTraceId);
+                etwLog.TransactionInDoubt(TraceSourceType.TraceSourceLtm, tx.TransactionTraceId);
             }
         }
 
@@ -3303,7 +3261,7 @@ namespace System.Transactions
             CommonEnterState(tx);
 
             // Create a transaction with the distributed transaction manager
-            DistributedTransaction? distributedTx = null;
+            Oletx.OletxTransaction? distributedTx = null;
             try
             {
                 // Ask the delegation interface to promote the transaction.
@@ -3312,7 +3270,7 @@ namespace System.Transactions
                     TransactionsEtwProvider etwLog = TransactionsEtwProvider.Log;
                     if (etwLog.IsEnabled())
                     {
-                        etwLog.EnlistmentStatus(tx._durableEnlistment, NotificationCall.Promote);
+                        etwLog.EnlistmentStatus(TraceSourceType.TraceSourceLtm, tx._durableEnlistment.EnlistmentTraceId, NotificationCall.Promote);
                     }
                 }
 
@@ -3423,10 +3381,7 @@ namespace System.Transactions
             // Pass the Rollback through the promotable single phase enlistment to be
             // certain it is notified.
 
-            if (tx._innerException == null)
-            {
-                tx._innerException = e;
-            }
+            tx._innerException ??= e;
 
             TransactionStateDelegatedAborting.EnterState(tx);
         }
@@ -3538,10 +3493,7 @@ namespace System.Transactions
             // transaction promoter will get notified of the abort.
             Debug.Assert(tx._durableEnlistment != null, "PromotedNonMSDTC state is not valid for transaction");
 
-            if (tx._innerException == null)
-            {
-                tx._innerException = e;
-            }
+            tx._innerException ??= e;
 
             TransactionStateAborted.EnterState(tx);
         }
@@ -3630,10 +3582,7 @@ namespace System.Transactions
             // Just transition to Aborted. The PSPE will be told to rollback thru the durableEnlistment.
             // This is also overridden in TransactionStatePromotedNonMSDTCSinglePhaseCommit
             // that does something slightly differently.
-            if (tx._innerException == null)
-            {
-                tx._innerException = e;
-            }
+            tx._innerException ??= e;
 
             TransactionStateAborted.EnterState(tx);
         }
@@ -3899,12 +3848,12 @@ namespace System.Transactions
             TransactionsEtwProvider etwLog = TransactionsEtwProvider.Log;
             if (etwLog.IsEnabled())
             {
-                etwLog.EnlistmentStatus(tx._durableEnlistment, NotificationCall.SinglePhaseCommit);
+                etwLog.EnlistmentStatus(TraceSourceType.TraceSourceLtm, tx._durableEnlistment.EnlistmentTraceId, NotificationCall.SinglePhaseCommit);
             }
 
             // We are about to tell the PSPE to do the SinglePhaseCommit. It is too late for us to timeout the transaction.
             // Remove this from the timeout list
-            TransactionManager.TransactionTable.Remove(tx);
+            TransactionTable.Remove(tx);
 
             tx._durableEnlistment.State.ChangeStateCommitting(tx._durableEnlistment);
         }
@@ -3934,10 +3883,7 @@ namespace System.Transactions
 
         internal override void ChangeStateTransactionAborted(InternalTransaction tx, Exception? e)
         {
-            if (tx._innerException == null)
-            {
-                tx._innerException = e;
-            }
+            tx._innerException ??= e;
 
             // The durable enlistment must have aborted.  Go to the aborted state.
             TransactionStatePromotedNonMSDTCAborted.EnterState(tx);
@@ -4095,10 +4041,7 @@ namespace System.Transactions
             }
 
             // Notify the durable enlistment
-            if (tx._durableEnlistment != null)
-            {
-                tx._durableEnlistment.State.InternalAborted(tx._durableEnlistment);
-            }
+            tx._durableEnlistment?.State.InternalAborted(tx._durableEnlistment);
 
             // Fire Completion for anyone listening
             tx.FireCompletion();
@@ -4107,7 +4050,7 @@ namespace System.Transactions
             TransactionsEtwProvider etwLog = TransactionsEtwProvider.Log;
             if (etwLog.IsEnabled())
             {
-                etwLog.TransactionAborted(tx.TransactionTraceId);
+                etwLog.TransactionAborted(TraceSourceType.TraceSourceLtm, tx.TransactionTraceId);
             }
         }
 
@@ -4200,7 +4143,7 @@ namespace System.Transactions
             TransactionsEtwProvider etwLog = TransactionsEtwProvider.Log;
             if (etwLog.IsEnabled())
             {
-                etwLog.TransactionCommitted(tx.TransactionTraceId);
+                etwLog.TransactionCommitted(TraceSourceType.TraceSourceLtm, tx.TransactionTraceId);
             }
         }
 
@@ -4244,7 +4187,7 @@ namespace System.Transactions
             TransactionsEtwProvider etwLog = TransactionsEtwProvider.Log;
             if (etwLog.IsEnabled())
             {
-                etwLog.TransactionInDoubt(tx.TransactionTraceId);
+                etwLog.TransactionInDoubt(TraceSourceType.TraceSourceLtm, tx.TransactionTraceId);
             }
         }
 
@@ -4304,7 +4247,7 @@ namespace System.Transactions
             CommonEnterState(tx);
 
             // We are never going to have an DistributedTransaction for this one.
-            DistributedTransaction? distributedTx;
+            OletxTransaction? distributedTx;
             try
             {
                 // Ask the delegation interface to promote the transaction.
@@ -4313,7 +4256,7 @@ namespace System.Transactions
                     TransactionsEtwProvider etwLog = TransactionsEtwProvider.Log;
                     if (etwLog.IsEnabled())
                     {
-                        etwLog.EnlistmentStatus(tx._durableEnlistment, NotificationCall.Promote);
+                        etwLog.EnlistmentStatus(TraceSourceType.TraceSourceLtm, tx._durableEnlistment.EnlistmentTraceId, NotificationCall.Promote);
                     }
                 }
 
@@ -4359,10 +4302,7 @@ namespace System.Transactions
             // Pass the Rollback through the promotable single phase enlistment to be
             // certain it is notified.
 
-            if (tx._innerException == null)
-            {
-                tx._innerException = e;
-            }
+            tx._innerException ??= e;
 
             Debug.Assert(tx.PromotedTransaction != null);
             tx.PromotedTransaction.Rollback();
@@ -4453,7 +4393,7 @@ namespace System.Transactions
             }
         }
 
-        internal DistributedTransaction? PSPEPromote(InternalTransaction tx)
+        internal Oletx.OletxTransaction? PSPEPromote(InternalTransaction tx)
         {
             bool changeToReturnState = true;
 
@@ -4464,7 +4404,7 @@ namespace System.Transactions
                 "PSPEPromote called from state other than TransactionStateDelegated[NonMSDTC]");
             CommonEnterState(tx);
 
-            DistributedTransaction? distributedTx = null;
+            Oletx.OletxTransaction? distributedTx = null;
             try
             {
                 if (tx._attemptingPSPEPromote)
@@ -4531,7 +4471,7 @@ namespace System.Transactions
                 {
                     try
                     {
-                        distributedTx = TransactionInterop.GetDistributedTransactionFromTransmitterPropagationToken(
+                        distributedTx = TransactionInterop.GetOletxTransactionFromTransmitterPropagationToken(
                                             propagationToken!
                                             );
                     }
@@ -4549,7 +4489,6 @@ namespace System.Transactions
                     if (TransactionManager.FindPromotedTransaction(distributedTx.Identifier) != null)
                     {
                         // If there is already a promoted transaction then someone has committed an error.
-                        distributedTx.Dispose();
                         throw TransactionException.CreateInvalidOperationException(
                                 TraceSourceType.TraceSourceLtm,
                                 SR.PromotedTransactionExists,
@@ -4678,13 +4617,12 @@ namespace System.Transactions
             TransactionsEtwProvider etwLog = TransactionsEtwProvider.Log;
             if (etwLog.IsEnabled())
             {
-                etwLog.EnlistmentStatus(tx._durableEnlistment, NotificationCall.SinglePhaseCommit);
+                etwLog.EnlistmentStatus(TraceSourceType.TraceSourceLtm, tx._durableEnlistment.EnlistmentTraceId, NotificationCall.SinglePhaseCommit);
             }
 
             try
             {
-                tx._durableEnlistment.PromotableSinglePhaseNotification.SinglePhaseCommit(
-                    tx._durableEnlistment.SinglePhaseEnlistment);
+                tx._durableEnlistment.PromotableSinglePhaseNotification.SinglePhaseCommit(tx._durableEnlistment.SinglePhaseEnlistment);
             }
             finally
             {
@@ -4715,7 +4653,7 @@ namespace System.Transactions
                 TransactionsEtwProvider etwLog = TransactionsEtwProvider.Log;
                 if (etwLog.IsEnabled())
                 {
-                    etwLog.EnlistmentStatus(tx._durableEnlistment, NotificationCall.Rollback);
+                    etwLog.EnlistmentStatus(TraceSourceType.TraceSourceLtm, tx._durableEnlistment.EnlistmentTraceId, NotificationCall.Rollback);
                 }
 
                 tx._durableEnlistment.PromotableSinglePhaseNotification.Rollback(

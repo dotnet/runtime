@@ -63,8 +63,10 @@ namespace System.ComponentModel
         ///    <para>Converts the given value object to
         ///       the specified destination type using the specified context and arguments.</para>
         /// </summary>
-        public override object? ConvertTo(ITypeDescriptorContext? context, CultureInfo? culture, object? value, Type destinationType!!)
+        public override object? ConvertTo(ITypeDescriptorContext? context, CultureInfo? culture, object? value, Type destinationType)
         {
+            ArgumentNullException.ThrowIfNull(destinationType);
+
             if (value is Version version)
             {
                 if (destinationType == typeof(InstanceDescriptor))
@@ -92,7 +94,7 @@ namespace System.ComponentModel
         {
             if (value is string version)
             {
-                return Version.TryParse(version, out Version _);
+                return Version.TryParse(version, out _);
             }
             return value is Version;
         }

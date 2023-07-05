@@ -51,15 +51,7 @@
 #define REDZONE_SIZE 0
 #endif
 
-#elif defined(__mips__)
-
-#define REDZONE_SIZE	0
-
 #elif defined(__s390x__)
-
-#define REDZONE_SIZE	0
-
-#elif defined(__sparc__)
 
 #define REDZONE_SIZE	0
 

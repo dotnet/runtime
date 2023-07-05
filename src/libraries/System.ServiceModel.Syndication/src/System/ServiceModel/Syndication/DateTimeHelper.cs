@@ -58,7 +58,11 @@ namespace System.ServiceModel.Syndication
                     ++i;
                 }
 
+#if NETCOREAPP
+                dateTimeString = string.Concat(dateTimeString.AsSpan(0, 19), dateTimeString.AsSpan(i));
+#else
                 dateTimeString = dateTimeString.Substring(0, 19) + dateTimeString.Substring(i);
+#endif
             }
 
             return DateTimeOffset.TryParseExact(dateTimeString, Rfc3339DateTimeFormat, CultureInfo.InvariantCulture.DateTimeFormat, DateTimeStyles.None, out dto);

@@ -57,7 +57,7 @@ namespace Microsoft.Interop.Diagnostics
             WriteEvent(StopSourceGenerationEventId);
         }
 
-        private class StartStopEvent : IDisposable
+        private sealed class StartStopEvent : IDisposable
         {
             public StartStopEvent(int methodCount) => Logger.SourceGenerationStart(methodCount);
             public void Dispose() => Logger.SourceGenerationStop();

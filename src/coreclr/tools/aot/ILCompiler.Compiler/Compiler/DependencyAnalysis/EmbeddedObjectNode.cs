@@ -16,8 +16,6 @@ namespace ILCompiler.DependencyAnalysis
         private int _offset;
         private int _index;
 
-        public IHasStartSymbol ContainingNode { get; set; }
-
         public EmbeddedObjectNode()
         {
             _offset = InvalidOffset;

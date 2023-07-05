@@ -1,6 +1,7 @@
 // Licensed to the .NET Foundation under one or more agreements.
 // The .NET Foundation licenses this file to you under the MIT license.
 
+using System.ComponentModel;
 using System.Diagnostics;
 using System.Diagnostics.CodeAnalysis;
 using System.Reflection;
@@ -39,34 +40,20 @@ namespace System
         [MethodImpl(MethodImplOptions.InternalCall)]
         internal static extern bool IsInstanceOfType(RuntimeType type, [NotNullWhen(true)] object? o);
 
-        [RequiresUnreferencedCode("MakeGenericType cannot be statically analyzed. It's not possible to guarantee the availability of requirements of the generic type.")]
-        internal static Type GetTypeHelper(Type typeStart, Type[]? genericArgs, IntPtr pModifiers, int cModifiers)
-        {
-            Type type = typeStart;
+        /// <summary>
+        /// Returns a new <see cref="RuntimeTypeHandle"/> object created from a handle to a RuntimeType.
+        /// </summary>
+        /// <param name="value">An IntPtr handle to a RuntimeType to create a <see cref="RuntimeTypeHandle"/> object from.</param>
+        /// <returns>A new <see cref="RuntimeTypeHandle"/> object that corresponds to the value parameter.</returns>
+        public static RuntimeTypeHandle FromIntPtr(IntPtr value) => new RuntimeTypeHandle(Type.GetTypeFromHandleUnsafe(value));
 
-            if (genericArgs != null)
-            {
-                type = type.MakeGenericType(genericArgs);
-            }
-
-            if (cModifiers > 0)
-            {
-                int* arModifiers = (int*)pModifiers.ToPointer();
-                for (int i = 0; i < cModifiers; i++)
-                {
-                    if ((CorElementType)Marshal.ReadInt32((IntPtr)arModifiers, i * sizeof(int)) == CorElementType.ELEMENT_TYPE_PTR)
-                        type = type.MakePointerType();
-                    else if ((CorElementType)Marshal.ReadInt32((IntPtr)arModifiers, i * sizeof(int)) == CorElementType.ELEMENT_TYPE_BYREF)
-                        type = type.MakeByRefType();
-                    else if ((CorElementType)Marshal.ReadInt32((IntPtr)arModifiers, i * sizeof(int)) == CorElementType.ELEMENT_TYPE_SZARRAY)
-                        type = type.MakeArrayType();
-                    else
-                        type = type.MakeArrayType(Marshal.ReadInt32((IntPtr)arModifiers, ++i * sizeof(int)));
-                }
-            }
-
-            return type;
-        }
+        /// <summary>
+        /// Returns the internal pointer representation of a <see cref="RuntimeTypeHandle"/> object.
+        /// </summary>
+        /// <param name="value">A <see cref="RuntimeTypeHandle"/> object to retrieve an internal pointer representation from.</param>
+        /// <returns>An <see cref="IntPtr"/> object that represents a <see cref="RuntimeTypeHandle"/> object.</returns>
+        [Intrinsic]
+        public static IntPtr ToIntPtr(RuntimeTypeHandle value) => value.Value;
 
         public static bool operator ==(RuntimeTypeHandle left, object? right) => left.Equals(right);
 
@@ -80,29 +67,15 @@ namespace System
         internal RuntimeType m_type;
 
         public override int GetHashCode()
-        {
-            return m_type != null ? m_type.GetHashCode() : 0;
-        }
+            => m_type?.GetHashCode() ?? 0;
 
         public override bool Equals(object? obj)
-        {
-            if (!(obj is RuntimeTypeHandle))
-                return false;
-
-            RuntimeTypeHandle handle = (RuntimeTypeHandle)obj;
-            return handle.m_type == m_type;
-        }
+            => (obj is RuntimeTypeHandle handle) && ReferenceEquals(handle.m_type, m_type);
 
         public bool Equals(RuntimeTypeHandle handle)
-        {
-            return handle.m_type == m_type;
-        }
+            => ReferenceEquals(handle.m_type, m_type);
 
-        public IntPtr Value => m_type != null ? m_type.m_handle : IntPtr.Zero;
-
-        [Intrinsic]
-        [MethodImpl(MethodImplOptions.InternalCall)]
-        internal static extern IntPtr GetValueInternal(RuntimeTypeHandle handle);
+        public IntPtr Value => m_type?.m_handle ?? 0;
 
         internal RuntimeTypeHandle(RuntimeType type)
         {
@@ -121,7 +94,7 @@ namespace System
                     corElemType == CorElementType.ELEMENT_TYPE_OBJECT))
                 return false;
 
-            if (HasInstantiation(type) && !IsGenericTypeDefinition(type))
+            if (type.IsConstructedGenericType)
                 return false;
 
             return true;
@@ -154,6 +127,12 @@ namespace System
         {
             CorElementType corElemType = GetCorElementType(type);
             return corElemType == CorElementType.ELEMENT_TYPE_SZARRAY;
+        }
+
+        internal static bool IsFunctionPointer(RuntimeType type)
+        {
+            CorElementType corElemType = GetCorElementType(type);
+            return corElemType == CorElementType.ELEMENT_TYPE_FNPTR;
         }
 
         internal static bool HasElementType(RuntimeType type)
@@ -211,6 +190,9 @@ namespace System
             return outHandles;
         }
 
+        [UnconditionalSuppressMessage("ReflectionAnalysis", "IL2067:ParameterDoesntMeetParameterRequirements",
+            Justification = "The parameter 'type' is passed by ref to QCallTypeHandle which only instantiates" +
+                            "the type using the public parameterless constructor and doesn't modify it")]
         internal static object CreateInstanceForAnotherGenericParameter(
             [DynamicallyAccessedMembers(DynamicallyAccessedMemberTypes.PublicParameterlessConstructor)] RuntimeType type,
             RuntimeType genericParameter)
@@ -231,6 +213,9 @@ namespace System
             return instantiatedObject!;
         }
 
+        [UnconditionalSuppressMessage("ReflectionAnalysis", "IL2067:ParameterDoesntMeetParameterRequirements",
+            Justification = "The parameter 'type' is passed by ref to QCallTypeHandle which only instantiates" +
+                            "the type using the public parameterless constructor and doesn't modify it")]
         internal static object CreateInstanceForAnotherGenericParameter(
             [DynamicallyAccessedMembers(DynamicallyAccessedMemberTypes.PublicParameterlessConstructor)] RuntimeType type,
             RuntimeType genericParameter1,
@@ -327,7 +312,7 @@ namespace System
 
         public ModuleHandle GetModuleHandle()
         {
-            return new ModuleHandle(RuntimeTypeHandle.GetModule(m_type));
+            return new ModuleHandle(GetModule(m_type));
         }
 
         [MethodImpl(MethodImplOptions.InternalCall)]
@@ -351,6 +336,12 @@ namespace System
         [MethodImpl(MethodImplOptions.InternalCall)]
         internal static extern RuntimeMethodHandleInternal GetMethodAt(RuntimeType type, int slot);
 
+        [MethodImpl(MethodImplOptions.InternalCall)]
+        internal static extern Type[] GetArgumentTypesFromFunctionPointer(RuntimeType type);
+
+        [MethodImpl(MethodImplOptions.InternalCall)]
+        internal static extern bool IsUnmanagedFunctionPointer(RuntimeType type);
+
         // This is managed wrapper for MethodTable::IntroducedMethodIterator
         internal struct IntroducedMethodEnumerator
         {
@@ -359,7 +350,7 @@ namespace System
 
             internal IntroducedMethodEnumerator(RuntimeType type)
             {
-                _handle = RuntimeTypeHandle.GetFirstIntroducedMethod(type);
+                _handle = GetFirstIntroducedMethod(type);
                 _firstCall = true;
             }
 
@@ -371,7 +362,7 @@ namespace System
                 }
                 else if (_handle.Value != IntPtr.Zero)
                 {
-                    RuntimeTypeHandle.GetNextIntroducedMethod(ref _handle);
+                    GetNextIntroducedMethod(ref _handle);
                 }
                 return !(_handle.Value == IntPtr.Zero);
             }
@@ -466,7 +457,7 @@ namespace System
             if (isGenericCOM)
                 return type.TypeHandle.Value == typeof(__ComObject).TypeHandle.Value;
 
-            return RuntimeTypeHandle.CanCastTo(type, (RuntimeType)typeof(__ComObject));
+            return CanCastTo(type, (RuntimeType)typeof(__ComObject));
 #else
             return false;
 #endif
@@ -517,53 +508,6 @@ namespace System
 
         [MethodImpl(MethodImplOptions.InternalCall)]
         internal static extern IRuntimeMethodInfo GetDeclaringMethod(RuntimeType type);
-
-        [LibraryImport(RuntimeHelpers.QCall, EntryPoint = "RuntimeTypeHandle_GetTypeByName", StringMarshalling = StringMarshalling.Utf16)]
-        private static partial void GetTypeByName(string name, [MarshalAs(UnmanagedType.Bool)] bool throwOnError, [MarshalAs(UnmanagedType.Bool)] bool ignoreCase, StackCrawlMarkHandle stackMark,
-            ObjectHandleOnStack assemblyLoadContext,
-            ObjectHandleOnStack type, ObjectHandleOnStack keepalive);
-
-        // Wrapper function to reduce the need for ifdefs.
-        internal static RuntimeType? GetTypeByName(string name, bool throwOnError, bool ignoreCase, ref StackCrawlMark stackMark)
-        {
-            return GetTypeByName(name, throwOnError, ignoreCase, ref stackMark, AssemblyLoadContext.CurrentContextualReflectionContext!);
-        }
-
-        internal static RuntimeType? GetTypeByName(string name, bool throwOnError, bool ignoreCase, ref StackCrawlMark stackMark,
-                                                  AssemblyLoadContext assemblyLoadContext)
-        {
-            if (string.IsNullOrEmpty(name))
-            {
-                if (throwOnError)
-                    throw new TypeLoadException(SR.Arg_TypeLoadNullStr);
-
-                return null;
-            }
-
-            RuntimeType? type = null;
-            object? keepAlive = null;
-            AssemblyLoadContext assemblyLoadContextStack = assemblyLoadContext;
-            GetTypeByName(name, throwOnError, ignoreCase,
-                new StackCrawlMarkHandle(ref stackMark),
-                ObjectHandleOnStack.Create(ref assemblyLoadContextStack),
-                ObjectHandleOnStack.Create(ref type), ObjectHandleOnStack.Create(ref keepAlive));
-            GC.KeepAlive(keepAlive);
-
-            return type;
-        }
-
-        [LibraryImport(RuntimeHelpers.QCall, EntryPoint = "RuntimeTypeHandle_GetTypeByNameUsingCARules", StringMarshalling = StringMarshalling.Utf16)]
-        private static partial void GetTypeByNameUsingCARules(string name, QCallModule scope, ObjectHandleOnStack type);
-
-        internal static RuntimeType GetTypeByNameUsingCARules(string name, RuntimeModule scope)
-        {
-            ArgumentException.ThrowIfNullOrEmpty(name);
-
-            RuntimeType? type = null;
-            GetTypeByNameUsingCARules(name, new QCallModule(ref scope), ObjectHandleOnStack.Create(ref type));
-
-            return type!;
-        }
 
         [LibraryImport(RuntimeHelpers.QCall, EntryPoint = "RuntimeTypeHandle_GetInstantiation")]
         internal static partial void GetInstantiation(QCallTypeHandle type, ObjectHandleOnStack types, Interop.BOOL fAsRuntimeTypeArray);
@@ -659,27 +603,8 @@ namespace System
         [LibraryImport(RuntimeHelpers.QCall, EntryPoint = "RuntimeTypeHandle_IsCollectible")]
         internal static partial Interop.BOOL IsCollectible(QCallTypeHandle handle);
 
-        [MethodImpl(MethodImplOptions.InternalCall)]
-        internal static extern bool HasInstantiation(RuntimeType type);
-
         [LibraryImport(RuntimeHelpers.QCall, EntryPoint = "RuntimeTypeHandle_GetGenericTypeDefinition")]
-        private static partial void GetGenericTypeDefinition(QCallTypeHandle type, ObjectHandleOnStack retType);
-
-        internal static RuntimeType GetGenericTypeDefinition(RuntimeType type)
-        {
-            RuntimeType retType = type;
-
-            if (HasInstantiation(retType) && !IsGenericTypeDefinition(retType))
-            {
-                RuntimeTypeHandle nativeHandle = retType.TypeHandle;
-                GetGenericTypeDefinition(new QCallTypeHandle(ref nativeHandle), ObjectHandleOnStack.Create(ref retType));
-            }
-
-            return retType;
-        }
-
-        [MethodImpl(MethodImplOptions.InternalCall)]
-        internal static extern bool IsGenericTypeDefinition(RuntimeType type);
+        internal static partial void GetGenericTypeDefinition(QCallTypeHandle type, ObjectHandleOnStack retType);
 
         [MethodImpl(MethodImplOptions.InternalCall)]
         internal static extern bool IsGenericVariable(RuntimeType type);
@@ -732,6 +657,16 @@ namespace System
             return new MetadataImport(_GetMetadataImport(type), type);
         }
 
+        [LibraryImport(RuntimeHelpers.QCall, EntryPoint = "RuntimeTypeHandle_RegisterCollectibleTypeDependency")]
+        private static partial void RegisterCollectibleTypeDependency(QCallTypeHandle type, QCallAssembly assembly);
+
+        internal static void RegisterCollectibleTypeDependency(RuntimeType type, RuntimeAssembly? assembly)
+        {
+            RegisterCollectibleTypeDependency(new QCallTypeHandle(ref type), new QCallAssembly(ref assembly!));
+        }
+
+        [Obsolete(Obsoletions.LegacyFormatterImplMessage, DiagnosticId = Obsoletions.LegacyFormatterImplDiagId, UrlFormat = Obsoletions.SharedUrlFormat)]
+        [EditorBrowsable(EditorBrowsableState.Never)]
         public void GetObjectData(SerializationInfo info, StreamingContext context)
         {
             throw new PlatformNotSupportedException();
@@ -788,7 +723,7 @@ namespace System
         private readonly object m_keepalive;
 
         // These unused variables are used to ensure that this class has the same layout as RuntimeMethodInfo
-#pragma warning disable CA1823, 414, 169
+#pragma warning disable CA1823, 414, 169, IDE0044
         private object? m_a;
         private object? m_b;
         private object? m_c;
@@ -796,7 +731,8 @@ namespace System
         private object? m_e;
         private object? m_f;
         private object? m_g;
-#pragma warning restore CA1823, 414, 169
+        private object? m_h;
+#pragma warning restore CA1823, 414, 169, IDE0044
 
         public RuntimeMethodHandleInternal m_value;
 
@@ -834,13 +770,9 @@ namespace System
             return m_value;
         }
 
-        // Used by EE
-        private static IntPtr GetValueInternal(RuntimeMethodHandle rmh)
-        {
-            return rmh.Value;
-        }
-
         // ISerializable interface
+        [Obsolete(Obsoletions.LegacyFormatterImplMessage, DiagnosticId = Obsoletions.LegacyFormatterImplDiagId, UrlFormat = Obsoletions.SharedUrlFormat)]
+        [EditorBrowsable(EditorBrowsableState.Never)]
         public void GetObjectData(SerializationInfo info, StreamingContext context)
         {
             throw new PlatformNotSupportedException();
@@ -850,7 +782,7 @@ namespace System
 
         public override int GetHashCode()
         {
-            return ValueType.GetHashCodeOfPtr(Value);
+            return HashCode.Combine(Value);
         }
 
         public override bool Equals(object? obj)
@@ -862,6 +794,25 @@ namespace System
 
             return handle.Value == Value;
         }
+
+        /// <summary>
+        /// Returns a new <see cref="RuntimeMethodHandle"/> object created from a handle to a RuntimeMethodInfo.
+        /// </summary>
+        /// <param name="value">An IntPtr handle to a RuntimeMethodInfo to create a <see cref="RuntimeMethodHandle"/> object from.</param>
+        /// <returns>A new <see cref="RuntimeMethodHandle"/> object that corresponds to the value parameter.</returns>
+        public static RuntimeMethodHandle FromIntPtr(IntPtr value)
+        {
+            var handle = new RuntimeMethodHandleInternal(value);
+            var methodInfo = new RuntimeMethodInfoStub(handle, GetLoaderAllocator(handle));
+            return new RuntimeMethodHandle(methodInfo);
+        }
+
+        /// <summary>
+        /// Returns the internal pointer representation of a <see cref="RuntimeMethodHandle"/> object.
+        /// </summary>
+        /// <param name="value">A <see cref="RuntimeMethodHandle"/> object to retrieve an internal pointer representation from.</param>
+        /// <returns>An <see cref="IntPtr"/> object that represents a <see cref="RuntimeMethodHandle"/> object.</returns>
+        public static IntPtr ToIntPtr(RuntimeMethodHandle value) => value.Value;
 
         public static bool operator ==(RuntimeMethodHandle left, RuntimeMethodHandle right) => left.Equals(right);
 
@@ -909,7 +860,7 @@ namespace System
 
         internal static MethodAttributes GetAttributes(IRuntimeMethodInfo method)
         {
-            MethodAttributes retVal = RuntimeMethodHandle.GetAttributes(method.Value);
+            MethodAttributes retVal = GetAttributes(method.Value);
             GC.KeepAlive(method);
             return retVal;
         }
@@ -934,7 +885,7 @@ namespace System
 
         internal static RuntimeType GetDeclaringType(IRuntimeMethodInfo method)
         {
-            RuntimeType type = RuntimeMethodHandle.GetDeclaringType(method.Value);
+            RuntimeType type = GetDeclaringType(method.Value);
             GC.KeepAlive(method);
             return type;
         }
@@ -946,7 +897,7 @@ namespace System
         {
             Debug.Assert(method != null);
 
-            int slot = RuntimeMethodHandle.GetSlot(method.Value);
+            int slot = GetSlot(method.Value);
             GC.KeepAlive(method);
             return slot;
         }
@@ -959,7 +910,7 @@ namespace System
 
         internal static string GetName(IRuntimeMethodInfo method)
         {
-            string name = RuntimeMethodHandle.GetName(method.Value);
+            string name = GetName(method.Value);
             GC.KeepAlive(method);
             return name;
         }
@@ -972,13 +923,16 @@ namespace System
             return new MdUtf8String(_GetUtf8Name(method));
         }
 
+        [DebuggerStepThrough]
+        [DebuggerHidden]
         [MethodImpl(MethodImplOptions.InternalCall)]
-        internal static extern bool MatchesNameHash(RuntimeMethodHandleInternal method, uint hash);
+        internal static extern object? InvokeMethod(object? target, void** arguments, Signature sig, bool isConstructor);
 
-        [DebuggerStepThroughAttribute]
-        [Diagnostics.DebuggerHidden]
         [MethodImpl(MethodImplOptions.InternalCall)]
-        internal static extern object? InvokeMethod(object? target, in Span<object?> arguments, Signature sig, bool constructor, bool wrapExceptions);
+        internal static extern object? ReboxFromNullable(object? src);
+
+        [MethodImpl(MethodImplOptions.InternalCall)]
+        internal static extern object ReboxToNullable(object? src, RuntimeType destNullableType);
 
         [LibraryImport(RuntimeHelpers.QCall, EntryPoint = "RuntimeMethodHandle_GetMethodInstantiation")]
         private static partial void GetMethodInstantiation(RuntimeMethodHandleInternal method, ObjectHandleOnStack types, Interop.BOOL fAsRuntimeTypeArray);
@@ -1011,7 +965,7 @@ namespace System
 
         internal static bool HasMethodInstantiation(IRuntimeMethodInfo method)
         {
-            bool fRet = RuntimeMethodHandle.HasMethodInstantiation(method.Value);
+            bool fRet = HasMethodInstantiation(method.Value);
             GC.KeepAlive(method);
             return fRet;
         }
@@ -1027,7 +981,7 @@ namespace System
 
         internal static bool IsGenericMethodDefinition(IRuntimeMethodInfo method)
         {
-            bool fRet = RuntimeMethodHandle.IsGenericMethodDefinition(method.Value);
+            bool fRet = IsGenericMethodDefinition(method.Value);
             GC.KeepAlive(method);
             return fRet;
         }
@@ -1123,15 +1077,22 @@ namespace System
     [StructLayout(LayoutKind.Sequential)]
     internal sealed class RuntimeFieldInfoStub : IRuntimeFieldInfo
     {
+        public RuntimeFieldInfoStub(RuntimeFieldHandleInternal fieldHandle, object keepalive)
+        {
+            m_keepalive = keepalive;
+            m_fieldHandle = fieldHandle;
+        }
+
+        private readonly object m_keepalive;
+
         // These unused variables are used to ensure that this class has the same layout as RuntimeFieldInfo
-#pragma warning disable 414, 169
-        private object? m_keepalive;
+#pragma warning disable 414, 169, IDE0044
         private object? m_c;
         private object? m_d;
         private int m_b;
         private object? m_e;
         private RuntimeFieldHandleInternal m_fieldHandle;
-#pragma warning restore 414, 169
+#pragma warning restore 414, 169, IDE0044
 
         RuntimeFieldHandleInternal IRuntimeFieldInfo.Value => m_fieldHandle;
     }
@@ -1170,7 +1131,7 @@ namespace System
 
         public override int GetHashCode()
         {
-            return ValueType.GetHashCodeOfPtr(Value);
+            return HashCode.Combine(Value);
         }
 
         public override bool Equals(object? obj)
@@ -1188,6 +1149,25 @@ namespace System
             return handle.Value == Value;
         }
 
+        /// <summary>
+        /// Returns a new <see cref="RuntimeFieldHandle"/> object created from a handle to a RuntimeFieldInfo.
+        /// </summary>
+        /// <param name="value">An IntPtr handle to a RuntimeFieldInfo to create a <see cref="RuntimeFieldHandle"/> object from.</param>
+        /// <returns>A new <see cref="RuntimeFieldHandle"/> object that corresponds to the value parameter.</returns>
+        public static RuntimeFieldHandle FromIntPtr(IntPtr value)
+        {
+            var handle = new RuntimeFieldHandleInternal(value);
+            var fieldInfo = new RuntimeFieldInfoStub(handle, GetLoaderAllocator(handle));
+            return new RuntimeFieldHandle(fieldInfo);
+        }
+
+        /// <summary>
+        /// Returns the internal pointer representation of a <see cref="RuntimeFieldHandle"/> object.
+        /// </summary>
+        /// <param name="value">A <see cref="RuntimeFieldHandle"/> object to retrieve an internal pointer representation from.</param>
+        /// <returns>An <see cref="IntPtr"/> object that represents a <see cref="RuntimeFieldHandle"/> object.</returns>
+        public static IntPtr ToIntPtr(RuntimeFieldHandle value) => value.Value;
+
         public static bool operator ==(RuntimeFieldHandle left, RuntimeFieldHandle right) => left.Equals(right);
 
         public static bool operator !=(RuntimeFieldHandle left, RuntimeFieldHandle right) => !left.Equals(right);
@@ -1199,9 +1179,6 @@ namespace System
         private static extern void* _GetUtf8Name(RuntimeFieldHandleInternal field);
 
         internal static MdUtf8String GetUtf8Name(RuntimeFieldHandleInternal field) { return new MdUtf8String(_GetUtf8Name(field)); }
-
-        [MethodImpl(MethodImplOptions.InternalCall)]
-        internal static extern bool MatchesNameHash(RuntimeFieldHandleInternal handle, uint hash);
 
         [MethodImpl(MethodImplOptions.InternalCall)]
         internal static extern FieldAttributes GetAttributes(RuntimeFieldHandleInternal field);
@@ -1237,7 +1214,12 @@ namespace System
         [MethodImpl(MethodImplOptions.InternalCall)]
         internal static extern bool AcquiresContextFromThis(RuntimeFieldHandleInternal field);
 
+        [MethodImpl(MethodImplOptions.InternalCall)]
+        internal static extern LoaderAllocator GetLoaderAllocator(RuntimeFieldHandleInternal method);
+
         // ISerializable interface
+        [Obsolete(Obsoletions.LegacyFormatterImplMessage, DiagnosticId = Obsoletions.LegacyFormatterImplDiagId, UrlFormat = Obsoletions.SharedUrlFormat)]
+        [EditorBrowsable(EditorBrowsableState.Never)]
         public void GetObjectData(SerializationInfo info, StreamingContext context)
         {
             throw new PlatformNotSupportedException();
@@ -1293,7 +1275,7 @@ namespace System
         public static bool operator !=(ModuleHandle left, ModuleHandle right) => !left.Equals(right);
 
         [MethodImpl(MethodImplOptions.InternalCall)]
-        internal static extern IRuntimeMethodInfo GetDynamicMethod(System.Reflection.Emit.DynamicMethod method, RuntimeModule module, string name, byte[] sig, Resolver resolver);
+        internal static extern IRuntimeMethodInfo GetDynamicMethod(Reflection.Emit.DynamicMethod method, RuntimeModule module, string name, byte[] sig, Resolver resolver);
 
         [MethodImpl(MethodImplOptions.InternalCall)]
         internal static extern int GetToken(RuntimeModule module);
@@ -1323,8 +1305,8 @@ namespace System
             RuntimeModule module = GetRuntimeModule();
             ValidateModulePointer(module);
 
-            ReadOnlySpan<IntPtr> typeInstantiationContextHandles = stackalloc IntPtr[0];
-            ReadOnlySpan<IntPtr> methodInstantiationContextHandles = stackalloc IntPtr[0];
+            scoped ReadOnlySpan<IntPtr> typeInstantiationContextHandles = default;
+            scoped ReadOnlySpan<IntPtr> methodInstantiationContextHandles = default;
 
             // defensive copy of user-provided array, per CopyRuntimeTypeHandles contract
             if (typeInstantiationContext?.Length > 0)
@@ -1429,8 +1411,8 @@ namespace System
             RuntimeModule module = GetRuntimeModule();
             ValidateModulePointer(module);
 
-            ReadOnlySpan<IntPtr> typeInstantiationContextHandles = stackalloc IntPtr[0];
-            ReadOnlySpan<IntPtr> methodInstantiationContextHandles = stackalloc IntPtr[0];
+            scoped ReadOnlySpan<IntPtr> typeInstantiationContextHandles = default;
+            scoped ReadOnlySpan<IntPtr> methodInstantiationContextHandles = default;
 
             // defensive copy of user-provided array, per CopyRuntimeTypeHandles contract
             if (typeInstantiationContext?.Length > 0)
@@ -1510,30 +1492,8 @@ namespace System
         #endregion
     }
 
-    internal unsafe class Signature
+    internal sealed unsafe class Signature
     {
-        #region Definitions
-        internal enum MdSigCallingConvention : byte
-        {
-            Generics = 0x10,
-            HasThis = 0x20,
-            ExplicitThis = 0x40,
-            CallConvMask = 0x0F,
-            Default = 0x00,
-            C = 0x01,
-            StdCall = 0x02,
-            ThisCall = 0x03,
-            FastCall = 0x04,
-            Vararg = 0x05,
-            Field = 0x06,
-            LocalSig = 0x07,
-            Property = 0x08,
-            Unmanaged = 0x09,
-            GenericInst = 0x0A,
-            Max = 0x0B,
-        }
-        #endregion
-
         #region FCalls
         [MemberNotNull(nameof(m_arguments))]
         [MemberNotNull(nameof(m_returnTypeORfieldType))]
@@ -1541,7 +1501,6 @@ namespace System
         private extern void GetSignature(
             void* pCorSig, int cCorSig,
             RuntimeFieldHandleInternal fieldHandle, IRuntimeMethodInfo? methodHandle, RuntimeType? declaringType);
-
         #endregion
 
         #region Private Data Members
@@ -1600,8 +1559,20 @@ namespace System
         [MethodImpl(MethodImplOptions.InternalCall)]
         internal static extern bool CompareSig(Signature sig1, Signature sig2);
 
+        internal Type[] GetCustomModifiers(int parameterIndex, bool required) =>
+            GetCustomModifiersAtOffset(GetParameterOffset(parameterIndex), required);
+
         [MethodImpl(MethodImplOptions.InternalCall)]
-        internal extern Type[] GetCustomModifiers(int position, bool required);
+        internal extern int GetParameterOffset(int parameterIndex);
+
+        [MethodImpl(MethodImplOptions.InternalCall)]
+        internal extern int GetTypeParameterOffset(int offset, int index);
+
+        [MethodImpl(MethodImplOptions.InternalCall)]
+        internal extern SignatureCallingConvention GetCallingConventionFromFunctionPointerAtOffset(int offset);
+
+        [MethodImpl(MethodImplOptions.InternalCall)]
+        internal extern Type[] GetCustomModifiersAtOffset(int offset, bool required);
         #endregion
     }
 

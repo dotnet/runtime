@@ -22,6 +22,7 @@ namespace Sample
                 new TryCatchFilterInline(),
                 new TryCatchFilterThrow(),
                 new TryCatchFilterThrowApplies(),
+                new TryFinally(),
             };
         }
 
@@ -82,7 +83,7 @@ namespace Sample
             void DoNothing ()
             {
                 if (doThrow)
-                    throw new Exception ("Reached DoThrow and throwed");
+                    throw new Exception ("Reached DoThrow and threw");
             }
         }
 
@@ -106,7 +107,7 @@ namespace Sample
             void DoThrow()
             {
                 if (doThrow)
-                    throw new System.Exception("Reached DoThrow and throwed");
+                    throw new System.Exception("Reached DoThrow and threw");
             }
         }
 
@@ -130,7 +131,7 @@ namespace Sample
             void DoNothing()
             {
                 if (doThrow)
-                    throw new Exception("Reached DoThrow and throwed");
+                    throw new Exception("Reached DoThrow and threw");
             }
         }
 
@@ -154,7 +155,7 @@ namespace Sample
             void DoNothing()
             {
                 if (doThrow)
-                    throw new Exception("Reached DoThrow and throwed");
+                    throw new Exception("Reached DoThrow and threw");
             }
         }
 
@@ -181,7 +182,7 @@ namespace Sample
             void DoThrow()
             {
                 if (doThrow)
-                    throw new System.Exception("Reached DoThrow and throwed");
+                    throw new System.Exception("Reached DoThrow and threw");
             }
         }
 
@@ -196,7 +197,7 @@ namespace Sample
                 {
                     DoThrow();
                 }
-                catch (Exception e) when (e.Message == "Reached DoThrow and throwed")
+                catch (Exception e) when (e.Message == "Reached DoThrow and threw")
                 {
                 }
             }
@@ -205,7 +206,28 @@ namespace Sample
             void DoThrow()
             {
                 if (doThrow)
-                    throw new System.Exception("Reached DoThrow and throwed");
+                    throw new System.Exception("Reached DoThrow and threw");
+            }
+        }
+
+        class TryFinally : ExcMeasurement
+        {
+            public override string Name => "TryFinally";
+            int j = 1;
+
+            public override void RunStep()
+            {
+                int i = 0;
+                try
+                {
+                    i += j;
+                }
+                finally
+                {
+                    i += j;
+                }
+                if (i != 2)
+                    throw new System.Exception("Internal error");
             }
         }
     }

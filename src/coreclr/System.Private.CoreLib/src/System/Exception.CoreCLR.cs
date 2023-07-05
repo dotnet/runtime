@@ -24,7 +24,9 @@ namespace System
             _watsonBuckets = (byte[]?)info.GetValueNoThrow("WatsonBuckets", typeof(byte[])); // Do not rename (binary serialization)
 
             // If we are constructing a new exception after a cross-appdomain call...
+#pragma warning disable SYSLIB0050 // StreamingContextStates is obsolete
             if (context.State == StreamingContextStates.CrossAppDomain)
+#pragma warning restore SYSLIB0050
             {
                 // ...this new exception may get thrown.  It is logically a re-throw, but
                 //  physically a brand-new exception.  Since the stack trace is cleared
@@ -87,34 +89,6 @@ namespace System
             }
         }
 
-        [UnconditionalSuppressMessage("ReflectionAnalysis", "IL2026:RequiresUnreferencedCode",
-            Justification = "The API will return null if the metadata for current method cannot be established.")]
-        private string? CreateSourceName()
-        {
-            StackTrace st = new StackTrace(this, fNeedFileInfo: false);
-            if (st.FrameCount > 0)
-            {
-                StackFrame sf = st.GetFrame(0)!;
-                MethodBase? method = sf.GetMethod();
-                if (method == null)
-                    return null;
-
-                Module module = method.Module;
-
-                if (!(module is RuntimeModule rtModule))
-                {
-                    if (module is System.Reflection.Emit.ModuleBuilder moduleBuilder)
-                        rtModule = moduleBuilder.InternalModule;
-                    else
-                        throw new ArgumentException(SR.Argument_MustBeRuntimeReflectionObject);
-                }
-
-                return rtModule.GetRuntimeAssembly().GetSimpleName();
-            }
-
-            return null;
-        }
-
         // This method will clear the _stackTrace of the exception object upon deserialization
         // to ensure that references from another AD/Process dont get accidentally used.
         [OnDeserialized]
@@ -135,7 +109,7 @@ namespace System
         //  copy the stack trace to _remoteStackTraceString.
         internal void InternalPreserveStackTrace()
         {
-            // Make sure that the _source field is initialized if Source is not overriden.
+            // Make sure that the _source field is initialized if Source is not overridden.
             // We want it to contain the original faulting point.
             _ = Source;
 
@@ -301,6 +275,33 @@ namespace System
             }
 
             return true;
+        }
+
+        // used by vm
+        internal string? GetHelpContext(out uint helpContext)
+        {
+            helpContext = 0;
+            string? helpFile = HelpLink;
+
+            int poundPos, digitEnd;
+
+            if (helpFile is null || (poundPos = helpFile.LastIndexOf('#')) == -1)
+            {
+                return helpFile;
+            }
+
+            for (digitEnd = poundPos + 1; digitEnd < helpFile.Length; digitEnd++)
+            {
+                if (char.IsWhiteSpace(helpFile[digitEnd]))
+                    break;
+            }
+
+            if (uint.TryParse(helpFile.AsSpan(poundPos + 1, digitEnd - poundPos - 1), out helpContext))
+            {
+                helpFile = helpFile.Substring(0, poundPos);
+            }
+
+            return helpFile;
         }
     }
 }

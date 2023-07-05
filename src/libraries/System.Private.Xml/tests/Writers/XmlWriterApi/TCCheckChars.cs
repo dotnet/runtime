@@ -2,11 +2,10 @@
 // The .NET Foundation licenses this file to you under the MIT license.
 
 using OLEDB.Test.ModuleCore;
-using System.Text;
 using XmlCoreTest.Common;
 using Xunit;
 
-namespace System.Xml.Tests
+namespace System.Xml.XmlWriterApiTests
 {
     public class TCCheckChars
     {
@@ -314,7 +313,7 @@ namespace System.Xml.Tests
         }
 
         /*=============================================================================
-        The writer contructor will throw XmlException when CheckCharacters=true and
+        The writer constructor will throw XmlException when CheckCharacters=true and
             - IndentChars or NewLineChars contains non-whitespace character when NewLineOnAttributes=true
         or
             - IndentChars or NewLineChars contains <, &, ]]> or an invalid surrogate character when NewLineOnAttributes=false

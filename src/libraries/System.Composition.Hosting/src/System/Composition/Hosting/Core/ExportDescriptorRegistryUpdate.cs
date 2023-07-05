@@ -12,7 +12,7 @@ namespace System.Composition.Hosting.Core
     {
         private readonly IDictionary<CompositionContract, ExportDescriptor[]> _partDefinitions;
         private readonly ExportDescriptorProvider[] _exportDescriptorProviders;
-        private readonly IDictionary<CompositionContract, UpdateResult> _updateResults = new Dictionary<CompositionContract, UpdateResult>();
+        private readonly Dictionary<CompositionContract, UpdateResult> _updateResults = new Dictionary<CompositionContract, UpdateResult>();
 
         private static readonly CompositionDependency[] s_noDependenciesValue = Array.Empty<CompositionDependency>();
         private static readonly Func<CompositionDependency[]> s_noDependencies = () => s_noDependenciesValue;
@@ -111,15 +111,15 @@ namespace System.Composition.Hosting.Core
             CheckTarget(dependency, @checked, checking);
         }
 
-        private StringBuilder DescribeCompositionStack(CompositionDependency import, IEnumerable<CompositionDependency> dependencies)
+        private static StringBuilder DescribeCompositionStack(CompositionDependency import, Stack<CompositionDependency> dependencies)
         {
             var result = new StringBuilder();
-            if (dependencies.FirstOrDefault() == null)
+            if (dependencies.Count == 0 || dependencies.Peek() == null)
             {
                 return result;
             }
 
-            foreach (var step in dependencies)
+            foreach (CompositionDependency step in dependencies)
             {
                 result.AppendFormat(SR.ExportDescriptor_DependencyErrorLine, import.Site, step.Target.Origin);
                 result.AppendLine();

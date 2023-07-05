@@ -65,25 +65,24 @@ internal static partial class Interop
 
         internal static partial class ServiceTypeOptions
         {
-            internal const int SERVICE_TYPE_ADAPTER = 0x00000004;
-            internal const int SERVICE_TYPE_FILE_SYSTEM_DRIVER = 0x00000002;
-            internal const int SERVICE_TYPE_INTERACTIVE_PROCESS = 0x00000100;
-            internal const int SERVICE_TYPE_KERNEL_DRIVER = 0x00000001;
-            internal const int SERVICE_TYPE_RECOGNIZER_DRIVER = 0x00000008;
-            internal const int SERVICE_TYPE_WIN32_OWN_PROCESS = 0x00000010;
-            internal const int SERVICE_TYPE_WIN32_SHARE_PROCESS = 0x00000020;
-            internal const int SERVICE_TYPE_WIN32 =
-                SERVICE_TYPE_WIN32_OWN_PROCESS |
-                SERVICE_TYPE_WIN32_SHARE_PROCESS;
-            internal const int SERVICE_TYPE_DRIVER =
-                SERVICE_TYPE_KERNEL_DRIVER |
-                SERVICE_TYPE_FILE_SYSTEM_DRIVER |
-                SERVICE_TYPE_RECOGNIZER_DRIVER;
-            internal const int SERVICE_TYPE_ALL =
-                SERVICE_TYPE_WIN32 |
-                SERVICE_TYPE_ADAPTER |
-                SERVICE_TYPE_DRIVER |
-                SERVICE_TYPE_INTERACTIVE_PROCESS;
+            internal const int SERVICE_KERNEL_DRIVER = 0x00000001;
+            internal const int SERVICE_FILE_SYSTEM_DRIVER = 0x00000002;
+            internal const int SERVICE_ADAPTER = 0x00000004;
+            internal const int SERVICE_RECOGNIZER_DRIVER = 0x00000008;
+
+            internal const int SERVICE_DRIVER =
+                SERVICE_KERNEL_DRIVER |
+                SERVICE_FILE_SYSTEM_DRIVER |
+                SERVICE_RECOGNIZER_DRIVER;
+
+            internal const int SERVICE_WIN32_OWN_PROCESS = 0x00000010;
+            internal const int SERVICE_WIN32_SHARE_PROCESS = 0x00000020;
+
+            internal const int SERVICE_WIN32 =
+                SERVICE_WIN32_OWN_PROCESS |
+                SERVICE_WIN32_SHARE_PROCESS;
+
+            internal const int SERVICE_INTERACTIVE_PROCESS = 0x00000100;
         }
 
         internal static partial class ServiceAccessOptions

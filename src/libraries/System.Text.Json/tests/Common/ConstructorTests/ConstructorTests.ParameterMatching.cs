@@ -12,32 +12,32 @@ namespace System.Text.Json.Serialization.Tests
 {
     public abstract partial class ConstructorTests : SerializerTests
     {
-        public ConstructorTests(JsonSerializerWrapperForString stringSerializer, JsonSerializerWrapperForStream streamSerializer)
-            : base(stringSerializer, streamSerializer)
+        public ConstructorTests(JsonSerializerWrapper stringSerializer)
+            : base(stringSerializer)
         {
         }
 
         [Fact]
         public async Task ReturnNullForNullObjects()
         {
-            Assert.Null(await JsonSerializerWrapperForString.DeserializeWrapper<Point_2D>("null"));
-            Assert.Null(await JsonSerializerWrapperForString.DeserializeWrapper<Point_3D>("null"));
+            Assert.Null(await Serializer.DeserializeWrapper<Point_2D>("null"));
+            Assert.Null(await Serializer.DeserializeWrapper<Point_3D>("null"));
         }
 
         [Fact]
         public Task JsonExceptionWhenAssigningNullToStruct()
         {
-            return Assert.ThrowsAsync<JsonException>(() => JsonSerializerWrapperForString.DeserializeWrapper<Point_2D_With_ExtData>("null"));
+            return Assert.ThrowsAsync<JsonException>(() => Serializer.DeserializeWrapper<Point_2D_With_ExtData>("null"));
         }
 
         [Fact]
         public async Task MatchJsonPropertyToConstructorParameters()
         {
-            Point_2D point = await JsonSerializerWrapperForString.DeserializeWrapper<Point_2D>(@"{""X"":1,""Y"":2}");
+            Point_2D point = await Serializer.DeserializeWrapper<Point_2D>(@"{""X"":1,""Y"":2}");
             Assert.Equal(1, point.X);
             Assert.Equal(2, point.Y);
 
-            point = await JsonSerializerWrapperForString.DeserializeWrapper<Point_2D>(@"{""Y"":2,""X"":1}");
+            point = await Serializer.DeserializeWrapper<Point_2D>(@"{""Y"":2,""X"":1}");
             Assert.Equal(1, point.X);
             Assert.Equal(2, point.Y);
         }
@@ -46,98 +46,98 @@ namespace System.Text.Json.Serialization.Tests
         public async Task UseDefaultValues_When_NoJsonMatch()
         {
             // Using CLR value when `ParameterInfo.DefaultValue` is not set.
-            Point_2D point = await JsonSerializerWrapperForString.DeserializeWrapper<Point_2D>(@"{""x"":1,""y"":2}");
+            Point_2D point = await Serializer.DeserializeWrapper<Point_2D>(@"{""x"":1,""y"":2}");
             Assert.Equal(0, point.X);
             Assert.Equal(0, point.Y);
 
-            point = await JsonSerializerWrapperForString.DeserializeWrapper<Point_2D>(@"{""y"":2,""x"":1}");
+            point = await Serializer.DeserializeWrapper<Point_2D>(@"{""y"":2,""x"":1}");
             Assert.Equal(0, point.X);
             Assert.Equal(0, point.Y);
 
-            point = await JsonSerializerWrapperForString.DeserializeWrapper<Point_2D>(@"{""x"":1,""Y"":2}");
-            Assert.Equal(0, point.X);
-            Assert.Equal(2, point.Y);
-
-            point = await JsonSerializerWrapperForString.DeserializeWrapper<Point_2D>(@"{""y"":2,""X"":1}");
-            Assert.Equal(1, point.X);
-            Assert.Equal(0, point.Y);
-
-            point = await JsonSerializerWrapperForString.DeserializeWrapper<Point_2D>(@"{""X"":1}");
-            Assert.Equal(1, point.X);
-            Assert.Equal(0, point.Y);
-
-            point = await JsonSerializerWrapperForString.DeserializeWrapper<Point_2D>(@"{""Y"":2}");
+            point = await Serializer.DeserializeWrapper<Point_2D>(@"{""x"":1,""Y"":2}");
             Assert.Equal(0, point.X);
             Assert.Equal(2, point.Y);
 
-            point = await JsonSerializerWrapperForString.DeserializeWrapper<Point_2D>(@"{""X"":1}");
+            point = await Serializer.DeserializeWrapper<Point_2D>(@"{""y"":2,""X"":1}");
             Assert.Equal(1, point.X);
             Assert.Equal(0, point.Y);
 
-            point = await JsonSerializerWrapperForString.DeserializeWrapper<Point_2D>(@"{""Y"":2}");
+            point = await Serializer.DeserializeWrapper<Point_2D>(@"{""X"":1}");
+            Assert.Equal(1, point.X);
+            Assert.Equal(0, point.Y);
+
+            point = await Serializer.DeserializeWrapper<Point_2D>(@"{""Y"":2}");
             Assert.Equal(0, point.X);
             Assert.Equal(2, point.Y);
 
-            point = await JsonSerializerWrapperForString.DeserializeWrapper<Point_2D>(@"{}");
+            point = await Serializer.DeserializeWrapper<Point_2D>(@"{""X"":1}");
+            Assert.Equal(1, point.X);
+            Assert.Equal(0, point.Y);
+
+            point = await Serializer.DeserializeWrapper<Point_2D>(@"{""Y"":2}");
+            Assert.Equal(0, point.X);
+            Assert.Equal(2, point.Y);
+
+            point = await Serializer.DeserializeWrapper<Point_2D>(@"{}");
             Assert.Equal(0, point.X);
             Assert.Equal(0, point.Y);
 
-            point = await JsonSerializerWrapperForString.DeserializeWrapper<Point_2D>(@"{""a"":1,""b"":2}");
+            point = await Serializer.DeserializeWrapper<Point_2D>(@"{""a"":1,""b"":2}");
             Assert.Equal(0, point.X);
             Assert.Equal(0, point.Y);
 
             // Using `ParameterInfo.DefaultValue` when set; using CLR value as fallback.
-            Point_3D point3d = await JsonSerializerWrapperForString.DeserializeWrapper<Point_3D>(@"{""X"":1}");
+            Point_3D point3d = await Serializer.DeserializeWrapper<Point_3D>(@"{""X"":1}");
             Assert.Equal(1, point3d.X);
             Assert.Equal(0, point3d.Y);
             Assert.Equal(50, point3d.Z);
 
-            point3d = await JsonSerializerWrapperForString.DeserializeWrapper<Point_3D>(@"{""y"":2}");
+            point3d = await Serializer.DeserializeWrapper<Point_3D>(@"{""y"":2}");
             Assert.Equal(0, point3d.X);
             Assert.Equal(0, point3d.Y);
             Assert.Equal(50, point3d.Z);
 
-            point3d = await JsonSerializerWrapperForString.DeserializeWrapper<Point_3D>(@"{""Z"":3}");
+            point3d = await Serializer.DeserializeWrapper<Point_3D>(@"{""Z"":3}");
             Assert.Equal(0, point3d.X);
             Assert.Equal(0, point3d.Y);
             Assert.Equal(3, point3d.Z);
 
-            point3d = await JsonSerializerWrapperForString.DeserializeWrapper<Point_3D>(@"{""X"":1}");
+            point3d = await Serializer.DeserializeWrapper<Point_3D>(@"{""X"":1}");
             Assert.Equal(1, point3d.X);
             Assert.Equal(0, point3d.Y);
             Assert.Equal(50, point3d.Z);
 
-            point3d = await JsonSerializerWrapperForString.DeserializeWrapper<Point_3D>(@"{""Y"":2}");
+            point3d = await Serializer.DeserializeWrapper<Point_3D>(@"{""Y"":2}");
             Assert.Equal(0, point3d.X);
             Assert.Equal(2, point3d.Y);
             Assert.Equal(50, point3d.Z);
 
-            point3d = await JsonSerializerWrapperForString.DeserializeWrapper<Point_3D>(@"{""Z"":3}");
+            point3d = await Serializer.DeserializeWrapper<Point_3D>(@"{""Z"":3}");
             Assert.Equal(0, point3d.X);
             Assert.Equal(0, point3d.Y);
             Assert.Equal(3, point3d.Z);
 
-            point3d = await JsonSerializerWrapperForString.DeserializeWrapper<Point_3D>(@"{""x"":1,""Y"":2}");
+            point3d = await Serializer.DeserializeWrapper<Point_3D>(@"{""x"":1,""Y"":2}");
             Assert.Equal(0, point3d.X);
             Assert.Equal(2, point3d.Y);
             Assert.Equal(50, point3d.Z);
 
-            point3d = await JsonSerializerWrapperForString.DeserializeWrapper<Point_3D>(@"{""Z"":3,""y"":2}");
+            point3d = await Serializer.DeserializeWrapper<Point_3D>(@"{""Z"":3,""y"":2}");
             Assert.Equal(0, point3d.X);
             Assert.Equal(0, point3d.Y);
             Assert.Equal(3, point3d.Z);
 
-            point3d = await JsonSerializerWrapperForString.DeserializeWrapper<Point_3D>(@"{""x"":1,""Z"":3}");
+            point3d = await Serializer.DeserializeWrapper<Point_3D>(@"{""x"":1,""Z"":3}");
             Assert.Equal(0, point3d.X);
             Assert.Equal(0, point3d.Y);
             Assert.Equal(3, point3d.Z);
 
-            point3d = await JsonSerializerWrapperForString.DeserializeWrapper<Point_3D>(@"{}");
+            point3d = await Serializer.DeserializeWrapper<Point_3D>(@"{}");
             Assert.Equal(0, point3d.X);
             Assert.Equal(0, point3d.Y);
             Assert.Equal(50, point3d.Z);
 
-            point3d = await JsonSerializerWrapperForString.DeserializeWrapper<Point_3D>(@"{""a"":1,""b"":2}");
+            point3d = await Serializer.DeserializeWrapper<Point_3D>(@"{""a"":1,""b"":2}");
             Assert.Equal(0, point3d.X);
             Assert.Equal(0, point3d.Y);
             Assert.Equal(50, point3d.Z);
@@ -148,19 +148,19 @@ namespace System.Text.Json.Serialization.Tests
         {
             var options = new JsonSerializerOptions { PropertyNameCaseInsensitive = true };
 
-            Point_2D point = await JsonSerializerWrapperForString.DeserializeWrapper<Point_2D>(@"{""x"":1,""y"":2}", options);
+            Point_2D point = await Serializer.DeserializeWrapper<Point_2D>(@"{""x"":1,""y"":2}", options);
             Assert.Equal(1, point.X);
             Assert.Equal(2, point.Y);
 
-            point = await JsonSerializerWrapperForString.DeserializeWrapper<Point_2D>(@"{""y"":2,""x"":1}", options);
+            point = await Serializer.DeserializeWrapper<Point_2D>(@"{""y"":2,""x"":1}", options);
             Assert.Equal(1, point.X);
             Assert.Equal(2, point.Y);
 
-            point = await JsonSerializerWrapperForString.DeserializeWrapper<Point_2D>(@"{""x"":1,""Y"":2}", options);
+            point = await Serializer.DeserializeWrapper<Point_2D>(@"{""x"":1,""Y"":2}", options);
             Assert.Equal(1, point.X);
             Assert.Equal(2, point.Y);
 
-            point = await JsonSerializerWrapperForString.DeserializeWrapper<Point_2D>(@"{""y"":2,""X"":1}", options);
+            point = await Serializer.DeserializeWrapper<Point_2D>(@"{""y"":2,""X"":1}", options);
             Assert.Equal(1, point.X);
             Assert.Equal(2, point.Y);
         }
@@ -168,32 +168,32 @@ namespace System.Text.Json.Serialization.Tests
         [Fact]
         public async Task VaryingOrderingOfJson()
         {
-            Point_3D point = await JsonSerializerWrapperForString.DeserializeWrapper<Point_3D>(@"{""X"":1,""Y"":2,""Z"":3}");
+            Point_3D point = await Serializer.DeserializeWrapper<Point_3D>(@"{""X"":1,""Y"":2,""Z"":3}");
             Assert.Equal(1, point.X);
             Assert.Equal(2, point.Y);
             Assert.Equal(3, point.Z);
 
-            point = await JsonSerializerWrapperForString.DeserializeWrapper<Point_3D>(@"{""X"":1,""Z"":3,""Y"":2}");
+            point = await Serializer.DeserializeWrapper<Point_3D>(@"{""X"":1,""Z"":3,""Y"":2}");
             Assert.Equal(1, point.X);
             Assert.Equal(2, point.Y);
             Assert.Equal(3, point.Z);
 
-            point = await JsonSerializerWrapperForString.DeserializeWrapper<Point_3D>(@"{""Y"":2,""Z"":3,""X"":1}");
+            point = await Serializer.DeserializeWrapper<Point_3D>(@"{""Y"":2,""Z"":3,""X"":1}");
             Assert.Equal(1, point.X);
             Assert.Equal(2, point.Y);
             Assert.Equal(3, point.Z);
 
-            point = await JsonSerializerWrapperForString.DeserializeWrapper<Point_3D>(@"{""Y"":2,""X"":1,""Z"":3}");
+            point = await Serializer.DeserializeWrapper<Point_3D>(@"{""Y"":2,""X"":1,""Z"":3}");
             Assert.Equal(1, point.X);
             Assert.Equal(2, point.Y);
             Assert.Equal(3, point.Z);
 
-            point = await JsonSerializerWrapperForString.DeserializeWrapper<Point_3D>(@"{""Z"":3,""Y"":2,""X"":1}");
+            point = await Serializer.DeserializeWrapper<Point_3D>(@"{""Z"":3,""Y"":2,""X"":1}");
             Assert.Equal(1, point.X);
             Assert.Equal(2, point.Y);
             Assert.Equal(3, point.Z);
 
-            point = await JsonSerializerWrapperForString.DeserializeWrapper<Point_3D>(@"{""Z"":3,""X"":1,""Y"":2}");
+            point = await Serializer.DeserializeWrapper<Point_3D>(@"{""Z"":3,""X"":1,""Y"":2}");
             Assert.Equal(1, point.X);
             Assert.Equal(2, point.Y);
             Assert.Equal(3, point.Z);
@@ -202,7 +202,7 @@ namespace System.Text.Json.Serialization.Tests
         [Fact]
         public async Task AsListElement()
         {
-            List<Point_3D> list = await JsonSerializerWrapperForString.DeserializeWrapper<List<Point_3D>>(@"[{""Y"":2,""Z"":3,""X"":1},{""Z"":10,""Y"":30,""X"":20}]");
+            List<Point_3D> list = await Serializer.DeserializeWrapper<List<Point_3D>>(@"[{""Y"":2,""Z"":3,""X"":1},{""Z"":10,""Y"":30,""X"":20}]");
             Assert.Equal(1, list[0].X);
             Assert.Equal(2, list[0].Y);
             Assert.Equal(3, list[0].Z);
@@ -214,7 +214,7 @@ namespace System.Text.Json.Serialization.Tests
         [Fact]
         public async Task AsDictionaryValue()
         {
-            Dictionary<string, Point_3D> dict = await JsonSerializerWrapperForString.DeserializeWrapper<Dictionary<string, Point_3D>>(@"{""0"":{""Y"":2,""Z"":3,""X"":1},""1"":{""Z"":10,""Y"":30,""X"":20}}");
+            Dictionary<string, Point_3D> dict = await Serializer.DeserializeWrapper<Dictionary<string, Point_3D>>(@"{""0"":{""Y"":2,""Z"":3,""X"":1},""1"":{""Z"":10,""Y"":30,""X"":20}}");
             Assert.Equal(1, dict["0"].X);
             Assert.Equal(2, dict["0"].Y);
             Assert.Equal(3, dict["0"].Z);
@@ -226,7 +226,7 @@ namespace System.Text.Json.Serialization.Tests
         [Fact]
         public async Task AsProperty_Of_ObjectWithParameterlessCtor()
         {
-            WrapperForPoint_3D obj = await JsonSerializerWrapperForString.DeserializeWrapper<WrapperForPoint_3D>(@"{""Point_3D"":{""Y"":2,""Z"":3,""X"":1}}");
+            WrapperForPoint_3D obj = await Serializer.DeserializeWrapper<WrapperForPoint_3D>(@"{""Point_3D"":{""Y"":2,""Z"":3,""X"":1}}");
             Point_3D point = obj.Point_3D;
             Assert.Equal(1, point.X);
             Assert.Equal(2, point.Y);
@@ -236,7 +236,7 @@ namespace System.Text.Json.Serialization.Tests
         [Fact]
         public async Task AsProperty_Of_ObjectWithParameterizedCtor()
         {
-            ClassWrapperForPoint_3D obj = await JsonSerializerWrapperForString.DeserializeWrapper<ClassWrapperForPoint_3D>(@"{""Point3D"":{""Y"":2,""Z"":3,""X"":1}}");
+            ClassWrapperForPoint_3D obj = await Serializer.DeserializeWrapper<ClassWrapperForPoint_3D>(@"{""Point3D"":{""Y"":2,""Z"":3,""X"":1}}");
             Point_3D point = obj.Point3D;
             Assert.Equal(1, point.X);
             Assert.Equal(2, point.Y);
@@ -246,7 +246,7 @@ namespace System.Text.Json.Serialization.Tests
         [Fact]
         public async Task At_Symbol_As_ParameterNamePrefix()
         {
-            ClassWrapper_For_Int_String obj = await JsonSerializerWrapperForString.DeserializeWrapper<ClassWrapper_For_Int_String>(@"{""Int"":1,""String"":""1""}");
+            ClassWrapper_For_Int_String obj = await Serializer.DeserializeWrapper<ClassWrapper_For_Int_String>(@"{""Int"":1,""String"":""1""}");
             Assert.Equal(1, obj.Int);
             Assert.Equal("1", obj.String);
         }
@@ -254,7 +254,7 @@ namespace System.Text.Json.Serialization.Tests
         [Fact]
         public async Task At_Symbol_As_ParameterNamePrefix_UseDefaultValues()
         {
-            ClassWrapper_For_Int_String obj = await JsonSerializerWrapperForString.DeserializeWrapper<ClassWrapper_For_Int_String>(@"{""@Int"":1,""@String"":""1""}");
+            ClassWrapper_For_Int_String obj = await Serializer.DeserializeWrapper<ClassWrapper_For_Int_String>(@"{""@Int"":1,""@String"":""1""}");
             Assert.Equal(0, obj.Int);
             Assert.Null(obj.String);
         }
@@ -262,10 +262,10 @@ namespace System.Text.Json.Serialization.Tests
         [Fact]
         public async Task PassDefaultValueToComplexStruct()
         {
-            ClassWrapperForPoint_3D obj = await JsonSerializerWrapperForString.DeserializeWrapper<ClassWrapperForPoint_3D>(@"{}");
+            ClassWrapperForPoint_3D obj = await Serializer.DeserializeWrapper<ClassWrapperForPoint_3D>(@"{}");
             Assert.True(obj.Point3D == default);
 
-            ClassWrapper_For_Int_Point_3D_String obj1 = await JsonSerializerWrapperForString.DeserializeWrapper<ClassWrapper_For_Int_Point_3D_String>(@"{}");
+            ClassWrapper_For_Int_Point_3D_String obj1 = await Serializer.DeserializeWrapper<ClassWrapper_For_Int_Point_3D_String>(@"{}");
             Assert.Equal(0, obj1.MyInt);
             Assert.Equal(0, obj1.MyPoint3DStruct.X);
             Assert.Equal(0, obj1.MyPoint3DStruct.Y);
@@ -276,7 +276,7 @@ namespace System.Text.Json.Serialization.Tests
         [Fact]
         public async Task Null_AsArgument_To_ParameterThat_CanBeNull()
         {
-            ClassWrapper_For_Int_Point_3D_String obj1 = await JsonSerializerWrapperForString.DeserializeWrapper<ClassWrapper_For_Int_Point_3D_String>(@"{""MyInt"":1,""MyPoint3DStruct"":{},""MyString"":null}");
+            ClassWrapper_For_Int_Point_3D_String obj1 = await Serializer.DeserializeWrapper<ClassWrapper_For_Int_Point_3D_String>(@"{""MyInt"":1,""MyPoint3DStruct"":{},""MyString"":null}");
             Assert.Equal(1, obj1.MyInt);
             Assert.Equal(0, obj1.MyPoint3DStruct.X);
             Assert.Equal(0, obj1.MyPoint3DStruct.Y);
@@ -287,24 +287,24 @@ namespace System.Text.Json.Serialization.Tests
         [Fact]
         public async Task Null_AsArgument_To_ParameterThat_CanNotBeNull()
         {
-            await Assert.ThrowsAsync<JsonException>(() => JsonSerializerWrapperForString.DeserializeWrapper<ClassWrapper_For_Int_Point_3D_String>(@"{""MyInt"":null,""MyString"":""1""}"));
-            await Assert.ThrowsAsync<JsonException>(() => JsonSerializerWrapperForString.DeserializeWrapper<ClassWrapper_For_Int_Point_3D_String>(@"{""MyPoint3DStruct"":null,""MyString"":""1""}"));
+            await Assert.ThrowsAsync<JsonException>(() => Serializer.DeserializeWrapper<ClassWrapper_For_Int_Point_3D_String>(@"{""MyInt"":null,""MyString"":""1""}"));
+            await Assert.ThrowsAsync<JsonException>(() => Serializer.DeserializeWrapper<ClassWrapper_For_Int_Point_3D_String>(@"{""MyPoint3DStruct"":null,""MyString"":""1""}"));
         }
 
         [Fact]
         public async Task OtherPropertiesAreSet()
         {
-            var personClass = await JsonSerializerWrapperForString.DeserializeWrapper<Person_Class>(Person_Class.s_json);
+            var personClass = await Serializer.DeserializeWrapper<Person_Class>(Person_Class.s_json);
             personClass.Verify();
 
-            var personStruct = await JsonSerializerWrapperForString.DeserializeWrapper<Person_Struct>(Person_Struct.s_json);
+            var personStruct = await Serializer.DeserializeWrapper<Person_Struct>(Person_Struct.s_json);
             personStruct.Verify();
         }
 
         [Fact]
         public async Task ExtraProperties_AreIgnored()
         {
-            Point_2D point = await JsonSerializerWrapperForString.DeserializeWrapper<Point_2D>(@"{ ""x"":1,""y"":2,""b"":3}");
+            Point_2D point = await Serializer.DeserializeWrapper<Point_2D>(@"{ ""x"":1,""y"":2,""b"":3}");
             Assert.Equal(0, point.X);
             Assert.Equal(0, point.Y);
         }
@@ -312,7 +312,7 @@ namespace System.Text.Json.Serialization.Tests
         [Fact]
         public async Task ExtraProperties_GoInExtensionData_IfPresent()
         {
-            Point_2D_With_ExtData point = await JsonSerializerWrapperForString.DeserializeWrapper<Point_2D_With_ExtData>(@"{""X"":1,""y"":2,""b"":3}");
+            Point_2D_With_ExtData point = await Serializer.DeserializeWrapper<Point_2D_With_ExtData>(@"{""X"":1,""y"":2,""b"":3}");
             Assert.Equal(1, point.X);
             Assert.Equal(2, point.ExtensionData["y"].GetInt32());
             Assert.Equal(3, point.ExtensionData["b"].GetInt32());
@@ -321,7 +321,7 @@ namespace System.Text.Json.Serialization.Tests
         [Fact]
         public async Task PropertiesNotSet_WhenJSON_MapsToConstructorParameters()
         {
-            var obj = await JsonSerializerWrapperForString.DeserializeWrapper<Point_CtorsIgnoreJson>(@"{""X"":1,""Y"":2}");
+            var obj = await Serializer.DeserializeWrapper<Point_CtorsIgnoreJson>(@"{""X"":1,""Y"":2}");
             Assert.Equal(40, obj.X); // Would be 1 if property were set directly after object construction.
             Assert.Equal(60, obj.Y); // Would be 2 if property were set directly after object construction.
         }
@@ -331,39 +331,47 @@ namespace System.Text.Json.Serialization.Tests
         {
             // Throw JsonException when null applied to types that can't be null. Behavior should align with properties deserialized with setters.
 
-            await Assert.ThrowsAsync<JsonException>(() => JsonSerializerWrapperForString.DeserializeWrapper<NullArgTester>(@"{""Point3DStruct"":null,""Int"":null,""ImmutableArray"":null}"));
-            await Assert.ThrowsAsync<JsonException>(() => JsonSerializerWrapperForString.DeserializeWrapper<NullArgTester_Mutable>(@"{""Point3DStruct"":null,""Int"":null,""ImmutableArray"":null}"));
+            await Assert.ThrowsAsync<JsonException>(() => Serializer.DeserializeWrapper<NullArgTester>(@"{""Point3DStruct"":null,""Int"":null,""ImmutableArray"":null}"));
+            await Assert.ThrowsAsync<JsonException>(() => Serializer.DeserializeWrapper<NullArgTester_Mutable>(@"{""Point3DStruct"":null,""Int"":null,""ImmutableArray"":null}"));
 
-            await Assert.ThrowsAsync<JsonException>(() => JsonSerializerWrapperForString.DeserializeWrapper<NullArgTester>(@"{""Point3DStruct"":null}"));
-            await Assert.ThrowsAsync<JsonException>(() => JsonSerializerWrapperForString.DeserializeWrapper<NullArgTester_Mutable>(@"{""Point3DStruct"":null}"));
+            await Assert.ThrowsAsync<JsonException>(() => Serializer.DeserializeWrapper<NullArgTester>(@"{""Point3DStruct"":null}"));
+            await Assert.ThrowsAsync<JsonException>(() => Serializer.DeserializeWrapper<NullArgTester_Mutable>(@"{""Point3DStruct"":null}"));
 
-            await Assert.ThrowsAsync<JsonException>(() => JsonSerializerWrapperForString.DeserializeWrapper<NullArgTester>(@"{""Int"":null}"));
-            await Assert.ThrowsAsync<JsonException>(() => JsonSerializerWrapperForString.DeserializeWrapper<NullArgTester_Mutable>(@"{""Int"":null}"));
+            await Assert.ThrowsAsync<JsonException>(() => Serializer.DeserializeWrapper<NullArgTester>(@"{""Int"":null}"));
+            await Assert.ThrowsAsync<JsonException>(() => Serializer.DeserializeWrapper<NullArgTester_Mutable>(@"{""Int"":null}"));
 
-            await Assert.ThrowsAsync<JsonException>(() => JsonSerializerWrapperForString.DeserializeWrapper<NullArgTester>(@"{""ImmutableArray"":null}"));
-            await Assert.ThrowsAsync<JsonException>(() => JsonSerializerWrapperForString.DeserializeWrapper<NullArgTester_Mutable>(@"{""ImmutableArray"":null}"));
+            await Assert.ThrowsAsync<JsonException>(() => Serializer.DeserializeWrapper<NullArgTester>(@"{""ImmutableArray"":null}"));
+            await Assert.ThrowsAsync<JsonException>(() => Serializer.DeserializeWrapper<NullArgTester_Mutable>(@"{""ImmutableArray"":null}"));
 
             // Throw even when IgnoreNullValues is true for symmetry with property deserialization,
             // until https://github.com/dotnet/runtime/issues/30795 is addressed.
 
             var options = new JsonSerializerOptions { IgnoreNullValues = true };
-            await Assert.ThrowsAsync<JsonException>(() => JsonSerializerWrapperForString.DeserializeWrapper<NullArgTester>(@"{""Point3DStruct"":null,""Int"":null,""ImmutableArray"":null}", options));
-            await Assert.ThrowsAsync<JsonException>(() => JsonSerializerWrapperForString.DeserializeWrapper<NullArgTester_Mutable>(@"{""Point3DStruct"":null,""Int"":null,""ImmutableArray"":null}", options));
+            await Assert.ThrowsAsync<JsonException>(() => Serializer.DeserializeWrapper<NullArgTester>(@"{""Point3DStruct"":null,""Int"":null,""ImmutableArray"":null}", options));
+            await Assert.ThrowsAsync<JsonException>(() => Serializer.DeserializeWrapper<NullArgTester_Mutable>(@"{""Point3DStruct"":null,""Int"":null,""ImmutableArray"":null}", options));
 
-            await Assert.ThrowsAsync<JsonException>(() => JsonSerializerWrapperForString.DeserializeWrapper<NullArgTester>(@"{""Point3DStruct"":null}", options));
-            await Assert.ThrowsAsync<JsonException>(() => JsonSerializerWrapperForString.DeserializeWrapper<NullArgTester_Mutable>(@"{""Point3DStruct"":null,""Int"":null,""ImmutableArray"":null}", options));
+            await Assert.ThrowsAsync<JsonException>(() => Serializer.DeserializeWrapper<NullArgTester>(@"{""Point3DStruct"":null}", options));
+            await Assert.ThrowsAsync<JsonException>(() => Serializer.DeserializeWrapper<NullArgTester_Mutable>(@"{""Point3DStruct"":null,""Int"":null,""ImmutableArray"":null}", options));
 
-            await Assert.ThrowsAsync<JsonException>(() => JsonSerializerWrapperForString.DeserializeWrapper<NullArgTester>(@"{""Int"":null}", options));
-            await Assert.ThrowsAsync<JsonException>(() => JsonSerializerWrapperForString.DeserializeWrapper<NullArgTester_Mutable>(@"{""Point3DStruct"":null,""Int"":null,""ImmutableArray"":null}", options));
+            await Assert.ThrowsAsync<JsonException>(() => Serializer.DeserializeWrapper<NullArgTester>(@"{""Int"":null}", options));
+            await Assert.ThrowsAsync<JsonException>(() => Serializer.DeserializeWrapper<NullArgTester_Mutable>(@"{""Point3DStruct"":null,""Int"":null,""ImmutableArray"":null}", options));
 
-            await Assert.ThrowsAsync<JsonException>(() => JsonSerializerWrapperForString.DeserializeWrapper<NullArgTester>(@"{""ImmutableArray"":null}", options));
-            await Assert.ThrowsAsync<JsonException>(() => JsonSerializerWrapperForString.DeserializeWrapper<NullArgTester_Mutable>(@"{""Point3DStruct"":null,""Int"":null,""ImmutableArray"":null}", options));
+            await Assert.ThrowsAsync<JsonException>(() => Serializer.DeserializeWrapper<NullArgTester>(@"{""ImmutableArray"":null}", options));
+            await Assert.ThrowsAsync<JsonException>(() => Serializer.DeserializeWrapper<NullArgTester_Mutable>(@"{""Point3DStruct"":null,""Int"":null,""ImmutableArray"":null}", options));
+        }
+
+        [Fact]
+        public async Task IgnoreNullValues_SetDefaultConstructorParameter_ToConstructorArguments_ThatCanBeNull()
+        {
+            var options = new JsonSerializerOptions { IgnoreNullValues = true };
+            NullArgTester result = await Serializer.DeserializeWrapper<NullArgTester>(@"{""String"":null}", options);
+            Assert.Equal("defaultStr", result.String);
         }
 
         [Fact]
         public async Task NumerousSimpleAndComplexParameters()
         {
-            var obj = await JsonSerializerWrapperForString.DeserializeWrapper<ObjWCtorMixedParams>(ObjWCtorMixedParams.s_json);
+            var obj = await Serializer.DeserializeWrapper<ObjWCtorMixedParams>(ObjWCtorMixedParams.s_json);
             obj.Verify();
         }
 
@@ -390,9 +398,9 @@ namespace System.Text.Json.Serialization.Tests
             point.ThirdDateTime = DateTimeTestHelpers.FixedDateTimeValue;
             point.FourthDateTime = DateTimeTestHelpers.FixedDateTimeValue.AddHours(1).AddYears(1);
 
-            string json = await JsonSerializerWrapperForString.SerializeWrapper(point);
+            string json = await Serializer.SerializeWrapper(point);
 
-            var deserialized = await JsonSerializerWrapperForString.DeserializeWrapper<Parameterless_ClassWithPrimitives>(json);
+            var deserialized = await Serializer.DeserializeWrapper<Parameterless_ClassWithPrimitives>(json);
             Assert.Equal(point.FirstInt, deserialized.FirstInt);
             Assert.Equal(point.SecondInt, deserialized.SecondInt);
             Assert.Equal(point.FirstString, deserialized.FirstString);
@@ -431,9 +439,9 @@ namespace System.Text.Json.Serialization.Tests
             point.ThirdDateTime = DateTimeTestHelpers.FixedDateTimeValue;
             point.FourthDateTime = DateTimeTestHelpers.FixedDateTimeValue.AddHours(1).AddYears(1);
 
-            string json = await JsonSerializerWrapperForString.SerializeWrapper(point);
+            string json = await Serializer.SerializeWrapper(point);
 
-            var deserialized = await JsonSerializerWrapperForString.DeserializeWrapper<Parameterized_ClassWithPrimitives_3Args>(json);
+            var deserialized = await Serializer.DeserializeWrapper<Parameterized_ClassWithPrimitives_3Args>(json);
             Assert.Equal(point.FirstInt, deserialized.FirstInt);
             Assert.Equal(point.SecondInt, deserialized.SecondInt);
             Assert.Equal(point.FirstString, deserialized.FirstString);
@@ -472,10 +480,10 @@ namespace System.Text.Json.Serialization.Tests
             point.ThirdDateTime = DateTimeTestHelpers.FixedDateTimeValue;
             point.FourthDateTime = DateTimeTestHelpers.FixedDateTimeValue.AddHours(1).AddYears(1);
 
-            string json = await JsonSerializerWrapperForString.SerializeWrapper(point);
+            string json = await Serializer.SerializeWrapper(point);
 
-            await JsonSerializerWrapperForString.DeserializeWrapper<Parameterized_ClassWithPrimitives_3Args>(json);
-            await JsonSerializerWrapperForString.DeserializeWrapper<Parameterized_ClassWithPrimitives_3Args>(json);
+            await Serializer.DeserializeWrapper<Parameterized_ClassWithPrimitives_3Args>(json);
+            await Serializer.DeserializeWrapper<Parameterized_ClassWithPrimitives_3Args>(json);
         }
 
         [Fact]
@@ -483,16 +491,16 @@ namespace System.Text.Json.Serialization.Tests
         {
             var dont_trim_ctor = typeof(Tuple<,>).GetConstructors();
 
-            var tuple = await JsonSerializerWrapperForString.DeserializeWrapper<Tuple<string, double>>(@"{""Item1"":""New York"",""Item2"":32.68}");
+            var tuple = await Serializer.DeserializeWrapper<Tuple<string, double>>(@"{""Item1"":""New York"",""Item2"":32.68}");
             Assert.Equal("New York", tuple.Item1);
             Assert.Equal(32.68, tuple.Item2);
 
-            var tupleWrapper = await JsonSerializerWrapperForString.DeserializeWrapper<TupleWrapper>(@"{""Tuple"":{""Item1"":""New York"",""Item2"":32.68}}");
+            var tupleWrapper = await Serializer.DeserializeWrapper<TupleWrapper>(@"{""Tuple"":{""Item1"":""New York"",""Item2"":32.68}}");
             tuple = tupleWrapper.Tuple;
             Assert.Equal("New York", tuple.Item1);
             Assert.Equal(32.68, tuple.Item2);
 
-            var tupleList = await JsonSerializerWrapperForString.DeserializeWrapper<List<Tuple<string, double>>>(@"[{""Item1"":""New York"",""Item2"":32.68}]");
+            var tupleList = await Serializer.DeserializeWrapper<List<Tuple<string, double>>>(@"[{""Item1"":""New York"",""Item2"":32.68}]");
             tuple = tupleList[0];
             Assert.Equal("New York", tuple.Item1);
             Assert.Equal(32.68, tuple.Item2);
@@ -500,28 +508,27 @@ namespace System.Text.Json.Serialization.Tests
 
         [Fact]
         [DynamicDependency(DynamicallyAccessedMemberTypes.PublicConstructors | DynamicallyAccessedMemberTypes.PublicProperties, typeof(Tuple<,,,,,,,>))]
+        [DynamicDependency(DynamicallyAccessedMemberTypes.PublicConstructors | DynamicallyAccessedMemberTypes.PublicProperties, typeof(Tuple<,,,,,,>))]
+        [DynamicDependency(DynamicallyAccessedMemberTypes.PublicConstructors | DynamicallyAccessedMemberTypes.PublicProperties, typeof(Tuple<>))]
         public async Task TupleDeserialization_MoreThanSevenItems()
         {
-            var dont_trim_ctor = typeof(Tuple<,,,,,,>).GetConstructors();
-            dont_trim_ctor = typeof(Tuple<,,,,,,,>).GetConstructors();
-
             // Seven is okay
-            string json = await JsonSerializerWrapperForString.SerializeWrapper(Tuple.Create(1, 2, 3, 4, 5, 6, 7));
-            var obj = await JsonSerializerWrapperForString.DeserializeWrapper<Tuple<int, int, int, int, int, int, int>>(json);
-            Assert.Equal(json, await JsonSerializerWrapperForString.SerializeWrapper(obj));
+            string json = await Serializer.SerializeWrapper(Tuple.Create(1, 2, 3, 4, 5, 6, 7));
+            var obj = await Serializer.DeserializeWrapper<Tuple<int, int, int, int, int, int, int>>(json);
+            Assert.Equal(json, await Serializer.SerializeWrapper(obj));
 
 #if !BUILDING_SOURCE_GENERATOR_TESTS // Source-gen implementations aren't binding with tuples with more than 7 generic args
             // More than seven arguments needs special casing and can be revisted.
             // Newtonsoft.Json fails in the same way.
-            json = await JsonSerializerWrapperForString.SerializeWrapper(Tuple.Create(1, 2, 3, 4, 5, 6, 7, 8));
-            await Assert.ThrowsAsync<JsonException>(() => JsonSerializerWrapperForString.DeserializeWrapper<Tuple<int, int, int, int, int, int, int, int>>(json));
+            json = await Serializer.SerializeWrapper(Tuple.Create(1, 2, 3, 4, 5, 6, 7, 8));
+            await Assert.ThrowsAsync<JsonException>(() => Serializer.DeserializeWrapper<Tuple<int, int, int, int, int, int, int, int>>(json));
 
             // Invalid JSON representing a tuple with more than seven items yields an ArgumentException from the constructor.
             // System.ArgumentException : The last element of an eight element tuple must be a Tuple.
             // We pass the number 8, not a new Tuple<int>(8).
             // Fixing this needs special casing. Newtonsoft behaves the same way.
             string invalidJson = @"{""Item1"":1,""Item2"":2,""Item3"":3,""Item4"":4,""Item5"":5,""Item6"":6,""Item7"":7,""Item1"":8}";
-            await Assert.ThrowsAsync<ArgumentException>(() => JsonSerializerWrapperForString.DeserializeWrapper<Tuple<int, int, int, int, int, int, int, int>>(invalidJson));
+            await Assert.ThrowsAsync<ArgumentException>(() => Serializer.DeserializeWrapper<Tuple<int, int, int, int, int, int, int, int>>(invalidJson));
 #endif
         }
 
@@ -531,9 +538,9 @@ namespace System.Text.Json.Serialization.Tests
         {
             // Seven items; only three provided.
             string input = @"{""Item2"":""2"",""Item3"":3,""Item6"":6}";
-            var obj = await JsonSerializerWrapperForString.DeserializeWrapper<Tuple<int, string, int, string, string, int, Point_3D_Struct>>(input);
+            var obj = await Serializer.DeserializeWrapper<Tuple<int, string, int, string, string, int, Point_3D_Struct>>(input);
 
-            string serialized = await JsonSerializerWrapperForString.SerializeWrapper(obj);
+            string serialized = await Serializer.SerializeWrapper(obj);
             Assert.Contains(@"""Item1"":0", serialized);
             Assert.Contains(@"""Item2"":""2""", serialized);
             Assert.Contains(@"""Item3"":3", serialized);
@@ -542,7 +549,7 @@ namespace System.Text.Json.Serialization.Tests
             Assert.Contains(@"""Item6"":6", serialized);
             Assert.Contains(@"""Item7"":{", serialized);
 
-            serialized = await JsonSerializerWrapperForString.SerializeWrapper(obj.Item7);
+            serialized = await Serializer.SerializeWrapper(obj.Item7);
             Assert.Contains(@"""X"":0", serialized);
             Assert.Contains(@"""Y"":0", serialized);
             Assert.Contains(@"""Z"":0", serialized);
@@ -551,7 +558,7 @@ namespace System.Text.Json.Serialization.Tests
             // System.ArgumentException : The last element of an eight element tuple must be a Tuple.
             // We pass the number 8, not a new Tuple<int>(default(int)).
             // Fixing this needs special casing. Newtonsoft behaves the same way.
-            await Assert.ThrowsAsync<ArgumentException>(() => JsonSerializerWrapperForString.DeserializeWrapper<Tuple<int, string, int, string, string, int, Point_3D_Struct, int>>(input));
+            await Assert.ThrowsAsync<ArgumentException>(() => Serializer.DeserializeWrapper<Tuple<int, string, int, string, string, int, Point_3D_Struct, int>>(input));
         }
 
         [Fact]
@@ -573,7 +580,7 @@ namespace System.Text.Json.Serialization.Tests
 
             string complexTupleJson = sb.ToString();
 
-            var complexTuple = await JsonSerializerWrapperForString.DeserializeWrapper<Tuple<
+            var complexTuple = await Serializer.DeserializeWrapper<Tuple<
                 ObjWCtorMixedParams,
                 ObjWCtorMixedParams,
                 ObjWCtorMixedParams,
@@ -612,7 +619,7 @@ namespace System.Text.Json.Serialization.Tests
 
             var dont_trim_ctor = typeof(Tuple<,,,,,,>).GetConstructors();
 
-            var complexTuple = await JsonSerializerWrapperForString.DeserializeWrapper<Tuple<
+            var complexTuple = await Serializer.DeserializeWrapper<Tuple<
                 SimpleTestClass,
                 SimpleTestClass,
                 SimpleTestClass,
@@ -634,23 +641,23 @@ namespace System.Text.Json.Serialization.Tests
         public async Task NoConstructorHandlingWhenObjectHasConverter()
         {
             // Baseline without converter
-            string serialized = await JsonSerializerWrapperForString.SerializeWrapper(new Point_3D(10, 6));
+            string serialized = await Serializer.SerializeWrapper(new Point_3D(10, 6));
 
-            Point_3D point = await JsonSerializerWrapperForString.DeserializeWrapper<Point_3D>(serialized);
+            Point_3D point = await Serializer.DeserializeWrapper<Point_3D>(serialized);
             Assert.Equal(10, point.X);
             Assert.Equal(6, point.Y);
             Assert.Equal(50, point.Z);
 
-            serialized = await JsonSerializerWrapperForString.SerializeWrapper(new[] { new Point_3D(10, 6) });
+            serialized = await Serializer.SerializeWrapper(new[] { new Point_3D(10, 6) });
 
-            point = (await JsonSerializerWrapperForString.DeserializeWrapper<Point_3D[]>(serialized))[0];
+            point = (await Serializer.DeserializeWrapper<Point_3D[]>(serialized))[0];
             Assert.Equal(10, point.X);
             Assert.Equal(6, point.Y);
             Assert.Equal(50, point.Z);
 
-            serialized = await JsonSerializerWrapperForString.SerializeWrapper(new WrapperForPoint_3D { Point_3D = new Point_3D(10, 6) });
+            serialized = await Serializer.SerializeWrapper(new WrapperForPoint_3D { Point_3D = new Point_3D(10, 6) });
 
-            point = (await JsonSerializerWrapperForString.DeserializeWrapper<WrapperForPoint_3D>(serialized)).Point_3D;
+            point = (await Serializer.DeserializeWrapper<WrapperForPoint_3D>(serialized)).Point_3D;
             Assert.Equal(10, point.X);
             Assert.Equal(6, point.Y);
             Assert.Equal(50, point.Z);
@@ -660,23 +667,23 @@ namespace System.Text.Json.Serialization.Tests
             var options = new JsonSerializerOptions();
             options.Converters.Add(new ConverterForPoint3D());
 
-            serialized = await JsonSerializerWrapperForString.SerializeWrapper(new Point_3D(10, 6));
+            serialized = await Serializer.SerializeWrapper(new Point_3D(10, 6));
 
-            point = await JsonSerializerWrapperForString.DeserializeWrapper<Point_3D>(serialized, options);
+            point = await Serializer.DeserializeWrapper<Point_3D>(serialized, options);
             Assert.Equal(4, point.X);
             Assert.Equal(4, point.Y);
             Assert.Equal(4, point.Z);
 
-            serialized = await JsonSerializerWrapperForString.SerializeWrapper(new[] { new Point_3D(10, 6) });
+            serialized = await Serializer.SerializeWrapper(new[] { new Point_3D(10, 6) });
 
-            point = (await JsonSerializerWrapperForString.DeserializeWrapper<Point_3D[]>(serialized, options))[0];
+            point = (await Serializer.DeserializeWrapper<Point_3D[]>(serialized, options))[0];
             Assert.Equal(4, point.X);
             Assert.Equal(4, point.Y);
             Assert.Equal(4, point.Z);
 
-            serialized = await JsonSerializerWrapperForString.SerializeWrapper(new WrapperForPoint_3D { Point_3D = new Point_3D(10, 6) });
+            serialized = await Serializer.SerializeWrapper(new WrapperForPoint_3D { Point_3D = new Point_3D(10, 6) });
 
-            point = (await JsonSerializerWrapperForString.DeserializeWrapper<WrapperForPoint_3D>(serialized, options)).Point_3D;
+            point = (await Serializer.DeserializeWrapper<WrapperForPoint_3D>(serialized, options)).Point_3D;
             Assert.Equal(4, point.X);
             Assert.Equal(4, point.Y);
             Assert.Equal(4, point.Z);
@@ -686,7 +693,7 @@ namespace System.Text.Json.Serialization.Tests
         public async Task ConstructorHandlingHonorsCustomConverters()
         {
             // Baseline, use internal converters for primitives
-            Point_2D point = await JsonSerializerWrapperForString.DeserializeWrapper<Point_2D>(@"{""X"":2,""Y"":3}");
+            Point_2D point = await Serializer.DeserializeWrapper<Point_2D>(@"{""X"":2,""Y"":3}");
             Assert.Equal(2, point.X);
             Assert.Equal(3, point.Y);
 
@@ -694,7 +701,7 @@ namespace System.Text.Json.Serialization.Tests
             var options = new JsonSerializerOptions();
             options.Converters.Add(new ConverterForInt32());
 
-            point = await JsonSerializerWrapperForString.DeserializeWrapper<Point_2D>(@"{""X"":2,""Y"":3}", options);
+            point = await Serializer.DeserializeWrapper<Point_2D>(@"{""X"":2,""Y"":3}", options);
             Assert.Equal(25, point.X);
             Assert.Equal(25, point.X);
         }
@@ -715,7 +722,7 @@ namespace System.Text.Json.Serialization.Tests
 
                 string input = sb.ToString();
 
-                object obj = await JsonSerializerWrapperForString.DeserializeWrapper<T>(input);
+                object obj = await Serializer.DeserializeWrapper<T>(input);
                 for (int i = 0; i < 64; i++)
                 {
                     Assert.Equal(i, (int)typeof(T).GetProperty($"Int{i}").GetValue(obj));
@@ -727,7 +734,7 @@ namespace System.Text.Json.Serialization.Tests
         }
 
         [Fact]
-        public async Task Cannot_Deserialize_ObjectWith_Ctor_With_65_Params()
+        public async Task Can_Deserialize_ObjectWith_Ctor_With_65_Params()
         {
             async Task RunTestAsync<T>()
             {
@@ -753,11 +760,8 @@ namespace System.Text.Json.Serialization.Tests
                 sb.Append("Int32");
                 sb.Append(")");
 
-                NotSupportedException ex = await Assert.ThrowsAsync<NotSupportedException>(() => JsonSerializerWrapperForString.DeserializeWrapper<T>(input));
-                Assert.Contains(type.ToString(), ex.ToString());
-
-                ex = await Assert.ThrowsAsync<NotSupportedException>(() => JsonSerializerWrapperForString.DeserializeWrapper<T>("{}"));
-                Assert.Contains(type.ToString(), ex.ToString());
+                T value = await Serializer.DeserializeWrapper<T>(input);
+                value = await Serializer.DeserializeWrapper<T>("{}");
             }
 
             await RunTestAsync<Class_With_Ctor_With_65_Params>();
@@ -767,14 +771,14 @@ namespace System.Text.Json.Serialization.Tests
         [Fact]
         public async Task Deserialize_ObjectWith_Ctor_With_65_Params_IfNull()
         {
-            Assert.Null(await JsonSerializerWrapperForString.DeserializeWrapper<Class_With_Ctor_With_65_Params>("null"));
-            await Assert.ThrowsAsync<JsonException>(() => JsonSerializerWrapperForString.DeserializeWrapper<Struct_With_Ctor_With_65_Params>("null"));
+            Assert.Null(await Serializer.DeserializeWrapper<Class_With_Ctor_With_65_Params>("null"));
+            await Assert.ThrowsAsync<JsonException>(() => Serializer.DeserializeWrapper<Struct_With_Ctor_With_65_Params>("null"));
         }
 
         [Fact]
         public async Task Escaped_ParameterNames_Work()
         {
-            Point_2D point = await JsonSerializerWrapperForString.DeserializeWrapper<Point_2D>(@"{""\u0058"":1,""\u0059"":2}");
+            Point_2D point = await Serializer.DeserializeWrapper<Point_2D>(@"{""\u0058"":1,""\u0059"":2}");
             Assert.Equal(1, point.X);
             Assert.Equal(2, point.Y);
         }
@@ -782,7 +786,7 @@ namespace System.Text.Json.Serialization.Tests
         [Fact]
         public async Task LastParameterWins()
         {
-            Point_2D point = await JsonSerializerWrapperForString.DeserializeWrapper<Point_2D>(@"{""X"":1,""Y"":2,""X"":4}");
+            Point_2D point = await Serializer.DeserializeWrapper<Point_2D>(@"{""X"":1,""Y"":2,""X"":4}");
             Assert.Equal(4, point.X); // Not 1.
             Assert.Equal(2, point.Y);
         }
@@ -799,7 +803,7 @@ namespace System.Text.Json.Serialization.Tests
                 ""Id"":""63cf821d-fd47-4782-8345-576d9228a534""
                 }";
 
-            Parameterized_Person person = await JsonSerializerWrapperForString.DeserializeWrapper<Parameterized_Person>(json);
+            Parameterized_Person person = await Serializer.DeserializeWrapper<Parameterized_Person>(json);
             Assert.Equal("Jet", person.FirstName);
             Assert.Equal("Doe", person.LastName);
             Assert.Equal("63cf821d-fd47-4782-8345-576d9228a534", person.Id.ToString());
@@ -810,23 +814,23 @@ namespace System.Text.Json.Serialization.Tests
         [Fact]
         public async Task BitVector32_UsesStructDefaultCtor_MultipleParameterizedCtor()
         {
-            string serialized = await JsonSerializerWrapperForString.SerializeWrapper(new BitVector32(1));
-            Assert.Equal(0, (await JsonSerializerWrapperForString.DeserializeWrapper<BitVector32>(serialized)).Data);
+            string serialized = await Serializer.SerializeWrapper(new BitVector32(1));
+            Assert.Equal(0, (await Serializer.DeserializeWrapper<BitVector32>(serialized)).Data);
         }
 
         [Fact]
         public async Task HonorExtensionDataGeneric()
         {
-            var obj1 = await JsonSerializerWrapperForString.DeserializeWrapper<SimpleClassWithParameterizedCtor_GenericDictionary_JsonElementExt>(@"{""key"": ""value""}");
+            var obj1 = await Serializer.DeserializeWrapper<SimpleClassWithParameterizedCtor_GenericDictionary_JsonElementExt>(@"{""key"": ""value""}");
             Assert.Equal("value", obj1.ExtensionData["key"].GetString());
 
-            var obj2 = await JsonSerializerWrapperForString.DeserializeWrapper<SimpleClassWithParameterizedCtor_GenericDictionary_ObjectExt>(@"{""key"": ""value""}");
+            var obj2 = await Serializer.DeserializeWrapper<SimpleClassWithParameterizedCtor_GenericDictionary_ObjectExt>(@"{""key"": ""value""}");
             Assert.Equal("value", ((JsonElement)obj2.ExtensionData["key"]).GetString());
 
-            var obj3 = await JsonSerializerWrapperForString.DeserializeWrapper<SimpleClassWithParameterizedCtor_Derived_GenericIDictionary_JsonElementExt>(@"{""key"": ""value""}");
+            var obj3 = await Serializer.DeserializeWrapper<SimpleClassWithParameterizedCtor_Derived_GenericIDictionary_JsonElementExt>(@"{""key"": ""value""}");
             Assert.Equal("value", obj3.ExtensionData["key"].GetString());
 
-            var obj4 = await JsonSerializerWrapperForString.DeserializeWrapper<SimpleClassWithParameterizedCtor_Derived_GenericIDictionary_ObjectExt>(@"{""key"": ""value""}");
+            var obj4 = await Serializer.DeserializeWrapper<SimpleClassWithParameterizedCtor_Derived_GenericIDictionary_ObjectExt>(@"{""key"": ""value""}");
             Assert.Equal("value", ((JsonElement)obj4.ExtensionData["key"]).GetString());
         }
 
@@ -835,24 +839,24 @@ namespace System.Text.Json.Serialization.Tests
         {
             Point_MembersHave_JsonInclude point = new Point_MembersHave_JsonInclude(1, 2, 3);
 
-            string json = await JsonSerializerWrapperForString.SerializeWrapper(point);
+            string json = await Serializer.SerializeWrapper(point);
             Assert.Contains(@"""X"":1", json);
             Assert.Contains(@"""Y"":2", json);
             //We should add another test for non-public members
             //when https://github.com/dotnet/runtime/issues/31511 is implemented
             Assert.Contains(@"""Z"":3", json);
 
-            point = await JsonSerializerWrapperForString.DeserializeWrapper<Point_MembersHave_JsonInclude>(json);
+            point = await Serializer.DeserializeWrapper<Point_MembersHave_JsonInclude>(json);
             point.Verify();
         }
 
         [Fact]
         public async Task ArgumentDeserialization_Honors_JsonNumberHandling()
         {
-            ClassWithFiveArgs_MembersHave_JsonNumberHandlingAttributes obj = await JsonSerializerWrapperForString.DeserializeWrapper<ClassWithFiveArgs_MembersHave_JsonNumberHandlingAttributes>(ClassWithFiveArgs_MembersHave_JsonNumberHandlingAttributes.s_json);
+            ClassWithFiveArgs_MembersHave_JsonNumberHandlingAttributes obj = await Serializer.DeserializeWrapper<ClassWithFiveArgs_MembersHave_JsonNumberHandlingAttributes>(ClassWithFiveArgs_MembersHave_JsonNumberHandlingAttributes.s_json);
             obj.Verify();
 
-            string json = await JsonSerializerWrapperForString.SerializeWrapper(obj);
+            string json = await Serializer.SerializeWrapper(obj);
             Assert.Contains(@"""A"":1", json);
             Assert.Contains(@"""B"":""NaN""", json);
             Assert.Contains(@"""C"":2", json);
@@ -865,11 +869,11 @@ namespace System.Text.Json.Serialization.Tests
         {
             Point_MembersHave_JsonPropertyName point = new Point_MembersHave_JsonPropertyName(1, 2);
 
-            string json = await JsonSerializerWrapperForString.SerializeWrapper(point);
+            string json = await Serializer.SerializeWrapper(point);
             Assert.Contains(@"""XValue"":1", json);
             Assert.Contains(@"""YValue"":2", json);
 
-            point = await JsonSerializerWrapperForString.DeserializeWrapper<Point_MembersHave_JsonPropertyName>(json);
+            point = await Serializer.DeserializeWrapper<Point_MembersHave_JsonPropertyName>(json);
             point.Verify();
         }
 
@@ -879,10 +883,10 @@ namespace System.Text.Json.Serialization.Tests
             string json = @"{""XVALUE"":1,""yvalue"":2}";
 
             // Without case insensitivity, there's no match.
-            Point_MembersHave_JsonPropertyName point = await JsonSerializerWrapperForString.DeserializeWrapper<Point_MembersHave_JsonPropertyName>(json);
+            Point_MembersHave_JsonPropertyName point = await Serializer.DeserializeWrapper<Point_MembersHave_JsonPropertyName>(json);
 
             var options = new JsonSerializerOptions { PropertyNameCaseInsensitive = true };
-            point = await JsonSerializerWrapperForString.DeserializeWrapper<Point_MembersHave_JsonPropertyName>(json, options);
+            point = await Serializer.DeserializeWrapper<Point_MembersHave_JsonPropertyName>(json, options);
             Assert.Equal(1, point.X);
             Assert.Equal(2, point.Y);
         }
@@ -890,14 +894,14 @@ namespace System.Text.Json.Serialization.Tests
         [Fact]
         public async Task ArgumentDeserialization_Honors_ConverterOnProperty()
         {
-            var point = await JsonSerializerWrapperForString.DeserializeWrapper<Point_MembersHave_JsonConverter>(Point_MembersHave_JsonConverter.s_json);
+            var point = await Serializer.DeserializeWrapper<Point_MembersHave_JsonConverter>(Point_MembersHave_JsonConverter.s_json);
             point.Verify();
         }
 
         [Fact]
         public async Task ArgumentDeserialization_Honors_JsonIgnore()
         {
-            var point = await JsonSerializerWrapperForString.DeserializeWrapper<Point_MembersHave_JsonIgnore>(Point_MembersHave_JsonIgnore.s_json);
+            var point = await Serializer.DeserializeWrapper<Point_MembersHave_JsonIgnore>(Point_MembersHave_JsonIgnore.s_json);
             point.Verify();
         }
 
@@ -909,14 +913,14 @@ namespace System.Text.Json.Serialization.Tests
                 PropertyNamingPolicy = new LowerCaseNamingPolicy()
             };
 
-            string json = await JsonSerializerWrapperForString.SerializeWrapper(new Point_ExtendedPropNames(1, 2), options);
+            string json = await Serializer.SerializeWrapper(new Point_ExtendedPropNames(1, 2), options);
 
             // If we don't use naming policy, then we can't match serialized properties to constructor parameters on deserialization.
-            var point = await JsonSerializerWrapperForString.DeserializeWrapper<Point_ExtendedPropNames>(json);
+            var point = await Serializer.DeserializeWrapper<Point_ExtendedPropNames>(json);
             Assert.Equal(0, point.XValue);
             Assert.Equal(0, point.YValue);
 
-            point = await JsonSerializerWrapperForString.DeserializeWrapper<Point_ExtendedPropNames>(json, options);
+            point = await Serializer.DeserializeWrapper<Point_ExtendedPropNames>(json, options);
             Assert.Equal(1, point.XValue);
             Assert.Equal(2, point.YValue);
         }
@@ -932,7 +936,7 @@ namespace System.Text.Json.Serialization.Tests
             string json = @"{""x_VaLUE"":1,""Y_vALue"":2}";
 
             // If we don't use case sensitivity, then we can't match serialized properties to constructor parameters on deserialization.
-            Point_ExtendedPropNames point = await JsonSerializerWrapperForString.DeserializeWrapper<Point_ExtendedPropNames>(json, options1);
+            Point_ExtendedPropNames point = await Serializer.DeserializeWrapper<Point_ExtendedPropNames>(json, options1);
             Assert.Equal(0, point.XValue);
             Assert.Equal(0, point.YValue);
 
@@ -942,7 +946,7 @@ namespace System.Text.Json.Serialization.Tests
                 PropertyNameCaseInsensitive = true,
             };
 
-            point = await JsonSerializerWrapperForString.DeserializeWrapper<Point_ExtendedPropNames>(json, options2);
+            point = await Serializer.DeserializeWrapper<Point_ExtendedPropNames>(json, options2);
             Assert.Equal(1, point.XValue);
             Assert.Equal(2, point.YValue);
         }
@@ -955,19 +959,19 @@ namespace System.Text.Json.Serialization.Tests
                 PropertyNamingPolicy = new NullNamingPolicy()
             };
 
-            await Assert.ThrowsAsync<InvalidOperationException>(() => JsonSerializerWrapperForString.DeserializeWrapper<Point_ExtendedPropNames>("{}", options));
+            await Assert.ThrowsAsync<InvalidOperationException>(() => Serializer.DeserializeWrapper<Point_ExtendedPropNames>("{}", options));
         }
 
         [Fact]
         public async Task ComplexJson_As_LastCtorArg()
         {
-            Point_With_Array obj1 = await JsonSerializerWrapperForString.DeserializeWrapper<Point_With_Array>(Point_With_Array.s_json);
+            Point_With_Array obj1 = await Serializer.DeserializeWrapper<Point_With_Array>(Point_With_Array.s_json);
             ((ITestClass)obj1).Verify();
 
-            Point_With_Dictionary obj2 = await JsonSerializerWrapperForString.DeserializeWrapper<Point_With_Dictionary>(Point_With_Dictionary.s_json);
+            Point_With_Dictionary obj2 = await Serializer.DeserializeWrapper<Point_With_Dictionary>(Point_With_Dictionary.s_json);
             ((ITestClass)obj2).Verify();
 
-            Point_With_Object obj3 = await JsonSerializerWrapperForString.DeserializeWrapper<Point_With_Object>(Point_With_Object.s_json);
+            Point_With_Object obj3 = await Serializer.DeserializeWrapper<Point_With_Object>(Point_With_Object.s_json);
             ((ITestClass)obj3).Verify();
         }
 
@@ -989,7 +993,7 @@ namespace System.Text.Json.Serialization.Tests
 
             string json = sb.ToString();
 
-            var point = await JsonSerializerWrapperForString.DeserializeWrapper<Point_With_Property>(json);
+            var point = await Serializer.DeserializeWrapper<Point_With_Property>(json);
             Assert.Equal(1, point.X);
             Assert.Equal(2, point.Y);
             Assert.Equal(66, point.Z);
@@ -1002,9 +1006,9 @@ namespace System.Text.Json.Serialization.Tests
             ClassWithNestedClass obj1 = new ClassWithNestedClass(myClass: obj, myPoint: new Point_2D_Struct_WithAttribute(1, 2));
             ClassWithNestedClass obj2 = new ClassWithNestedClass(myClass: obj1, myPoint: new Point_2D_Struct_WithAttribute(3, 4));
 
-            string json = await JsonSerializerWrapperForString.SerializeWrapper(obj2);
+            string json = await Serializer.SerializeWrapper(obj2);
 
-            obj2 = await JsonSerializerWrapperForString.DeserializeWrapper<ClassWithNestedClass>(json);
+            obj2 = await Serializer.DeserializeWrapper<ClassWithNestedClass>(json);
             Assert.Equal(3, obj2.MyPoint.X);
             Assert.Equal(4, obj2.MyPoint.Y);
 
@@ -1022,9 +1026,9 @@ namespace System.Text.Json.Serialization.Tests
         [Fact]
         public async Task FourArgsWork()
         {
-            string json = await JsonSerializerWrapperForString.SerializeWrapper(new StructWithFourArgs(1, 2, 3, 4));
+            string json = await Serializer.SerializeWrapper(new StructWithFourArgs(1, 2, 3, 4));
 
-            var obj = await JsonSerializerWrapperForString.DeserializeWrapper<StructWithFourArgs>(json);
+            var obj = await Serializer.DeserializeWrapper<StructWithFourArgs>(json);
             Assert.Equal(1, obj.W);
             Assert.Equal(2, obj.X);
             Assert.Equal(3, obj.Y);
@@ -1034,34 +1038,35 @@ namespace System.Text.Json.Serialization.Tests
         [Fact]
         public async Task InvalidJsonFails()
         {
-            await Assert.ThrowsAsync<JsonException>(() => JsonSerializerWrapperForString.DeserializeWrapper<Point_2D>("{1"));
-            await Assert.ThrowsAsync<JsonException>(() => JsonSerializerWrapperForString.DeserializeWrapper<Point_2D>("{x"));
-            await Assert.ThrowsAsync<JsonException>(() => JsonSerializerWrapperForString.DeserializeWrapper<Point_2D>("{{"));
-            await Assert.ThrowsAsync<JsonException>(() => JsonSerializerWrapperForString.DeserializeWrapper<Point_2D>("{true"));
+            await Assert.ThrowsAsync<JsonException>(() => Serializer.DeserializeWrapper<Point_2D>("{1"));
+            await Assert.ThrowsAsync<JsonException>(() => Serializer.DeserializeWrapper<Point_2D>("{x"));
+            await Assert.ThrowsAsync<JsonException>(() => Serializer.DeserializeWrapper<Point_2D>("{{"));
+            await Assert.ThrowsAsync<JsonException>(() => Serializer.DeserializeWrapper<Point_2D>("{true"));
 
             // Also test deserialization of objects with parameterless ctors
-            await Assert.ThrowsAsync<JsonException>(() => JsonSerializerWrapperForString.DeserializeWrapper<Point_2D_Struct>("{1"));
-            await Assert.ThrowsAsync<JsonException>(() => JsonSerializerWrapperForString.DeserializeWrapper<Point_2D_Struct>("{x"));
-            await Assert.ThrowsAsync<JsonException>(() => JsonSerializerWrapperForString.DeserializeWrapper<Point_2D_Struct>("{true"));
+            await Assert.ThrowsAsync<JsonException>(() => Serializer.DeserializeWrapper<Point_2D_Struct>("{1"));
+            await Assert.ThrowsAsync<JsonException>(() => Serializer.DeserializeWrapper<Point_2D_Struct>("{x"));
+            await Assert.ThrowsAsync<JsonException>(() => Serializer.DeserializeWrapper<Point_2D_Struct>("{true"));
         }
 
+#if !BUILDING_SOURCE_GENERATOR_TESTS // Anonymous types not supported in source gen
         [Fact]
-        public void AnonymousObject()
+        public async Task AnonymousObject()
         {
             var obj = new { Prop = 5 };
             Type objType = obj.GetType();
 
             // 'Prop' property binds with a ctor arg called 'Prop'.
 
-            object newObj = JsonSerializer.Deserialize("{}", objType);
+            object newObj = await Serializer.DeserializeWrapper("{}", objType);
             Assert.Equal(0, objType.GetProperty("Prop").GetValue(newObj));
 
-            newObj = JsonSerializer.Deserialize(@"{""Prop"":5}", objType);
+            newObj = await Serializer.DeserializeWrapper(@"{""Prop"":5}", objType);
             Assert.Equal(5, objType.GetProperty("Prop").GetValue(newObj));
         }
 
         [Fact]
-        public void AnonymousObject_NamingPolicy()
+        public async Task AnonymousObject_NamingPolicy()
         {
             const string Json = @"{""prop"":5}";
 
@@ -1070,7 +1075,7 @@ namespace System.Text.Json.Serialization.Tests
 
             // 'Prop' property binds with a ctor arg called 'Prop'.
 
-            object newObj = JsonSerializer.Deserialize(Json, objType);
+            object newObj = await Serializer.DeserializeWrapper(Json, objType);
             // Verify no match if no naming policy
             Assert.Equal(0, objType.GetProperty("Prop").GetValue(newObj));
 
@@ -1079,10 +1084,11 @@ namespace System.Text.Json.Serialization.Tests
                 PropertyNamingPolicy = JsonNamingPolicy.CamelCase
             };
 
-            newObj = JsonSerializer.Deserialize(Json, objType, options);
+            newObj = await Serializer.DeserializeWrapper(Json, objType, options);
             // Verify match with naming policy
             Assert.Equal(5, objType.GetProperty("Prop").GetValue(newObj));
         }
+#endif
 
         public record MyRecord(int Prop);
 
@@ -1090,10 +1096,10 @@ namespace System.Text.Json.Serialization.Tests
         public async Task Record()
         {
             // 'Prop' property binds with a ctor arg called 'Prop'.
-            MyRecord obj = await JsonSerializerWrapperForString.DeserializeWrapper<MyRecord>("{}");
+            MyRecord obj = await Serializer.DeserializeWrapper<MyRecord>("{}");
             Assert.Equal(0, obj.Prop);
 
-            obj = await JsonSerializerWrapperForString.DeserializeWrapper<MyRecord>(@"{""Prop"":5}");
+            obj = await Serializer.DeserializeWrapper<MyRecord>(@"{""Prop"":5}");
             Assert.Equal(5, obj.Prop);
         }
 
@@ -1105,7 +1111,7 @@ namespace System.Text.Json.Serialization.Tests
         [Fact]
         public async Task RecordWithSamePropertyNameDifferentTypes()
         {
-            AgeRecord obj = await JsonSerializerWrapperForString.DeserializeWrapper<AgeRecord>(@"{""age"":1}");
+            AgeRecord obj = await Serializer.DeserializeWrapper<AgeRecord>(@"{""age"":1}");
             Assert.Equal(1, obj.age);
         }
 
@@ -1117,7 +1123,7 @@ namespace System.Text.Json.Serialization.Tests
         [Fact]
         public async Task RecordWithAdditionalProperty()
         {
-            MyRecordWithUnboundCtorProperty obj = await JsonSerializerWrapperForString.DeserializeWrapper<MyRecordWithUnboundCtorProperty>(
+            MyRecordWithUnboundCtorProperty obj = await Serializer.DeserializeWrapper<MyRecordWithUnboundCtorProperty>(
                 @"{""IntProp1"":1,""IntProp2"":2,""StringProp"":""hello""}");
 
             Assert.Equal(1, obj.IntProp1);
@@ -1135,7 +1141,7 @@ namespace System.Text.Json.Serialization.Tests
             // 'Prop' property binds with a ctor arg called 'Prop'.
 
             // Verify no match if no naming policy
-            MyRecord obj = await JsonSerializerWrapperForString.DeserializeWrapper<MyRecord>(Json);
+            MyRecord obj = await Serializer.DeserializeWrapper<MyRecord>(Json);
             Assert.Equal(0, obj.Prop);
 
             var options = new JsonSerializerOptions
@@ -1144,7 +1150,7 @@ namespace System.Text.Json.Serialization.Tests
             };
 
             // Verify match with naming policy
-            obj = await JsonSerializerWrapperForString.DeserializeWrapper<MyRecord>(Json, options);
+            obj = await Serializer.DeserializeWrapper<MyRecord>(Json, options);
             Assert.Equal(5, obj.Prop);
         }
 
@@ -1162,7 +1168,7 @@ namespace System.Text.Json.Serialization.Tests
         [Fact]
         public async Task PocoWithSamePropertyNameDifferentTypes()
         {
-            AgePoco obj = await JsonSerializerWrapperForString.DeserializeWrapper<AgePoco>(@"{""age"":1}");
+            AgePoco obj = await Serializer.DeserializeWrapper<AgePoco>(@"{""age"":1}");
             Assert.Equal(1, obj.age);
         }
 
@@ -1172,14 +1178,14 @@ namespace System.Text.Json.Serialization.Tests
         public async Task DefaultForValueTypeCtorParam(Type type)
         {
             string json = @"{""MyGuid"":""edc421bf-782a-4a95-ad67-3d73b5d7db6f""}";
-            object obj = await JsonSerializerWrapperForString.DeserializeWrapper(json, type);
-            Assert.Equal(json, await JsonSerializerWrapperForString.SerializeWrapper(obj));
+            object obj = await Serializer.DeserializeWrapper(json, type);
+            Assert.Equal(json, await Serializer.SerializeWrapper(obj));
 
             json = @"{}";
-            obj = await JsonSerializerWrapperForString.DeserializeWrapper(json, type);
+            obj = await Serializer.DeserializeWrapper(json, type);
 
             var options = new JsonSerializerOptions { DefaultIgnoreCondition = JsonIgnoreCondition.WhenWritingDefault };
-            Assert.Equal(json, await JsonSerializerWrapperForString.SerializeWrapper(obj, options));
+            Assert.Equal(json, await Serializer.SerializeWrapper(obj, options));
         }
 
         public class TypeWithGuid
@@ -1201,14 +1207,14 @@ namespace System.Text.Json.Serialization.Tests
         public async Task DefaultForReferenceTypeCtorParam()
         {
             string json = @"{""MyUri"":""http://hello""}";
-            object obj = await JsonSerializerWrapperForString.DeserializeWrapper(json, typeof(TypeWithUri));
-            Assert.Equal(json, await JsonSerializerWrapperForString.SerializeWrapper(obj));
+            object obj = await Serializer.DeserializeWrapper(json, typeof(TypeWithUri));
+            Assert.Equal(json, await Serializer.SerializeWrapper(obj));
 
             json = @"{}";
-            obj = await JsonSerializerWrapperForString.DeserializeWrapper(json, typeof(TypeWithUri));
+            obj = await Serializer.DeserializeWrapper(json, typeof(TypeWithUri));
 
             var options = new JsonSerializerOptions { DefaultIgnoreCondition = JsonIgnoreCondition.WhenWritingDefault };
-            Assert.Equal(json, await JsonSerializerWrapperForString.SerializeWrapper(obj, options));
+            Assert.Equal(json, await Serializer.SerializeWrapper(obj, options));
         }
 
         public class TypeWithUri
@@ -1222,10 +1228,10 @@ namespace System.Text.Json.Serialization.Tests
         public async Task SmallObject_ClrDefaultParamValueUsed_WhenMatchingPropIgnored()
         {
             string json = @"{""Prop"":20}";
-            var obj1 = await JsonSerializerWrapperForString.DeserializeWrapper<SmallType_IgnoredProp_Bind_ParamWithDefaultValue>(json);
-            Assert.Equal(0, obj1.Prop);
+            var obj1 = await Serializer.DeserializeWrapper<SmallType_IgnoredProp_Bind_ParamWithDefaultValue>(json);
+            Assert.Equal(5, obj1.Prop);
 
-            var obj2 = await JsonSerializerWrapperForString.DeserializeWrapper<SmallType_IgnoredProp_Bind_Param>(json);
+            var obj2 = await Serializer.DeserializeWrapper<SmallType_IgnoredProp_Bind_Param>(json);
             Assert.Equal(0, obj2.Prop);
         }
 
@@ -1251,10 +1257,10 @@ namespace System.Text.Json.Serialization.Tests
         public async Task LargeObject_ClrDefaultParamValueUsed_WhenMatchingPropIgnored()
         {
             string json = @"{""Prop"":20}";
-            var obj1 = await JsonSerializerWrapperForString.DeserializeWrapper<LargeType_IgnoredProp_Bind_ParamWithDefaultValue>(json);
-            Assert.Equal(0, obj1.Prop);
+            var obj1 = await Serializer.DeserializeWrapper<LargeType_IgnoredProp_Bind_ParamWithDefaultValue>(json);
+            Assert.Equal(5, obj1.Prop);
 
-            var obj2 = await JsonSerializerWrapperForString.DeserializeWrapper<LargeType_IgnoredProp_Bind_Param>(json);
+            var obj2 = await Serializer.DeserializeWrapper<LargeType_IgnoredProp_Bind_Param>(json);
             Assert.Equal(0, obj2.Prop);
         }
 
@@ -1297,7 +1303,7 @@ namespace System.Text.Json.Serialization.Tests
         public async Task BindingBetweenRefProps()
         {
             string json = @"{""NameRef"":""John""}";
-            await JsonSerializerWrapperForString.DeserializeWrapper<TypeWith_RefStringProp_ParamCtor>(json);
+            await Serializer.DeserializeWrapper<TypeWith_RefStringProp_ParamCtor>(json);
         }
 
         public class TypeWith_RefStringProp_ParamCtor
@@ -1313,7 +1319,7 @@ namespace System.Text.Json.Serialization.Tests
         public async Task BindToIgnoredPropOfSameType()
         {
             string json = @"{""Prop"":{}}";
-            Assert.NotNull(await JsonSerializerWrapperForString.DeserializeWrapper<ClassWithIgnoredSameType>(json));
+            Assert.NotNull(await Serializer.DeserializeWrapper<ClassWithIgnoredSameType>(json));
         }
 
         public class ClassWithIgnoredSameType
@@ -1325,29 +1331,29 @@ namespace System.Text.Json.Serialization.Tests
         }
 
         [Fact]
-        public void StructWithPropertyInit_DeseralizeEmptyObject()
+        public async Task StructWithPropertyInit_DeseralizeEmptyObject()
         {
             string json = @"{}";
-            var obj = JsonSerializer.Deserialize<StructWithPropertyInit>(json);
+            var obj = await Serializer.DeserializeWrapper<StructWithPropertyInit>(json);
             Assert.Equal(42, obj.A);
             Assert.Equal(0, obj.B);
         }
 
         [Fact]
-        public void StructWithPropertyInit_OverrideInitedProperty()
+        public async Task StructWithPropertyInit_OverrideInitedProperty()
         {
             string json = @"{""A"":43}";
-            var obj = JsonSerializer.Deserialize<StructWithPropertyInit>(json);
+            var obj = await Serializer.DeserializeWrapper<StructWithPropertyInit>(json);
             Assert.Equal(43, obj.A);
             Assert.Equal(0, obj.B);
 
             json = @"{""A"":0,""B"":44}";
-            obj = JsonSerializer.Deserialize<StructWithPropertyInit>(json);
+            obj = await Serializer.DeserializeWrapper<StructWithPropertyInit>(json);
             Assert.Equal(0, obj.A);
             Assert.Equal(44, obj.B);
 
             json = @"{""B"":45}";
-            obj = JsonSerializer.Deserialize<StructWithPropertyInit>(json);
+            obj = await Serializer.DeserializeWrapper<StructWithPropertyInit>(json);
             Assert.Equal(42, obj.A); // JSON doesn't set A property so it's expected to be 42
             Assert.Equal(45, obj.B);
         }
@@ -1360,10 +1366,10 @@ namespace System.Text.Json.Serialization.Tests
         }
 
         [Fact]
-        public void StructWithFieldInit_DeseralizeEmptyObject()
+        public async Task StructWithFieldInit_DeseralizeEmptyObject()
         {
             string json = @"{}";
-            var obj = JsonSerializer.Deserialize<StructWithFieldInit>(json);
+            var obj = await Serializer.DeserializeWrapper<StructWithFieldInit>(json);
             Assert.Equal(0, obj.A);
             Assert.Equal(42, obj.B);
         }
@@ -1376,10 +1382,10 @@ namespace System.Text.Json.Serialization.Tests
         }
 
         [Fact]
-        public void StructWithExplicitParameterlessCtor_DeseralizeEmptyObject()
+        public async Task StructWithExplicitParameterlessCtor_DeseralizeEmptyObject()
         {
             string json = @"{}";
-            var obj = JsonSerializer.Deserialize<StructWithExplicitParameterlessCtor>(json);
+            var obj = await Serializer.DeserializeWrapper<StructWithExplicitParameterlessCtor>(json);
             Assert.Equal(42, obj.A);
         }
 
@@ -1422,9 +1428,20 @@ namespace System.Text.Json.Serialization.Tests
                 9,
                 10);
 
-            string json = await JsonSerializerWrapperForString.SerializeWrapper(obj);
-            obj = await JsonSerializerWrapperForString.DeserializeWrapper<ClassWithDefaultCtorParams>(json);
-            JsonTestHelper.AssertJsonEqual(json, await JsonSerializerWrapperForString.SerializeWrapper(obj));
+            string json = await Serializer.SerializeWrapper(obj);
+            obj = await Serializer.DeserializeWrapper<ClassWithDefaultCtorParams>(json);
+            JsonTestHelper.AssertJsonEqual(json, await Serializer.SerializeWrapper(obj));
+        }
+
+        [Fact]
+        public async Task TestClassWithManyConstructorParameters()
+        {
+            ClassWithManyConstructorParameters value = ClassWithManyConstructorParameters.Create();
+            string json = await Serializer.SerializeWrapper(value);
+
+            ClassWithManyConstructorParameters result = await Serializer.DeserializeWrapper<ClassWithManyConstructorParameters>(json);
+
+            Assert.Equal(value, result); // Type is C# record that implements structural equality.
         }
 
         public class ClassWithDefaultCtorParams
@@ -1470,7 +1487,7 @@ namespace System.Text.Json.Serialization.Tests
                 SampleEnumUInt32 enum5 = SampleEnumUInt32.MinZero,
                 string str1 = "abc",
                 string str2 = "",
-                string str3 = "\n\r⁉️\'\"\u200D\f\t\v\0\a\b\\\'\"",
+                string str3 = "\n\r\u2049\uFE0F\'\"\u200D\f\t\v\0\a\b\\\'\"",
                 char char1 = 'a',
                 char char2 = '\u200D',
                 double double1 = double.NegativeInfinity,
@@ -1524,6 +1541,92 @@ namespace System.Text.Json.Serialization.Tests
                 UInt = @uint;
                 ULong = @ulong;
             }
+        }
+
+        [Fact]
+        public async Task TestTypeWithEnumParameters()
+        {
+            // Regression test for https://github.com/dotnet/runtime/issues/68647
+
+            var value = new TypeWithEnumParameters();
+
+            string json = await Serializer.SerializeWrapper(value);
+            Assert.Equal("""{"Value":"One","NullableValue":"Two"}""", json);
+
+            value = await Serializer.DeserializeWrapper<TypeWithEnumParameters>(json);
+            Assert.Equal(MyEnum.One, value.Value);
+            Assert.Equal(MyEnum.Two, value.NullableValue);
+
+            value = await Serializer.DeserializeWrapper<TypeWithEnumParameters>("{}");
+            Assert.Equal(MyEnum.One, value.Value);
+            Assert.Equal(MyEnum.Two, value.NullableValue);
+        }
+
+        public sealed class TypeWithEnumParameters
+        {
+            public MyEnum Value { get; }
+            public MyEnum? NullableValue { get; }
+
+            [JsonConstructor]
+            public TypeWithEnumParameters(MyEnum value = MyEnum.One, MyEnum? nullableValue = MyEnum.Two)
+            {
+                Value = value;
+                NullableValue = nullableValue;
+            }
+        }
+
+        [JsonConverter(typeof(JsonStringEnumConverter<MyEnum>))]
+        public enum MyEnum
+        {
+            One = 1,
+            Two = 2,
+        }
+
+        [Fact]
+        public async Task TestClassWithIgnoredPropertyDefaultParam()
+        {
+            // Regression test for https://github.com/dotnet/runtime/issues/60082
+
+            string json = "{}";
+            ClassWithIgnoredPropertyDefaultParam result = await Serializer.DeserializeWrapper<ClassWithIgnoredPropertyDefaultParam>(json);
+            Assert.Equal(5, result.Y);
+        }
+
+        public class ClassWithIgnoredPropertyDefaultParam
+        {
+            public int X { get; }
+
+            [JsonIgnore]
+            public int Y { get; }
+
+            public ClassWithIgnoredPropertyDefaultParam(int x, int y = 5) => (X, Y) = (x, y);
+        }
+
+        [Fact]
+        public async Task TestClassWithCustomConverterOnCtorParameter_ShouldPassCorrectTypeToConvertParameter()
+        {
+            ClassWithCustomConverterOnCtorParameter result = await Serializer.DeserializeWrapper<ClassWithCustomConverterOnCtorParameter>("""{"Id":"id"}""");
+            Assert.Equal("id", result.Id);
+        }
+
+        public class ClassWithCustomConverterOnCtorParameter
+        {
+            public ClassWithCustomConverterOnCtorParameter(string id) => Id = id;
+
+            [JsonConverter(typeof(CustomCtorParameterConverter))]
+            public string Id { get; }
+        }
+
+        public class CustomCtorParameterConverter : JsonConverter<string>
+        {
+            public override string? Read(ref Utf8JsonReader reader, Type typeToConvert, JsonSerializerOptions options)
+            {
+                Assert.Equal(typeof(string), typeToConvert);
+                return reader.GetString();
+            }
+
+            public override void Write(Utf8JsonWriter writer, string value, JsonSerializerOptions options)
+                => writer.WriteStringValue(value);
         }
     }
 }

@@ -31,7 +31,9 @@
 //
 //
 
+#ifdef FEATURE_COMINTEROP
 void FreeExceptionData(ExceptionData *pedata);
+#endif
 
 class ExceptionNative
 {
@@ -44,8 +46,10 @@ public:
     static FCDECL3(VOID, SaveStackTracesFromDeepCopy, Object* pExceptionObjectUnsafe, Object *pStackTraceUnsafe, Object *pDynamicMethodsUnsafe);
 
 
+#ifdef FEATURE_COMINTEROP
     // NOTE: caller cleans up any partially initialized BSTRs in pED
     static void      GetExceptionData(OBJECTREF, ExceptionData *);
+#endif
 
     // Note: these are on the PInvoke class to hide these from the user.
     static FCDECL0(EXCEPTION_POINTERS*, GetExceptionPointers);
@@ -121,6 +125,19 @@ typedef GCMemoryInfoData * GCMEMORYINFODATA;
 typedef GCMemoryInfoData * GCMEMORYINFODATAREF;
 #endif // USE_CHECKED_OBJECTREFS
 
+using EnumerateConfigurationValuesCallback = void (*)(void* context, void* name, void* publicKey, GCConfigurationType type, int64_t data);
+
+struct GCHeapHardLimitInfo
+{
+    UINT64 heapHardLimit;
+    UINT64 heapHardLimitPercent;
+    UINT64 heapHardLimitSOH;
+    UINT64 heapHardLimitLOH;
+    UINT64 heapHardLimitPOH;
+    UINT64 heapHardLimitSOHPercent;
+    UINT64 heapHardLimitLOHPercent;
+    UINT64 heapHardLimitPOHPercent;
+};
 
 class GCInterface {
 private:
@@ -134,6 +151,7 @@ public:
     static FORCEINLINE UINT64 InterlockedAdd(UINT64 *pAugend, UINT64 addend);
     static FORCEINLINE UINT64 InterlockedSub(UINT64 *pMinuend, UINT64 subtrahend);
 
+    static FCDECL0(INT64,   GetTotalPauseDuration);
     static FCDECL2(void,    GetMemoryInfo, Object* objUNSAFE, int kind);
     static FCDECL0(UINT32,  GetMemoryLoad);
     static FCDECL0(int,     GetGcLatencyMode);
@@ -168,6 +186,10 @@ public:
     static void RemoveMemoryPressure(UINT64 bytesAllocated);
     static void AddMemoryPressure(UINT64 bytesAllocated);
 
+    static void EnumerateConfigurationValues(void* configurationContext, EnumerateConfigurationValuesCallback callback);
+    static int  RefreshMemoryLimit();
+    static enable_no_gc_region_callback_status EnableNoGCRegionCallback(NoGCRegionCallbackFinalizerWorkItem* callback, INT64 totalSize);
+
 private:
     // Out-of-line helper to avoid EH prolog/epilog in functions that otherwise don't throw.
     NOINLINE static void GarbageCollectModeAny(int generation);
@@ -192,6 +214,12 @@ extern "C" void QCALLTYPE GCInterface_AddMemoryPressure(UINT64 bytesAllocated);
 
 extern "C" void QCALLTYPE GCInterface_RemoveMemoryPressure(UINT64 bytesAllocated);
 
+extern "C" void QCALLTYPE GCInterface_EnumerateConfigurationValues(void* configurationContext, EnumerateConfigurationValuesCallback callback);
+
+extern "C" int  QCALLTYPE GCInterface_RefreshMemoryLimit(GCHeapHardLimitInfo heapHardLimitInfo);
+
+extern "C" enable_no_gc_region_callback_status QCALLTYPE GCInterface_EnableNoGCRegionCallback(NoGCRegionCallbackFinalizerWorkItem* callback, INT64 totalSize);
+
 class COMInterlocked
 {
 public:
@@ -199,17 +227,10 @@ public:
         static FCDECL2_IV(INT64,   Exchange64, INT64 *location, INT64 value);
         static FCDECL3(INT32, CompareExchange,        INT32* location, INT32 value, INT32 comparand);
         static FCDECL3_IVV(INT64, CompareExchange64,        INT64* location, INT64 value, INT64 comparand);
-        static FCDECL2_IV(float, ExchangeFloat, float *location, float value);
-        static FCDECL2_IV(double, ExchangeDouble, double *location, double value);
-        static FCDECL3_IVV(float, CompareExchangeFloat, float *location, float value, float comparand);
-        static FCDECL3_IVV(double, CompareExchangeDouble, double *location, double value, double comparand);
         static FCDECL2(LPVOID, ExchangeObject, LPVOID* location, LPVOID value);
         static FCDECL3(LPVOID, CompareExchangeObject, LPVOID* location, LPVOID value, LPVOID comparand);
         static FCDECL2(INT32, ExchangeAdd32, INT32 *location, INT32 value);
         static FCDECL2_IV(INT64, ExchangeAdd64, INT64 *location, INT64 value);
-
-        static FCDECL0(void, FCMemoryBarrier);
-        static FCDECL0(void, FCMemoryBarrierLoad);
 };
 
 extern "C" void QCALLTYPE Interlocked_MemoryBarrierProcessWide();
@@ -217,15 +238,22 @@ extern "C" void QCALLTYPE Interlocked_MemoryBarrierProcessWide();
 class ValueTypeHelper {
 public:
     static FCDECL1(FC_BOOL_RET, CanCompareBits, Object* obj);
-    static FCDECL2(FC_BOOL_RET, FastEqualsCheck, Object* obj1, Object* obj2);
     static FCDECL1(INT32, GetHashCode, Object* objRef);
-    static FCDECL1(INT32, GetHashCodeOfPtr, LPVOID ptr);
 };
+
+class MethodTableNative {
+public:
+    static FCDECL1(UINT32, GetNumInstanceFieldBytes, MethodTable* mt);
+};
+
+extern "C" BOOL QCALLTYPE MethodTable_AreTypesEquivalent(MethodTable* mta, MethodTable* mtb);
 
 class StreamNative {
 public:
     static FCDECL1(FC_BOOL_RET, HasOverriddenBeginEndRead, Object *stream);
     static FCDECL1(FC_BOOL_RET, HasOverriddenBeginEndWrite, Object *stream);
 };
+
+BOOL CanCompareBitsOrUseFastGetHashCode(MethodTable* mt);
 
 #endif // _COMUTILNATIVE_H_

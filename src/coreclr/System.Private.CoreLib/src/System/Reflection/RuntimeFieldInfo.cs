@@ -9,9 +9,9 @@ namespace System.Reflection
     internal abstract class RuntimeFieldInfo : FieldInfo
     {
         #region Private Data Members
-        private BindingFlags m_bindingFlags;
-        protected RuntimeTypeCache m_reflectedTypeCache;
-        protected RuntimeType m_declaringType;
+        private readonly BindingFlags m_bindingFlags;
+        protected readonly RuntimeTypeCache m_reflectedTypeCache;
+        protected readonly RuntimeType m_declaringType;
         #endregion
 
         #region Constructor
@@ -46,6 +46,7 @@ namespace System.Reflection
 
         public override Module Module => GetRuntimeModule();
         public override bool IsCollectible => m_declaringType.IsCollectible;
+
         #endregion
 
         #region Object Overrides
@@ -61,16 +62,20 @@ namespace System.Reflection
             return CustomAttribute.GetCustomAttributes(this, (typeof(object) as RuntimeType)!);
         }
 
-        public override object[] GetCustomAttributes(Type attributeType!!, bool inherit)
+        public override object[] GetCustomAttributes(Type attributeType, bool inherit)
         {
+            ArgumentNullException.ThrowIfNull(attributeType);
+
             if (attributeType.UnderlyingSystemType is not RuntimeType attributeRuntimeType)
                 throw new ArgumentException(SR.Arg_MustBeType, nameof(attributeType));
 
             return CustomAttribute.GetCustomAttributes(this, attributeRuntimeType);
         }
 
-        public override bool IsDefined(Type attributeType!!, bool inherit)
+        public override bool IsDefined(Type attributeType, bool inherit)
         {
+            ArgumentNullException.ThrowIfNull(attributeType);
+
             if (attributeType.UnderlyingSystemType is not RuntimeType attributeRuntimeType)
                 throw new ArgumentException(SR.Arg_MustBeType, nameof(attributeType));
 

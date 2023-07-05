@@ -11,7 +11,7 @@ namespace LOHCompactAPI
     class Program
     {
 
-        public static int Main(string[] args)
+        public static int Main()
         {
             for(int i = 0; i <= 5; i++)
             {

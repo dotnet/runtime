@@ -2,8 +2,11 @@
 // The .NET Foundation licenses this file to you under the MIT license.
 
 .assembly extern legacy library mscorlib {}
+.assembly extern xunit.core {}
 
 
+.namespace conv_ovf_r8_i8
+{
 .class public		conv_ovf_i8 {
 
 
@@ -79,86 +82,89 @@ END2:
 	ret
 }
 
-.method public static	int32 main(class [mscorlib]System.String[]) {
+.method public static	int32 main() {
+.custom instance void [xunit.core]Xunit.FactAttribute::.ctor() = (
+    01 00 00 00
+)
 .entrypoint
 .maxstack		5
 
 	ldc.r8			float64(0xFFF0000000000000)
 	ldc.i8			0x0000000000000000
-	call		int32 conv_ovf_i8::conv(float64,int64)
+	call		int32 conv_ovf_r8_i8.conv_ovf_i8::conv(float64,int64)
 	ldc.i4			0xEEEEEEEE
 	ceq
 	brfalse			FAIL
 	ldc.r8			float64(0xFFEFFFFFFFFFFFFF)
 	ldc.i8			0x0000000000000000
-	call		int32 conv_ovf_i8::conv(float64,int64)
+	call		int32 conv_ovf_r8_i8.conv_ovf_i8::conv(float64,int64)
 	ldc.i4			0xEEEEEEEE
 	ceq
 	brfalse			FAIL
 	ldc.r8			float64(0xBFF0000000000000)
 	ldc.i8			0xFFFFFFFFFFFFFFFF
-	call		int32 conv_ovf_i8::conv(float64,int64)
+	call		int32 conv_ovf_r8_i8.conv_ovf_i8::conv(float64,int64)
 	ldc.i4			0x11111111
 	ceq
 	brfalse			FAIL
 	ldc.r8			float64(0x8000000000000000)
 	ldc.i8			0x0000000000000000
-	call		int32 conv_ovf_i8::conv(float64,int64)
+	call		int32 conv_ovf_r8_i8.conv_ovf_i8::conv(float64,int64)
 	ldc.i4			0x11111111
 	ceq
 	brfalse			FAIL
 	ldc.r8			float64(0x0000000000000000)
 	ldc.i8			0x0000000000000000
-	call		int32 conv_ovf_i8::conv(float64,int64)
+	call		int32 conv_ovf_r8_i8.conv_ovf_i8::conv(float64,int64)
 	ldc.i4			0x11111111
 	ceq
 	brfalse			FAIL
 	ldc.r8			float64(0x3FF0000000000000)
 	ldc.i8			0x0000000000000001
-	call		int32 conv_ovf_i8::conv(float64,int64)
+	call		int32 conv_ovf_r8_i8.conv_ovf_i8::conv(float64,int64)
 	ldc.i4			0x11111111
 	ceq
 	brfalse			FAIL
 	ldc.r8			float64(0x7FEFFFFFFFFFFFFF)
 	ldc.i8			0x0000000000000000
-	call		int32 conv_ovf_i8::conv(float64,int64)
+	call		int32 conv_ovf_r8_i8.conv_ovf_i8::conv(float64,int64)
 	ldc.i4			0xEEEEEEEE
 	ceq
 	brfalse			FAIL
 	ldc.r8			float64(0x7FF0000000000000)
 	ldc.i8			0x0000000000000000
-	call		int32 conv_ovf_i8::conv(float64,int64)
+	call		int32 conv_ovf_r8_i8.conv_ovf_i8::conv(float64,int64)
 	ldc.i4			0xEEEEEEEE
 	ceq
 	brfalse			FAIL
 	ldc.r8			float64(0x7FF8000000000000)
 	ldc.i8			0x0000000000000000
-	call		int32 conv_ovf_i8::conv(float64,int64)
+	call		int32 conv_ovf_r8_i8.conv_ovf_i8::conv(float64,int64)
 	ldc.i4			0xEEEEEEEE
 	ceq
 	brfalse			FAIL
 	ldc.r8			1.5
 	ldc.i8			0x0000000000000001
-	call		int32 conv_ovf_i8::conv(float64,int64)
+	call		int32 conv_ovf_r8_i8.conv_ovf_i8::conv(float64,int64)
 	ldc.i4			0x11111111
 	ceq
 	brfalse			FAIL
 	ldc.r8			99.99
 	ldc.i8			0x0000000000000063
-	call		int32 conv_ovf_i8::conv(float64,int64)
+	call		int32 conv_ovf_r8_i8.conv_ovf_i8::conv(float64,int64)
 	ldc.i4			0x11111111
 	ceq
 	brfalse			FAIL
 
 	ldc.r8			float64(0xC3DFFFFFFFFFFFFF)
 	ldc.i8			0x8000000000000400
-	call		int32 conv_ovf_i8::conv(float64,int64)
+	call		int32 conv_ovf_r8_i8.conv_ovf_i8::conv(float64,int64)
 	ldc.i4			0x11111111
 	ceq
 	brfalse			FAIL
 	ldc.r8			float64(0x43C0000000000000)
 	ldc.i8			0x2000000000000000
-	call		int32 conv_ovf_i8::conv(float64,int64)
+	call		int32 conv_ovf_r8_i8.conv_ovf_i8::conv(float64,int64)
 	ldc.i4			0x11111111
 	ceq
 	brfalse			FAIL
@@ -166,50 +172,50 @@ END2:
 
 	ldc.r8			float64(0x0000000000000000)
 	ldc.i8			0x0000000000000000
-	call		int32 conv_ovf_i8::conv_un(float64,int64)
+	call		int32 conv_ovf_r8_i8.conv_ovf_i8::conv_un(float64,int64)
 	ldc.i4			0x11111111
 	ceq
 	brfalse			FAIL
 	ldc.r8			float64(0x3FF0000000000000)
 	ldc.i8			0x0000000000000001
-	call		int32 conv_ovf_i8::conv_un(float64,int64)
+	call		int32 conv_ovf_r8_i8.conv_ovf_i8::conv_un(float64,int64)
 	ldc.i4			0x11111111
 	ceq
 	brfalse			FAIL
 	ldc.r8			float64(0x7FEFFFFFFFFFFFFF)
 	ldc.i8			0x0000000000000000
-	call		int32 conv_ovf_i8::conv_un(float64,int64)
+	call		int32 conv_ovf_r8_i8.conv_ovf_i8::conv_un(float64,int64)
 	ldc.i4			0xEEEEEEEE
 	ceq
 	brfalse			FAIL
 	ldc.r8			float64(0x7FF0000000000000)
 	ldc.i8			0x0000000000000000
-	call		int32 conv_ovf_i8::conv_un(float64,int64)
+	call		int32 conv_ovf_r8_i8.conv_ovf_i8::conv_un(float64,int64)
 	ldc.i4			0xEEEEEEEE
 	ceq
 	brfalse			FAIL
 	ldc.r8			float64(0x7FF8000000000000)
 	ldc.i8			0x0000000000000000
-	call		int32 conv_ovf_i8::conv_un(float64,int64)
+	call		int32 conv_ovf_r8_i8.conv_ovf_i8::conv_un(float64,int64)
 	ldc.i4			0xEEEEEEEE
 	ceq
 	brfalse			FAIL
 	ldc.r8			1.5
 	ldc.i8			0x0000000000000001
-	call		int32 conv_ovf_i8::conv_un(float64,int64)
+	call		int32 conv_ovf_r8_i8.conv_ovf_i8::conv_un(float64,int64)
 	ldc.i4			0x11111111
 	ceq
 	brfalse			FAIL
 	ldc.r8			99.99
 	ldc.i8			0x0000000000000063
-	call		int32 conv_ovf_i8::conv_un(float64,int64)
+	call		int32 conv_ovf_r8_i8.conv_ovf_i8::conv_un(float64,int64)
 	ldc.i4			0x11111111
 	ceq
 	brfalse			FAIL
 
 	ldc.r8			float64(0x43C0000000000000)
 	ldc.i8			0x2000000000000000
-	call		int32 conv_ovf_i8::conv_un(float64,int64)
+	call		int32 conv_ovf_r8_i8.conv_ovf_i8::conv_un(float64,int64)
 	ldc.i4			0x11111111
 	ceq
 	brfalse			FAIL
@@ -229,3 +235,4 @@ END:
 }
 
 .assembly conv_ovf_r8_i8{}
+}

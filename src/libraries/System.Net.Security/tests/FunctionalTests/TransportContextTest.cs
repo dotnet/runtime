@@ -14,6 +14,7 @@ namespace System.Net.Security.Tests
     public class TransportContextTest
     {
         [Fact]
+        [ActiveIssue("https://github.com/dotnet/runtime/issues/68206", TestPlatforms.Android)]
         public async Task TransportContext_ConnectToServerWithSsl_GetExpectedChannelBindings()
         {
             (Stream clientStream, Stream serverStream) = TestHelper.GetConnectedStreams();
@@ -35,9 +36,9 @@ namespace System.Net.Security.Tests
 
         private static void CheckTransportContext(TransportContext context)
         {
-            var cbt1 = context.GetChannelBinding(ChannelBindingKind.Endpoint);
-            var cbt2 = context.GetChannelBinding(ChannelBindingKind.Unique);
-            var cbt3 = context.GetChannelBinding(ChannelBindingKind.Unknown);
+            using ChannelBinding cbt1 = context.GetChannelBinding(ChannelBindingKind.Endpoint);
+            using ChannelBinding cbt2 = context.GetChannelBinding(ChannelBindingKind.Unique);
+            using ChannelBinding cbt3 = context.GetChannelBinding(ChannelBindingKind.Unknown);
 
             CheckChannelBinding(ChannelBindingKind.Endpoint, cbt1);
             CheckChannelBinding(ChannelBindingKind.Unique, cbt2);

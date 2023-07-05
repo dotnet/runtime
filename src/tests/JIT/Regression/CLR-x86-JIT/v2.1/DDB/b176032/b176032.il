@@ -73,7 +73,7 @@
     IL_0007:  ret
   } // end of method My::set_MyProperty
 
-  .method private hidebysig static int32  Main() cil managed
+  .method public hidebysig static int32  Main() cil managed
   {
     .custom instance void [xunit.core]Xunit.FactAttribute::.ctor() = (
         01 00 00 00
@@ -131,7 +131,7 @@
     .maxstack  1
     IL_0000:  ldarg.1
     IL_0001:  castclass  My
-    IL_0006:  callvirt   instance valuetype [mscorlib]System.Nullable`1<bool> [FastPropertyAccessor]My::get_MyProperty()
+    IL_0006:  callvirt   instance valuetype [mscorlib]System.Nullable`1<bool> [b176032]My::get_MyProperty()
     IL_000b:  box        valuetype [mscorlib]System.Nullable`1<bool>
     IL_0010:  ret
   } // end of method MyProperty::GetProperty

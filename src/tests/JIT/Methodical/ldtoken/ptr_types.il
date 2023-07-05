@@ -8,11 +8,11 @@
   .publickeytoken = (B0 3F 5F 7F 11 D5 0A 3A )
   .ver 4:0:0:0
 }
-.assembly ptr_types { }
+.assembly ASSEMBLY_NAME { }
 .assembly extern xunit.core {}
-.namespace JitTest
+.namespace JitTest_ptr_types_ldtoken_il
 {
-  .class private auto ansi beforefieldinit Test
+  .class public auto ansi beforefieldinit Test
          extends [mscorlib]System.Object
   {
     .method private hidebysig static void 
@@ -26,7 +26,7 @@
       call       void [System.Console]System.Console::WriteLine(string)
       ret
     }
-    .method private hidebysig static int32
+    .method public hidebysig static int32
             Main() cil managed
     {
       .custom instance void [xunit.core]Xunit.FactAttribute::.ctor() = (
@@ -35,40 +35,40 @@
       .entrypoint
       .maxstack  8
       ldtoken    int8*
-      call       void JitTest.Test::test_token(valuetype [mscorlib]System.RuntimeTypeHandle)
+      call       void JitTest_ptr_types_ldtoken_il.Test::test_token(valuetype [mscorlib]System.RuntimeTypeHandle)
 
       ldtoken    unsigned int8*
-      call       void JitTest.Test::test_token(valuetype [mscorlib]System.RuntimeTypeHandle)
+      call       void JitTest_ptr_types_ldtoken_il.Test::test_token(valuetype [mscorlib]System.RuntimeTypeHandle)
       
       ldtoken    int16*
-      call       void JitTest.Test::test_token(valuetype [mscorlib]System.RuntimeTypeHandle)
+      call       void JitTest_ptr_types_ldtoken_il.Test::test_token(valuetype [mscorlib]System.RuntimeTypeHandle)
       
       ldtoken    unsigned int16*
-      call       void JitTest.Test::test_token(valuetype [mscorlib]System.RuntimeTypeHandle)
+      call       void JitTest_ptr_types_ldtoken_il.Test::test_token(valuetype [mscorlib]System.RuntimeTypeHandle)
       
       ldtoken    int32*
-      call       void JitTest.Test::test_token(valuetype [mscorlib]System.RuntimeTypeHandle)
+      call       void JitTest_ptr_types_ldtoken_il.Test::test_token(valuetype [mscorlib]System.RuntimeTypeHandle)
       
       ldtoken    unsigned int32*
-      call       void JitTest.Test::test_token(valuetype [mscorlib]System.RuntimeTypeHandle)
+      call       void JitTest_ptr_types_ldtoken_il.Test::test_token(valuetype [mscorlib]System.RuntimeTypeHandle)
       
       ldtoken    int64*
-      call       void JitTest.Test::test_token(valuetype [mscorlib]System.RuntimeTypeHandle)
+      call       void JitTest_ptr_types_ldtoken_il.Test::test_token(valuetype [mscorlib]System.RuntimeTypeHandle)
       
       ldtoken    unsigned int64*
-      call       void JitTest.Test::test_token(valuetype [mscorlib]System.RuntimeTypeHandle)
+      call       void JitTest_ptr_types_ldtoken_il.Test::test_token(valuetype [mscorlib]System.RuntimeTypeHandle)
       
       ldtoken    native int*
-      call       void JitTest.Test::test_token(valuetype [mscorlib]System.RuntimeTypeHandle)
+      call       void JitTest_ptr_types_ldtoken_il.Test::test_token(valuetype [mscorlib]System.RuntimeTypeHandle)
       
       ldtoken    native unsigned int*
-      call       void JitTest.Test::test_token(valuetype [mscorlib]System.RuntimeTypeHandle)
+      call       void JitTest_ptr_types_ldtoken_il.Test::test_token(valuetype [mscorlib]System.RuntimeTypeHandle)
       
       ldtoken    float32*
-      call       void JitTest.Test::test_token(valuetype [mscorlib]System.RuntimeTypeHandle)
+      call       void JitTest_ptr_types_ldtoken_il.Test::test_token(valuetype [mscorlib]System.RuntimeTypeHandle)
       
       ldtoken    float64*
-      call       void JitTest.Test::test_token(valuetype [mscorlib]System.RuntimeTypeHandle)
+      call       void JitTest_ptr_types_ldtoken_il.Test::test_token(valuetype [mscorlib]System.RuntimeTypeHandle)
       
       ldstr      "Passed"
       call       void [System.Console]System.Console::WriteLine(string)

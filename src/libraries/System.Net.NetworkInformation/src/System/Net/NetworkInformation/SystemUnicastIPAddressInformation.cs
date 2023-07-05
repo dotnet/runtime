@@ -20,7 +20,7 @@ namespace System.Net.NetworkInformation
         private readonly uint _preferredLifetime;
         private readonly byte _prefixLength;
 
-        internal SystemUnicastIPAddressInformation(Interop.IpHlpApi.IpAdapterUnicastAddress adapterAddress)
+        internal SystemUnicastIPAddressInformation(in Interop.IpHlpApi.IpAdapterUnicastAddress adapterAddress)
         {
             IPAddress ipAddress = adapterAddress.address.MarshalIPAddress();
             _innerInfo = new SystemIPAddressInformation(ipAddress, adapterAddress.flags);
@@ -135,15 +135,15 @@ namespace System.Net.NetworkInformation
         }
 
         // Helper method that marshals the address information into the classes.
-        internal static UnicastIPAddressInformationCollection MarshalUnicastIpAddressInformationCollection(IntPtr ptr)
+        internal static unsafe UnicastIPAddressInformationCollection MarshalUnicastIpAddressInformationCollection(IntPtr ptr)
         {
             UnicastIPAddressInformationCollection addressList = new UnicastIPAddressInformationCollection();
 
-            while (ptr != IntPtr.Zero)
+            Interop.IpHlpApi.IpAdapterUnicastAddress* pIpAdapterAddress = (Interop.IpHlpApi.IpAdapterUnicastAddress*)ptr;
+            while (pIpAdapterAddress != null)
             {
-                Interop.IpHlpApi.IpAdapterUnicastAddress addr = Marshal.PtrToStructure<Interop.IpHlpApi.IpAdapterUnicastAddress>(ptr);
-                addressList.InternalAdd(new SystemUnicastIPAddressInformation(addr));
-                ptr = addr.next;
+                addressList.InternalAdd(new SystemUnicastIPAddressInformation(in *pIpAdapterAddress));
+                pIpAdapterAddress = pIpAdapterAddress->next;
             }
 
             return addressList;

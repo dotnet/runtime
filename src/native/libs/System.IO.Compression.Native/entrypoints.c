@@ -5,10 +5,10 @@
 
 // Include System.IO.Compression.Native headers
 #include "pal_zlib.h"
-#include <external/brotli/include/brotli/decode.h>
-#include <external/brotli/include/brotli/encode.h>
-#include <external/brotli/include/brotli/port.h>
-#include <external/brotli/include/brotli/types.h>
+#include <brotli/decode.h>
+#include <brotli/encode.h>
+#include <brotli/port.h>
+#include <brotli/types.h>
 
 static const Entry s_compressionNative[] =
 {
@@ -26,11 +26,9 @@ static const Entry s_compressionNative[] =
     DllImportEntry(CompressionNative_Crc32)
     DllImportEntry(CompressionNative_Deflate)
     DllImportEntry(CompressionNative_DeflateEnd)
-    DllImportEntry(CompressionNative_DeflateReset)
     DllImportEntry(CompressionNative_DeflateInit2_)
     DllImportEntry(CompressionNative_Inflate)
     DllImportEntry(CompressionNative_InflateEnd)
-    DllImportEntry(CompressionNative_InflateReset)
     DllImportEntry(CompressionNative_InflateInit2_)
 };
 

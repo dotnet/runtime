@@ -2,6 +2,7 @@
 // The .NET Foundation licenses this file to you under the MIT license.
 
 using System;
+using System.Collections.Generic;
 using System.IO;
 using System.Linq;
 using Xunit;
@@ -44,7 +45,7 @@ namespace Microsoft.Win32.RegistryTests
         public void CreateSubkeyWithEmptyName()
         {
             string expectedName = TestRegistryKey.Name + @"\";
-            var rk = TestRegistryKey.CreateSubKey(string.Empty);
+            using RegistryKey rk = TestRegistryKey.CreateSubKey(string.Empty);
             Assert.NotNull(rk);
             Assert.Equal(expectedName, rk.Name);
         }
@@ -52,8 +53,12 @@ namespace Microsoft.Win32.RegistryTests
         [Fact]
         public void CreateSubKeyAndCheckThatItExists()
         {
-            TestRegistryKey.CreateSubKey(TestRegistryKeyName);
-            Assert.NotNull(TestRegistryKey.OpenSubKey(TestRegistryKeyName));
+            using RegistryKey created = TestRegistryKey.CreateSubKey(TestRegistryKeyName);
+            Assert.NotNull(created);
+
+            using RegistryKey opened = TestRegistryKey.OpenSubKey(TestRegistryKeyName);
+            Assert.NotNull(opened);
+
             Assert.Equal(expected: 1, actual:TestRegistryKey.SubKeyCount);
         }
 
@@ -61,9 +66,14 @@ namespace Microsoft.Win32.RegistryTests
         public void CreateSubKeyShouldOpenExisting()
         {
             // CreateSubKey should open subkey if it already exists
-            Assert.NotNull(TestRegistryKey.CreateSubKey(TestRegistryKeyName));
-            Assert.NotNull(TestRegistryKey.OpenSubKey(TestRegistryKeyName));
-            Assert.NotNull(TestRegistryKey.CreateSubKey(TestRegistryKeyName));
+            using RegistryKey subkey1 = TestRegistryKey.CreateSubKey(TestRegistryKeyName);
+            Assert.NotNull(subkey1);
+
+            using RegistryKey subkey2 = TestRegistryKey.OpenSubKey(TestRegistryKeyName);
+            Assert.NotNull(subkey2);
+
+            using RegistryKey subkey3 = TestRegistryKey.CreateSubKey(TestRegistryKeyName);
+            Assert.NotNull(subkey3);
         }
 
         [Theory]
@@ -72,8 +82,11 @@ namespace Microsoft.Win32.RegistryTests
         [InlineData(@"a\b\c\/d\//e\f\g\h\//\\")]
         public void CreateSubKeyWithName(string subkeyName)
         {
-            TestRegistryKey.CreateSubKey(subkeyName);
-            Assert.NotNull(TestRegistryKey.OpenSubKey(subkeyName));
+            using RegistryKey created = TestRegistryKey.CreateSubKey(subkeyName);
+            Assert.NotNull(created);
+
+            using RegistryKey opened = TestRegistryKey.OpenSubKey(subkeyName);
+            Assert.NotNull(opened);
         }
 
         [Fact]
@@ -89,17 +102,25 @@ namespace Microsoft.Win32.RegistryTests
             for (int i = 0; i < 25 && subkeyName.Length < 230; i++)
                 subkeyName = subkeyName + i.ToString() + @"\";
 
-            TestRegistryKey.CreateSubKey(subkeyName);
-            Assert.NotNull(TestRegistryKey.OpenSubKey(subkeyName));
+            using RegistryKey created = TestRegistryKey.CreateSubKey(subkeyName);
+            Assert.NotNull(created);
+
+            using RegistryKey opened = TestRegistryKey.OpenSubKey(subkeyName);
+            Assert.NotNull(opened);
 
             //However, we are interested in ensuring that there are no buffer overflow issues with a deeply nested keys
+            var keys = new List<RegistryKey>();
             RegistryKey rk = TestRegistryKey;
             for (int i = 0; i < 3; i++)
             {
                 rk = rk.OpenSubKey(subkeyName, true);
                 Assert.NotNull(rk);
-                rk.CreateSubKey(subkeyName);
+                keys.Add(rk);
+
+                keys.Add(rk.CreateSubKey(subkeyName));
             }
+
+            keys.ForEach(key => key.Dispose());
         }
 
         [Theory]

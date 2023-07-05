@@ -4,14 +4,15 @@
 //
 // Please keep the data structures in this file in sync with the managed version at
 //  src/Common/src/Internal/Runtime/ModuleHeaders.cs
-//
+//  src/coreclr/inc/readytorun.h
+
 
 struct ReadyToRunHeaderConstants
 {
     static const uint32_t Signature = 0x00525452; // 'RTR'
 
-    static const uint32_t CurrentMajorVersion = 6;
-    static const uint32_t CurrentMinorVersion = 0;
+    static const uint32_t CurrentMajorVersion = 9;
+    static const uint32_t CurrentMinorVersion = 1;
 };
 
 struct ReadyToRunHeader
@@ -35,22 +36,22 @@ struct ReadyToRunHeader
 // of the enum and deprecated sections should not be removed to preserve ID stability.
 //
 // Eventually this will be reconciled with ReadyToRunSectionType from
-// https://github.com/dotnet/coreclr/blob/master/src/inc/readytorun.h
+// https://github.com/dotnet/runtime/blob/main/src/coreclr/inc/readytorun.h
 //
 enum class ReadyToRunSectionType
 {
     StringTable                 = 200,
     GCStaticRegion              = 201,
     ThreadStaticRegion          = 202,
-    InterfaceDispatchTable      = 203,
+    // unused                   = 203,
     TypeManagerIndirection      = 204,
     EagerCctor                  = 205,
     FrozenObjectRegion          = 206,
-    GCStaticDesc                = 207,
+    // 207 is unused - it was used by GCStaticDesc
     ThreadStaticOffsetRegion    = 208,
-    ThreadStaticGCDescRegion    = 209,
-    ThreadStaticIndex           = 210,
-    LoopHijackFlag              = 211,
+    // 209 is unused - it was used by ThreadStaticGCDescRegion
+    // 210 is unused - it was used by ThreadStaticIndex
+    // 211 is unused - it was used by LoopHijackFlag
     ImportAddressTables         = 212,
 
     // Sections 300 - 399 are reserved for RhFindBlob backwards compatibility

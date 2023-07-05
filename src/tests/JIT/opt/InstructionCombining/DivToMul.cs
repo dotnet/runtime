@@ -4,6 +4,7 @@
 using System;
 using System.Collections.Generic;
 using System.Runtime.CompilerServices;
+using Xunit;
 
 // JIT is able to replace "x / 2" with "x * 0.5" where 2 is a power of two float
 // Make sure this optimization doesn't change the results
@@ -12,7 +13,8 @@ public class Program
 {
     private static int resultCode = 100;
 
-    public static int Main(string[] args)
+    [Fact]
+    public static int TestEntryPoint()
     {
         // Some corner cases
         var testValues = new List<double>(new []
@@ -160,6 +162,13 @@ public class Program
     [MethodImpl(MethodImplOptions.NoInlining)]
     private static void AssertEquals(float expected, float actual)
     {
+        if (Single.IsNaN(expected) && Single.IsNaN(actual))
+        {
+            // There can be multiple configurations for NaN values
+            // verifying that these values are NaNs should be enough
+            return;
+        }
+
         int expectedi = BitConverter.SingleToInt32Bits(expected);
         int actuali = BitConverter.SingleToInt32Bits(actual);
         if (expectedi != actuali)
@@ -172,6 +181,13 @@ public class Program
     [MethodImpl(MethodImplOptions.NoInlining)]
     private static void AssertEquals(double expected, double actual)
     {
+        if (Double.IsNaN(expected) && Double.IsNaN(actual))
+        {
+            // There can be multiple configurations for NaN values
+            // verifying that these values are NaNs should be enough
+            return;
+        }
+
         long expectedi = BitConverter.DoubleToInt64Bits(expected);
         long actuali = BitConverter.DoubleToInt64Bits(actual);
         if (expectedi != actuali)

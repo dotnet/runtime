@@ -43,6 +43,11 @@ class Program
             return -1;
         }
 
+        if (!RunTest(targetType: typeof(Int128), expectedConverterType: typeof(Int128Converter)))
+        {
+            return -1;
+        }
+
         if (!RunTest(targetType: typeof(short), expectedConverterType: typeof(Int16Converter)))
         {
             return -1;
@@ -59,6 +64,16 @@ class Program
         }
 
         if (!RunTest(targetType: typeof(float), expectedConverterType: typeof(SingleConverter)))
+        {
+            return -1;
+        }
+
+        if (!RunTest(targetType: typeof(Half), expectedConverterType: typeof(HalfConverter)))
+        {
+            return -1;
+        }
+
+        if (!RunTest(targetType: typeof(UInt128), expectedConverterType: typeof(UInt128Converter)))
         {
             return -1;
         }
@@ -83,6 +98,11 @@ class Program
             return -1;
         }
 
+        if (!RunTest(targetType: typeof(DateOnly), expectedConverterType: typeof(DateOnlyConverter)))
+        {
+            return -1;
+        }
+
         if (!RunTest(targetType: typeof(DateTime), expectedConverterType: typeof(DateTimeConverter)))
         {
             return -1;
@@ -94,6 +114,11 @@ class Program
         }
 
         if (!RunTest(targetType: typeof(decimal), expectedConverterType: typeof(DecimalConverter)))
+        {
+            return -1;
+        }
+
+        if (!RunTest(targetType: typeof(TimeOnly), expectedConverterType: typeof(TimeOnlyConverter)))
         {
             return -1;
         }

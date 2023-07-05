@@ -9,39 +9,39 @@ namespace System.Text.Json.Serialization.Tests
 {
     public class InvalidTypeTests_Span : InvalidTypeTests
     {
-        public InvalidTypeTests_Span() : base(JsonSerializerWrapperForString.SpanSerializer) { }
+        public InvalidTypeTests_Span() : base(JsonSerializerWrapper.SpanSerializer) { }
     }
 
     public class InvalidTypeTests_String : InvalidTypeTests
     {
-        public InvalidTypeTests_String() : base(JsonSerializerWrapperForString.StringSerializer) { }
+        public InvalidTypeTests_String() : base(JsonSerializerWrapper.StringSerializer) { }
     }
 
     public class InvalidTypeTests_AsyncStream : InvalidTypeTests
     {
-        public InvalidTypeTests_AsyncStream() : base(JsonSerializerWrapperForString.AsyncStreamSerializer) { }
+        public InvalidTypeTests_AsyncStream() : base(JsonSerializerWrapper.AsyncStreamSerializer) { }
     }
 
     public class InvalidTypeTests_AsyncStreamWithSmallBuffer : InvalidTypeTests
     {
-        public InvalidTypeTests_AsyncStreamWithSmallBuffer() : base(JsonSerializerWrapperForString.AsyncStreamSerializerWithSmallBuffer) { }
+        public InvalidTypeTests_AsyncStreamWithSmallBuffer() : base(JsonSerializerWrapper.AsyncStreamSerializerWithSmallBuffer) { }
     }
 
     public class InvalidTypeTests_SyncStream : InvalidTypeTests
     {
-        public InvalidTypeTests_SyncStream() : base(JsonSerializerWrapperForString.SyncStreamSerializer) { }
+        public InvalidTypeTests_SyncStream() : base(JsonSerializerWrapper.SyncStreamSerializer) { }
     }
 
     public class InvalidTypeTests_Writer : InvalidTypeTests
     {
-        public InvalidTypeTests_Writer() : base(JsonSerializerWrapperForString.ReaderWriterSerializer) { }
+        public InvalidTypeTests_Writer() : base(JsonSerializerWrapper.ReaderWriterSerializer) { }
     }
 
     public abstract class InvalidTypeTests
     {
-        private JsonSerializerWrapperForString Serializer { get; }
+        private JsonSerializerWrapper Serializer { get; }
 
-        public InvalidTypeTests(JsonSerializerWrapperForString serializer)
+        public InvalidTypeTests(JsonSerializerWrapper serializer)
         {
             Serializer = serializer;
         }
@@ -157,9 +157,14 @@ namespace System.Text.Json.Serialization.Tests
         // and typeof(int*) can't be a generic parameter to the generic overload.
         public static IEnumerable<object[]> TypesWithInvalidMembers_WithMembers()
         {
-            yield return new object[] { typeof(Memory<byte>), typeof(Span<byte>), "Span" }; // Contains Span<byte> property.
+            yield return new object[] { typeof(ClassWithSpan), typeof(Span<byte>), "Span" };
 
             yield return new object[] { typeof(ClassWithIntPtr), s_intPtrType, "IntPtr" };
+        }
+
+        private class ClassWithSpan
+        {
+            public Span<byte> Span => Array.Empty<byte>();
         }
 
         private class ClassWithIntPtr

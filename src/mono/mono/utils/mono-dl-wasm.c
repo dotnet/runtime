@@ -1,5 +1,6 @@
 #include <config.h>
 #include <mono/utils/mono-compiler.h>
+#include <mono/eglib/glib.h>
 
 #if defined (HOST_WASM)
 
@@ -77,14 +78,14 @@ mono_dl_convert_flags (int mono_flags, int native_flags)
 }
 
 void *
-mono_dl_open_file (const char *file, int flags)
+mono_dl_open_file (const char *file, int flags, MonoError *error)
 {
 	// Actual dlopen is done in driver.c:wasm_dl_load()
 	return NULL;
 }
 
 void
-mono_dl_close_handle (MonoDl *module)
+mono_dl_close_handle (MonoDl *module, MonoError *error)
 {
 }
 

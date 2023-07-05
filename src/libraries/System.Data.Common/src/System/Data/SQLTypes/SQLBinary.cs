@@ -17,11 +17,6 @@ namespace System.Data.SqlTypes
         // NOTE: If any instance fields change, update SqlTypeWorkarounds type in System.Data.SqlClient.
         private byte[]? _value;
 
-        private SqlBinary(bool fNull)
-        {
-            _value = null;
-        }
-
         /// <summary>
         /// Initializes a new instance of the <see cref='SqlBinary'/> class with a binary object to be stored.
         /// </summary>
@@ -42,8 +37,9 @@ namespace System.Data.SqlTypes
         /// <summary>
         /// Initializes a new instance of the <see cref='SqlBinary'/> class with a binary object to be stored.  This constructor will not copy the value.
         /// </summary>
-        internal SqlBinary(byte[]? value, bool ignored)
+        private SqlBinary(byte[]? value, bool copy)
         {
+            Debug.Assert(!copy);
             // if value is null, this generates a SqlBinary.Null
             _value = value;
         }
@@ -338,10 +334,8 @@ namespace System.Data.SqlTypes
         // If object is not of same type, this method throws an ArgumentException.
         public int CompareTo(object? value)
         {
-            if (value is SqlBinary)
+            if (value is SqlBinary i)
             {
-                SqlBinary i = (SqlBinary)value;
-
                 return CompareTo(i);
             }
             throw ADP.WrongType(value!.GetType(), typeof(SqlBinary));
@@ -466,10 +460,15 @@ namespace System.Data.SqlTypes
             return new XmlQualifiedName("base64Binary", XmlSchema.Namespace);
         }
 
+        public static SqlBinary WrapBytes(byte[] bytes)
+        {
+            return new SqlBinary(bytes, copy: false);
+        }
+
         /// <summary>
         /// Represents a null value that can be assigned to the <see cref='Value'/> property of an
         /// instance of the <see cref='SqlBinary'/> class.
         /// </summary>
-        public static readonly SqlBinary Null = new SqlBinary(true);
+        public static readonly SqlBinary Null = new SqlBinary(null, copy: false);
     } // SqlBinary
 } // namespace System.Data.SqlTypes

@@ -208,7 +208,7 @@ int hostfxr_get_runtime_properties(
 ```
 Get all runtime properties for the specified host context.
 * `host_context_handle` - initialized host context. If set to `nullptr` the function will operate on the first host context in the process.
-* `count` - in/out parameter which must not be `nullptr`. On input it specifies the size of the the `keys` and `values` buffers. On output it contains the number of entries used from `keys` and `values` buffers - the number of properties returned.
+* `count` - in/out parameter which must not be `nullptr`. On input it specifies the size of the `keys` and `values` buffers. On output it contains the number of entries used from `keys` and `values` buffers - the number of properties returned.
 * `keys` - buffer which acts as an array of pointers to buffers with keys for the runtime properties.
 * `values` - buffer which acts as an array of pointer to buffers with values for the runtime properties.
 
@@ -259,7 +259,7 @@ int corehost_load(host_interface_t *init)
 Initialize `hostpolicy`. This stores information that will be required to do all the processing necessary to start CoreCLR, but it does not actually do any of that processing.
 * `init` - structure defining how the library should be initialized
 
-If already initalized, this function returns success without reinitializing (`init` is ignored).
+If already initialized, this function returns success without reinitializing (`init` is ignored).
 
 ``` C
 int corehost_main(const int argc, const char_t* argv[])
@@ -324,7 +324,7 @@ corehost_error_writer_fn corehost_set_error_writer(corehost_error_writer_fn erro
 Set a callback which will be used to report error messages. By default no callback is registered and the errors are written to standard error.
 * `error_writer` - callback function which will be invoked every time an error is reported. When set to `nullptr`, this function unregisters any previously registered callback and the default behaviour is restored.
 
-The return value is the previouly registered callback (which is now unregistered) or `nullptr` if there was no previously registered callback.
+The return value is the previously registered callback (which is now unregistered) or `nullptr` if there was no previously registered callback.
 
 The error writer is registered per-thread. On each thread, only one callback can be registered. Subsequent registrations overwrite the previous ones.
 
@@ -374,7 +374,7 @@ Contract for performing operations on an initialized hostpolicy.
   * `delegate` - function pointer to the requested runtime functionality
 
 ``` C
-enum intialization_options_t
+enum initialization_options_t
 {
     none = 0x0,
     wait_for_initialized = 0x1,

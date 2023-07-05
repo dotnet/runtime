@@ -1,0 +1,51 @@
+<Directives>
+  <Application>
+    <Assembly Name="System.Linq">
+      <!-- called by xUnit in obscure MemberData scenarios -->
+      <Type Name="System.Linq.Enumerable">
+        <Method Name="Cast" Dynamic="Required All">
+          <GenericArgument Name="System.IO.MemoryMappedFiles.MemoryMappedFileAccess,System.IO.MemoryMappedFiles" />
+        </Method>
+        <Method Name="ToArray" Dynamic="Required All">
+          <GenericArgument Name="System.IO.MemoryMappedFiles.MemoryMappedFileAccess,System.IO.MemoryMappedFiles" />
+        </Method>
+        <Method Name="Cast" Dynamic="Required All">
+          <GenericArgument Name="System.IO.MemoryMappedFiles.MemoryMappedFileOptions,System.IO.MemoryMappedFiles" />
+        </Method>
+        <Method Name="ToArray" Dynamic="Required All">
+          <GenericArgument Name="System.IO.MemoryMappedFiles.MemoryMappedFileOptions,System.IO.MemoryMappedFiles" />
+        </Method>
+        <Method Name="Cast" Dynamic="Required All">
+          <GenericArgument Name="System.String,System.Private.CoreLib" />
+        </Method>
+        <Method Name="ToArray" Dynamic="Required All">
+          <GenericArgument Name="System.String,System.Private.CoreLib" />
+        </Method>
+        <Method Name="Cast" Dynamic="Required All">
+          <GenericArgument Name="System.Int64,System.Private.CoreLib" />
+        </Method>
+        <Method Name="ToArray" Dynamic="Required All">
+          <GenericArgument Name="System.Int64,System.Private.CoreLib" />
+        </Method>
+        <Method Name="Cast" Dynamic="Required All">
+          <GenericArgument Name="System.Boolean,System.Private.CoreLib" />
+        </Method>
+        <Method Name="ToArray" Dynamic="Required All">
+          <GenericArgument Name="System.Boolean,System.Private.CoreLib" />
+        </Method>
+        <Method Name="Cast" Dynamic="Required All">
+          <GenericArgument Name="System.IO.HandleInheritability,System.Private.CoreLib" />
+        </Method>
+        <Method Name="ToArray" Dynamic="Required All">
+          <GenericArgument Name="System.IO.HandleInheritability,System.Private.CoreLib" />
+        </Method>
+        <Method Name="Cast" Dynamic="Required All">
+          <GenericArgument Name="System.IO.FileMode,System.Private.CoreLib" />
+        </Method>
+        <Method Name="ToArray" Dynamic="Required All">
+          <GenericArgument Name="System.IO.FileMode,System.Private.CoreLib" />
+        </Method>
+      </Type>
+    </Assembly>
+  </Application>
+</Directives>

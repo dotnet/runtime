@@ -29,7 +29,7 @@ namespace Internal.Runtime.TypeLoader
         public Instantiation _typeArgumentHandles;
         public Instantiation _methodArgumentHandles;
 
-        private TypeDesc GetInstantiationType(ref NativeParser parser, uint arity)
+        private DefType GetInstantiationType(ref NativeParser parser, uint arity)
         {
             DefType typeDefinition = (DefType)GetType(ref parser);
 
@@ -56,7 +56,7 @@ namespace Internal.Runtime.TypeLoader
                     return _typeSystemContext.GetPointerType(typeParameter);
 
                 default:
-                    parser.ThrowBadImageFormatException();
+                    NativeParser.ThrowBadImageFormatException();
                     return null;
             }
         }
@@ -125,7 +125,7 @@ namespace Internal.Runtime.TypeLoader
 
                 case TypeSignatureKind.MultiDimArray:
                     {
-                        DefType elementType = (DefType)GetType(ref parser);
+                        TypeDesc elementType = GetType(ref parser);
                         int rank = (int)data;
 
                         // Skip encoded bounds and lobounds
@@ -150,12 +150,28 @@ namespace Internal.Runtime.TypeLoader
                     return _typeSystemContext.GetWellKnownType((WellKnownType)data);
 
                 case TypeSignatureKind.FunctionPointer:
-                    Debug.Fail("NYI!");
-                    parser.ThrowBadImageFormatException();
-                    return null;
+                    {
+                        var callConv = (MethodCallingConvention)parser.GetUnsigned();
+                        Debug.Assert((callConv & MethodCallingConvention.Generic) == 0);
+
+                        uint numParams = parser.GetUnsigned();
+
+                        TypeDesc returnType = GetType(ref parser);
+                        TypeDesc[] parameters = new TypeDesc[numParams];
+                        for (uint i = 0; i < parameters.Length; i++)
+                            parameters[i] = GetType(ref parser);
+
+                        return _typeSystemContext.GetFunctionPointerType(
+                            new MethodSignature(
+                                (callConv & MethodCallingConvention.Unmanaged) != 0 ? MethodSignatureFlags.UnmanagedCallingConvention : 0,
+                                0,
+                                returnType,
+                                parameters
+                                ));
+                    }
 
                 default:
-                    parser.ThrowBadImageFormatException();
+                    NativeParser.ThrowBadImageFormatException();
                     return null;
             }
         }
@@ -169,7 +185,7 @@ namespace Internal.Runtime.TypeLoader
                 functionPointer = GetExternalReferencePointer(parser.GetUnsigned());
 
             DefType containingType = (DefType)GetType(ref parser);
-            MethodNameAndSignature nameAndSignature = TypeLoaderEnvironment.Instance.GetMethodNameAndSignature(ref parser, _module.Handle, out methodNameSig, out methodSig);
+            MethodNameAndSignature nameAndSignature = TypeLoaderEnvironment.GetMethodNameAndSignature(ref parser, _module.Handle, out methodNameSig, out methodSig);
 
             bool unboxingStub = (flags & MethodFlags.IsUnboxingStub) != 0;
 

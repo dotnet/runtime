@@ -23,10 +23,9 @@ namespace System.Runtime.InteropServices.Tests
             Assert.Throws<PlatformNotSupportedException>(() => new DispatchWrapper(value));
         }
 
-        [Theory]
+        [ConditionalTheory(typeof(PlatformDetection), nameof(PlatformDetection.IsBuiltInComEnabled))]
         [InlineData("")]
         [InlineData(0)]
-        [PlatformSpecific(TestPlatforms.Windows)]
         public void Ctor_NonDispatchObject_ThrowsInvalidCastException(object value)
         {
             Assert.Throws<InvalidCastException>(() => new DispatchWrapper(value));

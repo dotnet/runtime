@@ -2,7 +2,7 @@
 // The .NET Foundation licenses this file to you under the MIT license.
 /*
 ** This program was translated to C# and adapted for xunit-performance.
-** New variants of several tests were added to compare class versus 
+** New variants of several tests were added to compare class versus
 ** struct and to compare jagged arrays vs multi-dimensional arrays.
 */
 
@@ -23,7 +23,7 @@
 ** are error-free.  Consequently, McGraw-HIll and BYTE Magazine make
 ** no claims in regard to the fitness of the source code, executable
 ** code, and documentation of the BYTEmark.
-** 
+**
 ** Furthermore, BYTE Magazine, McGraw-Hill, and all employees
 ** of McGraw-Hill cannot be held responsible for any damages resulting
 ** from the use of this code or the results obtained from using
@@ -218,7 +218,7 @@ public class AssignJagged : AssignStruct
 	******************
 	** Copy the contents of one array to another.  This is called by
 	** the routine that builds the initial array, and is used to copy
-	** the contents of the intial array into all following arrays.
+	** the contents of the initial array into all following arrays.
 	*/
     private static void CopyToAssign(int[][] arrayfrom,
                              int[][] arrayto)

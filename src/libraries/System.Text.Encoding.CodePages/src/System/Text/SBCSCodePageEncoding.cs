@@ -99,7 +99,8 @@ namespace System.Text
                 lock (s_streamLock)
                 {
                     s_codePagesEncodingDataStream.Seek(m_firstDataWordOffset, SeekOrigin.Begin);
-                    s_codePagesEncodingDataStream.Read(buffer, 0, buffer.Length);
+                    int bytesRead = s_codePagesEncodingDataStream.Read(buffer, 0, buffer.Length);
+                    Debug.Assert(bytesRead == buffer.Length, "s_codePagesEncodingDataStream.Read should have read a full buffer.");
                 }
 
                 fixed (byte* pBuffer = &buffer[0])
@@ -143,7 +144,7 @@ namespace System.Text
         }
 
         // Read in our best fit table
-        protected unsafe override void ReadBestFitTable()
+        protected override unsafe void ReadBestFitTable()
         {
             // Lock so we don't confuse ourselves.
             lock (InternalSyncObject)
@@ -162,7 +163,8 @@ namespace System.Text
                     lock (s_streamLock)
                     {
                         s_codePagesEncodingDataStream.Seek(m_firstDataWordOffset + 512, SeekOrigin.Begin);
-                        s_codePagesEncodingDataStream.Read(buffer, 0, buffer.Length);
+                        int bytesRead = s_codePagesEncodingDataStream.Read(buffer, 0, buffer.Length);
+                        Debug.Assert(bytesRead == buffer.Length, "s_codePagesEncodingDataStream.Read should have read a full buffer.");
                     }
 
                     fixed (byte* pBuffer = buffer)
@@ -694,7 +696,7 @@ namespace System.Text
             // Have to do it the hard way.
             // Assume charCount will be == count
             int charCount = count;
-            byte[] byteBuffer = new byte[1];
+            byte[]? byteBuffer = null;
 
             // Do it our fast way
             byte* byteEnd = bytes + count;
@@ -725,6 +727,7 @@ namespace System.Text
                     }
 
                     // Use fallback buffer
+                    byteBuffer ??= new byte[1];
                     byteBuffer[0] = *(bytes - 1);
                     charCount--;                            // We'd already reserved one for *(bytes-1)
                     charCount += fallbackHelper.InternalFallback(byteBuffer, bytes);
@@ -826,7 +829,7 @@ namespace System.Text
 
             // Slower way's going to need a fallback buffer
             DecoderFallbackBuffer? fallbackBuffer = null;
-            byte[] byteBuffer = new byte[1];
+            byte[]? byteBuffer = null;
             char* charEnd = chars + charCount;
 
             DecoderFallbackBufferHelper fallbackHelper = new DecoderFallbackBufferHelper(null);
@@ -857,6 +860,7 @@ namespace System.Text
                     // Use fallback buffer
                     Debug.Assert(bytes > byteStart,
                         "[SBCSCodePageEncoding.GetChars]Expected bytes to have advanced already (unknown byte)");
+                    byteBuffer ??= new byte[1];
                     byteBuffer[0] = *(bytes - 1);
                     // Fallback adds fallback to chars, but doesn't increment chars unless the whole thing fits.
                     if (!fallbackHelper.InternalFallback(byteBuffer, bytes, ref chars))

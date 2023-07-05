@@ -14,7 +14,7 @@ extern const SMState*       gp_SMStates;
 extern const JumpTableCell* gp_SMJumpTableCells;
 extern const short*         gp_StateWeights;
 
-class CodeSeqSM // Represent a particualr run of the state machine
+class CodeSeqSM // Represent a particular run of the state machine
                 // For example, it maintains the array of counts for the terminated states.
                 // These counts should be stored in per method based for them to be correct
                 // under multithreadeded environment.

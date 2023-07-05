@@ -406,10 +406,7 @@ namespace System.Formats.Asn1
                             throw new AsnContentException(SR.ContentException_InvalidUnderCerOrDer_TryBer);
                         }
 
-                        if (readerStack == null)
-                        {
-                            readerStack = new Stack<(int, int, bool, int)>();
-                        }
+                        readerStack ??= new Stack<(int, int, bool, int)>();
 
                         if (!source.Overlaps(cur, out int curOffset))
                         {

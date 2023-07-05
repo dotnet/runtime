@@ -35,8 +35,13 @@ namespace System.ServiceModel.Syndication
         {
         }
 
-        protected SyndicationLink(SyndicationLink source!!)
+        protected SyndicationLink(SyndicationLink source)
         {
+            if (source is null)
+            {
+                throw new ArgumentNullException(nameof(source));
+            }
+
             _length = source._length;
             MediaType = source.MediaType;
             RelationshipType = source.RelationshipType;

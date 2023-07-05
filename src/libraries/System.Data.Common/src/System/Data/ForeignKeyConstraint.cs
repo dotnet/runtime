@@ -156,7 +156,7 @@ namespace System.Data
 
         internal override bool CanBeRemovedFromCollection(ConstraintCollection constraints, bool fThrowException) => true;
 
-        internal bool IsKeyNull(object[] values)
+        internal static bool IsKeyNull(object[] values)
         {
             for (int i = 0; i < values.Length; i++)
             {
@@ -581,7 +581,7 @@ namespace System.Data
                         object[] parentKeyValues = parentRow.GetKeyValues(_parentKey, action == DataRowAction.Rollback ? version : DataRowVersion.Default);
 
                         int parentKeyValuesRecord = childRow.Table.NewRecord();
-                        childRow.Table.SetKeyValues(_childKey, parentKeyValues, parentKeyValuesRecord);
+                        DataTable.SetKeyValues(_childKey, parentKeyValues, parentKeyValuesRecord);
                         if (_childKey.RecordsEqual(childRow._tempRecord, parentKeyValuesRecord))
                         {
                             return;
@@ -693,7 +693,7 @@ namespace System.Data
             else
             {
                 iDest = destination.Tables.IndexOf(Table!.TableName, Table.Namespace, false); // pass false for last param
-                // to be backward compatable, otherwise meay cause new exception
+                // to be backward compatible, otherwise meay cause new exception
             }
 
             if (iDest < 0)

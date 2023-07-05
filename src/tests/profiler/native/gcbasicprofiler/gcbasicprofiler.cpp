@@ -68,21 +68,19 @@ HRESULT GCBasicProfiler::GarbageCollectionStarted(int cGenerations, BOOL generat
         ULONG nObjectRanges;
         bool fHeapAlloc = false;
         COR_PRF_GC_GENERATION_RANGE* pObjectRanges = nullptr;
-        {
-            const ULONG cRanges = 32;
-            COR_PRF_GC_GENERATION_RANGE objectRangesStackBuffer[cRanges];
+        const ULONG cRanges = 32;
+        COR_PRF_GC_GENERATION_RANGE objectRangesStackBuffer[cRanges];
 
-            HRESULT hr = pCorProfilerInfo->GetGenerationBounds(cRanges, &nObjectRanges, objectRangesStackBuffer);
-            if (FAILED(hr))
-            {
-                _failures++;
-                printf("GCBasicProfiler::GarbageCollectionStarted: FAIL: GetGenerationBounds hr=0x%x\n", hr);
-                return S_OK;
-            }
-            if (nObjectRanges <= cRanges)
-            {
-                pObjectRanges = objectRangesStackBuffer;
-            }
+        HRESULT hr = pCorProfilerInfo->GetGenerationBounds(cRanges, &nObjectRanges, objectRangesStackBuffer);
+        if (FAILED(hr))
+        {
+            _failures++;
+            printf("GCBasicProfiler::GarbageCollectionStarted: FAIL: GetGenerationBounds hr=0x%x\n", hr);
+            return S_OK;
+        }
+        if (nObjectRanges <= cRanges)
+        {
+            pObjectRanges = objectRangesStackBuffer;
         }
 
         if (pObjectRanges == nullptr)

@@ -18,8 +18,9 @@
 using System;
 using System.Runtime.InteropServices;
 using System.Runtime.CompilerServices;
+using Xunit;
 
-namespace BigFrames
+namespace BigFrames_bigframes
 {
 
     [StructLayout(LayoutKind.Explicit)]
@@ -141,7 +142,8 @@ namespace BigFrames
             TestWrite(ref s);
         }
 
-        public static int Main()
+        [Fact]
+        public static int TestEntryPoint()
         {
             Test1();
             Test2();

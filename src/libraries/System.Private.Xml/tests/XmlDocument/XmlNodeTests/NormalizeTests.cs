@@ -4,7 +4,7 @@
 using System.Text;
 using Xunit;
 
-namespace System.Xml.Tests
+namespace System.Xml.XmlDocumentTests
 {
     public class NormalizeTests
     {

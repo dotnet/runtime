@@ -32,7 +32,7 @@ namespace System.IO.Tests
 
                 string mountedDirName;
                 string dirNameWithoutRoot;
-                string dirNameReferedFromMountedDrive;
+                string dirNameReferredFromMountedDrive;
                 string dirName;
                 string[] expectedFiles;
                 string[] files;
@@ -61,7 +61,7 @@ namespace System.IO.Tests
                             using (ManageFileSystem fileManager = new ManageFileSystem(dirName, 3, 100))
                             {
                                 dirNameWithoutRoot = dirName.Substring(3);
-                                dirNameReferedFromMountedDrive = Path.Combine(mountedDirName, dirNameWithoutRoot);
+                                dirNameReferredFromMountedDrive = Path.Combine(mountedDirName, dirNameWithoutRoot);
 
                                 //Files
                                 expectedFiles = fileManager.GetAllFiles();
@@ -69,7 +69,7 @@ namespace System.IO.Tests
                                 //We will only test the filenames since they are unique
                                 foreach (string file in expectedFiles)
                                     list.Add(Path.GetFileName(file));
-                                files = Directory.GetFiles(dirNameReferedFromMountedDrive, "*.*", SearchOption.AllDirectories);
+                                files = Directory.GetFiles(dirNameReferredFromMountedDrive, "*.*", SearchOption.AllDirectories);
                                 Eval(files.Length == list.Count, "Err_3947g! wrong count");
                                 for (int i = 0; i < expectedFiles.Length; i++)
                                 {
@@ -88,11 +88,11 @@ namespace System.IO.Tests
                                 list = new List<string>();
                                 foreach (string dir in expectedDirs)
                                     list.Add(dir.Substring(dirName.Length));
-                                dirs = Directory.GetDirectories(dirNameReferedFromMountedDrive, "*.*", SearchOption.AllDirectories);
+                                dirs = Directory.GetDirectories(dirNameReferredFromMountedDrive, "*.*", SearchOption.AllDirectories);
                                 Eval(dirs.Length == list.Count, "Err_813weq! wrong count");
                                 for (int i = 0; i < dirs.Length; i++)
                                 {
-                                    string exDir = dirs[i].Substring(dirNameReferedFromMountedDrive.Length);
+                                    string exDir = dirs[i].Substring(dirNameReferredFromMountedDrive.Length);
                                     if (Eval(list.Contains(exDir), "Err_287kkm! No file found: {0}", exDir))
                                         list.Remove(exDir);
                                 }
@@ -139,14 +139,14 @@ namespace System.IO.Tests
                             using (ManageFileSystem fileManager = new ManageFileSystem(dirName, 3, 100))
                             {
                                 dirNameWithoutRoot = dirName.Substring(3);
-                                dirNameReferedFromMountedDrive = Path.Combine(mountedDirName, dirNameWithoutRoot);
+                                dirNameReferredFromMountedDrive = Path.Combine(mountedDirName, dirNameWithoutRoot);
                                 //Files
                                 expectedFiles = fileManager.GetAllFiles();
                                 list = new List<string>();
                                 //We will only test the filenames since they are unique
                                 foreach (string file in expectedFiles)
                                     list.Add(Path.GetFileName(file));
-                                files = Directory.GetFiles(dirNameReferedFromMountedDrive, "*.*", SearchOption.AllDirectories);
+                                files = Directory.GetFiles(dirNameReferredFromMountedDrive, "*.*", SearchOption.AllDirectories);
                                 Eval(files.Length == list.Count, "Err_689myg! wrong count");
                                 for (int i = 0; i < expectedFiles.Length; i++)
                                 {
@@ -165,11 +165,11 @@ namespace System.IO.Tests
                                 list = new List<string>();
                                 foreach (string dir in expectedDirs)
                                     list.Add(dir.Substring(dirName.Length));
-                                dirs = Directory.GetDirectories(dirNameReferedFromMountedDrive, "*.*", SearchOption.AllDirectories);
+                                dirs = Directory.GetDirectories(dirNameReferredFromMountedDrive, "*.*", SearchOption.AllDirectories);
                                 Eval(dirs.Length == list.Count, "Err_154vrz! wrong count");
                                 for (int i = 0; i < dirs.Length; i++)
                                 {
-                                    string exDir = dirs[i].Substring(dirNameReferedFromMountedDrive.Length);
+                                    string exDir = dirs[i].Substring(dirNameReferredFromMountedDrive.Length);
                                     if (Eval(list.Contains(exDir), "Err_301sao! No file found: {0}", exDir))
                                         list.Remove(exDir);
                                 }
@@ -214,14 +214,14 @@ namespace System.IO.Tests
                             using (ManageFileSystem fileManager = new ManageFileSystem(dirName, 3, 100))
                             {
                                 dirNameWithoutRoot = dirName.Substring(3);
-                                dirNameReferedFromMountedDrive = Path.Combine(mountedDirName, dirNameWithoutRoot);
+                                dirNameReferredFromMountedDrive = Path.Combine(mountedDirName, dirNameWithoutRoot);
                                 //Files
                                 expectedFiles = fileManager.GetAllFiles();
                                 list = new List<string>();
                                 //We will only test the filenames since they are unique
                                 foreach (string file in expectedFiles)
                                     list.Add(Path.GetFileName(file));
-                                files = Directory.GetFiles(dirNameReferedFromMountedDrive, "*.*", SearchOption.AllDirectories);
+                                files = Directory.GetFiles(dirNameReferredFromMountedDrive, "*.*", SearchOption.AllDirectories);
                                 Eval(files.Length == list.Count, "Err_213fuo! wrong count");
                                 for (int i = 0; i < expectedFiles.Length; i++)
                                 {
@@ -240,11 +240,11 @@ namespace System.IO.Tests
                                 list = new List<string>();
                                 foreach (string dir in expectedDirs)
                                     list.Add(dir.Substring(dirName.Length));
-                                dirs = Directory.GetDirectories(dirNameReferedFromMountedDrive, "*.*", SearchOption.AllDirectories);
+                                dirs = Directory.GetDirectories(dirNameReferredFromMountedDrive, "*.*", SearchOption.AllDirectories);
                                 Eval(dirs.Length == list.Count, "Err_771dxv! wrong count");
                                 for (int i = 0; i < dirs.Length; i++)
                                 {
-                                    string exDir = dirs[i].Substring(dirNameReferedFromMountedDrive.Length);
+                                    string exDir = dirs[i].Substring(dirNameReferredFromMountedDrive.Length);
                                     if (Eval(list.Contains(exDir), "Err_315jey! No file found: {0}", exDir))
                                         list.Remove(exDir);
                                 }
@@ -289,14 +289,14 @@ namespace System.IO.Tests
                             using (ManageFileSystem fileManager = new ManageFileSystem(dirName, 3, 100))
                             {
                                 dirNameWithoutRoot = dirName.Substring(3);
-                                dirNameReferedFromMountedDrive = Path.Combine(mountedDirName, dirNameWithoutRoot);
+                                dirNameReferredFromMountedDrive = Path.Combine(mountedDirName, dirNameWithoutRoot);
                                 //Files
                                 expectedFiles = fileManager.GetAllFiles();
                                 list = new List<string>();
                                 //We will only test the filenames since they are unique
                                 foreach (string file in expectedFiles)
                                     list.Add(Path.GetFileName(file));
-                                files = Directory.GetFiles(dirNameReferedFromMountedDrive, "*.*", SearchOption.AllDirectories);
+                                files = Directory.GetFiles(dirNameReferredFromMountedDrive, "*.*", SearchOption.AllDirectories);
                                 Eval(files.Length == list.Count, "Err_253yit! wrong count");
                                 for (int i = 0; i < expectedFiles.Length; i++)
                                 {
@@ -315,11 +315,11 @@ namespace System.IO.Tests
                                 list = new List<string>();
                                 foreach (string dir in expectedDirs)
                                     list.Add(dir.Substring(dirName.Length));
-                                dirs = Directory.GetDirectories(dirNameReferedFromMountedDrive, "*.*", SearchOption.AllDirectories);
+                                dirs = Directory.GetDirectories(dirNameReferredFromMountedDrive, "*.*", SearchOption.AllDirectories);
                                 Eval(dirs.Length == list.Count, "Err_512oxq! wrong count");
                                 for (int i = 0; i < dirs.Length; i++)
                                 {
-                                    string exDir = dirs[i].Substring(dirNameReferedFromMountedDrive.Length);
+                                    string exDir = dirs[i].Substring(dirNameReferredFromMountedDrive.Length);
                                     if (Eval(list.Contains(exDir), "Err_907zbr! No file found: {0}", exDir))
                                         list.Remove(exDir);
                                 }

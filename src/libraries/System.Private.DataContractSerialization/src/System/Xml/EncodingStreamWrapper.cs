@@ -21,21 +21,14 @@ namespace System.Xml
     internal sealed class EncodingStreamWrapper : Stream
     {
         private enum SupportedEncoding { UTF8, UTF16LE, UTF16BE, None }
-        private static readonly UTF8Encoding s_safeUTF8 = new UTF8Encoding(false, false);
-        private static readonly UnicodeEncoding s_safeUTF16 = new UnicodeEncoding(false, false, false);
-        private static readonly UnicodeEncoding s_safeBEUTF16 = new UnicodeEncoding(true, false, false);
-        private static readonly UTF8Encoding s_validatingUTF8 = new UTF8Encoding(false, true);
-        private static readonly UnicodeEncoding s_validatingUTF16 = new UnicodeEncoding(false, false, true);
-        private static readonly UnicodeEncoding s_validatingBEUTF16 = new UnicodeEncoding(true, false, true);
         private const int BufferLength = 128;
 
         // UTF-8 is fastpath, so that's how these are stored
         // Compare methods adapt to Unicode.
-        private static readonly byte[] s_encodingAttr = new byte[] { (byte)'e', (byte)'n', (byte)'c', (byte)'o', (byte)'d', (byte)'i', (byte)'n', (byte)'g' };
-        private static readonly byte[] s_encodingUTF8 = new byte[] { (byte)'u', (byte)'t', (byte)'f', (byte)'-', (byte)'8' };
-        private static readonly byte[] s_encodingUnicode = new byte[] { (byte)'u', (byte)'t', (byte)'f', (byte)'-', (byte)'1', (byte)'6' };
-        private static readonly byte[] s_encodingUnicodeLE = new byte[] { (byte)'u', (byte)'t', (byte)'f', (byte)'-', (byte)'1', (byte)'6', (byte)'l', (byte)'e' };
-        private static readonly byte[] s_encodingUnicodeBE = new byte[] { (byte)'u', (byte)'t', (byte)'f', (byte)'-', (byte)'1', (byte)'6', (byte)'b', (byte)'e' };
+        private static readonly byte[] s_encodingUTF8 = "utf-8"u8.ToArray();
+        private static readonly byte[] s_encodingUnicode = "utf-16"u8.ToArray();
+        private static readonly byte[] s_encodingUnicodeLE = "utf-16le"u8.ToArray();
+        private static readonly byte[] s_encodingUnicodeBE = "utf-16be"u8.ToArray();
 
         private SupportedEncoding _encodingCode;
         private Encoding? _encoding;
@@ -92,7 +85,7 @@ namespace System.Xml
                     CleanupCharBreak();
                     int count = _encoding.GetChars(_bytes, _byteOffset, _byteCount, _chars, 0);
                     _byteOffset = 0;
-                    _byteCount = s_validatingUTF8.GetBytes(_chars, 0, count, _bytes, 0);
+                    _byteCount = DataContractSerializer.ValidatingUTF8.GetBytes(_chars, 0, count, _bytes, 0);
 
                     // Check for declaration
                     if (_bytes[1] == '?' && _bytes[0] == '<')
@@ -124,18 +117,18 @@ namespace System.Xml
         private static Encoding GetEncoding(SupportedEncoding e) =>
             e switch
             {
-                SupportedEncoding.UTF8 => s_validatingUTF8,
-                SupportedEncoding.UTF16LE => s_validatingUTF16,
-                SupportedEncoding.UTF16BE => s_validatingBEUTF16,
+                SupportedEncoding.UTF8 => DataContractSerializer.ValidatingUTF8,
+                SupportedEncoding.UTF16LE => DataContractSerializer.ValidatingUTF16,
+                SupportedEncoding.UTF16BE => DataContractSerializer.ValidatingBEUTF16,
                 _ => throw new XmlException(SR.XmlEncodingNotSupported),
             };
 
         private static Encoding GetSafeEncoding(SupportedEncoding e) =>
             e switch
             {
-                SupportedEncoding.UTF8 => s_safeUTF8,
-                SupportedEncoding.UTF16LE => s_safeUTF16,
-                SupportedEncoding.UTF16BE => s_safeBEUTF16,
+                SupportedEncoding.UTF8 => DataContractSerializer.UTF8NoBom,
+                SupportedEncoding.UTF16LE => DataContractSerializer.UTF16NoBom,
+                SupportedEncoding.UTF16BE => DataContractSerializer.BEUTF16NoBom,
                 _ => throw new XmlException(SR.XmlEncodingNotSupported),
             };
 
@@ -152,11 +145,11 @@ namespace System.Xml
         {
             if (encoding == null)
                 return SupportedEncoding.None;
-            else if (encoding.WebName == s_validatingUTF8.WebName)
+            else if (encoding.WebName == DataContractSerializer.ValidatingUTF8.WebName)
                 return SupportedEncoding.UTF8;
-            else if (encoding.WebName == s_validatingUTF16.WebName)
+            else if (encoding.WebName == DataContractSerializer.ValidatingUTF16.WebName)
                 return SupportedEncoding.UTF16LE;
-            else if (encoding.WebName == s_validatingBEUTF16.WebName)
+            else if (encoding.WebName == DataContractSerializer.ValidatingBEUTF16.WebName)
                 return SupportedEncoding.UTF16BE;
             else
                 throw new XmlException(SR.XmlEncodingNotSupported);
@@ -175,7 +168,7 @@ namespace System.Xml
             if (_encodingCode != SupportedEncoding.UTF8)
             {
                 EnsureBuffers();
-                _dec = s_validatingUTF8.GetDecoder();
+                _dec = DataContractSerializer.ValidatingUTF8.GetDecoder();
                 _enc = _encoding.GetEncoder();
 
                 // Emit BOM
@@ -281,14 +274,9 @@ namespace System.Xml
         private void FillBuffer(int count)
         {
             count -= _byteCount;
-            while (count > 0)
+            if (count > 0)
             {
-                int read = _stream.Read(_bytes!, _byteOffset + _byteCount, count);
-                if (read == 0)
-                    break;
-
-                _byteCount += read;
-                count -= read;
+                _byteCount += _stream.ReadAtLeast(_bytes.AsSpan(_byteOffset + _byteCount, count), count, throwOnEndOfStream: false);
             }
         }
 
@@ -297,8 +285,7 @@ namespace System.Xml
         private void EnsureBuffers()
         {
             EnsureByteBuffer();
-            if (_chars == null)
-                _chars = new char[BufferLength];
+            _chars ??= new char[BufferLength];
         }
 
         [MemberNotNull(nameof(_bytes))]
@@ -366,7 +353,7 @@ namespace System.Xml
             for (i = encEq - 1; IsWhitespace(buffer[i]); i--) ;
 
             // Check for encoding attribute
-            if (!Compare(s_encodingAttr, buffer, i - s_encodingAttr.Length + 1))
+            if (!buffer.AsSpan(0, i + 1).EndsWith("encoding"u8))
             {
                 if (e != SupportedEncoding.UTF8 && expectedEnc == SupportedEncoding.None)
                     throw new XmlException(SR.XmlDeclarationRequired);
@@ -407,15 +394,15 @@ namespace System.Xml
             else if (encCount == s_encodingUnicode.Length && CompareCaseInsensitive(s_encodingUnicode, buffer, encStart))
             {
                 if (e == SupportedEncoding.UTF8)
-                    ThrowEncodingMismatch(s_safeUTF8.GetString(buffer, encStart, encCount), s_safeUTF8.GetString(s_encodingUTF8, 0, s_encodingUTF8.Length));
+                    ThrowEncodingMismatch(DataContractSerializer.UTF8NoBom.GetString(buffer, encStart, encCount), DataContractSerializer.UTF8NoBom.GetString(s_encodingUTF8, 0, s_encodingUTF8.Length));
             }
             else
             {
-                ThrowEncodingMismatch(s_safeUTF8.GetString(buffer, encStart, encCount), e);
+                ThrowEncodingMismatch(DataContractSerializer.UTF8NoBom.GetString(buffer, encStart, encCount), e);
             }
 
             if (e != declEnc)
-                ThrowEncodingMismatch(s_safeUTF8.GetString(buffer, encStart, encCount), e);
+                ThrowEncodingMismatch(DataContractSerializer.UTF8NoBom.GetString(buffer, encStart, encCount), e);
         }
 
         private static bool CompareCaseInsensitive(byte[] key, byte[] buffer, int offset)
@@ -426,16 +413,6 @@ namespace System.Xml
                     continue;
 
                 if (key[i] != char.ToLowerInvariant((char)buffer[offset + i]))
-                    return false;
-            }
-            return true;
-        }
-
-        private static bool Compare(byte[] key, byte[] buffer, int offset)
-        {
-            for (int i = 0; i < key.Length; i++)
-            {
-                if (key[i] != buffer[offset + i])
                     return false;
             }
             return true;
@@ -487,8 +464,8 @@ namespace System.Xml
                 int inputCount = Math.Min(count, BufferLength * 2);
                 chars = new char[localEnc.GetMaxCharCount(inputCount)];
                 int ccount = localEnc.GetChars(buffer, offset, inputCount, chars, 0);
-                bytes = new byte[s_validatingUTF8.GetMaxByteCount(ccount)];
-                int bcount = s_validatingUTF8.GetBytes(chars, 0, ccount, bytes, 0);
+                bytes = new byte[DataContractSerializer.ValidatingUTF8.GetMaxByteCount(ccount)];
+                int bcount = DataContractSerializer.ValidatingUTF8.GetBytes(chars, 0, ccount, bytes, 0);
 
                 // Check for declaration
                 if (bytes[1] == '?' && bytes[0] == '<')
@@ -502,7 +479,7 @@ namespace System.Xml
                         throw new XmlException(SR.XmlDeclarationRequired);
                 }
 
-                seg = new ArraySegment<byte>(s_validatingUTF8.GetBytes(GetEncoding(declEnc).GetChars(buffer, offset, count)));
+                seg = new ArraySegment<byte>(DataContractSerializer.ValidatingUTF8.GetBytes(GetEncoding(declEnc).GetChars(buffer, offset, count)));
                 return seg;
             }
             catch (DecoderFallbackException e)
@@ -573,15 +550,15 @@ namespace System.Xml
             }
         }
 
-        protected override void Dispose(bool disposing)
+        public override void Close()
         {
             if (_stream.CanWrite)
             {
                 Flush();
             }
 
+            base.Close();
             _stream.Dispose();
-            base.Dispose(disposing);
         }
 
         public override void Flush()
@@ -598,14 +575,17 @@ namespace System.Xml
             return _byteBuffer[0];
         }
 
-        public override int Read(byte[] buffer, int offset, int count)
+        public override int Read(byte[] buffer, int offset, int count) =>
+            Read(new Span<byte>(buffer, offset, count));
+
+        public override int Read(Span<byte> buffer)
         {
             try
             {
                 if (_byteCount == 0)
                 {
                     if (_encodingCode == SupportedEncoding.UTF8)
-                        return _stream.Read(buffer, offset, count);
+                        return _stream.Read(buffer);
 
                     Debug.Assert(_bytes != null);
                     Debug.Assert(_chars != null);
@@ -627,9 +607,11 @@ namespace System.Xml
                 }
 
                 // Give them bytes
+                int count = buffer.Length;
                 if (_byteCount < count)
                     count = _byteCount;
-                Buffer.BlockCopy(_bytes!, _byteOffset, buffer, offset, count);
+
+                _bytes.AsSpan(_byteOffset, count).CopyTo(buffer);
                 _byteOffset += count;
                 _byteCount -= count;
                 return count;
@@ -738,8 +720,4 @@ namespace System.Xml
             throw new NotSupportedException();
         }
     }
-
-    // Add format exceptions
-    // Do we need to modify the stream position/Seek to account for the buffer?
-    // ASSUMPTION (Microsoft): This class will only be used for EITHER reading OR writing.
 }

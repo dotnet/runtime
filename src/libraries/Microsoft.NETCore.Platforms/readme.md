@@ -82,7 +82,7 @@ NuGet's extensibility mechanism for platform-specific assets requires a RID be d
 As such, whenever we want to put a new RID in a project.json in order to get assets specific for that RID we have to define the rid in some package.  Typically that package is `Microsoft.NETCore.Platforms` if the RID is "official".  If you'd like to prototype you can put the RID in any other package and so long as that package is referenced you can use that RID.
 
 ### Do I really need to add a new RID?
-If you're prototyping on a platform that is compatible with an existing platform then you can reuse the RID for that exsisting platform.  New RIDs are only needed when an asset needs to be different on a particular platform.
+If you're prototyping on a platform that is compatible with an existing platform then you can reuse the RID for that existing platform.  New RIDs are only needed when an asset needs to be different on a particular platform.
 
 `Microsoft.NETCore.Platforms` attempts to define all RIDs that packages may need, and as such will define RIDs for platforms that we don't actually cross compile for.  This is to support higher-level packages, 3rd party packages, that may need to cross-compile for that RID.
 

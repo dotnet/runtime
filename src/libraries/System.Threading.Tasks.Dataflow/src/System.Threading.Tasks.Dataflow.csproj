@@ -1,7 +1,6 @@
 <Project Sdk="Microsoft.NET.Sdk">
   <PropertyGroup>
-    <TargetFrameworks>$(NetCoreAppCurrent);$(NetCoreAppMinimum);netstandard2.1;netstandard2.0;$(NetFrameworkMinimum)</TargetFrameworks>
-    <Nullable>enable</Nullable>
+    <TargetFrameworks>$(NetCoreAppCurrent);$(NetCoreAppPrevious);$(NetCoreAppMinimum);netstandard2.1;netstandard2.0;$(NetFrameworkMinimum)</TargetFrameworks>
     <IsPackable>true</IsPackable>
     <PackageDescription>TPL Dataflow promotes actor/agent-oriented designs through primitives for in-process message passing, dataflow, and pipelining. TDF builds upon the APIs and scheduling infrastructure provided by the Task Parallel Library (TPL), and integrates with the language support for asynchrony provided by C#, Visual Basic, and F#.
 
@@ -19,6 +18,7 @@ System.Threading.Tasks.Dataflow.TransformBlock&lt;TInput, TOutput&gt;
 System.Threading.Tasks.Dataflow.TransformManyBlock&lt;TInput, TOutput&gt;
 System.Threading.Tasks.Dataflow.WriteOnceBlock&lt;T&gt;</PackageDescription>
   </PropertyGroup>
+
   <ItemGroup>
     <Compile Include="Base\DataflowBlock.cs" />
     <Compile Include="Base\DataflowBlockOptions.cs" />
@@ -40,6 +40,8 @@ System.Threading.Tasks.Dataflow.WriteOnceBlock&lt;T&gt;</PackageDescription>
     <Compile Include="Blocks\JoinBlock.cs" />
     <Compile Include="Blocks\TransformBlock.cs" />
     <Compile Include="Blocks\TransformManyBlock.cs" />
+    <Compile Include="Blocks\TransformManyBlock.IAsyncEnumerable.cs"
+             Condition="$([MSBuild]::IsTargetFrameworkCompatible('$(TargetFramework)', 'netstandard2.1'))" />
     <Compile Include="Blocks\WriteOnceBlock.cs" />
     <Compile Include="Internal\ActionOnDispose.cs" />
     <Compile Include="Internal\Common.cs" />
@@ -48,7 +50,6 @@ System.Threading.Tasks.Dataflow.WriteOnceBlock&lt;T&gt;</PackageDescription>
     <Compile Include="Internal\IDebuggerDisplay.cs" />
     <Compile Include="Internal\ImmutableArray.cs" />
     <Compile Include="Internal\Padding.cs" />
-    <Compile Include="Internal\ProducerConsumerQueues.cs" />
     <Compile Include="Internal\QueuedMap.cs" />
     <Compile Include="Internal\ReorderingBuffer.cs" />
     <Compile Include="Internal\SourceCore.cs" />
@@ -57,14 +58,22 @@ System.Threading.Tasks.Dataflow.WriteOnceBlock&lt;T&gt;</PackageDescription>
     <Compile Include="Internal\TargetRegistry.cs" />
     <Compile Include="$(CommonPath)Internal\Padding.cs"
              Link="Common\Internal\Padding.cs" />
+    <Compile Include="$(CommonPath)System\Collections\Concurrent\IProducerConsumerQueue.cs"
+             Link="Common\System\Collections\Concurrent\IProducerConsumerQueue.cs" />
+    <Compile Include="$(CommonPath)System\Collections\Concurrent\MultiProducerMultiConsumerQueue.cs"
+             Link="Common\System\Collections\Concurrent\MultiProducerMultiConsumerQueue.cs" />
+    <Compile Include="$(CommonPath)System\Collections\Concurrent\SingleProducerSingleConsumerQueue.cs"
+             Link="Common\System\Collections\Concurrent\SingleProducerSingleConsumerQueue.cs" />
     <Compile Include="$(CoreLibSharedDir)System\Diagnostics\CodeAnalysis\UnconditionalSuppressMessageAttribute.cs"
              Condition="'$(TargetFrameworkIdentifier)' != '.NETCoreApp'" />
   </ItemGroup>
+
   <ItemGroup>
     <None Include="XmlDocs\CommonXmlDocComments.xml" />
     <Content Include="XmlDocs\System.Threading.Tasks.Dataflow.xml" Pack="false" />
   </ItemGroup>
-  <ItemGroup Condition="'$(TargetFrameworkIdentifier)' == '.NETCoreApp'">
+
+  <ItemGroup Condition="'$(TargetFramework)' == '$(NetCoreAppCurrent)'">
     <Reference Include="System.Collections" />
     <Reference Include="System.Collections.Concurrent" />
     <Reference Include="System.Diagnostics.Tracing" />
@@ -73,6 +82,5 @@ System.Threading.Tasks.Dataflow.WriteOnceBlock&lt;T&gt;</PackageDescription>
     <Reference Include="System.Threading" />
     <Reference Include="System.Threading.Thread" />
     <Reference Include="System.Threading.ThreadPool" />
-    <Reference Include="System.Threading.Timer" />
   </ItemGroup>
 </Project>

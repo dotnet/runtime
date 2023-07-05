@@ -68,6 +68,14 @@ namespace System.ComponentModel.DataAnnotations
             _errorMessageResourceAccessor = errorMessageAccessor;
         }
 
+        /// <summary>
+        /// Internal constructor used for delayed population of the error message delegate.
+        /// </summary>
+        private protected ValidationAttribute(bool populateErrorMessageResourceAccessor)
+        {
+            Debug.Assert(populateErrorMessageResourceAccessor is false, "Use the default constructor instead");
+        }
+
         #endregion
 
         #region Internal Properties
@@ -78,13 +86,25 @@ namespace System.ComponentModel.DataAnnotations
         /// This property was added after the public contract for DataAnnotations was created.
         /// It is internal to avoid changing the DataAnnotations contract.
         /// </summary>
-        internal string? DefaultErrorMessage
+        private protected string? DefaultErrorMessage
         {
-            set
+            init
             {
                 _defaultErrorMessage = value;
                 _errorMessageResourceAccessor = null;
                 CustomErrorMessageSet = true;
+            }
+        }
+
+        /// <summary>
+        /// Sets the delayed resource accessor in cases where we can't pass it directly to the base constructor.
+        /// </summary>
+        private protected Func<string> ErrorMessageResourceAccessor
+        {
+            init
+            {
+                Debug.Assert(_defaultErrorMessage is null && _errorMessageResourceName is null && _errorMessage is null && _errorMessageResourceType is null);
+                _errorMessageResourceAccessor = value;
             }
         }
 
@@ -275,6 +295,15 @@ namespace System.ComponentModel.DataAnnotations
             _errorMessageResourceAccessor = () => (string)property.GetValue(null, null)!;
         }
 
+        private protected ValidationResult CreateFailedValidationResult(ValidationContext validationContext)
+        {
+            string[]? memberNames = validationContext.MemberName is { } memberName
+                ? new[] { memberName }
+                : null;
+
+            return new ValidationResult(FormatErrorMessage(validationContext.DisplayName), memberNames);
+        }
+
         #endregion
 
         #region Protected & Public Methods
@@ -284,7 +313,7 @@ namespace System.ComponentModel.DataAnnotations
         /// </summary>
         /// <remarks>
         ///     The error message will be re-evaluated every time this function is called.
-        ///     It applies the <paramref name="name" /> (for example, the name of a field) to the formated error message, resulting
+        ///     It applies the <paramref name="name" /> (for example, the name of a field) to the formatted error message, resulting
         ///     in something like "The field 'name' has an incorrect value".
         ///     <para>
         ///         Derived classes can override this method to customize how errors are generated.
@@ -366,18 +395,10 @@ namespace System.ComponentModel.DataAnnotations
                     SR.ValidationAttribute_IsValid_NotImplemented);
             }
 
-            var result = ValidationResult.Success;
-
             // call overridden method.
-            if (!IsValid(value))
-            {
-                string[]? memberNames = validationContext.MemberName is { } memberName
-                    ? new[] { memberName }
-                    : null;
-                result = new ValidationResult(FormatErrorMessage(validationContext.DisplayName), memberNames);
-            }
-
-            return result;
+            return IsValid(value)
+                ? ValidationResult.Success
+                : CreateFailedValidationResult(validationContext);
         }
 
         /// <summary>
@@ -406,8 +427,10 @@ namespace System.ComponentModel.DataAnnotations
         ///     is thrown when <see cref="IsValid(object, ValidationContext)" />
         ///     has not been implemented by a derived class.
         /// </exception>
-        public ValidationResult? GetValidationResult(object? value, ValidationContext validationContext!!)
+        public ValidationResult? GetValidationResult(object? value, ValidationContext validationContext)
         {
+            ArgumentNullException.ThrowIfNull(validationContext);
+
             var result = IsValid(value, validationContext);
 
             // If validation fails, we want to ensure we have a ValidationResult that guarantees it has an ErrorMessage
@@ -471,8 +494,10 @@ namespace System.ComponentModel.DataAnnotations
         ///     is thrown when <see cref="IsValid(object, ValidationContext)" />
         ///     has not been implemented by a derived class.
         /// </exception>
-        public void Validate(object? value, ValidationContext validationContext!!)
+        public void Validate(object? value, ValidationContext validationContext)
         {
+            ArgumentNullException.ThrowIfNull(validationContext);
+
             ValidationResult? result = GetValidationResult(value, validationContext);
 
             if (result != null)

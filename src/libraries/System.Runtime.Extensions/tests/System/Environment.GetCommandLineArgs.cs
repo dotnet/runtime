@@ -70,5 +70,63 @@ namespace System.Tests
 
             return RemoteExecutor.SuccessExitCode;
         }
+
+        [ConditionalFact(typeof(RemoteExecutor), nameof(RemoteExecutor.IsSupported))]
+        public void GetCommandLineArgs_Fallback_Returns()
+        {
+            if (PlatformDetection.IsNotMonoRuntime
+                && PlatformDetection.IsNotNativeAot
+                && PlatformDetection.IsWindows)
+            {
+                // Currently fallback command line is only implemented on Windows coreclr
+                RemoteExecutor.Invoke(CheckCommandLineArgsFallback).Dispose();
+            }
+        }
+
+        public static int CheckCommandLineArgsFallback()
+        {
+            string[] oldArgs = Environment.GetCommandLineArgs();
+
+            // Clear the command line args set for managed entry point
+            var field = typeof(Environment).GetField("s_commandLineArgs", BindingFlags.Static | BindingFlags.NonPublic);
+            Assert.NotNull(field);
+            field.SetValue(null, null);
+
+            string[] args = Environment.GetCommandLineArgs();
+            Assert.NotEmpty(args);
+
+            // The native command line should be superset of managed command line
+            foreach (string arg in oldArgs)
+            {
+                Assert.Contains(arg, args);
+            }
+
+            return RemoteExecutor.SuccessExitCode;
+        }
+
+        public static bool IsWindowsCoreCLRJit
+            => PlatformDetection.IsWindows
+            && PlatformDetection.IsNotMonoRuntime
+            && PlatformDetection.IsNotNativeAot;
+
+        [ConditionalTheory(typeof(GetCommandLineArgs), nameof(IsWindowsCoreCLRJit))]
+        [InlineData(@"cmd ""abc"" d e", new[] { "cmd", "abc", "d", "e" })]
+        [InlineData(@"cmd a\\b d""e f""g h", new[] { "cmd", @"a\\b", "de fg", "h" })]
+        [InlineData(@"cmd a\\\""b c d", new[] { "cmd", @"a\""b", "c", "d" })]
+        [InlineData(@"cmd a\\\\""b c"" d e", new[] { "cmd", @"a\\b c", "d", "e" })]
+        [InlineData(@"cmd a""b"""" c d", new[] { "cmd", @"ab"" c d" })]
+        [InlineData(@"X:\No""t A"""" P""ath arg", new[] { @"X:\Not A Path", "arg" })]
+        [InlineData(@"""\\Some Server\cmd"" ""arg", new[] { @"\\Some Server\cmd", "arg" })]
+        public static unsafe void CheckCommandLineParser(string cmdLine, string[] args)
+        {
+            var method = typeof(Environment).GetMethod("SegmentCommandLine", BindingFlags.Static | BindingFlags.NonPublic);
+            Assert.NotNull(method);
+
+            var span = cmdLine.AsSpan(); // Workaround
+            fixed (char* p = span)
+            {
+                Assert.Equal(args, method.Invoke(null, new object[] { Pointer.Box(p, typeof(char*)) }));
+            }
+        }
     }
 }

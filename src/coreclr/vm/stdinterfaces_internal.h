@@ -93,34 +93,6 @@ HRESULT __stdcall   Dispatch_Invoke (
                                     EXCEPINFO *pexcepinfo,
                                     unsigned int *puArgErr);
 
-
-//------------------------------------------------------------------------------------------
-//      IDispatch methods for COM+ objects that use our OleAut's implementation.
-
-
-// IDispatch::GetIDsofNames
-HRESULT __stdcall   OleAutDispatchImpl_GetIDsOfNames (
-                                    IDispatch* pDisp,
-                                    REFIID riid,
-                                    _In_reads_(cNames) OLECHAR **rgszNames,
-                                    unsigned int cNames,
-                                    LCID lcid,
-                                    DISPID *rgdispid);
-
-// IDispatch::Invoke
-HRESULT __stdcall   OleAutDispatchImpl_Invoke (
-                                    IDispatch* pDisp,
-                                    DISPID dispidMember,
-                                    REFIID riid,
-                                    LCID lcid,
-                                    unsigned short wFlags,
-                                    DISPPARAMS *pdispparams,
-                                    VARIANT *pvarResult,
-                                    EXCEPINFO *pexcepinfo,
-                                    unsigned int *puArgErr);
-
-
-
 //------------------------------------------------------------------------------------------
 //      IDispatch methods for COM+ objects that use our internal implementation.
 

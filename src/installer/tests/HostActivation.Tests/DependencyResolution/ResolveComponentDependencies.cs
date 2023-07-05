@@ -8,11 +8,12 @@ using Xunit;
 
 namespace Microsoft.DotNet.CoreSetup.Test.HostActivation.DependencyResolution
 {
-    public class ResolveComponentDependencies : 
+    public class ResolveComponentDependencies :
         ComponentDependencyResolutionBase,
         IClassFixture<ResolveComponentDependencies.SharedTestState>
     {
         private readonly SharedTestState sharedTestState;
+        private const string AdditionalDependencyName = "AdditionalDependency";
 
         public ResolveComponentDependencies(SharedTestState fixture)
         {
@@ -97,7 +98,7 @@ namespace Microsoft.DotNet.CoreSetup.Test.HostActivation.DependencyResolution
             else
             {
                 // OSPlatform.Linux
-                // We expect the test to fail due to the the case change of AppDll
+                // We expect the test to fail due to the case change of AppDll
                 sharedTestState.RunComponentResolutionTest(component)
                     .Should().Fail()
                     .And.HaveStdErrContaining($"Failed to locate managed application [{component.AppDll}]");
@@ -154,7 +155,7 @@ namespace Microsoft.DotNet.CoreSetup.Test.HostActivation.DependencyResolution
             else
             {
                 // OSPlatform.Linux
-                // We expect the test to fail due to the the case change of AppDll
+                // We expect the test to fail due to the case change of AppDll
                 sharedTestState.RunComponentResolutionTest(component)
                     .Should().Fail()
                     .And.HaveStdErrContaining($"Failed to locate managed application [{component.AppDll}]");
@@ -212,7 +213,7 @@ namespace Microsoft.DotNet.CoreSetup.Test.HostActivation.DependencyResolution
             else
             {
                 // OSPlatform.Linux
-                // We expect the test to fail due to the the case change of AppDll
+                // We expect the test to fail due to the case change of AppDll
                 sharedTestState.RunComponentResolutionTest(component)
                     .Should().Fail()
                     .And.HaveStdErrContaining($"Failed to locate managed application [{component.AppDll}]");
@@ -237,9 +238,10 @@ namespace Microsoft.DotNet.CoreSetup.Test.HostActivation.DependencyResolution
                 .And.HaveStdOutContaining("corehost_resolve_component_dependencies:Success")
                 .And.HaveStdOutContaining(
                     $"corehost_resolve_component_dependencies assemblies:[" +
+                    $"{Path.Combine(sharedTestState.ComponentWithDependencies.Location, $"{AdditionalDependencyName}.dll")}{Path.PathSeparator}" +
                     $"{Path.Combine(sharedTestState.ComponentWithDependencies.Location, "ComponentDependency.dll")}{Path.PathSeparator}" +
                     $"{sharedTestState.ComponentWithDependencies.AppDll}{Path.PathSeparator}" +
-                    $"{Path.Combine(sharedTestState.ComponentWithDependencies.Location, "Newtonsoft.Json.dll")}{Path.PathSeparator}]")
+                    $"]")
                 .And.HaveStdOutContaining(
                     $"corehost_resolve_component_dependencies native_search_paths:[" +
                     $"{Path.Combine(sharedTestState.ComponentWithDependencies.Location, "runtimes", "win10-x86", "native")}" +
@@ -259,9 +261,10 @@ namespace Microsoft.DotNet.CoreSetup.Test.HostActivation.DependencyResolution
                 .And.HaveStdOutContaining("corehost_resolve_component_dependencies:Success")
                 .And.HaveStdOutContaining(
                     $"corehost_resolve_component_dependencies assemblies:[" +
+                    $"{Path.Combine(component.Location, $"{AdditionalDependencyName}.dll")}{Path.PathSeparator}" +
                     $"{Path.Combine(component.Location, "ComponentDependency.dll")}{Path.PathSeparator}" +
                     $"{component.AppDll}{Path.PathSeparator}" +
-                    $"{Path.Combine(component.Location, "Newtonsoft.Json.dll")}{Path.PathSeparator}]");
+                    $"]");
         }
 
         [Fact]
@@ -277,9 +280,10 @@ namespace Microsoft.DotNet.CoreSetup.Test.HostActivation.DependencyResolution
                 .And.HaveStdOutContaining("corehost_resolve_component_dependencies:Success")
                 .And.HaveStdOutContaining(
                     $"corehost_resolve_component_dependencies assemblies:[" +
+                    $"{Path.Combine(component.Location, $"{AdditionalDependencyName}.dll")}{Path.PathSeparator}" +
                     $"{Path.Combine(component.Location, "ComponentDependency.dll")}{Path.PathSeparator}" +
                     $"{component.AppDll}{Path.PathSeparator}" +
-                    $"{Path.Combine(component.Location, "Newtonsoft.Json.dll")}{Path.PathSeparator}]");
+                    $"]");
         }
 
         [Fact]
@@ -299,8 +303,9 @@ namespace Microsoft.DotNet.CoreSetup.Test.HostActivation.DependencyResolution
                 .And.HaveStdOutContaining("corehost_resolve_component_dependencies:Success")
                 .And.HaveStdOutContaining(
                     $"corehost_resolve_component_dependencies assemblies:[" +
+                    $"{Path.Combine(component.Location, $"{AdditionalDependencyName}.dll")}{Path.PathSeparator}" +
                     $"{component.AppDll}{Path.PathSeparator}" +
-                    $"{Path.Combine(component.Location, "Newtonsoft.Json.dll")}{Path.PathSeparator}]");
+                    $"]");
         }
 
         [Fact]
@@ -390,7 +395,7 @@ namespace Microsoft.DotNet.CoreSetup.Test.HostActivation.DependencyResolution
         }
 
         [Fact]
-        public void MultiThreadedComponentDependencyResolutionWhichSucceeeds()
+        public void MultiThreadedComponentDependencyResolutionWhichSucceeds()
         {
             sharedTestState.RunComponentResolutionMultiThreadedTest(sharedTestState.ComponentWithNoDependencies, sharedTestState.ComponentWithResources)
                 .Should().Pass()
@@ -403,7 +408,7 @@ namespace Microsoft.DotNet.CoreSetup.Test.HostActivation.DependencyResolution
         }
 
         [Fact]
-        public void MultiThreadedComponentDependencyResolutionWhithFailures()
+        public void MultiThreadedComponentDependencyResolutionWithFailures()
         {
             var componentWithNoDependencies = sharedTestState.ComponentWithNoDependencies.Copy();
 
@@ -449,10 +454,10 @@ namespace Microsoft.DotNet.CoreSetup.Test.HostActivation.DependencyResolution
                 NetCoreAppBuilder builder = NetCoreAppBuilder.PortableForNETCoreApp(componentWithDependencies)
                     .WithProject(p => p.WithAssemblyGroup(null, g => g.WithMainAssembly()))
                     .WithProject("ComponentDependency", "1.0.0", p => p.WithAssemblyGroup(null, g => g.WithAsset("ComponentDependency.dll")))
-                    .WithPackage("Newtonsoft.Json", "9.0.1", p => p.WithAssemblyGroup(null, g => g
-                        .WithAsset("lib/netstandard1.0/Newtonsoft.Json.dll", f => f
-                            .WithVersion("9.0.0.0", "9.0.1.19813")
-                            .WithFileOnDiskPath("Newtonsoft.Json.dll"))))
+                    .WithPackage(AdditionalDependencyName, "2.0.1", p => p.WithAssemblyGroup(null, g => g
+                        .WithAsset($"lib/netstandard1.0/{AdditionalDependencyName}.dll", f => f
+                            .WithVersion("2.0.0.0", "2.0.1.23344")
+                            .WithFileOnDiskPath($"{AdditionalDependencyName}.dll"))))
                     .WithPackage("Libuv", "1.9.1", p => p
                         .WithNativeLibraryGroup("debian-x64", g => g.WithAsset("runtimes/debian-x64/native/libuv.so"))
                         .WithNativeLibraryGroup("fedora-x64", g => g.WithAsset("runtimes/fedora-x64/native/libuv.so"))

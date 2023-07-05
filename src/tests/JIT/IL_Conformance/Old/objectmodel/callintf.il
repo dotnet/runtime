@@ -3,10 +3,13 @@
 
 
 .assembly extern legacy library mscorlib {}
+.assembly extern xunit.core {}
 .assembly callintf{}
 
 
 
+.namespace callintf
+{
 .class public TestInterface {
 .method public void .ctor(){
 	.maxstack 10
@@ -22,13 +25,13 @@ ret
 
 
 }
-.class public	TestImplementation extends TestInterface {
+.class public	TestImplementation extends callintf.TestInterface {
 
 .method public void .ctor(){
 
 .maxstack	10
 	ldarg.0
-	call instance void TestInterface::.ctor()
+	call instance void callintf.TestInterface::.ctor()
 	ret
 }
 
@@ -46,13 +49,16 @@ ret
 }
 .class public callintf {
 
-.method public static int32 main(class [mscorlib]System.String[]) {
+.method public static int32 main() {
+.custom instance void [xunit.core]Xunit.FactAttribute::.ctor() = (
+    01 00 00 00
+)
 .entrypoint
 .maxstack	10
 
-	newobj	instance		void TestImplementation::.ctor()
+	newobj	instance		void callintf.TestImplementation::.ctor()
 	ldc.i4		0x6
-	callvirt	instance	int32 TestInterface::TestMethod(int32)
+	callvirt	instance	int32 callintf.TestInterface::TestMethod(int32)
 	ldc.i4		0xC
 	ceq
 	brfalse		FAIL
@@ -67,4 +73,5 @@ FAIL:
 
 }
 
+}
 }

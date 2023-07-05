@@ -45,7 +45,7 @@ PTR_CONTEXT GetCONTEXTFromRedirectedStubStackFrame(CONTEXT * pContext);
 
 //
 // Retrieves the FaultingExceptionFrame* from the stack frame of
-// RedirectForThrowControl or NakedThrowHelper.
+// RedirectForThrowControl.
 //
 FaultingExceptionFrame *GetFrameFromRedirectedStubStackFrame (DISPATCHER_CONTEXT *pDispatcherContext);
 

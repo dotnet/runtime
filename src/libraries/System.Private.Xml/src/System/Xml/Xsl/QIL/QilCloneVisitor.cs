@@ -65,8 +65,7 @@ namespace System.Xml.Xsl.Qil
                 newNode = FindClonedReference(oldNode);
             }
 
-            if (newNode == null)
-                newNode = oldNode.ShallowClone(_fac);
+            newNode ??= oldNode.ShallowClone(_fac);
 
             return base.Visit(newNode);
         }
@@ -88,8 +87,7 @@ namespace System.Xml.Xsl.Qil
                     parent[i] = VisitReference(child);
 
                     // If no substutition found, then use original child
-                    if (parent[i] == null)
-                        parent[i] = child;
+                   parent[i] ??= child;
                 }
                 else
                 {
@@ -107,7 +105,7 @@ namespace System.Xml.Xsl.Qil
         protected override QilNode VisitReference(QilNode oldNode)
         {
             QilNode? newNode = FindClonedReference(oldNode);
-            return base.VisitReference(newNode == null ? oldNode : newNode);
+            return base.VisitReference(newNode ?? oldNode);
         }
 
 

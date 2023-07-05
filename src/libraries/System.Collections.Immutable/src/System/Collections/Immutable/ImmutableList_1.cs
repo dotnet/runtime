@@ -211,7 +211,7 @@ namespace System.Collections.Immutable
         /// </summary>
         public ImmutableList<T> Add(T value)
         {
-            var result = _root.Add(value);
+            ImmutableList<T>.Node result = _root.Add(value);
             return this.Wrap(result);
         }
 
@@ -228,9 +228,34 @@ namespace System.Collections.Immutable
                 return CreateRange(items);
             }
 
-            var result = _root.AddRange(items);
+            ImmutableList<T>.Node result = _root.AddRange(items);
 
             return this.Wrap(result);
+        }
+
+        /// <summary>
+        /// See the <see cref="IImmutableList{T}"/> interface.
+        /// </summary>
+        internal ImmutableList<T> AddRange(ReadOnlySpan<T> items)
+        {
+            if (this.IsEmpty)
+            {
+                if (items.IsEmpty)
+                {
+                    return Empty;
+                }
+
+                return new ImmutableList<T>(Node.NodeTreeFromList(items));
+            }
+            else
+            {
+                if (items.IsEmpty)
+                {
+                    return this;
+                }
+
+                return this.Wrap(_root.AddRange(items));
+            }
         }
 
         /// <summary>
@@ -250,7 +275,7 @@ namespace System.Collections.Immutable
             Requires.Range(index >= 0 && index <= this.Count, nameof(index));
             Requires.NotNull(items, nameof(items));
 
-            var result = _root.InsertRange(index, items);
+            ImmutableList<T>.Node result = _root.InsertRange(index, items);
 
             return this.Wrap(result);
         }
@@ -280,7 +305,7 @@ namespace System.Collections.Immutable
             Requires.Range(index >= 0 && index <= this.Count, nameof(index));
             Requires.Range(count >= 0 && index + count <= this.Count, nameof(count));
 
-            var result = _root;
+            ImmutableList<T>.Node result = _root;
             int remaining = count;
             while (remaining-- > 0)
             {
@@ -322,7 +347,7 @@ namespace System.Collections.Immutable
 
             // Let's not implement in terms of ImmutableList.Remove so that we're
             // not unnecessarily generating a new list object for each item.
-            var result = _root;
+            ImmutableList<T>.Node result = _root;
             foreach (T item in items.GetEnumerableDisposable<T, Enumerator>())
             {
                 int index = result.IndexOf(item, equalityComparer);
@@ -341,7 +366,7 @@ namespace System.Collections.Immutable
         public ImmutableList<T> RemoveAt(int index)
         {
             Requires.Range(index >= 0 && index < this.Count, nameof(index));
-            var result = _root.RemoveAt(index);
+            ImmutableList<T>.Node result = _root.RemoveAt(index);
             return this.Wrap(result);
         }
 
@@ -1102,8 +1127,7 @@ namespace System.Collections.Immutable
                 return true;
             }
 
-            var builder = sequence as Builder;
-            if (builder != null)
+            if (sequence is Builder builder)
             {
                 other = builder.ToImmutable();
                 return true;
@@ -1124,7 +1148,7 @@ namespace System.Collections.Immutable
         {
             // Non-null values are fine.  Only accept nulls if T is a class or Nullable<U>.
             // Note that default(T) is not equal to null for value types except when T is Nullable<U>.
-            return ((value is T) || (value == null && default(T) == null));
+            return (value is T) || (default(T) == null && value == null);
         }
 
         /// <summary>
@@ -1165,7 +1189,7 @@ namespace System.Collections.Immutable
             // index into that sequence like a list, so the one possible piece of
             // garbage produced is a temporary array to store the list while
             // we build the tree.
-            var list = items.AsOrderedCollection();
+            IOrderedCollection<T> list = items.AsOrderedCollection();
             if (list.Count == 0)
             {
                 return Empty;

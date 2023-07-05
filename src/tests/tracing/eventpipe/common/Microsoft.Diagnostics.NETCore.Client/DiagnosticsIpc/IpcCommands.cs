@@ -35,6 +35,7 @@ namespace Microsoft.Diagnostics.NETCore.Client
     {
         GenerateCoreDump = 0x01,
         GenerateCoreDump2 = 0x02,
+        GenerateCoreDump3 = 0x03,
     }
 
     internal enum ProfilerCommandId : byte
@@ -49,6 +50,7 @@ namespace Microsoft.Diagnostics.NETCore.Client
         ResumeRuntime  = 0x01,
         GetProcessEnvironment = 0x02,
         SetEnvironmentVariable = 0x03,
-        GetProcessInfo2 = 0x04
+        GetProcessInfo2 = 0x04,
+        ApplyStartupHook = 0x07
     }
 }

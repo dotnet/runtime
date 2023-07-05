@@ -68,14 +68,14 @@ namespace System.Linq.Tests
         [Fact]
         public void Distinct1()
         {
-            var count = (new int[] { 0, 1, 2, 2, 0 }).AsQueryable().Distinct().Count();
+            var count = new[] { 0, 1, 2, 2, 0 }.AsQueryable().Distinct().Count();
             Assert.Equal(3, count);
         }
 
         [Fact]
         public void Distinct2()
         {
-            var count = (new int[] { 0, 1, 2, 2, 0 }).AsQueryable().Distinct(EqualityComparer<int>.Default).Count();
+            var count = new[] { 0, 1, 2, 2, 0 }.AsQueryable().Distinct(EqualityComparer<int>.Default).Count();
             Assert.Equal(3, count);
         }
 

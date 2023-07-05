@@ -137,7 +137,7 @@ namespace System.Numerics.Tensors
         }
 
         /// <summary>
-        /// Calculates the n-d indices from the 1-d index in a layout specificed by strides
+        /// Calculates the n-d indices from the 1-d index in a layout specified by strides
         /// </summary>
         /// <param name="strides"></param>
         /// <param name="reverseStride"></param>
@@ -162,7 +162,7 @@ namespace System.Numerics.Tensors
         }
 
         /// <summary>
-        /// Calculates the n-d indices from the 1-d index in a layout specificed by strides
+        /// Calculates the n-d indices from the 1-d index in a layout specified by strides
         /// </summary>
         /// <param name="strides"></param>
         /// <param name="reverseStride"></param>

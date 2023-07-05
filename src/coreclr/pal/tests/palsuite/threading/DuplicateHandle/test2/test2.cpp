@@ -10,7 +10,7 @@
 **            event in a signaled state to wait, and then set the duplicate
 **            to nonsignaled state and perform the wait again. The wait on
 **            the event should fail. Test the duplication of closed and NULL
-**            events, these should fail.  
+**            events, these should fail.
 **
 **
 **===================================================================*/
@@ -21,7 +21,7 @@ PALTEST(threading_DuplicateHandle_test2_paltest_duplicatehandle_test2, "threadin
     HANDLE hEvent;
     HANDLE hDupEvent;
 
-    /*Initalize the PAL.*/
+    /*Initialize the PAL.*/
     if ((PAL_Initialize(argc,argv)) != 0)
     {
         return (FAIL);
@@ -31,7 +31,7 @@ PALTEST(threading_DuplicateHandle_test2_paltest_duplicatehandle_test2, "threadin
     hEvent = CreateEvent(0, TRUE, TRUE, 0);
     if (hEvent == NULL)
     {
-        Fail("ERROR: %u :unable to create event\n", 
+        Fail("ERROR: %u :unable to create event\n",
              GetLastError());
     }
 

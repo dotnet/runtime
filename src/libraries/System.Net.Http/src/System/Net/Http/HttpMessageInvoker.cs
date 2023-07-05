@@ -20,8 +20,10 @@ namespace System.Net.Http
         {
         }
 
-        public HttpMessageInvoker(HttpMessageHandler handler!!, bool disposeHandler)
+        public HttpMessageInvoker(HttpMessageHandler handler, bool disposeHandler)
         {
+            ArgumentNullException.ThrowIfNull(handler);
+
             if (NetEventSource.Log.IsEnabled()) NetEventSource.Associate(this, handler);
 
             _handler = handler;
@@ -29,26 +31,30 @@ namespace System.Net.Http
         }
 
         [UnsupportedOSPlatformAttribute("browser")]
-        public virtual HttpResponseMessage Send(HttpRequestMessage request!!, CancellationToken cancellationToken)
+        public virtual HttpResponseMessage Send(HttpRequestMessage request, CancellationToken cancellationToken)
         {
-            CheckDisposed();
+            ArgumentNullException.ThrowIfNull(request);
+
+            ObjectDisposedException.ThrowIf(_disposed, this);
 
             if (ShouldSendWithTelemetry(request))
             {
                 HttpTelemetry.Log.RequestStart(request);
 
+                HttpResponseMessage? response = null;
                 try
                 {
-                    return _handler.Send(request, cancellationToken);
+                    response = _handler.Send(request, cancellationToken);
+                    return response;
                 }
-                catch when (LogRequestFailed(telemetryStarted: true))
+                catch (Exception ex) when (LogRequestFailed(ex, telemetryStarted: true))
                 {
                     // Unreachable as LogRequestFailed will return false
                     throw;
                 }
                 finally
                 {
-                    HttpTelemetry.Log.RequestStop();
+                    HttpTelemetry.Log.RequestStop(response);
                 }
             }
             else
@@ -57,9 +63,11 @@ namespace System.Net.Http
             }
         }
 
-        public virtual Task<HttpResponseMessage> SendAsync(HttpRequestMessage request!!, CancellationToken cancellationToken)
+        public virtual Task<HttpResponseMessage> SendAsync(HttpRequestMessage request, CancellationToken cancellationToken)
         {
-            CheckDisposed();
+            ArgumentNullException.ThrowIfNull(request);
+
+            ObjectDisposedException.ThrowIf(_disposed, this);
 
             if (ShouldSendWithTelemetry(request))
             {
@@ -72,18 +80,20 @@ namespace System.Net.Http
             {
                 HttpTelemetry.Log.RequestStart(request);
 
+                HttpResponseMessage? response = null;
                 try
                 {
-                    return await handler.SendAsync(request, cancellationToken).ConfigureAwait(false);
+                    response = await handler.SendAsync(request, cancellationToken).ConfigureAwait(false);
+                    return response;
                 }
-                catch when (LogRequestFailed(telemetryStarted: true))
+                catch (Exception ex) when (LogRequestFailed(ex, telemetryStarted: true))
                 {
                     // Unreachable as LogRequestFailed will return false
                     throw;
                 }
                 finally
                 {
-                    HttpTelemetry.Log.RequestStop();
+                    HttpTelemetry.Log.RequestStop(response);
                 }
             }
         }
@@ -94,11 +104,11 @@ namespace System.Net.Http
             request.RequestUri is Uri requestUri &&
             requestUri.IsAbsoluteUri;
 
-        internal static bool LogRequestFailed(bool telemetryStarted)
+        internal static bool LogRequestFailed(Exception exception, bool telemetryStarted)
         {
             if (HttpTelemetry.Log.IsEnabled() && telemetryStarted)
             {
-                HttpTelemetry.Log.RequestFailed();
+                HttpTelemetry.Log.RequestFailed(exception);
             }
             return false;
         }
@@ -119,14 +129,6 @@ namespace System.Net.Http
                 {
                     _handler.Dispose();
                 }
-            }
-        }
-
-        private void CheckDisposed()
-        {
-            if (_disposed)
-            {
-                throw new ObjectDisposedException(GetType().ToString());
             }
         }
     }

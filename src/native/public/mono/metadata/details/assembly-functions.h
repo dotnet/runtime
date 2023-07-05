@@ -24,9 +24,6 @@ MONO_API_FUNCTION(void, mono_assembly_load_reference, (MonoImage *image, int ind
 MONO_API_FUNCTION(void, mono_assembly_load_references, (MonoImage *image, MonoImageOpenStatus *status))
 MONO_API_FUNCTION(MONO_RT_EXTERNAL_ONLY MonoImage*, mono_assembly_load_module, (MonoAssembly *assembly, uint32_t idx))
 MONO_API_FUNCTION(void, mono_assembly_close, (MonoAssembly *assembly))
-MONO_API_FUNCTION(void, mono_assembly_setrootdir, (const char *root_dir))
-MONO_API_FUNCTION(MONO_CONST_RETURN char *, mono_assembly_getrootdir, (void))
-MONO_API_FUNCTION(char *, mono_native_getrootdir, (void))
 MONO_API_FUNCTION(void, mono_assembly_foreach, (MonoFunc func, void* user_data))
 MONO_API_FUNCTION(void, mono_assembly_set_main, (MonoAssembly *assembly))
 MONO_API_FUNCTION(MonoAssembly *, mono_assembly_get_main, (void))
@@ -66,10 +63,22 @@ MONO_API_FUNCTION(mono_byte*, mono_assembly_name_get_pubkeytoken, (MonoAssemblyN
 MONO_API_FUNCTION(MONO_RT_EXTERNAL_ONLY void, mono_assembly_name_free, (MonoAssemblyName *aname))
 
 MONO_API_FUNCTION(void, mono_register_bundled_assemblies, (const MonoBundledAssembly **assemblies))
-MONO_API_FUNCTION(MONO_RT_EXTERNAL_ONLY void, mono_register_config_for_assembly, (const char* assembly_name, const char* config_xml))
 MONO_API_FUNCTION(void, mono_register_symfile_for_assembly, (const char* assembly_name, const mono_byte *raw_contents, int size))
-MONO_API_FUNCTION(void, mono_register_machine_config, (const char *config_xml))
+MONO_API_FUNCTION(const mono_byte *, mono_get_symfile_bytes_from_bundle, (const char* assembly_name, int *size))
 
-MONO_API_FUNCTION(void, mono_set_rootdir, (void))
-MONO_API_FUNCTION(void, mono_set_dirs, (const char *assembly_dir, const char *config_dir))
 MONO_API_FUNCTION(void, mono_set_assemblies_path, (const char* path))
+
+/**
+ * These functions are deprecated.
+ */
+MONO_API_FUNCTION(MONO_RT_EXTERNAL_ONLY void, mono_set_rootdir, (void)) // no-ops
+MONO_API_FUNCTION(MONO_RT_EXTERNAL_ONLY void, mono_set_dirs, (const char *assembly_dir, const char *config_dir)) // ignores config_dir parameter, use mono_set_assemblies_path instead
+MONO_API_FUNCTION(MONO_RT_EXTERNAL_ONLY char *, mono_native_getrootdir, (void)) // returns the same value as mono_assembly_getrootdir
+MONO_API_FUNCTION(MONO_RT_EXTERNAL_ONLY void, mono_assembly_setrootdir, (const char *root_dir)) // use mono_set_assemblies_path instead
+MONO_API_FUNCTION(MONO_RT_EXTERNAL_ONLY MONO_CONST_RETURN char *, mono_assembly_getrootdir, (void))
+
+/**
+ * These functions are deprecated and no-ops since app.config/machine.config handling is not available in dotnet/runtime.
+ */
+MONO_API_FUNCTION(MONO_RT_EXTERNAL_ONLY void, mono_register_config_for_assembly, (const char* assembly_name, const char* config_xml))
+MONO_API_FUNCTION(MONO_RT_EXTERNAL_ONLY void, mono_register_machine_config, (const char *config_xml))

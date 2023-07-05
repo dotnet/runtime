@@ -114,7 +114,7 @@ namespace Microsoft.Win32.RegistryTests
             {
                 // keyName should be case insensitive so we mix casing
                 string keyName = MixUpperAndLowerCase(key.Name) + (useSeparator ? "\\" : "");
-                if (key.IsDefaultValueSet())
+                if (key.IsSystemKeyDefaultValueSet())
                 {
                     Registry.GetValue(keyName, valueName, null);
                 }

@@ -41,7 +41,7 @@ namespace Tracing.Tests.BigEventsValidation
 
     public class BigEventsValidation
     {
-        public static int Main(string[] args)
+        public static int Main()
         {
             // This test tries to send a big event (>100KB) and checks that the app does not crash
             // See https://github.com/dotnet/runtime/issues/50515 for the regression issue

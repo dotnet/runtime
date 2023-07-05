@@ -443,14 +443,13 @@ namespace System
                 }
 
                 // Check if we have baseUtcOffsetDelta in the serialized string and then deserialize it
-                if ((_serializedText[_currentTokenStartIndex] >= '0' && _serializedText[_currentTokenStartIndex] <= '9') ||
-                    _serializedText[_currentTokenStartIndex] == '-' || _serializedText[_currentTokenStartIndex] == '+')
+                if (char.IsAsciiDigit(_serializedText[_currentTokenStartIndex]) || _serializedText[_currentTokenStartIndex] is '-' or '+')
                 {
                     baseUtcOffsetDelta = GetNextTimeSpanValue();
                 }
 
                 // Check if we have NoDaylightTransitions in the serialized string and then deserialize it
-                if (_serializedText[_currentTokenStartIndex] >= '0' && _serializedText[_currentTokenStartIndex] <= '1')
+                if (_serializedText[_currentTokenStartIndex] is '0' or '1')
                 {
                     noDaylightTransitions = GetNextInt32Value();
                 }

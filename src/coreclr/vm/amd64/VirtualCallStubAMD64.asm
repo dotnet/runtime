@@ -70,7 +70,7 @@ Success:
         pop    rdx
         jmp    rax
 
-Promote:                         ;; Move this entry to head postion of the chain
+Promote:                         ;; Move this entry to head position of the chain
         ;; be quick to reset the counter so we don't get a bunch of contending threads
         mov    [CHAIN_SUCCESS_COUNTER], INITIAL_SUCCESS_COUNT
         or     r11, PROMOTE_CHAIN_FLAG

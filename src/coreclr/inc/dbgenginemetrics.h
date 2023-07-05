@@ -3,7 +3,7 @@
 //
 // DbgEngineMetrics.h
 //
-// This file contains the defintion of CLR_ENGINE_METRICS.  This struct is used for Silverlight debugging.
+// This file contains the definition of CLR_ENGINE_METRICS.  This struct is used for Silverlight debugging.
 //
 // ======================================================================================
 

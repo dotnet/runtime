@@ -17,11 +17,6 @@ namespace System.Diagnostics.TextWriterTraceListenerTests
         {
             return new TextWriterTraceListener(_fileName);
         }
-
-        protected override void Dispose(bool disposing)
-        {
-            base.Dispose(disposing);
-        }
     }
 
     public class TextWriterTraceListener_WriteTestsCtorStream : TextWriterTraceListener_WriteTestsBase
@@ -39,13 +34,13 @@ namespace System.Diagnostics.TextWriterTraceListenerTests
         }
 
         [Fact]
-        public void TestWriterPropery()
+        public void TestWriterProperty()
         {
             var testWriter = new StreamWriter(_stream);
             using (var target = new TextWriterTraceListener())
             {
                 Assert.Null(target.Writer);
-                target.Writer = testWriter;
+                target.Writer = testWriter; // disposed by TextWriterTraceListener
                 Assert.NotNull(target.Writer);
                 Assert.Same(testWriter, target.Writer);
             }
@@ -112,11 +107,9 @@ namespace System.Diagnostics.TextWriterTraceListenerTests
             target.WriteLine(TestMessage);
             target.Write(TestMessage);
             target.Flush();
-        }
 
-        protected override void Dispose(bool disposing)
-        {
-            base.Dispose(disposing);
+            // Write created a new StreamWriter around the file, so re-Dispose
+            target.Dispose();
         }
     }
 }

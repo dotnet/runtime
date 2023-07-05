@@ -123,9 +123,9 @@ public:
 private:
     regMaskTP _rsMaskVars; // backing store for rsMaskVars property
 
-#ifdef TARGET_ARMARCH
+#if defined(TARGET_ARMARCH) || defined(TARGET_LOONGARCH64) || defined(TARGET_RISCV64)
     regMaskTP rsMaskCalleeSaved; // mask of the registers pushed/popped in the prolog/epilog
-#endif                           // TARGET_ARM
+#endif                           // TARGET_ARMARCH || TARGET_LOONGARCH64
 
 public:                    // TODO-Cleanup: Should be private, but Compiler uses it
     regMaskTP rsMaskResvd; // mask of the registers that are reserved for special purposes (typically empty)
@@ -222,7 +222,7 @@ private:
     {
 #if defined(FEATURE_SIMD)
 #if defined(TARGET_XARCH)
-        TEMP_MAX_SIZE = YMM_REGSIZE_BYTES,
+        TEMP_MAX_SIZE = ZMM_REGSIZE_BYTES,
 #elif defined(TARGET_ARM64)
         TEMP_MAX_SIZE = FP_REGSIZE_BYTES,
 #endif // defined(TARGET_XARCH) || defined(TARGET_ARM64)

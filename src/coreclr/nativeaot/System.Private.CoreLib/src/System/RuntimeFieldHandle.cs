@@ -1,6 +1,7 @@
 // Licensed to the .NET Foundation under one or more agreements.
 // The .NET Foundation licenses this file to you under the MIT license.
 
+using System.ComponentModel;
 using System.Reflection;
 using System.Runtime.InteropServices;
 using System.Runtime.Serialization;
@@ -14,6 +15,11 @@ namespace System
     public struct RuntimeFieldHandle : IEquatable<RuntimeFieldHandle>, ISerializable
     {
         private IntPtr _value;
+
+        private RuntimeFieldHandle(IntPtr value)
+        {
+            _value = value;
+        }
 
         public IntPtr Value => _value;
 
@@ -43,7 +49,7 @@ namespace System
         }
 
         [MethodImpl(MethodImplOptions.AggressiveInlining)]
-        private int _rotl(int value, int shift)
+        private static int _rotl(int value, int shift)
         {
             return (int)(((uint)value << shift) | ((uint)value >> (32 - shift)));
         }
@@ -61,6 +67,10 @@ namespace System
             return (hashcode + _rotl(hashcode, 13)) ^ fieldName.GetHashCode();
         }
 
+        public static RuntimeFieldHandle FromIntPtr(IntPtr value) => new RuntimeFieldHandle(value);
+
+        public static IntPtr ToIntPtr(RuntimeFieldHandle value) => value.Value;
+
         public static bool operator ==(RuntimeFieldHandle left, RuntimeFieldHandle right)
         {
             return left.Equals(right);
@@ -71,6 +81,8 @@ namespace System
             return !left.Equals(right);
         }
 
+        [Obsolete(Obsoletions.LegacyFormatterImplMessage, DiagnosticId = Obsoletions.LegacyFormatterImplDiagId, UrlFormat = Obsoletions.SharedUrlFormat)]
+        [EditorBrowsable(EditorBrowsableState.Never)]
         public void GetObjectData(SerializationInfo info, StreamingContext context)
         {
             throw new PlatformNotSupportedException();

@@ -12,10 +12,12 @@ namespace System.Net.Security
     {
         private static readonly IdnMapping s_idnMapping = new IdnMapping();
 
+#pragma warning disable IDE0060
         internal static SslPolicyErrors BuildChainAndVerifyProperties(X509Chain chain, X509Certificate2 remoteCertificate, bool checkCertName, bool isServer, string? hostName, IntPtr certificateBuffer, int bufferLength)
             => BuildChainAndVerifyProperties(chain, remoteCertificate, checkCertName, isServer, hostName);
+#pragma warning restore IDE0060
 
-        internal static SslPolicyErrors BuildChainAndVerifyProperties(X509Chain chain, X509Certificate2 remoteCertificate, bool checkCertName, bool isServer, string? hostName)
+        internal static SslPolicyErrors BuildChainAndVerifyProperties(X509Chain chain, X509Certificate2 remoteCertificate, bool checkCertName, bool _ /*isServer*/, string? hostName)
         {
             SslPolicyErrors errors = chain.Build(remoteCertificate) ?
                 SslPolicyErrors.None :

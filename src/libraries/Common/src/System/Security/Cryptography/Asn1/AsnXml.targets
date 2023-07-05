@@ -3,6 +3,7 @@
     <AsnXml />
     <_AsnXmlDiffCmd>%24%28command -v diff%29 -q -a</_AsnXmlDiffCmd>
     <_AsnXmlDiffCmd Condition="$([MSBuild]::IsOsPlatform('windows')) == 'true'">$(SystemRoot)\System32\fc.exe /a</_AsnXmlDiffCmd>
+    <_AsnXmlDiffCmd Condition="$([MSBuild]::IsOsPlatform('osx')) == 'true'">diff</_AsnXmlDiffCmd>
   </PropertyGroup>
   <ItemGroup>
     <None Include="$(MSBuildThisFileDirectory)asn.xsd">

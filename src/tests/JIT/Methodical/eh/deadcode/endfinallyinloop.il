@@ -15,7 +15,7 @@
 }
 .assembly extern eh_common{}
 
-.assembly 'endfinallyinloop'
+.assembly ASSEMBLY_NAME
 {
   .hash algorithm 0x00008004
   .ver 0:0:0:0
@@ -27,7 +27,9 @@
 .corflags 0x00000001
 
 
-.class private auto ansi beforefieldinit foo
+.namespace Test_endfinallyinloop_il
+{
+.class public auto ansi beforefieldinit foo
        extends [mscorlib]System.Object
 {
   .method public hidebysig static int32 Main() cil managed
@@ -102,3 +104,4 @@
   } 
 
 } 
+}

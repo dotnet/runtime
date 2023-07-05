@@ -12,6 +12,7 @@ namespace System.Net.Sockets
     {
         public static readonly SocketsTelemetry Log = new SocketsTelemetry();
 
+        private PollingCounter? _currentOutgoingConnectAttemptsCounter;
         private PollingCounter? _outgoingConnectionsEstablishedCounter;
         private PollingCounter? _incomingConnectionsEstablishedCounter;
         private PollingCounter? _bytesReceivedCounter;
@@ -19,6 +20,7 @@ namespace System.Net.Sockets
         private PollingCounter? _datagramsReceivedCounter;
         private PollingCounter? _datagramsSentCounter;
 
+        private long _currentOutgoingConnectAttempts;
         private long _outgoingConnectionsEstablished;
         private long _incomingConnectionsEstablished;
         private long _bytesReceived;
@@ -77,6 +79,8 @@ namespace System.Net.Sockets
         [NonEvent]
         public void ConnectStart(Internals.SocketAddress address)
         {
+            Interlocked.Increment(ref _currentOutgoingConnectAttempts);
+
             if (IsEnabled(EventLevel.Informational, EventKeywords.All))
             {
                 ConnectStart(address.ToString());
@@ -86,6 +90,9 @@ namespace System.Net.Sockets
         [NonEvent]
         public void AfterConnect(SocketError error, string? exceptionMessage = null)
         {
+            long newCount = Interlocked.Decrement(ref _currentOutgoingConnectAttempts);
+            Debug.Assert(newCount >= 0);
+
             if (error == SocketError.Success)
             {
                 Debug.Assert(exceptionMessage is null);
@@ -165,6 +172,10 @@ namespace System.Net.Sockets
             {
                 // This is the convention for initializing counters in the RuntimeEventSource (lazily on the first enable command).
 
+                _currentOutgoingConnectAttemptsCounter ??= new PollingCounter("current-outgoing-connect-attempts", this, () => Interlocked.Read(ref _currentOutgoingConnectAttempts))
+                {
+                    DisplayName = "Current Outgoing Connect Attempts",
+                };
                 _outgoingConnectionsEstablishedCounter ??= new PollingCounter("outgoing-connections-established", this, () => Interlocked.Read(ref _outgoingConnectionsEstablished))
                 {
                     DisplayName = "Outgoing Connections Established",

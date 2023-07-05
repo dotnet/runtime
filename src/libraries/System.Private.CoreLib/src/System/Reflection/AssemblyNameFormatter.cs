@@ -20,26 +20,29 @@ namespace System.Reflection
 
             if (version != null)
             {
-                Version canonicalizedVersion = version.CanonicalizeVersion();
-                if (canonicalizedVersion.Major != ushort.MaxValue)
+                ushort major = (ushort)version.Major;
+                if (major != ushort.MaxValue)
                 {
                     vsb.Append(", Version=");
-                    vsb.AppendSpanFormattable(canonicalizedVersion.Major);
+                    vsb.AppendSpanFormattable(major);
 
-                    if (canonicalizedVersion.Minor != ushort.MaxValue)
+                    ushort minor = (ushort)version.Minor;
+                    if (minor != ushort.MaxValue)
                     {
                         vsb.Append('.');
-                        vsb.AppendSpanFormattable(canonicalizedVersion.Minor);
+                        vsb.AppendSpanFormattable(minor);
 
-                        if (canonicalizedVersion.Build != ushort.MaxValue)
+                        ushort build = (ushort)version.Build;
+                        if (build != ushort.MaxValue)
                         {
                             vsb.Append('.');
-                            vsb.AppendSpanFormattable(canonicalizedVersion.Build);
+                            vsb.AppendSpanFormattable(build);
 
-                            if (canonicalizedVersion.Revision != ushort.MaxValue)
+                            ushort revision = (ushort)version.Revision;
+                            if (revision != ushort.MaxValue)
                             {
                                 vsb.Append('.');
-                                vsb.AppendSpanFormattable(canonicalizedVersion.Revision);
+                                vsb.AppendSpanFormattable(revision);
                             }
                         }
                     }
@@ -121,19 +124,6 @@ namespace System.Reflection
 
             if (needsQuoting)
                 vsb.Append(quoteChar);
-        }
-
-        private static Version CanonicalizeVersion(this Version version)
-        {
-            ushort major = (ushort)version.Major;
-            ushort minor = (ushort)version.Minor;
-            ushort build = (ushort)version.Build;
-            ushort revision = (ushort)version.Revision;
-
-            if (major == version.Major && minor == version.Minor && build == version.Build && revision == version.Revision)
-                return version;
-
-            return new Version(major, minor, build, revision);
         }
     }
 }

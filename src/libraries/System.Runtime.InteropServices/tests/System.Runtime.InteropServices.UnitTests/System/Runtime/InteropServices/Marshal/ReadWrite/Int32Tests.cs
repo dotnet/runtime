@@ -142,7 +142,7 @@ namespace System.Runtime.InteropServices.Tests
             Assert.Throws<AccessViolationException>(() => Marshal.ReadInt32(null, 2));
         }
 
-        [Fact]
+        [ConditionalFact(typeof(PlatformDetection), nameof(PlatformDetection.IsReflectionEmitSupported))]
         [SkipOnMono("Marshal.ReadInt32 will not be implemented in Mono, see https://github.com/mono/mono/issues/15085.")]
         public void ReadInt32_NotReadable_ThrowsArgumentException()
         {
@@ -170,7 +170,7 @@ namespace System.Runtime.InteropServices.Tests
             Assert.Throws<AccessViolationException>(() => Marshal.WriteInt32(null, 2, 0));
         }
 
-        [Fact]
+        [ConditionalFact(typeof(PlatformDetection), nameof(PlatformDetection.IsReflectionEmitSupported))]
         [SkipOnMono("Marshal.WriteInt32 will not be implemented in Mono, see https://github.com/mono/mono/issues/15085.")]
         public void WriteInt32_NotReadable_ThrowsArgumentException()
         {

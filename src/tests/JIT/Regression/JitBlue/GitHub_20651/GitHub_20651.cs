@@ -2,8 +2,9 @@
 // The .NET Foundation licenses this file to you under the MIT license.
 
 using System;
+using Xunit;
 
-class X
+public class X
 {
     static string s = "hello, world";
 
@@ -15,7 +16,8 @@ class X
     }
 
     // Ensure GTF_CALL flag is propagated to MD array accessor
-    public static int Main()
+    [Fact]
+    public static int TestEntryPoint()
     {
         int c = G()[0,0].GetHashCode();
         int v = s.GetHashCode();

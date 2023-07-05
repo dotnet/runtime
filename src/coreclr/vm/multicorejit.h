@@ -165,6 +165,8 @@ public:
 
     void StoreMethodCode(MethodDesc * pMethod, MulticoreJitCodeInfo codeInfo);
 
+    bool LookupMethodCode(MethodDesc * pMethod);
+
     MulticoreJitCodeInfo QueryAndRemoveMethodCode(MethodDesc * pMethod);
 
     inline unsigned GetRemainingMethodCount() const

@@ -6,7 +6,7 @@
 
 namespace System.Reflection
 {
-    // This Enum matchs the CorPropertyAttr defined in CorHdr.h
+    // This Enum matches the CorPropertyAttr defined in CorHdr.h
     [Flags]
     public enum PropertyAttributes
     {

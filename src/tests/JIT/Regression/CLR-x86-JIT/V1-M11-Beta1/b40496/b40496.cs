@@ -2,11 +2,12 @@
 // The .NET Foundation licenses this file to you under the MIT license.
 //
 
+using Xunit;
 namespace Test
 {
     using System;
 
-    struct AA
+    public struct AA
     {
         private double[] m_dummyField1;
         private double[] m_dummyField2;
@@ -21,7 +22,8 @@ namespace Test
             param4[param4[param5].Method1()].Method1();
         }
 
-        static int Main()
+        [Fact]
+        public static int TestEntryPoint()
         {
             try
             {

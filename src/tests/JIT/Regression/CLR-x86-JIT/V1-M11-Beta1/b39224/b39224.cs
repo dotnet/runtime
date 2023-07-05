@@ -2,15 +2,17 @@
 // The .NET Foundation licenses this file to you under the MIT license.
 //
 
+using Xunit;
 namespace Test
 {
     using System;
 
-    class App
+    public class App
     {
         static uint[] m_au = new uint[10];
         static void Method1(uint param1) { }
-        static int Main()
+        [Fact]
+        public static int TestEntryPoint()
         {
             int a = 98;
             try

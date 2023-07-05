@@ -126,7 +126,7 @@ namespace Microsoft.Diagnostics.NETCore.Client
                 // Transfer ownership of connected named pipe.
                 var connectedStream = _stream;
 
-                // Setup new named pipe server stream used in upcomming accept calls.
+                // Setup new named pipe server stream used in upcoming accept calls.
                 _stream = CreateNewNamedPipeServer(_pipeName, _maxInstances);
 
                 return connectedStream;

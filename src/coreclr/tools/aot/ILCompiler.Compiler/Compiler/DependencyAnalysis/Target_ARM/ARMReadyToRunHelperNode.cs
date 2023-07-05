@@ -4,8 +4,6 @@
 using System;
 using System.Diagnostics;
 using Internal.TypeSystem;
-
-using ILCompiler;
 using ILCompiler.DependencyAnalysis.ARM;
 
 namespace ILCompiler.DependencyAnalysis
@@ -13,7 +11,7 @@ namespace ILCompiler.DependencyAnalysis
     /// <summary>
     /// ARM specific portions of ReadyToRunHelperNode
     /// </summary>
-    partial class ReadyToRunHelperNode
+    public partial class ReadyToRunHelperNode
     {
         protected override void EmitCode(NodeFactory factory, ref ARMEmitter encoder, bool relocsOnly)
         {
@@ -57,8 +55,8 @@ namespace ILCompiler.DependencyAnalysis
                             // We need to trigger the cctor before returning the base. It is stored at the beginning of the non-GC statics region.
                             encoder.EmitMOV(encoder.TargetRegister.Arg2, factory.TypeNonGCStaticsSymbol(target));
                             encoder.EmitLDR(encoder.TargetRegister.Arg3, encoder.TargetRegister.Arg2,
-                                            ((short)(factory.Target.PointerSize - NonGCStaticsNode.GetClassConstructorContextSize(factory.Target))));
-                            encoder.EmitCMP(encoder.TargetRegister.Arg3, 1);
+                                            (short)-NonGCStaticsNode.GetClassConstructorContextSize(factory.Target));
+                            encoder.EmitCMP(encoder.TargetRegister.Arg3, 0);
                             encoder.EmitRETIfEqual();
 
                             encoder.EmitMOV(encoder.TargetRegister.Arg1, encoder.TargetRegister.Result);
@@ -110,8 +108,8 @@ namespace ILCompiler.DependencyAnalysis
                             // We need to trigger the cctor before returning the base. It is stored at the beginning of the non-GC statics region.
                             encoder.EmitMOV(encoder.TargetRegister.Arg2, factory.TypeNonGCStaticsSymbol(target));
                             encoder.EmitLDR(encoder.TargetRegister.Arg3, encoder.TargetRegister.Arg2,
-                                            ((short)(factory.Target.PointerSize - NonGCStaticsNode.GetClassConstructorContextSize(factory.Target))));
-                            encoder.EmitCMP(encoder.TargetRegister.Arg3, 1);
+                                            (short)-NonGCStaticsNode.GetClassConstructorContextSize(factory.Target));
+                            encoder.EmitCMP(encoder.TargetRegister.Arg3, 0);
                             encoder.EmitRETIfEqual();
 
                             encoder.EmitMOV(encoder.TargetRegister.Arg1, encoder.TargetRegister.Result);

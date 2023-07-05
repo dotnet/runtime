@@ -8,6 +8,9 @@ namespace System.Reflection.Context.Tests
     {
         private const string Root = "System.Reflection.Context";
 
+        private const string Tests = Root + ".Tests";
+        public const string SecondTestObject = Tests + ".SecondTestObject";
+
         private const string RootCustom = Root + ".Custom";
         public const string CustomAssembly = RootCustom + ".CustomAssembly";
         public const string CustomModule = RootCustom + ".CustomModule";

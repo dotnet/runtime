@@ -13,11 +13,21 @@ namespace System.Net.Security
         private SslProtocols _enabledSslProtocols = SecurityProtocol.SystemDefaultSecurityProtocols;
         private EncryptionPolicy _encryptionPolicy = EncryptionPolicy.RequireEncryption;
         private bool _allowRenegotiation;
+        private bool _allowTlsResume = true;
 
         public bool AllowRenegotiation
         {
             get => _allowRenegotiation;
             set => _allowRenegotiation = value;
+        }
+
+        /// <summary>
+        ///  Gets or sets a value that indicates whether the SslStream should allow TLS resumption.
+        /// </summary>
+        public bool AllowTlsResume
+        {
+            get => _allowTlsResume;
+            set => _allowTlsResume = value;
         }
 
         public bool ClientCertificateRequired { get; set; }
@@ -74,5 +84,13 @@ namespace System.Net.Security
         /// Use extreme caution when changing this setting.
         /// </summary>
         public CipherSuitesPolicy? CipherSuitesPolicy { get; set; }
+
+        /// <summary>
+        /// Gets or sets an optional customized policy for remote certificate
+        /// validation. If not <see langword="null"/>,
+        /// <see cref="CertificateRevocationCheckMode"/> and <see cref="SslCertificateTrust"/>
+        /// are ignored.
+        /// </summary>
+        public X509ChainPolicy? CertificateChainPolicy { get; set; }
     }
 }

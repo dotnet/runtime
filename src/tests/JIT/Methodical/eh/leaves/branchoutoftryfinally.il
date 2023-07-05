@@ -14,7 +14,7 @@
 {
 }
 .assembly extern eh_common{}
-.assembly 'branchoutoftryfinally'
+.assembly ASSEMBLY_NAME
 {
   .hash algorithm 0x00008004
   .ver 0:0:0:0
@@ -33,9 +33,9 @@
 
 
 
-.namespace hello
+.namespace hello_branchoutoftryfinally_leaves_il
 {
-  .class private auto ansi beforefieldinit Class1
+  .class public auto ansi beforefieldinit Class1
          extends [mscorlib]System.Object
   {
     .method public hidebysig static int32

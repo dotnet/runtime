@@ -1,11 +1,6 @@
 ; Licensed to the .NET Foundation under one or more agreements.
 ; The .NET Foundation licenses this file to you under the MIT license.
 
-; ==++==
-;
-
-;
-; ==--==
 ;
 ; FILE: asmhelpers.asm
 ;
@@ -240,7 +235,7 @@ _RestoreFPUContext@4 ENDP
 
 ; Register CLR exception handlers defined on the C++ side with SAFESEH.
 ; Note that these directives must be in a file that defines symbols that will be used during linking,
-; otherwise it's possible that the resulting .obj will completly be ignored by the linker and these
+; otherwise it's possible that the resulting .obj will completely be ignored by the linker and these
 ; directives will have no effect.
 COMPlusFrameHandler proto c
 .safeseh COMPlusFrameHandler
@@ -381,91 +376,6 @@ endif
         pop     ebp ; don't use 'leave' here, as ebp as been trashed
         retn    8
 _CallJitEHFinallyHelper@8 ENDP
-
-
-_GetSpecificCpuTypeAsm@0 PROC public
-        push    ebx         ; ebx is trashed by the cpuid calls
-
-        ; See if the chip supports CPUID
-        pushfd
-        pop     ecx         ; Get the EFLAGS
-        mov     eax, ecx    ; Save for later testing
-        xor     ecx, 200000h ; Invert the ID bit.
-        push    ecx
-        popfd               ; Save the updated flags.
-        pushfd
-        pop     ecx         ; Retrieve the updated flags
-        xor     ecx, eax    ; Test if it actually changed (bit set means yes)
-        push    eax
-        popfd               ; Restore the flags
-
-        test    ecx, 200000h
-        jz      Assume486
-
-        xor     eax, eax
-        cpuid
-
-        test    eax, eax
-        jz      Assume486   ; brif CPUID1 not allowed
-
-        mov     eax, 1
-        cpuid
-
-        ; filter out everything except family and model
-        ; Note that some multi-procs have different stepping number for each proc
-        and     eax, 0ff0h
-
-        jmp     CpuTypeDone
-
-Assume486:
-        mov     eax, 0400h ; report 486
-CpuTypeDone:
-        pop     ebx
-        retn
-_GetSpecificCpuTypeAsm@0 ENDP
-
-; uint32_t __stdcall GetSpecificCpuFeaturesAsm(uint32_t *pInfo);
-_GetSpecificCpuFeaturesAsm@4 PROC public
-        push    ebx         ; ebx is trashed by the cpuid calls
-
-        ; See if the chip supports CPUID
-        pushfd
-        pop     ecx         ; Get the EFLAGS
-        mov     eax, ecx    ; Save for later testing
-        xor     ecx, 200000h ; Invert the ID bit.
-        push    ecx
-        popfd               ; Save the updated flags.
-        pushfd
-        pop     ecx         ; Retrieve the updated flags
-        xor     ecx, eax    ; Test if it actually changed (bit set means yes)
-        push    eax
-        popfd               ; Restore the flags
-
-        test    ecx, 200000h
-        jz      CpuFeaturesFail
-
-        xor     eax, eax
-        cpuid
-
-        test    eax, eax
-        jz      CpuFeaturesDone ; br if CPUID1 not allowed
-
-        mov     eax, 1
-        cpuid
-        mov     eax, edx        ; return all feature flags
-        mov     edx, [esp+8]
-        test    edx, edx
-        jz      CpuFeaturesDone
-        mov     [edx],ebx       ; return additional useful information
-        jmp     CpuFeaturesDone
-
-CpuFeaturesFail:
-        xor     eax, eax    ; Nothing to report
-CpuFeaturesDone:
-        pop     ebx
-        retn    4
-_GetSpecificCpuFeaturesAsm@4 ENDP
-
 
 ;-----------------------------------------------------------------------
 ; The out-of-line portion of the code to enable preemptive GC.
@@ -634,7 +544,7 @@ else
 FASTCALL_FUNC HelperMethodFrameRestoreState,4
     mov         eax, ecx        ; eax = MachState*
 endif
-    ; restore the registers from the m_MachState stucture.  Note that
+    ; restore the registers from the m_MachState structure.  Note that
     ; we only do this for register that where not saved on the stack
     ; at the time the machine state snapshot was taken.
 

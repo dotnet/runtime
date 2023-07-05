@@ -99,13 +99,13 @@ certain tailcalls to generic methods.
 The second IL stub extracts the arguments and calls the target function. For the
 above case a function like the following will be generated:
 ```csharp
-void IL_STUB_CallTailCallTarget(IntPtr argBuffer, IntPtr result, PortableTailCallFrame* pFrame)
+void IL_STUB_CallTailCallTarget(IntPtr argBuffer, ref byte result, PortableTailCallFrame* pFrame)
 {
     pFrame->NextCall = null;
     pFrame->TailCallAwareReturnAddress = StubHelpers.NextCallReturnAddress();
     int arg1 = *(int*)(argBuffer + 4);
     *argBuffer = TAILCALLARGBUFFER_ABANDONED;
-    *(bool*)result = IsOdd(arg1);
+    Unsafe.As<byte, bool>(ref result) = IsOdd(arg1);
 }
 ```
 It matches the function above by loading the argument that was written, and
@@ -141,7 +141,7 @@ live instance of the dispatcher. This structure looks like the following:
 struct PortableTailCallFrame
 {
     public IntPtr TailCallAwareReturnAddress;
-    public IntPtr NextCall;
+    public delegate*<IntPtr, ref byte, PortableTailCallFrame*, void> NextCall;
 }
 ```
 
@@ -166,8 +166,8 @@ Finally, the dispatcher follows:
 ```csharp
 private static unsafe void DispatchTailCalls(
     IntPtr callersRetAddrSlot,
-    delegate*<IntPtr, IntPtr, PortableTailCallFrame*, void> callTarget,
-    IntPtr retVal)
+    delegate*<IntPtr, ref byte, PortableTailCallFrame*, void> callTarget,
+    ref byte retVal)
 {
     IntPtr callersRetAddr;
     TailCallTls* tls = GetTailCallInfo(callersRetAddrSlot, &callersRetAddr);
@@ -189,7 +189,7 @@ private static unsafe void DispatchTailCalls(
 
         do
         {
-            callTarget(tls->ArgBuffer, retVal, &newFrame);
+            callTarget(tls->ArgBuffer, ref retVal, &newFrame);
             callTarget = newFrame.NextCall;
         } while (callTarget != null);
     }
@@ -232,7 +232,7 @@ Note that we take care to zero out PortableTailCallFrame.NextCall from the
 CallTailCallTarget stub instead of doing it in the dispatcher before calling
 the stub. This is because GC will use NextCall to keep collectible assemblies
 alive in the event that there is a GC inside the dispatcher. Once control has
-been transfered to CallTailCallTarget we can safely reset the field.
+been transferred to CallTailCallTarget we can safely reset the field.
 
 ## The JIT's transformation
 Based on these functions the JIT needs to do a relatively simple transformation
@@ -249,13 +249,19 @@ transforms the code into the equivalent of
 ```csharp
 IL_STUB_StoreTailCallArgs(x - 1);
 bool result;
-DispatchTailCalls(&IL_STUB_CallTailCallTarget, (IntPtr)&result, _AddressOfReturnAddress());
+DispatchTailCalls(_AddressOfReturnAddress(), &IL_STUB_CallTailCallTarget, ref result);
 return result;
 ```
 
 Here `_AddressOfReturnAddress()` represents the stack slot containing the return
 address. Note that .NET requires that the return address is always stored on the
 stack, even on ARM architectures, due to its return address hijacking mechanism.
+
+When the result is returned by value the JIT will introduce a local and pass a
+pointer to it in the second argument. For ret bufs the JIT will typically
+directly pass along its own return buffer parameter to DispatchTailCalls. It is
+possible that this return buffer is pointing into GC heap, so the result is
+always tracked as a byref in the mechanism.
 
 In certain cases the target function pointer is also stored. For some targets
 this might require the JIT to perform the equivalent of `ldvirtftn` or `ldftn`

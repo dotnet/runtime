@@ -2,6 +2,7 @@
 // The .NET Foundation licenses this file to you under the MIT license.
 //
 
+using Xunit;
 namespace DefaultNamespace
 {
     using System;
@@ -30,7 +31,7 @@ namespace DefaultNamespace
         }
     }
 
-    class BB
+    public class BB
     {
 #pragma warning disable 0414
         public uint m_field1 = 91;
@@ -50,7 +51,8 @@ namespace DefaultNamespace
             return 49548;
             /* 6 operator(s) emitted */
         }
-        public static int Main()
+        [Fact]
+        public static int TestEntryPoint()
         {
             new BB().Method1(false);
             return 100;

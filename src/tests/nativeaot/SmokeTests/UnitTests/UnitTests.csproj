@@ -13,6 +13,7 @@
   <ItemGroup>
     <Compile Include="BasicThreading.cs" />
     <Compile Include="Delegates.cs" />
+    <Compile Include="Devirtualization.cs" />
     <Compile Include="Generics.cs" />
     <Compile Include="Interfaces.cs" />
     <Compile Include="Threading.cs" />

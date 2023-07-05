@@ -8,7 +8,7 @@ namespace System.IO.Ports
 {
     internal sealed partial class SerialStream
     {
-        public SafeFileHandle OpenPort(uint portNumber)
+        private static SafeFileHandle OpenPort(uint portNumber)
         {
             return Interop.Kernel32.CreateFile(
                 @"\\?\COM" + portNumber.ToString(CultureInfo.InvariantCulture),

@@ -14,7 +14,7 @@ namespace NonBlittablePointer
 
     class Program
     {
-        static unsafe int Main(string[] args)
+        static unsafe int Main()
         {
             bool value = true;
             NonBlittablePointerNative.Negate(&value);

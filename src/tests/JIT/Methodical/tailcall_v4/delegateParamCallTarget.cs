@@ -2,7 +2,7 @@
 // The .NET Foundation licenses this file to you under the MIT license.
 
 /*
- * When generating the code for a tail call, the JIT was not careful to preserve any stack-based parameters used in the computation of the call target address if it is a simple indirection (like in the case of delgate.Invoke).
+ * When generating the code for a tail call, the JIT was not careful to preserve any stack-based parameters used in the computation of the call target address if it is a simple indirection (like in the case of delegate.Invoke).
  * Thus, in the case where an outgoing argument overwrites the same slot as the incoming delegate, the new value is used in the indirection to compute the target address.
  * The fix is to not hoist any parameter uses when we hoist the indirection onto the call, and instead use tmpvars. This leaves the use of the parameter above the assignment to the slot for the outgoing tail call. In this one example it actually made the code better.
  *
@@ -12,14 +12,17 @@
  *
  * Actual output:
  * Accomplice
- * Failed 
+ * Failed
  */
 
 using System;
+using Xunit;
 
+namespace Test_delegateParamCallTarget_cs
+{
 public delegate int DoIt(int a, int b, int c, DoIt d);
 
-internal class Repro
+public class Repro
 {
     private int DoItWrong(int a, int b, int c, DoIt d)
     {
@@ -40,10 +43,12 @@ internal class Repro
         return d(a, b, c, d2);
     }
 
-    public static int Main()
+    [Fact]
+    public static int TestEntryPoint()
     {
         Repro r = new Repro();
         DoIt d = r.DoItRight;
         return r.Accomplice(1, 2, 3, d);
     }
+}
 }

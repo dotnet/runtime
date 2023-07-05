@@ -21,7 +21,7 @@ namespace BasicEventSourceTests
         {
             // We expect only one session to be on when running the test but if a ETW session was left
             // hanging, it will confuse the EventListener tests.
-            if (TestUtilities.IsProcessElevated)
+            if (PlatformDetection.IsPrivilegedProcess)
             {
                 EtwListener.EnsureStopped();
             }
@@ -31,7 +31,7 @@ namespace BasicEventSourceTests
 
             var listenerGenerators = new List<Func<Listener>> { () => new EventListenerListener() };
 
-            if (TestUtilities.IsProcessElevated)
+            if (PlatformDetection.IsPrivilegedProcess)
             {
                 listenerGenerators.Add(() => new EtwListener());
             }

@@ -11,6 +11,8 @@ using System;
 using System.Runtime.CompilerServices;
 using Xunit;
 
+namespace Test_singleRefField_cs
+{
 public struct MB8
 {
     public object foo;
@@ -37,13 +39,13 @@ public class Repro
     {
     }
 
-    private Repro[] _preExecutionDelegates = new Repro[0];
+    private Repro[] _preExecutionDelegates = Array.Empty<Repro>();
 
     private int Bug(MB8 mb8, string V_2)
     {
         if (V_2 == null)
         {
-            throw new ArgumentNullException("V_2");
+            throw new ArgumentNullException(nameof(V_2));
         }
         _state = 2;
         int loc0 = 0;
@@ -73,4 +75,5 @@ public class Repro
         new Repro().Bug(new MB8(), "Test");
         return 100;
     }
+}
 }

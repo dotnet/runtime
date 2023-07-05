@@ -6,6 +6,7 @@
 
 using System;
 using System.Runtime.CompilerServices;
+using Xunit;
 
 struct Struct16bytes
 {
@@ -21,7 +22,7 @@ struct StructWithStructField
     public Struct16bytes structField;
 }
 
-class DevDiv_714266
+public class DevDiv_714266
 {
     [MethodImpl(MethodImplOptions.NoInlining)]
     int foo(int a1, int a2, int a3, int a4, int a5, int a6, int a7, int a8, int a9, int a10, Struct16bytes s)
@@ -31,7 +32,8 @@ class DevDiv_714266
     }
 
 
-    static int Main()
+    [Fact]
+    public static int TestEntryPoint()
     {
         StructWithStructField s = new StructWithStructField();
         s.structField.a = 100;

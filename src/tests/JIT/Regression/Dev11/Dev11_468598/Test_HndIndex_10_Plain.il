@@ -4,6 +4,7 @@
 
 
 .assembly extern mscorlib { }
+.assembly extern xunit.core {}
 .assembly extern System.Console
 {
   .publickeytoken = (B0 3F 5F 7F 11 D5 0A 3A )
@@ -15,7 +16,6 @@
     .custom instance void [mscorlib]System.Security.SecurityTransparentAttribute::.ctor() = ( 01 00 00 00 ) 
 }
 
-.module Test_HndIndex_10_Plain.exe
 .imagebase 0x00400000
 .file alignment 0x00000200
 .stackreserve 0x00100000
@@ -24,12 +24,16 @@
 
 
 .class
-    private auto ansi beforefieldinit sealed abstract
+    public auto ansi beforefieldinit sealed abstract
     Test.App
         extends [mscorlib]System.Object
 {
-    .method private hidebysig static int32 Main() cil managed
+.class nested public auto ansi Test_Test_HndIndex_10_Plain extends [mscorlib] System.Object {
+    .method public hidebysig static int32 Main() cil managed
     {
+        .custom instance void [xunit.core]Xunit.FactAttribute::.ctor() = (
+            01 00 00 00
+        )
         .entrypoint
         .maxstack 8
         .locals init (class Test.DerivedClass derivedInstance, int32 exitCode)
@@ -69,6 +73,7 @@
         ldloc       exitCode
         ret
     }
+}
 
 
     .method public hidebysig static void WriteLine(string format) cil managed noinlining

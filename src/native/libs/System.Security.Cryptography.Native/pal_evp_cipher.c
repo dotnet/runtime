@@ -233,169 +233,169 @@ int32_t CryptoNative_EvpCipherSetAeadTag(EVP_CIPHER_CTX* ctx, uint8_t* tag, int3
 #endif
 }
 
-const EVP_CIPHER* CryptoNative_EvpAes128Ecb()
+const EVP_CIPHER* CryptoNative_EvpAes128Ecb(void)
 {
     // No error queue impact.
     return EVP_aes_128_ecb();
 }
 
-const EVP_CIPHER* CryptoNative_EvpAes128Cbc()
+const EVP_CIPHER* CryptoNative_EvpAes128Cbc(void)
 {
     // No error queue impact.
     return EVP_aes_128_cbc();
 }
 
-const EVP_CIPHER* CryptoNative_EvpAes128Gcm()
+const EVP_CIPHER* CryptoNative_EvpAes128Gcm(void)
 {
     // No error queue impact.
     return EVP_aes_128_gcm();
 }
 
-const EVP_CIPHER* CryptoNative_EvpAes128Cfb128()
+const EVP_CIPHER* CryptoNative_EvpAes128Cfb128(void)
 {
     // No error queue impact.
     return EVP_aes_128_cfb128();
 }
 
-const EVP_CIPHER* CryptoNative_EvpAes128Cfb8()
+const EVP_CIPHER* CryptoNative_EvpAes128Cfb8(void)
 {
     // No error queue impact.
     return EVP_aes_128_cfb8();
 }
 
-const EVP_CIPHER* CryptoNative_EvpAes128Ccm()
+const EVP_CIPHER* CryptoNative_EvpAes128Ccm(void)
 {
     // No error queue impact.
     return EVP_aes_128_ccm();
 }
 
-const EVP_CIPHER* CryptoNative_EvpAes192Ecb()
+const EVP_CIPHER* CryptoNative_EvpAes192Ecb(void)
 {
     // No error queue impact.
     return EVP_aes_192_ecb();
 }
 
-const EVP_CIPHER* CryptoNative_EvpAes192Cfb128()
+const EVP_CIPHER* CryptoNative_EvpAes192Cfb128(void)
 {
     // No error queue impact.
     return EVP_aes_192_cfb128();
 }
 
-const EVP_CIPHER* CryptoNative_EvpAes192Cfb8()
+const EVP_CIPHER* CryptoNative_EvpAes192Cfb8(void)
 {
     // No error queue impact.
     return EVP_aes_192_cfb8();
 }
 
-const EVP_CIPHER* CryptoNative_EvpAes192Cbc()
+const EVP_CIPHER* CryptoNative_EvpAes192Cbc(void)
 {
     // No error queue impact.
     return EVP_aes_192_cbc();
 }
 
-const EVP_CIPHER* CryptoNative_EvpAes192Gcm()
+const EVP_CIPHER* CryptoNative_EvpAes192Gcm(void)
 {
     // No error queue impact.
     return EVP_aes_192_gcm();
 }
 
-const EVP_CIPHER* CryptoNative_EvpAes192Ccm()
+const EVP_CIPHER* CryptoNative_EvpAes192Ccm(void)
 {
     // No error queue impact.
     return EVP_aes_192_ccm();
 }
 
-const EVP_CIPHER* CryptoNative_EvpAes256Ecb()
+const EVP_CIPHER* CryptoNative_EvpAes256Ecb(void)
 {
     // No error queue impact.
     return EVP_aes_256_ecb();
 }
 
-const EVP_CIPHER* CryptoNative_EvpAes256Cfb128()
+const EVP_CIPHER* CryptoNative_EvpAes256Cfb128(void)
 {
     // No error queue impact.
     return EVP_aes_256_cfb128();
 }
 
-const EVP_CIPHER* CryptoNative_EvpAes256Cfb8()
+const EVP_CIPHER* CryptoNative_EvpAes256Cfb8(void)
 {
     // No error queue impact.
     return EVP_aes_256_cfb8();
 }
 
-const EVP_CIPHER* CryptoNative_EvpAes256Cbc()
+const EVP_CIPHER* CryptoNative_EvpAes256Cbc(void)
 {
     // No error queue impact.
     return EVP_aes_256_cbc();
 }
 
-const EVP_CIPHER* CryptoNative_EvpAes256Gcm()
+const EVP_CIPHER* CryptoNative_EvpAes256Gcm(void)
 {
     // No error queue impact.
     return EVP_aes_256_gcm();
 }
 
-const EVP_CIPHER* CryptoNative_EvpAes256Ccm()
+const EVP_CIPHER* CryptoNative_EvpAes256Ccm(void)
 {
     // No error queue impact.
     return EVP_aes_256_ccm();
 }
 
-const EVP_CIPHER* CryptoNative_EvpDesEcb()
+const EVP_CIPHER* CryptoNative_EvpDesEcb(void)
 {
     // No error queue impact.
     return EVP_des_ecb();
 }
 
-const EVP_CIPHER* CryptoNative_EvpDesCfb8()
+const EVP_CIPHER* CryptoNative_EvpDesCfb8(void)
 {
     // No error queue impact.
     return EVP_des_cfb8();
 }
 
-const EVP_CIPHER* CryptoNative_EvpDesCbc()
+const EVP_CIPHER* CryptoNative_EvpDesCbc(void)
 {
     // No error queue impact.
     return EVP_des_cbc();
 }
 
-const EVP_CIPHER* CryptoNative_EvpDes3Ecb()
+const EVP_CIPHER* CryptoNative_EvpDes3Ecb(void)
 {
     // No error queue impact.
     return EVP_des_ede3();
 }
 
-const EVP_CIPHER* CryptoNative_EvpDes3Cfb8()
+const EVP_CIPHER* CryptoNative_EvpDes3Cfb8(void)
 {
     // No error queue impact.
     return EVP_des_ede3_cfb8();
 }
 
-const EVP_CIPHER* CryptoNative_EvpDes3Cfb64()
+const EVP_CIPHER* CryptoNative_EvpDes3Cfb64(void)
 {
     // No error queue impact.
     return EVP_des_ede3_cfb64();
 }
 
-const EVP_CIPHER* CryptoNative_EvpDes3Cbc()
+const EVP_CIPHER* CryptoNative_EvpDes3Cbc(void)
 {
     // No error queue impact.
     return EVP_des_ede3_cbc();
 }
 
-const EVP_CIPHER* CryptoNative_EvpRC2Ecb()
+const EVP_CIPHER* CryptoNative_EvpRC2Ecb(void)
 {
     // No error queue impact.
     return EVP_rc2_ecb();
 }
 
-const EVP_CIPHER* CryptoNative_EvpRC2Cbc()
+const EVP_CIPHER* CryptoNative_EvpRC2Cbc(void)
 {
     // No error queue impact.
     return EVP_rc2_cbc();
 }
 
-const EVP_CIPHER* CryptoNative_EvpChaCha20Poly1305()
+const EVP_CIPHER* CryptoNative_EvpChaCha20Poly1305(void)
 {
     // No error queue impact.
 #if HAVE_OPENSSL_CHACHA20POLY1305

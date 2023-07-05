@@ -2,15 +2,18 @@
 // The .NET Foundation licenses this file to you under the MIT license.
 
 .assembly extern legacy library mscorlib {}
+.assembly extern xunit.core {}
 
 
 
+.namespace ret_ref
+{
 .class public		_ret {
 
 
     .data DATA = int32(0x00000000)
 
-.method public static		class _ret ret_test(class _ret) {
+.method public static		class ret_ref._ret ret_test(class ret_ref._ret) {
 .maxstack	1
 	ldarg	0
 	ret
@@ -21,43 +24,46 @@
 	ret
 }
 
-.method public static	int32 main(class [mscorlib]System.String[]) {
+.method public static	int32 main() {
+.custom instance void [xunit.core]Xunit.FactAttribute::.ctor() = (
+    01 00 00 00
+)
 .entrypoint
 .maxstack		5
 
-	newobj	instance 	void _ret::_ret()
+	newobj	instance 	void ret_ref._ret::_ret()
 	dup
-	call		class _ret _ret::ret_test(class _ret)
+	call		class ret_ref._ret ret_ref._ret::ret_test(class ret_ref._ret)
 	ceq
 	brfalse		FAIL
 
-	newobj	instance 	void _ret::_ret()
+	newobj	instance 	void ret_ref._ret::_ret()
 	dup
-	call		class _ret _ret::ret_test(class _ret)
+	call		class ret_ref._ret ret_ref._ret::ret_test(class ret_ref._ret)
 	ceq
 	brfalse		FAIL
 
-	newobj	instance 	void _ret::_ret()
+	newobj	instance 	void ret_ref._ret::_ret()
 	dup
-	call		class _ret _ret::ret_test(class _ret)
+	call		class ret_ref._ret ret_ref._ret::ret_test(class ret_ref._ret)
 	ceq
 	brfalse		FAIL
 
-	newobj	instance 	void _ret::_ret()
+	newobj	instance 	void ret_ref._ret::_ret()
 	dup
-	call		class _ret _ret::ret_test(class _ret)
+	call		class ret_ref._ret ret_ref._ret::ret_test(class ret_ref._ret)
 	ceq
 	brfalse		FAIL
 
-	newobj	instance 	void _ret::_ret()
+	newobj	instance 	void ret_ref._ret::_ret()
 	dup
-	call		class _ret _ret::ret_test(class _ret)
+	call		class ret_ref._ret ret_ref._ret::ret_test(class ret_ref._ret)
 	ceq
 	brfalse		FAIL
 
-	newobj	instance 	void _ret::_ret()
+	newobj	instance 	void ret_ref._ret::_ret()
 	dup
-	call		class _ret _ret::ret_test(class _ret)
+	call		class ret_ref._ret ret_ref._ret::ret_test(class ret_ref._ret)
 	ceq
 	brfalse		FAIL
 
@@ -78,3 +84,4 @@ END:
 
 
 .assembly ret_ref{}
+}

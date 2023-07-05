@@ -54,18 +54,20 @@ namespace System.Text.RegularExpressions.Tests
             internal class CustomRegexRunner : RegexRunner
             {
                 public Match? CallScanDirectly(Regex regex, string text, int textbeg, int textend, int textstart, int prevlen, bool quick)
+#pragma warning disable SYSLIB0052 // Type or member is obsolete
                     => Scan(regex, text, textbeg, textend, textstart, prevlen, quick);
+#pragma warning restore SYSLIB0052 // Type or member is obsolete
 
                 protected override void InitTrackCount() => base.runtrackcount = 12;
 
                 // Description:
-                // ○ Match if at the start position.
-                // ○ 1st capture group.
-                //     ○ Match a Unicode digit greedily at least 1 and at most 3 times.
-                // ○ Zero-width positive lookahead assertion.
-                //     ○ Loop greedily at least once.
-                //         ○ Match a Unicode digit exactly 3 times.
-                //     ○ Match if at a word boundary.
+                // * Match if at the start position.
+                // * 1st capture group.
+                //     * Match a Unicode digit greedily at least 1 and at most 3 times.
+                // * Zero-width positive lookahead assertion.
+                //     * Loop greedily at least once.
+                //         * Match a Unicode digit exactly 3 times.
+                //     * Match if at a word boundary.
 
                 protected override bool FindFirstChar()
                 {

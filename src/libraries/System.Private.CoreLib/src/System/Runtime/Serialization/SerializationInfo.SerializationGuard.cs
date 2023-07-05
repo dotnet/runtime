@@ -19,7 +19,7 @@ namespace System.Runtime.Serialization
             t_deserializationTracker ??= new DeserializationTracker();
 
         // Returns true if deserialization is currently in progress
-        public static bool DeserializationInProgress
+        internal static bool DeserializationInProgress
         {
             get
             {
@@ -34,23 +34,13 @@ namespace System.Runtime.Serialization
             }
         }
 
-        // Throws a SerializationException if dangerous deserialization is currently
-        // in progress
-        public static void ThrowIfDeserializationInProgress()
-        {
-            if (DeserializationInProgress)
-            {
-                throw new SerializationException(SR.Serialization_DangerousDeserialization);
-            }
-        }
-
         // Throws a DeserializationBlockedException if dangerous deserialization is currently
         // in progress and the AppContext switch Switch.System.Runtime.Serialization.SerializationGuard.{switchSuffix}
         // is not true. The value of the switch is cached in cachedValue to avoid repeated lookups:
         // 0: No value cached
         // 1: The switch is true
         // -1: The switch is false
-        public static void ThrowIfDeserializationInProgress(string switchSuffix, ref int cachedValue)
+        internal static void ThrowIfDeserializationInProgress(string switchSuffix, ref int cachedValue)
         {
             const string SwitchPrefix = "Switch.System.Runtime.Serialization.SerializationGuard.";
             Debug.Assert(!string.IsNullOrWhiteSpace(switchSuffix));

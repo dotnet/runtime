@@ -6,7 +6,7 @@ using System.Runtime.InteropServices;
 using System.Text;
 using System.Collections.Generic;
 
-// UTF8 
+// UTF8
 class UTF8StringTests
 {
     [DllImport("UTF8TestNative", CallingConvention = CallingConvention.Cdecl)]
@@ -20,7 +20,7 @@ class UTF8StringTests
         string nativeString = StringParameterInOut(passedString, index);
         if (!(nativeString == expectedNativeString))
         {
-            throw new Exception("StringParameterInOut: nativeString != expecedNativeString ");
+            throw new Exception("StringParameterInOut: nativeString != expectedNativeString ");
         }
     }
 
@@ -30,11 +30,11 @@ class UTF8StringTests
     public static void TestOutStringParameter(string orgString, int index)
     {
         string passedString = orgString;
-        string expecedNativeString = passedString;
+        string expectedNativeString = passedString;
         string nativeString = StringParameterInOut(passedString, index);
-        if (!(nativeString == expecedNativeString))
+        if (!(nativeString == expectedNativeString))
         {
-            throw new Exception("StringParameterInOut: nativeString != expecedNativeString ");
+            throw new Exception("StringParameterInOut: nativeString != expectedNativeString ");
         }
     }
 
@@ -42,7 +42,7 @@ class UTF8StringTests
     public static extern void StringParameterRefOut([MarshalAs(UnmanagedType.LPUTF8Str)]out string s, int index);
     public static void TestStringPassByOut(string orgString, int index)
     {
-        // out string 
+        // out string
         string expectedNative = string.Empty;
         StringParameterRefOut(out expectedNative, index);
         if (orgString != expectedNative)
@@ -82,8 +82,8 @@ class UTF8StringBuilderTests
 
         if (!nativeStrBuilder.ToString().Equals(expectedString))
         {
-            throw new Exception("TestInOutStringBuilderParameter: nativeString != expecedNativeString ");
-        }        
+            throw new Exception("TestInOutStringBuilderParameter: nativeString != expectedNativeString ");
+        }
     }
 
     [DllImport("UTF8TestNative", CallingConvention = CallingConvention.Cdecl)]
@@ -96,7 +96,7 @@ class UTF8StringBuilderTests
 
         if (!nativeStringBuilder.ToString().Equals(expectedString))
         {
-            throw new Exception("TestOutStringBuilderParameter: string != expecedString ");
+            throw new Exception("TestOutStringBuilderParameter: string != expectedString ");
         }
     }
 
@@ -109,7 +109,7 @@ class UTF8StringBuilderTests
         StringBuilder nativeString = StringBuilderParameterReturn(index);
         if (!expectedReturn.Equals(nativeString.ToString()))
         {
-            throw new Exception(string.Format( "TestReturnStringBuilder: nativeString {0} != expecedNativeString {1}",nativeString.ToString(),expectedReturn) );
+            throw new Exception(string.Format( "TestReturnStringBuilder: nativeString {0} != expectedNativeString {1}",nativeString.ToString(),expectedReturn) );
         }
     }
 }
@@ -163,7 +163,7 @@ class UTF8StructMarshalling
             throw new Exception("Incorrect UTF8 string marshalled back from native to managed.");
         }
    }
-   
+
    unsafe static void CompareWithUTF8Encoding()
    {
        // Compare results with UTF8Encoding
@@ -177,8 +177,8 @@ class UTF8StructMarshalling
 
         IntPtr ptr = (IntPtr)(&ums);
         ManagedStruct ms = Marshal.PtrToStructure<ManagedStruct>(ptr);
-	string actual = ms.str;       
- 
+	string actual = ms.str;
+
         UTF8Encoding uTF8Encoding = new UTF8Encoding();
         byte [] b = new byte[5];
         b[0] = 0xFF;
@@ -206,9 +206,9 @@ class UTF8DelegateMarshalling
     [DllImport("UTF8TestNative", CallingConvention = CallingConvention.Cdecl)]
     public static extern void Utf8DelegateAsParameter(DelegateUTF8Parameter param);
 
-   
+
     public static void TestUTF8DelegateMarshalling()
-    {        
+    {
         Utf8DelegateAsParameter(new DelegateUTF8Parameter(Utf8StringCallback));
     }
 
@@ -227,15 +227,15 @@ class Test
     //test strings
     public static string[] utf8Strings = {
                                 "Managed",
-                                 "Sîne klâwen durh die wolken sint geslagen" ,
-                                 "काचं शक्नोम्यत्तुम् । नोपहिनस्ति माम्",
-                                 "我能吞下玻璃而不伤身体",
-                                 "ღმერთსი შემვედრე,შემვედრე, ნუთუ კვლა დამხსნას შემვედრე,სოფლისა შემვედრე, შემვედრე,შემვედრე,შემვედრე,შრომასა, ცეცხლს, წყალსა და მიწასა, ჰაერთა თანა მრომასა; მომცნეს ფრთენი და აღვფრინდე, მივჰხვდე მას ჩემსა ნდომასა, დღისით და ღამით ვჰხედვიდე მზისა ელვათა კრთომაასაშემვედრე,შემვედრე,",
-                                 "Τη γλώσσα μου έδωσαν ελληνική",
+                                 "S\u00EEne kl\u00E2wen durh die wolken sint geslagen" ,
+                                 "\u0915\u093E\u091A\u0902 \u0936\u0915\u094D\u0928\u094B\u092E\u094D\u092F\u0924\u094D\u0924\u0941\u092E\u094D \u0964 \u0928\u094B\u092A\u0939\u093F\u0928\u0938\u094D\u0924\u093F \u092E\u093E\u092E\u094D",
+                                 "\u6211\u80FD\u541E\u4E0B\u73BB\u7483\u800C\u4E0D\u4F24\u8EAB\u4F53",
+                                 "\u10E6\u10DB\u10D4\u10E0\u10D7\u10E1\u10D8 \u10E8\u10D4\u10DB\u10D5\u10D4\u10D3\u10E0\u10D4,\u10E8\u10D4\u10DB\u10D5\u10D4\u10D3\u10E0\u10D4, \u10DC\u10E3\u10D7\u10E3 \u10D9\u10D5\u10DA\u10D0 \u10D3\u10D0\u10DB\u10EE\u10E1\u10DC\u10D0\u10E1 \u10E8\u10D4\u10DB\u10D5\u10D4\u10D3\u10E0\u10D4,\u10E1\u10DD\u10E4\u10DA\u10D8\u10E1\u10D0 \u10E8\u10D4\u10DB\u10D5\u10D4\u10D3\u10E0\u10D4, \u10E8\u10D4\u10DB\u10D5\u10D4\u10D3\u10E0\u10D4,\u10E8\u10D4\u10DB\u10D5\u10D4\u10D3\u10E0\u10D4,\u10E8\u10D4\u10DB\u10D5\u10D4\u10D3\u10E0\u10D4,\u10E8\u10E0\u10DD\u10DB\u10D0\u10E1\u10D0, \u10EA\u10D4\u10EA\u10EE\u10DA\u10E1, \u10EC\u10E7\u10D0\u10DA\u10E1\u10D0 \u10D3\u10D0 \u10DB\u10D8\u10EC\u10D0\u10E1\u10D0, \u10F0\u10D0\u10D4\u10E0\u10D7\u10D0 \u10D7\u10D0\u10DC\u10D0 \u10DB\u10E0\u10DD\u10DB\u10D0\u10E1\u10D0; \u10DB\u10DD\u10DB\u10EA\u10DC\u10D4\u10E1 \u10E4\u10E0\u10D7\u10D4\u10DC\u10D8 \u10D3\u10D0 \u10D0\u10E6\u10D5\u10E4\u10E0\u10D8\u10DC\u10D3\u10D4, \u10DB\u10D8\u10D5\u10F0\u10EE\u10D5\u10D3\u10D4 \u10DB\u10D0\u10E1 \u10E9\u10D4\u10DB\u10E1\u10D0 \u10DC\u10D3\u10DD\u10DB\u10D0\u10E1\u10D0, \u10D3\u10E6\u10D8\u10E1\u10D8\u10D7 \u10D3\u10D0 \u10E6\u10D0\u10DB\u10D8\u10D7 \u10D5\u10F0\u10EE\u10D4\u10D3\u10D5\u10D8\u10D3\u10D4 \u10DB\u10D6\u10D8\u10E1\u10D0 \u10D4\u10DA\u10D5\u10D0\u10D7\u10D0 \u10D9\u10E0\u10D7\u10DD\u10DB\u10D0\u10D0\u10E1\u10D0\u10E8\u10D4\u10DB\u10D5\u10D4\u10D3\u10E0\u10D4,\u10E8\u10D4\u10DB\u10D5\u10D4\u10D3\u10E0\u10D4,",
+                                 "\u03A4\u03B7 \u03B3\u03BB\u03CE\u03C3\u03C3\u03B1 \u03BC\u03BF\u03C5 \u03AD\u03B4\u03C9\u03C3\u03B1\u03BD \u03B5\u03BB\u03BB\u03B7\u03BD\u03B9\u03BA\u03AE",
                                  null,
                                };
 
-    public static int Main(string[] args)
+    public static int Main()
     {
         // Test string as [In,Out] parameter
         for (int i = 0; i < utf8Strings.Length; i++)
@@ -273,7 +273,7 @@ class Test
         // String.Empty tests
         UTF8StringTests.EmptyStringTest();
 
-        
+
         return 100;
     }
 }

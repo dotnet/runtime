@@ -75,11 +75,20 @@ namespace System.Security.Cryptography.X509Certificates
         try
         {
 #endif
-            RawData = rawData;
-            certificate = CertificateAsn.Decode(rawData, AsnEncodingRules.DER);
+            // Windows and Unix permit trailing data after the DER contents of the certificate, so we will allow
+            // it here, too.
+            AsnValueReader reader = new AsnValueReader(rawData, AsnEncodingRules.DER);
+            ReadOnlySpan<byte> encodedValue = reader.PeekEncodedValue();
+
+            CertificateAsn.Decode(ref reader, rawData, out certificate);
             certificate.TbsCertificate.ValidateVersion();
-            Issuer = new X500DistinguishedName(certificate.TbsCertificate.Issuer.ToArray());
-            Subject = new X500DistinguishedName(certificate.TbsCertificate.Subject.ToArray());
+
+            // Use of == on Span is intentional. If the encodedValue is identical to the rawData, then we can use
+            // raw data as-is, meaning it had no trailing data. Otherwise, use the encodedValue.
+            RawData = encodedValue == rawData ? rawData : encodedValue.ToArray();
+
+            Issuer = new X500DistinguishedName(certificate.TbsCertificate.Issuer.Span);
+            Subject = new X500DistinguishedName(certificate.TbsCertificate.Subject.Span);
             IssuerName = Issuer.Name;
             SubjectName = Subject.Name;
 
@@ -87,14 +96,14 @@ namespace System.Security.Cryptography.X509Certificates
             certificate.TbsCertificate.SubjectPublicKeyInfo.Encode(writer);
             SubjectPublicKeyInfo = writer.Encode();
 
-            Extensions = new List<X509Extension>();
+            Extensions = new List<X509Extension>((certificate.TbsCertificate.Extensions?.Length).GetValueOrDefault());
             if (certificate.TbsCertificate.Extensions != null)
             {
                 foreach (X509ExtensionAsn rawExtension in certificate.TbsCertificate.Extensions)
                 {
                     X509Extension extension = new X509Extension(
                         rawExtension.ExtnId,
-                        rawExtension.ExtnValue.ToArray(),
+                        rawExtension.ExtnValue.Span,
                         rawExtension.Critical);
 
                     Extensions.Add(extension);
@@ -104,9 +113,8 @@ namespace System.Security.Cryptography.X509Certificates
         }
         catch (Exception e)
         {
-            throw new CryptographicException(
-                $"Error in reading certificate:{Environment.NewLine}{PemPrintCert(rawData)}",
-                e);
+            string pem = PemEncoding.WriteString(PemLabels.X509Certificate, rawData);
+            throw new CryptographicException($"Error in reading certificate:{Environment.NewLine}{pem}", e);
         }
 #endif
         }
@@ -244,11 +252,7 @@ namespace System.Security.Cryptography.X509Certificates
                         e = value;
                         break;
                     default:
-                        if (firstRdn == null)
-                        {
-                            firstRdn = value;
-                        }
-
+                        firstRdn ??= value;
                         break;
                 }
             }
@@ -379,25 +383,5 @@ namespace System.Security.Cryptography.X509Certificates
                 }
             }
         }
-
-#if DEBUG
-        private static string PemPrintCert(byte[] rawData)
-        {
-            const string PemHeader = "-----BEGIN CERTIFICATE-----";
-            const string PemFooter = "-----END CERTIFICATE-----";
-
-            StringBuilder builder = new StringBuilder(PemHeader.Length + PemFooter.Length + rawData.Length * 2);
-            builder.Append(PemHeader);
-            builder.AppendLine();
-
-            builder.Append(Convert.ToBase64String(rawData, Base64FormattingOptions.InsertLineBreaks));
-            builder.AppendLine();
-
-            builder.Append(PemFooter);
-            builder.AppendLine();
-
-            return builder.ToString();
-        }
-#endif
     }
 }

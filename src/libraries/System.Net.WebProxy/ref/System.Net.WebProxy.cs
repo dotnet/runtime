@@ -15,16 +15,18 @@ namespace System.Net
     public partial class WebProxy : System.Net.IWebProxy, System.Runtime.Serialization.ISerializable
     {
         public WebProxy() { }
+        [System.ObsoleteAttribute("This API supports obsolete formatter-based serialization. It should not be called or extended by application code.", DiagnosticId = "SYSLIB0051", UrlFormat = "https://aka.ms/dotnet-warnings/{0}")]
+        [System.ComponentModel.EditorBrowsableAttribute(System.ComponentModel.EditorBrowsableState.Never)]
         protected WebProxy(System.Runtime.Serialization.SerializationInfo serializationInfo, System.Runtime.Serialization.StreamingContext streamingContext) { }
         public WebProxy(string? Address) { }
         public WebProxy(string? Address, bool BypassOnLocal) { }
-        public WebProxy(string? Address, bool BypassOnLocal, [System.Diagnostics.CodeAnalysis.StringSyntaxAttribute(System.Diagnostics.CodeAnalysis.StringSyntaxAttribute.Regex, System.Text.RegularExpressions.RegexOptions.IgnoreCase | System.Text.RegularExpressions.RegexOptions.CultureInvariant)] string[]? BypassList) { }
-        public WebProxy(string? Address, bool BypassOnLocal, [System.Diagnostics.CodeAnalysis.StringSyntaxAttribute(System.Diagnostics.CodeAnalysis.StringSyntaxAttribute.Regex, System.Text.RegularExpressions.RegexOptions.IgnoreCase | System.Text.RegularExpressions.RegexOptions.CultureInvariant)] string[]? BypassList, System.Net.ICredentials? Credentials) { }
+        public WebProxy(string? Address, bool BypassOnLocal, [System.Diagnostics.CodeAnalysis.StringSyntaxAttribute("Regex", System.Text.RegularExpressions.RegexOptions.IgnoreCase | System.Text.RegularExpressions.RegexOptions.CultureInvariant)] string[]? BypassList) { }
+        public WebProxy(string? Address, bool BypassOnLocal, [System.Diagnostics.CodeAnalysis.StringSyntaxAttribute("Regex", System.Text.RegularExpressions.RegexOptions.IgnoreCase | System.Text.RegularExpressions.RegexOptions.CultureInvariant)] string[]? BypassList, System.Net.ICredentials? Credentials) { }
         public WebProxy(string Host, int Port) { }
         public WebProxy(System.Uri? Address) { }
         public WebProxy(System.Uri? Address, bool BypassOnLocal) { }
-        public WebProxy(System.Uri? Address, bool BypassOnLocal, [System.Diagnostics.CodeAnalysis.StringSyntaxAttribute(System.Diagnostics.CodeAnalysis.StringSyntaxAttribute.Regex, System.Text.RegularExpressions.RegexOptions.IgnoreCase | System.Text.RegularExpressions.RegexOptions.CultureInvariant)] string[]? BypassList) { }
-        public WebProxy(System.Uri? Address, bool BypassOnLocal, [System.Diagnostics.CodeAnalysis.StringSyntaxAttribute(System.Diagnostics.CodeAnalysis.StringSyntaxAttribute.Regex, System.Text.RegularExpressions.RegexOptions.IgnoreCase | System.Text.RegularExpressions.RegexOptions.CultureInvariant)] string[]? BypassList, System.Net.ICredentials? Credentials) { }
+        public WebProxy(System.Uri? Address, bool BypassOnLocal, [System.Diagnostics.CodeAnalysis.StringSyntaxAttribute("Regex", System.Text.RegularExpressions.RegexOptions.IgnoreCase | System.Text.RegularExpressions.RegexOptions.CultureInvariant)] string[]? BypassList) { }
+        public WebProxy(System.Uri? Address, bool BypassOnLocal, [System.Diagnostics.CodeAnalysis.StringSyntaxAttribute("Regex", System.Text.RegularExpressions.RegexOptions.IgnoreCase | System.Text.RegularExpressions.RegexOptions.CultureInvariant)] string[]? BypassList, System.Net.ICredentials? Credentials) { }
         public System.Uri? Address { get { throw null; } set { } }
         public System.Collections.ArrayList BypassArrayList { get { throw null; } }
         [System.Diagnostics.CodeAnalysis.AllowNullAttribute]

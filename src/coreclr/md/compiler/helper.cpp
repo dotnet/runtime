@@ -40,8 +40,6 @@ STDMETHODIMP RegMeta::TranslateSigWithScope(    // S_OK or error.
     IMDCommon   *pAssemImportMDCommon = NULL;
     IMDCommon   *pImportMDCommon = NULL;
 
-    BEGIN_ENTRYPOINT_NOTHROW;
-
     RegMeta     *pRegMetaAssemEmit = static_cast<RegMeta*>(pAssemEmit);
     RegMeta     *pRegMetaEmit = NULL;
 
@@ -87,8 +85,6 @@ STDMETHODIMP RegMeta::TranslateSigWithScope(    // S_OK or error.
     }
 
 ErrExit:
-    END_ENTRYPOINT_NOTHROW;
-
     if (pAssemImportMDCommon)
         pAssemImportMDCommon->Release();
     if (pImportMDCommon)
@@ -223,8 +219,6 @@ STDMETHODIMP RegMeta::DefineEventHelper(    // Return hresult.
     mdEvent     *pmdEvent)              // [OUT] output event token
 {
     HRESULT     hr = S_OK;
-    LOG((LOGMD, "MD RegMeta::DefineEventHelper(0x%08x, %S, 0x%08x, 0x%08x, 0x%08x)\n",
-        td, szEvent, dwEventFlags, tkEventType, pmdEvent));
 
     LOCKWRITE();
 
@@ -254,9 +248,6 @@ STDMETHODIMP RegMeta::AddDeclarativeSecurityHelper(
     RID             iDeclSec;
     short           sAction = static_cast<short>(dwAction);
     mdPermission    tkPerm  = mdTokenNil;
-
-    LOG((LOGMD, "MD RegMeta::AddDeclarativeSecurityHelper(0x%08x, 0x%08x, 0x%08x, 0x%08x, 0x%08x)\n",
-        tk, dwAction, pValue, cbValue, pmdPermission));
 
     LOCKWRITE();
     IfFailGo(m_pStgdb->m_MiniMd.PreUpdate());

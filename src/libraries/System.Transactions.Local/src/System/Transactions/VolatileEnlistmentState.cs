@@ -141,7 +141,7 @@ namespace System.Transactions
                 TransactionsEtwProvider etwLog = TransactionsEtwProvider.Log;
                 if (etwLog.IsEnabled())
                 {
-                    etwLog.EnlistmentStatus(enlistment, NotificationCall.Prepare);
+                    etwLog.EnlistmentStatus(TraceSourceType.TraceSourceLtm, enlistment.EnlistmentTraceId, NotificationCall.Prepare);
                 }
 
                 Debug.Assert(enlistment.EnlistmentNotification != null);
@@ -213,7 +213,7 @@ namespace System.Transactions
             TransactionsEtwProvider etwLog = TransactionsEtwProvider.Log;
             if (etwLog.IsEnabled())
             {
-                etwLog.EnlistmentStatus(enlistment, NotificationCall.SinglePhaseCommit);
+                etwLog.EnlistmentStatus(TraceSourceType.TraceSourceLtm, enlistment.EnlistmentTraceId, NotificationCall.SinglePhaseCommit);
             }
 
             Monitor.Exit(enlistment.Transaction);
@@ -261,10 +261,7 @@ namespace System.Transactions
         {
             VolatileEnlistmentEnded.EnterState(enlistment);
 
-            if (enlistment.Transaction._innerException == null)
-            {
-                enlistment.Transaction._innerException = e;
-            }
+            enlistment.Transaction._innerException ??= e;
 
             Debug.Assert(enlistment.Transaction.State != null);
             enlistment.Transaction.State.InDoubtFromEnlistment(enlistment.Transaction);
@@ -369,7 +366,7 @@ namespace System.Transactions
                 TransactionsEtwProvider etwLog = TransactionsEtwProvider.Log;
                 if (etwLog.IsEnabled())
                 {
-                    etwLog.EnlistmentStatus(enlistment, NotificationCall.Rollback);
+                    etwLog.EnlistmentStatus(TraceSourceType.TraceSourceLtm, enlistment.EnlistmentTraceId, NotificationCall.Rollback);
                 }
 
                 Debug.Assert(enlistment.EnlistmentNotification != null);
@@ -412,7 +409,7 @@ namespace System.Transactions
                 TransactionsEtwProvider etwLog = TransactionsEtwProvider.Log;
                 if (etwLog.IsEnabled())
                 {
-                    etwLog.EnlistmentStatus(enlistment, NotificationCall.Commit);
+                    etwLog.EnlistmentStatus(TraceSourceType.TraceSourceLtm, enlistment.EnlistmentTraceId, NotificationCall.Commit);
                 }
 
                 Debug.Assert(enlistment.EnlistmentNotification != null);
@@ -446,7 +443,7 @@ namespace System.Transactions
                 TransactionsEtwProvider etwLog = TransactionsEtwProvider.Log;
                 if (etwLog.IsEnabled())
                 {
-                    etwLog.EnlistmentStatus(enlistment, NotificationCall.InDoubt);
+                    etwLog.EnlistmentStatus(TraceSourceType.TraceSourceLtm, enlistment.EnlistmentTraceId, NotificationCall.InDoubt);
                 }
 
                 Debug.Assert(enlistment.EnlistmentNotification != null);

@@ -24,14 +24,18 @@ namespace System.Xml.Xsl.XsltOld
         // Constructor
         //
 
-        internal TextOnlyOutput(Processor processor, Stream stream!!)
+        internal TextOnlyOutput(Processor processor, Stream stream)
         {
+            ArgumentNullException.ThrowIfNull(stream);
+
             _processor = processor;
             _writer = new StreamWriter(stream, Output.Encoding);
         }
 
-        internal TextOnlyOutput(Processor processor, TextWriter writer!!)
+        internal TextOnlyOutput(Processor processor, TextWriter writer)
         {
+            ArgumentNullException.ThrowIfNull(writer);
+
             _processor = processor;
             _writer = writer;
         }

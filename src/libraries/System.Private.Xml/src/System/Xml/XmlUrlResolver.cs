@@ -44,7 +44,7 @@ namespace System.Xml
         {
             if (ofObjectToReturn is null || ofObjectToReturn == typeof(System.IO.Stream) || ofObjectToReturn == typeof(object))
             {
-                return DownloadManager.GetStream(absoluteUri, _credentials, _proxy);
+                return XmlDownloadManager.GetStream(absoluteUri, _credentials, _proxy);
             }
 
             throw new XmlException(SR.Xml_UnsupportedClass, string.Empty);

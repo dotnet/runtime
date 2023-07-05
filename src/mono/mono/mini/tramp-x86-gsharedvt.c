@@ -11,6 +11,8 @@
 #include "mini.h"
 #include <mono/metadata/abi-details.h>
 
+MONO_DISABLE_WARNING(4127) /* conditional expression is constant */
+
 #ifdef MONO_ARCH_GSHAREDVT_SUPPORTED
 
 gpointer

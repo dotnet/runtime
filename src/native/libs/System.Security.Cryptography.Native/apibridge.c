@@ -182,7 +182,7 @@ int32_t local_X509_NAME_get0_der(X509_NAME* x509Name, const uint8_t** pder, size
     return 1;
 }
 
-long local_OpenSSL_version_num()
+long local_OpenSSL_version_num(void)
 {
     return (long)SSLeay();
 }
@@ -325,7 +325,7 @@ int32_t local_EVP_PKEY_up_ref(EVP_PKEY* pkey)
     return CRYPTO_add_lock(&pkey->references, 1, CRYPTO_LOCK_EVP_PKEY, __FILE__, __LINE__) > 1;
 }
 
-EVP_CIPHER_CTX* local_EVP_CIPHER_CTX_new()
+EVP_CIPHER_CTX* local_EVP_CIPHER_CTX_new(void)
 {
     EVP_CIPHER_CTX* ctx = (EVP_CIPHER_CTX*)calloc(1, sizeof(EVP_CIPHER_CTX));
     return ctx;
@@ -340,7 +340,7 @@ int32_t local_EVP_CIPHER_CTX_reset(EVP_CIPHER_CTX* ctx)
         return ret;
     }
 
-    // OpenSSL 1.1 returns succes 1 on a NULL input
+    // OpenSSL 1.1 returns success 1 on a NULL input
     return 1;
 }
 
@@ -353,7 +353,7 @@ void local_EVP_CIPHER_CTX_free(EVP_CIPHER_CTX* ctx)
     }
 }
 
-HMAC_CTX* local_HMAC_CTX_new()
+HMAC_CTX* local_HMAC_CTX_new(void)
 {
     HMAC_CTX* ctx = (HMAC_CTX*)calloc(1, sizeof(HMAC_CTX));
 
@@ -888,6 +888,19 @@ int local_EVP_PKEY_public_check(EVP_PKEY_CTX* ctx)
             ERR_put_error(ERR_LIB_EVP, 0, EVP_R_UNSUPPORTED_ALGORITHM, __FILE__, __LINE__);
             return -1;
     }
+}
+
+int local_ASN1_TIME_to_tm(const ASN1_TIME* s, struct tm* tm)
+{
+    (void)s;
+    (void)tm;
+
+    return 0;
+}
+
+int local_BN_is_zero(const BIGNUM* a)
+{
+    return a->top == 0;
 }
 
 #endif

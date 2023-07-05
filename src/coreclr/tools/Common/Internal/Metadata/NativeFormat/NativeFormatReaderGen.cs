@@ -7,15 +7,23 @@
 #pragma warning disable 169
 #pragma warning disable 282 // There is no defined ordering between fields in multiple declarations of partial class or struct
 #pragma warning disable CA1066 // IEquatable<T> implementations aren't used
+#pragma warning disable CA1822
 #pragma warning disable IDE0059
+#pragma warning disable SA1121
+#pragma warning disable IDE0036, SA1129
 
 using System;
+using System.Diagnostics;
 using System.Reflection;
 using System.Collections.Generic;
+using System.Runtime.CompilerServices;
 using Internal.NativeFormat;
 
 namespace Internal.Metadata.NativeFormat
 {
+#if SYSTEM_PRIVATE_CORELIB
+    [CLSCompliant(false)]
+#endif
     public partial struct ArraySignature
     {
         internal MetadataReader _reader;
@@ -28,7 +36,7 @@ namespace Internal.Metadata.NativeFormat
                 return _handle;
             }
         } // Handle
-        /// One of: TypeDefinition, TypeReference, TypeSpecification
+        /// One of: TypeDefinition, TypeReference, TypeSpecification, ModifiedType
 
         public Handle ElementType
         {
@@ -71,6 +79,9 @@ namespace Internal.Metadata.NativeFormat
         internal Int32Collection _lowerBounds;
     } // ArraySignature
 
+#if SYSTEM_PRIVATE_CORELIB
+    [CLSCompliant(false)]
+#endif
     public partial struct ArraySignatureHandle
     {
         public override bool Equals(object obj)
@@ -107,8 +118,7 @@ namespace Internal.Metadata.NativeFormat
         internal ArraySignatureHandle(int value)
         {
             HandleType hType = (HandleType)(value >> 24);
-            if (!(hType == 0 || hType == HandleType.ArraySignature || hType == HandleType.Null))
-                throw new ArgumentException();
+            Debug.Assert(hType == 0 || hType == HandleType.ArraySignature || hType == HandleType.Null);
             _value = (value & 0x00FFFFFF) | (((int)HandleType.ArraySignature) << 24);
             _Validate();
         }
@@ -154,6 +164,9 @@ namespace Internal.Metadata.NativeFormat
         } // ToString
     } // ArraySignatureHandle
 
+#if SYSTEM_PRIVATE_CORELIB
+    [CLSCompliant(false)]
+#endif
     public partial struct ByReferenceSignature
     {
         internal MetadataReader _reader;
@@ -166,7 +179,7 @@ namespace Internal.Metadata.NativeFormat
                 return _handle;
             }
         } // Handle
-        /// One of: TypeDefinition, TypeReference, TypeSpecification
+        /// One of: TypeDefinition, TypeReference, TypeSpecification, ModifiedType
 
         public Handle Type
         {
@@ -179,6 +192,9 @@ namespace Internal.Metadata.NativeFormat
         internal Handle _type;
     } // ByReferenceSignature
 
+#if SYSTEM_PRIVATE_CORELIB
+    [CLSCompliant(false)]
+#endif
     public partial struct ByReferenceSignatureHandle
     {
         public override bool Equals(object obj)
@@ -215,8 +231,7 @@ namespace Internal.Metadata.NativeFormat
         internal ByReferenceSignatureHandle(int value)
         {
             HandleType hType = (HandleType)(value >> 24);
-            if (!(hType == 0 || hType == HandleType.ByReferenceSignature || hType == HandleType.Null))
-                throw new ArgumentException();
+            Debug.Assert(hType == 0 || hType == HandleType.ByReferenceSignature || hType == HandleType.Null);
             _value = (value & 0x00FFFFFF) | (((int)HandleType.ByReferenceSignature) << 24);
             _Validate();
         }
@@ -262,6 +277,9 @@ namespace Internal.Metadata.NativeFormat
         } // ToString
     } // ByReferenceSignatureHandle
 
+#if SYSTEM_PRIVATE_CORELIB
+    [CLSCompliant(false)]
+#endif
     public partial struct ConstantBooleanArray
     {
         internal MetadataReader _reader;
@@ -286,6 +304,9 @@ namespace Internal.Metadata.NativeFormat
         internal BooleanCollection _value;
     } // ConstantBooleanArray
 
+#if SYSTEM_PRIVATE_CORELIB
+    [CLSCompliant(false)]
+#endif
     public partial struct ConstantBooleanArrayHandle
     {
         public override bool Equals(object obj)
@@ -322,8 +343,7 @@ namespace Internal.Metadata.NativeFormat
         internal ConstantBooleanArrayHandle(int value)
         {
             HandleType hType = (HandleType)(value >> 24);
-            if (!(hType == 0 || hType == HandleType.ConstantBooleanArray || hType == HandleType.Null))
-                throw new ArgumentException();
+            Debug.Assert(hType == 0 || hType == HandleType.ConstantBooleanArray || hType == HandleType.Null);
             _value = (value & 0x00FFFFFF) | (((int)HandleType.ConstantBooleanArray) << 24);
             _Validate();
         }
@@ -369,6 +389,9 @@ namespace Internal.Metadata.NativeFormat
         } // ToString
     } // ConstantBooleanArrayHandle
 
+#if SYSTEM_PRIVATE_CORELIB
+    [CLSCompliant(false)]
+#endif
     public partial struct ConstantBooleanValue
     {
         internal MetadataReader _reader;
@@ -393,6 +416,9 @@ namespace Internal.Metadata.NativeFormat
         internal bool _value;
     } // ConstantBooleanValue
 
+#if SYSTEM_PRIVATE_CORELIB
+    [CLSCompliant(false)]
+#endif
     public partial struct ConstantBooleanValueHandle
     {
         public override bool Equals(object obj)
@@ -429,8 +455,7 @@ namespace Internal.Metadata.NativeFormat
         internal ConstantBooleanValueHandle(int value)
         {
             HandleType hType = (HandleType)(value >> 24);
-            if (!(hType == 0 || hType == HandleType.ConstantBooleanValue || hType == HandleType.Null))
-                throw new ArgumentException();
+            Debug.Assert(hType == 0 || hType == HandleType.ConstantBooleanValue || hType == HandleType.Null);
             _value = (value & 0x00FFFFFF) | (((int)HandleType.ConstantBooleanValue) << 24);
             _Validate();
         }
@@ -476,6 +501,9 @@ namespace Internal.Metadata.NativeFormat
         } // ToString
     } // ConstantBooleanValueHandle
 
+#if SYSTEM_PRIVATE_CORELIB
+    [CLSCompliant(false)]
+#endif
     public partial struct ConstantBoxedEnumValue
     {
         internal MetadataReader _reader;
@@ -512,6 +540,9 @@ namespace Internal.Metadata.NativeFormat
         internal Handle _type;
     } // ConstantBoxedEnumValue
 
+#if SYSTEM_PRIVATE_CORELIB
+    [CLSCompliant(false)]
+#endif
     public partial struct ConstantBoxedEnumValueHandle
     {
         public override bool Equals(object obj)
@@ -548,8 +579,7 @@ namespace Internal.Metadata.NativeFormat
         internal ConstantBoxedEnumValueHandle(int value)
         {
             HandleType hType = (HandleType)(value >> 24);
-            if (!(hType == 0 || hType == HandleType.ConstantBoxedEnumValue || hType == HandleType.Null))
-                throw new ArgumentException();
+            Debug.Assert(hType == 0 || hType == HandleType.ConstantBoxedEnumValue || hType == HandleType.Null);
             _value = (value & 0x00FFFFFF) | (((int)HandleType.ConstantBoxedEnumValue) << 24);
             _Validate();
         }
@@ -595,6 +625,9 @@ namespace Internal.Metadata.NativeFormat
         } // ToString
     } // ConstantBoxedEnumValueHandle
 
+#if SYSTEM_PRIVATE_CORELIB
+    [CLSCompliant(false)]
+#endif
     public partial struct ConstantByteArray
     {
         internal MetadataReader _reader;
@@ -619,6 +652,9 @@ namespace Internal.Metadata.NativeFormat
         internal ByteCollection _value;
     } // ConstantByteArray
 
+#if SYSTEM_PRIVATE_CORELIB
+    [CLSCompliant(false)]
+#endif
     public partial struct ConstantByteArrayHandle
     {
         public override bool Equals(object obj)
@@ -655,8 +691,7 @@ namespace Internal.Metadata.NativeFormat
         internal ConstantByteArrayHandle(int value)
         {
             HandleType hType = (HandleType)(value >> 24);
-            if (!(hType == 0 || hType == HandleType.ConstantByteArray || hType == HandleType.Null))
-                throw new ArgumentException();
+            Debug.Assert(hType == 0 || hType == HandleType.ConstantByteArray || hType == HandleType.Null);
             _value = (value & 0x00FFFFFF) | (((int)HandleType.ConstantByteArray) << 24);
             _Validate();
         }
@@ -702,6 +737,9 @@ namespace Internal.Metadata.NativeFormat
         } // ToString
     } // ConstantByteArrayHandle
 
+#if SYSTEM_PRIVATE_CORELIB
+    [CLSCompliant(false)]
+#endif
     public partial struct ConstantByteValue
     {
         internal MetadataReader _reader;
@@ -726,6 +764,9 @@ namespace Internal.Metadata.NativeFormat
         internal byte _value;
     } // ConstantByteValue
 
+#if SYSTEM_PRIVATE_CORELIB
+    [CLSCompliant(false)]
+#endif
     public partial struct ConstantByteValueHandle
     {
         public override bool Equals(object obj)
@@ -762,8 +803,7 @@ namespace Internal.Metadata.NativeFormat
         internal ConstantByteValueHandle(int value)
         {
             HandleType hType = (HandleType)(value >> 24);
-            if (!(hType == 0 || hType == HandleType.ConstantByteValue || hType == HandleType.Null))
-                throw new ArgumentException();
+            Debug.Assert(hType == 0 || hType == HandleType.ConstantByteValue || hType == HandleType.Null);
             _value = (value & 0x00FFFFFF) | (((int)HandleType.ConstantByteValue) << 24);
             _Validate();
         }
@@ -809,6 +849,9 @@ namespace Internal.Metadata.NativeFormat
         } // ToString
     } // ConstantByteValueHandle
 
+#if SYSTEM_PRIVATE_CORELIB
+    [CLSCompliant(false)]
+#endif
     public partial struct ConstantCharArray
     {
         internal MetadataReader _reader;
@@ -833,6 +876,9 @@ namespace Internal.Metadata.NativeFormat
         internal CharCollection _value;
     } // ConstantCharArray
 
+#if SYSTEM_PRIVATE_CORELIB
+    [CLSCompliant(false)]
+#endif
     public partial struct ConstantCharArrayHandle
     {
         public override bool Equals(object obj)
@@ -869,8 +915,7 @@ namespace Internal.Metadata.NativeFormat
         internal ConstantCharArrayHandle(int value)
         {
             HandleType hType = (HandleType)(value >> 24);
-            if (!(hType == 0 || hType == HandleType.ConstantCharArray || hType == HandleType.Null))
-                throw new ArgumentException();
+            Debug.Assert(hType == 0 || hType == HandleType.ConstantCharArray || hType == HandleType.Null);
             _value = (value & 0x00FFFFFF) | (((int)HandleType.ConstantCharArray) << 24);
             _Validate();
         }
@@ -916,6 +961,9 @@ namespace Internal.Metadata.NativeFormat
         } // ToString
     } // ConstantCharArrayHandle
 
+#if SYSTEM_PRIVATE_CORELIB
+    [CLSCompliant(false)]
+#endif
     public partial struct ConstantCharValue
     {
         internal MetadataReader _reader;
@@ -940,6 +988,9 @@ namespace Internal.Metadata.NativeFormat
         internal char _value;
     } // ConstantCharValue
 
+#if SYSTEM_PRIVATE_CORELIB
+    [CLSCompliant(false)]
+#endif
     public partial struct ConstantCharValueHandle
     {
         public override bool Equals(object obj)
@@ -976,8 +1027,7 @@ namespace Internal.Metadata.NativeFormat
         internal ConstantCharValueHandle(int value)
         {
             HandleType hType = (HandleType)(value >> 24);
-            if (!(hType == 0 || hType == HandleType.ConstantCharValue || hType == HandleType.Null))
-                throw new ArgumentException();
+            Debug.Assert(hType == 0 || hType == HandleType.ConstantCharValue || hType == HandleType.Null);
             _value = (value & 0x00FFFFFF) | (((int)HandleType.ConstantCharValue) << 24);
             _Validate();
         }
@@ -1023,6 +1073,9 @@ namespace Internal.Metadata.NativeFormat
         } // ToString
     } // ConstantCharValueHandle
 
+#if SYSTEM_PRIVATE_CORELIB
+    [CLSCompliant(false)]
+#endif
     public partial struct ConstantDoubleArray
     {
         internal MetadataReader _reader;
@@ -1047,6 +1100,9 @@ namespace Internal.Metadata.NativeFormat
         internal DoubleCollection _value;
     } // ConstantDoubleArray
 
+#if SYSTEM_PRIVATE_CORELIB
+    [CLSCompliant(false)]
+#endif
     public partial struct ConstantDoubleArrayHandle
     {
         public override bool Equals(object obj)
@@ -1083,8 +1139,7 @@ namespace Internal.Metadata.NativeFormat
         internal ConstantDoubleArrayHandle(int value)
         {
             HandleType hType = (HandleType)(value >> 24);
-            if (!(hType == 0 || hType == HandleType.ConstantDoubleArray || hType == HandleType.Null))
-                throw new ArgumentException();
+            Debug.Assert(hType == 0 || hType == HandleType.ConstantDoubleArray || hType == HandleType.Null);
             _value = (value & 0x00FFFFFF) | (((int)HandleType.ConstantDoubleArray) << 24);
             _Validate();
         }
@@ -1130,6 +1185,9 @@ namespace Internal.Metadata.NativeFormat
         } // ToString
     } // ConstantDoubleArrayHandle
 
+#if SYSTEM_PRIVATE_CORELIB
+    [CLSCompliant(false)]
+#endif
     public partial struct ConstantDoubleValue
     {
         internal MetadataReader _reader;
@@ -1154,6 +1212,9 @@ namespace Internal.Metadata.NativeFormat
         internal double _value;
     } // ConstantDoubleValue
 
+#if SYSTEM_PRIVATE_CORELIB
+    [CLSCompliant(false)]
+#endif
     public partial struct ConstantDoubleValueHandle
     {
         public override bool Equals(object obj)
@@ -1190,8 +1251,7 @@ namespace Internal.Metadata.NativeFormat
         internal ConstantDoubleValueHandle(int value)
         {
             HandleType hType = (HandleType)(value >> 24);
-            if (!(hType == 0 || hType == HandleType.ConstantDoubleValue || hType == HandleType.Null))
-                throw new ArgumentException();
+            Debug.Assert(hType == 0 || hType == HandleType.ConstantDoubleValue || hType == HandleType.Null);
             _value = (value & 0x00FFFFFF) | (((int)HandleType.ConstantDoubleValue) << 24);
             _Validate();
         }
@@ -1237,6 +1297,9 @@ namespace Internal.Metadata.NativeFormat
         } // ToString
     } // ConstantDoubleValueHandle
 
+#if SYSTEM_PRIVATE_CORELIB
+    [CLSCompliant(false)]
+#endif
     public partial struct ConstantEnumArray
     {
         internal MetadataReader _reader;
@@ -1271,6 +1334,9 @@ namespace Internal.Metadata.NativeFormat
         internal Handle _value;
     } // ConstantEnumArray
 
+#if SYSTEM_PRIVATE_CORELIB
+    [CLSCompliant(false)]
+#endif
     public partial struct ConstantEnumArrayHandle
     {
         public override bool Equals(object obj)
@@ -1307,8 +1373,7 @@ namespace Internal.Metadata.NativeFormat
         internal ConstantEnumArrayHandle(int value)
         {
             HandleType hType = (HandleType)(value >> 24);
-            if (!(hType == 0 || hType == HandleType.ConstantEnumArray || hType == HandleType.Null))
-                throw new ArgumentException();
+            Debug.Assert(hType == 0 || hType == HandleType.ConstantEnumArray || hType == HandleType.Null);
             _value = (value & 0x00FFFFFF) | (((int)HandleType.ConstantEnumArray) << 24);
             _Validate();
         }
@@ -1354,6 +1419,9 @@ namespace Internal.Metadata.NativeFormat
         } // ToString
     } // ConstantEnumArrayHandle
 
+#if SYSTEM_PRIVATE_CORELIB
+    [CLSCompliant(false)]
+#endif
     public partial struct ConstantHandleArray
     {
         internal MetadataReader _reader;
@@ -1378,6 +1446,9 @@ namespace Internal.Metadata.NativeFormat
         internal HandleCollection _value;
     } // ConstantHandleArray
 
+#if SYSTEM_PRIVATE_CORELIB
+    [CLSCompliant(false)]
+#endif
     public partial struct ConstantHandleArrayHandle
     {
         public override bool Equals(object obj)
@@ -1414,8 +1485,7 @@ namespace Internal.Metadata.NativeFormat
         internal ConstantHandleArrayHandle(int value)
         {
             HandleType hType = (HandleType)(value >> 24);
-            if (!(hType == 0 || hType == HandleType.ConstantHandleArray || hType == HandleType.Null))
-                throw new ArgumentException();
+            Debug.Assert(hType == 0 || hType == HandleType.ConstantHandleArray || hType == HandleType.Null);
             _value = (value & 0x00FFFFFF) | (((int)HandleType.ConstantHandleArray) << 24);
             _Validate();
         }
@@ -1461,6 +1531,9 @@ namespace Internal.Metadata.NativeFormat
         } // ToString
     } // ConstantHandleArrayHandle
 
+#if SYSTEM_PRIVATE_CORELIB
+    [CLSCompliant(false)]
+#endif
     public partial struct ConstantInt16Array
     {
         internal MetadataReader _reader;
@@ -1485,6 +1558,9 @@ namespace Internal.Metadata.NativeFormat
         internal Int16Collection _value;
     } // ConstantInt16Array
 
+#if SYSTEM_PRIVATE_CORELIB
+    [CLSCompliant(false)]
+#endif
     public partial struct ConstantInt16ArrayHandle
     {
         public override bool Equals(object obj)
@@ -1521,8 +1597,7 @@ namespace Internal.Metadata.NativeFormat
         internal ConstantInt16ArrayHandle(int value)
         {
             HandleType hType = (HandleType)(value >> 24);
-            if (!(hType == 0 || hType == HandleType.ConstantInt16Array || hType == HandleType.Null))
-                throw new ArgumentException();
+            Debug.Assert(hType == 0 || hType == HandleType.ConstantInt16Array || hType == HandleType.Null);
             _value = (value & 0x00FFFFFF) | (((int)HandleType.ConstantInt16Array) << 24);
             _Validate();
         }
@@ -1568,6 +1643,9 @@ namespace Internal.Metadata.NativeFormat
         } // ToString
     } // ConstantInt16ArrayHandle
 
+#if SYSTEM_PRIVATE_CORELIB
+    [CLSCompliant(false)]
+#endif
     public partial struct ConstantInt16Value
     {
         internal MetadataReader _reader;
@@ -1592,6 +1670,9 @@ namespace Internal.Metadata.NativeFormat
         internal short _value;
     } // ConstantInt16Value
 
+#if SYSTEM_PRIVATE_CORELIB
+    [CLSCompliant(false)]
+#endif
     public partial struct ConstantInt16ValueHandle
     {
         public override bool Equals(object obj)
@@ -1628,8 +1709,7 @@ namespace Internal.Metadata.NativeFormat
         internal ConstantInt16ValueHandle(int value)
         {
             HandleType hType = (HandleType)(value >> 24);
-            if (!(hType == 0 || hType == HandleType.ConstantInt16Value || hType == HandleType.Null))
-                throw new ArgumentException();
+            Debug.Assert(hType == 0 || hType == HandleType.ConstantInt16Value || hType == HandleType.Null);
             _value = (value & 0x00FFFFFF) | (((int)HandleType.ConstantInt16Value) << 24);
             _Validate();
         }
@@ -1675,6 +1755,9 @@ namespace Internal.Metadata.NativeFormat
         } // ToString
     } // ConstantInt16ValueHandle
 
+#if SYSTEM_PRIVATE_CORELIB
+    [CLSCompliant(false)]
+#endif
     public partial struct ConstantInt32Array
     {
         internal MetadataReader _reader;
@@ -1699,6 +1782,9 @@ namespace Internal.Metadata.NativeFormat
         internal Int32Collection _value;
     } // ConstantInt32Array
 
+#if SYSTEM_PRIVATE_CORELIB
+    [CLSCompliant(false)]
+#endif
     public partial struct ConstantInt32ArrayHandle
     {
         public override bool Equals(object obj)
@@ -1735,8 +1821,7 @@ namespace Internal.Metadata.NativeFormat
         internal ConstantInt32ArrayHandle(int value)
         {
             HandleType hType = (HandleType)(value >> 24);
-            if (!(hType == 0 || hType == HandleType.ConstantInt32Array || hType == HandleType.Null))
-                throw new ArgumentException();
+            Debug.Assert(hType == 0 || hType == HandleType.ConstantInt32Array || hType == HandleType.Null);
             _value = (value & 0x00FFFFFF) | (((int)HandleType.ConstantInt32Array) << 24);
             _Validate();
         }
@@ -1782,6 +1867,9 @@ namespace Internal.Metadata.NativeFormat
         } // ToString
     } // ConstantInt32ArrayHandle
 
+#if SYSTEM_PRIVATE_CORELIB
+    [CLSCompliant(false)]
+#endif
     public partial struct ConstantInt32Value
     {
         internal MetadataReader _reader;
@@ -1806,6 +1894,9 @@ namespace Internal.Metadata.NativeFormat
         internal int _value;
     } // ConstantInt32Value
 
+#if SYSTEM_PRIVATE_CORELIB
+    [CLSCompliant(false)]
+#endif
     public partial struct ConstantInt32ValueHandle
     {
         public override bool Equals(object obj)
@@ -1842,8 +1933,7 @@ namespace Internal.Metadata.NativeFormat
         internal ConstantInt32ValueHandle(int value)
         {
             HandleType hType = (HandleType)(value >> 24);
-            if (!(hType == 0 || hType == HandleType.ConstantInt32Value || hType == HandleType.Null))
-                throw new ArgumentException();
+            Debug.Assert(hType == 0 || hType == HandleType.ConstantInt32Value || hType == HandleType.Null);
             _value = (value & 0x00FFFFFF) | (((int)HandleType.ConstantInt32Value) << 24);
             _Validate();
         }
@@ -1889,6 +1979,9 @@ namespace Internal.Metadata.NativeFormat
         } // ToString
     } // ConstantInt32ValueHandle
 
+#if SYSTEM_PRIVATE_CORELIB
+    [CLSCompliant(false)]
+#endif
     public partial struct ConstantInt64Array
     {
         internal MetadataReader _reader;
@@ -1913,6 +2006,9 @@ namespace Internal.Metadata.NativeFormat
         internal Int64Collection _value;
     } // ConstantInt64Array
 
+#if SYSTEM_PRIVATE_CORELIB
+    [CLSCompliant(false)]
+#endif
     public partial struct ConstantInt64ArrayHandle
     {
         public override bool Equals(object obj)
@@ -1949,8 +2045,7 @@ namespace Internal.Metadata.NativeFormat
         internal ConstantInt64ArrayHandle(int value)
         {
             HandleType hType = (HandleType)(value >> 24);
-            if (!(hType == 0 || hType == HandleType.ConstantInt64Array || hType == HandleType.Null))
-                throw new ArgumentException();
+            Debug.Assert(hType == 0 || hType == HandleType.ConstantInt64Array || hType == HandleType.Null);
             _value = (value & 0x00FFFFFF) | (((int)HandleType.ConstantInt64Array) << 24);
             _Validate();
         }
@@ -1996,6 +2091,9 @@ namespace Internal.Metadata.NativeFormat
         } // ToString
     } // ConstantInt64ArrayHandle
 
+#if SYSTEM_PRIVATE_CORELIB
+    [CLSCompliant(false)]
+#endif
     public partial struct ConstantInt64Value
     {
         internal MetadataReader _reader;
@@ -2020,6 +2118,9 @@ namespace Internal.Metadata.NativeFormat
         internal long _value;
     } // ConstantInt64Value
 
+#if SYSTEM_PRIVATE_CORELIB
+    [CLSCompliant(false)]
+#endif
     public partial struct ConstantInt64ValueHandle
     {
         public override bool Equals(object obj)
@@ -2056,8 +2157,7 @@ namespace Internal.Metadata.NativeFormat
         internal ConstantInt64ValueHandle(int value)
         {
             HandleType hType = (HandleType)(value >> 24);
-            if (!(hType == 0 || hType == HandleType.ConstantInt64Value || hType == HandleType.Null))
-                throw new ArgumentException();
+            Debug.Assert(hType == 0 || hType == HandleType.ConstantInt64Value || hType == HandleType.Null);
             _value = (value & 0x00FFFFFF) | (((int)HandleType.ConstantInt64Value) << 24);
             _Validate();
         }
@@ -2103,6 +2203,9 @@ namespace Internal.Metadata.NativeFormat
         } // ToString
     } // ConstantInt64ValueHandle
 
+#if SYSTEM_PRIVATE_CORELIB
+    [CLSCompliant(false)]
+#endif
     public partial struct ConstantReferenceValue
     {
         internal MetadataReader _reader;
@@ -2117,6 +2220,9 @@ namespace Internal.Metadata.NativeFormat
         } // Handle
     } // ConstantReferenceValue
 
+#if SYSTEM_PRIVATE_CORELIB
+    [CLSCompliant(false)]
+#endif
     public partial struct ConstantReferenceValueHandle
     {
         public override bool Equals(object obj)
@@ -2153,8 +2259,7 @@ namespace Internal.Metadata.NativeFormat
         internal ConstantReferenceValueHandle(int value)
         {
             HandleType hType = (HandleType)(value >> 24);
-            if (!(hType == 0 || hType == HandleType.ConstantReferenceValue || hType == HandleType.Null))
-                throw new ArgumentException();
+            Debug.Assert(hType == 0 || hType == HandleType.ConstantReferenceValue || hType == HandleType.Null);
             _value = (value & 0x00FFFFFF) | (((int)HandleType.ConstantReferenceValue) << 24);
             _Validate();
         }
@@ -2200,6 +2305,9 @@ namespace Internal.Metadata.NativeFormat
         } // ToString
     } // ConstantReferenceValueHandle
 
+#if SYSTEM_PRIVATE_CORELIB
+    [CLSCompliant(false)]
+#endif
     public partial struct ConstantSByteArray
     {
         internal MetadataReader _reader;
@@ -2224,6 +2332,9 @@ namespace Internal.Metadata.NativeFormat
         internal SByteCollection _value;
     } // ConstantSByteArray
 
+#if SYSTEM_PRIVATE_CORELIB
+    [CLSCompliant(false)]
+#endif
     public partial struct ConstantSByteArrayHandle
     {
         public override bool Equals(object obj)
@@ -2260,8 +2371,7 @@ namespace Internal.Metadata.NativeFormat
         internal ConstantSByteArrayHandle(int value)
         {
             HandleType hType = (HandleType)(value >> 24);
-            if (!(hType == 0 || hType == HandleType.ConstantSByteArray || hType == HandleType.Null))
-                throw new ArgumentException();
+            Debug.Assert(hType == 0 || hType == HandleType.ConstantSByteArray || hType == HandleType.Null);
             _value = (value & 0x00FFFFFF) | (((int)HandleType.ConstantSByteArray) << 24);
             _Validate();
         }
@@ -2307,6 +2417,9 @@ namespace Internal.Metadata.NativeFormat
         } // ToString
     } // ConstantSByteArrayHandle
 
+#if SYSTEM_PRIVATE_CORELIB
+    [CLSCompliant(false)]
+#endif
     public partial struct ConstantSByteValue
     {
         internal MetadataReader _reader;
@@ -2331,6 +2444,9 @@ namespace Internal.Metadata.NativeFormat
         internal sbyte _value;
     } // ConstantSByteValue
 
+#if SYSTEM_PRIVATE_CORELIB
+    [CLSCompliant(false)]
+#endif
     public partial struct ConstantSByteValueHandle
     {
         public override bool Equals(object obj)
@@ -2367,8 +2483,7 @@ namespace Internal.Metadata.NativeFormat
         internal ConstantSByteValueHandle(int value)
         {
             HandleType hType = (HandleType)(value >> 24);
-            if (!(hType == 0 || hType == HandleType.ConstantSByteValue || hType == HandleType.Null))
-                throw new ArgumentException();
+            Debug.Assert(hType == 0 || hType == HandleType.ConstantSByteValue || hType == HandleType.Null);
             _value = (value & 0x00FFFFFF) | (((int)HandleType.ConstantSByteValue) << 24);
             _Validate();
         }
@@ -2414,6 +2529,9 @@ namespace Internal.Metadata.NativeFormat
         } // ToString
     } // ConstantSByteValueHandle
 
+#if SYSTEM_PRIVATE_CORELIB
+    [CLSCompliant(false)]
+#endif
     public partial struct ConstantSingleArray
     {
         internal MetadataReader _reader;
@@ -2438,6 +2556,9 @@ namespace Internal.Metadata.NativeFormat
         internal SingleCollection _value;
     } // ConstantSingleArray
 
+#if SYSTEM_PRIVATE_CORELIB
+    [CLSCompliant(false)]
+#endif
     public partial struct ConstantSingleArrayHandle
     {
         public override bool Equals(object obj)
@@ -2474,8 +2595,7 @@ namespace Internal.Metadata.NativeFormat
         internal ConstantSingleArrayHandle(int value)
         {
             HandleType hType = (HandleType)(value >> 24);
-            if (!(hType == 0 || hType == HandleType.ConstantSingleArray || hType == HandleType.Null))
-                throw new ArgumentException();
+            Debug.Assert(hType == 0 || hType == HandleType.ConstantSingleArray || hType == HandleType.Null);
             _value = (value & 0x00FFFFFF) | (((int)HandleType.ConstantSingleArray) << 24);
             _Validate();
         }
@@ -2521,6 +2641,9 @@ namespace Internal.Metadata.NativeFormat
         } // ToString
     } // ConstantSingleArrayHandle
 
+#if SYSTEM_PRIVATE_CORELIB
+    [CLSCompliant(false)]
+#endif
     public partial struct ConstantSingleValue
     {
         internal MetadataReader _reader;
@@ -2545,6 +2668,9 @@ namespace Internal.Metadata.NativeFormat
         internal float _value;
     } // ConstantSingleValue
 
+#if SYSTEM_PRIVATE_CORELIB
+    [CLSCompliant(false)]
+#endif
     public partial struct ConstantSingleValueHandle
     {
         public override bool Equals(object obj)
@@ -2581,8 +2707,7 @@ namespace Internal.Metadata.NativeFormat
         internal ConstantSingleValueHandle(int value)
         {
             HandleType hType = (HandleType)(value >> 24);
-            if (!(hType == 0 || hType == HandleType.ConstantSingleValue || hType == HandleType.Null))
-                throw new ArgumentException();
+            Debug.Assert(hType == 0 || hType == HandleType.ConstantSingleValue || hType == HandleType.Null);
             _value = (value & 0x00FFFFFF) | (((int)HandleType.ConstantSingleValue) << 24);
             _Validate();
         }
@@ -2628,6 +2753,9 @@ namespace Internal.Metadata.NativeFormat
         } // ToString
     } // ConstantSingleValueHandle
 
+#if SYSTEM_PRIVATE_CORELIB
+    [CLSCompliant(false)]
+#endif
     public partial struct ConstantStringArray
     {
         internal MetadataReader _reader;
@@ -2653,6 +2781,9 @@ namespace Internal.Metadata.NativeFormat
         internal HandleCollection _value;
     } // ConstantStringArray
 
+#if SYSTEM_PRIVATE_CORELIB
+    [CLSCompliant(false)]
+#endif
     public partial struct ConstantStringArrayHandle
     {
         public override bool Equals(object obj)
@@ -2689,8 +2820,7 @@ namespace Internal.Metadata.NativeFormat
         internal ConstantStringArrayHandle(int value)
         {
             HandleType hType = (HandleType)(value >> 24);
-            if (!(hType == 0 || hType == HandleType.ConstantStringArray || hType == HandleType.Null))
-                throw new ArgumentException();
+            Debug.Assert(hType == 0 || hType == HandleType.ConstantStringArray || hType == HandleType.Null);
             _value = (value & 0x00FFFFFF) | (((int)HandleType.ConstantStringArray) << 24);
             _Validate();
         }
@@ -2736,6 +2866,9 @@ namespace Internal.Metadata.NativeFormat
         } // ToString
     } // ConstantStringArrayHandle
 
+#if SYSTEM_PRIVATE_CORELIB
+    [CLSCompliant(false)]
+#endif
     public partial struct ConstantStringValue
     {
         internal MetadataReader _reader;
@@ -2760,6 +2893,9 @@ namespace Internal.Metadata.NativeFormat
         internal string _value;
     } // ConstantStringValue
 
+#if SYSTEM_PRIVATE_CORELIB
+    [CLSCompliant(false)]
+#endif
     public partial struct ConstantStringValueHandle
     {
         public override bool Equals(object obj)
@@ -2796,8 +2932,7 @@ namespace Internal.Metadata.NativeFormat
         internal ConstantStringValueHandle(int value)
         {
             HandleType hType = (HandleType)(value >> 24);
-            if (!(hType == 0 || hType == HandleType.ConstantStringValue || hType == HandleType.Null))
-                throw new ArgumentException();
+            Debug.Assert(hType == 0 || hType == HandleType.ConstantStringValue || hType == HandleType.Null);
             _value = (value & 0x00FFFFFF) | (((int)HandleType.ConstantStringValue) << 24);
             _Validate();
         }
@@ -2843,6 +2978,9 @@ namespace Internal.Metadata.NativeFormat
         } // ToString
     } // ConstantStringValueHandle
 
+#if SYSTEM_PRIVATE_CORELIB
+    [CLSCompliant(false)]
+#endif
     public partial struct ConstantUInt16Array
     {
         internal MetadataReader _reader;
@@ -2867,6 +3005,9 @@ namespace Internal.Metadata.NativeFormat
         internal UInt16Collection _value;
     } // ConstantUInt16Array
 
+#if SYSTEM_PRIVATE_CORELIB
+    [CLSCompliant(false)]
+#endif
     public partial struct ConstantUInt16ArrayHandle
     {
         public override bool Equals(object obj)
@@ -2903,8 +3044,7 @@ namespace Internal.Metadata.NativeFormat
         internal ConstantUInt16ArrayHandle(int value)
         {
             HandleType hType = (HandleType)(value >> 24);
-            if (!(hType == 0 || hType == HandleType.ConstantUInt16Array || hType == HandleType.Null))
-                throw new ArgumentException();
+            Debug.Assert(hType == 0 || hType == HandleType.ConstantUInt16Array || hType == HandleType.Null);
             _value = (value & 0x00FFFFFF) | (((int)HandleType.ConstantUInt16Array) << 24);
             _Validate();
         }
@@ -2950,6 +3090,9 @@ namespace Internal.Metadata.NativeFormat
         } // ToString
     } // ConstantUInt16ArrayHandle
 
+#if SYSTEM_PRIVATE_CORELIB
+    [CLSCompliant(false)]
+#endif
     public partial struct ConstantUInt16Value
     {
         internal MetadataReader _reader;
@@ -2974,6 +3117,9 @@ namespace Internal.Metadata.NativeFormat
         internal ushort _value;
     } // ConstantUInt16Value
 
+#if SYSTEM_PRIVATE_CORELIB
+    [CLSCompliant(false)]
+#endif
     public partial struct ConstantUInt16ValueHandle
     {
         public override bool Equals(object obj)
@@ -3010,8 +3156,7 @@ namespace Internal.Metadata.NativeFormat
         internal ConstantUInt16ValueHandle(int value)
         {
             HandleType hType = (HandleType)(value >> 24);
-            if (!(hType == 0 || hType == HandleType.ConstantUInt16Value || hType == HandleType.Null))
-                throw new ArgumentException();
+            Debug.Assert(hType == 0 || hType == HandleType.ConstantUInt16Value || hType == HandleType.Null);
             _value = (value & 0x00FFFFFF) | (((int)HandleType.ConstantUInt16Value) << 24);
             _Validate();
         }
@@ -3057,6 +3202,9 @@ namespace Internal.Metadata.NativeFormat
         } // ToString
     } // ConstantUInt16ValueHandle
 
+#if SYSTEM_PRIVATE_CORELIB
+    [CLSCompliant(false)]
+#endif
     public partial struct ConstantUInt32Array
     {
         internal MetadataReader _reader;
@@ -3081,6 +3229,9 @@ namespace Internal.Metadata.NativeFormat
         internal UInt32Collection _value;
     } // ConstantUInt32Array
 
+#if SYSTEM_PRIVATE_CORELIB
+    [CLSCompliant(false)]
+#endif
     public partial struct ConstantUInt32ArrayHandle
     {
         public override bool Equals(object obj)
@@ -3117,8 +3268,7 @@ namespace Internal.Metadata.NativeFormat
         internal ConstantUInt32ArrayHandle(int value)
         {
             HandleType hType = (HandleType)(value >> 24);
-            if (!(hType == 0 || hType == HandleType.ConstantUInt32Array || hType == HandleType.Null))
-                throw new ArgumentException();
+            Debug.Assert(hType == 0 || hType == HandleType.ConstantUInt32Array || hType == HandleType.Null);
             _value = (value & 0x00FFFFFF) | (((int)HandleType.ConstantUInt32Array) << 24);
             _Validate();
         }
@@ -3164,6 +3314,9 @@ namespace Internal.Metadata.NativeFormat
         } // ToString
     } // ConstantUInt32ArrayHandle
 
+#if SYSTEM_PRIVATE_CORELIB
+    [CLSCompliant(false)]
+#endif
     public partial struct ConstantUInt32Value
     {
         internal MetadataReader _reader;
@@ -3188,6 +3341,9 @@ namespace Internal.Metadata.NativeFormat
         internal uint _value;
     } // ConstantUInt32Value
 
+#if SYSTEM_PRIVATE_CORELIB
+    [CLSCompliant(false)]
+#endif
     public partial struct ConstantUInt32ValueHandle
     {
         public override bool Equals(object obj)
@@ -3224,8 +3380,7 @@ namespace Internal.Metadata.NativeFormat
         internal ConstantUInt32ValueHandle(int value)
         {
             HandleType hType = (HandleType)(value >> 24);
-            if (!(hType == 0 || hType == HandleType.ConstantUInt32Value || hType == HandleType.Null))
-                throw new ArgumentException();
+            Debug.Assert(hType == 0 || hType == HandleType.ConstantUInt32Value || hType == HandleType.Null);
             _value = (value & 0x00FFFFFF) | (((int)HandleType.ConstantUInt32Value) << 24);
             _Validate();
         }
@@ -3271,6 +3426,9 @@ namespace Internal.Metadata.NativeFormat
         } // ToString
     } // ConstantUInt32ValueHandle
 
+#if SYSTEM_PRIVATE_CORELIB
+    [CLSCompliant(false)]
+#endif
     public partial struct ConstantUInt64Array
     {
         internal MetadataReader _reader;
@@ -3295,6 +3453,9 @@ namespace Internal.Metadata.NativeFormat
         internal UInt64Collection _value;
     } // ConstantUInt64Array
 
+#if SYSTEM_PRIVATE_CORELIB
+    [CLSCompliant(false)]
+#endif
     public partial struct ConstantUInt64ArrayHandle
     {
         public override bool Equals(object obj)
@@ -3331,8 +3492,7 @@ namespace Internal.Metadata.NativeFormat
         internal ConstantUInt64ArrayHandle(int value)
         {
             HandleType hType = (HandleType)(value >> 24);
-            if (!(hType == 0 || hType == HandleType.ConstantUInt64Array || hType == HandleType.Null))
-                throw new ArgumentException();
+            Debug.Assert(hType == 0 || hType == HandleType.ConstantUInt64Array || hType == HandleType.Null);
             _value = (value & 0x00FFFFFF) | (((int)HandleType.ConstantUInt64Array) << 24);
             _Validate();
         }
@@ -3378,6 +3538,9 @@ namespace Internal.Metadata.NativeFormat
         } // ToString
     } // ConstantUInt64ArrayHandle
 
+#if SYSTEM_PRIVATE_CORELIB
+    [CLSCompliant(false)]
+#endif
     public partial struct ConstantUInt64Value
     {
         internal MetadataReader _reader;
@@ -3402,6 +3565,9 @@ namespace Internal.Metadata.NativeFormat
         internal ulong _value;
     } // ConstantUInt64Value
 
+#if SYSTEM_PRIVATE_CORELIB
+    [CLSCompliant(false)]
+#endif
     public partial struct ConstantUInt64ValueHandle
     {
         public override bool Equals(object obj)
@@ -3438,8 +3604,7 @@ namespace Internal.Metadata.NativeFormat
         internal ConstantUInt64ValueHandle(int value)
         {
             HandleType hType = (HandleType)(value >> 24);
-            if (!(hType == 0 || hType == HandleType.ConstantUInt64Value || hType == HandleType.Null))
-                throw new ArgumentException();
+            Debug.Assert(hType == 0 || hType == HandleType.ConstantUInt64Value || hType == HandleType.Null);
             _value = (value & 0x00FFFFFF) | (((int)HandleType.ConstantUInt64Value) << 24);
             _Validate();
         }
@@ -3485,6 +3650,9 @@ namespace Internal.Metadata.NativeFormat
         } // ToString
     } // ConstantUInt64ValueHandle
 
+#if SYSTEM_PRIVATE_CORELIB
+    [CLSCompliant(false)]
+#endif
     public partial struct CustomAttribute
     {
         internal MetadataReader _reader;
@@ -3531,6 +3699,9 @@ namespace Internal.Metadata.NativeFormat
         internal NamedArgumentHandleCollection _namedArguments;
     } // CustomAttribute
 
+#if SYSTEM_PRIVATE_CORELIB
+    [CLSCompliant(false)]
+#endif
     public partial struct CustomAttributeHandle
     {
         public override bool Equals(object obj)
@@ -3567,8 +3738,7 @@ namespace Internal.Metadata.NativeFormat
         internal CustomAttributeHandle(int value)
         {
             HandleType hType = (HandleType)(value >> 24);
-            if (!(hType == 0 || hType == HandleType.CustomAttribute || hType == HandleType.Null))
-                throw new ArgumentException();
+            Debug.Assert(hType == 0 || hType == HandleType.CustomAttribute || hType == HandleType.Null);
             _value = (value & 0x00FFFFFF) | (((int)HandleType.CustomAttribute) << 24);
             _Validate();
         }
@@ -3614,6 +3784,9 @@ namespace Internal.Metadata.NativeFormat
         } // ToString
     } // CustomAttributeHandle
 
+#if SYSTEM_PRIVATE_CORELIB
+    [CLSCompliant(false)]
+#endif
     public partial struct Event
     {
         internal MetadataReader _reader;
@@ -3679,6 +3852,9 @@ namespace Internal.Metadata.NativeFormat
         internal CustomAttributeHandleCollection _customAttributes;
     } // Event
 
+#if SYSTEM_PRIVATE_CORELIB
+    [CLSCompliant(false)]
+#endif
     public partial struct EventHandle
     {
         public override bool Equals(object obj)
@@ -3715,8 +3891,7 @@ namespace Internal.Metadata.NativeFormat
         internal EventHandle(int value)
         {
             HandleType hType = (HandleType)(value >> 24);
-            if (!(hType == 0 || hType == HandleType.Event || hType == HandleType.Null))
-                throw new ArgumentException();
+            Debug.Assert(hType == 0 || hType == HandleType.Event || hType == HandleType.Null);
             _value = (value & 0x00FFFFFF) | (((int)HandleType.Event) << 24);
             _Validate();
         }
@@ -3762,6 +3937,9 @@ namespace Internal.Metadata.NativeFormat
         } // ToString
     } // EventHandle
 
+#if SYSTEM_PRIVATE_CORELIB
+    [CLSCompliant(false)]
+#endif
     public partial struct Field
     {
         internal MetadataReader _reader;
@@ -3837,6 +4015,9 @@ namespace Internal.Metadata.NativeFormat
         internal CustomAttributeHandleCollection _customAttributes;
     } // Field
 
+#if SYSTEM_PRIVATE_CORELIB
+    [CLSCompliant(false)]
+#endif
     public partial struct FieldHandle
     {
         public override bool Equals(object obj)
@@ -3873,8 +4054,7 @@ namespace Internal.Metadata.NativeFormat
         internal FieldHandle(int value)
         {
             HandleType hType = (HandleType)(value >> 24);
-            if (!(hType == 0 || hType == HandleType.Field || hType == HandleType.Null))
-                throw new ArgumentException();
+            Debug.Assert(hType == 0 || hType == HandleType.Field || hType == HandleType.Null);
             _value = (value & 0x00FFFFFF) | (((int)HandleType.Field) << 24);
             _Validate();
         }
@@ -3920,6 +4100,9 @@ namespace Internal.Metadata.NativeFormat
         } // ToString
     } // FieldHandle
 
+#if SYSTEM_PRIVATE_CORELIB
+    [CLSCompliant(false)]
+#endif
     public partial struct FieldSignature
     {
         internal MetadataReader _reader;
@@ -3945,6 +4128,9 @@ namespace Internal.Metadata.NativeFormat
         internal Handle _type;
     } // FieldSignature
 
+#if SYSTEM_PRIVATE_CORELIB
+    [CLSCompliant(false)]
+#endif
     public partial struct FieldSignatureHandle
     {
         public override bool Equals(object obj)
@@ -3981,8 +4167,7 @@ namespace Internal.Metadata.NativeFormat
         internal FieldSignatureHandle(int value)
         {
             HandleType hType = (HandleType)(value >> 24);
-            if (!(hType == 0 || hType == HandleType.FieldSignature || hType == HandleType.Null))
-                throw new ArgumentException();
+            Debug.Assert(hType == 0 || hType == HandleType.FieldSignature || hType == HandleType.Null);
             _value = (value & 0x00FFFFFF) | (((int)HandleType.FieldSignature) << 24);
             _Validate();
         }
@@ -4028,6 +4213,9 @@ namespace Internal.Metadata.NativeFormat
         } // ToString
     } // FieldSignatureHandle
 
+#if SYSTEM_PRIVATE_CORELIB
+    [CLSCompliant(false)]
+#endif
     public partial struct FunctionPointerSignature
     {
         internal MetadataReader _reader;
@@ -4052,6 +4240,9 @@ namespace Internal.Metadata.NativeFormat
         internal MethodSignatureHandle _signature;
     } // FunctionPointerSignature
 
+#if SYSTEM_PRIVATE_CORELIB
+    [CLSCompliant(false)]
+#endif
     public partial struct FunctionPointerSignatureHandle
     {
         public override bool Equals(object obj)
@@ -4088,8 +4279,7 @@ namespace Internal.Metadata.NativeFormat
         internal FunctionPointerSignatureHandle(int value)
         {
             HandleType hType = (HandleType)(value >> 24);
-            if (!(hType == 0 || hType == HandleType.FunctionPointerSignature || hType == HandleType.Null))
-                throw new ArgumentException();
+            Debug.Assert(hType == 0 || hType == HandleType.FunctionPointerSignature || hType == HandleType.Null);
             _value = (value & 0x00FFFFFF) | (((int)HandleType.FunctionPointerSignature) << 24);
             _Validate();
         }
@@ -4135,6 +4325,9 @@ namespace Internal.Metadata.NativeFormat
         } // ToString
     } // FunctionPointerSignatureHandle
 
+#if SYSTEM_PRIVATE_CORELIB
+    [CLSCompliant(false)]
+#endif
     public partial struct GenericParameter
     {
         internal MetadataReader _reader;
@@ -4210,6 +4403,9 @@ namespace Internal.Metadata.NativeFormat
         internal CustomAttributeHandleCollection _customAttributes;
     } // GenericParameter
 
+#if SYSTEM_PRIVATE_CORELIB
+    [CLSCompliant(false)]
+#endif
     public partial struct GenericParameterHandle
     {
         public override bool Equals(object obj)
@@ -4246,8 +4442,7 @@ namespace Internal.Metadata.NativeFormat
         internal GenericParameterHandle(int value)
         {
             HandleType hType = (HandleType)(value >> 24);
-            if (!(hType == 0 || hType == HandleType.GenericParameter || hType == HandleType.Null))
-                throw new ArgumentException();
+            Debug.Assert(hType == 0 || hType == HandleType.GenericParameter || hType == HandleType.Null);
             _value = (value & 0x00FFFFFF) | (((int)HandleType.GenericParameter) << 24);
             _Validate();
         }
@@ -4293,6 +4488,9 @@ namespace Internal.Metadata.NativeFormat
         } // ToString
     } // GenericParameterHandle
 
+#if SYSTEM_PRIVATE_CORELIB
+    [CLSCompliant(false)]
+#endif
     public partial struct MemberReference
     {
         internal MetadataReader _reader;
@@ -4339,6 +4537,9 @@ namespace Internal.Metadata.NativeFormat
         internal Handle _signature;
     } // MemberReference
 
+#if SYSTEM_PRIVATE_CORELIB
+    [CLSCompliant(false)]
+#endif
     public partial struct MemberReferenceHandle
     {
         public override bool Equals(object obj)
@@ -4375,8 +4576,7 @@ namespace Internal.Metadata.NativeFormat
         internal MemberReferenceHandle(int value)
         {
             HandleType hType = (HandleType)(value >> 24);
-            if (!(hType == 0 || hType == HandleType.MemberReference || hType == HandleType.Null))
-                throw new ArgumentException();
+            Debug.Assert(hType == 0 || hType == HandleType.MemberReference || hType == HandleType.Null);
             _value = (value & 0x00FFFFFF) | (((int)HandleType.MemberReference) << 24);
             _Validate();
         }
@@ -4422,6 +4622,9 @@ namespace Internal.Metadata.NativeFormat
         } // ToString
     } // MemberReferenceHandle
 
+#if SYSTEM_PRIVATE_CORELIB
+    [CLSCompliant(false)]
+#endif
     public partial struct Method
     {
         internal MetadataReader _reader;
@@ -4506,6 +4709,9 @@ namespace Internal.Metadata.NativeFormat
         internal CustomAttributeHandleCollection _customAttributes;
     } // Method
 
+#if SYSTEM_PRIVATE_CORELIB
+    [CLSCompliant(false)]
+#endif
     public partial struct MethodHandle
     {
         public override bool Equals(object obj)
@@ -4542,8 +4748,7 @@ namespace Internal.Metadata.NativeFormat
         internal MethodHandle(int value)
         {
             HandleType hType = (HandleType)(value >> 24);
-            if (!(hType == 0 || hType == HandleType.Method || hType == HandleType.Null))
-                throw new ArgumentException();
+            Debug.Assert(hType == 0 || hType == HandleType.Method || hType == HandleType.Null);
             _value = (value & 0x00FFFFFF) | (((int)HandleType.Method) << 24);
             _Validate();
         }
@@ -4589,6 +4794,9 @@ namespace Internal.Metadata.NativeFormat
         } // ToString
     } // MethodHandle
 
+#if SYSTEM_PRIVATE_CORELIB
+    [CLSCompliant(false)]
+#endif
     public partial struct MethodInstantiation
     {
         internal MetadataReader _reader;
@@ -4612,7 +4820,7 @@ namespace Internal.Metadata.NativeFormat
         } // Method
 
         internal Handle _method;
-        /// One of: TypeDefinition, TypeReference, TypeSpecification
+        /// One of: TypeDefinition, TypeReference, TypeSpecification, ModifiedType
 
         public HandleCollection GenericTypeArguments
         {
@@ -4625,6 +4833,9 @@ namespace Internal.Metadata.NativeFormat
         internal HandleCollection _genericTypeArguments;
     } // MethodInstantiation
 
+#if SYSTEM_PRIVATE_CORELIB
+    [CLSCompliant(false)]
+#endif
     public partial struct MethodInstantiationHandle
     {
         public override bool Equals(object obj)
@@ -4661,8 +4872,7 @@ namespace Internal.Metadata.NativeFormat
         internal MethodInstantiationHandle(int value)
         {
             HandleType hType = (HandleType)(value >> 24);
-            if (!(hType == 0 || hType == HandleType.MethodInstantiation || hType == HandleType.Null))
-                throw new ArgumentException();
+            Debug.Assert(hType == 0 || hType == HandleType.MethodInstantiation || hType == HandleType.Null);
             _value = (value & 0x00FFFFFF) | (((int)HandleType.MethodInstantiation) << 24);
             _Validate();
         }
@@ -4708,6 +4918,9 @@ namespace Internal.Metadata.NativeFormat
         } // ToString
     } // MethodInstantiationHandle
 
+#if SYSTEM_PRIVATE_CORELIB
+    [CLSCompliant(false)]
+#endif
     public partial struct MethodSemantics
     {
         internal MetadataReader _reader;
@@ -4742,6 +4955,9 @@ namespace Internal.Metadata.NativeFormat
         internal MethodHandle _method;
     } // MethodSemantics
 
+#if SYSTEM_PRIVATE_CORELIB
+    [CLSCompliant(false)]
+#endif
     public partial struct MethodSemanticsHandle
     {
         public override bool Equals(object obj)
@@ -4778,8 +4994,7 @@ namespace Internal.Metadata.NativeFormat
         internal MethodSemanticsHandle(int value)
         {
             HandleType hType = (HandleType)(value >> 24);
-            if (!(hType == 0 || hType == HandleType.MethodSemantics || hType == HandleType.Null))
-                throw new ArgumentException();
+            Debug.Assert(hType == 0 || hType == HandleType.MethodSemantics || hType == HandleType.Null);
             _value = (value & 0x00FFFFFF) | (((int)HandleType.MethodSemantics) << 24);
             _Validate();
         }
@@ -4825,6 +5040,9 @@ namespace Internal.Metadata.NativeFormat
         } // ToString
     } // MethodSemanticsHandle
 
+#if SYSTEM_PRIVATE_CORELIB
+    [CLSCompliant(false)]
+#endif
     public partial struct MethodSignature
     {
         internal MetadataReader _reader;
@@ -4838,7 +5056,7 @@ namespace Internal.Metadata.NativeFormat
             }
         } // Handle
 
-        public CallingConventions CallingConvention
+        public SignatureCallingConvention CallingConvention
         {
             get
             {
@@ -4846,7 +5064,7 @@ namespace Internal.Metadata.NativeFormat
             }
         } // CallingConvention
 
-        internal CallingConventions _callingConvention;
+        internal SignatureCallingConvention _callingConvention;
 
         public int GenericParameterCount
         {
@@ -4892,6 +5110,9 @@ namespace Internal.Metadata.NativeFormat
         internal HandleCollection _varArgParameters;
     } // MethodSignature
 
+#if SYSTEM_PRIVATE_CORELIB
+    [CLSCompliant(false)]
+#endif
     public partial struct MethodSignatureHandle
     {
         public override bool Equals(object obj)
@@ -4928,8 +5149,7 @@ namespace Internal.Metadata.NativeFormat
         internal MethodSignatureHandle(int value)
         {
             HandleType hType = (HandleType)(value >> 24);
-            if (!(hType == 0 || hType == HandleType.MethodSignature || hType == HandleType.Null))
-                throw new ArgumentException();
+            Debug.Assert(hType == 0 || hType == HandleType.MethodSignature || hType == HandleType.Null);
             _value = (value & 0x00FFFFFF) | (((int)HandleType.MethodSignature) << 24);
             _Validate();
         }
@@ -4975,6 +5195,9 @@ namespace Internal.Metadata.NativeFormat
         } // ToString
     } // MethodSignatureHandle
 
+#if SYSTEM_PRIVATE_CORELIB
+    [CLSCompliant(false)]
+#endif
     public partial struct MethodTypeVariableSignature
     {
         internal MetadataReader _reader;
@@ -4999,6 +5222,9 @@ namespace Internal.Metadata.NativeFormat
         internal int _number;
     } // MethodTypeVariableSignature
 
+#if SYSTEM_PRIVATE_CORELIB
+    [CLSCompliant(false)]
+#endif
     public partial struct MethodTypeVariableSignatureHandle
     {
         public override bool Equals(object obj)
@@ -5035,8 +5261,7 @@ namespace Internal.Metadata.NativeFormat
         internal MethodTypeVariableSignatureHandle(int value)
         {
             HandleType hType = (HandleType)(value >> 24);
-            if (!(hType == 0 || hType == HandleType.MethodTypeVariableSignature || hType == HandleType.Null))
-                throw new ArgumentException();
+            Debug.Assert(hType == 0 || hType == HandleType.MethodTypeVariableSignature || hType == HandleType.Null);
             _value = (value & 0x00FFFFFF) | (((int)HandleType.MethodTypeVariableSignature) << 24);
             _Validate();
         }
@@ -5082,6 +5307,9 @@ namespace Internal.Metadata.NativeFormat
         } // ToString
     } // MethodTypeVariableSignatureHandle
 
+#if SYSTEM_PRIVATE_CORELIB
+    [CLSCompliant(false)]
+#endif
     public partial struct ModifiedType
     {
         internal MetadataReader _reader;
@@ -5128,6 +5356,9 @@ namespace Internal.Metadata.NativeFormat
         internal Handle _type;
     } // ModifiedType
 
+#if SYSTEM_PRIVATE_CORELIB
+    [CLSCompliant(false)]
+#endif
     public partial struct ModifiedTypeHandle
     {
         public override bool Equals(object obj)
@@ -5164,8 +5395,7 @@ namespace Internal.Metadata.NativeFormat
         internal ModifiedTypeHandle(int value)
         {
             HandleType hType = (HandleType)(value >> 24);
-            if (!(hType == 0 || hType == HandleType.ModifiedType || hType == HandleType.Null))
-                throw new ArgumentException();
+            Debug.Assert(hType == 0 || hType == HandleType.ModifiedType || hType == HandleType.Null);
             _value = (value & 0x00FFFFFF) | (((int)HandleType.ModifiedType) << 24);
             _Validate();
         }
@@ -5211,6 +5441,9 @@ namespace Internal.Metadata.NativeFormat
         } // ToString
     } // ModifiedTypeHandle
 
+#if SYSTEM_PRIVATE_CORELIB
+    [CLSCompliant(false)]
+#endif
     public partial struct NamedArgument
     {
         internal MetadataReader _reader;
@@ -5267,6 +5500,9 @@ namespace Internal.Metadata.NativeFormat
         internal Handle _value;
     } // NamedArgument
 
+#if SYSTEM_PRIVATE_CORELIB
+    [CLSCompliant(false)]
+#endif
     public partial struct NamedArgumentHandle
     {
         public override bool Equals(object obj)
@@ -5303,8 +5539,7 @@ namespace Internal.Metadata.NativeFormat
         internal NamedArgumentHandle(int value)
         {
             HandleType hType = (HandleType)(value >> 24);
-            if (!(hType == 0 || hType == HandleType.NamedArgument || hType == HandleType.Null))
-                throw new ArgumentException();
+            Debug.Assert(hType == 0 || hType == HandleType.NamedArgument || hType == HandleType.Null);
             _value = (value & 0x00FFFFFF) | (((int)HandleType.NamedArgument) << 24);
             _Validate();
         }
@@ -5350,6 +5585,9 @@ namespace Internal.Metadata.NativeFormat
         } // ToString
     } // NamedArgumentHandle
 
+#if SYSTEM_PRIVATE_CORELIB
+    [CLSCompliant(false)]
+#endif
     public partial struct NamespaceDefinition
     {
         internal MetadataReader _reader;
@@ -5415,6 +5653,9 @@ namespace Internal.Metadata.NativeFormat
         internal NamespaceDefinitionHandleCollection _namespaceDefinitions;
     } // NamespaceDefinition
 
+#if SYSTEM_PRIVATE_CORELIB
+    [CLSCompliant(false)]
+#endif
     public partial struct NamespaceDefinitionHandle
     {
         public override bool Equals(object obj)
@@ -5451,8 +5692,7 @@ namespace Internal.Metadata.NativeFormat
         internal NamespaceDefinitionHandle(int value)
         {
             HandleType hType = (HandleType)(value >> 24);
-            if (!(hType == 0 || hType == HandleType.NamespaceDefinition || hType == HandleType.Null))
-                throw new ArgumentException();
+            Debug.Assert(hType == 0 || hType == HandleType.NamespaceDefinition || hType == HandleType.Null);
             _value = (value & 0x00FFFFFF) | (((int)HandleType.NamespaceDefinition) << 24);
             _Validate();
         }
@@ -5498,6 +5738,9 @@ namespace Internal.Metadata.NativeFormat
         } // ToString
     } // NamespaceDefinitionHandle
 
+#if SYSTEM_PRIVATE_CORELIB
+    [CLSCompliant(false)]
+#endif
     public partial struct NamespaceReference
     {
         internal MetadataReader _reader;
@@ -5533,6 +5776,9 @@ namespace Internal.Metadata.NativeFormat
         internal ConstantStringValueHandle _name;
     } // NamespaceReference
 
+#if SYSTEM_PRIVATE_CORELIB
+    [CLSCompliant(false)]
+#endif
     public partial struct NamespaceReferenceHandle
     {
         public override bool Equals(object obj)
@@ -5569,8 +5815,7 @@ namespace Internal.Metadata.NativeFormat
         internal NamespaceReferenceHandle(int value)
         {
             HandleType hType = (HandleType)(value >> 24);
-            if (!(hType == 0 || hType == HandleType.NamespaceReference || hType == HandleType.Null))
-                throw new ArgumentException();
+            Debug.Assert(hType == 0 || hType == HandleType.NamespaceReference || hType == HandleType.Null);
             _value = (value & 0x00FFFFFF) | (((int)HandleType.NamespaceReference) << 24);
             _Validate();
         }
@@ -5616,6 +5861,9 @@ namespace Internal.Metadata.NativeFormat
         } // ToString
     } // NamespaceReferenceHandle
 
+#if SYSTEM_PRIVATE_CORELIB
+    [CLSCompliant(false)]
+#endif
     public partial struct Parameter
     {
         internal MetadataReader _reader;
@@ -5681,6 +5929,9 @@ namespace Internal.Metadata.NativeFormat
         internal CustomAttributeHandleCollection _customAttributes;
     } // Parameter
 
+#if SYSTEM_PRIVATE_CORELIB
+    [CLSCompliant(false)]
+#endif
     public partial struct ParameterHandle
     {
         public override bool Equals(object obj)
@@ -5717,8 +5968,7 @@ namespace Internal.Metadata.NativeFormat
         internal ParameterHandle(int value)
         {
             HandleType hType = (HandleType)(value >> 24);
-            if (!(hType == 0 || hType == HandleType.Parameter || hType == HandleType.Null))
-                throw new ArgumentException();
+            Debug.Assert(hType == 0 || hType == HandleType.Parameter || hType == HandleType.Null);
             _value = (value & 0x00FFFFFF) | (((int)HandleType.Parameter) << 24);
             _Validate();
         }
@@ -5764,6 +6014,9 @@ namespace Internal.Metadata.NativeFormat
         } // ToString
     } // ParameterHandle
 
+#if SYSTEM_PRIVATE_CORELIB
+    [CLSCompliant(false)]
+#endif
     public partial struct PointerSignature
     {
         internal MetadataReader _reader;
@@ -5789,6 +6042,9 @@ namespace Internal.Metadata.NativeFormat
         internal Handle _type;
     } // PointerSignature
 
+#if SYSTEM_PRIVATE_CORELIB
+    [CLSCompliant(false)]
+#endif
     public partial struct PointerSignatureHandle
     {
         public override bool Equals(object obj)
@@ -5825,8 +6081,7 @@ namespace Internal.Metadata.NativeFormat
         internal PointerSignatureHandle(int value)
         {
             HandleType hType = (HandleType)(value >> 24);
-            if (!(hType == 0 || hType == HandleType.PointerSignature || hType == HandleType.Null))
-                throw new ArgumentException();
+            Debug.Assert(hType == 0 || hType == HandleType.PointerSignature || hType == HandleType.Null);
             _value = (value & 0x00FFFFFF) | (((int)HandleType.PointerSignature) << 24);
             _Validate();
         }
@@ -5872,6 +6127,9 @@ namespace Internal.Metadata.NativeFormat
         } // ToString
     } // PointerSignatureHandle
 
+#if SYSTEM_PRIVATE_CORELIB
+    [CLSCompliant(false)]
+#endif
     public partial struct Property
     {
         internal MetadataReader _reader;
@@ -5947,6 +6205,9 @@ namespace Internal.Metadata.NativeFormat
         internal CustomAttributeHandleCollection _customAttributes;
     } // Property
 
+#if SYSTEM_PRIVATE_CORELIB
+    [CLSCompliant(false)]
+#endif
     public partial struct PropertyHandle
     {
         public override bool Equals(object obj)
@@ -5983,8 +6244,7 @@ namespace Internal.Metadata.NativeFormat
         internal PropertyHandle(int value)
         {
             HandleType hType = (HandleType)(value >> 24);
-            if (!(hType == 0 || hType == HandleType.Property || hType == HandleType.Null))
-                throw new ArgumentException();
+            Debug.Assert(hType == 0 || hType == HandleType.Property || hType == HandleType.Null);
             _value = (value & 0x00FFFFFF) | (((int)HandleType.Property) << 24);
             _Validate();
         }
@@ -6030,6 +6290,9 @@ namespace Internal.Metadata.NativeFormat
         } // ToString
     } // PropertyHandle
 
+#if SYSTEM_PRIVATE_CORELIB
+    [CLSCompliant(false)]
+#endif
     public partial struct PropertySignature
     {
         internal MetadataReader _reader;
@@ -6076,6 +6339,9 @@ namespace Internal.Metadata.NativeFormat
         internal HandleCollection _parameters;
     } // PropertySignature
 
+#if SYSTEM_PRIVATE_CORELIB
+    [CLSCompliant(false)]
+#endif
     public partial struct PropertySignatureHandle
     {
         public override bool Equals(object obj)
@@ -6112,8 +6378,7 @@ namespace Internal.Metadata.NativeFormat
         internal PropertySignatureHandle(int value)
         {
             HandleType hType = (HandleType)(value >> 24);
-            if (!(hType == 0 || hType == HandleType.PropertySignature || hType == HandleType.Null))
-                throw new ArgumentException();
+            Debug.Assert(hType == 0 || hType == HandleType.PropertySignature || hType == HandleType.Null);
             _value = (value & 0x00FFFFFF) | (((int)HandleType.PropertySignature) << 24);
             _Validate();
         }
@@ -6159,6 +6424,9 @@ namespace Internal.Metadata.NativeFormat
         } // ToString
     } // PropertySignatureHandle
 
+#if SYSTEM_PRIVATE_CORELIB
+    [CLSCompliant(false)]
+#endif
     public partial struct QualifiedField
     {
         internal MetadataReader _reader;
@@ -6193,6 +6461,9 @@ namespace Internal.Metadata.NativeFormat
         internal TypeDefinitionHandle _enclosingType;
     } // QualifiedField
 
+#if SYSTEM_PRIVATE_CORELIB
+    [CLSCompliant(false)]
+#endif
     public partial struct QualifiedFieldHandle
     {
         public override bool Equals(object obj)
@@ -6229,8 +6500,7 @@ namespace Internal.Metadata.NativeFormat
         internal QualifiedFieldHandle(int value)
         {
             HandleType hType = (HandleType)(value >> 24);
-            if (!(hType == 0 || hType == HandleType.QualifiedField || hType == HandleType.Null))
-                throw new ArgumentException();
+            Debug.Assert(hType == 0 || hType == HandleType.QualifiedField || hType == HandleType.Null);
             _value = (value & 0x00FFFFFF) | (((int)HandleType.QualifiedField) << 24);
             _Validate();
         }
@@ -6276,6 +6546,9 @@ namespace Internal.Metadata.NativeFormat
         } // ToString
     } // QualifiedFieldHandle
 
+#if SYSTEM_PRIVATE_CORELIB
+    [CLSCompliant(false)]
+#endif
     public partial struct QualifiedMethod
     {
         internal MetadataReader _reader;
@@ -6310,6 +6583,9 @@ namespace Internal.Metadata.NativeFormat
         internal TypeDefinitionHandle _enclosingType;
     } // QualifiedMethod
 
+#if SYSTEM_PRIVATE_CORELIB
+    [CLSCompliant(false)]
+#endif
     public partial struct QualifiedMethodHandle
     {
         public override bool Equals(object obj)
@@ -6346,8 +6622,7 @@ namespace Internal.Metadata.NativeFormat
         internal QualifiedMethodHandle(int value)
         {
             HandleType hType = (HandleType)(value >> 24);
-            if (!(hType == 0 || hType == HandleType.QualifiedMethod || hType == HandleType.Null))
-                throw new ArgumentException();
+            Debug.Assert(hType == 0 || hType == HandleType.QualifiedMethod || hType == HandleType.Null);
             _value = (value & 0x00FFFFFF) | (((int)HandleType.QualifiedMethod) << 24);
             _Validate();
         }
@@ -6393,6 +6668,9 @@ namespace Internal.Metadata.NativeFormat
         } // ToString
     } // QualifiedMethodHandle
 
+#if SYSTEM_PRIVATE_CORELIB
+    [CLSCompliant(false)]
+#endif
     public partial struct SZArraySignature
     {
         internal MetadataReader _reader;
@@ -6418,6 +6696,9 @@ namespace Internal.Metadata.NativeFormat
         internal Handle _elementType;
     } // SZArraySignature
 
+#if SYSTEM_PRIVATE_CORELIB
+    [CLSCompliant(false)]
+#endif
     public partial struct SZArraySignatureHandle
     {
         public override bool Equals(object obj)
@@ -6454,8 +6735,7 @@ namespace Internal.Metadata.NativeFormat
         internal SZArraySignatureHandle(int value)
         {
             HandleType hType = (HandleType)(value >> 24);
-            if (!(hType == 0 || hType == HandleType.SZArraySignature || hType == HandleType.Null))
-                throw new ArgumentException();
+            Debug.Assert(hType == 0 || hType == HandleType.SZArraySignature || hType == HandleType.Null);
             _value = (value & 0x00FFFFFF) | (((int)HandleType.SZArraySignature) << 24);
             _Validate();
         }
@@ -6501,6 +6781,9 @@ namespace Internal.Metadata.NativeFormat
         } // ToString
     } // SZArraySignatureHandle
 
+#if SYSTEM_PRIVATE_CORELIB
+    [CLSCompliant(false)]
+#endif
     public partial struct ScopeDefinition
     {
         internal MetadataReader _reader;
@@ -6675,6 +6958,9 @@ namespace Internal.Metadata.NativeFormat
         internal CustomAttributeHandleCollection _moduleCustomAttributes;
     } // ScopeDefinition
 
+#if SYSTEM_PRIVATE_CORELIB
+    [CLSCompliant(false)]
+#endif
     public partial struct ScopeDefinitionHandle
     {
         public override bool Equals(object obj)
@@ -6711,8 +6997,7 @@ namespace Internal.Metadata.NativeFormat
         internal ScopeDefinitionHandle(int value)
         {
             HandleType hType = (HandleType)(value >> 24);
-            if (!(hType == 0 || hType == HandleType.ScopeDefinition || hType == HandleType.Null))
-                throw new ArgumentException();
+            Debug.Assert(hType == 0 || hType == HandleType.ScopeDefinition || hType == HandleType.Null);
             _value = (value & 0x00FFFFFF) | (((int)HandleType.ScopeDefinition) << 24);
             _Validate();
         }
@@ -6758,6 +7043,9 @@ namespace Internal.Metadata.NativeFormat
         } // ToString
     } // ScopeDefinitionHandle
 
+#if SYSTEM_PRIVATE_CORELIB
+    [CLSCompliant(false)]
+#endif
     public partial struct ScopeReference
     {
         internal MetadataReader _reader;
@@ -6852,6 +7140,9 @@ namespace Internal.Metadata.NativeFormat
         internal ConstantStringValueHandle _culture;
     } // ScopeReference
 
+#if SYSTEM_PRIVATE_CORELIB
+    [CLSCompliant(false)]
+#endif
     public partial struct ScopeReferenceHandle
     {
         public override bool Equals(object obj)
@@ -6888,8 +7179,7 @@ namespace Internal.Metadata.NativeFormat
         internal ScopeReferenceHandle(int value)
         {
             HandleType hType = (HandleType)(value >> 24);
-            if (!(hType == 0 || hType == HandleType.ScopeReference || hType == HandleType.Null))
-                throw new ArgumentException();
+            Debug.Assert(hType == 0 || hType == HandleType.ScopeReference || hType == HandleType.Null);
             _value = (value & 0x00FFFFFF) | (((int)HandleType.ScopeReference) << 24);
             _Validate();
         }
@@ -6935,6 +7225,9 @@ namespace Internal.Metadata.NativeFormat
         } // ToString
     } // ScopeReferenceHandle
 
+#if SYSTEM_PRIVATE_CORELIB
+    [CLSCompliant(false)]
+#endif
     public partial struct TypeDefinition
     {
         internal MetadataReader _reader;
@@ -7101,6 +7394,9 @@ namespace Internal.Metadata.NativeFormat
         internal CustomAttributeHandleCollection _customAttributes;
     } // TypeDefinition
 
+#if SYSTEM_PRIVATE_CORELIB
+    [CLSCompliant(false)]
+#endif
     public partial struct TypeDefinitionHandle
     {
         public override bool Equals(object obj)
@@ -7137,8 +7433,7 @@ namespace Internal.Metadata.NativeFormat
         internal TypeDefinitionHandle(int value)
         {
             HandleType hType = (HandleType)(value >> 24);
-            if (!(hType == 0 || hType == HandleType.TypeDefinition || hType == HandleType.Null))
-                throw new ArgumentException();
+            Debug.Assert(hType == 0 || hType == HandleType.TypeDefinition || hType == HandleType.Null);
             _value = (value & 0x00FFFFFF) | (((int)HandleType.TypeDefinition) << 24);
             _Validate();
         }
@@ -7184,6 +7479,9 @@ namespace Internal.Metadata.NativeFormat
         } // ToString
     } // TypeDefinitionHandle
 
+#if SYSTEM_PRIVATE_CORELIB
+    [CLSCompliant(false)]
+#endif
     public partial struct TypeForwarder
     {
         internal MetadataReader _reader;
@@ -7228,6 +7526,9 @@ namespace Internal.Metadata.NativeFormat
         internal TypeForwarderHandleCollection _nestedTypes;
     } // TypeForwarder
 
+#if SYSTEM_PRIVATE_CORELIB
+    [CLSCompliant(false)]
+#endif
     public partial struct TypeForwarderHandle
     {
         public override bool Equals(object obj)
@@ -7264,8 +7565,7 @@ namespace Internal.Metadata.NativeFormat
         internal TypeForwarderHandle(int value)
         {
             HandleType hType = (HandleType)(value >> 24);
-            if (!(hType == 0 || hType == HandleType.TypeForwarder || hType == HandleType.Null))
-                throw new ArgumentException();
+            Debug.Assert(hType == 0 || hType == HandleType.TypeForwarder || hType == HandleType.Null);
             _value = (value & 0x00FFFFFF) | (((int)HandleType.TypeForwarder) << 24);
             _Validate();
         }
@@ -7311,6 +7611,9 @@ namespace Internal.Metadata.NativeFormat
         } // ToString
     } // TypeForwarderHandle
 
+#if SYSTEM_PRIVATE_CORELIB
+    [CLSCompliant(false)]
+#endif
     public partial struct TypeInstantiationSignature
     {
         internal MetadataReader _reader;
@@ -7334,7 +7637,7 @@ namespace Internal.Metadata.NativeFormat
         } // GenericType
 
         internal Handle _genericType;
-        /// One of: TypeDefinition, TypeReference, TypeSpecification
+        /// One of: TypeDefinition, TypeReference, TypeSpecification, ModifiedType
 
         public HandleCollection GenericTypeArguments
         {
@@ -7347,6 +7650,9 @@ namespace Internal.Metadata.NativeFormat
         internal HandleCollection _genericTypeArguments;
     } // TypeInstantiationSignature
 
+#if SYSTEM_PRIVATE_CORELIB
+    [CLSCompliant(false)]
+#endif
     public partial struct TypeInstantiationSignatureHandle
     {
         public override bool Equals(object obj)
@@ -7383,8 +7689,7 @@ namespace Internal.Metadata.NativeFormat
         internal TypeInstantiationSignatureHandle(int value)
         {
             HandleType hType = (HandleType)(value >> 24);
-            if (!(hType == 0 || hType == HandleType.TypeInstantiationSignature || hType == HandleType.Null))
-                throw new ArgumentException();
+            Debug.Assert(hType == 0 || hType == HandleType.TypeInstantiationSignature || hType == HandleType.Null);
             _value = (value & 0x00FFFFFF) | (((int)HandleType.TypeInstantiationSignature) << 24);
             _Validate();
         }
@@ -7430,6 +7735,9 @@ namespace Internal.Metadata.NativeFormat
         } // ToString
     } // TypeInstantiationSignatureHandle
 
+#if SYSTEM_PRIVATE_CORELIB
+    [CLSCompliant(false)]
+#endif
     public partial struct TypeReference
     {
         internal MetadataReader _reader;
@@ -7465,6 +7773,9 @@ namespace Internal.Metadata.NativeFormat
         internal ConstantStringValueHandle _typeName;
     } // TypeReference
 
+#if SYSTEM_PRIVATE_CORELIB
+    [CLSCompliant(false)]
+#endif
     public partial struct TypeReferenceHandle
     {
         public override bool Equals(object obj)
@@ -7501,8 +7812,7 @@ namespace Internal.Metadata.NativeFormat
         internal TypeReferenceHandle(int value)
         {
             HandleType hType = (HandleType)(value >> 24);
-            if (!(hType == 0 || hType == HandleType.TypeReference || hType == HandleType.Null))
-                throw new ArgumentException();
+            Debug.Assert(hType == 0 || hType == HandleType.TypeReference || hType == HandleType.Null);
             _value = (value & 0x00FFFFFF) | (((int)HandleType.TypeReference) << 24);
             _Validate();
         }
@@ -7548,6 +7858,9 @@ namespace Internal.Metadata.NativeFormat
         } // ToString
     } // TypeReferenceHandle
 
+#if SYSTEM_PRIVATE_CORELIB
+    [CLSCompliant(false)]
+#endif
     public partial struct TypeSpecification
     {
         internal MetadataReader _reader;
@@ -7573,6 +7886,9 @@ namespace Internal.Metadata.NativeFormat
         internal Handle _signature;
     } // TypeSpecification
 
+#if SYSTEM_PRIVATE_CORELIB
+    [CLSCompliant(false)]
+#endif
     public partial struct TypeSpecificationHandle
     {
         public override bool Equals(object obj)
@@ -7609,8 +7925,7 @@ namespace Internal.Metadata.NativeFormat
         internal TypeSpecificationHandle(int value)
         {
             HandleType hType = (HandleType)(value >> 24);
-            if (!(hType == 0 || hType == HandleType.TypeSpecification || hType == HandleType.Null))
-                throw new ArgumentException();
+            Debug.Assert(hType == 0 || hType == HandleType.TypeSpecification || hType == HandleType.Null);
             _value = (value & 0x00FFFFFF) | (((int)HandleType.TypeSpecification) << 24);
             _Validate();
         }
@@ -7656,6 +7971,9 @@ namespace Internal.Metadata.NativeFormat
         } // ToString
     } // TypeSpecificationHandle
 
+#if SYSTEM_PRIVATE_CORELIB
+    [CLSCompliant(false)]
+#endif
     public partial struct TypeVariableSignature
     {
         internal MetadataReader _reader;
@@ -7680,6 +7998,9 @@ namespace Internal.Metadata.NativeFormat
         internal int _number;
     } // TypeVariableSignature
 
+#if SYSTEM_PRIVATE_CORELIB
+    [CLSCompliant(false)]
+#endif
     public partial struct TypeVariableSignatureHandle
     {
         public override bool Equals(object obj)
@@ -7716,8 +8037,7 @@ namespace Internal.Metadata.NativeFormat
         internal TypeVariableSignatureHandle(int value)
         {
             HandleType hType = (HandleType)(value >> 24);
-            if (!(hType == 0 || hType == HandleType.TypeVariableSignature || hType == HandleType.Null))
-                throw new ArgumentException();
+            Debug.Assert(hType == 0 || hType == HandleType.TypeVariableSignature || hType == HandleType.Null);
             _value = (value & 0x00FFFFFF) | (((int)HandleType.TypeVariableSignature) << 24);
             _Validate();
         }
@@ -7763,6 +8083,9 @@ namespace Internal.Metadata.NativeFormat
         } // ToString
     } // TypeVariableSignatureHandle
 
+#if SYSTEM_PRIVATE_CORELIB
+    [CLSCompliant(false)]
+#endif
     public partial struct NamedArgumentHandleCollection
     {
         private NativeReader _reader;
@@ -7789,6 +8112,9 @@ namespace Internal.Metadata.NativeFormat
             return new Enumerator(_reader, _offset);
         } // GetEnumerator
 
+#if SYSTEM_PRIVATE_CORELIB
+        [CLSCompliant(false)]
+#endif
         public struct Enumerator
         {
             private NativeReader _reader;
@@ -7826,6 +8152,9 @@ namespace Internal.Metadata.NativeFormat
         } // Enumerator
     } // NamedArgumentHandleCollection
 
+#if SYSTEM_PRIVATE_CORELIB
+    [CLSCompliant(false)]
+#endif
     public partial struct MethodSemanticsHandleCollection
     {
         private NativeReader _reader;
@@ -7852,6 +8181,9 @@ namespace Internal.Metadata.NativeFormat
             return new Enumerator(_reader, _offset);
         } // GetEnumerator
 
+#if SYSTEM_PRIVATE_CORELIB
+        [CLSCompliant(false)]
+#endif
         public struct Enumerator
         {
             private NativeReader _reader;
@@ -7889,6 +8221,9 @@ namespace Internal.Metadata.NativeFormat
         } // Enumerator
     } // MethodSemanticsHandleCollection
 
+#if SYSTEM_PRIVATE_CORELIB
+    [CLSCompliant(false)]
+#endif
     public partial struct CustomAttributeHandleCollection
     {
         private NativeReader _reader;
@@ -7915,6 +8250,9 @@ namespace Internal.Metadata.NativeFormat
             return new Enumerator(_reader, _offset);
         } // GetEnumerator
 
+#if SYSTEM_PRIVATE_CORELIB
+        [CLSCompliant(false)]
+#endif
         public struct Enumerator
         {
             private NativeReader _reader;
@@ -7952,6 +8290,9 @@ namespace Internal.Metadata.NativeFormat
         } // Enumerator
     } // CustomAttributeHandleCollection
 
+#if SYSTEM_PRIVATE_CORELIB
+    [CLSCompliant(false)]
+#endif
     public partial struct ParameterHandleCollection
     {
         private NativeReader _reader;
@@ -7978,6 +8319,9 @@ namespace Internal.Metadata.NativeFormat
             return new Enumerator(_reader, _offset);
         } // GetEnumerator
 
+#if SYSTEM_PRIVATE_CORELIB
+        [CLSCompliant(false)]
+#endif
         public struct Enumerator
         {
             private NativeReader _reader;
@@ -8015,6 +8359,9 @@ namespace Internal.Metadata.NativeFormat
         } // Enumerator
     } // ParameterHandleCollection
 
+#if SYSTEM_PRIVATE_CORELIB
+    [CLSCompliant(false)]
+#endif
     public partial struct GenericParameterHandleCollection
     {
         private NativeReader _reader;
@@ -8041,6 +8388,9 @@ namespace Internal.Metadata.NativeFormat
             return new Enumerator(_reader, _offset);
         } // GetEnumerator
 
+#if SYSTEM_PRIVATE_CORELIB
+        [CLSCompliant(false)]
+#endif
         public struct Enumerator
         {
             private NativeReader _reader;
@@ -8078,6 +8428,9 @@ namespace Internal.Metadata.NativeFormat
         } // Enumerator
     } // GenericParameterHandleCollection
 
+#if SYSTEM_PRIVATE_CORELIB
+    [CLSCompliant(false)]
+#endif
     public partial struct TypeDefinitionHandleCollection
     {
         private NativeReader _reader;
@@ -8104,6 +8457,9 @@ namespace Internal.Metadata.NativeFormat
             return new Enumerator(_reader, _offset);
         } // GetEnumerator
 
+#if SYSTEM_PRIVATE_CORELIB
+        [CLSCompliant(false)]
+#endif
         public struct Enumerator
         {
             private NativeReader _reader;
@@ -8141,6 +8497,9 @@ namespace Internal.Metadata.NativeFormat
         } // Enumerator
     } // TypeDefinitionHandleCollection
 
+#if SYSTEM_PRIVATE_CORELIB
+    [CLSCompliant(false)]
+#endif
     public partial struct TypeForwarderHandleCollection
     {
         private NativeReader _reader;
@@ -8167,6 +8526,9 @@ namespace Internal.Metadata.NativeFormat
             return new Enumerator(_reader, _offset);
         } // GetEnumerator
 
+#if SYSTEM_PRIVATE_CORELIB
+        [CLSCompliant(false)]
+#endif
         public struct Enumerator
         {
             private NativeReader _reader;
@@ -8204,6 +8566,9 @@ namespace Internal.Metadata.NativeFormat
         } // Enumerator
     } // TypeForwarderHandleCollection
 
+#if SYSTEM_PRIVATE_CORELIB
+    [CLSCompliant(false)]
+#endif
     public partial struct NamespaceDefinitionHandleCollection
     {
         private NativeReader _reader;
@@ -8230,6 +8595,9 @@ namespace Internal.Metadata.NativeFormat
             return new Enumerator(_reader, _offset);
         } // GetEnumerator
 
+#if SYSTEM_PRIVATE_CORELIB
+        [CLSCompliant(false)]
+#endif
         public struct Enumerator
         {
             private NativeReader _reader;
@@ -8267,6 +8635,9 @@ namespace Internal.Metadata.NativeFormat
         } // Enumerator
     } // NamespaceDefinitionHandleCollection
 
+#if SYSTEM_PRIVATE_CORELIB
+    [CLSCompliant(false)]
+#endif
     public partial struct MethodHandleCollection
     {
         private NativeReader _reader;
@@ -8293,6 +8664,9 @@ namespace Internal.Metadata.NativeFormat
             return new Enumerator(_reader, _offset);
         } // GetEnumerator
 
+#if SYSTEM_PRIVATE_CORELIB
+        [CLSCompliant(false)]
+#endif
         public struct Enumerator
         {
             private NativeReader _reader;
@@ -8330,6 +8704,9 @@ namespace Internal.Metadata.NativeFormat
         } // Enumerator
     } // MethodHandleCollection
 
+#if SYSTEM_PRIVATE_CORELIB
+    [CLSCompliant(false)]
+#endif
     public partial struct FieldHandleCollection
     {
         private NativeReader _reader;
@@ -8356,6 +8733,9 @@ namespace Internal.Metadata.NativeFormat
             return new Enumerator(_reader, _offset);
         } // GetEnumerator
 
+#if SYSTEM_PRIVATE_CORELIB
+        [CLSCompliant(false)]
+#endif
         public struct Enumerator
         {
             private NativeReader _reader;
@@ -8393,6 +8773,9 @@ namespace Internal.Metadata.NativeFormat
         } // Enumerator
     } // FieldHandleCollection
 
+#if SYSTEM_PRIVATE_CORELIB
+    [CLSCompliant(false)]
+#endif
     public partial struct PropertyHandleCollection
     {
         private NativeReader _reader;
@@ -8419,6 +8802,9 @@ namespace Internal.Metadata.NativeFormat
             return new Enumerator(_reader, _offset);
         } // GetEnumerator
 
+#if SYSTEM_PRIVATE_CORELIB
+        [CLSCompliant(false)]
+#endif
         public struct Enumerator
         {
             private NativeReader _reader;
@@ -8456,6 +8842,9 @@ namespace Internal.Metadata.NativeFormat
         } // Enumerator
     } // PropertyHandleCollection
 
+#if SYSTEM_PRIVATE_CORELIB
+    [CLSCompliant(false)]
+#endif
     public partial struct EventHandleCollection
     {
         private NativeReader _reader;
@@ -8482,6 +8871,9 @@ namespace Internal.Metadata.NativeFormat
             return new Enumerator(_reader, _offset);
         } // GetEnumerator
 
+#if SYSTEM_PRIVATE_CORELIB
+        [CLSCompliant(false)]
+#endif
         public struct Enumerator
         {
             private NativeReader _reader;
@@ -8519,6 +8911,9 @@ namespace Internal.Metadata.NativeFormat
         } // Enumerator
     } // EventHandleCollection
 
+#if SYSTEM_PRIVATE_CORELIB
+    [CLSCompliant(false)]
+#endif
     public partial struct ScopeDefinitionHandleCollection
     {
         private NativeReader _reader;
@@ -8545,6 +8940,9 @@ namespace Internal.Metadata.NativeFormat
             return new Enumerator(_reader, _offset);
         } // GetEnumerator
 
+#if SYSTEM_PRIVATE_CORELIB
+        [CLSCompliant(false)]
+#endif
         public struct Enumerator
         {
             private NativeReader _reader;
@@ -8582,6 +8980,9 @@ namespace Internal.Metadata.NativeFormat
         } // Enumerator
     } // ScopeDefinitionHandleCollection
 
+#if SYSTEM_PRIVATE_CORELIB
+    [CLSCompliant(false)]
+#endif
     public partial struct BooleanCollection
     {
         private NativeReader _reader;
@@ -8608,6 +9009,9 @@ namespace Internal.Metadata.NativeFormat
             return new Enumerator(_reader, _offset);
         } // GetEnumerator
 
+#if SYSTEM_PRIVATE_CORELIB
+        [CLSCompliant(false)]
+#endif
         public struct Enumerator
         {
             private NativeReader _reader;
@@ -8645,6 +9049,9 @@ namespace Internal.Metadata.NativeFormat
         } // Enumerator
     } // BooleanCollection
 
+#if SYSTEM_PRIVATE_CORELIB
+    [CLSCompliant(false)]
+#endif
     public partial struct CharCollection
     {
         private NativeReader _reader;
@@ -8671,6 +9078,9 @@ namespace Internal.Metadata.NativeFormat
             return new Enumerator(_reader, _offset);
         } // GetEnumerator
 
+#if SYSTEM_PRIVATE_CORELIB
+        [CLSCompliant(false)]
+#endif
         public struct Enumerator
         {
             private NativeReader _reader;
@@ -8708,6 +9118,9 @@ namespace Internal.Metadata.NativeFormat
         } // Enumerator
     } // CharCollection
 
+#if SYSTEM_PRIVATE_CORELIB
+    [CLSCompliant(false)]
+#endif
     public partial struct ByteCollection
     {
         private NativeReader _reader;
@@ -8734,6 +9147,9 @@ namespace Internal.Metadata.NativeFormat
             return new Enumerator(_reader, _offset);
         } // GetEnumerator
 
+#if SYSTEM_PRIVATE_CORELIB
+        [CLSCompliant(false)]
+#endif
         public struct Enumerator
         {
             private NativeReader _reader;
@@ -8771,6 +9187,9 @@ namespace Internal.Metadata.NativeFormat
         } // Enumerator
     } // ByteCollection
 
+#if SYSTEM_PRIVATE_CORELIB
+    [CLSCompliant(false)]
+#endif
     public partial struct SByteCollection
     {
         private NativeReader _reader;
@@ -8797,6 +9216,9 @@ namespace Internal.Metadata.NativeFormat
             return new Enumerator(_reader, _offset);
         } // GetEnumerator
 
+#if SYSTEM_PRIVATE_CORELIB
+        [CLSCompliant(false)]
+#endif
         public struct Enumerator
         {
             private NativeReader _reader;
@@ -8834,6 +9256,9 @@ namespace Internal.Metadata.NativeFormat
         } // Enumerator
     } // SByteCollection
 
+#if SYSTEM_PRIVATE_CORELIB
+    [CLSCompliant(false)]
+#endif
     public partial struct Int16Collection
     {
         private NativeReader _reader;
@@ -8860,6 +9285,9 @@ namespace Internal.Metadata.NativeFormat
             return new Enumerator(_reader, _offset);
         } // GetEnumerator
 
+#if SYSTEM_PRIVATE_CORELIB
+        [CLSCompliant(false)]
+#endif
         public struct Enumerator
         {
             private NativeReader _reader;
@@ -8897,6 +9325,9 @@ namespace Internal.Metadata.NativeFormat
         } // Enumerator
     } // Int16Collection
 
+#if SYSTEM_PRIVATE_CORELIB
+    [CLSCompliant(false)]
+#endif
     public partial struct UInt16Collection
     {
         private NativeReader _reader;
@@ -8923,6 +9354,9 @@ namespace Internal.Metadata.NativeFormat
             return new Enumerator(_reader, _offset);
         } // GetEnumerator
 
+#if SYSTEM_PRIVATE_CORELIB
+        [CLSCompliant(false)]
+#endif
         public struct Enumerator
         {
             private NativeReader _reader;
@@ -8960,6 +9394,9 @@ namespace Internal.Metadata.NativeFormat
         } // Enumerator
     } // UInt16Collection
 
+#if SYSTEM_PRIVATE_CORELIB
+    [CLSCompliant(false)]
+#endif
     public partial struct Int32Collection
     {
         private NativeReader _reader;
@@ -8986,6 +9423,9 @@ namespace Internal.Metadata.NativeFormat
             return new Enumerator(_reader, _offset);
         } // GetEnumerator
 
+#if SYSTEM_PRIVATE_CORELIB
+        [CLSCompliant(false)]
+#endif
         public struct Enumerator
         {
             private NativeReader _reader;
@@ -9023,6 +9463,9 @@ namespace Internal.Metadata.NativeFormat
         } // Enumerator
     } // Int32Collection
 
+#if SYSTEM_PRIVATE_CORELIB
+    [CLSCompliant(false)]
+#endif
     public partial struct UInt32Collection
     {
         private NativeReader _reader;
@@ -9049,6 +9492,9 @@ namespace Internal.Metadata.NativeFormat
             return new Enumerator(_reader, _offset);
         } // GetEnumerator
 
+#if SYSTEM_PRIVATE_CORELIB
+        [CLSCompliant(false)]
+#endif
         public struct Enumerator
         {
             private NativeReader _reader;
@@ -9086,6 +9532,9 @@ namespace Internal.Metadata.NativeFormat
         } // Enumerator
     } // UInt32Collection
 
+#if SYSTEM_PRIVATE_CORELIB
+    [CLSCompliant(false)]
+#endif
     public partial struct Int64Collection
     {
         private NativeReader _reader;
@@ -9112,6 +9561,9 @@ namespace Internal.Metadata.NativeFormat
             return new Enumerator(_reader, _offset);
         } // GetEnumerator
 
+#if SYSTEM_PRIVATE_CORELIB
+        [CLSCompliant(false)]
+#endif
         public struct Enumerator
         {
             private NativeReader _reader;
@@ -9149,6 +9601,9 @@ namespace Internal.Metadata.NativeFormat
         } // Enumerator
     } // Int64Collection
 
+#if SYSTEM_PRIVATE_CORELIB
+    [CLSCompliant(false)]
+#endif
     public partial struct UInt64Collection
     {
         private NativeReader _reader;
@@ -9175,6 +9630,9 @@ namespace Internal.Metadata.NativeFormat
             return new Enumerator(_reader, _offset);
         } // GetEnumerator
 
+#if SYSTEM_PRIVATE_CORELIB
+        [CLSCompliant(false)]
+#endif
         public struct Enumerator
         {
             private NativeReader _reader;
@@ -9212,6 +9670,9 @@ namespace Internal.Metadata.NativeFormat
         } // Enumerator
     } // UInt64Collection
 
+#if SYSTEM_PRIVATE_CORELIB
+    [CLSCompliant(false)]
+#endif
     public partial struct SingleCollection
     {
         private NativeReader _reader;
@@ -9238,6 +9699,9 @@ namespace Internal.Metadata.NativeFormat
             return new Enumerator(_reader, _offset);
         } // GetEnumerator
 
+#if SYSTEM_PRIVATE_CORELIB
+        [CLSCompliant(false)]
+#endif
         public struct Enumerator
         {
             private NativeReader _reader;
@@ -9275,6 +9739,9 @@ namespace Internal.Metadata.NativeFormat
         } // Enumerator
     } // SingleCollection
 
+#if SYSTEM_PRIVATE_CORELIB
+    [CLSCompliant(false)]
+#endif
     public partial struct DoubleCollection
     {
         private NativeReader _reader;
@@ -9301,6 +9768,9 @@ namespace Internal.Metadata.NativeFormat
             return new Enumerator(_reader, _offset);
         } // GetEnumerator
 
+#if SYSTEM_PRIVATE_CORELIB
+        [CLSCompliant(false)]
+#endif
         public struct Enumerator
         {
             private NativeReader _reader;
@@ -9338,6 +9808,9 @@ namespace Internal.Metadata.NativeFormat
         } // Enumerator
     } // DoubleCollection
 
+#if SYSTEM_PRIVATE_CORELIB
+    [CLSCompliant(false)]
+#endif
     public partial struct Handle
     {
         public ArraySignatureHandle ToArraySignatureHandle(MetadataReader reader)
@@ -9656,6 +10129,9 @@ namespace Internal.Metadata.NativeFormat
         } // ToTypeVariableSignatureHandle
     } // Handle
 
+#if SYSTEM_PRIVATE_CORELIB
+    [CLSCompliant(false)]
+#endif
     public partial struct HandleCollection
     {
         private NativeReader _reader;
@@ -9682,6 +10158,9 @@ namespace Internal.Metadata.NativeFormat
             return new Enumerator(_reader, _offset);
         } // GetEnumerator
 
+#if SYSTEM_PRIVATE_CORELIB
+        [CLSCompliant(false)]
+#endif
         public struct Enumerator
         {
             private NativeReader _reader;
@@ -9719,6 +10198,9 @@ namespace Internal.Metadata.NativeFormat
         } // Enumerator
     } // HandleCollection
 
+#if SYSTEM_PRIVATE_CORELIB
+    [CLSCompliant(false)]
+#endif
     public partial class MetadataReader
     {
         public ArraySignature GetArraySignature(ArraySignatureHandle handle)

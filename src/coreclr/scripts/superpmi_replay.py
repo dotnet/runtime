@@ -7,7 +7,7 @@
 #
 # Notes:
 #
-# Script to run "superpmi replay" for various collections under various COMPlus_JitStressRegs values.
+# Script to run "superpmi replay" for various collections under various DOTNET_JitStressRegs values.
 #
 ################################################################################
 ################################################################################
@@ -162,7 +162,6 @@ def main(main_args):
             "replay",
             "-core_root", cwd,
             "-jitoption", jit_flag,
-            "-jitoption", "TieredCompilation=0",
             "-target_os", platform_name,
             "-target_arch", arch_name,
             "-arch", host_arch_name,

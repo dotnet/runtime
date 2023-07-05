@@ -139,8 +139,7 @@ namespace System.Runtime
         // is somehow incorrect.
         public MemoryFailPoint(int sizeInMegabytes)
         {
-            if (sizeInMegabytes <= 0)
-                throw new ArgumentOutOfRangeException(nameof(sizeInMegabytes), SR.ArgumentOutOfRange_NeedNonNegNum);
+            ArgumentOutOfRangeException.ThrowIfNegativeOrZero(sizeInMegabytes);
 
             ulong size = ((ulong)sizeInMegabytes) << 20;
             _reservedMemory = size;
@@ -370,7 +369,7 @@ namespace System.Runtime
                 {
                     _stackTrace = Environment.StackTrace;
                 }
-                catch (System.Security.SecurityException)
+                catch (Security.SecurityException)
                 {
                     _stackTrace = "no permission";
                 }
@@ -382,7 +381,7 @@ namespace System.Runtime
 
             public override string ToString()
             {
-                return string.Format(System.Globalization.CultureInfo.InvariantCulture, "MemoryFailPoint detected insufficient memory to guarantee an operation could complete.  Checked for {0} MB, for allocation size of {1} MB.  Need page file? {2}  Need Address Space? {3}  Need Contiguous address space? {4}  Avail page file: {5} MB  Total free VA space: {6} MB  Contiguous free address space (found): {7} MB  Space reserved by process's MemoryFailPoints: {8} MB",
+                return string.Format(Globalization.CultureInfo.InvariantCulture, "MemoryFailPoint detected insufficient memory to guarantee an operation could complete.  Checked for {0} MB, for allocation size of {1} MB.  Need page file? {2}  Need Address Space? {3}  Need Contiguous address space? {4}  Avail page file: {5} MB  Total free VA space: {6} MB  Contiguous free address space (found): {7} MB  Space reserved by process's MemoryFailPoints: {8} MB",
                     _segmentSize >> 20, _allocationSizeInMB, _needPageFile,
                     _needAddressSpace, _needContiguousVASpace,
                     _availPageFile >> 20, _totalFreeAddressSpace >> 20,

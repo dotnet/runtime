@@ -213,7 +213,7 @@ namespace Microsoft.CSharp.RuntimeBinder
                         else if (member is EventInfo e)
                         {
                             // Store events until after all fields
-                            (events = events ?? new List<EventInfo>()).Add(e);
+                            (events ??= new List<EventInfo>()).Add(e);
                         }
                     } while (memberEn.MoveNext());
 

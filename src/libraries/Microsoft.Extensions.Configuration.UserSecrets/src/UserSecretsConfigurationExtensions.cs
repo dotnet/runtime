@@ -116,8 +116,11 @@ namespace Microsoft.Extensions.Configuration
         /// <param name="reloadOnChange">Whether the configuration should be reloaded if the file changes.</param>
         /// <exception cref="InvalidOperationException">Thrown when <paramref name="optional"/> is false and <paramref name="assembly"/> does not have a valid <see cref="UserSecretsIdAttribute"/>.</exception>
         /// <returns>The configuration builder.</returns>
-        public static IConfigurationBuilder AddUserSecrets(this IConfigurationBuilder configuration!!, Assembly assembly!!, bool optional, bool reloadOnChange)
+        public static IConfigurationBuilder AddUserSecrets(this IConfigurationBuilder configuration, Assembly assembly, bool optional, bool reloadOnChange)
         {
+            ThrowHelper.ThrowIfNull(configuration);
+            ThrowHelper.ThrowIfNull(assembly);
+
             UserSecretsIdAttribute? attribute = assembly.GetCustomAttribute<UserSecretsIdAttribute>();
             if (attribute != null)
             {
@@ -161,13 +164,21 @@ namespace Microsoft.Extensions.Configuration
         public static IConfigurationBuilder AddUserSecrets(this IConfigurationBuilder configuration, string userSecretsId, bool reloadOnChange)
             => AddUserSecretsInternal(configuration, userSecretsId, true, reloadOnChange);
 
-        private static IConfigurationBuilder AddUserSecretsInternal(IConfigurationBuilder configuration!!, string userSecretsId!!, bool optional, bool reloadOnChange)
+        private static IConfigurationBuilder AddUserSecretsInternal(IConfigurationBuilder configuration, string userSecretsId, bool optional, bool reloadOnChange)
         {
-            return AddSecretsFile(configuration, PathHelper.GetSecretsPathFromSecretsId(userSecretsId), optional, reloadOnChange);
+            ThrowHelper.ThrowIfNull(configuration);
+            ThrowHelper.ThrowIfNull(userSecretsId);
+
+            return AddSecretsFile(configuration, PathHelper.InternalGetSecretsPathFromSecretsId(userSecretsId, throwIfNoRoot: !optional), optional, reloadOnChange);
         }
 
         private static IConfigurationBuilder AddSecretsFile(IConfigurationBuilder configuration, string secretPath, bool optional, bool reloadOnChange)
         {
+            if (string.IsNullOrEmpty(secretPath))
+            {
+                return configuration;
+            }
+
             string? directoryPath = Path.GetDirectoryName(secretPath);
             PhysicalFileProvider? fileProvider = Directory.Exists(directoryPath)
                 ? new PhysicalFileProvider(directoryPath)

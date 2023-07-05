@@ -19,8 +19,10 @@ namespace System.Diagnostics
     {
         private static volatile DebugProvider s_provider = new DebugProvider();
 
-        public static DebugProvider SetProvider(DebugProvider provider!!)
+        public static DebugProvider SetProvider(DebugProvider provider)
         {
+            ArgumentNullException.ThrowIfNull(provider);
+
             return Interlocked.Exchange(ref s_provider, provider);
         }
 
@@ -72,7 +74,7 @@ namespace System.Diagnostics
             WriteLine(message);
 
         [Conditional("DEBUG")]
-        public static void Print(string format, params object?[] args) =>
+        public static void Print([StringSyntax(StringSyntaxAttribute.CompositeFormat)] string format, params object?[] args) =>
             WriteLine(string.Format(null, format, args));
 
         [Conditional("DEBUG")]
@@ -84,7 +86,7 @@ namespace System.Diagnostics
             Assert(condition, message, string.Empty);
 
         [Conditional("DEBUG")]
-        public static void Assert([DoesNotReturnIf(false)] bool condition, [InterpolatedStringHandlerArgument("condition")] ref AssertInterpolatedStringHandler message) =>
+        public static void Assert([DoesNotReturnIf(false)] bool condition, [InterpolatedStringHandlerArgument(nameof(condition))] ref AssertInterpolatedStringHandler message) =>
             Assert(condition, message.ToStringAndClear());
 
         [Conditional("DEBUG")]
@@ -97,11 +99,11 @@ namespace System.Diagnostics
         }
 
         [Conditional("DEBUG")]
-        public static void Assert([DoesNotReturnIf(false)] bool condition, [InterpolatedStringHandlerArgument("condition")] ref AssertInterpolatedStringHandler message, [InterpolatedStringHandlerArgument("condition")] ref AssertInterpolatedStringHandler detailMessage) =>
+        public static void Assert([DoesNotReturnIf(false)] bool condition, [InterpolatedStringHandlerArgument(nameof(condition))] ref AssertInterpolatedStringHandler message, [InterpolatedStringHandlerArgument(nameof(condition))] ref AssertInterpolatedStringHandler detailMessage) =>
             Assert(condition, message.ToStringAndClear(), detailMessage.ToStringAndClear());
 
         [Conditional("DEBUG")]
-        public static void Assert([DoesNotReturnIf(false)] bool condition, string? message, string detailMessageFormat, params object?[] args) =>
+        public static void Assert([DoesNotReturnIf(false)] bool condition, string? message, [StringSyntax(StringSyntaxAttribute.CompositeFormat)] string detailMessageFormat, params object?[] args) =>
             Assert(condition, message, string.Format(detailMessageFormat, args));
 
         internal static void ContractFailure(string message, string detailMessage, string failureKindMessage)
@@ -147,7 +149,7 @@ namespace System.Diagnostics
             WriteLine(value?.ToString(), category);
 
         [Conditional("DEBUG")]
-        public static void WriteLine(string format, params object?[] args) =>
+        public static void WriteLine([StringSyntax(StringSyntaxAttribute.CompositeFormat)] string format, params object?[] args) =>
             WriteLine(string.Format(null, format, args));
 
         [Conditional("DEBUG")]
@@ -194,7 +196,7 @@ namespace System.Diagnostics
         }
 
         [Conditional("DEBUG")]
-        public static void WriteIf(bool condition, [InterpolatedStringHandlerArgument("condition")] ref WriteIfInterpolatedStringHandler message) =>
+        public static void WriteIf(bool condition, [InterpolatedStringHandlerArgument(nameof(condition))] ref WriteIfInterpolatedStringHandler message) =>
             WriteIf(condition, message.ToStringAndClear());
 
         [Conditional("DEBUG")]
@@ -216,7 +218,7 @@ namespace System.Diagnostics
         }
 
         [Conditional("DEBUG")]
-        public static void WriteIf(bool condition, [InterpolatedStringHandlerArgument("condition")] ref WriteIfInterpolatedStringHandler message, string? category) =>
+        public static void WriteIf(bool condition, [InterpolatedStringHandlerArgument(nameof(condition))] ref WriteIfInterpolatedStringHandler message, string? category) =>
             WriteIf(condition, message.ToStringAndClear(), category);
 
         [Conditional("DEBUG")]
@@ -256,7 +258,7 @@ namespace System.Diagnostics
         }
 
         [Conditional("DEBUG")]
-        public static void WriteLineIf(bool condition, [InterpolatedStringHandlerArgument("condition")] ref WriteIfInterpolatedStringHandler message) =>
+        public static void WriteLineIf(bool condition, [InterpolatedStringHandlerArgument(nameof(condition))] ref WriteIfInterpolatedStringHandler message) =>
             WriteLineIf(condition, message.ToStringAndClear());
 
         [Conditional("DEBUG")]
@@ -269,7 +271,7 @@ namespace System.Diagnostics
         }
 
         [Conditional("DEBUG")]
-        public static void WriteLineIf(bool condition, [InterpolatedStringHandlerArgument("condition")] ref WriteIfInterpolatedStringHandler message, string? category) =>
+        public static void WriteLineIf(bool condition, [InterpolatedStringHandlerArgument(nameof(condition))] ref WriteIfInterpolatedStringHandler message, string? category) =>
             WriteLineIf(condition, message.ToStringAndClear(), category);
 
         /// <summary>Provides an interpolated string handler for <see cref="Debug.Assert"/> that only performs formatting if the assert fails.</summary>

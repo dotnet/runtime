@@ -42,7 +42,7 @@ namespace System.Security.Cryptography.X509Certificates
                 if (index < 0)
                     throw new InvalidOperationException(SR.InvalidOperation_EnumNotStarted);
                 if (index >= _list.Count)
-                    throw new ArgumentOutOfRangeException(nameof(index), SR.ArgumentOutOfRange_Index);
+                    throw new ArgumentOutOfRangeException(nameof(index), SR.ArgumentOutOfRange_IndexMustBeLess);
 
                 return _list[index];
             }
@@ -62,8 +62,10 @@ namespace System.Security.Cryptography.X509Certificates
             }
         }
 
-        public int Add(X509Extension extension!!)
+        public int Add(X509Extension extension)
         {
+            ArgumentNullException.ThrowIfNull(extension);
+
             _list.Add(extension);
             return _list.Count - 1;
         }
@@ -73,12 +75,14 @@ namespace System.Security.Cryptography.X509Certificates
             ((ICollection)this).CopyTo(array, index);
         }
 
-        void ICollection.CopyTo(Array array!!, int index)
+        void ICollection.CopyTo(Array array, int index)
         {
+            ArgumentNullException.ThrowIfNull(array);
+
             if (array.Rank != 1)
                 throw new ArgumentException(SR.Arg_RankMultiDimNotSupported);
             if (index < 0 || index >= array.Length)
-                throw new ArgumentOutOfRangeException(nameof(index), SR.ArgumentOutOfRange_Index);
+                throw new ArgumentOutOfRangeException(nameof(index), SR.ArgumentOutOfRange_IndexMustBeLess);
             if (index + Count > array.Length)
                 throw new ArgumentException(SR.Argument_InvalidOffLen);
 

@@ -74,7 +74,7 @@ Success_RWCLAS:
         pop    rdx
         jmp    rax
 
-Promote_RWCLAS:                  // Move this entry to head postion of the chain
+Promote_RWCLAS:                  // Move this entry to head position of the chain
         // be quick to reset the counter so we don't get a bunch of contending threads
         mov    qword ptr [rdx], INITIAL_SUCCESS_COUNT
         or     r11, PROMOTE_CHAIN_FLAG

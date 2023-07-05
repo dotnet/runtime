@@ -13,11 +13,11 @@
 
 // FireEtwGCPerHeapHistorySpecial() has to be defined manually rather than via the manifest because it does
 // not have a standard signature.
-#define FireEtwGCPerHeapHistorySpecial(DataPerHeap, DataSize, ClrId) (MICROSOFT_WINDOWS_REDHAWK_GC_PRIVATE_PROVIDER_Context.IsEnabled && PalEventEnabled(Microsoft_Windows_Redhawk_GC_PrivateHandle, &GCPerHeapHistory)) ? Template_GCPerHeapHistorySpecial(Microsoft_Windows_Redhawk_GC_PrivateHandle, &GCPerHeapHistory, DataPerHeap, DataSize, ClrId) : 0
+#define FireEtwGCPerHeapHistorySpecial(DataPerHeap, DataSize, ClrId) (MICROSOFT_WINDOWS_NATIVEAOT_GC_PRIVATE_PROVIDER_Context.IsEnabled && PalEventEnabled(Microsoft_Windows_Redhawk_GC_PrivateHandle, &GCPerHeapHistory)) ? Template_GCPerHeapHistorySpecial(Microsoft_Windows_Redhawk_GC_PrivateHandle, &GCPerHeapHistory, DataPerHeap, DataSize, ClrId) : 0
 
 // Map the CLR private provider to our version so we can avoid inserting more #ifdef's in the code.
-#define MICROSOFT_WINDOWS_DOTNETRUNTIME_PRIVATE_PROVIDER_Context MICROSOFT_WINDOWS_REDHAWK_GC_PRIVATE_PROVIDER_Context
-#define MICROSOFT_WINDOWS_DOTNETRUNTIME_PROVIDER_Context MICROSOFT_WINDOWS_REDHAWK_GC_PUBLIC_PROVIDER_Context
+#define MICROSOFT_WINDOWS_DOTNETRUNTIME_PRIVATE_PROVIDER_Context MICROSOFT_WINDOWS_NATIVEAOT_GC_PRIVATE_PROVIDER_Context
+#define MICROSOFT_WINDOWS_DOTNETRUNTIME_PROVIDER_Context MICROSOFT_WINDOWS_NATIVEAOT_GC_PUBLIC_PROVIDER_Context
 #define Microsoft_Windows_DotNETRuntimeHandle Microsoft_Windows_Redhawk_GC_PublicHandle
 
 #define CLR_GC_KEYWORD 0x1
@@ -40,7 +40,7 @@
 #define CLR_GCHEAPDUMP_KEYWORD 0x100000
 #define CLR_GCHEAPALLOC_KEYWORD 0x200000
 #define CLR_GCHEAPSURVIVALANDMOVEMENT_KEYWORD 0x400000
-#define CLR_GCHEAPCOLLECT_KEYWORD 0x800000
+#define CLR_MANAGEDHEAPCOLLECT_KEYWORD 0x800000
 #define CLR_GCHEAPANDTYPENAMES_KEYWORD 0x1000000
 #define CLR_PERFTRACK_KEYWORD 0x20000000
 #define CLR_STACK_KEYWORD 0x40000000

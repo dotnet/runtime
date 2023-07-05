@@ -34,6 +34,18 @@ namespace System.Security.Cryptography.X509Certificates
             {
                 oid = Oids.ECDsaWithSha512;
             }
+            else if (hashAlgorithm == HashAlgorithmName.SHA3_256)
+            {
+                oid = Oids.ECDsaWithSha3_256;
+            }
+            else if (hashAlgorithm == HashAlgorithmName.SHA3_384)
+            {
+                oid = Oids.ECDsaWithSha3_384;
+            }
+            else if (hashAlgorithm == HashAlgorithmName.SHA3_512)
+            {
+                oid = Oids.ECDsaWithSha3_512;
+            }
             else
             {
                 throw new ArgumentOutOfRangeException(
@@ -51,8 +63,7 @@ namespace System.Security.Cryptography.X509Certificates
 
         public override byte[] SignData(byte[] data, HashAlgorithmName hashAlgorithm)
         {
-            byte[] ieeeFormat = _key.SignData(data, hashAlgorithm);
-            return AsymmetricAlgorithmHelpers.ConvertIeee1363ToDer(ieeeFormat);
+            return _key.SignData(data, hashAlgorithm, DSASignatureFormat.Rfc3279DerSequence);
         }
 
         protected override PublicKey BuildPublicKey()
@@ -99,8 +110,8 @@ namespace System.Security.Cryptography.X509Certificates
 
             return new PublicKey(
                 ecPublicKey,
-                new AsnEncodedData(ecPublicKey, curveOidEncoded),
-                new AsnEncodedData(ecPublicKey, uncompressedPoint));
+                new AsnEncodedData(ecPublicKey, curveOidEncoded, skipCopy: true),
+                new AsnEncodedData(ecPublicKey, uncompressedPoint, skipCopy: true));
         }
     }
 }

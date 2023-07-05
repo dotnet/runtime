@@ -17,8 +17,10 @@ namespace System.ComponentModel
         /// Initializes a new instance of the <see cref='System.ComponentModel.DesignerAttribute'/> class using the name of the type that
         /// provides design-time services.
         /// </summary>
-        public DesignerAttribute([DynamicallyAccessedMembers(DynamicallyAccessedMemberTypes.PublicParameterlessConstructor)] string designerTypeName!!)
+        public DesignerAttribute([DynamicallyAccessedMembers(DynamicallyAccessedMemberTypes.PublicParameterlessConstructor)] string designerTypeName)
         {
+            ArgumentNullException.ThrowIfNull(designerTypeName);
+
             DesignerTypeName = designerTypeName;
             DesignerBaseTypeName = "System.ComponentModel.Design.IDesigner, System, Version=4.0.0.0, Culture=neutral, PublicKeyToken=b77a5c561934e089";
         }
@@ -27,8 +29,10 @@ namespace System.ComponentModel
         /// Initializes a new instance of the <see cref='System.ComponentModel.DesignerAttribute'/> class using the type that provides
         /// design-time services.
         /// </summary>
-        public DesignerAttribute([DynamicallyAccessedMembers(DynamicallyAccessedMemberTypes.PublicParameterlessConstructor)] Type designerType!!)
+        public DesignerAttribute([DynamicallyAccessedMembers(DynamicallyAccessedMemberTypes.PublicParameterlessConstructor)] Type designerType)
         {
+            ArgumentNullException.ThrowIfNull(designerType);
+
             DesignerTypeName = designerType.AssemblyQualifiedName!;
             DesignerBaseTypeName = "System.ComponentModel.Design.IDesigner, System, Version=4.0.0.0, Culture=neutral, PublicKeyToken=b77a5c561934e089";
         }
@@ -38,9 +42,11 @@ namespace System.ComponentModel
         /// base class for the designer.
         /// </summary>
         public DesignerAttribute(
-            [DynamicallyAccessedMembers(DynamicallyAccessedMemberTypes.PublicParameterlessConstructor)] string designerTypeName!!,
+            [DynamicallyAccessedMembers(DynamicallyAccessedMemberTypes.PublicParameterlessConstructor)] string designerTypeName,
             [DynamicallyAccessedMembers(DynamicallyAccessedMemberTypes.PublicParameterlessConstructor)] string designerBaseTypeName)
         {
+            ArgumentNullException.ThrowIfNull(designerTypeName);
+
             DesignerTypeName = designerTypeName;
             DesignerBaseTypeName = designerBaseTypeName;
         }
@@ -50,9 +56,12 @@ namespace System.ComponentModel
         /// class and the base class for the designer.
         /// </summary>
         public DesignerAttribute(
-            [DynamicallyAccessedMembers(DynamicallyAccessedMemberTypes.PublicParameterlessConstructor)] string designerTypeName!!,
-            [DynamicallyAccessedMembers(DynamicallyAccessedMemberTypes.PublicParameterlessConstructor)] Type designerBaseType!!)
+            [DynamicallyAccessedMembers(DynamicallyAccessedMemberTypes.PublicParameterlessConstructor)] string designerTypeName,
+            [DynamicallyAccessedMembers(DynamicallyAccessedMemberTypes.PublicParameterlessConstructor)] Type designerBaseType)
         {
+            ArgumentNullException.ThrowIfNull(designerTypeName);
+            ArgumentNullException.ThrowIfNull(designerBaseType);
+
             DesignerTypeName = designerTypeName;
             DesignerBaseTypeName = designerBaseType.AssemblyQualifiedName!;
         }
@@ -62,9 +71,12 @@ namespace System.ComponentModel
         /// designer base class.
         /// </summary>
         public DesignerAttribute(
-            [DynamicallyAccessedMembers(DynamicallyAccessedMemberTypes.PublicParameterlessConstructor)] Type designerType!!,
-            [DynamicallyAccessedMembers(DynamicallyAccessedMemberTypes.PublicParameterlessConstructor)] Type designerBaseType!!)
+            [DynamicallyAccessedMembers(DynamicallyAccessedMemberTypes.PublicParameterlessConstructor)] Type designerType,
+            [DynamicallyAccessedMembers(DynamicallyAccessedMemberTypes.PublicParameterlessConstructor)] Type designerBaseType)
         {
+            ArgumentNullException.ThrowIfNull(designerType);
+            ArgumentNullException.ThrowIfNull(designerBaseType);
+
             DesignerTypeName = designerType.AssemblyQualifiedName!;
             DesignerBaseTypeName = designerBaseType.AssemblyQualifiedName!;
         }

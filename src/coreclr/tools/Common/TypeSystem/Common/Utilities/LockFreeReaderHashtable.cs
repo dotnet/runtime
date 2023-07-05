@@ -6,7 +6,6 @@ using System.Collections;
 using System.Collections.Generic;
 using System.Runtime.CompilerServices;
 using System.Threading;
-using System.Threading.Tasks;
 using Debug = System.Diagnostics.Debug;
 
 namespace Internal.TypeSystem
@@ -245,7 +244,7 @@ namespace Internal.TypeSystem
             if (sentinel == null)
                 return null;
 
-            var sw = new SpinWait();
+            var sw = default(SpinWait);
             while (true)
             {
                 TValue value = Volatile.Read(ref hashtable[tableIndex]);
@@ -368,8 +367,12 @@ namespace Internal.TypeSystem
 
         private TValue AddOrGetExistingInner(TValue value, out bool addedValue)
         {
+#if NET5_0_OR_GREATER
+            ArgumentNullException.ThrowIfNull(value);
+#else
             if (value == null)
-                throw new ArgumentNullException();
+                throw new ArgumentNullException(nameof(value));
+#endif
 
             if (_entryInProcessOfWritingSentinel == null)
             {
@@ -408,7 +411,7 @@ namespace Internal.TypeSystem
         }
 
         /// <summary>
-        /// Attemps to add a value to the hashtable, or find a value which is already present in the hashtable.
+        /// Attempts to add a value to the hashtable, or find a value which is already present in the hashtable.
         /// In some cases, this will fail due to contention with other additions and must be retried.
         /// Note that the key is not specified as it is implicit in the value. This function is thread-safe,
         /// but must only take locks around internal operations and GetValueHashCode.
@@ -523,7 +526,7 @@ namespace Internal.TypeSystem
         /// Attempts to write a value into the table. Should never fail as the sentinel should be the only
         /// entry that can be in the table at this point
         /// </summary>
-        private void WriteValueToLocation(TValue value, TValue[] hashTableLocal, int tableIndex)
+        private static void WriteValueToLocation(TValue value, TValue[] hashTableLocal, int tableIndex)
         {
             // Add to hash, use a volatile write to ensure that
             // the contents of the value are fully published to all
@@ -535,7 +538,7 @@ namespace Internal.TypeSystem
         /// Attempts to abort write a value into the table. Should never fail as the sentinel should be the only
         /// entry that can be in the table at this point
         /// </summary>
-        private void WriteAbortNullToLocation(TValue[] hashTableLocal, int tableIndex)
+        private static void WriteAbortNullToLocation(TValue[] hashTableLocal, int tableIndex)
         {
             // Add to hash, use a volatile write to ensure that
             // the contents of the value are fully published to all
@@ -593,8 +596,12 @@ namespace Internal.TypeSystem
         /// <returns>Value from the hashtable if found, otherwise null.</returns>
         public TValue GetValueIfExists(TValue value)
         {
+#if NET5_0_OR_GREATER
+            ArgumentNullException.ThrowIfNull(value);
+#else
             if (value == null)
-                throw new ArgumentNullException();
+                throw new ArgumentNullException(nameof(value));
+#endif
 
             TValue[] hashTableLocal = GetCurrentHashtable();
             Debug.Assert(hashTableLocal.Length > 0);

@@ -10,6 +10,7 @@ using System;
 using System.Collections;
 using System.Collections.Generic;
 using System.Runtime.InteropServices;
+using Xunit;
 
 [StructLayout(LayoutKind.Auto)]
 public struct ValueTuple<T1, T2, T3>
@@ -77,7 +78,8 @@ public class StructOptsTest
         return Pass;
     }
 
-    public static int Main()
+    [Fact]
+    public static int TestEntryPoint()
     {
         int returnVal = Fail;
         try

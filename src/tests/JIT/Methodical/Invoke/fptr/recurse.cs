@@ -2,10 +2,11 @@
 // The .NET Foundation licenses this file to you under the MIT license.
 
 using System;
+using Xunit;
 
-namespace TestCase
+namespace TestCase_recurse_cs
 {
-    internal class Test
+    public class Test
     {
         private static int Fact1(ref int arg, ref int result)
         {
@@ -18,7 +19,8 @@ namespace TestCase
             return 0x12345;
         }
 
-        private static int Main()
+        [Fact]
+        public static int TestEntryPoint()
         {
             int arg = 6;
             int result = 1;

@@ -12,8 +12,10 @@ namespace Microsoft.Extensions.Logging.Console
     /// </summary>
     public abstract class ConsoleFormatter
     {
-        protected ConsoleFormatter(string name!!)
+        protected ConsoleFormatter(string name)
         {
+            ThrowHelper.ThrowIfNull(name);
+
             Name = name;
         }
 
@@ -32,6 +34,6 @@ namespace Microsoft.Extensions.Logging.Console
         /// <param name="scopeProvider">The provider of scope data.</param>
         /// <param name="textWriter">The string writer embedding ansi code for colors.</param>
         /// <typeparam name="TState">The type of the object to be written.</typeparam>
-        public abstract void Write<TState>(in LogEntry<TState> logEntry, IExternalScopeProvider scopeProvider, TextWriter textWriter);
+        public abstract void Write<TState>(in LogEntry<TState> logEntry, IExternalScopeProvider? scopeProvider, TextWriter textWriter);
     }
 }

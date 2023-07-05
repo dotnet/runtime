@@ -4,7 +4,6 @@
 using System;
 using System.Diagnostics;
 using System.Runtime.InteropServices;
-using System.Security.Cryptography;
 using System.Security.Cryptography.X509Certificates;
 using Microsoft.Win32.SafeHandles;
 
@@ -21,6 +20,61 @@ internal static partial class Interop
         [LibraryImport(Libraries.CryptoNative, EntryPoint = "CryptoNative_EncodeOcspRequest")]
         internal static partial int EncodeOcspRequest(SafeOcspRequestHandle req, byte[] buf);
 
+        [LibraryImport(Libraries.CryptoNative, EntryPoint = "CryptoNative_X509BuildOcspRequest")]
+        internal static partial SafeOcspRequestHandle X509BuildOcspRequest(IntPtr subject, IntPtr issuer);
+
+        [LibraryImport(Libraries.CryptoNative)]
+        private static unsafe partial int CryptoNative_X509DecodeOcspToExpiration(
+            byte* buf,
+            int len,
+            SafeOcspRequestHandle req,
+            IntPtr subject,
+            IntPtr issuer,
+            ref long expiration);
+
+        internal static unsafe bool X509DecodeOcspToExpiration(
+            ReadOnlySpan<byte> buf,
+            SafeOcspRequestHandle request,
+            IntPtr x509Subject,
+            IntPtr x509Issuer,
+            out DateTimeOffset expiration)
+        {
+            long timeT = 0;
+            int ret;
+
+            fixed (byte* pBuf = buf)
+            {
+                ret = CryptoNative_X509DecodeOcspToExpiration(
+                    pBuf,
+                    buf.Length,
+                    request,
+                    x509Subject,
+                    x509Issuer,
+                    ref timeT);
+            }
+
+            if (ret == 1)
+            {
+                if (timeT != 0)
+                {
+                    expiration = DateTimeOffset.FromUnixTimeSeconds(timeT);
+                }
+                else
+                {
+                    // Something went wrong during the determination of when the response
+                    // should not be used any longer.
+                    // Half an hour sounds fair?
+                    expiration = DateTimeOffset.UtcNow.AddMinutes(30);
+                }
+
+                return true;
+            }
+
+            Debug.Assert(ret == 0, $"Unexpected response from X509DecodeOcspToExpiration: {ret}");
+            expiration = DateTimeOffset.MinValue;
+            return false;
+        }
+
         [LibraryImport(Libraries.CryptoNative)]
         private static partial SafeOcspResponseHandle CryptoNative_DecodeOcspResponse(ref byte buf, int len);
 
@@ -33,69 +87,6 @@ internal static partial class Interop
 
         [LibraryImport(Libraries.CryptoNative, EntryPoint = "CryptoNative_OcspResponseDestroy")]
         internal static partial void OcspResponseDestroy(IntPtr ocspReq);
-
-        [LibraryImport(Libraries.CryptoNative, StringMarshalling = StringMarshalling.Utf8)]
-        private static partial int CryptoNative_X509ChainGetCachedOcspStatus(
-            SafeX509StoreCtxHandle ctx,
-            string cachePath,
-            int chainDepth);
-
-        internal static X509VerifyStatusCode X509ChainGetCachedOcspStatus(SafeX509StoreCtxHandle ctx, string cachePath, int chainDepth)
-        {
-            X509VerifyStatusCode response = (X509VerifyStatusCode)CryptoNative_X509ChainGetCachedOcspStatus(ctx, cachePath, chainDepth);
-
-            if (response.Code < 0)
-            {
-                Debug.Fail($"Unexpected response from X509ChainGetCachedOcspSuccess: {response}");
-                throw new CryptographicException();
-            }
-
-            return response;
-        }
-
-        [LibraryImport(Libraries.CryptoNative, StringMarshalling = StringMarshalling.Utf8)]
-        private static partial int CryptoNative_X509ChainVerifyOcsp(
-            SafeX509StoreCtxHandle ctx,
-            SafeOcspRequestHandle req,
-            SafeOcspResponseHandle resp,
-            string cachePath,
-            int chainDepth);
-
-        internal static X509VerifyStatusCode X509ChainVerifyOcsp(
-            SafeX509StoreCtxHandle ctx,
-            SafeOcspRequestHandle req,
-            SafeOcspResponseHandle resp,
-            string cachePath,
-            int chainDepth)
-        {
-            X509VerifyStatusCode response = (X509VerifyStatusCode)CryptoNative_X509ChainVerifyOcsp(ctx, req, resp, cachePath, chainDepth);
-
-            if (response.Code < 0)
-            {
-                Debug.Fail($"Unexpected response from X509ChainGetCachedOcspSuccess: {response}");
-                throw new CryptographicException();
-            }
-
-            return response;
-        }
-
-        [LibraryImport(Libraries.CryptoNative)]
-        private static partial SafeOcspRequestHandle CryptoNative_X509ChainBuildOcspRequest(
-            SafeX509StoreCtxHandle storeCtx,
-            int chainDepth);
-
-        internal static SafeOcspRequestHandle X509ChainBuildOcspRequest(SafeX509StoreCtxHandle storeCtx, int chainDepth)
-        {
-            SafeOcspRequestHandle req = CryptoNative_X509ChainBuildOcspRequest(storeCtx, chainDepth);
-
-            if (req.IsInvalid)
-            {
-                req.Dispose();
-                throw CreateOpenSslCryptographicException();
-            }
-
-            return req;
-        }
     }
 }
 

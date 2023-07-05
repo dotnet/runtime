@@ -3,6 +3,7 @@
 
 using System;
 using System.Collections.Generic;
+using Xunit;
 
 internal class Foo : IDisposable
 {
@@ -11,7 +12,7 @@ internal class Foo : IDisposable
     }
 }
 
-class GitHub_18332
+public class GitHub_18332
 {
     // In Aargh there is a finally with two distinct exit paths.
     // Finally cloning may choose the non-fall through ("wibble") exit
@@ -41,7 +42,8 @@ class GitHub_18332
         return "wobble";
     }
     
-    public static int Main(string[] args)
+    [Fact]
+    public static int TestEntryPoint()
     {
         string expected = "wobble";
         string actual = Aargh();

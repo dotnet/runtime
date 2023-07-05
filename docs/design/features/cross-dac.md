@@ -85,7 +85,7 @@ I use the term `DAC` in this document to refer to both the `DAC` and the `DBI` d
 
 ### Build entry point
 
-The main build systme change is adding the ability to set the Target OS on a Windows build.
+The main build system change is adding the ability to set the Target OS on a Windows build.
 
 - See [build-runtime.cmd changes](https://github.com/dotnet/runtime/blob/0049c629381c5a18e4dadd1038c2bd6b3ae6e3e6/src/coreclr/build-runtime.cmd#L133-L134)
 - See [Subsets.props](https://github.com/dotnet/runtime/blob/0049c629381c5a18e4dadd1038c2bd6b3ae6e3e6/eng/Subsets.props#L191-L197)

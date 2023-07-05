@@ -26,14 +26,18 @@ namespace Microsoft.Extensions.Hosting.Systemd
         /// <summary>
         /// Create custom ServiceState.
         /// </summary>
+        /// <param name="state">A <see cref="string"/> representation of service state.</param>
         public ServiceState(string state)
         {
-            _data = Encoding.UTF8.GetBytes(state ?? throw new ArgumentNullException(nameof(state)));
+            ThrowHelper.ThrowIfNull(state);
+
+            _data = Encoding.UTF8.GetBytes(state);
         }
 
         /// <summary>
         /// String representation of service state.
         /// </summary>
+        /// <returns>The <see cref="string"/> representation of the service state.</returns>
         public override string ToString()
             => _data == null ? string.Empty : Encoding.UTF8.GetString(_data);
 

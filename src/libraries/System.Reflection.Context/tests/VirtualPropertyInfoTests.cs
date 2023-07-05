@@ -97,7 +97,7 @@ namespace System.Reflection.Context.Tests
         public void GetCustomAttributesDataTest()
         {
             // This will never return any results as virtual properties never have custom attributes
-            // defined in code as they are instantiated during runtime. But as the method is overriden
+            // defined in code as they are instantiated during runtime. But as the method is overridden
             // we call it for code coverage.
             IList<CustomAttributeData> customAttributesData = _virtualProperty.GetCustomAttributesData();
             Assert.Empty(customAttributesData);

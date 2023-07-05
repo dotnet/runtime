@@ -1,6 +1,7 @@
 // Licensed to the .NET Foundation under one or more agreements.
 // The .NET Foundation licenses this file to you under the MIT license.
 
+using System.Collections.Generic;
 using Test.Cryptography;
 using Microsoft.DotNet.XUnitExtensions;
 using Xunit;
@@ -314,7 +315,19 @@ namespace System.Security.Cryptography.Rsa.Tests
         public void RsaCryptRoundtrip_OaepSHA512() =>
             RsaCryptRoundtrip(RSAEncryptionPadding.OaepSHA512, RSAFactory.SupportsSha2Oaep);
 
-        private void RsaCryptRoundtrip(RSAEncryptionPadding paddingMode, bool expectSuccess=true)
+        [Fact]
+        public void RsaCryptRoundtrip_OaepSHA3_256() =>
+            RsaCryptRoundtrip(RSAEncryptionPadding.OaepSHA3_256, RSAFactory.SupportsSha3);
+
+        [Fact]
+        public void RsaCryptRoundtrip_OaepSHA3_384() =>
+            RsaCryptRoundtrip(RSAEncryptionPadding.OaepSHA3_384, RSAFactory.SupportsSha3);
+
+        [Fact]
+        public void RsaCryptRoundtrip_OaepSHA3_512() =>
+            RsaCryptRoundtrip(RSAEncryptionPadding.OaepSHA3_512, RSAFactory.SupportsSha3);
+
+        private void RsaCryptRoundtrip(RSAEncryptionPadding paddingMode, bool expectSuccess = true)
         {
             byte[] crypt;
             byte[] output;
@@ -323,8 +336,11 @@ namespace System.Security.Cryptography.Rsa.Tests
             {
                 if (!expectSuccess)
                 {
-                    Assert.ThrowsAny<CryptographicException>(
+                    Exception ex = Assert.ThrowsAny<Exception>(
                         () => Encrypt(rsa, TestData.HelloBytes, paddingMode));
+
+                    Assert.True(ex is CryptographicException or PlatformNotSupportedException,
+                        "exception is CryptographicException or PlatformNotSupportedException");
 
                     return;
                 }
@@ -368,6 +384,13 @@ namespace System.Security.Cryptography.Rsa.Tests
                     RoundtripEmpty(RSAEncryptionPadding.OaepSHA256);
                     RoundtripEmpty(RSAEncryptionPadding.OaepSHA384);
                     RoundtripEmpty(RSAEncryptionPadding.OaepSHA512);
+                }
+
+                if (RSAFactory.SupportsSha3)
+                {
+                    RoundtripEmpty(RSAEncryptionPadding.OaepSHA3_256);
+                    RoundtripEmpty(RSAEncryptionPadding.OaepSHA3_384);
+                    RoundtripEmpty(RSAEncryptionPadding.OaepSHA3_512);
                 }
             }
         }
@@ -673,13 +696,54 @@ namespace System.Security.Cryptography.Rsa.Tests
             Assert.Equal(TestData.HelloBytes, output);
         }
 
+        [Theory]
+        [MemberData(nameof(OaepPaddingModes))]
+        public void NonPowerOfTwoKeySizeOaepRoundtrip(RSAEncryptionPadding oaepPaddingMode)
+        {
+            byte[] crypt;
+            byte[] output;
+
+            using (RSA rsa = RSAFactory.Create(3072))
+            {
+                crypt = Encrypt(rsa, TestData.HelloBytes, oaepPaddingMode);
+                output = Decrypt(rsa, crypt, oaepPaddingMode);
+            }
+
+            Assert.NotEqual(crypt, output);
+            Assert.Equal(TestData.HelloBytes, output);
+        }
+
         [Fact]
         public void NotSupportedValueMethods()
         {
             using (RSA rsa = RSAFactory.Create())
             {
+#pragma warning disable SYSLIB0048
                 Assert.Throws<NotSupportedException>(() => rsa.DecryptValue(null));
                 Assert.Throws<NotSupportedException>(() => rsa.EncryptValue(null));
+#pragma warning restore SYSLIB0048
+            }
+        }
+
+        public static IEnumerable<object[]> OaepPaddingModes
+        {
+            get
+            {
+                yield return new object[] { RSAEncryptionPadding.OaepSHA1 };
+
+                if (RSAFactory.SupportsSha2Oaep)
+                {
+                    yield return new object[] { RSAEncryptionPadding.OaepSHA256 };
+                    yield return new object[] { RSAEncryptionPadding.OaepSHA384 };
+                    yield return new object[] { RSAEncryptionPadding.OaepSHA512 };
+                }
+
+                if (RSAFactory.SupportsSha3)
+                {
+                    yield return new object[] { RSAEncryptionPadding.OaepSHA3_256 };
+                    yield return new object[] { RSAEncryptionPadding.OaepSHA3_384 };
+                    yield return new object[] { RSAEncryptionPadding.OaepSHA3_512 };
+                }
             }
         }
     }

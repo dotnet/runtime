@@ -21,12 +21,12 @@ namespace System.Runtime.Caching
         private DiagnosticCounter[] _counters;
         private long[] _counterValues;
 
-        internal Counters(string cacheName!!) : base(EVENT_SOURCE_NAME_ROOT + cacheName)
+        internal Counters(string cacheName) : base(EVENT_SOURCE_NAME_ROOT + (cacheName ?? throw new ArgumentNullException(nameof(cacheName))))
         {
-            InitDisposableMembers(cacheName);
+            InitDisposableMembers();
         }
 
-        private void InitDisposableMembers(string cacheName)
+        private void InitDisposableMembers()
         {
             bool dispose = true;
 
@@ -81,11 +81,7 @@ namespace System.Runtime.Caching
             {
                 for (int i = 0; i < NUM_COUNTERS; i++)
                 {
-                    var counter = counters[i];
-                    if (counter != null)
-                    {
-                        counter.Dispose();
-                    }
+                    counters[i]?.Dispose();
                 }
             }
         }
@@ -106,6 +102,7 @@ namespace System.Runtime.Caching
             Interlocked.Decrement(ref _counterValues[idx]);
         }
 #else
+#pragma warning disable CA1822, IDE0060
         internal Counters(string cacheName)
         {
         }
@@ -121,6 +118,7 @@ namespace System.Runtime.Caching
         internal void Decrement(CounterName name)
         {
         }
+#pragma warning restore CA1822, IDE0060
 #endif
     }
 }

@@ -71,7 +71,7 @@ namespace System.Reflection.Emit.Tests
             Assert.Equal(enumBuilder.AsType(), literal.FieldType);
 
             Type createdEnum = useCreateTypeInfo ?
-                enumBuilder.CreateTypeInfo().AsType() :
+                enumBuilder.CreateType() :
                 enumBuilder.CreateType();
 
             FieldInfo createdLiteral = createdEnum.GetField("FieldOne");
@@ -234,7 +234,7 @@ namespace System.Reflection.Emit.Tests
         public void SetCustomAttribute_ConstructorInfo_ByteArray()
         {
             EnumBuilder enumBuilder = Helpers.DynamicEnum(TypeAttributes.Public, typeof(int));
-            enumBuilder.CreateTypeInfo().AsType();
+            enumBuilder.CreateType();
 
             ConstructorInfo attributeConstructor = typeof(BoolAttribute).GetConstructor(new Type[] { typeof(bool) });
             enumBuilder.SetCustomAttribute(attributeConstructor, new byte[] { 01, 00, 01 });
@@ -248,7 +248,7 @@ namespace System.Reflection.Emit.Tests
         public void SetCustomAttribute_CustomAttributeBuilder()
         {
             EnumBuilder enumBuilder = Helpers.DynamicEnum(TypeAttributes.Public, typeof(int));
-            enumBuilder.CreateTypeInfo().AsType();
+            enumBuilder.CreateType();
 
             ConstructorInfo attributeConstructor = typeof(BoolAttribute).GetConstructor(new Type[] { typeof(bool) });
             CustomAttributeBuilder attributeBuilder = new CustomAttributeBuilder(attributeConstructor, new object[] { true });

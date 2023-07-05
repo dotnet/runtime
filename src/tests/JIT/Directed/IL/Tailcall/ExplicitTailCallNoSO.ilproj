@@ -1,6 +1,7 @@
 <Project Sdk="Microsoft.NET.Sdk.IL">
   <PropertyGroup>
-    <OutputType>Exe</OutputType>
+    <!-- Needed for JitOptimizationSensitive, CLRTestEnvironmentVariable -->
+    <RequiresProcessIsolation>true</RequiresProcessIsolation>
   </PropertyGroup>
   <PropertyGroup>
     <DebugType>PdbOnly</DebugType>
@@ -9,17 +10,8 @@
   </PropertyGroup>
   <ItemGroup>
     <Compile Include="ExplicitTailCallNoSO.il" />
+
+    <CLRTestEnvironmentVariable Include="DOTNET_TC_QuickJit" Value="1" />
+    <CLRTestEnvironmentVariable Include="DOTNET_TC_QuickJitForLoops" Value="1" />
   </ItemGroup>
-  <PropertyGroup>
-    <CLRTestBatchPreCommands><![CDATA[
-$(CLRTestBatchPreCommands)
-set COMPlus_TC_QuickJit=1
-set COMPlus_TC_QuickJitForLoops=1
-]]></CLRTestBatchPreCommands>
-    <BashCLRTestPreCommands><![CDATA[
-$(BashCLRTestPreCommands)
-export COMPlus_TC_QuickJit=1
-export COMPlus_TC_QuickJitForLoops=1
-]]></BashCLRTestPreCommands>
-  </PropertyGroup>
 </Project>

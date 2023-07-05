@@ -345,8 +345,8 @@ namespace System.Xml.Schema
     /// </summary>
     internal sealed class NamespaceListNode : SyntaxTreeNode
     {
-        private NamespaceList namespaceList;
-        private object particle;
+        private readonly NamespaceList namespaceList;
+        private readonly object particle;
 
         public NamespaceListNode(NamespaceList namespaceList, object particle)
         {
@@ -434,7 +434,7 @@ namespace System.Xml.Schema
         }
 
         //no recursive version of expand tree for Sequence and Choice node
-        protected void ExpandTreeNoRecursive(InteriorNode parent, SymbolsDictionary symbols, Positions positions)
+        protected void ExpandTreeNoRecursive(SymbolsDictionary symbols, Positions positions)
         {
             Stack<InteriorNode> nodeStack = new Stack<InteriorNode>();
             InteriorNode this_ = this;
@@ -450,10 +450,7 @@ namespace System.Xml.Schema
                 this_._leftChild!.ExpandTree(this_, symbols, positions);
 
             ProcessRight:
-                if (this_._rightChild != null)
-                {
-                    this_._rightChild.ExpandTree(this_, symbols, positions);
-                }
+                this_._rightChild?.ExpandTree(this_, symbols, positions);
 
                 if (nodeStack.Count == 0)
                     break;
@@ -466,10 +463,7 @@ namespace System.Xml.Schema
         public override void ExpandTree(InteriorNode parent, SymbolsDictionary symbols, Positions positions)
         {
             _leftChild!.ExpandTree(this, symbols, positions);
-            if (_rightChild != null)
-            {
-                _rightChild.ExpandTree(this, symbols, positions);
-            }
+            _rightChild?.ExpandTree(this, symbols, positions);
         }
     }
 
@@ -566,7 +560,7 @@ namespace System.Xml.Schema
 
         public override void ExpandTree(InteriorNode parent, SymbolsDictionary symbols, Positions positions)
         {
-            ExpandTreeNoRecursive(parent, symbols, positions);
+            ExpandTreeNoRecursive(symbols, positions);
         }
 
 #if DEBUG
@@ -649,7 +643,7 @@ namespace System.Xml.Schema
 
         public override void ExpandTree(InteriorNode parent, SymbolsDictionary symbols, Positions positions)
         {
-            ExpandTreeNoRecursive(parent, symbols, positions);
+            ExpandTreeNoRecursive(symbols, positions);
         }
 
 #if DEBUG
@@ -1252,7 +1246,7 @@ namespace System.Xml.Schema
             }
 
             // Add end marker
-            InteriorNode contentRoot = new SequenceNode();
+            var contentRoot = new SequenceNode();
             contentRoot.LeftChild = _contentNode;
             LeafNode endMarker = new LeafNode(_positions!.Add(_symbols!.AddName(XmlQualifiedName.Empty, null), null));
             contentRoot.RightChild = endMarker;
@@ -1274,7 +1268,7 @@ namespace System.Xml.Schema
             if (_minMaxNodesCount > 0)
             { //If the tree has any terminal range nodes
                 BitSet positionsWithRangeTerminals;
-                BitSet[] minMaxFollowPos = CalculateTotalFollowposForRangeNodes(firstpos, followpos, out positionsWithRangeTerminals);
+                BitSet[] minMaxFollowPos = CalculateTotalFollowposForRangeNodes(followpos, out positionsWithRangeTerminals);
 
                 if (_enableUpaCheck)
                 {
@@ -1315,7 +1309,7 @@ namespace System.Xml.Schema
             }
         }
 
-        private BitSet[] CalculateTotalFollowposForRangeNodes(BitSet firstpos, BitSet[] followpos, out BitSet posWithRangeTerminals)
+        private BitSet[] CalculateTotalFollowposForRangeNodes(BitSet[] followpos, out BitSet posWithRangeTerminals)
         {
             int positionsCount = _positions!.Count; //terminals
             posWithRangeTerminals = new BitSet(positionsCount);
@@ -1445,7 +1439,7 @@ namespace System.Xml.Schema
             int symbolsCount = _symbols!.Count;
 
             // transition table (Dtran in the book)
-            ArrayList transitionTable = new ArrayList();
+            List<int[]> transitionTable = new();
 
             // state lookup table (Dstate in the book)
             Dictionary<BitSet, int> stateTable = new();
@@ -1467,7 +1461,7 @@ namespace System.Xml.Schema
             {
                 BitSet statePosSet = unmarked.Dequeue(); // all positions that constitute DFA state
                 Debug.Assert(state == stateTable[statePosSet]); // just make sure that statePosSet is for correct state
-                int[] transition = (int[])transitionTable[state]!;
+                int[] transition = transitionTable[state]!;
                 if (statePosSet[endMarkerPos])
                 {
                     transition[symbolsCount] = 1;   // accepting
@@ -1512,7 +1506,7 @@ namespace System.Xml.Schema
                 state++;
             }
             // now convert transition table to array
-            return (int[][])transitionTable.ToArray(typeof(int[]));
+            return transitionTable.ToArray();
         }
 
 #if DEBUG
@@ -1630,10 +1624,7 @@ namespace System.Xml.Schema
                 {
                     if (transition[i] != -1)
                     {
-                        if (names == null)
-                        {
-                            names = new ArrayList();
-                        }
+                        names ??= new ArrayList();
 
                         XmlSchemaParticle? p = (XmlSchemaParticle?)_symbols.GetParticle(i);
                         if (p == null)
@@ -1783,10 +1774,7 @@ namespace System.Xml.Schema
             BitSet curpos = context.CurPos[context.CurrentState.CurPosIndex];
             for (int pos = curpos.NextSet(-1); pos != -1; pos = curpos.NextSet(pos))
             {
-                if (names == null)
-                {
-                    names = new ArrayList();
-                }
+                names ??= new ArrayList();
                 XmlSchemaParticle? p = (XmlSchemaParticle?)_positions[pos].particle;
                 if (p == null)
                 {
@@ -1929,7 +1917,7 @@ namespace System.Xml.Schema
                 { //If the first bitset itself matched, then no need to remove anything
                     runningPositions!.RemoveRange(0, k); //Delete entries from 0 to k-1
                 }
-                matchCount = matchCount - k;
+                matchCount -= k;
                 k = 0; // Since we re-sized the array
                 while (k < matchCount)
                 {
@@ -1992,10 +1980,7 @@ namespace System.Xml.Schema
                         }
 
                         RangePositionInfo newRPosInfo = runningPositions[matchCount];
-                        if (newRPosInfo.rangeCounters == null)
-                        {
-                            newRPosInfo.rangeCounters = new decimal[_minMaxNodesCount];
-                        }
+                        newRPosInfo.rangeCounters ??= new decimal[_minMaxNodesCount];
 
                         Array.Copy(rposInfo.rangeCounters, newRPosInfo.rangeCounters, rposInfo.rangeCounters.Length);
                         decimal count = ++newRPosInfo.rangeCounters[lrNode.Pos];
@@ -2020,10 +2005,7 @@ namespace System.Xml.Schema
                             runningPositions[matchCount] = newRPosInfo;
                             j = matchCount + 1;
                             newRPosInfo = runningPositions[j];
-                            if (newRPosInfo.rangeCounters == null)
-                            {
-                                newRPosInfo.rangeCounters = new decimal[_minMaxNodesCount];
-                            }
+                            newRPosInfo.rangeCounters ??= new decimal[_minMaxNodesCount];
                             Array.Copy(rposInfo.rangeCounters, newRPosInfo.rangeCounters, rposInfo.rangeCounters.Length);
                             newRPosInfo.curpos = _followpos[cPos];
                             newRPosInfo.rangeCounters[lrNode.Pos] = 0;
@@ -2066,10 +2048,7 @@ namespace System.Xml.Schema
                 }
                 for (int pos = expectedPos.NextSet(-1); pos != -1; pos = expectedPos.NextSet(pos))
                 {
-                    if (names == null)
-                    {
-                        names = new ArrayList();
-                    }
+                    names ??= new ArrayList();
                     int symbol = _positions[pos].symbol;
                     if (symbol >= 0)
                     { //non range nodes

@@ -9,7 +9,7 @@
 .assembly extern xunit.core {}
 .assembly extern mscorlib{auto}
 
-.class ILGEN_0xad4651aa {
+.class public ILGEN_0xad4651aa {
 
 //BEGIN STATIC FIELDS
 //END STATIC FIELDS
@@ -902,7 +902,7 @@ End_Orphan_b_9c:
 conv.i1
  ret
 }
-.method static int32 Main() {
+.method public static int32 Main() {
 .custom instance void [xunit.core]Xunit.FactAttribute::.ctor() = (
     01 00 00 00
 )

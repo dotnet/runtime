@@ -23,21 +23,21 @@ namespace System.Net.Http
         [NonEvent]
         public void Http11RequestLeftQueue(double timeOnQueueMilliseconds)
         {
-            _http11RequestsQueueDurationCounter!.WriteMetric(timeOnQueueMilliseconds);
+            _http11RequestsQueueDurationCounter?.WriteMetric(timeOnQueueMilliseconds);
             RequestLeftQueue(timeOnQueueMilliseconds, versionMajor: 1, versionMinor: 1);
         }
 
         [NonEvent]
         public void Http20RequestLeftQueue(double timeOnQueueMilliseconds)
         {
-            _http20RequestsQueueDurationCounter!.WriteMetric(timeOnQueueMilliseconds);
+            _http20RequestsQueueDurationCounter?.WriteMetric(timeOnQueueMilliseconds);
             RequestLeftQueue(timeOnQueueMilliseconds, versionMajor: 2, versionMinor: 0);
         }
 
         [NonEvent]
         public void Http30RequestLeftQueue(double timeOnQueueMilliseconds)
         {
-            _http30RequestsQueueDurationCounter!.WriteMetric(timeOnQueueMilliseconds);
+            _http30RequestsQueueDurationCounter?.WriteMetric(timeOnQueueMilliseconds);
             RequestLeftQueue(timeOnQueueMilliseconds, versionMajor: 3, versionMinor: 0);
         }
 
@@ -63,7 +63,7 @@ namespace System.Net.Http
 
                 // The cumulative number of HTTP requests failed since the process started.
                 // Failed means that an exception occurred during the handler's Send(Async) call as a result of a connection related error, timeout, or explicitly cancelled.
-                // In case of using HttpClient's SendAsync(and friends) with buffering, this includes exceptions that occured while buffering the response content
+                // In case of using HttpClient's SendAsync(and friends) with buffering, this includes exceptions that occurred while buffering the response content
                 // In case of using HttpClient's helper methods (GetString/ByteArray/Stream), this includes responses with non-success status codes
                 _failedRequestsCounter ??= new PollingCounter("requests-failed", this, () => Interlocked.Read(ref _failedRequests))
                 {

@@ -10,8 +10,10 @@ namespace Microsoft.Extensions.FileSystemGlobbing.Internal.PatternContexts
     public abstract class PatternContextLinear
         : PatternContext<PatternContextLinear.FrameData>
     {
-        public PatternContextLinear(ILinearPattern pattern!!)
+        public PatternContextLinear(ILinearPattern pattern)
         {
+            ThrowHelper.ThrowIfNull(pattern);
+
             Pattern = pattern;
         }
 
@@ -56,7 +58,7 @@ namespace Microsoft.Extensions.FileSystemGlobbing.Internal.PatternContexts
                 }
 
                 // directory matches segment, advance position in pattern
-                frame.SegmentIndex = frame.SegmentIndex + 1;
+                frame.SegmentIndex++;
             }
 
             PushDataFrame(frame);

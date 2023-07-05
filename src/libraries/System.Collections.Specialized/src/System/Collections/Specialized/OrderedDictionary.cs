@@ -1,6 +1,7 @@
 // Licensed to the .NET Foundation under one or more agreements.
 // The .NET Foundation licenses this file to you under the MIT license.
 
+using System.ComponentModel;
 using System.Diagnostics;
 using System.Runtime.Serialization;
 
@@ -64,6 +65,8 @@ namespace System.Collections.Specialized
             _initialCapacity = dictionary._initialCapacity;
         }
 
+        [Obsolete(Obsoletions.LegacyFormatterImplMessage, DiagnosticId = Obsoletions.LegacyFormatterImplDiagId, UrlFormat = Obsoletions.SharedUrlFormat)]
+        [EditorBrowsable(EditorBrowsableState.Never)]
         protected OrderedDictionary(SerializationInfo info, StreamingContext context)
         {
             // We can't do anything with the keys and values until the entire graph has been deserialized
@@ -239,14 +242,8 @@ namespace System.Collections.Specialized
             {
                 throw new NotSupportedException(SR.OrderedDictionary_ReadOnly);
             }
-            if (_objectsTable != null)
-            {
-                _objectsTable.Clear();
-            }
-            if (_objectsArray != null)
-            {
-                _objectsArray.Clear();
-            }
+            _objectsTable?.Clear();
+            _objectsArray?.Clear();
         }
 
         /// <devdoc>
@@ -260,8 +257,10 @@ namespace System.Collections.Specialized
         /// <devdoc>
         /// Returns true if the key exists in the table, false otherwise.
         /// </devdoc>
-        public bool Contains(object key!!)
+        public bool Contains(object key)
         {
+            ArgumentNullException.ThrowIfNull(key);
+
             if (_objectsTable == null)
             {
                 return false;
@@ -314,10 +313,8 @@ namespace System.Collections.Specialized
             {
                 throw new NotSupportedException(SR.OrderedDictionary_ReadOnly);
             }
-            if (index > Count || index < 0)
-            {
-                throw new ArgumentOutOfRangeException(nameof(index));
-            }
+            ArgumentOutOfRangeException.ThrowIfGreaterThan(index, Count);
+            ArgumentOutOfRangeException.ThrowIfNegative(index);
             Hashtable objectsTable = EnsureObjectsTable();
             ArrayList objectsArray = EnsureObjectsArray();
             objectsTable.Add(key, value);
@@ -333,10 +330,8 @@ namespace System.Collections.Specialized
             {
                 throw new NotSupportedException(SR.OrderedDictionary_ReadOnly);
             }
-            if (index >= Count || index < 0)
-            {
-                throw new ArgumentOutOfRangeException(nameof(index));
-            }
+            ArgumentOutOfRangeException.ThrowIfGreaterThanOrEqual(index, Count);
+            ArgumentOutOfRangeException.ThrowIfNegative(index);
             Hashtable objectsTable = EnsureObjectsTable();
             ArrayList objectsArray = EnsureObjectsArray();
             object key = ((DictionaryEntry)objectsArray[index]!).Key;
@@ -384,8 +379,12 @@ namespace System.Collections.Specialized
 #endregion
 
 #region ISerializable implementation
-        public virtual void GetObjectData(SerializationInfo info!!, StreamingContext context)
+        [Obsolete(Obsoletions.LegacyFormatterImplMessage, DiagnosticId = Obsoletions.LegacyFormatterImplDiagId, UrlFormat = Obsoletions.SharedUrlFormat)]
+        [EditorBrowsable(EditorBrowsableState.Never)]
+        public virtual void GetObjectData(SerializationInfo info, StreamingContext context)
         {
+            ArgumentNullException.ThrowIfNull(info);
+
             info.AddValue(KeyComparerName, _comparer, typeof(IEqualityComparer));
             info.AddValue(ReadOnlyName, _readOnly);
             info.AddValue(InitCapacityName, _initialCapacity);
@@ -554,10 +553,11 @@ namespace System.Collections.Specialized
 
             private bool IsKeys => _objectsTable is not null;
 
-            void ICollection.CopyTo(Array array!!, int index)
+            void ICollection.CopyTo(Array array, int index)
             {
-                if (index < 0)
-                    throw new ArgumentOutOfRangeException(nameof(index), index, SR.ArgumentOutOfRange_NeedNonNegNum_Index);
+                ArgumentNullException.ThrowIfNull(array);
+
+                ArgumentOutOfRangeException.ThrowIfNegative(index);
                 foreach (object? o in _objects)
                 {
                     Debug.Assert(o != null);

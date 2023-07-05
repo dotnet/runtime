@@ -33,13 +33,19 @@ namespace System.IO.Tests
             RemoteExecutor.Invoke(() =>
             {
                 Directory.SetCurrentDirectory(TestDirectory);
-                // On OSX, the temp directory /tmp/ is a symlink to /private/tmp, so setting the current
-                // directory to a symlinked path will result in GetCurrentDirectory returning the absolute
-                // path that followed the symlink.
-                if (!OperatingSystem.IsMacOS())
+                if (OperatingSystem.IsMacOS())
+                {
+                    // On OSX, the temp directory /tmp/ is a symlink to /private/tmp, so setting the current
+                    // directory to a symlinked path will result in GetCurrentDirectory returning the absolute
+                    // path that followed the symlink.
+                    Assert.Equal("/private" + TestDirectory, Directory.GetCurrentDirectory());
+                }
+                else
                 {
                     Assert.Equal(TestDirectory, Directory.GetCurrentDirectory());
                 }
+
+                Directory.SetCurrentDirectory(Path.GetTempPath());
             }).Dispose();
         }
 
@@ -76,6 +82,8 @@ namespace System.IO.Tests
                     {
                         Assert.Equal(path, Directory.GetCurrentDirectory());
                     }
+
+                    Directory.SetCurrentDirectory(Path.GetTempPath());
                 }).Dispose();
             }
         }

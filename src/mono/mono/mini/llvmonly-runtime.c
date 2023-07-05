@@ -757,6 +757,12 @@ mini_llvmonly_init_delegate (MonoDelegate *del, MonoDelegateTrampInfo *info)
 	ERROR_DECL (error);
 	MonoFtnDesc *ftndesc;
 
+	if (info && info->is_virtual) {
+		del->method = mono_object_get_virtual_method_internal (del->target, info->method);
+		/* Create a new one below for the new class+method pair */
+		info = NULL;
+	}
+
 	if (!info && !del->method) {
 		// Multicast delegate init
 		// Have to set the invoke_impl field
@@ -771,7 +777,7 @@ mini_llvmonly_init_delegate (MonoDelegate *del, MonoDelegateTrampInfo *info)
 
 	if (G_UNLIKELY (!info)) {
 		g_assert (del->method);
-		info = mono_create_delegate_trampoline_info (del->object.vtable->klass, del->method);
+		info = mono_create_delegate_trampoline_info (del->object.vtable->klass, del->method, FALSE);
 	}
 
 	del->method = info->method;
@@ -803,9 +809,11 @@ mini_llvmonly_init_delegate (MonoDelegate *del, MonoDelegateTrampInfo *info)
 
 	WrapperSubtype subtype = mono_marshal_get_delegate_invoke_subtype (info->invoke, del);
 
+	if (subtype == WRAPPER_SUBTYPE_DELEGATE_INVOKE_BOUND)
+		del->bound = TRUE;
+
 	ftndesc = info->invoke_impl;
 	if (G_UNLIKELY (!ftndesc) || subtype != WRAPPER_SUBTYPE_NONE) {
-		ERROR_DECL (error);
 		MonoMethod *invoke_impl = mono_marshal_get_delegate_invoke (info->invoke, del);
 		gpointer arg = NULL;
 		gpointer addr = mini_llvmonly_load_method (invoke_impl, FALSE, FALSE, &arg, error);
@@ -819,16 +827,6 @@ mini_llvmonly_init_delegate (MonoDelegate *del, MonoDelegateTrampInfo *info)
 		}
 	}
 	del->invoke_impl = ftndesc;
-}
-
-void
-mini_llvmonly_init_delegate_virtual (MonoDelegate *del, MonoObject *target, MonoMethod *method)
-{
-	g_assert (target);
-
-	del->method = mono_object_get_virtual_method_internal (target, method);
-
-	mini_llvmonly_init_delegate (del, NULL);
 }
 
 /*
@@ -955,6 +953,8 @@ mini_llvm_init_method (MonoAotFileInfo *info, gpointer aot_module, gpointer meth
 }
 
 static GENERATE_GET_CLASS_WITH_CACHE (nullref, "System", "NullReferenceException")
+static GENERATE_GET_CLASS_WITH_CACHE (index_out_of_range, "System", "IndexOutOfRangeException")
+static GENERATE_GET_CLASS_WITH_CACHE (invalid_cast, "System", "InvalidCastException")
 
 void
 mini_llvmonly_throw_nullref_exception (void)
@@ -975,16 +975,24 @@ mini_llvmonly_throw_aot_failed_exception (const char *name)
 	mini_llvmonly_throw_exception ((MonoObject*)ex);
 }
 
-/*
- * mini_llvmonly_pop_lmf:
- *
- *   Pop LMF off the LMF stack.
- */
 void
-mini_llvmonly_pop_lmf (MonoLMF *lmf)
+mini_llvmonly_throw_index_out_of_range_exception (void)
 {
-	if (lmf->previous_lmf)
-		mono_set_lmf ((MonoLMF*)lmf->previous_lmf);
+	MonoClass *klass = mono_class_get_index_out_of_range_class ();
+
+	guint32 ex_token_index = m_class_get_type_token (klass) - MONO_TOKEN_TYPE_DEF;
+
+	mini_llvmonly_throw_corlib_exception (ex_token_index);
+}
+
+void
+mini_llvmonly_throw_invalid_cast_exception (void)
+{
+	MonoClass *klass = mono_class_get_invalid_cast_class ();
+
+	guint32 ex_token_index = m_class_get_type_token (klass) - MONO_TOKEN_TYPE_DEF;
+
+	mini_llvmonly_throw_corlib_exception (ex_token_index);
 }
 
 void

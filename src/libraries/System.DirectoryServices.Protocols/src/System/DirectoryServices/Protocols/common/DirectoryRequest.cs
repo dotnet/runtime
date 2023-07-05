@@ -50,8 +50,10 @@ namespace System.DirectoryServices.Protocols
             }
         }
 
-        public AddRequest(string distinguishedName, string objectClass!!) : this()
+        public AddRequest(string distinguishedName, string objectClass) : this()
         {
+            ArgumentNullException.ThrowIfNull(objectClass);
+
             DistinguishedName = distinguishedName;
 
             var objClassAttr = new DirectoryAttribute()
@@ -77,8 +79,10 @@ namespace System.DirectoryServices.Protocols
             Modifications.AddRange(modifications);
         }
 
-        public ModifyRequest(string distinguishedName, DirectoryAttributeOperation operation, string attributeName!!, params object[] values) : this()
+        public ModifyRequest(string distinguishedName, DirectoryAttributeOperation operation, string attributeName, params object[] values) : this()
         {
+            ArgumentNullException.ThrowIfNull(attributeName);
+
             DistinguishedName = distinguishedName;
             var mod = new DirectoryAttributeModification()
             {
@@ -120,8 +124,10 @@ namespace System.DirectoryServices.Protocols
             CompareRequestHelper(distinguishedName, attributeName, value);
         }
 
-        public CompareRequest(string distinguishedName, DirectoryAttribute assertion!!)
+        public CompareRequest(string distinguishedName, DirectoryAttribute assertion)
         {
+            ArgumentNullException.ThrowIfNull(assertion);
+
             if (assertion.Count != 1)
             {
                 throw new ArgumentException(SR.WrongNumValuesCompare);
@@ -130,8 +136,11 @@ namespace System.DirectoryServices.Protocols
             CompareRequestHelper(distinguishedName, assertion.Name, assertion[0]);
         }
 
-        private void CompareRequestHelper(string distinguishedName, string attributeName!!, object value!!)
+        private void CompareRequestHelper(string distinguishedName, string attributeName, object value)
         {
+            ArgumentNullException.ThrowIfNull(attributeName);
+            ArgumentNullException.ThrowIfNull(value);
+
             DistinguishedName = distinguishedName;
             Assertion.Name = attributeName;
             Assertion.Add(value);

@@ -11,6 +11,7 @@
 //     It should print out "Pass".
 
 using System;
+using Xunit;
 
 struct MyStruct
 {
@@ -18,15 +19,16 @@ struct MyStruct
     int j;
 }
 
-class MainApp
+public class MainApp
 {
     [System.Runtime.CompilerServices.MethodImplAttribute(System.Runtime.CompilerServices.MethodImplOptions.NoInlining)]
-    public static MyStruct Foo()
+    static MyStruct Foo()
     {
         return new MyStruct();
     }
 
-    public static int Main()
+    [Fact]
+    public static int TestEntryPoint()
     {
         if ((object)MainApp.Foo() == null)
         {

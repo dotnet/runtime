@@ -22,8 +22,13 @@ MONO_BEGIN_DECLS
 #include "options-def.h"
 MONO_END_DECLS
 
+extern int mono_options_version;
+
 void mono_options_print_usage (void);
 
 void mono_options_parse_options (const char **args, int argc, int *out_argc, MonoError *error);
+
+/* returns a json blob representing the current values of all options */
+char * mono_options_get_as_json (void);
 
 #endif

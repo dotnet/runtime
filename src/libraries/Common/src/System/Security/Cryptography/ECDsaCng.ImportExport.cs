@@ -182,8 +182,10 @@ namespace System.Security.Cryptography
 
         public override byte[] ExportEncryptedPkcs8PrivateKey(
             ReadOnlySpan<byte> passwordBytes,
-            PbeParameters pbeParameters!!)
+            PbeParameters pbeParameters)
         {
+            ArgumentNullException.ThrowIfNull(pbeParameters);
+
             return CngPkcs8.ExportEncryptedPkcs8PrivateKey(
                 this,
                 passwordBytes,
@@ -192,8 +194,10 @@ namespace System.Security.Cryptography
 
         public override byte[] ExportEncryptedPkcs8PrivateKey(
             ReadOnlySpan<char> password,
-            PbeParameters pbeParameters!!)
+            PbeParameters pbeParameters)
         {
+            ArgumentNullException.ThrowIfNull(pbeParameters);
+
             PasswordBasedEncryption.ValidatePbeParameters(
                 pbeParameters,
                 password,
@@ -212,10 +216,12 @@ namespace System.Security.Cryptography
 
         public override bool TryExportEncryptedPkcs8PrivateKey(
             ReadOnlySpan<byte> passwordBytes,
-            PbeParameters pbeParameters!!,
+            PbeParameters pbeParameters,
             Span<byte> destination,
             out int bytesWritten)
         {
+            ArgumentNullException.ThrowIfNull(pbeParameters);
+
             PasswordBasedEncryption.ValidatePbeParameters(
                 pbeParameters,
                 ReadOnlySpan<char>.Empty,
@@ -231,10 +237,12 @@ namespace System.Security.Cryptography
 
         public override bool TryExportEncryptedPkcs8PrivateKey(
             ReadOnlySpan<char> password,
-            PbeParameters pbeParameters!!,
+            PbeParameters pbeParameters,
             Span<byte> destination,
             out int bytesWritten)
         {
+            ArgumentNullException.ThrowIfNull(pbeParameters);
+
             PasswordBasedEncryption.ValidatePbeParameters(
                 pbeParameters,
                 password,

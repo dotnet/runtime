@@ -14,7 +14,7 @@ namespace Microsoft.DotNet.CoreSetup.Test.HostActivation.NativeHosting
     {
         private const string GetHostFxrPath = "get_hostfxr_path";
 
-        private static readonly string HostFxrName = RuntimeInformationExtensions.GetSharedLibraryFileNameForCurrentPlatform("hostfxr");
+        private static readonly string HostFxrName = Binaries.HostFxr.FileName;
         private readonly SharedTestState sharedState;
 
         public Nethost(SharedTestState sharedTestState)
@@ -84,7 +84,7 @@ namespace Microsoft.DotNet.CoreSetup.Test.HostActivation.NativeHosting
                 result.Should().Fail()
                     .And.ExitWith(1)
                     .And.HaveStdOutContaining($"{GetHostFxrPath} failed: 0x{Constants.ErrorCode.CoreHostLibMissingFailure.ToString("x")}")
-                    .And.HaveStdErrContaining($"The folder [{Path.Combine(dotNetRoot, "host", "fxr")}] does not exist");
+                    .And.HaveStdErrContaining($"[{Path.Combine(dotNetRoot, "host", "fxr")}] does not exist");
             }
         }
 
@@ -131,7 +131,9 @@ namespace Microsoft.DotNet.CoreSetup.Test.HostActivation.NativeHosting
                     .Execute();
             }
 
-            result.Should().HaveStdErrContaining("Using global installation location");
+            result.Should().HaveUsedGlobalInstallLocation(installLocation);
+            if (useRegisteredLocation)
+                result.Should().HaveUsedRegisteredInstallLocation(installLocation);
 
             if (isValid)
             {
@@ -213,7 +215,7 @@ namespace Microsoft.DotNet.CoreSetup.Test.HostActivation.NativeHosting
                 CommandResult result = Command.Create(sharedState.NativeHostPath, GetHostFxrPath)
                     .EnableTracingAndCaptureOutputs()
                     .ApplyRegisteredInstallLocationOverride(registeredInstallLocationOverride)
-                    .EnvironmentVariable( // Redirect the default install location to an invalid location so that it doesn't cause the test to pass 
+                    .EnvironmentVariable( // Redirect the default install location to an invalid location so that it doesn't cause the test to pass
                         Constants.TestOnlyEnvironmentVariables.DefaultInstallPath,
                         sharedState.InvalidInstallRoot)
                     .DotNetRoot(null)
@@ -233,7 +235,7 @@ namespace Microsoft.DotNet.CoreSetup.Test.HostActivation.NativeHosting
                 if (shouldPass)
                 {
                     result.Should().Pass()
-                        .And.HaveUsedConfigFileInstallLocation(installLocation)
+                        .And.HaveUsedRegisteredInstallLocation(installLocation)
                         .And.HaveStdOutContaining($"hostfxr_path: {sharedState.HostFxrPath}".ToLower());
                 }
                 else
@@ -262,7 +264,7 @@ namespace Microsoft.DotNet.CoreSetup.Test.HostActivation.NativeHosting
                 CommandResult result = Command.Create(sharedState.NativeHostPath, GetHostFxrPath)
                     .EnableTracingAndCaptureOutputs()
                     .ApplyRegisteredInstallLocationOverride(registeredInstallLocationOverride)
-                    .EnvironmentVariable( // Redirect the default install location to an invalid location so that it doesn't cause the test to pass 
+                    .EnvironmentVariable( // Redirect the default install location to an invalid location so that it doesn't cause the test to pass
                         Constants.TestOnlyEnvironmentVariables.DefaultInstallPath,
                         sharedState.InvalidInstallRoot)
                     .DotNetRoot(null)
@@ -272,7 +274,7 @@ namespace Microsoft.DotNet.CoreSetup.Test.HostActivation.NativeHosting
                     .And.HaveLookedForArchitectureSpecificInstallLocation(
                         registeredInstallLocationOverride.PathValueOverride,
                         sharedState.RepoDirectories.BuildArchitecture)
-                    .And.HaveUsedConfigFileInstallLocation(installLocation)
+                    .And.HaveUsedRegisteredInstallLocation(installLocation)
                     .And.HaveStdOutContaining($"hostfxr_path: {sharedState.HostFxrPath}".ToLower());
             }
         }
@@ -293,7 +295,7 @@ namespace Microsoft.DotNet.CoreSetup.Test.HostActivation.NativeHosting
                 CommandResult result = Command.Create(sharedState.NativeHostPath, GetHostFxrPath)
                     .EnableTracingAndCaptureOutputs()
                     .ApplyRegisteredInstallLocationOverride(registeredInstallLocationOverride)
-                    .EnvironmentVariable( // Redirect the default install location to an invalid location so that it doesn't cause the test to pass 
+                    .EnvironmentVariable( // Redirect the default install location to an invalid location so that it doesn't cause the test to pass
                         Constants.TestOnlyEnvironmentVariables.DefaultInstallPath,
                         sharedState.InvalidInstallRoot)
                     .DotNetRoot(null)
@@ -303,7 +305,7 @@ namespace Microsoft.DotNet.CoreSetup.Test.HostActivation.NativeHosting
                     .And.HaveLookedForArchitectureSpecificInstallLocation(
                         registeredInstallLocationOverride.PathValueOverride,
                         sharedState.RepoDirectories.BuildArchitecture)
-                    .And.HaveUsedConfigFileInstallLocation(installLocation)
+                    .And.HaveUsedRegisteredInstallLocation(installLocation)
                     .And.HaveStdOutContaining($"hostfxr_path: {sharedState.HostFxrPath}".ToLower());
             }
         }
@@ -323,16 +325,18 @@ namespace Microsoft.DotNet.CoreSetup.Test.HostActivation.NativeHosting
         [Fact]
         public void TracingNotBufferedByDefault()
         {
+            string traceFilePath;
             CommandResult result = Command.Create(sharedState.NativeHostPath, $"{GetHostFxrPath} false nullptr x")
-                .EnvironmentVariable("COREHOST_TRACE", "1")
-                .EnvironmentVariable("COREHOST_TRACEFILE", "Tracing.out")
+                .EnableHostTracingToFile(out traceFilePath)
                 .MultilevelLookup(true)
                 .DotNetRoot(null)
                 .Execute();
 
             result.Should().Fail()
-                .And.FileExists("Tracing.out")
-                .And.FileContains("Tracing.out", "Tracing enabled");
+                .And.FileExists(traceFilePath)
+                .And.FileContains(traceFilePath, "Tracing enabled");
+
+            FileUtils.DeleteFileIfPossible(traceFilePath);
         }
 
         [Fact]
@@ -344,7 +348,7 @@ namespace Microsoft.DotNet.CoreSetup.Test.HostActivation.NativeHosting
             // This is to make sure that we're using the unmodified product binary. If some previous test
             // enabled test-only product behavior on the binary and didn't correctly cleanup, this test would fail.
             File.Copy(
-                Path.Combine(sharedState.RepoDirectories.HostArtifacts, RuntimeInformationExtensions.GetSharedLibraryFileNameForCurrentPlatform("nethost")),
+                Binaries.NetHost.FilePath,
                 sharedState.NethostPath,
                 overwrite: true);
 

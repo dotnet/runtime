@@ -16,7 +16,7 @@
 {
 }
 .assembly extern eh_common{}
-.assembly 'catchfiltercatch'
+.assembly ASSEMBLY_NAME
 {
   .hash algorithm 0x00008004
   .ver 0:0:0:0
@@ -26,9 +26,9 @@
 .subsystem 0x00000003
 .file alignment 512
 .corflags 0x00000001
-.namespace hello
+.namespace hello_catchfiltercatch_mixedhandler_il
 {
-  .class private auto ansi beforefieldinit Class1
+  .class public auto ansi beforefieldinit Class1
          extends [mscorlib]System.Object
   {
     .method public hidebysig static void 

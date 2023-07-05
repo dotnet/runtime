@@ -225,10 +225,7 @@ namespace System.Xml
         internal void Foliate(ElementState newState)
         {
             XmlDataDocument doc = (XmlDataDocument)OwnerDocument;
-            if (doc != null)
-            {
-                doc.Foliate(this, newState);
-            }
+            doc?.Foliate(this, newState);
         }
 
         // Foliate the node as a side effect of user calling functions on this node (like NextSibling) OR as a side effect of DataDocNav using nodes to do editing
@@ -236,10 +233,7 @@ namespace System.Xml
         private void AutoFoliate()
         {
             XmlDataDocument doc = (XmlDataDocument)OwnerDocument;
-            if (doc != null)
-            {
-                doc.Foliate(this, doc.AutoFoliationState);
-            }
+            doc?.Foliate(this, doc.AutoFoliationState);
         }
 
         public override XmlNode CloneNode(bool deep)
@@ -416,10 +410,7 @@ namespace System.Xml
 
                 default:
                     Debug.Assert(((IXmlDataVirtualNode)dp).IsOnColumn(null));
-                    if (dp.GetNode() != null)
-                    {
-                        dp.GetNode().WriteTo(w);
-                    }
+                    dp.GetNode()?.WriteTo(w);
                     break;
             }
         }

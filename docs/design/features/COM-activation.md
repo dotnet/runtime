@@ -59,7 +59,7 @@ The current .NET Core hosting solutions are described in detail at [Documentatio
 
 >[`HRESULT DllUnregisterServer();`](https://msdn.microsoft.com/library/windows/desktop/ms691457(v=vs.85).aspx)
 
-When `DllGetClassObject()` is called in a COM activation scenario, the following steps will occur. The calling of `DllGetClassObject()` is usually accomplished through an implicit or explcit call to `CoCreateInstance()`.
+When `DllGetClassObject()` is called in a COM activation scenario, the following steps will occur. The calling of `DllGetClassObject()` is usually accomplished through an implicit or explicit call to `CoCreateInstance()`.
 
 1) Determine additional registration information needed for activation.
     * The shim will check for an embedded manifest. If the shim does not contain an embedded manifest, the shim will check if a file with the `<shim_name>.clsidmap` naming format exists adjacent to it. Build tooling handles shim customization, including renaming the shim to be based on the managed assembly's name (e.g. `NetComServer.dll` will have a custom shim called `NetComServer.comhost.dll`). If the shim is signed the shim will **not** attempt to discover the manifest on disk.
@@ -104,7 +104,7 @@ When `DllGetClassObject()` is called in a COM activation scenario, the following
         }
         ```
         Note this API is not exposed outside of `System.Private.CoreLib` and is subject to change at any time.
-    * The loading of the assembly will take place in a new [`AssemblyLoadContext`](https://docs.microsoft.com/dotnet/api/system.runtime.loader.assemblyloadcontext) for dependency isolation. Each assembly path will get a seperate `AssemblyLoadContext`. This means that if an assembly provides multiple COM servers all of the servers from that assembly will reside in the same `AssemblyLoadContext`.
+    * The loading of the assembly will take place in a new [`AssemblyLoadContext`](https://docs.microsoft.com/dotnet/api/system.runtime.loader.assemblyloadcontext) for dependency isolation. Each assembly path will get a separate `AssemblyLoadContext`. This means that if an assembly provides multiple COM servers all of the servers from that assembly will reside in the same `AssemblyLoadContext`.
     * The created `AssemblyLoadContext` will use an [`AssemblyDependencyResolver`](https://github.com/dotnet/runtime/issues/27787) that was supplied with the path to the assembly to load assemblies.
 1) The `IClassFactory` instance is returned to the caller of `DllGetClassObject()` to attempt class activation.
 

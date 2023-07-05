@@ -78,7 +78,7 @@ void CryptoNative_Asn1BitStringFree(ASN1_STRING* a)
     ASN1_BIT_STRING_free(a);
 }
 
-ASN1_OCTET_STRING* CryptoNative_Asn1OctetStringNew()
+ASN1_OCTET_STRING* CryptoNative_Asn1OctetStringNew(void)
 {
     ERR_clear_error();
     return ASN1_OCTET_STRING_new();

@@ -7,10 +7,10 @@ scriptroot="$( cd -P "$( dirname "$0" )" && pwd )"
 
 if [[ "$#" -lt 4 ]]; then
   echo "Usage..."
-  echo "gen-buildsys.sh <path to top level CMakeLists.txt> <path to intermediate directory> <Architecture> <compiler> [build flavor] [ninja] [scan-build] [cmakeargs]"
+  echo "gen-buildsys.sh <path to top level CMakeLists.txt> <path to intermediate directory> <Architecture> <Os> <compiler> [build flavor] [ninja] [scan-build] [cmakeargs]"
   echo "Specify the path to the top level CMake file."
   echo "Specify the path that the build system files are generated in."
-  echo "Specify the target architecture."
+  echo "Specify the host architecture (the architecture the built tools should run on)."
   echo "Specify the name of compiler (clang or gcc)."
   echo "Optionally specify the build configuration (flavor.) Defaults to DEBUG."
   echo "Optionally specify 'scan-build' to enable build with clang static analyzer."
@@ -19,12 +19,13 @@ if [[ "$#" -lt 4 ]]; then
   exit 1
 fi
 
-build_arch="$3"
-compiler="$4"
+host_arch="$3"
+target_os="$4"
+compiler="$5"
 
 if [[ "$compiler" != "default" ]]; then
     nativescriptroot="$( cd -P "$scriptroot/../common/native" && pwd )"
-    source "$nativescriptroot/init-compiler.sh" "$nativescriptroot" "$build_arch" "$compiler"
+    build_arch="$host_arch" compiler="$compiler" . "$nativescriptroot/init-compiler.sh"
 
     CCC_CC="$CC"
     CCC_CXX="$CXX"
@@ -39,7 +40,7 @@ scan_build=OFF
 generator="Unix Makefiles"
 __UnprocessedCMakeArgs=""
 
-for i in "${@:5}"; do
+for i in "${@:6}"; do
     upperI="$(echo "$i" | tr "[:lower:]" "[:upper:]")"
     case "$upperI" in
       # Possible build types are DEBUG, CHECKED, RELEASE, RELWITHDEBINFO.
@@ -60,26 +61,26 @@ done
 
 cmake_extra_defines=
 if [[ "$CROSSCOMPILE" == "1" ]]; then
-    platform="$(uname)"
+    platform="$(uname -s | tr '[:upper:]' '[:lower:]')"
     # OSX doesn't use rootfs
-    if ! [[ -n "$ROOTFS_DIR" || "$platform" == "Darwin" ]]; then
+    if ! [[ -n "$ROOTFS_DIR" || "$platform" == "darwin" ]]; then
         echo "ROOTFS_DIR not set for crosscompile"
         exit 1
     fi
 
-    TARGET_BUILD_ARCH="$build_arch"
+    TARGET_BUILD_ARCH="$host_arch"
     export TARGET_BUILD_ARCH
 
     cmake_extra_defines="$cmake_extra_defines -C $scriptroot/tryrun.cmake"
 
-    if [[ "$platform" == "Darwin" ]]; then
+    if [[ "$platform" == "darwin" ]]; then
         cmake_extra_defines="$cmake_extra_defines -DCMAKE_SYSTEM_NAME=Darwin"
     else
         cmake_extra_defines="$cmake_extra_defines -DCMAKE_TOOLCHAIN_FILE=$scriptroot/../common/cross/toolchain.cmake"
     fi
 fi
 
-if [[ "$build_arch" == "armel" ]]; then
+if [[ "$host_arch" == "armel" ]]; then
     cmake_extra_defines="$cmake_extra_defines -DARM_SOFTFP=1"
 fi
 
@@ -92,21 +93,15 @@ if [[ "$scan_build" == "ON" && -n "$SCAN_BUILD_COMMAND" ]]; then
     cmake_command="$SCAN_BUILD_COMMAND $cmake_command"
 fi
 
-if [[ "$build_arch" == "wasm" ]]; then
-    cmake_command="emcmake $cmake_command"
-fi
-
-cmake_args_to_cache="$scan_build\n$SCAN_BUILD_COMMAND\n$generator\n$__UnprocessedCMakeArgs"
-cmake_args_cache_file="$2/cmake_cmd_line.txt"
-if [[ -z "$__ConfigureOnly" ]]; then
-    if [[ -e "$cmake_args_cache_file" ]]; then
-        cmake_args_cache=$(<"$cmake_args_cache_file")
-        if [[ "$cmake_args_cache" == "$cmake_args_to_cache" ]]; then
-            echo "CMake command line is unchanged. Reusing previous cache instead of regenerating."
-            exit 0
-        fi
+if [[ "$host_arch" == "wasm" ]]; then
+    if [[ "$target_os" == "browser" ]]; then
+        cmake_command="emcmake $cmake_command"
+    elif [[ "$target_os" == "wasi" ]]; then
+        true
+    else
+        echo "target_os was not specified"
+        exit 1
     fi
-    echo $cmake_args_to_cache > $cmake_args_cache_file
 fi
 
 # We have to be able to build with CMake 3.6.2, so we can't use the -S or -B options

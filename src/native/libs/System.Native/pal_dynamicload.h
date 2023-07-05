@@ -8,6 +8,10 @@
 
 PALEXPORT void* SystemNative_LoadLibrary(const char* filename);
 
+PALEXPORT void* SystemNative_GetLoadLibraryError(void);
+
 PALEXPORT void* SystemNative_GetProcAddress(void* handle, const char* symbol);
 
 PALEXPORT void SystemNative_FreeLibrary(void* handle);
+
+PALEXPORT void* SystemNative_GetDefaultSearchOrderPseudoHandle(void);

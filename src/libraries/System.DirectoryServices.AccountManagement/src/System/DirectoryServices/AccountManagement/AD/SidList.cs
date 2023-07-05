@@ -18,7 +18,7 @@ namespace System.DirectoryServices.AccountManagement
         internal SidList(List<byte[]> sidListByteFormat, string target, NetCred credentials)
         {
             GlobalDebug.WriteLineIf(GlobalDebug.Info, "SidList", "SidList: processing {0} ByteFormat SIDs", sidListByteFormat.Count);
-            GlobalDebug.WriteLineIf(GlobalDebug.Info, "SidList", "SidList: Targetting {0} ", (target != null) ? target : "local store");
+            GlobalDebug.WriteLineIf(GlobalDebug.Info, "SidList", "SidList: Targeting {0} ", target ?? "local store");
 
             // Build the list of SIDs to resolve
             IntPtr hUser = IntPtr.Zero;
@@ -94,6 +94,8 @@ namespace System.DirectoryServices.AccountManagement
                                     out policyHandle);
                 if (err != 0)
                 {
+                    policyHandle.Dispose();
+
                     GlobalDebug.WriteLineIf(GlobalDebug.Warn, "AuthZSet", "SidList: couldn't get policy handle, err={0}", err);
 
                     throw new PrincipalOperationException(SR.Format(
@@ -119,6 +121,9 @@ namespace System.DirectoryServices.AccountManagement
                      err != Interop.StatusOptions.STATUS_SOME_NOT_MAPPED &&
                      err != Interop.StatusOptions.STATUS_NONE_MAPPED)
                 {
+                    domainsHandle.Dispose();
+                    namesHandle.Dispose();
+
                     GlobalDebug.WriteLineIf(GlobalDebug.Warn, "AuthZSet", "SidList: LsaLookupSids failed, err={0}", err);
 
                     throw new PrincipalOperationException(SR.Format(
@@ -194,14 +199,9 @@ namespace System.DirectoryServices.AccountManagement
             }
             finally
             {
-                if (domainsHandle != null)
-                    domainsHandle.Dispose();
-
-                if (namesHandle != null)
-                    namesHandle.Dispose();
-
-                if (policyHandle != null)
-                    policyHandle.Dispose();
+                domainsHandle?.Dispose();
+                namesHandle?.Dispose();
+                policyHandle?.Dispose();
             }
         }
 

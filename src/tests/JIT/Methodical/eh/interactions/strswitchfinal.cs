@@ -4,10 +4,11 @@
 /* switch with string values contained in a loop with various try/catch and try/finally constructs */
 
 using System;
+using Xunit;
 
-namespace strswitch
+namespace strswitch_strswitchfinal_cs
 {
-    internal class Class1
+    public class Class1
     {
         private static TestUtil.TestLog s_testLog;
 
@@ -54,7 +55,8 @@ namespace strswitch
             s_testLog = new TestUtil.TestLog(expectedOut);
         }
 
-        private static int Main()
+        [Fact]
+        public static int TestEntryPoint()
         {
             string[] s = { "one", "two", "three", "four", "five", "six" };
             s_testLog.StartRecording();

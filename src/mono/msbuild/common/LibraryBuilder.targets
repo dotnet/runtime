@@ -1,0 +1,74 @@
+<Project>
+  <UsingTask TaskName="EmitBundleSourceFiles"
+             AssemblyFile="$(MonoTargetsTasksAssemblyPath)" />
+  <UsingTask TaskName="LibraryBuilderTask" 
+             AssemblyFile="$(LibraryBuilderTasksAssemblyPath)" />
+
+  <Target Name="_BuildNativeLibrary"
+          Condition="'$(_IsLibraryMode)' == 'true' and '$(RunAOTCompilation)' == 'true'"
+          DependsOnTargets="_GenerateBundle">
+
+    <PropertyGroup>
+      <_IsSharedLibrary>false</_IsSharedLibrary>
+      <_IsSharedLibrary Condition="'$(NativeLib)' == 'shared'">true</_IsSharedLibrary>
+      <_UsesCustomRuntimeInitCallback>false</_UsesCustomRuntimeInitCallback>
+      <_UsesCustomRuntimeInitCallback Condition="$(CustomRuntimeInitCallback) != ''">true</_UsesCustomRuntimeInitCallback>
+      <_BundlesResources>$(BundlesResources)</_BundlesResources>
+      <_BundlesResources Condition="'$(_BundlesResources)' == ''">true</_BundlesResources>
+    </PropertyGroup>
+
+    <ItemGroup>
+      <_ExtraLibrarySources Include="$(_AotModuleTablePath)" />
+      <_ExtraLibrarySources Include="@(BundledSources)" />
+      <_ExtraLibrarySources Include="%(_BundledResources.DestinationFile)" />
+      <_ExtraLinkerArgs Include="@(_CommonLinkerArgs)" />
+      <_BundledRuntimeConfig Include="@(_BundledResources)" Condition="$([System.String]::Copy('%(Identity)').EndsWith('runtimeconfig.bin'))" />
+    </ItemGroup>
+
+    <LibraryBuilderTask
+      Assemblies="@(_AssembliesToBundleInternal)"
+      AssembliesLocation="$(AssembliesLocation)"
+      BundlesResources="$(_BundlesResources)"
+      BundledRuntimeConfig="@(_BundledRuntimeConfig)"
+      ExtraLinkerArguments="@(_ExtraLinkerArgs)"
+      ExtraSources="@(_ExtraLibrarySources)"
+      IsSharedLibrary="$(_IsSharedLibrary)"
+      MonoRuntimeHeaders="$(_MonoHeaderPath)"
+      Name="$(AssemblyName)"
+      OutputDirectory="$(BundleDir)"
+      RuntimeIdentifier="$(RuntimeIdentifier)"
+      RuntimeLibraries="@(_RuntimeLibraries)"
+      TargetOS="$(TargetOS)"
+      UsesCustomRuntimeInitCallback="$(_UsesCustomRuntimeInitCallback)"
+      UsesRuntimeInitCallback="$(_UsesRuntimeInitCallback)">
+      <Output TaskParameter="OutputPath" PropertyName="LibraryOutputPath" />
+      <Output TaskParameter="ExportedSymbols" ItemName="LibraryRuntimeExportedSymbols" />
+    </LibraryBuilderTask>
+  </Target>
+
+  <Target Name="_GenerateBundle"
+          Condition="'$(BundlesResources)' != 'false'">
+    <PropertyGroup>
+      <BundleSourceFile>mono-bundled-source.c</BundleSourceFile>
+      <BundleOutputDirectory>$(BundleDir)</BundleOutputDirectory>
+    </PropertyGroup>
+
+    <ItemGroup>
+      <_ResourcesToBundle Remove="@(_ResourcesToBundle)" />
+      <_ResourcesToBundle Include="@(_AssembliesToBundleInternal)" />
+      <_ResourcesToBundle Include="$(_ParsedRuntimeConfigFilePath)" />
+    </ItemGroup>
+
+    <ItemGroup>
+      <BundledSources Include="$(BundleOutputDirectory)$(BundleSourceFile)" />
+    </ItemGroup>
+
+    <EmitBundleSourceFiles
+      FilesToBundle="@(_ResourcesToBundle)"
+      BundleFile="$(BundleSourceFile)"
+      OutputDirectory="$(BundleOutputDirectory)">
+      <Output TaskParameter="BundledResources" ItemName="_BundledResources" />
+     </EmitBundleSourceFiles>
+  </Target>
+
+</Project>

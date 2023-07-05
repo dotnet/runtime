@@ -22,7 +22,7 @@
 .class public auto ansi beforefieldinit Test_static_ref
        extends [mscorlib]System.Object
 {
-  .method public hidebysig static int32  Main(string[] args) cil managed noinlining
+  .method public hidebysig static int32  Main() cil managed noinlining
   {
     .custom instance void [xunit.core]Xunit.FactAttribute::.ctor() = (
         01 00 00 00

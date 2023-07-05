@@ -2,15 +2,17 @@
 // The .NET Foundation licenses this file to you under the MIT license.
 //
 
+using Xunit;
 namespace Test
 {
     using System;
 
-    class App
+    public class App
     {
         static void Static1(ulong param2, object param3) { }
 
-        static int Main()
+        [Fact]
+        public static int TestEntryPoint()
         {
             ulong[] arr = new ulong[16];
             uint u = 11u;

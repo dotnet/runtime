@@ -3,6 +3,7 @@
 
 using System.Collections.Generic;
 using System.Diagnostics;
+using System.Diagnostics.CodeAnalysis;
 using System.IO;
 using System.Linq;
 using System.Reflection;
@@ -54,7 +55,7 @@ namespace System.Tests
                 new object().GetType().GetType()
             };
 
-            if (PlatformDetection.IsWindows)
+            if (PlatformDetection.IsBuiltInComEnabled)
             {
                 NonArrayBaseTypes.Add(Type.GetTypeFromCLSID(default(Guid)));
             }
@@ -149,6 +150,9 @@ namespace System.Tests
 
         [Theory]
         [MemberData(nameof(FindMembers_TestData))]
+        [UnconditionalSuppressMessage ("ReflectionAnalysis", "IL2118",
+            Justification = "DAM on FindMembers references compiler-generated members which use reflection. " +
+                            "These members are not accessed by the test.")]
         public void FindMembers_Invoke_ReturnsExpected(MemberTypes memberType, BindingFlags bindingAttr, MemberFilter filter, object filterCriteria, int expectedLength)
         {
             Assert.Equal(expectedLength, typeof(TypeTests).FindMembers(memberType, bindingAttr, filter, filterCriteria).Length);
@@ -503,6 +507,8 @@ namespace System.Tests
         [InlineData("Outside[,,]", typeof(Outside[,,]))]
         [InlineData("Outside[][]", typeof(Outside[][]))]
         [InlineData("Outside`1[System.Nullable`1[System.Boolean]]", typeof(Outside<bool?>))]
+        [InlineData(".Outside`1", typeof(Outside<>))]
+        [InlineData(".Outside`1+.Inside`1", typeof(Outside<>.Inside<>))]
         public void GetTypeByName_ValidType_ReturnsExpected(string typeName, Type expectedType)
         {
             Assert.Equal(expectedType, Type.GetType(typeName, throwOnError: false, ignoreCase: false));
@@ -516,6 +522,8 @@ namespace System.Tests
         [InlineData("System.Int32[,*,]", typeof(ArgumentException), false)]
         [InlineData("Outside`2", typeof(TypeLoadException), false)]
         [InlineData("Outside`1[System.Boolean, System.Int32]", typeof(ArgumentException), true)]
+        [InlineData(".System.Int32", typeof(TypeLoadException), false)]
+        [InlineData("..Outside`1", typeof(TypeLoadException), false)]
         public void GetTypeByName_Invalid(string typeName, Type expectedException, bool alwaysThrowsException)
         {
             if (!alwaysThrowsException)
@@ -524,6 +532,16 @@ namespace System.Tests
             }
 
             Assert.Throws(expectedException, () => Type.GetType(typeName, throwOnError: true, ignoreCase: false));
+        }
+
+        [ConditionalTheory(typeof(PlatformDetection), nameof(PlatformDetection.IsNotBuiltWithAggressiveTrimming))]
+        [InlineData(".GlobalStructStartingWithDot")]
+        [InlineData(" GlobalStructStartingWithSpace")]
+        public void GetTypeByName_NonRoundtrippable(string typeName)
+        {
+            Type type = Assembly.Load("System.TestStructs").GetTypes().Single((t) => t.FullName == typeName);
+            string assemblyQualifiedName = type.AssemblyQualifiedName;
+            Assert.Null(Type.GetType(assemblyQualifiedName));
         }
 
         [Fact]
@@ -726,7 +744,7 @@ namespace System.Tests
                 yield return new object[] { typeof(IEnumerable<>) };
                 yield return new object[] { 3.GetType().GetType() };  // This yields a reflection-blocked type on .NET Native - which is implemented separately
 
-                if (PlatformDetection.IsWindows)
+                if (PlatformDetection.IsBuiltInComEnabled)
                     yield return new object[] { Type.GetTypeFromCLSID(default(Guid)) };
             }
         }
@@ -779,7 +797,7 @@ namespace System.Tests
                 yield return new object[] { typeof(int[]), false };
                 yield return new object[] { typeof(int[,]), false };
                 yield return new object[] { typeof(object), false };
-                if (PlatformDetection.IsWindows) // GetTypeFromCLSID is Windows only
+                if (PlatformDetection.IsBuiltInComEnabled) // GetTypeFromCLSID = built-in COM
                 {
                     yield return new object[] { Type.GetTypeFromCLSID(default(Guid)), false };
                 }
@@ -822,7 +840,7 @@ namespace System.Tests
                 yield return new object[] { typeof(int).MakePointerType(), false, false, false };
                 yield return new object[] { typeof(DummyGenericClassForTypeTests<>), false, false, false };
                 yield return new object[] { typeof(DummyGenericClassForTypeTests<int>), false, false, false };
-                if (PlatformDetection.IsWindows) // GetTypeFromCLSID is Windows only
+                if (PlatformDetection.IsBuiltInComEnabled) // GetTypeFromCLSID = built-in COM
                 {
                     yield return new object[] { Type.GetTypeFromCLSID(default(Guid)), false, false, false };
                 }
@@ -848,7 +866,7 @@ namespace System.Tests
         static string testtype = "System.Collections.Generic.Dictionary`2[[Program, Foo], [Program, Foo]]";
 
         private static Func<AssemblyName, Assembly> assemblyloader = (aName) => aName.Name == "TestLoadAssembly" ?
-                           Assembly.LoadFrom(@".\TestLoadAssembly.dll") :
+                           Assembly.LoadFrom(Path.Join(".", "TestLoadAssembly.dll")) :
                            null;
         private static Func<Assembly, string, bool, Type> typeloader = (assem, name, ignore) => assem == null ?
                              Type.GetType(name, false, ignore) :
@@ -939,6 +957,27 @@ namespace System.Tests
                     Assert.Throws<PlatformNotSupportedException>(() => typeof(List<>).MakeGenericType(nonRuntimeType));
                 }
             }
+        }
+
+        public static IEnumerable<object[]> InvalidGenericArgumentTypes()
+        {
+            yield return new object[] { typeof(void) };
+            yield return new object[] { typeof(object).MakeByRefType() };
+            yield return new object[] { typeof(int).MakePointerType() };
+
+            // https://github.com/dotnet/runtime/issues/71095
+            if (!PlatformDetection.IsMonoRuntime)
+            {
+                yield return new object[] { FunctionPointerType() };
+                static unsafe Type FunctionPointerType() => typeof(delegate*<void>);
+            }
+        }
+
+        [Theory]
+        [MemberData(nameof(InvalidGenericArgumentTypes))]
+        public void MakeGenericType_InvalidGenericArgument(Type type)
+        {
+            Assert.Throws<ArgumentException>(() => typeof(List<>).MakeGenericType(type));
         }
 
 #region GetInterfaceMap tests
@@ -1134,6 +1173,36 @@ namespace System.Tests
             }
         }
 #endregion
+
+        [Fact]
+        public void GetEnumTypeCode()
+        {
+            Assert.True(Type.GetTypeCode(typeof(TestEnum)) == TypeCode.Int32);
+        }
+
+        [Fact]
+        public void GetEnumNestedInGenericClassTypeCode()
+        {
+            Assert.True(Type.GetTypeCode(typeof(TestGenericClass<TestClass>.NestedEnum)) == TypeCode.Int32);
+        }
+
+        public enum TestEnum
+        {
+            A,
+            B,
+            C
+        }
+
+        public class TestClass { }
+        public class TestGenericClass<T>
+        {
+            public enum NestedEnum
+            {
+                A,
+                B,
+                C
+            }
+        }
     }
 
     public class NonGenericClass { }

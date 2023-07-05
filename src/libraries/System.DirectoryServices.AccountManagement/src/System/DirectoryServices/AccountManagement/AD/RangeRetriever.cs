@@ -192,7 +192,7 @@ namespace System.DirectoryServices.AccountManagement
             }
             else
             {
-                _lowRange = _lowRange + pvc.Count;
+                _lowRange += pvc.Count;
 
                 GlobalDebug.WriteLineIf(GlobalDebug.Info,
                                         "RangeRetriever",

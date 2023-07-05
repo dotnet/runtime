@@ -45,8 +45,11 @@ namespace System.IO
         {
         }
 
-        public BinaryReader(Stream input!!, Encoding encoding!!, bool leaveOpen)
+        public BinaryReader(Stream input, Encoding encoding, bool leaveOpen)
         {
+            ArgumentNullException.ThrowIfNull(input);
+            ArgumentNullException.ThrowIfNull(encoding);
+
             if (!input.CanRead)
             {
                 throw new ArgumentException(SR.Argument_StreamNotReadable);
@@ -140,7 +143,7 @@ namespace System.IO
 
             _charBytes ??= new byte[MaxCharBytesSize];
 
-            Span<char> singleChar = stackalloc char[1];
+            char singleChar = '\0';
 
             while (charsRead == 0)
             {
@@ -175,7 +178,7 @@ namespace System.IO
 
                 try
                 {
-                    charsRead = _decoder.GetChars(new ReadOnlySpan<byte>(_charBytes, 0, numBytes), singleChar, flush: false);
+                    charsRead = _decoder.GetChars(new ReadOnlySpan<byte>(_charBytes, 0, numBytes), new Span<char>(ref singleChar), flush: false);
                 }
                 catch
                 {
@@ -193,7 +196,7 @@ namespace System.IO
                 Debug.Assert(charsRead < 2, "BinaryReader::ReadOneChar - assuming we only got 0 or 1 char, not 2!");
             }
             Debug.Assert(charsRead > 0);
-            return singleChar[0];
+            return singleChar;
         }
 
         public virtual byte ReadByte() => InternalReadByte();
@@ -237,9 +240,9 @@ namespace System.IO
         public virtual long ReadInt64() => BinaryPrimitives.ReadInt64LittleEndian(InternalRead(8));
         [CLSCompliant(false)]
         public virtual ulong ReadUInt64() => BinaryPrimitives.ReadUInt64LittleEndian(InternalRead(8));
-        public virtual Half ReadHalf() => BitConverter.Int16BitsToHalf(BinaryPrimitives.ReadInt16LittleEndian(InternalRead(2)));
-        public virtual unsafe float ReadSingle() => BitConverter.Int32BitsToSingle(BinaryPrimitives.ReadInt32LittleEndian(InternalRead(4)));
-        public virtual unsafe double ReadDouble() => BitConverter.Int64BitsToDouble(BinaryPrimitives.ReadInt64LittleEndian(InternalRead(8)));
+        public virtual Half ReadHalf() => BinaryPrimitives.ReadHalfLittleEndian(InternalRead(2));
+        public virtual float ReadSingle() => BinaryPrimitives.ReadSingleLittleEndian(InternalRead(4));
+        public virtual double ReadDouble() => BinaryPrimitives.ReadDoubleLittleEndian(InternalRead(8));
 
         public virtual decimal ReadDecimal()
         {
@@ -309,16 +312,12 @@ namespace System.IO
             return StringBuilderCache.GetStringAndRelease(sb);
         }
 
-        public virtual int Read(char[] buffer!!, int index, int count)
+        public virtual int Read(char[] buffer, int index, int count)
         {
-            if (index < 0)
-            {
-                throw new ArgumentOutOfRangeException(nameof(index), SR.ArgumentOutOfRange_NeedNonNegNum);
-            }
-            if (count < 0)
-            {
-                throw new ArgumentOutOfRangeException(nameof(count), SR.ArgumentOutOfRange_NeedNonNegNum);
-            }
+            ArgumentNullException.ThrowIfNull(buffer);
+
+            ArgumentOutOfRangeException.ThrowIfNegative(index);
+            ArgumentOutOfRangeException.ThrowIfNegative(count);
             if (buffer.Length - index < count)
             {
                 throw new ArgumentException(SR.Argument_InvalidOffLen);
@@ -414,10 +413,7 @@ namespace System.IO
 
         public virtual char[] ReadChars(int count)
         {
-            if (count < 0)
-            {
-                throw new ArgumentOutOfRangeException(nameof(count), SR.ArgumentOutOfRange_NeedNonNegNum);
-            }
+            ArgumentOutOfRangeException.ThrowIfNegative(count);
             ThrowIfDisposed();
 
             if (count == 0)
@@ -437,16 +433,12 @@ namespace System.IO
             return chars;
         }
 
-        public virtual int Read(byte[] buffer!!, int index, int count)
+        public virtual int Read(byte[] buffer, int index, int count)
         {
-            if (index < 0)
-            {
-                throw new ArgumentOutOfRangeException(nameof(index), SR.ArgumentOutOfRange_NeedNonNegNum);
-            }
-            if (count < 0)
-            {
-                throw new ArgumentOutOfRangeException(nameof(count), SR.ArgumentOutOfRange_NeedNonNegNum);
-            }
+            ArgumentNullException.ThrowIfNull(buffer);
+
+            ArgumentOutOfRangeException.ThrowIfNegative(index);
+            ArgumentOutOfRangeException.ThrowIfNegative(count);
             if (buffer.Length - index < count)
             {
                 throw new ArgumentException(SR.Argument_InvalidOffLen);
@@ -464,10 +456,7 @@ namespace System.IO
 
         public virtual byte[] ReadBytes(int count)
         {
-            if (count < 0)
-            {
-                throw new ArgumentOutOfRangeException(nameof(count), SR.ArgumentOutOfRange_NeedNonNegNum);
-            }
+            ArgumentOutOfRangeException.ThrowIfNegative(count);
             ThrowIfDisposed();
 
             if (count == 0)
@@ -476,18 +465,7 @@ namespace System.IO
             }
 
             byte[] result = new byte[count];
-            int numRead = 0;
-            do
-            {
-                int n = _stream.Read(result, numRead, count);
-                if (n == 0)
-                {
-                    break;
-                }
-
-                numRead += n;
-                count -= n;
-            } while (count > 0);
+            int numRead = _stream.ReadAtLeast(result, result.Length, throwOnEndOfStream: false);
 
             if (numRead != result.Length)
             {
@@ -514,16 +492,7 @@ namespace System.IO
             {
                 ThrowIfDisposed();
 
-                int bytesRead = 0;
-                do
-                {
-                    int n = _stream.Read(_buffer, bytesRead, numBytes - bytesRead);
-                    if (n == 0)
-                    {
-                        ThrowHelper.ThrowEndOfFileException();
-                    }
-                    bytesRead += n;
-                } while (bytesRead < numBytes);
+                _stream.ReadExactly(_buffer.AsSpan(0, numBytes));
 
                 return _buffer;
             }
@@ -540,9 +509,6 @@ namespace System.IO
                 throw new ArgumentOutOfRangeException(nameof(numBytes), SR.ArgumentOutOfRange_BinaryReaderFillBuffer);
             }
 
-            int bytesRead = 0;
-            int n;
-
             ThrowIfDisposed();
 
             // Need to find a good threshold for calling ReadByte() repeatedly
@@ -550,7 +516,7 @@ namespace System.IO
             // streams.
             if (numBytes == 1)
             {
-                n = _stream.ReadByte();
+                int n = _stream.ReadByte();
                 if (n == -1)
                 {
                     ThrowHelper.ThrowEndOfFileException();
@@ -560,15 +526,19 @@ namespace System.IO
                 return;
             }
 
-            do
+            if (numBytes > 0)
             {
-                n = _stream.Read(_buffer, bytesRead, numBytes - bytesRead);
+                _stream.ReadExactly(_buffer.AsSpan(0, numBytes));
+            }
+            else
+            {
+                // ReadExactly no-ops for empty buffers, so special case numBytes == 0 to preserve existing behavior.
+                int n = _stream.Read(_buffer, 0, 0);
                 if (n == 0)
                 {
                     ThrowHelper.ThrowEndOfFileException();
                 }
-                bytesRead += n;
-            } while (bytesRead < numBytes);
+            }
         }
 
         public int Read7BitEncodedInt()

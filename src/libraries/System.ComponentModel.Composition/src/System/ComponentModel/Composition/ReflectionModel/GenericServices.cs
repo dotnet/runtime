@@ -11,8 +11,10 @@ namespace System.ComponentModel.Composition.ReflectionModel
 {
     internal static class GenericServices
     {
-        internal static IList<Type> GetPureGenericParameters(this Type type!!)
+        internal static IList<Type> GetPureGenericParameters(this Type type)
         {
+            ArgumentNullException.ThrowIfNull(type);
+
             if (type.IsGenericType && type.ContainsGenericParameters)
             {
                 List<Type> pureGenericParameters = new List<Type>();
@@ -31,8 +33,10 @@ namespace System.ComponentModel.Composition.ReflectionModel
             }
         }
 
-        internal static int GetPureGenericArity(this Type type!!)
+        internal static int GetPureGenericArity(this Type type)
         {
+            ArgumentNullException.ThrowIfNull(type);
+
             int genericArity = 0;
             if (type.IsGenericType && type.ContainsGenericParameters)
             {
@@ -84,7 +88,7 @@ namespace System.ComponentModel.Composition.ReflectionModel
             return genericSpecialization;
         }
 
-        [return: NotNullIfNotNull("types")]
+        [return: NotNullIfNotNull(nameof(types))]
         public static IEnumerable<Type>? CreateTypeSpecializations(this Type[]? types, Type[] specializationTypes)
         {
             if (types == null)

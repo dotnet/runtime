@@ -182,7 +182,7 @@ namespace MS.Internal.Xml.XPath
                         _kind = LexKind.DotDot;
                         NextChar();
                     }
-                    else if (XmlCharType.IsDigit(CurrentChar))
+                    else if (char.IsAsciiDigit(CurrentChar))
                     {
                         _kind = LexKind.Number;
                         _numberValue = ScanFraction();
@@ -203,7 +203,7 @@ namespace MS.Internal.Xml.XPath
                     _stringValue = ScanString();
                     break;
                 default:
-                    if (XmlCharType.IsDigit(CurrentChar))
+                    if (char.IsAsciiDigit(CurrentChar))
                     {
                         _kind = LexKind.Number;
                         _numberValue = ScanNumber();
@@ -274,17 +274,17 @@ namespace MS.Internal.Xml.XPath
 
         private double ScanNumber()
         {
-            Debug.Assert(CurrentChar == '.' || XmlCharType.IsDigit(CurrentChar));
+            Debug.Assert(CurrentChar == '.' || char.IsAsciiDigit(CurrentChar));
             int start = _xpathExprIndex - 1;
             int len = 0;
-            while (XmlCharType.IsDigit(CurrentChar))
+            while (char.IsAsciiDigit(CurrentChar))
             {
                 NextChar(); len++;
             }
             if (CurrentChar == '.')
             {
                 NextChar(); len++;
-                while (XmlCharType.IsDigit(CurrentChar))
+                while (char.IsAsciiDigit(CurrentChar))
                 {
                     NextChar(); len++;
                 }
@@ -294,11 +294,11 @@ namespace MS.Internal.Xml.XPath
 
         private double ScanFraction()
         {
-            Debug.Assert(XmlCharType.IsDigit(CurrentChar));
+            Debug.Assert(char.IsAsciiDigit(CurrentChar));
             int start = _xpathExprIndex - 2;
             Debug.Assert(0 <= start && _xpathExpr[start] == '.');
             int len = 1; // '.'
-            while (XmlCharType.IsDigit(CurrentChar))
+            while (char.IsAsciiDigit(CurrentChar))
             {
                 NextChar(); len++;
             }

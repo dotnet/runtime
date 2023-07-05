@@ -78,7 +78,6 @@ namespace System.Text.Json.Tests
                 };
 
                 const string CharLabel = "char";
-                byte[] byteUtf8 = Encoding.UTF8.GetBytes("byte");
                 using var writer = new Utf8JsonWriter(buffer, options);
 
                 if (skipValidation)
@@ -89,7 +88,7 @@ namespace System.Text.Json.Tests
                         val.WriteTo(writer);
                         writer.WritePropertyName(CharLabel.AsSpan());
                         val.WriteTo(writer);
-                        writer.WritePropertyName(byteUtf8);
+                        writer.WritePropertyName("byte"u8);
                         val.WriteTo(writer);
                         writer.WritePropertyName(JsonEncodedText.Encode(CharLabel));
                         val.WriteTo(writer);
@@ -111,7 +110,7 @@ namespace System.Text.Json.Tests
                 {
                     Assert.Throws<InvalidOperationException>(() => writer.WritePropertyName(CharLabel));
                     Assert.Throws<InvalidOperationException>(() => writer.WritePropertyName(CharLabel.AsSpan()));
-                    Assert.Throws<InvalidOperationException>(() => writer.WritePropertyName(byteUtf8));
+                    Assert.Throws<InvalidOperationException>(() => writer.WritePropertyName("byte"u8));
                     Assert.Throws<InvalidOperationException>(() => writer.WritePropertyName(JsonEncodedText.Encode(CharLabel)));
 
                     writer.Flush();

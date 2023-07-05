@@ -15,8 +15,11 @@ namespace System.Reflection.Context.Virtual
         private Type? _declaringType;
         private ParameterInfo[]? _indexedParameters;
 
-        protected VirtualPropertyBase(Type propertyType, string name!!, CustomReflectionContext context)
+        protected VirtualPropertyBase(Type propertyType, string name, CustomReflectionContext context)
         {
+            if (name is null)
+                throw new ArgumentNullException(nameof(name));
+
             if (name.Length == 0)
                 throw new ArgumentException("", nameof(name));
 
@@ -32,52 +35,52 @@ namespace System.Reflection.Context.Virtual
 
         public CustomReflectionContext ReflectionContext { get; }
 
-        public override sealed PropertyAttributes Attributes
+        public sealed override PropertyAttributes Attributes
         {
             get { return PropertyAttributes.None; }
         }
 
-        public override sealed Type? DeclaringType
+        public sealed override Type? DeclaringType
         {
             get { return _declaringType; }
         }
 
-        public override sealed string Name
+        public sealed override string Name
         {
             get { return _name; }
         }
 
-        public override sealed Type PropertyType
+        public sealed override Type PropertyType
         {
             get { return _propertyType; }
         }
 
-        public override sealed bool CanRead
+        public sealed override bool CanRead
         {
             get { return GetGetMethod(true) != null; }
         }
 
-        public override sealed bool CanWrite
+        public sealed override bool CanWrite
         {
             get { return GetSetMethod(true) != null; }
         }
 
-        public override sealed int MetadataToken
+        public sealed override int MetadataToken
         {
             get { throw new InvalidOperationException(); }
         }
 
-        public override sealed Module Module
+        public sealed override Module Module
         {
             get { return DeclaringType!.Module; }
         }
 
-        public override sealed Type? ReflectedType
+        public sealed override Type? ReflectedType
         {
             get { return DeclaringType; }
         }
 
-        public override sealed MethodInfo[] GetAccessors(bool nonPublic)
+        public sealed override MethodInfo[] GetAccessors(bool nonPublic)
         {
             MethodInfo? getMethod = GetGetMethod(nonPublic);
             MethodInfo? setMethod = GetSetMethod(nonPublic);
@@ -92,12 +95,12 @@ namespace System.Reflection.Context.Virtual
             return new MethodInfo[] { getMethod, setMethod };
         }
 
-        public override sealed ParameterInfo[] GetIndexParameters()
+        public sealed override ParameterInfo[] GetIndexParameters()
         {
             return (ParameterInfo[])GetIndexParametersNoCopy().Clone();
         }
 
-        public override sealed object? GetValue(object? obj, BindingFlags invokeAttr, Binder? binder, object?[]? index, CultureInfo? culture)
+        public sealed override object? GetValue(object? obj, BindingFlags invokeAttr, Binder? binder, object?[]? index, CultureInfo? culture)
         {
             MethodInfo? getMethod = GetGetMethod(true);
             if (getMethod == null)
@@ -106,7 +109,7 @@ namespace System.Reflection.Context.Virtual
             return getMethod.Invoke(obj, invokeAttr, binder, index, culture);
         }
 
-        public override sealed void SetValue(object? obj, object? value, BindingFlags invokeAttr, Binder? binder, object?[]? index, CultureInfo? culture)
+        public sealed override void SetValue(object? obj, object? value, BindingFlags invokeAttr, Binder? binder, object?[]? index, CultureInfo? culture)
         {
             MethodInfo? setMethod = GetSetMethod(true);
             if (setMethod == null)
@@ -131,22 +134,22 @@ namespace System.Reflection.Context.Virtual
             setMethod.Invoke(obj, invokeAttr, binder, args, culture);
         }
 
-        public override sealed object GetConstantValue()
+        public sealed override object GetConstantValue()
         {
             throw new InvalidOperationException(SR.InvalidOperation_EnumLitValueNotFound);
         }
 
-        public override sealed object GetRawConstantValue()
+        public sealed override object GetRawConstantValue()
         {
             throw new InvalidOperationException(SR.InvalidOperation_EnumLitValueNotFound);
         }
 
-        public override sealed Type[] GetOptionalCustomModifiers()
+        public sealed override Type[] GetOptionalCustomModifiers()
         {
             return CollectionServices.Empty<Type>();
         }
 
-        public override sealed Type[] GetRequiredCustomModifiers()
+        public sealed override Type[] GetRequiredCustomModifiers()
         {
             return CollectionServices.Empty<Type>();
         }

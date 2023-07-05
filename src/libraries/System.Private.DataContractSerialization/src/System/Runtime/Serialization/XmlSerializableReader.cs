@@ -10,7 +10,7 @@ using System.Diagnostics;
 
 namespace System.Runtime.Serialization
 {
-    internal sealed class XmlSerializableReader : XmlReader, IXmlLineInfo
+    internal sealed class XmlSerializableReader : XmlReader, IXmlLineInfo, IXmlTextParser // IXmlTextParser (Normalized, WhitespaceHandling) was added. Is it ever used?
     {
         private XmlReaderDelegator _xmlReader = null!; // initialized in BeginRead
         private int _startDepth;
@@ -25,7 +25,7 @@ namespace System.Runtime.Serialization
         internal void BeginRead(XmlReaderDelegator xmlReader)
         {
             if (xmlReader.NodeType != XmlNodeType.Element)
-                throw DiagnosticUtility.ExceptionUtility.ThrowHelperError(XmlObjectSerializerReadContext.CreateUnexpectedStateException(XmlNodeType.Element, xmlReader));
+                throw XmlObjectSerializerReadContext.CreateUnexpectedStateException(XmlNodeType.Element, xmlReader);
             _xmlReader = xmlReader;
             _startDepth = xmlReader.Depth;
             _innerReader = xmlReader.UnderlyingReader;
@@ -43,7 +43,7 @@ namespace System.Runtime.Serialization
                 while (_xmlReader.Depth > _startDepth)
                 {
                     if (!_xmlReader.Read())
-                        throw DiagnosticUtility.ExceptionUtility.ThrowHelperError(XmlObjectSerializerReadContext.CreateUnexpectedStateException(XmlNodeType.EndElement, _xmlReader));
+                        throw XmlObjectSerializerReadContext.CreateUnexpectedStateException(XmlNodeType.EndElement, _xmlReader);
                 }
             }
         }
@@ -64,7 +64,7 @@ namespace System.Runtime.Serialization
 
         public override void Close()
         {
-            throw System.Runtime.Serialization.DiagnosticUtility.ExceptionUtility.ThrowHelperError(XmlObjectSerializer.CreateSerializationException(SR.IXmlSerializableIllegalOperation));
+            throw XmlObjectSerializer.CreateSerializationException(SR.IXmlSerializableIllegalOperation);
         }
 
         public override XmlReaderSettings? Settings { get { return InnerReader.Settings; } }
@@ -79,8 +79,10 @@ namespace System.Runtime.Serialization
         public override string BaseURI { get { return InnerReader.BaseURI; } }
         public override bool IsEmptyElement { get { return InnerReader.IsEmptyElement; } }
         public override bool IsDefault { get { return InnerReader.IsDefault; } }
+        public override char QuoteChar { get { return InnerReader.QuoteChar; } }
         public override XmlSpace XmlSpace { get { return InnerReader.XmlSpace; } }
         public override string XmlLang { get { return InnerReader.XmlLang; } }
+        public override IXmlSchemaInfo? SchemaInfo { get { return InnerReader.SchemaInfo; } }
         public override Type ValueType { get { return InnerReader.ValueType; } }
         public override int AttributeCount { get { return InnerReader.AttributeCount; } }
         public override string this[int i] { get { return InnerReader[i]; } }
@@ -122,6 +124,41 @@ namespace System.Runtime.Serialization
         public override int ReadContentAsBase64(byte[] buffer, int index, int count) { return InnerReader.ReadContentAsBase64(buffer, index, count); }
         public override int ReadContentAsBinHex(byte[] buffer, int index, int count) { return InnerReader.ReadContentAsBinHex(buffer, index, count); }
         public override int ReadValueChunk(char[] buffer, int index, int count) { return InnerReader.ReadValueChunk(buffer, index, count); }
+        public override string ReadString() { return InnerReader.ReadString(); }
+
+        // IXmlTextParser members
+        bool IXmlTextParser.Normalized
+        {
+            get
+            {
+                IXmlTextParser? xmlTextParser = InnerReader as IXmlTextParser;
+                return (xmlTextParser == null) ? _xmlReader.Normalized : xmlTextParser.Normalized;
+            }
+            set
+            {
+                if (InnerReader is not IXmlTextParser xmlTextParser)
+                    _xmlReader.Normalized = value;
+                else
+                    xmlTextParser.Normalized = value;
+            }
+        }
+
+        WhitespaceHandling IXmlTextParser.WhitespaceHandling
+        {
+            get
+            {
+                IXmlTextParser? xmlTextParser = InnerReader as IXmlTextParser;
+                return (xmlTextParser == null) ? _xmlReader.WhitespaceHandling : xmlTextParser.WhitespaceHandling;
+            }
+            set
+            {
+                if (InnerReader is not IXmlTextParser xmlTextParser)
+                    _xmlReader.WhitespaceHandling = value;
+                else
+                    xmlTextParser.WhitespaceHandling = value;
+            }
+        }
+
         // IXmlLineInfo members
         bool IXmlLineInfo.HasLineInfo()
         {

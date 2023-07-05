@@ -25,8 +25,17 @@ namespace System.Security.Cryptography.Pkcs
         {
         }
 
-        public EnvelopedCms(ContentInfo contentInfo!!, AlgorithmIdentifier encryptionAlgorithm!!)
+        public EnvelopedCms(ContentInfo contentInfo, AlgorithmIdentifier encryptionAlgorithm)
         {
+            if (contentInfo is null)
+            {
+                throw new ArgumentNullException(nameof(contentInfo));
+            }
+            if (encryptionAlgorithm is null)
+            {
+                throw new ArgumentNullException(nameof(encryptionAlgorithm));
+            }
+
             Version = 0;  // It makes little sense to ask for a version before you've decoded, but since the .NET Framework returns 0 in that case, we will too.
             ContentInfo = contentInfo;
             ContentEncryptionAlgorithm = encryptionAlgorithm;
@@ -79,13 +88,23 @@ namespace System.Security.Cryptography.Pkcs
         //
         // Encrypt() overloads. Senders invoke this to encrypt and encode a CMS. Afterward, invoke the Encode() method to retrieve the actual encoding.
         //
-        public void Encrypt(CmsRecipient recipient!!)
+        public void Encrypt(CmsRecipient recipient)
         {
+            if (recipient is null)
+            {
+                throw new ArgumentNullException(nameof(recipient));
+            }
+
             Encrypt(new CmsRecipientCollection(recipient));
         }
 
-        public void Encrypt(CmsRecipientCollection recipients!!)
+        public void Encrypt(CmsRecipientCollection recipients)
         {
+            if (recipients is null)
+            {
+                throw new ArgumentNullException(nameof(recipients));
+            }
+
             // .NET Framework compat note: Unlike the desktop, we don't provide a free UI to select the recipient. The app must give it to us programmatically.
             if (recipients.Count == 0)
                 throw new PlatformNotSupportedException(SR.Cryptography_Cms_NoRecipients);
@@ -113,8 +132,13 @@ namespace System.Security.Cryptography.Pkcs
         //
         // Recipients invoke Decode() to turn the on-the-wire representation into a usable EnvelopedCms instance. Next step is to call Decrypt().
         //
-        public void Decode(byte[] encodedMessage!!)
+        public void Decode(byte[] encodedMessage)
         {
+            if (encodedMessage is null)
+            {
+                throw new ArgumentNullException(nameof(encodedMessage));
+            }
+
             Decode(new ReadOnlySpan<byte>(encodedMessage));
         }
 
@@ -161,23 +185,47 @@ namespace System.Security.Cryptography.Pkcs
             DecryptContent(RecipientInfos, null);
         }
 
-        public void Decrypt(RecipientInfo recipientInfo!!)
+        public void Decrypt(RecipientInfo recipientInfo)
         {
+            if (recipientInfo is null)
+            {
+                throw new ArgumentNullException(nameof(recipientInfo));
+            }
+
             DecryptContent(new RecipientInfoCollection(recipientInfo), null);
         }
 
-        public void Decrypt(RecipientInfo recipientInfo!!, X509Certificate2Collection extraStore!!)
+        public void Decrypt(RecipientInfo recipientInfo, X509Certificate2Collection extraStore)
         {
+            if (recipientInfo is null)
+            {
+                throw new ArgumentNullException(nameof(recipientInfo));
+            }
+            if (extraStore is null)
+            {
+                throw new ArgumentNullException(nameof(extraStore));
+            }
+
             DecryptContent(new RecipientInfoCollection(recipientInfo), extraStore);
         }
 
-        public void Decrypt(X509Certificate2Collection extraStore!!)
+        public void Decrypt(X509Certificate2Collection extraStore)
         {
+            if (extraStore is null)
+            {
+                throw new ArgumentNullException(nameof(extraStore));
+            }
+
             DecryptContent(RecipientInfos, extraStore);
         }
 
-        public void Decrypt(RecipientInfo recipientInfo!!, AsymmetricAlgorithm? privateKey)
+        public void Decrypt(RecipientInfo recipientInfo, AsymmetricAlgorithm? privateKey)
         {
+            if (recipientInfo is null)
+            {
+                throw new ArgumentNullException(nameof(recipientInfo));
+            }
+
             CheckStateForDecryption();
 
             X509Certificate2Collection extraStore = new X509Certificate2Collection();
@@ -198,7 +246,7 @@ namespace System.Security.Cryptography.Pkcs
         private void DecryptContent(RecipientInfoCollection recipientInfos, X509Certificate2Collection? extraStore)
         {
             CheckStateForDecryption();
-            extraStore = extraStore ?? new X509Certificate2Collection();
+            extraStore ??= new X509Certificate2Collection();
 
             X509Certificate2Collection certs = new X509Certificate2Collection();
             PkcsPal.Instance.AddCertsFromStoreForDecryption(certs);

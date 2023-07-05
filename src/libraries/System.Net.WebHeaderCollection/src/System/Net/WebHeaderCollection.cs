@@ -4,6 +4,7 @@
 using System.Collections;
 using System.Collections.Generic;
 using System.Collections.Specialized;
+using System.ComponentModel;
 using System.Diagnostics;
 using System.Globalization;
 using System.Runtime.Serialization;
@@ -28,6 +29,8 @@ namespace System.Net
 
         private static HeaderInfoTable? _headerInfo;
 
+        [Obsolete(Obsoletions.LegacyFormatterImplMessage, DiagnosticId = Obsoletions.LegacyFormatterImplDiagId, UrlFormat = Obsoletions.SharedUrlFormat)]
+        [EditorBrowsable(EditorBrowsableState.Never)]
         protected WebHeaderCollection(SerializationInfo serializationInfo, StreamingContext streamingContext)
         {
             throw new PlatformNotSupportedException();
@@ -45,27 +48,9 @@ namespace System.Net
             }
         }
 
-        private static HeaderInfoTable HeaderInfo
-        {
-            get
-            {
-                if (_headerInfo == null)
-                {
-                    _headerInfo = new HeaderInfoTable();
-                }
-                return _headerInfo;
-            }
-        }
+        private static HeaderInfoTable HeaderInfo => _headerInfo ??= new HeaderInfoTable();
 
-        private NameValueCollection InnerCollection
-        {
-            get
-            {
-                if (_innerCollection == null)
-                    _innerCollection = new NameValueCollection(ApproxHighAvgNumHeaders, CaseInsensitiveAscii.StaticInstance);
-                return _innerCollection;
-            }
-        }
+        private NameValueCollection InnerCollection => _innerCollection ??= new NameValueCollection(ApproxHighAvgNumHeaders, CaseInsensitiveAscii.StaticInstance);
 
         private bool AllowHttpResponseHeader
         {
@@ -152,6 +137,8 @@ namespace System.Net
             this.Set(header.GetName(), value);
         }
 
+        [Obsolete(Obsoletions.LegacyFormatterImplMessage, DiagnosticId = Obsoletions.LegacyFormatterImplDiagId, UrlFormat = Obsoletions.SharedUrlFormat)]
+        [EditorBrowsable(EditorBrowsableState.Never)]
         public override void GetObjectData(SerializationInfo serializationInfo, StreamingContext streamingContext)
         {
             throw new PlatformNotSupportedException();
@@ -278,10 +265,7 @@ namespace System.Net
         public override void Clear()
         {
             InvalidateCachedArrays();
-            if (_innerCollection != null)
-            {
-                _innerCollection.Clear();
-            }
+            _innerCollection?.Clear();
         }
 
         public override string? Get(int index)

@@ -28,6 +28,7 @@ namespace System.Net.Http
         protected override Task SerializeToStreamAsync(Stream stream, TransportContext? context) =>
             SerializeToStreamAsync(stream, context, CancellationToken.None);
 
+#pragma warning disable IDE0060
 #if NETCOREAPP
         protected override
 #else
@@ -59,6 +60,7 @@ namespace System.Net.Http
             }
             return copyTask;
         }
+#pragma warning restore IDE0060
 
         protected override bool TryComputeLength(out long length)
         {

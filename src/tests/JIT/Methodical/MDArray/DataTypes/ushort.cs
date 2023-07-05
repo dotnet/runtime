@@ -3,6 +3,7 @@
 //
 
 using System;
+using Xunit;
 
 public struct VT
 {
@@ -33,7 +34,8 @@ public class ushortMDArrTest
     static ushort[][,] ja1_b = new ushort[2][,];
     static ushort[][, ,] ja2_b = new ushort[2][, ,];
 
-    public static int Main()
+    [Fact]
+    public static int TestEntryPoint()
     {
 
         bool pass = true;

@@ -28,6 +28,7 @@ namespace System.Threading
         public bool IsLocked => _ownerThread == Thread.CurrentThread;
 #endif
 
+#pragma warning disable CA1822
         [Conditional("DEBUG")]
         public void VerifyIsLocked()
         {
@@ -51,6 +52,7 @@ namespace System.Threading
             Debug.Assert(_ownerThread == null);
 #endif
         }
+#pragma warning restore CA1822
 
         [Conditional("DEBUG")]
         private void ResetOwnerThread()

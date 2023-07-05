@@ -28,7 +28,10 @@ namespace System.Security.Principal
             {
                 return policyHandle;
             }
-            else if (error == Interop.StatusOptions.STATUS_ACCESS_DENIED)
+
+            policyHandle.Dispose();
+
+            if (error == Interop.StatusOptions.STATUS_ACCESS_DENIED)
             {
                 throw new UnauthorizedAccessException();
             }
@@ -94,23 +97,23 @@ namespace System.Security.Principal
         //
 
 
-        internal static int CreateSidFromString(
+        internal static unsafe int CreateSidFromString(
             string stringSid,
             out byte[]? resultSid
             )
         {
             int ErrorCode;
-            IntPtr ByteArray = IntPtr.Zero;
+            void* pSid = null;
 
             try
             {
-                if (Interop.BOOL.FALSE == Interop.Advapi32.ConvertStringSidToSid(stringSid, out ByteArray))
+                if (Interop.BOOL.FALSE == Interop.Advapi32.ConvertStringSidToSid(stringSid, out pSid))
                 {
-                    ErrorCode = Marshal.GetLastWin32Error();
+                    ErrorCode = Marshal.GetLastPInvokeError();
                     goto Error;
                 }
 
-                resultSid = ConvertIntPtrSidToByteArraySid(ByteArray);
+                resultSid = ConvertIntPtrSidToByteArraySid((IntPtr)pSid);
             }
             finally
             {
@@ -118,7 +121,7 @@ namespace System.Security.Principal
                 // Now is a good time to get rid of the returned pointer
                 //
 
-                Marshal.FreeHGlobal(ByteArray);
+                Marshal.FreeHGlobal((IntPtr)pSid);
             }
 
             //
@@ -160,7 +163,7 @@ namespace System.Security.Principal
             {
                 resultSid = null;
 
-                return Marshal.GetLastWin32Error();
+                return Marshal.GetLastPInvokeError();
             }
         }
 
@@ -215,7 +218,7 @@ namespace System.Security.Principal
             {
                 resultSid = null;
 
-                return Marshal.GetLastWin32Error();
+                return Marshal.GetLastPInvokeError();
             }
         }
 

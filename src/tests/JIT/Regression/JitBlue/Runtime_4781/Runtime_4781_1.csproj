@@ -1,6 +1,8 @@
 <Project Sdk="Microsoft.NET.Sdk">
   <PropertyGroup>
-    <OutputType>Exe</OutputType>
+    <!-- Needed for GCStressIncompatible, GC.WaitForPendingFinalizers -->
+    <!-- See https://github.com/dotnet/runtime/issues/68529 -->
+    <RequiresProcessIsolation>true</RequiresProcessIsolation>
   </PropertyGroup>
   <PropertyGroup>
     <DebugType>None</DebugType>

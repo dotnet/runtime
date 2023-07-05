@@ -4,8 +4,9 @@
 //Solving AX=B and the inverse of A with Gauss-Jordan algorithm
 
 using System;
+using Xunit;
 
-internal class plainarr
+public class plainarr
 {
     private static double s_tolerance = 0.0000000000001;
     public static bool AreEqual(double left, double right)
@@ -84,7 +85,8 @@ internal class plainarr
         }
     }
 
-    public static int Main()
+    [Fact]
+    public static int TestEntryPoint()
     {
         bool pass = false;
 

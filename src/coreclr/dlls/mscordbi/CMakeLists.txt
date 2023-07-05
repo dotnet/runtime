@@ -2,10 +2,13 @@
 # Set the RPATH of mscordbi so that it can find dependencies without needing to set LD_LIBRARY_PATH
 # For more information: http://www.cmake.org/Wiki/CMake_RPATH_handling.
 if(CORECLR_SET_RPATH)
-  set(CMAKE_BUILD_WITH_INSTALL_RPATH TRUE)
   if(CLR_CMAKE_HOST_OSX)
+    set(CMAKE_BUILD_WITH_INSTALL_NAME_DIR ON)
+    set(CMAKE_INSTALL_NAME_DIR "@rpath")
+    set(CMAKE_BUILD_WITH_INSTALL_RPATH TRUE)
     set(CMAKE_INSTALL_RPATH "@loader_path")
   else()
+    set(CMAKE_BUILD_WITH_INSTALL_RPATH TRUE)
     set(CMAKE_INSTALL_RPATH "\$ORIGIN")
   endif(CLR_CMAKE_HOST_OSX)
 endif(CORECLR_SET_RPATH)
@@ -87,7 +90,7 @@ if(CLR_CMAKE_HOST_WIN32)
         ${STATIC_MT_VCRT_LIB}
     )
 
-    target_link_libraries(mscordbi ${COREDBI_LIBRARIES})
+    target_link_libraries(mscordbi PRIVATE ${COREDBI_LIBRARIES})
 
 elseif(CLR_CMAKE_HOST_UNIX)
 
@@ -97,10 +100,21 @@ elseif(CLR_CMAKE_HOST_UNIX)
         mscordaccore
     )
 
+    # Before llvm 16, lld was setting `--undefined-version` by default. The default was
+    # flipped to `--no-undefined-version` in lld 16, so we will explicitly set it to
+    # `--undefined-version` for our use-case.
+    include(CheckLinkerFlag OPTIONAL)
+    if(COMMAND check_linker_flag)
+        check_linker_flag(CXX -Wl,--undefined-version LINKER_SUPPORTS_UNDEFINED_VERSION)
+        if (LINKER_SUPPORTS_UNDEFINED_VERSION)
+            add_linker_flag(-Wl,--undefined-version)
+        endif(LINKER_SUPPORTS_UNDEFINED_VERSION)
+    endif(COMMAND check_linker_flag)
+
     # COREDBI_LIBRARIES is mentioned twice because ld is one pass linker and will not find symbols
     # if they are defined after they are used. Having all libs twice makes sure that ld will actually
     # find all symbols.
-    target_link_libraries(mscordbi ${COREDBI_LIBRARIES} ${COREDBI_LIBRARIES})
+    target_link_libraries(mscordbi PRIVATE ${COREDBI_LIBRARIES} ${COREDBI_LIBRARIES})
 
     add_dependencies(mscordbi mscordaccore)
 

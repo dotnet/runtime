@@ -44,7 +44,6 @@ namespace System.Reflection.TypeLoading
             protected sealed override RoType[] ComputeGenericArgumentsOrParameters() => throw null!;
             protected sealed override MethodImplAttributes ComputeMethodImplementationFlags() => throw null!;
             protected sealed override MethodSig<RoParameter> ComputeMethodSig() => throw null!;
-            protected sealed override MethodSig<RoType> ComputeCustomModifiers() => throw null!;
             protected sealed override MethodSig<string> ComputeMethodSigStrings() => throw null!;
             protected sealed override string ComputeName() => throw null!;
             internal sealed override RoType[] GetGenericTypeArgumentsNoCopy() => throw null!;

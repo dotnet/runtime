@@ -1,6 +1,7 @@
 // Licensed to the .NET Foundation under one or more agreements.
 // The .NET Foundation licenses this file to you under the MIT license.
 
+using System.Buffers.Text;
 using System.Diagnostics;
 using System.Numerics;
 using System.Runtime.CompilerServices;
@@ -26,21 +27,18 @@ namespace System.Text.Unicode
             Debug.Assert(pInputBuffer != null || inputLength == 0, "Input length must be zero if input buffer pointer is null.");
 
             // First, try to drain off as many ASCII bytes as we can from the beginning.
+            nuint numAsciiBytesCounted = Ascii.GetIndexOfFirstNonAsciiByte(pInputBuffer, (uint)inputLength);
+            pInputBuffer += numAsciiBytesCounted;
 
+            // Quick check - did we just end up consuming the entire input buffer?
+            // If so, short-circuit the remainder of the method.
+
+            inputLength -= (int)numAsciiBytesCounted;
+            if (inputLength == 0)
             {
-                nuint numAsciiBytesCounted = ASCIIUtility.GetIndexOfFirstNonAsciiByte(pInputBuffer, (uint)inputLength);
-                pInputBuffer += numAsciiBytesCounted;
-
-                // Quick check - did we just end up consuming the entire input buffer?
-                // If so, short-circuit the remainder of the method.
-
-                inputLength -= (int)numAsciiBytesCounted;
-                if (inputLength == 0)
-                {
-                    utf16CodeUnitCountAdjustment = 0;
-                    scalarCountAdjustment = 0;
-                    return pInputBuffer;
-                }
+                utf16CodeUnitCountAdjustment = 0;
+                scalarCountAdjustment = 0;
+                return pInputBuffer;
             }
 
 #if DEBUG
@@ -82,7 +80,7 @@ namespace System.Text.Unicode
 
                 // First, check for the common case of all-ASCII bytes.
 
-                if (ASCIIUtility.AllBytesInUInt32AreAscii(thisDWord))
+                if (Ascii.AllBytesInUInt32AreAscii(thisDWord))
                 {
                     // We read an all-ASCII sequence.
 
@@ -102,7 +100,7 @@ namespace System.Text.Unicode
                         // the read pointer up to the next aligned address.
 
                         thisDWord = Unsafe.ReadUnaligned<uint>(pInputBuffer);
-                        if (!ASCIIUtility.AllBytesInUInt32AreAscii(thisDWord))
+                        if (!Ascii.AllBytesInUInt32AreAscii(thisDWord))
                         {
                             goto AfterReadDWordSkipAllBytesAsciiCheck;
                         }
@@ -156,12 +154,12 @@ namespace System.Text.Unicode
                                 }
                                 else
                                 {
-                                    if (!ASCIIUtility.AllBytesInUInt32AreAscii(((uint*)pInputBuffer)[0] | ((uint*)pInputBuffer)[1]))
+                                    if (!Ascii.AllBytesInUInt32AreAscii(((uint*)pInputBuffer)[0] | ((uint*)pInputBuffer)[1]))
                                     {
                                         goto LoopTerminatedEarlyDueToNonAsciiDataInFirstPair;
                                     }
 
-                                    if (!ASCIIUtility.AllBytesInUInt32AreAscii(((uint*)pInputBuffer)[2] | ((uint*)pInputBuffer)[3]))
+                                    if (!Ascii.AllBytesInUInt32AreAscii(((uint*)pInputBuffer)[2] | ((uint*)pInputBuffer)[3]))
                                     {
                                         goto LoopTerminatedEarlyDueToNonAsciiDataInSecondPair;
                                     }
@@ -206,7 +204,7 @@ namespace System.Text.Unicode
                         // Let's perform a quick check here to bypass the logic at the beginning of the main loop.
 
                         thisDWord = *(uint*)pInputBuffer; // still aligned here
-                        if (ASCIIUtility.AllBytesInUInt32AreAscii(thisDWord))
+                        if (Ascii.AllBytesInUInt32AreAscii(thisDWord))
                         {
                             pInputBuffer += sizeof(uint); // consumed 1 more DWORD
                             thisDWord = *(uint*)pInputBuffer; // still aligned here
@@ -220,13 +218,13 @@ namespace System.Text.Unicode
 
             AfterReadDWordSkipAllBytesAsciiCheck:
 
-                Debug.Assert(!ASCIIUtility.AllBytesInUInt32AreAscii(thisDWord)); // this should have been handled earlier
+                Debug.Assert(!Ascii.AllBytesInUInt32AreAscii(thisDWord)); // this should have been handled earlier
 
                 // Next, try stripping off ASCII bytes one at a time.
                 // We only handle up to three ASCII bytes here since we handled the four ASCII byte case above.
 
                 {
-                    uint numLeadingAsciiBytes = ASCIIUtility.CountNumberOfLeadingAsciiBytesFromUInt32WithSomeNonAsciiData(thisDWord);
+                    uint numLeadingAsciiBytes = Ascii.CountNumberOfLeadingAsciiBytesFromUInt32WithSomeNonAsciiData(thisDWord);
                     pInputBuffer += numLeadingAsciiBytes;
 
                     if (pFinalPosWhereCanReadDWordFromInputBuffer < pInputBuffer)
@@ -742,6 +740,7 @@ namespace System.Text.Unicode
         }
 
         [MethodImpl(MethodImplOptions.AggressiveInlining)]
+        [CompExactlyDependsOn(typeof(AdvSimd.Arm64))]
         private static ulong GetNonAsciiBytes(Vector128<byte> value, Vector128<byte> bitMask128)
         {
             if (!AdvSimd.Arm64.IsSupported || !BitConverter.IsLittleEndian)

@@ -1,28 +1,30 @@
 ﻿// Licensed to the .NET Foundation under one or more agreements.
 // The .NET Foundation licenses this file to you under the MIT license.
 
-using Microsoft.CodeAnalysis;
-using Microsoft.CodeAnalysis.CSharp.Syntax;
 using System;
 using System.Collections.Generic;
+using System.Collections.Immutable;
 using System.Diagnostics;
+using Microsoft.CodeAnalysis;
 
 namespace Microsoft.Interop
 {
     /// <summary>
     /// Class for reporting diagnostics in the library import generator
     /// </summary>
-    public class GeneratorDiagnostics : IGeneratorDiagnostics
+    public static class GeneratorDiagnostics
     {
         public class Ids
         {
-            // SYSLIB1050-SYSLIB1059 are reserved for LibraryImportGenerator
+            // SYSLIB1050-SYSLIB1069 are reserved for LibraryImportGenerator
             public const string Prefix = "SYSLIB";
             public const string InvalidLibraryImportAttributeUsage = Prefix + "1050";
             public const string TypeNotSupported = Prefix + "1051";
             public const string ConfigurationNotSupported = Prefix + "1052";
-            public const string TargetFrameworkNotSupported = Prefix + "1053";
-            public const string CannotForwardToDllImport = Prefix + "1054";
+            public const string CannotForwardToDllImport = Prefix + "1053";
+
+            public const string RequiresAllowUnsafeBlocks = Prefix + "1062";
+            public const string UnnecessaryMarshallingInfo = Prefix + "1063";
         }
 
         private const string Category = "LibraryImportGenerator";
@@ -30,146 +32,189 @@ namespace Microsoft.Interop
         public static readonly DiagnosticDescriptor InvalidAttributedMethodSignature =
             new DiagnosticDescriptor(
             Ids.InvalidLibraryImportAttributeUsage,
-            GetResourceString(nameof(Resources.InvalidLibraryImportAttributeUsageTitle)),
-            GetResourceString(nameof(Resources.InvalidAttributedMethodSignatureMessage)),
+            GetResourceString(nameof(SR.InvalidLibraryImportAttributeUsageTitle)),
+            GetResourceString(nameof(SR.InvalidAttributedMethodSignatureMessage)),
             Category,
             DiagnosticSeverity.Error,
             isEnabledByDefault: true,
-            description: GetResourceString(nameof(Resources.InvalidAttributedMethodDescription)));
+            description: GetResourceString(nameof(SR.InvalidAttributedMethodDescription)));
 
         public static readonly DiagnosticDescriptor InvalidAttributedMethodContainingTypeMissingModifiers =
             new DiagnosticDescriptor(
             Ids.InvalidLibraryImportAttributeUsage,
-            GetResourceString(nameof(Resources.InvalidLibraryImportAttributeUsageTitle)),
-            GetResourceString(nameof(Resources.InvalidAttributedMethodContainingTypeMissingModifiersMessage)),
+            GetResourceString(nameof(SR.InvalidLibraryImportAttributeUsageTitle)),
+            GetResourceString(nameof(SR.InvalidAttributedMethodContainingTypeMissingModifiersMessage)),
             Category,
             DiagnosticSeverity.Error,
             isEnabledByDefault: true,
-            description: GetResourceString(nameof(Resources.InvalidAttributedMethodDescription)));
+            description: GetResourceString(nameof(SR.InvalidAttributedMethodDescription)));
 
         public static readonly DiagnosticDescriptor InvalidStringMarshallingConfiguration =
             new DiagnosticDescriptor(
             Ids.InvalidLibraryImportAttributeUsage,
-            GetResourceString(nameof(Resources.InvalidLibraryImportAttributeUsageTitle)),
-            GetResourceString(nameof(Resources.InvalidStringMarshallingConfigurationMessage)),
+            GetResourceString(nameof(SR.InvalidLibraryImportAttributeUsageTitle)),
+            GetResourceString(nameof(SR.InvalidStringMarshallingConfigurationMessage)),
             Category,
             DiagnosticSeverity.Error,
             isEnabledByDefault: true,
-            description: GetResourceString(nameof(Resources.InvalidStringMarshallingConfigurationDescription)));
+            description: GetResourceString(nameof(SR.InvalidStringMarshallingConfigurationDescription)));
 
         public static readonly DiagnosticDescriptor ParameterTypeNotSupported =
             new DiagnosticDescriptor(
                 Ids.TypeNotSupported,
-                GetResourceString(nameof(Resources.TypeNotSupportedTitle)),
-                GetResourceString(nameof(Resources.TypeNotSupportedMessageParameter)),
+                GetResourceString(nameof(SR.TypeNotSupportedTitle)),
+                GetResourceString(nameof(SR.TypeNotSupportedMessageParameter)),
                 Category,
                 DiagnosticSeverity.Error,
                 isEnabledByDefault: true,
-                description: GetResourceString(nameof(Resources.TypeNotSupportedDescription)));
+                description: GetResourceString(nameof(SR.TypeNotSupportedDescription)));
 
         public static readonly DiagnosticDescriptor ReturnTypeNotSupported =
             new DiagnosticDescriptor(
                 Ids.TypeNotSupported,
-                GetResourceString(nameof(Resources.TypeNotSupportedTitle)),
-                GetResourceString(nameof(Resources.TypeNotSupportedMessageReturn)),
+                GetResourceString(nameof(SR.TypeNotSupportedTitle)),
+                GetResourceString(nameof(SR.TypeNotSupportedMessageReturn)),
                 Category,
                 DiagnosticSeverity.Error,
                 isEnabledByDefault: true,
-                description: GetResourceString(nameof(Resources.TypeNotSupportedDescription)));
+                description: GetResourceString(nameof(SR.TypeNotSupportedDescription)));
 
         public static readonly DiagnosticDescriptor ParameterTypeNotSupportedWithDetails =
             new DiagnosticDescriptor(
                 Ids.TypeNotSupported,
-                GetResourceString(nameof(Resources.TypeNotSupportedTitle)),
-                GetResourceString(nameof(Resources.TypeNotSupportedMessageParameterWithDetails)),
+                GetResourceString(nameof(SR.TypeNotSupportedTitle)),
+                GetResourceString(nameof(SR.TypeNotSupportedMessageParameterWithDetails)),
                 Category,
                 DiagnosticSeverity.Error,
                 isEnabledByDefault: true,
-                description: GetResourceString(nameof(Resources.TypeNotSupportedDescription)));
+                description: GetResourceString(nameof(SR.TypeNotSupportedDescription)));
 
         public static readonly DiagnosticDescriptor ReturnTypeNotSupportedWithDetails =
             new DiagnosticDescriptor(
                 Ids.TypeNotSupported,
-                GetResourceString(nameof(Resources.TypeNotSupportedTitle)),
-                GetResourceString(nameof(Resources.TypeNotSupportedMessageReturnWithDetails)),
+                GetResourceString(nameof(SR.TypeNotSupportedTitle)),
+                GetResourceString(nameof(SR.TypeNotSupportedMessageReturnWithDetails)),
                 Category,
                 DiagnosticSeverity.Error,
                 isEnabledByDefault: true,
-                description: GetResourceString(nameof(Resources.TypeNotSupportedDescription)));
+                description: GetResourceString(nameof(SR.TypeNotSupportedDescription)));
 
         public static readonly DiagnosticDescriptor ParameterConfigurationNotSupported =
             new DiagnosticDescriptor(
                 Ids.ConfigurationNotSupported,
-                GetResourceString(nameof(Resources.ConfigurationNotSupportedTitle)),
-                GetResourceString(nameof(Resources.ConfigurationNotSupportedMessageParameter)),
+                GetResourceString(nameof(SR.ConfigurationNotSupportedTitle)),
+                GetResourceString(nameof(SR.ConfigurationNotSupportedMessageParameter)),
                 Category,
                 DiagnosticSeverity.Error,
                 isEnabledByDefault: true,
-                description: GetResourceString(nameof(Resources.ConfigurationNotSupportedDescription)));
+                description: GetResourceString(nameof(SR.ConfigurationNotSupportedDescription)));
 
         public static readonly DiagnosticDescriptor ReturnConfigurationNotSupported =
             new DiagnosticDescriptor(
                 Ids.ConfigurationNotSupported,
-                GetResourceString(nameof(Resources.ConfigurationNotSupportedTitle)),
-                GetResourceString(nameof(Resources.ConfigurationNotSupportedMessageReturn)),
+                GetResourceString(nameof(SR.ConfigurationNotSupportedTitle)),
+                GetResourceString(nameof(SR.ConfigurationNotSupportedMessageReturn)),
                 Category,
                 DiagnosticSeverity.Error,
                 isEnabledByDefault: true,
-                description: GetResourceString(nameof(Resources.ConfigurationNotSupportedDescription)));
+                description: GetResourceString(nameof(SR.ConfigurationNotSupportedDescription)));
+
+        public static readonly DiagnosticDescriptor MarshalAsParameterConfigurationNotSupported =
+            new DiagnosticDescriptor(
+                GeneratorDiagnostics.Ids.ConfigurationNotSupported,
+                GetResourceString(nameof(SR.ConfigurationNotSupportedTitle)),
+                GetResourceString(nameof(SR.MarshalAsConfigurationNotSupportedMessageParameter)),
+                Category,
+                DiagnosticSeverity.Error,
+                isEnabledByDefault: true,
+                description: GetResourceString(nameof(SR.ConfigurationNotSupportedDescription)));
+
+        public static readonly DiagnosticDescriptor MarshalAsReturnConfigurationNotSupported =
+            new DiagnosticDescriptor(
+                GeneratorDiagnostics.Ids.ConfigurationNotSupported,
+                GetResourceString(nameof(SR.ConfigurationNotSupportedTitle)),
+                GetResourceString(nameof(SR.MarshalAsConfigurationNotSupportedMessageReturn)),
+                Category,
+                DiagnosticSeverity.Error,
+                isEnabledByDefault: true,
+                description: GetResourceString(nameof(SR.ConfigurationNotSupportedDescription)));
 
         public static readonly DiagnosticDescriptor ConfigurationNotSupported =
             new DiagnosticDescriptor(
                 Ids.ConfigurationNotSupported,
-                GetResourceString(nameof(Resources.ConfigurationNotSupportedTitle)),
-                GetResourceString(nameof(Resources.ConfigurationNotSupportedMessage)),
+                GetResourceString(nameof(SR.ConfigurationNotSupportedTitle)),
+                GetResourceString(nameof(SR.ConfigurationNotSupportedMessage)),
                 Category,
                 DiagnosticSeverity.Error,
                 isEnabledByDefault: true,
-                description: GetResourceString(nameof(Resources.ConfigurationNotSupportedDescription)));
+                description: GetResourceString(nameof(SR.ConfigurationNotSupportedDescription)));
 
         public static readonly DiagnosticDescriptor ConfigurationValueNotSupported =
             new DiagnosticDescriptor(
                 Ids.ConfigurationNotSupported,
-                GetResourceString(nameof(Resources.ConfigurationNotSupportedTitle)),
-                GetResourceString(nameof(Resources.ConfigurationNotSupportedMessageValue)),
+                GetResourceString(nameof(SR.ConfigurationNotSupportedTitle)),
+                GetResourceString(nameof(SR.ConfigurationNotSupportedMessageValue)),
                 Category,
                 DiagnosticSeverity.Error,
                 isEnabledByDefault: true,
-                description: GetResourceString(nameof(Resources.ConfigurationNotSupportedDescription)));
+                description: GetResourceString(nameof(SR.ConfigurationNotSupportedDescription)));
 
         public static readonly DiagnosticDescriptor MarshallingAttributeConfigurationNotSupported =
             new DiagnosticDescriptor(
                 Ids.ConfigurationNotSupported,
-                GetResourceString(nameof(Resources.ConfigurationNotSupportedTitle)),
-                GetResourceString(nameof(Resources.ConfigurationNotSupportedMessageMarshallingInfo)),
+                GetResourceString(nameof(SR.ConfigurationNotSupportedTitle)),
+                GetResourceString(nameof(SR.ConfigurationNotSupportedMessageMarshallingInfo)),
                 Category,
                 DiagnosticSeverity.Error,
                 isEnabledByDefault: true,
-                description: GetResourceString(nameof(Resources.ConfigurationNotSupportedDescription)));
-
-        public static readonly DiagnosticDescriptor TargetFrameworkNotSupported =
-            new DiagnosticDescriptor(
-                Ids.TargetFrameworkNotSupported,
-                GetResourceString(nameof(Resources.TargetFrameworkNotSupportedTitle)),
-                GetResourceString(nameof(Resources.TargetFrameworkNotSupportedMessage)),
-                Category,
-                DiagnosticSeverity.Error,
-                isEnabledByDefault: true,
-                description: GetResourceString(nameof(Resources.TargetFrameworkNotSupportedDescription)));
+                description: GetResourceString(nameof(SR.ConfigurationNotSupportedDescription)));
 
         public static readonly DiagnosticDescriptor CannotForwardToDllImport =
             new DiagnosticDescriptor(
                 Ids.CannotForwardToDllImport,
-                GetResourceString(nameof(Resources.CannotForwardToDllImportTitle)),
-                GetResourceString(nameof(Resources.CannotForwardToDllImportMessage)),
+                GetResourceString(nameof(SR.CannotForwardToDllImportTitle)),
+                GetResourceString(nameof(SR.CannotForwardToDllImportMessage)),
                 Category,
                 DiagnosticSeverity.Error,
                 isEnabledByDefault: true,
-                description: GetResourceString(nameof(Resources.CannotForwardToDllImportDescription)));
+                description: GetResourceString(nameof(SR.CannotForwardToDllImportDescription)));
 
-        private readonly List<Diagnostic> _diagnostics = new List<Diagnostic>();
+        public static readonly DiagnosticDescriptor RequiresAllowUnsafeBlocks =
+            new DiagnosticDescriptor(
+                Ids.RequiresAllowUnsafeBlocks,
+                GetResourceString(nameof(SR.RequiresAllowUnsafeBlocksTitle)),
+                GetResourceString(nameof(SR.RequiresAllowUnsafeBlocksMessage)),
+                Category,
+                DiagnosticSeverity.Error,
+                isEnabledByDefault: true,
+                description: GetResourceString(nameof(SR.RequiresAllowUnsafeBlocksDescription)));
 
-        public IEnumerable<Diagnostic> Diagnostics => _diagnostics;
+        public static readonly DiagnosticDescriptor UnnecessaryParameterMarshallingInfo =
+            new DiagnosticDescriptor(
+                Ids.UnnecessaryMarshallingInfo,
+                GetResourceString(nameof(SR.UnnecessaryMarshallingInfoTitle)),
+                GetResourceString(nameof(SR.UnnecessaryParameterMarshallingInfoMessage)),
+                Category,
+                DiagnosticSeverity.Info,
+                isEnabledByDefault: true,
+                description: GetResourceString(nameof(SR.UnnecessaryMarshallingInfoDescription)),
+                customTags: new[]
+                {
+                    WellKnownDiagnosticTags.Unnecessary
+                });
+        public static readonly DiagnosticDescriptor UnnecessaryReturnMarshallingInfo =
+            new DiagnosticDescriptor(
+                Ids.UnnecessaryMarshallingInfo,
+                GetResourceString(nameof(SR.UnnecessaryMarshallingInfoTitle)),
+                GetResourceString(nameof(SR.UnnecessaryReturnMarshallingInfoMessage)),
+                Category,
+                DiagnosticSeverity.Info,
+                isEnabledByDefault: true,
+                description: GetResourceString(nameof(SR.UnnecessaryMarshallingInfoDescription)),
+                customTags: new[]
+                {
+                    WellKnownDiagnosticTags.Unnecessary
+                });
 
         /// <summary>
         /// Report diagnostic for invalid configuration for string marshalling.
@@ -177,159 +222,17 @@ namespace Microsoft.Interop
         /// <param name="attributeData">Attribute specifying the invalid configuration</param>
         /// <param name="methodName">Name of the method</param>
         /// <param name="detailsMessage">Specific reason the configuration is invalid</param>
-        public void ReportInvalidStringMarshallingConfiguration(
+        public static void ReportInvalidStringMarshallingConfiguration(
+            this GeneratorDiagnosticsBag diagnostics,
             AttributeData attributeData,
             string methodName,
             string detailsMessage)
         {
-            _diagnostics.Add(
-                attributeData.CreateDiagnostic(
+            diagnostics.ReportDiagnostic(
+                attributeData.CreateDiagnosticInfo(
                     GeneratorDiagnostics.InvalidStringMarshallingConfiguration,
                     methodName,
                     detailsMessage));
-        }
-
-        /// <summary>
-        /// Report diagnostic for configuration that is not supported by the DLL import source generator
-        /// </summary>
-        /// <param name="attributeData">Attribute specifying the unsupported configuration</param>
-        /// <param name="configurationName">Name of the configuration</param>
-        /// <param name="unsupportedValue">[Optiona] Unsupported configuration value</param>
-        public void ReportConfigurationNotSupported(
-            AttributeData attributeData,
-            string configurationName,
-            string? unsupportedValue = null)
-        {
-            if (unsupportedValue == null)
-            {
-                _diagnostics.Add(
-                    attributeData.CreateDiagnostic(
-                        GeneratorDiagnostics.ConfigurationNotSupported,
-                        configurationName));
-            }
-            else
-            {
-                _diagnostics.Add(
-                    attributeData.CreateDiagnostic(
-                        GeneratorDiagnostics.ConfigurationValueNotSupported,
-                        unsupportedValue,
-                        configurationName));
-            }
-        }
-
-        /// <summary>
-        /// Report diagnostic for marshalling of a parameter/return that is not supported
-        /// </summary>
-        /// <param name="method">Method with the parameter/return</param>
-        /// <param name="info">Type info for the parameter/return</param>
-        /// <param name="notSupportedDetails">[Optional] Specific reason for lack of support</param>
-        public void ReportMarshallingNotSupported(
-            MethodDeclarationSyntax method,
-            TypePositionInfo info,
-            string? notSupportedDetails)
-        {
-            Location diagnosticLocation = Location.None;
-            string elementName = string.Empty;
-
-            if (info.IsManagedReturnPosition)
-            {
-                diagnosticLocation = Location.Create(method.SyntaxTree, method.Identifier.Span);
-                elementName = method.Identifier.ValueText;
-            }
-            else
-            {
-                Debug.Assert(info.ManagedIndex <= method.ParameterList.Parameters.Count);
-                ParameterSyntax param = method.ParameterList.Parameters[info.ManagedIndex];
-                diagnosticLocation = Location.Create(param.SyntaxTree, param.Identifier.Span);
-                elementName = param.Identifier.ValueText;
-            }
-
-            if (!string.IsNullOrEmpty(notSupportedDetails))
-            {
-                // Report the specific not-supported reason.
-                if (info.IsManagedReturnPosition)
-                {
-                    _diagnostics.Add(
-                        diagnosticLocation.CreateDiagnostic(
-                            GeneratorDiagnostics.ReturnTypeNotSupportedWithDetails,
-                            notSupportedDetails!,
-                            elementName));
-                }
-                else
-                {
-                    _diagnostics.Add(
-                        diagnosticLocation.CreateDiagnostic(
-                            GeneratorDiagnostics.ParameterTypeNotSupportedWithDetails,
-                            notSupportedDetails!,
-                            elementName));
-                }
-            }
-            else if (info.MarshallingAttributeInfo is MarshalAsInfo)
-            {
-                // Report that the specified marshalling configuration is not supported.
-                // We don't forward marshalling attributes, so this is reported differently
-                // than when there is no attribute and the type itself is not supported.
-                if (info.IsManagedReturnPosition)
-                {
-                    _diagnostics.Add(
-                        diagnosticLocation.CreateDiagnostic(
-                            GeneratorDiagnostics.ReturnConfigurationNotSupported,
-                            nameof(System.Runtime.InteropServices.MarshalAsAttribute),
-                            elementName));
-                }
-                else
-                {
-                    _diagnostics.Add(
-                        diagnosticLocation.CreateDiagnostic(
-                            GeneratorDiagnostics.ParameterConfigurationNotSupported,
-                            nameof(System.Runtime.InteropServices.MarshalAsAttribute),
-                            elementName));
-                }
-            }
-            else
-            {
-                // Report that the type is not supported
-                if (info.IsManagedReturnPosition)
-                {
-                    _diagnostics.Add(
-                        diagnosticLocation.CreateDiagnostic(
-                            GeneratorDiagnostics.ReturnTypeNotSupported,
-                            info.ManagedType.DiagnosticFormattedName,
-                            elementName));
-                }
-                else
-                {
-                    _diagnostics.Add(
-                        diagnosticLocation.CreateDiagnostic(
-                            GeneratorDiagnostics.ParameterTypeNotSupported,
-                            info.ManagedType.DiagnosticFormattedName,
-                            elementName));
-                }
-            }
-        }
-
-        public void ReportInvalidMarshallingAttributeInfo(
-            AttributeData attributeData,
-            string reasonResourceName,
-            params string[] reasonArgs)
-        {
-            _diagnostics.Add(
-                attributeData.CreateDiagnostic(
-                    GeneratorDiagnostics.MarshallingAttributeConfigurationNotSupported,
-                    new LocalizableResourceString(reasonResourceName, Resources.ResourceManager, typeof(Resources), reasonArgs)));
-        }
-
-        /// <summary>
-        /// Report diagnostic for targeting a framework that is not supported
-        /// </summary>
-        /// <param name="minimumSupportedVersion">Minimum supported version of .NET</param>
-        public void ReportTargetFrameworkNotSupported(Version minimumSupportedVersion)
-        {
-            _diagnostics.Add(
-                Diagnostic.Create(
-                    TargetFrameworkNotSupported,
-                    Location.None,
-                    minimumSupportedVersion.ToString(2)));
         }
 
         /// <summary>
@@ -338,18 +241,18 @@ namespace Microsoft.Interop
         /// <param name="method">Method with the configuration that cannot be forwarded</param>
         /// <param name="name">Configuration name</param>
         /// <param name="value">Configuration value</param>
-        public void ReportCannotForwardToDllImport(MethodDeclarationSyntax method, string name, string? value = null)
+        public static void ReportCannotForwardToDllImport(this GeneratorDiagnosticsBag diagnostics, MethodSignatureDiagnosticLocations method, string name, string? value = null)
         {
-            _diagnostics.Add(
-                Diagnostic.Create(
+            diagnostics.ReportDiagnostic(
+                DiagnosticInfo.Create(
                     CannotForwardToDllImport,
-                    Location.Create(method.SyntaxTree, method.Identifier.Span),
+                    method.FallbackLocation,
                     value is null ? name : $"{name}={value}"));
         }
 
         private static LocalizableResourceString GetResourceString(string resourceName)
         {
-            return new LocalizableResourceString(resourceName, Resources.ResourceManager, typeof(Resources));
+            return new LocalizableResourceString(resourceName, SR.ResourceManager, typeof(FxResources.Microsoft.Interop.LibraryImportGenerator.SR));
         }
     }
 }

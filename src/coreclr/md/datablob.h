@@ -6,7 +6,7 @@
 
 //
 // Class code:MetaData::DataBlob provides secure access to a block of memory from MetaData (i.e. with fixed
-// endianess).
+// endianness).
 //
 // ======================================================================================
 
@@ -49,7 +49,7 @@ public:
     // Creates memory block copy.
     inline DataBlob(
         const DataBlob &source);
-    // Initializes memory block to empty data. The object could be already initialzied.
+    // Initializes memory block to empty data. The object could be already initialized.
     inline void Clear();
     // Initializes memory block to data (pbData, of size cbSize). The object should be empty before.
     inline void Init(

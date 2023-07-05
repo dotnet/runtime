@@ -4,6 +4,7 @@
 #include "trace.h"
 #include "info.h"
 #include "utils.h"
+#include <cinttypes>
 
 using namespace bundle;
 
@@ -48,8 +49,8 @@ StatusCode info_t::process_bundle(const pal::char_t* bundle_path, const pal::cha
     }
 
     trace::info(_X("Single-File bundle details:"));
-    trace::info(_X("DepsJson Offset:[%lx] Size[%lx]"), info.m_header.deps_json_location().offset, info.m_header.deps_json_location().size);
-    trace::info(_X("RuntimeConfigJson Offset:[%lx] Size[%lx]"), info.m_header.runtimeconfig_json_location().offset, info.m_header.runtimeconfig_json_location().size);
+    trace::info(_X("DepsJson Offset:[%" PRIx64 "] Size[%" PRIx64 "]"), info.m_header.deps_json_location().offset, info.m_header.deps_json_location().size);
+    trace::info(_X("RuntimeConfigJson Offset:[%" PRIx64 "] Size[%" PRIx64 "]"), info.m_header.runtimeconfig_json_location().offset, info.m_header.runtimeconfig_json_location().size);
     trace::info(_X(".net core 3 compatibility mode: [%s]"), info.m_header.is_netcoreapp3_compat_mode() ? _X("Yes") : _X("No"));
 
     the_app = &info;
@@ -124,14 +125,15 @@ char* info_t::config_t::map(const pal::string_t& path, const location_t* &locati
 
     trace::info(_X("Mapped bundle for [%s]"), path.c_str());
 
-    return addr + location->offset + app->m_offset_in_file;
+    // Adjust to the beginning of the bundle
+    return addr + (location->offset + app->m_offset_in_file);
 }
 
 void info_t::config_t::unmap(const char* addr, const location_t* location)
 {
-    // Adjust to the beginning of the bundle.
     const bundle::info_t* app = bundle::info_t::the_app;
-    addr -= location->offset - app->m_offset_in_file;
+    // Reverse the adjustment to the beginning of the bundle
+    addr = addr - (location->offset + app->m_offset_in_file);
 
     bundle::info_t::the_app->unmap_bundle(addr);
 }

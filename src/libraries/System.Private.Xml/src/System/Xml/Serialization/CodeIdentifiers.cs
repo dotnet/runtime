@@ -1,13 +1,13 @@
 // Licensed to the .NET Foundation under one or more agreements.
 // The .NET Foundation licenses this file to you under the MIT license.
 
+using System;
+using System.Collections;
+using System.IO;
+using System.Globalization;
+
 namespace System.Xml.Serialization
 {
-    using System;
-    using System.Collections;
-    using System.IO;
-    using System.Globalization;
-
     internal sealed class CaseInsensitiveKeyComparer : CaseInsensitiveComparer, IEqualityComparer
     {
         public CaseInsensitiveKeyComparer() : base(CultureInfo.CurrentCulture)

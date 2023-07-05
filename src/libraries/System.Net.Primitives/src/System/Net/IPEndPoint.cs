@@ -44,8 +44,10 @@ namespace System.Net
         /// <summary>
         /// Creates a new instance of the IPEndPoint class with the specified address and port.
         /// </summary>
-        public IPEndPoint(IPAddress address!!, int port)
+        public IPEndPoint(IPAddress address, int port)
         {
+            ArgumentNullException.ThrowIfNull(address);
+
             if (!TcpValidationHelpers.ValidatePortNumber(port))
             {
                 throw new ArgumentOutOfRangeException(nameof(port));
@@ -125,8 +127,10 @@ namespace System.Net
             return false;
         }
 
-        public static IPEndPoint Parse(string s!!)
+        public static IPEndPoint Parse(string s)
         {
+            ArgumentNullException.ThrowIfNull(s);
+
             return Parse(s.AsSpan());
         }
 
@@ -140,16 +144,17 @@ namespace System.Net
             throw new FormatException(SR.bad_endpoint_string);
         }
 
-        public override string ToString()
-        {
-            string format = (_address.AddressFamily == AddressFamily.InterNetworkV6) ? "[{0}]:{1}" : "{0}:{1}";
-            return string.Format(format, _address.ToString(), Port.ToString(NumberFormatInfo.InvariantInfo));
-        }
+        public override string ToString() =>
+            _address.AddressFamily == AddressFamily.InterNetworkV6 ?
+                string.Create(NumberFormatInfo.InvariantInfo, $"[{_address}]:{_port}") :
+                string.Create(NumberFormatInfo.InvariantInfo, $"{_address}:{_port}");
 
         public override SocketAddress Serialize() => new SocketAddress(Address, Port);
 
-        public override EndPoint Create(SocketAddress socketAddress!!)
+        public override EndPoint Create(SocketAddress socketAddress)
         {
+            ArgumentNullException.ThrowIfNull(socketAddress);
+
             if (socketAddress.Family != AddressFamily)
             {
                 throw new ArgumentException(SR.Format(SR.net_InvalidAddressFamily, socketAddress.Family.ToString(), GetType().FullName, AddressFamily.ToString()), nameof(socketAddress));

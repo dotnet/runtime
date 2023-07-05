@@ -87,7 +87,7 @@ namespace System.Dynamic.Utils
 
         public void CopyTo(T[] array, int index)
         {
-            ContractUtils.RequiresNotNull(array, nameof(array));
+            ArgumentNullException.ThrowIfNull(array);
             if (index < 0)
             {
                 throw LinqError.ArgumentOutOfRange(nameof(index));

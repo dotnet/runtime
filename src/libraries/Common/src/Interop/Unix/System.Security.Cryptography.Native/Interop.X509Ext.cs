@@ -34,7 +34,7 @@ internal static partial class Interop
         [LibraryImport(Libraries.CryptoNative, EntryPoint = "CryptoNative_DecodeExtendedKeyUsage")]
         internal static partial SafeEkuExtensionHandle DecodeExtendedKeyUsage(byte[] buf, int len);
 
-        [LibraryImport(Libraries.CryptoNative, EntryPoint = "CryptoNative_ExtendedKeyUsageDestory")]
-        internal static partial void ExtendedKeyUsageDestory(IntPtr a);
+        [LibraryImport(Libraries.CryptoNative, EntryPoint = "CryptoNative_ExtendedKeyUsageDestroy")]
+        internal static partial void ExtendedKeyUsageDestroy(IntPtr a);
     }
 }

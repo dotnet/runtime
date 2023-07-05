@@ -3,8 +3,9 @@
 
 using System;
 using System.Runtime.CompilerServices;
+using Xunit;
 
-class Program
+public class Program
 {
     static bool s_caughtException;
 
@@ -96,7 +97,8 @@ class Program
         }
     }
 
-    static int Main()
+    [Fact]
+    public static int TestEntryPoint()
     {
         bool failed = false;
 

@@ -14,48 +14,74 @@ namespace Internal.Runtime.CompilerHelpers
         private static void MonitorEnter(object obj, ref bool lockTaken)
         {
             // Inlined Monitor.Enter with a few tweaks
-            Lock lck = Monitor.GetLock(obj);
+            int resultOrIndex = ObjectHeader.Acquire(obj);
+            if (resultOrIndex < 0)
+            {
+                lockTaken = true;
+                return;
+            }
+
+            Lock lck = resultOrIndex == 0 ?
+                ObjectHeader.GetLockObject(obj) :
+                SyncTable.GetLockObject(resultOrIndex);
+
             if (lck.TryAcquire(0))
             {
                 lockTaken = true;
                 return;
             }
+
             Monitor.TryAcquireContended(lck, obj, Timeout.Infinite);
             lockTaken = true;
         }
         private static void MonitorExit(object obj, ref bool lockTaken)
         {
             // Inlined Monitor.Exit with a few tweaks
-            if (!lockTaken) return;
-            Monitor.GetLock(obj).Release();
+            if (!lockTaken)
+                return;
+
+            ObjectHeader.Release(obj);
             lockTaken = false;
         }
 
-        private static void MonitorEnterStatic(IntPtr pEEType, ref bool lockTaken)
+        private static unsafe void MonitorEnterStatic(MethodTable* pMT, ref bool lockTaken)
         {
             // Inlined Monitor.Enter with a few tweaks
-            object obj = GetStaticLockObject(pEEType);
-            Lock lck = Monitor.GetLock(obj);
+            object obj = GetStaticLockObject(pMT);
+            int resultOrIndex = ObjectHeader.Acquire(obj);
+            if (resultOrIndex < 0)
+            {
+                lockTaken = true;
+                return;
+            }
+
+            Lock lck = resultOrIndex == 0 ?
+                ObjectHeader.GetLockObject(obj) :
+                SyncTable.GetLockObject(resultOrIndex);
+
             if (lck.TryAcquire(0))
             {
                 lockTaken = true;
                 return;
             }
+
             Monitor.TryAcquireContended(lck, obj, Timeout.Infinite);
             lockTaken = true;
         }
-        private static void MonitorExitStatic(IntPtr pEEType, ref bool lockTaken)
+        private static unsafe void MonitorExitStatic(MethodTable* pMT, ref bool lockTaken)
         {
             // Inlined Monitor.Exit with a few tweaks
-            if (!lockTaken) return;
-            object obj = GetStaticLockObject(pEEType);
-            Monitor.GetLock(obj).Release();
+            if (!lockTaken)
+                return;
+
+            object obj = GetStaticLockObject(pMT);
+            ObjectHeader.Release(obj);
             lockTaken = false;
         }
 
-        private static object GetStaticLockObject(IntPtr pEEType)
+        private static unsafe Type GetStaticLockObject(MethodTable* pMT)
         {
-            return Type.GetTypeFromEETypePtr(new EETypePtr(pEEType));
+            return Type.GetTypeFromMethodTable(pMT);
         }
     }
 }

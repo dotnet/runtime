@@ -14,13 +14,23 @@ namespace System.Security.Cryptography
     {
         private static readonly byte[] s_nonEmpty = new byte[1];
 
-        public static byte[] Protect(byte[] userData!!, byte[]? optionalEntropy, DataProtectionScope scope)
+        public static byte[] Protect(byte[] userData, byte[]? optionalEntropy, DataProtectionScope scope)
         {
+            CheckPlatformSupport();
+
+            if (userData is null)
+                throw new ArgumentNullException(nameof(userData));
+
             return ProtectOrUnprotect(userData, optionalEntropy, scope, protect: true);
         }
 
-        public static byte[] Unprotect(byte[] encryptedData!!, byte[]? optionalEntropy, DataProtectionScope scope)
+        public static byte[] Unprotect(byte[] encryptedData, byte[]? optionalEntropy, DataProtectionScope scope)
         {
+            CheckPlatformSupport();
+
+            if (encryptedData is null)
+                throw new ArgumentNullException(nameof(encryptedData));
+
             return ProtectOrUnprotect(encryptedData, optionalEntropy, scope, protect: false);
         }
 
@@ -57,7 +67,11 @@ namespace System.Security.Cryptography
                             Interop.Crypt32.CryptUnprotectData(in userDataBlob, IntPtr.Zero, ref optionalEntropyBlob, IntPtr.Zero, IntPtr.Zero, flags, out outputBlob);
                         if (!success)
                         {
+#if NET
+                            int lastWin32Error = Marshal.GetLastPInvokeError();
+#else
                             int lastWin32Error = Marshal.GetLastWin32Error();
+#endif
                             if (protect && ErrorMayBeCausedByUnloadedProfile(lastWin32Error))
                                 throw new CryptographicException(SR.Cryptography_DpApi_ProfileMayNotBeLoaded);
                             else
@@ -97,6 +111,14 @@ namespace System.Security.Cryptography
             // CAPI returns a file not found error if the user profile is not yet loaded
             return errorCode == HResults.E_FILENOTFOUND ||
                    errorCode == Interop.Errors.ERROR_FILE_NOT_FOUND;
+        }
+
+        private static void CheckPlatformSupport()
+        {
+            if (!RuntimeInformation.IsOSPlatform(OSPlatform.Windows))
+            {
+                throw new PlatformNotSupportedException();
+            }
         }
     }
 }

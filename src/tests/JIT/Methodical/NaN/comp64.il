@@ -7,10 +7,10 @@
   .publickeytoken = (B0 3F 5F 7F 11 D5 0A 3A )
   .ver 4:0:0:0
 }
-.assembly comp64 { }
+.assembly ASSEMBLY_NAME { }
 .assembly extern xunit.core {}
-.namespace JitTest {
-.class private auto ansi beforefieldinit Test extends [mscorlib]System.Object
+.namespace JitTest_comp64_NaN_il {
+.class public auto ansi beforefieldinit Test extends [mscorlib]System.Object
 {
 .method private hidebysig static void RunTests(float64 nan,
                      	float64 plusinf, float64 zero, float64 minusinf) cil managed
@@ -662,7 +662,7 @@ IL_THROW:
 	throw
 }
 
-.method private hidebysig static int32 Main() cil managed
+.method public hidebysig static int32 Main() cil managed
 {
 	.custom instance void [xunit.core]Xunit.FactAttribute::.ctor() = (
 	    01 00 00 00
@@ -674,7 +674,7 @@ IL_THROW:
 	ldc.r8     (00 00 00 00 00 00 F0 7F)
 	ldc.r8     0
 	ldc.r8     (00 00 00 00 00 00 F0 FF)
-	call       void JitTest.Test::RunTests(float64,
+	call       void JitTest_comp64_NaN_il.Test::RunTests(float64,
                                            float64,
                                            float64,
                                            float64)

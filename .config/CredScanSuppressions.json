@@ -7,11 +7,18 @@
                 "src/libraries/Common/tests/System/Security/Cryptography/AlgorithmImplementations/DSA/DSAKeyPemTests.cs",
                 "src/libraries/Common/tests/System/Security/Cryptography/AlgorithmImplementations/EC/ECKeyPemTests.cs",
                 "src/libraries/Common/tests/System/Security/Cryptography/AlgorithmImplementations/RSA/RSAKeyPemTests.cs",
-                "src/libraries/System.Security.Cryptography.X509Certificates/tests/TestData.cs"
+                "src/libraries/System.Security.Cryptography/tests/X509Certificates/TestData.cs",
+                "src/tests/FunctionalTests/Android/Device_Emulator/gRPC/grpc-dotnet/testassets/Certs/InteropTests/server1.key"
             ],
             "placeholder": [
                 "-----BEGIN PRIVATE KEY-----",
                 "-----BEGIN * PRIVATE KEY-----"
+            ]
+        },
+        {
+            "_justification": "Suppression approved. Private key for testing purpose.",
+            "file": [
+                "src/tests/FunctionalTests/Android/Device_Emulator/gRPC/grpc-dotnet/testassets/Certs/InteropTests/server1.pfx"
             ]
         }
     ]

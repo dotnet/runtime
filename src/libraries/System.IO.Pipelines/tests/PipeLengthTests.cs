@@ -239,7 +239,7 @@ namespace System.IO.Pipelines.Tests
         }
 
         [Fact]
-        public async Task ConsumedGreatherThanExaminedThrows()
+        public async Task ConsumedGreaterThanExaminedThrows()
         {
             _pipe.Writer.WriteEmpty(10);
             await _pipe.Writer.FlushAsync();

@@ -54,7 +54,7 @@ POINTER_SIZE                        equ 08h
 LOAD_DATA_ADDRESS macro groupIndex, index, thunkPool
         ALIGN   10h                             ;; make sure we align to 16-byte boundary for CFG table
 
-        ;; set r10 to begining of data page : r10 <- [thunkPool] + PAGE_SIZE
+        ;; set r10 to beginning of data page : r10 <- [thunkPool] + PAGE_SIZE
         ;; fix offset of the data           : r10 <- r10 + (THUNK_DATASIZE * current thunk's index)
         lea     r10, [thunkPool + PAGE_SIZE + (groupIndex * THUNK_DATASIZE * 10 + THUNK_DATASIZE * index)]
 endm

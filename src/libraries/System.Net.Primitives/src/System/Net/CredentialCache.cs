@@ -21,8 +21,11 @@ namespace System.Net
         {
         }
 
-        public void Add(Uri uriPrefix!!, string authType!!, NetworkCredential cred)
+        public void Add(Uri uriPrefix, string authType, NetworkCredential cred)
         {
+            ArgumentNullException.ThrowIfNull(uriPrefix);
+            ArgumentNullException.ThrowIfNull(authType);
+
             if ((cred is SystemNetworkCredential)
                 && !((string.Equals(authType, NegotiationInfoClass.NTLM, StringComparison.OrdinalIgnoreCase))
                      || (string.Equals(authType, NegotiationInfoClass.Kerberos, StringComparison.OrdinalIgnoreCase))
@@ -38,11 +41,7 @@ namespace System.Net
 
             if (NetEventSource.Log.IsEnabled()) NetEventSource.Info(this, $"Adding key:[{key}], cred:[{cred.Domain}],[{cred.UserName}]");
 
-            if (_cache == null)
-            {
-                _cache = new Dictionary<CredentialKey, NetworkCredential>();
-            }
-
+            _cache ??= new Dictionary<CredentialKey, NetworkCredential>();
             _cache.Add(key, cred);
         }
 
@@ -51,10 +50,7 @@ namespace System.Net
             ArgumentException.ThrowIfNullOrEmpty(host);
             ArgumentNullException.ThrowIfNull(authenticationType);
 
-            if (port < 0)
-            {
-                throw new ArgumentOutOfRangeException(nameof(port));
-            }
+            ArgumentOutOfRangeException.ThrowIfNegative(port);
 
             if ((credential is SystemNetworkCredential)
                 && !((string.Equals(authenticationType, NegotiationInfoClass.NTLM, StringComparison.OrdinalIgnoreCase))
@@ -71,11 +67,7 @@ namespace System.Net
 
             if (NetEventSource.Log.IsEnabled()) NetEventSource.Info(this, $"Adding key:[{key}], cred:[{credential.Domain}],[{credential.UserName}]");
 
-            if (_cacheForHosts == null)
-            {
-                _cacheForHosts = new Dictionary<CredentialHostKey, NetworkCredential>();
-            }
-
+            _cacheForHosts ??= new Dictionary<CredentialHostKey, NetworkCredential>();
             _cacheForHosts.Add(key, credential);
         }
 
@@ -132,8 +124,11 @@ namespace System.Net
             _cacheForHosts.Remove(key);
         }
 
-        public NetworkCredential? GetCredential(Uri uriPrefix!!, string authType!!)
+        public NetworkCredential? GetCredential(Uri uriPrefix, string authType)
         {
+            ArgumentNullException.ThrowIfNull(uriPrefix);
+            ArgumentNullException.ThrowIfNull(authType);
+
             if (_cache == null)
             {
                 if (NetEventSource.Log.IsEnabled()) NetEventSource.Info(this, "CredentialCache::GetCredential short-circuiting because the dictionary is null.");
@@ -172,10 +167,7 @@ namespace System.Net
         {
             ArgumentException.ThrowIfNullOrEmpty(host);
             ArgumentNullException.ThrowIfNull(authenticationType);
-            if (port < 0)
-            {
-                throw new ArgumentOutOfRangeException(nameof(port));
-            }
+            ArgumentOutOfRangeException.ThrowIfNegative(port);
 
             if (_cacheForHosts == null)
             {

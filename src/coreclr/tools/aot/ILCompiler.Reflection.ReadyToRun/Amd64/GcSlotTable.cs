@@ -68,6 +68,9 @@ namespace ILCompiler.Reflection.ReadyToRun.Amd64
                     case Machine.Arm64:
                         return ((Arm64.Registers)registerNumber).ToString();
 
+                    case Machine.LoongArch64:
+                        return ((LoongArch64.Registers)registerNumber).ToString();
+
                     default:
                         throw new NotImplementedException(machine.ToString());
                 }
@@ -96,7 +99,7 @@ namespace ILCompiler.Reflection.ReadyToRun.Amd64
         public GcSlotTable() { }
 
         /// <summary>
-        /// based on <a href="https://github.com/dotnet/coreclr/blob/master/src/vm/gcinfodecoder.cpp">GcSlotDecoder::DecodeSlotTable</a>
+        /// based on <a href="https://github.com/dotnet/runtime/blob/main/src/coreclr/vm/gcinfodecoder.cpp">GcSlotDecoder::DecodeSlotTable</a>
         /// </summary>
         public GcSlotTable(byte[] image, Machine machine, GcInfoTypes gcInfoTypes, ref int bitOffset)
         {

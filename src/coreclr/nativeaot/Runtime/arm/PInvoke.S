@@ -33,15 +33,8 @@ NESTED_ENTRY RhpPInvoke, _TEXT, NoHandler
         str     r0, [r5, #OFFSETOF__PInvokeTransitionFrame__m_pThread]
         str     r5, [r0, #OFFSETOF__Thread__m_pTransitionFrame]
 
-        ldr     r3, =C_FUNC(RhpTrapThreads)
-        ldr     r3, [r3]
-        cbnz    r3, LOCAL_LABEL(InvokeRareTrapThread)  // TrapThreadsFlags_None = 0
-
         EPILOG_POP "{r5,pc}"
 
-LOCAL_LABEL(InvokeRareTrapThread):
-        EPILOG_POP "{r5,lr}"
-        b       C_FUNC(RhpWaitForSuspend2)
 NESTED_END RhpPInvoke, _TEXT
 
 

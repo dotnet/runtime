@@ -1,7 +1,6 @@
 <Project Sdk="Microsoft.NET.Sdk">
   <PropertyGroup>
     <TargetFramework>$(NetCoreAppCurrent)</TargetFramework>
-    <Nullable>enable</Nullable>
     <!--
       Since many resource strings in this library are shown to an end-user,
       always generate default resource string values which will be used when UseSystemResourceKeys is true in trimmed apps.
@@ -9,15 +8,18 @@
     <GenerateResxSourceIncludeDefaultValues>true</GenerateResxSourceIncludeDefaultValues>
   </PropertyGroup>
   <ItemGroup>
+    <Compile Include="System\ComponentModel\DataAnnotations\AllowedValuesAttribute.cs" />
     <Compile Include="System\ComponentModel\DataAnnotations\AssociatedMetadataTypeTypeDescriptor.cs" />
     <Compile Include="System\ComponentModel\DataAnnotations\AssociatedMetadataTypeTypeDescriptionProvider.cs" />
     <Compile Include="System\ComponentModel\DataAnnotations\AssociationAttribute.cs" />
+    <Compile Include="System\ComponentModel\DataAnnotations\Base64StringAttribute.cs" />
     <Compile Include="System\ComponentModel\DataAnnotations\CompareAttribute.cs" />
     <Compile Include="System\ComponentModel\DataAnnotations\ConcurrencyCheckAttribute.cs" />
     <Compile Include="System\ComponentModel\DataAnnotations\CreditCardAttribute.cs" />
     <Compile Include="System\ComponentModel\DataAnnotations\CustomValidationAttribute.cs" />
     <Compile Include="System\ComponentModel\DataAnnotations\DataType.cs" />
     <Compile Include="System\ComponentModel\DataAnnotations\DataTypeAttribute.cs" />
+    <Compile Include="System\ComponentModel\DataAnnotations\DeniedValuesAttribute.cs" />
     <Compile Include="System\ComponentModel\DataAnnotations\DisplayAttribute.cs" />
     <Compile Include="System\ComponentModel\DataAnnotations\DisplayColumnAttribute.cs" />
     <Compile Include="System\ComponentModel\DataAnnotations\DisplayFormatAttribute.cs" />
@@ -28,6 +30,7 @@
     <Compile Include="System\ComponentModel\DataAnnotations\FilterUIHintAttribute.cs" />
     <Compile Include="System\ComponentModel\DataAnnotations\IValidatableObject.cs" />
     <Compile Include="System\ComponentModel\DataAnnotations\KeyAttribute.cs" />
+    <Compile Include="System\ComponentModel\DataAnnotations\LengthAttribute.cs" />
     <Compile Include="System\ComponentModel\DataAnnotations\LocalizableString.cs" />
     <Compile Include="System\ComponentModel\DataAnnotations\MaxLengthAttribute.cs" />
     <Compile Include="System\ComponentModel\DataAnnotations\MetadataPropertyDescriptorWrapper.cs" />
@@ -56,8 +59,8 @@
     <Compile Include="System\ComponentModel\DataAnnotations\ValidationException.cs" />
     <Compile Include="System\ComponentModel\DataAnnotations\ValidationResult.cs" />
     <Compile Include="System\ComponentModel\DataAnnotations\Validator.cs" />
-    <Compile Include="$(CommonPath)System\NotImplemented.cs"
-             Link="Common\System\NotImplemented.cs" />
+    <Compile Include="$(CommonPath)System\NotImplemented.cs" Link="Common\System\NotImplemented.cs" />
+    <Compile Include="$(CommonPath)System\Obsoletions.cs" Link="Common\System\Obsoletions.cs" />
   </ItemGroup>
   <ItemGroup>
     <Reference Include="System.Collections" />
@@ -66,8 +69,8 @@
     <Reference Include="System.ComponentModel.Primitives" />
     <Reference Include="System.ComponentModel.TypeConverter" />
     <Reference Include="System.Linq" />
+    <Reference Include="System.Memory" />
     <Reference Include="System.Runtime" />
-    <Reference Include="System.Resources.ResourceManager" />
     <Reference Include="System.Text.RegularExpressions" />
     <Reference Include="System.Threading" />
   </ItemGroup>

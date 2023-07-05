@@ -54,7 +54,7 @@ namespace System.Speech.Synthesis
                     {
                         try
                         {
-                            using (TextReader reader = new StreamReader(stream))
+                            using (var reader = new StreamReader(stream))
                             {
                                 _text = reader.ReadToEnd();
                             }

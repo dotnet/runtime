@@ -8,7 +8,7 @@ using System.Text;
 namespace ILCompiler.Reflection.ReadyToRun.x86
 {
     /// <summary>
-    /// based on <a href="https://github.com/dotnet/coreclr/blob/master/src/inc/gcinfotypes.h">src\inc\gcinfotypes.h</a> InfoHdrSmall
+    /// based on <a href="https://github.com/dotnet/runtime/blob/main/src/coreclr/inc/gcinfotypes.h">src\inc\gcinfotypes.h</a> InfoHdrSmall
     /// </summary>
     public struct InfoHdrSmall
     {
@@ -161,7 +161,7 @@ namespace ILCompiler.Reflection.ReadyToRun.x86
         private const uint YES = HAS_VARPTR;
 
         /// <summary>
-        /// based on <a href="https://github.com/dotnet/coreclr/blob/master/src/inc/gcinfotypes.h">src\inc\gcinfotypes.h</a> GetInfoHdr
+        /// based on <a href="https://github.com/dotnet/runtime/blob/main/src/coreclr/inc/gcinfotypes.h">src\inc\gcinfotypes.h</a> GetInfoHdr
         /// </summary>
         public static InfoHdrSmall GetInfoHdr(byte encoding)
         {
@@ -170,7 +170,7 @@ namespace ILCompiler.Reflection.ReadyToRun.x86
 
         /// <summary>
         /// Initialize the GcInfo header
-        /// based on <a href="https://github.com/dotnet/coreclr/blob/master/src/inc/gcdecoder.cpp">src\inc\gcdecoder.cpp</a> DecodeHeader and <a href="https://github.com/dotnet/coreclr/blob/master/src/gcdump/i386/gcdumpx86.cpp">GCDump::DumpInfoHdr</a>
+        /// based on <a href="https://github.com/dotnet/runtime/blob/main/src/coreclr/inc/gcdecoder.cpp">src\inc\gcdecoder.cpp</a> DecodeHeader and <a href="https://github.com/dotnet/runtime/blob/main/src/coreclr/gcdump/i386/gcdumpx86.cpp">GCDump::DumpInfoHdr</a>
         /// </summary>
         public static InfoHdrSmall DecodeHeader(byte[] image, ref int offset, int codeLength)
         {
@@ -378,7 +378,7 @@ namespace ILCompiler.Reflection.ReadyToRun.x86
         }
 
         /// <summary>
-        /// based on <a href="https://github.com/dotnet/coreclr/blob/master/src/inc/gcdecoder.cpp">src\inc\gcdecoder.cpp</a> infoHdrShortcut
+        /// based on <a href="https://github.com/dotnet/runtime/blob/main/src/coreclr/inc/gcdecoder.cpp">src\inc\gcdecoder.cpp</a> infoHdrShortcut
         /// </summary>
         private static InfoHdrSmall[] _infoHdrShortcut = {
             new InfoHdrSmall(  0,  1, 1, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0,  0,  0,  0          ),  //    1139  00

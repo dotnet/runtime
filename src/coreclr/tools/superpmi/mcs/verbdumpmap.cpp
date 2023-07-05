@@ -29,9 +29,10 @@ void DumpMap(int index, MethodContext* mc)
 
     mc->repCompileMethod(&cmi, &flags, &os);
 
-    const char* moduleName = nullptr;
-    const char* methodName = mc->repGetMethodName(cmi.ftn, &moduleName);
-    const char* className  = mc->repGetClassName(mc->repGetMethodClass(cmi.ftn));
+    char methodName[256];
+    mc->repPrintMethodName(cmi.ftn, methodName, sizeof(methodName));
+    char className[256];
+    mc->repPrintClassName(mc->repGetMethodClass(cmi.ftn), className, sizeof(className));
 
     printf("%d,", index);
     // printf("\"%s\",", mc->cr->repProcessName());
@@ -53,7 +54,7 @@ void DumpMap(int index, MethodContext* mc)
         for (unsigned i = 0; i < classInst; i++)
         {
             CORINFO_CLASS_HANDLE ci = sig.sigInst.classInst[i];
-            className = mc->repGetClassName(ci);
+            mc->repPrintClassName(ci, className, sizeof(className));
 
             printf("%s%s%s%s",
                 i == 0 ? "[" : "",
@@ -69,7 +70,7 @@ void DumpMap(int index, MethodContext* mc)
         for (unsigned i = 0; i < methodInst; i++)
         {
             CORINFO_CLASS_HANDLE ci = sig.sigInst.methInst[i];
-            className = mc->repGetClassName(ci);
+            mc->repPrintClassName(ci, className, sizeof(className));
 
             printf("%s%s%s%s",
                 i == 0 ? "[" : "",
@@ -91,9 +92,11 @@ void DumpMap(int index, MethodContext* mc)
     // Add in the "fake" pgo flags
     bool hasEdgeProfile = false;
     bool hasClassProfile = false;
+    bool hasMethodProfile = false;
     bool hasLikelyClass = false;
+    bool hasLikelyMethod = false;
     ICorJitInfo::PgoSource pgoSource = ICorJitInfo::PgoSource::Unknown;
-    if (mc->hasPgoData(hasEdgeProfile, hasClassProfile, hasLikelyClass, pgoSource))
+    if (mc->hasPgoData(hasEdgeProfile, hasClassProfile, hasMethodProfile, hasLikelyClass, hasLikelyMethod, pgoSource))
     {
         rawFlags |= 1ULL << (EXTRA_JIT_FLAGS::HAS_PGO);
 
@@ -107,9 +110,19 @@ void DumpMap(int index, MethodContext* mc)
             rawFlags |= 1ULL << (EXTRA_JIT_FLAGS::HAS_CLASS_PROFILE);
         }
 
+        if (hasMethodProfile)
+        {
+            rawFlags |= 1ULL << (EXTRA_JIT_FLAGS::HAS_METHOD_PROFILE);
+        }
+
         if (hasLikelyClass)
         {
             rawFlags |= 1ULL << (EXTRA_JIT_FLAGS::HAS_LIKELY_CLASS);
+        }
+
+        if (hasLikelyMethod)
+        {
+            rawFlags |= 1ULL << (EXTRA_JIT_FLAGS::HAS_LIKELY_METHOD);
         }
 
         if (pgoSource == ICorJitInfo::PgoSource::Static)

@@ -80,10 +80,7 @@ namespace System.Net
         {
             base.Close();
 
-            if (_sslStream != null)
-            {
-                _sslStream.Close();
-            }
+            _sslStream?.Close();
         }
     }
 }

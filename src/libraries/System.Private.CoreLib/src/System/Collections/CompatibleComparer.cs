@@ -44,8 +44,10 @@ namespace System.Collections
             throw new ArgumentException(SR.Argument_ImplementIComparable);
         }
 
-        public int GetHashCode(object obj!!)
+        public int GetHashCode(object obj)
         {
+            ArgumentNullException.ThrowIfNull(obj);
+
             return _hcp != null ?
                 _hcp.GetHashCode(obj) :
                 obj.GetHashCode();

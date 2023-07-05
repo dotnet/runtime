@@ -28,7 +28,7 @@ namespace Microsoft.DotNet.CoreSetup.Test
         private const int SubsystemOffset = 0x5C;
 
         /// <summary>
-        /// The value of the sybsystem field which indicates Windows GUI (Graphical UI)
+        /// The value of the subsystem field which indicates Windows GUI (Graphical UI)
         /// </summary>
         private const UInt16 WindowsGUISubsystem = 0x2;
 

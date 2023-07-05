@@ -11,7 +11,7 @@ namespace System.Text.Json.SourceGeneration.Tests
     public sealed partial class ExtensionDataTests_Metadata : ExtensionDataTests
     {
         public ExtensionDataTests_Metadata()
-            : base(new StringSerializerWrapper(ExtensionDataTestsContext_Metadata.Default, (options) => new ExtensionDataTestsContext_Metadata(options)))
+            : base(new StringSerializerWrapper(ExtensionDataTestsContext_Metadata.Default))
         {
         }
 
@@ -61,6 +61,10 @@ namespace System.Text.Json.SourceGeneration.Tests
         [JsonSerializable(typeof(ClassWithExtensionPropertyThreeGenericParameters))]
         [JsonSerializable(typeof(JsonElement))]
         [JsonSerializable(typeof(ClassWithExtensionData<JsonObject>))]
+        [JsonSerializable(typeof(ClassWithExtensionData<Dictionary<string, JsonElement>>))]
+        [JsonSerializable(typeof(ClassWithExtensionData<Dictionary<string, object>>))]
+        [JsonSerializable(typeof(ClassWithExtensionData<CustomOverflowDictionary<object>>))]
+        [JsonSerializable(typeof(ClassWithExtensionData<CustomOverflowDictionary<JsonElement>>))]
         [JsonSerializable(typeof(int))]
         [JsonSerializable(typeof(DummyObj))]
         [JsonSerializable(typeof(DummyStruct))]
@@ -72,7 +76,7 @@ namespace System.Text.Json.SourceGeneration.Tests
     public sealed partial class ExtensionDataTests_Default : ExtensionDataTests
     {
         public ExtensionDataTests_Default()
-            : base(new StringSerializerWrapper(ExtensionDataTestsContext_Default.Default, (options) => new ExtensionDataTestsContext_Default(options)))
+            : base(new StringSerializerWrapper(ExtensionDataTestsContext_Default.Default))
         {
         }
 
@@ -121,6 +125,10 @@ namespace System.Text.Json.SourceGeneration.Tests
         [JsonSerializable(typeof(ClassWithExtensionPropertyThreeGenericParameters))]
         [JsonSerializable(typeof(JsonElement))]
         [JsonSerializable(typeof(ClassWithExtensionData<JsonObject>))]
+        [JsonSerializable(typeof(ClassWithExtensionData<Dictionary<string, JsonElement>>))]
+        [JsonSerializable(typeof(ClassWithExtensionData<Dictionary<string, object>>))]
+        [JsonSerializable(typeof(ClassWithExtensionData<CustomOverflowDictionary<object>>))]
+        [JsonSerializable(typeof(ClassWithExtensionData<CustomOverflowDictionary<JsonElement>>))]
         [JsonSerializable(typeof(int))]
         [JsonSerializable(typeof(DummyObj))]
         [JsonSerializable(typeof(DummyStruct))]

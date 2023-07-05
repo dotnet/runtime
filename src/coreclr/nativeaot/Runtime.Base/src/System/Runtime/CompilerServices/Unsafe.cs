@@ -92,6 +92,15 @@ namespace System.Runtime.CompilerServices
         }
 
         /// <summary>
+        /// Adds an element offset to the given reference.
+        /// </summary>
+        [MethodImpl(MethodImplOptions.AggressiveInlining)]
+        public static ref T Add<T>(ref T source, IntPtr elementOffset)
+        {
+            return ref AddByteOffset(ref source, (IntPtr)((nint)elementOffset * (nint)SizeOf<T>()));
+        }
+
+        /// <summary>
         /// Reinterprets the given location as a reference to a value of type <typeparamref name="T"/>.
         /// </summary>
         [Intrinsic]

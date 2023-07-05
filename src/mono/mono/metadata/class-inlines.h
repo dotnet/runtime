@@ -242,6 +242,12 @@ m_method_is_synchronized (MonoMethod *method)
 }
 
 static inline gboolean
+m_method_is_aggressive_inlining (MonoMethod *method)
+{
+	return (method->iflags & METHOD_IMPL_ATTRIBUTE_AGGRESSIVE_INLINING) != 0;
+}
+
+static inline gboolean
 m_method_is_pinvoke (MonoMethod *method)
 {
 	return (method->flags & METHOD_ATTRIBUTE_PINVOKE_IMPL) != 0;
@@ -252,7 +258,6 @@ m_method_is_wrapper (MonoMethod *method)
 {
 	return method->wrapper_type != 0;
 }
-
 
 static inline void
 m_field_set_parent (MonoClassField *field, MonoClass *klass)

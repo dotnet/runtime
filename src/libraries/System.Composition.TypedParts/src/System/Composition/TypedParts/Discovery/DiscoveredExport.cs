@@ -38,7 +38,7 @@ namespace System.Composition.TypedParts.Discovery
                () => Part.GetDependencies(definitionAccessor),
                deps =>
                {
-                   var activator = Part.GetActivator(definitionAccessor, deps);
+                   var activator = Part.GetActivator(deps);
                    return GetExportDescriptor(activator);
                });
         }

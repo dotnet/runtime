@@ -1,6 +1,9 @@
 <Project Sdk="Microsoft.NET.Sdk.IL">
   <PropertyGroup>
     <OutputType>Exe</OutputType>
+
+    <!-- Testing TypeLoad/MissingMethod exceptions in situations that are expensive to detect -->
+    <NativeAotIncompatible>true</NativeAotIncompatible>
   </PropertyGroup>
   <PropertyGroup>
     <DebugType>pdbonly</DebugType>

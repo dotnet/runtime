@@ -7,7 +7,6 @@ using System.IO;
 using System.Linq;
 using System.Reflection.PortableExecutable;
 using System.Text;
-
 using ILCompiler.Reflection.ReadyToRun;
 using Internal.Runtime;
 
@@ -16,7 +15,7 @@ namespace R2RDump
     /// <summary>
     /// Helper class for diffing a pair of R2R images.
     /// </summary>
-    class R2RDiff
+    internal sealed class R2RDiff
     {
         private const int InvalidModule = -1;
         private const int AllModules = -2;
@@ -111,7 +110,7 @@ namespace R2RDump
                 .Select(kvp => new KeyValuePair<string, MethodPair>(kvp.Key,
                     new MethodPair(kvp.Value, rightMethods.TryGetValue(kvp.Key, out ReadyToRunMethod rightMethod) ? rightMethod : null)))
                 .Where(kvp => kvp.Value.RightMethod != null));
-            if (_leftDumper.Options.DiffHideSameDisasm)
+            if (_leftDumper.Model.DiffHideSameDisasm)
             {
                 commonMethods = new Dictionary<string, MethodPair>(HideMethodsWithSameDisassembly(commonMethods));
             }
@@ -347,7 +346,7 @@ namespace R2RDump
             return sectionMap;
         }
 
-        private static ReadyToRunSectionType[] s_methodSections = new ReadyToRunSectionType[] { ReadyToRunSectionType.MethodDefEntryPoints, ReadyToRunSectionType.InstanceMethodEntryPoints };
+        private static ReadyToRunSectionType[] s_methodSections = new[] { ReadyToRunSectionType.MethodDefEntryPoints, ReadyToRunSectionType.InstanceMethodEntryPoints };
 
         /// <summary>
         /// Read the R2R method map for a given R2R image.

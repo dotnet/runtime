@@ -41,6 +41,7 @@ namespace System.Tests
         public static bool NotMobileAndRemoteExecutable => PlatformDetection.IsNotMobile && RemoteExecutor.IsSupported;
 
         [ConditionalTheory(nameof(NotMobileAndRemoteExecutable))]
+        [SkipOnPlatform(TestPlatforms.LinuxBionic, "Remote executor has problems with exit codes")]
         [MemberData(nameof(SupportedSignals))]
         public void SignalHandlerCalledForKnownSignals(PosixSignal s)
         {
@@ -75,6 +76,7 @@ namespace System.Tests
         }
 
         [ConditionalTheory(nameof(NotMobileAndRemoteExecutable))]
+        [SkipOnPlatform(TestPlatforms.LinuxBionic, "Remote executor has problems with exit codes")]
         [MemberData(nameof(PosixSignalAsRawValues))]
         public void SignalHandlerCalledForRawSignals(PosixSignal s)
         {
@@ -137,7 +139,7 @@ namespace System.Tests
             Thread.Sleep(100);
         }
 
-        [ConditionalFact(typeof(PlatformDetection), nameof(PlatformDetection.IsNotMobile))]
+        [ConditionalFact(typeof(PlatformDetection), nameof(PlatformDetection.IsNotMobile), nameof(PlatformDetection.IsPreciseGcSupported))]
         public void SignalHandlerNotCalledWhenFinalized()
         {
             PosixSignal signal = PosixSignal.SIGCONT;

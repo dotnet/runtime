@@ -5,10 +5,12 @@ using System;
 using System.Collections;
 using System.Collections.Generic;
 using System.Collections.ObjectModel;
+using Xunit;
 
-internal class My
+public class My
 {
-    private static int Main()
+    [Fact]
+    public static int TestEntryPoint()
     {
         My[] s = new My[0];
         IList<My> ls = (IList<My>)s;

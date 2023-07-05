@@ -6,7 +6,7 @@ namespace System.Threading
     /// <summary>
     /// Overlapped subclass adding data needed by ThreadPoolBoundHandle.
     /// </summary>
-    internal unsafe sealed class ThreadPoolBoundHandleOverlapped : Overlapped
+    internal sealed unsafe class ThreadPoolBoundHandleOverlapped : Overlapped
     {
         private static readonly IOCompletionCallback s_completionCallback = CompletionCallback;
 
@@ -33,7 +33,7 @@ namespace System.Threading
 
         private static void CompletionCallback(uint errorCode, uint numBytes, NativeOverlapped* nativeOverlapped)
         {
-            ThreadPoolBoundHandleOverlapped overlapped = (ThreadPoolBoundHandleOverlapped)Overlapped.Unpack(nativeOverlapped);
+            ThreadPoolBoundHandleOverlapped overlapped = (ThreadPoolBoundHandleOverlapped)Unpack(nativeOverlapped);
 
             //
             // The Win32 thread pool implementation of ThreadPoolBoundHandle does not permit reuse of NativeOverlapped

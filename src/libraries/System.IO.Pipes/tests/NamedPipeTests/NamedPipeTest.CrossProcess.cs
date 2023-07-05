@@ -14,6 +14,7 @@ namespace System.IO.Pipes.Tests
     public sealed class NamedPipeTest_CrossProcess
     {
         [ConditionalFact(typeof(RemoteExecutor), nameof(RemoteExecutor.IsSupported))]
+        [SkipOnPlatform(TestPlatforms.LinuxBionic, "SElinux blocks UNIX sockets in our CI environment")]
         public void InheritHandles_AvailableInChildProcess()
         {
             string pipeName = PipeStreamConformanceTests.GetUniquePipeName();
@@ -45,6 +46,7 @@ namespace System.IO.Pipes.Tests
         }
 
         [ConditionalFact(typeof(RemoteExecutor), nameof(RemoteExecutor.IsSupported))]
+        [SkipOnPlatform(TestPlatforms.LinuxBionic, "SElinux blocks UNIX sockets in our CI environment")]
         public void PingPong_Sync()
         {
             // Create names for two pipes
@@ -71,6 +73,7 @@ namespace System.IO.Pipes.Tests
         }
 
         [ConditionalFact(typeof(RemoteExecutor), nameof(RemoteExecutor.IsSupported))]
+        [SkipOnPlatform(TestPlatforms.LinuxBionic, "SElinux blocks UNIX sockets in our CI environment")]
         public async Task PingPong_Async()
         {
             // Create names for two pipes
@@ -98,6 +101,22 @@ namespace System.IO.Pipes.Tests
                     Assert.Equal(i, data[0]);
                 }
             }
+        }
+
+        [ConditionalFact(typeof(RemoteExecutor), nameof(RemoteExecutor.IsSupported))]
+        [SkipOnPlatform(TestPlatforms.LinuxBionic, "SElinux blocks UNIX sockets in our CI environment")]
+        public void NamedPipeOptionsFirstPipeInstance_Throws_WhenNameIsUsedAcrossProcesses()
+        {
+            var uniqueServerName = PipeStreamConformanceTests.GetUniquePipeName();
+            using (var firstServer = new NamedPipeServerStream(uniqueServerName, PipeDirection.In, 2, PipeTransmissionMode.Byte, PipeOptions.FirstPipeInstance))
+            {
+                RemoteExecutor.Invoke(new Action<string>(CreateFirstPipeInstance_OtherProcess), uniqueServerName).Dispose();
+            }
+        }
+
+        private static void CreateFirstPipeInstance_OtherProcess(string uniqueServerName)
+        {
+            Assert.Throws<UnauthorizedAccessException>(() => new NamedPipeServerStream(uniqueServerName, PipeDirection.In, 2, PipeTransmissionMode.Byte, PipeOptions.FirstPipeInstance));
         }
 
         private static void PingPong_OtherProcess(string inName, string outName)

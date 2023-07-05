@@ -1,36 +1,44 @@
 // Licensed to the .NET Foundation under one or more agreements.
 // The .NET Foundation licenses this file to you under the MIT license.
 
+using System.Buffers.Binary;
 using System.IO;
 using System.Text;
+using System.Runtime.InteropServices;
+using System.Runtime.Intrinsics;
 using System.Runtime.Serialization;
 using System.Threading.Tasks;
+using System.Diagnostics;
 
 namespace System.Xml
 {
     internal abstract class XmlStreamNodeWriter : XmlNodeWriter
     {
-        private Stream _stream = null!; // initialized by SetOutput
         private readonly byte[] _buffer;
         private int _offset;
         private bool _ownsStream;
         private const int bufferLength = 512;
         private const int maxBytesPerChar = 3;
         private Encoding? _encoding;
-        private static readonly UTF8Encoding s_UTF8Encoding = new UTF8Encoding(false, true);
 
         protected XmlStreamNodeWriter()
         {
             _buffer = new byte[bufferLength];
+            OutputStream = null!; // Always initialized by SetOutput()
         }
 
         protected void SetOutput(Stream stream, bool ownsStream, Encoding? encoding)
         {
-            _stream = stream;
+            OutputStream = stream;
             _ownsStream = ownsStream;
             _offset = 0;
-            _encoding = encoding;
+
+            if (encoding != null)
+                _encoding = encoding;
         }
+
+        // Getting/Setting the Stream exists for fragmenting
+        public Stream OutputStream { get; set; }
 
         // StreamBuffer/BufferOffset exists only for the BinaryWriter to fix up nodes
         public byte[] StreamBuffer
@@ -52,25 +60,13 @@ namespace System.Xml
         {
             get
             {
-                return (int)_stream.Position + _offset;
-            }
-        }
-
-        private int GetByteCount(char[] chars)
-        {
-            if (_encoding == null)
-            {
-                return s_UTF8Encoding.GetByteCount(chars);
-            }
-            else
-            {
-                return _encoding.GetByteCount(chars);
+                return (int)OutputStream.Position + _offset;
             }
         }
 
         protected byte[] GetBuffer(int count, out int offset)
         {
-            DiagnosticUtility.DebugAssert(count >= 0 && count <= bufferLength, "");
+            Debug.Assert(count >= 0 && count <= bufferLength);
             int bufferOffset = _offset;
             if (bufferOffset + count <= bufferLength)
             {
@@ -82,7 +78,7 @@ namespace System.Xml
                 offset = 0;
             }
 #if DEBUG
-            DiagnosticUtility.DebugAssert(offset + count <= bufferLength, "");
+            Debug.Assert(offset + count <= bufferLength);
             for (int i = 0; i < count; i++)
             {
                 _buffer[offset + i] = (byte)'<';
@@ -94,7 +90,7 @@ namespace System.Xml
         protected async Task<BytesWithOffset> GetBufferAsync(int count)
         {
             int offset;
-            DiagnosticUtility.DebugAssert(count >= 0 && count <= bufferLength, "");
+            Debug.Assert(count >= 0 && count <= bufferLength);
             int bufferOffset = _offset;
             if (bufferOffset + count <= bufferLength)
             {
@@ -106,7 +102,7 @@ namespace System.Xml
                 offset = 0;
             }
 #if DEBUG
-            DiagnosticUtility.DebugAssert(offset + count <= bufferLength, "");
+            Debug.Assert(offset + count <= bufferLength);
             for (int i = 0; i < count; i++)
             {
                 _buffer[offset + i] = (byte)'<';
@@ -117,7 +113,7 @@ namespace System.Xml
 
         protected void Advance(int count)
         {
-            DiagnosticUtility.DebugAssert(_offset + count <= bufferLength, "");
+            Debug.Assert(_offset + count <= bufferLength);
             _offset += count;
         }
 
@@ -156,13 +152,13 @@ namespace System.Xml
 
         protected void WriteByte(char ch)
         {
-            DiagnosticUtility.DebugAssert(ch < 0x80, "");
+            Debug.Assert(ch < 0x80);
             WriteByte((byte)ch);
         }
 
         protected Task WriteByteAsync(char ch)
         {
-            DiagnosticUtility.DebugAssert(ch < 0x80, "");
+            Debug.Assert(ch < 0x80);
             return WriteByteAsync((byte)ch);
         }
 
@@ -203,13 +199,13 @@ namespace System.Xml
 
         protected void WriteBytes(char ch1, char ch2)
         {
-            DiagnosticUtility.DebugAssert(ch1 < 0x80 && ch2 < 0x80, "");
+            Debug.Assert(ch1 < 0x80 && ch2 < 0x80);
             WriteBytes((byte)ch1, (byte)ch2);
         }
 
         protected Task WriteBytesAsync(char ch1, char ch2)
         {
-            DiagnosticUtility.DebugAssert(ch1 < 0x80 && ch2 < 0x80, "");
+            Debug.Assert(ch1 < 0x80 && ch2 < 0x80);
             return WriteBytesAsync((byte)ch1, (byte)ch2);
         }
 
@@ -225,26 +221,22 @@ namespace System.Xml
             else
             {
                 FlushBuffer();
-                _stream.Write(byteBuffer, byteOffset, byteCount);
+                OutputStream.Write(byteBuffer, byteOffset, byteCount);
             }
         }
 
-        protected unsafe void UnsafeWriteBytes(byte* bytes, int byteCount)
+        protected void WriteBytes(ReadOnlySpan<byte> bytes)
         {
-            FlushBuffer();
-            byte[] buffer = _buffer;
-            while (byteCount >= bufferLength)
+            if (bytes.Length < bufferLength)
             {
-                for (int i = 0; i < bufferLength; i++)
-                    buffer[i] = bytes[i];
-                _stream.Write(buffer, 0, bufferLength);
-                bytes += bufferLength;
-                byteCount -= bufferLength;
+                var buffer = GetBuffer(bytes.Length, out int offset).AsSpan(offset, bytes.Length);
+                bytes.CopyTo(buffer);
+                Advance(bytes.Length);
             }
+            else
             {
-                for (int i = 0; i < byteCount; i++)
-                    buffer[i] = bytes[i];
-                _stream.Write(buffer, 0, byteCount);
+                FlushBuffer();
+                OutputStream.Write(bytes);
             }
         }
 
@@ -270,22 +262,6 @@ namespace System.Xml
             }
         }
 
-        protected void WriteUTF8Chars(byte[] chars, int charOffset, int charCount)
-        {
-            if (charCount < bufferLength)
-            {
-                int offset;
-                byte[] buffer = GetBuffer(charCount, out offset);
-                Buffer.BlockCopy(chars, charOffset, buffer, offset, charCount);
-                Advance(charCount);
-            }
-            else
-            {
-                FlushBuffer();
-                _stream.Write(chars, charOffset, charCount);
-            }
-        }
-
         protected unsafe void WriteUTF8Chars(string value)
         {
             int count = value.Length;
@@ -295,6 +271,21 @@ namespace System.Xml
                 {
                     UnsafeWriteUTF8Chars(chars, count);
                 }
+            }
+        }
+
+        protected void WriteUTF8Bytes(ReadOnlySpan<byte> value)
+        {
+            if (value.Length < bufferLength)
+            {
+                byte[] buffer = GetBuffer(value.Length, out int offset);
+                value.CopyTo(buffer.AsSpan(offset));
+                Advance(value.Length);
+            }
+            else
+            {
+                FlushBuffer();
+                OutputStream.Write(value);
             }
         }
 
@@ -342,39 +333,26 @@ namespace System.Xml
             }
         }
 
-        protected unsafe int UnsafeGetUnicodeChars(char* chars, int charCount, byte[] buffer, int offset)
+        protected static unsafe int UnsafeGetUnicodeChars(char* chars, int charCount, byte[] buffer, int offset)
         {
-            char* charsMax = chars + charCount;
-            while (chars < charsMax)
+            if (BitConverter.IsLittleEndian)
             {
-                char value = *chars++;
-                buffer[offset++] = (byte)value;
-                value >>= 8;
-                buffer[offset++] = (byte)value;
+                new ReadOnlySpan<char>(chars, charCount)
+                    .CopyTo(MemoryMarshal.Cast<byte, char>(buffer.AsSpan(offset)));
             }
+            else
+            {
+                BinaryPrimitives.ReverseEndianness(new ReadOnlySpan<short>(chars, charCount),
+                    MemoryMarshal.Cast<byte, short>(buffer.AsSpan(offset)));
+            }
+
             return charCount * 2;
         }
 
         protected unsafe int UnsafeGetUTF8Length(char* chars, int charCount)
         {
-            char* charsMax = chars + charCount;
-            while (chars < charsMax)
-            {
-                if (*chars >= 0x80)
-                    break;
-
-                chars++;
-            }
-
-            if (chars == charsMax)
-                return charCount;
-
-            char[] chArray = new char[charsMax - chars];
-            for (int i = 0; i < chArray.Length; i++)
-            {
-                chArray[i] = chars[i];
-            }
-            return (int)(chars - (charsMax - charCount)) + GetByteCount(chArray);
+            // Length will always be at least ( 128 / maxBytesPerChar) = 42
+            return (_encoding ?? DataContractSerializer.ValidatingUTF8).GetByteCount(chars, charCount);
         }
 
         protected unsafe int UnsafeGetUTF8Chars(char* chars, int charCount, byte[] buffer, int offset)
@@ -383,39 +361,32 @@ namespace System.Xml
             {
                 fixed (byte* _bytes = &buffer[offset])
                 {
-                    byte* bytes = _bytes;
-                    byte* bytesMax = &bytes[buffer.Length - offset];
-                    char* charsMax = &chars[charCount];
-
-                    while (true)
+                    // Fast path for small strings, use Encoding.GetBytes for larger strings since it is faster when vectorization is possible
+                    if (!Vector128.IsHardwareAccelerated || (uint)charCount < 32)
                     {
+                        byte* bytes = _bytes;
+                        char* charsMax = &chars[charCount];
+
                         while (chars < charsMax)
                         {
                             char t = *chars;
                             if (t >= 0x80)
-                                break;
+                                goto NonAscii;
 
                             *bytes = (byte)t;
                             bytes++;
                             chars++;
                         }
+                        return charCount;
 
-                        if (chars >= charsMax)
-                            break;
-
-                        char* charsStart = chars;
-                        while (chars < charsMax && *chars >= 0x80)
-                        {
-                            chars++;
-                        }
-
-                        bytes += (_encoding ?? s_UTF8Encoding).GetBytes(charsStart, (int)(chars - charsStart), bytes, (int)(bytesMax - bytes));
-
-                        if (chars >= charsMax)
-                            break;
+                    NonAscii:
+                        byte* bytesMax = _bytes + buffer.Length - offset;
+                        return (int)(bytes - _bytes) + (_encoding ?? DataContractSerializer.ValidatingUTF8).GetBytes(chars, (int)(charsMax - chars), bytes, (int)(bytesMax - bytes));
                     }
-
-                    return (int)(bytes - _bytes);
+                    else
+                    {
+                        return (_encoding ?? DataContractSerializer.ValidatingUTF8).GetBytes(chars, charCount, _bytes, buffer.Length - offset);
+                    }
                 }
             }
             return 0;
@@ -425,7 +396,7 @@ namespace System.Xml
         {
             if (_offset != 0)
             {
-                _stream.Write(_buffer, 0, _offset);
+                OutputStream.Write(_buffer, 0, _offset);
                 _offset = 0;
             }
         }
@@ -434,7 +405,7 @@ namespace System.Xml
         {
             if (_offset != 0)
             {
-                var task = _stream.WriteAsync(_buffer, 0, _offset);
+                var task = OutputStream.WriteAsync(_buffer, 0, _offset);
                 _offset = 0;
                 return task;
             }
@@ -445,24 +416,24 @@ namespace System.Xml
         public override void Flush()
         {
             FlushBuffer();
-            _stream.Flush();
+            OutputStream.Flush();
         }
 
         public override async Task FlushAsync()
         {
             await FlushBufferAsync().ConfigureAwait(false);
-            await _stream.FlushAsync().ConfigureAwait(false);
+            await OutputStream.FlushAsync().ConfigureAwait(false);
         }
 
         public override void Close()
         {
-            if (_stream != null)
+            if (OutputStream != null)
             {
                 if (_ownsStream)
                 {
-                    _stream.Dispose();
+                    OutputStream.Dispose();
                 }
-                _stream = null!;
+                OutputStream = null!;
             }
         }
     }

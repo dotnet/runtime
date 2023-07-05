@@ -41,7 +41,7 @@ namespace UnhandledExceptionTest
 				return addHandlerToDifferentApplicationDomain;
 			}
 		}
-		
+
 		private static bool ParseArgumentValue (string value) {
 			if ((value.Length == 1)) {
 				switch (value [0]) {
@@ -58,7 +58,7 @@ namespace UnhandledExceptionTest
 				throw new ApplicationException ("Invalid argument value " + value);
 			}
 		}
-		
+
 		public TestConfiguration (string configuration) {
 			string [] arguments = configuration.Split (',');
 			foreach (string argument in arguments) {
@@ -106,7 +106,7 @@ namespace UnhandledExceptionTest
 					BoolToString (addHandlerToDifferentApplicationDomain));
 		}
 	}
-	
+
 	class Test {
 		private string configurationDescription;
 		private TestConfiguration configuration;
@@ -114,8 +114,8 @@ namespace UnhandledExceptionTest
 			this.configurationDescription = configurationDescription;
 			this.configuration = new TestConfiguration (configurationDescription);
 		}
-		
-		private AppDomain CreateDiffrentAppDomain () {
+
+		private AppDomain CreateDifferentAppDomain () {
 			AppDomainSetup ads = new AppDomainSetup();
         		ads.ApplicationBase = System.Environment.CurrentDirectory;
         		ads.DisallowBindingRedirects = false;
@@ -124,10 +124,10 @@ namespace UnhandledExceptionTest
 					(configuration.DCIL ? "unhandled-exception-legacy-configuration.config" : "unhandled-exception-base-configuration.config");
 			return AppDomain.CreateDomain("DifferentAppDomain", null, ads);
 		}
-		
+
 		public void RunTest () {
 			if (configuration.DA) {
-				AppDomain differentAppDomain = CreateDiffrentAppDomain ();
+				AppDomain differentAppDomain = CreateDifferentAppDomain ();
 				if (configuration.HDA) {
 					differentAppDomain.UnhandledException += new UnhandledExceptionEventHandler (DifferentDomainUnhandledExceptionHandler);
 				}
@@ -146,7 +146,7 @@ namespace UnhandledExceptionTest
 				Console.WriteLine ("Continuing in different thread after the exception was thrown");
 			}
 		}
-		
+
 		static void Main (string [] args) {
 			if (args.Length != 1) {
 				Console.WriteLine ("Invalid arguments (number of) {0}", args.Length);
@@ -158,11 +158,11 @@ namespace UnhandledExceptionTest
 		public void Act () {
 			configuration.Print ();
 			Console.WriteLine ("Running under version {0}", Environment.Version);
-			
+
 			if (configuration.HRA) {
 				AppDomain.CurrentDomain.UnhandledException += new UnhandledExceptionEventHandler (RootDomainUnhandledExceptionHandler);
 			}
-			
+
 			if (configuration.DT) {
 				Thread thread = new Thread (new ThreadStart (this.RunTest));
 				thread.Start ();
@@ -170,7 +170,7 @@ namespace UnhandledExceptionTest
 			} else {
 				RunTest ();
 			}
-			
+
 			Console.WriteLine ("Continuing in main thread after the exception was thrown");
 			Console.WriteLine ("Continuing in root AppDomain after the exception was thrown");
 			Console.WriteLine ("MARKER-CONT");
@@ -193,11 +193,11 @@ namespace UnhandledExceptionTest
 			PrintUnhandledException ("DifferentDomainUnhandledExceptionHandler", sender, e);
 		}
 	}
-	
+
 	public class DifferentDomainActor : MarshalByRefObject {
 		//private string configurationDescription = null;
 		private TestConfiguration configuration = null;
-		
+
 		public void RunTest () {
 			if (configuration.DTDA) {
 				Console.WriteLine ("Throwing ApplicationException in new thread (different appdomain)");
@@ -208,12 +208,12 @@ namespace UnhandledExceptionTest
 			}
 			throw new ApplicationException ("This exception is unhandled");
 		}
-		
+
 		//  Call this method via a proxy.
 		public void Act (string configurationDescription) {
 			//this.configurationDescription = configurationDescription;
 			this.configuration = new TestConfiguration (configurationDescription);
-			
+
 			if (configuration.DTDA) {
 				Thread thread = new Thread (new ThreadStart (this.RunTest));
 				thread.Start ();

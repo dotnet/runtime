@@ -20,16 +20,19 @@
 // 
 // Fix: Stop OSR from rewriting IV's when the ADD is greater than pointer size. Need to further beat down OSR to have it stop rewriting IVs when they would be offset more than pointer-sized past the end of an array or object. 
 // 
-// PLEASE NOTE: You have to set complus_GCSTRESS=4 to see the AV.
+// PLEASE NOTE: You have to set DOTNET_GCSTRESS=4 to see the AV.
 
 using System;
+using Xunit;
 
+namespace Test_osrAddovershot_cs
+{
 internal struct MyStruct
 {
     public int a, b, c, d, e, f, g, h;
 }
 
-internal static class Repro
+public static class Repro
 {
     private static int SumMSH(MyStruct[] ms)
     {
@@ -59,11 +62,13 @@ internal static class Repro
         return ms;
     }
 
-    private static int Main()
+    [Fact]
+    public static int TestEntryPoint()
     {
         MyStruct[] ms = InitMS(5); //InitMS(args.Length > 0 ? int.Parse(args[0]) : 5);
                                    //Do not expect to take in any arguments here for simplicity sake.
                                    //This does not impact functionality of the repro.
         if (SumMSH(ms) == 115) return 100; else return 101;
     }
+}
 }

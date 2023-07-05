@@ -70,6 +70,38 @@ public enum HashAlgorithmType
     Aead,
 }
 
+public enum CipherAlgorithmTypeIndex
+{
+    None,
+    Null,
+    Des,
+    Rc2,
+    TripleDes,
+    Aes128,
+    Aes192,
+    Aes256,
+    Aes,
+    Rc4,
+}
+
+public enum ExchangeAlgorithmTypeIndex
+{
+    None,
+    RsaSign,
+    RsaKeyX,
+    DiffieHellman,
+}
+
+public enum HashAlgorithmTypeIndex
+{
+    None,
+    Md5,
+    Sha1,
+    Sha256,
+    Sha384,
+    Sha512
+}
+
 internal static class EnumHelpers
 {
     public static string ToFrameworkName(ExchangeAlgorithmType val)
@@ -236,7 +268,7 @@ class CipherSuiteNameData
                     break;
                 case "WITH": // means: just PSK
                     break;
-                default: throw new Exception($"Token `{Peek()}` has occured after PSK and it is not known. Name: {_name}");
+                default: throw new Exception($"Token `{Peek()}` has occurred after PSK and it is not known. Name: {_name}");
             }
         }
 
@@ -268,7 +300,7 @@ class CipherSuiteNameData
                     // no changes needed
                     break;
                 default:
-                    throw new Exception($"`anon` ocurred after `{ret}` which was unexpected. Name: {_name}");
+                    throw new Exception($"`anon` occurred after `{ret}` which was unexpected. Name: {_name}");
             }
         }
 
@@ -281,7 +313,7 @@ class CipherSuiteNameData
                 case ExchangeAlgorithmType.DiffieHellmanStatic:
                     break;
                 default:
-                    throw new Exception($"`EXPORT` ocurred after `{ret}` which was unexpected. Name: {_name}");
+                    throw new Exception($"`EXPORT` occurred after `{ret}` which was unexpected. Name: {_name}");
             }
             Next();
         }

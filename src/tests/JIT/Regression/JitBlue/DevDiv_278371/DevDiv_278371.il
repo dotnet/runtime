@@ -20,7 +20,7 @@
   .field public uint32 val
 } // end of class S
 
-.class private auto ansi beforefieldinit Program
+.class public auto ansi beforefieldinit Program
        extends [mscorlib]System.Object
 {
   .method public hidebysig static void  Init(valuetype S& s,
@@ -34,7 +34,7 @@
           ret
   } // end of method Program::Init
 
-  .method private hidebysig static int32 
+  .method public hidebysig static int32 
           Main() cil managed
   {
     .custom instance void [xunit.core]Xunit.FactAttribute::.ctor() = (

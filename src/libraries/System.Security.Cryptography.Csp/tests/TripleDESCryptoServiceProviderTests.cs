@@ -66,9 +66,9 @@ namespace System.Security.Cryptography.Encryption.TripleDES.Tests
         }
 
         [Fact]
-        public static void TestShimOverloads()
+        public static void TestShimOverrides()
         {
-            ShimHelpers.VerifyAllBaseMembersOverloaded(typeof(TripleDESCryptoServiceProvider));
+            ShimHelpers.VerifyAllBaseMembersOverridden(typeof(TripleDESCryptoServiceProvider));
         }
     }
 }

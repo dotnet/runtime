@@ -21,7 +21,7 @@ namespace System.Net.Mime
         protected override void AppendEncodedCRLF()
         {
             //the encoding for CRLF is =0D=0A
-            WriteState.Append((byte)'=', (byte)'0', (byte)'D', (byte)'=', (byte)'0', (byte)'A');
+            WriteState.Append("=0D=0A"u8);
         }
 
         protected override bool LineBreakNeeded(byte b)
@@ -85,7 +85,7 @@ namespace System.Net.Mime
             }
             // RFC 2047 Section 5 part 3 also allows for !*+-/ but these arn't required in headers.
             // Conservatively encode anything but letters or digits.
-            else if (IsAsciiLetterOrDigit((char)b))
+            else if (char.IsAsciiLetterOrDigit((char)b))
             {
                 // Just a regular printable ascii char.
                 WriteState.Append(b);
@@ -100,11 +100,5 @@ namespace System.Net.Mime
                 WriteState.Append((byte)HexConverter.ToCharUpper(b));
             }
         }
-
-        private static bool IsAsciiLetterOrDigit(char character) =>
-            IsAsciiLetter(character) || (character >= '0' && character <= '9');
-
-        private static bool IsAsciiLetter(char character) =>
-            (character >= 'a' && character <= 'z') || (character >= 'A' && character <= 'Z');
     }
 }

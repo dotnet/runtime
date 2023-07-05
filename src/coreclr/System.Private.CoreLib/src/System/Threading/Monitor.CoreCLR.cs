@@ -125,8 +125,10 @@ namespace System.Threading
         [MethodImpl(MethodImplOptions.InternalCall)]
         private static extern void ReliableEnterTimeout(object obj, int timeout, ref bool lockTaken);
 
-        public static bool IsEntered(object obj!!)
+        public static bool IsEntered(object obj)
         {
+            ArgumentNullException.ThrowIfNull(obj);
+
             return IsEnteredNative(obj);
         }
 
@@ -148,10 +150,8 @@ namespace System.Threading
         [UnsupportedOSPlatform("browser")]
         public static bool Wait(object obj, int millisecondsTimeout)
         {
-            if (obj == null)
-                throw (new ArgumentNullException(nameof(obj)));
-            if (millisecondsTimeout < -1)
-                throw new ArgumentOutOfRangeException(nameof(millisecondsTimeout), SR.ArgumentOutOfRange_NeedNonNegOrNegative1);
+            ArgumentNullException.ThrowIfNull(obj);
+            ArgumentOutOfRangeException.ThrowIfLessThan(millisecondsTimeout, -1);
 
             return ObjWait(millisecondsTimeout, obj);
         }
@@ -164,8 +164,10 @@ namespace System.Threading
         [MethodImpl(MethodImplOptions.InternalCall)]
         private static extern void ObjPulse(object obj);
 
-        public static void Pulse(object obj!!)
+        public static void Pulse(object obj)
         {
+            ArgumentNullException.ThrowIfNull(obj);
+
             ObjPulse(obj);
         }
         /*========================================================================
@@ -174,8 +176,10 @@ namespace System.Threading
         [MethodImpl(MethodImplOptions.InternalCall)]
         private static extern void ObjPulseAll(object obj);
 
-        public static void PulseAll(object obj!!)
+        public static void PulseAll(object obj)
         {
+            ArgumentNullException.ThrowIfNull(obj);
+
             ObjPulseAll(obj);
         }
 

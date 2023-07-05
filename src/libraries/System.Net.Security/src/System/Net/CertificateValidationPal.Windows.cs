@@ -8,13 +8,14 @@ using System.Runtime.InteropServices;
 using System.Security.Cryptography;
 using System.Security.Cryptography.X509Certificates;
 using System.Security.Principal;
+using static Interop.SspiCli;
 
 namespace System.Net
 {
     internal static partial class CertificateValidationPal
     {
         internal static SslPolicyErrors VerifyCertificateProperties(
-            SafeDeleteContext? securityContext,
+            SafeDeleteContext? _ /*securityContext*/,
             X509Chain chain,
             X509Certificate2 remoteCertificate,
             bool checkCertName,
@@ -28,17 +29,12 @@ namespace System.Net
         // Extracts a remote certificate upon request.
         //
 
-        internal static X509Certificate2? GetRemoteCertificate(SafeDeleteContext? securityContext) =>
-            GetRemoteCertificate(securityContext, retrieveCollection: false, out _);
-
-        internal static X509Certificate2? GetRemoteCertificate(SafeDeleteContext? securityContext, out X509Certificate2Collection? remoteCertificateCollection) =>
-            GetRemoteCertificate(securityContext, retrieveCollection: true, out remoteCertificateCollection);
-
         private static X509Certificate2? GetRemoteCertificate(
-            SafeDeleteContext? securityContext, bool retrieveCollection, out X509Certificate2Collection? remoteCertificateCollection)
+            SafeDeleteContext? securityContext,
+            bool retrieveChainCertificates,
+            ref X509Chain? chain,
+            X509ChainPolicy? chainPolicy)
         {
-            remoteCertificateCollection = null;
-
             if (securityContext == null)
             {
                 return null;
@@ -54,7 +50,7 @@ namespace System.Net
                 //
                 // We can use retrieveCollection to distinguish between in-handshake and after-handshake calls, because
                 // the collection is retrieved for cert validation purposes after the handshake completes.
-                if (retrieveCollection) // handshake completed
+                if (retrieveChainCertificates) // handshake completed
                 {
                     SSPIWrapper.QueryContextAttributes_SECPKG_ATTR_REMOTE_CERT_CONTEXT(GlobalSSPI.SSPISecureChannel, securityContext, out remoteContext);
                 }
@@ -70,11 +66,20 @@ namespace System.Net
             }
             finally
             {
-                if (remoteContext != null && !remoteContext.IsInvalid)
+                if (remoteContext != null)
                 {
-                    if (retrieveCollection)
+                    if (!remoteContext.IsInvalid)
                     {
-                        remoteCertificateCollection = UnmanagedCertificateContext.GetRemoteCertificatesFromStoreContext(remoteContext);
+                        if (retrieveChainCertificates)
+                        {
+                            chain ??= new X509Chain();
+                            if (chainPolicy != null)
+                            {
+                                chain.ChainPolicy = chainPolicy;
+                            }
+
+                            UnmanagedCertificateContext.GetRemoteCertificatesFromStoreContext(remoteContext, chain.ChainPolicy.ExtraStore);
+                        }
                     }
 
                     remoteContext.Dispose();
@@ -83,6 +88,43 @@ namespace System.Net
 
             if (NetEventSource.Log.IsEnabled()) NetEventSource.Log.RemoteCertificate(result);
             return result;
+        }
+
+        // Check that local certificate was used by schannel.
+        internal static bool IsLocalCertificateUsed(SafeFreeCredentials? _credentialsHandle, SafeDeleteContext securityContext)
+        {
+            SecPkgContext_SessionInfo info  = default;
+            // fails on Server 2008 and older. We will fall-back to probing LOCAL_CERT_CONTEXT in that case.
+            if (SSPIWrapper.QueryBlittableContextAttributes(
+                                    GlobalSSPI.SSPISecureChannel,
+                                    securityContext,
+                                    Interop.SspiCli.ContextAttribute.SECPKG_ATTR_SESSION_INFO,
+                                    ref info) &&
+               ((SecPkgContext_SessionInfo.Flags)info.dwFlags).HasFlag(SecPkgContext_SessionInfo.Flags.SSL_SESSION_RECONNECT))
+            {
+                // This is TLS Resumed session. Windows can fail to query the local cert bellow.
+                // Instead, we will determine the usage form used credentials.
+                SafeFreeCredential_SECURITY creds = (SafeFreeCredential_SECURITY)_credentialsHandle!;
+                return creds.LocalCertificate != null;
+            }
+
+            SafeFreeCertContext? localContext = null;
+            try
+            {
+                if (SSPIWrapper.QueryContextAttributes_SECPKG_ATTR_LOCAL_CERT_CONTEXT(GlobalSSPI.SSPISecureChannel, securityContext, out localContext) &&
+                    localContext != null)
+                {
+                    return !localContext.IsInvalid;
+                }
+            }
+            finally
+            {
+                localContext?.Dispose();
+            }
+
+            // Some older Windows do not support that. This is only called when client certificate was provided
+            // so assume it was for a reason.
+            return true;
         }
 
         //
@@ -134,7 +176,8 @@ namespace System.Net
             // For app-compat We want to ensure the store is opened under the **process** account.
             try
             {
-                WindowsIdentity.RunImpersonated(SafeAccessTokenHandle.InvalidHandle, () =>
+                using SafeAccessTokenHandle invalidHandle = SafeAccessTokenHandle.InvalidHandle;
+                WindowsIdentity.RunImpersonated(invalidHandle, () =>
                 {
                     store.Open(OpenFlags.ReadOnly | OpenFlags.OpenExistingOnly);
                 });

@@ -13,14 +13,14 @@
   .publickeytoken = (B0 3F 5F 7F 11 D5 0A 3A )
   .ver 4:0:0:0
 }
-.assembly 'i_qsort1'// as "qsort"
+.assembly ASSEMBLY_NAME// as "qsort"
 {
 }
 .assembly extern xunit.core {}
 // MVID: {D2333E3D-2CA6-4703-8D46-E41A46BDF801}
-.namespace QSortTest
+.namespace QSortTest_i_qsort1
 {
-  .class private auto ansi Sorter
+  .class public auto ansi Sorter
          extends [mscorlib]System.Object
   {
     .method private hidebysig static void Sort(native int[] A,
@@ -194,7 +194,7 @@
       IL_00b1:  ret
     } // end of method 'Sorter::Sort'
 
-    .method private hidebysig static int32 Main() il managed
+    .method public hidebysig static int32 Main() il managed
     {
       .custom instance void [xunit.core]Xunit.FactAttribute::.ctor() = (
           01 00 00 00
@@ -248,7 +248,7 @@
       IL_0035:  ldloc.1
       IL_0036:  ldc.i4.1
       IL_0037:  ldloc.0
-      IL_0038:  call       void QSortTest.Sorter::Sort(native int[],
+      IL_0038:  call       void QSortTest_i_qsort1.Sorter::Sort(native int[],
                                                        native int,
                                                        native int)
       IL_003d:  ldc.i4.2
@@ -305,6 +305,6 @@
 
   } // end of class 'Sorter'
 
-} // end of namespace 'QSortTest'
+} // end of namespace 'QSortTest_i_qsort1'
 
 //*********** DISASSEMBLY COMPLETE ***********************

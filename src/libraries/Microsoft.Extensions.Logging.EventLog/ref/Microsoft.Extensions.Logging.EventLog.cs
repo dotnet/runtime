@@ -8,6 +8,15 @@ namespace Microsoft.Extensions.Logging
 {
     public static partial class EventLoggerFactoryExtensions
     {
+        [System.ComponentModel.EditorBrowsableAttribute(System.ComponentModel.EditorBrowsableState.Never)]
+        [System.ObsoleteAttribute("This method is retained only for compatibility. The recommended alternative is AddEventLog(this ILoggingBuilder builder).", error: true)]
+        public static Microsoft.Extensions.Logging.ILoggerFactory AddEventLog(this Microsoft.Extensions.Logging.ILoggerFactory factory) { throw null; }
+        [System.ComponentModel.EditorBrowsableAttribute(System.ComponentModel.EditorBrowsableState.Never)]
+        [System.ObsoleteAttribute("This method is retained only for compatibility. The recommended alternative is AddEventLog(this ILoggingBuilder builder).", error: true)]
+        public static Microsoft.Extensions.Logging.ILoggerFactory AddEventLog(this Microsoft.Extensions.Logging.ILoggerFactory factory, Microsoft.Extensions.Logging.EventLog.EventLogSettings settings) { throw null; }
+        [System.ComponentModel.EditorBrowsableAttribute(System.ComponentModel.EditorBrowsableState.Never)]
+        [System.ObsoleteAttribute("This method is retained only for compatibility. The recommended alternative is AddEventLog(this ILoggingBuilder builder).", error: true)]
+        public static Microsoft.Extensions.Logging.ILoggerFactory AddEventLog(this Microsoft.Extensions.Logging.ILoggerFactory factory, Microsoft.Extensions.Logging.LogLevel minLevel) { throw null; }
         public static Microsoft.Extensions.Logging.ILoggingBuilder AddEventLog(this Microsoft.Extensions.Logging.ILoggingBuilder builder) { throw null; }
         public static Microsoft.Extensions.Logging.ILoggingBuilder AddEventLog(this Microsoft.Extensions.Logging.ILoggingBuilder builder, Microsoft.Extensions.Logging.EventLog.EventLogSettings settings) { throw null; }
         public static Microsoft.Extensions.Logging.ILoggingBuilder AddEventLog(this Microsoft.Extensions.Logging.ILoggingBuilder builder, System.Action<Microsoft.Extensions.Logging.EventLog.EventLogSettings> configure) { throw null; }
@@ -19,7 +28,7 @@ namespace Microsoft.Extensions.Logging.EventLog
     public partial class EventLogLoggerProvider : Microsoft.Extensions.Logging.ILoggerProvider, Microsoft.Extensions.Logging.ISupportExternalScope, System.IDisposable
     {
         public EventLogLoggerProvider() { }
-        public EventLogLoggerProvider(Microsoft.Extensions.Logging.EventLog.EventLogSettings settings) { }
+        public EventLogLoggerProvider(Microsoft.Extensions.Logging.EventLog.EventLogSettings? settings) { }
         public EventLogLoggerProvider(Microsoft.Extensions.Options.IOptions<Microsoft.Extensions.Logging.EventLog.EventLogSettings> options) { }
         public Microsoft.Extensions.Logging.ILogger CreateLogger(string name) { throw null; }
         public void Dispose() { }
@@ -28,9 +37,9 @@ namespace Microsoft.Extensions.Logging.EventLog
     public partial class EventLogSettings
     {
         public EventLogSettings() { }
-        public System.Func<string, Microsoft.Extensions.Logging.LogLevel, bool> Filter { get { throw null; } set { } }
-        public string LogName { get { throw null; } set { } }
-        public string MachineName { get { throw null; } set { } }
-        public string SourceName { get { throw null; } set { } }
+        public System.Func<string, Microsoft.Extensions.Logging.LogLevel, bool>? Filter { get { throw null; } set { } }
+        public string? LogName { get { throw null; } set { } }
+        public string? MachineName { get { throw null; } set { } }
+        public string? SourceName { get { throw null; } set { } }
     }
 }

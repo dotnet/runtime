@@ -48,13 +48,13 @@ public:
     HRESULT Init(
         ProfToEEInterfaceImpl * pProfToEE,
         const CLSID * pClsid,
-        __inout_z LPCWSTR wszClsid,
+        __inout_z LPCSTR szClsid,
         _In_z_ LPCWSTR wszProfileDLL,
         BOOL fLoadedViaAttach,
         DWORD dwConcurrentGCWaitTimeoutInMs);
 
     void SetProfilerInfo(ProfilerInfo *pProfilerInfo);
-    
+
     BOOL IsCallback3Supported();
     BOOL IsCallback4Supported();
     BOOL IsCallback5Supported();
@@ -611,7 +611,7 @@ private:
 
     HRESULT CreateProfiler(
         const CLSID * pClsid,
-        _In_z_ LPCWSTR wszClsid,
+        _In_z_ LPCSTR szClsid,
         _In_z_ LPCWSTR wszProfileDLL);
 
     HRESULT DetermineAndSetEnterLeaveFunctionHooksForJit();

@@ -125,11 +125,7 @@ namespace System.Data.OleDb
 
         internal override void PermissionDemand(DbConnection outerConnection)
         {
-            OleDbConnection? c = (outerConnection as OleDbConnection);
-            if (null != c)
-            {
-                c.PermissionDemand();
-            }
+            (outerConnection as OleDbConnection)?.PermissionDemand();
         }
 
         internal override void SetConnectionPoolGroup(DbConnection outerConnection, DbConnectionPoolGroup poolGroup)
@@ -143,11 +139,7 @@ namespace System.Data.OleDb
 
         internal override void SetInnerConnectionEvent(DbConnection owningObject, DbConnectionInternal to)
         {
-            OleDbConnection? c = (owningObject as OleDbConnection);
-            if (null != c)
-            {
-                c.SetInnerConnectionEvent(to);
-            }
+            (owningObject as OleDbConnection)?.SetInnerConnectionEvent(to);
         }
 
         internal override bool SetInnerConnectionFrom(DbConnection owningObject, DbConnectionInternal to, DbConnectionInternal from)
@@ -162,11 +154,7 @@ namespace System.Data.OleDb
 
         internal override void SetInnerConnectionTo(DbConnection owningObject, DbConnectionInternal to)
         {
-            OleDbConnection? c = (owningObject as OleDbConnection);
-            if (null != c)
-            {
-                c.SetInnerConnectionTo(to);
-            }
+            (owningObject as OleDbConnection)?.SetInnerConnectionTo(to);
         }
 
     }

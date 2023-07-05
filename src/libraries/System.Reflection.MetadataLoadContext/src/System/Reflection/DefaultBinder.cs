@@ -25,10 +25,10 @@ namespace System
         // fit.  The methods all have the same number of arguments and the object
         // array args.  On exit, this method will choice the best fit method
         // and coerce the args to match that method.  By match, we mean all primitive
-        // arguments are exact matchs and all object arguments are exact or subclasses
+        // arguments are exact matches and all object arguments are exact or subclasses
         // of the target.  If the target OR is an interface, the object must implement
         // that interface.  There are a couple of exceptions
-        // thrown when a method cannot be returned.  If no method matchs the args and
+        // thrown when a method cannot be returned.  If no method matches the args and
         // ArgumentException is thrown.  If multiple methods match the args then
         // an AmbiguousMatchException is thrown.
         //
@@ -137,9 +137,10 @@ namespace System
                     ambig = false;
                 }
             }
+            MethodBase bestMatch = candidates[currentMin];
             if (ambig)
-                throw new AmbiguousMatchException();
-            return candidates[currentMin];
+                throw ThrowHelper.GetAmbiguousMatchException(bestMatch);
+            return bestMatch;
         }
 
         // Given a set of properties that match the base criteria, select one.
@@ -256,9 +257,10 @@ namespace System
                 }
             }
 
+            PropertyInfo bestMatch = candidates[currentMin];
             if (ambig)
-                throw new AmbiguousMatchException();
-            return candidates[currentMin];
+                throw ThrowHelper.GetAmbiguousMatchException(bestMatch);
+            return bestMatch;
         }
 
         // The default binder doesn't support any change type functionality.
@@ -269,8 +271,13 @@ namespace System
 
         // Return any exact bindings that may exist. (This method is not defined on the
         // Binder and is used by RuntimeType.)
-        public static MethodBase? ExactBinding(MethodBase[] match!!, Type[] types, ParameterModifier[]? modifiers)
+        public static MethodBase? ExactBinding(MethodBase[] match, Type[] types)
         {
+            if (match is null)
+            {
+                throw new ArgumentNullException(nameof(match));
+            }
+
             MethodBase[] aExactMatches = new MethodBase[match.Length];
             int cExactMatches = 0;
 
@@ -309,8 +316,13 @@ namespace System
 
         // Return any exact bindings that may exist. (This method is not defined on the
         //  Binder and is used by RuntimeType.)
-        public static PropertyInfo? ExactPropertyBinding(PropertyInfo[] match!!, Type? returnType, Type[]? types, ParameterModifier[]? modifiers)
+        public static PropertyInfo? ExactPropertyBinding(PropertyInfo[] match, Type? returnType, Type[]? types)
         {
+            if (match is null)
+            {
+                throw new ArgumentNullException(nameof(match));
+            }
+
             PropertyInfo? bestMatch = null;
             int typesLength = (types != null) ? types.Length : 0;
             for (int i = 0; i < match.Length; i++)
@@ -331,7 +343,7 @@ namespace System
                     continue;
 
                 if (bestMatch != null)
-                    throw new AmbiguousMatchException();
+                    throw ThrowHelper.GetAmbiguousMatchException(bestMatch);
 
                 bestMatch = match[i];
             }
@@ -411,7 +423,7 @@ namespace System
             }
             else
             {
-                return (param1Less == true) ? 1 : 2;
+                return param1Less ? 1 : 2;
             }
         }
 
@@ -497,7 +509,7 @@ namespace System
             int res = FindMostSpecific(m1.GetParametersNoCopy(), paramOrder1, paramArrayType1,
                                        m2.GetParametersNoCopy(), paramOrder2, paramArrayType2, types, args);
 
-            // If the match was not ambigous then return the result.
+            // If the match was not ambiguous then return the result.
             if (res != 0)
                 return res;
 
@@ -523,7 +535,7 @@ namespace System
                 }
             }
 
-            // The match is ambigous.
+            // The match is ambiguous.
             return 0;
         }
 
@@ -545,7 +557,7 @@ namespace System
                     return 1;
             }
 
-            // The match is ambigous.
+            // The match is ambiguous.
             return 0;
         }
 
@@ -596,7 +608,7 @@ namespace System
                 // This can only happen if at least one is vararg or generic.
                 if (currentHierarchyDepth == deepestHierarchy)
                 {
-                    throw new AmbiguousMatchException();
+                    throw ThrowHelper.GetAmbiguousMatchException(methWithDeepestHierarchy!);
                 }
 
                 // Check to see if this method is on the most derived class.

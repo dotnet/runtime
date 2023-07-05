@@ -20,7 +20,7 @@ namespace System.ServiceModel.Syndication
 
         public Dictionary<XmlQualifiedName, string> AttributeExtensions
         {
-            get => _attributeExtensions ?? (_attributeExtensions = new Dictionary<XmlQualifiedName, string>());
+            get => _attributeExtensions ??= new Dictionary<XmlQualifiedName, string>();
         }
 
         public abstract string Type { get; }
@@ -67,8 +67,13 @@ namespace System.ServiceModel.Syndication
 
         public abstract SyndicationContent Clone();
 
-        public void WriteTo(XmlWriter writer!!, string outerElementName, string outerElementNamespace)
+        public void WriteTo(XmlWriter writer, string outerElementName, string outerElementNamespace)
         {
+            if (writer is null)
+            {
+                throw new ArgumentNullException(nameof(writer));
+            }
+
             if (string.IsNullOrEmpty(outerElementName))
             {
                 throw new ArgumentException(SR.OuterElementNameNotSpecified, nameof(outerElementName));
@@ -92,8 +97,13 @@ namespace System.ServiceModel.Syndication
             writer.WriteEndElement();
         }
 
-        internal void CopyAttributeExtensions(SyndicationContent source!!)
+        internal void CopyAttributeExtensions(SyndicationContent source)
         {
+            if (source is null)
+            {
+                throw new ArgumentNullException(nameof(source));
+            }
+
             if (source._attributeExtensions != null)
             {
                 foreach (XmlQualifiedName key in source._attributeExtensions.Keys)

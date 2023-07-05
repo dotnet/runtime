@@ -17,7 +17,7 @@ namespace System.Configuration
         }
 
         public PropertyInformationCollection Properties
-            => _internalProperties ?? (_internalProperties = new PropertyInformationCollection(_thisElement));
+            => _internalProperties ??= new PropertyInformationCollection(_thisElement);
 
         public bool IsPresent => _thisElement.ElementPresent;
 
@@ -52,7 +52,7 @@ namespace System.Configuration
 
         public ConfigurationValidatorBase Validator => _thisElement.ElementProperty.Validator;
 
-        public ICollection Errors => _errors ?? (_errors = GetReadOnlyErrorsList());
+        public ICollection Errors => _errors ??= GetReadOnlyErrorsList();
 
         // Internal method to fix SetRawXML defect...
         internal PropertySourceInfo PropertyInfoInternal()

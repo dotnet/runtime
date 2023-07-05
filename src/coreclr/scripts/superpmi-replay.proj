@@ -28,8 +28,6 @@
     <Python>%HELIX_PYTHONPATH%</Python>
     <ProductDirectory>%HELIX_CORRELATION_PAYLOAD%</ProductDirectory>
     <SuperpmiLogsLocation>%HELIX_WORKITEM_UPLOAD_ROOT%</SuperpmiLogsLocation>
-    <!-- Workaround until https://github.com/dotnet/arcade/pull/6179 is not available -->
-    <HelixResultsDestinationDir>$(BUILD_SOURCESDIRECTORY)\artifacts\helixresults</HelixResultsDestinationDir>
     <WorkItemCommand>$(Python) $(ProductDirectory)\superpmi_replay.py -jit_directory $(ProductDirectory)</WorkItemCommand>
     <WorkItemTimeout>3:15</WorkItemTimeout>
   </PropertyGroup>
@@ -52,27 +50,30 @@
   </ItemGroup>
 
   <ItemGroup Condition="'$(Architecture)' == 'x64'">
-    <!-- Use 2 partitions for each run on an x64 machine -->
-    <SPMI_Partition Include="win-x64-1" Platform="windows" Architecture="x64" Partition="1" PartitionCount="2"/>
-    <SPMI_Partition Include="win-x64-2" Platform="windows" Architecture="x64" Partition="2" PartitionCount="2"/>
-    <SPMI_Partition Include="win-arm64-1" Platform="windows" Architecture="arm64" Partition="1" PartitionCount="2"/>
-    <SPMI_Partition Include="win-arm64-2" Platform="windows" Architecture="arm64" Partition="2" PartitionCount="2"/>
-    <SPMI_Partition Include="unix-x64-1" Platform="Linux" Architecture="x64" Partition="1" PartitionCount="2"/>
-    <SPMI_Partition Include="unix-x64-2" Platform="Linux" Architecture="x64" Partition="2" PartitionCount="2"/>
-    <SPMI_Partition Include="linux-arm64-1" Platform="Linux" Architecture="arm64" Partition="1" PartitionCount="2"/>
-    <SPMI_Partition Include="linux-arm64-2" Platform="Linux" Architecture="arm64" Partition="2" PartitionCount="2"/>
-    <SPMI_Partition Include="osx-arm64-1" Platform="OSX" Architecture="arm64" Partition="1" PartitionCount="2"/>
-    <SPMI_Partition Include="osx-arm64-2" Platform="OSX" Architecture="arm64" Partition="2" PartitionCount="2"/>
+    <SPMI_Partition Include="windows-x64-1" Platform="windows" Architecture="x64" Partition="1" PartitionCount="3"/>
+    <SPMI_Partition Include="windows-x64-2" Platform="windows" Architecture="x64" Partition="2" PartitionCount="3"/>
+    <SPMI_Partition Include="windows-x64-3" Platform="windows" Architecture="x64" Partition="3" PartitionCount="3"/>
+    <SPMI_Partition Include="windows-arm64-1" Platform="windows" Architecture="arm64" Partition="1" PartitionCount="3"/>
+    <SPMI_Partition Include="windows-arm64-2" Platform="windows" Architecture="arm64" Partition="2" PartitionCount="3"/>
+    <SPMI_Partition Include="windows-arm64-3" Platform="windows" Architecture="arm64" Partition="3" PartitionCount="3"/>
+    <SPMI_Partition Include="linux-x64-1" Platform="linux" Architecture="x64" Partition="1" PartitionCount="3"/>
+    <SPMI_Partition Include="linux-x64-2" Platform="linux" Architecture="x64" Partition="2" PartitionCount="3"/>
+    <SPMI_Partition Include="linux-x64-3" Platform="linux" Architecture="x64" Partition="3" PartitionCount="3"/>
+    <SPMI_Partition Include="linux-arm64-1" Platform="linux" Architecture="arm64" Partition="1" PartitionCount="3"/>
+    <SPMI_Partition Include="linux-arm64-2" Platform="linux" Architecture="arm64" Partition="2" PartitionCount="3"/>
+    <SPMI_Partition Include="linux-arm64-3" Platform="linux" Architecture="arm64" Partition="3" PartitionCount="3"/>
+    <SPMI_Partition Include="osx-arm64-1" Platform="osx" Architecture="arm64" Partition="1" PartitionCount="3"/>
+    <SPMI_Partition Include="osx-arm64-2" Platform="osx" Architecture="arm64" Partition="2" PartitionCount="3"/>
+    <SPMI_Partition Include="osx-arm64-3" Platform="osx" Architecture="arm64" Partition="3" PartitionCount="3"/>
   </ItemGroup>
 
   <ItemGroup Condition="'$(Architecture)' == 'x86'">
-    <!-- The x86 machine replays are slower than x64, so use 3 partitions for each run on x86 -->
-    <SPMI_Partition Include="win-x86-1" Platform="windows" Architecture="x86" Partition="1" PartitionCount="3"/>
-    <SPMI_Partition Include="win-x86-2" Platform="windows" Architecture="x86" Partition="2" PartitionCount="3"/>
-    <SPMI_Partition Include="win-x86-3" Platform="windows" Architecture="x86" Partition="3" PartitionCount="3"/>
-    <SPMI_Partition Include="unix-arm-1" Platform="Linux" Architecture="arm" Partition="1" PartitionCount="3"/>
-    <SPMI_Partition Include="unix-arm-2" Platform="Linux" Architecture="arm" Partition="2" PartitionCount="3"/>
-    <SPMI_Partition Include="unix-arm-3" Platform="Linux" Architecture="arm" Partition="3" PartitionCount="3"/>
+    <SPMI_Partition Include="windows-x86-1" Platform="windows" Architecture="x86" Partition="1" PartitionCount="3"/>
+    <SPMI_Partition Include="windows-x86-2" Platform="windows" Architecture="x86" Partition="2" PartitionCount="3"/>
+    <SPMI_Partition Include="windows-x86-3" Platform="windows" Architecture="x86" Partition="3" PartitionCount="3"/>
+    <SPMI_Partition Include="linux-arm-1" Platform="linux" Architecture="arm" Partition="1" PartitionCount="3"/>
+    <SPMI_Partition Include="linux-arm-2" Platform="linux" Architecture="arm" Partition="2" PartitionCount="3"/>
+    <SPMI_Partition Include="linux-arm-3" Platform="linux" Architecture="arm" Partition="3" PartitionCount="3"/>
   </ItemGroup>
 
   <ItemGroup>

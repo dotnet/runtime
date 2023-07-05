@@ -6,36 +6,14 @@ using System.Runtime.Versioning;
 
 namespace System
 {
-    // ByReference<T> is meant to be used to represent "ref T" fields. It is working
-    // around lack of first class support for byref fields in C# and IL. The JIT and
-    // type loader has special handling for it that turns it into a thin wrapper around ref T.
+    // ByReference is meant to be used to represent a tracked reference in cases where C#
+    // proves difficult. See use in Reflection.
     [NonVersionable]
-    internal readonly ref struct ByReference<T>
+    internal readonly ref struct ByReference
     {
-#pragma warning disable CA1823, 169 // private field '{blah}' is never used
-        private readonly IntPtr _value;
-#pragma warning restore CA1823, 169
+        public readonly ref byte Value;
+        public ByReference(ref byte value) => Value = ref value;
 
-#pragma warning disable IDE0060
-        [Intrinsic]
-        public ByReference(ref T value)
-        {
-            // Implemented as a JIT intrinsic - This default implementation is for
-            // completeness and to provide a concrete error if called via reflection
-            // or if intrinsic is missed.
-            throw new PlatformNotSupportedException();
-        }
-#pragma warning restore IDE0060
-
-#pragma warning disable CA1822 // Mark members as static
-        public ref T Value
-        {
-            // Implemented as a JIT intrinsic - This default implementation is for
-            // completeness and to provide a concrete error if called via reflection
-            // or if the intrinsic is missed.
-            [Intrinsic]
-            get => throw new PlatformNotSupportedException();
-        }
-#pragma warning restore CA1822
+        public static ByReference Create<T>(ref T p) => new ByReference(ref Unsafe.As<T, byte>(ref p));
     }
 }

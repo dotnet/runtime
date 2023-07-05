@@ -7,8 +7,9 @@
 */
 
 using System;
+using Xunit;
 
-class ByRef_GCHole
+public class ByRef_GCHole
 {
     static volatile int returnCode = 0;
     ~ByRef_GCHole()
@@ -37,7 +38,8 @@ class ByRef_GCHole
         }
     }
 
-    static int Main()
+    [Fact]
+    public static int TestEntryPoint()
     {
         ByRef_GCHole h;
 

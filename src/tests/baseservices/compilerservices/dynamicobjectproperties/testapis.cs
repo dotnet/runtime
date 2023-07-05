@@ -11,7 +11,7 @@ public class Driver<K, V>
     public void BasicAdd(K[] keys, V[] values)
     {
         ConditionalWeakTable<K,V> tbl = new ConditionalWeakTable<K,V>();
-        
+
         for (int i = 0; i < keys.Length; i++)
         {
             tbl.Add(keys[i], values[i]);
@@ -23,7 +23,7 @@ public class Driver<K, V>
 
             // make sure TryGetValues return true, since the key should be in the table
             Test.Eval(tbl.TryGetValue(keys[i], out val), "Err_001 Expected TryGetValue to return true");
-            
+
             if ( val == null && values[i] == null )
             {
                 Test.Eval(true);
@@ -44,7 +44,7 @@ public class Driver<K, V>
         (K[] keys, V[] values, int index, int repeat)
     {
         ConditionalWeakTable<K,V> tbl = new ConditionalWeakTable<K,V>();
-        
+
         for (int i = 0; i < keys.Length; i++)
         {
             tbl.Add(keys[i], values[i]);
@@ -198,7 +198,7 @@ public class Driver<K, V>
 
         Test.Eval(false, "Err_12a Unknown type of key provided to CreateValue()");
         return null;
-      
+
     }
 
     public void VerifyValue(K key, V val)
@@ -215,7 +215,7 @@ public class Driver<K, V>
         }
         else if (key is RefX1<string>)
         {
-            expectedVal = g_refStringDict[key as RefX1<string>] as V;  
+            expectedVal = g_refStringDict[key as RefX1<string>] as V;
         }
         else
         {
@@ -232,18 +232,18 @@ public class Driver<K, V>
 
     public void GetValueValidations(K[] keys, V[] values)
     {
-        ConditionalWeakTable<K,V>.CreateValueCallback valueCallBack = 
+        ConditionalWeakTable<K,V>.CreateValueCallback valueCallBack =
             new ConditionalWeakTable<K,V>.CreateValueCallback(CreateValue);
-        
+
         ConditionalWeakTable<K,V> tbl = new ConditionalWeakTable<K,V>();
 
         K key = keys[0];
 
         // Get key from an empty dictionary
-        // GetValue should return the new value generated from CreateValue() 
+        // GetValue should return the new value generated from CreateValue()
         tbl.GetValue(key, valueCallBack);
 
-        // check that this opeartion added the (key,value) pair to the dictionary
+        // check that this operation added the (key,value) pair to the dictionary
         V val;
 
         Test.Eval(tbl.TryGetValue(key, out val));
@@ -339,7 +339,7 @@ public class Driver<K, V>
 	V[] values = new V[keys.Length];
 
         ConditionalWeakTable<K,V> tbl = new ConditionalWeakTable<K,V>();
-        
+
         // assume additions for all values
         for (int i = 0; i < keys.Length; i++)
         {
@@ -352,7 +352,7 @@ public class Driver<K, V>
 
             // make sure TryGetValues return true, since the key should be in the table
             Test.Eval(tbl.TryGetValue(keys[i], out val), "Err_018 Expected TryGetValue to return true");
-            
+
             if (val == null || !val.Equals(values[i]))
             {
                 // only one of the values is null or the values don't match
@@ -365,7 +365,7 @@ public class Driver<K, V>
     public void BasicAddThenGetOrCreateValue(K[] keys, V[] values)
     {
         ConditionalWeakTable<K,V> tbl = new ConditionalWeakTable<K,V>();
-        
+
         // assume additions for all values
         for (int i = 0; i < keys.Length; i++)
         {
@@ -378,7 +378,7 @@ public class Driver<K, V>
 
             // make sure GetOrCreateValues the value added (and not a new object)
             val = tbl.GetOrCreateValue(keys[i]);
-            
+
             if (val == null || !val.Equals(values[i]))
             {
                 // only one of the values is null or the values don't match
@@ -446,7 +446,7 @@ public class TestAPIs
         {
             // test for ConditionalWeakTable<string>
             Driver<string,string> stringDriver = new Driver<string,string>();
-            
+
             string[] stringArr = new string[100];
             for (int i = 0; i < 100; i++)
             {
@@ -498,7 +498,7 @@ public class TestAPIs
 
             //===============================================================
             // this method generates a dictionary with keys and values to be used for GetValue() method testing
-            stringDriver.GenerateValuesForStringKeys(stringArr); 
+            stringDriver.GenerateValuesForStringKeys(stringArr);
             stringDriver.GetValueValidations(stringArr, stringArr);
 
             Driver<RefX1<int>, string> refIntDriver2 = new Driver<RefX1<int>, string>();

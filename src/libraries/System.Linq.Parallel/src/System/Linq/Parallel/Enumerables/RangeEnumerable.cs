@@ -96,8 +96,7 @@ namespace System.Linq.Parallel
 
             internal override bool MoveNext(ref int currentElement, ref int currentKey)
             {
-                if (_currentCount == null)
-                    _currentCount = new Shared<int>(-1);
+                _currentCount ??= new Shared<int>(-1);
 
                 // Calculate the next index and ensure it falls within our range.
                 int nextCount = _currentCount.Value + 1;

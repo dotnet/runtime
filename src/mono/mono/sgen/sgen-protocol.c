@@ -18,7 +18,7 @@
 #include "sgen-memory-governor.h"
 #include "sgen-workers.h"
 #include "sgen-client.h"
-#include "mono/utils/mono-membar.h"
+#include "mono/utils/mono-memory-model.h"
 #include "mono/utils/mono-proclib.h"
 
 #include <errno.h>
@@ -449,11 +449,11 @@ protocol_entry (unsigned char type, gpointer data, int size)
 #define IS_VTABLE_MATCH(_)
 
 #define END_PROTOCOL_ENTRY \
-		protocol_entry (__type, __data, __size); \
+		protocol_entry ((unsigned char)__type, __data, __size); \
 	}
 
 #define END_PROTOCOL_ENTRY_FLUSH \
-		protocol_entry (__type, __data, __size); \
+		protocol_entry ((unsigned char)__type, __data, __size); \
 		sgen_binary_protocol_flush_buffers (FALSE); \
 	}
 

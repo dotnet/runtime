@@ -6,7 +6,7 @@ using Internal.TypeSystem;
 namespace Internal.IL.Stubs
 {
     // Functionality related to deterministic ordering of types
-    partial class StructMarshallingThunk
+    public partial class StructMarshallingThunk
     {
         protected override int ClassCode => 340834018;
 

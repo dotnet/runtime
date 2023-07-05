@@ -11,17 +11,17 @@
   .publickeytoken = (B0 3F 5F 7F 11 D5 0A 3A )
   .ver 4:0:0:0
 }
-.assembly 'u_native'// as "native"
+.assembly ASSEMBLY_NAME// as "native"
 {
 }
 .assembly extern xunit.core {}
 // MVID: {C18F1061-8239-420B-AC69-D4CB0BB38F2B}
-.namespace JitTest
+.namespace JitTest_u_native_refany_il
 {
-  .class private auto ansi Test
+  .class public auto ansi Test
          extends [mscorlib]System.Object
   {
-    .method private hidebysig static int32
+    .method public hidebysig static int32
             Main() il managed
     {
       .custom instance void [xunit.core]Xunit.FactAttribute::.ctor() = (
@@ -85,6 +85,6 @@
 
   } // end of class Test
 
-} // end of namespace JitTest
+} // end of namespace JitTest_u_native_refany_il
 
 //*********** DISASSEMBLY COMPLETE ***********************

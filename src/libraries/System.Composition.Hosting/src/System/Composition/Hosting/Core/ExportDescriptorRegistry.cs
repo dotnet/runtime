@@ -10,7 +10,7 @@ namespace System.Composition.Hosting.Core
     {
         private readonly object _thisLock = new object();
         private readonly ExportDescriptorProvider[] _exportDescriptorProviders;
-        private volatile IDictionary<CompositionContract, ExportDescriptor[]> _partDefinitions = new Dictionary<CompositionContract, ExportDescriptor[]>();
+        private volatile Dictionary<CompositionContract, ExportDescriptor[]> _partDefinitions = new Dictionary<CompositionContract, ExportDescriptor[]>();
 
         public ExportDescriptorRegistry(ExportDescriptorProvider[] exportDescriptorProviders)
         {

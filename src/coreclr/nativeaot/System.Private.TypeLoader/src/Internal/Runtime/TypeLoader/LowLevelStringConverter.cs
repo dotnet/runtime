@@ -41,12 +41,12 @@ namespace System
             return arg.LowLevelToString();
         }
 
-        public static string ToStringInvariant(this float arg)
+        public static string ToStringInvariant(this float _)
         {
             return "FLOAT";
         }
 
-        public static string ToStringInvariant(this double arg)
+        public static string ToStringInvariant(this double _)
         {
             return "DOUBLE";
         }
@@ -116,28 +116,15 @@ namespace Internal.Runtime.TypeLoader
 
         public static string LowLevelToString(this RuntimeTypeHandle rtth)
         {
-            TypeReferenceHandle typeRefHandle;
             QTypeDefinition qTypeDefinition;
             MetadataReader reader;
 
             // Try to get the name from metadata
-            if (TypeLoaderEnvironment.Instance.TryGetMetadataForNamedType(rtth, out qTypeDefinition))
+            if (TypeLoaderEnvironment.TryGetMetadataForNamedType(rtth, out qTypeDefinition))
             {
-#if ECMA_METADATA_SUPPORT
-                string result = EcmaMetadataFullName(qTypeDefinition);
-                if (result != null)
-                    return result;
-#endif
-
                 reader = qTypeDefinition.NativeFormatReader;
                 TypeDefinitionHandle typeDefHandle = qTypeDefinition.NativeFormatHandle;
                 return typeDefHandle.GetFullName(reader);
-            }
-
-            // Try to get the name from diagnostic metadata
-            if (TypeLoaderEnvironment.TryGetTypeReferenceForNamedType(rtth, out reader, out typeRefHandle))
-            {
-                return typeRefHandle.GetFullName(reader);
             }
 
             // Fallback implementation when no metadata available

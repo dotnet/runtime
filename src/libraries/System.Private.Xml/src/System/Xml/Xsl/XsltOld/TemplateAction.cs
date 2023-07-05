@@ -1,17 +1,17 @@
 // Licensed to the .NET Foundation under one or more agreements.
 // The .NET Foundation licenses this file to you under the MIT license.
 
+using System;
+using System.Diagnostics;
+using System.Collections;
+using System.Xml;
+using System.Xml.XPath;
+using MS.Internal.Xml.XPath;
+using System.Globalization;
+
 namespace System.Xml.Xsl.XsltOld
 {
-    using System;
-    using System.Diagnostics;
-    using System.Collections;
-    using System.Xml;
-    using System.Xml.XPath;
-    using MS.Internal.Xml.XPath;
-    using System.Globalization;
-
-    internal class TemplateAction : TemplateBaseAction
+    internal sealed class TemplateAction : TemplateBaseAction
     {
         private int _matchKey = Compiler.InvalidQueryKey;
         private XmlQualifiedName? _name;
@@ -78,7 +78,7 @@ namespace System.Xml.Xsl.XsltOld
             AnalyzePriority(compiler);
         }
 
-        internal virtual void CompileSingle(Compiler compiler)
+        internal void CompileSingle(Compiler compiler)
         {
             _matchKey = compiler.AddQuery("/", /*allowVars:*/false, /*allowKey:*/true, /*pattern*/true);
             _priority = Compiler.RootPriority;
@@ -113,14 +113,7 @@ namespace System.Xml.Xsl.XsltOld
             else if (Ref.Equal(name, compiler.Atoms.Mode))
             {
                 Debug.Assert(_mode == null);
-                if (compiler.AllowBuiltInMode && value == "*")
-                {
-                    _mode = Compiler.BuiltInMode;
-                }
-                else
-                {
-                    _mode = compiler.CreateXPathQName(value);
-                }
+                _mode = compiler.CreateXPathQName(value);
             }
             else
             {
@@ -157,7 +150,7 @@ namespace System.Xml.Xsl.XsltOld
             }
             if (expr.QueryTree != query)
             {
-                // query was splitted and we need create new TheQuery for this template
+                // query was split and we need create new TheQuery for this template
                 compiler.QueryStore[this.MatchKey] = new TheQuery(
                     new CompiledXpathExpr(query, expr.Expression, false),
                     theQuery._ScopeManager
@@ -166,7 +159,7 @@ namespace System.Xml.Xsl.XsltOld
             _priority = query.XsltDefaultPriority;
         }
 
-        protected void CompileParameters(Compiler compiler)
+        private void CompileParameters(Compiler compiler)
         {
             NavigatorInput input = compiler.Input;
             do

@@ -4,8 +4,8 @@
     <RequiresMockHostPolicy>true</RequiresMockHostPolicy>
     <!-- The test fails casting from ClassFromA from the default ALC to type IGetTypeFromC from a custom ALC -->
     <UnloadabilityIncompatible>true</UnloadabilityIncompatible>
-    <DisableProjectBuild Condition="'$(RuntimeFlavor)' == 'Mono'">true</DisableProjectBuild>
     <AllowUnsafeBlocks>true</AllowUnsafeBlocks>
+    <NativeAotIncompatible>true</NativeAotIncompatible>
   </PropertyGroup>
   <ItemGroup>
     <Compile Include="Program.cs" />

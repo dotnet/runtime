@@ -32,6 +32,16 @@ namespace System.Security.Cryptography.Tests
         }
 
         [Fact]
+        [PlatformSpecific(TestPlatforms.Windows | TestPlatforms.Linux)]
+        public static void FormatCrlDistibutionPoint()
+        {
+            byte[] data = ("30363034A032A030862E687474703A2F2F63726C2E676C6F62616C7369676E2E" +
+                "636F6D2F67737273616F7673736C6361323031382E63726C").HexToByteArray();
+            AsnEncodedData extension = new AsnEncodedData("2.5.29.31", data);
+            Assert.Contains("http://crl.globalsign.com/gsrsaovsslca2018.crl", extension.Format(true));
+        }
+
+        [Fact]
         public static void FormatInvalidTypedData()
         {
             // This passes in data in an illegal format. AsnEncodedData.Format() swallows the error and falls back to a simple hex-encoding scheme.

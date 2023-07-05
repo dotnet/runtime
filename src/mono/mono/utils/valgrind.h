@@ -769,12 +769,14 @@ typedef
   __extension__                                                   \
   ({volatile unsigned long long int  _zzq_args[6];                \
     volatile unsigned long long int  _zzq_result;                 \
+    volatile unsigned long long int  _zzq_default_ll;             \
     _zzq_args[0] = (unsigned long long int)(_zzq_request);        \
     _zzq_args[1] = (unsigned long long int)(_zzq_arg1);           \
     _zzq_args[2] = (unsigned long long int)(_zzq_arg2);           \
     _zzq_args[3] = (unsigned long long int)(_zzq_arg3);           \
     _zzq_args[4] = (unsigned long long int)(_zzq_arg4);           \
     _zzq_args[5] = (unsigned long long int)(_zzq_arg5);           \
+    _zzq_default_ll = (unsigned long long int)(_zzq_default);     \
     __asm__ volatile("mov x3, %1\n\t" /*default*/                 \
                      "mov x4, %2\n\t" /*ptr*/                     \
                      __SPECIAL_INSTRUCTION_PREAMBLE               \
@@ -782,7 +784,7 @@ typedef
                      "orr x10, x10, x10\n\t"                      \
                      "mov %0, x3"     /*result*/                  \
                      : "=r" (_zzq_result)                         \
-                     : "r" (_zzq_default), "r" (&_zzq_args[0])    \
+                     : "r" (_zzq_default_ll), "r" (&_zzq_args[0]) \
                      : "cc","memory", "x3", "x4");                \
     _zzq_result;                                                  \
   })
@@ -6290,7 +6292,7 @@ VALGRIND_PRINTF_BACKTRACE(const char *format, ...)
 
 
 /* These requests allow control to move from the simulated CPU to the
-   real CPU, calling an arbitary function.
+   real CPU, calling an arbitrary function.
 
    Note that the current ThreadId is inserted as the first argument.
    So this call:

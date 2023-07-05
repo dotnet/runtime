@@ -1396,7 +1396,7 @@ typedef struct lfEasy {
 
     Record type         Change (f == field arrangement, p = padding added)
     ----------------------------------------------------------------------
-    lfModifer           f
+    lfModifier           f
     lfPointer           fp
     lfClass             f
     lfStructure         f
@@ -2250,7 +2250,7 @@ typedef struct lfModifierEx {
  *      size of the following variable length data.  When the numeric
  *      data is a single byte less than 0x8000, then the data is output
  *      directly.  If the data is more the 0x8000 or is a negative value,
- *      then the data is preceeded by the proper index.
+ *      then the data is preceded by the proper index.
  */
 
 
@@ -3052,7 +3052,7 @@ typedef struct CV_LVARFLAGS {
     unsigned short fIsParam          :1; // variable is a parameter
     unsigned short fAddrTaken        :1; // address is taken
     unsigned short fCompGenx         :1; // variable is compiler generated
-    unsigned short fIsAggregate      :1; // the symbol is splitted in temporaries,
+    unsigned short fIsAggregate      :1; // the symbol is split in temporaries,
                                          // which are treated by compiler as
                                          // independent entities
     unsigned short fIsAggregated     :1; // Counterpart of fIsAggregate - tells

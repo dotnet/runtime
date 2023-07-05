@@ -12,8 +12,8 @@ namespace System.Threading
     /// </summary>
     internal sealed partial class CompleteWaitThreadPoolWorkItem : IThreadPoolWorkItem
     {
-        private RegisteredWaitHandle _registeredWaitHandle;
-        private bool _timedOut;
+        private readonly RegisteredWaitHandle _registeredWaitHandle;
+        private readonly bool _timedOut;
 
         public CompleteWaitThreadPoolWorkItem(RegisteredWaitHandle registeredWaitHandle, bool timedOut)
         {
@@ -45,11 +45,7 @@ namespace System.Threading
             _waitThreadLock.Acquire();
             try
             {
-                WaitThreadNode? current = _waitThreadsHead;
-                if (current == null) // Lazily create the first wait thread.
-                {
-                    _waitThreadsHead = current = new WaitThreadNode(new WaitThread());
-                }
+                WaitThreadNode? current = _waitThreadsHead ??= new WaitThreadNode(new WaitThread()); // Lazily create the first wait thread.
 
                 // Register the wait handle on the first wait thread that is not at capacity.
                 WaitThreadNode prev;
@@ -191,7 +187,7 @@ namespace System.Threading
                 {
                     IsThreadPoolThread = true,
                     IsBackground = true,
-                    Name = ".NET ThreadPool Wait"
+                    Name = ".NET TP Wait"
                 };
                 waitThread.UnsafeStart();
             }
@@ -377,7 +373,10 @@ namespace System.Threading
                 // If the handle is a repeating handle, set up the next call. Otherwise, remove it from the wait thread.
                 if (registeredHandle.Repeating)
                 {
-                    registeredHandle.RestartTimeout();
+                    if (!registeredHandle.IsInfiniteTimeout)
+                    {
+                        registeredHandle.RestartTimeout();
+                    }
                 }
                 else
                 {

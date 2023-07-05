@@ -2,11 +2,12 @@
 // The .NET Foundation licenses this file to you under the MIT license.
 //
 
+using Xunit;
 namespace Test
 {
     using System;
 
-    class BB
+    public class BB
     {
         public float[] m_afField1 = new float[16];
         public int m_nField2 = 0;
@@ -37,7 +38,8 @@ namespace Test
             return ptr.m_afField1[2];
         }
 
-        public static int Main()
+        [Fact]
+        public static int TestEntryPoint()
         {
             int N1 = 0;
             FailingFunc(ref N1);

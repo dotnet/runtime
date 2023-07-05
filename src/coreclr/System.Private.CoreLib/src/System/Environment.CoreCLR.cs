@@ -59,29 +59,22 @@ namespace System
 
         [DoesNotReturn]
         [MethodImpl(MethodImplOptions.InternalCall)]
-        public static extern void FailFast(string? message, Exception? exception, string? errorMessage);
+        internal static extern void FailFast(string? message, Exception? exception, string? errorMessage);
 
-        [MethodImpl(MethodImplOptions.InternalCall)]
-        private static extern string[] GetCommandLineArgsNative();
-
-        public static string[] GetCommandLineArgs()
+        private static unsafe string[] InitializeCommandLineArgs(char* exePath, int argc, char** argv) // invoked from VM
         {
-            // There are multiple entry points to a hosted app. The host could
-            // use ::ExecuteAssembly() or ::CreateDelegate option:
-            //
-            // ::ExecuteAssembly() -> In this particular case, the runtime invokes the main
-            // method based on the arguments set by the host, and we return those arguments
-            //
-            // ::CreateDelegate() -> In this particular case, the host is asked to create a
-            // delegate based on the appDomain, assembly and methodDesc passed to it.
-            // which the caller uses to invoke the method. In this particular case we do not have
-            // any information on what arguments would be passed to the delegate.
-            // So our best bet is to simply use the commandLine that was used to invoke the process.
-            // in case it is present.
+            string[] commandLineArgs = new string[argc + 1];
+            string[] mainMethodArgs = new string[argc];
 
-            return s_commandLineArgs != null ?
-                (string[])s_commandLineArgs.Clone() :
-                GetCommandLineArgsNative();
+            commandLineArgs[0] = new string(exePath);
+
+            for (int i = 0; i < mainMethodArgs.Length; i++)
+            {
+                 commandLineArgs[i + 1] = mainMethodArgs[i] = new string(argv[i]);
+            }
+
+            s_commandLineArgs = commandLineArgs;
+            return mainMethodArgs;
         }
 
         [LibraryImport(RuntimeHelpers.QCall, EntryPoint = "Environment_GetProcessorCount")]

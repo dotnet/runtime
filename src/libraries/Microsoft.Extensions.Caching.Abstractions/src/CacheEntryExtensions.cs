@@ -2,6 +2,7 @@
 // The .NET Foundation licenses this file to you under the MIT license.
 
 using System;
+using System.Diagnostics.CodeAnalysis;
 using Microsoft.Extensions.Primitives;
 
 namespace Microsoft.Extensions.Caching.Memory
@@ -30,8 +31,10 @@ namespace Microsoft.Extensions.Caching.Memory
         /// <returns>The <see cref="ICacheEntry"/> for chaining.</returns>
         public static ICacheEntry AddExpirationToken(
             this ICacheEntry entry,
-            IChangeToken expirationToken!!)
+            IChangeToken expirationToken)
         {
+            ThrowHelper.ThrowIfNull(expirationToken);
+
             entry.ExpirationTokens.Add(expirationToken);
             return entry;
         }
@@ -87,9 +90,11 @@ namespace Microsoft.Extensions.Caching.Memory
         /// <returns>The <see cref="ICacheEntry"/> for chaining.</returns>
         public static ICacheEntry RegisterPostEvictionCallback(
             this ICacheEntry entry,
-            PostEvictionDelegate callback!!)
+            PostEvictionDelegate callback)
         {
-            return entry.RegisterPostEvictionCallback(callback, state: null);
+            ThrowHelper.ThrowIfNull(callback);
+
+            return entry.RegisterPostEvictionCallbackNoValidation(callback, state: null);
         }
 
         /// <summary>
@@ -101,7 +106,17 @@ namespace Microsoft.Extensions.Caching.Memory
         /// <returns>The <see cref="ICacheEntry"/> for chaining.</returns>
         public static ICacheEntry RegisterPostEvictionCallback(
             this ICacheEntry entry,
-            PostEvictionDelegate callback!!,
+            PostEvictionDelegate callback,
+            object? state)
+        {
+            ThrowHelper.ThrowIfNull(callback);
+
+            return entry.RegisterPostEvictionCallbackNoValidation(callback, state);
+        }
+
+        private static ICacheEntry RegisterPostEvictionCallbackNoValidation(
+            this ICacheEntry entry,
+            PostEvictionDelegate callback,
             object? state)
         {
             entry.PostEvictionCallbacks.Add(new PostEvictionCallbackRegistration()
@@ -120,7 +135,7 @@ namespace Microsoft.Extensions.Caching.Memory
         /// <returns>The <see cref="ICacheEntry"/> for chaining.</returns>
         public static ICacheEntry SetValue(
             this ICacheEntry entry,
-            object value)
+            object? value)
         {
             entry.Value = value;
             return entry;
@@ -151,8 +166,10 @@ namespace Microsoft.Extensions.Caching.Memory
         /// <param name="entry">The <see cref="ICacheEntry"/>.</param>
         /// <param name="options">Set the values of these options on the <paramref name="entry"/>.</param>
         /// <returns>The <see cref="ICacheEntry"/> for chaining.</returns>
-        public static ICacheEntry SetOptions(this ICacheEntry entry, MemoryCacheEntryOptions options!!)
+        public static ICacheEntry SetOptions(this ICacheEntry entry, MemoryCacheEntryOptions options)
         {
+            ThrowHelper.ThrowIfNull(options);
+
             entry.AbsoluteExpiration = options.AbsoluteExpiration;
             entry.AbsoluteExpirationRelativeToNow = options.AbsoluteExpirationRelativeToNow;
             entry.SlidingExpiration = options.SlidingExpiration;
@@ -164,12 +181,24 @@ namespace Microsoft.Extensions.Caching.Memory
                 entry.AddExpirationToken(expirationToken);
             }
 
-            foreach (PostEvictionCallbackRegistration postEvictionCallback in options.PostEvictionCallbacks)
+            for (int i = 0; i < options.PostEvictionCallbacks.Count; i++)
             {
-                entry.RegisterPostEvictionCallback(postEvictionCallback.EvictionCallback!, postEvictionCallback.State);
+                PostEvictionCallbackRegistration postEvictionCallback = options.PostEvictionCallbacks[i];
+                if (postEvictionCallback.EvictionCallback is null)
+                    ThrowNullCallback(i, nameof(options));
+
+                entry.RegisterPostEvictionCallbackNoValidation(postEvictionCallback.EvictionCallback, postEvictionCallback.State);
             }
 
             return entry;
+        }
+
+        [DoesNotReturn]
+        private static void ThrowNullCallback(int index, string paramName)
+        {
+            string message =
+                $"MemoryCacheEntryOptions.PostEvictionCallbacks contains a PostEvictionCallbackRegistration with a null EvictionCallback at index {index}.";
+            throw new ArgumentException(message, paramName);
         }
     }
 }

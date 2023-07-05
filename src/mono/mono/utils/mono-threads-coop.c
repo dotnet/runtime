@@ -178,7 +178,7 @@ copy_stack_data_internal (MonoThreadInfo *info, MonoStackData *stackdata_begin, 
 
 	state = &info->thread_saved_state [SELF_SUSPEND_STATE_INDEX];
 
-	stackdata_size = (char*)mono_stackdata_get_stackpointer (stackdata_begin) - (char*)stackdata_end;
+	stackdata_size = GPTRDIFF_TO_INT ((char*)mono_stackdata_get_stackpointer (stackdata_begin) - (char*)stackdata_end);
 
 	if (((gsize) stackdata_begin & (SIZEOF_VOID_P - 1)) != 0)
 		g_error ("%s stackdata_begin (%p) must be %d-byte aligned", mono_stackdata_get_function_name (stackdata_begin), stackdata_begin, SIZEOF_VOID_P);
@@ -219,6 +219,7 @@ typedef struct {
 __declspec(naked) void __cdecl
 copy_stack_data_internal_win32_wrapper (MonoThreadInfo *info, MonoStackData *stackdata_begin, MonoBuiltinUnwindInfo *unwind_info_data, CopyStackDataFunc func)
 {
+#if defined(TARGET_X86) || defined(TARGET_AMD64)
 	__asm {
 		mov edx, dword ptr [esp + 0Ch]
 		mov dword ptr [edx + 00h], ebx
@@ -230,6 +231,7 @@ copy_stack_data_internal_win32_wrapper (MonoThreadInfo *info, MonoStackData *sta
 		mov edx, dword ptr [esp + 10h]
 		jmp edx
 	};
+#endif
 }
 #endif
 
@@ -594,7 +596,7 @@ static gboolean
 hasenv_obsolete (const char *name, const char* newval)
 {
 	// If they already set MONO_THREADS_SUSPEND to something, maybe they're keeping
-	// the old var set for compatability with old Mono - in that case don't nag.
+	// the old var set for compatibility with old Mono - in that case don't nag.
 	// FIXME: but maybe nag if MONO_THREADS_SUSPEND isn't set to "newval"?
 	static int quiet = -1;
 	if (g_hasenv (name)) {

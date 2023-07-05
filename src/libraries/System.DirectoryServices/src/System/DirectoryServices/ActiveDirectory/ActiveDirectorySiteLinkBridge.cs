@@ -136,7 +136,7 @@ namespace System.DirectoryServices.ActiveDirectory
             {
                 ADSearcher adSearcher = new ADSearcher(de,
                                                       "(&(objectClass=siteLinkBridge)(objectCategory=SiteLinkBridge)(name=" + Utils.GetEscapedFilterValue(bridgeName) + "))",
-                                                      new string[] { "distinguishedName" },
+                                                      ActiveDirectorySite.s_distinguishedName,
                                                       SearchScope.OneLevel,
                                                       false, /* don't need paged search */
                                                       false /* don't need to cache result */);
@@ -310,8 +310,7 @@ namespace System.DirectoryServices.ActiveDirectory
             if (disposing)
             {
                 // free other state (managed objects)
-                if (cachedEntry != null)
-                    cachedEntry.Dispose();
+                cachedEntry?.Dispose();
             }
 
             // free your own state (unmanaged objects)

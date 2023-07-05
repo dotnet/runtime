@@ -15,7 +15,7 @@ namespace System.Runtime.InteropServices
         {
             if (!Interop.Sys.InitializeTerminalAndSignalHandling())
             {
-                Interop.CheckIo(-1);
+                Interop.ThrowIOExceptionForLastError();
             }
 
             Interop.Sys.SetPosixSignalHandler(&OnPosixSignal);
@@ -44,7 +44,7 @@ namespace System.Runtime.InteropServices
                 if (tokens.Count == 0 &&
                     !Interop.Sys.EnablePosixSignalHandling(signo))
                 {
-                    Interop.CheckIo(-1);
+                    Interop.ThrowIOExceptionForLastError();
                 }
 
                 tokens.Add(token);

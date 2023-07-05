@@ -107,7 +107,7 @@ namespace SslStress
                 for (int i = 0; i < _currentCounters.Length; i++)
                 {
                     Console.ForegroundColor = ConsoleColor.Cyan;
-                    Console.Write($"\tWorker #{i.ToString("N0")}:");
+                    Console.Write($"\tWorker #{i:N0}:");
                     Console.ResetColor();
 
                     Console.ForegroundColor = ConsoleColor.Green;

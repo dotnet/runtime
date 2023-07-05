@@ -22,7 +22,7 @@
 #endif
 
 
-// Some contants are different in _DEBUG builds.  This macro factors out
+// Some constants are different in _DEBUG builds.  This macro factors out
 // ifdefs from below.
 #ifdef _DEBUG
 #define DBG_FRE(dbg,fre) dbg
@@ -138,9 +138,6 @@ ASMCONSTANTS_C_ASSERT(OFFSETOF__ThreadExceptionState__m_pCurrentTracker
 
 
 
-#define               OFFSETOF__NDirectMethodDesc__m_pWriteableData DBG_FRE(0x48, 0x20)
-ASMCONSTANTS_C_ASSERT(OFFSETOF__NDirectMethodDesc__m_pWriteableData == offsetof(NDirectMethodDesc, ndirect.m_pWriteableData));
-
 #define           OFFSETOF__DelegateObject___methodPtr      0x18
 ASMCONSTANT_OFFSETOF_ASSERT(DelegateObject, _methodPtr);
 
@@ -162,10 +159,6 @@ ASMCONSTANTS_C_ASSERT(OFFSETOF__MethodTable__m_wNumInterfaces
 #define               OFFSETOF__MethodTable__m_pParentMethodTable   DBG_FRE(0x18, 0x10)
 ASMCONSTANTS_C_ASSERT(OFFSETOF__MethodTable__m_pParentMethodTable
                     == offsetof(MethodTable, m_pParentMethodTable));
-
-#define               OFFSETOF__MethodTable__m_pWriteableData       DBG_FRE(0x28, 0x20)
-ASMCONSTANTS_C_ASSERT(OFFSETOF__MethodTable__m_pWriteableData
-                    == offsetof(MethodTable, m_pWriteableData));
 
 #define               OFFSETOF__MethodTable__m_pEEClass             DBG_FRE(0x30, 0x28)
 ASMCONSTANTS_C_ASSERT(OFFSETOF__MethodTable__m_pEEClass
@@ -200,14 +193,6 @@ ASMCONSTANTS_C_ASSERT(METHODTABLE_EQUIVALENCE_FLAGS
 #define               MethodTable__enum_flag_ContainsPointers 0x01000000
 ASMCONSTANTS_C_ASSERT(MethodTable__enum_flag_ContainsPointers
                     == MethodTable::enum_flag_ContainsPointers);
-
-#define               OFFSETOF__MethodTableWriteableData__m_dwFlags 0
-ASMCONSTANTS_C_ASSERT(OFFSETOF__MethodTableWriteableData__m_dwFlags
-                    == offsetof(MethodTableWriteableData, m_dwFlags));
-
-#define               MethodTableWriteableData__enum_flag_Unrestored 0x04
-ASMCONSTANTS_C_ASSERT(MethodTableWriteableData__enum_flag_Unrestored
-                    == MethodTableWriteableData::enum_flag_Unrestored);
 
 #define               OFFSETOF__InterfaceInfo_t__m_pMethodTable  0
 ASMCONSTANTS_C_ASSERT(OFFSETOF__InterfaceInfo_t__m_pMethodTable
@@ -300,7 +285,15 @@ ASMCONSTANTS_C_ASSERT(OFFSETOF__MethodDesc__m_wFlags == offsetof(MethodDesc, m_w
 ASMCONSTANTS_C_ASSERT(OFFSETOF__VASigCookie__pNDirectILStub
                     == offsetof(VASigCookie, pNDirectILStub));
 
-#define               SIZEOF__CONTEXT                 (8*6 + 4*2 + 2*6 + 4 + 8*6 + 8*16 + 8 + /*XMM_SAVE_AREA32*/(2*2 + 1*2 + 2 + 4 + 2*2 + 4 + 2*2 + 4*2 + 16*8 + 16*16 + 1*96) + 26*16 + 8 + 8*5)
+#if defined(UNIX_AMD64_ABI) && !defined(HOST_WINDOWS)
+// Expression is too complicated, is currently:
+//     (8*6 + 4*2 + 2*6 + 4 + 8*6 + 8*16 + 8 + /*XMM_SAVE_AREA32*/(2*2 + 1*2 + 2 + 4 + 2*2 + 4 + 2*2 + 4*2 + 16*8 + 16*16 + 1*96) + 26*16 + 8 + 8*5 + /*XSTATE*/ + 8 + 8 + /*XSTATE_AVX*/ 16*16 + /*XSTATE_AVX512_KMASK*/ 8*8 + /*XSTATE_AVX512_ZMM_H*/ 32*16 + /*XSTATE_AVX512_ZMM*/ 64*16)
+#define               SIZEOF__CONTEXT                 (3104)
+#else
+// Expression is too complicated, is currently:
+//     (8*6 + 4*2 + 2*6 + 4 + 8*6 + 8*16 + 8 + /*XMM_SAVE_AREA32*/(2*2 + 1*2 + 2 + 4 + 2*2 + 4 + 2*2 + 4*2 + 16*8 + 16*16 + 1*96) + 26*16 + 8 + 8*5)
+#define               SIZEOF__CONTEXT                 (1232)
+#endif
 ASMCONSTANTS_C_ASSERT(SIZEOF__CONTEXT
                     == sizeof(CONTEXT));
 
@@ -467,13 +460,6 @@ ASMCONSTANTS_C_ASSERT(OFFSETOF__PtrArray__m_NumComponents
 #define               OFFSETOF__PtrArray__m_Array 0x10
 ASMCONSTANTS_C_ASSERT(OFFSETOF__PtrArray__m_Array
                     == offsetof(PtrArray, m_Array));
-
-
-#define MethodDescClassification__mdcClassification 0x7
-ASMCONSTANTS_C_ASSERT(MethodDescClassification__mdcClassification == mdcClassification);
-
-#define MethodDescClassification__mcInstantiated 0x5
-ASMCONSTANTS_C_ASSERT(MethodDescClassification__mcInstantiated == mcInstantiated);
 
 #ifndef TARGET_UNIX
 #define OFFSET__TEB__ThreadLocalStoragePointer 0x58

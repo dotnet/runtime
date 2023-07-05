@@ -43,6 +43,9 @@ namespace System.Security.Cryptography
         public override byte[] DeriveKeyTls(ECDiffieHellmanPublicKey otherPartyPublicKey, byte[] prfLabel, byte[] prfSeed) =>
             _wrapped.DeriveKeyTls(Unwrap(otherPartyPublicKey), prfLabel, prfSeed);
 
+        public override byte[] DeriveRawSecretAgreement(ECDiffieHellmanPublicKey otherPartyPublicKey) =>
+            _wrapped.DeriveRawSecretAgreement(Unwrap(otherPartyPublicKey));
+
         public override void FromXmlString(string xmlString) => _wrapped.FromXmlString(xmlString);
 
         public override string ToXmlString(bool includePrivateParameters) =>
@@ -195,9 +198,13 @@ namespace System.Security.Cryptography
                 }
             }
 
+#pragma warning disable 0672, SYSLIB0043 // Member overrides an obsolete member, ToByteArray is obsolete.
             public override byte[] ToByteArray() => _wrapped.ToByteArray();
+#pragma warning restore 0672, SYSLIB0043
 
+#pragma warning disable 0672, SYSLIB0042 // Member overrides an obsolete member, ToXmlString is obsolete.
             public override string ToXmlString() => _wrapped.ToXmlString();
+#pragma warning restore 0672, SYSLIB0042
 
             public override bool Equals(object? obj) => _wrapped.Equals(obj);
 

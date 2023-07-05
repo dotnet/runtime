@@ -132,7 +132,7 @@ HRESULT ProfilingAPIDetach::Initialize()
 //        * The profiler must immediately call FreeLibraryAndExitThread() after
 //            RequestProfilerDetach returns.
 //
-//    The above invariants result in the following possiblities:
+//    The above invariants result in the following possibilities:
 //        * RequestProfilerDetach() may be called multi-threaded, but only from within
 //            profiler callbacks. As such, evacuation counters will have been incremented
 //            before entry into RequestProfilerDetach(), so the DetachThread will be
@@ -232,7 +232,7 @@ HRESULT ProfilingAPIDetach::RequestProfilerDetach(ProfilerInfo *pProfilerInfo, D
             s_profilerDetachInfos.Push(detachInfo);
         }
         EX_CATCH_HRESULT(hr);
-        
+
         if (FAILED(hr))
         {
             return hr;
@@ -388,7 +388,7 @@ void ProfilingAPIDetach::SleepWhileProfilerEvacuates(ProfilerDetachInfo *pDetach
 
         // Here's the "within reason" part:  the user may not customize these values to
         // be more "extreme" than the constants, or to be 0 (which would confuse the
-        // issue of whether these statics were intialized yet).
+        // issue of whether these statics were initialized yet).
         if ((s_dwMinSleepMs < kdwDefaultMinSleepMs) || (s_dwMinSleepMs > kdwDefaultMaxSleepMs))
         {
             // Sleeping less than 300ms between evac checks could negatively affect the
@@ -489,7 +489,7 @@ void ProfilingAPIDetach::UnloadProfiler(ProfilerDetachInfo *pDetachInfo)
 
         // Notify profiler it's about to be unloaded
         _ASSERTE(pDetachInfo->m_pProfilerInfo != NULL);
-        
+
         {
             // This EvacuationCounterHolder is just to make asserts in EEToProfInterfaceImpl happy.
             // Using it like this without the dirty read/evac counter increment/clean read pattern
@@ -498,7 +498,7 @@ void ProfilingAPIDetach::UnloadProfiler(ProfilerDetachInfo *pDetachInfo)
             EvacuationCounterHolder evacuationCounter(pDetachInfo->m_pProfilerInfo);
             pDetachInfo->m_pProfilerInfo->pProfInterface->ProfilerDetachSucceeded();
         }
-        
+
         EEToProfInterfaceImpl *pProfInterface = pDetachInfo->m_pProfilerInfo->pProfInterface.Load();
         pDetachInfo->m_pProfilerInfo->pProfInterface.Store(NULL);
         delete pProfInterface;

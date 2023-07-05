@@ -40,9 +40,9 @@ namespace System.ComponentModel.Composition
             }
         }
 
-        public ImportingComposablePart(params ImportDefinition[] importDefintions)
+        public ImportingComposablePart(params ImportDefinition[] importDefinitions)
         {
-            _importDefinitions.AddRange(importDefintions);
+            _importDefinitions.AddRange(importDefinitions);
         }
 
         public override IEnumerable<ExportDefinition> ExportDefinitions

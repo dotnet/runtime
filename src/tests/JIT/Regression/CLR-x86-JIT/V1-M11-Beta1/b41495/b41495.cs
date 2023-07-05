@@ -2,11 +2,12 @@
 // The .NET Foundation licenses this file to you under the MIT license.
 //
 
+using Xunit;
 namespace Test
 {
     using System;
 
-    class BB
+    public class BB
     {
         private bool m_bUnusedField1 = false;
         private object m_xUnusedField2 = null;
@@ -36,7 +37,8 @@ namespace Test
             }
         }
 
-        static int Main()
+        [Fact]
+        public static int TestEntryPoint()
         {
             try { Method1(); }
             catch (Exception) { }

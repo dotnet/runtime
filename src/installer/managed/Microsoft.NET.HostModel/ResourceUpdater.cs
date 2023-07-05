@@ -428,7 +428,7 @@ namespace Microsoft.NET.HostModel
             return true;
         }
 
-        private class EnumResourcesErrorInfo
+        private sealed class EnumResourcesErrorInfo
         {
             public int hResult;
             public bool failedToLockResource;
@@ -457,7 +457,7 @@ namespace Microsoft.NET.HostModel
             }
         }
 
-        private class ResourceNotAvailableException : Exception
+        private sealed class ResourceNotAvailableException : Exception
         {
             public ResourceNotAvailableException(string message) : base(message)
             {

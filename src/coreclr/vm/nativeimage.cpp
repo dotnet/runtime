@@ -13,8 +13,6 @@
 // Headers
 // --------------------------------------------------------------------------------
 
-#include <shlwapi.h>
-
 BOOL AssemblyNameIndexHashTraits::Equals(LPCUTF8 a, LPCUTF8 b)
 {
     WRAPPER_NO_CONTRACT;
@@ -66,11 +64,10 @@ void NativeImage::Initialize(READYTORUN_HEADER *pHeader, LoaderAllocator *pLoade
 {
     LoaderHeap *pHeap = pLoaderAllocator->GetHighFrequencyHeap();
 
-    m_pReadyToRunInfo = new ReadyToRunInfo(/*pModule*/ NULL, pLoaderAllocator, m_pImageLayout, pHeader, /*compositeImage*/ NULL, pamTracker);
+    m_pReadyToRunInfo = new ReadyToRunInfo(/*pModule*/ NULL, pLoaderAllocator, m_pImageLayout, pHeader, this, pamTracker);
     m_pComponentAssemblies = m_pReadyToRunInfo->FindSection(ReadyToRunSectionType::ComponentAssemblies);
-    m_pComponentAssemblyMvids = m_pReadyToRunInfo->FindSection(ReadyToRunSectionType::ManifestAssemblyMvids);
     m_componentAssemblyCount = m_pComponentAssemblies->Size / sizeof(READYTORUN_COMPONENT_ASSEMBLIES_ENTRY);
-    
+
     // Check if the current module's image has native manifest metadata, otherwise the current->GetNativeAssemblyImport() asserts.
     m_pManifestMetadata = LoadManifestMetadata();
 
@@ -85,12 +82,12 @@ void NativeImage::Initialize(READYTORUN_HEADER *pHeader, LoaderAllocator *pLoade
         m_assemblySimpleNameToIndexMap.Add(AssemblyNameIndex(assemblyName, m_manifestAssemblyCount));
         m_manifestAssemblyCount++;
     }
-    
+
     // When a composite image contributes to a larger version bubble, its manifest assembly
     // count may exceed its component assembly count as it may contain references to
     // assemblies outside of the composite image that are part of its version bubble.
     _ASSERTE(m_manifestAssemblyCount >= m_componentAssemblyCount);
-    
+
     S_SIZE_T dwAllocSize = S_SIZE_T(sizeof(PTR_Assembly)) * S_SIZE_T(m_manifestAssemblyCount);
 
     // Note: Memory allocated on loader heap is zero filled
@@ -126,7 +123,6 @@ NativeImage *NativeImage::Open(
         *isNewNativeImage = false;
         if (pExistingImage->GetAssemblyBinder() == pAssemblyBinder)
         {
-            pExistingImage->AddComponentAssemblyToCache(componentModule->GetAssembly());
             return pExistingImage;
         }
         else
@@ -199,7 +195,7 @@ NativeImage *NativeImage::Open(
 
                 fullPath.Append(DIRECTORY_SEPARATOR_CHAR_W);
                 fullPath += compositeImageFileName;
-                
+
                 EX_TRY
                 {
                     peLoadedImage = PEImageLayout::LoadNative(fullPath);
@@ -216,10 +212,13 @@ NativeImage *NativeImage::Open(
         if (peLoadedImage.IsNull())
         {
             // Failed to locate the native composite R2R image
-            LOG((LF_LOADER, LL_ALWAYS, "LOADER: failed to load native image '%s' for component assembly '%S' using search paths: '%S'\n",
+#ifdef LOGGING
+            SString searchPaths(searchPathsConfig != nullptr ? searchPathsConfig : W("<use DOTNET_NativeImageSearchPaths to set>"));
+            LOG((LF_LOADER, LL_ALWAYS, "LOADER: failed to load native image '%s' for component assembly '%s' using search paths: '%s'\n",
                 nativeImageFileName,
-                path.GetUnicode(),
-                searchPathsConfig != nullptr ? searchPathsConfig : W("<use COMPlus_NativeImageSearchPaths to set>")));
+                path.GetUTF8(),
+                searchPaths.GetUTF8()));
+#endif // LOGGING
             RaiseFailFastException(nullptr, nullptr, 0);
         }
     }
@@ -246,32 +245,17 @@ NativeImage *NativeImage::Open(
         // No pre-existing image, new image has been stored in the map
         *isNewNativeImage = true;
         amTracker.SuppressRelease();
-        image->AddComponentAssemblyToCache(componentModule->GetAssembly());
         return image.Extract();
     }
     // Return pre-existing image if it was loaded into the same ALC, null otherwise
     *isNewNativeImage = false;
     if (pExistingImage->GetAssemblyBinder() == pAssemblyBinder)
     {
-        pExistingImage->AddComponentAssemblyToCache(componentModule->GetAssembly());
         return pExistingImage;
     }
     else
     {
         return nullptr;
-    }
-}
-#endif
-
-#ifndef DACCESS_COMPILE
-void NativeImage::AddComponentAssemblyToCache(Assembly *assembly)
-{
-    STANDARD_VM_CONTRACT;
-    
-    const AssemblyNameIndex *assemblyNameIndex = m_assemblySimpleNameToIndexMap.LookupPtr(assembly->GetSimpleName());
-    if (assemblyNameIndex != nullptr)
-    {
-        VolatileStore(&m_pNativeMetadataAssemblyRefMap[assemblyNameIndex->Index], assembly);
     }
 }
 #endif
@@ -301,49 +285,6 @@ PTR_READYTORUN_CORE_HEADER NativeImage::GetComponentAssemblyHeader(LPCUTF8 simpl
         return (PTR_READYTORUN_CORE_HEADER)&pImageBase[componentAssembly->ReadyToRunCoreHeader.VirtualAddress];
     }
     return NULL;
-}
-#endif
-
-#ifndef DACCESS_COMPILE
-void NativeImage::CheckAssemblyMvid(Assembly *assembly) const
-{
-    STANDARD_VM_CONTRACT;
-    if (m_pComponentAssemblyMvids == NULL)
-    {
-        return;
-    }
-
-    const AssemblyNameIndex *assemblyNameIndex = m_assemblySimpleNameToIndexMap.LookupPtr(assembly->GetSimpleName());
-    if (assemblyNameIndex == NULL)
-    {
-        return;
-    }
-
-    GUID assemblyMvid;
-    assembly->GetMDImport()->GetScopeProps(NULL, &assemblyMvid);
-
-    const byte *pImageBase = (const BYTE *)m_pImageLayout->GetBase();
-    const GUID *componentMvid = (const GUID *)&pImageBase[m_pComponentAssemblyMvids->VirtualAddress] + assemblyNameIndex->Index;
-    if (IsEqualGUID(*componentMvid, assemblyMvid))
-    {
-        return;
-    }
-
-    static const size_t MVID_TEXT_LENGTH = 39;
-    WCHAR assemblyMvidText[MVID_TEXT_LENGTH];
-    StringFromGUID2(assemblyMvid, assemblyMvidText, MVID_TEXT_LENGTH);
-
-    WCHAR componentMvidText[MVID_TEXT_LENGTH];
-    StringFromGUID2(*componentMvid, componentMvidText, MVID_TEXT_LENGTH);
-
-    SString message;
-    message.Printf(W("MVID mismatch between loaded assembly '%s' (MVID = %s) and an assembly with the same simple name embedded in the native image '%s' (MVID = %s)"),
-        SString(SString::Utf8, assembly->GetSimpleName()).GetUnicode(),
-        assemblyMvidText,
-        SString(SString::Utf8, GetFileName()).GetUnicode(),
-        componentMvidText);
-
-    EEPOLICY_HANDLE_FATAL_ERROR_WITH_MESSAGE(COR_E_FAILFAST, message.GetUnicode());
 }
 #endif
 

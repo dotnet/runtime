@@ -132,7 +132,7 @@ namespace Microsoft.Extensions.DependencyModel
             return reader.GetBoolean();
         }
 
-        private static Exception CreateUnexpectedException(ref Utf8JsonReader reader, string expected)
+        private static FormatException CreateUnexpectedException(ref Utf8JsonReader reader, string expected)
         {
             // Replace with public API once https://github.com/dotnet/runtime/issues/28482 is fixed
             object boxedState = reader.CurrentState;

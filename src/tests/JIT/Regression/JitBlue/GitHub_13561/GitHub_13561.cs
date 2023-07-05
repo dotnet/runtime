@@ -3,8 +3,9 @@
 
 using System;
 using System.Collections.Generic;
+using Xunit;
 
-internal static class Program
+public static class Program
 {
     class MemberInfo { }
 
@@ -53,7 +54,8 @@ internal static class Program
         return result;
     }
 
-    private static int Main(string[] args)
+    [Fact]
+    public static int TestEntryPoint()
     {
         return GetCustomAttribute<Attribute>(new PropertyInfo()) != null ? 100 : -1;
     }

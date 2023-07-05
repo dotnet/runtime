@@ -163,15 +163,17 @@ namespace System
         //
         // Registers a custom Uri parser based on a scheme string
         //
-        public static void Register(UriParser uriParser!!, string schemeName!!, int defaultPort)
+        public static void Register(UriParser uriParser, string schemeName, int defaultPort)
         {
-            if (schemeName.Length == 1)
-                throw new ArgumentOutOfRangeException(nameof(schemeName));
+            ArgumentNullException.ThrowIfNull(uriParser);
+            ArgumentNullException.ThrowIfNull(schemeName);
+
+            ArgumentOutOfRangeException.ThrowIfEqual(schemeName.Length, 1);
 
             if (!Uri.CheckSchemeName(schemeName))
                 throw new ArgumentOutOfRangeException(nameof(schemeName));
 
-            if ((defaultPort >= 0xFFFF || defaultPort < 0) && defaultPort != -1)
+            if ((uint)defaultPort > 0xFFFF && defaultPort != -1)
                 throw new ArgumentOutOfRangeException(nameof(defaultPort));
 
             schemeName = schemeName.ToLowerInvariant();
@@ -181,8 +183,10 @@ namespace System
         //
         // Is a Uri scheme known to System.Uri?
         //
-        public static bool IsKnownScheme(string schemeName!!)
+        public static bool IsKnownScheme(string schemeName)
         {
+            ArgumentNullException.ThrowIfNull(schemeName);
+
             if (!Uri.CheckSchemeName(schemeName))
                 throw new ArgumentOutOfRangeException(nameof(schemeName));
 

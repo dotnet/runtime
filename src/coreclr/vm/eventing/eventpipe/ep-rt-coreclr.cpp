@@ -1,3 +1,6 @@
+// Licensed to the .NET Foundation under one or more agreements.
+// The .NET Foundation licenses this file to you under the MIT license.
+
 #include <eventpipe/ep-rt-config.h>
 
 #ifdef ENABLE_PERFTRACING
@@ -12,7 +15,7 @@ CrstStatic _ep_rt_coreclr_config_lock;
 
 thread_local EventPipeCoreCLRThreadHolderTLS EventPipeCoreCLRThreadHolderTLS::g_threadHolderTLS;
 
-ep_char8_t *_ep_rt_coreclr_diagnostics_cmd_line;
+ep_char8_t *volatile _ep_rt_coreclr_diagnostics_cmd_line;
 
 #ifndef TARGET_UNIX
 uint32_t *_ep_rt_coreclr_proc_group_offsets;

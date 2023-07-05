@@ -4,12 +4,14 @@
 using System;
 using System.Numerics;
 using System.Runtime.CompilerServices;
+using Xunit;
 
-class Runtime_64700
+public class Runtime_64700
 {
     private static StructWithVtors _structWithVtorsStatic;
 
-    static int Main()
+    [Fact]
+    public static int TestEntryPoint()
     {
         _structWithVtorsStatic = new StructWithVtors { StructWithOneVtor = { OneVtor = new Vector2(1, 0) } };
 
@@ -68,7 +70,7 @@ class Runtime_64700
         return t + p2.FirstLngValue;
     }
 
-    public static void Use<T>(ref T arg) { }
+    internal static void Use<T>(ref T arg) { }
 
     struct SmallerStruct
     {

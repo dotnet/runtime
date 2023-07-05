@@ -24,7 +24,7 @@ class MethodTable;
 // Currently we set this to the packing size of the largest supported
 // fundamental type and let the field marshaller downsize where needed.
 //=======================================================================
-#define DEFAULT_PACKING_SIZE 32
+#define DEFAULT_PACKING_SIZE 64
 
 //=======================================================================
 // This structure contains information about where a field is placed in a structure, as well as it's size and alignment.
@@ -52,8 +52,8 @@ BOOL IsStructMarshalable(TypeHandle th);
 bool IsFieldBlittable(
     Module* pModule,
     mdFieldDef fd,
-    SigPointer fieldSig,
-    const SigTypeContext* pTypeContext,
+    CorElementType corElemType,
+    TypeHandle valueTypeHandle,
     ParseNativeTypeFlags flags
 );
 
@@ -92,7 +92,20 @@ public:
         return m_category;
     }
 
-    PTR_MethodTable GetNestedNativeMethodTable() const;
+    PTR_MethodTable GetNestedNativeMethodTable() const
+    {
+        CONTRACT(PTR_MethodTable)
+        {
+            NOTHROW;
+            GC_NOTRIGGER;
+            MODE_ANY;
+            PRECONDITION(IsNestedType());
+            POSTCONDITION(CheckPointer(RETVAL));
+        }
+        CONTRACT_END;
+
+        RETURN nestedTypeAndCount.m_pNestedType;
+    }
 
     ULONG GetNumElements() const
     {

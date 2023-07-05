@@ -30,6 +30,11 @@ namespace System.Security.Cryptography.Pkcs
         {
         }
 
+        internal Pkcs9DocumentDescription(ReadOnlySpan<byte> encodedDocumentDescription)
+            : base(Oids.DocumentDescriptionOid.CopyOid(), encodedDocumentDescription)
+        {
+        }
+
         //
         // Public methods.
         //
@@ -38,7 +43,7 @@ namespace System.Security.Cryptography.Pkcs
         {
             get
             {
-                return _lazyDocumentDescription ?? (_lazyDocumentDescription = Decode(RawData));
+                return _lazyDocumentDescription ??= Decode(RawData);
             }
         }
 
@@ -52,7 +57,7 @@ namespace System.Security.Cryptography.Pkcs
         // Private methods.
         //
 
-        [return: NotNullIfNotNull("rawData")]
+        [return: NotNullIfNotNull(nameof(rawData))]
         private static string? Decode(byte[]? rawData)
         {
             if (rawData == null)
@@ -62,8 +67,13 @@ namespace System.Security.Cryptography.Pkcs
             return octets.OctetStringToUnicode();
         }
 
-        private static byte[] Encode(string documentDescription!!)
+        private static byte[] Encode(string documentDescription)
         {
+            if (documentDescription is null)
+            {
+                throw new ArgumentNullException(nameof(documentDescription));
+            }
+
             byte[] octets = documentDescription.UnicodeToOctetString();
             return PkcsHelpers.EncodeOctetString(octets);
         }

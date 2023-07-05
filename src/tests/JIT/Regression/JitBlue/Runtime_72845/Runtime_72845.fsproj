@@ -1,0 +1,14 @@
+<Project Sdk="Microsoft.NET.Sdk">
+  <PropertyGroup>
+    <!-- Needed for GCStressIncompatible -->
+    <RequiresProcessIsolation>true</RequiresProcessIsolation>
+    <NoStandardLib>True</NoStandardLib>
+    <Noconfig>True</Noconfig>
+    <Optimize>True</Optimize>
+    <TargetFramework>$(NetCoreAppToolCurrent)</TargetFramework>
+    <GCStressIncompatible>True</GCStressIncompatible>
+  </PropertyGroup>
+  <ItemGroup>
+    <Compile Include="Runtime_72845.fs" />
+  </ItemGroup>
+</Project>

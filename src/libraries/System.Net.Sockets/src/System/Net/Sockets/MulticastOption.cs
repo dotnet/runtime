@@ -12,26 +12,31 @@ namespace System.Net.Sockets
 
         // Creates a new instance of the MulticastOption class with the specified IP address
         // group and local address.
-        public MulticastOption(IPAddress group!!, IPAddress mcint!!)
+        public MulticastOption(IPAddress group, IPAddress mcint)
         {
+            ArgumentNullException.ThrowIfNull(group);
+            ArgumentNullException.ThrowIfNull(mcint);
+
             _group = group;
             LocalAddress = mcint;
         }
 
-        public MulticastOption(IPAddress group!!, int interfaceIndex)
+        public MulticastOption(IPAddress group, int interfaceIndex)
         {
-            if (interfaceIndex < 0 || interfaceIndex > 0x00FFFFFF)
-            {
-                throw new ArgumentOutOfRangeException(nameof(interfaceIndex));
-            }
+            ArgumentNullException.ThrowIfNull(group);
+
+            ArgumentOutOfRangeException.ThrowIfNegative(interfaceIndex);
+            ArgumentOutOfRangeException.ThrowIfGreaterThan(interfaceIndex, 0x00FFFFFF);
 
             _group = group;
             _ifIndex = interfaceIndex;
         }
 
         // Creates a new version of the MulticastOption class for the specified group.
-        public MulticastOption(IPAddress group!!)
+        public MulticastOption(IPAddress group)
         {
+            ArgumentNullException.ThrowIfNull(group);
+
             _group = group;
 
             LocalAddress = IPAddress.Any;
@@ -64,10 +69,8 @@ namespace System.Net.Sockets
             get => _ifIndex;
             set
             {
-                if (value < 0 || value > 0x00FFFFFF)
-                {
-                    throw new ArgumentOutOfRangeException(nameof(value));
-                }
+                ArgumentOutOfRangeException.ThrowIfNegative(value);
+                ArgumentOutOfRangeException.ThrowIfGreaterThan(value, 0x00FFFFFF);
 
                 _localAddress = null;
                 _ifIndex = value;
@@ -83,12 +86,12 @@ namespace System.Net.Sockets
 
         // Creates a new instance of the MulticaseOption class with the specified IP
         // address group and local address.
-        public IPv6MulticastOption(IPAddress group!!, long ifindex)
+        public IPv6MulticastOption(IPAddress group, long ifindex)
         {
-            if (ifindex < 0 || ifindex > 0x00000000FFFFFFFF)
-            {
-                throw new ArgumentOutOfRangeException(nameof(ifindex));
-            }
+            ArgumentNullException.ThrowIfNull(group);
+
+            ArgumentOutOfRangeException.ThrowIfNegative(ifindex);
+            ArgumentOutOfRangeException.ThrowIfGreaterThan(ifindex, 0x00000000FFFFFFFF);
 
             _group = group;
             InterfaceIndex = ifindex;
@@ -96,8 +99,10 @@ namespace System.Net.Sockets
 
         // Creates a new version of the MulticastOption class for the specified
         // group.
-        public IPv6MulticastOption(IPAddress group!!)
+        public IPv6MulticastOption(IPAddress group)
         {
+            ArgumentNullException.ThrowIfNull(group);
+
             _group = group;
             InterfaceIndex = 0;
         }
@@ -119,10 +124,8 @@ namespace System.Net.Sockets
             get => _interface;
             set
             {
-                if (value < 0 || value > 0x00000000FFFFFFFF)
-                {
-                    throw new ArgumentOutOfRangeException(nameof(value));
-                }
+                ArgumentOutOfRangeException.ThrowIfNegative(value);
+                ArgumentOutOfRangeException.ThrowIfGreaterThan(value, 0x00000000FFFFFFFF);
 
                 _interface = value;
             }

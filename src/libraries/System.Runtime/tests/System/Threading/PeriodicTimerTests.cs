@@ -12,17 +12,56 @@ namespace System.Threading.Tests
         [Fact]
         public void Ctor_InvalidArguments_Throws()
         {
-            AssertExtensions.Throws<ArgumentOutOfRangeException>("period", () => new PeriodicTimer(TimeSpan.FromMilliseconds(-1)));
             AssertExtensions.Throws<ArgumentOutOfRangeException>("period", () => new PeriodicTimer(TimeSpan.Zero));
             AssertExtensions.Throws<ArgumentOutOfRangeException>("period", () => new PeriodicTimer(TimeSpan.FromMilliseconds(uint.MaxValue)));
         }
 
         [Theory]
+        [InlineData(-1)]
         [InlineData(1)]
         [InlineData(uint.MaxValue - 1)]
-        public void Ctor_ValidArguments_Succeeds(uint milliseconds)
+        public void Ctor_ValidArguments_Succeeds(double milliseconds)
         {
             using var timer = new PeriodicTimer(TimeSpan.FromMilliseconds(milliseconds));
+        }
+
+        [Fact]
+        public void Period_InvalidArguments_Throws()
+        {
+            PeriodicTimer timer = new PeriodicTimer(TimeSpan.FromMilliseconds(1));
+            AssertExtensions.Throws<ArgumentOutOfRangeException>("value", () => timer.Period = TimeSpan.Zero);
+            AssertExtensions.Throws<ArgumentOutOfRangeException>("value", () => timer.Period = TimeSpan.FromMilliseconds(uint.MaxValue));
+
+            timer.Dispose();
+            Assert.Throws<ObjectDisposedException>(() => timer.Period = TimeSpan.FromMilliseconds(100));
+        }
+
+        [Fact]
+        public void Period_Roundtrips()
+        {
+            using PeriodicTimer timer = new PeriodicTimer(TimeSpan.FromMilliseconds(1));
+            Assert.Equal(TimeSpan.FromMilliseconds(1), timer.Period);
+
+            timer.Period = Timeout.InfiniteTimeSpan;
+            Assert.Equal(Timeout.InfiniteTimeSpan, timer.Period);
+
+            timer.Period = TimeSpan.FromDays(1);
+            Assert.Equal(TimeSpan.FromDays(1), timer.Period);
+
+            AssertExtensions.Throws<ArgumentOutOfRangeException>("value", () => timer.Period = TimeSpan.Zero);
+            Assert.Equal(TimeSpan.FromDays(1), timer.Period);
+        }
+
+        [Fact]
+        public async Task Period_AffectsPendingWaits()
+        {
+            using PeriodicTimer timer = new PeriodicTimer(Timeout.InfiniteTimeSpan);
+
+            ValueTask<bool> task = timer.WaitForNextTickAsync();
+            Assert.False(task.IsCompleted);
+
+            timer.Period = TimeSpan.FromMilliseconds(1);
+            await task;
         }
 
         [Fact]
@@ -112,20 +151,46 @@ namespace System.Threading.Tests
         [ConditionalFact(typeof(PlatformDetection), nameof(PlatformDetection.IsPreciseGcSupported))]
         public async Task PeriodicTimer_ActiveOperations_TimerRooted()
         {
-            (WeakReference<PeriodicTimer> timer, ValueTask<bool> task) = Create();
+            // Step 1: Verify that if we have an active wait the timer does not get collected.
+            WeakReference<PeriodicTimer> timer = await CreateAndVerifyRooted();
 
-            WaitForTimerToBeCollected(timer, expected: false);
-
-            Assert.True(await task);
-
+            // Step 2: Verify that now the timer does get collected
             WaitForTimerToBeCollected(timer, expected: true);
 
+            // It is important that we do these two things in NoInlining
+            // methods. We are only guaranteed that references inside these
+            // methods are not live anymore when the functions return.
             [MethodImpl(MethodImplOptions.NoInlining)]
-            static (WeakReference<PeriodicTimer>, ValueTask<bool>) Create()
+            static async ValueTask<WeakReference<PeriodicTimer>> CreateAndVerifyRooted()
             {
-                var timer = new PeriodicTimer(TimeSpan.FromMilliseconds(1));
-                ValueTask<bool> task = timer.WaitForNextTickAsync();
-                return (new WeakReference<PeriodicTimer>(timer), task);
+                (WeakReference<PeriodicTimer> timer, ValueTask<bool> task) = CreateActive();
+
+                WaitForTimerToBeCollected(timer, expected: false);
+
+                Assert.True(await task);
+
+                return timer;
+            }
+
+            [MethodImpl(MethodImplOptions.NoInlining)]
+            static (WeakReference<PeriodicTimer>, ValueTask<bool>) CreateActive()
+            {
+                int waitMs = 1;
+                for (int i = 0; i < 10; i++)
+                {
+                    var timer = new PeriodicTimer(TimeSpan.FromMilliseconds(waitMs));
+                    ValueTask<bool> task = timer.WaitForNextTickAsync();
+                    if (!task.IsCompleted)
+                    {
+                        return (new WeakReference<PeriodicTimer>(timer), task);
+                    }
+
+                    task.GetAwaiter().GetResult();
+
+                    waitMs *= 2;
+                }
+
+                throw new Exception("Expected to be able to create an active wait for a timer");
             }
         }
 

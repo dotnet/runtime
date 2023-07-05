@@ -189,7 +189,7 @@ namespace System.Speech.Synthesis
         {
             get
             {
-                return _description != null ? _description : string.Empty;
+                return _description ?? string.Empty;
             }
         }
         [EditorBrowsable(EditorBrowsableState.Advanced)]
@@ -201,16 +201,7 @@ namespace System.Speech.Synthesis
             }
         }
         [EditorBrowsable(EditorBrowsableState.Advanced)]
-        public IDictionary<string, string> AdditionalInfo
-        {
-            get
-            {
-                if (_attributes == null)
-                    _attributes = new ReadOnlyDictionary<string, string>(new Dictionary<string, string>(0));
-                return _attributes;
-            }
-        }
-
+        public IDictionary<string, string> AdditionalInfo => _attributes ??= new ReadOnlyDictionary<string, string>(new Dictionary<string, string>(0));
         #endregion
 
         #region Internal Methods

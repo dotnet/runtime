@@ -56,14 +56,14 @@ namespace System.Linq.Tests
         [Fact]
         public void Count1()
         {
-            var count = (new int[] { 0 }).AsQueryable().Count();
+            var count = new[] { 0 }.AsQueryable().Count();
             Assert.Equal(1, count);
         }
 
         [Fact]
         public void Count2()
         {
-            var count = (new int[] { 0, 1, 2 }).AsQueryable().Count(n => n > 0);
+            var count = new[] { 0, 1, 2 }.AsQueryable().Count(n => n > 0);
             Assert.Equal(2, count);
         }
     }

@@ -41,7 +41,7 @@
 
 // =============== CLASS MEMBERS DECLARATION ===================
 
-.class private abstract auto ansi sealed beforefieldinit VectorForwarder.App
+.class public abstract auto ansi sealed beforefieldinit VectorForwarder.App
        extends [mscorlib]System.Object
 {
   .class auto ansi nested private beforefieldinit CallTarget
@@ -242,7 +242,7 @@
     IL_002e:  ret
   } // end of method App::ForwardIndices
 
-  .method private hidebysig static int32 
+  .method public hidebysig static int32 
           Main() cil managed
   {
     .custom instance void [xunit.core]Xunit.FactAttribute::.ctor() = (

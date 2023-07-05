@@ -244,23 +244,13 @@ int32_t SystemNative_ForkAndExecProcess(const char* filename,
     pthread_setcancelstate(PTHREAD_CANCEL_DISABLE, &thread_cancel_state);
 #endif
 
-    // Validate arguments
-    if (NULL == filename || NULL == argv || NULL == envp || NULL == stdinFd || NULL == stdoutFd ||
-        NULL == stderrFd || NULL == childPid || (groupsLength > 0 && groups == NULL))
-    {
-        assert(false && "null argument.");
-        errno = EINVAL;
-        success = false;
-        goto done;
-    }
+    assert(NULL != filename && NULL != argv && NULL != envp && NULL != stdinFd &&
+            NULL != stdoutFd && NULL != stderrFd && NULL != childPid &&
+            (groupsLength == 0 || groups != NULL) && "null argument.");
 
-    if ((redirectStdin & ~1) != 0 || (redirectStdout & ~1) != 0 || (redirectStderr & ~1) != 0 || (setCredentials & ~1) != 0)
-    {
-        assert(false && "Boolean redirect* inputs must be 0 or 1.");
-        errno = EINVAL;
-        success = false;
-        goto done;
-    }
+    assert((redirectStdin & ~1) == 0 && (redirectStdout & ~1) == 0 &&
+            (redirectStderr & ~1) == 0 && (setCredentials & ~1) == 0 &&
+            "Boolean redirect* inputs must be 0 or 1.");
 
     if (setCredentials && groupsLength > 0)
     {
@@ -334,7 +324,7 @@ int32_t SystemNative_ForkAndExecProcess(const char* filename,
     // The thing to remember about shared memory vfork() is the documentation is way out of date.
     // It does the following things:
     // * creates a new process in the memory space of the calling process.
-    // * blocks the calling thread (not process!) in an uninterruptable sleep
+    // * blocks the calling thread (not process!) in an uninterruptible sleep
     // * sets up the process records so the following happen:
     //   + execve() replaces the memory space in the child and unblocks the parent
     //   + process exit by any means unblocks the parent
@@ -374,7 +364,7 @@ int32_t SystemNative_ForkAndExecProcess(const char* filename,
         // equally confused.
         // Remove all signals, then restore signal mask.
         // Since we are in a vfork() child, the only safe signal values are SIG_DFL and SIG_IGN.  See man 3 libthr on BSD.
-        // "The implementation interposes the user-installed signal(3) handlers....to pospone signal delivery to threads
+        // "The implementation interposes the user-installed signal(3) handlers....to postpone signal delivery to threads
         // which entered (libthr-internal) critical sections..."  We want to pass SIG_DFL anyway.
         sigset_t junk_signal_set;
         struct sigaction sa_default;
@@ -670,7 +660,7 @@ int32_t SystemNative_Kill(int32_t pid, int32_t signal)
     return kill(pid, signal);
 }
 
-int32_t SystemNative_GetPid()
+int32_t SystemNative_GetPid(void)
 {
     return getpid();
 }
@@ -685,7 +675,7 @@ void SystemNative_SysLog(SysLogPriority priority, const char* message, const cha
     syslog((int)(LOG_USER | priority), message, arg1);
 }
 
-int32_t SystemNative_WaitIdAnyExitedNoHangNoWait()
+int32_t SystemNative_WaitIdAnyExitedNoHangNoWait(void)
 {
     siginfo_t siginfo;
     memset(&siginfo, 0, sizeof(siginfo));
@@ -884,7 +874,7 @@ int32_t SystemNative_SchedGetAffinity(int32_t pid, intptr_t* mask)
 }
 #endif
 
-char* SystemNative_GetProcessPath()
+char* SystemNative_GetProcessPath(void)
 {
     return minipal_getexepath();
 }

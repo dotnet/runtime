@@ -104,8 +104,8 @@ struct ResourceNode
         {
             //fwrite(&(g_prResNodePtr[i]->ResHdr),g_prResNodePtr[i]->ResHdr.dwHeaderSize,1,pF);
             ResHdr.dwHeaderSize = sizeof(ResourceHeader);
-            if(wzType) ResHdr.dwHeaderSize += (DWORD)((wcslen(wzType) + 1)*sizeof(WCHAR) - sizeof(DWORD));
-            if(wzName) ResHdr.dwHeaderSize += (DWORD)((wcslen(wzName) + 1)*sizeof(WCHAR) - sizeof(DWORD));
+            if(wzType) ResHdr.dwHeaderSize += (DWORD)((u16_strlen(wzType) + 1)*sizeof(WCHAR) - sizeof(DWORD));
+            if(wzName) ResHdr.dwHeaderSize += (DWORD)((u16_strlen(wzName) + 1)*sizeof(WCHAR) - sizeof(DWORD));
 
             //---- Constant part of the header: DWORD,DWORD
             fwrite(&ResHdr.dwDataSize, sizeof(DWORD),1,pF);
@@ -113,15 +113,15 @@ struct ResourceNode
             //--- Variable part of header: type and name
             if(wzType)
             {
-                fwrite(wzType,(wcslen(wzType) + 1)*sizeof(WCHAR), 1, pF);
-                dwFiller += (DWORD)wcslen(wzType) + 1;
+                fwrite(wzType,(u16_strlen(wzType) + 1)*sizeof(WCHAR), 1, pF);
+                dwFiller += (DWORD)u16_strlen(wzType) + 1;
             }
             else
                 fwrite(&ResHdr.dwTypeID,sizeof(DWORD),1,pF);
             if(wzName)
             {
-                fwrite(wzName,(wcslen(wzName) + 1)*sizeof(WCHAR), 1, pF);
-                dwFiller += (DWORD)wcslen(wzName) + 1;
+                fwrite(wzName,(u16_strlen(wzName) + 1)*sizeof(WCHAR), 1, pF);
+                dwFiller += (DWORD)u16_strlen(wzName) + 1;
             }
             else
                 fwrite(&ResHdr.dwNameID,sizeof(DWORD),1,pF);
@@ -181,7 +181,7 @@ DWORD   DumpResourceToFile(_In_ __nullterminated WCHAR*   wzFileName)
             PIMAGE_RESOURCE_DIRECTORY pirdType = (PIMAGE_RESOURCE_DIRECTORY)pbResBase;
             PIMAGE_RESOURCE_DIRECTORY_ENTRY pirdeType = (PIMAGE_RESOURCE_DIRECTORY_ENTRY)(pbResBase+sizeof(IMAGE_RESOURCE_DIRECTORY));
             DWORD	dwTypeID;
-            unsigned short i = 0,N = pirdType->NumberOfNamedEntries+pirdType->NumberOfIdEntries;
+            unsigned i = 0,N = pirdType->NumberOfNamedEntries+pirdType->NumberOfIdEntries;
             PAL_CPP_TRY {
                 for(i=0; i < N; i++, pirdeType++)
                 {
@@ -192,7 +192,7 @@ DWORD   DumpResourceToFile(_In_ __nullterminated WCHAR*   wzFileName)
                         PIMAGE_RESOURCE_DIRECTORY pirdName = (PIMAGE_RESOURCE_DIRECTORY)pbNameBase;
                         PIMAGE_RESOURCE_DIRECTORY_ENTRY pirdeName = (PIMAGE_RESOURCE_DIRECTORY_ENTRY)(pbNameBase+sizeof(IMAGE_RESOURCE_DIRECTORY));
                         DWORD   dwNameID;
-                        unsigned short i,N = VAL16(pirdName->NumberOfNamedEntries)+VAL16(pirdName->NumberOfIdEntries);
+                        unsigned i,N = VAL16(pirdName->NumberOfNamedEntries)+VAL16(pirdName->NumberOfIdEntries);
 
                         for(i=0; i < N; i++, pirdeName++)
                         {
@@ -203,7 +203,7 @@ DWORD   DumpResourceToFile(_In_ __nullterminated WCHAR*   wzFileName)
                                 PIMAGE_RESOURCE_DIRECTORY pirdLang = (PIMAGE_RESOURCE_DIRECTORY)pbLangBase;
                                 PIMAGE_RESOURCE_DIRECTORY_ENTRY pirdeLang = (PIMAGE_RESOURCE_DIRECTORY_ENTRY)(pbLangBase+sizeof(IMAGE_RESOURCE_DIRECTORY));
                                 DWORD   dwLangID;
-                                unsigned short i,N = VAL16(pirdLang->NumberOfNamedEntries)+VAL16(pirdLang->NumberOfIdEntries);
+                                unsigned i,N = VAL16(pirdLang->NumberOfNamedEntries)+VAL16(pirdLang->NumberOfIdEntries);
 
                                 for(i=0; i < N; i++, pirdeLang++)
                                 {

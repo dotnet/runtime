@@ -2,7 +2,6 @@
 // The .NET Foundation licenses this file to you under the MIT license.
 
 using System.Collections;
-using System.DirectoryServices.Interop;
 
 namespace System.DirectoryServices
 {
@@ -34,7 +33,7 @@ namespace System.DirectoryServices
             _changeList = ArrayList.Synchronized(tempList);
             _allowMultipleChange = entry.allowMultipleChange;
             string tempPath = entry.Path;
-            if (tempPath == null || tempPath.Length == 0)
+            if (string.IsNullOrEmpty(tempPath))
             {
                 // user does not specify path, so we bind to default naming context using LDAP provider.
                 _needNewBehavior = true;

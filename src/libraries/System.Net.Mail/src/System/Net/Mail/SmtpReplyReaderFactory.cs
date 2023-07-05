@@ -73,10 +73,7 @@ namespace System.Net.Mail
             {
                 if (_readState != ReadState.Done)
                 {
-                    if (_byteBuffer == null)
-                    {
-                        _byteBuffer = new byte[SmtpReplyReaderFactory.DefaultBufferSize];
-                    }
+                    _byteBuffer ??= new byte[SmtpReplyReaderFactory.DefaultBufferSize];
 
                     while (0 != Read(caller, _byteBuffer, 0, _byteBuffer.Length)) ;
                 }
@@ -85,12 +82,12 @@ namespace System.Net.Mail
             }
         }
 
-        internal LineInfo[] EndReadLines(IAsyncResult result)
+        internal static LineInfo[] EndReadLines(IAsyncResult result)
         {
             return ReadLinesAsyncResult.End(result);
         }
 
-        internal LineInfo EndReadLine(IAsyncResult result)
+        internal static LineInfo EndReadLine(IAsyncResult result)
         {
             LineInfo[] info = ReadLinesAsyncResult.End(result);
             if (info != null && info.Length > 0)
@@ -102,10 +99,7 @@ namespace System.Net.Mail
 
         internal SmtpReplyReader GetNextReplyReader()
         {
-            if (_currentReader != null)
-            {
-                _currentReader.Close();
-            }
+            _currentReader?.Close();
 
             _readState = ReadState.Status0;
             _currentReader = new SmtpReplyReader(this);
@@ -310,10 +304,7 @@ namespace System.Net.Mail
                 return Array.Empty<LineInfo>();
             }
 
-            if (_byteBuffer == null)
-            {
-                _byteBuffer = new byte[SmtpReplyReaderFactory.DefaultBufferSize];
-            }
+            _byteBuffer ??= new byte[SmtpReplyReaderFactory.DefaultBufferSize];
 
             System.Diagnostics.Debug.Assert(_readState == ReadState.Status0);
 
@@ -398,10 +389,7 @@ namespace System.Net.Mail
                     return;
                 }
 
-                if (_parent._byteBuffer == null)
-                {
-                    _parent._byteBuffer = new byte[SmtpReplyReaderFactory.DefaultBufferSize];
-                }
+                _parent._byteBuffer ??= new byte[SmtpReplyReaderFactory.DefaultBufferSize];
 
                 System.Diagnostics.Debug.Assert(_parent._readState == ReadState.Status0);
 

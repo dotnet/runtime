@@ -160,7 +160,7 @@ namespace System.IO
                 _fullDirectory = Interop.Sys.RealPath(_fullDirectory);
                 if (_fullDirectory is null)
                 {
-                    throw Interop.GetExceptionForIoErrno(Interop.Sys.GetLastErrorInfo(), _fullDirectory, isDirectory: true);
+                    throw Interop.GetExceptionForIoErrno(Interop.Sys.GetLastErrorInfo(), _fullDirectory, isDirError: true);
                 }
 
                 // Also ensure it has a trailing slash.
@@ -324,7 +324,9 @@ namespace System.IO
                         EventStreamFlags);
                     if (eventStream.IsInvalid)
                     {
-                        throw Interop.GetExceptionForIoErrno(Interop.Sys.GetLastErrorInfo(), _fullDirectory, true);
+                        Exception e = Interop.GetExceptionForIoErrno(Interop.Sys.GetLastErrorInfo(), _fullDirectory, true);
+                        eventStream.Dispose();
+                        throw e;
                     }
 
                     cleanupGCHandle = false;
@@ -601,7 +603,7 @@ namespace System.IO
                 return eventType;
             }
 
-            private bool ShouldRescanOccur(FSEventStreamEventFlags flags)
+            private static bool ShouldRescanOccur(FSEventStreamEventFlags flags)
             {
                 // Check if any bit is set that signals that the caller should rescan
                 return (flags.HasFlag(FSEventStreamEventFlags.kFSEventStreamEventFlagMustScanSubDirs) ||
@@ -620,7 +622,7 @@ namespace System.IO
                 return _includeChildren || _fullDirectory.AsSpan().StartsWith(System.IO.Path.GetDirectoryName(eventPath), StringComparison.OrdinalIgnoreCase);
             }
 
-            private int? FindRenameChangePairedChange(
+            private static int? FindRenameChangePairedChange(
                 int currentIndex,
                 Span<FSEventStreamEventFlags> flags, Span<FSEventStreamEventId> ids)
             {

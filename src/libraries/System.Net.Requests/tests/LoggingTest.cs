@@ -10,7 +10,6 @@ namespace System.Net.Tests
     {
         [Fact]
         [SkipOnCoreClr("System.Net.Tests are flaky", ~RuntimeConfiguration.Release)]
-        [ActiveIssue("https://github.com/dotnet/runtime/issues/37087", TestPlatforms.Android)]
         public void EventSource_ExistsWithCorrectId()
         {
             Type esType = typeof(WebRequest).Assembly.GetType("System.Net.NetEventSource", throwOnError: true, ignoreCase: false);

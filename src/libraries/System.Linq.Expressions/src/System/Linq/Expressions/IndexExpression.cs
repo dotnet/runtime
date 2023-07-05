@@ -213,7 +213,7 @@ namespace System.Linq.Expressions
         public static IndexExpression Property(Expression instance, string propertyName, params Expression[]? arguments)
         {
             ExpressionUtils.RequiresCanRead(instance, nameof(instance));
-            ContractUtils.RequiresNotNull(propertyName, nameof(propertyName));
+            ArgumentNullException.ThrowIfNull(propertyName);
             PropertyInfo pi = FindInstanceProperty(instance.Type, propertyName, arguments);
             return MakeIndexProperty(instance, pi, nameof(propertyName), arguments.ToReadOnly());
         }
@@ -378,7 +378,7 @@ namespace System.Linq.Expressions
             // should match the type returned by the get method.
             // Accessor parameters cannot be ByRef.
 
-            ContractUtils.RequiresNotNull(indexer, paramName);
+            ArgumentNullException.ThrowIfNull(indexer, paramName);
             if (indexer.PropertyType.IsByRef)
             {
                 throw Error.PropertyCannotHaveRefType(paramName);
@@ -457,7 +457,7 @@ namespace System.Linq.Expressions
 
         private static void ValidateAccessor(Expression? instance, MethodInfo method, ParameterInfo[] indexes, ref ReadOnlyCollection<Expression> arguments, string? paramName)
         {
-            ContractUtils.RequiresNotNull(arguments, nameof(arguments));
+            ArgumentNullException.ThrowIfNull(arguments);
 
             ValidateMethodInfo(method, nameof(method));
             if ((method.CallingConvention & CallingConventions.VarArgs) != 0)

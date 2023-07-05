@@ -196,7 +196,7 @@ namespace System.DirectoryServices.ActiveDirectory
                     }
                     Debug.Assert(buffer != (IntPtr)0);
 
-                    // get the managed structre representation
+                    // get the managed structure representation
                     TRUSTED_DOMAIN_INFORMATION_EX domainInfo = default;
                     Marshal.PtrToStructure(buffer, domainInfo);
 
@@ -639,7 +639,7 @@ namespace System.DirectoryServices.ActiveDirectory
                             throw ExceptionHelper.GetExceptionFromErrorCode((int)win32Error, serverName);
                     }
 
-                    // get the managed structre representation
+                    // get the managed structure representation
                     TRUSTED_DOMAIN_FULL_INFORMATION domainInfo = new TRUSTED_DOMAIN_FULL_INFORMATION();
                     Marshal.PtrToStructure(buffer, domainInfo);
 
@@ -770,7 +770,7 @@ namespace System.DirectoryServices.ActiveDirectory
                             throw ExceptionHelper.GetExceptionFromErrorCode((int)win32Error, serverName);
                     }
 
-                    // get the managed structre representation
+                    // get the managed structure representation
                     TRUSTED_DOMAIN_FULL_INFORMATION domainInfo = new TRUSTED_DOMAIN_FULL_INFORMATION();
                     Marshal.PtrToStructure(buffer, domainInfo);
 
@@ -947,14 +947,8 @@ namespace System.DirectoryServices.ActiveDirectory
 
         internal static string CreateTrustPassword()
         {
-#if NETCOREAPP3_0_OR_GREATER
-            return string.Create<object?>(PASSWORD_LENGTH, null, static (destination, _) =>
-            {
-                for (int i = 0; i < destination.Length; i++)
-                {
-                    destination[i] = PasswordCharacterSet[RandomNumberGenerator.GetInt32(PasswordCharacterSet.Length)];
-                }
-            });
+#if NET8_0_OR_GREATER
+            return RandomNumberGenerator.GetString(PasswordCharacterSet, PASSWORD_LENGTH);
 #else
             char[] cBuf = new char[PASSWORD_LENGTH];
             byte[] randomBuffer = new byte[1];

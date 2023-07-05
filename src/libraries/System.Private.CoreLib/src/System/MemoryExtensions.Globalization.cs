@@ -26,10 +26,10 @@ namespace System
 
         /// <summary>
         /// Returns a value indicating whether the specified <paramref name="value"/> occurs within the <paramref name="span"/>.
+        /// </summary>
         /// <param name="span">The source span.</param>
         /// <param name="value">The value to seek within the source span.</param>
         /// <param name="comparisonType">One of the enumeration values that determines how the <paramref name="span"/> and <paramref name="value"/> are compared.</param>
-        /// </summary>
         public static bool Contains(this ReadOnlySpan<char> span, ReadOnlySpan<char> value, StringComparison comparisonType)
         {
             return IndexOf(span, value, comparisonType) >= 0;
@@ -38,10 +38,10 @@ namespace System
         /// <summary>
         /// Determines whether this <paramref name="span"/> and the specified <paramref name="other"/> span have the same characters
         /// when compared using the specified <paramref name="comparisonType"/> option.
+        /// </summary>
         /// <param name="span">The source span.</param>
         /// <param name="other">The value to compare with the source span.</param>
         /// <param name="comparisonType">One of the enumeration values that determines how the <paramref name="span"/> and <paramref name="other"/> are compared.</param>
-        /// </summary>
         [Intrinsic] // Unrolled and vectorized for half-constant input (Ordinal)
         public static bool Equals(this ReadOnlySpan<char> span, ReadOnlySpan<char> other, StringComparison comparisonType)
         {
@@ -89,10 +89,10 @@ namespace System
         /// <summary>
         /// Compares the specified <paramref name="span"/> and <paramref name="other"/> using the specified <paramref name="comparisonType"/>,
         /// and returns an integer that indicates their relative position in the sort order.
+        /// </summary>
         /// <param name="span">The source span.</param>
         /// <param name="other">The value to compare with the source span.</param>
         /// <param name="comparisonType">One of the enumeration values that determines how the <paramref name="span"/> and <paramref name="other"/> are compared.</param>
-        /// </summary>
         public static int CompareTo(this ReadOnlySpan<char> span, ReadOnlySpan<char> other, StringComparison comparisonType)
         {
             string.CheckStringComparison(comparisonType);
@@ -120,10 +120,10 @@ namespace System
 
         /// <summary>
         /// Reports the zero-based index of the first occurrence of the specified <paramref name="value"/> in the current <paramref name="span"/>.
+        /// </summary>
         /// <param name="span">The source span.</param>
         /// <param name="value">The value to seek within the source span.</param>
         /// <param name="comparisonType">One of the enumeration values that determines how the <paramref name="span"/> and <paramref name="value"/> are compared.</param>
-        /// </summary>
         public static int IndexOf(this ReadOnlySpan<char> span, ReadOnlySpan<char> value, StringComparison comparisonType)
         {
             string.CheckStringComparison(comparisonType);
@@ -151,10 +151,10 @@ namespace System
 
         /// <summary>
         /// Reports the zero-based index of the last occurrence of the specified <paramref name="value"/> in the current <paramref name="span"/>.
+        /// </summary>
         /// <param name="span">The source span.</param>
         /// <param name="value">The value to seek within the source span.</param>
         /// <param name="comparisonType">One of the enumeration values that determines how the <paramref name="span"/> and <paramref name="value"/> are compared.</param>
-        /// </summary>
         public static int LastIndexOf(this ReadOnlySpan<char> span, ReadOnlySpan<char> value, StringComparison comparisonType)
         {
             string.CheckStringComparison(comparisonType);
@@ -191,13 +191,13 @@ namespace System
         /// <param name="source">The source span.</param>
         /// <param name="destination">The destination span which contains the transformed characters.</param>
         /// <param name="culture">An object that supplies culture-specific casing rules.</param>
-        /// <remarks>If <paramref name="culture"/> is null, <see cref="System.Globalization.CultureInfo.CurrentCulture"/> will be used.</remarks>
+        /// <remarks>If <paramref name="culture"/> is null, <see cref="CultureInfo.CurrentCulture"/> will be used.</remarks>
         /// <returns>The number of characters written into the destination span. If the destination is too small, returns -1.</returns>
         /// <exception cref="InvalidOperationException">The source and destination buffers overlap.</exception>
         public static int ToLower(this ReadOnlySpan<char> source, Span<char> destination, CultureInfo? culture)
         {
             if (source.Overlaps(destination))
-                throw new InvalidOperationException(SR.InvalidOperation_SpanOverlappedOperation);
+                ThrowHelper.ThrowInvalidOperationException(ExceptionResource.InvalidOperation_SpanOverlappedOperation);
 
             culture ??= CultureInfo.CurrentCulture;
 
@@ -223,7 +223,7 @@ namespace System
         public static int ToLowerInvariant(this ReadOnlySpan<char> source, Span<char> destination)
         {
             if (source.Overlaps(destination))
-                throw new InvalidOperationException(SR.InvalidOperation_SpanOverlappedOperation);
+                ThrowHelper.ThrowInvalidOperationException(ExceptionResource.InvalidOperation_SpanOverlappedOperation);
 
             // Assuming that changing case does not affect length
             if (destination.Length < source.Length)
@@ -243,13 +243,13 @@ namespace System
         /// <param name="source">The source span.</param>
         /// <param name="destination">The destination span which contains the transformed characters.</param>
         /// <param name="culture">An object that supplies culture-specific casing rules.</param>
-        /// <remarks>If <paramref name="culture"/> is null, <see cref="System.Globalization.CultureInfo.CurrentCulture"/> will be used.</remarks>
+        /// <remarks>If <paramref name="culture"/> is null, <see cref="CultureInfo.CurrentCulture"/> will be used.</remarks>
         /// <returns>The number of characters written into the destination span. If the destination is too small, returns -1.</returns>
         /// <exception cref="InvalidOperationException">The source and destination buffers overlap.</exception>
         public static int ToUpper(this ReadOnlySpan<char> source, Span<char> destination, CultureInfo? culture)
         {
             if (source.Overlaps(destination))
-                throw new InvalidOperationException(SR.InvalidOperation_SpanOverlappedOperation);
+                ThrowHelper.ThrowInvalidOperationException(ExceptionResource.InvalidOperation_SpanOverlappedOperation);
 
             culture ??= CultureInfo.CurrentCulture;
 
@@ -275,7 +275,7 @@ namespace System
         public static int ToUpperInvariant(this ReadOnlySpan<char> source, Span<char> destination)
         {
             if (source.Overlaps(destination))
-                throw new InvalidOperationException(SR.InvalidOperation_SpanOverlappedOperation);
+                ThrowHelper.ThrowInvalidOperationException(ExceptionResource.InvalidOperation_SpanOverlappedOperation);
 
             // Assuming that changing case does not affect length
             if (destination.Length < source.Length)

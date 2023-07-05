@@ -15,7 +15,7 @@ namespace LOHCompactAPI
         static List<byte[]> shortLivedList = new List<byte[]>(ListSize);
         static List<byte[]> LongLivedList = new List<byte[]>(ListSize);
 
-        public static int Main(string[] args)
+        public static int Main()
         {
             int retVal=0;
             for (int i = 0; i < 3; i++)

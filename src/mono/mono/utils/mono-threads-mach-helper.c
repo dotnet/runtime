@@ -34,7 +34,7 @@ static id mono_dead_letter_key;
 
 /*
  * Our Mach bindings have a problem in that they might need to attach
- * the runtime after the the user tls keys have been destroyed.
+ * the runtime after the user tls keys have been destroyed.
  *
  * This happens when a bound object is retained by NSThread, which is
  * released very late in the TLS cleanup process.
@@ -59,10 +59,10 @@ mono_dead_letter_dealloc (id self, SEL _cmd)
 {
 	struct objc_super super;
 	super.receiver = self;
-#if !defined(__cplusplus) && !__OBJC2__
-	super.class = nsobject;
-#else
+#if defined(__cplusplus) || defined(HAVE_OBJC_SUPER_SUPER_CLASS)
 	super.super_class = nsobject;
+#else
+	super.class = nsobject;
 #endif
 	void (*objc_msgSendSuper_op)(struct objc_super *, SEL) = (void (*)(struct objc_super *, SEL)) objc_msgSendSuper;
 	objc_msgSendSuper_op (&super, dealloc);

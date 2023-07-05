@@ -1,0 +1,10 @@
+<Project>
+  <PropertyGroup>
+    <!-- needs to be set early -->
+    <Scenario>BuildWasmApps</Scenario>
+    <IsTestProject>true</IsTestProject>
+    <AssemblyBeingTested>Wasm.Build.Tests</AssemblyBeingTested>
+  </PropertyGroup>
+
+  <Import Project="..\..\..\libraries\Directory.Build.props" />
+</Project>

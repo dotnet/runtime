@@ -6,6 +6,9 @@ using System.IO;
 using System.Threading.Tasks;
 using System.Runtime.Versioning;
 using Microsoft.Win32.SafeHandles;
+using System.Reflection;
+using System.Collections;
+using System.Threading;
 
 namespace System.Net.Sockets
 {
@@ -106,7 +109,7 @@ namespace System.Net.Sockets
             SocketError errorCode = ReplaceHandle();
             if (errorCode != SocketError.Success)
             {
-                throw new SocketException((int) errorCode);
+                throw new SocketException((int)errorCode);
             }
 
             _handle.LastConnectFailed = false;
@@ -135,12 +138,20 @@ namespace System.Net.Sockets
 
             // Then replace the handle with a new one
             SafeSocketHandle oldHandle = _handle;
-            SocketError errorCode = SocketPal.CreateSocket(_addressFamily, _socketType, _protocolType, out _handle);
+            SocketError errorCode = SocketPal.CreateSocket(_addressFamily, _socketType, _protocolType, out SafeSocketHandle newHandle);
+            Volatile.Write(ref _handle, newHandle);
             oldHandle.TransferTrackedState(_handle);
             oldHandle.Dispose();
+
             if (errorCode != SocketError.Success)
             {
                 return errorCode;
+            }
+
+            if (Volatile.Read(ref _disposed) != 0)
+            {
+                _handle.Dispose();
+                throw new ObjectDisposedException(GetType().FullName);
             }
 
             // And put back the copied settings.  For DualMode, we use the value stored in the _handle
@@ -165,17 +176,26 @@ namespace System.Net.Sockets
             throw new PlatformNotSupportedException(SR.net_sockets_connect_multiconnect_notsupported);
         }
 
-        private Socket? GetOrCreateAcceptSocket(Socket? acceptSocket, bool unused, string propertyName, out SafeSocketHandle? handle)
+#pragma warning disable IDE0060, CA1822
+        private Socket? GetOrCreateAcceptSocket(Socket? acceptSocket, bool checkDisconnected, string propertyName, out SafeSocketHandle? handle)
         {
-            // AcceptSocket is not supported on Unix.
             if (acceptSocket != null)
             {
-                throw new PlatformNotSupportedException(SR.PlatformNotSupported_AcceptSocket);
+                if (acceptSocket._handle.HasShutdownSend)
+                {
+                    throw new SocketException((int)SocketError.InvalidArgument);
+                }
+
+                if (acceptSocket._rightEndPoint != null && (!checkDisconnected || !acceptSocket._isDisconnected))
+                {
+                    throw new InvalidOperationException(SR.Format(SR.net_sockets_namedmustnotbebound, propertyName));
+                }
             }
 
             handle = null;
-            return null;
+            return acceptSocket;
         }
+#pragma warning restore IDE0060, CA1822
 
         private static void CheckTransmitFileOptions(TransmitFileOptions flags)
         {
@@ -225,6 +245,58 @@ namespace System.Net.Sockets
             {
                 Send(postBuffer);
             }
+        }
+
+        internal void DisposeHandle()
+        {
+            _handle.Dispose();
+        }
+
+        internal void ClearHandle()
+        {
+            _handle = null!;
+        }
+
+        internal Socket CopyStateFromSource(Socket source)
+        {
+            _addressFamily = source._addressFamily;
+            _closeTimeout = source._closeTimeout;
+            _disposed = source._disposed;
+            _handle = source._handle;
+            _isConnected = source._isConnected;
+            _isDisconnected = source._isDisconnected;
+            _isListening = source._isListening;
+            _nonBlockingConnectInProgress = source._nonBlockingConnectInProgress;
+            _protocolType = source._protocolType;
+            _receivingPacketInformation = source._receivingPacketInformation;
+            _remoteEndPoint = source._remoteEndPoint;
+            _rightEndPoint = source._rightEndPoint;
+            _socketType = source._socketType;
+            _willBlock = source._willBlock;
+            _willBlockInternal = source._willBlockInternal;
+            _localEndPoint = source._localEndPoint;
+            _multiBufferReceiveEventArgs = source._multiBufferReceiveEventArgs;
+            _multiBufferSendEventArgs = source._multiBufferSendEventArgs;
+            _pendingConnectRightEndPoint = source._pendingConnectRightEndPoint;
+            _singleBufferReceiveEventArgs = source._singleBufferReceiveEventArgs;
+#if DEBUG
+            // Try to detect if a property gets added that we're not copying correctly.
+            foreach (PropertyInfo pi in typeof(Socket).GetProperties(BindingFlags.Public | BindingFlags.NonPublic | BindingFlags.Instance | BindingFlags.DeclaredOnly))
+            {
+                try
+                {
+                    object? origValue = pi.GetValue(source);
+                    object? cloneValue = pi.GetValue(this);
+
+                    Debug.Assert(Equals(origValue, cloneValue), $"{pi.Name}. Expected: {origValue}, Actual: {cloneValue}");
+                }
+                catch (TargetInvocationException ex) when (ex.InnerException is SocketException se && se.SocketErrorCode == SocketError.OperationNotSupported)
+                {
+                    // macOS fails to retrieve DontFragment and MulticastLoopback at the moment
+                }
+            }
+#endif
+            return this;
         }
     }
 }

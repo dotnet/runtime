@@ -25,10 +25,12 @@ namespace System.Text
             _charLeftOver = NULL_CHAR;
         }
 
-        public override unsafe int GetByteCount(char[] chars!!, int index, int count, bool flush)
+        public override unsafe int GetByteCount(char[] chars, int index, int count, bool flush)
         {
-            if (index < 0 || count < 0)
-                throw new ArgumentOutOfRangeException(index < 0 ? nameof(index) : nameof(count), SR.ArgumentOutOfRange_NeedNonNegNum);
+            ArgumentNullException.ThrowIfNull(chars);
+
+            ArgumentOutOfRangeException.ThrowIfNegative(index);
+            ArgumentOutOfRangeException.ThrowIfNegative(count);
 
             if (chars.Length - index < count)
                 throw new ArgumentOutOfRangeException(nameof(chars), SR.ArgumentOutOfRange_IndexCountBuffer);
@@ -70,10 +72,11 @@ namespace System.Text
             return result;
         }
 
-        public unsafe override int GetByteCount(char* chars!!, int count, bool flush)
+        public override unsafe int GetByteCount(char* chars, int count, bool flush)
         {
-            if (count < 0)
-                throw new ArgumentOutOfRangeException(nameof(count), SR.ArgumentOutOfRange_NeedNonNegNum);
+            ArgumentNullException.ThrowIfNull(chars);
+
+            ArgumentOutOfRangeException.ThrowIfNegative(count);
 
             bool excludeLastChar = count > 0 && !flush && char.IsHighSurrogate(chars[count - 1]);
 
@@ -95,17 +98,20 @@ namespace System.Text
             return ConvertWithLeftOverChar(chars, count, null, 0);
         }
 
-        public override unsafe int GetBytes(char[] chars!!, int charIndex, int charCount,
-                                              byte[] bytes!!, int byteIndex, bool flush)
+        public override unsafe int GetBytes(char[] chars, int charIndex, int charCount,
+                                              byte[] bytes, int byteIndex, bool flush)
         {
-            if (charIndex < 0 || charCount < 0)
-                throw new ArgumentOutOfRangeException(charIndex < 0 ? nameof(charIndex) : nameof(charCount), SR.ArgumentOutOfRange_NeedNonNegNum);
+            ArgumentNullException.ThrowIfNull(chars);
+            ArgumentNullException.ThrowIfNull(bytes);
+
+            ArgumentOutOfRangeException.ThrowIfNegative(charIndex);
+            ArgumentOutOfRangeException.ThrowIfNegative(charCount);
 
             if (chars.Length - charIndex < charCount)
                 throw new ArgumentOutOfRangeException(nameof(chars), SR.ArgumentOutOfRange_IndexCountBuffer);
 
             if (byteIndex < 0 || byteIndex > bytes.Length)
-                throw new ArgumentOutOfRangeException(nameof(byteIndex), SR.ArgumentOutOfRange_Index);
+                throw new ArgumentOutOfRangeException(nameof(byteIndex), SR.ArgumentOutOfRange_IndexMustBeLessOrEqual);
 
             if (bytes.Length == 0)
                 return 0;
@@ -123,10 +129,13 @@ namespace System.Text
             }
         }
 
-        public unsafe override int GetBytes(char* chars!!, int charCount, byte* bytes!!, int byteCount, bool flush)
+        public override unsafe int GetBytes(char* chars, int charCount, byte* bytes, int byteCount, bool flush)
         {
-            if (byteCount < 0 || charCount < 0)
-                throw new ArgumentOutOfRangeException(byteCount < 0 ? nameof(byteCount) : nameof(charCount), SR.ArgumentOutOfRange_NeedNonNegNum);
+            ArgumentNullException.ThrowIfNull(chars);
+            ArgumentNullException.ThrowIfNull(bytes);
+
+            ArgumentOutOfRangeException.ThrowIfNegative(byteCount);
+            ArgumentOutOfRangeException.ThrowIfNegative(charCount);
 
             if (byteCount == 0)
                 return 0;
@@ -158,15 +167,18 @@ namespace System.Text
             return res;
         }
 
-        public override unsafe void Convert(char[] chars!!, int charIndex, int charCount,
-                                              byte[] bytes!!, int byteIndex, int byteCount, bool flush,
+        public override unsafe void Convert(char[] chars, int charIndex, int charCount,
+                                              byte[] bytes, int byteIndex, int byteCount, bool flush,
                                               out int charsUsed, out int bytesUsed, out bool completed)
         {
-            if (charIndex < 0 || charCount < 0)
-                throw new ArgumentOutOfRangeException(charIndex < 0 ? nameof(charIndex) : nameof(charCount), SR.ArgumentOutOfRange_NeedNonNegNum);
+            ArgumentNullException.ThrowIfNull(chars);
+            ArgumentNullException.ThrowIfNull(bytes);
 
-            if (byteIndex < 0 || byteCount < 0)
-                throw new ArgumentOutOfRangeException(byteIndex < 0 ? nameof(byteIndex) : nameof(byteCount), SR.ArgumentOutOfRange_NeedNonNegNum);
+            ArgumentOutOfRangeException.ThrowIfNegative(charIndex);
+            ArgumentOutOfRangeException.ThrowIfNegative(charCount);
+
+            ArgumentOutOfRangeException.ThrowIfNegative(byteIndex);
+            ArgumentOutOfRangeException.ThrowIfNegative(byteCount);
 
             if (chars.Length - charIndex < charCount)
                 throw new ArgumentOutOfRangeException(nameof(chars), SR.ArgumentOutOfRange_IndexCountBuffer);
@@ -192,12 +204,15 @@ namespace System.Text
             }
         }
 
-        public override unsafe void Convert(char* chars!!, int charCount,
-                                              byte* bytes!!, int byteCount, bool flush,
+        public override unsafe void Convert(char* chars, int charCount,
+                                              byte* bytes, int byteCount, bool flush,
                                               out int charsUsed, out int bytesUsed, out bool completed)
         {
-            if (charCount < 0 || byteCount < 0)
-                throw new ArgumentOutOfRangeException(charCount < 0 ? nameof(charCount) : nameof(byteCount), SR.ArgumentOutOfRange_NeedNonNegNum);
+            ArgumentNullException.ThrowIfNull(chars);
+            ArgumentNullException.ThrowIfNull(bytes);
+
+            ArgumentOutOfRangeException.ThrowIfNegative(charCount);
+            ArgumentOutOfRangeException.ThrowIfNegative(byteCount);
 
             int count = charCount;
             while (count > 0)

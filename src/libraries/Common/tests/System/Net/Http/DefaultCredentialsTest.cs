@@ -86,7 +86,8 @@ namespace System.Net.Http.Functional.Tests
                 Assert.Equal(HttpStatusCode.OK, response.StatusCode);
 
                 string responseBody = await response.Content.ReadAsStringAsync();
-                WindowsIdentity currentIdentity = WindowsIdentity.GetCurrent();
+
+                using WindowsIdentity currentIdentity = WindowsIdentity.GetCurrent();
                 _output.WriteLine("currentIdentity={0}", currentIdentity.Name);
                 VerifyAuthentication(responseBody, true, currentIdentity.Name);
             }
@@ -110,7 +111,8 @@ namespace System.Net.Http.Functional.Tests
                 Assert.Equal(HttpStatusCode.OK, response.StatusCode);
 
                 string responseBody = await response.Content.ReadAsStringAsync();
-                WindowsIdentity currentIdentity = WindowsIdentity.GetCurrent();
+
+                using WindowsIdentity currentIdentity = WindowsIdentity.GetCurrent();
                 _output.WriteLine("currentIdentity={0}", currentIdentity.Name);
                 VerifyAuthentication(responseBody, true, currentIdentity.Name);
             }

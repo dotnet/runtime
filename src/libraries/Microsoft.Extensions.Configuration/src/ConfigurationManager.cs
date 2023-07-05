@@ -4,6 +4,7 @@
 using System;
 using System.Collections;
 using System.Collections.Generic;
+using System.Diagnostics;
 using System.Diagnostics.CodeAnalysis;
 using System.Linq;
 using System.Threading;
@@ -13,10 +14,15 @@ using Microsoft.Extensions.Primitives;
 namespace Microsoft.Extensions.Configuration
 {
     /// <summary>
-    /// ConfigurationManager is a mutable configuration object. It is both an <see cref="IConfigurationBuilder"/> and an <see cref="IConfigurationRoot"/>.
-    /// As sources are added, it updates its current view of configuration.
+    /// Represents a mutable configuration object.
     /// </summary>
-    public sealed class ConfigurationManager : IConfigurationBuilder, IConfigurationRoot, IDisposable
+    /// <remarks>
+    /// It is both an <see cref="IConfigurationBuilder"/> and an <see cref="IConfigurationRoot"/>.
+    /// As sources are added, it updates its current view of configuration.
+    /// </remarks>
+    [DebuggerDisplay("{DebuggerToString(),nq}")]
+    [DebuggerTypeProxy(typeof(ConfigurationManagerDebugView))]
+    public sealed class ConfigurationManager : IConfigurationManager, IConfigurationRoot, IDisposable
     {
         // Concurrently modifying config sources or properties is not thread-safe. However, it is thread-safe to read config while modifying sources or properties.
         private readonly ConfigurationSources _sources;
@@ -81,8 +87,10 @@ namespace Microsoft.Extensions.Configuration
             _providerManager.Dispose();
         }
 
-        IConfigurationBuilder IConfigurationBuilder.Add(IConfigurationSource source!!)
+        IConfigurationBuilder IConfigurationBuilder.Add(IConfigurationSource source)
         {
+            ThrowHelper.ThrowIfNull(source);
+
             _sources.Add(source);
             return this;
         }
@@ -118,7 +126,7 @@ namespace Microsoft.Extensions.Configuration
             IConfigurationProvider provider = source.Build(this);
 
             provider.Load();
-            _changeTokenRegistrations.Add(ChangeToken.OnChange(() => provider.GetReloadToken(), () => RaiseChanged()));
+            _changeTokenRegistrations.Add(ChangeToken.OnChange(provider.GetReloadToken, RaiseChanged));
 
             _providerManager.AddProvider(provider);
             RaiseChanged();
@@ -141,7 +149,7 @@ namespace Microsoft.Extensions.Configuration
             foreach (IConfigurationProvider p in newProvidersList)
             {
                 p.Load();
-                _changeTokenRegistrations.Add(ChangeToken.OnChange(() => p.GetReloadToken(), () => RaiseChanged()));
+                _changeTokenRegistrations.Add(ChangeToken.OnChange(p.GetReloadToken, RaiseChanged));
             }
 
             _providerManager.ReplaceProviders(newProvidersList);
@@ -155,6 +163,24 @@ namespace Microsoft.Extensions.Configuration
             {
                 registration.Dispose();
             }
+        }
+
+        private string DebuggerToString()
+        {
+            return $"Sections = {ConfigurationSectionDebugView.FromConfiguration(this, this).Count}";
+        }
+
+        private sealed class ConfigurationManagerDebugView
+        {
+            private readonly ConfigurationManager _current;
+
+            public ConfigurationManagerDebugView(ConfigurationManager current)
+            {
+                _current = current;
+            }
+
+            [DebuggerBrowsable(DebuggerBrowsableState.RootHidden)]
+            public ConfigurationSectionDebugView[] Items => ConfigurationSectionDebugView.FromConfiguration(_current, _current).ToArray();
         }
 
         private sealed class ConfigurationSources : IList<IConfigurationSource>
@@ -203,10 +229,7 @@ namespace Microsoft.Extensions.Configuration
                 _sources.CopyTo(array, arrayIndex);
             }
 
-            public IEnumerator<IConfigurationSource> GetEnumerator()
-            {
-                return _sources.GetEnumerator();
-            }
+            public List<IConfigurationSource>.Enumerator GetEnumerator() => _sources.GetEnumerator();
 
             public int IndexOf(IConfigurationSource source)
             {
@@ -232,10 +255,9 @@ namespace Microsoft.Extensions.Configuration
                 _config.ReloadSources();
             }
 
-            IEnumerator IEnumerable.GetEnumerator()
-            {
-                return GetEnumerator();
-            }
+            IEnumerator IEnumerable.GetEnumerator() => GetEnumerator();
+
+            IEnumerator<IConfigurationSource> IEnumerable<IConfigurationSource>.GetEnumerator() => GetEnumerator();
         }
 
         private sealed class ConfigurationBuilderProperties : IDictionary<string, object>

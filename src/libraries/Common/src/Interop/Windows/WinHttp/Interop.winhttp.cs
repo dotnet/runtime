@@ -3,6 +3,9 @@
 
 using System;
 using System.Runtime.InteropServices;
+#if NET7_0_OR_GREATER
+using System.Runtime.InteropServices.Marshalling;
+#endif
 using System.Text;
 
 internal static partial class Interop
@@ -53,23 +56,20 @@ internal static partial class Interop
             uint modifiers);
 
 #if NET7_0_OR_GREATER
-        private unsafe struct SimpleStringBufferMarshaller
+        [CustomMarshaller(typeof(StringBuilder), MarshalMode.ManagedToUnmanagedIn, typeof(SimpleStringBufferMarshaller))]
+        private static unsafe class SimpleStringBufferMarshaller
         {
-            public SimpleStringBufferMarshaller(StringBuilder builder)
+            public static void* ConvertToUnmanaged(StringBuilder builder)
             {
                 int length = builder.Length + 1;
-                Value = NativeMemory.Alloc(sizeof(char) * (nuint)length);
-                Span<char> buffer = new(Value, length);
+                void* value = NativeMemory.Alloc(sizeof(char) * (nuint)length);
+                Span<char> buffer = new(value, length);
                 buffer.Clear();
                 builder.CopyTo(0, buffer, length - 1);
+                return value;
             }
 
-            public void* Value { get; }
-
-            public void FreeNative()
-            {
-                NativeMemory.Free(Value);
-            }
+            public static void Free(void* value) => NativeMemory.Free(value);
         }
 #endif
 

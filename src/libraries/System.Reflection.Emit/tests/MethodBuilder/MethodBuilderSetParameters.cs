@@ -30,7 +30,7 @@ namespace System.Reflection.Emit.Tests
             ILGenerator ilGenerator = method.GetILGenerator();
             ilGenerator.Emit(OpCodes.Ret);
 
-            Type createdType = type.CreateTypeInfo().AsType();
+            Type createdType = type.CreateType();
             MethodInfo createdMethod = createdType.GetMethod(method.Name);
             VerifyParameters(createdMethod.GetParameters(), typeParameters, typeParamNames);
         }
@@ -46,7 +46,7 @@ namespace System.Reflection.Emit.Tests
             ILGenerator ilGenerator = method.GetILGenerator();
             ilGenerator.Emit(OpCodes.Ret);
 
-            type.CreateTypeInfo().AsType();
+            type.CreateType();
             method.SetParameters(typeParameters);
         }
 
@@ -60,7 +60,7 @@ namespace System.Reflection.Emit.Tests
             ILGenerator ilGenerator = method.GetILGenerator();
             ilGenerator.Emit(OpCodes.Ret);
 
-            Type createdType = type.CreateTypeInfo().AsType();
+            Type createdType = type.CreateType();
             MethodInfo createdMethod = createdType.GetMethod(method.Name);
             ParameterInfo[] parameters = createdMethod.GetParameters();
             VerifyParameters(parameters, new Type[0], null);
@@ -76,7 +76,7 @@ namespace System.Reflection.Emit.Tests
             ILGenerator ilGenerator = builder.GetILGenerator();
             ilGenerator.Emit(OpCodes.Ret);
 
-            Type createdType = type.CreateTypeInfo().AsType();
+            Type createdType = type.CreateType();
 
             MethodInfo method = createdType.GetMethod(builder.Name);
             ParameterInfo[] parameters = builder.GetParameters();
@@ -93,7 +93,7 @@ namespace System.Reflection.Emit.Tests
             ILGenerator ilGenerator = builder.GetILGenerator();
             ilGenerator.Emit(OpCodes.Ret);
 
-            Type createdType = type.CreateTypeInfo().AsType();
+            Type createdType = type.CreateType();
 
             MethodInfo method = createdType.GetMethod(builder.Name);
             ParameterInfo[] parameters = method.GetParameters();
@@ -119,7 +119,7 @@ namespace System.Reflection.Emit.Tests
             ILGenerator ilGenerator = builder.GetILGenerator();
             ilGenerator.Emit(OpCodes.Ret);
 
-            AssertExtensions.Throws<ArgumentNullException>("argument", () => type.CreateTypeInfo().AsType());
+            AssertExtensions.Throws<ArgumentNullException>("argument", () => type.CreateType());
         }
 
         private void VerifyParameters(ParameterInfo[] parameters, Type[] parameterTypes, string[] parameterName)

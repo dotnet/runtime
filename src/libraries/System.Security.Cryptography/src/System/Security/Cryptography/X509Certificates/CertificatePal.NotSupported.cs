@@ -7,6 +7,7 @@ namespace System.Security.Cryptography.X509Certificates
 {
     internal static partial class CertificatePal
     {
+#pragma warning disable IDE0060
         internal static partial ICertificatePal FromHandle(IntPtr handle)
         {
             throw new PlatformNotSupportedException(SR.SystemSecurityCryptographyX509Certificates_PlatformNotSupported);
@@ -32,5 +33,6 @@ namespace System.Security.Cryptography.X509Certificates
         {
             throw new PlatformNotSupportedException(SR.SystemSecurityCryptographyX509Certificates_PlatformNotSupported);
         }
+#pragma warning restore IDE0060
     }
 }

@@ -50,9 +50,13 @@ namespace System.Runtime.InteropServices.Tests
             yield return new object[] { null, GCHandleType.Pinned };
             yield return new object[] { "", GCHandleType.Pinned };
             yield return new object[] { 1, GCHandleType.Pinned };
+            yield return new object[] { new object(), GCHandleType.Pinned };
             yield return new object[] { new Blittable(), GCHandleType.Pinned };
             yield return new object[] { new Blittable(), GCHandleType.Pinned };
             yield return new object[] { new Blittable[0], GCHandleType.Pinned };
+            yield return new object[] { new UnmanagedNonBlittable(), GCHandleType.Pinned };
+            yield return new object[] { new UnmanagedNonBlittable[0], GCHandleType.Pinned };
+            yield return new object[] { new ClassWithoutReferences(), GCHandleType.Pinned };
         }
 
         [Theory]
@@ -66,8 +70,10 @@ namespace System.Runtime.InteropServices.Tests
         public static IEnumerable<object[]> InvalidPinnedObject_TestData()
         {
             yield return new object[] { new NonBlittable() };
+            yield return new object[] { new ClassWithReferences() };
             yield return new object[] { new object[0] };
             yield return new object[] { new NonBlittable[0] };
+            yield return new object[] { new ClassWithoutReferences[0] };
         }
 
         [Theory]
@@ -186,12 +192,28 @@ namespace System.Runtime.InteropServices.Tests
 
         public struct Blittable
         {
-            public int Object { get; set; }
+            public int _field;
+        }
+
+        public class ClassWithoutReferences
+        {
+            public int _field;
+        }
+
+        public struct UnmanagedNonBlittable
+        {
+            public char _field1;
+            public bool _field2;
         }
 
         public struct NonBlittable
         {
-            public List<string> Object { get; set; }
+            public string _field;
+        }
+
+        public class ClassWithReferences
+        {
+            public string _field;
         }
     }
 }

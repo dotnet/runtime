@@ -28,8 +28,13 @@ namespace System.Composition.Convention
         /// </summary>
         /// <param name="contractName"></param>
         /// <returns>An import builder allowing further configuration.</returns>
-        public ImportConventionBuilder AsContractName(string contractName!!)
+        public ImportConventionBuilder AsContractName(string contractName)
         {
+            if (contractName is null)
+            {
+                throw new ArgumentNullException(nameof(contractName));
+            }
+
             if (contractName.Length == 0)
             {
                 throw new ArgumentException(SR.Format(SR.ArgumentException_EmptyString, nameof(contractName)), nameof(contractName));
@@ -43,8 +48,13 @@ namespace System.Composition.Convention
         /// </summary>
         /// <param name="getContractNameFromPartType">A Func to retrieve the contract name from the part typeThe contract name.</param>
         /// <returns>An export builder allowing further configuration.</returns>
-        public ImportConventionBuilder AsContractName(Func<Type, string> getContractNameFromPartType!!)
+        public ImportConventionBuilder AsContractName(Func<Type, string> getContractNameFromPartType)
         {
+            if (getContractNameFromPartType is null)
+            {
+                throw new ArgumentNullException(nameof(getContractNameFromPartType));
+            }
+
             _getContractNameFromPartType = getContractNameFromPartType;
             return this;
         }
@@ -86,16 +96,19 @@ namespace System.Composition.Convention
         /// <param name="name">The name of the constraint item.</param>
         /// <param name="value">The value to match.</param>
         /// <returns>An import builder allowing further configuration.</returns>
-        public ImportConventionBuilder AddMetadataConstraint(string name!!, object value)
+        public ImportConventionBuilder AddMetadataConstraint(string name, object value)
         {
+            if (name is null)
+            {
+                throw new ArgumentNullException(nameof(name));
+            }
+
             if (name.Length == 0)
             {
                 throw new ArgumentException(SR.Format(SR.ArgumentException_EmptyString, nameof(name)), nameof(name));
             }
-            if (_metadataConstraintItems == null)
-            {
-                _metadataConstraintItems = new List<Tuple<string, object>>();
-            }
+
+            _metadataConstraintItems ??= new List<Tuple<string, object>>();
             _metadataConstraintItems.Add(Tuple.Create(name, value));
             return this;
         }
@@ -106,17 +119,23 @@ namespace System.Composition.Convention
         /// <param name="name">The name of the constraint item.</param>
         /// <param name="getConstraintValueFromPartType">A function that calculates the value to match.</param>
         /// <returns>An export builder allowing further configuration.</returns>
-        public ImportConventionBuilder AddMetadataConstraint(string name!!, Func<Type, object> getConstraintValueFromPartType!!)
+        public ImportConventionBuilder AddMetadataConstraint(string name, Func<Type, object> getConstraintValueFromPartType)
         {
+            if (name is null)
+            {
+                throw new ArgumentNullException(nameof(name));
+            }
+            if (getConstraintValueFromPartType is null)
+            {
+                throw new ArgumentNullException(nameof(getConstraintValueFromPartType));
+            }
+
             if (name.Length == 0)
             {
                 throw new ArgumentException(SR.Format(SR.ArgumentException_EmptyString, nameof(name)), nameof(name));
             }
 
-            if (_metadataConstraintItemFuncs == null)
-            {
-                _metadataConstraintItemFuncs = new List<Tuple<string, Func<Type, object>>>();
-            }
+            _metadataConstraintItemFuncs ??= new List<Tuple<string, Func<Type, object>>>();
             _metadataConstraintItemFuncs.Add(Tuple.Create(name, getConstraintValueFromPartType));
             return this;
         }
@@ -140,12 +159,9 @@ namespace System.Composition.Convention
             {
                 importAttribute = new ImportManyAttribute(contractName);
             }
-            if (attributes == null)
-            {
-                attributes = new List<Attribute>();
-            }
-            attributes.Add(importAttribute);
 
+            attributes ??= new List<Attribute>();
+            attributes.Add(importAttribute);
 
             //Add metadata attributes from direct specification
             if (_metadataConstraintItems != null)
@@ -169,7 +185,7 @@ namespace System.Composition.Convention
             return;
         }
 
-        private bool IsSupportedImportManyType(TypeInfo typeInfo)
+        private static bool IsSupportedImportManyType(TypeInfo typeInfo)
         {
             return typeInfo.IsArray ||
                 (typeInfo.IsGenericTypeDefinition && s_supportedImportManyTypes.Contains(typeInfo.AsType())) ||

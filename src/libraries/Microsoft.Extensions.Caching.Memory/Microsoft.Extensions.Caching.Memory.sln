@@ -27,6 +27,8 @@ Project("{9A19103F-16F7-4668-BE54-9A1E7A4F7556}") = "Microsoft.Extensions.Loggin
 EndProject
 Project("{9A19103F-16F7-4668-BE54-9A1E7A4F7556}") = "Microsoft.Extensions.Logging.Generators.Roslyn4.0", "..\Microsoft.Extensions.Logging.Abstractions\gen\Microsoft.Extensions.Logging.Generators.Roslyn4.0.csproj", "{11D672F4-D640-423D-A79A-2A5EA498D3BF}"
 EndProject
+Project("{9A19103F-16F7-4668-BE54-9A1E7A4F7556}") = "Microsoft.Extensions.Logging.Generators.Roslyn4.4", "..\Microsoft.Extensions.Logging.Abstractions\gen\Microsoft.Extensions.Logging.Generators.Roslyn4.4.csproj", "{51A94A31-6734-4BD1-AACF-73A0D704C985}"
+EndProject
 Project("{9A19103F-16F7-4668-BE54-9A1E7A4F7556}") = "Microsoft.Extensions.Logging.Abstractions", "..\Microsoft.Extensions.Logging.Abstractions\ref\Microsoft.Extensions.Logging.Abstractions.csproj", "{BDC4E2D9-627A-4DE2-BF31-A95351C1CB7C}"
 EndProject
 Project("{9A19103F-16F7-4668-BE54-9A1E7A4F7556}") = "Microsoft.Extensions.Logging.Abstractions", "..\Microsoft.Extensions.Logging.Abstractions\src\Microsoft.Extensions.Logging.Abstractions.csproj", "{C76753D0-F564-45E9-AA60-A846EFE0A414}"
@@ -38,6 +40,8 @@ EndProject
 Project("{9A19103F-16F7-4668-BE54-9A1E7A4F7556}") = "Microsoft.Extensions.Primitives", "..\Microsoft.Extensions.Primitives\ref\Microsoft.Extensions.Primitives.csproj", "{FCF170AC-100A-4EEE-849E-497A299EDE3F}"
 EndProject
 Project("{9A19103F-16F7-4668-BE54-9A1E7A4F7556}") = "Microsoft.Extensions.Primitives", "..\Microsoft.Extensions.Primitives\src\Microsoft.Extensions.Primitives.csproj", "{DA43AA92-35BA-4B84-BAA2-C3BB56C8BB3B}"
+EndProject
+Project("{9A19103F-16F7-4668-BE54-9A1E7A4F7556}") = "ComInterfaceGenerator", "..\System.Runtime.InteropServices\gen\ComInterfaceGenerator\ComInterfaceGenerator.csproj", "{8B3671D1-A834-4456-89A7-40B5F13FC8D4}"
 EndProject
 Project("{9A19103F-16F7-4668-BE54-9A1E7A4F7556}") = "LibraryImportGenerator", "..\System.Runtime.InteropServices\gen\LibraryImportGenerator\LibraryImportGenerator.csproj", "{88C1F3B9-B92E-4847-AF86-A437FA34382B}"
 EndProject
@@ -113,6 +117,10 @@ Global
 		{11D672F4-D640-423D-A79A-2A5EA498D3BF}.Debug|Any CPU.Build.0 = Debug|Any CPU
 		{11D672F4-D640-423D-A79A-2A5EA498D3BF}.Release|Any CPU.ActiveCfg = Release|Any CPU
 		{11D672F4-D640-423D-A79A-2A5EA498D3BF}.Release|Any CPU.Build.0 = Release|Any CPU
+		{51A94A31-6734-4BD1-AACF-73A0D704C985}.Debug|Any CPU.ActiveCfg = Debug|Any CPU
+		{51A94A31-6734-4BD1-AACF-73A0D704C985}.Debug|Any CPU.Build.0 = Debug|Any CPU
+		{51A94A31-6734-4BD1-AACF-73A0D704C985}.Release|Any CPU.ActiveCfg = Release|Any CPU
+		{51A94A31-6734-4BD1-AACF-73A0D704C985}.Release|Any CPU.Build.0 = Release|Any CPU
 		{BDC4E2D9-627A-4DE2-BF31-A95351C1CB7C}.Debug|Any CPU.ActiveCfg = Debug|Any CPU
 		{BDC4E2D9-627A-4DE2-BF31-A95351C1CB7C}.Debug|Any CPU.Build.0 = Debug|Any CPU
 		{BDC4E2D9-627A-4DE2-BF31-A95351C1CB7C}.Release|Any CPU.ActiveCfg = Release|Any CPU
@@ -137,6 +145,10 @@ Global
 		{DA43AA92-35BA-4B84-BAA2-C3BB56C8BB3B}.Debug|Any CPU.Build.0 = Debug|Any CPU
 		{DA43AA92-35BA-4B84-BAA2-C3BB56C8BB3B}.Release|Any CPU.ActiveCfg = Release|Any CPU
 		{DA43AA92-35BA-4B84-BAA2-C3BB56C8BB3B}.Release|Any CPU.Build.0 = Release|Any CPU
+		{8B3671D1-A834-4456-89A7-40B5F13FC8D4}.Debug|Any CPU.ActiveCfg = Debug|Any CPU
+		{8B3671D1-A834-4456-89A7-40B5F13FC8D4}.Debug|Any CPU.Build.0 = Debug|Any CPU
+		{8B3671D1-A834-4456-89A7-40B5F13FC8D4}.Release|Any CPU.ActiveCfg = Release|Any CPU
+		{8B3671D1-A834-4456-89A7-40B5F13FC8D4}.Release|Any CPU.Build.0 = Release|Any CPU
 		{88C1F3B9-B92E-4847-AF86-A437FA34382B}.Debug|Any CPU.ActiveCfg = Debug|Any CPU
 		{88C1F3B9-B92E-4847-AF86-A437FA34382B}.Debug|Any CPU.Build.0 = Debug|Any CPU
 		{88C1F3B9-B92E-4847-AF86-A437FA34382B}.Release|Any CPU.ActiveCfg = Release|Any CPU
@@ -170,6 +182,8 @@ Global
 		{DA43AA92-35BA-4B84-BAA2-C3BB56C8BB3B} = {67719AA1-52DC-4E35-B6F7-2F53A50B913A}
 		{A7F69E1A-D6DF-46A9-A347-66354425BC9E} = {C77F6550-84B5-4C20-8541-8B6118A8651A}
 		{11D672F4-D640-423D-A79A-2A5EA498D3BF} = {C77F6550-84B5-4C20-8541-8B6118A8651A}
+		{51A94A31-6734-4BD1-AACF-73A0D704C985} = {C77F6550-84B5-4C20-8541-8B6118A8651A}
+		{8B3671D1-A834-4456-89A7-40B5F13FC8D4} = {C77F6550-84B5-4C20-8541-8B6118A8651A}
 		{88C1F3B9-B92E-4847-AF86-A437FA34382B} = {C77F6550-84B5-4C20-8541-8B6118A8651A}
 		{94673D00-C1BB-48F3-8A1B-75DDEA247AB0} = {C77F6550-84B5-4C20-8541-8B6118A8651A}
 	EndGlobalSection

@@ -15,10 +15,10 @@ namespace System.Security.Cryptography
         // Reset operation is not supported on stream cipher
         private readonly bool _supportsReset;
 
-        private Interop.AppleCrypto.PAL_SymmetricAlgorithm _algorithm;
-        private CipherMode _cipherMode;
-        private byte[] _key;
-        private int _feedbackSizeInBytes;
+        private readonly Interop.AppleCrypto.PAL_SymmetricAlgorithm _algorithm;
+        private readonly CipherMode _cipherMode;
+        private readonly byte[] _key;
+        private readonly int _feedbackSizeInBytes;
 
         public AppleCCCryptor(
             Interop.AppleCrypto.PAL_SymmetricAlgorithm algorithm,

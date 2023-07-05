@@ -151,18 +151,17 @@ namespace System.Security.Permissions
 
                         if (operandIdRole.ID == null || idRole.ID == null || idRole.ID.Equals(operandIdRole.ID))
                         {
-                            newID = operandIdRole.ID == null ? idRole.ID : operandIdRole.ID;
+                            newID = operandIdRole.ID ?? idRole.ID;
                             addToNewIDRoles = true;
                         }
                         if (operandIdRole.Role == null || idRole.Role == null || idRole.Role.Equals(operandIdRole.Role))
                         {
-                            newRole = operandIdRole.Role == null ? idRole.Role : operandIdRole.Role;
+                            newRole = operandIdRole.Role ?? idRole.Role;
                             addToNewIDRoles = true;
                         }
                         if (addToNewIDRoles)
                         {
-                            if (idroles == null)
-                                idroles = new List<IDRole>();
+                            idroles ??= new List<IDRole>();
                             idroles.Add(new IDRole(newAuthenticated, newID, newRole));
                         }
                     }
@@ -268,8 +267,13 @@ namespace System.Security.Permissions
             return root;
         }
 
-        public void FromXml(SecurityElement elem!!)
+        public void FromXml(SecurityElement elem)
         {
+            if (elem is null)
+            {
+                throw new ArgumentNullException(nameof(elem));
+            }
+
             if (elem.Tag == null || !elem.Tag.Equals("Permission") && !elem.Tag.Equals("IPermission"))
                 throw new ArgumentException(SR.Argument_NotAPermissionElement);
 

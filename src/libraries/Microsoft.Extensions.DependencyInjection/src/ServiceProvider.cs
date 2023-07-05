@@ -4,6 +4,8 @@
 using System;
 using System.Collections.Concurrent;
 using System.Collections.Generic;
+using System.Diagnostics;
+using System.Diagnostics.CodeAnalysis;
 using System.Runtime.CompilerServices;
 using System.Threading.Tasks;
 using Microsoft.Extensions.DependencyInjection.ServiceLookup;
@@ -13,6 +15,8 @@ namespace Microsoft.Extensions.DependencyInjection
     /// <summary>
     /// The default IServiceProvider.
     /// </summary>
+    [DebuggerDisplay("{DebuggerToString(),nq}")]
+    [DebuggerTypeProxy(typeof(ServiceProviderDebugView))]
     public sealed class ServiceProvider : IServiceProvider, IDisposable, IAsyncDisposable
     {
         private readonly CallSiteValidator? _callSiteValidator;
@@ -24,7 +28,7 @@ namespace Microsoft.Extensions.DependencyInjection
 
         private bool _disposed;
 
-        private ConcurrentDictionary<Type, Func<ServiceProviderEngineScope, object?>> _realizedServices;
+        private readonly ConcurrentDictionary<Type, Func<ServiceProviderEngineScope, object?>> _realizedServices;
 
         internal CallSiteFactory CallSiteFactory { get; }
 
@@ -32,6 +36,13 @@ namespace Microsoft.Extensions.DependencyInjection
 
         internal static bool VerifyOpenGenericServiceTrimmability { get; } =
             AppContext.TryGetSwitch("Microsoft.Extensions.DependencyInjection.VerifyOpenGenericServiceTrimmability", out bool verifyOpenGenerics) ? verifyOpenGenerics : false;
+
+        internal static bool VerifyAotCompatibility =>
+#if NETFRAMEWORK || NETSTANDARD2_0
+            false;
+#else
+            !RuntimeFeature.IsDynamicCodeSupported;
+#endif
 
         internal ServiceProvider(ICollection<ServiceDescriptor> serviceDescriptors, ServiceProviderOptions options)
         {
@@ -64,7 +75,7 @@ namespace Microsoft.Extensions.DependencyInjection
                     }
                     catch (Exception e)
                     {
-                        exceptions = exceptions ?? new List<Exception>();
+                        exceptions ??= new List<Exception>();
                         exceptions.Add(e);
                     }
                 }
@@ -84,6 +95,8 @@ namespace Microsoft.Extensions.DependencyInjection
         /// <param name="serviceType">The type of the service to get.</param>
         /// <returns>The service that was produced.</returns>
         public object? GetService(Type serviceType) => GetService(serviceType, Root);
+
+        internal bool IsDisposed() => _disposed;
 
         /// <inheritdoc />
         public void Dispose()
@@ -110,9 +123,9 @@ namespace Microsoft.Extensions.DependencyInjection
             _callSiteValidator?.ValidateCallSite(callSite);
         }
 
-        private void OnResolve(Type serviceType, IServiceScope scope)
+        private void OnResolve(ServiceCallSite callSite, IServiceScope scope)
         {
-            _callSiteValidator?.ValidateResolution(serviceType, scope, Root);
+            _callSiteValidator?.ValidateResolution(callSite, scope, Root);
         }
 
         internal object? GetService(Type serviceType, ServiceProviderEngineScope serviceProviderEngineScope)
@@ -123,8 +136,6 @@ namespace Microsoft.Extensions.DependencyInjection
             }
 
             Func<ServiceProviderEngineScope, object?> realizedService = _realizedServices.GetOrAdd(serviceType, _createServiceAccessor);
-            OnResolve(serviceType, serviceProviderEngineScope);
-            DependencyInjectionEventSource.Log.ServiceResolved(this, serviceType);
             var result = realizedService.Invoke(serviceProviderEngineScope);
             System.Diagnostics.Debug.Assert(result is null || CallSiteFactory.IsService(serviceType));
             return result;
@@ -163,10 +174,20 @@ namespace Microsoft.Extensions.DependencyInjection
                 if (callSite.Cache.Location == CallSiteResultCacheLocation.Root)
                 {
                     object? value = CallSiteRuntimeResolver.Instance.Resolve(callSite, Root);
-                    return scope => value;
+                    return scope =>
+                    {
+                        DependencyInjectionEventSource.Log.ServiceResolved(this, serviceType);
+                        return value;
+                    };
                 }
 
-                return _engine.RealizeService(callSite);
+                Func<ServiceProviderEngineScope, object?> realizedService = _engine.RealizeService(callSite);
+                return scope =>
+                {
+                    OnResolve(callSite, scope);
+                    DependencyInjectionEventSource.Log.ServiceResolved(this, serviceType);
+                    return realizedService(scope);
+                };
             }
 
             return _ => null;
@@ -192,11 +213,11 @@ namespace Microsoft.Extensions.DependencyInjection
             ServiceProviderEngine engine;
 
 #if NETFRAMEWORK || NETSTANDARD2_0
-            engine = new DynamicServiceProviderEngine(this);
+            engine = CreateDynamicEngine();
 #else
             if (RuntimeFeature.IsDynamicCodeCompiled)
             {
-                engine = new DynamicServiceProviderEngine(this);
+                engine = CreateDynamicEngine();
             }
             else
             {
@@ -205,6 +226,27 @@ namespace Microsoft.Extensions.DependencyInjection
             }
 #endif
             return engine;
+
+            [UnconditionalSuppressMessage("AotAnalysis", "IL3050:RequiresDynamicCode",
+                Justification = "CreateDynamicEngine won't be called when using NativeAOT.")] // see also https://github.com/dotnet/linker/issues/2715
+            ServiceProviderEngine CreateDynamicEngine() => new DynamicServiceProviderEngine(this);
+        }
+
+        private string DebuggerToString() => Root.DebuggerToString();
+
+        internal sealed class ServiceProviderDebugView
+        {
+            private readonly ServiceProvider _serviceProvider;
+
+            public ServiceProviderDebugView(ServiceProvider serviceProvider)
+            {
+                _serviceProvider = serviceProvider;
+            }
+
+            public List<ServiceDescriptor> ServiceDescriptors => new List<ServiceDescriptor>(_serviceProvider.Root.RootProvider.CallSiteFactory.Descriptors);
+            public List<object> Disposables => new List<object>(_serviceProvider.Root.Disposables);
+            public bool Disposed => _serviceProvider.Root.Disposed;
+            public bool IsScope => !_serviceProvider.Root.IsRootScope;
         }
     }
 }

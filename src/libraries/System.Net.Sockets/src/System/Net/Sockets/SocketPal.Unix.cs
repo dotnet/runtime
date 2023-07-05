@@ -30,7 +30,7 @@ namespace System.Net.Sockets
             return SocketErrorPal.GetSocketErrorForNativeError(errorCode);
         }
 
-        public static void CheckDualModeReceiveSupport(Socket socket)
+        public static void CheckDualModePacketInfoSupport(Socket socket)
         {
             if (!SupportsDualModeIPv4PacketInfo && socket.AddressFamily == AddressFamily.InterNetworkV6 && socket.DualMode)
             {
@@ -56,6 +56,8 @@ namespace System.Net.Sockets
 
         public static unsafe SocketError CreateSocket(AddressFamily addressFamily, SocketType socketType, ProtocolType protocolType, out SafeSocketHandle socket)
         {
+            socket = new SafeSocketHandle();
+
             IntPtr fd;
             SocketError errorCode;
             Interop.Error error = Interop.Sys.Socket(addressFamily, socketType, protocolType, &fd);
@@ -86,8 +88,13 @@ namespace System.Net.Sockets
                 errorCode = GetSocketErrorForErrorCode(error);
             }
 
-            socket = new SafeSocketHandle(fd, ownsHandle: true);
+            Marshal.InitHandle(socket, fd);
+
             if (NetEventSource.Log.IsEnabled()) NetEventSource.Info(null, socket);
+            if (socket.IsInvalid)
+            {
+                socket.Dispose();
+            }
 
             return errorCode;
         }
@@ -674,7 +681,7 @@ namespace System.Net.Sockets
             return false;
         }
 
-        public static unsafe bool TryCompleteConnect(SafeSocketHandle socket, int socketAddressLen, out SocketError errorCode)
+        public static unsafe bool TryCompleteConnect(SafeSocketHandle socket, out SocketError errorCode)
         {
             Interop.Error socketError = default;
             Interop.Error err;
@@ -682,7 +689,7 @@ namespace System.Net.Sockets
             {
                 // Due to fd recyling, TryCompleteConnect may be called when there was a write event
                 // for the previous socket that used the fd.
-                // The SocketErrorOption in that case is the same as for a succesful connect.
+                // The SocketErrorOption in that case is the same as for a successful connect.
                 // To filter out these false events, we check whether the socket is writable, before
                 // reading the socket option.
                 Interop.PollEvents outEvents;
@@ -1089,6 +1096,8 @@ namespace System.Net.Sockets
 
         public static SocketError Accept(SafeSocketHandle listenSocket, byte[] socketAddress, ref int socketAddressLen, out SafeSocketHandle socket)
         {
+            socket = new SafeSocketHandle();
+
             IntPtr acceptedFd;
             SocketError errorCode;
             if (!listenSocket.IsNonBlocking)
@@ -1097,14 +1106,14 @@ namespace System.Net.Sockets
             }
             else
             {
-                bool completed = TryCompleteAccept(listenSocket, socketAddress, ref socketAddressLen, out acceptedFd, out errorCode);
-                if (!completed)
+                if (!TryCompleteAccept(listenSocket, socketAddress, ref socketAddressLen, out acceptedFd, out errorCode))
                 {
                     errorCode = SocketError.WouldBlock;
                 }
             }
 
-            socket = new SafeSocketHandle(acceptedFd, ownsHandle: true);
+            Marshal.InitHandle(socket, acceptedFd);
+
             if (NetEventSource.Log.IsEnabled()) NetEventSource.Info(null, socket);
 
             return errorCode;
@@ -1334,7 +1343,7 @@ namespace System.Net.Sockets
             return completed ? errorCode : SocketError.WouldBlock;
         }
 
-        public static SocketError WindowsIoctl(SafeSocketHandle handle, int ioControlCode, byte[]? optionInValue, byte[]? optionOutValue, out int optionLength)
+        public static SocketError WindowsIoctl(SafeSocketHandle handle, int ioControlCode, byte[]? _ /*optionInValue*/, byte[]? optionOutValue, out int optionLength)
         {
             // Three codes are called out in the Winsock IOCTLs documentation as "The following Unix IOCTL codes (commands) are supported." They are
             // also the three codes available for use with ioctlsocket on Windows. Developers should be discouraged from using Socket.IOControl in
@@ -1536,10 +1545,12 @@ namespace System.Net.Sockets
             }
         }
 
+#pragma warning disable IDE0060
         public static void SetIPProtectionLevel(Socket socket, SocketOptionLevel optionLevel, int protectionLevel)
         {
             throw new PlatformNotSupportedException(SR.PlatformNotSupported_IPProtectionLevel);
         }
+#pragma warning restore IDE0060
 
         public static unsafe SocketError GetSockOpt(SafeSocketHandle handle, SocketOptionLevel optionLevel, SocketOptionName optionName, out int optionValue)
         {
@@ -1829,11 +1840,8 @@ namespace System.Net.Sockets
             int listCount = socketList.Count;
             for (int i = 0; i < listCount; i++)
             {
-                if (arrOffset >= arrLength)
-                {
-                    Debug.Fail("IList.Count must have been faulty, returning a negative value and/or returning a different value across calls.");
-                    throw new ArgumentOutOfRangeException(nameof(socketList));
-                }
+                Debug.Assert(arrOffset < arrLength, "IList.Count must have been faulty, returning a negative value and/or returning a different value across calls.");
+                ArgumentOutOfRangeException.ThrowIfGreaterThanOrEqual(arrOffset, arrLength, nameof(socketList));
 
                 Socket? socket = socketList[i] as Socket;
                 if (socket == null)
@@ -1867,11 +1875,8 @@ namespace System.Net.Sockets
 
             for (int i = socketList.Count - 1; i >= 0; --i, --arrEndOffset)
             {
-                if (arrEndOffset < 0)
-                {
-                    Debug.Fail("IList.Count must have been faulty, returning a negative value and/or returning a different value across calls.");
-                    throw new ArgumentOutOfRangeException(nameof(arrEndOffset));
-                }
+                Debug.Assert(arrEndOffset >= 0, "IList.Count must have been faulty, returning a negative value and/or returning a different value across calls.");
+                ArgumentOutOfRangeException.ThrowIfNegative(arrEndOffset);
 
                 if ((arr[arrEndOffset].TriggeredEvents & desiredEvents) == 0)
                 {

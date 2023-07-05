@@ -3,7 +3,6 @@
     <AllowUnsafeBlocks>true</AllowUnsafeBlocks>
     <IsPartialFacadeAssembly>true</IsPartialFacadeAssembly>
     <TargetFramework>$(NetCoreAppCurrent)</TargetFramework>
-    <Nullable>enable</Nullable>
   </PropertyGroup>
   <ItemGroup>
     <Compile Include="System\Xml\XPath\XDocumentExtensions.cs" />
@@ -12,6 +11,5 @@
     <ProjectReference Include="$(LibrariesProjectRoot)System.Private.Xml\src\System.Private.Xml.csproj" />
     <ProjectReference Include="$(LibrariesProjectRoot)System.Private.Xml.Linq\src\System.Private.Xml.Linq.csproj" />
     <Reference Include="System.Runtime" />
-    <Reference Include="System.Runtime.Extensions" />
   </ItemGroup>
 </Project>

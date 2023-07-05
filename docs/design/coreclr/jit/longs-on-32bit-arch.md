@@ -50,7 +50,7 @@ together (i.e. can’t preserve the tree traversal/linear order invariants), we 
 
 ## Richer Liveness Model (No Decomposition)
 
-The idea here woudl be to retain `TYP_LONG` nodes in the IR, and to find a way to extend
+The idea here would be to retain `TYP_LONG` nodes in the IR, and to find a way to extend
 the liveness model used by Lowering, LSRA and CodeGen to ensure good register allocation.
 o
 

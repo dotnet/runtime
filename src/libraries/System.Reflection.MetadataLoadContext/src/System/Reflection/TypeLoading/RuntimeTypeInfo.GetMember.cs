@@ -6,16 +6,26 @@ using System.Reflection.Runtime.BindingFlagSupport;
 
 namespace System.Reflection.TypeLoading
 {
-    internal abstract partial class RoType
+    internal partial class RoType
     {
         public sealed override MemberInfo[] GetMembers(BindingFlags bindingAttr) => GetMemberImpl(null, MemberTypes.All, bindingAttr);
-        public sealed override MemberInfo[] GetMember(string name!!, BindingFlags bindingAttr)
+        public sealed override MemberInfo[] GetMember(string name, BindingFlags bindingAttr)
         {
+            if (name is null)
+            {
+                throw new ArgumentNullException(nameof(name));
+            }
+
             return GetMemberImpl(name, MemberTypes.All, bindingAttr);
         }
 
-        public sealed override MemberInfo[] GetMember(string name!!, MemberTypes type, BindingFlags bindingAttr)
+        public sealed override MemberInfo[] GetMember(string name, MemberTypes type, BindingFlags bindingAttr)
         {
+            if (name is null)
+            {
+                throw new ArgumentNullException(nameof(name));
+            }
+
             return GetMemberImpl(name, type, bindingAttr);
         }
 

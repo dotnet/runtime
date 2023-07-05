@@ -39,17 +39,14 @@ namespace System.Data
         {
             Debug.Assert(column != null, "Invalid (null) argument");
             Debug.Assert(column.Table != null, "Invalid (loose) column");
-            if (error == null || error.Length == 0)
+            if (string.IsNullOrEmpty(error))
             {
                 // remove error from the collection
                 Clear(column);
             }
             else
             {
-                if (_errorList == null)
-                {
-                    _errorList = new ColumnError[initialCapacity];
-                }
+                _errorList ??= new ColumnError[initialCapacity];
                 int i = IndexOf(column);
                 _errorList[i]._column = column;
                 _errorList[i]._error = error;

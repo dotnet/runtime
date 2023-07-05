@@ -9,9 +9,9 @@ namespace Microsoft.Extensions.Hosting.Internal
 {
     public partial class ConsoleLifetime : IHostLifetime
     {
-        private PosixSignalRegistration _sigIntRegistration;
-        private PosixSignalRegistration _sigQuitRegistration;
-        private PosixSignalRegistration _sigTermRegistration;
+        private PosixSignalRegistration? _sigIntRegistration;
+        private PosixSignalRegistration? _sigQuitRegistration;
+        private PosixSignalRegistration? _sigTermRegistration;
 
         private partial void RegisterShutdownHandlers()
         {

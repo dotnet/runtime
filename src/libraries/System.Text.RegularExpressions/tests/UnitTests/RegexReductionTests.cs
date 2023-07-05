@@ -50,26 +50,14 @@ namespace System.Text.RegularExpressions.Tests
         // Two atomic one loops
         [InlineData("(?>a*)(?>a*)", "(?>a*)")]
         [InlineData("(?>a*)(?>(?:a*))", "(?>a*)")]
-        [InlineData("(?>a*)(?>a+)", "(?>a+)")]
         [InlineData("(?>a*)(?>a?)", "(?>a*)")]
-        [InlineData("(?>a*)(?>a{1,3})", "(?>a+)")]
         [InlineData("(?>a+)(?>a*)", "(?>a+)")]
-        [InlineData("(?>a+)(?>a+)", "(?>a{2,})")]
         [InlineData("(?>a+)(?>a?)", "(?>a+)")]
-        [InlineData("(?>a+)(?>a{1,3})", "(?>a{2,})")]
         [InlineData("(?>a?)(?>a*)", "(?>a*)")]
-        [InlineData("(?>a?)(?>a+)", "(?>a+)")]
         [InlineData("(?>a?)(?>a?)", "(?>a{0,2})")]
-        [InlineData("(?>a?)(?>a{1,3})", "(?>a{1,4})")]
         [InlineData("(?>a{1,3})(?>a*)", "(?>a+)")]
-        [InlineData("(?>a{1,3})(?>a+)", "(?>a{2,})")]
         [InlineData("(?>a{1,3})(?>a?)", "(?>a{1,4})")]
-        [InlineData("(?>a{1,3})(?>a{1,3})", "(?>a{2,6})")]
-        // Atomic one loop and one
-        [InlineData("(?>a*)a", "(?>a+)")]
-        [InlineData("(?>a+)a", "(?>a{2,})")]
-        [InlineData("(?>a?)a", "(?>a{1,2})")]
-        [InlineData("(?>a{1,3})a", "(?>a{2,4})")]
+        // One and atomic one loop
         [InlineData("a(?>a*)", "(?>a+)")]
         [InlineData("a(?>a+)", "(?>a{2,})")]
         [InlineData("a(?>a?)", "(?>a{1,2})")]
@@ -136,21 +124,13 @@ namespace System.Text.RegularExpressions.Tests
         [InlineData("[^a]{1,3}?[^a]{1,3}?", "[^a]{2,6}?")]
         // Two atomic notone loops
         [InlineData("(?>[^a]*)(?>[^a]*)", "(?>[^a]*)")]
-        [InlineData("(?>[^a]*)(?>[^a]+)", "(?>[^a]+)")]
         [InlineData("(?>[^a]*)(?>[^a]?)", "(?>[^a]*)")]
-        [InlineData("(?>[^a]*)(?>[^a]{1,3})", "(?>[^a]+)")]
         [InlineData("(?>[^a]+)(?>[^a]*)", "(?>[^a]+)")]
-        [InlineData("(?>[^a]+)(?>[^a]+)", "(?>[^a]{2,})")]
         [InlineData("(?>[^a]+)(?>[^a]?)", "(?>[^a]+)")]
-        [InlineData("(?>[^a]+)(?>[^a]{1,3})", "(?>[^a]{2,})")]
         [InlineData("(?>[^a]?)(?>[^a]*)", "(?>[^a]*)")]
-        [InlineData("(?>[^a]?)(?>[^a]+)", "(?>[^a]+)")]
         [InlineData("(?>[^a]?)(?>[^a]?)", "(?>[^a]{0,2})")]
-        [InlineData("(?>[^a]?)(?>[^a]{1,3})", "(?>[^a]{1,4})")]
         [InlineData("(?>[^a]{1,3})(?>[^a]*)", "(?>[^a]+)")]
-        [InlineData("(?>[^a]{1,3})(?>[^a]+)", "(?>[^a]{2,})")]
         [InlineData("(?>[^a]{1,3})(?>[^a]?)", "(?>[^a]{1,4})")]
-        [InlineData("(?>[^a]{1,3})(?>[^a]{1,3})", "(?>[^a]{2,6})")]
         // Greedy notone loop and notone
         [InlineData("[^a]*[^a]", "[^a]+")]
         [InlineData("[^a]+[^a]", "[^a]{2,}")]
@@ -169,11 +149,7 @@ namespace System.Text.RegularExpressions.Tests
         [InlineData("[^a][^a]+?", "[^a]{2,}?")]
         [InlineData("[^a][^a]??", "[^a]{1,2}?")]
         [InlineData("[^a][^a]{1,3}?", "[^a]{2,4}?")]
-        // Atomic notone loop and notone
-        [InlineData("(?>[^a]*)[^a]", "(?>[^a]+)")]
-        [InlineData("(?>[^a]+)[^a]", "(?>[^a]{2,})")]
-        [InlineData("(?>[^a]?)[^a]", "(?>[^a]{1,2})")]
-        [InlineData("(?>[^a]{1,3})[^a]", "(?>[^a]{2,4})")]
+        // Notone and atomic notone loop
         [InlineData("[^a](?>[^a]*)", "(?>[^a]+)")]
         [InlineData("[^a](?>[^a]+)", "(?>[^a]{2,})")]
         [InlineData("[^a](?>[^a]?)", "(?>[^a]{1,2})")]
@@ -206,11 +182,7 @@ namespace System.Text.RegularExpressions.Tests
         [InlineData("[0-9][0-9]+", "[0-9]{2,}")]
         [InlineData("[0-9][0-9]?", "[0-9]{1,2}")]
         [InlineData("[0-9][0-9]{1,3}", "[0-9]{2,4}")]
-        // Atomic set loop and set
-        [InlineData("(?>[0-9]*)[0-9]", "(?>[0-9]+)")]
-        [InlineData("(?>[0-9]+)[0-9]", "(?>[0-9]{2,})")]
-        [InlineData("(?>[0-9]?)[0-9]", "(?>[0-9]{1,2})")]
-        [InlineData("(?>[0-9]{1,3})[0-9]", "(?>[0-9]{2,4})")]
+        // Set and atomic set loop
         [InlineData("[0-9](?>[0-9]*)", "(?>[0-9]+)")]
         [InlineData("[0-9](?>[0-9]+)", "(?>[0-9]{2,})")]
         [InlineData("[0-9](?>[0-9]?)", "(?>[0-9]{1,2})")]
@@ -234,21 +206,13 @@ namespace System.Text.RegularExpressions.Tests
         [InlineData("[0-9]{1,3}?[0-9]{1,3}?", "[0-9]{2,6}?")]
         // Two atomic set loops
         [InlineData("(?>[0-9]*)(?>[0-9]*)", "(?>[0-9]*)")]
-        [InlineData("(?>[0-9]*)(?>[0-9]+)", "(?>[0-9]+)")]
         [InlineData("(?>[0-9]*)(?>[0-9]?)", "(?>[0-9]*)")]
-        [InlineData("(?>[0-9]*)(?>[0-9]{1,3})", "(?>[0-9]+)")]
         [InlineData("(?>[0-9]+)(?>[0-9]*)", "(?>[0-9]+)")]
-        [InlineData("(?>[0-9]+)(?>[0-9]+)", "(?>[0-9]{2,})")]
         [InlineData("(?>[0-9]+)(?>[0-9]?)", "(?>[0-9]+)")]
-        [InlineData("(?>[0-9]+)(?>[0-9]{1,3})", "(?>[0-9]{2,})")]
         [InlineData("(?>[0-9]?)(?>[0-9]*)", "(?>[0-9]*)")]
-        [InlineData("(?>[0-9]?)(?>[0-9]+)", "(?>[0-9]+)")]
         [InlineData("(?>[0-9]?)(?>[0-9]?)", "(?>[0-9]{0,2})")]
-        [InlineData("(?>[0-9]?)(?>[0-9]{1,3})", "(?>[0-9]{1,4})")]
         [InlineData("(?>[0-9]{1,3})(?>[0-9]*)", "(?>[0-9]+)")]
-        [InlineData("(?>[0-9]{1,3})(?>[0-9]+)", "(?>[0-9]{2,})")]
         [InlineData("(?>[0-9]{1,3})(?>[0-9]?)", "(?>[0-9]{1,4})")]
-        [InlineData("(?>[0-9]{1,3})(?>[0-9]{1,3})", "(?>[0-9]{2,6})")]
         // Lazy set loop and set
         [InlineData("[0-9]*?[0-9]", "[0-9]+?")]
         [InlineData("[0-9]+?[0-9]", "[0-9]{2,}?")]
@@ -354,6 +318,10 @@ namespace System.Text.RegularExpressions.Tests
         [InlineData("[ab]*[^a]*", "[ab]*(?>[^a]*)")]
         [InlineData("[aa]*[^a]*", "(?>a*)(?>[^a]*)")]
         [InlineData("a??", "")]
+        [InlineData("ab?c", "a(?>b?)c")]
+        [InlineData("ab??c", "a(?>b?)c")]
+        [InlineData("ab{2}?c", "abbc")]
+        [InlineData("ab{2,3}?c", "a(?>b{2,3})c")]
         //[InlineData("(abc*?)", "(ab)")] // TODO https://github.com/dotnet/runtime/issues/66031: Need to reorganize optimizations to avoid an extra Empty being left at the end of the tree
         [InlineData("a{1,3}?", "a{1,4}?")]
         [InlineData("a{2,3}?", "a{2}")]
@@ -366,8 +334,10 @@ namespace System.Text.RegularExpressions.Tests
         [InlineData("[^\n]*\n+", "(?>[^\n]*)(?>\n+)")]
         [InlineData("(a+)b", "((?>a+))b")]
         [InlineData("a*(?:bcd|efg)", "(?>a*)(?:bcd|efg)")]
-        [InlineData("\\w*\\b", "(?>\\w*)\\b")]
-        [InlineData("\\d*\\b", "(?>\\d*)\\b")]
+        [InlineData("\\w+\\b", "(?>\\w+)\\b")]
+        [InlineData("\\d+\\b", "(?>\\d+)\\b")]
+        [InlineData("\\W+\\B", "(?>\\W+)\\B")]
+        [InlineData("\\D+\\B", "(?>\\D+)\\B")]
         [InlineData("(?:abc*|def*)g", "(?:ab(?>c*)|de(?>f*))g")]
         [InlineData("(?:a[ce]*|b*)g", "(?:a(?>[ce]*)|(?>b*))g")]
         [InlineData("(?:a[ce]*|b*)c", "(?:a[ce]*|(?>b*))c")]
@@ -377,6 +347,8 @@ namespace System.Text.RegularExpressions.Tests
         [InlineData("(?:w*)+\\.", "(?>w*)+\\.")]
         [InlineData("(a[bcd]e*)*fg", "(a[bcd](?>e*))*fg")]
         [InlineData("(\\w[bcd]\\s*)*fg", "(\\w[bcd](?>\\s*))*fg")]
+        [InlineData(@"\b(\w+)\b", @"\b((?>\w+))\b")]
+        [InlineData(@"\b(?:\w+)\b ", @"\b(?>\w+)\b ")]
         // Nothing handling
         [InlineData(@"\wabc(?!)def", "(?!)")]
         [InlineData(@"\wabc(?!)def|ghi(?!)", "(?!)")]
@@ -398,7 +370,7 @@ namespace System.Text.RegularExpressions.Tests
             string expectedStr = RegexParser.Parse(expected, RegexOptions.None, CultureInfo.InvariantCulture).Root.ToString();
             if (actualStr != expectedStr)
             {
-                throw new Xunit.Sdk.EqualException(actualStr, expectedStr);
+                throw new Xunit.Sdk.EqualException(expectedStr, actualStr);
             }
         }
 
@@ -419,6 +391,42 @@ namespace System.Text.RegularExpressions.Tests
         [InlineData("a*?a*", "a*")]
         [InlineData("a*[^a]*", "a*")]
         [InlineData("[^a]*a*", "a*")]
+        [InlineData("(?>a*)(?>a+)", "(?>a+)")]
+        [InlineData("(?>a*)(?>a{1,3})", "(?>a+)")]
+        [InlineData("(?>a+)(?>a+)", "(?>a{2,})")]
+        [InlineData("(?>a+)(?>a{1,3})", "(?>a{2,})")]
+        [InlineData("(?>a?)(?>a+)", "(?>a+)")]
+        [InlineData("(?>a?)(?>a{1,3})", "(?>a{1,4})")]
+        [InlineData("(?>a{1,3})(?>a+)", "(?>a{2,})")]
+        [InlineData("(?>a{1,3})(?>a{1,3})", "(?>a{2,6})")]
+        [InlineData("(?>[^a]*)(?>[^a]+)", "(?>[^a]+)")]
+        [InlineData("(?>[^a]*)(?>[^a]{1,3})", "(?>[^a]+)")]
+        [InlineData("(?>[^a]+)(?>[^a]+)", "(?>[^a]{2,})")]
+        [InlineData("(?>[^a]+)(?>[^a]{1,3})", "(?>[^a]{2,})")]
+        [InlineData("(?>[^a]?)(?>[^a]+)", "(?>[^a]+)")]
+        [InlineData("(?>[^a]?)(?>[^a]{1,3})", "(?>[^a]{1,4})")]
+        [InlineData("(?>[^a]{1,3})(?>[^a]+)", "(?>[^a]{2,})")]
+        [InlineData("(?>[^a]{1,3})(?>[^a]{1,3})", "(?>[^a]{2,6})")]
+        [InlineData("(?>[0-9]*)(?>[0-9]+)", "(?>[0-9]+)")]
+        [InlineData("(?>[0-9]*)(?>[0-9]{1,3})", "(?>[0-9]+)")]
+        [InlineData("(?>[0-9]+)(?>[0-9]+)", "(?>[0-9]{2,})")]
+        [InlineData("(?>[0-9]+)(?>[0-9]{1,3})", "(?>[0-9]{2,})")]
+        [InlineData("(?>[0-9]?)(?>[0-9]+)", "(?>[0-9]+)")]
+        [InlineData("(?>[0-9]?)(?>[0-9]{1,3})", "(?>[0-9]{1,4})")]
+        [InlineData("(?>[0-9]{1,3})(?>[0-9]+)", "(?>[0-9]{2,})")]
+        [InlineData("(?>[0-9]{1,3})(?>[0-9]{1,3})", "(?>[0-9]{2,6})")]
+        [InlineData("(?>a*)a", "(?>a+)")]
+        [InlineData("(?>a+)a", "(?>a{2,})")]
+        [InlineData("(?>a?)a", "(?>a{1,2})")]
+        [InlineData("(?>a{1,3})a", "(?>a{2,4})")]
+        [InlineData("(?>[^a]*)[^a]", "(?>[^a]+)")]
+        [InlineData("(?>[^a]+)[^a]", "(?>[^a]{2,})")]
+        [InlineData("(?>[^a]?)[^a]", "(?>[^a]{1,2})")]
+        [InlineData("(?>[^a]{1,3})[^a]", "(?>[^a]{2,4})")]
+        [InlineData("(?>[0-9]*)[0-9]", "(?>[0-9]+)")]
+        [InlineData("(?>[0-9]+)[0-9]", "(?>[0-9]{2,})")]
+        [InlineData("(?>[0-9]?)[0-9]", "(?>[0-9]{1,2})")]
+        [InlineData("(?>[0-9]{1,3})[0-9]", "(?>[0-9]{2,4})")]
         [InlineData("a{2147483646}a", "a{2147483647}")]
         [InlineData("a{2147483647}a", "a{2147483647}")]
         [InlineData("a{0,2147483646}a", "a{0,2147483647}")]
@@ -460,6 +468,21 @@ namespace System.Text.RegularExpressions.Tests
         [InlineData("(w+)+", "((?>w+))+")]
         [InlineData("(w{1,2})+", "((?>w{1,2}))+")]
         [InlineData("(?:ab|cd|ae)f", "(?>ab|cd|ae)f")]
+        [InlineData("ab?(b)", "a(?>b?)(b)")]
+        [InlineData("ab??c?", "a(?>b??)c?")]
+        [InlineData("ab{2,3}?c?", "a(?>b{2,3}?)c?")]
+        [InlineData("(?:ab??){2}", "(?:a(?>b??)){2}")]
+        [InlineData("(?:ab??){2, 3}", "(?:a(?>b??)){2, 3}")]
+        [InlineData("ab??(b)", "a(?>b??)(b)")]
+        [InlineData(@"\w+\b\w+", @"(?>\w+)\b\w")]
+        [InlineData(@"\w*\b\w+", @"(?>\w*)\b\w+")]
+        [InlineData(@"\W+\B\W+", @"(?>\W+)\B\W")]
+        [InlineData(@"\W*\B\W+", @"(?>\W*)\B\W")]
+        [InlineData(@"a?\b", @"(?>a?)\b")]
+        [InlineData(@"\w*\b", @"(?>\w*)\b")]
+        [InlineData(@"\d*\b", @"(?>\d*)\b")]
+        [InlineData(@"\W*\B", @"(?>\W*)\B")]
+        [InlineData(@"\D*\B", @"(?>\D*)\B")]
         // Loops inside alternation constructs
         [InlineData("(abc*|def)chi", "(ab(?>c*)|def)chi")]
         [InlineData("(abc|def*)fhi", "(abc|de(?>f*))fhi")]
@@ -480,79 +503,82 @@ namespace System.Text.RegularExpressions.Tests
             string expectedStr = RegexParser.Parse(expected, RegexOptions.None, CultureInfo.InvariantCulture).Root.ToString();
             if (actualStr == expectedStr)
             {
-                throw new Xunit.Sdk.NotEqualException(actualStr, expectedStr);
+                throw new Xunit.Sdk.NotEqualException(expectedStr, actualStr);
             }
         }
 
         [Theory]
-        [InlineData(@"a", RegexOptions.None, 1, 1)]
-        [InlineData(@"[^a]", RegexOptions.None, 1, 1)]
-        [InlineData(@"[abcdefg]", RegexOptions.None, 1, 1)]
-        [InlineData(@"abcd", RegexOptions.None, 4, 4)]
-        [InlineData(@"a*", RegexOptions.None, 0, null)]
-        [InlineData(@"a*?", RegexOptions.None, 0, null)]
-        [InlineData(@"a?", RegexOptions.None, 0, 1)]
-        [InlineData(@"a??", RegexOptions.None, 0, 1)]
-        [InlineData(@"a+", RegexOptions.None, 1, null)]
-        [InlineData(@"a+?", RegexOptions.None, 1, null)]
-        [InlineData(@"a{2}", RegexOptions.None, 2, 2)]
-        [InlineData(@"a{2}?", RegexOptions.None, 2, 2)]
-        [InlineData(@"a{3,17}", RegexOptions.None, 3, 17)]
-        [InlineData(@"a{3,17}?", RegexOptions.None, 3, 17)]
-        [InlineData(@"[^a]{3,17}", RegexOptions.None, 3, 17)]
-        [InlineData(@"[^a]{3,17}?", RegexOptions.None, 3, 17)]
-        [InlineData(@"(abcd){5}", RegexOptions.None, 20, 20)]
-        [InlineData(@"(abcd|ef){2,6}", RegexOptions.None, 4, 24)]
-        [InlineData(@"abcef|de", RegexOptions.None, 2, 5)]
-        [InlineData(@"abc(def|ghij)k", RegexOptions.None, 7, 8)]
-        [InlineData(@"abc(def|ghij|k||lmnopqrs|t)u", RegexOptions.None, 4, 12)]
-        [InlineData(@"(ab)c(def|ghij|k|l|\1|m)n", RegexOptions.None, 4, null)]
-        [InlineData(@"abc|de*f|ghi", RegexOptions.None, 2, null)]
-        [InlineData(@"abc|de+f|ghi", RegexOptions.None, 3, null)]
-        [InlineData(@"abc|(def)+|ghi", RegexOptions.None, 3, null)]
-        [InlineData(@"(abc)+|def", RegexOptions.None, 3, null)]
-        [InlineData(@"\d{1,2}-\d{1,2}-\d{2,4}", RegexOptions.None, 6, 10)]
-        [InlineData(@"\d{1,2}-(?>\d{1,2})-\d{2,4}", RegexOptions.None, 6, 10)]
-        [InlineData(@"1(?=9)\d", RegexOptions.None, 2, 2)]
-        [InlineData(@"1(?!\d)\w", RegexOptions.None, 2, 2)]
-        [InlineData(@"a*a*a*a*a*a*a*b*", RegexOptions.None, 0, null)]
-        [InlineData(@"((a{1,2}){4}){3,7}", RegexOptions.None, 12, 56)]
-        [InlineData(@"((a{1,2}){4}?){3,7}", RegexOptions.None, 12, 56)]
-        [InlineData(@"\b\w{4}\b", RegexOptions.None, 4, 4)]
-        [InlineData(@"\b\w{4}\b", RegexOptions.ECMAScript,  4, 4)]
-        [InlineData(@"abcd(?=efgh)efgh", RegexOptions.None, 8, 8)]
-        [InlineData(@"abcd(?<=cd)efgh", RegexOptions.None, 8, 8)]
-        [InlineData(@"abcd(?!ab)efgh", RegexOptions.None, 8, 8)]
-        [InlineData(@"abcd(?<!ef)efgh", RegexOptions.None, 8, 8)]
-        [InlineData(@"(a{1073741824}){2}", RegexOptions.None, 2147483646, null)] // min length max is bound to int.MaxValue - 1 for convenience in other places where we need to be able to add 1 without risk of overflow
-        [InlineData(@"a{1073741824}b{1073741824}", RegexOptions.None, 2147483646, null)]
-        [InlineData(@"((((((((((((((((((((((((((((((ab|cd+)|ef+)|gh+)|ij+)|kl+)|mn+)|op+)|qr+)|st+)|uv+)|wx+)|yz+)|01+)|23+)|45+)|67+)|89+)|AB+)|CD+)|EF+)|GH+)|IJ+)|KL+)|MN+)|OP+)|QR+)|ST+)|UV+)|WX+)|YZ)", RegexOptions.None, 2, null)]
-        [InlineData(@"(YZ+|(WX+|(UV+|(ST+|(QR+|(OP+|(MN+|(KL+|(IJ+|(GH+|(EF+|(CD+|(AB+|(89+|(67+|(45+|(23+|(01+|(yz+|(wx+|(uv+|(st+|(qr+|(op+|(mn+|(kl+|(ij+|(gh+|(ef+|(de+|(a|bc+)))))))))))))))))))))))))))))))", RegexOptions.None, 1, null)]
-        [InlineData(@"a(a(a(a(a(a(a(a(a(a(a(a(a(a(a(a(a(a(a(a(a(a(a(a(a(a(a(a(a(a(ab|cd+)|ef+)|gh+)|ij+)|kl+)|mn+)|op+)|qr+)|st+)|uv+)|wx+)|yz+)|01+)|23+)|45+)|67+)|89+)|AB+)|CD+)|EF+)|GH+)|IJ+)|KL+)|MN+)|OP+)|QR+)|ST+)|UV+)|WX+)|YZ+)", RegexOptions.None, 3, null)]
-        [InlineData(@"(((((((((((((((((((((((((((((((((((((((((((((((((((((((((((((((((((((((((((((((((((((((((((((((((a)))))))))))))))))))))))))))))))))))))))))))))))))))))))))))))))))))))))))))))))))))))))))))))))))", RegexOptions.None, 1, 1)]
-        [InlineData(@"(?(\d)\d{3}|\d)", RegexOptions.None, 1, 3)]
-        [InlineData(@"(?(\d{7})\d{3}|\d{2})", RegexOptions.None, 2, 3)]
-        [InlineData(@"(?(\d{7})\d{2}|\d{3})", RegexOptions.None, 2, 3)]
-        [InlineData(@"(?(\d)\d{3}|\d{2})", RegexOptions.None, 2, 3)]
-        [InlineData(@"(?(\d)|\d{2})", RegexOptions.None, 0, 2)]
-        [InlineData(@"(?(\d)\d{3})", RegexOptions.None, 0, 3)]
-        [InlineData(@"(abc)(?(1)\d{3}|\d{2})", RegexOptions.None, 5, 6)]
-        [InlineData(@"(abc)(?(1)\d{2}|\d{3})", RegexOptions.None, 5, 6)]
-        [InlineData(@"(abc)(?(1)|\d{2})", RegexOptions.None, 3, 5)]
-        [InlineData(@"(abc)(?(1)\d{3})", RegexOptions.None, 3, 6)]
-        [InlineData(@"(abc|)", RegexOptions.None, 0, 3)]
-        [InlineData(@"(|abc)", RegexOptions.None, 0, 3)]
-        [InlineData(@"(?(x)abc|)", RegexOptions.None, 0, 3)]
-        [InlineData(@"(?(x)|abc)", RegexOptions.None, 0, 3)]
-        [InlineData(@"(?(x)|abc)^\A\G\z\Z$", RegexOptions.None, 0, 3)]
-        [InlineData(@"(?(x)|abc)^\A\G\z$\Z", RegexOptions.Multiline, 0, 3)]
-        [InlineData(@"^\A\Gabc", RegexOptions.None, 3, null)] // leading anchor currently prevents ComputeMaxLength from being invoked, as it's not needed
-        [InlineData(@"^\A\Gabc", RegexOptions.Multiline, 3, null)]
-        [InlineData(@"abc            def", RegexOptions.IgnorePatternWhitespace, 6, 6)]
-        [InlineData(@"abcdef", RegexOptions.RightToLeft, 6, null)]
-        public void MinMaxLengthIsCorrect(string pattern, RegexOptions options, int expectedMin, int? expectedMax)
+        [InlineData(@"a", 0, 1, 1)]
+        [InlineData(@"[^a]", 0, 1, 1)]
+        [InlineData(@"[abcdefg]", 0, 1, 1)]
+        [InlineData(@"abcd", 0, 4, 4)]
+        [InlineData(@"a*", 0, 0, null)]
+        [InlineData(@"a*?", 0, 0, null)]
+        [InlineData(@"a?", 0, 0, 1)]
+        [InlineData(@"a??", 0, 0, 1)]
+        [InlineData(@"a+", 0, 1, null)]
+        [InlineData(@"a+?", 0, 1, null)]
+        [InlineData(@"(?>a*)a", 0, 1, null)]
+        [InlineData(@"(?>a*)a+", 0, 1, null)]
+        [InlineData(@"(?>a*)a*", 0, 0, null)]
+        [InlineData(@"a{2}", 0, 2, 2)]
+        [InlineData(@"a{2}?", 0, 2, 2)]
+        [InlineData(@"a{3,17}", 0, 3, 17)]
+        [InlineData(@"a{3,17}?", 0, 3, 17)]
+        [InlineData(@"[^a]{3,17}", 0, 3, 17)]
+        [InlineData(@"[^a]{3,17}?", 0, 3, 17)]
+        [InlineData(@"(abcd){5}", 0, 20, 20)]
+        [InlineData(@"(abcd|ef){2,6}", 0, 4, 24)]
+        [InlineData(@"abcef|de", 0, 2, 5)]
+        [InlineData(@"abc(def|ghij)k", 0, 7, 8)]
+        [InlineData(@"abc(def|ghij|k||lmnopqrs|t)u", 0, 4, 12)]
+        [InlineData(@"(ab)c(def|ghij|k|l|\1|m)n", 0, 4, null)]
+        [InlineData(@"abc|de*f|ghi", 0, 2, null)]
+        [InlineData(@"abc|de+f|ghi", 0, 3, null)]
+        [InlineData(@"abc|(def)+|ghi", 0, 3, null)]
+        [InlineData(@"(abc)+|def", 0, 3, null)]
+        [InlineData(@"\d{1,2}-\d{1,2}-\d{2,4}", 0, 6, 10)]
+        [InlineData(@"\d{1,2}-(?>\d{1,2})-\d{2,4}", 0, 6, 10)]
+        [InlineData(@"1(?=9)\d", 0, 2, 2)]
+        [InlineData(@"1(?!\d)\w", 0, 2, 2)]
+        [InlineData(@"a*a*a*a*a*a*a*b*", 0, 0, null)]
+        [InlineData(@"((a{1,2}){4}){3,7}", 0, 12, 56)]
+        [InlineData(@"((a{1,2}){4}?){3,7}", 0, 12, 56)]
+        [InlineData(@"\b\w{4}\b", 0, 4, 4)]
+        [InlineData(@"\b\w{4}\b", (int)RegexOptions.ECMAScript,  4, 4)]
+        [InlineData(@"abcd(?=efgh)efgh", 0, 8, 8)]
+        [InlineData(@"abcd(?<=cd)efgh", 0, 8, 8)]
+        [InlineData(@"abcd(?!ab)efgh", 0, 8, 8)]
+        [InlineData(@"abcd(?<!ef)efgh", 0, 8, 8)]
+        [InlineData(@"(a{1073741824}){2}", 0, 2147483646, null)] // min length max is bound to int.MaxValue - 1 for convenience in other places where we need to be able to add 1 without risk of overflow
+        [InlineData(@"a{1073741824}b{1073741824}", 0, 2147483646, null)]
+        [InlineData(@"((((((((((((((((((((((((((((((ab|cd+)|ef+)|gh+)|ij+)|kl+)|mn+)|op+)|qr+)|st+)|uv+)|wx+)|yz+)|01+)|23+)|45+)|67+)|89+)|AB+)|CD+)|EF+)|GH+)|IJ+)|KL+)|MN+)|OP+)|QR+)|ST+)|UV+)|WX+)|YZ)", 0, 2, null)]
+        [InlineData(@"(YZ+|(WX+|(UV+|(ST+|(QR+|(OP+|(MN+|(KL+|(IJ+|(GH+|(EF+|(CD+|(AB+|(89+|(67+|(45+|(23+|(01+|(yz+|(wx+|(uv+|(st+|(qr+|(op+|(mn+|(kl+|(ij+|(gh+|(ef+|(de+|(a|bc+)))))))))))))))))))))))))))))))", 0, 1, null)]
+        [InlineData(@"a(a(a(a(a(a(a(a(a(a(a(a(a(a(a(a(a(a(a(a(a(a(a(a(a(a(a(a(a(a(ab|cd+)|ef+)|gh+)|ij+)|kl+)|mn+)|op+)|qr+)|st+)|uv+)|wx+)|yz+)|01+)|23+)|45+)|67+)|89+)|AB+)|CD+)|EF+)|GH+)|IJ+)|KL+)|MN+)|OP+)|QR+)|ST+)|UV+)|WX+)|YZ+)", 0, 3, null)]
+        [InlineData(@"(((((((((((((((((((((((((((((((((((((((((((((((((((((((((((((((((((((((((((((((((((((((((((((((((a)))))))))))))))))))))))))))))))))))))))))))))))))))))))))))))))))))))))))))))))))))))))))))))))))", 0, 1, 1)]
+        [InlineData(@"(?(\d)\d{3}|\d)", 0, 1, 3)]
+        [InlineData(@"(?(\d{7})\d{3}|\d{2})", 0, 2, 3)]
+        [InlineData(@"(?(\d{7})\d{2}|\d{3})", 0, 2, 3)]
+        [InlineData(@"(?(\d)\d{3}|\d{2})", 0, 2, 3)]
+        [InlineData(@"(?(\d)|\d{2})", 0, 0, 2)]
+        [InlineData(@"(?(\d)\d{3})", 0, 0, 3)]
+        [InlineData(@"(abc)(?(1)\d{3}|\d{2})", 0, 5, 6)]
+        [InlineData(@"(abc)(?(1)\d{2}|\d{3})", 0, 5, 6)]
+        [InlineData(@"(abc)(?(1)|\d{2})", 0, 3, 5)]
+        [InlineData(@"(abc)(?(1)\d{3})", 0, 3, 6)]
+        [InlineData(@"(abc|)", 0, 0, 3)]
+        [InlineData(@"(|abc)", 0, 0, 3)]
+        [InlineData(@"(?(x)abc|)", 0, 0, 3)]
+        [InlineData(@"(?(x)|abc)", 0, 0, 3)]
+        [InlineData(@"(?(x)|abc)^\A\G\z\Z$", 0, 0, 3)]
+        [InlineData(@"(?(x)|abc)^\A\G\z$\Z", (int)RegexOptions.Multiline, 0, 3)]
+        [InlineData(@"^\A\Gabc", 0, 3, null)] // leading anchor currently prevents ComputeMaxLength from being invoked, as it's not needed
+        [InlineData(@"^\A\Gabc", (int)RegexOptions.Multiline, 3, null)]
+        [InlineData(@"abc            def", (int)RegexOptions.IgnorePatternWhitespace, 6, 6)]
+        [InlineData(@"abcdef", (int)RegexOptions.RightToLeft, 6, null)]
+        public void MinMaxLengthIsCorrect(string pattern, int options, int expectedMin, int? expectedMax)
         {
-            RegexTree tree = RegexParser.Parse(pattern, options, CultureInfo.InvariantCulture);
+            RegexTree tree = RegexParser.Parse(pattern, (RegexOptions)options, CultureInfo.InvariantCulture);
 
             Assert.Equal(expectedMin, tree.FindOptimizations.MinRequiredLength);
 
@@ -560,7 +586,7 @@ namespace System.Text.RegularExpressions.Tests
                 !pattern.EndsWith(@"\Z", StringComparison.OrdinalIgnoreCase))
             {
                 // MaxPossibleLength is currently only computed/stored if there's a trailing End{Z} anchor as the max length is otherwise unused
-                tree = RegexParser.Parse($"(?:{pattern})$", options, CultureInfo.InvariantCulture);
+                tree = RegexParser.Parse($"(?:{pattern})$", (RegexOptions)options, CultureInfo.InvariantCulture);
             }
 
             Assert.Equal(expectedMax, tree.FindOptimizations.MaxPossibleLength);
@@ -570,7 +596,7 @@ namespace System.Text.RegularExpressions.Tests
         public void MinMaxLengthIsCorrect_HugeDepth()
         {
             const int Depth = 10_000;
-            RegexTree tree = RegexParser.Parse($"{new string('(', Depth)}a{new string(')', Depth)}$", RegexOptions.None, CultureInfo.InvariantCulture); // too deep for analysis on some platform default stack sizes
+            RegexTree tree = RegexParser.Parse($"{new string('(', Depth)}a{new string(')', Depth)}$", 0, CultureInfo.InvariantCulture); // too deep for analysis on some platform default stack sizes
 
             int minRequiredLength = tree.FindOptimizations.MinRequiredLength;
 
@@ -582,6 +608,23 @@ namespace System.Text.RegularExpressions.Tests
             Assert.True(
                 maxPossibleLength == 1 /* successfully analyzed */ || maxPossibleLength is null /* ran out of stack space to complete analysis */,
                 $"Expected 1 or null, got {maxPossibleLength}");
+        }
+
+        [Theory]
+        [InlineData("(?i)abc", (int)RegexOptions.IgnoreCase)]
+        [InlineData("(?i)abc(?-i)", (int)RegexOptions.IgnoreCase)]
+        [InlineData("(?:hello(nested(?:abc|(?:(?i:b)))))", (int)RegexOptions.IgnoreCase)]
+        [InlineData("(?-i)abc", (int)RegexOptions.None)]
+        [InlineData("(?mi)abc", (int)RegexOptions.IgnoreCase | (int)RegexOptions.Multiline)]
+        [InlineData("(?im)abc", (int)RegexOptions.IgnoreCase | (int)RegexOptions.Multiline)]
+        [InlineData("(?i)ab(?m)c", (int)RegexOptions.IgnoreCase | (int)RegexOptions.Multiline)]
+        [InlineData("(?xmi)abc", (int)RegexOptions.IgnoreCase | (int)RegexOptions.IgnorePatternWhitespace | (int)RegexOptions.Multiline)]
+        [InlineData("(?s)abc", (int)RegexOptions.Singleline)]
+        [InlineData("(?-simx)abc", (int)RegexOptions.None)]
+        public void FoundOptionsInPatternIsCorrect(string pattern, int expectedOptions)
+        {
+            RegexOptions foundOptions = RegexParser.ParseOptionsInPattern(pattern, RegexOptions.None);
+            Assert.Equal((RegexOptions)expectedOptions, foundOptions);
         }
     }
 }

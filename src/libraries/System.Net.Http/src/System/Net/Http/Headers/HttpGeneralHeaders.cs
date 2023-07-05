@@ -22,7 +22,7 @@ namespace System.Net.Http.Headers
 
         public CacheControlHeaderValue? CacheControl
         {
-            get { return (CacheControlHeaderValue?)_parent.GetParsedValues(KnownHeaders.CacheControl.Descriptor); }
+            get { return (CacheControlHeaderValue?)_parent.GetSingleParsedValue(KnownHeaders.CacheControl.Descriptor); }
             set { _parent.SetOrRemoveParsedValue(KnownHeaders.CacheControl.Descriptor, value); }
         }
 
@@ -81,14 +81,25 @@ namespace System.Net.Http.Headers
 
         internal static bool? GetTransferEncodingChunked(HttpHeaders parent, HttpGeneralHeaders? headers)
         {
-            if (parent.ContainsParsedValue(KnownHeaders.TransferEncoding.Descriptor, HeaderUtilities.TransferEncodingChunked))
+            if (parent.TryGetHeaderValue(KnownHeaders.TransferEncoding.Descriptor, out object? value))
             {
-                return true;
+                // Fast-path for the very common case where "chunked" is the only value.
+                if (value is string stringValue && stringValue.Equals("chunked", StringComparison.OrdinalIgnoreCase))
+                {
+                    return true;
+                }
+
+                if (parent.ContainsParsedValue(KnownHeaders.TransferEncoding.Descriptor, HeaderUtilities.TransferEncodingChunked))
+                {
+                    return true;
+                }
             }
+
             if (headers != null && headers._transferEncodingChunkedSet)
             {
                 return false;
             }
+
             return null;
         }
 

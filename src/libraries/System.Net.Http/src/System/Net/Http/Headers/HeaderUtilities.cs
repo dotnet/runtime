@@ -5,6 +5,7 @@ using System.Buffers;
 using System.Collections.Generic;
 using System.Diagnostics;
 using System.Globalization;
+using System.Runtime.CompilerServices;
 using System.Text;
 
 namespace System.Net.Http.Headers
@@ -21,6 +22,11 @@ namespace System.Net.Http.Headers
 
         internal const string BytesUnit = "bytes";
 
+        // attr-char = ALPHA / DIGIT / "!" / "#" / "$" / "&" / "+" / "-" / "." / "^" / "_" / "`" / "|" / "~"
+        //      ; token except ( "*" / "'" / "%" )
+        private static readonly SearchValues<byte> s_rfc5987AttrBytes =
+            SearchValues.Create("!#$&+-.0123456789ABCDEFGHIJKLMNOPQRSTUVWXYZ^_`abcdefghijklmnopqrstuvwxyz|~"u8);
+
         internal static void SetQuality(UnvalidatedObjectCollection<NameValueHeaderValue> parameters, double? value)
         {
             Debug.Assert(parameters != null);
@@ -33,12 +39,11 @@ namespace System.Net.Http.Headers
                 // using Parameters.Add() they could always add invalid values using HttpHeaders.AddWithoutValidation().
                 // So this check is really for convenience to show users that they're trying to add an invalid
                 // value.
-                if ((value < 0) || (value > 1))
-                {
-                    throw new ArgumentOutOfRangeException(nameof(value));
-                }
+                double d = value.GetValueOrDefault();
+                ArgumentOutOfRangeException.ThrowIfNegative(d);
+                ArgumentOutOfRangeException.ThrowIfGreaterThan(d, 1);
 
-                string qualityString = ((double)value).ToString("0.0##", NumberFormatInfo.InvariantInfo);
+                string qualityString = d.ToString("0.0##", NumberFormatInfo.InvariantInfo);
                 if (qualityParameter != null)
                 {
                     qualityParameter.Value = qualityString;
@@ -58,64 +63,57 @@ namespace System.Net.Http.Headers
             }
         }
 
-        internal static bool ContainsNonAscii(string input)
-        {
-            Debug.Assert(input != null);
-
-            foreach (char c in input)
-            {
-                if ((int)c > 0x7f)
-                {
-                    return true;
-                }
-            }
-            return false;
-        }
-
         // Encode a string using RFC 5987 encoding.
         // encoding'lang'PercentEncodedSpecials
         internal static string Encode5987(string input)
         {
-            // Encode a string using RFC 5987 encoding.
-            // encoding'lang'PercentEncodedSpecials
-            StringBuilder builder = StringBuilderCache.Acquire();
+            var builder = new ValueStringBuilder(stackalloc char[256]);
             byte[] utf8bytes = ArrayPool<byte>.Shared.Rent(Encoding.UTF8.GetMaxByteCount(input.Length));
             int utf8length = Encoding.UTF8.GetBytes(input, 0, input.Length, utf8bytes, 0);
 
             builder.Append("utf-8\'\'");
-            for (int i = 0; i < utf8length; i++)
+
+            ReadOnlySpan<byte> utf8 = utf8bytes.AsSpan(0, utf8length);
+            do
             {
-                byte utf8byte = utf8bytes[i];
-
-                // attr-char = ALPHA / DIGIT / "!" / "#" / "$" / "&" / "+" / "-" / "." / "^" / "_" / "`" / "|" / "~"
-                //      ; token except ( "*" / "'" / "%" )
-                if (utf8byte > 0x7F) // Encodes as multiple utf-8 bytes
+                int length = utf8.IndexOfAnyExcept(s_rfc5987AttrBytes);
+                if (length < 0)
                 {
-                    AddHexEscaped(utf8byte, builder);
-                }
-                else if (!HttpRuleParser.IsTokenChar((char)utf8byte) || utf8byte == '*' || utf8byte == '\'' || utf8byte == '%')
-                {
-                    // ASCII - Only one encoded byte.
-                    AddHexEscaped(utf8byte, builder);
-                }
-                else
-                {
-                    builder.Append((char)utf8byte);
+                    length = utf8.Length;
                 }
 
+                Encoding.ASCII.GetChars(utf8.Slice(0, length), builder.AppendSpan(length));
+
+                utf8 = utf8.Slice(length);
+
+                if (utf8.IsEmpty)
+                {
+                    break;
+                }
+
+                length = utf8.IndexOfAny(s_rfc5987AttrBytes);
+                if (length < 0)
+                {
+                    length = utf8.Length;
+                }
+
+                foreach (byte b in utf8.Slice(0, length))
+                {
+                    AddHexEscaped(b, ref builder);
+                }
+
+                utf8 = utf8.Slice(length);
             }
+            while (!utf8.IsEmpty);
 
-            Array.Clear(utf8bytes, 0, utf8length);
             ArrayPool<byte>.Shared.Return(utf8bytes);
 
-            return StringBuilderCache.GetStringAndRelease(builder);
+            return builder.ToString();
         }
 
         /// <summary>Transforms an ASCII character into its hexadecimal representation, adding the characters to a StringBuilder.</summary>
-        private static void AddHexEscaped(byte c, StringBuilder destination)
+        private static void AddHexEscaped(byte c, ref ValueStringBuilder destination)
         {
-            Debug.Assert(destination != null);
-
             destination.Append('%');
             destination.Append(HexConverter.ToCharUpper(c >> 4));
             destination.Append(HexConverter.ToCharUpper(c));
@@ -142,12 +140,9 @@ namespace System.Net.Http.Headers
             return null;
         }
 
-        internal static void CheckValidToken(string value, string parameterName)
+        internal static void CheckValidToken(string value, [CallerArgumentExpression(nameof(value))] string? parameterName = null)
         {
-            if (string.IsNullOrEmpty(value))
-            {
-                throw new ArgumentException(SR.net_http_argument_empty_string, parameterName);
-            }
+            ArgumentException.ThrowIfNullOrWhiteSpace(value, parameterName);
 
             if (HttpRuleParser.GetTokenLength(value, 0) != value.Length)
             {
@@ -155,12 +150,9 @@ namespace System.Net.Http.Headers
             }
         }
 
-        internal static void CheckValidComment(string value, string parameterName)
+        internal static void CheckValidComment(string value, [CallerArgumentExpression(nameof(value))] string? parameterName = null)
         {
-            if (string.IsNullOrEmpty(value))
-            {
-                throw new ArgumentException(SR.net_http_argument_empty_string, parameterName);
-            }
+            ArgumentException.ThrowIfNullOrWhiteSpace(value, parameterName);
 
             int length;
             if ((HttpRuleParser.GetCommentLength(value, 0, out length) != HttpParseResult.Parsed) ||
@@ -170,12 +162,9 @@ namespace System.Net.Http.Headers
             }
         }
 
-        internal static void CheckValidQuotedString(string value, string parameterName)
+        internal static void CheckValidQuotedString(string value, [CallerArgumentExpression(nameof(value))] string? parameterName = null)
         {
-            if (string.IsNullOrEmpty(value))
-            {
-                throw new ArgumentException(SR.net_http_argument_empty_string, parameterName);
-            }
+            ArgumentException.ThrowIfNullOrWhiteSpace(value, parameterName);
 
             int length;
             if ((HttpRuleParser.GetQuotedStringLength(value, 0, out length) != HttpParseResult.Parsed) ||
@@ -269,14 +258,14 @@ namespace System.Net.Http.Headers
             // empty values, continue until the current character is neither a separator nor a whitespace.
             separatorFound = true;
             current++; // skip delimiter.
-            current = current + HttpRuleParser.GetWhitespaceLength(input, current);
+            current += HttpRuleParser.GetWhitespaceLength(input, current);
 
             if (skipEmptyValues)
             {
                 while ((current < input.Length) && (input[current] == ','))
                 {
                     current++; // skip delimiter.
-                    current = current + HttpRuleParser.GetWhitespaceLength(input, current);
+                    current += HttpRuleParser.GetWhitespaceLength(input, current);
                 }
             }
 
@@ -287,7 +276,7 @@ namespace System.Net.Http.Headers
         {
             Debug.Assert(store != null);
 
-            object? storedValue = store.GetParsedValues(descriptor);
+            object? storedValue = store.GetSingleParsedValue(descriptor);
             if (storedValue != null)
             {
                 return (DateTimeOffset)storedValue;
@@ -304,7 +293,7 @@ namespace System.Net.Http.Headers
         {
             Debug.Assert(store != null);
 
-            object? storedValue = store.GetParsedValues(descriptor);
+            object? storedValue = store.GetSingleParsedValue(descriptor);
             if (storedValue != null)
             {
                 return (TimeSpan)storedValue;

@@ -2,6 +2,7 @@
 // The .NET Foundation licenses this file to you under the MIT license.
 
 using System;
+using System.Diagnostics;
 using System.Threading.Tasks;
 
 namespace Microsoft.Extensions.DependencyInjection
@@ -9,6 +10,7 @@ namespace Microsoft.Extensions.DependencyInjection
     /// <summary>
     /// An <see cref="IServiceScope" /> implementation that implements <see cref="IAsyncDisposable" />.
     /// </summary>
+    [DebuggerDisplay("{ServiceProvider,nq}")]
     public readonly struct AsyncServiceScope : IServiceScope, IAsyncDisposable
     {
         private readonly IServiceScope _serviceScope;
@@ -18,8 +20,10 @@ namespace Microsoft.Extensions.DependencyInjection
         /// Wraps an instance of <see cref="IServiceScope" />.
         /// </summary>
         /// <param name="serviceScope">The <see cref="IServiceScope"/> instance to wrap.</param>
-        public AsyncServiceScope(IServiceScope serviceScope!!)
+        public AsyncServiceScope(IServiceScope serviceScope)
         {
+            ThrowHelper.ThrowIfNull(serviceScope);
+
             _serviceScope = serviceScope;
         }
 

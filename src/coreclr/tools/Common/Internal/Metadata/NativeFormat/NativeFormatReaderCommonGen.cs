@@ -6,6 +6,7 @@
 using System;
 using System.Reflection;
 using System.Collections.Generic;
+using System.Runtime.CompilerServices;
 
 #pragma warning disable 108     // base type 'uint' is not CLS-compliant
 #pragma warning disable 3009    // base type 'uint' is not CLS-compliant
@@ -14,6 +15,9 @@ using System.Collections.Generic;
 namespace Internal.Metadata.NativeFormat
 {
     [Flags]
+#if SYSTEM_PRIVATE_CORELIB
+    [CLSCompliant(false)]
+#endif
     public enum AssemblyFlags : uint
     {
         /// The assembly reference holds the full (unhashed) public key.
@@ -29,6 +33,9 @@ namespace Internal.Metadata.NativeFormat
         EnableJITcompileTracking = 0x8000,
     } // AssemblyFlags
 
+#if SYSTEM_PRIVATE_CORELIB
+    [CLSCompliant(false)]
+#endif
     public enum AssemblyHashAlgorithm : uint
     {
         None = 0x0,
@@ -36,6 +43,9 @@ namespace Internal.Metadata.NativeFormat
         SHA1 = 0x8004,
     } // AssemblyHashAlgorithm
 
+#if SYSTEM_PRIVATE_CORELIB
+    [CLSCompliant(false)]
+#endif
     public enum GenericParameterKind : byte
     {
         /// Represents a type parameter for a generic type.
@@ -45,6 +55,9 @@ namespace Internal.Metadata.NativeFormat
         GenericMethodParameter = 0x1,
     } // GenericParameterKind
 
+#if SYSTEM_PRIVATE_CORELIB
+    [CLSCompliant(false)]
+#endif
     public enum NamedArgumentMemberKind : byte
     {
         /// Specifies the name of a property
@@ -54,6 +67,26 @@ namespace Internal.Metadata.NativeFormat
         Field = 0x1,
     } // NamedArgumentMemberKind
 
+#if SYSTEM_PRIVATE_CORELIB
+    [CLSCompliant(false)]
+#endif
+    public enum SignatureCallingConvention : byte
+    {
+        HasThis = 0x20,
+        ExplicitThis = 0x40,
+        Default = 0x00,
+        Vararg = 0x05,
+        Cdecl = 0x01,
+        StdCall = 0x02,
+        ThisCall = 0x03,
+        FastCall = 0x04,
+        Unmanaged = 0x09,
+        UnmanagedCallingConventionMask = 0x0F,
+    } // SignatureCallingConvention
+
+#if SYSTEM_PRIVATE_CORELIB
+    [CLSCompliant(false)]
+#endif
     public enum HandleType : byte
     {
         Null = 0x0,

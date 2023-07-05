@@ -7,22 +7,25 @@ using System.Threading.Tasks;
 using Microsoft.WebAssembly.Diagnostics;
 using Newtonsoft.Json.Linq;
 using Xunit;
+using Xunit.Abstractions;
 
 namespace DebuggerTests
 {
 
-    public class PointerTests : DebuggerTestBase
+    public class PointerTests : DebuggerTests
     {
+        public PointerTests(ITestOutputHelper testOutput) : base(testOutput)
+        {}
 
         public static TheoryData<string, string, string, int, string, bool> PointersTestData =>
             new TheoryData<string, string, string, int, string, bool>
-            { { $"invoke_static_method ('[debugger-test] DebuggerTests.PointerTests:LocalPointers');", "DebuggerTests.PointerTests", "LocalPointers", 32, "LocalPointers", false },
-                { $"invoke_static_method ('[debugger-test] DebuggerTests.PointerTests:LocalPointers');", "DebuggerTests.PointerTests", "LocalPointers", 32, "LocalPointers", true },
-                { $"invoke_static_method_async ('[debugger-test] DebuggerTests.PointerTests:LocalPointersAsync');", "DebuggerTests.PointerTests", "LocalPointersAsync", 32, "LocalPointersAsync", false },
-                { $"invoke_static_method_async ('[debugger-test] DebuggerTests.PointerTests:LocalPointersAsync');", "DebuggerTests.PointerTests", "LocalPointersAsync", 32, "LocalPointersAsync", true }
+            { { $"invoke_static_method ('[debugger-test] DebuggerTests.PointerTests:LocalPointers');", "DebuggerTests.PointerTests", "LocalPointers", 32, "DebuggerTests.PointerTests.LocalPointers", false },
+                { $"invoke_static_method ('[debugger-test] DebuggerTests.PointerTests:LocalPointers');", "DebuggerTests.PointerTests", "LocalPointers", 32, "DebuggerTests.PointerTests.LocalPointers", true },
+                { $"invoke_static_method_async ('[debugger-test] DebuggerTests.PointerTests:LocalPointersAsync');", "DebuggerTests.PointerTests", "LocalPointersAsync", 32, "DebuggerTests.PointerTests.LocalPointersAsync", false },
+                { $"invoke_static_method_async ('[debugger-test] DebuggerTests.PointerTests:LocalPointersAsync');", "DebuggerTests.PointerTests", "LocalPointersAsync", 32, "DebuggerTests.PointerTests.LocalPointersAsync", true }
             };
 
-        [Theory]
+        [ConditionalTheory(nameof(RunningOnChrome))]
         [MemberDataAttribute(nameof(PointersTestData))]
         public async Task InspectLocalPointersToPrimitiveTypes(string eval_fn, string type, string method, int line_offset, string bp_function_name, bool use_cfo) => await CheckInspectLocalsAtBreakpointSite(
             type, method, line_offset, bp_function_name,
@@ -68,7 +71,7 @@ namespace DebuggerTests
                await CheckPointerValue(props, "*cp", TChar('q'));
            });
 
-        [Theory]
+        [ConditionalTheory(nameof(RunningOnChrome))]
         [MemberDataAttribute(nameof(PointersTestData))]
         public async Task InspectLocalPointerArrays(string eval_fn, string type, string method, int line_offset, string bp_function_name, bool use_cfo) => await CheckInspectLocalsAtBreakpointSite(
             type, method, line_offset, bp_function_name,
@@ -99,7 +102,7 @@ namespace DebuggerTests
                });
            });
 
-        [Theory]
+        [ConditionalTheory(nameof(RunningOnChrome))]
         [MemberDataAttribute(nameof(PointersTestData))]
         public async Task InspectLocalDoublePointerToPrimitiveTypeArrays(string eval_fn, string type, string method, int line_offset, string bp_function_name, bool use_cfo) => await CheckInspectLocalsAtBreakpointSite(
             type, method, line_offset, bp_function_name,
@@ -142,7 +145,7 @@ namespace DebuggerTests
                }
            });
 
-        [Theory]
+        [ConditionalTheory(nameof(RunningOnChrome))]
         [MemberDataAttribute(nameof(PointersTestData))]
         public async Task InspectLocalPointersToValueTypes(string eval_fn, string type, string method, int line_offset, string bp_function_name, bool use_cfo) => await CheckInspectLocalsAtBreakpointSite(
             type, method, line_offset, bp_function_name,
@@ -210,7 +213,7 @@ namespace DebuggerTests
                }
            });
 
-        [Theory]
+        [ConditionalTheory(nameof(RunningOnChrome))]
         [MemberDataAttribute(nameof(PointersTestData))]
         public async Task InspectLocalPointersToValueTypeArrays(string eval_fn, string type, string method, int line_offset, string bp_function_name, bool use_cfo) => await CheckInspectLocalsAtBreakpointSite(
             type, method, line_offset, bp_function_name,
@@ -243,7 +246,7 @@ namespace DebuggerTests
                }
            });
 
-        [Theory]
+        [ConditionalTheory(nameof(RunningOnChrome))]
         [MemberDataAttribute(nameof(PointersTestData))]
         public async Task InspectLocalPointersToGenericValueTypeArrays(string eval_fn, string type, string method, int line_offset, string bp_function_name, bool use_cfo) => await CheckInspectLocalsAtBreakpointSite(
             type, method, line_offset, bp_function_name,
@@ -310,7 +313,7 @@ namespace DebuggerTests
                }
            });
 
-        [Theory]
+        [ConditionalTheory(nameof(RunningOnChrome))]
         [MemberDataAttribute(nameof(PointersTestData))]
         public async Task InspectLocalDoublePointersToValueTypeArrays(string eval_fn, string type, string method, int line_offset, string bp_function_name, bool use_cfo) => await CheckInspectLocalsAtBreakpointSite(
             type, method, line_offset, bp_function_name,
@@ -376,11 +379,11 @@ namespace DebuggerTests
 
         public static TheoryData<string, string, string, int, string, bool> PointersAsMethodArgsTestData =>
             new TheoryData<string, string, string, int, string, bool>
-            { { $"invoke_static_method ('[debugger-test] DebuggerTests.PointerTests:LocalPointers');", "DebuggerTests.PointerTests", "PointersAsArgsTest", 2, "PointersAsArgsTest", false },
-                { $"invoke_static_method ('[debugger-test] DebuggerTests.PointerTests:LocalPointers');", "DebuggerTests.PointerTests", "PointersAsArgsTest", 2, "PointersAsArgsTest", true },
+            { { $"invoke_static_method ('[debugger-test] DebuggerTests.PointerTests:LocalPointers');", "DebuggerTests.PointerTests", "PointersAsArgsTest", 2, "DebuggerTests.PointerTests.PointersAsArgsTest", false },
+                { $"invoke_static_method ('[debugger-test] DebuggerTests.PointerTests:LocalPointers');", "DebuggerTests.PointerTests", "PointersAsArgsTest", 2, "DebuggerTests.PointerTests.PointersAsArgsTest", true },
             };
 
-        [Theory]
+        [ConditionalTheory(nameof(RunningOnChrome))]
         [MemberDataAttribute(nameof(PointersAsMethodArgsTestData))]
         public async Task InspectPrimitiveTypePointersAsMethodArgs(string eval_fn, string type, string method, int line_offset, string bp_function_name, bool use_cfo) => await CheckInspectLocalsAtBreakpointSite(
             type, method, line_offset, bp_function_name,
@@ -453,7 +456,7 @@ namespace DebuggerTests
                }
            });
 
-        [Theory]
+        [ConditionalTheory(nameof(RunningOnChrome))]
         [MemberDataAttribute(nameof(PointersAsMethodArgsTestData))]
         public async Task InspectValueTypePointersAsMethodArgs(string eval_fn, string type, string method, int line_offset, string bp_function_name, bool use_cfo) => await CheckInspectLocalsAtBreakpointSite(
             type, method, line_offset, bp_function_name,
@@ -517,9 +520,9 @@ namespace DebuggerTests
                await CheckArrayElements(dtppa_elems, exp_elems);
            });
 
-        [Theory]
-        [InlineData("invoke_static_method ('[debugger-test] Math:UseComplex', 0, 0);", "Math", "UseComplex", 3, "UseComplex", false)]
-        [InlineData("invoke_static_method ('[debugger-test] Math:UseComplex', 0, 0);", "Math", "UseComplex", 3, "UseComplex", true)]
+        [ConditionalTheory(nameof(RunningOnChrome))]
+        [InlineData("invoke_static_method ('[debugger-test] Math:UseComplex', 0, 0);", "Math", "UseComplex", 3, "Math.UseComplex", false)]
+        [InlineData("invoke_static_method ('[debugger-test] Math:UseComplex', 0, 0);", "Math", "UseComplex", 3, "Math.UseComplex", true)]
         public async Task DerefNonPointerObject(string eval_fn, string type, string method, int line_offset, string bp_function_name, bool use_cfo) => await CheckInspectLocalsAtBreakpointSite(
             type, method, line_offset, bp_function_name,
             "window.setTimeout(function() { " + eval_fn + " })",

@@ -23,8 +23,13 @@ namespace System.Reflection.PortableExecutable
             public readonly string Name;
             public readonly SectionCharacteristics Characteristics;
 
-            public Section(string name!!, SectionCharacteristics characteristics)
+            public Section(string name, SectionCharacteristics characteristics)
             {
+                if (name is null)
+                {
+                    Throw.ArgumentNull(nameof(name));
+                }
+
                 Name = name;
                 Characteristics = characteristics;
             }
@@ -53,8 +58,13 @@ namespace System.Reflection.PortableExecutable
             public int VirtualSize => Builder.Count;
         }
 
-        protected PEBuilder(PEHeaderBuilder header!!, Func<IEnumerable<Blob>, BlobContentId>? deterministicIdProvider)
+        protected PEBuilder(PEHeaderBuilder header, Func<IEnumerable<Blob>, BlobContentId>? deterministicIdProvider)
         {
+            if (header is null)
+            {
+                Throw.ArgumentNull(nameof(header));
+            }
+
             IdProvider = deterministicIdProvider ?? BlobContentId.GetTimeBasedProvider();
             IsDeterministic = deterministicIdProvider != null;
             Header = header;
@@ -140,16 +150,23 @@ namespace System.Reflection.PortableExecutable
             return result.MoveToImmutable();
         }
 
-        private void WritePESignature(BlobBuilder builder)
+        private static unsafe void WritePESignature(BlobBuilder builder)
         {
             // MS-DOS stub (128 bytes)
-            builder.WriteBytes(s_dosHeader);
+            ReadOnlySpan<byte> header = DosHeader;
+            Debug.Assert(DosHeader.Length == DosHeaderSize);
+            fixed (byte* ptr = header)
+            {
+                builder.WriteBytes(ptr, header.Length);
+            }
 
             // PE Signature "PE\0\0"
             builder.WriteUInt32(PEHeaders.PESignature);
         }
 
-        private static readonly byte[] s_dosHeader = new byte[]
+        internal const int DosHeaderSize = 0x80;
+
+        private static ReadOnlySpan<byte> DosHeader => new byte[DosHeaderSize]
         {
             0x4d, 0x5a, 0x90, 0x00, 0x03, 0x00, 0x00, 0x00,
             0x04, 0x00, 0x00, 0x00, 0xff, 0xff, 0x00, 0x00,
@@ -160,7 +177,7 @@ namespace System.Reflection.PortableExecutable
             0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00,
             0x00, 0x00, 0x00, 0x00,
 
-            0x80, 0x00, 0x00, 0x00, // NT Header offset (0x80 == s_dosHeader.Length)
+            0x80, 0x00, 0x00, 0x00, // NT Header offset (0x80 == DosHeader.Length)
 
             0x0e, 0x1f, 0xba, 0x0e, 0x00, 0xb4, 0x09, 0xcd,
             0x21, 0xb8, 0x01, 0x4c, 0xcd, 0x21, 0x54, 0x68,
@@ -171,8 +188,6 @@ namespace System.Reflection.PortableExecutable
             0x6d, 0x6f, 0x64, 0x65, 0x2e, 0x0d, 0x0d, 0x0a,
             0x24, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00
         };
-
-        internal static int DosHeaderSize = s_dosHeader.Length;
 
         private void WriteCoffHeader(BlobBuilder builder, ImmutableArray<SerializedSection> sections, out Blob stampFixup)
         {
@@ -327,7 +342,7 @@ namespace System.Reflection.PortableExecutable
             builder.WriteUInt64(0);
         }
 
-        private void WriteSectionHeaders(BlobBuilder builder, ImmutableArray<SerializedSection> serializedSections)
+        private static void WriteSectionHeaders(BlobBuilder builder, ImmutableArray<SerializedSection> serializedSections)
         {
             foreach (var serializedSection in serializedSections)
             {

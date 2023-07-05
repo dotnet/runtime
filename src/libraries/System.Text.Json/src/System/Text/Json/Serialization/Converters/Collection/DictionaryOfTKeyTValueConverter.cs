@@ -15,6 +15,8 @@ namespace System.Text.Json.Serialization.Converters
         where TCollection : Dictionary<TKey, TValue>
         where TKey : notnull
     {
+        internal override bool CanPopulate => true;
+
         protected override void Add(TKey key, in TValue value, JsonSerializerOptions options, ref ReadStack state)
         {
             ((TCollection)state.Current.ReturnValue!)[key] = value;
@@ -80,7 +82,7 @@ namespace System.Text.Json.Serialization.Converters
                         return false;
                     }
 
-                    state.Current.EndDictionaryElement();
+                    state.Current.EndDictionaryEntry();
                 } while (enumerator.MoveNext());
             }
 

@@ -19,7 +19,7 @@ namespace System.Net.Security.Tests
     [PlatformSpecific(TestPlatforms.Windows)] // NegotiateStream only supports client-side functionality on Unix
     public class NegotiateStreamInvalidOperationTest
     {
-        private static readonly byte[] s_sampleMsg = Encoding.UTF8.GetBytes("Sample Test Message");
+        private static readonly byte[] s_sampleMsg = "Sample Test Message"u8.ToArray();
         private const string TargetName = "testTargetName";
 
         [Fact]

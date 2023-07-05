@@ -2,9 +2,10 @@
 // The .NET Foundation licenses this file to you under the MIT license.
 
 using System.Collections.Generic;
+using System.Collections.ObjectModel;
 using System.Formats.Cbor;
+using System.IO;
 using System.Linq;
-using System.Text;
 using Microsoft.IdentityModel.Tokens;
 using Test.Cryptography;
 using Xunit;
@@ -17,11 +18,11 @@ namespace System.Security.Cryptography.Cose.Tests
         internal const int KnownHeaderCrit = 2;
         internal const int KnownHeaderContentType = 3;
         internal const int KnownHeaderKid = 4;
-        internal const int KnownHeaderIV = 5;
-        internal const int KnownHeaderPartialIV = 6;
-        internal const int KnownHeaderCounterSignature = 7;
-        internal static readonly byte[] s_sampleContent = Encoding.UTF8.GetBytes("This is the content.");
+        internal static readonly byte[] s_sampleContent = "This is the content."u8.ToArray();
         internal const string ContentTypeDummyValue = "application/cose; cose-type=\"cose-sign1\"";
+
+        internal const string NullCborHex = "F6";
+        internal const string SampleContentByteStringCborHex = "54546869732069732074686520636F6E74656E742E";
 
         public enum ECDsaAlgorithm
         {
@@ -34,7 +35,23 @@ namespace System.Security.Cryptography.Cose.Tests
         {
             PS256 = -37,
             PS384 = -38,
-            PS512 = -39
+            PS512 = -39,
+            RS256 = -257,
+            RS384 = -258,
+            RS512 = -259
+        }
+
+        public enum CoseAlgorithm
+        {
+            ES256 = -7,
+            ES384 = -35,
+            ES512 = -36,
+            PS256 = -37,
+            PS384 = -38,
+            PS512 = -39,
+            RS256 = -257,
+            RS384 = -258,
+            RS512 = -259
         }
 
         public enum ContentTestCase
@@ -53,19 +70,19 @@ namespace System.Security.Cryptography.Cose.Tests
                 _ => throw new InvalidOperationException()
             };
 
-        internal static CoseHeaderMap GetHeaderMapWithAlgorithm(int algorithm = (int)ECDsaAlgorithm.ES256)
+        internal static CoseHeaderMap GetHeaderMapWithAlgorithm(CoseAlgorithm algorithm = CoseAlgorithm.ES256)
         {
             var protectedHeaders = new CoseHeaderMap();
-            protectedHeaders.SetValue(CoseHeaderLabel.Algorithm, algorithm);
+            protectedHeaders.Add(CoseHeaderLabel.Algorithm, (int)algorithm);
             return protectedHeaders;
         }
 
         internal static CoseHeaderMap GetEmptyHeaderMap() => new CoseHeaderMap();
 
-        internal static List<(CoseHeaderLabel, ReadOnlyMemory<byte>)> GetExpectedProtectedHeaders(int algorithm = (int)ECDsaAlgorithm.ES256)
+        internal static List<(CoseHeaderLabel, ReadOnlyMemory<byte>)> GetExpectedProtectedHeaders(CoseAlgorithm algorithm)
         {
             var l = new List<(CoseHeaderLabel, ReadOnlyMemory<byte>)>();
-            AddEncoded(l, CoseHeaderLabel.Algorithm, algorithm);
+            AddEncoded(l, CoseHeaderLabel.Algorithm, (int)algorithm);
 
             return l;
         }
@@ -76,6 +93,13 @@ namespace System.Security.Cryptography.Cose.Tests
         {
             var writer = new CborWriter();
             writer.WriteInt32(value);
+            list.Add((label, writer.Encode()));
+        }
+
+        internal static void AddEncoded(List<(CoseHeaderLabel, ReadOnlyMemory<byte>)> list, CoseHeaderLabel label, string value)
+        {
+            var writer = new CborWriter();
+            writer.WriteTextString(value);
             list.Add((label, writer.Encode()));
         }
 
@@ -90,34 +114,36 @@ namespace System.Security.Cryptography.Cose.Tests
             };
         }
 
-        internal static void AssertSign1Message(
-            byte[] encodedMsg,
-            byte[]? expectedContent,
+        internal static void AssertSign1MessageCore(
+            ReadOnlySpan<byte> encodedMsg,
+            ReadOnlySpan<byte> expectedContent,
             AsymmetricAlgorithm signingKey,
+            CoseAlgorithm algorithm,
             List<(CoseHeaderLabel, ReadOnlyMemory<byte>)>? expectedProtectedHeaders = null,
-            List<(CoseHeaderLabel, ReadOnlyMemory<byte>)>? expectedUnprotectedHeaders = null)
+            List<(CoseHeaderLabel, ReadOnlyMemory<byte>)>? expectedUnprotectedHeaders = null,
+            bool expectedDetachedContent = false)
         {
-            Assert.NotNull(encodedMsg);
-            var reader = new CborReader(encodedMsg);
+            var reader = new CborReader(encodedMsg.ToArray());
 
             // Start
             Assert.Equal((CborTag)18, reader.ReadTag());
             Assert.Equal(4, reader.ReadStartArray());
 
             // Protected headers
-            AssertSign1ProtectedHeaders(reader.ReadByteString(), expectedProtectedHeaders ?? GetExpectedProtectedHeaders());
+            byte[] rawProtectedHeaders = reader.ReadByteString();
+            AssertProtectedHeaders(rawProtectedHeaders, expectedProtectedHeaders ?? GetExpectedProtectedHeaders(algorithm));
 
             // Unprotected headers
-            AssertSign1Headers(reader, expectedUnprotectedHeaders ?? GetEmptyExpectedHeaders());
+            AssertHeaders(reader, expectedUnprotectedHeaders ?? GetEmptyExpectedHeaders());
 
             // Content
-            if (expectedContent != null)
+            if (expectedDetachedContent)
             {
-                AssertExtensions.SequenceEqual(expectedContent, reader.ReadByteString());
+                reader.ReadNull();
             }
             else
             {
-                reader.ReadNull();
+                AssertExtensions.SequenceEqual(expectedContent, reader.ReadByteString());
             }
 
             // Signature
@@ -130,18 +156,125 @@ namespace System.Security.Cryptography.Cose.Tests
 
             // Verify
             CoseSign1Message msg = CoseMessage.DecodeSign1(encodedMsg);
-            if (signingKey is ECDsa ecdsa)
+            if (expectedDetachedContent)
             {
-                Assert.True(msg.Verify(ecdsa), "msg.Verify(ecdsa)");
-            }
-            else if (signingKey is RSA rsa)
-            {
-                Assert.True(msg.Verify(rsa), "msg.Verify(rsa)");
+                Assert.True(msg.VerifyDetached(signingKey, expectedContent), "msg.Verify(key, content)");
             }
             else
             {
-                throw new InvalidOperationException();
+                Assert.True(msg.VerifyEmbedded(signingKey), "msg.Verify(key)");
             }
+
+            // Raw Protected Headers
+            AssertExtensions.SequenceEqual(rawProtectedHeaders, msg.RawProtectedHeaders.Span);
+
+            // Signature
+            AssertExtensions.SequenceEqual(signatureBytes, msg.Signature.Span);
+
+            // GetEncodedLength
+            Assert.Equal(encodedMsg.Length, msg.GetEncodedLength());
+
+            // Re-Encode
+            AssertExtensions.SequenceEqual(msg.Encode(), encodedMsg);
+        }
+
+        internal static void AssertMultiSignMessageCore(
+            ReadOnlySpan<byte> encodedMsg,
+            ReadOnlySpan<byte> expectedContent,
+            AsymmetricAlgorithm signingKey,
+            CoseAlgorithm algorithm,
+            int expectedSignatures,
+            List<(CoseHeaderLabel, ReadOnlyMemory<byte>)>? expectedBodyProtectedHeaders = null,
+            List<(CoseHeaderLabel, ReadOnlyMemory<byte>)>? expectedBodyUnprotectedHeaders = null,
+            List<(CoseHeaderLabel, ReadOnlyMemory<byte>)>? expectedSignProtectedHeaders = null,
+            List<(CoseHeaderLabel, ReadOnlyMemory<byte>)>? expectedSignUnprotectedHeaders = null,
+            bool expectedDetachedContent = false)
+        {
+            var reader = new CborReader(encodedMsg.ToArray());
+
+            // Start
+            Assert.Equal((CborTag)98, reader.ReadTag());
+            Assert.Equal(4, reader.ReadStartArray());
+
+            // Body's Protected headers
+            byte[] encodedBodyProtectedHeaders = reader.ReadByteString();
+            AssertProtectedHeaders(encodedBodyProtectedHeaders, expectedBodyProtectedHeaders);
+
+            // Body's Unprotected headers
+            AssertHeaders(reader, expectedBodyUnprotectedHeaders ?? GetEmptyExpectedHeaders());
+
+            // Content
+            if (expectedDetachedContent)
+            {
+                reader.ReadNull();
+            }
+            else
+            {
+                AssertExtensions.SequenceEqual(expectedContent, reader.ReadByteString());
+            }
+
+            Assert.Equal(expectedSignatures, reader.ReadStartArray());
+            List<byte[]> listOfRawSignProtectedHeaders = new();
+            List<byte[]> listOfSignatureBytes = new();
+
+            for (int i = 0; i < expectedSignatures; i++)
+            {
+                // Cose_Signature
+                Assert.Equal(3, reader.ReadStartArray());
+
+                // Sign's Protected headers
+                byte[] rawSignProtectedHeaders = reader.ReadByteString();
+                listOfRawSignProtectedHeaders.Add(rawSignProtectedHeaders);
+                AssertProtectedHeaders(rawSignProtectedHeaders, expectedSignProtectedHeaders ?? GetExpectedProtectedHeaders(algorithm));
+
+                // Sign's Unprotected headers
+                AssertHeaders(reader, expectedSignUnprotectedHeaders ?? GetEmptyExpectedHeaders());
+
+                // Signature
+                byte[] signatureBytes = reader.ReadByteString();
+                Assert.Equal(GetSignatureSize(signingKey), signatureBytes.Length);
+                listOfSignatureBytes.Add(signatureBytes);
+
+                reader.ReadEndArray(); // End of Cose_Signature.
+            }
+            reader.ReadEndArray(); // End of Cose_Signatures.
+            reader.ReadEndArray(); // End of message.
+
+            Assert.Equal(0, reader.BytesRemaining);
+
+            // Verify
+            CoseMultiSignMessage msg = CoseMessage.DecodeMultiSign(encodedMsg);
+            Assert.Equal(expectedSignatures, msg.Signatures.Count);
+
+            ReadOnlyCollection<CoseSignature> signatures = msg.Signatures;
+            CoseSignature signature = signatures[0];
+
+            if (expectedDetachedContent)
+            {
+                Assert.True(signature.VerifyDetached(signingKey, expectedContent), "msg.Verify(ecdsa, content)");
+            }
+            else
+            {
+                Assert.True(signature.VerifyEmbedded(signingKey), "msg.Verify(ecdsa)");
+            }
+
+            // Raw Body Protected Headers
+            AssertExtensions.SequenceEqual(encodedBodyProtectedHeaders, msg.RawProtectedHeaders.Span);
+
+            for (int i = 0; i < signatures.Count; i++)
+            {
+                // Raw Sign Protected Headers
+                AssertExtensions.SequenceEqual(listOfRawSignProtectedHeaders[i], signatures[i].RawProtectedHeaders.Span);
+
+                // Signature
+                AssertExtensions.SequenceEqual(listOfSignatureBytes[i], signatures[i].Signature.Span);
+            }
+
+            // GetEncodedLength
+            Assert.Equal(encodedMsg.Length, msg.GetEncodedLength());
+
+            // Re-Encode
+            AssertExtensions.SequenceEqual(msg.Encode(), encodedMsg);
         }
 
         internal static int GetSignatureSize(AsymmetricAlgorithm key)
@@ -156,15 +289,21 @@ namespace System.Security.Cryptography.Cose.Tests
             return size;
         }
 
-        private static void AssertSign1ProtectedHeaders(byte[] protectedHeadersBytes, List<(CoseHeaderLabel, ReadOnlyMemory<byte>)> expectedProtectedHeaders)
+        private static void AssertProtectedHeaders(byte[] protectedHeadersBytes, List<(CoseHeaderLabel, ReadOnlyMemory<byte>)>? expectedProtectedHeaders)
         {
+            if (expectedProtectedHeaders == null || expectedProtectedHeaders.Count == 0)
+            {
+                Assert.Equal(0, protectedHeadersBytes.Length);
+                return;
+            }
+
             var reader = new CborReader(protectedHeadersBytes);
-            AssertSign1Headers(reader, expectedProtectedHeaders);
+            AssertHeaders(reader, expectedProtectedHeaders);
 
             Assert.Equal(0, reader.BytesRemaining);
         }
 
-        private static void AssertSign1Headers(CborReader reader, List<(CoseHeaderLabel, ReadOnlyMemory<byte>)> expectedHeaders)
+        private static void AssertHeaders(CborReader reader, List<(CoseHeaderLabel, ReadOnlyMemory<byte>)> expectedHeaders)
         {
             Assert.Equal(expectedHeaders.Count, reader.ReadStartMap());
             CoseHeaderMap headers = new();
@@ -179,7 +318,7 @@ namespace System.Security.Cryptography.Cose.Tests
                     _ => throw new InvalidOperationException()
                 };
 
-                headers.SetEncodedValue(label, reader.ReadEncodedValue().Span);
+                headers[label] = CoseHeaderValue.FromEncodedValue(reader.ReadEncodedValue().Span);
                 headerCount++;
             }
 
@@ -188,8 +327,8 @@ namespace System.Security.Cryptography.Cose.Tests
 
             foreach ((CoseHeaderLabel expectedLabel, ReadOnlyMemory<byte> expectedEncodedValue) in expectedHeaders)
             {
-                Assert.True(headers.TryGetEncodedValue(expectedLabel, out ReadOnlyMemory<byte> encodedValue), "headers.TryGetEncodedValue(expectedLabel, out ReadOnlyMemory<byte> encodedValue)");
-                AssertExtensions.SequenceEqual(expectedEncodedValue.Span, encodedValue.Span);
+                Assert.True(headers.TryGetValue(expectedLabel, out CoseHeaderValue value), "headers.TryGetValue(expectedLabel, out ReadOnlyMemory<byte> encodedValue)");
+                AssertExtensions.SequenceEqual(expectedEncodedValue.Span, value.EncodedValue.Span);
             }
         }
 
@@ -222,9 +361,6 @@ namespace System.Security.Cryptography.Cose.Tests
         internal static ECDsa DefaultKey => ES256;
         internal static HashAlgorithmName DefaultHash { get; } = GetHashAlgorithmNameFromCoseAlgorithm((int)ECDsaAlgorithm.ES256);
 
-        internal static readonly ThreadStaticECDsaDictionary ECDsaKeys = new(true);
-        internal static readonly ThreadStaticECDsaDictionary ECDsaKeysWithoutPrivateKey = new(false);
-
         [ThreadStatic]
         internal static RSA? t_rsaKey;
         [ThreadStatic]
@@ -235,7 +371,7 @@ namespace System.Security.Cryptography.Cose.Tests
 
         private static ECParameters CreateECParameters(string curveFriendlyName, string base64UrlQx, string base64UrlQy, string base64UrlPrivateKey)
         {
-            return new()
+            return new ECParameters()
             {
                 Curve = ECCurve.CreateFromFriendlyName(curveFriendlyName),
                 Q = new ECPoint
@@ -280,23 +416,363 @@ namespace System.Security.Cryptography.Cose.Tests
             return RSA.Create(rsaParameters);
         }
 
-        internal class ThreadStaticECDsaDictionary: Dictionary<ECDsaAlgorithm, ECDsa>
+        internal static (T Key, HashAlgorithmName Hash, RSASignaturePadding? Padding) GetKeyHashPaddingTriplet<T>(CoseAlgorithm algorithm, bool useNonPrivateKey = false)
         {
-            private bool _includePrivateKeys;
-            public ThreadStaticECDsaDictionary(bool includePrivateKeys)
+            return algorithm switch
             {
-                _includePrivateKeys = includePrivateKeys;
-            }
-            public new ECDsa this[ECDsaAlgorithm key]
+                CoseAlgorithm.ES256 => (GetKey(ES256, ES256WithoutPrivateKey, useNonPrivateKey), HashAlgorithmName.SHA256, null),
+                CoseAlgorithm.ES384 => (GetKey(ES384, ES384WithoutPrivateKey, useNonPrivateKey), HashAlgorithmName.SHA384, null),
+                CoseAlgorithm.ES512 => (GetKey(ES512, ES512WithoutPrivateKey, useNonPrivateKey), HashAlgorithmName.SHA512, null),
+                CoseAlgorithm.PS256 => (GetKey(RSAKey, RSAKeyWithoutPrivateKey, useNonPrivateKey), HashAlgorithmName.SHA256, RSASignaturePadding.Pss),
+                CoseAlgorithm.PS384 => (GetKey(RSAKey, RSAKeyWithoutPrivateKey, useNonPrivateKey), HashAlgorithmName.SHA384, RSASignaturePadding.Pss),
+                CoseAlgorithm.PS512 => (GetKey(RSAKey, RSAKeyWithoutPrivateKey, useNonPrivateKey), HashAlgorithmName.SHA512, RSASignaturePadding.Pss),
+                CoseAlgorithm.RS256 => (GetKey(RSAKey, RSAKeyWithoutPrivateKey, useNonPrivateKey), HashAlgorithmName.SHA256, RSASignaturePadding.Pkcs1),
+                CoseAlgorithm.RS384 => (GetKey(RSAKey, RSAKeyWithoutPrivateKey, useNonPrivateKey), HashAlgorithmName.SHA384, RSASignaturePadding.Pkcs1),
+                CoseAlgorithm.RS512 => (GetKey(RSAKey, RSAKeyWithoutPrivateKey, useNonPrivateKey), HashAlgorithmName.SHA512, RSASignaturePadding.Pkcs1),
+                _ => throw new InvalidOperationException()
+            };
+
+
+            T GetKey(AsymmetricAlgorithm privateKey, AsymmetricAlgorithm nonPrivateKey, bool useNonPrivateKey)
             {
-                get => key switch
+                if (privateKey is T privateKeyAsT && nonPrivateKey is T nonPrivateKeyAsT)
                 {
-                    ECDsaAlgorithm.ES256 => _includePrivateKeys ? ES256 : ES256WithoutPrivateKey,
-                    ECDsaAlgorithm.ES384 => _includePrivateKeys ? ES384 : ES384WithoutPrivateKey,
-                    ECDsaAlgorithm.ES512 => _includePrivateKeys ? ES512 : ES512WithoutPrivateKey,
-                    _ => throw new InvalidOperationException()
-                };
+                    return useNonPrivateKey ? nonPrivateKeyAsT : privateKeyAsT;
+                }
+
+                throw new InvalidOperationException($"Specified algorithm {algorithm} doesn't match the type {typeof(T)}");
             }
+        }
+
+        internal static Stream GetTestStream(byte[] content, StreamKind streamKind = StreamKind.Normal)
+        {
+            MemoryStream ms = streamKind switch
+            {
+                StreamKind.Normal => new MemoryStream(),
+                StreamKind.Unseekable => new UnseekableMemoryStream(),
+                StreamKind.Unreadable => new UnreadableMemoryStream(),
+                _ => throw new InvalidOperationException()
+            };
+
+            ms.Write(content, 0, content.Length);
+            ms.Position = 0;
+            return ms;
+        }
+
+        internal static CoseSigner GetCoseSigner(AsymmetricAlgorithm key, HashAlgorithmName hash, CoseHeaderMap? protectedHeaders = null, CoseHeaderMap? unprotectedHeaders = null, RSASignaturePadding? padding = null)
+        {
+            if (key is RSA rsa)
+            {
+                return new CoseSigner(rsa, padding ?? RSASignaturePadding.Pss, hash, protectedHeaders, unprotectedHeaders);
+            }
+
+            return new CoseSigner(key, hash, protectedHeaders, unprotectedHeaders);
+        }
+
+        internal static bool Sign1Verify(CoseMessage msg, AsymmetricAlgorithm key, byte[] content, byte[]? associatedData = null)
+        {
+            CoseSign1Message sign1Msg = Assert.IsType<CoseSign1Message>(msg);
+
+            return sign1Msg.Content.HasValue? sign1Msg.VerifyEmbedded(key, associatedData) : sign1Msg.VerifyDetached(key, content, associatedData);
+        }
+
+        internal static bool MultiSignVerify(CoseMessage msg, AsymmetricAlgorithm key, byte[] content, int expectedSignatures, byte[]? associatedData = null)
+        {
+            CoseMultiSignMessage multiSignMsg = Assert.IsType<CoseMultiSignMessage>(msg);
+            ReadOnlyCollection<CoseSignature> signatures = multiSignMsg.Signatures;
+            Assert.Equal(expectedSignatures, signatures.Count);
+
+            bool isDetached = !multiSignMsg.Content.HasValue;
+            bool result = false;
+
+            foreach (CoseSignature s in signatures)
+            {
+                if (isDetached)
+                {
+                    result = s.VerifyDetached(key, content, associatedData);
+                }
+                else
+                {
+                    result = s.VerifyEmbedded(key, associatedData);
+                }
+
+                if (!result)
+                {
+                    break;
+                }
+            }
+
+            return result;
+        }
+
+        internal static void MultiSignAddSignature(CoseMultiSignMessage msg, byte[] content, CoseSigner signer, byte[]? associatedData = null)
+        {
+            if (msg.Content.HasValue)
+            {
+                msg.AddSignatureForEmbedded(signer, associatedData);
+            }
+            else
+            {
+                msg.AddSignatureForDetached(content, signer, associatedData);
+            }
+        }
+
+        private class UnseekableMemoryStream : MemoryStream
+        {
+            public override bool CanSeek => false;
+        }
+
+        private class UnreadableMemoryStream : MemoryStream
+        {
+            public override bool CanRead => false;
+        }
+
+        internal enum StreamKind
+        {
+            Normal,
+            Unseekable,
+            Unreadable
+        }
+
+        // each kind is represented by the value of its CBOR tag.
+        internal enum CoseMessageKind
+        {
+            Sign1 = 18,
+            MultiSign = 98
+        }
+
+        internal static void WriteDummyCritHeaderValue(CborWriter writer, bool useIndefiniteLength = false)
+        {
+            writer.WriteStartArray(useIndefiniteLength ? null : 1);
+            writer.WriteInt32(42);
+            writer.WriteEndArray();
+        }
+
+        internal static byte[] GetDummyCritHeaderValue(bool useIndefiniteLength = false)
+        {
+            var writer = new CborWriter();
+            WriteDummyCritHeaderValue(writer, useIndefiniteLength);
+            return writer.Encode();
+        }
+
+        internal static string ReplaceFirst(string text, string search, string replace)
+        {
+            int pos = text.IndexOf(search);
+            return text.Substring(0, pos) + replace + text.Substring(pos + search.Length);
+        }
+
+        public static IEnumerable<byte[]> AllCborTypes()
+        {
+            var w = new CborWriter();
+
+            w.WriteBigInteger(default);
+            yield return ReturnDataAndReset(w);
+
+            w.WriteBoolean(true);
+            yield return ReturnDataAndReset(w);
+
+            w.WriteByteString(s_sampleContent);
+            yield return ReturnDataAndReset(w);
+
+            w.WriteCborNegativeIntegerRepresentation(default);
+            yield return ReturnDataAndReset(w);
+
+            w.WriteDateTimeOffset(default);
+            yield return ReturnDataAndReset(w);
+
+            w.WriteDecimal(default);
+            yield return ReturnDataAndReset(w);
+
+            w.WriteDecimal(default);
+            yield return ReturnDataAndReset(w);
+
+            w.WriteDouble(default);
+            yield return ReturnDataAndReset(w);
+#if NETCOREAPP
+            w.WriteHalf(default);
+            yield return ReturnDataAndReset(w);
+#endif
+            w.WriteInt32(default);
+            yield return ReturnDataAndReset(w);
+
+            w.WriteInt64(default);
+            yield return ReturnDataAndReset(w);
+
+            w.WriteNull();
+            yield return ReturnDataAndReset(w);
+
+            w.WriteSimpleValue(CborSimpleValue.Undefined);
+            yield return ReturnDataAndReset(w);
+
+            w.WriteSingle(default);
+            yield return ReturnDataAndReset(w);
+
+            w.WriteTag(CborTag.UnsignedBigNum);
+            w.WriteInt32(42);
+            yield return ReturnDataAndReset(w);
+
+            w.WriteTextString(string.Empty);
+            yield return ReturnDataAndReset(w);
+
+            w.WriteUInt32(default);
+            yield return ReturnDataAndReset(w);
+
+            w.WriteUInt64(default);
+            yield return ReturnDataAndReset(w);
+
+            w.WriteUnixTimeSeconds(default);
+            yield return ReturnDataAndReset(w);
+
+            // Array
+            w.WriteStartArray(2);
+            w.WriteInt32(42);
+            w.WriteTextString("foo");
+            w.WriteEndArray();
+            yield return ReturnDataAndReset(w);
+
+            // Map
+            w.WriteStartMap(2);
+            // first label-value pair.
+            w.WriteInt32(42);
+            w.WriteTextString("4242");
+            // second label-value pair.
+            w.WriteTextString("42");
+            w.WriteInt32(4242);
+            w.WriteEndMap();
+            yield return ReturnDataAndReset(w);
+
+            // Indefinite length array
+            w.WriteStartArray(null);
+            w.WriteInt32(42);
+            w.WriteTextString("foo");
+            w.WriteEndArray();
+            yield return ReturnDataAndReset(w);
+
+            // Indefinite length map
+            w.WriteStartMap(null);
+            // first label-value pair.
+            w.WriteInt32(42);
+            w.WriteTextString("4242");
+            // second label-value pair.
+            w.WriteTextString("42");
+            w.WriteInt32(4242);
+            w.WriteEndMap();
+            yield return ReturnDataAndReset(w);
+
+            // Indefinite length tstr
+            w.WriteStartIndefiniteLengthTextString();
+            w.WriteTextString("foo");
+            w.WriteEndIndefiniteLengthTextString();
+            yield return ReturnDataAndReset(w);
+
+            // Indefinite length bstr
+            w.WriteStartIndefiniteLengthByteString();
+            w.WriteByteString(s_sampleContent);
+            w.WriteEndIndefiniteLengthByteString();
+            yield return ReturnDataAndReset(w);
+
+            static byte[] ReturnDataAndReset(CborWriter w)
+            {
+                byte[] encodedValue = w.Encode();
+                w.Reset();
+                return encodedValue;
+            }
+        }
+
+        internal static byte[] GetCounterSign(CoseMultiSignMessage msg, CoseSignature signature, CoseAlgorithm algorithm)
+        {
+            Assert.True(msg.Signatures.Contains(signature));
+            var writer = new CborWriter();
+            writer.WriteStartArray(3);
+
+            // encoded protected
+            byte[] encodedProtectedHeaders = GetCounterSignProtectedHeaders((int)algorithm);
+            writer.WriteByteString(encodedProtectedHeaders);
+
+            // empty unprotected headers
+            writer.WriteStartMap(0);
+            writer.WriteEndMap();
+
+            // signature
+            (AsymmetricAlgorithm key, HashAlgorithmName hash, _) = GetKeyHashPaddingTriplet<AsymmetricAlgorithm>(algorithm);
+            byte[] signatureBytes = GetSignature(key, hash, GetToBeSignedForCounterSign(msg, signature, encodedProtectedHeaders));
+            writer.WriteByteString(signatureBytes);
+            writer.WriteEndArray();
+
+            return writer.Encode();
+        }
+
+        private static byte[] GetCounterSignProtectedHeaders(int algorithm)
+        {
+            var writer = new CborWriter();
+            writer.WriteStartMap(1);
+            writer.WriteInt32(KnownHeaderAlg);
+            writer.WriteInt32(algorithm);
+            writer.WriteEndMap();
+
+            return writer.Encode();
+        }
+
+        private static byte[] GetSignature(AsymmetricAlgorithm key, HashAlgorithmName hash, byte[] toBeSigned)
+        {
+            if (key is ECDsa ecdsa)
+            {
+                return ecdsa.SignData(toBeSigned, hash);
+            }
+            else if (key is RSA rsa)
+            {
+                return rsa.SignData(toBeSigned, hash, RSASignaturePadding.Pss);
+            }
+
+            throw new ArgumentException("Key must be ECDsa or RSA", nameof(key));
+        }
+
+        internal static bool VerifyCounterSign(AsymmetricAlgorithm key, HashAlgorithmName hash, byte[] toBeSigned, byte[] signature)
+        {
+            if (key is ECDsa ecdsa)
+            {
+                return ecdsa.VerifyData(toBeSigned, signature, hash);
+            }
+            else if (key is RSA rsa)
+            {
+                return rsa.VerifyData(toBeSigned, signature, hash, RSASignaturePadding.Pss);
+            }
+
+            throw new ArgumentException("Key must be ECDsa or RSA", nameof(key));
+        }
+
+        internal static byte[] GetToBeSignedForCounterSign(CoseMultiSignMessage msg, CoseSignature signature, byte[] signProtected)
+        {
+            var writer = new CborWriter();
+            writer.WriteStartArray(5);
+            writer.WriteTextString("CounterSignature");
+            writer.WriteByteString(msg.RawProtectedHeaders.Span); // body_protected
+            writer.WriteByteString(signProtected); // sign_protected
+            writer.WriteByteString(default(Span<byte>)); // external_aad
+            writer.WriteByteString(signature.Signature.Span);
+            writer.WriteEndArray();
+
+            return writer.Encode();
+        }
+
+        internal static (byte[], byte[]) ReadCounterSign(CoseHeaderValue value, AsymmetricAlgorithm key)
+        {
+            var reader = new CborReader(value.EncodedValue);
+            Assert.Equal(3, reader.ReadStartArray());
+
+            // encoded protected
+            byte[] encodedProtectedHeaders = reader.ReadByteString();
+
+            // empty unprotected headers
+            Assert.Equal(0, reader.ReadStartMap());
+            reader.ReadEndMap();
+
+            // signature
+            byte[] signature = reader.ReadByteString();
+            Assert.Equal(GetSignatureSize(key), signature.Length);
+
+            reader.ReadEndArray();
+            return (encodedProtectedHeaders, signature);
         }
     }
 }

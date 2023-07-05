@@ -161,7 +161,7 @@ public class CastableTests
             Assert(retArgInt.ReturnArg(42) == 42, "retArgInt.ReturnArg() should return arg");
 
 
-            // testing Castable implemeting other interfaces
+            // testing Castable implementing other interfaces
             var extra = (IExtra)implProxy;
             Assert(extra.InnocentMethod() == 3, "InnocentMethod() should be called on Castable and return 3");
 

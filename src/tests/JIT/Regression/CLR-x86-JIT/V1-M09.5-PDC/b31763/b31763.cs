@@ -2,15 +2,16 @@
 // The .NET Foundation licenses this file to you under the MIT license.
 //
 
+using Xunit;
 namespace Test
 {
     using System;
 
-    class AA
+    public class AA
     {
         public double m_dField2 = 47.26;
         public static float m_fForward1;
-        public static void Method2(object param2, ref double param4)
+        internal static void Method2(object param2, ref double param4)
         {
             while (param4 != 0.0d)
             {
@@ -19,7 +20,8 @@ namespace Test
                 } while ((object)m_fForward1 != param2);
             }
         }
-        static int Main()
+        [Fact]
+        public static int TestEntryPoint()
         {
             try
             {

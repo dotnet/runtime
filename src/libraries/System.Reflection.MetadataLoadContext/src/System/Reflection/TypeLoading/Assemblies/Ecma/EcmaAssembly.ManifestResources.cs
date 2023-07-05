@@ -12,10 +12,12 @@ namespace System.Reflection.TypeLoading.Ecma
     /// </summary>
     internal sealed partial class EcmaAssembly
     {
-        public sealed override ManifestResourceInfo? GetManifestResourceInfo(string resourceName!!)
+        public sealed override ManifestResourceInfo? GetManifestResourceInfo(string resourceName)
         {
+            if (resourceName is null)
+                throw new ArgumentNullException(nameof(resourceName));
             if (resourceName.Length == 0)
-                throw new ArgumentException(nameof(resourceName));
+                throw new ArgumentException(null, nameof(resourceName));
 
             InternalManifestResourceInfo internalManifestResourceInfo = GetEcmaManifestModule().GetInternalManifestResourceInfo(resourceName);
 
@@ -57,10 +59,12 @@ namespace System.Reflection.TypeLoading.Ecma
 
         [UnconditionalSuppressMessage("SingleFile", "IL3002:RequiresAssemblyFiles on Module.GetFile",
             Justification = "ResourceLocation should never be ContainedInAnotherAssembly if embedded in a single-file")]
-        public sealed override Stream? GetManifestResourceStream(string name!!)
+        public sealed override Stream? GetManifestResourceStream(string name)
         {
+            if (name is null)
+                throw new ArgumentNullException(nameof(name));
             if (name.Length == 0)
-                throw new ArgumentException(nameof(name));
+                throw new ArgumentException(null, nameof(name));
 
             InternalManifestResourceInfo internalManifestResourceInfo = GetEcmaManifestModule().GetInternalManifestResourceInfo(name);
 

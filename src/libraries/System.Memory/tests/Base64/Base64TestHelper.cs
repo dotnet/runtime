@@ -44,6 +44,8 @@ namespace System.Buffers.Text.Tests
             -1, -1, -1, -1, -1, -1, -1, -1, -1, -1, -1, -1, -1, -1, -1, -1,
         };
 
+        public static bool IsByteToBeIgnored(byte charByte) => charByte is (byte)' ' or (byte)'\t' or (byte)'\r' or (byte)'\n';
+
         public const byte EncodingPad = (byte)'=';      // '=', for padding
         public const sbyte InvalidByte = -1;            // Designating -1 for invalid bytes in the decoding map
 
@@ -58,7 +60,7 @@ namespace System.Buffers.Text.Tests
             }
         }
 
-        internal static void InitalizeBytes(Span<byte> bytes, int seed = 100)
+        internal static void InitializeBytes(Span<byte> bytes, int seed = 100)
         {
             var rnd = new Random(seed);
             for (int i = 0; i < bytes.Length; i++)
@@ -67,12 +69,12 @@ namespace System.Buffers.Text.Tests
             }
         }
 
-        internal static void InitalizeDecodableBytes(Span<byte> bytes, int seed = 100)
+        internal static void InitializeDecodableBytes(Span<byte> bytes, int seed = 100)
         {
             var rnd = new Random(seed);
             for (int i = 0; i < bytes.Length; i++)
             {
-                int index = (byte)rnd.Next(0, s_encodingMap.Length - 1);    // Do not pick '='
+                int index = (byte)rnd.Next(0, s_encodingMap.Length);
                 bytes[i] = s_encodingMap[index];
             }
         }

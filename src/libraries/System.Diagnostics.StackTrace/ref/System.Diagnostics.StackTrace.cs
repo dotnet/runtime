@@ -4,53 +4,7 @@
 // Changes to this file must follow the https://aka.ms/api-review process.
 // ------------------------------------------------------------------------------
 
-namespace System.Diagnostics
-{
-    public partial class StackFrame
-    {
-        public const int OFFSET_UNKNOWN = -1;
-        public StackFrame() { }
-        public StackFrame(bool needFileInfo) { }
-        public StackFrame(int skipFrames) { }
-        public StackFrame(int skipFrames, bool needFileInfo) { }
-        public StackFrame(string? fileName, int lineNumber) { }
-        public StackFrame(string? fileName, int lineNumber, int colNumber) { }
-        public virtual int GetFileColumnNumber() { throw null; }
-        public virtual int GetFileLineNumber() { throw null; }
-        public virtual string? GetFileName() { throw null; }
-        public virtual int GetILOffset() { throw null; }
-        [System.Diagnostics.CodeAnalysis.RequiresUnreferencedCodeAttribute("Metadata for the method might be incomplete or removed")]
-        public virtual System.Reflection.MethodBase? GetMethod() { throw null; }
-        public virtual int GetNativeOffset() { throw null; }
-        public override string ToString() { throw null; }
-    }
-    public static partial class StackFrameExtensions
-    {
-        public static System.IntPtr GetNativeImageBase(this System.Diagnostics.StackFrame stackFrame) { throw null; }
-        public static System.IntPtr GetNativeIP(this System.Diagnostics.StackFrame stackFrame) { throw null; }
-        public static bool HasILOffset(this System.Diagnostics.StackFrame stackFrame) { throw null; }
-        public static bool HasMethod(this System.Diagnostics.StackFrame stackFrame) { throw null; }
-        public static bool HasNativeImage(this System.Diagnostics.StackFrame stackFrame) { throw null; }
-        public static bool HasSource(this System.Diagnostics.StackFrame stackFrame) { throw null; }
-    }
-    public partial class StackTrace
-    {
-        public const int METHODS_TO_SKIP = 0;
-        public StackTrace() { }
-        public StackTrace(bool fNeedFileInfo) { }
-        public StackTrace(System.Diagnostics.StackFrame frame) { }
-        public StackTrace(System.Exception e) { }
-        public StackTrace(System.Exception e, bool fNeedFileInfo) { }
-        public StackTrace(System.Exception e, int skipFrames) { }
-        public StackTrace(System.Exception e, int skipFrames, bool fNeedFileInfo) { }
-        public StackTrace(int skipFrames) { }
-        public StackTrace(int skipFrames, bool fNeedFileInfo) { }
-        public virtual int FrameCount { get { throw null; } }
-        public virtual System.Diagnostics.StackFrame? GetFrame(int index) { throw null; }
-        public virtual System.Diagnostics.StackFrame[] GetFrames() { throw null; }
-        public override string ToString() { throw null; }
-    }
-}
+#if !BUILDING_CORELIB_REFERENCE
 namespace System.Diagnostics.SymbolStore
 {
     public partial interface ISymbolBinder
@@ -74,11 +28,6 @@ namespace System.Diagnostics.SymbolStore
         int FindClosestLine(int line);
         byte[] GetCheckSum();
         byte[] GetSourceRange(int startLine, int startColumn, int endLine, int endColumn);
-    }
-    public partial interface ISymbolDocumentWriter
-    {
-        void SetCheckSum(System.Guid algorithmId, byte[] checkSum);
-        void SetSource(byte[] source);
     }
     public partial interface ISymbolMethod
     {
@@ -205,5 +154,61 @@ namespace System.Diagnostics.SymbolStore
     {
         public static readonly System.Guid Microsoft;
         public SymLanguageVendor() { }
+    }
+}
+#endif // !BUILDING_CORELIB_REFERENCE
+namespace System.Diagnostics
+{
+    public partial class StackFrame
+    {
+        public const int OFFSET_UNKNOWN = -1;
+        public StackFrame() { }
+        public StackFrame(bool needFileInfo) { }
+        public StackFrame(int skipFrames) { }
+        public StackFrame(int skipFrames, bool needFileInfo) { }
+        public StackFrame(string? fileName, int lineNumber) { }
+        public StackFrame(string? fileName, int lineNumber, int colNumber) { }
+        public virtual int GetFileColumnNumber() { throw null; }
+        public virtual int GetFileLineNumber() { throw null; }
+        public virtual string? GetFileName() { throw null; }
+        public virtual int GetILOffset() { throw null; }
+        [System.Diagnostics.CodeAnalysis.RequiresUnreferencedCodeAttribute("Metadata for the method might be incomplete or removed")]
+        public virtual System.Reflection.MethodBase? GetMethod() { throw null; }
+        public virtual int GetNativeOffset() { throw null; }
+        public override string ToString() { throw null; }
+    }
+    public static partial class StackFrameExtensions
+    {
+        public static System.IntPtr GetNativeImageBase(this System.Diagnostics.StackFrame stackFrame) { throw null; }
+        public static System.IntPtr GetNativeIP(this System.Diagnostics.StackFrame stackFrame) { throw null; }
+        public static bool HasILOffset(this System.Diagnostics.StackFrame stackFrame) { throw null; }
+        public static bool HasMethod(this System.Diagnostics.StackFrame stackFrame) { throw null; }
+        public static bool HasNativeImage(this System.Diagnostics.StackFrame stackFrame) { throw null; }
+        public static bool HasSource(this System.Diagnostics.StackFrame stackFrame) { throw null; }
+    }
+    public partial class StackTrace
+    {
+        public const int METHODS_TO_SKIP = 0;
+        public StackTrace() { }
+        public StackTrace(bool fNeedFileInfo) { }
+        public StackTrace(System.Diagnostics.StackFrame frame) { }
+        public StackTrace(System.Exception e) { }
+        public StackTrace(System.Exception e, bool fNeedFileInfo) { }
+        public StackTrace(System.Exception e, int skipFrames) { }
+        public StackTrace(System.Exception e, int skipFrames, bool fNeedFileInfo) { }
+        public StackTrace(int skipFrames) { }
+        public StackTrace(int skipFrames, bool fNeedFileInfo) { }
+        public virtual int FrameCount { get { throw null; } }
+        public virtual System.Diagnostics.StackFrame? GetFrame(int index) { throw null; }
+        public virtual System.Diagnostics.StackFrame[] GetFrames() { throw null; }
+        public override string ToString() { throw null; }
+    }
+}
+namespace System.Diagnostics.SymbolStore
+{
+    public partial interface ISymbolDocumentWriter
+    {
+        void SetCheckSum(System.Guid algorithmId, byte[] checkSum);
+        void SetSource(byte[] source);
     }
 }

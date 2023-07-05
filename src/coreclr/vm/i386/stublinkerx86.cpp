@@ -800,7 +800,7 @@ class X64LeaRIP : public InstructionFormat
 
             pOutBufferRW[0] = rex;
             pOutBufferRW[1] = 0x8D;
-            pOutBufferRW[2] = 0x05 | (reg << 3);
+            pOutBufferRW[2] = (BYTE)(0x05 | (reg << 3));
             // only support absolute pushimm32 of the label address. The fixedUpReference is
             // the offset to the label from the current point, so add to get address
             *((__int32*)(3+pOutBufferRW)) = (__int32)(fixedUpReference);
@@ -3184,8 +3184,6 @@ GetModuleInformationProc *g_pfnGetModuleInformation = NULL;
 
 extern "C" VOID __cdecl DebugCheckStubUnwindInfoWorker (CONTEXT *pStubContext)
 {
-    BEGIN_ENTRYPOINT_VOIDRET;
-
     LOG((LF_STUBS, LL_INFO1000000, "checking stub unwind info:\n"));
 
     //
@@ -3300,8 +3298,6 @@ extern "C" VOID __cdecl DebugCheckStubUnwindInfoWorker (CONTEXT *pStubContext)
         }
     }
 ErrExit:
-
-    END_ENTRYPOINT_VOIDRET;
     return;
 }
 
@@ -4253,7 +4249,7 @@ VOID StubLinkerCPU::EmitArrayOpStub(const ArrayOpScript* pArrayOpScript)
 
             X86EmitEspOffset(0x8b, kRDX,   ofsadjust
                                          + TransitionBlock::GetOffsetOfArgumentRegisters()
-                                         + FIELD_OFFSET(ArgumentRegisters, THIS_REG));
+                                         + offsetof(ArgumentRegisters, THIS_REG));
 
             // mov RDX, [kArrayMTReg+offsetof(MethodTable, m_ElementType)]
             X86EmitIndexRegLoad(kRDX, kArrayMTReg, MethodTable::GetOffsetOfArrayElementTypeHandle());
@@ -4291,7 +4287,7 @@ VOID StubLinkerCPU::EmitArrayOpStub(const ArrayOpScript* pArrayOpScript)
             // lea rdx, [rsp+offs]
             X86EmitEspOffset(0x8d, kRDX,   ofsadjust
                                          + TransitionBlock::GetOffsetOfArgumentRegisters()
-                                         + FIELD_OFFSET(ArgumentRegisters, THIS_REG));
+                                         + offsetof(ArgumentRegisters, THIS_REG));
 
 #else
             // The stack is already setup correctly for the slow helper.
@@ -4545,29 +4541,42 @@ COPY_VALUE_CLASS:
                         total += cur->startoffset - elemOfs;
 
                         SSIZE_T cnt = (SSIZE_T) pArrayOpScript->m_gcDesc->GetNumSeries();
-                        // special array encoding
-                        _ASSERTE(cnt < 0);
 
-                        for (SSIZE_T __i = 0; __i > cnt; __i--)
+                        if (cnt == 1)
                         {
-                            HALF_SIZE_T skip =  cur->val_serie[__i].skip;
-                            HALF_SIZE_T nptrs = cur->val_serie[__i].nptrs;
-                            total += nptrs*sizeof (DWORD*);
-                            do
+                            // all pointers
+                            for (size_t i = 0; i < size; i += sizeof(Object*))
                             {
-                                AMD64_ONLY(_ASSERTE(fNeedScratchArea));
-
-                                X86EmitCall(NewExternalCodeLabel((LPVOID) JIT_ByRefWriteBarrier), 0);
-                            } while (--nptrs);
-                            if (skip > 0)
-                            {
-                                //check if we are at the end of the series
-                                if (__i == (cnt + 1))
-                                    skip = skip - (HALF_SIZE_T)(cur->startoffset - elemOfs);
-                                if (skip > 0)
-                                    generate_noref_copy (skip, this);
+                                X86EmitCall(NewExternalCodeLabel((LPVOID)JIT_ByRefWriteBarrier), 0);
+                                total += sizeof(Object*);
                             }
-                            total += skip;
+                        }
+                        else
+                        {
+                            // special array encoding
+                            _ASSERTE(cnt < 0);
+
+                            for (SSIZE_T __i = 0; __i > cnt; __i--)
+                            {
+                                HALF_SIZE_T skip =  (cur->val_serie + __i)->skip;
+                                HALF_SIZE_T nptrs = (cur->val_serie + __i)->nptrs;
+                                total += nptrs*sizeof (Object*);
+                                do
+                                {
+                                    AMD64_ONLY(_ASSERTE(fNeedScratchArea));
+
+                                    X86EmitCall(NewExternalCodeLabel((LPVOID) JIT_ByRefWriteBarrier), 0);
+                                } while (--nptrs);
+                                if (skip > 0)
+                                {
+                                    //check if we are at the end of the series
+                                    if (__i == (cnt + 1))
+                                        skip = skip - (HALF_SIZE_T)(cur->startoffset - elemOfs);
+                                    if (skip > 0)
+                                        generate_noref_copy (skip, this);
+                                }
+                                total += skip;
+                            }
                         }
 
                         _ASSERTE (size == total);
@@ -4909,14 +4918,10 @@ Thread* __stdcall CreateThreadBlockReturnHr(ComMethodFrame *pFrame)
 
     WRAPPER_NO_CONTRACT;
 
-    Thread *pThread = NULL;
-
     HRESULT hr = S_OK;
 
     // This means that a thread is FIRST coming in from outside the EE.
-    BEGIN_ENTRYPOINT_THROWS;
-    pThread = SetupThreadNoThrow(&hr);
-    END_ENTRYPOINT_THROWS;
+    Thread* pThread = SetupThreadNoThrow(&hr);
 
     if (pThread == NULL) {
         // Unwind stack, and return hr
@@ -5019,7 +5024,7 @@ BOOL ThisPtrRetBufPrecode::SetTargetInterlocked(TADDR target, TADDR expected)
 
     _ASSERTE(IS_ALIGNED(&m_rel32, sizeof(INT32)));
     ExecutableWriterHolder<INT32> rel32WriterHolder(&m_rel32, sizeof(INT32));
-    FastInterlockExchange((LONG*)rel32WriterHolder.GetRW(), (LONG)newRel32);
+    InterlockedExchange((LONG*)rel32WriterHolder.GetRW(), (LONG)newRel32);
 
     return TRUE;
 }

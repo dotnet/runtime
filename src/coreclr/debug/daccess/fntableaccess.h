@@ -41,6 +41,7 @@ struct FakeHeapList
     DWORD_PTR           pHdrMap;        // changed from DWORD*
     size_t              maxCodeHeapSize;
     size_t              reserveForJumpStubs;
+    DWORD_PTR           pLoaderAllocator;
 #if defined(TARGET_AMD64) || defined(TARGET_ARM64)
     DWORD_PTR           CLRPersonalityRoutine;
 #endif
@@ -82,7 +83,7 @@ struct FakeStubUnwindInfoHeaderSuffix
     UCHAR nUnwindInfoSize;
 };
 
-// Variable-sized struct that preceeds a Stub when the stub requires unwind
+// Variable-sized struct that precedes a Stub when the stub requires unwind
 // information.  Followed by a StubUnwindInfoHeaderSuffix.
 struct FakeStubUnwindInfoHeader
 {

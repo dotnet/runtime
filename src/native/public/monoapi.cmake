@@ -1,7 +1,7 @@
 
 add_library(monoapi_utils INTERFACE)
 
-set(utils_public_headers_base
+set(utils_public_headers
     mono-logger.h
     mono-error.h
     mono-forward.h
@@ -11,7 +11,7 @@ set(utils_public_headers_base
     mono-private-unstable.h
     mono-counters.h
     )
-set(utils_public_headers_details_base
+set(utils_public_headers_details
     details/mono-publib-types.h
     details/mono-publib-functions.h
     details/mono-logger-types.h
@@ -23,8 +23,8 @@ set(utils_public_headers_details_base
     details/mono-counters-types.h
     details/mono-counters-functions.h
     )
-addprefix(utils_public_headers mono/utils "${utils_public_headers_base}")
-addprefix(utils_public_headers_details mono/utils "${utils_public_headers_details_base}")
+list(TRANSFORM utils_public_headers PREPEND "mono/utils/")
+list(TRANSFORM utils_public_headers_details PREPEND "mono/utils/")
 
 target_sources(monoapi_utils INTERFACE ${utils_public_headers} ${utils_public_headers_details})
 
@@ -32,7 +32,7 @@ target_include_directories(monoapi_utils INTERFACE .)
 
 add_library(monoapi_metadata INTERFACE)
 
-set(metadata_public_headers_base
+set(metadata_public_headers
 	appdomain.h
 	assembly.h
 	attrdefs.h
@@ -61,7 +61,7 @@ set(metadata_public_headers_base
 	tokentype.h
 	verify.h
 	)
-set(metadata_public_headers_details_base
+set(metadata_public_headers_details
 	details/environment-functions.h
 	details/opcodes-types.h
 	details/opcodes-functions.h
@@ -100,8 +100,8 @@ set(metadata_public_headers_details_base
 	details/mono-private-unstable-types.h
 	details/mono-private-unstable-functions.h
 	)
-addprefix(metadata_public_headers mono/metadata "${metadata_public_headers_base}")
-addprefix(metadata_public_headers_details mono/metadata "${metadata_public_headers_details_base}")
+list(TRANSFORM metadata_public_headers PREPEND "mono/metadata/")
+list(TRANSFORM metadata_public_headers_details PREPEND "mono/metadata/")
 
 target_sources(monoapi_metadata INTERFACE ${metadata_public_headers} ${metadata_public_headers_details})
 
@@ -109,18 +109,18 @@ target_include_directories(monoapi_metadata INTERFACE .)
 
 add_library(monoapi_jit INTERFACE)
 
-set(jit_public_headers_base
+set(jit_public_headers
   jit.h
   mono-private-unstable.h
   )
-set(jit_public_headers_details_base
+set(jit_public_headers_details
   details/jit-types.h
   details/jit-functions.h
   details/mono-private-unstable-types.h
   details/mono-private-unstable-functions.h
   )
-addprefix(jit_public_headers mono/jit "${jit_public_headers_base}")
-addprefix(jit_public_headers_details mono/jit "${jit_public_headers_details_base}")
+list(TRANSFORM jit_public_headers PREPEND "mono/jit/")
+list(TRANSFORM jit_public_headers_details PREPEND "mono/jit/")
 
 target_sources(monoapi_jit INTERFACE ${jit_public_headers} ${jit_public_headers_details})
 
@@ -138,3 +138,21 @@ if(INSTALL_MONO_API)
   install(FILES ${jit_public_headers} DESTINATION ${CMAKE_INSTALL_INCLUDEDIR}/mono-2.0/mono/jit)
   install(FILES ${jit_public_headers_details} DESTINATION ${CMAKE_INSTALL_INCLUDEDIR}/mono-2.0/mono/jit/details)
 endif()
+
+
+# create a helper source file to validate an implementation exists for each public API,
+# it is compiled into mono-sgen and will cause a linking failure there if an API is missing
+foreach(header IN LISTS jit_public_headers metadata_public_headers utils_public_headers)
+	if(NOT header MATCHES "profiler-events.h") # profiler-events.h doesn't define APIs which causes an issue
+		string(APPEND publicapis_headers_include "#include <${header}>\n")
+	endif()
+endforeach()
+
+foreach(header IN LISTS jit_public_headers_details metadata_public_headers_details utils_public_headers_details)
+	if(header MATCHES "-functions.h")
+		string(APPEND publicapis_headers_details_include "#include <${header}>\n")
+	endif()
+endforeach()
+
+set(mono_validate_apis_source ${CMAKE_CURRENT_BINARY_DIR}/validate-apis.c PARENT_SCOPE)
+configure_file(validate-apis.c.in ${CMAKE_CURRENT_BINARY_DIR}/validate-apis.c @ONLY)

@@ -116,13 +116,11 @@ namespace System.ComponentModel.Tests
             ex = Assert.Throws<ArgumentOutOfRangeException>(() => stack[-1]);
             Assert.Equal(typeof(ArgumentOutOfRangeException), ex.GetType());
             Assert.Null(ex.InnerException);
-            Assert.Equal(new ArgumentOutOfRangeException("level").Message, ex.Message);
             Assert.Equal("level", ex.ParamName);
 
             ex = Assert.Throws<ArgumentOutOfRangeException>(() => stack[-5]);
             Assert.Equal(typeof(ArgumentOutOfRangeException), ex.GetType());
             Assert.Null(ex.InnerException);
-            Assert.Equal(new ArgumentOutOfRangeException("level").Message, ex.Message);
             Assert.Equal("level", ex.ParamName);
         }
 

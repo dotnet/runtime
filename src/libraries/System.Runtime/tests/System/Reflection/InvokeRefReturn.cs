@@ -43,7 +43,8 @@ namespace System.Reflection.Tests
             TestClass<T> tc = new TestClass<T>(value);
             PropertyInfo p = typeof(TestClass<T>).GetProperty(nameof(TestClass<T>.NullRefReturningProp));
             Assert.NotNull(p);
-            Assert.Throws<NullReferenceException>(() => p.GetValue(tc));
+            Exception ex = Assert.Throws<TargetInvocationException>(() => p.GetValue(tc));
+            Assert.IsType<NullReferenceException>(ex.InnerException);
         }
 
         [Fact]
@@ -65,7 +66,8 @@ namespace System.Reflection.Tests
 
             PropertyInfo p = typeof(TestClassIntPointer).GetProperty(nameof(TestClassIntPointer.NullRefReturningProp));
             Assert.NotNull(p);
-            Assert.Throws<NullReferenceException>(() => p.GetValue(tc));
+            Exception ex = Assert.Throws<TargetInvocationException>(() => p.GetValue(tc));
+            Assert.IsType<NullReferenceException>(ex.InnerException);
         }
 
         [Fact]
@@ -105,10 +107,9 @@ namespace System.Reflection.Tests
                 yield return new object[] { 42L };
                 yield return new object[] { 43.67f };
                 yield return new object[] { 43.67 };
-                // [ActiveIssue("https://github.com/xunit/xunit/issues/1771")]
-                //yield return new object[] { new IntPtr(42) };
-                //yield return new object[] { new UIntPtr(42) };
-                //yield return new object[] { 232953453454m };
+                yield return new object[] { new IntPtr(42) };
+                yield return new object[] { new UIntPtr(42) };
+                yield return new object[] { 232953453454m };
                 yield return new object[] { BindingFlags.IgnoreCase };
                 yield return new object[] { "Hello" };
                 yield return new object[] { new object() };

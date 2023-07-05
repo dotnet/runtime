@@ -33,8 +33,8 @@ namespace System.Security.Cryptography.Xml
             }
 
             int rDepth;
-            XmlAttribute local = (XmlAttribute)nsLocallyDeclared[nsPrefix];
-            XmlAttribute rAncestral = GetNearestRenderedNamespaceWithMatchingPrefix(nsPrefix, out rDepth);
+            XmlAttribute? local = (XmlAttribute?)nsLocallyDeclared[nsPrefix];
+            XmlAttribute? rAncestral = GetNearestRenderedNamespaceWithMatchingPrefix(nsPrefix, out rDepth);
 
             if (local != null)
             {
@@ -47,7 +47,7 @@ namespace System.Security.Cryptography.Xml
             else
             {
                 int uDepth;
-                XmlAttribute uAncestral = GetNearestUnrenderedNamespaceWithMatchingPrefix(nsPrefix, out uDepth);
+                XmlAttribute? uAncestral = GetNearestUnrenderedNamespaceWithMatchingPrefix(nsPrefix, out uDepth);
                 if (uAncestral != null && uDepth > rDepth && Utils.IsNonRedundantNamespaceDecl(uAncestral, rAncestral))
                 {
                     nsListToRender.Add(uAncestral, null);
@@ -68,13 +68,10 @@ namespace System.Security.Cryptography.Xml
 
         internal override void TrackNamespaceNode(XmlAttribute attr, SortedList nsListToRender, Hashtable nsLocallyDeclared)
         {
-            if (!Utils.IsXmlPrefixDefinitionNode(attr))
-            {
-                if (HasNonRedundantInclusivePrefix(attr))
-                    nsListToRender.Add(attr, null);
-                else
-                    nsLocallyDeclared.Add(Utils.GetNamespacePrefix(attr), attr);
-            }
+            if (HasNonRedundantInclusivePrefix(attr))
+                nsListToRender.Add(attr, null);
+            else
+                nsLocallyDeclared.Add(Utils.GetNamespacePrefix(attr), attr);
         }
 
         internal override void TrackXmlNamespaceNode(XmlAttribute attr, SortedList nsListToRender, SortedList attrListToRender, Hashtable nsLocallyDeclared)

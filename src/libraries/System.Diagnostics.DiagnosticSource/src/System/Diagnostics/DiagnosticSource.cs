@@ -11,12 +11,13 @@ namespace System.Diagnostics
     /// (which can also write object), but is intended to log complex objects that can't be serialized.
     ///
     /// Please See the DiagnosticSource Users Guide
-    /// https://github.com/dotnet/corefx/blob/master/src/System.Diagnostics.DiagnosticSource/src/DiagnosticSourceUsersGuide.md
+    /// https://github.com/dotnet/runtime/blob/main/src/libraries/System.Diagnostics.DiagnosticSource/src/DiagnosticSourceUsersGuide.md
     /// for instructions on its use.
     /// </summary>
     public abstract partial class DiagnosticSource
     {
         internal const string WriteRequiresUnreferencedCode = "The type of object being written to DiagnosticSource cannot be discovered statically.";
+        internal const string WriteOfTRequiresUnreferencedCode = "Only the properties of the T type will be preserved. Properties of referenced types and properties of derived types may be trimmed.";
 
         /// <summary>
         /// Write is a generic way of logging complex payloads.  Each notification
@@ -36,6 +37,12 @@ namespace System.Diagnostics
         /// This is often an anonymous type which contains several sub-values.</param>
         [RequiresUnreferencedCode(WriteRequiresUnreferencedCode)]
         public abstract void Write(string name, object? value);
+
+        /// <inheritdoc cref="Write"/>
+        /// <typeparam name="T">The type of the value being passed as a payload for the event.</typeparam>
+        [RequiresUnreferencedCode(WriteOfTRequiresUnreferencedCode)]
+        public void Write<[DynamicallyAccessedMembers(DynamicallyAccessedMemberTypes.PublicProperties)] T>(string name, T value) =>
+            Write(name, (object?)value);
 
         /// <summary>
         /// Optional: if there is expensive setup for the notification, you can call IsEnabled

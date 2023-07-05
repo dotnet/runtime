@@ -4,6 +4,7 @@
 using System;
 using System.Collections.Generic;
 using System.Linq;
+using System.Threading;
 using Microsoft.Extensions.Configuration.Memory;
 using Xunit;
 
@@ -57,6 +58,64 @@ namespace Microsoft.Extensions.Configuration.Test
             Assert.Equal("ValueInMem2", config["Mem2:KeyInMem2"]);
             Assert.Equal("ValueInMem3", config["MEM3:KEYINMEM3"]);
             Assert.Null(config["NotExist"]);
+        }
+
+        [Fact]
+        public void GetChildKeys_CanChainEmptyKeys()
+        {
+            var input = new Dictionary<string, string>() { };
+            for (int i = 0; i < 1000; i++)
+            {
+                input.Add(new string(' ', i), string.Empty);
+            }
+
+            IConfigurationRoot configurationRoot = new ConfigurationBuilder()
+                .Add(new MemoryConfigurationSource
+                {
+                    InitialData = input
+                })
+                .Build();
+
+            var chainedConfigurationSource = new ChainedConfigurationSource
+            {
+                Configuration = configurationRoot,
+                ShouldDisposeConfiguration = false,
+            };
+            
+            var chainedConfiguration = new ChainedConfigurationProvider(chainedConfigurationSource);
+            IEnumerable<string> childKeys = chainedConfiguration.GetChildKeys(new string[0], null);
+            Assert.Equal(1000, childKeys.Count());
+            Assert.Equal(string.Empty, childKeys.First());
+            Assert.Equal(999, childKeys.Last().Length);
+        }
+
+        [Fact]
+        public void GetChildKeys_CanChainKeyWithNoDelimiter()
+        {
+            var input = new Dictionary<string, string>() { };
+            for (int i = 1000; i < 2000; i++)
+            {
+                input.Add(i.ToString(), string.Empty);
+            }
+
+            IConfigurationRoot configurationRoot = new ConfigurationBuilder()
+                .Add(new MemoryConfigurationSource
+                {
+                    InitialData = input
+                })
+                .Build();
+
+            var chainedConfigurationSource = new ChainedConfigurationSource
+            {
+                Configuration = configurationRoot,
+                ShouldDisposeConfiguration = false,
+            };
+            
+            var chainedConfiguration = new ChainedConfigurationProvider(chainedConfigurationSource);
+            IEnumerable<string> childKeys = chainedConfiguration.GetChildKeys(new string[0], null);
+            Assert.Equal(1000, childKeys.Count());
+            Assert.Equal("1000", childKeys.First());
+            Assert.Equal("1999", childKeys.Last());
         }
 
         [Fact]
@@ -627,6 +686,39 @@ namespace Microsoft.Extensions.Configuration.Test
             config.Reload();
             Assert.Equal(1, called1);
             Assert.Equal(2, called2);
+        }
+
+        [Fact]
+        public void AsyncLocalsNotCapturedAndRestoredConfigurationReloadToken()
+        {
+            // Capture clean context
+            var executionContext = ExecutionContext.Capture();
+
+            var configurationReloadToken = new ConfigurationReloadToken();
+            var executed = false;
+
+            // Set AsyncLocal
+            var asyncLocal = new AsyncLocal<int>();
+            asyncLocal.Value = 1;
+
+            // Register Callback
+            configurationReloadToken.RegisterChangeCallback(al =>
+            {
+                // AsyncLocal not set, when run on clean context
+                // A suppressed flow runs in current context, rather than restoring the captured context
+                Assert.Equal(0, ((AsyncLocal<int>)al).Value);
+                executed = true;
+            }, asyncLocal);
+
+            // AsyncLocal should still be set
+            Assert.Equal(1, asyncLocal.Value);
+
+            // Check AsyncLocal is not restored by running on clean context
+            ExecutionContext.Run(executionContext, crt => ((ConfigurationReloadToken)crt).OnReload(), configurationReloadToken);
+
+            // AsyncLocal should still be set
+            Assert.Equal(1, asyncLocal.Value);
+            Assert.True(executed);
         }
 
         [Fact]

@@ -2,19 +2,25 @@
 // The .NET Foundation licenses this file to you under the MIT license.
 
 .assembly extern legacy library mscorlib {}
+.assembly extern xunit.core {}
 
+.namespace clt_u
+{
 .class public clt_un {
 
 
 	.field public static int32 PTR
 
-.method public static	int32 main(class [mscorlib]System.String[]) {
+.method public static	int32 main() {
+.custom instance void [xunit.core]Xunit.FactAttribute::.ctor() = (
+    01 00 00 00
+)
 .entrypoint
 .maxstack		10
 .locals	(int32*,int32*)
-	ldsflda		int32 clt_un::PTR
+	ldsflda		int32 clt_u.clt_un::PTR
 	stloc	0
-	ldsflda		int32 clt_un::PTR
+	ldsflda		int32 clt_u.clt_un::PTR
 	ldc.i4		0x2
 	add
 	stloc	1
@@ -44,3 +50,4 @@ FAIL:
 }
 }
 .assembly clt_u{}
+}

@@ -2,10 +2,11 @@
 // The .NET Foundation licenses this file to you under the MIT license.
 
 using System;
+using Xunit;
 
-namespace JitTest
+namespace JitTest_catchfinally_tail_cs
 {
-    internal class Test1
+    public class Test1
     {
         private static bool s_globalFlag = false,s_globalFlag2 = true;
 
@@ -91,7 +92,8 @@ namespace JitTest
                 return TestTryFinally(recurseLevel);
         }
 
-        private static int Main()
+        [Fact]
+        public static int TestEntryPoint()
         {
             try
             {

@@ -50,7 +50,7 @@ From the API surface perspective, there are only couple of new functions added:
 * `AssemblyLoadContext.IsCollectible` property to query whether the `AssemblyLoadContext` is unloadable or not.
 * `MemberInfo.IsCollectible` and `Assembly.IsCollectible` properties to enable developers to do the right thing for collectible assemblies (e.g. avoid caching them for a long time, etc.)
 
-The design of the feature builds on top of the existing collectible types. The isolation containter for this feature is provided by `AssemblyLoadContext`.  All assemblies loaded into an unloadable `AssemblyLoadContext` are marked as collectible.
+The design of the feature builds on top of the existing collectible types. The isolation container for this feature is provided by `AssemblyLoadContext`.  All assemblies loaded into an unloadable `AssemblyLoadContext` are marked as collectible.
 
 For each unloadable `AssemblyLoadContext`, an `AssemblyLoaderAllocator` is created. It is used to allocate all context specific memory related to the assemblies loaded into the context. The existing collectible types support ensures this behavior.
 

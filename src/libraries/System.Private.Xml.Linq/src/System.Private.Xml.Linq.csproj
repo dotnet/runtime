@@ -2,7 +2,6 @@
   <PropertyGroup>
     <RootNamespace>System.Xml</RootNamespace>
     <TargetFramework>$(NetCoreAppCurrent)</TargetFramework>
-    <Nullable>enable</Nullable>
   </PropertyGroup>
   <ItemGroup>
     <Compile Include="$(CommonPath)System\Collections\Generic\EnumerableHelpers.cs"
@@ -47,7 +46,6 @@
     <Reference Include="System.Linq" />
     <Reference Include="System.ObjectModel" />
     <Reference Include="System.Runtime" />
-    <Reference Include="System.Runtime.Extensions" />
     <Reference Include="System.Threading" />
     <Reference Include="System.Threading.Thread" />
     <Reference Include="System.Memory" />

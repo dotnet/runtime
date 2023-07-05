@@ -7,7 +7,7 @@ using System.Collections.Generic;
 using System.Linq;
 using System.Runtime.CompilerServices;
 using System.Runtime.InteropServices;
-using System.Runtime.InteropServices.GeneratedMarshalling;
+using System.Runtime.InteropServices.Marshalling;
 using System.Text;
 
 using Xunit;
@@ -19,37 +19,30 @@ namespace LibraryImportGenerator.IntegrationTests
         public partial class Span
         {
             [LibraryImport(NativeExportsNE_Binary, EntryPoint = "sum_int_array")]
-            public static partial int Sum([MarshalUsing(typeof(SpanMarshaller<int>))] Span<int> values, int numValues);
-
+            public static partial int Sum(Span<int> values, int numValues);
             [LibraryImport(NativeExportsNE_Binary, EntryPoint = "sum_int_array")]
-            public static partial int SumNeverNull([MarshalUsing(typeof(NeverNullSpanMarshaller<int>))] Span<int> values, int numValues);
-
-            [LibraryImport(NativeExportsNE_Binary, EntryPoint = "sum_int_array")]
-            public static partial int SumNeverNull([MarshalUsing(typeof(NeverNullReadOnlySpanMarshaller<int>))] ReadOnlySpan<int> values, int numValues);
+            public static partial int Sum(ReadOnlySpan<int> values, int numValues);
 
             [LibraryImport(NativeExportsNE_Binary, EntryPoint = "sum_int_array_ref")]
-            public static partial int SumInArray([MarshalUsing(typeof(SpanMarshaller<int>))] in Span<int> values, int numValues);
+            public static partial int SumInArray(in Span<int> values, int numValues);
 
             [LibraryImport(NativeExportsNE_Binary, EntryPoint = "duplicate_int_array")]
-            public static partial void Duplicate([MarshalUsing(typeof(SpanMarshaller<int>), CountElementName = "numValues")] ref Span<int> values, int numValues);
-
-            [LibraryImport(NativeExportsNE_Binary, EntryPoint = "duplicate_int_array")]
-            public static partial void DuplicateRaw([MarshalUsing(typeof(DirectSpanMarshaller<int>), CountElementName = "numValues")] ref Span<int> values, int numValues);
+            public static partial void Duplicate([MarshalUsing(CountElementName = "numValues")] ref Span<int> values, int numValues);
 
             [LibraryImport(NativeExportsNE_Binary, EntryPoint = "create_range_array")]
-            [return: MarshalUsing(typeof(SpanMarshaller<int>), CountElementName = "numValues")]
+            [return: MarshalUsing(CountElementName = "numValues")]
             public static partial Span<int> CreateRange(int start, int end, out int numValues);
 
             [LibraryImport(NativeExportsNE_Binary, EntryPoint = "create_range_array_out")]
-            public static partial void CreateRange_Out(int start, int end, out int numValues, [MarshalUsing(typeof(SpanMarshaller<int>), CountElementName = "numValues")] out Span<int> res);
+            public static partial void CreateRange_Out(int start, int end, out int numValues, [MarshalUsing(CountElementName = "numValues")] out Span<int> res);
 
             [LibraryImport(NativeExportsNE_Binary, EntryPoint = "get_long_bytes")]
-            [return: MarshalUsing(typeof(SpanMarshaller<byte>), ConstantElementCount = sizeof(long))]
+            [return: MarshalUsing(ConstantElementCount = sizeof(long))]
             public static partial Span<byte> GetLongBytes(long l);
 
-            [LibraryImport(NativeExportsNE_Binary, EntryPoint = "and_all_members")]
+            [LibraryImport(NativeExportsNE_Binary, EntryPoint = "and_bool_struct_array")]
             [return: MarshalAs(UnmanagedType.U1)]
-            public static partial bool AndAllMembers([MarshalUsing(typeof(SpanMarshaller<BoolStruct>))] Span<BoolStruct> pArray, int length);
+            public static partial bool AndAllMembers(Span<BoolStruct> pArray, int length);
         }
     }
 
@@ -69,15 +62,17 @@ namespace LibraryImportGenerator.IntegrationTests
         }
 
         [Fact]
-        public void NeverNullSpanMarshallerMarshalsDefaultAsNonNull()
+        public void ZeroLengthSpanMarshalsAsNonNull()
         {
-            Assert.Equal(0, NativeExportsNE.Span.SumNeverNull(Span<int>.Empty, 0));
+            Span<int> list = new int[0];
+            Assert.Equal(0, NativeExportsNE.Span.Sum(list, list.Length));
         }
 
         [Fact]
-        public void NeverNullReadOnlySpanMarshallerMarshalsDefaultAsNonNull()
+        public void ZeroLengthReadOnlySpanMarshalsAsNonNull()
         {
-            Assert.Equal(0, NativeExportsNE.Span.SumNeverNull(ReadOnlySpan<int>.Empty, 0));
+            ReadOnlySpan<int> list = new int[0];
+            Assert.Equal(0, NativeExportsNE.Span.Sum(list, list.Length));
         }
 
         [Fact]
@@ -97,23 +92,13 @@ namespace LibraryImportGenerator.IntegrationTests
         }
 
         [Fact]
-        public unsafe void DirectSpanMarshaller()
-        {
-            var list = new int[] { 1, 5, 79, 165, 32, 3 };
-            Span<int> newSpan = list;
-            NativeExportsNE.Span.DuplicateRaw(ref newSpan, list.Length);
-            Assert.Equal((IEnumerable<int>)list, newSpan.ToArray());
-            Marshal.FreeCoTaskMem((IntPtr)Unsafe.AsPointer(ref newSpan.GetPinnableReference()));
-        }
-
-        [Fact]
         public void BlittableElementSpanReturnedFromNative()
         {
             int start = 5;
             int end = 20;
 
             IEnumerable<int> expected = Enumerable.Range(start, end - start);
-            Assert.Equal(expected, NativeExportsNE.Collections.CreateRange(start, end, out _));
+            Assert.Equal(expected, NativeExportsNE.Collections.Stateless.CreateRange(start, end, out _));
 
             Span<int> res;
             NativeExportsNE.Span.CreateRange_Out(start, end, out _, out res);
@@ -123,7 +108,7 @@ namespace LibraryImportGenerator.IntegrationTests
         [Fact]
         public void NullBlittableElementSpanReturnedFromNative()
         {
-            Assert.Null(NativeExportsNE.Collections.CreateRange(1, 0, out _));
+            Assert.Null(NativeExportsNE.Collections.Stateless.CreateRange(1, 0, out _));
 
             Span<int> res;
             NativeExportsNE.Span.CreateRange_Out(1, 0, out _, out res);

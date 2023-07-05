@@ -2,19 +2,21 @@
 // The .NET Foundation licenses this file to you under the MIT license.
 
 .assembly extern mscorlib {}
+.assembly extern xunit.core {}
 
-.assembly GitHub_23970 {}
+.assembly 'GitHub_23950' {}
 
 // Test that jit can inline method with a pinned pointer
 
 .class public sequential ansi sealed beforefieldinit Program
 	extends [mscorlib]System.Object
 {
-	.method private hidebysig static 
-		int32 Main (
-			string[] args
-		) cil managed 
+	.method public hidebysig static 
+		int32 Main () cil managed
 	{
+.custom instance void [xunit.core]Xunit.FactAttribute::.ctor() = (
+    01 00 00 00
+)
 
 		.maxstack 1
 		.entrypoint

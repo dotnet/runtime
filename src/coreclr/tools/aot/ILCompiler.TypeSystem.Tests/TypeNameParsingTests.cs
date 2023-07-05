@@ -1,7 +1,6 @@
 // Licensed to the .NET Foundation under one or more agreements.
 // The .NET Foundation licenses this file to you under the MIT license.
 
-using System;
 using System.Collections.Generic;
 
 using Internal.TypeSystem;
@@ -12,22 +11,17 @@ namespace TypeSystemTests
 {
     public class TypeNameParsingTests
     {
-        TestTypeSystemContext _context;
-        ModuleDesc _testModule;
-
-        string _coreAssemblyQualifier;
-
-        MetadataType _simpleType;
-        MetadataType _nestedType;
-        MetadataType _nestedTwiceType;
-
-        MetadataType _genericType;
-        MetadataType _nestedNongenericType;
-        MetadataType _nestedGenericType;
-
-        MetadataType _veryGenericType;
-
-        MetadataType _structType;
+        private TestTypeSystemContext _context;
+        private ModuleDesc _testModule;
+        private string _coreAssemblyQualifier;
+        private MetadataType _simpleType;
+        private MetadataType _nestedType;
+        private MetadataType _nestedTwiceType;
+        private MetadataType _genericType;
+        private MetadataType _nestedNongenericType;
+        private MetadataType _nestedGenericType;
+        private MetadataType _veryGenericType;
+        private MetadataType _structType;
 
         public TypeNameParsingTests()
         {
@@ -164,21 +158,21 @@ namespace TypeSystemTests
                     _simpleType,
                     _context.GetWellKnownType(WellKnownType.Int32)
                 );
-                TypeDesc result = _testModule.GetTypeByCustomAttributeTypeName(String.Format(
+                TypeDesc result = _testModule.GetTypeByCustomAttributeTypeName(string.Format(
                     "TypeNameParsing.VeryGeneric`3[[System.Object, {0}],TypeNameParsing.Simple,[System.Int32, {0}]]", _coreAssemblyQualifier));
                 Assert.Equal(expected, result);
             }
 
             {
                 TypeDesc expected = nullableType.MakeInstantiatedType(_structType);
-                TypeDesc result = _testModule.GetTypeByCustomAttributeTypeName(String.Format(
+                TypeDesc result = _testModule.GetTypeByCustomAttributeTypeName(string.Format(
                     "System.Nullable`1[TypeNameParsing.Struct], {0}", _coreAssemblyQualifier));
                 Assert.Equal(expected, result);
             }
 
             {
                 TypeDesc expected = nullableType.MakeInstantiatedType(_context.GetWellKnownType(WellKnownType.Int32));
-                TypeDesc result = _testModule.GetTypeByCustomAttributeTypeName(String.Format(
+                TypeDesc result = _testModule.GetTypeByCustomAttributeTypeName(string.Format(
                     "System.Nullable`1[[System.Int32, {0}]], {0}", _coreAssemblyQualifier));
                 Assert.Equal(expected, result);
             }
@@ -205,7 +199,7 @@ namespace TypeSystemTests
                 TypeDesc expected = _nestedNongenericType.MakeInstantiatedType(
                     nullableType.MakeInstantiatedType(_structType)
                 );
-                TypeDesc result = _testModule.GetTypeByCustomAttributeTypeName(String.Format(
+                TypeDesc result = _testModule.GetTypeByCustomAttributeTypeName(string.Format(
                     "TypeNameParsing.Generic`1+NestedNongeneric[[System.Nullable`1[TypeNameParsing.Struct], {0}]]", _coreAssemblyQualifier));
                 Assert.Equal(expected, result);
             }
@@ -215,7 +209,7 @@ namespace TypeSystemTests
                     nullableType.MakeInstantiatedType(_context.GetWellKnownType(WellKnownType.Int32)),
                     _nestedType.MakeArrayType()
                 );
-                TypeDesc result = _testModule.GetTypeByCustomAttributeTypeName(String.Format(
+                TypeDesc result = _testModule.GetTypeByCustomAttributeTypeName(string.Format(
                     "TypeNameParsing.Generic`1+NestedGeneric`1[[System.Nullable`1[[System.Int32, {0}]], {0}],TypeNameParsing.Simple+Nested[]]", _coreAssemblyQualifier));
                 Assert.Equal(expected, result);
             }

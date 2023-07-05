@@ -1,8 +1,6 @@
 // Licensed to the .NET Foundation under one or more agreements.
 // The .NET Foundation licenses this file to you under the MIT license.
 
-
-
 #ifndef _RUNTIMEHANDLES_H_
 #define _RUNTIMEHANDLES_H_
 
@@ -105,8 +103,6 @@ public:
 
 extern "C" BOOL QCALLTYPE MdUtf8String_EqualsCaseInsensitive(LPCUTF8 szLhs, LPCUTF8 szRhs, INT32 stringNumBytes);
 
-extern "C" ULONG QCALLTYPE MdUtf8String_HashCaseInsensitive(LPCUTF8 sz, INT32 stringNumBytes);
-
 class RuntimeTypeHandle;
 
 typedef RuntimeTypeHandle FCALLRuntimeTypeHandle;
@@ -120,9 +116,6 @@ public:
     static FCDECL1(Object*, AllocateComObject, void* pClassFactory);
 
     static FCDECL1(ReflectClassBaseObject*, GetRuntimeType, void *th);
-
-    static FCDECL1_V(ReflectClassBaseObject*, GetTypeFromHandle, FCALLRuntimeTypeHandle th);
-    static FCDECL1_V(EnregisteredTypeHandle, GetValueInternal, FCALLRuntimeTypeHandle RTH);
 
     static FCDECL2(FC_BOOL_RET, IsEquivalentTo, ReflectClassBaseObject *rtType1UNSAFE, ReflectClassBaseObject *rtType2UNSAFE);
 
@@ -141,16 +134,13 @@ public:
     static FCDECL1(FC_BOOL_RET, IsInterface, ReflectClassBaseObject* pType);
     static FCDECL1(FC_BOOL_RET, IsByRefLike, ReflectClassBaseObject* pType);
 
+    static FCDECL1(Object *, GetArgumentTypesFromFunctionPointer, ReflectClassBaseObject *pTypeUNSAFE);
+    static FCDECL1(FC_BOOL_RET, IsUnmanagedFunctionPointer, ReflectClassBaseObject *pTypeUNSAFE);
+
     static FCDECL2(FC_BOOL_RET, CanCastTo, ReflectClassBaseObject *pType, ReflectClassBaseObject *pTarget);
     static FCDECL2(FC_BOOL_RET, IsInstanceOfType, ReflectClassBaseObject *pType, Object *object);
 
     static FCDECL6(FC_BOOL_RET, SatisfiesConstraints, PTR_ReflectClassBaseObject pGenericParameter, TypeHandle *typeContextArgs, INT32 typeContextCount, TypeHandle *methodContextArgs, INT32 methodContextCount, PTR_ReflectClassBaseObject pGenericArgument);
-
-    static
-    FCDECL1(FC_BOOL_RET, HasInstantiation, PTR_ReflectClassBaseObject pType);
-
-    static
-    FCDECL1(FC_BOOL_RET, IsGenericTypeDefinition, PTR_ReflectClassBaseObject pType);
 
     static
     FCDECL1(FC_BOOL_RET, IsGenericVariable, PTR_ReflectClassBaseObject pType);
@@ -176,8 +166,7 @@ public:
     static FCDECL1(MethodDesc *, GetFirstIntroducedMethod, ReflectClassBaseObject* pType);
     static FCDECL1(void, GetNextIntroducedMethod, MethodDesc **ppMethod);
 
-    static
-    FCDECL1(IMDInternalImport*, GetMetadataImport, ReflectClassBaseObject * pModuleUNSAFE);
+    static FCDECL1(IMDInternalImport*, GetMetadataImport, ReflectClassBaseObject * pModuleUNSAFE);
 
     // Helper methods not called by managed code
 
@@ -203,12 +192,6 @@ extern "C" void QCALLTYPE RuntimeTypeHandle_MakeArray(QCall::TypeHandle pTypeHan
 extern "C" BOOL QCALLTYPE RuntimeTypeHandle_IsCollectible(QCall::TypeHandle pTypeHandle);
 extern "C" void QCALLTYPE RuntimeTypeHandle_PrepareMemberInfoCache(QCall::TypeHandle pMemberInfoCache);
 extern "C" void QCALLTYPE RuntimeTypeHandle_ConstructName(QCall::TypeHandle pTypeHandle, DWORD format, QCall::StringHandleOnStack retString);
-extern "C" void QCALLTYPE RuntimeTypeHandle_GetTypeByNameUsingCARules(LPCWSTR pwzClassName, QCall::ModuleHandle pModule, QCall::ObjectHandleOnStack retType);
-extern "C" void QCALLTYPE RuntimeTypeHandle_GetTypeByName(LPCWSTR pwzClassName, BOOL bThrowOnError, BOOL bIgnoreCase,
-                                 QCall::StackCrawlMarkHandle pStackMark,
-                                 QCall::ObjectHandleOnStack pAssemblyLoadContext,
-                                 QCall::ObjectHandleOnStack retType,
-                                 QCall::ObjectHandleOnStack keepAlive);
 extern "C" BOOL QCALLTYPE RuntimeTypeHandle_IsVisible(QCall::TypeHandle pTypeHandle);
 extern "C" void QCALLTYPE RuntimeTypeHandle_GetInstantiation(QCall::TypeHandle pTypeHandle, QCall::ObjectHandleOnStack retType, BOOL fAsRuntimeTypeArray);
 extern "C" void QCALLTYPE RuntimeTypeHandle_Instantiate(QCall::TypeHandle pTypeHandle, TypeHandle * pInstArray, INT32 cInstArray, QCall::ObjectHandleOnStack retType);
@@ -216,13 +199,17 @@ extern "C" void QCALLTYPE RuntimeTypeHandle_GetGenericTypeDefinition(QCall::Type
 extern "C" void QCALLTYPE RuntimeTypeHandle_GetConstraints(QCall::TypeHandle pTypeHandle, QCall::ObjectHandleOnStack retTypes);
 extern "C" void QCALLTYPE RuntimeTypeHandle_VerifyInterfaceIsImplemented(QCall::TypeHandle pTypeHandle, QCall::TypeHandle pIFaceHandle);
 extern "C" MethodDesc* QCALLTYPE RuntimeTypeHandle_GetInterfaceMethodImplementation(QCall::TypeHandle pTypeHandle, QCall::TypeHandle pOwner, MethodDesc * pMD);
+extern "C" void QCALLTYPE RuntimeTypeHandle_RegisterCollectibleTypeDependency(QCall::TypeHandle pTypeHandle, QCall::AssemblyHandle pAssembly);
 
 class RuntimeMethodHandle {
 
 public:
     static FCDECL1(ReflectMethodObject*, GetCurrentMethod, StackCrawlMark* stackMark);
 
-    static FCDECL5(Object*, InvokeMethod, Object *target, Span<OBJECTREF>* objs, SignatureNative* pSig, CLR_BOOL fConstructor, CLR_BOOL fWrapExceptions);
+    static FCDECL4(Object*, InvokeMethod, Object *target, PVOID* args, SignatureNative* pSig, CLR_BOOL fConstructor);
+
+    static FCDECL2(Object*, ReboxToNullable, Object *pBoxedValUNSAFE, ReflectClassBaseObject *pDestUNSAFE);
+    static FCDECL1(Object*, ReboxFromNullable, Object *pBoxedValUNSAFE);
 
     struct StreamingContextData {
         Object * additionalContext;  // additionalContex was changed from OBJECTREF to Object to avoid having a
@@ -261,7 +248,6 @@ public:
     static FCDECL1(INT32, GetMethodDef, ReflectMethodObject *pMethodUNSAFE);
     static FCDECL1(StringObject*, GetName, MethodDesc *pMethod);
     static FCDECL1(LPCUTF8, GetUtf8Name, MethodDesc *pMethod);
-    static FCDECL2(FC_BOOL_RET, MatchesNameHash, MethodDesc * pMethod, ULONG hash);
     static
     FCDECL1(FC_BOOL_RET, HasMethodInstantiation, MethodDesc *pMethod);
 
@@ -315,13 +301,13 @@ public:
     static FCDECL5(void, SetValueDirect, ReflectFieldObject *pFieldUNSAFE, ReflectClassBaseObject *pFieldType, TypedByRef *pTarget, Object *valueUNSAFE, ReflectClassBaseObject *pContextType);
     static FCDECL1(StringObject*, GetName, ReflectFieldObject *pFieldUNSAFE);
     static FCDECL1(LPCUTF8, GetUtf8Name, FieldDesc *pField);
-    static FCDECL2(FC_BOOL_RET, MatchesNameHash, FieldDesc * pField, ULONG hash);
 
     static FCDECL1(INT32, GetAttributes, FieldDesc *pField);
     static FCDECL1(ReflectClassBaseObject*, GetApproxDeclaringType, FieldDesc *pField);
     static FCDECL1(INT32, GetToken, ReflectFieldObject *pFieldUNSAFE);
     static FCDECL2(FieldDesc*, GetStaticFieldForGenericType, FieldDesc *pField, ReflectClassBaseObject *pDeclaringType);
     static FCDECL1(FC_BOOL_RET, AcquiresContextFromThis, FieldDesc *pField);
+    static FCDECL1(Object*, GetLoaderAllocator, FieldDesc *pField);
 };
 
 class ModuleHandle {
@@ -379,9 +365,16 @@ public:
         PCCOR_SIGNATURE pCorSig, DWORD cCorSig,
         FieldDesc *pFieldDesc, ReflectMethodObject *pMethodUNSAFE,
         ReflectClassBaseObject *pDeclaringType);
-    static FCDECL3(Object *, GetCustomModifiers, SignatureNative* pSig, INT32 parameter, CLR_BOOL fRequired);
+
     static FCDECL2(FC_BOOL_RET, CompareSig, SignatureNative* pLhs, SignatureNative* pRhs);
 
+    static FCDECL2(INT32, GetParameterOffset, SignatureNative* pSig, INT32 parameterIndex);
+
+    static FCDECL3(INT32, GetTypeParameterOffset, SignatureNative* pSig, INT32 offset, INT32 index);
+
+    static FCDECL2(FC_INT8_RET, GetCallingConventionFromFunctionPointerAtOffset, SignatureNative* pSig, INT32 offset);
+
+    static FCDECL3(Object *, GetCustomModifiersAtOffset, SignatureNative* pSig, INT32 offset, CLR_BOOL fRequired);
 
     BOOL HasThis() { LIMITED_METHOD_CONTRACT; return (m_managedCallingConvention & CALLCONV_HasThis); }
     INT32 NumFixedArgs() { WRAPPER_NO_CONTRACT; return m_PtrArrayarguments->GetNumComponents(); }
@@ -562,4 +555,3 @@ public:
 };
 
 #endif
-

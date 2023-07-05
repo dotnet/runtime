@@ -44,13 +44,6 @@ void InitEventForDebuggerNotification(DEBUG_EVENT *      pDebugEvent,
                                       DebuggerIPCEvent * pIPCEvent);
 #endif // (FEATURE_DBGIPC_TRANSPORT_DI || FEATURE_DBGIPC_TRANSPORT_VM)
 
-
-void GetPidDecoratedName(_Out_writes_z_(cBufSizeInChars) WCHAR * pBuf,
-                         int cBufSizeInChars,
-                         const WCHAR * pPrefix,
-                         DWORD pid);
-
-
 //
 // This macro is used in CORDbgCopyThreadContext().
 //
@@ -103,7 +96,15 @@ ULONG32 ContextSizeForFlags(ULONG32 flags)
     else
 #endif // TARGET_X86
     {
+#if !defined(CROSS_COMPILE) && !defined(TARGET_WINDOWS) && defined(TARGET_AMD64)
+        if ((flags & CONTEXT_XSTATE) == CONTEXT_XSTATE)
+        {
+            return sizeof(T_CONTEXT);
+        }
+        return offsetof(T_CONTEXT, XStateFeaturesMask);
+#else
         return sizeof(T_CONTEXT);
+#endif
     }
 }
 

@@ -3,7 +3,7 @@
 
 namespace System.Runtime.CompilerServices
 {
-    internal unsafe sealed class FixedBufferAttribute : Attribute
+    internal sealed unsafe class FixedBufferAttribute : Attribute
     {
         public FixedBufferAttribute(Type elementType, int length)
         {

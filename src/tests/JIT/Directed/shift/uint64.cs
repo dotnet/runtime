@@ -3,6 +3,7 @@
 //
 
 using System;
+using Xunit;
 
 namespace ShiftTest
 {
@@ -27,7 +28,8 @@ namespace ShiftTest
             arg_data <<= 8;
             return arg_data;
         }
-        public static int Main()
+        [Fact]
+        public static int TestEntryPoint()
         {
             ulong loc_data = 0xFFFFFFFFFFFFFFFF;
 
@@ -47,7 +49,7 @@ namespace ShiftTest
             Console.WriteLine("The expected result of (0xFFFFFFFFFFFFFFFF>>8) is: {0}", (0xFFFFFFFFFFFFFFFF >> 8));
             Console.WriteLine();
 
-            Console.WriteLine("The actual result for funciton argument is: {0}", f1(0xFFFFFFFFFFFFFFFF));
+            Console.WriteLine("The actual result for function argument is: {0}", f1(0xFFFFFFFFFFFFFFFF));
             loc_data >>= 8;
             Console.WriteLine("The actual result for local variable is: {0}", loc_data);
             s_data >>= 8;
@@ -103,7 +105,7 @@ namespace ShiftTest
             Console.WriteLine("The expected result of (0x1<<8) is: {0}", ((ulong)0x1 << 8));
             Console.WriteLine();
 
-            Console.WriteLine("The actual result for funciton argument is: {0}", f2(0x1));
+            Console.WriteLine("The actual result for function argument is: {0}", f2(0x1));
             loc_data <<= 8;
             Console.WriteLine("The actual result for local variable is: {0}", loc_data);
             s_data <<= 8;

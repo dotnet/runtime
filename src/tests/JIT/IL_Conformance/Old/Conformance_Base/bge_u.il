@@ -2,20 +2,26 @@
 // The .NET Foundation licenses this file to you under the MIT license.
 
 .assembly extern legacy library mscorlib {}
+.assembly extern xunit.core {}
 
 
+.namespace bge_u
+{
 .class public _bge {
 
 
 .field public static int32 PTR
 
-.method public static	int32 main(class [mscorlib]System.String[]) {
+.method public static	int32 main() {
+.custom instance void [xunit.core]Xunit.FactAttribute::.ctor() = (
+    01 00 00 00
+)
 .entrypoint
 .maxstack		10
 .locals	(int32*,int32*)
-	ldsflda		int32 _bge::PTR
+	ldsflda		int32 bge_u._bge::PTR
 	stloc	0
-	ldsflda		int32 _bge::PTR
+	ldsflda		int32 bge_u._bge::PTR
 	ldc.i4		0x2
 	add
 	stloc	1
@@ -46,3 +52,4 @@ FAIL:
 }
 }
 .assembly bge_u{}
+}

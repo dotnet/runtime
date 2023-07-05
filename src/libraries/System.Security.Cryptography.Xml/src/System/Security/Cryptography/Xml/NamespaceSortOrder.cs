@@ -10,10 +10,10 @@ namespace System.Security.Cryptography.Xml
     {
         internal NamespaceSortOrder() { }
 
-        public int Compare(object a, object b)
+        public int Compare(object? a, object? b)
         {
-            XmlNode nodeA = a as XmlNode;
-            XmlNode nodeB = b as XmlNode;
+            XmlNode? nodeA = a as XmlNode;
+            XmlNode? nodeB = b as XmlNode;
             if ((nodeA == null) || (nodeB == null))
                 throw new ArgumentException();
             bool nodeAdefault = Utils.IsDefaultNamespaceNode(nodeA);

@@ -7,9 +7,9 @@
   .ver 4:0:0:0
 }
 .assembly extern mscorlib {}
-.assembly convX {}
+.assembly ASSEMBLY_NAME {}
 .assembly extern xunit.core {}
-.class private auto ansi beforefieldinit convX
+.class public auto ansi beforefieldinit convX
        extends [mscorlib]System.Object
 {
   .method public hidebysig static int32  Main() cil managed

@@ -172,7 +172,7 @@
 
 // static methods:
 DEFINE_METASIG_T(SM(Int_IntPtr_Obj_RetException, i I j, C(EXCEPTION)))
-DEFINE_METASIG_T(SM(Type_ArrType_IntPtr_int_RetType, C(TYPE) a(C(TYPE)) I i, C(TYPE) ))
+DEFINE_METASIG_T(SM(Type_CharPtr_RuntimeAssembly_Bool_Bool_RetRuntimeType, P(u) C(ASSEMBLY) F F, C(CLASS)))
 DEFINE_METASIG_T(SM(Type_RetIntPtr, C(TYPE), I))
 DEFINE_METASIG(SM(RefIntPtr_IntPtr_IntPtr_Int_RetObj, r(I) I I i, j))
 DEFINE_METASIG(SM(Obj_IntPtr_RetIntPtr, j I, I))
@@ -338,6 +338,7 @@ DEFINE_METASIG(SM(IntPtr_Bool_RetVoid, I F, v))
 DEFINE_METASIG(SM(IntPtr_UInt_IntPtr_RetVoid, I K I, v))
 DEFINE_METASIG(SM(IntPtr_RetUInt, I, K))
 DEFINE_METASIG(SM(PtrChar_RetInt, P(u), i))
+DEFINE_METASIG(SM(PtrChar_RetVoid, P(u), v))
 DEFINE_METASIG(SM(IntPtr_IntPtr_RetIntPtr, I I, I))
 DEFINE_METASIG(SM(IntPtr_IntPtr_Int_RetIntPtr, I I i, I))
 DEFINE_METASIG(SM(PtrVoid_PtrVoid_RetVoid, P(v) P(v), v))
@@ -374,8 +375,6 @@ DEFINE_METASIG(SM(ArrByte_RetObj, a(b), j))
 DEFINE_METASIG(SM(ArrByte_Bool_RetObj, a(b) F, j))
 DEFINE_METASIG(SM(ArrByte_ArrByte_RefObj_RetObj, a(b) a(b) r(j), j))
 
-DEFINE_METASIG_T(SM(UInt_UInt_PtrNativeOverlapped_RetVoid, K K P(g(NATIVEOVERLAPPED)), v))
-
 DEFINE_METASIG(IM(Long_RetVoid, l, v))
 DEFINE_METASIG(IM(IntPtr_Int_RetVoid, I i, v))
 DEFINE_METASIG(IM(IntInt_RetArrByte, i i, a(b)))
@@ -384,10 +383,8 @@ DEFINE_METASIG(IM(RetInt, _, i))
 DEFINE_METASIG_T(IM(RetAssemblyName, _, C(ASSEMBLY_NAME)))
 DEFINE_METASIG_T(IM(RetAssemblyBase, _, C(ASSEMBLYBASE)))
 DEFINE_METASIG_T(IM(RetModule, _, C(MODULE)))
-DEFINE_METASIG_T(IM(Str_ArrB_ArrB_Ver_CI_AHA_AVC_Str_ANF_RetV,
-                 s a(b) a(b) C(VERSION) C(CULTURE_INFO) g(ASSEMBLY_HASH_ALGORITHM) g(ASSEMBLY_VERSION_COMPATIBILITY) s g(ASSEMBLY_NAME_FLAGS), v))
-DEFINE_METASIG_T(IM(PEK_IFM_RetV,
-                 g(PORTABLE_EXECUTABLE_KINDS) g(IMAGE_FILE_MACHINE), v))
+DEFINE_METASIG_T(IM(PtrNativeAssemblyNameParts, P(g(NATIVE_ASSEMBLY_NAME_PARTS)), v))
+DEFINE_METASIG(SM(PtrCharPtrVoid, P(u) P(v), v))
 DEFINE_METASIG(IM(RetObj, _, j))
 DEFINE_METASIG(SM(RetObj, _, j))
 DEFINE_METASIG_T(IM(RetIEnumerator, _, C(IENUMERATOR)))
@@ -428,7 +425,6 @@ DEFINE_METASIG_T(SM(PtrSByt_Int_Int_Encoding_RetStr, P(B) i i C(ENCODING), s))
 DEFINE_METASIG(IM(Obj_Int_RetIntPtr, j i, I))
 
 DEFINE_METASIG(IM(ArrByte_Int_Int_RetVoid, a(b) i i, v))
-DEFINE_METASIG(IM(PtrByte_RetVoid, P(b), v))
 
 DEFINE_METASIG(IM(Char_Char_RetStr, u u, s))
 DEFINE_METASIG(IM(Char_Int_RetVoid, u i, v))
@@ -492,8 +488,7 @@ DEFINE_METASIG(SM(Str_RetStr, s, s))
 DEFINE_METASIG_T(SM(Str_CultureInfo_RetStr, s C(CULTURE_INFO), s))
 DEFINE_METASIG_T(SM(Str_CultureInfo_RefBool_RetStr, s C(CULTURE_INFO) r(F), s))
 DEFINE_METASIG(SM(PtrPtrChar_PtrPtrChar_Int_RetVoid, P(P(u)) P(P(u)) i, v))
-DEFINE_METASIG(SM(ArrStr_RetVoid, a(s), v))
-DEFINE_METASIG(IM(Str_RetVoid, s, v))
+DEFINE_METASIG(SM(PtrChar_Int_PtrPtrChar_RetArrStr, P(u) i P(P(u)), a(s)))
 DEFINE_METASIG(SM(RefBool_RefBool_RetVoid, r(F) r(F), v))
 DEFINE_METASIG_T(IM(Str_Exception_RetVoid, s C(EXCEPTION), v))
 DEFINE_METASIG(IM(Str_Obj_RetVoid, s j, v))
@@ -545,6 +540,9 @@ DEFINE_METASIG(SM(Str_RetArrStr, s, a(s)))
 // Execution Context
 DEFINE_METASIG_T(SM(SyncCtx_ArrIntPtr_Bool_Int_RetInt, C(SYNCHRONIZATION_CONTEXT) a(I) F i, i))
 
+// Exception
+DEFINE_METASIG(IM(RefUInt_RetStr, r(K), s))
+
 #ifdef FEATURE_COMINTEROP
 // The signature of the method System.Runtime.InteropServices.ICustomQueryInterface.GetInterface
 DEFINE_METASIG_T(IM(RefGuid_OutIntPtr_RetCustomQueryInterfaceResult, r(g(GUID)) r(I), g(CUSTOMQUERYINTERFACERESULT)))
@@ -557,9 +555,6 @@ DEFINE_METASIG_T(SM(RefGuid_RetVoid, r(g(GUID)), v))
 DEFINE_METASIG_T(SM(IntPtr_AssemblyName_RetAssemblyBase, I C(ASSEMBLY_NAME), C(ASSEMBLYBASE)))
 DEFINE_METASIG_T(SM(Str_AssemblyBase_IntPtr_RetIntPtr, s C(ASSEMBLYBASE) I, I))
 DEFINE_METASIG_T(SM(Str_AssemblyBase_Bool_UInt_RetIntPtr, s C(ASSEMBLYBASE) F K, I))
-
-// ThreadPool
-DEFINE_METASIG_T(SM(_ThreadPoolWaitOrTimerCallback_Bool_RetVoid, C(TPWAITORTIMER_HELPER) F, v))
 
 // For FailFast
 DEFINE_METASIG(SM(Str_RetVoid, s, v))
@@ -603,10 +598,20 @@ DEFINE_METASIG(GM(RetT, IMAGE_CEE_CS_CALLCONV_DEFAULT, 1, _, M(0)))
 DEFINE_METASIG_T(SM(Array_Int_Array_Int_Int_RetVoid, C(ARRAY) i C(ARRAY) i i, v))
 DEFINE_METASIG_T(SM(Array_Int_Obj_RetVoid, C(ARRAY) i j, v))
 DEFINE_METASIG_T(SM(Array_Int_PtrVoid_RetRefObj, C(ARRAY) i P(v), r(j)))
+DEFINE_METASIG_T(SM(Array_IntPtr_Obj_RetVoid, C(ARRAY) I j, v))
+DEFINE_METASIG_T(SM(Array_IntPtr_PtrVoid_RetRefObj, C(ARRAY) I P(v), r(j)))
 
 DEFINE_METASIG(SM(Obj_IntPtr_Bool_RetVoid, j I F, v))
 DEFINE_METASIG(SM(IntPtr_Obj_RetVoid, I j, v))
 DEFINE_METASIG_T(SM(IntPtr_Type_RetVoid, I C(TYPE), v))
+
+DEFINE_METASIG_T(IM(Str_SpanOfByte_RetVoid, s GI(g(SPAN), 1, b), v))
+DEFINE_METASIG(IM(RetPtrByte, , P(b)))
+DEFINE_METASIG(IM(VoidPtr_Int_RetVoid, P(v) i, v))
+
+DEFINE_METASIG(SM(PtrByte_RetStr, P(b), s))
+DEFINE_METASIG(SM(Str_RetPtrByte, s, P(b)))
+DEFINE_METASIG(SM(PtrByte_RetVoid, P(b), v))
 
 // Undefine macros in case we include the file again in the compilation unit
 

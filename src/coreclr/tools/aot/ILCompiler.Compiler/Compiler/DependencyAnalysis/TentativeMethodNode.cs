@@ -18,7 +18,7 @@ namespace ILCompiler.DependencyAnalysis
     /// body at object emission phase if the real method body was marked.
     /// It the real method body wasn't marked, this stub will tail-call into a throw helper.
     /// </summary>
-    partial class TentativeMethodNode : AssemblyStubNode, IMethodNode, ISymbolNodeWithLinkage
+    public partial class TentativeMethodNode : AssemblyStubNode, IMethodNode, ISymbolNodeWithLinkage
     {
         private readonly IMethodBodyNode _methodNode;
 

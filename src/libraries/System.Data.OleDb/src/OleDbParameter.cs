@@ -166,8 +166,7 @@ namespace System.Data.OleDb
         { // V1.2.3300, XXXParameter V1.0.3300
             get
             {
-                string? parameterName = _parameterName;
-                return ((null != parameterName) ? parameterName : string.Empty);
+                return _parameterName ?? string.Empty;
             }
             set
             {
@@ -333,7 +332,7 @@ namespace System.Data.OleDb
 
             if (dbtype.islong)
             { // long data (image, text, ntext)
-                bytecount = ADP.PtrSize;
+                bytecount = IntPtr.Size;
                 if (ShouldSerializeSize())
                 {
                     size = Size;
@@ -397,7 +396,7 @@ namespace System.Data.OleDb
 
                     if (ODB.LargeDataSize < bytecount)
                     {
-                        bytecount = ADP.PtrSize;
+                        bytecount = IntPtr.Size;
                         wtype |= NativeDBType.BYREF;
                     }
                 }
@@ -416,7 +415,7 @@ namespace System.Data.OleDb
                 }
                 else if (-1 == size)
                 {
-                    bytecount = ADP.PtrSize;
+                    bytecount = IntPtr.Size;
                     wtype |= NativeDBType.BYREF;
                 }
                 else
@@ -433,7 +432,7 @@ namespace System.Data.OleDb
 
             // tagDBPARAMBINDINFO info for SetParameterInfo
             bindings.DataSourceType = dbtype.dbString.DangerousGetHandle(); // NOTE: This is a constant and isn't exposed publicly, so there really isn't a potential for Handle Recycling.
-            bindings.Name = ADP.PtrZero;
+            bindings.Name = IntPtr.Zero;
             bindings.ParamSize = new IntPtr(size);
             bindings.Flags = GetBindFlags(direction);
             //bindings.Precision    = precision;
@@ -575,17 +574,17 @@ namespace System.Data.OleDb
             }
         }
 
-        private byte ValuePrecision(object? value)
+        private static byte ValuePrecision(object? value)
         {
             return ValuePrecisionCore(value);
         }
 
-        private byte ValueScale(object? value)
+        private static byte ValueScale(object? value)
         {
             return ValueScaleCore(value);
         }
 
-        private int ValueSize(object? value)
+        private static int ValueSize(object? value)
         {
             return ValueSizeCore(value);
         }
@@ -650,7 +649,7 @@ namespace System.Data.OleDb
                 return base.ConvertTo(context, culture, value, destinationType);
             }
 
-            private System.ComponentModel.Design.Serialization.InstanceDescriptor ConvertToInstanceDescriptor(OleDbParameter p)
+            private static System.ComponentModel.Design.Serialization.InstanceDescriptor ConvertToInstanceDescriptor(OleDbParameter p)
             {
                 int flags = 0;
 

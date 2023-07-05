@@ -9,7 +9,7 @@
 ** This test is for WFMO Test case for Mutex
 ** Algorithm
 ** o	Create PROCESS_COUNT processes.
-** o	Main Thread of each process creates OBJECT_TYPE Object 
+** o	Main Thread of each process creates OBJECT_TYPE Object
 **
 ** Author: ShamitP
 **
@@ -41,24 +41,24 @@ struct TestStats{
 
 int GetParameters( int argc, char **argv)
 {
-  if( (argc != 6) || ((argc == 1) && !strcmp(argv[1],"/?")) 
+  if( (argc != 6) || ((argc == 1) && !strcmp(argv[1],"/?"))
        || !strcmp(argv[1],"/h") || !strcmp(argv[1],"/H"))
     {
         printf("PAL -Composite WFMO Test\n");
         printf("Usage:\n");
-        printf("main\n\t[PROCESS_COUNT  [greater than 0] \n"); 
-        printf("\t[THREAD_COUNT  [greater than 0] \n"); 
+        printf("main\n\t[PROCESS_COUNT  [greater than 0] \n");
+        printf("\t[THREAD_COUNT  [greater than 0] \n");
         printf("\t[REPEAT_COUNT  [greater than 0]\n");
         printf("\t[SLEEP_LENGTH  [greater than 0]\n");
-        printf("\t[RELATION_ID  [greater than 0]\n");        
+        printf("\t[RELATION_ID  [greater than 0]\n");
 
-		 
+
 
         return -1;
     }
 
     PROCESS_COUNT = atoi(argv[1]);
-    if( (PROCESS_COUNT < 1) || (PROCESS_COUNT > MAXIMUM_WAIT_OBJECTS) ) 
+    if( (PROCESS_COUNT < 1) || (PROCESS_COUNT > MAXIMUM_WAIT_OBJECTS) )
     {
         printf("\nMain Process:Invalid PROCESS_COUNT number, Pass greater than 1 and less than PROCESS_COUNT %d\n", MAXIMUM_WAIT_OBJECTS);
         return -1;
@@ -72,21 +72,21 @@ int GetParameters( int argc, char **argv)
     }
 
     REPEAT_COUNT = atoi(argv[3]);
-    if( REPEAT_COUNT < 1) 
+    if( REPEAT_COUNT < 1)
     {
         printf("\nMain Process:Invalid REPEAT_COUNT number, Pass greater than 1\n");
         return -1;
     }
 
     SLEEP_LENGTH = atoi(argv[4]);
-    if( SLEEP_LENGTH < 1) 
+    if( SLEEP_LENGTH < 1)
     {
         printf("\nMain Process:Invalid SLEEP_LENGTH number, Pass greater than 1\n");
         return -1;
     }
 
     RELATION_ID = atoi(argv[5]);
-    if( RELATION_ID < 1) 
+    if( RELATION_ID < 1)
     {
         printf("\nMain Process:Invalid RELATION_ID number, Pass greater than 1\n");
         return -1;
@@ -101,7 +101,7 @@ PALTEST(composite_wfmo_paltest_composite_wfmo, "composite/wfmo/paltest_composite
 {
     unsigned int i = 0;
     HANDLE hProcess[MAXIMUM_WAIT_OBJECTS];
-   
+
     STARTUPINFO si[MAXIMUM_WAIT_OBJECTS];
     PROCESS_INFORMATION pi[MAXIMUM_WAIT_OBJECTS];
 
@@ -126,7 +126,7 @@ PALTEST(composite_wfmo_paltest_composite_wfmo, "composite/wfmo/paltest_composite
         Fail("Error in obtaining the parameters\n");
     }
 
-     /* Register the start time */  
+     /* Register the start time */
     dwStartTime = GetTickCount();
     testStats.relationId = 0;
     testStats.relationId   = RELATION_ID;
@@ -140,7 +140,7 @@ PALTEST(composite_wfmo_paltest_composite_wfmo, "composite/wfmo/paltest_composite
     _snprintf(fileName, MAX_PATH, "main_wfmo_%d_.txt",testStats.relationId);
     pFile = fopen(fileName, "w+");
     if(pFile == NULL)
-    { 
+    {
         Fail("Error in opening main file for write\n");
     }
 
@@ -150,16 +150,16 @@ PALTEST(composite_wfmo_paltest_composite_wfmo, "composite/wfmo/paltest_composite
         ZeroMemory( lpCommandLine, MAX_PATH );
         if ( _snprintf( lpCommandLine, MAX_PATH-1, "mutex %d %d %d %d %d", i, THREAD_COUNT, REPEAT_COUNT, SLEEP_LENGTH, RELATION_ID) < 0 )
         {
-            Trace ("Error: Insufficient commandline string length for for iteration [%d]\n", i);
+            Trace ("Error: Insufficient commandline string length for iteration [%d]\n", i);
         }
-        
+
         /* Zero the data structure space */
         ZeroMemory ( &pi[i], sizeof(pi[i]) );
         ZeroMemory ( &si[i], sizeof(si[i]) );
 
         /* Set the process flags and standard io handles */
         si[i].cb = sizeof(si[i]);
-        
+
         //Create Process
         if(!CreateProcess( NULL, /* lpApplicationName*/
                           lpCommandLine, /* lpCommandLine */
@@ -183,26 +183,26 @@ PALTEST(composite_wfmo_paltest_composite_wfmo, "composite/wfmo/paltest_composite
 
     }
 
-    returnCode = WaitForMultipleObjects( PROCESS_COUNT, hProcess, TRUE, INFINITE);  
+    returnCode = WaitForMultipleObjects( PROCESS_COUNT, hProcess, TRUE, INFINITE);
     if( WAIT_OBJECT_0 != returnCode )
     {
         Trace("Wait for Object(s) @ Main thread for %d processes returned %d, and GetLastError value is %d\n", PROCESS_COUNT, returnCode, GetLastError());
     }
-    
+
     for( i = 0; i < PROCESS_COUNT; i++ )
     {
         /* check the exit code from the process */
         if( ! GetExitCodeProcess( pi[i].hProcess, &processReturnCode ) )
         {
-            Trace( "GetExitCodeProcess call failed for iteration %d with error code %u\n", 
-                i, GetLastError() ); 
-           
+            Trace( "GetExitCodeProcess call failed for iteration %d with error code %u\n",
+                i, GetLastError() );
+
             testReturnCode = FAIL;
         }
 
         if(processReturnCode == FAIL)
         {
-            Trace( "Process [%d] failed and returned FAIL\n", i); 
+            Trace( "Process [%d] failed and returned FAIL\n", i);
             testReturnCode = FAIL;
         }
 
@@ -217,14 +217,14 @@ PALTEST(composite_wfmo_paltest_composite_wfmo, "composite/wfmo/paltest_composite
         }
     }
 
-    testStats.operationTime = GetTimeDiff(dwStartTime); 
+    testStats.operationTime = GetTimeDiff(dwStartTime);
     fprintf(pFile, "%d,%d,%d,%d,%d,%s\n", testStats.operationTime, testStats.relationId, testStats.processCount, testStats.threadCount, testStats.repeatCount, testStats.buildNumber);
     if(fclose(pFile))
     {
         Trace("Error: fclose failed for pFile\n");
         testReturnCode = FAIL;
     }
-    
+
     if( testReturnCode == PASS)
     {
         Trace("Test Passed\n");

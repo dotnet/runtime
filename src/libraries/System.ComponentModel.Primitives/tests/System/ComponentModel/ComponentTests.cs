@@ -218,7 +218,7 @@ namespace System.ComponentModel.Tests
             Assert.Equal(0, callCount);
         }
 
-        [Fact]
+        [ConditionalFact(typeof(PlatformDetection), nameof(PlatformDetection.IsInvokingFinalizersSupported))]
         public void Finalize_Invoke_DoesNotCallDisposedEvent()
         {
             var component = new SubComponent();

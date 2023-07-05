@@ -9,7 +9,7 @@ namespace System.Security.Cryptography
 {
     public sealed partial class AesCcm
     {
-        private byte[] _key;
+        private byte[]? _key;
 
         public static bool IsSupported { get; } = Interop.OpenSslNoInit.OpenSslIsAvailable;
 
@@ -18,7 +18,9 @@ namespace System.Security.Cryptography
         {
             // OpenSSL does not allow setting nonce length after setting the key
             // we need to store it as bytes instead
-            _key = key.ToArray();
+            // Pin the array on the POH so that the GC doesn't move it around to allow zeroing to be more effective.
+            _key = GC.AllocateArray<byte>(key.Length, pinned: true);
+            key.CopyTo(_key);
         }
 
         private void EncryptCore(
@@ -28,6 +30,8 @@ namespace System.Security.Cryptography
             Span<byte> tag,
             ReadOnlySpan<byte> associatedData = default)
         {
+            CheckDisposed();
+
             using (SafeEvpCipherCtxHandle ctx = Interop.Crypto.EvpCipherCreatePartial(GetCipher(_key.Length * 8)))
             {
                 Interop.Crypto.CheckValidOpenSslHandle(ctx);
@@ -82,6 +86,8 @@ namespace System.Security.Cryptography
             Span<byte> plaintext,
             ReadOnlySpan<byte> associatedData)
         {
+            CheckDisposed();
+
             using (SafeEvpCipherCtxHandle ctx = Interop.Crypto.EvpCipherCreatePartial(GetCipher(_key.Length * 8)))
             {
                 Interop.Crypto.CheckValidOpenSslHandle(ctx);
@@ -104,7 +110,7 @@ namespace System.Security.Cryptography
                 if (!Interop.Crypto.EvpCipherUpdate(ctx, plaintext, out int plaintextBytesWritten, ciphertext))
                 {
                     plaintext.Clear();
-                    throw new CryptographicException(SR.Cryptography_AuthTagMismatch);
+                    throw new AuthenticationTagMismatchException();
                 }
 
                 if (plaintextBytesWritten != plaintext.Length)
@@ -134,6 +140,13 @@ namespace System.Security.Cryptography
         public void Dispose()
         {
             CryptographicOperations.ZeroMemory(_key);
+            _key = null;
+        }
+
+        [MemberNotNull(nameof(_key))]
+        private void CheckDisposed()
+        {
+            ObjectDisposedException.ThrowIf(_key is null, this);
         }
     }
 }

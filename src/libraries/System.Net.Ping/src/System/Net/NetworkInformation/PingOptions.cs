@@ -15,10 +15,7 @@ namespace System.Net.NetworkInformation
 
         public PingOptions(int ttl, bool dontFragment)
         {
-            if (ttl <= 0)
-            {
-                throw new ArgumentOutOfRangeException(nameof(ttl));
-            }
+            ArgumentOutOfRangeException.ThrowIfNegativeOrZero(ttl);
 
             _ttl = ttl;
             _dontFragment = dontFragment;
@@ -32,10 +29,7 @@ namespace System.Net.NetworkInformation
             }
             set
             {
-                if (value <= 0)
-                {
-                    throw new ArgumentOutOfRangeException(nameof(value));
-                }
+                ArgumentOutOfRangeException.ThrowIfNegativeOrZero(value);
 
                 // Useful to discover routes.
                 _ttl = value;

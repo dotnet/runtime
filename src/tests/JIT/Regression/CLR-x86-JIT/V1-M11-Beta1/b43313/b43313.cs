@@ -2,11 +2,12 @@
 // The .NET Foundation licenses this file to you under the MIT license.
 //
 
+using Xunit;
 namespace Test
 {
     using System;
 
-    struct AA
+    public struct AA
     {
         static float[] m_afStatic1;
 
@@ -44,7 +45,8 @@ namespace Test
             }
             catch (NullReferenceException) { }
         }
-        static int Main()
+        [Fact]
+        public static int TestEntryPoint()
         {
             try
             {

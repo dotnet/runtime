@@ -24,32 +24,29 @@ private:
     // Indicates whether optimization tiers should be shown for methods in perf maps
     static bool s_ShowOptimizationTiers;
 
+    // Set to true if an error is encountered when writing to the file.
+    static unsigned s_StubsMapped;
+
+    static CrstStatic s_csPerfMap;
+
     // The file stream to write the map to.
     CFileStream * m_FileStream;
 
     // The perfinfo file to log images to.
-    PerfInfo* m_PerfInfo;
+    PerfInfo * m_PerfInfo;
 
     // Set to true if an error is encountered when writing to the file.
     bool m_ErrorEncountered;
 
-    // Set to true if an error is encountered when writing to the file.
-    unsigned m_StubsMapped;
-
     // Construct a new map for the specified pid.
-    PerfMap(int pid);
+    PerfMap();
+
+    void OpenFileForPid(int pid);
 
     // Write a line to the map file.
     void WriteLine(SString & line);
 
 protected:
-    // Construct a new map without a specified file name.
-    // Used for offline creation of NGEN map files.
-    PerfMap();
-
-    // Clean-up resources.
-    ~PerfMap();
-
     // Open the perf map file for write.
     void OpenFile(SString& path);
 
@@ -60,16 +57,35 @@ protected:
     void LogImage(PEAssembly * pPEAssembly);
 
     // Get the image signature and store it as a string.
-    static void GetNativeImageSignature(PEAssembly * pPEAssembly, WCHAR * pwszSig, unsigned int nSigSize);
+    static void GetNativeImageSignature(PEAssembly * pPEAssembly, CHAR * pszSig, unsigned int nSigSize);
 
 public:
+    // Clean-up resources.
+    ~PerfMap();
+
+    enum class PerfMapType
+    {
+        DISABLED = 0,
+        ALL      = 1,
+        JITDUMP  = 2,
+        PERFMAP  = 3
+    };
+
+    static bool IsEnabled()
+    {
+        LIMITED_METHOD_CONTRACT;
+
+        return s_enabled;
+    }
+
     // Initialize the map for the current process.
     static void Initialize();
+
+    static void Enable(PerfMapType type, bool sendExisting);
 
     // Log a native image load to the map.
     static void LogImageLoad(PEAssembly * pPEAssembly);
 
-    // Log a JIT compiled method to the map.
     static void LogJITCompiledMethod(MethodDesc * pMethod, PCODE pCode, size_t codeSize, PrepareCodeConfig *pConfig);
 
     // Log a pre-compiled method to the map.
@@ -79,27 +95,6 @@ public:
     static void LogStubs(const char* stubType, const char* stubOwner, PCODE pCode, size_t codeSize);
 
     // Close the map and flush any remaining data.
-    static void Destroy();
+    static void Disable();
 };
-
-// Generates a perfmap file for a native image by running crossgen.
-class NativeImagePerfMap : PerfMap
-{
-private:
-    const WCHAR *strOFFSET = W("OFFSET");
-
-    // Specify the address format since it's now possible for 'perf script' to output file offsets or RVAs.
-    bool m_EmitRVAs;
-
-    // Log a pre-compiled method to the map.
-    void LogPreCompiledMethod(MethodDesc * pMethod, PCODE pCode, PEImageLayout *pLoadedLayout, const char *optimizationTier);
-
-public:
-    // Construct a new map for a native image.
-    NativeImagePerfMap(Assembly * pAssembly, BSTR pDestPath);
-
-    // Log method information for each module.
-    void LogDataForModule(Module * pModule);
-};
-
 #endif // PERFPID_H

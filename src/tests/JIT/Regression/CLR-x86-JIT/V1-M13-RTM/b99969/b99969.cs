@@ -3,8 +3,9 @@
 
 using System;
 using System.Threading;
+using Xunit;
 
-internal class Test_b99969
+public class Test_b99969
 {
     public int i;
     private volatile bool _bSpoof = false;
@@ -55,7 +56,8 @@ internal class Test_b99969
         return result;
     }
 
-    private static int Main()
+    [Fact]
+    public static int TestEntryPoint()
     {
         Test_b99969 t = new Test_b99969();
 

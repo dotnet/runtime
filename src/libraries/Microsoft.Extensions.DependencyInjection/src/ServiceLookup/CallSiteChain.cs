@@ -3,7 +3,6 @@
 
 using System;
 using System.Collections.Generic;
-using System.Linq;
 using System.Text;
 using Microsoft.Extensions.Internal;
 
@@ -62,9 +61,10 @@ namespace Microsoft.Extensions.DependencyInjection.ServiceLookup
                 }
                 else
                 {
-                    builder.AppendFormat("{0}({1})",
-                        TypeNameHelper.GetTypeDisplayName(serviceType),
-                        TypeNameHelper.GetTypeDisplayName(implementationType));
+                    builder.Append(TypeNameHelper.GetTypeDisplayName(serviceType))
+                           .Append('(')
+                           .Append(TypeNameHelper.GetTypeDisplayName(implementationType))
+                           .Append(')');
                 }
 
                 builder.Append(" -> ");

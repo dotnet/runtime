@@ -25,8 +25,10 @@ namespace System.DirectoryServices.ActiveDirectory
             _cachedEntry = entry;
         }
 
-        public static ActiveDirectoryInterSiteTransport FindByTransportType(DirectoryContext context!!, ActiveDirectoryTransportType transport)
+        public static ActiveDirectoryInterSiteTransport FindByTransportType(DirectoryContext context, ActiveDirectoryTransportType transport)
         {
+            ArgumentNullException.ThrowIfNull(context);
+
             // if target is not specified, then we determin the target from the logon credential, so if it is a local user context, it should fail
             if ((context.Name == null) && (!context.isRootDomain()))
             {
@@ -72,7 +74,7 @@ namespace System.DirectoryServices.ActiveDirectory
 
             try
             {
-                de.RefreshCache(new string[] { "options" });
+                de.RefreshCache(s_options);
             }
             catch (COMException e)
             {
@@ -221,7 +223,7 @@ namespace System.DirectoryServices.ActiveDirectory
 
                     ADSearcher adSearcher = new ADSearcher(_cachedEntry,
                                                              "(&(objectClass=siteLink)(objectCategory=SiteLink))",
-                                                             new string[] { "cn" },
+                                                             s_cn,
                                                              SearchScope.OneLevel);
                     SearchResultCollection? results = null;
 
@@ -269,7 +271,7 @@ namespace System.DirectoryServices.ActiveDirectory
 
                     ADSearcher adSearcher = new ADSearcher(_cachedEntry,
                                                              "(&(objectClass=siteLinkBridge)(objectCategory=SiteLinkBridge))",
-                                                             new string[] { "cn" },
+                                                             s_cn,
                                                              SearchScope.OneLevel);
                     SearchResultCollection? results = null;
 
@@ -304,6 +306,9 @@ namespace System.DirectoryServices.ActiveDirectory
                 return _bridgeCollection;
             }
         }
+
+        private static readonly string[] s_options = new string[] { "options" };
+        private static readonly string[] s_cn = new string[] { "cn" };
 
         public void Save()
         {
@@ -347,8 +352,7 @@ namespace System.DirectoryServices.ActiveDirectory
             if (disposing)
             {
                 // free other state (managed objects)
-                if (_cachedEntry != null)
-                    _cachedEntry.Dispose();
+                _cachedEntry?.Dispose();
             }
 
             // free your own state (unmanaged objects)

@@ -112,23 +112,14 @@ namespace System.Net.WebSockets
 
         public static ArraySegment<byte> CreateClientBuffer(int receiveBufferSize, int sendBufferSize)
         {
-            if (receiveBufferSize <= 0)
-            {
-                throw new ArgumentOutOfRangeException(nameof(receiveBufferSize), receiveBufferSize, SR.Format(SR.net_WebSockets_ArgumentOutOfRange_TooSmall, 1));
-            }
-            if (sendBufferSize <= 0)
-            {
-                throw new ArgumentOutOfRangeException(nameof(sendBufferSize), sendBufferSize, SR.Format(SR.net_WebSockets_ArgumentOutOfRange_TooSmall, 1));
-            }
+            ArgumentOutOfRangeException.ThrowIfNegativeOrZero(receiveBufferSize);
+            ArgumentOutOfRangeException.ThrowIfNegativeOrZero(sendBufferSize);
             return new ArraySegment<byte>(new byte[Math.Max(receiveBufferSize, sendBufferSize)]);
         }
 
         public static ArraySegment<byte> CreateServerBuffer(int receiveBufferSize)
         {
-            if (receiveBufferSize <= 0)
-            {
-                throw new ArgumentOutOfRangeException(nameof(receiveBufferSize), receiveBufferSize, SR.Format(SR.net_WebSockets_ArgumentOutOfRange_TooSmall, 1));
-            }
+            ArgumentOutOfRangeException.ThrowIfNegativeOrZero(receiveBufferSize);
             return new ArraySegment<byte>(new byte[receiveBufferSize]);
         }
 
@@ -138,8 +129,10 @@ namespace System.Net.WebSockets
         /// <param name="subProtocol">The agreed upon sub-protocol that was used when creating the connection.</param>
         /// <param name="keepAliveInterval">The keep-alive interval to use, or <see cref="Timeout.InfiniteTimeSpan"/> to disable keep-alives.</param>
         /// <returns>The created <see cref="WebSocket"/>.</returns>
-        public static WebSocket CreateFromStream(Stream stream!!, bool isServer, string? subProtocol, TimeSpan keepAliveInterval)
+        public static WebSocket CreateFromStream(Stream stream, bool isServer, string? subProtocol, TimeSpan keepAliveInterval)
         {
+            ArgumentNullException.ThrowIfNull(stream);
+
             if (!stream.CanRead || !stream.CanWrite)
             {
                 throw new ArgumentException(!stream.CanRead ? SR.NotReadableStream : SR.NotWriteableStream, nameof(stream));
@@ -163,8 +156,11 @@ namespace System.Net.WebSockets
         /// <summary>Creates a <see cref="WebSocket"/> that operates on a <see cref="Stream"/> representing a web socket connection.</summary>
         /// <param name="stream">The <see cref="Stream"/> for the connection.</param>
         /// <param name="options">The options with which the websocket must be created.</param>
-        public static WebSocket CreateFromStream(Stream stream!!, WebSocketCreationOptions options!!)
+        public static WebSocket CreateFromStream(Stream stream, WebSocketCreationOptions options)
         {
+            ArgumentNullException.ThrowIfNull(stream);
+            ArgumentNullException.ThrowIfNull(options);
+
             if (!stream.CanRead || !stream.CanWrite)
                 throw new ArgumentException(!stream.CanRead ? SR.NotReadableStream : SR.NotWriteableStream, nameof(stream));
 
@@ -185,10 +181,12 @@ namespace System.Net.WebSockets
         }
 
         [EditorBrowsable(EditorBrowsableState.Never)]
-        public static WebSocket CreateClientWebSocket(Stream innerStream!!,
+        public static WebSocket CreateClientWebSocket(Stream innerStream,
             string? subProtocol, int receiveBufferSize, int sendBufferSize,
             TimeSpan keepAliveInterval, bool useZeroMaskingKey, ArraySegment<byte> internalBuffer)
         {
+            ArgumentNullException.ThrowIfNull(innerStream);
+
             if (!innerStream.CanRead || !innerStream.CanWrite)
             {
                 throw new ArgumentException(!innerStream.CanRead ? SR.NotReadableStream : SR.NotWriteableStream, nameof(innerStream));
@@ -206,13 +204,8 @@ namespace System.Net.WebSockets
                     0));
             }
 
-            if (receiveBufferSize <= 0 || sendBufferSize <= 0)
-            {
-                throw new ArgumentOutOfRangeException(
-                    receiveBufferSize <= 0 ? nameof(receiveBufferSize) : nameof(sendBufferSize),
-                    receiveBufferSize <= 0 ? receiveBufferSize : sendBufferSize,
-                    SR.Format(SR.net_WebSockets_ArgumentOutOfRange_TooSmall, 0));
-            }
+            ArgumentOutOfRangeException.ThrowIfNegativeOrZero(receiveBufferSize);
+            ArgumentOutOfRangeException.ThrowIfNegativeOrZero(sendBufferSize);
 
             // Ignore useZeroMaskingKey. ManagedWebSocket doesn't currently support that debugging option.
             // Ignore internalBuffer. ManagedWebSocket uses its own small buffer for headers/control messages.

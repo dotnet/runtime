@@ -5,7 +5,6 @@ using System.Runtime.CompilerServices;
 
 namespace System.Collections.Generic
 {
-    [TypeDependency("System.Collections.Generic.ObjectComparer`1")]
     public abstract partial class Comparer<T> : IComparer, IComparer<T>
     {
         // To minimize generic instantiation overhead of creating the comparer per type, we keep the generic portion of the code as small
@@ -17,7 +16,7 @@ namespace System.Collections.Generic
     {
         public override int Compare(T x, T y)
         {
-            return System.Runtime.CompilerServices.RuntimeHelpers.EnumCompareTo(x, y);
+            return RuntimeHelpers.EnumCompareTo(x, y);
         }
     }
 }

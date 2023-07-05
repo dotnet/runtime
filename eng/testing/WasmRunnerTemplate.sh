@@ -4,6 +4,8 @@
 [[SetCommands]]
 [[SetCommandsEcho]]
 
+export PATH="$HOME/.jsvu/bin:$PATH"
+
 EXECUTION_DIR=$(dirname $0)
 if [[ -n "$3" ]]; then
 	SCENARIO=$3
@@ -33,7 +35,7 @@ fi
 
 if [[ "$XHARNESS_COMMAND" == "test" ]]; then
 	if [[ -z "$JS_ENGINE" ]]; then
-		if [[ "$SCENARIO" == "WasmTestOnNodeJs" || "$SCENARIO" == "wasmtestonnodejs" ]]; then
+		if [[ "$SCENARIO" == "WasmTestOnNodeJS" || "$SCENARIO" == "wasmtestonnodejs" ]]; then
 			JS_ENGINE="--engine=NodeJS"
 		else
 			JS_ENGINE="--engine=V8"
@@ -46,6 +48,12 @@ if [[ "$XHARNESS_COMMAND" == "test" ]]; then
 
 	if [[ -z "$JS_ENGINE_ARGS" ]]; then
 		JS_ENGINE_ARGS="--engine-arg=--stack-trace-limit=1000"
+		if [[ "$SCENARIO" != "WasmTestOnNodeJS" && "$SCENARIO" != "wasmtestonnodejs" ]]; then
+			JS_ENGINE_ARGS="$JS_ENGINE_ARGS --engine-arg=--module"
+		fi
+		if [[ "$SCENARIO" == "WasmTestOnNodeJS" || "$SCENARIO" == "wasmtestonnodejs" ]]; then
+			JS_ENGINE_ARGS="$JS_ENGINE_ARGS --engine-arg=--experimental-wasm-eh"
+		fi
 	fi
 fi
 
@@ -53,10 +61,15 @@ if [[ -z "$XHARNESS_ARGS" ]]; then
 	XHARNESS_ARGS="$JS_ENGINE $JS_ENGINE_ARGS $MAIN_JS"
 fi
 
+if [[ -n "$PREPEND_PATH" ]]; then
+    export PATH=$PREPEND_PATH:$PATH
+fi
+
 if [[ -n "$XUNIT_RANDOM_ORDER_SEED" ]]; then
     WasmXHarnessMonoArgs="${WasmXHarnessMonoArgs} --setenv=XUNIT_RANDOM_ORDER_SEED=${XUNIT_RANDOM_ORDER_SEED}"
 fi
 
+echo PATH=$PATH
 echo EXECUTION_DIR=$EXECUTION_DIR
 echo SCENARIO=$SCENARIO
 echo XHARNESS_OUT=$XHARNESS_OUT

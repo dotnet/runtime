@@ -76,7 +76,7 @@ test_fast_serializer_object_fast_serialize (void)
 
 	test_location = 2;
 
-	provider = ep_create_provider (TEST_PROVIDER_NAME, NULL, NULL, NULL);
+	provider = ep_create_provider (TEST_PROVIDER_NAME, NULL, NULL);
 	ep_raise_error_if_nok (provider != NULL);
 
 	test_location = 3;

@@ -147,6 +147,10 @@ namespace System.Linq
         public static System.Linq.IOrderedEnumerable<TSource> OrderByDescending<TSource, TKey>(this System.Collections.Generic.IEnumerable<TSource> source, System.Func<TSource, TKey> keySelector, System.Collections.Generic.IComparer<TKey>? comparer) { throw null; }
         public static System.Linq.IOrderedEnumerable<TSource> OrderBy<TSource, TKey>(this System.Collections.Generic.IEnumerable<TSource> source, System.Func<TSource, TKey> keySelector) { throw null; }
         public static System.Linq.IOrderedEnumerable<TSource> OrderBy<TSource, TKey>(this System.Collections.Generic.IEnumerable<TSource> source, System.Func<TSource, TKey> keySelector, System.Collections.Generic.IComparer<TKey>? comparer) { throw null; }
+        public static System.Linq.IOrderedEnumerable<T> OrderDescending<T>(this System.Collections.Generic.IEnumerable<T> source) { throw null; }
+        public static System.Linq.IOrderedEnumerable<T> OrderDescending<T>(this System.Collections.Generic.IEnumerable<T> source, System.Collections.Generic.IComparer<T>? comparer) { throw null; }
+        public static System.Linq.IOrderedEnumerable<T> Order<T>(this System.Collections.Generic.IEnumerable<T> source) { throw null; }
+        public static System.Linq.IOrderedEnumerable<T> Order<T>(this System.Collections.Generic.IEnumerable<T> source, System.Collections.Generic.IComparer<T>? comparer) { throw null; }
         public static System.Collections.Generic.IEnumerable<TSource> Prepend<TSource>(this System.Collections.Generic.IEnumerable<TSource> source, TSource element) { throw null; }
         public static System.Collections.Generic.IEnumerable<int> Range(int start, int count) { throw null; }
         public static System.Collections.Generic.IEnumerable<TResult> Repeat<TResult>(TResult element, int count) { throw null; }
@@ -199,6 +203,10 @@ namespace System.Linq
         public static System.Linq.IOrderedEnumerable<TSource> ThenBy<TSource, TKey>(this System.Linq.IOrderedEnumerable<TSource> source, System.Func<TSource, TKey> keySelector) { throw null; }
         public static System.Linq.IOrderedEnumerable<TSource> ThenBy<TSource, TKey>(this System.Linq.IOrderedEnumerable<TSource> source, System.Func<TSource, TKey> keySelector, System.Collections.Generic.IComparer<TKey>? comparer) { throw null; }
         public static TSource[] ToArray<TSource>(this System.Collections.Generic.IEnumerable<TSource> source) { throw null; }
+        public static System.Collections.Generic.Dictionary<TKey, TValue> ToDictionary<TKey, TValue>(this System.Collections.Generic.IEnumerable<System.Collections.Generic.KeyValuePair<TKey, TValue>> source) where TKey : notnull { throw null; }
+        public static System.Collections.Generic.Dictionary<TKey, TValue> ToDictionary<TKey, TValue>(this System.Collections.Generic.IEnumerable<System.Collections.Generic.KeyValuePair<TKey, TValue>> source, System.Collections.Generic.IEqualityComparer<TKey>? comparer) where TKey : notnull { throw null; }
+        public static System.Collections.Generic.Dictionary<TKey, TValue> ToDictionary<TKey, TValue>(this System.Collections.Generic.IEnumerable<(TKey Key, TValue Value)> source) where TKey : notnull { throw null; }
+        public static System.Collections.Generic.Dictionary<TKey, TValue> ToDictionary<TKey, TValue>(this System.Collections.Generic.IEnumerable<(TKey Key, TValue Value)> source, System.Collections.Generic.IEqualityComparer<TKey>? comparer) where TKey : notnull { throw null; }
         public static System.Collections.Generic.Dictionary<TKey, TSource> ToDictionary<TSource, TKey>(this System.Collections.Generic.IEnumerable<TSource> source, System.Func<TSource, TKey> keySelector) where TKey : notnull { throw null; }
         public static System.Collections.Generic.Dictionary<TKey, TSource> ToDictionary<TSource, TKey>(this System.Collections.Generic.IEnumerable<TSource> source, System.Func<TSource, TKey> keySelector, System.Collections.Generic.IEqualityComparer<TKey>? comparer) where TKey : notnull { throw null; }
         public static System.Collections.Generic.Dictionary<TKey, TElement> ToDictionary<TSource, TKey, TElement>(this System.Collections.Generic.IEnumerable<TSource> source, System.Func<TSource, TKey> keySelector, System.Func<TSource, TElement> elementSelector) where TKey : notnull { throw null; }

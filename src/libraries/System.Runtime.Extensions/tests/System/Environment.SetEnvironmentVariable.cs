@@ -16,9 +16,9 @@ namespace System.Tests
 
         internal static bool IsSupportedTarget(EnvironmentVariableTarget target)
         {
-            // [ActiveIssue("https://github.com/dotnet/runtime/issues/30566")]
             if (target == EnvironmentVariableTarget.User && PlatformDetection.IsWindowsNanoServer)
             {
+                // Windows Nano Server does not have full per-user registry hives
                 return false;
             }
 
@@ -160,7 +160,7 @@ namespace System.Tests
                 shouldCleanUp = false;
                 Assert.True(target == EnvironmentVariableTarget.Machine, "only machine target should have access issues");
                 Assert.True(PlatformDetection.IsWindows, "and it should be Windows");
-                Assert.False(PlatformDetection.IsWindowsAndElevated, "and we shouldn't be elevated");
+                Assert.False(PlatformDetection.IsPrivilegedProcess, "and we shouldn't be elevated");
             }
             finally
             {

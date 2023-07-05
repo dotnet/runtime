@@ -2,6 +2,7 @@
 // The .NET Foundation licenses this file to you under the MIT license.
 //
 
+using Xunit;
 /*
 JE1 JR1 C(null) I1 S(null) G0
 ..\regalloc.cpp, Line 8037 : Assertion failed 'passes <= 4' in 'DefaultNamespace.Obj.Static3():ref'
@@ -15,7 +16,7 @@ namespace Test
 {
     using System;
 
-    class Obj
+    public class Obj
     {
         public const int DefaultSeed = 20010415;
         public static int Seed = Environment.GetEnvironmentVariable("CORECLR_SEED") switch
@@ -66,7 +67,8 @@ namespace Test
             return new float[4];
         }
 
-        static int Main()
+        [Fact]
+        public static int TestEntryPoint()
         {
             try
             {

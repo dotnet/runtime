@@ -6,13 +6,17 @@ using System.Diagnostics;
 
 namespace System.Runtime.Serialization
 {
+    [Obsolete(Obsoletions.LegacyFormatterMessage, DiagnosticId = Obsoletions.LegacyFormatterDiagId, UrlFormat = Obsoletions.SharedUrlFormat)]
     public class SurrogateSelector : ISurrogateSelector
     {
         internal readonly SurrogateHashtable _surrogates = new SurrogateHashtable(32);
         internal ISurrogateSelector? _nextSelector;
 
-        public virtual void AddSurrogate(Type type!!, StreamingContext context, ISerializationSurrogate surrogate!!)
+        public virtual void AddSurrogate(Type type, StreamingContext context, ISerializationSurrogate surrogate)
         {
+            ArgumentNullException.ThrowIfNull(type);
+            ArgumentNullException.ThrowIfNull(surrogate);
+
             var key = new SurrogateKey(type, context);
             _surrogates.Add(key, surrogate); // Hashtable does duplicate checking.
         }
@@ -47,8 +51,10 @@ namespace System.Runtime.Serialization
 
         // Adds another selector to check if we don't have  match within this selector.
         // The logic is:"Add this onto the list as the first thing that you check after yourself."
-        public virtual void ChainSelector(ISurrogateSelector selector!!)
+        public virtual void ChainSelector(ISurrogateSelector selector)
         {
+            ArgumentNullException.ThrowIfNull(selector);
+
             // Verify that we don't try and add ourself twice.
             if (selector == this)
             {
@@ -136,8 +142,10 @@ namespace System.Runtime.Serialization
 
         // Gets the surrogate for a particular type.  If this selector can't
         // provide a surrogate, it checks with all of it's children before returning null.
-        public virtual ISerializationSurrogate? GetSurrogate(Type type!!, StreamingContext context, out ISurrogateSelector selector)
+        public virtual ISerializationSurrogate? GetSurrogate(Type type, StreamingContext context, out ISurrogateSelector selector)
         {
+            ArgumentNullException.ThrowIfNull(type);
+
             selector = this;
 
             SurrogateKey key = new SurrogateKey(type, context);
@@ -155,8 +163,10 @@ namespace System.Runtime.Serialization
 
         // Removes the surrogate associated with a given type.  Does not
         // check chained surrogates.
-        public virtual void RemoveSurrogate(Type type!!, StreamingContext context)
+        public virtual void RemoveSurrogate(Type type, StreamingContext context)
         {
+            ArgumentNullException.ThrowIfNull(type);
+
             SurrogateKey key = new SurrogateKey(type, context);
             _surrogates.Remove(key);
         }

@@ -34,14 +34,20 @@ namespace System
 
         public static unsafe bool IsProcessElevated()
         {
+            // Browser does not have the concept of an elevated process
+            if (RuntimeInformation.IsOSPlatform(OSPlatform.Create("BROWSER")))
+            {
+                return false;
+            }
+
             if (!RuntimeInformation.IsOSPlatform(OSPlatform.Windows))
             {
                 uint userId = Interop.Sys.GetEUid();
                 return(userId == 0);
             }
 
-            SafeAccessTokenHandle token;
-            if (!Interop.Advapi32.OpenProcessToken(Interop.Kernel32.GetCurrentProcess(), TokenAccessLevels.Read, out token))
+            SafeTokenHandle token;
+            if (!Interop.Advapi32.OpenProcessToken(Interop.Kernel32.GetCurrentProcess(), (int)TokenAccessLevels.Read, out token))
             {
                 throw new Win32Exception(Marshal.GetLastWin32Error(), "Open process token failed");
             }

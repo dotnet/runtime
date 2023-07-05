@@ -1,14 +1,17 @@
 <Project Sdk="Microsoft.NET.Sdk">
   <PropertyGroup>
-    <OutputType>Exe</OutputType>
     <AllowUnsafeBlocks>true</AllowUnsafeBlocks>
+    <HWITestsXarchOnly>true</HWITestsXarchOnly>
+    <!-- https://github.com/dotnet/runtime/issues/57352 -->
+    <MonoAotIncompatible>true</MonoAotIncompatible>
+    <RequiresProcessIsolation>true</RequiresProcessIsolation>
   </PropertyGroup>
   <PropertyGroup>
     <DebugType>Embedded</DebugType>
     <Optimize>True</Optimize>
   </PropertyGroup>
   <ItemGroup>
-    <Compile Include="*.cs" />
+    <Compile Include="Program.Vector256_1.cs" />
     <Compile Include="..\Shared\Program.cs" />
   </ItemGroup>
 </Project>

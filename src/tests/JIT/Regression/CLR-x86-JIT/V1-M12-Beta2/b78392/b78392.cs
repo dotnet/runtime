@@ -3,9 +3,11 @@
 //
 
 using System;
-class foo
+using Xunit;
+public class foo
 {
-    static int Main()
+    [Fact]
+    public static int TestEntryPoint()
     {
         byte[,] Param = new byte[2, 2];
         Param[0, 0] = 1;

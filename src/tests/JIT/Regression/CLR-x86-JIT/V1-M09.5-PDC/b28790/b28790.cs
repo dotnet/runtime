@@ -2,11 +2,12 @@
 // The .NET Foundation licenses this file to you under the MIT license.
 //
 
+using Xunit;
 namespace Test
 {
     using System;
 
-    class AA
+    public class AA
     {
         bool m_bField3 = false;
         static double[] m_auForward3;
@@ -39,7 +40,8 @@ namespace Test
             }
         }
 
-        static int Main()
+        [Fact]
+        public static int TestEntryPoint()
         {
             double[] arg = null;
             Static4(ref arg);

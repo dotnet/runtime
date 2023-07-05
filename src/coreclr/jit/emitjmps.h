@@ -46,6 +46,19 @@ JMP_SMALL(lt    , ge    , blt    )  // LT
 JMP_SMALL(gt    , le    , bgt    )  // GT
 JMP_SMALL(le    , gt    , ble    )  // LE
 
+#elif defined(TARGET_LOONGARCH64)
+
+// TODO-LOONGARCH64: adding other condition branches.
+JMP_SMALL(jmp   , jmp   , b      )
+JMP_SMALL(eq    , ne    , beq    )  // EQ
+JMP_SMALL(ne    , eq    , bne    )  // NE
+
+#elif defined(TARGET_RISCV64)
+// TODO-RISCV64: adding other condition branches
+JMP_SMALL(jmp   , jmp   , j      )
+JMP_SMALL(eq    , ne    , beq    )  // EQ
+JMP_SMALL(ne    , eq    , bne    )  // NE
+
 #else
   #error Unsupported or unset target architecture
 #endif // target type

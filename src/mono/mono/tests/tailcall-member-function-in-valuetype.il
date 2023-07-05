@@ -21,7 +21,7 @@ ValueType
 	[MethodImpl (NoInlining)]
 	static void check (long stack1, long stack2)
 	{
-// NOTE: This is wierd in order to be later hand edited (removed) in the IL.
+// NOTE: This is weird in order to be later hand edited (removed) in the IL.
 		if (stack1 != 0)
 			return;
 		if (stack1 == stack2)

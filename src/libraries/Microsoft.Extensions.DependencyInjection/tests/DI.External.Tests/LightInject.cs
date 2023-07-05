@@ -10,8 +10,6 @@ namespace Microsoft.Extensions.DependencyInjection.Specification
 {
     public class LightInjectDependencyInjectionSpecificationTests : SkippableDependencyInjectionSpecificationTests
     {
-        public override bool SupportsIServiceProviderIsService => false;
-
         public override string[] SkippedTests => new string[]
         {
             "NonSingletonService_WithInjectedProvider_ResolvesScopeProvider"

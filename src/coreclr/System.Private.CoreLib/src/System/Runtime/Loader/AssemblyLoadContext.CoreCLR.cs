@@ -54,7 +54,7 @@ namespace System.Runtime.Loader
         internal static partial bool TraceSatelliteSubdirectoryPathProbed(string filePath, int hResult);
 
         [RequiresUnreferencedCode("Types and members the loaded assembly depends on might be removed")]
-        private Assembly InternalLoadFromPath(string? assemblyPath, string? nativeImagePath)
+        private RuntimeAssembly InternalLoadFromPath(string? assemblyPath, string? nativeImagePath)
         {
             RuntimeAssembly? loadedAssembly = null;
             LoadFromPath(_nativeAssemblyLoadContext, assemblyPath, nativeImagePath, ObjectHandleOnStack.Create(ref loadedAssembly));
@@ -140,8 +140,10 @@ namespace System.Runtime.Loader
         private static partial IntPtr GetLoadContextForAssembly(QCallAssembly assembly);
 
         // Returns the load context in which the specified assembly has been loaded
-        public static AssemblyLoadContext? GetLoadContext(Assembly assembly!!)
+        public static AssemblyLoadContext? GetLoadContext(Assembly assembly)
         {
+            ArgumentNullException.ThrowIfNull(assembly);
+
             RuntimeAssembly? rtAsm = GetRuntimeAssembly(assembly);
 
             // We only support looking up load context for runtime assemblies.
@@ -154,7 +156,7 @@ namespace System.Runtime.Loader
                 {
                     // If the load context is returned null, then the assembly was bound using the TPA binder
                     // and we shall return reference to the "Default" binder.
-                    loadContextForAssembly = AssemblyLoadContext.Default;
+                    loadContextForAssembly = Default;
                 }
                 else
                 {
@@ -182,7 +184,7 @@ namespace System.Runtime.Loader
             return
                 asm == null ? null :
                 asm is RuntimeAssembly rtAssembly ? rtAssembly :
-                asm is System.Reflection.Emit.AssemblyBuilder ab ? ab.InternalAssembly :
+                asm is System.Reflection.Emit.RuntimeAssemblyBuilder ab ? ab.InternalAssembly :
                 null;
         }
 
@@ -215,7 +217,7 @@ namespace System.Runtime.Loader
         /// </summary>
         private static void InitializeDefaultContext()
         {
-            _ = AssemblyLoadContext.Default;
+            _ = Default;
         }
     }
 }

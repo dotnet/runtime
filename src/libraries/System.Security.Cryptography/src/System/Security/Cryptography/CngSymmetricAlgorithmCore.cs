@@ -27,8 +27,11 @@ namespace System.Security.Cryptography
         /// <summary>
         /// Constructs the core to use a stored CNG key.
         /// </summary>
-        public CngSymmetricAlgorithmCore(ICngSymmetricAlgorithm outer, string keyName!!, CngProvider provider!!, CngKeyOpenOptions openOptions)
+        public CngSymmetricAlgorithmCore(ICngSymmetricAlgorithm outer, string keyName, CngProvider provider, CngKeyOpenOptions openOptions)
         {
+            ArgumentNullException.ThrowIfNull(keyName);
+            ArgumentNullException.ThrowIfNull(provider);
+
             _outer = outer;
 
             _keyName = keyName;
@@ -83,13 +86,13 @@ namespace System.Security.Cryptography
 
         public void GenerateKey()
         {
-            byte[] key = Helpers.GenerateRandom(AsymmetricAlgorithmHelpers.BitsToBytes(_outer.BaseKeySize));
+            byte[] key = RandomNumberGenerator.GetBytes(AsymmetricAlgorithmHelpers.BitsToBytes(_outer.BaseKeySize));
             SetKey(key);
         }
 
         public void GenerateIV()
         {
-            byte[] iv = Helpers.GenerateRandom(AsymmetricAlgorithmHelpers.BitsToBytes(_outer.BlockSize));
+            byte[] iv = RandomNumberGenerator.GetBytes(AsymmetricAlgorithmHelpers.BitsToBytes(_outer.BlockSize));
             _outer.IV = iv;
         }
 
@@ -113,7 +116,7 @@ namespace System.Security.Cryptography
             return CreateCryptoTransform(rgbKey, rgbIV, encrypting: false, _outer.Padding, _outer.Mode, _outer.FeedbackSize);
         }
 
-        private ICryptoTransform CreateCryptoTransform(bool encrypting)
+        private UniversalCryptoTransform CreateCryptoTransform(bool encrypting)
         {
             if (KeyInPlainText)
             {
@@ -123,21 +126,20 @@ namespace System.Security.Cryptography
             return CreatePersistedCryptoTransformCore(ProduceCngKey, _outer.IV, encrypting, _outer.Padding, _outer.Mode, _outer.FeedbackSize);
         }
 
-        public ILiteSymmetricCipher CreateLiteSymmetricCipher(ReadOnlySpan<byte> iv, bool encrypting, PaddingMode padding, CipherMode mode, int feedbackSizeInBits)
+        public ILiteSymmetricCipher CreateLiteSymmetricCipher(ReadOnlySpan<byte> iv, bool encrypting, CipherMode mode, int feedbackSizeInBits)
         {
             if (KeyInPlainText)
             {
-                return CreateLiteSymmetricCipher(_outer.BaseKey, iv, encrypting, padding, mode, feedbackSizeInBits);
+                return CreateLiteSymmetricCipher(_outer.BaseKey, iv, encrypting, mode, feedbackSizeInBits);
             }
 
-            return CreatePersistedLiteSymmetricCipher(ProduceCngKey, iv, encrypting, padding, mode, feedbackSizeInBits);
+            return CreatePersistedLiteSymmetricCipher(ProduceCngKey, iv, encrypting, mode, feedbackSizeInBits);
         }
 
-        private ILiteSymmetricCipher CreateLiteSymmetricCipher(
+        private BasicSymmetricCipherLiteBCrypt CreateLiteSymmetricCipher(
             ReadOnlySpan<byte> key,
             ReadOnlySpan<byte> iv,
             bool encrypting,
-            PaddingMode padding,
             CipherMode mode,
             int feedbackSizeInBits)
         {
@@ -159,7 +161,6 @@ namespace System.Security.Cryptography
 
             return new BasicSymmetricCipherLiteBCrypt(
                 algorithmModeHandle,
-                mode,
                 blockSizeInBytes,
                 _outer.GetPaddingSize(mode, feedbackSizeInBits),
                 processedKey,
@@ -168,8 +169,10 @@ namespace System.Security.Cryptography
                 encrypting);
         }
 
-        private UniversalCryptoTransform CreateCryptoTransform(byte[] rgbKey!!, byte[]? rgbIV, bool encrypting, PaddingMode padding, CipherMode mode, int feedbackSizeInBits)
+        private UniversalCryptoTransform CreateCryptoTransform(byte[] rgbKey, byte[]? rgbIV, bool encrypting, PaddingMode padding, CipherMode mode, int feedbackSizeInBits)
         {
+            ArgumentNullException.ThrowIfNull(rgbKey);
+
             ValidateFeedbackSize(mode, feedbackSizeInBits);
             byte[] key = CopyAndValidateKey(rgbKey);
 
@@ -203,11 +206,10 @@ namespace System.Security.Cryptography
             return UniversalCryptoTransform.Create(padding, cipher, encrypting);
         }
 
-        private ILiteSymmetricCipher CreatePersistedLiteSymmetricCipher(
+        private BasicSymmetricCipherLiteNCrypt CreatePersistedLiteSymmetricCipher(
             Func<CngKey> cngKeyFactory,
             ReadOnlySpan<byte> iv,
             bool encrypting,
-            PaddingMode padding,
             CipherMode mode,
             int feedbackSizeInBits)
         {
@@ -263,14 +265,14 @@ namespace System.Security.Cryptography
             {
                 if (!_outer.IsValidEphemeralFeedbackSize(feedbackSizeInBits))
                 {
-                    throw new CryptographicException(string.Format(SR.Cryptography_CipherModeFeedbackNotSupported, feedbackSizeInBits, CipherMode.CFB));
+                    throw new CryptographicException(SR.Format(SR.Cryptography_CipherModeFeedbackNotSupported, feedbackSizeInBits, CipherMode.CFB));
                 }
             }
             else if (feedbackSizeInBits != 8)
             {
                 // Persisted CNG keys in CFB mode always use CFB8 when in CFB mode,
                 // so require the feedback size to be set to 8.
-                throw new CryptographicException(string.Format(SR.Cryptography_CipherModeFeedbackNotSupported, feedbackSizeInBits, CipherMode.CFB));
+                throw new CryptographicException(SR.Format(SR.Cryptography_CipherModeFeedbackNotSupported, feedbackSizeInBits, CipherMode.CFB));
             }
         }
 

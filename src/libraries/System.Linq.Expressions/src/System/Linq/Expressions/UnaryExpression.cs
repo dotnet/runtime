@@ -346,7 +346,7 @@ namespace System.Linq.Expressions
             UnaryExpression? u = GetUserDefinedUnaryOperator(unaryType, name, operand);
             if (u != null)
             {
-                ValidateParamswithOperandsOrThrow(u.Method!.GetParametersCached()[0].ParameterType, operand.Type, unaryType, name);
+                ValidateParamsWithOperandsOrThrow(u.Method!.GetParametersCached()[0].ParameterType, operand.Type, unaryType, name);
                 return u;
             }
             throw Error.UnaryOperatorNotDefined(unaryType, operand.Type);
@@ -386,7 +386,7 @@ namespace System.Linq.Expressions
                 throw Error.IncorrectNumberOfMethodCallArguments(method, nameof(method));
             if (ParameterIsAssignable(pms[0], operand.Type))
             {
-                ValidateParamswithOperandsOrThrow(pms[0].ParameterType, operand.Type, unaryType, method.Name);
+                ValidateParamsWithOperandsOrThrow(pms[0].ParameterType, operand.Type, unaryType, method.Name);
                 return new UnaryExpression(unaryType, operand, method.ReturnType, method);
             }
             // check for lifted call
@@ -690,7 +690,7 @@ namespace System.Linq.Expressions
         public static UnaryExpression TypeAs(Expression expression, Type type)
         {
             ExpressionUtils.RequiresCanRead(expression, nameof(expression));
-            ContractUtils.RequiresNotNull(type, nameof(type));
+            ArgumentNullException.ThrowIfNull(type);
             TypeUtils.ValidateType(type, nameof(type));
             if (type.IsValueType && !type.IsNullableType())
             {
@@ -709,7 +709,7 @@ namespace System.Linq.Expressions
         public static UnaryExpression Unbox(Expression expression, Type type)
         {
             ExpressionUtils.RequiresCanRead(expression, nameof(expression));
-            ContractUtils.RequiresNotNull(type, nameof(type));
+            ArgumentNullException.ThrowIfNull(type);
             if (!expression.Type.IsInterface && expression.Type != typeof(object))
             {
                 throw Error.InvalidUnboxType(nameof(expression));
@@ -745,7 +745,7 @@ namespace System.Linq.Expressions
         public static UnaryExpression Convert(Expression expression, Type type, MethodInfo? method)
         {
             ExpressionUtils.RequiresCanRead(expression, nameof(expression));
-            ContractUtils.RequiresNotNull(type, nameof(type));
+            ArgumentNullException.ThrowIfNull(type);
             TypeUtils.ValidateType(type, nameof(type));
             if (method == null)
             {
@@ -785,7 +785,7 @@ namespace System.Linq.Expressions
         public static UnaryExpression ConvertChecked(Expression expression, Type type, MethodInfo? method)
         {
             ExpressionUtils.RequiresCanRead(expression, nameof(expression));
-            ContractUtils.RequiresNotNull(type, nameof(type));
+            ArgumentNullException.ThrowIfNull(type);
             TypeUtils.ValidateType(type, nameof(type));
             if (method == null)
             {
@@ -879,7 +879,7 @@ namespace System.Linq.Expressions
         /// <returns>A <see cref="UnaryExpression"/> that represents the exception.</returns>
         public static UnaryExpression Throw(Expression? value, Type type)
         {
-            ContractUtils.RequiresNotNull(type, nameof(type));
+            ArgumentNullException.ThrowIfNull(type);
             TypeUtils.ValidateType(type, nameof(type));
             if (value != null)
             {

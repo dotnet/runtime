@@ -16,17 +16,11 @@ namespace System.Security.Cryptography
         /// <summary>
         ///     Computes the signature of a hash that was produced by the hash algorithm specified by "hashAlgorithm."
         /// </summary>
-        public override byte[] SignHash(byte[] hash!!)
+        public override byte[] SignHash(byte[] hash)
         {
-            int estimatedSize = KeySize switch
-            {
-                256 => 64,
-                384 => 96,
-                521 => 132,
-                // If we got here, the range of legal key sizes for ECDsaCng was expanded and someone didn't update this switch.
-                // Since it isn't a fatal error to miscalculate the estimatedSize, don't throw an exception. Just truck along.
-                _ => KeySize / 4,
-            };
+            ArgumentNullException.ThrowIfNull(hash);
+
+            int estimatedSize = GetMaxSignatureSize(DSASignatureFormat.IeeeP1363FixedFieldConcatenation);
 
             unsafe
             {
@@ -84,8 +78,11 @@ namespace System.Security.Cryptography
         /// <summary>
         ///     Verifies that alleged signature of a hash is, in fact, a valid signature of that hash.
         /// </summary>
-        public override bool VerifyHash(byte[] hash!!, byte[] signature!!)
+        public override bool VerifyHash(byte[] hash, byte[] signature)
         {
+            ArgumentNullException.ThrowIfNull(hash);
+            ArgumentNullException.ThrowIfNull(signature);
+
             return VerifyHashCore(hash, signature, DSASignatureFormat.IeeeP1363FixedFieldConcatenation);
         }
 

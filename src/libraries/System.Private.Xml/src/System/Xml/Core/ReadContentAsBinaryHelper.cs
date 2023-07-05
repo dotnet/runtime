@@ -60,21 +60,12 @@ namespace System.Xml
 
         // Internal methods
 
-        internal int ReadContentAsBase64(byte[] buffer!!, int index, int count)
+        internal int ReadContentAsBase64(byte[] buffer, int index, int count)
         {
-            // check arguments
-            if (count < 0)
-            {
-                throw new ArgumentOutOfRangeException(nameof(count));
-            }
-            if (index < 0)
-            {
-                throw new ArgumentOutOfRangeException(nameof(index));
-            }
-            if (buffer.Length - index < count)
-            {
-                throw new ArgumentOutOfRangeException(nameof(count));
-            }
+            ArgumentNullException.ThrowIfNull(buffer);
+            ArgumentOutOfRangeException.ThrowIfNegative(count);
+            ArgumentOutOfRangeException.ThrowIfNegative(index);
+            ArgumentOutOfRangeException.ThrowIfGreaterThan(count, buffer.Length - index);
 
             switch (_state)
             {
@@ -112,21 +103,12 @@ namespace System.Xml
             return ReadContentAsBinary(buffer, index, count);
         }
 
-        internal int ReadContentAsBinHex(byte[] buffer!!, int index, int count)
+        internal int ReadContentAsBinHex(byte[] buffer, int index, int count)
         {
-            // check arguments
-            if (count < 0)
-            {
-                throw new ArgumentOutOfRangeException(nameof(count));
-            }
-            if (index < 0)
-            {
-                throw new ArgumentOutOfRangeException(nameof(index));
-            }
-            if (buffer.Length - index < count)
-            {
-                throw new ArgumentOutOfRangeException(nameof(count));
-            }
+            ArgumentNullException.ThrowIfNull(buffer);
+            ArgumentOutOfRangeException.ThrowIfNegative(count);
+            ArgumentOutOfRangeException.ThrowIfNegative(index);
+            ArgumentOutOfRangeException.ThrowIfGreaterThan(count, buffer.Length - index);
 
             switch (_state)
             {
@@ -164,21 +146,12 @@ namespace System.Xml
             return ReadContentAsBinary(buffer, index, count);
         }
 
-        internal int ReadElementContentAsBase64(byte[] buffer!!, int index, int count)
+        internal int ReadElementContentAsBase64(byte[] buffer, int index, int count)
         {
-            // check arguments
-            if (count < 0)
-            {
-                throw new ArgumentOutOfRangeException(nameof(count));
-            }
-            if (index < 0)
-            {
-                throw new ArgumentOutOfRangeException(nameof(index));
-            }
-            if (buffer.Length - index < count)
-            {
-                throw new ArgumentOutOfRangeException(nameof(count));
-            }
+            ArgumentNullException.ThrowIfNull(buffer);
+            ArgumentOutOfRangeException.ThrowIfNegative(count);
+            ArgumentOutOfRangeException.ThrowIfNegative(index);
+            ArgumentOutOfRangeException.ThrowIfGreaterThan(count, buffer.Length - index);
 
             switch (_state)
             {
@@ -216,21 +189,12 @@ namespace System.Xml
             return ReadElementContentAsBinary(buffer, index, count);
         }
 
-        internal int ReadElementContentAsBinHex(byte[] buffer!!, int index, int count)
+        internal int ReadElementContentAsBinHex(byte[] buffer, int index, int count)
         {
-            // check arguments
-            if (count < 0)
-            {
-                throw new ArgumentOutOfRangeException(nameof(count));
-            }
-            if (index < 0)
-            {
-                throw new ArgumentOutOfRangeException(nameof(index));
-            }
-            if (buffer.Length - index < count)
-            {
-                throw new ArgumentOutOfRangeException(nameof(count));
-            }
+            ArgumentNullException.ThrowIfNull(buffer);
+            ArgumentOutOfRangeException.ThrowIfNegative(count);
+            ArgumentOutOfRangeException.ThrowIfNegative(index);
+            ArgumentOutOfRangeException.ThrowIfGreaterThan(count, buffer.Length - index);
 
             switch (_state)
             {

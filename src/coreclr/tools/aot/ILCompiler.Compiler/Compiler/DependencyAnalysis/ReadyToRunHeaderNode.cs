@@ -1,44 +1,34 @@
 // Licensed to the .NET Foundation under one or more agreements.
 // The .NET Foundation licenses this file to you under the MIT license.
 
-using System;
 using System.Collections.Generic;
 
 using Internal.Runtime;
 using Internal.Text;
-using Internal.TypeSystem;
+
+using Debug = System.Diagnostics.Debug;
 
 namespace ILCompiler.DependencyAnalysis
 {
     public class ReadyToRunHeaderNode : ObjectNode, ISymbolDefinitionNode
     {
-        struct HeaderItem
+        private struct HeaderItem
         {
-            public HeaderItem(ReadyToRunSectionType id, ObjectNode node, ISymbolNode startSymbol, ISymbolNode endSymbol)
+            public HeaderItem(ReadyToRunSectionType id, ObjectNode node)
             {
                 Id = id;
                 Node = node;
-                StartSymbol = startSymbol;
-                EndSymbol = endSymbol;
             }
 
-            readonly public ReadyToRunSectionType Id;
-            readonly public ObjectNode Node;
-            readonly public ISymbolNode StartSymbol;
-            readonly public ISymbolNode EndSymbol;
+            public readonly ReadyToRunSectionType Id;
+            public readonly ObjectNode Node;
         }
 
-        List<HeaderItem> _items = new List<HeaderItem>();
-        TargetDetails _target;
+        private List<HeaderItem> _items = new List<HeaderItem>();
 
-        public ReadyToRunHeaderNode(TargetDetails target)
+        public void Add<T>(ReadyToRunSectionType id, T node) where T : ObjectNode, ISymbolDefinitionNode
         {
-            _target = target;
-        }
-
-        public void Add(ReadyToRunSectionType id, ObjectNode node, ISymbolNode startSymbol, ISymbolNode endSymbol = null)
-        {
-            _items.Add(new HeaderItem(id, node, startSymbol, endSymbol));
+            _items.Add(new HeaderItem(id, node));
         }
 
         public void AppendMangledName(NameMangler nameMangler, Utf8StringBuilder sb)
@@ -53,15 +43,12 @@ namespace ILCompiler.DependencyAnalysis
 
         public override bool StaticDependenciesAreComputed => true;
 
-        public override ObjectNodeSection Section
+        public override ObjectNodeSection GetSection(NodeFactory factory)
         {
-            get
-            {
-                if (_target.IsWindows)
-                    return ObjectNodeSection.ReadOnlyDataSection;
-                else
-                    return ObjectNodeSection.DataSection;
-            }
+            if (factory.Target.IsWindows)
+                return ObjectNodeSection.ReadOnlyDataSection;
+            else
+                return ObjectNodeSection.DataSection;
         }
 
         public override ObjectData GetData(NodeFactory factory, bool relocsOnly = false)
@@ -103,17 +90,17 @@ namespace ILCompiler.DependencyAnalysis
                 builder.EmitInt((int)item.Id);
 
                 ModuleInfoFlags flags = 0;
-                if (item.EndSymbol != null)
+                if (item.Node is INodeWithSize)
                 {
                     flags |= ModuleInfoFlags.HasEndPointer;
                 }
                 builder.EmitInt((int)flags);
 
-                builder.EmitPointerReloc(item.StartSymbol);
+                builder.EmitPointerReloc((ISymbolNode)item.Node);
 
-                if (item.EndSymbol != null)
+                if (!relocsOnly && item.Node is INodeWithSize nodeWithSize)
                 {
-                    builder.EmitPointerReloc(item.EndSymbol);
+                    builder.EmitPointerReloc((ISymbolNode)item.Node, nodeWithSize.Size);
                 }
                 else
                 {
@@ -127,6 +114,12 @@ namespace ILCompiler.DependencyAnalysis
             return builder.ToObjectData();
         }
 
-        public override int ClassCode => -534800244;
+        protected internal override int Phase => (int)ObjectNodePhase.Late;
+        public override int ClassCode => 0x7db08464;
+    }
+
+    public interface INodeWithSize
+    {
+        public int Size { get; }
     }
 }

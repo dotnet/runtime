@@ -1,0 +1,12 @@
+T:Mono.Cecil.Cil.ILProcessor;Use LinkerILProcessor instead
+M:Mono.Cecil.TypeReference.Resolve();Use LinkContext.Resolve and LinkContext.TryResolve helpers instead
+P:Mono.Cecil.MethodReference.Parameters;Use an extension method from MethodReferenceExtensions instead
+P:Mono.Cecil.MethodReference.HasParameters;Use an extension method from MethodReference.HasMetadataParameters() instead
+M:Mono.Cecil.MethodReference.Resolve();Use LinkContext.Resolve and LinkContext.TryResolve helpers instead
+M:Mono.Cecil.ExportedType.Resolve();Use LinkContext.Resolve and LinkContext.TryResolve helpers instead
+P:Mono.Collections.Generic.Collection`1{Mono.Cecil.ParameterDefinition}.Item(System.Int32); use x
+P:Mono.Cecil.ParameterDefinitionCollection.Item(System.Int32); use x
+P:Mono.Cecil.Cil.MethodBody.Instructions;Use LinkContext.MethodBodyInstructionProvider instead
+P:Mono.Cecil.Cil.MethodBody.ExceptionHandlers;Use LinkContext.MethodBodyInstructionProvider instead
+P:Mono.Cecil.Cil.MethodBody.Variables;Use LinkContext.MethodBodyInstructionProvider instead
+M:Mono.Linker.Steps.ILProvider/MethodIL.Create;Use ILProvider GetMethodIL instead

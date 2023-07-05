@@ -96,10 +96,7 @@ namespace MS.Internal.Xml.XPath
             XsltContext? xsltContext = nsResolver as XsltContext;
             if (xsltContext == null)
             {
-                if (nsResolver == null)
-                {
-                    nsResolver = new XmlNamespaceManager(new NameTable());
-                }
+                nsResolver ??= new XmlNamespaceManager(new NameTable());
                 xsltContext = new UndefinedXsltContext(nsResolver);
             }
             _query.SetXsltContext(xsltContext);

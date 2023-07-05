@@ -13,12 +13,10 @@
 #include "eventtrace.h"
 #include "rhbinder.h"
 #include "slist.h"
-#include "rwlock.h"
 #include "runtimeinstance.h"
 #include "shash.h"
 #include "eventtracepriv.h"
 #include "shash.inl"
-#include "palredhawk.h"
 
 #if defined(FEATURE_EVENT_TRACE)
 
@@ -265,9 +263,6 @@ int BulkTypeEventLogger::LogSingleType(MethodTable * pEEType)
     }
     else
     {
-        // Note: if pEEType->IsCloned(), then no special handling is necessary.  All the
-        // functionality we need from the MethodTable below work just as well from cloned types.
-
         // Note: For generic types, we do not necessarily know the generic parameters.
         // So we leave it to the profiler at post-processing time to determine that via
         // the PDBs.  We'll leave pVal->cTypeParameters as 0, even though there could be
@@ -363,7 +358,7 @@ void ETW::TypeSystemLog::LogTypeAndParametersIfNecessary(BulkTypeEventLogger * p
 
 COOP_PINVOKE_HELPER(void, RhpEtwExceptionThrown, (LPCWSTR exceptionTypeName, LPCWSTR exceptionMessage, void* faultingIP, HRESULT hresult))
 {
-    FireEtwExceptionThrown_V1(exceptionTypeName,
+    FireEtXplatExceptionThrown_V1(exceptionTypeName,
         exceptionMessage,
         faultingIP,
         hresult,

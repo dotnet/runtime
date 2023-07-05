@@ -126,6 +126,24 @@ namespace System.Threading.ThreadPools.Tests
                     false);
             waitForBackgroundWork(true);
             Assert.Equal(0, backgroundAsyncLocalValue);
+
+            // Validate a repeating waithandle with infinite timeout.
+            registeredWaitHandle =
+                ThreadPool.UnsafeRegisterWaitForSingleObject(
+                    registerWaitEvent,
+                    (state, timedOut) =>
+                    {
+                        commonBackgroundTest(true, () =>
+                        {
+                            Assert.Same(obj, state);
+                            Assert.False(timedOut);
+                        });
+                    },
+                    obj,
+                    -1,      // Infinite
+                    false);  // Execute once
+            waitForBackgroundWork(true);
+            Assert.Equal(0, backgroundAsyncLocalValue);
         }
 
         [ConditionalFact(typeof(PlatformDetection), nameof(PlatformDetection.IsThreadingSupported))]

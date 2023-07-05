@@ -390,13 +390,15 @@ namespace System.Text.Unicode.Tests
             Assert.Equal(expectedRetVal, actualRetVal);
             Assert.Equal(expectedRuneCount, actualRuneCount);
             Assert.Equal(expectedSurrogatePairCount, actualSurrogatePairCount);
+
+            Assert.True(Utf8.IsValid(boundedMemory.Span) == (expectedRetVal < 0));
         }
 
         private static Lazy<GetPointerToFirstInvalidByteDel> CreateGetPointerToFirstInvalidByteFn()
         {
             return new Lazy<GetPointerToFirstInvalidByteDel>(() =>
             {
-                Type utf8UtilityType = typeof(Utf8).Assembly.GetType("System.Text.Unicode.Utf8Utility");
+                Type utf8UtilityType = Type.GetType("System.Text.Unicode.Utf8Utility, System.Private.CoreLib");
 
                 if (utf8UtilityType is null)
                 {

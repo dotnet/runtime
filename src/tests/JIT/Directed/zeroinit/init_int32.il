@@ -9,7 +9,7 @@
   .ver 4:0:0:0
 }
 .assembly init_int32 { }
-.class private auto ansi beforefieldinit Test_init_int32
+.class public auto ansi beforefieldinit Test_init_int32
        extends [mscorlib]System.Object
 {
   .field private int32 m_ret
@@ -415,8 +415,7 @@
     IL_000e:  ret
   } // end of method Test::test22
 
-  .method private hidebysig static int32 
-          Main() cil managed
+  .method public hidebysig static int32 Main() cil managed
   {
     .custom instance void [xunit.core]Xunit.FactAttribute::.ctor() = (
         01 00 00 00

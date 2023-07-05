@@ -11,12 +11,6 @@
   #define ROUND_FLOAT              0       // Do not round intermed float expression results
   #define CPU_HAS_BYTE_REGS        0
 
-  #define CPBLK_UNROLL_LIMIT       64     // Upper bound to let the code generator to loop unroll CpBlk
-  #define CPBLK_LCL_UNROLL_LIMIT   128    // Upper bound to let the code generator to loop unroll CpBlk (when both srcAddr and dstAddr point to the stack)
-  #define INITBLK_UNROLL_LIMIT     64     // Upper bound to let the code generator to loop unroll InitBlk
-  #define INITBLK_LCL_UNROLL_LIMIT 128    // Upper bound to let the code generator to loop unroll InitBlk (when dstAddr points to the stack)
-  #define LCLHEAP_UNROLL_LIMIT     128    // Upper bound to let the code generator to loop unroll LclHeap (when zeroing is required)
-
 #ifdef FEATURE_SIMD
   #define ALIGN_SIMD_TYPES         1       // whether SIMD type locals are to be aligned
   #define FEATURE_PARTIAL_SIMD_CALLEE_SAVE 1 // Whether SIMD registers are partially saved at calls
@@ -28,6 +22,7 @@
   #define FEATURE_FASTTAILCALL     1       // Tail calls made as epilog+jmp
   #define FEATURE_TAILCALL_OPT     1       // opportunistic Tail calls (i.e. without ".tail" prefix) made as fast tail calls.
   #define FEATURE_SET_FLAGS        0       // Set to true to force the JIT to mark the trees with GTF_SET_FLAGS when the flags need to be set
+  #define FEATURE_IMPLICIT_BYREFS       1  // Support for struct parameters passed via pointers to shadow copies
   #define FEATURE_MULTIREG_ARGS_OR_RET  1  // Support for passing and/or returning single values in more than one register
   #define FEATURE_MULTIREG_ARGS         1  // Support for passing a single argument in more than one register
   #define FEATURE_MULTIREG_RET          1  // Support for returning a single value in more than one register
@@ -38,7 +33,7 @@
   #define MAX_ARG_REG_COUNT             4  // Maximum registers used to pass a single argument in multiple registers. (max is 4 128-bit vectors using an HVA)
   #define MAX_RET_REG_COUNT             4  // Maximum registers used to return a value.
 
-  #define MAX_MULTIREG_COUNT            4  // Maxiumum number of registers defined by a single instruction (including calls).
+  #define MAX_MULTIREG_COUNT            4  // Maximum number of registers defined by a single instruction (including calls).
                                            // This is also the maximum number of registers for a MultiReg node.
 
   #define NOGC_WRITE_BARRIERS      1       // We have specialized WriteBarrier JIT Helpers that DO-NOT trash the RBM_CALLEE_TRASH registers
@@ -109,6 +104,12 @@
 
   #define CALLEE_SAVED_REG_MAXSZ    (CNT_CALLEE_SAVED * REGSIZE_BYTES)
   #define CALLEE_SAVED_FLOAT_MAXSZ  (CNT_CALLEE_SAVED_FLOAT * FPSAVE_REGSIZE_BYTES)
+
+  // On ARM64 we do not use any additional callee-saves for ENC
+  // since there are so many volatile registers available, and
+  // callee saves have to be aggressively saved by ENC codegen
+  // because a future version could use them.
+  #define RBM_ENC_CALLEE_SAVED     0
 
   // Temporary registers used for the GS cookie check.
   #define REG_GSCOOKIE_TMP_0       REG_IP0

@@ -4,7 +4,7 @@
 namespace System.ComponentModel.DataAnnotations
 {
     /// <summary>
-    ///     Validation attribute to indicate that a property field or parameter is required.
+    ///     Validation attribute to indicate that a property, field or parameter is required.
     /// </summary>
     [AttributeUsage(AttributeTargets.Property | AttributeTargets.Field | AttributeTargets.Parameter,
         AllowMultiple = false)]
@@ -32,19 +32,18 @@ namespace System.ComponentModel.DataAnnotations
         /// </summary>
         /// <param name="value">The value to test</param>
         /// <returns>
-        ///     <c>false</c> if the <paramref name="value" /> is null or an empty string. If
-        ///     <see cref="RequiredAttribute.AllowEmptyStrings" />
-        ///     then <c>false</c> is returned only if <paramref name="value" /> is null.
+        ///     Returns <see langword="false" /> if the <paramref name="value" /> is null or an empty string.
+        ///     If <see cref="AllowEmptyStrings" /> then <see langword="true" /> is returned for empty strings.
         /// </returns>
         public override bool IsValid(object? value)
         {
-            if (value == null)
+            if (value is null)
             {
                 return false;
             }
 
             // only check string length if empty strings are not allowed
-            return AllowEmptyStrings || !(value is string stringValue) || !string.IsNullOrWhiteSpace(stringValue);
+            return AllowEmptyStrings || value is not string stringValue || !string.IsNullOrWhiteSpace(stringValue);
         }
     }
 }

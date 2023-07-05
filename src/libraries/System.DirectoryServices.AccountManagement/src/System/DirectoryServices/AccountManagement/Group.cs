@@ -141,7 +141,7 @@ namespace System.DirectoryServices.AccountManagement
                 // Make sure we're not disposed or deleted.
                 CheckDisposedOrDeleted();
 
-                // Check that we actually support this propery in our store
+                // Check that we actually support this property in our store
                 //CheckSupportedProperty(PropertyNames.GroupMembers);
 
                 if (_members == null)
@@ -221,8 +221,7 @@ namespace System.DirectoryServices.AccountManagement
                 {
                     GlobalDebug.WriteLineIf(GlobalDebug.Info, "Group", "Dispose: disposing");
 
-                    if (_members != null)
-                        _members.Dispose();
+                    _members?.Dispose();
 
                     _disposed = true;
                     GC.SuppressFinalize(this);
@@ -333,8 +332,7 @@ namespace System.DirectoryServices.AccountManagement
             _groupScopeChanged = (_groupScopeChanged == LoadState.Changed) ? LoadState.Loaded : LoadState.NotSet;
             _isSecurityGroupChanged = (_isSecurityGroupChanged == LoadState.Changed) ? LoadState.Loaded : LoadState.NotSet;
 
-            if (_members != null)
-                _members.ResetTracking();
+            _members?.ResetTracking();
 
             base.ResetAllChangeStatus();
         }
@@ -349,6 +347,8 @@ namespace System.DirectoryServices.AccountManagement
         /// it will only be set for small groups!
         /// </summary>
         internal SearchResult SmallGroupMemberSearchResult { get; private set; }
+
+        private static readonly string[] s_member = new string[] { "member" };
 
         /// <summary>
         ///  Finds if the group is "small", meaning that it has less than MaxValRange values (usually 1500)
@@ -368,7 +368,7 @@ namespace System.DirectoryServices.AccountManagement
             Debug.Assert(de != null);
             if (de != null)
             {
-                using (DirectorySearcher ds = new DirectorySearcher(de, "(objectClass=*)", new string[] { "member" }, SearchScope.Base))
+                using (DirectorySearcher ds = new DirectorySearcher(de, "(objectClass=*)", s_member, SearchScope.Base))
                 {
                     SearchResult sr = ds.FindOne();
                     if (sr != null)

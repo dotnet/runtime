@@ -10,7 +10,7 @@ using System;
 
 public class LargeArrayTest {
 
-    public static int Main(string[] args) {
+    public static int Main() {
 
         for (int i=0; i<= 100; i++) {
             try {

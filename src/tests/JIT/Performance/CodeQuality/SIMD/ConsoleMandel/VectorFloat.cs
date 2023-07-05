@@ -45,7 +45,7 @@ namespace Algorithms
             {
                 int xp = 0;
                 for (Vector<float> vx = vxmin;
-                     Vector.LessThanOrEqualAny(vx, vxmax); // Vector.{comparision}Any|All return bools, not masks
+                     Vector.LessThanOrEqualAny(vx, vxmax); // Vector.{comparison}Any|All return bools, not masks
                      vx += vinc, xp += Vector<int>.Count)
                 {
                     ComplexVecFloat num = new ComplexVecFloat(vx, vy);
@@ -62,7 +62,7 @@ namespace Algorithms
                         viters += increment;
                         // Create a mask that correspons to the element-wise logical operation
                         // "accum <= limit && iters <= max_iters" Note that the bitwise and is used,
-                        // because the Vector.{comparision} operations return masks, not boolean values
+                        // because the Vector.{comparison} operations return masks, not boolean values
                         Vector<int> vCond = Vector.LessThanOrEqual(accum.sqabs(), vlimit) &
                             Vector.LessThanOrEqual(viters, vmax_iters);
                         // increment becomes zero for the elems that have hit the limit because
@@ -75,8 +75,8 @@ namespace Algorithms
 
                     // This is another little helper I created. It's definitely kind of slow but I
                     // find it pleasantly succinct. It could also be written like this:
-                    // 
-                    // for (int eNum = 0; eNum < Vector<int>.Count; eNum++) 
+                    //
+                    // for (int eNum = 0; eNum < Vector<int>.Count; eNum++)
                     //     DrawPixel(xp + eNum, yp, viters[eNum]);
                     //
                     // Neither implementation is particularly fast, because pulling individual elements

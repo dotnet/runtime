@@ -67,13 +67,13 @@ namespace Tracing.Tests.Common
 
                 process.StartInfo.UseShellExecute = false;
                 process.StartInfo.CreateNoWindow = true;
-                process.StartInfo.Environment.Add("COMPlus_StressLog",   "1");    // Turn on stresslog for subprocess
-                process.StartInfo.Environment.Add("COMPlus_LogFacility", "1000"); // Diagnostics Server Log Facility
-                process.StartInfo.Environment.Add("COMPlus_LogLevel",    "10");   // Log everything
+                process.StartInfo.Environment.Add("DOTNET_StressLog",   "1");    // Turn on stresslog for subprocess
+                process.StartInfo.Environment.Add("DOTNET_LogFacility", "1000"); // Diagnostics Server Log Facility
+                process.StartInfo.Environment.Add("DOTNET_LogLevel",    "10");   // Log everything
                 foreach ((string key, string value) in environment)
                     process.StartInfo.Environment.Add(key, value);
                 process.StartInfo.FileName = Process.GetCurrentProcess().MainModule.FileName;
-                process.StartInfo.Arguments = new Uri(currentAssembly.Location).LocalPath + " 0";
+                process.StartInfo.Arguments = TestLibrary.Utilities.IsNativeAot ? "0" : $"{new Uri(currentAssembly.Location).LocalPath} 0";
                 process.StartInfo.RedirectStandardOutput = true;
                 process.StartInfo.RedirectStandardInput = true;
                 process.StartInfo.RedirectStandardError = true;
@@ -137,6 +137,7 @@ namespace Tracing.Tests.Common
                         Logger.logger.Log("Subprocess didn't exit in 5 seconds!");
                     }
                     Logger.logger.Log($"SubProcess exited - Exit code: {process.ExitCode}");
+                    fSuccess &= process.ExitCode == 0;
                 }
                 catch (Exception e)
                 {
@@ -446,7 +447,7 @@ namespace Tracing.Tests.Common
                 namedPipe.Connect(3);
                 return namedPipe;
             }
-            else if (OperatingSystem.IsAndroid())
+            else if (OperatingSystem.IsAndroid() || OperatingSystem.IsIOS() || OperatingSystem.IsTvOS())
             {
                 TcpClient client = new TcpClient("127.0.0.1", 9000);
                 return client.GetStream();

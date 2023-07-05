@@ -14,6 +14,7 @@ using System.Text;
 using System.Threading;
 using System.Xml;
 using Xunit;
+using Xunit.Abstractions;
 
 namespace SampleSynthesisTests
 {
@@ -26,33 +27,125 @@ namespace SampleSynthesisTests
                                                       PlatformDetection.IsNotWindowsNanoNorServerCore &&
                                                       SpeechRecognitionEngine.InstalledRecognizers().Count > 0;
 
-        [ConditionalFact(nameof(HasInstalledRecognizers))]
-        public void SpeechSynthesizerToSpeechRecognitionEngine()
+        private ITestOutputHelper _output;
+
+        public SynthesizeRecognizeTests(ITestOutputHelper output)
         {
-            if (Thread.CurrentThread.CurrentCulture.ToString() != "en-US")
-                return;
+            _output = output;
+        }
 
-            using var ms = new MemoryStream();
+        [ConditionalFact(nameof(HasInstalledRecognizers))]
+        public void SpeechSynthesizerToSpeechRecognitionEngine1()
+        {
+            // word chosen to be recognized with high confidence
+            SpeechSynthesizerToSpeechRecognitionEngine_Core("recognize", "recognize");
+        }
 
-            using (var synth = new SpeechSynthesizer())
+        [ConditionalFact(nameof(HasInstalledRecognizers))]
+        public void SpeechSynthesizerToSpeechRecognitionEngine2()
+        {
+            // word chosen to be recognized with high confidence
+            SpeechSynthesizerToSpeechRecognitionEngine_Core("apple", "apple");
+        }
+
+        [ConditionalFact(nameof(HasInstalledRecognizers))]
+        public void SpeechSynthesizerToSpeechRecognitionEngine_SilenceFails()
+        {
+            SpeechSynthesizerToSpeechRecognitionEngine_Core("    ", null);
+        }
+
+        private void SpeechSynthesizerToSpeechRecognitionEngine_Core(string input, string output)
+        {
+            if (PlatformDetection.IsWindows7 && PlatformDetection.IsX86Process)
+                return; // Flaky on this configuration
+
+            RetryHelper.Execute(() => // Flaky in some cases
             {
-                synth.SetOutputToWaveStream(ms);
-                var prompt = new Prompt("synthesizer");
-                synth.Speak(prompt);
-            }
+                if (Thread.CurrentThread.CurrentCulture.ToString() != "en-US")
+                    return;
 
-            ms.Position = 0;
+                using var ms = new MemoryStream();
 
-            using (var rec = new SpeechRecognitionEngine())
-            {
-                rec.LoadGrammar(new DictationGrammar());
-                rec.SetInputToWaveStream(ms);
-                RecognitionResult result = rec.Recognize();
+                using (var synth = new SpeechSynthesizer())
+                {
+                    synth.SetOutputToWaveStream(ms);
+                    var prompt = new Prompt(input);
+                    synth.Speak(prompt);
+                }
 
-                Assert.True(result.Confidence > 0.1);
-                // handles "synthesizer", "synthesizes", etc.
-                Assert.StartsWith("synthe", result.Text, StringComparison.OrdinalIgnoreCase);
-            }
+                ms.Position = 0;
+
+                using (var rec = new SpeechRecognitionEngine())
+                {
+                    Stopwatch sw = new();
+                    rec.LoadGrammar(new DictationGrammar());
+                    rec.SetInputToWaveStream(ms);
+                    rec.InitialSilenceTimeout = TimeSpan.FromSeconds(60); // for slow machines
+                    rec.BabbleTimeout = TimeSpan.FromSeconds(60); // for slow machines/robustness
+
+                    StringBuilder diagnostics = new();
+                    diagnostics.AppendLine($"Passing synthesized input '{input}'");
+                    try
+                    {
+                        rec.SpeechDetected += (o, args) =>
+                        {
+                            diagnostics.AppendLine($"Speech detected at position {args.AudioPosition}");
+                        };
+
+                        rec.SpeechRecognitionRejected += (o, args) =>
+                        {
+                            if (output != null)
+                            {
+                                foreach (RecognizedPhrase phrase in args.Result.Alternates)
+                                {
+                                    diagnostics.AppendLine($"Alternatives included '{phrase.Text}' with confidence {phrase.Confidence}");
+                                }
+                                diagnostics.Append($"Elapsed {sw.Elapsed}");
+                                Assert.Fail($"Recognition of '{input}' was expected to produce a string containing '{output}', but failed");
+                            }
+                        };
+
+                        RecognitionResult argsResult = null;
+                        rec.SpeechRecognized += (o, args) =>
+                        {
+                            argsResult = args.Result;
+                            diagnostics.AppendLine($"Received speech recognized event with result '{args.Result.Text}'");
+                        };
+
+                        sw.Start();
+                        RecognitionResult result = rec.Recognize();
+                        sw.Stop();
+
+                        Assert.Equal(argsResult, result);
+
+                        if (output == null)
+                        {
+                            Assert.Null(result);
+                        }
+                        else
+                        {
+                            Assert.NotNull(result);
+                            diagnostics.AppendLine($"Recognized '{result.Text}' with confidence {result.Confidence}");
+                            diagnostics.AppendLine($"Elapsed {sw.Elapsed}");
+
+                            foreach (RecognizedPhrase phrase in result.Alternates)
+                            {
+                                diagnostics.AppendLine($"Alternatives included '{phrase.Text}' with confidence {phrase.Confidence}");
+                            }
+
+                            Assert.True(result.Confidence > 0.1); // strings we use are normally > 0.8
+
+                            // Use Contains as sometimes we get garbage on the end, eg., "recognize" can be "recognized" or "a recognize"
+                            Assert.Contains(output, result.Text, StringComparison.OrdinalIgnoreCase);
+                        }
+                    }
+                    catch
+                    {
+                        _output.WriteLine(diagnostics.ToString());
+                        throw;
+                    }
+                }
+            });
         }
 
         [ConditionalFact(nameof(HasInstalledRecognizers))]

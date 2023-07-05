@@ -124,7 +124,7 @@ namespace System.Reflection.Emit.Tests
         }
 
         [Fact]
-        public void SetSignature_GenericMethod_ParameterType_RequiredCustomModifer_OptionalCustomModifiers()
+        public void SetSignature_GenericMethod_ParameterType_RequiredCustomModifier_OptionalCustomModifiers()
         {
             TypeBuilder type = Helpers.DynamicType(TypeAttributes.Abstract);
             MethodBuilder method = type.DefineMethod("TestMethod", MethodAttributes.Public | MethodAttributes.Abstract | MethodAttributes.Virtual);
@@ -258,7 +258,7 @@ namespace System.Reflection.Emit.Tests
 
         private void VerifyMethodSignature(TypeBuilder type, MethodBuilder method, Type desiredReturnType)
         {
-            Type ret = type.CreateTypeInfo().AsType();
+            Type ret = type.CreateType();
             MethodInfo methodInfo = method.GetBaseDefinition();
             Type actualReturnType = methodInfo.ReturnType;
 

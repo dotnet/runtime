@@ -9,7 +9,7 @@ using Xunit;
 
 namespace System.Threading.Tests
 {
-    public class InterlockedTests
+    public unsafe class InterlockedTests
     {
         [Fact]
         public void InterlockedAdd_Int32()
@@ -164,11 +164,39 @@ namespace System.Threading.Tests
         }
 
         [Fact]
+        public void InterlockedExchange_IntPtr()
+        {
+            nint value = 42;
+            Assert.Equal(42, (nint)Interlocked.Exchange(ref value, (nint)12345));
+            Assert.Equal(12345, value);
+
+            if (Environment.Is64BitProcess)
+            {
+                Assert.Equal(12345, (nint)Interlocked.Exchange(ref value, unchecked((nint)1 + int.MaxValue)));
+                Assert.Equal(unchecked((nint)1 + int.MaxValue), value);
+            }
+        }
+
+        [Fact]
         public void InterlockedExchange_UInt64()
         {
             ulong value = 42;
             Assert.Equal(42u, Interlocked.Exchange(ref value, 12345u));
             Assert.Equal(12345u, value);
+        }
+
+        [Fact]
+        public void InterlockedExchange_UIntPtr()
+        {
+            nuint value = 42;
+            Assert.Equal(42u, (nuint)Interlocked.Exchange(ref value, (nuint)12345u));
+            Assert.Equal(12345u, value);
+
+            if (Environment.Is64BitProcess)
+            {
+                Assert.Equal(12345u, (nuint)Interlocked.Exchange(ref value, unchecked((nuint)1 + uint.MaxValue)));
+                Assert.Equal(unchecked((nuint)1 + uint.MaxValue), value);
+            }
         }
 
         [Fact]
@@ -249,6 +277,24 @@ namespace System.Threading.Tests
         }
 
         [Fact]
+        public void InterlockedCompareExchange_IntPtr()
+        {
+            nint value = 42;
+
+            Assert.Equal(42, (nint)Interlocked.CompareExchange(ref value, (nint)12345, (nint)41));
+            Assert.Equal(42, value);
+
+            Assert.Equal(42, (nint)Interlocked.CompareExchange(ref value, (nint)12345, (nint)42));
+            Assert.Equal(12345, value);
+
+            if (Environment.Is64BitProcess)
+            {
+                Assert.Equal(12345, (nint)Interlocked.CompareExchange(ref value, unchecked((nint)1 + int.MaxValue), (nint)12345u));
+                Assert.Equal(unchecked((nint)1 + int.MaxValue), value);
+            }
+        }
+
+        [Fact]
         public void InterlockedCompareExchange_UInt64()
         {
             ulong value = 42;
@@ -258,6 +304,24 @@ namespace System.Threading.Tests
 
             Assert.Equal(42u, Interlocked.CompareExchange(ref value, 12345u, 42u));
             Assert.Equal(12345u, value);
+        }
+
+        [Fact]
+        public void InterlockedCompareExchange_UIntPtr()
+        {
+            nuint value = 42;
+
+            Assert.Equal(42u, (nuint)Interlocked.CompareExchange(ref value, (nuint)12345u, (nuint)41u));
+            Assert.Equal(42u, value);
+
+            Assert.Equal(42u, (nuint)Interlocked.CompareExchange(ref value, (nuint)12345u, (nuint)42u));
+            Assert.Equal(12345u, value);
+
+            if (Environment.Is64BitProcess)
+            {
+                Assert.Equal(12345u, (nuint)Interlocked.CompareExchange(ref value, unchecked((nuint)1 + uint.MaxValue), (nuint)12345u));
+                Assert.Equal(unchecked((nuint)1 + uint.MaxValue), value);
+            }
         }
 
         [Fact]
@@ -537,6 +601,23 @@ namespace System.Threading.Tests
 
             Assert.Equal(ThreadCount, completedThreadCount);
             Assert.Equal(ThreadCount * IterationCount * Increment, Interlocked.Read(ref value));
+        }
+
+        [MethodImpl(MethodImplOptions.NoInlining)]
+        private static Action MemoryBarrierDelegate() => Interlocked.MemoryBarrier;
+
+        [MethodImpl(MethodImplOptions.NoInlining)]
+        private static delegate* <void> MemoryBarrierPointer() => &Interlocked.MemoryBarrier;
+
+        [Fact()]
+        public void MemoryBarrierIntrinsic()
+        {
+            // Interlocked.MemoryBarrier is a self-referring intrinsic
+            // we should be able to call it through a delegate.
+            MemoryBarrierDelegate()();
+
+            // through a method pointer
+            MemoryBarrierPointer()();
         }
 
         [ConditionalFact(typeof(PlatformDetection), nameof(PlatformDetection.IsThreadingSupported))]

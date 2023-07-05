@@ -203,7 +203,7 @@ namespace System.Text
                 }
 
                 // Its in the Unicode Indic script range
-                int indicInfo = s_UnicodeToIndicChar[ch - IndicBegin];
+                int indicInfo = UnicodeToIndicChar[ch - IndicBegin];
                 byte byteIndic = (byte)indicInfo;
                 int indicScript = (0x000f & (indicInfo >> 8));
                 int indicTwoBytes = (0xf000 & indicInfo);
@@ -354,7 +354,7 @@ namespace System.Text
 
             if (currentCodePage >= CodeDevanagari && currentCodePage <= CodePunjabi)
             {
-                currentCodePageIndex = s_IndicMappingIndex[currentCodePage];
+                currentCodePageIndex = IndicMappingIndex[currentCodePage];
             }
 
             // Loop through our input
@@ -381,7 +381,7 @@ namespace System.Text
                         {
                             // Remember the code page
                             currentCodePage = b & 0xf;
-                            currentCodePageIndex = s_IndicMappingIndex[currentCodePage];
+                            currentCodePageIndex = IndicMappingIndex[currentCodePage];
                             // No longer last ATR
                             bLastATR = false;
                             continue;
@@ -395,7 +395,7 @@ namespace System.Text
 
                             if (currentCodePage >= CodeDevanagari && currentCodePage <= CodePunjabi)
                             {
-                                currentCodePageIndex = s_IndicMappingIndex[currentCodePage];
+                                currentCodePageIndex = IndicMappingIndex[currentCodePage];
                             }
                             // No longer last ATR
                             bLastATR = false;
@@ -410,7 +410,7 @@ namespace System.Text
 
                             if (currentCodePage >= CodeDevanagari && currentCodePage <= CodePunjabi)
                             {
-                                currentCodePageIndex = s_IndicMappingIndex[currentCodePage];
+                                currentCodePageIndex = IndicMappingIndex[currentCodePage];
                             }
 
                             // Even though we don't know how to support Roman, windows didn't add a ? so we don't either.
@@ -714,8 +714,7 @@ namespace System.Text
             {
                 bLastVirama = false;
                 charLeftOver = (char)0;
-                if (m_fallbackBuffer != null)
-                    m_fallbackBuffer.Reset();
+                m_fallbackBuffer?.Reset();
             }
 
             // Anything left in our encoder?
@@ -754,8 +753,7 @@ namespace System.Text
                 bLastDevenagariStressAbbr = false;
                 cLastCharForNextNukta = '\0';
                 cLastCharForNoNextNukta = '\0';
-                if (m_fallbackBuffer != null)
-                    m_fallbackBuffer.Reset();
+                m_fallbackBuffer?.Reset();
             }
 
             // Anything left in our decoder?
@@ -791,7 +789,7 @@ namespace System.Text
         //
         ////////////////////////////////////////////////////////////////////////////
 
-        private static readonly int[] s_UnicodeToIndicChar =
+        private static ReadOnlySpan<int> UnicodeToIndicChar => new int[]
         {
             0x02a1,  // U+0901 : Devanagari Sign Candrabindu
             0x02a2,  // U+0902 : Devanagari Sign Anusvara
@@ -1951,7 +1949,7 @@ namespace System.Text
         // There are 0x60 characters in each table.  The tables are in pairs of 2
         // (1st char, 2nd char) and there are 10 tables (1 for each code page "font")
         ////////////////////////////////////////////////////////////////////////////
-        private static readonly int[] s_IndicMappingIndex =
+        private static ReadOnlySpan<int> IndicMappingIndex => new int[]
         {
             -1,       //  0 DEF 0X40 Default        // Not a real code page
             -1,       //  1 RMN 0X41 Roman          // Transliteration not supported

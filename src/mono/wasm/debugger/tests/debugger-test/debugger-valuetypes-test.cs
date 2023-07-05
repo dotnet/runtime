@@ -5,10 +5,10 @@ using System;
 using System.Threading.Tasks;
 namespace DebuggerTests
 {
-    public class ValueTypesTest
+    public partial class ValueTypesTest
     { //Only append content to this class as the test suite depends on line info
 
-        public static void MethodWithLocalStructs()
+        [System.Runtime.InteropServices.JavaScript.JSExport] public static void MethodWithLocalStructs()
         {
             var ss_local = new SimpleStruct("set in MethodWithLocalStructs", 1, DateTimeKind.Utc);
             var gs_local = new GenericStruct<ValueTypesTest> { StringField = $"gs_local#GenericStruct<ValueTypesTest>#StringField" };

@@ -1,0 +1,8 @@
+﻿<?xml version="1.0" encoding="utf-8"?>
+<Suppressions xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance" xmlns:xsd="http://www.w3.org/2001/XMLSchema">
+  <!-- The assembly version intentionally doesn't match between contract and implementation. -->
+  <Suppression>
+    <DiagnosticId>CP0003</DiagnosticId>
+    <Target>System.Reflection.Context, Version=4.0.0.0, Culture=neutral, PublicKeyToken=b77a5c561934e089</Target>
+  </Suppression>
+</Suppressions>

@@ -61,16 +61,21 @@ namespace System.IO.Pipelines
         public override void SetLength(long value) => throw new NotSupportedException();
 
         public sealed override IAsyncResult BeginWrite(byte[] buffer, int offset, int count, AsyncCallback? callback, object? state) =>
-            TaskToApm.Begin(WriteAsync(buffer, offset, count, default), callback, state);
+            TaskToAsyncResult.Begin(WriteAsync(buffer, offset, count, default), callback, state);
 
         public sealed override void EndWrite(IAsyncResult asyncResult) =>
-            TaskToApm.End(asyncResult);
+            TaskToAsyncResult.End(asyncResult);
 
         public override void Write(byte[] buffer, int offset, int count) =>
             WriteAsync(buffer, offset, count).GetAwaiter().GetResult();
 
-        public override Task WriteAsync(byte[] buffer!!, int offset, int count, CancellationToken cancellationToken)
+        public override Task WriteAsync(byte[] buffer, int offset, int count, CancellationToken cancellationToken)
         {
+            if (buffer is null)
+            {
+                ThrowHelper.ThrowArgumentNullException(ExceptionArgument.buffer);
+            }
+
             ValueTask<FlushResult> valueTask = _pipeWriter.WriteAsync(new ReadOnlyMemory<byte>(buffer, offset, count), cancellationToken);
 
             return GetFlushResultAsTask(valueTask);

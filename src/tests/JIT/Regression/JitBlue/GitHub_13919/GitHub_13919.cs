@@ -3,13 +3,14 @@
 
 using System;
 using System.Runtime.CompilerServices;
+using Xunit;
 
 // Test to make sure we can compute correct loop nest even in the face
 // of loop compaction.
 
 namespace N
 {
-    class C
+    public class C
     {
         class Node
         {
@@ -41,7 +42,8 @@ namespace N
             return result;
         }
 
-        public static int Main(string[] args)
+        [Fact]
+        public static int TestEntryPoint()
         {
             Node head = new Node { value = 6, next = new Node { value = 13, next = new Node { value = 5, next = null } } };
 

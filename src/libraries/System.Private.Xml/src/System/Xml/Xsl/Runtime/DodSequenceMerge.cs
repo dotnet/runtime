@@ -1,7 +1,6 @@
 // Licensed to the .NET Foundation under one or more agreements.
 // The .NET Foundation licenses this file to you under the MIT license.
 
-#nullable disable
 using System;
 using System.Collections.Generic;
 using System.Xml.XPath;
@@ -17,8 +16,8 @@ namespace System.Xml.Xsl.Runtime
     [EditorBrowsable(EditorBrowsableState.Never)]
     public struct DodSequenceMerge
     {
-        private IList<XPathNavigator> _firstSequence;
-        private List<IEnumerator<XPathNavigator>> _sequencesToMerge;
+        private IList<XPathNavigator>? _firstSequence;
+        private List<IEnumerator<XPathNavigator>>? _sequencesToMerge;
         private int _nodeCount;
         private XmlQueryRuntime _runtime;
 
@@ -118,7 +117,7 @@ namespace System.Xml.Xsl.Runtime
         /// </summary>
         private void InsertSequence(IEnumerator<XPathNavigator> sequence)
         {
-            for (int i = _sequencesToMerge.Count - 1; i >= 0; i--)
+            for (int i = _sequencesToMerge!.Count - 1; i >= 0; i--)
             {
                 int cmp = _runtime.ComparePosition(sequence.Current, _sequencesToMerge[i].Current);
 

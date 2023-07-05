@@ -171,16 +171,34 @@ public:
         // Shuffle float registers first
         if (m_currentFloatRegIndex < m_argLocDesc->m_cFloatReg)
         {
-            index = m_argLocDesc->m_idxFloatReg + m_currentFloatRegIndex;
-            m_currentFloatRegIndex++;
+#if defined(TARGET_LOONGARCH64)
+            if ((m_argLocDesc->m_structFields & STRUCT_FLOAT_FIELD_SECOND) && (m_currentGenRegIndex < m_argLocDesc->m_cGenReg))
+            {
+                // the first field is integer so just skip this.
+            }
+            else
+#endif
+            {
+                index = m_argLocDesc->m_idxFloatReg + m_currentFloatRegIndex;
+                m_currentFloatRegIndex++;
 
-            return index | ShuffleEntry::REGMASK | ShuffleEntry::FPREGMASK;
+                return index | ShuffleEntry::REGMASK | ShuffleEntry::FPREGMASK;
+            }
         }
 
         // Shuffle any registers first (the order matters since otherwise we could end up shuffling a stack slot
         // over a register we later need to shuffle down as well).
         if (m_currentGenRegIndex < m_argLocDesc->m_cGenReg)
         {
+#if defined(TARGET_LOONGARCH64)
+            if (7 < (m_currentGenRegIndex + m_argLocDesc->m_idxGenReg))
+            {
+                m_currentGenRegIndex++;
+                index = m_currentByteStackIndex;
+                m_currentByteStackIndex += TARGET_POINTER_SIZE;
+                return index;
+            }
+#endif
             index = m_argLocDesc->m_idxGenReg + m_currentGenRegIndex;
             m_currentGenRegIndex++;
 
@@ -277,9 +295,9 @@ public:
 // Return an index of argument slot. First indices are reserved for general purpose registers,
 // the following ones for float registers and then the rest for stack slots.
 // This index is independent of how many registers are actually used to pass arguments.
-int GetNormalizedArgumentSlotIndex(UINT16 offset)
+static UINT16 GetNormalizedArgumentSlotIndex(UINT16 offset)
 {
-    int index;
+    UINT16 index;
 
     if (offset & ShuffleEntry::FPREGMASK)
     {
@@ -513,11 +531,11 @@ BOOL GenerateShuffleArrayPortable(MethodDesc* pMethodSrc, MethodDesc *pMethodDst
         {
             ShuffleEntry entry = (*pShuffleEntryArray)[i];
 
-            int srcIndex = GetNormalizedArgumentSlotIndex(entry.srcofs);
-            int dstIndex = GetNormalizedArgumentSlotIndex(entry.dstofs);
+            UINT16 srcIndex = GetNormalizedArgumentSlotIndex(entry.srcofs);
+            UINT16 dstIndex = GetNormalizedArgumentSlotIndex(entry.dstofs);
 
-            _ASSERTE((srcIndex >= 0) && ((unsigned int)srcIndex < argSlots));
-            _ASSERTE((dstIndex >= 0) && ((unsigned int)dstIndex < argSlots));
+            _ASSERTE((srcIndex >= 0) && (srcIndex < argSlots));
+            _ASSERTE((dstIndex >= 0) && (dstIndex < argSlots));
 
             // Unmark the node to indicate that it was not processed yet
             pGraphNodes[srcIndex].isMarked = false;
@@ -814,11 +832,9 @@ Stub* COMDelegate::SetupShuffleThunk(MethodTable * pDelMT, MethodDesc *pTargetMe
         COMPlusThrowOM();
     }
 
-    g_IBCLogger.LogEEClassCOWTableAccess(pDelMT);
-
     if (!pTargetMeth->IsStatic() && pTargetMeth->HasRetBuffArg() && IsRetBuffPassedAsFirstArg())
     {
-        if (FastInterlockCompareExchangePointer(&pClass->m_pInstRetBuffCallStub, pShuffleThunk, NULL ) != NULL)
+        if (InterlockedCompareExchangeT(&pClass->m_pInstRetBuffCallStub, pShuffleThunk, NULL ) != NULL)
         {
             ExecutableWriterHolder<Stub> shuffleThunkWriterHolder(pShuffleThunk, sizeof(Stub));
             shuffleThunkWriterHolder.GetRW()->DecRef();
@@ -827,7 +843,7 @@ Stub* COMDelegate::SetupShuffleThunk(MethodTable * pDelMT, MethodDesc *pTargetMe
     }
     else
     {
-        if (FastInterlockCompareExchangePointer(&pClass->m_pStaticCallStub, pShuffleThunk, NULL ) != NULL)
+        if (InterlockedCompareExchangeT(&pClass->m_pStaticCallStub, pShuffleThunk, NULL ) != NULL)
         {
             ExecutableWriterHolder<Stub> shuffleThunkWriterHolder(pShuffleThunk, sizeof(Stub));
             shuffleThunkWriterHolder.GetRW()->DecRef();
@@ -908,9 +924,9 @@ FCIMPL5(FC_BOOL_RET, COMDelegate::BindToMethodName,
     //
 
     // get the name in UTF8 format
-    SString wszName(SString::Literal, gc.methodName->GetBuffer());
-    StackScratchBuffer utf8Name;
-    LPCUTF8 szNameStr = wszName.GetUTF8(utf8Name);
+    StackSString szName;
+    szName.SetAndConvertToUTF8(gc.methodName->GetBuffer());
+    LPCUTF8 szNameStr = szName.GetUTF8();
 
     // pick a proper compare function
     typedef int (__cdecl *UTF8StringCompareFuncPtr)(const char *, const char *);
@@ -1257,8 +1273,7 @@ LPVOID COMDelegate::ConvertToCallback(OBJECTREF pDelegateObj)
                 ExecutableWriterHolder<UMThunkMarshInfo> uMThunkMarshInfoWriterHolder(pUMThunkMarshInfo, sizeof(UMThunkMarshInfo));
                 uMThunkMarshInfoWriterHolder.GetRW()->LoadTimeInit(pInvokeMeth);
 
-                g_IBCLogger.LogEEClassCOWTableAccess(pMT);
-                if (FastInterlockCompareExchangePointer(&(pClass->m_pUMThunkMarshInfo),
+                if (InterlockedCompareExchangeT(&(pClass->m_pUMThunkMarshInfo),
                                                         pUMThunkMarshInfo,
                                                         NULL ) != NULL)
                 {
@@ -1473,34 +1488,6 @@ MethodDesc* COMDelegate::GetILStubMethodDesc(EEImplMethodDesc* pDelegateMD, DWOR
     return NDirect::CreateCLRToNativeILStub(&sigInfo, dwStubFlags, pDelegateMD);
 }
 
-
-
-FCIMPL2(FC_BOOL_RET, COMDelegate::CompareUnmanagedFunctionPtrs, Object *refDelegate1UNSAFE, Object *refDelegate2UNSAFE)
-{
-    CONTRACTL
-    {
-        FCALL_CHECK;
-        PRECONDITION(refDelegate1UNSAFE != NULL);
-        PRECONDITION(refDelegate2UNSAFE != NULL);
-    }
-    CONTRACTL_END;
-
-    DELEGATEREF refD1 = (DELEGATEREF) ObjectToOBJECTREF(refDelegate1UNSAFE);
-    DELEGATEREF refD2 = (DELEGATEREF) ObjectToOBJECTREF(refDelegate2UNSAFE);
-    BOOL ret = FALSE;
-
-    // Make sure this is an unmanaged function pointer wrapped in a delegate.
-    CONSISTENCY_CHECK(DELEGATE_MARKER_UNMANAGEDFPTR == refD1->GetInvocationCount());
-    CONSISTENCY_CHECK(DELEGATE_MARKER_UNMANAGEDFPTR == refD2->GetInvocationCount());
-
-    ret = (refD1->GetMethodPtr() == refD2->GetMethodPtr() &&
-           refD1->GetMethodPtrAux() == refD2->GetMethodPtrAux());
-
-    FC_RETURN_BOOL(ret);
-}
-FCIMPLEND
-
-
 void COMDelegate::RemoveEntryFromFPtrHash(UPTR key)
 {
     WRAPPER_NO_CONTRACT;
@@ -1581,6 +1568,25 @@ FCIMPLEND
 extern "C" void * _ReturnAddress(void);
 #endif // _MSC_VER && !TARGET_UNIX
 
+uint32_t MethodDescToNumFixedArgs(MethodDesc *pMD)
+{
+    WRAPPER_NO_CONTRACT;
+
+    SigParser sig = pMD->GetSigParser();
+
+    uint32_t data;
+    IfFailThrow(sig.GetCallingConvInfo(&data));
+    if (data & IMAGE_CEE_CS_CALLCONV_GENERIC)
+    {
+        // Skip over generic argument count
+        IfFailThrow(sig.GetData(&data));
+    }
+
+    // Return argument count
+    IfFailThrow(sig.GetData(&data));
+    return data;
+}
+
 // This is the single constructor for all Delegates.  The compiler
 //  doesn't provide an implementation of the Delegate constructor.  We
 //  provide that implementation through an ECall call to this method.
@@ -1648,10 +1654,8 @@ FCIMPL3(void, COMDelegate::DelegateConstruct, Object* refThisUNSAFE, Object* tar
     DelegateEEClass *pDelCls = (DelegateEEClass*)pDelMT->GetClass();
     MethodDesc *pDelegateInvoke = COMDelegate::FindDelegateInvokeMethod(pDelMT);
 
-    MetaSig invokeSig(pDelegateInvoke);
-    MetaSig methodSig(pMeth);
-    UINT invokeArgCount = invokeSig.NumFixedArgs();
-    UINT methodArgCount = methodSig.NumFixedArgs();
+    UINT invokeArgCount = MethodDescToNumFixedArgs(pDelegateInvoke);
+    UINT methodArgCount = MethodDescToNumFixedArgs(pMeth);
     BOOL isStatic = pMeth->IsStatic();
     if (!isStatic)
     {
@@ -1701,8 +1705,6 @@ FCIMPL3(void, COMDelegate::DelegateConstruct, Object* refThisUNSAFE, Object* tar
         {
             if (pMTTarg)
             {
-                g_IBCLogger.LogMethodTableAccess(pMTTarg);
-
                 // Use the Unboxing stub for value class methods, since the value
                 // class is constructed using the boxed instance.
                 //
@@ -2016,30 +2018,6 @@ FCIMPL1(Object*, COMDelegate::InternalAllocLike, Object* pThis)
 }
 FCIMPLEND
 
-FCIMPL2(FC_BOOL_RET, COMDelegate::InternalEqualTypes, Object* pThis, Object *pThat)
-{
-    FCALL_CONTRACT;
-
-    MethodTable *pThisMT = pThis->GetMethodTable();
-    MethodTable *pThatMT = pThat->GetMethodTable();
-
-    _ASSERTE(pThisMT != NULL && pThisMT->IsDelegate());
-    _ASSERTE(pThatMT != NULL);
-
-    BOOL bResult = (pThisMT == pThatMT);
-
-    if (!bResult)
-    {
-        HELPER_METHOD_FRAME_BEGIN_RET_0();
-        bResult = pThisMT->IsEquivalentTo(pThatMT);
-        HELPER_METHOD_FRAME_END();
-    }
-
-    FC_RETURN_BOOL(bResult);
-}
-FCIMPLEND
-
-
 void COMDelegate::ThrowIfInvalidUnmanagedCallersOnlyUsage(MethodDesc* pMD)
 {
     CONTRACTL
@@ -2145,6 +2123,7 @@ FCIMPL1(ReflectMethodObject *, COMDelegate::FindMethodHandle, Object* refThisIn)
     HELPER_METHOD_FRAME_BEGIN_RET_1(refThis);
 
     pMD = GetMethodDesc(refThis);
+    pMD = MethodDesc::FindOrCreateAssociatedMethodDescForReflection(pMD, TypeHandle(pMD->GetMethodTable()), pMD->GetMethodInstantiation());
     pRet = pMD->GetStubMethodInfo();
     HELPER_METHOD_FRAME_END();
 
@@ -2297,8 +2276,6 @@ FCIMPL1(PCODE, COMDelegate::GetMulticastInvoke, Object* refThisIn)
 
         pStub = Stub::NewStub(JitILStub(pStubMD));
 
-        g_IBCLogger.LogEEClassCOWTableAccess(pDelegateMT);
-
         InterlockedCompareExchangeT<PTR_Stub>(&delegateEEClass->m_pMultiCastInvokeStub, pStub, NULL);
 
         HELPER_METHOD_FRAME_END();
@@ -2350,13 +2327,11 @@ FCIMPL1(PCODE, COMDelegate::GetMulticastInvoke, Object* refThisIn)
             if (!pWinner)
                 COMPlusThrowOM();
 
-            LOG((LF_CORDB,LL_INFO10000, "Putting a MC stub at 0x%x (code:0x%x)\n",
+            LOG((LF_CORDB,LL_INFO10000, "Putting a MC stub at 0x%p (code:0x%p)\n",
                 pWinner, (BYTE*)pWinner+sizeof(Stub)));
 
             pStub = pWinner;
         }
-
-        g_IBCLogger.LogEEClassCOWTableAccess(pDelegateMT);
 
         // we don't need to do an InterlockedCompareExchange here - the m_pMulticastStubCache->AttemptToSetStub
         // will make sure all threads racing here will get the same stub, so they'll all store the same value
@@ -2428,8 +2403,6 @@ PCODE COMDelegate::GetWrapperInvoke(MethodDesc* pMD)
                                                           &sl);
 
         pStub = Stub::NewStub(JitILStub(pStubMD));
-
-        g_IBCLogger.LogEEClassCOWTableAccess(pDelegateMT);
 
         InterlockedCompareExchangeT<PTR_Stub>(&delegateEEClass->m_pWrapperDelegateInvokeStub, pStub, NULL);
 
@@ -3047,68 +3020,6 @@ MethodDesc* COMDelegate::GetDelegateCtor(TypeHandle delegateType, MethodDesc *pT
 }
 
 
-/*@GENERICSVER: new (works for generics too)
-    Does a static validation of parameters passed into a delegate constructor.
-
-
-    For "new Delegate(obj.method)" where method is statically typed as "C::m" and
-    the static type of obj is D (some subclass of C)...
-
-    Params:
-    instHnd : Static type of the instance, from which pFtn is obtained. Ignored if pFtn
-             is static (i.e. D)
-    ftnParentHnd: Parent of the MethodDesc, pFtn, used to create the delegate (i.e. type C)
-    pFtn  : (possibly shared) MethodDesc of the function pointer used to create the delegate (i.e. C::m)
-    pDlgt : The delegate type (i.e. Delegate)
-    module: The module scoping methodMemberRef and delegateConstructorMemberRef
-    methodMemberRef: the MemberRef, MemberDef or MemberSpec of the target method  (i.e. a mdToken for C::m)
-    delegateConstructorMemberRef: the MemberRef, MemberDef or MemberSpec of the delegate constructor (i.e. a mdToken for Delegate::.ctor)
-
-    Validates the following conditions:
-    1.  If the function (pFtn) is not static, pInst should be equal to the type where
-        pFtn is defined or pInst should be a parent of pFtn's type.
-    2.  The signature of the function should be compatible with the signature
-        of the Invoke method of the delegate type.
-        The signature is retrieved from module, methodMemberRef and delegateConstructorMemberRef
-
-    NB: Although some of these arguments are redundant, we pass them in to avoid looking up
-        information that should already be available.
-        Instead of comparing type handles modulo some context, the method directly compares metadata to avoid
-        loading classes referenced in the method signatures (hence the need for the module and member refs).
-        Also, because this method works directly on metadata, without allowing any additional instantiation of the
-        free type variables in the signature of the method or delegate constructor, this code
-        will *only* verify a constructor application at the typical (ie. formal) instantiation.
-*/
-/* static */
-bool COMDelegate::ValidateCtor(TypeHandle instHnd,
-                               TypeHandle ftnParentHnd,
-                               MethodDesc *pFtn,
-                               TypeHandle dlgtHnd,
-                               bool       *pfIsOpenDelegate)
-
-{
-    CONTRACTL
-    {
-        THROWS;
-        GC_TRIGGERS;
-        MODE_ANY;
-
-        PRECONDITION(CheckPointer(pFtn));
-        PRECONDITION(!dlgtHnd.IsNull());
-        PRECONDITION(!ftnParentHnd.IsNull());
-
-        INJECT_FAULT(COMPlusThrowOM()); // from MetaSig::CompareElementType
-    }
-    CONTRACTL_END;
-
-    DelegateEEClass *pdlgEEClass = (DelegateEEClass*)dlgtHnd.AsMethodTable()->GetClass();
-    PREFIX_ASSUME(pdlgEEClass != NULL);
-    MethodDesc *pDlgtInvoke = pdlgEEClass->GetInvokeMethod();
-    if (pDlgtInvoke == NULL)
-        return false;
-    return IsMethodDescCompatible(instHnd, ftnParentHnd, pFtn, dlgtHnd, pDlgtInvoke, DBF_RelaxedSignature, pfIsOpenDelegate);
-}
-
 BOOL COMDelegate::IsWrapperDelegate(DELEGATEREF dRef)
 {
     CONTRACTL
@@ -3246,13 +3157,15 @@ void DistributeUnhandledExceptionReliably(OBJECTREF *pDelegate,
 
     EX_TRY
     {
-        struct _gc
+        struct
         {
             PTRARRAYREF Array;
             OBJECTREF   InnerDelegate;
             OBJECTREF   EventArgs;
         } gc;
-        ZeroMemory(&gc, sizeof(gc));
+        gc.Array = NULL;
+        gc.InnerDelegate = NULL;
+        gc.EventArgs = NULL;
 
         GCPROTECT_BEGIN(gc);
 

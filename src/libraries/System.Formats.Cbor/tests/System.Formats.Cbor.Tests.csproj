@@ -1,9 +1,11 @@
 ﻿<Project Sdk="Microsoft.NET.Sdk">
   <PropertyGroup>
-    <TargetFrameworks>$(NetCoreAppCurrent);net48</TargetFrameworks>
+    <TargetFrameworks>$(NetCoreAppCurrent);$(NetFrameworkCurrent)</TargetFrameworks>
     <nullable>enable</nullable>
     <!-- Referenced assembly 'FsCheck' does not have a strong name.-->
-    <NoWarn>CS8002</NoWarn>
+    <NoWarn>$(NoWarn);CS8002</NoWarn>
+    <!-- FSharp.Core: Could not find embedded resource 'FSharpOptimizationCompressedData.FSharp.Core' to remove in assembly 'FSharp.Core'. See https://github.com/dotnet/fsharp/pull/14395 -->
+    <NoWarn>$(NoWarn);IL2040</NoWarn>
   </PropertyGroup>
   <ItemGroup>
     <Compile Include="$(CommonTestPath)System\Security\Cryptography\ByteUtils.cs">

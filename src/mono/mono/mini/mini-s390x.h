@@ -129,8 +129,6 @@ struct SeqPointInfo {
 
 #define MONO_ARCH_CALLEE_SAVED_FREGS 0
 
-#define MONO_ARCH_USE_FPSTACK FALSE
-
 #define MONO_ARCH_INST_FIXED_REG(desc) ((desc == 'o') ? s390_r2 : 		\
 					((desc == 'g') ? s390_f0 : 		\
 					((desc == 'A') ? S390_FIRST_ARG_REG : -1)))

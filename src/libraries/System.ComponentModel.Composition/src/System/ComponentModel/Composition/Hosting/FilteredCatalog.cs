@@ -115,10 +115,7 @@ namespace System.ComponentModel.Composition.Hosting
                         }
                     }
 
-                    if (complement != null)
-                    {
-                        complement.Dispose();
-                    }
+                    complement?.Dispose();
                 }
 
                 return _complement;
@@ -182,11 +179,7 @@ namespace System.ComponentModel.Composition.Hosting
         /// <param name="e">The <see cref="System.ComponentModel.Composition.Hosting.ComposablePartCatalogChangeEventArgs"/> instance containing the event data.</param>
         protected virtual void OnChanged(ComposablePartCatalogChangeEventArgs e)
         {
-            EventHandler<ComposablePartCatalogChangeEventArgs>? changedEvent = Changed;
-            if (changedEvent != null)
-            {
-                changedEvent.Invoke(this, e);
-            }
+            Changed?.Invoke(this, e);
         }
 
         /// <summary>
@@ -195,11 +188,7 @@ namespace System.ComponentModel.Composition.Hosting
         /// <param name="e">The <see cref="System.ComponentModel.Composition.Hosting.ComposablePartCatalogChangeEventArgs"/> instance containing the event data.</param>
         protected virtual void OnChanging(ComposablePartCatalogChangeEventArgs e)
         {
-            EventHandler<ComposablePartCatalogChangeEventArgs>? changingEvent = Changing;
-            if (changingEvent != null)
-            {
-                changingEvent.Invoke(this, e);
-            }
+            Changing?.Invoke(this, e);
         }
 
         private void OnChangedInternal(object? sender, ComposablePartCatalogChangeEventArgs e)

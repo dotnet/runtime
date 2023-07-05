@@ -1,7 +1,6 @@
 // Licensed to the .NET Foundation under one or more agreements.
 // The .NET Foundation licenses this file to you under the MIT license.
 
-#nullable disable
 using System.Diagnostics;
 using System.Globalization;
 using System.Text;
@@ -27,9 +26,9 @@ namespace System.Xml.Xsl.Runtime
     internal sealed class DecimalFormatter
     {
         private readonly NumberFormatInfo _posFormatInfo;
-        private readonly NumberFormatInfo _negFormatInfo;
-        private readonly string _posFormat;
-        private readonly string _negFormat;
+        private readonly NumberFormatInfo? _negFormatInfo;
+        private readonly string? _posFormat;
+        private readonly string? _negFormat;
         private readonly char _zeroDigit;
 
         // These characters have special meaning for CLR and must be escaped
@@ -172,7 +171,7 @@ namespace System.Xml.Xsl.Runtime
                     continue;
                 }
                 // Escape literal digits with EscChar, double literal EscChar
-                if ('0' <= ch && ch <= '9' || ch == EscChar)
+                if (char.IsAsciiDigit(ch) || ch == EscChar)
                 {
                     if (decimalFormat.zeroDigit != '0')
                     {
@@ -191,7 +190,7 @@ namespace System.Xml.Xsl.Runtime
             {
                 throw XsltException.Create(SR.Xslt_InvalidFormat8);
             }
-            NumberFormatInfo formatInfo = sawPattern ? _negFormatInfo : _posFormatInfo;
+            NumberFormatInfo formatInfo = sawPattern ? _negFormatInfo! : _posFormatInfo;
 
             if (decimalIndex < 0)
             {
@@ -234,7 +233,7 @@ namespace System.Xml.Xsl.Runtime
         public string Format(double value)
         {
             NumberFormatInfo formatInfo;
-            string subPicture;
+            string? subPicture;
 
             if (value < 0 && _negFormatInfo != null)
             {
@@ -256,7 +255,7 @@ namespace System.Xml.Xsl.Runtime
                 for (int i = 0; i < result.Length; i++)
                 {
                     char ch = result[i];
-                    if ((uint)(ch - '0') <= 9)
+                    if (char.IsAsciiDigit(ch))
                     {
                         ch += (char)shift;
                     }
@@ -266,7 +265,7 @@ namespace System.Xml.Xsl.Runtime
                         // of the fact that no extra EscChar could be inserted by value.ToString().
                         Debug.Assert(i + 1 < result.Length);
                         ch = result[++i];
-                        Debug.Assert('0' <= ch && ch <= '9' || ch == EscChar);
+                        Debug.Assert(char.IsAsciiDigit(ch) || ch == EscChar);
                     }
                     builder.Append(ch);
                 }

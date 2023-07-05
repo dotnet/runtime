@@ -11,7 +11,7 @@ namespace Internal.Compiler
     /// <summary>
     /// IL Opcode reader in external reader style where the reading is done by trying to read
     /// various opcodes, and the reader can indicate success or failure of reading a particular opcode
-    /// 
+    ///
     /// Used by logic which is designed to encode information in il structure, but not used
     /// to support general compilation of IL.
     /// </summary>

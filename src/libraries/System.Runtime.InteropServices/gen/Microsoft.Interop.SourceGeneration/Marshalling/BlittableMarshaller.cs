@@ -15,9 +15,9 @@ namespace Microsoft.Interop
     {
         public bool IsSupported(TargetFramework target, Version version) => true;
 
-        public TypeSyntax AsNativeType(TypePositionInfo info)
+        public ManagedTypeInfo AsNativeType(TypePositionInfo info)
         {
-            return info.ManagedType.Syntax;
+            return info.ManagedType;
         }
 
         public SignatureBehavior GetNativeSignatureBehavior(TypePositionInfo info)
@@ -31,7 +31,7 @@ namespace Microsoft.Interop
             {
                 return ValueBoundaryBehavior.ManagedIdentifier;
             }
-            else if (context.SingleFrameSpansNativeContext && !info.IsManagedReturnPosition)
+            else if (context.SingleFrameSpansNativeContext && !context.IsInStubReturnPosition(info))
             {
                 return ValueBoundaryBehavior.NativeIdentifier;
             }
@@ -40,7 +40,7 @@ namespace Microsoft.Interop
 
         public IEnumerable<StatementSyntax> Generate(TypePositionInfo info, StubCodeContext context)
         {
-            if (!info.IsByRef || info.IsManagedReturnPosition)
+            if (!info.IsByRef || context.IsInStubReturnPosition(info))
                 yield break;
 
             (string managedIdentifier, string nativeIdentifier) = context.GetIdentifiers(info);
@@ -51,7 +51,7 @@ namespace Microsoft.Interop
                 {
                     yield return FixedStatement(
                         VariableDeclaration(
-                            PointerType(AsNativeType(info)),
+                            PointerType(AsNativeType(info).Syntax),
                             SingletonSeparatedList(
                                 VariableDeclarator(Identifier(nativeIdentifier))
                                     .WithInitializer(EqualsValueClause(
@@ -66,12 +66,14 @@ namespace Microsoft.Interop
                 yield break;
             }
 
+            MarshalDirection elementMarshalling = MarshallerHelpers.GetMarshalDirection(info, context);
+
             switch (context.CurrentStage)
             {
                 case StubCodeContext.Stage.Setup:
                     break;
                 case StubCodeContext.Stage.Marshal:
-                    if (info.RefKind == RefKind.Ref)
+                    if (elementMarshalling is MarshalDirection.ManagedToUnmanaged or MarshalDirection.Bidirectional && info.IsByRef)
                     {
                         yield return ExpressionStatement(
                             AssignmentExpression(
@@ -82,11 +84,14 @@ namespace Microsoft.Interop
 
                     break;
                 case StubCodeContext.Stage.Unmarshal:
-                    yield return ExpressionStatement(
-                        AssignmentExpression(
-                            SyntaxKind.SimpleAssignmentExpression,
-                            IdentifierName(managedIdentifier),
-                            IdentifierName(nativeIdentifier)));
+                    if (elementMarshalling is MarshalDirection.UnmanagedToManaged or MarshalDirection.Bidirectional && info.IsByRef)
+                    {
+                        yield return ExpressionStatement(
+                            AssignmentExpression(
+                                SyntaxKind.SimpleAssignmentExpression,
+                                IdentifierName(managedIdentifier),
+                                IdentifierName(nativeIdentifier)));
+                    }
                     break;
                 default:
                     break;
@@ -95,10 +100,10 @@ namespace Microsoft.Interop
 
         public bool UsesNativeIdentifier(TypePositionInfo info, StubCodeContext context)
         {
-            return info.IsByRef && !info.IsManagedReturnPosition && !context.SingleFrameSpansNativeContext;
+            return info.IsByRef && !context.IsInStubReturnPosition(info) && !context.SingleFrameSpansNativeContext;
         }
 
-        public bool SupportsByValueMarshalKind(ByValueContentsMarshalKind marshalKind, StubCodeContext context) => false;
+        public ByValueMarshalKindSupport SupportsByValueMarshalKind(ByValueContentsMarshalKind marshalKind, StubCodeContext context) => ByValueMarshalKindSupport.NotSupported;
     }
 
 }

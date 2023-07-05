@@ -161,7 +161,7 @@ namespace Microsoft.Extensions.Logging.Testing.Tests
 
         public static TheoryData<
             IEnumerable<KeyValuePair<string, object>>,
-            IEnumerable<KeyValuePair<string, object>>> CaseSensitivityComparisionData
+            IEnumerable<KeyValuePair<string, object>>> CaseSensitivityComparisonData
         {
             get
             {
@@ -198,8 +198,8 @@ namespace Microsoft.Extensions.Logging.Testing.Tests
         }
 
         [Theory]
-        [MemberData(nameof(CaseSensitivityComparisionData))]
-        public void DefaultComparer_Performs_CaseSensitiveComparision(
+        [MemberData(nameof(CaseSensitivityComparisonData))]
+        public void DefaultComparer_Performs_CaseSensitiveComparison(
             IEnumerable<KeyValuePair<string, object>> expectedValues,
             IEnumerable<KeyValuePair<string, object>> actualValues)
         {

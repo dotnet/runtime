@@ -69,7 +69,7 @@ ep_event_instance_init (
 
 #ifdef EP_CHECKED_BUILD
 	event_instance->debug_event_start = 0xDEADBEEF;
-	event_instance->debug_event_end = 0xCAFEBABE;
+	event_instance->debug_event_end = 0xC0DEC0DE;
 #endif
 
 	event_instance->ep_event = ep_event;
@@ -113,7 +113,7 @@ ep_event_instance_ensure_consistency (const EventPipeEventInstance *ep_event_ins
 {
 #ifdef EP_CHECKED_BUILD
 	EP_ASSERT (ep_event_instance->debug_event_start == 0xDEADBEEF);
-	EP_ASSERT (ep_event_instance->debug_event_end == 0xCAFEBABE);
+	EP_ASSERT (ep_event_instance->debug_event_end == 0xC0DEC0DE);
 #endif
 
 	return true;
@@ -148,7 +148,7 @@ ep_event_instance_get_aligned_total_size (
 			// Prepended stack payload size in bytes
 			sizeof (uint32_t) +
 			// Stack payload size
-			ep_stack_contents_get_size (&ep_event_instance->stack_contents);
+			ep_stack_contents_instance_get_size (&ep_event_instance->stack_contents_instance);
 	} else if (format == EP_SERIALIZATION_FORMAT_NETTRACE_V4) {
 		payload_len =
 			// Metadata ID
@@ -207,7 +207,7 @@ ep_event_instance_serialize_to_json_file (
 		ep_event_get_event_version (ep_event_instance->ep_event));
 
 	if (characters_written > 0 && characters_written < (int32_t)ARRAY_SIZE (buffer))
-		ep_json_file_write_event_data (json_file, ep_event_instance->timestamp, ep_rt_uint64_t_to_thread_id_t (ep_event_instance->thread_id), buffer, &ep_event_instance->stack_contents);
+		ep_json_file_write_event_data (json_file, ep_event_instance->timestamp, ep_rt_uint64_t_to_thread_id_t (ep_event_instance->thread_id), buffer, &ep_event_instance->stack_contents_instance);
 }
 #else
 void
@@ -230,17 +230,13 @@ sequence_point_fini (EventPipeSequencePoint *sequence_point)
 	EP_ASSERT (sequence_point != NULL);
 
 	// Each entry in the map owns a ref-count on the corresponding thread
-	if (ep_rt_thread_sequence_number_map_count (&sequence_point->thread_sequence_numbers) != 0) {
-		for (ep_rt_thread_sequence_number_hash_map_iterator_t iterator = ep_rt_thread_sequence_number_map_iterator_begin (&sequence_point->thread_sequence_numbers);
-			!ep_rt_thread_sequence_number_map_iterator_end (&sequence_point->thread_sequence_numbers, &iterator);
-			ep_rt_thread_sequence_number_map_iterator_next (&iterator)) {
-
-			EventPipeThreadSessionState *key = ep_rt_thread_sequence_number_map_iterator_key (&iterator);
+	if (dn_umap_size (sequence_point->thread_sequence_numbers) != 0) {
+		DN_UMAP_FOREACH_KEY_BEGIN (EventPipeThreadSessionState *, key, sequence_point->thread_sequence_numbers) {
 			ep_thread_release (ep_thread_session_state_get_thread (key));
-		}
+		} DN_UMAP_FOREACH_END;
 	}
 
-	ep_rt_thread_sequence_number_map_free (&sequence_point->thread_sequence_numbers);
+	dn_umap_free (sequence_point->thread_sequence_numbers);
 }
 
 
@@ -266,8 +262,8 @@ ep_sequence_point_init (EventPipeSequencePoint *sequence_point)
 	EP_ASSERT (sequence_point != NULL);
 
 	sequence_point->timestamp = 0;
-	ep_rt_thread_sequence_number_map_alloc (&sequence_point->thread_sequence_numbers, NULL, NULL, NULL, NULL);
-	return ep_rt_thread_sequence_number_map_is_valid (&sequence_point->thread_sequence_numbers) ? sequence_point : NULL;
+	sequence_point->thread_sequence_numbers = dn_umap_alloc ();
+	return sequence_point->thread_sequence_numbers ? sequence_point : NULL;
 }
 
 void
@@ -289,7 +285,7 @@ ep_sequence_point_free (EventPipeSequencePoint *sequence_point)
 #endif /* !defined(EP_INCLUDE_SOURCE_FILES) || defined(EP_FORCE_INCLUDE_SOURCE_FILES) */
 #endif /* ENABLE_PERFTRACING */
 
-#ifndef EP_INCLUDE_SOURCE_FILES
+#if !defined(ENABLE_PERFTRACING) || (defined(EP_INCLUDE_SOURCE_FILES) && !defined(EP_FORCE_INCLUDE_SOURCE_FILES))
 extern const char quiet_linker_empty_file_warning_eventpipe_event_instance;
 const char quiet_linker_empty_file_warning_eventpipe_event_instance = 0;
 #endif

@@ -117,13 +117,13 @@ namespace System.PrivateUri.Tests
         }
 
         [Fact]
-        public void UriMailTo_TwoSemiColonSepratedAddresses_Success()
+        public void UriMailTo_TwoSemiColonSeparatedAddresses_Success()
         {
             Assert.ThrowsAny<FormatException>(() => new Uri("mailto:User@Host;User@Host"));
         }
 
         [Fact]
-        public void UriMailTo_TwoCommaSepratedAddresses_Success()
+        public void UriMailTo_TwoCommaSeparatedAddresses_Success()
         {
             Assert.ThrowsAny<FormatException>(() => new Uri("mailto:User@Host,User@Host"));
         }
@@ -177,6 +177,15 @@ namespace System.PrivateUri.Tests
             Assert.Equal("\u30AF", uri.Host);
             Assert.Equal("", uri.AbsolutePath);
             Assert.Equal("\u30AF@\u30AF", uri.GetComponents(UriComponents.UserInfo | UriComponents.Host, UriFormat.SafeUnescaped));
+        }
+
+        [Fact]
+        public void UriMailTo_DifferentEmailAddressesNotEqual_Success()
+        {
+            var uri1 = new Uri("mailto:first@contoso.com");
+            var uri2 = new Uri("mailto:second@contoso.com");
+
+            Assert.NotEqual(uri1, uri2);
         }
     }
 }

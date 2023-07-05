@@ -36,7 +36,7 @@ namespace System.Xml
         {
             if (!doc.IsLoading)
             {
-                if (name.Length > 0 && name[0] == '#')
+                if (name.StartsWith('#'))
                 {
                     throw new ArgumentException(SR.Xdom_InvalidCharacter_EntityReference);
                 }
@@ -179,17 +179,23 @@ namespace System.Xml
             }
         }
 
-        private string ConstructBaseURI(string baseURI, string systemId)
+        private static string ConstructBaseURI(string baseURI, string systemId)
         {
             if (baseURI == null)
                 return systemId;
+
             int nCount = baseURI.LastIndexOf('/') + 1;
             string buf = baseURI;
             if (nCount > 0 && nCount < baseURI.Length)
                 buf = baseURI.Substring(0, nCount);
             else if (nCount == 0)
                 buf = $"{buf}\\";
-            return (buf + systemId.Replace('\\', '/'));
+
+            return string.Create(buf.Length + systemId.Length, (buf, systemId), (dest, state) =>
+            {
+                state.buf.CopyTo(dest);
+                state.systemId.AsSpan().Replace(dest.Slice(state.buf.Length), '\\', '/');
+            });
         }
 
         //childrenBaseURI returns where the entity reference node's children come from

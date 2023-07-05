@@ -7,7 +7,7 @@ using System.Threading;
 using System.Threading.Tasks;
 using Xunit;
 
-namespace System.Xml.Tests
+namespace System.Xml.XmlWriterTests
 {
     public class MyXmlWriter : XmlWriter
     {

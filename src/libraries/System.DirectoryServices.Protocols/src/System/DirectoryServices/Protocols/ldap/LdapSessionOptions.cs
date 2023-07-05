@@ -553,41 +553,37 @@ namespace System.DirectoryServices.Protocols
 
             try
             {
-                IntPtr tempPtr = IntPtr.Zero;
-
                 // build server control
-                managedServerControls = _connection.BuildControlArray(controls, true);
+                managedServerControls = LdapConnection.BuildControlArray(controls, true);
                 int structSize = Marshal.SizeOf(typeof(LdapControl));
                 if (managedServerControls != null)
                 {
                     serverControlArray = Utility.AllocHGlobalIntPtrArray(managedServerControls.Length + 1);
+                    void** pServerControlArray = (void**)serverControlArray;
                     for (int i = 0; i < managedServerControls.Length; i++)
                     {
                         IntPtr controlPtr = Marshal.AllocHGlobal(structSize);
                         Marshal.StructureToPtr(managedServerControls[i], controlPtr, false);
-                        tempPtr = (IntPtr)((long)serverControlArray + IntPtr.Size * i);
-                        Marshal.WriteIntPtr(tempPtr, controlPtr);
+                        pServerControlArray[i] = (void*)controlPtr;
                     }
 
-                    tempPtr = (IntPtr)((long)serverControlArray + IntPtr.Size * managedServerControls.Length);
-                    Marshal.WriteIntPtr(tempPtr, IntPtr.Zero);
+                    pServerControlArray[managedServerControls.Length] = null;
                 }
 
                 // Build client control.
-                managedClientControls = _connection.BuildControlArray(controls, false);
+                managedClientControls = LdapConnection.BuildControlArray(controls, false);
                 if (managedClientControls != null)
                 {
                     clientControlArray = Utility.AllocHGlobalIntPtrArray(managedClientControls.Length + 1);
+                    void** pClientControlArray = (void**)clientControlArray;
                     for (int i = 0; i < managedClientControls.Length; i++)
                     {
                         IntPtr controlPtr = Marshal.AllocHGlobal(structSize);
                         Marshal.StructureToPtr(managedClientControls[i], controlPtr, false);
-                        tempPtr = (IntPtr)((long)clientControlArray + IntPtr.Size * i);
-                        Marshal.WriteIntPtr(tempPtr, controlPtr);
+                        pClientControlArray[i] = (void*)controlPtr;
                     }
 
-                    tempPtr = (IntPtr)((long)clientControlArray + IntPtr.Size * managedClientControls.Length);
-                    Marshal.WriteIntPtr(tempPtr, IntPtr.Zero);
+                    pClientControlArray[managedClientControls.Length] = null;
                 }
 
                 int error = LdapPal.StartTls(_connection._ldapHandle, ref serverError, ref ldapResult, serverControlArray, clientControlArray);
@@ -877,11 +873,8 @@ namespace System.DirectoryServices.Protocols
                     NewDN = LdapPal.PtrToString(NewDNPtr);
                 }
 
-                var target = new StringBuilder();
-                target.Append(Marshal.PtrToStringUni(HostNamePtr));
-                target.Append(':');
-                target.Append(PortNumber);
-                var identifier = new LdapDirectoryIdentifier(target.ToString());
+                string target = $"{Marshal.PtrToStringUni(HostNamePtr)}:{PortNumber}";
+                var identifier = new LdapDirectoryIdentifier(target);
 
                 NetworkCredential cred = ProcessSecAuthIdentity(SecAuthIdentity);
                 LdapConnection tempReferralConnection = null;
@@ -944,11 +937,8 @@ namespace System.DirectoryServices.Protocols
                     newDN = LdapPal.PtrToString(newDNPtr);
                 }
 
-                var target = new StringBuilder();
-                target.Append(Marshal.PtrToStringUni(hostNamePtr));
-                target.Append(':');
-                target.Append(portNumber);
-                var identifier = new LdapDirectoryIdentifier(target.ToString());
+                string target = $"{Marshal.PtrToStringUni(hostNamePtr)}:{portNumber}";
+                var identifier = new LdapDirectoryIdentifier(target);
 
                 NetworkCredential cred = ProcessSecAuthIdentity(SecAuthIdentity);
                 LdapConnection tempNewConnection = null;

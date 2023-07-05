@@ -37,7 +37,7 @@ namespace GenUnicodeProp
 
             // Next, iterate though all assigned code points, populating
             // the category casing & numeric grapheme maps. Also put the
-            // data into the the DataTable structure, which will compute
+            // data into the DataTable structure, which will compute
             // the tiered offset tables.
 
             DataTable categoryCasingTable = new DataTable();
@@ -175,7 +175,7 @@ namespace GenUnicodeProp
             PrintByteArray(tableName.Replace('1', '3'), file, levels[2]);
         }
 
-        private static void PrintValueArray<T>(string tableName, Dictionary<T, byte> d, Func<T, byte[]> getBytesCallback, StreamWriter file)
+        private static void PrintValueArray<T>(string tableName, Dictionary<T, byte> d, Func<T, byte[]> getBytesCallback, StreamWriter file) where T : notnull
         {
             Console.WriteLine("    ******************************** .");
 

@@ -21,7 +21,7 @@ namespace System.Reflection.Metadata
         public static bool IsSupported => (IsModifiableAssembliesSet || IsRemoteExecutorSupported) &&
             (!IsMonoRuntime || IsSupportedMonoConfiguration);
 
-        /// true if the current runtime was not launched with the apropriate settings for applying
+        /// true if the current runtime was not launched with the appropriate settings for applying
         /// updates (DOTNET_MODIFIABLE_ASSEMBLIES unset), but we can use the remote executor to
         /// launch a child process that has the right setting.
         public static bool TestUsingRemoteExecutor => IsRemoteExecutorSupported && !IsModifiableAssembliesSet;
@@ -173,6 +173,6 @@ namespace System.Reflection.Metadata
             Assert.NotNull(clearCache);
             return clearCache.CreateDelegate<Action<Type[]>>();
         }
-        
+
     }
 }

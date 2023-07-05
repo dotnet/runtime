@@ -1,6 +1,7 @@
 // Licensed to the .NET Foundation under one or more agreements.
 // The .NET Foundation licenses this file to you under the MIT license.
 
+using System.Buffers;
 using System.Collections.Generic;
 using System.Linq;
 using Xunit;
@@ -37,6 +38,19 @@ namespace System.Text.Tests
             // Decoding valid bytes should not throw with a DecoderExceptionFallback
             Encoding exceptionEncoding = Encoding.GetEncoding("ascii", new EncoderReplacementFallback("?"), new DecoderExceptionFallback());
             EncodingHelpers.Decode(exceptionEncoding, bytes, index, count, expected);
+
+            char[] actual = new char[expected.Length];
+            Assert.Equal(OperationStatus.Done, Ascii.ToUtf16(bytes.AsSpan(index, count), actual, out int charsWritten));
+            Assert.Equal(expected.Length, charsWritten);
+            Assert.Equal(expected, new string(actual.AsSpan(0, charsWritten)));
+
+            if (expected.Length > 1)
+            {
+                actual = new char[expected.Length - 1];
+                Assert.Equal(OperationStatus.DestinationTooSmall, Ascii.ToUtf16(bytes.AsSpan(index, count), actual, out charsWritten));
+                Assert.Equal(expected.Length - 1, charsWritten);
+                Assert.Equal(expected.Substring(0, expected.Length - 1), new string(actual.AsSpan(0, charsWritten)));
+            }
         }
 
         public static IEnumerable<object[]> Decode_InvalidBytes_TestData()
@@ -45,17 +59,17 @@ namespace System.Text.Tests
             for (int i = 0x80; i <= byte.MaxValue; i++)
             {
                 byte b = (byte)i;
-                yield return new object[] { new byte[] { b }, 0, 1 };
-                yield return new object[] { new byte[] { 96, b, 97 }, 1, 1 };
-                yield return new object[] { new byte[] { 97, b, 97 }, 0, 3 };
+                yield return new object[] { new byte[] { b }, 0, 1, 0 };
+                yield return new object[] { new byte[] { 96, b, 97 }, 1, 1, 0 };
+                yield return new object[] { new byte[] { 97, b, 97 }, 0, 3, 1 };
             }
 
-            yield return new object[] { new byte[] { 0xC1, 0x41, 0xF0, 0x42 }, 0, 4 };
+            yield return new object[] { new byte[] { 0xC1, 0x41, 0xF0, 0x42 }, 0, 4, 0 };
         }
 
         [Theory]
         [MemberData(nameof(Decode_InvalidBytes_TestData))]
-        public void Decode_InvalidBytes(byte[] bytes, int index, int count)
+        public void Decode_InvalidBytes(byte[] bytes, int index, int count, int expectedBytesConsumed)
         {
             string expected = GetString(bytes, index, count);
             EncodingHelpers.Decode(new ASCIIEncoding(), bytes, index, count, expected);
@@ -63,6 +77,11 @@ namespace System.Text.Tests
             // Decoding invalid bytes should throw with a DecoderExceptionFallback
             Encoding exceptionEncoding = Encoding.GetEncoding("ascii", new EncoderReplacementFallback("?"), new DecoderExceptionFallback());
             NegativeEncodingTests.Decode_Invalid(exceptionEncoding, bytes, index, count);
+
+            char[] actual = new char[expected.Length];
+            Assert.Equal(OperationStatus.InvalidData, Ascii.ToUtf16(bytes.AsSpan(index, count), actual, out int charsWritten));
+            Assert.Equal(expectedBytesConsumed, charsWritten);
+            Assert.Equal(expected.Take(charsWritten).ToArray(), actual.Take(charsWritten).ToArray());
         }
 
         public static string GetString(byte[] bytes, int index, int count)

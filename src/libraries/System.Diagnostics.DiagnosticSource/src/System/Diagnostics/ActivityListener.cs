@@ -11,7 +11,7 @@ namespace System.Diagnostics
     public delegate ActivitySamplingResult SampleActivity<T>(ref ActivityCreationOptions<T> options);
 
     /// <summary>
-    /// ActivityListener allows listening to the start and stop Activity events and give the oppertunity to decide creating the Activity for sampling scenarios.
+    /// ActivityListener allows listening to the start and stop Activity events and give the opportunity to decide creating the Activity for sampling scenarios.
     /// </summary>
     public sealed class ActivityListener : IDisposable
     {

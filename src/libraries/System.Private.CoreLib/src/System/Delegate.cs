@@ -1,6 +1,7 @@
 // Licensed to the .NET Foundation under one or more agreements.
 // The .NET Foundation licenses this file to you under the MIT license.
 
+using System.ComponentModel;
 using System.Diagnostics.CodeAnalysis;
 using System.Reflection;
 using System.Runtime.CompilerServices;
@@ -12,8 +13,8 @@ namespace System
     {
         public virtual object Clone() => MemberwiseClone();
 
-        [return: NotNullIfNotNull("a")]
-        [return: NotNullIfNotNull("b")]
+        [return: NotNullIfNotNull(nameof(a))]
+        [return: NotNullIfNotNull(nameof(b))]
         public static Delegate? Combine(Delegate? a, Delegate? b)
         {
             if (a is null)
@@ -61,6 +62,8 @@ namespace System
             return DynamicInvokeImpl(args);
         }
 
+        [Obsolete(Obsoletions.LegacyFormatterImplMessage, DiagnosticId = Obsoletions.LegacyFormatterImplDiagId, UrlFormat = Obsoletions.SharedUrlFormat)]
+        [EditorBrowsable(EditorBrowsableState.Never)]
         public virtual void GetObjectData(SerializationInfo info, StreamingContext context) => throw new PlatformNotSupportedException();
 
         public MethodInfo Method => GetMethodImpl();
@@ -93,7 +96,6 @@ namespace System
             return newDelegate;
         }
 
-        // Force inline as the true/false ternary takes it above ALWAYS_INLINE size even though the asm ends up smaller
         [MethodImpl(MethodImplOptions.AggressiveInlining)]
         public static bool operator ==(Delegate? d1, Delegate? d2)
         {
@@ -101,14 +103,12 @@ namespace System
             // so it can become a simple test
             if (d2 is null)
             {
-                // return true/false not the test result https://github.com/dotnet/runtime/issues/4207
-                return (d1 is null) ? true : false;
+                return d1 is null;
             }
 
             return ReferenceEquals(d2, d1) ? true : d2.Equals((object?)d1);
         }
 
-        // Force inline as the true/false ternary takes it above ALWAYS_INLINE size even though the asm ends up smaller
         [MethodImpl(MethodImplOptions.AggressiveInlining)]
         public static bool operator !=(Delegate? d1, Delegate? d2)
         {
@@ -116,8 +116,7 @@ namespace System
             // so it can become a simple test
             if (d2 is null)
             {
-                // return true/false not the test result https://github.com/dotnet/runtime/issues/4207
-                return (d1 is null) ? false : true;
+                return d1 is not null;
             }
 
             return ReferenceEquals(d2, d1) ? false : !d2.Equals(d1);

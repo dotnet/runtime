@@ -1,18 +1,14 @@
 // Licensed to the .NET Foundation under one or more agreements.
 // The .NET Foundation licenses this file to you under the MIT license.
+
 //
 // File: typedesc.cpp
-//
-
-
 //
 // This file contains definitions for methods in the code:TypeDesc class and its
 // subclasses
 //     code:ParamTypeDesc,
 //     code:TyVarTypeDesc,
 //     code:FnPtrTypeDesc
-//
-
 //
 // ============================================================================
 
@@ -34,7 +30,6 @@ BOOL ParamTypeDesc::Verify() {
     STATIC_CONTRACT_DEBUG_ONLY;
     STATIC_CONTRACT_SUPPORTS_DAC;
 
-    _ASSERTE((m_TemplateMT == NULL) || GetTemplateMethodTableInternal()->SanityCheck());
     _ASSERTE(!GetTypeParam().IsNull());
     _ASSERTE(CorTypeInfo::IsModifier_NoThrow(GetInternalCorElementType()) ||
                               GetInternalCorElementType() == ELEMENT_TYPE_VALUETYPE);
@@ -92,6 +87,23 @@ PTR_Module TypeDesc::GetLoaderModule()
     }
 }
 
+BOOL TypeDesc::IsSharedByGenericInstantiations()
+{
+    LIMITED_METHOD_DAC_CONTRACT;
+
+    if (HasTypeParam())
+    {
+        return GetRootTypeParam().IsCanonicalSubtype();
+    }
+
+    if (IsFnPtr())
+    {
+        return dac_cast<PTR_FnPtrTypeDesc>(this)->IsSharedByGenericInstantiations();
+    }
+
+    return FALSE;
+}
+
 PTR_BaseDomain TypeDesc::GetDomain()
 {
     CONTRACTL
@@ -135,26 +147,6 @@ PTR_Module TypeDesc::GetModule() {
     _ASSERTE(GetInternalCorElementType() == ELEMENT_TYPE_FNPTR);
 
     return GetLoaderModule();
-}
-
-BOOL ParamTypeDesc::OwnsTemplateMethodTable()
-{
-    CONTRACTL
-    {
-        NOTHROW;
-        GC_NOTRIGGER;
-    }
-    CONTRACTL_END;
-
-    CorElementType kind = GetInternalCorElementType();
-
-    // The m_TemplateMT for pointer types is UIntPtr
-    if (!CorTypeInfo::IsArray_NoThrow(kind))
-    {
-        return FALSE;
-    }
-
-    return TRUE;
 }
 
 Assembly* TypeDesc::GetAssembly() {
@@ -246,18 +238,24 @@ void TypeDesc::ConstructName(CorElementType kind,
 
     case ELEMENT_TYPE_VAR:
     case ELEMENT_TYPE_MVAR:
+    {
         if (kind == ELEMENT_TYPE_VAR)
         {
-            ssBuff.Printf(W("!%d"), rank);
+            ssBuff.Append(W('!'));
         }
         else
         {
-            ssBuff.Printf(W("!!%d"), rank);
+            ssBuff.Append(W("!!"));
         }
+
+        WCHAR buffer[MaxSigned32BitDecString + 1];
+        FormatInteger(buffer, ARRAY_SIZE(buffer), "%d", rank);
+        ssBuff.Append(buffer);
+    }
         break;
 
     case ELEMENT_TYPE_FNPTR:
-        ssBuff.Printf(W("FNPTR"));
+        ssBuff.Set(W("FNPTR"));
         break;
 
     default:
@@ -517,35 +515,33 @@ OBJECTREF ParamTypeDesc::GetManagedClassObject()
     }
     CONTRACTL_END;
 
-    if (m_hExposedClassObject == NULL) {
-        REFLECTCLASSBASEREF  refClass = NULL;
-        GCPROTECT_BEGIN(refClass);
-        refClass = (REFLECTCLASSBASEREF) AllocateObject(g_pRuntimeTypeClass);
+    if (m_hExposedClassObject == NULL)
+    {
+        TypeHandle(this).AllocateManagedClassObject(&m_hExposedClassObject);
+    }
+    return GetManagedClassObjectIfExists();
+}
 
-        LoaderAllocator *pLoaderAllocator = GetLoaderAllocator();
-        TypeHandle th = TypeHandle(this);
-        ((ReflectClassBaseObject*)OBJECTREFToObject(refClass))->SetType(th);
-        ((ReflectClassBaseObject*)OBJECTREFToObject(refClass))->SetKeepAlive(pLoaderAllocator->GetExposedObject());
+#endif // #ifndef DACCESS_COMPILE
 
-        // Let all threads fight over who wins using InterlockedCompareExchange.
-        // Only the winner can set m_hExposedClassObject from NULL.
-        LOADERHANDLE hExposedClassObject = pLoaderAllocator->AllocateHandle(refClass);
+#ifndef DACCESS_COMPILE
 
-        if (FastInterlockCompareExchangePointer(&m_hExposedClassObject, hExposedClassObject, static_cast<LOADERHANDLE>(NULL)))
-        {
-            pLoaderAllocator->FreeHandle(hExposedClassObject);
-        }
+OBJECTREF FnPtrTypeDesc::GetManagedClassObject()
+{
+    CONTRACTL {
+        THROWS;
+        GC_TRIGGERS;
+        MODE_COOPERATIVE;
 
-        if (OwnsTemplateMethodTable())
-        {
-            // Set the handle on template methodtable as well to make Object.GetType for arrays take the fast path
-            GetTemplateMethodTableInternal()->GetWriteableDataForWrite()->m_hExposedClassObject = m_hExposedClassObject;
-        }
+        INJECT_FAULT(COMPlusThrowOM());
 
-        // Log the TypeVarTypeDesc access
-        g_IBCLogger.LogTypeMethodTableWriteableAccess(&th);
+        PRECONDITION(GetInternalCorElementType() == ELEMENT_TYPE_FNPTR);
+    }
+    CONTRACTL_END;
 
-        GCPROTECT_END();
+    if (m_hExposedClassObject == NULL)
+    {
+        TypeHandle(this).AllocateManagedClassObject(&m_hExposedClassObject);
     }
     return GetManagedClassObjectIfExists();
 }
@@ -560,8 +556,6 @@ BOOL TypeDesc::IsRestored()
     STATIC_CONTRACT_CANNOT_TAKE_LOCK;
     SUPPORTS_DAC;
 
-    TypeHandle th = TypeHandle(this);
-    g_IBCLogger.LogTypeMethodTableAccess(&th);
     return IsRestored_NoLogging();
 }
 
@@ -630,7 +624,7 @@ ClassLoadLevel TypeDesc::GetLoadLevel()
 //                 dependencies - the root caller must handle this.
 //
 //
-//   pfBailed - if we or one of our depedencies bails early due to cyclic dependencies, we
+//   pfBailed - if we or one of our dependencies bails early due to cyclic dependencies, we
 //              must set *pfBailed to TRUE. Otherwise, we must *leave it unchanged* (thus, the
 //              boolean acts as a cumulative OR.)
 //
@@ -699,20 +693,12 @@ void TypeDesc::DoFullyLoad(Generics::RecursionGraph *pVisited, ClassLoadLevel le
 
         // Fully load the type parameter
         GetTypeParam().DoFullyLoad(&newVisited, level, pPending, &fBailed, pInstContext);
-
-        ParamTypeDesc* pPTD = (ParamTypeDesc*) this;
-
-        // Fully load the template method table
-        if (pPTD->m_TemplateMT != NULL)
-        {
-            pPTD->GetTemplateMethodTableInternal()->DoFullyLoad(&newVisited, level, pPending, &fBailed, pInstContext);
-        }
     }
 
     switch (level)
     {
         case CLASS_DEPENDENCIES_LOADED:
-            FastInterlockOr(&m_typeAndFlags, TypeDesc::enum_flag_DependenciesLoaded);
+            InterlockedOr((LONG*)&m_typeAndFlags, TypeDesc::enum_flag_DependenciesLoaded);
             break;
 
         case CLASS_LOADED:
@@ -855,6 +841,14 @@ void TypeVarTypeDesc::LoadConstraints(ClassLoadLevel level /* = CLASS_LOADED */)
         else
         {
             _ASSERTE(TypeFromToken(defToken) == mdtTypeDef);
+
+            bool foundResult = false;
+            if (!GetModule()->m_pTypeGenericInfoMap->HasConstraints(defToken, &foundResult) && foundResult)
+            {
+                m_numConstraints = 0;
+                return;
+            }
+
             TypeHandle genericType = LoadOwnerType();
             _ASSERTE(genericType.IsGenericTypeDefinition());
 
@@ -866,7 +860,7 @@ void TypeVarTypeDesc::LoadConstraints(ClassLoadLevel level /* = CLASS_LOADED */)
         if (numConstraints != 0)
         {
             LoaderAllocator* pAllocator = GetModule()->GetLoaderAllocator();
-            // If there is a single class constraint we put in in element 0 of the array
+            // If there is a single class constraint we place it at index 0 of the array
             AllocMemHolder<TypeHandle> constraints
                 (pAllocator->GetLowFrequencyHeap()->AllocMem(S_SIZE_T(numConstraints) * S_SIZE_T(sizeof(TypeHandle))));
 
@@ -1435,7 +1429,7 @@ BOOL TypeVarTypeDesc::SatisfiesConstraints(SigTypeContext *pTypeContextOfConstra
 
     ArrayList argList;
 
-    // First check special constraints (must-be-reference-type, must-be-value-type, and must-have-default-constructor)
+    // First check special constraints
     DWORD flags;
     IfFailThrow(pInternalImport->GetGenericParamProps(genericParamToken, NULL, &flags, NULL, NULL, NULL));
 
@@ -1522,6 +1516,9 @@ BOOL TypeVarTypeDesc::SatisfiesConstraints(SigTypeContext *pTypeContextOfConstra
             if (thArg.IsTypeDesc() || (!thArg.AsMethodTable()->HasExplicitOrImplicitPublicDefaultConstructor()))
                 return FALSE;
         }
+
+        if (thArg.IsByRefLike() && (specialConstraints & gpAcceptByRefLike) == 0)
+            return FALSE;
     }
 
     // Complete the list by adding thArg itself. If thArg is not a generic variable this will be the only
@@ -1591,14 +1588,14 @@ BOOL TypeVarTypeDesc::SatisfiesConstraints(SigTypeContext *pTypeContextOfConstra
                 }
                 else
                 {
-                    // if a concrete type can be cast to the constraint, then this constraint will be satisifed
+                    // if a concrete type can be cast to the constraint, then this constraint will be satisfied
                     if (thElem.CanCastTo(thConstraint))
                     {
                         // Static virtual methods need an extra check when an abstract type is used for instantiation
                         // to ensure that the implementation of the constraint is complete
                         //
                         // Do not apply this check when the generic argument is exactly a generic variable, as those
-                        // do not hold the correct detail for checking, and do not need to do so. This constraint rule 
+                        // do not hold the correct detail for checking, and do not need to do so. This constraint rule
                         // is only applicable for generic arguments which have been specialized to some extent
                         if (!thArg.IsGenericVariable() &&
                             !thElem.IsTypeDesc() &&
@@ -1613,7 +1610,8 @@ BOOL TypeVarTypeDesc::SatisfiesConstraints(SigTypeContext *pTypeContextOfConstra
                                 MethodDesc *pMD = it.GetMethodDesc();
                                 if (pMD->IsVirtual() &&
                                     pMD->IsStatic() &&
-                                    (pMD->IsAbstract() && !thElem.AsMethodTable()->ResolveVirtualStaticMethod(pInterfaceMT, pMD, /* allowNullResult */ TRUE, /* verifyImplemented */ TRUE)))
+                                    (pMD->IsAbstract() && !thElem.AsMethodTable()->ResolveVirtualStaticMethod(
+                                        pInterfaceMT, pMD, /* allowNullResult */ TRUE, /* verifyImplemented */ TRUE)))
                                 {
                                     virtualStaticResolutionCheckFailed = true;
                                     break;
@@ -1636,7 +1634,6 @@ BOOL TypeVarTypeDesc::SatisfiesConstraints(SigTypeContext *pTypeContextOfConstra
     return TRUE;
 }
 
-
 OBJECTREF TypeVarTypeDesc::GetManagedClassObject()
 {
     CONTRACTL {
@@ -1650,26 +1647,9 @@ OBJECTREF TypeVarTypeDesc::GetManagedClassObject()
     }
     CONTRACTL_END;
 
-    if (m_hExposedClassObject == NULL) {
-        REFLECTCLASSBASEREF  refClass = NULL;
-        GCPROTECT_BEGIN(refClass);
-        refClass = (REFLECTCLASSBASEREF) AllocateObject(g_pRuntimeTypeClass);
-
-        LoaderAllocator *pLoaderAllocator = GetLoaderAllocator();
-        TypeHandle th = TypeHandle(this);
-        ((ReflectClassBaseObject*)OBJECTREFToObject(refClass))->SetType(th);
-        ((ReflectClassBaseObject*)OBJECTREFToObject(refClass))->SetKeepAlive(pLoaderAllocator->GetExposedObject());
-
-        // Let all threads fight over who wins using InterlockedCompareExchange.
-        // Only the winner can set m_hExposedClassObject from NULL.
-        LOADERHANDLE hExposedClassObject = pLoaderAllocator->AllocateHandle(refClass);
-
-        if (FastInterlockCompareExchangePointer(&m_hExposedClassObject, hExposedClassObject, static_cast<LOADERHANDLE>(NULL)))
-        {
-            pLoaderAllocator->FreeHandle(hExposedClassObject);
-        }
-
-        GCPROTECT_END();
+    if (m_hExposedClassObject == NULL)
+    {
+        TypeHandle(this).AllocateManagedClassObject(&m_hExposedClassObject);
     }
     return GetManagedClassObjectIfExists();
 }
@@ -1679,17 +1659,25 @@ OBJECTREF TypeVarTypeDesc::GetManagedClassObject()
 TypeHandle *
 FnPtrTypeDesc::GetRetAndArgTypes()
 {
-    CONTRACTL
-    {
-        THROWS;
-        GC_TRIGGERS;
-        MODE_ANY;
-    }
-    CONTRACTL_END;
-
+    LIMITED_METHOD_CONTRACT;
 
     return m_RetAndArgTypes;
 } // FnPtrTypeDesc::GetRetAndArgTypes
+
+BOOL
+FnPtrTypeDesc::IsSharedByGenericInstantiations()
+{
+    LIMITED_METHOD_DAC_CONTRACT;
+
+    for (DWORD i = 0; i <= m_NumArgs; i++)
+    {
+        if (m_RetAndArgTypes[i].IsCanonicalSubtype())
+        {
+            return TRUE;
+        }
+    }
+    return FALSE;
+} // FnPtrTypeDesc::IsSharedByGenericInstantiations
 
 #ifndef DACCESS_COMPILE
 
@@ -1705,10 +1693,9 @@ FnPtrTypeDesc::IsExternallyVisible() const
     }
     CONTRACTL_END;
 
-    const TypeHandle * rgRetAndArgTypes = GetRetAndArgTypes();
     for (DWORD i = 0; i <= m_NumArgs; i++)
     {
-        if (!rgRetAndArgTypes[i].IsExternallyVisible())
+        if (!m_RetAndArgTypes[i].IsExternallyVisible())
         {
             return FALSE;
         }
@@ -1726,12 +1713,6 @@ ParamTypeDesc::EnumMemoryRegions(CLRDataEnumMemoryFlags flags)
 {
     SUPPORTS_DAC;
     DAC_ENUM_DTHIS();
-
-    PTR_MethodTable pTemplateMT = GetTemplateMethodTableInternal();
-    if (pTemplateMT.IsValid())
-    {
-        pTemplateMT->EnumMemoryRegions(flags);
-    }
 
     m_Arg.EnumMemoryRegions(flags);
 }

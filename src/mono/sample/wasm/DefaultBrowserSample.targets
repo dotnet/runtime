@@ -1,0 +1,18 @@
+<Project>
+  <PropertyGroup>
+    <WasmCopyAppZipToHelixTestDir Condition="'$(ArchiveTests)' == 'true'">true</WasmCopyAppZipToHelixTestDir>
+    <DebugSymbols>true</DebugSymbols>
+    <DebugType>embedded</DebugType>
+    <!-- note that enabling debugger disables interp optimizations -->
+    <WasmDebugLevel Condition="'$(Configuration)' == 'Debug'">-1</WasmDebugLevel>
+    <GenerateRunScriptForSample Condition="'$(ArchiveTests)' == 'true'">true</GenerateRunScriptForSample>
+    <WasmXHarnessArgs Condition="'$(WasmEnableThreads)' == 'true'">$(WasmXHarnessArgs) --web-server-use-cop</WasmXHarnessArgs>
+    <RunScriptCommand>$(ExecXHarnessCmd) wasm test-browser  --app=. --browser=Chrome $(XHarnessBrowserPathArg) $(WasmXHarnessArgs) --html-file=index.html --output-directory=$(XHarnessOutput) -- $(MSBuildProjectName).dll</RunScriptCommand>
+  </PropertyGroup>
+
+  <ItemGroup>
+    <WasmExtraFilesToDeploy Include="index.html" />
+  </ItemGroup>
+
+  <Target Name="RunSample" DependsOnTargets="RunSampleWithBrowser" />
+</Project>

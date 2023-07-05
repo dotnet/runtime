@@ -14,6 +14,7 @@ namespace Microsoft.Extensions.Configuration
     public partial class ChainedConfigurationProvider : Microsoft.Extensions.Configuration.IConfigurationProvider, System.IDisposable
     {
         public ChainedConfigurationProvider(Microsoft.Extensions.Configuration.ChainedConfigurationSource source) { }
+        public Microsoft.Extensions.Configuration.IConfiguration Configuration { get { throw null; } }
         public void Dispose() { }
         public System.Collections.Generic.IEnumerable<string> GetChildKeys(System.Collections.Generic.IEnumerable<string> earlierKeys, string? parentPath) { throw null; }
         public Microsoft.Extensions.Primitives.IChangeToken GetReloadToken() { throw null; }
@@ -43,7 +44,7 @@ namespace Microsoft.Extensions.Configuration
         public static Microsoft.Extensions.Configuration.ConfigurationKeyComparer Instance { get { throw null; } }
         public int Compare(string? x, string? y) { throw null; }
     }
-    public sealed partial class ConfigurationManager : Microsoft.Extensions.Configuration.IConfiguration, Microsoft.Extensions.Configuration.IConfigurationBuilder, Microsoft.Extensions.Configuration.IConfigurationRoot, System.IDisposable
+    public sealed partial class ConfigurationManager : Microsoft.Extensions.Configuration.IConfiguration, Microsoft.Extensions.Configuration.IConfigurationBuilder, Microsoft.Extensions.Configuration.IConfigurationManager, Microsoft.Extensions.Configuration.IConfigurationRoot, System.IDisposable
     {
         public ConfigurationManager() { }
         public string? this[string key] { get { throw null; } set { } }

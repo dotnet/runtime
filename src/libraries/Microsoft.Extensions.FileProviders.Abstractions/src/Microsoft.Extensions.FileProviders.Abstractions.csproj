@@ -3,7 +3,6 @@
   <PropertyGroup>
     <RootNamespace>Microsoft.Extensions.FileProviders</RootNamespace>
     <TargetFrameworks>$(NetCoreAppCurrent);$(NetCoreAppMinimum);netstandard2.0;$(NetFrameworkMinimum)</TargetFrameworks>
-    <Nullable>enable</Nullable>
     <EnableDefaultItems>true</EnableDefaultItems>
     <IsPackable>true</IsPackable>
     <PackageDescription>Abstractions of files and directories.
@@ -21,11 +20,5 @@ Microsoft.Extensions.FileProviders.IFileProvider</PackageDescription>
 
   <ItemGroup>
     <ProjectReference Include="$(LibrariesProjectRoot)Microsoft.Extensions.Primitives\src\Microsoft.Extensions.Primitives.csproj" />
-  </ItemGroup>
-
-  <ItemGroup Condition="'$(TargetFrameworkIdentifier)' == '.NETCoreApp'">
-    <Reference Include="System.Runtime" />
-    <Reference Include="System.Linq" />
-    <Reference Include="System.Linq.Expressions" />
   </ItemGroup>
 </Project>

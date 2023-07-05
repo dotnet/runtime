@@ -45,16 +45,12 @@ namespace System.IO
             Initialize(buffer, offset, capacity, access);
         }
 
-        protected void Initialize(SafeBuffer buffer!!, long offset, long capacity, FileAccess access)
+        protected void Initialize(SafeBuffer buffer, long offset, long capacity, FileAccess access)
         {
-            if (offset < 0)
-            {
-                throw new ArgumentOutOfRangeException(nameof(offset), SR.ArgumentOutOfRange_NeedNonNegNum);
-            }
-            if (capacity < 0)
-            {
-                throw new ArgumentOutOfRangeException(nameof(capacity), SR.ArgumentOutOfRange_NeedNonNegNum);
-            }
+            ArgumentNullException.ThrowIfNull(buffer);
+
+            ArgumentOutOfRangeException.ThrowIfNegative(offset);
+            ArgumentOutOfRangeException.ThrowIfNegative(capacity);
             if (buffer.ByteLength < (ulong)(offset + capacity))
             {
                 throw new ArgumentException(SR.Argument_OffsetAndCapacityOutOfBounds);
@@ -292,10 +288,7 @@ namespace System.IO
         // bools, etc.
         public void Read<T>(long position, out T structure) where T : struct
         {
-            if (position < 0)
-            {
-                throw new ArgumentOutOfRangeException(nameof(position), SR.ArgumentOutOfRange_NeedNonNegNum);
-            }
+            ArgumentOutOfRangeException.ThrowIfNegative(position);
 
             if (!_isOpen)
             {
@@ -325,16 +318,12 @@ namespace System.IO
         // Reads 'count' structs of type T from unmanaged memory, into 'array' starting at 'offset'.
         // Note: this method is not safe, since it overwrites the contents of structures, it can
         // be used to modify the private members of a struct.
-        public int ReadArray<T>(long position, T[] array!!, int offset, int count) where T : struct
+        public int ReadArray<T>(long position, T[] array, int offset, int count) where T : struct
         {
-            if (offset < 0)
-            {
-                throw new ArgumentOutOfRangeException(nameof(offset), SR.ArgumentOutOfRange_NeedNonNegNum);
-            }
-            if (count < 0)
-            {
-                throw new ArgumentOutOfRangeException(nameof(count), SR.ArgumentOutOfRange_NeedNonNegNum);
-            }
+            ArgumentNullException.ThrowIfNull(array);
+
+            ArgumentOutOfRangeException.ThrowIfNegative(offset);
+            ArgumentOutOfRangeException.ThrowIfNegative(count);
             if (array.Length - offset < count)
             {
                 throw new ArgumentException(SR.Argument_InvalidOffLen);
@@ -347,10 +336,7 @@ namespace System.IO
             {
                 throw new NotSupportedException(SR.NotSupported_Reading);
             }
-            if (position < 0)
-            {
-                throw new ArgumentOutOfRangeException(nameof(position), SR.ArgumentOutOfRange_NeedNonNegNum);
-            }
+            ArgumentOutOfRangeException.ThrowIfNegative(position);
 
             uint sizeOfT = SafeBuffer.AlignedSizeOf<T>();
 
@@ -375,7 +361,7 @@ namespace System.IO
                 }
             }
 
-            _buffer.ReadArray<T>((ulong)(_offset + position), array, offset, n);
+            _buffer.ReadArray((ulong)(_offset + position), array, offset, n);
 
             return n;
         }
@@ -420,7 +406,7 @@ namespace System.IO
                 try
                 {
                     _buffer.AcquirePointer(ref pointer);
-                    Unsafe.WriteUnaligned<short>(pointer + _offset + position, value);
+                    Unsafe.WriteUnaligned(pointer + _offset + position, value);
                 }
                 finally
                 {
@@ -443,7 +429,7 @@ namespace System.IO
                 try
                 {
                     _buffer.AcquirePointer(ref pointer);
-                    Unsafe.WriteUnaligned<int>(pointer + _offset + position, value);
+                    Unsafe.WriteUnaligned(pointer + _offset + position, value);
                 }
                 finally
                 {
@@ -466,7 +452,7 @@ namespace System.IO
                 try
                 {
                     _buffer.AcquirePointer(ref pointer);
-                    Unsafe.WriteUnaligned<long>(pointer + _offset + position, value);
+                    Unsafe.WriteUnaligned(pointer + _offset + position, value);
                 }
                 finally
                 {
@@ -494,10 +480,10 @@ namespace System.IO
                     _buffer.AcquirePointer(ref pointer);
                     pointer += (_offset + position);
 
-                    Unsafe.WriteUnaligned<int>(pointer, bits[0]);
-                    Unsafe.WriteUnaligned<int>(pointer + 4, bits[1]);
-                    Unsafe.WriteUnaligned<int>(pointer + 8, bits[2]);
-                    Unsafe.WriteUnaligned<int>(pointer + 12, bits[3]);
+                    Unsafe.WriteUnaligned(pointer, bits[0]);
+                    Unsafe.WriteUnaligned(pointer + 4, bits[1]);
+                    Unsafe.WriteUnaligned(pointer + 8, bits[2]);
+                    Unsafe.WriteUnaligned(pointer + 12, bits[3]);
                 }
                 finally
                 {
@@ -531,10 +517,7 @@ namespace System.IO
         // the WriteX methods for small standard types such as ints, longs, bools, etc.
         public void Write<T>(long position, ref T structure) where T : struct
         {
-            if (position < 0)
-            {
-                throw new ArgumentOutOfRangeException(nameof(position), SR.ArgumentOutOfRange_NeedNonNegNum);
-            }
+            ArgumentOutOfRangeException.ThrowIfNegative(position);
             if (!_isOpen)
             {
                 throw new ObjectDisposedException(nameof(UnmanagedMemoryAccessor), SR.ObjectDisposed_ViewAccessorClosed);
@@ -557,28 +540,21 @@ namespace System.IO
                 }
             }
 
-            _buffer.Write<T>((ulong)(_offset + position), structure);
+            _buffer.Write((ulong)(_offset + position), structure);
         }
 
         // Writes 'count' structs of type T from 'array' (starting at 'offset') into unmanaged memory.
-        public void WriteArray<T>(long position, T[] array!!, int offset, int count) where T : struct
+        public void WriteArray<T>(long position, T[] array, int offset, int count) where T : struct
         {
-            if (offset < 0)
-            {
-                throw new ArgumentOutOfRangeException(nameof(offset), SR.ArgumentOutOfRange_NeedNonNegNum);
-            }
-            if (count < 0)
-            {
-                throw new ArgumentOutOfRangeException(nameof(count), SR.ArgumentOutOfRange_NeedNonNegNum);
-            }
+            ArgumentNullException.ThrowIfNull(array);
+
+            ArgumentOutOfRangeException.ThrowIfNegative(offset);
+            ArgumentOutOfRangeException.ThrowIfNegative(count);
             if (array.Length - offset < count)
             {
                 throw new ArgumentException(SR.Argument_InvalidOffLen);
             }
-            if (position < 0)
-            {
-                throw new ArgumentOutOfRangeException(nameof(position), SR.ArgumentOutOfRange_NeedNonNegNum);
-            }
+            ArgumentOutOfRangeException.ThrowIfNegative(position);
             if (position >= Capacity)
             {
                 throw new ArgumentOutOfRangeException(nameof(position), SR.ArgumentOutOfRange_PositionLessThanCapacityRequired);
@@ -593,7 +569,7 @@ namespace System.IO
                 throw new NotSupportedException(SR.NotSupported_Writing);
             }
 
-            _buffer.WriteArray<T>((ulong)(_offset + position), array, offset, count);
+            _buffer.WriteArray((ulong)(_offset + position), array, offset, count);
         }
 
         private void EnsureSafeToRead(long position, int sizeOfType)
@@ -606,10 +582,7 @@ namespace System.IO
             {
                 throw new NotSupportedException(SR.NotSupported_Reading);
             }
-            if (position < 0)
-            {
-                throw new ArgumentOutOfRangeException(nameof(position), SR.ArgumentOutOfRange_NeedNonNegNum);
-            }
+            ArgumentOutOfRangeException.ThrowIfNegative(position);
             if (position > _capacity - sizeOfType)
             {
                 if (position >= _capacity)
@@ -633,10 +606,7 @@ namespace System.IO
             {
                 throw new NotSupportedException(SR.NotSupported_Writing);
             }
-            if (position < 0)
-            {
-                throw new ArgumentOutOfRangeException(nameof(position), SR.ArgumentOutOfRange_NeedNonNegNum);
-            }
+            ArgumentOutOfRangeException.ThrowIfNegative(position);
             if (position > _capacity - sizeOfType)
             {
                 if (position >= _capacity)

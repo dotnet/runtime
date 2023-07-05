@@ -14,9 +14,7 @@
 #ifndef __EVENTTRACEPRIV_H__
 #define __EVENTTRACEPRIV_H__
 
-#ifdef FEATURE_REDHAWK
 #include "holder.h"
-#endif // FEATURE_REDHAWK
 
 #ifndef _countof
 #define _countof(_array) (sizeof(_array)/sizeof(_array[0]))
@@ -107,13 +105,8 @@ public:
         return
             sizeof(fixedSizedData) +
             sizeof(cTypeParameters) +
-#ifdef FEATURE_REDHAWK
             sizeof(WCHAR) +                                 // No name in event, so just the null terminator
             cTypeParameters * sizeof(ULONGLONG);            // Type parameters
-#else
-            (sName.GetCount() + 1) * sizeof(WCHAR) +        // Size of name, including null terminator
-            rgTypeParameters.GetCount() * sizeof(ULONGLONG);// Type parameters
-#endif
     }
 
     EventStructBulkTypeFixedSizedData fixedSizedData;
@@ -125,21 +118,15 @@ public:
     // This is really a denorm of the size already stored in rgTypeParameters, but we
     // need a persistent place to stash this away so EventDataDescCreate & EventWrite
     // have a reliable place to copy it from.  This is filled in at the last minute,
-    // when sending the event.  (On ProjectN, which doesn't have StackSArray, this is
-    // filled in earlier and used in more places.)
+    // when sending the event.
     ULONG cTypeParameters;
 
-#ifdef FEATURE_REDHAWK
     // If > 1 type parameter, this is an array of their MethodTable*'s
     NewArrayHolder<ULONGLONG> rgTypeParameters;
 
     // If exactly one type parameter, this is its MethodTable*.  (If != 1 type parameter,
     // this is 0.)
     ULONGLONG ullSingleTypeParameter;
-#else   // FEATURE_REDHAWK
-    StackSString sName;
-    StackSArray<ULONGLONG> rgTypeParameters;
-#endif // FEATURE_REDHAWK
 };
 
 // Encapsulates all the type event batching we need to do. This is used by
@@ -191,11 +178,7 @@ private:
     // List of types we've batched.
     BulkTypeValue m_rgBulkTypeValues[kMaxCountTypeValues];
 
-#ifdef FEATURE_REDHAWK
     int LogSingleType(MethodTable * pEEType);
-#else
-    int LogSingleType(TypeHandle th);
-#endif
 
 public:
     BulkTypeEventLogger() :

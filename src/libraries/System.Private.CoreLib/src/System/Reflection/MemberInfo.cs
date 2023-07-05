@@ -50,12 +50,11 @@ namespace System.Reflection
             // so it can become a simple test
             if (right is null)
             {
-                // return true/false not the test result https://github.com/dotnet/runtime/issues/4207
-                return (left is null) ? true : false;
+                return left is null;
             }
 
             // Try fast reference equality and opposite null check prior to calling the slower virtual Equals
-            if ((object?)left == (object)right)
+            if (ReferenceEquals(left, right))
             {
                 return true;
             }

@@ -35,22 +35,5 @@ namespace System.Net.NetworkInformation.Tests
             int max = StringParsingHelpers.ParseRawIntFile("NetworkFiles/rawint_maxvalue");
             Assert.Equal(int.MaxValue, max);
         }
-
-        [Fact]
-        public static void RawLongFileParsing()
-        {
-            long val = StringParsingHelpers.ParseRawLongFile("NetworkFiles/rawlong");
-            Assert.Equal(3147483647L, val);
-
-            long max = StringParsingHelpers.ParseRawLongFile("NetworkFiles/rawlong_maxvalue");
-            Assert.Equal(long.MaxValue, max);
-        }
-
-        [Fact]
-        public static void RawHexIntParsing()
-        {
-            int val = StringParsingHelpers.ParseRawHexFileAsInt("NetworkFiles/rawhexint");
-            Assert.Equal(10, val);
-        }
     }
 }

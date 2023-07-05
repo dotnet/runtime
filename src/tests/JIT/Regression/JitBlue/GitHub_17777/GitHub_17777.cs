@@ -2,10 +2,11 @@
 // The .NET Foundation licenses this file to you under the MIT license.
 
 using System;
+using Xunit;
 
 namespace Repro
 {
-    class Program
+    public class Program
     {
 
         static int Test(
@@ -258,7 +259,8 @@ namespace Repro
             }
         }
 
-        static int Main(string[] args)
+        [Fact]
+        public static int TestEntryPoint()
         {
             int result = Test(   0,   1,   2,   3,   4,   5,   6,   7,   8,   9,
                                 10,  11,  12,  13,  14,  15,  16,  17,  18,  19,    

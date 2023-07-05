@@ -4,11 +4,10 @@
 using System.Collections.Generic;
 using System.Diagnostics;
 using System.Xml.Xsl.Qil;
+using T = System.Xml.Xsl.XmlQueryTypeFactory;
 
 namespace System.Xml.Xsl.Xslt
 {
-    using T = XmlQueryTypeFactory;
-
     /**
     InvokeGenerator is one of the trickiest peaces here.
     ARGS:
@@ -99,7 +98,7 @@ namespace System.Xml.Xsl.Xslt
             return invoke;
         }
 
-        private QilNode? FindActualArg(QilParameter formalArg, IList<XslNode> actualArgs)
+        private static QilNode? FindActualArg(QilParameter formalArg, IList<XslNode> actualArgs)
         {
             QilName? argName = formalArg.Name;
             Debug.Assert(argName != null);

@@ -6,7 +6,7 @@
     <AllowUnsafeBlocks>true</AllowUnsafeBlocks>
 
     <!-- these tests depend on the pdb files -->
-    <DebuggerSupport Condition="'$(DebuggerSupport)' == '' and '$(TargetOS)' == 'Browser'">true</DebuggerSupport>
+    <DebuggerSupport Condition="'$(DebuggerSupport)' == '' and '$(TargetOS)' == 'browser'">true</DebuggerSupport>
   </PropertyGroup>
   <ItemGroup>
     <Compile Include="StackFrameExtensionsTests.cs" />
@@ -18,7 +18,7 @@
     <Compile Include="SymLanguageVendorTests.cs" />
     <Compile Include="SymbolTokenTests.cs" />
   </ItemGroup>
-  <ItemGroup Condition="'$(TargetOS)' == 'Browser'">
+  <ItemGroup Condition="'$(TargetOS)' == 'browser'">
     <WasmFilesToIncludeFromPublishDir Include="$(AssemblyName).dll" />
     <WasmFilesToIncludeFromPublishDir Include="$(AssemblyName).pdb" />
   </ItemGroup>

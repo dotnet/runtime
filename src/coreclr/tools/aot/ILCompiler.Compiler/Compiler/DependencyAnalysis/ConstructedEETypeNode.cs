@@ -1,12 +1,10 @@
 // Licensed to the .NET Foundation under one or more agreements.
 // The .NET Foundation licenses this file to you under the MIT license.
 
-using System.Collections.Generic;
 using System.Diagnostics;
 
 using Internal.Runtime;
 using Internal.TypeSystem;
-using Internal.IL;
 
 namespace ILCompiler.DependencyAnalysis
 {
@@ -33,18 +31,7 @@ namespace ILCompiler.DependencyAnalysis
             // relocs to nodes we emit.
             dependencyList.Add(factory.NecessaryTypeSymbol(_type), "NecessaryType for constructed type");
 
-            if (_type is MetadataType mdType
-                && mdType.Module.GetGlobalModuleType().GetStaticConstructor() is MethodDesc moduleCctor)
-            {
-                dependencyList.Add(factory.MethodEntrypoint(moduleCctor), "Type in a module with initializer");
-            }
-
             DefType closestDefType = _type.GetClosestDefType();
-
-            if (MightHaveInterfaceDispatchMap(factory))
-            {
-                dependencyList.Add(factory.InterfaceDispatchMap(_type), "Interface dispatch map");
-            }
 
             if (_type.IsArray)
             {
@@ -69,29 +56,17 @@ namespace ILCompiler.DependencyAnalysis
                 {
                     if (instantiationType.IsValueType)
                     {
-                        // All valuetype generic parameters of a constructed type may be effectively constructed. This is generally not that 
+                        // All valuetype generic parameters of a constructed type may be effectively constructed. This is generally not that
                         // critical, but in the presence of universal generics the compiler may generate a Box followed by calls to ToString,
                         // GetHashcode or Equals in ways that cannot otherwise be detected by dependency analysis. Thus force all struct type
                         // generic parameters to be considered constructed when walking dependencies of a constructed generic
-                        dependencyList.Add(factory.ConstructedTypeSymbol(instantiationType.ConvertToCanonForm(CanonicalFormKind.Specific)), 
+                        dependencyList.Add(factory.ConstructedTypeSymbol(instantiationType.ConvertToCanonForm(CanonicalFormKind.Specific)),
                         "Struct generic parameters in constructed types may be assumed to be used as constructed in constructed generic types");
                     }
                 }
             }
 
-            // Ask the metadata manager if we have any dependencies due to reflectability.
-            factory.MetadataManager.GetDependenciesDueToReflectability(ref dependencyList, factory, _type);
-
             factory.InteropStubManager.AddInterestingInteropConstructedTypeDependencies(ref dependencyList, factory, _type);
-
-            // Keep track of the default constructor map dependency for this type if it has a default constructor
-            MethodDesc defaultCtor = closestDefType.GetDefaultConstructor();
-            if (defaultCtor != null)
-            {
-                dependencyList.Add(new DependencyListEntry(
-                    factory.CanonicalEntrypoint(defaultCtor), 
-                    "DefaultConstructorNode"));
-            }
 
             return dependencyList;
         }
@@ -99,6 +74,11 @@ namespace ILCompiler.DependencyAnalysis
         protected override ISymbolNode GetBaseTypeNode(NodeFactory factory)
         {
             return _type.BaseType != null ? factory.ConstructedTypeSymbol(_type.BaseType) : null;
+        }
+
+        protected override ISymbolNode GetNonNullableValueTypeArrayElementTypeNode(NodeFactory factory)
+        {
+            return factory.ConstructedTypeSymbol(((ArrayType)_type).ElementType);
         }
 
         protected override IEETypeNode GetInterfaceTypeNode(NodeFactory factory, TypeDesc interfaceType)

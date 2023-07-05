@@ -33,11 +33,11 @@ namespace System.Net.Http.Headers
 
         public TransferCodingHeaderValue(string value)
         {
-            HeaderUtilities.CheckValidToken(value, nameof(value));
+            HeaderUtilities.CheckValidToken(value);
             _value = value;
         }
 
-        public static TransferCodingHeaderValue Parse(string? input)
+        public static TransferCodingHeaderValue Parse(string input)
         {
             int index = 0;
             return (TransferCodingHeaderValue)TransferCodingHeaderParser.SingleValueParser.ParseValue(
@@ -80,7 +80,7 @@ namespace System.Net.Http.Headers
 
             string value = input.Substring(startIndex, valueLength);
             int current = startIndex + valueLength;
-            current = current + HttpRuleParser.GetWhitespaceLength(input, current);
+            current += HttpRuleParser.GetWhitespaceLength(input, current);
             TransferCodingHeaderValue transferCodingHeader;
 
             // If we're not done and we have a parameter delimiter, then we have a list of parameters.

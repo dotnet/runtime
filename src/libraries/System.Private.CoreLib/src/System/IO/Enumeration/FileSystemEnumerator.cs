@@ -10,7 +10,7 @@ namespace System.IO.Enumeration
 {
     /// <summary>Enumerates the file system elements of the provided type that are being searched and filtered by a <see cref="FileSystemEnumerable{T}" />.</summary>
     /// <typeparam name="TResult">The type of the result produced by this file system enumerator.</typeparam>
-    public unsafe abstract partial class FileSystemEnumerator<TResult> : CriticalFinalizerObject, IEnumerator<TResult>
+    public abstract unsafe partial class FileSystemEnumerator<TResult> : CriticalFinalizerObject, IEnumerator<TResult>
     {
         private int _remainingRecursionDepth;
 
@@ -28,8 +28,10 @@ namespace System.IO.Enumeration
         /// <param name="directory">The directory to search in.</param>
         /// <param name="isNormalized">Whether the directory path is already normalized or not.</param>
         /// <param name="options">Enumeration options to use.</param>
-        internal FileSystemEnumerator(string directory!!, bool isNormalized, EnumerationOptions? options = null)
+        internal FileSystemEnumerator(string directory, bool isNormalized, EnumerationOptions? options = null)
         {
+            ArgumentNullException.ThrowIfNull(directory);
+
             _originalRootDirectory = directory;
 
             string path = isNormalized ? directory : Path.GetFullPath(directory);
@@ -70,7 +72,7 @@ namespace System.IO.Enumeration
 
         /// <summary>Gets the currently visited object.</summary>
         /// <value>The currently visited object.</value>
-        /// <remarks>This member is an explicit interface member implementation. It can be used only when the <see cref="FileSystemEnumerator{T}" /> instance is cast to an <see cref="System.Collections.IEnumerator" /> interface.</remarks>
+        /// <remarks>This member is an explicit interface member implementation. It can be used only when the <see cref="FileSystemEnumerator{T}" /> instance is cast to an <see cref="IEnumerator" /> interface.</remarks>
         object? IEnumerator.Current => Current;
 
         private void DirectoryFinished()
@@ -92,20 +94,20 @@ namespace System.IO.Enumeration
             }
         }
 
-        /// <summary>Always throws <see cref="System.NotSupportedException" />.</summary>
+        /// <summary>Always throws <see cref="NotSupportedException" />.</summary>
         public void Reset()
         {
             throw new NotSupportedException();
         }
 
-        /// <summary>Releases the resources used by the current instance of the <see cref="Enumeration.FileSystemEnumerator{T}" /> class.</summary>
+        /// <summary>Releases the resources used by the current instance of the <see cref="FileSystemEnumerator{T}" /> class.</summary>
         public void Dispose()
         {
             InternalDispose(disposing: true);
             GC.SuppressFinalize(this);
         }
 
-        /// <summary>When overridden in a derived class, releases the unmanaged resources used by the <see cref="Enumeration.FileSystemEnumerator{T}" /> class and optionally releases the managed resources.</summary>
+        /// <summary>When overridden in a derived class, releases the unmanaged resources used by the <see cref="FileSystemEnumerator{T}" /> class and optionally releases the managed resources.</summary>
         /// <param name="disposing"><see langword="true" /> to release both managed and unmanaged resources; <see langword="false" /> to release only unmanaged resources.</param>
         protected virtual void Dispose(bool disposing)
         {

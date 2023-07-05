@@ -13,12 +13,9 @@
 // File types for the database.
 enum FILETYPE
 {
-	FILETYPE_UNKNOWN,					// Unknown or undefined type.
-	FILETYPE_CLB,						// Native .clb file format.
-	FILETYPE_CLX, 					    // An obsolete file format.
-	FILETYPE_NTPE,						// Windows PE executable.
-	FILETYPE_NTOBJ, 					// .obj file format (with .clb embedded).
-	FILETYPE_TLB						// Typelib format.
+    FILETYPE_UNKNOWN,       // Unknown or undefined type.
+    FILETYPE_CLB,           // Native .clb file format.
+    FILETYPE_NTPE,          // Windows PE executable.
 };
 
 enum MAPPINGTYPE
@@ -37,7 +34,6 @@ enum MAPPINGTYPE
 #define COMPRESSED_MODEL_STREAM_A   "#~"
 #define ENC_MODEL_STREAM_A          "#-"
 #define MINIMAL_MD_STREAM_A         "#JTD"
-#define HOT_MODEL_STREAM_A          "#!"
 #ifdef FEATURE_METADATA_EMIT_PORTABLE_PDB
 #define PDB_STREAM_A                "#Pdb"
 #endif // FEATURE_METADATA_EMIT_PORTABLE_PDB
@@ -50,7 +46,6 @@ enum MAPPINGTYPE
 #define COMPRESSED_MODEL_STREAM     W("#~")
 #define ENC_MODEL_STREAM            W("#-")
 #define MINIMAL_MD_STREAM           W("#JTD")
-#define HOT_MODEL_STREAM            W("#!")
 #ifdef FEATURE_METADATA_EMIT_PORTABLE_PDB
 #define PDB_STREAM                  W("#Pdb")
 #endif // FEATURE_METADATA_EMIT_PORTABLE_PDB

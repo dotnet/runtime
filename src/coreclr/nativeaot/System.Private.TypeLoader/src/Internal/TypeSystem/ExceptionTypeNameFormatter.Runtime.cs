@@ -5,7 +5,7 @@ namespace Internal.TypeSystem
 {
     partial class ExceptionTypeNameFormatter
     {
-        private string GetTypeName(DefType type)
+        private static string GetTypeName(DefType type)
         {
             if (type is NoMetadata.NoMetadataType)
                 return ((NoMetadata.NoMetadataType)type).NameForDiagnostics;
@@ -13,7 +13,7 @@ namespace Internal.TypeSystem
             return type.Name;
         }
 
-        private string GetTypeNamespace(DefType type)
+        private static string GetTypeNamespace(DefType type)
         {
             if (type is NoMetadata.NoMetadataType)
                 return ((NoMetadata.NoMetadataType)type).NamespaceForDiagnostics;

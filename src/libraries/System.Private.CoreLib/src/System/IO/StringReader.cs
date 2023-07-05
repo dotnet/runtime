@@ -83,16 +83,12 @@ namespace System.IO
         // array starting at position index. Returns the actual number of
         // characters read, or zero if the end of the string is reached.
         //
-        public override int Read(char[] buffer!!, int index, int count)
+        public override int Read(char[] buffer, int index, int count)
         {
-            if (index < 0)
-            {
-                throw new ArgumentOutOfRangeException(nameof(index), SR.ArgumentOutOfRange_NeedNonNegNum);
-            }
-            if (count < 0)
-            {
-                throw new ArgumentOutOfRangeException(nameof(count), SR.ArgumentOutOfRange_NeedNonNegNum);
-            }
+            ArgumentNullException.ThrowIfNull(buffer);
+
+            ArgumentOutOfRangeException.ThrowIfNegative(index);
+            ArgumentOutOfRangeException.ThrowIfNegative(count);
             if (buffer.Length - index < count)
             {
                 throw new ArgumentException(SR.Argument_InvalidOffLen);
@@ -288,12 +284,12 @@ namespace System.IO
                 ? Task.FromCanceled<string>(cancellationToken)
                 : Task.FromResult(ReadToEnd());
 
-        public override Task<int> ReadBlockAsync(char[] buffer!!, int index, int count)
+        public override Task<int> ReadBlockAsync(char[] buffer, int index, int count)
         {
-            if (index < 0 || count < 0)
-            {
-                throw new ArgumentOutOfRangeException(index < 0 ? nameof(index) : nameof(count), SR.ArgumentOutOfRange_NeedNonNegNum);
-            }
+            ArgumentNullException.ThrowIfNull(buffer);
+
+            ArgumentOutOfRangeException.ThrowIfNegative(index);
+            ArgumentOutOfRangeException.ThrowIfNegative(count);
             if (buffer.Length - index < count)
             {
                 throw new ArgumentException(SR.Argument_InvalidOffLen);
@@ -306,12 +302,12 @@ namespace System.IO
             cancellationToken.IsCancellationRequested ? ValueTask.FromCanceled<int>(cancellationToken) :
             new ValueTask<int>(ReadBlock(buffer.Span));
 
-        public override Task<int> ReadAsync(char[] buffer!!, int index, int count)
+        public override Task<int> ReadAsync(char[] buffer, int index, int count)
         {
-            if (index < 0 || count < 0)
-            {
-                throw new ArgumentOutOfRangeException(index < 0 ? nameof(index) : nameof(count), SR.ArgumentOutOfRange_NeedNonNegNum);
-            }
+            ArgumentNullException.ThrowIfNull(buffer);
+
+            ArgumentOutOfRangeException.ThrowIfNegative(index);
+            ArgumentOutOfRangeException.ThrowIfNegative(count);
             if (buffer.Length - index < count)
             {
                 throw new ArgumentException(SR.Argument_InvalidOffLen);

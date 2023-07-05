@@ -30,21 +30,15 @@ namespace System
         private static int FindAndParseNextNumber(string text, ref int pos)
         {
             // Move to the beginning of the number
-            for (; pos < text.Length; pos++)
-            {
-                char c = text[pos];
-                if ('0' <= c && c <= '9')
-                {
-                    break;
-                }
-            }
+            int numberPos = text.AsSpan(pos).IndexOfAnyInRange('0', '9');
+            pos = numberPos >= 0 ? pos + numberPos : text.Length;
 
             // Parse the number;
             int num = 0;
-            for (; pos < text.Length; pos++)
+            for (; (uint)pos < (uint)text.Length; pos++)
             {
                 char c = text[pos];
-                if ('0' > c || c > '9')
+                if (!char.IsAsciiDigit(c))
                     break;
 
                 try

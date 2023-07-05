@@ -102,59 +102,6 @@ PALTEST(file_io_SetFilePointer_test5_paltest_setfilepointer_test5, "file_io/SetF
         PAL_TerminateEx(FAIL);
         return FAIL;
     }
-    else
-    {
-        /* verify */
-        bRc = SetEndOfFile(hFile);
-        if (bRc != TRUE)
-        {
-            dwError = GetLastError();
-            if (dwError == 112)
-            {
-                Trace("SetFilePointer: ERROR -> SetEndOfFile failed due to "
-                    "lack of disk space\n");
-            }
-            else
-            {
-                Trace("SetFilePointer: ERROR -> SetEndOfFile call failed with "
-                    "error %ld\n", dwError);
-            }
-            bRc = CloseHandle(hFile);
-            if (bRc != TRUE)
-            {
-                Trace("SetFilePointer: ERROR -> Unable to close file"
-                      " \"%s\".\n", szTextFile);
-            }
-            if (!DeleteFileA(szTextFile))
-            {
-                Trace("SetFilePointer: ERROR -> Unable to delete file"
-                      " \"%s\".\n", szTextFile);
-            }
-            PAL_TerminateEx(FAIL);
-            return FAIL;
-        }
-
-        dwReturnedOffset = GetFileSize(hFile, &dwReturnedHighWord);
-        if ((dwOffset != dwReturnedOffset) ||
-           (dwHighWord != dwReturnedHighWord))
-        {
-            Trace("SetFilePointer: ERROR -> Failed to move pointer past"
-                  " EOF.\n");
-            bRc = CloseHandle(hFile);
-            if (bRc != TRUE)
-            {
-                Trace("SetFilePointer: ERROR -> Unable to close file"
-                      " \"%s\".\n", szTextFile);
-            }
-            if (!DeleteFileA(szTextFile))
-            {
-                Trace("SetFilePointer: ERROR -> Unable to delete file"
-                      " \"%s\".\n", szTextFile);
-            }
-            PAL_TerminateEx(FAIL);
-            return FAIL;
-        }
-    }
 
     bRc = CloseHandle(hFile);
     if (bRc != TRUE)

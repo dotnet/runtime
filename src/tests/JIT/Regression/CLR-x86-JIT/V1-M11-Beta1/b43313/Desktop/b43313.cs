@@ -1,6 +1,7 @@
 // Licensed to the .NET Foundation under one or more agreements.
 // The .NET Foundation licenses this file to you under the MIT license.
 
+using Xunit;
 namespace Test
 {
     using System;
@@ -9,7 +10,7 @@ namespace Test
     {
     }
 
-    internal struct AA
+    public struct AA
     {
         private static float[] s_afStatic1;
 
@@ -47,7 +48,8 @@ namespace Test
             }
             catch (OtherException) { }
         }
-        private static int Main()
+        [Fact]
+        public static int TestEntryPoint()
         {
             try
             {

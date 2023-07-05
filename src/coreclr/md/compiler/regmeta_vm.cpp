@@ -19,7 +19,6 @@
 #include "mdlog.h"
 #include "importhelper.h"
 #include "filtermanager.h"
-#include "mdperf.h"
 #include "switches.h"
 #include "posterror.h"
 #include "stgio.h"
@@ -31,7 +30,7 @@
 #define DEFINE_CUSTOM_DUPCHECK      2
 #define SET_CUSTOM                  3
 
-#if defined(_DEBUG) && defined(_TRACE_REMAPS)
+#if defined(_DEBUG)
 #define LOGGING
 #endif
 #include <log.h>
@@ -157,16 +156,10 @@ RegMeta::ResolveTypeRef(
 #ifdef FEATURE_METADATA_IN_VM
     HRESULT hr;
 
-    BEGIN_ENTRYPOINT_NOTHROW;
-
     TypeRefRec * pTypeRefRec;
     WCHAR        wzNameSpace[_MAX_PATH];
     CMiniMdRW *  pMiniMd = NULL;
 
-    LOG((LOGMD, "{%08x} RegMeta::ResolveTypeRef(0x%08x, 0x%08x, 0x%08x, 0x%08x)\n",
-        this, tr, riid, ppIScope, ptd));
-
-    START_MD_PERF();
     LOCKREAD();
 
     pMiniMd = &(m_pStgdb->m_MiniMd);
@@ -189,7 +182,6 @@ RegMeta::ResolveTypeRef(
             *ppIScope = NULL;
         }
 
-        STOP_MD_PERF(ResolveTypeRef);
         hr = E_INVALIDARG;
         goto ErrExit;
     }
@@ -198,7 +190,6 @@ RegMeta::ResolveTypeRef(
     {
         // Shortcut when we receive a TypeDef token
         *ptd = tr;
-        STOP_MD_PERF(ResolveTypeRef);
         hr = this->QueryInterface(riid, (void **)ppIScope);
         goto ErrExit;
     }
@@ -233,9 +224,6 @@ RegMeta::ResolveTypeRef(
     IfFailGo(META_E_CANNOTRESOLVETYPEREF);
 
 ErrExit:
-    STOP_MD_PERF(ResolveTypeRef);
-    END_ENTRYPOINT_NOTHROW;
-
     return hr;
 #else // FEATURE_METADATA_IN_VM
     return E_NOTIMPL;
@@ -248,8 +236,6 @@ ErrExit:
 // Thus Release() is in a satellite lib.
 ULONG RegMeta::Release()
 {
-    BEGIN_CLEANUP_ENTRYPOINT;
-
 #if defined(FEATURE_METADATA_IN_VM)
     _ASSERTE(!m_bCached || LOADEDMODULES::IsEntryInList(this));
 #else
@@ -279,7 +265,6 @@ ULONG RegMeta::Release()
         }
 #endif // FEATURE_METADATA_IN_VM
     }
-    END_CLEANUP_ENTRYPOINT
 
     return cRef;
 } // RegMeta::Release

@@ -74,7 +74,7 @@ internal static partial class Interop
 
     public static IntPtr VirtualAlloc(
             SafeHandle baseAddress,
-            UIntPtr size,
+            nuint size,
             int allocationType,
             int protection)
     {

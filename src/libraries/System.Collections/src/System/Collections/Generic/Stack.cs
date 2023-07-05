@@ -41,15 +41,16 @@ namespace System.Collections.Generic
         // must be a non-negative number.
         public Stack(int capacity)
         {
-            if (capacity < 0)
-                throw new ArgumentOutOfRangeException(nameof(capacity), capacity, SR.ArgumentOutOfRange_NeedNonNegNum);
+            ArgumentOutOfRangeException.ThrowIfNegative(capacity);
             _array = new T[capacity];
         }
 
         // Fills a Stack with the contents of a particular collection.  The items are
         // pushed onto the stack in the same order they are read by the enumerator.
-        public Stack(IEnumerable<T> collection!!)
+        public Stack(IEnumerable<T> collection)
         {
+            ArgumentNullException.ThrowIfNull(collection);
+
             _array = EnumerableHelpers.ToArray(collection, out _size);
         }
 
@@ -92,11 +93,13 @@ namespace System.Collections.Generic
         }
 
         // Copies the stack into an array.
-        public void CopyTo(T[] array!!, int arrayIndex)
+        public void CopyTo(T[] array, int arrayIndex)
         {
+            ArgumentNullException.ThrowIfNull(array);
+
             if (arrayIndex < 0 || arrayIndex > array.Length)
             {
-                throw new ArgumentOutOfRangeException(nameof(arrayIndex), arrayIndex, SR.ArgumentOutOfRange_Index);
+                throw new ArgumentOutOfRangeException(nameof(arrayIndex), arrayIndex, SR.ArgumentOutOfRange_IndexMustBeLessOrEqual);
             }
 
             if (array.Length - arrayIndex < _size)
@@ -113,8 +116,10 @@ namespace System.Collections.Generic
             }
         }
 
-        void ICollection.CopyTo(Array array!!, int arrayIndex)
+        void ICollection.CopyTo(Array array, int arrayIndex)
         {
+            ArgumentNullException.ThrowIfNull(array);
+
             if (array.Rank != 1)
             {
                 throw new ArgumentException(SR.Arg_RankMultiDimNotSupported, nameof(array));
@@ -127,7 +132,7 @@ namespace System.Collections.Generic
 
             if (arrayIndex < 0 || arrayIndex > array.Length)
             {
-                throw new ArgumentOutOfRangeException(nameof(arrayIndex), arrayIndex, SR.ArgumentOutOfRange_Index);
+                throw new ArgumentOutOfRangeException(nameof(arrayIndex), arrayIndex, SR.ArgumentOutOfRange_IndexMustBeLessOrEqual);
             }
 
             if (array.Length - arrayIndex < _size)
@@ -142,26 +147,19 @@ namespace System.Collections.Generic
             }
             catch (ArrayTypeMismatchException)
             {
-                throw new ArgumentException(SR.Argument_InvalidArrayType, nameof(array));
+                throw new ArgumentException(SR.Argument_IncompatibleArrayType, nameof(array));
             }
         }
 
         // Returns an IEnumerator for this Stack.
-        public Enumerator GetEnumerator()
-        {
-            return new Enumerator(this);
-        }
+        public Enumerator GetEnumerator() => new Enumerator(this);
 
         /// <internalonly/>
-        IEnumerator<T> IEnumerable<T>.GetEnumerator()
-        {
-            return new Enumerator(this);
-        }
+        IEnumerator<T> IEnumerable<T>.GetEnumerator() =>
+            Count == 0 ? EnumerableHelpers.GetEmptyEnumerator<T>() :
+            GetEnumerator();
 
-        IEnumerator IEnumerable.GetEnumerator()
-        {
-            return new Enumerator(this);
-        }
+        IEnumerator IEnumerable.GetEnumerator() => ((IEnumerable<T>)this).GetEnumerator();
 
         public void TrimExcess()
         {
@@ -169,7 +167,6 @@ namespace System.Collections.Generic
             if (_size < threshold)
             {
                 Array.Resize(ref _array, _size);
-                _version++;
             }
         }
 
@@ -286,15 +283,11 @@ namespace System.Collections.Generic
         /// <returns>The new capacity of this stack.</returns>
         public int EnsureCapacity(int capacity)
         {
-            if (capacity < 0)
-            {
-                throw new ArgumentOutOfRangeException(nameof(capacity), capacity, SR.ArgumentOutOfRange_NeedNonNegNum);
-            }
+            ArgumentOutOfRangeException.ThrowIfNegative(capacity);
 
             if (_array.Length < capacity)
             {
                 Grow(capacity);
-                _version++;
             }
 
             return _array.Length;

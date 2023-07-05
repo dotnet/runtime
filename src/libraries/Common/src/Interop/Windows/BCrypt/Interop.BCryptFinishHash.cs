@@ -9,10 +9,10 @@ internal static partial class Interop
 {
     internal static partial class BCrypt
     {
-        internal static NTSTATUS BCryptFinishHash(SafeBCryptHashHandle hHash, Span<byte> pbOutput, int cbOutput, int dwFlags) =>
-            BCryptFinishHash(hHash, ref MemoryMarshal.GetReference(pbOutput), cbOutput, dwFlags);
+        [LibraryImport(Libraries.BCrypt)]
+        internal static partial NTSTATUS BCryptFinishHash(SafeBCryptHashHandle hHash, Span<byte> pbOutput, int cbOutput, int dwFlags);
 
         [LibraryImport(Libraries.BCrypt)]
-        private static partial NTSTATUS BCryptFinishHash(SafeBCryptHashHandle hHash, ref byte pbOutput, int cbOutput, int dwFlags);
+        internal static unsafe partial NTSTATUS BCryptFinishHash(SafeBCryptHashHandle hHash, byte* pbOutput, int cbOutput, int dwFlags);
     }
 }

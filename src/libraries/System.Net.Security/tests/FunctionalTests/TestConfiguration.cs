@@ -2,6 +2,7 @@
 // The .NET Foundation licenses this file to you under the MIT license.
 
 using System.Diagnostics;
+using System.IO;
 using System.Security.Cryptography.X509Certificates;
 using System.Threading.Tasks;
 
@@ -28,7 +29,7 @@ namespace System.Net.Security.Tests
         public static bool SupportsHandshakeAlerts { get { return OperatingSystem.IsLinux() || OperatingSystem.IsWindows() || OperatingSystem.IsFreeBSD(); } }
         public static bool SupportsRenegotiation { get { return (OperatingSystem.IsWindows() && !PlatformDetection.IsWindows7) || ((OperatingSystem.IsLinux() || OperatingSystem.IsFreeBSD()) && PlatformDetection.OpenSslVersion >= new Version(1, 1, 1)); } }
 
-        public static X509Certificate2 ServerCertificate = System.Net.Test.Common.Configuration.Certificates.GetServerCertificate();
+        public static readonly X509Certificate2 ServerCertificate = System.Net.Test.Common.Configuration.Certificates.GetServerCertificate();
 
         public static Task WhenAllOrAnyFailedWithTimeout(params Task[] tasks)
             => tasks.WhenAllOrAnyFailed(PassingTestTimeoutMilliseconds);
@@ -49,7 +50,8 @@ namespace System.Net.Security.Tests
                     // New Windows can support null but it may be disabled in Azure images
                     using (Process p = Process.Start(new ProcessStartInfo("powershell", "-Command Get-TlsCipherSuite") { RedirectStandardOutput = true, RedirectStandardError = true }))
                     {
-                        return p.StandardOutput.ReadToEnd().Contains("WITH_NULL");
+                        using StreamReader reader = p.StandardOutput;
+                        return reader.ReadToEnd().Contains("WITH_NULL");
                     }
                 }
                 catch { return true; }  // assume availability

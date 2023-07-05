@@ -184,7 +184,6 @@ MethodDesc* ILStubCache::CreateNewMethodDesc(LoaderHeap* pCreationHeap, MethodTa
                                                            mcDynamic,
                                                            TRUE /* fNonVtableSlot */,
                                                            TRUE /* fNativeCodeSlot */,
-                                                           FALSE /* fComPlusCallInfo */,
                                                            pMT,
                                                            pamTracker);
 

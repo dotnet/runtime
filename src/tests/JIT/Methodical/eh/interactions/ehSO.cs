@@ -1,4 +1,5 @@
 // Licensed to the .NET Foundation under one or more agreements.
+using Xunit;
 // The .NET Foundation licenses this file to you under the MIT license.
 
 /*
@@ -29,7 +30,8 @@ public class Form1
         }
     }
 
-    public static int Main()
+    [Fact]
+    public static int TestEntryPoint()
     {
         Form1 f = new Form1();
         return 100;

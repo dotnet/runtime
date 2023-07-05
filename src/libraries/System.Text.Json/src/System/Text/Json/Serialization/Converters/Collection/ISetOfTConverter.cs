@@ -11,6 +11,8 @@ namespace System.Text.Json.Serialization.Converters
         : IEnumerableDefaultConverter<TCollection, TElement>
         where TCollection : ISet<TElement>
     {
+        internal override bool CanPopulate => true;
+
         protected override void Add(in TElement value, ref ReadStack state)
         {
             TCollection collection = (TCollection)state.Current.ReturnValue!;
@@ -21,23 +23,23 @@ namespace System.Text.Json.Serialization.Converters
             };
         }
 
-        protected override void CreateCollection(ref Utf8JsonReader reader, ref ReadStack state, JsonSerializerOptions options)
+        protected override void CreateCollection(ref Utf8JsonReader reader, scoped ref ReadStack state, JsonSerializerOptions options)
         {
             base.CreateCollection(ref reader, ref state, options);
             TCollection returnValue = (TCollection)state.Current.ReturnValue!;
             if (returnValue.IsReadOnly)
             {
                 state.Current.ReturnValue = null; // clear out for more accurate JsonPath reporting.
-                ThrowHelper.ThrowNotSupportedException_CannotPopulateCollection(TypeToConvert, ref reader, ref state);
+                ThrowHelper.ThrowNotSupportedException_CannotPopulateCollection(Type, ref reader, ref state);
             }
         }
 
         internal override void ConfigureJsonTypeInfo(JsonTypeInfo jsonTypeInfo, JsonSerializerOptions options)
         {
             // Deserialize as HashSet<TElement> for interface types that support it.
-            if (jsonTypeInfo.CreateObject is null && TypeToConvert.IsAssignableFrom(typeof(HashSet<TElement>)))
+            if (jsonTypeInfo.CreateObject is null && Type.IsAssignableFrom(typeof(HashSet<TElement>)))
             {
-                Debug.Assert(TypeToConvert.IsInterface);
+                Debug.Assert(Type.IsInterface);
                 jsonTypeInfo.CreateObject = () => new HashSet<TElement>();
             }
         }

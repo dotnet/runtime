@@ -122,7 +122,7 @@ namespace System.Reflection.Internal
         }
 
         /// <exception cref="IOException">IO error while mapping memory or not enough memory to create the mapping.</exception>
-        private unsafe bool TryCreateMemoryMappedFileBlock(long start, int size, [NotNullWhen(true)]out MemoryMappedFileBlock? block)
+        private unsafe bool TryCreateMemoryMappedFileBlock(long start, int size, [NotNullWhen(true)] out MemoryMappedFileBlock? block)
         {
             if (_lazyMemoryMap == null)
             {
@@ -142,7 +142,8 @@ namespace System.Reflection.Internal
                                 access: MemoryMappedFileAccess.Read,
                                 inheritability: HandleInheritability.None,
                                 leaveOpen: true);
-                    } catch (UnauthorizedAccessException e)
+                    }
+                    catch (UnauthorizedAccessException e)
                     {
                         throw new IOException(e.Message, e);
                     }

@@ -21,7 +21,7 @@
 
 // =============== CLASS MEMBERS DECLARATION ===================
 
-.class private auto ansi beforefieldinit JumpBug
+.class public auto ansi beforefieldinit JumpBug
        extends [mscorlib]System.Object
 {
   .method private hidebysig instance string 
@@ -45,7 +45,7 @@
     IL_0000:  jmp       instance string JumpBug::JumpCallTarget()
   } // end of method JumpBug::BugRepro
 
-  .method private hidebysig static int32 Main() cil managed
+  .method public hidebysig static int32 Main() cil managed
   {
     .custom instance void [xunit.core]Xunit.FactAttribute::.ctor() = (
         01 00 00 00

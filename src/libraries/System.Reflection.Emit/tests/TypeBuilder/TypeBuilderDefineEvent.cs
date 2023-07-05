@@ -43,7 +43,7 @@ namespace System.Reflection.Emit.Tests
             eventBuilder.SetAddOnMethod(addOnMethod);
             eventBuilder.SetRemoveOnMethod(removeOnMethod);
 
-            Type createdType = type.CreateTypeInfo().AsType();
+            Type createdType = type.CreateType();
             Assert.Equal(type.AsType().GetEvents(Helpers.AllFlags), createdType.GetEvents(Helpers.AllFlags));
             Assert.Equal(type.AsType().GetEvent(expectedName, Helpers.AllFlags), createdType.GetEvent(expectedName, Helpers.AllFlags));
 
@@ -75,7 +75,7 @@ namespace System.Reflection.Emit.Tests
                 eventBuilder.SetRemoveOnMethod(removeOnMethod);
             }
 
-            Type createdType = type.CreateTypeInfo().AsType();
+            Type createdType = type.CreateType();
             EventInfo[] events = createdType.GetEvents();
             Assert.Equal(1, events.Length);
             Assert.Equal("EventName", events[0].Name);
@@ -88,7 +88,7 @@ namespace System.Reflection.Emit.Tests
             type.DefineGenericParameters("T");
 
             type.DefineEvent("TestEvent", EventAttributes.None, typeof(int));
-            type.CreateTypeInfo().AsType();
+            type.CreateType();
             Assert.Throws<InvalidOperationException>(() => type.DefineEvent("TestEvent2", EventAttributes.None, typeof(int)));
         }
 
@@ -110,7 +110,7 @@ namespace System.Reflection.Emit.Tests
         {
             TypeBuilder type = Helpers.DynamicType(TypeAttributes.Class | TypeAttributes.Public);
             type.DefineEvent("Name", EventAttributes.None, typeof(int).MakeByRefType());
-            type.CreateTypeInfo().AsType();
+            type.CreateType();
         }
 
         [Fact]

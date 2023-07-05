@@ -14,8 +14,10 @@ namespace System.Security.Cryptography.Tests
         [Fact]
         public void Create_InvalidArgument_Throws()
         {
+#pragma warning disable SYSLIB0045 // String factory methods are obsolete
             AssertExtensions.Throws<ArgumentNullException>("algorithm", () => ECDsa.Create(null));
             Assert.Null(ECDsa.Create(Guid.NewGuid().ToString("N")));
+#pragma warning restore SYSLIB0045 // String factory methods are obsolete
         }
 
         [Fact]
@@ -35,8 +37,6 @@ namespace System.Security.Cryptography.Tests
                 Assert.Throws<NotSupportedException>(() => ecdsa.ExportExplicitParameters(false));
                 Assert.Throws<NotSupportedException>(() => ecdsa.ImportParameters(default(ECParameters)));
                 Assert.Throws<NotSupportedException>(() => ecdsa.GenerateKey(default(ECCurve)));
-                Assert.Throws<NotSupportedException>(() => ecdsa.BaseHashData(null, HashAlgorithmName.SHA256));
-                Assert.Throws<NotSupportedException>(() => ecdsa.BaseHashData(null, 0, 0, HashAlgorithmName.SHA256));
 
                 Assert.Throws<NotImplementedException>(() => ecdsa.FromXmlString(null));
                 Assert.Throws<NotImplementedException>(() => ecdsa.ToXmlString(false));
@@ -145,6 +145,12 @@ namespace System.Security.Cryptography.Tests
             private readonly ECDsa _ecdsa;
 
             public OverrideAbstractECDsa(ECDsa ecdsa) => _ecdsa = ecdsa;
+
+            protected override void Dispose(bool disposing)
+            {
+                _ecdsa.Dispose();
+                base.Dispose(disposing);
+            }
 
             public override int KeySize
             {

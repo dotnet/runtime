@@ -35,10 +35,7 @@ internal static partial class Interop
             public override unsafe int GetHashCode()
             {
                 HashCode h = default;
-                fixed (byte* ptr = Address)
-                {
-                    h.AddBytes(new ReadOnlySpan<byte>(ptr, IsIPv6 ? IPv6AddressBytes : IPv4AddressBytes));
-                }
+                h.AddBytes(MemoryMarshal.CreateReadOnlySpan(ref Address[0], IsIPv6 ? IPv6AddressBytes : IPv4AddressBytes));
                 return h.ToHashCode();
             }
 
@@ -71,18 +68,8 @@ internal static partial class Interop
                     addressByteCount = IPv4AddressBytes;
                 }
 
-                fixed (byte* thisAddress = Address)
-                {
-                    for (int i = 0; i < addressByteCount; i++)
-                    {
-                        if (thisAddress[i] != other.Address[i])
-                        {
-                            return false;
-                        }
-                    }
-                }
-
-                return true;
+                return MemoryMarshal.CreateReadOnlySpan(ref Address[0], addressByteCount).SequenceEqual(
+                       new ReadOnlySpan<byte>(other.Address, addressByteCount));
             }
         }
     }

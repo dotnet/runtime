@@ -8,7 +8,7 @@ namespace System.ServiceProcess.Tests
     [OuterLoop(/* Modifies machine state */)]
     public partial class ServiceControllerTests : IDisposable
     {
-        [ConditionalFact(nameof(IsProcessElevated))]
+        [ConditionalFact(typeof(PlatformDetection), nameof(PlatformDetection.IsPrivilegedProcess))]
         public void Stop_FalseArg_WithDependentServices_ThrowsInvalidOperationException()
         {
             var controller = new ServiceController(_testService.TestServiceName);
@@ -23,7 +23,7 @@ namespace System.ServiceProcess.Tests
             Assert.Throws<InvalidOperationException>(() => prerequisiteServiceController.Stop(stopDependentServices: false));
         }
 
-        [ConditionalFact(nameof(IsProcessElevated))]
+        [ConditionalFact(typeof(PlatformDetection), nameof(PlatformDetection.IsPrivilegedProcess))]
         public void Stop_TrueArg_WithDependentServices_StopsTheServiceAndItsDependents()
         {
             var controller = new ServiceController(_testService.TestServiceName);
@@ -36,7 +36,7 @@ namespace System.ServiceProcess.Tests
             Assert.All(controller.DependentServices, service => Assert.Equal(ServiceControllerStatus.Stopped, service.Status));
         }
 
-        [ConditionalFact(nameof(IsProcessElevated))]
+        [ConditionalFact(typeof(PlatformDetection), nameof(PlatformDetection.IsPrivilegedProcess))]
         public void StopTheServiceAndItsDependentsManually()
         {
             var controller = new ServiceController(_testService.TestServiceName);

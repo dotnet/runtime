@@ -18,7 +18,7 @@ class Test
     private const string RelativePath1Unix =  @"./RelativeNative/../libDllImportPath_Relative";
     private const string RelativePath3Unix = @"../DllImportPathTest/libDllImportPath_Relative";
 
-    private const string UnicodeFileName = "DllImportPath_Unicode✔";
+    private const string UnicodeFileName = "DllImportPath_Unicode\u2714";
 
     [DllImport(@"DllImportPath_Local", EntryPoint = "GetZero")]
     private static extern int GetZero_Local1();
@@ -168,7 +168,7 @@ class Test
         GetZero_Exe();
     }
 
-    public static int Main(string[] args)
+    public static int Main()
     {
         try
         {

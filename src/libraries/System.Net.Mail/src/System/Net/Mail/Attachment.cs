@@ -82,8 +82,10 @@ namespace System.Net.Mail
             _part.SetContent(stream, null, mediaType);
         }
 
-        internal void SetContentFromString(string content!!, ContentType? contentType)
+        internal void SetContentFromString(string content, ContentType? contentType)
         {
+            ArgumentNullException.ThrowIfNull(content);
+
             _part.Stream?.Close();
 
             Encoding encoding;
@@ -116,8 +118,10 @@ namespace System.Net.Mail
             }
         }
 
-        internal void SetContentFromString(string content!!, Encoding? encoding, string? mediaType)
+        internal void SetContentFromString(string content, Encoding? encoding, string? mediaType)
         {
+            ArgumentNullException.ThrowIfNull(content);
+
             _part.Stream?.Close();
 
             if (string.IsNullOrEmpty(mediaType))
@@ -129,10 +133,10 @@ namespace System.Net.Mail
             int offset = 0;
             try
             {
-                string value = MailBnfHelper.ReadToken(mediaType, ref offset, null);
+                string value = MailBnfHelper.ReadToken(mediaType, ref offset);
                 if (value.Length == 0 || offset >= mediaType.Length || mediaType[offset++] != '/')
                     throw new ArgumentException(SR.MediaTypeInvalid, nameof(mediaType));
-                value = MailBnfHelper.ReadToken(mediaType, ref offset, null);
+                value = MailBnfHelper.ReadToken(mediaType, ref offset);
                 if (value.Length == 0 || offset < mediaType.Length)
                 {
                     throw new ArgumentException(SR.MediaTypeInvalid, nameof(mediaType));
@@ -200,7 +204,7 @@ namespace System.Net.Mail
                     ContentId = cid;
                     return cid;
                 }
-                if (cid.Length >= 2 && cid[0] == '<' && cid[cid.Length - 1] == '>')
+                if (cid.StartsWith('<') && cid.EndsWith('>'))
                 {
                     return cid.Substring(1, cid.Length - 2);
                 }
@@ -215,7 +219,7 @@ namespace System.Net.Mail
                 }
                 else
                 {
-                    if (value.AsSpan().IndexOfAny('<', '>') >= 0) // invalid chars
+                    if (value.AsSpan().ContainsAny('<', '>')) // invalid chars
                     {
                         throw new ArgumentException(SR.MailHeaderInvalidCID, nameof(value));
                     }
@@ -337,7 +341,7 @@ namespace System.Net.Mail
 
         internal void SetContentTypeName(bool allowUnicode)
         {
-            if (!allowUnicode && _name != null && _name.Length != 0 && !MimeBasePart.IsAscii(_name, false))
+            if (!allowUnicode && !string.IsNullOrEmpty(_name) && !MimeBasePart.IsAscii(_name, false))
             {
                 Encoding encoding = NameEncoding ?? Encoding.GetEncoding(MimeBasePart.DefaultCharSet);
                 MimePart.ContentType.Name = MimeBasePart.EncodeHeaderValue(_name, encoding, MimeBasePart.ShouldUseBase64Encoding(encoding));

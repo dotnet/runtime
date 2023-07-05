@@ -14,7 +14,7 @@ namespace SslStress.Utils
 
         /// <summary>
         /// Starts and awaits a collection of cancellable tasks.
-        /// Will surface the first exception that has occured (instead of AggregateException)
+        /// Will surface the first exception that has occurred (instead of AggregateException)
         /// and trigger cancellation for all sibling tasks.
         /// </summary>
         /// <param name="token"></param>

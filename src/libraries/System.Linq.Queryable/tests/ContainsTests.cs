@@ -62,14 +62,14 @@ namespace System.Linq.Tests
         [Fact]
         public void Contains1()
         {
-            var val = (new int[] { 0, 2, 1 }).AsQueryable().Contains(1);
+            var val = new[] { 0, 2, 1 }.AsQueryable().Contains(1);
             Assert.True(val);
         }
 
         [Fact]
         public void Contains2()
         {
-            var val = (new int[] { 0, 2, 1 }).AsQueryable().Contains(1, EqualityComparer<int>.Default);
+            var val = new[] { 0, 2, 1 }.AsQueryable().Contains(1, EqualityComparer<int>.Default);
             Assert.True(val);
         }
     }

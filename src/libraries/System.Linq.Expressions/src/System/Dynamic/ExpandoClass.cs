@@ -89,10 +89,7 @@ namespace System.Dynamic
         /// </summary>
         private List<WeakReference> GetTransitionList(int hashCode)
         {
-            if (_transitions == null)
-            {
-                _transitions = new Dictionary<int, List<WeakReference>>();
-            }
+            _transitions ??= new Dictionary<int, List<WeakReference>>();
 
             if (!_transitions.TryGetValue(hashCode, out List<WeakReference>? infos))
             {

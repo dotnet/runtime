@@ -88,10 +88,7 @@ namespace System.ComponentModel
                     return string.Empty;
                 }
 
-                if (culture == null)
-                {
-                    culture = CultureInfo.CurrentCulture;
-                }
+                culture ??= CultureInfo.CurrentCulture;
 
                 DateTimeFormatInfo? formatInfo = (DateTimeFormatInfo?)culture.GetFormat(typeof(DateTimeFormatInfo));
 
@@ -117,7 +114,7 @@ namespace System.ComponentModel
                     format = formatInfo!.ShortDatePattern + " " + formatInfo.ShortTimePattern;
                 }
 
-                return dt.ToString(format, CultureInfo.CurrentCulture);
+                return dt.ToString(format, culture);
             }
 
             if (destinationType == typeof(InstanceDescriptor) && value is DateTime)

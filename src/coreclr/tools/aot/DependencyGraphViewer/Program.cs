@@ -2,20 +2,44 @@
 // The .NET Foundation licenses this file to you under the MIT license.
 
 using System;
+using System.Collections.Concurrent;
 using System.Collections.Generic;
 using System.Diagnostics;
-using System.Linq;
-using System.Threading.Tasks;
+using System.IO;
+using System.Runtime.CompilerServices;
+using System.Threading;
 using System.Windows.Forms;
+using System.Xml;
 using Microsoft.Diagnostics.Tracing;
 using Microsoft.Diagnostics.Tracing.Session;
-using System.Collections.Concurrent;
-using System.Threading;
+
+[assembly: InternalsVisibleTo("DependecyGraphViewer.Tests")]
 
 namespace DependencyLogViewer
 {
+    public class BoxDisplay
+    {
+        public Node node;
+        public List<string> reason;
+
+        public BoxDisplay(Node node, List<string> reason)
+        {
+            this.node = node;
+            this.reason = reason;
+        }
+
+        public override string ToString()
+        {
+            return $"Index: {node.Index}, Name: {node.Name}, {reason.Count} Reason(s): {string.Join(", ", reason.ToArray())}";
+        }
+    }
     public class Node
     {
+        public readonly int Index;
+        public readonly string Name;
+        public readonly Dictionary<Node, List<string>> Targets = new Dictionary<Node, List<string>>();
+        public readonly Dictionary<Node, List<string>> Sources = new Dictionary<Node, List<string>>();
+
         public Node(int index, string name)
         {
             Index = index;
@@ -24,46 +48,92 @@ namespace DependencyLogViewer
 
         public override string ToString()
         {
-            return "Index:" + Index.ToString() + " Name:" + Name;
+            return $"Index: {Index}, Name: {Name}";
         }
-
-        public readonly int Index;
-        public readonly string Name;
-        public readonly List<KeyValuePair<Node, string>> Dependencies = new List<KeyValuePair<Node, string>>();
-        public readonly List<KeyValuePair<Node, string>> Dependents = new List<KeyValuePair<Node, string>>();
     }
 
     public class Graph
     {
-        public override string ToString()
-        {
-            return "PID:" + PID.ToString() + " Id:" + ID.ToString() + " Name: " + Name;
-        }
-
-        public int NextConditionalNodeIndex = Int32.MaxValue;
-
+        public int NextConditionalNodeIndex = int.MaxValue;
         public int PID;
         public int ID;
         public string Name;
         public Dictionary<int, Node> Nodes = new Dictionary<int, Node>();
+
+        public override string ToString()
+        {
+            return $"PID: {PID}, ID: {ID}, Name: {Name}";
+        }
+
+        public bool AddEdge(int source, int target, string reason)
+        {
+            if (Nodes.TryGetValue(source, out Node a) && Nodes.TryGetValue(target, out Node b))
+            {
+                AddReason(a.Targets, b, reason);
+                AddReason(b.Sources, a, reason);
+            }
+            else
+            {
+                return false;
+            }
+            return true;
+        }
+
+        public void AddConditionalEdge(int reason1, int reason2, int target, string reason)
+        {
+            Node reason1Node = Nodes[reason1];
+            Node reason2Node = Nodes[reason2];
+            Node dependee = Nodes[target];
+
+            int conditionalNodeIndex = NextConditionalNodeIndex--;
+            Node conditionalNode = new Node(conditionalNodeIndex, string.Format("Conditional({0} - {1})", reason1Node.ToString(), reason2Node.ToString()));
+            Nodes.Add(conditionalNodeIndex, conditionalNode);
+
+            AddReason(conditionalNode.Targets, dependee, reason);
+            AddReason(dependee.Sources, conditionalNode, reason);
+
+            AddReason(reason1Node.Targets, conditionalNode, "Reason1Conditional - " + reason);
+            AddReason(conditionalNode.Sources, reason1Node, "Reason1Conditional - " + reason);
+
+            AddReason(reason2Node.Targets, conditionalNode, "Reason2Conditional - " + reason);
+            AddReason(conditionalNode.Sources, reason2Node, "Reason2Conditional - " + reason);
+        }
+
+        public void AddNode(int index, string name)
+        {
+            Node n = new Node(index, name);
+            this.Nodes.Add(index, n);
+        }
+
+        public void AddReason(Dictionary<Node, List<string>> dict, Node node, string reason)
+        {
+            if (dict.TryGetValue(node, out List<string> reasons))
+            {
+                reasons.Add(reason);
+            }
+            else
+            {
+                dict.Add(node, new List<string> { reason });
+            }
+        }
     }
 
-    class GraphCollection
+    public class GraphCollection
     {
         public static readonly GraphCollection Singleton = new GraphCollection();
         public static DependencyGraphs DependencyGraphsUI;
-
         public List<Graph> Graphs = new List<Graph>();
 
-        public void AddGraph(int pid, int id, string name)
+        public void AddGraph(Graph g)
         {
-            Graph g = new Graph();
-            g.ID = id;
-            g.PID = pid;
-            g.Name = name;
             Graphs.Add(g);
+            DependencyGraphsUI?.ForceRefresh();
+        }
 
-            DependencyGraphsUI.ForceRefresh();
+        public void RemoveGraph(Graph g)
+        {
+            Graphs.Remove(g);
+            DependencyGraphsUI?.ForceRefresh();
         }
 
         public Graph GetGraph(int pid, int id)
@@ -73,7 +143,6 @@ namespace DependencyLogViewer
                 if ((g.PID == pid) && (g.ID == id))
                     return g;
             }
-
             return null;
         }
 
@@ -83,21 +152,15 @@ namespace DependencyLogViewer
             if (g == null)
                 return;
 
-            Node n = new Node(index, name);
-            g.Nodes.Add(index, n);
+            g.AddNode(index, name);
         }
 
-        public void AddEdgeToGraph(int pid, int id, int edge1, int edge2, string reason)
+        public bool AddEdgeToGraph(int pid, int id, int source, int target, string reason)
         {
             Graph g = GetGraph(pid, id);
             if (g == null)
-                return;
-
-            Node dependent = g.Nodes[edge1];
-            Node dependee = g.Nodes[edge2];
-
-            dependent.Dependencies.Add(new KeyValuePair<Node, string>(dependee, reason));
-            dependee.Dependents.Add(new KeyValuePair<Node, string>(dependent, reason));
+                return false;
+            return (g.AddEdge(source, target, reason));
         }
 
         public void AddConditionalEdgeToGraph(int pid, int id, int reason1, int reason2, int target, string reason)
@@ -105,27 +168,11 @@ namespace DependencyLogViewer
             Graph g = GetGraph(pid, id);
             if (g == null)
                 return;
-
-            Node reason1Node = g.Nodes[reason1];
-            Node reason2Node = g.Nodes[reason2];
-            Node dependee = g.Nodes[target];
-
-            int conditionalNodeIndex = g.NextConditionalNodeIndex--;
-            Node conditionalNode = new Node(conditionalNodeIndex, String.Format("Conditional({0} - {1})", reason1Node.ToString(), reason2Node.ToString()));
-            g.Nodes.Add(conditionalNodeIndex, conditionalNode);
-
-            conditionalNode.Dependencies.Add(new KeyValuePair<Node, string>(dependee, reason));
-            dependee.Dependents.Add(new KeyValuePair<Node, string>(conditionalNode, reason));
-
-            reason1Node.Dependencies.Add(new KeyValuePair<Node, string>(conditionalNode, "Reason1Conditional - " + reason));
-            conditionalNode.Dependents.Add(new KeyValuePair<Node, string>(reason1Node, "Reason1Conditional - " + reason));
-
-            reason2Node.Dependencies.Add(new KeyValuePair<Node, string>(conditionalNode, "Reason2Conditional - " + reason));
-            conditionalNode.Dependents.Add(new KeyValuePair<Node, string>(reason2Node, "Reason2Conditional - " + reason));
+            g.AddConditionalEdge(reason1, reason2, target, reason);
         }
     }
 
-    enum GraphEventType
+    internal enum GraphEventType
     {
         NewGraph,
         NewNode,
@@ -133,7 +180,7 @@ namespace DependencyLogViewer
         NewConditionalEdge,
     }
 
-    struct GraphEvent
+    internal struct GraphEvent
     {
         public int Pid;
         public int Id;
@@ -144,15 +191,155 @@ namespace DependencyLogViewer
         public string Str;
     }
 
-    class GraphProcessing
+    public class DGMLGraphProcessing
     {
-        public static GraphProcessing Singleton;
+        public delegate void OnCompleted(int currFileID);
+        public event OnCompleted Complete;
+        public Graph g;
+        private Stream _stream;
+        private string _name;
 
-        ConcurrentQueue<GraphEvent> events = new ConcurrentQueue<GraphEvent>();
-        TraceEventSession session;
-        volatile bool stopped;
+        internal DGMLGraphProcessing(int file)
+        {
+            FileID = file;
+            g = new Graph();
+        }
 
-        public GraphProcessing()
+        public static bool StartProcess(int fileID, string argPath)
+        {
+            var dgml = new DGMLGraphProcessing(fileID);
+            dgml._name = argPath;
+            GraphCollection collection = GraphCollection.Singleton;
+            dgml.Complete += (fileID) =>
+            {
+                lock (collection)
+                {
+                    collection.AddGraph(dgml.g);
+                }
+                Debug.Assert(fileID == dgml.FileID);
+            };
+            return dgml.FindXML(argPath);
+        }
+
+        public int FileID
+        {
+            get; init;
+        }
+
+        private bool FindXML(string argPath)
+        {
+            FileStream fileStream = null;
+            if (argPath != null)
+            {
+                try
+                {
+                    fileStream = new FileStream(argPath, FileMode.Open);
+                }
+                catch (Exception e)
+                {
+                    string _errorMsg = $"Failure to open file {argPath} \n{e}";
+                    Console.WriteLine(_errorMsg);
+                    return false;
+                }
+            }
+            else
+            {
+                using (OpenFileDialog openFileDialog = new OpenFileDialog())
+                {
+                    openFileDialog.Filter = @"XML (*.xml)|*.xml| DGML (*.dgml; *.dgml.xml)|*.dgml;*.dgml.xml";
+                    openFileDialog.FilterIndex = 2;
+                    openFileDialog.RestoreDirectory = true;
+
+                    if (openFileDialog.ShowDialog() == DialogResult.OK)
+                    {
+                        //Get the path of specified file
+                        fileStream = (FileStream)openFileDialog.OpenFile();
+                    }
+                    else
+                    {
+                        return false;
+                    }
+                }
+            }
+            return FindXML(fileStream, fileStream.Name);
+        }
+
+        internal bool FindXML(Stream stream, string name)
+        {
+            if (stream != Stream.Null)
+            {
+                _stream = stream;
+                _name = name;
+                Thread th = new Thread(ProcessingMain);
+                th.Start(this);
+                return true;
+            }
+            return false;
+        }
+
+        public static void ProcessingMain(object obj)
+        {
+            var writer = (DGMLGraphProcessing)obj;
+            if (!writer.ParseXML(writer._stream))
+                DependencyGraphs.showError("Nonexistent nodes present in Links");
+        }
+
+        internal bool ParseXML(Stream fileStream)
+        {
+            Debug.Assert(fileStream is Stream);
+            XmlReaderSettings settings = new XmlReaderSettings();
+            settings.IgnoreWhitespace = true;
+
+            g = new Graph();
+
+            using (XmlReader reader = XmlReader.Create(fileStream, settings))
+            {
+                while (reader.Read())
+                {
+                    if ((reader.Name == "Property" || reader.Name == "Properties"))
+                        continue;
+
+                    if (reader.NodeType != XmlNodeType.Element)
+                        continue;
+                    // fileID is the PID for the system, increments down with the number of files being read.
+                    // There is the same PID and ID because each process will only have one graph, this is why the first two args are the same for each of the functions below.
+                    switch (reader.Name)
+                    {
+                        case "Node":
+                            int id = int.Parse(reader.GetAttribute("Id"));
+                            g.AddNode(id, reader.GetAttribute("Label"));
+                            break;
+                        case "Link":
+                            int source = int.Parse(reader.GetAttribute("Source"));
+                            int target = int.Parse(reader.GetAttribute("Target"));
+                            if (!g.AddEdge(source, target, reader.GetAttribute("Reason")))
+                            {
+                                return false;
+                            }
+                            break;
+                        case "DirectedGraph":
+                            g.ID = FileID;
+                            g.PID = FileID;
+                            g.Name = _name;
+                            break;
+                    }
+                }
+            }
+            fileStream.Close();
+            Complete?.Invoke(FileID);
+            return true;
+        }
+    }
+
+    internal class ETWGraphProcessing
+    {
+        public static ETWGraphProcessing Singleton;
+
+        private ConcurrentQueue<GraphEvent> events = new ConcurrentQueue<GraphEvent>();
+        private TraceEventSession session;
+        private volatile bool stopped;
+
+        public ETWGraphProcessing()
         {
             var sessionName = "GraphETWEventProcessingSession";
 
@@ -189,7 +376,11 @@ namespace DependencyLogViewer
                                     collection.AddNodeToGraph(eventRead.Pid, eventRead.Id, eventRead.Num1, eventRead.Str);
                                     break;
                                 case GraphEventType.NewGraph:
-                                    collection.AddGraph(eventRead.Pid, eventRead.Id, eventRead.Str);
+                                    Graph g = new Graph();
+                                    g.PID = eventRead.Pid;
+                                    g.ID = eventRead.Id;
+                                    g.Name = eventRead.Str;
+                                    collection.AddGraph(g);
                                     break;
                                 case GraphEventType.NewConditionalEdge:
                                     collection.AddConditionalEdgeToGraph(eventRead.Pid, eventRead.Id, eventRead.Num1, eventRead.Num2, eventRead.Num3, eventRead.Str);
@@ -207,13 +398,13 @@ namespace DependencyLogViewer
 
         private void ETWImportingThread()
         {
-            
+
             using (session)
             {
                 session.BufferSizeMB = 1024;
                 session.Source.Dynamic.AddCallbackForProviderEvent("Microsoft-ILCompiler-DependencyGraph", "Graph", delegate (TraceEvent data)
                 {
-                    GraphEvent ge = new GraphEvent();
+                    GraphEvent ge = default(GraphEvent);
                     ge.EventType = GraphEventType.NewGraph;
                     ge.Pid = data.ProcessID;
                     ge.Id = (int)data.PayloadValue(0);
@@ -222,7 +413,7 @@ namespace DependencyLogViewer
                 });
                 session.Source.Dynamic.AddCallbackForProviderEvent("Microsoft-ILCompiler-DependencyGraph", "Node", delegate (TraceEvent data)
                 {
-                    GraphEvent ge = new GraphEvent();
+                    GraphEvent ge = default(GraphEvent);
                     ge.EventType = GraphEventType.NewNode;
                     ge.Pid = data.ProcessID;
                     ge.Id = (int)data.PayloadValue(0);
@@ -232,7 +423,7 @@ namespace DependencyLogViewer
                 });
                 session.Source.Dynamic.AddCallbackForProviderEvent("Microsoft-ILCompiler-DependencyGraph", "Edge", delegate (TraceEvent data)
                 {
-                    GraphEvent ge = new GraphEvent();
+                    GraphEvent ge = default(GraphEvent);
                     ge.EventType = GraphEventType.NewEdge;
                     ge.Pid = data.ProcessID;
                     ge.Id = (int)data.PayloadValue(0);
@@ -243,7 +434,7 @@ namespace DependencyLogViewer
                 });
                 session.Source.Dynamic.AddCallbackForProviderEvent("Microsoft-ILCompiler-DependencyGraph", "ConditionalEdge", delegate (TraceEvent data)
                 {
-                    GraphEvent ge = new GraphEvent();
+                    GraphEvent ge = default(GraphEvent);
                     ge.EventType = GraphEventType.NewConditionalEdge;
                     ge.Pid = data.ProcessID;
                     ge.Id = (int)data.PayloadValue(0);
@@ -266,30 +457,29 @@ namespace DependencyLogViewer
         }
     }
 
-    static class Program
+    public static class Program
     {
         /// <summary>
         /// The main entry point for the application.
         /// </summary>
+#nullable enable
         [STAThread]
-        static int Main()
+        public static int Main(string[] args)
         {
-            // Today you have to be Admin to turn on ETW events (anyone can write ETW events).   
-            if (!(TraceEventSession.IsElevated() ?? false))
-            {
-                MessageBox.Show("To turn on ETW events you need to be Administrator, please run from an Admin process.");
-                return -1;
-            }
+            string? argPath = args.Length > 0 ? args[0] : null;
 
-            Application.EnableVisualStyles();
-            Application.SetCompatibleTextRenderingDefault(false);
+            //Application.EnableVisualStyles();
+            //Application.SetCompatibleTextRenderingDefault(true);
 
-            GraphCollection.DependencyGraphsUI = new DependencyGraphs();
-            GraphProcessing.Singleton = new GraphProcessing();
+            ApplicationConfiguration.Initialize();
+
+            GraphCollection.DependencyGraphsUI = new DependencyGraphs(argPath);
+
 
             Application.Run(GraphCollection.DependencyGraphsUI);
 
             return 0;
         }
+#nullable restore
     }
 }

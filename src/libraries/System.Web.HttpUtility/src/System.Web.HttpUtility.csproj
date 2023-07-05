@@ -1,10 +1,10 @@
 <Project Sdk="Microsoft.NET.Sdk">
   <PropertyGroup>
     <AllowUnsafeBlocks>true</AllowUnsafeBlocks>
-    <Nullable>enable</Nullable>
     <TargetFramework>$(NetCoreAppCurrent)</TargetFramework>
   </PropertyGroup>
   <ItemGroup>
+    <Compile Include="System\Web\IHtmlString.cs" />
     <Compile Include="System\Web\HttpUtility.cs" />
     <Compile Include="System\Web\Util\HttpEncoder.cs" />
     <Compile Include="System\Web\Util\HttpEncoderUtility.cs" />
@@ -17,6 +17,5 @@
     <Reference Include="System.Collections.Specialized" />
     <Reference Include="System.Memory" />
     <Reference Include="System.Runtime" />
-    <Reference Include="System.Runtime.Extensions" />
   </ItemGroup>
 </Project>

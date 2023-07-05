@@ -27,7 +27,7 @@ namespace System.Reflection.Metadata.Tests
             Assert.Equal(AssemblyNameFlags.None, assemblyName.Flags);
             Assert.Equal(AssemblyContentType.Default, assemblyName.ContentType);
 
-            // Validate against AssemblyRefernce
+            // Validate against AssemblyReference
             ValidateReferenceAssemblyNameAgainst(assemblyName, reader, assemblyRef);
 
             // Validate against AssemblyDefinition
@@ -76,7 +76,7 @@ namespace System.Reflection.Metadata.Tests
                 Assert.Equal(AssemblyNameFlags.None, assemblyName.Flags);
                 Assert.Equal(AssemblyContentType.Default, assemblyName.ContentType);
 
-                // Validate against AssemblyRefernce
+                // Validate against AssemblyReference
                 ValidateReferenceAssemblyNameAgainst(assemblyName, reader, assemblyRef);
 
                 // Validate against AssemblyDefinition

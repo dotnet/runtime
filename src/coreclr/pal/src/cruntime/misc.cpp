@@ -260,23 +260,3 @@ void PAL__mm_setcsr(unsigned int i)
 }
 
 #endif // HOST_AMD64
-
-/*++
-Function:
-PAL_memcpy
-
-Overlapping buffer-safe version of memcpy.
-See MSDN doc for memcpy
---*/
-EXTERN_C
-PALIMPORT
-void *PAL_memcpy (void *dest, const void *src, size_t count)
-{
-    UINT_PTR x = (UINT_PTR)dest, y = (UINT_PTR)src;
-    _ASSERTE((x + count <= y) || (y + count <= x));
-
-    void *ret;
-    #undef memcpy
-    ret = memcpy(dest, src, count);
-    return ret;
-}

@@ -27,6 +27,7 @@ namespace System.Text.Json.Tests
         {
             JsonEncodedText text = default;
             Assert.True(text.EncodedUtf8Bytes.IsEmpty);
+            Assert.Equal("", text.Value);
 
             Assert.Equal(0, text.GetHashCode());
             Assert.Equal("", text.ToString());
@@ -42,11 +43,19 @@ namespace System.Text.Json.Tests
 
             JsonEncodedText textByteEmpty = JsonEncodedText.Encode(Array.Empty<byte>());
             Assert.True(textByteEmpty.EncodedUtf8Bytes.IsEmpty);
+            Assert.Equal("", textByteEmpty.Value);
             Assert.Equal("", textByteEmpty.ToString());
+
+            Assert.Equal(text.Value, textByteEmpty.Value);
+            Assert.False(text.Equals(textByteEmpty));
 
             JsonEncodedText textCharEmpty = JsonEncodedText.Encode(Array.Empty<char>());
             Assert.True(textCharEmpty.EncodedUtf8Bytes.IsEmpty);
+            Assert.Equal("", textCharEmpty.Value);
             Assert.Equal("", textCharEmpty.ToString());
+
+            Assert.Equal(text.Value, textCharEmpty.Value);
+            Assert.False(text.Equals(textCharEmpty));
 
             Assert.True(textCharEmpty.Equals(textByteEmpty));
             Assert.Equal(textByteEmpty.GetHashCode(), textCharEmpty.GetHashCode());
@@ -60,9 +69,9 @@ namespace System.Text.Json.Tests
             JsonEncodedText textSpan = JsonEncodedText.Encode(message.AsSpan(), null);
             JsonEncodedText textUtf8Span = JsonEncodedText.Encode(Encoding.UTF8.GetBytes(message), null);
 
-            Assert.Equal(expectedMessage, text.ToString());
-            Assert.Equal(expectedMessage, textSpan.ToString());
-            Assert.Equal(expectedMessage, textUtf8Span.ToString());
+            Assert.Equal(expectedMessage, text.Value);
+            Assert.Equal(expectedMessage, textSpan.Value);
+            Assert.Equal(expectedMessage, textUtf8Span.Value);
 
             Assert.True(text.Equals(textSpan));
             Assert.True(text.Equals(textUtf8Span));
@@ -80,9 +89,9 @@ namespace System.Text.Json.Tests
             JsonEncodedText textSpan = JsonEncodedText.Encode(message.AsSpan(), encoder);
             JsonEncodedText textUtf8Span = JsonEncodedText.Encode(Encoding.UTF8.GetBytes(message), encoder);
 
-            Assert.Equal(expectedMessage, text.ToString());
-            Assert.Equal(expectedMessage, textSpan.ToString());
-            Assert.Equal(expectedMessage, textUtf8Span.ToString());
+            Assert.Equal(expectedMessage, text.Value);
+            Assert.Equal(expectedMessage, textSpan.Value);
+            Assert.Equal(expectedMessage, textUtf8Span.Value);
 
             Assert.True(text.Equals(textSpan));
             Assert.True(text.Equals(textUtf8Span));
@@ -99,9 +108,9 @@ namespace System.Text.Json.Tests
             JsonEncodedText textSpan = JsonEncodedText.Encode(message.AsSpan(), encoder);
             JsonEncodedText textUtf8Span = JsonEncodedText.Encode(Encoding.UTF8.GetBytes(message), encoder);
 
-            Assert.Equal(expectedMessage, text.ToString());
-            Assert.Equal(expectedMessage, textSpan.ToString());
-            Assert.Equal(expectedMessage, textUtf8Span.ToString());
+            Assert.Equal(expectedMessage, text.Value);
+            Assert.Equal(expectedMessage, textSpan.Value);
+            Assert.Equal(expectedMessage, textUtf8Span.Value);
 
             Assert.True(text.Equals(textSpan));
             Assert.True(text.Equals(textUtf8Span));
@@ -315,6 +324,60 @@ namespace System.Text.Json.Tests
             }
         }
 
+        [Theory]
+        [MemberData(nameof(JsonEncodedTextStrings))]
+        public static void GetValueTest(string message, string expectedMessage)
+        {
+            JsonEncodedText text = JsonEncodedText.Encode(message);
+            JsonEncodedText textSpan = JsonEncodedText.Encode(message.AsSpan());
+            JsonEncodedText textUtf8Span = JsonEncodedText.Encode(Encoding.UTF8.GetBytes(message));
+
+            Assert.Equal(expectedMessage, text.Value);
+            Assert.Equal(expectedMessage, textSpan.Value);
+            Assert.Equal(expectedMessage, textUtf8Span.Value);
+        }
+
+        [Theory]
+        [InlineData(100)]
+        [InlineData(1_000)]
+        [InlineData(10_000)]
+        public static void GetValueLargeTest(int stringLength)
+        {
+            var message = new string('a', stringLength);
+            var expectedMessage = new string('a', stringLength);
+
+            JsonEncodedText text = JsonEncodedText.Encode(message);
+            JsonEncodedText textSpan = JsonEncodedText.Encode(message.AsSpan());
+            JsonEncodedText textUtf8Span = JsonEncodedText.Encode(Encoding.UTF8.GetBytes(message));
+
+            Assert.Equal(expectedMessage, text.Value);
+            Assert.Equal(expectedMessage, textSpan.Value);
+            Assert.Equal(expectedMessage, textUtf8Span.Value);
+        }
+
+        [Theory]
+        [InlineData(100)]
+        [InlineData(1_000)]
+        [InlineData(10_000)]
+        public static void GetValueLargeEscapedTest(int stringLength)
+        {
+            var message = new string('>', stringLength);
+            var builder = new StringBuilder();
+            for (int i = 0; i < stringLength; i++)
+            {
+                builder.Append("\\u003E");
+            }
+            string expectedMessage = builder.ToString();
+
+            JsonEncodedText text = JsonEncodedText.Encode(message);
+            JsonEncodedText textSpan = JsonEncodedText.Encode(message.AsSpan());
+            JsonEncodedText textUtf8Span = JsonEncodedText.Encode(Encoding.UTF8.GetBytes(message));
+
+            Assert.Equal(expectedMessage, text.Value);
+            Assert.Equal(expectedMessage, textSpan.Value);
+            Assert.Equal(expectedMessage, textUtf8Span.Value);
+        }
+
         [Fact]
         public static void InvalidUTF16()
         {
@@ -338,7 +401,7 @@ namespace System.Text.Json.Tests
         public static void ReplacementCharacterUTF8(byte[] dataUtf8, string expected)
         {
             JsonEncodedText text = JsonEncodedText.Encode(dataUtf8);
-            Assert.Equal(expected, text.ToString());
+            Assert.Equal(expected, text.Value);
         }
 
         [Fact]
@@ -464,16 +527,16 @@ namespace System.Text.Json.Tests
             JsonEncodedText text;
 
             text = JsonEncodedText.Encode(message);
-            Assert.Equal(expected, text.ToString());
+            Assert.Equal(expected, text.Value);
 
             text = JsonEncodedText.Encode(message, null);
-            Assert.Equal(expected, text.ToString());
+            Assert.Equal(expected, text.Value);
 
             text = JsonEncodedText.Encode(message, JavaScriptEncoder.Default);
-            Assert.Equal(expected, text.ToString());
+            Assert.Equal(expected, text.Value);
 
             text = JsonEncodedText.Encode(message, new CustomEncoderAllowingPlusSign());
-            Assert.Equal("a+", text.ToString());
+            Assert.Equal("a+", text.Value);
         }
     }
 }

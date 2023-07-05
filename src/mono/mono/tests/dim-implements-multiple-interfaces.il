@@ -1,10 +1,3 @@
-
-//  Microsoft (R) .NET Framework IL Disassembler.  Version 4.6.1055.0
-//  Copyright (c) Microsoft Corporation.  All rights reserved.
-
-
-
-// Metadata version: v4.0.30319
 .assembly extern mscorlib
 {
   .ver 4:0:0:0
@@ -32,16 +25,16 @@
   {
 
     // method line 1
-    .method public virtual hidebysig newslot 
-           instance default void M1 ()  cil managed 
+    .method public virtual hidebysig newslot
+           instance default void M1 ()  cil managed
     {
         // Method begins at RVA 0x2050
 	// Code size 12 (0xc)
 	.maxstack 8
-	IL_0000:  nop 
-	IL_0001:  ldstr "Shoud not be called"
+	IL_0000:  nop
+	IL_0001:  ldstr "Should not be called"
 	IL_0006:  newobj instance void class [mscorlib]System.Exception::'.ctor'(string)
-	IL_000b:  throw 
+	IL_000b:  throw
     } // end of method I1::M1
 
   } // end of class Application.I1
@@ -53,17 +46,17 @@
   	implements Application.I1  {
 
     // method line 2
-    .method public final virtual hidebysig 
-           instance default void Application.I1.M1 ()  cil managed 
+    .method public final virtual hidebysig
+           instance default void Application.I1.M1 ()  cil managed
     {
         // Method begins at RVA 0x2050
 	.override class Application.I1::M1
 	// Code size 12 (0xc)
 	.maxstack 8
-	IL_0000:  nop 
-	IL_0001:  ldstr "Shoud not be called"
+	IL_0000:  nop
+	IL_0001:  ldstr "Should not be called"
 	IL_0006:  newobj instance void class [mscorlib]System.Exception::'.ctor'(string)
-	IL_000b:  throw 
+	IL_000b:  throw
     } // end of method I2::Application.I1.M1
 
   } // end of class Application.I2
@@ -75,17 +68,17 @@
   	implements Application.I1  {
 
     // method line 3
-    .method public final virtual hidebysig 
-           instance default void Application.I1.M1 ()  cil managed 
+    .method public final virtual hidebysig
+           instance default void Application.I1.M1 ()  cil managed
     {
         // Method begins at RVA 0x2050
 	.override class Application.I1::M1
 	// Code size 12 (0xc)
 	.maxstack 8
-	IL_0000:  nop 
-	IL_0001:  ldstr "Shoud not be called"
+	IL_0000:  nop
+	IL_0001:  ldstr "Should not be called"
 	IL_0006:  newobj instance void class [mscorlib]System.Exception::'.ctor'(string)
-	IL_000b:  throw 
+	IL_000b:  throw
     } // end of method I3::Application.I1.M1
 
   } // end of class Application.I3
@@ -97,17 +90,17 @@
   	implements Application.I1  {
 
     // method line 4
-    .method public final virtual hidebysig 
-           instance default void Application.I1.M1 ()  cil managed 
+    .method public final virtual hidebysig
+           instance default void Application.I1.M1 ()  cil managed
     {
         // Method begins at RVA 0x2050
 	.override class Application.I1::M1
 	// Code size 12 (0xc)
 	.maxstack 8
-	IL_0000:  nop 
-	IL_0001:  ldstr "Shoud not be called"
+	IL_0000:  nop
+	IL_0001:  ldstr "Should not be called"
 	IL_0006:  newobj instance void class [mscorlib]System.Exception::'.ctor'(string)
-	IL_000b:  throw 
+	IL_000b:  throw
     } // end of method I4::Application.I1.M1
 
   } // end of class Application.I4
@@ -120,30 +113,30 @@
   	implements Application.I1, Application.I2, Application.I3, Application.I4  {
 
     // method line 5
-    .method public final virtual hidebysig newslot 
-           instance default void M1 ()  cil managed 
+    .method public final virtual hidebysig newslot
+           instance default void M1 ()  cil managed
     {
         // Method begins at RVA 0x205d
 	// Code size 13 (0xd)
 	.maxstack 8
-	IL_0000:  nop 
+	IL_0000:  nop
 	IL_0001:  ldstr "Test10.M1"
 	IL_0006:  call void class [mscorlib]System.Console::WriteLine(string)
-	IL_000b:  nop 
-	IL_000c:  ret 
+	IL_000b:  nop
+	IL_000c:  ret
     } // end of method Test10::M1
 
     // method line 6
-    .method public hidebysig specialname rtspecialname 
-           instance default void '.ctor' ()  cil managed 
+    .method public hidebysig specialname rtspecialname
+           instance default void '.ctor' ()  cil managed
     {
         // Method begins at RVA 0x206b
 	// Code size 8 (0x8)
 	.maxstack 8
-	IL_0000:  ldarg.0 
+	IL_0000:  ldarg.0
 	IL_0001:  call instance void object::'.ctor'()
-	IL_0006:  nop 
-	IL_0007:  ret 
+	IL_0006:  nop
+	IL_0007:  ret
     } // end of method Test10::.ctor
 
   } // end of class Application.Test10
@@ -156,8 +149,8 @@
   {
 
     // method line 7
-    .method public static hidebysig 
-           default void Main (string[] args)  cil managed 
+    .method public static hidebysig
+           default void Main (string[] args)  cil managed
     {
         // Method begins at RVA 0x2074
 	.entrypoint
@@ -165,26 +158,26 @@
 	.maxstack 1
 	.locals init (
 		class Application.I1	V_0)
-	IL_0000:  nop 
+	IL_0000:  nop
 	IL_0001:  newobj instance void class Application.Test10::'.ctor'()
-	IL_0006:  stloc.0 
-	IL_0007:  ldloc.0 
+	IL_0006:  stloc.0
+	IL_0007:  ldloc.0
 	IL_0008:  callvirt instance void class Application.I1::M1()
-	IL_000d:  nop 
-	IL_000e:  ret 
+	IL_000d:  nop
+	IL_000e:  ret
     } // end of method MainClass::Main
 
     // method line 8
-    .method public hidebysig specialname rtspecialname 
-           instance default void '.ctor' ()  cil managed 
+    .method public hidebysig specialname rtspecialname
+           instance default void '.ctor' ()  cil managed
     {
         // Method begins at RVA 0x206b
 	// Code size 8 (0x8)
 	.maxstack 8
-	IL_0000:  ldarg.0 
+	IL_0000:  ldarg.0
 	IL_0001:  call instance void object::'.ctor'()
-	IL_0006:  nop 
-	IL_0007:  ret 
+	IL_0006:  nop
+	IL_0007:  ret
     } // end of method MainClass::.ctor
 
   } // end of class Application.MainClass

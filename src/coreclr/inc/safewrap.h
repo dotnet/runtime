@@ -25,16 +25,14 @@ consistency's sake.
     Return non-oom failure codes because callees actually freqeuntly expect an API to fail.
     For example, the callee will have special handling for file-not-found.
 
-    For convenience, you could add a no-throwing wrapper version of the API:
-        ClrGetEnvironmentVariable   <-- default throws on oom.
-        ClrGetEnvironmentVariableNoThrow <-- never throws.
+    For convenience, you could add a no-throwing wrapper version of the API.
 
 - NAMING: Prefix the name with 'Clr', just like we do for win32 APIs going through hosting.
 
 - DON'T FORGET CONTRACTS: Most of these APIs will likely be Throws/GC_Notrigger.
     Also use PRECONDITIONs + POSTCONDITIONS when possible.
 
-- SIGNATURES: Keep the method signture as close the the original win32 API as possible.
+- SIGNATURES: Keep the method signture as close the original win32 API as possible.
     - Preserve the return type + value. (except allow it to throw on oom). If the return value
         should be a holder, then use that as an out-parameter at the end of the argument list.
         We don't want to return holders because that will cause the dtors to be called.
@@ -57,46 +55,6 @@ consistency's sake.
 #define _safewrap_h_
 
 #include "holder.h"
-
-class SString;
-bool ClrGetEnvironmentVariable(LPCSTR szEnvVarName, SString & value);
-bool ClrGetEnvironmentVariableNoThrow(LPCSTR szEnvVarName, SString & value);
-void ClrGetModuleFileName(HMODULE hModule, SString & value);
-
-void ClrGetCurrentDirectory(SString & value);
-
-
-/* --------------------------------------------------------------------------- *
- * Simple wrapper around WszFindFirstFile/WszFindNextFile
- * --------------------------------------------------------------------------- */
-class ClrDirectoryEnumerator
-{
-    WIN32_FIND_DATAW    data;
-    FindHandleHolder    dirHandle;
-    BOOL                fFindNext; // Skip FindNextFile first time around
-
-public:
-    ClrDirectoryEnumerator(LPCWSTR pBaseDirectory, LPCWSTR pMask = W("*"));
-    bool Next();
-
-    LPCWSTR GetFileName()
-    {
-        return data.cFileName;
-    }
-
-    DWORD GetFileAttributes()
-    {
-        return data.dwFileAttributes;
-    }
-
-    void Close()
-    {
-        dirHandle.Clear();
-    }
-};
-
-// Read a REG_SZ (null-terminated string) value from the registry.  Throws.
-void ClrRegReadString(HKEY hKey, const SString & szValueName, SString & value);
 
 /* --------------------------------------------------------------------------- *
  * Simple wrapper around RegisterEventSource/ReportEvent/DeregisterEventSource

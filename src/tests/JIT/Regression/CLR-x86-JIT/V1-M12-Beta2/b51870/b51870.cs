@@ -2,15 +2,17 @@
 // The .NET Foundation licenses this file to you under the MIT license.
 //
 
+using Xunit;
 namespace Test
 {
     using System;
 
-    struct BB
+    public struct BB
     {
         int m_iField4;
 
-        static int Main()
+        [Fact]
+        public static int TestEntryPoint()
         {
             BB local3 = new BB();
             bool b = false;

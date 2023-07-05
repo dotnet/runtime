@@ -21,7 +21,6 @@
 
 #include <metamodelrw.h>
 #include "mdlog.h"
-#include "mdperf.h"
 #include "regmeta.h"
 #include "ex.h"
 

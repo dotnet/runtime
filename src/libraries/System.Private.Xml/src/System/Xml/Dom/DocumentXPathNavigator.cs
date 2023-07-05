@@ -38,8 +38,10 @@ namespace System.Xml
             return new DocumentXPathNavigator(this);
         }
 
-        public override void SetValue(string value!!)
+        public override void SetValue(string value)
         {
+            ArgumentNullException.ThrowIfNull(value);
+
             XmlNode node = _source;
             XmlNode end;
 
@@ -1300,7 +1302,7 @@ namespace System.Xml
 
         //Assuming that node1 and node2 are in the same level; Except when they are namespace nodes, they should have the same parent node
         //the returned value is node2's position corresponding to node1
-        private XmlNodeOrder Compare(XmlNode node1, XmlNode node2)
+        private static XmlNodeOrder Compare(XmlNode node1, XmlNode node2)
         {
             Debug.Assert(node1 != null);
             Debug.Assert(node2 != null);
@@ -1903,7 +1905,7 @@ namespace System.Xml
             return ParentNodeTail(parent);
         }
 
-        private XmlNode? ParentNodeTail(XmlNode? parent)
+        private static XmlNode? ParentNodeTail(XmlNode? parent)
         {
             while (parent != null
                    && parent.NodeType == XmlNodeType.EntityReference)
@@ -1924,7 +1926,7 @@ namespace System.Xml
             return FirstChildTail(child);
         }
 
-        private XmlNode? FirstChildTail(XmlNode? child)
+        private static XmlNode? FirstChildTail(XmlNode? child)
         {
             while (child != null
                    && child.NodeType == XmlNodeType.EntityReference)
@@ -1945,7 +1947,7 @@ namespace System.Xml
             return NextSiblingTail(node, sibling);
         }
 
-        private XmlNode? NextSiblingTail(XmlNode node, XmlNode? sibling)
+        private static XmlNode? NextSiblingTail(XmlNode node, XmlNode? sibling)
         {
             XmlNode? current = node;
             while (sibling == null)
@@ -1977,7 +1979,7 @@ namespace System.Xml
             return PreviousSiblingTail(node, sibling);
         }
 
-        private XmlNode? PreviousSiblingTail(XmlNode node, XmlNode? sibling)
+        private static XmlNode? PreviousSiblingTail(XmlNode node, XmlNode? sibling)
         {
             XmlNode? current = node;
             while (sibling == null)
@@ -2009,7 +2011,7 @@ namespace System.Xml
             return PreviousTextTail(node, text);
         }
 
-        private XmlNode? PreviousTextTail(XmlNode node, XmlNode? text)
+        private static XmlNode? PreviousTextTail(XmlNode node, XmlNode? text)
         {
             if (text != null)
             {

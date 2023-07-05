@@ -1,11 +1,11 @@
 # On Stack Replacement in the CLR
 
-Design Sketch and Prototype Assessment
+Design and Alternatives
 
 Andy Ayers
 
 Initial: 7 July 2019 &mdash;
-Revised: 25 February 2020
+Revised: 2 May 2022
 
 ## Overview
 
@@ -13,17 +13,15 @@ On Stack Replacement allows the code executed by currently running methods to be
 changed in the middle of method execution, while those methods are active "on
 stack." This document describes design considerations and challenges involved in
 implementing basic On Stack Replacement for the CLR, presents the results of
-some prototype investigations, and describes how OSR might be used to re-host
-Edit and Continue and support more general transitions like deoptimization.
+some investigations, and describes how OSR might be used support more general transitions like deoptimization.
 
 * [Background](#1-Background)
 * [Design Principles](#2-Design-Principles)
 * [An Overview of OSR](#3-An-Overview-of-OSR)
 * [Complications](#4-Complications)
 * [The Prototype](#5-The-Prototype)
-* [Edit and Continue](#6-Edit-and-Continue)
-* [Deoptimization](#7-Deoptimization)
-* [References](#8-References)
+* [Deoptimization](#6-Deoptimization)
+* [References](#7-References)
 
 ## 1. Background
 
@@ -69,8 +67,8 @@ optimized instance). We will use _deoptimization_ (_deopt_) to describe the
 transition from an optimized code instance to some other code instance
 (typically to an unoptimized instance).
 
-We envision OSR as a technology that will allow us to enable tiered compilation
-by default: performance-critical applications will no longer risk seeing key
+OSR is a technology that will allow us to enable tiered compilation
+by default for almost all methods: performance-critical applications will no longer risk seeing key
 methods trapped in unoptimized tier0 code, and straightforwardly written
 microbenchmarks (e.g. all code in main) will perform as expected, as no matter
 how they are coded, they will be able to transition to optimized code.
@@ -126,9 +124,9 @@ method's code that supports OSR transitions.
 * **Triggers** : Determine what will trigger an OSR transition
 * **Alternatives** : Have means to prepare a suitable alternative code
 version covering all or part of the method (loops, for instance), and
-having one or possibly many entry points.
+having one or possibly many entry points. Hereafter we will call these alternative code versions _OSR methods_.
 * **Transitions**: Remap the stack frame(s) as needed to carry out the
-OSR transition
+transition from the tier0 method to the OSR method.
 
 ### 3.1 Patchpoints
 
@@ -184,7 +182,7 @@ subset where the IL stack is empty) are the candidate patchpoints in the method.
 We can also rely on the fact that in our current unoptimized code, no IL state
 is kept in registers across IL stack empty points&mdash;all the IL state is
 stored in the native stack frame. This means that each patchpoint's live state
-description is the same&mdash;he set of stack frame locations holding the IL
+description is the same&mdash;the set of stack frame locations holding the IL
 state.
 
 So, with the above restrictions, a single patchpoint descriptor suffices for the
@@ -213,12 +211,12 @@ proposing synchronous triggers and transitions, and transitioning from
 unoptimized code. A fine-grained patchpoint mechanism would require more
 metadata to describe each transition point.
 
-#### 3.1.4 The Prototype
+#### 3.1.4 Patchpoint Implementation
 
-In the prototype, patchpoints are the set of IL boundaries in a method that are
-stack-empty and the targets of lexical back edges. The live state of the
-original method is just the IL-visible locals and arguments, plus a few special
-values found in certain frames (GS Cookie, etc).
+In the OSR implementation, patchpoints are the set of IL boundaries in a method that are stack-empty and are the sources or the targets of lexical back edges. The live state of the original method is just the IL-visible locals and arguments, plus a few special values found in certain frames (GS Cookie, etc).
+
+Placing patchpoints at back edge sources turns out to be most effective as it
+ensures that OSR methods are able to take full advantage of the JIT's loop optimizations (see [OSR patchpoint strategy](https://github.com/dotnet/runtime/pull/66208) for details).
 
 ### 3.2 Triggers
 
@@ -344,43 +342,42 @@ observation points from patchpoint counters is fairly sparse (not as detailed as
 what we get from IBC, say) but it may be sufficient to build a reasonable
 profile.
 
-#### 3.2.5 The Prototype
+#### 3.2.5 Trigger Implementation
 
-In the prototype OSR transitions are synchronous; there is one local patchpoint
-counter per frame shared by all patchpoints; patchpoint IDs are IL offsets.
+In the current OSR implementation the transitions are synchronous; there is one local patchpoint counter per frame shared by all patchpoints; patchpoint IDs are IL offsets.
 
-### 3.3 Alternative Versions
+### 3.3 OSR Methods
 
 When a patchpoint is hit often enough, the runtime should produce an alternative
-version of the code that can be transitioned to at that patchpoint.
+version&mdash;an OSR method&mdash;for the code that can be transitioned to at that patchpoint.
 
-There are several choice points for alternatives:
+There are several choice points for OSR methods:
 
-* Whether to tailor the alternative code specifically to that patchpoint or have
-  the alternative handle multiple (or perhaps all) the patchpoints in a method.
-  We'll call the former a single-entry alternative, and the latter
-  multi-entry alternatives (and, in the limit, whole-method alternatives).
+* Whether to tailor the OSR method code specifically to that patchpoint or have
+  the OSR method handle multiple (or perhaps all) the patchpoints in a method.
+  We'll call the former a single-entry OSR method, and the latter
+  multi-entry OSR method (and, in the limit, whole-method OSR methods).
 
-* Whether the alternative version encompasses the remainder of the method, or
+* Whether the OSR method version encompasses the remainder of the method, or
   just some part of the method. We'll call these whole and partial
-  alternatives.
+  OSR methods.
 
-* If a partial method alternative, whether the part of the method compiled
+* If a partial OSR method, whether the part of the method compiled
   includes the entire remainder of the method, or just some fragment that
   includes the patchpoint (say the enclosing loop nest).
 
-* Whether or not the alternative entry points include the code to build up the
-  alternative stack frames, or setup of the new frame happens via some runtime
+* Whether or not the OSR method entry points include the code to build up the
+  OSR method stack frames, or setup of the new frame happens via some runtime
   logic.
 
-* Whether or not the alternate version is tailored to the actual runtime state
+* Whether or not the OSR method is tailored to the actual runtime state
   at the point of the trigger. For instance, specific argument or local values,
   or actual types.
 
-The partial alternatives obviously are special versions that can only be used by
-OSR. The whole method alternative could also be conceivably used as the
+The partial OSR methods are special versions that can only be used by
+OSR. The whole method OSR methods could also be conceivably used as the
 optimized version of the method, but the additional entry points may result some
-loss of optimizations. So, in general, the OSR alternatives are likely distinct
+loss of optimizations. So, in general, the OSR methods are likely distinct
 from the Tier-1 versions of methods and are used only for active frame
 transitions. New calls to methods can be handled via the existing tiering
 mechanisms.
@@ -395,45 +392,45 @@ matters for performance.]
 Taken together there are various combinations of these alternatives that make
 sense, and various tradeoffs to consider. We explore a few of these below.
 
-#### 3.3.1 Option 1: Partial Method with Transition Prolog
+#### 3.3.1 Option 1: Partial OSR Method with Transition Prolog
 
 In this option, the runtime invokes the jit with a method, IL offset, and the
 original method mapping of stack frame state to IL state at that offset. The jit
-uses the logical PC (IL offset) to determine the scope of the alternative
+uses the logical PC (IL offset) to determine the scope of the OSR method
 fragment. Here the scope is the IL in the method reachable from the patchpoint.
 
 For the entry point it creates a specialized transition prolog that sets up a
 normal frame, and takes the values of the locals from the old stack frame and
-copies them to the new stack slots, and pushes& any live evaluation stack
-arguments. Arguments passed in registers are restored to the right registers.
+copies them to the new stack slots, and pushes any live evaluation stack
+arguments (if we allow patchpoints at non-stack-empty locations). Arguments passed in registers are restored to the right registers.
 Control then transfers to the IL offset of the patchpoint. Any IL in the method
 not reachable from the patchpoint is dead code and can be removed (including the
-original method entry point). This new partial method is then jitted more or
+original method entry point). This new partial OSR method is then jitted more or
 less normally (modulo the generation of the special prolog).
 
 It might be possible to express this new prolog in IL or something similar. At
 any rate it seems likely the impact on the jit overall can be mostly localized
-to the &importer and prolog generation stages and the rest of the jit would
+to the importer and prolog generation stages and the rest of the jit would
 operate more or less as it does today.
 
-This alternative version can be used any time the original method reaches the
+This OSR method can be transitioned to any time the original method reaches the
 inspiring patchpoint.
 
-#### 3.3.2 Option 2: Partial Tailored Method with Transition Prolog
+#### 3.3.2 Option 2: Partial Tailored OSR Method with Transition Prolog
 
 If the runtime also passes the triggering stack frame to the jit, the jit can
 incorporate the values in that frame (or information derived from the frame
-values) into the alternative method codegen. This creates a tailored alternative
+values) into the OSR method codegen. This creates a tailored OSR method
 that can only be used at this patchpoint from this specific original method
 invocation. The potential benefit here is that the code in the method may be
-more optimizable with the additional context, and since OSR alternatives are
+more optimizable with the additional context, and since OSR methods are
 likely to be lightly used there may not be much downside to specializing exactly
 for this trigger instance. This alternative likely implies synchronous OSR.
 
-#### 3.3.3 Option 3: Full Method with Multiple Entry Points
+#### 3.3.3 Option 3: Full OSR Method with Multiple Entry Points
 
-Instead of generating an alternative that can only be used to transition from
-one specific patchpoint, the alternative method can offer multiple entry points
+Instead of generating an OSR method that can only be used to transition from
+one specific patchpoint, the OSR method can offer multiple entry points
 to allow transition from some or all of the patchpoints in the original method.
 
 Note: After thinking about this a bit more, I think we can implement this
@@ -445,24 +442,22 @@ variants for methods with many patchpoints. This method would still be OSR
 specific&mdash;that is, it could not also serve as a normally callable Tier1
 method.
 
-#### 3.3.4 Option 4: Method Fragment
+#### 3.3.4 Option 4: OSR Method Fragment
 
-If the alternative method is just a fragment of the entire method, then in
+If the OSR method is just a fragment of the entire method, then in
 addition to a specialized entry point, the jit will have to create specialized
 exit points that either transition back to the unoptimized method, or else use
 synchronous OSR to invoke jitting of the method code that comes after the
 fragment.
 
-#### 3.3.5 Prototype
+#### 3.3.5 OSR Method Implementation
 
-The prototype generates partial methods with transition prolog. Per 4.1 below,
-the OSR method frame incorporates the (live portion of the) original method
-frame instead of supplanting it.
+The current implementation generates partial methods with transition prolog. Per 4.1 below, the OSR method frame incorporates the (live portion of the) original method frame instead of supplanting it.
 
 ### 3.4 Transitions
 
-A transition can happen once an OSR capable method reaches a patchpoint where a
-suitable alternative version is ready. Because transitions will likely require
+A transition can happen once a method reaches a patchpoint where a
+suitable OSR method version is ready. Because transitions will likely require
 changes in stack frame size it is much simpler to consider transitions only for
 methods at the top of the stack. This means that methods that are invoked
 recursively may be transitioned by OSR gradually as the stack unwinds.
@@ -480,7 +475,7 @@ frame as it did in the original method frame. The simplest way to accomplish
 this is to just leave the original frame in place, and have the OSR frame
 "incorporate" it as part of its frame.
 
-#### 3.4.1 The Prototype
+#### 3.4.1 Transition Implementation
 
 The original method conditionally calls to the patchpoint helper at
 patchpoints. The helper will return if there is no transition.
@@ -561,9 +556,10 @@ frames. This means it is going to be difficult for our system to handle
 patchpoints within funclets; even if we could update the code the funclet is
 running we would not be able to update the parent frame.
 
-The proposal here is to disallow patchpoints within funclets so that we do not
+The current behavior disallows patchpoints within funclets so that we do not
 attempt OSR transitions when the top of stack frame is a funclet frame. One
 hopes that performance critical loops rarely appear in catch or finally clauses.
+The jit detects if a there is a loop in a catch or finally and disables OSR for such methods.
 
 EnC has similar restrictions.
 
@@ -577,7 +573,7 @@ be relatively brief.
 
 ### 4.5 Diagnostics
 
-Alternative methods will never be called &mdash; they are only transitioned to
+OSR methods will never be called &mdash; they are only transitioned to
 by active original methods, so likely no special work is needed to make them
 compatible with the current profiler guarantees for IL modifications ("new
 invocations" of the method invoke the new version).
@@ -603,11 +599,7 @@ points in OSR methods. We have the same issue with Tiered compilation already.
 OSR (exclusive of EnC) will be disabled for debuggable code.
 
 Debugging through an OSR transition (say a single-step that triggers OSR) may
-require special consideration. This is something that needs further
-investigation.
-
-**Prototype: The OSR methods have somewhat unusual unwind records that may be
-confusing the (Windbg) debugger stack trace.**
+require special consideration. But so far things seem to be working as expected.
 
 ### 4.6 Proposed Tier-0 Optimizations
 
@@ -631,12 +623,12 @@ Optimizing expressions may reduce the truly live set but so long as all stores
 to locals and args are kept live the base values needed for any alternate
 version of the code will be available.
 
-### 4.7 Alternative Method Optimizations
+### 4.7 OSR Method Optimizations
 
-In options where the alternative method has multiple entry points, one must be
-wary of early aggressive optimizations done when optimizing the alternative. The
+In options where the OSR method has multiple entry points, one must be
+wary of early aggressive optimizations done when optimizing the OSR method. The
 original version of the method may hit a patchpoint while executing code that
-can be optimized away by the more aggressive alternative method compiler (e.g.
+can be optimized away by the more aggressive OSR method compiler (e.g.
 it may be executing a series of type equality tests in a generic method that the
 optimizing jit can evaluate at jit time). But with our simple patchpoint
 recognition algorithm the alternate compiler can quickly verify that the
@@ -649,10 +641,10 @@ versions to be optimized.
 
 ###  4.8 Prologs and Unwind
 
-The alternative version of the method will, in all likelihood, need to save and
+The OSR version of the method will, in all likelihood, need to save and
 restore a different set of callee-saves registers than the original version. But
-since the original stack frame has already saved some registers, the alternative
-version prolog will either need to save a superset of those registers or else
+since the original stack frame has already saved some registers, the OSR method
+prolog will either need to save a superset of those registers or else
 restore the value of some registers in its prolog. So, the alternative version
 needs to know which registers the original saved and where in the stack they are
 stored.
@@ -664,12 +656,17 @@ scheme, where there is an initial prolog that emulates the original version
 prolog and duplicates its saves, and then a subsequent "shrink wrapped" prolog
 &amp; epilog that saves any additional registers in a disjoint area.
 
-**Prototype:** When it is time to transition, the patchpoint helper virtually
-unwinds two frames from the stack&mdash;its own frame, and the frame for the
-original method. So the unwound context restores the callee saves done by the
-original method. That turns out to be sufficient.
+#### Implementation
 
-You might think the helper would need to carefully save all the register state
+Callee-saves are currently handled sightly differently on x64
+than it is on arm64:
+* on x64, all the integer callee saves are saved in space pre-reserved in the Tier0 frame. The Tier0 method saves whatever subset it uses, and the OSR method saves any additional callee saves it uses. THe OSR method then restores this entire set on exit, with a single stack pointer adjustment. See [OSR x64 Epilog Redesign](https://github.com/dotnet/runtime/blob/main/docs/design/features/OSRX64EpilogRedesign.md) and the pull request [revise approach for x64 OSR epilogs](https://github.com/dotnet/runtime/pull/65609) for details.
+* for arm64, the virtual unwind done by the runtime restores the Tier0 callee saves, so the OSR method saves and restores the full set of callee saves it uses, and then does a second stack pointer adjustment to pop the Tier0 frame.
+Eventually we will revise arm64 to behave more like x64.
+* float callee-saves are handled separately for tier0 and OSR methods; there is opportunity here to also share save space as we do for x64 integer registers,
+but this might also lead to needlessly large tier0 frames.
+
+You might think the runtime helper would need to carefully save all the register state
 on entry, but that's not the case. Because the original method is un-optimized,
 there isn't any live IL state in registers across the call to the patchpoint
 helper&mdash;all the live IL state for the method is on the original
@@ -678,10 +675,6 @@ patchpoint. Thus only part of register state that is significant for ongoing
 computation is the callee-saves, which are recovered via virtual unwind, and the
 frame and stack pointers of the original method, which are likewise recovered by
 virtual unwind.
-
-With this context in hand, the helper then "calls" the OSR method by restoring
-the context. The OSR method performs its own callee-saves as needed, and
-recovers the arguments/IL state from the original frame.
 
 If we were to support patchpoints in optimized code things would be more
 complicated.
@@ -696,7 +689,7 @@ exit.
 
 OSR methods only need to support the method exit hook.
 
-## 5 The Prototype
+## 5 Current Implementation
 
 Based on the above, we developed a prototype implementation of OSR to gain
 experience, gather data, and test out assumptions.
@@ -708,14 +701,19 @@ The prototype chose the following options:
 * Trigger: one shared counter per frame. Initial value configurable at runtime.
   Patchpoints decrement the counter and conditionally call the runtime helper if
   the value is zero or negative.
-* Alternatives: partial method tailored to each patchpoint. OSR method
+* OSR methods: partial OSR method tailored to each patchpoint. OSR method
   incorporates the original method frame.
 * Transition: synchronous&mdash;once the patchpoint has been hit often enough a
-  new alternative is jitted.
+  new OSR method is jitted.
 
-The prototype works for x64 on Windows and Linux, and can pass the basic (pri0)
+The prototype worked for x64 on Windows and Linux, and passed the basic (pri0)
 tests suites with an aggressive transition policy (produce the OSR method and
 transition the first time each patchpoint is hit).
+
+The current implementation largely follows the prototype, with a number of relatively small changes described in [On Stack Replacement Next Steps](https://github.com/dotnet/runtime/issues/33658). Support has been extended to arm64.
+
+See [OSR Details and Debugging](https://github.com/dotnet/runtime/blob/main/docs/design/features/OsrDetailsAndDebugging.md) for information on how OSR might
+impact debugging or ongoing development.
 
 ### 5.1 Example Codegen
 
@@ -895,43 +893,7 @@ It is often possible to diff the Tier1 and OSR codegen and see that the latter
 is just a partial version of the former, with different register usage and
 different stack offsets.
 
-### 5.2 More Complex Examples
-
-If the OSR method needs to save and restore registers, then the epilog will have
-two stack pointer adjustments: the first to reach the register save area on the
-OSR frame, the second to reach the saved RBP and return address on the original
-frame.
-
-For example:
-```asm
-       4883C440             add      rsp, 64
-       5B                   pop      rbx
-       5E                   pop      rsi
-       5F                   pop      rdi
-       4883C448             add      rsp, 72
-       5D                   pop      rbp
-       C3                   ret
-```
-with unwind info:
-```
-  UnwindCodes:
-    CodeOffset: 0x07 UnwindOp: UWOP_ALLOC_SMALL (2)     OpInfo: 7 * 8 + 8 = 64 = 0x40
-    CodeOffset: 0x03 UnwindOp: UWOP_PUSH_NONVOL (0)     OpInfo: rbx (3)
-    CodeOffset: 0x02 UnwindOp: UWOP_PUSH_NONVOL (0)     OpInfo: rsi (6)
-    CodeOffset: 0x01 UnwindOp: UWOP_PUSH_NONVOL (0)     OpInfo: rdi (7)
-    CodeOffset: 0x00 UnwindOp: UWOP_ALLOC_SMALL (2)     OpInfo: 8 * 8 + 8 = 72 = 0x48
-    CodeOffset: 0x00 UnwindOp: UWOP_PUSH_NONVOL (0)     OpInfo: rbp (5)
-```
-
-If the OSR method needs to save RBP, we may see two RBP restores in the epilog;
-this does not appear to cause problems during execution, as the "last one wins"
-when unwinding.
-
-However, the debugger (at least windbg) may end up being confused; any tool
-simply following the RBP chain will see the original frame is still "linked"
-into the active stack.
-
-### 5.3 PatchpointInfo
+### 5.2 PatchpointInfo
 
 As noted above, when the jit is invoked to create the OSR method, it asks the
 runtime for some extra data:
@@ -945,107 +907,24 @@ runtime helper decides to kick off an OSR jit, it sets things up so that the jit
 can retrieve this data.
 
 Since the `PatchpointInfo` is produced and consumed by the jit its format is
-largely opaque to the runtime. It has the following general layout:
+largely opaque to the runtime. It has the following general layout (see [patchpointinfo.h](https://github.com/dotnet/runtime/blob/main/src/coreclr/inc/patchpointinfo.h)):
 ```C++
 struct PatchpointInfo
 {
-    unsigned m_patchpointInfoSize;
-    unsigned m_ilSize;
+    uint64_t m_calleeSaveRegisters;
     unsigned m_numberOfLocals;
-    int      m_fpToSpDelta;
+    int      m_totalFrameSize;
     int      m_genericContextArgOffset;
     int      m_keptAliveThisOffset;
     int      m_securityCookieOffset;
+    int      m_monitorAcquiredOffset;
     int      m_offsetAndExposureData[];
+;
 };
 ```
-The key values are the `fpToSpDelta` which describes the extent of the original
-frame, and the `offsetAndExposureData` which describe the offset of each local
-on the original frame.
+The key fields are the `m_totalFrameSize` which describes the extent of the original frame, and the `m_offsetAndExposureData` which describe the offset of each local on the original frame.
 
-### 5.4 Performance Impact
-
-The prototype is mainly intended to show that OSR can be used to improve startup
-without compromising steady-state performance: with OSR, we can safely use the
-quick jit for almost all methods.
-
-We are currently evaluating the performance impact of OSR on some realistic
-scenarios.
-
-Initial data shows a general improvement in startup time, in particular for
-applications where startup was impacted by disabling quick-jitting of methods
-with loops (see dotnet/coreclr#24252).
-
-### 5.5 Prototype Limitations and Workarounds
-
-* x64 only
-* Struct promotion is currently disabled for OSR methods
-* No OSR for synchronous methods
-* No OSR for methods with profiler hooks
-* No OSR for methods with localloc
-* No OSR from "handler" regions (catch/finally/filter)
-
-The prototype trigger strategy is a hybrid: it has a per-frame local counter and
-a per-patchpoint global counter (kept by the runtime). This is probably
-something we need to re-assess.
-
-## 6 Edit and Continue
-
-As mentioned in the introduction, OSR is similar to Edit and Continue (EnC). EnC
-transitions from an original unoptimized version of a method to a new
-unoptimized version with slightly different IL. The CLR already supports EnC on
-some platforms, and we briefly review the current implementation here. Our main
-interest here is in edits to method IL for an active method, so we focus on that
-aspect.
-
-### 6.1 Current EnC Support
-
-Method modification in EnC works roughly as follows. A process being debugged is
-stopped at a breakpoint. The user makes a source edit and hits apply. The source
-edit is vetted by the language compiler as suitable for EnC and metadata edits
-are sent to the runtime via the debugger. For method modifications these edits
-create a new version of method IL. Any subsequent invocations of that method
-will use that new IL.
-
-To update currently active versions, the debugger also adds special breakpoints
-to the plausible patchpoints of the original method's native code. Execution
-then resumes. When one of those special breakpoints is hit, an original
-method's active frame is at the top of the stack, and the frame can be
-transitioned over to the new version. The remapping is done by using the debug
-information generated by the jit for both the old and new versions of the
-method. As part of this the runtime verifies that locals remain at the same
-addresses in the old and new stack frames (thus avoiding the complication noted
-earlier in [Section 4.1](#Addresses-of-Locals)).
-
-The jit is notified if a method is going to potentially be eligible for EnC and
-takes some precautions to ensure the EnC transition can be handled by the
-runtime: for instance, the jit will always save the same set of registers and
-use a frame pointer.
-
-So, for EnC, we see that:
-
-- The viable patchpoints are determined by the debugger (via
-  EnCSequencePointHelper). These are restricted to be stack empty points (since
-  debug info will not describe contents of the evaluation stack) that are not in
-  filter or handlers. They are a broader set than we envision needing for OSR.
-- The necessary mapping information (stack frame layout, native to IL mapping,
-  and native offsets of stack empty points) is present in the debug stream
-  generated by the jit for the original method.
-- The trigger is a set of special breakpoints placed into the original method
-  native code by the debugger when an edit is applied to the method.
-- When an EnC breakpoint is hit, the debugger can choose whether or not to
-  initiate a transition.
-- If the debugger initiates a transition, it is done synchronously: the new
-  version of the method is jitted if necessary and the currently active frame is
-  transitioned over to the new version, via ResumeInUpdatedFunction. Of interest
-  here are the lower-level methods used here to update the frame:
-  FixContextAndResume and FixContextForEnC.
-- The alternative version is a full method and can be used to transition from
-  any patchpoint in the original method.
-- The jit modifies its codegen somewhat to facilitate the transition. It does
-  not, however, explicitly model the alternate entry points.
-
-## 7 Deoptimization
+## 6 Deoptimization
 
 Up until this point we have been assuming the original method was not optimized
 or was optimized in a manner that did not alter its reported live state.
@@ -1099,7 +978,7 @@ debug optimized code. The really strong motivations for deoptimization may come
 about when the system is optimizing based on "currently true" information that
 has now become invalid.
 
-## 8 References
+## 7 References
 
 1. <a id="1"></a> U. Holzle, C. Chambers and D. Ungar, "Debugging Optimized
    Code with Dynamic Deoptimization," in _ACM PLDI_, 1992.
@@ -1109,3 +988,5 @@ has now become invalid.
 3. <a id="3"></a> S. Fink and F. Qian, "Design, Implementation and
    Evaluation of Adaptive Recompilation with On-Stack Replacement," in _In
    International Symposium on Code Generation and Optimization (CGO)_, 2003.
+4. [OSR x64 Epilog Redesign](https://github.com/dotnet/runtime/blob/main/docs/design/features/OSRX64EpilogRedesign.md)
+5. [OSR Details and Debugging](https://github.com/dotnet/runtime/blob/main/docs/design/features/OsrDetailsAndDebugging.md)

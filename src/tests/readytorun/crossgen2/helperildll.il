@@ -192,12 +192,12 @@
   }
 }
 
-.class auto ansi public beforefieldinit DerivedTypeNonGenericMethodActuallyOnBase`1<T0> extends class [helperdll]BaseTypeGenericMethodActuallyOnBase<string>
+.class auto ansi public beforefieldinit DerivedTypeNonGenericMethodActuallyOnBase`1<T0> extends class [helperdll]BaseTypeGenericMethodActuallyOnBase`1<string>
 {
   .method public hidebysig specialname rtspecialname instance void .ctor() cil managed
   { 
     ldarg.0
-    call instance void class [helperdll]BaseTypeGenericMethodActuallyOnBase<string>::.ctor()
+    call instance void class [helperdll]BaseTypeGenericMethodActuallyOnBase`1<string>::.ctor()
     ret
   }
 }

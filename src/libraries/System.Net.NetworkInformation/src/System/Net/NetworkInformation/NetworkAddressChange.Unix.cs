@@ -6,6 +6,7 @@ using System.ComponentModel;
 using System.Diagnostics;
 using System.Net.Sockets;
 using System.Runtime.InteropServices;
+using System.Runtime.Versioning;
 using System.Threading;
 using System.Threading.Tasks;
 
@@ -43,6 +44,8 @@ namespace System.Net.NetworkInformation
         private static Timer? s_availabilityTimer;
         private static bool s_availabilityHasChanged;
 
+        [UnsupportedOSPlatform("illumos")]
+        [UnsupportedOSPlatform("solaris")]
         public static event NetworkAddressChangedEventHandler? NetworkAddressChanged
         {
             add
@@ -83,6 +86,8 @@ namespace System.Net.NetworkInformation
             }
         }
 
+        [UnsupportedOSPlatform("illumos")]
+        [UnsupportedOSPlatform("solaris")]
         public static event NetworkAvailabilityChangedEventHandler? NetworkAvailabilityChanged
         {
             add
@@ -99,22 +104,9 @@ namespace System.Net.NetworkInformation
                         if (s_availabilityTimer == null)
                         {
                             // Don't capture the current ExecutionContext and its AsyncLocals onto the timer causing them to live forever
-                            bool restoreFlow = false;
-                            try
+                            using (ExecutionContext.SuppressFlow())
                             {
-                                if (!ExecutionContext.IsFlowSuppressed())
-                                {
-                                    ExecutionContext.SuppressFlow();
-                                    restoreFlow = true;
-                                }
-
                                 s_availabilityTimer = new Timer(s_availabilityTimerFiredCallback, null, Timeout.Infinite, Timeout.Infinite);
-                            }
-                            finally
-                            {
-                                // Restore the current ExecutionContext
-                                if (restoreFlow)
-                                    ExecutionContext.RestoreFlow();
                             }
                         }
 
@@ -159,20 +151,25 @@ namespace System.Net.NetworkInformation
         {
             Debug.Assert(Monitor.IsEntered(s_gate));
             Debug.Assert(Socket == null, "Socket is not null, must close existing socket before opening another.");
+
+            var sh = new SafeSocketHandle();
+
             IntPtr newSocket;
             Interop.Error result = Interop.Sys.CreateNetworkChangeListenerSocket(&newSocket);
             if (result != Interop.Error.SUCCESS)
             {
                 string message = Interop.Sys.GetLastErrorInfo().GetErrorMessage();
+                sh.Dispose();
                 throw new NetworkInformationException(message);
             }
 
-            Socket = new Socket(new SafeSocketHandle(newSocket, ownsHandle: true));
+            Marshal.InitHandle(sh, newSocket);
+            Socket = new Socket(sh);
 
-            // Don't capture ExecutionContext.
-            ThreadPool.UnsafeQueueUserWorkItem(
-                static socket => ReadEventsAsync(socket),
-                Socket, preferLocal: false);
+            using (ExecutionContext.SuppressFlow())
+            {
+                _ = ReadEventsAsync(Socket);
+            }
         }
 
         private static void CloseSocket()
@@ -183,8 +180,9 @@ namespace System.Net.NetworkInformation
             Socket = null;
         }
 
-        private static async void ReadEventsAsync(Socket socket)
+        private static async Task ReadEventsAsync(Socket socket)
         {
+            await Task.CompletedTask.ConfigureAwait(ConfigureAwaitOptions.ForceYielding);
             try
             {
                 while (true)
@@ -202,14 +200,18 @@ namespace System.Net.NetworkInformation
                 }
             }
             catch (ObjectDisposedException)
-            { } // Socket disposed.
+            {
+                // Socket disposed.
+            }
             catch (SocketException se) when (se.SocketErrorCode == SocketError.OperationAborted)
-            { } // ReceiveAsync aborted by disposing Socket.
+            {
+                // ReceiveAsync aborted by disposing Socket.
+            }
             catch (Exception ex)
             {
                 // Unexpected error.
                 Debug.Fail($"Unexpected error: {ex}");
-                if (NetEventSource.Log.IsEnabled()) NetEventSource.Error(null, ex);
+                if (NetEventSource.Log.IsEnabled()) NetEventSource.Error(ex);
             }
 
             static unsafe Interop.Error ReadEvents(Socket socket)
@@ -277,7 +279,7 @@ namespace System.Net.NetworkInformation
                     NetworkAddressChangedEventHandler handler = subscriber.Key;
                     ExecutionContext? ec = subscriber.Value;
 
-                    if (ec == null) // Flow supressed
+                    if (ec == null) // Flow suppressed
                     {
                         handler(null, EventArgs.Empty);
                     }
@@ -319,7 +321,7 @@ namespace System.Net.NetworkInformation
                     NetworkAvailabilityChangedEventHandler handler = subscriber.Key;
                     ExecutionContext? ec = subscriber.Value;
 
-                    if (ec == null) // Flow supressed
+                    if (ec == null) // Flow suppressed
                     {
                         handler(null, args);
                     }

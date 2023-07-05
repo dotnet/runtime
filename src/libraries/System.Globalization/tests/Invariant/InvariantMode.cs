@@ -925,7 +925,7 @@ namespace System.Globalization.Tests
                 Assert.Equal(result, compareInfo.LastIndexOf(source, value, startIndex, count, options));
                 Assert.Equal(result, source.LastIndexOf(value, startIndex, count, GetStringComparison(options)));
 
-                // Filter differences betweeen string-based and Span-based LastIndexOf
+                // Filter differences between string-based and Span-based LastIndexOf
                 // - Empty value handling - https://github.com/dotnet/runtime/issues/13382
                 // - Negative count
                 if (value.Length == 0 || count < 0)
@@ -1194,6 +1194,16 @@ namespace System.Globalization.Tests
         public void TestGetCultureInfo_PredefinedOnly_ReturnsSame()
         {
             Assert.Equal(CultureInfo.GetCultureInfo("en-US"), CultureInfo.GetCultureInfo("en-US", predefinedOnly: true));
+        }
+
+        [ConditionalTheory(nameof(PredefinedCulturesOnlyIsDisabled))]
+        [InlineData(0x0001)]
+        [InlineData(0x7c5C)]
+        [InlineData(0x03_0404)] // with sort id
+        [InlineData(0x007F)] // LOCALE_INVARIANT
+        public void TestCultureInfo_Ctor_Int32_ReturnsInvariant(int culture)
+        {
+            Assert.Equal(new CultureInfo(culture), CultureInfo.InvariantCulture);
         }
 
         private static byte[] GetExpectedInvariantOrdinalSortKey(ReadOnlySpan<char> input)

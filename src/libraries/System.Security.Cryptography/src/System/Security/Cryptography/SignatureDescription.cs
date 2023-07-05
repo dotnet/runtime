@@ -16,8 +16,10 @@ namespace System.Security.Cryptography
         {
         }
 
-        public SignatureDescription(SecurityElement el!!)
+        public SignatureDescription(SecurityElement el)
         {
+            ArgumentNullException.ThrowIfNull(el);
+
             KeyAlgorithm = el.SearchForTextOfTag("Key");
             DigestAlgorithm = el.SearchForTextOfTag("Digest");
             FormatterAlgorithm = el.SearchForTextOfTag("Formatter");

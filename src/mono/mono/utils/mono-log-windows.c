@@ -113,7 +113,7 @@ mono_log_write_syslog(const char *domain, GLogLevelFlags level, mono_bool hdr, c
  * 	Close the syslog file
  */
 void
-mono_log_close_syslog()
+mono_log_close_syslog(void)
 {
 	if (logFile) {
 		fclose(logFile);

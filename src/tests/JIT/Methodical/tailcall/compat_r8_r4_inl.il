@@ -7,7 +7,7 @@
   .ver 4:0:0:0
 }
 .assembly extern mscorlib { }
-.assembly compat_r8_r4_inl { }
+.assembly ASSEMBLY_NAME { }
 .assembly extern xunit.core {}
 .namespace JitTest_compat_r8_r4_inl
 {

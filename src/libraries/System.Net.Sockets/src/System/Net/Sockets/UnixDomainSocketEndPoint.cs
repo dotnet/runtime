@@ -2,6 +2,7 @@
 // The .NET Foundation licenses this file to you under the MIT license.
 
 using System.Diagnostics;
+using System.Diagnostics.CodeAnalysis;
 using System.Text;
 using System.IO;
 
@@ -18,12 +19,19 @@ namespace System.Net.Sockets
         // Tracks the file Socket should delete on Dispose.
         internal string? BoundFileName { get; }
 
+        /// <summary>Initializes a new instance of the <see cref="UnixDomainSocketEndPoint"/> with the file path to connect a unix domain socket over.</summary>
+        /// <param name="path">The path to connect a unix domain socket over.</param>
+        /// <exception cref="ArgumentNullException"><paramref name="path"/> is <see langword="null"/>.</exception>
+        /// <exception cref="ArgumentOutOfRangeException"><paramref name="path"/> is of an invalid length for use with domain sockets on this platform. The length must be between 1 and the allowed native path length.</exception>
+        /// <exception cref="PlatformNotSupportedException">The current OS does not support Unix Domain Sockets.</exception>
         public UnixDomainSocketEndPoint(string path)
             : this(path, null)
         { }
 
-        private UnixDomainSocketEndPoint(string path!!, string? boundFileName)
+        private UnixDomainSocketEndPoint(string path, string? boundFileName)
         {
+            ArgumentNullException.ThrowIfNull(path);
+
             BoundFileName = boundFileName;
 
             // Pathname socket addresses should be null-terminated.
@@ -56,8 +64,10 @@ namespace System.Net.Sockets
 
         internal static int MaxAddressSize => s_nativeAddressSize;
 
-        internal UnixDomainSocketEndPoint(SocketAddress socketAddress!!)
+        internal UnixDomainSocketEndPoint(SocketAddress socketAddress)
         {
+            ArgumentNullException.ThrowIfNull(socketAddress);
+
             if (socketAddress.Family != EndPointAddressFamily ||
                 socketAddress.Size > s_nativeAddressSize)
             {
@@ -91,6 +101,8 @@ namespace System.Net.Sockets
             }
         }
 
+        /// <summary>Serializes endpoint information into a <see cref="SocketAddress"/> instance.</summary>
+        /// <returns>A <see cref="SocketAddress"/> instance that contains the endpoint information.</returns>
         public override SocketAddress Serialize()
         {
             SocketAddress result = CreateSocketAddressForSerialize();
@@ -103,10 +115,17 @@ namespace System.Net.Sockets
             return result;
         }
 
+        /// <summary>Creates an <see cref="EndPoint"/> instance from a <see cref="SocketAddress"/> instance.</summary>
+        /// <param name="socketAddress">The socket address that serves as the endpoint for a connection.</param>
+        /// <returns>A new <see cref="EndPoint"/> instance that is initialized from the specified <see cref="SocketAddress"/> instance.</returns>
         public override EndPoint Create(SocketAddress socketAddress) => new UnixDomainSocketEndPoint(socketAddress);
 
+        /// <summary>Gets the address family to which the endpoint belongs.</summary>
+        /// <value>One of the <see cref="AddressFamily"/> values.</value>
         public override AddressFamily AddressFamily => EndPointAddressFamily;
 
+        /// <summary>Gets the path represented by this <see cref="UnixDomainSocketEndPoint"/> instance.</summary>
+        /// <returns>The path represented by this <see cref="UnixDomainSocketEndPoint"/> instance.</returns>
         public override string ToString()
         {
             bool isAbstract = IsAbstract(_path);
@@ -120,12 +139,23 @@ namespace System.Net.Sockets
             }
         }
 
+        /// <summary>Determines whether the specified <see cref="object"/> is equal to the current <see cref="UnixDomainSocketEndPoint"/>.</summary>
+        /// <param name="obj">The <see cref="object"/> to compare with the current <see cref="UnixDomainSocketEndPoint"/>.</param>
+        /// <returns><see langword="true"/> if the specified <see cref="object"/> is equal to the current <see cref="UnixDomainSocketEndPoint"/>; otherwise, <see langword="false"/>.</returns>
+        public override bool Equals([NotNullWhen(true)] object? obj)
+            => obj is UnixDomainSocketEndPoint ep && _path == ep._path;
+
+        /// <summary>Returns a hash value for a <see cref="UnixDomainSocketEndPoint"/> instance.</summary>
+        /// <returns>An integer hash value.</returns>
+        public override int GetHashCode() => _path.GetHashCode();
+
         internal UnixDomainSocketEndPoint CreateBoundEndPoint()
         {
             if (IsAbstract(_path))
             {
                 return this;
             }
+
             return new UnixDomainSocketEndPoint(_path, Path.GetFullPath(_path));
         }
 
@@ -135,6 +165,7 @@ namespace System.Net.Sockets
             {
                 return this;
             }
+
             return new UnixDomainSocketEndPoint(_path, null);
         }
 

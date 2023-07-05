@@ -25,7 +25,7 @@ namespace System.ComponentModel.Design
             Properties["Text"] = text == null ? null : GetParameterReplacementRegex().Replace(text, "");
         }
 
-        [RegexGenerator(@"\(\&.\)")]
+        [GeneratedRegex(@"\(\&.\)")]
         private static partial Regex GetParameterReplacementRegex();
 
         /// <summary>

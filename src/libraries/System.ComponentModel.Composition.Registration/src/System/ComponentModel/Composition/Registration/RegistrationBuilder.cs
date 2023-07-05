@@ -38,8 +38,13 @@ namespace System.ComponentModel.Composition.Registration
             return partBuilder;
         }
 
-        public PartBuilder ForTypesDerivedFrom(Type type!!)
+        public PartBuilder ForTypesDerivedFrom(Type type)
         {
+            if (type is null)
+            {
+                throw new ArgumentNullException(nameof(type));
+            }
+
             var partBuilder = new PartBuilder((t) => type != t && type.IsAssignableFrom(t));
             _conventions.Add(partBuilder);
 
@@ -54,31 +59,46 @@ namespace System.ComponentModel.Composition.Registration
             return partBuilder;
         }
 
-        public PartBuilder ForType(Type type!!)
+        public PartBuilder ForType(Type type)
         {
+            if (type is null)
+            {
+                throw new ArgumentNullException(nameof(type));
+            }
+
             var partBuilder = new PartBuilder((t) => t == type);
             _conventions.Add(partBuilder);
 
             return partBuilder;
         }
 
-        public PartBuilder<T> ForTypesMatching<T>(Predicate<Type> typeFilter!!)
+        public PartBuilder<T> ForTypesMatching<T>(Predicate<Type> typeFilter)
         {
+            if (typeFilter is null)
+            {
+                throw new ArgumentNullException(nameof(typeFilter));
+            }
+
             var partBuilder = new PartBuilder<T>(typeFilter);
             _conventions.Add(partBuilder);
 
             return partBuilder;
         }
 
-        public PartBuilder ForTypesMatching(Predicate<Type> typeFilter!!)
+        public PartBuilder ForTypesMatching(Predicate<Type> typeFilter)
         {
+            if (typeFilter is null)
+            {
+                throw new ArgumentNullException(nameof(typeFilter));
+            }
+
             var partBuilder = new PartBuilder(typeFilter);
             _conventions.Add(partBuilder);
 
             return partBuilder;
         }
 
-        private IEnumerable<Tuple<object, List<Attribute>>> EvaluateThisTypeAgainstTheConvention(Type type)
+        private List<Tuple<object, List<Attribute>>> EvaluateThisTypeAgainstTheConvention(Type type)
         {
             List<Attribute> attributes = new List<Attribute>();
 

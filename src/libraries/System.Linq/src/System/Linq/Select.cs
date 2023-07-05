@@ -58,8 +58,10 @@ namespace System.Linq
             return new SelectEnumerableIterator<TSource, TResult>(source, selector);
         }
 
+#pragma warning disable IDE0060 // https://github.com/dotnet/roslyn-analyzers/issues/6177
         static partial void CreateSelectIPartitionIterator<TResult, TSource>(
             Func<TSource, TResult> selector, IPartition<TSource> partition, [NotNull] ref IEnumerable<TResult>? result);
+#pragma warning restore IDE0060
 
         public static IEnumerable<TResult> Select<TSource, TResult>(this IEnumerable<TSource> source, Func<TSource, int, TResult> selector)
         {
@@ -151,7 +153,7 @@ namespace System.Linq
         }
 
         /// <summary>
-        /// An iterator that maps each item of a array.
+        /// An iterator that maps each item of an array.
         /// </summary>
         /// <typeparam name="TSource">The type of the source array.</typeparam>
         /// <typeparam name="TResult">The type of the mapped items.</typeparam>
@@ -176,15 +178,17 @@ namespace System.Linq
 
             public override bool MoveNext()
             {
-                if (_state < 1 | _state == _source.Length + 1)
+                TSource[] source = _source;
+                int index = _state - 1;
+                if ((uint)index < (uint)source.Length)
                 {
-                    Dispose();
-                    return false;
+                    _state++;
+                    _current = _selector(source[index]);
+                    return true;
                 }
 
-                int index = _state++ - 1;
-                _current = _selector(_source[index]);
-                return true;
+                Dispose();
+                return false;
             }
 
             public override IEnumerable<TResult2> Select<TResult2>(Func<TResult, TResult2> selector) =>

@@ -1,0 +1,10 @@
+{
+    "extends": "../../tsconfig.worker.json",
+    "compilerOptions": {
+        "module": "commonjs",
+    },
+    "include": [
+        "../../**/*.ts",
+        "../../**/*.d.ts"
+    ]
+}

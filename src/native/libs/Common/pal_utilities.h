@@ -69,24 +69,6 @@ inline static void SafeStringCopy(char* destination, size_t destinationSize, con
 }
 
 /**
- * Abstraction helper method to safely copy strings using strlcpy or strcpy_s
- * or a different safe copy method, depending on the current platform.
- */
-inline static void SafeStringConcat(char* destination, size_t destinationSize, const char* str1, const char* str2)
-{
-    memset(destination, 0, destinationSize);
-#if HAVE_STRCAT_S
-    strcat_s(destination, destinationSize, str1);
-    strcat_s(destination, destinationSize, str2);
-#elif HAVE_STRLCAT
-    strlcat(destination, str1, destinationSize);
-    strlcat(destination, str2, destinationSize);
-#else
-    snprintf(destination, destinationSize, "%s%s", str1, str2);
-#endif
-}
-
-/**
 * Converts an intptr_t to a file descriptor.
 * intptr_t is the type used to marshal file descriptors so we can use SafeHandles effectively.
 */
@@ -101,7 +83,9 @@ inline static int ToFileDescriptorUnchecked(intptr_t fd)
 */
 inline static int ToFileDescriptor(intptr_t fd)
 {
+#ifndef TARGET_WASI // the valid range of file descriptors is probably INT32_MIN <= fd && fd <= INT32_MAX, the negative handles are valid for console.
     assert(0 <= fd && fd < sysconf(_SC_OPEN_MAX));
+#endif
 
     return ToFileDescriptorUnchecked(fd);
 }

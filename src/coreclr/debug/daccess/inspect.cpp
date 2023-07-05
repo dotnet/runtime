@@ -1047,7 +1047,7 @@ ClrDataValue::GetString(
 
             if (strLen)
             {
-                *strLen = static_cast<ULONG32>(wcslen(msgStr) + 1);
+                *strLen = static_cast<ULONG32>(u16_strlen(msgStr) + 1);
             }
             status = StringCchCopy(str, bufLen, msgStr) == S_OK ?
                 S_OK : S_FALSE;
@@ -2822,7 +2822,7 @@ ClrDataTypeInstance::EnumMethodInstance(
 
     EX_TRY
     {
-        for (;;)
+        while (true)
         {
             mdMethodDef token;
 
@@ -2938,7 +2938,7 @@ ClrDataTypeInstance::EnumMethodInstanceByName(
 
     EX_TRY
     {
-        for (;;)
+        while (true)
         {
             mdMethodDef token;
 
@@ -3556,7 +3556,7 @@ ClrDataTypeInstance::GetDefinition(
             // XXX Microsoft - Generics issues?
 
             // Question - what does the GetCl return return here? The underlying element type?
-            // If so, we are lossing informaiton.
+            // If so, we are lossing information.
             //
             defType = m_typeHandle;
             *typeDefinition = new (nothrow)

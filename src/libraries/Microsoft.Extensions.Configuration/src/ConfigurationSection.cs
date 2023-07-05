@@ -3,6 +3,7 @@
 
 using System;
 using System.Collections.Generic;
+using System.Diagnostics;
 using Microsoft.Extensions.Primitives;
 
 namespace Microsoft.Extensions.Configuration
@@ -10,6 +11,8 @@ namespace Microsoft.Extensions.Configuration
     /// <summary>
     /// Represents a section of application configuration values.
     /// </summary>
+    [DebuggerDisplay("{DebuggerToString(),nq}")]
+    [DebuggerTypeProxy(typeof(ConfigurationSectionDebugView))]
     public class ConfigurationSection : IConfigurationSection
     {
         private readonly IConfigurationRoot _root;
@@ -21,8 +24,11 @@ namespace Microsoft.Extensions.Configuration
         /// </summary>
         /// <param name="root">The configuration root.</param>
         /// <param name="path">The path to this section.</param>
-        public ConfigurationSection(IConfigurationRoot root!!, string path!!)
+        public ConfigurationSection(IConfigurationRoot root, string path)
         {
+            ThrowHelper.ThrowIfNull(root);
+            ThrowHelper.ThrowIfNull(path);
+
             _root = root;
             _path = path;
         }
@@ -35,18 +41,9 @@ namespace Microsoft.Extensions.Configuration
         /// <summary>
         /// Gets the key this section occupies in its parent.
         /// </summary>
-        public string Key
-        {
-            get
-            {
-                if (_key == null)
-                {
-                    // Key is calculated lazily as last portion of Path
-                    _key = ConfigurationPath.GetSectionKey(_path);
-                }
-                return _key;
-            }
-        }
+        public string Key =>
+            // Key is calculated lazily as last portion of Path
+            _key ??= ConfigurationPath.GetSectionKey(_path);
 
         /// <summary>
         /// Gets or sets the section value.
@@ -72,11 +69,11 @@ namespace Microsoft.Extensions.Configuration
         {
             get
             {
-                return _root[ConfigurationPath.Combine(Path, key)];
+                return _root[Path + ConfigurationPath.KeyDelimiter + key];
             }
             set
             {
-                _root[ConfigurationPath.Combine(Path, key)] = value;
+                _root[Path + ConfigurationPath.KeyDelimiter + key] = value;
             }
         }
 
@@ -89,7 +86,7 @@ namespace Microsoft.Extensions.Configuration
         ///     This method will never return <c>null</c>. If no matching sub-section is found with the specified key,
         ///     an empty <see cref="IConfigurationSection"/> will be returned.
         /// </remarks>
-        public IConfigurationSection GetSection(string key) => _root.GetSection(ConfigurationPath.Combine(Path, key));
+        public IConfigurationSection GetSection(string key) => _root.GetSection(Path + ConfigurationPath.KeyDelimiter + key);
 
         /// <summary>
         /// Gets the immediate descendant configuration sub-sections.
@@ -102,5 +99,43 @@ namespace Microsoft.Extensions.Configuration
         /// </summary>
         /// <returns>The <see cref="IChangeToken"/>.</returns>
         public IChangeToken GetReloadToken() => _root.GetReloadToken();
+
+        private string DebuggerToString()
+        {
+            var s = $"Path = {Path}";
+            var childCount = Configuration.ConfigurationSectionDebugView.FromConfiguration(this, _root).Count;
+            if (childCount > 0)
+            {
+                s += $", Sections = {childCount}";
+            }
+            if (Value is not null)
+            {
+                s += $", Value = {Value}";
+                IConfigurationProvider? provider = Configuration.ConfigurationSectionDebugView.GetValueProvider(_root, Path);
+                if (provider != null)
+                {
+                    s += $", Provider = {provider}";
+                }
+            }
+            return s;
+        }
+
+        private sealed class ConfigurationSectionDebugView
+        {
+            private readonly ConfigurationSection _current;
+            private readonly IConfigurationProvider? _provider;
+
+            public ConfigurationSectionDebugView(ConfigurationSection current)
+            {
+                _current = current;
+                _provider = Configuration.ConfigurationSectionDebugView.GetValueProvider(_current._root, _current.Path);
+            }
+
+            public string Path => _current.Path;
+            public string Key => _current.Key;
+            public string? Value => _current.Value;
+            public IConfigurationProvider? Provider => _provider;
+            public List<Configuration.ConfigurationSectionDebugView> Sections => Configuration.ConfigurationSectionDebugView.FromConfiguration(_current, _current._root);
+        }
     }
 }

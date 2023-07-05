@@ -3,7 +3,9 @@
 
 using System.Collections.Generic;
 
+using ILCompiler.Dataflow;
 using ILCompiler.DependencyAnalysisFramework;
+using ILCompiler.Logging;
 
 using Internal.TypeSystem;
 
@@ -14,11 +16,14 @@ namespace ILCompiler.DependencyAnalysis
 {
     /// <summary>
     /// Represents a field that has metadata generated in the current compilation.
+    /// This corresponds to a ECMA-335 FieldDef record. It is however not a 1:1
+    /// mapping because a field could be used in the AOT compiled program without generating
+    /// the reflection metadata for it (which would not be possible in IL terms).
     /// </summary>
     /// <remarks>
     /// Only expected to be used during ILScanning when scanning for reflection.
     /// </remarks>
-    internal class FieldMetadataNode : DependencyNodeCore<NodeFactory>
+    internal sealed class FieldMetadataNode : DependencyNodeCore<NodeFactory>
     {
         private readonly FieldDesc _field;
 
@@ -37,11 +42,27 @@ namespace ILCompiler.DependencyAnalysis
 
             CustomAttributeBasedDependencyAlgorithm.AddDependenciesDueToCustomAttributes(ref dependencies, factory, ((EcmaField)_field));
 
+            if (_field is EcmaField ecmaField)
+            {
+                DynamicDependencyAttributesOnEntityNode.AddDependenciesDueToDynamicDependencyAttribute(ref dependencies, factory, ecmaField);
+
+                // On a reflectable field, perform generic data flow for the field's type
+                // This is a compensation for the DI issue described in https://github.com/dotnet/runtime/issues/81358
+                GenericArgumentDataFlow.ProcessGenericArgumentDataFlow(ref dependencies, factory, new MessageOrigin(_field), ecmaField.FieldType, ecmaField.OwningType);
+            }
+
+            if (_field.HasEmbeddedSignatureData)
+            {
+                foreach (var sigData in _field.GetEmbeddedSignatureData())
+                    if (sigData.type != null)
+                        TypeMetadataNode.GetMetadataDependencies(ref dependencies, factory, sigData.type, "Modifier in a field signature");
+            }
+
             return dependencies;
         }
         protected override string GetName(NodeFactory factory)
         {
-            return "Reflectable field: " + _field.ToString();
+            return "Field metadata: " + _field.ToString();
         }
 
         protected override void OnMarked(NodeFactory factory)

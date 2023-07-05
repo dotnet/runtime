@@ -27,7 +27,6 @@ namespace System.Reflection.TypeLoading
         DllImportAttribute ComputeDllImportAttribute();
 
         MethodSig<RoParameter> SpecializeMethodSig(IRoMethodBase member);
-        MethodSig<RoType> SpecializeCustomModifiers(in TypeContext typeContext);
         MethodBody? SpecializeMethodBody(IRoMethodBase owner);
         MethodSig<string> SpecializeMethodSigStrings(in TypeContext typeContext);
     }

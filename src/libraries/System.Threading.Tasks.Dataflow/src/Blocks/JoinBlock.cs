@@ -47,18 +47,23 @@ namespace System.Threading.Tasks.Dataflow
         /// <summary>Initializes the <see cref="JoinBlock{T1,T2}"/>.</summary>
         /// <param name="dataflowBlockOptions">The options with which to configure this <see cref="JoinBlock{T1,T2}"/>.</param>
         /// <exception cref="System.ArgumentNullException">The <paramref name="dataflowBlockOptions"/> is null (Nothing in Visual Basic).</exception>
-        public JoinBlock(GroupingDataflowBlockOptions dataflowBlockOptions!!)
+        public JoinBlock(GroupingDataflowBlockOptions dataflowBlockOptions)
         {
+            if (dataflowBlockOptions is null)
+            {
+                throw new ArgumentNullException(nameof(dataflowBlockOptions));
+            }
+
             // Ensure we have options that can't be changed by the caller
             dataflowBlockOptions = dataflowBlockOptions.DefaultOrClone();
 
             // Initialize bounding state if necessary
             Action<ISourceBlock<Tuple<T1, T2>>, int>? onItemsRemoved = null;
-            if (dataflowBlockOptions.BoundedCapacity > 0) onItemsRemoved = (owningSource, count) => ((JoinBlock<T1, T2>)owningSource)._sharedResources.OnItemsRemoved(count);
+            if (dataflowBlockOptions.BoundedCapacity > 0) onItemsRemoved = static (owningSource, count) => ((JoinBlock<T1, T2>)owningSource)._sharedResources.OnItemsRemoved(count);
 
             // Configure the source
             _source = new SourceCore<Tuple<T1, T2>>(this, dataflowBlockOptions,
-                owningSource => ((JoinBlock<T1, T2>)owningSource)._sharedResources.CompleteEachTarget(),
+                static owningSource => ((JoinBlock<T1, T2>)owningSource)._sharedResources.CompleteEachTarget(),
                 onItemsRemoved);
 
             // Configure targets
@@ -87,7 +92,7 @@ namespace System.Threading.Tasks.Dataflow
             // In those cases we need to fault the target half to drop its buffered messages and to release its
             // reservations. This should not create an infinite loop, because all our implementations are designed
             // to handle multiple completion requests and to carry over only one.
-            _source.Completion.ContinueWith((completed, state) =>
+            _source.Completion.ContinueWith(static (completed, state) =>
             {
                 var thisBlock = ((JoinBlock<T1, T2>)state!) as IDataflowBlock;
                 Debug.Assert(completed.IsFaulted, "The source must be faulted in order to trigger a target completion.");
@@ -96,7 +101,7 @@ namespace System.Threading.Tasks.Dataflow
 
             // Handle async cancellation requests by declining on the target
             Common.WireCancellationToComplete(
-                dataflowBlockOptions.CancellationToken, _source.Completion, state => ((JoinBlock<T1, T2>)state!)._sharedResources.CompleteEachTarget(), this);
+                dataflowBlockOptions.CancellationToken, _source.Completion, static (state, _) => ((JoinBlock<T1, T2>)state!)._sharedResources.CompleteEachTarget(), this);
             DataflowEtwProvider etwLog = DataflowEtwProvider.Log;
             if (etwLog.IsEnabled())
             {
@@ -136,8 +141,13 @@ namespace System.Threading.Tasks.Dataflow
         }
 
         /// <include file='XmlDocs/CommonXmlDocComments.xml' path='CommonXmlDocComments/Blocks/Member[@name="Fault"]/*' />
-        void IDataflowBlock.Fault(Exception exception!!)
+        void IDataflowBlock.Fault(Exception exception)
         {
+            if (exception is null)
+            {
+                throw new ArgumentNullException(nameof(exception));
+            }
+
             Debug.Assert(_sharedResources != null, "_sharedResources not initialized");
             Debug.Assert(_sharedResources._exceptionAction != null, "_sharedResources._exceptionAction not initialized");
 
@@ -264,18 +274,23 @@ namespace System.Threading.Tasks.Dataflow
         /// <summary>Initializes the <see cref="JoinBlock{T1,T2,T3}"/>.</summary>
         /// <param name="dataflowBlockOptions">The options with which to configure this <see cref="JoinBlock{T1,T2}"/>.</param>
         /// <exception cref="System.ArgumentNullException">The <paramref name="dataflowBlockOptions"/> is null (Nothing in Visual Basic).</exception>
-        public JoinBlock(GroupingDataflowBlockOptions dataflowBlockOptions!!)
+        public JoinBlock(GroupingDataflowBlockOptions dataflowBlockOptions)
         {
+            if (dataflowBlockOptions is null)
+            {
+                throw new ArgumentNullException(nameof(dataflowBlockOptions));
+            }
+
             // Ensure we have options that can't be changed by the caller
             dataflowBlockOptions = dataflowBlockOptions.DefaultOrClone();
 
             // Initialize bounding state if necessary
             Action<ISourceBlock<Tuple<T1, T2, T3>>, int>? onItemsRemoved = null;
-            if (dataflowBlockOptions.BoundedCapacity > 0) onItemsRemoved = (owningSource, count) => ((JoinBlock<T1, T2, T3>)owningSource)._sharedResources.OnItemsRemoved(count);
+            if (dataflowBlockOptions.BoundedCapacity > 0) onItemsRemoved = static (owningSource, count) => ((JoinBlock<T1, T2, T3>)owningSource)._sharedResources.OnItemsRemoved(count);
 
             // Configure the source
             _source = new SourceCore<Tuple<T1, T2, T3>>(this, dataflowBlockOptions,
-                owningSource => ((JoinBlock<T1, T2, T3>)owningSource)._sharedResources.CompleteEachTarget(),
+                static owningSource => ((JoinBlock<T1, T2, T3>)owningSource)._sharedResources.CompleteEachTarget(),
                 onItemsRemoved);
 
             // Configure the targets
@@ -302,7 +317,7 @@ namespace System.Threading.Tasks.Dataflow
             // In those cases we need to fault the target half to drop its buffered messages and to release its
             // reservations. This should not create an infinite loop, because all our implementations are designed
             // to handle multiple completion requests and to carry over only one.
-            _source.Completion.ContinueWith((completed, state) =>
+            _source.Completion.ContinueWith(static (completed, state) =>
             {
                 var thisBlock = ((JoinBlock<T1, T2, T3>)state!) as IDataflowBlock;
                 Debug.Assert(completed.IsFaulted, "The source must be faulted in order to trigger a target completion.");
@@ -311,7 +326,7 @@ namespace System.Threading.Tasks.Dataflow
 
             // Handle async cancellation requests by declining on the target
             Common.WireCancellationToComplete(
-                dataflowBlockOptions.CancellationToken, _source.Completion, state => ((JoinBlock<T1, T2, T3>)state!)._sharedResources.CompleteEachTarget(), this);
+                dataflowBlockOptions.CancellationToken, _source.Completion, static (state, _) => ((JoinBlock<T1, T2, T3>)state!)._sharedResources.CompleteEachTarget(), this);
             DataflowEtwProvider etwLog = DataflowEtwProvider.Log;
             if (etwLog.IsEnabled())
             {
@@ -353,8 +368,13 @@ namespace System.Threading.Tasks.Dataflow
         }
 
         /// <include file='XmlDocs/CommonXmlDocComments.xml' path='CommonXmlDocComments/Blocks/Member[@name="Fault"]/*' />
-        void IDataflowBlock.Fault(Exception exception!!)
+        void IDataflowBlock.Fault(Exception exception)
         {
+            if (exception is null)
+            {
+                throw new ArgumentNullException(nameof(exception));
+            }
+
             Debug.Assert(_sharedResources != null, "_sharedResources not initialized");
             Debug.Assert(_sharedResources._exceptionAction != null, "_sharedResources._exceptionAction not initialized");
 
@@ -775,7 +795,7 @@ namespace System.Threading.Tasks.Dataflow.Internal
             lock (_sharedResources.IncomingLock)
             {
                 _decliningPermanently = true;
-                if (_messages != null) _messages.Clear();
+                _messages?.Clear();
             }
 
             // Release any postponed messages
@@ -914,8 +934,13 @@ namespace System.Threading.Tasks.Dataflow.Internal
         }
 
         /// <include file='XmlDocs/CommonXmlDocComments.xml' path='CommonXmlDocComments/Blocks/Member[@name="Fault"]/*' />
-        void IDataflowBlock.Fault(Exception exception!!)
+        void IDataflowBlock.Fault(Exception exception)
         {
+            if (exception is null)
+            {
+                throw new ArgumentNullException(nameof(exception));
+            }
+
             CompleteCore(exception, dropPendingMessages: true, releaseReservedMessages: false);
         }
 
@@ -1254,7 +1279,7 @@ namespace System.Threading.Tasks.Dataflow.Internal
 
             // Create task and store into _taskForInputProcessing prior to scheduling the task
             // so that _taskForInputProcessing will be visibly set in the task loop.
-            _taskForInputProcessing = new Task(thisSharedResources => ((JoinBlockTargetSharedResources)thisSharedResources!).ProcessMessagesLoopCore(), this,
+            _taskForInputProcessing = new Task(static thisSharedResources => ((JoinBlockTargetSharedResources)thisSharedResources!).ProcessMessagesLoopCore(), this,
                                                 Common.GetCreationOptionsForTask(isReplacementReplica));
 
             DataflowEtwProvider etwLog = DataflowEtwProvider.Log;
@@ -1262,7 +1287,7 @@ namespace System.Threading.Tasks.Dataflow.Internal
             {
                 etwLog.TaskLaunchedForMessageHandling(
                     _ownerJoin, _taskForInputProcessing, DataflowEtwProvider.TaskLaunchedReason.ProcessingInputMessages,
-                    _targets.Max(t => t.NumberOfMessagesAvailableOrPostponed));
+                    _targets.Max(static t => t.NumberOfMessagesAvailableOrPostponed));
             }
 
             // Start the task handling scheduling exceptions
@@ -1318,7 +1343,7 @@ namespace System.Threading.Tasks.Dataflow.Internal
                     _decliningPermanently = true;
 
                     // Complete each target asynchronously so as not to invoke synchronous continuations under a lock
-                    Task.Factory.StartNew(state =>
+                    Task.Factory.StartNew(static state =>
                     {
                         var sharedResources = (JoinBlockTargetSharedResources)state!;
                         foreach (JoinBlockTargetBase target in sharedResources._targets) target.CompleteOncePossible();

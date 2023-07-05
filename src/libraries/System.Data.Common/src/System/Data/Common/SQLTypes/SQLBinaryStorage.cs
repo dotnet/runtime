@@ -91,19 +91,14 @@ namespace System.Data.Common
 
         public override void SetCapacity(int capacity)
         {
-            SqlBinary[] newValues = new SqlBinary[capacity];
-            if (null != _values)
-            {
-                Array.Copy(_values, newValues, Math.Min(capacity, _values.Length));
-            }
-            _values = newValues;
+            Array.Resize(ref _values, capacity);
         }
 
         [RequiresUnreferencedCode(DataSet.RequiresUnreferencedCodeMessage)]
         public override object ConvertXmlToObject(string s)
         {
             SqlBinary newValue = default;
-            string tempStr = string.Concat("<col>", s, "</col>"); // this is done since you can give fragmet to reader
+            string tempStr = string.Concat("<col>", s, "</col>"); // this is done since you can give fragment to reader
             StringReader strReader = new StringReader(tempStr);
 
             IXmlSerializable tmp = newValue;

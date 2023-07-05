@@ -7,7 +7,7 @@ using System;
 
 class HelloWorld
 {
-    static int Main(String[] args)
+    static int Main()
     {
         C<object> c = new C<object>();
 

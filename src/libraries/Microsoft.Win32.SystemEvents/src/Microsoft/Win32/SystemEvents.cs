@@ -370,7 +370,7 @@ namespace Microsoft.Win32
             return false;
         }
 
-        private IntPtr DefWndProc
+        private static IntPtr DefWndProc
         {
             get
             {
@@ -517,17 +517,17 @@ namespace Microsoft.Win32
             }
         }
 
-        private UserPreferenceCategory GetUserPreferenceCategory(int msg, IntPtr wParam, IntPtr lParam)
+        private static UserPreferenceCategory GetUserPreferenceCategory(int msg, nint wParam, nint lParam)
         {
             UserPreferenceCategory pref = UserPreferenceCategory.General;
 
             if (msg == Interop.User32.WM_SETTINGCHANGE)
             {
-                if (lParam != IntPtr.Zero && Marshal.PtrToStringUni(lParam)!.Equals("Policy"))
+                if (lParam != 0 && Marshal.PtrToStringUni(lParam)!.Equals("Policy"))
                 {
                     pref = UserPreferenceCategory.Policy;
                 }
-                else if (lParam != IntPtr.Zero && Marshal.PtrToStringUni(lParam)!.Equals("intl"))
+                else if (lParam != 0 && Marshal.PtrToStringUni(lParam)!.Equals("intl"))
                 {
                     pref = UserPreferenceCategory.Locale;
                 }
@@ -680,7 +680,7 @@ namespace Microsoft.Win32
                 if (Interop.User32.RegisterClassW(ref windowClass) == 0)
                 {
                     _windowProc = null;
-                    Debug.WriteLine("Unable to register broadcast window class: {0}", Marshal.GetLastWin32Error());
+                    Debug.WriteLine("Unable to register broadcast window class: {0}", Marshal.GetLastPInvokeError());
                 }
                 else
                 {
@@ -703,7 +703,7 @@ namespace Microsoft.Win32
         ///  This empties this control's callback queue, propagating any exceptions
         ///  back as needed.
         /// </summary>
-        private void InvokeMarshaledCallbacks()
+        private static void InvokeMarshaledCallbacks()
         {
             Debug.Assert(s_threadCallbackList != null, "Invoking marshaled callbacks before there are any");
 
@@ -808,7 +808,7 @@ namespace Microsoft.Win32
         ///  Callback that handles the create timer
         ///  user message.
         /// </summary>
-        private IntPtr OnCreateTimer(IntPtr wParam)
+        private IntPtr OnCreateTimer(nint wParam)
         {
             IntPtr timerId = (IntPtr)s_randomTimerId.Next();
             IntPtr res = Interop.User32.SetTimer(_windowHandle, timerId, (int)wParam, IntPtr.Zero);
@@ -856,7 +856,7 @@ namespace Microsoft.Win32
         /// <summary>
         ///  Handler for WM_POWERBROADCAST.
         /// </summary>
-        private void OnPowerModeChanged(IntPtr wParam)
+        private void OnPowerModeChanged(nint wParam)
         {
             PowerModes mode;
 
@@ -889,11 +889,11 @@ namespace Microsoft.Win32
         /// <summary>
         ///  Handler for WM_ENDSESSION.
         /// </summary>
-        private void OnSessionEnded(IntPtr wParam, IntPtr lParam)
+        private void OnSessionEnded(nint wParam, nint lParam)
         {
             // wParam will be nonzero if the session is actually ending.  If
             // it was canceled then we do not want to raise the event.
-            if (wParam != (IntPtr)0)
+            if (wParam != 0)
             {
                 SessionEndReasons reason = SessionEndReasons.SystemShutdown;
 
@@ -1004,10 +1004,8 @@ namespace Microsoft.Win32
 
             lock (s_eventLockObject)
             {
-                if (s_handlers != null && s_handlers.ContainsKey(key))
+                if (s_handlers != null && s_handlers.TryGetValue(key, out List<SystemEventInvokeInfo>? invokeItems))
                 {
-                    List<SystemEventInvokeInfo> invokeItems = s_handlers[key];
-
                     // clone the list so we don't have this type locked and cause
                     // a deadlock if someone tries to modify handlers during an invoke.
                     if (invokeItems != null)
@@ -1068,10 +1066,8 @@ namespace Microsoft.Win32
 
             lock (s_eventLockObject)
             {
-                if (s_handlers != null && s_handlers.ContainsKey(key))
+                if (s_handlers != null && s_handlers.TryGetValue(key, out List<SystemEventInvokeInfo>? invokeItems))
                 {
-                    List<SystemEventInvokeInfo> invokeItems = s_handlers[key];
-
                     invokeItems.Remove(new SystemEventInvokeInfo(value));
                 }
             }
@@ -1130,14 +1126,14 @@ namespace Microsoft.Win32
         /// <summary>
         ///  A standard Win32 window proc for our broadcast window.
         /// </summary>
-        private IntPtr WindowProc(IntPtr hWnd, int msg, IntPtr wParam, IntPtr lParam)
+        private IntPtr WindowProc(IntPtr hWnd, int msg, nint wParam, nint lParam)
         {
             switch (msg)
             {
                 case Interop.User32.WM_SETTINGCHANGE:
                     string? newString;
                     IntPtr newStringPtr = lParam;
-                    if (lParam != IntPtr.Zero)
+                    if (lParam != 0)
                     {
                         newString = Marshal.PtrToStringUni(lParam);
                         if (newString != null)
@@ -1177,7 +1173,7 @@ namespace Microsoft.Win32
                     {
                         try
                         {
-                            if (lParam != IntPtr.Zero)
+                            if (lParam != 0)
                             {
                                 Marshal.FreeHGlobal(lParam);
                             }

@@ -41,12 +41,12 @@ namespace System.Net
 {
     internal partial class HttpRequestStream : Stream
     {
-        private byte[] _buffer;
+        private readonly byte[] _buffer;
         private int _offset;
         private int _length;
         private long _remainingBody;
         protected bool _closed;
-        private Stream _stream;
+        private readonly Stream _stream;
 
         internal HttpRequestStream(Stream stream, byte[] buffer, int offset, int length)
             : this(stream, buffer, offset, length, -1)
@@ -161,8 +161,10 @@ namespace System.Net
             return _stream.BeginRead(buffer, offset, size, cback, state);
         }
 
-        public override int EndRead(IAsyncResult asyncResult!!)
+        public override int EndRead(IAsyncResult asyncResult)
         {
+            ArgumentNullException.ThrowIfNull(asyncResult);
+
             if (asyncResult is HttpStreamAsyncResult r)
             {
                 if (!ReferenceEquals(this, r._parent))

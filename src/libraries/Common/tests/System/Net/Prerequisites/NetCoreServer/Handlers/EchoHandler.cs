@@ -21,7 +21,7 @@ namespace NetCoreServer
             }
 
             // Add original request method verb as a custom response header.
-            context.Response.Headers.Add("X-HttpRequest-Method", context.Request.Method);
+            context.Response.Headers["X-HttpRequest-Method"] = context.Request.Method;
 
             // Echo back JSON encoded payload.
             RequestInformation info = await RequestInformation.CreateAsync(context.Request);
@@ -34,7 +34,7 @@ namespace NetCoreServer
                 byte[] hash = md5.ComputeHash(bytes);
                 string encodedHash = Convert.ToBase64String(hash);
 
-                context.Response.Headers.Add("Content-MD5", encodedHash);
+                context.Response.Headers["Content-MD5"] = encodedHash;
                 context.Response.ContentType = "application/json";
                 context.Response.ContentLength = bytes.Length;
                 await context.Response.Body.WriteAsync(bytes, 0, bytes.Length);

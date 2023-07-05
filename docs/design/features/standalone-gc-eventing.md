@@ -6,7 +6,7 @@ This document aims to provide a specification for how a standalone GC fires
 events that can be collected by trace collectors. Such a feature is highly desirable
 for a standalone GC since it is the primary way that is used to reason about
 GC performance. Since a standalone GC is not permitted to link against the rest of the runtime, all
-communication betwene the runtime and the GC most pass through dynamically-dispatched interfaces.
+communication between the runtime and the GC most pass through dynamically-dispatched interfaces.
 
 ## Definitions
 
@@ -147,7 +147,7 @@ It is useful for a standalone GC to be able to fire events that the EE was not p
 (the "CLR GC") to interopate seamlessly with future versions of the .NET Core EE, which implies that it should be possible
 for the GC within this repository to add new events without having to recompile the runtime.
 
-While it is possible for some eventing implementations to receive events that are created at runtime, not all eventing implementations (particularly LTTNG) are not flexible enough for this. In order to accomodate new events, another method is added to `IGCToCLREventSink`:
+While it is possible for some eventing implementations to receive events that are created at runtime, not all eventing implementations (particularly LTTNG) are not flexible enough for this. In order to accommodate new events, another method is added to `IGCToCLREventSink`:
 
 ```c++
 void IGCToCLREventSink::FireDynamicEvent(

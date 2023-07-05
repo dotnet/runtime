@@ -6,8 +6,6 @@ using System.Collections.Generic;
 
 using ILCompiler.DependencyAnalysis;
 using ILCompiler.DependencyAnalysisFramework;
-
-using Internal.TypeSystem;
 using Internal.IL;
 
 namespace ILCompiler
@@ -66,6 +64,12 @@ namespace ILCompiler
         public ILScannerBuilder UseParallelism(int parallelism)
         {
             _parallelism = parallelism;
+            return this;
+        }
+
+        public ILScannerBuilder UseLogger(Logger logger)
+        {
+            _logger = logger;
             return this;
         }
 

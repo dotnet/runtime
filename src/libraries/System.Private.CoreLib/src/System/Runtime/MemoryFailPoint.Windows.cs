@@ -28,9 +28,9 @@ namespace System.Runtime
                 totalAddressSpaceFree = default;
                 return false;
             }
+
             availPageFile = memoryStatus.ullAvailPageFile;
             totalAddressSpaceFree = memoryStatus.ullAvailVirtual;
-            // Console.WriteLine($"Memory gate:  Mem load: {memory.memoryLoad}%  Available memory (physical + page file): {(memory.availPageFile >> 20)} MB  Total free address space: {memory.availVirtual >> 20} MB  GC Heap: {(GC.GetTotalMemory(true) >> 20)} MB");
             return true;
         }
 
@@ -44,8 +44,6 @@ namespace System.Runtime
             // pages that VirtualAlloc would return - we just need to
             // know whether VirtualAlloc could succeed.
             ulong freeSpaceAfterGCHeap = MemFreeAfterAddress(null, size);
-
-            // Console.WriteLine($"MemoryFailPoint: Checked for free VA space.  Found enough? {(freeSpaceAfterGCHeap >= size)}  Asked for: {size}  Found: {freeSpaceAfterGCHeap}");
 
             // We may set these without taking a lock - I don't believe
             // this will hurt, as long as we never increment this number in

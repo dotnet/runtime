@@ -4,6 +4,7 @@
     "target": "ESNext",
     "module": "ESNext",
     "strict": true,
-    "outDir": "bin"
+    "outDir": "bin",
+    "allowSyntheticDefaultImports": true
   }
 }

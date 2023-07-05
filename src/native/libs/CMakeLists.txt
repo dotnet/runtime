@@ -1,13 +1,6 @@
-cmake_minimum_required(VERSION 3.6.2)
-include(CheckCCompilerFlag)
+cmake_minimum_required(VERSION 3.20)
 
-if (CLR_CMAKE_TARGET_IOS OR CLR_CMAKE_TARGET_TVOS)
-    # CMake 3.14.5 contains bug fixes for iOS
-    cmake_minimum_required(VERSION 3.14.5)
-elseif (CLR_CMAKE_TARGET_MACCATALYST)
-    # CMake 3.18.1 properly generates MacCatalyst C compiler
-    cmake_minimum_required(VERSION 3.18.1)
-endif ()
+include(CheckCCompilerFlag)
 
 if (WIN32)
     cmake_policy(SET CMP0091 NEW)
@@ -35,7 +28,7 @@ else ()
     set(STATIC_LIB_DESTINATION .)
 endif ()
 
-if (CLR_CMAKE_TARGET_UNIX OR CLR_CMAKE_TARGET_BROWSER)
+if (CLR_CMAKE_TARGET_UNIX OR CLR_CMAKE_TARGET_BROWSER OR CLR_CMAKE_TARGET_WASI)
     set(CMAKE_MACOSX_RPATH ON)
     if (CLR_CMAKE_TARGET_MACCATALYST OR CLR_CMAKE_TARGET_IOS OR CLR_CMAKE_TARGET_TVOS)
         set(CMAKE_BUILD_WITH_INSTALL_NAME_DIR ON)
@@ -48,17 +41,23 @@ if (CLR_CMAKE_TARGET_UNIX OR CLR_CMAKE_TARGET_BROWSER)
     add_compile_options(-I${CMAKE_CURRENT_SOURCE_DIR}/Common)
     add_compile_options(-I${CMAKE_CURRENT_BINARY_DIR}/Common)
 
-    if (CLR_CMAKE_TARGET_BROWSER)
+    if (CLR_CMAKE_TARGET_BROWSER OR CLR_CMAKE_TARGET_WASI)
         set(GEN_SHARED_LIB 0)
         set(STATIC_LIB_DESTINATION .)
     endif ()
 
-    if (CLR_CMAKE_TARGET_TVOS)
-        # with -fembed-bitcode passing -headerpad_max_install_names is not allowed so remove it from the CMake flags
-        string(REPLACE "-Wl,-headerpad_max_install_names" "" CMAKE_C_LINK_FLAGS ${CMAKE_C_LINK_FLAGS})
-        string(REPLACE "-Wl,-headerpad_max_install_names" "" CMAKE_SHARED_LIBRARY_CREATE_C_FLAGS ${CMAKE_SHARED_LIBRARY_CREATE_C_FLAGS})
-        add_compile_options(-fembed-bitcode)
-        add_link_options(-fembed-bitcode)
+    if (CLR_CMAKE_TARGET_WASI)
+        set(HOST_WASI 1)
+        add_compile_options(-I${CLR_REPO_ROOT_DIR}/src/mono/wasi/include/)
+        add_compile_options(-I${CLR_REPO_ROOT_DIR}/src/mono/wasi/libs-include/)
+        add_compile_options(-Wno-unused-variable)
+        add_compile_options(-Wno-unused-parameter)
+        add_compile_options(-Wno-gnu-statement-expression)
+        add_compile_options(-DHOST_WASI)
+        add_compile_options(-D_WASI_EMULATED_PROCESS_CLOCKS)
+        add_compile_options(-D_WASI_EMULATED_SIGNAL)
+        add_compile_options(-D_WASI_EMULATED_MMAN)
+        add_link_options(-Wl,-z,stack-size=1048576,--initial-memory=5242880,--max-memory=52428800,-lwasi-emulated-process-clocks,-lwasi-emulated-signal,-lwasi-emulated-mman)
     endif ()
 
     if (CLR_CMAKE_TARGET_ANDROID)
@@ -103,13 +102,19 @@ if (CLR_CMAKE_TARGET_UNIX OR CLR_CMAKE_TARGET_BROWSER)
         if (CLR_CMAKE_TARGET_ARCH_ARMV7L AND DEFINED ENV{CROSSCOMPILE} AND CMAKE_C_COMPILER_VERSION VERSION_LESS 3.9)
             add_compile_options (-O1)
         else ()
-            add_compile_options (-O3)
+            if(CLR_CMAKE_TARGET_ANDROID)
+                # -O2 optimization generates faster/smaller code on Android
+                # TODO: This duplicates the settings in eng/native/configureoptimization.cmake, we should unify it
+                add_compile_options (-O2)
+            else()
+                add_compile_options (-O3)
+            endif ()
         endif ()
     else ()
         message(FATAL_ERROR "Unknown build type. Set CMAKE_BUILD_TYPE to DEBUG or RELEASE.")
     endif ()
 
-    if (CLR_CMAKE_TARGET_OSX OR CLR_CMAKE_TARGET_MACCATALYST OR CLR_CMAKE_TARGET_IOS OR CLR_CMAKE_TARGET_TVOS)
+    if (CLR_CMAKE_TARGET_APPLE)
         add_definitions(-D__APPLE_USE_RFC_3542)
     endif ()
 
@@ -127,10 +132,10 @@ endif ()
 
 add_subdirectory(System.IO.Compression.Native)
 
-if (CLR_CMAKE_TARGET_UNIX OR CLR_CMAKE_TARGET_BROWSER)
+if (CLR_CMAKE_TARGET_UNIX OR CLR_CMAKE_TARGET_BROWSER OR CLR_CMAKE_TARGET_WASI)
     include(configure.cmake)
 
-    if (NOT CLR_CMAKE_TARGET_BROWSER AND NOT CLR_CMAKE_TARGET_MACCATALYST AND NOT CLR_CMAKE_TARGET_IOS AND NOT CLR_CMAKE_TARGET_TVOS AND NOT CLR_CMAKE_TARGET_ANDROID)
+    if (NOT CLR_CMAKE_TARGET_BROWSER AND NOT CLR_CMAKE_TARGET_WASI AND NOT CLR_CMAKE_TARGET_MACCATALYST AND NOT CLR_CMAKE_TARGET_IOS AND NOT CLR_CMAKE_TARGET_TVOS AND NOT CLR_CMAKE_TARGET_ANDROID)
         add_subdirectory(System.IO.Ports.Native)
     endif ()
 
@@ -144,11 +149,16 @@ if (CLR_CMAKE_TARGET_UNIX OR CLR_CMAKE_TARGET_BROWSER)
         add_compile_options(-Wno-typedef-redefinition)
         add_compile_options(-Wno-c11-extensions)
         add_compile_options(-Wno-thread-safety-analysis)
+        if (CLR_CMAKE_TARGET_BROWSER)
+            add_compile_options(-Wno-unsafe-buffer-usage)
+            add_compile_options(-Wno-cast-function-type-strict)
+        endif ()
     endif ()
 
     add_subdirectory(System.Native)
+    add_subdirectory(System.Globalization.Native)
 
-    if (CLR_CMAKE_TARGET_BROWSER)
+    if (CLR_CMAKE_TARGET_BROWSER OR CLR_CMAKE_TARGET_WASI)
         # skip for now
     elseif (CLR_CMAKE_TARGET_MACCATALYST)
         add_subdirectory(System.Net.Security.Native)
@@ -162,15 +172,16 @@ if (CLR_CMAKE_TARGET_UNIX OR CLR_CMAKE_TARGET_BROWSER)
         #add_subdirectory(System.Net.Security.Native) # no gssapi on tvOS, see https://developer.apple.com/documentation/gss
         # System.Security.Cryptography.Native is intentionally disabled on tvOS
         # it is only used for interacting with OpenSSL which isn't useful there
-    elseif (CLR_CMAKE_TARGET_ANDROID)
+    elseif (CLR_CMAKE_TARGET_ANDROID AND NOT FORCE_ANDROID_OPENSSL)
         add_subdirectory(System.Security.Cryptography.Native.Android)
+    elseif (FORCE_ANDROID_OPENSSL)
+        add_subdirectory(System.Security.Cryptography.Native)
     else ()
-        add_subdirectory(System.Globalization.Native)
         add_subdirectory(System.Net.Security.Native)
         add_subdirectory(System.Security.Cryptography.Native)
     endif ()
 
-    if (CLR_CMAKE_TARGET_OSX OR CLR_CMAKE_TARGET_MACCATALYST OR CLR_CMAKE_TARGET_IOS OR CLR_CMAKE_TARGET_TVOS)
+    if (CLR_CMAKE_TARGET_APPLE)
         add_subdirectory(System.Security.Cryptography.Native.Apple)
     endif ()
 endif ()

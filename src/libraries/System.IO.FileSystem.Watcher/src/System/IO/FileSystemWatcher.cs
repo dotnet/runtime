@@ -64,7 +64,7 @@ namespace System.IO
         static FileSystemWatcher()
         {
             int s_notifyFiltersValidMask = 0;
-            foreach (int enumValue in Enum.GetValues(typeof(NotifyFilters)))
+            foreach (int enumValue in Enum.GetValues<NotifyFilters>())
                 s_notifyFiltersValidMask |= enumValue;
             Debug.Assert(c_notifyFiltersValidMask == s_notifyFiltersValidMask, "The NotifyFilters enum has changed. The c_notifyFiltersValidMask must be updated to reflect the values of the NotifyFilters enum.");
         }
@@ -250,7 +250,7 @@ namespace System.IO
             }
             set
             {
-                value = (value == null) ? string.Empty : value;
+                value ??= string.Empty;
                 if (!string.Equals(_directory, value, PathInternal.StringComparison))
                 {
                     if (value.Length == 0)
@@ -370,8 +370,10 @@ namespace System.IO
             }
         }
 
-        private static void CheckPathValidity(string path!!)
+        private static void CheckPathValidity(string path)
         {
+            ArgumentNullException.ThrowIfNull(path);
+
             // Early check for directory parameter so that an exception can be thrown as early as possible.
             if (path.Length == 0)
                 throw new ArgumentException(SR.Format(SR.InvalidDirName, path), nameof(path));
@@ -618,6 +620,17 @@ namespace System.IO
                 WaitForChangedResult.TimedOutResult;
         }
 
+        public WaitForChangedResult WaitForChanged(WatcherChangeTypes changeType, TimeSpan timeout) =>
+            WaitForChanged(changeType, ToTimeoutMilliseconds(timeout));
+
+        private static int ToTimeoutMilliseconds(TimeSpan timeout)
+        {
+            long totalMilliseconds = (long)timeout.TotalMilliseconds;
+            ArgumentOutOfRangeException.ThrowIfLessThan(totalMilliseconds, -1, nameof(timeout));
+            ArgumentOutOfRangeException.ThrowIfGreaterThan(totalMilliseconds, int.MaxValue, nameof(timeout));
+            return (int)totalMilliseconds;
+        }
+
         /// <devdoc>
         ///     Stops and starts this object.
         /// </devdoc>
@@ -711,10 +724,7 @@ namespace System.IO
                     get
                     {
                         string[] items = Items;
-                        if ((uint)index >= (uint)items.Length)
-                        {
-                            throw new ArgumentOutOfRangeException(nameof(index));
-                        }
+                        ArgumentOutOfRangeException.ThrowIfGreaterThanOrEqual((uint)index, (uint)items.Length, nameof(index));
                         return items[index];
                     }
                     set

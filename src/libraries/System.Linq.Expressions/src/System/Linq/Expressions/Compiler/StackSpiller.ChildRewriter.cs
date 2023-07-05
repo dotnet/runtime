@@ -350,10 +350,7 @@ namespace System.Linq.Expressions.Compiler
             /// </param>
             private void MarkRef(int index)
             {
-                if (_byRefs == null)
-                {
-                    _byRefs = new bool[_expressions.Length];
-                }
+                _byRefs ??= new bool[_expressions.Length];
 
                 _byRefs[index] = true;
             }

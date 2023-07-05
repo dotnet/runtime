@@ -2,6 +2,7 @@
 // The .NET Foundation licenses this file to you under the MIT license.
 //
 
+using Xunit;
 namespace Test
 {
     using System;
@@ -23,9 +24,10 @@ namespace Test
                     ulong[] param4, double[] param5, double param6) { return new AA[7]; }
     }
 
-    class App
+    public class App
     {
-        static int Main()
+        [Fact]
+        public static int TestEntryPoint()
         {
             try
             {

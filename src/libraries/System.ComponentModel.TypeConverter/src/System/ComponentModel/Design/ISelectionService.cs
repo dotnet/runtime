@@ -13,7 +13,7 @@ namespace System.ComponentModel.Design
         /// <summary>
         /// Gets the object that is currently the primary selection.
         /// </summary>
-        object PrimarySelection { get; }
+        object? PrimarySelection { get; }
 
         /// <summary>
         /// Gets the count of selected objects.

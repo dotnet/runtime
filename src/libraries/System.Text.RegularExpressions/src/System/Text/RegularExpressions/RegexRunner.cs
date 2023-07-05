@@ -1,97 +1,123 @@
 // Licensed to the .NET Foundation under one or more agreements.
 // The .NET Foundation licenses this file to you under the MIT license.
 
-// This RegexRunner class is a base class for compiled regex code.
-
-// Implementation notes:
-
-// It provides the driver code that call's the subclass's Go()
-// method for either scanning or direct execution.
-//
-// It also maintains memory allocation for the backtracking stack,
-// the grouping stack and the longjump crawlstack, and provides
-// methods to push new subpattern match results into (or remove
-// backtracked results from) the Match instance.
-
-using System.Diagnostics;
-using System.Diagnostics.CodeAnalysis;
+using System.ComponentModel;
+using System.Runtime.CompilerServices;
 
 namespace System.Text.RegularExpressions
 {
+    /// <summary>
+    /// Base class for source-generated regex extensibility
+    /// (and the old CompileToAssembly extensibility).
+    /// It's not intended to be used by anything else.
+    /// </summary>
+    /// <remarks>
+    /// Provides the driver code that calls the subclass's Scan
+    /// method for either scanning or direct execution.
+    /// Also maintains memory allocation for the backtracking stack,
+    /// the grouping stack and the longjump crawlstack, and provides
+    /// methods to push new subpattern match results into (or remove
+    /// backtracked results from) the Match instance.
+    /// </remarks>
+    [EditorBrowsable(EditorBrowsableState.Never)]
     public abstract class RegexRunner
     {
-        protected internal int runtextbeg;         // Beginning of text to search. We now always use a sliced span of the input
-                                                   // from runtextbeg to runtextend, which means that runtextbeg is now always 0 except
-                                                   // for CompiledToAssembly scenario which works over the original input.
-        protected internal int runtextend;         // End of text to search. Because we now pass in a sliced span of the input into Scan,
-                                                   // the runtextend will always match the length of that passed in span except for CompileToAssemby
-                                                   // scenario, which still works over the original input.
-        protected internal int runtextstart;       // starting point for search
+        /// <summary>Index of the first character to search</summary>
+        /// <remarks>
+        /// We now always use a sliced span of the input
+        /// from runtextbeg to runtextend, which means that runtextbeg is now always 0 except
+        /// for CompiledToAssembly scenario which works over the original input.
+        /// </remarks>
+        protected internal int runtextbeg;
 
-        protected internal string? runtext;        // text to search
-        protected internal int runtextpos;         // current position in text
+        /// <summary>Index just past the last character to search</summary>
+        /// <remarks>
+        /// Because we now pass in a sliced span of the input into Scan,
+        /// the runtextend will always match the length of that passed in span except for CompileToAssembly
+        /// scenario, which still works over the original input.
+        /// </remarks>
+        protected internal int runtextend;
 
-        protected internal int[]? runtrack;        // The backtracking stack.  Opcodes use this to store data regarding
-        protected internal int runtrackpos;        // what they have matched and where to backtrack to.  Each "frame" on
-                                                   // the stack takes the form of [CodePosition Data1 Data2...], where
-                                                   // CodePosition is the position of the current opcode and
-                                                   // the data values are all optional.  The CodePosition can be negative, and
-                                                   // these values (also called "back2") are used by the BranchMark family of opcodes
-                                                   // to indicate whether they are backtracking after a successful or failed
-                                                   // match.
-                                                   // When we backtrack, we pop the CodePosition off the stack, set the current
-                                                   // instruction pointer to that code position, and mark the opcode
-                                                   // with a backtracking flag ("Back").  Each opcode then knows how to
-                                                   // handle its own data.
+        /// <summary>Index of the starting character for the search.</summary>
+        /// <remarks>
+        /// The differs from <see cref="runtextbeg"/> in that lookbehinds will be able to see text before
+        /// <see cref="runtextstart"/> but not before <see cref="runtextbeg"/>.
+        /// </remarks>
+        protected internal int runtextstart;
 
-        protected internal int[]? runstack;        // This stack is used to track text positions across different opcodes.
-        protected internal int runstackpos;        // For example, in /(a*b)+/, the parentheses result in a SetMark/CaptureMark
-                                                   // pair. SetMark records the text position before we match a*b.  Then
-                                                   // CaptureMark uses that position to figure out where the capture starts.
-                                                   // Opcodes which push onto this stack are always paired with other opcodes
-                                                   // which will pop the value from it later.  A successful match should mean
-                                                   // that this stack is empty.
+        /// <summary>Text to search. May be null if the input was supplied as a span.</summary>
+        protected internal string? runtext;
 
-        protected internal int[]? runcrawl;        // The crawl stack is used to keep track of captures.  Every time a group
-        protected internal int runcrawlpos;        // has a capture, we push its group number onto the runcrawl stack.  In
-                                                   // the case of a balanced match, we push BOTH groups onto the stack.
+        /// <summary>Current position in text</summary>
+        protected internal int runtextpos;
 
-        protected internal int runtrackcount;      // count of states that may do backtracking
+        /// <summary>Backtracking stack</summary>
+        /// <remarks>
+        /// Opcodes use this to store data regarding
+        /// what they have matched and where to backtrack to.  Each "frame" on
+        /// the stack takes the form of [CodePosition Data1 Data2...], where
+        /// CodePosition is the position of the current opcode and
+        /// the data values are all optional.  The CodePosition can be negative, and
+        /// these values (also called "back2") are used by the BranchMark family of opcodes
+        /// to indicate whether they are backtracking after a successful or failed
+        /// match.
+        /// When we backtrack, we pop the CodePosition off the stack, set the current
+        /// instruction pointer to that code position, and mark the opcode
+        /// with a backtracking flag ("Back").  Each opcode then knows how to
+        /// handle its own data.
+        /// </remarks>
+        protected internal int[]? runtrack;
+        /// <summary>Backtracking stack position</summary>
+        protected internal int runtrackpos;
 
-        protected internal Match? runmatch;        // result object
-        protected internal Regex? runregex;        // regex object
+        /// <summary>Utility stack</summary>
+        /// <remarks>
+        /// This stack is used to track text positions across different opcodes.
+        /// For example, in /(a*b)+/, the parentheses result in a SetMark/CaptureMark
+        /// pair. SetMark records the text position before we match a*b.  Then
+        /// CaptureMark uses that position to figure out where the capture starts.
+        /// Opcodes which push onto this stack are always paired with other opcodes
+        /// which will pop the value from it later.  A successful match should mean
+        /// that this stack is empty.
+        /// </remarks>
+        protected internal int[]? runstack;
+        /// <summary>Utility stack position</summary>
+        protected internal int runstackpos;
 
-        // TODO: Expose something as protected internal: https://github.com/dotnet/runtime/issues/59629
-        private protected bool quick;              // false if match details matter, true if only the fact that match occurred matters
+        /// <summary>Crawl stack</summary>
+        /// <remarks>
+        /// Every time a group has a capture, we push its group number onto the runcrawl stack.
+        /// In the case of a balanced match, we push BOTH groups onto the stack.
+        /// </remarks>
+        protected internal int[]? runcrawl;
+        /// <summary>Crawl stack position</summary>
+        protected internal int runcrawlpos;
 
-        private int _timeout;              // timeout in milliseconds (needed for actual)
-        private bool _ignoreTimeout;
-        private int _timeoutOccursAt;
+        /// <summary>Count of states that may do backtracking</summary>
+        protected internal int runtrackcount;
 
-        // We have determined this value in a series of experiments where x86 retail
-        // builds (ono-lab-optimized) were run on different pattern/input pairs. Larger values
-        // of TimeoutCheckFrequency did not tend to increase performance; smaller values
-        // of TimeoutCheckFrequency tended to slow down the execution.
-        private const int TimeoutCheckFrequency = 1000;
-        private int _timeoutChecksToSkip;
+        /// <summary>Result object</summary>
+        protected internal Match? runmatch;
+        /// <summary>Regex object</summary>
+        protected internal Regex? runregex;
+
+        /// <summary>Mode in which the runner is operating</summary>
+        private protected RegexRunnerMode _mode;
+
+        /// <summary>Timeout in milliseconds</summary>
+        private int _timeout;
+        private bool _checkTimeout;
+        private long _timeoutOccursAt;
 
         protected RegexRunner() { }
 
-        /// <summary>
-        /// Scans the string to find the first match. Uses the Match object
-        /// both to feed text in and as a place to store matches that come out.
-        ///
-        /// All the action is in the abstract Go() method defined by subclasses. Our
-        /// responsibility is to load up the class members (as done here) before
-        /// calling Go.
-        ///
-        /// The optimizer can compute a set of candidate starting characters,
-        /// and we could use a separate method Skip() that will quickly scan past
-        /// any characters that we know can't match.
-        /// </summary>
-        protected Match? Scan(Regex regex, string text, int textbeg, int textend, int textstart, int prevlen, bool quick) =>
-            Scan(regex, text, textbeg, textend, textstart, prevlen, quick, regex.MatchTimeout);
-
+        /// <summary>Used by a <see cref="Regex"/> object to scan the input <paramref name="text"/> looking for the next match.</summary>
+        /// <remarks>This API supports the product infrastructure and is not intended to be used directly from your code.</remarks>
+        /// <param name="text">The text to scan for a pattern match.</param>
+        /// <exception cref="NotSupportedException">
+        /// <see cref="ReadOnlySpan{T}"/>-based <see cref="Regex"/> methods are not supported from <see cref="Regex"/>-derived types
+        /// generated by Regex.CompileToAssembly.
+        /// </exception>
         protected internal virtual void Scan(ReadOnlySpan<char> text)
         {
             // This base implementation is overridden by all of the built-in engines and by all source-generated
@@ -133,18 +159,25 @@ namespace System.Text.RegularExpressions
             InternalScan(runregex!, beginning, beginning + text.Length);
         }
 
+        [Obsolete(Obsoletions.RegexExtensibilityImplMessage, DiagnosticId = Obsoletions.RegexExtensibilityDiagId, UrlFormat = Obsoletions.SharedUrlFormat)]
+        protected Match? Scan(Regex regex, string text, int textbeg, int textend, int textstart, int prevlen, bool quick) =>
+            Scan(regex, text, textbeg, textend, textstart, prevlen, quick, regex.MatchTimeout);
+
         /// <summary>
         /// This method's body is only kept since it is a protected member that could be called by someone outside
         /// the assembly.
         /// </summary>
+        [Obsolete(Obsoletions.RegexExtensibilityImplMessage, DiagnosticId = Obsoletions.RegexExtensibilityDiagId, UrlFormat = Obsoletions.SharedUrlFormat)]
         protected internal Match? Scan(Regex regex, string text, int textbeg, int textend, int textstart, int prevlen, bool quick, TimeSpan timeout)
         {
             InitializeTimeout(timeout);
 
+            RegexRunnerMode mode = quick ? RegexRunnerMode.ExistenceRequired : RegexRunnerMode.FullMatchRequired;
+
             // We set runtext before calling InitializeForScan so that runmatch object is initialized with the text
             runtext = text;
 
-            InitializeForScan(regex, text, textstart, quick);
+            InitializeForScan(regex, text, textstart, mode);
 
             // InitializeForScan will default runtextstart and runtextend to 0 and length of string
             // since it is configured to work over a sliced portion of text so we adjust those values.
@@ -184,7 +217,7 @@ namespace System.Text.RegularExpressions
                 }
 
                 runmatch = null;
-                match.Tidy(runtextpos, 0);
+                match.Tidy(runtextpos, 0, mode);
             }
             else
             {
@@ -211,17 +244,11 @@ namespace System.Text.RegularExpressions
             while (true)
             {
                 // Find the next potential location for a match in the input.
-#if DEBUG
-                Debug.WriteLineIf(Regex.EnableDebugTracing, $"Calling FindFirstChar at {nameof(runtextbeg)}={runtextbeg}, {nameof(runtextpos)}={runtextpos}, {nameof(runtextend)}={runtextend}");
-#endif
                 if (FindFirstChar())
                 {
                     CheckTimeout();
 
                     // See if there's a match at this position.
-#if DEBUG
-                    Debug.WriteLineIf(Regex.EnableDebugTracing, $"Calling Go at {nameof(runtextpos)}={runtextpos}");
-#endif
                     Go();
 
                     if (runmatch!.FoundMatch)
@@ -246,27 +273,28 @@ namespace System.Text.RegularExpressions
             }
         }
 
-        internal void InitializeForScan(Regex regex, ReadOnlySpan<char> text, int textstart, bool quick)
+        internal void InitializeForScan(Regex regex, ReadOnlySpan<char> text, int textstart, RegexRunnerMode mode)
         {
             // Store remaining arguments into fields now that we're going to start the scan.
             // These are referenced by the derived runner.
-            this.quick = quick;
+            _mode = mode;
             runregex = regex;
             runtextstart = textstart;
             runtextbeg = 0;
             runtextend = text.Length;
             runtextpos = textstart;
 
-            if (runmatch is null)
+            Match? m = runmatch;
+            if (m is null)
             {
                 // Use a hashtabled Match object if the capture numbers are sparse
                 runmatch = runregex!.caps is null ?
-                    new Match(runregex, runregex.capsize, runtext, runtextbeg, runtextend - runtextbeg, runtextstart) :
-                    new MatchSparse(runregex, runregex.caps, runregex.capsize, runtext, runtextbeg, runtextend - runtextbeg, runtextstart);
+                    new Match(runregex, runregex.capsize, runtext, text.Length) :
+                    new MatchSparse(runregex, runregex.caps, runregex.capsize, runtext, text.Length);
             }
             else
             {
-                runmatch.Reset(runregex!, runtext, runtextbeg, runtextend, runtextstart);
+                m.Reset(runtext, text.Length);
             }
 
             // Note we test runcrawl, because it is the last one to be allocated
@@ -311,54 +339,29 @@ namespace System.Text.RegularExpressions
         internal void InitializeTimeout(TimeSpan timeout)
         {
             // Handle timeout argument
-            _ignoreTimeout = true;
+            _checkTimeout = false;
             if (Regex.InfiniteMatchTimeout != timeout)
             {
                 ConfigureTimeout(timeout);
 
                 void ConfigureTimeout(TimeSpan timeout)
                 {
-                    // We are using Environment.TickCount and not Stopwatch for performance reasons.
-                    // Environment.TickCount is an int that cycles. We intentionally let timeoutOccursAt
-                    // overflow it will still stay ahead of Environment.TickCount for comparisons made
-                    // in DoCheckTimeout().
-                    _ignoreTimeout = false;
+                    _checkTimeout = true;
                     _timeout = (int)(timeout.TotalMilliseconds + 0.5); // Round;
-                    _timeoutOccursAt = Environment.TickCount + _timeout;
-                    _timeoutChecksToSkip = TimeoutCheckFrequency;
+                    _timeoutOccursAt = Environment.TickCount64 + _timeout;
                 }
             }
         }
 
+        [MethodImpl(MethodImplOptions.AggressiveInlining)]
         protected internal void CheckTimeout()
         {
-            if (_ignoreTimeout)
-                return;
+            if (_checkTimeout && Environment.TickCount64 >= _timeoutOccursAt)
+            {
+                ThrowRegexTimeout();
+            }
 
-            DoCheckTimeout();
-        }
-
-        private void DoCheckTimeout()
-        {
-            if (--_timeoutChecksToSkip != 0)
-                return;
-
-            _timeoutChecksToSkip = TimeoutCheckFrequency;
-
-            // Note that both, Environment.TickCount and timeoutOccursAt are ints and can overflow and become negative.
-            // See the comment in StartTimeoutWatch().
-
-            int currentMillis = Environment.TickCount;
-
-            if (currentMillis < _timeoutOccursAt)
-                return;
-
-            if (0 > _timeoutOccursAt && 0 < currentMillis)
-                return;
-
-            string input = runtext ?? string.Empty;
-
-            throw new RegexMatchTimeoutException(input, runregex!.pattern!, TimeSpan.FromMilliseconds(_timeout));
+            void ThrowRegexTimeout() => throw new RegexMatchTimeoutException(runtext ?? string.Empty, runregex!.pattern!, TimeSpan.FromMilliseconds(_timeout));
         }
 
         /// <summary>
@@ -408,7 +411,7 @@ namespace System.Text.RegularExpressions
                    (index < endpos && RegexCharClass.IsBoundaryWordChar(runtext![index]));
         }
 
-        internal bool IsBoundary(ReadOnlySpan<char> inputSpan, int index)
+        internal static bool IsBoundary(ReadOnlySpan<char> inputSpan, int index)
         {
             int indexM1 = index - 1;
             return ((uint)indexM1 < (uint)inputSpan.Length && RegexCharClass.IsBoundaryWordChar(inputSpan[indexM1])) !=
@@ -424,20 +427,21 @@ namespace System.Text.RegularExpressions
                    (index < endpos && RegexCharClass.IsECMAWordChar(runtext![index]));
         }
 
-        internal bool IsECMABoundary(ReadOnlySpan<char> inputSpan, int index)
+        internal static bool IsECMABoundary(ReadOnlySpan<char> inputSpan, int index)
         {
             int indexM1 = index - 1;
             return ((uint)indexM1 < (uint)inputSpan.Length && RegexCharClass.IsECMAWordChar(inputSpan[indexM1])) !=
                    ((uint)index < (uint)inputSpan.Length && RegexCharClass.IsECMAWordChar(inputSpan[index]));
         }
 
+        [Obsolete(Obsoletions.RegexExtensibilityImplMessage, DiagnosticId = Obsoletions.RegexExtensibilityDiagId, UrlFormat = Obsoletions.SharedUrlFormat)]
         protected static bool CharInSet(char ch, string set, string category)
         {
             string charClass = RegexCharClass.ConvertOldStringsToClass(set, category);
             return RegexCharClass.CharInClass(ch, charClass);
         }
 
-        protected static bool CharInClass(char ch, string charClass)
+        public static bool CharInClass(char ch, string charClass)
         {
             return RegexCharClass.CharInClass(ch, charClass);
         }
@@ -605,90 +609,5 @@ namespace System.Text.RegularExpressions
         {
             return runmatch!.MatchLength(cap);
         }
-
-#if DEBUG
-        /// <summary>
-        /// Dump the current state
-        /// </summary>
-        [ExcludeFromCodeCoverage(Justification = "Debug only")]
-        internal virtual void DebugTraceCurrentState()
-        {
-            Debug.WriteLineIf(Regex.EnableDebugTracing, $"Text:  {DescribeTextPosition()}");
-            Debug.WriteLineIf(Regex.EnableDebugTracing, $"Track: {DescribeStack(runtrack!, runtrackpos)}");
-            Debug.WriteLineIf(Regex.EnableDebugTracing, $"Stack: {DescribeStack(runstack!, runstackpos)}");
-
-            string DescribeTextPosition()
-            {
-                var sb = new StringBuilder();
-
-                sb.Append(runtextpos);
-
-                if (sb.Length < 8)
-                {
-                    sb.Append(' ', 8 - sb.Length);
-                }
-
-                if (runtextpos > runtextbeg)
-                {
-                    if (runtext != null)
-                    {
-                        sb.Append(RegexCharClass.DescribeChar(runtext[runtextpos - 1]));
-                    }
-                }
-                else
-                {
-                    sb.Append('^');
-                }
-
-                sb.Append('>');
-
-                for (int i = runtextpos; i < runtextend; i++)
-                {
-                    if (runtext != null)
-                    {
-                        sb.Append(RegexCharClass.DescribeChar(runtext[i]));
-                    }
-                }
-                if (sb.Length >= 64)
-                {
-                    sb.Length = 61;
-                    sb.Append("...");
-                }
-                else
-                {
-                    sb.Append('$');
-                }
-
-                return sb.ToString();
-            }
-
-            static string DescribeStack(int[] stack, int index)
-            {
-                var sb = new StringBuilder();
-
-                sb.Append(stack.Length - index).Append('/').Append(stack.Length);
-
-                if (sb.Length < 8)
-                {
-                    sb.Append(' ', 8 - sb.Length);
-                }
-
-                sb.Append('(');
-
-                for (int i = index; i < stack.Length; i++)
-                {
-                    if (i > index)
-                    {
-                        sb.Append(' ');
-                    }
-                    sb.Append(stack[i]);
-                }
-
-                sb.Append(')');
-
-                return sb.ToString();
-            }
-        }
-#endif
     }
 }

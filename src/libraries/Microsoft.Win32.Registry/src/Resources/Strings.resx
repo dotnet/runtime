@@ -1,4 +1,5 @@
-﻿<root>
+﻿<?xml version="1.0" encoding="utf-8"?>
+<root>
   <xsd:schema id="root" xmlns="" xmlns:xsd="http://www.w3.org/2001/XMLSchema" xmlns:msdata="urn:schemas-microsoft-com:xml-msdata">
     <xsd:import namespace="http://www.w3.org/XML/1998/namespace" />
     <xsd:element name="root" msdata:IsDataSet="true">
@@ -84,8 +85,8 @@
   <data name="Arg_RegBadKeyKind" xml:space="preserve">
     <value>The specified RegistryValueKind is an invalid value.</value>
   </data>
-  <data name="Arg_RegGetOverflowBug" xml:space="preserve">
-    <value>RegistryKey.GetValue does not allow a String that has a length greater than Int32.MaxValue.</value>
+  <data name="Arg_RegValueTooLarge" xml:space="preserve">
+    <value>RegistryKey.GetValue does not support values with more than Int32.MaxValue bytes.</value>
   </data>
   <data name="Arg_RegSetMismatchedKind" xml:space="preserve">
     <value>The type of the value object did not match the specified RegistryValueKind or the object could not be properly converted.</value>

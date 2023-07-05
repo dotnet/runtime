@@ -2,17 +2,18 @@
 // The .NET Foundation licenses this file to you under the MIT license.
 //
 
+using Xunit;
 namespace Test
 {
     using System;
 
-    class AA
+    public class AA
     {
         public int[] m_anField1 = (new int[7]);
         public bool[] m_abField2 = (new bool[7]);
         public float[] m_afField3 = (new float[7]);
 
-        public static void Method1()
+        internal static void Method1()
         {
             object local1 = 0.0;
             AA[] local2 = new AA[7];
@@ -26,7 +27,8 @@ namespace Test
             }
         }
 
-        static int Main()
+        [Fact]
+        public static int TestEntryPoint()
         {
             try
             {

@@ -10,7 +10,7 @@ namespace Internal.Text
     public class Utf8StringBuilder
     {
         private byte[] _buffer = Array.Empty<byte>();
-        private int _length = 0;
+        private int _length;
 
         public Utf8StringBuilder()
         {
@@ -103,7 +103,7 @@ namespace Internal.Text
             _buffer = newBuffer;
         }
 
-        // Find the boundary of the last character prior to a position 
+        // Find the boundary of the last character prior to a position
         // If pos points to the last byte of a char, then return pos; Otherwise,
         // return the position of the last byte of the preceding char.
         public int LastCharBoundary(int pos)

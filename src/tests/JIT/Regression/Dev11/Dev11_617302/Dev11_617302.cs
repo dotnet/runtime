@@ -4,17 +4,19 @@
 
 using System;
 using System.Runtime.CompilerServices;
+using Xunit;
 
 namespace ConsoleApplication1
 {
-    class Program
+    public class Program
     {
         /// <summary>
         /// AV when switch optimized away in x64. Should be somewhat rare but we optimize because all the switch cases result in the same assignment
         /// </summary>
         /// <param name="args"></param>
         /// <returns></returns>
-        static int Main(string[] args)
+        [Fact]
+        public static int TestEntryPoint()
         {
             try
             {

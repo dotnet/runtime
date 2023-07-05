@@ -8,7 +8,7 @@
 {
   .class public Recurse1
   {
-    .method public static int32  Main(class System.String[] A_0)
+    .method public static int32  Main()
     {
       .custom instance void [xunit.core]Xunit.FactAttribute::.ctor() = (
           01 00 00 00

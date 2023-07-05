@@ -14,40 +14,7 @@
 #include <mono/metadata/abi-details.h>
 
 void
-mono_dump_metadata_offsets (void);
-
-void
 mono_metadata_cross_helpers_run (void);
-
-
-static void
-mono_dump_jit_offsets (void)
-{
-#ifdef USED_CROSS_COMPILER_OFFSETS
-	g_print ("#error not using native offsets\n");
-#else
-	mono_dump_metadata_offsets ();
-
-	g_print ("#ifndef DISABLE_JIT_OFFSETS\n");
-	g_print ("#define USED_CROSS_COMPILER_OFFSETS\n");
-#define DISABLE_METADATA_OFFSETS
-#define DECL_OFFSET2(struct,field,offset) this_should_not_happen
-#define DECL_ALIGN2(type,size) this_should_not_happen
-
-#define DECL_OFFSET(struct,field) g_print ("DECL_OFFSET2(%s,%s,%d)\n", #struct, #field, (int)MONO_STRUCT_OFFSET (struct, field));
-#define DECL_ALIGN(type)
-#define DECL_SIZE2(type,size) this_should_not_happen
-#define DECL_SIZE(type)
-#include <mono/metadata/object-offsets.h>
-
-	g_print ("#endif //disable jit check\n");
-	g_print ("#endif //cross compiler checks\n");
-	g_print ("#endif //gc check\n");
-	g_print ("#endif //os check\n");
-	g_print ("#endif //arch check\n");
-	g_print ("#endif //USED_CROSS_COMPILER_OFFSETS check\n");
-#endif
-}
 
 /*
  * mono_cross_helpers_run:
@@ -60,11 +27,6 @@ mono_cross_helpers_run (void)
 {
 #if defined (HAS_CROSS_COMPILER_OFFSETS) && !defined (MONO_CROSS_COMPILE)
 	gboolean is_broken = FALSE;
-#endif
-
-#ifndef USED_CROSS_COMPILER_OFFSETS
-	if (g_hasenv ("DUMP_CROSS_OFFSETS"))
-		mono_dump_jit_offsets ();
 #endif
 
 #if defined (HAS_CROSS_COMPILER_OFFSETS) && !defined (MONO_CROSS_COMPILE)

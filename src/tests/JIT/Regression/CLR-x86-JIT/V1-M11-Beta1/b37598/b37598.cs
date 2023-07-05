@@ -2,11 +2,12 @@
 // The .NET Foundation licenses this file to you under the MIT license.
 //
 
+using Xunit;
 namespace Test
 {
     using System;
 
-    class AA
+    public class AA
     {
         static uint Method1(__arglist) { return 0; }
 
@@ -15,7 +16,8 @@ namespace Test
             Method1(__arglist(Method1(__arglist())));
         }
 
-        static int Main()
+        [Fact]
+        public static int TestEntryPoint()
         {
             uint u = 0;
             bool[] ab = null;

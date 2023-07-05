@@ -83,16 +83,16 @@ namespace System.Reflection.PortableExecutable
             {
                 decompressed = new NativeHeapMemoryBlock(decompressedSize);
             }
-            catch
+            catch (Exception e)
             {
-                throw new BadImageFormatException(SR.DataTooBig);
+                throw new BadImageFormatException(SR.DataTooBig, e);
             }
 
             bool success = false;
             try
             {
                 var compressed = new ReadOnlyUnmanagedMemoryStream(headerReader.CurrentPointer, headerReader.RemainingBytes);
-                var deflate = new DeflateStream(compressed, CompressionMode.Decompress, leaveOpen: true);
+                using var deflate = new DeflateStream(compressed, CompressionMode.Decompress, leaveOpen: true);
 
                 if (decompressedSize > 0)
                 {
@@ -110,7 +110,7 @@ namespace System.Reflection.PortableExecutable
                     }
                     catch (Exception e)
                     {
-                        throw new BadImageFormatException(e.Message, e.InnerException);
+                        throw new BadImageFormatException(e.Message, e);
                     }
 
                     if (actualLength != decompressed.Size)
@@ -158,7 +158,7 @@ namespace System.Reflection.PortableExecutable
             }
             catch (Exception e) when (e is BadImageFormatException || e is IOException)
             {
-                errorToReport = errorToReport ?? e;
+                errorToReport ??= e;
                 openedEmbeddedPdb = false;
             }
             finally

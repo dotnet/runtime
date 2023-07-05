@@ -2,13 +2,13 @@
 // The .NET Foundation licenses this file to you under the MIT license.
 
 using System;
+using System.Collections;
+using System.Collections.Generic;
 using System.IO;
 using System.Text;
 using System.Xml;
-using OLEDB.Test.ModuleCore;
-using System.Collections;
-using System.Collections.Generic;
 using System.Xml.XmlDiff;
+using OLEDB.Test.ModuleCore;
 
 namespace XmlCoreTest.Common
 {

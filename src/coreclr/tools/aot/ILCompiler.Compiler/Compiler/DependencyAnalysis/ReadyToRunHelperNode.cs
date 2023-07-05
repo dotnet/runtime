@@ -46,9 +46,9 @@ namespace ILCompiler.DependencyAnalysis
     public partial class ReadyToRunHelperNode : AssemblyStubNode, INodeWithDebugInfo
     {
         private readonly ReadyToRunHelperId _id;
-        private readonly Object _target;
+        private readonly object _target;
 
-        public ReadyToRunHelperNode(ReadyToRunHelperId id, Object target)
+        public ReadyToRunHelperNode(ReadyToRunHelperId id, object target)
         {
             _id = id;
             _target = target;
@@ -86,7 +86,7 @@ namespace ILCompiler.DependencyAnalysis
         protected override string GetName(NodeFactory factory) => this.GetMangledName(factory.NameMangler);
 
         public ReadyToRunHelperId Id => _id;
-        public Object Target =>  _target;
+        public object Target =>  _target;
 
         public override void AppendMangledName(NameMangler nameMangler, Utf8StringBuilder sb)
         {
@@ -142,23 +142,27 @@ namespace ILCompiler.DependencyAnalysis
             }
             else if (_id == ReadyToRunHelperId.DelegateCtor)
             {
+                DependencyList dependencyList = null;
+
                 var info = (DelegateCreationInfo)_target;
                 if (info.NeedsVirtualMethodUseTracking)
                 {
                     MethodDesc targetMethod = info.TargetMethod;
 
-                    DependencyList dependencyList = new DependencyList();
 #if !SUPPORT_JIT
                     factory.MetadataManager.GetDependenciesDueToVirtualMethodReflectability(ref dependencyList, factory, targetMethod);
 
                     if (!factory.VTable(info.TargetMethod.OwningType).HasFixedSlots)
                     {
+                        dependencyList ??= new DependencyList();
                         dependencyList.Add(factory.VirtualMethodUse(info.TargetMethod), "ReadyToRun Delegate to virtual method");
                     }
 #endif
-
-                    return dependencyList;
                 }
+
+                factory.MetadataManager.GetDependenciesDueToDelegateCreation(ref dependencyList, factory, info.PossiblyUnresolvedTargetMethod);
+
+                return dependencyList;
             }
 
             return null;
@@ -183,8 +187,8 @@ namespace ILCompiler.DependencyAnalysis
                 {
                     return new NativeSequencePoint[]
                     {
-                        new NativeSequencePoint(0, String.Empty, WellKnownLineNumber.DebuggerStepThrough),
-                        new NativeSequencePoint(debuggerStepInOffset, String.Empty, WellKnownLineNumber.DebuggerStepIn)
+                        new NativeSequencePoint(0, string.Empty, WellKnownLineNumber.DebuggerStepThrough),
+                        new NativeSequencePoint(debuggerStepInOffset, string.Empty, WellKnownLineNumber.DebuggerStepIn)
                     };
                 }
             }
@@ -220,7 +224,7 @@ namespace ILCompiler.DependencyAnalysis
                 default:
                     throw new NotImplementedException();
             }
-            
+
         }
 #endif
     }

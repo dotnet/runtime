@@ -1,16 +1,13 @@
 // Licensed to the .NET Foundation under one or more agreements.
 // The .NET Foundation licenses this file to you under the MIT license.
 
-using System;
-using System.Collections.Generic;
-
 using Internal.TypeSystem;
 
 using Debug = System.Diagnostics.Debug;
 
 namespace ILCompiler
 {
-    internal class CompilerMetadataFieldLayoutAlgorithm : MetadataFieldLayoutAlgorithm
+    internal sealed class CompilerMetadataFieldLayoutAlgorithm : MetadataFieldLayoutAlgorithm
     {
         // GC statics start with a pointer to the "MethodTable" that signals the size and GCDesc to the GC
         public static LayoutInt GetGCStaticFieldOffset(TypeSystemContext context) => context.Target.LayoutPointerSize;
@@ -37,7 +34,7 @@ namespace ILCompiler
                 layout.ThreadGcStatics.Size = LayoutInt.Zero;
             }
 
-            // CoreRT makes no distinction between Gc / non-Gc thread statics. All are placed into ThreadGcStatics since thread statics
+            // NativeAOT makes no distinction between Gc / non-Gc thread statics. All are placed into ThreadGcStatics since thread statics
             // are typically rare.
             Debug.Assert(layout.ThreadNonGcStatics.Size == LayoutInt.Zero);
         }

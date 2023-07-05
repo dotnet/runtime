@@ -23,9 +23,9 @@
 // MVID: {0573B9C2-3980-4A83-9B01-889CCC1D6FBC}
 .namespace Test
 {
-  .class private auto ansi App extends [mscorlib]System.Object
+  .class public auto ansi App extends [mscorlib]System.Object
   {
-    .method private hidebysig static int32 Main() il managed
+    .method public hidebysig static int32 Main() il managed
     {
 		.custom instance void [xunit.core]Xunit.FactAttribute::.ctor() = (
 		    01 00 00 00

@@ -4,7 +4,7 @@
 // sizeof64.il
 .assembly extern mscorlib { }
 .assembly extern System.Runtime { .publickeytoken = (B0 3F 5F 7F 11 D5 0A 3A ) }
-.assembly sizeof64_Target_32Bit_x86 { }
+.assembly ASSEMBLY_NAME { }
 .assembly extern xunit.core {}
 .assembly extern Microsoft.DotNet.XUnitExtensions { .publickeytoken = (31 BF 38 56 AD 36 4E 35 ) }
 .assembly extern TestLibrary {}
@@ -32,12 +32,12 @@
     .field public valuetype JitTest_sizeof64_Target_32Bit_x86_il.SimpleStruct[0...] ss_array
     .field public valuetype JitTest_sizeof64_Target_32Bit_x86_il.SimpleStruct ss2
   }
-  .class private sequential ansi sealed beforefieldinit Test
+  .class public sequential ansi sealed beforefieldinit Test
          extends [mscorlib]System.ValueType
   {
     .pack 1
     .size 1
-    .method private hidebysig static int32
+    .method public hidebysig static int32
             Main() cil managed
     {
       // [ConditionalFact(typeof(TestLibrary.PlatformDetection), nameof(TestLibrary.PlatformDetection.IsX86Process))]

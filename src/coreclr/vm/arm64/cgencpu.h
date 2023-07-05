@@ -277,7 +277,7 @@ inline NEON128 GetSimdMem(PCODE ip)
 void emitCOMStubCall (ComCallMethodDesc *pCOMMethodRX, ComCallMethodDesc *pCOMMethodRW, PCODE target);
 #endif // FEATURE_COMINTEROP
 
-inline BOOL ClrFlushInstructionCache(LPCVOID pCodeAddr, size_t sizeOfCode)
+inline BOOL ClrFlushInstructionCache(LPCVOID pCodeAddr, size_t sizeOfCode, bool hasCodeExecutedBefore = false)
 {
     return FlushInstructionCache(GetCurrentProcess(), pCodeAddr, sizeOfCode);
 }
@@ -315,24 +315,6 @@ inline PCODE decodeJump(PCODE pCode)
     TADDR pInstr = PCODEToPINSTR(pCode);
 
     return *dac_cast<PTR_PCODE>(pInstr + 2*sizeof(DWORD));
-}
-
-//------------------------------------------------------------------------
-inline BOOL isJump(PCODE pCode)
-{
-    LIMITED_METHOD_DAC_CONTRACT;
-
-    TADDR pInstr = PCODEToPINSTR(pCode);
-
-    return *dac_cast<PTR_DWORD>(pInstr) == 0x58000050;
-}
-
-//------------------------------------------------------------------------
-inline BOOL isBackToBackJump(PCODE pBuffer)
-{
-    WRAPPER_NO_CONTRACT;
-    SUPPORTS_DAC;
-    return isJump(pBuffer);
 }
 
 //------------------------------------------------------------------------

@@ -55,6 +55,8 @@ namespace System.Net
         public HttpListenerException() { }
         public HttpListenerException(int errorCode) { }
         public HttpListenerException(int errorCode, string message) { }
+        [System.ObsoleteAttribute("This API supports obsolete formatter-based serialization. It should not be called or extended by application code.", DiagnosticId = "SYSLIB0051", UrlFormat = "https://aka.ms/dotnet-warnings/{0}")]
+        [System.ComponentModel.EditorBrowsableAttribute(System.ComponentModel.EditorBrowsableState.Never)]
         protected HttpListenerException(System.Runtime.Serialization.SerializationInfo serializationInfo, System.Runtime.Serialization.StreamingContext streamingContext) { }
         public override int ErrorCode { get { throw null; } }
     }
@@ -132,7 +134,7 @@ namespace System.Net
         public void Close() { }
         public void Close(byte[] responseEntity, bool willBlock) { }
         public void CopyFrom(System.Net.HttpListenerResponse templateResponse) { }
-        public void Redirect(string url) { }
+        public void Redirect([System.Diagnostics.CodeAnalysis.StringSyntaxAttribute("Uri")] string url) { }
         public void SetCookie(System.Net.Cookie cookie) { }
         void System.IDisposable.Dispose() { }
     }

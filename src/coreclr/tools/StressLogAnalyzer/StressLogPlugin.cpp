@@ -4,6 +4,7 @@
 #include <stdio.h>
 #include <stddef.h>
 #include <stdlib.h>
+#include <stdint.h>
 #include <math.h>
 
 #ifndef INFINITY
@@ -32,13 +33,6 @@ class MapViewHolder
     void* whatever;
 };
 
-typedef unsigned char uint8_t;
-typedef unsigned int uint32_t;
-#ifdef HOST_WINDOWS
-typedef long long int64_t;
-#endif
-typedef size_t uint64_t;
-
 bool IsInCantAllocStressLogRegion()
 {
     return true;
@@ -51,8 +45,9 @@ size_t StressLog::writing_base_address;
 size_t StressLog::reading_base_address;
 
 bool s_showAllMessages = false;
+bool s_showDefaultMessages = true;
 BOOL g_bDacBroken;
-WCHAR g_mdName[1];
+char g_mdName[1];
 SYMBOLS* g_ExtSymbols;
 SOS* g_sos;
 
@@ -157,6 +152,7 @@ d(IS_DESIRED_NEW_ALLOCATION,    ThreadStressLog::gcDesiredNewAllocationMsg())   
 d(IS_MAKE_UNUSED_ARRAY,         ThreadStressLog::gcMakeUnusedArrayMsg())                                                    \
 d(IS_START_BGC_THREAD,          ThreadStressLog::gcStartBgcThread())                                                        \
 d(IS_RELOCATE_REFERENCE,        ThreadStressLog::gcRelocateReferenceMsg())                                                  \
+d(IS_LOGGING_OFF,               ThreadStressLog::gcLoggingIsOffMsg())                                                       \
 d(IS_UNINTERESTING,             "")
 
 enum InterestingStringId : unsigned char
@@ -176,11 +172,13 @@ const char* s_interestingStringTable[MAX_INTERESTING_STRINGS] =
 #undef d
 };
 
+bool s_interestingStringMatchMode[MAX_INTERESTING_STRINGS];
+
 bool s_interestingStringFilter[MAX_INTERESTING_STRINGS];
 
-static void AddInterestingString(const char* s)
+static void AddInterestingString(const char* s, bool matchMode)
 {
-    for (int i = 0; i < s_interestingStringCount; i++)
+    for (int i = 1; i < s_interestingStringCount; i++)
     {
         if (strcmp(s_interestingStringTable[i], s) == 0)
         {
@@ -190,6 +188,7 @@ static void AddInterestingString(const char* s)
     }
     int i = s_interestingStringCount++;
     s_interestingStringTable[i] = s;
+    s_interestingStringMatchMode[i] = matchMode;
     s_interestingStringFilter[IS_INTERESTING] = true;
 }
 
@@ -205,13 +204,25 @@ InterestingStringId FindStringId(StressLog::StressLogHeader* hdr, char* format)
         return id;
     for (int i = 1; s_interestingStringTable[i] != nullptr; i++)
     {
-        if (strcmp(format, s_interestingStringTable[i]) == 0)
+        if (i != IS_UNINTERESTING)
         {
-            id = (InterestingStringId)i;
-            if (id > IS_INTERESTING)
-                id = IS_INTERESTING;
-            mapImageToStringId[offset] = id;
-            return id;
+            bool match = false;
+            if (s_interestingStringMatchMode[i])
+            {
+                match = (strstr(format, s_interestingStringTable[i]) == format);
+            }
+            else
+            {
+                match = (strcmp(format, s_interestingStringTable[i]) == 0);
+            }
+            if (match)
+            {
+                id = (InterestingStringId)i;
+                if (id > IS_INTERESTING)
+                    id = IS_INTERESTING;
+                mapImageToStringId[offset] = id;
+                return id;
+            }
         }
     }
     mapImageToStringId[offset] = IS_UNINTERESTING;
@@ -392,6 +403,9 @@ bool FilterMessage(StressLog::StressLogHeader* hdr, ThreadStressLog* tsl, uint32
         break;
     }
 
+    case    IS_LOGGING_OFF:
+        return s_showDefaultMessages;
+
     case    IS_GCSTART:
     {
         int gcIndex = (int)(size_t)args[0];
@@ -399,7 +413,7 @@ bool FilterMessage(StressLog::StressLogHeader* hdr, ThreadStressLog* tsl, uint32
         {
             s_gcStartEnd[gcIndex].startTime = deltaTime;
         }
-        return true;
+        return s_showDefaultMessages;
     }
 
     case    IS_GCEND:
@@ -409,7 +423,7 @@ bool FilterMessage(StressLog::StressLogHeader* hdr, ThreadStressLog* tsl, uint32
         {
             s_gcStartEnd[gcIndex].endTime = deltaTime;
         }
-        return true;
+        return s_showDefaultMessages;
     }
 
     case    IS_MARK_START:
@@ -419,7 +433,7 @@ bool FilterMessage(StressLog::StressLogHeader* hdr, ThreadStressLog* tsl, uint32
     case    IS_COMPACT_START:
     case    IS_COMPACT_END:
         RememberThreadForHeap(tsl->threadId, (int64_t)args[0], GC_THREAD_FG);
-        return true;
+        return s_showDefaultMessages;
 
     case    IS_PLAN_PLUG:
     case    IS_PLAN_PINNED_PLUG:
@@ -526,9 +540,9 @@ int CmpMsg(const void* p1, const void* p2)
     const StressThreadAndMsg* msg1 = (const StressThreadAndMsg*)p1;
     const StressThreadAndMsg* msg2 = (const StressThreadAndMsg*)p2;
 
-    if (msg1->msg->timeStamp < msg2->msg->timeStamp)
+    if (msg1->msg->GetTimeStamp() < msg2->msg->GetTimeStamp())
         return 1;
-    if (msg1->msg->timeStamp > msg2->msg->timeStamp)
+    if (msg1->msg->GetTimeStamp() > msg2->msg->GetTimeStamp())
         return -11;
 
     if (msg1->threadId < msg2->threadId)
@@ -568,7 +582,7 @@ static volatile LONG64 s_msgCount = 0;
 static volatile LONG64 s_totalMsgCount = 0;
 static double s_timeFilterStart = 0;
 static double s_timeFilterEnd = 0;
-static WCHAR* s_outputFileName = nullptr;
+static const char* s_outputFileName = nullptr;
 
 static StressLog::StressLogHeader* s_hdr;
 
@@ -591,13 +605,15 @@ void Usage()
     printf("\n");
     printf(" -l:<level1>,<level2>,... : print messages at dprint level1,level2,...\n");
     printf("\n");
-    printf(" -g:<gc_index>: only print messages occuring during GC#gc_index\n");
+    printf(" -g:<gc_index>: only print messages occurring during GC#gc_index\n");
     printf(" -g:<gc_index1>-<gc_index_2>: as above, for a range of GC indices\n");
     printf("\n");
     printf(" -f: print the raw format strings along with the message\n");
     printf("     (useful to search for the format string in the source code)\n");
     printf(" -f:<format string>: search for a specific format string\n");
-    printf("    e.g. '-f:\"<%%Ix>:%%Ix\"'\n");
+    printf("    e.g. '-f:\"<%%zx>:%%zx\"'\n");
+    printf(" -p:<format string>: search for all format strings with a specific prefix\n");
+    printf("    e.g. '-p:\"commit-accounting\"'\n");
     printf("\n");
     printf(" -i:<hex facility code>: ignore messages from log facilities\n");
     printf("   e.g. '-i:7ffe' means ignore messages from anything but LF_GC\n");
@@ -617,6 +633,8 @@ void Usage()
     printf("     the gc thread associated with heap 3, and the background GC thread for heap 14\n");
     printf("\n");
     printf(" -a: print all messages from all threads\n");
+    printf("\n");
+    printf(" -d: suppress default messages\n");
     printf("\n");
 }
 
@@ -785,10 +803,7 @@ bool ParseOptions(int argc, char* argv[])
             case 'O':
                 if (arg[2] == ':')
                 {
-                    WCHAR* buffer = new WCHAR[1000];
-                    if (MultiByteToWideChar(CP_ACP, 0, &arg[3], -1, buffer, 1000) == 0)
-                        return false;
-                    s_outputFileName = buffer;
+                    s_outputFileName = &arg[3];
                 }
                 else
                 {
@@ -855,6 +870,10 @@ bool ParseOptions(int argc, char* argv[])
             case 'A':
                 s_showAllMessages = true;
                 break;
+            case 'd':
+            case 'D':
+                s_showDefaultMessages = false;
+                break;
             case 'f':
             case 'F':
                 if (arg[2] == '\0')
@@ -884,10 +903,37 @@ bool ParseOptions(int argc, char* argv[])
                         buf++;
                     }
                     InterpretEscapeSequences(buf);
-                    AddInterestingString(buf);
+                    AddInterestingString(buf, false);
                 }
                 break;
+            case 'p':
+            case 'P':
+                if (arg[2] == ':')
+                {
+                    if (s_interestingStringCount >= MAX_INTERESTING_STRINGS)
+                    {
+                        printf("too format string filters - max is %d\n", MAX_INTERESTING_STRINGS - IS_INTERESTING);
+                        return false;
+                    }
+                    arg = &arg[3];
+                    char* buf = arg;
+                    size_t actualSize = strlen(buf);
+                    if (actualSize <= 1)
+                    {
+                        printf("-f:<format string> expected\n");
+                        return false;
+                    }
 
+                    // remove double quotes around the string, if given
+                    if (actualSize >= 2 && buf[0] == '"' && buf[actualSize - 1] == '"')
+                    {
+                        buf[actualSize - 1] = '\0';
+                        buf++;
+                    }
+                    InterpretEscapeSequences(buf);
+                    AddInterestingString(buf, true);
+                }
+                break;
             case 'g':
             case 'G':
                 if (arg[2] == ':')
@@ -1042,14 +1088,14 @@ DWORD WINAPI ProcessStresslogWorker(LPVOID)
         {
             wrappedWriteThreadCount++;
         }
-        // printf("thread: %Ix\n", tsl->threadId);
+        // printf("thread: %zx\n", tsl->threadId);
         StressMsg* msg = StressLog::TranslateMemoryMappedPointer(tsl->curPtr);
         StressLogChunk* slc = StressLog::TranslateMemoryMappedPointer(tsl->curWriteChunk);
         int chunkCount = 0;
         StressMsg* prevMsg = nullptr;
         while (true)
         {
-            // printf("stress log chunk %Ix\n", (size_t)slc);
+            // printf("stress log chunk %zx\n", (size_t)slc);
             if (!slc->IsValid())
             {
                 printf("oops, invalid stress log chunk\n");
@@ -1095,8 +1141,8 @@ DWORD WINAPI ProcessStresslogWorker(LPVOID)
             while (msg < endMsg)
             {
                 totalMsgCount++;
-                char* format = (char*)(hdr->moduleImage + msg->formatOffset);
-                double deltaTime = ((double)(msg->timeStamp - hdr->startTimeStamp)) / hdr->tickFrequency;
+                char* format = (char*)(hdr->moduleImage + msg->GetFormatOffset());
+                double deltaTime = ((double)(msg->GetTimeStamp() - hdr->startTimeStamp)) / hdr->tickFrequency;
                 bool fIgnoreMessage = false;
                 if (fTimeFilter)
                 {
@@ -1110,10 +1156,10 @@ DWORD WINAPI ProcessStresslogWorker(LPVOID)
                         fIgnoreMessage = true;
                     }
                 }
-                int numberOfArgs = (msg->numberOfArgsX << 3) + msg->numberOfArgs;
+                int numberOfArgs = msg->GetNumberOfArgs();
                 if (!fIgnoreMessage)
                 {
-                    bool fIncludeMessage = s_showAllMessages || FilterMessage(hdr, tsl, msg->facility, format, deltaTime, numberOfArgs, msg->args);
+                    bool fIncludeMessage = s_showAllMessages || FilterMessage(hdr, tsl, msg->GetFacility(), format, deltaTime, numberOfArgs, msg->args);
                     if (!fIncludeMessage && s_valueFilterCount > 0)
                     {
                         for (int i = 0; i < numberOfArgs; i++)
@@ -1169,7 +1215,7 @@ static double FindLatestTime(StressLog::StressLogHeader* hdr)
     for (ThreadStressLog* tsl = StressLog::TranslateMemoryMappedPointer(hdr->logs.t); tsl != nullptr; tsl = StressLog::TranslateMemoryMappedPointer(tsl->next))
     {
         StressMsg* msg = StressLog::TranslateMemoryMappedPointer(tsl->curPtr);
-        double deltaTime = ((double)(msg->timeStamp - hdr->startTimeStamp)) / hdr->tickFrequency;
+        double deltaTime = ((double)(msg->GetTimeStamp() - hdr->startTimeStamp)) / hdr->tickFrequency;
         latestTime = max(latestTime, deltaTime);
     }
     return latestTime;
@@ -1178,7 +1224,7 @@ static double FindLatestTime(StressLog::StressLogHeader* hdr)
 static void PrintFriendlyNumber(LONGLONG n)
 {
     if (n < 1000)
-        printf("%lld", n);
+        printf("%d", (int32_t)n);
     else if (n < 1000 * 1000)
         printf("%5.3f thousand", n / 1000.0);
     else if (n < 1000 * 1000 * 1000)
@@ -1190,13 +1236,13 @@ static void PrintFriendlyNumber(LONGLONG n)
 static void PrintMessage(CorClrData& corClrData, FILE *outputFile, uint64_t threadId, StressMsg* msg)
 {
     void* argBuffer[StressMsg::maxArgCnt];
-    char* format = (char*)(s_hdr->moduleImage + msg->formatOffset);
-    int numberOfArgs = (msg->numberOfArgsX << 3) + msg->numberOfArgs;
+    char* format = (char*)(s_hdr->moduleImage + msg->GetFormatOffset());
+    int numberOfArgs = msg->GetNumberOfArgs();
     for (int i = 0; i < numberOfArgs; i++)
     {
         argBuffer[i] = msg->args[i];
     }
-    double deltaTime = ((double)(msg->timeStamp - s_hdr->startTimeStamp)) / s_hdr->tickFrequency;
+    double deltaTime = ((double)(msg->GetTimeStamp() - s_hdr->startTimeStamp)) / s_hdr->tickFrequency;
     if (!s_printHexTidForGcThreads)
     {
         GcThread gcThread;
@@ -1209,7 +1255,7 @@ static void PrintMessage(CorClrData& corClrData, FILE *outputFile, uint64_t thre
                 threadId |= 0x4000000000000000;
         }
     }
-    formatOutput(&corClrData, outputFile, format, threadId, deltaTime, msg->facility, argBuffer, s_fPrintFormatStrings);
+    formatOutput(&corClrData, outputFile, format, threadId, deltaTime, msg->GetFacility(), argBuffer, s_fPrintFormatStrings);
 }
 
 int ProcessStressLog(void* baseAddress, int argc, char* argv[])
@@ -1226,7 +1272,28 @@ int ProcessStressLog(void* baseAddress, int argc, char* argv[])
     s_outputFileName = nullptr;
     s_fPrintFormatStrings = false;
     s_showAllMessages = false;
+    s_showDefaultMessages = true;
+    s_maxHeapNumberSeen = -1;
+    for (int i = IS_INTERESTING; i < s_interestingStringCount; i++)
+    {
+        s_interestingStringTable[i] = nullptr;
+    }
+    s_interestingStringCount = IS_INTERESTING;
+    s_levelFilterCount = 0;
+    s_gcFilterStart = 0;
+    s_gcFilterEnd = 0;
+    s_valueFilterCount = 0;
+    s_threadFilterCount = 0;
+    s_hadGcThreadFilters = false;
+    s_printHexTidForGcThreads = false;
+    s_facilityIgnore = 0;
+    s_printEarliestMessages = false;
+    s_printEarliestMessageFromThreadCount = 0;
+    memset(s_gcThreadFilter, 0, sizeof(s_gcThreadFilter));
     memset(&mapImageToStringId, 0, sizeof(mapImageToStringId));
+    memset(s_interestingStringFilter, 0, sizeof(s_interestingStringFilter));
+    memset(s_interestingStringMatchMode, 0, sizeof(s_interestingStringMatchMode));
+    memset(s_printEarliestMessageFromGcThread, 0, sizeof(s_printEarliestMessageFromGcThread));
 
     if (!ParseOptions(argc, argv))
         return 1;
@@ -1317,7 +1384,7 @@ int ProcessStressLog(void* baseAddress, int argc, char* argv[])
         for (int msgIndex = 0; msgIndex < s_msgCount; msgIndex++)
         {
             StressMsg* msg = s_threadMsgBuf[msgIndex].msg;
-            double deltaTime = ((double)(msg->timeStamp - hdr->startTimeStamp)) / hdr->tickFrequency;
+            double deltaTime = ((double)(msg->GetTimeStamp() - hdr->startTimeStamp)) / hdr->tickFrequency;
             if (startTime <= deltaTime && deltaTime <= endTime)
             {
                 s_threadMsgBuf[remMsgCount] = s_threadMsgBuf[msgIndex];
@@ -1386,9 +1453,9 @@ int ProcessStressLog(void* baseAddress, int argc, char* argv[])
     FILE* outputFile = stdout;
     if (s_outputFileName != nullptr)
     {
-        if (_wfopen_s(&outputFile, s_outputFileName, W("w")) != 0)
+        if (fopen_s(&outputFile, s_outputFileName, "w") != 0)
         {
-            printf("could not create output file %S\n", s_outputFileName);
+            printf("could not create output file %s\n", s_outputFileName);
             outputFile = stdout;
         }
     }
@@ -1472,7 +1539,7 @@ int ProcessStressLog(void* baseAddress, int argc, char* argv[])
         (double)usedSize / (1024 * 1024 * 1024), (double)availSize/ (1024 * 1024 * 1024),
         s_threadStressLogCount, (int)s_wrappedWriteThreadCount);
     if (hdr->threadsWithNoLog != 0)
-        printf("%Id threads did not get a log!\n", hdr->threadsWithNoLog);
+        printf("%u threads did not get a log!\n", hdr->threadsWithNoLog);
     printf("Number of messages examined: "); PrintFriendlyNumber(s_totalMsgCount); printf(", printed: "); PrintFriendlyNumber(s_msgCount); printf("\n");
 
     delete[] s_threadMsgBuf;

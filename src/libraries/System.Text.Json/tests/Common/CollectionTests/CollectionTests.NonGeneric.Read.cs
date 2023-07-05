@@ -13,7 +13,7 @@ namespace System.Text.Json.Serialization.Tests
         [Fact]
         public async Task ReadGenericIEnumerableOfIEnumerable()
         {
-            IEnumerable<IEnumerable> result = await JsonSerializerWrapperForString.DeserializeWrapper<IEnumerable<IEnumerable>>(@"[[1,2],[3,4]]");
+            IEnumerable<IEnumerable> result = await Serializer.DeserializeWrapper<IEnumerable<IEnumerable>>(@"[[1,2],[3,4]]");
             int expected = 1;
 
             foreach (IEnumerable ie in result)
@@ -25,13 +25,13 @@ namespace System.Text.Json.Serialization.Tests
             }
 
             // No way to populate this collection.
-            await Assert.ThrowsAsync<NotSupportedException>(async () => await JsonSerializerWrapperForString.DeserializeWrapper<GenericIEnumerableWrapper<WrapperForIEnumerable>>(@"[[1,2],[3,4]]"));
+            await Assert.ThrowsAsync<NotSupportedException>(async () => await Serializer.DeserializeWrapper<GenericIEnumerableWrapper<WrapperForIEnumerable>>(@"[[1,2],[3,4]]"));
         }
 
         [Fact]
         public async Task ReadIEnumerableOfArray()
         {
-            IEnumerable result = await JsonSerializerWrapperForString.DeserializeWrapper<IEnumerable>(@"[[1,2],[3,4]]");
+            IEnumerable result = await Serializer.DeserializeWrapper<IEnumerable>(@"[[1,2],[3,4]]");
             int expected = 1;
 
             foreach (JsonElement arr in result)
@@ -46,7 +46,7 @@ namespace System.Text.Json.Serialization.Tests
         [Fact]
         public async Task ReadArrayOfIEnumerable()
         {
-            IEnumerable[] result = await JsonSerializerWrapperForString.DeserializeWrapper<IEnumerable[]>(@"[[1,2],[3,4]]");
+            IEnumerable[] result = await Serializer.DeserializeWrapper<IEnumerable[]>(@"[[1,2],[3,4]]");
             int expected = 1;
 
             foreach (IEnumerable arr in result)
@@ -61,7 +61,7 @@ namespace System.Text.Json.Serialization.Tests
         [Fact]
         public async Task ReadPrimitiveIEnumerable()
         {
-            IEnumerable result = await JsonSerializerWrapperForString.DeserializeWrapper<IEnumerable>(@"[1,2]");
+            IEnumerable result = await Serializer.DeserializeWrapper<IEnumerable>(@"[1,2]");
             int expected = 1;
 
             foreach (JsonElement i in result)
@@ -69,7 +69,7 @@ namespace System.Text.Json.Serialization.Tests
                 Assert.Equal(expected++, i.GetInt32());
             }
 
-            result = await JsonSerializerWrapperForString.DeserializeWrapper<IEnumerable>(@"[]");
+            result = await Serializer.DeserializeWrapper<IEnumerable>(@"[]");
 
             int count = 0;
             IEnumerator e = result.GetEnumerator();
@@ -83,7 +83,7 @@ namespace System.Text.Json.Serialization.Tests
         [Fact]
         public async Task ReadGenericIListOfIList()
         {
-            IList<IList> result = await JsonSerializerWrapperForString.DeserializeWrapper<IList<IList>>(@"[[1,2],[3,4]]");
+            IList<IList> result = await Serializer.DeserializeWrapper<IList<IList>>(@"[[1,2],[3,4]]");
             int expected = 1;
 
             foreach (IList list in result)
@@ -94,7 +94,7 @@ namespace System.Text.Json.Serialization.Tests
                 }
             }
 
-            GenericIListWrapper<WrapperForIList> result2 = await JsonSerializerWrapperForString.DeserializeWrapper<GenericIListWrapper<WrapperForIList>>(@"[[1,2],[3,4]]");
+            GenericIListWrapper<WrapperForIList> result2 = await Serializer.DeserializeWrapper<GenericIListWrapper<WrapperForIList>>(@"[[1,2],[3,4]]");
             expected = 1;
 
             foreach (WrapperForIList list in result2)
@@ -109,7 +109,7 @@ namespace System.Text.Json.Serialization.Tests
         [Fact]
         public async Task ReadIListOfArray()
         {
-            IList result = await JsonSerializerWrapperForString.DeserializeWrapper<IList>(@"[[1,2],[3,4]]");
+            IList result = await Serializer.DeserializeWrapper<IList>(@"[[1,2],[3,4]]");
             int expected = 1;
 
             foreach (JsonElement arr in result)
@@ -124,7 +124,7 @@ namespace System.Text.Json.Serialization.Tests
         [Fact]
         public async Task ReadArrayOfIList()
         {
-            IList[] result = await JsonSerializerWrapperForString.DeserializeWrapper<IList[]>(@"[[1,2],[3,4]]");
+            IList[] result = await Serializer.DeserializeWrapper<IList[]>(@"[[1,2],[3,4]]");
             int expected = 1;
 
             foreach (IList arr in result)
@@ -140,7 +140,7 @@ namespace System.Text.Json.Serialization.Tests
         public async Task ReadStructIList()
         {
             string json = @"[""a"",20]";
-            var wrapper = await JsonSerializerWrapperForString.DeserializeWrapper<StructWrapperForIList>(json);
+            var wrapper = await Serializer.DeserializeWrapper<StructWrapperForIList>(json);
             Assert.Equal(2, wrapper.Count);
             Assert.Equal("a", ((JsonElement)wrapper[0]).GetString());
             Assert.Equal(20, ((JsonElement)wrapper[1]).GetInt32());
@@ -150,7 +150,7 @@ namespace System.Text.Json.Serialization.Tests
         public async Task ReadNullableStructIList()
         {
             string json = @"[""a"",20]";
-            var wrapper = await JsonSerializerWrapperForString.DeserializeWrapper<StructWrapperForIList?>(json);
+            var wrapper = await Serializer.DeserializeWrapper<StructWrapperForIList?>(json);
             Assert.True(wrapper.HasValue);
             Assert.Equal(2, wrapper.Value.Count);
             Assert.Equal("a", ((JsonElement)wrapper.Value[0]).GetString());
@@ -160,7 +160,7 @@ namespace System.Text.Json.Serialization.Tests
         [Fact]
         public async Task ReadNullableStructIListWithNullJson()
         {
-            var wrapper = await JsonSerializerWrapperForString.DeserializeWrapper<StructWrapperForIList?>("null");
+            var wrapper = await Serializer.DeserializeWrapper<StructWrapperForIList?>("null");
             Assert.False(wrapper.HasValue);
         }
 
@@ -168,14 +168,14 @@ namespace System.Text.Json.Serialization.Tests
         public async Task ReadClassWithStructIListWrapper_NullJson_Throws()
         {
             string json = @"{ ""List"" : null }";
-            await Assert.ThrowsAsync<JsonException>(async () => await JsonSerializerWrapperForString.DeserializeWrapper<ClassWithStructIListWrapper>(json));
+            await Assert.ThrowsAsync<JsonException>(async () => await Serializer.DeserializeWrapper<ClassWithStructIListWrapper>(json));
         }
 
         [Fact]
         public async Task ReadStructIDictionary()
         {
             string json = @"{""Key"":""Value""}";
-            var wrapper = await JsonSerializerWrapperForString.DeserializeWrapper<StructWrapperForIDictionary>(json);
+            var wrapper = await Serializer.DeserializeWrapper<StructWrapperForIDictionary>(json);
             Assert.Equal("Value", wrapper["Key"].ToString());
         }
 
@@ -183,7 +183,7 @@ namespace System.Text.Json.Serialization.Tests
         public async Task ReadNullableStructIDictionary()
         {
             string json = @"{""Key"":""Value""}";
-            var wrapper = await JsonSerializerWrapperForString.DeserializeWrapper<StructWrapperForIDictionary?>(json);
+            var wrapper = await Serializer.DeserializeWrapper<StructWrapperForIDictionary?>(json);
             Assert.True(wrapper.HasValue);
             Assert.Equal("Value", wrapper.Value["Key"].ToString());
         }
@@ -191,7 +191,7 @@ namespace System.Text.Json.Serialization.Tests
         [Fact]
         public async Task ReadNullableStructIDictionaryWithNullJson()
         {
-            var wrapper = await JsonSerializerWrapperForString.DeserializeWrapper<StructWrapperForIDictionary?>("null");
+            var wrapper = await Serializer.DeserializeWrapper<StructWrapperForIDictionary?>("null");
             Assert.False(wrapper.HasValue);
         }
 
@@ -199,13 +199,13 @@ namespace System.Text.Json.Serialization.Tests
         public async Task ReadClassWithStructIDictionaryWrapper_NullJson_Throws()
         {
             string json = @"{ ""Dictionary"" : null }";
-            await Assert.ThrowsAsync<JsonException>(async () => await JsonSerializerWrapperForString.DeserializeWrapper<ClassWithStructIDictionaryWrapper>(json));
+            await Assert.ThrowsAsync<JsonException>(async () => await Serializer.DeserializeWrapper<ClassWithStructIDictionaryWrapper>(json));
         }
 
         [Fact]
         public async Task ReadPrimitiveIList()
         {
-            IList result = await JsonSerializerWrapperForString.DeserializeWrapper<IList>(@"[1,2]");
+            IList result = await Serializer.DeserializeWrapper<IList>(@"[1,2]");
             int expected = 1;
 
             foreach (JsonElement i in result)
@@ -213,7 +213,7 @@ namespace System.Text.Json.Serialization.Tests
                 Assert.Equal(expected++, i.GetInt32());
             }
 
-            result = await JsonSerializerWrapperForString.DeserializeWrapper<IList>(@"[]");
+            result = await Serializer.DeserializeWrapper<IList>(@"[]");
 
             int count = 0;
             IEnumerator e = result.GetEnumerator();
@@ -223,7 +223,7 @@ namespace System.Text.Json.Serialization.Tests
             }
             Assert.Equal(0, count);
 
-            WrapperForIList result2 = await JsonSerializerWrapperForString.DeserializeWrapper<WrapperForIList>(@"[1,2]");
+            WrapperForIList result2 = await Serializer.DeserializeWrapper<WrapperForIList>(@"[1,2]");
             expected = 1;
 
             foreach (JsonElement i in result2)
@@ -235,7 +235,7 @@ namespace System.Text.Json.Serialization.Tests
         [Fact]
         public async Task ReadGenericICollectionOfICollection()
         {
-            ICollection<ICollection> result = await JsonSerializerWrapperForString.DeserializeWrapper<ICollection<ICollection>>(@"[[1,2],[3,4]]");
+            ICollection<ICollection> result = await Serializer.DeserializeWrapper<ICollection<ICollection>>(@"[[1,2],[3,4]]");
             int expected = 1;
 
             foreach (ICollection ie in result)
@@ -247,13 +247,13 @@ namespace System.Text.Json.Serialization.Tests
             }
 
             // No way to populate this collection.
-            await Assert.ThrowsAsync<NotSupportedException>(async () => await JsonSerializerWrapperForString.DeserializeWrapper<GenericICollectionWrapper<WrapperForICollection>>(@"[[1,2],[3,4]]"));
+            await Assert.ThrowsAsync<NotSupportedException>(async () => await Serializer.DeserializeWrapper<GenericICollectionWrapper<WrapperForICollection>>(@"[[1,2],[3,4]]"));
         }
 
         [Fact]
         public async Task ReadICollectionOfArray()
         {
-            ICollection result = await JsonSerializerWrapperForString.DeserializeWrapper<ICollection>(@"[[1,2],[3,4]]");
+            ICollection result = await Serializer.DeserializeWrapper<ICollection>(@"[[1,2],[3,4]]");
             int expected = 1;
 
             foreach (JsonElement arr in result)
@@ -268,7 +268,7 @@ namespace System.Text.Json.Serialization.Tests
         [Fact]
         public async Task ReadArrayOfICollection()
         {
-            ICollection[] result = await JsonSerializerWrapperForString.DeserializeWrapper<ICollection[]>(@"[[1,2],[3,4]]");
+            ICollection[] result = await Serializer.DeserializeWrapper<ICollection[]>(@"[[1,2],[3,4]]");
             int expected = 1;
 
             foreach (ICollection arr in result)
@@ -283,7 +283,7 @@ namespace System.Text.Json.Serialization.Tests
         [Fact]
         public async Task ReadPrimitiveICollection()
         {
-            ICollection result = await JsonSerializerWrapperForString.DeserializeWrapper<ICollection>(@"[1,2]");
+            ICollection result = await Serializer.DeserializeWrapper<ICollection>(@"[1,2]");
             int expected = 1;
 
             foreach (JsonElement i in result)
@@ -291,7 +291,7 @@ namespace System.Text.Json.Serialization.Tests
                 Assert.Equal(expected++, i.GetInt32());
             }
 
-            result = await JsonSerializerWrapperForString.DeserializeWrapper<ICollection>(@"[]");
+            result = await Serializer.DeserializeWrapper<ICollection>(@"[]");
 
             int count = 0;
             IEnumerator e = result.GetEnumerator();
@@ -305,7 +305,7 @@ namespace System.Text.Json.Serialization.Tests
         [Fact]
         public async Task ReadGenericStackOfStack()
         {
-            Stack<Stack> result = await JsonSerializerWrapperForString.DeserializeWrapper<Stack<Stack>>(@"[[1,2],[3,4]]");
+            Stack<Stack> result = await Serializer.DeserializeWrapper<Stack<Stack>>(@"[[1,2],[3,4]]");
             int expected = 4;
 
             foreach (Stack stack in result)
@@ -320,7 +320,7 @@ namespace System.Text.Json.Serialization.Tests
         [Fact]
         public async Task ReadStackOfArray()
         {
-            Stack result = await JsonSerializerWrapperForString.DeserializeWrapper<Stack>(@"[[1,2],[3,4]]");
+            Stack result = await Serializer.DeserializeWrapper<Stack>(@"[[1,2],[3,4]]");
             int expected = 3;
 
             foreach (JsonElement arr in result)
@@ -336,7 +336,7 @@ namespace System.Text.Json.Serialization.Tests
         [Fact]
         public async Task ReadArrayOfStack()
         {
-            Stack[] result = await JsonSerializerWrapperForString.DeserializeWrapper<Stack[]>(@"[[1,2],[3,4]]");
+            Stack[] result = await Serializer.DeserializeWrapper<Stack[]>(@"[[1,2],[3,4]]");
             int expected = 2;
 
             foreach (Stack arr in result)
@@ -352,7 +352,7 @@ namespace System.Text.Json.Serialization.Tests
         [Fact]
         public async Task ReadPrimitiveStack()
         {
-            Stack result = await JsonSerializerWrapperForString.DeserializeWrapper<Stack>(@"[1,2]");
+            Stack result = await Serializer.DeserializeWrapper<Stack>(@"[1,2]");
             int expected = 2;
 
             foreach (JsonElement i in result)
@@ -360,7 +360,7 @@ namespace System.Text.Json.Serialization.Tests
                 Assert.Equal(expected--, i.GetInt32());
             }
 
-            result = await JsonSerializerWrapperForString.DeserializeWrapper<Stack>(@"[]");
+            result = await Serializer.DeserializeWrapper<Stack>(@"[]");
 
             int count = 0;
             IEnumerator e = result.GetEnumerator();
@@ -370,7 +370,7 @@ namespace System.Text.Json.Serialization.Tests
             }
             Assert.Equal(0, count);
 
-            StackWrapper wrapper = await JsonSerializerWrapperForString.DeserializeWrapper<StackWrapper>(@"[1,2]");
+            StackWrapper wrapper = await Serializer.DeserializeWrapper<StackWrapper>(@"[1,2]");
             expected = 2;
 
             foreach (JsonElement i in wrapper)
@@ -382,7 +382,7 @@ namespace System.Text.Json.Serialization.Tests
         [Fact]
         public async Task ReadGenericQueueOfQueue()
         {
-            Queue<Queue> result = await JsonSerializerWrapperForString.DeserializeWrapper<Queue<Queue>>(@"[[1,2],[3,4]]");
+            Queue<Queue> result = await Serializer.DeserializeWrapper<Queue<Queue>>(@"[[1,2],[3,4]]");
             int expected = 1;
 
             foreach (Queue ie in result)
@@ -397,7 +397,7 @@ namespace System.Text.Json.Serialization.Tests
         [Fact]
         public async Task ReadQueueOfArray()
         {
-            Queue result = await JsonSerializerWrapperForString.DeserializeWrapper<Queue>(@"[[1,2],[3,4]]");
+            Queue result = await Serializer.DeserializeWrapper<Queue>(@"[[1,2],[3,4]]");
             int expected = 1;
 
             foreach (JsonElement arr in result)
@@ -412,7 +412,7 @@ namespace System.Text.Json.Serialization.Tests
         [Fact]
         public async Task ReadArrayOfQueue()
         {
-            Queue[] result = await JsonSerializerWrapperForString.DeserializeWrapper<Queue[]>(@"[[1,2],[3,4]]");
+            Queue[] result = await Serializer.DeserializeWrapper<Queue[]>(@"[[1,2],[3,4]]");
             int expected = 1;
 
             foreach (Queue arr in result)
@@ -427,7 +427,7 @@ namespace System.Text.Json.Serialization.Tests
         [Fact]
         public async Task ReadPrimitiveQueue()
         {
-            Queue result = await JsonSerializerWrapperForString.DeserializeWrapper<Queue>(@"[1,2]");
+            Queue result = await Serializer.DeserializeWrapper<Queue>(@"[1,2]");
             int expected = 1;
 
             foreach (JsonElement i in result)
@@ -435,7 +435,7 @@ namespace System.Text.Json.Serialization.Tests
                 Assert.Equal(expected++, i.GetInt32());
             }
 
-            result = await JsonSerializerWrapperForString.DeserializeWrapper<Queue>(@"[]");
+            result = await Serializer.DeserializeWrapper<Queue>(@"[]");
 
             int count = 0;
             IEnumerator e = result.GetEnumerator();
@@ -445,7 +445,7 @@ namespace System.Text.Json.Serialization.Tests
             }
             Assert.Equal(0, count);
             
-            QueueWrapper wrapper = await JsonSerializerWrapperForString.DeserializeWrapper<QueueWrapper>(@"[1,2]");
+            QueueWrapper wrapper = await Serializer.DeserializeWrapper<QueueWrapper>(@"[1,2]");
             expected = 1;
 
             foreach (JsonElement i in wrapper)
@@ -457,7 +457,7 @@ namespace System.Text.Json.Serialization.Tests
         [Fact]
         public async Task ReadArrayListOfArray()
         {
-            ArrayList result = await JsonSerializerWrapperForString.DeserializeWrapper<ArrayList>(@"[[1,2],[3,4]]");
+            ArrayList result = await Serializer.DeserializeWrapper<ArrayList>(@"[[1,2],[3,4]]");
             int expected = 1;
 
             foreach (JsonElement arr in result)
@@ -468,7 +468,7 @@ namespace System.Text.Json.Serialization.Tests
                 }
             }
 
-            ArrayListWrapper result2 = await JsonSerializerWrapperForString.DeserializeWrapper<ArrayListWrapper>(@"[[1,2],[3,4]]");
+            ArrayListWrapper result2 = await Serializer.DeserializeWrapper<ArrayListWrapper>(@"[[1,2],[3,4]]");
             expected = 1;
 
             foreach (JsonElement arr in result2)
@@ -483,7 +483,7 @@ namespace System.Text.Json.Serialization.Tests
         [Fact]
         public async Task ReadArrayOfArrayList()
         {
-            ArrayList[] result = await JsonSerializerWrapperForString.DeserializeWrapper<ArrayList[]>(@"[[1,2],[3,4]]");
+            ArrayList[] result = await Serializer.DeserializeWrapper<ArrayList[]>(@"[[1,2],[3,4]]");
             int expected = 1;
 
             foreach (ArrayList arr in result)
@@ -498,7 +498,7 @@ namespace System.Text.Json.Serialization.Tests
         [Fact]
         public async Task ReadPrimitiveArrayList()
         {
-            ArrayList result = await JsonSerializerWrapperForString.DeserializeWrapper<ArrayList>(@"[1,2]");
+            ArrayList result = await Serializer.DeserializeWrapper<ArrayList>(@"[1,2]");
             int expected = 1;
 
             foreach (JsonElement i in result)
@@ -506,7 +506,7 @@ namespace System.Text.Json.Serialization.Tests
                 Assert.Equal(expected++, i.GetInt32());
             }
 
-            result = await JsonSerializerWrapperForString.DeserializeWrapper<ArrayList>(@"[]");
+            result = await Serializer.DeserializeWrapper<ArrayList>(@"[]");
 
             int count = 0;
             IEnumerator e = result.GetEnumerator();
@@ -520,14 +520,14 @@ namespace System.Text.Json.Serialization.Tests
         [Fact]
         public async Task ReadSimpleTestClass_NonGenericCollectionWrappers()
         {
-            SimpleTestClassWithNonGenericCollectionWrappers obj = await JsonSerializerWrapperForString.DeserializeWrapper<SimpleTestClassWithNonGenericCollectionWrappers>(SimpleTestClassWithNonGenericCollectionWrappers.s_json);
+            SimpleTestClassWithNonGenericCollectionWrappers obj = await Serializer.DeserializeWrapper<SimpleTestClassWithNonGenericCollectionWrappers>(SimpleTestClassWithNonGenericCollectionWrappers.s_json);
             obj.Verify();
         }
 
         [Fact]
         public async Task ReadSimpleTestClass_StructCollectionWrappers()
         {
-            SimpleTestClassWithStructCollectionWrappers obj = await JsonSerializerWrapperForString.DeserializeWrapper<SimpleTestClassWithStructCollectionWrappers>(SimpleTestClassWithStructCollectionWrappers.s_json);
+            SimpleTestClassWithStructCollectionWrappers obj = await Serializer.DeserializeWrapper<SimpleTestClassWithStructCollectionWrappers>(SimpleTestClassWithStructCollectionWrappers.s_json);
             obj.Verify();
         }
 
@@ -535,7 +535,7 @@ namespace System.Text.Json.Serialization.Tests
         public async Task ReadSimpleTestStruct_NullableStructCollectionWrappers()
         {
             {
-                SimpleTestStructWithNullableStructCollectionWrappers obj = await JsonSerializerWrapperForString.DeserializeWrapper<SimpleTestStructWithNullableStructCollectionWrappers>(SimpleTestStructWithNullableStructCollectionWrappers.s_json);
+                SimpleTestStructWithNullableStructCollectionWrappers obj = await Serializer.DeserializeWrapper<SimpleTestStructWithNullableStructCollectionWrappers>(SimpleTestStructWithNullableStructCollectionWrappers.s_json);
                 obj.Verify();
             }
 
@@ -546,7 +546,7 @@ namespace System.Text.Json.Serialization.Tests
                         @"""Dictionary"" : null" +
                         @"}";
 
-                SimpleTestStructWithNullableStructCollectionWrappers obj = await JsonSerializerWrapperForString.DeserializeWrapper<SimpleTestStructWithNullableStructCollectionWrappers>(json);
+                SimpleTestStructWithNullableStructCollectionWrappers obj = await Serializer.DeserializeWrapper<SimpleTestStructWithNullableStructCollectionWrappers>(json);
                 Assert.False(obj.List.HasValue);
                 Assert.False(obj.Dictionary.HasValue);
             }
@@ -556,7 +556,7 @@ namespace System.Text.Json.Serialization.Tests
         [MemberData(nameof(ReadSimpleTestClass_NonGenericWrappers_NoAddMethod))]
         public async Task ReadSimpleTestClass_NonGenericWrappers_NoAddMethod_Throws(Type type, string json, Type exceptionMessageType)
         {
-            NotSupportedException ex = await Assert.ThrowsAsync<NotSupportedException>(async () => await JsonSerializerWrapperForString.DeserializeWrapper(json, type));
+            NotSupportedException ex = await Assert.ThrowsAsync<NotSupportedException>(async () => await Serializer.DeserializeWrapper(json, type));
             Assert.Contains(exceptionMessageType.ToString(), ex.Message);
         }
 
@@ -590,7 +590,7 @@ namespace System.Text.Json.Serialization.Tests
         [InlineData(typeof(WrapperForIDictionaryInternalConstructor), @"{""Key"":""Value""}")]
         public async Task Read_NonGeneric_NoPublicConstructor_Throws(Type type, string json)
         {
-            NotSupportedException ex = await Assert.ThrowsAsync<NotSupportedException>(async () => await JsonSerializerWrapperForString.DeserializeWrapper(json, type));
+            NotSupportedException ex = await Assert.ThrowsAsync<NotSupportedException>(async () => await Serializer.DeserializeWrapper(json, type));
             Assert.Contains(type.ToString(), ex.Message);
         }
     }

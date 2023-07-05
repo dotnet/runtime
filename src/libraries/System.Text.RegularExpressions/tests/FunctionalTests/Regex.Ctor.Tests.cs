@@ -138,6 +138,7 @@ namespace System.Text.RegularExpressions.Tests
                 Assert.Throws<NotSupportedException>(() => new Regex(@"(?>a*)a", RegexHelpers.RegexOptionNonBacktracking)); // NonBacktracking and atomics
                 Assert.Throws<NotSupportedException>(() => new Regex(@"\Ga", RegexHelpers.RegexOptionNonBacktracking)); // NonBacktracking and start anchors
                 Assert.Throws<NotSupportedException>(() => new Regex(@"(?<C>A)(?<-C>B)$", RegexHelpers.RegexOptionNonBacktracking)); // NonBacktracking and balancing groups
+                Assert.Throws<NotSupportedException>(() => new Regex(@"\w{1,1001}", RegexHelpers.RegexOptionNonBacktracking)); // Potentially large automata expansion
             }
         }
 
@@ -212,7 +213,9 @@ namespace System.Text.RegularExpressions.Tests
             public DerivedRegex() { }
             public DerivedRegex(string pattern) : base(pattern) { }
 
+#pragma warning disable SYSLIB0052 // Type or member is obsolete
             public new void InitializeReferences() => base.InitializeReferences();
+#pragma warning restore SYSLIB0052 // Type or member is obsolete
 
             public new IDictionary Caps { get => base.Caps; set => base.Caps = value; }
             public new IDictionary CapNames { get => base.CapNames; set => base.CapNames = value; }

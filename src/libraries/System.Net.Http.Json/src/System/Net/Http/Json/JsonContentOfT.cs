@@ -1,4 +1,4 @@
-﻿// Licensed to the .NET Foundation under one or more agreements.
+// Licensed to the .NET Foundation under one or more agreements.
 // The .NET Foundation licenses this file to you under the MIT license.
 
 #if !NETCOREAPP
@@ -19,8 +19,13 @@ namespace System.Net.Http.Json
 
         private readonly TValue _typedValue;
 
-        public JsonContent(TValue inputValue, JsonTypeInfo<TValue> jsonTypeInfo!!)
+        public JsonContent(TValue inputValue, JsonTypeInfo<TValue> jsonTypeInfo)
         {
+            if (jsonTypeInfo is null)
+            {
+                throw new ArgumentNullException(nameof(jsonTypeInfo));
+            }
+
             _typeInfo = jsonTypeInfo;
             _typedValue = inputValue;
             Headers.ContentType = JsonHelpers.GetDefaultMediaType();
@@ -43,7 +48,7 @@ namespace System.Net.Http.Json
         /// </summary>
         private async Task SerializeToStreamAsyncCore(Stream targetStream, bool async, CancellationToken cancellationToken)
         {
-            Encoding? targetEncoding = JsonHelpers.GetEncoding(Headers.ContentType?.CharSet);
+            Encoding? targetEncoding = JsonHelpers.GetEncoding(this);
 
             // Wrap provided stream into a transcoding stream that buffers the data transcoded from utf-8 to the targetEncoding.
             if (targetEncoding != null && targetEncoding != Encoding.UTF8)

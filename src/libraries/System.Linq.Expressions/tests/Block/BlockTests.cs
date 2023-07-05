@@ -122,7 +122,7 @@ namespace System.Linq.Expressions.Tests
         }
 
         [Fact]
-        public static void VisitChangingOnlyParmeters()
+        public static void VisitChangingOnlyParameters()
         {
             BlockExpression block = Expression.Block(
                 new[] { Expression.Parameter(typeof(int)), Expression.Parameter(typeof(string)) },
@@ -132,7 +132,7 @@ namespace System.Linq.Expressions.Tests
         }
 
         [Fact]
-        public static void VisitChangingOnlyParmetersMultiStatementBody()
+        public static void VisitChangingOnlyParametersMultiStatementBody()
         {
             BlockExpression block = Expression.Block(
                 new[] { Expression.Parameter(typeof(int)), Expression.Parameter(typeof(string)) },
@@ -143,7 +143,7 @@ namespace System.Linq.Expressions.Tests
         }
 
         [Fact]
-        public static void VisitChangingOnlyParmetersTyped()
+        public static void VisitChangingOnlyParametersTyped()
         {
             BlockExpression block = Expression.Block(
                 typeof(object),

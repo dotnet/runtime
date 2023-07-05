@@ -59,7 +59,7 @@ mono_log_write_os_log (const char *log_domain, GLogLevelFlags level, mono_bool h
 }
 
 void
-mono_log_close_os_log ()
+mono_log_close_os_log (void)
 {
 }
 

@@ -16,8 +16,8 @@ namespace System.Net.Test.Common
         HttpRequestMessage _request;
         public HttpStatusCode ResponseStatusCode;
         public IList<HttpHeaderData> ResponseHeaders;
-        public string ReponseContentString;
-        public byte[] ReponseContentBytes;
+        public string ResponseContentString;
+        public byte[] ResponseContentBytes;
 
         private HttpMessageHandlerLoopbackServer(HttpRequestMessage request)
         {
@@ -33,7 +33,7 @@ namespace System.Net.Test.Common
         {
             ResponseStatusCode = statusCode;
             ResponseHeaders = headers;
-            ReponseContentString = content;
+            ResponseContentString = content;
             return await HttpRequestData.FromHttpRequestMessageAsync(_request).ConfigureAwait(false);
         }
 
@@ -41,7 +41,7 @@ namespace System.Net.Test.Common
         {
             ResponseStatusCode = statusCode;
             ResponseHeaders = headers;
-            ReponseContentBytes = bytes;
+            ResponseContentBytes = bytes;
             return await HttpRequestData.FromHttpRequestMessageAsync(_request).ConfigureAwait(false);
         }
 
@@ -73,13 +73,13 @@ namespace System.Net.Test.Common
                 await _serverFunc(server).ConfigureAwait(false);
 
                 var response = new HttpResponseMessage(server.ResponseStatusCode);
-                if (server.ReponseContentString != null)
+                if (server.ResponseContentString != null)
                 {
-                    response.Content = new StringContent(server.ReponseContentString);
+                    response.Content = new StringContent(server.ResponseContentString);
                 }
                 else
                 {
-                    response.Content = new ByteArrayContent(server.ReponseContentBytes);
+                    response.Content = new ByteArrayContent(server.ResponseContentBytes);
                 }
 
                 foreach (var header in server.ResponseHeaders ?? Array.Empty<HttpHeaderData>())

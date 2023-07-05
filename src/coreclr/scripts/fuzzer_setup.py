@@ -79,7 +79,10 @@ def main(main_args):
 
     coreclr_args = setup_args(main_args)
     arch_name = coreclr_args.arch
-    os_name = "win" if coreclr_args.platform.lower() == "windows" else "linux"
+    os_name = coreclr_args.platform.lower()
+    if os_name == "windows":
+        os_name = "win"
+
     run_configuration = "{}-{}".format(os_name, arch_name)
     source_directory = coreclr_args.source_directory
 
@@ -92,14 +95,14 @@ def main(main_args):
     helix_source_prefix = "official"
     creator = ""
 
-    repo_urls = {
-        "Antigen": "https://github.com/kunalspathak/Antigen.git",
-        "Fuzzlyn": "https://github.com/jakobbotsch/Fuzzlyn.git",
+    build_repos = {
+        "Antigen": ("https://github.com/kunalspathak/Antigen.git", "Antigen/Antigen.csproj"),
+        "Fuzzlyn": ("https://github.com/jakobbotsch/Fuzzlyn.git", "Fuzzlyn/Fuzzlyn.csproj"),
     }
 
     # tool_name is verifed in setup_args
-    assert coreclr_args.tool_name in repo_urls
-    repo_url = repo_urls[coreclr_args.tool_name]
+    assert coreclr_args.tool_name in build_repos
+    (repo_url, proj_path) = build_repos[coreclr_args.tool_name]
 
     # create exploratory directory
     print('Copying {} -> {}'.format(scripts_src_directory, coreroot_directory))
@@ -109,7 +112,7 @@ def main(main_args):
         acceptable_copy = lambda path: any(path.endswith(extension) for extension in [".py", ".dll", ".exe", ".json"])
     else:
         # Need to accept files without any extension, which is how executable file's names look.
-        acceptable_copy = lambda path: (os.path.basename(path).find(".") == -1) or any(path.endswith(extension) for extension in [".py", ".dll", ".so", ".json", ".a"])
+        acceptable_copy = lambda path: (os.path.basename(path).find(".") == -1) or any(path.endswith(extension) for extension in [".py", ".dll", ".so", ".dylib", ".json", ".a"])
 
     # copy CORE_ROOT
     print('Copying {} -> {}'.format(coreclr_args.core_root_directory, coreroot_directory))
@@ -128,7 +131,7 @@ def main(main_args):
                 dotnet_cmd = os.path.join(source_directory, "dotnet.cmd")
                 if not is_windows:
                     dotnet_cmd = os.path.join(source_directory, "dotnet.sh")
-                run_command([dotnet_cmd, "publish", "-c", "Release", "--self-contained", "-r", run_configuration, "-o", publish_dir], _exit_on_fail=True)
+                run_command([dotnet_cmd, "publish", proj_path.replace("/", os.sep), "-c", "Release", "--self-contained", "-r", run_configuration, "-o", publish_dir], _exit_on_fail=True)
 
             dll_name = coreclr_args.tool_name + ".dll"
             if not os.path.exists(path.join(publish_dir, dll_name)):
@@ -140,7 +143,7 @@ def main(main_args):
     except PermissionError as pe:
         print("Skipping file. Got error: %s", pe)
 
-    # create foo.txt in work_item directories
+    # create a dummy file in the work_item directories, otherwise Helix complains
     workitem_directory = path.join(source_directory, "workitem")
     os.mkdir(workitem_directory)
     foo_txt = os.path.join(workitem_directory, "foo.txt")

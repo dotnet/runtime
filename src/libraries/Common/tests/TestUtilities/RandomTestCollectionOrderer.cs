@@ -7,8 +7,6 @@ using Xunit;
 using Xunit.Abstractions;
 using Xunit.Sdk;
 
-#nullable enable
-
 namespace TestUtilities;
 
 public class RandomTestCollectionOrderer : ITestCollectionOrderer

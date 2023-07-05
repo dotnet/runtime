@@ -2,7 +2,8 @@
 // The .NET Foundation licenses this file to you under the MIT license.
 
 using System;
-internal struct BB
+using Xunit;
+public struct BB
 {
     public static object m_xStatic1;
     public static byte m_bFwd10;
@@ -18,7 +19,8 @@ internal struct BB
                 ;
         } while (param2 != param3);
     }
-    private static int Main()
+    [Fact]
+    public static int TestEntryPoint()
     {
         try
         {

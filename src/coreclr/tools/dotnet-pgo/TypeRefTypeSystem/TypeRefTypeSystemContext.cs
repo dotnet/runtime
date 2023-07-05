@@ -153,8 +153,8 @@ namespace Microsoft.Diagnostics.Tools.Pgo.TypeRefTypeSystem
                     }
                     else
                     {
-                        var fieldType = ecmaSigParse.ParseFieldSignature();
-                        ownerType.GetOrAddField(name, fieldType);
+                        var fieldType = ecmaSigParse.ParseFieldSignature(out var embeddedSigData);
+                        ownerType.GetOrAddField(name, fieldType, embeddedSigData);
                     }
                 }
 

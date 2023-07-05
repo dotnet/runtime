@@ -2,7 +2,7 @@
   <PropertyGroup>
     <OutputType>Library</OutputType>
     <AssemblyName>ILCompiler.MetadataTransform</AssemblyName>
-    <TargetFramework>net6.0</TargetFramework>
+    <TargetFramework>$(NetCoreAppToolCurrent)</TargetFramework>
     <AllowUnsafeBlocks>true</AllowUnsafeBlocks>
     <DefineConstants>$(DefineConstants);NATIVEFORMAT_PUBLICWRITER;NETFX_45</DefineConstants>
     <EnableDefaultCompileItems>false</EnableDefaultCompileItems>
@@ -24,11 +24,6 @@
 
   <ItemGroup>
     <ProjectReference Include="..\ILCompiler.TypeSystem\ILCompiler.TypeSystem.csproj" />
-  </ItemGroup>
-  <ItemGroup>
-    <PackageReference Include="System.Reflection.Metadata">
-      <Version>$(SystemReflectionMetadataVersion)</Version>
-    </PackageReference>
   </ItemGroup>
   <ItemGroup>
     <Compile Include="$(CommonSourcePath)Internal\LowLevelLinq\LowLevelEnumerable.cs" />

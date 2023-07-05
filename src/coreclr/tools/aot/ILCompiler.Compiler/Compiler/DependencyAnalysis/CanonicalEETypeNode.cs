@@ -1,8 +1,6 @@
 // Licensed to the .NET Foundation under one or more agreements.
 // The .NET Foundation licenses this file to you under the MIT license.
 
-using System;
-using System.Collections.Generic;
 using System.Diagnostics;
 
 using Internal.TypeSystem;
@@ -13,8 +11,8 @@ namespace ILCompiler.DependencyAnalysis
     /// <summary>
     /// Canonical type instantiations are emitted, not because they are used directly by the user code, but because
     /// they are used by the dynamic type loader when dynamically instantiating types at runtime.
-    /// The data that we emit on canonical type instantiations should just be the minimum that is needed by the template 
-    /// type loader. 
+    /// The data that we emit on canonical type instantiations should just be the minimum that is needed by the template
+    /// type loader.
     /// Similarly, the dependencies that we track for canonical type instantiations are minimal, and are just the ones used
     /// by the dynamic type loader
     /// </summary>
@@ -44,29 +42,17 @@ namespace ILCompiler.DependencyAnalysis
 
             DefType closestDefType = _type.GetClosestDefType();
 
-            if (MightHaveInterfaceDispatchMap(factory))
-                dependencyList.Add(factory.InterfaceDispatchMap(_type), "Canonical interface dispatch map");
-
             dependencyList.Add(factory.VTable(closestDefType), "VTable");
 
             if (_type.IsCanonicalSubtype(CanonicalFormKind.Universal))
                 dependencyList.Add(factory.NativeLayout.TemplateTypeLayout(_type), "Universal generic types always have template layout");
 
             // Track generic virtual methods that will get added to the GVM tables
-            if (TypeGVMEntriesNode.TypeNeedsGVMTableEntries(_type))
+            if ((_virtualMethodAnalysisFlags & VirtualMethodAnalysisFlags.NeedsGvmEntries) != 0)
             {
                 dependencyList.Add(new DependencyListEntry(factory.TypeGVMEntries(_type.GetTypeDefinition()), "Type with generic virtual methods"));
 
                 AddDependenciesForUniversalGVMSupport(factory, _type, ref dependencyList);
-            }
-
-            // Keep track of the default constructor map dependency for this type if it has a default constructor
-            MethodDesc defaultCtor = closestDefType.GetDefaultConstructor();
-            if (defaultCtor != null)
-            {
-                dependencyList.Add(new DependencyListEntry(
-                    factory.CanonicalEntrypoint(defaultCtor),
-                    "DefaultConstructorNode"));
             }
 
             return dependencyList;
@@ -75,6 +61,11 @@ namespace ILCompiler.DependencyAnalysis
         protected override ISymbolNode GetBaseTypeNode(NodeFactory factory)
         {
             return _type.BaseType != null ? factory.NecessaryTypeSymbol(_type.BaseType.NormalizeInstantiation()) : null;
+        }
+
+        protected override ISymbolNode GetNonNullableValueTypeArrayElementTypeNode(NodeFactory factory)
+        {
+            return factory.ConstructedTypeSymbol(((ArrayType)_type).ElementType);
         }
 
         protected override int GCDescSize
@@ -102,7 +93,7 @@ namespace ILCompiler.DependencyAnalysis
 
         protected override void OutputInterfaceMap(NodeFactory factory, ref ObjectDataBuilder objData)
         {
-            foreach (var itf in _type.RuntimeInterfaces)
+            for (int i = 0; i < _type.RuntimeInterfaces.Length; i++)
             {
                 // Interface omitted for canonical instantiations (constructed at runtime for dynamic types from the native layout info)
                 objData.EmitZeroPointer();
@@ -119,7 +110,7 @@ namespace ILCompiler.DependencyAnalysis
 
                     if (instanceByteCount.IsIndeterminate)
                     {
-                        // For USG types, they may be of indeterminate size, and the size of the type may be meaningless. 
+                        // For USG types, they may be of indeterminate size, and the size of the type may be meaningless.
                         // In that case emit a fixed constant.
                         return MinimumObjectSize;
                     }

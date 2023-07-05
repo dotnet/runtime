@@ -23,33 +23,28 @@ namespace System.Net.Http
         {
         }
 
-        public override void Add(HttpContent content!!)
+        public override void Add(HttpContent content)
         {
+            ArgumentNullException.ThrowIfNull(content);
+
             content.Headers.ContentDisposition ??= new ContentDispositionHeaderValue(formData);
 
             base.Add(content);
         }
 
-        public void Add(HttpContent content!!, string name)
+        public void Add(HttpContent content, string name)
         {
-            if (string.IsNullOrWhiteSpace(name))
-            {
-                throw new ArgumentException(SR.net_http_argument_empty_string, nameof(name));
-            }
+            ArgumentNullException.ThrowIfNull(content);
+            ArgumentException.ThrowIfNullOrWhiteSpace(name);
 
             AddInternal(content, name, null);
         }
 
-        public void Add(HttpContent content!!, string name, string fileName)
+        public void Add(HttpContent content, string name, string fileName)
         {
-            if (string.IsNullOrWhiteSpace(name))
-            {
-                throw new ArgumentException(SR.net_http_argument_empty_string, nameof(name));
-            }
-            if (string.IsNullOrWhiteSpace(fileName))
-            {
-                throw new ArgumentException(SR.net_http_argument_empty_string, nameof(fileName));
-            }
+            ArgumentNullException.ThrowIfNull(content);
+            ArgumentException.ThrowIfNullOrWhiteSpace(name);
+            ArgumentException.ThrowIfNullOrWhiteSpace(fileName);
 
             AddInternal(content, name, fileName);
         }

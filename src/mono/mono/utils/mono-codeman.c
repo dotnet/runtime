@@ -39,7 +39,7 @@ static const MonoCodeManagerCallbacks *code_manager_callbacks;
  * AMD64 processors maintain icache coherency only for pages which are
  * marked executable. Also, windows DEP requires us to obtain executable memory from
  * malloc when using dynamic code managers. The system malloc can't do this so we use a
- * slighly modified version of Doug Lea's Malloc package for this purpose:
+ * slightly modified version of Doug Lea's Malloc package for this purpose:
  * http://g.oswego.edu/dl/html/malloc.html
  *
  * Or on Windows, HeapCreate (HEAP_CREATE_ENABLE_EXECUTE).
@@ -627,7 +627,7 @@ mono_code_manager_reserve_align (MonoCodeManager *cman, int size, int alignment)
 			/* Align the chunk->data we add to chunk->pos */
 			/* or we can't guarantee proper alignment     */
 			ptr = (void*)((((uintptr_t)chunk->data + align_mask) & ~(uintptr_t)align_mask) + chunk->pos);
-			chunk->pos = ((char*)ptr - chunk->data) + size;
+			chunk->pos = GPTRDIFF_TO_INT (((char*)ptr - chunk->data) + size);
 			return ptr;
 		}
 	}
@@ -658,7 +658,7 @@ mono_code_manager_reserve_align (MonoCodeManager *cman, int size, int alignment)
 	/* Align the chunk->data we add to chunk->pos */
 	/* or we can't guarantee proper alignment     */
 	ptr = (void*)((((uintptr_t)chunk->data + align_mask) & ~(uintptr_t)align_mask) + chunk->pos);
-	chunk->pos = ((char*)ptr - chunk->data) + size;
+	chunk->pos = GPTRDIFF_TO_INT (((char*)ptr - chunk->data) + size);
 	return ptr;
 }
 

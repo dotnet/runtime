@@ -22,7 +22,7 @@
 }
 .assembly extern xunit.core {}
 // MVID: {23E3D49B-6CFD-4DA0-8C9D-A611CE0BA103}
-.namespace JitTest
+.namespace JitTest_huge_struct_Arrays_il
 {
   .class value private auto ansi sealed TestStruct extends [mscorlib]System.ValueType
   {
@@ -32,10 +32,10 @@
     .field public unsigned int64[] ul_ptr
   } // end of class 'TestStruct'
   
-  .class private auto ansi Test
+  .class public auto ansi Test
          extends [mscorlib]System.Object
   {
-    .method private hidebysig static int32
+    .method public hidebysig static int32
             Main() il managed
     {
       .custom instance void [xunit.core]Xunit.FactAttribute::.ctor() = (
@@ -44,11 +44,11 @@
       .entrypoint
       // Code size       38 (0x26)
       .maxstack  70
-      .locals init (value class JitTest.TestStruct[,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,] matrix,
+      .locals init (value class JitTest_huge_struct_Arrays_il.TestStruct[,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,] matrix,
                int32 count,
 			   int32[] dim,
-			   value class JitTest.TestStruct t,
-			   value class JitTest.TestStruct r)
+			   value class JitTest_huge_struct_Arrays_il.TestStruct t,
+			   value class JitTest_huge_struct_Arrays_il.TestStruct r)
 
 
       			ldc.i4	32
@@ -176,7 +176,7 @@
 				ldloc dim ldc.i4 61 ldelem.i4
 				ldloc dim ldc.i4 62 ldelem.i4
 				ldloc dim ldc.i4 63 ldelem.i4
-				newobj		instance void value class JitTest.TestStruct[,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,]::.ctor(
+				newobj		instance void value class JitTest_huge_struct_Arrays_il.TestStruct[,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,]::.ctor(
       					int32, int32, int32, int32,
       					int32, int32, int32, int32,
       					int32, int32, int32, int32,
@@ -233,7 +233,7 @@
 				ldloc dim ldc.i4 62 ldelem.i4
 				
       			ldloca	t
-				initobj		JitTest.TestStruct
+				initobj		JitTest_huge_struct_Arrays_il.TestStruct
       			ldloca	t
       			dup
 				ldc.i4	99
@@ -242,14 +242,14 @@
 				ldc.i4  98
 				ldc.r8	8.0
 				stelem.r8
-				stfld	float64[] JitTest.TestStruct::dbl_ptr
+				stfld	float64[] JitTest_huge_struct_Arrays_il.TestStruct::dbl_ptr
 				ldc.i4	0x05071975
-				stfld	int32 JitTest.TestStruct::magic
+				stfld	int32 JitTest_huge_struct_Arrays_il.TestStruct::magic
 
 				call    void [mscorlib]System.GC::Collect()
 
 				ldloc	t
-      			callvirt 	instance void value class JitTest.TestStruct[,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,]::Set(
+      			callvirt 	instance void value class JitTest_huge_struct_Arrays_il.TestStruct[,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,]::Set(
       					int32, int32, int32, int32,
       					int32, int32, int32, int32,
       					int32, int32, int32, int32,
@@ -258,7 +258,7 @@
       					int32, int32, int32, int32,
       					int32, int32, int32, int32,
       					int32, int32, int32, int32,
-      					value class JitTest.TestStruct)
+      					value class JitTest_huge_struct_Arrays_il.TestStruct)
 
 				//---------------------------------------------------------------
 				//	Test typed array's Get method
@@ -296,7 +296,7 @@
 				ldloc dim ldc.i4 58 ldelem.i4
 				ldloc dim ldc.i4 60 ldelem.i4
 				ldloc dim ldc.i4 62 ldelem.i4
-      			callvirt 	instance value class JitTest.TestStruct value class JitTest.TestStruct[,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,]::Get(
+      			callvirt 	instance value class JitTest_huge_struct_Arrays_il.TestStruct value class JitTest_huge_struct_Arrays_il.TestStruct[,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,]::Get(
       					int32, int32, int32, int32,
       					int32, int32, int32, int32,
       					int32, int32, int32, int32,
@@ -309,7 +309,7 @@
       			stloc r
       			ldloca r
       			dup
-      			ldfld   float64[] JitTest.TestStruct::dbl_ptr
+      			ldfld   float64[] JitTest_huge_struct_Arrays_il.TestStruct::dbl_ptr
       			ldc.i4 98
       			ldelem.r8
       			ldc.r8 8.0
@@ -318,7 +318,7 @@
       			pop
       			br  throw0
 			next0_0:
-      			ldfld   int32 JitTest.TestStruct::magic
+      			ldfld   int32 JitTest_huge_struct_Arrays_il.TestStruct::magic
       			ldc.i4  0x05071975
       			ceq
       			brfalse throw0
@@ -367,7 +367,7 @@
       			br cont3
       			
       		go1:
-      			callvirt instance value class JitTest.TestStruct value class JitTest.TestStruct[,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,]::Get(
+      			callvirt instance value class JitTest_huge_struct_Arrays_il.TestStruct value class JitTest_huge_struct_Arrays_il.TestStruct[,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,]::Get(
       					int32, int32, int32, int32,
       					int32, int32, int32, int32,
       					int32, int32, int32, int32,
@@ -379,7 +379,7 @@
       			stloc r
       			ldloca r
       			dup
-      			ldfld   float64[] JitTest.TestStruct::dbl_ptr
+      			ldfld   float64[] JitTest_huge_struct_Arrays_il.TestStruct::dbl_ptr
       			ldc.i4 98
       			ldelem.r8
       			ldc.r8 8.0
@@ -388,7 +388,7 @@
       			pop
       			br  throw0
 			next0_1:
-      			ldfld   int32 JitTest.TestStruct::magic
+      			ldfld   int32 JitTest_huge_struct_Arrays_il.TestStruct::magic
       			ldc.i4  0x05071975
       			ceq
       			brfalse throw0
@@ -440,7 +440,7 @@
 				ldloc dim ldc.i4 60 ldelem.i4
 				ldloc dim ldc.i4 62 ldelem.i4
 				ldloc	t
-      			callvirt 	instance void value class JitTest.TestStruct[,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,]::Set(
+      			callvirt 	instance void value class JitTest_huge_struct_Arrays_il.TestStruct[,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,]::Set(
       					int32, int32, int32, int32,
       					int32, int32, int32, int32,
       					int32, int32, int32, int32,
@@ -449,7 +449,7 @@
       					int32, int32, int32, int32,
       					int32, int32, int32, int32,
       					int32, int32, int32, int32,
-      					value class JitTest.TestStruct)
+      					value class JitTest_huge_struct_Arrays_il.TestStruct)
       			ldnull
       			stloc matrix
       			call void [mscorlib]System.GC::Collect()
@@ -500,7 +500,7 @@
 				ldloc dim ldc.i4 58 ldelem.i4
 				ldloc dim ldc.i4 60 ldelem.i4
 				ldloc dim ldc.i4 62 ldelem.i4
-      			callvirt instance value class JitTest.TestStruct& value class JitTest.TestStruct[,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,]::Address(
+      			callvirt instance value class JitTest_huge_struct_Arrays_il.TestStruct& value class JitTest_huge_struct_Arrays_il.TestStruct[,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,]::Address(
       					int32, int32, int32, int32,
       					int32, int32, int32, int32,
       					int32, int32, int32, int32,
@@ -510,7 +510,7 @@
       					int32, int32, int32, int32,
       					int32, int32, int32, int32)
       			dup
-      			ldfld   float64[] JitTest.TestStruct::dbl_ptr
+      			ldfld   float64[] JitTest_huge_struct_Arrays_il.TestStruct::dbl_ptr
       			ldc.i4 98
       			ldelem.r8
       			ldc.r8 8.0
@@ -519,7 +519,7 @@
       			pop
       			br  throw0
 			next0_2:
-      			ldfld   int32 JitTest.TestStruct::magic
+      			ldfld   int32 JitTest_huge_struct_Arrays_il.TestStruct::magic
       			ldc.i4  0x05071975
       			ceq
       			brfalse throw0
@@ -541,5 +541,5 @@
     
   } // end of class 'Test'
   
-} // end of namespace 'JitTest'
+} // end of namespace 'JitTest_huge_struct_Arrays_il'
 //*********** DISASSEMBLY COMPLETE ***********************

@@ -123,7 +123,7 @@ namespace System.IO.Pipes.Tests
         [InlineData(PipeDirection.Out)]
         public static void InvalidHandle_Throws_ArgumentException(PipeDirection direction)
         {
-            SafePipeHandle pipeHandle = new SafePipeHandle(new IntPtr(-1), true);
+            using SafePipeHandle pipeHandle = new SafePipeHandle(new IntPtr(-1), true);
             AssertExtensions.Throws<ArgumentException>("safePipeHandle", () => new NamedPipeClientStream(direction, false, true, pipeHandle));
         }
 

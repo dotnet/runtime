@@ -232,6 +232,7 @@ inline void TypeHandle::ForEachComponentMethodTable(T &callback) const
     }
 }
 
+#ifndef DACCESS_COMPILE
 FORCEINLINE OBJECTREF TypeHandle::GetManagedClassObjectFast() const
 {
     CONTRACTL
@@ -264,8 +265,7 @@ FORCEINLINE OBJECTREF TypeHandle::GetManagedClassObjectFast() const
             break;
 
         case ELEMENT_TYPE_FNPTR:
-            // A function pointer is mapped into typeof(IntPtr). It results in a loss of information.
-            o = CoreLibBinder::GetElementType(ELEMENT_TYPE_I)->GetManagedClassObjectIfExists();
+            o = dac_cast<PTR_FnPtrTypeDesc>(AsTypeDesc())->GetManagedClassObjectFast();
             break;
 
         default:
@@ -276,5 +276,6 @@ FORCEINLINE OBJECTREF TypeHandle::GetManagedClassObjectFast() const
 
     return o;
 }
+#endif
 
 #endif  // _TYPEHANDLE_INL_

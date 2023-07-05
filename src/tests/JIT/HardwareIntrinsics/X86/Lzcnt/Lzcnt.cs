@@ -5,15 +5,17 @@
 using System;
 using System.Reflection;
 using System.Runtime.Intrinsics.X86;
+using Xunit;
 
-namespace IntelHardwareIntrinsicTest
+namespace IntelHardwareIntrinsicTest._Lzcnt
 {
-    class Program
+    public class Program
     {
         const int Pass = 100;
         const int Fail = 0;
 
-        static int Main(string[] args)
+        [Fact]
+        public static void Test()
         {
             int testResult = Pass;
 
@@ -43,7 +45,7 @@ namespace IntelHardwareIntrinsicTest
                 }
             }
 
-            return testResult;
+            Assert.Equal(Pass, testResult);
         }
 
         public struct LZCNT<T> where T : struct

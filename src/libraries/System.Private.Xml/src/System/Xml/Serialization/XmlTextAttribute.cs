@@ -45,7 +45,7 @@ namespace System.Xml.Serialization
         [AllowNull]
         public string DataType
         {
-            get { return _dataType == null ? string.Empty : _dataType; }
+            get { return _dataType ?? string.Empty; }
             set { _dataType = value; }
         }
     }

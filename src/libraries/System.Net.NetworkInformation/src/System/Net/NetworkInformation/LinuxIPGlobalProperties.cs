@@ -1,5 +1,6 @@
 // Licensed to the .NET Foundation under one or more agreements.
 // The .NET Foundation licenses this file to you under the MIT license.
+using System.Net.Sockets;
 
 namespace System.Net.NetworkInformation
 {
@@ -7,17 +8,20 @@ namespace System.Net.NetworkInformation
     {
         public override TcpConnectionInformation[] GetActiveTcpConnections()
         {
-            return StringParsingHelpers.ParseActiveTcpConnectionsFromFiles(NetworkFiles.Tcp4ConnectionsFile, NetworkFiles.Tcp6ConnectionsFile);
+            return StringParsingHelpers.ParseActiveTcpConnectionsFromFiles(Socket.OSSupportsIPv4 ? NetworkFiles.Tcp4ConnectionsFile : null,
+                                                                           Socket.OSSupportsIPv6 ? NetworkFiles.Tcp6ConnectionsFile : null);
         }
 
         public override IPEndPoint[] GetActiveTcpListeners()
         {
-            return StringParsingHelpers.ParseActiveTcpListenersFromFiles(NetworkFiles.Tcp4ConnectionsFile, NetworkFiles.Tcp6ConnectionsFile);
+            return StringParsingHelpers.ParseActiveTcpListenersFromFiles(Socket.OSSupportsIPv4 ? NetworkFiles.Tcp4ConnectionsFile : null,
+                                                                         Socket.OSSupportsIPv6 ? NetworkFiles.Tcp6ConnectionsFile : null);
         }
 
         public override IPEndPoint[] GetActiveUdpListeners()
         {
-            return StringParsingHelpers.ParseActiveUdpListenersFromFiles(NetworkFiles.Udp4ConnectionsFile, NetworkFiles.Udp6ConnectionsFile);
+            return StringParsingHelpers.ParseActiveUdpListenersFromFiles(Socket.OSSupportsIPv4 ? NetworkFiles.Udp4ConnectionsFile : null,
+                                                                         Socket.OSSupportsIPv6 ? NetworkFiles.Udp6ConnectionsFile : null);
         }
 
         public override IcmpV4Statistics GetIcmpV4Statistics()

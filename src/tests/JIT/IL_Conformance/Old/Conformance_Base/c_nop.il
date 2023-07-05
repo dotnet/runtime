@@ -2,7 +2,10 @@
 // The .NET Foundation licenses this file to you under the MIT license.
 
 .assembly extern legacy library mscorlib {}
-.class          _nop {
+.assembly extern xunit.core {}
+.namespace c_nop
+{
+.class public          _nop {
 
 
 
@@ -17,12 +20,15 @@
         ret
 }
 
-.method public static  int32 main(class [mscorlib]System.String[]) {
+.method public static  int32 main() {
+.custom instance void [xunit.core]Xunit.FactAttribute::.ctor() = (
+    01 00 00 00
+)
 .entrypoint
 .maxstack               5
 
         ldc.i4  0xFF
-        call    int32 _nop::return(int32)
+        call    int32 c_nop._nop::return(int32)
         nop
         nop
         nop
@@ -51,7 +57,7 @@
         nop
         nop
         ldc.i4  0xFF
-        call    int32 _nop::return(int32)
+        call    int32 c_nop._nop::return(int32)
         ceq
         brfalse FAIL
 
@@ -70,3 +76,4 @@ END:
 
 .assembly c_nop {}
 
+}

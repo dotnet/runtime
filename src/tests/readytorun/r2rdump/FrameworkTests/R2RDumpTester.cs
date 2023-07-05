@@ -47,8 +47,8 @@ namespace R2RDumpTests
             string CoreLibAbsolutePath = Path.Combine(CoreRootVar, CoreLibFile);
             string OutputFile = Path.GetTempFileName();
             string TestDotNetCmdVar = Environment.GetEnvironmentVariable("__TestDotNetCmd");
-            // Unset COMPlus_GCName since standalone GC doesnt exist in official "dotnet" deployment
-            Environment.SetEnvironmentVariable("COMPlus_GCName", String.Empty);
+            // Unset DOTNET_GCName since standalone GC doesnt exist in official "dotnet" deployment
+            Environment.SetEnvironmentVariable("DOTNET_GCName", String.Empty);
             string DotNetAbsolutePath = string.IsNullOrEmpty(TestDotNetCmdVar) ? FindExePath("dotnet") : TestDotNetCmdVar;
 
             ProcessStartInfo processStartInfo = new ProcessStartInfo
@@ -56,7 +56,7 @@ namespace R2RDumpTests
                 UseShellExecute = false,
                 FileName = DotNetAbsolutePath,
                 // TODO, what flags do we like to test?
-                Arguments = string.Join(" ", new string[]{"exec", R2RDumpAbsolutePath, "--in", CoreLibAbsolutePath, "--out", OutputFile})
+                Arguments = string.Join(" ", new string[]{"exec", R2RDumpAbsolutePath, "--in", CoreLibAbsolutePath, "--out", OutputFile, "--val"})
             };
 
             Process process = Process.Start(processStartInfo);

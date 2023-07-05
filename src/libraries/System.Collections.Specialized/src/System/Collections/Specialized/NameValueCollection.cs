@@ -7,6 +7,7 @@
  *
  */
 
+using System.ComponentModel;
 using System.Diagnostics;
 using System.Runtime.Serialization;
 using System.Text;
@@ -41,7 +42,7 @@ namespace System.Collections.Specialized
         ///    provider and the default case-insensitive comparer.</para>
         /// </devdoc>
         public NameValueCollection(NameValueCollection col)
-            : base(col != null ? col.Comparer : null)
+            : base(col?.Comparer)
         {
             Add(col!);
         }
@@ -76,8 +77,8 @@ namespace System.Collections.Specialized
         ///    using the default case-insensitive hash code provider and the default
         ///    case-insensitive comparer.</para>
         /// </devdoc>
-        public NameValueCollection(int capacity, NameValueCollection col!!)
-            : base(capacity, col.Comparer)
+        public NameValueCollection(int capacity, NameValueCollection col)
+            : base(capacity, col != null ? col.Comparer : throw new ArgumentNullException(nameof(col)))
         {
             this.Comparer = col.Comparer;
             Add(col);
@@ -89,6 +90,8 @@ namespace System.Collections.Specialized
         {
         }
 
+        [Obsolete(Obsoletions.LegacyFormatterImplMessage, DiagnosticId = Obsoletions.LegacyFormatterImplDiagId, UrlFormat = Obsoletions.SharedUrlFormat)]
+        [EditorBrowsable(EditorBrowsableState.Never)]
         protected NameValueCollection(SerializationInfo info, StreamingContext context) : base(info, context)
         {
         }
@@ -152,8 +155,10 @@ namespace System.Collections.Specialized
         /// <devdoc>
         /// <para>Copies the entries in the specified <see cref='System.Collections.Specialized.NameValueCollection'/> to the current <see cref='System.Collections.Specialized.NameValueCollection'/>.</para>
         /// </devdoc>
-        public void Add(NameValueCollection c!!)
+        public void Add(NameValueCollection c)
         {
+            ArgumentNullException.ThrowIfNull(c);
+
             InvalidateCachedArrays();
 
             int n = c.Count;
@@ -188,17 +193,16 @@ namespace System.Collections.Specialized
             BaseClear();
         }
 
-        public void CopyTo(Array dest!!, int index)
+        public void CopyTo(Array dest, int index)
         {
+            ArgumentNullException.ThrowIfNull(dest);
+
             if (dest.Rank != 1)
             {
                 throw new ArgumentException(SR.Arg_MultiRank, nameof(dest));
             }
 
-            if (index < 0)
-            {
-                throw new ArgumentOutOfRangeException(nameof(index), index, SR.ArgumentOutOfRange_NeedNonNegNum_Index);
-            }
+            ArgumentOutOfRangeException.ThrowIfNegative(index);
 
             if (dest.Length - index < Count)
             {
@@ -383,14 +387,6 @@ namespace System.Collections.Specialized
         /// <devdoc>
         /// <para>Gets all the keys in the <see cref='System.Collections.Specialized.NameValueCollection'/>. </para>
         /// </devdoc>
-        public virtual string?[] AllKeys
-        {
-            get
-            {
-                if (_allKeys == null)
-                    _allKeys = BaseGetAllKeys();
-                return _allKeys;
-            }
-        }
+        public virtual string?[] AllKeys => _allKeys ??= BaseGetAllKeys();
     }
 }

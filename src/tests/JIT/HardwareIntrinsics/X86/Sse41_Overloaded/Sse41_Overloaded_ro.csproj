@@ -1,6 +1,6 @@
 <Project Sdk="Microsoft.NET.Sdk">
   <PropertyGroup>
-    <OutputType>Exe</OutputType>
+    <AssemblyName>X86_Sse41_Overloaded_ro</AssemblyName>
     <AllowUnsafeBlocks>true</AllowUnsafeBlocks>
   </PropertyGroup>
   <PropertyGroup>
@@ -8,16 +8,7 @@
     <Optimize>True</Optimize>
   </PropertyGroup>
   <ItemGroup>
-    <Compile Include="RoundCurrentDirectionScalar.Double.cs" />
-    <Compile Include="RoundCurrentDirectionScalar.Single.cs" />
-    <Compile Include="RoundToNearestIntegerScalar.Double.cs" />
-    <Compile Include="RoundToNearestIntegerScalar.Single.cs" />
-    <Compile Include="RoundToNegativeInfinityScalar.Double.cs" />
-    <Compile Include="RoundToNegativeInfinityScalar.Single.cs" />
-    <Compile Include="RoundToPositiveInfinityScalar.Double.cs" />
-    <Compile Include="RoundToPositiveInfinityScalar.Single.cs" />
     <Compile Include="Program.Sse41_Overloaded.cs" />
     <Compile Include="..\Shared\Program.cs" />
-    <Compile Include="..\Shared\SimpleUnOpTest_DataTable.cs" />
   </ItemGroup>
 </Project>

@@ -3,7 +3,7 @@
 
 class CrashInfo;
 
-class DumpDataTarget : public ICLRDataTarget
+class DumpDataTarget : public ICLRDataTarget, ICLRRuntimeLocator
 {
 private:
     LONG m_ref;                         // reference count
@@ -79,4 +79,9 @@ public:
         /* [size_is][in] */ BYTE *inBuffer,
         /* [in] */ ULONG32 outBufferSize,
         /* [size_is][out] */ BYTE *outBuffer);
+
+    // ICLRRuntimeLocator
+
+    virtual HRESULT STDMETHODCALLTYPE GetRuntimeBase(
+        /* [out] */ CLRDATA_ADDRESS* baseAddress);
 };

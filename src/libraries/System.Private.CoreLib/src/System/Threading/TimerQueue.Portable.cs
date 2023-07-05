@@ -7,7 +7,7 @@ using System.Diagnostics;
 namespace System.Threading
 {
     //
-    // Unix-specific implementation of Timer
+    // Portable implementation of Timer
     //
     internal sealed partial class TimerQueue : IThreadPoolWorkItem
     {
@@ -20,14 +20,9 @@ namespace System.Threading
         /// </summary>
         private static readonly AutoResetEvent s_timerEvent = new AutoResetEvent(false);
 
+        // this means that it's in the s_scheduledTimers collection, not that it's the one which would run on the next TimeoutCallback
         private bool _isScheduled;
         private long _scheduledDueTimeMs;
-
-#pragma warning disable IDE0060
-        private TimerQueue(int id)
-        {
-        }
-#pragma warning restore IDE0060
 
         private static List<TimerQueue> InitializeScheduledTimerManager_Locked()
         {
@@ -40,7 +35,7 @@ namespace System.Threading
             // using UnsafeStart() instead of Start()
             Thread timerThread = new Thread(TimerThread)
             {
-                Name = ".NET Timers",
+                Name = ".NET Timer",
                 IsBackground = true
             };
             timerThread.UnsafeStart();
@@ -50,7 +45,7 @@ namespace System.Threading
             return timers;
         }
 
-        private bool SetTimer(uint actualDuration)
+        private bool SetTimerPortable(uint actualDuration)
         {
             Debug.Assert((int)actualDuration >= 0);
             long dueTimeMs = TickCount64 + (int)actualDuration;
@@ -59,11 +54,7 @@ namespace System.Threading
             {
                 if (!_isScheduled)
                 {
-                    List<TimerQueue>? timers = s_scheduledTimers;
-                    if (timers == null)
-                    {
-                        timers = InitializeScheduledTimerManager_Locked();
-                    }
+                    List<TimerQueue> timers = s_scheduledTimers ?? InitializeScheduledTimerManager_Locked();
 
                     timers.Add(this);
                     _isScheduled = true;
@@ -77,7 +68,7 @@ namespace System.Threading
         }
 
         /// <summary>
-        /// This method is executed on a dedicated a timer thread. Its purpose is
+        /// This method is executed on a dedicated timer thread. Its purpose is
         /// to handle timer requests and notify the TimerQueue when a timer expires.
         /// </summary>
         private static void TimerThread()

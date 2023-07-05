@@ -440,7 +440,7 @@ namespace System.Net.Mail.Tests
         }
 
         [Fact]
-        public void MailAddress_WithDisplayNameParamiterQuotes_ShouldReadCorrectly()
+        public void MailAddress_WithDisplayNameParameterQuotes_ShouldReadCorrectly()
         {
             MailAddress result = new MailAddress("display username@domain", "\"quoted display\"");
 
@@ -450,7 +450,7 @@ namespace System.Net.Mail.Tests
         }
 
         [Fact]
-        public void MailAddress_WithDisplayNameParamiterNoQuotes_ShouldReadCorrectly()
+        public void MailAddress_WithDisplayNameParameterNoQuotes_ShouldReadCorrectly()
         {
             MailAddress result = new MailAddress("display username@domain", "quoted display");
 
@@ -505,7 +505,7 @@ namespace System.Net.Mail.Tests
         }
 
         [Fact]
-        public void ParseAdresses_WithOnlyOneAddress_ShouldReadCorrectly()
+        public void ParseAddresses_WithOnlyOneAddress_ShouldReadCorrectly()
         {
             IList<MailAddress> result = MailAddressParser.ParseMultipleAddresses("Dr M\u00FCller <test@mail.com>");
 

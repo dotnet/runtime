@@ -8,10 +8,6 @@ namespace System.Text.RegularExpressions
     internal static class ThrowHelper
     {
         [DoesNotReturn]
-        internal static Exception CreateArgumentException(ExceptionResource resource) =>
-            throw new ArgumentException(GetStringForExceptionResource(resource));
-
-        [DoesNotReturn]
         internal static void ThrowArgumentNullException(ExceptionArgument arg) =>
             throw new ArgumentNullException(GetStringForExceptionArgument(arg));
 
@@ -22,10 +18,6 @@ namespace System.Text.RegularExpressions
         [DoesNotReturn]
         internal static void ThrowArgumentOutOfRangeException(ExceptionArgument arg, ExceptionResource resource) =>
             throw new ArgumentOutOfRangeException(GetStringForExceptionArgument(arg), GetStringForExceptionResource(resource));
-
-        [DoesNotReturn]
-        internal static void ThrowNotSupportedException(ExceptionResource resource) =>
-            throw new NotSupportedException(GetStringForExceptionResource(resource));
 
         private static string? GetStringForExceptionArgument(ExceptionArgument arg) =>
             arg switch
@@ -43,7 +35,6 @@ namespace System.Text.RegularExpressions
                 ExceptionArgument.name => nameof(ExceptionArgument.name),
                 ExceptionArgument.options => nameof(ExceptionArgument.options),
                 ExceptionArgument.pattern => nameof(ExceptionArgument.pattern),
-                ExceptionArgument.regexinfos => nameof(ExceptionArgument.regexinfos),
                 ExceptionArgument.replacement => nameof(ExceptionArgument.replacement),
                 ExceptionArgument.startat => nameof(ExceptionArgument.startat),
                 ExceptionArgument.str => nameof(ExceptionArgument.str),
@@ -57,7 +48,6 @@ namespace System.Text.RegularExpressions
                 ExceptionResource.BeginIndexNotNegative => SR.BeginIndexNotNegative,
                 ExceptionResource.CountTooSmall => SR.CountTooSmall,
                 ExceptionResource.LengthNotNegative => SR.LengthNotNegative,
-                ExceptionResource.ReplacementError => SR.ReplacementError,
                 _ => null
             };
     }
@@ -77,7 +67,6 @@ namespace System.Text.RegularExpressions
         name,
         options,
         pattern,
-        regexinfos,
         replacement,
         startat,
         str,
@@ -89,6 +78,5 @@ namespace System.Text.RegularExpressions
         BeginIndexNotNegative,
         CountTooSmall,
         LengthNotNegative,
-        ReplacementError,
     }
 }

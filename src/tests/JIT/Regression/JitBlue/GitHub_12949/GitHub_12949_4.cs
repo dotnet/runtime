@@ -3,6 +3,7 @@
 
 using System;
 using System.Runtime.CompilerServices;
+using Xunit;
 
 public class X<K> 
 {
@@ -20,9 +21,10 @@ public class X<K>
     public K k;
 }
 
-class B
+public class B
 {
-    public static int Main()
+    [Fact]
+    public static int TestEntryPoint()
     {
         X<int> a = null;
         bool result = false;

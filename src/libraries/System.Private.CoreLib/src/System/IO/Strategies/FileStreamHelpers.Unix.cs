@@ -9,12 +9,12 @@ namespace System.IO.Strategies
     internal static partial class FileStreamHelpers
     {
 #pragma warning disable IDE0060
-        private static OSFileStreamStrategy ChooseStrategyCore(SafeFileHandle handle, FileAccess access, bool isAsync) =>
+        private static UnixFileStreamStrategy ChooseStrategyCore(SafeFileHandle handle, FileAccess access, bool isAsync) =>
             new UnixFileStreamStrategy(handle, access);
 #pragma warning restore IDE0060
 
-        private static FileStreamStrategy ChooseStrategyCore(string path, FileMode mode, FileAccess access, FileShare share, FileOptions options, long preallocationSize) =>
-            new UnixFileStreamStrategy(path, mode, access, share, options, preallocationSize);
+        private static UnixFileStreamStrategy ChooseStrategyCore(string path, FileMode mode, FileAccess access, FileShare share, FileOptions options, long preallocationSize, UnixFileMode? unixCreateMode) =>
+            new UnixFileStreamStrategy(path, mode, access, share, options, preallocationSize, unixCreateMode);
 
         internal static long CheckFileCall(long result, string? path, bool ignoreNotSupported = false)
         {
@@ -23,7 +23,7 @@ namespace System.IO.Strategies
                 Interop.ErrorInfo errorInfo = Interop.Sys.GetLastErrorInfo();
                 if (!(ignoreNotSupported && errorInfo.Error == Interop.Error.ENOTSUP))
                 {
-                    throw Interop.GetExceptionForIoErrno(errorInfo, path, isDirectory: false);
+                    throw Interop.GetExceptionForIoErrno(errorInfo, path);
                 }
             }
 
@@ -51,14 +51,14 @@ namespace System.IO.Strategies
                         // In such cases there's nothing to flush.
                         break;
                     default:
-                        throw Interop.GetExceptionForIoErrno(errorInfo, handle.Path, isDirectory: false);
+                        throw Interop.GetExceptionForIoErrno(errorInfo, handle.Path);
                 }
             }
         }
 
         internal static void Lock(SafeFileHandle handle, bool canWrite, long position, long length)
         {
-            if (OperatingSystem.IsOSXLike())
+            if (OperatingSystem.IsOSXLike() || OperatingSystem.IsFreeBSD())
             {
                 throw new PlatformNotSupportedException(SR.PlatformNotSupported_OSXFileLocking);
             }
@@ -68,7 +68,7 @@ namespace System.IO.Strategies
 
         internal static void Unlock(SafeFileHandle handle, long position, long length)
         {
-            if (OperatingSystem.IsOSXLike())
+            if (OperatingSystem.IsOSXLike() || OperatingSystem.IsFreeBSD())
             {
                 throw new PlatformNotSupportedException(SR.PlatformNotSupported_OSXFileLocking);
             }

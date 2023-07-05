@@ -6,18 +6,18 @@
 
   <Target Name="VerifyCrossDacProperties" BeforeTargets="Build;Pack">
     <Error Condition="'$(CrossDacArtifactsDir)' == '' or !Exists('$(CrossDacArtifactsDir)')"
-          Text="Packaging the Cross OS DAC requires property CrossDacArtifactsDir to to a path containing all cross OS DAC assets needed." />
+          Text="Packaging the Cross OS DAC requires property CrossDacArtifactsDir to a path containing all cross OS DAC assets needed." />
   </Target>
 
   <Target Name="FilterSupportedCrossOsDacPackages" BeforeTargets="Build;Pack">
     <ItemGroup>
       <_projectsToBuild Include="@(Project)" Condition="$(SupportedRids.Contains('%(Project.PackageTargetRuntime)'))">
-        <AdditionalProperties Condition="'%(Project.PackageTargetRuntime)' == 'linux-x64'">%(AdditionalProperties);CrossDacBinRoot=$(CrossDacArtifactsDir)/Linux.x64.$(Configuration)/x64</AdditionalProperties>
-        <AdditionalProperties Condition="'%(Project.PackageTargetRuntime)' == 'linux-musl-x64'">%(AdditionalProperties);CrossDacBinRoot=$(CrossDacArtifactsDir)/Linux_musl.x64.$(Configuration)/x64</AdditionalProperties>
-        <AdditionalProperties Condition="'%(Project.PackageTargetRuntime)' == 'linux-arm64'">%(AdditionalProperties);CrossDacBinRoot=$(CrossDacArtifactsDir)/Linux.arm64.$(Configuration)/x64</AdditionalProperties>
-        <AdditionalProperties Condition="'%(Project.PackageTargetRuntime)' == 'linux-musl-arm64'">%(AdditionalProperties);CrossDacBinRoot=$(CrossDacArtifactsDir)/Linux_musl.arm64.$(Configuration)/x64</AdditionalProperties>
-        <AdditionalProperties Condition="'%(Project.PackageTargetRuntime)' == 'linux-arm'">%(AdditionalProperties);CrossDacBinRoot=$(CrossDacArtifactsDir)/Linux.arm.$(Configuration)/x86</AdditionalProperties>
-        <AdditionalProperties Condition="'%(Project.PackageTargetRuntime)' == 'linux-musl-arm'">%(AdditionalProperties);CrossDacBinRoot=$(CrossDacArtifactsDir)/Linux_musl.arm.$(Configuration)/x86</AdditionalProperties>
+        <AdditionalProperties Condition="'%(Project.PackageTargetRuntime)' == 'linux-x64'">%(AdditionalProperties);CrossDacBinRoot=$(CrossDacArtifactsDir)/linux.x64.$(Configuration)/x64</AdditionalProperties>
+        <AdditionalProperties Condition="'%(Project.PackageTargetRuntime)' == 'linux-musl-x64'">%(AdditionalProperties);CrossDacBinRoot=$(CrossDacArtifactsDir)/linux_musl.x64.$(Configuration)/x64</AdditionalProperties>
+        <AdditionalProperties Condition="'%(Project.PackageTargetRuntime)' == 'linux-arm64'">%(AdditionalProperties);CrossDacBinRoot=$(CrossDacArtifactsDir)/linux.arm64.$(Configuration)/x64</AdditionalProperties>
+        <AdditionalProperties Condition="'%(Project.PackageTargetRuntime)' == 'linux-musl-arm64'">%(AdditionalProperties);CrossDacBinRoot=$(CrossDacArtifactsDir)/linux_musl.arm64.$(Configuration)/x64</AdditionalProperties>
+        <AdditionalProperties Condition="'%(Project.PackageTargetRuntime)' == 'linux-arm'">%(AdditionalProperties);CrossDacBinRoot=$(CrossDacArtifactsDir)/linux.arm.$(Configuration)/x86</AdditionalProperties>
+        <AdditionalProperties Condition="'%(Project.PackageTargetRuntime)' == 'linux-musl-arm'">%(AdditionalProperties);CrossDacBinRoot=$(CrossDacArtifactsDir)/linux_musl.arm.$(Configuration)/x86</AdditionalProperties>
       </_projectsToBuild>
     </ItemGroup>
 

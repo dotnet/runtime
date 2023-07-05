@@ -25,7 +25,7 @@ namespace System.Reflection.Emit.Tests
 
             Helpers.VerifyConstructor(constructor, type, MethodAttributes.Private | MethodAttributes.Static | MethodAttributes.SpecialName, CallingConventions.Standard, new Type[0]);
 
-            Type createdType = type.CreateTypeInfo().AsType();
+            Type createdType = type.CreateType();
             FieldInfo createdField = createdType.GetField("Greeting", BindingFlags.NonPublic | BindingFlags.Static);
             Assert.Equal("hello", createdField.GetValue(Activator.CreateInstance(createdType)));
         }
@@ -34,7 +34,7 @@ namespace System.Reflection.Emit.Tests
         public void DefineTypeInitializer_TypeCreated_ThrowsInvalidOperationException()
         {
             TypeBuilder type = Helpers.DynamicType(TypeAttributes.Public);
-            type.CreateTypeInfo().AsType();
+            type.CreateType();
 
             Assert.Throws<InvalidOperationException>(() => type.DefineTypeInitializer());
         }

@@ -28,6 +28,29 @@ namespace System.Reflection.Metadata.Ecma335.Tests
         }
 
         [Fact]
+        public void BlobEncoder_Field()
+        {
+            var b = new BlobBuilder();
+            var e = new BlobEncoder(b);
+            Assert.Same(b, e.Builder);
+
+            var f = e.Field();
+            f.CustomModifiers()
+                .AddModifier(MetadataTokens.TypeDefinitionHandle(1), isOptional: true)
+                .AddModifier(MetadataTokens.TypeDefinitionHandle(2), isOptional: false);
+            f.Type(isByRef: true).Object();
+            AssertEx.Equal(new byte[] { 0x06, 0x20, 0x04, 0x1F, 0x08, 0x10, 0x1C }, b.ToArray());
+
+            b.Clear();
+            f = e.Field();
+            f.CustomModifiers()
+                .AddModifier(MetadataTokens.TypeDefinitionHandle(1), isOptional: true)
+                .AddModifier(MetadataTokens.TypeDefinitionHandle(2), isOptional: false);
+            f.Type().Int32();
+            AssertEx.Equal(new byte[] { 0x06, 0x20, 0x04, 0x1F, 0x08, 0x08 }, b.ToArray());
+        }
+
+        [Fact]
         public void BlobEncoder_MethodSpecificationSignature()
         {
             var b = new BlobBuilder();
@@ -949,6 +972,10 @@ namespace System.Reflection.Metadata.Ecma335.Tests
             AssertEx.Equal(new byte[] { 0x0E }, b.ToArray());
             b.Clear();
 
+            e.TypedReference();
+            AssertEx.Equal(new byte[] { 0x16 }, b.ToArray());
+            b.Clear();
+
             e.IntPtr();
             AssertEx.Equal(new byte[] { 0x18 }, b.ToArray());
             b.Clear();
@@ -1021,6 +1048,10 @@ namespace System.Reflection.Metadata.Ecma335.Tests
             AssertEx.Equal(new byte[] { 0x0E }, b.ToArray());
             b.Clear();
 
+            e.PrimitiveType(PrimitiveTypeCode.TypedReference);
+            AssertEx.Equal(new byte[] { 0x16 }, b.ToArray());
+            b.Clear();
+
             e.PrimitiveType(PrimitiveTypeCode.IntPtr);
             AssertEx.Equal(new byte[] { 0x18 }, b.ToArray());
             b.Clear();
@@ -1034,7 +1065,6 @@ namespace System.Reflection.Metadata.Ecma335.Tests
             b.Clear();
 
             Assert.Throws<ArgumentOutOfRangeException>(() => e.PrimitiveType(PrimitiveTypeCode.Void));
-            Assert.Throws<ArgumentOutOfRangeException>(() => e.PrimitiveType(PrimitiveTypeCode.TypedReference));
             Assert.Throws<ArgumentOutOfRangeException>(() => e.PrimitiveType((PrimitiveTypeCode)255));
         }
 

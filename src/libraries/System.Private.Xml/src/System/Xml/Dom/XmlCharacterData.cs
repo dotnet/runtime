@@ -185,12 +185,12 @@ namespace System.Xml
                 AfterEvent(args);
         }
 
-        internal bool CheckOnData(string? data)
+        internal static bool CheckOnData(string? data)
         {
             return XmlCharType.IsOnlyWhitespace(data);
         }
 
-        internal bool DecideXPNodeTypeForTextNodes(XmlNode node, ref XPathNodeType xnt)
+        internal static bool DecideXPNodeTypeForTextNodes(XmlNode node, ref XPathNodeType xnt)
         {
             //returns true - if all siblings of the node are processed else returns false.
             //The reference XPathNodeType argument being passed in is the watermark that

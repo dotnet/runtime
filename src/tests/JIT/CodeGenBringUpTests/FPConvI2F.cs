@@ -5,6 +5,7 @@
 
 using System;
 using System.Runtime.CompilerServices;
+using Xunit;
 public class BringUpTest_FPConvI2F
 {
     const int Pass = 100;
@@ -28,7 +29,8 @@ public class BringUpTest_FPConvI2F
     [MethodImplAttribute(MethodImplOptions.NoInlining)]
     public static float FPConvI2F(Int16 x) { return (float)x; }
 
-    public static int Main()
+    [Fact]
+    public static int TestEntryPoint()
     {
         int result = Fail;
         float x = FPConvI2F((int)3);

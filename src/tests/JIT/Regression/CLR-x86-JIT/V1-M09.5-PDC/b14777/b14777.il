@@ -11,6 +11,7 @@
 // Entry point - Main     -
 //-------------------------
 .assembly extern legacy library mscorlib {}
+.assembly extern xunit.core {}
 .assembly extern System.Console
 {
   .publickeytoken = (B0 3F 5F 7F 11 D5 0A 3A )
@@ -19,8 +20,11 @@
 .assembly b14777
 {
 }
-.class	_ldtoken	 {
-.method static int32 main(class [mscorlib]System.String[]) {
+.class	public _ldtoken	 {
+.method public static int32 main() {
+.custom instance void [xunit.core]Xunit.FactAttribute::.ctor() = (
+    01 00 00 00
+)
 .entrypoint
 .locals	()
 .maxstack	2

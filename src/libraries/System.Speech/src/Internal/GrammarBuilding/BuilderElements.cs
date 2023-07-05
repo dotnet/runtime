@@ -152,9 +152,9 @@ namespace System.Speech.Internal.GrammarBuilding
 
         internal void CreateChildrenElements(IElementFactory elementFactory, IRule parent, IdentifierCollection ruleIds)
         {
-            foreach (GrammarBuilderBase buider in Items)
+            foreach (GrammarBuilderBase builder in Items)
             {
-                IElement element = buider.CreateElement(elementFactory, parent, parent, ruleIds);
+                IElement element = builder.CreateElement(elementFactory, parent, parent, ruleIds);
                 if (element != null)
                 {
                     element.PostParse(parent);
@@ -165,9 +165,9 @@ namespace System.Speech.Internal.GrammarBuilding
 
         internal void CreateChildrenElements(IElementFactory elementFactory, IItem parent, IRule rule, IdentifierCollection ruleIds)
         {
-            foreach (GrammarBuilderBase buider in Items)
+            foreach (GrammarBuilderBase builder in Items)
             {
-                IElement element = buider.CreateElement(elementFactory, parent, rule, ruleIds);
+                IElement element = builder.CreateElement(elementFactory, parent, rule, ruleIds);
                 if (element != null)
                 {
                     element.PostParse(parent);
@@ -233,11 +233,13 @@ namespace System.Speech.Internal.GrammarBuilding
                 // Go deeper if the number of children is greater the element to compare against.
                 if (current != null)
                 {
-                    if (!dict.ContainsKey(current.Count))
+                    if (!dict.TryGetValue(current.Count, out Collection<BuilderElements> builderElements))
                     {
-                        dict.Add(current.Count, new Collection<BuilderElements>());
+                        builderElements = new Collection<BuilderElements>();
+                        dict.Add(current.Count, builderElements);
                     }
-                    dict[current.Count].Add(current);
+
+                    builderElements.Add(current);
 
                     current.GetDictionaryElements(dict);
                 }

@@ -5,7 +5,7 @@ using System;
 
 
 public class TryCatchFinally{
-	public static int Main(String [] args) {
+	public static int Main() {
 			int i = 1;
 			String m_str = "Failed";
 			String str = "Done";

@@ -3,14 +3,16 @@
 //
 
 using System;
-struct AA
+using Xunit;
+public struct AA
 {
     static bool Static3(ulong param2)
     {
         bool b = false;
         return (bool)(object)(long)(byte)(b ? Convert.ToInt64(param2) : (long)param2);
     }
-    static int Main()
+    [Fact]
+    public static int TestEntryPoint()
     {
         try
         {

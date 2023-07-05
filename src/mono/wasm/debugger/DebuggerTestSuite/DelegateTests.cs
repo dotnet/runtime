@@ -7,18 +7,21 @@ using System.Threading.Tasks;
 using Microsoft.WebAssembly.Diagnostics;
 using Newtonsoft.Json.Linq;
 using Xunit;
+using Xunit.Abstractions;
 
 namespace DebuggerTests
 {
 
-    public class DelegateTests : DebuggerTestBase
+    public class DelegateTests : DebuggerTests
     {
+        public DelegateTests(ITestOutputHelper testOutput) : base(testOutput)
+        {}
 
-        [Theory]
-        [InlineData(0, 53, 8, "DelegatesTest", false)]
-        [InlineData(0, 53, 8, "DelegatesTest", true)]
-        [InlineData(2, 99, 8, "InnerMethod2", false)]
-        [InlineData(2, 99, 8, "InnerMethod2", true)]
+        [ConditionalTheory(nameof(RunningOnChrome))]
+        [InlineData(0, 53, 8, "Math.DelegatesTest", false)]
+        [InlineData(0, 53, 8, "Math.DelegatesTest", true)]
+        [InlineData(2, 99, 8, "Math.InnerMethod2", false)]
+        [InlineData(2, 99, 8, "Math.InnerMethod2", true)]
         public async Task InspectLocalsWithDelegatesAtBreakpointSite(int frame, int line, int col, string method_name, bool use_cfo) =>
             await CheckInspectLocalsAtBreakpointSite(
                 "dotnet://debugger-test.dll/debugger-test.cs", line, col, method_name,
@@ -80,11 +83,11 @@ namespace DebuggerTests
                }
             );
 
-        [Theory]
-        [InlineData(0, 202, 8, "DelegatesSignatureTest", false)]
-        [InlineData(0, 202, 8, "DelegatesSignatureTest", true)]
-        [InlineData(2, 99, 8, "InnerMethod2", false)]
-        [InlineData(2, 99, 8, "InnerMethod2", true)]
+        [ConditionalTheory(nameof(RunningOnChrome))]
+        [InlineData(0, 202, 8, "Math.DelegatesSignatureTest", false)]
+        [InlineData(0, 202, 8, "Math.DelegatesSignatureTest", true)]
+        [InlineData(2, 99, 8, "Math.InnerMethod2", false)]
+        [InlineData(2, 99, 8, "Math.InnerMethod2", true)]
         public async Task InspectDelegateSignaturesWithFunc(int frame, int line, int col, string bp_method, bool use_cfo) => await CheckInspectLocalsAtBreakpointSite(
             "dotnet://debugger-test.dll/debugger-test.cs",
             line, col,
@@ -151,11 +154,11 @@ namespace DebuggerTests
                }, "locals#fn_void_del_arr");
            });
 
-        [Theory]
-        [InlineData(0, 224, 8, "ActionTSignatureTest", false)]
-        [InlineData(0, 224, 8, "ActionTSignatureTest", true)]
-        [InlineData(2, 99, 8, "InnerMethod2", false)]
-        [InlineData(2, 99, 8, "InnerMethod2", true)]
+        [ConditionalTheory(nameof(RunningOnChrome))]
+        [InlineData(0, 224, 8, "Math.ActionTSignatureTest", false)]
+        [InlineData(0, 224, 8, "Math.ActionTSignatureTest", true)]
+        [InlineData(2, 99, 8, "Math.InnerMethod2", false)]
+        [InlineData(2, 99, 8, "Math.InnerMethod2", true)]
         public async Task ActionTSignatureTest(int frame, int line, int col, string bp_method, bool use_cfo) => await CheckInspectLocalsAtBreakpointSite(
             "dotnet://debugger-test.dll/debugger-test.cs", line, col,
             bp_method,
@@ -193,11 +196,11 @@ namespace DebuggerTests
                }, "locals#fn_action_arr");
            });
 
-        [Theory]
-        [InlineData(0, 242, 8, "NestedDelegatesTest", false)]
-        [InlineData(0, 242, 8, "NestedDelegatesTest", true)]
-        [InlineData(2, 99, 8, "InnerMethod2", false)]
-        [InlineData(2, 99, 8, "InnerMethod2", true)]
+        [ConditionalTheory(nameof(RunningOnChrome))]
+        [InlineData(0, 242, 8, "Math.NestedDelegatesTest", false)]
+        [InlineData(0, 242, 8, "Math.NestedDelegatesTest", true)]
+        [InlineData(2, 99, 8, "Math.InnerMethod2", false)]
+        [InlineData(2, 99, 8, "Math.InnerMethod2", true)]
         public async Task NestedDelegatesTest(int frame, int line, int col, string bp_method, bool use_cfo) => await CheckInspectLocalsAtBreakpointSite(
             "dotnet://debugger-test.dll/debugger-test.cs", line, col,
             bp_method,
@@ -236,11 +239,11 @@ namespace DebuggerTests
                }, "locals#fn_del_arr");
            });
 
-        [Theory]
-        [InlineData(0, 262, 8, "MethodWithDelegateArgs", false)]
-        [InlineData(0, 262, 8, "MethodWithDelegateArgs", true)]
-        [InlineData(2, 99, 8, "InnerMethod2", false)]
-        [InlineData(2, 99, 8, "InnerMethod2", true)]
+        [ConditionalTheory(nameof(RunningOnChrome))]
+        [InlineData(0, 262, 8, "Math.MethodWithDelegateArgs", false)]
+        [InlineData(0, 262, 8, "Math.MethodWithDelegateArgs", true)]
+        [InlineData(2, 99, 8, "Math.InnerMethod2", false)]
+        [InlineData(2, 99, 8, "Math.InnerMethod2", true)]
         public async Task DelegatesAsMethodArgsTest(int frame, int line, int col, string bp_method, bool use_cfo) => await CheckInspectLocalsAtBreakpointSite(
             "dotnet://debugger-test.dll/debugger-test.cs", line, col,
             bp_method,
@@ -269,12 +272,12 @@ namespace DebuggerTests
                }, "locals#dst_arr");
            });
 
-        [Theory]
+        [ConditionalTheory(nameof(RunningOnChrome))]
         [InlineData(false)]
         [InlineData(true)]
         public async Task MethodWithDelegatesAsyncTest(bool use_cfo) => await CheckInspectLocalsAtBreakpointSite(
             "dotnet://debugger-test.dll/debugger-test.cs", 281, 8,
-            "MoveNext", //"DelegatesAsMethodArgsTestAsync"
+            "Math.MethodWithDelegatesAsync",
             "window.setTimeout (function () { invoke_static_method_async ('[debugger-test] Math:MethodWithDelegatesAsyncTest'); }, 1)",
             use_cfo: use_cfo,
             wait_for_event_fn: async (pause_location) =>

@@ -26,8 +26,10 @@ namespace System.Xml.Linq
 
         internal XContainer() { }
 
-        internal XContainer(XContainer other!!)
+        internal XContainer(XContainer other)
         {
+            ArgumentNullException.ThrowIfNull(other);
+
             if (other.content is string)
             {
                 this.content = other.content;
@@ -53,8 +55,7 @@ namespace System.Xml.Linq
         {
             get
             {
-                XNode? last = LastNode;
-                return last != null ? last.next : null;
+                return LastNode?.next;
             }
         }
 
@@ -846,7 +847,7 @@ namespace System.Xml.Linq
             if (r.ReadState != ReadState.Interactive) throw new InvalidOperationException(SR.InvalidOperation_ExpectedInteractive);
 
             ContentReader cr = new ContentReader(this, r, o);
-            while (cr.ReadContentFrom(this, r, o) && r.Read()) ;
+            while (cr.ReadContentFromContainer(this, r) && r.Read()) ;
         }
 
         internal async Task ReadContentFromAsync(XmlReader r, CancellationToken cancellationToken)
@@ -875,7 +876,7 @@ namespace System.Xml.Linq
             {
                 cancellationToken.ThrowIfCancellationRequested();
             }
-            while (await cr.ReadContentFromAsync(this, r, o).ConfigureAwait(false) && await r.ReadAsync().ConfigureAwait(false));
+            while (await cr.ReadContentFromContainerAsync(this, r).ConfigureAwait(false) && await r.ReadAsync().ConfigureAwait(false));
         }
 
         private sealed class ContentReader
@@ -919,10 +920,7 @@ namespace System.Xml.Linq
                         }
                         break;
                     case XmlNodeType.EndElement:
-                        if (_currentContainer.content == null)
-                        {
-                            _currentContainer.content = string.Empty;
-                        }
+                        _currentContainer.content ??= string.Empty;
                         if (_currentContainer == rootContainer) return false;
                         _currentContainer = _currentContainer.parent!;
                         break;
@@ -978,10 +976,7 @@ namespace System.Xml.Linq
                         }
                         break;
                     case XmlNodeType.EndElement:
-                        if (_currentContainer.content == null)
-                        {
-                            _currentContainer.content = string.Empty;
-                        }
+                        _currentContainer.content ??= string.Empty;
                         if (_currentContainer == rootContainer) return false;
                         _currentContainer = _currentContainer.parent!;
                         break;
@@ -1014,7 +1009,7 @@ namespace System.Xml.Linq
                 return true;
             }
 
-            public bool ReadContentFrom(XContainer rootContainer, XmlReader r, LoadOptions o)
+            public bool ReadContentFromContainer(XContainer rootContainer, XmlReader r)
             {
                 XNode? newNode = null;
                 string baseUri = r.BaseURI;
@@ -1058,10 +1053,7 @@ namespace System.Xml.Linq
                     }
                     case XmlNodeType.EndElement:
                     {
-                        if (_currentContainer.content == null)
-                        {
-                                _currentContainer.content = string.Empty;
-                        }
+                        _currentContainer.content ??= string.Empty;
                         // Store the line info of the end element tag.
                         // Note that since we've got EndElement the current container must be an XElement
                         XElement? e = _currentContainer as XElement;
@@ -1131,7 +1123,7 @@ namespace System.Xml.Linq
                 return true;
             }
 
-            public async ValueTask<bool> ReadContentFromAsync(XContainer rootContainer, XmlReader r, LoadOptions o)
+            public async ValueTask<bool> ReadContentFromContainerAsync(XContainer rootContainer, XmlReader r)
             {
                 XNode? newNode = null;
                 string baseUri = r.BaseURI!;
@@ -1177,10 +1169,7 @@ namespace System.Xml.Linq
                         }
                     case XmlNodeType.EndElement:
                         {
-                            if (_currentContainer.content == null)
-                            {
-                                _currentContainer.content = string.Empty;
-                            }
+                            _currentContainer.content ??= string.Empty;
                             // Store the line info of the end element tag.
                             // Note that since we've got EndElement the current container must be an XElement
                             XElement? e = _currentContainer as XElement;
@@ -1378,7 +1367,7 @@ namespace System.Xml.Linq
             }
         }
 
-        [return: NotNullIfNotNull("content")]
+        [return: NotNullIfNotNull(nameof(content))]
         internal static object? GetContentSnapshot(object? content)
         {
             if (content is string || !(content is IEnumerable)) return content;

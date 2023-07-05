@@ -14,7 +14,7 @@ namespace ILCompiler.DependencyAnalysis.ReadyToRun
 {
     public class EHInfoNode : ObjectNode, ISymbolDefinitionNode
     {
-        public override ObjectNodeSection Section => ObjectNodeSection.ReadOnlyDataSection;
+        public override ObjectNodeSection GetSection(NodeFactory factory) => ObjectNodeSection.ReadOnlyDataSection;
 
         public override bool IsShareable => false;
 
@@ -69,7 +69,6 @@ namespace ILCompiler.DependencyAnalysis.ReadyToRun
         private readonly EHInfoNode _ehInfoNode;
 
         public ExceptionInfoLookupTableNode(NodeFactory nodeFactory)
-            : base(nodeFactory.Target)
         {
             _nodeFactory = nodeFactory;
             _ehInfoNode = new EHInfoNode();

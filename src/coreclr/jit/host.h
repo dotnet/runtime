@@ -41,6 +41,11 @@ extern "C" void ANALYZER_NORETURN __cdecl assertAbort(const char* why, const cha
 
 #else // DEBUG
 
+// Re-define printf in Release to use jitstdout (can be overwritten with DOTNET_JitStdOutFile=file)
+#undef printf
+#define printf jitprintf
+void jitprintf(const char* fmt, ...);
+
 #undef assert
 #define assert(p) (void)0
 #endif // DEBUG
@@ -56,6 +61,7 @@ inline FILE* procstdout()
 {
     return stdout;
 }
+
 #undef stdout
 #define stdout use_jitstdout
 

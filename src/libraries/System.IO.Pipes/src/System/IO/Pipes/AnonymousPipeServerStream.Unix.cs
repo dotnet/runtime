@@ -17,14 +17,23 @@ namespace System.IO.Pipes
             Debug.Assert(direction != PipeDirection.InOut, "Anonymous pipe direction shouldn't be InOut");
             // Ignore bufferSize.  It's optional, and the fcntl F_SETPIPE_SZ for changing it is Linux specific.
 
-            SafePipeHandle serverHandle, clientHandle;
-            if (direction == PipeDirection.In)
+            SafePipeHandle? serverHandle = null, clientHandle = null;
+            try
             {
-                CreateAnonymousPipe(reader: out serverHandle, writer: out clientHandle);
+                if (direction == PipeDirection.In)
+                {
+                    CreateAnonymousPipe(reader: out serverHandle, writer: out clientHandle);
+                }
+                else
+                {
+                    CreateAnonymousPipe(reader: out clientHandle, writer: out serverHandle);
+                }
             }
-            else
+            catch
             {
-                CreateAnonymousPipe(reader: out clientHandle, writer: out serverHandle);
+                serverHandle?.Dispose();
+                clientHandle?.Dispose();
+                throw;
             }
 
             // We always create pipes with both file descriptors being O_CLOEXEC.

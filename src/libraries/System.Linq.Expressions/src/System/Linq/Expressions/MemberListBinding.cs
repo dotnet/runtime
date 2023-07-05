@@ -79,8 +79,8 @@ namespace System.Linq.Expressions
         /// <paramref name="member"/> does not represent a field or property.-or-The <see cref="FieldInfo.FieldType"/> or <see cref="PropertyInfo.PropertyType"/> of the field or property that <paramref name="member"/> represents does not implement <see cref="Collections.IEnumerable"/>.</exception>
         public static MemberListBinding ListBind(MemberInfo member, IEnumerable<ElementInit> initializers)
         {
-            ContractUtils.RequiresNotNull(member, nameof(member));
-            ContractUtils.RequiresNotNull(initializers, nameof(initializers));
+            ArgumentNullException.ThrowIfNull(member);
+            ArgumentNullException.ThrowIfNull(initializers);
             Type memberType;
             ValidateGettableFieldOrPropertyMember(member, out memberType);
             ReadOnlyCollection<ElementInit> initList = initializers.ToReadOnly();
@@ -113,8 +113,8 @@ namespace System.Linq.Expressions
         [RequiresUnreferencedCode(PropertyFromAccessorRequiresUnreferencedCode)]
         public static MemberListBinding ListBind(MethodInfo propertyAccessor, IEnumerable<ElementInit> initializers)
         {
-            ContractUtils.RequiresNotNull(propertyAccessor, nameof(propertyAccessor));
-            ContractUtils.RequiresNotNull(initializers, nameof(initializers));
+            ArgumentNullException.ThrowIfNull(propertyAccessor);
+            ArgumentNullException.ThrowIfNull(initializers);
             return ListBind(GetProperty(propertyAccessor, nameof(propertyAccessor)), initializers);
         }
 

@@ -3,6 +3,7 @@
 
 using System.Buffers;
 using System.Diagnostics;
+using System.Runtime.CompilerServices;
 using System.Runtime.InteropServices;
 
 namespace System.Net
@@ -30,8 +31,22 @@ namespace System.Net
 
         public ArrayBuffer(int initialSize, bool usePool = false)
         {
+            Debug.Assert(initialSize > 0 || usePool);
+
             _usePool = usePool;
-            _bytes = usePool ? ArrayPool<byte>.Shared.Rent(initialSize) : new byte[initialSize];
+            _bytes = initialSize == 0
+                ? Array.Empty<byte>()
+                : usePool ? ArrayPool<byte>.Shared.Rent(initialSize) : new byte[initialSize];
+            _activeStart = 0;
+            _availableStart = 0;
+        }
+
+        public ArrayBuffer(byte[] buffer)
+        {
+            Debug.Assert(buffer.Length > 0);
+
+            _usePool = false;
+            _bytes = buffer;
             _activeStart = 0;
             _availableStart = 0;
         }
@@ -44,10 +59,24 @@ namespace System.Net
             byte[] array = _bytes;
             _bytes = null!;
 
-            if (_usePool && array != null)
+            if (array is not null)
             {
-                ArrayPool<byte>.Shared.Return(array);
+                ReturnBufferIfPooled(array);
             }
+        }
+
+        // This is different from Dispose as the instance remains usable afterwards (_bytes will not be null).
+        public void ClearAndReturnBuffer()
+        {
+            Debug.Assert(_usePool);
+            Debug.Assert(_bytes is not null);
+
+            _activeStart = 0;
+            _availableStart = 0;
+
+            byte[] bufferToReturn = _bytes;
+            _bytes = Array.Empty<byte>();
+            ReturnBufferIfPooled(bufferToReturn);
         }
 
         public int ActiveLength => _availableStart - _activeStart;
@@ -61,6 +90,9 @@ namespace System.Net
         public Memory<byte> AvailableMemorySliced(int length) => new Memory<byte>(_bytes, _availableStart, length);
 
         public int Capacity => _bytes.Length;
+        public int ActiveStartOffset => _activeStart;
+
+        public byte[] DangerousGetUnderlyingBuffer() => _bytes;
 
         public void Discard(int byteCount)
         {
@@ -81,10 +113,23 @@ namespace System.Net
         }
 
         // Ensure at least [byteCount] bytes to write to.
+        [MethodImpl(MethodImplOptions.AggressiveInlining)]
         public void EnsureAvailableSpace(int byteCount)
         {
-            if (byteCount <= AvailableLength)
+            if (byteCount > AvailableLength)
             {
+                EnsureAvailableSpaceCore(byteCount);
+            }
+        }
+
+        private void EnsureAvailableSpaceCore(int byteCount)
+        {
+            Debug.Assert(AvailableLength < byteCount);
+
+            if (_bytes.Length == 0)
+            {
+                Debug.Assert(_usePool && _activeStart == 0 && _availableStart == 0);
+                _bytes = ArrayPool<byte>.Shared.Rent(byteCount);
                 return;
             }
 
@@ -121,72 +166,24 @@ namespace System.Net
             _activeStart = 0;
 
             _bytes = newBytes;
-            if (_usePool)
-            {
-                ArrayPool<byte>.Shared.Return(oldBytes);
-            }
+            ReturnBufferIfPooled(oldBytes);
 
             Debug.Assert(byteCount <= AvailableLength);
         }
 
-        // Ensure at least [byteCount] bytes to write to, up to the specified limit
-        public void TryEnsureAvailableSpaceUpToLimit(int byteCount, int limit)
-        {
-            if (byteCount <= AvailableLength)
-            {
-                return;
-            }
-
-            int totalFree = _activeStart + AvailableLength;
-            if (byteCount <= totalFree)
-            {
-                // We can free up enough space by just shifting the bytes down, so do so.
-                Buffer.BlockCopy(_bytes, _activeStart, _bytes, 0, ActiveLength);
-                _availableStart = ActiveLength;
-                _activeStart = 0;
-                Debug.Assert(byteCount <= AvailableLength);
-                return;
-            }
-
-            if (_bytes.Length >= limit)
-            {
-                // Already at limit, can't grow further.
-                return;
-            }
-
-            // Double the size of the buffer until we have enough space, or we hit the limit
-            int desiredSize = Math.Min(ActiveLength + byteCount, limit);
-            int newSize = _bytes.Length;
-            do
-            {
-                newSize = Math.Min(newSize * 2, limit);
-            } while (newSize < desiredSize);
-
-            byte[] newBytes = _usePool ?
-                ArrayPool<byte>.Shared.Rent(newSize) :
-                new byte[newSize];
-            byte[] oldBytes = _bytes;
-
-            if (ActiveLength != 0)
-            {
-                Buffer.BlockCopy(oldBytes, _activeStart, newBytes, 0, ActiveLength);
-            }
-
-            _availableStart = ActiveLength;
-            _activeStart = 0;
-
-            _bytes = newBytes;
-            if (_usePool)
-            {
-                ArrayPool<byte>.Shared.Return(oldBytes);
-            }
-
-            Debug.Assert(byteCount <= AvailableLength || desiredSize == limit);
-        }
-
         public void Grow()
         {
-            EnsureAvailableSpace(AvailableLength + 1);
+            EnsureAvailableSpaceCore(AvailableLength + 1);
+        }
+
+        [MethodImpl(MethodImplOptions.AggressiveInlining)]
+        private void ReturnBufferIfPooled(byte[] buffer)
+        {
+            // The buffer may be Array.Empty<byte>()
+            if (_usePool && buffer.Length > 0)
+            {
+                ArrayPool<byte>.Shared.Return(buffer);
+            }
         }
     }
 }

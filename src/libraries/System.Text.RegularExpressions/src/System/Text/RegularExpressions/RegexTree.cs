@@ -21,6 +21,8 @@ namespace System.Text.RegularExpressions
         public readonly RegexFindOptimizations FindOptimizations;
         /// <summary>The number of captures in the regex.</summary>
         public readonly int CaptureCount;
+        /// <summary>If the pattern has backreferences and uses IgnoreCase, we cache the Culture at creation time to use it at match time.</summary>
+        public readonly CultureInfo? Culture;
         /// <summary>A list of all the captures' names.</summary>
         /// <remarks>
         /// For numbered (implicitly or explicitly) captures, these are string representations of the numbers.  This may be null if all captures were numbered
@@ -38,7 +40,7 @@ namespace System.Text.RegularExpressions
         /// </remarks>
         public readonly Hashtable? CaptureNumberSparseMapping;
 
-        internal RegexTree(RegexNode root, int captureCount, string[]? captureNames, Hashtable? captureNameToNumberMapping, Hashtable? captureNumberSparseMapping, RegexOptions options, CultureInfo culture)
+        internal RegexTree(RegexNode root, int captureCount, string[]? captureNames, Hashtable? captureNameToNumberMapping, Hashtable? captureNumberSparseMapping, RegexOptions options, CultureInfo? culture)
         {
 #if DEBUG
             // Asserts to both demonstrate and validate the relationships between the various capture data structures.
@@ -69,12 +71,13 @@ namespace System.Text.RegularExpressions
 #endif
 
             Root = root;
+            Culture = culture;
             CaptureNumberSparseMapping = captureNumberSparseMapping;
             CaptureCount = captureCount;
             CaptureNameToNumberMapping = captureNameToNumberMapping;
             CaptureNames = captureNames;
             Options = options;
-            FindOptimizations = new RegexFindOptimizations(root, options, culture);
+            FindOptimizations = new RegexFindOptimizations(root, options);
         }
     }
 }

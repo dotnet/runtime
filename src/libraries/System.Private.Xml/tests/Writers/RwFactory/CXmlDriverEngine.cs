@@ -1,16 +1,16 @@
 // Licensed to the .NET Foundation under one or more agreements.
 // The .NET Foundation licenses this file to you under the MIT license.
 
-using OLEDB.Test.ModuleCore;
 using System.Collections;
 using System.Collections.Generic;
 using System.Globalization;
 using System.IO;
 using System.Linq;
 using System.Xml.Linq;
+using OLEDB.Test.ModuleCore;
 using XmlCoreTest.Common;
 
-namespace System.Xml.Tests
+namespace System.Xml.RwFactoryWriterTests
 {
     /// <summary>
     /// CXmlDriverEngine
@@ -667,7 +667,7 @@ namespace System.Xml.Tests
                     // no 'implemented' variations satisfying the filter
                     testCase = new CXmlDriverEmptyTestCase(testCaseName, testCaseDescription,
                         " no variations with @Implemented='True' " +
-                        (_requiredLanguage != null && _requiredLanguage.Length != 0 ? " and @Language='" + _requiredLanguage + "'" : "") +
+                        (!string.IsNullOrEmpty(_requiredLanguage) ? " and @Language='" + _requiredLanguage + "'" : "") +
                         (filterXPath == null ? "" : " and satisfying '" + filterXPath + "'"), _testModule);
 
                 // add test case

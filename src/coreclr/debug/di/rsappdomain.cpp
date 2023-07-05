@@ -12,9 +12,6 @@
 
 #include "check.h"
 
-#include <tlhelp32.h>
-#include "wtsapi32.h"
-
 #ifndef SM_REMOTESESSION
 #define SM_REMOTESESSION 0x1000
 #endif
@@ -280,7 +277,7 @@ HRESULT CordbAppDomain::EnumerateThreads(ICorDebugThreadEnum **ppThreads)
         RSInitHolder<CordbHashTableEnum> pEnum;
         GetProcess()->BuildThreadEnum(this, NULL, pEnum.GetAddr());
 
-        // This builds up auxillary list. don't need pEnum after this.
+        // This builds up auxiliary list. don't need pEnum after this.
         hr = pThreadEnum->Init(pEnum, this);
         IfFailThrow(hr);
 
@@ -1085,8 +1082,9 @@ HRESULT CordbAppDomain::GetObjectForCCW(CORDB_ADDRESS ccwPointer, ICorDebugValue
 
     PUBLIC_API_ENTRY(this);
     FAIL_IF_NEUTERED(this);
-
     VALIDATE_POINTER_TO_OBJECT(ppManagedObject, ICorDebugValue **);
+    ATT_REQUIRE_STOPPED_MAY_FAIL(GetProcess());
+
     HRESULT hr = S_OK;
 
     *ppManagedObject = NULL;

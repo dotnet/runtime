@@ -33,10 +33,7 @@ namespace System.Drawing
                 }
 
                 // Parse 4 integer values.
-                if (culture == null)
-                {
-                    culture = CultureInfo.CurrentCulture;
-                }
+                culture ??= CultureInfo.CurrentCulture;
 
                 char sep = culture.TextInfo.ListSeparator[0];
                 string[] tokens = text.Split(sep);
@@ -59,16 +56,15 @@ namespace System.Drawing
             return base.ConvertFrom(context, culture, value);
         }
 
-        public override object? ConvertTo(ITypeDescriptorContext? context, CultureInfo? culture, object? value, Type destinationType!!)
+        public override object? ConvertTo(ITypeDescriptorContext? context, CultureInfo? culture, object? value, Type destinationType)
         {
+            ArgumentNullException.ThrowIfNull(destinationType);
+
             if (value is Rectangle rect)
             {
                 if (destinationType == typeof(string))
                 {
-                    if (culture == null)
-                    {
-                        culture = CultureInfo.CurrentCulture;
-                    }
+                    culture ??= CultureInfo.CurrentCulture;
 
                     string sep = culture.TextInfo.ListSeparator + " ";
                     TypeConverter intConverter = TypeDescriptor.GetConverterTrimUnsafe(typeof(int));
@@ -99,8 +95,10 @@ namespace System.Drawing
             return base.ConvertTo(context, culture, value, destinationType);
         }
 
-        public override object CreateInstance(ITypeDescriptorContext? context, IDictionary propertyValues!!)
+        public override object CreateInstance(ITypeDescriptorContext? context, IDictionary propertyValues)
         {
+            ArgumentNullException.ThrowIfNull(propertyValues);
+
             object? x = propertyValues["X"];
             object? y = propertyValues["Y"];
             object? width = propertyValues["Width"];

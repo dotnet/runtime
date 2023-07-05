@@ -2,10 +2,11 @@
 // The .NET Foundation licenses this file to you under the MIT license.
 
 using System;
+using Xunit;
 
-namespace test
+namespace test_outermostFinally
 {
-    class Class1
+    public class Class1
     {
         private static TestUtil.TestLog testLog;
 
@@ -26,7 +27,8 @@ namespace test
             testLog = new TestUtil.TestLog(expectedOut);
         }
 
-        static int Main()
+        [Fact]
+        public static int TestEntryPoint()
         {
             int[] array = { 1, 2, 3, 4, 5, 6 };
 

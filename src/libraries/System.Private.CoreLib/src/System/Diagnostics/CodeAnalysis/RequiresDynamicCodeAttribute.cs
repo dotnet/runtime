@@ -5,13 +5,18 @@ namespace System.Diagnostics.CodeAnalysis
 {
     /// <summary>
     /// Indicates that the specified method requires the ability to generate new code at runtime,
-    /// for example through <see cref="System.Reflection"/>.
+    /// for example through <see cref="Reflection"/>.
     /// </summary>
     /// <remarks>
     /// This allows tools to understand which methods are unsafe to call when compiling ahead of time.
     /// </remarks>
-    [AttributeUsage(AttributeTargets.Method | AttributeTargets.Constructor, Inherited = false)]
-    public sealed class RequiresDynamicCodeAttribute : Attribute
+    [AttributeUsage(AttributeTargets.Method | AttributeTargets.Constructor | AttributeTargets.Class, Inherited = false)]
+#if SYSTEM_PRIVATE_CORELIB
+    public
+#else
+    internal
+#endif
+    sealed class RequiresDynamicCodeAttribute : Attribute
     {
         /// <summary>
         /// Initializes a new instance of the <see cref="RequiresDynamicCodeAttribute"/> class

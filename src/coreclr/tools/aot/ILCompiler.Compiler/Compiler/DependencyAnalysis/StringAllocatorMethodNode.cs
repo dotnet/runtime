@@ -19,7 +19,7 @@ namespace ILCompiler.DependencyAnalysis
     /// This node is used to model the behavior. It represents the symbol for the target allocator
     /// method and makes sure the String type is marked as constructed.
     /// </summary>
-    class StringAllocatorMethodNode : DependencyNodeCore<NodeFactory>, IMethodNode
+    internal sealed class StringAllocatorMethodNode : DependencyNodeCore<NodeFactory>, IMethodNode
     {
         private readonly MethodDesc _allocationMethod;
         private readonly MethodDesc _constructorMethod;

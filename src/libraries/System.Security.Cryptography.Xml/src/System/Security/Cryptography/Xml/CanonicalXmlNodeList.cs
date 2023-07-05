@@ -17,7 +17,7 @@ namespace System.Security.Cryptography.Xml
 
         public override XmlNode Item(int index)
         {
-            return (XmlNode)_nodeArray[index];
+            return (XmlNode)_nodeArray[index]!;
         }
 
         public override IEnumerator GetEnumerator()
@@ -31,7 +31,7 @@ namespace System.Security.Cryptography.Xml
         }
 
         // IList methods
-        public int Add(object value)
+        public int Add(object? value)
         {
             if (!(value is XmlNode))
                 throw new ArgumentException(SR.Cryptography_Xml_IncorrectObjectType, "node");
@@ -43,24 +43,24 @@ namespace System.Security.Cryptography.Xml
             _nodeArray.Clear();
         }
 
-        public bool Contains(object value)
+        public bool Contains(object? value)
         {
             return _nodeArray.Contains(value);
         }
 
-        public int IndexOf(object value)
+        public int IndexOf(object? value)
         {
             return _nodeArray.IndexOf(value);
         }
 
-        public void Insert(int index, object value)
+        public void Insert(int index, object? value)
         {
             if (!(value is XmlNode))
                 throw new ArgumentException(SR.Cryptography_Xml_IncorrectObjectType, nameof(value));
             _nodeArray.Insert(index, value);
         }
 
-        public void Remove(object value)
+        public void Remove(object? value)
         {
             _nodeArray.Remove(value);
         }
@@ -80,7 +80,7 @@ namespace System.Security.Cryptography.Xml
             get { return _nodeArray.IsReadOnly; }
         }
 
-        object IList.this[int index]
+        object? IList.this[int index]
         {
             get { return _nodeArray[index]; }
             set

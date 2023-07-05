@@ -93,7 +93,7 @@ MINI_OP(OP_RETHROW,	"rethrow", NONE, IREG, NONE)
 /*
  * Vararg calls are implemented as follows:
  * - the caller emits a hidden argument just before the varargs argument. this
- *   'signature cookie' argument contains the signature describing the the call.
+ *   'signature cookie' argument contains the signature describing the call.
  * - all implicit arguments are passed in memory right after the signature cookie, i.e.
  *   the stack will look like this:
  *   <argn>
@@ -127,6 +127,7 @@ MINI_OP(OP_STOREI1_MEMBASE_IMM, "storei1_membase_imm", IREG, NONE, NONE)
 MINI_OP(OP_STOREI2_MEMBASE_IMM, "storei2_membase_imm", IREG, NONE, NONE)
 MINI_OP(OP_STOREI4_MEMBASE_IMM, "storei4_membase_imm", IREG, NONE, NONE)
 MINI_OP(OP_STOREI8_MEMBASE_IMM, "storei8_membase_imm", IREG, NONE, NONE)
+/* klass must be set to a simd class */
 MINI_OP(OP_STOREX_MEMBASE,      	"storex_membase", IREG, XREG, NONE)
 MINI_OP(OP_STOREV_MEMBASE,      "storev_membase", IREG, VREG, NONE)
 
@@ -142,6 +143,7 @@ MINI_OP(OP_LOADI8_MEMBASE,"loadi8_membase", LREG, IREG, NONE)
 MINI_OP(OP_LOADR4_MEMBASE,"loadr4_membase", FREG, IREG, NONE)
 MINI_OP(OP_LOADR8_MEMBASE,"loadr8_membase", FREG, IREG, NONE)
 
+/* klass must be set to a simd class */
 MINI_OP(OP_LOADX_MEMBASE, 			"loadx_membase", XREG, IREG, NONE)
 
 #if defined(TARGET_X86) || defined(TARGET_AMD64)
@@ -764,7 +766,7 @@ MINI_OP(OP_BOUNDS_CHECK, "bounds_check", NONE, IREG, IREG)
 /* type checks */
 MINI_OP(OP_ISINST, "isinst", IREG, IREG, NONE)
 MINI_OP(OP_CASTCLASS, "castclass", IREG, IREG, NONE)
-/* get adress of element in a 2D array */
+/* get address of element in a 2D array */
 MINI_OP(OP_LDELEMA2D, "ldelema2d", NONE, NONE, NONE)
 /* inlined small memcpy with constant length */
 MINI_OP(OP_MEMCPY, "memcpy", NONE, NONE, NONE)
@@ -795,6 +797,7 @@ MINI_OP(OP_LOAD_GOTADDR, "load_gotaddr", IREG, NONE, NONE)
 MINI_OP(OP_DUMMY_USE, "dummy_use", NONE, IREG, NONE)
 MINI_OP(OP_NOT_REACHED, "not_reached", NONE, NONE, NONE)
 MINI_OP(OP_NOT_NULL, "not_null", NONE, IREG, NONE)
+MINI_OP(OP_LDTOKEN_FIELD, "ldtoken_field", VREG, VREG, NONE)
 
 /* SIMD opcodes. */
 
@@ -814,7 +817,10 @@ MINI_OP(OP_EXTRACT_R4, "extract_r4", FREG, XREG, NONE)
 MINI_OP(OP_EXTRACT_R8, "extract_r8", FREG, XREG, NONE)
 MINI_OP(OP_EXTRACTX_U2, "extractx_u2", IREG, XREG, NONE)
 
-/* Used by LLVM */
+/*
+ * Insert an element into a vector with a constant lane index.
+ * inst_c0 is the lane index.
+ */
 MINI_OP(OP_INSERT_I1, "insert_i1", XREG, XREG, IREG)
 MINI_OP(OP_INSERT_I2, "insert_i2", XREG, XREG, IREG)
 MINI_OP(OP_INSERT_I4, "insert_i4", XREG, XREG, IREG)
@@ -844,6 +850,31 @@ MINI_OP(OP_EXPAND_R4, "expand_r4", XREG, FREG, NONE)
 MINI_OP(OP_EXPAND_I8, "expand_i8", XREG, IREG, NONE)
 MINI_OP(OP_EXPAND_R8, "expand_r8", XREG, FREG, NONE)
 
+#endif
+
+// wasm specific SIMD v128
+
+#if defined(TARGET_WASM)
+MINI_OP(OP_WASM_SIMD_BITMASK, "wasm_bitmask", IREG, XREG, NONE)
+MINI_OP3(OP_WASM_SIMD_SHUFFLE, "wasm_shuffle", XREG, XREG, XREG, XREG)
+MINI_OP(OP_WASM_SIMD_SUM, "wasm_sum", XREG, XREG, NONE)
+MINI_OP(OP_WASM_SIMD_SWIZZLE, "wasm_swizzle", XREG, XREG, XREG)
+MINI_OP(OP_WASM_EXTRACT_NARROW, "wasm_extract_narrow", XREG, XREG, XREG)
+MINI_OP(OP_WASM_EXTMUL_LOWER, "wasm_extmul_lower", XREG, XREG, XREG)
+MINI_OP(OP_WASM_EXTMUL_UPPER, "wasm_extmul_upper", XREG, XREG, XREG)
+MINI_OP(OP_WASM_EXTMUL_LOWER_U, "wasm_extmul_lower_u", XREG, XREG, XREG)
+MINI_OP(OP_WASM_EXTMUL_UPPER_U, "wasm_extmul_upper_u", XREG, XREG, XREG)
+MINI_OP(OP_WASM_SIMD_CONV_R8_TO_R4, "wasm_simd_conv_r8_to_r4", XREG, XREG, NONE)
+MINI_OP(OP_WASM_SIMD_CONV_R8_TO_I4_ZERO, "wasm_simd_conv_r8_to_i4_zero", XREG, XREG, NONE)
+MINI_OP(OP_WASM_SIMD_CONV_U4_TO_R8_LOW, "wasm_simd_conv_u4_to_r8_low", XREG, XREG, NONE)
+MINI_OP3(OP_WASM_SIMD_LOAD_SCALAR_INSERT, "wasm_simd_load_scalar_insert", XREG, IREG, XREG, IREG)
+MINI_OP(OP_WASM_SIMD_LOAD_SCALAR_SPLAT, "wasm_simd_load_scalar_splat", XREG, IREG, NONE)
+MINI_OP(OP_WASM_SIMD_LOAD_WIDENING, "wasm_simd_load_widening", XREG, IREG, NONE)
+MINI_OP(OP_WASM_SIMD_SEXT_LOWER, "wasm_simd_ext_lower_s", XREG, XREG, NONE)
+MINI_OP(OP_WASM_SIMD_SEXT_UPPER, "wasm_simd_ext_upper_s", XREG, XREG, NONE)
+MINI_OP3(OP_WASM_SIMD_STORE_LANE, "wasm_simd_store_lane", NONE, IREG, XREG, IREG)
+MINI_OP(OP_WASM_SIMD_ZEXT_LOWER, "wasm_simd_ext_lower_u", XREG, XREG, NONE)
+MINI_OP(OP_WASM_SIMD_ZEXT_UPPER, "wasm_simd_ext_upper_u", XREG, XREG, NONE)
 #endif
 
 #if defined(TARGET_X86) || defined(TARGET_AMD64) || defined(TARGET_WASM)
@@ -1017,11 +1048,13 @@ MINI_OP(OP_CVTPS2PD, "cvtps2pd", XREG, XREG, NONE)
 MINI_OP(OP_CVTTPD2DQ, "cvttpd2dq", XREG, XREG, NONE)
 MINI_OP(OP_CVTTPS2DQ, "cvttps2dq", XREG, XREG, NONE)
 
+MINI_OP(OP_VECTOR_IABS, "vector_integer_abs", XREG, XREG, NONE)
+MINI_OP(OP_VECTOR_ANDN, "vector_andnot", XREG, XREG, XREG)
+
 /* sse 1 */
 /* inst_c1 is target type */
 MINI_OP(OP_SSE_LOADU, "sse_loadu", XREG, XREG, NONE)
 MINI_OP(OP_SSE_MOVMSK, "sse_movmsk", IREG, XREG, NONE)
-MINI_OP(OP_SSE_STORE, "sse_store", NONE, XREG, XREG)
 MINI_OP(OP_SSE_STORES, "sse_stores", NONE, XREG, XREG)
 MINI_OP(OP_SSE_MOVS, "sse_movs", XREG, XREG, NONE)
 MINI_OP(OP_SSE_MOVS2, "sse_movs2", XREG, XREG, XREG)
@@ -1033,7 +1066,6 @@ MINI_OP3(OP_SSE_SHUFPS, "sse_shufps", XREG, XREG, XREG, IREG)
 MINI_OP(OP_SSE_AND, "sse_and", XREG, XREG, XREG)
 MINI_OP(OP_SSE_OR, "sse_or", XREG, XREG, XREG)
 MINI_OP(OP_SSE_XOR, "sse_xor", XREG, XREG, XREG)
-MINI_OP(OP_SSE_ANDN, "sse_andn", XREG, XREG, XREG)
 MINI_OP(OP_SSE_ADDSS, "sse_addss", XREG, XREG, XREG)
 MINI_OP(OP_SSE_SUBSS, "sse_subss", XREG, XREG, XREG)
 MINI_OP(OP_SSE_DIVSS, "sse_divss", XREG, XREG, XREG)
@@ -1071,9 +1103,6 @@ MINI_OP(OP_SSE2_ADDSD, "sse2_addsd", XREG, XREG, XREG)
 MINI_OP(OP_SSE2_SUBSD, "sse2_subsd", XREG, XREG, XREG)
 MINI_OP(OP_SSE2_DIVSD, "sse2_divsd", XREG, XREG, XREG)
 MINI_OP(OP_SSE2_MULSD, "sse2_mulsd", XREG, XREG, XREG)
-MINI_OP(OP_SSE2_MOVD, "sse2_movd", XREG, IREG, NONE)
-MINI_OP(OP_SSE2_MOVQ, "sse2_movq", XREG, IREG, NONE)
-MINI_OP(OP_SSE2_MOVUPD, "sse2_movupd", XREG, IREG, NONE)
 MINI_OP(OP_SSE2_PSLLDQ, "sse2_pslldq", XREG, XREG, IREG)
 MINI_OP(OP_SSE2_PSRLDQ, "sse2_psrldq", XREG, XREG, IREG)
 MINI_OP(OP_SSE2_PSRAW_IMM, "sse2_psraw_imm", XREG, XREG, IREG)
@@ -1103,7 +1132,6 @@ MINI_OP(OP_SSE3_MOVSLDUP, "sse3_movsldup", XREG, XREG, NONE)
 MINI_OP(OP_SSE3_MOVDDUP_MEM, "sse3_movddup_mem", XREG, IREG, NONE)
 
 /* ssse 3 */
-MINI_OP(OP_SSSE3_ABS, "ssse3_abs", XREG, XREG, NONE)
 MINI_OP(OP_SSSE3_SHUFFLE, "ssse3_shuffle", XREG, XREG, XREG)
 MINI_OP3(OP_SSSE3_ALIGNR, "ssse3_alignr", XREG, XREG, XREG, IREG)
 
@@ -1120,6 +1148,9 @@ MINI_OP(OP_SSE_CVTII, "sse_cvtii", XREG, XREG, NONE)
 MINI_OP3(OP_SSE41_DPPS, "sse41_dpps", XREG, XREG, XREG, IREG)
 MINI_OP3(OP_SSE41_DPPD, "sse41_dppd", XREG, XREG, XREG, IREG)
 MINI_OP3(OP_SSE41_MPSADBW, "sse41_mpsadbw", XREG, XREG, XREG, IREG)
+/* inst_c0 contains the mask value */
+MINI_OP(OP_SSE41_DPPS_IMM, "sse41_dpps_imm", XREG, XREG, XREG)
+MINI_OP(OP_SSE41_DPPD_IMM, "sse41_dppd_imm", XREG, XREG, XREG)
 
 /* pclmulqdq */
 MINI_OP3(OP_PCLMULQDQ, "pclmulqdq", XREG, XREG, XREG, IREG)
@@ -1156,9 +1187,15 @@ MINI_OP3(OP_MULX_HL64, "mulxhl64", LREG, LREG, LREG, LREG)
 MINI_OP(OP_CREATE_SCALAR_UNSAFE, "create_scalar_unsafe", XREG, XREG, NONE)
 MINI_OP(OP_CREATE_SCALAR, "create_scalar", XREG, XREG, NONE)
 
+MINI_OP(OP_CREATE_SCALAR_UNSAFE_INT, "create_scalar_unsafe_int", XREG, IREG, NONE)
+MINI_OP(OP_CREATE_SCALAR_UNSAFE_FLOAT, "create_scalar_unsafe_float", XREG, FREG, NONE)
+MINI_OP(OP_CREATE_SCALAR_INT, "create_scalar_int", XREG, IREG, NONE)
+MINI_OP(OP_CREATE_SCALAR_FLOAT, "create_scalar_float", XREG, FREG, NONE)
+
 MINI_OP(OP_XMOVE,   "xmove", XREG, XREG, NONE)
 MINI_OP(OP_XZERO,   "xzero", XREG, NONE, NONE)
 MINI_OP(OP_XONES,   "xones", XREG, NONE, NONE)
+MINI_OP(OP_XCONST,  "xconst", XREG, NONE, NONE)
 MINI_OP(OP_XPHI,	"xphi", XREG, NONE, NONE)
 
 /*
@@ -1294,6 +1331,13 @@ MINI_OP(OP_GC_SAFE_POINT, "gc_safe_point", NONE, IREG, NONE)
  */
 MINI_OP(OP_GENERIC_CLASS_INIT, "generic_class_init", NONE, IREG, NONE)
 
+/*
+ * Call mini_init_method_rgctx () if needed.
+ * sreg1 is a MonoMethodRuntimeGenericContext.
+ * sreg2 is a MonoGSharedMethodInfo.
+ */
+MINI_OP(OP_INIT_MRGCTX, "init_mrgctx", NONE, IREG, IREG)
+
 /* Arch specific opcodes */
 #if defined(TARGET_X86) || defined(TARGET_AMD64)
 MINI_OP(OP_X86_TEST_NULL,          "x86_test_null", NONE, IREG, NONE)
@@ -1343,6 +1387,8 @@ MINI_OP(OP_X86_BSF32,              "x86_bsf32", IREG, IREG, NONE)
 MINI_OP(OP_X86_BSR32,              "x86_bsr32", IREG, IREG, NONE)
 MINI_OP(OP_X86_BSF64,              "x86_bsf64", LREG, LREG, NONE)
 MINI_OP(OP_X86_BSR64,              "x86_bsr64", LREG, LREG, NONE)
+MINI_OP(OP_X86_MOVE_R8_TO_FPSTACK,    "x86_move_r8_to_fpstack", NONE, FREG, NONE)
+MINI_OP(OP_X86_MOVE_R4_TO_FPSTACK,    "x86_move_r4_to_fpstack", NONE, FREG, NONE)
 #endif
 
 #if defined(TARGET_AMD64)
@@ -1382,7 +1428,7 @@ MINI_OP(OP_AMD64_LOADI8_MEMINDEX,        "amd64_loadi8_memindex", IREG, IREG, IR
 MINI_OP(OP_AMD64_SAVE_SP_TO_LMF,         "amd64_save_sp_to_lmf", NONE, NONE, NONE)
 #endif
 
-#if  defined(TARGET_POWERPC)
+#if  defined(TARGET_POWERPC) || defined(TARGET_POWERPC64)
 MINI_OP(OP_PPC_SUBFIC,             "ppc_subfic", IREG, IREG, NONE)
 MINI_OP(OP_PPC_SUBFZE,             "ppc_subfze", IREG, IREG, NONE)
 MINI_OP(OP_PPC_CHECK_FINITE,       "ppc_check_finite", NONE, IREG, NONE)
@@ -1396,21 +1442,6 @@ MINI_OP(OP_ARM_RSBS_IMM,            "arm_rsbs_imm", IREG, IREG, NONE)
 MINI_OP(OP_ARM_RSC_IMM,             "arm_rsc_imm", IREG, IREG, NONE)
 /* Set dreg to an r4 value */
 MINI_OP(OP_ARM_SETFREG_R4,             "arm_setfreg_r4", FREG, FREG, NONE)
-#endif
-
-#if defined(TARGET_SPARC)
-MINI_OP(OP_SPARC_BRZ,              "sparc_brz", NONE, NONE, NONE)
-MINI_OP(OP_SPARC_BRLEZ,            "sparc_brlez", NONE, NONE, NONE)
-MINI_OP(OP_SPARC_BRLZ,             "sparc_brlz", NONE, NONE, NONE)
-MINI_OP(OP_SPARC_BRNZ,             "sparc_brnz", NONE, NONE, NONE)
-MINI_OP(OP_SPARC_BRGZ,             "sparc_brgz", NONE, NONE, NONE)
-MINI_OP(OP_SPARC_BRGEZ,            "sparc_brgez", NONE, NONE, NONE)
-MINI_OP(OP_SPARC_COND_EXC_EQZ,     "sparc_cond_exc_eqz", NONE, NONE, NONE)
-MINI_OP(OP_SPARC_COND_EXC_GEZ,     "sparc_cond_exc_gez", NONE, NONE, NONE)
-MINI_OP(OP_SPARC_COND_EXC_GTZ,     "sparc_cond_exc_gtz", NONE, NONE, NONE)
-MINI_OP(OP_SPARC_COND_EXC_LEZ,     "sparc_cond_exc_lez", NONE, NONE, NONE)
-MINI_OP(OP_SPARC_COND_EXC_LTZ,     "sparc_cond_exc_ltz", NONE, NONE, NONE)
-MINI_OP(OP_SPARC_COND_EXC_NEZ,     "sparc_cond_exc_nez", NONE, NONE, NONE)
 #endif
 
 #if defined(TARGET_S390X)
@@ -1442,72 +1473,6 @@ MINI_OP(OP_S390_CGIJ,           "s390_cgij", LREG, NONE, NONE)
 MINI_OP(OP_S390_CLGIJ,          "s390_cgij_un", LREG, NONE, NONE)
 #endif
 
-#if defined(TARGET_MIPS)
-MINI_OP(OP_MIPS_BEQ,   "mips_beq", NONE, IREG, IREG)
-MINI_OP(OP_MIPS_BGEZ,  "mips_bgez", NONE, IREG, NONE)
-MINI_OP(OP_MIPS_BGTZ,  "mips_bgtz", NONE, IREG, NONE)
-MINI_OP(OP_MIPS_BLEZ,  "mips_blez", NONE, IREG, NONE)
-MINI_OP(OP_MIPS_BLTZ,  "mips_bltz", NONE, IREG, NONE)
-MINI_OP(OP_MIPS_BNE,   "mips_bne", NONE, IREG, IREG)
-MINI_OP(OP_MIPS_CVTSD, "mips_cvtsd", FREG, FREG, NONE)
-MINI_OP(OP_MIPS_FBEQ,  "mips_fbeq", NONE, FREG, FREG)
-MINI_OP(OP_MIPS_FBGE,  "mips_fbge", NONE, FREG, FREG)
-MINI_OP(OP_MIPS_FBGE_UN,  "mips_fbge_un", NONE, FREG, FREG)
-MINI_OP(OP_MIPS_FBGT,  "mips_fbgt", NONE, FREG, FREG)
-MINI_OP(OP_MIPS_FBGT_UN,  "mips_fbgt_un", NONE, FREG, FREG)
-MINI_OP(OP_MIPS_FBLE,  "mips_fble", NONE, FREG, FREG)
-MINI_OP(OP_MIPS_FBLE_UN,  "mips_fble_un", NONE, FREG, FREG)
-MINI_OP(OP_MIPS_FBLT,  "mips_fblt", NONE, FREG, FREG)
-MINI_OP(OP_MIPS_FBLT_UN,  "mips_fblt_un", NONE, FREG, FREG)
-MINI_OP(OP_MIPS_FBNE,  "mips_fbne", NONE, FREG, FREG)
-MINI_OP(OP_MIPS_FBFALSE, "mips_fbfalse", NONE, NONE, NONE)
-MINI_OP(OP_MIPS_FBTRUE, "mips_fbtrue", NONE, NONE, NONE)
-MINI_OP(OP_MIPS_LWC1,  "mips_lwc1", NONE, NONE, NONE)
-MINI_OP(OP_MIPS_MTC1S, "mips_mtc1_s", FREG, IREG, NONE)
-MINI_OP(OP_MIPS_MTC1S_2, "mips_mtc1_s2", FREG, IREG, IREG)
-MINI_OP(OP_MIPS_MFC1S, "mips_mfc1_s", IREG, FREG, NONE)
-MINI_OP(OP_MIPS_MTC1D, "mips_mtc1_d", FREG, IREG, NONE)
-MINI_OP(OP_MIPS_MFC1D, "mips_mfc1_d", IREG, FREG, NONE)
-MINI_OP(OP_MIPS_NOP,   "mips_nop", NONE, NONE, NONE)
-MINI_OP(OP_MIPS_SLTI,  "mips_slti", IREG, IREG, NONE)
-MINI_OP(OP_MIPS_SLT,   "mips_slt", IREG, IREG, IREG)
-MINI_OP(OP_MIPS_SLTIU, "mips_sltiu", IREG, IREG, NONE)
-MINI_OP(OP_MIPS_SLTU,  "mips_sltu", IREG, IREG, IREG)
-
-MINI_OP(OP_MIPS_COND_EXC_EQ, "mips_cond_exc_eq", NONE, IREG, IREG)
-MINI_OP(OP_MIPS_COND_EXC_GE, "mips_cond_exc_ge", NONE, IREG, IREG)
-MINI_OP(OP_MIPS_COND_EXC_GT, "mips_cond_exc_gt", NONE, IREG, IREG)
-MINI_OP(OP_MIPS_COND_EXC_LE, "mips_cond_exc_le", NONE, IREG, IREG)
-MINI_OP(OP_MIPS_COND_EXC_LT, "mips_cond_exc_lt", NONE, IREG, IREG)
-MINI_OP(OP_MIPS_COND_EXC_NE_UN, "mips_cond_exc_ne_un", NONE, IREG, IREG)
-MINI_OP(OP_MIPS_COND_EXC_GE_UN, "mips_cond_exc_ge_un", NONE, IREG, IREG)
-MINI_OP(OP_MIPS_COND_EXC_GT_UN, "mips_cond_exc_gt_un", NONE, IREG, IREG)
-MINI_OP(OP_MIPS_COND_EXC_LE_UN, "mips_cond_exc_le_un", NONE, IREG, IREG)
-MINI_OP(OP_MIPS_COND_EXC_LT_UN, "mips_cond_exc_lt_un", NONE, IREG, IREG)
-
-MINI_OP(OP_MIPS_COND_EXC_OV, "mips_cond_exc_ov", NONE, IREG, IREG)
-MINI_OP(OP_MIPS_COND_EXC_NO, "mips_cond_exc_no", NONE, IREG, IREG)
-MINI_OP(OP_MIPS_COND_EXC_C, "mips_cond_exc_c", NONE, IREG, IREG)
-MINI_OP(OP_MIPS_COND_EXC_NC, "mips_cond_exc_nc", NONE, IREG, IREG)
-
-MINI_OP(OP_MIPS_COND_EXC_IEQ, "mips_cond_exc_ieq", NONE, IREG, IREG)
-MINI_OP(OP_MIPS_COND_EXC_IGE, "mips_cond_exc_ige", NONE, IREG, IREG)
-MINI_OP(OP_MIPS_COND_EXC_IGT, "mips_cond_exc_igt", NONE, IREG, IREG)
-MINI_OP(OP_MIPS_COND_EXC_ILE, "mips_cond_exc_ile", NONE, IREG, IREG)
-MINI_OP(OP_MIPS_COND_EXC_ILT, "mips_cond_exc_ilt", NONE, IREG, IREG)
-MINI_OP(OP_MIPS_COND_EXC_INE_UN, "mips_cond_exc_ine_un", NONE, IREG, IREG)
-MINI_OP(OP_MIPS_COND_EXC_IGE_UN, "mips_cond_exc_ige_un", NONE, IREG, IREG)
-MINI_OP(OP_MIPS_COND_EXC_IGT_UN, "mips_cond_exc_igt_un", NONE, IREG, IREG)
-MINI_OP(OP_MIPS_COND_EXC_ILE_UN, "mips_cond_exc_ile_un", NONE, IREG, IREG)
-MINI_OP(OP_MIPS_COND_EXC_ILT_UN, "mips_cond_exc_ilt_un", NONE, IREG, IREG)
-
-MINI_OP(OP_MIPS_COND_EXC_IOV, "mips_cond_exc_iov", NONE, IREG, IREG)
-MINI_OP(OP_MIPS_COND_EXC_INO, "mips_cond_exc_ino", NONE, IREG, IREG)
-MINI_OP(OP_MIPS_COND_EXC_IC, "mips_cond_exc_ic", NONE, IREG, IREG)
-MINI_OP(OP_MIPS_COND_EXC_INC, "mips_cond_exc_inc", NONE, IREG, IREG)
-
-#endif
-
 #if defined(TARGET_ARM64)
 /* Branch if sreg1 == 0 */
 MINI_OP(OP_ARM64_CBZW, "arm64_cbzw", NONE, IREG, NONE)
@@ -1515,6 +1480,7 @@ MINI_OP(OP_ARM64_CBZX, "arm64_cbzx", NONE, IREG, NONE)
 /* Branch if sreg1 != 0 */
 MINI_OP(OP_ARM64_CBNZW, "arm64_cbnzw", NONE, IREG, NONE)
 MINI_OP(OP_ARM64_CBNZX, "arm64_cbnzx", NONE, IREG, NONE)
+MINI_OP(OP_ARM64_HINT, "arm64_hint", NONE, NONE, NONE)
 #endif
 
 /* Same as OUTARG_VT, but has a dreg */
@@ -1536,6 +1502,9 @@ MINI_OP(OP_FILL_PROF_CALL_CTX, "fill_prof_call_ctx", NONE, IREG, NONE)
 
 /* LLVM only, compare 2 vectors for equality, set dreg to 1/0 */
 MINI_OP(OP_XEQUAL, "xequal", IREG, XREG, XREG)
+#if defined(TARGET_ARM64)
+MINI_OP(OP_XEQUAL_ARM64_V128_FAST, "arm64_xequal_v128", IREG, XREG, XREG)
+#endif
 /* Per element compate, inst_c0 contains a CompRelation */
 MINI_OP(OP_XCOMPARE, "xcompare", XREG, XREG, XREG)
 MINI_OP(OP_XCOMPARE_SCALAR, "xcompare_scalar", XREG, XREG, XREG)
@@ -1543,12 +1512,26 @@ MINI_OP(OP_XCOMPARE_FP, "xcompare_fp", XREG, XREG, XREG)
 MINI_OP(OP_XCOMPARE_FP_SCALAR, "xcompare_fp_scalar", XREG, XREG, XREG)
 
 /*
+ * The input reg is the result ofg OP_XCOMPARE, i.e.
+ * every element is either 0 or 0xff.
+ * Compute an integer result based on whenever all or any
+ * bits are non-zero.
+ *   inst_c0 - specific instruction, one of SIMD_EXTR_...
+ *   inst_c1 - vector size in bytes
+ */
+MINI_OP(OP_XEXTRACT, "xextract", IREG, XREG, NONE)
+
+/*
  * Generic SIMD operations, the rest of the JIT doesn't care about the exact operation.
  */
+MINI_OP(OP_XUNOP, "xunop", XREG, XREG, NONE)
+/* inst_c0 is a OP_ constant, inst_c1 is a MONO_TYPE_ constant */
 MINI_OP(OP_XBINOP, "xbinop", XREG, XREG, XREG)
+/* The arguments are treated as vectors of integer types. inst_c0 is a XBINOP_FORCEINT_ constant */
 MINI_OP(OP_XBINOP_FORCEINT, "xbinop_forceint", XREG, XREG, XREG)
 MINI_OP(OP_XBINOP_SCALAR, "xbinop_scalar", XREG, XREG, XREG)
 MINI_OP(OP_XBINOP_BYSCALAR, "xbinop_byscalar", XREG, XREG, XREG)
+
 /* inst_c0 contains an INTRINS_ enum, inst_c1 might contain additional data */
 MINI_OP(OP_XOP, "xop", NONE, NONE, NONE)
 MINI_OP(OP_XOP_X_I, "xop_x_i", XREG, IREG, NONE)
@@ -1576,7 +1559,9 @@ MINI_OP(OP_XOP_OVR_BYSCALAR_X_X_X, "xop_ovr_byscalar_x_x_x", XREG, XREG, XREG)
 
 MINI_OP(OP_XCONCAT, "xconcat", XREG, XREG, XREG)
 MINI_OP(OP_XCAST, "xcast", XREG, XREG, NONE)
+/* Return a new vector containing the lower half of the source */
 MINI_OP(OP_XLOWER, "xlower", XREG, XREG, NONE)
+/* Return a new vector containing the upper half of the source */
 MINI_OP(OP_XUPPER, "xupper", XREG, XREG, NONE)
 MINI_OP(OP_XWIDEN, "xwiden", XREG, XREG, NONE)
 MINI_OP(OP_XWIDEN_UNSAFE, "xwiden_unsafe", XREG, XREG, NONE)
@@ -1674,17 +1659,6 @@ MINI_OP(OP_ARM64_URSHR, "arm64_urshr", XREG, XREG, IREG)
 MINI_OP3(OP_ARM64_SRSRA, "arm64_srsra", XREG, XREG, XREG, IREG)
 MINI_OP3(OP_ARM64_URSRA, "arm64_ursra", XREG, XREG, XREG, IREG)
 
-MINI_OP(OP_ARM64_SHL, "arm64_shl", XREG, XREG, IREG)
-MINI_OP(OP_ARM64_SSHR, "arm64_sshr", XREG, XREG, IREG)
-MINI_OP(OP_ARM64_USHR, "arm64_ushr", XREG, XREG, IREG)
-MINI_OP3(OP_ARM64_USRA, "arm64_usra", XREG, XREG, XREG, IREG)
-MINI_OP3(OP_ARM64_SSRA, "arm64_ssra", XREG, XREG, XREG, IREG)
-
-MINI_OP(OP_ARM64_USHLL, "arm64_ushll", XREG, XREG, IREG)
-MINI_OP(OP_ARM64_USHLL2, "arm64_ushll2", XREG, XREG, IREG)
-MINI_OP(OP_ARM64_SSHLL, "arm64_sshll", XREG, XREG, IREG)
-MINI_OP(OP_ARM64_SSHLL2, "arm64_sshll2", XREG, XREG, IREG)
-
 /* Narrowing arm64 shifts that aren't decomposed into urshl or srshl. */
 MINI_OP(OP_ARM64_XNSHIFT_SCALAR, "arm64_xrshift_scalar", XREG, XREG, IREG)
 MINI_OP(OP_ARM64_XNSHIFT, "arm64_xnshift", XREG, XREG, IREG)
@@ -1697,9 +1671,6 @@ MINI_OP(OP_ARM64_REVN, "arm64_revn", XREG, XREG, NONE)
 
 MINI_OP(OP_ARM64_PMULL, "arm64_pmull", XREG, XREG, XREG)
 MINI_OP(OP_ARM64_PMULL2, "arm64_pmull2", XREG, XREG, XREG)
-
-MINI_OP(OP_ARM64_XNEG, "arm64_xneg", XREG, XREG, NONE)
-MINI_OP(OP_ARM64_XNEG_SCALAR, "arm64_xneg_scalar", XREG, XREG, NONE)
 
 MINI_OP(OP_ARM64_SMULL, "arm64_smull", XREG, XREG, XREG)
 MINI_OP(OP_ARM64_SMULL_SCALAR, "arm64_smull_scalar", XREG, XREG, XREG)
@@ -1769,31 +1740,17 @@ MINI_OP(OP_ARM64_SQXTUN2, "arm64_sqxtun2", XREG, XREG, XREG)
 
 MINI_OP(OP_ARM64_SELECT_SCALAR, "arm64_select_scalar", XREG, XREG, IREG)
 MINI_OP(OP_ARM64_SELECT_QUAD, "arm64_select_quad", XREG, XREG, IREG)
-
-MINI_OP(OP_ARM64_FCVTZU, "arm64_fcvtzu", XREG, XREG, NONE)
-MINI_OP(OP_ARM64_FCVTZS, "arm64_fcvtzs", XREG, XREG, NONE)
-MINI_OP(OP_ARM64_FCVTZU_SCALAR, "arm64_fcvtzu_scalar", XREG, XREG, NONE)
-MINI_OP(OP_ARM64_FCVTZS_SCALAR, "arm64_fcvtzs_scalar", XREG, XREG, NONE)
-
-MINI_OP(OP_ARM64_UCVTF, "arm64_ucvtf", XREG, XREG, NONE)
-MINI_OP(OP_ARM64_SCVTF, "arm64_scvtf", XREG, XREG, NONE)
-MINI_OP(OP_ARM64_UCVTF_SCALAR, "arm64_ucvtf_scalar", XREG, XREG, NONE)
-MINI_OP(OP_ARM64_SCVTF_SCALAR, "arm64_scvtf_scalar", XREG, XREG, NONE)
+/* Take a word elem of sreg1 identified by inst_c0 and broadcast it to all elements of dreg */
+MINI_OP(OP_ARM64_BROADCAST_ELEM, "arm64_broadcast_elem", XREG, XREG, NONE)
 
 MINI_OP(OP_ARM64_FCVTN, "arm64_fcvtn", XREG, XREG, NONE)
 MINI_OP(OP_ARM64_FCVTN2, "arm64_fcvtn2", XREG, XREG, XREG)
 MINI_OP(OP_ARM64_FCVTXN, "arm64_fcvtxn", XREG, XREG, NONE)
 MINI_OP(OP_ARM64_FCVTXN2, "arm64_fcvtxn2", XREG, XREG, XREG)
 
-MINI_OP(OP_ARM64_FCVTL, "arm64_fcvtl", XREG, XREG, NONE)
-MINI_OP(OP_ARM64_FCVTL2, "arm64_fcvtl2", XREG, XREG, NONE)
-
 MINI_OP(OP_ARM64_CMTST, "arm64_cmtst", XREG, XREG, XREG)
 
-MINI_OP3(OP_ARM64_BSL, "arm64_bsl", XREG, XREG, XREG, XREG)
 MINI_OP(OP_ARM64_BIC, "arm64_bic", XREG, XREG, XREG)
-
-MINI_OP(OP_ARM64_MVN, "arm64_mvn", XREG, XREG, NONE)
 
 MINI_OP(OP_ARM64_SADD, "arm64_sadd", XREG, XREG, XREG)
 MINI_OP(OP_ARM64_SADD2, "arm64_sadd2", XREG, XREG, XREG)
@@ -1835,6 +1792,7 @@ MINI_OP(OP_ARM64_ABSCOMPARE, "arm64_abscompare", XREG, XREG, XREG)
 MINI_OP(OP_ARM64_XNARROW_SCALAR, "arm64_xnarrow_scalar", XREG, XREG, NONE)
 
 MINI_OP3(OP_ARM64_EXT, "arm64_ext", XREG, XREG, XREG, IREG)
+MINI_OP(OP_ARM64_EXT_IMM, "arm64_ext_imm", XREG, XREG, XREG)
 
 MINI_OP3(OP_ARM64_SQRDMLAH, "arm64_sqrdmlah", XREG, XREG, XREG, XREG)
 MINI_OP3(OP_ARM64_SQRDMLAH_BYSCALAR, "arm64_sqrdmlah_byscalar", XREG, XREG, XREG, XREG)
@@ -1843,4 +1801,84 @@ MINI_OP3(OP_ARM64_SQRDMLSH, "arm64_sqrdmlsh", XREG, XREG, XREG, XREG)
 MINI_OP3(OP_ARM64_SQRDMLSH_BYSCALAR, "arm64_sqrdmlsh_byscalar", XREG, XREG, XREG, XREG)
 MINI_OP3(OP_ARM64_SQRDMLSH_SCALAR, "arm64_sqrdmlsh_scalar", XREG, XREG, XREG, XREG)
 
+/*
+ * sreg1 points to a memory area with the input vectors.
+ * inst_c0 is the number of vectors.
+ * inst_p1 points to an int array with the offsets inside the memory area.
+ */
+MINI_OP(OP_ARM64_TBL_INDIRECT, "arm64_tbl_indirect", XREG, IREG, XREG)
+MINI_OP3(OP_ARM64_TBX_INDIRECT, "arm64_tbx_indirect", XREG, IREG, XREG, XREG)
+
+MINI_OP(OP_ARM64_USHL, "arm64_ushl", XREG, XREG, XREG)
+
 #endif // TARGET_ARM64
+
+MINI_OP(OP_SIMD_FCVTL, "simd_convert_to_higher_precision", XREG, XREG, NONE)
+MINI_OP(OP_SIMD_FCVTL2, "simd_convert_to_higher_precision_2", XREG, XREG, NONE)
+MINI_OP(OP_SIMD_USHLL, "simd_unsigned_shift_left_long", XREG, XREG, IREG)
+MINI_OP(OP_SIMD_USHLL2, "simd_unsigned_shift_left_long_2", XREG, XREG, IREG)
+MINI_OP(OP_SIMD_SSHLL, "simd_signed_shift_left_long", XREG, XREG, IREG)
+MINI_OP(OP_SIMD_SSHLL2, "simd_signed_shift_left_long_2", XREG, XREG, IREG)
+MINI_OP(OP_SIMD_SHL, "simd_shl", XREG, XREG, IREG)
+MINI_OP(OP_SIMD_SSHR, "simd_sshr", XREG, XREG, IREG)
+MINI_OP(OP_SIMD_USHR, "simd_ushr", XREG, XREG, IREG)
+MINI_OP3(OP_SIMD_USRA, "simd_usra", XREG, XREG, XREG, IREG)
+MINI_OP3(OP_SIMD_SSRA, "simd_ssra", XREG, XREG, XREG, IREG)
+MINI_OP(OP_SIMD_LOAD_SCALAR_I4, "simd_load_scalar_i4", XREG, IREG, NONE)
+MINI_OP(OP_SIMD_LOAD_SCALAR_I8, "simd_load_scalar_i8", XREG, IREG, NONE)
+MINI_OP(OP_SIMD_LOAD_SCALAR_R8, "simd_load_scalar_r8", XREG, IREG, NONE)
+MINI_OP(OP_SIMD_STORE, "simd_store", NONE, XREG, XREG)
+
+#if defined(TARGET_WASM)
+MINI_OP(OP_WASM_ONESCOMPLEMENT, "wasm_onescomplement", XREG, XREG, NONE)
+#endif
+
+#if defined(TARGET_ARM64) || defined(TARGET_AMD64)
+MINI_OP(OP_ONES_COMPLEMENT, "ones_complement", XREG, XREG, NONE)
+
+#endif // TARGET_ARM64 || TARGET_AMD64
+
+#if defined(TARGET_ARM64) || defined(TARGET_AMD64) || defined(TARGET_WASM)
+MINI_OP(OP_CVT_FP_UI,        "convert_fp_to_ui", XREG, XREG, NONE)
+MINI_OP(OP_CVT_FP_SI,        "convert_fp_to_si", XREG, XREG, NONE)
+MINI_OP(OP_CVT_FP_UI_SCALAR, "convert_fp_to_ui_scalar", XREG, XREG, NONE)
+MINI_OP(OP_CVT_FP_SI_SCALAR, "convert_fp_to_si_scalar", XREG, XREG, NONE)
+MINI_OP(OP_CVT_UI_FP,        "convert_ui_to_fp", XREG, XREG, NONE)
+MINI_OP(OP_CVT_SI_FP,        "convert_si_to_fp", XREG, XREG, NONE)
+MINI_OP(OP_CVT_UI_FP_SCALAR, "convert_ui_to_fp_scalar", XREG, XREG, NONE)
+MINI_OP(OP_CVT_SI_FP_SCALAR, "convert_si_to_fp_scalar", XREG, XREG, NONE)
+/* inst_c1 is one of the MONO_TYPE_ constants */
+MINI_OP(OP_NEGATION,        "negate", XREG, XREG, NONE)
+MINI_OP(OP_NEGATION_SCALAR, "negate_scalar", XREG, XREG, NONE)
+/* Select bits from src2/src3 using src1 */
+MINI_OP3(OP_BSL,            "bitwise_select", XREG, XREG, XREG, XREG)
+#endif // TARGET_ARM64 || TARGET_AMD64 || TARGET_WASM
+
+#if defined(TARGET_RISCV64) || defined(TARGET_RISCV32)
+MINI_OP(OP_RISCV_EXC_BEQ, "riscv_exc_beq", NONE, IREG, IREG)
+MINI_OP(OP_RISCV_EXC_BNE, "riscv_exc_bne", NONE, IREG, IREG)
+MINI_OP(OP_RISCV_EXC_BGEU, "riscv_exc_bgeu", NONE, IREG, IREG)
+MINI_OP(OP_RISCV_EXC_BLT, "riscv_exc_blt", NONE, IREG, IREG)
+MINI_OP(OP_RISCV_EXC_BLTU, "riscv_exc_bltu", NONE, IREG, IREG)
+
+MINI_OP(OP_RISCV_BEQ, "riscv_beq", NONE, IREG, IREG)
+MINI_OP(OP_RISCV_BNE, "riscv_bne", NONE, IREG, IREG)
+MINI_OP(OP_RISCV_BGE, "riscv_bge", NONE, IREG, IREG)
+MINI_OP(OP_RISCV_BGEU, "riscv_bgeu", NONE, IREG, IREG)
+MINI_OP(OP_RISCV_BLT, "riscv_blt", NONE, IREG, IREG)
+MINI_OP(OP_RISCV_BLTU, "riscv_bltu", NONE, IREG, IREG)
+
+MINI_OP(OP_RISCV_ADDIW, "riscv_addiw", IREG, IREG, NONE)
+
+MINI_OP(OP_RISCV_SLT, "riscv_slt", IREG, IREG, IREG)
+MINI_OP(OP_RISCV_SLTU, "riscv_sltu", IREG, IREG, IREG)
+MINI_OP(OP_RISCV_SLTI, "riscv_slti", IREG, IREG, NONE)
+MINI_OP(OP_RISCV_SLTIU, "riscv_sltiu", IREG, IREG, NONE)
+
+// used for cfg->r4fp == FALSE
+MINI_OP(OP_RISCV_SETFREG_R4,"riscv_setfreg_r4", FREG, FREG, NONE)
+#endif
+
+#if defined(TARGET_RISCV64)
+MINI_OP(OP_RISCV_ADDUW, "riscv_adduw", IREG, IREG, IREG)
+#endif

@@ -53,7 +53,7 @@ namespace System.IO.Ports.Tests
             {
                 SerialPortProperties serPortProp = new SerialPortProperties();
 
-                Debug.WriteLine("Verifying seting RtsEnable to true then false before open");
+                Debug.WriteLine("Verifying setting RtsEnable to true then false before open");
 
                 com1.RtsEnable = true;
 
@@ -141,7 +141,7 @@ namespace System.IO.Ports.Tests
             {
                 SerialPortProperties serPortProp = new SerialPortProperties();
 
-                Debug.WriteLine("Verifying seting RtsEnable to true then false after open");
+                Debug.WriteLine("Verifying setting RtsEnable to true then false after open");
 
                 com1.RtsEnable = true;
 

@@ -8,26 +8,23 @@ namespace System.Net.Http.Headers
 {
     public class RangeConditionHeaderValue : ICloneable
     {
-        private readonly DateTimeOffset? _date;
+        // Exactly one of date and entityTag will be set.
+        private readonly DateTimeOffset _date;
         private readonly EntityTagHeaderValue? _entityTag;
 
-        public DateTimeOffset? Date
-        {
-            get { return _date; }
-        }
+        public DateTimeOffset? Date => _entityTag is null ? _date : null;
 
-        public EntityTagHeaderValue? EntityTag
-        {
-            get { return _entityTag; }
-        }
+        public EntityTagHeaderValue? EntityTag => _entityTag;
 
         public RangeConditionHeaderValue(DateTimeOffset date)
         {
             _date = date;
         }
 
-        public RangeConditionHeaderValue(EntityTagHeaderValue entityTag!!)
+        public RangeConditionHeaderValue(EntityTagHeaderValue entityTag)
         {
+            ArgumentNullException.ThrowIfNull(entityTag);
+
             _entityTag = entityTag;
         }
 
@@ -44,46 +41,16 @@ namespace System.Net.Http.Headers
             _date = source._date;
         }
 
-        public override string ToString()
-        {
-            if (_entityTag == null)
-            {
-                Debug.Assert(_date != null);
-                return HttpDateParser.DateToString(_date.Value);
-            }
-            return _entityTag.ToString();
-        }
+        public override string ToString() => _entityTag?.ToString() ?? _date.ToString("r");
 
-        public override bool Equals([NotNullWhen(true)] object? obj)
-        {
-            RangeConditionHeaderValue? other = obj as RangeConditionHeaderValue;
+        public override bool Equals([NotNullWhen(true)] object? obj) =>
+            obj is RangeConditionHeaderValue other &&
+            (_entityTag is null ? other._entityTag is null : _entityTag.Equals(other._entityTag)) &&
+            _date == other._date;
 
-            if (other == null)
-            {
-                return false;
-            }
+        public override int GetHashCode() => _entityTag?.GetHashCode() ?? _date.GetHashCode();
 
-            if (_entityTag == null)
-            {
-                Debug.Assert(_date != null);
-                return (other._date != null) && (_date.Value == other._date.Value);
-            }
-
-            return _entityTag.Equals(other._entityTag);
-        }
-
-        public override int GetHashCode()
-        {
-            if (_entityTag == null)
-            {
-                Debug.Assert(_date != null);
-                return _date.Value.GetHashCode();
-            }
-
-            return _entityTag.GetHashCode();
-        }
-
-        public static RangeConditionHeaderValue Parse(string? input)
+        public static RangeConditionHeaderValue Parse(string input)
         {
             int index = 0;
             return (RangeConditionHeaderValue)GenericHeaderParser.RangeConditionParser.ParseValue(
@@ -136,7 +103,7 @@ namespace System.Net.Http.Headers
                     return 0;
                 }
 
-                current = current + entityTagLength;
+                current += entityTagLength;
 
                 // RangeConditionHeaderValue only allows 1 value. There must be no delimiter/other chars after an
                 // entity tag.

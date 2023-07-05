@@ -10,6 +10,7 @@ namespace System.Security.Cryptography.X509Certificates
     {
         private static readonly TimeSpan s_maxUrlRetrievalTimeout = TimeSpan.FromMinutes(1);
 
+#pragma warning disable IDE0060
         internal static partial IChainPal FromHandle(IntPtr chainContext)
         {
             throw new PlatformNotSupportedException();
@@ -19,6 +20,7 @@ namespace System.Security.Cryptography.X509Certificates
         {
             return true;
         }
+#pragma warning restore IDE0060
 
         public static void FlushStores()
         {
@@ -69,7 +71,7 @@ namespace System.Security.Cryptography.X509Certificates
             }
         }
 
-        private static IChainPal? BuildChainCore(
+        private static OpenSslX509ChainProcessor? BuildChainCore(
             bool useMachineContext,
             ICertificatePal cert,
             X509Certificate2Collection? extraStore,
@@ -160,11 +162,18 @@ namespace System.Security.Cryptography.X509Certificates
                 }
             }
 
+            chainPal.CommitToChain();
+
             if (revocationMode != X509RevocationMode.NoCheck)
             {
                 if (OpenSslX509ChainProcessor.IsCompleteChain(status))
                 {
-                    if (status != Interop.Crypto.X509VerifyStatusCode.X509_V_OK)
+                    // Checking the validity period for the certificates in the chain is done after the
+                    // check for a trusted root, so accept expired (or not yet valid) as acceptable for
+                    // processing revocation.
+                    if (status != Interop.Crypto.X509VerifyStatusCode.X509_V_OK &&
+                        status != Interop.Crypto.X509VerifyStatusCodeUniversal.X509_V_ERR_CERT_NOT_YET_VALID &&
+                        status != Interop.Crypto.X509VerifyStatusCodeUniversal.X509_V_ERR_CERT_HAS_EXPIRED)
                     {
                         if (OpenSslX509ChainEventSource.Log.IsEnabled())
                         {
@@ -174,7 +183,6 @@ namespace System.Security.Cryptography.X509Certificates
                         revocationMode = X509RevocationMode.NoCheck;
                     }
 
-                    chainPal.CommitToChain();
                     chainPal.ProcessRevocation(revocationMode, revocationFlag);
                 }
             }
@@ -229,7 +237,7 @@ namespace System.Security.Cryptography.X509Certificates
 
                         if (OpenSslX509ChainEventSource.Log.IsEnabled())
                         {
-                            OpenSslX509ChainEventSource.Log.CachingIntermediateFailed(cert);
+                            OpenSslX509ChainEventSource.Log.CachingIntermediateFailedMessage();
                         }
                     }
                 }

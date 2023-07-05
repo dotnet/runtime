@@ -1255,7 +1255,7 @@ namespace System.Transactions.Tests
                 // At some point we realize that we can't complete our work, so enqueue it to be completed later
                 s_workQueue.Add(Tuple.Create(i, completionSource, Transaction.Current));
 
-                // If we are the first thread kicked off, then we are also resposible to kick of the background thread which will do the work for us
+                // If we are the first thread kicked off, then we are also responsible to kick of the background thread which will do the work for us
                 if (i == 0)
                 {
                     StartWorkProcessingThread();

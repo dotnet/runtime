@@ -19,4 +19,9 @@ namespace SharedTypes
         public bool* b;
         public char* c;
     }
+
+    public struct BlittableIntWrapper
+    {
+        public int i;
+    }
 }

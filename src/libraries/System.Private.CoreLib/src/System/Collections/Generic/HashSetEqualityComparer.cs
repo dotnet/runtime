@@ -63,7 +63,7 @@ namespace System.Collections.Generic
                 {
                     if (t != null)
                     {
-                        hashCode ^= t.GetHashCode(); // same hashcode as as default comparer
+                        hashCode ^= t.GetHashCode(); // same hashcode as default comparer
                     }
                 }
             }

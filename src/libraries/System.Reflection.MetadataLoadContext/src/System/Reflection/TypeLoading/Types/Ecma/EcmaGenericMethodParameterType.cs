@@ -23,7 +23,7 @@ namespace System.Reflection.TypeLoading.Ecma
         protected sealed override RoType ComputeDeclaringType() => GetRoDeclaringMethod().GetRoDeclaringType();
 
         public sealed override MethodBase DeclaringMethod => GetRoDeclaringMethod();
-        private RoMethod GetRoDeclaringMethod() => _lazyDeclaringMethod ?? (_lazyDeclaringMethod = ComputeDeclaringMethod());
+        private RoMethod GetRoDeclaringMethod() => _lazyDeclaringMethod ??= ComputeDeclaringMethod();
         private RoMethod ComputeDeclaringMethod() => ((MethodDefinitionHandle)(GenericParameter.Parent)).ResolveMethod<RoMethod>(GetEcmaModule(), default);
         private volatile RoMethod? _lazyDeclaringMethod;
 

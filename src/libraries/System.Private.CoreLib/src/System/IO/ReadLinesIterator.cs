@@ -76,10 +76,7 @@ namespace System.IO
             {
                 if (disposing)
                 {
-                    if (_reader != null)
-                    {
-                        _reader.Dispose();
-                    }
+                    _reader?.Dispose();
                 }
             }
             finally

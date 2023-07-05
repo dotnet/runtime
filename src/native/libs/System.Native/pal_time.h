@@ -28,9 +28,21 @@ typedef struct ProcessCpuInformation
 PALEXPORT int32_t SystemNative_UTimensat(const char* path, TimeSpec* times);
 
 /**
+ * Sets the last access and last modified time of a file
+ *
+ * Returns 0 on success; otherwise, returns -1 and errno is set.
+ */
+PALEXPORT int32_t SystemNative_FUTimens(intptr_t fd, TimeSpec* times);
+
+/**
  * Gets a high-resolution timestamp that can be used for time-interval measurements.
  */
 PALEXPORT uint64_t SystemNative_GetTimestamp(void);
+
+/**
+ * Gets system boot time ticks. (Linux only)
+ */
+PALEXPORT int64_t SystemNative_GetBootTimeTicks(void);
 
 /**
  * The main purpose of this function is to compute the overall CPU utilization
@@ -41,4 +53,4 @@ PALEXPORT uint64_t SystemNative_GetTimestamp(void);
  * returned is sum of utilization across all processors, e.g. this function will
  * return 200 when two cores are running at 100%.
  */
-PALEXPORT int32_t SystemNative_GetCpuUtilization(ProcessCpuInformation* previousCpuInfo);
+PALEXPORT double SystemNative_GetCpuUtilization(ProcessCpuInformation* previousCpuInfo);

@@ -290,7 +290,7 @@ IEnumerable<ImportDefinition> imports;
         private class TypeOrigin : ICompositionElement
         {
             private readonly Type _type;
-            private readonly ICompositionElement _orgin;
+            private readonly ICompositionElement _origin;
 
             public TypeOrigin(Type type)
                 : this(type, null)
@@ -300,7 +300,7 @@ IEnumerable<ImportDefinition> imports;
             public TypeOrigin(Type type, ICompositionElement origin)
             {
                 this._type = type;
-                this._orgin = origin;
+                this._origin = origin;
             }
 
             public string DisplayName
@@ -315,7 +315,7 @@ IEnumerable<ImportDefinition> imports;
             {
                 get
                 {
-                    return this._orgin;
+                    return this._origin;
                 }
             }
         }

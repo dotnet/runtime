@@ -126,7 +126,7 @@ namespace System.Linq.Expressions.Interpreter
 
         public static bool IsInterpretedFrame(MethodBase method)
         {
-            //ContractUtils.RequiresNotNull(method, nameof(method));
+            //ArgumentNullException.ThrowIfNull(method);
             return method.DeclaringType == typeof(Interpreter) && method.Name == "Run";
         }
 
@@ -142,10 +142,7 @@ namespace System.Linq.Expressions.Interpreter
 
         internal void SaveTraceToException(Exception exception)
         {
-            if (exception.Data[typeof(InterpretedFrameInfo)] == null)
-            {
-                exception.Data[typeof(InterpretedFrameInfo)] = new List<InterpretedFrameInfo>(GetStackTraceDebugInfo()).ToArray();
-            }
+            exception.Data[typeof(InterpretedFrameInfo)] ??= new List<InterpretedFrameInfo>(GetStackTraceDebugInfo()).ToArray();
         }
 
         public static InterpretedFrameInfo[]? GetExceptionStackTrace(Exception exception)
@@ -177,7 +174,7 @@ namespace System.Linq.Expressions.Interpreter
             return _parent = currentFrame;
         }
 
-        internal void Leave(InterpretedFrame? prevFrame)
+        internal static void Leave(InterpretedFrame? prevFrame)
         {
             s_currentFrame = prevFrame;
         }

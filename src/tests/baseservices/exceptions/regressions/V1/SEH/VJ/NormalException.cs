@@ -150,7 +150,7 @@ class ComplexByte {
 
 public class NormalException {
 
-    public static int Main( String [] args ) 
+    public static int Main() 
 	{
 		String s = "Done";
 		int retVal = 100;

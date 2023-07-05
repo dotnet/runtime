@@ -1,0 +1,55 @@
+<Directives>
+  <Application>
+    <Assembly Name="mscorlib" />
+    <Assembly Name="System.Runtime" />
+
+    <Assembly Name="System.Reflection.Tests">
+      <Type Name="System.Reflection.Tests.ModuleTest">
+        <Method Name="CustomAttributes" Dynamic="Required All">
+          <GenericArgument Name="System.Int32, System.Private.CoreLib" />
+          <GenericArgument Name="System.String, System.Private.CoreLib" />
+        </Method>
+        <Method Name="CustomAttributes" Dynamic="Required All">
+          <GenericArgument Name="System.Int64, System.Private.CoreLib" />
+          <GenericArgument Name="System.String, System.Private.CoreLib" />
+        </Method>
+        <Method Name="CustomAttributes" Dynamic="Required All">
+          <GenericArgument Name="System.Reflection.Tests.PublicEnum, System.Reflection.Tests" />
+          <GenericArgument Name="System.String, System.Private.CoreLib" />
+        </Method>
+      </Type>
+
+      <Type Name="System.Reflection.Tests.MemberInfoTests+Base">
+        <Method Name="Moo" Dynamic="Required All">
+          <GenericArgument Name="System.Int32, System.Private.CoreLib" />
+        </Method>
+      </Type>
+
+      <Type Name="System.Reflection.Tests.MI_SubClass">
+        <Method Name="GenericMethod1" Dynamic="Required All">
+          <GenericArgument Name="System.Int32, System.Private.CoreLib" />
+        </Method>
+        <Method Name="GenericMethod2" Dynamic="Required All">
+          <GenericArgument Name="System.String, System.Private.CoreLib" />
+          <GenericArgument Name="System.Int32, System.Private.CoreLib" />
+        </Method>
+      </Type>
+
+      <Type Name="System.Reflection.Tests.MI_GenericClass`1[[System.String, System.Private.CoreLib]]">
+        <Method Name="GenericMethod2" Dynamic="Required All">
+          <GenericArgument Name="System.DateTime, System.Private.CoreLib" />
+        </Method>
+        <Method Name="GenericMethod3" Dynamic="Required All">
+          <GenericArgument Name="System.Int32, System.Private.CoreLib" />
+        </Method>
+      </Type>
+
+      <Type Name="System.Reflection.Tests.MemberInfoTests+GenericTestClass`1[[System.Double, System.Private.CoreLib]]" Dynamic="Required All" />
+
+    </Assembly>
+
+    <Assembly Name="System.Private.CoreLib">
+      <Type Name="System.Collections.Generic.Dictionary`2" Dynamic="Required All" />
+    </Assembly>
+  </Application>
+</Directives>
