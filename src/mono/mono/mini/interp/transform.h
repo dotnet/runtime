@@ -50,7 +50,8 @@ typedef struct
 #define LOCAL_VALUE_LOCAL 1
 #define LOCAL_VALUE_I4 2
 #define LOCAL_VALUE_I8 3
-#define LOCAL_VALUE_NON_NULL 4
+#define LOCAL_VALUE_R4 4
+#define LOCAL_VALUE_NON_NULL 5
 
 // LocalValue contains data to construct an InterpInst that is equivalent with the contents
 // of the stack slot / local / argument.
@@ -62,6 +63,7 @@ typedef struct {
 		int local;
 		gint32 i;
 		gint64 l;
+		float f;
 	};
 	// The instruction that writes this local.
 	InterpInst *ins;
@@ -381,6 +383,6 @@ mono_interp_print_td_code (TransformData *td);
 
 /* Forward definitions for simd methods */
 static gboolean
-interp_emit_simd_intrinsics (TransformData *td, MonoMethod *cmethod, MonoMethodSignature *csignature);
+interp_emit_simd_intrinsics (TransformData *td, MonoMethod *cmethod, MonoMethodSignature *csignature, gboolean newobj);
 
 #endif /* __MONO_MINI_INTERP_TRANSFORM_H__ */

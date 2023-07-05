@@ -1981,7 +1981,7 @@ interp_handle_intrinsics (TransformData *td, MonoMethod *target_method, MonoClas
 	const char *klass_name = m_class_get_name (target_method->klass);
 
 #ifdef INTERP_ENABLE_SIMD
-	if ((mono_interp_opt & INTERP_OPT_SIMD) && interp_emit_simd_intrinsics (td, target_method, csignature))
+	if ((mono_interp_opt & INTERP_OPT_SIMD) && interp_emit_simd_intrinsics (td, target_method, csignature, FALSE))
 		return TRUE;
 #endif
 
@@ -6289,6 +6289,10 @@ generate_code (TransformData *td, MonoMethod *method, MonoMethodHeader *header, 
 				init_last_ins_call (td);
 				td->last_ins->info.call_info->call_offset = call_offset;
 			} else {
+#ifdef INTERP_ENABLE_SIMD
+				if ((mono_interp_opt & INTERP_OPT_SIMD) && interp_emit_simd_intrinsics (td, m, csignature, TRUE))
+					break;
+#endif
 				td->sp -= csignature->param_count;
 
 				// Move params types in temporary buffer
@@ -9362,7 +9366,7 @@ write_v128_element (gpointer v128_addr, LocalValue *val, int index, int el_size)
 	switch (el_size) {
 		case 1: *(gint8*)el_addr = (gint8)val->i; break;
 		case 2: *(gint16*)el_addr = (gint16)val->i; break;
-		case 4: *(gint32*)el_addr = val->i; break;
+		case 4: *(gint32*)el_addr = val->i; break; // this also handles r4
 		case 8: *(gint64*)el_addr = val->l; break;
 		default:
 			g_assert_not_reached ();
@@ -9379,7 +9383,7 @@ interp_fold_simd_create (TransformData *td, InterpBasicBlock *cbb, LocalValue *l
 	int var = args [index];
 	while (var != -1) {
 		LocalValue *val = &local_defs [var];
-		if (val->type != LOCAL_VALUE_I4 && val->type != LOCAL_VALUE_I8)
+		if (val->type != LOCAL_VALUE_I4 && val->type != LOCAL_VALUE_I8 && val->type != LOCAL_VALUE_R4)
 			return ins;
 		index++;
 		var = args [index];
@@ -9654,6 +9658,11 @@ retry:
 			} else if (MINT_IS_LDC_I8 (opcode)) {
 				local_defs [dreg].type = LOCAL_VALUE_I8;
 				local_defs [dreg].l = interp_get_const_from_ldc_i8 (ins);
+			} else if (opcode == MINT_LDC_R4) {
+				guint32 val_u = READ32 (&ins->data [0]);
+				float f = *(float*)(&val_u);
+				local_defs [dreg].type = LOCAL_VALUE_R4;
+				local_defs [dreg].f = f;
 			} else if (ins->opcode == MINT_LDPTR) {
 #if SIZEOF_VOID_P == 8
 				local_defs [dreg].type = LOCAL_VALUE_I8;
@@ -9822,6 +9831,26 @@ retry:
 					if (td->verbose_level) {
 						g_print ("Replace ldloca/ldobj_vt pair :\n\t");
 						dump_interp_inst (ins, td->data_items);
+					}
+				}
+			} else if (opcode == MINT_STOBJ_VT || opcode == MINT_STOBJ_VT_NOREF) {
+				InterpInst *ldloca = local_defs [sregs [0]].ins;
+				if (ldloca != NULL && ldloca->opcode == MINT_LDLOCA_S) {
+					int stsize = ins->data [0];
+					int local = ldloca->sregs [0];
+
+					if (stsize == td->locals [local].size) {
+						// Replace LDLOCA + STOBJ_VT with MOV_VT
+						local_ref_count [sregs [0]]--;
+						ins->opcode = MINT_MOV_VT;
+						sregs [0] = sregs [1];
+						ins->dreg = local;
+						needs_retry = TRUE;
+
+						if (td->verbose_level) {
+							g_print ("Replace ldloca/stobj_vt pair :\n\t");
+							dump_interp_inst (ins, td->data_items);
+						}
 					}
 				}
 			} else if (MINT_IS_STIND (opcode)) {
