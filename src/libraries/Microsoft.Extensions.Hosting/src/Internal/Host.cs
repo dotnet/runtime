@@ -3,10 +3,12 @@
 
 using System;
 using System.Collections.Generic;
+using System.Diagnostics;
 using System.Linq;
 using System.Runtime.ExceptionServices;
 using System.Threading;
 using System.Threading.Tasks;
+using Microsoft.Extensions.Configuration;
 using Microsoft.Extensions.DependencyInjection;
 using Microsoft.Extensions.FileProviders;
 using Microsoft.Extensions.Logging;
@@ -14,6 +16,8 @@ using Microsoft.Extensions.Options;
 
 namespace Microsoft.Extensions.Hosting.Internal
 {
+    [DebuggerDisplay("{DebuggerToString(),nq}")]
+    [DebuggerTypeProxy(typeof(HostDebugView))]
     internal sealed class Host : IHost, IAsyncDisposable
     {
         private readonly ILogger<Host> _logger;
@@ -25,6 +29,7 @@ namespace Microsoft.Extensions.Hosting.Internal
         private IEnumerable<IHostedService>? _hostedServices;
         private IEnumerable<IHostedLifecycleService>? _hostedLifecycleServices;
         private volatile bool _stopCalled;
+        private bool _hostStopped;
 
         public Host(IServiceProvider services,
                     IHostEnvironment hostEnvironment,
@@ -261,6 +266,8 @@ namespace Microsoft.Extensions.Hosting.Internal
                     exceptions.Add(ex);
                 }
 
+                _hostStopped = true;
+
                 if (exceptions.Count > 0)
                 {
                     if (exceptions.Count == 1)
@@ -407,6 +414,25 @@ namespace Microsoft.Extensions.Hosting.Internal
                         break;
                 }
             }
+        }
+
+        private string DebuggerToString()
+        {
+            return $@"ApplicationName = ""{_hostEnvironment.ApplicationName}"", IsRunning = {(IsRunning ? "true" : "false")}";
+        }
+
+        // Host is running if the app has been started and the host hasn't been stopped.
+        private bool IsRunning => _applicationLifetime.ApplicationStarted.IsCancellationRequested && !_hostStopped;
+
+        internal sealed class HostDebugView(Host host)
+        {
+            public IServiceProvider Services => host.Services;
+            public IConfiguration Configuration => host.Services.GetRequiredService<IConfiguration>();
+            public IHostEnvironment Environment => host._hostEnvironment;
+            public IHostApplicationLifetime ApplicationLifetime => host._applicationLifetime;
+            public HostOptions Options => host._options;
+            public List<IHostedService> HostedServices => new List<IHostedService>(host._hostedServices ?? Enumerable.Empty<IHostedService>());
+            public bool IsRunning => host.IsRunning;
         }
     }
 }

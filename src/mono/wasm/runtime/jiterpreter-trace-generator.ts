@@ -49,6 +49,8 @@ import {
     simdCreateLoadOps, simdCreateSizes,
     simdCreateStoreOps, simdShiftTable,
     bitmaskTable, createScalarTable,
+    simdExtractTable, simdReplaceTable,
+    simdLoadTable, simdStoreTable,
 } from "./jiterpreter-tables";
 import { mono_log_error, mono_log_info } from "./logging";
 
@@ -3496,10 +3498,19 @@ function append_simd_4_load(builder: WasmBuilder, ip: MintOpcodePtr) {
 
 function emit_simd_2(builder: WasmBuilder, ip: MintOpcodePtr, index: SimdIntrinsic2): boolean {
     const simple = <WasmSimdOpcode>cwraps.mono_jiterp_get_simd_opcode(1, index);
-    if (simple) {
-        append_simd_2_load(builder, ip);
-        builder.appendSimd(simple);
-        append_simd_store(builder, ip);
+    if (simple >= 0) {
+        if (simdLoadTable.has(index)) {
+            // Indirect load, so v1 is T** and res is Vector128*
+            builder.local("pLocals");
+            append_ldloc(builder, getArgU16(ip, 2), WasmOpcode.i32_load);
+            builder.appendSimd(simple);
+            builder.appendMemarg(0, 0);
+            append_simd_store(builder, ip);
+        } else {
+            append_simd_2_load(builder, ip);
+            builder.appendSimd(simple);
+            append_simd_store(builder, ip);
+        }
         return true;
     }
 
@@ -3554,14 +3565,34 @@ function emit_simd_2(builder: WasmBuilder, ip: MintOpcodePtr, index: SimdIntrins
 
 function emit_simd_3(builder: WasmBuilder, ip: MintOpcodePtr, index: SimdIntrinsic3): boolean {
     const simple = <WasmSimdOpcode>cwraps.mono_jiterp_get_simd_opcode(2, index);
-    if (simple) {
-        const isShift = simdShiftTable.has(index);
+    if (simple >= 0) {
+        const isShift = simdShiftTable.has(index),
+            extractTup = simdExtractTable[index];
+
         if (isShift) {
             builder.local("pLocals");
             append_ldloc(builder, getArgU16(ip, 2), WasmOpcode.PREFIX_simd, WasmSimdOpcode.v128_load);
             append_ldloc(builder, getArgU16(ip, 3), WasmOpcode.i32_load);
             builder.appendSimd(simple);
             append_simd_store(builder, ip);
+        } else if (Array.isArray(extractTup)) {
+            const lane = get_known_constant_value(builder, getArgU16(ip, 3)),
+                laneCount = extractTup[0];
+            if (typeof (lane) !== "number") {
+                mono_log_error (`${builder.functions[0].name}: Non-constant lane index passed to ExtractLane`);
+                return false;
+            } else if ((lane >= laneCount) || (lane < 0)) {
+                mono_log_error (`${builder.functions[0].name}: ExtractLane index ${lane} out of range (0 - ${laneCount - 1})`);
+                return false;
+            }
+
+            // load vec onto stack and then emit extract + lane imm
+            builder.local("pLocals");
+            append_ldloc(builder, getArgU16(ip, 2), WasmOpcode.PREFIX_simd, WasmSimdOpcode.v128_load);
+            builder.appendSimd(simple);
+            builder.appendU8(lane);
+            // Store using the opcode from the tuple
+            append_stloc_tail(builder, getArgU16(ip, 1), extractTup[1]);
         } else {
             append_simd_3_load(builder, ip);
             builder.appendSimd(simple);
@@ -3571,6 +3602,13 @@ function emit_simd_3(builder: WasmBuilder, ip: MintOpcodePtr, index: SimdIntrins
     }
 
     switch (index) {
+        case SimdIntrinsic3.StoreANY:
+            // Indirect store where args are [V128**, V128*]
+            append_ldloc(builder, getArgU16(ip, 2), WasmOpcode.i32_load);
+            append_ldloc(builder, getArgU16(ip, 3), WasmOpcode.PREFIX_simd, WasmSimdOpcode.v128_load);
+            builder.appendSimd(WasmSimdOpcode.v128_store);
+            builder.appendMemarg(0, 0);
+            return true;
         case SimdIntrinsic3.V128_BITWISE_EQUALITY:
         case SimdIntrinsic3.V128_BITWISE_INEQUALITY:
             append_simd_3_load(builder, ip);
@@ -3682,10 +3720,49 @@ function emit_shuffle(builder: WasmBuilder, ip: MintOpcodePtr, elementCount: num
 
 function emit_simd_4(builder: WasmBuilder, ip: MintOpcodePtr, index: SimdIntrinsic4): boolean {
     const simple = <WasmSimdOpcode>cwraps.mono_jiterp_get_simd_opcode(3, index);
-    if (simple) {
-        append_simd_4_load(builder, ip);
-        builder.appendSimd(simple);
-        append_simd_store(builder, ip);
+    if (simple >= 0) {
+        // [lane count, value load opcode]
+        const rtup = simdReplaceTable[index],
+            stup = simdStoreTable[index];
+        if (Array.isArray(rtup)) {
+            const laneCount = rtup[0],
+                lane = get_known_constant_value(builder, getArgU16(ip, 3));
+            if (typeof (lane) !== "number") {
+                mono_log_error (`${builder.functions[0].name}: Non-constant lane index passed to ReplaceLane`);
+                return false;
+            } else if ((lane >= laneCount) || (lane < 0)) {
+                mono_log_error (`${builder.functions[0].name}: ReplaceLane index ${lane} out of range (0 - ${laneCount - 1})`);
+                return false;
+            }
+
+            // arrange stack as [vec, value] and then write replace + lane imm
+            builder.local("pLocals");
+            append_ldloc(builder, getArgU16(ip, 2), WasmOpcode.PREFIX_simd, WasmSimdOpcode.v128_load);
+            append_ldloc(builder, getArgU16(ip, 4), rtup[1]);
+            builder.appendSimd(simple);
+            builder.appendU8(lane);
+            append_simd_store(builder, ip);
+        } else if (Array.isArray(stup)) {
+            // Indirect store where args are [Scalar**, V128*]
+            const laneCount = stup[0],
+                lane = get_known_constant_value(builder, getArgU16(ip, 4));
+            if (typeof (lane) !== "number") {
+                mono_log_error (`${builder.functions[0].name}: Non-constant lane index passed to store method`);
+                return false;
+            } else if ((lane >= laneCount) || (lane < 0)) {
+                mono_log_error (`${builder.functions[0].name}: Store lane ${lane} out of range (0 - ${laneCount - 1})`);
+                return false;
+            }
+            append_ldloc(builder, getArgU16(ip, 2), WasmOpcode.i32_load);
+            append_ldloc(builder, getArgU16(ip, 3), WasmOpcode.PREFIX_simd, WasmSimdOpcode.v128_load);
+            builder.appendSimd(simple);
+            builder.appendMemarg(0, 0);
+            builder.appendU8(lane);
+        } else {
+            append_simd_4_load(builder, ip);
+            builder.appendSimd(simple);
+            append_simd_store(builder, ip);
+        }
         return true;
     }
 
@@ -3700,6 +3777,28 @@ function emit_simd_4(builder: WasmBuilder, ip: MintOpcodePtr, index: SimdIntrins
             builder.appendSimd(WasmSimdOpcode.v128_bitselect);
             append_simd_store(builder, ip);
             return true;
+        case SimdIntrinsic4.ShuffleD1: {
+            const indices = get_known_constant_value(builder, getArgU16(ip, 4));
+            if (typeof (indices) !== "object") {
+                mono_log_error (`${builder.functions[0].name}: Non-constant indices passed to PackedSimd.Shuffle`);
+                return false;
+            }
+            for (let i = 0; i < 32; i++) {
+                const lane = indices[i];
+                if ((lane < 0) || (lane > 31)) {
+                    mono_log_error (`${builder.functions[0].name}: Shuffle lane index #${i} (${lane}) out of range (0 - 31)`);
+                    return false;
+                }
+            }
+
+            builder.local("pLocals");
+            append_ldloc(builder, getArgU16(ip, 2), WasmOpcode.PREFIX_simd, WasmSimdOpcode.v128_load);
+            append_ldloc(builder, getArgU16(ip, 3), WasmOpcode.PREFIX_simd, WasmSimdOpcode.v128_load);
+            builder.appendSimd(WasmSimdOpcode.i8x16_shuffle);
+            builder.appendBytes(indices);
+            append_simd_store(builder, ip);
+            return true;
+        }
         default:
             return false;
     }

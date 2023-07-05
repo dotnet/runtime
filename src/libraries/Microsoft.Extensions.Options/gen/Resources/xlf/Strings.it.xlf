@@ -32,6 +32,16 @@
         <target state="translated">Non è possibile usare 'ValidateObjectMembersAttribute' o 'ValidateEnumeratedItemsAttribute' nei campi o nelle proprietà con tipi generici aperti.</target>
         <note />
       </trans-unit>
+      <trans-unit id="CantValidateStaticOrConstMemberMessage">
+        <source>Can't apply validation attributes to constant or static member {0}.</source>
+        <target state="new">Can't apply validation attributes to constant or static member {0}.</target>
+        <note />
+      </trans-unit>
+      <trans-unit id="CantValidateStaticOrConstMemberTitle">
+        <source>Can't validate constants, static fields or properties.</source>
+        <target state="new">Can't validate constants, static fields or properties.</target>
+        <note />
+      </trans-unit>
       <trans-unit id="CircularTypeReferencesMessage">
         <source>There is a circular type reference involving type {0} preventing it from being used for static validation.</source>
         <target state="translated">Esiste un riferimento di tipo circolare che interessa il tipo {0} e ne impedisce l'utilizzo per la convalida statica.</target>

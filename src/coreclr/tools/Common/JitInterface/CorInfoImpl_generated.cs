@@ -71,12 +71,12 @@ namespace Internal.JitInterface
         }
 
         [UnmanagedCallersOnly]
-        private static byte _getMethodInfo(IntPtr thisHandle, IntPtr* ppException, CORINFO_METHOD_STRUCT_* ftn, CORINFO_METHOD_INFO* info)
+        private static byte _getMethodInfo(IntPtr thisHandle, IntPtr* ppException, CORINFO_METHOD_STRUCT_* ftn, CORINFO_METHOD_INFO* info, CORINFO_CONTEXT_STRUCT* context)
         {
             var _this = GetThis(thisHandle);
             try
             {
-                return _this.getMethodInfo(ftn, info) ? (byte)1 : (byte)0;
+                return _this.getMethodInfo(ftn, info, context) ? (byte)1 : (byte)0;
             }
             catch (Exception ex)
             {
@@ -2513,7 +2513,7 @@ namespace Internal.JitInterface
             callbacks[1] = (delegate* unmanaged<IntPtr, IntPtr*, CORINFO_METHOD_STRUCT_*, uint>)&_getMethodAttribs;
             callbacks[2] = (delegate* unmanaged<IntPtr, IntPtr*, CORINFO_METHOD_STRUCT_*, CorInfoMethodRuntimeFlags, void>)&_setMethodAttribs;
             callbacks[3] = (delegate* unmanaged<IntPtr, IntPtr*, CORINFO_METHOD_STRUCT_*, CORINFO_SIG_INFO*, CORINFO_CLASS_STRUCT_*, void>)&_getMethodSig;
-            callbacks[4] = (delegate* unmanaged<IntPtr, IntPtr*, CORINFO_METHOD_STRUCT_*, CORINFO_METHOD_INFO*, byte>)&_getMethodInfo;
+            callbacks[4] = (delegate* unmanaged<IntPtr, IntPtr*, CORINFO_METHOD_STRUCT_*, CORINFO_METHOD_INFO*, CORINFO_CONTEXT_STRUCT*, byte>)&_getMethodInfo;
             callbacks[5] = (delegate* unmanaged<IntPtr, IntPtr*, CORINFO_METHOD_STRUCT_*, CORINFO_METHOD_STRUCT_*, CorInfoInline>)&_canInline;
             callbacks[6] = (delegate* unmanaged<IntPtr, IntPtr*, CORINFO_METHOD_STRUCT_*, CORINFO_METHOD_STRUCT_*, void>)&_beginInlining;
             callbacks[7] = (delegate* unmanaged<IntPtr, IntPtr*, CORINFO_METHOD_STRUCT_*, CORINFO_METHOD_STRUCT_*, CorInfoInline, byte*, void>)&_reportInliningDecision;

@@ -3,9 +3,8 @@
 
 using System;
 using System.Collections.Generic;
-using System.Diagnostics.Metrics;
 
-namespace Microsoft.Extensions.Diagnostics.Metrics
+namespace System.Diagnostics.Metrics
 {
     /// <summary>
     /// Extension methods for <see cref="Meter" /> and <see cref="IMeterFactory" />.

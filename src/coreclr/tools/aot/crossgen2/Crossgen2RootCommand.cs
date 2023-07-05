@@ -80,7 +80,7 @@ namespace ILCompiler
         public CliOption<string> ImageBase { get; } =
             new("--imagebase") { Description = SR.ImageBase };
         public CliOption<TargetArchitecture> TargetArchitecture { get; } =
-            new("--targetarch") { CustomParser = MakeTargetArchitecture, DefaultValueFactory = MakeTargetArchitecture, Description = SR.TargetArchOption, Arity = ArgumentArity.OneOrMore };
+            new("--targetarch") { CustomParser = MakeTargetArchitecture, DefaultValueFactory = MakeTargetArchitecture, Description = SR.TargetArchOption, Arity = ArgumentArity.OneOrMore, HelpName = "arg" };
         public CliOption<bool> EnableGenericCycleDetection { get; } =
             new("--enable-generic-cycle-detection") { Description = SR.EnableGenericCycleDetection };
         public CliOption<int> GenericCycleDepthCutoff { get; } =
@@ -88,7 +88,7 @@ namespace ILCompiler
         public CliOption<int> GenericCycleBreadthCutoff { get; } =
             new("--maxgenericcyclebreadth") { DefaultValueFactory = _ => ReadyToRunCompilerContext.DefaultGenericCycleBreadthCutoff, Description = SR.GenericCycleBreadthCutoff };
         public CliOption<TargetOS> TargetOS { get; } =
-            new("--targetos") { CustomParser = result => Helpers.GetTargetOS(result.Tokens.Count > 0 ? result.Tokens[0].Value : null), DefaultValueFactory = result => Helpers.GetTargetOS(result.Tokens.Count > 0 ? result.Tokens[0].Value : null), Description = SR.TargetOSOption };
+            new("--targetos") { CustomParser = result => Helpers.GetTargetOS(result.Tokens.Count > 0 ? result.Tokens[0].Value : null), DefaultValueFactory = result => Helpers.GetTargetOS(result.Tokens.Count > 0 ? result.Tokens[0].Value : null), Description = SR.TargetOSOption, HelpName = "arg" };
         public CliOption<string> JitPath { get; } =
             new("--jitpath") { Description = SR.JitPathOption };
         public CliOption<bool> PrintReproInstructions { get; } =

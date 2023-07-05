@@ -1627,28 +1627,6 @@ bool StructSegments::IsEmpty()
 }
 
 //------------------------------------------------------------------------
-// IsSingleSegment:
-//   Check if the segment tree contains only a single segment, and return
-//   it if so.
-//
-// Parameters:
-//   result - [out] The single segment. Only valid if the method returns true.
-//
-// Returns:
-//   True if so.
-//
-bool StructSegments::IsSingleSegment(Segment* result)
-{
-    if (m_segments.size() == 1)
-    {
-        *result = m_segments[0];
-        return true;
-    }
-
-    return false;
-}
-
-//------------------------------------------------------------------------
 // CoveringSegment:
 //   Compute a segment that covers all contained segments in this segment tree.
 //
@@ -2274,7 +2252,8 @@ GenTree** ReplaceVisitor::InsertMidTreeReadBacks(GenTree** use)
                 continue;
             }
 
-            JITDUMP("  V%02.[%03u..%03u) -> V%02u\n", agg->LclNum, rep.Offset, genTypeSize(rep.AccessType), rep.LclNum);
+            JITDUMP("  V%02u.[%03u..%03u) -> V%02u\n", agg->LclNum, rep.Offset,
+                    rep.Offset + genTypeSize(rep.AccessType), rep.LclNum);
 
             ClearNeedsReadBack(rep);
             GenTree* readBack = Promotion::CreateReadBack(m_compiler, agg->LclNum, rep);
