@@ -785,7 +785,7 @@ namespace System.Text.RegularExpressions
             // 1. "(" followed by nothing
             // 2. "(x" where x != ?
             // 3. "(?)"
-            if (_pos == _pattern.Length || _pattern[_pos] != '?' || (_pattern[_pos] == '?' && _pattern.Length - _pos > 1 && _pattern[_pos + 1] == ')'))
+            if (_pos == _pattern.Length || _pattern[_pos] != '?' || (_pattern[_pos] == '?' && _pos + 1 < _pattern.Length && _pattern[_pos + 1] == ')'))
             {
                 if (UseOptionN() || _ignoreNextParen)
                 {
@@ -923,7 +923,7 @@ namespace System.Text.RegularExpressions
 
                                 // grab part after - if any
 
-                                if ((capnum != -1 || proceed) && _pattern.Length - _pos > 1 && _pattern[_pos] == '-')
+                                if ((capnum != -1 || proceed) && _pos + 1 < _pattern.Length && _pattern[_pos] == '-')
                                 {
                                     _pos++;
                                     ch = _pattern[_pos];
@@ -1236,7 +1236,7 @@ namespace System.Text.RegularExpressions
 
             // Note angle without \g
 
-            else if ((ch == '<' || ch == '\'') && _pattern.Length - _pos > 1)
+            else if ((ch == '<' || ch == '\'') && _pos + 1 < _pattern.Length)
             {
                 angled = true;
                 close = (ch == '\'') ? '\'' : '>';
@@ -1352,7 +1352,7 @@ namespace System.Text.RegularExpressions
 
             // Note angle
 
-            if (ch == '{' && _pattern.Length - _pos > 1)
+            if (ch == '{' && _pos + 1 < _pattern.Length)
             {
                 angled = true;
                 _pos++;
@@ -1494,12 +1494,7 @@ namespace System.Text.RegularExpressions
         private char ScanOctal()
         {
             // Consume octal chars only up to 3 digits and value 0377
-            int c = 3;
-            if (c > _pattern.Length - _pos)
-            {
-                c = _pattern.Length - _pos;
-            }
-
+            int c = Math.Min(3, _pattern.Length - _pos);
             int d;
             int i;
             for (i = 0; c > 0 && (uint)(d = _pattern[_pos] - '0') <= 7; c -= 1)
@@ -1807,7 +1802,7 @@ namespace System.Text.RegularExpressions
                                 // we have (?...
                                 _pos++;
 
-                                if (_pattern.Length - _pos > 1 && (_pattern[_pos] == '<' || _pattern[_pos] == '\''))
+                                if (_pos + 1 < _pattern.Length && (_pattern[_pos] == '<' || _pattern[_pos] == '\''))
                                 {
                                     // named group: (?<... or (?'...
 
