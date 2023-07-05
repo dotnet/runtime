@@ -247,7 +247,7 @@ namespace System.Runtime.Serialization.Json
         }
 
         public override void Write(byte[] buffer, int offset, int count) =>
-            Write(new Span<byte>(buffer, offset, count));
+            Write(new ReadOnlySpan<byte>(buffer, offset, count));
 
         public override void Write(ReadOnlySpan<byte> buffer)
         {
