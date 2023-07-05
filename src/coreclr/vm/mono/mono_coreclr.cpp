@@ -2611,24 +2611,36 @@ extern "C" EXPORT_API MonoType* EXPORT_CC mono_type_get_generic_arg(MonoType *ty
 
 extern "C" EXPORT_API char* EXPORT_CC mono_type_get_name(MonoType *type)
 {
-    TypeHandle handle = TypeHandle::FromPtr((PTR_VOID)type);
-    SString ssBuf;
-    handle.GetName(ssBuf);
-    return _strdup(ssBuf.GetUTF8());
+    // To be compatible with Mono behavior.
+    return mono_type_get_name_full(type, MonoTypeNameFormat::MONO_TYPE_NAME_FORMAT_IL);
 }
 
-extern "C" EXPORT_API char* EXPORT_CC mono_type_get_name_full(MonoType *type, MonoTypeNameFormat format)
+// The method can be moved to C# code, but will require introduction
+// of core_clr_FreeHGlobal method to properly free an allocated string
+extern "C" EXPORT_API char* EXPORT_CC mono_type_get_name_full(MonoType *type, MonoTypeNameFormat monoFormat)
 {
     TRACE_API("%p %d", type, format);
-    if (format != MonoTypeNameFormat::MONO_TYPE_NAME_FORMAT_ASSEMBLY_QUALIFIED)
+
+    DWORD format = TypeString::FormatBasic;
+    switch (monoFormat)
     {
-        ASSERT_NOT_IMPLEMENTED;
-        return NULL;
+        case MonoTypeNameFormat::MONO_TYPE_NAME_FORMAT_IL:
+            // The closest managed equivalent is Type.ToString()
+            format = TypeString::FormatNamespace;
+            break;
+        case MonoTypeNameFormat::MONO_TYPE_NAME_FORMAT_ASSEMBLY_QUALIFIED:
+            // The managed equivalent is Type.AssemblyQualifiedName
+            format = TypeString::FormatNamespace | TypeString::FormatAssembly | TypeString::FormatFullInst;
+            break;
+
+        default:
+            ASSERT_NOT_IMPLEMENTED;
+            return NULL;
     }
 
     TypeHandle handle = TypeHandle::FromPtr((PTR_VOID)type);
     SString ssBuf;
-    TypeString::AppendType(ssBuf, handle, TypeString::FormatNamespace | TypeString::FormatAssembly | TypeString::FormatFullInst);
+    TypeString::AppendType(ssBuf, handle, format);
 
     return _strdup(ssBuf.GetUTF8());
 }

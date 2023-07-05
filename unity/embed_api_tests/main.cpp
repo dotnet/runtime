@@ -347,6 +347,15 @@ TEST(mono_type_get_name_full_returns_assembly_qualified_name)
     mono_unity_g_free(name);
 }
 
+TEST(mono_type_get_name_full_returns_il_name)
+{
+    MonoClass *klass = GetClassHelper(kTestDLLNameSpace, kTestClassName);
+    GET_AND_CHECK(type, mono_class_get_type(klass));
+    GET_AND_CHECK(name , mono_type_get_name_full(type, MonoTypeNameFormat::MONO_TYPE_NAME_FORMAT_IL));
+    CHECK(strcmp("TestDll.TestClass", name) == 0);
+    mono_unity_g_free(name);
+}
+
 TEST(mono_runtime_object_init_calls_constructor)
 {
     MonoMethod* method = GetMethodHelper(kTestDLLNameSpace, "TestClassWithConstructor", "GetI", 0);
@@ -763,11 +772,11 @@ TEST(can_get_type_of_generic_field)
     gpointer ptr = nullptr;
     GET_AND_CHECK(field, mono_class_get_fields(klass, &ptr));
     CHECK(strcmp("genericField", mono_field_get_name(field)) == 0);
-    CHECK(strcmp(g_Mode == CoreCLR ? "!0" : "T", mono_type_get_name(mono_field_get_type(field))) == 0);
+    CHECK(strcmp("T", mono_type_get_name(mono_field_get_type(field))) == 0);
     field = mono_class_get_fields(klass, &ptr);
     CHECK(field != NULL);
     CHECK(strcmp("genericArrayField", mono_field_get_name(field)) == 0);
-    CHECK(strcmp(g_Mode == CoreCLR ? "!0[]" : "T[]", mono_type_get_name(mono_field_get_type(field))) == 0);
+    CHECK(strcmp("T[]", mono_type_get_name(mono_field_get_type(field))) == 0);
     field = mono_class_get_fields(klass, &ptr);
     CHECK(field == NULL);
 }
