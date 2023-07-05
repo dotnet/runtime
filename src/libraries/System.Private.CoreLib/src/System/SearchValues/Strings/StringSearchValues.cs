@@ -117,8 +117,6 @@ namespace System.Buffers
                 return CreateForSingleValue(values[0], uniqueValues, ignoreCase, allAscii, asciiLettersOnly);
             }
 
-            // TODO: Should this be supported anywhere else?
-            // It may be too niche and too much code for WASM, but AOT with just Vector128 may be interesting.
             if ((Ssse3.IsSupported || AdvSimd.Arm64.IsSupported) &&
                 TryGetTeddyAcceleratedValues(values, uniqueValues, ignoreCase, allAscii, asciiLettersOnly, nonAsciiAffectedByCaseConversion, minLength) is { } searchValues)
             {
@@ -268,8 +266,6 @@ namespace System.Buffers
             if (values.Length > 8)
             {
                 string[][] buckets = TeddyBucketizer.Bucketize(values, bucketCount: 8, n);
-
-                // TODO: Should we bail if we encounter a bad bucket distributions?
 
                 // TODO: We don't have to pick the first N characters for the fingerprint.
                 // Different offset selection can noticeably improve throughput (e.g. 2x).
