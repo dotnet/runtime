@@ -4245,6 +4245,6 @@
     <value>String length exceeded supported range.</value>
   </data>
   <data name="Argument_SearchValues_UnsupportedStringComparison" xml:space="preserve">
-    <value>SearchValues&lt;string&gt; supports only Ordinal and OrdinalIgnoreCase StringComparison semantics.</value>
+    <value>SearchValues&lt;string&gt; supports only StringComparison.Ordinal and StringComparison.OrdinalIgnoreCase.</value>
   </data>
 </root>

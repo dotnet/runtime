@@ -34,10 +34,8 @@ namespace System.Buffers
 
         protected AsciiStringSearchValuesTeddyBase(ReadOnlySpan<string> values, HashSet<string> uniqueValues, int n) : base(values, uniqueValues)
         {
-            if (TBucketized.Value)
-            {
-                throw new UnreachableException();
-            }
+            Debug.Assert(!TBucketized.Value);
+            Debug.Assert(n is 2 or 3);
 
             _buckets = new EightPackedReferences(MemoryMarshal.CreateReadOnlySpan(
                 ref Unsafe.As<string, object>(ref MemoryMarshal.GetReference(values)),
@@ -54,10 +52,8 @@ namespace System.Buffers
 
         protected AsciiStringSearchValuesTeddyBase(string[][] buckets, ReadOnlySpan<string> values, HashSet<string> uniqueValues, int n) : base(values, uniqueValues)
         {
-            if (!TBucketized.Value)
-            {
-                throw new UnreachableException();
-            }
+            Debug.Assert(TBucketized.Value);
+            Debug.Assert(n is 2 or 3);
 
             _buckets = new EightPackedReferences(buckets);
 
@@ -86,7 +82,7 @@ namespace System.Buffers
             {
                 return IndexOfAnyN2Avx2(span);
             }
-#pragma warning disable IntrinsicsInSystemPrivateCoreLibAttributeNotSpecificEnough
+#pragma warning restore IntrinsicsInSystemPrivateCoreLibAttributeNotSpecificEnough
 
             return IndexOfAnyN2Vector128(span);
         }
@@ -107,7 +103,7 @@ namespace System.Buffers
             {
                 return IndexOfAnyN3Avx2(span);
             }
-#pragma warning disable IntrinsicsInSystemPrivateCoreLibAttributeNotSpecificEnough
+#pragma warning restore IntrinsicsInSystemPrivateCoreLibAttributeNotSpecificEnough
 
             return IndexOfAnyN3Vector128(span);
         }

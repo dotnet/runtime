@@ -139,10 +139,10 @@ namespace System.Buffers
 
             if (asciiLettersOnly)
             {
-                return PickAhoCorasickImplementation<CaseInensitiveAsciiLetters>(ahoCorasick, uniqueValues);
+                return PickAhoCorasickImplementation<CaseInsensitiveAsciiLetters>(ahoCorasick, uniqueValues);
             }
 
-            return PickAhoCorasickImplementation<CaseInensitiveAscii>(ahoCorasick, uniqueValues);
+            return PickAhoCorasickImplementation<CaseInsensitiveAscii>(ahoCorasick, uniqueValues);
 
             static SearchValues<string> PickAhoCorasickImplementation<TCaseSensitivity>(AhoCorasick ahoCorasick, HashSet<string> uniqueValues)
                 where TCaseSensitivity : struct, ICaseSensitivity
@@ -218,7 +218,7 @@ namespace System.Buffers
 
             if (asciiLettersOnly)
             {
-                return PickTeddyImplementation<CaseInensitiveAsciiLetters, CaseInensitiveAsciiLetters>(values, uniqueValues, n);
+                return PickTeddyImplementation<CaseInsensitiveAsciiLetters, CaseInsensitiveAsciiLetters>(values, uniqueValues, n);
             }
 
             // Even if the whole value isn't ASCII letters only, we can still use a faster approach
@@ -239,19 +239,19 @@ namespace System.Buffers
             {
                 return nonAsciiAffectedByCaseConversion
                     ? PickTeddyImplementation<CaseSensitive, CaseInsensitiveUnicode>(values, uniqueValues, n)
-                    : PickTeddyImplementation<CaseSensitive, CaseInensitiveAscii>(values, uniqueValues, n);
+                    : PickTeddyImplementation<CaseSensitive, CaseInsensitiveAscii>(values, uniqueValues, n);
             }
 
             if (nonAsciiAffectedByCaseConversion)
             {
                 return asciiStartLettersOnly
-                    ? PickTeddyImplementation<CaseInensitiveAsciiLetters, CaseInsensitiveUnicode>(values, uniqueValues, n)
-                    : PickTeddyImplementation<CaseInensitiveAscii, CaseInsensitiveUnicode>(values, uniqueValues, n);
+                    ? PickTeddyImplementation<CaseInsensitiveAsciiLetters, CaseInsensitiveUnicode>(values, uniqueValues, n)
+                    : PickTeddyImplementation<CaseInsensitiveAscii, CaseInsensitiveUnicode>(values, uniqueValues, n);
             }
 
             return asciiStartLettersOnly
-                ? PickTeddyImplementation<CaseInensitiveAsciiLetters, CaseInensitiveAscii>(values, uniqueValues, n)
-                : PickTeddyImplementation<CaseInensitiveAscii, CaseInensitiveAscii>(values, uniqueValues, n);
+                ? PickTeddyImplementation<CaseInsensitiveAsciiLetters, CaseInsensitiveAscii>(values, uniqueValues, n)
+                : PickTeddyImplementation<CaseInsensitiveAscii, CaseInsensitiveAscii>(values, uniqueValues, n);
         }
 
         private static SearchValues<string> PickTeddyImplementation<TStartCaseSensitivity, TCaseSensitivity>(
@@ -331,12 +331,12 @@ namespace System.Buffers
 
             if (asciiLettersOnly)
             {
-                return new SingleStringSearchValuesThreeChars<TValueLength, CaseInensitiveAsciiLetters>(value, uniqueValues);
+                return new SingleStringSearchValuesThreeChars<TValueLength, CaseInsensitiveAsciiLetters>(value, uniqueValues);
             }
 
             if (allAscii)
             {
-                return new SingleStringSearchValuesThreeChars<TValueLength, CaseInensitiveAscii>(value, uniqueValues);
+                return new SingleStringSearchValuesThreeChars<TValueLength, CaseInsensitiveAscii>(value, uniqueValues);
             }
 
             // When ignoring casing, all anchor chars we search for must be ASCII.

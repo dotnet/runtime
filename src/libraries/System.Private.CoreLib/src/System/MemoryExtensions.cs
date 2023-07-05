@@ -457,7 +457,7 @@ namespace System
             ContainsAnyExceptInRange((ReadOnlySpan<T>)span, lowInclusive, highInclusive);
 
         /// <summary>
-        /// Searches for any occurance of the specified <paramref name="value0"/> or <paramref name="value1"/>, and returns true if found. If not found, returns false.
+        /// Searches for any occurrence of the specified <paramref name="value0"/> or <paramref name="value1"/>, and returns true if found. If not found, returns false.
         /// </summary>
         /// <param name="span">The span to search.</param>
         /// <param name="value0">One of the values to search for.</param>
@@ -467,7 +467,7 @@ namespace System
             IndexOfAny(span, value0, value1) >= 0;
 
         /// <summary>
-        /// Searches for any occurance of the specified <paramref name="value0"/>, <paramref name="value1"/>, or <paramref name="value2"/>, and returns true if found. If not found, returns false.
+        /// Searches for any occurrence of the specified <paramref name="value0"/>, <paramref name="value1"/>, or <paramref name="value2"/>, and returns true if found. If not found, returns false.
         /// </summary>
         /// <param name="span">The span to search.</param>
         /// <param name="value0">One of the values to search for.</param>
@@ -478,7 +478,7 @@ namespace System
             IndexOfAny(span, value0, value1, value2) >= 0;
 
         /// <summary>
-        /// Searches for any occurance of any of the specified <paramref name="values"/> and returns true if found. If not found, returns false.
+        /// Searches for any occurrence of any of the specified <paramref name="values"/> and returns true if found. If not found, returns false.
         /// </summary>
         /// <param name="span">The span to search.</param>
         /// <param name="values">The set of values to search for.</param>
@@ -487,7 +487,7 @@ namespace System
             IndexOfAny(span, values) >= 0;
 
         /// <summary>
-        /// Searches for any occurance of any of the specified <paramref name="values"/> and returns true if found. If not found, returns false.
+        /// Searches for any occurrence of any of the specified <paramref name="values"/> and returns true if found. If not found, returns false.
         /// </summary>
         /// <param name="span">The span to search.</param>
         /// <param name="values">The set of values to search for.</param>
@@ -496,7 +496,7 @@ namespace System
             IndexOfAny(span, values) >= 0;
 
         /// <summary>
-        /// Searches for any occurance of any of the specified substring <paramref name="values"/> and returns true if found. If not found, returns false.
+        /// Searches for any occurrence of any of the specified substring <paramref name="values"/> and returns true if found. If not found, returns false.
         /// </summary>
         /// <param name="span">The span to search.</param>
         /// <param name="values">The set of values to search for.</param>

@@ -139,7 +139,7 @@ namespace System.Buffers
             }
         }
 
-        public readonly struct CaseInensitiveAsciiLetters : ICaseSensitivity
+        public readonly struct CaseInsensitiveAsciiLetters : ICaseSensitivity
         {
             [MethodImpl(MethodImplOptions.AggressiveInlining)]
             public static char TransformInput(char input) => (char)(input & ~0x20);
@@ -200,7 +200,7 @@ namespace System.Buffers
             }
         }
 
-        public readonly struct CaseInensitiveAscii : ICaseSensitivity
+        public readonly struct CaseInsensitiveAscii : ICaseSensitivity
         {
             [MethodImpl(MethodImplOptions.AggressiveInlining)]
             public static char TransformInput(char input) => TextInfo.ToUpperAsciiInvariant(input);

@@ -39,10 +39,10 @@ namespace System.Buffers
                     // the ASCII fast scan may end up performing worse than checking one character at a time.
                     // Avoid using this optimization if the combined frequency of starting chars is too high.
 
-                    // Combined frequency of
-                    // - All digits is ~ 5
-                    // - All lowercase letters is ~ 57.2
-                    // - All uppercase letters is ~ 7.4
+                    // Combined frequency of characters based on CharacterFrequencyHelper.AsciiFrequency:
+                    // - All digits is ~ 5 %
+                    // - All lowercase letters is ~ 57.2 %
+                    // - All uppercase letters is ~ 7.4 %
                     const float MaxCombinedFrequency = 50f;
 
                     float frequency = 0;
