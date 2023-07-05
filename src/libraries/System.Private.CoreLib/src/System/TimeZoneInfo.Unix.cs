@@ -20,8 +20,8 @@ namespace System
 
         // Set fallback values using abbreviations, base offset, and id
         // These are expected in environments without time zone globalization data
-        private string? s_standardAbbrevName;
-        private string? s_daylightAbbrevName;
+        private string? _standardAbbrevName;
+        private string? _daylightAbbrevName;
 
         // Handle UTC and its aliases per https://github.com/unicode-org/cldr/blob/master/common/bcp47/timezone.xml
         // Hard-coded because we need to treat all aliases of UTC the same even when globalization data is not available.
@@ -81,11 +81,11 @@ namespace System
                 if (!transitionType[type].IsDst)
                 {
                     _baseUtcOffset = transitionType[type].UtcOffset;
-                    s_standardAbbrevName = TZif_GetZoneAbbreviation(zoneAbbreviations, transitionType[type].AbbreviationIndex);
+                    _standardAbbrevName = TZif_GetZoneAbbreviation(zoneAbbreviations, transitionType[type].AbbreviationIndex);
                 }
                 else
                 {
-                    s_daylightAbbrevName = TZif_GetZoneAbbreviation(zoneAbbreviations, transitionType[type].AbbreviationIndex);
+                    _daylightAbbrevName = TZif_GetZoneAbbreviation(zoneAbbreviations, transitionType[type].AbbreviationIndex);
                 }
             }
 
@@ -98,11 +98,11 @@ namespace System
                     if (!transitionType[i].IsDst)
                     {
                         _baseUtcOffset = transitionType[i].UtcOffset;
-                        s_standardAbbrevName = TZif_GetZoneAbbreviation(zoneAbbreviations, transitionType[i].AbbreviationIndex);
+                        _standardAbbrevName = TZif_GetZoneAbbreviation(zoneAbbreviations, transitionType[i].AbbreviationIndex);
                     }
                     else
                     {
-                        s_daylightAbbrevName = TZif_GetZoneAbbreviation(zoneAbbreviations, transitionType[i].AbbreviationIndex);
+                        _daylightAbbrevName = TZif_GetZoneAbbreviation(zoneAbbreviations, transitionType[i].AbbreviationIndex);
                     }
                 }
             }
@@ -246,7 +246,7 @@ namespace System
             if (IsUtcAlias(Id))
                 return GetUtcStandardDisplayName();
 
-            string? standardDisplayName = s_standardAbbrevName;
+            string? standardDisplayName = _standardAbbrevName;
             if (GlobalizationMode.Invariant)
                 return standardDisplayName;
 
@@ -264,7 +264,7 @@ namespace System
             if (IsUtcAlias(Id))
                 return StandardName;
 
-            string? daylightDisplayName = s_daylightAbbrevName ?? s_standardAbbrevName;
+            string? daylightDisplayName = _daylightAbbrevName ?? _standardAbbrevName;
             if (GlobalizationMode.Invariant)
                 return daylightDisplayName;
 
