@@ -61,16 +61,6 @@ static MonoDl *internal_module; // used when pinvoking `__Internal`
 
 static PInvokeOverrideFn pinvoke_override;
 
-// Did we initialize the temporary directory for dynamic libraries
-// FIXME: this is racy
-static gboolean bundle_save_library_initialized;
-
-// List of bundled libraries we unpacked
-static GSList *bundle_library_paths;
-
-// Directory where we unpacked dynamic libraries
-static char *bundled_dylibrary_directory;
-
 /* Class lazy loading functions */
 GENERATE_GET_CLASS_WITH_CACHE (appdomain_unloaded_exception, "System", "AppDomainUnloadedException")
 GENERATE_TRY_GET_CLASS_WITH_CACHE (appdomain_unloaded_exception, "System", "AppDomainUnloadedException")
@@ -1461,63 +1451,6 @@ leave:
 	g_free (lib_path);
 
 	return handle;
-}
-
-#ifdef HAVE_ATEXIT
-static void
-delete_bundled_libraries (void)
-{
-	GSList *list;
-
-	for (list = bundle_library_paths; list != NULL; list = list->next){
-		unlink ((const char*)list->data);
-	}
-	rmdir (bundled_dylibrary_directory);
-}
-#endif
-
-static void
-bundle_save_library_initialize (void)
-{
-	bundle_save_library_initialized = TRUE;
-	char *path = g_build_filename (g_get_tmp_dir (), "mono-bundle-XXXXXX", (const char*)NULL);
-	bundled_dylibrary_directory = g_mkdtemp (path);
-	g_free (path);
-	if (bundled_dylibrary_directory == NULL)
-		return;
-#ifdef HAVE_ATEXIT
-	atexit (delete_bundled_libraries);
-#endif
-}
-
-void
-mono_loader_save_bundled_library (int fd, uint64_t offset, uint64_t size, const char *destfname)
-{
-	MonoDl *lib;
-	char *file, *buffer, *internal_path;
-	if (!bundle_save_library_initialized)
-		bundle_save_library_initialize ();
-
-	file = g_build_filename (bundled_dylibrary_directory, destfname, (const char*)NULL);
-	buffer = g_str_from_file_region (fd, offset, GUINT64_TO_SIZE (size));
-	g_file_set_contents (file, buffer, GUINT64_TO_SIZE (size), NULL);
-
-	ERROR_DECL (load_error);
-	lib = mono_dl_open (file, MONO_DL_LAZY, load_error);
-	if (!lib) {
-		fprintf (stderr, "Error loading shared library: %s %s\n", file, mono_error_get_message_without_fields (load_error));
-		mono_error_cleanup (load_error);
-		exit (1);
-	}
-	mono_error_assert_ok (load_error);
-
-	// Register the name with "." as this is how it will be found when embedded
-	internal_path = g_build_filename (".", destfname, (const char*)NULL);
- 	mono_loader_register_module (internal_path, lib);
-	g_free (internal_path);
-	bundle_library_paths = g_slist_append (bundle_library_paths, file);
-
-	g_free (buffer);
 }
 
 void
