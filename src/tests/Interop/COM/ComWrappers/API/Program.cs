@@ -319,12 +319,12 @@ namespace ComWrappersTests
                 Assert.NotEqual(IntPtr.Zero, nativeInstance);
 
                 var iid = typeof(ITest).GUID;
-                IntPtr itestPtr;
+                nint itestPtr;
                 Assert.Equal(0, Marshal.QueryInterface(nativeInstance, ref iid, out itestPtr));
 
-                var inst = Marshal.PtrToStructure<VtblPtr>(itestPtr);
-                var vtbl = Marshal.PtrToStructure<ITestVtbl>(inst.Vtbl);
-                var setValue = (delegate* unmanaged<IntPtr, int, int>)vtbl.SetValue;
+                var inst = (ComWrappers.ComInterfaceDispatch*)itestPtr;
+                var vtbl = (ITestVtbl*)(inst->Vtable);
+                var setValue = (delegate* unmanaged<nint, int, int>)vtbl->SetValue;
 
                 Assert.Equal(0, setValue(itestPtr, value));
                 Assert.Equal(value, testInstance.GetValue());
@@ -332,7 +332,63 @@ namespace ComWrappersTests
                 // release for QueryInterface
                 Assert.Equal(1, Marshal.Release(itestPtr));
                 // release for GetOrCreateComInterfaceForObject
-                Assert.Equal(0, Marshal.Release(itestPtr));
+                Assert.Equal(0, Marshal.Release(nativeInstance));
+            }
+        }
+
+        [MethodImpl(MethodImplOptions.NoInlining)]
+        [Fact]
+        public void ValidateResurrection()
+        {
+            Console.WriteLine($"Running {nameof(ValidateResurrection)}...");
+
+            var wrappers = new TestComWrappers();
+
+            try
+            {
+                CreateResurrectingTestInstance(wrappers);
+
+                ForceGC();
+
+                CallSetValue(wrappers);
+            }
+            finally
+            {
+                Test.Resurrected = null;
+            }
+
+            [MethodImpl(MethodImplOptions.NoInlining)]
+            static void CreateResurrectingTestInstance(ComWrappers wrapper)
+            {
+                Test testInstance = new Test()
+                {
+                    EnableResurrection = true,
+                };
+                IntPtr nativeInstance = wrapper.GetOrCreateComInterfaceForObject(testInstance, CreateComInterfaceFlags.None);
+                Assert.Equal(0, Marshal.Release(nativeInstance));
+            }
+
+            unsafe static void CallSetValue(ComWrappers wrappers)
+            {
+                Assert.NotEqual(null, Test.Resurrected);
+                IntPtr nativeInstance = wrappers.GetOrCreateComInterfaceForObject(Test.Resurrected, CreateComInterfaceFlags.None);
+                Assert.NotEqual(IntPtr.Zero, nativeInstance);
+
+                var iid = typeof(ITest).GUID;
+                nint itestPtr;
+                Assert.Equal(0, Marshal.QueryInterface(nativeInstance, ref iid, out itestPtr));
+
+                var inst = (ComWrappers.ComInterfaceDispatch*)itestPtr;
+                var vtbl = (ITestVtbl*)(inst->Vtable);
+                var setValue = (delegate* unmanaged<nint, int, int>)vtbl->SetValue;
+
+                Assert.Equal(0, setValue(itestPtr, 42));
+                Assert.Equal(42, Test.Resurrected.GetValue());
+
+                // release for QueryInterface
+                Assert.Equal(1, Marshal.Release(itestPtr));
+                // release for GetOrCreateComInterfaceForObject
+                Assert.Equal(0, Marshal.Release(nativeInstance));
             }
         }
 

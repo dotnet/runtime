@@ -115,7 +115,7 @@ We use and recommend the following workflow:
     - State in the description what issue or improvement your change is addressing.
     - Check if all the Continuous Integration checks are passing. Refer to [triaging failures in CI](docs/workflow/ci/failure-analysis.md) to check if any outstanding errors are known.
 8. Wait for feedback or approval of your changes from the [area owners](docs/area-owners.md).
-    - Details about the pull request [review procedure](docs/pr-guide.md).
+    - Details about the pull request [review procedure](docs/workflow/ci/pr-guide.md).
 9. When area owners have signed off, and all checks are green, your PR will be merged.
     - The next official build will automatically include your change.
     - You can delete the branch you used for making the change.

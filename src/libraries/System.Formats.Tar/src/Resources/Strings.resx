@@ -160,12 +160,6 @@
   <data name="TarGnuFormatExpected" xml:space="preserve">
     <value>Entry '{0}' was expected to be in the GNU format, but did not have the expected version data.</value>
   </data>
-  <data name="TarHardLinkTargetNotExists" xml:space="preserve">
-    <value>Cannot create a hard link '{0}' because the specified target file '{1}' does not exist.</value>
-  </data>
-  <data name="TarHardLinkToDirectoryNotAllowed" xml:space="preserve">
-    <value>Cannot create the hard link '{0}' targeting the directory '{1}'.</value>
-  </data>
   <data name="TarInvalidFormat" xml:space="preserve">
     <value>The archive format is invalid: '{0}'</value>
   </data>
@@ -177,9 +171,6 @@
   </data>
   <data name="TarSizeFieldTooLargeForEntryType" xml:space="preserve">
     <value>The value of the size field for the current entry of type '{0}' is greater than the expected length.</value>
-  </data>
-  <data name="TarSymbolicLinkTargetNotExists" xml:space="preserve">
-    <value>Cannot create the symbolic link '{0}' because the specified target '{1}' does not exist.</value>
   </data>
   <data name="TarUnexpectedMetadataEntry" xml:space="preserve">
     <value>A metadata entry of type '{0}' was unexpectedly found after a metadata entry of type '{1}'.</value>

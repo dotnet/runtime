@@ -549,6 +549,7 @@ namespace System
         }
 
         /// <inheritdoc cref="IBinaryNumber{TSelf}.Log2(TSelf)" />
+        [Intrinsic]
         public static double Log2(double value) => Math.Log2(value);
 
         //
@@ -602,6 +603,7 @@ namespace System
         //
 
         /// <inheritdoc cref="IExponentialFunctions{TSelf}.Exp" />
+        [Intrinsic]
         public static double Exp(double x) => Math.Exp(x);
 
         /// <inheritdoc cref="IExponentialFunctions{TSelf}.ExpM1(TSelf)" />
@@ -624,12 +626,15 @@ namespace System
         //
 
         /// <inheritdoc cref="IFloatingPoint{TSelf}.Ceiling(TSelf)" />
+        [Intrinsic]
         public static double Ceiling(double x) => Math.Ceiling(x);
 
         /// <inheritdoc cref="IFloatingPoint{TSelf}.Floor(TSelf)" />
+        [Intrinsic]
         public static double Floor(double x) => Math.Floor(x);
 
         /// <inheritdoc cref="IFloatingPoint{TSelf}.Round(TSelf)" />
+        [Intrinsic]
         public static double Round(double x) => Math.Round(x);
 
         /// <inheritdoc cref="IFloatingPoint{TSelf}.Round(TSelf, int)" />
@@ -642,6 +647,7 @@ namespace System
         public static double Round(double x, int digits, MidpointRounding mode) => Math.Round(x, digits, mode);
 
         /// <inheritdoc cref="IFloatingPoint{TSelf}.Truncate(TSelf)" />
+        [Intrinsic]
         public static double Truncate(double x) => Math.Truncate(x);
 
         /// <inheritdoc cref="IFloatingPoint{TSelf}.GetExponentByteCount()" />
@@ -797,6 +803,7 @@ namespace System
         static double IFloatingPointIeee754<double>.PositiveInfinity => PositiveInfinity;
 
         /// <inheritdoc cref="IFloatingPointIeee754{TSelf}.Atan2(TSelf, TSelf)" />
+        [Intrinsic]
         public static double Atan2(double y, double x) => Math.Atan2(y, x);
 
         /// <inheritdoc cref="IFloatingPointIeee754{TSelf}.Atan2Pi(TSelf, TSelf)" />
@@ -809,6 +816,7 @@ namespace System
         public static double BitIncrement(double x) => Math.BitIncrement(x);
 
         /// <inheritdoc cref="IFloatingPointIeee754{TSelf}.FusedMultiplyAdd(TSelf, TSelf, TSelf)" />
+        [Intrinsic]
         public static double FusedMultiplyAdd(double left, double right, double addend) => Math.FusedMultiplyAdd(left, right, addend);
 
         /// <inheritdoc cref="IFloatingPointIeee754{TSelf}.Ieee754Remainder(TSelf, TSelf)" />
@@ -837,21 +845,27 @@ namespace System
         //
 
         /// <inheritdoc cref="IHyperbolicFunctions{TSelf}.Acosh(TSelf)" />
+        [Intrinsic]
         public static double Acosh(double x) => Math.Acosh(x);
 
         /// <inheritdoc cref="IHyperbolicFunctions{TSelf}.Asinh(TSelf)" />
+        [Intrinsic]
         public static double Asinh(double x) => Math.Asinh(x);
 
         /// <inheritdoc cref="IHyperbolicFunctions{TSelf}.Atanh(TSelf)" />
+        [Intrinsic]
         public static double Atanh(double x) => Math.Atanh(x);
 
         /// <inheritdoc cref="IHyperbolicFunctions{TSelf}.Cosh(TSelf)" />
+        [Intrinsic]
         public static double Cosh(double x) => Math.Cosh(x);
 
         /// <inheritdoc cref="IHyperbolicFunctions{TSelf}.Sinh(TSelf)" />
+        [Intrinsic]
         public static double Sinh(double x) => Math.Sinh(x);
 
         /// <inheritdoc cref="IHyperbolicFunctions{TSelf}.Tanh(TSelf)" />
+        [Intrinsic]
         public static double Tanh(double x) => Math.Tanh(x);
 
         //
@@ -866,6 +880,7 @@ namespace System
         //
 
         /// <inheritdoc cref="ILogarithmicFunctions{TSelf}.Log(TSelf)" />
+        [Intrinsic]
         public static double Log(double x) => Math.Log(x);
 
         /// <inheritdoc cref="ILogarithmicFunctions{TSelf}.Log(TSelf, TSelf)" />
@@ -878,6 +893,7 @@ namespace System
         public static double Log2P1(double x) => Math.Log2(x + 1);
 
         /// <inheritdoc cref="ILogarithmicFunctions{TSelf}.Log10(TSelf)" />
+        [Intrinsic]
         public static double Log10(double x) => Math.Log10(x);
 
         /// <inheritdoc cref="ILogarithmicFunctions{TSelf}.Log10P1(TSelf)" />
@@ -925,9 +941,11 @@ namespace System
         public static double CopySign(double value, double sign) => Math.CopySign(value, sign);
 
         /// <inheritdoc cref="INumber{TSelf}.Max(TSelf, TSelf)" />
+        [Intrinsic]
         public static double Max(double x, double y) => Math.Max(x, y);
 
         /// <inheritdoc cref="INumber{TSelf}.MaxNumber(TSelf, TSelf)" />
+        [Intrinsic]
         public static double MaxNumber(double x, double y)
         {
             // This matches the IEEE 754:2019 `maximumNumber` function
@@ -950,9 +968,11 @@ namespace System
         }
 
         /// <inheritdoc cref="INumber{TSelf}.Min(TSelf, TSelf)" />
+        [Intrinsic]
         public static double Min(double x, double y) => Math.Min(x, y);
 
         /// <inheritdoc cref="INumber{TSelf}.MinNumber(TSelf, TSelf)" />
+        [Intrinsic]
         public static double MinNumber(double x, double y)
         {
             // This matches the IEEE 754:2019 `minimumNumber` function
@@ -991,6 +1011,7 @@ namespace System
         static double INumberBase<double>.Zero => Zero;
 
         /// <inheritdoc cref="INumberBase{TSelf}.Abs(TSelf)" />
+        [Intrinsic]
         public static double Abs(double value) => Math.Abs(value);
 
         /// <inheritdoc cref="INumberBase{TSelf}.CreateChecked{TOther}(TOther)" />
@@ -1086,9 +1107,11 @@ namespace System
         static bool INumberBase<double>.IsZero(double value) => (value == 0);
 
         /// <inheritdoc cref="INumberBase{TSelf}.MaxMagnitude(TSelf, TSelf)" />
+        [Intrinsic]
         public static double MaxMagnitude(double x, double y) => Math.MaxMagnitude(x, y);
 
         /// <inheritdoc cref="INumberBase{TSelf}.MaxMagnitudeNumber(TSelf, TSelf)" />
+        [Intrinsic]
         public static double MaxMagnitudeNumber(double x, double y)
         {
             // This matches the IEEE 754:2019 `maximumMagnitudeNumber` function
@@ -1114,9 +1137,11 @@ namespace System
         }
 
         /// <inheritdoc cref="INumberBase{TSelf}.MinMagnitude(TSelf, TSelf)" />
+        [Intrinsic]
         public static double MinMagnitude(double x, double y) => Math.MinMagnitude(x, y);
 
         /// <inheritdoc cref="INumberBase{TSelf}.MinMagnitudeNumber(TSelf, TSelf)" />
+        [Intrinsic]
         public static double MinMagnitudeNumber(double x, double y)
         {
             // This matches the IEEE 754:2019 `minimumMagnitudeNumber` function
@@ -1407,6 +1432,7 @@ namespace System
         //
 
         /// <inheritdoc cref="IPowerFunctions{TSelf}.Pow(TSelf, TSelf)" />
+        [Intrinsic]
         public static double Pow(double x, double y) => Math.Pow(x, y);
 
         //
@@ -1414,6 +1440,7 @@ namespace System
         //
 
         /// <inheritdoc cref="IRootFunctions{TSelf}.Cbrt(TSelf)" />
+        [Intrinsic]
         public static double Cbrt(double x) => Math.Cbrt(x);
 
         /// <inheritdoc cref="IRootFunctions{TSelf}.Hypot(TSelf, TSelf)" />
@@ -1697,6 +1724,7 @@ namespace System
         }
 
         /// <inheritdoc cref="IRootFunctions{TSelf}.Sqrt(TSelf)" />
+        [Intrinsic]
         public static double Sqrt(double x) => Math.Sqrt(x);
 
         //
@@ -1728,6 +1756,7 @@ namespace System
         //
 
         /// <inheritdoc cref="ITrigonometricFunctions{TSelf}.Acos(TSelf)" />
+        [Intrinsic]
         public static double Acos(double x) => Math.Acos(x);
 
         /// <inheritdoc cref="ITrigonometricFunctions{TSelf}.AcosPi(TSelf)" />
@@ -1737,6 +1766,7 @@ namespace System
         }
 
         /// <inheritdoc cref="ITrigonometricFunctions{TSelf}.Asin(TSelf)" />
+        [Intrinsic]
         public static double Asin(double x) => Math.Asin(x);
 
         /// <inheritdoc cref="ITrigonometricFunctions{TSelf}.AsinPi(TSelf)" />
@@ -1746,6 +1776,7 @@ namespace System
         }
 
         /// <inheritdoc cref="ITrigonometricFunctions{TSelf}.Atan(TSelf)" />
+        [Intrinsic]
         public static double Atan(double x) => Math.Atan(x);
 
         /// <inheritdoc cref="ITrigonometricFunctions{TSelf}.AtanPi(TSelf)" />
@@ -1755,6 +1786,7 @@ namespace System
         }
 
         /// <inheritdoc cref="ITrigonometricFunctions{TSelf}.Cos(TSelf)" />
+        [Intrinsic]
         public static double Cos(double x) => Math.Cos(x);
 
         /// <inheritdoc cref="ITrigonometricFunctions{TSelf}.CosPi(TSelf)" />
@@ -1847,6 +1879,7 @@ namespace System
         }
 
         /// <inheritdoc cref="ITrigonometricFunctions{TSelf}.Sin(TSelf)" />
+        [Intrinsic]
         public static double Sin(double x) => Math.Sin(x);
 
         /// <inheritdoc cref="ITrigonometricFunctions{TSelf}.SinCos(TSelf)" />
@@ -2054,6 +2087,7 @@ namespace System
         }
 
         /// <inheritdoc cref="ITrigonometricFunctions{TSelf}.Tan(TSelf)" />
+        [Intrinsic]
         public static double Tan(double x) => Math.Tan(x);
 
         /// <inheritdoc cref="ITrigonometricFunctions{TSelf}.TanPi(TSelf)" />

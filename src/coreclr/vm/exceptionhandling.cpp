@@ -5763,12 +5763,6 @@ HijackHandler(IN     PEXCEPTION_RECORD   pExceptionRecord,
 // If the managed method will *NOT* be unwound by the current exception
 // pass we have an error: with no Frame on the stack to report it, the
 // managed method will not be included in the next stack walk.
-// An example of running into this issue was DDBug 1133, where
-// TransparentProxyStubIA64 had a personality routine that removed a
-// transition frame.  As a consequence the managed method did not
-// participate in the stack walk until the exception handler was called.  At
-// that time the stack walking code was able to see the managed method again
-// but by this time all references from this managed method were stale.
 BOOL IsSafeToUnwindFrameChain(Thread* pThread, LPVOID MemoryStackFpForFrameChain)
 {
     // Look for the last Frame to be removed that marks a managed-to-unmanaged transition
@@ -6674,7 +6668,7 @@ StackFrame ExceptionTracker::FindParentStackFrameForStackWalk(CrawlFrame* pCF, b
     }
     else
     {
-        return FindParentStackFrameHelper(pCF, NULL, NULL, NULL, fForGCReporting);
+        return FindParentStackFrameHelper(pCF, NULL, NULL, fForGCReporting);
     }
 }
 
@@ -6694,8 +6688,7 @@ StackFrame ExceptionTracker::FindParentStackFrameForStackWalk(CrawlFrame* pCF, b
 //
 // static
 StackFrame ExceptionTracker::FindParentStackFrameEx(CrawlFrame* pCF,
-                                                    DWORD*      pParentOffset,
-                                                    UINT_PTR*   pParentCallerSP)
+                                                    DWORD*      pParentOffset)
 {
     CONTRACTL
     {
@@ -6708,7 +6701,7 @@ StackFrame ExceptionTracker::FindParentStackFrameEx(CrawlFrame* pCF,
     CONTRACTL_END;
 
     bool fRealParent = false;
-    StackFrame sfResult = ExceptionTracker::FindParentStackFrameHelper(pCF, &fRealParent, pParentOffset, pParentCallerSP);
+    StackFrame sfResult = ExceptionTracker::FindParentStackFrameHelper(pCF, &fRealParent, pParentOffset);
 
     if (fRealParent)
     {
@@ -6719,7 +6712,7 @@ StackFrame ExceptionTracker::FindParentStackFrameEx(CrawlFrame* pCF,
     {
         // Otherwise we need to do a full stackwalk to find the parent method frame.
         // This should only happen if we are calling a filter inside a funclet.
-        return ExceptionTracker::RareFindParentStackFrame(pCF, pParentOffset, pParentCallerSP);
+        return ExceptionTracker::RareFindParentStackFrame(pCF, pParentOffset);
     }
 }
 
@@ -6759,7 +6752,6 @@ StackFrame ExceptionTracker::GetCallerSPOfParentOfNonExceptionallyInvokedFunclet
 StackFrame ExceptionTracker::FindParentStackFrameHelper(CrawlFrame* pCF,
                                                         bool*       pfRealParent,
                                                         DWORD*      pParentOffset,
-                                                        UINT_PTR*   pParentCallerSP,
                                                         bool        fForGCReporting /* = false */)
 {
     CONTRACTL
@@ -6771,7 +6763,6 @@ StackFrame ExceptionTracker::FindParentStackFrameHelper(CrawlFrame* pCF,
         PRECONDITION( pCF->IsFunclet() );
         PRECONDITION( CheckPointer(pfRealParent, NULL_OK) );
         PRECONDITION( CheckPointer(pParentOffset, NULL_OK) );
-        PRECONDITION( CheckPointer(pParentCallerSP, NULL_OK) );
     }
     CONTRACTL_END;
 
@@ -6873,10 +6864,6 @@ StackFrame ExceptionTracker::FindParentStackFrameHelper(CrawlFrame* pCF,
             {
                 *pParentOffset = srcEnclosingClause.GetEnclosingClauseOffset();
             }
-            if (pParentCallerSP != NULL)
-            {
-                *pParentCallerSP = srcEnclosingClause.GetEnclosingClauseCallerSP();
-            }
 
             break;
         }
@@ -6958,7 +6945,7 @@ StackWalkAction ExceptionTracker::RareFindParentStackFrameCallback(CrawlFrame* p
 
     if (pState->m_sfParent.IsNull() && pCF->IsFunclet())
     {
-        pState->m_sfParent = ExceptionTracker::FindParentStackFrameHelper(pCF, NULL, NULL, NULL);
+        pState->m_sfParent = ExceptionTracker::FindParentStackFrameHelper(pCF, NULL, NULL);
     }
 
     // If we still need to skip, then continue the stackwalk.
@@ -6979,8 +6966,7 @@ StackWalkAction ExceptionTracker::RareFindParentStackFrameCallback(CrawlFrame* p
 
 // static
 StackFrame ExceptionTracker::RareFindParentStackFrame(CrawlFrame* pCF,
-                                                      DWORD*      pParentOffset,
-                                                      UINT_PTR*   pParentCallerSP)
+                                                      DWORD*      pParentOffset)
 {
     CONTRACTL
     {
@@ -6990,7 +6976,6 @@ StackFrame ExceptionTracker::RareFindParentStackFrame(CrawlFrame* pCF,
         PRECONDITION( pCF != NULL );
         PRECONDITION( pCF->IsFunclet() );
         PRECONDITION( CheckPointer(pParentOffset, NULL_OK) );
-        PRECONDITION( CheckPointer(pParentCallerSP, NULL_OK) );
     }
     CONTRACTL_END;
 
@@ -7011,10 +6996,6 @@ StackFrame ExceptionTracker::RareFindParentStackFrame(CrawlFrame* pCF,
     if (pParentOffset != NULL)
     {
         *pParentOffset = state.m_dwParentOffset;
-    }
-    if (pParentCallerSP != NULL)
-    {
-        *pParentCallerSP = state.m_uParentCallerSP;
     }
     return state.m_sfParent;
 }

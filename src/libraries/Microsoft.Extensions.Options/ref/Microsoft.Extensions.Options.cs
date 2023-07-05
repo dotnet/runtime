@@ -215,6 +215,10 @@ namespace Microsoft.Extensions.Options
         public string OptionsName { get { throw null; } }
         public System.Type OptionsType { get { throw null; } }
     }
+    [System.AttributeUsage(System.AttributeTargets.Class | System.AttributeTargets.Struct)]
+    public sealed class OptionsValidatorAttribute : System.Attribute
+    {
+    }
     public partial class OptionsWrapper<[System.Diagnostics.CodeAnalysis.DynamicallyAccessedMembers(System.Diagnostics.CodeAnalysis.DynamicallyAccessedMemberTypes.PublicParameterlessConstructor)] TOptions> : Microsoft.Extensions.Options.IOptions<TOptions> where TOptions : class
     {
         public OptionsWrapper(TOptions options) { }
@@ -281,6 +285,20 @@ namespace Microsoft.Extensions.Options
         public string? Name { get { throw null; } }
         public virtual void PostConfigure(string? name, TOptions options) { }
         public void PostConfigure(TOptions options) { }
+    }
+    [System.AttributeUsage(System.AttributeTargets.Property | System.AttributeTargets.Field)]
+    public sealed class ValidateEnumeratedItemsAttribute : System.Attribute
+    {
+        public ValidateEnumeratedItemsAttribute() {}
+        public ValidateEnumeratedItemsAttribute(System.Type validator) { throw null; }
+        public System.Type? Validator { get {throw null; } }
+    }
+    [System.AttributeUsage(System.AttributeTargets.Property | System.AttributeTargets.Field)]
+    public sealed class ValidateObjectMembersAttribute : System.Attribute
+    {
+        public ValidateObjectMembersAttribute() {}
+        public ValidateObjectMembersAttribute(System.Type validator) { throw null; }
+        public System.Type? Validator { get { throw null; } }
     }
     public partial class ValidateOptionsResult
     {

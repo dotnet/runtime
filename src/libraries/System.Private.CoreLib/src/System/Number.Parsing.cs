@@ -1304,7 +1304,7 @@ namespace System
             where TChar : unmanaged, IUtfChar<TChar>
         {
             // For compatibility, we need to allow trailing zeros at the end of a number string
-            return value.Slice(index).IndexOfAnyExcept(TChar.CastFrom('\0')) < 0;
+            return !value.Slice(index).ContainsAnyExcept('\0');
         }
 
         private static bool IsSpaceReplacingChar(uint c) => (c == '\u00a0') || (c == '\u202f');

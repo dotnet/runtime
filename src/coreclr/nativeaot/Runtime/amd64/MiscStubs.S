@@ -44,21 +44,3 @@ LOCAL_LABEL(ProbeLoop):
         RESET_FRAME_WITH_RBP
         ret
 NESTED_END RhpStackProbe, _TEXT
-
-NESTED_ENTRY RhpGetInlinedThreadStaticBase, _TEXT, NoHandler
-        // On exit:
-        //   rax - the thread static base for the given type
-
-        // rdi = &tls_InlinedThreadStatics
-        INLINE_GET_TLS_VAR tls_InlinedThreadStatics
-        mov     rdi, rax
-
-        // get per-thread storage
-        mov     rax, [rdi]
-        test    rax, rax
-        jz      C_FUNC(RhpGetInlinedThreadStaticBaseSlow)    // rdi contains the storage ref
-
-        // return it
-        ret
-NESTED_END RhpGetInlinedThreadStaticBase, _TEXT
-
