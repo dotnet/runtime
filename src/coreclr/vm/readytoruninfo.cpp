@@ -1951,13 +1951,13 @@ bool ReadyToRun_MethodIsGenericMap::IsGeneric(mdMethodDef input, bool *foundResu
 {
 #ifdef DACCESS_COMPILE
     *foundResult = false;
-    return 0;
+    return false;
 #else
     uint32_t rid = RidFromToken(input);
     if ((rid > MethodCount) || (rid == 0))
     {
         *foundResult = false;
-        return 0;
+        return false;
     }
 
     uint8_t chunk = ((uint8_t*)&MethodCount)[((rid - 1) / 8) + sizeof(uint32_t)];
