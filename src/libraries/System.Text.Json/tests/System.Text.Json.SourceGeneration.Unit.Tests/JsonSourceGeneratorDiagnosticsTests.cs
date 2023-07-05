@@ -270,16 +270,18 @@ namespace System.Text.Json.SourceGeneration.UnitTests
             Location idLocation = compilation.GetSymbolsWithName("Id").First().Locations[0];
             Location address2Location = compilation.GetSymbolsWithName("Address2").First().Locations[0];
             Location countryLocation = compilation.GetSymbolsWithName("Country").First().Locations[0];
-            Location internalFieldLocation = compilation.GetSymbolsWithName("internalField").First().Locations[0];
             Location privateFieldLocation = compilation.GetSymbolsWithName("privateField").First().Locations[0];
+            Location internalPropertyWithPrivateGetterLocation = compilation.GetSymbolsWithName("InternalPropertyWithPrivateGetter").First().Locations[0];
+            Location internalPropertyWithPrivateSetterLocation = compilation.GetSymbolsWithName("InternalPropertyWithPrivateSetter").First().Locations[0];
 
             var expectedDiagnostics = new DiagnosticData[]
             {
                 new(DiagnosticSeverity.Warning, idLocation, "The member 'Location.Id' has been annotated with the JsonIncludeAttribute but is not visible to the source generator."),
                 new(DiagnosticSeverity.Warning, address2Location, "The member 'Location.Address2' has been annotated with the JsonIncludeAttribute but is not visible to the source generator."),
                 new(DiagnosticSeverity.Warning, countryLocation, "The member 'Location.Country' has been annotated with the JsonIncludeAttribute but is not visible to the source generator."),
-                new(DiagnosticSeverity.Warning, internalFieldLocation, "The member 'Location.internalField' has been annotated with the JsonIncludeAttribute but is not visible to the source generator."),
                 new(DiagnosticSeverity.Warning, privateFieldLocation, "The member 'Location.privateField' has been annotated with the JsonIncludeAttribute but is not visible to the source generator."),
+                new(DiagnosticSeverity.Warning, internalPropertyWithPrivateGetterLocation, "The member 'Location.InternalPropertyWithPrivateGetter' has been annotated with the JsonIncludeAttribute but is not visible to the source generator."),
+                new(DiagnosticSeverity.Warning, internalPropertyWithPrivateSetterLocation, "The member 'Location.InternalPropertyWithPrivateSetter' has been annotated with the JsonIncludeAttribute but is not visible to the source generator."),
             };
 
             CompilationHelper.AssertEqualDiagnosticMessages(expectedDiagnostics, result.Diagnostics);

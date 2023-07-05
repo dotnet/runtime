@@ -849,7 +849,7 @@ namespace System.Text.Json.SourceGeneration
                     memberInfo,
                     hasJsonInclude,
                     out bool isReadOnly,
-                    out bool isPublic,
+                    out bool isAccessible,
                     out bool isRequired,
                     out bool canUseGetter,
                     out bool canUseSetter,
@@ -899,7 +899,7 @@ namespace System.Text.Json.SourceGeneration
                     NameSpecifiedInSourceCode = memberInfo.MemberNameNeedsAtSign() ? "@" + memberInfo.Name : memberInfo.Name,
                     MemberName = memberInfo.Name,
                     IsProperty = memberInfo is IPropertySymbol,
-                    IsPublic = isPublic,
+                    IsPublic = isAccessible,
                     IsVirtual = memberInfo.IsVirtual(),
                     JsonPropertyName = jsonPropertyName,
                     RuntimePropertyName = runtimePropertyName,
@@ -1031,14 +1031,14 @@ namespace System.Text.Json.SourceGeneration
                 ISymbol memberInfo,
                 bool hasJsonInclude,
                 out bool isReadOnly,
-                out bool isPublic,
+                out bool isAccessible,
                 out bool isRequired,
                 out bool canUseGetter,
                 out bool canUseSetter,
                 out bool hasJsonIncludeButIsInaccessible,
                 out bool isSetterInitOnly)
             {
-                isPublic = false;
+                isAccessible = false;
                 isReadOnly = false;
                 isRequired = false;
                 canUseGetter = false;
@@ -1049,71 +1049,71 @@ namespace System.Text.Json.SourceGeneration
                 switch (memberInfo)
                 {
                     case IPropertySymbol propertyInfo:
-                        {
-                            IMethodSymbol? getMethod = propertyInfo.GetMethod;
-                            IMethodSymbol? setMethod = propertyInfo.SetMethod;
 #if ROSLYN4_4_OR_GREATER
-                            isRequired = propertyInfo.IsRequired;
+                        isRequired = propertyInfo.IsRequired;
 #endif
-
-                            if (getMethod != null)
+                        if (propertyInfo.GetMethod is { } getMethod)
+                        {
+                            if (getMethod.DeclaredAccessibility is Accessibility.Public)
                             {
-                                if (getMethod.DeclaredAccessibility is Accessibility.Public)
-                                {
-                                    isPublic = true;
-                                    canUseGetter = true;
-                                }
-                                else if (IsSymbolAccessibleWithin(getMethod, within: contextType))
-                                {
-                                    canUseGetter = hasJsonInclude;
-                                }
-                                else
-                                {
-                                    hasJsonIncludeButIsInaccessible = hasJsonInclude;
-                                }
+                                isAccessible = true;
+                                canUseGetter = true;
                             }
-
-                            if (setMethod != null)
+                            else if (IsSymbolAccessibleWithin(getMethod, within: contextType))
                             {
-                                isSetterInitOnly = setMethod.IsInitOnly;
-
-                                if (setMethod.DeclaredAccessibility is Accessibility.Public)
-                                {
-                                    isPublic = true;
-                                    canUseSetter = true;
-                                }
-                                else if (IsSymbolAccessibleWithin(setMethod, within: contextType))
-                                {
-                                    canUseSetter = hasJsonInclude;
-                                }
-                                else
-                                {
-                                    hasJsonIncludeButIsInaccessible = hasJsonInclude;
-                                }
+                                isAccessible = true;
+                                canUseGetter = hasJsonInclude;
                             }
                             else
                             {
-                                isReadOnly = true;
+                                hasJsonIncludeButIsInaccessible = hasJsonInclude;
                             }
+                        }
+
+                        if (propertyInfo.SetMethod is { } setMethod)
+                        {
+                            isSetterInitOnly = setMethod.IsInitOnly;
+
+                            if (setMethod.DeclaredAccessibility is Accessibility.Public)
+                            {
+                                isAccessible = true;
+                                canUseSetter = true;
+                            }
+                            else if (IsSymbolAccessibleWithin(setMethod, within: contextType))
+                            {
+                                isAccessible = true;
+                                canUseSetter = hasJsonInclude;
+                            }
+                            else
+                            {
+                                hasJsonIncludeButIsInaccessible = hasJsonInclude;
+                            }
+                        }
+                        else
+                        {
+                            isReadOnly = true;
                         }
                         break;
                     case IFieldSymbol fieldInfo:
-                        {
-                            isReadOnly = fieldInfo.IsReadOnly;
+                        isReadOnly = fieldInfo.IsReadOnly;
 #if ROSLYN4_4_OR_GREATER
-                            isRequired = fieldInfo.IsRequired;
+                        isRequired = fieldInfo.IsRequired;
 #endif
-                            if (fieldInfo.DeclaredAccessibility is Accessibility.Public)
-                            {
-                                isPublic = true;
-                                canUseGetter = true;
-                                canUseSetter = !isReadOnly;
-                            }
-                            else
-                            {
-                                // Unlike properties JsonIncludeAttribute is not supported for internal fields.
-                                hasJsonIncludeButIsInaccessible = hasJsonInclude;
-                            }
+                        if (fieldInfo.DeclaredAccessibility is Accessibility.Public)
+                        {
+                            isAccessible = true;
+                            canUseGetter = true;
+                            canUseSetter = !isReadOnly;
+                        }
+                        else if (IsSymbolAccessibleWithin(fieldInfo, within: contextType))
+                        {
+                            isAccessible = true;
+                            canUseGetter = hasJsonInclude;
+                            canUseSetter = hasJsonInclude && !isReadOnly;
+                        }
+                        else
+                        {
+                            hasJsonIncludeButIsInaccessible = hasJsonInclude;
                         }
                         break;
                     default:

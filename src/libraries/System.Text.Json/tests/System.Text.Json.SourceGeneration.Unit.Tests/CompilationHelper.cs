@@ -491,6 +491,12 @@ namespace System.Text.Json.SourceGeneration.UnitTests
                         public string PhoneNumber { internal get; set; }
                         [JsonInclude]
                         public string Country { private get; set; }
+                        [JsonInclude]
+                        internal string InternalProperty { get; set; }
+                        [JsonInclude]
+                        internal string InternalPropertyWithPrivateGetter { private get; set; }
+                        [JsonInclude]
+                        internal string InternalPropertyWithPrivateSetter { get; private set; }
 
                         public int GetPrivateField() => privateField;
                     }
