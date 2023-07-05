@@ -131,7 +131,7 @@ namespace System.Text.Json.Serialization.Converters
 
             Debug.Assert(options.UnknownTypeHandling == JsonUnknownTypeHandling.JsonNode);
 
-            JsonNode node = JsonNodeConverter.Instance.Read(ref reader, typeToConvert, options)!;
+            JsonNode? node = JsonNodeConverter.Instance.Read(ref reader, typeToConvert, options);
 
             if (options.ReferenceHandlingStrategy == ReferenceHandlingStrategy.Preserve &&
                 JsonSerializer.TryHandleReferenceFromJsonNode(ref reader, ref state, node, out referenceValue))

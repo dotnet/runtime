@@ -702,5 +702,13 @@ namespace System.Text.Unicode
                 return false;
             }
         }
+
+        /// <summary>
+        /// Validates that the value is well-formed UTF-8.
+        /// </summary>
+        /// <param name="value">The <see cref="ReadOnlySpan{T}"/> string.</param>
+        /// <returns><c>true</c> if value is well-formed UTF-8, <c>false</c> otherwise.</returns>
+        public static unsafe bool IsValid(ReadOnlySpan<byte> value) =>
+            Utf8Utility.GetIndexOfFirstInvalidUtf8Sequence(value, out _) < 0;
     }
 }

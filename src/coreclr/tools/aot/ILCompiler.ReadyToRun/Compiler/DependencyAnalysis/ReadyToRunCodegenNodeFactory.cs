@@ -44,9 +44,18 @@ namespace ILCompiler.DependencyAnalysis
         }
     }
 
+    public enum TypeValidationRule
+    {
+        Automatic,
+        AutomaticWithLogging,
+        AlwaysValidate,
+        SkipTypeValidation
+    }
+
     public sealed class NodeFactoryOptimizationFlags
     {
         public bool OptimizeAsyncMethods;
+        public TypeValidationRule TypeValidation;
         public int DeterminismStress;
         public bool PrintReproArgs;
     }
@@ -189,6 +198,7 @@ namespace ILCompiler.DependencyAnalysis
             ReadyToRunFlags flags,
             NodeFactoryOptimizationFlags nodeFactoryOptimizationFlags,
             ulong imageBase,
+            EcmaModule associatedModule,
             int genericCycleDepthCutoff,
             int genericCycleBreadthCutoff)
         {
@@ -202,7 +212,8 @@ namespace ILCompiler.DependencyAnalysis
             CopiedCorHeaderNode = corHeaderNode;
             DebugDirectoryNode = debugDirectoryNode;
             Resolver = compilationModuleGroup.Resolver;
-            Header = new GlobalHeaderNode(flags);
+
+            Header = new GlobalHeaderNode(flags, associatedModule);
             ImageBase = imageBase;
             if (!win32Resources.IsEmpty)
                 Win32ResourcesNode = new Win32ResourcesNode(win32Resources);
@@ -743,6 +754,24 @@ namespace ILCompiler.DependencyAnalysis
                 {
                     AttributePresenceFilterNode attributePresenceTable = new AttributePresenceFilterNode(inputModule);
                     tableHeader.Add(Internal.Runtime.ReadyToRunSectionType.AttributePresence, attributePresenceTable, attributePresenceTable);
+                }
+
+                if (EnclosingTypeMapNode.IsSupported(inputModule.MetadataReader))
+                {
+                    var node = new EnclosingTypeMapNode(inputModule);
+                    tableHeader.Add(Internal.Runtime.ReadyToRunSectionType.EnclosingTypeMap, node, node);
+                }
+
+                if (TypeGenericInfoMapNode.IsSupported(inputModule.MetadataReader))
+                {
+                    var node = new TypeGenericInfoMapNode(inputModule);
+                    tableHeader.Add(Internal.Runtime.ReadyToRunSectionType.TypeGenericInfoMap, node, node);
+                }
+
+                if (MethodIsGenericMapNode.IsSupported(inputModule.MetadataReader))
+                {
+                    var node = new MethodIsGenericMapNode(inputModule);
+                    tableHeader.Add(Internal.Runtime.ReadyToRunSectionType.MethodIsGenericMap, node, node);
                 }
             }
 

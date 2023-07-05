@@ -46,7 +46,7 @@ namespace ILCompiler.DependencyAnalysis
         public static readonly ObjectNodeSection ReadOnlyDataSection = new ObjectNodeSection("rdata", SectionType.ReadOnly);
         public static readonly ObjectNodeSection FoldableReadOnlyDataSection = new ObjectNodeSection("rdata", SectionType.ReadOnly);
         public static readonly ObjectNodeSection TextSection = new ObjectNodeSection("text", SectionType.Executable);
-        public static readonly ObjectNodeSection TLSSection = new ObjectNodeSection("TLS", SectionType.Writeable);
+        public static readonly ObjectNodeSection TLSSection = new ObjectNodeSection("tdata", SectionType.Writeable);
         public static readonly ObjectNodeSection BssSection = new ObjectNodeSection("bss", SectionType.Uninitialized);
         public static readonly ObjectNodeSection HydrationTargetSection = new ObjectNodeSection("hydrated", SectionType.Uninitialized);
         public static readonly ObjectNodeSection ManagedCodeWindowsContentSection = new ObjectNodeSection(".managedcode$I", SectionType.Executable);

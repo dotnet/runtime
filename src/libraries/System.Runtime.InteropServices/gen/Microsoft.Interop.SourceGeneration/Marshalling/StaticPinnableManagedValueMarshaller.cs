@@ -62,7 +62,7 @@ namespace Microsoft.Interop
             return _innerMarshallingGenerator.Generate(info, context);
         }
 
-        public bool SupportsByValueMarshalKind(ByValueContentsMarshalKind marshalKind, StubCodeContext context)
+        public ByValueMarshalKindSupport SupportsByValueMarshalKind(ByValueContentsMarshalKind marshalKind, StubCodeContext context)
         {
             return _innerMarshallingGenerator.SupportsByValueMarshalKind(marshalKind, context);
         }

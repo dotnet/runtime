@@ -94,6 +94,7 @@ export async function mono_wasm_load_config(module: DotnetModuleInternal): Promi
             const loadedAnyConfig: any = (await configResponse.json()) || {};
             if (loadedAnyConfig.resources) {
                 // If we found boot config schema
+                normalizeConfig();
                 await initializeBootConfig(BootConfigResult.fromFetchResponse(configResponse, loadedAnyConfig as BootJsonData, loaderHelpers.config.applicationEnvironment), module, loaderHelpers.config.startupOptions);
             } else {
                 // Otherwise we found mono config schema
@@ -118,7 +119,7 @@ export async function mono_wasm_load_config(module: DotnetModuleInternal): Promi
         }
         loaderHelpers.afterConfigLoaded.promise_control.resolve(loaderHelpers.config);
     } catch (err) {
-        const errMessage = `Failed to load config file ${configFilePath} ${err}`;
+        const errMessage = `Failed to load config file ${configFilePath} ${err} ${(err as Error)?.stack}`;
         loaderHelpers.config = module.config = <any>{ message: errMessage, error: err, isError: true };
         loaderHelpers.abort_startup(errMessage, true);
         throw err;

@@ -4,6 +4,7 @@
     <EnableDefaultCompileItems>false</EnableDefaultCompileItems>
     <TargetFramework>$(NetCoreAppCurrent)</TargetFramework>
     <RuntimeIdentifier>android-$(TargetArchitecture)</RuntimeIdentifier>
+    <SelfContained>true</SelfContained>
     <PublishTrimmed>true</PublishTrimmed>
     <TrimMode>Link</TrimMode>
     <ForceAOT Condition="'$(ForceAOT)' == ''">false</ForceAOT>

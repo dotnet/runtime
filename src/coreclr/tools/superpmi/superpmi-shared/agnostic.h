@@ -204,6 +204,25 @@ struct Agnostic_GetStaticFieldCurrentClass
     bool      isSpeculative;
 };
 
+struct Agnostic_CORINFO_TYPE_LAYOUT_NODE
+{
+    DWORDLONG simdTypeHnd;
+    DWORDLONG diagFieldHnd;
+    DWORD parent;
+    DWORD offset;
+    DWORD size;
+    DWORD numFields;
+    BYTE type;
+    bool hasSignificantPadding;
+};
+
+struct Agnostic_GetTypeLayoutResult
+{
+    DWORD result;
+    DWORD nodesBuffer;
+    DWORD numNodes;
+};
+
 struct Agnostic_CORINFO_RESOLVED_TOKEN
 {
     Agnostic_CORINFO_RESOLVED_TOKENin inValue;
@@ -474,14 +493,6 @@ struct Agnostic_GetStaticBaseAddress
     DWORD                         result;
 };
 
-struct Agnostic_IsCompatibleDelegate
-{
-    DWORDLONG objCls;
-    DWORDLONG methodParentCls;
-    DWORDLONG method;
-    DWORDLONG delegateCls;
-};
-
 struct Agnostic_PgoInstrumentationSchema
 {
     DWORDLONG Offset;          // size_t
@@ -610,12 +621,6 @@ struct ResolveTokenValue
     DWORD                              exceptionCode;
 };
 
-struct TryResolveTokenValue
-{
-    Agnostic_CORINFO_RESOLVED_TOKENout tokenOut;
-    DWORD                              success;
-};
-
 struct GetTokenTypeAsHandleValue
 {
     DWORDLONG hMethod;
@@ -675,7 +680,6 @@ struct Agnostic_RecordRelocation
     DWORDLONG location;
     DWORDLONG target;
     DWORD     fRelocType;
-    DWORD     slotNum;
     DWORD     addlDelta;
 };
 
