@@ -239,7 +239,8 @@ namespace System.Memory.Tests.Span
                         {
                             var helper = new StringSearchValuesTestHelper(
                                 expected: IndexOfAnyReferenceImpl,
-                                searchValues: (searchSpace, values) => searchSpace.IndexOfAny(values))
+                                searchValues: (searchSpace, values) => searchSpace.IndexOfAny(values),
+                                rngSeed: Random.Shared.Next())
                             {
                                 MaxNeedleCount = maxNeedleCount,
                                 MaxNeedleValueLength = maxNeedleValueLength,
@@ -294,34 +295,44 @@ namespace System.Memory.Tests.Span
 
         private sealed class StringSearchValuesTestHelper
         {
+            public delegate int IndexOfAnySearchDelegate(ReadOnlySpan<char> searchSpace, ReadOnlySpan<string> values, StringComparison comparisonType);
+
+            public delegate int SearchValuesSearchDelegate(ReadOnlySpan<char> searchSpace, SearchValues<string> values);
+
             public int MaxNeedleCount = 20;
             public int MaxNeedleValueLength = 10;
             public int MaxHaystackLength = 100;
             public int HaystackIterationsPerNeedle = 50;
             public int MinValueLength = 1;
 
-            private static readonly char[] s_randomAsciiChars;
-            private static readonly char[] s_randomSimpleAsciiChars;
-            private static readonly char[] s_randomChars;
+            private readonly IndexOfAnySearchDelegate _expectedDelegate;
+            private readonly SearchValuesSearchDelegate _searchValuesDelegate;
 
-            static StringSearchValuesTestHelper()
+            private readonly char[] _randomAsciiChars;
+            private readonly char[] _randomSimpleAsciiChars;
+            private readonly char[] _randomChars;
+
+            public StringSearchValuesTestHelper(IndexOfAnySearchDelegate expected, SearchValuesSearchDelegate searchValues, int rngSeed = 42)
             {
-                s_randomAsciiChars = new char[100 * 1024];
-                s_randomSimpleAsciiChars = new char[100 * 1024];
-                s_randomChars = new char[1024 * 1024];
+                _expectedDelegate = expected;
+                _searchValuesDelegate = searchValues;
 
-                var rng = new Random(42);
+                _randomAsciiChars = new char[100 * 1024];
+                _randomSimpleAsciiChars = new char[100 * 1024];
+                _randomChars = new char[1024 * 1024];
 
-                for (int i = 0; i < s_randomAsciiChars.Length; i++)
+                var rng = new Random(rngSeed);
+
+                for (int i = 0; i < _randomAsciiChars.Length; i++)
                 {
-                    s_randomAsciiChars[i] = (char)rng.Next(0, 128);
+                    _randomAsciiChars[i] = (char)rng.Next(0, 128);
                 }
 
-                for (int i = 0; i < s_randomSimpleAsciiChars.Length; i++)
+                for (int i = 0; i < _randomSimpleAsciiChars.Length; i++)
                 {
                     int random = rng.Next(26 * 2 + 10);
 
-                    s_randomSimpleAsciiChars[i] = (char)(random + (random switch
+                    _randomSimpleAsciiChars[i] = (char)(random + (random switch
                     {
                         < 10 => '0',
                         < 36 => 'a' - 10,
@@ -329,21 +340,8 @@ namespace System.Memory.Tests.Span
                     }));
                 }
 
-                rng.NextBytes(MemoryMarshal.Cast<char, byte>(s_randomChars));
+                rng.NextBytes(MemoryMarshal.Cast<char, byte>(_randomChars));
             }
-
-            private readonly IndexOfAnySearchDelegate _expectedDelegate;
-            private readonly SearchValuesSearchDelegate _searchValuesDelegate;
-
-            public StringSearchValuesTestHelper(IndexOfAnySearchDelegate expected, SearchValuesSearchDelegate searchValues)
-            {
-                _expectedDelegate = expected;
-                _searchValuesDelegate = searchValues;
-            }
-
-            public delegate int IndexOfAnySearchDelegate(ReadOnlySpan<char> searchSpace, ReadOnlySpan<string> values, StringComparison comparisonType);
-
-            public delegate int SearchValuesSearchDelegate(ReadOnlySpan<char> searchSpace, SearchValues<string> values);
 
             public void StressRandomInputs(TimeSpan duration)
             {
@@ -375,14 +373,14 @@ namespace System.Memory.Tests.Span
                 for (int iterations = 0; iterations < iterationCount; iterations++)
                 {
                     // There are more interesting corner cases with ASCII needles, test those more.
-                    Test(rng, s_randomSimpleAsciiChars, s_randomSimpleAsciiChars);
-                    Test(rng, s_randomAsciiChars, s_randomSimpleAsciiChars);
-                    Test(rng, s_randomSimpleAsciiChars, s_randomAsciiChars);
-                    Test(rng, s_randomAsciiChars, s_randomAsciiChars);
-                    Test(rng, s_randomChars, s_randomSimpleAsciiChars);
-                    Test(rng, s_randomChars, s_randomAsciiChars);
+                    Test(rng, _randomSimpleAsciiChars, _randomSimpleAsciiChars);
+                    Test(rng, _randomAsciiChars, _randomSimpleAsciiChars);
+                    Test(rng, _randomSimpleAsciiChars, _randomAsciiChars);
+                    Test(rng, _randomAsciiChars, _randomAsciiChars);
+                    Test(rng, _randomChars, _randomSimpleAsciiChars);
+                    Test(rng, _randomChars, _randomAsciiChars);
 
-                    Test(rng, s_randomChars, s_randomChars);
+                    Test(rng, _randomChars, _randomChars);
                 }
             }
 
