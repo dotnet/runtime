@@ -174,9 +174,9 @@ private:
             fprintf(stderr, "GCHeapSurvivalAndMovement ");
         }
 
-        if (keyword & GCEventKeyword_GCHeapCollect)
+        if (keyword & GCEventKeyword_ManagedHeapCollect)
         {
-            fprintf(stderr, "GCHeapCollect ");
+            fprintf(stderr, "ManagedHeapCollect ");
         }
 
         if (keyword & GCEventKeyword_GCHeapAndTypeNames)

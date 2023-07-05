@@ -10,7 +10,7 @@ namespace Microsoft.Extensions.DependencyInjection
     /// <summary>
     /// Describes a service with its service type, implementation, and lifetime.
     /// </summary>
-    [DebuggerDisplay("Lifetime = {Lifetime}, ServiceType = {ServiceType}, ImplementationType = {ImplementationType}")]
+    [DebuggerDisplay("{DebuggerToString(),nq}")]
     public class ServiceDescriptor
     {
         /// <summary>
@@ -466,6 +466,27 @@ namespace Microsoft.Extensions.DependencyInjection
         public static ServiceDescriptor Describe(Type serviceType, Func<IServiceProvider, object> implementationFactory, ServiceLifetime lifetime)
         {
             return new ServiceDescriptor(serviceType, implementationFactory, lifetime);
+        }
+
+        private string DebuggerToString()
+        {
+            string debugText = $@"Lifetime = {Lifetime}, ServiceType = ""{ServiceType.FullName}""";
+
+            // Either implementation type, factory or instance is set.
+            if (ImplementationType != null)
+            {
+                debugText += $@", ImplementationType = ""{ImplementationType.FullName}""";
+            }
+            else if (ImplementationFactory != null)
+            {
+                debugText += $@", ImplementationFactory = {ImplementationFactory.Method}";
+            }
+            else
+            {
+                debugText += $@", ImplementationInstance = {ImplementationInstance}";
+            }
+
+            return debugText;
         }
     }
 }

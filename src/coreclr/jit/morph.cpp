@@ -7945,7 +7945,11 @@ GenTree* Compiler::fgExpandVirtualVtableCallTarget(GenTreeCall* call)
     // Dereference the this pointer to obtain the method table, it is called vtab below
     assert(VPTR_OFFS == 0); // We have to add this value to the thisPtr to get the methodTable
     GenTree* vtab = gtNewIndir(TYP_I_IMPL, thisPtr, GTF_IND_INVARIANT);
-    vtab->gtFlags &= ~GTF_EXCEPT; // TODO-Cleanup: delete this zero-diff quirk.
+
+    if (fgGlobalMorph)
+    {
+        vtab->gtFlags &= ~GTF_EXCEPT; // TODO-Cleanup: delete this zero-diff quirk.
+    }
 
     // Get the appropriate vtable chunk
     if (vtabOffsOfIndirection != CORINFO_VIRTUALCALL_NO_CHUNK)
@@ -14719,12 +14723,12 @@ PhaseStatus Compiler::fgRetypeImplicitByRefArgs()
                 }
 
                 // Copy the struct promotion annotations to the new temp.
-                LclVarDsc* newVarDsc       = lvaGetDesc(newLclNum);
-                newVarDsc->lvPromoted      = true;
-                newVarDsc->lvFieldLclStart = varDsc->lvFieldLclStart;
-                newVarDsc->lvFieldCnt      = varDsc->lvFieldCnt;
-                newVarDsc->lvContainsHoles = varDsc->lvContainsHoles;
-                newVarDsc->lvCustomLayout  = varDsc->lvCustomLayout;
+                LclVarDsc* newVarDsc               = lvaGetDesc(newLclNum);
+                newVarDsc->lvPromoted              = true;
+                newVarDsc->lvFieldLclStart         = varDsc->lvFieldLclStart;
+                newVarDsc->lvFieldCnt              = varDsc->lvFieldCnt;
+                newVarDsc->lvContainsHoles         = varDsc->lvContainsHoles;
+                newVarDsc->lvAnySignificantPadding = varDsc->lvAnySignificantPadding;
 #ifdef DEBUG
                 newVarDsc->lvKeepType = true;
 #endif // DEBUG
