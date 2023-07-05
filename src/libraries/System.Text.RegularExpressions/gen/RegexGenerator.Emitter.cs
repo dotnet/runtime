@@ -735,11 +735,15 @@ namespace System.Text.RegularExpressions.Generator
                         case FindNextStartingPositionMode.LeadingString_LeftToRight:
                         case FindNextStartingPositionMode.LeadingString_OrdinalIgnoreCase_LeftToRight:
                         case FindNextStartingPositionMode.FixedDistanceString_LeftToRight:
-                            EmitIndexOf_LeftToRight();
+                            EmitIndexOfString_LeftToRight();
                             break;
 
                         case FindNextStartingPositionMode.LeadingString_RightToLeft:
-                            EmitIndexOf_RightToLeft();
+                            EmitIndexOfString_RightToLeft();
+                            break;
+
+                        case FindNextStartingPositionMode.LeadingStrings_LeftToRight:
+                            EmitIndexOfStrings_LeftToRight();
                             break;
 
                         case FindNextStartingPositionMode.LeadingSet_LeftToRight:
@@ -964,7 +968,7 @@ namespace System.Text.RegularExpressions.Generator
             }
 
             // Emits a case-sensitive left-to-right search for a substring.
-            void EmitIndexOf_LeftToRight()
+            void EmitIndexOfString_LeftToRight()
             {
                 RegexFindOptimizations opts = regexTree.FindOptimizations;
 
@@ -1010,8 +1014,43 @@ namespace System.Text.RegularExpressions.Generator
                 }
             }
 
+            // Emits a case-sensitive left-to-right search for any one of multiple leading prefixes.
+            void EmitIndexOfStrings_LeftToRight()
+            {
+                RegexFindOptimizations opts = regexTree.FindOptimizations;
+                Debug.Assert(opts.FindMode == FindNextStartingPositionMode.LeadingStrings_LeftToRight);
+
+                string prefixes = string.Join(", ", opts.LeadingPrefixes.Select(prefix => Literal(prefix)));
+
+                string fieldName = "s_indexOfAnyStrings_";
+                using (SHA256 sha = SHA256.Create())
+                {
+#pragma warning disable CA1850 // SHA256.HashData isn't available on netstandard2.0
+                    fieldName += $"{BitConverter.ToString(sha.ComputeHash(Encoding.UTF8.GetBytes(prefixes))).Replace("-", "")}";
+#pragma warning restore CA1850
+                }
+
+                if (!requiredHelpers.ContainsKey(fieldName))
+                {
+                    requiredHelpers.Add(fieldName, new string[]
+                    {
+                        $"/// <summary>Supports searching for any of the strings {EscapeXmlComment(prefixes)}.</summary>",
+                        $"internal static readonly SearchValues<string> {fieldName} = SearchValues.Create(new[] {{ {prefixes} }}, StringComparison.Ordinal);",
+                    });
+                }
+
+                writer.WriteLine($"// The pattern has multiple strings that could begin the match. Search for any of them.");
+                writer.WriteLine($"// If none can be found, there's no match.");
+                writer.WriteLine($"int i = inputSpan.Slice(pos).IndexOfAny({HelpersTypeName}.{fieldName});");
+                using (EmitBlock(writer, "if (i >= 0)"))
+                {
+                    writer.WriteLine("base.runtextpos = pos + i;");
+                    writer.WriteLine("return true;");
+                }
+            }
+
             // Emits a case-sensitive right-to-left search for a substring.
-            void EmitIndexOf_RightToLeft()
+            void EmitIndexOfString_RightToLeft()
             {
                 string prefix = regexTree.FindOptimizations.LeadingPrefix;
 

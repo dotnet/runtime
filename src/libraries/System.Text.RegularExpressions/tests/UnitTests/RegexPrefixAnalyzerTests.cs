@@ -70,6 +70,39 @@ namespace System.Text.RegularExpressions.Tests
             FindFirstCharClass(string.Concat(Enumerable.Repeat($"(a?", nesting).Concat(Enumerable.Repeat(")*", nesting))), 0, null);
         }
 
+        [Theory]
+        [InlineData("abc|def", new[] { "abc", "def" })]
+        [InlineData("abc|def|(ghi|jklm)", new[] { "abc", "def", "ghi", "jklm" })]
+        [InlineData("abc[def]ghi", new[] { "abcdghi", "abceghi", "abcfghi" })]
+        [InlineData("abc[def]ghi|[jkl]", new[] { "abcdghi", "abceghi", "abcfghi", "j", "k", "l" })]
+        [InlineData("abcdefg|h", new[] { "abcdefg", "h" })]
+        [InlineData("agggtaaa|tttaccct", new[] { "agggtaaa", "tttaccct" })]
+        [InlineData("[cgt]gggtaaa|tttaccc[acg]", new[] { "cgggtaaa", "ggggtaaa", "tgggtaaa", "tttaccca", "tttacccc", "tttacccg" })]
+        [InlineData("a[act]ggtaaa|tttacc[agt]t", new[] { "aaggtaaa", "acggtaaa", "atggtaaa", "tttaccat", "tttaccgt", "tttacctt" })]
+        [InlineData("ag[act]gtaaa|tttac[agt]ct", new[] { "agagtaaa", "agcgtaaa", "agtgtaaa", "tttacact", "tttacgct", "tttactct" })]
+        [InlineData("agg[act]taaa|ttta[agt]cct", new[] { "aggataaa", "aggctaaa", "aggttaaa", "tttaacct", "tttagcct", "tttatcct" })]
+        [InlineData("\b(abc|def)\b", new[] { "abc", "def" })]
+        [InlineData("^(abc|def)$", new[] { "abc", "def" })]
+        public void FindPrefixes(string pattern, string[] expectedSet)
+        {
+            RegexTree tree = RegexParser.Parse(pattern, RegexOptions.None, CultureInfo.InvariantCulture);
+            string[] actual = RegexPrefixAnalyzer.FindPrefixes(tree.Root);
+
+            if (expectedSet is null)
+            {
+                Assert.Null(actual);
+            }
+            else
+            {
+                Assert.NotNull(actual);
+
+                Array.Sort(actual, StringComparer.Ordinal);
+                Array.Sort(expectedSet, StringComparer.Ordinal);
+
+                Assert.Equal(expectedSet, actual);
+            }
+        }
+
         private static string FormatSet(string set)
         {
             if (set is null)

@@ -11,6 +11,329 @@ namespace System.Text.RegularExpressions
     /// <summary>Detects various forms of prefixes in the regular expression that can help FindFirstChars optimize its search.</summary>
     internal static class RegexPrefixAnalyzer
     {
+        /// <summary>Cache of ToString() strings for the ASCII chars.</summary>
+        /// <remarks>The strings are lazily created on first use.</remarks>
+        private static string[]? s_asciiCharStrings;
+
+        /// <summary>Gets the ToString() string for the specified char.</summary>
+        private static string GetCharString(char ch)
+        {
+            // If the character isn't ASCII, just ToString it.
+            if (ch >= 128)
+            {
+                return ch.ToString();
+            }
+
+            // Use a lazily-initialized cache of strings for ASCII characters. The overall cache is initialized
+            // with Interlocked.CompareExchange simply to avoid accidentally throwing out a lot of strings accidentally.
+
+            string[] asciiCharString =
+                s_asciiCharStrings ??
+                Interlocked.CompareExchange(ref s_asciiCharStrings, new string[128], null) ??
+                s_asciiCharStrings;
+
+            return asciiCharString[ch] ??= ch.ToString();
+        }
+
+        /// <summary>Finds an array of multiple prefixes that a node can begin with.</summary>
+        /// <param name="node">The node to search.</param>
+        /// <returns>
+        /// If a fixed set of prefixes is found, such that a match for this node is guaranteed to begin
+        /// with one of those prefixes, an array of those prefixes is returned.  Otherwise, null.
+        /// </returns>
+        public static string[]? FindPrefixes(RegexNode node)
+        {
+            // Minimum string length for prefixes to be useful. If any prefix has length 1,
+            // then we're generally better off just using IndexOfAny with chars.
+            const int MinPrefixLength = 2;
+
+            // Arbitrary string length limit to avoid creating strings that are longer than is useful and consuming too much memory.
+            // Some of the algorithms used also create strings by appending a single character at a time, which is O(N^2) in the
+            // final length of the string, so keeping this small helps avoid problematic complexity.
+            const int MaxPrefixLength = 8;
+
+            // Limit based on what IndexOfAny is able to handle most efficiently. This can be updated in future if/when IndexOfAny improves further.
+            const int MaxPrefixes = 64;
+
+            // Analyze the node to find prefixes.
+            string[]? results = FindPrefixesCore(node);
+            if (results is not null)
+            {
+                // If the number found is larger than our limit, we didn't find a valid set, so return null.
+                if (results.Length > MaxPrefixes)
+                {
+                    return null;
+                }
+
+                // If any of the prefixes is shorter than the required minimum, we didn't find a valid set, so
+                // return null.
+                foreach (string result in results)
+                {
+                    if (result.Length < MinPrefixLength)
+                    {
+                        return null;
+                    }
+                }
+            }
+
+            // Return the prefixes if we got any, or null if we didn't.
+            return results;
+
+            static string[]? FindPrefixesCore(RegexNode node)
+            {
+                // If we're too deep to analyze further, we can't trust what we've already computed, so give up.
+                if (!StackHelper.TryEnsureSufficientExecutionStack())
+                {
+                    return null;
+                }
+
+                // These limits are approximations. We'll stop trying to make strings longer once we exceed the max length,
+                // and if we exceed the max number of prefixes by a non-trivial amount, we'll fail the operation.
+                Span<char> setChars = stackalloc char[MaxPrefixes]; // limit how many chars we get from a set based on the max prefixes we care about
+                Span<char> scratch = stackalloc char[32]; // arbitrary limit
+
+                // Loop down the left side of the tree, looking for a starting node we can handle. We only loop through
+                // atomic and capture nodes, as the child is guaranteed to execute once, as well as loops with a positive
+                // minimum and thus at least one guaranteed iteration.
+                while (true)
+                {
+                    switch (node.Kind)
+                    {
+                        case RegexNodeKind.Atomic:
+                        case RegexNodeKind.Capture:
+                        case RegexNodeKind.Loop or RegexNodeKind.Lazyloop when node.M > 0:
+                            // These nodes are all guaranteed to execute at least once, so we can just
+                            // skip through them to their child.
+                            node = node.Child(0);
+                            break;
+
+                        case RegexNodeKind.Alternate:
+                            // For alternations, we need to find a prefix for every branch; if we can't compute a
+                            // prefix for any one branch, we can't trust the results and need to give up, since we don't
+                            // know if our set of prefixes is complete.
+                            {
+                                // If there are more children than our maximum, just give up immediately, as we
+                                // won't be able to get a prefix for every branch and have it be within our max.
+                                int childCount = node.ChildCount();
+                                if (childCount > MaxPrefixes)
+                                {
+                                    return null;
+                                }
+
+                                List<string>? prefixes = null;
+                                for (int i = 0; i < childCount; i++)
+                                {
+                                    // Get the prefix for the branch.
+                                    string[]? childPrefixes = FindPrefixesCore(node.Child(i));
+
+                                    // If we couldn't get one, or if its results puts us over the max, give up.
+                                    if (childPrefixes is null ||
+                                        (childPrefixes.Length + (prefixes?.Count ?? 0) > MaxPrefixes))
+                                    {
+                                        return null;
+                                    }
+
+                                    // Otherwise, add the prefixes to our list.
+                                    (prefixes ??= new()).AddRange(childPrefixes);
+                                }
+
+                                Debug.Assert(prefixes is not null && prefixes.Count is > 0 and <= MaxPrefixes);
+                                return prefixes.ToArray();
+                            }
+
+                        case RegexNodeKind.One:
+                            // If we hit a single character, we can just return that character.
+                            return new string[] { GetCharString(node.Ch) };
+
+                        case RegexNodeKind.Multi:
+                            // If we hit a string, we can just return that string.
+                            return new string[] { node.Str! };
+
+                        case RegexNodeKind.Set when !RegexCharClass.IsNegated(node.Str!):
+                            // If we hit a non-negated set (negated sets are too complex to analyze),
+                            // we can try to extract the characters that comprise it, and if there are
+                            // any and there aren't more than the max number of prefixes, we can return
+                            // them each as a prefix. Effectively, this is an alternation of the characters
+                            // that comprise the set.
+                            {
+                                string[]? results = null;
+                                int charCount = RegexCharClass.GetSetChars(node.Str!, setChars);
+                                if (charCount != 0)
+                                {
+                                    results = new string[charCount];
+                                    for (int i = 0; i < charCount; i++)
+                                    {
+                                        results[i] = GetCharString(setChars[i]);
+                                    }
+                                }
+                                return results;
+                            }
+
+                        case RegexNodeKind.Concatenate:
+                            {
+                                // For concatenations, we specially recognize certain kinds of children and fail on others.
+                                // Concatenations can get complex in the face of multiple children that branch. To simplify
+                                // and handle the 95% case, we only process up a single branch within the concatenation.
+                                // Once we've seen such a branch (a set or an alternation), the next time we see one we stop trying
+                                // to lengthen the prefixes and just return what we have. For example, given the pattern
+                                // `ab[cd]ef[gh]`, we'll create the prefixes "abcef" and "abdef". Thus, we maintain two pieces of state: a
+                                // ValueStringBuilder for the current prefix in the concatenation if we haven't set branched, or a
+                                // list of strings for the prefixes if we have branched. Once we switch over to using concatStrings,
+                                // the ValueStringBuilder is no longer used.
+                                var vsb = new ValueStringBuilder(scratch);
+                                try
+                                {
+                                    string[]? concatStrings = null;
+
+                                    int childCount = node.ChildCount();
+                                    for (int i = 0; i < childCount && vsb.Length < MaxPrefixLength; i++)
+                                    {
+                                        // Atomic and Capture nodes don't impact prefixes, so skip through them.
+                                        // Unlike earlier, however, we can't skip through loops, as a loop with
+                                        // more than one iteration impacts the matched sequence for the concatenation,
+                                        // and since we need a minimum of one, we'd only be able to skip a loop with
+                                        // both a min and max of 1, which in general is removed as superfluous during
+                                        // tree optimization.
+                                        RegexNode child = SkipThroughAtomicAndCapture(node.Child(i));
+
+                                        switch (child.Kind)
+                                        {
+                                            case RegexNodeKind.One:
+                                                // For a single char, if we haven't branched yet, just append it to the ValueStringBuilder.
+                                                // Otherwise, append it to every string in our branched list.
+                                                if (concatStrings is null)
+                                                {
+                                                    vsb.Append(child.Ch);
+                                                }
+                                                else
+                                                {
+                                                    for (int s = 0; s < concatStrings.Length; s++)
+                                                    {
+                                                        concatStrings[s] += GetCharString(child.Ch);
+                                                    }
+                                                }
+                                                break;
+
+                                            case RegexNodeKind.Multi:
+                                                // For a string, if we haven't branched yet, just append it to the ValueStringBuilder.
+                                                // Otherwise, append it to every string in our branched list.
+                                                if (concatStrings is null)
+                                                {
+                                                    vsb.Append(child.Str);
+                                                }
+                                                else
+                                                {
+                                                    for (int s = 0; s < concatStrings.Length; s++)
+                                                    {
+                                                        concatStrings[s] += child.Str;
+                                                    }
+                                                }
+                                                break;
+
+                                            case RegexNodeKind.Set when concatStrings is null && !RegexCharClass.IsNegated(child.Str!): // if we've already branched for a set, don't again
+                                                // For a set when we haven't branched yet, get the characters that comprise it, and if we
+                                                // were able to get any and it's under our maximum, upgrade from our ValueStringBuilder to
+                                                // the concatStrings list. This means
+                                                {
+                                                    int charCount = RegexCharClass.GetSetChars(child.Str!, setChars);
+                                                    if (charCount == 0)
+                                                    {
+                                                        // Couldn't process the set, so we can't continue to process the concatenation.
+                                                        goto default;
+                                                    }
+
+                                                    ReadOnlySpan<char> sliced = setChars.Slice(0, charCount);
+                                                    concatStrings = new string[sliced.Length];
+                                                    if (vsb.Length == 0)
+                                                    {
+                                                        // We don't have any prefix yet, so just add each set's char as its own string.
+                                                        for (int c = 0; c < sliced.Length; c++)
+                                                        {
+                                                            concatStrings[c] = GetCharString(sliced[c]);
+                                                        }
+                                                    }
+                                                    else
+                                                    {
+                                                        // We have a prefix, so for each char in the set, add a string comprised of
+                                                        // the current prefix plus that char.
+                                                        for (int c = 0; c < sliced.Length; c++)
+                                                        {
+                                                            vsb.Append(sliced[c]);
+                                                            concatStrings[c] = vsb.AsSpan().ToString();
+                                                            vsb.Length--;
+                                                        }
+                                                    }
+                                                }
+                                                break;
+
+                                            case RegexNodeKind.Alternate when concatStrings is null: // if we've already branched, don't again
+                                                // Process the alternation. Since we haven't yet branched, if we don't have any prefix yet
+                                                // for this concatenation, we can just use the alternation's prefixes as our prefixes.
+                                                // If we do have a prefix, we need to prepend that prefix onto each of the alternation's.
+                                                {
+                                                    concatStrings = FindPrefixesCore(child);
+                                                    if (concatStrings is not null)
+                                                    {
+                                                        if (vsb.Length != 0)
+                                                        {
+                                                            int currentLength = vsb.Length;
+                                                            for (int c = 0; c < concatStrings.Length; c++)
+                                                            {
+                                                                vsb.Append(concatStrings[c]);
+                                                                concatStrings[c] = vsb.AsSpan().ToString();
+                                                                vsb.Length = currentLength;
+                                                            }
+                                                        }
+                                                    }
+
+                                                    // If we failed to find any prefixes, we need to stop processing the concatenation.
+                                                    // But even if we found prefixes, we still need to stop processing the concatenation,
+                                                    // as the prefixes aren't guaranteed to be the full width of the child, in which case
+                                                    // the node coming after the altneration in the concatenation might not be contiguous
+                                                    // after every prefix.
+                                                    goto default;
+                                                }
+
+                                            case RegexNodeKind.Bol:
+                                            case RegexNodeKind.Eol:
+                                            case RegexNodeKind.Boundary:
+                                            case RegexNodeKind.ECMABoundary:
+                                            case RegexNodeKind.NonBoundary:
+                                            case RegexNodeKind.NonECMABoundary:
+                                            case RegexNodeKind.Beginning:
+                                            case RegexNodeKind.Start:
+                                            case RegexNodeKind.EndZ:
+                                            case RegexNodeKind.End:
+                                            case RegexNodeKind.Empty:
+                                            case RegexNodeKind.UpdateBumpalong:
+                                            case RegexNodeKind.PositiveLookaround:
+                                            case RegexNodeKind.NegativeLookaround:
+                                                // Zero-width anchors and assertions don't impact the prefix.
+                                                break;
+
+                                            default:
+                                                i = childCount; // exit the loop
+                                                break;
+                                        }
+                                    }
+
+                                    // Return multiple prefixes if we branched, or a single prefix if we didn't,
+                                    // or null if we didn't find any prefix.
+                                    return concatStrings ?? (vsb.Length != 0 ? new[] { vsb.ToString() } : null);
+                                }
+                                finally
+                                {
+                                    vsb.Dispose();
+                                }
+                            }
+
+                        default:
+                            return null;
+                    }
+                }
+            }
+        }
+
         /// <summary>Computes the leading substring in <paramref name="node"/>; may be empty.</summary>
         public static string FindPrefix(RegexNode node)
         {
@@ -787,10 +1110,7 @@ namespace System.Text.RegularExpressions
             // Find the first concatenation.  We traverse through atomic and capture nodes as they don't effect flow control.  (We don't
             // want to explore loops, even if they have a guaranteed iteration, because we may use information about the node to then
             // skip the node's execution in the matching algorithm, and we would need to special-case only skipping the first iteration.)
-            while (node.Kind is RegexNodeKind.Atomic or RegexNodeKind.Capture)
-            {
-                node = node.Child(0);
-            }
+            node = SkipThroughAtomicAndCapture(node);
             if (node.Kind != RegexNodeKind.Concatenate)
             {
                 return null;
@@ -961,6 +1281,16 @@ namespace System.Text.RegularExpressions
                         return RegexNodeKind.Unknown;
                 }
             }
+        }
+
+        /// <summary>Walk through a node's children as long as the nodes are atomic or capture.</summary>
+        private static RegexNode SkipThroughAtomicAndCapture(RegexNode node)
+        {
+            while (node.Kind is RegexNodeKind.Atomic or RegexNodeKind.Capture)
+            {
+                node = node.Child(0);
+            }
+            return node;
         }
 
         /// <summary>Percent occurrences in source text (100 * char count / total count).</summary>
