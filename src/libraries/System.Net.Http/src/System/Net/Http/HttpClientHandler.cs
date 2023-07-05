@@ -9,9 +9,10 @@ using System.Security.Authentication;
 using System.Security.Cryptography.X509Certificates;
 using System.Threading;
 using System.Threading.Tasks;
-using System.Diagnostics;
 using System.Diagnostics.Metrics;
 #if TARGET_BROWSER
+using System.Diagnostics;
+using System.Net.Http.Metrics;
 using HttpHandlerType = System.Net.Http.BrowserHttpHandler;
 #else
 using HttpHandlerType = System.Net.Http.SocketsHttpHandler;
@@ -25,7 +26,7 @@ namespace System.Net.Http
         private HttpMessageHandler? _handler;
 
 #if TARGET_BROWSER
-        private Meter _meter = MetricsHandler.DefaultMeter;
+        private IMeterFactory? _meterFactory;
 #endif
 
         private ClientCertificateOption _clientCertificateOptions;
@@ -47,7 +48,7 @@ namespace System.Net.Http
             {
                 handler = new DiagnosticsHandler(handler, DistributedContextPropagator.Current);
             }
-            handler = new MetricsHandler(handler, _meter);
+            handler = new MetricsHandler(handler, _meterFactory);
 #endif
             // Ensure a single handler is used for all requests.
             if (Interlocked.CompareExchange(ref _handler, handler, null) != null)
@@ -76,32 +77,18 @@ namespace System.Net.Http
 
         public IMeterFactory? MeterFactory
         {
-            get => throw new NotImplementedException();
+#if TARGET_BROWSER
+            get => _meterFactory;
             set
             {
-                throw new NotImplementedException();
+                CheckDisposedOrStarted();
+                _meterFactory = value;
             }
+#else
+            get => _underlyingHandler.MeterFactory;
+            set => _underlyingHandler.MeterFactory = value;
+#endif
         }
-//        public Meter Meter
-//        {
-//#if TARGET_BROWSER
-//            get => _meter;
-//            set
-//            {
-//                ArgumentNullException.ThrowIfNull(value);
-//                if (value.Name != "System.Net.Http")
-//                {
-//                    throw new ArgumentException("Meter name must be 'System.Net.Http'.");
-//                }
-
-//                CheckDisposedOrStarted();
-//                _meter = value;
-//            }
-//#else
-//            get => _underlyingHandler.Meter;
-//            set => _underlyingHandler.Meter = value;
-//#endif
-//        }
 
         [UnsupportedOSPlatform("browser")]
         public bool UseCookies

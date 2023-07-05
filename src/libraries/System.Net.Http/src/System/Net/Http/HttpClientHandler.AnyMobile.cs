@@ -8,6 +8,7 @@ using System.Diagnostics;
 using System.Diagnostics.CodeAnalysis;
 using System.Diagnostics.Metrics;
 using System.Globalization;
+using System.Net.Http.Metrics;
 using System.Net.Security;
 using System.Reflection;
 using System.Runtime.ExceptionServices;
@@ -28,7 +29,7 @@ namespace System.Net.Http
         private static readonly ConcurrentDictionary<string, MethodInfo?> s_cachedMethods =
             new ConcurrentDictionary<string, MethodInfo?>();
 
-        private Meter _meter = MetricsHandler.DefaultMeter;
+        private IMeterFactory? _meterFactory;
         private ClientCertificateOption _clientCertificateOptions;
 
         private volatile bool _disposed;
@@ -68,28 +69,13 @@ namespace System.Net.Http
         [CLSCompliant(false)]
         public IMeterFactory? MeterFactory
         {
-            get => throw new NotImplementedException();
+            get => _meterFactory;
             set
             {
-                throw new NotImplementedException();
+                CheckDisposedOrStarted();
+                _meterFactory = value;
             }
         }
-        //[CLSCompliant(false)]
-        //public Meter Meter
-        //{
-        //    get => _meter;
-        //    set
-        //    {
-        //        ArgumentNullException.ThrowIfNull(value);
-        //        if (value.Name != "System.Net.Http")
-        //        {
-        //            throw new ArgumentException("Meter name must be 'System.Net.Http'.");
-        //        }
-
-        //        CheckDisposedOrStarted();
-        //        _meter = value;
-        //    }
-        //}
 
         [UnsupportedOSPlatform("browser")]
         public bool UseCookies
@@ -755,7 +741,7 @@ namespace System.Net.Http
             {
                 handler = new DiagnosticsHandler(handler, DistributedContextPropagator.Current);
             }
-            handler = new MetricsHandler(handler, _meter);
+            handler = new MetricsHandler(handler, _meterFactory);
 
             // Ensure a single handler is used for all requests.
             if (Interlocked.CompareExchange(ref _handler, handler, null) != null)

@@ -11,6 +11,7 @@ using System.Diagnostics.CodeAnalysis;
 using System.Text;
 using System.Diagnostics;
 using System.Diagnostics.Metrics;
+using System.Net.Http.Metrics;
 
 namespace System.Net.Http
 {
@@ -454,27 +455,13 @@ namespace System.Net.Http
         [CLSCompliant(false)]
         public IMeterFactory? MeterFactory
         {
-            get => throw new NotImplementedException();
+            get => _settings._meterFactory;
             set
             {
-                throw new NotImplementedException();
+                CheckDisposedOrStarted();
+                _settings._meterFactory = value;
             }
         }
-        //public Meter Meter
-        //{
-        //    get => _settings._meter;
-        //    set
-        //    {
-        //        ArgumentNullException.ThrowIfNull(value);
-        //        if (value.Name != "System.Net.Http")
-        //        {
-        //            throw new ArgumentException("Meter name must be 'System.Net.Http'.");
-        //        }
-
-        //        CheckDisposedOrStarted();
-        //        _settings._meter = value;
-        //    }
-        //}
 
         protected override void Dispose(bool disposing)
         {
@@ -512,7 +499,7 @@ namespace System.Net.Http
                 handler = new DiagnosticsHandler(handler, propagator, settings._allowAutoRedirect);
             }
 
-            handler = new MetricsHandler(handler, _settings._meter);
+            handler = new MetricsHandler(handler, _settings._meterFactory);
 
             if (settings._allowAutoRedirect)
             {

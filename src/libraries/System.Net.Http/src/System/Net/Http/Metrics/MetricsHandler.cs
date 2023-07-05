@@ -5,195 +5,196 @@ using System.Collections.Frozen;
 using System.Collections.Generic;
 using System.Diagnostics;
 using System.Diagnostics.Metrics;
-using System.Net.Http.Metrics;
 using System.Threading;
 using System.Threading.Tasks;
 
-namespace System.Net.Http;
-
-internal sealed class MetricsHandler : HttpMessageHandlerStage, IHttpMetricsLogger
+namespace System.Net.Http.Metrics
 {
-    private readonly HttpMessageHandler _innerHandler;
-    private readonly UpDownCounter<long> _currentRequests;
-    private readonly Counter<long> _failedRequests;
-    private readonly Histogram<double> _requestsDuration;
-
-    [ThreadStatic]
-    private static HttpMetricsEnrichmentContext? s_cachedEnrichmentContext;
-
-    public MetricsHandler(HttpMessageHandler innerHandler, Meter meter)
+    internal sealed class MetricsHandler : HttpMessageHandlerStage, IHttpMetricsLogger
     {
-        _innerHandler = innerHandler;
+        private readonly HttpMessageHandler _innerHandler;
+        private readonly UpDownCounter<long> _currentRequests;
+        private readonly Counter<long> _failedRequests;
+        private readonly Histogram<double> _requestsDuration;
 
-        // Meter has a cache for
-        _currentRequests = meter.CreateUpDownCounter<long>(
-            "http-client-current-requests",
-            description: "Number of outbound HTTP requests that are currently active on the client.");
-        _failedRequests = meter.CreateCounter<long>(
-            "http-client-failed-requests",
-            description: "Number of outbound HTTP requests that have failed.");
-        _requestsDuration = meter.CreateHistogram<double>(
-            "http-client-request-duration",
-            unit: "s",
-            description: "The duration of outbound HTTP requests.");
-    }
+        [ThreadStatic]
+        private static HttpMetricsEnrichmentContext? s_cachedEnrichmentContext;
 
-    public static Meter DefaultMeter { get; } = new SharedMeter();
-
-    internal override ValueTask<HttpResponseMessage> SendAsync(HttpRequestMessage request, bool async, CancellationToken cancellationToken)
-    {
-        if (_currentRequests.Enabled || _failedRequests.Enabled || _requestsDuration.Enabled)
+        public MetricsHandler(HttpMessageHandler innerHandler, IMeterFactory? meterFactory)
         {
-            ArgumentNullException.ThrowIfNull(request);
-            return SendAsyncWithMetrics(request, async, cancellationToken);
+            _innerHandler = innerHandler;
+
+            Meter meter = meterFactory?.Create("System.Net.Http") ?? DefaultMeter;
+
+            // Meter has a cache for
+            _currentRequests = meter.CreateUpDownCounter<long>(
+                "http-client-current-requests",
+                description: "Number of outbound HTTP requests that are currently active on the client.");
+            _failedRequests = meter.CreateCounter<long>(
+                "http-client-failed-requests",
+                description: "Number of outbound HTTP requests that have failed.");
+            _requestsDuration = meter.CreateHistogram<double>(
+                "http-client-request-duration",
+                unit: "s",
+                description: "The duration of outbound HTTP requests.");
         }
-        else
-        {
-            return async ?
-                new ValueTask<HttpResponseMessage>(_innerHandler.SendAsync(request, cancellationToken)) :
-                new ValueTask<HttpResponseMessage>(_innerHandler.Send(request, cancellationToken));
-        }
-    }
 
-    private async ValueTask<HttpResponseMessage> SendAsyncWithMetrics(HttpRequestMessage request, bool async, CancellationToken cancellationToken)
-    {
-        (long startTimestamp, bool recordCurrentRequests) = RequestStart(request);
-        HttpResponseMessage? response = null;
-        Exception? exception = null;
-        try
+        public static Meter DefaultMeter { get; } = new SharedMeter();
+
+        internal override ValueTask<HttpResponseMessage> SendAsync(HttpRequestMessage request, bool async, CancellationToken cancellationToken)
         {
-            response = async ?
-                await _innerHandler.SendAsync(request, cancellationToken).ConfigureAwait(false) :
-                _innerHandler.Send(request, cancellationToken);
-            if (_failedRequests.Enabled)
+            if (_currentRequests.Enabled || _failedRequests.Enabled || _requestsDuration.Enabled)
             {
-                // No exception has been thrown to the point of reading headers, but errors can still occur while buffering the response content in HttpClient.
-                // We need to report http-client-failed-requests if it happens.
-                response.HttpMetricsLogger = this;
+                ArgumentNullException.ThrowIfNull(request);
+                return SendAsyncWithMetrics(request, async, cancellationToken);
             }
-            return response;
+            else
+            {
+                return async ?
+                    new ValueTask<HttpResponseMessage>(_innerHandler.SendAsync(request, cancellationToken)) :
+                    new ValueTask<HttpResponseMessage>(_innerHandler.Send(request, cancellationToken));
+            }
         }
-        catch (Exception ex)
+
+        private async ValueTask<HttpResponseMessage> SendAsyncWithMetrics(HttpRequestMessage request, bool async, CancellationToken cancellationToken)
         {
-            exception = ex;
-            throw;
+            (long startTimestamp, bool recordCurrentRequests) = RequestStart(request);
+            HttpResponseMessage? response = null;
+            Exception? exception = null;
+            try
+            {
+                response = async ?
+                    await _innerHandler.SendAsync(request, cancellationToken).ConfigureAwait(false) :
+                    _innerHandler.Send(request, cancellationToken);
+                if (_failedRequests.Enabled)
+                {
+                    // No exception has been thrown to the point of reading headers, but errors can still occur while buffering the response content in HttpClient.
+                    // We need to report http-client-failed-requests if it happens.
+                    response.HttpMetricsLogger = this;
+                }
+                return response;
+            }
+            catch (Exception ex)
+            {
+                exception = ex;
+                throw;
+            }
+            finally
+            {
+                RequestStop(request, response, exception, startTimestamp, recordCurrentRequests);
+            }
         }
-        finally
+
+        protected override void Dispose(bool disposing)
         {
-            RequestStop(request, response, exception, startTimestamp, recordCurrentRequests);
-        }
-    }
+            if (disposing)
+            {
+                _innerHandler.Dispose();
+            }
 
-    protected override void Dispose(bool disposing)
-    {
-        if (disposing)
+            base.Dispose(disposing);
+        }
+
+        private (long StartTimestamp, bool RecordCurrentRequests) RequestStart(HttpRequestMessage request)
         {
-            _innerHandler.Dispose();
+            bool recordCurrentRequests = _currentRequests.Enabled;
+            long startTimestamp = Stopwatch.GetTimestamp();
+
+            if (recordCurrentRequests)
+            {
+                TagList tags = InitializeCommonTags(request);
+                _currentRequests.Add(1, tags);
+            }
+
+            return (startTimestamp, recordCurrentRequests);
         }
 
-        base.Dispose(disposing);
-    }
-
-    private (long StartTimestamp, bool RecordCurrentRequests) RequestStart(HttpRequestMessage request)
-    {
-        bool recordCurrentRequests = _currentRequests.Enabled;
-        long startTimestamp = Stopwatch.GetTimestamp();
-
-        if (recordCurrentRequests)
+        private void RequestStop(HttpRequestMessage request, HttpResponseMessage? response, Exception? exception, long startTimestamp, bool recordCurrentRequsts)
         {
             TagList tags = InitializeCommonTags(request);
-            _currentRequests.Add(1, tags);
-        }
 
-        return (startTimestamp, recordCurrentRequests);
-    }
-
-    private void RequestStop(HttpRequestMessage request, HttpResponseMessage? response, Exception? exception, long startTimestamp, bool recordCurrentRequsts)
-    {
-        TagList tags = InitializeCommonTags(request);
-
-        if (recordCurrentRequsts)
-        {
-            _currentRequests.Add(-1, tags);
-        }
-
-        bool recordRequestDuration = _requestsDuration.Enabled;
-        bool recordFailedRequests = _failedRequests.Enabled && response is null;
-
-        if (recordRequestDuration || recordFailedRequests)
-        {
-            ApplyExtendedTags(ref tags, request, response, exception);
-        }
-
-        if (recordRequestDuration)
-        {
-            TimeSpan duration = Stopwatch.GetElapsedTime(startTimestamp, Stopwatch.GetTimestamp());
-            _requestsDuration.Record(duration.TotalSeconds, tags);
-        }
-
-        if (recordFailedRequests)
-        {
-            _failedRequests.Add(1, tags);
-        }
-    }
-
-    private static void ApplyExtendedTags(ref TagList tags, HttpRequestMessage request, HttpResponseMessage? response, Exception? exception)
-    {
-        if (response is not null)
-        {
-            tags.Add("status-code", GetBoxedStatusCode((int)response.StatusCode));
-            tags.Add("protocol", GetProtocolName(response.Version));
-        }
-
-        s_cachedEnrichmentContext ??= new HttpMetricsEnrichmentContext();
-
-        // Protect against re-entrancy
-        HttpMetricsEnrichmentContext enrichmentContext = s_cachedEnrichmentContext.InProgress ?
-            new HttpMetricsEnrichmentContext() :
-            s_cachedEnrichmentContext;
-
-        enrichmentContext.ApplyEnrichment(request, response, exception, ref tags);
-    }
-
-    private static string GetProtocolName(Version httpVersion) => (httpVersion.Major, httpVersion.Minor) switch
-    {
-        (1, 0) => "HTTP/1.0",
-        (1, 1) => "HTTP/1.1",
-        (2, 0) => "HTTP/2",
-        (3, 0) => "HTTP/3",
-        _ => $"HTTP/{httpVersion.Major}.{httpVersion.Minor}"
-    };
-
-    private static TagList InitializeCommonTags(HttpRequestMessage request)
-    {
-        TagList tags = default;
-
-        if (request.RequestUri is Uri requestUri && requestUri.IsAbsoluteUri)
-        {
-            tags.Add("scheme", requestUri.Scheme);
-            tags.Add("host", requestUri.Host);
-            // Add port tag when not the default value for the current scheme
-            if (!requestUri.IsDefaultPort)
+            if (recordCurrentRequsts)
             {
-                tags.Add("port", requestUri.Port);
+                _currentRequests.Add(-1, tags);
+            }
+
+            bool recordRequestDuration = _requestsDuration.Enabled;
+            bool recordFailedRequests = _failedRequests.Enabled && response is null;
+
+            if (recordRequestDuration || recordFailedRequests)
+            {
+                ApplyExtendedTags(ref tags, request, response, exception);
+            }
+
+            if (recordRequestDuration)
+            {
+                TimeSpan duration = Stopwatch.GetElapsedTime(startTimestamp, Stopwatch.GetTimestamp());
+                _requestsDuration.Record(duration.TotalSeconds, tags);
+            }
+
+            if (recordFailedRequests)
+            {
+                _failedRequests.Add(1, tags);
             }
         }
-        tags.Add("method", request.Method.Method);
 
-        return tags;
-    }
+        private static void ApplyExtendedTags(ref TagList tags, HttpRequestMessage request, HttpResponseMessage? response, Exception? exception)
+        {
+            if (response is not null)
+            {
+                tags.Add("status-code", GetBoxedStatusCode((int)response.StatusCode));
+                tags.Add("protocol", GetProtocolName(response.Version));
+            }
 
-    void IHttpMetricsLogger.LogRequestFailed(HttpResponseMessage response, Exception exception)
-    {
-        Debug.Assert(response.RequestMessage is not null);
-        TagList tags = InitializeCommonTags(response.RequestMessage);
-        ApplyExtendedTags(ref tags, response.RequestMessage, response, exception);
-        _failedRequests.Add(1, tags);
-    }
+            s_cachedEnrichmentContext ??= new HttpMetricsEnrichmentContext();
 
-    // Status Codes listed at http://www.iana.org/assignments/http-status-codes/http-status-codes.xhtml
-    private static readonly FrozenDictionary<int, object> s_boxedStatusCodes = FrozenDictionary.ToFrozenDictionary(new[]
-    {
+            // Protect against re-entrancy
+            HttpMetricsEnrichmentContext enrichmentContext = s_cachedEnrichmentContext.InProgress ?
+                new HttpMetricsEnrichmentContext() :
+                s_cachedEnrichmentContext;
+
+            enrichmentContext.ApplyEnrichment(request, response, exception, ref tags);
+        }
+
+        private static string GetProtocolName(Version httpVersion) => (httpVersion.Major, httpVersion.Minor) switch
+        {
+            (1, 0) => "HTTP/1.0",
+            (1, 1) => "HTTP/1.1",
+            (2, 0) => "HTTP/2",
+            (3, 0) => "HTTP/3",
+            _ => $"HTTP/{httpVersion.Major}.{httpVersion.Minor}"
+        };
+
+        private static TagList InitializeCommonTags(HttpRequestMessage request)
+        {
+            TagList tags = default;
+
+            if (request.RequestUri is Uri requestUri && requestUri.IsAbsoluteUri)
+            {
+                tags.Add("scheme", requestUri.Scheme);
+                tags.Add("host", requestUri.Host);
+                // Add port tag when not the default value for the current scheme
+                if (!requestUri.IsDefaultPort)
+                {
+                    tags.Add("port", requestUri.Port);
+                }
+            }
+            tags.Add("method", request.Method.Method);
+
+            return tags;
+        }
+
+        void IHttpMetricsLogger.LogRequestFailed(HttpResponseMessage response, Exception exception)
+        {
+            Debug.Assert(response.RequestMessage is not null);
+            TagList tags = InitializeCommonTags(response.RequestMessage);
+            ApplyExtendedTags(ref tags, response.RequestMessage, response, exception);
+            _failedRequests.Add(1, tags);
+        }
+
+        // Status Codes listed at http://www.iana.org/assignments/http-status-codes/http-status-codes.xhtml
+        private static readonly FrozenDictionary<int, object> s_boxedStatusCodes = FrozenDictionary.ToFrozenDictionary(new[]
+        {
         KeyValuePair.Create<int, object>(100, 100),
         KeyValuePair.Create<int, object>(101, 101),
         KeyValuePair.Create<int, object>(102, 102),
@@ -263,26 +264,27 @@ internal sealed class MetricsHandler : HttpMessageHandlerStage, IHttpMetricsLogg
         KeyValuePair.Create<int, object>(511, 511)
     });
 
-    private static object GetBoxedStatusCode(int statusCode)
-    {
-        if (s_boxedStatusCodes.TryGetValue(statusCode, out object? result))
+        private static object GetBoxedStatusCode(int statusCode)
         {
-            return result;
+            if (s_boxedStatusCodes.TryGetValue(statusCode, out object? result))
+            {
+                return result;
+            }
+
+            return statusCode;
         }
 
-        return statusCode;
-    }
-
-    private sealed class SharedMeter : Meter
-    {
-        public SharedMeter()
-            : base("System.Net.Http")
+        private sealed class SharedMeter : Meter
         {
-        }
+            public SharedMeter()
+                : base("System.Net.Http")
+            {
+            }
 
-        protected override void Dispose(bool disposing)
-        {
-            // NOP to prevent disposing the global instance from arbitrary user code.
+            protected override void Dispose(bool disposing)
+            {
+                // NOP to prevent disposing the global instance from arbitrary user code.
+            }
         }
     }
 }
