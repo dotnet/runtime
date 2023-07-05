@@ -154,11 +154,8 @@ namespace System
 
             ValidateTimeZoneInfo(_id, _baseUtcOffset, _adjustmentRules, out _supportsDaylightSavingTime);
             _displayName = standardName;
-            _displayNameSet = true;
             _standardDisplayName = standardName;
-            _standardDisplayNameSet = true;
             _daylightDisplayName = zone.GetDaylightName();
-            _daylightDisplayNameSet = true;
         }
 
         /// <summary>

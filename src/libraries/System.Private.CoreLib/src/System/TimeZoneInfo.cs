@@ -44,11 +44,8 @@ namespace System
         private const int MaxKeyLength = 255;
 
         private readonly string _id;
-        private bool _displayNameSet;
         private string? _displayName;
-        private bool _standardDisplayNameSet;
         private string? _standardDisplayName;
-        private bool _daylightDisplayNameSet;
         private string? _daylightDisplayName;
         private readonly TimeSpan _baseUtcOffset;
         private readonly bool _supportsDaylightSavingTime;
@@ -153,11 +150,8 @@ namespace System
         {
             get
             {
-                if (_displayName == null && !_displayNameSet)
-                {
+                if (_displayName == null)
                     Interlocked.CompareExchange(ref _displayName, PopulateDisplayName(), null);
-                    _displayNameSet = true;
-                }
 
                 return _displayName ?? string.Empty;
             }
@@ -167,11 +161,8 @@ namespace System
         {
             get
             {
-                if (_standardDisplayName == null && !_standardDisplayNameSet)
-                {
+                if (_standardDisplayName == null)
                     Interlocked.CompareExchange(ref _standardDisplayName, PopulateStandardDisplayName(), null);
-                    _standardDisplayNameSet = true;
-                }
 
                 return _standardDisplayName ?? string.Empty;
             }
@@ -181,11 +172,8 @@ namespace System
         {
             get
             {
-                if (_daylightDisplayName == null && !_daylightDisplayNameSet)
-                {
+                if (_daylightDisplayName == null)
                     Interlocked.CompareExchange(ref _daylightDisplayName, PopulateDaylightDisplayName(), null);
-                    _daylightDisplayNameSet = true;
-                }
 
                 return _daylightDisplayName ?? string.Empty;
             }
@@ -1002,11 +990,8 @@ namespace System
             _id = id;
             _baseUtcOffset = baseUtcOffset;
             _displayName = displayName;
-            _displayNameSet = true;
             _standardDisplayName = standardDisplayName;
-            _standardDisplayNameSet = true;
             _daylightDisplayName = disableDaylightSavingTime ? null : daylightDisplayName;
-            _daylightDisplayNameSet = true;
             _supportsDaylightSavingTime = adjustmentRulesSupportDst && !disableDaylightSavingTime;
             _adjustmentRules = adjustmentRules;
 
@@ -1027,9 +1012,9 @@ namespace System
             return new TimeZoneInfo(
                 id,
                 baseUtcOffset,
-                displayName,
-                standardDisplayName,
-                standardDisplayName,
+                displayName ?? string.Empty,
+                standardDisplayName ?? string.Empty,
+                standardDisplayName ?? string.Empty,
                 adjustmentRules: null,
                 disableDaylightSavingTime: false,
                 hasIanaId);
@@ -1049,9 +1034,9 @@ namespace System
             return CreateCustomTimeZone(
                 id,
                 baseUtcOffset,
-                displayName,
-                standardDisplayName,
-                daylightDisplayName,
+                displayName ?? string.Empty,
+                standardDisplayName ?? string.Empty,
+                daylightDisplayName ?? string.Empty,
                 adjustmentRules,
                 disableDaylightSavingTime: false);
         }
@@ -1078,9 +1063,9 @@ namespace System
             return new TimeZoneInfo(
                 id,
                 baseUtcOffset,
-                displayName,
-                standardDisplayName,
-                daylightDisplayName,
+                displayName ?? string.Empty,
+                standardDisplayName ?? string.Empty,
+                daylightDisplayName ?? string.Empty,
                 adjustmentRules,
                 disableDaylightSavingTime,
                 hasIanaId);
@@ -1151,11 +1136,8 @@ namespace System
 
             _id = (string)info.GetValue("Id", typeof(string))!; // Do not rename (binary serialization)
             _displayName = (string?)info.GetValue("DisplayName", typeof(string)); // Do not rename (binary serialization)
-            _displayNameSet = true;
             _standardDisplayName = (string?)info.GetValue("StandardName", typeof(string)); // Do not rename (binary serialization)
-            _standardDisplayNameSet = true;
             _daylightDisplayName = (string?)info.GetValue("DaylightName", typeof(string)); // Do not rename (binary serialization)
-            _daylightDisplayNameSet = true;
             _baseUtcOffset = (TimeSpan)info.GetValue("BaseUtcOffset", typeof(TimeSpan))!; // Do not rename (binary serialization)
             _adjustmentRules = (AdjustmentRule[]?)info.GetValue("AdjustmentRules", typeof(AdjustmentRule[])); // Do not rename (binary serialization)
             _supportsDaylightSavingTime = (bool)info.GetValue("SupportsDaylightSavingTime", typeof(bool))!; // Do not rename (binary serialization)
