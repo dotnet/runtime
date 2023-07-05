@@ -8,7 +8,7 @@ using System.Runtime.Serialization;
 namespace System
 {
     /// <summary>
-    /// The exception that is thrown when there is an attempt to dynamically access a method that does not exist,
+    /// The exception that is thrown when an invoked method is not supported,
     /// typically because it should have been implemented on a subclass.
     /// </summary>
     [Serializable]
