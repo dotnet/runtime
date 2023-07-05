@@ -69,9 +69,7 @@ namespace System.Buffers
         {
             if (typeof(TCaseSensitivity) == typeof(StringSearchValuesHelper.CaseInsensitiveUnicode))
             {
-                return GlobalizationMode.UseNls
-                    ? IndexOfAnyCaseInsensitiveUnicodeNls<TFastScanVariant>(span)
-                    : IndexOfAnyCaseInsensitiveUnicodeIcuOrInvariant<TFastScanVariant>(span);
+                return IndexOfAnyCaseInsensitiveUnicode<TFastScanVariant>(span);
             }
 
             return IndexOfAnyCore<TCaseSensitivity, TFastScanVariant>(span);
@@ -81,10 +79,7 @@ namespace System.Buffers
             where TCaseSensitivity : struct, StringSearchValuesHelper.ICaseSensitivity
             where TFastScanVariant : struct, IFastScan
         {
-            if (typeof(TCaseSensitivity) == typeof(StringSearchValuesHelper.CaseInsensitiveUnicode))
-            {
-                throw new UnreachableException();
-            }
+            Debug.Assert(typeof(TCaseSensitivity) != typeof(StringSearchValuesHelper.CaseInsensitiveUnicode));
 
             ref AhoCorasickNode nodes = ref MemoryMarshal.GetArrayDataReference(_nodes);
             int nodeIndex = 0;
@@ -171,11 +166,9 @@ namespace System.Buffers
         }
 
         // Mostly a copy of IndexOfAnyCore, but we may read two characters at a time in the case of surrogate pairs.
-        private readonly int IndexOfAnyCaseInsensitiveUnicodeIcuOrInvariant<TFastScanVariant>(ReadOnlySpan<char> span)
+        private readonly int IndexOfAnyCaseInsensitiveUnicode<TFastScanVariant>(ReadOnlySpan<char> span)
             where TFastScanVariant : struct, IFastScan
         {
-            Debug.Assert(!GlobalizationMode.UseNls);
-
             const char LowSurrogateNotSet = '\0';
 
             ref AhoCorasickNode nodes = ref MemoryMarshal.GetArrayDataReference(_nodes);
@@ -234,14 +227,22 @@ namespace System.Buffers
                     (uint)(i + 1) < (uint)span.Length &&
                     char.IsLowSurrogate(lowSurrogate = Unsafe.Add(ref MemoryMarshal.GetReference(span), i + 1)))
                 {
-                    SurrogateCasing.ToUpper(c, lowSurrogate, out c, out lowSurrogateUpper);
+                    if (GlobalizationMode.UseNls)
+                    {
+                        SurrogateToUpperNLS(c, lowSurrogate, out c, out lowSurrogateUpper);
+                    }
+                    else
+                    {
+                        SurrogateCasing.ToUpper(c, lowSurrogate, out c, out lowSurrogateUpper);
+                    }
+
                     Debug.Assert(lowSurrogateUpper != LowSurrogateNotSet);
                 }
                 else
                 {
-                    c = GlobalizationMode.Invariant
-                        ? InvariantModeCasing.ToUpper(c)
-                        : OrdinalCasing.ToUpper(c);
+                    c = GlobalizationMode.Invariant ? InvariantModeCasing.ToUpper(c) :
+                        GlobalizationMode.UseNls ? TextInfo.ToUpperOrdinalNls(c) :
+                        OrdinalCasing.ToUpper(c);
                 }
 
 #if DEBUG
@@ -297,78 +298,19 @@ namespace System.Buffers
             return result;
         }
 
-        private readonly int IndexOfAnyCaseInsensitiveUnicodeNls<TFastScanVariant>(ReadOnlySpan<char> span)
-            where TFastScanVariant : struct, IFastScan
+        private static void SurrogateToUpperNLS(char h, char l, out char hr, out char lr)
         {
-            Debug.Assert(GlobalizationMode.UseNls);
+            Debug.Assert(char.IsHighSurrogate(h));
+            Debug.Assert(char.IsLowSurrogate(l));
 
-            if (span.IsEmpty)
-            {
-                return -1;
-            }
+            Span<char> chars = stackalloc char[] { h, l };
+            Span<char> destination = stackalloc char[2];
 
-            // If the input is large, we avoid uppercasing all of it upfront.
-            // We may find a match at position 0, so we want to behave closer to O(match offset) than O(input length).
-#if DEBUG
-            // Make it easier to test with shorter inputs
-            const int StackallocThreshold = 32;
-#else
-            // This limit isn't just about how much we allocate on the stack, but also how we chunk the input span.
-            // A larger value would improve throughput for rare matches, while a lower number reduces the overhead
-            // when matches are found close to the start.
-            const int StackallocThreshold = 64;
-#endif
+            int written = Ordinal.ToUpperOrdinal(chars, destination);
+            Debug.Assert(written == 2);
 
-            int minBufferSize = (int)Math.Clamp(_maxValueLength * 4L, StackallocThreshold, string.MaxLength + 1);
-
-            char[]? pooledArray = null;
-            Span<char> buffer = minBufferSize <= StackallocThreshold
-                ? stackalloc char[StackallocThreshold]
-                : (pooledArray = ArrayPool<char>.Shared.Rent(minBufferSize));
-
-            int leftoverFromPreviousIteration = 0;
-            int offsetFromStart = 0;
-            int result;
-
-            while (true)
-            {
-                Span<char> newSpaceAvailable = buffer.Slice(leftoverFromPreviousIteration);
-                int toConvert = Math.Min(span.Length, newSpaceAvailable.Length);
-
-                int charsWritten = Ordinal.ToUpperOrdinal(span.Slice(0, toConvert), newSpaceAvailable);
-                Debug.Assert(charsWritten == toConvert);
-                span = span.Slice(toConvert);
-
-                Span<char> upperCaseBuffer = buffer.Slice(0, leftoverFromPreviousIteration + toConvert);
-
-                // CaseSensitive instead of CaseInsensitiveUnicode as we've already done the case conversion.
-                result = IndexOfAnyCore<StringSearchValuesHelper.CaseSensitive, TFastScanVariant>(upperCaseBuffer);
-
-                // Even if we found a result, it is possible that an earlier match exists if we ran out of upperCaseBuffer.
-                // If that is the case, we will find the correct result in the next loop iteration.
-                if (result >= 0 && (span.IsEmpty || result <= buffer.Length - _maxValueLength))
-                {
-                    result += offsetFromStart;
-                    break;
-                }
-
-                if (span.IsEmpty)
-                {
-                    result = -1;
-                    break;
-                }
-
-                leftoverFromPreviousIteration = _maxValueLength - 1;
-                buffer.Slice(buffer.Length - leftoverFromPreviousIteration).CopyTo(buffer);
-                offsetFromStart += buffer.Length - leftoverFromPreviousIteration;
-            }
-
-            if (pooledArray is not null)
-            {
-                ArrayPool<char>.Shared.Return(pooledArray);
-            }
-
-            return result;
+            hr = destination[0];
+            lr = destination[1];
         }
 
         public interface IFastScan { }

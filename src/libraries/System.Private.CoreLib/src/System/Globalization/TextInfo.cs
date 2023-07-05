@@ -190,6 +190,16 @@ namespace System.Globalization
             return dst;
         }
 
+        internal static char ToUpperOrdinalNls(char c)
+        {
+            if (char.IsAscii(c))
+            {
+                return ToUpperAsciiInvariant(c);
+            }
+
+            return Invariant.ChangeCase(c, toUpper: true);
+        }
+
         [MethodImpl(MethodImplOptions.AggressiveInlining)]
         internal void ChangeCaseToLower(ReadOnlySpan<char> source, Span<char> destination)
         {
