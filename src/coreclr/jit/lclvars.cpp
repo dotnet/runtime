@@ -7646,10 +7646,9 @@ void Compiler::lvaDumpEntry(unsigned lclNum, FrameLayoutState curState, size_t r
     else if (varTypeIsStruct(varDsc->TypeGet()))
     {
         ClassLayout* layout = varDsc->GetLayout();
-        if (layout != nullptr)
+        if (layout != nullptr && layout->GetClassName() != nullptr)
         {
-            printf(" ");
-            gtDispClassLayout(layout, varDsc->TypeGet());
+            printf(" <%s>", layout->GetClassName());
         }
     }
 
