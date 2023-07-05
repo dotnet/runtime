@@ -320,10 +320,22 @@ public class Program
         Compare_Int32_Nullable(-1, null);
         Compare_Enum_Int32_Nullable(null, null);
 
+        GenericsTest();
         GetTypeTests();
         GetHashCodeTests();
 
         return s_ReturnCode;
+    }
+
+    private static void GenericsTest()
+    {
+        AssertEquals(true, Test<string, object>());
+
+        [MethodImpl(MethodImplOptions.NoInlining)]
+        static bool Test<T,U>()
+        {
+            return EqualityComparer<G<T,U>>.Default.Equals(default, default);
+        }
     }
 
     private static void GetTypeTests()
@@ -463,4 +475,9 @@ public struct StructGenericString<T> : IEquatable<string>, IComparable<string>
     
     public bool Equals(string s) => s == t?.ToString();
     public int CompareTo(string s) => Comparer<string>.Default.Compare(t?.ToString(), s);
+}
+
+struct G<T,U> : IEquatable<G<U,T>>
+{
+    public bool Equals(G<U,T> x) => false;
 }
