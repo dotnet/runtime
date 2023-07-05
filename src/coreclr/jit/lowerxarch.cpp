@@ -802,8 +802,8 @@ void Lowering::LowerCast(GenTree* tree)
     //       Reason: ulong -> float = ulong -> double -> float
     if (varTypeIsFloating(srcType))
     {
-        assert(!tree->gtOverflow());
-        assert(castToType != TYP_ULONG);
+        noway_assert(!tree->gtOverflow());
+        noway_assert(castToType != TYP_ULONG);
     }
     else if (srcType == TYP_UINT)
     {

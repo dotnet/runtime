@@ -301,7 +301,7 @@ GenTree* Compiler::fgMorphExpandCast(GenTreeCast* tree)
     // have the 2 GT_CAST nodes in the tree and we are combining them below.
     if (oper->OperIs(GT_CAST))
     {
-        GenTreeCast* innerCast = static_cast<GenTreeCast*>(oper);
+        GenTreeCast* innerCast = oper->AsCast();
 
         if (innerCast->IsUnsigned())
         {
