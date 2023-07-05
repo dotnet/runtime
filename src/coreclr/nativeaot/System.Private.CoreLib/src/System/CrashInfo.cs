@@ -9,7 +9,7 @@ using Internal.DeveloperExperience;
 
 namespace System
 {
-    internal unsafe class CrashInfo
+    internal unsafe struct CrashInfo
     {
         /// <summary>
         /// The kind or reason of crash for the triage JSON
@@ -37,8 +37,8 @@ namespace System
         private int _currentBufferIndex;
         private int _reservedBuffer;
         private bool _isCommaNeeded;
-        private int _maxBufferSize;
-        private byte* _bufferAddress;
+        private readonly int _maxBufferSize;
+        private readonly byte* _bufferAddress;
 
         public CrashInfo()
         {
@@ -58,7 +58,7 @@ namespace System
         /// <param name="reason"></param>
         /// <param name="crashingThreadId">the thread id of this crashing thread</param>
         /// <param name="message"></param>
-        public void Open(RhFailFastReason reason, ulong crashingThreadId, string? message)
+        public void Open(RhFailFastReason reason, ulong crashingThreadId, string message)
         {
             // Write the opening bracket and basic header which should never fail
             bool success = OpenValue(default, '{');
@@ -98,7 +98,7 @@ namespace System
         /// <param name="crashingThreadId">the thread id of this crashing thread</param>
         /// <param name="message">fail fast message, limited to 1024 chars</param>
         /// <returns>true - success, false - out of triage buffer space</returns>
-        private bool WriteHeader(RhFailFastReason reason, ulong crashingThreadId, string? message)
+        private bool WriteHeader(RhFailFastReason reason, ulong crashingThreadId, string message)
         {
             if (!WriteValue("version"u8, "1.0.0"u8))
                 return false;
@@ -124,11 +124,9 @@ namespace System
             if (!WriteHexValue("thread"u8, crashingThreadId))
                 return false;
 
-            if (message != null)
-            {
-                if (!WriteValue("message"u8, message, max: 1024))
-                    return false;
-            }
+            if (!WriteValue("message"u8, message, max: 1024))
+                return false;
+
             return true;
         }
 

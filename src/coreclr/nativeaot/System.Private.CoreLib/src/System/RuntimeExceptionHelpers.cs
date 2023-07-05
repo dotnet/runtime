@@ -188,6 +188,8 @@ namespace System
             ulong previousThreadId = Interlocked.CompareExchange(ref s_crashingThreadId, currentThreadId, 0);
             if (previousThreadId == 0)
             {
+                message ??= GetStringForFailFastReason(reason);
+
                 CrashInfo crashInfo = new();
                 crashInfo.Open(reason, s_crashingThreadId, message);
 
@@ -204,7 +206,6 @@ namespace System
                     else
                     {
                         prefix = "Process terminated. ";
-                        message ??= GetStringForFailFastReason(reason);
                         outputMessage = message;
                     }
 
