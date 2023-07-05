@@ -75,7 +75,6 @@ public:
     void Add(const Segment& segment);
     void Subtract(const Segment& segment);
     bool IsEmpty();
-    bool IsSingleSegment(Segment* result);
     bool CoveringSegment(Segment* result);
 
 #ifdef DEBUG

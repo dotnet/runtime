@@ -2,9 +2,8 @@
 // The .NET Foundation licenses this file to you under the MIT license.
 
 using System;
-using System.Diagnostics.Metrics;
 
-namespace Microsoft.Extensions.Diagnostics.Metrics
+namespace System.Diagnostics.Metrics
 {
     /// <summary>
     /// A factory for creating <see cref="Meter"/> instances.

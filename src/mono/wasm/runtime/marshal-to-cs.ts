@@ -20,6 +20,7 @@ import { stringToMonoStringRoot } from "./strings";
 import { GCHandle, GCHandleNull, JSMarshalerArgument, JSMarshalerArguments, JSMarshalerType, MarshalerToCs, MarshalerToJs, BoundMarshalerToCs, MarshalerType } from "./types/internal";
 import { TypedArray } from "./types/emscripten";
 import { addUnsettledPromise, settleUnsettledPromise } from "./pthreads/shared/eventloop";
+import { mono_log_warn } from "./logging";
 
 
 export function initialize_marshalers_to_cs(): void {
@@ -313,15 +314,25 @@ function _marshal_task_to_cs(arg: JSMarshalerArgument, value: Promise<any>, _?: 
         addUnsettledPromise();
 
     value.then(data => {
-        if (MonoWasmThreads)
-            settleUnsettledPromise();
-        runtimeHelpers.javaScriptExports.complete_task(gc_handle, null, data, res_converter || _marshal_cs_object_to_cs);
-        teardown_managed_proxy(holder, gc_handle); // this holds holder alive for finalizer, until the promise is freed, (holding promise instead would not work)
+        try {
+            if (MonoWasmThreads)
+                settleUnsettledPromise();
+            runtimeHelpers.javaScriptExports.complete_task(gc_handle, null, data, res_converter || _marshal_cs_object_to_cs);
+            teardown_managed_proxy(holder, gc_handle); // this holds holder alive for finalizer, until the promise is freed, (holding promise instead would not work)
+        }
+        catch (ex) {
+            mono_log_warn("Exception marshalling result of JS promise to CS: ", ex);
+        }
     }).catch(reason => {
-        if (MonoWasmThreads)
-            settleUnsettledPromise();
-        runtimeHelpers.javaScriptExports.complete_task(gc_handle, reason, null, undefined);
-        teardown_managed_proxy(holder, gc_handle); // this holds holder alive for finalizer, until the promise is freed
+        try {
+            if (MonoWasmThreads)
+                settleUnsettledPromise();
+            runtimeHelpers.javaScriptExports.complete_task(gc_handle, reason, null, undefined);
+            teardown_managed_proxy(holder, gc_handle); // this holds holder alive for finalizer, until the promise is freed
+        }
+        catch (ex) {
+            mono_log_warn("Exception marshalling error of JS promise to CS: ", ex);
+        }
     });
 }
 
