@@ -309,7 +309,7 @@ namespace System.Text.RegularExpressions
 
                 ScanBlank();
 
-                if (_pattern.Length - _pos == 0)
+                if (_pos == _pattern.Length)
                 {
                     ch = '!'; // nonspecial, means at end
                 }
@@ -389,7 +389,7 @@ namespace System.Text.RegularExpressions
                         break;
 
                     case '\\':
-                        if (_pattern.Length - _pos == 0)
+                        if (_pos == _pattern.Length)
                         {
                             throw MakeException(RegexParseError.UnescapedEndingBackslash, SR.UnescapedEndingBackslash);
                         }
@@ -431,7 +431,7 @@ namespace System.Text.RegularExpressions
 
                 ScanBlank();
 
-                if (_pattern.Length - _pos == 0 || !(isQuantifier = IsTrueQuantifier()))
+                if (_pos == _pattern.Length || !(isQuantifier = IsTrueQuantifier()))
                 {
                     AddConcatenate();
                     goto ContinueOuterScan;
@@ -467,11 +467,11 @@ namespace System.Text.RegularExpressions
                                 if (_pos < _pattern.Length && _pattern[_pos] == ',')
                                 {
                                     _pos++;
-                                    max = _pattern.Length - _pos == 0 || _pattern[_pos] == '}' ? int.MaxValue : ScanDecimal();
+                                    max = _pos == _pattern.Length || _pattern[_pos] == '}' ? int.MaxValue : ScanDecimal();
                                 }
                             }
 
-                            if (startpos == _pos || _pattern.Length - _pos == 0 || _pattern[_pos++] != '}')
+                            if (startpos == _pos || _pos == _pattern.Length || _pattern[_pos++] != '}')
                             {
                                 AddConcatenate();
                                 _pos = startpos - 1;
@@ -785,7 +785,7 @@ namespace System.Text.RegularExpressions
             // 1. "(" followed by nothing
             // 2. "(x" where x != ?
             // 3. "(?)"
-            if (_pattern.Length - _pos == 0 || _pattern[_pos] != '?' || (_pattern[_pos] == '?' && _pattern.Length - _pos > 1 && _pattern[_pos + 1] == ')'))
+            if (_pos == _pattern.Length || _pattern[_pos] != '?' || (_pattern[_pos] == '?' && _pattern.Length - _pos > 1 && _pattern[_pos + 1] == ')'))
             {
                 if (UseOptionN() || _ignoreNextParen)
                 {
@@ -802,7 +802,7 @@ namespace System.Text.RegularExpressions
 
             while (true)
             {
-                if (_pattern.Length - _pos == 0)
+                if (_pos == _pattern.Length)
                 {
                     break;
                 }
@@ -839,7 +839,7 @@ namespace System.Text.RegularExpressions
                         goto case '<'; // fallthrough
 
                     case '<':
-                        if (_pattern.Length - _pos == 0)
+                        if (_pos == _pattern.Length)
                         {
                             goto BreakRecognize;
                         }
@@ -1053,7 +1053,7 @@ namespace System.Text.RegularExpressions
                             ScanOptions();
                         }
 
-                        if (_pattern.Length - _pos == 0)
+                        if (_pos == _pattern.Length)
                         {
                             goto BreakRecognize;
                         }
@@ -1109,7 +1109,7 @@ namespace System.Text.RegularExpressions
                         _pos++;
                     }
 
-                    if (_pattern.Length - _pos == 0)
+                    if (_pos == _pattern.Length)
                     {
                         throw MakeException(RegexParseError.UnterminatedComment, SR.UnterminatedComment);
                     }
@@ -1276,7 +1276,7 @@ namespace System.Text.RegularExpressions
                         }
 
                         _pos++;
-                        if (_pattern.Length - _pos == 0 || (ch = _pattern[_pos]) < '0' || ch > '9')
+                        if (_pos == _pattern.Length || (ch = _pattern[_pos]) < '0' || ch > '9')
                         {
                             break;
                         }
@@ -1340,7 +1340,7 @@ namespace System.Text.RegularExpressions
          */
         private RegexNode ScanDollar()
         {
-            if (_pattern.Length - _pos == 0)
+            if (_pos == _pattern.Length)
             {
                 return RegexNode.CreateOneWithCaseConversion('$', _options, _culture, ref _caseBehavior);
             }
@@ -1590,7 +1590,7 @@ namespace System.Text.RegularExpressions
          */
         private char ScanControl()
         {
-            if (_pattern.Length - _pos == 0)
+            if (_pos == _pattern.Length)
             {
                 throw MakeException(RegexParseError.MissingControlCharacter, SR.MissingControlCharacter);
             }
@@ -1718,7 +1718,7 @@ namespace System.Text.RegularExpressions
 
             string capname = _pattern.Substring(startpos, _pos - startpos);
 
-            if (_pattern.Length - _pos == 0 || _pattern[_pos++] != '}')
+            if (_pos == _pattern.Length || _pattern[_pos++] != '}')
             {
                 throw MakeException(RegexParseError.InvalidUnicodePropertyEscape, SR.InvalidUnicodePropertyEscape);
             }
