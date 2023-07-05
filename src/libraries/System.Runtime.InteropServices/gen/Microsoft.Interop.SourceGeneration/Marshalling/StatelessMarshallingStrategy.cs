@@ -3,8 +3,6 @@
 
 using System;
 using System.Collections.Generic;
-using System.Linq;
-using System.Linq.Expressions;
 using Microsoft.CodeAnalysis;
 using Microsoft.CodeAnalysis.CSharp;
 using Microsoft.CodeAnalysis.CSharp.Syntax;
@@ -295,10 +293,12 @@ namespace Microsoft.Interop
         public bool UsesNativeIdentifier(TypePositionInfo info, StubCodeContext context) => _innerMarshaller.UsesNativeIdentifier(info, context);
     }
 
+    internal interface ISpaceMarshallingStrategy : IMarshallingStagesGenerator { }
+
     /// <summary>
     /// Marshaller type that enables allocating space for marshalling a linear collection using a marshaller that implements the LinearCollection marshalling spec.
     /// </summary>
-    internal sealed class StatelessLinearCollectionSpaceAllocator : ICustomTypeMarshallingStrategy
+    internal sealed class StatelessLinearCollectionSpaceAllocator : ISpaceMarshallingStrategy
     {
         private readonly TypeSyntax _marshallerTypeSyntax;
         private readonly ManagedTypeInfo _unmanagedType;
@@ -311,11 +311,6 @@ namespace Microsoft.Interop
             _unmanagedType = unmanagedType;
             _shape = shape;
             _numElementsExpression = numElementsExpression;
-        }
-
-        public ManagedTypeInfo AsNativeType(TypePositionInfo info)
-        {
-            return _unmanagedType;
         }
 
         public IEnumerable<StatementSyntax> GenerateCleanupStatements(TypePositionInfo info, StubCodeContext context) => Array.Empty<StatementSyntax>();
@@ -436,8 +431,6 @@ namespace Microsoft.Interop
                             Argument(IdentifierName(numElementsIdentifier))
                         })))));
         }
-
-        public bool UsesNativeIdentifier(TypePositionInfo info, StubCodeContext context) => true;
     }
 
     internal sealed class StatelessLinearCollectionSource : IElementsMarshallingCollectionSource
@@ -517,14 +510,14 @@ namespace Microsoft.Interop
     /// </summary>
     internal sealed class StatelessLinearCollectionMarshalling : ICustomTypeMarshallingStrategy
     {
-        private readonly ICustomTypeMarshallingStrategy _spaceMarshallingStrategy;
+        private readonly ISpaceMarshallingStrategy _spaceMarshallingStrategy;
         private readonly ElementsMarshalling _elementsMarshalling;
         private readonly ManagedTypeInfo _unmanagedType;
         private readonly MarshallerShape _shape;
         private readonly bool _cleanupElementsAndSpace;
 
         public StatelessLinearCollectionMarshalling(
-            ICustomTypeMarshallingStrategy spaceMarshallingStrategy,
+            ISpaceMarshallingStrategy spaceMarshallingStrategy,
             ElementsMarshalling elementsMarshalling,
             ManagedTypeInfo unmanagedType,
             MarshallerShape shape,
