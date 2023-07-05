@@ -106,7 +106,7 @@ namespace System
             if (!WriteValue("runtime"u8, new ReadOnlySpan<byte>(RuntimeImports.RhGetRuntimeVersion(out int cbLength), cbLength)))
                 return false;
 
-            if (!WriteValue("runtime_type"u8, (int)RuntimeType.NativeAOT))
+            if (!WriteIntValue("runtime_type"u8, (int)RuntimeType.NativeAOT))
                 return false;
 
             CrashReason crashReason = reason switch
@@ -118,13 +118,13 @@ namespace System
                 _ => CrashReason.Unknown,
             };
 
-            if (!WriteValue("reason"u8, (int)crashReason))
+            if (!WriteIntValue("reason"u8, (int)crashReason))
                 return false;
 
             if (!WriteHexValue("thread"u8, crashingThreadId))
                 return false;
 
-            if (!WriteValue("message"u8, message, max: 1024))
+            if (!WriteStringValue("message"u8, message, maxChars: 1024))
                 return false;
 
             return true;
@@ -171,11 +171,11 @@ namespace System
             if (!WriteHexValue("hr"u8, exception.HResult))
                 return false;
 
-            if (!WriteValue("message"u8, exception.Message, maxMessageSize))
+            if (!WriteStringValue("message"u8, exception.Message, maxMessageSize))
                 return false;
 
             // Exception type names are not truncated because the full name is important to bucketing and usually not that long
-            if (!WriteValue("type"u8, exception.GetType().ToString()))
+            if (!WriteStringValue("type"u8, exception.GetType().ToString()))
                 return false;
 
             StackFrame[] stackFrames = new StackTrace(exception).GetFrames();
@@ -245,7 +245,7 @@ namespace System
             string method = DeveloperExperience.GetMethodName(ip, out IntPtr _);
             if (method != null)
             {
-                if (!WriteValue("name"u8, method, maxNameSize))
+                if (!WriteStringValue("name"u8, method, maxNameSize, truncateLeft: true))
                     return false;
             }
             CloseValue('}');
@@ -256,21 +256,21 @@ namespace System
 
         private bool WriteHexValue(ReadOnlySpan<byte> key, int value) => WriteValue(key, $"0x{value:X}".AsSpan());
 
-        private bool WriteValue(ReadOnlySpan<byte> key, int value) => WriteValue(key, $"{value}".AsSpan());
+        private bool WriteIntValue(ReadOnlySpan<byte> key, int value) => WriteValue(key, $"{value}".AsSpan());
 
-        private bool WriteValue(ReadOnlySpan<byte> key, string value, int max = int.MaxValue)
+        private bool WriteStringValue(ReadOnlySpan<byte> key, string value, int maxChars = int.MaxValue, bool truncateLeft = false)
         {
             if (!OpenValue(key, '"'))
                 return false;
 
-            // Escape the special JSON characters.
-            int count = 0;
-            foreach (char c in value)
-            {
-                // Have we reached the max number of chars?
-                if (++count > max)
-                    break;
+            int length = value.Length;
+            int count = Math.Min(length, maxChars);
+            int start = truncateLeft ? Math.Max(0, length - maxChars) : 0;
 
+            for (int i = 0; i < count; i++)
+            {
+                // Escape the special JSON characters.
+                char c = value[start + i];
                 if (c < 0x20)
                 {
                     if (!WriteChars($"\\u{((ushort)c):X4}".AsSpan()))
