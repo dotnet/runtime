@@ -61,7 +61,45 @@ namespace System.Text
                     }
                 }
             }
-            else if (Avx.IsSupported && length >= (uint)Vector256<TLeft>.Count)
+            else if (Avx512F.IsSupported && length >= (uint)Vector512<TRight>.Count)
+            {
+                ref TLeft currentLeftSearchSpace = ref left;
+                ref TLeft oneVectorAwayFromLeftEnd = ref Unsafe.Add(ref currentLeftSearchSpace, length - TLoader.Count512);
+                ref TRight currentRightSearchSpace = ref right;
+                ref TRight oneVectorAwayFromRightEnd = ref Unsafe.Add(ref currentRightSearchSpace, length - (uint)Vector512<TRight>.Count);
+
+                Vector512<TRight> leftValues;
+                Vector512<TRight> rightValues;
+
+                // Loop until either we've finished all elements or there's less than a vector's-worth remaining.
+                do
+                {
+                    leftValues = TLoader.Load512(ref currentLeftSearchSpace);
+                    rightValues = Vector512.LoadUnsafe(ref currentRightSearchSpace);
+
+                    if (leftValues != rightValues || !AllCharsInVectorAreAscii(leftValues | rightValues))
+                    {
+                        return false;
+                    }
+
+                    currentRightSearchSpace = ref Unsafe.Add(ref currentRightSearchSpace, Vector256<TRight>.Count);
+                    currentLeftSearchSpace = ref Unsafe.Add(ref currentLeftSearchSpace, TLoader.Count256);
+                }
+                while (!Unsafe.IsAddressGreaterThan(ref currentRightSearchSpace, ref oneVectorAwayFromRightEnd));
+
+                // If any elements remain, process the last vector in the search space.
+                if (length % (uint)Vector256<TRight>.Count != 0)
+                {
+                    leftValues = TLoader.Load512(ref oneVectorAwayFromLeftEnd);
+                    rightValues = Vector512.LoadUnsafe(ref oneVectorAwayFromRightEnd);
+
+                    if (leftValues != rightValues || !AllCharsInVectorAreAscii(leftValues | rightValues))
+                    {
+                        return false;
+                    }
+                }
+            }
+            else if (Avx.IsSupported && length >= (uint)Vector256<TRight>.Count)
             {
                 ref TLeft currentLeftSearchSpace = ref left;
                 ref TRight currentRightSearchSpace = ref right;
@@ -353,8 +391,10 @@ namespace System.Text
         {
             static abstract nuint Count128 { get; }
             static abstract nuint Count256 { get; }
+            static abstract nuint Count512 { get; }
             static abstract Vector128<TRight> Load128(ref TLeft ptr);
             static abstract Vector256<TRight> Load256(ref TLeft ptr);
+            static abstract Vector512<TRight> Load512(ref TLeft ptr);
             static abstract bool EqualAndAscii(ref TLeft left, ref TRight right);
         }
 
@@ -362,6 +402,7 @@ namespace System.Text
         {
             public static nuint Count128 => (uint)Vector128<T>.Count;
             public static nuint Count256 => (uint)Vector256<T>.Count;
+            public static nuint Count512 => (uint)Vector512<T>.Count;
             public static Vector128<T> Load128(ref T ptr) => Vector128.LoadUnsafe(ref ptr);
             public static Vector256<T> Load256(ref T ptr) => Vector256.LoadUnsafe(ref ptr);
 
@@ -379,12 +420,15 @@ namespace System.Text
 
                 return true;
             }
+
+            public static Vector512<T> Load512(ref T ptr) => Vector512.LoadUnsafe(ref ptr);
         }
 
         private readonly struct WideningLoader : ILoader<byte, ushort>
         {
             public static nuint Count128 => sizeof(long);
             public static nuint Count256 => (uint)Vector128<byte>.Count;
+            public static nuint Count512 => (uint)Vector512<byte>.Count;
 
             [MethodImpl(MethodImplOptions.AggressiveInlining)]
             public static Vector128<ushort> Load128(ref byte ptr)
@@ -436,6 +480,12 @@ namespace System.Text
                 }
 
                 return true;
+            }
+
+            public static Vector512<ushort> Load512(ref byte ptr)
+            {
+                (Vector256<ushort> lower, Vector256<ushort> upper) = Vector256.Widen(Vector256.LoadUnsafe(ref ptr));
+                return Vector512.Create(lower, upper);
             }
         }
     }
