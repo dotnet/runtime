@@ -7639,6 +7639,11 @@ void Compiler::lvaDumpEntry(unsigned lclNum, FrameLayoutState curState, size_t r
         }
     }
 
+    if (varDsc->lvClassHnd != NO_CLASS_HANDLE)
+    {
+        printf(" %s", eeGetClassName(varDsc->lvClassHnd));
+    }
+
     printf("\n");
 }
 
