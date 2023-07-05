@@ -10698,8 +10698,8 @@ GenTree* Compiler::fgOptimizeHWIntrinsic(GenTreeHWIntrinsic* node)
                 break;
             }
 
-            GenTree* op1  = node->Op(1);
-            GenTree* sqrt = nullptr;
+            GenTree* op1      = node->Op(1);
+            GenTree* sqrt     = nullptr;
             GenTree* toScalar = nullptr;
 
             if (op1->OperIs(GT_INTRINSIC))
@@ -10726,7 +10726,8 @@ GenTree* Compiler::fgOptimizeHWIntrinsic(GenTreeHWIntrinsic* node)
             GenTreeHWIntrinsic* hwop1 = op1->AsHWIntrinsic();
 
 #if defined(TARGET_ARM64)
-            if ((hwop1->GetHWIntrinsicId() == NI_Vector64_ToScalar) && (hwop1->GetHWIntrinsicId() == NI_Vector128_ToScalar))
+            if ((hwop1->GetHWIntrinsicId() == NI_Vector64_ToScalar) &&
+                (hwop1->GetHWIntrinsicId() == NI_Vector128_ToScalar))
 #else
             if (hwop1->GetHWIntrinsicId() == NI_Vector128_ToScalar)
 #endif
