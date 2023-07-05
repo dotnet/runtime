@@ -125,10 +125,11 @@ namespace System
                 case RhFailFastReason.InternalError:
                     return "Runtime internal error";
                 case RhFailFastReason.UnhandledException:
-                    return "Unhandled exception: a managed exception was not handled before reaching unmanaged code.";
+                    return "Unhandled exception: a managed exception was not handled before reaching unmanaged code";
                 case RhFailFastReason.UnhandledExceptionFromPInvoke:
-                    return "Unhandled exception: an unmanaged exception was thrown out of a managed-to-native transition.";
+                    return "Unhandled exception: an unmanaged exception was thrown out of a managed-to-native transition";
                 case RhFailFastReason.EnvironmentFailFast:
+                    return "Environment.FailFast was called";
                 default:
                     return "Unknown reason.";
             }
@@ -203,9 +204,7 @@ namespace System
                     else
                     {
                         prefix = "Process terminated. ";
-                        message ??= string.Format("Runtime-generated FailFast: ({0}): {1}",
-                            reason.ToString(),  // Explicit call to ToString() to avoid missing metadata exception inside String.Format()
-                            GetStringForFailFastReason(reason));
+                        message ??= GetStringForFailFastReason(reason);
                         outputMessage = message;
                     }
 
