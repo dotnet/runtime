@@ -443,20 +443,22 @@ namespace System.Text.Json.SourceGeneration
 
                     if (!TryGetDeserializationConstructor(type, useDefaultCtorInAnnotatedStructs, out IMethodSymbol? constructor))
                     {
-                        classType = ClassType.TypeUnsupportedBySourceGen;
                         ReportDiagnostic(DiagnosticDescriptors.MultipleJsonConstructorAttribute, typeLocation, type.ToDisplayString());
                     }
-                    else
+                    else if (constructor != null && !IsSymbolAccessibleWithin(constructor, within: contextType))
                     {
-                        classType = ClassType.Object;
-
-                        implementsIJsonOnSerializing = _knownSymbols.IJsonOnSerializingType.IsAssignableFrom(type);
-                        implementsIJsonOnSerialized = _knownSymbols.IJsonOnSerializedType.IsAssignableFrom(type);
-
-                        ctorParamSpecs = ParseConstructorParameters(typeToGenerate, constructor, out constructionStrategy, out constructorSetsRequiredMembers);
-                        propertySpecs = ParsePropertyGenerationSpecs(contextType, typeToGenerate, typeLocation, options, out hasExtensionDataProperty);
-                        propertyInitializerSpecs = ParsePropertyInitializers(ctorParamSpecs, propertySpecs, constructorSetsRequiredMembers, ref constructionStrategy);
+                        ReportDiagnostic(DiagnosticDescriptors.JsonConstructorInaccessible, typeLocation, type.ToDisplayString());
+                        constructor = null;
                     }
+
+                    classType = ClassType.Object;
+
+                    implementsIJsonOnSerializing = _knownSymbols.IJsonOnSerializingType.IsAssignableFrom(type);
+                    implementsIJsonOnSerialized = _knownSymbols.IJsonOnSerializedType.IsAssignableFrom(type);
+
+                    ctorParamSpecs = ParseConstructorParameters(typeToGenerate, constructor, out constructionStrategy, out constructorSetsRequiredMembers);
+                    propertySpecs = ParsePropertyGenerationSpecs(contextType, typeToGenerate, typeLocation, options, out hasExtensionDataProperty);
+                    propertyInitializerSpecs = ParsePropertyInitializers(ctorParamSpecs, propertySpecs, constructorSetsRequiredMembers, ref constructionStrategy);
                 }
 
                 var typeRef = new TypeRef(type);
@@ -1410,20 +1412,18 @@ namespace System.Text.Json.SourceGeneration
                     }
                 }
 
-                // For correctness, throw if multiple ctors have [JsonConstructor], even if one or more are non-public.
-                IMethodSymbol? dummyCtorWithAttribute = ctorWithAttribute;
-
+                // Search for non-public ctors with [JsonConstructor].
                 foreach (IMethodSymbol constructor in namedType.GetExplicitlyDeclaredInstanceConstructors().Where(ctor => ctor.DeclaredAccessibility is not Accessibility.Public))
                 {
                     if (constructor.ContainsAttribute(_knownSymbols.JsonConstructorAttributeType))
                     {
-                        if (dummyCtorWithAttribute != null)
+                        if (ctorWithAttribute != null)
                         {
                             deserializationCtor = null;
                             return false;
                         }
 
-                        dummyCtorWithAttribute = constructor;
+                        ctorWithAttribute = constructor;
                     }
                 }
 
