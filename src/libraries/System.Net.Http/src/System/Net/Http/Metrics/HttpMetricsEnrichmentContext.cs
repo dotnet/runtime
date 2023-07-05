@@ -7,8 +7,10 @@ using System.Diagnostics;
 
 namespace System.Net.Http.Metrics;
 
-public class HttpMetricsEnrichmentContext
+public sealed class HttpMetricsEnrichmentContext
 {
+    private static readonly HttpRequestOptionsKey<List<Action<HttpMetricsEnrichmentContext>>> s_callbackCollectionKey = new("MetricsEnrichmentCallbackCollection");
+
     private HttpRequestMessage? _request;
     private HttpResponseMessage? _response;
     private Exception? _exception;
@@ -43,11 +45,25 @@ public class HttpMetricsEnrichmentContext
 
     internal bool InProgress => _request != null;
 
-    public ICollection<KeyValuePair<string, object?>> CustomTags => _tags;
+    public void AddCustomTag(string name, object? value)
+    {
+        _tags.Add(new KeyValuePair<string, object?>(name, value));
+    }
+
+    public static void AddCallback(HttpRequestMessage request, Action<HttpMetricsEnrichmentContext> callback)
+    {
+        HttpRequestOptions options = request.Options;
+        if (!options.TryGetValue(s_callbackCollectionKey, out List<Action<HttpMetricsEnrichmentContext>>? callbackCollection))
+        {
+            callbackCollection = new List<Action<HttpMetricsEnrichmentContext>>();
+            options.Set(s_callbackCollectionKey, callbackCollection);
+        }
+        callbackCollection.Add(callback);
+    }
 
     internal void ApplyEnrichment(HttpRequestMessage request, HttpResponseMessage? response, Exception? exception, ref TagList tags)
     {
-        if (request._options?.TryGetMetricsEnrichmentCallbackCollection(out List<Action<HttpMetricsEnrichmentContext>>? callbackCollection) != true)
+        if (request._options?.TryGetValue(s_callbackCollectionKey, out List<Action<HttpMetricsEnrichmentContext>>? callbackCollection) != true)
         {
             return;
         }

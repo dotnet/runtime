@@ -66,21 +66,30 @@ namespace System.Net.Http
         }
 
         [CLSCompliant(false)]
-        public Meter Meter
+        public IMeterFactory? MeterFactory
         {
-            get => _meter;
+            get => throw new NotImplementedException();
             set
             {
-                ArgumentNullException.ThrowIfNull(value);
-                if (value.Name != "System.Net.Http")
-                {
-                    throw new ArgumentException("Meter name must be 'System.Net.Http'.");
-                }
-
-                CheckDisposedOrStarted();
-                _meter = value;
+                throw new NotImplementedException();
             }
         }
+        //[CLSCompliant(false)]
+        //public Meter Meter
+        //{
+        //    get => _meter;
+        //    set
+        //    {
+        //        ArgumentNullException.ThrowIfNull(value);
+        //        if (value.Name != "System.Net.Http")
+        //        {
+        //            throw new ArgumentException("Meter name must be 'System.Net.Http'.");
+        //        }
+
+        //        CheckDisposedOrStarted();
+        //        _meter = value;
+        //    }
+        //}
 
         [UnsupportedOSPlatform("browser")]
         public bool UseCookies

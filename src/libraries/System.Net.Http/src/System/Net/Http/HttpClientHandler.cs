@@ -73,26 +73,35 @@ namespace System.Net.Http
         public virtual bool SupportsRedirectConfiguration => HttpHandlerType.SupportsRedirectConfiguration;
 
         [CLSCompliant(false)]
-        public Meter Meter
+
+        public IMeterFactory? MeterFactory
         {
-#if TARGET_BROWSER
-            get => _meter;
+            get => throw new NotImplementedException();
             set
             {
-                ArgumentNullException.ThrowIfNull(value);
-                if (value.Name != "System.Net.Http")
-                {
-                    throw new ArgumentException("Meter name must be 'System.Net.Http'.");
-                }
-
-                CheckDisposedOrStarted();
-                _meter = value;
+                throw new NotImplementedException();
             }
-#else
-            get => _underlyingHandler.Meter;
-            set => _underlyingHandler.Meter = value;
-#endif
         }
+//        public Meter Meter
+//        {
+//#if TARGET_BROWSER
+//            get => _meter;
+//            set
+//            {
+//                ArgumentNullException.ThrowIfNull(value);
+//                if (value.Name != "System.Net.Http")
+//                {
+//                    throw new ArgumentException("Meter name must be 'System.Net.Http'.");
+//                }
+
+//                CheckDisposedOrStarted();
+//                _meter = value;
+//            }
+//#else
+//            get => _underlyingHandler.Meter;
+//            set => _underlyingHandler.Meter = value;
+//#endif
+//        }
 
         [UnsupportedOSPlatform("browser")]
         public bool UseCookies

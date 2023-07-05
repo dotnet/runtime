@@ -67,7 +67,6 @@
     <Compile Include="System\Net\Http\HttpVersionPolicy.cs" />
     <Compile Include="System\Net\Http\IHttpMetricsLogger.cs" />
     <Compile Include="System\Net\Http\MessageProcessingHandler.cs" />
-    <Compile Include="System\Net\Http\MetricsHandler.cs" />
     <Compile Include="System\Net\Http\MultipartContent.cs" />
     <Compile Include="System\Net\Http\MultipartFormDataContent.cs" />
     <Compile Include="System\Net\Http\NetEventSource.Http.cs" />
@@ -125,7 +124,7 @@
     <Compile Include="System\Net\Http\Headers\ViaHeaderValue.cs" />
     <Compile Include="System\Net\Http\Headers\WarningHeaderValue.cs" />
     <Compile Include="System\Net\Http\Metrics\HttpMetricsEnrichmentContext.cs" />
-    <Compile Include="System\Net\Http\Metrics\MetricsHttpRequestOptionsExtensions.cs" />
+    <Compile Include="System\Net\Http\Metrics\MetricsHandler.cs" />
     <Compile Include="System\Net\Http\SocketsHttpHandler\SocketsHttpPlaintextStreamFilterContext.cs" />
     <Compile Include="$(CommonPath)DisableRuntimeMarshalling.cs"
              Link="Common\DisableRuntimeMarshalling.cs" />

@@ -452,21 +452,29 @@ namespace System.Net.Http
         }
 
         [CLSCompliant(false)]
-        public Meter Meter
+        public IMeterFactory? MeterFactory
         {
-            get => _settings._meter;
+            get => throw new NotImplementedException();
             set
             {
-                ArgumentNullException.ThrowIfNull(value);
-                if (value.Name != "System.Net.Http")
-                {
-                    throw new ArgumentException("Meter name must be 'System.Net.Http'.");
-                }
-
-                CheckDisposedOrStarted();
-                _settings._meter = value;
+                throw new NotImplementedException();
             }
         }
+        //public Meter Meter
+        //{
+        //    get => _settings._meter;
+        //    set
+        //    {
+        //        ArgumentNullException.ThrowIfNull(value);
+        //        if (value.Name != "System.Net.Http")
+        //        {
+        //            throw new ArgumentException("Meter name must be 'System.Net.Http'.");
+        //        }
+
+        //        CheckDisposedOrStarted();
+        //        _settings._meter = value;
+        //    }
+        //}
 
         protected override void Dispose(bool disposing)
         {
