@@ -45,10 +45,26 @@ namespace Microsoft.Extensions.DependencyInjection
         public static Microsoft.Extensions.DependencyInjection.IHttpClientBuilder AddHttpClient<TClient, TImplementation>(this Microsoft.Extensions.DependencyInjection.IServiceCollection services, string name, System.Func<System.Net.Http.HttpClient, System.IServiceProvider, TImplementation> factory) where TClient : class where TImplementation : class, TClient { throw null; }
         public static Microsoft.Extensions.DependencyInjection.IHttpClientBuilder AddHttpClient<TClient, TImplementation>(this Microsoft.Extensions.DependencyInjection.IServiceCollection services, string name, System.Func<System.Net.Http.HttpClient, TImplementation> factory) where TClient : class where TImplementation : class, TClient { throw null; }
     }
+
+    public static partial class HttpClientLoggingBuilderExtensions
+    {
+        public static Microsoft.Extensions.DependencyInjection.IHttpClientLoggingBuilder AddDefaultLogger(this Microsoft.Extensions.DependencyInjection.IHttpClientLoggingBuilder builder) { throw null; }
+
+        public static Microsoft.Extensions.DependencyInjection.IHttpClientLoggingBuilder AddLogger<TLogger>(this Microsoft.Extensions.DependencyInjection.IHttpClientLoggingBuilder builder, bool wrapHandlersPipeline = false) where TLogger : Microsoft.Extensions.Http.Logging.IHttpClientLogger { throw null; }
+    }
+
     public partial interface IHttpClientBuilder
     {
         string Name { get; }
         Microsoft.Extensions.DependencyInjection.IServiceCollection Services { get; }
+    }
+
+    public partial interface IHttpClientLoggingBuilder
+    {
+        string Name { get; }
+        Microsoft.Extensions.DependencyInjection.IServiceCollection Services { get; }
+        Microsoft.Extensions.DependencyInjection.IHttpClientLoggingBuilder AddLogger(System.Func<System.IServiceProvider, Microsoft.Extensions.Http.Logging.IHttpClientLogger> httpClientLoggerFactory, bool wrapHandlersPipeline = false);
+        Microsoft.Extensions.DependencyInjection.IHttpClientLoggingBuilder RemoveAllLoggers();
     }
 }
 namespace Microsoft.Extensions.Http
@@ -97,6 +113,13 @@ namespace Microsoft.Extensions.Http.Logging
         public LoggingScopeHttpMessageHandler(Microsoft.Extensions.Logging.ILogger logger, Microsoft.Extensions.Http.HttpClientFactoryOptions options) { }
         [System.Diagnostics.DebuggerStepThroughAttribute]
         protected override System.Threading.Tasks.Task<System.Net.Http.HttpResponseMessage> SendAsync(System.Net.Http.HttpRequestMessage request, System.Threading.CancellationToken cancellationToken) { throw null; }
+    }
+
+    public partial interface IHttpClientLogger
+    {
+        System.Threading.Tasks.ValueTask<object?> LogRequestStartAsync(System.Net.Http.HttpRequestMessage request, System.Threading.CancellationToken cancellationToken = default);
+        System.Threading.Tasks.ValueTask LogRequestStopAsync(object? context, System.Net.Http.HttpRequestMessage request, System.Net.Http.HttpResponseMessage response, System.TimeSpan elapsed, System.Threading.CancellationToken cancellationToken = default);
+        System.Threading.Tasks.ValueTask LogRequestFailedAsync(object? context, System.Net.Http.HttpRequestMessage request, System.Net.Http.HttpResponseMessage? response, System.Exception exception, System.TimeSpan elapsed, System.Threading.CancellationToken cancellationToken = default);
     }
 }
 namespace System.Net.Http
