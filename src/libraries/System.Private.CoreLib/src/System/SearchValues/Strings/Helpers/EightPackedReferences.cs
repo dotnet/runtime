@@ -3,21 +3,13 @@
 
 using System.Diagnostics;
 using System.Runtime.CompilerServices;
-using System.Runtime.InteropServices;
 
 namespace System.Buffers
 {
-    [StructLayout(LayoutKind.Sequential)]
+    [InlineArray(8)]
     internal readonly struct EightPackedReferences
     {
         private readonly object? _ref0;
-        private readonly object? _ref1;
-        private readonly object? _ref2;
-        private readonly object? _ref3;
-        private readonly object? _ref4;
-        private readonly object? _ref5;
-        private readonly object? _ref6;
-        private readonly object? _ref7;
 
         public EightPackedReferences(ReadOnlySpan<object> values)
         {
