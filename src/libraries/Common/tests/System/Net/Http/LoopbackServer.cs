@@ -489,11 +489,11 @@ namespace System.Net.Test.Common
 #else
                     using (X509Certificate2 cert = httpOptions.Certificate ?? Configuration.Certificates.GetServerCertificate())
                     {
-                         await sslStream.AuthenticateAsServerAsync(
-                             cert,
-                             clientCertificateRequired: true, // allowed but not required
-                             enabledSslProtocols: httpOptions.SslProtocols,
-                             checkCertificateRevocation: false).ConfigureAwait(false);
+                        await sslStream.AuthenticateAsServerAsync(
+                            cert,
+                            clientCertificateRequired: true, // allowed but not required
+                            enabledSslProtocols: httpOptions.SslProtocols,
+                            checkCertificateRevocation: false).ConfigureAwait(false);
                     }
 #endif
                     stream = sslStream;
