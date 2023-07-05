@@ -64,6 +64,23 @@ bool WriteToBuffer(const BYTE *src, size_t len, BYTE *&buffer, size_t& offset, s
     return true;
 }
 
+bool WriteToBuffer(const WCHAR* str, BYTE *&buffer, size_t& offset, size_t& size, bool &fixedBuffer)
+{
+    if (str == NULL)
+        return true;
+
+    size_t byteCount = (ep_rt_utf16_string_len(reinterpret_cast<const ep_char16_t*>(str)) + 1) * sizeof(*str);
+    if (offset + byteCount > size)
+    {
+        if (!ResizeBuffer(buffer, size, offset, size + byteCount, fixedBuffer))
+            return false;
+    }
+
+    memcpy(buffer + offset, str, byteCount);
+    offset += byteCount;
+    return true;
+}
+
 bool ResizeBuffer(BYTE *&buffer, size_t& size, size_t currLen, size_t newSize, bool &fixedBuffer)
 {
     newSize = (size_t)(newSize * 1.5);

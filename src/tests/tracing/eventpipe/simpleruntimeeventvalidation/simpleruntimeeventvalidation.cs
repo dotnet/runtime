@@ -25,7 +25,7 @@ namespace Tracing.Tests.SimpleRuntimeEventValidation
                 _eventGeneratingActionForGC, 
                 //GCKeyword (0x1): 0b1
                 new List<EventPipeProvider>(){new EventPipeProvider("Microsoft-Windows-DotNETRuntime", EventLevel.Informational, 0b1)}, 
-                1024, _DoesTraceContainEvents, enableRundownProvider:false);
+                1024, _DoesTraceContainGCEvents, enableRundownProvider:false);
 
             GC.Collect();
             GC.WaitForPendingFinalizers();
@@ -37,11 +37,11 @@ namespace Tracing.Tests.SimpleRuntimeEventValidation
                 ret = IpcTraceTest.RunAndValidateEventCounts(
                     // Validate the exception type and message after the below issue is fixed. For now, check that the event is fired
                     // https://github.com/dotnet/runtime/issues/87978
-                    new Dictionary<string, ExpectedEventCount>(){{ "Microsoft-Windows-DotNETRuntime", 1000 }}, 
+                    new Dictionary<string, ExpectedEventCount>(){{ "Microsoft-DotNETCore-EventPipe", 1 }}, 
                     _eventGeneratingActionForExceptions, 
                     //ExceptionKeyword (0x8000): 0b1000_0000_0000_0000
                     new List<EventPipeProvider>(){new EventPipeProvider("Microsoft-Windows-DotNETRuntime", EventLevel.Warning, 0b1000_0000_0000_0000)}, 
-                    1024, enableRundownProvider:false);
+                    1024, _DoesTraceContainExceptionEvents, enableRundownProvider:false);
             }
 
             if (ret < 0)
@@ -64,9 +64,9 @@ namespace Tracing.Tests.SimpleRuntimeEventValidation
 
         private static Action _eventGeneratingActionForExceptions = () => 
         {
-            for (int i = 0; i < 1000; i++)
+            for (int i = 0; i < 10; i++)
             {
-                if (i % 100 == 0)
+                if (i % 5 == 0)
                     Logger.logger.Log($"Thrown an exception {i} times...");
                 try
                 {
@@ -79,8 +79,7 @@ namespace Tracing.Tests.SimpleRuntimeEventValidation
             }
         };
 
-
-        private static Func<EventPipeEventSource, Func<int>> _DoesTraceContainEvents = (source) =>
+        private static Func<EventPipeEventSource, Func<int>> _DoesTraceContainGCEvents = (source) =>
         {
             int GCStartEvents = 0;
             int GCEndEvents = 0;
@@ -119,5 +118,22 @@ namespace Tracing.Tests.SimpleRuntimeEventValidation
             };
         };
 
+        private static Func<EventPipeEventSource, Func<int>> _DoesTraceContainExceptionEvents = (source) =>
+        {
+            int ExStartEvents = 0;
+            source.Clr.ExceptionStart += (eventData) => 
+            {
+                if(eventData.ToString().IndexOf("System.ArgumentNullException")>=0)
+                    ExStartEvents += 1;
+            };
+
+            return () => {
+                Logger.logger.Log("Exception Event counts validation");
+                Logger.logger.Log("ExStartEvents: " + ExStartEvents);
+                bool ExStartResult = ExStartEvents >= 10;
+
+                return ExStartResult ? 100 : -1;
+            };
+        };
     }
 }
