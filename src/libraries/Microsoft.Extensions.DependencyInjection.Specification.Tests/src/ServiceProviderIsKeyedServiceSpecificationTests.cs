@@ -92,7 +92,7 @@ namespace Microsoft.Extensions.DependencyInjection.Specification
             // Arrange
             var key = new object();
             var collection = new TestServiceCollection();
-            collection.AddKeyedTransient(typeof(IFakeService), typeof(FakeService));
+            collection.AddKeyedTransient(typeof(IFakeService), key, typeof(FakeService));
             var provider = CreateServiceProvider(collection);
 
             // Act
