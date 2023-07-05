@@ -8,7 +8,6 @@ using System.Runtime.CompilerServices;
 
 namespace System.Buffers
 {
-    [DebuggerDisplay("{DebuggerDisplay,nq}")]
     internal struct AhoCorasickNode
     {
         private static object EmptyChildrenSentinel => Array.Empty<int>();
@@ -170,31 +169,6 @@ namespace System.Buffers
                         _ => childCount * 25
                     };
                 }
-            }
-        }
-
-        private readonly string DebuggerDisplay
-        {
-            get
-            {
-                int count = _firstChildChar >= 0 ? 1 : 0;
-
-                if (_children is int[] table)
-                {
-                    foreach (int index in table)
-                    {
-                        if (index >= 0)
-                        {
-                            count++;
-                        }
-                    }
-                }
-                else
-                {
-                    count += ((Dictionary<char, int>)_children).Count;
-                }
-
-                return $"MatchLength={MatchLength} SuffixLink={SuffixLink} ChildrenCount={count}";
             }
         }
     }
