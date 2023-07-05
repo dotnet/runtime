@@ -7641,7 +7641,16 @@ void Compiler::lvaDumpEntry(unsigned lclNum, FrameLayoutState curState, size_t r
 
     if (varDsc->lvClassHnd != NO_CLASS_HANDLE)
     {
-        printf(" %s", eeGetClassName(varDsc->lvClassHnd));
+        printf(" <%s>", eeGetClassName(varDsc->lvClassHnd));
+    }
+    else if (varTypeIsStruct(varDsc->TypeGet()))
+    {
+        ClassLayout* layout = varDsc->GetLayout();
+        if (layout != nullptr)
+        {
+            printf(" ");
+            gtDispClassLayout(layout, varDsc->TypeGet());
+        }
     }
 
     printf("\n");
