@@ -88,9 +88,9 @@ namespace System
                         timeZone = new TimeZoneInfo(
                                             timeZone._id,
                                             timeZone._baseUtcOffset,
-                                            timeZone._displayName,
-                                            timeZone._standardDisplayName,
-                                            timeZone._daylightDisplayName,
+                                            timeZone.DisplayName,
+                                            timeZone.StandardName,
+                                            timeZone.DaylightName,
                                             timeZone._adjustmentRules,
                                             disableDaylightSavingTime: false,
                                             timeZone.HasIanaId);
