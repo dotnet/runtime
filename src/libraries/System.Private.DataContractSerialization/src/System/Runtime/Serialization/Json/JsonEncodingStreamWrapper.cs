@@ -226,6 +226,7 @@ namespace System.Runtime.Serialization.Json
             {
                 return _stream.ReadByte();
             }
+
             byte b = 0;
             if (Read(new Span<byte>(ref b)) == 0)
             {
@@ -247,48 +248,28 @@ namespace System.Runtime.Serialization.Json
 
         public override void Write(byte[] buffer, int offset, int count)
         {
-            // Optimize UTF-8 case
-            if (_encodingCode == SupportedEncoding.UTF8)
-            {
-                _stream.Write(buffer, offset, count);
-                return;
-            }
-
-            Debug.Assert(_bytes != null);
-            Debug.Assert(_chars != null);
-            while (count > 0)
-            {
-                int size = _chars.Length < count ? _chars.Length : count;
-                int charCount = _dec!.GetChars(buffer, offset, size, _chars, 0, false);
-                _byteCount = _enc!.GetBytes(_chars, 0, charCount, _bytes, 0, false);
-                _stream.Write(_bytes, 0, _byteCount);
-                offset += size;
-                count -= size;
-            }
+            return Write(buffer.AsSpan(offset, count));
         }
 
-        public override void Write(ReadOnlySpan<byte> spanBuffer)
+        public override void Write(ReadOnlySpan<byte> buffer)
         {
             // Optimize UTF-8 case
             if (_encodingCode == SupportedEncoding.UTF8)
             {
-                _stream.Write(spanBuffer);
+                _stream.Write(buffer);
                 return;
             }
 
             Debug.Assert(_bytes != null);
             Debug.Assert(_chars != null);
 
-            int offset = 0;
-            int count = spanBuffer.Length;
-            while (count > 0)
+            while (buffer.Length > 0)
             {
-                int size = _chars.Length < count ? _chars.Length : count;
-                int charCount = _dec!.GetChars(spanBuffer.Slice(offset, size), _chars, false);
+                int size = _chars.Length < buffer.Length ? _chars.Length : buffer.Length;
+                int charCount = _dec!.GetChars(buffer.Slice(0, size), _chars, false);
                 _byteCount = _enc!.GetBytes(_chars, 0, charCount, _bytes, 0, false);
                 _stream.Write(_bytes, 0, _byteCount);
-                offset += size;
-                count -= size;
+                buffer = buffer.Slice(size, buffer.Length - size);
             }
         }
         
@@ -299,6 +280,7 @@ namespace System.Runtime.Serialization.Json
                 _stream.WriteByte(b);
                 return;
             }
+
             Write(new ReadOnlySpan<byte>(in b));
         }
 
