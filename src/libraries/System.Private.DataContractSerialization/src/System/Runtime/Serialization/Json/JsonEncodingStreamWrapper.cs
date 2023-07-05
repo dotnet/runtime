@@ -246,10 +246,8 @@ namespace System.Runtime.Serialization.Json
             throw new NotSupportedException();
         }
 
-        public override void Write(byte[] buffer, int offset, int count)
-        {
-            return Write(buffer.AsSpan(offset, count));
-        }
+        public override void Write(byte[] buffer, int offset, int count) =>
+            Write(new Span<byte>(buffer, offset, count));
 
         public override void Write(ReadOnlySpan<byte> buffer)
         {
