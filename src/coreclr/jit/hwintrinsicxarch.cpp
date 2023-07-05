@@ -1779,6 +1779,7 @@ GenTree* Compiler::impSpecialIntrinsic(NamedIntrinsic        intrinsic,
             op1 = impSIMDPopStack();
 
             retNode = gtNewSimdDotProdNode(retType, op1, op2, simdBaseJitType, simdSize);
+            retNode = gtNewSimdGetElementNode(retType, retNode, gtNewIconNode(0), simdBaseJitType, simdSize);
             break;
         }
 
