@@ -2,6 +2,10 @@
 
 If you need to tag folks on an issue or PR, you will generally want to tag the owners (not the lead) for [area](#areas) to which the change or issue is closest to. For areas which are large and can be operating system or architecture specific it's better to tag owners of [OS](#operating-systems) or [Architecture](#architectures).
 
+## Repos
+
+This list is for this **dotnet/runtime** repo. The **dotnet/aspnetcore** repo has [its own list](https://github.com/dotnet/aspnetcore/blob/main/docs/area-owners.md).
+
 ## Areas
 
 Note: Editing this file doesn't update the mapping used by `@msftbot` for area-specific issue/PR notifications. That configuration is part of the [`fabricbot.json`](../.github/fabricbot.json) file, and many areas use GitHub teams for those notifications. If you're a community member interested in receiving area-specific issue/PR notifications, you won't appear in this table or be added to those GitHub teams, but you can create a PR that updates `fabricbot.json` to add yourself to those notifications. See [automation.md](infra/automation.md) for more information on the schema and tools used by FabricBot.
