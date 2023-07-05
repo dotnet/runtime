@@ -6,8 +6,6 @@ namespace System
     public sealed partial class TimeZoneInfo
     {
 #pragma warning disable IDE0060
-        static partial void TryPopulateTimeZoneDisplayNamesFromGlobalizationData(string timeZoneId, TimeSpan baseUtcOffset, ref string? standardDisplayName, ref string? daylightDisplayName, ref string? displayName);
-
         private static string GetUtcStandardDisplayName()
         {
             // For this target, be consistent with other time zone display names that use an abbreviation.

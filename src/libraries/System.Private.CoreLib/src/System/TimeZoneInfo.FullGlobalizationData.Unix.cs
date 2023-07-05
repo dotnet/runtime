@@ -21,25 +21,6 @@ namespace System
             "Pacific/Pitcairn"    // Prefer "Pitcairn Islands Time" over "Pitcairn Time"
         };
 
-        // Main function that is called during construction to populate the three display names
-        private static void TryPopulateTimeZoneDisplayNamesFromGlobalizationData(string timeZoneId, TimeSpan baseUtcOffset, ref string? standardDisplayName, ref string? daylightDisplayName, ref string? displayName)
-        {
-            if (GlobalizationMode.Invariant)
-            {
-                return;
-            }
-
-            // Determine the culture to use
-            CultureInfo uiCulture = CultureInfo.CurrentUICulture;
-            if (uiCulture.Name.Length == 0)
-                uiCulture = CultureInfo.GetCultureInfo(FallbackCultureName); // ICU doesn't work nicely with InvariantCulture
-
-            // Attempt to populate the fields backing the StandardName, DaylightName, and DisplayName from globalization data.
-            GetDisplayName(timeZoneId, Interop.Globalization.TimeZoneDisplayNameType.Standard, uiCulture.Name, ref standardDisplayName);
-            GetDisplayName(timeZoneId, Interop.Globalization.TimeZoneDisplayNameType.DaylightSavings, uiCulture.Name, ref daylightDisplayName);
-            GetFullValueForDisplayNameField(timeZoneId, baseUtcOffset, uiCulture, ref displayName);
-        }
-
         // Helper function to get the standard display name for the UTC static time zone instance
         private static string GetUtcStandardDisplayName()
         {
