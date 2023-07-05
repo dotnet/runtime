@@ -88,19 +88,19 @@ namespace System
             return (AdjustmentRule[])_adjustmentRules.Clone();
         }
 
-        private string? PopulateDisplayName()
+        private static string? PopulateDisplayName()
         {
             // Keep window's implementation to populate via constructor
             return null;
         }
 
-        private string? PopulateStandardDisplayName()
+        private static string? PopulateStandardDisplayName()
         {
             // Keep window's implementation to populate via constructor
             return null;
         }
 
-        private string? PopulateDaylightDisplayName()
+        private static string? PopulateDaylightDisplayName()
         {
             // Keep window's implementation to populate via constructor
             return null;
