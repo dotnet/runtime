@@ -2540,7 +2540,10 @@ interp_handle_intrinsics (TransformData *td, MonoMethod *target_method, MonoClas
 		MonoType *t = ctx->method_inst->type_argv [0];
 		t = mini_get_underlying_type (t);
 
-		gboolean is_i8 = (t->type == MONO_TYPE_I8 || t->type == MONO_TYPE_U8);
+		if (t->type == MONO_TYPE_R4 || t->type == MONO_TYPE_R8)
+			return FALSE;
+
+		gboolean is_i8 = (t->type == MONO_TYPE_I8 || t->type == MONO_TYPE_U8 || (TARGET_SIZEOF_VOID_P == 8 && (t->type == MONO_TYPE_I || t->type == MONO_TYPE_U)));
 		gboolean is_unsigned = (t->type == MONO_TYPE_U1 || t->type == MONO_TYPE_U2 || t->type == MONO_TYPE_U4 || t->type == MONO_TYPE_U8 || t->type == MONO_TYPE_U);
 
 		gboolean is_compareto = strcmp (tm, "EnumCompareTo") == 0;

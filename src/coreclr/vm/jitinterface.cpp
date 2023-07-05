@@ -8824,55 +8824,31 @@ CORINFO_CLASS_HANDLE CEEInfo::getDefaultComparerClassHelper(CORINFO_CLASS_HANDLE
     // We need to find the appropriate instantiation
     Instantiation inst(&elemTypeHnd, 1);
 
-    // If T implements IComparable<T>
-    if (elemTypeHnd.CanCastTo(TypeHandle(CoreLibBinder::GetClass(CLASS__ICOMPARABLEGENERIC)).Instantiate(inst)))
-    {
-        TypeHandle resultTh = ((TypeHandle)CoreLibBinder::GetClass(CLASS__GENERIC_COMPARER)).Instantiate(inst);
-        return CORINFO_CLASS_HANDLE(resultTh.GetMethodTable());
-    }
-
     // Nullable<T>
     if (Nullable::IsNullableType(elemTypeHnd))
     {
         Instantiation nullableInst = elemTypeHnd.AsMethodTable()->GetInstantiation();
-        TypeHandle iequatable = TypeHandle(CoreLibBinder::GetClass(CLASS__IEQUATABLEGENERIC)).Instantiate(nullableInst);
-        if (nullableInst[0].CanCastTo(iequatable))
-        {
-            TypeHandle resultTh = ((TypeHandle)CoreLibBinder::GetClass(CLASS__NULLABLE_COMPARER)).Instantiate(nullableInst);
-            return CORINFO_CLASS_HANDLE(resultTh.GetMethodTable());
-        }
+        TypeHandle resultTh = ((TypeHandle)CoreLibBinder::GetClass(CLASS__NULLABLE_COMPARER)).Instantiate(nullableInst);
+        return CORINFO_CLASS_HANDLE(resultTh.GetMethodTable());
     }
 
     // We need to special case the Enum comparers based on their underlying type to avoid boxing
     if (elemTypeHnd.IsEnum())
     {
-        MethodTable* targetClass = NULL;
-        CorElementType normType = elemTypeHnd.GetVerifierCorElementType();
+        TypeHandle resultTh = ((TypeHandle)CoreLibBinder::GetClass(CLASS__ENUM_COMPARER)).Instantiate(inst);
+        return CORINFO_CLASS_HANDLE(resultTh.GetMethodTable());
+    }
 
-        switch(normType)
-        {
-            case ELEMENT_TYPE_I1:
-            case ELEMENT_TYPE_I2:
-            case ELEMENT_TYPE_U1:
-            case ELEMENT_TYPE_U2:
-            case ELEMENT_TYPE_I4:
-            case ELEMENT_TYPE_U4:
-            case ELEMENT_TYPE_I8:
-            case ELEMENT_TYPE_U8:
-            {
-                targetClass = CoreLibBinder::GetClass(CLASS__ENUM_COMPARER);
-                break;
-            }
+    if (elemTypeHnd.IsCanonicalSubtype())
+    {
+        return NULL;
+    }
 
-            default:
-                break;
-        }
-
-        if (targetClass != NULL)
-        {
-            TypeHandle resultTh = ((TypeHandle)targetClass->GetCanonicalMethodTable()).Instantiate(inst);
-            return CORINFO_CLASS_HANDLE(resultTh.GetMethodTable());
-        }
+    // If T implements IComparable<T>
+    if (elemTypeHnd.CanCastTo(TypeHandle(CoreLibBinder::GetClass(CLASS__ICOMPARABLEGENERIC)).Instantiate(inst)))
+    {
+        TypeHandle resultTh = ((TypeHandle)CoreLibBinder::GetClass(CLASS__GENERIC_COMPARER)).Instantiate(inst);
+        return CORINFO_CLASS_HANDLE(resultTh.GetMethodTable());
     }
 
     // Default case
@@ -8913,24 +8889,11 @@ CORINFO_CLASS_HANDLE CEEInfo::getDefaultEqualityComparerClassHelper(CORINFO_CLAS
     // And in compile.cpp's SpecializeEqualityComparer
     TypeHandle elemTypeHnd(elemType);
 
-    // Special case for byte
-    if (elemTypeHnd.AsMethodTable()->HasSameTypeDefAs(CoreLibBinder::GetClass(CLASS__ELEMENT_TYPE_U1)))
-    {
-        return CORINFO_CLASS_HANDLE(CoreLibBinder::GetClass(CLASS__BYTE_EQUALITYCOMPARER));
-    }
-
     // Mirrors the logic in BCL's CompareHelpers.CreateDefaultComparer
     // And in compile.cpp's SpecializeComparer
     //
     // We need to find the appropriate instantiation
     Instantiation inst(&elemTypeHnd, 1);
-
-    // If T implements IEquatable<T>
-    if (elemTypeHnd.CanCastTo(TypeHandle(CoreLibBinder::GetClass(CLASS__IEQUATABLEGENERIC)).Instantiate(inst)))
-    {
-        TypeHandle resultTh = ((TypeHandle)CoreLibBinder::GetClass(CLASS__GENERIC_EQUALITYCOMPARER)).Instantiate(inst);
-        return CORINFO_CLASS_HANDLE(resultTh.GetMethodTable());
-    }
 
     // Nullable<T>
     if (Nullable::IsNullableType(elemTypeHnd))
@@ -8946,33 +8909,20 @@ CORINFO_CLASS_HANDLE CEEInfo::getDefaultEqualityComparerClassHelper(CORINFO_CLAS
     // to avoid boxing and call the correct versions of GetHashCode.
     if (elemTypeHnd.IsEnum())
     {
-        MethodTable* targetClass = NULL;
-        CorElementType normType = elemTypeHnd.GetVerifierCorElementType();
+        TypeHandle resultTh = ((TypeHandle)CoreLibBinder::GetClass(CLASS__ENUM_EQUALITYCOMPARER)).Instantiate(inst);
+        return CORINFO_CLASS_HANDLE(resultTh.GetMethodTable());
+    }
 
-        switch(normType)
-        {
-            case ELEMENT_TYPE_I1:
-            case ELEMENT_TYPE_I2:
-            case ELEMENT_TYPE_U1:
-            case ELEMENT_TYPE_U2:
-            case ELEMENT_TYPE_I4:
-            case ELEMENT_TYPE_U4:
-            case ELEMENT_TYPE_I8:
-            case ELEMENT_TYPE_U8:
-            {
-                targetClass = CoreLibBinder::GetClass(CLASS__ENUM_EQUALITYCOMPARER);
-                break;
-            }
+    if (elemTypeHnd.IsCanonicalSubtype())
+    {
+        return NULL;
+    }
 
-            default:
-                break;
-        }
-
-        if (targetClass != NULL)
-        {
-            TypeHandle resultTh = ((TypeHandle)targetClass->GetCanonicalMethodTable()).Instantiate(inst);
-            return CORINFO_CLASS_HANDLE(resultTh.GetMethodTable());
-        }
+    // If T implements IEquatable<T>
+    if (elemTypeHnd.CanCastTo(TypeHandle(CoreLibBinder::GetClass(CLASS__IEQUATABLEGENERIC)).Instantiate(inst)))
+    {
+        TypeHandle resultTh = ((TypeHandle)CoreLibBinder::GetClass(CLASS__GENERIC_EQUALITYCOMPARER)).Instantiate(inst);
+        return CORINFO_CLASS_HANDLE(resultTh.GetMethodTable());
     }
 
     // Default case
