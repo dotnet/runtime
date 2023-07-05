@@ -109,6 +109,16 @@ namespace System.Memory.Tests.Span
         [InlineData(StringComparison.OrdinalIgnoreCase, -1, " ", null)]
         [InlineData(StringComparison.Ordinal, -1, "", null)]
         [InlineData(StringComparison.OrdinalIgnoreCase, -1, "", null)]
+        // A few simple cases
+        [InlineData(StringComparison.Ordinal, 1, "xbc", "abc, bc")]
+        [InlineData(StringComparison.Ordinal, 0, "foobar", "foo, bar")]
+        [InlineData(StringComparison.Ordinal, 0, "barfoo", "foo, bar")]
+        [InlineData(StringComparison.Ordinal, 0, "foofoo", "foo, bar")]
+        [InlineData(StringComparison.Ordinal, 0, "barbar", "foo, bar")]
+        [InlineData(StringComparison.Ordinal, 4, "bafofoo", "foo, bar")]
+        [InlineData(StringComparison.Ordinal, 4, "bafofoo", "bar, foo")]
+        [InlineData(StringComparison.Ordinal, 4, "fobabar", "foo, bar")]
+        [InlineData(StringComparison.Ordinal, 4, "fobabar", "bar, foo")]
         // Multiple potential matches - we want the first one
         [InlineData(StringComparison.Ordinal, 1, "abcd", "bc, cd")]
         // Simple case sensitivity
