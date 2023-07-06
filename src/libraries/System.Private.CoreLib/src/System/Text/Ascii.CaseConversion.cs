@@ -219,7 +219,7 @@ namespace System.Text
             bool conversionIsWidthPreserving = typeof(TFrom) == typeof(TTo); // JIT turns this into a const
             bool conversionIsToUpper = (typeof(TCasing) == typeof(ToUpperConversion)); // JIT turns this into a const
             uint numInputElementsToConsumeEachVectorizedLoopIteration = (uint)(sizeof(Vector128<byte>) / sizeof(TFrom)); // JIT turns this into a const
-            uint numInputElementsToConsumeEachVectorizedLoopIteration_AVX512 = (uint)(sizeof(Vector512<byte>) / sizeof(TFrom)); // JIT turns this into a const
+            uint numInputElementsToConsumeEachVectorizedLoopIteration_512 = (uint)(sizeof(Vector512<byte>) / sizeof(TFrom)); // JIT turns this into a const
 
 
             nuint i = 0;
@@ -234,7 +234,7 @@ namespace System.Text
             }
 
             // Process the input as a series of 512-bit blocks.
-            if (Vector512.IsHardwareAccelerated && elementCount >= numInputElementsToConsumeEachVectorizedLoopIteration_AVX512)
+            if (Vector512.IsHardwareAccelerated && elementCount >= numInputElementsToConsumeEachVectorizedLoopIteration_512)
             {
                 Vector512<TFrom> srcVector = Vector512.LoadUnsafe(ref *pSrc);
                 if (VectorContainsNonAsciiChar(srcVector))
@@ -262,15 +262,15 @@ namespace System.Text
                 // many elements we should skip in order to have future writes be
                 // aligned.
 
-                uint expectedWriteAlignment_AVX512 = numInputElementsToConsumeEachVectorizedLoopIteration_AVX512 * (uint)sizeof(TTo); // JIT turns this into a const
-                i = numInputElementsToConsumeEachVectorizedLoopIteration_AVX512 - ((uint)pDest % expectedWriteAlignment_AVX512) / (uint)sizeof(TTo);
-                Debug.Assert((nuint)(&pDest[i]) % expectedWriteAlignment_AVX512 == 0, "Destination buffer wasn't properly aligned!");
+                uint expectedWriteAlignment_512 = numInputElementsToConsumeEachVectorizedLoopIteration_512 * (uint)sizeof(TTo); // JIT turns this into a const
+                i = numInputElementsToConsumeEachVectorizedLoopIteration_512 - ((uint)pDest % expectedWriteAlignment_512) / (uint)sizeof(TTo);
+                Debug.Assert((nuint)(&pDest[i]) % expectedWriteAlignment_512 == 0, "Destination buffer wasn't properly aligned!");
 
                 while (true)
                 {
                     Debug.Assert(i <= elementCount, "We overran a buffer somewhere.");
 
-                    if ((elementCount - i) < numInputElementsToConsumeEachVectorizedLoopIteration_AVX512)
+                    if ((elementCount - i) < numInputElementsToConsumeEachVectorizedLoopIteration_512)
                     {
                         // If we're about to enter the final iteration of the loop, back up so that
                         // we can read one unaligned block. If we've already consumed all the data,
@@ -281,7 +281,7 @@ namespace System.Text
                             goto Return;
                         }
 
-                        i = elementCount - numInputElementsToConsumeEachVectorizedLoopIteration_AVX512;
+                        i = elementCount - numInputElementsToConsumeEachVectorizedLoopIteration_512;
                     }
 
                     // Unaligned read & check for non-ASCII data.
@@ -301,7 +301,7 @@ namespace System.Text
                     // We expect this write to be aligned except for the last run through the loop.
 
                     ChangeWidthAndWriteTo(srcVector, pDest, i);
-                    i += numInputElementsToConsumeEachVectorizedLoopIteration_AVX512;
+                    i += numInputElementsToConsumeEachVectorizedLoopIteration_512;
                 }
             }
             // Process the input as a series of 128-bit blocks.

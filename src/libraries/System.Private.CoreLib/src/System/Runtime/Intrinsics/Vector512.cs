@@ -2701,8 +2701,9 @@ namespace System.Runtime.Intrinsics
         internal static void StoreLowerUnsafe<T>(this Vector512<T> source, ref T destination, nuint elementOffset = 0)
             where T : struct
         {
+            ThrowHelper.ThrowForUnsupportedIntrinsicsVector512BaseType<T>();
             ref byte address = ref Unsafe.As<T, byte>(ref Unsafe.Add(ref destination, elementOffset));
-            Unsafe.WriteUnaligned<double>(ref address, source.AsDouble().ToScalar());
+            Unsafe.WriteUnaligned(ref address, source._lower);
         }
 
         /// <summary>Subtracts two vectors to compute their difference.</summary>
