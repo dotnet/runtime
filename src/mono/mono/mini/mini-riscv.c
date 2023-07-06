@@ -3845,6 +3845,13 @@ mono_arch_output_basic_block (MonoCompile *cfg, MonoBasicBlock *bb)
 			riscv_divu (code, ins->dreg, ins->sreg1, ins->sreg2);
 			break;
 		case OP_IREM:
+#ifdef TARGET_RISCV64
+			g_assert (riscv_stdext_m);
+			code = mono_riscv_emit_branch_exc (cfg, code, OP_RISCV_EXC_BEQ, ins->sreg2, RISCV_ZERO,
+			                                   "DivideByZeroException");
+			riscv_remw (code, ins->dreg, ins->sreg1, ins->sreg2);
+			break;
+#endif
 		case OP_LREM:
 			g_assert (riscv_stdext_m);
 			code = mono_riscv_emit_branch_exc (cfg, code, OP_RISCV_EXC_BEQ, ins->sreg2, RISCV_ZERO,
@@ -3852,6 +3859,13 @@ mono_arch_output_basic_block (MonoCompile *cfg, MonoBasicBlock *bb)
 			riscv_rem (code, ins->dreg, ins->sreg1, ins->sreg2);
 			break;
 		case OP_IREM_UN:
+#ifdef TARGET_RISCV64
+			g_assert (riscv_stdext_m);
+			code = mono_riscv_emit_branch_exc (cfg, code, OP_RISCV_EXC_BEQ, ins->sreg2, RISCV_ZERO,
+			                                   "DivideByZeroException");
+			riscv_remuw (code, ins->dreg, ins->sreg1, ins->sreg2);
+			break;
+#endif
 		case OP_LREM_UN:
 			g_assert (riscv_stdext_m);
 			code = mono_riscv_emit_branch_exc (cfg, code, OP_RISCV_EXC_BEQ, ins->sreg2, RISCV_ZERO,
