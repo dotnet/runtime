@@ -67,82 +67,65 @@ namespace System
         }
     }
 
-    // Native AOT doesn't use these for size on disk reasons
-#if !NATIVEAOT
     internal abstract class SZGenericArrayEnumeratorBase : IDisposable
     {
-        protected readonly Array _array;
         protected int _index;
+        protected readonly int _endIndex;
 
-        protected SZGenericArrayEnumeratorBase(Array array)
+        protected SZGenericArrayEnumeratorBase(int endIndex)
         {
-            Debug.Assert(array != null);
-
-            _array = array;
             _index = -1;
+            _endIndex = endIndex;
         }
 
         public bool MoveNext()
         {
-            int index = _index + 1;
-            uint length = (uint)_array.NativeLength;
-            if ((uint)index >= length)
+            if (_index < _endIndex)
             {
-                _index = (int)length;
-                return false;
+                _index++;
+                return (_index < _endIndex);
             }
-            _index = index;
-            return true;
+            return false;
         }
 
         public void Reset() => _index = -1;
 
-#pragma warning disable CA1822 // https://github.com/dotnet/roslyn-analyzers/issues/5911
         public void Dispose()
         {
         }
-#pragma warning restore CA1822
     }
 
     internal sealed class SZGenericArrayEnumerator<T> : SZGenericArrayEnumeratorBase, IEnumerator<T>
     {
+        private readonly T[]? _array;
+
         /// <summary>Provides an empty enumerator singleton.</summary>
         /// <remarks>
         /// If the consumer is using SZGenericArrayEnumerator elsewhere or is otherwise likely
         /// to be using T[] elsewhere, this singleton should be used.  Otherwise, GenericEmptyEnumerator's
         /// singleton should be used instead, as it doesn't reference T[] in order to reduce footprint.
         /// </remarks>
-#pragma warning disable CA1825
-        internal static readonly SZGenericArrayEnumerator<T> Empty =
-            // Array.Empty is intentionally omitted here, since we don't want to pay for generic instantiations
-            // that wouldn't have otherwise been used.
-            new SZGenericArrayEnumerator<T>(new T[0]);
-#pragma warning restore CA1825
+        internal static readonly SZGenericArrayEnumerator<T> Empty = new SZGenericArrayEnumerator<T>(null, -1);
 
-        public SZGenericArrayEnumerator(T[] array)
-            : base(array)
+        internal SZGenericArrayEnumerator(T[]? array, int endIndex)
+            : base(endIndex)
         {
+            Debug.Assert(array == null || endIndex == array.Length);
+            _array = array;
         }
 
         public T Current
         {
             get
             {
-                int index = _index;
-                T[] array = Unsafe.As<T[]>(_array);
-
-                if ((uint)index >= (uint)array.Length)
-                {
-                    ThrowHelper.ThrowInvalidOperationException_EnumCurrent(index);
-                }
-
-                return array[index];
+                if ((uint)_index >= (uint)_endIndex)
+                    ThrowHelper.ThrowInvalidOperationException();
+                return _array![_index];
             }
         }
 
         object? IEnumerator.Current => Current;
     }
-#endif
 
     internal abstract class GenericEmptyEnumeratorBase : IDisposable, IEnumerator
     {

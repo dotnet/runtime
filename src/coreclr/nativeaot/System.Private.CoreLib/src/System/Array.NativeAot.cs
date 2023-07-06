@@ -1199,68 +1199,6 @@ namespace System
         }
     }
 
-    internal class SZGenericArrayEnumeratorBase : IDisposable
-    {
-        protected int _index;
-        protected int _endIndex;
-
-        internal SZGenericArrayEnumeratorBase()
-        {
-            _index = -1;
-        }
-
-        public bool MoveNext()
-        {
-            if (_index < _endIndex)
-            {
-                _index++;
-                return (_index < _endIndex);
-            }
-            return false;
-        }
-
-        public void Dispose()
-        {
-        }
-    }
-
-    internal sealed class SZGenericArrayEnumerator<T> : SZGenericArrayEnumeratorBase, IEnumerator<T>
-    {
-        private readonly T[] _array;
-
-        // Passing -1 for endIndex so that MoveNext always returns false without mutating _index
-        internal static readonly SZGenericArrayEnumerator<T> Empty = new SZGenericArrayEnumerator<T>(null, -1);
-
-        internal SZGenericArrayEnumerator(T[] array, int endIndex)
-        {
-            _array = array;
-            _endIndex = endIndex;
-        }
-
-        public T Current
-        {
-            get
-            {
-                if ((uint)_index >= (uint)_endIndex)
-                    ThrowHelper.ThrowInvalidOperationException();
-                return _array[_index];
-            }
-        }
-
-        object IEnumerator.Current
-        {
-            get
-            {
-                return Current;
-            }
-        }
-
-        void IEnumerator.Reset()
-        {
-            _index = -1;
-        }
-    }
-
     public class MDArray
     {
         public const int MinRank = 1;
