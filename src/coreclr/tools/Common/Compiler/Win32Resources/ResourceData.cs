@@ -83,6 +83,11 @@ namespace ILCompiler.Win32Resources
 
         public void WriteResources(ISymbolNode nodeAssociatedWithDataBuilder, ref ObjectDataBuilder dataBuilder)
         {
+            WriteResources(nodeAssociatedWithDataBuilder, ref dataBuilder, ref dataBuilder);
+        }
+
+        public void WriteResources(ISymbolNode nodeAssociatedWithDataBuilder, ref ObjectDataBuilder dataBuilder, ref ObjectDataBuilder contentBuilder)
+        {
             Debug.Assert(dataBuilder.CountBytes == 0);
 
             SortedDictionary<string, List<ObjectDataBuilder.Reservation>> nameTable = new SortedDictionary<string, List<ObjectDataBuilder.Reservation>>();
@@ -126,6 +131,23 @@ namespace ILCompiler.Win32Resources
                 }
             }
 
+            // Emit byte arrays of resource data, capture the offsets
+            foreach (Tuple<ResLanguage, ObjectDataBuilder.Reservation> language in resLanguages)
+            {
+                contentBuilder.PadAlignment(8); // Data in resource files is 8 byte aligned
+                dataEntryTable.Add(language.Item1, contentBuilder.CountBytes);
+                contentBuilder.EmitBytes(language.Item1.DataEntry);
+            }
+            contentBuilder.PadAlignment(8); // Data in resource files is 8 byte aligned
+
+            dataBuilder.PadAlignment(4); // resource data entries are 4 byte aligned
+            foreach (Tuple<ResLanguage, ObjectDataBuilder.Reservation> language in resLanguages)
+            {
+                dataBuilder.EmitInt(language.Item2, dataBuilder.CountBytes);
+                IMAGE_RESOURCE_DATA_ENTRY.Write(ref dataBuilder, nodeAssociatedWithDataBuilder, dataEntryTable[language.Item1], language.Item1.DataEntry.Length);
+            }
+            dataBuilder.PadAlignment(4); // resource data entries are 4 byte aligned
+
             // Emit name table
             dataBuilder.PadAlignment(2); // name table is 2 byte aligned
             foreach (KeyValuePair<string, List<ObjectDataBuilder.Reservation>> name in nameTable)
@@ -141,22 +163,6 @@ namespace ILCompiler.Win32Resources
                     dataBuilder.EmitUShort((ushort)c);
                 }
             }
-
-            // Emit byte arrays of resource data, capture the offsets
-            foreach (Tuple<ResLanguage, ObjectDataBuilder.Reservation> language in resLanguages)
-            {
-                dataBuilder.PadAlignment(4); // Data in resource files is 4 byte aligned
-                dataEntryTable.Add(language.Item1, dataBuilder.CountBytes);
-                dataBuilder.EmitBytes(language.Item1.DataEntry);
-            }
-
-            dataBuilder.PadAlignment(4); // resource data entries are 4 byte aligned
-            foreach (Tuple<ResLanguage, ObjectDataBuilder.Reservation> language in resLanguages)
-            {
-                dataBuilder.EmitInt(language.Item2, dataBuilder.CountBytes);
-                IMAGE_RESOURCE_DATA_ENTRY.Write(ref dataBuilder, nodeAssociatedWithDataBuilder, dataEntryTable[language.Item1], language.Item1.DataEntry.Length);
-            }
-            dataBuilder.PadAlignment(4); // resource data entries are 4 byte aligned
         }
     }
 }
