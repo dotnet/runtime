@@ -82,8 +82,8 @@ namespace System.Text
                         return false;
                     }
 
-                    currentRightSearchSpace = ref Unsafe.Add(ref currentRightSearchSpace, Vector256<TRight>.Count);
-                    currentLeftSearchSpace = ref Unsafe.Add(ref currentLeftSearchSpace, TLoader.Count256);
+                    currentRightSearchSpace = ref Unsafe.Add(ref currentRightSearchSpace, Vector512<TRight>.Count);
+                    currentLeftSearchSpace = ref Unsafe.Add(ref currentLeftSearchSpace, TLoader.Count512);
                 }
                 while (!Unsafe.IsAddressGreaterThan(ref currentRightSearchSpace, ref oneVectorAwayFromRightEnd));
 
