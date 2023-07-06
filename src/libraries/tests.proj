@@ -52,10 +52,6 @@
   <ItemGroup Condition="'$(TargetOS)' == 'browser' and '$(MonoWasmBuildVariant)' != 'multithread'" >
     <ProjectExclusions Include="$(MonoProjectRoot)sample\wasm\browser-threads\Wasm.Browser.Threads.Sample.csproj" />
     <ProjectExclusions Include="$(MonoProjectRoot)sample\wasm\browser-threads-minimal\Wasm.Browser.Threads.Minimal.Sample.csproj" />
-  </ItemGroup>
-
-  <!-- Samples that require a perf-tracing wasm runtime -->
-  <ItemGroup Condition="'$(TargetOS)' == 'browser' and '$(MonoWasmBuildVariant)' != 'perftrace'" >
     <ProjectExclusions Include="$(MonoProjectRoot)sample\wasm\browser-eventpipe\Wasm.Browser.EventPipe.Sample.csproj" />
   </ItemGroup>
 
@@ -375,13 +371,6 @@
     <ProjectExclusions Include="$(MSBuildThisFileDirectory)System.Net.WebSockets.Client\tests\System.Net.WebSockets.Client.Tests.csproj" />
   </ItemGroup>
 
-  <ItemGroup Condition="'$(TargetOS)' == 'browser' and '$(MonoWasmBuildVariant)' == 'perftrace' and '$(RunDisabledWasmTests)' != 'true'">
-    <!-- Issue: https://github.com/dotnet/runtime/issues/74411 -->
-    <ProjectExclusions Include="$(MSBuildThisFileDirectory)System.Net.Http\tests\FunctionalTests\System.Net.Http.Functional.Tests.csproj" />
-    <!-- Issue: https://github.com/dotnet/runtime/issues/74413 -->
-    <ProjectExclusions Include="$(MSBuildThisFileDirectory)System.Net.WebSockets.Client\tests\System.Net.WebSockets.Client.Tests.csproj" />
-  </ItemGroup>
-
   <!-- Aggressive Trimming related failures -->
   <ItemGroup Condition="('$(TargetOS)' != 'browser' and '$(RunAOTCompilation)' == 'true' and '$(MonoForceInterpreter)' != 'true') or ('$(TargetOS)' == 'browser' and '$(BuildAOTTestsOnHelix)' == 'true' and '$(RunDisabledWasmTests)' != 'true')">
   </ItemGroup>
@@ -452,6 +441,9 @@
     <ProjectExclusions Include="$(MSBuildThisFileDirectory)System.Text.RegularExpressions\tests\FunctionalTests\System.Text.RegularExpressions.Tests.csproj" />
     <ProjectExclusions Include="$(MSBuildThisFileDirectory)System.Runtime.InteropServices.JavaScript\tests\JSImportGenerator.UnitTest\JSImportGenerator.Unit.Tests.csproj" />
     <ProjectExclusions Include="$(MSBuildThisFileDirectory)Microsoft.Extensions.Configuration.Binder\tests\SourceGenerationTests\Microsoft.Extensions.Configuration.Binder.SourceGeneration.Tests.csproj" />
+    <ProjectExclusions Include="$(MSBuildThisFileDirectory)Microsoft.Extensions.Options.ConfigurationExtensions\tests\SourceGenerationTests\Microsoft.Extensions.Options.ConfigurationExtensions.SourceGeneration.Tests.csproj" />
+    <ProjectExclusions Include="$(MSBuildThisFileDirectory)Microsoft.Extensions.Options/tests/SourceGenerationTests/Microsoft.Extensions.Options.SourceGeneration.Tests.csproj" />
+    <ProjectExclusions Include="$(MSBuildThisFileDirectory)Microsoft.Extensions.Options/tests/SourceGeneration.Unit.Tests/Microsoft.Extensions.Options.SourceGeneration.Unit.Tests.csproj" />
     <ProjectExclusions Include="$(MSBuildThisFileDirectory)System.Private.CoreLib/tests/IntrinsicsInSystemPrivatecoreLibAnalyzer.Tests/IntrinsicsInSystemPrivateCoreLib.Tests.csproj" />
 
     <!-- Many test failures due to trimming and MakeGeneric. XmlSerializer is not currently supported with NativeAOT. Low priority -->
@@ -558,6 +550,10 @@
     <!-- Don't want the default smoke tests - just verify that threading works -->
     <SmokeTestProject Remove="@(SmokeTestProject)" />
     <SmokeTestProject Include="$(MonoProjectRoot)sample\wasm\browser-threads-minimal\Wasm.Browser.Threads.Minimal.Sample.csproj" />
+    <SmokeTestProject Include="$(MSBuildThisFileDirectory)System.Net.WebSockets.Client\tests\System.Net.WebSockets.Client.Tests.csproj" />
+    <!-- ActiveIssue https://github.com/dotnet/runtime/issues/88084
+    <SmokeTestProject Include="$(MSBuildThisFileDirectory)System.Net.Http\tests\FunctionalTests\System.Net.Http.Functional.Tests.csproj" />
+    -->
   </ItemGroup>
 
   <ItemGroup>
@@ -720,12 +716,12 @@
 
     <ItemGroup>
       <NormalTestAppBundles Include="$(NormalTestsAppBundleRoot)*/AppBundle/CMakeLists.txt" />
-      <NormalTestCMakeEntries Include="cmake_minimum_required(VERSION 3.16)" />
+      <NormalTestCMakeEntries Include="cmake_minimum_required(VERSION 3.20)" />
       <NormalTestCMakeEntries Include="project(NormalTestAppBundles)" />
       <NormalTestCMakeEntries Include="add_subdirectory(%(NormalTestAppBundles.RootDir)%(NormalTestAppBundles.Directory) %(NormalTestAppBundles.RecursiveDir) EXCLUDE_FROM_ALL)" />
 
       <FunctionalTestAppBundles Include="$(FunctionalTestsAppBundleRoot)*/AppBundle/CMakeLists.txt" />
-      <FunctionalTestCMakeEntries Include="cmake_minimum_required(VERSION 3.16)" />
+      <FunctionalTestCMakeEntries Include="cmake_minimum_required(VERSION 3.20)" />
       <FunctionalTestCMakeEntries Include="project(FunctionalTestAppBundles)" />
       <FunctionalTestCMakeEntries Include="add_subdirectory(%(FunctionalTestAppBundles.RootDir)%(FunctionalTestAppBundles.Directory) %(FunctionalTestAppBundles.RecursiveDir) EXCLUDE_FROM_ALL)" />
     </ItemGroup>

@@ -14,7 +14,7 @@ namespace System.Runtime.InteropServices.JavaScript
     /// This is draft for possible public API of browser thread (web worker) dedicated to JS interop workloads.
     /// The method names are unique to make it easy to call them via reflection for now. All of them should be just `RunAsync` probably.
     /// </summary>
-    internal static class WebWorker
+    public static class WebWorker
     {
         public static Task<T> RunAsync<T>(Func<Task<T>> body, CancellationToken cancellationToken)
         {
@@ -31,7 +31,7 @@ namespace System.Runtime.InteropServices.JavaScript
                         return;
                     }
 
-                    JSHostImplementation.InstallWebWorkerInterop(true);
+                    JSHostImplementation.InstallWebWorkerInterop(true, false);
                     var childScheduler = TaskScheduler.FromCurrentSynchronizationContext();
                     Task<T> res = body();
                     // This code is exiting thread main() before all promises are resolved.
@@ -42,9 +42,9 @@ namespace System.Runtime.InteropServices.JavaScript
                         JSHostImplementation.UninstallWebWorkerInterop();
                     }, childScheduler);
                 }
-                catch (Exception e)
+                catch (Exception ex)
                 {
-                    Environment.FailFast("WebWorker.RunAsync failed", e);
+                    PostWhenException(parentContext, tcs, ex);
                 }
 
             });
@@ -68,7 +68,7 @@ namespace System.Runtime.InteropServices.JavaScript
                         return;
                     }
 
-                    JSHostImplementation.InstallWebWorkerInterop(true);
+                    JSHostImplementation.InstallWebWorkerInterop(true, false);
                     var childScheduler = TaskScheduler.FromCurrentSynchronizationContext();
                     Task res = body();
                     // This code is exiting thread main() before all promises are resolved.
@@ -79,9 +79,9 @@ namespace System.Runtime.InteropServices.JavaScript
                         JSHostImplementation.UninstallWebWorkerInterop();
                     }, childScheduler);
                 }
-                catch (Exception e)
+                catch (Exception ex)
                 {
-                    Environment.FailFast("WebWorker.RunAsync failed", e);
+                    PostWhenException(parentContext, tcs, ex);
                 }
 
             });
@@ -105,7 +105,7 @@ namespace System.Runtime.InteropServices.JavaScript
                         return;
                     }
 
-                    JSHostImplementation.InstallWebWorkerInterop(false);
+                    JSHostImplementation.InstallWebWorkerInterop(false, false);
                     try
                     {
                         body();
@@ -117,9 +117,9 @@ namespace System.Runtime.InteropServices.JavaScript
                     }
                     JSHostImplementation.UninstallWebWorkerInterop();
                 }
-                catch (Exception e)
+                catch (Exception ex)
                 {
-                    tcs.SetException(e);
+                    PostWhenException(parentContext, tcs, ex);
                 }
 
             });
@@ -160,13 +160,7 @@ namespace System.Runtime.InteropServices.JavaScript
             {
                 ctx.Post((_) =>
                 {
-                    if (done.IsFaulted)
-                        tcs.SetException(done.Exception);
-                    else if (done.IsCanceled)
-                        tcs.SetCanceled();
-                    else
-                        tcs.SetResult();
-
+                    PropagateCompletion(tcs, done);
                 }, null);
             }
             catch (Exception e)
@@ -199,25 +193,69 @@ namespace System.Runtime.InteropServices.JavaScript
             }
         }
 
+        private static void PostWhenException<T>(SynchronizationContext ctx, TaskCompletionSource<T> tcs, Exception ex)
+        {
+            try
+            {
+                ctx.Post((_) => tcs.SetException(ex), null);
+            }
+            catch (Exception e)
+            {
+                Environment.FailFast("WebWorker.RunAsync failed", e);
+            }
+        }
+
         private static void PostWhenDone<T>(SynchronizationContext ctx, TaskCompletionSource<T> tcs, Task<T> done)
         {
             try
             {
                 ctx.Post((_) =>
                 {
-                    if (done.IsFaulted)
-                        tcs.SetException(done.Exception);
-                    else if (done.IsCanceled)
-                        tcs.SetCanceled();
-                    else
-                        tcs.SetResult(done.Result);
-
+                    PropagateCompletion(tcs, done);
                 }, null);
             }
             catch (Exception e)
             {
                 Environment.FailFast("WebWorker.RunAsync failed", e);
             }
+        }
+
+        internal static void PropagateCompletion<T>(TaskCompletionSource<T> tcs, Task<T> done)
+        {
+            if (done.IsFaulted)
+            {
+                if(done.Exception is AggregateException ag && ag.InnerException!=null)
+                {
+                    tcs.SetException(ag.InnerException);
+                }
+                else
+                {
+                    tcs.SetException(done.Exception);
+                }
+            }
+            else if (done.IsCanceled)
+                tcs.SetCanceled();
+            else
+                tcs.SetResult(done.Result);
+        }
+
+        internal static void PropagateCompletion(TaskCompletionSource tcs, Task done)
+        {
+            if (done.IsFaulted)
+            {
+                if (done.Exception is AggregateException ag && ag.InnerException != null)
+                {
+                    tcs.SetException(ag.InnerException);
+                }
+                else
+                {
+                    tcs.SetException(done.Exception);
+                }
+            }
+            else if (done.IsCanceled)
+                tcs.SetCanceled();
+            else
+                tcs.SetResult();
         }
 
         #endregion

@@ -76,7 +76,8 @@ export type MonoConfigInternal = MonoConfig & {
     forwardConsoleLogsToWS?: boolean,
     asyncFlushOnExit?: boolean
     exitAfterSnapshot?: number,
-    startupOptions?: Partial<WebAssemblyStartOptions>
+    startupOptions?: Partial<WebAssemblyStartOptions>,
+    loadAllSatelliteResources?: boolean
 };
 
 export type RunArguments = {
@@ -245,7 +246,9 @@ export function is_nullish<T>(value: T | null | undefined): value is null | unde
 
 export type EmscriptenInternals = {
     isPThread: boolean,
-    disableLegacyJsInterop: boolean,
+    linkerDisableLegacyJsInterop: boolean,
+    linkerEnableAotProfiler: boolean,
+    linkerEnableBrowserProfiler: boolean,
     quit_: Function,
     ExitStatus: ExitStatusError,
 };

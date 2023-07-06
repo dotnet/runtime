@@ -178,6 +178,9 @@ add_event_to_existing_class (MonoImage *image_base, BaselineInfo *base_info, uin
 static void
 add_semantic_method_to_existing_event (MonoImage *image_base, BaselineInfo *base_info, uint32_t semantics, uint32_t klass_token, uint32_t event_token, uint32_t method_token);
 
+static MonoClassMetadataUpdateInfo *
+hot_reload_get_or_add_ginst_update_info(MonoClass *ginst);
+
 static MonoComponentHotReload fn_table = {
 	{ MONO_COMPONENT_ITF_VERSION, &hot_reload_available },
 	&hot_reload_set_fastpath_data,
@@ -322,6 +325,9 @@ struct _BaselineInfo {
 /* See Note: Suppressed Columns */
 static guint16 m_SuppressedDeltaColumns [MONO_TABLE_NUM];
 
+static int
+hot_reload_update_enabled_slow_check (char **env_invalid_val_out);
+
 /**
  * mono_metadata_update_enable:
  * \param modifiable_assemblies_out: set to MonoModifiableAssemblies value
@@ -340,31 +346,58 @@ hot_reload_update_enabled (int *modifiable_assemblies_out)
 	static gboolean inited = FALSE;
 	static int modifiable = MONO_MODIFIABLE_ASSM_NONE;
 
+	gboolean result = FALSE;
 	if (!inited) {
-		char *val = g_getenv (DOTNET_MODIFIABLE_ASSEMBLIES);
-		if (val && !g_strcasecmp (val, "debug")) {
-			mono_trace (G_LOG_LEVEL_DEBUG, MONO_TRACE_METADATA_UPDATE, "Metadata update enabled for debuggable assemblies");
-			modifiable
-				= MONO_MODIFIABLE_ASSM_DEBUG;
-		}
-		g_free (val);
+		modifiable = hot_reload_update_enabled_slow_check (NULL);
 		inited = TRUE;
+		result = (modifiable != MONO_MODIFIABLE_ASSM_NONE);
+		if (result) {
+			mono_trace (G_LOG_LEVEL_DEBUG, MONO_TRACE_METADATA_UPDATE, "Metadata update enabled for debuggable assemblies");
+		}
 	}
 	if (modifiable_assemblies_out)
 		*modifiable_assemblies_out = modifiable;
-	return modifiable != MONO_MODIFIABLE_ASSM_NONE;
+	return result;
+}
+
+/**
+ * checks the DOTNET_MODIFIABLE_ASSEMBLIES environment value.  if it is recognized returns the
+ * aporporiate MONO_MODIFIABLE_ASSM_ enum value.  if it is unset or uncrecognized returns
+ * MONO_MODIFIABLE_ASSM_NONE and writes the value to \c env_invalid_val_out, if it is non-NULL;
+ */
+static int
+hot_reload_update_enabled_slow_check (char **env_invalid_val_out)
+{
+	int modifiable = MONO_MODIFIABLE_ASSM_NONE;
+	char *val = g_getenv (DOTNET_MODIFIABLE_ASSEMBLIES);
+	if (val && !g_strcasecmp (val, "debug")) {
+		modifiable = MONO_MODIFIABLE_ASSM_DEBUG;
+	} else {
+		/* unset or unrecognized value */
+		if (env_invalid_val_out != NULL) {
+			*env_invalid_val_out = val;
+		} else {
+			g_free (val);
+		}
+	}
+	return modifiable;
 }
 
 static gboolean
-assembly_update_supported (MonoAssembly *assm)
+assembly_update_supported (MonoImage *image_base, MonoError *error)
 {
 	int modifiable = 0;
-	if (!hot_reload_update_enabled (&modifiable))
+	char *invalid_env_val = NULL;
+	modifiable = hot_reload_update_enabled_slow_check (&invalid_env_val);
+	if (modifiable == MONO_MODIFIABLE_ASSM_NONE) {
+		mono_error_set_invalid_operation (error, "The assembly '%s' cannot be edited or changed, because environment variable DOTNET_MODIFIABLE_ASSEMBLIES is set to '%s', not 'Debug'", image_base->name, invalid_env_val);
+		g_free (invalid_env_val);
 		return FALSE;
-	if (modifiable == MONO_MODIFIABLE_ASSM_DEBUG &&
-	    mono_assembly_is_jit_optimizer_disabled (assm))
-		return TRUE;
-	return FALSE;
+	} else if (!mono_assembly_is_jit_optimizer_disabled (image_base->assembly)) {
+		mono_error_set_invalid_operation (error, "The assembly '%s' cannot be edited or changed, because it does not have a System.Diagnostics.DebuggableAttribute with the DebuggingModes.DisableOptimizations flag (editing Release build assemblies is not supported)", image_base->name);
+		return FALSE;
+	}
+	return TRUE;
 }
 
 /**
@@ -2506,8 +2539,7 @@ dump_methodbody (MonoImage *image)
 void
 hot_reload_apply_changes (int origin, MonoImage *image_base, gconstpointer dmeta_bytes, uint32_t dmeta_length, gconstpointer dil_bytes_orig, uint32_t dil_length, gconstpointer dpdb_bytes_orig, uint32_t dpdb_length, MonoError *error)
 {
-	if (!assembly_update_supported (image_base->assembly)) {
-		mono_error_set_invalid_operation (error, "The assembly can not be edited or changed.");
+	if (!assembly_update_supported (image_base, error)) {
 		return;
 	}
 
@@ -2983,7 +3015,12 @@ hot_reload_get_field_idx (MonoClassField *field)
 
 static MonoClassField *
 hot_reload_get_field (MonoClass *klass, uint32_t fielddef_token) {
-	MonoClassMetadataUpdateInfo *info = mono_class_get_or_add_metadata_update_info (klass);
+	MonoClassMetadataUpdateInfo *info;
+	if (mono_class_is_ginst (klass)) {
+		info = hot_reload_get_or_add_ginst_update_info (klass);
+	} else {
+		info = mono_class_get_metadata_update_info (klass);
+	}
 	g_assert (mono_metadata_token_table (fielddef_token) == MONO_TABLE_FIELD);
 	GSList *added_fields = info->added_fields;
 
@@ -3252,7 +3289,12 @@ hot_reload_get_static_field_addr (MonoClassField *field)
 	g_assert (!m_type_is_byref(f->field.type)); // byref fields only in ref structs, which aren't allowed in EnC updates
 
 	MonoClass *parent = m_field_get_parent (&f->field);
-	MonoClassMetadataUpdateInfo *parent_info = mono_class_get_or_add_metadata_update_info (parent);
+	MonoClassMetadataUpdateInfo *parent_info;
+	if (mono_class_is_ginst (parent)) {
+		parent_info = hot_reload_get_or_add_ginst_update_info (parent);
+	} else {
+		parent_info = mono_class_get_metadata_update_info (parent);
+	}
 	MonoClassRuntimeMetadataUpdateInfo *runtime_info = &parent_info->runtime;
 
 	ensure_class_runtime_info_inited (parent, runtime_info);
@@ -3394,7 +3436,12 @@ hot_reload_added_methods_iter (MonoClass *klass, gpointer *iter)
 static MonoClassField *
 hot_reload_added_fields_iter (MonoClass *klass, gboolean lazy G_GNUC_UNUSED, gpointer *iter)
 {
-	MonoClassMetadataUpdateInfo *info = mono_class_get_metadata_update_info (klass);
+	MonoClassMetadataUpdateInfo *info;
+	if (mono_class_is_ginst (klass)) {
+		info = hot_reload_get_or_add_ginst_update_info (klass);
+	} else {
+		info = mono_class_get_metadata_update_info (klass);
+	}
 	if (!info)
 		return NULL;
 
@@ -3422,7 +3469,12 @@ hot_reload_added_fields_iter (MonoClass *klass, gboolean lazy G_GNUC_UNUSED, gpo
 static uint32_t
 hot_reload_get_num_fields_added (MonoClass *klass)
 {
-	MonoClassMetadataUpdateInfo *info = mono_class_get_metadata_update_info (klass);
+	MonoClassMetadataUpdateInfo *info;
+	if (mono_class_is_ginst (klass)) {
+		info = hot_reload_get_or_add_ginst_update_info (klass);
+	} else {
+		info = mono_class_get_metadata_update_info (klass);
+	}
 	if (!info)
 		return 0;
 	return g_slist_length (info->added_fields);
@@ -3432,6 +3484,7 @@ static uint32_t
 hot_reload_get_num_methods_added (MonoClass *klass)
 {
 	uint32_t count = 0;
+	// FIXME: this might need to look at the generic class if `klass` is a ginst
 	GSList *members = hot_reload_get_added_members (klass);
 	for (GSList *ptr = members; ptr; ptr = ptr->next) {
 		uint32_t token = GPOINTER_TO_UINT(ptr->data);
@@ -3471,7 +3524,7 @@ hot_reload_get_method_params (MonoImage *base_image, uint32_t methoddef_token, u
 static const char *
 hot_reload_get_capabilities (void)
 {
-	return "Baseline AddMethodToExistingType AddStaticFieldToExistingType NewTypeDefinition ChangeCustomAttributes AddInstanceFieldToExistingType GenericAddMethodToExistingType GenericUpdateMethod UpdateParameters";
+	return "Baseline AddMethodToExistingType AddStaticFieldToExistingType NewTypeDefinition ChangeCustomAttributes AddInstanceFieldToExistingType GenericAddMethodToExistingType GenericUpdateMethod UpdateParameters GenericAddFieldToExistingType";
 }
 
 static GENERATE_GET_CLASS_WITH_CACHE_DECL (hot_reload_instance_field_table);
@@ -3552,14 +3605,10 @@ hot_reload_get_or_add_ginst_update_info(MonoClass *ginst)
     ((struct_type *) mono_class_alloc0 ((klass), ((gsize) sizeof (struct_type)) * ((gsize) (n_structs))))
 
 static void
-recompute_ginst_update_info(MonoClass *ginst, MonoClass *gtd, MonoClassMetadataUpdateInfo *gtd_info)
+recompute_ginst_props (MonoClass *ginst, MonoClassMetadataUpdateInfo *info,
+			MonoClass *gtd, MonoClassMetadataUpdateInfo *gtd_info,
+			MonoError *error)
 {
-	// if ginst has a `MonoClassMetadataUpdateInfo`, use it to start with, otherwise, allocate a new one
-	MonoClassMetadataUpdateInfo *info = mono_class_get_or_add_metadata_update_info (ginst);
-  
-	if (!info)
-		info = mono_class_new0 (ginst, MonoClassMetadataUpdateInfo, 1);
-
 	// replace info->added_props by a new list re-computed from gtd_info->added_props
 	info->added_props = NULL;
 	for (GSList *ptr = gtd_info->added_props; ptr; ptr = ptr->next) {
@@ -3569,20 +3618,25 @@ recompute_ginst_update_info(MonoClass *ginst, MonoClass *gtd, MonoClassMetadataU
 		added_prop->prop = gtd_added_prop->prop;
 		added_prop->token = gtd_added_prop->token;
 
-		ERROR_DECL (error);
 		if (added_prop->prop.get)
 				added_prop->prop.get = mono_class_inflate_generic_method_full_checked (
 					added_prop->prop.get, ginst, mono_class_get_context (ginst), error);
 		if (added_prop->prop.set)
 			added_prop->prop.set = mono_class_inflate_generic_method_full_checked (
 				added_prop->prop.set, ginst, mono_class_get_context (ginst), error);
-		g_assert (is_ok (error)); /*FIXME proper error handling*/
+		mono_error_assert_ok (error); /*FIXME proper error handling*/
 
 		added_prop->prop.parent = ginst;
 
 		info->added_props = g_slist_prepend_mem_manager (m_class_get_mem_manager (ginst), info->added_props, (gpointer)added_prop);
 	}
+}
 
+static void
+recompute_ginst_events (MonoClass *ginst, MonoClassMetadataUpdateInfo *info,
+			MonoClass *gtd, MonoClassMetadataUpdateInfo *gtd_info,
+			MonoError *error)
+{
 	// replace info->added_events by a new list re-computed from gtd_info->added_events
 	info->added_events = NULL;
 	for (GSList *ptr = gtd_info->added_events; ptr; ptr = ptr->next) {
@@ -3591,7 +3645,6 @@ recompute_ginst_update_info(MonoClass *ginst, MonoClass *gtd, MonoClassMetadataU
 		
 		added_event->evt = gtd_added_event->evt;
 
-		ERROR_DECL (error);
 		if (added_event->evt.add)
 				added_event->evt.add = mono_class_inflate_generic_method_full_checked (
 					added_event->evt.add, ginst, mono_class_get_context (ginst), error);
@@ -3601,13 +3654,62 @@ recompute_ginst_update_info(MonoClass *ginst, MonoClass *gtd, MonoClassMetadataU
 		if (added_event->evt.raise)
 			added_event->evt.raise = mono_class_inflate_generic_method_full_checked (
 				added_event->evt.raise, ginst, mono_class_get_context (ginst), error);
-		g_assert (is_ok (error)); /*FIXME proper error handling*/
+		mono_error_assert_ok (error); /*FIXME proper error handling*/
 		
 		added_event->evt.parent = ginst;
 
 		info->added_events = g_slist_prepend_mem_manager (m_class_get_mem_manager (ginst), info->added_events, (gpointer)added_event);
 	}
+}
+
+static void
+recompute_ginst_fields (MonoClass *ginst, MonoClassMetadataUpdateInfo *info,
+			MonoClass *gtd, MonoClassMetadataUpdateInfo *gtd_info,
+			MonoError *error)
+{
+	info->added_fields = NULL;
+	for (GSList *ptr = gtd_info->added_fields; ptr; ptr = ptr->next) {
+		MonoClassMetadataUpdateField *gtd_added_field = (MonoClassMetadataUpdateField *)ptr->data;
+		MonoClassMetadataUpdateField *added_field = mono_class_new0 (ginst, MonoClassMetadataUpdateField, 1);
+
+		mono_field_resolve_type (&gtd_added_field->field, error);
+		mono_error_assert_ok (error);
+		g_assert (gtd_added_field->field.type != NULL);
+
+		added_field->field = gtd_added_field->field;
+		added_field->token = gtd_added_field->token;
+
+		added_field->field.type = mono_class_inflate_generic_type_checked (
+			added_field->field.type, mono_class_get_context (ginst), error);
+		mono_error_assert_ok (error); /*FIXME proper error handling*/
+
+		m_field_set_parent (&added_field->field, ginst);
+		m_field_set_meta_flags (&added_field->field, MONO_CLASS_FIELD_META_FLAG_FROM_UPDATE);
+
+		info->added_fields = g_slist_prepend_mem_manager (m_class_get_mem_manager (ginst), info->added_fields, (gpointer)added_field);
+	}
+}
+
+static void
+recompute_ginst_update_info(MonoClass *ginst, MonoClass *gtd, MonoClassMetadataUpdateInfo *gtd_info)
+{
+	// if ginst has a `MonoClassMetadataUpdateInfo`, use it to start with, otherwise, allocate a new one
+	MonoClassMetadataUpdateInfo *info = mono_class_get_or_add_metadata_update_info (ginst);
+  
+	if (!info)
+		info = mono_class_new0 (ginst, MonoClassMetadataUpdateInfo, 1);
+
+	ERROR_DECL (error);
+
+	recompute_ginst_props (ginst, info, gtd, gtd_info, error);
+	mono_error_assert_ok (error);
+
+	recompute_ginst_events (ginst, info, gtd, gtd_info, error);
+	mono_error_assert_ok (error);
 	
+	recompute_ginst_fields (ginst, info, gtd, gtd_info, error);
+	mono_error_assert_ok (error);
+
 	// finally, update the generation of the ginst info to the same one as the gtd
 	info->generation = gtd_info->generation;
 	// we're done info is now up to date    

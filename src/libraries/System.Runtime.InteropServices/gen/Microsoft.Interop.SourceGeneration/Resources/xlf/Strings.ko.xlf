@@ -24,7 +24,7 @@
       </trans-unit>
       <trans-unit id="ContainingTypeAccessibilityDetails">
         <source>Containing type '{0}' has accessibility '{1}'.</source>
-        <target state="new">Containing type '{0}' has accessibility '{1}'.</target>
+        <target state="translated">'{0}' 형식을 포함하는 경우 접근성 '{1}'이(가) 있습니다.</target>
         <note />
       </trans-unit>
       <trans-unit id="CyclicalCountInfo">
@@ -65,6 +65,11 @@
       <trans-unit id="InOutAttributeMarshalerNotSupported">
         <source>The provided '[In]' and '[Out]' attributes on this parameter are unsupported on this parameter.</source>
         <target state="translated">이 매개 변수에 제공된 '[In]' 및 '[Out]' 특성은 이 매개 변수에서 지원되지 않습니다.</target>
+        <note />
+      </trans-unit>
+      <trans-unit id="InOutAttributes">
+        <source>[In] and [Out] attributes</source>
+        <target state="translated">[In] 및 [Out] 속성</target>
         <note />
       </trans-unit>
       <trans-unit id="ManagedToUnmanagedMissingRequiredMarshaller">
@@ -119,7 +124,7 @@
       </trans-unit>
       <trans-unit id="TypeAccessibilityDetails">
         <source>'{0}' has accessibility '{1}'.</source>
-        <target state="new">'{0}' has accessibility '{1}'.</target>
+        <target state="translated">'{0}'에는 접근성 '{1}'이(가) 있습니다.</target>
         <note />
       </trans-unit>
       <trans-unit id="UnmanagedToManagedMissingRequiredMarshaller">

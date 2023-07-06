@@ -24,7 +24,7 @@
       </trans-unit>
       <trans-unit id="ContainingTypeAccessibilityDetails">
         <source>Containing type '{0}' has accessibility '{1}'.</source>
-        <target state="new">Containing type '{0}' has accessibility '{1}'.</target>
+        <target state="translated">Zawierający typ „{0}” ma ułatwienia dostępu „{1}”.</target>
         <note />
       </trans-unit>
       <trans-unit id="CyclicalCountInfo">
@@ -65,6 +65,11 @@
       <trans-unit id="InOutAttributeMarshalerNotSupported">
         <source>The provided '[In]' and '[Out]' attributes on this parameter are unsupported on this parameter.</source>
         <target state="translated">Podane atrybuty „[In]” i „[Out]” w tym parametrze nie są obsługiwane w tym parametrze.</target>
+        <note />
+      </trans-unit>
+      <trans-unit id="InOutAttributes">
+        <source>[In] and [Out] attributes</source>
+        <target state="translated">Atrybuty [In] i [Out]</target>
         <note />
       </trans-unit>
       <trans-unit id="ManagedToUnmanagedMissingRequiredMarshaller">
@@ -119,7 +124,7 @@
       </trans-unit>
       <trans-unit id="TypeAccessibilityDetails">
         <source>'{0}' has accessibility '{1}'.</source>
-        <target state="new">'{0}' has accessibility '{1}'.</target>
+        <target state="translated">„{0}” ma ułatwienia dostępu „{1}”.</target>
         <note />
       </trans-unit>
       <trans-unit id="UnmanagedToManagedMissingRequiredMarshaller">

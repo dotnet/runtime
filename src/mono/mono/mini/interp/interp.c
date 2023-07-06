@@ -869,15 +869,11 @@ stackval_to_data (MonoType *type, stackval *val, void *data, gboolean pinvoke)
 	}
 	/* printf ("TODAT0 %p\n", data); */
 	switch (type->type) {
+	case MONO_TYPE_BOOLEAN:
 	case MONO_TYPE_I1:
 	case MONO_TYPE_U1: {
 		guint8 *p = (guint8*)data;
 		*p = GINT32_TO_UINT8 (val->data.i);
-		return MINT_STACK_SLOT_SIZE;
-	}
-	case MONO_TYPE_BOOLEAN: {
-		guint8 *p = (guint8*)data;
-		*p = (val->data.i != 0);
 		return MINT_STACK_SLOT_SIZE;
 	}
 	case MONO_TYPE_I2:
@@ -3560,6 +3556,26 @@ mono_interp_enum_hasflag (stackval *sp1, stackval *sp2, MonoClass* klass)
 	return (a_val & b_val) == b_val;
 }
 
+static void
+interp_simd_create (gpointer dest, gpointer args, int el_size)
+{
+	const int num_elements = SIZEOF_V128 / el_size;
+	gint8 res_buffer [SIZEOF_V128];
+	for (int i = 0; i < num_elements; i++) {
+		switch (el_size) {
+			case 1: res_buffer [i] = *(gint8*)args; break;
+			case 2: ((gint16*)res_buffer) [i] = *(gint16*)args; break;
+			case 4: ((gint32*)res_buffer) [i] = *(gint32*)args; break;
+			case 8: ((gint64*)res_buffer) [i] = *(gint64*)args; break;
+			default:
+				g_assert_not_reached ();
+		}
+		args = (gpointer) ((char*)args + MINT_STACK_SLOT_SIZE);
+	}
+
+	memcpy (dest, res_buffer, SIZEOF_V128);
+}
+
 // varargs in wasm consumes extra linear stack per call-site.
 // These g_warning/g_error wrappers fix that. It is not the
 // small wasm stack, but conserving it is still desirable.
@@ -5748,50 +5764,22 @@ MINT_IN_CASE(MINT_BRTRUE_I8_SP) ZEROP_SP(gint64, !=); MINT_IN_BREAK;
 			MINT_IN_BREAK;
 		}
 		MINT_IN_CASE(MINT_SIMD_V128_I1_CREATE) {
-			const int num_elements = SIZEOF_V128 / sizeof (gint8);
-			gint8 res_buffer [num_elements];
-			gint8 *args = (gint8*)(locals + ip [2]);
-			for (int i = 0; i < num_elements; i++) {
-				res_buffer [i] = *args;
-				args += MINT_STACK_SLOT_SIZE / sizeof (gint8);
-			}
-			memcpy (locals + ip [1], res_buffer, SIZEOF_V128);
+			interp_simd_create (locals + ip [1], locals + ip [2], 1);
 			ip += 3;
 			MINT_IN_BREAK;
 		}
 		MINT_IN_CASE(MINT_SIMD_V128_I2_CREATE) {
-			const int num_elements = SIZEOF_V128 / sizeof (gint16);
-			gint16 res_buffer [num_elements];
-			gint16 *args = (gint16*)(locals + ip [2]);
-			for (int i = 0; i < num_elements; i++) {
-				res_buffer [i] = *args;
-				args += MINT_STACK_SLOT_SIZE / sizeof (gint16);
-			}
-			memcpy (locals + ip [1], res_buffer, SIZEOF_V128);
+			interp_simd_create (locals + ip [1], locals + ip [2], 2);
 			ip += 3;
 			MINT_IN_BREAK;
 		}
 		MINT_IN_CASE(MINT_SIMD_V128_I4_CREATE) {
-			const int num_elements = SIZEOF_V128 / sizeof (gint32);
-			gint32 res_buffer [num_elements];
-			gint32 *args = (gint32*)(locals + ip [2]);
-			for (int i = 0; i < num_elements; i++) {
-				res_buffer [i] = *args;
-				args += MINT_STACK_SLOT_SIZE / sizeof (gint32);
-			}
-			memcpy (locals + ip [1], res_buffer, SIZEOF_V128);
+			interp_simd_create (locals + ip [1], locals + ip [2], 4);
 			ip += 3;
 			MINT_IN_BREAK;
 		}
 		MINT_IN_CASE(MINT_SIMD_V128_I8_CREATE) {
-			const int num_elements = SIZEOF_V128 / sizeof (gint64);
-			gint64 res_buffer [num_elements];
-			gint64 *args = (gint64*)(locals + ip [2]);
-			for (int i = 0; i < num_elements; i++) {
-				res_buffer [i] = *args;
-				args += MINT_STACK_SLOT_SIZE / sizeof (gint64);
-			}
-			memcpy (locals + ip [1], res_buffer, SIZEOF_V128);
+			interp_simd_create (locals + ip [1], locals + ip [2], 8);
 			ip += 3;
 			MINT_IN_BREAK;
 		}
@@ -7648,7 +7636,7 @@ MINT_IN_CASE(MINT_BRTRUE_I8_SP) ZEROP_SP(gint64, !=); MINT_IN_BREAK;
 				 *  JS workers in order to register them at the appropriate slots in the function pointer
 				 *  table. when growing the function pointer table we will also need to synchronize that.
 				 */
-				JiterpreterThunk prepare_result = mono_interp_tier_prepare_jiterpreter_fast(frame, frame->imethod->method, ip, frame->imethod->jinfo->code_start, frame->imethod->jinfo->code_size);
+				JiterpreterThunk prepare_result = mono_interp_tier_prepare_jiterpreter_fast(frame, ip);
 				ptrdiff_t offset;
 				switch ((guint32)(void*)prepare_result) {
 					case JITERPRETER_TRAINING:

@@ -23,13 +23,11 @@ EXTERN_C NATIVEAOT_API uint64_t __cdecl RhEventPipeInternal_Enable(
     /* COR_PRF_EVENTPIPE_PROVIDER_CONFIG */ const void * pProviders,
     uint32_t numProviders)
 {
-    PalDebugBreak();
     return 0;
 }
 
 EXTERN_C NATIVEAOT_API void __cdecl RhEventPipeInternal_Disable(uint64_t sessionID)
 {
-    PalDebugBreak();
 }
 
 EXTERN_C NATIVEAOT_API intptr_t __cdecl RhEventPipeInternal_CreateProvider(
@@ -54,7 +52,6 @@ EXTERN_C NATIVEAOT_API intptr_t __cdecl RhEventPipeInternal_DefineEvent(
 
 EXTERN_C NATIVEAOT_API intptr_t __cdecl RhEventPipeInternal_GetProvider(LPCWSTR providerName)
 {
-    PalDebugBreak();
     return 0;
 }
 
@@ -64,7 +61,6 @@ EXTERN_C NATIVEAOT_API void __cdecl RhEventPipeInternal_DeleteProvider(intptr_t 
 
 EXTERN_C NATIVEAOT_API int __cdecl RhEventPipeInternal_EventActivityIdControl(uint32_t controlCode, GUID *pActivityId)
 {
-    PalDebugBreak();
     return 0;
 }
 
@@ -79,25 +75,21 @@ EXTERN_C NATIVEAOT_API void __cdecl RhEventPipeInternal_WriteEventData(
 
 EXTERN_C NATIVEAOT_API UInt32_BOOL __cdecl RhEventPipeInternal_GetSessionInfo(uint64_t sessionID, EventPipeSessionInfo *pSessionInfo)
 {
-    PalDebugBreak();
     return FALSE;
 }
 
 EXTERN_C NATIVEAOT_API UInt32_BOOL __cdecl RhEventPipeInternal_GetNextEvent(uint64_t sessionID, EventPipeEventInstanceData *pInstance)
 {
-    PalDebugBreak();
     return FALSE;
 }
 
 EXTERN_C NATIVEAOT_API UInt32_BOOL __cdecl RhEventPipeInternal_SignalSession(uint64_t sessionID)
 {
-    PalDebugBreak();
     return FALSE;
 }
 
 EXTERN_C NATIVEAOT_API UInt32_BOOL __cdecl RhEventPipeInternal_WaitForSessionSignal(uint64_t sessionID, int32_t timeoutMs)
 {
-    PalDebugBreak();
     return FALSE;
 }
 

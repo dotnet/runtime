@@ -515,6 +515,11 @@ NamedIntrinsic HWIntrinsicInfo::lookupId(Compiler*         comp,
         }
         else if (strcmp(className, "Vector512") == 0)
         {
+            // If the JitFlags::JIT_FLAG_VECTOR512_THROTTLING flag is set, we do not need to do any further checks.
+            if (comp->opts.Vector512Throttling())
+            {
+                return NI_IsSupported_False;
+            }
             isa = InstructionSet_AVX512F;
         }
     }
@@ -913,8 +918,7 @@ bool Compiler::compSupportsHWIntrinsic(CORINFO_InstructionSet isa)
 //
 static bool impIsTableDrivenHWIntrinsic(NamedIntrinsic intrinsicId, HWIntrinsicCategory category)
 {
-    return (category != HW_Category_Special) && HWIntrinsicInfo::RequiresCodegen(intrinsicId) &&
-           !HWIntrinsicInfo::HasSpecialImport(intrinsicId);
+    return (category != HW_Category_Special) && !HWIntrinsicInfo::HasSpecialImport(intrinsicId);
 }
 
 //------------------------------------------------------------------------
