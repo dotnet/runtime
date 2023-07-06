@@ -8,8 +8,6 @@ using System.Net.Http;
 using System.Threading;
 using System.Threading.Tasks;
 using Microsoft.Extensions.DependencyInjection;
-using Microsoft.Extensions.Http;
-using Microsoft.Extensions.Http.Logging;
 using Microsoft.Extensions.Logging;
 using Microsoft.Extensions.Logging.Testing;
 using Xunit;
@@ -20,6 +18,7 @@ namespace Microsoft.Extensions.Http.Logging
     public class HttpClientLoggerTest
     {
         private const string Url = "http://www.example.com";
+        private const int DefaultLoggerEventsPerRequest = 8; // 2 handlers (inner & outer) x 2 levels (msg & headers) x 2 times (request & response)
 
         private readonly ITestOutputHelper _output;
 
@@ -35,7 +34,7 @@ namespace Microsoft.Extensions.Http.Logging
             var serviceCollection = new ServiceCollection();
             serviceCollection.AddLogging();
             serviceCollection.AddSingleton<ILoggerFactory>(new TestLoggerFactory(sink, enabled: true));
-            serviceCollection.AddTransient(_ => new TestMessageHandler());
+            serviceCollection.AddTransient<TestMessageHandler>();
 
             serviceCollection.AddHttpClient("NoLoggers")
                 .ConfigurePrimaryHttpMessageHandler<TestMessageHandler>()
@@ -46,7 +45,7 @@ namespace Microsoft.Extensions.Http.Logging
 
             var client = factory.CreateClient("NoLoggers");
 
-            await client.GetAsync(Url);
+            _ = await client.GetAsync(Url);
             Assert.Equal(0, sink.Writes.Count);
         }
 
@@ -57,7 +56,7 @@ namespace Microsoft.Extensions.Http.Logging
             var serviceCollection = new ServiceCollection();
             serviceCollection.AddLogging();
             serviceCollection.AddSingleton<ILoggerFactory>(new TestLoggerFactory(sink, enabled: true));
-            serviceCollection.AddTransient(_ => new TestMessageHandler());
+            serviceCollection.AddTransient<TestMessageHandler>();
 
             serviceCollection.AddHttpClient("NoLoggers")
                 .ConfigurePrimaryHttpMessageHandler<TestMessageHandler>()
@@ -77,22 +76,73 @@ namespace Microsoft.Extensions.Http.Logging
             var noLoggersClient = factory.CreateClient("NoLoggers");
             var noLoggersClientV2 = factory.CreateClient("NoLoggersV2");
 
-            await noLoggersClient.GetAsync(Url);
+            _ = await noLoggersClient.GetAsync(Url);
             Assert.Equal(0, sink.Writes.Count);
 
-            await defaultLoggerClient.GetAsync(Url);
-            Assert.Equal(8, sink.Writes.Count); // 2 loggers (inner & outer) x 2 levels (msg & headers) x 2 times (request & response)
+            _ = await defaultLoggerClient.GetAsync(Url);
+            Assert.Equal(DefaultLoggerEventsPerRequest, sink.Writes.Count);
 
             var previousMessagesCount = sink.Writes.Count;
 
-            await noLoggersClientV2.GetAsync(Url);
+            _ = await noLoggersClientV2.GetAsync(Url);
             Assert.Equal(0, sink.Writes.Count - previousMessagesCount);
         }
 
-        [Theory]
-        [InlineData(true)]
+        [ConditionalTheory(typeof(PlatformDetection), nameof(PlatformDetection.IsThreadingSupported))]
+        [InlineData(false, false)]
+        [InlineData(false, true)]
+        [InlineData(true, false)]
+        [InlineData(true, true)]
+        public async Task CustomLogger_LogsCorrectEvents(bool requestSuccessful, bool forceAsyncLogging)
+        {
+            var serviceCollection = new ServiceCollection();
+            serviceCollection.AddTransient(_ =>
+                new TestMessageHandler(_ => requestSuccessful
+                    ? new HttpResponseMessage()
+                    : throw new HttpRequestException("expected")));
+
+            var testLogger = new TestCountingLogger(forceAsyncLogging);
+            serviceCollection.AddHttpClient("TestCountingLogger")
+                .ConfigurePrimaryHttpMessageHandler<TestMessageHandler>()
+                .ConfigureLogging(b => b.AddLogger(_ => testLogger));
+
+            var services = serviceCollection.BuildServiceProvider();
+            var factory = services.GetRequiredService<IHttpClientFactory>();
+
+            var client = factory.CreateClient("TestCountingLogger");
+
+            if (requestSuccessful)
+            {
+                _ = await client.GetAsync(Url);
+            }
+            else
+            {
+                _ = await Assert.ThrowsAsync<HttpRequestException>(() => client.GetAsync(Url));
+            }
+
+            Assert.Equal(1, testLogger.RequestStartLogCount);
+            Assert.Equal(requestSuccessful ? 1 : 0, testLogger.RequestStopLogCount);
+            Assert.Equal(requestSuccessful ? 0 : 1, testLogger.RequestFailedLogCount);
+
+            if (requestSuccessful)
+            {
+                _ = await client.GetAsync(Url);
+            }
+            else
+            {
+                _ = await Assert.ThrowsAsync<HttpRequestException>(() => client.GetAsync(Url));
+            }
+
+            Assert.Equal(2, testLogger.RequestStartLogCount);
+            Assert.Equal(requestSuccessful ? 2 : 0, testLogger.RequestStopLogCount);
+            Assert.Equal(requestSuccessful ? 0 : 2, testLogger.RequestFailedLogCount);
+        }
+
+#if NET5_0_OR_GREATER
+        [ConditionalTheory(typeof(PlatformDetection), nameof(PlatformDetection.IsNetCore))]
         [InlineData(false)]
-        public async Task CustomLogger_LogsCorrectEvents(bool requestSuccessful)
+        [InlineData(true)]
+        public void CustomLogger_LogsCorrectEvents_Sync(bool requestSuccessful)
         {
             var serviceCollection = new ServiceCollection();
             serviceCollection.AddTransient(_ =>
@@ -110,36 +160,37 @@ namespace Microsoft.Extensions.Http.Logging
 
             var client = factory.CreateClient("TestCountingLogger");
 
-            try
+            if (requestSuccessful)
             {
-                await client.GetAsync(Url);
+                _ = client.Send(new HttpRequestMessage(HttpMethod.Get, Url));
             }
-            catch (HttpRequestException e) when (!requestSuccessful && e.Message == "expected")
+            else
             {
-                // swallow expected exception
+                _ = Assert.Throws<HttpRequestException>(() => client.Send(new HttpRequestMessage(HttpMethod.Get, Url)));
             }
 
             Assert.Equal(1, testLogger.RequestStartLogCount);
             Assert.Equal(requestSuccessful ? 1 : 0, testLogger.RequestStopLogCount);
             Assert.Equal(requestSuccessful ? 0 : 1, testLogger.RequestFailedLogCount);
 
-            try
+            if (requestSuccessful)
             {
-                await client.GetAsync(Url);
+                _ = client.Send(new HttpRequestMessage(HttpMethod.Get, Url));
             }
-            catch (HttpRequestException e) when (!requestSuccessful && e.Message == "expected")
+            else
             {
-                // swallow expected exception
+                _ = Assert.Throws<HttpRequestException>(() => client.Send(new HttpRequestMessage(HttpMethod.Get, Url)));
             }
 
             Assert.Equal(2, testLogger.RequestStartLogCount);
             Assert.Equal(requestSuccessful ? 2 : 0, testLogger.RequestStopLogCount);
             Assert.Equal(requestSuccessful ? 0 : 2, testLogger.RequestFailedLogCount);
         }
+#endif
 
         [Theory]
-        [InlineData(true)]
         [InlineData(false)]
+        [InlineData(true)]
         public async Task CustomLogger_WithContext_LogsCorrectEvents(bool requestSuccessful)
         {
             var serviceCollection = new ServiceCollection();
@@ -158,26 +209,26 @@ namespace Microsoft.Extensions.Http.Logging
 
             var client = factory.CreateClient("TestContextCountingLogger");
 
-            try
+            if (requestSuccessful)
             {
-                await client.GetAsync(Url);
+                _ = await client.GetAsync(Url);
             }
-            catch (HttpRequestException e) when (!requestSuccessful && e.Message == "expected")
+            else
             {
-                // swallow expected exception
+                _ = await Assert.ThrowsAsync<HttpRequestException>(() => client.GetAsync(Url));
             }
 
             Assert.Equal(1, testLogger.RequestStartLogged.Count);
             Assert.Equal(requestSuccessful ? 1 : 0, testLogger.RequestStopLogged.Count);
             Assert.Equal(requestSuccessful ? 0 : 1, testLogger.RequestFailedLogged.Count);
 
-            try
+            if (requestSuccessful)
             {
-                await client.GetAsync(Url);
+                _ = await client.GetAsync(Url);
             }
-            catch (HttpRequestException e) when (!requestSuccessful && e.Message == "expected")
+            else
             {
-                // swallow expected exception
+                _ = await Assert.ThrowsAsync<HttpRequestException>(() => client.GetAsync(Url));
             }
 
             Assert.Equal(2, testLogger.RequestStartLogged.Count);
@@ -185,30 +236,162 @@ namespace Microsoft.Extensions.Http.Logging
             Assert.Equal(requestSuccessful ? 0 : 2, testLogger.RequestFailedLogged.Count);
         }
 
+        [Theory]
+        [InlineData(false)]
+        [InlineData(true)]
+        public async Task CustomLogger_ResolveFromDI_Success(bool removeDefaultLoggers)
+        {
+            var sink = new TestSink();
+            var serviceCollection = new ServiceCollection();
+            serviceCollection.AddLogging();
+            serviceCollection.AddSingleton<ILoggerFactory>(new TestLoggerFactory(sink, enabled: true));
+            serviceCollection.AddTransient<TestMessageHandler>();
+            serviceCollection.AddSingleton<TestILoggerCustomLogger>();
+
+            serviceCollection.AddHttpClient("TestILoggerCustomLogger")
+                .ConfigurePrimaryHttpMessageHandler<TestMessageHandler>()
+                .ConfigureLogging(b => {
+                    if (removeDefaultLoggers)
+                    {
+                        b.RemoveAllLoggers();
+                    }
+                    b.AddLogger<TestILoggerCustomLogger>();
+                });
+
+            serviceCollection.AddHttpClient("TestILoggerCustomLoggerV2")
+                .ConfigurePrimaryHttpMessageHandler<TestMessageHandler>()
+                .ConfigureLogging(b => {
+                    if (removeDefaultLoggers)
+                    {
+                        b.RemoveAllLoggers();
+                    }
+                    b.AddLogger<TestILoggerCustomLogger>();
+                });
+
+            var services = serviceCollection.BuildServiceProvider();
+            var factory = services.GetRequiredService<IHttpClientFactory>();
+
+            var client = factory.CreateClient("TestILoggerCustomLogger");
+            var client2 = factory.CreateClient("TestILoggerCustomLoggerV2");
+
+            var customLoggerName = typeof(TestILoggerCustomLogger).FullName.Replace('+', '.');
+            int customLoggerEventsPerRequest = 2;
+            int expectedEventsPerRequest = customLoggerEventsPerRequest + (removeDefaultLoggers ? 0 : DefaultLoggerEventsPerRequest);
+
+            _ = await client.GetAsync(Url);
+            Assert.Equal(expectedEventsPerRequest, sink.Writes.Count);
+            Assert.Equal(customLoggerEventsPerRequest, sink.Writes.Count(w => w.LoggerName == customLoggerName));
+
+            _ = await client.GetAsync(Url);
+            Assert.Equal(2 * expectedEventsPerRequest, sink.Writes.Count);
+            Assert.Equal(2 * customLoggerEventsPerRequest, sink.Writes.Count(w => w.LoggerName == customLoggerName));
+
+            _ = await client2.GetAsync(Url);
+            Assert.Equal(3 * expectedEventsPerRequest, sink.Writes.Count);
+            Assert.Equal(3 * customLoggerEventsPerRequest, sink.Writes.Count(w => w.LoggerName == customLoggerName));
+        }
+
+        [Fact]
+        public async Task WrapHandlerPipeline_LogCorrectNumberOfEvents()
+        {
+            var serviceCollection = new ServiceCollection();
+
+            int counter = 1;
+            serviceCollection.AddTransient(_ =>
+                new TestMessageHandler(_ => ((counter++) % 3 == 0) // every 3rd request is successful
+                    ? new HttpResponseMessage()
+                    : throw new HttpRequestException("expected")));
+            serviceCollection.AddTransient<TestRetryingHandler>();
+
+            var innerLogger = new TestCountingLogger();
+            var outerLogger = new TestCountingLogger();
+            serviceCollection.AddHttpClient("WrapHandlerPipeline")
+                .ConfigurePrimaryHttpMessageHandler<TestMessageHandler>()
+                .AddHttpMessageHandler<TestRetryingHandler>()
+                .ConfigureLogging(b => b
+                    .AddLogger(_ => innerLogger, wrapHandlersPipeline: false)
+                    .AddLogger(_ => outerLogger, wrapHandlersPipeline: true));
+
+            var services = serviceCollection.BuildServiceProvider();
+            var factory = services.GetRequiredService<IHttpClientFactory>();
+
+            var client = factory.CreateClient("WrapHandlerPipeline");
+
+            _ = await client.GetAsync(Url);
+
+            Assert.Equal(1, outerLogger.RequestStartLogCount);
+            Assert.Equal(1, outerLogger.RequestStopLogCount);
+            Assert.Equal(0, outerLogger.RequestFailedLogCount);
+
+            Assert.Equal(3, innerLogger.RequestStartLogCount);
+            Assert.Equal(1, innerLogger.RequestStopLogCount);
+            Assert.Equal(2, innerLogger.RequestFailedLogCount);
+
+            _ = await client.GetAsync(Url);
+
+            Assert.Equal(2, outerLogger.RequestStartLogCount);
+            Assert.Equal(2, outerLogger.RequestStopLogCount);
+            Assert.Equal(0, outerLogger.RequestFailedLogCount);
+
+            Assert.Equal(6, innerLogger.RequestStartLogCount);
+            Assert.Equal(2, innerLogger.RequestStopLogCount);
+            Assert.Equal(4, innerLogger.RequestFailedLogCount);
+        }
+
+        private static ValueTask<object?> GetSuccessfulTaskWithResult(bool async = false, object? result = null)
+        {
+            if (async)
+            {
+                return DelayWithResult(result);
+            }
+            return new ValueTask<object?>(result);
+        }
+
+        private static async ValueTask<object?> DelayWithResult(object? result)
+        {
+            await Task.Delay(1).ConfigureAwait(false);
+            return result;
+        }
+
+        private static ValueTask GetSuccessfulTask(bool async = false)
+        {
+            if (async)
+            {
+                return new ValueTask(Task.Delay(1));
+            }
+            return new ValueTask();
+        }
+
         private class TestCountingLogger : IHttpClientLogger
         {
+            private bool _async;
             public int RequestStartLogCount { get; private set; }
             public int RequestStopLogCount { get; private set; }
             public int RequestFailedLogCount { get; private set; }
 
+            public TestCountingLogger(bool async = false)
+            {
+                _async = async;
+            }
+
             public ValueTask<object?> LogRequestStartAsync(HttpRequestMessage request, CancellationToken cancellationToken = default)
             {
                 RequestStartLogCount++;
-                return new ValueTask<object?>((object?)null); // task from result (.NET Framework compliant)
+                return GetSuccessfulTaskWithResult(_async);
             }
 
             public ValueTask LogRequestStopAsync(object? context, HttpRequestMessage request, HttpResponseMessage response, TimeSpan elapsed,
                 CancellationToken cancellationToken = default)
             {
                 RequestStopLogCount++;
-                return new ValueTask(); // completed task (.NET Framework compliant)
+                return GetSuccessfulTask(_async);
             }
 
             public ValueTask LogRequestFailedAsync(object? context, HttpRequestMessage request, HttpResponseMessage? response, Exception exception,
                 TimeSpan elapsed, CancellationToken cancellationToken = default)
             {
                 RequestFailedLogCount++;
-                return new ValueTask(); // completed task (.NET Framework compliant)
+                return GetSuccessfulTask(_async);
             }
         }
 
@@ -228,7 +411,7 @@ namespace Microsoft.Extensions.Http.Logging
                 Assert.False(RequestStartLogged.Contains(context));
                 RequestStartLogged.Add(context);
 
-                return new ValueTask<object?>(context);
+                return GetSuccessfulTaskWithResult(result: context);
             }
 
             public ValueTask LogRequestStopAsync(object? context, HttpRequestMessage request, HttpResponseMessage response, TimeSpan elapsed,
@@ -242,7 +425,7 @@ namespace Microsoft.Extensions.Http.Logging
                 Assert.False(RequestStopLogged.Contains(context));
                 RequestStopLogged.Add(context);
 
-                return new ValueTask();
+                return GetSuccessfulTask();
             }
 
             public ValueTask LogRequestFailedAsync(object? context, HttpRequestMessage request, HttpResponseMessage? response, Exception exception,
@@ -256,7 +439,7 @@ namespace Microsoft.Extensions.Http.Logging
                 Assert.False(RequestFailedLogged.Contains(context));
                 RequestFailedLogged.Add(context);
 
-                return new ValueTask();
+                return GetSuccessfulTask();
             }
 
             private class Context
@@ -273,35 +456,73 @@ namespace Microsoft.Extensions.Http.Logging
                 _logger = loggerFactory.CreateLogger<TestILoggerCustomLogger>();
             }
 
+            public TestILoggerCustomLogger(ILoggerFactory loggerFactory, string loggerName)
+            {
+                _logger = loggerFactory.CreateLogger(loggerName);
+            }
+
             public ValueTask<object?> LogRequestStartAsync(HttpRequestMessage request, CancellationToken cancellationToken = default)
             {
-                _logger.LogInformation("LogRequestStartAsync " + GetObjId(request));
-                return new ValueTask<object?>(null);
+                _logger.LogInformation("LogRequestStartAsync");
+                return GetSuccessfulTaskWithResult();
             }
 
             public ValueTask LogRequestStopAsync(object? context, HttpRequestMessage request, HttpResponseMessage response, TimeSpan elapsed,
                 CancellationToken cancellationToken = default)
             {
-                _logger.LogInformation("LogRequestStopAsync " + GetObjId(request));
-                return new ValueTask();
+                _logger.LogInformation("LogRequestStopAsync");
+                return GetSuccessfulTask();
             }
 
             public ValueTask LogRequestFailedAsync(object? context, HttpRequestMessage request, HttpResponseMessage? response, Exception exception,
                 TimeSpan elapsed, CancellationToken cancellationToken = default)
             {
-                _logger.LogInformation("LogRequestFailedAsync " + GetObjId(request));
-                return new ValueTask();
+                _logger.LogInformation("LogRequestFailedAsync");
+                return GetSuccessfulTask();
             }
         }
 
-        private static string GetObjId(object? obj)
+        private class TestRetryingHandler : DelegatingHandler
         {
-            if (obj is null)
+            private const int MaxRetries = 5;
+
+            private async Task<HttpResponseMessage> SendAsyncCore(HttpRequestMessage request, bool async, CancellationToken cancellationToken)
             {
-                return "(null)";
+                for (int i = 1; i <= MaxRetries; ++i)
+                {
+                    try
+                    {
+                        if (async)
+                        {
+                            return await base.SendAsync(request, cancellationToken);
+                        }
+                        else
+                        {
+#if NET5_0_OR_GREATER
+                            return base.Send(request, cancellationToken);
+#else
+                            throw new NotImplementedException("unreachable");
+#endif
+                        }
+                    }
+                    catch (HttpRequestException)
+                    {
+                        if (i == MaxRetries)
+                        {
+                            throw;
+                        }
+                    }
+                }
+                throw new NotImplementedException("unreachable");
             }
 
-            return obj.GetType().Name + "#" + obj.GetHashCode();
+            protected override Task<HttpResponseMessage> SendAsync(HttpRequestMessage request, CancellationToken cancellationToken)
+                => SendAsyncCore(request, async: true, cancellationToken);
+
+#if NET5_0_OR_GREATER
+            protected override HttpResponseMessage Send(HttpRequestMessage request, CancellationToken cancellationToken)
+                => SendAsyncCore(request, async: false, cancellationToken).GetAwaiter().GetResult();
+#endif
         }
     }
 }
