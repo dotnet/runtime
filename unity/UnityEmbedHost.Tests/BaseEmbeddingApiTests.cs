@@ -616,6 +616,16 @@ public abstract class BaseEmbeddingApiTests
         Assert.That(actualFlat, Is.EquivalentTo(expectedFlat));
     }
 
+
+    [TestCase(typeof(Animal),        false)]
+    [TestCase(typeof(ValueMammal),    true)]
+    [TestCase(typeof(Classification), true)]
+    public void ClassIsValuetypeReturnsProperValue(Type klass, bool expectedResult)
+    {
+        bool isValueType = ClrHost.class_is_valuetype(klass);
+        Assert.That(isValueType, Is.EqualTo(expectedResult));
+    }
+
     static List<object?> FlattenedArray(Array arr)
     {
         var result = new List<object?>();
