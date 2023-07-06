@@ -84,7 +84,13 @@ namespace ILCompiler.Win32Resources
 
             public static void Write(ref ObjectDataBuilder dataBuilder, ISymbolNode node, int offsetFromSymbol, int sizeOfData)
             {
-                dataBuilder.EmitReloc(node, RelocType.IMAGE_REL_BASED_ADDR32NB, offsetFromSymbol);
+                dataBuilder.EmitReloc(node,
+#if READYTORUN
+                    RelocType.IMAGE_REL_BASED_ADDR32NB,
+#else
+                    RelocType.IMAGE_REL_BASED_ABSOLUTE,
+#endif
+                    offsetFromSymbol);
                 dataBuilder.EmitInt(sizeOfData);
                 dataBuilder.EmitInt(1252);  // CODEPAGE = DEFAULT_CODEPAGE
                 dataBuilder.EmitInt(0); // RESERVED
