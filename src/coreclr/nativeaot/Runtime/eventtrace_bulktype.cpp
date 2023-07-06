@@ -3,8 +3,8 @@
 
 #include "common.h"
 #include "gcenv.h"
-#include "rheventtrace.h"
 #include "eventtrace.h"
+#include "eventtrace_etw.h"
 #include "rhbinder.h"
 #include "slist.h"
 #include "runtimeinstance.h"
