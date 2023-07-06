@@ -68,32 +68,30 @@ namespace Microsoft.Extensions.Logging.Console
         [UnsupportedOSPlatformGuard("windows")]
         private static bool DoesConsoleSupportAnsi()
         {
-            string? envVar = Environment.GetEnvironmentVariable("DOTNET_SYSTEM_CONSOLE_ALLOW_ANSI_COLOR_REDIRECTION");
-            if (envVar is not null && (envVar == "1" || envVar.Equals("true", StringComparison.OrdinalIgnoreCase)))
-            {
-                // ANSI color support forcibly enabled via environment variable. This logic matches the behaviour
-                // found in System.ConsoleUtils.EmitAnsiColorCodes.
-                return true;
-            }
-            if (
-#if NETFRAMEWORK
-                Environment.OSVersion.Platform != PlatformID.Win32NT
-#else
-                !RuntimeInformation.IsOSPlatform(OSPlatform.Windows)
-#endif
-                )
-            {
-                return true;
-            }
-
-            // for Windows, check the console mode
-            var stdOutHandle = Interop.Kernel32.GetStdHandle(Interop.Kernel32.STD_OUTPUT_HANDLE);
-            if (!Interop.Kernel32.GetConsoleMode(stdOutHandle, out int consoleMode))
+            if (!ConsoleUtils.EmitAnsiColorCodes)
             {
                 return false;
             }
 
-            return (consoleMode & Interop.Kernel32.ENABLE_VIRTUAL_TERMINAL_PROCESSING) == Interop.Kernel32.ENABLE_VIRTUAL_TERMINAL_PROCESSING;
+            if (
+#if NETFRAMEWORK
+                Environment.OSVersion.Platform == PlatformID.Win32NT
+#else
+                RuntimeInformation.IsOSPlatform(OSPlatform.Windows)
+#endif
+                )
+            {
+                // for Windows, check the console mode
+                nint stdOutHandle = Interop.Kernel32.GetStdHandle(Interop.Kernel32.STD_OUTPUT_HANDLE);
+                if (!Interop.Kernel32.GetConsoleMode(stdOutHandle, out int consoleMode))
+                {
+                    return false;
+                }
+
+                return (consoleMode & Interop.Kernel32.ENABLE_VIRTUAL_TERMINAL_PROCESSING) != 0;
+            }
+
+            return true;
         }
 
         [MemberNotNull(nameof(_formatters))]
