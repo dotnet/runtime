@@ -8139,7 +8139,7 @@ bool Lowering::IsContainableHWIntrinsicOp(GenTreeHWIntrinsic* parentNode, GenTre
         case NI_AVX512F_BroadcastScalarToVector512:
         {
             var_types baseType = hwintrinsic->GetSimdBaseType();
-            if (baseType == TYP_BYTE || baseType == TYP_UBYTE || baseType == TYP_SHORT || baseType == TYP_USHORT)
+            if (varTypeIsSmall(baseType))
             {
                 // early return if the base type is not embedded broadcast compatible.
                 return false;
