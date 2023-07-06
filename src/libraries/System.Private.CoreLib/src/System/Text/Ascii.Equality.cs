@@ -74,7 +74,7 @@ namespace System.Text
                 // Loop until either we've finished all elements or there's less than a vector's-worth remaining.
                 do
                 {
-                    if (!TLoader.Compare256(ref currentLeftSearchSpace, ref currentRightSearchSpace))
+                    if (!TLoader.EqualAndAscii(ref currentLeftSearchSpace, ref currentRightSearchSpace))
                     {
                         return false;
                     }
@@ -88,7 +88,7 @@ namespace System.Text
                 if (length % (uint)Vector256<TLeft>.Count != 0)
                 {
                     ref TLeft oneVectorAwayFromLeftEnd = ref Unsafe.Add(ref left, length - (uint)Vector256<TLeft>.Count);
-                    return TLoader.Compare256(ref oneVectorAwayFromLeftEnd, ref oneVectorAwayFromRightEnd);
+                    return TLoader.EqualAndAscii(ref oneVectorAwayFromLeftEnd, ref oneVectorAwayFromRightEnd);
                 }
             }
             else
@@ -355,7 +355,7 @@ namespace System.Text
             static abstract nuint Count256 { get; }
             static abstract Vector128<TRight> Load128(ref TLeft ptr);
             static abstract Vector256<TRight> Load256(ref TLeft ptr);
-            static abstract bool Compare256(ref TLeft left, ref TRight right);
+            static abstract bool EqualAndAscii(ref TLeft left, ref TRight right);
         }
 
         private readonly struct PlainLoader<T> : ILoader<T, T> where T : unmanaged, INumberBase<T>
@@ -367,7 +367,7 @@ namespace System.Text
 
             [MethodImpl(MethodImplOptions.AggressiveInlining)]
             [CompExactlyDependsOn(typeof(Avx))]
-            public static bool Compare256(ref T left, ref T right)
+            public static bool EqualAndAscii(ref T left, ref T right)
             {
                 Vector256<T> leftValues = Vector256.LoadUnsafe(ref left);
                 Vector256<T> rightValues = Vector256.LoadUnsafe(ref right);
@@ -414,7 +414,7 @@ namespace System.Text
 
             [MethodImpl(MethodImplOptions.AggressiveInlining)]
             [CompExactlyDependsOn(typeof(Avx))]
-            public static bool Compare256(ref byte utf8, ref ushort utf16)
+            public static bool EqualAndAscii(ref byte utf8, ref ushort utf16)
             {
                 // We widen the utf8 param so we can compare it to utf16, this doubles how much of the utf16 vector we search
                 Debug.Assert(Vector256<byte>.Count == Vector256<ushort>.Count * 2);
@@ -425,11 +425,12 @@ namespace System.Text
                     return false;
                 }
 
-                (Vector256<ushort> lower, Vector256<ushort> upper) = Vector256.Widen(leftNotWidened);
-                Vector256<ushort> rightValues0 = Vector256.LoadUnsafe(ref utf16);
-                Vector256<ushort> rightValues1 = Vector256.LoadUnsafe(ref utf16, (uint)Vector256<ushort>.Count);
+                (Vector256<ushort> leftLower, Vector256<ushort> leftUpper) = Vector256.Widen(leftNotWidened);
+                Vector256<ushort> right = Vector256.LoadUnsafe(ref utf16);
+                Vector256<ushort> rightNext = Vector256.LoadUnsafe(ref utf16, (uint)Vector256<ushort>.Count);
 
-                if (((lower ^ rightValues0) | (upper ^ rightValues1)) != Vector256<ushort>.Zero)
+                // A branchless version of "leftLower != right || leftUpper != rightNext"
+                if (((leftLower ^ right) | (leftUpper ^ rightNext)) != Vector256<ushort>.Zero)
                 {
                     return false;
                 }
