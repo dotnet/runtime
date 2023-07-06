@@ -29,13 +29,13 @@ namespace Microsoft.Interop
 
         private static ResolvedGenerator ValidateByValueMarshalKind(TypePositionInfo info, StubCodeContext context, ResolvedGenerator generator)
         {
-            if (generator.Generator is Forwarder)
+            if (generator.Generator is Forwarder || info.ByValueContentsMarshalKind == ByValueContentsMarshalKind.Default)
             {
                 // Forwarder allows everything since it just forwards to a P/Invoke.
                 return generator;
             }
 
-            if (info.IsByRef && info.ByValueContentsMarshalKind != ByValueContentsMarshalKind.Default)
+            if (info.IsByRef)
             {
                 return ResolvedGenerator.ResolvedWithDiagnostics(s_forwarder, generator.Diagnostics.Add(new GeneratorDiagnostic.NotSupported(info, context)
                 {
@@ -44,48 +44,72 @@ namespace Microsoft.Interop
             }
             else if (info.ByValueContentsMarshalKind == ByValueContentsMarshalKind.In)
             {
-                if (info.ManagedType is SzArrayType && generator.Generator is StaticPinnableManagedValueMarshaller)
+                if (generator.Generator is StaticPinnableManagedValueMarshaller)
                 {
                     return ResolvedGenerator.ResolvedWithDiagnostics(s_forwarder, generator.Diagnostics.Add(new GeneratorDiagnostic.NotSupported(info, context)
                     {
                         NotSupportedDetails = SR.InAttributeNotSupportedWithoutOutBlittableArray
                     }));
                 }
-                return ResolvedGenerator.ResolvedWithDiagnostics(s_forwarder, generator.Diagnostics.Add(new GeneratorDiagnostic.NotSupported(info, context)
-                {
-                    NotSupportedDetails = SR.InAttributeNotSupportedWithoutOut
-                }));
             }
-            else if (info.ByValueContentsMarshalKind != ByValueContentsMarshalKind.Default)
+            else
             {
-                ByValueMarshalKindSupport support = generator.Generator.SupportsByValueMarshalKind(info.ByValueContentsMarshalKind, context);
-                if (support == ByValueMarshalKindSupport.NotSupported)
+                bool supported = generator.Generator.SupportsByValueMarshalKind(info.ByValueContentsMarshalKind, info, context, out GeneratorDiagnostic diagnostic);
+                if (!supported)
                 {
-                    return ResolvedGenerator.ResolvedWithDiagnostics(s_forwarder, generator.Diagnostics.Add(new GeneratorDiagnostic.NotSupported(info, context)
+                    if (diagnostic.IsFatal)
                     {
-                        NotSupportedDetails = SR.InOutAttributeMarshalerNotSupported
-                    }));
-                }
-                else if (support == ByValueMarshalKindSupport.Unnecessary)
-                {
-                    var locations = ImmutableArray<Location>.Empty;
-                    if (info.ByValueMarshalAttributeLocations.InLocation is not null)
-                    {
-                        locations = locations.Add(info.ByValueMarshalAttributeLocations.InLocation);
+                        return ResolvedGenerator.ResolvedWithDiagnostics(s_forwarder, generator.Diagnostics.Add(diagnostic));
                     }
-                    if (info.ByValueMarshalAttributeLocations.OutLocation is not null)
+                    else
                     {
-                        locations = locations.Add(info.ByValueMarshalAttributeLocations.OutLocation);
-                    }
-
-                    return generator with
-                    {
-                        Diagnostics = generator.Diagnostics.Add(new GeneratorDiagnostic.UnnecessaryData(info, context, locations)
+                        var locations = ImmutableArray<Location>.Empty;
+                        if (info.ByValueMarshalAttributeLocations.InLocation is not null)
                         {
-                            UnnecessaryDataDetails = SR.InOutAttributes
-                        })
-                    };
+                            locations = locations.Add(info.ByValueMarshalAttributeLocations.InLocation);
+                        }
+                        if (info.ByValueMarshalAttributeLocations.OutLocation is not null)
+                        {
+                            locations = locations.Add(info.ByValueMarshalAttributeLocations.OutLocation);
+                        }
+
+                        return generator with
+                        {
+                            Diagnostics = generator.Diagnostics.Add(new GeneratorDiagnostic.UnnecessaryData(info, context, locations)
+                            {
+                                UnnecessaryDataDetails = SR.InOutAttributes
+                            })
+                        };
+
+                    }
                 }
+                //if (support == ByValueMarshalKindSupport.NotSupported)
+                //{
+                //    return ResolvedGenerator.ResolvedWithDiagnostics(s_forwarder, generator.Diagnostics.Add(new GeneratorDiagnostic.NotSupported(info, context)
+                //    {
+                //        NotSupportedDetails = SR.InOutAttributeMarshalerNotSupported
+                //    }));
+                //}
+                //else if (support == ByValueMarshalKindSupport.Unnecessary)
+                //{
+                //    var locations = ImmutableArray<Location>.Empty;
+                //    if (info.ByValueMarshalAttributeLocations.InLocation is not null)
+                //    {
+                //        locations = locations.Add(info.ByValueMarshalAttributeLocations.InLocation);
+                //    }
+                //    if (info.ByValueMarshalAttributeLocations.OutLocation is not null)
+                //    {
+                //        locations = locations.Add(info.ByValueMarshalAttributeLocations.OutLocation);
+                //    }
+
+                //    return generator with
+                //    {
+                //        Diagnostics = generator.Diagnostics.Add(new GeneratorDiagnostic.UnnecessaryData(info, context, locations)
+                //        {
+                //            UnnecessaryDataDetails = SR.InOutAttributes
+                //        })
+                //    };
+                //}
             }
             return generator;
         }

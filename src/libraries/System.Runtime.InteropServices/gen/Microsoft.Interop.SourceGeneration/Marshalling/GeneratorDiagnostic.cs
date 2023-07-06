@@ -1,6 +1,7 @@
 ﻿// Licensed to the .NET Foundation under one or more agreements.
 // The .NET Foundation licenses this file to you under the MIT license.
 
+using System;
 using System.Collections.Immutable;
 using System.Linq;
 using Microsoft.CodeAnalysis;
@@ -26,7 +27,7 @@ namespace Microsoft.Interop
 
         public abstract DiagnosticInfo ToDiagnosticInfo(DiagnosticDescriptor descriptor, Location location, string elementName);
 
-        public sealed record NotSupported(TypePositionInfo TypePositionInfo, StubCodeContext StubCodeContext) : GeneratorDiagnostic(TypePositionInfo, StubCodeContext, isFatal: true)
+        public sealed record NotSupported(TypePositionInfo TypePositionInfo, StubCodeContext Context) : GeneratorDiagnostic(TypePositionInfo, Context, isFatal: true)
         {
             /// <summary>
             /// [Optional] Specific reason marshalling of the supplied type isn't supported.
@@ -57,6 +58,36 @@ namespace Microsoft.Interop
                     DiagnosticProperties.Add(WellKnownDiagnosticTags.Unnecessary, $"[{string.Join(",", Enumerable.Range(0, UnnecessaryDataLocations.Length))}]"),
                     UnnecessaryDataDetails,
                     elementName);
+            }
+        }
+
+        public static GeneratorDiagnostic DefaultDiagnosticForByValueGeneratorSupport(ByValueMarshalKindSupport support, TypePositionInfo info, StubCodeContext context)
+        {
+            switch (support)
+            {
+                case ByValueMarshalKindSupport.Supported:
+                    throw new ArgumentException("Supported ByValueMarshalKind will not have a diagnostic");
+                case ByValueMarshalKindSupport.NotSupported:
+                    return new GeneratorDiagnostic.NotSupported(info, context)
+                    {
+                        NotSupportedDetails = SR.InOutAttributeMarshalerNotSupported
+                    };
+                case ByValueMarshalKindSupport.Unnecessary:
+                    var locations = ImmutableArray<Location>.Empty;
+                    if (info.ByValueMarshalAttributeLocations.InLocation is not null)
+                    {
+                        locations = locations.Add(info.ByValueMarshalAttributeLocations.InLocation);
+                    }
+                    if (info.ByValueMarshalAttributeLocations.OutLocation is not null)
+                    {
+                        locations = locations.Add(info.ByValueMarshalAttributeLocations.OutLocation);
+                    }
+                    return new GeneratorDiagnostic.UnnecessaryData(info, context, locations)
+                    {
+                        UnnecessaryDataDetails = SR.InOutAttributes
+                    };
+                default:
+                    throw new UnreachableException("Unexpected ByValueMarshalKindSupport");
             }
         }
     }

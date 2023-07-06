@@ -77,6 +77,11 @@
         <target state="new">[In] and [Out] attributes</target>
         <note />
       </trans-unit>
+      <trans-unit id="InOutAttributesNotSupportedOnByValueParameters">
+        <source>The `[In]` and `[Out]` attributes are not supported on by value value type parameters.</source>
+        <target state="new">The `[In]` and `[Out]` attributes are not supported on by value value type parameters.</target>
+        <note />
+      </trans-unit>
       <trans-unit id="ManagedToUnmanagedMissingRequiredMarshaller">
         <source>The specified parameter needs to be marshalled from managed to unmanaged, but the marshaller type '{0}' does not support it.</source>
         <target state="translated">El parámetro especificado debe serializarse de administrado a no administrado, pero el tipo no administrado “{0}” no lo admite.</target>

@@ -381,9 +381,10 @@ namespace LibraryImportGenerator.UnitTests
             // By value non-array with [In, Out] attributes
             yield return new object[] { ID(), CodeSnippets.ByValueParameterWithModifier<byte>("In"), new[]
             {
-                VerifyCS.Diagnostic(GeneratorDiagnostics.ParameterTypeNotSupportedWithDetails)
+                VerifyCS.Diagnostic(GeneratorDiagnostics.UnnecessaryParameterMarshallingInfo)
                     .WithLocation(0)
-                    .WithArguments("The '[In]' attribute is not supported unless the '[Out]' attribute is also used. The behavior of the '[In]' attribute without the '[Out]' attribute is the same as the default behavior.", "p")
+                    .WithArguments("[In] and [Out] attributes", "p")
+                    .WithSeverity(DiagnosticSeverity.Hidden)
             } };
             yield return new object[] { ID(), CodeSnippets.ByValueParameterWithModifier<byte>("Out"), new[]
             {

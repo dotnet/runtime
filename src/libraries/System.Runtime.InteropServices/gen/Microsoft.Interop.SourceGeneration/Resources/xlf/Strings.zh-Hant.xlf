@@ -77,6 +77,11 @@
         <target state="translated">[In] 與 [Out] 屬性</target>
         <note />
       </trans-unit>
+      <trans-unit id="InOutAttributesNotSupportedOnByValueParameters">
+        <source>The `[In]` and `[Out]` attributes are not supported on by value value type parameters.</source>
+        <target state="new">The `[In]` and `[Out]` attributes are not supported on by value value type parameters.</target>
+        <note />
+      </trans-unit>
       <trans-unit id="ManagedToUnmanagedMissingRequiredMarshaller">
         <source>The specified parameter needs to be marshalled from managed to unmanaged, but the marshaller type '{0}' does not support it.</source>
         <target state="translated">指定的參數必須從受控封送處理到非受控，但封送處理程式類型 '{0}' 不支援。</target>

@@ -3,9 +3,8 @@
 
 using System;
 using System.Collections.Generic;
-using Microsoft.CodeAnalysis;
+using System.Diagnostics.CodeAnalysis;
 using Microsoft.CodeAnalysis.CSharp.Syntax;
-using static Microsoft.CodeAnalysis.CSharp.SyntaxFactory;
 
 namespace Microsoft.Interop
 {
@@ -111,14 +110,20 @@ namespace Microsoft.Interop
             return _byValueContentsMarshallingSupport == ByValueMarshalKindSupport.Supported && !info.IsByRef && info.ByValueContentsMarshalKind.HasFlag(ByValueContentsMarshalKind.Out);
         }
 
-        public ByValueMarshalKindSupport SupportsByValueMarshalKind(ByValueContentsMarshalKind marshalKind, StubCodeContext context)
-        {
-            return _byValueContentsMarshallingSupport;
-        }
-
         public bool UsesNativeIdentifier(TypePositionInfo info, StubCodeContext context)
         {
             return _nativeTypeMarshaller.UsesNativeIdentifier(info, context);
+        }
+
+        public bool SupportsByValueMarshalKind(ByValueContentsMarshalKind marshalKind, TypePositionInfo info, StubCodeContext context, [NotNullWhen(false)] out GeneratorDiagnostic? diagnostic)
+        {
+            if (_byValueContentsMarshallingSupport is ByValueMarshalKindSupport.Supported)
+            {
+                diagnostic = null;
+                return true;
+            }
+            diagnostic = GeneratorDiagnostic.DefaultDiagnosticForByValueGeneratorSupport(_byValueContentsMarshallingSupport, info, context);
+            return false;
         }
     }
 }

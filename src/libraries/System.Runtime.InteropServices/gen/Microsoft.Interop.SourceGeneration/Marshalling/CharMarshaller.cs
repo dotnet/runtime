@@ -4,7 +4,7 @@
 using System;
 using System.Collections.Generic;
 using System.Diagnostics;
-
+using System.Diagnostics.CodeAnalysis;
 using Microsoft.CodeAnalysis;
 using Microsoft.CodeAnalysis.CSharp;
 using Microsoft.CodeAnalysis.CSharp.Syntax;
@@ -128,8 +128,6 @@ namespace Microsoft.Interop
             return context.IsInStubReturnPosition(info) || (info.IsByRef && !context.SingleFrameSpansNativeContext);
         }
 
-        public ByValueMarshalKindSupport SupportsByValueMarshalKind(ByValueContentsMarshalKind marshalKind, StubCodeContext context) => ByValueMarshalKindSupport.NotSupported;
-
         private static bool IsPinningPathSupported(TypePositionInfo info, StubCodeContext context)
         {
             return context.SingleFrameSpansNativeContext
@@ -138,5 +136,13 @@ namespace Microsoft.Interop
         }
 
         private static string PinnedIdentifier(string identifier) => $"{identifier}__pinned";
+        public bool SupportsByValueMarshalKind(ByValueContentsMarshalKind marshalKind, TypePositionInfo info, StubCodeContext context, [NotNullWhen(false)] out GeneratorDiagnostic? diagnostic)
+        {
+            diagnostic = new GeneratorDiagnostic.NotSupported(info, context)
+            {
+                NotSupportedDetails = SR.InOutAttributesNotSupportedOnByValueParameters
+            };
+            return false;
+        }
     }
 }

@@ -3,6 +3,7 @@
 
 using System;
 using System.Collections.Generic;
+using System.Diagnostics.CodeAnalysis;
 using Microsoft.CodeAnalysis;
 using Microsoft.CodeAnalysis.CSharp;
 using Microsoft.CodeAnalysis.CSharp.Syntax;
@@ -62,11 +63,6 @@ namespace Microsoft.Interop
             return _innerMarshallingGenerator.Generate(info, context);
         }
 
-        public ByValueMarshalKindSupport SupportsByValueMarshalKind(ByValueContentsMarshalKind marshalKind, StubCodeContext context)
-        {
-            return _innerMarshallingGenerator.SupportsByValueMarshalKind(marshalKind, context);
-        }
-
         public bool UsesNativeIdentifier(TypePositionInfo info, StubCodeContext context)
         {
             if (IsPinningPathSupported(info, context))
@@ -106,6 +102,16 @@ namespace Microsoft.Interop
                     ),
                     EmptyStatement());
             }
+        }
+
+        public bool SupportsByValueMarshalKind(ByValueContentsMarshalKind marshalKind, TypePositionInfo info, StubCodeContext context, [NotNullWhen(false)] out GeneratorDiagnostic? diagnostic)
+        {
+            if (marshalKind is ByValueContentsMarshalKind.In)
+            {
+                diagnostic = GeneratorDiagnostic.DefaultDiagnosticForByValueGeneratorSupport(ByValueMarshalKindSupport.NotSupported, info, context);
+                return false;
+            }
+            return _innerMarshallingGenerator.SupportsByValueMarshalKind(marshalKind, info, context, out diagnostic);
         }
     }
 }

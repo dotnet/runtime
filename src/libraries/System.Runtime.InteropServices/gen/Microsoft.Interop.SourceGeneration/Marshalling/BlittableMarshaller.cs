@@ -3,8 +3,7 @@
 
 using System;
 using System.Collections.Generic;
-
-using Microsoft.CodeAnalysis;
+using System.Diagnostics.CodeAnalysis;
 using Microsoft.CodeAnalysis.CSharp;
 using Microsoft.CodeAnalysis.CSharp.Syntax;
 using static Microsoft.CodeAnalysis.CSharp.SyntaxFactory;
@@ -103,7 +102,13 @@ namespace Microsoft.Interop
             return info.IsByRef && !context.IsInStubReturnPosition(info) && !context.SingleFrameSpansNativeContext;
         }
 
-        public ByValueMarshalKindSupport SupportsByValueMarshalKind(ByValueContentsMarshalKind marshalKind, StubCodeContext context) => ByValueMarshalKindSupport.NotSupported;
+        public bool SupportsByValueMarshalKind(ByValueContentsMarshalKind marshalKind, TypePositionInfo info, StubCodeContext context, [NotNullWhen(false)] out GeneratorDiagnostic? diagnostic)
+        {
+            diagnostic = new GeneratorDiagnostic.NotSupported(info, context)
+            {
+                NotSupportedDetails = SR.InOutAttributesNotSupportedOnByValueParameters
+            };
+            return false;
+        }
     }
-
 }

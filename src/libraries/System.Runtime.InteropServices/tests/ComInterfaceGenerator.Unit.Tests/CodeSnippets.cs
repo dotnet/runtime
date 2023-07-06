@@ -216,8 +216,8 @@ namespace ComInterfaceGenerator.Unit.Tests
                     int pSize,
                     [MarshalUsing(CountElementName = "pInSize")] in {{collectionType}} pIn,
                     in int pInSize,
-                    int pRefSize,
                     [MarshalUsing(CountElementName = "pRefSize")] ref {{collectionType}} pRef,
+                    int pRefSize,
                     [MarshalUsing(CountElementName = "pOutSize")] out {{collectionType}} pOut,
                     out int pOutSize);
             }
