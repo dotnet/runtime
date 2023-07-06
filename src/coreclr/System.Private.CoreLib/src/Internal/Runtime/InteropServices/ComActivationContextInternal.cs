@@ -32,6 +32,7 @@ namespace Internal.Runtime.InteropServices
         public string AssemblyPath;
         public string AssemblyName;
         public string TypeName;
+        public bool IsolatedContext;
     }
 
     [ComImport]

@@ -39,7 +39,8 @@ pal::hresult_t get_load_in_memory_assembly_delegate(pal::dll_t handle, load_in_m
 
             return StatusCode::Success;
         },
-        delegate
+        [](pal::dll_t fxr, hostfxr_handle context){ },
+        reinterpret_cast<void**>(delegate)
     );
 }
 
