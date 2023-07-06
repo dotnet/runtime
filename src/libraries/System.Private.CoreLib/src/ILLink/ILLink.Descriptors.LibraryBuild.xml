@@ -8,5 +8,14 @@
       <!-- Used by VS4Mac via reflection to symbolize stack traces -->
       <method name="GetMethodFromNativeIP" />
     </type>
+    <type fullname="Internal.Runtime.InteropServices.ComActivator">
+      <!-- Used by hostpolicy.cpp -->
+      <method name="GetClassFactoryForTypeInContext" />
+      <method name="GetClassFactoryForTypeInternal" />
+      <method name="RegisterClassForTypeInContext" />
+      <method name="RegisterClassForTypeInternal" />
+      <method name="UnregisterClassForTypeInContext" />
+      <method name="UnregisterClassForTypeInternal" />
+    </type>
   </assembly>
 </linker>
