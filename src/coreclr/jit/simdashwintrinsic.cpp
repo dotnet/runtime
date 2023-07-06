@@ -531,8 +531,12 @@ GenTree* Compiler::impSimdAsHWIntrinsicSpecial(NamedIntrinsic       intrinsic,
     switch (intrinsic)
     {
 #if defined(TARGET_XARCH)
+        case NI_VectorT128_ConvertToInt64:
+        case NI_VectorT256_ConvertToInt64:
         case NI_VectorT128_ConvertToUInt32:
         case NI_VectorT256_ConvertToUInt32:
+        case NI_VectorT128_ConvertToUInt64:
+        case NI_VectorT256_ConvertToUInt64:
         {
             // TODO-XARCH-CQ: These intrinsics should be accelerated
             // This is not accelerated because scalar float/double->uint
@@ -1266,54 +1270,6 @@ GenTree* Compiler::impSimdAsHWIntrinsicSpecial(NamedIntrinsic       intrinsic,
                                                      ? NI_AVX512DQ_VL_ConvertToVector128Double
                                                      : (simdSize == 32) ? NI_AVX512DQ_VL_ConvertToVector256Double
                                                                         : NI_AVX512DQ_ConvertToVector512Double;
-                        return gtNewSimdHWIntrinsicNode(retType, op1, convert, simdBaseJitType, simdSize);
-                    }
-                    return nullptr;
-                }
-
-                case NI_VectorT128_ConvertToInt64:
-                case NI_VectorT256_ConvertToInt64:
-                case NI_VectorT512_ConvertToInt64:
-                {
-                    if (IsBaselineVector512IsaSupportedOpportunistically())
-                    {
-                        assert(sig->numArgs == 1);
-                        assert((simdBaseType == TYP_DOUBLE) || (simdBaseType == TYP_FLOAT));
-#ifdef TARGET_XARCH
-                        NamedIntrinsic convert =
-                            (simdSize == 16) ? NI_AVX512DQ_VL_ConvertToVector128Int64WithTruncation
-                                             : (simdSize == 32) ? NI_AVX512DQ_VL_ConvertToVector256Int64WithTruncation
-                                                                : NI_AVX512DQ_ConvertToVector512Int64WithTruncation;
-#else
-                        NamedIntrinsic convert = (simdSize == 16)
-                                                     ? NI_AVX512DQ_VL_ConvertToVector128Int64
-                                                     : (simdSize == 32) ? NI_AVX512DQ_VL_ConvertToVector256Int64
-                                                                        : NI_AVX512DQ_ConvertToVector512Int64;
-#endif // TARGET_XARCH
-                        return gtNewSimdHWIntrinsicNode(retType, op1, convert, simdBaseJitType, simdSize);
-                    }
-                    return nullptr;
-                }
-
-                case NI_VectorT128_ConvertToUInt64:
-                case NI_VectorT256_ConvertToUInt64:
-                case NI_VectorT512_ConvertToUInt64:
-                {
-                    if (IsBaselineVector512IsaSupportedOpportunistically())
-                    {
-                        assert(sig->numArgs == 1);
-                        assert((simdBaseType == TYP_DOUBLE) || (simdBaseType == TYP_FLOAT));
-#ifdef TARGET_XARCH
-                        NamedIntrinsic convert =
-                            (simdSize == 16) ? NI_AVX512DQ_VL_ConvertToVector128UInt64WithTruncation
-                                             : (simdSize == 32) ? NI_AVX512DQ_VL_ConvertToVector256UInt64WithTruncation
-                                                                : NI_AVX512DQ_ConvertToVector512UInt64WithTruncation;
-#else
-                        NamedIntrinsic convert = (simdSize == 16)
-                                                     ? NI_AVX512DQ_VL_ConvertToVector128UInt64
-                                                     : (simdSize == 32) ? NI_AVX512DQ_VL_ConvertToVector256UInt64
-                                                                        : NI_AVX512DQ_ConvertToVector512UInt64;
-#endif // TARGET_XARCH
                         return gtNewSimdHWIntrinsicNode(retType, op1, convert, simdBaseJitType, simdSize);
                     }
                     return nullptr;
