@@ -223,6 +223,10 @@ namespace System
             if (!Console.IsOutputRedirected)
             {
                 WriteStdoutAnsiString(TerminalFormatStringsInstance.Clear);
+                if (TerminalFormatStringsInstance.ClearScrollbackBuffer is not null)
+                {
+                    WriteStdoutAnsiString(TerminalFormatStringsInstance.ClearScrollbackBuffer);
+                }
             }
         }
 

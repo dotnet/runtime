@@ -75,22 +75,22 @@ public class TermInfoTests
 
     [Theory]
     [PlatformSpecific(TestPlatforms.AnyUnix)]  // Tests TermInfo
-    [InlineData("xterm-256color", "\u001B\u005B\u00330m", "\u001B\u005B\u00340m", 0)]
-    [InlineData("xterm-256color", "\u001B\u005B\u00331m", "\u001B\u005B\u00341m", 1)]
-    [InlineData("xterm-256color", "\u001B\u005B90m", "\u001B\u005B100m", 8)]
-    [InlineData("screen", "\u001B\u005B\u00330m", "\u001B\u005B\u00340m", 0)]
-    [InlineData("screen", "\u001B\u005B\u00332m", "\u001B\u005B\u00342m", 2)]
-    [InlineData("screen", "\u001B\u005B\u00339m", "\u001B\u005B\u00349m", 9)]
-    [InlineData("Eterm", "\u001B\u005B\u00330m", "\u001B\u005B\u00340m", 0)]
-    [InlineData("Eterm", "\u001B\u005B\u00333m", "\u001B\u005B\u00343m", 3)]
-    [InlineData("Eterm", "\u001B\u005B\u003310m", "\u001B\u005B\u003410m", 10)]
-    [InlineData("wsvt25", "\u001B\u005B\u00330m", "\u001B\u005B\u00340m", 0)]
-    [InlineData("wsvt25", "\u001B\u005B\u00334m", "\u001B\u005B\u00344m", 4)]
-    [InlineData("wsvt25", "\u001B\u005B\u003311m", "\u001B\u005B\u003411m", 11)]
-    [InlineData("mach-color", "\u001B\u005B\u00330m", "\u001B\u005B\u00340m", 0)]
-    [InlineData("mach-color", "\u001B\u005B\u00335m", "\u001B\u005B\u00345m", 5)]
-    [InlineData("mach-color", "\u001B\u005B\u003312m", "\u001B\u005B\u003412m", 12)]
-    public void TermInfoVerification(string termToTest, string expectedForeground, string expectedBackground, int colorValue)
+    [InlineData("xterm-256color", "\u001B\u005B\u00330m", "\u001B\u005B\u00340m", 0, true)]
+    [InlineData("xterm-256color", "\u001B\u005B\u00331m", "\u001B\u005B\u00341m", 1, true)]
+    [InlineData("xterm-256color", "\u001B\u005B90m", "\u001B\u005B100m", 8, true)]
+    [InlineData("screen", "\u001B\u005B\u00330m", "\u001B\u005B\u00340m", 0, false)]
+    [InlineData("screen", "\u001B\u005B\u00332m", "\u001B\u005B\u00342m", 2, false)]
+    [InlineData("screen", "\u001B\u005B\u00339m", "\u001B\u005B\u00349m", 9, false)]
+    [InlineData("Eterm", "\u001B\u005B\u00330m", "\u001B\u005B\u00340m", 0, false)]
+    [InlineData("Eterm", "\u001B\u005B\u00333m", "\u001B\u005B\u00343m", 3, false)]
+    [InlineData("Eterm", "\u001B\u005B\u003310m", "\u001B\u005B\u003410m", 10, false)]
+    [InlineData("wsvt25", "\u001B\u005B\u00330m", "\u001B\u005B\u00340m", 0, false)]
+    [InlineData("wsvt25", "\u001B\u005B\u00334m", "\u001B\u005B\u00344m", 4, false)]
+    [InlineData("wsvt25", "\u001B\u005B\u003311m", "\u001B\u005B\u003411m", 11, false)]
+    [InlineData("mach-color", "\u001B\u005B\u00330m", "\u001B\u005B\u00340m", 0, false)]
+    [InlineData("mach-color", "\u001B\u005B\u00335m", "\u001B\u005B\u00345m", 5, false)]
+    [InlineData("mach-color", "\u001B\u005B\u003312m", "\u001B\u005B\u003412m", 12, false)]
+    public void TermInfoVerification(string termToTest, string expectedForeground, string expectedBackground, int colorValue, bool expectedScrollbackClearSupport)
     {
         TermInfo.Database db = TermInfo.DatabaseFactory.ReadDatabase(termToTest);
         if (db != null)
@@ -99,6 +99,14 @@ public class TermInfoTests
             Assert.Equal(expectedForeground, TermInfo.ParameterizedStrings.Evaluate(info.Foreground, colorValue));
             Assert.Equal(expectedBackground, TermInfo.ParameterizedStrings.Evaluate(info.Background, colorValue));
             Assert.InRange(info.MaxColors, 1, int.MaxValue);
+            if (expectedScrollbackClearSupport)
+            {
+                Assert.NotNull(info.ClearScrollbackBuffer);
+            }
+            else
+            {
+                Assert.Null(info.ClearScrollbackBuffer);
+            }
         }
     }
 
@@ -108,7 +116,7 @@ public class TermInfoTests
     {
         // This file (available by default on OS X) is called out specifically since it contains a format where it has %i
         // but only one variable instead of two. Make sure we don't break in this case
-        TermInfoVerification("emu", "\u001Br1;", "\u001Bs1;", 0);
+        TermInfoVerification("emu", "\u001Br1;", "\u001Bs1;", 0, false);
     }
 
     [Fact]
