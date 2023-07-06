@@ -290,7 +290,6 @@ namespace System.Data.ProviderBase
             offset += BaseOffset;
             Validate(offset, 2 * destination.Length);
             Debug.Assert(0 == offset % ADP.PtrSize, "invalid alignment");
-            Debug.Assert(null != destination, "null destination");
 
             bool mustRelease = false;
 
@@ -515,7 +514,6 @@ namespace System.Data.ProviderBase
             offset += BaseOffset;
             Validate(offset, source.Length);
             Debug.Assert(0 == offset % ADP.PtrSize, "invalid alignment");
-            Debug.Assert(null != source, "null source");
 
             bool mustRelease = false;
 
@@ -624,7 +622,6 @@ namespace System.Data.ProviderBase
             offset += BaseOffset;
             Validate(offset, 2 * source.Length);
             Debug.Assert(0 == offset % ADP.PtrSize, "invalid alignment");
-            Debug.Assert(null != source, "null source");
 
             bool mustRelease = false;
 
@@ -770,26 +767,22 @@ namespace System.Data.ProviderBase
             }
         }
 
-        internal Guid ReadGuid(int offset)
+        internal unsafe Guid ReadGuid(int offset)
         {
             offset += BaseOffset;
 
-            unsafe
-            {
-                Validate(offset, sizeof(Guid));
-            }
+            Validate(offset, sizeof(Guid));
 
-            Debug.Assert(0 == offset % ADP.PtrSize, "invalid alignment");
+            Debug.Assert(0 == offset % /* alignof(Guid) */ sizeof(int), "invalid alignment");
 
             bool mustRelease = false;
             try
             {
                 DangerousAddRef(ref mustRelease);
-                unsafe
-                {
-                    byte* addrGuid = (byte*)DangerousGetHandle() + (uint)offset;
-                    return new Guid(new ReadOnlySpan<byte>(addrGuid, sizeof(Guid)));
-                }
+
+                byte* addrGuid = (byte*)DangerousGetHandle() + (uint)offset;
+
+                return new Guid(new ReadOnlySpan<byte>(addrGuid, sizeof(Guid)));
             }
             finally
             {
@@ -799,24 +792,18 @@ namespace System.Data.ProviderBase
                 }
             }
         }
-        internal void WriteGuid(int offset, Guid value)
+        internal unsafe void WriteGuid(int offset, Guid value)
         {
             offset += BaseOffset;
 
-            unsafe
-            {
-                Validate(offset, sizeof(Guid));
-            }
+            Validate(offset, sizeof(Guid));
 
-            Debug.Assert(0 == offset % ADP.PtrSize, "invalid alignment");
+            Debug.Assert(0 == offset % /* alignof(Guid) */ sizeof(int), "invalid alignment");
             bool mustRelease = false;
             try
             {
                 DangerousAddRef(ref mustRelease);
-                unsafe
-                {
-                    *((Guid*)DangerousGetHandle() + (uint)offset) = value;
-                }
+                *((Guid*)DangerousGetHandle() + (uint)offset) = value;
             }
             finally
             {
