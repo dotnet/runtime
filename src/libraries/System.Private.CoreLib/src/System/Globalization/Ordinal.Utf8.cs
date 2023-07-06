@@ -306,7 +306,7 @@ namespace System.Globalization
             }
 
             Debug.Assert(length == 0);
-            return true;
+            return lengthA == lengthB;
 
         NonAscii32:
             // Both values have to be non-ASCII to use the slow fallback, in case if one of them is not we return false
@@ -620,7 +620,7 @@ namespace System.Globalization
             }
 
             Debug.Assert(length == 0);
-            return true;
+            return prefixLength <= sourceLength;
 
         NonAscii32:
             // Both values have to be non-ASCII to use the slow fallback, in case if one of them is not we return false
