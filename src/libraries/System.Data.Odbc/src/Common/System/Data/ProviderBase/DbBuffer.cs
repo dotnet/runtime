@@ -773,15 +773,30 @@ namespace System.Data.ProviderBase
 
         internal Guid ReadGuid(int offset)
         {
-            // faster than Marshal.PtrToStructure(offset, typeof(Guid))
-            Span<byte> spanBuffer = stackalloc byte[16];
-            ReadBytes(offset, spanBuffer);
-            return new Guid(spanBuffer);
+            offset += BaseOffset;
+            Debug.Assert(0 == offset % ADP.PtrSize, "invalid alignment");
+            bool mustRelease = false;
+            try
+            {
+                DangerousAddRef(ref mustRelease);
+                IntPtr ptr = ADP.IntPtrOffset(DangerousGetHandle(), offset);
+                unsafe
+                {
+                    return new Guid(new ReadOnlySpan<byte>(ptr.ToPointer(), sizeof(Guid)));
+                }
+            }
+            finally
+            {
+                if (mustRelease)
+                {
+                    DangerousRelease();
+                }
+            }
         }
         internal void WriteGuid(int offset, Guid value)
         {
-            // faster than Marshal.Copy(value.GetByteArray()
-            StructureToPtr(offset, value);
+            ReadOnlySpan<Guid> spanGuid = MemoryMarshal.CreateReadOnlySpan(ref Unsafe.AsRef(value), 1);
+            WriteBytes(offset, MemoryMarshal.AsBytes(spanGuid));
         }
 
         internal DateTime ReadDate(int offset)
