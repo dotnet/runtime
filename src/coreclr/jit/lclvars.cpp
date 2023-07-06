@@ -7646,7 +7646,7 @@ void Compiler::lvaDumpEntry(unsigned lclNum, FrameLayoutState curState, size_t r
     else if (varTypeIsStruct(varDsc->TypeGet()))
     {
         ClassLayout* layout = varDsc->GetLayout();
-        if (layout != nullptr && layout->GetClassName() != nullptr)
+        if (layout != nullptr && !layout->IsBlockLayout())
         {
             printf(" <%s>", layout->GetClassName());
         }
