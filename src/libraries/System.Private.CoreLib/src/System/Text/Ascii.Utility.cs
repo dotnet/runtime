@@ -1500,7 +1500,6 @@ namespace System.Text
         }
 
         [MethodImpl(MethodImplOptions.AggressiveInlining)]
-        [CompExactlyDependsOn(typeof(Avx512F))]
         private static bool AllCharsInVectorAreAscii<T>(Vector512<T> vector)
             where T : unmanaged
         {

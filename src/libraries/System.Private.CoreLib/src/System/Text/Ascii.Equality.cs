@@ -61,7 +61,7 @@ namespace System.Text
                     }
                 }
             }
-            else if (Avx512F.IsSupported && length >= (uint)Vector512<TRight>.Count)
+            else if (Vector512.IsHardwareAccelerated && length >= (uint)Vector512<TRight>.Count)
             {
                 ref TLeft currentLeftSearchSpace = ref left;
                 ref TLeft oneVectorAwayFromLeftEnd = ref Unsafe.Add(ref currentLeftSearchSpace, length - TLoader.Count512);
