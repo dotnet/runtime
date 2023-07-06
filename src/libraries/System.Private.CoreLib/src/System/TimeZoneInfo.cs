@@ -6,7 +6,9 @@ using System.Collections.ObjectModel;
 using System.Diagnostics;
 using System.Diagnostics.CodeAnalysis;
 using System.Globalization;
+using System.Runtime.CompilerServices;
 using System.Runtime.Serialization;
+using System.Security;
 using System.Threading;
 
 namespace System
@@ -28,7 +30,7 @@ namespace System
     }
 
     [Serializable]
-    [System.Runtime.CompilerServices.TypeForwardedFrom("System.Core, Version=3.5.0.0, Culture=neutral, PublicKeyToken=b77a5c561934e089")]
+    [TypeForwardedFrom("System.Core, Version=3.5.0.0, Culture=neutral, PublicKeyToken=b77a5c561934e089")]
     public sealed partial class TimeZoneInfo : IEquatable<TimeZoneInfo?>, ISerializable, IDeserializationCallback
     {
         private enum TimeZoneInfoResult
@@ -38,6 +40,8 @@ namespace System
             InvalidTimeZoneException = 2,
             SecurityException = 3
         }
+
+        private const int MaxKeyLength = 255;
 
         private readonly string _id;
         private readonly string? _displayName;
@@ -556,6 +560,90 @@ namespace System
             ConvertTime(dateTime, FindSystemTimeZoneById(destinationTimeZoneId));
 
         /// <summary>
+        /// Helper function for retrieving a <see cref="TimeZoneInfo"/> object by time zone name.
+        /// This function wraps the logic necessary to keep the private
+        /// SystemTimeZones cache in working order.
+        ///
+        /// This function will either return a valid <see cref="TimeZoneInfo"/> instance or
+        /// it will throw <see cref="InvalidTimeZoneException"/> / <see cref="TimeZoneNotFoundException"/> /
+        /// <see cref="SecurityException"/>
+        /// </summary>
+        /// <param name="id">Time zone name.</param>
+        /// <returns>Valid <see cref="TimeZoneInfo"/> instance.</returns>
+        public static TimeZoneInfo FindSystemTimeZoneById(string id)
+        {
+            TimeZoneInfo? value;
+            Exception? e;
+
+            TimeZoneInfoResult result = TryFindSystemTimeZoneById(id, out value, out e);
+            switch (result)
+            {
+                case TimeZoneInfoResult.Success:
+                    return value!;
+                case TimeZoneInfoResult.InvalidTimeZoneException:
+                    Debug.Assert(e is InvalidTimeZoneException,
+                        "TryGetTimeZone must create an InvalidTimeZoneException when it returns TimeZoneInfoResult.InvalidTimeZoneException");
+                    throw e;
+                case TimeZoneInfoResult.SecurityException:
+                    throw new SecurityException(SR.Format(SR.Security_CannotReadFileData, id), e);
+                default:
+                    throw new TimeZoneNotFoundException(SR.Format(SR.TimeZoneNotFound_MissingData, id), e);
+            }
+        }
+
+        /// <summary>
+        /// Helper function for retrieving a <see cref="TimeZoneInfo"/> object by time zone name.
+        /// This function wraps the logic necessary to keep the private
+        /// SystemTimeZones cache in working order.
+        ///
+        /// This function will either return <c>true</c> and a valid <see cref="TimeZoneInfo"/>
+        /// instance or return <c>false</c> and <c>null</c>.
+        /// </summary>
+        /// <param name="id">Time zone name.</param>
+        /// <param name="timeZoneInfo">A valid retrieved <see cref="TimeZoneInfo"/> or <c>null</c>.</param>
+        /// <returns><c>true</c> if the <see cref="TimeZoneInfo"/> object was successfully retrieved, <c>false</c> otherwise.</returns>
+        public static bool TryFindSystemTimeZoneById(string id, [NotNullWhenAttribute(true)] out TimeZoneInfo? timeZoneInfo)
+            => TryFindSystemTimeZoneById(id, out timeZoneInfo, out _) == TimeZoneInfoResult.Success;
+
+        /// <summary>
+        /// Helper function for retrieving a TimeZoneInfo object by time_zone_name.
+        /// This function wraps the logic necessary to keep the private
+        /// SystemTimeZones cache in working order.
+        ///
+        /// This function will either return:
+        /// <c>TimeZoneInfoResult.Success</c> and a valid <see cref="TimeZoneInfo"/>instance and <c>null</c> Exception or
+        /// <c>TimeZoneInfoResult.TimeZoneNotFoundException</c> and <c>null</c> <see cref="TimeZoneInfo"/> and Exception (can be null) or
+        /// other <c>TimeZoneInfoResult</c> and <c>null</c> <see cref="TimeZoneInfo"/> and valid Exception.
+        /// </summary>
+        private static TimeZoneInfoResult TryFindSystemTimeZoneById(string id, out TimeZoneInfo? timeZone, out Exception? e)
+        {
+            // Special case for Utc as it will not exist in the dictionary with the rest
+            // of the system time zones.  There is no need to do this check for Local.Id
+            // since Local is a real time zone that exists in the dictionary cache
+            if (string.Equals(id, UtcId, StringComparison.OrdinalIgnoreCase))
+            {
+                timeZone = Utc;
+                e = default;
+                return TimeZoneInfoResult.Success;
+            }
+
+            ArgumentNullException.ThrowIfNull(id);
+            if (id.Length == 0 || id.Length > MaxKeyLength || id.Contains('\0'))
+            {
+                timeZone = default;
+                e = default;
+                return TimeZoneInfoResult.TimeZoneNotFoundException;
+            }
+
+            CachedData cachedData = s_cachedData;
+
+            lock (cachedData)
+            {
+                return TryGetTimeZone(id, out timeZone, out e, cachedData);
+            }
+        }
+
+        /// <summary>
         /// Converts the value of a DateTime object from sourceTimeZone to destinationTimeZone.
         /// </summary>
         public static DateTime ConvertTimeBySystemTimeZoneId(DateTime dateTime, string sourceTimeZoneId, string destinationTimeZoneId)
@@ -892,7 +980,7 @@ namespace System
             string? displayName,
             string? standardDisplayName)
         {
-            bool hasIanaId = TimeZoneInfo.TryConvertIanaIdToWindowsId(id, allocate: false, out _);
+            bool hasIanaId = TryConvertIanaIdToWindowsId(id, allocate: false, out _);
 
             return new TimeZoneInfo(
                 id,
@@ -943,7 +1031,7 @@ namespace System
                 adjustmentRules = (AdjustmentRule[])adjustmentRules.Clone();
             }
 
-            bool hasIanaId = TimeZoneInfo.TryConvertIanaIdToWindowsId(id, allocate: false, out _);
+            bool hasIanaId = TryConvertIanaIdToWindowsId(id, allocate: false, out _);
 
             return new TimeZoneInfo(
                 id,

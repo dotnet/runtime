@@ -12,7 +12,7 @@ namespace System
             if (GlobalizationMode.Invariant ||
                 GlobalizationMode.UseNls ||
                 ianaId is null ||
-                ianaId.AsSpan().IndexOfAny('\\', '\n', '\r') >= 0) // ICU uses these characters as a separator
+                ianaId.AsSpan().ContainsAny('\\', '\n', '\r')) // ICU uses these characters as a separator
             {
                 windowsId = null;
                 return false;
@@ -46,7 +46,7 @@ namespace System
                 return true;
             }
 
-            if (windowsId.AsSpan().IndexOfAny('\\', '\n', '\r') >= 0) // ICU uses these characters as a separator
+            if (windowsId.AsSpan().ContainsAny('\\', '\n', '\r')) // ICU uses these characters as a separator
             {
                 ianaId = null;
                 return false;

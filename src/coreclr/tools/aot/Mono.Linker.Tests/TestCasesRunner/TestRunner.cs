@@ -132,6 +132,7 @@ namespace Mono.Linker.Tests.TestCasesRunner
 					// It's important to add all assemblies as "link" assemblies since the default configuration
 					// is to run the compiler in multi-file mode which will not process anything which is just in the reference set.
 					builder.AddLinkAssembly (inputReference);
+					builder.AddReference (inputReference);
 				}
 			}
 			var coreAction = caseDefinedOptions.TrimMode ?? "skip";

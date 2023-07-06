@@ -1,3 +1,4 @@
+SIMD_METHOD2(".ctor", ctor)
 SIMD_METHOD(get_Count)
 SIMD_METHOD(get_AllBitsSet)
 SIMD_METHOD(get_IsHardwareAccelerated)

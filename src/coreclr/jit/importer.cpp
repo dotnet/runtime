@@ -3530,18 +3530,27 @@ GenTree* Compiler::impImportStaticReadOnlyField(CORINFO_FIELD_HANDLE field, CORI
 #ifdef FEATURE_SIMD
                 // First, let's check whether field is a SIMD vector and import it as GT_CNS_VEC
                 int simdWidth = getSIMDTypeSizeInBytes(fieldClsHnd);
-                if (simdWidth > 0)
+                if ((simdWidth > 0) && IsBaselineSimdIsaSupported())
                 {
                     assert((totalSize <= 32) && (totalSize <= MaxStructSize));
                     var_types simdType = getSIMDTypeForSize(simdWidth);
 
-// SSE2 and AdvSimd are baselines so TYP_SIMD8-16 are always there
-// for TYP_SIMD32 we need to check AVX support on XARCH
-#ifdef TARGET_XARCH
-                    bool hwAccelerated = (simdType != TYP_SIMD32) || compOpportunisticallyDependsOn(InstructionSet_AVX);
-#else
                     bool hwAccelerated = true;
+#ifdef TARGET_XARCH
+                    if (simdType == TYP_SIMD64)
+                    {
+                        hwAccelerated = compOpportunisticallyDependsOn(InstructionSet_AVX512F);
+                    }
+                    else if (simdType == TYP_SIMD32)
+                    {
+                        hwAccelerated = compOpportunisticallyDependsOn(InstructionSet_AVX);
+                    }
+                    else
 #endif
+                    {
+                        // SIMD8, SIMD12, SIMD16 are covered by IsBaselineSimdIsaSupported check
+                        assert((simdType == TYP_SIMD8) || (simdType == TYP_SIMD12) || (simdType == TYP_SIMD16));
+                    }
 
                     if (hwAccelerated)
                     {
@@ -5426,6 +5435,23 @@ GenTree* Compiler::impCastClassOrIsInstToTree(
     bool shouldExpandInline = true;
     bool isClassExact       = impIsClassExact(pResolvedToken->hClass);
 
+    // ECMA-335 III.4.3:  If typeTok is a nullable type, Nullable<T>, it is interpreted as "boxed" T
+    // We can convert constant-ish tokens of nullable to its underlying type.
+    // However, when the type is shared generic parameter like Nullable<Struct<__Canon>>, the actual type will require
+    // runtime lookup. It's too complex to add another level of indirection in op2, fallback to the cast helper instead.
+    if (isClassExact && !(info.compCompHnd->getClassAttribs(pResolvedToken->hClass) & CORINFO_FLG_SHAREDINST))
+    {
+        CORINFO_CLASS_HANDLE hClass = info.compCompHnd->getTypeForBox(pResolvedToken->hClass);
+
+        if (hClass != pResolvedToken->hClass)
+        {
+            bool runtimeLookup;
+            pResolvedToken->hClass = hClass;
+            op2                    = impTokenToHandle(pResolvedToken, &runtimeLookup);
+            assert(!runtimeLookup);
+        }
+    }
+
     // Profitability check.
     //
     // Don't bother with inline expansion when jit is trying to generate code quickly
@@ -5784,7 +5810,8 @@ void Compiler::impImportBlockCode(BasicBlock* block)
 
 #ifdef FEATURE_ON_STACK_REPLACEMENT
 
-    bool enablePatchpoints = opts.jitFlags->IsSet(JitFlags::JIT_FLAG_TIER0) && (JitConfig.TC_OnStackReplacement() > 0);
+    bool enablePatchpoints =
+        !opts.compDbgCode && opts.jitFlags->IsSet(JitFlags::JIT_FLAG_TIER0) && (JitConfig.TC_OnStackReplacement() > 0);
 
 #ifdef DEBUG
 

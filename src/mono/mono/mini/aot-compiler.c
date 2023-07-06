@@ -9390,6 +9390,7 @@ add_referenced_patch (MonoAotCompile *acfg, MonoJumpInfo *patch_info, int depth)
 			case MONO_PATCH_INFO_VIRT_METHOD:
 			case MONO_PATCH_INFO_GSHAREDVT_METHOD:
 			case MONO_PATCH_INFO_GSHAREDVT_CALL:
+			case MONO_PATCH_INFO_SIGNATURE:
 				tmp.type = patch_type;
 				tmp.data.target = data;
 				break;
@@ -9828,8 +9829,9 @@ compile_method (MonoAotCompile *acfg, MonoMethod *method)
 	mono_atomic_inc_i32 (&acfg->stats.ccount);
 
 	if (acfg->aot_opts.compiled_methods_outfile && acfg->compiled_methods_outfile != NULL) {
-		if (!mono_method_is_generic_impl (method) && method->token != 0)
+		if (!mono_method_is_generic_impl (method) && method->token != 0) {
 			fprintf (acfg->compiled_methods_outfile, "%x\n", method->token);
+		}
 	}
 }
 
@@ -10724,7 +10726,14 @@ emit_llvm_file (MonoAotCompile *acfg)
 		// FIXME: This doesn't work yet
 		opts = g_strdup ("");
 	} else {
-#if LLVM_API_VERSION >= 1300
+#if LLVM_API_VERSION >= 1600
+		/* The safepoints pass requires new pass manager syntax*/
+		opts = g_strdup ("-disable-tail-calls -passes='");
+		if (!acfg->aot_opts.llvm_only) {
+			opts = g_strdup_printf ("%sdefault<O2>,", opts);
+		}
+		opts = g_strdup_printf ("%splace-safepoints' -spp-all-backedges", opts);
+#elif LLVM_API_VERSION >= 1300
 		/* The safepoints pass requires the old pass manager */
 		opts = g_strdup ("-disable-tail-calls -place-safepoints -spp-all-backedges -enable-new-pm=0");
 #else
@@ -10734,8 +10743,10 @@ emit_llvm_file (MonoAotCompile *acfg)
 
 	if (acfg->aot_opts.llvm_opts) {
 		opts = g_strdup_printf ("%s %s", acfg->aot_opts.llvm_opts, opts);
+#if LLVM_API_VERSION < 1600
 	} else if (!acfg->aot_opts.llvm_only) {
 		opts = g_strdup_printf ("-O2 %s", opts);
+#endif
 	}
 
 	if (acfg->aot_opts.use_current_cpu) {
@@ -14434,6 +14445,8 @@ static void aot_dump (MonoAotCompile *acfg)
 static const MonoJitICallId preinited_jit_icalls [] = {
 	MONO_JIT_ICALL_mini_llvm_init_method,
 	MONO_JIT_ICALL_mini_llvmonly_throw_nullref_exception,
+	MONO_JIT_ICALL_mini_llvmonly_throw_index_out_of_range_exception,
+	MONO_JIT_ICALL_mini_llvmonly_throw_invalid_cast_exception,
 	MONO_JIT_ICALL_mini_llvmonly_throw_corlib_exception,
 	MONO_JIT_ICALL_mono_threads_state_poll,
 	MONO_JIT_ICALL_mini_llvmonly_init_vtable_slot,
@@ -14832,6 +14845,10 @@ aot_assembly (MonoAssembly *ass, guint32 jit_opts, MonoAotOptions *aot_options)
 		acfg->compiled_methods_outfile = fopen (acfg->aot_opts.compiled_methods_outfile, "w+");
 		if (!acfg->compiled_methods_outfile)
 			aot_printerrf (acfg, "Unable to open compiled-methods-outfile specified file %s\n", acfg->aot_opts.compiled_methods_outfile);
+		else {
+			fprintf(acfg->compiled_methods_outfile, "%s\n", ass->image->filename);
+			fprintf(acfg->compiled_methods_outfile, "%s\n", ass->image->guid);
+		}
 	}
 
 	if (acfg->aot_opts.data_outfile) {

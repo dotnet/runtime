@@ -95,7 +95,8 @@ namespace Microsoft.Extensions.Configuration
 
         private static string Segment(string key, int prefixLength)
         {
-            int indexOf = key.IndexOf(ConfigurationPath.KeyDelimiter, prefixLength, StringComparison.OrdinalIgnoreCase);
+            Debug.Assert(ConfigurationPath.KeyDelimiter == ":");
+            int indexOf = key.IndexOf(':', prefixLength);
             return indexOf < 0 ? key.Substring(prefixLength) : key.Substring(prefixLength, indexOf - prefixLength);
         }
 

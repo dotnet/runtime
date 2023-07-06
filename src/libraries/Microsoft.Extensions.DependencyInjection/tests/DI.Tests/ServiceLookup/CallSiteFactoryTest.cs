@@ -786,17 +786,10 @@ namespace Microsoft.Extensions.DependencyInjection.ServiceLookup
             var callSite = factory(typeof(IEnumerable<FakeService>));
 
             var expectedLocation = (CallSiteResultCacheLocation)expectedCacheLocation;
-            Assert.Equal(expectedLocation, callSite.Cache.Location);
 
-            if (expectedLocation != CallSiteResultCacheLocation.None)
-            {
-                Assert.Equal(0, callSite.Cache.Key.Slot);
-                Assert.Equal(typeof(IEnumerable<FakeService>), callSite.Cache.Key.Type);
-            }
-            else
-            {
-                Assert.Equal(ResultCache.None, callSite.Cache);
-            }
+            Assert.Equal(expectedLocation, callSite.Cache.Location);
+            Assert.Equal(0, callSite.Cache.Key.Slot);
+            Assert.Equal(typeof(IEnumerable<FakeService>), callSite.Cache.Key.Type);
         }
 
         [ConditionalFact(typeof(PlatformDetection), nameof(PlatformDetection.IsThreadingSupported))]

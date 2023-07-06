@@ -8,7 +8,7 @@ import { WasmOpcode, WasmSimdOpcode } from "./jiterpreter-opcodes";
 import { MintOpcode } from "./mintops";
 import cwraps from "./cwraps";
 import { mono_log_error, mono_log_info } from "./logging";
-import { localHeapViewU8 } from "./memory";
+import { localHeapViewU8, localHeapViewU32 } from "./memory";
 import { utf8ToString } from "./strings";
 
 export const maxFailures = 2,
@@ -386,13 +386,22 @@ export class WasmBuilder {
                 this.i52_const(0);
                 this.appendSimd(WasmSimdOpcode.i64x2_splat);
             */
-            this.appendSimd(WasmSimdOpcode.v128_const);
-            for (let i = 0; i < 16; i++)
-                this.appendU8(0);
+            this.local("v128_zero");
         } else if (typeof (value) === "object") {
             mono_assert(value.byteLength === 16, "Expected v128_const arg to be 16 bytes in size");
-            this.appendSimd(WasmSimdOpcode.v128_const);
-            this.appendBytes(value);
+            let isZero = true;
+            for (let i = 0; i < 16; i++) {
+                if (value[i] !== 0)
+                    isZero = false;
+            }
+
+            if (isZero) {
+                // mono_log_info("Detected that literal v128_const was zero");
+                this.local("v128_zero");
+            } else {
+                this.appendSimd(WasmSimdOpcode.v128_const);
+                this.appendBytes(value);
+            }
         } else {
             throw new Error("Expected v128_const arg to be 0 or a Uint8Array");
         }
@@ -626,9 +635,21 @@ export class WasmBuilder {
                 exportCount++;
 
             this.beginFunction(func.typeName, func.locals);
-            func.blob = func.generator();
-            if (!func.blob)
-                func.blob = this.endFunction(false);
+            try {
+                func.blob = func.generator();
+            } finally {
+                // If func.generator failed due to an error or didn't return a blob, we want
+                //  to call endFunction to pop the stack and create the blob automatically.
+                // We may be in the middle of handling an exception so don't let this automatic
+                //  logic throw and suppress the original exception being handled
+                try {
+                    if (!func.blob)
+                        func.blob = this.endFunction(false);
+                } catch {
+                    // eslint-disable-next-line @typescript-eslint/no-extra-semi
+                    ;
+                }
+            }
         }
 
         this._generateImportSection(includeFunctionTable);
@@ -723,6 +744,7 @@ export class WasmBuilder {
         counts[WasmValtype.i64] = 0;
         counts[WasmValtype.f32] = 0;
         counts[WasmValtype.f64] = 0;
+        counts[WasmValtype.v128] = 0;
 
         for (const k in locals) {
             const ty = locals[k];
@@ -734,34 +756,39 @@ export class WasmBuilder {
         const offi32 = 0,
             offi64 = counts[WasmValtype.i32],
             offf32 = offi64 + counts[WasmValtype.i64],
-            offf64 = offf32 + counts[WasmValtype.f32];
+            offf64 = offf32 + counts[WasmValtype.f32],
+            offv128 = offf64 + counts[WasmValtype.f64];
 
         counts[WasmValtype.i32] = 0;
         counts[WasmValtype.i64] = 0;
         counts[WasmValtype.f32] = 0;
         counts[WasmValtype.f64] = 0;
+        counts[WasmValtype.v128] = 0;
 
         for (const k in locals) {
             const ty = locals[k];
-            let idx = 0;
+            let idx = 0, offset;
             switch (ty) {
                 case WasmValtype.i32:
-                    idx = (counts[ty]++) + offi32 + base;
-                    this.locals.set(k, idx);
+                    offset = offi32;
                     break;
                 case WasmValtype.i64:
-                    idx = (counts[ty]++) + offi64 + base;
-                    this.locals.set(k, idx);
+                    offset = offi64;
                     break;
                 case WasmValtype.f32:
-                    idx = (counts[ty]++) + offf32 + base;
-                    this.locals.set(k, idx);
+                    offset = offf32;
                     break;
                 case WasmValtype.f64:
-                    idx = (counts[ty]++) + offf64 + base;
-                    this.locals.set(k, idx);
+                    offset = offf64;
                     break;
+                case WasmValtype.v128:
+                    offset = offv128;
+                    break;
+                default:
+                    throw new Error(`Unimplemented valtype: ${ty}`);
             }
+            idx = (counts[ty]++) + offset + base;
+            this.locals.set(k, idx);
             // mono_log_info(`local ${k} ${locals[k]} -> ${idx}`);
         }
 
@@ -780,7 +807,7 @@ export class WasmBuilder {
         this.locals.clear();
         this.branchTargets.clear();
         let counts: any = {};
-        const tk = [WasmValtype.i32, WasmValtype.i64, WasmValtype.f32, WasmValtype.f64];
+        const tk = [WasmValtype.i32, WasmValtype.i64, WasmValtype.f32, WasmValtype.f64, WasmValtype.v128];
 
         // We first assign the parameters local indices and then
         //  we assign the named locals indices, because parameters
@@ -1412,6 +1439,7 @@ export const enum WasmValtype {
     i64 = 0x7E,
     f32 = 0x7D,
     f64 = 0x7C,
+    v128 = 0x7B,
 }
 
 let wasmTable: WebAssembly.Table | undefined;
@@ -1531,9 +1559,9 @@ export function try_append_memset_fast(builder: WasmBuilder, localOffset: number
     if (value !== 0)
         return false;
 
-    const destLocal = destOnStack ? "math_lhs32" : "pLocals";
+    const destLocal = destOnStack ? "memop_dest" : "pLocals";
     if (destOnStack)
-        builder.local("math_lhs32", WasmOpcode.set_local);
+        builder.local(destLocal, WasmOpcode.set_local);
 
     let offset = destOnStack ? 0 : localOffset;
 
@@ -1616,8 +1644,9 @@ export function try_append_memmove_fast(
         return false;
 
     if (addressesOnStack) {
-        destLocal = destLocal || "math_lhs32";
-        srcLocal = srcLocal || "math_rhs32";
+        destLocal = destLocal || "memop_dest";
+        srcLocal = srcLocal || "memop_src";
+        // Stack layout is [..., dest, src]
         builder.local(srcLocal, WasmOpcode.set_local);
         builder.local(destLocal, WasmOpcode.set_local);
     } else if (!destLocal || !srcLocal) {
@@ -1784,6 +1813,8 @@ export function bytesFromHex(hex: string): Uint8Array {
     return bytes;
 }
 
+let observedTaintedZeroPage : boolean | undefined;
+
 export function isZeroPageReserved(): boolean {
     // FIXME: This check will always return true on worker threads.
     // Right now the jiterpreter is disabled when threading is active, so that's not an issue.
@@ -1793,14 +1824,26 @@ export function isZeroPageReserved(): boolean {
     if (!cwraps.mono_wasm_is_zero_page_reserved())
         return false;
 
+    // If we ever saw garbage written to the zero page, never use it
+    if (observedTaintedZeroPage === true)
+        return false;
+
     // Determine whether emscripten's stack checker or some other troublemaker has
     //  written junk at the start of memory. The previous cwraps call will have
     //  checked whether the stack starts at zero or not (on the main thread).
     // We can't do this in the C helper because emcc/asan might be checking pointers.
-    return (Module.HEAPU32[0] === 0) &&
-        (Module.HEAPU32[1] === 0) &&
-        (Module.HEAPU32[2] === 0) &&
-        (Module.HEAPU32[3] === 0);
+    const heapU32 = localHeapViewU32();
+    for (let i = 0; i < 8; i++) {
+        if (heapU32[i] !== 0) {
+            if (observedTaintedZeroPage === false)
+                mono_log_error(`Zero page optimizations are enabled but garbage appeared in memory at address ${i * 4}: ${heapU32[i]}`);
+            observedTaintedZeroPage = true;
+            return false;
+        }
+    }
+
+    observedTaintedZeroPage = false;
+    return true;
 }
 
 export type JiterpreterOptions = {

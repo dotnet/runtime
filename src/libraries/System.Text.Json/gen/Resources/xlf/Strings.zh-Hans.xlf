@@ -62,6 +62,36 @@
         <target state="translated">源生成模式当前不支持仅初始化属性的反序列化。</target>
         <note />
       </trans-unit>
+      <trans-unit id="JsonConverterAttributeInvalidTypeMessageFormat">
+        <source>The 'JsonConverterAttribute' type '{0}' specified on member '{1}' is not a converter type or does not contain an accessible parameterless constructor.</source>
+        <target state="translated">在成员 "{1}" 上指定的 "JsonConverterAttribute" 类型 "{0}" 不是转换器类型或不包含可访问的无参数构造函数。</target>
+        <note />
+      </trans-unit>
+      <trans-unit id="JsonConverterAttributeInvalidTypeTitle">
+        <source>The 'JsonConverterAttribute.Type' contains an invalid or inaccessible argument.</source>
+        <target state="translated">"JsonConverterAttribute.Type" 包含无效或不可访问的参数。</target>
+        <note />
+      </trans-unit>
+      <trans-unit id="JsonStringEnumConverterNotSupportedMessageFormat">
+        <source>The member '{0}' has been annotated with 'JsonStringEnumConverter' which is not supported in native AOT. Consider using the generic 'JsonStringEnumConverter&lt;TEnum&gt;' instead.</source>
+        <target state="translated">成员“{0}”已使用本机 AOT 中不支持的 "JsonStringEnumConverter" 进行批注。请改为考虑使用泛型 "JsonStringEnumConverter&lt;TEnum&gt;"。</target>
+        <note />
+      </trans-unit>
+      <trans-unit id="JsonStringEnumConverterNotSupportedTitle">
+        <source>The non-generic 'JsonStringEnumConverter' requires dynamic code.</source>
+        <target state="translated">非泛型 "JsonStringEnumConverter" 需要动态代码。</target>
+        <note />
+      </trans-unit>
+      <trans-unit id="JsonUnsupportedLanguageVersionMessageFormat">
+        <source>The System.Text.Json source generator is not available in C# '{0}'. Please use language version {1} or greater.</source>
+        <target state="translated">System.Text.Json 源生成器在 C#“{0}”中不可用。请使用{1}或更高版本的语言版本。</target>
+        <note />
+      </trans-unit>
+      <trans-unit id="JsonUnsupportedLanguageVersionTitle">
+        <source>C# language version not supported by the source generator.</source>
+        <target state="translated">源生成器不支持 C# 语言版本。</target>
+        <note />
+      </trans-unit>
       <trans-unit id="MultipleJsonConstructorAttributeFormat">
         <source>Type '{0}' has multiple constructors annotated with 'JsonConstructorAttribute'.</source>
         <target state="translated">类型“{0}”具有用 “JsonConstructorAttribute” 批注的多个构造函数。</target>

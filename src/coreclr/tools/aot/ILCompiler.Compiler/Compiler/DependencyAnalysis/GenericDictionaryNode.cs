@@ -196,7 +196,12 @@ namespace ILCompiler.DependencyAnalysis
         protected override TypeSystemContext Context => _owningMethod.Context;
         public override TypeSystemEntity OwningEntity => _owningMethod;
         public MethodDesc OwningMethod => _owningMethod;
-        public override bool HasConditionalStaticDependencies => false;
+        public override bool HasConditionalStaticDependencies => true;
+
+        public override IEnumerable<CombinedDependencyListEntry> GetConditionalStaticDependencies(NodeFactory factory)
+        {
+            return factory.MetadataManager.GetConditionalDependenciesDueToGenericDictionary(factory, _owningMethod);
+        }
 
         protected override DependencyList ComputeNonRelocationBasedDependencies(NodeFactory factory)
         {
@@ -206,8 +211,7 @@ namespace ILCompiler.DependencyAnalysis
             if (factory.CompilationModuleGroup.ContainsMethodBody(canonicalTarget, false))
                 dependencies.Add(GetDictionaryLayout(factory), "Layout");
 
-            // TODO-SIZE: We probably don't need to add these for all dictionaries
-            GenericMethodsHashtableNode.GetGenericMethodsHashtableDependenciesForMethod(ref dependencies, factory, _owningMethod);
+            factory.MetadataManager.GetDependenciesDueToGenericDictionary(ref dependencies, factory, _owningMethod);
 
             factory.InteropStubManager.AddMarshalAPIsGenericDependencies(ref dependencies, factory, _owningMethod);
 

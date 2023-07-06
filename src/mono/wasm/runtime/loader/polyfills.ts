@@ -1,11 +1,11 @@
 
 import type { DotnetModuleInternal } from "../types/internal";
-import { INTERNAL, ENVIRONMENT_IS_NODE, ENVIRONMENT_IS_SHELL, loaderHelpers } from "./globals";
+import { INTERNAL, ENVIRONMENT_IS_NODE, ENVIRONMENT_IS_SHELL, loaderHelpers, ENVIRONMENT_IS_WEB } from "./globals";
 
 let node_fs: any | undefined = undefined;
 let node_url: any | undefined = undefined;
 
-export async function init_polyfills(module: DotnetModuleInternal): Promise<void> {
+export async function detect_features_and_polyfill(module: DotnetModuleInternal): Promise<void> {
 
     loaderHelpers.scriptUrl = normalizeFileUrl(/* webpackIgnore: true */import.meta.url);
     loaderHelpers.scriptDirectory = normalizeDirectoryUrl(loaderHelpers.scriptUrl);
@@ -20,6 +20,18 @@ export async function init_polyfills(module: DotnetModuleInternal): Promise<void
     // eslint-disable-next-line no-console
     loaderHelpers.err = console.error;
     loaderHelpers.getApplicationEnvironment = module.getApplicationEnvironment;
+
+    if (ENVIRONMENT_IS_WEB && globalThis.navigator) {
+        const navigator: any = globalThis.navigator;
+        const brands = navigator.userAgentData && navigator.userAgentData.brands;
+        if (brands && brands.length > 0) {
+            loaderHelpers.isChromium = brands.some((b: any) => b.brand === "Google Chrome" || b.brand === "Microsoft Edge" || b.brand === "Chromium");
+        }
+        else if (navigator.userAgent) {
+            loaderHelpers.isChromium = navigator.userAgent.includes("Chrome");
+            loaderHelpers.isFirefox = navigator.userAgent.includes("Firefox");
+        }
+    }
 
     if (ENVIRONMENT_IS_NODE) {
         // eslint-disable-next-line @typescript-eslint/ban-ts-comment
@@ -61,10 +73,14 @@ export async function fetch_like(url: string, init?: RequestInit): Promise<Respo
             const arrayBuffer = await node_fs.promises.readFile(url);
             return <Response><any>{
                 ok: true,
-                headers: [],
+                headers: {
+                    length: 0,
+                    get: () => null
+                },
                 url,
                 arrayBuffer: () => arrayBuffer,
-                json: () => JSON.parse(arrayBuffer)
+                json: () => JSON.parse(arrayBuffer),
+                text: () => { throw new Error("NotImplementedException"); }
             };
         }
         else if (hasFetch) {
@@ -76,12 +92,17 @@ export async function fetch_like(url: string, init?: RequestInit): Promise<Respo
             return <Response><any>{
                 ok: true,
                 url,
+                headers: {
+                    length: 0,
+                    get: () => null
+                },
                 arrayBuffer: () => {
                     return new Uint8Array(read(url, "binary"));
                 },
                 json: () => {
                     return JSON.parse(read(url, "utf8"));
-                }
+                },
+                text: () => read(url, "utf8")
             };
         }
     }
@@ -90,9 +111,14 @@ export async function fetch_like(url: string, init?: RequestInit): Promise<Respo
             ok: false,
             url,
             status: 500,
+            headers: {
+                length: 0,
+                get: () => null
+            },
             statusText: "ERR28: " + e,
             arrayBuffer: () => { throw e; },
-            json: () => { throw e; }
+            json: () => { throw e; },
+            text: () => { throw e; }
         };
     }
     throw new Error("No fetch implementation available");
