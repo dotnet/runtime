@@ -2087,9 +2087,9 @@ mono_method_get_unsafe_accessor_attr_data (MonoMethod *method, int *accessor_kin
 	}
 
 	for (int i = 0; i < decoded_args->named_args_num; ++i) {
-		if (decoded_args->named_args_info [i].field && !strcmp (decoded_args->named_args_info [i].field->name, "Kind")) {
+		if (decoded_args->named_args_info [i].prop && !strcmp (decoded_args->named_args_info [i].prop->name, "Kind")) {
 			*accessor_kind =  *(int*)decoded_args->named_args [i]->value.primitive;
-		}else if (decoded_args->named_args_info [i].field && !strcmp (decoded_args->named_args_info [i].field->name, "Kind")) {
+		}else if (decoded_args->named_args_info [i].prop && !strcmp (decoded_args->named_args_info [i].prop->name, "Name")) {
 			*member_name = *(char**)decoded_args->named_args [i]->value.primitive;
 		}
 	}
