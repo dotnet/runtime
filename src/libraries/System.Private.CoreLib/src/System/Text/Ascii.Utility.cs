@@ -1508,11 +1508,15 @@ namespace System.Text
 
             if (typeof(T) == typeof(byte))
             {
-                return vector.AsByte().ExtractMostSignificantBits() == 0;
+                return
+                    Avx512F.IsSupported ? Vector512.EqualsAll(Vector512.BitwiseAnd(vector.AsByte(), Vector512.Create((byte)0x80)), Vector512<byte>.Zero) :
+                    vector.AsByte().ExtractMostSignificantBits() == 0;
             }
             else
             {
-                return ((vector.AsUInt16() & Vector512.Create((ushort)0xFF80)) == Vector512<ushort>.Zero);
+                return
+                    Avx512F.IsSupported ? Vector512.EqualsAll(Vector512.BitwiseAnd(vector.AsUInt16(), Vector512.Create((ushort)0xFF80)), Vector512<ushort>.Zero) :
+                    ((vector.AsUInt16() & Vector512.Create((ushort)0xFF80)) == Vector512<ushort>.Zero);
             }
         }
 
