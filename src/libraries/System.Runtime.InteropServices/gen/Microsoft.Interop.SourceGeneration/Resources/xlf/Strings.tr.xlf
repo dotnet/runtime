@@ -78,8 +78,8 @@
         <note />
       </trans-unit>
       <trans-unit id="InOutAttributesNotSupportedOnByValueParameters">
-        <source>The `[In]` and `[Out]` attributes are not supported on by value value type parameters.</source>
-        <target state="new">The `[In]` and `[Out]` attributes are not supported on by value value type parameters.</target>
+        <source>The `[In]` and `[Out]` attributes are not supported on value-type parameters passed by-value.</source>
+        <target state="new">The `[In]` and `[Out]` attributes are not supported on value-type parameters passed by-value.</target>
         <note />
       </trans-unit>
       <trans-unit id="ManagedToUnmanagedMissingRequiredMarshaller">
