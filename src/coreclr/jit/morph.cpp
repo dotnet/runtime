@@ -10752,11 +10752,6 @@ GenTree* Compiler::fgOptimizeHWIntrinsic(GenTreeHWIntrinsic* node)
                 break;
             }
 
-            unsigned  simdSize = node->GetSimdSize();
-            var_types simdType = getSIMDTypeForSize(simdSize);
-
-            hwop1->gtType = simdType;
-
             if (toScalar != nullptr)
             {
                 DEBUG_DESTROY_NODE(toScalar);
@@ -10764,6 +10759,9 @@ GenTree* Compiler::fgOptimizeHWIntrinsic(GenTreeHWIntrinsic* node)
 
             if (sqrt != nullptr)
             {
+                unsigned  simdSize = node->GetSimdSize();
+                var_types simdType = getSIMDTypeForSize(simdSize);
+
                 node = gtNewSimdSqrtNode(simdType, hwop1, node->GetSimdBaseJitType(), simdSize)->AsHWIntrinsic();
                 DEBUG_DESTROY_NODE(sqrt);
             }
