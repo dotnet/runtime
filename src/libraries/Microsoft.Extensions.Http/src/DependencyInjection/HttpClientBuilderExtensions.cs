@@ -531,6 +531,16 @@ namespace Microsoft.Extensions.DependencyInjection
             return builder;
         }
 
+        public static IHttpClientBuilder ConfigureLogging(this IHttpClientBuilder builder, Action<IHttpClientLoggingBuilder> configure)
+        {
+            ThrowHelper.ThrowIfNull(builder);
+            ThrowHelper.ThrowIfNull(configure);
+
+            configure(new DefaultHttpClientLoggingBuilder(builder.Services, builder.Name));
+
+            return builder;
+        }
+
         // See comments on HttpClientMappingRegistry.
         private static void ReserveClient(IHttpClientBuilder builder, Type type, string name, bool validateSingleType)
         {
