@@ -989,9 +989,9 @@ namespace System
 
             _id = id;
             _baseUtcOffset = baseUtcOffset;
-            _displayName = displayName;
-            _standardDisplayName = standardDisplayName;
-            _daylightDisplayName = disableDaylightSavingTime ? null : daylightDisplayName;
+            _displayName = displayName ?? string.Empty;
+            _standardDisplayName = standardDisplayName ?? string.Empty;
+            _daylightDisplayName = disableDaylightSavingTime ? string.Empty : daylightDisplayName ?? string.Empty;
             _supportsDaylightSavingTime = adjustmentRulesSupportDst && !disableDaylightSavingTime;
             _adjustmentRules = adjustmentRules;
 
@@ -1012,9 +1012,9 @@ namespace System
             return new TimeZoneInfo(
                 id,
                 baseUtcOffset,
-                displayName ?? string.Empty,
-                standardDisplayName ?? string.Empty,
-                standardDisplayName ?? string.Empty,
+                displayName,
+                standardDisplayName,
+                standardDisplayName,
                 adjustmentRules: null,
                 disableDaylightSavingTime: false,
                 hasIanaId);
@@ -1034,9 +1034,9 @@ namespace System
             return CreateCustomTimeZone(
                 id,
                 baseUtcOffset,
-                displayName ?? string.Empty,
-                standardDisplayName ?? string.Empty,
-                daylightDisplayName ?? string.Empty,
+                displayName,
+                standardDisplayName,
+                daylightDisplayName,
                 adjustmentRules,
                 disableDaylightSavingTime: false);
         }
@@ -1063,9 +1063,9 @@ namespace System
             return new TimeZoneInfo(
                 id,
                 baseUtcOffset,
-                displayName ?? string.Empty,
-                standardDisplayName ?? string.Empty,
-                daylightDisplayName ?? string.Empty,
+                displayName,
+                standardDisplayName,
+                daylightDisplayName,
                 adjustmentRules,
                 disableDaylightSavingTime,
                 hasIanaId);

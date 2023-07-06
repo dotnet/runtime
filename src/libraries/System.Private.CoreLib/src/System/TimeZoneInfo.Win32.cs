@@ -91,18 +91,24 @@ namespace System
         private static string? PopulateDisplayName()
         {
             // Keep window's implementation to populate via constructor
+            // This should not be reached
+            Debug.Assert(false);
             return null;
         }
 
         private static string? PopulateStandardDisplayName()
         {
             // Keep window's implementation to populate via constructor
+            // This should not be reached
+            Debug.Assert(false);
             return null;
         }
 
         private static string? PopulateDaylightDisplayName()
         {
             // Keep window's implementation to populate via constructor
+            // This should not be reached
+            Debug.Assert(false);
             return null;
         }
 
@@ -918,9 +924,9 @@ namespace System
                     value = new TimeZoneInfo(
                         id,
                         new TimeSpan(0, -(defaultTimeZoneInformation.Bias), 0),
-                        displayName,
-                        standardName,
-                        daylightName,
+                        displayName ?? string.Empty,
+                        standardName ?? string.Empty,
+                        daylightName ?? string.Empty,
                         adjustmentRules,
                         disableDaylightSavingTime: false);
 
