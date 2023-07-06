@@ -773,15 +773,22 @@ namespace System.Data.ProviderBase
         internal Guid ReadGuid(int offset)
         {
             offset += BaseOffset;
+
+            unsafe
+            {
+                Validate(offset, sizeof(Guid));
+            }
+
             Debug.Assert(0 == offset % ADP.PtrSize, "invalid alignment");
+
             bool mustRelease = false;
             try
             {
                 DangerousAddRef(ref mustRelease);
-                IntPtr ptr = ADP.IntPtrOffset(DangerousGetHandle(), offset);
                 unsafe
                 {
-                    return new Guid(new ReadOnlySpan<byte>(ptr.ToPointer(), sizeof(Guid)));
+                    byte* addrGuid = (byte*)DangerousGetHandle() + (uint)offset;
+                    return new Guid(new ReadOnlySpan<byte>(addrGuid, sizeof(Guid)));
                 }
             }
             finally
@@ -794,8 +801,30 @@ namespace System.Data.ProviderBase
         }
         internal void WriteGuid(int offset, Guid value)
         {
-            ReadOnlySpan<Guid> spanGuid = MemoryMarshal.CreateReadOnlySpan(ref Unsafe.AsRef(value), 1);
-            WriteBytes(offset, MemoryMarshal.AsBytes(spanGuid));
+            offset += BaseOffset;
+
+            unsafe
+            {
+                Validate(offset, sizeof(Guid));
+            }
+
+            Debug.Assert(0 == offset % ADP.PtrSize, "invalid alignment");
+            bool mustRelease = false;
+            try
+            {
+                DangerousAddRef(ref mustRelease);
+                unsafe
+                {
+                    *((Guid*)DangerousGetHandle() + (uint)offset) = value;
+                }
+            }
+            finally
+            {
+                if (mustRelease)
+                {
+                    DangerousRelease();
+                }
+            }
         }
 
         internal DateTime ReadDate(int offset)
