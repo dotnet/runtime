@@ -173,10 +173,10 @@ namespace System.Globalization
         {
             IntPtr byteOffset = IntPtr.Zero;
 
-#if TARGET_64BIT
             int length = Math.Min(lengthA, lengthB);
             int range = length;
 
+#if TARGET_64BIT
             ulong valueAu64 = 0;
             ulong valueBu64 = 0;
 
