@@ -65,20 +65,28 @@
 
 #include "tailcallhelp.h"
 
-#ifdef HOST_WINDOWS
+#ifdef TARGET_WINDOWS
 EXTERN_C uint32_t _tls_index;
 #endif
 
-#ifdef _MSC_VER
-__declspec(selectany) __declspec(thread) uint32_t t_NonGCMaxThreadStaticBlocks;
-__declspec(selectany) __declspec(thread) uint32_t t_GCMaxThreadStaticBlocks;
+struct ThreadStaticBlockInfo
+{
+    uint32_t NonGCMaxThreadStaticBlocks;
+    void** NonGCThreadStaticBlocks;
 
-__declspec(selectany) __declspec(thread) void** t_NonGCThreadStaticBlocks;
-__declspec(selectany) __declspec(thread) void** t_GCThreadStaticBlocks;
+    uint32_t GCMaxThreadStaticBlocks;
+    void** GCThreadStaticBlocks;
+};
+#ifdef _MSC_VER
+__declspec(selectany) __declspec(thread)  ThreadStaticBlockInfo t_ThreadStatics;
+__declspec(selectany) __declspec(thread)  uint32_t t_NonGCThreadStaticBlocksSize;
+__declspec(selectany) __declspec(thread)  uint32_t t_GCThreadStaticBlocksSize;
 #else
-EXTERN_C __thread uint32_t t_maxThreadStaticBlocks;
-EXTERN_C __thread void** t_threadStaticBlocks;
-#endif
+extern "C" void* __tls_get_addr(void* ti);
+__thread ThreadStaticBlockInfo t_ThreadStatics;
+__thread uint32_t t_NonGCThreadStaticBlocksSize;
+__thread uint32_t t_GCThreadStaticBlocksSize;
+#endif // _MSC_VER
 
 // The Stack Overflow probe takes place in the COOPERATIVE_TRANSITION_BEGIN() macro
 //
@@ -1297,6 +1305,178 @@ static CorInfoHelpFunc getInstanceFieldHelper(FieldDesc * pField, CORINFO_ACCESS
     return (CorInfoHelpFunc)helper;
 }
 
+
+
+/*********************************************************************/
+uint32_t CEEInfo::getThreadLocalFieldInfo (CORINFO_FIELD_HANDLE  field, bool isGCType)
+{
+    CONTRACTL {
+        THROWS;
+        GC_TRIGGERS;
+        MODE_PREEMPTIVE;
+    } CONTRACTL_END;
+
+    UINT32 typeIndex = 0;
+
+    JIT_TO_EE_TRANSITION();
+
+    FieldDesc* fieldDesc = (FieldDesc*)field;
+    _ASSERTE(fieldDesc->IsThreadStatic());
+
+    if (isGCType)
+    {
+        typeIndex = AppDomain::GetCurrentDomain()->GetGCThreadStaticTypeIndex(fieldDesc->GetEnclosingMethodTable());
+    }
+    else
+    {
+        typeIndex = AppDomain::GetCurrentDomain()->GetNonGCThreadStaticTypeIndex(fieldDesc->GetEnclosingMethodTable());
+    }
+
+    assert(typeIndex != TypeIDProvider::INVALID_TYPE_ID);
+
+    EE_TO_JIT_TRANSITION();
+    return typeIndex;
+}
+
+#if defined(TARGET_WINDOWS)
+/*********************************************************************/
+static uint32_t ThreadLocalOffset(void* p)
+{
+    PTEB Teb = NtCurrentTeb();
+    uint8_t** pTls = (uint8_t**)Teb->ThreadLocalStoragePointer;
+    uint8_t* pOurTls = pTls[_tls_index];
+    return (uint32_t)((uint8_t*)p - pOurTls);
+}
+#elif defined(TARGET_OSX)
+extern "C" void* GetThreadVarsAddress();
+
+static void* GetThreadVarsSectionAddressFromDesc(uint8_t* p)
+{
+    _ASSERT(p[0] == 0x48 && p[1] == 0x8d && p[2] == 0x3d);
+
+    // At this point, `p` contains the instruction pointer and is pointing to the above opcodes.
+    // These opcodes are patched by the dynamic linker.
+    // Move beyond the opcodes that we have already checked above.
+    p += 3;
+
+    // The descriptor address is located at *p at this point.
+    // (p + 4) below skips the descriptor address bytes embedded in the instruction and
+    // add it to the `instruction pointer` to find out the address.
+    return *(uint32_t*)p + (p + 4);
+}
+
+static void* GetThreadVarsSectionAddress()
+{
+#ifdef TARGET_AMD64
+    // On x64, the address is related to rip, so, disassemble the function,
+    // read the offset, and then relative to the IP, find the final address of
+    // __thread_vars section.
+    uint8_t* p = reinterpret_cast<uint8_t*>(&GetThreadVarsAddress);
+    return GetThreadVarsSectionAddressFromDesc(p);
+#else
+    return GetThreadVarsAddress();
+#endif // TARGET_AMD64
+}
+
+#else
+
+// Linux
+
+#ifdef TARGET_AMD64
+
+extern "C" void* GetTlsIndexObjectDescOffset();
+
+static void* GetThreadStaticDescriptor(uint8_t* p)
+{
+    if (!(p[0] == 0x66 && p[1] == 0x48 && p[2] == 0x8d && p[3] == 0x3d))
+    {
+        // The optimization is disabled if coreclr is not compiled in .so format.
+        _ASSERTE(false && "Unexpected code sequence");
+        return nullptr;
+    }
+
+    // At this point, `p` contains the instruction pointer and is pointing to the above opcodes.
+    // These opcodes are patched by the dynamic linker.
+    // Move beyond the opcodes that we have already checked above.
+    p += 4;
+
+    // The descriptor address is located at *p at this point. Read that and add
+    // it to the instruction pointer to locate the address of `ti` that will be used
+    // to pass to __tls_get_addr during execution.
+    // (p + 4) below skips the descriptor address bytes embedded in the instruction and
+    // add it to the `instruction pointer` to find out the address.
+    return *(uint32_t*)p + (p + 4);
+}
+
+static void* GetTlsIndexObjectAddress()
+{
+    uint8_t* p = reinterpret_cast<uint8_t*>(&GetTlsIndexObjectDescOffset);
+    return GetThreadStaticDescriptor(p);
+}
+
+#elif TARGET_ARM64
+
+extern "C" size_t GetThreadStaticsVariableOffset();
+
+#endif  // TARGET_ARM64
+#endif // TARGET_WINDOWS
+
+
+void CEEInfo::getThreadLocalStaticBlocksInfo (CORINFO_THREAD_STATIC_BLOCKS_INFO* pInfo, bool isGCType)
+{
+    CONTRACTL {
+        NOTHROW;
+        GC_NOTRIGGER;
+        MODE_PREEMPTIVE;
+    } CONTRACTL_END;
+
+    JIT_TO_EE_TRANSITION_LEAF();
+
+    size_t threadStaticBaseOffset = 0;
+
+#if defined(TARGET_WINDOWS)
+    pInfo->tlsIndex.addr = (void*)static_cast<uintptr_t>(_tls_index);
+    pInfo->tlsIndex.accessType = IAT_VALUE;
+
+    pInfo->offsetOfThreadLocalStoragePointer = offsetof(_TEB, ThreadLocalStoragePointer);
+    threadStaticBaseOffset = ThreadLocalOffset(&t_ThreadStatics);
+
+#elif defined(TARGET_OSX)
+
+    pInfo->threadVarsSection = GetThreadVarsSectionAddress();
+
+#elif defined(TARGET_AMD64)
+
+    // For Linux/x64, get the address of tls_get_addr system method and the base address
+    // of struct that we will pass to it.
+    pInfo->tlsGetAddrFtnPtr = reinterpret_cast<void*>(&__tls_get_addr);
+    pInfo->tlsIndexObject = GetTlsIndexObjectAddress();
+
+#elif defined(TARGET_ARM64)
+
+    // For Linux/arm64, just get the offset of thread static variable, and during execution,
+    // this offset, taken from trpid_elp0 system register gives back the thread variable address.
+    threadStaticBaseOffset = GetThreadStaticsVariableOffset();
+
+#else
+    _ASSERTE_MSG(false, "Unsupported scenario of optimizing TLS access on Linux Arm32/x86");
+#endif // TARGET_WINDOWS
+
+    if (isGCType)
+    {
+        pInfo->offsetOfMaxThreadStaticBlocks = (uint32_t)(threadStaticBaseOffset + offsetof(ThreadStaticBlockInfo, GCMaxThreadStaticBlocks));
+        pInfo->offsetOfThreadStaticBlocks = (uint32_t)(threadStaticBaseOffset + offsetof(ThreadStaticBlockInfo, GCThreadStaticBlocks));
+    }
+    else
+    {
+        pInfo->offsetOfMaxThreadStaticBlocks = (uint32_t)(threadStaticBaseOffset + offsetof(ThreadStaticBlockInfo, NonGCMaxThreadStaticBlocks));
+        pInfo->offsetOfThreadStaticBlocks = (uint32_t)(threadStaticBaseOffset + offsetof(ThreadStaticBlockInfo, NonGCThreadStaticBlocks));
+    }
+    pInfo->offsetOfGCDataPointer = static_cast<uint32_t>(PtrArray::GetDataOffset());
+
+    EE_TO_JIT_TRANSITION_LEAF();
+}
+
 /*********************************************************************/
 void CEEInfo::getFieldInfo (CORINFO_RESOLVED_TOKEN * pResolvedToken,
                             CORINFO_METHOD_HANDLE  callerHandle,
@@ -1401,25 +1581,40 @@ void CEEInfo::getFieldInfo (CORINFO_RESOLVED_TOKEN * pResolvedToken,
                 fieldAccessor = CORINFO_FIELD_STATIC_SHARED_STATIC_HELPER;
 
                 pResult->helper = getSharedStaticsHelper(pField, pFieldMT);
+#if defined(TARGET_ARM)
+                // Optimization is disabled for linux/windows arm
+#elif !defined(TARGET_WINDOWS) && defined(TARGET_X86)
+                // Optimization is disabled for linux/x86
+#elif defined(TARGET_LINUX_MUSL) && defined(TARGET_ARM64)
+                // Optimization is disabled for linux musl arm64
+#else
+                bool optimizeThreadStaticAccess = true;
+#if !defined(TARGET_OSX) && defined(TARGET_UNIX) && defined(TARGET_AMD64)
+                // For linux/x64, check if compiled coreclr as .so file and not single file.
+                // For single file, the `tls_index` might not be accurate.
+                // Do not perform this optimization in such case.
+                optimizeThreadStaticAccess = GetTlsIndexObjectAddress() != nullptr;
+#endif // TARGET_UNIX && TARGET_AMD64
 
-#ifdef HOST_WINDOWS
-#ifndef TARGET_ARM
-                // For windows, we convert the TLS access to the optimized helper where we will store
-                // the static blocks in TLS directly and access them via inline code.
-                if ((pResult->helper == CORINFO_HELP_GETSHARED_NONGCTHREADSTATIC_BASE_NOCTOR) ||
-                    (pResult->helper == CORINFO_HELP_GETSHARED_NONGCTHREADSTATIC_BASE))
+                if (optimizeThreadStaticAccess)
                 {
-                    fieldAccessor = CORINFO_FIELD_STATIC_TLS_MANAGED;
-                    pResult->helper = CORINFO_HELP_GETSHARED_NONGCTHREADSTATIC_BASE_NOCTOR_OPTIMIZED;
+                    // For windows x64/x86/arm64, linux x64/arm64:
+                    // We convert the TLS access to the optimized helper where we will store
+                    // the static blocks in TLS directly and access them via inline code.
+                    if ((pResult->helper == CORINFO_HELP_GETSHARED_NONGCTHREADSTATIC_BASE_NOCTOR) ||
+                        (pResult->helper == CORINFO_HELP_GETSHARED_NONGCTHREADSTATIC_BASE))
+                    {
+                        fieldAccessor = CORINFO_FIELD_STATIC_TLS_MANAGED;
+                        pResult->helper = CORINFO_HELP_GETSHARED_NONGCTHREADSTATIC_BASE_NOCTOR_OPTIMIZED;
+                    }
+                    else if ((pResult->helper == CORINFO_HELP_GETSHARED_GCTHREADSTATIC_BASE_NOCTOR) ||
+                                (pResult->helper == CORINFO_HELP_GETSHARED_GCTHREADSTATIC_BASE))
+                    {
+                        fieldAccessor = CORINFO_FIELD_STATIC_TLS_MANAGED;
+                        pResult->helper = CORINFO_HELP_GETSHARED_GCTHREADSTATIC_BASE_NOCTOR_OPTIMIZED;
+                    }
                 }
-                else if ((pResult->helper == CORINFO_HELP_GETSHARED_GCTHREADSTATIC_BASE_NOCTOR) ||
-                            (pResult->helper == CORINFO_HELP_GETSHARED_GCTHREADSTATIC_BASE))
-                {
-                    fieldAccessor = CORINFO_FIELD_STATIC_TLS_MANAGED;
-                    pResult->helper = CORINFO_HELP_GETSHARED_GCTHREADSTATIC_BASE_NOCTOR_OPTIMIZED;
-                }
-#endif // !TARGET_ARM
-#endif // HOST_WINDOWS
+#endif // TARGET_ARM
             }
             else
             {
@@ -1600,113 +1795,6 @@ void CEEInfo::getFieldInfo (CORINFO_RESOLVED_TOKEN * pResolvedToken,
 
     EE_TO_JIT_TRANSITION();
 }
-
-
-
-#ifdef HOST_WINDOWS
-
-/*********************************************************************/
-uint32_t CEEInfo::getThreadLocalFieldInfo (CORINFO_FIELD_HANDLE  field, bool isGCType)
-{
-    CONTRACTL {
-        THROWS;
-        GC_TRIGGERS;
-        MODE_PREEMPTIVE;
-    } CONTRACTL_END;
-
-    UINT32 typeIndex = 0;
-
-    JIT_TO_EE_TRANSITION();
-
-    FieldDesc* fieldDesc = (FieldDesc*)field;
-    _ASSERTE(fieldDesc->IsThreadStatic());
-
-    if (isGCType)
-    {
-        typeIndex = AppDomain::GetCurrentDomain()->GetGCThreadStaticTypeIndex(fieldDesc->GetEnclosingMethodTable());
-    }
-    else
-    {
-        typeIndex = AppDomain::GetCurrentDomain()->GetNonGCThreadStaticTypeIndex(fieldDesc->GetEnclosingMethodTable());
-    }
-
-    assert(typeIndex != TypeIDProvider::INVALID_TYPE_ID);
-
-    EE_TO_JIT_TRANSITION();
-    return typeIndex;
-}
-
-/*********************************************************************/
-static uint32_t ThreadLocalOffset(void* p)
-{
-    PTEB Teb = NtCurrentTeb();
-    uint8_t** pTls = (uint8_t**)Teb->ThreadLocalStoragePointer;
-    uint8_t* pOurTls = pTls[_tls_index];
-    return (uint32_t)((uint8_t*)p - pOurTls);
-}
-
-void CEEInfo::getThreadLocalStaticBlocksInfo (CORINFO_THREAD_STATIC_BLOCKS_INFO* pInfo, bool isGCType)
-{
-    CONTRACTL {
-        NOTHROW;
-        GC_NOTRIGGER;
-        MODE_PREEMPTIVE;
-    } CONTRACTL_END;
-
-    JIT_TO_EE_TRANSITION_LEAF();
-
-    pInfo->tlsIndex.addr = (void*)static_cast<uintptr_t>(_tls_index);
-    pInfo->tlsIndex.accessType = IAT_VALUE;
-
-    pInfo->offsetOfThreadLocalStoragePointer = offsetof(_TEB, ThreadLocalStoragePointer);
-    if (isGCType)
-    {
-        pInfo->offsetOfThreadStaticBlocks = ThreadLocalOffset(&t_GCThreadStaticBlocks);
-        pInfo->offsetOfMaxThreadStaticBlocks = ThreadLocalOffset(&t_GCMaxThreadStaticBlocks);
-    }
-    else
-    {
-        pInfo->offsetOfThreadStaticBlocks = ThreadLocalOffset(&t_NonGCThreadStaticBlocks);
-        pInfo->offsetOfMaxThreadStaticBlocks = ThreadLocalOffset(&t_NonGCMaxThreadStaticBlocks);
-    }
-
-    pInfo->offsetOfGCDataPointer = static_cast<uint32_t>(PtrArray::GetDataOffset());
-
-    JIT_TO_EE_TRANSITION_LEAF();
-}
-#else
-
-uint32_t CEEInfo::getThreadLocalFieldInfo (CORINFO_FIELD_HANDLE  field, bool isGCType)
-{
-    CONTRACTL {
-        NOTHROW;
-        GC_NOTRIGGER;
-        MODE_PREEMPTIVE;
-    } CONTRACTL_END;
-
-    return 0;
-}
-
-void CEEInfo::getThreadLocalStaticBlocksInfo (CORINFO_THREAD_STATIC_BLOCKS_INFO* pInfo, bool isGCType)
-{
-    CONTRACTL {
-        NOTHROW;
-        GC_NOTRIGGER;
-        MODE_PREEMPTIVE;
-    } CONTRACTL_END;
-
-    JIT_TO_EE_TRANSITION_LEAF();
-
-    pInfo->tlsIndex.addr = (UINT8*)0;
-
-    pInfo->offsetOfThreadLocalStoragePointer = 0;
-    pInfo->offsetOfThreadStaticBlocks = 0;
-    pInfo->offsetOfMaxThreadStaticBlocks = 0;
-    pInfo->offsetOfGCDataPointer = 0;
-
-    JIT_TO_EE_TRANSITION_LEAF();
-}
-#endif // HOST_WINDOWS
 
 //---------------------------------------------------------------------------------------
 //

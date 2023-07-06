@@ -7124,7 +7124,7 @@ public:
         optMethodFlags |= OMF_HAS_GUARDEDDEVIRT;
     }
 
-    bool doesMethodHasTlsFieldAccess()
+    bool methodHasTlsFieldAccess()
     {
         return (optMethodFlags & OMF_HAS_TLS_FIELD) != 0;
     }
