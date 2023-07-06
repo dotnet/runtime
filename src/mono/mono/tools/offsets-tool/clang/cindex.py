@@ -1352,6 +1352,8 @@ CursorKind.VISIBILITY_ATTR = CursorKind(417)
 
 CursorKind.DLLEXPORT_ATTR = CursorKind(418)
 CursorKind.DLLIMPORT_ATTR = CursorKind(419)
+# Temporary fake value to work around xcode 15 beta / clang 15
+CursorKind.XCODEBETA_ATTR = CursorKind(437)
 CursorKind.CONVERGENT_ATTR = CursorKind(438)
 CursorKind.WARN_UNUSED_ATTR = CursorKind(439)
 CursorKind.WARN_UNUSED_RESULT_ATTR = CursorKind(440)

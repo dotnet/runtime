@@ -1904,8 +1904,7 @@ var_types Compiler::StructPromotionHelper::TryPromoteValueClassAsPrimitive(CORIN
         const char* className = compiler->info.compCompHnd->getClassNameFromMetadata(node.simdTypeHnd, &namespaceName);
 
 #ifdef FEATURE_SIMD
-        if (compiler->usesSIMDTypes() &&
-            (compiler->isRuntimeIntrinsicsNamespace(namespaceName) || compiler->isNumericsNamespace(namespaceName)))
+        if (compiler->isRuntimeIntrinsicsNamespace(namespaceName) || compiler->isNumericsNamespace(namespaceName))
         {
             unsigned    simdSize;
             CorInfoType simdBaseJitType = compiler->getBaseJitTypeAndSizeOfSIMDType(node.simdTypeHnd, &simdSize);

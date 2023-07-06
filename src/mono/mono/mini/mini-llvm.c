@@ -7712,7 +7712,7 @@ MONO_RESTORE_WARNING
 					addresses [ins->sreg1] = build_alloca_address (ctx, t);
 					g_assert (values [ins->sreg1]);
 				}
-				LLVMBuildStore (builder, convert (ctx, values [ins->sreg1], LLVMGetElementType (LLVMTypeOf (addresses [ins->sreg1]->value))), addresses [ins->sreg1]->value);
+				LLVMBuildStore (builder, convert (ctx, values [ins->sreg1], addresses [ins->sreg1]->type), addresses [ins->sreg1]->value);
 				addresses [ins->dreg] = addresses [ins->sreg1];
 			} else {
 				LLVMTypeRef etype = type_to_llvm_type (ctx, t);

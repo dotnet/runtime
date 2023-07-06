@@ -89,6 +89,12 @@
         <ExcludeList Include="$(XunitTestBinBase)/tracing/eventpipe/eventsourceerror/eventsourceerror/*">
             <Issue>https://github.com/dotnet/runtime/issues/80666</Issue>
         </ExcludeList>
+        <ExcludeList Include="$(XunitTestBinBase)/baseservices/typeequivalence/signatures/nopiatestil/*">
+            <Issue>CoreCLR doesn't support type equivalence on Unix</Issue>
+        </ExcludeList>
+        <ExcludeList Include="$(XunitTestBinBase)/baseservices/typeequivalence/istypeequivalent/istypeequivalent/*">
+            <Issue>CoreCLR doesn't support type equivalence on Unix</Issue>
+        </ExcludeList>
     </ItemGroup>
 
     <!-- Arm32 All OS -->
@@ -725,6 +731,12 @@
             <Issue>No crossgen folder under Core_Root</Issue>
         </ExcludeList>
         <ExcludeList Include="$(XunitTestBinBase)/baseservices/typeequivalence/simple/Simple/*">
+            <Issue>https://github.com/dotnet/runtimelab/issues/155: Type equivalence</Issue>
+        </ExcludeList>
+        <ExcludeList Include="$(XunitTestBinBase)/baseservices/typeequivalence/signatures/nopiatestil/*">
+            <Issue>https://github.com/dotnet/runtimelab/issues/155: Type equivalence</Issue>
+        </ExcludeList>
+        <ExcludeList Include="$(XunitTestBinBase)/baseservices/typeequivalence/istypeequivalent/istypeequivalent/*">
             <Issue>https://github.com/dotnet/runtimelab/issues/155: Type equivalence</Issue>
         </ExcludeList>
         <ExcludeList Include="$(XunitTestBinBase)/GC/API/WeakReference/Finalize2/*">
@@ -1925,6 +1937,12 @@
         <ExcludeList Include="$(XunitTestBinBase)/baseservices/typeequivalence/simple/Simple/*">
             <Issue>Mono doesn't support type equivalence on types implemented in different assemblies</Issue>
         </ExcludeList>
+        <ExcludeList Include="$(XunitTestBinBase)/baseservices/typeequivalence/signatures/nopiatestil/*">
+            <Issue>Mono doesn't support type equivalence on types implemented in different assemblies</Issue>
+        </ExcludeList>
+        <ExcludeList Include="$(XunitTestBinBase)/baseservices/typeequivalence/istypeequivalent/istypeequivalent/*">
+            <Issue>Mono doesn't support type equivalence on types implemented in different assemblies</Issue>
+        </ExcludeList>
         <ExcludeList Include="$(XunitTestBinBase)/Interop/ArrayMarshalling/SafeArray/SafeArrayTest/*">
             <Issue>Requires COM support, disabled on all Mono platforms.</Issue>
         </ExcludeList>
@@ -2912,6 +2930,12 @@
 
     <ItemGroup Condition=" '$(RuntimeFlavor)' == 'mono' and '$(TargetArchitecture)' == 'arm64' and '$(TargetsWindows)' != 'true' " >
         <ExcludeList Include="$(XunitTestBinBase)/baseservices/typeequivalence/simple/Simple/**">
+            <Issue>Doesn't compile with LLVM AOT.</Issue>
+        </ExcludeList>
+        <ExcludeList Include="$(XunitTestBinBase)/baseservices/typeequivalence/signatures/nopiatestil/nopiatestil/**">
+            <Issue>Doesn't compile with LLVM AOT.</Issue>
+        </ExcludeList>
+        <ExcludeList Include="$(XunitTestBinBase)/baseservices/typeequivalence/istypeequivalent/istypeequivalent/*">
             <Issue>Doesn't compile with LLVM AOT.</Issue>
         </ExcludeList>
         <ExcludeList Include="$(XunitTestBinBase)/Loader/classloader/generics/Variance/IL/Unbox002/**">

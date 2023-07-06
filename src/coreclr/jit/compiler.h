@@ -2500,6 +2500,8 @@ public:
 
     GenTree* gtNewOneConNode(var_types type, var_types simdBaseType = TYP_UNDEF);
 
+    GenTree* gtNewGenericCon(var_types type, uint8_t* cnsVal);
+
     GenTree* gtNewConWithPattern(var_types type, uint8_t pattern);
 
     GenTreeLclVar* gtNewStoreLclVarNode(unsigned lclNum, GenTree* data);
@@ -3884,7 +3886,6 @@ protected:
     GenTree* impInitClass(CORINFO_RESOLVED_TOKEN* pResolvedToken);
 
     GenTree* impImportStaticReadOnlyField(CORINFO_FIELD_HANDLE field, CORINFO_CLASS_HANDLE ownerCls);
-    GenTree* impImportCnsTreeFromBuffer(uint8_t* buffer, var_types valueType);
 
     GenTree* impImportStaticFieldAddress(CORINFO_RESOLVED_TOKEN* pResolvedToken,
                                          CORINFO_ACCESS_FLAGS    access,
@@ -8932,6 +8933,20 @@ private:
 #endif // FEATURE_SIMD
 
 public:
+    // Similar to roundUpSIMDSize, but for General Purpose Registers (GPR)
+    unsigned int roundUpGPRSize(unsigned size)
+    {
+        if (size > 4 && (REGSIZE_BYTES == 8))
+        {
+            return 8;
+        }
+        else if (size > 2)
+        {
+            return 4;
+        }
+        return size; // 2, 1, 0
+    }
+
     enum UnrollKind
     {
         Memset,
