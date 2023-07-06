@@ -9,6 +9,8 @@ Project("{9A19103F-16F7-4668-BE54-9A1E7A4F7556}") = "Microsoft.Extensions.Config
 EndProject
 Project("{9A19103F-16F7-4668-BE54-9A1E7A4F7556}") = "Microsoft.Extensions.Configuration.Abstractions", "..\Microsoft.Extensions.Configuration.Abstractions\src\Microsoft.Extensions.Configuration.Abstractions.csproj", "{67F6FF8D-4EBB-4BCC-A531-7844935E9CA6}"
 EndProject
+Project("{9A19103F-16F7-4668-BE54-9A1E7A4F7556}") = "Microsoft.Extensions.Configuration.Binder.SourceGeneration", "..\Microsoft.Extensions.Configuration.Binder\gen\Microsoft.Extensions.Configuration.Binder.SourceGeneration.csproj", "{B3A888B8-B506-40A4-B43F-95862E572964}"
+EndProject
 Project("{9A19103F-16F7-4668-BE54-9A1E7A4F7556}") = "Microsoft.Extensions.Configuration.Binder", "..\Microsoft.Extensions.Configuration.Binder\ref\Microsoft.Extensions.Configuration.Binder.csproj", "{A573897A-051C-476B-91D9-D121D2301340}"
 EndProject
 Project("{9A19103F-16F7-4668-BE54-9A1E7A4F7556}") = "Microsoft.Extensions.Configuration.Binder", "..\Microsoft.Extensions.Configuration.Binder\src\Microsoft.Extensions.Configuration.Binder.csproj", "{2142ADA1-1367-4C02-B9B4-49D5D8F8167B}"
@@ -163,6 +165,8 @@ Project("{9A19103F-16F7-4668-BE54-9A1E7A4F7556}") = "System.Diagnostics.EventLog
 EndProject
 Project("{9A19103F-16F7-4668-BE54-9A1E7A4F7556}") = "System.Memory", "..\System.Memory\ref\System.Memory.csproj", "{523807D2-58F0-4337-96A9-22A092D41407}"
 EndProject
+Project("{9A19103F-16F7-4668-BE54-9A1E7A4F7556}") = "ComInterfaceGenerator", "..\System.Runtime.InteropServices\gen\ComInterfaceGenerator\ComInterfaceGenerator.csproj", "{BE1F44EC-1298-412C-BEF9-4578CA6DE547}"
+EndProject
 Project("{9A19103F-16F7-4668-BE54-9A1E7A4F7556}") = "LibraryImportGenerator", "..\System.Runtime.InteropServices\gen\LibraryImportGenerator\LibraryImportGenerator.csproj", "{1406D871-3350-4754-9E69-DA6E75E56857}"
 EndProject
 Project("{9A19103F-16F7-4668-BE54-9A1E7A4F7556}") = "Microsoft.Interop.SourceGeneration", "..\System.Runtime.InteropServices\gen\Microsoft.Interop.SourceGeneration\Microsoft.Interop.SourceGeneration.csproj", "{0A3C61A6-F9D7-4189-B23C-41BF629E8237}"
@@ -217,6 +221,10 @@ Global
 		{67F6FF8D-4EBB-4BCC-A531-7844935E9CA6}.Debug|Any CPU.Build.0 = Debug|Any CPU
 		{67F6FF8D-4EBB-4BCC-A531-7844935E9CA6}.Release|Any CPU.ActiveCfg = Release|Any CPU
 		{67F6FF8D-4EBB-4BCC-A531-7844935E9CA6}.Release|Any CPU.Build.0 = Release|Any CPU
+		{B3A888B8-B506-40A4-B43F-95862E572964}.Debug|Any CPU.ActiveCfg = Debug|Any CPU
+		{B3A888B8-B506-40A4-B43F-95862E572964}.Debug|Any CPU.Build.0 = Debug|Any CPU
+		{B3A888B8-B506-40A4-B43F-95862E572964}.Release|Any CPU.ActiveCfg = Release|Any CPU
+		{B3A888B8-B506-40A4-B43F-95862E572964}.Release|Any CPU.Build.0 = Release|Any CPU
 		{A573897A-051C-476B-91D9-D121D2301340}.Debug|Any CPU.ActiveCfg = Debug|Any CPU
 		{A573897A-051C-476B-91D9-D121D2301340}.Debug|Any CPU.Build.0 = Debug|Any CPU
 		{A573897A-051C-476B-91D9-D121D2301340}.Release|Any CPU.ActiveCfg = Release|Any CPU
@@ -525,6 +533,10 @@ Global
 		{523807D2-58F0-4337-96A9-22A092D41407}.Debug|Any CPU.Build.0 = Debug|Any CPU
 		{523807D2-58F0-4337-96A9-22A092D41407}.Release|Any CPU.ActiveCfg = Release|Any CPU
 		{523807D2-58F0-4337-96A9-22A092D41407}.Release|Any CPU.Build.0 = Release|Any CPU
+		{BE1F44EC-1298-412C-BEF9-4578CA6DE547}.Debug|Any CPU.ActiveCfg = Debug|Any CPU
+		{BE1F44EC-1298-412C-BEF9-4578CA6DE547}.Debug|Any CPU.Build.0 = Debug|Any CPU
+		{BE1F44EC-1298-412C-BEF9-4578CA6DE547}.Release|Any CPU.ActiveCfg = Release|Any CPU
+		{BE1F44EC-1298-412C-BEF9-4578CA6DE547}.Release|Any CPU.Build.0 = Release|Any CPU
 		{1406D871-3350-4754-9E69-DA6E75E56857}.Debug|Any CPU.ActiveCfg = Debug|Any CPU
 		{1406D871-3350-4754-9E69-DA6E75E56857}.Debug|Any CPU.Build.0 = Debug|Any CPU
 		{1406D871-3350-4754-9E69-DA6E75E56857}.Release|Any CPU.ActiveCfg = Release|Any CPU
@@ -654,9 +666,11 @@ Global
 		{516D2203-B660-4D05-94A4-DA69C48A74AC} = {549715BC-A4E3-49F5-A8AC-84D2F65FAC0F}
 		{6D474B99-2B7A-4460-BFBF-D5AF7F7D5EA1} = {549715BC-A4E3-49F5-A8AC-84D2F65FAC0F}
 		{1D04506B-4530-4BC4-B0F7-7E46DF497454} = {549715BC-A4E3-49F5-A8AC-84D2F65FAC0F}
+		{B3A888B8-B506-40A4-B43F-95862E572964} = {64423F79-97D4-45E8-9F06-6CFB06A36C0F}
 		{B764D730-34BD-4BED-A756-373F2F17391A} = {64423F79-97D4-45E8-9F06-6CFB06A36C0F}
 		{0540EF81-262A-4A23-92E3-14A3971A17A5} = {64423F79-97D4-45E8-9F06-6CFB06A36C0F}
 		{A8840229-74D9-4A14-8975-272C8C436190} = {64423F79-97D4-45E8-9F06-6CFB06A36C0F}
+		{BE1F44EC-1298-412C-BEF9-4578CA6DE547} = {64423F79-97D4-45E8-9F06-6CFB06A36C0F}
 		{1406D871-3350-4754-9E69-DA6E75E56857} = {64423F79-97D4-45E8-9F06-6CFB06A36C0F}
 		{0A3C61A6-F9D7-4189-B23C-41BF629E8237} = {64423F79-97D4-45E8-9F06-6CFB06A36C0F}
 		{5A1C0774-4BF1-478D-812F-5CF34431AAD0} = {64423F79-97D4-45E8-9F06-6CFB06A36C0F}

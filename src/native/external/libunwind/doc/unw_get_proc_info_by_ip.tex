@@ -25,7 +25,7 @@ even if it is not part of the current call-chain.  However, since it
 is more flexible, it also tends to run slower (and often much slower)
 than \Func{unw\_get\_proc\_info}().
 
-The routine expects the followins arguments: \Var{as} is the
+The routine expects the following arguments: \Var{as} is the
 address-space in which the instruction-pointer should be looked up.
 For a look-up in the local address-space,
 \Var{unw\_local\_addr\_space} can be passed for this argument.
@@ -41,7 +41,7 @@ argument.
 
 Note that for the purposes of \Prog{libunwind}, the code of a
 procedure is assumed to occupy a single, contiguous range of
-addresses.  For this reason, it is alwas possible to describe the
+addresses.  For this reason, it is always possible to describe the
 extent of a procedure with the \Var{start\_ip} and \Var{end\_ip}
 members.  If a single function/routine is split into multiple,
 discontiguous pieces, \Prog{libunwind} will treat each piece as a
@@ -55,7 +55,7 @@ below is returned.
 
 \section{Thread and Signal Safety}
 
-\Func{unw\_get\_proc\_info}() is thread-safe.  If the local
+\Func{unw\_get\_proc\_info\_by\_ip}() is thread-safe.  If the local
 address-space is passed in argument \Var{as}, this routine is also
 safe to use from a signal handler.
 
@@ -68,8 +68,8 @@ safe to use from a signal handler.
 \item[\Const{UNW\_EBADVERSION}] The unwind-info for the procedure has
   version or format that is not understood by \Prog{libunwind}.
 \end{Description}
-In addition, \Func{unw\_get\_proc\_info}() may return any error
-returned by the \Func{access\_mem}() call-back (see
+In addition, \Func{unw\_get\_proc\_info\_by\_ip}() may return any
+error returned by the \Func{access\_mem}() call-back (see
 \Func{unw\_create\_addr\_space}(3)).
 
 \section{See Also}

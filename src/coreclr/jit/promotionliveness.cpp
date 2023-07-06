@@ -72,18 +72,11 @@ struct BasicBlockLiveness
 //
 void PromotionLiveness::Run()
 {
-    m_structLclToTrackedIndex = new (m_compiler, CMK_Promotion) unsigned[m_aggregates.size()]{};
+    m_structLclToTrackedIndex = new (m_compiler, CMK_Promotion) unsigned[m_compiler->lvaCount]{};
     unsigned trackedIndex     = 0;
     for (AggregateInfo* agg : m_aggregates)
     {
-        if (agg == nullptr)
-        {
-            continue;
-        }
-
         m_structLclToTrackedIndex[agg->LclNum] = trackedIndex;
-        // TODO: We need a scalability limit on these, we cannot always track
-        // the remainder and all fields.
         // Remainder.
         trackedIndex++;
         // Fields.
@@ -190,9 +183,9 @@ void PromotionLiveness::ComputeUseDefSets()
 //   useSet - The use set to mark in.
 //   defSet - The def set to mark in.
 //
-void PromotionLiveness::MarkUseDef(GenTreeLclVarCommon* lcl, BitSetShortLongRep& useSet, BitSetShortLongRep& defSet)
+void PromotionLiveness::MarkUseDef(GenTreeLclVarCommon* lcl, BitVec& useSet, BitVec& defSet)
 {
-    AggregateInfo* agg = m_aggregates[lcl->GetLclNum()];
+    AggregateInfo* agg = m_aggregates.Lookup(lcl->GetLclNum());
     if (agg == nullptr)
     {
         return;
@@ -575,7 +568,7 @@ void PromotionLiveness::FillInLiveness()
 //
 void PromotionLiveness::FillInLiveness(BitVec& life, BitVec volatileVars, GenTreeLclVarCommon* lcl)
 {
-    AggregateInfo* agg = m_aggregates[lcl->GetLclNum()];
+    AggregateInfo* agg = m_aggregates.Lookup(lcl->GetLclNum());
     if (agg == nullptr)
     {
         return;
@@ -688,8 +681,19 @@ void PromotionLiveness::FillInLiveness(BitVec& life, BitVec volatileVars, GenTre
         if (lcl->OperIs(GT_LCL_ADDR))
         {
             // Retbuf -- these are definitions but we do not know of how much.
-            // We never mark them as dead and we never treat them as killing anything.
-            assert(isDef);
+            // We never treat them as killing anything, but we do store liveness information for them.
+            BitVecTraits aggTraits(1 + (unsigned)agg->Replacements.size(), m_compiler);
+            BitVec       aggDeaths(BitVecOps::MakeEmpty(&aggTraits));
+            // Copy preexisting liveness information.
+            for (size_t i = 0; i <= agg->Replacements.size(); i++)
+            {
+                unsigned varIndex = baseIndex + (unsigned)i;
+                if (!BitVecOps::IsMember(m_bvTraits, life, varIndex))
+                {
+                    BitVecOps::AddElemD(&aggTraits, aggDeaths, (unsigned)i);
+                }
+            }
+            m_aggDeaths.Set(lcl, aggDeaths);
             return;
         }
 
@@ -748,6 +752,24 @@ void PromotionLiveness::FillInLiveness(BitVec& life, BitVec volatileVars, GenTre
 }
 
 //------------------------------------------------------------------------
+// IsReplacementLiveIn:
+//   Check if a replacement field is live at the start of a basic block.
+//
+// Parameters:
+//   structLcl        - The struct (base) local
+//   replacementIndex - Index of the replacement
+//
+// Returns:
+//   True if the field is in the live-in set.
+//
+bool PromotionLiveness::IsReplacementLiveIn(BasicBlock* bb, unsigned structLcl, unsigned replacementIndex)
+{
+    BitVec   liveIn    = m_bbInfo[bb->bbNum].LiveIn;
+    unsigned baseIndex = m_structLclToTrackedIndex[structLcl];
+    return BitVecOps::IsMember(m_bvTraits, liveIn, baseIndex + 1 + replacementIndex);
+}
+
+//------------------------------------------------------------------------
 // IsReplacementLiveOut:
 //   Check if a replacement field is live at the end of a basic block.
 //
@@ -778,13 +800,14 @@ bool PromotionLiveness::IsReplacementLiveOut(BasicBlock* bb, unsigned structLcl,
 //
 StructDeaths PromotionLiveness::GetDeathsForStructLocal(GenTreeLclVarCommon* lcl)
 {
-    assert(lcl->OperIsLocal() && lcl->TypeIs(TYP_STRUCT) && (m_aggregates[lcl->GetLclNum()] != nullptr));
+    assert((lcl->TypeIs(TYP_STRUCT) || (lcl->OperIs(GT_LCL_ADDR) && ((lcl->gtFlags & GTF_VAR_DEF) != 0))) &&
+           (m_aggregates.Lookup(lcl->GetLclNum()) != nullptr));
     BitVec aggDeaths;
     bool   found = m_aggDeaths.Lookup(lcl, &aggDeaths);
     assert(found);
 
     unsigned       lclNum  = lcl->GetLclNum();
-    AggregateInfo* aggInfo = m_aggregates[lclNum];
+    AggregateInfo* aggInfo = m_aggregates.Lookup(lclNum);
     return StructDeaths(aggDeaths, (unsigned)aggInfo->Replacements.size());
 }
 
@@ -831,11 +854,6 @@ void PromotionLiveness::DumpVarSet(BitVec set, BitVec allVars)
     const char* sep = "";
     for (AggregateInfo* agg : m_aggregates)
     {
-        if (agg == nullptr)
-        {
-            continue;
-        }
-
         for (size_t j = 0; j <= agg->Replacements.size(); j++)
         {
             unsigned index = (unsigned)(m_structLclToTrackedIndex[agg->LclNum] + j);

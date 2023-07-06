@@ -6,6 +6,9 @@
   </PropertyGroup>
 
   <Target Name="GetGenerateFrameworkListFileInputs">
+    <Error Text="Shared framework assemblies must be built before the framework list can be generated."
+           Condition="'@(SharedFrameworkAssembly)' == '' or '@(SharedFrameworkAnalyzerAssembly)' == ''" />
+
     <ItemGroup>
       <SharedFrameworkAssemblyWithReferenceAssembly Include="@(SharedFrameworkAssembly->HasMetadata('ReferenceAssembly'))" />
       <SharedFrameworkAssemblyWithoutReferenceAssembly Include="@(SharedFrameworkAssembly)"
@@ -15,6 +18,8 @@
                                        @(SharedFrameworkAssemblyWithoutReferenceAssembly)"
                               TargetPath="ref/$(NetCoreAppCurrent)"
                               Condition="!$(NetCoreAppLibraryNoReference.Contains('%(Filename);'))" />
+      <FrameworkListInputFile Include="@(SharedFrameworkAnalyzerAssembly)"
+                              TargetPath="%(SharedFrameworkAnalyzerAssembly.GeneratorProjectBaseTargetPath)" />
     </ItemGroup>
   </Target>
 
@@ -22,7 +27,6 @@
   <Target Name="GenerateFrameworkListFile"
           DependsOnTargets="GetGenerateFrameworkListFileInputs"
           AfterTargets="Build"
-          Condition="'@(SharedFrameworkAssembly)' != ''"
           Inputs="@(FrameworkListInputFile)"
           Outputs="$(FrameworkListOutputPath)">
     <ItemGroup>
@@ -34,7 +38,7 @@
 
     <CreateFrameworkListFile Files="@(FrameworkListInputFile)"
                              TargetFile="$(FrameworkListOutputPath)"
-                             TargetFilePrefixes="ref/;runtimes/"
+                             TargetFilePrefixes="ref/;runtimes/;analyzers/"
                              RootAttributes="@(FrameworkListRootAttribute)" />
   </Target>
 

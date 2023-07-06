@@ -8,7 +8,7 @@ namespace Microsoft.Extensions.Logging
 {
     internal readonly struct MessageLogger
     {
-        public MessageLogger(ILogger logger, string? category, string? providerTypeFullName, LogLevel? minLevel, Func<string?, string?, LogLevel, bool>? filter)
+        public MessageLogger(ILogger logger, string category, string? providerTypeFullName, LogLevel? minLevel, Func<string?, string?, LogLevel, bool>? filter)
         {
             Logger = logger;
             Category = category;
@@ -19,7 +19,7 @@ namespace Microsoft.Extensions.Logging
 
         public ILogger Logger { get; }
 
-        public string? Category { get; }
+        public string Category { get; }
 
         private string? ProviderTypeFullName { get; }
 

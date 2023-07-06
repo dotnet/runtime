@@ -140,6 +140,8 @@ MONO_JIT_ICALL (mini_llvmonly_resolve_vcall_gsharedvt) \
 MONO_JIT_ICALL (mini_llvmonly_resolve_vcall_gsharedvt_fast) \
 MONO_JIT_ICALL (mini_llvmonly_throw_nullref_exception) \
 MONO_JIT_ICALL (mini_llvmonly_throw_aot_failed_exception) \
+MONO_JIT_ICALL (mini_llvmonly_throw_index_out_of_range_exception) \
+MONO_JIT_ICALL (mini_llvmonly_throw_invalid_cast_exception) \
 MONO_JIT_ICALL (mini_llvmonly_interp_entry_gsharedvt) \
 MONO_JIT_ICALL (mini_llvmonly_throw_exception) \
 MONO_JIT_ICALL (mini_llvmonly_rethrow_exception) \

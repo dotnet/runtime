@@ -120,7 +120,7 @@ namespace System
                 return CompareTo(v);
             }
 
-            throw new ArgumentException(SR.Arg_MustBeVersion);
+            throw new ArgumentException(SR.Arg_MustBeVersion, nameof(version));
         }
 
         public int CompareTo(Version? value)
