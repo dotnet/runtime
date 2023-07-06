@@ -236,6 +236,78 @@ namespace System.Text
                     }
                 }
             }
+            else if (Avx512F.IsSupported && length >= (uint)Vector512<TRight>.Count)
+            {
+                ref TLeft currentLeftSearchSpace = ref left;
+                ref TLeft oneVectorAwayFromLeftEnd = ref Unsafe.Add(ref currentLeftSearchSpace, length - TLoader.Count512);
+                ref TRight currentRightSearchSpace = ref right;
+                ref TRight oneVectorAwayFromRightEnd = ref Unsafe.Add(ref currentRightSearchSpace, length - (uint)Vector512<TRight>.Count);
+
+                Vector512<TRight> leftValues;
+                Vector512<TRight> rightValues;
+
+                Vector512<TRight> loweringMask = Vector512.Create(TRight.CreateTruncating(0x20));
+                Vector512<TRight> vecA = Vector512.Create(TRight.CreateTruncating('a'));
+                Vector512<TRight> vecZMinusA = Vector512.Create(TRight.CreateTruncating(('z' - 'a')));
+
+                // Loop until either we've finished all elements or there's less than a vector's-worth remaining.
+                do
+                {
+                    leftValues = TLoader.Load512(ref currentLeftSearchSpace);
+                    rightValues = Vector512.LoadUnsafe(ref currentRightSearchSpace);
+
+                    if (!AllCharsInVectorAreAscii(leftValues | rightValues))
+                    {
+                        return false;
+                    }
+
+                    Vector512<TRight> notEquals = ~Vector512.Equals(leftValues, rightValues);
+
+                    if (notEquals != Vector512<TRight>.Zero)
+                    {
+                        // not exact match
+
+                        leftValues |= loweringMask;
+                        rightValues |= loweringMask;
+
+                        if (Vector512.GreaterThanAny((leftValues - vecA) & notEquals, vecZMinusA) || leftValues != rightValues)
+                        {
+                            return false; // first input isn't in [A-Za-z], and not exact match of lowered
+                        }
+                    }
+
+                    currentRightSearchSpace = ref Unsafe.Add(ref currentRightSearchSpace, (uint)Vector512<TRight>.Count);
+                    currentLeftSearchSpace = ref Unsafe.Add(ref currentLeftSearchSpace, TLoader.Count512);
+                }
+                while (!Unsafe.IsAddressGreaterThan(ref currentRightSearchSpace, ref oneVectorAwayFromRightEnd));
+
+                // If any elements remain, process the last vector in the search space.
+                if (length % (uint)Vector512<TRight>.Count != 0)
+                {
+                    leftValues = TLoader.Load512(ref oneVectorAwayFromLeftEnd);
+                    rightValues = Vector512.LoadUnsafe(ref oneVectorAwayFromRightEnd);
+
+                    if (!AllCharsInVectorAreAscii(leftValues | rightValues))
+                    {
+                        return false;
+                    }
+
+                    Vector512<TRight> notEquals = ~Vector512.Equals(leftValues, rightValues);
+
+                    if (notEquals != Vector512<TRight>.Zero)
+                    {
+                        // not exact match
+
+                        leftValues |= loweringMask;
+                        rightValues |= loweringMask;
+
+                        if (Vector512.GreaterThanAny((leftValues - vecA) & notEquals, vecZMinusA) || leftValues != rightValues)
+                        {
+                            return false; // first input isn't in [A-Za-z], and not exact match of lowered
+                        }
+                    }
+                }
+            }
             else if (Avx.IsSupported && length >= (uint)Vector256<TRight>.Count)
             {
                 ref TLeft currentLeftSearchSpace = ref left;
