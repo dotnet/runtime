@@ -38,7 +38,7 @@ namespace Tracing.Tests.ProviderValidation
             bool enableRundown = TestLibrary.Utilities.IsNativeAot? false: true;
 
             Dictionary<string, ExpectedEventCount> _expectedEventCounts = TestLibrary.Utilities.IsNativeAot? _expectedEventCountsNativeAOT: _expectedEventCountsCoreCLR;
-            var ret = IpcTraceTest.RunAndValidateEventCounts(_expectedEventCounts, _eventGeneratingAction, providers, 1024, enableRundownProvider:enableRundown);
+            var ret = IpcTraceTest.RunAndValidateEventCounts(_expectedEventCounts, _eventGeneratingAction, providers, 1024, enableRundownProvider: enableRundown);
             if (ret < 0)
                 return ret;
             else

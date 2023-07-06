@@ -27,16 +27,10 @@ namespace Tracing.Tests.SimpleRuntimeEventValidation
                 new List<EventPipeProvider>(){new EventPipeProvider("Microsoft-Windows-DotNETRuntime", EventLevel.Informational, 0b1)}, 
                 1024, _DoesTraceContainGCEvents, enableRundownProvider:false);
 
-            GC.Collect();
-            GC.WaitForPendingFinalizers();
-            GC.Collect();
-
             // Run the 2nd test scenario only if the first one passes
             if(ret== 100)
             {
                 ret = IpcTraceTest.RunAndValidateEventCounts(
-                    // Validate the exception type and message after the below issue is fixed. For now, check that the event is fired
-                    // https://github.com/dotnet/runtime/issues/87978
                     new Dictionary<string, ExpectedEventCount>(){{ "Microsoft-DotNETCore-EventPipe", 1 }}, 
                     _eventGeneratingActionForExceptions, 
                     //ExceptionKeyword (0x8000): 0b1000_0000_0000_0000
