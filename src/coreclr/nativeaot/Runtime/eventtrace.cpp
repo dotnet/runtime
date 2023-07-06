@@ -50,13 +50,3 @@ void ETW::GCLog::FireGcStart(ETW_GC_INFO* pGcInfo)
         FireEtwGCStart_V2(pGcInfo->GCStart.Count, pGcInfo->GCStart.Depth, pGcInfo->GCStart.Reason, pGcInfo->GCStart.Type, GetClrInstanceId(), l64ClientSequenceNumberToLog);
     }
 }
-
-COOP_PINVOKE_HELPER(void, RhpEtwExceptionThrown, (LPCWSTR exceptionTypeName, LPCWSTR exceptionMessage, void* faultingIP, HRESULT hresult))
-{
-    FireEtXplatExceptionThrown_V1(exceptionTypeName,
-        exceptionMessage,
-        faultingIP,
-        hresult,
-        0,
-        GetClrInstanceId());
-}
