@@ -3,6 +3,7 @@
 
 using System.Globalization;
 using System.Threading;
+using System.Diagnostics;
 
 namespace System
 {
@@ -57,6 +58,7 @@ namespace System
             {
                 if (_uiCulture == null)
                 {
+                    Debug.Assert(!GlobalizationMode.Invariant);
                     // Determine the culture to use
                     CultureInfo uiCulture = CultureInfo.CurrentUICulture;
                     if (uiCulture.Name.Length == 0)
