@@ -150,11 +150,10 @@ namespace ILCompiler.Win32Resources
             // Emit byte arrays of resource data, capture the offsets
             foreach (Tuple<ResLanguage, ObjectDataBuilder.Reservation> language in resLanguages)
             {
-                contentBuilder.PadAlignment(8); // Data in resource files is 8 byte aligned
+                contentBuilder.PadAlignment(4); // Data in resource files is 4 byte aligned
                 dataEntryTable.Add(language.Item1, contentBuilder.CountBytes);
                 contentBuilder.EmitBytes(language.Item1.DataEntry);
             }
-            contentBuilder.PadAlignment(8); // Data in resource files is 8 byte aligned
 
             dataBuilder.PadAlignment(4); // resource data entries are 4 byte aligned
             foreach (Tuple<ResLanguage, ObjectDataBuilder.Reservation> language in resLanguages)
