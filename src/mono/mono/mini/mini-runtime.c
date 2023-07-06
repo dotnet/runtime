@@ -2649,6 +2649,16 @@ compile_special (MonoMethod *method, MonoError *error)
 		}
 	}
 
+	gboolean has_header = mono_method_metadata_has_header (method);
+	if (G_UNLIKELY (!has_header)) {
+		char *member_name = NULL;
+		int accessor_kind = -1;
+		if (mono_method_get_unsafe_accessor_attr_data (method, &accessor_kind, &member_name, error)) {
+			g_warning ("Method %s is an unsafe accessor with kind %d and target %s", method->name, accessor_kind, member_name);
+			g_assert_not_reached ();
+    	}
+	}
+
 	return NULL;
 }
 
