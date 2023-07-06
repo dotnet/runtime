@@ -172,7 +172,6 @@ namespace System.Data.ProviderBase
             offset += BaseOffset;
             Validate(offset, destination.Length);
             Debug.Assert(0 == offset % ADP.PtrSize, "invalid alignment");
-            Debug.Assert(null != destination, "null destination");
 
             bool mustRelease = false;
 
