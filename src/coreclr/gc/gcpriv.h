@@ -4197,8 +4197,8 @@ private:
     // in the very next GC done with garbage_collect_pm_full_gc.
     PER_HEAP_ISOLATED_FIELD_MAINTAINED bool pm_trigger_full_gc;
 
-    // This is smoothed "desired_per_heap", ie, smoothed budget. Only used in a join.
-    PER_HEAP_ISOLATED_FIELD_MAINTAINED size_t smoothed_desired_per_heap[total_generation_count];
+    // This is the smoothed *total* budget, i.e. across *all* heaps. Only used in a join.
+    PER_HEAP_ISOLATED_FIELD_MAINTAINED size_t smoothed_desired_total[total_generation_count];
 
     PER_HEAP_ISOLATED_FIELD_MAINTAINED uint64_t gc_last_ephemeral_decommit_time;
 
@@ -4256,6 +4256,7 @@ private:
         sample          samples[sample_size];
 
         float median_percent_overhead;          // estimated overhead of allocator + gc
+        float smoothed_median_percent_overhead; // exponentially smoothed version
         float percent_heap_space_cost_per_heap; // percent space cost of adding a heap
         float overhead_reduction_per_step_up;   // percentage effect on overhead of increasing heap count
         float overhead_increase_per_step_down;  // percentage effect on overhead of decreasing heap count

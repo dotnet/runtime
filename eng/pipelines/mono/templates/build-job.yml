@@ -104,15 +104,12 @@ jobs:
         value: wasm
       - name: osOverride
         value: '-os wasi'
-    - ${{ if and(eq(parameters.osGroup, 'linux'), not(eq(parameters.archType, 'x64'))) }}:
-        name: llvmCxxAbi
-        value: /p:MonoLLVMUseCxx11Abi=true
     - ${{ if eq(parameters.runtimeVariant, 'llvmjit') }}:
       - name: llvmParameter
-        value: /p:MonoEnableLLVM=true /p:MonoBundleLLVMOptimizer=false $(llvmCxxAbi)
+        value: /p:MonoEnableLLVM=true /p:MonoBundleLLVMOptimizer=false
     - ${{ if eq(parameters.runtimeVariant, 'llvmaot') }}:
       - name: llvmParameter
-        value: /p:MonoEnableLLVM=true /p:MonoBundleLLVMOptimizer=true $(llvmCxxAbi)
+        value: /p:MonoEnableLLVM=true /p:MonoBundleLLVMOptimizer=true
     - ${{ if gt(length(parameters.monoCrossAOTTargetOS),0) }}:
       - name: aotCrossParameter
         value: /p:MonoCrossAOTTargetOS=${{join('+',parameters.monoCrossAOTTargetOS)}} /p:SkipMonoCrossJitConfigure=true /p:BuildMonoAOTCrossCompilerOnly=true

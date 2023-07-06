@@ -409,3 +409,17 @@ Affected public APIs:
 - CompareInfo.GetHashCode
 
 Apple Native API does not have an equivalent, so they throw `PlatformNotSupportedException`.
+
+
+## Case change
+
+Affected public APIs:
+- TextInfo.ToLower,
+- TextInfo.ToUpper
+
+Below function are used from apple native functions:
+- [uppercaseString](https://developer.apple.com/documentation/foundation/nsstring/1409855-uppercasestring)
+- [lowercaseString](https://developer.apple.com/documentation/foundation/nsstring/1408467-lowercasestring)
+- [uppercaseStringWithLocale](https://developer.apple.com/documentation/foundation/nsstring/1413316-uppercasestringwithlocale?language=objc)
+- [lowercaseStringWithLocale](https://developer.apple.com/documentation/foundation/nsstring/1417298-lowercasestringwithlocale?language=objc)
+

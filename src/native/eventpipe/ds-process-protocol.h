@@ -109,6 +109,48 @@ void
 ds_process_info_2_payload_fini (DiagnosticsProcessInfo2Payload *payload);
 
 /*
+* DiagnosticsProcessInfo3Payload
+*/
+
+#if defined(DS_INLINE_GETTER_SETTER) || defined(DS_IMPL_PROCESS_PROTOCOL_GETTER_SETTER)
+struct _DiagnosticsProcessInfo3Payload {
+#else
+struct _DiagnosticsProcessInfo3Payload_Internal {
+#endif
+	uint32_t version;
+	uint64_t process_id;
+	const ep_char16_t *command_line;
+	const ep_char16_t *os;
+	const ep_char16_t *arch;
+	uint8_t runtime_cookie [EP_GUID_SIZE];
+	const ep_char16_t *managed_entrypoint_assembly_name;
+	const ep_char16_t *clr_product_version;
+	const ep_char16_t *portable_rid;
+
+};
+
+#if !defined(DS_INLINE_GETTER_SETTER) && !defined(DS_IMPL_PROCESS_PROTOCOL_GETTER_SETTER)
+struct _DiagnosticsProcessInfo3Payload {
+	uint8_t _internal [sizeof (struct _DiagnosticsProcessInfo3Payload_Internal)];
+};
+#endif
+
+DiagnosticsProcessInfo3Payload *
+ds_process_info_3_payload_init (
+	DiagnosticsProcessInfo3Payload *payload,
+	const ep_char16_t *command_line,
+	const ep_char16_t *os,
+	const ep_char16_t *arch,
+	uint32_t process_id,
+	const uint8_t *runtime_cookie,
+	const ep_char16_t *managed_entrypoint_assembly_name,
+	const ep_char16_t *clr_product_version,
+	const ep_char16_t *portable_rid);
+
+void
+ds_process_info_3_payload_fini (DiagnosticsProcessInfo3Payload *payload);
+
+/*
 * DiagnosticsEnvironmentInfoPayload
 */
 

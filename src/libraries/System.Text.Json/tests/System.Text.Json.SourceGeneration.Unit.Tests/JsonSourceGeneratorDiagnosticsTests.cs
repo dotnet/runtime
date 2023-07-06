@@ -1,11 +1,10 @@
 ﻿// Licensed to the .NET Foundation under one or more agreements.
 // The .NET Foundation licenses this file to you under the MIT license.
 
-using System.Collections.Generic;
 using System.IO;
 using System.Linq;
 using Microsoft.CodeAnalysis;
-using Microsoft.CodeAnalysis.Text;
+using Microsoft.CodeAnalysis.CSharp;
 using Xunit;
 
 namespace System.Text.Json.SourceGeneration.UnitTests
@@ -73,14 +72,12 @@ namespace System.Text.Json.SourceGeneration.UnitTests
                 MetadataReference.CreateFromImage(documentedImage),
             };
 
-            Compilation compilation = CompilationHelper.CreateCompilation(source, additionalReferences, configureParseOptions: options => options.WithDocumentationMode(DocumentationMode.Diagnose));
+            Compilation compilation = CompilationHelper.CreateCompilation(source, additionalReferences, parseOptions: CompilationHelper.CreateParseOptions(documentationMode: DocumentationMode.Diagnose));
             JsonSourceGeneratorResult sourceGenResult = CompilationHelper.RunJsonSourceGenerator(compilation);
 
             using var emitStream = new MemoryStream();
             using var xmlStream = new MemoryStream();
             var result = sourceGenResult.NewCompilation.Emit(emitStream, xmlDocumentationStream: xmlStream);
-
-            Assert.Empty(result.Diagnostics);
         }
 
         [Fact]
@@ -123,11 +120,7 @@ namespace System.Text.Json.SourceGeneration.UnitTests
             };
 
             Compilation compilation = CompilationHelper.CreateCompilation(source, additionalReferences);
-
-            JsonSourceGeneratorResult result = CompilationHelper.RunJsonSourceGenerator(compilation);
-
-            Assert.Empty(result.NewCompilation.GetDiagnostics());
-            Assert.Empty(result.Diagnostics);
+            CompilationHelper.RunJsonSourceGenerator(compilation);
         }
 
         [Theory]
@@ -174,10 +167,7 @@ namespace System.Text.Json.SourceGeneration.UnitTests
             };
 
             Compilation compilation = CompilationHelper.CreateCompilation(source, additionalReferences);
-            JsonSourceGeneratorResult result = CompilationHelper.RunJsonSourceGenerator(compilation);
-
-            Assert.Empty(result.NewCompilation.GetDiagnostics());
-            Assert.Empty(result.Diagnostics);
+            CompilationHelper.RunJsonSourceGenerator(compilation);
         }
 
         [Fact]
@@ -185,7 +175,7 @@ namespace System.Text.Json.SourceGeneration.UnitTests
         {
             // Without resolution.
             Compilation compilation = CompilationHelper.CreateRepeatedLocationsCompilation();
-            JsonSourceGeneratorResult result = CompilationHelper.RunJsonSourceGenerator(compilation);
+            JsonSourceGeneratorResult result = CompilationHelper.RunJsonSourceGenerator(compilation, disableDiagnosticValidation: true);
 
             INamedTypeSymbol symbol = (INamedTypeSymbol)compilation.GetSymbolsWithName("JsonContext").FirstOrDefault();
             Location location = symbol.GetAttributes()[1].GetLocation();
@@ -196,12 +186,6 @@ namespace System.Text.Json.SourceGeneration.UnitTests
             };
 
             CompilationHelper.AssertEqualDiagnosticMessages(expectedDiagnostics, result.Diagnostics);
-
-            // With resolution.
-            compilation = CompilationHelper.CreateRepeatedLocationsWithResolutionCompilation();
-            result = CompilationHelper.RunJsonSourceGenerator(compilation);
-
-            Assert.Empty(result.Diagnostics);
         }
 
         [Fact]
@@ -215,15 +199,13 @@ namespace System.Text.Json.SourceGeneration.UnitTests
                 {
                     public static void Main()
                     {
-                        Console.WriteLine(""Hello World"");
+                        Console.WriteLine("Hello World");
                     }
                 }
                 """;
 
             Compilation compilation = CompilationHelper.CreateCompilation(source);
-            JsonSourceGeneratorResult result = CompilationHelper.RunJsonSourceGenerator(compilation);
-
-            Assert.Empty(result.Diagnostics);
+            CompilationHelper.RunJsonSourceGenerator(compilation);
 
             // With STJ usage.
             source = """
@@ -233,67 +215,57 @@ namespace System.Text.Json.SourceGeneration.UnitTests
                 {
                     public static void Main()
                     {
-                        JsonSerializer.Serialize(""Hello World"");
+                        JsonSerializer.Serialize("Hello World");
                     }
                 }
                 """;
 
             compilation = CompilationHelper.CreateCompilation(source);
-            result = CompilationHelper.RunJsonSourceGenerator(compilation);
-
-            Assert.Empty(result.Diagnostics);
+            CompilationHelper.RunJsonSourceGenerator(compilation);
         }
 
         [Fact]
         public void DoNotWarnOnClassesWithInitOnlyProperties()
         {
             Compilation compilation = CompilationHelper.CreateCompilationWithInitOnlyProperties();
-            JsonSourceGeneratorResult result = CompilationHelper.RunJsonSourceGenerator(compilation);
-
-            Assert.Empty(result.Diagnostics);
+            CompilationHelper.RunJsonSourceGenerator(compilation);
         }
 
         [Fact]
         public void DoNotWarnOnClassesWithConstructorInitOnlyProperties()
         {
             Compilation compilation = CompilationHelper.CreateCompilationWithConstructorInitOnlyProperties();
-            JsonSourceGeneratorResult result = CompilationHelper.RunJsonSourceGenerator(compilation);
-
-            Assert.Empty(result.Diagnostics);
+            CompilationHelper.RunJsonSourceGenerator(compilation);
         }
         
         [Fact]
         public void DoNotWarnOnClassesWithMixedInitOnlyProperties()
         {
             Compilation compilation = CompilationHelper.CreateCompilationWithMixedInitOnlyProperties();
-            JsonSourceGeneratorResult result = CompilationHelper.RunJsonSourceGenerator(compilation);
-
-            Assert.Empty(result.Diagnostics);
+            CompilationHelper.RunJsonSourceGenerator(compilation);
         }
 
         [Fact]
         public void DoNotWarnOnRecordsWithInitOnlyPositionalParameters()
         {
             Compilation compilation = CompilationHelper.CreateCompilationWithRecordPositionalParameters();
-            JsonSourceGeneratorResult result = CompilationHelper.RunJsonSourceGenerator(compilation);
-
-            Assert.Empty(result.Diagnostics);
+            CompilationHelper.RunJsonSourceGenerator(compilation);
         }
 
+#if ROSLYN4_4_OR_GREATER
         [Fact]
         public void DoNotWarnOnClassesWithRequiredProperties()
         {
             Compilation compilation = CompilationHelper.CreateCompilationWithRequiredProperties();
-            JsonSourceGeneratorResult result = CompilationHelper.RunJsonSourceGenerator(compilation);
-
-            Assert.Empty(result.Diagnostics);
+            CompilationHelper.RunJsonSourceGenerator(compilation);
         }
+#endif
 
         [Fact]
         public void WarnOnClassesWithInaccessibleJsonIncludeProperties()
         {
             Compilation compilation = CompilationHelper.CreateCompilationWithInaccessibleJsonIncludeProperties();
-            JsonSourceGeneratorResult result = CompilationHelper.RunJsonSourceGenerator(compilation);
+            JsonSourceGeneratorResult result = CompilationHelper.RunJsonSourceGenerator(compilation, disableDiagnosticValidation: true);
 
             Location idLocation = compilation.GetSymbolsWithName("Id").First().Locations[0];
             Location address2Location = compilation.GetSymbolsWithName("Address2").First().Locations[0];
@@ -317,7 +289,7 @@ namespace System.Text.Json.SourceGeneration.UnitTests
         public void PolymorphicClassWarnsOnFastPath()
         {
             Compilation compilation = CompilationHelper.CreatePolymorphicClassOnFastPathContext();
-            JsonSourceGeneratorResult result = CompilationHelper.RunJsonSourceGenerator(compilation);
+            JsonSourceGeneratorResult result = CompilationHelper.RunJsonSourceGenerator(compilation, disableDiagnosticValidation: true);
 
             Location myBaseClassLocation = compilation.GetSymbolsWithName("MyBaseClass").First().Locations[0];
 
@@ -333,7 +305,7 @@ namespace System.Text.Json.SourceGeneration.UnitTests
         public void JsonStringEnumConverterWarns()
         {
             Compilation compilation = CompilationHelper.CreateTypesAnnotatedWithJsonStringEnumConverter();
-            JsonSourceGeneratorResult result = CompilationHelper.RunJsonSourceGenerator(compilation);
+            JsonSourceGeneratorResult result = CompilationHelper.RunJsonSourceGenerator(compilation, disableDiagnosticValidation: true);
 
             Location enum2PropLocation = compilation.GetSymbolsWithName("Enum2Prop").First().GetAttributes()[0].GetLocation();
             Location enum1TypeLocation = compilation.GetSymbolsWithName("Enum1").First().GetAttributes()[0].GetLocation();
@@ -351,7 +323,7 @@ namespace System.Text.Json.SourceGeneration.UnitTests
         public void InvalidJsonConverterAttributeTypeWarns()
         {
             Compilation compilation = CompilationHelper.CreateTypesWithInvalidJsonConverterAttributeType();
-            JsonSourceGeneratorResult result = CompilationHelper.RunJsonSourceGenerator(compilation);
+            JsonSourceGeneratorResult result = CompilationHelper.RunJsonSourceGenerator(compilation, disableDiagnosticValidation: true);
 
             Location value1PropLocation = compilation.GetSymbolsWithName("Value1").First().GetAttributes()[0].GetLocation();
             Location value2PropLocation = compilation.GetSymbolsWithName("Value2").First().GetAttributes()[0].GetLocation();
@@ -371,7 +343,7 @@ namespace System.Text.Json.SourceGeneration.UnitTests
         public void UnboundGenericTypeDeclarationWarns()
         {
             Compilation compilation = CompilationHelper.CreateContextWithUnboundGenericTypeDeclarations();
-            JsonSourceGeneratorResult result = CompilationHelper.RunJsonSourceGenerator(compilation);
+            JsonSourceGeneratorResult result = CompilationHelper.RunJsonSourceGenerator(compilation, disableDiagnosticValidation: true);
 
             INamedTypeSymbol symbol = (INamedTypeSymbol)compilation.GetSymbolsWithName("JsonContext").FirstOrDefault();
             Collections.Immutable.ImmutableArray<AttributeData> attributes = symbol.GetAttributes();
@@ -389,7 +361,7 @@ namespace System.Text.Json.SourceGeneration.UnitTests
         public void ErrorTypeDeclarationWarns()
         {
             Compilation compilation = CompilationHelper.CreateContextWithErrorTypeDeclarations();
-            JsonSourceGeneratorResult result = CompilationHelper.RunJsonSourceGenerator(compilation);
+            JsonSourceGeneratorResult result = CompilationHelper.RunJsonSourceGenerator(compilation, disableDiagnosticValidation: true);
 
             INamedTypeSymbol symbol = (INamedTypeSymbol)compilation.GetSymbolsWithName("JsonContext").FirstOrDefault();
             Collections.Immutable.ImmutableArray<AttributeData> attributes = symbol.GetAttributes();
@@ -398,6 +370,92 @@ namespace System.Text.Json.SourceGeneration.UnitTests
             {
                 new(DiagnosticSeverity.Warning, attributes[0].GetLocation(), "Did not generate serialization metadata for type 'BogusType'."),
                 new(DiagnosticSeverity.Warning, attributes[1].GetLocation(), "Did not generate serialization metadata for type 'BogusType<int>'."),
+            };
+
+            CompilationHelper.AssertEqualDiagnosticMessages(expectedDiagnostics, result.Diagnostics);
+        }
+
+        [Theory]
+        [InlineData(LanguageVersion.Default)]
+        [InlineData(LanguageVersion.Preview)]
+        [InlineData(LanguageVersion.Latest)]
+        [InlineData(LanguageVersion.LatestMajor)]
+        [InlineData(LanguageVersion.CSharp9)]
+#if ROSLYN4_4_OR_GREATER
+        [InlineData(LanguageVersion.CSharp10)]
+        [InlineData(LanguageVersion.CSharp11)]
+#endif
+        public void SupportedLanguageVersions_SucceedCompilation(LanguageVersion langVersion)
+        {
+            string source = """
+                using System.Text.Json.Serialization;
+
+                namespace HelloWorld
+                { 
+                    public class MyClass
+                    {
+                        public MyClass(int value)
+                        {
+                            Value = value;
+                        }
+
+                        public int Value { get; set; }
+                    }
+
+                    [JsonSerializable(typeof(MyClass))]
+                    public partial class MyJsonContext : JsonSerializerContext
+                    {
+                    }
+                }
+                """;
+
+            CSharpParseOptions parseOptions = CompilationHelper.CreateParseOptions(langVersion);
+            Compilation compilation = CompilationHelper.CreateCompilation(source, parseOptions: parseOptions);
+
+            CompilationHelper.RunJsonSourceGenerator(compilation);
+        }
+
+        [Theory]
+        [InlineData(LanguageVersion.CSharp1)]
+        [InlineData(LanguageVersion.CSharp2)]
+        [InlineData(LanguageVersion.CSharp3)]
+        [InlineData(LanguageVersion.CSharp7)]
+        [InlineData(LanguageVersion.CSharp7_3)]
+        [InlineData(LanguageVersion.CSharp8)]
+        public void UnsupportedLanguageVersions_FailCompilation(LanguageVersion langVersion)
+        {
+            string source = """
+                using System.Text.Json.Serialization;
+
+                namespace HelloWorld
+                { 
+                    public class MyClass
+                    {
+                        public MyClass(int value)
+                        {
+                            Value = value;
+                        }
+
+                        public int Value { get; set; }
+                    }
+
+                    [JsonSerializable(typeof(MyClass))]
+                    public partial class MyJsonContext : JsonSerializerContext
+                    {
+                    }
+                }
+                """;
+
+            CSharpParseOptions parseOptions = CompilationHelper.CreateParseOptions(langVersion);
+            Compilation compilation = CompilationHelper.CreateCompilation(source, parseOptions: parseOptions);
+
+            JsonSourceGeneratorResult result = CompilationHelper.RunJsonSourceGenerator(compilation, disableDiagnosticValidation: true);
+
+            Location contextLocation = compilation.GetSymbolsWithName("MyJsonContext").First().Locations[0];
+
+            var expectedDiagnostics = new DiagnosticData[]
+            {
+                new(DiagnosticSeverity.Error, contextLocation, $"The System.Text.Json source generator is not available in C# '{langVersion.ToDisplayString()}'. Please use language version 9.0 or greater.")
             };
 
             CompilationHelper.AssertEqualDiagnosticMessages(expectedDiagnostics, result.Diagnostics);
