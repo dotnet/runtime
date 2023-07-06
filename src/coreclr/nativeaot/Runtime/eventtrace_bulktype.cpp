@@ -372,7 +372,11 @@ int BulkTypeEventLogger::LogSingleType(MethodTable * pEEType)
 
 void BulkTypeEventLogger::LogTypeAndParameters(uint64_t thAsAddr)
 {
-    if (!RUNTIME_PROVIDER_CATEGORY_ENABLED(TRACE_LEVEL_INFORMATION, CLR_TYPE_KEYWORD))
+    // BulkTypeEventLogger currently fires ETW events only
+    if (!ETW_TRACING_CATEGORY_ENABLED(
+        MICROSOFT_WINDOWS_DOTNETRUNTIME_PROVIDER_Context,
+        TRACE_LEVEL_INFORMATION,
+        CLR_TYPE_KEYWORD))
     {
         return;
     }
