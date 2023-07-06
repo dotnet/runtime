@@ -1114,10 +1114,8 @@ static
 void
 ep_rt_os_environment_get_utf16 (dn_vector_ptr_t *env_array)
 {
-    STATIC_CONTRACT_NOTHROW;
-    EP_ASSERT (env_array != NULL);
-
-    // PalDebugBreak();
+    extern void ep_rt_aot_os_environment_get_utf16 (dn_vector_ptr_t *env_array);
+    ep_rt_aot_os_environment_get_utf16(env_array);
 }
 
 /*
