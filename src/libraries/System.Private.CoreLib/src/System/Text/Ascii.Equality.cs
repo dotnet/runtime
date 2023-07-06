@@ -88,7 +88,7 @@ namespace System.Text
                 while (!Unsafe.IsAddressGreaterThan(ref currentRightSearchSpace, ref oneVectorAwayFromRightEnd));
 
                 // If any elements remain, process the last vector in the search space.
-                if (length % (uint)Vector256<TRight>.Count != 0)
+                if (length % (uint)Vector512<TRight>.Count != 0)
                 {
                     leftValues = TLoader.Load512(ref oneVectorAwayFromLeftEnd);
                     rightValues = Vector512.LoadUnsafe(ref oneVectorAwayFromRightEnd);
