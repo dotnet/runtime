@@ -11,7 +11,7 @@ namespace ILCompiler.Win32Resources
         private readonly SortedDictionary<ushort, ResType> _resTypeHeadID = new SortedDictionary<ushort, ResType>();
         private readonly SortedDictionary<string, ResType> _resTypeHeadName = new SortedDictionary<string, ResType>(StringComparer.Ordinal);
 
-        private class ResLanguage
+        private sealed class ResLanguage
         {
             public ResLanguage(byte[] data)
             {
@@ -22,12 +22,12 @@ namespace ILCompiler.Win32Resources
             public byte[] DataEntry;
         }
 
-        private class ResName
+        private sealed class ResName
         {
             public SortedDictionary<ushort, ResLanguage> Languages = new SortedDictionary<ushort, ResLanguage>();
         }
 
-        private class ResType
+        private sealed class ResType
         {
             public SortedDictionary<string, ResName> NameHeadName = new SortedDictionary<string, ResName>(StringComparer.Ordinal);
             public SortedDictionary<ushort, ResName> NameHeadID = new SortedDictionary<ushort, ResName>();

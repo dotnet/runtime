@@ -49,7 +49,7 @@ namespace ILCompiler.Win32Resources
                 OffsetToData = blobReader.ReadUInt32();
             }
 
-            public static ObjectDataBuilder.Reservation Write(ref ObjectDataBuilder dataBuilder, string name, IDictionary<string, List<ObjectDataBuilder.Reservation>> nameTable)
+            public static ObjectDataBuilder.Reservation Write(ref ObjectDataBuilder dataBuilder, string name, SortedDictionary<string, List<ObjectDataBuilder.Reservation>> nameTable)
             {
                 List<ObjectDataBuilder.Reservation> relatedNameReferences;
                 if (!nameTable.TryGetValue(name, out relatedNameReferences))
