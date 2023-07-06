@@ -1,17 +1,11 @@
 ﻿// Licensed to the .NET Foundation under one or more agreements.
 // The .NET Foundation licenses this file to you under the MIT license.
 
-using System;
-using System.Collections.Generic;
-
 using ILCompiler.DependencyAnalysis;
-using ILCompiler.DependencyAnalysisFramework;
 using ILCompiler.Win32Resources;
 
 using Internal.Text;
 using Internal.TypeSystem.Ecma;
-
-using Debug = System.Diagnostics.Debug;
 
 namespace ILCompiler
 {
@@ -41,7 +35,6 @@ namespace ILCompiler
                 rsrc2.SetData(rsrc2data.ToObjectData());
 
                 rootProvider.AddCompilationRoot(rsrc1, "Resource section from input module");
-                rootProvider.AddCompilationRoot(rsrc2, "Resource section from input module");
             }
         }
 

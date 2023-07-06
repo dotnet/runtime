@@ -231,14 +231,17 @@ namespace ILCompiler
                     compilationRoots.Add(new RuntimeConfigurationRootProvider(settingsBlobName, runtimeOptions));
                     compilationRoots.Add(new RuntimeConfigurationRootProvider(knobsBlobName, runtimeKnobs));
                     compilationRoots.Add(new ExpectedIsaFeaturesRootProvider(instructionSetSupport));
-                    if (typeSystemContext.Target.IsWindows)
-                    {
-                        compilationRoots.Add(new Win32ResourcesRootProvider(entrypointModule));
-                    }
                     if (SplitExeInitialization)
                     {
                         compilationRoots.Add(new NativeLibraryInitializerRootProvider(typeSystemContext.GeneratedAssembly, CreateInitializerList(typeSystemContext)));
                     }
+                }
+
+                string win32resourcesModule = Get(_command.Win32ResourceModuleName);
+                if (typeSystemContext.Target.IsWindows && !string.IsNullOrEmpty(win32resourcesModule))
+                {
+                    EcmaModule module = typeSystemContext.GetModuleForSimpleName(win32resourcesModule);
+                    compilationRoots.Add(new Win32ResourcesRootProvider(module));
                 }
 
                 foreach (var unmanagedEntryPointsAssembly in Get(_command.UnmanagedEntryPointsAssemblies))
