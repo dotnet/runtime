@@ -2086,11 +2086,12 @@ mono_method_get_unsafe_accessor_attr_data (MonoMethod *method, int *accessor_kin
 		return FALSE;
 	}
 
+	g_assert (decoded_args->typed_args_num == 1);
+	*accessor_kind =  *(int*)decoded_args->typed_args [0]->value.primitive;
+
 	for (int i = 0; i < decoded_args->named_args_num; ++i) {
-		if (decoded_args->named_args_info [i].prop && !strcmp (decoded_args->named_args_info [i].prop->name, "Kind")) {
-			*accessor_kind =  *(int*)decoded_args->named_args [i]->value.primitive;
-		}else if (decoded_args->named_args_info [i].prop && !strcmp (decoded_args->named_args_info [i].prop->name, "Name")) {
-			*member_name = *(char**)decoded_args->named_args [i]->value.primitive;
+		if (decoded_args->named_args_info [i].prop && !strcmp (decoded_args->named_args_info [i].prop->name, "Name")) {
+			*member_name = (char*)decoded_args->named_args [i]->value.primitive;
 		}
 	}
 
