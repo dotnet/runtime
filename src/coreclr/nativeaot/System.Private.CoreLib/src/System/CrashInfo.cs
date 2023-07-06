@@ -84,7 +84,7 @@ namespace System
                 // If the buffer isn't big enough to fit 500 stack frames, try limiting to 10
                 if (!WriteExceptionWithFallback(key, exception, int.MaxValue, 10, int.MaxValue))
                 {
-                    // If that fails, try limiting the size of the stack frame method names to 100 bytes
+                    // If that fails, try limiting the size of the stack frame method names to 100 chars
                     WriteExceptionWithFallback(key, exception, int.MaxValue, 10, 100);
                 }
             }
@@ -239,13 +239,20 @@ namespace System
             if (!WriteHexValue("ip"u8, (nuint)ip))
                 return false;
 
+            nint moduleBase = RuntimeImports.RhGetOSModuleFromPointer(ip);
+            if (moduleBase != nint.Zero)
+            {
+                if (!WriteHexValue("module"u8, (nuint)moduleBase))
+                    return false;
+            }
+
             if (!WriteHexValue("offset"u8, frame.GetNativeOffset()))
                 return false;
 
             string method = DeveloperExperience.GetMethodName(ip, out IntPtr _);
             if (method != null)
             {
-                if (!WriteStringValue("name"u8, method, maxNameSize, truncateLeft: true))
+                if (!WriteStringValue("name"u8, method, maxNameSize))
                     return false;
             }
             CloseValue('}');
