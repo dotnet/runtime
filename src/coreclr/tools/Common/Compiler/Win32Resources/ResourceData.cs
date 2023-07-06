@@ -131,6 +131,22 @@ namespace ILCompiler.Win32Resources
                 }
             }
 
+            // Emit name table
+            dataBuilder.PadAlignment(2); // name table is 2 byte aligned
+            foreach (KeyValuePair<string, List<ObjectDataBuilder.Reservation>> name in nameTable)
+            {
+                foreach (ObjectDataBuilder.Reservation reservation in name.Value)
+                {
+                    dataBuilder.EmitUInt(reservation, (uint)dataBuilder.CountBytes | 0x80000000);
+                }
+
+                dataBuilder.EmitUShort(checked((ushort)name.Key.Length));
+                foreach (char c in name.Key)
+                {
+                    dataBuilder.EmitUShort((ushort)c);
+                }
+            }
+
             // Emit byte arrays of resource data, capture the offsets
             foreach (Tuple<ResLanguage, ObjectDataBuilder.Reservation> language in resLanguages)
             {
@@ -147,22 +163,6 @@ namespace ILCompiler.Win32Resources
                 IMAGE_RESOURCE_DATA_ENTRY.Write(ref dataBuilder, nodeAssociatedWithDataBuilder, dataEntryTable[language.Item1], language.Item1.DataEntry.Length);
             }
             dataBuilder.PadAlignment(4); // resource data entries are 4 byte aligned
-
-            // Emit name table
-            dataBuilder.PadAlignment(2); // name table is 2 byte aligned
-            foreach (KeyValuePair<string, List<ObjectDataBuilder.Reservation>> name in nameTable)
-            {
-                foreach (ObjectDataBuilder.Reservation reservation in name.Value)
-                {
-                    dataBuilder.EmitUInt(reservation, (uint)dataBuilder.CountBytes | 0x80000000);
-                }
-
-                dataBuilder.EmitUShort(checked((ushort)name.Key.Length));
-                foreach (char c in name.Key)
-                {
-                    dataBuilder.EmitUShort((ushort)c);
-                }
-            }
         }
     }
 }
