@@ -99,14 +99,7 @@ public class TermInfoTests
             Assert.Equal(expectedForeground, TermInfo.ParameterizedStrings.Evaluate(info.Foreground, colorValue));
             Assert.Equal(expectedBackground, TermInfo.ParameterizedStrings.Evaluate(info.Background, colorValue));
             Assert.InRange(info.MaxColors, 1, int.MaxValue);
-            if (expectedScrollbackClearSupport)
-            {
-                Assert.NotNull(info.ClearScrollbackBuffer);
-            }
-            else
-            {
-                Assert.Null(info.ClearScrollbackBuffer);
-            }
+            Assert.Equal(expectedScrollbackClearSupport, !string.IsNullOrEmpty(info.ClearScrollbackBuffer));
         }
     }
 
