@@ -1556,7 +1556,7 @@ GenTree* Compiler::impFixupCallStructReturn(GenTreeCall* call, CORINFO_CLASS_HAN
     const ReturnTypeDesc* retTypeDesc = call->GetReturnTypeDesc();
     const unsigned        retRegCount = retTypeDesc->GetReturnRegCount();
 #else  // !FEATURE_MULTIREG_RET
-    const unsigned retRegCount = 1;
+    const unsigned            retRegCount = 1;
 #endif // !FEATURE_MULTIREG_RET
 
     structPassingKind howToReturnStruct;
@@ -3794,7 +3794,17 @@ GenTree* Compiler::impIntrinsic(GenTree*                newobjThis,
                 if (op1->IsIntegralConst())
                 {
                     int32_t i32Cns = (int32_t)op1->AsIntConCommon()->IconValue();
-                    retNode        = gtNewDconNode(*reinterpret_cast<float*>(&i32Cns), TYP_FLOAT);
+#ifdef TARGET_RISCV64
+                    float f32Cns = *reinterpret_cast<float*>(&i32Cns);
+                    if (FloatingPointUtils::isNaN(f32Cns))
+                    {
+                        retNode = gtNewDconNode(*reinterpret_cast<double*>(&i32Cns), TYP_FLOAT);
+                    }
+                    else
+#endif // TARGET_RISCV64
+                    {
+                        retNode = gtNewDconNode(*reinterpret_cast<float*>(&i32Cns), TYP_FLOAT);
+                    }
                 }
                 else
                 {
@@ -3834,8 +3844,17 @@ GenTree* Compiler::impIntrinsic(GenTree*                newobjThis,
 
                 if (op1->IsCnsFltOrDbl())
                 {
-                    float f32Cns = (float)op1->AsDblCon()->DconValue();
-                    retNode      = gtNewIconNode(*reinterpret_cast<int32_t*>(&f32Cns));
+#ifdef TARGET_RISCV64
+                    double f64Cns = op1->AsDblCon()->DconValue();
+                    float  f32Cns = *reinterpret_cast<float*>(&f64Cns);
+                    if (!FloatingPointUtils::isNaN(f32Cns))
+                    {
+                        f32Cns = (float)op1->AsDblCon()->DconValue();
+                    }
+#else
+                    float     f32Cns      = (float)op1->AsDblCon()->DconValue();
+#endif // TARGET_RISCV64
+                    retNode = gtNewIconNode(*reinterpret_cast<int32_t*>(&f32Cns));
                 }
                 else
                 {
@@ -4141,7 +4160,16 @@ GenTree* Compiler::impSRCSUnsafeIntrinsic(NamedIntrinsic          intrinsic,
                     else
                     {
                         assert(fromType == TYP_FLOAT);
-                        float f32Cns = static_cast<float>(op1->AsDblCon()->DconValue());
+#ifdef TARGET_RISCV64
+                        double f64Cns = op1->AsDblCon()->DconValue();
+                        float  f32Cns = *reinterpret_cast<float*>(&f64Cns);
+                        if (!FloatingPointUtils::isNaN(f32Cns))
+                        {
+                            f32Cns = static_cast<float>(op1->AsDblCon()->DconValue());
+                        }
+#else
+                        float f32Cns      = static_cast<float>(op1->AsDblCon()->DconValue());
+#endif // TARGET_RISCV64
                         return gtNewIconNode(static_cast<int32_t>(BitOperations::SingleToUInt32Bits(f32Cns)));
                     }
                 }
@@ -4181,7 +4209,17 @@ GenTree* Compiler::impSRCSUnsafeIntrinsic(NamedIntrinsic          intrinsic,
                         assert(toType == TYP_FLOAT);
 
                         uint32_t u32Cns = static_cast<uint32_t>(op1->AsIntConCommon()->IconValue());
-                        return gtNewDconNode(BitOperations::UInt32BitsToSingle(u32Cns), TYP_FLOAT);
+#ifdef TARGET_RISCV64
+                        float f32Cns = BitOperations::UInt32BitsToSingle(u32Cns);
+                        if (FloatingPointUtils::isNaN(f32Cns))
+                        {
+                            return gtNewDconNode(*reinterpret_cast<double*>(&f32Cns), TYP_FLOAT);
+                        }
+                        else
+#endif // TARGET_RISCV64
+                        {
+                            return gtNewDconNode(BitOperations::UInt32BitsToSingle(u32Cns), TYP_FLOAT);
+                        }
                     }
                 }
                 else

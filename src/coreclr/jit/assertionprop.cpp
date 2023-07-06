@@ -1200,8 +1200,18 @@ AssertionIndex Compiler::optCreateAssertion(GenTree*         op1,
                     }
                     else
                     {
-                        noway_assert(op2->gtOper == GT_CNS_DBL);
                         /* If we have an NaN value then don't record it */
+                        noway_assert(op2->gtOper == GT_CNS_DBL);
+#ifdef TARGET_RISCV64
+                        if (op2->TypeGet() == TYP_FLOAT)
+                        {
+                            double f64Cns = op2->AsDblCon()->DconValue();
+                            if (_isnan(*reinterpret_cast<float*>(&f64Cns)))
+                            {
+                                goto DONE_ASSERTION;
+                            }
+                        }
+#endif // TARGET_RISCV64
                         if (_isnan(op2->AsDblCon()->DconValue()))
                         {
                             goto DONE_ASSERTION; // Don't make an assertion
@@ -2587,7 +2597,16 @@ GenTree* Compiler::optVNConstantPropOnTree(BasicBlock* block, GenTree* tree)
             {
                 // Implicit conversion to float or double
                 assert(varTypeIsFloating(tree->TypeGet()));
-                conValTree = gtNewDconNode(value, tree->TypeGet());
+#ifdef TARGET_RISCV64
+                if (tree->TypeGet() == TYP_FLOAT && _isnan(*reinterpret_cast<float*>(&value)))
+                {
+                    conValTree = gtNewDconNode(*reinterpret_cast<double*>(&value), tree->TypeGet());
+                }
+                else
+#endif // TARGET_RISCV64
+                {
+                    conValTree = gtNewDconNode(value, tree->TypeGet());
+                }
             }
             break;
         }
@@ -2696,8 +2715,17 @@ GenTree* Compiler::optVNConstantPropOnTree(BasicBlock* block, GenTree* tree)
                         break;
 
                     case TYP_FLOAT:
-                        // Same sized reinterpretation of bits to float
-                        conValTree = gtNewDconNode(*reinterpret_cast<float*>(&value), TYP_FLOAT);
+#ifdef TARGET_RISCV64
+                        if (_isnan(*reinterpret_cast<float*>(&value)))
+                        {
+                            conValTree = gtNewDconNode(*reinterpret_cast<double*>(&value), TYP_FLOAT);
+                        }
+                        else
+#endif // TARGET_RISCV64
+                        {
+                            // Same sized reinterpretation of bits to float
+                            conValTree = gtNewDconNode(*reinterpret_cast<float*>(&value), TYP_FLOAT);
+                        }
                         break;
 
                     case TYP_DOUBLE:

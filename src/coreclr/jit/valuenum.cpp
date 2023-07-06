@@ -10345,7 +10345,17 @@ void Compiler::fgValueNumberTreeConst(GenTree* tree)
 
         case TYP_FLOAT:
         {
-            tree->gtVNPair.SetBoth(vnStore->VNForFloatCon((float)tree->AsDblCon()->DconValue()));
+#ifdef TARGET_RISCV64
+            double f64Cns = tree->AsDblCon()->DconValue();
+            float  f32Cns = *reinterpret_cast<float*>(&f64Cns);
+            if (!_isnan(f32Cns))
+            {
+                f32Cns = (float)f64Cns;
+            }
+#else
+            float f32Cns = (float)tree->AsDblCon()->DconValue();
+#endif // TARGET_RISCV64
+            tree->gtVNPair.SetBoth(vnStore->VNForFloatCon(f32Cns));
             break;
         }
 
