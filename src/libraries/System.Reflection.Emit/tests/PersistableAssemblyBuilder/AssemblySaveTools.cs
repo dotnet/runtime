@@ -9,7 +9,7 @@ using Xunit;
 
 namespace System.Reflection.Emit.Tests
 {
-    internal static class AssemblyTools
+    internal static class AssemblySaveTools
     {
         internal static void WriteAssemblyToDisk(AssemblyName assemblyName, Type[] types, string fileLocation)
         {
@@ -150,7 +150,7 @@ namespace System.Reflection.Emit.Tests
     internal sealed class CoreMetadataAssemblyResolver : MetadataAssemblyResolver
     {
         public static Assembly s_coreAssembly = typeof(object).Assembly;
-        public static Assembly s_emitAssembly = typeof(AssemblyTools).Assembly;
+        public static Assembly s_emitAssembly = typeof(AssemblySaveTools).Assembly;
         public CoreMetadataAssemblyResolver() { }
 
         public override Assembly Resolve(MetadataLoadContext context, AssemblyName assemblyName)

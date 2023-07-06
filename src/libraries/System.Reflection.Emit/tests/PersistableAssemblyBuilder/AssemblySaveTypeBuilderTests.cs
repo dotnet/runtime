@@ -10,7 +10,7 @@ using Xunit;
 namespace System.Reflection.Emit.Tests
 {
     [ConditionalClass(typeof(PlatformDetection), nameof(PlatformDetection.IsNotBrowser))]
-    public class AssemblySaveWithVariousMembersTests
+    public class AssemblySaveTypeBuilderTests
     {
         private static readonly AssemblyName s_assemblyName = new AssemblyName("MyDynamicAssembly")
         {
@@ -28,15 +28,15 @@ namespace System.Reflection.Emit.Tests
                 Assembly assemblyFromDisk = WriteAndLoadAssembly(Type.EmptyTypes, file.Path);
 
                 Assert.Empty(assemblyFromDisk.GetTypes());
-                AssemblyTools.AssertAssemblyNameAndModule(s_assemblyName, assemblyFromDisk.GetName(), assemblyFromDisk.Modules.FirstOrDefault());
+                AssemblySaveTools.AssertAssemblyNameAndModule(s_assemblyName, assemblyFromDisk.GetName(), assemblyFromDisk.Modules.FirstOrDefault());
             }
         }
 
         private static Assembly WriteAndLoadAssembly(Type[] types, string filePath)
         {
-            AssemblyTools.WriteAssemblyToDisk(s_assemblyName, types, filePath);
+            AssemblySaveTools.WriteAssemblyToDisk(s_assemblyName, types, filePath);
 
-            return AssemblyTools.LoadAssemblyFromPath(filePath);
+            return AssemblySaveTools.LoadAssemblyFromPath(filePath);
         }
 
         public static IEnumerable<object[]> VariousInterfacesStructsTestData()
@@ -73,9 +73,9 @@ namespace System.Reflection.Emit.Tests
                 Type sourceType = types[i];
                 Type typeFromDisk = typesFromDisk[i];
 
-                AssemblyTools.AssertTypeProperties(sourceType, typeFromDisk);
-                AssemblyTools.AssertMethods(sourceType.GetMethods(), typeFromDisk.GetMethods());
-                AssemblyTools.AssertFields(sourceType.GetFields(), typeFromDisk.GetFields());
+                AssemblySaveTools.AssertTypeProperties(sourceType, typeFromDisk);
+                AssemblySaveTools.AssertMethods(sourceType.GetMethods(), typeFromDisk.GetMethods());
+                AssemblySaveTools.AssertFields(sourceType.GetFields(), typeFromDisk.GetFields());
             }
         }
 
@@ -85,8 +85,8 @@ namespace System.Reflection.Emit.Tests
         {
             using (var stream = new MemoryStream())
             {
-                AssemblyTools.WriteAssemblyToStream(s_assemblyName, types, stream);
-                Assembly assemblyFromStream = AssemblyTools.LoadAssemblyFromStream(stream);
+                AssemblySaveTools.WriteAssemblyToStream(s_assemblyName, types, stream);
+                Assembly assemblyFromStream = AssemblySaveTools.LoadAssemblyFromStream(stream);
 
                 AssertTypesAndTypeMembers(types, assemblyFromStream.Modules.First().GetTypes());
             }
@@ -101,7 +101,7 @@ namespace System.Reflection.Emit.Tests
                 tb.DefineMethod("TestMethod", MethodAttributes.Public);
                 saveMethod.Invoke(assemblyBuilder, new object[] { file.Path });
 
-                Assembly assemblyFromDisk = AssemblyTools.LoadAssemblyFromPath(file.Path);
+                Assembly assemblyFromDisk = AssemblySaveTools.LoadAssemblyFromPath(file.Path);
                 Module moduleFromDisk = assemblyFromDisk.Modules.First();
 
                 Assert.Equal("MyModule", moduleFromDisk.ScopeName);
@@ -119,7 +119,7 @@ namespace System.Reflection.Emit.Tests
 
         private static TypeBuilder CreateAssemblyAndDefineType(out AssemblyBuilder assemblyBuilder, out MethodInfo saveMethod)
         {
-            assemblyBuilder = AssemblyTools.PopulateAssemblyBuilderAndSaveMethod(s_assemblyName, null, typeof(string), out saveMethod);
+            assemblyBuilder = AssemblySaveTools.PopulateAssemblyBuilderAndSaveMethod(s_assemblyName, null, typeof(string), out saveMethod);
             return assemblyBuilder.DefineDynamicModule("MyModule")
                 .DefineType("TestInterface", TypeAttributes.Interface | TypeAttributes.Abstract);
         }
@@ -129,7 +129,7 @@ namespace System.Reflection.Emit.Tests
         {
             using (TempFile file = TempFile.Create())
             {
-                AssemblyBuilder assemblyBuilder = AssemblyTools.PopulateAssemblyBuilderAndSaveMethod(
+                AssemblyBuilder assemblyBuilder = AssemblySaveTools.PopulateAssemblyBuilderAndSaveMethod(
                     s_assemblyName, null, typeof(string), out MethodInfo saveMethod);
                 ModuleBuilder mb = assemblyBuilder.DefineDynamicModule("My Module");
                 TypeBuilder tb = mb.DefineType("TestInterface", TypeAttributes.Interface | TypeAttributes.Abstract, null, new Type[] { typeof(IOneMethod)});
@@ -137,7 +137,7 @@ namespace System.Reflection.Emit.Tests
                 tb.DefineNestedType("NestedType", TypeAttributes.Interface | TypeAttributes.Abstract);
                 saveMethod.Invoke(assemblyBuilder, new object[] { file.Path });
 
-                Assembly assemblyFromDisk = AssemblyTools.LoadAssemblyFromPath(file.Path);
+                Assembly assemblyFromDisk = AssemblySaveTools.LoadAssemblyFromPath(file.Path);
                 Type testType = assemblyFromDisk.Modules.First().GetTypes()[0];
                 Type[] interfaces = testType.GetInterfaces(); 
 
@@ -174,7 +174,7 @@ namespace System.Reflection.Emit.Tests
                 }
                 saveMethod.Invoke(assemblyBuilder, new object[] { file.Path });
 
-                Type testType = AssemblyTools.LoadAssemblyFromPath(file.Path).Modules.First().GetTypes()[0];
+                Type testType = AssemblySaveTools.LoadAssemblyFromPath(file.Path).Modules.First().GetTypes()[0];
                 MethodInfo testMethod = testType.GetMethod("TestMethod");
                 Type[] genericTypeParams = testType.GetGenericArguments();
 
@@ -237,7 +237,7 @@ namespace System.Reflection.Emit.Tests
                 }
                 saveMethod.Invoke(assemblyBuilder, new object[] { file.Path });
 
-                Type testType = AssemblyTools.LoadAssemblyFromPath(file.Path).Modules.First().GetTypes()[0];
+                Type testType = AssemblySaveTools.LoadAssemblyFromPath(file.Path).Modules.First().GetTypes()[0];
                 MethodInfo testMethod = testType.GetMethod("TestMethod");
                 Type[] genericTypeParams = testMethod.GetGenericArguments();
 
@@ -267,7 +267,7 @@ namespace System.Reflection.Emit.Tests
                 mb.SetParameters(new Type[] { typeof(INoMethod), arrayType, typeof(int[,,,]) });
                 saveMethod.Invoke(assemblyBuilder, new object[] { file.Path });
 
-                Type testType = AssemblyTools.LoadAssemblyFromPath(file.Path).Modules.First().GetTypes()[0];
+                Type testType = AssemblySaveTools.LoadAssemblyFromPath(file.Path).Modules.First().GetTypes()[0];
                 MethodInfo testMethod = testType.GetMethod("TestMethod");
                 Type intArray = testMethod.GetParameters()[2].ParameterType;
 
@@ -300,7 +300,7 @@ namespace System.Reflection.Emit.Tests
                 mb.SetParameters(new Type[] { typeof(INoMethod), byrefType });
                 saveMethod.Invoke(assemblyBuilder, new object[] { file.Path });
 
-                Type testType = AssemblyTools.LoadAssemblyFromPath(file.Path).Modules.First().GetTypes()[0];
+                Type testType = AssemblySaveTools.LoadAssemblyFromPath(file.Path).Modules.First().GetTypes()[0];
                 MethodInfo testMethod = testType.GetMethod("TestMethod");
 
                 Assert.False(testMethod.GetParameters()[0].ParameterType.IsByRef);
@@ -327,7 +327,7 @@ namespace System.Reflection.Emit.Tests
                 mb.SetParameters(new Type[] { typeof(INoMethod), pointerType });
                 saveMethod.Invoke(assemblyBuilder, new object[] { file.Path });
 
-                Type testType = AssemblyTools.LoadAssemblyFromPath(file.Path).Modules.First().GetTypes()[0];
+                Type testType = AssemblySaveTools.LoadAssemblyFromPath(file.Path).Modules.First().GetTypes()[0];
                 MethodInfo testMethod = testType.GetMethod("TestMethod");
 
                 Assert.False(testMethod.GetParameters()[0].ParameterType.IsPointer);
@@ -364,7 +364,7 @@ namespace System.Reflection.Emit.Tests
                 mb.SetParameters(new Type[] { typeof(INoMethod), genericType });
                 saveMethod.Invoke(assemblyBuilder, new object[] { file.Path });
 
-                Type testType = AssemblyTools.LoadAssemblyFromPath(file.Path).Modules.First().GetTypes()[0];
+                Type testType = AssemblySaveTools.LoadAssemblyFromPath(file.Path).Modules.First().GetTypes()[0];
                 MethodInfo testMethod = testType.GetMethod("TestMethod");
                 Type paramType = testMethod.GetParameters()[1].ParameterType;
 
@@ -398,7 +398,7 @@ namespace System.Reflection.Emit.Tests
                 mb.SetParameters(new Type[] { typeof(INoMethod), genericType, typeParams[1] });
                 saveMethod.Invoke(assemblyBuilder, new object[] { file.Path });
 
-                Type testType = AssemblyTools.LoadAssemblyFromPath(file.Path).Modules.First().GetTypes()[0];
+                Type testType = AssemblySaveTools.LoadAssemblyFromPath(file.Path).Modules.First().GetTypes()[0];
                 MethodInfo testMethod = testType.GetMethod("TestMethod");
                 Type paramType = testMethod.GetParameters()[1].ParameterType;
                 Type genericParameter = testMethod.GetParameters()[2].ParameterType;
@@ -425,7 +425,7 @@ namespace System.Reflection.Emit.Tests
         {
             using (TempFile file = TempFile.Create())
             {
-                AssemblyBuilder assemblyBuilder = AssemblyTools.PopulateAssemblyBuilderAndSaveMethod(
+                AssemblyBuilder assemblyBuilder = AssemblySaveTools.PopulateAssemblyBuilderAndSaveMethod(
                     s_assemblyName, null, typeof(string), out MethodInfo saveMethod);
                 ModuleBuilder mb = assemblyBuilder.DefineDynamicModule("My Module");
                 TypeBuilder tb = mb.DefineType("TestInterface1", TypeAttributes.Interface | TypeAttributes.Abstract);
@@ -447,7 +447,7 @@ namespace System.Reflection.Emit.Tests
                 typePar[0].SetBaseTypeConstraint(typeof(EmptyTestClass));
                 saveMethod.Invoke(assemblyBuilder, new object[] { file.Path });
 
-                Module m = AssemblyTools.LoadAssemblyFromPath(file.Path).Modules.First();
+                Module m = AssemblySaveTools.LoadAssemblyFromPath(file.Path).Modules.First();
                 Type[] type1Params = m.GetTypes()[0].GetGenericArguments();
                 Type[] type2Params = m.GetTypes()[1].GetGenericArguments();
                 Type[] type3Params = m.GetTypes()[2].GetGenericArguments();
