@@ -3,6 +3,7 @@
 
 using System;
 using System.Collections.Generic;
+using System.Collections.Immutable;
 using System.Diagnostics.CodeAnalysis;
 using Microsoft.CodeAnalysis.CSharp.Syntax;
 
@@ -121,6 +122,14 @@ namespace Microsoft.Interop
             {
                 diagnostic = null;
                 return true;
+            }
+            if (marshalKind == ByValueContentsMarshalKind.In)
+            {
+                diagnostic = new GeneratorDiagnostic.UnnecessaryData(info, context, ImmutableArray.Create(info.ByValueMarshalAttributeLocations.InLocation))
+                {
+                    UnnecessaryDataDetails = SR.InAttributeNotSupportedWithoutOut
+                };
+                return false;
             }
             diagnostic = GeneratorDiagnostic.DefaultDiagnosticForByValueGeneratorSupport(_byValueContentsMarshallingSupport, info, context);
             return false;

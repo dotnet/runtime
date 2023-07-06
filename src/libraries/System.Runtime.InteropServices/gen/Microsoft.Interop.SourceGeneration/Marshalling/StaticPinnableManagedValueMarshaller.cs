@@ -108,7 +108,10 @@ namespace Microsoft.Interop
         {
             if (marshalKind is ByValueContentsMarshalKind.In)
             {
-                diagnostic = GeneratorDiagnostic.DefaultDiagnosticForByValueGeneratorSupport(ByValueMarshalKindSupport.NotSupported, info, context);
+                diagnostic = new GeneratorDiagnostic.NotSupported(info, context)
+                {
+                    NotSupportedDetails = SR.InAttributeNotSupportedWithoutOutBlittableArray
+                };
                 return false;
             }
             return _innerMarshallingGenerator.SupportsByValueMarshalKind(marshalKind, info, context, out diagnostic);

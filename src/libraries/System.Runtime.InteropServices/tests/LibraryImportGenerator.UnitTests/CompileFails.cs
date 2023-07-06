@@ -379,7 +379,11 @@ namespace LibraryImportGenerator.UnitTests
             } };
 
             // By value non-array with [In, Out] attributes
-            yield return new object[] { ID(), CodeSnippets.ByValueParameterWithModifier<byte>("In"), new Diagnostic[] { } };
+            yield return new object[] { ID(), CodeSnippets.ByValueParameterWithModifier<byte>("In"), new[] {
+                VerifyCS.Diagnostic(GeneratorDiagnostics.ParameterTypeNotSupportedWithDetails)
+                    .WithLocation(0)
+                    .WithArguments(SR.InOutAttributesNotSupportedOnByValueParameters, "p")
+            } };
             yield return new object[] { ID(), CodeSnippets.ByValueParameterWithModifier<byte>("Out"), new[]
             {
                 VerifyCS.Diagnostic(GeneratorDiagnostics.ParameterTypeNotSupportedWithDetails)

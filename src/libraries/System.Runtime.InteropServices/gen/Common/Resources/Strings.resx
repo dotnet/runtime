@@ -127,7 +127,7 @@
     <value>The provided graph has cycles and cannot be topologically sorted.</value>
   </data>
   <data name="InAttributeNotSupportedWithoutOut" xml:space="preserve">
-    <value>The '[In]' attribute is not supported unless the '[Out]' attribute is also used. The behavior of the '[In]' attribute without the '[Out]' attribute is the same as the default behavior.</value>
+    <value>The '[In]' attribute is not necessary unless the '[Out]' attribute is also used. The behavior of the '[In]' attribute without the '[Out]' attribute is the same as the default behavior.</value>
   </data>
   <data name="InOutAttributeByRefNotSupported" xml:space="preserve">
     <value>The '[In]' and '[Out]' attributes are unsupported on parameters passed by reference. Use the 'in', 'ref', or 'out' keywords instead.</value>
@@ -191,9 +191,6 @@
   </data>
   <data name="TypeAccessibilityDetails" xml:space="preserve">
     <value>'{0}' has accessibility '{1}'.</value>
-  </data>
-  <data name="InOutAttributes" xml:space="preserve">
-    <value>[In] and [Out] attributes</value>
   </data>
   <data name="InAttributeNotSupportedWithoutOutBlittableArray" xml:space="preserve">
     <value>The '[In]' attribute is not supported unless the '[Out]' attribute is also used. Blittable arrays cannot be marshalled as '[In]' only.</value>
@@ -867,5 +864,8 @@
   <data name="InvalidStringMarshallingConfigurationMessageCom" xml:space="preserve">
     <value>The configuration of 'StringMarshalling' and 'StringMarshallingCustomType' on interface '{0}' is invalid. {1}</value>
     <comment>{1} is a message containing additional details about what is not valid</comment>
+  </data>
+  <data name="InOutAttributes" xml:space="preserve">
+    <value>[In] and [Out] attributes</value>
   </data>
 </root>

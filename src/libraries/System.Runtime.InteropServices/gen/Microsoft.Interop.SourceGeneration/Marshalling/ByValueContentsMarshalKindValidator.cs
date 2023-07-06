@@ -42,74 +42,35 @@ namespace Microsoft.Interop
                     NotSupportedDetails = SR.InOutAttributeByRefNotSupported
                 }));
             }
-            else if (info.ByValueContentsMarshalKind == ByValueContentsMarshalKind.In)
+
+            bool supported = generator.Generator.SupportsByValueMarshalKind(info.ByValueContentsMarshalKind, info, context, out GeneratorDiagnostic diagnostic);
+            if (!supported)
             {
-                if (generator.Generator is StaticPinnableManagedValueMarshaller)
+                if (diagnostic.IsFatal)
                 {
-                    return ResolvedGenerator.ResolvedWithDiagnostics(s_forwarder, generator.Diagnostics.Add(new GeneratorDiagnostic.NotSupported(info, context)
-                    {
-                        NotSupportedDetails = SR.InAttributeNotSupportedWithoutOutBlittableArray
-                    }));
+                    return ResolvedGenerator.ResolvedWithDiagnostics(s_forwarder, generator.Diagnostics.Add(diagnostic));
                 }
-            }
-            else
-            {
-                bool supported = generator.Generator.SupportsByValueMarshalKind(info.ByValueContentsMarshalKind, info, context, out GeneratorDiagnostic diagnostic);
-                if (!supported)
+                else
                 {
-                    if (diagnostic.IsFatal)
+                    var locations = ImmutableArray<Location>.Empty;
+                    if (info.ByValueMarshalAttributeLocations.InLocation is not null)
                     {
-                        return ResolvedGenerator.ResolvedWithDiagnostics(s_forwarder, generator.Diagnostics.Add(diagnostic));
+                        locations = locations.Add(info.ByValueMarshalAttributeLocations.InLocation);
                     }
-                    else
+                    if (info.ByValueMarshalAttributeLocations.OutLocation is not null)
                     {
-                        var locations = ImmutableArray<Location>.Empty;
-                        if (info.ByValueMarshalAttributeLocations.InLocation is not null)
-                        {
-                            locations = locations.Add(info.ByValueMarshalAttributeLocations.InLocation);
-                        }
-                        if (info.ByValueMarshalAttributeLocations.OutLocation is not null)
-                        {
-                            locations = locations.Add(info.ByValueMarshalAttributeLocations.OutLocation);
-                        }
-
-                        return generator with
-                        {
-                            Diagnostics = generator.Diagnostics.Add(new GeneratorDiagnostic.UnnecessaryData(info, context, locations)
-                            {
-                                UnnecessaryDataDetails = SR.InOutAttributes
-                            })
-                        };
-
+                        locations = locations.Add(info.ByValueMarshalAttributeLocations.OutLocation);
                     }
+
+                    return generator with
+                    {
+                        Diagnostics = generator.Diagnostics.Add(new GeneratorDiagnostic.UnnecessaryData(info, context, locations)
+                        {
+                            UnnecessaryDataDetails = SR.InOutAttributes
+                        })
+                    };
+
                 }
-                //if (support == ByValueMarshalKindSupport.NotSupported)
-                //{
-                //    return ResolvedGenerator.ResolvedWithDiagnostics(s_forwarder, generator.Diagnostics.Add(new GeneratorDiagnostic.NotSupported(info, context)
-                //    {
-                //        NotSupportedDetails = SR.InOutAttributeMarshalerNotSupported
-                //    }));
-                //}
-                //else if (support == ByValueMarshalKindSupport.Unnecessary)
-                //{
-                //    var locations = ImmutableArray<Location>.Empty;
-                //    if (info.ByValueMarshalAttributeLocations.InLocation is not null)
-                //    {
-                //        locations = locations.Add(info.ByValueMarshalAttributeLocations.InLocation);
-                //    }
-                //    if (info.ByValueMarshalAttributeLocations.OutLocation is not null)
-                //    {
-                //        locations = locations.Add(info.ByValueMarshalAttributeLocations.OutLocation);
-                //    }
-
-                //    return generator with
-                //    {
-                //        Diagnostics = generator.Diagnostics.Add(new GeneratorDiagnostic.UnnecessaryData(info, context, locations)
-                //        {
-                //            UnnecessaryDataDetails = SR.InOutAttributes
-                //        })
-                //    };
-                //}
             }
             return generator;
         }
