@@ -451,7 +451,7 @@ namespace System.Formats.Tar
         {
             try
             {
-                Directory.SetLastWriteTime(fullPath, lastWriteTime.LocalDateTime); // SetLastWriteTime expects local time
+                Directory.SetLastWriteTime(fullPath, lastWriteTime.UtcDateTime);
             }
             catch
             {
