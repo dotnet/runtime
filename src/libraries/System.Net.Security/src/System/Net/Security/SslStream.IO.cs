@@ -516,13 +516,6 @@ namespace System.Net.Security
                 return true;
             }
 
-            if (_selectedClientCertificate != null && !CertificateValidationPal.IsLocalCertificateUsed(_credentialsHandle, _securityContext!))
-            {
-                // We may select client cert but it may not be used.
-                // This is primarily an issue on Windows with credential caching.
-                _selectedClientCertificate = null;
-            }
-
 #if TARGET_ANDROID
             // On Android, the remote certificate verification can be invoked from Java TrustManager's callback
             // during the handshake process. If that has occurred, we shouldn't run the validation again and
