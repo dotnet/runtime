@@ -4976,7 +4976,7 @@ namespace System.Numerics
 
                     if (value._bits.Length >= 3)
                     {
-                        upperBits = value._bits[2];
+                        upperBits |= value._bits[2];
                     }
 
                     if (value._bits.Length >= 2)
