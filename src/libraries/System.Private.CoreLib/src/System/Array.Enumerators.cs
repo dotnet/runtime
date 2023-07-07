@@ -107,7 +107,7 @@ namespace System
         /// to be using T[] elsewhere, this singleton should be used.  Otherwise, GenericEmptyEnumerator's
         /// singleton should be used instead, as it doesn't reference T[] in order to reduce footprint.
         /// </remarks>
-        internal static readonly SZGenericArrayEnumerator<T> Empty = new SZGenericArrayEnumerator<T>(null, -1);
+        internal static readonly SZGenericArrayEnumerator<T> Empty = new SZGenericArrayEnumerator<T>(null, 0);
 
         internal SZGenericArrayEnumerator(T[]? array, int endIndex)
             : base(endIndex)
@@ -121,7 +121,7 @@ namespace System
             get
             {
                 if ((uint)_index >= (uint)_endIndex)
-                    ThrowHelper.ThrowInvalidOperationException();
+                    ThrowHelper.ThrowInvalidOperationException_EnumCurrent(_index);
                 return _array![_index];
             }
         }
