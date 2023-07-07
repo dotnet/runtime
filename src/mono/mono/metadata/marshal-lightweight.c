@@ -39,6 +39,7 @@
 #include "mono/metadata/handle.h"
 #include "mono/metadata/custom-attrs-internals.h"
 #include "mono/metadata/icall-internals.h"
+#include "mono/metadata/unsafe-accessor.h"
 #include "mono/utils/mono-tls.h"
 #include "mono/utils/mono-memory-model.h"
 #include "mono/utils/atomic.h"
@@ -2320,6 +2321,13 @@ emit_array_accessor_wrapper_ilgen (MonoMethodBuilder *mb, MonoMethod *method, Mo
 }
 
 static void
+emit_unsafe_accessor_wrapper_ilgen (MonoMethodBuilder *mb, MonoMethod *accessor_method, MonoMethodSignature *sig, MonoGenericContext *ctx, MonoUnsafeAccessorKind kind, const char *member_name)
+{
+	// TODO: implement me
+	mono_mb_emit_byte (mb, CEE_RET);
+}
+
+static void
 emit_generic_array_helper_ilgen (MonoMethodBuilder *mb, MonoMethod *method, MonoMethodSignature *csig)
 {
 	mono_mb_emit_ldarg (mb, 0);
@@ -3154,6 +3162,7 @@ mono_marshal_lightweight_init (void)
 	cb.emit_synchronized_wrapper = emit_synchronized_wrapper_ilgen;
 	cb.emit_unbox_wrapper = emit_unbox_wrapper_ilgen;
 	cb.emit_array_accessor_wrapper = emit_array_accessor_wrapper_ilgen;
+	cb.emit_unsafe_accessor_wrapper = emit_unsafe_accessor_wrapper_ilgen;
 	cb.emit_generic_array_helper = emit_generic_array_helper_ilgen;
 	cb.emit_thunk_invoke_wrapper = emit_thunk_invoke_wrapper_ilgen;
 	cb.emit_create_string_hack = emit_create_string_hack_ilgen;
