@@ -80,11 +80,13 @@ namespace System
 
         public bool MoveNext()
         {
-            if (_index < _endIndex)
+            int index = _index + 1;
+            if ((uint)index < (uint)_endIndex)
             {
-                _index++;
-                return (_index < _endIndex);
+                _index = index;
+                return true;
             }
+            _index = _endIndex;
             return false;
         }
 
