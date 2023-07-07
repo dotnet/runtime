@@ -1907,10 +1907,18 @@ namespace System.Text
         [MethodImpl(MethodImplOptions.AggressiveInlining)]
         private static bool VectorContainsNonAsciiChar(Vector256<ushort> utf16Vector)
         {
-            const ushort asciiMask = ushort.MaxValue - 127; // 0xFF80
-            Vector256<ushort> zeroIsAscii = utf16Vector & Vector256.Create(asciiMask);
-            // If a non-ASCII bit is set in any WORD of the vector, we have seen non-ASCII data.
-            return zeroIsAscii != Vector256<ushort>.Zero;
+            if (Avx.IsSupported)
+            {
+                Vector256<ushort> asciiMaskForTestZ = Vector256.Create((ushort)0xFF80);
+                return !Avx.TestZ(utf16Vector.AsInt16(), asciiMaskForTestZ.AsInt16());
+            }
+            else
+            {
+                const ushort asciiMask = ushort.MaxValue - 127; // 0xFF80
+                Vector256<ushort> zeroIsAscii = utf16Vector & Vector256.Create(asciiMask);
+                // If a non-ASCII bit is set in any WORD of the vector, we have seen non-ASCII data.
+                return zeroIsAscii != Vector256<ushort>.Zero;
+            }
         }
 
         [MethodImpl(MethodImplOptions.AggressiveInlining)]
