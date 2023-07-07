@@ -323,6 +323,7 @@ export interface JavaScriptExports {
     // the marshaled signature is: string GetManagedStackTrace(GCHandle exception)
     get_managed_stack_trace(exception_gc_handle: GCHandle): string | null
 
+    // the marshaled signature is: void LoadSatelliteAssembly(byte[] dll)
     load_satellite_assembly(dll: Uint8Array): void;
 
     // the marshaled signature is: void LoadLazyAssembly(byte[] dll, byte[] pdb)
