@@ -33,7 +33,7 @@ namespace System.Runtime.CompilerServices
         /// <summary>Initiates the builder's execution with the associated state machine.</summary>
         /// <typeparam name="TStateMachine">Specifies the type of the state machine.</typeparam>
         /// <param name="stateMachine">The state machine instance, passed by reference.</param>
-        /// <exception cref="System.ArgumentNullException">The <paramref name="stateMachine"/> argument was null (Nothing in Visual Basic).</exception>
+        /// <exception cref="ArgumentNullException">The <paramref name="stateMachine"/> argument was null (Nothing in Visual Basic).</exception>
         [DebuggerStepThrough]
         [MethodImpl(MethodImplOptions.AggressiveInlining)]
         public void Start<TStateMachine>(ref TStateMachine stateMachine) where TStateMachine : IAsyncStateMachine =>
@@ -41,8 +41,8 @@ namespace System.Runtime.CompilerServices
 
         /// <summary>Associates the builder with the state machine it represents.</summary>
         /// <param name="stateMachine">The heap-allocated state machine object.</param>
-        /// <exception cref="System.ArgumentNullException">The <paramref name="stateMachine"/> argument was null (Nothing in Visual Basic).</exception>
-        /// <exception cref="System.InvalidOperationException">The builder is incorrectly initialized.</exception>
+        /// <exception cref="ArgumentNullException">The <paramref name="stateMachine"/> argument was null (Nothing in Visual Basic).</exception>
+        /// <exception cref="InvalidOperationException">The builder is incorrectly initialized.</exception>
         public void SetStateMachine(IAsyncStateMachine stateMachine) =>
             _builder.SetStateMachine(stateMachine);
 
@@ -92,8 +92,8 @@ namespace System.Runtime.CompilerServices
 
         /// <summary>Faults the method builder with an exception.</summary>
         /// <param name="exception">The exception that is the cause of this fault.</param>
-        /// <exception cref="System.ArgumentNullException">The <paramref name="exception"/> argument is null (Nothing in Visual Basic).</exception>
-        /// <exception cref="System.InvalidOperationException">The builder is not initialized.</exception>
+        /// <exception cref="ArgumentNullException">The <paramref name="exception"/> argument is null (Nothing in Visual Basic).</exception>
+        /// <exception cref="InvalidOperationException">The builder is not initialized.</exception>
         public void SetException(Exception exception)
         {
             if (exception == null)
@@ -112,7 +112,7 @@ namespace System.Runtime.CompilerServices
                 // and decrement its outstanding operation count.
                 try
                 {
-                    System.Threading.Tasks.Task.ThrowAsync(exception, targetContext: _synchronizationContext);
+                    Task.ThrowAsync(exception, targetContext: _synchronizationContext);
                 }
                 finally
                 {
@@ -124,7 +124,7 @@ namespace System.Runtime.CompilerServices
                 // Otherwise, queue the exception to be thrown on the ThreadPool.  This will
                 // result in a crash unless legacy exception behavior is enabled by a config
                 // file or a CLR host.
-                System.Threading.Tasks.Task.ThrowAsync(exception, targetContext: null);
+                Task.ThrowAsync(exception, targetContext: null);
             }
 
             // The exception was propagated already; we don't need or want to fault the builder, just mark it as completed.

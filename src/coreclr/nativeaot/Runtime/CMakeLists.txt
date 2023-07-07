@@ -177,7 +177,7 @@ if (CLR_CMAKE_TARGET_APPLE)
 endif (CLR_CMAKE_TARGET_APPLE)
 
 if (CLR_CMAKE_TARGET_ARCH_AMD64 AND CLR_CMAKE_TARGET_WIN32)
-  list(APPEND COMMON_RUNTIME_SOURCES
+  set(VXSORT_SOURCES
     ${GC_DIR}/vxsort/isa_detection.cpp
     ${GC_DIR}/vxsort/do_vxsort_avx2.cpp
     ${GC_DIR}/vxsort/do_vxsort_avx512.cpp
@@ -187,12 +187,15 @@ if (CLR_CMAKE_TARGET_ARCH_AMD64 AND CLR_CMAKE_TARGET_WIN32)
     ${GC_DIR}/vxsort/smallsort/bitonic_sort.AVX512.int64_t.generated.cpp
     ${GC_DIR}/vxsort/smallsort/bitonic_sort.AVX512.int32_t.generated.cpp
     ${GC_DIR}/vxsort/smallsort/avx2_load_mask_tables.cpp
-)
+  )
+
+  set(DUMMY_VXSORT_SOURCES
+    ${GC_DIR}/vxsort/dummy.cpp
+  )
 endif (CLR_CMAKE_TARGET_ARCH_AMD64 AND CLR_CMAKE_TARGET_WIN32)
 
 list(APPEND RUNTIME_SOURCES_ARCH_ASM
   ${ARCH_SOURCES_DIR}/AllocFast.${ASM_SUFFIX}
-  ${ARCH_SOURCES_DIR}/CallDescrWorker.${ASM_SUFFIX}
   ${ARCH_SOURCES_DIR}/ExceptionHandling.${ASM_SUFFIX}
   ${ARCH_SOURCES_DIR}/GcProbe.${ASM_SUFFIX}
   ${ARCH_SOURCES_DIR}/Interlocked.${ASM_SUFFIX}
@@ -210,10 +213,15 @@ include_directories(${ARCH_SOURCES_DIR})
 
 if(NOT CLR_CMAKE_TARGET_ARCH_WASM)
   set(FEATURE_PERFTRACING 1)
+  set(FEATURE_EVENT_TRACE 1)
 endif()
 
 if(FEATURE_PERFTRACING)
   add_definitions(-DFEATURE_PERFTRACING)
+endif()
+
+if(FEATURE_EVENT_TRACE)
+  add_definitions(-DFEATURE_EVENT_TRACE)
 endif()
 
 add_definitions(-DFEATURE_BASICFREEZE)
@@ -235,7 +243,6 @@ add_definitions(-D_LIB)
 
 if(WIN32)
   add_definitions(-DFEATURE_ETW)
-  add_definitions(-DFEATURE_EVENT_TRACE)
   add_definitions(-DFEATURE_SUSPEND_REDIRECTION)
   add_definitions(-DFEATURE_SPECIAL_USER_MODE_APC)
 else()
@@ -267,6 +274,8 @@ convert_to_absolute_path(COMMON_RUNTIME_SOURCES ${COMMON_RUNTIME_SOURCES})
 convert_to_absolute_path(FULL_RUNTIME_SOURCES ${FULL_RUNTIME_SOURCES})
 convert_to_absolute_path(SERVER_GC_SOURCES ${SERVER_GC_SOURCES})
 convert_to_absolute_path(RUNTIME_SOURCES_ARCH_ASM ${RUNTIME_SOURCES_ARCH_ASM})
+convert_to_absolute_path(VXSORT_SOURCES ${VXSORT_SOURCES})
+convert_to_absolute_path(DUMMY_VXSORT_SOURCES ${DUMMY_VXSORT_SOURCES})
 
 if(NOT CLR_CMAKE_TARGET_ARCH_WASM)
   add_subdirectory(Full)

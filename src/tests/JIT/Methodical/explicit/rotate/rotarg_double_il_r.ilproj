@@ -5,6 +5,7 @@
     <DebugType>PdbOnly</DebugType>
   </PropertyGroup>
   <ItemGroup>
+    <Compile Include="rotarg_double_r.il" />
     <Compile Include="rotarg_double.il" />
   </ItemGroup>
 </Project>

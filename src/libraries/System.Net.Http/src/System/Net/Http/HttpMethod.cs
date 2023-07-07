@@ -78,10 +78,7 @@ namespace System.Net.Http
 
         public HttpMethod(string method)
         {
-            if (string.IsNullOrEmpty(method))
-            {
-                throw new ArgumentException(SR.net_http_argument_empty_string, nameof(method));
-            }
+            ArgumentException.ThrowIfNullOrWhiteSpace(method);
             if (!HttpRuleParser.IsToken(method))
             {
                 throw new FormatException(SR.net_http_httpmethod_format_error);

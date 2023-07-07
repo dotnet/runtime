@@ -1,8 +1,8 @@
 // Licensed to the .NET Foundation under one or more agreements.
 // The .NET Foundation licenses this file to you under the MIT license.
 
-#ifndef __EVENTPIPE_ADAPTER_H__
-#define __EVENTPIPE_ADAPTER_H__
+#ifndef EVENTPIPE_ADAPTER_H
+#define EVENTPIPE_ADAPTER_H
 
 #if defined(FEATURE_PERFTRACING)
 
@@ -38,7 +38,7 @@ public:
         ep_init();
     }
 
-    static inline EventPipeProvider * CreateProvider(LPCWSTR providerName, EventPipeCallback callback, void* pCallbackContext)
+    static inline EventPipeProvider * CreateProvider(LPCWSTR providerName, EventPipeCallback callback, void* pCallbackContext = nullptr)
     {
         ep_char8_t *providerNameUTF8 = ep_rt_utf16_to_utf8_string(reinterpret_cast<const ep_char16_t *>(providerName), -1);
         EventPipeProvider * provider = ep_create_provider (providerNameUTF8, callback, pCallbackContext);
@@ -151,4 +151,4 @@ public:
 };
 
 #endif // FEATURE_PERFTRACING
-#endif // __EVENTPIPE_ADAPTER_H__
+#endif // EVENTPIPE_ADAPTER_H

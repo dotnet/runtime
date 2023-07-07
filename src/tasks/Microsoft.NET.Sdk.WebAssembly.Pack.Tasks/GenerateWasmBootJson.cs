@@ -38,6 +38,8 @@ public class GenerateWasmBootJson : Task
 
     public bool LoadAllICUData { get; set; }
 
+    public bool IsHybridGlobalization { get; set; }
+
     public bool LoadCustomIcuData { get; set; }
 
     public string InvariantGlobalization { get; set; }
@@ -83,6 +85,10 @@ public class GenerateWasmBootJson : Task
         {
             icuDataMode = ICUDataMode.Invariant;
         }
+        else if (IsHybridGlobalization)
+        {
+            icuDataMode = ICUDataMode.Hybrid;
+        }
         else if (LoadAllICUData)
         {
             icuDataMode = ICUDataMode.All;
@@ -97,6 +103,7 @@ public class GenerateWasmBootJson : Task
             entryAssembly = entryAssemblyName,
             cacheBootResources = CacheBootResources,
             debugBuild = DebugBuild,
+            debugLevel = DebugBuild ? 1 : 0,
             linkerEnabled = LinkerEnabled,
             resources = new ResourcesData(),
             config = new List<string>(),
@@ -174,7 +181,7 @@ public class GenerateWasmBootJson : Task
                 }
                 else if (string.Equals("symbol", assetTraitValue, StringComparison.OrdinalIgnoreCase))
                 {
-                    if (TryGetLazyLoadedAssembly($"{fileName}.dll", out _))
+                    if (TryGetLazyLoadedAssembly($"{fileName}.dll", out _) || TryGetLazyLoadedAssembly($"{fileName}{Utils.WebcilInWasmExtension}", out _))
                     {
                         Log.LogMessage(MessageImportance.Low, "Candidate '{0}' is defined as a lazy loaded symbols file.", resource.ItemSpec);
                         resourceData.lazyAssembly ??= new ResourceHashesByNameDictionary();
@@ -196,8 +203,7 @@ public class GenerateWasmBootJson : Task
                         string.Equals(assetTraitValue, "native", StringComparison.OrdinalIgnoreCase))
                 {
                     Log.LogMessage(MessageImportance.Low, "Candidate '{0}' is defined as a native application resource.", resource.ItemSpec);
-                    if (string.Equals(fileName, "dotnet", StringComparison.OrdinalIgnoreCase) &&
-                        string.Equals(fileExtension, ".wasm", StringComparison.OrdinalIgnoreCase))
+                    if (fileName.StartsWith("dotnet", StringComparison.OrdinalIgnoreCase) && string.Equals(fileExtension, ".wasm", StringComparison.OrdinalIgnoreCase))
                     {
                         behavior = "dotnetwasm";
                     }
@@ -286,11 +292,12 @@ public class GenerateWasmBootJson : Task
                 UseSimpleDictionaryFormat = true
             });
 
-            result.extensions = new Dictionary<string, Dictionary<string, object>> ();
+            result.extensions = new Dictionary<string, Dictionary<string, object>>();
             foreach (var configExtension in Extensions)
             {
                 var key = configExtension.GetMetadata("key");
-                var config = (Dictionary<string, object>)configSerializer.ReadObject(File.OpenRead(configExtension.ItemSpec));
+                using var fs = File.OpenRead(configExtension.ItemSpec);
+                var config = (Dictionary<string, object>)configSerializer.ReadObject(fs);
                 result.extensions[key] = config;
             }
         }
@@ -328,8 +335,8 @@ public class GenerateWasmBootJson : Task
             Log.LogMessage(MessageImportance.Low, "Added resource '{0}' to the list of additional assets in the manifest.", resource.ItemSpec);
             additionalResources.Add(resourceName, new AdditionalAsset
             {
-                Hash = $"sha256-{resource.GetMetadata("FileHash")}",
-                Behavior = behavior
+                hash = $"sha256-{resource.GetMetadata("FileHash")}",
+                behavior = behavior
             });
         }
     }

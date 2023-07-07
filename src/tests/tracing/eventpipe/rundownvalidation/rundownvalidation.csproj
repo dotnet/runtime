@@ -3,15 +3,14 @@
     <TargetFrameworkIdentifier>.NETCoreApp</TargetFrameworkIdentifier>
     <OutputType>exe</OutputType>
     <AllowUnsafeBlocks>true</AllowUnsafeBlocks>
+    <!-- Tracing tests routinely time out with jitstress and gcstress -->
+    <GCStressIncompatible>true</GCStressIncompatible>
     <JitOptimizationSensitive>true</JitOptimizationSensitive>
     <!-- The test launches a secondary process and process launch creates
     an infinite event loop in the SocketAsyncEngine on Linux. Since
     runincontext loads even framework assemblies into the unloadable
     context, locals in this loop prevent unloading -->
     <UnloadabilityIncompatible>true</UnloadabilityIncompatible>
-    <!-- Times out -->
-    <GCStressIncompatible Condition="'$(TargetArchitecture)' == 'arm64' and '$(TargetOS)' == 'osx'">true</GCStressIncompatible>
-    <GCStressIncompatible Condition="'$(TargetArchitecture)' == 'arm'">true</GCStressIncompatible>
   </PropertyGroup>
   <ItemGroup>
     <Compile Include="$(MSBuildProjectName).cs" />

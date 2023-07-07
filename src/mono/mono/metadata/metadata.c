@@ -2512,6 +2512,29 @@ mono_metadata_signature_dup (MonoMethodSignature *sig)
 	return mono_metadata_signature_dup_full (NULL, sig);
 }
 
+/**
+ * mono_metadata_signature_dup_delegate_invoke_to_target:
+ * \param sig method signature
+ *
+ * Duplicate an existing \c MonoMethodSignature but removes first param from it so it can
+ * be used as signature for a delegate target method.
+ * This is a Mono runtime internal function.
+ *
+ * \returns the new \c MonoMethodSignature structure.
+ */
+MonoMethodSignature*
+mono_metadata_signature_dup_delegate_invoke_to_target (MonoMethodSignature *sig)
+{
+	MonoMethodSignature *res = mono_metadata_signature_dup_full (NULL, sig);
+
+	for (int i = 0 ; i < sig->param_count - 1; i ++) {
+		res->params [i] = sig->params [i + 1];
+	}
+	res->param_count --;
+
+	return res;
+}
+
 /*
  * mono_metadata_signature_size:
  *
@@ -5103,12 +5126,17 @@ mono_metadata_custom_attrs_from_index (MonoImage *meta, guint32 index)
 	/* FIXME: Index translation */
 
 	gboolean found = tdef->base && mono_binary_search (&loc, tdef->base, table_info_get_rows (tdef), tdef->row_size, table_locator) != NULL;
-	if (!found && !meta->has_updates)
-		return 0;
-
-	if (G_UNLIKELY (meta->has_updates)) {
-		if (!found && !mono_metadata_update_metadata_linear_search (meta, tdef, &loc, table_locator))
+	if (!found) {
+		if (G_LIKELY (!meta->has_updates)) {
 			return 0;
+		} else {
+			if ((mono_metadata_table_num_rows (meta, MONO_TABLE_CUSTOMATTRIBUTE) > table_info_get_rows (tdef))) {
+				if (!mono_metadata_update_metadata_linear_search (meta, tdef, &loc, table_locator))
+					return 0;
+			} else {
+				return 0;
+			}
+		}
 	}
 
 	/* Find the first entry by searching backwards */
@@ -7029,17 +7057,26 @@ mono_class_get_overrides_full (MonoImage *image, guint32 type_token, MonoMethod 
 	if (num_overrides)
 		*num_overrides = 0;
 
-	if (!tdef->base)
+	if (!tdef->base && !image->has_updates)
 		return;
 
 	loc.t = tdef;
 	loc.col_idx = MONO_METHODIMPL_CLASS;
 	loc.idx = mono_metadata_token_index (type_token);
+	loc.result = 0;
 
-	/* FIXME metadata-update */
+	gboolean found = tdef->base && mono_binary_search (&loc, tdef->base, table_info_get_rows (tdef), tdef->row_size, table_locator) != NULL;
 
-	if (!mono_binary_search (&loc, tdef->base, table_info_get_rows (tdef), tdef->row_size, table_locator))
+	if (!found && !image->has_updates)
 		return;
+
+	if (G_UNLIKELY (image->has_updates))  {
+		if (!found && !mono_metadata_update_metadata_linear_search (image, tdef, &loc, table_locator)) {
+			mono_trace (G_LOG_LEVEL_INFO, MONO_TRACE_METADATA_UPDATE, "NO Found interfaces for class 0x%08x", type_token);
+			return;
+		}
+		mono_trace (G_LOG_LEVEL_INFO, MONO_TRACE_METADATA_UPDATE, "Found interfaces for class 0x%08x starting at 0x%08x", type_token, loc.result);
+	}
 
 	start = loc.result;
 	end = start + 1;
@@ -7052,7 +7089,7 @@ mono_class_get_overrides_full (MonoImage *image, guint32 type_token, MonoMethod 
 		else
 			break;
 	}
-	guint32 rows = table_info_get_rows (tdef);
+	guint32 rows = mono_metadata_table_num_rows (image, MONO_TABLE_METHODIMPL);
 	while (end < rows) {
 		if (loc.idx == mono_metadata_decode_row_col (tdef, end, MONO_METHODIMPL_CLASS))
 			end++;
@@ -7698,13 +7735,15 @@ mono_metadata_get_corresponding_field_from_generic_type_definition (MonoClassFie
 	if (!mono_class_is_ginst (m_field_get_parent (field)))
 		return field;
 
-	/*
-	 * metadata-update: nothing to do. can't add fields to existing generic
-	 * classes; for new gtds added in updates, this is correct.
-	 */
 	gtd = mono_class_get_generic_class (m_field_get_parent (field))->container_class;
-	offset = field - m_class_get_fields (m_field_get_parent (field));
-	return m_class_get_fields (gtd) + offset;
+
+	if (G_LIKELY (!m_field_is_from_update (field))) {
+		offset = field - m_class_get_fields (m_field_get_parent (field));
+		return m_class_get_fields (gtd) + offset;
+	} else {
+		uint32_t token = mono_class_get_field_token (field);
+		return mono_class_get_field (gtd, token);
+	}
 }
 
 /*

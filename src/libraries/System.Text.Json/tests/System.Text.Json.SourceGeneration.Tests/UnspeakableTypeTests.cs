@@ -37,9 +37,8 @@ namespace System.Text.Json.SourceGeneration.Tests
             json = await Serializer.SerializeWrapper<object>(envelope.Value, options);
             Assert.Equal(expectedJson, json);
 
-            // or if you pass in its runtime type 
-            json = await Serializer.SerializeWrapper(envelope.Value, envelope.Value.GetType(), options);
-            Assert.Equal(expectedJson, json);
+            // But fails if you pass in its runtime type 
+            await Assert.ThrowsAsync<NotSupportedException>(() => Serializer.SerializeWrapper(envelope.Value, envelope.Value.GetType(), options));
 
             if (isBaseTypeDeserializable)
             {
@@ -93,11 +92,6 @@ namespace System.Text.Json.SourceGeneration.Tests
             object value = new TypeWithDiamondAmbiguity();
 
             NotSupportedException exn = await Assert.ThrowsAsync<NotSupportedException>(() => Serializer.SerializeWrapper(value, UnspeakableTypeContext.Default.Options));
-            Assert.Contains("TypeWithDiamondAmbiguity", exn.Message);
-            Assert.Contains("BasePoco", exn.Message);
-            Assert.Contains("IEnumerable", exn.Message);
-
-            exn = await Assert.ThrowsAsync<NotSupportedException>(() => Serializer.SerializeWrapper(value, value.GetType(), UnspeakableTypeContext.Default.Options));
             Assert.Contains("TypeWithDiamondAmbiguity", exn.Message);
             Assert.Contains("BasePoco", exn.Message);
             Assert.Contains("IEnumerable", exn.Message);
@@ -158,7 +152,6 @@ namespace System.Text.Json.SourceGeneration.Tests
 
         public record Envelope<T>(T Value);
 
-        [JsonSerializable(typeof(object))]
         [JsonSerializable(typeof(BasePoco))]
         [JsonSerializable(typeof(IMyInterface))]
         [JsonSerializable(typeof(IEnumerable))]

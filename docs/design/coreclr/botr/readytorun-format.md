@@ -179,6 +179,10 @@ The following section types are defined and described later in this document:
 | PgoInstrumentationData    |   117 | Image (added in V5.2)
 | ManifestAssemblyMvids     |   118 | Image (added in V5.3)
 | CrossModuleInlineInfo     |   119 | Image (added in V6.3)
+| HotColdMap                |   120 | Image (added in V8.0)
+| MethodIsGenericMap        |   121 | Assembly (Added in V9.0)
+| EnclosingTypeMap          |   122 | Assembly (Added in V9.0)
+| TypeGenericInfoMap        |   123 | Assembly (Added in V9.0)
 
 ## ReadyToRunSectionType.CompilerIdentifier
 
@@ -644,6 +648,42 @@ The entry of the hashtable is a counted sequence of compressed unsigned integers
 
 This section may be included in addition to a InliningInfo2 section.
 
+## ReadyToRunSectionType.HotColdMap (v8.0+)
+In ReadyToRun 8.0+, the format supports splitting a method into hot and cold parts so that they are not located together. This hot-cold map section captures the information about how methods are split so that the runtime can locate them for various services.
+
+For every method that is split, there is a single entry in the section. Each entry has two unsigned 32-bit integers. The first integer is the runtime function index of the cold part and the second integer is the runtime function index of the hot part.
+
+The methods in this table are sorted by their hot part runtime function indices, which are also sorted by their cold part runtime function indices because we always emit the cold part in the same order as the hot parts, or by their RVAs because the runtime function table itself is sorted by the RVAs.
+
+This section may not exist if no method is split - this happens when the `--hot-cold-splitting` flag is not specified during compilation, or the compiler decides it should not split any methods.
+
+## ReadyToRunSectionType.MethodIsGenericMap (v9.0+)
+This optional section holds a bit vector to indicate if the MethodDefs contained within the assembly have generic parameters or not. This allows determining if a method is generic or not by querying a bit vector (which is fast, and efficient) as opposed to examining the GenericParameter table, or the signature of the Method.
+
+The section begins with a single 32 bit integer indicating the number of bits in the bit vector. Following that integer is the actual bit vector of all of the data. The data is grouped into 8 bit bytes, where the least significant bit of the byte is the bit which represents the lowest MethodDef.
+
+For instance, the first byte in the bit vector represents the MethodDefs 06000001 to 06000008, and the least signficant bit of that first byte is the bit representing the IsGeneric bit for MethodDef 06000001.
+
+## ReadyToRunSectionType.EnclosingTypeMap (v9.0+)
+
+This optional section allows for efficient O(1) lookup from the enclosed type to the type which encloses it without requiring the binary search that is necessary if using the ECMA 335 defined NestedClass table (which encodes exactly the same information). This section may only be included in the assembly if the assembly has fewer than 0xFFFE types defined within it.
+
+The structure of this section is:
+A single 16 bit unsigned integer listing the count of entries in the map.
+This count is followed by a 16 bit unsigned integer for each TypeDef defined in the assembly. This typedef is the RID of the enclosing type, or 0 if the typedef is not enclosed by another type.
+
+## ReadyToRunSectionType.TypeGenericInfoMap (v9.0+)
+This optional section represents a condensed view of some generic details about types. This can make it more efficient to load types.
+
+The structure of this section is:
+A single 32 bit integer representing the number of entries in the map followed by a series of 4 bit entries, one per type. These 4 bit entries are grouped into bytes, where each byte holds 2 entries, and the entry in the most significant 4 bits of the byte is the entry representing a lower TypeDef RID.
+
+TypeGenericInfoMap entries have 4 bits representing 3 different sets of information.
+
+1. What is the count of generic parameters (0, 1, 2, MoreThanTwo) (This is represented in the least significant 2 bits of the TypeGenericInfoMap entry)
+2. Are there any constraints on the generic parameters? (This is the 3rd bit of the entry)
+3. Do any of the generic parameters have co or contra variance? (This is the 4th bit of the entry)
+
 # Native Format
 
 Native format is set of encoding patterns that allow persisting type system data in a binary format that is
@@ -798,6 +838,8 @@ enum ReadyToRunHelper
     READYTORUN_HELPER_GenericNonGcTlsBase       = 0x67,
     READYTORUN_HELPER_VirtualFuncPtr            = 0x68,
     READYTORUN_HELPER_IsInstanceOfException     = 0x69,
+    READYTORUN_HELPER_NewMaybeFrozenArray       = 0x6A,
+    READYTORUN_HELPER_NewMaybeFrozenObject      = 0x6B,
 
     // Long mul/div/shift ops
     READYTORUN_HELPER_LMul                      = 0xC0,

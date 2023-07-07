@@ -45,12 +45,15 @@ namespace System.Text.Json.SourceGeneration.Tests
     [JsonSerializable(typeof(StructWithCustomConverterProperty))]
     [JsonSerializable(typeof(ClassWithCustomConverterFactoryProperty))]
     [JsonSerializable(typeof(StructWithCustomConverterFactoryProperty))]
+    [JsonSerializable(typeof(ClassWithCustomConverterNullableProperty))]
+    [JsonSerializable(typeof(ClassWithCustomConverterFactoryNullableProperty))]
     [JsonSerializable(typeof(ClassWithBadCustomConverter))]
     [JsonSerializable(typeof(StructWithBadCustomConverter))]
     [JsonSerializable(typeof(PersonStruct?))]
     [JsonSerializable(typeof(TypeWithValidationAttributes))]
     [JsonSerializable(typeof(TypeWithDerivedAttribute))]
     [JsonSerializable(typeof(PolymorphicClass))]
+    [JsonSerializable(typeof(PocoWithNumberHandlingAttr))]
     internal partial class MetadataAndSerializationContext : JsonSerializerContext, ITestContext
     {
         public JsonSourceGenerationMode JsonSourceGenerationMode => JsonSourceGenerationMode.Default;
@@ -83,7 +86,7 @@ namespace System.Text.Json.SourceGeneration.Tests
             Assert.NotNull(MetadataAndSerializationContext.Default.MyNestedClass.SerializeHandler);
             Assert.NotNull(MetadataAndSerializationContext.Default.MyNestedNestedClass.SerializeHandler);
             Assert.Null(MetadataAndSerializationContext.Default.ObjectArray.SerializeHandler);
-            Assert.Null(MetadataAndSerializationContext.Default.SampleEnum.SerializeHandler);
+            Assert.Null(MetadataAndSerializationContext.Default.SourceGenSampleEnum.SerializeHandler);
             Assert.Null(MetadataAndSerializationContext.Default.String.SerializeHandler);
             Assert.NotNull(MetadataAndSerializationContext.Default.ValueTupleStringInt32Boolean.SerializeHandler);
             Assert.Null(MetadataAndSerializationContext.Default.JsonDocument.SerializeHandler);

@@ -20,9 +20,9 @@ namespace System.Collections.Generic
     [DebuggerTypeProxy(typeof(QueueDebugView<>))]
     [DebuggerDisplay("Count = {Count}")]
     [Serializable]
-    [System.Runtime.CompilerServices.TypeForwardedFrom("System, Version=4.0.0.0, Culture=neutral, PublicKeyToken=b77a5c561934e089")]
+    [TypeForwardedFrom("System, Version=4.0.0.0, Culture=neutral, PublicKeyToken=b77a5c561934e089")]
     public class Queue<T> : IEnumerable<T>,
-        System.Collections.ICollection,
+        ICollection,
         IReadOnlyCollection<T>
     {
         private T[] _array;
@@ -406,7 +406,7 @@ namespace System.Collections.Generic
         // internal version number of the list to ensure that no modifications are
         // made to the list while an enumeration is in progress.
         public struct Enumerator : IEnumerator<T>,
-            System.Collections.IEnumerator
+            IEnumerator
         {
             private readonly Queue<T> _q;
             private readonly int _version;

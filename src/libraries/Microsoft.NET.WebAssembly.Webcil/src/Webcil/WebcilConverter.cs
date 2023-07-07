@@ -42,6 +42,8 @@ public class WebcilConverter
 
     private string InputPath => _inputPath;
 
+    public bool WrapInWebAssembly { get; set; } = true;
+
     private WebcilConverter(string inputPath, string outputPath)
     {
         _inputPath = inputPath;
@@ -62,6 +64,26 @@ public class WebcilConverter
         }
 
         using var outputStream = File.Open(_outputPath, FileMode.Create, FileAccess.Write);
+        if (!WrapInWebAssembly)
+        {
+            WriteConversionTo(outputStream, inputStream, peInfo, wcInfo);
+        }
+        else
+        {
+            // if wrapping in WASM, write the webcil payload to memory because we need to discover the length
+
+            // webcil is about the same size as the PE file
+            using var memoryStream = new MemoryStream(checked((int)inputStream.Length));
+            WriteConversionTo(memoryStream, inputStream, peInfo, wcInfo);
+            memoryStream.Flush();
+            var wrapper = new WebcilWasmWrapper(memoryStream);
+            memoryStream.Seek(0, SeekOrigin.Begin);
+            wrapper.WriteWasmWrappedWebcil(outputStream);
+        }
+    }
+
+    public void WriteConversionTo(Stream outputStream, FileStream inputStream, PEFileInfo peInfo, WCFileInfo wcInfo)
+    {
         WriteHeader(outputStream, wcInfo.Header);
         WriteSectionHeaders(outputStream, wcInfo.SectionHeaders);
         CopySections(outputStream, inputStream, peInfo.SectionHeaders);
@@ -210,7 +232,7 @@ public class WebcilConverter
     }
 #endif
 
-    private static void CopySections(FileStream outStream, FileStream inputStream, ImmutableArray<SectionHeader> peSections)
+    private static void CopySections(Stream outStream, FileStream inputStream, ImmutableArray<SectionHeader> peSections)
     {
         // endianness: ok, we're just copying from one stream to another
         foreach (var peHeader in peSections)

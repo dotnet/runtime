@@ -603,15 +603,6 @@ namespace System.IO.Tests
             protected override IEnumerable<Task> GetScheduledTasks() => new Task[0];
         }
 
-        protected readonly struct JumpToThreadPoolAwaiter : ICriticalNotifyCompletion
-        {
-            public JumpToThreadPoolAwaiter GetAwaiter() => this;
-            public bool IsCompleted => false;
-            public void OnCompleted(Action continuation) => ThreadPool.QueueUserWorkItem(_ => continuation());
-            public void UnsafeOnCompleted(Action continuation) => ThreadPool.UnsafeQueueUserWorkItem(_ => continuation(), null);
-            public void GetResult() { }
-        }
-
         protected sealed unsafe class NativeMemoryManager : MemoryManager<byte>
         {
             private readonly int _length;
@@ -2046,9 +2037,7 @@ namespace System.IO.Tests
         [SkipOnPlatform(TestPlatforms.iOS | TestPlatforms.tvOS, "iOS/tvOS blocks binding to UNIX sockets")]
         public virtual async Task ReadAsync_ContinuesOnCurrentSynchronizationContextIfDesired(bool flowExecutionContext, bool? continueOnCapturedContext)
         {
-            await default(JumpToThreadPoolAwaiter); // escape xunit sync ctx
-
-            using StreamPair streams = await CreateConnectedStreamsAsync();
+            using StreamPair streams = await CreateConnectedStreamsAsync().ConfigureAwait(ConfigureAwaitOptions.ForceYielding /* escape xunit sync ctx */);
             foreach ((Stream writeable, Stream readable) in GetReadWritePairs(streams))
             {
                 Assert.Null(SynchronizationContext.Current);
@@ -2130,9 +2119,7 @@ namespace System.IO.Tests
         [SkipOnPlatform(TestPlatforms.iOS | TestPlatforms.tvOS, "iOS/tvOS blocks binding to UNIX sockets")]
         public virtual async Task ReadAsync_ContinuesOnCurrentTaskSchedulerIfDesired(bool flowExecutionContext, bool? continueOnCapturedContext)
         {
-            await default(JumpToThreadPoolAwaiter); // escape xunit sync ctx
-
-            using StreamPair streams = await CreateConnectedStreamsAsync();
+            using StreamPair streams = await CreateConnectedStreamsAsync().ConfigureAwait(ConfigureAwaitOptions.ForceYielding /* escape xunit sync ctx */);
             foreach ((Stream writeable, Stream readable) in GetReadWritePairs(streams))
             {
                 Assert.Null(SynchronizationContext.Current);
@@ -2752,6 +2739,8 @@ namespace System.IO.Tests
         /// </summary>
         protected virtual bool ZeroByteReadPerformsZeroByteReadOnUnderlyingStream => false;
 
+        protected virtual bool ExtraZeroByteReadsAllowed => false;
+
         [Theory]
         [InlineData(false)]
         [InlineData(true)]
@@ -2951,7 +2940,7 @@ namespace System.IO.Tests
             using StreamPair innerStreams = ConnectedStreams.CreateBidirectional();
             (Stream innerWriteable, Stream innerReadable) = GetReadWritePair(innerStreams);
 
-            var tracker = new ZeroByteReadTrackingStream(innerReadable);
+            var tracker = new ZeroByteReadTrackingStream(innerReadable, ExtraZeroByteReadsAllowed);
             using StreamPair streams = await CreateWrappedConnectedStreamsAsync((innerWriteable, tracker));
 
             (Stream writeable, Stream readable) = GetReadWritePair(streams);
@@ -3006,9 +2995,11 @@ namespace System.IO.Tests
         private sealed class ZeroByteReadTrackingStream : DelegatingStream
         {
             private TaskCompletionSource? _signal;
+            private bool _extraZeroByteReadsAllowed;
 
-            public ZeroByteReadTrackingStream(Stream innerStream) : base(innerStream)
+            public ZeroByteReadTrackingStream(Stream innerStream, bool extraZeroByteReadsAllowed = false) : base(innerStream)
             {
+                _extraZeroByteReadsAllowed = extraZeroByteReadsAllowed;
             }
 
             public Task WaitForZeroByteReadAsync()
@@ -3027,13 +3018,13 @@ namespace System.IO.Tests
                 if (bufferLength == 0)
                 {
                     var signal = _signal;
-                    if (signal is null)
+                    if (signal is null && !_extraZeroByteReadsAllowed)
                     {
                         throw new Exception("Unexpected zero byte read");
                     }
 
                     _signal = null;
-                    signal.SetResult();
+                    signal?.SetResult();
                 }
             }
 

@@ -9,7 +9,7 @@
   .publickeytoken = (B0 3F 5F 7F 11 D5 0A 3A )
   .ver 4:0:0:0
 }
-.assembly 'i_seq'
+.assembly ASSEMBLY_NAME
 { }
 .assembly extern xunit.core {}
 .class public auto ansi Test_i_seq extends [mscorlib]System.Object

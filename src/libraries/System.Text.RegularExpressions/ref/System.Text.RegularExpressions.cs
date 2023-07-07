@@ -183,6 +183,8 @@ namespace System.Text.RegularExpressions
         public int[] GetGroupNumbers() { throw null; }
         public string GroupNameFromNumber(int i) { throw null; }
         public int GroupNumberFromName(string name) { throw null; }
+        [System.ObsoleteAttribute("This API supports obsolete mechanisms for Regex extensibility. It is not supported.", DiagnosticId = "SYSLIB0052", UrlFormat = "https://aka.ms/dotnet-warnings/{0}")]
+        [System.ComponentModel.EditorBrowsableAttribute(System.ComponentModel.EditorBrowsableState.Never)]
         protected void InitializeReferences() { }
         public bool IsMatch(System.ReadOnlySpan<char> input) { throw null; }
         public bool IsMatch(System.ReadOnlySpan<char> input, int startat) { throw null; }
@@ -226,8 +228,12 @@ namespace System.Text.RegularExpressions
         void System.Runtime.Serialization.ISerializable.GetObjectData(System.Runtime.Serialization.SerializationInfo si, System.Runtime.Serialization.StreamingContext context) { }
         public override string ToString() { throw null; }
         public static string Unescape(string str) { throw null; }
+        [System.ObsoleteAttribute("This API supports obsolete mechanisms for Regex extensibility. It is not supported.", DiagnosticId = "SYSLIB0052", UrlFormat = "https://aka.ms/dotnet-warnings/{0}")]
+        [System.ComponentModel.EditorBrowsableAttribute(System.ComponentModel.EditorBrowsableState.Never)]
         protected bool UseOptionC() { throw null; }
-        protected internal bool UseOptionR() { throw null; }
+        [System.ObsoleteAttribute("This API supports obsolete mechanisms for Regex extensibility. It is not supported.", DiagnosticId = "SYSLIB0052", UrlFormat = "https://aka.ms/dotnet-warnings/{0}")]
+        [System.ComponentModel.EditorBrowsableAttribute(System.ComponentModel.EditorBrowsableState.Never)]
+        protected bool UseOptionR() { throw null; }
         protected internal static void ValidateMatchTimeout(System.TimeSpan matchTimeout) { }
         public ref partial struct ValueMatchEnumerator
         {
@@ -336,6 +342,7 @@ namespace System.Text.RegularExpressions
         [System.ComponentModel.EditorBrowsableAttribute(System.ComponentModel.EditorBrowsableState.Never)]
         public override void GetObjectData(System.Runtime.Serialization.SerializationInfo info, System.Runtime.Serialization.StreamingContext context) { }
     }
+    [System.ComponentModel.EditorBrowsableAttribute(System.ComponentModel.EditorBrowsableState.Never)]
     public abstract partial class RegexRunner
     {
         protected internal int[]? runcrawl;
@@ -354,7 +361,8 @@ namespace System.Text.RegularExpressions
         protected internal int runtrackpos;
         protected internal RegexRunner() { }
         protected void Capture(int capnum, int start, int end) { }
-        protected static bool CharInClass(char ch, string charClass) { throw null; }
+        public static bool CharInClass(char ch, string charClass) { throw null; }
+        [System.ObsoleteAttribute("This API supports obsolete mechanisms for Regex extensibility. It is not supported.", DiagnosticId = "SYSLIB0052", UrlFormat = "https://aka.ms/dotnet-warnings/{0}")]
         protected static bool CharInSet(char ch, string @set, string category) { throw null; }
         protected void CheckTimeout() { }
         protected void Crawl(int i) { }
@@ -372,12 +380,15 @@ namespace System.Text.RegularExpressions
         protected int MatchIndex(int cap) { throw null; }
         protected int MatchLength(int cap) { throw null; }
         protected int Popcrawl() { throw null; }
+        [System.ObsoleteAttribute("This API supports obsolete mechanisms for Regex extensibility. It is not supported.", DiagnosticId = "SYSLIB0052", UrlFormat = "https://aka.ms/dotnet-warnings/{0}")]
         protected internal System.Text.RegularExpressions.Match? Scan(System.Text.RegularExpressions.Regex regex, string text, int textbeg, int textend, int textstart, int prevlen, bool quick) { throw null; }
+        [System.ObsoleteAttribute("This API supports obsolete mechanisms for Regex extensibility. It is not supported.", DiagnosticId = "SYSLIB0052", UrlFormat = "https://aka.ms/dotnet-warnings/{0}")]
         protected internal System.Text.RegularExpressions.Match? Scan(System.Text.RegularExpressions.Regex regex, string text, int textbeg, int textend, int textstart, int prevlen, bool quick, System.TimeSpan timeout) { throw null; }
         protected internal virtual void Scan(System.ReadOnlySpan<char> text) { throw null; }
         protected void TransferCapture(int capnum, int uncapnum, int start, int end) { }
         protected void Uncapture() { }
     }
+    [System.ComponentModel.EditorBrowsableAttribute(System.ComponentModel.EditorBrowsableState.Never)]
     public abstract partial class RegexRunnerFactory
     {
         protected RegexRunnerFactory() { }

@@ -27,7 +27,6 @@ using EETypeElementType = Internal.Runtime.EETypeElementType;
 
 namespace Internal.Reflection.Augments
 {
-    [System.Runtime.CompilerServices.ReflectionBlocked]
     public static class ReflectionAugments
     {
         //
@@ -117,7 +116,6 @@ namespace Internal.Reflection.Augments
     // This class is implemented by Internal.Reflection.Core.dll and provides the actual implementation
     // of Type.GetTypeInfo() and Assembly.Load().
     //
-    [System.Runtime.CompilerServices.ReflectionBlocked]
     public abstract class ReflectionCoreCallbacks
     {
         public abstract Assembly Load(AssemblyName refName, bool throwOnFileNotFound);
@@ -152,10 +150,6 @@ namespace Internal.Reflection.Augments
 
         // V1 api: Creates open delegates to static methods only, relaxed signature checking disallowed.
         public abstract Delegate CreateDelegate(Type type, [DynamicallyAccessedMembers(DynamicallyAccessedMemberTypes.All)] Type target, string method, bool ignoreCase, bool throwOnBindFailure);
-
-#if FEATURE_COMINTEROP
-        public abstract Type GetTypeFromCLSID(Guid clsid, string server, bool throwOnError);
-#endif
 
         public abstract IntPtr GetFunctionPointer(RuntimeMethodHandle runtimeMethodHandle, RuntimeTypeHandle declaringTypeHandle);
 

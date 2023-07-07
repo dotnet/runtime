@@ -216,6 +216,7 @@ public:
         , m_FoldableExprUn(0)
         , m_FoldableBranch(0)
         , m_FoldableSwitch(0)
+        , m_UnrollableMemop(0)
         , m_Switch(0)
         , m_DivByCns(0)
         , m_ReturnsStructByValue(false)
@@ -268,6 +269,7 @@ protected:
     unsigned m_FoldableExprUn;
     unsigned m_FoldableBranch;
     unsigned m_FoldableSwitch;
+    unsigned m_UnrollableMemop;
     unsigned m_Switch;
     unsigned m_DivByCns;
     bool     m_ReturnsStructByValue : 1;

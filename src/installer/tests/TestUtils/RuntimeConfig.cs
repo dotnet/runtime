@@ -145,7 +145,7 @@ namespace Microsoft.DotNet.CoreSetup.Test
                     {
                         foreach (var includedFramework in includedFrameworks)
                         {
-                            runtimeConfig.WithFramework(Framework.FromJson((JsonObject)includedFramework));
+                            runtimeConfig.WithIncludedFramework(Framework.FromJson((JsonObject)includedFramework));
                         }
                     }
 

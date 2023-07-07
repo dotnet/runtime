@@ -9,6 +9,7 @@ using Internal.IL.Stubs;
 using Internal.TypeSystem.Ecma;
 using Internal.TypeSystem;
 using Mono.Cecil;
+using MetadataType = Internal.TypeSystem.MetadataType;
 
 namespace Mono.Linker.Tests.TestCasesRunner
 {
@@ -27,6 +28,7 @@ namespace Mono.Linker.Tests.TestCasesRunner
 				PropertyPseudoDesc property => (((EcmaType) property.OwningType).Module.Assembly.GetName ().Name, MetadataTokens.GetToken (property.Handle)),
 				EventPseudoDesc @event => (((EcmaType) @event.OwningType).Module.Assembly.GetName ().Name, MetadataTokens.GetToken (@event.Handle)),
 				ILStubMethod => (null, 0), // Ignore compiler generated methods
+				MetadataType mt when mt.GetType().Name == "BoxedValueType" => (null, 0),
 				_ => throw new NotSupportedException ($"The infra doesn't support getting a token for {entity} yet.")
 			};
 

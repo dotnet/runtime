@@ -36,6 +36,7 @@ internal class Program
         TestBadClass.Run();
         TestRefs.Run();
         TestDelegate.Run();
+        TestDelegateReflectionVisible.Run();
         TestInitFromOtherClass.Run();
         TestInitFromOtherClassDouble.Run();
         TestDelegateToOtherClass.Run();
@@ -610,6 +611,19 @@ class TestDelegate
     }
 }
 
+class TestDelegateReflectionVisible
+{
+    static readonly Action s_a = DelegateTarget;
+
+    static void DelegateTarget() { }
+
+    public static void Run()
+    {
+        Assert.IsPreinitialized(typeof(TestDelegateReflectionVisible));
+        Assert.AreEqual(nameof(DelegateTarget), s_a.Method.Name);
+    }
+}
+
 class TestInitFromOtherClass
 {
     class OtherClass
@@ -986,9 +1000,9 @@ class TestSharedCode
         }
 
         {
-            // Expecting this to be a frozen array, and reported as Gen2 by the GC
+            // Expecting this to be a frozen array, and reported as int.MaxValue by the GC
             object val = AccessArray<C1>();
-            Assert.AreEqual(2, GC.GetGeneration(val));
+            Assert.AreEqual(int.MaxValue, GC.GetGeneration(val));
 
             val = typeof(ClassWithTemplate<>).MakeGenericType(typeof(C4)).GetField("Array").GetValue(null);
             Assert.AreEqual(0, GC.GetGeneration(val));

@@ -1,6 +1,7 @@
 // Licensed to the .NET Foundation under one or more agreements.
 // The .NET Foundation licenses this file to you under the MIT license.
 
+using System.Net.Sockets;
 using System.Security.Cryptography.X509Certificates;
 using System.Threading;
 using System.Threading.Tasks;
@@ -22,7 +23,8 @@ namespace System.Net.Quic.Tests
         {
             await using QuicListener listener = await CreateQuicListener();
 
-            ValueTask<QuicConnection> connectTask = CreateQuicConnection(listener.LocalEndPoint);
+            var options = CreateQuicClientOptions(listener.LocalEndPoint);
+            ValueTask<QuicConnection> connectTask = CreateQuicConnection(options);
             ValueTask<QuicConnection> acceptTask = listener.AcceptConnectionAsync();
 
             await new Task[] { connectTask.AsTask(), acceptTask.AsTask() }.WhenAllOrAnyFailed(PassingTestTimeoutMilliseconds);
@@ -34,6 +36,8 @@ namespace System.Net.Quic.Tests
             Assert.Equal(clientConnection.LocalEndPoint, serverConnection.RemoteEndPoint);
             Assert.Equal(ApplicationProtocol.ToString(), clientConnection.NegotiatedApplicationProtocol.ToString());
             Assert.Equal(ApplicationProtocol.ToString(), serverConnection.NegotiatedApplicationProtocol.ToString());
+            Assert.Equal(options.ClientAuthenticationOptions.TargetHost, clientConnection.TargetHostName);
+            Assert.Equal(options.ClientAuthenticationOptions.TargetHost, serverConnection.TargetHostName);
         }
 
         private static async Task<QuicStream> OpenAndUseStreamAsync(QuicConnection c)
@@ -363,6 +367,48 @@ namespace System.Net.Quic.Tests
                     await using var stream = await connection.OpenOutboundStreamAsync(QuicStreamType.Unidirectional);
                     await stream.WriteAsync(new byte[1] { data }, completeWrites: true);
                 }).WaitAsync(TimeSpan.FromSeconds(5)));
+        }
+
+        [Fact]
+        [OuterLoop("Uses external servers")]
+        public async Task ConnectAsync_InvalidName_ThrowsSocketException()
+        {
+            string name = $"{Guid.NewGuid().ToString("N")}.microsoft.com.";
+            var options = new QuicClientConnectionOptions()
+            {
+                DefaultStreamErrorCode = DefaultStreamErrorCodeClient,
+                DefaultCloseErrorCode = DefaultCloseErrorCodeClient,
+                RemoteEndPoint = new DnsEndPoint(name, 10000),
+                ClientAuthenticationOptions = GetSslClientAuthenticationOptions()
+            };
+
+            SocketException ex = await Assert.ThrowsAsync<SocketException>(() => QuicConnection.ConnectAsync(options).AsTask());
+            Assert.Equal(SocketError.HostNotFound, ex.SocketErrorCode);
+        }
+
+        [Fact]
+        public void ConnectAsync_MissingName_ThrowsInvalidArgument()
+        {
+            var options = new QuicClientConnectionOptions()
+            {
+                DefaultStreamErrorCode = DefaultStreamErrorCodeClient,
+                DefaultCloseErrorCode = DefaultCloseErrorCodeClient,
+                ClientAuthenticationOptions = GetSslClientAuthenticationOptions()
+            };
+
+            Assert.Throws<ArgumentNullException>(() => QuicConnection.ConnectAsync(options));
+        }
+
+        [Fact]
+        public void ConnectAsync_MissingDefaults_ThrowsInvalidArgument()
+        {
+            var options = new QuicClientConnectionOptions()
+            {
+                RemoteEndPoint = new DnsEndPoint("localhost", 10000),
+                ClientAuthenticationOptions = GetSslClientAuthenticationOptions()
+            };
+
+            Assert.Throws<ArgumentOutOfRangeException>(() => QuicConnection.ConnectAsync(options));
         }
     }
 }

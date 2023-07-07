@@ -12,8 +12,8 @@ namespace System.Globalization
 {
     internal static class TimeSpanFormat
     {
-        internal static readonly FormatLiterals PositiveInvariantFormatLiterals = TimeSpanFormat.FormatLiterals.InitInvariant(isNegative: false);
-        internal static readonly FormatLiterals NegativeInvariantFormatLiterals = TimeSpanFormat.FormatLiterals.InitInvariant(isNegative: true);
+        internal static readonly FormatLiterals PositiveInvariantFormatLiterals = FormatLiterals.InitInvariant(isNegative: false);
+        internal static readonly FormatLiterals NegativeInvariantFormatLiterals = FormatLiterals.InitInvariant(isNegative: true);
 
         /// <summary>Main method called from TimeSpan.ToString.</summary>
         internal static string Format(TimeSpan value, string? format, IFormatProvider? formatProvider)
@@ -48,7 +48,7 @@ namespace System.Globalization
         }
 
         /// <summary>Main method called from TimeSpan.TryFormat.</summary>
-        internal static bool TryFormat<TChar>(TimeSpan value, Span<TChar> destination, out int charsWritten, ReadOnlySpan<char> format, IFormatProvider? formatProvider) where TChar : unmanaged, IBinaryInteger<TChar>
+        internal static bool TryFormat<TChar>(TimeSpan value, Span<TChar> destination, out int charsWritten, ReadOnlySpan<char> format, IFormatProvider? formatProvider) where TChar : unmanaged, IUtfChar<TChar>
         {
             Debug.Assert(typeof(TChar) == typeof(char) || typeof(TChar) == typeof(byte));
 
@@ -70,7 +70,7 @@ namespace System.Globalization
                         c == 'g' ? StandardFormat.g :
                         c == 'G' ? StandardFormat.G :
                         throw new FormatException(SR.Format_InvalidString);
-                    return TryFormatStandard(value, sf, DateTimeFormatInfo.GetInstance(formatProvider).DecimalSeparator, destination, out charsWritten);
+                    return TryFormatStandard(value, sf, DateTimeFormatInfo.GetInstance(formatProvider).DecimalSeparatorTChar<TChar>(), destination, out charsWritten);
                 }
             }
 
@@ -101,7 +101,7 @@ namespace System.Globalization
 
         internal enum StandardFormat { C, G, g }
 
-        internal static bool TryFormatStandard<TChar>(TimeSpan value, StandardFormat format, string? decimalSeparator, Span<TChar> destination, out int written) where TChar : unmanaged, IBinaryInteger<TChar>
+        internal static unsafe bool TryFormatStandard<TChar>(TimeSpan value, StandardFormat format, ReadOnlySpan<TChar> decimalSeparator, Span<TChar> destination, out int written) where TChar : unmanaged, IUtfChar<TChar>
         {
             Debug.Assert(format == StandardFormat.C || format == StandardFormat.G || format == StandardFormat.g);
 
@@ -144,7 +144,7 @@ namespace System.Globalization
                     // "c": Write out a fraction only if it's non-zero, and write out all 7 digits of it.
                     if (fraction != 0)
                     {
-                        Debug.Assert(decimalSeparator is null);
+                        Debug.Assert(decimalSeparator.IsEmpty);
                         fractionDigits = DateTimeFormat.MaxSecondsFractionDigits;
                         requiredOutputLength += fractionDigits + 1; // digits plus leading decimal separator
                     }
@@ -152,25 +152,19 @@ namespace System.Globalization
 
                 case StandardFormat.G:
                     // "G": Write out a fraction regardless of whether it's 0, and write out all 7 digits of it.
-                    Debug.Assert(decimalSeparator is not null);
                     fractionDigits = DateTimeFormat.MaxSecondsFractionDigits;
                     requiredOutputLength += fractionDigits;
-                    requiredOutputLength += typeof(TChar) == typeof(char) || (decimalSeparator.Length == 1 && char.IsAscii(decimalSeparator[0])) ?
-                        decimalSeparator.Length :
-                        Encoding.UTF8.GetByteCount(decimalSeparator);
+                    requiredOutputLength += decimalSeparator.Length;
                     break;
 
                 default:
                     // "g": Write out a fraction only if it's non-zero, and write out only the most significant digits.
                     Debug.Assert(format == StandardFormat.g);
-                    Debug.Assert(decimalSeparator is not null);
                     if (fraction != 0)
                     {
                         fractionDigits = DateTimeFormat.MaxSecondsFractionDigits - FormattingHelpers.CountDecimalTrailingZeros(fraction, out fraction);
                         requiredOutputLength += fractionDigits;
-                        requiredOutputLength += typeof(TChar) == typeof(char) || (decimalSeparator.Length == 1 && char.IsAscii(decimalSeparator[0])) ?
-                            decimalSeparator.Length :
-                            Encoding.UTF8.GetByteCount(decimalSeparator);
+                        requiredOutputLength += decimalSeparator.Length;
                     }
                     break;
             }
@@ -230,82 +224,73 @@ namespace System.Globalization
                 return false;
             }
 
-            // Write leading '-' if necessary
-            int idx = 0;
-            if (value.Ticks < 0)
+            fixed (TChar* dest = &MemoryMarshal.GetReference(destination))
             {
-                destination[idx++] = TChar.CreateTruncating('-');
-            }
+                TChar* p = dest;
 
-            // Write day and separator, if necessary
-            if (dayDigits != 0)
-            {
-                FormattingHelpers.WriteDigits(days, destination.Slice(idx, dayDigits));
-                idx += dayDigits;
-                destination[idx++] = TChar.CreateTruncating(format == StandardFormat.C ? '.' : ':');
-            }
-
-            // Write "[h]h:mm:ss
-            Debug.Assert(hourDigits == 1 || hourDigits == 2);
-            if (hourDigits == 2)
-            {
-                FormattingHelpers.WriteTwoDigits(hours, destination, idx);
-                idx += 2;
-            }
-            else
-            {
-                destination[idx++] = TChar.CreateTruncating('0' + hours);
-            }
-            destination[idx++] = TChar.CreateTruncating(':');
-            FormattingHelpers.WriteTwoDigits((uint)minutes, destination, idx);
-            idx += 2;
-            destination[idx++] = TChar.CreateTruncating(':');
-            FormattingHelpers.WriteTwoDigits((uint)seconds, destination, idx);
-            idx += 2;
-
-            // Write fraction and separator, if necessary
-            if (fractionDigits != 0)
-            {
-                Debug.Assert(format == StandardFormat.C || decimalSeparator != null);
-                if (format == StandardFormat.C)
+                // Write leading '-' if necessary
+                if (value.Ticks < 0)
                 {
-                    destination[idx++] = TChar.CreateTruncating('.');
+                    *p++ = TChar.CastFrom('-');
                 }
-                else if (typeof(TChar) == typeof(char))
+
+                // Write day and separator, if necessary
+                if (dayDigits != 0)
                 {
-                    if (decimalSeparator!.Length == 1)
-                    {
-                        destination[idx++] = TChar.CreateTruncating(decimalSeparator[0]);
-                    }
-                    else
-                    {
-                        decimalSeparator.CopyTo(MemoryMarshal.Cast<TChar, char>(destination).Slice(idx));
-                        idx += decimalSeparator.Length;
-                    }
+                    Number.WriteDigits(days, p, dayDigits);
+                    p += dayDigits;
+                    *p++ = TChar.CastFrom(format == StandardFormat.C ? '.' : ':');
+                }
+
+                // Write "[h]h:mm:ss
+                Debug.Assert(hourDigits == 1 || hourDigits == 2);
+                if (hourDigits == 2)
+                {
+                    Number.WriteTwoDigits(hours, p);
+                    p += 2;
                 }
                 else
                 {
-                    Debug.Assert(typeof(TChar) == typeof(byte));
-                    if (decimalSeparator!.Length == 1 && char.IsAscii(decimalSeparator[0]))
+                    *p++ = TChar.CastFrom('0' + hours);
+                }
+                *p++ = TChar.CastFrom(':');
+                Number.WriteTwoDigits((uint)minutes, p);
+                p += 2;
+                *p++ = TChar.CastFrom(':');
+                Number.WriteTwoDigits((uint)seconds, p);
+                p += 2;
+
+                // Write fraction and separator, if necessary
+                if (fractionDigits != 0)
+                {
+                    Debug.Assert(format == StandardFormat.C || decimalSeparator != null);
+                    if (format == StandardFormat.C)
                     {
-                        destination[idx++] = TChar.CreateTruncating(decimalSeparator[0]);
+                        *p++ = TChar.CastFrom('.');
+                    }
+                    else if (decimalSeparator!.Length == 1)
+                    {
+                        *p++ = decimalSeparator[0];
                     }
                     else
                     {
-                        idx += Encoding.UTF8.GetBytes(decimalSeparator, MemoryMarshal.Cast<TChar, byte>(destination).Slice(idx));
+                        decimalSeparator.CopyTo(new Span<TChar>(p, decimalSeparator.Length));
+                        p += decimalSeparator.Length;
                     }
+
+                    Number.WriteDigits(fraction, p, fractionDigits);
+                    p += fractionDigits;
                 }
-                FormattingHelpers.WriteDigits(fraction, destination.Slice(idx, fractionDigits));
-                idx += fractionDigits;
+
+                Debug.Assert(p - dest == requiredOutputLength);
             }
 
-            Debug.Assert(idx == requiredOutputLength);
             written = requiredOutputLength;
             return true;
         }
 
         /// <summary>Format the TimeSpan instance using the specified format.</summary>
-        private static void FormatCustomized<TChar>(TimeSpan value, scoped ReadOnlySpan<char> format, DateTimeFormatInfo dtfi, ref ValueListBuilder<TChar> result) where TChar : unmanaged, IBinaryInteger<TChar>
+        private static void FormatCustomized<TChar>(TimeSpan value, scoped ReadOnlySpan<char> format, DateTimeFormatInfo dtfi, ref ValueListBuilder<TChar> result) where TChar : unmanaged, IUtfChar<TChar>
         {
             Debug.Assert(dtfi != null);
 
@@ -411,7 +396,7 @@ namespace System.Globalization
                             goto default; // to release the builder and throw
                         }
 
-                        DateTimeFormat.FormatDigits(ref result, day, tokenLen, true);
+                        DateTimeFormat.FormatDigits(ref result, day, tokenLen);
                         break;
                     case '\'':
                     case '\"':
@@ -446,7 +431,7 @@ namespace System.Globalization
                         nextChar = DateTimeFormat.ParseNextChar(format, i);
                         if (nextChar >= 0)
                         {
-                            result.Append(TChar.CreateTruncating(nextChar));
+                            result.Append(TChar.CastFrom(nextChar));
                             tokenLen = 2;
                         }
                         else

@@ -30,12 +30,12 @@ namespace System.Buffers.Text
         public static bool TryFormat(TimeSpan value, Span<byte> destination, out int bytesWritten, StandardFormat format = default)
         {
             TimeSpanFormat.StandardFormat sf = TimeSpanFormat.StandardFormat.C;
-            string? decimalSeparator = null;
+            ReadOnlySpan<byte> decimalSeparator = default;
 
             char symbol = FormattingHelpers.GetSymbolOrDefault(format, 'c');
             if (symbol != 'c' && (symbol | 0x20) != 't')
             {
-                decimalSeparator = DateTimeFormatInfo.InvariantInfo.DecimalSeparator;
+                decimalSeparator = DateTimeFormatInfo.InvariantInfo.DecimalSeparatorTChar<byte>();
                 if (symbol == 'g')
                 {
                     sf = TimeSpanFormat.StandardFormat.g;

@@ -1,11 +1,8 @@
 ﻿// Licensed to the .NET Foundation under one or more agreements.
 // The .NET Foundation licenses this file to you under the MIT license.
 
-using System.Diagnostics;
-
 namespace System.Text.Json.Serialization.Metadata
 {
-    [DebuggerDisplay("{DebuggerDisplay,nq}")]
     internal class JsonTypeInfoResolverChain : ConfigurationList<IJsonTypeInfoResolver>, IJsonTypeInfoResolver, IBuiltInJsonTypeInfoResolver
     {
         public JsonTypeInfoResolverChain() : base(null) { }
@@ -57,23 +54,20 @@ namespace System.Text.Json.Serialization.Metadata
             return true;
         }
 
-        internal string DebuggerDisplay
+        public override string ToString()
         {
-            get
+            var sb = new StringBuilder("[");
+            foreach (IJsonTypeInfoResolver resolver in _list)
             {
-                var sb = new StringBuilder("[");
-                foreach (IJsonTypeInfoResolver resolver in _list)
-                {
-                    sb.Append(resolver.GetType().Name);
-                    sb.Append(", ");
-                }
-
-                if (_list.Count > 0)
-                    sb.Length -= 2;
-
-                sb.Append(']');
-                return sb.ToString();
+                sb.Append(resolver);
+                sb.Append(", ");
             }
+
+            if (_list.Count > 0)
+                sb.Length -= 2;
+
+            sb.Append(']');
+            return sb.ToString();
         }
     }
 }

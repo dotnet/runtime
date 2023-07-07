@@ -178,8 +178,8 @@ namespace System.Tests
         public void CompareTo_ObjectNotAVersion_ThrowsArgumentException(object other)
         {
             var version = new Version(1, 1);
-            AssertExtensions.Throws<ArgumentException>(null, () => version.CompareTo(other));
-            AssertExtensions.Throws<ArgumentException>(null, () => ((IComparable)version).CompareTo(other));
+            AssertExtensions.Throws<ArgumentException>("version", () => version.CompareTo(other));
+            AssertExtensions.Throws<ArgumentException>("version", () => ((IComparable)version).CompareTo(other));
         }
 
         public static IEnumerable<object[]> Equals_TestData()
@@ -370,65 +370,46 @@ namespace System.Tests
         [MemberData(nameof(ToString_TestData))]
         public static void TryFormat_Invoke_WritesExpected(Version version, string[] expected)
         {
-            char[] dest;
-            int charsWritten;
-
-            for (int i = 0; i < expected.Length; i++)
+            // UTF16
             {
-                if (i > 0)
+                byte[] dest;
+                int bytesWritten;
+
+                for (int i = 0; i < expected.Length; i++)
                 {
-                    // Too small
-                    dest = new char[expected[i].Length - 1];
-                    Assert.False(version.TryFormat(dest, i, out charsWritten));
-                    Assert.Equal(0, charsWritten);
+                    byte[] expectedBytes = Encoding.UTF8.GetBytes(expected[i]);
+
+                    if (i > 0)
+                    {
+                        // Too small
+                        dest = new byte[expectedBytes.Length - 1];
+                        Assert.False(version.TryFormat(dest, i, out bytesWritten));
+                        Assert.Equal(0, bytesWritten);
+                    }
+
+                    // Just right
+                    dest = new byte[expectedBytes.Length];
+                    Assert.True(version.TryFormat(dest, i, out bytesWritten));
+                    Assert.Equal(expectedBytes.Length, bytesWritten);
+                    Assert.Equal(expectedBytes, dest.AsSpan(0, bytesWritten).ToArray());
+
+                    // More than needed
+                    dest = new byte[expectedBytes.Length + 10];
+                    Assert.True(version.TryFormat(dest, i, out bytesWritten));
+                    Assert.Equal(expectedBytes.Length, bytesWritten);
+                    Assert.Equal(expectedBytes, dest.AsSpan(0, bytesWritten).ToArray());
                 }
 
-                // Just right
-                dest = new char[expected[i].Length];
-                Assert.True(version.TryFormat(dest, i, out charsWritten));
-                Assert.Equal(expected[i].Length, charsWritten);
-                Assert.Equal(expected[i], new string(dest, 0, charsWritten));
+                int maxFieldCount = expected.Length - 1;
+                dest = new byte[Encoding.UTF8.GetByteCount(expected[maxFieldCount])];
+                Assert.True(version.TryFormat(dest, out bytesWritten));
+                Assert.Equal(dest.Length, bytesWritten);
+                Assert.Equal(Encoding.UTF8.GetBytes(expected[maxFieldCount]), dest.AsSpan(0, bytesWritten).ToArray());
 
-                // More than needed
-                dest = new char[expected[i].Length + 10];
-                Assert.True(version.TryFormat(dest, i, out charsWritten));
-                Assert.Equal(expected[i].Length, charsWritten);
-                Assert.Equal(expected[i], new string(dest, 0, charsWritten));
+                dest = new byte[0];
+                AssertExtensions.Throws<ArgumentException>("fieldCount", () => version.TryFormat(dest, -1, out bytesWritten)); // Index < 0
+                AssertExtensions.Throws<ArgumentException>("fieldCount", () => version.TryFormat(dest, maxFieldCount + 1, out bytesWritten)); // Index > version.fieldCount
             }
-
-            int maxFieldCount = expected.Length - 1;
-            dest = new char[expected[maxFieldCount].Length];
-            Assert.True(version.TryFormat(dest, out charsWritten));
-            Assert.Equal(expected[maxFieldCount].Length, charsWritten);
-            Assert.Equal(expected[maxFieldCount], new string(dest, 0, charsWritten));
-
-            dest = new char[0];
-            AssertExtensions.Throws<ArgumentException>("fieldCount", () => version.TryFormat(dest, -1, out charsWritten)); // Index < 0
-            AssertExtensions.Throws<ArgumentException>("fieldCount", () => version.TryFormat(dest, maxFieldCount + 1, out charsWritten)); // Index > version.fieldCount
-        }
-
-        [Theory]
-        [MemberData(nameof(ToString_TestData))]
-        public static void IUtf8SpanFormattableTryFormat_Invoke_WritesExpected(Version version, string[] expectedFieldCounts)
-        {
-            string expected = expectedFieldCounts[^1];
-
-            // Too small
-            byte[] dest = new byte[expected.Length - 1];
-            Assert.False(((IUtf8SpanFormattable)version).TryFormat(dest, out int charsWritten, default, null));
-            Assert.Equal(0, charsWritten);
-
-            // Just right
-            dest = new byte[expected.Length];
-            Assert.True(((IUtf8SpanFormattable)version).TryFormat(dest, out charsWritten, default, null));
-            Assert.Equal(expected.Length, charsWritten);
-            Assert.Equal(expected, Encoding.UTF8.GetString(dest.AsSpan(0, charsWritten)));
-
-            // More than needed
-            dest = new byte[expected.Length + 10];
-            Assert.True(((IUtf8SpanFormattable)version).TryFormat(dest, out charsWritten, default, null));
-            Assert.Equal(expected.Length, charsWritten);
-            Assert.Equal(expected, Encoding.UTF8.GetString(dest.AsSpan(0, charsWritten)));
         }
     }
 }

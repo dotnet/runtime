@@ -3,6 +3,7 @@
 //
 
 using System;
+using Xunit;
 
 
 public struct ValX1<T>
@@ -51,7 +52,8 @@ public class Test_struc01
 
     }
 
-    public static int Main()
+    [Fact]
+    public static int TestEntryPoint()
     {
         int size = 10;
         int i, j, k, l, m;

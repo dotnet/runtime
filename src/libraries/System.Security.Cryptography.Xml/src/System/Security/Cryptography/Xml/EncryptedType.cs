@@ -105,6 +105,7 @@ namespace System.Security.Cryptography.Xml
         }
 
         [RequiresDynamicCode(CryptoHelpers.XsltRequiresDynamicCodeMessage)]
+        [RequiresUnreferencedCode(CryptoHelpers.CreateFromNameUnreferencedCodeMessage)]
         public abstract void LoadXml(XmlElement value);
         public abstract XmlElement GetXml();
     }

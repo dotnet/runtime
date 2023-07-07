@@ -67,7 +67,7 @@ namespace System.Security.Cryptography.X509Certificates.Tests
                 byte[] pfx = c1.Export(X509ContentType.Pkcs12);
                 Assert.Equal(X509ContentType.Pkcs12, X509Certificate2.GetCertContentType(pfx));
 
-                using (X509Certificate2 c2 = new X509Certificate2(pfx))
+                using (X509Certificate2 c2 = new X509Certificate2(pfx, (string?)null))
                 {
                     byte[] rawData = c2.Export(X509ContentType.Cert);
                     Assert.Equal(TestData.MsCertificate, rawData);
@@ -136,7 +136,7 @@ namespace System.Security.Cryptography.X509Certificates.Tests
 
                 byte[] pfxBytes = cert.Export(X509ContentType.Pkcs12);
 
-                using (X509Certificate2 fromPfx = new X509Certificate2(pfxBytes))
+                using (X509Certificate2 fromPfx = new X509Certificate2(pfxBytes, (string?)null))
                 {
                     Assert.Equal(cert, fromPfx);
                     Assert.True(fromPfx.HasPrivateKey, "fromPfx.HasPrivateKey");

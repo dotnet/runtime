@@ -4,8 +4,6 @@
 using System.Collections.Generic;
 using System.ComponentModel.Design.Serialization;
 using System.Globalization;
-using System.Reflection;
-using Microsoft.DotNet.RemoteExecutor;
 using Xunit;
 
 namespace System.ComponentModel.Tests
@@ -31,19 +29,32 @@ namespace System.ComponentModel.Tests
 
         public override IEnumerable<ConvertTest> ConvertToTestData()
         {
+            CultureInfo frenchCulture = new CultureInfo("fr-FR");
             CultureInfo polandCulture = new CultureInfo("pl-PL");
             DateTimeFormatInfo formatInfo = CultureInfo.CurrentCulture.DateTimeFormat;
             DateTime date = new DateTime(1998, 12, 5);
             yield return ConvertTest.Valid(date, date.ToString(formatInfo.ShortDatePattern));
-            yield return ConvertTest.Valid(date, date.ToString(polandCulture.DateTimeFormat.ShortDatePattern, polandCulture.DateTimeFormat))
+            yield return ConvertTest.Valid(date, date.ToString(frenchCulture.DateTimeFormat.ShortDatePattern, frenchCulture.DateTimeFormat), frenchCulture)
+                .WithRemoteInvokeCulture(frenchCulture);
+            yield return ConvertTest.Valid(date, date.ToString(frenchCulture.DateTimeFormat.ShortDatePattern, frenchCulture.DateTimeFormat), frenchCulture)
                 .WithRemoteInvokeCulture(polandCulture);
+            yield return ConvertTest.Valid(date, date.ToString(polandCulture.DateTimeFormat.ShortDatePattern, polandCulture.DateTimeFormat), polandCulture)
+                .WithRemoteInvokeCulture(polandCulture);
+            yield return ConvertTest.Valid(date, date.ToString(polandCulture.DateTimeFormat.ShortDatePattern, polandCulture.DateTimeFormat), polandCulture)
+                .WithRemoteInvokeCulture(frenchCulture);
             yield return ConvertTest.Valid(date, "1998-12-05", CultureInfo.InvariantCulture)
                 .WithRemoteInvokeCulture(polandCulture);
 
             DateTime dateWithTime = new DateTime(1998, 12, 5, 22, 30, 30);
             yield return ConvertTest.Valid(dateWithTime, dateWithTime.ToString(formatInfo.ShortDatePattern + " " + formatInfo.ShortTimePattern));
-            yield return ConvertTest.Valid(dateWithTime, dateWithTime.ToString(polandCulture.DateTimeFormat.ShortDatePattern + " " + polandCulture.DateTimeFormat.ShortTimePattern, polandCulture.DateTimeFormat))
+            yield return ConvertTest.Valid(dateWithTime, dateWithTime.ToString(frenchCulture.DateTimeFormat.ShortDatePattern + " " + frenchCulture.DateTimeFormat.ShortTimePattern, frenchCulture.DateTimeFormat), frenchCulture)
+                .WithRemoteInvokeCulture(frenchCulture);
+            yield return ConvertTest.Valid(dateWithTime, dateWithTime.ToString(frenchCulture.DateTimeFormat.ShortDatePattern + " " + frenchCulture.DateTimeFormat.ShortTimePattern, frenchCulture.DateTimeFormat), frenchCulture)
                 .WithRemoteInvokeCulture(polandCulture);
+            yield return ConvertTest.Valid(dateWithTime, dateWithTime.ToString(polandCulture.DateTimeFormat.ShortDatePattern + " " + polandCulture.DateTimeFormat.ShortTimePattern, polandCulture.DateTimeFormat), polandCulture)
+                .WithRemoteInvokeCulture(polandCulture);
+            yield return ConvertTest.Valid(dateWithTime, dateWithTime.ToString(polandCulture.DateTimeFormat.ShortDatePattern + " " + polandCulture.DateTimeFormat.ShortTimePattern, polandCulture.DateTimeFormat), polandCulture)
+                .WithRemoteInvokeCulture(frenchCulture);
             yield return ConvertTest.Valid(dateWithTime, "12/05/1998 22:30:30", CultureInfo.InvariantCulture)
                 .WithRemoteInvokeCulture(polandCulture);
 

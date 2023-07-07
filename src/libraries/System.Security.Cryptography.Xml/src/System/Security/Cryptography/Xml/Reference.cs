@@ -149,6 +149,8 @@ namespace System.Security.Cryptography.Xml
             }
         }
 
+        private static readonly string[] s_expectedAttrNames = new string[] { "Id", "URI", "Type" };
+
         //
         // public methods
         //
@@ -203,6 +205,7 @@ namespace System.Security.Cryptography.Xml
         }
 
         [RequiresDynamicCode(CryptoHelpers.XsltRequiresDynamicCodeMessage)]
+        [RequiresUnreferencedCode(CryptoHelpers.CreateFromNameUnreferencedCodeMessage)]
         public void LoadXml(XmlElement value)
         {
             if (value is null)
@@ -213,7 +216,7 @@ namespace System.Security.Cryptography.Xml
             _id = Utils.GetAttribute(value, "Id", SignedXml.XmlDsigNamespaceUrl);
             _uri = Utils.GetAttribute(value, "URI", SignedXml.XmlDsigNamespaceUrl);
             _type = Utils.GetAttribute(value, "Type", SignedXml.XmlDsigNamespaceUrl);
-            if (!Utils.VerifyAttributes(value, new string[] { "Id", "URI", "Type" }))
+            if (!Utils.VerifyAttributes(value, s_expectedAttrNames))
                 throw new CryptographicException(SR.Cryptography_Xml_InvalidElement, "Reference");
 
             XmlNamespaceManager nsm = new XmlNamespaceManager(value.OwnerDocument.NameTable);
@@ -333,6 +336,7 @@ namespace System.Security.Cryptography.Xml
             TransformChain.Add(transform);
         }
 
+        [RequiresUnreferencedCode(CryptoHelpers.CreateFromNameUnreferencedCodeMessage)]
         internal void UpdateHashValue(XmlDocument document, CanonicalXmlNodeList refList)
         {
             DigestValue = CalculateHashValue(document, refList);
@@ -340,6 +344,7 @@ namespace System.Security.Cryptography.Xml
 
         // What we want to do is pump the input through the TransformChain and then
         // hash the output of the chain document is the document context for resolving relative references
+        [RequiresUnreferencedCode(CryptoHelpers.CreateFromNameUnreferencedCodeMessage)]
         internal byte[]? CalculateHashValue(XmlDocument document, CanonicalXmlNodeList refList)
         {
             // refList is a list of elements that might be targets of references

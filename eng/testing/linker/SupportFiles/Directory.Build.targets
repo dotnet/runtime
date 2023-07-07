@@ -13,7 +13,7 @@
           Condition="'$(TargetArchitecture)' == 'wasm' And '$(TargetOS)' == 'browser'" />
 
   <PropertyGroup Condition="'$(PublishAot)' == 'true'">
-    <AotRuntimePackageLoadedViaSDK>true</AotRuntimePackageLoadedViaSDK>
+    <_IlcReferencedAsPackage>false</_IlcReferencedAsPackage>
     <ILCompilerTargetsPath>$(CoreCLRBuildIntegrationDir)Microsoft.DotNet.ILCompiler.SingleEntry.targets</ILCompilerTargetsPath>
   </PropertyGroup>
 

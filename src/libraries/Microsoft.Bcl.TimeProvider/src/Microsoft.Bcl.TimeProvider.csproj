@@ -1,19 +1,17 @@
 <Project Sdk="Microsoft.NET.Sdk">
+
   <PropertyGroup>
     <TargetFrameworks>$(NetCoreAppCurrent);netstandard2.0;$(NetFrameworkMinimum)</TargetFrameworks>
     <IsPackable>true</IsPackable>
     <!-- Disabling baseline validation since this is a brand new package.
-       Once this package has shipped a stable version, the following line
-       should be removed in order to re-enable validation. -->
+         Once this package has shipped a stable version, the following line
+         should be removed in order to re-enable validation. -->
     <DisablePackageBaselineValidation>true</DisablePackageBaselineValidation>
-    <!--<UseIntellisensePackageDocXmlFile>false</UseIntellisensePackageDocXmlFile>-->
     <PackageDescription>Provides support for system time abstraction primitives for .NET Framework and .NET Standard.
 
 Commonly Used Types:
 System.TimeProvider
-System.ITimer
-
-    </PackageDescription>
+System.ITimer</PackageDescription>
   </PropertyGroup>
 
   <PropertyGroup>
@@ -32,6 +30,9 @@ System.ITimer
 
   <ItemGroup Condition="'$(IsPartialFacadeAssembly)' != 'true'">
     <PackageReference Include="Microsoft.Bcl.AsyncInterfaces" Version="$(MicrosoftBclAsyncInterfacesVersion)" />
+  </ItemGroup>
+
+  <ItemGroup Condition="'$(TargetFrameworkIdentifier)' == '.NETFramework'">
     <PackageReference Include="System.ValueTuple" Version="$(SystemValueTupleVersion)" />
   </ItemGroup>
 

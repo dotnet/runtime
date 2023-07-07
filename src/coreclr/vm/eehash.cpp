@@ -362,7 +362,7 @@ EEHashEntry_t *EEClassFactoryInfoHashTableHelper::AllocateEntry(ClassFactoryInfo
     _ASSERTE(bDeepCopy && "Non deep copy is not supported by the EEComCompInfoHashTableHelper");
 
     if (pKey->m_strServerName)
-        cbStringLen = (S_SIZE_T(wcslen(pKey->m_strServerName)) + S_SIZE_T(1)) * S_SIZE_T(sizeof(WCHAR));
+        cbStringLen = (S_SIZE_T(u16_strlen(pKey->m_strServerName)) + S_SIZE_T(1)) * S_SIZE_T(sizeof(WCHAR));
 
     S_SIZE_T cbEntry = S_SIZE_T(SIZEOF_EEHASH_ENTRY + sizeof(ClassFactoryInfo)) + cbStringLen;
 
@@ -405,7 +405,7 @@ BOOL EEClassFactoryInfoHashTableHelper::CompareKeys(EEHashEntry_t *pEntry, Class
         return FALSE;
 
     // Finally do a string comparison of the server names.
-    return wcscmp(((ClassFactoryInfo*)pEntry->Key)->m_strServerName, pKey->m_strServerName) == 0;
+    return u16_strcmp(((ClassFactoryInfo*)pEntry->Key)->m_strServerName, pKey->m_strServerName) == 0;
 }
 
 DWORD EEClassFactoryInfoHashTableHelper::Hash(ClassFactoryInfo *pKey)

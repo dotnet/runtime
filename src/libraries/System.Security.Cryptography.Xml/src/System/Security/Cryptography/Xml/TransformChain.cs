@@ -168,6 +168,7 @@ namespace System.Security.Cryptography.Xml
         }
 
         [RequiresDynamicCode(CryptoHelpers.XsltRequiresDynamicCodeMessage)]
+        [RequiresUnreferencedCode(CryptoHelpers.CreateFromNameUnreferencedCodeMessage)]
         internal void LoadXml(XmlElement value)
         {
             if (value is null)

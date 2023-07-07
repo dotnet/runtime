@@ -52,7 +52,7 @@ namespace System.Net.Tests
         {
             WebRequest request = WebRequest.Create("file://anything");
             AssertExtensions.Throws<ArgumentOutOfRangeException>("value", () => request.ContentLength = -1);
-            AssertExtensions.Throws<ArgumentException>("value", () => request.Method = null);
+            AssertExtensions.Throws<ArgumentNullException>("value", () => request.Method = null);
             AssertExtensions.Throws<ArgumentException>("value", () => request.Method = "");
             AssertExtensions.Throws<ArgumentOutOfRangeException>("value", () => request.Timeout = -2);
         }

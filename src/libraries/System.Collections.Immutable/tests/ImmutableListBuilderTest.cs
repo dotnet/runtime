@@ -476,7 +476,7 @@ namespace System.Collections.Immutable.Tests
 
         protected override IEnumerable<T> GetEnumerableOf<T>(params T[] contents)
         {
-            return ImmutableList<T>.Empty.AddRange(contents).ToBuilder();
+            return ImmutableList<T>.Empty.AddRange((ReadOnlySpan<T>)contents).ToBuilder();
         }
 
         protected override void RemoveAllTestHelper<T>(ImmutableList<T> list, Predicate<T> test)

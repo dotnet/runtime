@@ -7,6 +7,7 @@ using System.Xml;
 namespace System.Security.Cryptography.Xml
 {
     [RequiresDynamicCode(CryptoHelpers.XsltRequiresDynamicCodeMessage)]
+    [RequiresUnreferencedCode(CryptoHelpers.CreateFromNameUnreferencedCodeMessage)]
     public class KeyInfoEncryptedKey : KeyInfoClause
     {
         private EncryptedKey? _encryptedKey;

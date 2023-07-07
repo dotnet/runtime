@@ -9,6 +9,7 @@ namespace Microsoft.Extensions.Configuration.Xml
     /// Represents a XML file as an <see cref="IConfigurationSource"/>.
     /// </summary>
     [RequiresDynamicCode(XmlDocumentDecryptor.RequiresDynamicCodeMessage)]
+    [RequiresUnreferencedCode(XmlDocumentDecryptor.RequiresUnreferencedCodeMessage)]
     public class XmlStreamConfigurationSource : StreamConfigurationSource
     {
         /// <summary>

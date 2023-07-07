@@ -44,6 +44,8 @@ namespace System.Collections.Immutable.Tests
             if (factory(list) is IList)
             {
                 Assert.Equal(-1, ((IList)factory(list)).IndexOf(6));
+                Assert.Equal(-1, ((IList)factory(list)).IndexOf(null));
+                Assert.Equal(-1, ((IList)factory(list)).IndexOf("a"));
             }
 
             for (int idx = 0; idx < list.Count; idx++)

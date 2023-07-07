@@ -67,6 +67,7 @@ namespace System.Net
 
         MisdirectedRequest = 421,
         UnprocessableEntity = 422,
+        UnprocessableContent = 422,
         Locked = 423,
         FailedDependency = 424,
 

@@ -18,7 +18,7 @@ namespace System.Collections.Immutable
         /// </summary>
         /// <remarks>
         /// <para>
-        /// While <see cref="ImmutableList{T}.AddRange"/> and other bulk change methods
+        /// While <see cref="M:ImmutableList{T}.AddRange"/> and other bulk change methods
         /// already provide fast bulk change operations on the collection, this class allows
         /// multiple combinations of changes to be made to a set with equal efficiency.
         /// </para>

@@ -45,7 +45,6 @@ The System.Reflection.Metadata library is built-in as part of the shared framewo
     <Compile Include="System\Reflection\Metadata\BlobWriterImpl.cs" />
     <Compile Include="System\Reflection\Metadata\BlobBuilder.cs" />
     <Compile Include="System\Reflection\Metadata\BlobBuilder.Enumerators.cs" />
-    <Compile Include="System\Reflection\Internal\Utilities\ByteSequenceComparer.cs" />
     <Compile Include="System\Reflection\Internal\Utilities\DecimalUtilities.cs" />
     <Compile Include="System\Reflection\Internal\Utilities\EnumerableExtensions.cs" />
     <Compile Include="System\Reflection\Metadata\Ecma335\CustomAttributeDecoder.cs" />
@@ -60,6 +59,7 @@ The System.Reflection.Metadata library is built-in as part of the shared framewo
     <Compile Include="System\Reflection\Metadata\Ecma335\Encoding\InstructionEncoder.cs" />
     <Compile Include="System\Reflection\Metadata\Ecma335\Encoding\LabelHandle.cs" />
     <Compile Include="System\Reflection\Metadata\IL\ILOpCode.cs" />
+    <Compile Include="System\Reflection\Metadata\Ecma335\BlobDictionary.cs" />
     <Compile Include="System\Reflection\Metadata\Ecma335\CodedIndex.cs" />
     <Compile Include="System\Reflection\Metadata\Ecma335\PortablePdbBuilder.cs" />
     <Compile Include="System\Reflection\Metadata\Ecma335\MetadataBuilder.Tables.cs" />
@@ -110,7 +110,6 @@ The System.Reflection.Metadata library is built-in as part of the shared framewo
     <Compile Include="System\Reflection\Internal\Utilities\StreamExtensions.netcoreapp.cs" Condition="'$(TargetFrameworkIdentifier)' == '.NETCoreApp'" />
     <Compile Include="System\Reflection\Internal\Utilities\StreamExtensions.netstandard2.0.cs" Condition="'$(TargetFrameworkIdentifier)' != '.NETCoreApp'" />
     <Compile Include="System\Reflection\Internal\Utilities\Hash.cs" />
-    <Compile Include="System\Reflection\Internal\Utilities\ImmutableByteArrayInterop.cs" />
     <Compile Include="System\Reflection\Internal\Utilities\ImmutableMemoryStream.cs" />
     <Compile Include="System\Reflection\Internal\Utilities\MemoryBlock.cs" />
     <Compile Include="System\Reflection\Internal\Utilities\PooledStringBuilder.cs" />

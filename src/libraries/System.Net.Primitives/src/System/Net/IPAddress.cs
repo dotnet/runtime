@@ -427,6 +427,13 @@ namespace System.Net
         public bool TryFormat(Span<char> destination, out int charsWritten) =>
             TryFormatCore(destination, out charsWritten);
 
+        /// <summary>Tries to format the current IP address into the provided span.</summary>
+        /// <param name="utf8Destination">When this method returns, the IP address as a span of UTF8 bytes.</param>
+        /// <param name="bytesWritten">When this method returns, the number of bytes written into the <paramref name="utf8Destination"/>.</param>
+        /// <returns><see langword="true" /> if the formatting was successful; otherwise, <see langword="false" />.</returns>
+        public bool TryFormat(Span<byte> utf8Destination, out int bytesWritten) =>
+            TryFormatCore(utf8Destination, out bytesWritten);
+
         /// <inheritdoc/>
         bool ISpanFormattable.TryFormat(Span<char> destination, out int charsWritten, ReadOnlySpan<char> format, IFormatProvider? provider) =>
             // format and provider are explicitly ignored

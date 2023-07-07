@@ -35,11 +35,7 @@ namespace System.Net.Http
         public void Add(HttpContent content, string name)
         {
             ArgumentNullException.ThrowIfNull(content);
-
-            if (string.IsNullOrWhiteSpace(name))
-            {
-                throw new ArgumentException(SR.net_http_argument_empty_string, nameof(name));
-            }
+            ArgumentException.ThrowIfNullOrWhiteSpace(name);
 
             AddInternal(content, name, null);
         }
@@ -47,15 +43,8 @@ namespace System.Net.Http
         public void Add(HttpContent content, string name, string fileName)
         {
             ArgumentNullException.ThrowIfNull(content);
-
-            if (string.IsNullOrWhiteSpace(name))
-            {
-                throw new ArgumentException(SR.net_http_argument_empty_string, nameof(name));
-            }
-            if (string.IsNullOrWhiteSpace(fileName))
-            {
-                throw new ArgumentException(SR.net_http_argument_empty_string, nameof(fileName));
-            }
+            ArgumentException.ThrowIfNullOrWhiteSpace(name);
+            ArgumentException.ThrowIfNullOrWhiteSpace(fileName);
 
             AddInternal(content, name, fileName);
         }

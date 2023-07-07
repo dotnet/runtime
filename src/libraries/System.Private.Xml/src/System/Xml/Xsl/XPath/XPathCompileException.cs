@@ -85,7 +85,7 @@ namespace System.Xml.Xsl.XPath
 
         internal string? MarkOutError()
         {
-            if (queryString == null || queryString.Trim(' ').Length == 0)
+            if (queryString == null || queryString.AsSpan().Trim(' ').IsEmpty)
             {
                 return null;
             }

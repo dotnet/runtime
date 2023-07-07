@@ -204,6 +204,25 @@ struct Agnostic_GetStaticFieldCurrentClass
     bool      isSpeculative;
 };
 
+struct Agnostic_CORINFO_TYPE_LAYOUT_NODE
+{
+    DWORDLONG simdTypeHnd;
+    DWORDLONG diagFieldHnd;
+    DWORD parent;
+    DWORD offset;
+    DWORD size;
+    DWORD numFields;
+    BYTE type;
+    bool hasSignificantPadding;
+};
+
+struct Agnostic_GetTypeLayoutResult
+{
+    DWORD result;
+    DWORD nodesBuffer;
+    DWORD numNodes;
+};
+
 struct Agnostic_CORINFO_RESOLVED_TOKEN
 {
     Agnostic_CORINFO_RESOLVED_TOKENin inValue;
@@ -318,8 +337,6 @@ struct Agnostic_CORINFO_CALL_INFO
     DWORD                         methodFlags;
     DWORD                         classFlags;
     Agnostic_CORINFO_SIG_INFO     sig;
-    DWORD                         verMethodFlags;
-    Agnostic_CORINFO_SIG_INFO     verSig;
     DWORD                         accessAllowed;
     Agnostic_CORINFO_HELPER_DESC  callsiteCalloutHelper;
     DWORD                         thisTransform;
@@ -476,14 +493,6 @@ struct Agnostic_GetStaticBaseAddress
     DWORD                         result;
 };
 
-struct Agnostic_IsCompatibleDelegate
-{
-    DWORDLONG objCls;
-    DWORDLONG methodParentCls;
-    DWORDLONG method;
-    DWORDLONG delegateCls;
-};
-
 struct Agnostic_PgoInstrumentationSchema
 {
     DWORDLONG Offset;          // size_t
@@ -521,9 +530,13 @@ struct Agnostic_GetProfilingHandle
 struct Agnostic_GetThreadLocalStaticBlocksInfo
 {
     Agnostic_CORINFO_CONST_LOOKUP tlsIndex;
-    UINT                          offsetOfThreadLocalStoragePointer;
-    UINT                          offsetOfMaxThreadStaticBlocks;
-    UINT                          offsetOfThreadStaticBlocks;
+    DWORDLONG                     tlsGetAddrFtnPtr;
+    DWORDLONG                     tlsIndexObject;
+    DWORDLONG                     threadVarsSection;
+    DWORD                         offsetOfThreadLocalStoragePointer;
+    DWORD                         offsetOfMaxThreadStaticBlocks;
+    DWORD                         offsetOfThreadStaticBlocks;
+    DWORD                         offsetOfGCDataPointer;
 };
 
 struct Agnostic_GetThreadLocalFieldInfo
@@ -611,12 +624,6 @@ struct ResolveTokenValue
     DWORD                              exceptionCode;
 };
 
-struct TryResolveTokenValue
-{
-    Agnostic_CORINFO_RESOLVED_TOKENout tokenOut;
-    DWORD                              success;
-};
-
 struct GetTokenTypeAsHandleValue
 {
     DWORDLONG hMethod;
@@ -676,7 +683,6 @@ struct Agnostic_RecordRelocation
     DWORDLONG location;
     DWORDLONG target;
     DWORD     fRelocType;
-    DWORD     slotNum;
     DWORD     addlDelta;
 };
 

@@ -15,7 +15,7 @@ namespace System.Text.Json.Serialization
         {
             Debug.Assert(!IsValueType);
             Debug.Assert(CanHaveMetadata);
-            Debug.Assert(state.Current.MetadataPropertyNames.HasFlag(MetadataPropertyName.Type));
+            Debug.Assert((state.Current.MetadataPropertyNames & MetadataPropertyName.Type) != 0);
             Debug.Assert(state.Current.PolymorphicSerializationState != PolymorphicSerializationState.PolymorphicReEntryStarted);
             Debug.Assert(jsonTypeInfo.PolymorphicTypeResolver?.UsesTypeDiscriminators == true);
 
@@ -30,7 +30,7 @@ namespace System.Text.Json.Serialization
                     PolymorphicTypeResolver resolver = jsonTypeInfo.PolymorphicTypeResolver;
                     if (resolver.TryGetDerivedJsonTypeInfo(state.PolymorphicTypeDiscriminator, out JsonTypeInfo? resolvedType))
                     {
-                        Debug.Assert(TypeToConvert.IsAssignableFrom(resolvedType.Type));
+                        Debug.Assert(Type!.IsAssignableFrom(resolvedType.Type));
 
                         polymorphicConverter = state.InitializePolymorphicReEntry(resolvedType);
                         if (!polymorphicConverter.CanHaveMetadata)
@@ -48,7 +48,7 @@ namespace System.Text.Json.Serialization
 
                 case PolymorphicSerializationState.PolymorphicReEntrySuspended:
                     polymorphicConverter = state.ResumePolymorphicReEntry();
-                    Debug.Assert(TypeToConvert.IsAssignableFrom(polymorphicConverter.TypeToConvert));
+                    Debug.Assert(Type!.IsAssignableFrom(polymorphicConverter.Type));
                     break;
 
                 case PolymorphicSerializationState.PolymorphicReEntryNotFound:
@@ -69,7 +69,7 @@ namespace System.Text.Json.Serialization
         internal JsonConverter? ResolvePolymorphicConverter(object value, JsonTypeInfo jsonTypeInfo, JsonSerializerOptions options, ref WriteStack state)
         {
             Debug.Assert(!IsValueType);
-            Debug.Assert(value != null && TypeToConvert.IsAssignableFrom(value.GetType()));
+            Debug.Assert(value != null && Type!.IsAssignableFrom(value.GetType()));
             Debug.Assert(CanBePolymorphic || jsonTypeInfo.PolymorphicTypeResolver != null);
             Debug.Assert(state.PolymorphicTypeDiscriminator is null);
 
@@ -80,21 +80,18 @@ namespace System.Text.Json.Serialization
                 case PolymorphicSerializationState.None:
                     Debug.Assert(!state.IsContinuation);
 
-                    if (state.IsPolymorphicRootValue && state.CurrentDepth == 0)
-                    {
-                        Debug.Assert(jsonTypeInfo.PolymorphicTypeResolver != null);
-
-                        // We're serializing a root-level object value whose runtime type uses type hierarchies.
-                        // For consistency with nested value handling, we want to serialize as-is without emitting metadata.
-                        state.Current.PolymorphicSerializationState = PolymorphicSerializationState.PolymorphicReEntryNotFound;
-                        break;
-                    }
-
                     Type runtimeType = value.GetType();
+
+                    if (CanBePolymorphic && runtimeType != Type)
+                    {
+                        Debug.Assert(Type == typeof(object));
+                        jsonTypeInfo = state.Current.InitializePolymorphicReEntry(runtimeType, options);
+                        polymorphicConverter = jsonTypeInfo.Converter;
+                    }
 
                     if (jsonTypeInfo.PolymorphicTypeResolver is PolymorphicTypeResolver resolver)
                     {
-                        Debug.Assert(CanHaveMetadata);
+                        Debug.Assert(jsonTypeInfo.Converter.CanHaveMetadata);
 
                         if (resolver.TryGetDerivedJsonTypeInfo(runtimeType, out JsonTypeInfo? derivedJsonTypeInfo, out object? typeDiscriminator))
                         {
@@ -108,32 +105,22 @@ namespace System.Text.Json.Serialization
                                 }
 
                                 state.PolymorphicTypeDiscriminator = typeDiscriminator;
+                                state.PolymorphicTypeResolver = resolver;
                             }
                         }
-                        else
-                        {
-                            state.Current.PolymorphicSerializationState = PolymorphicSerializationState.PolymorphicReEntryNotFound;
-                        }
                     }
-                    else
-                    {
-                        Debug.Assert(CanBePolymorphic);
 
-                        if (runtimeType != TypeToConvert)
-                        {
-                            polymorphicConverter = state.Current.InitializePolymorphicReEntry(runtimeType, options);
-                        }
-                        else
-                        {
-                            state.Current.PolymorphicSerializationState = PolymorphicSerializationState.PolymorphicReEntryNotFound;
-                        }
+                    if (polymorphicConverter is null)
+                    {
+                        state.Current.PolymorphicSerializationState = PolymorphicSerializationState.PolymorphicReEntryNotFound;
                     }
+
                     break;
 
                 case PolymorphicSerializationState.PolymorphicReEntrySuspended:
                     Debug.Assert(state.IsContinuation);
                     polymorphicConverter = state.Current.ResumePolymorphicReEntry();
-                    Debug.Assert(TypeToConvert.IsAssignableFrom(polymorphicConverter.TypeToConvert));
+                    Debug.Assert(Type.IsAssignableFrom(polymorphicConverter.Type));
                     break;
 
                 case PolymorphicSerializationState.PolymorphicReEntryNotFound:

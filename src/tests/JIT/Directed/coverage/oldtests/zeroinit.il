@@ -9,7 +9,7 @@
   .publickeytoken = (B0 3F 5F 7F 11 D5 0A 3A )
   .ver 4:0:0:0
 }
-.assembly zeroinit {}
+.assembly ASSEMBLY_NAME {}
 .class private auto ansi beforefieldinit CL
        extends [mscorlib]System.Object
 {

@@ -9,10 +9,16 @@ PALEXPORT int32_t GlobalizationNative_GetLocales(UChar *value, int32_t valueLeng
 
 PALEXPORT int32_t GlobalizationNative_GetLocaleName(const UChar* localeName, UChar* value, int32_t valueLength);
 
-#ifdef __APPLE__
-PALEXPORT const char* GlobalizationNative_GetLocaleNameNative(const char* localeName);
-#endif
-
 PALEXPORT int32_t GlobalizationNative_GetDefaultLocaleName(UChar* value, int32_t valueLength);
 
 PALEXPORT int32_t GlobalizationNative_IsPredefinedLocale(const UChar* localeName);
+
+PALEXPORT int32_t GlobalizationNative_GetLocaleTimeFormat(const UChar* localeName,
+                                                          int shortFormat, UChar* value,
+                                                          int32_t valueLength);
+
+#ifdef __APPLE__
+PALEXPORT const char* GlobalizationNative_GetLocaleNameNative(const char* localeName);
+
+PALEXPORT const char* GlobalizationNative_GetLocaleTimeFormatNative(const char* localeName, int shortFormat);
+#endif

@@ -597,27 +597,27 @@ namespace System.Tests
                 TimeOnly timeOnly = TimeOnly.FromDateTime(DateTime.Now);
 
                 buffer.Fill((byte)' ');
-                Assert.True(((IUtf8SpanFormattable)timeOnly).TryFormat(buffer, out int charsWritten, default, null));
-                Assert.Equal(charsWritten, buffer.TrimEnd(" "u8).Length);
+                Assert.True(timeOnly.TryFormat(buffer, out int bytesWritten));
+                Assert.Equal(bytesWritten, buffer.TrimEnd(" "u8).Length);
 
                 buffer.Fill((byte)' ');
-                Assert.True(((IUtf8SpanFormattable)timeOnly).TryFormat(buffer, out charsWritten, "o", null));
-                Assert.Equal(16, charsWritten);
+                Assert.True(timeOnly.TryFormat(buffer, out bytesWritten, "o"));
+                Assert.Equal(16, bytesWritten);
                 Assert.Equal(16, buffer.TrimEnd(" "u8).Length);
 
                 buffer.Fill((byte)' ');
-                Assert.True(((IUtf8SpanFormattable)timeOnly).TryFormat(buffer, out charsWritten, "R", null));
-                Assert.Equal(8, charsWritten);
+                Assert.True(timeOnly.TryFormat(buffer, out bytesWritten, "R"));
+                Assert.Equal(8, bytesWritten);
                 Assert.Equal(8, buffer.TrimEnd(" "u8).Length);
 
-                Assert.False(((IUtf8SpanFormattable)timeOnly).TryFormat(buffer.Slice(0, 3), out charsWritten, default, null));
-                Assert.False(((IUtf8SpanFormattable)timeOnly).TryFormat(buffer.Slice(0, 3), out charsWritten, "r", null));
-                Assert.False(((IUtf8SpanFormattable)timeOnly).TryFormat(buffer.Slice(0, 3), out charsWritten, "O", null));
+                Assert.False(timeOnly.TryFormat(buffer.Slice(0, 3), out bytesWritten));
+                Assert.False(timeOnly.TryFormat(buffer.Slice(0, 3), out bytesWritten, "r"));
+                Assert.False(timeOnly.TryFormat(buffer.Slice(0, 3), out bytesWritten, "O"));
 
-                Assert.Throws<FormatException>(() => ((IUtf8SpanFormattable)timeOnly).TryFormat(new byte[100], out charsWritten, "u", null));
-                Assert.Throws<FormatException>(() => ((IUtf8SpanFormattable)timeOnly).TryFormat(new byte[100], out charsWritten, "dd-yyyy", null));
-                Assert.Throws<FormatException>(() => $"{((IUtf8SpanFormattable)timeOnly):u}");
-                Assert.Throws<FormatException>(() => $"{((IUtf8SpanFormattable)timeOnly):dd-yyyy}");
+                Assert.Throws<FormatException>(() => timeOnly.TryFormat(new byte[100], out bytesWritten, "u"));
+                Assert.Throws<FormatException>(() => timeOnly.TryFormat(new byte[100], out bytesWritten, "dd-yyyy"));
+                Assert.Throws<FormatException>(() => $"{timeOnly:u}");
+                Assert.Throws<FormatException>(() => $"{timeOnly:dd-yyyy}");
             }
         }
     }

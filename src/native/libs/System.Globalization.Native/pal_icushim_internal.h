@@ -7,7 +7,7 @@
 
 #pragma once
 
-#if defined(TARGET_UNIX)
+#if defined(TARGET_UNIX) || defined(TARGET_WASI)
 
 #include "config.h"
 
@@ -341,6 +341,7 @@ FOR_ALL_ICU_FUNCTIONS
 #define ucal_getTimeZoneIDForWindowsID_ptr ucal_getTimeZoneIDForWindowsID
 
 #if defined(TARGET_MACCATALYST) || defined(TARGET_IOS) || defined(TARGET_TVOS)
+const char* GlobalizationNative_GetICUDataPathRelativeToAppBundleRoot(const char* path);
 const char* GlobalizationNative_GetICUDataPathFallback(void);
 #endif
 

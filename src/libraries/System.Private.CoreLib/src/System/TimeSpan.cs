@@ -273,7 +273,7 @@ namespace System
 
         public TimeSpan Duration()
         {
-            if (Ticks == TimeSpan.MinValue.Ticks)
+            if (Ticks == MinValue.Ticks)
                 throw new OverflowException(SR.Overflow_Duration);
             return new TimeSpan(_ticks >= 0 ? _ticks : -_ticks);
         }
@@ -319,7 +319,7 @@ namespace System
             if ((ticks > long.MaxValue) || (ticks < long.MinValue) || double.IsNaN(ticks))
                 ThrowHelper.ThrowOverflowException_TimeSpanTooLong();
             if (ticks == long.MaxValue)
-                return TimeSpan.MaxValue;
+                return MaxValue;
             return new TimeSpan((long)ticks);
         }
 
@@ -360,7 +360,7 @@ namespace System
 
         public TimeSpan Negate()
         {
-            if (Ticks == TimeSpan.MinValue.Ticks)
+            if (Ticks == MinValue.Ticks)
                 throw new OverflowException(SR.Overflow_NegateTwosCompNum);
             return new TimeSpan(-_ticks);
         }
@@ -564,14 +564,15 @@ namespace System
         public bool TryFormat(Span<char> destination, out int charsWritten, [StringSyntax(StringSyntaxAttribute.TimeSpanFormat)] ReadOnlySpan<char> format = default, IFormatProvider? formatProvider = null) =>
             TimeSpanFormat.TryFormat(this, destination, out charsWritten, format, formatProvider);
 
-        bool IUtf8SpanFormattable.TryFormat(Span<byte> utf8Destination, out int bytesWritten, [StringSyntax(StringSyntaxAttribute.TimeSpanFormat)] ReadOnlySpan<char> format, IFormatProvider? formatProvider) =>
+        /// <inheritdoc cref="IUtf8SpanFormattable.TryFormat" />
+        public bool TryFormat(Span<byte> utf8Destination, out int bytesWritten, [StringSyntax(StringSyntaxAttribute.TimeSpanFormat)] ReadOnlySpan<char> format = default, IFormatProvider? formatProvider = null) =>
             TimeSpanFormat.TryFormat(this, utf8Destination, out bytesWritten, format, formatProvider);
 
         #endregion
 
         public static TimeSpan operator -(TimeSpan t)
         {
-            if (t._ticks == TimeSpan.MinValue._ticks)
+            if (t._ticks == MinValue._ticks)
                 throw new OverflowException(SR.Overflow_NegateTwosCompNum);
             return new TimeSpan(-t._ticks);
         }

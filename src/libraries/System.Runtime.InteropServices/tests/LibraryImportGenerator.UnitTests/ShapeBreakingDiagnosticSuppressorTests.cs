@@ -8,7 +8,7 @@ using System.Linq;
 using System.Text;
 using System.Threading;
 using System.Threading.Tasks;
-using LibraryImportGenerator.UnitTests.Verifiers;
+using Microsoft.Interop.UnitTests.Verifiers;
 using Microsoft.CodeAnalysis;
 using Microsoft.CodeAnalysis.Diagnostics;
 using Microsoft.CodeAnalysis.Testing;
@@ -17,7 +17,6 @@ using Xunit;
 
 namespace LibraryImportGenerator.UnitTests
 {
-    [ActiveIssue("https://github.com/dotnet/runtime/issues/60650", TestRuntimes.Mono)]
     public class ShapeBreakingDiagnosticSuppressorTests
     {
         [Fact]

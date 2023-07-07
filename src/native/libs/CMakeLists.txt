@@ -1,13 +1,6 @@
-cmake_minimum_required(VERSION 3.6.2)
-include(CheckCCompilerFlag)
+cmake_minimum_required(VERSION 3.20)
 
-if (CLR_CMAKE_TARGET_IOS OR CLR_CMAKE_TARGET_TVOS)
-    # CMake 3.14.5 contains bug fixes for iOS
-    cmake_minimum_required(VERSION 3.14.5)
-elseif (CLR_CMAKE_TARGET_MACCATALYST)
-    # CMake 3.18.1 properly generates MacCatalyst C compiler
-    cmake_minimum_required(VERSION 3.18.1)
-endif ()
+include(CheckCCompilerFlag)
 
 if (WIN32)
     cmake_policy(SET CMP0091 NEW)
@@ -163,6 +156,7 @@ if (CLR_CMAKE_TARGET_UNIX OR CLR_CMAKE_TARGET_BROWSER OR CLR_CMAKE_TARGET_WASI)
     endif ()
 
     add_subdirectory(System.Native)
+    add_subdirectory(System.Globalization.Native)
 
     if (CLR_CMAKE_TARGET_BROWSER OR CLR_CMAKE_TARGET_WASI)
         # skip for now
@@ -183,7 +177,6 @@ if (CLR_CMAKE_TARGET_UNIX OR CLR_CMAKE_TARGET_BROWSER OR CLR_CMAKE_TARGET_WASI)
     elseif (FORCE_ANDROID_OPENSSL)
         add_subdirectory(System.Security.Cryptography.Native)
     else ()
-        add_subdirectory(System.Globalization.Native)
         add_subdirectory(System.Net.Security.Native)
         add_subdirectory(System.Security.Cryptography.Native)
     endif ()

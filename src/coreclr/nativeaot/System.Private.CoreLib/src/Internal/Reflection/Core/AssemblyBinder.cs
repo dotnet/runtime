@@ -13,7 +13,6 @@ namespace Internal.Reflection.Core
 {
     // Auto StructLayout used to suppress warning that order of fields is not guaranteed in partial structs
     [StructLayout(LayoutKind.Auto)]
-    [ReflectionBlocked]
     [CLSCompliant(false)]
     public partial struct AssemblyBindResult
     {
@@ -28,7 +27,6 @@ namespace Internal.Reflection.Core
     //
     // If the binder cannot locate an assembly, it must return null and set "exception" to an exception object.
     //
-    [ReflectionBlocked]
     [CLSCompliant(false)]
     public abstract class AssemblyBinder
     {

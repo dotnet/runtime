@@ -1,6 +1,7 @@
 // Licensed to the .NET Foundation under one or more agreements.
 // The .NET Foundation licenses this file to you under the MIT license.
 
+using System.Collections.ObjectModel;
 using System.Security.Cryptography.X509Certificates;
 
 namespace System.Net.Security
@@ -13,12 +14,12 @@ namespace System.Net.Security
         internal static SslStreamCertificateContext Create(X509Certificate2 target)
         {
             // On Windows we do not need to build chain unless we are asked for it.
-            return new SslStreamCertificateContext(target, Array.Empty<X509Certificate2>(), null);
+            return new SslStreamCertificateContext(target, new ReadOnlyCollection<X509Certificate2>(Array.Empty<X509Certificate2>()), null);
         }
 
-        private SslStreamCertificateContext(X509Certificate2 target, X509Certificate2[] intermediates, SslCertificateTrust? trust)
+        private SslStreamCertificateContext(X509Certificate2 target, ReadOnlyCollection<X509Certificate2> intermediates, SslCertificateTrust? trust)
         {
-            if (intermediates.Length > 0)
+            if (intermediates.Count > 0)
             {
                 using (X509Chain chain = new X509Chain())
                 {
@@ -74,7 +75,7 @@ namespace System.Net.Security
                             using (store)
                             {
                                 // Add everything except the root
-                                for (int index = count; index < intermediates.Length - 1; index++)
+                                for (int index = count; index < intermediates.Count - 1; index++)
                                 {
                                     store.Add(intermediates[index]);
                                 }
@@ -93,7 +94,7 @@ namespace System.Net.Security
                                 {
                                     // Add also root to Intermediate CA store so OS can complete building chain.
                                     // (This does not make it trusted.
-                                    store.Add(intermediates[intermediates.Length - 1]);
+                                    store.Add(intermediates[intermediates.Count - 1]);
                                 }
                             }
                         }
@@ -101,8 +102,8 @@ namespace System.Net.Security
                 }
             }
 
-            _intermediateCertificates = intermediates;
-            Certificate = target;
+            IntermediateCertificates = intermediates;
+            TargetCertificate = target;
             Trust = trust;
         }
     }

@@ -10,6 +10,7 @@ namespace Microsoft.Extensions.Configuration.Xml
     /// Represents an XML file as an <see cref="IConfigurationSource"/>.
     /// </summary>
     [RequiresDynamicCode(XmlDocumentDecryptor.RequiresDynamicCodeMessage)]
+    [RequiresUnreferencedCode(XmlDocumentDecryptor.RequiresUnreferencedCodeMessage)]
     public class XmlConfigurationProvider : FileConfigurationProvider
     {
         /// <summary>

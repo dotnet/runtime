@@ -92,7 +92,7 @@ namespace System.Net.Security
         {
         }
 
-        private ProtocolToken? CreateShutdownToken()
+        private byte[]? CreateShutdownToken()
         {
             return null;
         }

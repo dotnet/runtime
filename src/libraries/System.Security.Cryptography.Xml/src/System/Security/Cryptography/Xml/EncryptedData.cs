@@ -9,6 +9,7 @@ namespace System.Security.Cryptography.Xml
     public sealed class EncryptedData : EncryptedType
     {
         [RequiresDynamicCode(CryptoHelpers.XsltRequiresDynamicCodeMessage)]
+        [RequiresUnreferencedCode(CryptoHelpers.CreateFromNameUnreferencedCodeMessage)]
         public override void LoadXml(XmlElement value)
         {
             if (value is null)
