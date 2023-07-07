@@ -11,6 +11,7 @@ public partial class AppSettingsTest
     [JSExport]
     public static void Run()
     {
+        // Check file presence in VFS based on application environment
         PrintFileExistence("/appsettings.json");
         PrintFileExistence("/appsettings.Development.json");
         PrintFileExistence("/appsettings.Production.json");

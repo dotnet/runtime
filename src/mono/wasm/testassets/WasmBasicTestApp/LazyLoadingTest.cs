@@ -10,6 +10,8 @@ public partial class LazyLoadingTest
     [JSExport]
     public static void Run()
     {
+        // System.Text.Json is marked as lazy loaded in the csproj, this method can be called only after the assembly is lazy loaded
+        // In the test case it is done in the JS before call to this method
         var text = JsonSerializer.Serialize(new Person("John", "Doe"));
         TestOutput.WriteLine(text);
     }
