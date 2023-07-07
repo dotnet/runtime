@@ -1652,8 +1652,7 @@ namespace System.Numerics
             bool trivialLeft = leftBits.IsEmpty;
             bool trivialRight = rightBits.IsEmpty;
 
-            // Trivial cases should be handled on the caller operator
-            Debug.Assert(!(trivialLeft && trivialRight));
+            Debug.Assert(!(trivialLeft && trivialRight), "Trivial cases should be handled on the caller operator");
 
             BigInteger result;
             uint[]? bitsFromPool = null;
@@ -1731,8 +1730,7 @@ namespace System.Numerics
             bool trivialLeft = leftBits.IsEmpty;
             bool trivialRight = rightBits.IsEmpty;
 
-            // Trivial cases should be handled on the caller operator
-            Debug.Assert(!(trivialLeft && trivialRight));
+            Debug.Assert(!(trivialLeft && trivialRight), "Trivial cases should be handled on the caller operator");
 
             BigInteger result;
             uint[]? bitsFromPool = null;
@@ -2707,8 +2705,7 @@ namespace System.Numerics
             bool trivialLeft = left.IsEmpty;
             bool trivialRight = right.IsEmpty;
 
-            // Trivial cases should be handled on the caller operator
-            Debug.Assert(!(trivialLeft && trivialRight));
+            Debug.Assert(!(trivialLeft && trivialRight), "Trivial cases should be handled on the caller operator");
 
             BigInteger result;
             uint[]? bitsFromPool = null;
