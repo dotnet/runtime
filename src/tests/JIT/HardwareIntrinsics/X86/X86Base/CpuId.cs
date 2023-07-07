@@ -217,7 +217,7 @@ namespace XarchHardwareIntrinsicTest._CpuId
 
             bool isAvx512HierarchyDisabled = isHierarchyDisabled;
 
-            int preferredVectorBitWidth = (GetDotnetEnvVar("PreferredVectorBitWidth") / 128) * 128;
+            int preferredVectorBitWidth = (GetDotnetEnvVar("PreferredVectorBitWidth", defaultValue: 0) / 128) * 128;
             int preferredVectorByteLength = preferredVectorBitWidth / 8;
 
             if (preferredVectorByteLength == 0)
