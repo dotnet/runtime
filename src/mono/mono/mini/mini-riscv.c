@@ -350,7 +350,14 @@ mono_arch_fregname (int reg)
 gpointer
 mono_arch_get_this_arg_from_call (host_mgreg_t *regs, guint8 *code)
 {
-	return (gpointer) regs [RISCV_A0];
+	MonoObject * this = (MonoObject *)regs [RISCV_A0];
+	// FIXME:
+	// The Mono will treat first parameter as this_pointer,
+	// it get conflict with RISC-V ABI. 
+	// more information refer to get_call_info(). 
+	if (!this->vtable)
+		this = (MonoObject *)regs [RISCV_A1];
+	return (gpointer) this;
 }
 
 MonoMethod *
