@@ -121,13 +121,11 @@ LEAF_END RtlRestoreContext, _TEXT
 
 LEAF_ENTRY RtlCaptureContext, _TEXT
     PROLOG_STACK_ALLOC 16
-    .cfi_adjust_cfa_offset 16
     sd  t1, 0(sp)
     li  t1, CONTEXT_FULL
     sw  t1, CONTEXT_ContextFlags(a0)
     ld  t1, 0(sp)
     EPILOG_STACK_FREE 16
-    .cfi_adjust_cfa_offset -16
     tail CONTEXT_CaptureContext
 LEAF_END RtlCaptureContext, _TEXT
 
@@ -137,7 +135,6 @@ LEAF_END RtlCaptureContext, _TEXT
 
 LEAF_ENTRY CONTEXT_CaptureContext, _TEXT
     PROLOG_STACK_ALLOC 24
-    .cfi_adjust_cfa_offset 24
     sd  t0, 0(sp)
     sd  t1, 8(sp)
     sd  t3, 16(sp)
@@ -241,6 +238,5 @@ LOCAL_LABEL(Done_CONTEXT_INTEGER):
 LOCAL_LABEL(Done_CONTEXT_FLOATING_POINT):
 
     EPILOG_STACK_FREE 24
-    .cfi_adjust_cfa_offset -24
     ret
 LEAF_END CONTEXT_CaptureContext, _TEXT
