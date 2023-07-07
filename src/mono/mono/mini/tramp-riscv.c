@@ -376,7 +376,6 @@ mono_arch_build_imt_trampoline (MonoVTable *vtable, MonoIMTCheckItem **imt_entri
 				buf_len += 6 * 4;
 			}
 		} else {
-			NOT_IMPLEMENTED;
 			buf_len += 5 * 4;
 		}
 	}
@@ -442,7 +441,6 @@ mono_arch_build_imt_trampoline (MonoVTable *vtable, MonoIMTCheckItem **imt_entri
 				riscv_jalr (code, RISCV_ZERO, RISCV_T0, 0);
 			}
 		} else {
-			NOT_IMPLEMENTED;
 			code = mono_riscv_emit_imm (code, RISCV_T0, (guint64)item->key);
 			item->jmp_code = code;
 			riscv_bgeu (code, imt_reg, RISCV_T0, 0);
