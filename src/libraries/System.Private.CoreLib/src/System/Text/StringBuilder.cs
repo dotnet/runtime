@@ -679,7 +679,6 @@ namespace System.Text
             return this;
         }
 
-        [MethodImpl(MethodImplOptions.NoInlining)]
         private void AppendWithExpansion(char value, int repeatCount)
         {
             Debug.Assert(repeatCount > 0, "Invalid length; should have been validated by caller.");
