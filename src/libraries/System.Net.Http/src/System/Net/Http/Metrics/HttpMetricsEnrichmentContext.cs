@@ -14,7 +14,7 @@ namespace System.Net.Http.Metrics
         private HttpRequestMessage? _request;
         private HttpResponseMessage? _response;
         private Exception? _exception;
-        private TagCollection _tags = new TagCollection();
+        private List<KeyValuePair<string, object?>> _tags = new();
 
         public HttpRequestMessage Request
         {
@@ -76,7 +76,6 @@ namespace System.Net.Http.Metrics
             _request = request;
             _response = response;
             _exception = exception;
-            _tags._runningCallback = true;
 
             try
             {
@@ -85,15 +84,14 @@ namespace System.Net.Http.Metrics
                     callback(this);
                 }
 
-                foreach (KeyValuePair<string, object?> tag in _tags._tags)
+                foreach (KeyValuePair<string, object?> tag in _tags)
                 {
                     tags.Add(tag);
                 }
             }
             finally
             {
-                _tags._tags.Clear();
-                _tags._runningCallback = false;
+                _tags.Clear();
                 _request = null;
                 _response = null;
                 _exception = null;
@@ -103,73 +101,6 @@ namespace System.Net.Http.Metrics
         private void EnsureRunningCallback()
         {
             if (_request == null) throw new InvalidOperationException("Enrichment callback should not cache HttpMetricsEnrichmentContext");
-        }
-
-        private sealed class TagCollection : ICollection<KeyValuePair<string, object?>>
-        {
-            public bool _runningCallback;
-            internal List<KeyValuePair<string, object?>> _tags = new();
-
-            public int Count
-            {
-                get
-                {
-                    EnsureRunningCallback();
-                    return _tags.Count;
-                }
-            }
-
-            public bool IsReadOnly
-            {
-                get
-                {
-                    EnsureRunningCallback();
-                    return false;
-                }
-            }
-
-            public void Add(KeyValuePair<string, object?> item)
-            {
-                EnsureRunningCallback();
-                _tags.Add(item);
-            }
-
-            public void Clear()
-            {
-                EnsureRunningCallback();
-                _tags.Clear();
-            }
-
-            public bool Contains(KeyValuePair<string, object?> item)
-            {
-                EnsureRunningCallback();
-                return _tags.Contains(item);
-            }
-
-            public void CopyTo(KeyValuePair<string, object?>[] array, int arrayIndex)
-            {
-                EnsureRunningCallback();
-                _tags.CopyTo(array, arrayIndex);
-            }
-
-            public IEnumerator<KeyValuePair<string, object?>> GetEnumerator()
-            {
-                EnsureRunningCallback();
-                return _tags.GetEnumerator();
-            }
-
-            public bool Remove(KeyValuePair<string, object?> item)
-            {
-                EnsureRunningCallback();
-                return _tags.Remove(item);
-            }
-
-            IEnumerator IEnumerable.GetEnumerator() => GetEnumerator();
-
-            private void EnsureRunningCallback()
-            {
-                if (!_runningCallback) throw new InvalidOperationException("Enrichment callback should not cache HttpMetricsEnrichmentContext");
-            }
         }
     }
 }
