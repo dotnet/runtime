@@ -1,6 +1,7 @@
 // Licensed to the .NET Foundation under one or more agreements.
 // The .NET Foundation licenses this file to you under the MIT license.
 
+import { mono_log_warn } from "./logging";
 import { MonoConfig, RuntimeAPI } from "../types";
 import { appendUniqueQuery, toAbsoluteBaseUri } from "./assets";
 import { normalizeConfig } from "./config";
@@ -19,10 +20,14 @@ export async function fetchInitializers(moduleConfig: MonoConfig): Promise<void>
     await Promise.all(initializerFiles.map(f => importInitializer(f)));
 
     async function importInitializer(path: string): Promise<void> {
-        const adjustedPath = appendUniqueQuery(toAbsoluteBaseUri(path));
-        const initializer = await import(/* webpackIgnore: true */ adjustedPath);
+        try {
+            const adjustedPath = appendUniqueQuery(toAbsoluteBaseUri(path));
+            const initializer = await import(/* webpackIgnore: true */ adjustedPath);
 
-        moduleConfig.libraryInitializers!.push(initializer);
+            moduleConfig.libraryInitializers!.push(initializer);
+        } catch (error) {
+            mono_log_warn(`Failed to import library initializer '${path}': ${error}`);
+        }
     }
 }
 
@@ -32,8 +37,8 @@ export async function invokeOnRuntimeConfigLoaded(config: MonoConfig) {
     const promises = [];
     for (let i = 0; i < config.libraryInitializers.length; i++) {
         const initializer = config.libraryInitializers[i] as { onRuntimeConfigLoaded: (config: MonoConfig) => Promise<void> };
-        if (initializer?.onRuntimeConfigLoaded) {
-            promises.push(initializer?.onRuntimeConfigLoaded(config));
+        if (initializer.onRuntimeConfigLoaded) {
+            promises.push(logAndSwallowError("onRuntimeConfigLoaded", () => initializer.onRuntimeConfigLoaded(config)));
         }
     }
 
@@ -49,10 +54,18 @@ export async function invokeOnRuntimeReady(api: RuntimeAPI) {
     const promises = [];
     for (let i = 0; i < config.libraryInitializers.length; i++) {
         const initializer = config.libraryInitializers[i] as { onRuntimeReady: (api: RuntimeAPI) => Promise<void> };
-        if (initializer?.onRuntimeReady) {
-            promises.push(initializer?.onRuntimeReady(api));
+        if (initializer.onRuntimeReady) {
+            promises.push(logAndSwallowError("onRuntimeReady", () => initializer.onRuntimeReady(api)));
         }
     }
 
     await Promise.all(promises);
+}
+
+async function logAndSwallowError(methodName: string, callback: () => Promise<void> | undefined): Promise<void> {
+    try {
+        await callback();
+    } catch (error) {
+        mono_log_warn(`Failed to invoke '${methodName}' on library initializer: ${error}`);
+    }
 }

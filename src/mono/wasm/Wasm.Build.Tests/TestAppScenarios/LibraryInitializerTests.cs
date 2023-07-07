@@ -35,4 +35,19 @@ public class LibraryInitializerTests : AppTestBase
             m => Assert.Equal("LIBRARY_INITIALIZER_TEST = 1", m)
         );
     }
+
+    [Fact]
+    public async Task LogAndSwallowError()
+    {
+        CopyTestAsset("WasmBasicTestApp", "LibraryInitializerTests");
+        PublishProject("Debug");
+
+        var result = await RunSdkStyleApp(new(
+            Configuration: "Debug",
+            ForPublish: true,
+            TestScenario: "LibraryInitializerTest",
+            BrowserQueryString: new Dictionary<string, string> { ["throwError"] = "true" }
+        ));
+        Assert.True(result.ConsoleOutput.Any(m => m.Contains("MONO_WASM: Failed to invoke 'onRuntimeConfigLoaded' on library initializer: Error: Error thrown from library initializer")), "The library initializer test didn't emit expected error message");
+    }
 }
