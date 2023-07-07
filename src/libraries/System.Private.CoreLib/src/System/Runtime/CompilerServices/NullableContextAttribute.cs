@@ -10,12 +10,17 @@ namespace System.Runtime.CompilerServices
     /// This attribute should not be used by developers in source code.
     /// </summary>
     [EditorBrowsable(EditorBrowsableState.Never)]
-    [AttributeUsage(AttributeTargets.Struct)]
-    public sealed class IsByRefLikeAttribute : Attribute
+    [AttributeUsage(AttributeTargets.Class | AttributeTargets.Struct | AttributeTargets.Method | AttributeTargets.Interface | AttributeTargets.Delegate, Inherited = false)]
+    public sealed class NullableContextAttribute : Attribute
     {
+        /// <summary>Flag specifying metadata related to nullable reference types.</summary>
+        public readonly byte Flag;
+
         /// <summary>Initializes the attribute.</summary>
-        public IsByRefLikeAttribute()
+        /// <param name="value">The flag value.</param>
+        public NullableContextAttribute(byte value)
         {
+            Flag = value;
         }
     }
 }

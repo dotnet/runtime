@@ -10,11 +10,11 @@ namespace System.Runtime.CompilerServices
     /// This attribute should not be used by developers in source code.
     /// </summary>
     [EditorBrowsable(EditorBrowsableState.Never)]
-    [AttributeUsage(AttributeTargets.Struct)]
-    public sealed class IsByRefLikeAttribute : Attribute
+    [AttributeUsage(AttributeTargets.Parameter, Inherited = false)]
+    public sealed class ScopedRefAttribute : Attribute
     {
         /// <summary>Initializes the attribute.</summary>
-        public IsByRefLikeAttribute()
+        public ScopedRefAttribute()
         {
         }
     }

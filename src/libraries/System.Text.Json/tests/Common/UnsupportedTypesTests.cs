@@ -170,6 +170,7 @@ namespace System.Text.Json.Serialization.Tests
 
 #if !BUILDING_SOURCE_GENERATOR_TESTS
         [Fact]
+        [SkipOnTargetFramework(TargetFrameworkMonikers.Netcoreapp, "NullableContextAttribute is public in corelib in .NET 8+")]
         public async Task TypeWithNullConstructorParameterName_ThrowsNotSupportedException()
         {
             // Regression test for https://github.com/dotnet/runtime/issues/58690
