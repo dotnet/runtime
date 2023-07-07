@@ -280,6 +280,7 @@ namespace pal
 
     bool touch_file(const string_t& path);
     bool realpath(string_t* path, bool skip_error_logging = false);
+    bool fullpath(string_t* path, bool skip_error_logging = false);
     bool file_exists(const string_t& path);
     inline bool directory_exists(const string_t& path) { return file_exists(path); }
     void readdir(const string_t& path, const string_t& pattern, std::vector<string_t>* list);

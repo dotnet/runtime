@@ -730,6 +730,88 @@ bool pal::clr_palstring(const char* cstr, pal::string_t* out)
 // Return if path is valid and file exists, return true and adjust path as appropriate.
 bool pal::realpath(string_t* path, bool skip_error_logging)
 {
+    return fullpath(path, skip_error_logging);
+}
+
+typedef std::unique_ptr<std::remove_pointer<HANDLE>::type, decltype(&::CloseHandle)> SmartHandle;
+
+// Like realpath, but resolves symlinks.
+bool pal::realpath2(string_t* path, bool skip_error_logging)
+{
+    if (path->empty())
+    {
+        return false;
+    }
+
+    // Use CreateFileW + GetFinalPathNameByHandleW to resolve symlinks
+
+    SmartHandle file(
+        ::CreateFileW(
+            path->c_str(),
+            0, // Querying only
+            FILE_SHARE_READ | FILE_SHARE_WRITE | FILE_SHARE_DELETE,
+            nullptr, // default security
+            OPEN_EXISTING, // existing file
+            FILE_ATTRIBUTE_NORMAL, // normal file
+            nullptr), // No attribute template
+        &::CloseHandle);
+
+    char_t buf[MAX_PATH];
+    size_t size;
+
+    if (file.get() == INVALID_HANDLE_VALUE)
+    {
+        // If we get "access denied" that may mean the path represents a directory.
+        // Even if not, we can fall back to GetFullPathNameW, which doesn't require a HANDLE
+
+        auto error = ::GetLastError();
+        file.release();
+        if (ERROR_ACCESS_DENIED != error)
+        {
+            goto invalidPath;
+        }
+    }
+    else
+    {
+        size = ::GetFinalPathNameByHandleW(file.get(), buf, MAX_PATH, FILE_NAME_NORMALIZED);
+        // If size is 0, this call failed. Fall back to GetFullPathNameW, below
+        if (size != 0)
+        {
+            string_t str;
+            if (size < MAX_PATH)
+            {
+                str.assign(buf);
+            }
+            else
+            {
+                str.resize(size, 0);
+                size = ::GetFinalPathNameByHandleW(file.get(), (LPWSTR)str.data(), static_cast<uint32_t>(size), FILE_NAME_NORMALIZED);
+                assert(size <= str.size());
+
+                if (size == 0)
+                {
+                    goto invalidPath;
+                }
+            }
+
+            // Remove the \\?\ prefix, unless it is necessary or was already there
+            if (LongFile::IsExtended(str) && !LongFile::IsExtended(*path) &&
+                !LongFile::ShouldNormalize(str.substr(LongFile::ExtendedPrefix.size())))
+            {
+                str.erase(0, LongFile::ExtendedPrefix.size());
+            }
+
+            *path = str;
+            return true;
+        }
+    }
+
+    // If the above fails, fall back to fullpath
+    return fullpath(path, skip_error_logging);
+}
+
+bool pal::fullpath(string_t* path, bool skip_error_logging)
+{
     if (path->empty())
     {
         return false;
