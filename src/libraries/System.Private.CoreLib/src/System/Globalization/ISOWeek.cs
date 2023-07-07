@@ -34,7 +34,9 @@ namespace System.Globalization
             return week;
         }
 
-        public static int GetYear(DateTime date)
+        public static int GetYear(DateTime date) => GetWeekAndYear(date).Year;
+
+        public static (int Week, int Year) GetWeekAndYear(DateTime date)
         {
             int week = GetWeekNumber(date);
 
@@ -52,7 +54,7 @@ namespace System.Globalization
                 return date.Year + 1;
             }
 
-            return date.Year;
+            return (week, date.Year);
         }
 
         // The year parameter represents an ISO week-numbering year (also called ISO year informally).
