@@ -10,12 +10,17 @@ namespace System.Runtime.CompilerServices
     /// This attribute should not be used by developers in source code.
     /// </summary>
     [EditorBrowsable(EditorBrowsableState.Never)]
-    [AttributeUsage(AttributeTargets.Struct)]
-    public sealed class IsByRefLikeAttribute : Attribute
+    [AttributeUsage(AttributeTargets.Module, Inherited = false)]
+    public sealed class NullablePublicOnlyAttribute : Attribute
     {
+        /// <summary>Indicates whether metadata for internal members is included.</summary>
+        public readonly bool IncludesInternals;
+
         /// <summary>Initializes the attribute.</summary>
-        public IsByRefLikeAttribute()
+        /// <param name="value">Indicates whether metadata for internal members is included.</param>
+        public NullablePublicOnlyAttribute(bool value)
         {
+            IncludesInternals = value;
         }
     }
 }
