@@ -136,6 +136,9 @@ The .NET Foundation licenses this file to you under the MIT license.
       <LinkerArg Include="-static-pie" Condition="'$(StaticExecutable)' == 'true' and '$(PositionIndependentExecutable)' != 'false'" />
       <LinkerArg Include="-dynamiclib" Condition="'$(_IsApplePlatform)' == 'true' and '$(NativeLib)' == 'Shared'" />
       <LinkerArg Include="-shared" Condition="'$(_IsApplePlatform)' != 'true' and '$(NativeLib)' == 'Shared'" />
+      <!-- source-build links directly with openssl (-lssl -lcrypto) -->
+      <LinkerArg Include="-lssl" />
+      <LinkerArg Include="-lcrypto" />
       <!-- binskim warning BA3001 PIE disabled on executable -->
       <LinkerArg Include="-pie -Wl,-pie" Condition="'$(_IsApplePlatform)' != 'true' and '$(NativeLib)' == '' and '$(StaticExecutable)' != 'true' and '$(PositionIndependentExecutable)' != 'false'" />
       <LinkerArg Include="-Wl,-no-pie" Condition="'$(_IsApplePlatform)' != 'true' and '$(NativeLib)' == '' and '$(StaticExecutable)' != 'true' and '$(PositionIndependentExecutable)' == 'false'" />
