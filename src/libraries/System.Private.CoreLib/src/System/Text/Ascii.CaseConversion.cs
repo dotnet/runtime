@@ -219,8 +219,8 @@ namespace System.Text
             bool conversionIsWidthPreserving = typeof(TFrom) == typeof(TTo); // JIT turns this into a const
             bool conversionIsToUpper = (typeof(TCasing) == typeof(ToUpperConversion)); // JIT turns this into a const
             uint numInputElementsToConsumeEachVectorizedLoopIteration = (uint)(sizeof(Vector128<byte>) / sizeof(TFrom)); // JIT turns this into a const
+            uint numInputElementsToConsumeEachVectorizedLoopIteration_256 = (uint)(sizeof(Vector256<byte>) / sizeof(TFrom)); // JIT turns this into a const
             uint numInputElementsToConsumeEachVectorizedLoopIteration_512 = (uint)(sizeof(Vector512<byte>) / sizeof(TFrom)); // JIT turns this into a const
-
 
             nuint i = 0;
 
@@ -302,6 +302,81 @@ namespace System.Text
 
                     ChangeWidthAndWriteTo(srcVector, pDest, i);
                     i += numInputElementsToConsumeEachVectorizedLoopIteration_512;
+                }
+            }
+            // Process the input as a series of 256-bit blocks.
+            else if (Vector256.IsHardwareAccelerated && elementCount >= numInputElementsToConsumeEachVectorizedLoopIteration_256)
+            {
+                // Unaligned read and check for non-ASCII data.
+                Vector256<TFrom> srcVector = Vector256.LoadUnsafe(ref *pSrc);
+                if (VectorContainsNonAsciiChar(srcVector))
+                {
+                    goto Drain64;
+                }
+
+                // Now find matching characters and perform case conversion.
+                // Basically, the (A <= value && value <= Z) check is converted to:
+                // (value - CONST) <= (Z - A), but using signed instead of unsigned arithmetic.
+
+                TFrom SourceSignedMinValue = TFrom.CreateTruncating(1 << (8 * sizeof(TFrom) - 1));
+                Vector256<TFrom> subtractionVector = Vector256.Create(conversionIsToUpper ? (SourceSignedMinValue + TFrom.CreateTruncating('a')) : (SourceSignedMinValue + TFrom.CreateTruncating('A')));
+                Vector256<TFrom> comparisionVector = Vector256.Create(SourceSignedMinValue + TFrom.CreateTruncating(26 /* A..Z or a..z */));
+                Vector256<TFrom> caseConversionVector = Vector256.Create(TFrom.CreateTruncating(0x20)); // works both directions
+
+                Vector256<TFrom> matches = SignedLessThan((srcVector - subtractionVector), comparisionVector);
+                srcVector ^= (matches & caseConversionVector);
+
+                // Now write to the destination.
+
+                ChangeWidthAndWriteTo(srcVector, pDest, 0);
+
+                // Now that the first conversion is out of the way, calculate how
+                // many elements we should skip in order to have future writes be
+                // aligned.
+
+                uint expectedWriteAlignment_256 = numInputElementsToConsumeEachVectorizedLoopIteration_256 * (uint)sizeof(TTo); // JIT turns this into a const
+                i = numInputElementsToConsumeEachVectorizedLoopIteration_256 - ((uint)pDest % expectedWriteAlignment_256) / (uint)sizeof(TTo);
+                Debug.Assert((nuint)(&pDest[i]) % expectedWriteAlignment_256 == 0, "Destination buffer wasn't properly aligned!");
+
+                // Future iterations of this loop will be aligned,
+                // except for the last iteration.
+
+                while (true)
+                {
+                    Debug.Assert(i <= elementCount, "We overran a buffer somewhere.");
+
+                    if ((elementCount - i) < numInputElementsToConsumeEachVectorizedLoopIteration_256)
+                    {
+                        // If we're about to enter the final iteration of the loop, back up so that
+                        // we can read one unaligned block. If we've already consumed all the data,
+                        // jump straight to the end.
+
+                        if (i == elementCount)
+                        {
+                            goto Return;
+                        }
+
+                        i = elementCount - numInputElementsToConsumeEachVectorizedLoopIteration_256;
+                    }
+
+                    // Unaligned read & check for non-ASCII data.
+
+                    srcVector = Vector256.LoadUnsafe(ref *pSrc, i);
+                    if (VectorContainsNonAsciiChar(srcVector))
+                    {
+                        goto Drain64;
+                    }
+
+                    // Now find matching characters and perform case conversion.
+
+                    matches = SignedLessThan((srcVector - subtractionVector), comparisionVector);
+                    srcVector ^= (matches & caseConversionVector);
+
+                    // Now write to the destination.
+                    // We expect this write to be aligned except for the last run through the loop.
+
+                    ChangeWidthAndWriteTo(srcVector, pDest, i);
+                    i += numInputElementsToConsumeEachVectorizedLoopIteration_256;
                 }
             }
             // Process the input as a series of 128-bit blocks.
@@ -573,6 +648,35 @@ namespace System.Text
         }
 
         [MethodImpl(MethodImplOptions.AggressiveInlining)]
+        private static unsafe void ChangeWidthAndWriteTo<TFrom, TTo>(Vector256<TFrom> vector, TTo* pDest, nuint elementOffset)
+            where TFrom : unmanaged
+            where TTo : unmanaged
+        {
+            if (sizeof(TFrom) == sizeof(TTo))
+            {
+                // no width change needed
+                Vector256.StoreUnsafe(vector.As<TFrom, TTo>(), ref *pDest, elementOffset);
+            }
+            else if (sizeof(TFrom) == 1 && sizeof(TTo) == 2)
+            {
+                // widening operation required
+                Vector256.StoreUnsafe(Vector256.WidenLower(vector.AsByte()), ref *(ushort*)pDest, elementOffset);
+                Vector256.StoreUnsafe(Vector256.WidenUpper(vector.AsByte()), ref *(ushort*)pDest, elementOffset + 16);
+            }
+            else if (sizeof(TFrom) == 2 && sizeof(TTo) == 1)
+            {
+                // narrowing operation required, we know data is all-ASCII so use extract helper
+                Vector256<byte> narrow = ExtractAsciiVector(vector.AsUInt16(), vector.AsUInt16());
+                narrow.StoreLowerUnsafe(ref *(byte*)pDest, elementOffset);
+            }
+            else
+            {
+                Debug.Fail("Unknown types.");
+                throw new NotSupportedException();
+            }
+        }
+
+        [MethodImpl(MethodImplOptions.AggressiveInlining)]
         private static unsafe void ChangeWidthAndWriteTo<TFrom, TTo>(Vector512<TFrom> vector, TTo* pDest, nuint elementOffset)
             where TFrom : unmanaged
             where TTo : unmanaged
@@ -612,6 +716,24 @@ namespace System.Text
             else if (sizeof(T) == 2)
             {
                 return Vector128.LessThan(left.AsInt16(), right.AsInt16()).As<short, T>();
+            }
+            else
+            {
+                throw new NotSupportedException();
+            }
+        }
+
+        [MethodImpl(MethodImplOptions.AggressiveInlining)]
+        private static unsafe Vector256<T> SignedLessThan<T>(Vector256<T> left, Vector256<T> right)
+            where T : unmanaged
+        {
+            if (sizeof(T) == 1)
+            {
+                return Vector256.LessThan(left.AsSByte(), right.AsSByte()).As<sbyte, T>();
+            }
+            else if (sizeof(T) == 2)
+            {
+                return Vector256.LessThan(left.AsInt16(), right.AsInt16()).As<short, T>();
             }
             else
             {

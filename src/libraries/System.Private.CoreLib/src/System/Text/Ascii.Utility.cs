@@ -1456,6 +1456,35 @@ namespace System.Text
         }
 
         [MethodImpl(MethodImplOptions.AggressiveInlining)]
+        private static bool VectorContainsNonAsciiChar(Vector256<byte> asciiVector)
+        {
+            // max ASCII character is 0b_0111_1111, so the most significant bit (0x80) tells whether it contains non ascii
+
+            // prefer architecture specific intrinsic as they offer better perf
+            return asciiVector.ExtractMostSignificantBits() != 0;
+        }
+
+        [MethodImpl(MethodImplOptions.AggressiveInlining)]
+        private static bool VectorContainsNonAsciiChar(Vector256<ushort> utf16Vector)
+        {
+            const ushort asciiMask = ushort.MaxValue - 127; // 0xFF80
+            Vector256<ushort> zeroIsAscii = utf16Vector & Vector256.Create(asciiMask);
+            // If a non-ASCII bit is set in any WORD of the vector, we have seen non-ASCII data.
+            return zeroIsAscii != Vector256<ushort>.Zero;
+        }
+
+        [MethodImpl(MethodImplOptions.AggressiveInlining)]
+        private static bool VectorContainsNonAsciiChar<T>(Vector256<T> vector)
+            where T : unmanaged
+        {
+            Debug.Assert(typeof(T) == typeof(byte) || typeof(T) == typeof(ushort));
+
+            return typeof(T) == typeof(byte)
+                ? VectorContainsNonAsciiChar(vector.AsByte())
+                : VectorContainsNonAsciiChar(vector.AsUInt16());
+        }
+
+        [MethodImpl(MethodImplOptions.AggressiveInlining)]
         private static bool VectorContainsNonAsciiChar(Vector512<byte> asciiVector)
         {
             // max ASCII character is 0b_0111_1111, so the most significant bit (0x80) tells whether it contains non ascii
@@ -1547,6 +1576,16 @@ namespace System.Text
             {
                 return Vector128.Narrow(vectorFirst, vectorSecond);
             }
+        }
+
+        [MethodImpl(MethodImplOptions.AggressiveInlining)]
+        private static Vector256<byte> ExtractAsciiVector(Vector256<ushort> vectorFirst, Vector256<ushort> vectorSecond)
+        {
+            // Narrows two vectors of words [ w7 w6 w5 w4 w3 w2 w1 w0 ] and [ w7' w6' w5' w4' w3' w2' w1' w0' ]
+            // to a vector of bytes [ b7 ... b0 b7' ... b0'].
+
+            // prefer architecture specific intrinsic as they don't perform additional AND like Vector128.Narrow does
+            return Vector256.Narrow(vectorFirst, vectorSecond);
         }
 
         [MethodImpl(MethodImplOptions.AggressiveInlining)]
