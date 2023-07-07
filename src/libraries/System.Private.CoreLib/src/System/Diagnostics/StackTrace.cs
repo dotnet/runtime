@@ -128,10 +128,16 @@ namespace System.Diagnostics
         /// <summary>
         /// Constructs a "fake" stack trace
         /// </summary>
-        public StackTrace(StackFrame[] frames)
+        public StackTrace(IEnumerable<StackFrame> frames)
         {
-            _stackFrames = frames;
-            _numOfFrames = frames.Length;
+            ArgumentNullException.ThrowIfNull(frames);
+
+            List<StackFrame> frameList = new List<StackFrame>();
+            foreach (var frame in frames)
+                frameList.Add(frame);
+
+            _stackFrames = frameList.ToArray();
+            _numOfFrames = frameList.Count;
         }
 
         /// <summary>
