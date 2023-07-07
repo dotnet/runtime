@@ -635,9 +635,21 @@ export class WasmBuilder {
                 exportCount++;
 
             this.beginFunction(func.typeName, func.locals);
-            func.blob = func.generator();
-            if (!func.blob)
-                func.blob = this.endFunction(false);
+            try {
+                func.blob = func.generator();
+            } finally {
+                // If func.generator failed due to an error or didn't return a blob, we want
+                //  to call endFunction to pop the stack and create the blob automatically.
+                // We may be in the middle of handling an exception so don't let this automatic
+                //  logic throw and suppress the original exception being handled
+                try {
+                    if (!func.blob)
+                        func.blob = this.endFunction(false);
+                } catch {
+                    // eslint-disable-next-line @typescript-eslint/no-extra-semi
+                    ;
+                }
+            }
         }
 
         this._generateImportSection(includeFunctionTable);

@@ -995,7 +995,7 @@ namespace System.Text.Json.Nodes.Tests
 
             var clone = jObject.DeepClone().AsObject();
 
-            Assert.True(JsonNode.DeepEquals(jObject, clone));
+            JsonNodeTests.AssertDeepEqual(jObject, clone);
 
             Assert.Equal(jObject.Count, clone.Count);
             Assert.Equal(1, clone["One"].GetValue<int>());
@@ -1029,7 +1029,7 @@ namespace System.Text.Json.Nodes.Tests
             JsonObject jObject = JsonObject.Create(document.RootElement);
             var clone = jObject.DeepClone().AsObject();
 
-            Assert.True(JsonNode.DeepEquals(jObject, clone));
+            JsonNodeTests.AssertDeepEqual(jObject, clone);
             Assert.Equal(1, clone["One"].GetValue<int>());
             Assert.Equal("abc", clone["String"].GetValue<string>());
         }
@@ -1045,19 +1045,13 @@ namespace System.Text.Json.Nodes.Tests
             sameJObject["One"] = 1;
             sameJObject["array"] = new JsonArray() { "a", "b" };
 
-            Assert.True(JsonNode.DeepEquals(jObject, jObject));
-            Assert.True(JsonNode.DeepEquals(jObject, sameJObject));
-            Assert.True(JsonNode.DeepEquals(sameJObject, jObject));
-
-            Assert.True(JsonNode.DeepEquals(null, null));
-            Assert.False(JsonNode.DeepEquals(jObject, null));
-            Assert.False(JsonNode.DeepEquals(null, jObject));
+            JsonNodeTests.AssertDeepEqual(jObject, sameJObject);
+            JsonNodeTests.AssertNotDeepEqual(jObject, null);
 
             var diffJObject = new JsonObject();
             diffJObject["One"] = 3;
 
-            Assert.False(JsonNode.DeepEquals(diffJObject, jObject));
-            Assert.False(JsonNode.DeepEquals(jObject, diffJObject));
+            JsonNodeTests.AssertNotDeepEqual(diffJObject, jObject);
         }
 
         [Fact]
@@ -1083,7 +1077,7 @@ namespace System.Text.Json.Nodes.Tests
                 }
             };
 
-            Assert.True(JsonNode.DeepEquals(jObject, JsonValue.Create(poco)));
+            JsonNodeTests.AssertDeepEqual(jObject, JsonValue.Create(poco));
 
             var diffPoco = new SimpleClass()
             {
@@ -1096,7 +1090,7 @@ namespace System.Text.Json.Nodes.Tests
                 }
             };
 
-            Assert.False(JsonNode.DeepEquals(jObject, JsonValue.Create(diffPoco)));
+            JsonNodeTests.AssertNotDeepEqual(jObject, JsonValue.Create(diffPoco));
         }
 
         [Fact]
@@ -1114,7 +1108,7 @@ namespace System.Text.Json.Nodes.Tests
                 { "obj", new { } }
             };
 
-            Assert.True(JsonNode.DeepEquals(jObject, JsonValue.Create(dictionary)));
+            JsonNodeTests.AssertDeepEqual(jObject, JsonValue.Create(dictionary));
 
             var diffDictionary = new Dictionary<string, object>()
             {
@@ -1123,7 +1117,7 @@ namespace System.Text.Json.Nodes.Tests
                 { "obj", new { } }
             };
 
-            Assert.False(JsonNode.DeepEquals(jObject, JsonValue.Create(diffDictionary)));
+            JsonNodeTests.AssertNotDeepEqual(jObject, JsonValue.Create(diffDictionary));
         }
 
         private class SimpleClass
@@ -1143,15 +1137,15 @@ namespace System.Text.Json.Nodes.Tests
 
             using JsonDocument document2 = JsonDocument.Parse("{\"One\":     1, \"String\":     \"abc\"}   ");
             JsonObject jObject2 = JsonObject.Create(document2.RootElement);
-            Assert.True(JsonNode.DeepEquals(jObject, jObject2));
+            JsonNodeTests.AssertDeepEqual(jObject, jObject2);
 
             using JsonDocument document3 = JsonDocument.Parse("{\"One\": 3, \"String\": \"abc\"}");
             JsonObject jObject3 = JsonObject.Create(document3.RootElement);
-            Assert.False(JsonNode.DeepEquals(jObject, jObject3));
+            JsonNodeTests.AssertNotDeepEqual(jObject, jObject3);
 
             using JsonDocument document4 = JsonDocument.Parse("{\"One\":     1, \"String\":     \"abc2\"}   ");
             JsonObject jObject4 = JsonObject.Create(document4.RootElement);
-            Assert.False(JsonNode.DeepEquals(jObject, jObject4));
+            JsonNodeTests.AssertNotDeepEqual(jObject, jObject4);
         }
 
         [Fact]

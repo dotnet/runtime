@@ -1789,13 +1789,6 @@ bool Compiler::StructPromotionHelper::CanPromoteStructType(CORINFO_CLASS_HANDLE 
         return false;
     }
 
-    // TODO-Quirk: The old logic disallowed promotion for "custom layout" HFAs.
-    // The equivalent check now is the following, but it is quite meaningless.
-    if (treeNodes[0].hasSignificantPadding && compiler->IsHfa(typeHnd))
-    {
-        return false;
-    }
-
     assert(treeNodes[0].size == structSize);
 
     structPromotionInfo.fieldCnt = 0;
@@ -1911,8 +1904,7 @@ var_types Compiler::StructPromotionHelper::TryPromoteValueClassAsPrimitive(CORIN
         const char* className = compiler->info.compCompHnd->getClassNameFromMetadata(node.simdTypeHnd, &namespaceName);
 
 #ifdef FEATURE_SIMD
-        if (compiler->usesSIMDTypes() &&
-            (compiler->isRuntimeIntrinsicsNamespace(namespaceName) || compiler->isNumericsNamespace(namespaceName)))
+        if (compiler->isRuntimeIntrinsicsNamespace(namespaceName) || compiler->isNumericsNamespace(namespaceName))
         {
             unsigned    simdSize;
             CorInfoType simdBaseJitType = compiler->getBaseJitTypeAndSizeOfSIMDType(node.simdTypeHnd, &simdSize);

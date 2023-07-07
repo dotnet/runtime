@@ -851,7 +851,7 @@ VOID ETW::GCLog::EndMovedReferences(size_t profilingContext, BOOL fAllowProfApiN
 }
 
 /***************************************************************************/
-/* This implements the public runtime provider's GCHeapCollectKeyword.  It
+/* This implements the public runtime provider's ManagedHeapCollectKeyword.  It
    performs a full, gen-2, blocking GC. */
 /***************************************************************************/
 VOID ETW::GCLog::ForceGC(LONGLONG l64ClientSequenceNumber)
@@ -4326,10 +4326,10 @@ void InitializeEventTracing()
 // that ultimately funnels them all into a common handler.
 
 #if defined(HOST_UNIX)
-// CLR_GCHEAPCOLLECT_KEYWORD is defined by the generated ETW manifest on Windows.
+// CLR_MANAGEDHEAPCOLLECT_KEYWORD is defined by the generated ETW manifest on Windows.
 // On non-Windows, we need to make sure that this is defined.  Given that we can't change
 // the value due to compatibility, we specify it here rather than generating defines based on the manifest.
-#define CLR_GCHEAPCOLLECT_KEYWORD 0x800000
+#define CLR_MANAGEDHEAPCOLLECT_KEYWORD 0x800000
 #endif // defined(HOST_UNIX)
 
 // CallbackProviderIndex provides a quick identification of which provider triggered the
@@ -4417,10 +4417,10 @@ VOID EtwCallbackCommon(
         GCHeapUtilities::RecordEventStateChange(bIsPublicTraceHandle, keywords, level);
     }
 
-    // Special check for the runtime provider's GCHeapCollectKeyword.  Profilers
+    // Special check for the runtime provider's ManagedHeapCollectKeyword.  Profilers
     // flick this to force a full GC.
     if (g_fEEStarted && !g_fEEShutDown && bIsPublicTraceHandle &&
-        ((MatchAnyKeyword & CLR_GCHEAPCOLLECT_KEYWORD) != 0))
+        ((MatchAnyKeyword & CLR_MANAGEDHEAPCOLLECT_KEYWORD) != 0))
     {
         // Profilers may (optionally) specify extra data in the filter parameter
         // to log with the GCStart event.

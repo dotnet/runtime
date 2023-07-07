@@ -1,0 +1,15 @@
+<Project Sdk="Microsoft.NET.Sdk">
+  <PropertyGroup>
+    <OutputType>Exe</OutputType>
+    <AllowUnsafeBlocks>True</AllowUnsafeBlocks>
+    <MonoAotIncompatible>true</MonoAotIncompatible>
+  </PropertyGroup>
+  <ItemGroup>
+    <Compile Include="istypeequivalent.cs" />
+  </ItemGroup>
+  <ItemGroup>
+    <ProjectReference Include="typeequivalenttypes_1.csproj" />
+    <ProjectReference Include="typeequivalenttypes_2.csproj" />
+  </ItemGroup>
+  <Import Project="$([MSBuild]::GetPathOfFileAbove(TypeEquivalence.targets))" />
+</Project>

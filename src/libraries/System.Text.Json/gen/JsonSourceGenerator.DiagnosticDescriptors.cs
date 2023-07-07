@@ -98,6 +98,14 @@ namespace System.Text.Json.SourceGeneration
                 category: JsonConstants.SystemTextJsonSourceGenerationName,
                 defaultSeverity: DiagnosticSeverity.Error,
                 isEnabledByDefault: true);
+
+            public static DiagnosticDescriptor JsonConstructorInaccessible { get; } = new DiagnosticDescriptor(
+                id: "SYSLIB1222",
+                title: new LocalizableResourceString(nameof(SR.JsonConstructorInaccessibleTitle), SR.ResourceManager, typeof(FxResources.System.Text.Json.SourceGeneration.SR)),
+                messageFormat: new LocalizableResourceString(nameof(SR.JsonConstructorInaccessibleMessageFormat), SR.ResourceManager, typeof(FxResources.System.Text.Json.SourceGeneration.SR)),
+                category: JsonConstants.SystemTextJsonSourceGenerationName,
+                defaultSeverity: DiagnosticSeverity.Warning,
+                isEnabledByDefault: true);
         }
     }
 }
