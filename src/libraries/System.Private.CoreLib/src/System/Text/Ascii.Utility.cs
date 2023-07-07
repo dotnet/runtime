@@ -1771,16 +1771,8 @@ namespace System.Text
                     goto FoundNonAsciiData;
                 }
 
-                if (BitConverter.IsLittleEndian)
-                {
-                    pUtf16Buffer[currentOffset] = (char)(byte)asciiData;
-                    pUtf16Buffer[currentOffset + 1] = (char)(asciiData >> 8);
-                }
-                else
-                {
-                    pUtf16Buffer[currentOffset + 1] = (char)(byte)asciiData;
-                    pUtf16Buffer[currentOffset] = (char)(asciiData >> 8);
-                }
+                // Same logic works regardless of endianness.
+                *(uint*)(pUtf16Buffer + currentOffset) = (asciiData | (asciiData << 8)) & 0x00ff00ffu;
 
                 currentOffset += 2;
             }
