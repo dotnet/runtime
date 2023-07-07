@@ -1659,6 +1659,7 @@ mono_arch_decompose_opts (MonoCompile *cfg, MonoInst *ins)
 	case OP_IADD_OVF:
 	case OP_ISUB:
 	case OP_LSUB:
+	case OP_FSUB:
 	case OP_ISUB_IMM:
 	case OP_LSUB_IMM:
 	case OP_INEG:
@@ -2033,6 +2034,7 @@ mono_arch_lowering_pass (MonoCompile *cfg, MonoBasicBlock *bb)
 		case OP_LMOVE:
 		case OP_ISUB:
 		case OP_LSUB:
+		case OP_FSUB:
 		case OP_IADD:
 		case OP_LADD:
 		case OP_IMUL:
@@ -3873,6 +3875,14 @@ mono_arch_output_basic_block (MonoCompile *cfg, MonoBasicBlock *bb)
 		case OP_LSUB:
 			riscv_sub (code, ins->dreg, ins->sreg1, ins->sreg2);
 			break;
+		case OP_FSUB:
+			g_assert (riscv_stdext_f || riscv_stdext_d);
+			if (riscv_stdext_d)
+				riscv_fsub_d (code, RISCV_ROUND_DY, ins->dreg, ins->sreg1, ins->sreg2);
+			else
+				NOT_IMPLEMENTED;
+				riscv_fsub_s (code, RISCV_ROUND_DY, ins->dreg, ins->sreg1, ins->sreg2);
+			break;
 		case OP_IMUL:
 #ifdef TARGET_RISCV64
 			g_assert (riscv_stdext_m);
@@ -3896,10 +3906,21 @@ mono_arch_output_basic_block (MonoCompile *cfg, MonoBasicBlock *bb)
 			break;
 		case OP_FDIV:
 			g_assert (riscv_stdext_f || riscv_stdext_d);
-			if (riscv_stdext_d)
+			if (riscv_stdext_d){
+				riscv_fmv_d_x (code, RISCV_FT0, RISCV_ZERO);
+				riscv_feq_d (code, RISCV_T0, ins->sreg2, RISCV_FT0);
+				code = mono_riscv_emit_branch_exc (cfg, code, OP_RISCV_EXC_BEQ, RISCV_T0, RISCV_ZERO,
+												"DivideByZeroException");
 				riscv_fdiv_d (code, RISCV_ROUND_DY, ins->dreg, ins->sreg1, ins->sreg2);
-			else
-				riscv_fdiv_d (code, RISCV_ROUND_DY, ins->dreg, ins->sreg1, ins->sreg2);
+			}
+			else{
+				NOT_IMPLEMENTED;
+				riscv_fmv_w_x (code, RISCV_FT0, RISCV_ZERO);
+				riscv_feq_s (code, RISCV_T0, ins->sreg2, RISCV_FT0);
+				code = mono_riscv_emit_branch_exc (cfg, code, OP_RISCV_EXC_BEQ, RISCV_T0, RISCV_ZERO,
+												"DivideByZeroException");
+				riscv_fdiv_s (code, RISCV_ROUND_DY, ins->dreg, ins->sreg1, ins->sreg2);
+			}
 			break;
 		case OP_IDIV:
 		case OP_LDIV:
