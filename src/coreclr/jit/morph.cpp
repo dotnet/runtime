@@ -10685,7 +10685,7 @@ GenTree* Compiler::fgOptimizeHWIntrinsic(GenTreeHWIntrinsic* node)
             //  * Create(ToScalar(Dot(..., ...)))
             //  * Create(ToScalar(Sqrt(Dot(..., ...))))
             //
-            // When these exist, we'll avoid converting to a scalar and avoid broadcasting
+            // When these exist, we'll avoid converting to a scalar and hence, avoid broadcasting
             // the value back into a vector. Instead we'll just keep everything as a vector.
             //
             // We only do this for Vector64/Vector128 today. We could expand this more in
@@ -10726,7 +10726,7 @@ GenTree* Compiler::fgOptimizeHWIntrinsic(GenTreeHWIntrinsic* node)
             GenTreeHWIntrinsic* hwop1 = op1->AsHWIntrinsic();
 
 #if defined(TARGET_ARM64)
-            if ((hwop1->GetHWIntrinsicId() == NI_Vector64_ToScalar) &&
+            if ((hwop1->GetHWIntrinsicId() == NI_Vector64_ToScalar) ||
                 (hwop1->GetHWIntrinsicId() == NI_Vector128_ToScalar))
 #else
             if (hwop1->GetHWIntrinsicId() == NI_Vector128_ToScalar)
