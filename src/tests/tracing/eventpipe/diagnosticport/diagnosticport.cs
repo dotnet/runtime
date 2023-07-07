@@ -401,9 +401,15 @@ namespace Tracing.Tests.DiagnosticPortValidation
                         // Mono currently returns empty string if the runtime is suspended before an assembly is loaded
                         Utils.Assert(string.IsNullOrEmpty(processInfo2.ManagedEntrypointAssemblyName));
                     }
-                    else
+                    else if (TestLibrary.Utilities.IsNativeAot)
                     {
                         string expectedName = System.Reflection.Assembly.GetExecutingAssembly().GetName().Name;
+                        Utils.Assert(expectedName.Equals(processInfo2.ManagedEntrypointAssemblyName),
+                            $"ManagedEntrypointAssemblyName must match. Expected: {expectedName}, Received: {processInfo2.ManagedEntrypointAssemblyName}");
+                    }
+                    else
+                    {
+                        string expectedName = Path.GetFileNameWithoutExtension(Assembly.GetExecutingAssembly().Location);
                         Utils.Assert(expectedName.Equals(processInfo2.ManagedEntrypointAssemblyName),
                             $"ManagedEntrypointAssemblyName must match. Expected: {expectedName}, Received: {processInfo2.ManagedEntrypointAssemblyName}");
                     }
