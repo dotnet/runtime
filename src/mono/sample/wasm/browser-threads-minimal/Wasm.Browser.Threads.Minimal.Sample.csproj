@@ -1,8 +1,8 @@
 <Project Sdk="Microsoft.NET.Sdk">
-  <Import Project="..\DefaultBrowserSample.targets" />
   <PropertyGroup>
     <WasmEnableThreads>true</WasmEnableThreads>
   </PropertyGroup>
+  <Import Project="..\DefaultBrowserSample.targets" />
 
   <ItemGroup>
     <WasmExtraFilesToDeploy Include="main.js" />

@@ -665,7 +665,6 @@ void BaseDomain::InitVSD()
     GetLoaderAllocator()->InitVirtualCallStubManager(this);
 }
 
-#ifdef HOST_WINDOWS
 void BaseDomain::InitThreadStaticBlockTypeMap()
 {
     STANDARD_VM_CONTRACT;
@@ -673,7 +672,6 @@ void BaseDomain::InitThreadStaticBlockTypeMap()
     m_NonGCThreadStaticBlockTypeIDMap.Init();
     m_GCThreadStaticBlockTypeIDMap.Init();
 }
-#endif // HOST_WINDOWS
 
 void BaseDomain::ClearBinderContext()
 {
@@ -1771,10 +1769,8 @@ void AppDomain::Create()
     // allocate a Virtual Call Stub Manager for the default domain
     pDomain->InitVSD();
 
-#ifdef HOST_WINDOWS
     // allocate a thread static block to index map
     pDomain->InitThreadStaticBlockTypeMap();
-#endif
 
     pDomain->SetStage(AppDomain::STAGE_OPEN);
     pDomain->CreateDefaultBinder();
@@ -4664,7 +4660,6 @@ PTR_MethodTable BaseDomain::LookupType(UINT32 id) {
     return pMT;
 }
 
-#ifdef HOST_WINDOWS
 //------------------------------------------------------------------------
 UINT32 BaseDomain::GetNonGCThreadStaticTypeIndex(PTR_MethodTable pMT)
 {
@@ -4715,7 +4710,6 @@ PTR_MethodTable BaseDomain::LookupGCThreadStaticBlockType(UINT32 id) {
     CONSISTENCY_CHECK(CheckPointer(pMT));
     return pMT;
 }
-#endif // HOST_WINDOWS
 
 #ifndef DACCESS_COMPILE
 //---------------------------------------------------------------------------------------

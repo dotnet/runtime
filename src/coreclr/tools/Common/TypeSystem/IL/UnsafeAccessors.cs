@@ -23,6 +23,18 @@ namespace Internal.IL
                 return null;
             }
 
+            // UnsafeAccessor must be on a static method
+            if (!method.Signature.IsStatic)
+            {
+                return GenerateAccessorBadImageFailure(method);
+            }
+
+            // Block generic support early
+            if (method.HasInstantiation || method.OwningType.HasInstantiation)
+            {
+                return GenerateAccessorBadImageFailure(method);
+            }
+
             if (!TryParseUnsafeAccessorAttribute(method, decodedAttribute.Value, out UnsafeAccessorKind kind, out string name))
             {
                 return GenerateAccessorBadImageFailure(method);

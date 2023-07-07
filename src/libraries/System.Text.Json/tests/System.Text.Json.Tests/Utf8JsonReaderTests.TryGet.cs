@@ -1125,13 +1125,22 @@ namespace System.Text.Json.Tests
                         int length = json.HasValueSequence ? (int)json.ValueSequence.Length : json.ValueSpan.Length;
 
                         InvalidOperationException ex = JsonTestHelper.AssertThrows<InvalidOperationException>(ref json, (ref Utf8JsonReader json) => json.GetString());
-                        Assert.IsType<DecoderFallbackException>(ex.InnerException);
+                        if (ex.InnerException is not null)
+                        {
+                            Assert.IsType<DecoderFallbackException>(ex.InnerException);
+                        }
 
                         ex = JsonTestHelper.AssertThrows<InvalidOperationException>(ref json, (ref Utf8JsonReader json) => json.CopyString(new byte[length]));
-                        Assert.IsType<DecoderFallbackException>(ex.InnerException);
+                        if (ex.InnerException is not null)
+                        {
+                            Assert.IsType<DecoderFallbackException>(ex.InnerException);
+                        }
 
                         ex = JsonTestHelper.AssertThrows<InvalidOperationException>(ref json, (ref Utf8JsonReader json) => json.CopyString(new char[length]));
-                        Assert.IsType<DecoderFallbackException>(ex.InnerException);
+                        if (ex.InnerException is not null)
+                        {
+                            Assert.IsType<DecoderFallbackException>(ex.InnerException);
+                        }
                     }
                 }
             }

@@ -2298,7 +2298,7 @@ void Compiler::compSetProcessor()
 
         instructionSetFlags.AddInstructionSet(InstructionSet_Vector512);
 
-        if ((preferredVectorByteLength == 0) && jitFlags.IsSet(JitFlags::JIT_FLAG_VECTOR512_THROTTLING))
+        if ((preferredVectorByteLength == 0) && opts.Vector512Throttling())
         {
             // Some architectures can experience frequency throttling when
             // executing 512-bit width instructions. To account for this we set the
@@ -5026,11 +5026,8 @@ void Compiler::compCompile(void** methodCodePtr, uint32_t* methodCodeSize, JitFl
     // Partially inline static initializations
     DoPhase(this, PHASE_EXPAND_STATIC_INIT, &Compiler::fgExpandStaticInit);
 
-    if (TargetOS::IsWindows)
-    {
-        // Currently this is only applicable for Windows
-        DoPhase(this, PHASE_EXPAND_TLS, &Compiler::fgExpandThreadLocalAccess);
-    }
+    // Expand thread local access
+    DoPhase(this, PHASE_EXPAND_TLS, &Compiler::fgExpandThreadLocalAccess);
 
     // Insert GC Polls
     DoPhase(this, PHASE_INSERT_GC_POLLS, &Compiler::fgInsertGCPolls);
@@ -10353,6 +10350,8 @@ const char* Compiler::devirtualizationDetailToString(CORINFO_DEVIRTUALIZATION_DE
                    "interface implementations";
         case CORINFO_DEVIRTUALIZATION_FAILED_DECL_NOT_REPRESENTABLE:
             return "Decl method cannot be represented in R2R image";
+        case CORINFO_DEVIRTUALIZATION_FAILED_TYPE_EQUIVALENCE:
+            return "Support for type equivalence in devirtualization is not yet implemented in crossgen2";
         default:
             return "undefined";
     }

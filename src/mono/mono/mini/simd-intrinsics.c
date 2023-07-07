@@ -325,6 +325,10 @@ emit_simd_ins_for_binary_op (MonoCompile *cfg, MonoClass *klass, MonoMethodSigna
 			case SN_Divide:
 			case SN_op_Division: {
 				const char *class_name = m_class_get_name (klass);
+				if (!strcmp("Vector4", class_name) && fsig->params [1]->type == MONO_TYPE_R4) {
+					// Handles  Vector4 / scalar
+					return handle_mul_div_by_scalar (cfg, klass, MONO_TYPE_R4, args [1]->dreg, args [0]->dreg, OP_FDIV);	
+				}
 				if (strcmp ("Vector2", class_name) && strcmp ("Vector4", class_name) && strcmp ("Quaternion", class_name) && strcmp ("Plane", class_name)) {
 					if ((fsig->params [0]->type == MONO_TYPE_GENERICINST) && (fsig->params [1]->type != MONO_TYPE_GENERICINST))
 						return handle_mul_div_by_scalar (cfg, klass, arg_type, args [1]->dreg, args [0]->dreg, OP_FDIV);
@@ -347,6 +351,14 @@ emit_simd_ins_for_binary_op (MonoCompile *cfg, MonoClass *klass, MonoMethodSigna
 			case SN_Multiply:
 			case SN_op_Multiply: {
 				const char *class_name = m_class_get_name (klass);
+				if (!strcmp("Vector4", class_name)) {
+					// Handles scalar * Vector4 and Vector4 * scalar
+					if (fsig->params [0]->type == MONO_TYPE_R4) {
+						return handle_mul_div_by_scalar (cfg, klass, MONO_TYPE_R4, args [0]->dreg, args [1]->dreg, OP_FMUL);
+					} else if (fsig->params [1]->type == MONO_TYPE_R4) {
+						return handle_mul_div_by_scalar (cfg, klass, MONO_TYPE_R4, args [1]->dreg, args [0]->dreg, OP_FMUL);
+					}
+				}
 				if (strcmp ("Vector2", class_name) && strcmp ("Vector4", class_name) && strcmp ("Quaternion", class_name) && strcmp ("Plane", class_name)) {
 					if (fsig->params [1]->type != MONO_TYPE_GENERICINST)
 						return handle_mul_div_by_scalar (cfg, klass, arg_type, args [1]->dreg, args [0]->dreg, OP_FMUL);
@@ -1201,6 +1213,8 @@ static guint16 sri_vector_methods [] = {
 	SN_WidenLower,
 	SN_WidenUpper,
 	SN_WithElement,
+	SN_WithLower,
+	SN_WithUpper,
 	SN_Xor,
 	SN_get_IsHardwareAccelerated,
 };
@@ -1382,14 +1396,7 @@ emit_sri_vector (MonoCompile *cfg, MonoMethod *cmethod, MonoMethodSignature *fsi
 	if (!COMPILE_LLVM (cfg)) {
 		if (vector_size != 128)
 			return NULL;
-		switch (id) {
-		case SN_GetLower:
-		case SN_GetUpper:
-			return NULL;
-		default:
-			break;
 		}
-	}
 #endif
 
 #ifdef TARGET_WASM
@@ -1662,11 +1669,6 @@ emit_sri_vector (MonoCompile *cfg, MonoMethod *cmethod, MonoMethodSignature *fsi
 			ins->inst_c1 = arg0_type;
 			return ins;
 		} else if (is_create_from_half_vectors_overload (fsig)) {
-#if defined(TARGET_ARM64)
-			// Require Vector64 SIMD support
-			if (!COMPILE_LLVM (cfg))
-				return NULL;
-#endif
 #if defined(TARGET_AMD64)
 			// Require Vector64 SIMD support
 			if (!COMPILE_LLVM (cfg))
@@ -1929,10 +1931,9 @@ emit_sri_vector (MonoCompile *cfg, MonoMethod *cmethod, MonoMethodSignature *fsi
 
 #ifdef TARGET_AMD64
 		if (!COMPILE_LLVM (cfg))
-			/* These return a Vector64 */
+		  /* These return a Vector64 */
 			return NULL;
 #endif
-
 		return emit_simd_ins_for_sig (cfg, klass, op, 0, arg0_type, fsig, args);
 	}
 	case SN_GreaterThan:
@@ -2304,9 +2305,15 @@ emit_sri_vector (MonoCompile *cfg, MonoMethod *cmethod, MonoMethodSignature *fsi
 	}
 	case SN_WithLower:
 	case SN_WithUpper: {
+#ifdef TARGET_AMD64
+		if (!COMPILE_LLVM (cfg))
+		  /* These return a Vector64 */
+			return NULL;
+#endif
+
 		if (!is_element_type_primitive (fsig->params [0]))
 			return NULL;
-		int op = id == SN_GetLower ? OP_XINSERT_LOWER : OP_XINSERT_UPPER;
+		int op = id == SN_WithLower ? OP_XINSERT_LOWER : OP_XINSERT_UPPER;
 		return emit_simd_ins_for_sig (cfg, klass, op, 0, arg0_type, fsig, args);
 	}
 	default:
@@ -2578,14 +2585,49 @@ emit_vector_2_3_4 (MonoCompile *cfg, MonoMethod *cmethod, MonoMethodSignature *f
 	MonoClass *klass;
 	MonoType *type, *etype;
 
-	if (!COMPILE_LLVM (cfg))
-		return NULL;
 
 	id = lookup_intrins (vector2_methods, sizeof (vector2_methods), cmethod);
 	if (id == -1) {
 		// https://github.com/dotnet/runtime/issues/81961
 		// check_no_intrinsic_cattr (cmethod);
 		return NULL;
+	}
+
+	if (!COMPILE_LLVM (cfg)) {
+#ifndef TARGET_ARM64
+		return NULL;
+#else
+		// when a method gets enabled should be removed from here
+		switch (id) {
+		case SN_ctor:
+		case SN_Clamp:
+		case SN_Conjugate:
+		case SN_CopyTo:
+		case SN_Distance:
+		case SN_DistanceSquared:
+		case SN_Dot:
+		case SN_Length:
+		case SN_LengthSquared:
+		case SN_Lerp:
+		case SN_Negate:
+		case SN_Normalize:
+		case SN_get_Identity:
+		case SN_get_Item:
+		case SN_get_One:
+		case SN_get_UnitW:
+		case SN_get_UnitX:
+		case SN_get_UnitY:
+		case SN_get_UnitZ:
+		case SN_get_Zero:
+		case SN_op_Equality:
+		case SN_op_Inequality:
+		case SN_op_UnaryNegation:
+		case SN_set_Item:
+			return NULL;
+		default:
+			break;
+		}
+#endif
 	}
 
 	if (cfg->verbose_level > 1) {
@@ -2779,6 +2821,11 @@ emit_vector_2_3_4 (MonoCompile *cfg, MonoMethod *cmethod, MonoMethodSignature *f
 #endif
 	}
 	case SN_Abs: {
+		if (!COMPILE_LLVM (cfg)) {
+#ifdef TARGET_ARM64
+			return emit_simd_ins_for_sig (cfg, cmethod->klass, OP_XOP_OVR_X_X, INTRINS_AARCH64_ADV_SIMD_FABS, MONO_TYPE_R4, fsig, args);
+#endif
+		}
 		// MAX(x,0-x)
 		MonoInst *zero = emit_xzero (cfg, klass);
 		MonoInst *neg = emit_simd_ins (cfg, klass, OP_XBINOP, zero->dreg, args [0]->dreg);
@@ -4221,8 +4268,8 @@ static SimdIntrinsic sse_methods [] = {
 	{SN_Shuffle},
 	{SN_Sqrt, OP_XOP_X_X, INTRINS_SIMD_SQRT_R4},
 	{SN_SqrtScalar},
-	{SN_Store, OP_SSE_STORE, 1 /* alignment */},
-	{SN_StoreAligned, OP_SSE_STORE, 16 /* alignment */},
+	{SN_Store, OP_SIMD_STORE, 1 /* alignment */},
+	{SN_StoreAligned, OP_SIMD_STORE, 16 /* alignment */},
 	{SN_StoreAlignedNonTemporal, OP_SSE_MOVNTPS, 16 /* alignment */},
 	{SN_StoreFence, OP_XOP, INTRINS_SSE_SFENCE},
 	{SN_StoreHigh, OP_SSE_MOVHPS_STORE},
@@ -4331,8 +4378,8 @@ static SimdIntrinsic sse2_methods [] = {
 	{SN_ShuffleLow},
 	{SN_Sqrt, OP_XOP_X_X, INTRINS_SIMD_SQRT_R8},
 	{SN_SqrtScalar},
-	{SN_Store, OP_SSE_STORE, 1 /* alignment */},
-	{SN_StoreAligned, OP_SSE_STORE, 16 /* alignment */},
+	{SN_Store, OP_SIMD_STORE, 1 /* alignment */},
+	{SN_StoreAligned, OP_SIMD_STORE, 16 /* alignment */},
 	{SN_StoreAlignedNonTemporal, OP_SSE_MOVNTPS, 16 /* alignment */},
 	{SN_StoreHigh, OP_SSE2_MOVHPD_STORE},
 	{SN_StoreLow, OP_SSE2_MOVLPD_STORE},
@@ -5248,8 +5295,11 @@ static SimdIntrinsic packedsimd_methods [] = {
 	{SN_Dot, OP_XOP_X_X_X, INTRINS_WASM_DOT},
 	{SN_ExtractLane},
 	{SN_Floor, OP_XOP_OVR_X_X, INTRINS_SIMD_FLOOR},
+	{SN_LoadScalarAndInsert, OP_WASM_SIMD_LOAD_SCALAR_INSERT},
+	{SN_LoadScalarAndSplatVector128, OP_WASM_SIMD_LOAD_SCALAR_SPLAT},
 	{SN_LoadScalarVector128},
 	{SN_LoadVector128, OP_LOADX_MEMBASE},
+	{SN_LoadWideningVector128, OP_WASM_SIMD_LOAD_WIDENING},
 	{SN_Max, OP_XBINOP, OP_IMIN, OP_XBINOP, OP_IMIN_UN, OP_XBINOP, OP_FMIN},
 	{SN_Min, OP_XBINOP, OP_IMAX, OP_XBINOP, OP_IMAX_UN, OP_XBINOP, OP_FMAX},
 	{SN_Multiply},
@@ -5272,6 +5322,8 @@ static SimdIntrinsic packedsimd_methods [] = {
 	{SN_SignExtendWideningUpper, OP_WASM_SIMD_SEXT_UPPER},
 	{SN_Splat},
 	{SN_Sqrt},
+	{SN_Store, OP_SIMD_STORE, 1},
+	{SN_StoreSelectedScalar, OP_WASM_SIMD_STORE_LANE},
 	{SN_Subtract},
 	{SN_SubtractSaturate},
 	{SN_Swizzle, OP_WASM_SIMD_SWIZZLE},
@@ -5284,6 +5336,7 @@ static SimdIntrinsic packedsimd_methods [] = {
 
 static const IntrinGroup supported_wasm_intrinsics [] = {
 	{ "PackedSimd", MONO_CPU_WASM_SIMD, packedsimd_methods, sizeof (packedsimd_methods) },
+	{ "WasmBase", MONO_CPU_WASM_BASE, wasmbase_methods, sizeof (wasmbase_methods) },
 };
 
 static const IntrinGroup supported_wasm_common_intrinsics [] = {

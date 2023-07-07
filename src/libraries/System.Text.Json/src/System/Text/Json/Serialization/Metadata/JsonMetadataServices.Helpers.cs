@@ -146,7 +146,7 @@ namespace System.Text.Json.Serialization.Metadata
                     if (jsonPropertyInfo.SrcGen_HasJsonInclude)
                     {
                         Debug.Assert(jsonPropertyInfo.MemberName != null, "MemberName is not set by source gen");
-                        ThrowHelper.ThrowInvalidOperationException_JsonIncludeOnNonPublicInvalid(jsonPropertyInfo.MemberName, jsonPropertyInfo.DeclaringType);
+                        ThrowHelper.ThrowInvalidOperationException_JsonIncludeOnInaccessibleProperty(jsonPropertyInfo.MemberName, jsonPropertyInfo.DeclaringType);
                     }
 
                     continue;
