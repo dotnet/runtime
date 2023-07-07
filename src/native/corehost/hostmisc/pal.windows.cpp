@@ -736,7 +736,7 @@ bool pal::realpath(string_t* path, bool skip_error_logging)
 typedef std::unique_ptr<std::remove_pointer<HANDLE>::type, decltype(&::CloseHandle)> SmartHandle;
 
 // Like realpath, but resolves symlinks.
-bool realpath2(string_t* path, bool skip_error_logging)
+static bool realpath2(pal::string_t* path, bool skip_error_logging)
 {
     if (path->empty())
     {
@@ -756,7 +756,7 @@ bool realpath2(string_t* path, bool skip_error_logging)
             nullptr), // No attribute template
         &::CloseHandle);
 
-    char_t buf[MAX_PATH];
+    pal::char_t buf[MAX_PATH];
     size_t size;
 
     if (file.get() == INVALID_HANDLE_VALUE)
@@ -777,7 +777,7 @@ bool realpath2(string_t* path, bool skip_error_logging)
         // If size is 0, this call failed. Fall back to GetFullPathNameW, below
         if (size != 0)
         {
-            string_t str;
+            pal::string_t str;
             if (size < MAX_PATH)
             {
                 str.assign(buf);
@@ -807,7 +807,14 @@ bool realpath2(string_t* path, bool skip_error_logging)
     }
 
     // If the above fails, fall back to fullpath
-    return fullpath(path, skip_error_logging);
+    return pal::fullpath(path, skip_error_logging);
+
+invalidPath:
+    if (!skip_error_logging)
+    {
+        trace::error(_X("Error resolving full path [%s]"), path->c_str());
+    }
+    return false;
 }
 
 bool pal::fullpath(string_t* path, bool skip_error_logging)
