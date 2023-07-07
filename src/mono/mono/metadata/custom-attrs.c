@@ -2091,7 +2091,12 @@ mono_method_get_unsafe_accessor_attr_data (MonoMethod *method, int *accessor_kin
 
 	for (int i = 0; i < decoded_args->named_args_num; ++i) {
 		if (decoded_args->named_args_info [i].prop && !strcmp (decoded_args->named_args_info [i].prop->name, "Name")) {
-			*member_name = (char*)decoded_args->named_args [i]->value.primitive;
+			const char *ptr = (const char*)decoded_args->named_args [i]->value.primitive;
+			uint32_t len = mono_metadata_decode_value (ptr, &ptr);
+			char *name = m_method_alloc0 (method, len + 1);
+			memcpy (name, ptr, len);
+			name[len] = 0;
+			*member_name = (char*)name;
 		}
 	}
 
