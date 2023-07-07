@@ -355,16 +355,3 @@ void ETW::TypeSystemLog::LogTypeAndParametersIfNecessary(BulkTypeEventLogger * p
 
 #endif // defined(FEATURE_EVENT_TRACE)
 }
-
-COOP_PINVOKE_HELPER(void, RhpEtwExceptionThrown, (LPCWSTR exceptionTypeName, LPCWSTR exceptionMessage, void* faultingIP, HRESULT hresult))
-{
-    FireEtXplatExceptionThrown_V1(exceptionTypeName,
-        exceptionMessage,
-        faultingIP,
-        hresult,
-        0,
-        GetClrInstanceId());
-}
-
-
-

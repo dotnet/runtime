@@ -115,6 +115,8 @@ ac_check_funcs(
   pthread_attr_setstacksize pthread_get_stackaddr_np
 )
 
+check_function_exists(clock_gettime HAVE_CLOCK_GETTIME)
+
 check_symbol_exists(madvise "sys/mman.h" HAVE_MADVISE)
 check_symbol_exists(pthread_mutexattr_setprotocol "pthread.h" HAVE_DECL_PTHREAD_MUTEXATTR_SETPROTOCOL)
 check_symbol_exists(CLOCK_MONOTONIC "time.h" HAVE_CLOCK_MONOTONIC)
