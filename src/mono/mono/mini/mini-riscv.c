@@ -599,27 +599,28 @@ riscv_patch_full (MonoCompile *cfg, guint8 *code, guint8 *target, int relocation
 					riscv_bgeu (code, rs1, rs2, 8);
 				else
 					g_assert_not_reached ();
-				break;
 
 				riscv_jal (code, RISCV_ZERO, riscv_get_jal_disp (code, target));
+				break;
 			} else
 				g_assert_not_reached ();
 		}
-
-		if (relocation == MONO_R_RISCV_BEQ)
-			riscv_beq (code, rs1, rs2, offset);
-		else if (relocation == MONO_R_RISCV_BNE)
-			riscv_bne (code, rs1, rs2, offset);
-		else if (relocation == MONO_R_RISCV_BGE)
-			riscv_bge (code, rs1, rs2, offset);
-		else if (relocation == MONO_R_RISCV_BLT)
-			riscv_blt (code, rs1, rs2, offset);
-		else if (relocation == MONO_R_RISCV_BGEU)
-			riscv_bgeu (code, rs1, rs2, offset);
-		else if (relocation == MONO_R_RISCV_BLTU)
-			riscv_bltu (code, rs1, rs2, offset);
-		else
-			g_assert_not_reached ();
+		else{
+			if (relocation == MONO_R_RISCV_BEQ)
+				riscv_beq (code, rs1, rs2, offset);
+			else if (relocation == MONO_R_RISCV_BNE)
+				riscv_bne (code, rs1, rs2, offset);
+			else if (relocation == MONO_R_RISCV_BGE)
+				riscv_bge (code, rs1, rs2, offset);
+			else if (relocation == MONO_R_RISCV_BLT)
+				riscv_blt (code, rs1, rs2, offset);
+			else if (relocation == MONO_R_RISCV_BGEU)
+				riscv_bgeu (code, rs1, rs2, offset);
+			else if (relocation == MONO_R_RISCV_BLTU)
+				riscv_bltu (code, rs1, rs2, offset);
+			else
+				g_assert_not_reached ();
+		}
 		break;
 	}
 	default:
@@ -1729,8 +1730,10 @@ mono_arch_decompose_opts (MonoCompile *cfg, MonoInst *ins)
 	case OP_IREM:
 	case OP_LREM:
 	case OP_IREM_IMM:
+	case OP_LREM_IMM:
 	case OP_IREM_UN:
 	case OP_LREM_UN:
+	case OP_IREM_UN_IMM:
 
 	case OP_ICONV_TO_OVF_U2:
 	case OP_LCONV_TO_OVF_U:
@@ -2705,6 +2708,7 @@ mono_arch_lowering_pass (MonoCompile *cfg, MonoBasicBlock *bb)
 			break;
 		}
 		case OP_IREM_IMM:
+		case OP_LREM_IMM:
 		case OP_IREM_UN_IMM:
 		case OP_LREM_UN_IMM:
 			mono_decompose_op_imm (cfg, bb, ins);
@@ -2965,6 +2969,36 @@ mono_riscv_emit_load (guint8 *code, int rd, int rs1, gint32 imm, int length)
 #ifdef TARGET_RISCV64
 	case 8:
 		riscv_ld (code, rd, rs1, imm);
+		break;
+#endif
+	default:
+		g_assert_not_reached ();
+		break;
+	}
+	return code;
+}
+
+// Uses at most 16 bytes on RV32I and 24 bytes on RV64I.
+guint8 *
+mono_riscv_emit_loadu (guint8 *code, int rd, int rs1, gint32 imm, int length)
+{
+	if (!RISCV_VALID_I_IMM (imm)) {
+		code = mono_riscv_emit_imm (code, RISCV_T0, imm);
+		riscv_add (code, RISCV_T0, rs1, RISCV_T0);
+		rs1 = RISCV_T0;
+		imm = 0;
+	}
+
+	switch (length) {
+	case 1:
+		riscv_lbu (code, rd, rs1, imm);
+		break;
+	case 2:
+		riscv_lhu (code, rd, rs1, imm);
+		break;
+#ifdef TARGET_RISCV64
+	case 4:
+		riscv_lwu (code, rd, rs1, imm);
 		break;
 #endif
 	default:
@@ -3781,20 +3815,20 @@ mono_arch_output_basic_block (MonoCompile *cfg, MonoBasicBlock *bb)
 			code = mono_riscv_emit_load (code, ins->dreg, ins->sreg1, ins->inst_offset, 1);
 			break;
 		case OP_LOADU1_MEMBASE:
-			riscv_lbu (code, ins->dreg, ins->sreg1, ins->inst_offset);
+			code = mono_riscv_emit_loadu (code, ins->dreg, ins->sreg1, ins->inst_offset, 1);
 			break;
 		case OP_LOADI2_MEMBASE:
 			code = mono_riscv_emit_load (code, ins->dreg, ins->sreg1, ins->inst_offset, 2);
 			break;
 		case OP_LOADU2_MEMBASE:
-			riscv_lhu (code, ins->dreg, ins->sreg1, ins->inst_offset);
+			code = mono_riscv_emit_loadu (code, ins->dreg, ins->sreg1, ins->inst_offset, 2);
 			break;
 		case OP_LOADI4_MEMBASE:
 			code = mono_riscv_emit_load (code, ins->dreg, ins->sreg1, ins->inst_offset, 4);
 			break;
 #ifdef TARGET_RISCV64
 		case OP_LOADU4_MEMBASE:
-			riscv_lwu (code, ins->dreg, ins->sreg1, ins->inst_offset);
+			code = mono_riscv_emit_loadu (code, ins->dreg, ins->sreg1, ins->inst_offset, 4);
 			break;
 		case OP_LOADI8_MEMBASE:
 			code = mono_riscv_emit_load (code, ins->dreg, ins->sreg1, ins->inst_offset, 8);

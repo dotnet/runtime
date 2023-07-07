@@ -302,6 +302,9 @@ __attribute__ ((warn_unused_result)) guint8 *mono_riscv_emit_nop (guint8 *code);
 __attribute__ ((warn_unused_result)) guint8 *mono_riscv_emit_load (
     guint8 *code, int rd, int rs1, gint32 imm, int length);
 
+__attribute__ ((warn_unused_result)) guint8 *mono_riscv_emit_loadu (
+    guint8 *code, int rd, int rs1, gint32 imm, int length);
+
 __attribute__ ((warn_unused_result)) guint8 *mono_riscv_emit_fload (
     guint8 *code, int rd, int rs1, gint32 imm, gboolean isSingle);
 
