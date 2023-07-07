@@ -14,10 +14,11 @@ namespace Microsoft.Extensions.Configuration.Binder.SourceGeneration
 {
     using Microsoft.Extensions.Configuration;
     using System;
+    using System.CodeDom.Compiler;
     using System.Globalization;
 
     /// <summary>Provide core binding logic.</summary>
-    [global::System.CodeDom.Compiler.GeneratedCodeAttribute("Microsoft.Extensions.Configuration.Binder.SourceGeneration", "42.42.42.42")]
+    [GeneratedCode("Microsoft.Extensions.Configuration.Binder.SourceGeneration", "42.42.42.42")]
     file static class CoreBindingHelper
     {
         public static object? GetValueCore(this IConfiguration configuration, Type type, string key)
@@ -29,24 +30,24 @@ namespace Microsoft.Extensions.Configuration.Binder.SourceGeneration
 
             IConfigurationSection section = configuration.GetSection(key);
 
-            if (section.Value is not string stringValue)
+            if (section.Value is not string value)
             {
                 return null;
             }
 
             if (type == typeof(CultureInfo))
             {
-                return ParseCultureInfo(stringValue, () => section.Path);
+                return ParseCultureInfo(value, () => section.Path);
             }
 
             return null;
         }
 
-        public static CultureInfo ParseCultureInfo(string stringValue, Func<string?> getPath)
+        public static CultureInfo ParseCultureInfo(string value, Func<string?> getPath)
         {
             try
             {
-                return CultureInfo.GetCultureInfo(stringValue);
+                return CultureInfo.GetCultureInfo(value);
             }
             catch (Exception exception)
             {

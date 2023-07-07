@@ -14,11 +14,12 @@ namespace Microsoft.Extensions.Configuration.Binder.SourceGeneration
 {
     using Microsoft.Extensions.Configuration;
     using System;
+    using System.CodeDom.Compiler;
     using System.Collections.Generic;
     using System.Globalization;
 
     /// <summary>Provide core binding logic.</summary>
-    [global::System.CodeDom.Compiler.GeneratedCodeAttribute("Microsoft.Extensions.Configuration.Binder.SourceGeneration", "42.42.42.42")]
+    [GeneratedCode("Microsoft.Extensions.Configuration.Binder.SourceGeneration", "42.42.42.42")]
     file static class CoreBindingHelper
     {
         private readonly static Lazy<HashSet<string>> s_configKeys_ProgramMyClass = new(() => new HashSet<string>(StringComparer.OrdinalIgnoreCase) { "MyString", "MyInt", "MyList", "MyDictionary", "MyComplexDictionary" });
@@ -32,9 +33,9 @@ namespace Microsoft.Extensions.Configuration.Binder.SourceGeneration
 
             foreach (IConfigurationSection section in configuration.GetChildren())
             {
-                if (section.Value is string stringValue0)
+                if (section.Value is string value)
                 {
-                    obj.Add(ParseInt(stringValue0, () => section.Path)!);
+                    obj.Add(ParseInt(value, () => section.Path));
                 }
             }
         }
@@ -48,9 +49,9 @@ namespace Microsoft.Extensions.Configuration.Binder.SourceGeneration
 
             foreach (IConfigurationSection section in configuration.GetChildren())
             {
-                if (section.Value is string stringValue1)
+                if (section.Value is string value)
                 {
-                    obj[section.Key!] = stringValue1!;
+                    obj[section.Key] = value;
                 }
             }
         }
@@ -64,11 +65,11 @@ namespace Microsoft.Extensions.Configuration.Binder.SourceGeneration
 
             foreach (IConfigurationSection section in configuration.GetChildren())
             {
-                if (!(obj.TryGetValue(section.Key!, out Program.MyClass2? element) && element is not null))
+                if (!(obj.TryGetValue(section.Key, out Program.MyClass2? element) && element is not null))
                 {
                     element = new Program.MyClass2();
                 }
-                obj[section.Key!] = element;
+                obj[section.Key] = element;
             }
         }
 
@@ -79,48 +80,49 @@ namespace Microsoft.Extensions.Configuration.Binder.SourceGeneration
                 throw new ArgumentNullException(nameof(obj));
             }
 
-            ValidateConfigurationKeys(typeof(Program.MyClass), s_configKeys_ProgramMyClass.Value, configuration, binderOptions);
+            ValidateConfigurationKeys(typeof(Program.MyClass), s_configKeys_ProgramMyClass, configuration, binderOptions);
 
             obj.MyString = configuration["MyString"]!;
 
-            if (configuration["MyInt"] is string stringValue2)
+            if (configuration["MyInt"] is string value1)
             {
-                obj.MyInt = ParseInt(stringValue2, () => configuration.GetSection("MyInt").Path)!;
+                obj.MyInt = ParseInt(value1, () => configuration.GetSection("MyInt").Path);
             }
 
-            if (AsConfigWithChildren(configuration.GetSection("MyList")) is IConfigurationSection section3)
+            if (AsConfigWithChildren(configuration.GetSection("MyList")) is IConfigurationSection section2)
             {
-                List<int> temp5 = obj.MyList;
-                temp5 ??= new List<int>();
-                BindCore(section3, ref temp5, binderOptions);
-                obj.MyList = temp5;
+                List<int> temp4 = obj.MyList;
+                temp4 ??= new List<int>();
+                BindCore(section2, ref temp4, binderOptions);
+                obj.MyList = temp4;
             }
 
-            if (AsConfigWithChildren(configuration.GetSection("MyDictionary")) is IConfigurationSection section6)
+            if (AsConfigWithChildren(configuration.GetSection("MyDictionary")) is IConfigurationSection section5)
             {
-                Dictionary<string, string> temp8 = obj.MyDictionary;
-                temp8 ??= new Dictionary<string, string>();
-                BindCore(section6, ref temp8, binderOptions);
-                obj.MyDictionary = temp8;
+                Dictionary<string, string> temp7 = obj.MyDictionary;
+                temp7 ??= new Dictionary<string, string>();
+                BindCore(section5, ref temp7, binderOptions);
+                obj.MyDictionary = temp7;
             }
 
-            if (AsConfigWithChildren(configuration.GetSection("MyComplexDictionary")) is IConfigurationSection section9)
+            if (AsConfigWithChildren(configuration.GetSection("MyComplexDictionary")) is IConfigurationSection section8)
             {
-                Dictionary<string, Program.MyClass2> temp11 = obj.MyComplexDictionary;
-                temp11 ??= new Dictionary<string, Program.MyClass2>();
-                BindCore(section9, ref temp11, binderOptions);
-                obj.MyComplexDictionary = temp11;
+                Dictionary<string, Program.MyClass2> temp10 = obj.MyComplexDictionary;
+                temp10 ??= new Dictionary<string, Program.MyClass2>();
+                BindCore(section8, ref temp10, binderOptions);
+                obj.MyComplexDictionary = temp10;
             }
         }
 
-        public static void ValidateConfigurationKeys(Type type, HashSet<string> keys, IConfiguration configuration, BinderOptions? binderOptions)
+        /// <summary>If required by the binder options, validates that there are no unknown keys in the input configuration object.</summary>
+        public static void ValidateConfigurationKeys(Type type, Lazy<HashSet<string>> keys, IConfiguration configuration, BinderOptions? binderOptions)
         {
             if (binderOptions?.ErrorOnUnknownConfiguration is true)
             {
                 List<string>? temp = null;
                 foreach (IConfigurationSection section in configuration.GetChildren())
                 {
-                    if (!keys.Contains(section.Key))
+                    if (!keys.Value.Contains(section.Key))
                     {
                         (temp ??= new List<string>()).Add($"'{section.Key}'");
                     }
@@ -141,11 +143,11 @@ namespace Microsoft.Extensions.Configuration.Binder.SourceGeneration
             return null;
         }
 
-        public static int ParseInt(string stringValue, Func<string?> getPath)
+        public static int ParseInt(string value, Func<string?> getPath)
         {
             try
             {
-                return int.Parse(stringValue, NumberStyles.Integer, CultureInfo.InvariantCulture);
+                return int.Parse(value, NumberStyles.Integer, CultureInfo.InvariantCulture);
             }
             catch (Exception exception)
             {

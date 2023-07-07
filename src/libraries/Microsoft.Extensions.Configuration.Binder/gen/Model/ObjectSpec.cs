@@ -16,7 +16,7 @@ namespace Microsoft.Extensions.Configuration.Binder.SourceGeneration
 
         public override InitializationStrategy InitializationStrategy { get; set; }
 
-        public override bool CanInitialize => CanInit();
+        public override bool CanInitialize => CanInitComplexObject();
 
         public Dictionary<string, PropertySpec> Properties { get; } = new(StringComparer.OrdinalIgnoreCase);
 

@@ -14,11 +14,12 @@ namespace Microsoft.Extensions.Configuration.Binder.SourceGeneration
 {
     using Microsoft.Extensions.Configuration;
     using System;
+    using System.CodeDom.Compiler;
     using System.Collections.Generic;
     using System.Globalization;
 
     /// <summary>Provide core binding logic.</summary>
-    [global::System.CodeDom.Compiler.GeneratedCodeAttribute("Microsoft.Extensions.Configuration.Binder.SourceGeneration", "42.42.42.42")]
+    [GeneratedCode("Microsoft.Extensions.Configuration.Binder.SourceGeneration", "42.42.42.42")]
     file static class CoreBindingHelper
     {
         private readonly static Lazy<HashSet<string>> s_configKeys_ProgramMyClass2 = new(() => new HashSet<string>(StringComparer.OrdinalIgnoreCase) { "MyInt" });
@@ -54,22 +55,23 @@ namespace Microsoft.Extensions.Configuration.Binder.SourceGeneration
                 throw new ArgumentNullException(nameof(obj));
             }
 
-            ValidateConfigurationKeys(typeof(Program.MyClass2), s_configKeys_ProgramMyClass2.Value, configuration, binderOptions);
+            ValidateConfigurationKeys(typeof(Program.MyClass2), s_configKeys_ProgramMyClass2, configuration, binderOptions);
 
-            if (configuration["MyInt"] is string stringValue1)
+            if (configuration["MyInt"] is string value1)
             {
-                obj.MyInt = ParseInt(stringValue1, () => configuration.GetSection("MyInt").Path)!;
+                obj.MyInt = ParseInt(value1, () => configuration.GetSection("MyInt").Path);
             }
         }
 
-        public static void ValidateConfigurationKeys(Type type, HashSet<string> keys, IConfiguration configuration, BinderOptions? binderOptions)
+        /// <summary>If required by the binder options, validates that there are no unknown keys in the input configuration object.</summary>
+        public static void ValidateConfigurationKeys(Type type, Lazy<HashSet<string>> keys, IConfiguration configuration, BinderOptions? binderOptions)
         {
             if (binderOptions?.ErrorOnUnknownConfiguration is true)
             {
                 List<string>? temp = null;
                 foreach (IConfigurationSection section in configuration.GetChildren())
                 {
-                    if (!keys.Contains(section.Key))
+                    if (!keys.Value.Contains(section.Key))
                     {
                         (temp ??= new List<string>()).Add($"'{section.Key}'");
                     }
@@ -114,11 +116,11 @@ namespace Microsoft.Extensions.Configuration.Binder.SourceGeneration
             return binderOptions;
         }
 
-        public static int ParseInt(string stringValue, Func<string?> getPath)
+        public static int ParseInt(string value, Func<string?> getPath)
         {
             try
             {
-                return int.Parse(stringValue, NumberStyles.Integer, CultureInfo.InvariantCulture);
+                return int.Parse(value, NumberStyles.Integer, CultureInfo.InvariantCulture);
             }
             catch (Exception exception)
             {

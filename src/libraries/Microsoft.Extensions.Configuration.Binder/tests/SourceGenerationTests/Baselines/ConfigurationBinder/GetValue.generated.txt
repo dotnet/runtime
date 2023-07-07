@@ -23,10 +23,11 @@ namespace Microsoft.Extensions.Configuration.Binder.SourceGeneration
 {
     using Microsoft.Extensions.Configuration;
     using System;
+    using System.CodeDom.Compiler;
     using System.Globalization;
 
     /// <summary>Provide core binding logic.</summary>
-    [global::System.CodeDom.Compiler.GeneratedCodeAttribute("Microsoft.Extensions.Configuration.Binder.SourceGeneration", "42.42.42.42")]
+    [GeneratedCode("Microsoft.Extensions.Configuration.Binder.SourceGeneration", "42.42.42.42")]
     file static class CoreBindingHelper
     {
         public static object? GetValueCore(this IConfiguration configuration, Type type, string key)
@@ -38,39 +39,39 @@ namespace Microsoft.Extensions.Configuration.Binder.SourceGeneration
 
             IConfigurationSection section = configuration.GetSection(key);
 
-            if (section.Value is not string stringValue)
+            if (section.Value is not string value)
             {
                 return null;
             }
 
             if (type == typeof(int))
             {
-                return ParseInt(stringValue, () => section.Path);
+                return ParseInt(value, () => section.Path);
             }
 
             if (type == typeof(bool?))
             {
-                return ParseBool(stringValue, () => section.Path);
+                return ParseBool(value, () => section.Path);
             }
 
             if (type == typeof(byte[]))
             {
-                return ParseByteArray(stringValue, () => section.Path);
+                return ParseByteArray(value, () => section.Path);
             }
 
             if (type == typeof(CultureInfo))
             {
-                return ParseCultureInfo(stringValue, () => section.Path);
+                return ParseCultureInfo(value, () => section.Path);
             }
 
             return null;
         }
 
-        public static int ParseInt(string stringValue, Func<string?> getPath)
+        public static int ParseInt(string value, Func<string?> getPath)
         {
             try
             {
-                return int.Parse(stringValue, NumberStyles.Integer, CultureInfo.InvariantCulture);
+                return int.Parse(value, NumberStyles.Integer, CultureInfo.InvariantCulture);
             }
             catch (Exception exception)
             {
@@ -78,11 +79,11 @@ namespace Microsoft.Extensions.Configuration.Binder.SourceGeneration
             }
         }
 
-        public static bool ParseBool(string stringValue, Func<string?> getPath)
+        public static bool ParseBool(string value, Func<string?> getPath)
         {
             try
             {
-                return bool.Parse(stringValue);
+                return bool.Parse(value);
             }
             catch (Exception exception)
             {
@@ -90,11 +91,11 @@ namespace Microsoft.Extensions.Configuration.Binder.SourceGeneration
             }
         }
 
-        public static byte[] ParseByteArray(string stringValue, Func<string?> getPath)
+        public static byte[] ParseByteArray(string value, Func<string?> getPath)
         {
             try
             {
-                return Convert.FromBase64String(stringValue);
+                return Convert.FromBase64String(value);
             }
             catch (Exception exception)
             {
@@ -102,11 +103,11 @@ namespace Microsoft.Extensions.Configuration.Binder.SourceGeneration
             }
         }
 
-        public static CultureInfo ParseCultureInfo(string stringValue, Func<string?> getPath)
+        public static CultureInfo ParseCultureInfo(string value, Func<string?> getPath)
         {
             try
             {
-                return CultureInfo.GetCultureInfo(stringValue);
+                return CultureInfo.GetCultureInfo(value);
             }
             catch (Exception exception)
             {

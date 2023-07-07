@@ -3,10 +3,8 @@
 
 using System;
 using System.Diagnostics;
-using System.Reflection;
 using System.Text.RegularExpressions;
 using Microsoft.CodeAnalysis;
-using Microsoft.CodeAnalysis.CSharp;
 
 namespace Microsoft.Extensions.Configuration.Binder.SourceGeneration
 {
@@ -17,20 +15,13 @@ namespace Microsoft.Extensions.Configuration.Binder.SourceGeneration
             private readonly SourceProductionContext _context;
             private readonly SourceGenerationSpec _sourceGenSpec;
 
-            // Postfix for stringValueX variables used to save config value indexer
-            // results e.g. if (configuration["Key"] is string stringValue0) { ... }
-            private int _parseValueCount;
-
             private bool _emitBlankLineBeforeNextStatement;
-
-            private readonly SourceWriter _writer = new();
+            private bool _useFullyQualifiedNames;
+            private int _valueSuffixIndex;
 
             private static readonly Regex s_arrayBracketsRegex = new(Regex.Escape("[]"));
 
-            private static readonly AssemblyName s_assemblyName = typeof(Emitter).Assembly.GetName();
-            private static readonly string s_generatedCodeAttributeSource = $@"[global::System.CodeDom.Compiler.GeneratedCodeAttribute(""{s_assemblyName.Name}"", ""{s_assemblyName.Version}"")]";
-
-            public bool _useFullyQualifiedNames { get; private set; }
+            private readonly SourceWriter _writer = new();
 
             public Emitter(SourceProductionContext context, SourceGenerationSpec sourceGenSpec)
             {
@@ -113,30 +104,29 @@ namespace Microsoft.Extensions.Configuration.Binder.SourceGeneration
                 }
             }
 
-            public void EmitBindLogicFromString(
+            private void EmitBindLogicFromString(
                 ParsableFromStringSpec type,
                 string sectionValueExpr,
                 string sectionPathExpr,
-                Action<string>? writeOnSuccess = null,
-                bool checkForNullSectionValue = false)
+                Action<string>? writeOnSuccess,
+                bool checkForNullSectionValue,
+                bool useIncrementalStringValueIdentifier)
             {
                 StringParsableTypeKind typeKind = type.StringParsableTypeKind;
                 Debug.Assert(typeKind is not StringParsableTypeKind.None);
 
-                string stringValueIdentifier = checkForNullSectionValue ?
-                    GetIncrementalIdentifier(Identifier.stringValue)
-                    : sectionValueExpr;
+                string nonNull_StringValue_Identifier = useIncrementalStringValueIdentifier ? GetIncrementalIdentifier(Identifier.value) : Identifier.value;
+                string stringValueToParse_Expr = checkForNullSectionValue ? nonNull_StringValue_Identifier : sectionValueExpr;
 
                 string parsedValueExpr;
-
                 if (typeKind is StringParsableTypeKind.AssignFromSectionValue)
                 {
-                    parsedValueExpr = stringValueIdentifier;
+                    parsedValueExpr = stringValueToParse_Expr;
                 }
                 else
                 {
                     string helperMethodDisplayString = GetHelperMethodDisplayString(type.ParseMethodName);
-                    parsedValueExpr = $"{helperMethodDisplayString}({stringValueIdentifier}, () => {sectionPathExpr})";
+                    parsedValueExpr = $"{helperMethodDisplayString}({stringValueToParse_Expr}, () => {sectionPathExpr})";
                 }
 
                 if (!checkForNullSectionValue)
@@ -145,7 +135,7 @@ namespace Microsoft.Extensions.Configuration.Binder.SourceGeneration
                 }
                 else
                 {
-                    _writer.WriteBlockStart($"if ({sectionValueExpr} is string {stringValueIdentifier})");
+                    _writer.WriteBlockStart($"if ({sectionValueExpr} is string {nonNull_StringValue_Identifier})");
                     writeOnSuccess?.Invoke(parsedValueExpr);
                     _writer.WriteBlockEnd();
                 }
@@ -217,7 +207,7 @@ namespace Microsoft.Extensions.Configuration.Binder.SourceGeneration
                 return true;
             }
 
-            public void EmitCastToIConfigurationSection()
+            private void EmitCastToIConfigurationSection()
             {
                 string sectionTypeDisplayString;
                 string exceptionTypeDisplayString;
@@ -240,7 +230,7 @@ namespace Microsoft.Extensions.Configuration.Binder.SourceGeneration
                     """);
             }
 
-            public void EmitIConfigurationHasValueOrChildrenCheck(bool voidReturn)
+            private void EmitIConfigurationHasValueOrChildrenCheck(bool voidReturn)
             {
                 string returnPostfix = voidReturn ? string.Empty : " null";
                 string methodDisplayString = GetHelperMethodDisplayString(Identifier.HasValueOrChildren);

@@ -12,14 +12,17 @@ namespace Microsoft.Extensions.Configuration.Binder.SourceGeneration
         {
             Debug.Assert(member is IPropertySymbol or IParameterSymbol);
             Name = member.Name;
+            DefaultValueExpr = "default";
         }
 
-        public required TypeSpec Type { get; init; }
         public string Name { get; }
+        public bool ErrorOnFailedBinding { get; protected set; }
+        public string DefaultValueExpr { get; protected set; }
+
+        public required TypeSpec Type { get; init; }
         public required string ConfigurationKeyName { get; init; }
-        public abstract string DefaultValueExpr { get; }
+
         public abstract bool CanGet { get; }
         public abstract bool CanSet { get; }
-        public abstract bool ErrorOnFailedBinding { get; }
     }
 }

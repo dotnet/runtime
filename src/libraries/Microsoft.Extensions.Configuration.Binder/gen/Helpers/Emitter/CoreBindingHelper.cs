@@ -29,7 +29,7 @@ namespace Microsoft.Extensions.Configuration.Binder.SourceGeneration
 
                 _writer.WriteBlock($$"""
                     /// <summary>Provide core binding logic.</summary>
-                    {{s_generatedCodeAttributeSource}}
+                    {{GetGeneratedCodeAttributeSrc()}}
                     file static class {{Identifier.CoreBindingHelper}}
                     {
                     """);
@@ -111,7 +111,8 @@ namespace Microsoft.Extensions.Configuration.Binder.SourceGeneration
                             Expression.sectionValue,
                             Expression.sectionPath,
                             writeOnSuccess: parsedValueExpr => _writer.WriteLine($"return {parsedValueExpr};"),
-                            checkForNullSectionValue: stringParsableType.StringParsableTypeKind is not StringParsableTypeKind.AssignFromSectionValue);
+                            checkForNullSectionValue: stringParsableType.StringParsableTypeKind is not StringParsableTypeKind.AssignFromSectionValue,
+                            useIncrementalStringValueIdentifier: false);
                     }
                     else if (!EmitInitException(type))
                     {
@@ -143,7 +144,7 @@ namespace Microsoft.Extensions.Configuration.Binder.SourceGeneration
                 _writer.WriteBlankLine();
 
                 _writer.WriteBlock($$"""
-                    if ({{Expression.sectionValue}} is not string {{Identifier.stringValue}})
+                    if ({{Expression.sectionValue}} is not string {{Identifier.value}})
                     {
                         return null;
                     }
@@ -157,10 +158,11 @@ namespace Microsoft.Extensions.Configuration.Binder.SourceGeneration
 
                     EmitBindLogicFromString(
                         (ParsableFromStringSpec)type.EffectiveType,
-                        Identifier.stringValue,
+                        Identifier.value,
                         Expression.sectionPath,
                         writeOnSuccess: (parsedValueExpr) => _writer.WriteLine($"return {parsedValueExpr};"),
-                        checkForNullSectionValue: false);
+                        checkForNullSectionValue: false,
+                        useIncrementalStringValueIdentifier: false);
 
                     _writer.WriteBlockEnd();
                     _writer.WriteBlankLine();
@@ -286,7 +288,17 @@ namespace Microsoft.Extensions.Configuration.Binder.SourceGeneration
 
                 foreach (ParameterSpec parameter in ctorParams)
                 {
-                    ctorArgList.Add(GetExpressionForArgument(parameter));
+                    string name = parameter.Name;
+                    string argExpr = parameter.RefKind switch
+                    {
+                        RefKind.None => name,
+                        RefKind.Ref => $"ref {name}",
+                        RefKind.Out => "out _",
+                        RefKind.In => $"in {name}",
+                        _ => throw new InvalidOperationException()
+                    };
+
+                    ctorArgList.Add(argExpr);
                     EmitBindImplForMember(parameter);
                 }
 
@@ -312,23 +324,27 @@ namespace Microsoft.Extensions.Configuration.Binder.SourceGeneration
                         _writer.WriteLine($@"{propertyName} = {propertyName},");
                     }
                     _writer.WriteBlockEnd(";");
-                    _writer.WriteBlankLine();
                 }
 
                 // End method.
                 _writer.WriteBlockEnd();
+                _emitBlankLineBeforeNextStatement = true;
 
                 void EmitBindImplForMember(MemberSpec member)
                 {
-                    string bindingTargetExpression;
+                    TypeSpec memberType = member.Type;
+                    bool errorOnFailedBinding = member.ErrorOnFailedBinding;
 
-                    if (member.Type is ParsableFromStringSpec { StringParsableTypeKind: StringParsableTypeKind.AssignFromSectionValue })
+                    string parsedMemberIdentifierDeclarationPrefix = $"{memberType.MinimalDisplayString} {member.Name}";
+                    string parsedMemberIdentifier;
+
+                    if (memberType is ParsableFromStringSpec { StringParsableTypeKind: StringParsableTypeKind.AssignFromSectionValue })
                     {
-                        bindingTargetExpression = $"{member.Type.MinimalDisplayString} {member.Name}";
+                        parsedMemberIdentifier = parsedMemberIdentifierDeclarationPrefix;
 
-                        if (member.ErrorOnFailedBinding)
+                        if (errorOnFailedBinding)
                         {
-                            string condition = $@" if ({Identifier.configuration}[""{member.ConfigurationKeyName}""] is not {member.Type.MinimalDisplayString} {member.Name})";
+                            string condition = $@" if ({Identifier.configuration}[""{member.ConfigurationKeyName}""] is not {memberType.MinimalDisplayString} {member.Name})";
                             EmitThrowBlock(condition);
                             _writer.WriteBlankLine();
                             return;
@@ -336,20 +352,35 @@ namespace Microsoft.Extensions.Configuration.Binder.SourceGeneration
                     }
                     else
                     {
-                        bindingTargetExpression = member.Name;
-                        _writer.WriteLine($"{member.Type.MinimalDisplayString} {member.Name} = {member.DefaultValueExpr};");
+                        parsedMemberIdentifier = member.Name;
+
+                        string declarationSuffix;
+                        if (errorOnFailedBinding)
+                        {
+                            declarationSuffix = ";";
+                        }
+                        else
+                        {
+                            string bangExpr = memberType.IsValueType ? string.Empty : "!";
+                            declarationSuffix = memberType.CanInitialize
+                                ? $" = {member.DefaultValueExpr}{bangExpr};"
+                                : ";";
+                        }
+
+                        string parsedMemberIdentifierDeclaration = $"{parsedMemberIdentifierDeclarationPrefix}{declarationSuffix}";
+                        _writer.WriteLine(parsedMemberIdentifierDeclaration);
                         _emitBlankLineBeforeNextStatement = false;
                     }
 
                     bool canBindToMember = this.EmitBindImplForMember(
                         member,
-                        bindingTargetExpression,
+                        parsedMemberIdentifier,
                         sectionPathExpr: GetSectionPathFromConfigurationExpression(member.ConfigurationKeyName),
                         canSet: true);
 
                     if (canBindToMember)
                     {
-                        if (member.ErrorOnFailedBinding)
+                        if (errorOnFailedBinding)
                         {
                             // Add exception logic for parameter ctors; must be present in configuration object.
                             EmitThrowBlock(condition: "else");
@@ -365,19 +396,6 @@ namespace Microsoft.Extensions.Configuration.Binder.SourceGeneration
                                 throw new {{GetInvalidOperationDisplayName()}}("{{string.Format(ExceptionMessages.ParameterHasNoMatchingConfig, type.Name, member.Name)}}");
                             }
                             """);
-                }
-
-                static string GetExpressionForArgument(ParameterSpec parameter)
-                {
-                    string name = parameter.Name;
-                    return parameter.RefKind switch
-                    {
-                        RefKind.None => name,
-                        RefKind.Ref => $"ref {name}",
-                        RefKind.Out => "out _",
-                        RefKind.In => $"in {name}",
-                        _ => throw new InvalidOperationException()
-                    };
                 }
             }
 
@@ -396,7 +414,7 @@ namespace Microsoft.Extensions.Configuration.Binder.SourceGeneration
                     EmitAsConfigWithChildrenMethod();
                     _emitBlankLineBeforeNextStatement = true;
                 }
-                else if (_sourceGenSpec.ShouldEmitHasChildren)
+                else if (ShouldEmitMethods(MethodsToGen_CoreBindingHelper.AsConfigWithChildren))
                 {
                     _writer.WriteBlankLine();
                     EmitAsConfigWithChildrenMethod();
@@ -425,15 +443,17 @@ namespace Microsoft.Extensions.Configuration.Binder.SourceGeneration
                 string exceptionMessage = string.Format(ExceptionMessages.MissingConfig, Identifier.ErrorOnUnknownConfiguration, Identifier.BinderOptions, $"{{{Identifier.type}}}", $@"{{string.Join("", "", {Identifier.temp})}}");
 
                 EmitBlankLineIfRequired();
-                _writer.WriteBlockStart($"public static void {Identifier.ValidateConfigurationKeys}(Type {Identifier.type}, {MinimalDisplayString.HashSetOfString} {keysIdentifier}, {Identifier.IConfiguration} {Identifier.configuration}, {Identifier.BinderOptions}? {Identifier.binderOptions})");
                 _writer.WriteBlock($$"""
+                    /// <summary>If required by the binder options, validates that there are no unknown keys in the input configuration object.</summary>
+                    public static void {{Identifier.ValidateConfigurationKeys}}(Type {{Identifier.type}}, {{MinimalDisplayString.LazyHashSetOfString}} {{keysIdentifier}}, {{Identifier.IConfiguration}} {{Identifier.configuration}}, {{Identifier.BinderOptions}}? {{Identifier.binderOptions}})
+                    {
                         if ({{Identifier.binderOptions}}?.{{Identifier.ErrorOnUnknownConfiguration}} is true)
                         {
                             {{MinimalDisplayString.ListOfString}}? {{Identifier.temp}} = null;
-
+                    
                             foreach ({{Identifier.IConfigurationSection}} {{Identifier.section}} in {{Identifier.configuration}}.{{Identifier.GetChildren}}())
                             {
-                                if (!{{keysIdentifier}}.Contains({{Expression.sectionKey}}))
+                                if (!{{keysIdentifier}}.Value.Contains({{Expression.sectionKey}}))
                                 {
                                     ({{Identifier.temp}} ??= new {{MinimalDisplayString.ListOfString}}()).Add($"'{{{Expression.sectionKey}}}'");
                                 }
@@ -518,52 +538,52 @@ namespace Microsoft.Extensions.Configuration.Binder.SourceGeneration
                     numberStylesTypeDisplayString = "NumberStyles";
                 }
 
-                string invariantCultureExpression = $"{cultureInfoTypeDisplayString}.InvariantCulture";
-
-                string expressionForParsedValue;
                 StringParsableTypeKind typeKind = type.StringParsableTypeKind;
                 string typeDisplayString = type.MinimalDisplayString;
 
+                string invariantCultureExpression = $"{cultureInfoTypeDisplayString}.InvariantCulture";
+
+                string parsedValueExpr;
                 switch (typeKind)
                 {
                     case StringParsableTypeKind.Enum:
                         {
-                            expressionForParsedValue = $"({typeDisplayString}){Identifier.Enum}.{Identifier.Parse}(typeof({typeDisplayString}), {Identifier.stringValue}, ignoreCase: true)";
+                            parsedValueExpr = $"({typeDisplayString}){Identifier.Enum}.{Identifier.Parse}(typeof({typeDisplayString}), {Identifier.value}, ignoreCase: true)";
                         }
                         break;
                     case StringParsableTypeKind.ByteArray:
                         {
-                            expressionForParsedValue = $"Convert.FromBase64String({Identifier.stringValue})";
+                            parsedValueExpr = $"Convert.FromBase64String({Identifier.value})";
                         }
                         break;
                     case StringParsableTypeKind.Integer:
                         {
-                            expressionForParsedValue = $"{typeDisplayString}.{Identifier.Parse}({Identifier.stringValue}, {numberStylesTypeDisplayString}.Integer, {invariantCultureExpression})";
+                            parsedValueExpr = $"{typeDisplayString}.{Identifier.Parse}({Identifier.value}, {numberStylesTypeDisplayString}.Integer, {invariantCultureExpression})";
                         }
                         break;
                     case StringParsableTypeKind.Float:
                         {
-                            expressionForParsedValue = $"{typeDisplayString}.{Identifier.Parse}({Identifier.stringValue}, {numberStylesTypeDisplayString}.Float, {invariantCultureExpression})";
+                            parsedValueExpr = $"{typeDisplayString}.{Identifier.Parse}({Identifier.value}, {numberStylesTypeDisplayString}.Float, {invariantCultureExpression})";
                         }
                         break;
                     case StringParsableTypeKind.Parse:
                         {
-                            expressionForParsedValue = $"{typeDisplayString}.{Identifier.Parse}({Identifier.stringValue})";
+                            parsedValueExpr = $"{typeDisplayString}.{Identifier.Parse}({Identifier.value})";
                         }
                         break;
                     case StringParsableTypeKind.ParseInvariant:
                         {
-                            expressionForParsedValue = $"{typeDisplayString}.{Identifier.Parse}({Identifier.stringValue}, {invariantCultureExpression})"; ;
+                            parsedValueExpr = $"{typeDisplayString}.{Identifier.Parse}({Identifier.value}, {invariantCultureExpression})"; ;
                         }
                         break;
                     case StringParsableTypeKind.CultureInfo:
                         {
-                            expressionForParsedValue = $"{cultureInfoTypeDisplayString}.GetCultureInfo({Identifier.stringValue})";
+                            parsedValueExpr = $"{cultureInfoTypeDisplayString}.GetCultureInfo({Identifier.value})";
                         }
                         break;
                     case StringParsableTypeKind.Uri:
                         {
-                            expressionForParsedValue = $"new Uri({Identifier.stringValue}, UriKind.RelativeOrAbsolute)";
+                            parsedValueExpr = $"new Uri({Identifier.value}, UriKind.RelativeOrAbsolute)";
                         }
                         break;
                     default:
@@ -574,11 +594,11 @@ namespace Microsoft.Extensions.Configuration.Binder.SourceGeneration
                 }
 
                 _writer.WriteBlock($$"""
-                    public static {{typeDisplayString}} {{type.ParseMethodName}}(string {{Identifier.stringValue}}, Func<string?> {{Identifier.getPath}})
+                    public static {{typeDisplayString}} {{type.ParseMethodName}}(string {{Identifier.value}}, Func<string?> {{Identifier.getPath}})
                     {
                         try
                         {
-                            return {{expressionForParsedValue}};
+                            return {{parsedValueExpr}};
                     """);
 
                 string exceptionArg1 = string.Format(ExceptionMessages.FailedBinding, $"{{{Identifier.getPath}()}}", $"{{typeof({typeDisplayString})}}");
@@ -597,11 +617,11 @@ namespace Microsoft.Extensions.Configuration.Binder.SourceGeneration
             {
                 EnumerableSpec concreteType = (EnumerableSpec)type.ConcreteType;
 
-                // Create, bind, and add elements to temp list.
+                // Create list and bind elements.
                 string tempIdentifier = GetIncrementalIdentifier(Identifier.temp);
                 EmitBindCoreCall(concreteType, tempIdentifier, Identifier.configuration, InitializationKind.Declaration);
 
-                // Resize array and copy additional elements.
+                // Resize array and add binded elements.
                 _writer.WriteBlock($$"""
                     {{Identifier.Int32}} {{Identifier.originalCount}} = {{Identifier.obj}}.{{Identifier.Length}};
                     {{Identifier.Array}}.{{Identifier.Resize}}(ref {{Identifier.obj}}, {{Identifier.originalCount}} + {{tempIdentifier}}.{{Identifier.Count}});
@@ -623,13 +643,14 @@ namespace Microsoft.Extensions.Configuration.Binder.SourceGeneration
                         stringParsableType,
                         Expression.sectionValue,
                         Expression.sectionPath,
-                        (parsedValueExpr) => _writer.WriteLine($"{objIdentifier}.{Identifier.Add}({parsedValueExpr}!);"),
-                        checkForNullSectionValue: true);
+                        (parsedValueExpr) => _writer.WriteLine($"{objIdentifier}.{Identifier.Add}({parsedValueExpr});"),
+                        checkForNullSectionValue: true,
+                        useIncrementalStringValueIdentifier: false);
                 }
                 else
                 {
-                    EmitBindCoreCall(elementType, Identifier.element, Identifier.section, InitializationKind.Declaration);
-                    _writer.WriteLine($"{objIdentifier}.{Identifier.Add}({Identifier.element});");
+                    EmitBindCoreCall(elementType, Identifier.value, Identifier.section, InitializationKind.Declaration);
+                    _writer.WriteLine($"{objIdentifier}.{Identifier.Add}({Identifier.value});");
                 }
 
                 _writer.WriteBlockEnd();
@@ -646,10 +667,12 @@ namespace Microsoft.Extensions.Configuration.Binder.SourceGeneration
 
                 // Parse key
                 EmitBindLogicFromString(
-                        keyType,
-                        Expression.sectionKey,
-                        Expression.sectionPath,
-                        Emit_BindAndAddLogic_ForElement);
+                    keyType,
+                    Expression.sectionKey,
+                    Expression.sectionPath,
+                    Emit_BindAndAddLogic_ForElement,
+                    checkForNullSectionValue: false,
+                    useIncrementalStringValueIdentifier: false);
 
                 void Emit_BindAndAddLogic_ForElement(string parsedKeyExpr)
                 {
@@ -659,14 +682,14 @@ namespace Microsoft.Extensions.Configuration.Binder.SourceGeneration
                             stringParsableElementType,
                             Expression.sectionValue,
                             Expression.sectionPath,
-                            (parsedValueExpr) => _writer.WriteLine($"{objIdentifier}[{parsedKeyExpr}!] = {parsedValueExpr}!;"),
-                            checkForNullSectionValue: true);
+                            writeOnSuccess: parsedValueExpr => _writer.WriteLine($"{objIdentifier}[{parsedKeyExpr}] = {parsedValueExpr};"),
+                            checkForNullSectionValue: true,
+                            useIncrementalStringValueIdentifier: false);
                     }
                     else // For complex types:
                     {
                         Debug.Assert(elementType.CanInitialize);
 
-                        parsedKeyExpr += "!";
                         if (keyType.StringParsableTypeKind is not StringParsableTypeKind.AssignFromSectionValue)
                         {
                             // Save value to local to avoid parsing twice - during look-up and during add.
@@ -722,7 +745,7 @@ namespace Microsoft.Extensions.Configuration.Binder.SourceGeneration
                 Debug.Assert(type.NeedsMemberBinding);
 
                 string keyCacheFieldName = GetConfigKeyCacheFieldName(type);
-                string validateMethodCallExpr = $"{Identifier.ValidateConfigurationKeys}(typeof({type.MinimalDisplayString}), {keyCacheFieldName}.{Identifier.Value}, {Identifier.configuration}, {Identifier.binderOptions});";
+                string validateMethodCallExpr = $"{Identifier.ValidateConfigurationKeys}(typeof({type.MinimalDisplayString}), {keyCacheFieldName}, {Identifier.configuration}, {Identifier.binderOptions});";
                 _writer.WriteLine(validateMethodCallExpr);
 
                 foreach (PropertySpec property in type.Properties.Values)
@@ -752,25 +775,26 @@ namespace Microsoft.Extensions.Configuration.Binder.SourceGeneration
                 {
                     if (canSet)
                     {
-                        bool checkForNullSectionValue = member is ParameterSpec ?
-                            true :
-                            stringParsableType.StringParsableTypeKind is not StringParsableTypeKind.AssignFromSectionValue;
+                        bool checkForNullSectionValue = member is ParameterSpec
+                            ? true
+                            : stringParsableType.StringParsableTypeKind is not StringParsableTypeKind.AssignFromSectionValue;
+
+                        string nullBangExpr = checkForNullSectionValue ? string.Empty : "!";
 
                         EmitBlankLineIfRequired();
                         EmitBindLogicFromString(
                             stringParsableType,
                             $@"{Identifier.configuration}[""{member.ConfigurationKeyName}""]",
                             sectionPathExpr,
-                            (parsedValueExpr) => _writer.WriteLine($"{memberAccessExpr} = {parsedValueExpr}!;"),
-                            checkForNullSectionValue);
+                            writeOnSuccess: parsedValueExpr => _writer.WriteLine($"{memberAccessExpr} = {parsedValueExpr}{nullBangExpr};"),
+                            checkForNullSectionValue,
+                            useIncrementalStringValueIdentifier: true);
                     }
 
                     return true;
                 }
 
                 string sectionParseExpr = $"{GetSectionFromConfigurationExpression(member.ConfigurationKeyName)}";
-                string sectionValidationCall = $"{Identifier.AsConfigWithChildren}({sectionParseExpr})";
-                string sectionIdentifier = GetIncrementalIdentifier(Identifier.section);
 
                 EmitBlankLineIfRequired();
 
@@ -779,6 +803,9 @@ namespace Microsoft.Extensions.Configuration.Binder.SourceGeneration
                     _writer.WriteLine($"{memberAccessExpr} = {sectionParseExpr};");
                     return true;
                 }
+
+                string sectionValidationCall = $"{Identifier.AsConfigWithChildren}({sectionParseExpr})";
+                string sectionIdentifier = GetIncrementalIdentifier(Identifier.section);
 
                 _writer.WriteBlockStart($"if ({sectionValidationCall} is {Identifier.IConfigurationSection} {sectionIdentifier})");
 

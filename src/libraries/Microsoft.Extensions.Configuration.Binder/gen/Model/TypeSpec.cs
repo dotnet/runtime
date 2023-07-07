@@ -47,7 +47,7 @@ namespace Microsoft.Extensions.Configuration.Binder.SourceGeneration
 
         public bool IsInterface { get; }
 
-        protected bool CanInit() => InitializationStrategy is not InitializationStrategy.None && InitExceptionMessage is null;
+        protected bool CanInitComplexObject() => InitializationStrategy is not InitializationStrategy.None && InitExceptionMessage is null;
     }
 
     internal enum TypeSpecKind

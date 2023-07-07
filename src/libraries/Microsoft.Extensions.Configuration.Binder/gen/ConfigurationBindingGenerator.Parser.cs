@@ -512,7 +512,7 @@ namespace Microsoft.Extensions.Configuration.Binder.SourceGeneration
                     return null;
                 }
 
-                RegisterHasChildrenHelperForGenIfRequired(elementSpec);
+                Register_AsConfigWithChildren_HelperForGen_IfRequired(elementSpec);
 
                 EnumerableSpec spec = new(type)
                 {
@@ -615,7 +615,7 @@ namespace Microsoft.Extensions.Configuration.Binder.SourceGeneration
                             {
                                 PropertySpec spec = new(property) { Type = propertyTypeSpec, ConfigurationKeyName = configKeyName };
                                 objectSpec.Properties[propertyName] = spec;
-                                RegisterHasChildrenHelperForGenIfRequired(propertyTypeSpec);
+                                Register_AsConfigWithChildren_HelperForGen_IfRequired(propertyTypeSpec);
                             }
                         }
                     }
@@ -687,14 +687,14 @@ namespace Microsoft.Extensions.Configuration.Binder.SourceGeneration
                 return objectSpec;
             }
 
-            private void RegisterHasChildrenHelperForGenIfRequired(TypeSpec type)
+            private void Register_AsConfigWithChildren_HelperForGen_IfRequired(TypeSpec type)
             {
                 if (type.SpecKind is TypeSpecKind.Object or
                                         TypeSpecKind.Enumerable or
                                         TypeSpecKind.Dictionary)
                 {
 
-                    _sourceGenSpec.ShouldEmitHasChildren = true;
+                    _sourceGenSpec.MethodsToGen_CoreBindingHelper |= MethodsToGen_CoreBindingHelper.AsConfigWithChildren;
                 }
             }
 

@@ -29,10 +29,6 @@ namespace Microsoft.Extensions.Configuration.Binder.SourceGeneration
 
         public override bool CanSet { get; }
 
-        public override string DefaultValueExpr => "default!";
-
-        public override bool ErrorOnFailedBinding => false;
-
         public bool ShouldBind() => CanGet || CanSet;
     }
 }

@@ -257,12 +257,14 @@ namespace Microsoft.Extensions.Configuration.Binder.SourceGeneration.Tests
                                              .Split(Environment.NewLine);
 
             var (d, r) = await RunGenerator(testSourceCode, languageVersion);
+            bool success = RoslynTestUtils.CompareLines(expectedLines, r[0].SourceText,
+                out string errorMessage);
 
+#if !SKIP_BASELINES
             Assert.Single(r);
             (assessDiagnostics ?? ((d) => Assert.Empty(d))).Invoke(d);
-
-            Assert.True(RoslynTestUtils.CompareLines(expectedLines, r[0].SourceText,
-                out string errorMessage), errorMessage);
+            Assert.True(success, errorMessage);
+#endif
         }
 
         private static async Task<(ImmutableArray<Diagnostic>, ImmutableArray<GeneratedSourceResult>)> RunGenerator(

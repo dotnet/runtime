@@ -2,6 +2,7 @@
 // The .NET Foundation licenses this file to you under the MIT license.
 
 using System.Diagnostics;
+using System.Reflection;
 
 namespace Microsoft.Extensions.Configuration.Binder.SourceGeneration
 {
@@ -9,6 +10,8 @@ namespace Microsoft.Extensions.Configuration.Binder.SourceGeneration
     {
         private sealed partial class Emitter
         {
+            private static readonly AssemblyName s_assemblyName = typeof(Emitter).Assembly.GetName();
+
             private enum InitializationKind
             {
                 None = 0,
@@ -47,6 +50,7 @@ namespace Microsoft.Extensions.Configuration.Binder.SourceGeneration
             {
                 public const string NullableActionOfBinderOptions = "Action<BinderOptions>?";
                 public const string HashSetOfString = "HashSet<string>";
+                public const string LazyHashSetOfString = "Lazy<HashSet<string>>";
                 public const string ListOfString = "List<string>";
             }
 
@@ -69,10 +73,10 @@ namespace Microsoft.Extensions.Configuration.Binder.SourceGeneration
                 public const string section = nameof(section);
                 public const string sectionKey = nameof(sectionKey);
                 public const string services = nameof(services);
-                public const string stringValue = nameof(stringValue);
                 public const string temp = nameof(temp);
                 public const string type = nameof(type);
                 public const string validateKeys = nameof(validateKeys);
+                public const string value = nameof(value);
 
                 public const string Add = nameof(Add);
                 public const string AddSingleton = nameof(AddSingleton);
@@ -177,7 +181,7 @@ namespace Microsoft.Extensions.Configuration.Binder.SourceGeneration
                 EmitBlankLineIfRequired();
                 _writer.WriteBlock($$"""
                     /// <summary>Generated helper providing an AOT and linking compatible implementation for configuration binding.</summary>
-                    {{s_generatedCodeAttributeSource}}
+                    {{GetGeneratedCodeAttributeSrc()}}
                     internal static class {{className}}
                     {
                     """);
@@ -185,9 +189,15 @@ namespace Microsoft.Extensions.Configuration.Binder.SourceGeneration
                 _emitBlankLineBeforeNextStatement = false;
             }
 
+            private string GetGeneratedCodeAttributeSrc()
+            {
+                string attributeRefExpr = _useFullyQualifiedNames ? $"global::System.CodeDom.Compiler.GeneratedCodeAttribute" : "GeneratedCode";
+                return $@"[{attributeRefExpr}(""{s_assemblyName.Name}"", ""{s_assemblyName.Version}"")]";
+            }
+
             private string GetInitException(string message) => $@"throw new {GetInvalidOperationDisplayName()}(""{message}"")";
 
-            private string GetIncrementalIdentifier(string prefix) => $"{prefix}{_parseValueCount++}";
+            private string GetIncrementalIdentifier(string prefix) => $"{prefix}{_valueSuffixIndex++}";
 
             private string GetInitalizeMethodDisplayString(ObjectSpec type) =>
                 GetHelperMethodDisplayString($"{nameof(MethodsToGen_CoreBindingHelper.Initialize)}{type.DisplayStringWithoutSpecialCharacters}");

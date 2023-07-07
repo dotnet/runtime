@@ -17,7 +17,7 @@ namespace Microsoft.Extensions.Configuration.Binder.SourceGeneration
 
         public required CollectionPopulationStrategy PopulationStrategy { get; init; }
 
-        public override bool CanInitialize => ConcreteType?.CanInitialize ?? CanInit();
+        public override bool CanInitialize => ConcreteType?.CanInitialize ?? CanInitComplexObject();
 
         public override required InitializationStrategy InitializationStrategy { get; set; }
 
