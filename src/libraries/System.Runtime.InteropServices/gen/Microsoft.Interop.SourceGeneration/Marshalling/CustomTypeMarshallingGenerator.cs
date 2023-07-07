@@ -127,7 +127,7 @@ namespace Microsoft.Interop
             {
                 diagnostic = new GeneratorDiagnostic.UnnecessaryData(info, context, ImmutableArray.Create(info.ByValueMarshalAttributeLocations.InLocation))
                 {
-                    UnnecessaryDataDetails = SR.InAttributeNotSupportedWithoutOut
+                    UnnecessaryDataDetails = SR.InAttributeOnlyIsDefault
                 };
                 return false;
             }

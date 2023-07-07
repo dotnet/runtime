@@ -4,7 +4,6 @@
 using System;
 using System.Collections.Generic;
 using System.Diagnostics;
-using System.Diagnostics.CodeAnalysis;
 using Microsoft.CodeAnalysis;
 using Microsoft.CodeAnalysis.CSharp;
 using Microsoft.CodeAnalysis.CSharp.Syntax;
@@ -136,13 +135,19 @@ namespace Microsoft.Interop
         }
 
         private static string PinnedIdentifier(string identifier) => $"{identifier}__pinned";
-        public bool SupportsByValueMarshalKind(ByValueContentsMarshalKind marshalKind, TypePositionInfo info, StubCodeContext context, [NotNullWhen(false)] out GeneratorDiagnostic? diagnostic)
+        public ByValueMarshalKindSupport SupportsByValueMarshalKind(ByValueContentsMarshalKind marshalKind, TypePositionInfo info, StubCodeContext context, out GeneratorDiagnostic? diagnostic)
         {
-            diagnostic = new GeneratorDiagnostic.NotSupported(info, context)
+            // Maybe should be done in the CharMarshallerFactory, but complexity and interdependence bleeds in if you do that
+            if (IsPinningPathSupported(info, context) && info.RefKind == RefKind.In)
             {
-                NotSupportedDetails = SR.InOutAttributesNotSupportedOnByValueParameters
-            };
-            return false;
+                diagnostic = new GeneratorDiagnostic.NotSupported(info, context)
+                {
+                    NotSupportedDetails = SR.InRefKindIsNotSupportedOnPinnedParameters
+                };
+                return ByValueMarshalKindSupport.NotSupported;
+            }
+            return GeneratorDiagnostic.ByValueMarshalKindSupportManager.ValueTypeParameterDefault.GetSupport(marshalKind, info, context, out diagnostic);
         }
+
     }
 }

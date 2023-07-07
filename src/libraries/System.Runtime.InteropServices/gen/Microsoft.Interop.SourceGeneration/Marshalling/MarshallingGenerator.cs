@@ -3,7 +3,6 @@
 
 using System;
 using System.Collections.Generic;
-using System.Diagnostics.CodeAnalysis;
 using Microsoft.CodeAnalysis.CSharp.Syntax;
 
 namespace Microsoft.Interop
@@ -152,8 +151,13 @@ namespace Microsoft.Interop
         /// A supported marshal kind has a different behavior than the default behavior.
         /// </summary>
         /// <param name="marshalKind">The marshal kind.</param>
+        /// <param name="info">The TypePositionInfo of the parameter.</param>
         /// <param name="context">The marshalling context.</param>
+        /// <param name="diagnostic">
+        /// The diagnostic to report if the return value is not <see cref="ByValueMarshalKindSupport.Supported"/>.
+        /// It should be non-null if the value is not <see cref="ByValueMarshalKindSupport.Supported"/>
+        /// </param>
         /// <returns>If the provided <paramref name="marshalKind"/> is supported and if it is required to specify the requested behavior.</returns>
-        bool SupportsByValueMarshalKind(ByValueContentsMarshalKind marshalKind, TypePositionInfo info, StubCodeContext context, [NotNullWhen(false)] out GeneratorDiagnostic? diagnostic);
+        ByValueMarshalKindSupport SupportsByValueMarshalKind(ByValueContentsMarshalKind marshalKind, TypePositionInfo info, StubCodeContext context, out GeneratorDiagnostic? diagnostic);
     }
 }

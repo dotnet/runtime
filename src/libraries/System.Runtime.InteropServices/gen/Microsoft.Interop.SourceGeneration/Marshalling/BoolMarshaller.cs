@@ -100,15 +100,8 @@ namespace Microsoft.Interop
 
         public bool UsesNativeIdentifier(TypePositionInfo info, StubCodeContext context) => true;
 
-        public bool SupportsByValueMarshalKind(ByValueContentsMarshalKind marshalKind, TypePositionInfo info, StubCodeContext context, [NotNullWhen(false)] out GeneratorDiagnostic? diagnostic)
-        {
-            diagnostic = new GeneratorDiagnostic.NotSupported(info, context)
-            {
-                NotSupportedDetails = SR.InOutAttributesNotSupportedOnByValueParameters
-            };
-
-            return false;
-        }
+        public ByValueMarshalKindSupport SupportsByValueMarshalKind(ByValueContentsMarshalKind marshalKind, TypePositionInfo info, StubCodeContext context, [NotNullWhen(false)] out GeneratorDiagnostic? diagnostic)
+            => GeneratorDiagnostic.ByValueMarshalKindSupportManager.ValueTypeParameterDefault.GetSupport(marshalKind, info, context, out diagnostic);
     }
 
     /// <summary>

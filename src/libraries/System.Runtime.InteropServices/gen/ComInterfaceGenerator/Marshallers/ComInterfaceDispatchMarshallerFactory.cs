@@ -62,10 +62,7 @@ namespace Microsoft.Interop
             public bool IsSupported(TargetFramework target, Version version)
                 => target == TargetFramework.Net && version >= new Version(5, 0);
             public bool SupportsByValueMarshalKind(ByValueContentsMarshalKind marshalKind, TypePositionInfo info, StubCodeContext context, out GeneratorDiagnostic? diagnostic)
-            {
-                diagnostic = GeneratorDiagnostic.DefaultDiagnosticForByValueGeneratorSupport(ByValueMarshalKindSupport.NotSupported, info, context);
-                return false;
-            }
+                => GeneratorDiagnostic.SupportsByValueMarshalKindDefault(marshalKind, info, context, out diagnostic);
             public bool UsesNativeIdentifier(TypePositionInfo info, StubCodeContext context) => true;
         }
     }

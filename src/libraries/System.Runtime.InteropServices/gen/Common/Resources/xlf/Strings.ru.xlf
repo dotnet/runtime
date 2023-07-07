@@ -427,14 +427,19 @@
         <target state="new">The provided graph has cycles and cannot be topologically sorted.</target>
         <note />
       </trans-unit>
-      <trans-unit id="InAttributeNotSupportedWithoutOut">
+      <trans-unit id="InAttributeNotSupportedWithoutOutBlittableArray">
+        <source>The '[In]' attribute is not supported unless the '[Out]' attribute is also used. Blittable arrays cannot be marshalled as '[In]' only.</source>
+        <target state="new">The '[In]' attribute is not supported unless the '[Out]' attribute is also used. Blittable arrays cannot be marshalled as '[In]' only.</target>
+        <note />
+      </trans-unit>
+      <trans-unit id="InAttributeOnlyIsDefault">
         <source>The '[In]' attribute is not necessary unless the '[Out]' attribute is also used. The behavior of the '[In]' attribute without the '[Out]' attribute is the same as the default behavior.</source>
         <target state="new">The '[In]' attribute is not necessary unless the '[Out]' attribute is also used. The behavior of the '[In]' attribute without the '[Out]' attribute is the same as the default behavior.</target>
         <note />
       </trans-unit>
-      <trans-unit id="InAttributeNotSupportedWithoutOutBlittableArray">
-        <source>The '[In]' attribute is not supported unless the '[Out]' attribute is also used. Blittable arrays cannot be marshalled as '[In]' only.</source>
-        <target state="new">The '[In]' attribute is not supported unless the '[Out]' attribute is also used. Blittable arrays cannot be marshalled as '[In]' only.</target>
+      <trans-unit id="InAttributeOnlyNotSupportedOnPinnedParameters">
+        <source>This parameter is marshalled by pinning and does not support the '[In]' attribute without the '[Out]' attribute.</source>
+        <target state="new">This parameter is marshalled by pinning and does not support the '[In]' attribute without the '[Out]' attribute.</target>
         <note />
       </trans-unit>
       <trans-unit id="InOutAttributeByRefNotSupported">
@@ -452,9 +457,9 @@
         <target state="new">[In] and [Out] attributes</target>
         <note />
       </trans-unit>
-      <trans-unit id="InOutAttributesNotSupportedOnByValueParameters">
-        <source>The `[In]` and `[Out]` attributes are not supported on value-type parameters passed by-value.</source>
-        <target state="new">The `[In]` and `[Out]` attributes are not supported on value-type parameters passed by-value.</target>
+      <trans-unit id="InRefKindIsNotSupportedOnPinnedParameters">
+        <source>The 'in' keyword is not supported on parameters that are marshalled by pinning. Use 'ref' or 'out' instead.</source>
+        <target state="new">The 'in' keyword is not supported on parameters that are marshalled by pinning. Use 'ref' or 'out' instead.</target>
         <note />
       </trans-unit>
       <trans-unit id="InstanceEventDeclaredInInterfaceDescription">
@@ -887,6 +892,11 @@
         <target state="new">Either 'ComInterfaceOptions.ManagedObjectWrapper' or 'ComInterfaceOptions.ComObjectWrapper' must be specified.</target>
         <note />
       </trans-unit>
+      <trans-unit id="OutAttributeNotSupportedOnByValueParameters">
+        <source>The `[Out]` attribute are not supported on value-type parameters passed by-value. Consider using the 'out' or 'ref' keyword to make the parameter passed by reference.</source>
+        <target state="new">The `[Out]` attribute are not supported on value-type parameters passed by-value. Consider using the 'out' or 'ref' keyword to make the parameter passed by reference.</target>
+        <note />
+      </trans-unit>
       <trans-unit id="OutRequiresToManagedDescription">
         <source>A 'Value' or 'LinearCollection'-kind native type that supports marshalling in the 'Out' direction must provide a 'ToManaged' method that returns the managed type.</source>
         <target state="new">A 'Value' or 'LinearCollection'-kind native type that supports marshalling in the 'Out' direction must provide a 'ToManaged' method that returns the managed type.</target>
@@ -895,6 +905,11 @@
       <trans-unit id="OutRequiresToManagedMessage">
         <source>The type '{0}' specifies it supports marshalling in the 'Out' direction, but it does not provide a 'ToManaged' method that returns the managed type</source>
         <target state="new">The type '{0}' specifies it supports marshalling in the 'Out' direction, but it does not provide a 'ToManaged' method that returns the managed type</target>
+        <note />
+      </trans-unit>
+      <trans-unit id="PinnedMarshallingIsInOutByDefault">
+        <source>This parameter is marshalled by pinning and is '[In, Out]' by default.</source>
+        <target state="new">This parameter is marshalled by pinning and is '[In, Out]' by default.</target>
         <note />
       </trans-unit>
       <trans-unit id="RequiresAllowUnsafeBlocksDescriptionCom">

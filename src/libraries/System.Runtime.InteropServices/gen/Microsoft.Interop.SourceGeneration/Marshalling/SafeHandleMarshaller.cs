@@ -236,9 +236,6 @@ namespace Microsoft.Interop
         public bool UsesNativeIdentifier(TypePositionInfo info, StubCodeContext context) => true;
 
         public bool SupportsByValueMarshalKind(ByValueContentsMarshalKind marshalKind, TypePositionInfo info, StubCodeContext context, [NotNullWhen(false)] out GeneratorDiagnostic? diagnostic)
-        {
-            diagnostic = GeneratorDiagnostic.DefaultDiagnosticForByValueGeneratorSupport(ByValueMarshalKindSupport.NotSupported, info, context);
-            return false;
-        }
+            => GeneratorDiagnostic.SupportsByValueMarshalKindDefault(marshalKind, info, context, out diagnostic);
     }
 }

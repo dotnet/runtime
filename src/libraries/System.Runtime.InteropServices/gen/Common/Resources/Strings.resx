@@ -126,7 +126,7 @@
   <data name="GraphHasCycles" xml:space="preserve">
     <value>The provided graph has cycles and cannot be topologically sorted.</value>
   </data>
-  <data name="InAttributeNotSupportedWithoutOut" xml:space="preserve">
+  <data name="InAttributeOnlyIsDefault" xml:space="preserve">
     <value>The '[In]' attribute is not necessary unless the '[Out]' attribute is also used. The behavior of the '[In]' attribute without the '[Out]' attribute is the same as the default behavior.</value>
   </data>
   <data name="InOutAttributeByRefNotSupported" xml:space="preserve">
@@ -195,8 +195,8 @@
   <data name="InAttributeNotSupportedWithoutOutBlittableArray" xml:space="preserve">
     <value>The '[In]' attribute is not supported unless the '[Out]' attribute is also used. Blittable arrays cannot be marshalled as '[In]' only.</value>
   </data>
-  <data name="InOutAttributesNotSupportedOnByValueParameters" xml:space="preserve">
-    <value>The `[In]` and `[Out]` attributes are not supported on value-type parameters passed by-value.</value>
+  <data name="OutAttributeNotSupportedOnByValueParameters" xml:space="preserve">
+    <value>The `[Out]` attribute are not supported on value-type parameters passed by-value. Consider using the 'out' or 'ref' keyword to make the parameter passed by reference.</value>
   </data>
   <data name="AddGeneratedComClassAddUnsafe" xml:space="preserve">
     <value>Add 'GeneratedComClassAttribute' to enable passing objects of this type to COM and allow unsafe code</value>
@@ -867,5 +867,14 @@
   </data>
   <data name="InOutAttributes" xml:space="preserve">
     <value>[In] and [Out] attributes</value>
+  </data>
+  <data name="InAttributeOnlyNotSupportedOnPinnedParameters" xml:space="preserve">
+    <value>This parameter is marshalled by pinning and does not support the '[In]' attribute without the '[Out]' attribute.</value>
+  </data>
+  <data name="PinnedMarshallingIsInOutByDefault" xml:space="preserve">
+    <value>This parameter is marshalled by pinning and is '[In, Out]' by default.</value>
+  </data>
+  <data name="InRefKindIsNotSupportedOnPinnedParameters" xml:space="preserve">
+    <value>The 'in' keyword is not supported on parameters that are marshalled by pinning. Use 'ref' or 'out' instead.</value>
   </data>
 </root>

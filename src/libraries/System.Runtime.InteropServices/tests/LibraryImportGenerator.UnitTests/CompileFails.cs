@@ -388,14 +388,14 @@ namespace LibraryImportGenerator.UnitTests
             {
                 VerifyCS.Diagnostic(GeneratorDiagnostics.ParameterTypeNotSupportedWithDetails)
                     .WithLocation(0)
-                    .WithArguments(SR.InOutAttributesNotSupportedOnByValueParameters, "p")
+                    .WithArguments(SR.InOutAttributeMarshalerNotSupported, "p")
             } };
 
             yield return new object[] { ID(), CodeSnippets.ByValueParameterWithModifier<byte>("In, Out"), new[]
             {
                 VerifyCS.Diagnostic(GeneratorDiagnostics.ParameterTypeNotSupportedWithDetails)
                     .WithLocation(0)
-                    .WithArguments(SR.InOutAttributesNotSupportedOnByValueParameters, "p")
+                    .WithArguments(SR., "p")
             } };
 
             // LCIDConversion
