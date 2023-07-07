@@ -39,49 +39,6 @@ ULONG EventPipeWriteEventExceptionThrown_V1(
     return 0;
 }
 
-ULONG EventPipeWriteEventGCAllocationTick_V1(
-    const unsigned int  AllocationAmount,
-    const unsigned int  AllocationKind,
-    const unsigned short  ClrInstanceID,
-    const GUID * ActivityId,
-    const GUID * RelatedActivityId
-)
-{
-    return 0;
-}
-
-
-ULONG EventPipeWriteEventGCAllocationTick_V2(
-    const unsigned int  AllocationAmount,
-    const unsigned int  AllocationKind,
-    const unsigned short  ClrInstanceID,
-    const unsigned __int64  AllocationAmount64,
-    const void*  TypeID,
-    const WCHAR*  TypeName,
-    const unsigned int  HeapIndex,
-    const GUID * ActivityId,
-    const GUID * RelatedActivityId
-)
-{
-    return 0;
-}
-
-ULONG EventPipeWriteEventGCAllocationTick_V3(
-    const unsigned int  AllocationAmount,
-    const unsigned int  AllocationKind,
-    const unsigned short  ClrInstanceID,
-    const unsigned __int64  AllocationAmount64,
-    const void*  TypeID,
-    const WCHAR*  TypeName,
-    const unsigned int  HeapIndex,
-    const void*  Address,
-    const GUID * ActivityId,
-    const GUID * RelatedActivityId
-)
-{
-    return 0;
-}
-
 ULONG EventPipeWriteEventGCBulkEdge(
     const unsigned int  Index,
     const unsigned int  Count,
@@ -232,23 +189,6 @@ ULONG EventPipeWriteEventGCGenerationRange(
     const unsigned __int64  RangeUsedLength,
     const unsigned __int64  RangeReservedLength,
     const unsigned short  ClrInstanceID,
-    const GUID * ActivityId,
-    const GUID * RelatedActivityId
-)
-{
-    return 0;
-}
-
-ULONG EventPipeWriteEventGCGlobalHeapHistory_V2(
-    const unsigned __int64  FinalYoungestDesired,
-    const signed int  NumHeaps,
-    const unsigned int  CondemnedGeneration,
-    const unsigned int  Gen0ReductionCount,
-    const unsigned int  Reason,
-    const unsigned int  GlobalMechanisms,
-    const unsigned short  ClrInstanceID,
-    const unsigned int  PauseMode,
-    const unsigned int  MemoryPressure,
     const GUID * ActivityId,
     const GUID * RelatedActivityId
 )
@@ -422,19 +362,6 @@ ULONG EventPipeWriteEventSetGCHandle(
     return 0;
 }
 
-ULONG EventPipeWriteEventGCStart_V1(
-    const unsigned int  Count,
-    const unsigned int  Depth,
-    const unsigned int  Reason,
-    const unsigned int  Type,
-    const unsigned short  ClrInstanceID,
-    const GUID * ActivityId,
-    const GUID * RelatedActivityId
-)
-{
-    return 0;
-}
-
 ULONG EventPipeWriteEventGCStart_V2(
     const unsigned int Count,
     const unsigned int Depth,
@@ -478,6 +405,230 @@ ULONG EventPipeWriteEventGCRestartEEEnd_V1(
     const unsigned short ClrInstanceID,
     const GUID * ActivityId,
     const GUID * RelatedActivityId)
+{
+    return 0;
+}
+
+ULONG EventPipeWriteEventDecreaseMemoryPressure(
+    const unsigned __int64  BytesFreed,
+    const unsigned short  ClrInstanceID,
+    const GUID * ActivityId,
+    const GUID * RelatedActivityId
+)
+{
+    return 0;
+}
+
+ULONG EventPipeWriteEventFinalizeObject(
+    const void*  TypeID,
+    const void*  ObjectID,
+    const unsigned short  ClrInstanceID,
+    const GUID * ActivityId,
+    const GUID * RelatedActivityId
+)
+{
+    return 0;
+}
+
+ULONG EventPipeWriteEventGCFinalizersBegin_V1(
+    const unsigned short  ClrInstanceID,
+    const GUID * ActivityId,
+    const GUID * RelatedActivityId
+)
+{
+    return 0;
+}
+
+
+ULONG EventPipeWriteEventGCFinalizersEnd_V1(
+    const unsigned int  Count,
+    const unsigned short  ClrInstanceID,
+    const GUID * ActivityId,
+    const GUID * RelatedActivityId
+)
+{
+    return 0;
+}
+
+
+ULONG EventPipeWriteEventGCAllocationTick_V4(
+    const unsigned int  AllocationAmount,
+    const unsigned int  AllocationKind,
+    const unsigned short  ClrInstanceID,
+    const unsigned __int64  AllocationAmount64,
+    const void*  TypeID,
+    const WCHAR*  TypeName,
+    const unsigned int  HeapIndex,
+    const void*  Address,
+    const unsigned __int64  ObjectSize,
+    const GUID * ActivityId,
+    const GUID * RelatedActivityId
+)
+{
+    return 0;
+}
+
+
+ULONG EventPipeWriteEventGCHeapStats_V2(
+    const unsigned __int64  GenerationSize0,
+    const unsigned __int64  TotalPromotedSize0,
+    const unsigned __int64  GenerationSize1,
+    const unsigned __int64  TotalPromotedSize1,
+    const unsigned __int64  GenerationSize2,
+    const unsigned __int64  TotalPromotedSize2,
+    const unsigned __int64  GenerationSize3,
+    const unsigned __int64  TotalPromotedSize3,
+    const unsigned __int64  FinalizationPromotedSize,
+    const unsigned __int64  FinalizationPromotedCount,
+    const unsigned int  PinnedObjectCount,
+    const unsigned int  SinkBlockCount,
+    const unsigned int  GCHandleCount,
+    const unsigned short  ClrInstanceID,
+    const unsigned __int64  GenerationSize4,
+    const unsigned __int64  TotalPromotedSize4,
+    const GUID * ActivityId,
+    const GUID * RelatedActivityId
+)
+{
+    return 0;
+}
+
+
+ULONG EventPipeWriteEventGCSampledObjectAllocationHigh(
+    const void*  Address,
+    const void*  TypeID,
+    const unsigned int  ObjectCountForTypeSample,
+    const unsigned __int64  TotalSizeForTypeSample,
+    const unsigned short  ClrInstanceID,
+    const GUID * ActivityId,
+    const GUID * RelatedActivityId
+)
+{
+    return 0;
+}
+
+
+ULONG EventPipeWriteEventGCSampledObjectAllocationLow(
+    const void*  Address,
+    const void*  TypeID,
+    const unsigned int  ObjectCountForTypeSample,
+    const unsigned __int64  TotalSizeForTypeSample,
+    const unsigned short  ClrInstanceID,
+    const GUID * ActivityId,
+    const GUID * RelatedActivityId
+)
+{
+    return 0;
+}
+
+
+ULONG EventPipeWriteEventPinObjectAtGCTime(
+    const void*  HandleID,
+    const void*  ObjectID,
+    const unsigned __int64  ObjectSize,
+    const WCHAR*  TypeName,
+    const unsigned short  ClrInstanceID,
+    const GUID * ActivityId,
+    const GUID * RelatedActivityId
+)
+{
+    return 0;
+}
+
+
+ULONG EventPipeWriteEventGCBulkRootStaticVar(
+    const unsigned int  Count,
+    const unsigned __int64  AppDomainID,
+    const unsigned short  ClrInstanceID,
+    int Values_ElementSize,
+    const void* Values,
+    const GUID * ActivityId,
+    const GUID * RelatedActivityId
+)
+{
+    return 0;
+}
+
+
+ULONG EventPipeWriteEventIncreaseMemoryPressure(
+    const unsigned __int64  BytesAllocated,
+    const unsigned short  ClrInstanceID,
+    const GUID * ActivityId,
+    const GUID * RelatedActivityId
+)
+{
+    return 0;
+}
+
+
+ULONG EventPipeWriteEventGCGlobalHeapHistory_V4(
+    const unsigned __int64  FinalYoungestDesired,
+    const signed int  NumHeaps,
+    const unsigned int  CondemnedGeneration,
+    const unsigned int  Gen0ReductionCount,
+    const unsigned int  Reason,
+    const unsigned int  GlobalMechanisms,
+    const unsigned short  ClrInstanceID,
+    const unsigned int  PauseMode,
+    const unsigned int  MemoryPressure,
+    const unsigned int  CondemnReasons0,
+    const unsigned int  CondemnReasons1,
+    const unsigned int  Count,
+    int Values_ElementSize,
+    const void* Values,
+    const GUID * ActivityId,
+    const GUID * RelatedActivityId
+)
+{
+    return 0;
+}
+
+
+ULONG EventPipeWriteEventGenAwareBegin(
+    const unsigned int  Count,
+    const unsigned short  ClrInstanceID,
+    const GUID * ActivityId,
+    const GUID * RelatedActivityId
+)
+{
+    return 0;
+}
+
+
+ULONG EventPipeWriteEventGenAwareEnd(
+    const unsigned int  Count,
+    const unsigned short  ClrInstanceID,
+    const GUID * ActivityId,
+    const GUID * RelatedActivityId
+)
+{
+    return 0;
+}
+
+
+ULONG EventPipeWriteEventGCLOHCompact(
+    const unsigned short  ClrInstanceID,
+    const unsigned short  Count,
+    int Values_ElementSize,
+    const void* Values,
+    const GUID * ActivityId,
+    const GUID * RelatedActivityId
+)
+{
+    return 0;
+}
+
+
+ULONG EventPipeWriteEventGCFitBucketInfo(
+    const unsigned short  ClrInstanceID,
+    const unsigned short  BucketKind,
+    const unsigned __int64  TotalSize,
+    const unsigned short  Count,
+    int Values_ElementSize,
+    const void* Values,
+    const GUID * ActivityId,
+    const GUID * RelatedActivityId
+)
 {
     return 0;
 }

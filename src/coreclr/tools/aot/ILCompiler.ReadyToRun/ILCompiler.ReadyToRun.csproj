@@ -233,7 +233,6 @@
     <Compile Include="Compiler\DependencyAnalysis\ReadyToRunSymbolNodeFactory.cs" />
     <Compile Include="Compiler\DependencyAnalysis\SortableDependencyNodeCompilerSpecific.cs" />
     <Compile Include="Compiler\DependencyAnalysis\TypeAndMethod.cs" />
-    <Compile Include="Compiler\EffectiveVisibility.cs" />
     <Compile Include="Compiler\IRootingServiceProvider.cs" />
     <Compile Include="Compiler\ReadyToRunCompilationModuleGroupBase.cs" />
     <Compile Include="Compiler\PettisHansenSort\CallGraphNode.cs" />

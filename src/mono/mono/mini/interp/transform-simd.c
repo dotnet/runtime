@@ -14,16 +14,21 @@
 #define MSGSTRFIELD1(line) str##line
 static const struct msgstr_t {
 #define SIMD_METHOD(name) char MSGSTRFIELD(__LINE__) [sizeof (#name)];
+#define SIMD_METHOD2(str,name) char MSGSTRFIELD(__LINE__) [sizeof (str)];
 #include "simd-methods.def"
 #undef SIMD_METHOD
+#undef SIMD_METHOD2
 } method_names = {
 #define SIMD_METHOD(name) #name,
+#define SIMD_METHOD2(str,name) str,
 #include "simd-methods.def"
 #undef SIMD_METHOD
+#undef SIMD_METHOD2
 };
 
 enum {
 #define SIMD_METHOD(name) SN_ ## name = offsetof (struct msgstr_t, MSGSTRFIELD(__LINE__)),
+#define SIMD_METHOD2(str,name) SN_ ## name = offsetof (struct msgstr_t, MSGSTRFIELD(__LINE__)),
 #include "simd-methods.def"
 };
 
@@ -91,6 +96,7 @@ static guint16 sri_vector128_t_methods [] = {
 };
 
 static guint16 sn_vector_t_methods [] = {
+	SN_ctor,
 	SN_get_AllBitsSet,
 	SN_get_Count,
 	SN_get_One,
@@ -156,6 +162,12 @@ emit_common_simd_operations (TransformData *td, int id, int atype, int vector_si
 				gint64 *data = (gint64*)&td->last_ins->data [0];
 				for (int i = 0; i < vector_size / arg_size; i++)
 					data [i] = 1;
+				return TRUE;
+			} else if (atype == MONO_TYPE_R4) {
+				interp_add_ins (td, MINT_SIMD_V128_LDC);
+				float *data = (float*)&td->last_ins->data [0];
+				for (int i = 0; i < vector_size / arg_size; i++)
+					data [i] = 1.0f;
 				return TRUE;
 			}
 			break;
@@ -310,6 +322,31 @@ emit_common_simd_epilogue (TransformData *td, MonoClass *vector_klass, MonoMetho
 	td->ip += 5;
 }
 
+static void
+emit_vector_create (TransformData *td, MonoMethodSignature *csignature, MonoClass *vector_klass, int vector_size)
+{
+	int num_args = csignature->param_count;
+	if (num_args == 16) interp_add_ins (td, MINT_SIMD_V128_I1_CREATE);
+	else if (num_args == 8) interp_add_ins (td, MINT_SIMD_V128_I2_CREATE);
+	else if (num_args == 4) interp_add_ins (td, MINT_SIMD_V128_I4_CREATE);
+	else if (num_args == 2) interp_add_ins (td, MINT_SIMD_V128_I8_CREATE);
+	else g_assert_not_reached ();
+
+	// We use call args machinery since we have too many args
+	interp_ins_set_sreg (td->last_ins, MINT_CALL_ARGS_SREG);
+	int *call_args = (int*)mono_mempool_alloc (td->mempool, (num_args + 1) * sizeof (int));
+	td->sp -= csignature->param_count;
+	for (int i = 0; i < num_args; i++)
+		call_args [i] = td->sp [i].local;
+	call_args [num_args] = -1;
+	init_last_ins_call (td);
+	td->last_ins->info.call_info->call_args = call_args;
+	if (!td->optimized)
+		td->last_ins->info.call_info->call_offset = get_tos_offset (td);
+	push_type_vt (td, vector_klass, vector_size);
+	interp_ins_set_dreg (td->last_ins, td->sp [-1].local);
+}
+
 static gboolean
 emit_sri_vector128 (TransformData *td, MonoMethod *cmethod, MonoMethodSignature *csignature)
 {
@@ -352,26 +389,7 @@ emit_sri_vector128 (TransformData *td, MonoMethod *cmethod, MonoMethodSignature 
 				else if (arg_size == 4) simd_intrins = INTERP_SIMD_INTRINSIC_V128_I4_CREATE;
 				else if (arg_size == 8) simd_intrins = INTERP_SIMD_INTRINSIC_V128_I8_CREATE;
 			} else if (csignature->param_count == vector_size / arg_size && atype == csignature->params [0]->type) {
-				int num_args = csignature->param_count;
-				if (num_args == 16) interp_add_ins (td, MINT_SIMD_V128_I1_CREATE);
-				else if (num_args == 8) interp_add_ins (td, MINT_SIMD_V128_I2_CREATE);
-				else if (num_args == 4) interp_add_ins (td, MINT_SIMD_V128_I4_CREATE);
-				else if (num_args == 2) interp_add_ins (td, MINT_SIMD_V128_I8_CREATE);
-				else g_assert_not_reached ();
-
-				// We use call args machinery since we have too many args
-				interp_ins_set_sreg (td->last_ins, MINT_CALL_ARGS_SREG);
-				int *call_args = (int*)mono_mempool_alloc (td->mempool, (num_args + 1) * sizeof (int));
-				td->sp -= csignature->param_count;
-				for (int i = 0; i < num_args; i++)
-					call_args [i] = td->sp [i].local;
-				call_args [num_args] = -1;
-				init_last_ins_call (td);
-				td->last_ins->info.call_info->call_args = call_args;
-				if (!td->optimized)
-					td->last_ins->info.call_info->call_offset = get_tos_offset (td);
-				push_type_vt (td, vector_klass, vector_size);
-				interp_ins_set_dreg (td->last_ins, td->sp [-1].local);
+				emit_vector_create (td, csignature, vector_klass, vector_size);
 				td->ip += 5;
 				return TRUE;
 			}
@@ -507,7 +525,52 @@ opcode_added:
 }
 
 static gboolean
-emit_sn_vector_t (TransformData *td, MonoMethod *cmethod, MonoMethodSignature *csignature)
+emit_sn_vector_t (TransformData *td, MonoMethod *cmethod, MonoMethodSignature *csignature, gboolean newobj)
+{
+	int id = lookup_intrins (sn_vector_t_methods, sizeof (sn_vector_t_methods), cmethod);
+	if (id == -1)
+		return FALSE;
+
+	gint16 simd_opcode = -1;
+	gint16 simd_intrins = -1;
+
+	// First argument is always vector
+	MonoClass *vector_klass = cmethod->klass;
+	if (!m_class_is_simd_type (vector_klass))
+		return FALSE;
+
+	MonoTypeEnum atype;
+	int vector_size, arg_size, scalar_arg;
+	if (!get_common_simd_info (vector_klass, csignature, &atype, &vector_size, &arg_size, &scalar_arg))
+		return FALSE;
+
+	if (emit_common_simd_operations (td, id, atype, vector_size, arg_size, scalar_arg, &simd_opcode, &simd_intrins)) {
+		goto opcode_added;
+	} else if (id == SN_ctor) {
+		if (csignature->param_count == vector_size / arg_size && atype == csignature->params [0]->type) {
+			emit_vector_create (td, csignature, vector_klass, vector_size);
+			if (!newobj) {
+				// If the ctor is called explicitly, then we need to store to the passed `this`
+				interp_emit_stobj (td, vector_klass, FALSE);
+				td->ip += 5;
+			}
+			return TRUE;
+		}
+	}
+
+	if (simd_opcode == -1 || simd_intrins == -1)
+		return FALSE;
+
+	interp_add_ins (td, simd_opcode);
+	td->last_ins->data [0] = simd_intrins;
+
+opcode_added:
+	emit_common_simd_epilogue (td, vector_klass, csignature, vector_size, FALSE);
+	return TRUE;
+}
+
+static gboolean
+emit_sn_vector4 (TransformData *td, MonoMethod *cmethod, MonoMethodSignature *csignature, gboolean newobj)
 {
 	int id = lookup_intrins (sn_vector_t_methods, sizeof (sn_vector_t_methods), cmethod);
 	if (id == -1)
@@ -519,13 +582,28 @@ emit_sn_vector_t (TransformData *td, MonoMethod *cmethod, MonoMethodSignature *c
 	// First argument is always vector
 	MonoClass *vector_klass = cmethod->klass;
 
-	MonoTypeEnum atype;
-	int vector_size, arg_size, scalar_arg;
-	if (!get_common_simd_info (vector_klass, csignature, &atype, &vector_size, &arg_size, &scalar_arg))
-		return FALSE;
+	MonoTypeEnum atype = MONO_TYPE_R4;
+	int vector_size = SIZEOF_V128;
+	int arg_size = sizeof (float);
+	int scalar_arg = -1;
+	for (int i = 0; i < csignature->param_count; i++) {
+		if (csignature->params [i]->type != MONO_TYPE_GENERICINST)
+			scalar_arg = i;
+	}
 
-	if (emit_common_simd_operations (td, id, atype, vector_size, arg_size, scalar_arg, &simd_opcode, &simd_intrins))
+	if (emit_common_simd_operations (td, id, atype, vector_size, arg_size, scalar_arg, &simd_opcode, &simd_intrins)) {
 		goto opcode_added;
+	} else if (id == SN_ctor) {
+		if (csignature->param_count == vector_size / arg_size && atype == csignature->params [0]->type) {
+			emit_vector_create (td, csignature, vector_klass, vector_size);
+			if (!newobj) {
+				// If the ctor is called explicitly, then we need to store to the passed `this`
+				interp_emit_stobj (td, vector_klass, FALSE);
+				td->ip += 5;
+			}
+			return TRUE;
+		}
+	}
 
 	if (simd_opcode == -1 || simd_intrins == -1)
 		return FALSE;
@@ -805,7 +883,7 @@ opcode_added:
 }
 
 static gboolean
-interp_emit_simd_intrinsics (TransformData *td, MonoMethod *cmethod, MonoMethodSignature *csignature)
+interp_emit_simd_intrinsics (TransformData *td, MonoMethod *cmethod, MonoMethodSignature *csignature, gboolean newobj)
 {
 	const char *class_name;
 	const char *class_ns;
@@ -824,7 +902,9 @@ interp_emit_simd_intrinsics (TransformData *td, MonoMethod *cmethod, MonoMethodS
 			return emit_sri_vector128_t (td, cmethod, csignature);
 	} else if (!strcmp (class_ns, "System.Numerics")) {
 		if (!strcmp (class_name, "Vector`1"))
-			return emit_sn_vector_t (td, cmethod, csignature);
+			return emit_sn_vector_t (td, cmethod, csignature, newobj);
+		else if (!strcmp (class_name, "Vector4"))
+			return emit_sn_vector4 (td, cmethod, csignature, newobj);
 	} else if (!strcmp (class_ns, "System.Runtime.Intrinsics.Wasm")) {
 		if (!strcmp (class_name, "PackedSimd"))
 			return emit_sri_packedsimd (td, cmethod, csignature);
