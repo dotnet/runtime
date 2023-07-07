@@ -222,11 +222,11 @@ namespace System
         {
             if (!Console.IsOutputRedirected)
             {
-                WriteStdoutAnsiString(TerminalFormatStringsInstance.Clear);
                 if (!string.IsNullOrEmpty(TerminalFormatStringsInstance.ClearScrollbackBuffer))
                 {
                     WriteStdoutAnsiString(TerminalFormatStringsInstance.ClearScrollbackBuffer);
                 }
+                WriteStdoutAnsiString(TerminalFormatStringsInstance.Clear);
             }
         }
 
