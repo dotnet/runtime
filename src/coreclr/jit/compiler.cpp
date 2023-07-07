@@ -2266,7 +2266,7 @@ void Compiler::compSetProcessor()
 // the total sum of flags is still valid.
 #if defined(TARGET_XARCH)
     // Get the preferred vector bitwidth, rounding down to the nearest multiple of 128-bits
-    uint32_t preferredVectorBitWidth   = (JitConfig.PreferredVectorBitWidth() / 128) * 128;
+    uint32_t preferredVectorBitWidth   = (ReinterpretHexAsDecimal(JitConfig.PreferredVectorBitWidth()) / 128) * 128;
     uint32_t preferredVectorByteLength = preferredVectorBitWidth / 8;
 
     if (instructionSetFlags.HasInstructionSet(InstructionSet_SSE))
