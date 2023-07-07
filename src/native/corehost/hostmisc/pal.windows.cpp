@@ -736,7 +736,7 @@ bool pal::realpath(string_t* path, bool skip_error_logging)
 typedef std::unique_ptr<std::remove_pointer<HANDLE>::type, decltype(&::CloseHandle)> SmartHandle;
 
 // Like realpath, but resolves symlinks.
-bool pal::realpath2(string_t* path, bool skip_error_logging)
+bool realpath2(string_t* path, bool skip_error_logging)
 {
     if (path->empty())
     {
