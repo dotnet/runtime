@@ -1194,8 +1194,8 @@ namespace __OptionValidationStaticInstances
                 [Required]
                 public string? Foo { get; set; }
 
-                // line below causes the generator to emit a warning "SYSLIB1212" outside of its compilation.
-                // The generator should not emit this diagnostics in this case.
+                // line below causes the generator to emit a warning "SYSLIB1212" but the original location is outside of its compilation (SyntaxTree).
+                // The generator should emit this diagnostics pointing at the closest location of the failure inside the compilation.
                 public SecondClassInAnotherAssembly? TransitiveProperty { get; set; }
             }
 
@@ -1253,8 +1253,12 @@ namespace __OptionValidationStaticInstances
                     new List<string> { source1 })
                 .ConfigureAwait(false);
 
-            Assert.Empty(diagnostics); // no diagnostics should be produced
+            Assert.Equal(1, diagnostics.Count());
+            Assert.Equal(DiagDescriptors.PotentiallyMissingTransitiveValidation.Id, diagnostics[0].Id);
             _ = Assert.Single(generatedSources);
+
+            // validate the location is inside the MyOptions class and not outside the compilation which is in the referenced assembly
+            Assert.StartsWith("src-0.cs: (12,", diagnostics[0].Location.GetLineSpan().ToString());
         }, assemblyPath).Dispose();
 
         File.Delete(assemblyPath); // cleanup
