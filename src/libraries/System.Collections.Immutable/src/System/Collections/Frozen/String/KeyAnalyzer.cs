@@ -4,9 +4,7 @@
 using System.Buffers;
 using System.Collections.Generic;
 using System.Diagnostics;
-#if !NET8_0_OR_GREATER
 using System.Runtime.CompilerServices;
-#endif
 
 namespace System.Collections.Frozen
 {
@@ -59,7 +57,7 @@ namespace System.Collections.Frozen
             int maxSubstringLength = Math.Min(minLength, MaxSubstringLengthLimit);
             for (int count = 1; count <= maxSubstringLength; count++)
             {
-                comparer.IsLeft = true;
+                comparer.Slicer = SliceLeft;
                 comparer.Count = count;
 
                 // For each index, get a uniqueness factor for the left-justified substrings.
@@ -71,8 +69,7 @@ namespace System.Collections.Frozen
                     if (HasSufficientUniquenessFactor(set, uniqueStrings))
                     {
                         results = CreateAnalysisResults(
-                            uniqueStrings, ignoreCase, minLength, maxLength, index, count,
-                            static (string s, int index, int count) => s.AsSpan(index, count));
+                            uniqueStrings, ignoreCase, minLength, maxLength, index, count, comparer.Slicer);
                         return true;
                     }
                 }
@@ -83,8 +80,8 @@ namespace System.Collections.Frozen
                 // right-justified substrings, and so we also check right-justification.
                 if (minLength != maxLength)
                 {
-                    // toggle the direction and re-use the comparer and hashset (HasSufficientUniquenessFactor clears it)
-                    comparer.IsLeft = false;
+                    // toggle the direction and re-use the comparer and HashSet (HasSufficientUniquenessFactor clears it)
+                    comparer.Slicer = SliceRight;
 
                     // For each index, get a uniqueness factor for the right-justified substrings.
                     // If any is above our threshold, we're done.
@@ -96,8 +93,7 @@ namespace System.Collections.Frozen
                         if (HasSufficientUniquenessFactor(set, uniqueStrings))
                         {
                             results = CreateAnalysisResults(
-                                uniqueStrings, ignoreCase, minLength, maxLength, comparer.Index, count,
-                                static (string s, int index, int count) => s.AsSpan(s.Length + index, count));
+                                uniqueStrings, ignoreCase, minLength, maxLength, comparer.Index, count, comparer.Slicer);
                             return true;
                         }
                     }
@@ -110,7 +106,7 @@ namespace System.Collections.Frozen
         }
 
         private static AnalysisResults CreateAnalysisResults(
-            ReadOnlySpan<string> uniqueStrings, bool ignoreCase, int minLength, int maxLength, int index, int count, GetSpan getSubstringSpan)
+            ReadOnlySpan<string> uniqueStrings, bool ignoreCase, int minLength, int maxLength, int index, int count, GetSpan slicer)
         {
             // Start off by assuming all strings are ASCII
             bool allAsciiIfIgnoreCase = true;
@@ -124,12 +120,12 @@ namespace System.Collections.Frozen
                 // actually perform the comparison as case-sensitive even if case-insensitive
                 // was requested, as there's nothing that would compare equally to the substring
                 // other than the substring itself.
-                bool canSwitchIgnoreCaseToCaseSensitive = ignoreCase;
+                bool canSwitchIgnoreCaseToCaseSensitive = true;
 
                 foreach (string s in uniqueStrings)
                 {
                     // Get the span for the substring.
-                    ReadOnlySpan<char> substring = getSubstringSpan(s, index, count);
+                    ReadOnlySpan<char> substring = slicer(s, index, count);
 
                     // If the substring isn't ASCII, bail out to return the results.
                     if (!IsAllAscii(substring))
@@ -263,25 +259,32 @@ namespace System.Collections.Frozen
             public bool RightJustifiedSubstring => HashIndex < 0;
         }
 
+        [MethodImpl(MethodImplOptions.AggressiveInlining)]
+        private static ReadOnlySpan<char> SliceLeft(string s, int index, int count) => s.AsSpan(index, count);
+
+        [MethodImpl(MethodImplOptions.AggressiveInlining)]
+        private static ReadOnlySpan<char> SliceRight(string s, int index, int count) => s.AsSpan(s.Length + index, count);
+
         private abstract class SubstringComparer : IEqualityComparer<string>
         {
             public int Index;
             public int Count;
-            public bool IsLeft;
+            public GetSpan Slicer = SliceLeft;
+
             public abstract bool Equals(string? x, string? y);
             public abstract int GetHashCode(string s);
         }
 
         private sealed class JustifiedSubstringComparer : SubstringComparer
         {
-            public override bool Equals(string? x, string? y) => x.AsSpan(IsLeft ? Index : (x!.Length + Index), Count).SequenceEqual(y.AsSpan(IsLeft ? Index : (y!.Length + Index), Count));
-            public override int GetHashCode(string s) => Hashing.GetHashCodeOrdinal(s.AsSpan(IsLeft ? Index : (s.Length + Index), Count));
+            public override bool Equals(string? x, string? y) => Slicer(x!, Index, Count).SequenceEqual(Slicer(y!, Index, Count));
+            public override int GetHashCode(string s) => Hashing.GetHashCodeOrdinal(Slicer(s, Index, Count));
         }
 
         private sealed class JustifiedCaseInsensitiveSubstringComparer : SubstringComparer
         {
-            public override bool Equals(string? x, string? y) => x.AsSpan(IsLeft ? Index : (x!.Length + Index), Count).Equals(y.AsSpan(IsLeft ? Index : (y!.Length + Index), Count), StringComparison.OrdinalIgnoreCase);
-            public override int GetHashCode(string s) => Hashing.GetHashCodeOrdinalIgnoreCase(s.AsSpan(IsLeft ? Index : (s.Length + Index), Count));
+            public override bool Equals(string? x, string? y) => Slicer(x!, Index, Count).Equals(Slicer(y!, Index, Count), StringComparison.OrdinalIgnoreCase);
+            public override int GetHashCode(string s) => Hashing.GetHashCodeOrdinalIgnoreCase(Slicer(s, Index, Count));
         }
     }
 }
