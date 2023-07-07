@@ -3779,14 +3779,22 @@ GenTree* Compiler::impImportStaticFieldAddress(CORINFO_RESOLVED_TOKEN* pResolved
 
         case CORINFO_FIELD_STATIC_TLS_MANAGED:
 
-            if (pFieldInfo->helper == CORINFO_HELP_GETSHARED_NONGCTHREADSTATIC_BASE_NOCTOR_OPTIMIZED)
+#ifdef FEATURE_READYTORUN
+            if (opts.IsReadyToRun())
             {
-                typeIndex = info.compCompHnd->getThreadLocalFieldInfo(pResolvedToken->hField, false);
             }
             else
+#endif // FEATURE_READYTORUN
             {
-                assert(pFieldInfo->helper == CORINFO_HELP_GETSHARED_GCTHREADSTATIC_BASE_NOCTOR_OPTIMIZED);
-                typeIndex = info.compCompHnd->getThreadLocalFieldInfo(pResolvedToken->hField, true);
+                if (pFieldInfo->helper == CORINFO_HELP_GETSHARED_NONGCTHREADSTATIC_BASE_NOCTOR_OPTIMIZED)
+                {
+                    typeIndex = info.compCompHnd->getThreadLocalFieldInfo(pResolvedToken->hField, false);
+                }
+                else
+                {
+                    assert(pFieldInfo->helper == CORINFO_HELP_GETSHARED_GCTHREADSTATIC_BASE_NOCTOR_OPTIMIZED);
+                    typeIndex = info.compCompHnd->getThreadLocalFieldInfo(pResolvedToken->hField, true);
+                }
             }
 
             FALLTHROUGH;
@@ -3804,7 +3812,22 @@ GenTree* Compiler::impImportStaticFieldAddress(CORINFO_RESOLVED_TOKEN* pResolved
                     callFlags |= GTF_CALL_HOISTABLE;
                 }
 
+                //if (pFieldInfo->fieldAccessor == CORINFO_FIELD_STATIC_TLS_MANAGED)
+                ////if (pFieldInfo->helper == CORINFO_HELP_GETSHARED_NONGCTHREADSTATIC_BASE_NOCTOR_OPTIMIZED)
+                //{
+                //    // for now. We will eventually need a new helper that doesn't take argument
+                //    op1 = gtNewHelperCallNode(pFieldInfo->helper, TYP_BYREF, gtNewIconNode(0));
+                //    op1->AsCall()->SetExpTLSFieldAccess();
+                //}
+                //else
+                //{
+                //    op1 = gtNewHelperCallNode(pFieldInfo->helper, TYP_BYREF);
+                //}
                 op1 = gtNewHelperCallNode(pFieldInfo->helper, TYP_BYREF);
+                if (pFieldInfo->fieldAccessor == CORINFO_FIELD_STATIC_TLS_MANAGED)
+                {
+                    op1->AsCall()->SetExpTLSFieldAccess();
+                }
                 if (pResolvedToken->hClass == info.compClassHnd && m_preferredInitCctor == CORINFO_HELP_UNDEF &&
                     (pFieldInfo->helper == CORINFO_HELP_READYTORUN_GCSTATIC_BASE ||
                      pFieldInfo->helper == CORINFO_HELP_READYTORUN_NONGCSTATIC_BASE))

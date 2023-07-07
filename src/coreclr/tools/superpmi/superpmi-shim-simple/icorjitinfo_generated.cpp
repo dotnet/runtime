@@ -669,6 +669,18 @@ void interceptor_ICJI::getThreadLocalStaticBlocksInfo(
     original_ICorJitInfo->getThreadLocalStaticBlocksInfo(pInfo, isGCType);
 }
 
+void interceptor_ICJI::getTlsRootInfo(
+          CORINFO_CONST_LOOKUP* addr)
+{
+    original_ICorJitInfo->getTlsRootInfo(addr);
+}
+
+void interceptor_ICJI::getThreadStaticBaseSlowInfo(
+          CORINFO_CONST_LOOKUP* addr)
+{
+    original_ICorJitInfo->getThreadStaticBaseSlowInfo(addr);
+}
+
 bool interceptor_ICJI::isFieldStatic(
           CORINFO_FIELD_HANDLE fldHnd)
 {

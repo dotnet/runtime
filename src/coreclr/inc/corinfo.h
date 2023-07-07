@@ -601,6 +601,7 @@ enum CorInfoHelpFunc
     CORINFO_HELP_READYTORUN_GENERIC_HANDLE,
     CORINFO_HELP_READYTORUN_DELEGATE_CTOR,
     CORINFO_HELP_READYTORUN_GENERIC_STATIC_BASE,
+    CORINFO_HELP_READYTORUN_INLINED_THREADSTATIC_BASE_SLOW,
 
     CORINFO_HELP_EE_PERSONALITY_ROUTINE,// Not real JIT helper. Used in native images.
     CORINFO_HELP_EE_PERSONALITY_ROUTINE_FILTER_FUNCLET,// Not real JIT helper. Used in native images to detect filter funclets.
@@ -1736,6 +1737,7 @@ struct CORINFO_THREAD_STATIC_BLOCKS_INFO
     uint32_t offsetOfMaxThreadStaticBlocks;
     uint32_t offsetOfThreadStaticBlocks;
     uint32_t offsetOfGCDataPointer;
+    CORINFO_CONST_LOOKUP tlsRoot;               // for nativeaot
 };
 
 //----------------------------------------------------------------------------
@@ -2788,6 +2790,9 @@ public:
             CORINFO_THREAD_STATIC_BLOCKS_INFO*  pInfo,
             bool                                isGCType
             ) = 0;
+
+    virtual void getTlsRootInfo(CORINFO_CONST_LOOKUP* addr) = 0;
+    virtual void getThreadStaticBaseSlowInfo(CORINFO_CONST_LOOKUP* addr) = 0;
 
     // Returns true iff "fldHnd" represents a static field.
     virtual bool isFieldStatic(CORINFO_FIELD_HANDLE fldHnd) = 0;

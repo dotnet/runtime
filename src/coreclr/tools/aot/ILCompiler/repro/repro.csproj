@@ -10,6 +10,7 @@
     <Configurations>Debug;Release;Checked</Configurations>
     <AllowUnsafeBlocks>true</AllowUnsafeBlocks>
     <RunAnalyzers>false</RunAnalyzers>
+    <Optimize>true</Optimize>
   </PropertyGroup>
 
   <Target Name="GenerateReproProjectResponseFile"
@@ -41,7 +42,7 @@
       <ReproResponseLines Include="--feature:System.Linq.Expressions.CanEmitObjectArrayDelegate=false" />
       <ReproResponseLines Include="--feature:System.Linq.Expressions.CanCreateArbitraryDelegates=false" />
     </ItemGroup>
-
+    <Message Text="$(OutputPath)\compile-with-$(LibrariesConfiguration)-libs.rsp" />
     <WriteLinesToFile File="$(OutputPath)\compile-with-$(LibrariesConfiguration)-libs.rsp"
                       Lines="@(ReproResponseLines)"
                       Overwrite="true"

@@ -3230,5 +3230,22 @@ namespace Internal.JitInterface
                 throw new RequiresRuntimeJitException($"Type equivalent valuetype '{type}' not directly referenced from member reference");
             }
         }
+
+#pragma warning disable CA1822 // Mark members as static
+        private void getThreadLocalStaticBlocksInfo(CORINFO_THREAD_STATIC_BLOCKS_INFO* pInfo, bool isGCType)
+        {
+            // Implemented for JIT and NativeAOT only for now.
+        }
+
+        private void getTlsRootInfo(ref CORINFO_CONST_LOOKUP addr)
+        {
+            // Implemented for JIT and NativeAOT only for now.
+        }
+
+        private void getThreadStaticBaseSlowInfo(ref CORINFO_CONST_LOOKUP addr)
+        {
+            // Implemented for JIT and NativeAOT only for now.
+        }
+#pragma warning restore CA1822 // Mark members as static
     }
 }

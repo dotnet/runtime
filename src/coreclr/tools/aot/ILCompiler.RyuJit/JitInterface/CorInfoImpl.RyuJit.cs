@@ -350,6 +350,12 @@ namespace Internal.JitInterface
                         pLookup = CreateConstLookupToSymbol(helper);
                     }
                     break;
+                case CorInfoHelpFunc.CORINFO_HELP_READYTORUN_INLINED_THREADSTATIC_BASE_SLOW:
+                    {
+                        ISymbolNode helper = GetGenericLookupHelper(pGenericLookupKind.runtimeLookupKind, helperId, helperArg);
+                        pLookup = CreateConstLookupToSymbol(helper);
+                    }
+                    break;
                 default:
                     throw new NotImplementedException("ReadyToRun: " + id.ToString());
             }
@@ -2137,8 +2143,22 @@ namespace Internal.JitInterface
                     }
                     else if (field.IsThreadStatic)
                     {
-                        pResult->helper = CorInfoHelpFunc.CORINFO_HELP_READYTORUN_THREADSTATIC_BASE;
-                        helperId = ReadyToRunHelperId.GetThreadStaticBase;
+                        bool isNew = false;
+                        if (MethodBeingCompiled.Context.Target.IsWindows && MethodBeingCompiled.Context.Target.Architecture == TargetArchitecture.X64)
+                        {
+                            //  TODO: Do it only for windows?
+                            fieldAccessor = CORINFO_FIELD_ACCESSOR.CORINFO_FIELD_STATIC_TLS_MANAGED;
+                        }
+                        if (isNew)
+                        {
+                            fieldAccessor = CORINFO_FIELD_ACCESSOR.CORINFO_FIELD_STATIC_TLS_MANAGED;
+                            pResult->helper = CorInfoHelpFunc.CORINFO_HELP_GETSHARED_NONGCTHREADSTATIC_BASE_NOCTOR_OPTIMIZED;
+                        }
+                        else
+                        {
+                            pResult->helper = CorInfoHelpFunc.CORINFO_HELP_READYTORUN_THREADSTATIC_BASE;
+                            helperId = ReadyToRunHelperId.GetThreadStaticBase;
+                        }
                     }
                     else if (!_compilation.HasLazyStaticConstructor(field.OwningType))
                     {
@@ -2397,6 +2417,24 @@ namespace Internal.JitInterface
                 addr.addr = (void*)ObjectToHandle(_compilation.NodeFactory.TypeNonGCStaticsSymbol(type));
             }
             return true;
+        }
+
+        private void getTlsRootInfo(ref CORINFO_CONST_LOOKUP addr)
+        {
+            addr = CreateConstLookupToSymbol(_compilation.NodeFactory.TlsRoot);
+        }
+
+        private void getThreadStaticBaseSlowInfo(ref CORINFO_CONST_LOOKUP addr)
+        {
+            addr = CreateConstLookupToSymbol(_compilation.NodeFactory.HelperEntrypoint(HelperEntrypoint.GetInlinedThreadStaticBaseSlow));
+        }
+
+        private void getThreadLocalStaticBlocksInfo(CORINFO_THREAD_STATIC_BLOCKS_INFO* pInfo, bool isGCType)
+        {
+            pInfo->offsetOfThreadLocalStoragePointer = 0x58;
+            pInfo->tlsIndex = CreateConstLookupToSymbol(_compilation.NodeFactory.ExternSymbol("_tls_index"));
+            pInfo->tlsRoot = CreateConstLookupToSymbol(_compilation.NodeFactory.TlsRoot);
+            // Implemented for JIT only for now.
         }
     }
 }

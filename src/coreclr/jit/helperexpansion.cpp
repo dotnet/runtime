@@ -443,7 +443,192 @@ PhaseStatus Compiler::fgExpandThreadLocalAccess()
         return result;
     }
 
-    return fgExpandHelper<&Compiler::fgExpandThreadLocalAccessForCall>(true);
+    return opts.IsReadyToRun() ? fgExpandHelper<&Compiler::fgExpandThreadLocalAccessForCallReadyToRun>(true)
+                               : fgExpandHelper<&Compiler::fgExpandThreadLocalAccessForCall>(true);
+}
+
+bool Compiler::fgExpandThreadLocalAccessForCallReadyToRun(BasicBlock** pBlock, Statement* stmt, GenTreeCall* call)
+{
+    assert(opts.IsReadyToRun());
+    BasicBlock* block = *pBlock;
+    assert(call->IsHelperCall());
+    if (!call->IsExpTLSFieldAccess())
+    {
+        return false;
+    }
+
+    JITDUMP("Expanding thread static local access for [%06d] in " FMT_BB ":\n", dspTreeID(call), block->bbNum);
+    DISPTREE(call);
+    JITDUMP("\n");
+    CORINFO_THREAD_STATIC_BLOCKS_INFO threadStaticBlocksInfo;
+    memset(&threadStaticBlocksInfo, 0, sizeof(CORINFO_THREAD_STATIC_BLOCKS_INFO));
+
+    info.compCompHnd->getThreadLocalStaticBlocksInfo(&threadStaticBlocksInfo, false);
+
+    JITDUMP("getThreadLocalStaticBlocksInfo\n:");
+    JITDUMP("tlsIndex= %p\n", dspPtr(threadStaticBlocksInfo.tlsIndex.addr));
+    JITDUMP("tlsGetAddrFtnPtr= %p\n", dspPtr(threadStaticBlocksInfo.tlsGetAddrFtnPtr));
+    JITDUMP("tlsIndexObject= %p\n", dspPtr(threadStaticBlocksInfo.tlsIndexObject));
+    JITDUMP("threadVarsSection= %p\n", dspPtr(threadStaticBlocksInfo.threadVarsSection));
+    JITDUMP("offsetOfThreadLocalStoragePointer= %u\n",
+            dspOffset(threadStaticBlocksInfo.offsetOfThreadLocalStoragePointer));
+    JITDUMP("offsetOfMaxThreadStaticBlocks= %u\n", dspOffset(threadStaticBlocksInfo.offsetOfMaxThreadStaticBlocks));
+    JITDUMP("offsetOfThreadStaticBlocks= %u\n", dspOffset(threadStaticBlocksInfo.offsetOfThreadStaticBlocks));
+    JITDUMP("offsetOfGCDataPointer= %u\n", dspOffset(threadStaticBlocksInfo.offsetOfGCDataPointer));
+
+    call->ClearExpTLSFieldAccess();
+
+    // Split block right before the call tree
+    BasicBlock* prevBb       = block;
+    GenTree**   callUse      = nullptr;
+    Statement*  newFirstStmt = nullptr;
+    DebugInfo   debugInfo    = stmt->GetDebugInfo();
+    block                    = fgSplitBlockBeforeTree(block, stmt, call, &newFirstStmt, &callUse);
+    *pBlock                  = block;
+    var_types callType       = call->TypeGet();
+    assert(prevBb != nullptr && block != nullptr);
+
+    // Block ops inserted by the split need to be morphed here since we are after morph.
+    // We cannot morph stmt yet as we may modify it further below, and the morphing
+    // could invalidate callUse.
+    while ((newFirstStmt != nullptr) && (newFirstStmt != stmt))
+    {
+        fgMorphStmtBlockOps(block, newFirstStmt);
+        newFirstStmt = newFirstStmt->GetNextStmt();
+    }
+
+    GenTreeLclVar* threadStaticBlockLcl = nullptr;
+
+    // Grab a temp to store result (it's assigned from either fastPathBb or fallbackBb)
+    unsigned threadStaticBlockLclNum         = lvaGrabTemp(true DEBUGARG("TLS field access"));
+    lvaTable[threadStaticBlockLclNum].lvType = callType;
+    threadStaticBlockLcl                     = gtNewLclvNode(threadStaticBlockLclNum, callType);
+
+    *callUse = gtClone(threadStaticBlockLcl);
+
+    fgMorphStmtBlockOps(block, stmt);
+    gtUpdateStmtSideEffects(stmt);
+
+    GenTree* tlsValue                   = nullptr;
+    unsigned tlsLclNum                  = lvaGrabTemp(true DEBUGARG("TLS access"));
+    lvaTable[tlsLclNum].lvType          = TYP_I_IMPL;
+    GenTree* maxThreadStaticBlocksValue = nullptr;
+    GenTree* threadStaticBlocksValue    = nullptr;
+    GenTree* tlsValueDef                = nullptr;
+
+    if (TargetOS::IsWindows)
+    {
+        // Mark this ICON as a TLS_HDL, codegen will use FS:[cns] or GS:[cns]
+        tlsValue = gtNewIconHandleNode(threadStaticBlocksInfo.offsetOfThreadLocalStoragePointer, GTF_ICON_TLS_HDL);
+        tlsValue = gtNewIndir(TYP_I_IMPL, tlsValue, GTF_IND_NONFAULTING | GTF_IND_INVARIANT);
+
+        size_t   tlsIndexValue = (size_t)threadStaticBlocksInfo.tlsIndex.addr;
+        GenTree* dllRef        = gtNewIconHandleNode(tlsIndexValue, GTF_ICON_TLS_HDL);
+        dllRef                 = gtNewIndir(TYP_I_IMPL, dllRef, GTF_IND_NONFAULTING | GTF_IND_INVARIANT);
+        // Add the dllRef to produce thread local storage reference for coreclr
+        tlsValue = gtNewOperNode(GT_ADD, TYP_I_IMPL, tlsValue, dllRef);
+
+        // Base of coreclr's thread local storage
+        tlsValue = gtNewIndir(TYP_I_IMPL, tlsValue, GTF_IND_NONFAULTING | GTF_IND_INVARIANT);
+
+        CORINFO_CONST_LOOKUP                        tlsRootNode;
+        info.compCompHnd->getTlsRootInfo(&tlsRootNode);
+
+        GenTree* tlsRootOffset = gtNewIconHandleNode((size_t)tlsRootNode.handle, GTF_ICON_OBJ_HDL);
+
+        // Add the tlsValue and tlsRootOffset to produce tlsRootAddr.
+        GenTree* tlsRootAddr = gtNewOperNode(GT_ADD, TYP_I_IMPL, tlsValue, tlsRootOffset);
+
+        GenTree* tlsRootVal = gtNewIndir(TYP_I_IMPL, tlsRootAddr, GTF_IND_NONFAULTING | GTF_IND_INVARIANT);
+
+        // Cache the TlsRoot value
+        unsigned tlsRootLclNum             = lvaGrabTemp(true DEBUGARG("TlsRoot access"));
+        lvaTable[tlsRootLclNum].lvType     = TYP_I_IMPL;
+        GenTree* tlsRootDef                = gtNewStoreLclVarNode(tlsRootLclNum, tlsRootVal);
+        GenTree* tlsRootUse                = gtNewLclVarNode(tlsRootLclNum);
+
+        GenTree* tlsRootNullCond = gtNewOperNode(GT_NE, TYP_INT, tlsRootUse, gtNewIconNode(0, TYP_I_IMPL));
+        tlsRootNullCond          = gtNewOperNode(GT_JTRUE, TYP_VOID, tlsRootNullCond);
+
+        // prevBb (BBJ_NONE):                                               [weight: 1.0]
+        //      ...
+        //
+        // tlsRootNullCondBB (BBJ_COND):                                    [weight: 1.0]
+        //      fastPathValue = [tlsRootAddress]
+        //      if (fastPathValue != nullptr)
+        //          goto fastPathBb;
+        //
+        // fallbackBb (BBJ_ALWAYS):                                         [weight: 0]
+        //      tlsRoot = HelperCall();
+        //      goto block;
+        //
+        // fastPathBb(BBJ_ALWAYS):                                          [weight: 1.0]
+        //      tlsRoot = fastPathValue;
+        //
+        // block (...):                                                     [weight: 1.0]
+        //      use(tlsRoot);
+        // ...
+
+        // tlsRootNullCondBB
+        BasicBlock* tlsRootNullCondBB = fgNewBBFromTreeAfter(BBJ_COND, prevBb, tlsRootDef, debugInfo);
+
+        fgInsertStmtAfter(tlsRootNullCondBB, tlsRootNullCondBB->firstStmt(), fgNewStmtFromTree(tlsRootNullCond));
+
+        CORINFO_CONST_LOOKUP threadStaticSlowHelper;
+        info.compCompHnd->getThreadStaticBaseSlowInfo(&threadStaticSlowHelper);
+
+        GenTree* slowHelper = gtNewIndCallNode(gtNewIconHandleNode((size_t)threadStaticSlowHelper.addr, GTF_ICON_TLS_HDL), TYP_VOID);
+
+        // fallbackBb
+        GenTree*    fallbackValueDef = gtNewStoreLclVarNode(tlsRootLclNum, slowHelper);
+        BasicBlock* fallbackBb = fgNewBBFromTreeAfter(BBJ_ALWAYS, tlsRootNullCondBB, fallbackValueDef, debugInfo, true);
+
+        GenTree*    fastPathValueDef = gtNewStoreLclVarNode(tlsRootLclNum, gtCloneExpr(tlsRootUse));
+        BasicBlock* fastPathBb = fgNewBBFromTreeAfter(BBJ_ALWAYS, fallbackBb, fastPathValueDef, debugInfo, true);
+        
+        //
+        // Update preds in all new blocks
+        //
+        fgRemoveRefPred(block, prevBb);
+        fgAddRefPred(tlsRootNullCondBB, prevBb);
+
+        fgAddRefPred(fallbackBb, tlsRootNullCondBB);
+        fgAddRefPred(fastPathBb, tlsRootNullCondBB);
+
+        fgAddRefPred(block, fallbackBb);
+        fgAddRefPred(block, fastPathBb);
+
+        tlsRootNullCondBB->bbJumpDest           = fastPathBb;
+        fastPathBb->bbJumpDest                  = block;
+        fallbackBb->bbJumpDest                  = block;
+
+        // Inherit the weights
+        block->inheritWeight(prevBb);
+        tlsRootNullCondBB->inheritWeight(prevBb);
+        fastPathBb->inheritWeight(prevBb);
+
+        // fallback will just execute first time
+        fallbackBb->bbSetRunRarely();
+
+        //
+        // Update loop info if loop table is known to be valid
+        //
+        tlsRootNullCondBB->bbNatLoopNum           = prevBb->bbNatLoopNum;
+        fastPathBb->bbNatLoopNum                  = prevBb->bbNatLoopNum;
+        fallbackBb->bbNatLoopNum                  = prevBb->bbNatLoopNum;
+
+        // All blocks are expected to be in the same EH region
+        assert(BasicBlock::sameEHRegion(prevBb, block));
+        assert(BasicBlock::sameEHRegion(prevBb, tlsRootNullCondBB));
+        assert(BasicBlock::sameEHRegion(prevBb, fastPathBb));
+
+        return true;
+    }
+    else
+    {
+        assert(!"Unsupported scenario\n");
+    }
+    return false;
 }
 
 //------------------------------------------------------------------------------
@@ -471,14 +656,14 @@ PhaseStatus Compiler::fgExpandThreadLocalAccess()
 //
 bool Compiler::fgExpandThreadLocalAccessForCall(BasicBlock** pBlock, Statement* stmt, GenTreeCall* call)
 {
+    assert(!opts.IsReadyToRun());
+
     BasicBlock* block = *pBlock;
 
     if (!call->IsHelperCall() || !call->IsExpTLSFieldAccess())
     {
         return false;
     }
-
-    assert(!opts.IsReadyToRun());
 
     if (TargetOS::IsUnix)
     {
@@ -524,9 +709,9 @@ bool Compiler::fgExpandThreadLocalAccessForCall(BasicBlock** pBlock, Statement* 
 
     assert((eeGetHelperNum(call->gtCallMethHnd) == CORINFO_HELP_GETSHARED_NONGCTHREADSTATIC_BASE_NOCTOR_OPTIMIZED) ||
            (eeGetHelperNum(call->gtCallMethHnd) == CORINFO_HELP_GETSHARED_GCTHREADSTATIC_BASE_NOCTOR_OPTIMIZED));
+    assert(call->gtArgs.CountArgs() == 1);
 
     call->ClearExpTLSFieldAccess();
-    assert(call->gtArgs.CountArgs() == 1);
 
     // Split block right before the call tree
     BasicBlock* prevBb       = block;
@@ -559,7 +744,6 @@ bool Compiler::fgExpandThreadLocalAccessForCall(BasicBlock** pBlock, Statement* 
     fgMorphStmtBlockOps(block, stmt);
     gtUpdateStmtSideEffects(stmt);
 
-    GenTree* typeThreadStaticBlockIndexValue = call->gtArgs.GetArgByIndex(0)->GetNode();
     GenTree* tlsValue                        = nullptr;
     unsigned tlsLclNum                       = lvaGrabTemp(true DEBUGARG("TLS access"));
     lvaTable[tlsLclNum].lvType               = TYP_I_IMPL;
@@ -569,17 +753,16 @@ bool Compiler::fgExpandThreadLocalAccessForCall(BasicBlock** pBlock, Statement* 
 
     if (TargetOS::IsWindows)
     {
+        // Mark this ICON as a TLS_HDL, codegen will use FS:[cns] or GS:[cns]
+        tlsValue = gtNewIconHandleNode(threadStaticBlocksInfo.offsetOfThreadLocalStoragePointer, GTF_ICON_TLS_HDL);
+        tlsValue = gtNewIndir(TYP_I_IMPL, tlsValue, GTF_IND_NONFAULTING | GTF_IND_INVARIANT);
+
         size_t   tlsIndexValue = (size_t)threadStaticBlocksInfo.tlsIndex.addr;
         GenTree* dllRef        = nullptr;
-
         if (tlsIndexValue != 0)
         {
             dllRef = gtNewIconHandleNode(tlsIndexValue * TARGET_POINTER_SIZE, GTF_ICON_TLS_HDL);
         }
-
-        // Mark this ICON as a TLS_HDL, codegen will use FS:[cns] or GS:[cns]
-        tlsValue = gtNewIconHandleNode(threadStaticBlocksInfo.offsetOfThreadLocalStoragePointer, GTF_ICON_TLS_HDL);
-        tlsValue = gtNewIndir(TYP_I_IMPL, tlsValue, GTF_IND_NONFAULTING | GTF_IND_INVARIANT);
 
         if (dllRef != nullptr)
         {
@@ -687,6 +870,7 @@ bool Compiler::fgExpandThreadLocalAccessForCall(BasicBlock** pBlock, Statement* 
     threadStaticBlocksValue = gtNewIndir(TYP_I_IMPL, threadStaticBlocksRef, GTF_IND_NONFAULTING | GTF_IND_INVARIANT);
 
     // Create tree for "if (maxThreadStaticBlocks < typeIndex)"
+    GenTree* typeThreadStaticBlockIndexValue = gtNewIconNode(0, TYP_INT); //    call->gtArgs.GetArgByIndex(0)->GetNode();
     GenTree* maxThreadStaticBlocksCond =
         gtNewOperNode(GT_LT, TYP_INT, maxThreadStaticBlocksValue, gtCloneExpr(typeThreadStaticBlockIndexValue));
     maxThreadStaticBlocksCond = gtNewOperNode(GT_JTRUE, TYP_VOID, maxThreadStaticBlocksCond);

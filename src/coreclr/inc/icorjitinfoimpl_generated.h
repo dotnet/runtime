@@ -396,6 +396,12 @@ void getThreadLocalStaticBlocksInfo(
           CORINFO_THREAD_STATIC_BLOCKS_INFO* pInfo,
           bool isGCType) override;
 
+void getTlsRootInfo(
+          CORINFO_CONST_LOOKUP* addr) override;
+
+void getThreadStaticBaseSlowInfo(
+          CORINFO_CONST_LOOKUP* addr) override;
+
 bool isFieldStatic(
           CORINFO_FIELD_HANDLE fldHnd) override;
 

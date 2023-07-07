@@ -932,6 +932,22 @@ void WrapICorJitInfo::getThreadLocalStaticBlocksInfo(
     API_LEAVE(getThreadLocalStaticBlocksInfo);
 }
 
+void WrapICorJitInfo::getTlsRootInfo(
+          CORINFO_CONST_LOOKUP* addr)
+{
+    API_ENTER(getTlsRootInfo);
+    wrapHnd->getTlsRootInfo(addr);
+    API_LEAVE(getTlsRootInfo);
+}
+
+void WrapICorJitInfo::getThreadStaticBaseSlowInfo(
+          CORINFO_CONST_LOOKUP* addr)
+{
+    API_ENTER(getThreadStaticBaseSlowInfo);
+    wrapHnd->getThreadStaticBaseSlowInfo(addr);
+    API_LEAVE(getThreadStaticBaseSlowInfo);
+}
+
 bool WrapICorJitInfo::isFieldStatic(
           CORINFO_FIELD_HANDLE fldHnd)
 {
