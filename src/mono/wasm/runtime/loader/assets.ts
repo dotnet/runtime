@@ -425,7 +425,7 @@ export function appendUniqueQuery(attemptUrl: string): string {
 }
 
 export function toAbsoluteBaseUri(path: string) {
-    if ("URL" in globalThis) {
+    if ("URL" in globalThis && document && document.baseURI) {
         return new URL(path, document.baseURI).toString();
     }
 
