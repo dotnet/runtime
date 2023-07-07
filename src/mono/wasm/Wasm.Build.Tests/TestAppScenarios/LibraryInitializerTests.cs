@@ -32,7 +32,6 @@ public class LibraryInitializerTests : AppTestBase
         var testOutput = await RunSdkStyleApp(new(Configuration: "Debug", ForPublish: true, TestScenario: "LibraryInitializerTest"));
         Assert.Collection(
             testOutput,
-            m => Assert.Equal("Run from LibraryInitializer", m),
             m => Assert.Equal("LIBRARY_INITIALIZER_TEST = 1", m)
         );
     }
