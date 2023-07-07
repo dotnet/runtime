@@ -50,6 +50,11 @@ namespace System.Net.Http.Metrics
             _tags.Add(new KeyValuePair<string, object?>(name, value));
         }
 
+        /// <summary>
+        /// Adds a callback to register enrichment for request metrics instruments that support it.
+        /// </summary>
+        /// <param name="request">The <see cref="HttpRequestMessage"/> to apply enrichment to.</param>
+        /// <param name="callback">The callback responsible to add custom tags.</param>
         public static void AddCallback(HttpRequestMessage request, Action<HttpMetricsEnrichmentContext> callback)
         {
             HttpRequestOptions options = request.Options;
