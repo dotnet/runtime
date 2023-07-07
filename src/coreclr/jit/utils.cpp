@@ -2051,6 +2051,29 @@ unsigned __int64 FloatingPointUtils::convertDoubleToUInt64(double d)
     return u64;
 }
 
+double FloatingPointUtils::convertFloatToDouble(float f32)
+{
+#ifdef TARGET_RISCV64
+    if (FloatingPointUtils::isNaN(f32))
+    {
+        return *reinterpret_cast<double*>(&f32);
+    }
+#endif // TARGET_RISCV64
+    return (double)f32;
+}
+
+float FloatingPointUtils::convertDoubleToFloat(double f64)
+{
+#ifdef TARGET_RISCV64
+    float f32 = *reinterpret_cast<float*>(&f64);
+    if (FloatingPointUtils::isNaN(f32))
+    {
+        return f32;
+    }
+#endif // TARGET_RISCV64
+    return forceCastToFloat(f64);
+}
+
 // Rounds a double-precision floating-point value to the nearest integer,
 // and rounds midpoint values to the nearest even number.
 double FloatingPointUtils::round(double x)

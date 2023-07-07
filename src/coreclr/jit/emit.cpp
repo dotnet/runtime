@@ -8050,15 +8050,7 @@ CORINFO_FIELD_HANDLE emitter::emitFltOrDblConst(double constValue, emitAttr attr
 
     if (attr == EA_4BYTE)
     {
-#ifdef TARGET_RISCV64
-        f = *reinterpret_cast<float*>(&constValue);
-        if (!FloatingPointUtils::isNaN(f))
-        {
-            f = forceCastToFloat(constValue);
-        }
-#else
-        f = forceCastToFloat(constValue);
-#endif // TARGET_RISCV64
+        f        = FloatingPointUtils::convertDoubleToFloat(constValue);
         cnsAddr  = &f;
         dataType = TYP_FLOAT;
     }
