@@ -34,12 +34,12 @@
       </trans-unit>
       <trans-unit id="CantValidateStaticOrConstMemberMessage">
         <source>Can't apply validation attributes to constant or static member {0}.</source>
-        <target state="new">Can't apply validation attributes to constant or static member {0}.</target>
+        <target state="translated">상수 또는 정적 멤버 {0}에 유효성 검사 특성을 적용할 수 없습니다.</target>
         <note />
       </trans-unit>
       <trans-unit id="CantValidateStaticOrConstMemberTitle">
         <source>Can't validate constants, static fields or properties.</source>
-        <target state="new">Can't validate constants, static fields or properties.</target>
+        <target state="translated">상수, 정적 필드 또는 속성을 확인할 수 없습니다.</target>
         <note />
       </trans-unit>
       <trans-unit id="CircularTypeReferencesMessage">
