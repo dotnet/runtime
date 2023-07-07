@@ -224,7 +224,9 @@ namespace System.Buffers
             }
 
             if (count == 0)
+            {
                 return;
+            }
 
             Consumed -= count;
 
