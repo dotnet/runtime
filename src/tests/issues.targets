@@ -3502,6 +3502,9 @@
         <ExcludeList Include="$(XunitTestBinBase)/tracing/eventpipe/simpleprovidervalidation/**">
             <Issue>System.Diagnostics.Process is not supported on wasm</Issue>
         </ExcludeList>
+        <ExcludeList Include="$(XunitTestBinBase)/tracing/eventpipe/simpleruntimeeventvalidation/**">
+            <Issue>System.Diagnostics.Process is not supported on wasm</Issue>
+        </ExcludeList>
     </ItemGroup>
 
     <ItemGroup Condition="'$(TargetOS)' == 'android'" >
