@@ -29,9 +29,9 @@ public class LibraryInitializerTests : AppTestBase
         CopyTestAsset("WasmBasicTestApp", "LibraryInitializerTests");
         PublishProject("Debug");
 
-        var testOutput = await RunSdkStyleApp(new(Configuration: "Debug", ForPublish: true, TestScenario: "LibraryInitializerTest"));
+        var result = await RunSdkStyleApp(new(Configuration: "Debug", ForPublish: true, TestScenario: "LibraryInitializerTest"));
         Assert.Collection(
-            testOutput,
+            result.TestOutput,
             m => Assert.Equal("LIBRARY_INITIALIZER_TEST = 1", m)
         );
     }

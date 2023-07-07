@@ -35,7 +35,9 @@ try {
             exit(0);
             break;
         case "LazyLoadingTest":
-            await INTERNAL.loadLazyAssembly("System.Text.Json.wasm");
+            if (params.get("loadRequiredAssembly") !== "false") {
+                await INTERNAL.loadLazyAssembly("System.Text.Json.wasm");
+            }
             exports.LazyLoadingTest.Run();
             exit(0);
             break;

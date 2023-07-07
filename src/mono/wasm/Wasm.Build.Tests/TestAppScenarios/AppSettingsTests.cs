@@ -28,9 +28,14 @@ public class AppSettingsTests : AppTestBase
         CopyTestAsset("WasmBasicTestApp", "AppSettingsTests");
         PublishProject("Debug");
 
-        var testOutput = await RunSdkStyleApp(new(Configuration: "Debug", ForPublish: true, TestScenario: "AppSettingsTest", BrowserQueryString: new Dictionary<string, string> { ["applicationEnvironment"] = applicationEnvironment }));
+        var result = await RunSdkStyleApp(new(
+            Configuration: "Debug",
+            ForPublish: true,
+            TestScenario: "AppSettingsTest",
+            BrowserQueryString: new Dictionary<string, string> { ["applicationEnvironment"] = applicationEnvironment }
+        ));
         Assert.Collection(
-            testOutput,
+            result.TestOutput,
             m => Assert.Equal(GetFileExistenceMessage("/appsettings.json", true), m),
             m => Assert.Equal(GetFileExistenceMessage("/appsettings.Development.json", applicationEnvironment == "Development"), m),
             m => Assert.Equal(GetFileExistenceMessage("/appsettings.Production.json", applicationEnvironment == "Production"), m)

@@ -57,7 +57,7 @@ public abstract class AppTestBase : BuildTestBase
         .WithWorkingDirectory(_projectDir!)
         .WithEnvironmentVariable("NUGET_PACKAGES", _nugetPackagesDir);
 
-    protected async Task<IReadOnlyCollection<string>> RunSdkStyleApp(RunOptions options)
+    protected async Task<RunResult> RunSdkStyleApp(RunOptions options)
     {
         string runArgs = $"{s_xharnessRunnerCommand} wasm webserver --app=. --web-server-use-default-files";
         string workingDirectory = Path.GetFullPath(Path.Combine(FindBlazorBinFrameworkDir(options.Configuration, forPublish: options.ForPublish), ".."));
@@ -65,9 +65,10 @@ public abstract class AppTestBase : BuildTestBase
         using var runCommand = new RunCommand(s_buildEnv, _testOutput)
             .WithWorkingDirectory(workingDirectory);
 
-        var tcs = new TaskCompletionSource<bool>();
+        var tcs = new TaskCompletionSource<int>();
 
         List<string> testOutput = new();
+        List<string> consoleOutput = new();
         Regex exitRegex = new Regex("WASM EXIT (?<exitCode>[0-9]+)$");
 
         await using var runner = new BrowserRunner(_testOutput);
@@ -86,13 +87,15 @@ public abstract class AppTestBase : BuildTestBase
                 Console.WriteLine($"[{msg.Type}] {msg.Text}");
 
             _testOutput.WriteLine($"[{msg.Type}] {msg.Text}");
+            consoleOutput.Add(msg.Text);
 
             const string testOutputPrefix = "TestOutput -> ";
             if (msg.Text.StartsWith(testOutputPrefix))
                 testOutput.Add(msg.Text.Substring(testOutputPrefix.Length));
 
-            if (exitRegex.Match(msg.Text).Success)
-                tcs.SetResult(true);
+            var exitMatch = exitRegex.Match(msg.Text);
+            if (exitMatch.Success)
+                tcs.TrySetResult(int.Parse(exitMatch.Groups["exitCode"].Value));
 
             if (msg.Text.StartsWith("Error: Missing test scenario"))
                 throw new Exception(msg.Text);
@@ -103,10 +106,14 @@ public abstract class AppTestBase : BuildTestBase
 
         TimeSpan timeout = TimeSpan.FromMinutes(2);
         await Task.WhenAny(tcs.Task, Task.Delay(timeout));
-        if (!tcs.Task.IsCompleted || !tcs.Task.Result)
+        if (!tcs.Task.IsCompleted)
             throw new Exception($"Timed out after {timeout.TotalSeconds}s waiting for process to exit");
 
-        return testOutput;
+        int wasmExitCode = tcs.Task.Result;
+        if (options.ExpectedExitCode != null && wasmExitCode != options.ExpectedExitCode)
+            throw new Exception($"Expected exit code {options.ExpectedExitCode} but got {wasmExitCode}");
+
+        return new(wasmExitCode, testOutput, consoleOutput);
     }
 
     protected record RunOptions(
@@ -114,6 +121,13 @@ public abstract class AppTestBase : BuildTestBase
         string TestScenario,
         Dictionary<string, string> BrowserQueryString = null,
         bool ForPublish = false,
-        Action<IConsoleMessage, IPage> OnConsoleMessage = null
+        Action<IConsoleMessage, IPage> OnConsoleMessage = null,
+        int? ExpectedExitCode = 0
+    );
+
+    protected record RunResult(
+        int ExitCode,
+        IReadOnlyCollection<string> TestOutput,
+        IReadOnlyCollection<string> ConsoleOutput
     );
 }

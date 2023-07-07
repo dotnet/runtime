@@ -21,12 +21,28 @@ public class LazyLoadingTests : AppTestBase
     }
 
     [Fact]
-    public async Task LazyLoadAssembly()
+    public async Task LoadLazyAssemblyBeforeItIsNeeded()
     {
         CopyTestAsset("WasmBasicTestApp", "LazyLoadingTests");
         PublishProject("Debug");
 
-        var testOutput = await RunSdkStyleApp(new(Configuration: "Debug", ForPublish: true, TestScenario: "LazyLoadingTest"));
-        Assert.True(testOutput.Any(m => m.Contains("FirstName")), "The lazy loading test didn't emit expected message with JSON");
+        var result = await RunSdkStyleApp(new(Configuration: "Debug", ForPublish: true, TestScenario: "LazyLoadingTest"));
+        Assert.True(result.TestOutput.Any(m => m.Contains("FirstName")), "The lazy loading test didn't emit expected message with JSON");
+    }
+
+    [Fact]
+    public async Task FailOnMissingLazyAssembly()
+    {
+        CopyTestAsset("WasmBasicTestApp", "LazyLoadingTests");
+        PublishProject("Debug");
+
+        var result = await RunSdkStyleApp(new(
+            Configuration: "Debug",
+            ForPublish: true,
+            TestScenario: "LazyLoadingTest",
+            BrowserQueryString: new Dictionary<string, string> { ["loadRequiredAssembly"] = "false" },
+            ExpectedExitCode: 1
+        ));
+        Assert.True(result.ConsoleOutput.Any(m => m.Contains("Could not load file or assembly") && m.Contains("System.Text.Json")), "The lazy loading test didn't emit expected error message");
     }
 }

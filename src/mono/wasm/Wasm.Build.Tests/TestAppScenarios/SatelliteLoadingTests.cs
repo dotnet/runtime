@@ -29,9 +29,9 @@ public class SatelliteLoadingTests : AppTestBase
         CopyTestAsset("WasmBasicTestApp", "SatelliteLoadingTests");
         PublishProject("Debug");
 
-        var testOutput = await RunSdkStyleApp(new(Configuration: "Debug", ForPublish: true, TestScenario: "SatelliteAssembliesTest"));
+        var result = await RunSdkStyleApp(new(Configuration: "Debug", ForPublish: true, TestScenario: "SatelliteAssembliesTest"));
         Assert.Collection(
-            testOutput,
+            result.TestOutput,
             m => Assert.Equal("default: hello", m),
             m => Assert.Equal("es-ES without satellite: hello", m),
             m => Assert.Equal("default: hello", m),
