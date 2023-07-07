@@ -34,9 +34,7 @@ namespace System.Globalization
             return week;
         }
 
-        public static int GetYear(DateTime date) => GetWeekAndYear(date).Year;
-
-        public static (int Week, int Year) GetWeekAndYear(DateTime date)
+        public static int GetYear(DateTime date)
         {
             int week = GetWeekNumber(date);
 
@@ -44,18 +42,21 @@ namespace System.Globalization
             {
                 // If the week number obtained equals 0, it means that the
                 // given date belongs to the preceding (week-based) year.
-                return (week, date.Year - 1);
+                return date.Year - 1;
             }
 
             if (week > GetWeeksInYear(date.Year))
             {
                 // If a week number of 53 is obtained, one must check that
                 // the date is not actually in week 1 of the following year.
-                return (week, date.Year + 1);
+                return date.Year + 1;
             }
 
-            return (week, date.Year);
+            return date.Year;
         }
+
+        public static (int Week, int Year) GetWeekAndYear(DateTime date)
+            => (GetWeekOfYear(date), GetYear(date));
 
         // The year parameter represents an ISO week-numbering year (also called ISO year informally).
         // Each week's year is the Gregorian year in which the Thursday falls.
