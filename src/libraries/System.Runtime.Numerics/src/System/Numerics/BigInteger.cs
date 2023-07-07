@@ -1652,10 +1652,7 @@ namespace System.Numerics
             bool trivialLeft = leftBits.IsEmpty;
             bool trivialRight = rightBits.IsEmpty;
 
-            if (trivialLeft && trivialRight)
-            {
-                return (long)leftSign + rightSign;
-            }
+            Debug.Assert(!(trivialLeft && trivialRight), "Trivial cases should be handled on the caller operator");
 
             BigInteger result;
             uint[]? bitsFromPool = null;
@@ -1720,6 +1717,9 @@ namespace System.Numerics
             left.AssertValid();
             right.AssertValid();
 
+            if (left._bits == null && right._bits == null)
+                return (long)left._sign - right._sign;
+
             if (left._sign < 0 != right._sign < 0)
                 return Add(left._bits, left._sign, right._bits, -1 * right._sign);
             return Subtract(left._bits, left._sign, right._bits, right._sign);
@@ -1730,10 +1730,7 @@ namespace System.Numerics
             bool trivialLeft = leftBits.IsEmpty;
             bool trivialRight = rightBits.IsEmpty;
 
-            if (trivialLeft && trivialRight)
-            {
-                return (long)leftSign - rightSign;
-            }
+            Debug.Assert(!(trivialLeft && trivialRight), "Trivial cases should be handled on the caller operator");
 
             BigInteger result;
             uint[]? bitsFromPool = null;
@@ -2684,6 +2681,9 @@ namespace System.Numerics
             left.AssertValid();
             right.AssertValid();
 
+            if (left._bits == null && right._bits == null)
+                return (long)left._sign + right._sign;
+
             if (left._sign < 0 != right._sign < 0)
                 return Subtract(left._bits, left._sign, right._bits, -1 * right._sign);
             return Add(left._bits, left._sign, right._bits, right._sign);
@@ -2694,6 +2694,9 @@ namespace System.Numerics
             left.AssertValid();
             right.AssertValid();
 
+            if (left._bits == null && right._bits == null)
+                return (long)left._sign * right._sign;
+
             return Multiply(left._bits, left._sign, right._bits, right._sign);
         }
 
@@ -2702,10 +2705,7 @@ namespace System.Numerics
             bool trivialLeft = left.IsEmpty;
             bool trivialRight = right.IsEmpty;
 
-            if (trivialLeft && trivialRight)
-            {
-                return (long)leftSign * rightSign;
-            }
+            Debug.Assert(!(trivialLeft && trivialRight), "Trivial cases should be handled on the caller operator");
 
             BigInteger result;
             uint[]? bitsFromPool = null;
