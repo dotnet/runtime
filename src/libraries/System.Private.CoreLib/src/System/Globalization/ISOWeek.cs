@@ -44,14 +44,14 @@ namespace System.Globalization
             {
                 // If the week number obtained equals 0, it means that the
                 // given date belongs to the preceding (week-based) year.
-                return date.Year - 1;
+                return (week, date.Year - 1);
             }
 
             if (week > GetWeeksInYear(date.Year))
             {
                 // If a week number of 53 is obtained, one must check that
                 // the date is not actually in week 1 of the following year.
-                return date.Year + 1;
+                return (week, date.Year + 1);
             }
 
             return (week, date.Year);
