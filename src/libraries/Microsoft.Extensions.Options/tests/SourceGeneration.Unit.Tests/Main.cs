@@ -1253,12 +1253,12 @@ namespace __OptionValidationStaticInstances
                     new List<string> { source1 })
                 .ConfigureAwait(false);
 
-            Assert.Equal(1, diagnostics.Count());
-            Assert.Equal(DiagDescriptors.PotentiallyMissingTransitiveValidation.Id, diagnostics[0].Id);
             _ = Assert.Single(generatedSources);
+            var diag = Assert.Single(diagnostics);
+            Assert.Equal(DiagDescriptors.PotentiallyMissingTransitiveValidation.Id, diag.Id);
 
             // validate the location is inside the MyOptions class and not outside the compilation which is in the referenced assembly
-            Assert.StartsWith("src-0.cs: (12,", diagnostics[0].Location.GetLineSpan().ToString());
+            Assert.StartsWith("src-0.cs: (12,", diag.Location.GetLineSpan().ToString());
         }, assemblyPath).Dispose();
 
         File.Delete(assemblyPath); // cleanup
