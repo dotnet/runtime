@@ -40,20 +40,23 @@ namespace System.Net.Http
 
         private HttpMessageHandler SetupHandlerChain()
         {
-            HttpMessageHandler handler = _underlyingHandler;
 #if TARGET_BROWSER
+            HttpMessageHandler handler = _underlyingHandler;
             if (DiagnosticsHandler.IsGloballyEnabled())
             {
                 handler = new DiagnosticsHandler(handler, DistributedContextPropagator.Current);
             }
             handler = new MetricsHandler(handler, _meterFactory);
-#endif
+
             // Ensure a single handler is used for all requests.
             if (Interlocked.CompareExchange(ref _handler, handler, null) != null)
             {
                 handler.Dispose();
             }
-            return handler;
+#else
+            _handler = _underlyingHandler;
+#endif
+            return _handler;
         }
 
         protected override void Dispose(bool disposing)

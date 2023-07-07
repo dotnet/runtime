@@ -748,7 +748,7 @@ namespace System.Net.Http
             {
                 handler.Dispose();
             }
-            return handler;
+            return _handler;
         }
 
         private void CheckDisposedOrStarted()
