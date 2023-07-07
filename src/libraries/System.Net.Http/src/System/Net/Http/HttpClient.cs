@@ -622,7 +622,6 @@ namespace System.Net.Http
             }
 
             LogRequestFailed(e, telemetryStarted);
-            response?.HttpMetricsLogger?.LogRequestFailed(response, e);
 
             if (NetEventSource.Log.IsEnabled()) NetEventSource.Error(this, e);
 

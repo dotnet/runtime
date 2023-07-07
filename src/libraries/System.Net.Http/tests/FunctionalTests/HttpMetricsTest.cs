@@ -479,7 +479,7 @@ namespace System.Net.Http.Functional.Tests
         }
 
         [Fact]
-        public async Task Send_FailedRequests_ContentLengthError_Recorded()
+        public async Task FailedRequests_InvalidResponseStatusLine_Recorded()
         {
             if (TestHttpMessageInvoker)
             {
@@ -498,11 +498,13 @@ namespace System.Net.Http.Functional.Tests
                 });
 
                 Measurement<long> m = recorder.GetMeasurements().Single();
-                VerifyFailedRequests(m, 1, uri, ExpectedProtocolString, 200);
-            }, server => server.HandleRequestAsync(headers: new[] {
-                new HttpHeaderData("Content-Length", "1000")
-            }, content: "x"));
-        }    
+                VerifyFailedRequests(m, 1, uri, null, null);
+            }, async server =>
+            {
+                var connection = (LoopbackServer.Connection)await server.EstablishGenericConnectionAsync();
+                await connection.Stream.WriteAsync(Encoding.ASCII.GetBytes("\n\n\n\n"));
+            });
+        }
     }
 
     public class HttpMetricsTest_Http11_Async : HttpMetricsTest_Http11
@@ -558,32 +560,6 @@ namespace System.Net.Http.Functional.Tests
                 }
 
             }, new LoopbackServer.Options() { UseSsl = true });
-        }
-
-        [Fact]
-        public async Task GetStringAsync_FailedRequests_ContentLengthError_Recorded()
-        {
-            if (TestHttpMessageInvoker)
-            {
-                // GetString not supported for HttpMessageInvoker, skipping.
-                return;
-            }
-
-            await LoopbackServerFactory.CreateClientAndServerAsync(async uri =>
-            {
-                using HttpClient client = CreateHttpClient(Handler);
-                using InstrumentRecorder<long> recorder = SetupInstrumentRecorder<long>("http-client-failed-requests");
-                
-                await Assert.ThrowsAsync<HttpRequestException>(async () =>
-                {
-                    await client.GetStringAsync(uri);
-                });
-
-                Measurement<long> m = recorder.GetMeasurements().Single();
-                VerifyFailedRequests(m, 1, uri, ExpectedProtocolString, 200);
-            }, server => server.HandleRequestAsync(headers: new[] {
-                new HttpHeaderData("Content-Length", "1000")
-            }, content: "x"));
         }
     }
 

@@ -22,8 +22,6 @@ namespace System.Net.Http
         private HttpContent? _content;
         private bool _disposed;
 
-        internal IHttpMetricsLogger? HttpMetricsLogger { get; set; }
-
         public Version Version
         {
             get { return _version; }

@@ -10,7 +10,7 @@ using System.Threading.Tasks;
 
 namespace System.Net.Http.Metrics
 {
-    internal sealed class MetricsHandler : HttpMessageHandlerStage, IHttpMetricsLogger
+    internal sealed class MetricsHandler : HttpMessageHandlerStage
     {
         private readonly HttpMessageHandler _innerHandler;
         private readonly UpDownCounter<long> _currentRequests;
@@ -64,12 +64,6 @@ namespace System.Net.Http.Metrics
                 response = async ?
                     await _innerHandler.SendAsync(request, cancellationToken).ConfigureAwait(false) :
                     _innerHandler.Send(request, cancellationToken);
-                if (_failedRequests.Enabled)
-                {
-                    // No exception has been thrown to the point of reading headers, but errors can still occur while buffering the response content in HttpClient.
-                    // We need to report http-client-failed-requests if it happens.
-                    response.HttpMetricsLogger = this;
-                }
                 return response;
             }
             catch (Exception ex)
@@ -180,14 +174,6 @@ namespace System.Net.Http.Metrics
             tags.Add("method", request.Method.Method);
 
             return tags;
-        }
-
-        void IHttpMetricsLogger.LogRequestFailed(HttpResponseMessage response, Exception exception)
-        {
-            Debug.Assert(response.RequestMessage is not null);
-            TagList tags = InitializeCommonTags(response.RequestMessage);
-            ApplyExtendedTags(ref tags, response.RequestMessage, response, exception);
-            _failedRequests.Add(1, tags);
         }
 
         // Status Codes listed at http://www.iana.org/assignments/http-status-codes/http-status-codes.xhtml
