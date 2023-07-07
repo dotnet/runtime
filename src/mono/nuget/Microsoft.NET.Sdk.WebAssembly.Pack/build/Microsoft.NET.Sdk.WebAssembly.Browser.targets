@@ -187,8 +187,8 @@ Copyright (c) .NET Foundation. All rights reserved.
       <_BlazorWebAssemblyJiterpreter>$(BlazorWebAssemblyJiterpreter)</_BlazorWebAssemblyJiterpreter>
       <_BlazorWebAssemblyRuntimeOptions>$(BlazorWebAssemblyRuntimeOptions)</_BlazorWebAssemblyRuntimeOptions>
       <_WasmDebugLevel>$(WasmDebugLevel)</_WasmDebugLevel>
-      <_WasmDebugLevel Condition="'$(_TargetingNET80OrLater)' == 'true' and '$(_WasmDebugLevel)' == ''">0</_WasmDebugLevel>
-      <_WasmDebugLevel Condition="'$(_TargetingNET80OrLater)' == 'true' and ('$(_WasmDebugLevel)' == '' or '$(_WasmDebugLevel)' == '0') and ('$(DebuggerSupport)' == 'true' or '$(Configuration)' == 'Debug')">-1</_WasmDebugLevel>
+      <_WasmDebugLevel Condition="'$(_WasmDebugLevel)' == ''">0</_WasmDebugLevel>
+      <_WasmDebugLevel Condition="'$(_WasmDebugLevel)' == '0' and ('$(DebuggerSupport)' == 'true' or '$(Configuration)' == 'Debug')">-1</_WasmDebugLevel>
 
       <!-- Workaround for https://github.com/dotnet/sdk/issues/12114-->
       <PublishDir Condition="'$(AppendRuntimeIdentifierToOutputPath)' != 'true' AND '$(PublishDir)' == '$(OutputPath)$(RuntimeIdentifier)\$(PublishDirName)\'">$(OutputPath)$(PublishDirName)\</PublishDir>
