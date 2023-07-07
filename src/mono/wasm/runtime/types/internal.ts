@@ -183,9 +183,6 @@ export type RuntimeHelpers = {
     instantiate_asset: (asset: AssetEntry, url: string, bytes: Uint8Array) => void,
     instantiate_symbols_asset: (pendingAsset: AssetEntryInternal) => Promise<void>,
     jiterpreter_dump_stats?: (x: boolean) => string,
-
-    hasDebuggingEnabled(bootConfig: BootJsonData): boolean,
-    locateFile: (path: string, prefix?: string) => string,
 }
 
 export type AOTProfilerOptions = {
