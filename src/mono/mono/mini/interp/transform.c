@@ -3787,10 +3787,20 @@ interp_transform_call (TransformData *td, MonoMethod *method, MonoMethod *target
 			if (native && !method->dynamic)
 				icall_sig = interp_get_icall_sig (csignature);
 #endif
+			gboolean default_cconv = TRUE;
+#ifdef TARGET_X86
+#ifdef TARGET_WIN32
+			// Platform that we don't actively support ?
+			default_cconv = csignature->call_convention == MONO_CALL_C;
+#else
+			default_cconv = csignature->call_convention == MONO_CALL_DEFAULT || csignature->call_convention == MONO_CALL_C;
+#endif
+#endif
+
 			// FIXME calli receives both the args offset and sometimes another arg for the frame pointer,
 			// therefore some args are in the param area, while the fp is not. We should differentiate for
 			// this, probably once we will have an explicit param area where we copy arguments.
-			if (icall_sig != MINT_ICALLSIG_MAX) {
+			if (icall_sig != MINT_ICALLSIG_MAX && default_cconv) {
 				interp_add_ins (td, MINT_CALLI_NAT_FAST);
 				interp_ins_set_dreg (td->last_ins, dreg);
 				interp_ins_set_sregs2 (td->last_ins, fp_sreg, MINT_CALL_ARGS_SREG);
@@ -3804,10 +3814,6 @@ interp_transform_call (TransformData *td, MonoMethod *method, MonoMethod *target
 				td->last_ins->data [0] = get_data_item_index (td, (void *)csignature);
 			} else if (native) {
 				interp_add_ins (td, MINT_CALLI_NAT);
-#ifdef TARGET_X86
-				/* Windows not tested/supported yet */
-				g_assertf (csignature->call_convention == MONO_CALL_DEFAULT || csignature->call_convention == MONO_CALL_C, "Interpreter supports only cdecl pinvoke on x86");
-#endif
 
 				InterpMethod *imethod = NULL;
 				/*
