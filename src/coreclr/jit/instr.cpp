@@ -1230,7 +1230,7 @@ void CodeGen::inst_RV_RV_TT(
     if (IsEmbBroadcast)
     {
         instOptions = INS_OPTS_EVEX_b;
-        if (HWIntrinsicInfo::IsBitwiseOperation(ins) && varTypeIsLong(op2->AsHWIntrinsic()->GetSimdBaseType()))
+        if (emitter::IsBitwiseInstruction(ins) && varTypeIsLong(op2->AsHWIntrinsic()->GetSimdBaseType()))
         {
             switch (ins)
             {
