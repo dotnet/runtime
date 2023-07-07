@@ -1,8 +1,6 @@
 // Licensed to the .NET Foundation under one or more agreements.
 // The .NET Foundation licenses this file to you under the MIT license.
 
-/* eslint-disable no-prototype-builtins */
-
 import { INTERNAL, loaderHelpers, runtimeHelpers } from "./globals";
 import type { WebAssemblyResourceLoader } from "./loader/blazor/WebAssemblyResourceLoader";
 
@@ -14,7 +12,7 @@ export async function loadLazyAssembly(assemblyNameToLoad: string): Promise<bool
         throw new Error("No assemblies have been marked as lazy-loadable. Use the 'BlazorWebAssemblyLazyLoad' item group in your project file to enable lazy loading an assembly.");
     }
 
-    const assemblyMarkedAsLazy = lazyAssemblies.hasOwnProperty(assemblyNameToLoad);
+    const assemblyMarkedAsLazy = Object.prototype.hasOwnProperty.call(lazyAssemblies, assemblyNameToLoad);
     if (!assemblyMarkedAsLazy) {
         throw new Error(`${assemblyNameToLoad} must be marked with 'BlazorWebAssemblyLazyLoad' item group in your project file to allow lazy-loading.`);
     }
@@ -25,7 +23,7 @@ export async function loadLazyAssembly(assemblyNameToLoad: string): Promise<bool
 
     const dllNameToLoad = assemblyNameToLoad;
     const pdbNameToLoad = changeExtension(assemblyNameToLoad, ".pdb");
-    const shouldLoadPdb = loaderHelpers.hasDebuggingEnabled(resourceLoader.bootConfig) && resources.pdb && lazyAssemblies.hasOwnProperty(pdbNameToLoad);
+    const shouldLoadPdb = loaderHelpers.hasDebuggingEnabled(resourceLoader.bootConfig) && resources.pdb && Object.prototype.hasOwnProperty.call(lazyAssemblies, pdbNameToLoad);
 
     const dllBytesPromise = resourceLoader.loadResource(dllNameToLoad, loaderHelpers.locateFile(dllNameToLoad), lazyAssemblies[dllNameToLoad], "assembly").response.then(response => response.arrayBuffer());
 

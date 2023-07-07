@@ -1,8 +1,6 @@
 // Licensed to the .NET Foundation under one or more agreements.
 // The .NET Foundation licenses this file to you under the MIT license.
 
-/* eslint-disable no-prototype-builtins */
-
 import { INTERNAL, loaderHelpers, runtimeHelpers } from "./globals";
 import type { WebAssemblyResourceLoader } from "./loader/blazor/WebAssemblyResourceLoader";
 import { LoadingResource } from "./types";
@@ -15,7 +13,7 @@ export async function loadSatelliteAssemblies(culturesToLoad: string[]): Promise
     }
 
     await Promise.all(culturesToLoad!
-        .filter(culture => satelliteResources.hasOwnProperty(culture))
+        .filter(culture => Object.prototype.hasOwnProperty.call(satelliteResources, culture))
         .map(culture => resourceLoader.loadResources(satelliteResources[culture], fileName => loaderHelpers.locateFile(fileName), "assembly"))
         .reduce((previous, next) => previous.concat(next), new Array<LoadingResource>())
         .map(async resource => {
