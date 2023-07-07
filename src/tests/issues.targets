@@ -2027,6 +2027,9 @@
         <ExcludeList Include = "$(XunitTestBinBase)/JIT/opt/OSR/pinnedlocal/**">
             <Issue>https://github.com/dotnet/runtime/issues/70820</Issue>
         </ExcludeList>
+        <ExcludeList Include="$(XunitTestBinBase)/tracing/eventpipe/simpleruntimeeventvalidation/**">
+            <Issue>https://github.com/dotnet/runtime/issues/88499</Issue>
+        </ExcludeList>
     </ItemGroup>
 
     <!-- Known failures for mono runtime on Windows -->
