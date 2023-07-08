@@ -2830,7 +2830,7 @@ GenTree* Compiler::impIntrinsic(GenTree*                newobjThis,
 
                 if (varTypeIsSmall(type))
                 {
-                    return gtFoldExpr(gtNewOperNode(GT_SUB, TYP_INT, op1, op2);
+                    return gtFoldExpr(gtNewOperNode(GT_SUB, TYP_INT, op1, op2));
                 }
 
                 bool uns = varTypeIsUnsigned(type);
