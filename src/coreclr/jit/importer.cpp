@@ -2430,7 +2430,7 @@ GenTree* Compiler::impImportCompare(GenTree* op1, GenTree* op2, genTreeOps oper,
     // it so that downstream optimizations don't have to.
     if ((oper == GT_GT) && isUnsignedOrUnordered && op2->IsIntegralConst(0))
     {
-        oper = GT_NE;
+        oper                  = GT_NE;
         isUnsignedOrUnordered = false;
     }
 
@@ -2446,7 +2446,7 @@ GenTree* Compiler::impImportCompare(GenTree* op1, GenTree* op2, genTreeOps oper,
 #endif // TARGET_64BIT
 
     assert(genActualType(op1) == genActualType(op2) || (varTypeIsI(op1) && varTypeIsI(op2)) ||
-                (varTypeIsFloating(op1) && varTypeIsFloating(op2)));
+           (varTypeIsFloating(op1) && varTypeIsFloating(op2)));
 
     if ((op1->TypeGet() != op2->TypeGet()) && varTypeIsFloating(op1))
     {

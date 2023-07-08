@@ -2766,7 +2766,7 @@ GenTree* Compiler::impIntrinsic(GenTree*                newobjThis,
             {
                 assert(sig->sigInst.methInstCount == 1);
                 CORINFO_CLASS_HANDLE hClass = sig->sigInst.methInst[0];
-                retNode = gtNewIconNode(eeIsValueClass(hClass) ? 0 : 1);
+                retNode                     = gtNewIconNode(eeIsValueClass(hClass) ? 0 : 1);
                 break;
             }
 
@@ -2774,7 +2774,10 @@ GenTree* Compiler::impIntrinsic(GenTree*                newobjThis,
             {
                 assert(sig->sigInst.methInstCount == 1);
                 CORINFO_CLASS_HANDLE hClass = sig->sigInst.methInst[0];
-                retNode = gtNewIconNode(!eeIsValueClass(hClass) || ((info.compCompHnd->getClassAttribs(hClass) & CORINFO_FLG_CONTAINS_GC_PTR) != 0) ? 1 : 0);
+                retNode = gtNewIconNode(!eeIsValueClass(hClass) || ((info.compCompHnd->getClassAttribs(hClass) &
+                                                                     CORINFO_FLG_CONTAINS_GC_PTR) != 0)
+                                            ? 1
+                                            : 0);
                 break;
             }
 
@@ -2782,7 +2785,7 @@ GenTree* Compiler::impIntrinsic(GenTree*                newobjThis,
             {
                 assert(sig->sigInst.methInstCount == 1);
                 CORINFO_CLASS_HANDLE hClass = sig->sigInst.methInst[0];
-                retNode = gtNewIconNode(info.compCompHnd->isBitwiseEquatable(hClass) ? 1 : 0);
+                retNode                     = gtNewIconNode(info.compCompHnd->isBitwiseEquatable(hClass) ? 1 : 0);
                 break;
             }
 
@@ -2805,7 +2808,7 @@ GenTree* Compiler::impIntrinsic(GenTree*                newobjThis,
 
                 GenTree* op2 = impPopStack().val;
                 GenTree* op1 = impPopStack().val;
-                retNode = impImportCompare(op1, op2, GT_EQ, false);
+                retNode      = impImportCompare(op1, op2, GT_EQ, false);
                 break;
             }
 
@@ -2824,16 +2827,21 @@ GenTree* Compiler::impIntrinsic(GenTree*                newobjThis,
 
                 GenTree* op2 = impPopStack().val;
                 GenTree* op1 = impPopStack().val;
-                bool     uns = varTypeIsUnsigned(type);
+
+                if (varTypeIsSmall(type))
+                {
+                    return gtFoldExpr(gtNewOperNode(GT_SUB, TYP_INT, op1, op2);
+                }
+
+                bool uns = varTypeIsUnsigned(type);
 
                 GenTree* op1Clone;
                 GenTree* op2Clone;
                 op1 = impCloneExpr(op1, &op1Clone, CHECK_SPILL_ALL, nullptr DEBUGARG("EnumCompareTo arg1"));
                 op2 = impCloneExpr(op2, &op2Clone, CHECK_SPILL_ALL, nullptr DEBUGARG("EnumCompareTo arg2"));
 
-                retNode = gtFoldExpr(gtNewOperNode(GT_SUB, TYP_INT,
-                                        impImportCompare(op1, op2, GT_GT, uns),
-                                        impImportCompare(op1Clone, op2Clone, GT_LT, uns)));
+                retNode = gtFoldExpr(gtNewOperNode(GT_SUB, TYP_INT, impImportCompare(op1, op2, GT_GT, uns),
+                                                   impImportCompare(op1Clone, op2Clone, GT_LT, uns)));
                 break;
             }
 

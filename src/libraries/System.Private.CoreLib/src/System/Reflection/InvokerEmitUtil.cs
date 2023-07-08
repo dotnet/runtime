@@ -193,7 +193,7 @@ namespace System.Reflection
 #if MONO
             private static MethodInfo? s_DisableInline;
             public static MethodInfo DisableInline() =>
-                s_DisableInline ??= typeof(System.Runtime.CompilerServices.JitHelpers).GetMethod(nameof(System.Runtime.CompilerServices.JitHelpers.DisableInline), BindingFlags.NonPublic | BindingFlags.Static)!;
+                s_DisableInline ??= typeof(System.Runtime.CompilerServices.RuntimeHelpers).GetMethod(nameof(System.Runtime.CompilerServices.RuntimeHelpers.DisableInline), BindingFlags.NonPublic | BindingFlags.Static)!;
 #else
             private static MethodInfo? s_NextCallReturnAddress;
             public static MethodInfo NextCallReturnAddress() =>

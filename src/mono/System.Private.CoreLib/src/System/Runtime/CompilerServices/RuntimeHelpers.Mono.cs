@@ -221,5 +221,8 @@ namespace System.Runtime.CompilerServices
 
         [MethodImplAttribute(MethodImplOptions.InternalCall)]
         private static extern bool SufficientExecutionStack();
+
+        [Intrinsic]
+        internal static void DisableInline () => throw new NotImplementedException();
     }
 }
