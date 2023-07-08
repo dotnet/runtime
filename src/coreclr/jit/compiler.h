@@ -3904,6 +3904,7 @@ protected:
     void impImportLeave(BasicBlock* block);
     void impResetLeaveBlock(BasicBlock* block, unsigned jmpAddr);
     GenTree* impTypeIsAssignable(GenTree* typeTo, GenTree* typeFrom);
+    GenTree* impImportCompare(GenTree* op1, GenTree* op2, genTreeOps oper, bool isUnsignedOrUnordered);
 
     // Mirrors StringComparison.cs
     enum StringComparison

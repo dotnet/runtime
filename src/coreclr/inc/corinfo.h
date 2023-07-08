@@ -2354,6 +2354,9 @@ public:
     // Quick check whether the type is a value class. Returns the same value as getClassAttribs(cls) & CORINFO_FLG_VALUECLASS, except faster.
     virtual bool isValueClass(CORINFO_CLASS_HANDLE cls) = 0;
 
+    // Checks if type can be compared for equality as bytes.
+    virtual bool isBitwiseEquatable(CORINFO_CLASS_HANDLE cls) = 0;
+
     // Decides how the JIT should do the optimization to inline the check for
     //     GetTypeFromHandle(handle) == obj.GetType() (for CORINFO_INLINE_TYPECHECK_SOURCE_VTABLE)
     //     GetTypeFromHandle(X) == GetTypeFromHandle(Y) (for CORINFO_INLINE_TYPECHECK_SOURCE_TOKEN)

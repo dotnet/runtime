@@ -104,6 +104,12 @@ enum NamedIntrinsic : unsigned short
     NI_System_Runtime_CompilerServices_RuntimeHelpers_CreateSpan,
     NI_System_Runtime_CompilerServices_RuntimeHelpers_InitializeArray,
     NI_System_Runtime_CompilerServices_RuntimeHelpers_IsKnownConstant,
+    NI_System_Runtime_CompilerServices_RuntimeHelpers_IsReference,
+    NI_System_Runtime_CompilerServices_RuntimeHelpers_IsReferenceOrContainsReferences,
+    NI_System_Runtime_CompilerServices_RuntimeHelpers_IsBitwiseEquatable,
+    NI_System_Runtime_CompilerServices_RuntimeHelpers_EnumEquals,
+    NI_System_Runtime_CompilerServices_RuntimeHelpers_EnumCompareTo,
+    NI_System_Runtime_CompilerServices_RuntimeHelpers_GetMethodTable,
 
     NI_System_Runtime_InteropService_MemoryMarshal_GetArrayDataReference,
 

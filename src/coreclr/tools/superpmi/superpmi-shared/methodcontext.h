@@ -216,6 +216,10 @@ public:
     void dmpIsValueClass(DWORDLONG key, DWORD value);
     bool repIsValueClass(CORINFO_CLASS_HANDLE cls);
 
+    void recIsBitwiseEquatable(CORINFO_CLASS_HANDLE cls, bool result);
+    void dmpIsBitwiseEquatable(DWORDLONG key, DWORD value);
+    bool repIsBitwiseEquatable(CORINFO_CLASS_HANDLE cls);
+
     void recGetClassSize(CORINFO_CLASS_HANDLE cls, unsigned result);
     void dmpGetClassSize(DWORDLONG key, DWORD val);
     unsigned repGetClassSize(CORINFO_CLASS_HANDLE cls);
@@ -561,7 +565,7 @@ public:
     void recGetIsClassInitedFlagAddress(CORINFO_CLASS_HANDLE cls, CORINFO_CONST_LOOKUP* addr, int* offset, bool result);
     void dmpGetIsClassInitedFlagAddress(DWORDLONG key, const Agnostic_GetIsClassInitedFlagAddress& value);
     bool repGetIsClassInitedFlagAddress(CORINFO_CLASS_HANDLE cls, CORINFO_CONST_LOOKUP* addr, int* offset);
-    
+
     void recGetStaticBaseAddress(CORINFO_CLASS_HANDLE cls, bool isGc, CORINFO_CONST_LOOKUP* addr, bool result);
     void dmpGetStaticBaseAddress(DLD key, const Agnostic_GetStaticBaseAddress& value);
     bool repGetStaticBaseAddress(CORINFO_CLASS_HANDLE cls, bool isGc, CORINFO_CONST_LOOKUP* addr);
@@ -1133,6 +1137,7 @@ enum mcPackets
     Packet_GetRISCV64PassStructInRegisterFlags = 209,
     Packet_GetObjectContent = 210,
     Packet_GetTypeLayout = 211,
+    Packet_IsBitwiseEquatable = 212,
 };
 
 void SetDebugDumpVariables();

@@ -187,26 +187,9 @@ namespace System.Runtime.CompilerServices
         }
 
         [Intrinsic]
-        public static bool IsReferenceOrContainsReferences<T>()
-        {
-            var pEEType = EETypePtr.EETypePtrOf<T>();
-            return !pEEType.IsValueType || pEEType.ContainsGCPointers;
-        }
-
-        [Intrinsic]
         internal static bool IsReference<T>()
         {
-            var pEEType = EETypePtr.EETypePtrOf<T>();
-            return !pEEType.IsValueType;
-        }
-
-        [Intrinsic]
-        [MethodImpl(MethodImplOptions.AggressiveInlining)]
-        internal static bool IsBitwiseEquatable<T>()
-        {
-            // Only reachable for universal shared code - the compiler replaces this otherwise.
-            // Returning false is conservative.
-            return false;
+            return IsReference<T>();
         }
 
         internal static ref byte GetRawData(this object obj) =>
@@ -231,6 +214,7 @@ namespace System.Runtime.CompilerServices
             return array.GetMethodTable()->ComponentSize;
         }
 
+        [Intrinsic]
         internal static unsafe MethodTable* GetMethodTable(this object obj)
             => obj.m_pEEType;
 

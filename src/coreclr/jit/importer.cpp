@@ -2424,6 +2424,49 @@ GenTree* Compiler::impTypeIsAssignable(GenTree* typeTo, GenTree* typeFrom)
     return nullptr;
 }
 
+GenTree* Compiler::impImportCompare(GenTree* op1, GenTree* op2, genTreeOps oper, bool isUnsignedOrUnordered)
+{
+    // Recognize the IL idiom of CGT_UN(op1, 0) and normalize
+    // it so that downstream optimizations don't have to.
+    if ((oper == GT_GT) && isUnsignedOrUnordered && op2->IsIntegralConst(0))
+    {
+        oper = GT_NE;
+        isUnsignedOrUnordered = false;
+    }
+
+#ifdef TARGET_64BIT
+    if (varTypeIsI(op1) && genActualTypeIsInt(op2))
+    {
+        op2 = impImplicitIorI4Cast(op2, TYP_I_IMPL);
+    }
+    else if (varTypeIsI(op2) && genActualTypeIsInt(op1))
+    {
+        op1 = impImplicitIorI4Cast(op1, TYP_I_IMPL);
+    }
+#endif // TARGET_64BIT
+
+    assert(genActualType(op1) == genActualType(op2) || (varTypeIsI(op1) && varTypeIsI(op2)) ||
+                (varTypeIsFloating(op1) && varTypeIsFloating(op2)));
+
+    if ((op1->TypeGet() != op2->TypeGet()) && varTypeIsFloating(op1))
+    {
+        op1 = impImplicitR4orR8Cast(op1, TYP_DOUBLE);
+        op2 = impImplicitR4orR8Cast(op2, TYP_DOUBLE);
+    }
+
+    // Create the comparison node.
+    op1 = gtNewOperNode(oper, TYP_INT, op1, op2);
+
+    // TODO: setting both flags when only one is appropriate.
+    if (isUnsignedOrUnordered)
+    {
+        op1->gtFlags |= GTF_RELOP_NAN_UN | GTF_UNSIGNED;
+    }
+
+    // Fold result, if possible.
+    return gtFoldExpr(op1);
+}
+
 /*****************************************************************************
  * 'logMsg' is true if a log message needs to be logged. false if the caller has
  *   already logged it (presumably in a more detailed fashion than done here)
@@ -7396,47 +7439,7 @@ void Compiler::impImportBlockCode(BasicBlock* block)
                 op2 = impPopStack().val;
                 op1 = impPopStack().val;
 
-                // Recognize the IL idiom of CGT_UN(op1, 0) and normalize
-                // it so that downstream optimizations don't have to.
-                if ((opcode == CEE_CGT_UN) && op2->IsIntegralConst(0))
-                {
-                    oper = GT_NE;
-                    uns  = false;
-                }
-
-#ifdef TARGET_64BIT
-                if (varTypeIsI(op1) && genActualTypeIsInt(op2))
-                {
-                    op2 = impImplicitIorI4Cast(op2, TYP_I_IMPL);
-                }
-                else if (varTypeIsI(op2) && genActualTypeIsInt(op1))
-                {
-                    op1 = impImplicitIorI4Cast(op1, TYP_I_IMPL);
-                }
-#endif // TARGET_64BIT
-
-                assertImp(genActualType(op1) == genActualType(op2) || (varTypeIsI(op1) && varTypeIsI(op2)) ||
-                          (varTypeIsFloating(op1) && varTypeIsFloating(op2)));
-
-                if ((op1->TypeGet() != op2->TypeGet()) && varTypeIsFloating(op1))
-                {
-                    op1 = impImplicitR4orR8Cast(op1, TYP_DOUBLE);
-                    op2 = impImplicitR4orR8Cast(op2, TYP_DOUBLE);
-                }
-
-                // Create the comparison node.
-                op1 = gtNewOperNode(oper, TYP_INT, op1, op2);
-
-                // TODO: setting both flags when only one is appropriate.
-                if (uns)
-                {
-                    op1->gtFlags |= GTF_RELOP_NAN_UN | GTF_UNSIGNED;
-                }
-
-                // Fold result, if possible.
-                op1 = gtFoldExpr(op1);
-
-                impPushOnStack(op1, tiRetVal);
+                impPushOnStack(impImportCompare(op1, op2, oper, uns), tiRetVal);
                 break;
 
             case CEE_BEQ_S:

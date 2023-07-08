@@ -250,7 +250,6 @@
     <Compile Include="..\..\Common\TypeSystem\IL\Stubs\MethodBaseGetCurrentMethodThunk.Sorting.cs">
       <Link>IL\Stubs\MethodBaseGetCurrentMethodThunk.Sorting.cs</Link>
     </Compile>
-    <Compile Include="..\..\Common\TypeSystem\IL\Stubs\RuntimeHelpersIntrinsics.cs" Link="IL\Stubs\RuntimeHelpersIntrinsics.cs" />
     <Compile Include="..\..\Common\TypeSystem\IL\Stubs\StreamIntrinsics.cs" Link="IL\Stubs\StreamIntrinsics.cs" />
     <Compile Include="..\..\Common\TypeSystem\IL\Stubs\TypeGetTypeMethodThunk.cs">
       <Link>IL\Stubs\TypeGetTypeMethodThunk.cs</Link>

@@ -3839,6 +3839,57 @@ bool CEEInfo::isValueClass(CORINFO_CLASS_HANDLE clsHnd)
     return ret;
 }
 
+bool CEEInfo::isBitwiseEquatable(CORINFO_CLASS_HANDLE cls)
+{
+    CONTRACTL {
+        NOTHROW;
+        GC_NOTRIGGER;
+        MODE_PREEMPTIVE;
+    } CONTRACTL_END;
+
+    bool ret = false;
+
+    JIT_TO_EE_TRANSITION_LEAF();
+
+    TypeHandle typeHandle(cls);
+    MethodTable* methodTable = typeHandle.GetMethodTable();
+
+    if (methodTable->IsEnum())
+    {
+        CorElementType elemType = typeHandle.AsMethodTable()->GetInternalCorElementType();
+        typeHandle = TypeHandle(CoreLibBinder::GetElementType(elemType));
+        methodTable = typeHandle.GetMethodTable();
+    }
+
+    if (methodTable == CoreLibBinder::GetClass(CLASS__BOOLEAN)
+        || methodTable == CoreLibBinder::GetClass(CLASS__BYTE)
+        || methodTable == CoreLibBinder::GetClass(CLASS__SBYTE)
+        || methodTable == CoreLibBinder::GetClass(CLASS__CHAR)
+        || methodTable == CoreLibBinder::GetClass(CLASS__INT16)
+        || methodTable == CoreLibBinder::GetClass(CLASS__UINT16)
+        || methodTable == CoreLibBinder::GetClass(CLASS__INT32)
+        || methodTable == CoreLibBinder::GetClass(CLASS__UINT32)
+        || methodTable == CoreLibBinder::GetClass(CLASS__INT64)
+        || methodTable == CoreLibBinder::GetClass(CLASS__UINT64)
+        || methodTable == CoreLibBinder::GetClass(CLASS__INTPTR)
+        || methodTable == CoreLibBinder::GetClass(CLASS__UINTPTR)
+        || methodTable == CoreLibBinder::GetClass(CLASS__RUNE))
+    {
+        ret = true;
+    }
+    else if (methodTable->IsValueType() && CanCompareBitsOrUseFastGetHashCode(methodTable))
+    {
+        // CanCompareBitsOrUseFastGetHashCode checks for an object.Equals override.
+        // We also need to check for an IEquatable<T> implementation.
+        Instantiation inst(&typeHandle, 1);
+        ret = !typeHandle.CanCastTo(TypeHandle(CoreLibBinder::GetClass(CLASS__IEQUATABLEGENERIC)).Instantiate(inst));
+    }
+
+    EE_TO_JIT_TRANSITION_LEAF();
+
+    return ret;
+}
+
 /*********************************************************************/
 // Decides how the JIT should do the optimization to inline the check for
 //     GetTypeFromHandle(handle) == obj.GetType()
@@ -7246,244 +7297,6 @@ bool getILIntrinsicImplementationForInterlocked(MethodDesc * ftn,
     return true;
 }
 
-bool IsBitwiseEquatable(TypeHandle typeHandle, MethodTable * methodTable)
-{
-    if (!methodTable->IsValueType() ||
-        !CanCompareBitsOrUseFastGetHashCode(methodTable))
-    {
-        return false;
-    }
-
-    // CanCompareBitsOrUseFastGetHashCode checks for an object.Equals override.
-    // We also need to check for an IEquatable<T> implementation.
-    Instantiation inst(&typeHandle, 1);
-    if (typeHandle.CanCastTo(TypeHandle(CoreLibBinder::GetClass(CLASS__IEQUATABLEGENERIC)).Instantiate(inst)))
-    {
-        return false;
-    }
-
-    return true;
-}
-
-bool getILIntrinsicImplementationForRuntimeHelpers(MethodDesc * ftn,
-    CORINFO_METHOD_INFO * methInfo)
-{
-    STANDARD_VM_CONTRACT;
-
-    _ASSERTE(CoreLibBinder::IsClass(ftn->GetMethodTable(), CLASS__RUNTIME_HELPERS));
-
-    mdMethodDef tk = ftn->GetMemberDef();
-
-    if (tk == CoreLibBinder::GetMethod(METHOD__RUNTIME_HELPERS__IS_REFERENCE_OR_CONTAINS_REFERENCES)->GetMemberDef())
-    {
-        _ASSERTE(ftn->HasMethodInstantiation());
-        Instantiation inst = ftn->GetMethodInstantiation();
-
-        _ASSERTE(ftn->GetNumGenericMethodArgs() == 1);
-        TypeHandle typeHandle = inst[0];
-        MethodTable * methodTable = typeHandle.GetMethodTable();
-
-        static const BYTE returnTrue[] = { CEE_LDC_I4_1, CEE_RET };
-        static const BYTE returnFalse[] = { CEE_LDC_I4_0, CEE_RET };
-
-        if (!methodTable->IsValueType() || methodTable->ContainsPointers())
-        {
-            methInfo->ILCode = const_cast<BYTE*>(returnTrue);
-        }
-        else
-        {
-            methInfo->ILCode = const_cast<BYTE*>(returnFalse);
-        }
-
-        methInfo->ILCodeSize = sizeof(returnTrue);
-        methInfo->maxStack = 1;
-        methInfo->EHcount = 0;
-        methInfo->options = (CorInfoOptions)0;
-        return true;
-    }
-
-    if (tk == CoreLibBinder::GetMethod(METHOD__RUNTIME_HELPERS__IS_BITWISE_EQUATABLE)->GetMemberDef())
-    {
-        _ASSERTE(ftn->HasMethodInstantiation());
-        Instantiation inst = ftn->GetMethodInstantiation();
-
-        _ASSERTE(ftn->GetNumGenericMethodArgs() == 1);
-        TypeHandle typeHandle = inst[0];
-        MethodTable * methodTable = typeHandle.GetMethodTable();
-
-        static const BYTE returnTrue[] = { CEE_LDC_I4_1, CEE_RET };
-        static const BYTE returnFalse[] = { CEE_LDC_I4_0, CEE_RET };
-
-        // Ideally we could detect automatically whether a type is trivially equatable
-        // (i.e., its operator == could be implemented via memcmp). The best we can do
-        // for now is hardcode a list of known supported types and then also include anything
-        // that doesn't provide its own object.Equals override / IEquatable<T> implementation.
-        // n.b. This doesn't imply that the type's CompareTo method can be memcmp-implemented,
-        // as a method like CompareTo may need to take a type's signedness into account.
-
-        if (methodTable == CoreLibBinder::GetClass(CLASS__BOOLEAN)
-            || methodTable == CoreLibBinder::GetClass(CLASS__BYTE)
-            || methodTable == CoreLibBinder::GetClass(CLASS__SBYTE)
-            || methodTable == CoreLibBinder::GetClass(CLASS__CHAR)
-            || methodTable == CoreLibBinder::GetClass(CLASS__INT16)
-            || methodTable == CoreLibBinder::GetClass(CLASS__UINT16)
-            || methodTable == CoreLibBinder::GetClass(CLASS__INT32)
-            || methodTable == CoreLibBinder::GetClass(CLASS__UINT32)
-            || methodTable == CoreLibBinder::GetClass(CLASS__INT64)
-            || methodTable == CoreLibBinder::GetClass(CLASS__UINT64)
-            || methodTable == CoreLibBinder::GetClass(CLASS__INTPTR)
-            || methodTable == CoreLibBinder::GetClass(CLASS__UINTPTR)
-            || methodTable == CoreLibBinder::GetClass(CLASS__RUNE)
-            || methodTable->IsEnum()
-            || IsBitwiseEquatable(typeHandle, methodTable))
-        {
-            methInfo->ILCode = const_cast<BYTE*>(returnTrue);
-        }
-        else
-        {
-            methInfo->ILCode = const_cast<BYTE*>(returnFalse);
-        }
-
-        methInfo->ILCodeSize = sizeof(returnTrue);
-        methInfo->maxStack = 1;
-        methInfo->EHcount = 0;
-        methInfo->options = (CorInfoOptions)0;
-        return true;
-    }
-
-    if (tk == CoreLibBinder::GetMethod(METHOD__RUNTIME_HELPERS__GET_METHOD_TABLE)->GetMemberDef())
-    {
-        mdToken tokRawData = CoreLibBinder::GetField(FIELD__RAW_DATA__DATA)->GetMemberDef();
-
-        // In the CLR, an object is laid out as follows.
-        // [ object_header || MethodTable* (64-bit pointer) || instance_data ]
-        //                    ^                                ^-- ref <theObj>.firstField points here
-        //                    `-- <theObj> reference (type O) points here
-        //
-        // So essentially what we want to do is to turn an object reference (type O) into a
-        // native int&, then dereference it to get the MethodTable*. (Essentially, an object
-        // reference is a MethodTable**.) Per ECMA-335, Sec. III.1.5, we can add
-        // (but not subtract) a & and an int32 to produce a &. So we'll get a reference to
-        // <theObj>.firstField (type &), then back up one pointer length to get a value of
-        // essentially type (MethodTable*)&. Both of these are legal GC-trackable references
-        // to <theObj>, regardless of <theObj>'s actual length.
-
-        static BYTE ilcode[] = { CEE_LDARG_0,         // stack contains [ O ] = <theObj>
-                                 CEE_LDFLDA,0,0,0,0,  // stack contains [ & ] = ref <theObj>.firstField
-                                 CEE_LDC_I4_S,(BYTE)(-TARGET_POINTER_SIZE), // stack contains [ &, int32 ] = -IntPtr.Size
-                                 CEE_ADD,             // stack contains [ & ] = ref <theObj>.methodTablePtr
-                                 CEE_LDIND_I,         // stack contains [ native int ] = <theObj>.methodTablePtr
-                                 CEE_RET };
-
-        ilcode[2] = (BYTE)(tokRawData);
-        ilcode[3] = (BYTE)(tokRawData >> 8);
-        ilcode[4] = (BYTE)(tokRawData >> 16);
-        ilcode[5] = (BYTE)(tokRawData >> 24);
-
-        methInfo->ILCode = const_cast<BYTE*>(ilcode);
-        methInfo->ILCodeSize = sizeof(ilcode);
-        methInfo->maxStack = 2;
-        methInfo->EHcount = 0;
-        methInfo->options = (CorInfoOptions)0;
-        return true;
-    }
-
-    if (tk == CoreLibBinder::GetMethod(METHOD__RUNTIME_HELPERS__ENUM_EQUALS)->GetMemberDef())
-    {
-        // Normally we would follow the above pattern and unconditionally replace the IL,
-        // relying on generic type constraints to guarantee that it will only ever be instantiated
-        // on the type/size of argument we expect.
-        //
-        // However C#/CLR does not support restricting a generic type to be an Enum, so the best
-        // we can do is constrain it to be a value type.  This is fine for run time, since we only
-        // ever create instantiations on 4 byte or less Enums. But during NGen we may compile instantiations
-        // on other value types (to be specific, every value type instatiation of EqualityComparer
-        // because of its TypeDependencyAttribute; here again we would like to restrict this to
-        // 4 byte or less Enums but cannot).
-        //
-        // This IL is invalid for those instantiations, and replacing it would lead to all sorts of
-        // errors at NGen time.  So we only replace it for instantiations where it would be valid,
-        // leaving the others, which we should never execute, with the C# implementation of throwing.
-
-        _ASSERTE(ftn->HasMethodInstantiation());
-        Instantiation inst = ftn->GetMethodInstantiation();
-
-        _ASSERTE(inst.GetNumArgs() == 1);
-        CorElementType et = inst[0].GetVerifierCorElementType();
-        if (et == ELEMENT_TYPE_I4 ||
-            et == ELEMENT_TYPE_U4 ||
-            et == ELEMENT_TYPE_I2 ||
-            et == ELEMENT_TYPE_U2 ||
-            et == ELEMENT_TYPE_I1 ||
-            et == ELEMENT_TYPE_U1 ||
-            et == ELEMENT_TYPE_I8 ||
-            et == ELEMENT_TYPE_U8)
-        {
-            static const BYTE ilcode[] = { CEE_LDARG_0, CEE_LDARG_1, CEE_PREFIX1, (CEE_CEQ & 0xFF), CEE_RET };
-            methInfo->ILCode = const_cast<BYTE*>(ilcode);
-            methInfo->ILCodeSize = sizeof(ilcode);
-            methInfo->maxStack = 2;
-            methInfo->EHcount = 0;
-            methInfo->options = (CorInfoOptions)0;
-            return true;
-        }
-    }
-    else if (tk == CoreLibBinder::GetMethod(METHOD__RUNTIME_HELPERS__ENUM_COMPARE_TO)->GetMemberDef())
-    {
-        // The comment above on why this is not an unconditional replacement.  This case handles
-        // Enums backed by 8 byte values.
-
-        _ASSERTE(ftn->HasMethodInstantiation());
-        Instantiation inst = ftn->GetMethodInstantiation();
-
-        _ASSERTE(inst.GetNumArgs() == 1);
-        CorElementType et = inst[0].GetVerifierCorElementType();
-        if (et == ELEMENT_TYPE_I4 ||
-            et == ELEMENT_TYPE_U4 ||
-            et == ELEMENT_TYPE_I2 ||
-            et == ELEMENT_TYPE_U2 ||
-            et == ELEMENT_TYPE_I1 ||
-            et == ELEMENT_TYPE_U1 ||
-            et == ELEMENT_TYPE_I8 ||
-            et == ELEMENT_TYPE_U8)
-        {
-            static BYTE ilcode[8][9];
-
-            TypeHandle thUnderlyingType = CoreLibBinder::GetElementType(et);
-
-            TypeHandle thIComparable = TypeHandle(CoreLibBinder::GetClass(CLASS__ICOMPARABLEGENERIC)).Instantiate(Instantiation(&thUnderlyingType, 1));
-
-            MethodDesc* pCompareToMD = thUnderlyingType.AsMethodTable()->GetMethodDescForInterfaceMethod(
-                thIComparable, CoreLibBinder::GetMethod(METHOD__ICOMPARABLEGENERIC__COMPARE_TO), TRUE /* throwOnConflict */);
-
-            // Call CompareTo method on the primitive type
-            int tokCompareTo = pCompareToMD->GetMemberDef();
-
-            unsigned int index = (et - ELEMENT_TYPE_I1);
-            _ASSERTE(index < ARRAY_SIZE(ilcode));
-
-            ilcode[index][0] = CEE_LDARGA_S;
-            ilcode[index][1] = 0;
-            ilcode[index][2] = CEE_LDARG_1;
-            ilcode[index][3] = CEE_CALL;
-            ilcode[index][4] = (BYTE)(tokCompareTo);
-            ilcode[index][5] = (BYTE)(tokCompareTo >> 8);
-            ilcode[index][6] = (BYTE)(tokCompareTo >> 16);
-            ilcode[index][7] = (BYTE)(tokCompareTo >> 24);
-            ilcode[index][8] = CEE_RET;
-
-            methInfo->ILCode = const_cast<BYTE*>(ilcode[index]);
-            methInfo->ILCodeSize = sizeof(ilcode[index]);
-            methInfo->maxStack = 2;
-            methInfo->EHcount = 0;
-            methInfo->options = (CorInfoOptions)0;
-            return true;
-        }
-    }
-
-    return false;
-}
-
 bool getILIntrinsicImplementationForActivator(MethodDesc* ftn,
     CORINFO_METHOD_INFO* methInfo,
     SigPointer* pSig)
@@ -7626,10 +7439,6 @@ static void getMethodInfoHelper(
             else if (CoreLibBinder::IsClass(pMT, CLASS__INTERLOCKED))
             {
                 fILIntrinsic = getILIntrinsicImplementationForInterlocked(ftn, methInfo);
-            }
-            else if (CoreLibBinder::IsClass(pMT, CLASS__RUNTIME_HELPERS))
-            {
-                fILIntrinsic = getILIntrinsicImplementationForRuntimeHelpers(ftn, methInfo);
             }
             else if (CoreLibBinder::IsClass(pMT, CLASS__ACTIVATOR))
             {

@@ -249,7 +249,9 @@ namespace System.Collections.Generic
             }
         }
 
-        // public override bool Equals(T x, T y) is runtime-specific
+        [MethodImpl(MethodImplOptions.AggressiveInlining)]
+        public override bool Equals(T x, T y) =>
+            RuntimeHelpers.EnumEquals(x, y);
 
         [MethodImpl(MethodImplOptions.AggressiveInlining)]
         public override int GetHashCode(T obj) =>

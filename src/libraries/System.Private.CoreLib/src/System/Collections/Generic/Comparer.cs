@@ -135,7 +135,11 @@ namespace System.Collections.Generic
         // Used by the serialization engine.
         private EnumComparer(SerializationInfo info, StreamingContext context) { }
 
-        // public override int Compare(T x, T y) is runtime-specific
+        [MethodImpl(MethodImplOptions.AggressiveInlining)]
+        public override int Compare(T x, T y)
+        {
+            return RuntimeHelpers.EnumCompareTo(x, y);
+        }
 
         // Equals method for the comparer itself.
         public override bool Equals([NotNullWhen(true)] object? obj) =>

@@ -657,7 +657,7 @@ MONO_RESTORE_WARNING
 }
 
 static MonoInst*
-emit_jit_helpers_intrinsics (MonoCompile *cfg, MonoMethod *cmethod, MonoMethodSignature *fsig, MonoInst **args)
+emit_runtime_helpers_intrinsics (MonoCompile *cfg, MonoMethod *cmethod, MonoMethodSignature *fsig, MonoInst **args)
 {
 	MonoInst *ins;
 	int dreg;
@@ -2059,8 +2059,8 @@ mini_emit_inst_for_method (MonoCompile *cfg, MonoMethod *cmethod, MonoMethodSign
 		return emit_unsafe_intrinsics (cfg, cmethod, fsig, args);
 	} else if (in_corlib &&
 			   !strcmp (cmethod_klass_name_space, "System.Runtime.CompilerServices") &&
-			   !strcmp (cmethod_klass_name, "JitHelpers")) {
-		return emit_jit_helpers_intrinsics (cfg, cmethod, fsig, args);
+			   !strcmp (cmethod_klass_name, "RuntimeHelpers")) {
+		return emit_runtime_helpers_intrinsics (cfg, cmethod, fsig, args);
 	}  else if (in_corlib &&
 			   (strcmp (cmethod_klass_name_space, "System") == 0) &&
 			   (strcmp (cmethod_klass_name, "Activator") == 0)) {

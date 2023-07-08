@@ -387,6 +387,15 @@ bool WrapICorJitInfo::isValueClass(
     return temp;
 }
 
+bool WrapICorJitInfo::isBitwiseEquatable(
+          CORINFO_CLASS_HANDLE cls)
+{
+    API_ENTER(isBitwiseEquatable);
+    bool temp = wrapHnd->isBitwiseEquatable(cls);
+    API_LEAVE(isBitwiseEquatable);
+    return temp;
+}
+
 CorInfoInlineTypeCheck WrapICorJitInfo::canInlineTypeCheck(
           CORINFO_CLASS_HANDLE cls,
           CorInfoInlineTypeCheckSource source)

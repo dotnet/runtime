@@ -325,6 +325,13 @@ bool interceptor_ICJI::isValueClass(
     return original_ICorJitInfo->isValueClass(cls);
 }
 
+bool interceptor_ICJI::isBitwiseEquatable(
+          CORINFO_CLASS_HANDLE cls)
+{
+    mcs->AddCall("isBitwiseEquatable");
+    return original_ICorJitInfo->isBitwiseEquatable(cls);
+}
+
 CorInfoInlineTypeCheck interceptor_ICJI::canInlineTypeCheck(
           CORINFO_CLASS_HANDLE cls,
           CorInfoInlineTypeCheckSource source)

@@ -130,12 +130,6 @@ namespace Internal.IL
                         }
                     }
                     break;
-                case "RuntimeHelpers":
-                    {
-                        if (owningType.Namespace == "System.Runtime.CompilerServices")
-                            return RuntimeHelpersIntrinsics.EmitIL(method);
-                    }
-                    break;
                 case "Comparer`1":
                     {
                         if (methodName == "Create" && owningType.Namespace == "System.Collections.Generic")
@@ -148,81 +142,12 @@ namespace Internal.IL
                             return ComparerIntrinsics.EmitEqualityComparerCreate(method);
                     }
                     break;
-                case "ComparerHelpers":
-                    {
-                        if (owningType.Namespace != "Internal.IntrinsicSupport")
-                            return null;
-
-                        if (methodName == "EnumOnlyCompare")
-                        {
-                            //calls CompareTo for underlyingType to avoid boxing
-
-                            TypeDesc elementType = method.Instantiation[0];
-                            if (!elementType.IsEnum)
-                                return null;
-
-                            TypeDesc underlyingType = elementType.UnderlyingType;
-                            TypeDesc returnType = method.Context.GetWellKnownType(WellKnownType.Int32);
-                            MethodDesc underlyingCompareToMethod = underlyingType.GetKnownMethod("CompareTo",
-                                new MethodSignature(
-                                    MethodSignatureFlags.None,
-                                    genericParameterCount: 0,
-                                    returnType: returnType,
-                                    parameters: new TypeDesc[] {underlyingType}));
-
-                            ILEmitter emitter = new ILEmitter();
-                            var codeStream = emitter.NewCodeStream();
-
-                            codeStream.EmitLdArga(0);
-                            codeStream.EmitLdArg(1);
-                            codeStream.Emit(ILOpcode.call, emitter.NewToken(underlyingCompareToMethod));
-                            codeStream.Emit(ILOpcode.ret);
-
-                            return emitter.Link(method);
-                        }
-                    }
-                    break;
                 case "EqualityComparerHelpers":
                     {
                         if (owningType.Namespace != "Internal.IntrinsicSupport")
                             return null;
 
-                        if (methodName == "EnumOnlyEquals")
-                        {
-                            // EnumOnlyEquals would basically like to do this:
-                            // static bool EnumOnlyEquals<T>(T x, T y) where T: struct => x == y;
-                            // This is not legal though.
-                            // We don't want to do this:
-                            // static bool EnumOnlyEquals<T>(T x, T y) where T: struct => x.Equals(y);
-                            // Because it would box y.
-                            // So we resort to some per-instantiation magic.
-
-                            TypeDesc elementType = method.Instantiation[0];
-                            if (!elementType.IsEnum)
-                                return null;
-
-                            ILOpcode convInstruction;
-                            if (((DefType)elementType).InstanceFieldSize.AsInt <= 4)
-                            {
-                                convInstruction = ILOpcode.conv_i4;
-                            }
-                            else
-                            {
-                                Debug.Assert(((DefType)elementType).InstanceFieldSize.AsInt == 8);
-                                convInstruction = ILOpcode.conv_i8;
-                            }
-
-                            return new ILStubMethodIL(method, new byte[] {
-                                (byte)ILOpcode.ldarg_0,
-                                (byte)convInstruction,
-                                (byte)ILOpcode.ldarg_1,
-                                (byte)convInstruction,
-                                (byte)ILOpcode.prefix1, unchecked((byte)ILOpcode.ceq),
-                                (byte)ILOpcode.ret,
-                            },
-                            Array.Empty<LocalVariableDefinition>(), null);
-                        }
-                        else if (methodName == "GetComparerForReferenceTypesOnly")
+                        if (methodName == "GetComparerForReferenceTypesOnly")
                         {
                             TypeDesc elementType = method.Instantiation[0];
                             if (!elementType.IsRuntimeDeterminedSubtype
@@ -251,7 +176,8 @@ namespace Internal.IL
                                 MethodDesc methodToCall;
                                 if (elementType.IsEnum)
                                 {
-                                    methodToCall = helperType.GetKnownMethod("EnumOnlyEquals", null).MakeInstantiatedMethod(elementType);
+                                    helperType = context.SystemModule.GetKnownType("System.Runtime.CompilerServices", "RuntimeHelpers");
+                                    methodToCall = helperType.GetKnownMethod("EnumEquals", null).MakeInstantiatedMethod(elementType);
                                 }
                                 else if (elementType.IsNullable && ComparerIntrinsics.ImplementsIEquatable(elementType.Instantiation[0]))
                                 {

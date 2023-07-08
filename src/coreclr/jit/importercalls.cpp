@@ -2551,6 +2551,9 @@ GenTree* Compiler::impIntrinsic(GenTree*                newobjThis,
             // This one is just `return true/false`
             case NI_System_Runtime_CompilerServices_RuntimeHelpers_IsKnownConstant:
 
+            case NI_System_Runtime_CompilerServices_RuntimeHelpers_EnumEquals:
+            case NI_System_Runtime_CompilerServices_RuntimeHelpers_EnumCompareTo:
+
             // We need these to be able to fold "typeof(...) == typeof(...)"
             case NI_System_Type_GetTypeFromHandle:
             case NI_System_Type_op_Equality:
@@ -2756,6 +2759,81 @@ GenTree* Compiler::impIntrinsic(GenTree*                newobjThis,
                     JITDUMP("\nConverting RuntimeHelpers.IsKnownConstant to:\n");
                     DISPTREE(retNode);
                 }
+                break;
+            }
+
+            case NI_System_Runtime_CompilerServices_RuntimeHelpers_IsReference:
+            {
+                assert(sig->sigInst.methInstCount == 1);
+                CORINFO_CLASS_HANDLE hClass = sig->sigInst.methInst[0];
+                retNode = gtNewIconNode(eeIsValueClass(hClass) ? 0 : 1);
+                break;
+            }
+
+            case NI_System_Runtime_CompilerServices_RuntimeHelpers_IsReferenceOrContainsReferences:
+            {
+                assert(sig->sigInst.methInstCount == 1);
+                CORINFO_CLASS_HANDLE hClass = sig->sigInst.methInst[0];
+                retNode = gtNewIconNode(!eeIsValueClass(hClass) || ((info.compCompHnd->getClassAttribs(hClass) & CORINFO_FLG_CONTAINS_GC_PTR) != 0) ? 1 : 0);
+                break;
+            }
+
+            case NI_System_Runtime_CompilerServices_RuntimeHelpers_IsBitwiseEquatable:
+            {
+                assert(sig->sigInst.methInstCount == 1);
+                CORINFO_CLASS_HANDLE hClass = sig->sigInst.methInst[0];
+                retNode = gtNewIconNode(info.compCompHnd->isBitwiseEquatable(hClass) ? 1 : 0);
+                break;
+            }
+
+            case NI_System_Runtime_CompilerServices_RuntimeHelpers_GetMethodTable:
+            {
+                retNode = gtNewMethodTableLookup(impPopStack().val);
+                break;
+            }
+
+            case NI_System_Runtime_CompilerServices_RuntimeHelpers_EnumEquals:
+            {
+                assert(sig->sigInst.methInstCount == 1);
+                CORINFO_CLASS_HANDLE hClass  = sig->sigInst.methInst[0];
+                CorInfoType          jitType = info.compCompHnd->asCorInfoType(hClass);
+
+                if (varTypeIsFloating(JitType2PreciseVarType(jitType)))
+                {
+                    return nullptr;
+                }
+
+                GenTree* op2 = impPopStack().val;
+                GenTree* op1 = impPopStack().val;
+                retNode = impImportCompare(op1, op2, GT_EQ, false);
+                break;
+            }
+
+            case NI_System_Runtime_CompilerServices_RuntimeHelpers_EnumCompareTo:
+            {
+                assert(sig->sigInst.methInstCount == 1);
+
+                CORINFO_CLASS_HANDLE hClass  = sig->sigInst.methInst[0];
+                CorInfoType          jitType = info.compCompHnd->asCorInfoType(hClass);
+                var_types            type    = JitType2PreciseVarType(jitType);
+
+                if (varTypeIsFloating(type))
+                {
+                    return nullptr;
+                }
+
+                GenTree* op2 = impPopStack().val;
+                GenTree* op1 = impPopStack().val;
+                bool     uns = varTypeIsUnsigned(type);
+
+                GenTree* op1Clone;
+                GenTree* op2Clone;
+                op1 = impCloneExpr(op1, &op1Clone, CHECK_SPILL_ALL, nullptr DEBUGARG("EnumCompareTo arg1"));
+                op2 = impCloneExpr(op2, &op2Clone, CHECK_SPILL_ALL, nullptr DEBUGARG("EnumCompareTo arg2"));
+
+                retNode = gtFoldExpr(gtNewOperNode(GT_SUB, TYP_INT,
+                                        impImportCompare(op1, op2, GT_GT, uns),
+                                        impImportCompare(op1Clone, op2Clone, GT_LT, uns)));
                 break;
             }
 
@@ -8947,6 +9025,30 @@ NamedIntrinsic Compiler::lookupNamedIntrinsic(CORINFO_METHOD_HANDLE method)
                         else if (strcmp(methodName, "IsKnownConstant") == 0)
                         {
                             result = NI_System_Runtime_CompilerServices_RuntimeHelpers_IsKnownConstant;
+                        }
+                        else if (strcmp(methodName, "IsReference") == 0)
+                        {
+                            result = NI_System_Runtime_CompilerServices_RuntimeHelpers_IsReference;
+                        }
+                        else if (strcmp(methodName, "IsReferenceOrContainsReferences") == 0)
+                        {
+                            result = NI_System_Runtime_CompilerServices_RuntimeHelpers_IsReferenceOrContainsReferences;
+                        }
+                        else if (strcmp(methodName, "IsBitwiseEquatable") == 0)
+                        {
+                            result = NI_System_Runtime_CompilerServices_RuntimeHelpers_IsBitwiseEquatable;
+                        }
+                        else if (strcmp(methodName, "EnumEquals") == 0)
+                        {
+                            result = NI_System_Runtime_CompilerServices_RuntimeHelpers_EnumEquals;
+                        }
+                        else if (strcmp(methodName, "EnumCompareTo") == 0)
+                        {
+                            result = NI_System_Runtime_CompilerServices_RuntimeHelpers_EnumCompareTo;
+                        }
+                        else if (strcmp(methodName, "GetMethodTable") == 0)
+                        {
+                            result = NI_System_Runtime_CompilerServices_RuntimeHelpers_GetMethodTable;
                         }
                     }
                     else if (strcmp(className, "Unsafe") == 0)

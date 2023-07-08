@@ -98,13 +98,6 @@ namespace Internal.IntrinsicSupport
         // Redirection target functions for redirecting behavior of Array.IndexOf
         //-----------------------------------------------------------------------
 
-        // This one is an intrinsic that is used to make enum comparisons more efficient.
-        [Intrinsic]
-        internal static bool EnumOnlyEquals<T>(T x, T y) where T : struct
-        {
-            return x.Equals(y);
-        }
-
         private static bool StructOnlyEqualsIEquatable<T>(T x, T y) where T : IEquatable<T>
         {
             return x.Equals(y);

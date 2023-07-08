@@ -60,10 +60,4 @@ namespace System.Collections.Generic
             return new ObjectEqualityComparer<T>();
         }
     }
-
-    public partial class EnumEqualityComparer<T>
-    {
-        [MethodImpl(MethodImplOptions.AggressiveInlining)]
-        public override bool Equals(T x, T y) => JitHelpers.EnumEquals(x, y);
-    }
 }

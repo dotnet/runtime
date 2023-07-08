@@ -2406,6 +2406,80 @@ interp_handle_intrinsics (TransformData *td, MonoMethod *target_method, MonoClas
 
 			td->ip += 5;
 			return TRUE;
+		} else if (!strcmp (tm, "EnumEquals") || !strcmp (tm, "EnumCompareTo")) {
+			MonoGenericContext *ctx = mono_method_get_context (target_method);
+			g_assert (ctx);
+			g_assert (ctx->method_inst);
+			g_assert (ctx->method_inst->type_argc == 1);
+			g_assert (csignature->param_count == 2);
+
+			MonoType *t = ctx->method_inst->type_argv [0];
+			t = mini_get_underlying_type (t);
+
+			if (t->type == MONO_TYPE_R4 || t->type == MONO_TYPE_R8)
+				return FALSE;
+
+			gboolean is_i8 = (t->type == MONO_TYPE_I8 || t->type == MONO_TYPE_U8 || (TARGET_SIZEOF_VOID_P == 8 && (t->type == MONO_TYPE_I || t->type == MONO_TYPE_U)));
+			gboolean is_unsigned = (t->type == MONO_TYPE_U1 || t->type == MONO_TYPE_U2 || t->type == MONO_TYPE_U4 || t->type == MONO_TYPE_U8 || t->type == MONO_TYPE_U);
+
+			gboolean is_compareto = strcmp (tm, "EnumCompareTo") == 0;
+			if (is_compareto) {
+				int locala, localb;
+				locala = create_interp_local (td, t);
+				localb = create_interp_local (td, t);
+
+				// Save arguments
+				store_local (td, localb);
+				store_local (td, locala);
+				load_local (td, locala);
+				load_local (td, localb);
+
+				if (t->type >= MONO_TYPE_BOOLEAN && t->type <= MONO_TYPE_U2)
+				{
+					interp_add_ins (td, MINT_SUB_I4);
+					td->sp -= 2;
+					interp_ins_set_sregs2 (td->last_ins, td->sp [0].local, td->sp [1].local);
+					push_simple_type (td, STACK_TYPE_I4);
+					interp_ins_set_dreg (td->last_ins, td->sp [-1].local);
+				}
+				else
+				{
+					// (a > b)
+					if (is_unsigned)
+						interp_add_ins (td, is_i8 ? MINT_CGT_UN_I8 : MINT_CGT_UN_I4);
+					else
+						interp_add_ins (td, is_i8 ? MINT_CGT_I8 : MINT_CGT_I4);
+					td->sp -= 2;
+					interp_ins_set_sregs2 (td->last_ins, td->sp [0].local, td->sp [1].local);
+					push_simple_type (td, STACK_TYPE_I4);
+					interp_ins_set_dreg (td->last_ins, td->sp [-1].local);
+					// (a < b)
+					load_local (td, locala);
+					load_local (td, localb);
+					if (is_unsigned)
+						interp_add_ins (td, is_i8 ? MINT_CLT_UN_I8 : MINT_CLT_UN_I4);
+					else
+						interp_add_ins (td, is_i8 ? MINT_CLT_I8 : MINT_CLT_I4);
+					td->sp -= 2;
+					interp_ins_set_sregs2 (td->last_ins, td->sp [0].local, td->sp [1].local);
+					push_simple_type (td, STACK_TYPE_I4);
+					interp_ins_set_dreg (td->last_ins, td->sp [-1].local);
+					// (a > b) - (a < b)
+					interp_add_ins (td, MINT_SUB_I4);
+					td->sp -= 2;
+					interp_ins_set_sregs2 (td->last_ins, td->sp [0].local, td->sp [1].local);
+					push_simple_type (td, STACK_TYPE_I4);
+					interp_ins_set_dreg (td->last_ins, td->sp [-1].local);
+				}
+				td->ip += 5;
+				return TRUE;
+			} else {
+				if (is_i8) {
+					*op = MINT_CEQ_I8;
+				} else {
+					*op = MINT_CEQ_I4;
+				}
+			}
 		}
 	} else if (in_corlib && !strcmp (klass_name_space, "System") && !strcmp (klass_name, "RuntimeMethodHandle") && !strcmp (tm, "GetFunctionPointer") && csignature->param_count == 1) {
 		// We must intrinsify this method on interp so we don't return a pointer to native code entering interpreter
@@ -2528,84 +2602,6 @@ interp_handle_intrinsics (TransformData *td, MonoMethod *target_method, MonoClas
 		if (!strcmp (tm, "MemoryBarrier") && csignature->param_count == 0)
 			*op = MINT_MONO_MEMORY_BARRIER;
 	} else if (in_corlib &&
-			!strcmp (klass_name_space, "System.Runtime.CompilerServices") &&
-			!strcmp (klass_name, "JitHelpers") &&
-			(!strcmp (tm, "EnumEquals") || !strcmp (tm, "EnumCompareTo"))) {
-		MonoGenericContext *ctx = mono_method_get_context (target_method);
-		g_assert (ctx);
-		g_assert (ctx->method_inst);
-		g_assert (ctx->method_inst->type_argc == 1);
-		g_assert (csignature->param_count == 2);
-
-		MonoType *t = ctx->method_inst->type_argv [0];
-		t = mini_get_underlying_type (t);
-
-		if (t->type == MONO_TYPE_R4 || t->type == MONO_TYPE_R8)
-			return FALSE;
-
-		gboolean is_i8 = (t->type == MONO_TYPE_I8 || t->type == MONO_TYPE_U8 || (TARGET_SIZEOF_VOID_P == 8 && (t->type == MONO_TYPE_I || t->type == MONO_TYPE_U)));
-		gboolean is_unsigned = (t->type == MONO_TYPE_U1 || t->type == MONO_TYPE_U2 || t->type == MONO_TYPE_U4 || t->type == MONO_TYPE_U8 || t->type == MONO_TYPE_U);
-
-		gboolean is_compareto = strcmp (tm, "EnumCompareTo") == 0;
-		if (is_compareto) {
-			int locala, localb;
-			locala = create_interp_local (td, t);
-			localb = create_interp_local (td, t);
-
-			// Save arguments
-			store_local (td, localb);
-			store_local (td, locala);
-			load_local (td, locala);
-			load_local (td, localb);
-
-			if (t->type >= MONO_TYPE_BOOLEAN && t->type <= MONO_TYPE_U2)
-			{
-				interp_add_ins (td, MINT_SUB_I4);
-				td->sp -= 2;
-				interp_ins_set_sregs2 (td->last_ins, td->sp [0].local, td->sp [1].local);
-				push_simple_type (td, STACK_TYPE_I4);
-				interp_ins_set_dreg (td->last_ins, td->sp [-1].local);
-			}
-			else
-			{
-				// (a > b)
-				if (is_unsigned)
-					interp_add_ins (td, is_i8 ? MINT_CGT_UN_I8 : MINT_CGT_UN_I4);
-				else
-					interp_add_ins (td, is_i8 ? MINT_CGT_I8 : MINT_CGT_I4);
-				td->sp -= 2;
-				interp_ins_set_sregs2 (td->last_ins, td->sp [0].local, td->sp [1].local);
-				push_simple_type (td, STACK_TYPE_I4);
-				interp_ins_set_dreg (td->last_ins, td->sp [-1].local);
-				// (a < b)
-				load_local (td, locala);
-				load_local (td, localb);
-				if (is_unsigned)
-					interp_add_ins (td, is_i8 ? MINT_CLT_UN_I8 : MINT_CLT_UN_I4);
-				else
-					interp_add_ins (td, is_i8 ? MINT_CLT_I8 : MINT_CLT_I4);
-				td->sp -= 2;
-				interp_ins_set_sregs2 (td->last_ins, td->sp [0].local, td->sp [1].local);
-				push_simple_type (td, STACK_TYPE_I4);
-				interp_ins_set_dreg (td->last_ins, td->sp [-1].local);
-				// (a > b) - (a < b)
-				interp_add_ins (td, MINT_SUB_I4);
-				td->sp -= 2;
-				interp_ins_set_sregs2 (td->last_ins, td->sp [0].local, td->sp [1].local);
-				push_simple_type (td, STACK_TYPE_I4);
-				interp_ins_set_dreg (td->last_ins, td->sp [-1].local);
-			}
-			td->ip += 5;
-			return TRUE;
-		} else {
-			if (is_i8) {
-				*op = MINT_CEQ_I8;
-			} else {
-				*op = MINT_CEQ_I4;
-			}
-		}
-	}
-	else if (in_corlib &&
 			   !strcmp ("System.Runtime.CompilerServices", klass_name_space) &&
 			   !strcmp ("RuntimeFeature", klass_name)) {
 		// NOTE: on the interpreter, use the C# code in System.Private.CoreLib for IsDynamicCodeSupported

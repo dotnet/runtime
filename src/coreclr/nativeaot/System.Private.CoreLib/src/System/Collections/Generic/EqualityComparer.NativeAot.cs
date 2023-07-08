@@ -32,12 +32,4 @@ namespace System.Collections.Generic
 
         public static EqualityComparer<T> Default { [Intrinsic] get; } = Create();
     }
-
-    public sealed partial class EnumEqualityComparer<T> : EqualityComparer<T> where T : struct, Enum
-    {
-        public sealed override bool Equals(T x, T y)
-        {
-            return EqualityComparerHelpers.EnumOnlyEquals(x, y);
-        }
-    }
 }

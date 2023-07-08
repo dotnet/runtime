@@ -17,6 +17,7 @@ using Internal.Runtime.CompilerServices;
 #endif
 
 using Internal.IL;
+using Internal.IL.Stubs;
 using Internal.TypeSystem;
 using Internal.TypeSystem.Ecma;
 using Internal.TypeSystem.Interop;
@@ -1966,6 +1967,52 @@ namespace Internal.JitInterface
         private bool isValueClass(CORINFO_CLASS_STRUCT_* cls)
         {
             return HandleToObject(cls).IsValueType;
+        }
+
+        private bool isBitwiseEquatable(CORINFO_CLASS_STRUCT_* cls)
+        {
+            TypeDesc type = HandleToObject(cls);
+
+            // Ideally we could detect automatically whether a type is trivially equatable
+            // (i.e., its operator == could be implemented via memcmp). But for now we'll
+            // do the simple thing and hardcode the list of types we know fulfill this contract.
+            // n.b. This doesn't imply that the type's CompareTo method can be memcmp-implemented,
+            // as a method like CompareTo may need to take a type's signedness into account.
+            switch (type.UnderlyingType.Category)
+            {
+                case TypeFlags.Boolean:
+                case TypeFlags.Byte:
+                case TypeFlags.SByte:
+                case TypeFlags.Char:
+                case TypeFlags.UInt16:
+                case TypeFlags.Int16:
+                case TypeFlags.UInt32:
+                case TypeFlags.Int32:
+                case TypeFlags.UInt64:
+                case TypeFlags.Int64:
+                case TypeFlags.IntPtr:
+                case TypeFlags.UIntPtr:
+                    return true;
+
+                default:
+                    if (type is not MetadataType mdType)
+                        break;
+
+                    if (mdType.Module == mdType.Context.SystemModule &&
+                        mdType.Namespace == "System.Text" && mdType.Name == "Rune")
+                    {
+                        return true;
+                    }
+
+                    if (!mdType.IsValueType || ComparerIntrinsics.ImplementsIEquatable(mdType.GetTypeDefinition()))
+                        break;
+
+                    // Value type that can use memcmp and that doesn't override object.Equals or implement IEquatable<T>.Equals.
+                    MethodDesc objectEquals = mdType.Context.GetWellKnownType(WellKnownType.Object).GetMethod("Equals", null);
+                    return mdType.FindVirtualFunctionTargetMethodOnObjectType(objectEquals).OwningType != mdType &&
+                        ComparerIntrinsics.CanCompareValueTypeBits(mdType, objectEquals);
+            }
+            return false;
         }
 
 #pragma warning disable CA1822 // Mark members as static

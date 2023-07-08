@@ -182,6 +182,9 @@ size_t printClassName(
 bool isValueClass(
           CORINFO_CLASS_HANDLE cls) override;
 
+bool isBitwiseEquatable(
+          CORINFO_CLASS_HANDLE cls) override;
+
 CorInfoInlineTypeCheck canInlineTypeCheck(
           CORINFO_CLASS_HANDLE cls,
           CorInfoInlineTypeCheckSource source) override;
