@@ -13,8 +13,7 @@ namespace System.Buffers
 {
     // Based on SpanHelpers.IndexOf(ref char, int, ref char, int)
     // This implementation uses 3 precomputed anchor points when searching.
-    internal sealed class SingleStringSearchValuesThreeChars<TValueLength, TCaseSensitivity> : StringSearchValuesBase
-        where TValueLength : struct, IValueLength
+    internal sealed class SingleStringSearchValuesThreeChars<TCaseSensitivity> : StringSearchValuesBase
         where TCaseSensitivity : struct, ICaseSensitivity
     {
         private const ushort CaseConversionMask = unchecked((ushort)~0x20);
@@ -203,7 +202,7 @@ namespace System.Buffers
                 ref char cur = ref Unsafe.Add(ref searchSpace, i);
 
                 if ((typeof(TCaseSensitivity) == typeof(CaseInsensitiveUnicode) || TCaseSensitivity.TransformInput(cur) == valueHead) &&
-                    TCaseSensitivity.Equals<TValueLength>(ref cur, value))
+                    TCaseSensitivity.Equals(ref cur, value))
                 {
                     return (int)i;
                 }
@@ -285,8 +284,7 @@ namespace System.Buffers
 
                 ref char matchRef = ref Unsafe.AddByteOffset(ref searchSpace, bitPos);
 
-                if ((typeof(TCaseSensitivity) == typeof(CaseSensitive) && !TValueLength.AtLeast4Chars) ||
-                    TCaseSensitivity.Equals<TValueLength>(ref matchRef, _value))
+                if (TCaseSensitivity.Equals(ref matchRef, _value))
                 {
                     offsetFromStart = (int)((nuint)Unsafe.ByteOffset(ref searchSpaceStart, ref matchRef) / 2);
                     return true;
@@ -310,8 +308,7 @@ namespace System.Buffers
 
                 ref char matchRef = ref Unsafe.AddByteOffset(ref searchSpace, bitPos);
 
-                if ((typeof(TCaseSensitivity) == typeof(CaseSensitive) && !TValueLength.AtLeast4Chars) ||
-                    TCaseSensitivity.Equals<TValueLength>(ref matchRef, _value))
+                if (TCaseSensitivity.Equals(ref matchRef, _value))
                 {
                     offsetFromStart = (int)((nuint)Unsafe.ByteOffset(ref searchSpaceStart, ref matchRef) / 2);
                     return true;

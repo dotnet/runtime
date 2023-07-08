@@ -5,7 +5,6 @@ using System.Diagnostics;
 using System.Globalization;
 using System.Runtime.CompilerServices;
 using System.Runtime.Intrinsics;
-using System.Text;
 
 namespace System.Buffers
 {
@@ -38,30 +37,6 @@ namespace System.Buffers
             return TCaseSensitivity.Equals(ref matchStart, candidate);
         }
 
-        public interface IValueLength
-        {
-            static abstract bool AtLeast4Chars { get; }
-            static abstract bool AtLeast8Chars { get; }
-        }
-
-        public readonly struct ValueLengthLessThan4 : IValueLength
-        {
-            public static bool AtLeast4Chars => false;
-            public static bool AtLeast8Chars => false;
-        }
-
-        public readonly struct ValueLength4To7 : IValueLength
-        {
-            public static bool AtLeast4Chars => true;
-            public static bool AtLeast8Chars => false;
-        }
-
-        public readonly struct ValueLength8OrLonger : IValueLength
-        {
-            public static bool AtLeast4Chars => true;
-            public static bool AtLeast8Chars => true;
-        }
-
         public interface ICaseSensitivity
         {
             static abstract char TransformInput(char input);
@@ -69,7 +44,6 @@ namespace System.Buffers
             static abstract Vector256<byte> TransformInput(Vector256<byte> input);
             static abstract Vector512<byte> TransformInput(Vector512<byte> input);
             static abstract bool Equals(ref char matchStart, string candidate);
-            static abstract bool Equals<TValueLength>(ref char matchStart, string candidate) where TValueLength : struct, IValueLength;
         }
 
         public readonly struct CaseSensitive : ICaseSensitivity
@@ -106,37 +80,6 @@ namespace System.Buffers
 
                 return true;
             }
-
-            [MethodImpl(MethodImplOptions.AggressiveInlining)]
-            public static bool Equals<TValueLength>(ref char matchStart, string candidate)
-                where TValueLength : struct, IValueLength
-            {
-                Debug.Assert(candidate.Length > 1);
-                Debug.Assert(matchStart == candidate[0], "This should only be called after the first character has been checked");
-
-                ref byte first = ref Unsafe.As<char, byte>(ref matchStart);
-                ref byte second = ref Unsafe.As<char, byte>(ref candidate.GetRawStringData());
-                nuint byteLength = (nuint)(uint)candidate.Length * 2;
-
-                if (TValueLength.AtLeast8Chars)
-                {
-                    return SpanHelpers.SequenceEqual(ref first, ref second, byteLength);
-                }
-                else if (TValueLength.AtLeast4Chars)
-                {
-                    nuint offset = byteLength - sizeof(ulong);
-                    ulong differentBits = Unsafe.ReadUnaligned<ulong>(ref first) - Unsafe.ReadUnaligned<ulong>(ref second);
-                    differentBits |= Unsafe.ReadUnaligned<ulong>(ref Unsafe.Add(ref first, offset)) - Unsafe.ReadUnaligned<ulong>(ref Unsafe.Add(ref second, offset));
-                    return differentBits == 0;
-                }
-                else
-                {
-                    nuint offset = byteLength - sizeof(uint);
-
-                    return Unsafe.ReadUnaligned<uint>(ref Unsafe.Add(ref first, offset))
-                        == Unsafe.ReadUnaligned<uint>(ref Unsafe.Add(ref second, offset));
-                }
-            }
         }
 
         public readonly struct CaseInsensitiveAsciiLetters : ICaseSensitivity
@@ -165,38 +108,6 @@ namespace System.Buffers
                 }
 
                 return true;
-            }
-
-            [MethodImpl(MethodImplOptions.AggressiveInlining)]
-            public static bool Equals<TValueLength>(ref char matchStart, string candidate)
-                where TValueLength : struct, IValueLength
-            {
-                Debug.Assert(candidate.Length > 1);
-                Debug.Assert(candidate.ToUpperInvariant() == candidate);
-
-                if (TValueLength.AtLeast8Chars)
-                {
-                    return Ascii.EqualsIgnoreCase(ref matchStart, ref candidate.GetRawStringData(), (uint)candidate.Length);
-                }
-
-                ref byte first = ref Unsafe.As<char, byte>(ref matchStart);
-                ref byte second = ref Unsafe.As<char, byte>(ref candidate.GetRawStringData());
-                nuint byteLength = (nuint)(uint)candidate.Length * 2;
-
-                if (TValueLength.AtLeast4Chars)
-                {
-                    nuint offset = byteLength - sizeof(ulong);
-                    ulong differentBits = (Unsafe.ReadUnaligned<ulong>(ref first) & ~0x20002000200020u) - Unsafe.ReadUnaligned<ulong>(ref second);
-                    differentBits |= (Unsafe.ReadUnaligned<ulong>(ref Unsafe.Add(ref first, offset)) & ~0x20002000200020u) - Unsafe.ReadUnaligned<ulong>(ref Unsafe.Add(ref second, offset));
-                    return differentBits == 0;
-                }
-                else
-                {
-                    nuint offset = byteLength - sizeof(uint);
-                    uint differentBits = (Unsafe.ReadUnaligned<uint>(ref first) & ~0x200020u) - Unsafe.ReadUnaligned<uint>(ref second);
-                    differentBits |= (Unsafe.ReadUnaligned<uint>(ref Unsafe.Add(ref first, offset)) & ~0x200020u) - Unsafe.ReadUnaligned<uint>(ref Unsafe.Add(ref second, offset));
-                    return differentBits == 0;
-                }
             }
         }
 
@@ -251,18 +162,6 @@ namespace System.Buffers
 
                 return true;
             }
-
-            [MethodImpl(MethodImplOptions.AggressiveInlining)]
-            public static bool Equals<TValueLength>(ref char matchStart, string candidate)
-                where TValueLength : struct, IValueLength
-            {
-                if (Vector128.IsHardwareAccelerated && TValueLength.AtLeast8Chars)
-                {
-                    return Ascii.EqualsIgnoreCase(ref matchStart, ref candidate.GetRawStringData(), (uint)candidate.Length);
-                }
-
-                return Equals(ref matchStart, candidate);
-            }
         }
 
         public readonly struct CaseInsensitiveUnicode : ICaseSensitivity
@@ -276,18 +175,6 @@ namespace System.Buffers
             public static bool Equals(ref char matchStart, string candidate)
             {
                 return Ordinal.EqualsIgnoreCase(ref matchStart, ref candidate.GetRawStringData(), candidate.Length);
-            }
-
-            [MethodImpl(MethodImplOptions.AggressiveInlining)]
-            public static bool Equals<TValueLength>(ref char matchStart, string candidate)
-                where TValueLength : struct, IValueLength
-            {
-                if (Vector128.IsHardwareAccelerated && TValueLength.AtLeast8Chars)
-                {
-                    return Ordinal.EqualsIgnoreCase_Vector128(ref matchStart, ref candidate.GetRawStringData(), candidate.Length);
-                }
-
-                return Ordinal.EqualsIgnoreCase_Scalar(ref matchStart, ref candidate.GetRawStringData(), candidate.Length);
             }
         }
     }
