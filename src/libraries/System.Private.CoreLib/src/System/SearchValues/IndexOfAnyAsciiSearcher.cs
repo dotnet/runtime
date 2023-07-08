@@ -879,10 +879,10 @@ namespace System.Buffers
 
             // On ARM, we have an instruction for an arithmetic right shift of 1-byte signed values.
             // The shift will map values above 127 to values above 16, which the shuffle will then map to 0.
-            // On X86 and WASM, use a 4-byte value shift with AND 15 to emulate a 1-byte value logical shift.
+            // On X86 and WASM, use a logical right shift instead.
             Vector128<byte> highNibbles = AdvSimd.IsSupported
                 ? AdvSimd.ShiftRightArithmetic(source.AsSByte(), 4).AsByte()
-                : (source.AsInt32() >>> 4).AsByte() & Vector128.Create((byte)0xF);
+                : source >>> 4;
 
             // The bitmapLookup represents a 8x16 table of bits, indicating whether a character is present in the needle.
             // Lookup the rows via the lower nibble and the column via the higher nibble.
@@ -913,7 +913,7 @@ namespace System.Buffers
         private static Vector256<byte> IndexOfAnyLookupCore(Vector256<byte> source, Vector256<byte> bitmapLookup)
         {
             // See comments in IndexOfAnyLookupCore(Vector128<byte>) above for more details.
-            Vector256<byte> highNibbles = Vector256.ShiftRightLogical(source.AsInt32(), 4).AsByte() & Vector256.Create((byte)0xF);
+            Vector256<byte> highNibbles = source >>> 4;
             Vector256<byte> bitMask = Avx2.Shuffle(bitmapLookup, source);
             Vector256<byte> bitPositions = Avx2.Shuffle(Vector256.Create(0x8040201008040201).AsByte(), highNibbles);
             Vector256<byte> result = bitMask & bitPositions;
