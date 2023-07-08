@@ -24,7 +24,7 @@ namespace System.Net.Http
     {
         private readonly SocketsHttpHandler? _socketHandler;
         private readonly HttpMessageHandler? _nativeHandler;
-        private HttpMessageHandler? _handler;
+        private MetricsHandler? _metricsHandler;
 
         private static readonly ConcurrentDictionary<string, MethodInfo?> s_cachedMethods =
             new ConcurrentDictionary<string, MethodInfo?>();
@@ -717,7 +717,7 @@ namespace System.Net.Http
         protected internal override Task<HttpResponseMessage> SendAsync(HttpRequestMessage request,
             CancellationToken cancellationToken)
         {
-            HttpMessageHandler handler = _handler ?? SetupHandlerChain();
+            MetricsHandler handler = _metricsHandler ?? SetupHandlerChain();
             return handler.SendAsync(request, cancellationToken);
         }
 
@@ -734,27 +734,27 @@ namespace System.Net.Http
             }
         }
 
-        private HttpMessageHandler SetupHandlerChain()
+        private MetricsHandler SetupHandlerChain()
         {
             HttpMessageHandler handler = IsNativeHandlerEnabled ? _nativeHandler! : _socketHandler!;
             if (DiagnosticsHandler.IsGloballyEnabled())
             {
                 handler = new DiagnosticsHandler(handler, DistributedContextPropagator.Current);
             }
-            handler = new MetricsHandler(handler, _meterFactory);
+            MetricsHandler metricsHandler = new MetricsHandler(handler, _meterFactory);
 
             // Ensure a single handler is used for all requests.
-            if (Interlocked.CompareExchange(ref _handler, handler, null) != null)
+            if (Interlocked.CompareExchange(ref _metricsHandler, metricsHandler, null) != null)
             {
                 handler.Dispose();
             }
-            return _handler;
+            return _metricsHandler;
         }
 
         private void CheckDisposedOrStarted()
         {
             ObjectDisposedException.ThrowIf(_disposed, this);
-            if (_handler != null)
+            if (_metricsHandler != null)
             {
                 throw new InvalidOperationException(SR.net_http_operation_started);
             }

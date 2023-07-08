@@ -26,7 +26,7 @@ namespace System.Net.Http.Metrics
 
             Meter meter = meterFactory?.Create("System.Net.Http") ?? SharedMeter.Instance;
 
-            // Meter has a cache for
+            // Meter has a cache for the instruments it owns
             _currentRequests = meter.CreateUpDownCounter<long>(
                 "http-client-current-requests",
                 description: "Number of outbound HTTP requests that are currently active on the client.");

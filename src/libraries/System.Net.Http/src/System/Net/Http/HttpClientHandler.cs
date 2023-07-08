@@ -23,10 +23,37 @@ namespace System.Net.Http
     public partial class HttpClientHandler : HttpMessageHandler
     {
         private readonly HttpHandlerType _underlyingHandler;
-        private HttpMessageHandler? _handler;
 
 #if TARGET_BROWSER
         private IMeterFactory? _meterFactory;
+        private MetricsHandler? _metricsHandler;
+
+        private MetricsHandler Handler
+        {
+            get
+            {
+                if (_metricsHandler != null)
+                {
+                    return _metricsHandler;
+                }
+
+                HttpMessageHandler handler = _underlyingHandler;
+                if (DiagnosticsHandler.IsGloballyEnabled())
+                {
+                    handler = new DiagnosticsHandler(handler, DistributedContextPropagator.Current);
+                }
+                MetricsHandler metricsHandler = new MetricsHandler(handler, _meterFactory);
+
+                // Ensure a single handler is used for all requests.
+                if (Interlocked.CompareExchange(ref _metricsHandler, metricsHandler, null) != null)
+                {
+                    metricsHandler.Dispose();
+                }
+                return _metricsHandler;
+            }
+        }
+#else
+        private HttpHandlerType Handler => _underlyingHandler;
 #endif
 
         private volatile bool _disposed;
@@ -36,27 +63,6 @@ namespace System.Net.Http
             _underlyingHandler = new HttpHandlerType();
 
             ClientCertificateOptions = ClientCertificateOption.Manual;
-        }
-
-        private HttpMessageHandler SetupHandlerChain()
-        {
-#if TARGET_BROWSER
-            HttpMessageHandler handler = _underlyingHandler;
-            if (DiagnosticsHandler.IsGloballyEnabled())
-            {
-                handler = new DiagnosticsHandler(handler, DistributedContextPropagator.Current);
-            }
-            handler = new MetricsHandler(handler, _meterFactory);
-
-            // Ensure a single handler is used for all requests.
-            if (Interlocked.CompareExchange(ref _handler, handler, null) != null)
-            {
-                handler.Dispose();
-            }
-#else
-            _handler = _underlyingHandler;
-#endif
-            return _handler;
         }
 
         protected override void Dispose(bool disposing)
@@ -82,7 +88,11 @@ namespace System.Net.Http
             get => _meterFactory;
             set
             {
-                CheckDisposedOrStarted();
+                ObjectDisposedException.ThrowIf(_disposed, this);
+                if (_metricsHandler != null)
+                {
+                    throw new InvalidOperationException(SR.net_http_operation_started);
+                }
                 _meterFactory = value;
             }
 #else
@@ -319,6 +329,8 @@ namespace System.Net.Http
 
         public IDictionary<string, object?> Properties => _underlyingHandler.Properties;
 
+
+
         //
         // Attributes are commented out due to https://github.com/dotnet/arcade/issues/7585
         // API compat will fail until this is fixed
@@ -328,10 +340,10 @@ namespace System.Net.Http
         //[UnsupportedOSPlatform("ios")]
         //[UnsupportedOSPlatform("tvos")]
         protected internal override HttpResponseMessage Send(HttpRequestMessage request, CancellationToken cancellationToken) =>
-            (_handler ?? SetupHandlerChain()).Send(request, cancellationToken);
+            Handler.Send(request, cancellationToken);
 
         protected internal override Task<HttpResponseMessage> SendAsync(HttpRequestMessage request, CancellationToken cancellationToken) =>
-            (_handler ?? SetupHandlerChain()).SendAsync(request, cancellationToken);
+            Handler.SendAsync(request, cancellationToken);
 
         // lazy-load the validator func so it can be trimmed by the ILLinker if it isn't used.
         private static Func<HttpRequestMessage, X509Certificate2?, X509Chain?, SslPolicyErrors, bool>? s_dangerousAcceptAnyServerCertificateValidator;
@@ -347,16 +359,5 @@ namespace System.Net.Http
             // SslOptions is changed, since SslOptions itself does not do any such checks.
             _underlyingHandler.SslOptions = _underlyingHandler.SslOptions;
         }
-
-#if TARGET_BROWSER
-        private void CheckDisposedOrStarted()
-        {
-            ObjectDisposedException.ThrowIf(_disposed, this);
-            if (_handler != null)
-            {
-                throw new InvalidOperationException(SR.net_http_operation_started);
-            }
-        }
-#endif
     }
 }
