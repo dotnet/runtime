@@ -55,7 +55,7 @@ namespace System.Formats.Cbor.Tests
         }
 
         [Fact]
-        public static void Reset_ConformanceMode()
+        public static void Reset_DoesNotAffect_ConformanceMode()
         {
             var reader = new CborReader(Array.Empty<byte>());
             Assert.Equal(CborConformanceMode.Strict, reader.ConformanceMode);
