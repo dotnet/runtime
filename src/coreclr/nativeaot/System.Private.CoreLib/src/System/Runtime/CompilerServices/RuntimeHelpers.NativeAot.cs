@@ -216,7 +216,7 @@ namespace System.Runtime.CompilerServices
 
         [Intrinsic]
         internal static unsafe MethodTable* GetMethodTable(this object obj)
-            => obj.m_pEEType;
+            => GetMethodTable(obj);
 
         internal static unsafe ref MethodTable* GetMethodTableRef(this object obj)
             => ref obj.m_pEEType;

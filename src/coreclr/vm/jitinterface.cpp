@@ -3849,7 +3849,7 @@ bool CEEInfo::isBitwiseEquatable(CORINFO_CLASS_HANDLE cls)
 
     bool ret = false;
 
-    JIT_TO_EE_TRANSITION_LEAF();
+    JIT_TO_EE_TRANSITION();
 
     TypeHandle typeHandle(cls);
     MethodTable* methodTable = typeHandle.GetMethodTable();
@@ -3885,7 +3885,7 @@ bool CEEInfo::isBitwiseEquatable(CORINFO_CLASS_HANDLE cls)
         ret = !typeHandle.CanCastTo(TypeHandle(CoreLibBinder::GetClass(CLASS__IEQUATABLEGENERIC)).Instantiate(inst));
     }
 
-    EE_TO_JIT_TRANSITION_LEAF();
+    EE_TO_JIT_TRANSITION();
 
     return ret;
 }

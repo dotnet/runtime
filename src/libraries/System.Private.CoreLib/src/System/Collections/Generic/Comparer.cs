@@ -136,10 +136,8 @@ namespace System.Collections.Generic
         private EnumComparer(SerializationInfo info, StreamingContext context) { }
 
         [MethodImpl(MethodImplOptions.AggressiveInlining)]
-        public override int Compare(T x, T y)
-        {
-            return RuntimeHelpers.EnumCompareTo(x, y);
-        }
+        public override int Compare(T x, T y) =>
+            RuntimeHelpers.EnumCompareTo(x, y);
 
         // Equals method for the comparer itself.
         public override bool Equals([NotNullWhen(true)] object? obj) =>
